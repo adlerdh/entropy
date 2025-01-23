@@ -1,0 +1,3 @@
+externals/** linguist-vendored
+resources/** linguist-vendored
+ui/imgui/** linguist-vendored

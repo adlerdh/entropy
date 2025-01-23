@@ -1,0 +1,9 @@
+**/.DS_Store
+.vs/**
+.vscode/**
+build*/**
+out/**
+src/**/*.autosave
+CMakeFiles/**
+CMakeCache.txt
+CMakeLists.txt.user*
