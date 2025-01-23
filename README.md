@@ -19,10 +19,11 @@ Entropy builds on Linux, Windows, and macOS. It is currently tested on the follo
 * macOS 14.6.1, Apple Silicon arm64 architecture (with clang 15.0.4)
 
 ### External libraries
-Please download and install these libraries:
+Please clone/download and build these libraries:
 
 * [Boost](https://github.com/boostorg/boost), header libraries only (1.84.0)
-* [Insight Toolkit, ITK](https://github.com/InsightSoftwareConsortium/ITK) (5.3.0), ~~built with Module_ITKVtkGlue~~
+* [Insight Toolkit, ITK](https://github.com/InsightSoftwareConsortium/ITK) (v5.3.0), ~~built with Module_ITKVtkGlue~~
+* [spdlog](https://github.com/gabime/spdlog) (v1.15.0)
 * ~~[Visualization Toolkit, VTK](https://github.com/Kitware/VTK) (9.3.0)~~
 
 Note: build Boost (headers only) with `./bootstrap.sh && ./b2 headers`
