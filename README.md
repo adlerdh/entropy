@@ -16,7 +16,7 @@ Entropy builds on Linux, Windows, and macOS. It is currently tested on the follo
 * Ubuntu 24.04 (with gcc 12.3.0)
 * Windows 11 (with MSVC++ 17.3.4)
 * macOS 10.14.6, Intel x86_64 architecture (with clang 11.0.0)
-* macOS 14.6.1, Apple Silicon arm64 architecture (with clang 15.0.4)
+* macOS 14.6.1, Apple arm64 architecture (with clang 15.0.0)
 
 ### External libraries
 Please clone/download and build these libraries:
@@ -45,7 +45,7 @@ The following libraries and dependencies are brought in as Git submodules to the
 * ImPlot (https://github.com/epezent/implot)
 * JSON for Modern C++ (https://github.com/nlohmann/json)
 * NanoVG (https://github.com/memononen/nanovg)
-* spdlog (https://github.com/gabime/spdlog)
+* ~~spdlog (https://github.com/gabime/spdlog)~~
 * stduuid (https://github.com/mariusbancila/stduuid)
 * TinyFSM (https://github.com/digint/tinyfsm)
 
@@ -89,8 +89,7 @@ Entropy is run from the terminal. Images can be specified directly as command li
 
 With this input format, each image may have only one segmentation.
 
-2. Images can be specified in a JSON project file that is loaded using the `-p` argument. A sample current project file is given below.
-
+2. Images can be specified in a JSON project file that is loaded using the `-p` argument. A sample project file:
 ```json
 {
   "reference":
