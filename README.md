@@ -146,10 +146,3 @@ With this input format, each image may have only one segmentation.
 > Note: The project file format is subject to change!
 
 Logs are output to the console and to files saved in the `logs` folder. Log level can be set using the `-l` argument. See help (`-h`) for more details.
-
-
-## To be done
-- [X] Docking toolbars
-- [ ] Opening/saving project files
-- [ ] 3D rendering of images, meshes, and landmarks
-- [ ] A list of deformation field images can also be provided ("deformation" field in JSON project) for each image. The deformation fields are loaded, but code has not been implemented to apply them to warp the image.
