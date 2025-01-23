@@ -1,8 +1,5 @@
 cmake_minimum_required( VERSION 3.22.0 FATAL_ERROR )
 
-include(ExternalProject)
-include(FetchContent)
-
 #--------------------------------------------------------------------------------
 # Versioning
 #--------------------------------------------------------------------------------
@@ -42,23 +39,27 @@ set( GLAD_GL_DEBUG false CACHE BOOL "Use OpenGL debugging in GLAD" )
 set_property( CACHE GLAD_GL_VERSION PROPERTY STRINGS ${GL_VERSION_VALUES} )
 
 
-# find_package( ITK 5.3.0 REQUIRED )
+#--------------------------------------------------------------------------------
+# Insight Toolkit (ITK) library
+#--------------------------------------------------------------------------------
+find_package( ITK 5.3.0 REQUIRED )
 
-# if( ITK_FOUND )
-#   include( ${ITK_USE_FILE} )
-# else()
-#   message( FATAL_ERROR "ITK was not found. Please set ITK_DIR." )
-# endif()
+if( ITK_FOUND )
+    include( ${ITK_USE_FILE} )
+else()
+    message( FATAL_ERROR "ITK was not found. Please set ITK_DIR." )
+endif()
+
 
 #--------------------------------------------------------------------------------
 # Visualization Toolkit (VTK) library
 # Note: VTK is NOT currently used in this project.
 #--------------------------------------------------------------------------------
-# find_package( VTK 9.2.6 REQUIRED )
+find_package( VTK 9.2.6 REQUIRED )
 
-# if( NOT VTK_FOUND )
-#   message( SEND_ERROR "VTK was not found. Please set VTK_DIR." )
-# endif()
+if( NOT VTK_FOUND )
+    message( SEND_ERROR "VTK was not found. Please set VTK_DIR." )
+endif()
 
 
 #--------------------------------------------------------------------------------
@@ -67,99 +68,22 @@ set_property( CACHE GLAD_GL_VERSION PROPERTY STRINGS ${GL_VERSION_VALUES} )
 find_package( Boost 1.81.0 REQUIRED )
 
 if( NOT Boost_FOUND )
-  message( FATAL_ERROR "Boost was not found." )
+    message( FATAL_ERROR "Boost was not found." )
 endif()
 
 set( Boost_USE_MULTITHREADED ON )
 set( Boost_USE_STATIC_LIBS ON )  # only find static libs
-
-set(FETCHCONTENT_QUIET OFF)
-
-option(ENTROPY_BUILD_SHARED_LIBS "Build shared libraries" OFF)
-option(ENTROPY_BUILD_STATIC_LIBS "Build static libraries" ON)
-option(ENTROPY_BUILD_TESTING "Build tests for third party libraries" ON)
-
-option( USE_GIT_PROTOCOL "If behind a firewall turn this off to use http instead." OFF)
-
-set(git_protocol "git")
-if(NOT USE_GIT_PROTOCOL)
-  set(git_protocol "https")
-endif()
-
-
-# FetchContent_Declare(
-#   ITK
-#   GIT_REPOSITORY https://github.com/InsightSoftwareConsortium/ITK.git
-#   GIT_TAG 311b7060ef39e371f3cd209ec135284ff5fde735 # tag v5.4.0
-#   GIT_PROGRESS TRUE
-#   USES_TERMINAL_DOWNLOAD TRUE
-#   BUILD_EXAMPLES OFF
-#   BUILD_TESTING ${ENTROPY_BUILD_TESTING}
-#   BUILD_SHARED_LIBS ${ENTROPY_BUILD_SHARED_LIBS}
-#   BUILD_STATIC_LIBS ${ENTROPY_BUILD_STATIC_LIBS}
-#   Module_ITKVtkGlue ON
-#   FIND_PACKAGE_ARGS NAMES ITK VERSION 5.4.0
-# )
-
-find_package( ITK 5.4.0 REQUIRED )
-
-set(DOWNLOAD_DEPENDENCIES TRUE)
-
-if(NOT ITK_FOUND AND DOWNLOAD_DEPENDENCIES)
-  # include(${CMAKE_SOURCE_DIR}/External-ITK.cmake)
-
-  ExternalProject_Add( ITK
-    GIT_REPOSITORY "${git_protocol}://github.com/InsightSoftwareConsortium/ITK.git"
-    GIT_TAG 311b7060ef39e371f3cd209ec135284ff5fde735 # tag v5.4.0
-    GIT_SHALLOW TRUE
-    # SOURCE_DIR
-    # BINARY_DIR
-    CMAKE_ARGS
-      -DBUILD_EXAMPLES:BOOL=OFF
-      -DBUILD_SHARED_LIBS:BOOL=${ENTROPY_BUILD_SHARED_LIBS}
-      -DBUILD_STATIC_LIBS:BOOL=${ENTROPY_BUILD_STATIC_LIBS}
-      -DBUILD_TESTING:BOOL=${ENTROPY_BUILD_TESTING}
-      -DITK_BUILD_DEFAULT_MODULES:BOOL=ON
-      # -DModule_ITKVtkGlue:BOOL=ON
-    # CONFIGURE_COMMAND ""
-    INSTALL_COMMAND ""
-    LOG_DOWNLOAD TRUE
-    LOG_UPDATE TRUE
-    LOG_PATCH TRUE
-    LOG_CONFIGURE TRUE
-    LOG_BUILD TRUE
-    LOG_INSTALL TRUE
-    LOG_TEST TRUE
-    LOG_OUTPUT_ON_FAILURE TRUE
-     # DEPENDS [VTK] [DCMTK]
-  )
-
-  find_package( ITK 5.4.0 REQUIRED )
-  # add_dependencies(OpenCL::OpenCL opencl_headers opencl_icd_loader)
-
-else()
-  message( FATAL_ERROR "ITK was not found and was not downloaded. Please set ITK_DIR." )
-endif()
 
 
 #--------------------------------------------------------------------------------
 # spdlog (included as Git submodule):
 # Very fast, header-only/compiled, C++ logging library
 #--------------------------------------------------------------------------------
-FetchContent_Declare(
-  spdlog
-  GIT_REPOSITORY https://github.com/gabime/spdlog.git
-  GIT_TAG 27cb4c76708608465c413f6d0e6b8d99a4d84302 # tag v1.41.1
-  GIT_PROGRESS TRUE
-  USES_TERMINAL_DOWNLOAD TRUE
-  SPDLOG_BUILD_ALL OFF
-  SPDLOG_BUILD_EXAMPLE OFF
-  SPDLOG_BUILD_SHARED ${ENTROPY_BUILD_SHARED_LIBS}
-  SPDLOG_BUILD_TESTS ${ENTROPY_BUILD_TESTING}
-  SPDLOG_FMT_EXTERNAL OFF
-  SPDLOG_USE_STD_FORMAT OFF
-  FIND_PACKAGE_ARGS NAMES spdlog VERSION 1.41.1
-)
+find_package(spdlog REQUIRED)
+#set(SPDLOG_BUILD_SHARED ON)
+#set(SPDLOG_FMT_EXTERNAL OFF)
+#set(SPDLOG_USE_STD_FORMAT ON)
+
 
 #--------------------------------------------------------------------------------
 # GLFW library (included as Git submodule):
@@ -167,42 +91,12 @@ FetchContent_Declare(
 # Vulkan application development. It provides a simple, platform-independent API
 # for creating windows, contexts and surfaces, reading input, handling events, etc.
 #--------------------------------------------------------------------------------
-FetchContent_Declare(
-  GLFW
-  GIT_REPOSITORY https://github.com/glfw/glfw.git
-  GIT_TAG 7b6aead9fb88b3623e3b3725ebb42670cbe4c579 # tag 3.4
-  GIT_PROGRESS TRUE
-  USES_TERMINAL_DOWNLOAD TRUE
-  BUILD_SHARED_LIBS ${ENTROPY_BUILD_SHARED_LIBS}
-  GLFW_BUILD_DOCS OFF
-  GLFW_BUILD_EXAMPLES OFF
-  GLFW_BUILD_TESTS ${ENTROPY_BUILD_TESTING}
-  GLFW_INSTALL OFF
-  FIND_PACKAGE_ARGS NAMES glfw3 VERSION 3.4
-)
+set( GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE )
+set( GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE )
+set( GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE )
+set( GLFW_INSTALL OFF CACHE BOOL "" FORCE )
 
-# This will try calling find_package() first
-# use find_package to locate installed 3rd party project, if it is available
-FetchContent_MakeAvailable(GLFW spdlog)
-# FetchContent_MakeAvailable(ITK)
-
-message(STATUS "GLFW:")
-message(STATUS "-source dir: ${glfw_SOURCE_DIR}")
-message(STATUS "-binary dir: ${glfw_BINARY_DIR}")
-message(STATUS "-populated: ${glfw_POPULATED}")
-
-message(STATUS "ITK:")
-message(STATUS "-source dir: ${itk_SOURCE_DIR}")
-message(STATUS "-binary dir: ${itk_BINARY_DIR}")
-message(STATUS "-populated: ${itk_POPULATED}")
-
-message(STATUS "spdlog:")
-message(STATUS "-source dir: ${spdlog_SOURCE_DIR}")
-message(STATUS "-binary dir: ${spdlog_BINARY_DIR}")
-message(STATUS "-populated: ${spdlog_POPULATED}")
-
-# include( ${ITK_USE_FILE} )
-
+add_subdirectory( ${EXT_DIR}/glfw )
 
 
 #--------------------------------------------------------------------------------
@@ -226,7 +120,7 @@ list( GET GL_VERSION_LIST 1 GLAD_GL_VERSION_MINOR )
 set( GLAD_BASE glad_gl_${GLAD_GL_VERSION}_core )
 
 if( GLAD_GL_DEBUG )
-  set( GLAD_BASE ${GLAD_BASE}_debug )
+    set( GLAD_BASE ${GLAD_BASE}_debug )
 endif()
 
 set( GLAD_DIR ${EXT_DIR}/glad/${GLAD_BASE} )
@@ -250,45 +144,45 @@ set( IMGUI_BINDINGS_DIR ${SRC_DIR}/ui/imgui )
 add_compile_definitions( IMGUI_USER_CONFIG="ui/entropy_imgui_config.h" )
 
 list( APPEND IMGUI_SOURCES
-  ${IMGUI_SRC_DIR}/imgui.cpp
-  ${IMGUI_SRC_DIR}/imgui_demo.cpp
-  ${IMGUI_SRC_DIR}/imgui_draw.cpp
-  ${IMGUI_SRC_DIR}/imgui_tables.cpp
-  ${IMGUI_SRC_DIR}/imgui_widgets.cpp
-  ${IMGUI_SRC_DIR}/misc/cpp/imgui_stdlib.cpp
-  ${IMGUI_SRC_DIR}/backends/imgui_impl_glfw.cpp # GLFW bindings for ImGui
-  ${IMGUI_SRC_DIR}/backends/imgui_impl_opengl3.cpp # OpenGL 3 bindings for ImGui
+    ${IMGUI_SRC_DIR}/imgui.cpp
+    ${IMGUI_SRC_DIR}/imgui_demo.cpp
+    ${IMGUI_SRC_DIR}/imgui_draw.cpp
+    ${IMGUI_SRC_DIR}/imgui_tables.cpp
+    ${IMGUI_SRC_DIR}/imgui_widgets.cpp
+    ${IMGUI_SRC_DIR}/misc/cpp/imgui_stdlib.cpp
+    ${IMGUI_SRC_DIR}/backends/imgui_impl_glfw.cpp # GLFW bindings for ImGui
+    ${IMGUI_SRC_DIR}/backends/imgui_impl_opengl3.cpp # OpenGL 3 bindings for ImGui
 )
 
 add_library( imgui STATIC ${IMGUI_SOURCES} )
 
 target_include_directories( imgui PRIVATE
-  ${IMGUI_INCLUDE_DIR}
-  ${SRC_DIR} # needed for IMGUI_USER_CONFIG file
-  ${glfw_SOURCE_DIR}/include
+    ${IMGUI_INCLUDE_DIR}
+    ${SRC_DIR} # needed for IMGUI_USER_CONFIG file
+    ${EXT_DIR}/glfw/include
 )
 
 target_link_libraries( imgui PRIVATE
-  spdlog::spdlog # used in IMGUI_USER_CONFIG
+    spdlog::spdlog # used in IMGUI_USER_CONFIG
 )
 
 target_compile_options( imgui PRIVATE
-  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-    -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
-    -Wshadow -pedantic-errors -g -ftrapv
-    -Wno-error=deprecated-copy
-    -Wno-error=empty-body
-    -Wno-empty-body # suppressed due to empty IM_ASSERT
-  >
-  $<$<CXX_COMPILER_ID:MSVC>:
-    /W4
-  >
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
+        -Wshadow -pedantic-errors -g -ftrapv
+        -Wno-error=deprecated-copy
+        -Wno-error=empty-body
+        -Wno-empty-body # suppressed due to empty IM_ASSERT
+    >
+    $<$<CXX_COMPILER_ID:MSVC>:
+        /W4
+    >
 )
 
 set_target_properties( imgui PROPERTIES
-  CXX_STANDARD 20
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS ON )
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS ON )
 
 
 #--------------------------------------------------------------------------------
@@ -323,32 +217,32 @@ set_target_properties( imgui PROPERTIES
 set( IMPLOT_INCLUDE_DIR ${EXT_DIR}/implot )
 
 list( APPEND IMPLOT_SOURCES
-  ${EXT_DIR}/implot/implot_demo.cpp
-  ${EXT_DIR}/implot/implot_items.cpp
-  ${EXT_DIR}/implot/implot.cpp )
+    ${EXT_DIR}/implot/implot_demo.cpp
+    ${EXT_DIR}/implot/implot_items.cpp
+    ${EXT_DIR}/implot/implot.cpp )
 
 add_library( implot STATIC ${IMPLOT_SOURCES} )
 
 target_include_directories( implot PRIVATE
-  ${IMPLOT_INCLUDE_DIR}
-  ${IMGUI_INCLUDE_DIR}
-  ${SRC_DIR} # needed for IMGUI_USER_CONFIG file
+    ${IMPLOT_INCLUDE_DIR}
+    ${IMGUI_INCLUDE_DIR}
+    ${SRC_DIR} # needed for IMGUI_USER_CONFIG file
 )
 
 target_link_libraries( implot PRIVATE
-  spdlog::spdlog # used in IMGUI_USER_CONFIG
+    spdlog::spdlog # used in IMGUI_USER_CONFIG
 )
 
 target_compile_options( implot PRIVATE
-   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-      -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow -g -ftrapv>
-   $<$<CXX_COMPILER_ID:MSVC>:
-      /W4> )
+     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+          -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow -g -ftrapv>
+     $<$<CXX_COMPILER_ID:MSVC>:
+          /W4> )
 
 set_target_properties( implot PROPERTIES
-  CXX_STANDARD 20
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS ON )
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS ON )
 
 
 #--------------------------------------------------------------------------------
@@ -395,8 +289,8 @@ set( ARGPARSE_INCLUDE_DIR ${EXT_DIR}/argparse/include )
 # Header-only C++ library of fast max-flow/min-cut solvers optimized for grid graphs
 #--------------------------------------------------------------------------------
 set( GRIDCUT_INCLUDE_DIRS
-  ${EXT_DIR}/gridcut/include
-  ${EXT_DIR}/gridcut/examples/include )
+    ${EXT_DIR}/gridcut/include
+    ${EXT_DIR}/gridcut/examples/include )
 #include "../include/AlphaExpansion/AlphaExpansion_2D_4C.h"
 
 
@@ -466,22 +360,22 @@ get_git_head_revision( GIT_REFSPEC ENTROPY_GIT_COMMIT_SHA1 )
 find_package( Git QUIET )
 
 if( GIT_FOUND )
-  message( "Git found: ${GIT_EXECUTABLE} (version ${GIT_VERSION_STRING})" )
+    message( "Git found: ${GIT_EXECUTABLE} (version ${GIT_VERSION_STRING})" )
 endif()
 
 # Get the current working branch
 execute_process(
-  COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE ENTROPY_GIT_BRANCH
-  OUTPUT_STRIP_TRAILING_WHITESPACE )
+    COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE ENTROPY_GIT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE )
 
 # Get the timestamp
 execute_process(
-  COMMAND ${GIT_EXECUTABLE} show -s --format=%ci ${ENTROPY_GIT_COMMIT_SHA1}
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE ENTROPY_GIT_COMMIT_TIMESTAMP
-  OUTPUT_STRIP_TRAILING_WHITESPACE )
+    COMMAND ${GIT_EXECUTABLE} show -s --format=%ci ${ENTROPY_GIT_COMMIT_SHA1}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE ENTROPY_GIT_COMMIT_TIMESTAMP
+    OUTPUT_STRIP_TRAILING_WHITESPACE )
 
 message( STATUS "Git commit information:")
 message( STATUS "   -Hash: ${ENTROPY_GIT_COMMIT_SHA1}" )
@@ -497,265 +391,265 @@ string( TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%SZ" UTC )
 
 # Configure a header file with the versioning information
 configure_file(
-  ${SRC_DIR}/defines.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/defines.h
-  @ONLY )
+    ${SRC_DIR}/defines.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/defines.h
+    @ONLY )
 
 set( ENTROPY_SOURCES
-  ${SRC_DIR}/main.cpp
-  ${SRC_DIR}/EntropyApp.cpp
+    ${SRC_DIR}/main.cpp
+    ${SRC_DIR}/EntropyApp.cpp
 
-  ${SRC_DIR}/common/CoordinateFrame.cpp
-  ${SRC_DIR}/common/DataHelper.cpp
-  ${SRC_DIR}/common/DirectionMaps.cpp
-  ${SRC_DIR}/common/InputParams.cpp
-  ${SRC_DIR}/common/InputParser.cpp
-  ${SRC_DIR}/common/MathFuncs.cpp
-  ${SRC_DIR}/common/ParcellationLabelTable.cpp
-  ${SRC_DIR}/common/Types.cpp
-  ${SRC_DIR}/common/UuidUtility.cpp
-  ${SRC_DIR}/common/Viewport.cpp
+    ${SRC_DIR}/common/CoordinateFrame.cpp
+    ${SRC_DIR}/common/DataHelper.cpp
+    ${SRC_DIR}/common/DirectionMaps.cpp
+    ${SRC_DIR}/common/InputParams.cpp
+    ${SRC_DIR}/common/InputParser.cpp
+    ${SRC_DIR}/common/MathFuncs.cpp
+    ${SRC_DIR}/common/ParcellationLabelTable.cpp
+    ${SRC_DIR}/common/Types.cpp
+    ${SRC_DIR}/common/UuidUtility.cpp
+    ${SRC_DIR}/common/Viewport.cpp
 
-  ${SRC_DIR}/image/Image.cpp
-  ${SRC_DIR}/image/ImageColorMap.cpp
-  ${SRC_DIR}/image/ImageHeader.cpp
-  ${SRC_DIR}/image/ImageIoInfo.cpp
-  ${SRC_DIR}/image/ImageSettings.cpp
-  ${SRC_DIR}/image/ImageTransformations.cpp
-  ${SRC_DIR}/image/ImageUtility.cpp
-  ${SRC_DIR}/image/SegUtil.cpp
-  ${SRC_DIR}/image/SurfaceUtility.cpp
+    ${SRC_DIR}/image/Image.cpp
+    ${SRC_DIR}/image/ImageColorMap.cpp
+    ${SRC_DIR}/image/ImageHeader.cpp
+    ${SRC_DIR}/image/ImageIoInfo.cpp
+    ${SRC_DIR}/image/ImageSettings.cpp
+    ${SRC_DIR}/image/ImageTransformations.cpp
+    ${SRC_DIR}/image/ImageUtility.cpp
+    ${SRC_DIR}/image/SegUtil.cpp
+    ${SRC_DIR}/image/SurfaceUtility.cpp
 
-  ${SRC_DIR}/logic/app/CallbackHandler.cpp
-  ${SRC_DIR}/logic/app/Data.cpp
-  ${SRC_DIR}/logic/app/Logging.cpp
-  ${SRC_DIR}/logic/app/Settings.cpp
-  ${SRC_DIR}/logic/app/State.cpp
+    ${SRC_DIR}/logic/app/CallbackHandler.cpp
+    ${SRC_DIR}/logic/app/Data.cpp
+    ${SRC_DIR}/logic/app/Logging.cpp
+    ${SRC_DIR}/logic/app/Settings.cpp
+    ${SRC_DIR}/logic/app/State.cpp
 
-  # ${SRC_DIR}/logic/annotation/AnnotationHelper.cpp
-  ${SRC_DIR}/logic/annotation/Annotation.cpp
-  ${SRC_DIR}/logic/annotation/BezierHelper.cpp
-  ${SRC_DIR}/logic/annotation/LandmarkGroup.cpp
-  ${SRC_DIR}/logic/annotation/SerializeAnnot.cpp
+    # ${SRC_DIR}/logic/annotation/AnnotationHelper.cpp
+    ${SRC_DIR}/logic/annotation/Annotation.cpp
+    ${SRC_DIR}/logic/annotation/BezierHelper.cpp
+    ${SRC_DIR}/logic/annotation/LandmarkGroup.cpp
+    ${SRC_DIR}/logic/annotation/SerializeAnnot.cpp
 
-  ${SRC_DIR}/logic/camera/Camera.cpp
-  ${SRC_DIR}/logic/camera/CameraHelpers.cpp
-  ${SRC_DIR}/logic/camera/CameraTypes.cpp
-  ${SRC_DIR}/logic/camera/MathUtility.cpp
-  ${SRC_DIR}/logic/camera/OrthogonalProjection.cpp
-  ${SRC_DIR}/logic/camera/PerspectiveProjection.cpp
-  ${SRC_DIR}/logic/camera/Projection.cpp
+    ${SRC_DIR}/logic/camera/Camera.cpp
+    ${SRC_DIR}/logic/camera/CameraHelpers.cpp
+    ${SRC_DIR}/logic/camera/CameraTypes.cpp
+    ${SRC_DIR}/logic/camera/MathUtility.cpp
+    ${SRC_DIR}/logic/camera/OrthogonalProjection.cpp
+    ${SRC_DIR}/logic/camera/PerspectiveProjection.cpp
+    ${SRC_DIR}/logic/camera/Projection.cpp
 
-  ${SRC_DIR}/logic/interaction/ViewHit.cpp
-  ${SRC_DIR}/logic/interaction/events/ButtonState.cpp
+    ${SRC_DIR}/logic/interaction/ViewHit.cpp
+    ${SRC_DIR}/logic/interaction/events/ButtonState.cpp
 
-  ${SRC_DIR}/logic/segmentation/GraphCuts.cpp
-  ${SRC_DIR}/logic/segmentation/Poisson.cpp
-  ${SRC_DIR}/logic/segmentation/SegHelpers.cpp
+    ${SRC_DIR}/logic/segmentation/GraphCuts.cpp
+    ${SRC_DIR}/logic/segmentation/Poisson.cpp
+    ${SRC_DIR}/logic/segmentation/SegHelpers.cpp
 
-  ${SRC_DIR}/logic/serialization/ProjectSerialization.cpp
+    ${SRC_DIR}/logic/serialization/ProjectSerialization.cpp
 
-  ${SRC_DIR}/logic/states/AnnotationStateHelpers.cpp
-  ${SRC_DIR}/logic/states/AnnotationStateMachine.cpp
-  ${SRC_DIR}/logic/states/AnnotationStates.cpp
+    ${SRC_DIR}/logic/states/AnnotationStateHelpers.cpp
+    ${SRC_DIR}/logic/states/AnnotationStateMachine.cpp
+    ${SRC_DIR}/logic/states/AnnotationStates.cpp
 
-#  ${SRC_DIR}/logic_old/AppController.cpp
-#  ${SRC_DIR}/logic_old/AppInitializer.cpp
-#  ${SRC_DIR}/logic_old/annotation/AnnotationHelper.cpp
-  ${SRC_DIR}/logic_old/annotation/LandmarkGroupCpuRecord.cpp
-  ${SRC_DIR}/logic_old/annotation/PlanarPolygon.cpp
-  ${SRC_DIR}/logic_old/annotation/SlideAnnotationCpuRecord.cpp
-#  ${SRC_DIR}/logic_old/camera/OrthogonalProjection.cpp
-#  ${SRC_DIR}/logic_old/camera/PerspectiveProjection.cpp
-#  ${SRC_DIR}/logic_old/camera/Projection.cpp
-#  ${SRC_DIR}/logic_old/camera/Camera.cpp
-#  ${SRC_DIR}/logic_old/camera/CameraHelpers.cpp
-#  ${SRC_DIR}/logic_old/colormap/ImageColorMap.cpp
-#  ${SRC_DIR}/logic_old/colormap/ParcellationLabelTable.cpp
-#  ${SRC_DIR}/logic_old/data/DataHelper.cpp
-#  ${SRC_DIR}/logic_old/data/DataLoading.cpp
-#  ${SRC_DIR}/logic_old/data/DataMemoryUse.cpp
-#  ${SRC_DIR}/logic_old/data/details/DataLoadingDetails.cpp
-#  ${SRC_DIR}/logic_old/interaction/CameraInteractionHandler.cpp
-#  ${SRC_DIR}/logic_old/interaction/CrosshairsInteractionHandler.cpp
-#  ${SRC_DIR}/logic_old/interaction/InteractionHandlerBase.cpp
-#  ${SRC_DIR}/logic_old/interaction/InteractionPack.cpp
-#  ${SRC_DIR}/logic_old/interaction/RefImageInteractionHandler.cpp
-#  ${SRC_DIR}/logic_old/interaction/SlideInteractionHandler.cpp
-#  ${SRC_DIR}/logic_old/interaction/StackInteractionHandler.cpp
-#  ${SRC_DIR}/logic_old/interaction/WindowLevelInteractionHandler.cpp
-#  ${SRC_DIR}/logic_old/managers/ActionManager.cpp
-#  ${SRC_DIR}/logic_old/managers/AssemblyManager.cpp
-#  ${SRC_DIR}/logic_old/managers/ConnectionManager.cpp
-#  ${SRC_DIR}/logic_old/managers/DataManager.cpp
-#  ${SRC_DIR}/logic_old/managers/GuiManager.cpp
-#  ${SRC_DIR}/logic_old/managers/InteractionManager.cpp
-#  ${SRC_DIR}/logic_old/managers/LayoutManager.cpp
-#  ${SRC_DIR}/logic_old/managers/TransformationManager.cpp
+#    ${SRC_DIR}/logic_old/AppController.cpp
+#    ${SRC_DIR}/logic_old/AppInitializer.cpp
+#    ${SRC_DIR}/logic_old/annotation/AnnotationHelper.cpp
+    ${SRC_DIR}/logic_old/annotation/LandmarkGroupCpuRecord.cpp
+    ${SRC_DIR}/logic_old/annotation/PlanarPolygon.cpp
+    ${SRC_DIR}/logic_old/annotation/SlideAnnotationCpuRecord.cpp
+#    ${SRC_DIR}/logic_old/camera/OrthogonalProjection.cpp
+#    ${SRC_DIR}/logic_old/camera/PerspectiveProjection.cpp
+#    ${SRC_DIR}/logic_old/camera/Projection.cpp
+#    ${SRC_DIR}/logic_old/camera/Camera.cpp
+#    ${SRC_DIR}/logic_old/camera/CameraHelpers.cpp
+#    ${SRC_DIR}/logic_old/colormap/ImageColorMap.cpp
+#    ${SRC_DIR}/logic_old/colormap/ParcellationLabelTable.cpp
+#    ${SRC_DIR}/logic_old/data/DataHelper.cpp
+#    ${SRC_DIR}/logic_old/data/DataLoading.cpp
+#    ${SRC_DIR}/logic_old/data/DataMemoryUse.cpp
+#    ${SRC_DIR}/logic_old/data/details/DataLoadingDetails.cpp
+#    ${SRC_DIR}/logic_old/interaction/CameraInteractionHandler.cpp
+#    ${SRC_DIR}/logic_old/interaction/CrosshairsInteractionHandler.cpp
+#    ${SRC_DIR}/logic_old/interaction/InteractionHandlerBase.cpp
+#    ${SRC_DIR}/logic_old/interaction/InteractionPack.cpp
+#    ${SRC_DIR}/logic_old/interaction/RefImageInteractionHandler.cpp
+#    ${SRC_DIR}/logic_old/interaction/SlideInteractionHandler.cpp
+#    ${SRC_DIR}/logic_old/interaction/StackInteractionHandler.cpp
+#    ${SRC_DIR}/logic_old/interaction/WindowLevelInteractionHandler.cpp
+#    ${SRC_DIR}/logic_old/managers/ActionManager.cpp
+#    ${SRC_DIR}/logic_old/managers/AssemblyManager.cpp
+#    ${SRC_DIR}/logic_old/managers/ConnectionManager.cpp
+#    ${SRC_DIR}/logic_old/managers/DataManager.cpp
+#    ${SRC_DIR}/logic_old/managers/GuiManager.cpp
+#    ${SRC_DIR}/logic_old/managers/InteractionManager.cpp
+#    ${SRC_DIR}/logic_old/managers/LayoutManager.cpp
+#    ${SRC_DIR}/logic_old/managers/TransformationManager.cpp
 
-  ${SRC_DIR}/mesh/MeshCpuRecord.cpp
-  ${SRC_DIR}/mesh/MeshInfo.cpp
-  ${SRC_DIR}/mesh/MeshLoading.cpp
-  ${SRC_DIR}/mesh/MeshProperties.cpp
-  ${SRC_DIR}/mesh/vtkdetails/MeshGeneration.cpp
+    ${SRC_DIR}/mesh/MeshCpuRecord.cpp
+    ${SRC_DIR}/mesh/MeshInfo.cpp
+    ${SRC_DIR}/mesh/MeshLoading.cpp
+    ${SRC_DIR}/mesh/MeshProperties.cpp
+    ${SRC_DIR}/mesh/vtkdetails/MeshGeneration.cpp
 
-  # We were testing IPC with ITK-SNAP. This functionality is not currently hooked up to Entropy.
-  # ${SRC_DIR}/logic/ipc/IPCHandler.cxx
+    # We were testing IPC with ITK-SNAP. This functionality is not currently hooked up to Entropy.
+    # ${SRC_DIR}/logic/ipc/IPCHandler.cxx
 
-  ${SRC_DIR}/rendering/ImageDrawing.cpp
-  ${SRC_DIR}/rendering/Rendering.cpp
-  ${SRC_DIR}/rendering/RenderData.cpp
-  ${SRC_DIR}/rendering/TextureSetup.cpp
-  ${SRC_DIR}/rendering/VectorDrawing.cpp
-  ${SRC_DIR}/rendering/records/MeshGpuRecord.cpp
+    ${SRC_DIR}/rendering/ImageDrawing.cpp
+    ${SRC_DIR}/rendering/Rendering.cpp
+    ${SRC_DIR}/rendering/RenderData.cpp
+    ${SRC_DIR}/rendering/TextureSetup.cpp
+    ${SRC_DIR}/rendering/VectorDrawing.cpp
+    ${SRC_DIR}/rendering/records/MeshGpuRecord.cpp
 
-  ${SRC_DIR}/rendering/drawables/DrawableBase.cpp
-  ${SRC_DIR}/rendering/drawables/ddp/DdpBlendPassQuad.cpp
-  ${SRC_DIR}/rendering/drawables/ddp/DdpFinalPassQuad.cpp
-  ${SRC_DIR}/rendering/drawables/ddp/FullScreenDebugQuad.cpp
-  ${SRC_DIR}/rendering/drawables/ddp/FullScreenQuad.cpp
+    ${SRC_DIR}/rendering/drawables/DrawableBase.cpp
+    ${SRC_DIR}/rendering/drawables/ddp/DdpBlendPassQuad.cpp
+    ${SRC_DIR}/rendering/drawables/ddp/DdpFinalPassQuad.cpp
+    ${SRC_DIR}/rendering/drawables/ddp/FullScreenDebugQuad.cpp
+    ${SRC_DIR}/rendering/drawables/ddp/FullScreenQuad.cpp
 
-  ${SRC_DIR}/rendering/renderers/DepthPeelRenderer.cpp
+    ${SRC_DIR}/rendering/renderers/DepthPeelRenderer.cpp
 
-  ${SRC_DIR}/rendering/utility/CreateGLObjects.cpp
-  ${SRC_DIR}/rendering/utility/containers/VertexAttributeInfo.cpp
-  ${SRC_DIR}/rendering/utility/containers/VertexIndicesInfo.cpp
-  ${SRC_DIR}/rendering/utility/containers/Uniforms.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLBufferObject.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLBufferTexture.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLErrorChecker.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLFrameBufferObject.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLShader.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLShaderProgram.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLTexture.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLVersionChecker.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp
-  ${SRC_DIR}/rendering/utility/math/SliceIntersector.cpp
-  ${SRC_DIR}/rendering/utility/vtk/PolyDataConversion.cpp
-  ${SRC_DIR}/rendering/utility/vtk/PolyDataGenerator.cpp
+    ${SRC_DIR}/rendering/utility/CreateGLObjects.cpp
+    ${SRC_DIR}/rendering/utility/containers/VertexAttributeInfo.cpp
+    ${SRC_DIR}/rendering/utility/containers/VertexIndicesInfo.cpp
+    ${SRC_DIR}/rendering/utility/containers/Uniforms.cpp
+    ${SRC_DIR}/rendering/utility/gl/GLBufferObject.cpp
+    ${SRC_DIR}/rendering/utility/gl/GLBufferTexture.cpp
+    ${SRC_DIR}/rendering/utility/gl/GLErrorChecker.cpp
+    ${SRC_DIR}/rendering/utility/gl/GLFrameBufferObject.cpp
+    ${SRC_DIR}/rendering/utility/gl/GLShader.cpp
+    ${SRC_DIR}/rendering/utility/gl/GLShaderProgram.cpp
+    ${SRC_DIR}/rendering/utility/gl/GLTexture.cpp
+    ${SRC_DIR}/rendering/utility/gl/GLVersionChecker.cpp
+    ${SRC_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp
+    ${SRC_DIR}/rendering/utility/math/SliceIntersector.cpp
+    ${SRC_DIR}/rendering/utility/vtk/PolyDataConversion.cpp
+    ${SRC_DIR}/rendering/utility/vtk/PolyDataGenerator.cpp
 
-  ${SRC_DIR}/rendering_old/ShaderNames.cpp
-  ${SRC_DIR}/rendering_old/assemblies/AnnotationAssembly.cpp
-#  ${SRC_DIR}/rendering_old/assemblies/CameraLabelAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/CrosshairsAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/ImageSliceAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/LandmarkAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/MeshAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/SlideStackAssembly.cpp
-  ${SRC_DIR}/rendering_old/common/MeshPolygonOffset.cpp
-  ${SRC_DIR}/rendering_old/common/ObjectIdHelper.cpp
-  ${SRC_DIR}/rendering_old/computers/Polygonizer.cpp
-  ${SRC_DIR}/rendering_old/drawables/BasicMesh.cpp
-  ${SRC_DIR}/rendering_old/drawables/Crosshairs.cpp
-  ${SRC_DIR}/rendering_old/drawables/DynamicTransformation.cpp
-  ${SRC_DIR}/rendering_old/drawables/ImageSlice.cpp
-  ${SRC_DIR}/rendering_old/drawables/Line.cpp
-  ${SRC_DIR}/rendering_old/drawables/TexturedMesh.cpp
-  ${SRC_DIR}/rendering_old/drawables/Transformation.cpp
-  ${SRC_DIR}/rendering_old/drawables/annotation/AnnotationExtrusion.cpp
-  ${SRC_DIR}/rendering_old/drawables/annotation/AnnotationSlice.cpp
-  ${SRC_DIR}/rendering_old/drawables/annotation/LandmarkGroup3d.cpp
-###  ${SRC_DIR}/rendering_old/drawables/annotation/LandmarkGroupSlice.cpp
-  ${SRC_DIR}/rendering_old/drawables/overlays/CameraLabel.cpp
-  ${SRC_DIR}/rendering_old/drawables/slides/SlideBox.cpp
-  ${SRC_DIR}/rendering_old/drawables/slides/SlideSlice.cpp
-  ${SRC_DIR}/rendering_old/drawables/slides/SlideStackArrow.cpp
-  ${SRC_DIR}/rendering_old/records/ImageGpuRecord.cpp
-  # ${SRC_DIR}/rendering_old/records/MeshGpuRecord.cpp
-  ${SRC_DIR}/rendering_old/records/SlideAnnotationGpuRecord.cpp
-  ${SRC_DIR}/rendering_old/records/SlideGpuRecord.cpp
-  ${SRC_DIR}/rendering_old/utility/containers/BlankTextures.cpp
-  ${SRC_DIR}/rendering_old/utility/containers/ShaderProgramContainer.cpp
+    ${SRC_DIR}/rendering_old/ShaderNames.cpp
+    ${SRC_DIR}/rendering_old/assemblies/AnnotationAssembly.cpp
+#    ${SRC_DIR}/rendering_old/assemblies/CameraLabelAssembly.cpp
+    ${SRC_DIR}/rendering_old/assemblies/CrosshairsAssembly.cpp
+    ${SRC_DIR}/rendering_old/assemblies/ImageSliceAssembly.cpp
+    ${SRC_DIR}/rendering_old/assemblies/LandmarkAssembly.cpp
+    ${SRC_DIR}/rendering_old/assemblies/MeshAssembly.cpp
+    ${SRC_DIR}/rendering_old/assemblies/SlideStackAssembly.cpp
+    ${SRC_DIR}/rendering_old/common/MeshPolygonOffset.cpp
+    ${SRC_DIR}/rendering_old/common/ObjectIdHelper.cpp
+    ${SRC_DIR}/rendering_old/computers/Polygonizer.cpp
+    ${SRC_DIR}/rendering_old/drawables/BasicMesh.cpp
+    ${SRC_DIR}/rendering_old/drawables/Crosshairs.cpp
+    ${SRC_DIR}/rendering_old/drawables/DynamicTransformation.cpp
+    ${SRC_DIR}/rendering_old/drawables/ImageSlice.cpp
+    ${SRC_DIR}/rendering_old/drawables/Line.cpp
+    ${SRC_DIR}/rendering_old/drawables/TexturedMesh.cpp
+    ${SRC_DIR}/rendering_old/drawables/Transformation.cpp
+    ${SRC_DIR}/rendering_old/drawables/annotation/AnnotationExtrusion.cpp
+    ${SRC_DIR}/rendering_old/drawables/annotation/AnnotationSlice.cpp
+    ${SRC_DIR}/rendering_old/drawables/annotation/LandmarkGroup3d.cpp
+###    ${SRC_DIR}/rendering_old/drawables/annotation/LandmarkGroupSlice.cpp
+    ${SRC_DIR}/rendering_old/drawables/overlays/CameraLabel.cpp
+    ${SRC_DIR}/rendering_old/drawables/slides/SlideBox.cpp
+    ${SRC_DIR}/rendering_old/drawables/slides/SlideSlice.cpp
+    ${SRC_DIR}/rendering_old/drawables/slides/SlideStackArrow.cpp
+    ${SRC_DIR}/rendering_old/records/ImageGpuRecord.cpp
+    # ${SRC_DIR}/rendering_old/records/MeshGpuRecord.cpp
+    ${SRC_DIR}/rendering_old/records/SlideAnnotationGpuRecord.cpp
+    ${SRC_DIR}/rendering_old/records/SlideGpuRecord.cpp
+    ${SRC_DIR}/rendering_old/utility/containers/BlankTextures.cpp
+    ${SRC_DIR}/rendering_old/utility/containers/ShaderProgramContainer.cpp
 
-  ${SRC_DIR}/slideio/SlideAssociatedImages.cpp
-  ${SRC_DIR}/slideio/SlideCpuRecord.cpp
-  ${SRC_DIR}/slideio/SlideHeader.cpp
-  ${SRC_DIR}/slideio/SlideHelper.cpp
-  ${SRC_DIR}/slideio/SlideProperties.cpp
-  ${SRC_DIR}/slideio/SlideReading.cpp
-  ${SRC_DIR}/slideio/SlideTransformation.cpp
+    ${SRC_DIR}/slideio/SlideAssociatedImages.cpp
+    ${SRC_DIR}/slideio/SlideCpuRecord.cpp
+    ${SRC_DIR}/slideio/SlideHeader.cpp
+    ${SRC_DIR}/slideio/SlideHelper.cpp
+    ${SRC_DIR}/slideio/SlideProperties.cpp
+    ${SRC_DIR}/slideio/SlideReading.cpp
+    ${SRC_DIR}/slideio/SlideTransformation.cpp
 
-  ${SRC_DIR}/ui/GuiData.cpp
-  ${SRC_DIR}/ui/Headers.cpp
-  ${SRC_DIR}/ui/Helpers.cpp
-  ${SRC_DIR}/ui/IsosurfaceHeader.cpp
-  ${SRC_DIR}/ui/ImGuiCustomControls.cpp
-  ${SRC_DIR}/ui/ImGuiWrapper.cpp
-  ${SRC_DIR}/ui/MainMenuBar.cpp
-  ${SRC_DIR}/ui/Popups.cpp
-  ${SRC_DIR}/ui/Style.cpp
-  ${SRC_DIR}/ui/Toolbars.cpp
-  ${SRC_DIR}/ui/Widgets.cpp
-  ${SRC_DIR}/ui/Windows.cpp
+    ${SRC_DIR}/ui/GuiData.cpp
+    ${SRC_DIR}/ui/Headers.cpp
+    ${SRC_DIR}/ui/Helpers.cpp
+    ${SRC_DIR}/ui/IsosurfaceHeader.cpp
+    ${SRC_DIR}/ui/ImGuiCustomControls.cpp
+    ${SRC_DIR}/ui/ImGuiWrapper.cpp
+    ${SRC_DIR}/ui/MainMenuBar.cpp
+    ${SRC_DIR}/ui/Popups.cpp
+    ${SRC_DIR}/ui/Style.cpp
+    ${SRC_DIR}/ui/Toolbars.cpp
+    ${SRC_DIR}/ui/Widgets.cpp
+    ${SRC_DIR}/ui/Windows.cpp
 
-  ${SRC_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp
-  ${SRC_DIR}/ui/imgui/imgui-knobs/imgui-knobs.cpp
+    ${SRC_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp
+    ${SRC_DIR}/ui/imgui/imgui-knobs/imgui-knobs.cpp
 
-  ${SRC_DIR}/windowing/ControlFrame.cpp
-  ${SRC_DIR}/windowing/GlfwCallbacks.cpp
-  ${SRC_DIR}/windowing/GlfwWrapper.cpp
-  ${SRC_DIR}/windowing/Layout.cpp
-  ${SRC_DIR}/windowing/View.cpp
-  ${SRC_DIR}/windowing/ViewTypes.cpp
-  ${SRC_DIR}/windowing/WindowData.cpp
+    ${SRC_DIR}/windowing/ControlFrame.cpp
+    ${SRC_DIR}/windowing/GlfwCallbacks.cpp
+    ${SRC_DIR}/windowing/GlfwWrapper.cpp
+    ${SRC_DIR}/windowing/Layout.cpp
+    ${SRC_DIR}/windowing/View.cpp
+    ${SRC_DIR}/windowing/ViewTypes.cpp
+    ${SRC_DIR}/windowing/WindowData.cpp
 )
 
 set( SHADERS
-  ${SRC_DIR}/rendering/shaders/Correlation.fs
-  ${SRC_DIR}/rendering/shaders/Difference.fs
-  ${SRC_DIR}/rendering/shaders/Edge.fs
-  ${SRC_DIR}/rendering/shaders/Image.fs
-  ${SRC_DIR}/rendering/shaders/ImageRgba.fs
-  ${SRC_DIR}/rendering/shaders/Image.vs
-  ${SRC_DIR}/rendering/shaders/Metric.vs
-  ${SRC_DIR}/rendering/shaders/Overlay.fs
-  ${SRC_DIR}/rendering/shaders/RaycastIsoSurface.fs
-  ${SRC_DIR}/rendering/shaders/RaycastIsoSurface.vs
-  ${SRC_DIR}/rendering/shaders/Simple.fs
-  ${SRC_DIR}/rendering/shaders/Simple.vs
-  ${SRC_DIR}/rendering/shaders/Xray.fs )
+    ${SRC_DIR}/rendering/shaders/Correlation.fs
+    ${SRC_DIR}/rendering/shaders/Difference.fs
+    ${SRC_DIR}/rendering/shaders/Edge.fs
+    ${SRC_DIR}/rendering/shaders/Image.fs
+    ${SRC_DIR}/rendering/shaders/ImageRgba.fs
+    ${SRC_DIR}/rendering/shaders/Image.vs
+    ${SRC_DIR}/rendering/shaders/Metric.vs
+    ${SRC_DIR}/rendering/shaders/Overlay.fs
+    ${SRC_DIR}/rendering/shaders/RaycastIsoSurface.fs
+    ${SRC_DIR}/rendering/shaders/RaycastIsoSurface.vs
+    ${SRC_DIR}/rendering/shaders/Simple.fs
+    ${SRC_DIR}/rendering/shaders/Simple.vs
+    ${SRC_DIR}/rendering/shaders/Xray.fs )
 
 set( SHADERS_OLD
-  ${SRC_DIR}/rendering_old/shaders/BasicMesh.vert
-  ${SRC_DIR}/rendering_old/shaders/BasicMesh.frag
-  ${SRC_DIR}/rendering_old/shaders/BasicMeshPeel.frag
-  ${SRC_DIR}/rendering_old/shaders/Debug.vert
-  ${SRC_DIR}/rendering_old/shaders/Debug.frag
-  ${SRC_DIR}/rendering_old/shaders/fbo_screen.vert
-  ${SRC_DIR}/rendering_old/shaders/fbo_screen.frag
-  ${SRC_DIR}/rendering_old/shaders/Flat.vert
-  ${SRC_DIR}/rendering_old/shaders/Flat.frag
-  ${SRC_DIR}/rendering_old/shaders/FlatPeel.frag
-  ${SRC_DIR}/rendering_old/shaders/Mesh.vert
-  ${SRC_DIR}/rendering_old/shaders/Mesh.frag
-  ${SRC_DIR}/rendering_old/shaders/MeshPeel.frag
-  ${SRC_DIR}/rendering_old/shaders/Polygonizer.vert
-  ${SRC_DIR}/rendering_old/shaders/Polygonizer.geom
-  ${SRC_DIR}/rendering_old/shaders/Simple.vert
-  ${SRC_DIR}/rendering_old/shaders/Simple.frag
-  ${SRC_DIR}/rendering_old/shaders/ddp/blend.frag
-  ${SRC_DIR}/rendering_old/shaders/ddp/blend.vert
-  ${SRC_DIR}/rendering_old/shaders/ddp/final.frag
-  ${SRC_DIR}/rendering_old/shaders/ddp/InitializeDepths.frag
-  ${SRC_DIR}/rendering_old/shaders/ddp/init.vert )
+    ${SRC_DIR}/rendering_old/shaders/BasicMesh.vert
+    ${SRC_DIR}/rendering_old/shaders/BasicMesh.frag
+    ${SRC_DIR}/rendering_old/shaders/BasicMeshPeel.frag
+    ${SRC_DIR}/rendering_old/shaders/Debug.vert
+    ${SRC_DIR}/rendering_old/shaders/Debug.frag
+    ${SRC_DIR}/rendering_old/shaders/fbo_screen.vert
+    ${SRC_DIR}/rendering_old/shaders/fbo_screen.frag
+    ${SRC_DIR}/rendering_old/shaders/Flat.vert
+    ${SRC_DIR}/rendering_old/shaders/Flat.frag
+    ${SRC_DIR}/rendering_old/shaders/FlatPeel.frag
+    ${SRC_DIR}/rendering_old/shaders/Mesh.vert
+    ${SRC_DIR}/rendering_old/shaders/Mesh.frag
+    ${SRC_DIR}/rendering_old/shaders/MeshPeel.frag
+    ${SRC_DIR}/rendering_old/shaders/Polygonizer.vert
+    ${SRC_DIR}/rendering_old/shaders/Polygonizer.geom
+    ${SRC_DIR}/rendering_old/shaders/Simple.vert
+    ${SRC_DIR}/rendering_old/shaders/Simple.frag
+    ${SRC_DIR}/rendering_old/shaders/ddp/blend.frag
+    ${SRC_DIR}/rendering_old/shaders/ddp/blend.vert
+    ${SRC_DIR}/rendering_old/shaders/ddp/final.frag
+    ${SRC_DIR}/rendering_old/shaders/ddp/InitializeDepths.frag
+    ${SRC_DIR}/rendering_old/shaders/ddp/init.vert )
 
 file( GLOB COLORMAPS
-  ${RES_DIR}/colormaps/ncl/*.csv
-  ${RES_DIR}/colormaps/matplotlib/*.csv
-  ${RES_DIR}/colormaps/peter_kovesi/*.csv )
+    ${RES_DIR}/colormaps/ncl/*.csv
+    ${RES_DIR}/colormaps/matplotlib/*.csv
+    ${RES_DIR}/colormaps/peter_kovesi/*.csv )
 
 set( FONTS
-  ${RES_DIR}/fonts/Cousine/Cousine-Regular.ttf
-  ${RES_DIR}/fonts/ForkAwesome/forkawesome-webfont.ttf
-  ${RES_DIR}/fonts/HelveticaNeue/HelveticaNeue-Light.ttf
-  ${RES_DIR}/fonts/Inter/Inter-Light.ttf
-  ${RES_DIR}/fonts/Roboto/Roboto-Light.ttf
-  ${RES_DIR}/fonts/Roboto/Roboto-Regular.ttf
-  ${RES_DIR}/fonts/Satoshi/Satoshi-Light.ttf
-  ${RES_DIR}/fonts/SFMono/SFMono-Regular.ttf
-  ${RES_DIR}/fonts/SFPro/sf-pro-text-regular.ttf
-  ${RES_DIR}/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf
-  ${RES_DIR}/fonts/Supreme/Supreme-Light.ttf )
+    ${RES_DIR}/fonts/Cousine/Cousine-Regular.ttf
+    ${RES_DIR}/fonts/ForkAwesome/forkawesome-webfont.ttf
+    ${RES_DIR}/fonts/HelveticaNeue/HelveticaNeue-Light.ttf
+    ${RES_DIR}/fonts/Inter/Inter-Light.ttf
+    ${RES_DIR}/fonts/Roboto/Roboto-Light.ttf
+    ${RES_DIR}/fonts/Roboto/Roboto-Regular.ttf
+    ${RES_DIR}/fonts/Satoshi/Satoshi-Light.ttf
+    ${RES_DIR}/fonts/SFMono/SFMono-Regular.ttf
+    ${RES_DIR}/fonts/SFPro/sf-pro-text-regular.ttf
+    ${RES_DIR}/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf
+    ${RES_DIR}/fonts/Supreme/Supreme-Light.ttf )
 
 
 #--------------------------------------------------------------------------------
@@ -768,14 +662,14 @@ set( CMAKE_VERBOSE_MAKEFILE ON )
 set( default_build_type "Release" )
 
 if( NOT CMAKE_BUILD_TYPE )
-  set( CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build" FORCE )
-  message( STATUS "Setting build type to '${default_build_type}' as none was specified." )
-  set_property( CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" )
+    set( CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build" FORCE )
+    message( STATUS "Setting build type to '${default_build_type}' as none was specified." )
+    set_property( CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" )
 endif()
 
 # Prevent compilation in-source
 if( ${CMAKE_BINARY_DIR} STREQUAL ${PROJECT_SOURCE_DIR} )
-  message( FATAL_ERROR "Source and build directories are the same." )
+    message( FATAL_ERROR "Source and build directories are the same." )
 endif()
 
 # set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3" )
@@ -785,18 +679,18 @@ message( "CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}" )
 message( "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}" )
 
 if( CMAKE_CXX_COMPILER_LOADED )
-  message( STATUS "Compiler information:" )
-  message( STATUS "   -Path: ${CMAKE_CXX_COMPILER}" )
-  message( STATUS "   -ID: ${CMAKE_CXX_COMPILER_ID}" )
-  message( STATUS "   -Version: ${CMAKE_CXX_COMPILER_VERSION}" )
-  message( STATUS "   -Part of GCC: ${CMAKE_COMPILER_IS_GNUCXX}" )
+    message( STATUS "Compiler information:" )
+    message( STATUS "   -Path: ${CMAKE_CXX_COMPILER}" )
+    message( STATUS "   -ID: ${CMAKE_CXX_COMPILER_ID}" )
+    message( STATUS "   -Version: ${CMAKE_CXX_COMPILER_VERSION}" )
+    message( STATUS "   -Part of GCC: ${CMAKE_COMPILER_IS_GNUCXX}" )
 endif()
 
 
 # if( UNIX AND NOT APPLE )
 #   find_package( OpenGL REQUIRED )
-#  add_definitions( ${OPENGL_DEFINITIONS} )
-#  find_package( X11 REQUIRED )
+#    add_definitions( ${OPENGL_DEFINITIONS} )
+#    find_package( X11 REQUIRED )
 
   # Note: order is important for setting the libs
   # use pkg-config --libs $(pkg-config --print-requires --print-requires-private glfw3) in a terminal to confirm
@@ -835,84 +729,81 @@ cmrc_add_resource_library( ${EXEC_NAME}-shaders ALIAS ${EXEC_NAME}::shaders ${SH
 add_executable( ${EXEC_NAME} )
 
 target_sources( ${EXEC_NAME} PRIVATE
-  ${ENTROPY_SOURCES}
-  ${ENTROPY_HEADERS}
-  # ${GLAD_DIR}/src/glad.c
-)
+    ${ENTROPY_SOURCES}
+    ${ENTROPY_HEADERS} )
 
 target_link_libraries( ${EXEC_NAME} PRIVATE
-  ${ITK_LIBRARIES}
-  ${VTK_LIBRARIES}
-  ${Boost_LIBRARIES}
-  ghc_filesystem
-  glfw
-  glad
-  imgui
-  implot
-  nanovg
-  spdlog::spdlog
-  ${EXEC_NAME}::colormaps
-  ${EXEC_NAME}::fonts
-  ${EXEC_NAME}::shaders )
-
-message(STATUS "ITK_INCLUDE_DIRS = ${ITK_INCLUDE_DIRS}")
+    ${ITK_LIBRARIES}
+    ${VTK_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ghc_filesystem
+    glfw
+    glad
+    imgui
+    implot
+    nanovg
+    spdlog::spdlog
+    ${EXEC_NAME}::colormaps
+    ${EXEC_NAME}::fonts
+    ${EXEC_NAME}::shaders )
 
 target_include_directories( ${EXEC_NAME} PRIVATE
-  ${CMAKE_CURRENT_BINARY_DIR} # defines.h is here
-  ${SRC_DIR}
-  ${EXT_DIR}
-  ${RES_DIR}
-  ${GHC_FILESYSTEM}
-  ${GLAD_INCLUDE_DIR}
-  ${IMGUI_BINDINGS_DIR}
-  ${IMGUI_INCLUDE_DIR}
-  ${IMGUI_KNOBS_DIR}
-  ${IMPLOT_INCLUDE_DIR}
-  ${ITK_INCLUDE_DIRS}
-  ${JSON_INCLUDE_DIR}
-  ${TINYFSM_INCLUDE_DIR}
-  ${UUID_DIR}
-  ${UUID_INCLUDE_DIR}
-  ${VTK_INCLUDE_DIRS} )
+    ${CMAKE_CURRENT_BINARY_DIR} # defines.h is here
+    ${SRC_DIR}
+    ${EXT_DIR}
+    ${RES_DIR}
+    ${GLFW_INCLUDE_DIRS}
+    ${GHC_FILESYSTEM}
+    ${GLAD_INCLUDE_DIR}
+    ${IMGUI_BINDINGS_DIR}
+    ${IMGUI_INCLUDE_DIR}
+    ${IMGUI_KNOBS_DIR}
+    ${IMPLOT_INCLUDE_DIR}
+    ${ITK_INCLUDE_DIRS}
+    ${JSON_INCLUDE_DIR}
+    ${TINYFSM_INCLUDE_DIR}
+    ${UUID_DIR}
+    ${UUID_INCLUDE_DIR}
+    ${VTK_INCLUDE_DIRS} )
 
 # These libraries are in 'system' includes in order to ignore their compiler warnings:
 target_include_directories( ${EXEC_NAME} SYSTEM PRIVATE
-  ${ARGPARSE_INCLUDE_DIR}
-  ${Boost_INCLUDE_DIR}
-  ${EARCUT_INCLUDE_DIR}
-  ${GLM_INCLUDE_DIR}
-  ${GRIDCUT_INCLUDE_DIRS}
-  ${NANOVG_SRC_DIR}
+    ${ARGPARSE_INCLUDE_DIR}
+    ${Boost_INCLUDE_DIR}
+    ${EARCUT_INCLUDE_DIR}
+    ${GLM_INCLUDE_DIR}
+    ${GRIDCUT_INCLUDE_DIRS}
+    ${NANOVG_SRC_DIR}
 )
 
 target_compile_definitions( ${EXEC_NAME} PRIVATE
-  ${VTK_DEFINITIONS} )
+    ${VTK_DEFINITIONS} )
 
 target_compile_options( ${EXEC_NAME} PRIVATE
-  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
-    -Werror
-    -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
-    # -Wconversion -Wsign-conversion
-    -Wno-error=array-bounds
-    -Wno-error=empty-body
-    -Wno-error=float-conversion
-    -Wno-error=maybe-uninitialized
-    -Wno-error=stringop-overflow
-    -ftrapv
-    -O3
-  >
-  $<$<CXX_COMPILER_ID:AppleClang>:
-    -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
-    -Wno-error=array-bounds
-    -Wshadow -ftrapv
-    -O3
-  >
-  $<$<CXX_COMPILER_ID:MSVC>:
-    /W4 /Ox
-  >
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
+        -Werror
+        -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
+        # -Wconversion -Wsign-conversion
+        -Wno-error=array-bounds
+        -Wno-error=empty-body
+        -Wno-error=float-conversion
+        -Wno-error=maybe-uninitialized
+        -Wno-error=stringop-overflow
+        -ftrapv
+        -O3
+    >
+    $<$<CXX_COMPILER_ID:AppleClang>:
+        -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
+        -Wno-error=array-bounds
+        -Wshadow -ftrapv
+        -O3
+    >
+    $<$<CXX_COMPILER_ID:MSVC>:
+        /W4 /Ox
+    >
 )
 
 set_target_properties( ${EXEC_NAME} PROPERTIES
-  CXX_STANDARD 20
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS OFF )
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF )
