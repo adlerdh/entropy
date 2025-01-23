@@ -55,11 +55,11 @@ endif()
 # Visualization Toolkit (VTK) library
 # Note: VTK is NOT currently used in this project.
 #--------------------------------------------------------------------------------
-find_package( VTK 9.2.6 REQUIRED )
+# find_package( VTK 9.2.6 REQUIRED )
 
-if( NOT VTK_FOUND )
-    message( SEND_ERROR "VTK was not found. Please set VTK_DIR." )
-endif()
+# if( NOT VTK_FOUND )
+#     message( SEND_ERROR "VTK was not found. Please set VTK_DIR." )
+# endif()
 
 
 #--------------------------------------------------------------------------------
