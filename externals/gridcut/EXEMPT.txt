@@ -1,0 +1,6 @@
+LICENSE EXEMPT
+==============
+
+The entire contents of the "examples" subdirectory is exempted from the GridCut License.
+The examples are not part of GridCut, they are provided here merely for convenience.
+Both the code and the data found in the examples subdirectory are in the PUBLIC DOMAIN.
