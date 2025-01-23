@@ -1,0 +1,24 @@
+All color maps in this directory are copyright Peter Kovesi.
+
+Copyright (c) 2014-2018 Peter Kovesi
+Centre for Exploration Targeting
+The University of Western Australia
+peter.kovesi@uwa.edu.au
+
+Reference:
+Peter Kovesi. Good Colour Maps: How to Design Them.
+arXiv:1509.03700 [cs.GR] 2015
+https://arxiv.org/abs/1509.03700
+
+These colour maps are released under the Creative Commons BY License.
+A summary of the conditions can be found at
+https://creativecommons.org/licenses/by/4.0/
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+The Software is provided "as is", without warranty of any kind.
