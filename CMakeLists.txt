@@ -338,7 +338,7 @@ add_subdirectory( ${EXT_DIR}/filesystem )
 # CMakeRC (included as Git submodule):
 # Standalone CMake-Based C++ Resource Compiler
 #--------------------------------------------------------------------------------
-include( ${EXT_DIR}/cmakerc/CMakeRC.cmake )
+include( ${EXT_DIR}/cmrc/CMakeRC.cmake )
 
 
 #--------------------------------------------------------------------------------
