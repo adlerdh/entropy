@@ -2,7 +2,6 @@
 
 #include "common/Exception.hpp"
 #include "common/Types.h"
-#include "common/UuidUtility.h"
 
 #include "image/ImageColorMap.h"
 #include "image/SurfaceUtility.h"
@@ -19,12 +18,10 @@
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLShader.h"
 
-/**************************/
-#include "rendering/renderers/DepthPeelRenderer.h"
-#include "rendering/utility/CreateGLObjects.h"
-//#include "rendering_old/utility/containers/BlankTextures.h"
-//#include "rendering/utility/vtk/PolyDataGenerator.h"
-/**************************/
+// #include "rendering/renderers/DepthPeelRenderer.h"
+// #include "rendering/utility/CreateGLObjects.h"
+// #include "rendering_old/utility/containers/BlankTextures.h"
+// #include "rendering/utility/vtk/PolyDataGenerator.h"
 
 #include "windowing/View.h"
 
@@ -51,7 +48,6 @@
 #include <functional>
 #include <list>
 #include <memory>
-#include <sstream>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -89,6 +85,7 @@ static const std::string ROBOTO_LIGHT("robotoLight");
  * @param uniformsProvider Function returning the uniforms
  * @return Unique pointer to the renderer
  */
+#if 0
 std::unique_ptr<DepthPeelRenderer> createDdpRenderer(
   int viewUid,
   ShaderProgramActivatorType shaderActivator,
@@ -116,7 +113,7 @@ std::unique_ptr<DepthPeelRenderer> createDdpRenderer(
 
   return renderer;
 }
-
+#endif
 } // namespace
 
 /// @note OpenGL should have a at least a minimum of 16 texture units
@@ -203,6 +200,7 @@ Rendering::Rendering(AppData& appData)
   //                blankTextures );
   /***************************************************/
 
+  /*
   m_shaderPrograms = std::make_unique<ShaderProgramContainer>();
   m_shaderPrograms->initializeGL();
 
@@ -231,6 +229,7 @@ Rendering::Rendering(AppData& appData)
   );
 
   m_renderer->initialize();
+*/
 }
 
 Rendering::~Rendering()

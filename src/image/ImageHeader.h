@@ -2,7 +2,7 @@
 #define IMAGE_HEADER_H
 
 #include "common/Types.h"
-#include "common/filesystem.h"
+#include "common/Filesystem.h"
 #include "image/ImageHeaderOverrides.h"
 #include "image/ImageIoInfo.h"
 

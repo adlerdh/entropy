@@ -2,13 +2,11 @@
 #define UI_ISOSURFACE_HEADERS_H
 
 #include "common/AsyncTasks.h"
-#include "common/PublicTypes.h"
 
 #include <uuid.h>
 
 #include <functional>
 #include <future>
-#include <string>
 
 class AppData;
 

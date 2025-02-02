@@ -1,7 +1,7 @@
 #ifndef LANDMARK_GROUP_H
 #define LANDMARK_GROUP_H
 
-#include "common/filesystem.h"
+#include "common/Filesystem.h"
 #include "logic/annotation/PointRecord.h"
 
 #include <glm/vec3.hpp>

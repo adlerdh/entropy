@@ -954,6 +954,7 @@ Isosurface* AppData::isosurface(
   );
 }
 
+#if 0
 bool AppData::updateIsosurfaceMeshCpuRecord(
   const uuids::uuid& imageUid,
   ComponentIndexType component,
@@ -1011,6 +1012,7 @@ bool AppData::updateIsosurfaceMeshGpuRecord(
 
   return false;
 }
+#endif
 
 const ImageColorMap* AppData::imageColorMap(const uuids::uuid& colorMapUid) const
 {

@@ -1,7 +1,7 @@
 #ifndef ANNOTATION_H
 #define ANNOTATION_H
 
-#include "common/filesystem.h"
+#include "common/Filesystem.h"
 #include "logic/annotation/AnnotPolygon.tpp"
 
 #include <glm/vec2.hpp>
@@ -10,7 +10,6 @@
 
 #include <uuid.h>
 
-#include <memory>
 #include <set>
 #include <string>
 #include <tuple>

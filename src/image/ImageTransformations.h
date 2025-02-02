@@ -1,7 +1,7 @@
 #ifndef IMAGE_TX_H
 #define IMAGE_TX_H
 
-#include "common/filesystem.h"
+#include "common/Filesystem.h"
 #include "image/ImageHeaderOverrides.h"
 
 #include <glm/gtc/quaternion.hpp>

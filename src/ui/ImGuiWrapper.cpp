@@ -13,8 +13,6 @@
 #include "logic/states/AnnotationStateHelpers.h"
 #include "logic/states/AnnotationStateMachine.h"
 
-#include "rendering/utility/CreateGLObjects.h"
-
 #include <IconFontCppHeaders/IconsForkAwesome.h>
 
 #include <imgui/imgui.h>
@@ -275,6 +273,7 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
       continue;
     }
 
+#if 0
     const MeshCpuRecord* cpuMeshRecord = surface->mesh.cpuData();
 
     if (!cpuMeshRecord)
@@ -321,6 +320,7 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
         *value.imageUid
       );
     }
+#endif
   }
 }
 

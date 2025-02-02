@@ -3,11 +3,8 @@
 
 #include "common/ParcellationLabelTable.h"
 #include "common/SegmentationTypes.h"
-#include "common/Types.h"
 
 #include <glm/vec3.hpp>
-
-#include <optional>
 
 /**
  * @brief Holds all application settings

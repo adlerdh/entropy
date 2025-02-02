@@ -1,7 +1,5 @@
 #include "logic/annotation/LandmarkGroup.h"
 
-#include <limits>
-
 namespace
 {
 

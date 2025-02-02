@@ -5,12 +5,8 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-#include "test.h"
-
 int main(int argc, char* argv[])
 {
-  test();
-
   auto logFailure = []()
   { spdlog::debug("------------------------ END SESSION (FAILURE) ------------------------"); };
 

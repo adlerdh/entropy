@@ -1,7 +1,7 @@
 #ifndef IMAGE_IO_INFO_H
 #define IMAGE_IO_INFO_H
 
-#include "common/filesystem.h"
+#include "common/Filesystem.h"
 
 #include <itkCommonEnums.h>
 #include <itkImageBase.h>

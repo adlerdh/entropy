@@ -9,7 +9,6 @@
 #include <spdlog/spdlog.h>
 
 #include <exception>
-#include <format>
 #include <fstream>
 #include <sstream>
 #include <string>

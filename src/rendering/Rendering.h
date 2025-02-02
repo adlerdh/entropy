@@ -5,12 +5,9 @@
 #include "common/UuidRange.h"
 
 #include "logic/camera/CameraTypes.h"
-#include "logic/records/MeshRecord.h"
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
-#include "rendering_old/drawables/BasicMesh.h"
-#include "rendering_old/utility/containers/ShaderProgramContainer.h"
 
 #include <glm/fwd.hpp>
 
@@ -18,7 +15,6 @@
 
 #include <functional>
 #include <list>
-#include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -219,6 +215,7 @@ private:
   void updateIsosurfaceDataFor2d(AppData& appData, const uuids::uuid& imageUid);
   void updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& imageUid);
 
+#if 0
   using DrawableProviderType = std::function<IDrawable*()>;
 
   std::unique_ptr<IRenderer> m_renderer;
@@ -231,6 +228,7 @@ private:
   UniformsProviderType m_uniformsProvider;
   DrawableProviderType m_rootDrawableProvider;
   DrawableProviderType m_overlayDrawableProvider;
+#endif
 };
 
 #endif // RENDERING_H

@@ -3,10 +3,8 @@
 
 #include "common/Types.h"
 
-#include <uuid.h>
-
 #include <glm/fwd.hpp>
-
+#include <uuid.h>
 #include <functional>
 
 class Annotation;

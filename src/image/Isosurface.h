@@ -1,7 +1,7 @@
 #ifndef ISOSURFACE_H
 #define ISOSURFACE_H
 
-#include "logic/records/MeshRecord.h"
+// #include "logic/records/MeshRecord.h"
 
 #include <glm/vec3.hpp>
 
@@ -47,7 +47,7 @@ public:
   bool showIn2d = true;              //!< Show in 2D slice views
   float edgeStrength = 0.0f;         //!< Strength of edge outline, where 0.0f disables edges
 
-  MeshRecord mesh;         //!< Mesh record of the isosurface
+  // MeshRecord mesh;         //!< Mesh record of the isosurface
   bool meshInSync = false; //!< Is the mesh in sync with the isosurface value?
 
   glm::vec3 ambientColor() const { return this->material.ambient * this->color; }

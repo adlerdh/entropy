@@ -37,7 +37,7 @@ namespace
 static const ImVec4 sk_whiteText(1, 1, 1, 1);
 static const ImVec4 sk_blackText(0, 0, 0, 1);
 
-static const std::string sk_NA("<N/A>");
+// static const std::string sk_NA("<N/A>");
 
 ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
 {

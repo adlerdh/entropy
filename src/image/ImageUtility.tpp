@@ -3,7 +3,7 @@
 
 #include "common/Exception.hpp"
 #include "common/Types.h"
-#include "common/filesystem.h"
+#include "common/Filesystem.h"
 #include "image/Image.h"
 
 #include <itkBinaryThresholdImageFilter.h>
@@ -13,7 +13,7 @@
 #include <itkImageFileReader.h>
 #include <itkImageFileWriter.h>
 #include <itkImageToHistogramFilter.h>
-#include <itkImageToVTKImageFilter.h>
+// #include <itkImageToVTKImageFilter.h>
 #include <itkImportImageFilter.h>
 #include <itkLinearInterpolateImageFunction.h>
 #include <itkNoiseImageFilter.h>
@@ -22,7 +22,7 @@
 #include <itkStatisticsImageFilter.h>
 #include <itkVectorImage.h>
 
-#include <vtkSmartPointer.h>
+// #include <vtkSmartPointer.h>
 
 #include <spdlog/spdlog.h>
 
@@ -1147,6 +1147,7 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
   return clampFilter->GetOutput();
 }
 
+#if 0
 template<class ComponentType>
 vtkSmartPointer<vtkImageData> convertItkImageToVtkImageData(
   const typename itk::Image<ComponentType, 3>::Pointer image
@@ -1179,6 +1180,7 @@ vtkSmartPointer<vtkImageData> convertItkImageToVtkImageData(
 
   return static_cast<vtkImageData*>(conversionFilter->GetOutput());
 }
+#endif
 
 template<typename ReadComponentType>
 bool loadImage(

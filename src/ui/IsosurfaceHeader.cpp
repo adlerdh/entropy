@@ -1,15 +1,8 @@
 #include "ui/IsosurfaceHeader.h"
 #include "ui/Helpers.h"
 
-#include "common/UuidUtility.h"
-
-#include "image/Image.h"
-#include "image/ImageColorMap.h"
 #include "image/SurfaceUtility.h"
-
 #include "logic/app/Data.h"
-
-#include "mesh/MeshLoading.h"
 
 #include <IconFontCppHeaders/IconsForkAwesome.h>
 
@@ -165,8 +158,8 @@ std::optional<uuids::uuid> addNewSurface(
   const uuids::uuid& imageUid,
   uint32_t component,
   size_t index,
-  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue
+  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> /*storeFuture*/,
+  std::function<void(const uuids::uuid& taskUid)> /*addTaskToIsosurfaceGpuMeshGenerationQueue*/
 )
 {
   static constexpr uint32_t sk_defaultIsovalueQuantile = 75;
@@ -195,6 +188,7 @@ std::optional<uuids::uuid> addNewSurface(
       surface.value
     );
 
+#if 0
     // Function to update the mesh record in AppData after the mesh is generated
     auto meshCpuRecordUpdater =
       [&appData,
@@ -243,6 +237,7 @@ std::optional<uuids::uuid> addNewSurface(
         std::bind(addTaskToIsosurfaceGpuMeshGenerationQueue, taskUid)
       )
     );
+#endif
 
     return isosurfaceUid;
   }
