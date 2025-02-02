@@ -13,16 +13,16 @@ Entropy requires C++20 and build generation uses CMake 3.24.0+.
 ### Operating systems
 Entropy builds on Linux, Windows, and macOS. It is currently tested on the following:
 
-* Ubuntu 24.04 (with gcc 12.3.0)
-* Windows 11 (with MSVC++ 17.3.4)
+* Ubuntu 22.04, 24.04 (with gcc 12.3.0, 14.2.0)
+* Windows 10, 11 (with MSVC++ 17.3.4)
 * macOS 10.14.6, Intel x86_64 architecture (with clang 11.0.0)
-* macOS 14.6.1, Apple arm64 architecture (with clang 15.0.0)
+* macOS 14.6.1, 15.2.0, Apple arm64 architecture (with clang 15.0.0, 16.0.0)
 
 ### External libraries
 Please clone/download and build these libraries:
 
-* [Boost](https://github.com/boostorg/boost), header libraries only (1.84.0)
-* [Insight Toolkit, ITK](https://github.com/InsightSoftwareConsortium/ITK) (v5.3.0), ~~built with Module_ITKVtkGlue~~
+* [Boost](https://github.com/boostorg/boost), header libraries only (1.84.0 - 1.87.0)
+* [Insight Toolkit, ITK](https://github.com/InsightSoftwareConsortium/ITK) (v5.3.0 - v5.4.2), ~~built with Module_ITKVtkGlue~~
 * [spdlog](https://github.com/gabime/spdlog) (v1.15.0)
 * ~~[Visualization Toolkit, VTK](https://github.com/Kitware/VTK) (9.3.0)~~
 
