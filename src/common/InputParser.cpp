@@ -1,5 +1,5 @@
 #include "common/InputParser.h"
-#include "defines.h"
+#include "BuildStamp.h"
 
 #undef max
 
@@ -103,10 +103,9 @@ int parseCommandLine(const int argc, char* argv[], InputParams& params)
   params.set = false;
 
   std::ostringstream desc;
-  desc << "3D image differencing tool (" << ENTROPY_ORGNAME_LINE1 << ", " << ENTROPY_ORGNAME_LINE2
-       << ", " << ENTROPY_ORGNAME_LINE3 << ")";
+  desc << DESCRIPTION;
 
-  argparse::ArgumentParser program(ENTROPY_APPNAME_FULL, ENTROPY_VERSION_FULL);
+  argparse::ArgumentParser program(APP_NAME, VERSION_FULL);
 
   program.add_description(desc.str());
 

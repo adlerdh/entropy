@@ -1,5 +1,5 @@
 #include "EntropyApp.h"
-#include "defines.h"
+#include "BuildStamp.h"
 
 #include "common/DataHelper.h"
 #include "common/DirectionMaps.h"
@@ -354,13 +354,14 @@ WindowData& EntropyApp::windowData()
 
 void EntropyApp::logPreamble()
 {
-  spdlog::info("{} (version {})", ENTROPY_APPNAME_FULL, ENTROPY_VERSION_FULL);
-  spdlog::info("{}, {}, {}", ENTROPY_ORGNAME_LINE1, ENTROPY_ORGNAME_LINE2, ENTROPY_ORGNAME_LINE3);
+  spdlog::info("{} (version {})", APP_NAME, VERSION_FULL);
+  spdlog::info("{}", ORG_NAME);
 
-  spdlog::debug("Git commit hash: {}", ENTROPY_GIT_COMMIT_SHA1);
-  spdlog::debug("Git commit timestamp: {}", ENTROPY_GIT_COMMIT_TIMESTAMP);
-  spdlog::debug("Git branch: {}", ENTROPY_GIT_BRANCH);
-  spdlog::debug("Build timestamp: {}", ENTROPY_BUILD_TIMESTAMP);
+  spdlog::debug("Git branch: {}", GIT_BRANCH);
+  spdlog::debug("Git commit hash: {}", GIT_COMMIT_SHA1);
+  spdlog::debug("Git commit timestamp: {}", GIT_COMMIT_TIMESTAMP);
+  spdlog::debug("Build timestamp: {}", BUILD_TIMESTAMP);
+  spdlog::debug("Build type: {}", CMAKE_BUILD_TYPE);
 }
 
 std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadImage(

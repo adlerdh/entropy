@@ -1,8 +1,8 @@
 #include "ui/Popups.h"
 #include "ui/Helpers.h"
-
-#include "defines.h"
 #include "logic/app/Data.h"
+
+#include "BuildStamp.h"
 
 #include <imgui/imgui.h>
 
@@ -97,14 +97,14 @@ void renderAddLayoutModalPopup(
 
 void renderAboutDialogModalPopup(bool open)
 {
-  static const std::string sk_gitInfo = std::string("Git commit hash: ") + ENTROPY_GIT_COMMIT_SHA1
+  static const std::string sk_gitInfo = std::string("Git commit hash: ") + GIT_COMMIT_SHA1
                                         + "\n" + std::string("Git commit timestamp: ")
-                                        + ENTROPY_GIT_COMMIT_TIMESTAMP + "\n"
-                                        + std::string("Git branch: ") + ENTROPY_GIT_BRANCH + "\n\n"
-                                        + std::string("Build timestamp: ") + ENTROPY_BUILD_TIMESTAMP
-                                        + " (UTC)" + "\n" + std::string("Build OS: ") + SYSTEM_NAME
-                                        + " (" + SYSTEM_VERSION + ")\n"
-                                        + std::string("Build processor: ") + SYSTEM_PROCESSOR;
+                                        + GIT_COMMIT_TIMESTAMP + "\n"
+                                        + std::string("Git branch: ") + GIT_BRANCH + "\n\n"
+                                        + std::string("Build timestamp: ") + BUILD_TIMESTAMP
+                                        + " (UTC)" + "\n" + std::string("Build OS: ") + HOST_OS_NAME
+                                        + " (" + HOST_OS_VERSION + ")\n"
+                                        + std::string("Build processor: ") + HOST_SYSTEM_PROCESSOR;
 
   if (open && !ImGui::IsPopupOpen("About Entropy"))
   {
@@ -119,13 +119,13 @@ void renderAboutDialogModalPopup(bool open)
 
   if (ImGui::BeginPopupModal("About Entropy", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
   {
-    ImGui::Text("%s (version %s)", ENTROPY_APPNAME_FULL, ENTROPY_VERSION_FULL);
+    ImGui::Text("%s (version %s)", APP_NAME, VERSION_FULL);
+    ImGui::Text("%s", DESCRIPTION);
 
     ImGui::Spacing();
-    ImGui::Text("Copyright 2021-2023");
-    ImGui::Text("%s,", ENTROPY_ORGNAME_LINE1);
-    ImGui::Text("%s,", ENTROPY_ORGNAME_LINE2);
-    ImGui::Text("%s", ENTROPY_ORGNAME_LINE3);
+    ImGui::Text("%s,", ORG_NAME);
+    ImGui::Text("%s,", COPYRIGHT_LINE);
+    ImGui::Text("%s", LICENSE_LINE);
 
     ImGui::Spacing();
     ImGui::Spacing();
