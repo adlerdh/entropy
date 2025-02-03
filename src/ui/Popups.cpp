@@ -120,7 +120,7 @@ void renderAboutDialogModalPopup(bool open)
   if (ImGui::BeginPopupModal("About Entropy", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
   {
     ImGui::Text("%s (version %s)", APP_NAME, VERSION_FULL);
-    ImGui::Text("%s", DESCRIPTION);
+    ImGui::Text("%s", APP_DESCRIPTION);
 
     ImGui::Spacing();
     ImGui::Text("%s,", ORG_NAME);

@@ -6,8 +6,8 @@
 namespace
 {
 const char APP_NAME[] = "@APP_NAME@";
+const char APP_DESCRIPTION[] = "@APP_DESCRIPTION@";
 const char VERSION_FULL[] = "@VERSION_FULL@";
-const char DESCRIPTION[] = "@DESCRIPTION@";
 const char ORG_NAME[] = "@ORG_NAME@";
 const char COPYRIGHT_LINE[] = "@COPYRIGHT_LINE@";
 const char LICENSE_LINE[] = "@LICENSE_LINE@";

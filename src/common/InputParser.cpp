@@ -103,7 +103,7 @@ int parseCommandLine(const int argc, char* argv[], InputParams& params)
   params.set = false;
 
   std::ostringstream desc;
-  desc << DESCRIPTION;
+  desc << APP_DESCRIPTION;
 
   argparse::ArgumentParser program(APP_NAME, VERSION_FULL);
 

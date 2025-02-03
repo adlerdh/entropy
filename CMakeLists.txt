@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.22.0 FATAL_ERROR)
 
 set(APP_NAME "Entropy")
+set(APP_DESCRIPTION "Tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images")
 set(ORG_NAME "Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania")
-set(DESCRIPTION "Tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images")
 set(COPYRIGHT_LINE "Copyright Daniel H. Adler and PICSL")
 set(LICENSE_LINE "Apache License, Version 2.0")
 
