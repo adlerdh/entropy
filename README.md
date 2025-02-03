@@ -33,7 +33,6 @@ More recent versions of ITK and Boost should also work with potentially minor mo
 The following libraries and dependencies are brought in as Git submodules to the Entropy repository:
 
 * argparse (https://github.com/p-ranav/argparse)
-* CMake Modules Collection (https://github.com/rpavlik/cmake-modules)
 * CMakeRC (https://github.com/vector-of-bool/cmrc)
 * Dear ImGui (https://github.com/ocornut/imgui)
 * ghc::filesystem (https://github.com/gulrak/filesystem)
@@ -45,7 +44,6 @@ The following libraries and dependencies are brought in as Git submodules to the
 * ImPlot (https://github.com/epezent/implot)
 * JSON for Modern C++ (https://github.com/nlohmann/json)
 * NanoVG (https://github.com/memononen/nanovg)
-* ~~spdlog (https://github.com/gabime/spdlog)~~
 * stduuid (https://github.com/mariusbancila/stduuid)
 * TinyFSM (https://github.com/digint/tinyfsm)
 
@@ -62,9 +60,9 @@ The following external sources and libraries have been committed directly to the
 
 ### Development libraries for Debian Linux
 
-You may need to install additional development libraries for the Mesa 3D Graphics Library, Xrandr, Xinerama, Xcursor, and xi on Linux. On Debian, this can be done using
+You may need to install additional development libraries for Mesa 3D Graphics, Wayland, Xorg, Xrandr, Xinerama, Xcursor, xkbcommon, and xi on Linux. On Debian, this can be done using
 
-`sudo apt-get install libgl1-mesa-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev`
+`sudo apt-get install libgl1-mesa-dev libwayland-dev xorg-dev libxkbcommon-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev`
 
 
 ### External resources
