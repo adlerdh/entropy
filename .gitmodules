@@ -4,9 +4,6 @@
 [submodule "externals/argparse"]
 	path = externals/argparse
 	url = https://github.com/p-ranav/argparse
-[submodule "externals/cmake-modules"]
-	path = externals/cmake-modules
-	url = https://github.com/rpavlik/cmake-modules
 [submodule "externals/cmrc"]
 	path = externals/cmrc
 	url = https://github.com/vector-of-bool/cmrc
