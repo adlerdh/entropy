@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22.0 FATAL_ERROR)
 
+cmake_policy(SET CMP0175 OLD)
+
 set(APP_NAME "Entropy")
 set(APP_DESCRIPTION "Tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images")
 set(ORG_NAME "Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania")
@@ -14,12 +16,6 @@ set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION
 
 project(Entropy VERSION ${VERSION_FULL} LANGUAGES C CXX)
 
-set(BUILD_SHARED_LIBS OFF)
-
-
-#--------------------------------------------------------------------------------
-# Important directories
-#--------------------------------------------------------------------------------
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(RES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 set(EXT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/externals)
@@ -27,6 +23,28 @@ set(EXT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/externals)
 # CMake will generate a file compile_commands.json under the build directory.
 # VSCode is able to parse the file and find the include path based on its content.
 add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+
+if(${BUILD_SHARED_LIBS})
+  set(BUILD_STATIC_LIBS OFF)
+else()
+  set(BUILD_STATIC_LIBS ON)
+endif()
+
+message(STATUS "BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}")
+message(STATUS "BUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}")
+
+set(MIN_ITK_VERSION "5.4.2")
+set(MIN_Boost_VERSION "1.87.0")
+
+option(USE_SYSTEM_ITK "Use ITK library already on the system (minimum version: ${MIN_ITK_VERSION})" OFF)
+option(USE_SYSTEM_Boost "Use Boost library already on the system (minimum version: ${MIN_Boost_VERSION})" OFF)
+
+set(GIT_PROTOCOL "https")
+include(ExternalProjects)
 
 
 #--------------------------------------------------------------------------------
@@ -85,45 +103,8 @@ target_include_directories(glad PRIVATE ${GLAD_INCLUDE_DIR})
 
 
 # Generate build stamp header
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(BuildStamp)
 BuildStamp()
-
-
-#--------------------------------------------------------------------------------
-# Insight Toolkit (ITK) library
-#--------------------------------------------------------------------------------
-find_package(ITK 5.3.0 REQUIRED)
-
-if(ITK_FOUND)
-  include(${ITK_USE_FILE})
-else()
-  message(FATAL_ERROR "ITK was not found. Please set ITK_DIR.")
-endif()
-
-
-#--------------------------------------------------------------------------------
-# Visualization Toolkit (VTK) library
-# Note: VTK is NOT currently used in this project.
-#--------------------------------------------------------------------------------
-# find_package(VTK 9.2.6 REQUIRED)
-
-# if(NOT VTK_FOUND)
-  # message(SEND_ERROR "VTK was not found. Please set VTK_DIR.")
-# endif()
-
-
-#--------------------------------------------------------------------------------
-# Boost library
-#--------------------------------------------------------------------------------
-find_package(Boost 1.81.0 REQUIRED)
-
-if(NOT Boost_FOUND)
-  message(FATAL_ERROR "Boost was not found.")
-endif()
-
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_LIBS ON)  # only find static libs
 
 
 #--------------------------------------------------------------------------------
@@ -679,7 +660,8 @@ cmrc_add_resource_library(${EXEC_NAME}-fonts ALIAS ${EXEC_NAME}::fonts ${FONTS} 
 cmrc_add_resource_library(${EXEC_NAME}-shaders ALIAS ${EXEC_NAME}::shaders ${SHADERS} NAMESPACE shaders)
 
 
-add_executable(${EXEC_NAME})
+add_executable(${EXEC_NAME}
+    cmake/ExternalProjects.cmake)
 
 target_sources(${EXEC_NAME} PRIVATE
   ${ENTROPY_SOURCES}

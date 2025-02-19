@@ -18,31 +18,25 @@ else()
   message(FATAL_ERROR "Git executable not found")
 endif()
 
-# Git working branch
 execute_process(
   COMMAND "${GIT_EXECUTABLE}" rev-parse --abbrev-ref HEAD
   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   OUTPUT_VARIABLE GIT_BRANCH
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-# Git commit hash
 execute_process(
   COMMAND "${GIT_EXECUTABLE}" describe --match=DoNoTmAtCh --always --abbrev=50 --dirty
   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   OUTPUT_VARIABLE GIT_COMMIT_SHA1
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-# Git commit timestamp
 execute_process(
   COMMAND "${GIT_EXECUTABLE}" show -s --format=%ci
   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   OUTPUT_VARIABLE GIT_COMMIT_TIMESTAMP
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-# Build timestamp
 string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%SZ" UTC)
-
-# Build directory
 set(BUILD_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 message(STATUS "Project information:")
