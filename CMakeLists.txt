@@ -53,9 +53,8 @@ if(${CMAKE_BINARY_DIR} STREQUAL ${PROJECT_SOURCE_DIR})
 endif()
 
 # Set a default build type if none was specified
-set(DEFAULT_BUILD_TYPE "RelWithDebInfo")
-
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+if(NOT CMAKE_BUILD_TYPE)
+  set(DEFAULT_BUILD_TYPE "RelWithDebInfo")
   message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
   set(CMAKE_BUILD_TYPE ${DEFAULT_BUILD_TYPE} CACHE STRING "Choose the type of build" FORCE)
 
@@ -400,103 +399,6 @@ include(${EXT_DIR}/cmrc/CMakeRC.cmake)
 include(BuildStamp)
 BuildStamp()
 
-set(OLD_SOURCES
-  #  ${SRC_DIR}/logic_old/AppController.cpp
-  #  ${SRC_DIR}/logic_old/AppInitializer.cpp
-  #  ${SRC_DIR}/logic_old/annotation/AnnotationHelper.cpp
-  ${SRC_DIR}/logic_old/annotation/LandmarkGroupCpuRecord.cpp
-  ${SRC_DIR}/logic_old/annotation/PlanarPolygon.cpp
-  ${SRC_DIR}/logic_old/annotation/SlideAnnotationCpuRecord.cpp
-  #  ${SRC_DIR}/logic_old/camera/OrthogonalProjection.cpp
-  #  ${SRC_DIR}/logic_old/camera/PerspectiveProjection.cpp
-  #  ${SRC_DIR}/logic_old/camera/Projection.cpp
-  #  ${SRC_DIR}/logic_old/camera/Camera.cpp
-  #  ${SRC_DIR}/logic_old/camera/CameraHelpers.cpp
-  #  ${SRC_DIR}/logic_old/colormap/ImageColorMap.cpp
-  #  ${SRC_DIR}/logic_old/colormap/ParcellationLabelTable.cpp
-  #  ${SRC_DIR}/logic_old/data/DataHelper.cpp
-  #  ${SRC_DIR}/logic_old/data/DataLoading.cpp
-  #  ${SRC_DIR}/logic_old/data/DataMemoryUse.cpp
-  #  ${SRC_DIR}/logic_old/data/details/DataLoadingDetails.cpp
-  #  ${SRC_DIR}/logic_old/interaction/CameraInteractionHandler.cpp
-  #  ${SRC_DIR}/logic_old/interaction/CrosshairsInteractionHandler.cpp
-  #  ${SRC_DIR}/logic_old/interaction/InteractionHandlerBase.cpp
-  #  ${SRC_DIR}/logic_old/interaction/InteractionPack.cpp
-  #  ${SRC_DIR}/logic_old/interaction/RefImageInteractionHandler.cpp
-  #  ${SRC_DIR}/logic_old/interaction/SlideInteractionHandler.cpp
-  #  ${SRC_DIR}/logic_old/interaction/StackInteractionHandler.cpp
-  #  ${SRC_DIR}/logic_old/interaction/WindowLevelInteractionHandler.cpp
-  #  ${SRC_DIR}/logic_old/managers/ActionManager.cpp
-  #  ${SRC_DIR}/logic_old/managers/AssemblyManager.cpp
-  #  ${SRC_DIR}/logic_old/managers/ConnectionManager.cpp
-  #  ${SRC_DIR}/logic_old/managers/DataManager.cpp
-  #  ${SRC_DIR}/logic_old/managers/GuiManager.cpp
-  #  ${SRC_DIR}/logic_old/managers/InteractionManager.cpp
-  #  ${SRC_DIR}/logic_old/managers/LayoutManager.cpp
-  #  ${SRC_DIR}/logic_old/managers/TransformationManager.cpp
-
-  ${SRC_DIR}/mesh/MeshCpuRecord.cpp
-  ${SRC_DIR}/mesh/MeshInfo.cpp
-  ${SRC_DIR}/mesh/MeshLoading.cpp
-  ${SRC_DIR}/mesh/MeshProperties.cpp
-  ${SRC_DIR}/mesh/vtkdetails/MeshGeneration.cpp
-
-  ${SRC_DIR}/rendering_old/ShaderNames.cpp
-  ${SRC_DIR}/rendering_old/assemblies/AnnotationAssembly.cpp
-  #  ${SRC_DIR}/rendering_old/assemblies/CameraLabelAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/CrosshairsAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/ImageSliceAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/LandmarkAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/MeshAssembly.cpp
-  ${SRC_DIR}/rendering_old/assemblies/SlideStackAssembly.cpp
-  ${SRC_DIR}/rendering_old/common/MeshPolygonOffset.cpp
-  ${SRC_DIR}/rendering_old/common/ObjectIdHelper.cpp
-  ${SRC_DIR}/rendering_old/computers/Polygonizer.cpp
-  ${SRC_DIR}/rendering_old/drawables/BasicMesh.cpp
-  ${SRC_DIR}/rendering_old/drawables/Crosshairs.cpp
-  ${SRC_DIR}/rendering_old/drawables/DynamicTransformation.cpp
-  ${SRC_DIR}/rendering_old/drawables/ImageSlice.cpp
-  ${SRC_DIR}/rendering_old/drawables/Line.cpp
-  ${SRC_DIR}/rendering_old/drawables/TexturedMesh.cpp
-  ${SRC_DIR}/rendering_old/drawables/Transformation.cpp
-  ${SRC_DIR}/rendering_old/drawables/annotation/AnnotationExtrusion.cpp
-  ${SRC_DIR}/rendering_old/drawables/annotation/AnnotationSlice.cpp
-  ${SRC_DIR}/rendering_old/drawables/annotation/LandmarkGroup3d.cpp
-  ###  ${SRC_DIR}/rendering_old/drawables/annotation/LandmarkGroupSlice.cpp
-  ${SRC_DIR}/rendering_old/drawables/overlays/CameraLabel.cpp
-  ${SRC_DIR}/rendering_old/drawables/slides/SlideBox.cpp
-  ${SRC_DIR}/rendering_old/drawables/slides/SlideSlice.cpp
-  ${SRC_DIR}/rendering_old/drawables/slides/SlideStackArrow.cpp
-  ${SRC_DIR}/rendering_old/records/ImageGpuRecord.cpp
-  # ${SRC_DIR}/rendering_old/records/MeshGpuRecord.cpp
-  ${SRC_DIR}/rendering_old/records/SlideAnnotationGpuRecord.cpp
-  ${SRC_DIR}/rendering_old/records/SlideGpuRecord.cpp
-  ${SRC_DIR}/rendering_old/utility/containers/BlankTextures.cpp
-  ${SRC_DIR}/rendering_old/utility/containers/ShaderProgramContainer.cpp
-
-  ${SRC_DIR}/rendering/records/MeshGpuRecord.cpp
-
-  ${SRC_DIR}/rendering/drawables/DrawableBase.cpp
-  ${SRC_DIR}/rendering/drawables/ddp/DdpBlendPassQuad.cpp
-  ${SRC_DIR}/rendering/drawables/ddp/DdpFinalPassQuad.cpp
-  ${SRC_DIR}/rendering/drawables/ddp/FullScreenDebugQuad.cpp
-  ${SRC_DIR}/rendering/drawables/ddp/FullScreenQuad.cpp
-
-  ${SRC_DIR}/rendering/renderers/DepthPeelRenderer.cpp
-
-  ${SRC_DIR}/rendering/utility/CreateGLObjects.cpp
-  ${SRC_DIR}/rendering/utility/vtk/PolyDataConversion.cpp
-  ${SRC_DIR}/rendering/utility/vtk/PolyDataGenerator.cpp
-
-  ${SRC_DIR}/slideio/SlideAssociatedImages.cpp
-  ${SRC_DIR}/slideio/SlideCpuRecord.cpp
-  ${SRC_DIR}/slideio/SlideHeader.cpp
-  ${SRC_DIR}/slideio/SlideHelper.cpp
-  ${SRC_DIR}/slideio/SlideProperties.cpp
-  ${SRC_DIR}/slideio/SlideReading.cpp
-  ${SRC_DIR}/slideio/SlideTransformation.cpp
-)
-
 set(ENTROPY_SOURCES
   ${SRC_DIR}/main.cpp
   ${SRC_DIR}/EntropyApp.cpp
@@ -528,7 +430,6 @@ set(ENTROPY_SOURCES
   ${SRC_DIR}/logic/app/Settings.cpp
   ${SRC_DIR}/logic/app/State.cpp
 
-  # ${SRC_DIR}/logic/annotation/AnnotationHelper.cpp
   ${SRC_DIR}/logic/annotation/Annotation.cpp
   ${SRC_DIR}/logic/annotation/BezierHelper.cpp
   ${SRC_DIR}/logic/annotation/LandmarkGroup.cpp
@@ -709,13 +610,8 @@ target_sources(${EXEC_NAME} PRIVATE
   ${ENTROPY_SOURCES}
   ${ENTROPY_HEADERS})
 
-# target_link_directories(${EXEC_NAME} PRIVATE
-#   ${glfw_DIR}
-# )
-
 target_link_libraries(${EXEC_NAME} PRIVATE
   ${ITK_LIBRARIES}
-  # ${VTK_LIBRARIES}
   ${Boost_LIBRARIES}
   ghc_filesystem
   glfw
@@ -745,7 +641,6 @@ target_include_directories(${EXEC_NAME} PRIVATE
   ${TINYFSM_INCLUDE_DIR}
   ${UUID_DIR}
   ${UUID_INCLUDE_DIR}
-  # ${VTK_INCLUDE_DIRS}
 )
 
 # These libraries are in 'system' includes in order to ignore their compiler warnings:
@@ -757,10 +652,6 @@ target_include_directories(${EXEC_NAME} SYSTEM PRIVATE
   ${GRIDCUT_INCLUDE_DIRS}
   ${NANOVG_SRC_DIR}
 )
-
-# target_compile_definitions(${EXEC_NAME} PRIVATE
-  # ${VTK_DEFINITIONS}
-# )
 
 target_compile_options(${EXEC_NAME} PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
