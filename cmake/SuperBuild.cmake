@@ -28,16 +28,16 @@ ExternalProject_Add(ITK
   SOURCE_DIR "${ITK_PREFIX}/src"
   BINARY_DIR "${ITK_PREFIX}/build"
 
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DBUILD_STATIC_LIBS:BOOL=${BUILD_STATIC_LIBS}
+    -DBUILD_EXAMPLES:BOOL=OFF
+    -DBUILD_TESTING:BOOL=OFF
+
+  CMAKE_GENERATOR ${gen}
   UPDATE_COMMAND ""
   PATCH_COMMAND ""
-  CMAKE_GENERATOR ${gen}
-  CMAKE_ARGS
-  -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
-  -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
-  -DBUILD_STATIC_LIBS:BOOL=${BUILD_STATIC_LIBS}
-  -DBUILD_EXAMPLES:BOOL=OFF
-  -DBUILD_TESTING:BOOL=OFF
-
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ITK install step"
 )
 
@@ -133,5 +133,45 @@ ExternalProject_Add(spdlog
     -DSPDLOG_WCHAR_FILENAMES:BOOL=OFF
     -DSPDLOG_WCHAR_SUPPORT:BOOL=OFF
 
+  CMAKE_GENERATOR ${gen}
+  UPDATE_COMMAND ""
+  PATCH_COMMAND ""
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping spdlog install step"
+)
+
+
+message(STATUS "Downloading and building glfw in ${glfw_PREFIX}")
+
+ExternalProject_Add(glfw
+  URL "https://github.com/glfw/glfw/releases/download/3.4/glfw-${glfw_VERSION}.zip"
+  URL_HASH SHA512=03de56a0599275ff57759ca19e8f69176058252b5e9976193cc3d9bb7b7b78b6a8dac6ed91de483d03c1b4807d21e1302e5e47c2f0c21e63becb4aba9d5affdc
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/glfw/glfw.git"
+  # GIT_TAG "7b6aead9fb88b3623e3b3725ebb42670cbe4c579" # tag: ${glfw_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${glfw_PREFIX}"
+  TMP_DIR "${glfw_PREFIX}/tmp"
+  STAMP_DIR "${glfw_PREFIX}/stamp"
+  DOWNLOAD_DIR "${glfw_PREFIX}/download"
+  SOURCE_DIR "${glfw_PREFIX}/src"
+  BINARY_DIR "${glfw_PREFIX}/build"
+  INSTALL_DIR "${glfw_PREFIX}/install"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX="${glfw_PREFIX}/install"
+    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DGLFW_BUILD_DOCS:BOOL=OFF
+    -DGLFW_BUILD_EXAMPLES:BOOL=OFF
+    -DGLFW_BUILD_TESTS:BOOL=OFF
+    -DGLFW_INSTALL:BOOL=ON
+
+  CMAKE_GENERATOR ${gen}
+  UPDATE_COMMAND ""
+  PATCH_COMMAND ""
+  # INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping glfw install step"
+  INSTALL_COMMAND ${CMAKE_COMMAND} --install "${glfw_PREFIX}/build" --prefix "${glfw_PREFIX}/install"
 )

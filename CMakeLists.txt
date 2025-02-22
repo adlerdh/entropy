@@ -80,13 +80,17 @@ option(Entropy_SUPERBUILD "Run the SuperBuild" ON)
 
 set(EXTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
 
+# External library versions:
 set(ITK_VERSION "5.4.2")
 set(Boost_VERSION "1.87.0")
 set(spdlog_VERSION "1.15.1")
+set(glfw_VERSION "3.4")
 
+# External library directores:
 set(ITK_PREFIX "${EXTERNAL_DIR}/ITK-${ITK_VERSION}")
 set(Boost_PREFIX "${EXTERNAL_DIR}/Boost-${Boost_VERSION}")
 set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
+set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 
 if(Entropy_SUPERBUILD)
   include(SuperBuild)
@@ -107,7 +111,7 @@ endif()
 # Boost C++ Libraries
 set(Boost_INCLUDE_DIR "${Boost_PREFIX}/src" CACHE STRING "Boost include directory" FORCE)
 
-if(NOT Boost_INCLUDE_DIR STREQUAL "")
+if(IS_DIRECTORY "${Boost_INCLUDE_DIR}")
   message(STATUS "Using Boost headers in ${Boost_INCLUDE_DIR}")
 else()
   message(FATAL_ERROR "Boost headers not found: Please set Boost_INCLUDE_DIR")
@@ -123,6 +127,17 @@ else()
   message(FATAL_ERROR "spdlog not found: Please set spdlog_DIR")
 endif()
 
+# glfw: Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development
+find_package(glfw3 REQUIRED HINTS "${glfw_PREFIX}/install")
+
+if(glfw3_FOUND)
+  message(STATUS "Using glfw in ${glfw3_DIR}")
+else()
+  message(FATAL_ERROR "glfw not found")
+endif()
+
+set(glfw_INCLUDE_DIR "${glfw_PREFIX}/install/include" CACHE STRING "glfw include directory" FORCE)
+
 
 #--------------------------------------------------------------------------------
 # OpenGL version
@@ -132,20 +147,6 @@ set(GL_VERSION_VALUES "3.3;4.1;4.6")
 set(GLAD_GL_DEBUG false CACHE BOOL "Use OpenGL debugging in GLAD")
 
 set_property(CACHE GLAD_GL_VERSION PROPERTY STRINGS ${GL_VERSION_VALUES})
-
-
-#--------------------------------------------------------------------------------
-# GLFW library (included as Git submodule):
-# An Open Source, multi-platform library for OpenGL, OpenGL ES and
-# Vulkan application development. It provides a simple, platform-independent API
-# for creating windows, contexts and surfaces, reading input, handling events, etc.
-#--------------------------------------------------------------------------------
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-
-add_subdirectory(${EXT_DIR}/glfw)
 
 
 #--------------------------------------------------------------------------------
@@ -179,10 +180,6 @@ add_library(glad STATIC ${GLAD_DIR}/src/glad.c)
 target_include_directories(glad PRIVATE ${GLAD_INCLUDE_DIR})
 
 
-# Generate build stamp header
-include(BuildStamp)
-BuildStamp()
-
 
 #--------------------------------------------------------------------------------
 # "Dear ImGui" library (included as Git submodule):
@@ -213,7 +210,7 @@ add_library(imgui STATIC ${IMGUI_SOURCES})
 target_include_directories(imgui PRIVATE
   ${IMGUI_INCLUDE_DIR}
   ${SRC_DIR} # needed for IMGUI_USER_CONFIG file
-  ${EXT_DIR}/glfw/include
+  ${glfw_INCLUDE_DIR}
 )
 
 target_link_libraries(imgui PRIVATE
@@ -397,6 +394,11 @@ include(${EXT_DIR}/cmrc/CMakeRC.cmake)
 #--------------------------------------------------------------------------------
 # Entropy's sources
 #--------------------------------------------------------------------------------
+
+# Generate build stamp header after GLAD_GL_VERSION_MAJOR and
+# GLAD_GL_VERSION_MINOR are defined
+include(BuildStamp)
+BuildStamp()
 
 set(OLD_SOURCES
   #  ${SRC_DIR}/logic_old/AppController.cpp
@@ -683,9 +685,9 @@ if(APPLE)
 
   mark_as_advanced(COCOA_LIBRARY OpenGL_LIBRARY)
 
-  set(APPLE_LIBS ${COCOA_LIBRARY} ${IOKit_LIBRARY} ${OpenGL_LIBRARY} ${CoreVideo_LIBRARY})
-  set(APPLE_LIBS ${APPLE_LIBS} ${GLFW3_LIBRARY} ${ASSIMP_LIBRARY})
-  set(LIBS ${LIBS} ${APPLE_LIBS})
+  # set(APPLE_LIBS ${COCOA_LIBRARY} ${IOKit_LIBRARY} ${OpenGL_LIBRARY} ${CoreVideo_LIBRARY})
+  # set(APPLE_LIBS ${APPLE_LIBS} ${GLFW3_LIBRARY} ${ASSIMP_LIBRARY})
+  # set(LIBS ${LIBS} ${APPLE_LIBS})
 endif()
 
 
@@ -706,6 +708,10 @@ add_executable(${EXEC_NAME})
 target_sources(${EXEC_NAME} PRIVATE
   ${ENTROPY_SOURCES}
   ${ENTROPY_HEADERS})
+
+# target_link_directories(${EXEC_NAME} PRIVATE
+#   ${glfw_DIR}
+# )
 
 target_link_libraries(${EXEC_NAME} PRIVATE
   ${ITK_LIBRARIES}
@@ -728,7 +734,6 @@ target_include_directories(${EXEC_NAME} PRIVATE
   ${SRC_DIR}
   ${EXT_DIR}
   ${RES_DIR}
-  ${GLFW_INCLUDE_DIRS}
   ${GHC_FILESYSTEM}
   ${GLAD_INCLUDE_DIR}
   ${IMGUI_BINDINGS_DIR}
