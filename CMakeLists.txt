@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.22.0 FATAL_ERROR)
-
 cmake_policy(SET CMP0175 OLD)
 
 set(APP_NAME "Entropy")
@@ -9,7 +8,7 @@ set(COPYRIGHT_LINE "Copyright Daniel H. Adler and PICSL")
 set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)
-set(VERSION_MINOR 7)
+set(VERSION_MINOR 8)
 set(VERSION_FEATURE 0)
 set(VERSION_PATCH 0)
 set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION_PATCH}")
@@ -26,6 +25,45 @@ add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+
+# Set up directory structure for output libraries and binaries
+if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+endif()
+
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  if(UNIX)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+  else()
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+  endif()
+endif()
+
+
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo")
+set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fstack-protector-all -g")
+
+message(STATUS "CMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "CMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}")
+
+# Prevent compilation in-source
+if(${CMAKE_BINARY_DIR} STREQUAL ${PROJECT_SOURCE_DIR})
+  message(FATAL_ERROR "Source and build directories are the same.")
+endif()
+
+# Set a default build type if none was specified
+set(DEFAULT_BUILD_TYPE "RelWithDebInfo")
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
+  set(CMAKE_BUILD_TYPE ${DEFAULT_BUILD_TYPE} CACHE STRING "Choose the type of build" FORCE)
+
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 if(${BUILD_SHARED_LIBS})
@@ -37,14 +75,53 @@ endif()
 message(STATUS "BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}")
 message(STATUS "BUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}")
 
-set(MIN_ITK_VERSION "5.4.2")
-set(MIN_Boost_VERSION "1.87.0")
 
-option(USE_SYSTEM_ITK "Use ITK library already on the system (minimum version: ${MIN_ITK_VERSION})" OFF)
-option(USE_SYSTEM_Boost "Use Boost library already on the system (minimum version: ${MIN_Boost_VERSION})" OFF)
+option(Entropy_SUPERBUILD "Run the SuperBuild" ON)
 
-set(GIT_PROTOCOL "https")
-include(ExternalProjects)
+set(EXTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
+
+set(ITK_VERSION "5.4.2")
+set(Boost_VERSION "1.87.0")
+set(spdlog_VERSION "1.15.1")
+
+set(ITK_PREFIX "${EXTERNAL_DIR}/ITK-${ITK_VERSION}")
+set(Boost_PREFIX "${EXTERNAL_DIR}/Boost-${Boost_VERSION}")
+set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
+
+if(Entropy_SUPERBUILD)
+  include(SuperBuild)
+  return()
+endif()
+
+# ITK: The Insight Toolkit
+set(ITK_DIR "${ITK_PREFIX}/build" CACHE STRING "ITK build directory" FORCE)
+find_package(ITK ${ITK_VERSION} REQUIRED HINTS ${ITK_DIR})
+
+if(ITK_FOUND)
+  message(STATUS "Found ITK in ${ITK_DIR}")
+  include(${ITK_USE_FILE})
+else()
+  message(FATAL_ERROR "ITK not found: Please set ITK_DIR")
+endif()
+
+# Boost C++ Libraries
+set(Boost_INCLUDE_DIR "${Boost_PREFIX}/src" CACHE STRING "Boost include directory" FORCE)
+
+if(NOT Boost_INCLUDE_DIR STREQUAL "")
+  message(STATUS "Using Boost headers in ${Boost_INCLUDE_DIR}")
+else()
+  message(FATAL_ERROR "Boost headers not found: Please set Boost_INCLUDE_DIR")
+endif()
+
+# spdlog: Fast C++ logging library
+set(spdlog_DIR "${spdlog_PREFIX}/build" CACHE STRING "spdlog install directory" FORCE)
+find_package(spdlog ${spdlog_VERSION} REQUIRED HINTS ${spdlog_DIR})
+
+if(spdlog_FOUND)
+  message(STATUS "Using spdlog in ${spdlog_DIR}")
+else()
+  message(FATAL_ERROR "spdlog not found: Please set spdlog_DIR")
+endif()
 
 
 #--------------------------------------------------------------------------------
@@ -105,16 +182,6 @@ target_include_directories(glad PRIVATE ${GLAD_INCLUDE_DIR})
 # Generate build stamp header
 include(BuildStamp)
 BuildStamp()
-
-
-#--------------------------------------------------------------------------------
-# spdlog (included as Git submodule):
-# Very fast, header-only/compiled, C++ logging library
-#--------------------------------------------------------------------------------
-find_package(spdlog REQUIRED)
-#set(SPDLOG_BUILD_SHARED ON)
-#set(SPDLOG_FMT_EXTERNAL OFF)
-#set(SPDLOG_USE_STD_FORMAT ON)
 
 
 #--------------------------------------------------------------------------------
@@ -596,30 +663,6 @@ set(FONTS
 # Build types and compile options
 #--------------------------------------------------------------------------------
 
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
-set(CMAKE_VERBOSE_MAKEFILE ON)
-
-set(default_build_type "Release")
-
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build" FORCE)
-  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
-endif()
-
-# Prevent compilation in-source
-if(${CMAKE_BINARY_DIR} STREQUAL ${PROJECT_SOURCE_DIR})
-  message(FATAL_ERROR "Source and build directories are the same.")
-endif()
-
-# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3")
-# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fstack-protector-all -g")
-
-message(STATUS "CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
-message(STATUS "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
-
-
-
 # if(UNIX AND NOT APPLE)
 #   find_package(OpenGL REQUIRED)
 #  add_definitions(${OPENGL_DEFINITIONS})
@@ -629,7 +672,6 @@ message(STATUS "CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
   # use pkg-config --libs $(pkg-config --print-requires --print-requires-private glfw3) in a terminal to confirm
   # set(LIBS ${GLFW3_LIBRARY} X11 Xrandr Xinerama Xi Xxf86vm Xcursor GL dl pthread ${ASSIMP_LIBRARY} freetype)
   # set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -ldl")
-
 
 if(APPLE)
   include_directories(/System/Library/Frameworks)
@@ -652,7 +694,6 @@ endif()
 #--------------------------------------------------------------------------------
 set(EXEC_NAME Entropy)
 
-
 # Embed the resources using CMakeRC
 cmrc_add_resource_library(${EXEC_NAME}-colormaps ALIAS ${EXEC_NAME}::colormaps ${COLORMAPS} NAMESPACE colormaps)
 cmrc_add_resource_library(${EXEC_NAME}-fonts ALIAS ${EXEC_NAME}::fonts ${FONTS} NAMESPACE fonts)
@@ -660,8 +701,7 @@ cmrc_add_resource_library(${EXEC_NAME}-fonts ALIAS ${EXEC_NAME}::fonts ${FONTS} 
 cmrc_add_resource_library(${EXEC_NAME}-shaders ALIAS ${EXEC_NAME}::shaders ${SHADERS} NAMESPACE shaders)
 
 
-add_executable(${EXEC_NAME}
-    cmake/ExternalProjects.cmake)
+add_executable(${EXEC_NAME})
 
 target_sources(${EXEC_NAME} PRIVATE
   ${ENTROPY_SOURCES}
@@ -727,17 +767,15 @@ target_compile_options(${EXEC_NAME} PRIVATE
   -Wno-error=float-conversion
   -Wno-error=maybe-uninitialized
   -Wno-error=stringop-overflow
-  -ftrapv
-  -O3
+  -ftrapvx
   >
   $<$<CXX_COMPILER_ID:AppleClang>:
   -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
   -Wno-error=array-bounds
   -Wshadow -ftrapv
-  -O3
   >
   $<$<CXX_COMPILER_ID:MSVC>:
-  /W4 /Ox
+  /W4
   >
 )
 
