@@ -5,7 +5,6 @@
 #include "common/DirectionMaps.h"
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
-#include "common/UuidUtility.h"
 
 #include "image/ImageUtility.h"
 #include "image/ImageUtility.tpp"

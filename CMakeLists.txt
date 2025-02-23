@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.24.0 FATAL_ERROR)
 cmake_policy(SET CMP0175 OLD)
 
 set(APP_NAME "Entropy")
@@ -84,12 +84,14 @@ set(ITK_VERSION "5.4.2")
 set(Boost_VERSION "1.87.0")
 set(spdlog_VERSION "1.15.1")
 set(glfw_VERSION "3.4")
+set(nlohmann_json_VERSION "3.11.3")
 
 # External library directores:
 set(ITK_PREFIX "${EXTERNAL_DIR}/ITK-${ITK_VERSION}")
 set(Boost_PREFIX "${EXTERNAL_DIR}/Boost-${Boost_VERSION}")
 set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
+set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
 
 if(Entropy_SUPERBUILD)
   include(SuperBuild)
@@ -136,6 +138,15 @@ else()
 endif()
 
 set(glfw_INCLUDE_DIR "${glfw_PREFIX}/install/include" CACHE STRING "glfw include directory" FORCE)
+
+# nlohmann_json: JSON for Modern C++
+find_package(nlohmann_json REQUIRED HINTS "${nlohmann_json_PREFIX}/build")
+
+if(nlohmann_json_FOUND)
+  message(STATUS "Using nlohmann_json in ${nlohmann_json_DIR}")
+else()
+  message(FATAL_ERROR "nlohmann_json not found")
+endif()
 
 
 #--------------------------------------------------------------------------------
@@ -236,30 +247,6 @@ set_target_properties(imgui PROPERTIES
 
 
 #--------------------------------------------------------------------------------
-# imgui-knobs (included as Git submodule):
-# C++ port of https://github.com/DGriffin91/imgui-rs-knobs
-# for drawing knob widgets in ImGui
-#--------------------------------------------------------------------------------
-
-# Note: Due to warnings and errors in the original sources, they have been modified
-# and included in Entropy's source folder ui/imgui/imgui-knobs
-
-#set(IMGUI_KNOBS_DIR ${EXT_DIR}/imgui-knobs)
-
-
-#--------------------------------------------------------------------------------
-# imGuIZMO.quat (included as Git submodule):
-# A ImGui widget: like a trackball it provides a way to rotate models, lights,
-# or objects with mouse, and graphically visualize their position in space.
-#--------------------------------------------------------------------------------
-
-# Note: Due to warnings in these sources, they have been modified and included in
-# Entropy's source folder ui/imgui/imGuIZMO.quat
-
-# set(IMGUIZMO_INCLUDE_DIR ${EXT_DIR}/imGuIZMO.quat)
-
-
-#--------------------------------------------------------------------------------
 # ImPlot (included as Git submodule):
 # ImPlot is an immediate mode, GPU accelerated plotting library for Dear ImGui.
 #--------------------------------------------------------------------------------
@@ -306,17 +293,6 @@ list(APPEND NANOVG_SOURCES ${NANOVG_SRC_DIR}/nanovg.c)
 
 add_library(nanovg STATIC ${NANOVG_SOURCES})
 target_include_directories(nanovg PRIVATE ${NANOVG_SRC_DIR})
-
-
-#--------------------------------------------------------------------------------
-# "JSON for Modern C++" (included as Git submodule):
-# Header-only library by Niels Lohmann
-#--------------------------------------------------------------------------------
-set(JSON_INCLUDE_DIR ${EXT_DIR}/json/include)
-
-# Note: we could also use this method for including the JSON library:
-# find_package(nlohmann_json 3.2.0 REQUIRED)
-# Include: nlohmann_json::nlohmann_json
 
 
 #--------------------------------------------------------------------------------
@@ -619,6 +595,7 @@ target_link_libraries(${EXEC_NAME} PRIVATE
   imgui
   implot
   nanovg
+  nlohmann_json::nlohmann_json
   spdlog::spdlog
   ${EXEC_NAME}::colormaps
   ${EXEC_NAME}::fonts
@@ -637,7 +614,6 @@ target_include_directories(${EXEC_NAME} PRIVATE
   ${IMGUI_KNOBS_DIR}
   ${IMPLOT_INCLUDE_DIR}
   ${ITK_INCLUDE_DIRS}
-  ${JSON_INCLUDE_DIR}
   ${TINYFSM_INCLUDE_DIR}
   ${UUID_DIR}
   ${UUID_INCLUDE_DIR}

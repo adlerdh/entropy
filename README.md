@@ -1,5 +1,4 @@
 # ENTROPY
-
 *A cross-platform tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images.*
 
 Copyright Daniel H. Adler and the Penn Image Computing and Science Lab, Department of Radiology, University of Pennsylvania.
@@ -7,8 +6,7 @@ All rights reserved.
 
 
 ## Building
-
-Entropy requires C++20 and build generation uses CMake 3.24.0+.
+Entropy requires C++20 and build generation uses CMake 3.24.0.
 
 ### Operating systems
 Entropy builds on Linux, Windows, and macOS. It is currently tested on the following:
@@ -16,33 +14,26 @@ Entropy builds on Linux, Windows, and macOS. It is currently tested on the follo
 * Ubuntu 22.04, 24.04 (with gcc 12.3.0, 14.2.0)
 * Windows 10, 11 (with MSVC++ 17.3.4)
 * macOS 10.14.6, Intel x86_64 architecture (with clang 11.0.0)
-* macOS 14.6.1, 15.2.0, Apple arm64 architecture (with clang 15.0.0, 16.0.0)
+* macOS 14.6.1, 15.3.1, Apple arm64 architecture (with clang 15.0.0, 16.0.0)
 
 ### External libraries
-Please clone/download and build these libraries:
-
-* [Boost](https://github.com/boostorg/boost), header libraries only (1.84.0 - 1.87.0)
-* [Insight Toolkit, ITK](https://github.com/InsightSoftwareConsortium/ITK) (v5.3.0 - v5.4.2), ~~built with Module_ITKVtkGlue~~
-* [spdlog](https://github.com/gabime/spdlog) (v1.15.0)
-* ~~[Visualization Toolkit, VTK](https://github.com/Kitware/VTK) (9.3.0)~~
-
-Note: build Boost (headers only) with `./bootstrap.sh && ./b2 headers`
-
-More recent versions of ITK and Boost should also work with potentially minor modification to Entropy code. Please note that from Boost, only the header-only libraries (none of the compiled libraries) are required.
+The following libraries are downloaded and built during CMake build generation:
+* [Boost](https://github.com/boostorg/boost), headers only (v1.87.0)
+* [glfw](https://github.com/glfw/glfw) (v3.4)
+* [Insight Toolkit (ITK)](https://github.com/InsightSoftwareConsortium/ITK) (v5.4.2)
+* [nlohmann json](https://github.com/nlohmann/json) (v3.11.3)
+* [spdlog](https://github.com/gabime/spdlog) (v1.15.1)
 
 The following libraries and dependencies are brought in as Git submodules to the Entropy repository:
-
 * argparse (https://github.com/p-ranav/argparse)
 * CMakeRC (https://github.com/vector-of-bool/cmrc)
 * Dear ImGui (https://github.com/ocornut/imgui)
 * ghc::filesystem (https://github.com/gulrak/filesystem)
-* GLFW (https://github.com/glfw/glfw)
 * GLM (https://github.com/g-truc/glm)
 * IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 * imgui-filebrowser (https://github.com/AirGuanZ/imgui-filebrowser)
 * imGuIZMO.quat (https://github.com/BrutPitt/imGuIZMO.quat)
 * ImPlot (https://github.com/epezent/implot)
-* JSON for Modern C++ (https://github.com/nlohmann/json)
 * NanoVG (https://github.com/memononen/nanovg)
 * stduuid (https://github.com/mariusbancila/stduuid)
 * TinyFSM (https://github.com/digint/tinyfsm)
@@ -51,7 +42,6 @@ Clone Entropy with `--recurse-submodules` or run the folllowing command to clone
 `git submodule update --init --recursive`
 
 The following external sources and libraries have been committed directly to the Entropy repository:
-
 * GLAD OpenGL loaders (generated from https://github.com/Dav1dde/glad.git)
 * GridCut: fast max-flow/min-cut graph-cuts optimized for grid graphs (https://gridcut.com)
 * Local modifications to the ImGui bindings for GLFW and OpenGL 3 (see originals in externals/imgui/backends)
@@ -59,7 +49,6 @@ The following external sources and libraries have been committed directly to the
 
 
 ### Development libraries for Debian Linux
-
 You may need to install additional development libraries for Mesa 3D Graphics, Wayland, Xorg, Xrandr, Xinerama, Xcursor, xkbcommon, and xi on Linux. On Debian, this can be done using
 
 `sudo apt-get install libgl1-mesa-dev libwayland-dev xorg-dev libxkbcommon-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev`
@@ -78,7 +67,6 @@ Original attributions and licenses have been preserved and committed for all ext
 
 
 ## Running
-
 Entropy is run from the terminal. Images can be specified directly as command line arguments or from a JSON project file.
 
 1. A list of images can be provided as positional arguments. If an image has an accompanying segmentation, then it is separated from the image filename using a comma (,) and no space. e.g.:

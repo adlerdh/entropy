@@ -172,6 +172,51 @@ ExternalProject_Add(glfw
   CMAKE_GENERATOR ${gen}
   UPDATE_COMMAND ""
   PATCH_COMMAND ""
-  # INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping glfw install step"
   INSTALL_COMMAND ${CMAKE_COMMAND} --install "${glfw_PREFIX}/build" --prefix "${glfw_PREFIX}/install"
+)
+
+
+message(STATUS "Downloading and building nlohmann_json in ${nlohmann_json_PREFIX}")
+
+ExternalProject_Add(json
+  URL "https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz"
+  URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
+  DOWNLOAD_NAME "nlohmann_json-v${nlohmann_json_VERSION}.tar.xz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/nlohmann/json.git"
+  # GIT_TAG "9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03" # tag: v${nlohmann_json_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${nlohmann_json_PREFIX}"
+  TMP_DIR "${nlohmann_json_PREFIX}/tmp"
+  STAMP_DIR "${nlohmann_json_PREFIX}/stamp"
+  DOWNLOAD_DIR "${nlohmann_json_PREFIX}/download"
+  SOURCE_DIR "${nlohmann_json_PREFIX}/src"
+  BINARY_DIR "${nlohmann_json_PREFIX}/build"
+  # INSTALL_DIR "${nlohmann_json_PREFIX}/install"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DBUILD_TESTING:BOOL=OFF
+    -DJSON_BuildTests:BOOL=OFF
+    -DJSON_CI:BOOL=OFF
+    -DJSON_Diagnostic_Positions:BOOL=OFF
+    -DJSON_Diagnostics:BOOL=OFF
+    -DJSON_DisableEnumSerialization:BOOL=OFF
+    -DJSON_FastTests:BOOL=OFF
+    -DJSON_GlobalUDLs:BOOL=ON
+    -DJSON_ImplicitConversions:BOOL=ON
+    -DJSON_Install:BOOL=ON
+    -DJSON_LegacyDiscardedValueComparison:BOOL=OFF
+    -DJSON_MultipleHeaders:BOOL=ON
+    -DJSON_SystemInclude:BOOL=OFF
+    -DJSON_Valgrind:BOOL=OFF
+
+  CMAKE_GENERATOR ${gen}
+  UPDATE_COMMAND ""
+  PATCH_COMMAND ""
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nlohmann_json install step"
+  # INSTALL_COMMAND ${CMAKE_COMMAND} --install "${glfw_PREFIX}/build" --prefix "${glfw_PREFIX}/install"
 )
