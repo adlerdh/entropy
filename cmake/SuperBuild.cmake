@@ -9,24 +9,24 @@ endif()
 
 set(GIT_PROTOCOL "https")
 
-message(STATUS "Adding external ITK in ${ITK_PREFIX}")
+message(STATUS "Adding external ITK in ${itk_PREFIX}")
 
 ExternalProject_Add(ITK
-  URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${ITK_VERSION}/InsightToolkit-${ITK_VERSION}.tar.gz"
+  URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${itk_VERSION}/InsightToolkit-${itk_VERSION}.tar.gz"
   URL_HASH SHA512=440d5962336ae7ba68e1efcabd78db8f10437db27da077a65731024d2fd94c588468678d0af8d8be1bfdb45dc90a88ace85ae9e1fabf77fb4172f3cb7cc27a3c
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repository:
   # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/InsightSoftwareConsortium/ITK.git"
-  # GIT_TAG "898def645183e6a2d3293058ade451ec416c4514" # tag: v${ITK_VERSION}
+  # GIT_TAG "898def645183e6a2d3293058ade451ec416c4514" # tag: v${itk_VERSION}
   # GIT_PROGRESS true
 
-  PREFIX "${ITK_PREFIX}"
-  TMP_DIR "${ITK_PREFIX}/tmp"
-  STAMP_DIR "${ITK_PREFIX}/stamp"
-  DOWNLOAD_DIR "${ITK_PREFIX}/download"
-  SOURCE_DIR "${ITK_PREFIX}/src"
-  BINARY_DIR "${ITK_PREFIX}/build"
+  PREFIX "${itk_PREFIX}"
+  TMP_DIR "${itk_PREFIX}/tmp"
+  STAMP_DIR "${itk_PREFIX}/stamp"
+  DOWNLOAD_DIR "${itk_PREFIX}/download"
+  SOURCE_DIR "${itk_PREFIX}/src"
+  BINARY_DIR "${itk_PREFIX}/build"
 
   CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -54,13 +54,13 @@ elseif(UNIX OR APPLE)
 endif()
 
 ExternalProject_Add(Boost
-  URL "https://github.com/boostorg/boost/releases/download/boost-${Boost_VERSION}/boost-${Boost_VERSION}-b2-nodocs.tar.xz"
+  URL "https://github.com/boostorg/boost/releases/download/boost-${boost_VERSION}/boost-${boost_VERSION}-b2-nodocs.tar.xz"
   URL_HASH SHA256=3abd7a51118a5dd74673b25e0a3f0a4ab1752d8d618f4b8cea84a603aeecc680
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repositories:
   # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/boostorg/boost.git"
-  # GIT_TAG "c89e6267665516192015a9e40955e154466f4f68" # tag: ${Boost_VERSION}
+  # GIT_TAG "c89e6267665516192015a9e40955e154466f4f68" # tag: ${boost_VERSION}
   # GIT_SUBMODULES_RECURSE true
   # GIT_PROGRESS true
 
@@ -310,4 +310,23 @@ ExternalProject_Add(argparse
     -DARGPARSE_INSTALL:BOOL=ON
 
   CMAKE_GENERATOR ${gen}
+)
+
+
+message(STATUS "Adding external TinyFSM in ${tinyfsm_PREFIX}")
+
+ExternalProject_Add(tinyfsm
+  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/digint/tinyfsm.git"
+  GIT_TAG "01908cab0397fcdadb0a14e9a3187c308e2708ca" # tag: v${tinyfsm_PREFIX}
+  GIT_PROGRESS true
+
+  PREFIX "${tinyfsm_PREFIX}"
+  TMP_DIR "${tinyfsm_PREFIX}/tmp"
+  STAMP_DIR "${tinyfsm_PREFIX}/stamp"
+  SOURCE_DIR "${tinyfsm_PREFIX}/src"
+  BINARY_DIR "${tinyfsm_PREFIX}/build"
+
+  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM configure step"
+  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM build step"
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM install step"
 )

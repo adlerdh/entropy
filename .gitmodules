@@ -22,9 +22,6 @@
 [submodule "externals/stduuid"]
 	path = externals/stduuid
 	url = https://github.com/mariusbancila/stduuid
-[submodule "externals/tinyfsm"]
-	path = externals/tinyfsm
-	url = https://github.com/digint/tinyfsm
 [submodule "externals/imgui-knobs"]
 	path = externals/imgui-knobs
 	url = https://github.com/altschuler/imgui-knobs.git

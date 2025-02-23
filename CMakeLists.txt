@@ -74,32 +74,32 @@ set(EXTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
 
 # External library versions:
 set(argparse_VERSION "3.2")
-set(Boost_VERSION "1.87.0")
+set(boost_VERSION "1.87.0")
 set(glfw_VERSION "3.4")
 set(glm_VERSION "1.0.1")
-set(ITK_VERSION "5.4.2")
+set(itk_VERSION "5.4.2")
 set(nlohmann_json_VERSION "3.11.3")
 set(spdlog_VERSION "1.15.1")
+set(tinyfsm_VERSION "1.15.1")
 
 # External library directores:
 set(argparse_PREFIX "${EXTERNAL_DIR}/argparse-${argparse_VERSION}")
-set(Boost_PREFIX "${EXTERNAL_DIR}/Boost-${Boost_VERSION}")
+set(Boost_PREFIX "${EXTERNAL_DIR}/boost-${boost_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
-set(ITK_PREFIX "${EXTERNAL_DIR}/ITK-${ITK_VERSION}")
+set(itk_PREFIX "${EXTERNAL_DIR}/itk-${itk_VERSION}")
 set(nanovg_PREFIX "${EXTERNAL_DIR}/nanovg")
 set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
 set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
+set(tinyfsm_PREFIX "${EXTERNAL_DIR}/tinyfsm-${tinyfsm_VERSION}")
 
 if(Entropy_SUPERBUILD)
   include(SuperBuild)
   return()
 endif()
 
-# ITK: The Insight Toolkit
-# set(ITK_DIR "${ITK_PREFIX}/build" CACHE STRING "ITK build directory" FORCE)
-# find_package(ITK ${ITK_VERSION} REQUIRED HINTS ${ITK_DIR})
-find_package(ITK ${ITK_VERSION} REQUIRED HINTS "${ITK_PREFIX}/build")
+# The Insight Toolkit (ITK)
+find_package(ITK ${itk_VERSION} REQUIRED HINTS "${itk_PREFIX}/build")
 
 if(ITK_FOUND)
   message(STATUS "Found ITK in ${ITK_DIR}")
@@ -126,17 +126,18 @@ else()
   message(FATAL_ERROR "spdlog not found: Please set spdlog_DIR")
 endif()
 
-# glfw: Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development
+# GLFW: Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development
 find_package(glfw3 ${glfw_VERSION} REQUIRED HINTS "${glfw_PREFIX}/install")
 
 if(glfw3_FOUND)
-  message(STATUS "Using glfw in ${glfw3_DIR}")
-  set(glfw_INCLUDE_DIR "${glfw_PREFIX}/install/include" CACHE STRING "glfw include directory" FORCE)
+  message(STATUS "Using GLFW in ${glfw3_DIR}")
+  set(glfw_INCLUDE_DIR "${glfw_PREFIX}/install/include"
+      CACHE STRING "glfw include directory" FORCE)
 else()
-  message(FATAL_ERROR "glfw not found")
+  message(FATAL_ERROR "GLFW not found")
 endif()
 
-# nlohmann_json: Niels Lohmann's JSON for Modern C++
+# Niels Lohmann's JSON for Modern C++
 find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED HINTS "${nlohmann_json_PREFIX}/install")
 
 if(nlohmann_json_FOUND)
@@ -160,10 +161,16 @@ find_package(argparse ${argparse_VERSION} REQUIRED HINTS "${argparse_PREFIX}/ins
 
 if(argparse_FOUND)
   message(STATUS "Using argparse in ${argparse_DIR}")
-  set(argparse_INCLUDE_DIR "${argparse_PREFIX}/install/include" CACHE STRING "argparse include directory" FORCE)
+  set(argparse_INCLUDE_DIR "${argparse_PREFIX}/install/include"
+      CACHE STRING "argparse include directory" FORCE)
 else()
   message(FATAL_ERROR "argparse not found")
 endif()
+
+# TinyFSM: A simple, header-only C++ finite state machine library
+set(tinyfsm_INCLUDE_DIR "${tinyfsm_PREFIX}/src/include"
+    CACHE STRING "TinyFSM include directory" FORCE)
+
 
 
 #--------------------------------------------------------------------------------
@@ -319,12 +326,6 @@ set(GRIDCUT_INCLUDE_DIRS
 #--------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------
-# TinyFSM (included as Git submodule):
-# A simple C++ finite state machine library
-#--------------------------------------------------------------------------------
-set(TINYFSM_INCLUDE_DIR ${EXT_DIR}/tinyfsm/include)
-
-#--------------------------------------------------------------------------------
 # stduuid (included as Git submodule):
 # A C++17 cross-platform single-header library implementation for universally
 # unique identifiers
@@ -348,13 +349,11 @@ set(GHC_FILESYSTEM ${EXT_DIR}/filesystem/include)
 
 add_subdirectory(${EXT_DIR}/filesystem)
 
-
 #--------------------------------------------------------------------------------
 # CMakeRC (included as Git submodule):
 # Standalone CMake-Based C++ Resource Compiler
 #--------------------------------------------------------------------------------
 include(${EXT_DIR}/cmrc/CMakeRC.cmake)
-
 
 #--------------------------------------------------------------------------------
 # Entropy's sources
@@ -593,7 +592,7 @@ target_link_libraries(${EXEC_NAME} PRIVATE
 )
 
 target_include_directories(${EXEC_NAME} PRIVATE
-  ${CMAKE_CURRENT_BINARY_DIR} # defines.h is here
+  ${CMAKE_CURRENT_BINARY_DIR} # for defines.h
   ${SRC_DIR}
   ${EXT_DIR}
   ${RES_DIR}
@@ -604,7 +603,7 @@ target_include_directories(${EXEC_NAME} PRIVATE
   ${IMGUI_KNOBS_DIR}
   ${IMPLOT_INCLUDE_DIR}
   ${ITK_INCLUDE_DIRS}
-  ${TINYFSM_INCLUDE_DIR}
+  ${tinyfsm_INCLUDE_DIR}
   ${UUID_DIR}
   ${UUID_INCLUDE_DIR}
 )
