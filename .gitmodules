@@ -25,9 +25,6 @@
 [submodule "externals/implot"]
 	path = externals/implot
 	url = https://github.com/epezent/implot
-[submodule "externals/nanovg"]
-	path = externals/nanovg
-	url = https://github.com/memononen/nanovg
 [submodule "externals/stduuid"]
 	path = externals/stduuid
 	url = https://github.com/mariusbancila/stduuid

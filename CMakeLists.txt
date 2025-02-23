@@ -80,18 +80,19 @@ option(Entropy_SUPERBUILD "Run the SuperBuild" ON)
 set(EXTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
 
 # External library versions:
-set(ITK_VERSION "5.4.2")
 set(Boost_VERSION "1.87.0")
-set(spdlog_VERSION "1.15.1")
 set(glfw_VERSION "3.4")
+set(ITK_VERSION "5.4.2")
 set(nlohmann_json_VERSION "3.11.3")
+set(spdlog_VERSION "1.15.1")
 
 # External library directores:
-set(ITK_PREFIX "${EXTERNAL_DIR}/ITK-${ITK_VERSION}")
 set(Boost_PREFIX "${EXTERNAL_DIR}/Boost-${Boost_VERSION}")
-set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
+set(ITK_PREFIX "${EXTERNAL_DIR}/ITK-${ITK_VERSION}")
+set(nanovg_PREFIX "${EXTERNAL_DIR}/nanovg")
 set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
+set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
 
 if(Entropy_SUPERBUILD)
   include(SuperBuild)
@@ -150,17 +151,7 @@ endif()
 
 
 #--------------------------------------------------------------------------------
-# OpenGL version
-#--------------------------------------------------------------------------------
-set(GLAD_GL_VERSION "3.3" CACHE STRING "OpenGL Core profile version loaded by GLAD")
-set(GL_VERSION_VALUES "3.3;4.1;4.6")
-set(GLAD_GL_DEBUG false CACHE BOOL "Use OpenGL debugging in GLAD")
-
-set_property(CACHE GLAD_GL_VERSION PROPERTY STRINGS ${GL_VERSION_VALUES})
-
-
-#--------------------------------------------------------------------------------
-# GLAD library (NOT included as a Git submodule):
+# GLAD library:
 # Multi-Language GL/GLES/EGL/GLX/WGL Loader-Generator based on the official specs
 #--------------------------------------------------------------------------------
 
@@ -172,6 +163,12 @@ set_property(CACHE GLAD_GL_VERSION PROPERTY STRINGS ${GL_VERSION_VALUES})
 # https://github.com/Dav1dde/glad.git and executing
 # python3 -m glad --profile core --out-path glad --api gl=3.3 --generator c --spec gl
 # (It can also be generated from the webservice at https://glad.dav1d.de/)
+
+set(GLAD_GL_VERSION "3.3" CACHE STRING "OpenGL Core profile version loaded by GLAD")
+set(GL_VERSION_VALUES "3.3;4.1;4.6")
+set(GLAD_GL_DEBUG false CACHE BOOL "Use OpenGL debugging in GLAD")
+
+set_property(CACHE GLAD_GL_VERSION PROPERTY STRINGS ${GL_VERSION_VALUES})
 
 string(REPLACE "." ";" GL_VERSION_LIST ${GLAD_GL_VERSION})
 list(GET GL_VERSION_LIST 0 GLAD_GL_VERSION_MAJOR)
@@ -186,7 +183,7 @@ endif()
 set(GLAD_DIR ${EXT_DIR}/glad/${GLAD_BASE})
 set(GLAD_INCLUDE_DIR ${GLAD_DIR}/include)
 
-add_library(glad STATIC ${GLAD_DIR}/src/glad.c)
+add_library(glad ${GLAD_DIR}/src/glad.c)
 target_include_directories(glad PRIVATE ${GLAD_INCLUDE_DIR})
 
 
@@ -215,7 +212,7 @@ list(APPEND IMGUI_SOURCES
   ${IMGUI_SRC_DIR}/backends/imgui_impl_opengl3.cpp # OpenGL 3 bindings for ImGui
 )
 
-add_library(imgui STATIC ${IMGUI_SOURCES})
+add_library(imgui ${IMGUI_SOURCES})
 
 target_include_directories(imgui PRIVATE
   ${IMGUI_INCLUDE_DIR}
@@ -258,7 +255,7 @@ list(APPEND IMPLOT_SOURCES
   ${EXT_DIR}/implot/implot_items.cpp
   ${EXT_DIR}/implot/implot.cpp)
 
-add_library(implot STATIC ${IMPLOT_SOURCES})
+add_library(implot ${IMPLOT_SOURCES})
 
 target_include_directories(implot PRIVATE
   ${IMPLOT_INCLUDE_DIR}
@@ -283,16 +280,13 @@ set_target_properties(implot PROPERTIES
 
 
 #--------------------------------------------------------------------------------
-# "NanoVG" (included as a Git submodule):
-# A small antialiased vector graphics rendering library for OpenGL.
+# NanoVG: A small antialiased vector graphics rendering library for OpenGL.
 # It has lean API modeled after HTML5 canvas API. It is aimed to be a practical
 # and fun toolset for building scalable user interfaces and visualizations.
 #--------------------------------------------------------------------------------
-set(NANOVG_SRC_DIR ${EXT_DIR}/nanovg/src)
-list(APPEND NANOVG_SOURCES ${NANOVG_SRC_DIR}/nanovg.c)
-
-add_library(nanovg STATIC ${NANOVG_SOURCES})
-target_include_directories(nanovg PRIVATE ${NANOVG_SRC_DIR})
+set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
+add_library(nanovg "${nanovg_SRC_DIR}/nanovg.c")
+target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
 
 
 #--------------------------------------------------------------------------------
@@ -579,7 +573,6 @@ cmrc_add_resource_library(${EXEC_NAME}-fonts ALIAS ${EXEC_NAME}::fonts ${FONTS} 
 #cmrc_add_resource_library(${EXEC_NAME}-shaders ALIAS ${EXEC_NAME}::shaders ${SHADERS} ${SHADERS_OLD} NAMESPACE shaders)
 cmrc_add_resource_library(${EXEC_NAME}-shaders ALIAS ${EXEC_NAME}::shaders ${SHADERS} NAMESPACE shaders)
 
-
 add_executable(${EXEC_NAME})
 
 target_sources(${EXEC_NAME} PRIVATE
@@ -588,7 +581,7 @@ target_sources(${EXEC_NAME} PRIVATE
 
 target_link_libraries(${EXEC_NAME} PRIVATE
   ${ITK_LIBRARIES}
-  ${Boost_LIBRARIES}
+  # ${Boost_LIBRARIES}
   ghc_filesystem
   glfw
   glad
@@ -626,7 +619,7 @@ target_include_directories(${EXEC_NAME} SYSTEM PRIVATE
   ${EARCUT_INCLUDE_DIR}
   ${GLM_INCLUDE_DIR}
   ${GRIDCUT_INCLUDE_DIRS}
-  ${NANOVG_SRC_DIR}
+  ${nanovg_SRC_DIR}
 )
 
 target_compile_options(${EXEC_NAME} PRIVATE

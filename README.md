@@ -19,9 +19,10 @@ Entropy builds on Linux, Windows, and macOS. It is currently tested on the follo
 ### External libraries
 The following libraries are downloaded and built during CMake build generation:
 * [Boost](https://github.com/boostorg/boost), headers only (v1.87.0)
-* [glfw](https://github.com/glfw/glfw) (v3.4)
+* [GLFW](https://github.com/glfw/glfw) (v3.4)
 * [Insight Toolkit (ITK)](https://github.com/InsightSoftwareConsortium/ITK) (v5.4.2)
-* [nlohmann json](https://github.com/nlohmann/json) (v3.11.3)
+* [NanoVG](https://github.com/memononen/nanovg)
+* [Niels Lohmann JSON](https://github.com/nlohmann/json) (v3.11.3)
 * [spdlog](https://github.com/gabime/spdlog) (v1.15.1)
 
 The following libraries and dependencies are brought in as Git submodules to the Entropy repository:
@@ -34,7 +35,6 @@ The following libraries and dependencies are brought in as Git submodules to the
 * imgui-filebrowser (https://github.com/AirGuanZ/imgui-filebrowser)
 * imGuIZMO.quat (https://github.com/BrutPitt/imGuIZMO.quat)
 * ImPlot (https://github.com/epezent/implot)
-* NanoVG (https://github.com/memononen/nanovg)
 * stduuid (https://github.com/mariusbancila/stduuid)
 * TinyFSM (https://github.com/digint/tinyfsm)
 

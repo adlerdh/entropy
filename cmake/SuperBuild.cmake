@@ -178,7 +178,7 @@ ExternalProject_Add(glfw
 
 message(STATUS "Downloading and building nlohmann_json in ${nlohmann_json_PREFIX}")
 
-ExternalProject_Add(json
+ExternalProject_Add(nlohmann_json
   URL "https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz"
   URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
   DOWNLOAD_NAME "nlohmann_json-v${nlohmann_json_VERSION}.tar.xz"
@@ -195,7 +195,6 @@ ExternalProject_Add(json
   DOWNLOAD_DIR "${nlohmann_json_PREFIX}/download"
   SOURCE_DIR "${nlohmann_json_PREFIX}/src"
   BINARY_DIR "${nlohmann_json_PREFIX}/build"
-  # INSTALL_DIR "${nlohmann_json_PREFIX}/install"
 
   CMAKE_ARGS
     -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
@@ -218,5 +217,26 @@ ExternalProject_Add(json
   UPDATE_COMMAND ""
   PATCH_COMMAND ""
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nlohmann_json install step"
-  # INSTALL_COMMAND ${CMAKE_COMMAND} --install "${glfw_PREFIX}/build" --prefix "${glfw_PREFIX}/install"
+)
+
+
+message(STATUS "Downloading nanovg in ${nanovg_PREFIX}")
+
+ExternalProject_Add(nanovg
+  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/memononen/nanovg.git"
+  GIT_TAG "f93799c078fa11ed61c078c65a53914c8782c00b" # branch: master
+  GIT_PROGRESS true
+
+  PREFIX "${nanovg_PREFIX}"
+  TMP_DIR "${nanovg_PREFIX}/tmp"
+  STAMP_DIR "${nanovg_PREFIX}/stamp"
+  SOURCE_DIR "${nanovg_PREFIX}/src"
+  BINARY_DIR "${nanovg_PREFIX}/build"
+
+  CMAKE_ARGS ""
+  UPDATE_COMMAND ""
+  PATCH_COMMAND ""
+  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nanovg configure step"
+  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nanovg build step"
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nanovg install step"
 )
