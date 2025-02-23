@@ -17,7 +17,8 @@ Entropy builds on Linux, Windows, and macOS. It is currently tested on the follo
 * macOS 14.6.1, 15.3.1, Apple arm64 architecture (with clang 15.0.0, 16.0.0)
 
 ### External libraries
-The following libraries are downloaded and built during CMake build generation:
+The following libraries are added as external projects during CMake build generation:
+* [argparse](https://github.com/p-ranav/argparse) (v3.2)
 * [Boost](https://github.com/boostorg/boost), headers only (v1.87.0)
 * [GLFW](https://github.com/glfw/glfw) (v3.4)
 * [GLM](https://github.com/g-truc/glm) (v1.0.1)
@@ -27,7 +28,6 @@ The following libraries are downloaded and built during CMake build generation:
 * [spdlog](https://github.com/gabime/spdlog) (v1.15.1)
 
 The following libraries and dependencies are brought in as Git submodules to the Entropy repository:
-* argparse (https://github.com/p-ranav/argparse)
 * CMakeRC (https://github.com/vector-of-bool/cmrc)
 * Dear ImGui (https://github.com/ocornut/imgui)
 * ghc::filesystem (https://github.com/gulrak/filesystem)

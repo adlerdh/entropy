@@ -9,7 +9,7 @@ endif()
 
 set(GIT_PROTOCOL "https")
 
-message(STATUS "Downloading and building ITK in ${ITK_PREFIX}")
+message(STATUS "Adding external ITK in ${ITK_PREFIX}")
 
 ExternalProject_Add(ITK
   URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${ITK_VERSION}/InsightToolkit-${ITK_VERSION}.tar.gz"
@@ -36,13 +36,11 @@ ExternalProject_Add(ITK
     -DBUILD_TESTING:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
-  UPDATE_COMMAND ""
-  PATCH_COMMAND ""
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ITK install step"
 )
 
 
-message(STATUS "Downloading and building Boost in ${Boost_PREFIX}")
+message(STATUS "Adding external Boost in ${Boost_PREFIX}")
 
 set(Boost_Bootstrap_CMD)
 set(Boost_b2_CMD)
@@ -74,14 +72,12 @@ ExternalProject_Add(Boost
 
   CONFIGURE_COMMAND ${Boost_Bootstrap_CMD}
   BUILD_IN_SOURCE true
-  UPDATE_COMMAND ""
-  PATCH_COMMAND ""
   BUILD_COMMAND ${Boost_b2_CMD} headers
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping Boost install step"
 )
 
 
-message(STATUS "Downloading and building spdlog in ${spdlog_PREFIX}")
+message(STATUS "Adding external spdlog in ${spdlog_PREFIX}")
 
 ExternalProject_Add(spdlog
   URL "https://github.com/gabime/spdlog/archive/refs/tags/v${spdlog_VERSION}.tar.gz"
@@ -134,13 +130,11 @@ ExternalProject_Add(spdlog
     -DSPDLOG_WCHAR_SUPPORT:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
-  UPDATE_COMMAND ""
-  PATCH_COMMAND ""
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping spdlog install step"
 )
 
 
-message(STATUS "Downloading and building GLFW in ${glfw_PREFIX}")
+message(STATUS "Adding external GLFW in ${glfw_PREFIX}")
 
 ExternalProject_Add(glfw
   URL "https://github.com/glfw/glfw/releases/download/3.4/glfw-${glfw_VERSION}.zip"
@@ -170,13 +164,11 @@ ExternalProject_Add(glfw
     -DGLFW_INSTALL:BOOL=ON
 
   CMAKE_GENERATOR ${gen}
-  UPDATE_COMMAND ""
-  PATCH_COMMAND ""
   INSTALL_COMMAND ${CMAKE_COMMAND} --install "${glfw_PREFIX}/build" --prefix "${glfw_PREFIX}/install"
 )
 
 
-message(STATUS "Downloading and building nlohmann_json in ${nlohmann_json_PREFIX}")
+message(STATUS "Adding external nlohmann_json in ${nlohmann_json_PREFIX}")
 
 ExternalProject_Add(nlohmann_json
   URL "https://github.com/nlohmann/json/releases/download/v${nlohmann_json_VERSION}/json.tar.xz"
@@ -214,13 +206,11 @@ ExternalProject_Add(nlohmann_json
     -DJSON_Valgrind:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
-  UPDATE_COMMAND ""
-  PATCH_COMMAND ""
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nlohmann_json install step"
 )
 
 
-message(STATUS "Downloading NanoVG in ${nanovg_PREFIX}")
+message(STATUS "Adding external NanoVG in ${nanovg_PREFIX}")
 
 ExternalProject_Add(NanoVG
   GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/memononen/nanovg.git"
@@ -234,16 +224,13 @@ ExternalProject_Add(NanoVG
   BINARY_DIR "${nanovg_PREFIX}/build"
 
   CMAKE_ARGS ""
-  UPDATE_COMMAND ""
-  PATCH_COMMAND ""
   CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG configure step"
   BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG build step"
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG install step"
 )
 
 
-
-message(STATUS "Downloading and building GLM in ${glm_PREFIX}")
+message(STATUS "Adding external GLM in ${glm_PREFIX}")
 
 ExternalProject_Add(glm
   URL "https://github.com/g-truc/glm/archive/refs/tags/${glm_VERSION}.tar.gz"
@@ -262,9 +249,11 @@ ExternalProject_Add(glm
   DOWNLOAD_DIR "${glm_PREFIX}/download"
   SOURCE_DIR "${glm_PREFIX}/src"
   BINARY_DIR "${glm_PREFIX}/build"
+  INSTALL_DIR "${glm_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
     -DGLM_BUILD_INSTALL:BOOL=ON
     -DGLM_BUILD_LIBRARY:BOOL=ON
@@ -288,7 +277,36 @@ ExternalProject_Add(glm
     -DGLM_FORCE_PURE:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
-  UPDATE_COMMAND ""
-  PATCH_COMMAND ""
-  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping GLM install step"
+)
+
+
+message(STATUS "Adding external argparse in ${argparse_PREFIX}")
+
+ExternalProject_Add(argparse
+  URL "https://github.com/p-ranav/argparse/archive/refs/tags/v${argparse_VERSION}.zip"
+  URL_HASH SHA256=14c1a0e975d6877dfeaf52a1e79e54f70169a847e29c7e13aa7fe68a3d0ecbf1
+  DOWNLOAD_NAME "argparse-v${argparse_VERSION}.zip"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/p-ranav/argparse.git"
+  # GIT_TAG "3eda91b2e1ce7d569f84ba295507c4cd8fd96910" # tag: v${argparse_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${argparse_PREFIX}"
+  TMP_DIR "${argparse_PREFIX}/tmp"
+  STAMP_DIR "${argparse_PREFIX}/stamp"
+  DOWNLOAD_DIR "${argparse_PREFIX}/download"
+  SOURCE_DIR "${argparse_PREFIX}/src"
+  BINARY_DIR "${argparse_PREFIX}/build"
+  INSTALL_DIR "${argparse_PREFIX}/install"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DARGPARSE_BUILD_SAMPLES:BOOL=OFF
+    -DARGPARSE_BUILD_TESTS:BOOL=OFF
+    -DARGPARSE_INSTALL:BOOL=ON
+
+  CMAKE_GENERATOR ${gen}
 )

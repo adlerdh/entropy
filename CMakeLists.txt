@@ -73,6 +73,7 @@ option(Entropy_SUPERBUILD "Run the SuperBuild" ON)
 set(EXTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
 
 # External library versions:
+set(argparse_VERSION "3.2")
 set(Boost_VERSION "1.87.0")
 set(glfw_VERSION "3.4")
 set(glm_VERSION "1.0.1")
@@ -81,6 +82,7 @@ set(nlohmann_json_VERSION "3.11.3")
 set(spdlog_VERSION "1.15.1")
 
 # External library directores:
+set(argparse_PREFIX "${EXTERNAL_DIR}/argparse-${argparse_VERSION}")
 set(Boost_PREFIX "${EXTERNAL_DIR}/Boost-${Boost_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
@@ -130,11 +132,10 @@ find_package(glfw3 ${glfw_VERSION} REQUIRED HINTS "${glfw_PREFIX}/install")
 
 if(glfw3_FOUND)
   message(STATUS "Using glfw in ${glfw3_DIR}")
+  set(glfw_INCLUDE_DIR "${glfw_PREFIX}/install/include" CACHE STRING "glfw include directory" FORCE)
 else()
   message(FATAL_ERROR "glfw not found")
 endif()
-
-set(glfw_INCLUDE_DIR "${glfw_PREFIX}/install/include" CACHE STRING "glfw include directory" FORCE)
 
 # nlohmann_json: Niels Lohmann's JSON for Modern C++
 find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED HINTS "${nlohmann_json_PREFIX}/build")
@@ -147,16 +148,23 @@ endif()
 
 # OpenGL Mathematics (GLM): C++ mathematics library for graphics software based
 # on the OpenGL Shading Language (GLSL) specifications
-set(glm_INCLUDE_DIR "${glm_PREFIX}/src")
-set(glm_DIR "${glm_PREFIX}/build" CACHE STRING "GLM build directory" FORCE)
+find_package(glm ${glm_VERSION} REQUIRED CONFIG REQUIRED HINTS "${glm_PREFIX}/install")
 
-# find_package(glm CONFIGS glmConfigVersion.cmake REQUIRED HINTS "${glm_DIR}")
+if(glm_FOUND)
+  message(STATUS "Using GLM in ${glm_DIR}")
+else()
+  message(FATAL_ERROR "GLM not found")
+endif()
 
-# if(glm_FOUND)
-  # message(STATUS "Using GLM in ${glm_DIR}")
-# else()
-  # message(FATAL_ERROR "GLM not found: Please set glm_DIR")
-# endif()
+# argparse: Header-only library for argument parsing using modern C++
+find_package(argparse ${argparse_VERSION} REQUIRED HINTS "${argparse_PREFIX}/install")
+
+if(argparse_FOUND)
+  message(STATUS "Using argparse in ${argparse_DIR}")
+  set(argparse_INCLUDE_DIR "${argparse_PREFIX}/install/include" CACHE STRING "argparse include directory" FORCE)
+else()
+  message(FATAL_ERROR "argparse not found")
+endif()
 
 
 #--------------------------------------------------------------------------------
@@ -298,13 +306,6 @@ add_library(nanovg "${nanovg_SRC_DIR}/nanovg.c")
 target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
 
 #--------------------------------------------------------------------------------
-# argparse (included as Git submodule):
-# Header-only library for argument parsing using modern C++
-#--------------------------------------------------------------------------------
-set(ARGPARSE_INCLUDE_DIR ${EXT_DIR}/argparse/include)
-
-
-#--------------------------------------------------------------------------------
 # GridCut (NOT included as Git submodule):
 # Header-only C++ library of fast max-flow/min-cut solvers optimized for grid graphs
 #--------------------------------------------------------------------------------
@@ -312,20 +313,17 @@ set(GRIDCUT_INCLUDE_DIRS
   ${EXT_DIR}/gridcut/include
   ${EXT_DIR}/gridcut/examples/include)
 
-
 #--------------------------------------------------------------------------------
 # IconFontCppHeaders (included as Git submodule in ${EXT_DIR}/IconFontCppHeaders):
 # C, C++ headers and C# classes for icon fonts Font Awesome, Fork Awesome,
 # Google Material Design icons, Kenney game icons and Fontaudio.
 #--------------------------------------------------------------------------------
 
-
 #--------------------------------------------------------------------------------
 # TinyFSM (included as Git submodule):
 # A simple C++ finite state machine library
 #--------------------------------------------------------------------------------
 set(TINYFSM_INCLUDE_DIR ${EXT_DIR}/tinyfsm/include)
-
 
 #--------------------------------------------------------------------------------
 # stduuid (included as Git submodule):
@@ -334,7 +332,6 @@ set(TINYFSM_INCLUDE_DIR ${EXT_DIR}/tinyfsm/include)
 #--------------------------------------------------------------------------------
 set(UUID_DIR ${EXT_DIR}/stduuid)
 set(UUID_INCLUDE_DIR ${EXT_DIR}/stduuid/include)
-
 
 #--------------------------------------------------------------------------------
 # ghc::filesystem (included as Git submodule):
@@ -577,10 +574,7 @@ add_executable(${EXEC_NAME})
 
 target_sources(${EXEC_NAME} PRIVATE
   ${ENTROPY_SOURCES}
-  ${ENTROPY_HEADERS})
-
-target_link_directories(${EXEC_NAME} PRIVATE
-  ${glm_DIR}/glm
+  ${ENTROPY_HEADERS}
 )
 
 target_link_libraries(${EXEC_NAME} PRIVATE
@@ -588,7 +582,7 @@ target_link_libraries(${EXEC_NAME} PRIVATE
   ghc_filesystem
   glfw
   glad
-  glm
+  glm::glm
   imgui
   implot
   nanovg
@@ -618,11 +612,10 @@ target_include_directories(${EXEC_NAME} PRIVATE
 
 # These libraries are in 'system' includes in order to ignore their compiler warnings:
 target_include_directories(${EXEC_NAME} SYSTEM PRIVATE
-  ${ARGPARSE_INCLUDE_DIR}
+  ${argparse_INCLUDE_DIR}
   ${Boost_INCLUDE_DIR}
   # ${EARCUT_INCLUDE_DIR}
   ${GRIDCUT_INCLUDE_DIRS}
-  ${glm_INCLUDE_DIR}
   ${nanovg_SRC_DIR}
 )
 

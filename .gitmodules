@@ -1,9 +1,6 @@
 [submodule "externals/IconFontCppHeaders"]
 	path = externals/IconFontCppHeaders
 	url = https://github.com/juliettef/IconFontCppHeaders
-[submodule "externals/argparse"]
-	path = externals/argparse
-	url = https://github.com/p-ranav/argparse
 [submodule "externals/cmrc"]
 	path = externals/cmrc
 	url = https://github.com/vector-of-bool/cmrc
