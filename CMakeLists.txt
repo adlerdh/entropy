@@ -25,20 +25,13 @@ add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# Set up directory structure for output libraries and binaries
-if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+if(UNIX)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+else()
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
-
-if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-  if(UNIX)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-  else()
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-  endif()
-endif()
-
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo")
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -82,6 +75,7 @@ set(EXTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
 # External library versions:
 set(Boost_VERSION "1.87.0")
 set(glfw_VERSION "3.4")
+set(glm_VERSION "1.0.1")
 set(ITK_VERSION "5.4.2")
 set(nlohmann_json_VERSION "3.11.3")
 set(spdlog_VERSION "1.15.1")
@@ -89,6 +83,7 @@ set(spdlog_VERSION "1.15.1")
 # External library directores:
 set(Boost_PREFIX "${EXTERNAL_DIR}/Boost-${Boost_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
+set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
 set(ITK_PREFIX "${EXTERNAL_DIR}/ITK-${ITK_VERSION}")
 set(nanovg_PREFIX "${EXTERNAL_DIR}/nanovg")
 set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
@@ -129,8 +124,9 @@ else()
   message(FATAL_ERROR "spdlog not found: Please set spdlog_DIR")
 endif()
 
-# glfw: Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development
-find_package(glfw3 REQUIRED HINTS "${glfw_PREFIX}/install")
+# glfw: Open Source, multi-platform library for OpenGL, OpenGL ES and
+# Vulkan application development
+find_package(glfw3 ${glfw_VERSION} REQUIRED HINTS "${glfw_PREFIX}/install")
 
 if(glfw3_FOUND)
   message(STATUS "Using glfw in ${glfw3_DIR}")
@@ -140,14 +136,27 @@ endif()
 
 set(glfw_INCLUDE_DIR "${glfw_PREFIX}/install/include" CACHE STRING "glfw include directory" FORCE)
 
-# nlohmann_json: JSON for Modern C++
-find_package(nlohmann_json REQUIRED HINTS "${nlohmann_json_PREFIX}/build")
+# nlohmann_json: Niels Lohmann's JSON for Modern C++
+find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED HINTS "${nlohmann_json_PREFIX}/build")
 
 if(nlohmann_json_FOUND)
   message(STATUS "Using nlohmann_json in ${nlohmann_json_DIR}")
 else()
   message(FATAL_ERROR "nlohmann_json not found")
 endif()
+
+# OpenGL Mathematics (GLM): C++ mathematics library for graphics software based
+# on the OpenGL Shading Language (GLSL) specifications
+set(glm_INCLUDE_DIR "${glm_PREFIX}/src")
+set(glm_DIR "${glm_PREFIX}/build" CACHE STRING "GLM build directory" FORCE)
+
+# find_package(glm CONFIGS glmConfigVersion.cmake REQUIRED HINTS "${glm_DIR}")
+
+# if(glm_FOUND)
+  # message(STATUS "Using GLM in ${glm_DIR}")
+# else()
+  # message(FATAL_ERROR "GLM not found: Please set glm_DIR")
+# endif()
 
 
 #--------------------------------------------------------------------------------
@@ -287,15 +296,6 @@ set_target_properties(implot PROPERTIES
 set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
 add_library(nanovg "${nanovg_SRC_DIR}/nanovg.c")
 target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
-
-
-#--------------------------------------------------------------------------------
-# OpenGL Mathematics (GLM) (included as Git submodule):
-# Header-only C++ mathematics library for graphics software based on the OpenGL
-# Shading Language (GLSL) specifications.
-#--------------------------------------------------------------------------------
-set(GLM_INCLUDE_DIR ${EXT_DIR}/glm)
-
 
 #--------------------------------------------------------------------------------
 # argparse (included as Git submodule):
@@ -579,12 +579,16 @@ target_sources(${EXEC_NAME} PRIVATE
   ${ENTROPY_SOURCES}
   ${ENTROPY_HEADERS})
 
+target_link_directories(${EXEC_NAME} PRIVATE
+  ${glm_DIR}/glm
+)
+
 target_link_libraries(${EXEC_NAME} PRIVATE
   ${ITK_LIBRARIES}
-  # ${Boost_LIBRARIES}
   ghc_filesystem
   glfw
   glad
+  glm
   imgui
   implot
   nanovg
@@ -616,9 +620,9 @@ target_include_directories(${EXEC_NAME} PRIVATE
 target_include_directories(${EXEC_NAME} SYSTEM PRIVATE
   ${ARGPARSE_INCLUDE_DIR}
   ${Boost_INCLUDE_DIR}
-  ${EARCUT_INCLUDE_DIR}
-  ${GLM_INCLUDE_DIR}
+  # ${EARCUT_INCLUDE_DIR}
   ${GRIDCUT_INCLUDE_DIRS}
+  ${glm_INCLUDE_DIR}
   ${nanovg_SRC_DIR}
 )
 

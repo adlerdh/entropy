@@ -20,6 +20,7 @@ Entropy builds on Linux, Windows, and macOS. It is currently tested on the follo
 The following libraries are downloaded and built during CMake build generation:
 * [Boost](https://github.com/boostorg/boost), headers only (v1.87.0)
 * [GLFW](https://github.com/glfw/glfw) (v3.4)
+* [GLM](https://github.com/g-truc/glm) (v1.0.1)
 * [Insight Toolkit (ITK)](https://github.com/InsightSoftwareConsortium/ITK) (v5.4.2)
 * [NanoVG](https://github.com/memononen/nanovg)
 * [Niels Lohmann JSON](https://github.com/nlohmann/json) (v3.11.3)
@@ -30,7 +31,6 @@ The following libraries and dependencies are brought in as Git submodules to the
 * CMakeRC (https://github.com/vector-of-bool/cmrc)
 * Dear ImGui (https://github.com/ocornut/imgui)
 * ghc::filesystem (https://github.com/gulrak/filesystem)
-* GLM (https://github.com/g-truc/glm)
 * IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 * imgui-filebrowser (https://github.com/AirGuanZ/imgui-filebrowser)
 * imGuIZMO.quat (https://github.com/BrutPitt/imGuIZMO.quat)

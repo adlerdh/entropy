@@ -10,9 +10,6 @@
 [submodule "externals/filesystem"]
 	path = externals/filesystem
 	url = https://github.com/gulrak/filesystem
-[submodule "externals/glm"]
-	path = externals/glm
-	url = https://github.com/g-truc/glm
 [submodule "externals/imGuIZMO.quat"]
 	path = externals/imGuIZMO.quat
 	url = https://github.com/BrutPitt/imGuIZMO.quat

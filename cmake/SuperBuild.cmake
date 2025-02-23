@@ -140,7 +140,7 @@ ExternalProject_Add(spdlog
 )
 
 
-message(STATUS "Downloading and building glfw in ${glfw_PREFIX}")
+message(STATUS "Downloading and building GLFW in ${glfw_PREFIX}")
 
 ExternalProject_Add(glfw
   URL "https://github.com/glfw/glfw/releases/download/3.4/glfw-${glfw_VERSION}.zip"
@@ -179,7 +179,7 @@ ExternalProject_Add(glfw
 message(STATUS "Downloading and building nlohmann_json in ${nlohmann_json_PREFIX}")
 
 ExternalProject_Add(nlohmann_json
-  URL "https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz"
+  URL "https://github.com/nlohmann/json/releases/download/v${nlohmann_json_VERSION}/json.tar.xz"
   URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
   DOWNLOAD_NAME "nlohmann_json-v${nlohmann_json_VERSION}.tar.xz"
   DOWNLOAD_EXTRACT_TIMESTAMP false
@@ -220,9 +220,9 @@ ExternalProject_Add(nlohmann_json
 )
 
 
-message(STATUS "Downloading nanovg in ${nanovg_PREFIX}")
+message(STATUS "Downloading NanoVG in ${nanovg_PREFIX}")
 
-ExternalProject_Add(nanovg
+ExternalProject_Add(NanoVG
   GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/memononen/nanovg.git"
   GIT_TAG "f93799c078fa11ed61c078c65a53914c8782c00b" # branch: master
   GIT_PROGRESS true
@@ -236,7 +236,59 @@ ExternalProject_Add(nanovg
   CMAKE_ARGS ""
   UPDATE_COMMAND ""
   PATCH_COMMAND ""
-  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nanovg configure step"
-  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nanovg build step"
-  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nanovg install step"
+  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG configure step"
+  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG build step"
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG install step"
+)
+
+
+
+message(STATUS "Downloading and building GLM in ${glm_PREFIX}")
+
+ExternalProject_Add(glm
+  URL "https://github.com/g-truc/glm/archive/refs/tags/${glm_VERSION}.tar.gz"
+  URL_HASH SHA256=9f3174561fd26904b23f0db5e560971cbf9b3cbda0b280f04d5c379d03bf234c
+  DOWNLOAD_NAME "glm-${glm_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/g-truc/glm.git"
+  # GIT_TAG "0af55ccecd98d4e5a8d1fad7de25ba429d60e863" # tag: ${glm_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${glm_PREFIX}"
+  TMP_DIR "${glm_PREFIX}/tmp"
+  STAMP_DIR "${glm_PREFIX}/stamp"
+  DOWNLOAD_DIR "${glm_PREFIX}/download"
+  SOURCE_DIR "${glm_PREFIX}/src"
+  BINARY_DIR "${glm_PREFIX}/build"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DGLM_BUILD_INSTALL:BOOL=ON
+    -DGLM_BUILD_LIBRARY:BOOL=ON
+    -DGLM_BUILD_TESTS:BOOL=OFF
+    -DGLM_DISABLE_AUTO_DETECTION:BOOL=OFF
+    -DGLM_ENABLE_CXX_11:BOOL=OFF
+    -DGLM_ENABLE_CXX_14:BOOL=OFF
+    -DGLM_ENABLE_CXX_17:BOOL=OFF
+    -DGLM_ENABLE_CXX_20:BOOL=ON
+    -DGLM_ENABLE_CXX_98:BOOL=OFF
+    -DGLM_ENABLE_FAST_MATH:BOOL=ON
+    -DGLM_ENABLE_LANG_EXTENSIONS:BOOL=OFF
+    -DGLM_ENABLE_SIMD_AVX:BOOL=ON
+    -DGLM_ENABLE_SIMD_AVX2:BOOL=ON
+    -DGLM_ENABLE_SIMD_NEON:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSE2:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSE3:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSE4_1:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSE4_2:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSSE3:BOOL=ON
+    -DGLM_FORCE_PURE:BOOL=OFF
+
+  CMAKE_GENERATOR ${gen}
+  UPDATE_COMMAND ""
+  PATCH_COMMAND ""
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping GLM install step"
 )
