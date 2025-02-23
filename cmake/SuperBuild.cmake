@@ -9,7 +9,7 @@ endif()
 
 set(GIT_PROTOCOL "https")
 
-message(STATUS "Adding external ITK in ${itk_PREFIX}")
+message(STATUS "Adding external library ITK in ${itk_PREFIX}")
 
 ExternalProject_Add(ITK
   URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${itk_VERSION}/InsightToolkit-${itk_VERSION}.tar.gz"
@@ -40,7 +40,7 @@ ExternalProject_Add(ITK
 )
 
 
-message(STATUS "Adding external Boost in ${Boost_PREFIX}")
+message(STATUS "Adding external library Boost in ${Boost_PREFIX}")
 
 set(Boost_Bootstrap_CMD)
 set(Boost_b2_CMD)
@@ -77,7 +77,7 @@ ExternalProject_Add(Boost
 )
 
 
-message(STATUS "Adding external spdlog in ${spdlog_PREFIX}")
+message(STATUS "Adding external library spdlog in ${spdlog_PREFIX}")
 
 ExternalProject_Add(spdlog
   URL "https://github.com/gabime/spdlog/archive/refs/tags/v${spdlog_VERSION}.tar.gz"
@@ -135,7 +135,7 @@ ExternalProject_Add(spdlog
 )
 
 
-message(STATUS "Adding external GLFW in ${glfw_PREFIX}")
+message(STATUS "Adding external library GLFW in ${glfw_PREFIX}")
 
 ExternalProject_Add(glfw
   URL "https://github.com/glfw/glfw/releases/download/3.4/glfw-${glfw_VERSION}.zip"
@@ -168,7 +168,7 @@ ExternalProject_Add(glfw
 )
 
 
-message(STATUS "Adding external nlohmann_json in ${nlohmann_json_PREFIX}")
+message(STATUS "Adding external library nlohmann_json in ${nlohmann_json_PREFIX}")
 
 ExternalProject_Add(nlohmann_json
   URL "https://github.com/nlohmann/json/releases/download/v${nlohmann_json_VERSION}/json.tar.xz"
@@ -211,7 +211,7 @@ ExternalProject_Add(nlohmann_json
 )
 
 
-message(STATUS "Adding external NanoVG in ${nanovg_PREFIX}")
+message(STATUS "Adding external library NanoVG in ${nanovg_PREFIX}")
 
 ExternalProject_Add(NanoVG
   GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/memononen/nanovg.git"
@@ -231,7 +231,7 @@ ExternalProject_Add(NanoVG
 )
 
 
-message(STATUS "Adding external GLM in ${glm_PREFIX}")
+message(STATUS "Adding external library GLM in ${glm_PREFIX}")
 
 ExternalProject_Add(glm
   URL "https://github.com/g-truc/glm/archive/refs/tags/${glm_VERSION}.tar.gz"
@@ -281,7 +281,7 @@ ExternalProject_Add(glm
 )
 
 
-message(STATUS "Adding external argparse in ${argparse_PREFIX}")
+message(STATUS "Adding external library argparse in ${argparse_PREFIX}")
 
 ExternalProject_Add(argparse
   URL "https://github.com/p-ranav/argparse/archive/refs/tags/v${argparse_VERSION}.zip"
@@ -313,7 +313,7 @@ ExternalProject_Add(argparse
 )
 
 
-message(STATUS "Adding external TinyFSM in ${tinyfsm_PREFIX}")
+message(STATUS "Adding external library TinyFSM in ${tinyfsm_PREFIX}")
 
 ExternalProject_Add(tinyfsm
   GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/digint/tinyfsm.git"
@@ -329,4 +329,37 @@ ExternalProject_Add(tinyfsm
   CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM configure step"
   BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM build step"
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM install step"
+)
+
+
+message(STATUS "Adding external library ghc::filesystem in ${ghc_filesystem_PREFIX}")
+
+ExternalProject_Add(ghc_filesystem
+  URL "https://github.com/gulrak/filesystem/archive/refs/tags/v${ghc_filesystem_VERSION}.tar.gz"
+  URL_HASH SHA256=e783f672e49de7c5a237a0cea905ed51012da55c04fbacab397161976efc8472
+  DOWNLOAD_NAME "ghc_filesystem-v${ghc_filesystem_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/gulrak/filesystem.git"
+  # GIT_TAG "8a2edd6d92ed820521d42c94d179462bf06b5ed3" # tag: v${ghc_filesystem_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${ghc_filesystem_PREFIX}"
+  TMP_DIR "${ghc_filesystem_PREFIX}/tmp"
+  STAMP_DIR "${ghc_filesystem_PREFIX}/stamp"
+  DOWNLOAD_DIR "${ghc_filesystem_PREFIX}/download"
+  SOURCE_DIR "${ghc_filesystem_PREFIX}/src"
+  BINARY_DIR "${ghc_filesystem_PREFIX}/build"
+  INSTALL_DIR "${ghc_filesystem_PREFIX}/install"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DGHC_FILESYSTEM_BUILD_EXAMPLES:BOOL=OFF
+    -DGHC_FILESYSTEM_BUILD_STD_TESTING:BOOL=OFF
+    -DGHC_FILESYSTEM_BUILD_TESTING:BOOL=OFF
+    -DGHC_FILESYSTEM_WITH_INSTALL:BOOL=ON
+
+  CMAKE_GENERATOR ${gen}
 )

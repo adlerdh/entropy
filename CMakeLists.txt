@@ -75,6 +75,7 @@ set(EXTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
 # External library versions:
 set(argparse_VERSION "3.2")
 set(boost_VERSION "1.87.0")
+set(ghc_filesystem_VERSION "1.5.14")
 set(glfw_VERSION "3.4")
 set(glm_VERSION "1.0.1")
 set(itk_VERSION "5.4.2")
@@ -85,6 +86,7 @@ set(tinyfsm_VERSION "1.15.1")
 # External library directores:
 set(argparse_PREFIX "${EXTERNAL_DIR}/argparse-${argparse_VERSION}")
 set(Boost_PREFIX "${EXTERNAL_DIR}/boost-${boost_VERSION}")
+set(ghc_filesystem_PREFIX "${EXTERNAL_DIR}/ghc_filesystem-${ghc_filesystem_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
 set(itk_PREFIX "${EXTERNAL_DIR}/itk-${itk_VERSION}")
@@ -138,7 +140,8 @@ else()
 endif()
 
 # Niels Lohmann's JSON for Modern C++
-find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED HINTS "${nlohmann_json_PREFIX}/install")
+find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED
+    HINTS "${nlohmann_json_PREFIX}/install")
 
 if(nlohmann_json_FOUND)
   message(STATUS "Using nlohmann_json in ${nlohmann_json_DIR}")
@@ -148,7 +151,8 @@ endif()
 
 # OpenGL Mathematics (GLM): C++ mathematics library for graphics software based
 # on the OpenGL Shading Language (GLSL) specifications
-find_package(glm ${glm_VERSION} REQUIRED CONFIG REQUIRED HINTS "${glm_PREFIX}/install")
+find_package(glm ${glm_VERSION} REQUIRED CONFIG
+    HINTS "${glm_PREFIX}/install")
 
 if(glm_FOUND)
   message(STATUS "Using GLM in ${glm_DIR}")
@@ -157,7 +161,8 @@ else()
 endif()
 
 # argparse: Header-only library for argument parsing using modern C++
-find_package(argparse ${argparse_VERSION} REQUIRED HINTS "${argparse_PREFIX}/install")
+find_package(argparse ${argparse_VERSION} REQUIRED
+    HINTS "${argparse_PREFIX}/install")
 
 if(argparse_FOUND)
   message(STATUS "Using argparse in ${argparse_DIR}")
@@ -171,6 +176,23 @@ endif()
 set(tinyfsm_INCLUDE_DIR "${tinyfsm_PREFIX}/src/include"
     CACHE STRING "TinyFSM include directory" FORCE)
 
+# NanoVG: A small antialiased vector graphics rendering library for OpenGL
+set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
+add_library(nanovg "${nanovg_SRC_DIR}/nanovg.c")
+target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
+
+# ghc::filesystem: Header-only, single-file std::filesystem compatible helper library,
+# based on the C++17 and C++20 specs, but implemented for C++11, C++14, C++17 or C++20
+# and tightly following the C++17 standard with very few documented exceptions.
+# (Needed because std::filesystem is not fully implemented on macOS prior to 10.15)
+find_package(ghc_filesystem ${ghc_filesystem_VERSION} REQUIRED
+    HINTS "${ghc_filesystem_PREFIX}/install")
+
+if(ghc_filesystem_FOUND)
+  message(STATUS "Using ghc::filesystem in ${ghc_filesystem_DIR}")
+else()
+  message(FATAL_ERROR "ghc::filesystem not found")
+endif()
 
 
 #--------------------------------------------------------------------------------
@@ -301,16 +323,6 @@ set_target_properties(implot PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS ON)
 
-
-#--------------------------------------------------------------------------------
-# NanoVG: A small antialiased vector graphics rendering library for OpenGL.
-# It has lean API modeled after HTML5 canvas API. It is aimed to be a practical
-# and fun toolset for building scalable user interfaces and visualizations.
-#--------------------------------------------------------------------------------
-set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
-add_library(nanovg "${nanovg_SRC_DIR}/nanovg.c")
-target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
-
 #--------------------------------------------------------------------------------
 # GridCut (NOT included as Git submodule):
 # Header-only C++ library of fast max-flow/min-cut solvers optimized for grid graphs
@@ -332,22 +344,6 @@ set(GRIDCUT_INCLUDE_DIRS
 #--------------------------------------------------------------------------------
 set(UUID_DIR ${EXT_DIR}/stduuid)
 set(UUID_INCLUDE_DIR ${EXT_DIR}/stduuid/include)
-
-#--------------------------------------------------------------------------------
-# ghc::filesystem (included as Git submodule):
-# A header-only single-file std::filesystem compatible helper library, based on the
-# C++17 and C++20 specs, but implemented for C++11, C++14, C++17 or C++20 (tightly
-# following the C++17 standard with very few documented exceptions).
-#
-# This library is needed because std::filesystem is not fully implemented on macOS
-# prior to version 10.15.
-#--------------------------------------------------------------------------------
-set(GHC_FILESYSTEM_BUILD_TESTING OFF)
-set(GHC_FILESYSTEM_BUILD_EXAMPLES OFF)
-set(GHC_FILESYSTEM_WITH_INSTALL OFF)
-set(GHC_FILESYSTEM ${EXT_DIR}/filesystem/include)
-
-add_subdirectory(${EXT_DIR}/filesystem)
 
 #--------------------------------------------------------------------------------
 # CMakeRC (included as Git submodule):
@@ -577,7 +573,7 @@ target_sources(${EXEC_NAME} PRIVATE
 
 target_link_libraries(${EXEC_NAME} PRIVATE
   ${ITK_LIBRARIES}
-  ghc_filesystem
+  ghcFilesystem::ghc_filesystem
   glfw
   glad
   glm::glm
@@ -596,7 +592,6 @@ target_include_directories(${EXEC_NAME} PRIVATE
   ${SRC_DIR}
   ${EXT_DIR}
   ${RES_DIR}
-  ${GHC_FILESYSTEM}
   ${GLAD_INCLUDE_DIR}
   ${IMGUI_BINDINGS_DIR}
   ${IMGUI_INCLUDE_DIR}
