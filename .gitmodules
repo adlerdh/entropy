@@ -1,9 +1,6 @@
 [submodule "externals/IconFontCppHeaders"]
 	path = externals/IconFontCppHeaders
 	url = https://github.com/juliettef/IconFontCppHeaders
-[submodule "externals/cmrc"]
-	path = externals/cmrc
-	url = https://github.com/vector-of-bool/cmrc
 [submodule "externals/imGuIZMO.quat"]
 	path = externals/imGuIZMO.quat
 	url = https://github.com/BrutPitt/imGuIZMO.quat

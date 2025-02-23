@@ -397,3 +397,32 @@ ExternalProject_Add(stduuid
 
   CMAKE_GENERATOR ${gen}
 )
+
+
+message(STATUS "Adding external library CMakeRC in ${cmakerc_PREFIX}")
+
+ExternalProject_Add(cmakerc
+  URL "https://github.com/vector-of-bool/cmrc/archive/refs/tags/${cmakerc_VERSION}.tar.gz"
+  URL_HASH SHA256=edad5faaa0bea1df124b5e8cb00bf0adbd2faeccecd3b5c146796cbcb8b5b71b
+  DOWNLOAD_NAME "cmakerc-${cmakerc_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/vector-of-bool/cmrc.git"
+  # GIT_TAG "9a80e17c75fca503a55a38ea011dcfaf2a830cc9" # tag: ${cmakerc_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${cmakerc_PREFIX}"
+  TMP_DIR "${cmakerc_PREFIX}/tmp"
+  STAMP_DIR "${cmakerc_PREFIX}/stamp"
+  DOWNLOAD_DIR "${cmakerc_PREFIX}/download"
+  SOURCE_DIR "${cmakerc_PREFIX}/src"
+  BINARY_DIR "${cmakerc_PREFIX}/build"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DBUILD_TESTS:BOOL=OFF
+
+  CMAKE_GENERATOR ${gen}
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping CMakeRC install step"
+)
