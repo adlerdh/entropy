@@ -97,8 +97,9 @@ if(Entropy_SUPERBUILD)
 endif()
 
 # ITK: The Insight Toolkit
-set(ITK_DIR "${ITK_PREFIX}/build" CACHE STRING "ITK build directory" FORCE)
-find_package(ITK ${ITK_VERSION} REQUIRED HINTS ${ITK_DIR})
+# set(ITK_DIR "${ITK_PREFIX}/build" CACHE STRING "ITK build directory" FORCE)
+# find_package(ITK ${ITK_VERSION} REQUIRED HINTS ${ITK_DIR})
+find_package(ITK ${ITK_VERSION} REQUIRED HINTS "${ITK_PREFIX}/build")
 
 if(ITK_FOUND)
   message(STATUS "Found ITK in ${ITK_DIR}")
@@ -117,8 +118,7 @@ else()
 endif()
 
 # spdlog: Fast C++ logging library
-set(spdlog_DIR "${spdlog_PREFIX}/build" CACHE STRING "spdlog install directory" FORCE)
-find_package(spdlog ${spdlog_VERSION} REQUIRED HINTS ${spdlog_DIR})
+find_package(spdlog ${spdlog_VERSION} REQUIRED HINTS "${spdlog_PREFIX}/install")
 
 if(spdlog_FOUND)
   message(STATUS "Using spdlog in ${spdlog_DIR}")
@@ -126,8 +126,7 @@ else()
   message(FATAL_ERROR "spdlog not found: Please set spdlog_DIR")
 endif()
 
-# glfw: Open Source, multi-platform library for OpenGL, OpenGL ES and
-# Vulkan application development
+# glfw: Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development
 find_package(glfw3 ${glfw_VERSION} REQUIRED HINTS "${glfw_PREFIX}/install")
 
 if(glfw3_FOUND)
@@ -138,7 +137,7 @@ else()
 endif()
 
 # nlohmann_json: Niels Lohmann's JSON for Modern C++
-find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED HINTS "${nlohmann_json_PREFIX}/build")
+find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED HINTS "${nlohmann_json_PREFIX}/install")
 
 if(nlohmann_json_FOUND)
   message(STATUS "Using nlohmann_json in ${nlohmann_json_DIR}")
@@ -614,7 +613,6 @@ target_include_directories(${EXEC_NAME} PRIVATE
 target_include_directories(${EXEC_NAME} SYSTEM PRIVATE
   ${argparse_INCLUDE_DIR}
   ${Boost_INCLUDE_DIR}
-  # ${EARCUT_INCLUDE_DIR}
   ${GRIDCUT_INCLUDE_DIRS}
   ${nanovg_SRC_DIR}
 )

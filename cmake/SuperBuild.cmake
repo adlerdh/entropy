@@ -29,7 +29,7 @@ ExternalProject_Add(ITK
   BINARY_DIR "${ITK_PREFIX}/build"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
     -DBUILD_STATIC_LIBS:BOOL=${BUILD_STATIC_LIBS}
     -DBUILD_EXAMPLES:BOOL=OFF
@@ -96,9 +96,11 @@ ExternalProject_Add(spdlog
   DOWNLOAD_DIR "${spdlog_PREFIX}/download"
   SOURCE_DIR "${spdlog_PREFIX}/src"
   BINARY_DIR "${spdlog_PREFIX}/build"
+  INSTALL_DIR "${spdlog_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DSPDLOG_BUILD_ALL:BOOL=OFF
     -DSPDLOG_BUILD_BENCH:BOOL=OFF
     -DSPDLOG_BUILD_EXAMPLE:BOOL=OFF
@@ -130,7 +132,6 @@ ExternalProject_Add(spdlog
     -DSPDLOG_WCHAR_SUPPORT:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
-  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping spdlog install step"
 )
 
 
@@ -155,8 +156,8 @@ ExternalProject_Add(glfw
   INSTALL_DIR "${glfw_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
-    -DCMAKE_INSTALL_PREFIX="${glfw_PREFIX}/install"
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
     -DGLFW_BUILD_DOCS:BOOL=OFF
     -DGLFW_BUILD_EXAMPLES:BOOL=OFF
@@ -164,7 +165,6 @@ ExternalProject_Add(glfw
     -DGLFW_INSTALL:BOOL=ON
 
   CMAKE_GENERATOR ${gen}
-  INSTALL_COMMAND ${CMAKE_COMMAND} --install "${glfw_PREFIX}/build" --prefix "${glfw_PREFIX}/install"
 )
 
 
@@ -187,9 +187,11 @@ ExternalProject_Add(nlohmann_json
   DOWNLOAD_DIR "${nlohmann_json_PREFIX}/download"
   SOURCE_DIR "${nlohmann_json_PREFIX}/src"
   BINARY_DIR "${nlohmann_json_PREFIX}/build"
+  INSTALL_DIR "${nlohmann_json_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_TESTING:BOOL=OFF
     -DJSON_BuildTests:BOOL=OFF
     -DJSON_CI:BOOL=OFF
@@ -206,7 +208,6 @@ ExternalProject_Add(nlohmann_json
     -DJSON_Valgrind:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
-  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping nlohmann_json install step"
 )
 
 
