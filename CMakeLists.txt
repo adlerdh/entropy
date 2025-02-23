@@ -81,11 +81,12 @@ set(glm_VERSION "1.0.1")
 set(itk_VERSION "5.4.2")
 set(nlohmann_json_VERSION "3.11.3")
 set(spdlog_VERSION "1.15.1")
+set(stduuid_VERSION "1.2.3")
 set(tinyfsm_VERSION "1.15.1")
 
 # External library directores:
 set(argparse_PREFIX "${EXTERNAL_DIR}/argparse-${argparse_VERSION}")
-set(Boost_PREFIX "${EXTERNAL_DIR}/boost-${boost_VERSION}")
+set(boost_PREFIX "${EXTERNAL_DIR}/boost-${boost_VERSION}")
 set(ghc_filesystem_PREFIX "${EXTERNAL_DIR}/ghc_filesystem-${ghc_filesystem_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
@@ -93,6 +94,7 @@ set(itk_PREFIX "${EXTERNAL_DIR}/itk-${itk_VERSION}")
 set(nanovg_PREFIX "${EXTERNAL_DIR}/nanovg")
 set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
 set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
+set(stduuid_PREFIX "${EXTERNAL_DIR}/stduuid-${stduuid_VERSION}")
 set(tinyfsm_PREFIX "${EXTERNAL_DIR}/tinyfsm-${tinyfsm_VERSION}")
 
 if(Entropy_SUPERBUILD)
@@ -111,7 +113,7 @@ else()
 endif()
 
 # Boost C++ Libraries
-set(Boost_INCLUDE_DIR "${Boost_PREFIX}/src" CACHE STRING "Boost include directory" FORCE)
+set(Boost_INCLUDE_DIR "${boost_PREFIX}/src" CACHE STRING "Boost include directory" FORCE)
 
 if(IS_DIRECTORY "${Boost_INCLUDE_DIR}")
   message(STATUS "Using Boost headers in ${Boost_INCLUDE_DIR}")
@@ -192,6 +194,16 @@ if(ghc_filesystem_FOUND)
   message(STATUS "Using ghc::filesystem in ${ghc_filesystem_DIR}")
 else()
   message(FATAL_ERROR "ghc::filesystem not found")
+endif()
+
+# stduuid: A C++17 cross-platform single-header library implementation for universally
+# unique identifiers
+find_package(stduuid REQUIRED HINTS "${stduuid_PREFIX}/install")
+
+if(stduuid_FOUND)
+  message(STATUS "Using stduuid in ${stduuid_DIR}")
+else()
+  message(FATAL_ERROR "stduuid not found")
 endif()
 
 
@@ -336,14 +348,6 @@ set(GRIDCUT_INCLUDE_DIRS
 # C, C++ headers and C# classes for icon fonts Font Awesome, Fork Awesome,
 # Google Material Design icons, Kenney game icons and Fontaudio.
 #--------------------------------------------------------------------------------
-
-#--------------------------------------------------------------------------------
-# stduuid (included as Git submodule):
-# A C++17 cross-platform single-header library implementation for universally
-# unique identifiers
-#--------------------------------------------------------------------------------
-set(UUID_DIR ${EXT_DIR}/stduuid)
-set(UUID_INCLUDE_DIR ${EXT_DIR}/stduuid/include)
 
 #--------------------------------------------------------------------------------
 # CMakeRC (included as Git submodule):
@@ -582,6 +586,7 @@ target_link_libraries(${EXEC_NAME} PRIVATE
   nanovg
   nlohmann_json::nlohmann_json
   spdlog::spdlog
+  stduuid
   ${EXEC_NAME}::colormaps
   ${EXEC_NAME}::fonts
   ${EXEC_NAME}::shaders
@@ -599,8 +604,6 @@ target_include_directories(${EXEC_NAME} PRIVATE
   ${IMPLOT_INCLUDE_DIR}
   ${ITK_INCLUDE_DIRS}
   ${tinyfsm_INCLUDE_DIR}
-  ${UUID_DIR}
-  ${UUID_INCLUDE_DIR}
 )
 
 # These libraries are in 'system' includes in order to ignore their compiler warnings:

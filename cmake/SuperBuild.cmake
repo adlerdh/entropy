@@ -40,17 +40,17 @@ ExternalProject_Add(ITK
 )
 
 
-message(STATUS "Adding external library Boost in ${Boost_PREFIX}")
+message(STATUS "Adding external library Boost in ${boost_PREFIX}")
 
-set(Boost_Bootstrap_CMD)
-set(Boost_b2_CMD)
+set(boost_bootstrap_CMD)
+set(boost_b2_CMD)
 
 if(WIN32)
-  set(Boost_Bootstrap_CMD bootstrap.bat)
-  set(Boost_b2_CMD b2.exe)
+  set(boost_bootstrap_CMD bootstrap.bat)
+  set(boost_b2_CMD b2.exe)
 elseif(UNIX OR APPLE)
-  set(Boost_Bootstrap_CMD ./bootstrap.sh)
-  set(Boost_b2_CMD ./b2)
+  set(boost_bootstrap_CMD ./bootstrap.sh)
+  set(boost_b2_CMD ./b2)
 endif()
 
 ExternalProject_Add(Boost
@@ -64,15 +64,15 @@ ExternalProject_Add(Boost
   # GIT_SUBMODULES_RECURSE true
   # GIT_PROGRESS true
 
-  PREFIX "${Boost_PREFIX}"
-  TMP_DIR "${Boost_PREFIX}/tmp"
-  STAMP_DIR "${Boost_PREFIX}/stamp"
-  DOWNLOAD_DIR "${Boost_PREFIX}/download"
-  SOURCE_DIR "${Boost_PREFIX}/src"
+  PREFIX "${boost_PREFIX}"
+  TMP_DIR "${boost_PREFIX}/tmp"
+  STAMP_DIR "${boost_PREFIX}/stamp"
+  DOWNLOAD_DIR "${boost_PREFIX}/download"
+  SOURCE_DIR "${boost_PREFIX}/src"
 
-  CONFIGURE_COMMAND ${Boost_Bootstrap_CMD}
+  CONFIGURE_COMMAND ${boost_bootstrap_CMD}
   BUILD_IN_SOURCE true
-  BUILD_COMMAND ${Boost_b2_CMD} headers
+  BUILD_COMMAND ${boost_b2_CMD} headers
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping Boost install step"
 )
 
@@ -360,6 +360,40 @@ ExternalProject_Add(ghc_filesystem
     -DGHC_FILESYSTEM_BUILD_STD_TESTING:BOOL=OFF
     -DGHC_FILESYSTEM_BUILD_TESTING:BOOL=OFF
     -DGHC_FILESYSTEM_WITH_INSTALL:BOOL=ON
+
+  CMAKE_GENERATOR ${gen}
+)
+
+
+message(STATUS "Adding external library stduuid in ${stduuid_PREFIX}")
+
+ExternalProject_Add(stduuid
+  URL "https://github.com/mariusbancila/stduuid/archive/refs/tags/v${stduuid_VERSION}.tar.gz"
+  URL_HASH SHA256=b1176597e789531c38481acbbed2a6894ad419aab0979c10410d59eb0ebf40d3
+  DOWNLOAD_NAME "stduuid-v${stduuid_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/mariusbancila/stduuid.git"
+  # GIT_TAG "3afe7193facd5d674de709fccc44d5055e144d7a" # tag: v${stduuid_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${stduuid_PREFIX}"
+  TMP_DIR "${stduuid_PREFIX}/tmp"
+  STAMP_DIR "${stduuid_PREFIX}/stamp"
+  DOWNLOAD_DIR "${stduuid_PREFIX}/download"
+  SOURCE_DIR "${stduuid_PREFIX}/src"
+  BINARY_DIR "${stduuid_PREFIX}/build"
+  INSTALL_DIR "${stduuid_PREFIX}/install"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DUUID_BUILD_TESTS:BOOL=OFF
+    -DUUID_ENABLE_INSTALL:BOOL=ON
+    -DUUID_SYSTEM_GENERATOR:BOOL=OFF
+    -DUUID_TIME_GENERATOR:BOOL=OFF
+    -DUUID_USING_CXX20_SPAN:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
 )

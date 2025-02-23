@@ -16,9 +16,6 @@
 [submodule "externals/implot"]
 	path = externals/implot
 	url = https://github.com/epezent/implot
-[submodule "externals/stduuid"]
-	path = externals/stduuid
-	url = https://github.com/mariusbancila/stduuid
 [submodule "externals/imgui-knobs"]
 	path = externals/imgui-knobs
 	url = https://github.com/altschuler/imgui-knobs.git
