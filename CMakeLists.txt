@@ -17,7 +17,7 @@ project(Entropy VERSION ${VERSION_FULL} LANGUAGES C CXX)
 
 set(entropy_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(entropy_RES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
-set(EXT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/externals)
+set(entropy_EXT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external)
 
 # CMake will generate a file compile_commands.json under the build directory.
 # VSCode is able to parse the file and find the include path based on its content.
@@ -244,17 +244,17 @@ string(REPLACE "." ";" GL_VERSION_LIST ${GLAD_GL_VERSION})
 list(GET GL_VERSION_LIST 0 GLAD_GL_VERSION_MAJOR)
 list(GET GL_VERSION_LIST 1 GLAD_GL_VERSION_MINOR)
 
-set(GLAD_BASE glad_gl_${GLAD_GL_VERSION}_core)
+set(glad_BASE glad_gl_${GLAD_GL_VERSION}_core)
 
 if(GLAD_GL_DEBUG)
-  set(GLAD_BASE ${GLAD_BASE}_debug)
+  set(glad_BASE ${glad_BASE}_debug)
 endif()
 
-set(GLAD_DIR ${EXT_DIR}/glad/${GLAD_BASE})
-set(GLAD_INCLUDE_DIR ${GLAD_DIR}/include)
+set(glad_DIR ${entropy_EXT_DIR}/glad/${glad_BASE})
+set(glad_INCLUDE_DIR ${glad_DIR}/include)
 
-add_library(glad ${GLAD_DIR}/src/glad.c)
-target_include_directories(glad PRIVATE ${GLAD_INCLUDE_DIR})
+add_library(glad ${glad_DIR}/src/glad.c)
+target_include_directories(glad PRIVATE ${glad_INCLUDE_DIR})
 
 #--------------------------------------------------------------------------------
 # "Dear ImGui" library: Bloat-free graphical user interface library for C++.
@@ -262,8 +262,6 @@ target_include_directories(glad PRIVATE ${GLAD_INCLUDE_DIR})
 # Fast, portable, renderer agnostic and self-contained (no external dependencies).
 #--------------------------------------------------------------------------------
 set(imgui_SRC_DIR ${imgui_PREFIX}/src)
-
-add_compile_definitions(IMGUI_USER_CONFIG="ui/entropy_imgui_config.h")
 
 list(APPEND imgui_SOURCES
   ${imgui_SRC_DIR}/imgui/imgui.cpp
@@ -278,15 +276,16 @@ list(APPEND imgui_SOURCES
 
 add_library(imgui ${imgui_SOURCES})
 
+target_compile_definitions(imgui PRIVATE IMGUI_USER_CONFIG="ui/entropy_imgui_config.h")
+
 target_include_directories(imgui PRIVATE
   ${imgui_SRC_DIR}/imgui
   ${entropy_SRC_DIR} # needed for IMGUI_USER_CONFIG file
   ${glfw_INCLUDE_DIR}
 )
 
-target_link_libraries(imgui PRIVATE
-  spdlog::spdlog # used in IMGUI_USER_CONFIG
-)
+# used in IMGUI_USER_CONFIG
+target_link_libraries(imgui PRIVATE spdlog::spdlog)
 
 target_compile_options(imgui PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
@@ -326,9 +325,8 @@ target_include_directories(implot PRIVATE
   ${entropy_SRC_DIR} # needed for IMGUI_USER_CONFIG file
 )
 
-target_link_libraries(implot PRIVATE
-  spdlog::spdlog # used in IMGUI_USER_CONFIG
-)
+# used in IMGUI_USER_CONFIG
+target_link_libraries(implot PRIVATE spdlog::spdlog)
 
 target_compile_options(implot PRIVATE
    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
@@ -340,24 +338,25 @@ target_compile_options(implot PRIVATE
 set_target_properties(implot PROPERTIES
   CXX_STANDARD 20
   CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS OFF)
+  CXX_EXTENSIONS OFF
+)
 
 #--------------------------------------------------------------------------------
 # GridCut (NOT included as Git submodule):
 # Header-only C++ library of fast max-flow/min-cut solvers optimized for grid graphs
 #--------------------------------------------------------------------------------
-set(GRIDCUT_INCLUDE_DIRS
-  ${EXT_DIR}/gridcut/include
-  ${EXT_DIR}/gridcut/examples/include)
-
-#--------------------------------------------------------------------------------
-# Entropy's sources
-#--------------------------------------------------------------------------------
+set(gridcut_INCLUDE_DIRS
+  ${entropy_EXT_DIR}/gridcut/include
+  ${entropy_EXT_DIR}/gridcut/examples/include
+)
 
 # Generate build stamp header after GLAD_GL_VERSION_MAJOR and GLAD_GL_VERSION_MINOR are defined
 include(BuildStamp)
 BuildStamp()
 
+#--------------------------------------------------------------------------------
+# Define Entropy executable target
+#--------------------------------------------------------------------------------
 set(entropy_SOURCES
   ${entropy_SRC_DIR}/main.cpp
   ${entropy_SRC_DIR}/EntropyApp.cpp
@@ -463,7 +462,7 @@ set(entropy_SOURCES
   ${entropy_SRC_DIR}/windowing/WindowData.cpp
 )
 
-set(SHADERS
+set(entropy_SHADERS
   ${entropy_SRC_DIR}/rendering/shaders/Correlation.fs
   ${entropy_SRC_DIR}/rendering/shaders/Difference.fs
   ${entropy_SRC_DIR}/rendering/shaders/Edge.fs
@@ -479,7 +478,7 @@ set(SHADERS
   ${entropy_SRC_DIR}/rendering/shaders/Xray.fs
 )
 
-set(SHADERS_OLD
+set(entropy_SHADERS_OLD
   ${entropy_SRC_DIR}/rendering_old/shaders/BasicMesh.vert
   ${entropy_SRC_DIR}/rendering_old/shaders/BasicMesh.frag
   ${entropy_SRC_DIR}/rendering_old/shaders/BasicMeshPeel.frag
@@ -504,13 +503,13 @@ set(SHADERS_OLD
   ${entropy_SRC_DIR}/rendering_old/shaders/ddp/init.vert
 )
 
-file(GLOB COLORMAPS
+file(GLOB entropy_COLORMAPS
   ${entropy_RES_DIR}/colormaps/ncl/*.csv
   ${entropy_RES_DIR}/colormaps/matplotlib/*.csv
   ${entropy_RES_DIR}/colormaps/peter_kovesi/*.csv
 )
 
-set(FONTS
+set(entropy_FONTS
   ${entropy_RES_DIR}/fonts/Cousine/Cousine-Regular.ttf
   ${entropy_RES_DIR}/fonts/ForkAwesome/forkawesome-webfont.ttf
   ${entropy_RES_DIR}/fonts/HelveticaNeue/HelveticaNeue-Light.ttf
@@ -550,17 +549,12 @@ if(APPLE)
   # set(LIBS ${LIBS} ${APPLE_LIBS})
 endif()
 
-
-#--------------------------------------------------------------------------------
-# Define main executable target
-#--------------------------------------------------------------------------------
 set(entropy_EXE Entropy)
 
 # Embed the resources using CMakeRC
-cmrc_add_resource_library(${entropy_EXE}-colormaps ALIAS ${entropy_EXE}::colormaps ${COLORMAPS} NAMESPACE colormaps)
-cmrc_add_resource_library(${entropy_EXE}-fonts ALIAS ${entropy_EXE}::fonts ${FONTS} NAMESPACE fonts)
-#cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${SHADERS} ${SHADERS_OLD} NAMESPACE shaders)
-cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${SHADERS} NAMESPACE shaders)
+cmrc_add_resource_library(${entropy_EXE}-colormaps ALIAS ${entropy_EXE}::colormaps ${entropy_COLORMAPS} NAMESPACE colormaps)
+cmrc_add_resource_library(${entropy_EXE}-fonts ALIAS ${entropy_EXE}::fonts ${entropy_FONTS} NAMESPACE fonts)
+cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${entropy_SHADERS} NAMESPACE shaders)
 
 add_executable(${entropy_EXE})
 
@@ -587,16 +581,13 @@ target_link_libraries(${entropy_EXE} PRIVATE
 )
 
 target_include_directories(${entropy_EXE} PRIVATE
-  ${CMAKE_CURRENT_BINARY_DIR} # for defines.h
+  ${CMAKE_CURRENT_BINARY_DIR} # for BuildStamp.h
   ${entropy_SRC_DIR}
-  ${EXT_DIR} # remove
   ${entropy_RES_DIR}
-  ${GLAD_INCLUDE_DIR}
+  ${glad_INCLUDE_DIR}
   ${iconfont_INCLUDE_DIR}
-  ${entropy_SRC_DIR}/ui/imgui # ImGui bindings
   ${imgui_SRC_DIR}
   ${imgui_SRC_DIR}/imgui # due to ImPlot
-  ${IMGUI_KNOBS_DIR}
   ${implot_SRC_DIR}
   ${ITK_INCLUDE_DIRS}
   ${tinyfsm_INCLUDE_DIR}
@@ -606,7 +597,7 @@ target_include_directories(${entropy_EXE} PRIVATE
 target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   ${argparse_INCLUDE_DIR}
   ${Boost_INCLUDE_DIR}
-  ${GRIDCUT_INCLUDE_DIRS}
+  ${gridcut_INCLUDE_DIRS}
   ${nanovg_SRC_DIR}
 )
 

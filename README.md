@@ -12,8 +12,8 @@ Entropy builds on Linux, Windows, and macOS. It is currently tested on the follo
 
 * Ubuntu 22.04, 24.04 (with gcc 12.3.0, 14.2.0)
 * Windows 10, 11 (with MSVC++ 17.3.4)
-* macOS 10.14.6, Intel x86_64 architecture (with clang 11.0.0)
 * macOS 14.6.1, 15.3.1, Apple arm64 architecture (with clang 15.0.0, 16.0.0)
+* ~~macOS 10.14.6, Intel x86_64 architecture (with clang 11.0.0)~~
 
 ### External libraries
 The following libraries are added as external projects during CMake build generation:
@@ -34,13 +34,11 @@ The following libraries are added as external projects during CMake build genera
 * [TinyFSM](https://github.com/digint/tinyfsm/tree/v0.3.3) (v1.15.1)
 
 The following external sources and libraries have been committed directly to the Entropy repository:
-* GLAD OpenGL loaders (generated from https://github.com/Dav1dde/glad.git)
-* GridCut: fast max-flow/min-cut graph-cuts optimized for grid graphs (https://gridcut.com)
-* Local modifications to the ImGui bindings for GLFW and OpenGL 3 (see originals in externals/imgui/backends)
-* Local modifications to the ImGui file browser (https://github.com/AirGuanZ/imgui-filebrowser)
-* [imgui-filebrowser](https://github.com/AirGuanZ/imgui-filebrowser)
-* [imgui-knobs](https://github.com/AirGuanZ/imgui-filebrowser)
-* [imGuIZMO.quat](https://github.com/BrutPitt/imGuIZMO.quat)
+* [GLAD OpenGL loaders](https://github.com/Dav1dde/glad.git) (generated from webservice)
+* [GridCut]((https://gridcut.com)): fast max-flow/min-cut graph-cuts optimized for grid graphs 
+* Local modifications to ImGui bindings for GLFW and OpenGL 3
+* Local modifications to [ImGui file browser](https://github.com/AirGuanZ/imgui-filebrowser)
+* Local modifications to [imGuIZMO.quat](https://github.com/AirGuanZ/imgui-filebrowser)
 
 ### Development libraries for Debian Linux
 You may need to install additional development libraries for Mesa 3D Graphics, Wayland, Xorg, Xrandr, Xinerama, Xcursor, xkbcommon, and xi on Linux. On Debian, this can be done using
