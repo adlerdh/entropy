@@ -237,6 +237,7 @@ ExternalProject_Add(iconfont
   TMP_DIR "${iconfont_PREFIX}/tmp"
   STAMP_DIR "${iconfont_PREFIX}/stamp"
   SOURCE_DIR "${iconfont_PREFIX}/src"
+  BINARY_DIR "${iconfont_PREFIX}/build"
 
   CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping IconFontCppHeaders configure step"
   BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping IconFontCppHeaders build step"

@@ -25,14 +25,6 @@ add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-
-if(UNIX)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-else()
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-endif()
-
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo")
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fstack-protector-all -g")
@@ -67,8 +59,16 @@ endif()
 message(STATUS "BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}")
 message(STATUS "BUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}")
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-set(EXTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
+if(UNIX)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+else()
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+endif()
+
 
 # External library versions:
 set(argparse_VERSION "3.2")
@@ -88,6 +88,7 @@ set(stduuid_VERSION "1.2.3")
 set(tinyfsm_VERSION "1.15.1")
 
 # External library directores:
+set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
 set(argparse_PREFIX "${EXTERNAL_DIR}/argparse-${argparse_VERSION}")
 set(boost_PREFIX "${EXTERNAL_DIR}/boost-${boost_VERSION}")
 set(cmakerc_PREFIX "${EXTERNAL_DIR}/cmakerc-${cmakerc_VERSION}")
@@ -221,6 +222,7 @@ endif()
 # TinyFSM: A simple, header-only C++ finite state machine library
 set(tinyfsm_INCLUDE_DIR "${tinyfsm_PREFIX}/src/include"
     CACHE STRING "TinyFSM include directory" FORCE)
+
 
 #--------------------------------------------------------------------------------
 # GLAD library: Multi-Language GL/GLES/EGL/GLX/WGL Loader-Generator based on the official specs
