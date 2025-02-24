@@ -1,6 +1,6 @@
 #include "common/Types.h"
 
-#include <IconFontCppHeaders/IconsForkAwesome.h>
+#include <IconsForkAwesome.h>
 
 #include <unordered_map>
 

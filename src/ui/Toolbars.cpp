@@ -8,7 +8,7 @@
 #include "logic/states/AnnotationStateHelpers.h"
 #include "logic/states/FsmList.hpp"
 
-#include <IconFontCppHeaders/IconsForkAwesome.h>
+#include <IconsForkAwesome.h>
 
 #include <imgui/imgui.h>
 

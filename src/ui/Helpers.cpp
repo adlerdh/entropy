@@ -1,6 +1,6 @@
 #include "ui/Helpers.h"
 
-#include <IconFontCppHeaders/IconsForkAwesome.h>
+#include <IconsForkAwesome.h>
 
 #include <imgui/imgui.h>
 

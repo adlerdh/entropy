@@ -4,7 +4,7 @@
 #include "image/SurfaceUtility.h"
 #include "logic/app/Data.h"
 
-#include <IconFontCppHeaders/IconsForkAwesome.h>
+#include <IconsForkAwesome.h>
 
 #include <imgui/imgui.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>

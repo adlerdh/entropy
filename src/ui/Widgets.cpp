@@ -13,7 +13,7 @@
 #include <imgui/imgui_internal.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
-#include <IconFontCppHeaders/IconsForkAwesome.h>
+#include <IconsForkAwesome.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_precision.hpp>

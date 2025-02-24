@@ -9,34 +9,37 @@ endif()
 
 set(GIT_PROTOCOL "https")
 
-message(STATUS "Adding external library ITK in ${itk_PREFIX}")
 
-ExternalProject_Add(ITK
-  URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${itk_VERSION}/InsightToolkit-${itk_VERSION}.tar.gz"
-  URL_HASH SHA512=440d5962336ae7ba68e1efcabd78db8f10437db27da077a65731024d2fd94c588468678d0af8d8be1bfdb45dc90a88ace85ae9e1fabf77fb4172f3cb7cc27a3c
+
+message(STATUS "Adding external library argparse in ${argparse_PREFIX}")
+
+ExternalProject_Add(argparse
+  URL "https://github.com/p-ranav/argparse/archive/refs/tags/v${argparse_VERSION}.zip"
+  URL_HASH SHA256=14c1a0e975d6877dfeaf52a1e79e54f70169a847e29c7e13aa7fe68a3d0ecbf1
+  DOWNLOAD_NAME "argparse-v${argparse_VERSION}.zip"
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repository:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/InsightSoftwareConsortium/ITK.git"
-  # GIT_TAG "898def645183e6a2d3293058ade451ec416c4514" # tag: v${itk_VERSION}
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/p-ranav/argparse.git"
+  # GIT_TAG "3eda91b2e1ce7d569f84ba295507c4cd8fd96910" # tag: v${argparse_VERSION}
   # GIT_PROGRESS true
 
-  PREFIX "${itk_PREFIX}"
-  TMP_DIR "${itk_PREFIX}/tmp"
-  STAMP_DIR "${itk_PREFIX}/stamp"
-  DOWNLOAD_DIR "${itk_PREFIX}/download"
-  SOURCE_DIR "${itk_PREFIX}/src"
-  BINARY_DIR "${itk_PREFIX}/build"
+  PREFIX "${argparse_PREFIX}"
+  TMP_DIR "${argparse_PREFIX}/tmp"
+  STAMP_DIR "${argparse_PREFIX}/stamp"
+  DOWNLOAD_DIR "${argparse_PREFIX}/download"
+  SOURCE_DIR "${argparse_PREFIX}/src"
+  BINARY_DIR "${argparse_PREFIX}/build"
+  INSTALL_DIR "${argparse_PREFIX}/install"
 
   CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
-    -DBUILD_STATIC_LIBS:BOOL=${BUILD_STATIC_LIBS}
-    -DBUILD_EXAMPLES:BOOL=OFF
-    -DBUILD_TESTING:BOOL=OFF
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DARGPARSE_BUILD_SAMPLES:BOOL=OFF
+    -DARGPARSE_BUILD_TESTS:BOOL=OFF
+    -DARGPARSE_INSTALL:BOOL=ON
 
   CMAKE_GENERATOR ${gen}
-  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ITK install step"
 )
 
 
@@ -75,6 +78,265 @@ ExternalProject_Add(Boost
   BUILD_COMMAND ${boost_b2_CMD} headers
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping Boost install step"
 )
+
+
+message(STATUS "Adding external library CMakeRC in ${cmakerc_PREFIX}")
+
+ExternalProject_Add(cmakerc
+  URL "https://github.com/vector-of-bool/cmrc/archive/refs/tags/${cmakerc_VERSION}.tar.gz"
+  URL_HASH SHA256=edad5faaa0bea1df124b5e8cb00bf0adbd2faeccecd3b5c146796cbcb8b5b71b
+  DOWNLOAD_NAME "cmakerc-${cmakerc_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/vector-of-bool/cmrc.git"
+  # GIT_TAG "9a80e17c75fca503a55a38ea011dcfaf2a830cc9" # tag: ${cmakerc_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${cmakerc_PREFIX}"
+  TMP_DIR "${cmakerc_PREFIX}/tmp"
+  STAMP_DIR "${cmakerc_PREFIX}/stamp"
+  DOWNLOAD_DIR "${cmakerc_PREFIX}/download"
+  SOURCE_DIR "${cmakerc_PREFIX}/src"
+  BINARY_DIR "${cmakerc_PREFIX}/build"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DBUILD_TESTS:BOOL=OFF
+
+  CMAKE_GENERATOR ${gen}
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping CMakeRC install step"
+)
+
+
+
+message(STATUS "Adding external library ghc::filesystem in ${ghc_filesystem_PREFIX}")
+
+ExternalProject_Add(ghc_filesystem
+  URL "https://github.com/gulrak/filesystem/archive/refs/tags/v${ghc_filesystem_VERSION}.tar.gz"
+  URL_HASH SHA256=e783f672e49de7c5a237a0cea905ed51012da55c04fbacab397161976efc8472
+  DOWNLOAD_NAME "ghc_filesystem-v${ghc_filesystem_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/gulrak/filesystem.git"
+  # GIT_TAG "8a2edd6d92ed820521d42c94d179462bf06b5ed3" # tag: v${ghc_filesystem_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${ghc_filesystem_PREFIX}"
+  TMP_DIR "${ghc_filesystem_PREFIX}/tmp"
+  STAMP_DIR "${ghc_filesystem_PREFIX}/stamp"
+  DOWNLOAD_DIR "${ghc_filesystem_PREFIX}/download"
+  SOURCE_DIR "${ghc_filesystem_PREFIX}/src"
+  BINARY_DIR "${ghc_filesystem_PREFIX}/build"
+  INSTALL_DIR "${ghc_filesystem_PREFIX}/install"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DGHC_FILESYSTEM_BUILD_EXAMPLES:BOOL=OFF
+    -DGHC_FILESYSTEM_BUILD_STD_TESTING:BOOL=OFF
+    -DGHC_FILESYSTEM_BUILD_TESTING:BOOL=OFF
+    -DGHC_FILESYSTEM_WITH_INSTALL:BOOL=ON
+
+  CMAKE_GENERATOR ${gen}
+)
+
+
+message(STATUS "Adding external library GLFW in ${glfw_PREFIX}")
+
+ExternalProject_Add(glfw
+  URL "https://github.com/glfw/glfw/releases/download/3.4/glfw-${glfw_VERSION}.zip"
+  URL_HASH SHA512=03de56a0599275ff57759ca19e8f69176058252b5e9976193cc3d9bb7b7b78b6a8dac6ed91de483d03c1b4807d21e1302e5e47c2f0c21e63becb4aba9d5affdc
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/glfw/glfw.git"
+  # GIT_TAG "7b6aead9fb88b3623e3b3725ebb42670cbe4c579" # tag: ${glfw_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${glfw_PREFIX}"
+  TMP_DIR "${glfw_PREFIX}/tmp"
+  STAMP_DIR "${glfw_PREFIX}/stamp"
+  DOWNLOAD_DIR "${glfw_PREFIX}/download"
+  SOURCE_DIR "${glfw_PREFIX}/src"
+  BINARY_DIR "${glfw_PREFIX}/build"
+  INSTALL_DIR "${glfw_PREFIX}/install"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DGLFW_BUILD_DOCS:BOOL=OFF
+    -DGLFW_BUILD_EXAMPLES:BOOL=OFF
+    -DGLFW_BUILD_TESTS:BOOL=OFF
+    -DGLFW_INSTALL:BOOL=ON
+
+  CMAKE_GENERATOR ${gen}
+)
+
+
+message(STATUS "Adding external library GLM in ${glm_PREFIX}")
+
+ExternalProject_Add(glm
+  URL "https://github.com/g-truc/glm/archive/refs/tags/${glm_VERSION}.tar.gz"
+  URL_HASH SHA256=9f3174561fd26904b23f0db5e560971cbf9b3cbda0b280f04d5c379d03bf234c
+  DOWNLOAD_NAME "glm-${glm_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/g-truc/glm.git"
+  # GIT_TAG "0af55ccecd98d4e5a8d1fad7de25ba429d60e863" # tag: ${glm_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${glm_PREFIX}"
+  TMP_DIR "${glm_PREFIX}/tmp"
+  STAMP_DIR "${glm_PREFIX}/stamp"
+  DOWNLOAD_DIR "${glm_PREFIX}/download"
+  SOURCE_DIR "${glm_PREFIX}/src"
+  BINARY_DIR "${glm_PREFIX}/build"
+  INSTALL_DIR "${glm_PREFIX}/install"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DGLM_BUILD_INSTALL:BOOL=ON
+    -DGLM_BUILD_LIBRARY:BOOL=ON
+    -DGLM_BUILD_TESTS:BOOL=OFF
+    -DGLM_DISABLE_AUTO_DETECTION:BOOL=OFF
+    -DGLM_ENABLE_CXX_11:BOOL=OFF
+    -DGLM_ENABLE_CXX_14:BOOL=OFF
+    -DGLM_ENABLE_CXX_17:BOOL=OFF
+    -DGLM_ENABLE_CXX_20:BOOL=ON
+    -DGLM_ENABLE_CXX_98:BOOL=OFF
+    -DGLM_ENABLE_FAST_MATH:BOOL=ON
+    -DGLM_ENABLE_LANG_EXTENSIONS:BOOL=OFF
+    -DGLM_ENABLE_SIMD_AVX:BOOL=ON
+    -DGLM_ENABLE_SIMD_AVX2:BOOL=ON
+    -DGLM_ENABLE_SIMD_NEON:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSE2:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSE3:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSE4_1:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSE4_2:BOOL=ON
+    -DGLM_ENABLE_SIMD_SSSE3:BOOL=ON
+    -DGLM_FORCE_PURE:BOOL=OFF
+
+  CMAKE_GENERATOR ${gen}
+)
+
+
+message(STATUS "Adding external library IconFontCppHeaders in ${iconfont_PREFIX}")
+
+ExternalProject_Add(iconfont
+  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/juliettef/IconFontCppHeaders.git"
+  GIT_TAG "ef464d2fe5a568d30d7c88138e78d7fac7cfebc5" # branch: master
+  GIT_PROGRESS true
+
+  PREFIX "${iconfont_PREFIX}"
+  TMP_DIR "${iconfont_PREFIX}/tmp"
+  STAMP_DIR "${iconfont_PREFIX}/stamp"
+  SOURCE_DIR "${iconfont_PREFIX}/src"
+
+  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping IconFontCppHeaders configure step"
+  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping IconFontCppHeaders build step"
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping IconFontCppHeaders install step"
+)
+
+
+message(STATUS "Adding external library ITK in ${itk_PREFIX}")
+
+ExternalProject_Add(ITK
+  URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${itk_VERSION}/InsightToolkit-${itk_VERSION}.tar.gz"
+  URL_HASH SHA512=440d5962336ae7ba68e1efcabd78db8f10437db27da077a65731024d2fd94c588468678d0af8d8be1bfdb45dc90a88ace85ae9e1fabf77fb4172f3cb7cc27a3c
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/InsightSoftwareConsortium/ITK.git"
+  # GIT_TAG "898def645183e6a2d3293058ade451ec416c4514" # tag: v${itk_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${itk_PREFIX}"
+  TMP_DIR "${itk_PREFIX}/tmp"
+  STAMP_DIR "${itk_PREFIX}/stamp"
+  DOWNLOAD_DIR "${itk_PREFIX}/download"
+  SOURCE_DIR "${itk_PREFIX}/src"
+  BINARY_DIR "${itk_PREFIX}/build"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DBUILD_STATIC_LIBS:BOOL=${BUILD_STATIC_LIBS}
+    -DBUILD_EXAMPLES:BOOL=OFF
+    -DBUILD_TESTING:BOOL=OFF
+
+  CMAKE_GENERATOR ${gen}
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ITK install step"
+)
+
+
+message(STATUS "Adding external library NanoVG in ${nanovg_PREFIX}")
+
+ExternalProject_Add(NanoVG
+  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/memononen/nanovg.git"
+  GIT_TAG "f93799c078fa11ed61c078c65a53914c8782c00b" # branch: master
+  GIT_PROGRESS true
+
+  PREFIX "${nanovg_PREFIX}"
+  TMP_DIR "${nanovg_PREFIX}/tmp"
+  STAMP_DIR "${nanovg_PREFIX}/stamp"
+  SOURCE_DIR "${nanovg_PREFIX}/src"
+  BINARY_DIR "${nanovg_PREFIX}/build"
+
+  CMAKE_ARGS ""
+  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG configure step"
+  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG build step"
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG install step"
+)
+
+
+message(STATUS "Adding external library nlohmann_json in ${nlohmann_json_PREFIX}")
+
+ExternalProject_Add(nlohmann_json
+  URL "https://github.com/nlohmann/json/releases/download/v${nlohmann_json_VERSION}/json.tar.xz"
+  URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
+  DOWNLOAD_NAME "nlohmann_json-v${nlohmann_json_VERSION}.tar.xz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # Uncomment to instead clone Git repository:
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/nlohmann/json.git"
+  # GIT_TAG "9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03" # tag: v${nlohmann_json_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${nlohmann_json_PREFIX}"
+  TMP_DIR "${nlohmann_json_PREFIX}/tmp"
+  STAMP_DIR "${nlohmann_json_PREFIX}/stamp"
+  DOWNLOAD_DIR "${nlohmann_json_PREFIX}/download"
+  SOURCE_DIR "${nlohmann_json_PREFIX}/src"
+  BINARY_DIR "${nlohmann_json_PREFIX}/build"
+  INSTALL_DIR "${nlohmann_json_PREFIX}/install"
+
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DBUILD_TESTING:BOOL=OFF
+    -DJSON_BuildTests:BOOL=OFF
+    -DJSON_CI:BOOL=OFF
+    -DJSON_Diagnostic_Positions:BOOL=OFF
+    -DJSON_Diagnostics:BOOL=OFF
+    -DJSON_DisableEnumSerialization:BOOL=OFF
+    -DJSON_FastTests:BOOL=OFF
+    -DJSON_GlobalUDLs:BOOL=ON
+    -DJSON_ImplicitConversions:BOOL=ON
+    -DJSON_Install:BOOL=ON
+    -DJSON_LegacyDiscardedValueComparison:BOOL=OFF
+    -DJSON_MultipleHeaders:BOOL=ON
+    -DJSON_SystemInclude:BOOL=OFF
+    -DJSON_Valgrind:BOOL=OFF
+
+  CMAKE_GENERATOR ${gen}
+)
+
 
 
 message(STATUS "Adding external library spdlog in ${spdlog_PREFIX}")
@@ -135,236 +397,6 @@ ExternalProject_Add(spdlog
 )
 
 
-message(STATUS "Adding external library GLFW in ${glfw_PREFIX}")
-
-ExternalProject_Add(glfw
-  URL "https://github.com/glfw/glfw/releases/download/3.4/glfw-${glfw_VERSION}.zip"
-  URL_HASH SHA512=03de56a0599275ff57759ca19e8f69176058252b5e9976193cc3d9bb7b7b78b6a8dac6ed91de483d03c1b4807d21e1302e5e47c2f0c21e63becb4aba9d5affdc
-  DOWNLOAD_EXTRACT_TIMESTAMP false
-
-  # Uncomment to instead clone Git repository:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/glfw/glfw.git"
-  # GIT_TAG "7b6aead9fb88b3623e3b3725ebb42670cbe4c579" # tag: ${glfw_VERSION}
-  # GIT_PROGRESS true
-
-  PREFIX "${glfw_PREFIX}"
-  TMP_DIR "${glfw_PREFIX}/tmp"
-  STAMP_DIR "${glfw_PREFIX}/stamp"
-  DOWNLOAD_DIR "${glfw_PREFIX}/download"
-  SOURCE_DIR "${glfw_PREFIX}/src"
-  BINARY_DIR "${glfw_PREFIX}/build"
-  INSTALL_DIR "${glfw_PREFIX}/install"
-
-  CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
-    -DGLFW_BUILD_DOCS:BOOL=OFF
-    -DGLFW_BUILD_EXAMPLES:BOOL=OFF
-    -DGLFW_BUILD_TESTS:BOOL=OFF
-    -DGLFW_INSTALL:BOOL=ON
-
-  CMAKE_GENERATOR ${gen}
-)
-
-
-message(STATUS "Adding external library nlohmann_json in ${nlohmann_json_PREFIX}")
-
-ExternalProject_Add(nlohmann_json
-  URL "https://github.com/nlohmann/json/releases/download/v${nlohmann_json_VERSION}/json.tar.xz"
-  URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
-  DOWNLOAD_NAME "nlohmann_json-v${nlohmann_json_VERSION}.tar.xz"
-  DOWNLOAD_EXTRACT_TIMESTAMP false
-
-  # Uncomment to instead clone Git repository:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/nlohmann/json.git"
-  # GIT_TAG "9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03" # tag: v${nlohmann_json_VERSION}
-  # GIT_PROGRESS true
-
-  PREFIX "${nlohmann_json_PREFIX}"
-  TMP_DIR "${nlohmann_json_PREFIX}/tmp"
-  STAMP_DIR "${nlohmann_json_PREFIX}/stamp"
-  DOWNLOAD_DIR "${nlohmann_json_PREFIX}/download"
-  SOURCE_DIR "${nlohmann_json_PREFIX}/src"
-  BINARY_DIR "${nlohmann_json_PREFIX}/build"
-  INSTALL_DIR "${nlohmann_json_PREFIX}/install"
-
-  CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBUILD_TESTING:BOOL=OFF
-    -DJSON_BuildTests:BOOL=OFF
-    -DJSON_CI:BOOL=OFF
-    -DJSON_Diagnostic_Positions:BOOL=OFF
-    -DJSON_Diagnostics:BOOL=OFF
-    -DJSON_DisableEnumSerialization:BOOL=OFF
-    -DJSON_FastTests:BOOL=OFF
-    -DJSON_GlobalUDLs:BOOL=ON
-    -DJSON_ImplicitConversions:BOOL=ON
-    -DJSON_Install:BOOL=ON
-    -DJSON_LegacyDiscardedValueComparison:BOOL=OFF
-    -DJSON_MultipleHeaders:BOOL=ON
-    -DJSON_SystemInclude:BOOL=OFF
-    -DJSON_Valgrind:BOOL=OFF
-
-  CMAKE_GENERATOR ${gen}
-)
-
-
-message(STATUS "Adding external library NanoVG in ${nanovg_PREFIX}")
-
-ExternalProject_Add(NanoVG
-  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/memononen/nanovg.git"
-  GIT_TAG "f93799c078fa11ed61c078c65a53914c8782c00b" # branch: master
-  GIT_PROGRESS true
-
-  PREFIX "${nanovg_PREFIX}"
-  TMP_DIR "${nanovg_PREFIX}/tmp"
-  STAMP_DIR "${nanovg_PREFIX}/stamp"
-  SOURCE_DIR "${nanovg_PREFIX}/src"
-  BINARY_DIR "${nanovg_PREFIX}/build"
-
-  CMAKE_ARGS ""
-  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG configure step"
-  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG build step"
-  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping NanoVG install step"
-)
-
-
-message(STATUS "Adding external library GLM in ${glm_PREFIX}")
-
-ExternalProject_Add(glm
-  URL "https://github.com/g-truc/glm/archive/refs/tags/${glm_VERSION}.tar.gz"
-  URL_HASH SHA256=9f3174561fd26904b23f0db5e560971cbf9b3cbda0b280f04d5c379d03bf234c
-  DOWNLOAD_NAME "glm-${glm_VERSION}.tar.gz"
-  DOWNLOAD_EXTRACT_TIMESTAMP false
-
-  # Uncomment to instead clone Git repository:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/g-truc/glm.git"
-  # GIT_TAG "0af55ccecd98d4e5a8d1fad7de25ba429d60e863" # tag: ${glm_VERSION}
-  # GIT_PROGRESS true
-
-  PREFIX "${glm_PREFIX}"
-  TMP_DIR "${glm_PREFIX}/tmp"
-  STAMP_DIR "${glm_PREFIX}/stamp"
-  DOWNLOAD_DIR "${glm_PREFIX}/download"
-  SOURCE_DIR "${glm_PREFIX}/src"
-  BINARY_DIR "${glm_PREFIX}/build"
-  INSTALL_DIR "${glm_PREFIX}/install"
-
-  CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
-    -DGLM_BUILD_INSTALL:BOOL=ON
-    -DGLM_BUILD_LIBRARY:BOOL=ON
-    -DGLM_BUILD_TESTS:BOOL=OFF
-    -DGLM_DISABLE_AUTO_DETECTION:BOOL=OFF
-    -DGLM_ENABLE_CXX_11:BOOL=OFF
-    -DGLM_ENABLE_CXX_14:BOOL=OFF
-    -DGLM_ENABLE_CXX_17:BOOL=OFF
-    -DGLM_ENABLE_CXX_20:BOOL=ON
-    -DGLM_ENABLE_CXX_98:BOOL=OFF
-    -DGLM_ENABLE_FAST_MATH:BOOL=ON
-    -DGLM_ENABLE_LANG_EXTENSIONS:BOOL=OFF
-    -DGLM_ENABLE_SIMD_AVX:BOOL=ON
-    -DGLM_ENABLE_SIMD_AVX2:BOOL=ON
-    -DGLM_ENABLE_SIMD_NEON:BOOL=ON
-    -DGLM_ENABLE_SIMD_SSE2:BOOL=ON
-    -DGLM_ENABLE_SIMD_SSE3:BOOL=ON
-    -DGLM_ENABLE_SIMD_SSE4_1:BOOL=ON
-    -DGLM_ENABLE_SIMD_SSE4_2:BOOL=ON
-    -DGLM_ENABLE_SIMD_SSSE3:BOOL=ON
-    -DGLM_FORCE_PURE:BOOL=OFF
-
-  CMAKE_GENERATOR ${gen}
-)
-
-
-message(STATUS "Adding external library argparse in ${argparse_PREFIX}")
-
-ExternalProject_Add(argparse
-  URL "https://github.com/p-ranav/argparse/archive/refs/tags/v${argparse_VERSION}.zip"
-  URL_HASH SHA256=14c1a0e975d6877dfeaf52a1e79e54f70169a847e29c7e13aa7fe68a3d0ecbf1
-  DOWNLOAD_NAME "argparse-v${argparse_VERSION}.zip"
-  DOWNLOAD_EXTRACT_TIMESTAMP false
-
-  # Uncomment to instead clone Git repository:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/p-ranav/argparse.git"
-  # GIT_TAG "3eda91b2e1ce7d569f84ba295507c4cd8fd96910" # tag: v${argparse_VERSION}
-  # GIT_PROGRESS true
-
-  PREFIX "${argparse_PREFIX}"
-  TMP_DIR "${argparse_PREFIX}/tmp"
-  STAMP_DIR "${argparse_PREFIX}/stamp"
-  DOWNLOAD_DIR "${argparse_PREFIX}/download"
-  SOURCE_DIR "${argparse_PREFIX}/src"
-  BINARY_DIR "${argparse_PREFIX}/build"
-  INSTALL_DIR "${argparse_PREFIX}/install"
-
-  CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DARGPARSE_BUILD_SAMPLES:BOOL=OFF
-    -DARGPARSE_BUILD_TESTS:BOOL=OFF
-    -DARGPARSE_INSTALL:BOOL=ON
-
-  CMAKE_GENERATOR ${gen}
-)
-
-
-message(STATUS "Adding external library TinyFSM in ${tinyfsm_PREFIX}")
-
-ExternalProject_Add(tinyfsm
-  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/digint/tinyfsm.git"
-  GIT_TAG "01908cab0397fcdadb0a14e9a3187c308e2708ca" # tag: v${tinyfsm_PREFIX}
-  GIT_PROGRESS true
-
-  PREFIX "${tinyfsm_PREFIX}"
-  TMP_DIR "${tinyfsm_PREFIX}/tmp"
-  STAMP_DIR "${tinyfsm_PREFIX}/stamp"
-  SOURCE_DIR "${tinyfsm_PREFIX}/src"
-  BINARY_DIR "${tinyfsm_PREFIX}/build"
-
-  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM configure step"
-  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM build step"
-  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM install step"
-)
-
-
-message(STATUS "Adding external library ghc::filesystem in ${ghc_filesystem_PREFIX}")
-
-ExternalProject_Add(ghc_filesystem
-  URL "https://github.com/gulrak/filesystem/archive/refs/tags/v${ghc_filesystem_VERSION}.tar.gz"
-  URL_HASH SHA256=e783f672e49de7c5a237a0cea905ed51012da55c04fbacab397161976efc8472
-  DOWNLOAD_NAME "ghc_filesystem-v${ghc_filesystem_VERSION}.tar.gz"
-  DOWNLOAD_EXTRACT_TIMESTAMP false
-
-  # Uncomment to instead clone Git repository:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/gulrak/filesystem.git"
-  # GIT_TAG "8a2edd6d92ed820521d42c94d179462bf06b5ed3" # tag: v${ghc_filesystem_VERSION}
-  # GIT_PROGRESS true
-
-  PREFIX "${ghc_filesystem_PREFIX}"
-  TMP_DIR "${ghc_filesystem_PREFIX}/tmp"
-  STAMP_DIR "${ghc_filesystem_PREFIX}/stamp"
-  DOWNLOAD_DIR "${ghc_filesystem_PREFIX}/download"
-  SOURCE_DIR "${ghc_filesystem_PREFIX}/src"
-  BINARY_DIR "${ghc_filesystem_PREFIX}/build"
-  INSTALL_DIR "${ghc_filesystem_PREFIX}/install"
-
-  CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DGHC_FILESYSTEM_BUILD_EXAMPLES:BOOL=OFF
-    -DGHC_FILESYSTEM_BUILD_STD_TESTING:BOOL=OFF
-    -DGHC_FILESYSTEM_BUILD_TESTING:BOOL=OFF
-    -DGHC_FILESYSTEM_WITH_INSTALL:BOOL=ON
-
-  CMAKE_GENERATOR ${gen}
-)
-
-
 message(STATUS "Adding external library stduuid in ${stduuid_PREFIX}")
 
 ExternalProject_Add(stduuid
@@ -399,30 +431,20 @@ ExternalProject_Add(stduuid
 )
 
 
-message(STATUS "Adding external library CMakeRC in ${cmakerc_PREFIX}")
+message(STATUS "Adding external library TinyFSM in ${tinyfsm_PREFIX}")
 
-ExternalProject_Add(cmakerc
-  URL "https://github.com/vector-of-bool/cmrc/archive/refs/tags/${cmakerc_VERSION}.tar.gz"
-  URL_HASH SHA256=edad5faaa0bea1df124b5e8cb00bf0adbd2faeccecd3b5c146796cbcb8b5b71b
-  DOWNLOAD_NAME "cmakerc-${cmakerc_VERSION}.tar.gz"
-  DOWNLOAD_EXTRACT_TIMESTAMP false
+ExternalProject_Add(tinyfsm
+  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/digint/tinyfsm.git"
+  GIT_TAG "01908cab0397fcdadb0a14e9a3187c308e2708ca" # tag: v${tinyfsm_PREFIX}
+  GIT_PROGRESS true
 
-  # Uncomment to instead clone Git repository:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/vector-of-bool/cmrc.git"
-  # GIT_TAG "9a80e17c75fca503a55a38ea011dcfaf2a830cc9" # tag: ${cmakerc_VERSION}
-  # GIT_PROGRESS true
+  PREFIX "${tinyfsm_PREFIX}"
+  TMP_DIR "${tinyfsm_PREFIX}/tmp"
+  STAMP_DIR "${tinyfsm_PREFIX}/stamp"
+  SOURCE_DIR "${tinyfsm_PREFIX}/src"
+  BINARY_DIR "${tinyfsm_PREFIX}/build"
 
-  PREFIX "${cmakerc_PREFIX}"
-  TMP_DIR "${cmakerc_PREFIX}/tmp"
-  STAMP_DIR "${cmakerc_PREFIX}/stamp"
-  DOWNLOAD_DIR "${cmakerc_PREFIX}/download"
-  SOURCE_DIR "${cmakerc_PREFIX}/src"
-  BINARY_DIR "${cmakerc_PREFIX}/build"
-
-  CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DBUILD_TESTS:BOOL=OFF
-
-  CMAKE_GENERATOR ${gen}
-  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping CMakeRC install step"
+  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM configure step"
+  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM build step"
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM install step"
 )

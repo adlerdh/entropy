@@ -13,7 +13,7 @@
 #include "logic/states/AnnotationStateHelpers.h"
 #include "logic/states/AnnotationStateMachine.h"
 
-#include <IconFontCppHeaders/IconsForkAwesome.h>
+#include <IconsForkAwesome.h>
 
 #include <imgui/imgui.h>
 

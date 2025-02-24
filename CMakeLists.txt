@@ -79,6 +79,7 @@ set(cmakerc_VERSION "2.0.1")
 set(ghc_filesystem_VERSION "1.5.14")
 set(glfw_VERSION "3.4")
 set(glm_VERSION "1.0.1")
+set(iconfont_VERSION "ef464d2")
 set(itk_VERSION "5.4.2")
 set(nlohmann_json_VERSION "3.11.3")
 set(spdlog_VERSION "1.15.1")
@@ -92,6 +93,7 @@ set(cmakerc_PREFIX "${EXTERNAL_DIR}/cmakerc-${cmakerc_VERSION}")
 set(ghc_filesystem_PREFIX "${EXTERNAL_DIR}/ghc_filesystem-${ghc_filesystem_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
+set(iconfont_PREFIX "${EXTERNAL_DIR}/iconfont-${iconfont_VERSION}")
 set(itk_PREFIX "${EXTERNAL_DIR}/itk-${itk_VERSION}")
 set(nanovg_PREFIX "${EXTERNAL_DIR}/nanovg")
 set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
@@ -210,6 +212,10 @@ endif()
 
 # CMakeRC: Standalone CMake-based C++ resource compiler
 include(${cmakerc_PREFIX}/src/CMakeRC.cmake)
+
+# IconFontCppHeaders: Headers for Font Awesome and Fork Awesome icons
+set(iconfont_INCLUDE_DIR "${iconfont_PREFIX}/src"
+    CACHE STRING "IconFontCppHeaders include directory" FORCE)
 
 
 #--------------------------------------------------------------------------------
@@ -347,12 +353,6 @@ set_target_properties(implot PROPERTIES
 set(GRIDCUT_INCLUDE_DIRS
   ${EXT_DIR}/gridcut/include
   ${EXT_DIR}/gridcut/examples/include)
-
-#--------------------------------------------------------------------------------
-# IconFontCppHeaders (included as Git submodule in ${EXT_DIR}/IconFontCppHeaders):
-# C, C++ headers and C# classes for icon fonts Font Awesome, Fork Awesome,
-# Google Material Design icons, Kenney game icons and Fontaudio.
-#--------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------
 # Entropy's sources
@@ -597,6 +597,7 @@ target_include_directories(${EXEC_NAME} PRIVATE
   ${EXT_DIR}
   ${RES_DIR}
   ${GLAD_INCLUDE_DIR}
+  ${iconfont_INCLUDE_DIR}
   ${IMGUI_BINDINGS_DIR}
   ${IMGUI_INCLUDE_DIR}
   ${IMGUI_KNOBS_DIR}
