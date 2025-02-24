@@ -244,6 +244,31 @@ ExternalProject_Add(iconfont
 )
 
 
+message(STATUS "Adding external library ImGui in ${imgui_PREFIX}")
+
+ExternalProject_Add(imgui
+  URL "https://github.com/ocornut/imgui/archive/refs/tags/v${imgui_VERSION}.tar.gz"
+  URL_HASH SHA256=db3a2e02bfd6c269adf0968950573053d002f40bdfb9ef2e4a90bce804b0f286
+  DOWNLOAD_NAME "imgui-${imgui_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/ocornut/imgui.git"
+  # GIT_TAG "dbb5eeaadffb6a3ba6a60de1290312e5802dba5a" # tag: v${imgui_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${imgui_PREFIX}"
+  TMP_DIR "${imgui_PREFIX}/tmp"
+  STAMP_DIR "${imgui_PREFIX}/stamp"
+  DOWNLOAD_DIR "${imgui_PREFIX}/download"
+  SOURCE_DIR "${imgui_PREFIX}/src/imgui"
+  BINARY_DIR "${imgui_PREFIX}/build"
+
+  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ImGui configure step"
+  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ImGui build step"
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ImGui install step"
+)
+
+
 message(STATUS "Adding external library ITK in ${itk_PREFIX}")
 
 ExternalProject_Add(ITK

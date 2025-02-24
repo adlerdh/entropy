@@ -15,8 +15,8 @@ set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION
 
 project(Entropy VERSION ${VERSION_FULL} LANGUAGES C CXX)
 
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set(RES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
+set(entropy_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(entropy_RES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 set(EXT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/externals)
 
 # CMake will generate a file compile_commands.json under the build directory.
@@ -68,8 +68,6 @@ message(STATUS "BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}")
 message(STATUS "BUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}")
 
 
-option(Entropy_SUPERBUILD "Run the SuperBuild" ON)
-
 set(EXTERNAL_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
 
 # External library versions:
@@ -80,7 +78,9 @@ set(ghc_filesystem_VERSION "1.5.14")
 set(glfw_VERSION "3.4")
 set(glm_VERSION "1.0.1")
 set(iconfont_VERSION "ef464d2")
+set(imgui_VERSION "1.91.8")
 set(itk_VERSION "5.4.2")
+set(nanovg_VERSION "f93799c")
 set(nlohmann_json_VERSION "3.11.3")
 set(spdlog_VERSION "1.15.1")
 set(stduuid_VERSION "1.2.3")
@@ -94,6 +94,7 @@ set(ghc_filesystem_PREFIX "${EXTERNAL_DIR}/ghc_filesystem-${ghc_filesystem_VERSI
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
 set(iconfont_PREFIX "${EXTERNAL_DIR}/iconfont-${iconfont_VERSION}")
+set(imgui_PREFIX "${EXTERNAL_DIR}/imgui-${imgui_VERSION}")
 set(itk_PREFIX "${EXTERNAL_DIR}/itk-${itk_VERSION}")
 set(nanovg_PREFIX "${EXTERNAL_DIR}/nanovg")
 set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
@@ -101,70 +102,13 @@ set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
 set(stduuid_PREFIX "${EXTERNAL_DIR}/stduuid-${stduuid_VERSION}")
 set(tinyfsm_PREFIX "${EXTERNAL_DIR}/tinyfsm-${tinyfsm_VERSION}")
 
+option(Entropy_SUPERBUILD "Run the SuperBuild" ON)
+
 if(Entropy_SUPERBUILD)
   include(SuperBuild)
   return()
 endif()
 
-# The Insight Toolkit (ITK)
-find_package(ITK ${itk_VERSION} REQUIRED HINTS "${itk_PREFIX}/build")
-
-if(ITK_FOUND)
-  message(STATUS "Found ITK in ${ITK_DIR}")
-  include(${ITK_USE_FILE})
-else()
-  message(FATAL_ERROR "ITK not found: Please set ITK_DIR")
-endif()
-
-# Boost C++ Libraries
-set(Boost_INCLUDE_DIR "${boost_PREFIX}/src" CACHE STRING "Boost include directory" FORCE)
-
-if(IS_DIRECTORY "${Boost_INCLUDE_DIR}")
-  message(STATUS "Using Boost headers in ${Boost_INCLUDE_DIR}")
-else()
-  message(FATAL_ERROR "Boost headers not found: Please set Boost_INCLUDE_DIR")
-endif()
-
-# spdlog: Fast C++ logging library
-find_package(spdlog ${spdlog_VERSION} REQUIRED HINTS "${spdlog_PREFIX}/install")
-
-if(spdlog_FOUND)
-  message(STATUS "Using spdlog in ${spdlog_DIR}")
-else()
-  message(FATAL_ERROR "spdlog not found: Please set spdlog_DIR")
-endif()
-
-# GLFW: Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development
-find_package(glfw3 ${glfw_VERSION} REQUIRED HINTS "${glfw_PREFIX}/install")
-
-if(glfw3_FOUND)
-  message(STATUS "Using GLFW in ${glfw3_DIR}")
-  set(glfw_INCLUDE_DIR "${glfw_PREFIX}/install/include"
-      CACHE STRING "glfw include directory" FORCE)
-else()
-  message(FATAL_ERROR "GLFW not found")
-endif()
-
-# Niels Lohmann's JSON for Modern C++
-find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED
-    HINTS "${nlohmann_json_PREFIX}/install")
-
-if(nlohmann_json_FOUND)
-  message(STATUS "Using nlohmann_json in ${nlohmann_json_DIR}")
-else()
-  message(FATAL_ERROR "nlohmann_json not found")
-endif()
-
-# OpenGL Mathematics (GLM): C++ mathematics library for graphics software based
-# on the OpenGL Shading Language (GLSL) specifications
-find_package(glm ${glm_VERSION} REQUIRED CONFIG
-    HINTS "${glm_PREFIX}/install")
-
-if(glm_FOUND)
-  message(STATUS "Using GLM in ${glm_DIR}")
-else()
-  message(FATAL_ERROR "GLM not found")
-endif()
 
 # argparse: Header-only library for argument parsing using modern C++
 find_package(argparse ${argparse_VERSION} REQUIRED
@@ -178,18 +122,20 @@ else()
   message(FATAL_ERROR "argparse not found")
 endif()
 
-# TinyFSM: A simple, header-only C++ finite state machine library
-set(tinyfsm_INCLUDE_DIR "${tinyfsm_PREFIX}/src/include"
-    CACHE STRING "TinyFSM include directory" FORCE)
+# Boost C++ Libraries
+set(Boost_INCLUDE_DIR "${boost_PREFIX}/src" CACHE STRING "Boost include directory" FORCE)
 
-# NanoVG: A small antialiased vector graphics rendering library for OpenGL
-set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
-add_library(nanovg "${nanovg_SRC_DIR}/nanovg.c")
-target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
+if(IS_DIRECTORY "${Boost_INCLUDE_DIR}")
+  message(STATUS "Using Boost headers in ${Boost_INCLUDE_DIR}")
+else()
+  message(FATAL_ERROR "Boost headers not found: Please set Boost_INCLUDE_DIR")
+endif()
+
+# CMakeRC: Standalone CMake-based C++ resource compiler
+include(${cmakerc_PREFIX}/src/CMakeRC.cmake)
 
 # ghc::filesystem: Header-only, single-file std::filesystem compatible helper library,
 # based on the C++17 and C++20 specs, but implemented for C++11, C++14, C++17 or C++20
-# and tightly following the C++17 standard with very few documented exceptions.
 # (Needed because std::filesystem is not fully implemented on macOS prior to 10.15)
 find_package(ghc_filesystem ${ghc_filesystem_VERSION} REQUIRED
     HINTS "${ghc_filesystem_PREFIX}/install")
@@ -198,6 +144,66 @@ if(ghc_filesystem_FOUND)
   message(STATUS "Using ghc::filesystem in ${ghc_filesystem_DIR}")
 else()
   message(FATAL_ERROR "ghc::filesystem not found")
+endif()
+
+# GLFW: Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development
+find_package(glfw3 ${glfw_VERSION} REQUIRED HINTS "${glfw_PREFIX}/install")
+
+if(glfw3_FOUND)
+  message(STATUS "Using GLFW in ${glfw3_DIR}")
+  set(glfw_INCLUDE_DIR "${glfw_PREFIX}/install/include"
+      CACHE STRING "glfw include directory" FORCE)
+else()
+  message(FATAL_ERROR "GLFW not found")
+endif()
+
+# OpenGL Mathematics (GLM): C++ mathematics library for graphics software based
+# on the OpenGL Shading Language (GLSL) specifications
+find_package(glm ${glm_VERSION} REQUIRED CONFIG
+    HINTS "${glm_PREFIX}/install")
+
+if(glm_FOUND)
+  message(STATUS "Using GLM in ${glm_DIR}")
+else()
+  message(FATAL_ERROR "GLM not found")
+endif()
+
+# IconFontCppHeaders: Headers for Font Awesome and Fork Awesome icons
+set(iconfont_INCLUDE_DIR "${iconfont_PREFIX}/src"
+    CACHE STRING "IconFontCppHeaders include directory" FORCE)
+
+# Insight Toolkit (ITK)
+find_package(ITK ${itk_VERSION} REQUIRED HINTS "${itk_PREFIX}/build")
+
+if(ITK_FOUND)
+  message(STATUS "Found ITK in ${ITK_DIR}")
+  include(${ITK_USE_FILE})
+else()
+  message(FATAL_ERROR "ITK not found: Please set ITK_DIR")
+endif()
+
+# NanoVG: A small antialiased vector graphics rendering library for OpenGL
+set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
+add_library(nanovg "${nanovg_SRC_DIR}/nanovg.c")
+target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
+
+# Niels Lohmann's JSON for Modern C++
+find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED
+    HINTS "${nlohmann_json_PREFIX}/install")
+
+if(nlohmann_json_FOUND)
+  message(STATUS "Using nlohmann_json in ${nlohmann_json_DIR}")
+else()
+  message(FATAL_ERROR "nlohmann_json not found")
+endif()
+
+# spdlog: Fast C++ logging library
+find_package(spdlog ${spdlog_VERSION} REQUIRED HINTS "${spdlog_PREFIX}/install")
+
+if(spdlog_FOUND)
+  message(STATUS "Using spdlog in ${spdlog_DIR}")
+else()
+  message(FATAL_ERROR "spdlog not found: Please set spdlog_DIR")
 endif()
 
 # stduuid: A C++17 cross-platform single-header library implementation for universally
@@ -210,19 +216,13 @@ else()
   message(FATAL_ERROR "stduuid not found")
 endif()
 
-# CMakeRC: Standalone CMake-based C++ resource compiler
-include(${cmakerc_PREFIX}/src/CMakeRC.cmake)
-
-# IconFontCppHeaders: Headers for Font Awesome and Fork Awesome icons
-set(iconfont_INCLUDE_DIR "${iconfont_PREFIX}/src"
-    CACHE STRING "IconFontCppHeaders include directory" FORCE)
-
+# TinyFSM: A simple, header-only C++ finite state machine library
+set(tinyfsm_INCLUDE_DIR "${tinyfsm_PREFIX}/src/include"
+    CACHE STRING "TinyFSM include directory" FORCE)
 
 #--------------------------------------------------------------------------------
-# GLAD library:
-# Multi-Language GL/GLES/EGL/GLX/WGL Loader-Generator based on the official specs
+# GLAD library: Multi-Language GL/GLES/EGL/GLX/WGL Loader-Generator based on the official specs
 #--------------------------------------------------------------------------------
-
 # Entropy includes the loaders for OpenGL 3.3, 4.1, and 4.6 Core profiles for C,
 # though only the loaders for version 3.3 are used in Entropy in order to assure
 # compatability across graphics hardware and platforms.
@@ -254,37 +254,31 @@ set(GLAD_INCLUDE_DIR ${GLAD_DIR}/include)
 add_library(glad ${GLAD_DIR}/src/glad.c)
 target_include_directories(glad PRIVATE ${GLAD_INCLUDE_DIR})
 
-
-
 #--------------------------------------------------------------------------------
-# "Dear ImGui" library (included as Git submodule):
-# A bloat-free graphical user interface library for C++. It outputs optimized
-# vertex buffers that you can render anytime in your 3D-pipeline enabled
-# application. It is fast, portable, renderer agnostic and self-contained
-# (no external dependencies).
+# "Dear ImGui" library: Bloat-free graphical user interface library for C++.
+# Outputs optimized vertex buffers to render anytime in 3D-pipeline enabled application.
+# Fast, portable, renderer agnostic and self-contained (no external dependencies).
 #--------------------------------------------------------------------------------
-set(IMGUI_SRC_DIR ${EXT_DIR}/imgui)
-set(IMGUI_INCLUDE_DIR ${EXT_DIR}/imgui)
-set(IMGUI_BINDINGS_DIR ${SRC_DIR}/ui/imgui)
+set(imgui_SRC_DIR ${imgui_PREFIX}/src)
 
 add_compile_definitions(IMGUI_USER_CONFIG="ui/entropy_imgui_config.h")
 
-list(APPEND IMGUI_SOURCES
-  ${IMGUI_SRC_DIR}/imgui.cpp
-  ${IMGUI_SRC_DIR}/imgui_demo.cpp
-  ${IMGUI_SRC_DIR}/imgui_draw.cpp
-  ${IMGUI_SRC_DIR}/imgui_tables.cpp
-  ${IMGUI_SRC_DIR}/imgui_widgets.cpp
-  ${IMGUI_SRC_DIR}/misc/cpp/imgui_stdlib.cpp
-  ${IMGUI_SRC_DIR}/backends/imgui_impl_glfw.cpp # GLFW bindings for ImGui
-  ${IMGUI_SRC_DIR}/backends/imgui_impl_opengl3.cpp # OpenGL 3 bindings for ImGui
+list(APPEND imgui_SOURCES
+  ${imgui_SRC_DIR}/imgui/imgui.cpp
+  ${imgui_SRC_DIR}/imgui/imgui_demo.cpp
+  ${imgui_SRC_DIR}/imgui/imgui_draw.cpp
+  ${imgui_SRC_DIR}/imgui/imgui_tables.cpp
+  ${imgui_SRC_DIR}/imgui/imgui_widgets.cpp
+  ${imgui_SRC_DIR}/imgui/misc/cpp/imgui_stdlib.cpp
+  ${imgui_SRC_DIR}/imgui/backends/imgui_impl_glfw.cpp # GLFW bindings for ImGui
+  ${imgui_SRC_DIR}/imgui/backends/imgui_impl_opengl3.cpp # OpenGL 3 bindings for ImGui
 )
 
-add_library(imgui ${IMGUI_SOURCES})
+add_library(imgui ${imgui_SOURCES})
 
 target_include_directories(imgui PRIVATE
-  ${IMGUI_INCLUDE_DIR}
-  ${SRC_DIR} # needed for IMGUI_USER_CONFIG file
+  ${imgui_SRC_DIR}/imgui
+  ${entropy_SRC_DIR} # needed for IMGUI_USER_CONFIG file
   ${glfw_INCLUDE_DIR}
 )
 
@@ -308,8 +302,8 @@ target_compile_options(imgui PRIVATE
 set_target_properties(imgui PROPERTIES
   CXX_STANDARD 20
   CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS ON)
-
+  CXX_EXTENSIONS OFF
+)
 
 #--------------------------------------------------------------------------------
 # ImPlot (included as Git submodule):
@@ -321,14 +315,15 @@ set(IMPLOT_INCLUDE_DIR ${EXT_DIR}/implot)
 list(APPEND IMPLOT_SOURCES
   ${EXT_DIR}/implot/implot_demo.cpp
   ${EXT_DIR}/implot/implot_items.cpp
-  ${EXT_DIR}/implot/implot.cpp)
+  ${EXT_DIR}/implot/implot.cpp
+)
 
 add_library(implot ${IMPLOT_SOURCES})
 
 target_include_directories(implot PRIVATE
   ${IMPLOT_INCLUDE_DIR}
-  ${IMGUI_INCLUDE_DIR}
-  ${SRC_DIR} # needed for IMGUI_USER_CONFIG file
+  ${imgui_SRC_DIR}/imgui
+  ${entropy_SRC_DIR} # needed for IMGUI_USER_CONFIG file
 )
 
 target_link_libraries(implot PRIVATE
@@ -339,12 +334,13 @@ target_compile_options(implot PRIVATE
    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
     -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow -g -ftrapv>
    $<$<CXX_COMPILER_ID:MSVC>:
-    /W4>)
+    /W4>
+)
 
 set_target_properties(implot PROPERTIES
   CXX_STANDARD 20
   CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS ON)
+  CXX_EXTENSIONS OFF)
 
 #--------------------------------------------------------------------------------
 # GridCut (NOT included as Git submodule):
@@ -358,177 +354,176 @@ set(GRIDCUT_INCLUDE_DIRS
 # Entropy's sources
 #--------------------------------------------------------------------------------
 
-# Generate build stamp header after GLAD_GL_VERSION_MAJOR and
-# GLAD_GL_VERSION_MINOR are defined
+# Generate build stamp header after GLAD_GL_VERSION_MAJOR and GLAD_GL_VERSION_MINOR are defined
 include(BuildStamp)
 BuildStamp()
 
 set(ENTROPY_SOURCES
-  ${SRC_DIR}/main.cpp
-  ${SRC_DIR}/EntropyApp.cpp
+  ${entropy_SRC_DIR}/main.cpp
+  ${entropy_SRC_DIR}/EntropyApp.cpp
 
-  ${SRC_DIR}/common/CoordinateFrame.cpp
-  ${SRC_DIR}/common/DataHelper.cpp
-  ${SRC_DIR}/common/DirectionMaps.cpp
-  ${SRC_DIR}/common/InputParams.cpp
-  ${SRC_DIR}/common/InputParser.cpp
-  ${SRC_DIR}/common/MathFuncs.cpp
-  ${SRC_DIR}/common/ParcellationLabelTable.cpp
-  ${SRC_DIR}/common/Types.cpp
-  ${SRC_DIR}/common/UuidUtility.cpp
-  ${SRC_DIR}/common/Viewport.cpp
+  ${entropy_SRC_DIR}/common/CoordinateFrame.cpp
+  ${entropy_SRC_DIR}/common/DataHelper.cpp
+  ${entropy_SRC_DIR}/common/DirectionMaps.cpp
+  ${entropy_SRC_DIR}/common/InputParams.cpp
+  ${entropy_SRC_DIR}/common/InputParser.cpp
+  ${entropy_SRC_DIR}/common/MathFuncs.cpp
+  ${entropy_SRC_DIR}/common/ParcellationLabelTable.cpp
+  ${entropy_SRC_DIR}/common/Types.cpp
+  ${entropy_SRC_DIR}/common/UuidUtility.cpp
+  ${entropy_SRC_DIR}/common/Viewport.cpp
 
-  ${SRC_DIR}/image/Image.cpp
-  ${SRC_DIR}/image/ImageColorMap.cpp
-  ${SRC_DIR}/image/ImageHeader.cpp
-  ${SRC_DIR}/image/ImageIoInfo.cpp
-  ${SRC_DIR}/image/ImageSettings.cpp
-  ${SRC_DIR}/image/ImageTransformations.cpp
-  ${SRC_DIR}/image/ImageUtility.cpp
-  ${SRC_DIR}/image/SegUtil.cpp
-  ${SRC_DIR}/image/SurfaceUtility.cpp
+  ${entropy_SRC_DIR}/image/Image.cpp
+  ${entropy_SRC_DIR}/image/ImageColorMap.cpp
+  ${entropy_SRC_DIR}/image/ImageHeader.cpp
+  ${entropy_SRC_DIR}/image/ImageIoInfo.cpp
+  ${entropy_SRC_DIR}/image/ImageSettings.cpp
+  ${entropy_SRC_DIR}/image/ImageTransformations.cpp
+  ${entropy_SRC_DIR}/image/ImageUtility.cpp
+  ${entropy_SRC_DIR}/image/SegUtil.cpp
+  ${entropy_SRC_DIR}/image/SurfaceUtility.cpp
 
-  ${SRC_DIR}/logic/app/CallbackHandler.cpp
-  ${SRC_DIR}/logic/app/Data.cpp
-  ${SRC_DIR}/logic/app/Logging.cpp
-  ${SRC_DIR}/logic/app/Settings.cpp
-  ${SRC_DIR}/logic/app/State.cpp
+  ${entropy_SRC_DIR}/logic/app/CallbackHandler.cpp
+  ${entropy_SRC_DIR}/logic/app/Data.cpp
+  ${entropy_SRC_DIR}/logic/app/Logging.cpp
+  ${entropy_SRC_DIR}/logic/app/Settings.cpp
+  ${entropy_SRC_DIR}/logic/app/State.cpp
 
-  ${SRC_DIR}/logic/annotation/Annotation.cpp
-  ${SRC_DIR}/logic/annotation/BezierHelper.cpp
-  ${SRC_DIR}/logic/annotation/LandmarkGroup.cpp
-  ${SRC_DIR}/logic/annotation/SerializeAnnot.cpp
+  ${entropy_SRC_DIR}/logic/annotation/Annotation.cpp
+  ${entropy_SRC_DIR}/logic/annotation/BezierHelper.cpp
+  ${entropy_SRC_DIR}/logic/annotation/LandmarkGroup.cpp
+  ${entropy_SRC_DIR}/logic/annotation/SerializeAnnot.cpp
 
-  ${SRC_DIR}/logic/camera/Camera.cpp
-  ${SRC_DIR}/logic/camera/CameraHelpers.cpp
-  ${SRC_DIR}/logic/camera/CameraTypes.cpp
-  ${SRC_DIR}/logic/camera/MathUtility.cpp
-  ${SRC_DIR}/logic/camera/OrthogonalProjection.cpp
-  ${SRC_DIR}/logic/camera/PerspectiveProjection.cpp
-  ${SRC_DIR}/logic/camera/Projection.cpp
+  ${entropy_SRC_DIR}/logic/camera/Camera.cpp
+  ${entropy_SRC_DIR}/logic/camera/CameraHelpers.cpp
+  ${entropy_SRC_DIR}/logic/camera/CameraTypes.cpp
+  ${entropy_SRC_DIR}/logic/camera/MathUtility.cpp
+  ${entropy_SRC_DIR}/logic/camera/OrthogonalProjection.cpp
+  ${entropy_SRC_DIR}/logic/camera/PerspectiveProjection.cpp
+  ${entropy_SRC_DIR}/logic/camera/Projection.cpp
 
-  ${SRC_DIR}/logic/interaction/ViewHit.cpp
-  ${SRC_DIR}/logic/interaction/events/ButtonState.cpp
+  ${entropy_SRC_DIR}/logic/interaction/ViewHit.cpp
+  ${entropy_SRC_DIR}/logic/interaction/events/ButtonState.cpp
 
-  ${SRC_DIR}/logic/segmentation/GraphCuts.cpp
-  ${SRC_DIR}/logic/segmentation/Poisson.cpp
-  ${SRC_DIR}/logic/segmentation/SegHelpers.cpp
+  ${entropy_SRC_DIR}/logic/segmentation/GraphCuts.cpp
+  ${entropy_SRC_DIR}/logic/segmentation/Poisson.cpp
+  ${entropy_SRC_DIR}/logic/segmentation/SegHelpers.cpp
 
-  ${SRC_DIR}/logic/serialization/ProjectSerialization.cpp
+  ${entropy_SRC_DIR}/logic/serialization/ProjectSerialization.cpp
 
-  ${SRC_DIR}/logic/states/AnnotationStateHelpers.cpp
-  ${SRC_DIR}/logic/states/AnnotationStateMachine.cpp
-  ${SRC_DIR}/logic/states/AnnotationStates.cpp
+  ${entropy_SRC_DIR}/logic/states/AnnotationStateHelpers.cpp
+  ${entropy_SRC_DIR}/logic/states/AnnotationStateMachine.cpp
+  ${entropy_SRC_DIR}/logic/states/AnnotationStates.cpp
 
   # We were testing IPC with ITK-SNAP. This functionality is not currently hooked up to Entropy.
-  # ${SRC_DIR}/logic/ipc/IPCHandler.cxx
+  # ${entropy_SRC_DIR}/logic/ipc/IPCHandler.cxx
 
-  ${SRC_DIR}/rendering/ImageDrawing.cpp
-  ${SRC_DIR}/rendering/Rendering.cpp
-  ${SRC_DIR}/rendering/RenderData.cpp
-  ${SRC_DIR}/rendering/TextureSetup.cpp
-  ${SRC_DIR}/rendering/VectorDrawing.cpp
+  ${entropy_SRC_DIR}/rendering/ImageDrawing.cpp
+  ${entropy_SRC_DIR}/rendering/Rendering.cpp
+  ${entropy_SRC_DIR}/rendering/RenderData.cpp
+  ${entropy_SRC_DIR}/rendering/TextureSetup.cpp
+  ${entropy_SRC_DIR}/rendering/VectorDrawing.cpp
 
-  ${SRC_DIR}/rendering/utility/containers/VertexAttributeInfo.cpp
-  ${SRC_DIR}/rendering/utility/containers/VertexIndicesInfo.cpp
-  ${SRC_DIR}/rendering/utility/containers/Uniforms.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLBufferObject.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLBufferTexture.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLErrorChecker.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLFrameBufferObject.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLShader.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLShaderProgram.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLTexture.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLVersionChecker.cpp
-  ${SRC_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp
-  ${SRC_DIR}/rendering/utility/math/SliceIntersector.cpp
+  ${entropy_SRC_DIR}/rendering/utility/containers/VertexAttributeInfo.cpp
+  ${entropy_SRC_DIR}/rendering/utility/containers/VertexIndicesInfo.cpp
+  ${entropy_SRC_DIR}/rendering/utility/containers/Uniforms.cpp
+  ${entropy_SRC_DIR}/rendering/utility/gl/GLBufferObject.cpp
+  ${entropy_SRC_DIR}/rendering/utility/gl/GLBufferTexture.cpp
+  ${entropy_SRC_DIR}/rendering/utility/gl/GLErrorChecker.cpp
+  ${entropy_SRC_DIR}/rendering/utility/gl/GLFrameBufferObject.cpp
+  ${entropy_SRC_DIR}/rendering/utility/gl/GLShader.cpp
+  ${entropy_SRC_DIR}/rendering/utility/gl/GLShaderProgram.cpp
+  ${entropy_SRC_DIR}/rendering/utility/gl/GLTexture.cpp
+  ${entropy_SRC_DIR}/rendering/utility/gl/GLVersionChecker.cpp
+  ${entropy_SRC_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp
+  ${entropy_SRC_DIR}/rendering/utility/math/SliceIntersector.cpp
 
-  ${SRC_DIR}/ui/GuiData.cpp
-  ${SRC_DIR}/ui/Headers.cpp
-  ${SRC_DIR}/ui/Helpers.cpp
-  ${SRC_DIR}/ui/IsosurfaceHeader.cpp
-  ${SRC_DIR}/ui/ImGuiCustomControls.cpp
-  ${SRC_DIR}/ui/ImGuiWrapper.cpp
-  ${SRC_DIR}/ui/MainMenuBar.cpp
-  ${SRC_DIR}/ui/Popups.cpp
-  ${SRC_DIR}/ui/Style.cpp
-  ${SRC_DIR}/ui/Toolbars.cpp
-  ${SRC_DIR}/ui/Widgets.cpp
-  ${SRC_DIR}/ui/Windows.cpp
+  ${entropy_SRC_DIR}/ui/GuiData.cpp
+  ${entropy_SRC_DIR}/ui/Headers.cpp
+  ${entropy_SRC_DIR}/ui/Helpers.cpp
+  ${entropy_SRC_DIR}/ui/IsosurfaceHeader.cpp
+  ${entropy_SRC_DIR}/ui/ImGuiCustomControls.cpp
+  ${entropy_SRC_DIR}/ui/ImGuiWrapper.cpp
+  ${entropy_SRC_DIR}/ui/MainMenuBar.cpp
+  ${entropy_SRC_DIR}/ui/Popups.cpp
+  ${entropy_SRC_DIR}/ui/Style.cpp
+  ${entropy_SRC_DIR}/ui/Toolbars.cpp
+  ${entropy_SRC_DIR}/ui/Widgets.cpp
+  ${entropy_SRC_DIR}/ui/Windows.cpp
 
-  ${SRC_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp
-  ${SRC_DIR}/ui/imgui/imgui-knobs/imgui-knobs.cpp
+  ${entropy_SRC_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp
+  ${entropy_SRC_DIR}/ui/imgui/imgui-knobs/imgui-knobs.cpp
 
-  ${SRC_DIR}/windowing/ControlFrame.cpp
-  ${SRC_DIR}/windowing/GlfwCallbacks.cpp
-  ${SRC_DIR}/windowing/GlfwWrapper.cpp
-  ${SRC_DIR}/windowing/Layout.cpp
-  ${SRC_DIR}/windowing/View.cpp
-  ${SRC_DIR}/windowing/ViewTypes.cpp
-  ${SRC_DIR}/windowing/WindowData.cpp
+  ${entropy_SRC_DIR}/windowing/ControlFrame.cpp
+  ${entropy_SRC_DIR}/windowing/GlfwCallbacks.cpp
+  ${entropy_SRC_DIR}/windowing/GlfwWrapper.cpp
+  ${entropy_SRC_DIR}/windowing/Layout.cpp
+  ${entropy_SRC_DIR}/windowing/View.cpp
+  ${entropy_SRC_DIR}/windowing/ViewTypes.cpp
+  ${entropy_SRC_DIR}/windowing/WindowData.cpp
 )
 
 set(SHADERS
-  ${SRC_DIR}/rendering/shaders/Correlation.fs
-  ${SRC_DIR}/rendering/shaders/Difference.fs
-  ${SRC_DIR}/rendering/shaders/Edge.fs
-  ${SRC_DIR}/rendering/shaders/Image.fs
-  ${SRC_DIR}/rendering/shaders/ImageRgba.fs
-  ${SRC_DIR}/rendering/shaders/Image.vs
-  ${SRC_DIR}/rendering/shaders/Metric.vs
-  ${SRC_DIR}/rendering/shaders/Overlay.fs
-  ${SRC_DIR}/rendering/shaders/RaycastIsoSurface.fs
-  ${SRC_DIR}/rendering/shaders/RaycastIsoSurface.vs
-  ${SRC_DIR}/rendering/shaders/Simple.fs
-  ${SRC_DIR}/rendering/shaders/Simple.vs
-  ${SRC_DIR}/rendering/shaders/Xray.fs)
+  ${entropy_SRC_DIR}/rendering/shaders/Correlation.fs
+  ${entropy_SRC_DIR}/rendering/shaders/Difference.fs
+  ${entropy_SRC_DIR}/rendering/shaders/Edge.fs
+  ${entropy_SRC_DIR}/rendering/shaders/Image.fs
+  ${entropy_SRC_DIR}/rendering/shaders/ImageRgba.fs
+  ${entropy_SRC_DIR}/rendering/shaders/Image.vs
+  ${entropy_SRC_DIR}/rendering/shaders/Metric.vs
+  ${entropy_SRC_DIR}/rendering/shaders/Overlay.fs
+  ${entropy_SRC_DIR}/rendering/shaders/RaycastIsoSurface.fs
+  ${entropy_SRC_DIR}/rendering/shaders/RaycastIsoSurface.vs
+  ${entropy_SRC_DIR}/rendering/shaders/Simple.fs
+  ${entropy_SRC_DIR}/rendering/shaders/Simple.vs
+  ${entropy_SRC_DIR}/rendering/shaders/Xray.fs
+)
 
 set(SHADERS_OLD
-  ${SRC_DIR}/rendering_old/shaders/BasicMesh.vert
-  ${SRC_DIR}/rendering_old/shaders/BasicMesh.frag
-  ${SRC_DIR}/rendering_old/shaders/BasicMeshPeel.frag
-  ${SRC_DIR}/rendering_old/shaders/Debug.vert
-  ${SRC_DIR}/rendering_old/shaders/Debug.frag
-  ${SRC_DIR}/rendering_old/shaders/fbo_screen.vert
-  ${SRC_DIR}/rendering_old/shaders/fbo_screen.frag
-  ${SRC_DIR}/rendering_old/shaders/Flat.vert
-  ${SRC_DIR}/rendering_old/shaders/Flat.frag
-  ${SRC_DIR}/rendering_old/shaders/FlatPeel.frag
-  ${SRC_DIR}/rendering_old/shaders/Mesh.vert
-  ${SRC_DIR}/rendering_old/shaders/Mesh.frag
-  ${SRC_DIR}/rendering_old/shaders/MeshPeel.frag
-  ${SRC_DIR}/rendering_old/shaders/Polygonizer.vert
-  ${SRC_DIR}/rendering_old/shaders/Polygonizer.geom
-  ${SRC_DIR}/rendering_old/shaders/Simple.vert
-  ${SRC_DIR}/rendering_old/shaders/Simple.frag
-  ${SRC_DIR}/rendering_old/shaders/ddp/blend.frag
-  ${SRC_DIR}/rendering_old/shaders/ddp/blend.vert
-  ${SRC_DIR}/rendering_old/shaders/ddp/final.frag
-  ${SRC_DIR}/rendering_old/shaders/ddp/InitializeDepths.frag
-  ${SRC_DIR}/rendering_old/shaders/ddp/init.vert)
+  ${entropy_SRC_DIR}/rendering_old/shaders/BasicMesh.vert
+  ${entropy_SRC_DIR}/rendering_old/shaders/BasicMesh.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/BasicMeshPeel.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/Debug.vert
+  ${entropy_SRC_DIR}/rendering_old/shaders/Debug.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/fbo_screen.vert
+  ${entropy_SRC_DIR}/rendering_old/shaders/fbo_screen.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/Flat.vert
+  ${entropy_SRC_DIR}/rendering_old/shaders/Flat.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/FlatPeel.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/Mesh.vert
+  ${entropy_SRC_DIR}/rendering_old/shaders/Mesh.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/MeshPeel.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/Polygonizer.vert
+  ${entropy_SRC_DIR}/rendering_old/shaders/Polygonizer.geom
+  ${entropy_SRC_DIR}/rendering_old/shaders/Simple.vert
+  ${entropy_SRC_DIR}/rendering_old/shaders/Simple.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/ddp/blend.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/ddp/blend.vert
+  ${entropy_SRC_DIR}/rendering_old/shaders/ddp/final.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/ddp/InitializeDepths.frag
+  ${entropy_SRC_DIR}/rendering_old/shaders/ddp/init.vert
+)
 
 file(GLOB COLORMAPS
-  ${RES_DIR}/colormaps/ncl/*.csv
-  ${RES_DIR}/colormaps/matplotlib/*.csv
-  ${RES_DIR}/colormaps/peter_kovesi/*.csv)
+  ${entropy_RES_DIR}/colormaps/ncl/*.csv
+  ${entropy_RES_DIR}/colormaps/matplotlib/*.csv
+  ${entropy_RES_DIR}/colormaps/peter_kovesi/*.csv
+)
 
 set(FONTS
-  ${RES_DIR}/fonts/Cousine/Cousine-Regular.ttf
-  ${RES_DIR}/fonts/ForkAwesome/forkawesome-webfont.ttf
-  ${RES_DIR}/fonts/HelveticaNeue/HelveticaNeue-Light.ttf
-  ${RES_DIR}/fonts/Inter/Inter-Light.ttf
-  ${RES_DIR}/fonts/Roboto/Roboto-Light.ttf
-  ${RES_DIR}/fonts/Roboto/Roboto-Regular.ttf
-  ${RES_DIR}/fonts/Satoshi/Satoshi-Light.ttf
-  ${RES_DIR}/fonts/SFMono/SFMono-Regular.ttf
-  ${RES_DIR}/fonts/SFPro/sf-pro-text-regular.ttf
-  ${RES_DIR}/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf
-  ${RES_DIR}/fonts/Supreme/Supreme-Light.ttf)
+  ${entropy_RES_DIR}/fonts/Cousine/Cousine-Regular.ttf
+  ${entropy_RES_DIR}/fonts/ForkAwesome/forkawesome-webfont.ttf
+  ${entropy_RES_DIR}/fonts/HelveticaNeue/HelveticaNeue-Light.ttf
+  ${entropy_RES_DIR}/fonts/Inter/Inter-Light.ttf
+  ${entropy_RES_DIR}/fonts/Roboto/Roboto-Light.ttf
+  ${entropy_RES_DIR}/fonts/Roboto/Roboto-Regular.ttf
+  ${entropy_RES_DIR}/fonts/Satoshi/Satoshi-Light.ttf
+  ${entropy_RES_DIR}/fonts/SFMono/SFMono-Regular.ttf
+  ${entropy_RES_DIR}/fonts/SFPro/sf-pro-text-regular.ttf
+  ${entropy_RES_DIR}/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf
+  ${entropy_RES_DIR}/fonts/Supreme/Supreme-Light.ttf
+)
 
-
-#--------------------------------------------------------------------------------
-# Build types and compile options
-#--------------------------------------------------------------------------------
 
 # if(UNIX AND NOT APPLE)
 #   find_package(OpenGL REQUIRED)
@@ -593,13 +588,14 @@ target_link_libraries(${EXEC_NAME} PRIVATE
 
 target_include_directories(${EXEC_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR} # for defines.h
-  ${SRC_DIR}
-  ${EXT_DIR}
-  ${RES_DIR}
+  ${entropy_SRC_DIR}
+  ${EXT_DIR} # remove
+  ${entropy_RES_DIR}
   ${GLAD_INCLUDE_DIR}
   ${iconfont_INCLUDE_DIR}
-  ${IMGUI_BINDINGS_DIR}
-  ${IMGUI_INCLUDE_DIR}
+  ${entropy_SRC_DIR}/ui/imgui # ImGui bindings
+  ${imgui_SRC_DIR}
+  ${imgui_SRC_DIR}/imgui # due to ImPlot
   ${IMGUI_KNOBS_DIR}
   ${IMPLOT_INCLUDE_DIR}
   ${ITK_INCLUDE_DIRS}

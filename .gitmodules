@@ -1,9 +1,6 @@
 [submodule "externals/imGuIZMO.quat"]
 	path = externals/imGuIZMO.quat
 	url = https://github.com/BrutPitt/imGuIZMO.quat
-[submodule "externals/imgui"]
-	path = externals/imgui
-	url = https://github.com/ocornut/imgui
 [submodule "externals/imgui-filebrowser"]
 	path = externals/imgui-filebrowser
 	url = https://github.com/AirGuanZ/imgui-filebrowser

@@ -20,23 +20,24 @@ Entropy builds on Linux, Windows, and macOS. It is currently tested on the follo
 The following libraries are added as external projects during CMake build generation:
 * [argparse](https://github.com/p-ranav/argparse) (v3.2)
 * [Boost](https://github.com/boostorg/boost), headers only (v1.87.0)
+* [CMakeRC](https://github.com/vector-of-bool/cmrc) (v2.0.1)
+* [Dear ImGui](https://github.com/ocornut/imgui) (v1.91.8)
+* [ghc::filesystem[(https://github.com/gulrak/filesystem) (v1.5.14)
 * [GLFW](https://github.com/glfw/glfw) (v3.4)
 * [GLM](https://github.com/g-truc/glm) (v1.0.1)
+* [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) (ef464d2)
 * [Insight Toolkit (ITK)](https://github.com/InsightSoftwareConsortium/ITK) (v5.4.2)
-* [NanoVG](https://github.com/memononen/nanovg)
-* [Niels Lohmann JSON](https://github.com/nlohmann/json) (v3.11.3)
+* [NanoVG](https://github.com/memononen/nanovg) (f93799c)
+* [nlohmann::json](https://github.com/nlohmann/json) (v3.11.3)
 * [spdlog](https://github.com/gabime/spdlog) (v1.15.1)
+* [stduuid](https://github.com/mariusbancila/stduuid) (v1.2.3)
+* [TinyFSM](https://github.com/digint/tinyfsm) (v1.15.1)
 
 The following libraries and dependencies are brought in as Git submodules to the Entropy repository:
-* CMakeRC (https://github.com/vector-of-bool/cmrc)
-* Dear ImGui (https://github.com/ocornut/imgui)
-* ghc::filesystem (https://github.com/gulrak/filesystem)
-* IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 * imgui-filebrowser (https://github.com/AirGuanZ/imgui-filebrowser)
 * imGuIZMO.quat (https://github.com/BrutPitt/imGuIZMO.quat)
 * ImPlot (https://github.com/epezent/implot)
-* stduuid (https://github.com/mariusbancila/stduuid)
-* TinyFSM (https://github.com/digint/tinyfsm)
+
 
 Clone Entropy with `--recurse-submodules` or run the folllowing command to clone the submodules:
 `git submodule update --init --recursive`
