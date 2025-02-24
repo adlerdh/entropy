@@ -32,7 +32,7 @@ The following dependencies are added as external projects during CMake superbuil
 * [Boost](https://github.com/boostorg/boost/tree/boost-1.87.0), headers only (v1.87.0)
 * [CMakeRC](https://github.com/vector-of-bool/cmrc/tree/2.0.1) (v2.0.1)
 * [Dear ImGui](https://github.com/ocornut/imgui/tree/v1.91.8) (v1.91.8)
-* [ghc::filesystem[(https://github.com/gulrak/filesystem/tree/v1.5.14) (v1.5.14)
+* [ghc::filesystem](https://github.com/gulrak/filesystem/tree/v1.5.14) (v1.5.14)
 * [GLFW](https://github.com/glfw/glfw/tree/3.4) (v3.4)
 * [GLM](https://github.com/g-truc/glm/tree/1.0.1) (v1.0.1)
 * [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders/commit/ef464d2fe5a568d30d7c88138e78d7fac7cfebc5) (ef464d2)
@@ -46,7 +46,7 @@ The following dependencies are added as external projects during CMake superbuil
 
 The following external sources and libraries have been committed directly to the Entropy repository:
 * [GLAD OpenGL loaders](https://github.com/Dav1dde/glad.git) (generated from webservice)
-* [GridCut]((https://gridcut.com)): fast max-flow/min-cut graph-cuts optimized for grid graphs 
+* [GridCut](https://gridcut.com): fast max-flow/min-cut graph-cuts optimized for grid graphs 
 * [ImGui file browser](https://github.com/AirGuanZ/imgui-filebrowser) with local modifications
 * [imGuIZMO.quat](https://github.com/AirGuanZ/imgui-filebrowser) with local modifications
 
@@ -71,7 +71,7 @@ Entropy is run from the terminal. Images can be specified directly as command li
 
 1. A list of images can be provided as positional arguments. If an image has an accompanying segmentation, then it is separated from the image filename using a comma (,) and no space. e.g.:
 
-`./entropy reference_image.nii.gz,reference_seg.nii.gz additional_image1.nii.gz additional_image2.nii.gz,additional_image2_seg.nii.gz`
+`./Entropy reference_image.nii.gz,reference_seg.nii.gz additional_image1.nii.gz additional_image2.nii.gz,additional_image2_seg.nii.gz`
 
 With this input format, each image may have only one segmentation.
 
