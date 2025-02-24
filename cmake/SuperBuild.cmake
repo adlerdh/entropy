@@ -269,6 +269,31 @@ ExternalProject_Add(imgui
 )
 
 
+message(STATUS "Adding external library ImPlot in ${implot_PREFIX}")
+
+ExternalProject_Add(implot
+  URL "https://github.com/epezent/implot/archive/refs/tags/v${implot_VERSION}.tar.gz"
+  URL_HASH SHA256=961df327d8a756304d1b0a67316eebdb1111d13d559f0d3415114ec0eb30abd1
+  DOWNLOAD_NAME "implot-${implot_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/epezent/implot.git"
+  # GIT_TAG "18c72431f8265e2b0b5378a3a73d8a883b2175ff" # tag: v${implot_VERSION}
+  # GIT_PROGRESS true
+
+  PREFIX "${implot_PREFIX}"
+  TMP_DIR "${implot_PREFIX}/tmp"
+  STAMP_DIR "${implot_PREFIX}/stamp"
+  DOWNLOAD_DIR "${implot_PREFIX}/download"
+  SOURCE_DIR "${implot_PREFIX}/src/implot"
+  BINARY_DIR "${implot_PREFIX}/build"
+
+  CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ImPlot configure step"
+  BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ImPlot build step"
+  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ImPlot install step"
+)
+
+
 message(STATUS "Adding external library ITK in ${itk_PREFIX}")
 
 ExternalProject_Add(ITK

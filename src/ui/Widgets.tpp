@@ -1,7 +1,7 @@
 #pragma once
 
 #include "image/ImageSettings.h"
-#include <implot.h>
+#include <implot/implot.h>
 #include <string>
 
 /// @todo Icon for histogram: https://forkaweso.me/Fork-Awesome/icon/area-chart/

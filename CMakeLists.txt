@@ -79,6 +79,7 @@ set(glfw_VERSION "3.4")
 set(glm_VERSION "1.0.1")
 set(iconfont_VERSION "ef464d2")
 set(imgui_VERSION "1.91.8")
+set(implot_VERSION "0.16")
 set(itk_VERSION "5.4.2")
 set(nanovg_VERSION "f93799c")
 set(nlohmann_json_VERSION "3.11.3")
@@ -95,6 +96,7 @@ set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
 set(iconfont_PREFIX "${EXTERNAL_DIR}/iconfont-${iconfont_VERSION}")
 set(imgui_PREFIX "${EXTERNAL_DIR}/imgui-${imgui_VERSION}")
+set(implot_PREFIX "${EXTERNAL_DIR}/implot-${implot_VERSION}")
 set(itk_PREFIX "${EXTERNAL_DIR}/itk-${itk_VERSION}")
 set(nanovg_PREFIX "${EXTERNAL_DIR}/nanovg")
 set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
@@ -306,22 +308,20 @@ set_target_properties(imgui PROPERTIES
 )
 
 #--------------------------------------------------------------------------------
-# ImPlot (included as Git submodule):
-# ImPlot is an immediate mode, GPU accelerated plotting library for Dear ImGui.
+# ImPlot: Immediate mode, GPU accelerated plotting library for Dear ImGui
 #--------------------------------------------------------------------------------
-
-set(IMPLOT_INCLUDE_DIR ${EXT_DIR}/implot)
+set(implot_SRC_DIR ${implot_PREFIX}/src)
 
 list(APPEND IMPLOT_SOURCES
-  ${EXT_DIR}/implot/implot_demo.cpp
-  ${EXT_DIR}/implot/implot_items.cpp
-  ${EXT_DIR}/implot/implot.cpp
+  ${implot_SRC_DIR}/implot/implot_demo.cpp
+  ${implot_SRC_DIR}/implot/implot_items.cpp
+  ${implot_SRC_DIR}/implot/implot.cpp
 )
 
 add_library(implot ${IMPLOT_SOURCES})
 
 target_include_directories(implot PRIVATE
-  ${IMPLOT_INCLUDE_DIR}
+  ${implot_SRC_DIR}/implot
   ${imgui_SRC_DIR}/imgui
   ${entropy_SRC_DIR} # needed for IMGUI_USER_CONFIG file
 )
@@ -358,7 +358,7 @@ set(GRIDCUT_INCLUDE_DIRS
 include(BuildStamp)
 BuildStamp()
 
-set(ENTROPY_SOURCES
+set(entropy_SOURCES
   ${entropy_SRC_DIR}/main.cpp
   ${entropy_SRC_DIR}/EntropyApp.cpp
 
@@ -554,22 +554,22 @@ endif()
 #--------------------------------------------------------------------------------
 # Define main executable target
 #--------------------------------------------------------------------------------
-set(EXEC_NAME Entropy)
+set(entropy_EXE Entropy)
 
 # Embed the resources using CMakeRC
-cmrc_add_resource_library(${EXEC_NAME}-colormaps ALIAS ${EXEC_NAME}::colormaps ${COLORMAPS} NAMESPACE colormaps)
-cmrc_add_resource_library(${EXEC_NAME}-fonts ALIAS ${EXEC_NAME}::fonts ${FONTS} NAMESPACE fonts)
-#cmrc_add_resource_library(${EXEC_NAME}-shaders ALIAS ${EXEC_NAME}::shaders ${SHADERS} ${SHADERS_OLD} NAMESPACE shaders)
-cmrc_add_resource_library(${EXEC_NAME}-shaders ALIAS ${EXEC_NAME}::shaders ${SHADERS} NAMESPACE shaders)
+cmrc_add_resource_library(${entropy_EXE}-colormaps ALIAS ${entropy_EXE}::colormaps ${COLORMAPS} NAMESPACE colormaps)
+cmrc_add_resource_library(${entropy_EXE}-fonts ALIAS ${entropy_EXE}::fonts ${FONTS} NAMESPACE fonts)
+#cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${SHADERS} ${SHADERS_OLD} NAMESPACE shaders)
+cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${SHADERS} NAMESPACE shaders)
 
-add_executable(${EXEC_NAME})
+add_executable(${entropy_EXE})
 
-target_sources(${EXEC_NAME} PRIVATE
-  ${ENTROPY_SOURCES}
-  ${ENTROPY_HEADERS}
+target_sources(${entropy_EXE} PRIVATE
+  ${entropy_SOURCES}
+  ${entropy_HEADERS}
 )
 
-target_link_libraries(${EXEC_NAME} PRIVATE
+target_link_libraries(${entropy_EXE} PRIVATE
   ${ITK_LIBRARIES}
   ghcFilesystem::ghc_filesystem
   glfw
@@ -581,12 +581,12 @@ target_link_libraries(${EXEC_NAME} PRIVATE
   nlohmann_json::nlohmann_json
   spdlog::spdlog
   stduuid
-  ${EXEC_NAME}::colormaps
-  ${EXEC_NAME}::fonts
-  ${EXEC_NAME}::shaders
+  ${entropy_EXE}::colormaps
+  ${entropy_EXE}::fonts
+  ${entropy_EXE}::shaders
 )
 
-target_include_directories(${EXEC_NAME} PRIVATE
+target_include_directories(${entropy_EXE} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR} # for defines.h
   ${entropy_SRC_DIR}
   ${EXT_DIR} # remove
@@ -597,20 +597,20 @@ target_include_directories(${EXEC_NAME} PRIVATE
   ${imgui_SRC_DIR}
   ${imgui_SRC_DIR}/imgui # due to ImPlot
   ${IMGUI_KNOBS_DIR}
-  ${IMPLOT_INCLUDE_DIR}
+  ${implot_SRC_DIR}
   ${ITK_INCLUDE_DIRS}
   ${tinyfsm_INCLUDE_DIR}
 )
 
 # These libraries are in 'system' includes in order to ignore their compiler warnings:
-target_include_directories(${EXEC_NAME} SYSTEM PRIVATE
+target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   ${argparse_INCLUDE_DIR}
   ${Boost_INCLUDE_DIR}
   ${GRIDCUT_INCLUDE_DIRS}
   ${nanovg_SRC_DIR}
 )
 
-target_compile_options(${EXEC_NAME} PRIVATE
+target_compile_options(${entropy_EXE} PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
   -Werror
   -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
@@ -632,7 +632,7 @@ target_compile_options(${EXEC_NAME} PRIVATE
   >
 )
 
-set_target_properties(${EXEC_NAME} PROPERTIES
+set_target_properties(${entropy_EXE} PROPERTIES
   CXX_STANDARD 20
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF

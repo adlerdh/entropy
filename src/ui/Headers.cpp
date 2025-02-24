@@ -23,8 +23,7 @@
 
 #include <imgui/imgui.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
-
-#include <implot.h>
+#include <implot/implot.h>
 
 #include <ui/imgui/imgui-knobs/imgui-knobs.h>
 
