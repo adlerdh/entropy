@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.24.0 FATAL_ERROR)
-cmake_policy(SET CMP0175 OLD)
+
+if(POLICY CMP0175)
+  cmake_policy(SET CMP0175 OLD)
+endif()
 
 set(APP_NAME "Entropy")
 set(APP_DESCRIPTION "Tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images")
