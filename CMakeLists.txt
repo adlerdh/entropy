@@ -289,7 +289,10 @@ target_include_directories(imgui PRIVATE
 )
 
 # used in IMGUI_USER_CONFIG
-target_link_libraries(imgui PRIVATE spdlog::spdlog)
+target_link_libraries(imgui PRIVATE
+  glfw
+  spdlog::spdlog
+)
 
 target_compile_options(imgui PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
@@ -330,7 +333,11 @@ target_include_directories(implot PRIVATE
 )
 
 # used in IMGUI_USER_CONFIG
-target_link_libraries(implot PRIVATE spdlog::spdlog)
+target_link_libraries(implot PRIVATE
+  glfw
+  imgui
+  spdlog::spdlog
+)
 
 target_compile_options(implot PRIVATE
    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
