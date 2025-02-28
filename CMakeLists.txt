@@ -30,7 +30,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo")
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fstack-protector-all -g")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fstack-protector-all")
 
 message(STATUS "CMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}")
@@ -294,7 +294,7 @@ target_link_libraries(imgui PRIVATE spdlog::spdlog)
 target_compile_options(imgui PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
   -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
-  -Wshadow -pedantic-errors -g -ftrapv
+  -Wshadow -pedantic-errors -ftrapv
   -Wno-error=deprecated-copy
   -Wno-error=empty-body
   -Wno-empty-body # suppressed due to empty IM_ASSERT
@@ -334,7 +334,7 @@ target_link_libraries(implot PRIVATE spdlog::spdlog)
 
 target_compile_options(implot PRIVATE
    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-    -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow -g -ftrapv>
+    -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow -ftrapv>
    $<$<CXX_COMPILER_ID:MSVC>:
     /W4>
 )
@@ -555,7 +555,7 @@ endif()
 
 set(entropy_EXE Entropy)
 
-# Embed the resources using CMakeRC
+# Using CMakeRC, embed the resources  into static libraries
 cmrc_add_resource_library(${entropy_EXE}-colormaps ALIAS ${entropy_EXE}::colormaps ${entropy_COLORMAPS} NAMESPACE colormaps)
 cmrc_add_resource_library(${entropy_EXE}-fonts ALIAS ${entropy_EXE}::fonts ${entropy_FONTS} NAMESPACE fonts)
 cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${entropy_SHADERS} NAMESPACE shaders)
@@ -615,7 +615,7 @@ target_compile_options(${entropy_EXE} PRIVATE
   -Wno-error=float-conversion
   -Wno-error=maybe-uninitialized
   -Wno-error=stringop-overflow
-  -ftrapvx
+  -ftrapv
   >
   $<$<CXX_COMPILER_ID:AppleClang>:
   -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code

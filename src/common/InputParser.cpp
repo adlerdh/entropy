@@ -18,11 +18,11 @@ namespace
 
 /**
  * @brief Check string case-insensitive equality
- * @param[in] a First string
- * @param[in] b Second string
+ * @param[in] str1 First string
+ * @param[in] str2 Second string
  * @return True iff the strings are equal (case-insensitive)
  */
-bool iequals(const std::string& a, const std::string& b)
+bool iequals(const std::string& str1, const std::string& str2)
 {
   auto ichar_equals = [](char a, char b) -> bool
   {
@@ -30,7 +30,7 @@ bool iequals(const std::string& a, const std::string& b)
            == std::tolower(static_cast<unsigned char>(b));
   };
 
-  return std::equal(a.begin(), a.end(), b.begin(), b.end(), ichar_equals);
+  return std::equal(str1.begin(), str1.end(), str2.begin(), str2.end(), ichar_equals);
 }
 
 /**

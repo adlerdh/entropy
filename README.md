@@ -10,18 +10,23 @@ Entropy requires C++20 and build generation uses CMake 3.24.0. The "superbuild" 
 Here are sample build instructions:
 
 ```bash
-# Execute superbuild and set build flags (e.g. Release, static libraries)
-cmake -S . -B build -DEntropy_SUPERBUILD=1 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=0
-cmake --build build -- -j 16
+BUILD_TYPE=Release # Release, Debug, RelWithDebInfo, or MinSizeRel
+SHARED_LIBS=0 # 1 for shared linking, 0 for static linking
+NPROCS=24 # number of concurrent processes during build
+BUILD_DIR=build-${BUILD_TYPE}-shared-${SHARED_LIBS}
+
+# Execute superbuild and set build flags
+cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_SHARED_LIBS=${SHARED_LIBS};
+cmake --build ${BUILD_DIR} -- -j ${NPROCS};
 
 # Execute Entropy build
-cmake -S . -B build -DEntropy_SUPERBUILD=0
-cmake --build build -- -j 16
+cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=0;
+cmake --build ${BUILD_DIR} -- -j ${NPROCS};
 ```
 
 ### Operating systems
 Entropy builds on Linux, Windows, and macOS and is currently tested on
-* Ubuntu 22.04, 24.04 (with gcc 12.3.0, 14.2.0)
+* Ubuntu 22.04, 24.04 (with gcc 12.3.0, 13.3.0)
 * Windows 10, 11 (with MSVC++ 17.3.4)
 * macOS 14.6.1, 15.3.1, Apple arm64 architecture (with clang 15.0.0, 16.0.0)
 * ~~macOS 10.14.6, Intel x86_64 architecture (with clang 11.0.0)~~
