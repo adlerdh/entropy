@@ -152,7 +152,7 @@ void logStdErrno()
   std::unique_ptr<char[]> errmsg(new char[errmsglen]);
   strerror_s(errmsg.get(), errmsglen, errno);
 
-  spdlog::error("Error #{}: {}", errno, errmsg);
+  spdlog::error("Error #{}: {}", errno, errmsg.get());
 }
 #endif
 

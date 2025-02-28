@@ -41,7 +41,7 @@ VoxelDistances computeVoxelDistances(const glm::vec3& spacing, bool normalized)
 {
   VoxelDistances v;
 
-  const double L = (normalized) ? glm::length(spacing) : 1.0f;
+  const float L = (normalized) ? glm::length(spacing) : 1.0f;
 
   v.distXYZ = glm::length(spacing) / L;
 
