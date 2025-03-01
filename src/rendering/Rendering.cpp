@@ -243,14 +243,14 @@ Rendering::~Rendering()
 
 void Rendering::setupOpenGlState()
 {
-  glEnable(GL_MULTISAMPLE);
-  glDisable(GL_DEPTH_TEST);
-  glEnable(GL_STENCIL_TEST);
-  glDisable(GL_SCISSOR_TEST);
   glEnable(GL_BLEND);
   glDisable(GL_CULL_FACE);
+  glDisable(GL_DEPTH_TEST);
+  glEnable(GL_MULTISAMPLE);
+  glDisable(GL_SCISSOR_TEST);
+  glEnable(GL_STENCIL_TEST);
 
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
   glFrontFace(GL_CCW);
 
   // This is the state touched by NanoVG:

@@ -61,8 +61,6 @@ void renderPlacementContextMenu(int& corner, bool& /*isHoriz*/)
   //        if ( ImGui::MenuItem( "Vertical", nullptr, ( ! isHoriz ) ) ) isHoriz = ! isHoriz;
   //        ImGui::EndMenu();
   //    }
-
-  ImGui::EndPopup();
 }
 
 ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
@@ -178,13 +176,10 @@ void renderModeToolbar(
 
     if (s_lastShowState != guiData.m_showModeToolbar)
     {
-      const ImVec2 winSize = ImGui::GetWindowSize();
-
+      const ImVec2 winSize = ImGui::GetContentRegionAvail();
       guiData.m_modeToolbarDockDims = glm::vec2{winSize.x, winSize.y}
                                       + 2.0f * glm::vec2{padSize.x, padSize.y};
-
       readjustViewport();
-
       s_lastShowState = guiData.m_showModeToolbar;
     }
 
@@ -194,39 +189,42 @@ void renderModeToolbar(
 
     for (const MouseMode& mouseMode : AllMouseModes)
     {
-      ImGui::PushID(id); // PUSH ID
-
-      bool isModeActive = (activeMouseMode == mouseMode);
-
-      if (isHoriz)
-        ImGui::SameLine();
-      ImGui::PushStyleColor(ImGuiCol_Button, (isModeActive ? activeColor : inactiveColor));
+      ImGui::PushID(id);
       {
-        if (ImGui::Button(toolbarButtonIcon(mouseMode), buttonSize))
+        bool isModeActive = (activeMouseMode == mouseMode);
+
+        if (isHoriz) {
+          ImGui::SameLine();
+        }
+
+        ImGui::PushStyleColor(ImGuiCol_Button, (isModeActive ? activeColor : inactiveColor));
         {
-          isModeActive = !isModeActive;
-          if (isModeActive)
+          if (ImGui::Button(toolbarButtonIcon(mouseMode), buttonSize))
           {
-            setMouseMode(mouseMode);
+            isModeActive = !isModeActive;
+            if (isModeActive)
+            {
+              setMouseMode(mouseMode);
+            }
+          }
+
+          if (ImGui::IsItemHovered())
+          {
+            ImGui::SetTooltip("%s", typeString(mouseMode).c_str());
+          }
+
+          if (MouseMode::CameraZoom == mouseMode || MouseMode::Annotate == mouseMode)
+          {
+            // Put a small dummy space after these buttons
+            if (isHoriz)
+              ImGui::SameLine();
+            ImGui::Dummy(buttonSpace);
           }
         }
 
-        if (ImGui::IsItemHovered())
-        {
-          ImGui::SetTooltip("%s", typeString(mouseMode).c_str());
-        }
-
-        if (MouseMode::CameraZoom == mouseMode || MouseMode::Annotate == mouseMode)
-        {
-          // Put a small dummy space after these buttons
-          if (isHoriz)
-            ImGui::SameLine();
-          ImGui::Dummy(buttonSpace);
-        }
+        ImGui::PopStyleColor(1); // ImGuiCol_Button
+        ++id;
       }
-      ImGui::PopStyleColor(1); // ImGuiCol_Button
-      ++id;
-
       ImGui::PopID();
     }
 
@@ -234,12 +232,16 @@ void renderModeToolbar(
     // inactive button color
     ImGui::PushStyleColor(ImGuiCol_Button, inactiveColor);
     {
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::Dummy(buttonSpace);
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       if (ImGui::Button(ICON_FK_PICTURE_O, buttonSize))
       {
         ImGui::OpenPopup("imagePopup");
@@ -281,8 +283,10 @@ void renderModeToolbar(
         ImGui::EndPopup();
       }
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         ImGui::PushStyleColor(
@@ -305,8 +309,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         ImGui::PushStyleColor(
@@ -330,8 +336,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         ImGui::PushStyleColor(
@@ -354,8 +362,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         ImGui::PushStyleColor(
@@ -378,8 +388,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         ImGui::PushStyleColor(
@@ -402,8 +414,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         ImGui::PushStyleColor(
@@ -426,8 +440,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         ImGui::PushStyleColor(
@@ -450,12 +466,16 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::Dummy(buttonSpace);
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         if (ImGui::Button(ICON_FK_CROSSHAIRS, buttonSize))
@@ -488,8 +508,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         bool isOverlayVisible = getOverlayVisibility();
@@ -513,8 +535,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         //                ImGui::PushStyleColor( ImGuiCol_Button, highlightColor );
@@ -533,8 +557,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         //                ImGui::PushStyleColor( ImGuiCol_Button, highlightColor );
@@ -553,8 +579,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         if (ImGui::Button(ICON_FK_TH, buttonSize))
@@ -571,8 +599,10 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         if (ImGui::Button(ICON_FK_WINDOW_CLOSE_O, buttonSize))
@@ -596,12 +626,16 @@ void renderModeToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::Dummy(buttonSpace);
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         if (ImGui::Button(ICON_FK_INFO, buttonSize))
@@ -623,24 +657,23 @@ void renderModeToolbar(
     //        isCollapsed = false;
 
     // Save the new toolbar size:
-    const ImVec2 winSize = ImGui::GetWindowSize();
-
+    const ImVec2 winSize = ImGui::GetContentRegionAvail();
     guiData.m_modeToolbarDockDims = glm::vec2{winSize.x, winSize.y}
                                     + 2.0f * glm::vec2{padSize.x, padSize.y};
 
     if (ImGui::BeginPopupContextWindow())
     {
       renderPlacementContextMenu(guiData.m_modeToolbarCorner, guiData.m_isModeToolbarHorizontal);
-
       readjustViewport();
+      ImGui::EndPopup();
     }
-
-    ImGui::End(); // End toolbar
   }
   //    else
   //    {
   //        isCollapsed = true;
   //    }
+
+  ImGui::End(); // End toolbar
 
   // ImGuiCol_TitleBgCollapsed
   ImGui::PopStyleColor(1);
@@ -710,15 +743,12 @@ void renderSegToolbar(
   const auto buttonSize = scaledToolbarButtonSize(appData.windowData().getContentScaleRatios());
   const auto padSize = scaledPad(appData.windowData().getContentScaleRatios());
 
-  static bool s_lastShowState = guiData.m_showSegToolbar;
-
   guiData.m_showSegToolbar
     = (inSegmentationMode && !inAnnotationMode && !appData.guiData().m_showAnnotationsWindow);
 
   if (!guiData.m_showSegToolbar)
   {
     readjustViewport();
-    s_lastShowState = false;
     return;
   }
 
@@ -820,18 +850,6 @@ void renderSegToolbar(
 
   if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags))
   {
-    if (s_lastShowState != guiData.m_showSegToolbar)
-    {
-      const ImVec2 winSize = ImGui::GetWindowSize();
-
-      guiData.m_segToolbarDockDims = glm::vec2{winSize.x, winSize.y}
-                                     + 2.0f * glm::vec2{padSize.x, padSize.y};
-
-      readjustViewport();
-
-      s_lastShowState = guiData.m_showSegToolbar;
-    }
-
     int id = 0;
 
     const size_t fgLabel = appData.settings().foregroundLabel();
@@ -851,8 +869,10 @@ void renderSegToolbar(
 
     ImGui::PushStyleColor(ImGuiCol_Button, inactiveColor); // PUSH color
 
-    if (isHoriz)
+    if (isHoriz) {
       ImGui::SameLine();
+    }
+
     ImGui::PushStyleColor(ImGuiCol_Button, fgImGuiColor);
     ImGui::PushStyleColor(
       ImGuiCol_Text, (useDarkTextForFgColor ? sk_darkTextColor : sk_lightTextColor)
@@ -869,8 +889,10 @@ void renderSegToolbar(
       ImGui::SetTooltip("%s", "Select foreground label (<,>)");
     }
 
-    if (isHoriz)
+    if (isHoriz) {
       ImGui::SameLine();
+    }
+
     ImGui::PushStyleColor(ImGuiCol_Button, bgImGuiColor);
     ImGui::PushStyleColor(
       ImGuiCol_Text, (useDarkTextForBgColor ? sk_darkTextColor : sk_lightTextColor)
@@ -949,8 +971,10 @@ void renderSegToolbar(
       ImGui::EndPopup();
     }
 
-    if (isHoriz)
+    if (isHoriz) {
       ImGui::SameLine();
+    }
+
     ImGui::PushID(id);
     {
       if (ImGui::Button(ICON_FK_RANDOM, buttonSize))
@@ -965,12 +989,16 @@ void renderSegToolbar(
     }
     ImGui::PopID();
 
-    if (isHoriz)
+    if (isHoriz) {
       ImGui::SameLine();
+    }
+
     ImGui::Dummy(buttonSpace);
 
-    if (isHoriz)
+    if (isHoriz) {
       ImGui::SameLine();
+    }
+
     ImGui::PushID(id);
     {
       bool replaceBgWithFg = appData.settings().replaceBackgroundWithForeground();
@@ -996,8 +1024,10 @@ void renderSegToolbar(
     // Only show these segmentation toolbar buttons when in Segmentation mode
     if (inSegmentationMode)
     {
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         bool use3d = appData.settings().use3dBrush();
@@ -1020,8 +1050,10 @@ void renderSegToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         bool roundBrush = appData.settings().useRoundBrush();
@@ -1041,8 +1073,10 @@ void renderSegToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       if (ImGui::Button(ICON_FK_BULLSEYE, buttonSize))
       {
         ImGui::OpenPopup("brushSizePopup");
@@ -1053,12 +1087,16 @@ void renderSegToolbar(
         ImGui::SetTooltip("%s", "Brush options");
       }
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::Dummy(buttonSpace);
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       if (ImGui::Button(ICON_FK_PLUS_CIRCLE, buttonSize))
       {
         /// @todo replace with EntropyApp::cycleBrushSize
@@ -1071,8 +1109,9 @@ void renderSegToolbar(
         ImGui::SetTooltip("%s", "Increase brush size (+)");
       }
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
 
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, colors[ImGuiCol_Button]);
       //        ImGui::PushItemWidth( buttonSize.x );
@@ -1100,8 +1139,10 @@ void renderSegToolbar(
         ImGui::SetTooltip("%s", "Brush size (voxels)");
       }
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       if (ImGui::Button(ICON_FK_MINUS_CIRCLE, buttonSize))
       {
         /// @todo replace with EntropyApp::cycleBrushSize
@@ -1292,12 +1333,16 @@ void renderSegToolbar(
       // ImGuiStyleVar_FrameRounding, ImGuiStyleVar_WindowRounding
       ImGui::PopStyleVar(6);
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::Dummy(buttonSpace);
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       ImGui::PushID(id);
       {
         bool xhairsMove = appData.settings().crosshairsMoveWithBrush();
@@ -1321,8 +1366,10 @@ void renderSegToolbar(
       }
       ImGui::PopID();
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       if (ImGui::Button(ICON_FK_RSS, buttonSize))
       {
         ImGui::OpenPopup("segSyncPopup");
@@ -1333,8 +1380,10 @@ void renderSegToolbar(
         ImGui::SetTooltip("%s", "Synchronize drawing of segmentations on multiple images");
       }
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       if (ImGui::Button(ICON_FK_CUBE, buttonSize))
       {
         const auto imageUid = appData.activeImageUid();
@@ -1351,8 +1400,10 @@ void renderSegToolbar(
         ImGui::SetTooltip("%s", "Execute binary Graph Cuts segmentation");
       }
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       if (ImGui::Button(ICON_FK_CUBES, buttonSize))
       {
         const auto imageUid = appData.activeImageUid();
@@ -1369,8 +1420,10 @@ void renderSegToolbar(
         ImGui::SetTooltip("%s", "Execute multi-label Graph Cuts segmentation");
       }
 
-      if (isHoriz)
+      if (isHoriz) {
         ImGui::SameLine();
+      }
+
       if (ImGui::Button(ICON_FK_PLUG, buttonSize))
       {
         if (const auto imageUid = appData.activeImageUid())
@@ -1490,21 +1543,20 @@ void renderSegToolbar(
 
     ImGui::PopStyleColor(1); // ImGuiCol_Button
 
-    // Save the new toolbar size:
-    const ImVec2 winSize = ImGui::GetWindowSize();
-
-    guiData.m_segToolbarDockDims = glm::vec2{winSize.x, winSize.y}
-                                   + 2.0f * glm::vec2{padSize.x, padSize.y};
-
     if (ImGui::BeginPopupContextWindow())
     {
       renderPlacementContextMenu(guiData.m_segToolbarCorner, guiData.m_isSegToolbarHorizontal);
-
-      readjustViewport();
+      ImGui::EndPopup();
     }
 
-    ImGui::End(); // End toolbar
+    // Save the new toolbar size:
+    const ImVec2 winSize = ImGui::GetContentRegionAvail();
+    guiData.m_segToolbarDockDims = glm::vec2{winSize.x, winSize.y}
+                                   + 2.0f * glm::vec2{padSize.x, padSize.y};
+    readjustViewport();
   }
+
+  ImGui::End(); // End toolbar
 
   // ImGuiStyleVar_FramePadding, ImGuiStyleVar_ItemSpacing,
   // ImGuiStyleVar_WindowBorderSize, ImGuiStyleVar_WindowPadding,
@@ -2045,10 +2097,11 @@ void renderAnnotationToolbar(
     {
       /// @todo Disable placement in top-left corner
       renderPlacementContextMenu(corner, isHoriz);
+      ImGui::EndPopup();
     }
-
-    ImGui::End(); // End toolbar
   }
+
+  ImGui::End(); // End toolbar
 
   // // ImGuiStyleVar_FramePadding,
   // ImGuiStyleVar_ItemSpacing,

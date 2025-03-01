@@ -1,11 +1,10 @@
 # ENTROPY
 *A cross-platform tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images.*
 
-Copyright Daniel H. Adler and the Penn Image Computing and Science Lab, Department of Radiology, University of Pennsylvania.
-All rights reserved.
+Copyright Daniel H. Adler and the Penn Image Computing and Science Lab, Department of Radiology, University of Pennsylvania. All rights reserved.
 
 ## Building
-Entropy requires C++20 and build generation uses CMake 3.24.0. The "superbuild" pattern is used order to get and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), and [Slicer](https://github.com/Slicer/Slicer). Here are sample build instructions.
+Entropy requires C++20 and build generation uses CMake 3.24.0. The "superbuild" pattern is used order to retrieve and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ITK](https://github.com/InsightSoftwareConsortium/ITKSphinxExamples/tree/master/Superbuild), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), and [Slicer](https://github.com/Slicer/Slicer). Here are sample build instructions.
 
 Define build flags:
 - `BUILD_TYPE`: Debug, Release, RelWithDebInfo, or MinSizeRel
@@ -20,14 +19,14 @@ BUILD_DIR=build-${BUILD_TYPE}-shared-${SHARED_LIBS}
 
 Execute superbuild and set flags:
 ```
-cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_SHARED_LIBS=${SHARED_LIBS};
-cmake --build ${BUILD_DIR} -- -j ${NPROCS};
+cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_SHARED_LIBS=${SHARED_LIBS}
+cmake --build ${BUILD_DIR} -- -j ${NPROCS}
 ```
 
 Execute Entropy build:
 ```
-cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=0;
-cmake --build ${BUILD_DIR} -- -j ${NPROCS};
+cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=0
+cmake --build ${BUILD_DIR} -- -j ${NPROCS}
 ```
 
 ### Operating systems

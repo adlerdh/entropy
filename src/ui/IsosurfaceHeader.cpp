@@ -620,6 +620,7 @@ void renderIsosurfacesHeader(
     {
       selectedSurfaceUid = *uid;
       imageToSelectedSurfaceUid[imageUid] = *uid;
+      ImGui::PopStyleColor();
       return;
     }
   }
@@ -640,6 +641,7 @@ void renderIsosurfacesHeader(
         spdlog::info("Removed isosurface {}", *selectedSurfaceUid);
         selectedSurfaceUid = std::nullopt;
         imageToSelectedSurfaceUid.erase(imageUid);
+        ImGui::PopStyleColor();
         return;
       }
     }
@@ -799,5 +801,6 @@ void renderIsosurfacesHeader(
     }
   }
 
+  ImGui::PopStyleColor();
   ImGui::PopID(); /** PopID surfaceUid **/
 }

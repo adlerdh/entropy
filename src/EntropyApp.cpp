@@ -263,7 +263,7 @@ void EntropyApp::onImagesReady()
 
 void EntropyApp::resize(int windowWidth, int windowHeight)
 {
-  const auto margins = guiData().computeMargins();
+  const GuiData::Margins margins = guiData().computeMargins();
 
   // This call sets the window size and viewport
   // app->resize( windowWidth, windowHeight );

@@ -618,9 +618,9 @@ void renderViewSettingsComboWindow(
         static const ImVec4 s_textColor(0.75f, 0.75f, 0.75f, 1.0f);
         ImGui::TextColored(s_textColor, "%s", imageNamesText.c_str());
       }
-
-      ImGui::End(); // window
     }
+
+    ImGui::End(); // window
 
     ImGui::PopID(); /*** ID = uidString.c_str() ***/
   }
@@ -877,9 +877,9 @@ void renderViewOrientationToolWindow(
 
     // ImGuiStyleVar_FramePadding, ImGuiStyleVar_ItemSpacing, ImGuiStyleVar_WindowPadding
     ImGui::PopStyleVar(3);
-
-    ImGui::End();
   }
+
+  ImGui::End();
 
   ImGui::PopID(); /*** ID = uidString.c_str() ***/
 
@@ -963,9 +963,9 @@ void renderImagePropertiesWindow(
 
     //        const double frameRate = static_cast<double>( ImGui::GetIO().Framerate );
     //        ImGui::Text( "Rendering: %.3f ms/frame (%.1f FPS)", 1000.0 / frameRate, frameRate );
-
-    ImGui::End();
   }
+
+  ImGui::End();
 }
 
 void renderSegmentationPropertiesWindow(
@@ -1020,9 +1020,9 @@ void renderSegmentationPropertiesWindow(
         );
       }
     }
-
-    ImGui::End();
   }
+
+  ImGui::End();
 }
 
 void renderLandmarkPropertiesWindow(
@@ -1044,9 +1044,9 @@ void renderLandmarkPropertiesWindow(
         appData, imageUid, imageIndex++, isActiveImage, recenterAllViewsOnCurrentCrosshairsPosition
       );
     }
-
-    ImGui::End();
   }
+
+  ImGui::End();
 }
 
 void renderAnnotationWindow(
@@ -1078,9 +1078,9 @@ void renderAnnotationWindow(
         recenterAllViews
       );
     }
-
-    ImGui::End();
   }
+
+  ImGui::End();
 }
 
 void renderIsosurfacesWindow(
@@ -1109,9 +1109,9 @@ void renderIsosurfacesWindow(
         addTaskToIsosurfaceGpuMeshGenerationQueue
       );
     }
-
-    ImGui::End();
   }
+
+  ImGui::End();
 }
 
 void renderSettingsWindow(
@@ -2039,9 +2039,9 @@ void renderSettingsWindow(
 
       ImGui::EndTabBar();
     }
-
-    ImGui::End();
   }
+
+  ImGui::End();
 }
 
 //enum class PopupWindowPosition
@@ -2966,9 +2966,9 @@ void renderInspectionWindowWithTable(
       contextMenu();
       ImGui::EndPopup();
     }
-
-    ImGui::End();
   }
+
+  ImGui::End();
 
   // ImGuiStyleVar_CellPadding
   // ImGuiStyleVar_FramePadding
