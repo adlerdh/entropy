@@ -5,21 +5,27 @@ Copyright Daniel H. Adler and the Penn Image Computing and Science Lab, Departme
 All rights reserved.
 
 ## Building
-Entropy requires C++20 and build generation uses CMake 3.24.0. The "superbuild" pattern is used order to get and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), [Slicer](https://github.com/Slicer/Slicer)
+Entropy requires C++20 and build generation uses CMake 3.24.0. The "superbuild" pattern is used order to get and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), and [Slicer](https://github.com/Slicer/Slicer). Here are sample build instructions.
 
-Here are sample build instructions:
-
+Define build flags:
+- `BUILD_TYPE`: Debug, Release, RelWithDebInfo, or MinSizeRel
+- `SHARED_LIBS`: 0 for static; 1 for shared
+- `NPROCS`: number of concurrent processes during build
 ```bash
-BUILD_TYPE=Release # Release, Debug, RelWithDebInfo, or MinSizeRel
-SHARED_LIBS=0 # 1 for shared linking, 0 for static linking
-NPROCS=24 # number of concurrent processes during build
+BUILD_TYPE=Release
+SHARED_LIBS=0
+NPROCS=24
 BUILD_DIR=build-${BUILD_TYPE}-shared-${SHARED_LIBS}
+```
 
-# Execute superbuild and set build flags
+Execute superbuild and set flags:
+```
 cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_SHARED_LIBS=${SHARED_LIBS};
 cmake --build ${BUILD_DIR} -- -j ${NPROCS};
+```
 
-# Execute Entropy build
+Execute Entropy build:
+```
 cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=0;
 cmake --build ${BUILD_DIR} -- -j ${NPROCS};
 ```

@@ -299,12 +299,12 @@ message(STATUS "Adding external library ITK in ${itk_PREFIX}")
 
 ExternalProject_Add(ITK
   URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${itk_VERSION}/InsightToolkit-${itk_VERSION}.tar.gz"
-  URL_HASH SHA512=440d5962336ae7ba68e1efcabd78db8f10437db27da077a65731024d2fd94c588468678d0af8d8be1bfdb45dc90a88ace85ae9e1fabf77fb4172f3cb7cc27a3c
+  URL_HASH SHA512=29359839c0fb13acd430410e6adadbecb4d9d8cb4871a0aba0ac67b539c235354a591655dd654f43daa5f035a33721671d665eee8a4a129a9d0d3419e2356e97
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repository:
   # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/InsightSoftwareConsortium/ITK.git"
-  # GIT_TAG "898def645183e6a2d3293058ade451ec416c4514" # tag: v${itk_VERSION}
+  # GIT_TAG "1fc47c7bec4ee133318c1892b7b745763a17d411" # tag: v${itk_VERSION}
   # GIT_PROGRESS true
 
   PREFIX "${itk_PREFIX}"
