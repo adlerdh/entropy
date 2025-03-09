@@ -168,9 +168,15 @@ std::optional<uuids::uuid> CallbackHandler::createBlankImageAndTexture(
   // Assign the matching image's affine_T_subject transformation to the new image:
   image.transformations().set_affine_T_subject(matchImg->transformations().get_affine_T_subject());
 
+  const std::string imgDisplayName = image.settings().displayName();
+  spdlog::info("Created blank image matching header of existing image {} ({})",
+               imgDisplayName, matchImageUid);
+  spdlog::debug("Image header:\n{}", image.header());
+  spdlog::debug("Image transformation:\n{}", image.transformations());
+
   const uuids::uuid imageUid = m_appData.addImage(std::move(image));
 
-  spdlog::trace("Creating texture for image {}", imageUid);
+  spdlog::info("Creating texture for blank image {}", imageUid);
 
   const std::vector<uuids::uuid> createdImageTextureUids
     = createImageTextures(m_appData, std::vector<uuids::uuid>{imageUid});
@@ -186,14 +192,10 @@ std::optional<uuids::uuid> CallbackHandler::createBlankImageAndTexture(
   // Synchronize transformation with matching image
   syncManualImageTransformation(matchImageUid, imageUid);
 
-  spdlog::info("Created blank image {} matching header of image {}", imageUid, matchImageUid);
-  spdlog::debug("Header:\n{}", image.header());
-  spdlog::debug("Transformation:\n{}", image.transformations());
-
   if (createSegmentation)
   {
     const std::string segDisplayName = std::string("Untitled segmentation for image '")
-                                       + image.settings().displayName() + "'";
+                                       + imgDisplayName + "'";
 
     createBlankSegWithColorTableAndTextures(imageUid, segDisplayName);
   }
