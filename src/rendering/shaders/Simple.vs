@@ -9,6 +9,6 @@ uniform vec2 u_clipMax;
 
 void main()
 {
-    gl_Position = u_view_T_clip * vec4( clipPos, u_clipDepth, 1.0 );
-    gl_Position.xy = clamp( gl_Position.xy, u_clipMin, u_clipMax );
+  gl_Position = u_view_T_clip * vec4(clipPos, u_clipDepth, 1.0);
+  gl_Position.xy = clamp(gl_Position.xy, u_clipMin, u_clipMax);
 }

@@ -38,8 +38,8 @@ glm::vec3 computeTexSamplingDir(
   static const glm::vec4 clipOrigin{0.0f, 0.0f, -1.0f, 1.0};
   const glm::vec4 clipPos = clipOrigin + glm::vec4{Directions::get(axis), 0.0f};
 
-  const glm::vec4 pixelPos = pixel_T_clip * clipPos;
   const glm::vec4 pixelOrigin = pixel_T_clip * clipOrigin;
+  const glm::vec4 pixelPos = pixel_T_clip * clipPos;
 
   const glm::vec3 pixelDir = glm::normalize(pixelPos / pixelPos.w - pixelOrigin / pixelOrigin.w);
 
@@ -186,7 +186,7 @@ void drawImageQuad(
   // Half the number of samples for MIPs (for image 0):
   int halfNumMipSamples = 0;
 
-  // Distance (mm) per sample for computing MIPs (for image 0):
+  // Distance (cm) per sample for computing MIPs (for image 0):
   float mipSamplingDistance_cm = 0.0f;
 
   // Only compute these if doing a MIP:
@@ -227,11 +227,6 @@ void drawImageQuad(
         posInfo[i].viewClipDir
       );
 
-      if (SegmentationOutlineStyle::ImageVoxel == segOutlineStyle)
-      {
-        texSamplingDirsForSegOutline = voxelSamplingDirs;
-      }
-
       // For edges and smooth segmentation sampling,
       // use sampling directions based on image voxels:
       texSamplingDirsForEdges = voxelSamplingDirs;
@@ -239,11 +234,15 @@ void drawImageQuad(
     }
   }
 
-  if (SegmentationOutlineStyle::ViewPixel == segOutlineStyle)
-  {
+  switch (segOutlineStyle) {
+  case SegmentationOutlineStyle::ImageVoxel: {
+    texSamplingDirsForSegOutline = voxelSamplingDirs;
+    break;
+  }
+  case SegmentationOutlineStyle::ViewPixel: {
     const auto posInfo = math::computeAnatomicalLabelsForView(
       view.camera().camera_T_world(), image0->transformations().worldDef_T_subject()
-    );
+      );
 
     const glm::mat4 texture_T_viewClip = image0->transformations().texture_T_worldDef()
                                          * world_T_viewClip;
@@ -252,8 +251,13 @@ void drawImageQuad(
     {
       texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForViewPixelOffset(
         texture_T_viewClip, windowViewport, view.viewClip_T_windowClip(), posInfo[i].viewClipDir
-      );
+        );
     }
+    break;
+  }
+  case SegmentationOutlineStyle::Disabled: {
+    break;
+  }
   }
 
   // Set the view transformation uniforms that are common to all image plane rendering programs:
@@ -268,7 +272,10 @@ void drawImageQuad(
     (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity
   );
 
-  if (camera::ViewRenderMode::Image == renderMode || camera::ViewRenderMode::Checkerboard == renderMode || camera::ViewRenderMode::Quadrants == renderMode || camera::ViewRenderMode::Flashlight == renderMode)
+  if (camera::ViewRenderMode::Image == renderMode ||
+      camera::ViewRenderMode::Checkerboard == renderMode ||
+      camera::ViewRenderMode::Quadrants == renderMode ||
+      camera::ViewRenderMode::Flashlight == renderMode)
   {
     program.setUniform("u_aspectRatio", view.camera().aspectRatio());
     program.setUniform("u_flashlightRadius", flashlightRadius);
