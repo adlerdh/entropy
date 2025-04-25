@@ -1528,18 +1528,18 @@ void Rendering::renderAllImages(
   const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs
 )
 {
-  static std::list<std::reference_wrapper<GLTexture> > boundImageTextures;
-  static std::list<std::reference_wrapper<GLTexture> > boundMetricTextures;
-  static std::list<std::reference_wrapper<GLBufferTexture> > boundBufferTextures;
+  std::list<std::reference_wrapper<GLTexture> > boundImageTextures;
+  std::list<std::reference_wrapper<GLTexture> > boundMetricTextures;
+  std::list<std::reference_wrapper<GLBufferTexture> > boundBufferTextures;
 
   static const RenderData::ImageUniforms sk_defaultImageUniforms;
 
-  auto& renderData = m_appData.renderData();
+  const RenderData& renderData = m_appData.renderData();
   const bool modSegOpacity = renderData.m_modulateSegOpacityWithImageOpacity;
+  const camera::ViewRenderMode renderMode = view.renderMode();
 
-  const auto renderMode = view.renderMode();
-  const auto& metricImages = view.metricImages();
-  const auto& renderedImages = view.renderedImages();
+  const std::list<uuids::uuid>& metricImages = view.metricImages();
+  const std::list<uuids::uuid>& renderedImages = view.renderedImages();
 
   switch (getShaderGroup(renderMode))
   {

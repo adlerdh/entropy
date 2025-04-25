@@ -3,7 +3,9 @@
 .vscode/**
 build*/**
 out/**
+log*/**
 src/**/*.autosave
 CMakeFiles/**
 CMakeCache.txt
 CMakeLists.txt.user*
+entropy_ui.ini
