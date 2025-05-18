@@ -9,11 +9,11 @@ Entropy requires C++20 and build generation uses CMake 3.24.0. The "superbuild" 
 Define build flags:
 - `BUILD_TYPE`: Debug, Release, RelWithDebInfo, or MinSizeRel
 - `SHARED_LIBS`: 0 for static; 1 for shared
-- `NPROCS`: number of concurrent processes during build
+- `NPROCS`: number of concurrent processes during build (e.g. `nproc` on Linux, `sysctl -n hw.ncpu` on macOS, or `echo %NUMBER_OF_PROCESSORS%` on Windows)
 ```bash
 BUILD_TYPE=Release
 SHARED_LIBS=0
-NPROCS=24
+NPROCS=$(python3 -c "import os; print(os.cpu_count())")
 BUILD_DIR=build-${BUILD_TYPE}-shared-${SHARED_LIBS}
 ```
 
