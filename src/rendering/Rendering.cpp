@@ -117,6 +117,7 @@ std::unique_ptr<DepthPeelRenderer> createDdpRenderer(
 
 /// @note OpenGL should have a at least a minimum of 16 texture units
 
+/// @todo Change these to account for segs being in their own shader:
 const Uniforms::SamplerIndexVectorType Rendering::msk_imgTexSamplers{{0, 1}};
 const Uniforms::SamplerIndexVectorType Rendering::msk_segTexSamplers{{2, 3}};
 const Uniforms::SamplerIndexVectorType Rendering::msk_labelTableTexSamplers{{4, 5}};
@@ -124,9 +125,10 @@ const Uniforms::SamplerIndexVectorType Rendering::msk_imgCmapTexSamplers{{6, 7}}
 const Uniforms::SamplerIndexType Rendering::msk_metricCmapTexSampler{6};
 
 const Uniforms::SamplerIndexType Rendering::msk_imgTexSampler{0};
-const Uniforms::SamplerIndexType Rendering::msk_segTexSampler{1};
-const Uniforms::SamplerIndexType Rendering::msk_imgCmapTexSampler{2};
-const Uniforms::SamplerIndexType Rendering::msk_labelTableTexSampler{3};
+const Uniforms::SamplerIndexType Rendering::msk_segTexSampler{1}; /// @todo change to 0
+const Uniforms::SamplerIndexType Rendering::msk_imgCmapTexSampler{2}; /// @todo change to 1
+const Uniforms::SamplerIndexType Rendering::msk_labelTableTexSampler{3}; /// @todo change to 1
+
 const Uniforms::SamplerIndexVectorType Rendering::msk_imgRgbaTexSamplers{{0, 5, 6, 7}};
 
 const Uniforms::SamplerIndexType Rendering::msk_jumpTexSampler{4};
@@ -1525,6 +1527,7 @@ void Rendering::renderAllImages(
 
   const RenderData& renderData = m_appData.renderData();
   const bool modSegOpacity = renderData.m_modulateSegOpacityWithImageOpacity;
+
   const ViewRenderMode renderMode = view.renderMode();
   const bool doXray = (IntensityProjectionMode::Xray == view.intensityProjectionMode());
 
@@ -1562,7 +1565,6 @@ void Rendering::renderAllImages(
     for (const auto& imgSegPair : I)
     {
       if (!imgSegPair.first) {
-        // A non-existent image cannot be fixed, either:
         isFixedImage = false;
         continue;
       }
@@ -1605,11 +1607,11 @@ void Rendering::renderAllImages(
         return;
       }
 
-      // GLShaderProgram* segProg = &m_segProgram;
-      // if (!segProg) {
-      //   spdlog::error("Null segmentation program when rendering image {}", imgUid);
-      //   return;
-      // }
+      GLShaderProgram* segProg = &m_segProgram;
+      if (!segProg) {
+        spdlog::error("Null segmentation program when rendering image {}", imgUid);
+        return;
+      }
 
       imgProg->use();
 
@@ -1642,6 +1644,7 @@ void Rendering::renderAllImages(
             imgProg->setUniform("u_isoValues", renderData.m_isosurfaceData.values);
             imgProg->setUniform("u_isoOpacities", renderData.m_isosurfaceData.opacities);
             imgProg->setUniform("u_isoColors", renderData.m_isosurfaceData.colors);
+
             imgProg->setUniform("u_isoWidth", renderData.m_isosurfaceData.widthIn2d);
           }
         }
@@ -2260,6 +2263,11 @@ void Rendering::createShaderPrograms()
   if (!createRaycastIsoSurfaceProgram(m_raycastIsoSurfaceProgram))
   {
     throw_debug("Failed to create isosurface raycasting program")
+  }
+
+  if (!createSegProgram(m_segProgram))
+  {
+    throw_debug("Failed to create segmentation program")
   }
 }
 
@@ -3083,6 +3091,89 @@ bool Rendering::createSimpleProgram(GLShaderProgram& program)
     fs->setRegisteredUniforms(std::move(fsUniforms));
     program.attachShader(fs);
     spdlog::debug("Compiled simple fragment shader");
+  }
+
+  if (!program.link())
+  {
+    spdlog::critical("Failed to link shader program {}", program.name());
+    return false;
+  }
+
+  spdlog::debug("Linked shader program {}", program.name());
+  return true;
+}
+
+bool Rendering::createSegProgram(GLShaderProgram& program)
+{
+  static const std::string vsFileName{"src/rendering/shaders/Seg.vs"};
+  static const std::string fsFileName{"src/rendering/shaders/Seg.fs"};
+
+  auto filesystem = cmrc::shaders::get_filesystem();
+  std::string vsSource;
+  std::string fsSource;
+
+  try
+  {
+    cmrc::file vsData = filesystem.open(vsFileName.c_str());
+    cmrc::file fsData = filesystem.open(fsFileName.c_str());
+
+    vsSource = std::string(vsData.begin(), vsData.end());
+    fsSource = std::string(fsData.begin(), fsData.end());
+  }
+  catch (const std::exception& e)
+  {
+    spdlog::critical("Exception when loading shader file: {}", e.what());
+    throw_debug("Unable to load shader")
+  }
+
+  {
+    Uniforms vsUniforms;
+    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+
+    // For checkerboarding:
+    vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
+    vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+
+    vsUniforms.insertUniform("u_segTexture_T_world", UniformType::Mat4, sk_identMat4);
+    vsUniforms.insertUniform("u_segVoxel_T_world", UniformType::Mat4, sk_identMat4);
+
+    auto vs = std::make_shared<GLShader>("vsSeg", ShaderType::Vertex, vsSource.c_str());
+    vs->setRegisteredUniforms(std::move(vsUniforms));
+    program.attachShader(vs);
+
+    spdlog::debug("Compiled vertex shader {}", vsFileName);
+  }
+
+  {
+    Uniforms fsUniforms;
+
+    fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
+    fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_labelTableTexSampler);
+
+    fsUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
+
+    fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
+    fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
+
+    // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
+    fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
+
+    // For flashlighting:
+    fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
+    fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+
+    fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
+    // fsUniforms.insertUniform( "u_segInterpCutoff", UniformType::Float, 0.5f );
+    fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+    // fsUniforms.insertUniform( "u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{ sk_zeroVec3 } );
+
+    auto fs = std::make_shared<GLShader>("fsSeg", ShaderType::Fragment, fsSource.c_str());
+    fs->setRegisteredUniforms(std::move(fsUniforms));
+    program.attachShader(fs);
+
+    spdlog::debug("Compiled fragment shader {}", fsFileName);
   }
 
   if (!program.link())

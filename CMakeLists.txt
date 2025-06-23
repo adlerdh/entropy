@@ -11,7 +11,7 @@ set(COPYRIGHT_LINE "Copyright Daniel H. Adler and PICSL")
 set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)
-set(VERSION_MINOR 8)
+set(VERSION_MINOR 9)
 set(VERSION_FEATURE 0)
 set(VERSION_PATCH 0)
 set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION_PATCH}")
@@ -484,6 +484,8 @@ set(entropy_SHADERS
   ${entropy_SRC_DIR}/rendering/shaders/Overlay.fs
   ${entropy_SRC_DIR}/rendering/shaders/RaycastIsoSurface.fs
   ${entropy_SRC_DIR}/rendering/shaders/RaycastIsoSurface.vs
+  ${entropy_SRC_DIR}/rendering/shaders/Seg.fs
+  ${entropy_SRC_DIR}/rendering/shaders/Seg.vs
   ${entropy_SRC_DIR}/rendering/shaders/Simple.fs
   ${entropy_SRC_DIR}/rendering/shaders/Simple.vs
   ${entropy_SRC_DIR}/rendering/shaders/Xray.fs

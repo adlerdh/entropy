@@ -127,6 +127,7 @@ private:
   bool createOverlayProgram(GLShaderProgram& program);
   bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);
   bool createSimpleProgram(GLShaderProgram& program);
+  bool createSegProgram(GLShaderProgram& program);
 
   void renderImageData();
   void renderOverlays();
