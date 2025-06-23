@@ -864,7 +864,7 @@ void TexturedMesh::doRender(const RenderStage& stage)
 }
 
 void TexturedMesh::doUpdate(
-  double, const Viewport&, const camera::Camera& camera, const CoordinateFrame& crosshairs
+  double, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs
 )
 {
   static const glm::vec4 sk_lightColor{1.0f, 1.0f, 1.0f, 1.0f};
@@ -940,8 +940,8 @@ void TexturedMesh::doUpdate(
     // Transformation from view to 3D parcellation coordinates
     //        m_labelTexCoords_O_view =
     //                label3dRecord->cpuData()->transformations().texture_O_world() *
-    //                camera::world_O_clip( camera ) *
-    //                camera::get_ndc_O_view( viewport );
+    //                helper::world_O_clip( camera ) *
+    //                helper::get_ndc_O_view( viewport );
   }
   else
   {

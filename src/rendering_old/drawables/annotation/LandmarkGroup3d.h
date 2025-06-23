@@ -63,7 +63,7 @@ private:
     std::shared_ptr<BasicMesh> m_mesh;
   };
 
-  void doUpdate(double, const Viewport&, const camera::Camera&, const CoordinateFrame&) override;
+  void doUpdate(double, const Viewport&, const Camera&, const CoordinateFrame&) override;
 
   ShaderProgramActivatorType m_shaderActivator;
   UniformsProviderType m_uniformsProvider;

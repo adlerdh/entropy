@@ -40,39 +40,39 @@ private:
     None
   };
 
-  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
     override;
-  bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const camera::Camera&) override;
-  bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const camera::Camera&) override;
-  bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const camera::Camera&) override;
+  bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
+  bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
+  bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
 
-  bool doHandleTabletEvent(const QTabletEvent*, const Viewport&, const camera::Camera&) override
-  {
-    return false;
-  }
-
-  bool doHandleWheelEvent(const QWheelEvent*, const Viewport&, const camera::Camera&) override
+  bool doHandleTabletEvent(const QTabletEvent*, const Viewport&, const Camera&) override
   {
     return false;
   }
 
-  bool doHandlePanGesture(const QPanGesture*, const Viewport&, const camera::Camera&) override
+  bool doHandleWheelEvent(const QWheelEvent*, const Viewport&, const Camera&) override
   {
     return false;
   }
-  bool doHandlePinchGesture(const QPinchGesture*, const Viewport&, const camera::Camera&) override
+
+  bool doHandlePanGesture(const QPanGesture*, const Viewport&, const Camera&) override
   {
     return false;
   }
-  bool doHandleSwipeGesture(const QSwipeGesture*, const Viewport&, const camera::Camera&) override
+  bool doHandlePinchGesture(const QPinchGesture*, const Viewport&, const Camera&) override
   {
     return false;
   }
-  bool doHandleTapGesture(const QTapGesture*, const Viewport&, const camera::Camera&) override
+  bool doHandleSwipeGesture(const QSwipeGesture*, const Viewport&, const Camera&) override
   {
     return false;
   }
-  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const camera::Camera&)
+  bool doHandleTapGesture(const QTapGesture*, const Viewport&, const Camera&) override
+  {
+    return false;
+  }
+  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&)
     override
   {
     return false;

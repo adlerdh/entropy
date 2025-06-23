@@ -109,7 +109,7 @@ private:
   // Number of images rendered per metric view
   static constexpr std::size_t NUM_METRIC_IMAGES = 2;
 
-  using ImgSegPair = std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> >;
+  using ImgSegPair = std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>;
 
   // Vector of current image/segmentation pairs rendered by image shaders
   using CurrentImages = std::vector<ImgSegPair>;
@@ -161,7 +161,7 @@ private:
 
   // Bind/unbind images, segmentations, and color maps
   std::list<std::reference_wrapper<GLTexture> > bindMetricImageTextures(
-    const CurrentImages& I, const camera::ViewRenderMode& metricType
+    const CurrentImages& I, const ViewRenderMode& metricType
   );
 
   // Bind/unbind label tables
@@ -189,6 +189,8 @@ private:
   GLShaderProgram m_overlayProgram;
   GLShaderProgram m_raycastIsoSurfaceProgram;
   GLShaderProgram m_simpleProgram;
+
+  GLShaderProgram m_segProgram;
 
   // Samplers for metric shaders:
   static const Uniforms::SamplerIndexVectorType msk_imgTexSamplers;        // pair of images

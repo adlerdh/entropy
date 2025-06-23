@@ -105,7 +105,7 @@ void LandmarkGroup3d::setLandmarkToWorldTxProvider(
 }
 
 void LandmarkGroup3d::
-  doUpdate(double, const Viewport& viewport, const camera::Camera& camera, const CoordinateFrame&)
+  doUpdate(double, const Viewport& viewport, const Camera& camera, const CoordinateFrame&)
 {
   if (!m_scalingProvider || !m_landmarkToWorldTxProvider)
   {

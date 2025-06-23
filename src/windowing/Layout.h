@@ -25,8 +25,8 @@ public:
   void updateImageOrdering(uuid_range_t orderedImageUids) override;
 
   void setViewType(const ViewType& viewType) override;
-  void setRenderMode(const camera::ViewRenderMode& renderMode) override;
-  void setIntensityProjectionMode(const camera::IntensityProjectionMode& renderMode) override;
+  void setRenderMode(const ViewRenderMode& renderMode) override;
+  void setIntensityProjectionMode(const IntensityProjectionMode& renderMode) override;
 
   const uuids::uuid& uid() const;
   bool isLightbox() const;

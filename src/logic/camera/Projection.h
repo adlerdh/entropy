@@ -1,13 +1,9 @@
-#ifndef CAMERA_PROJECTION_H
-#define CAMERA_PROJECTION_H
+#pragma once
 
 #include "logic/camera/CameraTypes.h"
 
 #include <glm/fwd.hpp>
 #include <glm/vec2.hpp>
-
-namespace camera
-{
 
 class Projection
 {
@@ -61,7 +57,3 @@ protected:
 
   float m_zoom;
 };
-
-} // namespace camera
-
-#endif // CAMERA_PROJECTION_H

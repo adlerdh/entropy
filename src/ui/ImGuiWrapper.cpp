@@ -743,7 +743,7 @@ void ImGuiWrapper::render()
     if (!view)
       return sk_identityRotation;
 
-    return camera::computeCameraRotationRelativeToWorld(view->camera());
+    return helper::computeCameraRotationRelativeToWorld(view->camera());
   };
 
   auto setViewCameraRotation =
@@ -759,7 +759,7 @@ void ImGuiWrapper::render()
     View* view = m_appData.windowData().getCurrentView(viewUid);
     if (!view)
       return sk_zeroVec;
-    return camera::worldDirection(view->camera(), Directions::View::Back);
+    return helper::worldDirection(view->camera(), Directions::View::Back);
   };
 
   auto getObliqueViewDirections = [this](const uuids::uuid& viewUidToExclude
@@ -780,10 +780,10 @@ void ImGuiWrapper::render()
         if (!view.second)
           continue;
 
-        if (!camera::looksAlongOrthogonalAxis(view.second->camera()))
+        if (!helper::looksAlongOrthogonalAxis(view.second->camera()))
         {
           obliqueViewDirections.emplace_back(
-            camera::worldDirection(view.second->camera(), Directions::View::Front)
+            helper::worldDirection(view.second->camera(), Directions::View::Front)
           );
         }
       }
@@ -948,7 +948,7 @@ void ImGuiWrapper::render()
     static constexpr bool sk_resetObliqueOrientation = false;
     static constexpr bool sk_resetZoom = true;
 
-    const auto mindowFrameBounds = camera::computeMindowFrameBounds(
+    const auto mindowFrameBounds = helper::computeMindowFrameBounds(
       currentLayout.windowClipViewport(),
       m_appData.windowData().viewport().getAsVec4(),
       wholeWindowHeight
@@ -983,9 +983,9 @@ void ImGuiWrapper::render()
       currentLayout.intensityProjectionMode(),
 
       [&currentLayout](const ViewType& viewType) { return currentLayout.setViewType(viewType); },
-      [&currentLayout](const camera::ViewRenderMode& renderMode)
+      [&currentLayout](const ViewRenderMode& renderMode)
       { return currentLayout.setRenderMode(renderMode); },
-      [&currentLayout](const camera::IntensityProjectionMode& ipMode)
+      [&currentLayout](const IntensityProjectionMode& ipMode)
       { return currentLayout.setIntensityProjectionMode(ipMode); },
 
       [this]()
@@ -1045,13 +1045,13 @@ void ImGuiWrapper::render()
           view->setViewType(viewType);
       };
 
-      auto setRenderMode = [view](const camera::ViewRenderMode& renderMode)
+      auto setRenderMode = [view](const ViewRenderMode& renderMode)
       {
         if (view)
           view->setRenderMode(renderMode);
       };
 
-      auto setIntensityProjectionMode = [view](const camera::IntensityProjectionMode& ipMode)
+      auto setIntensityProjectionMode = [view](const IntensityProjectionMode& ipMode)
       {
         if (view)
           view->setIntensityProjectionMode(ipMode);
@@ -1059,7 +1059,7 @@ void ImGuiWrapper::render()
 
       auto recenter = [this, &viewUid]() { m_recenterView(viewUid); };
 
-      const auto mindowFrameBounds = camera::computeMindowFrameBounds(
+      const auto mindowFrameBounds = helper::computeMindowFrameBounds(
         view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4(), wholeWindowHeight
       );
 
@@ -1150,7 +1150,7 @@ void ImGuiWrapper::annotationToolbar(const std::function<void()> paintActiveAnno
 
   const float wholeWindowHeight = static_cast<float>(m_appData.windowData().getWindowSize().y);
 
-  const auto mindowAnnotViewFrameBounds = camera::computeMindowFrameBounds(
+  const auto mindowAnnotViewFrameBounds = helper::computeMindowFrameBounds(
     annotationView->windowClipViewport(),
     m_appData.windowData().viewport().getAsVec4(),
     wholeWindowHeight

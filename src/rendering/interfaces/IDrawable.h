@@ -41,7 +41,7 @@ public:
   virtual void update(
     double time,
     const Viewport& viewport,
-    const camera::Camera& camera,
+    const Camera& camera,
     const CoordinateFrame& crosshairs,
     const AccumulatedRenderingData& parentData
   ) = 0;

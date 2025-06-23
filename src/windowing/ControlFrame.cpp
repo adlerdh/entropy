@@ -8,14 +8,14 @@
 ControlFrame::ControlFrame(
   glm::vec4 winClipViewport,
   ViewType viewType,
-  camera::ViewRenderMode renderMode,
-  camera::IntensityProjectionMode ipMode,
+  ViewRenderMode renderMode,
+  IntensityProjectionMode ipMode,
   UiControls uiControls
 )
   : m_winClipViewport(std::move(winClipViewport))
   ,
 
-  m_windowClip_T_viewClip(camera::compute_windowClip_T_viewClip(m_winClipViewport))
+  m_windowClip_T_viewClip(helper::compute_windowClip_T_viewClip(m_winClipViewport))
   , m_viewClip_T_windowClip(glm::inverse(m_windowClip_T_viewClip))
   ,
 
@@ -212,11 +212,11 @@ const std::list<uuids::uuid>& ControlFrame::visibleImages() const
 
   switch (m_renderMode)
   {
-  case camera::ViewRenderMode::Image:
+  case ViewRenderMode::Image:
   {
     return renderedImages();
   }
-  case camera::ViewRenderMode::Disabled:
+  case ViewRenderMode::Disabled:
   {
     return sk_noImages;
   }
@@ -303,20 +303,20 @@ void ControlFrame::setViewType(const ViewType& viewType)
   m_viewType = viewType;
 }
 
-camera::ViewRenderMode ControlFrame::renderMode() const
+ViewRenderMode ControlFrame::renderMode() const
 {
   return m_renderMode;
 }
-void ControlFrame::setRenderMode(const camera::ViewRenderMode& shaderType)
+void ControlFrame::setRenderMode(const ViewRenderMode& shaderType)
 {
   m_renderMode = shaderType;
 }
 
-camera::IntensityProjectionMode ControlFrame::intensityProjectionMode() const
+IntensityProjectionMode ControlFrame::intensityProjectionMode() const
 {
   return m_intensityProjectionMode;
 }
-void ControlFrame::setIntensityProjectionMode(const camera::IntensityProjectionMode& ipMode)
+void ControlFrame::setIntensityProjectionMode(const IntensityProjectionMode& ipMode)
 {
   m_intensityProjectionMode = ipMode;
 }

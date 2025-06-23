@@ -163,7 +163,7 @@ glm::vec2 projectPointToPlaneLocal2dCoords(
 }
 
 void applyLayeringOffsetsToModelPositions(
-  const camera::Camera& camera,
+  const Camera& camera,
   const glm::mat4& model_T_world,
   uint32_t layer,
   std::vector<glm::vec3>& modelPositions
@@ -185,7 +185,7 @@ void applyLayeringOffsetsToModelPositions(
   );
 
   // Compute offset in World units based on first position (this choice is arbitrary)
-  const float worldDepth = camera::computeSmallestWorldDepthOffset(camera, modelPositions.front());
+  const float worldDepth = helper::computeSmallestWorldDepthOffset(camera, modelPositions.front());
 
   // Proportionally offset higher layers by more distance
   const float offsetMag = static_cast<float>(layer) * worldDepth;
@@ -274,7 +274,7 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelsForView(
 std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   const FrameBounds& miewportViewBounds,
   const Viewport& windowVP,
-  const camera::Camera& camera,
+  const Camera& camera,
   const glm::mat4& world_T_subject,
   const glm::mat4& windowClip_T_viewClip,
   const glm::vec3& worldCrosshairsPos
@@ -286,8 +286,8 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   // Compute intersections of the crosshair ray with the view box:
   static constexpr bool sk_doBothXhairDirs = true;
 
-  const glm::mat4 miewport_T_viewClip = camera::miewport_T_viewport(windowVP.height())
-                                        * camera::viewport_T_windowClip(windowVP)
+  const glm::mat4 miewport_T_viewClip = helper::miewport_T_viewport(windowVP.height())
+                                        * helper::viewport_T_windowClip(windowVP)
                                         * windowClip_T_viewClip;
 
   const glm::mat3 miewport_T_viewClip_IT = glm::inverseTranspose(glm::mat3{miewport_T_viewClip});
@@ -304,7 +304,7 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   const glm::vec2 miewportSize(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height);
   const glm::vec2 miewportCenter = miewportMinCorner + 0.5f * miewportSize;
 
-  glm::vec4 viewClipXhairPos = camera::clip_T_world(camera) * glm::vec4{worldCrosshairsPos, 1.0f};
+  glm::vec4 viewClipXhairPos = helper::clip_T_world(camera) * glm::vec4{worldCrosshairsPos, 1.0f};
   viewClipXhairPos /= viewClipXhairPos.w;
 
   glm::vec4 miewportXhairPos = miewport_T_viewClip * viewClipXhairPos;

@@ -803,7 +803,7 @@ void ConnectionManager::Impl::createInteractionConnections()
   // Functional returning the point picked in a 2D scene. This function analytically computes
   // the intersection of the view's camera plane with the ray emanating from the point picked.
   auto pointPicker2d =
-    [crosshairsFrameProvider](const camera::Camera& camera, const glm::vec2& ndcPos)
+    [crosshairsFrameProvider](const Camera& camera, const glm::vec2& ndcPos)
   {
     static constexpr float sk_nearPlaneZ = -1.0f;
 

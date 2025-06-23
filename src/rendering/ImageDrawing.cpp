@@ -56,8 +56,8 @@ glm::vec3 computeTextureSamplingDirectionForViewPixelOffset(
   static const glm::vec2 winPixelOrigin(0.0f, 0.0f);
 
   const glm::vec4
-    winNdcOrigin{camera::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
-  const glm::vec4 winNdcPos{camera::windowNdc_T_window(windowViewport, winPixelDir), -1.0f, 1.0f};
+    winNdcOrigin{helper::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
+  const glm::vec4 winNdcPos{helper::windowNdc_T_window(windowViewport, winPixelDir), -1.0f, 1.0f};
 
   glm::vec4 viewNdcOrigin = viewClip_T_windowClip * winNdcOrigin;
   viewNdcOrigin /= viewNdcOrigin.w;
@@ -83,8 +83,8 @@ glm::vec3 computeTextureSamplingDirectionForImageVoxelOffset(
   static const glm::vec2 winPixelOrigin(0.0f, 0.0f);
 
   const glm::vec4
-    winNdcOrigin{camera::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
-  const glm::vec4 winNdcPos{camera::windowNdc_T_window(windowViewport, winPixelDir), -1.0f, 1.0f};
+    winNdcOrigin{helper::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
+  const glm::vec4 winNdcPos{helper::windowNdc_T_window(windowViewport, winPixelDir), -1.0f, 1.0f};
 
   glm::vec4 viewNdcOrigin = viewClip_T_windowClip * winNdcOrigin;
   viewNdcOrigin /= viewNdcOrigin.w;
@@ -111,11 +111,11 @@ glm::vec3 computeTextureSamplingDirectionForImageVoxelOffset(
  * 2) the sampling distance in centimeters
  */
 std::pair<int, float> computeMipSamplingParams(
-  const camera::Camera& camera, const Image& image, float mipSlabThickness_mm, bool doMaxExtentMip
+  const Camera& camera, const Image& image, float mipSlabThickness_mm, bool doMaxExtentMip
 )
 {
   const float mmPerSample
-    = data::sliceScrollDistance(camera::worldDirection(camera, Directions::View::Front), image);
+    = data::sliceScrollDistance(helper::worldDirection(camera, Directions::View::Front), image);
 
   int halfNumMipSamples = 0;
 
@@ -140,7 +140,7 @@ std::pair<int, float> computeMipSamplingParams(
 
 void drawImageQuad(
   GLShaderProgram& program,
-  const camera::ViewRenderMode& renderMode,
+  const ViewRenderMode& renderMode,
   RenderData::Quad& quad,
   const View& view,
   const Viewport& windowViewport,
@@ -178,7 +178,7 @@ void drawImageQuad(
     return;
   }
 
-  const glm::mat4 world_T_viewClip = camera::world_T_clip(view.camera());
+  const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
 
   // Direction to sample direction along the camera view's Z axis for image 0:
   glm::vec3 texSamplingDirZ(0.0f);
@@ -190,7 +190,7 @@ void drawImageQuad(
   float mipSamplingDistance_cm = 0.0f;
 
   // Only compute these if doing a MIP:
-  if (camera::IntensityProjectionMode::None != view.intensityProjectionMode())
+  if (IntensityProjectionMode::None != view.intensityProjectionMode())
   {
     const glm::mat4 pixel_T_clip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
@@ -272,16 +272,16 @@ void drawImageQuad(
     (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity
   );
 
-  if (camera::ViewRenderMode::Image == renderMode ||
-      camera::ViewRenderMode::Checkerboard == renderMode ||
-      camera::ViewRenderMode::Quadrants == renderMode ||
-      camera::ViewRenderMode::Flashlight == renderMode)
+  if (ViewRenderMode::Image == renderMode ||
+      ViewRenderMode::Checkerboard == renderMode ||
+      ViewRenderMode::Quadrants == renderMode ||
+      ViewRenderMode::Flashlight == renderMode)
   {
     program.setUniform("u_aspectRatio", view.camera().aspectRatio());
     program.setUniform("u_flashlightRadius", flashlightRadius);
     program.setUniform("u_flashlightOverlays", flashlightOverlays);
 
-    const glm::vec4 clipXhairs = camera::clip_T_world(view.camera())
+    const glm::vec4 clipXhairs = helper::clip_T_world(view.camera())
                                  * glm::vec4{worldCrosshairs, 1.0f};
 
     program.setUniform("u_clipCrosshairs", glm::vec2{clipXhairs / clipXhairs.w});
@@ -304,7 +304,7 @@ void drawImageQuad(
       program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
       program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
 
-      if (camera::IntensityProjectionMode::Xray != view.intensityProjectionMode())
+      if (IntensityProjectionMode::Xray != view.intensityProjectionMode())
       {
         program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
       }
@@ -320,13 +320,13 @@ void drawImageQuad(
       }
     }
   }
-  else if (camera::ViewRenderMode::Difference == renderMode)
+  else if (ViewRenderMode::Difference == renderMode)
   {
     program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
     program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
     program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
   }
-  else if (camera::ViewRenderMode::CrossCorrelation == renderMode)
+  else if (ViewRenderMode::CrossCorrelation == renderMode)
   {
     if (2 != I.size())
     {
@@ -393,8 +393,8 @@ void drawRaycastQuad(
 
   // Set the view transformation uniforms that are common to all raycast rendering programs:
   program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
-  program.setUniform("u_world_T_clip", camera::world_T_clip(view.camera()));
-  program.setUniform("clip_T_world", camera::clip_T_world(view.camera()));
+  program.setUniform("u_world_T_clip", helper::world_T_clip(view.camera()));
+  program.setUniform("clip_T_world", helper::clip_T_world(view.camera()));
 
   /// @todo This must match the camera eye position
   program.setUniform("u_clipDepth", view.clipPlaneDepth());

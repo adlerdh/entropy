@@ -35,7 +35,7 @@ public:
 private:
   void setupChildren();
 
-  void doUpdate(double time, const Viewport&, const camera::Camera&, const CoordinateFrame&) override;
+  void doUpdate(double time, const Viewport&, const Camera&, const CoordinateFrame&) override;
 
   GetterType<float> m_slideStackHeightProvider;
 

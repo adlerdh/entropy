@@ -118,7 +118,7 @@ void SlideStackArrow::setupChildren()
 }
 
 void SlideStackArrow::
-  doUpdate(double /*time*/, const Viewport& viewport, const camera::Camera& camera, const CoordinateFrame&)
+  doUpdate(double /*time*/, const Viewport& viewport, const Camera& camera, const CoordinateFrame&)
 {
   static constexpr float sk_defaultCylinderLength(50.0f);
   static constexpr float sk_defaultScaleFactorInPixels(2.0f);

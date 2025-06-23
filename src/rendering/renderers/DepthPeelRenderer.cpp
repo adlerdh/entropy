@@ -125,7 +125,7 @@ struct DepthPeelRenderer::Impl
   void render();
   void resize(const Viewport&);
   void teardown();
-  void update(const camera::Camera&, const CoordinateFrame&);
+  void update(const Camera&, const CoordinateFrame&);
 
   void initializeFbos();
   void generateDefaultTextureAttachment(GLTexture&);
@@ -264,7 +264,7 @@ void DepthPeelRenderer::teardown()
   m_impl->teardown();
 }
 
-void DepthPeelRenderer::update(const camera::Camera& camera, const CoordinateFrame& crosshairs)
+void DepthPeelRenderer::update(const Camera& camera, const CoordinateFrame& crosshairs)
 {
   if (!m_impl)
   {
@@ -586,7 +586,7 @@ std::pair<uint16_t, float> DepthPeelRenderer::Impl::pickObjectIdAndNdcDepth(cons
     return sk_none;
   }
 
-  const glm::vec2 viewPos(camera::viewDevice_T_ndc(m_viewport, ndcPos));
+  const glm::vec2 viewPos(helper::viewDevice_T_ndc(m_viewport, ndcPos));
 
   if (viewPos.x < 0.0f || viewPos.y < 0.0f)
   {
@@ -623,7 +623,7 @@ std::pair<uint16_t, float> DepthPeelRenderer::Impl::pickObjectIdAndNdcDepth(cons
   const size_t index = viewPos_uint.x + m_objectIdTexture.size().x * viewPos_uint.y;
 
   const uint16_t id = m_objectIdBuffer[index];
-  const float ndcZ = camera::convertOpenGlDepthToNdc(m_objectDepthBuffer[index]);
+  const float ndcZ = helper::convertOpenGlDepthToNdc(m_objectDepthBuffer[index]);
 
   return std::make_pair(id, ndcZ);
 }
@@ -953,7 +953,7 @@ void DepthPeelRenderer::Impl::resize(const Viewport& viewport)
   m_objectBuffersDirty = true;
 }
 
-void DepthPeelRenderer::Impl::update(const camera::Camera& camera, const CoordinateFrame& crosshairs)
+void DepthPeelRenderer::Impl::update(const Camera& camera, const CoordinateFrame& crosshairs)
 {
   // Start traversing the drawable tree with identity transformation, full opacity multiplier,
   // and pickable property set to true.

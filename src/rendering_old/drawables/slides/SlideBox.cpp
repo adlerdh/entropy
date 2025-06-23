@@ -174,7 +174,7 @@ void SlideBox::setupChildren()
   m_boxMesh->setMaterialColor(sk_black);
 }
 
-void SlideBox::doUpdate(double, const Viewport&, const camera::Camera&, const CoordinateFrame&)
+void SlideBox::doUpdate(double, const Viewport&, const Camera&, const CoordinateFrame&)
 {
   auto record = m_slideRecord.lock();
 

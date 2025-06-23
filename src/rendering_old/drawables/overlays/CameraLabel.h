@@ -75,7 +75,7 @@ private:
   };
 
   void doRender(const RenderStage&) override;
-  void doUpdate(double time, const Viewport&, const camera::Camera&, const CoordinateFrame&) override;
+  void doUpdate(double time, const Viewport&, const Camera&, const CoordinateFrame&) override;
 
   void initBuffer();
   void initVao();

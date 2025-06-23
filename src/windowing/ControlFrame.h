@@ -22,8 +22,8 @@ public:
   ControlFrame(
     glm::vec4 winClipViewport,
     ViewType viewType,
-    camera::ViewRenderMode renderMode,
-    camera::IntensityProjectionMode ipMode,
+    ViewRenderMode renderMode,
+    IntensityProjectionMode ipMode,
     UiControls uiControls
   );
 
@@ -38,11 +38,11 @@ public:
   ViewType viewType() const;
   virtual void setViewType(const ViewType& viewType);
 
-  camera::ViewRenderMode renderMode() const;
-  virtual void setRenderMode(const camera::ViewRenderMode& renderMode);
+  ViewRenderMode renderMode() const;
+  virtual void setRenderMode(const ViewRenderMode& renderMode);
 
-  camera::IntensityProjectionMode intensityProjectionMode() const;
-  virtual void setIntensityProjectionMode(const camera::IntensityProjectionMode& ipMode);
+  IntensityProjectionMode intensityProjectionMode() const;
+  virtual void setIntensityProjectionMode(const IntensityProjectionMode& ipMode);
 
   bool isImageRendered(const AppData& appData, size_t index);
   bool isImageRendered(const uuids::uuid& imageUid);
@@ -108,10 +108,10 @@ protected:
   ViewType m_viewType;
 
   /// Rendering mode
-  camera::ViewRenderMode m_renderMode;
+  ViewRenderMode m_renderMode;
 
   /// Intensity projection mode
-  camera::IntensityProjectionMode m_intensityProjectionMode;
+  IntensityProjectionMode m_intensityProjectionMode;
 
   /// What UI controls are show in the frame?
   UiControls m_uiControls;

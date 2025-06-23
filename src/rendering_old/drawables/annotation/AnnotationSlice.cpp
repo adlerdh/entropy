@@ -303,7 +303,7 @@ bool AnnotationSlice::isOpaque() const
 }
 
 void AnnotationSlice::doUpdate(
-  double, const Viewport&, const camera::Camera& camera, const CoordinateFrame& crosshairs
+  double, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs
 )
 {
   if (!m_mesh || !m_annotToWorldTxProvider)

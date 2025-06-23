@@ -35,13 +35,13 @@ namespace
 static const glm::vec3 sk_origin{0.0f};
 
 // Map from view type to projection type
-static const std::unordered_map<ViewType, camera::ProjectionType>
+static const std::unordered_map<ViewType, ProjectionType>
   sk_viewTypeToDefaultProjectionTypeMap = {
-    {ViewType::Axial, camera::ProjectionType::Orthographic},
-    {ViewType::Coronal, camera::ProjectionType::Orthographic},
-    {ViewType::Sagittal, camera::ProjectionType::Orthographic},
-    {ViewType::Oblique, camera::ProjectionType::Orthographic},
-    {ViewType::ThreeD, camera::ProjectionType::Perspective}
+    {ViewType::Axial, ProjectionType::Orthographic},
+    {ViewType::Coronal, ProjectionType::Orthographic},
+    {ViewType::Sagittal, ProjectionType::Orthographic},
+    {ViewType::Oblique, ProjectionType::Orthographic},
+    {ViewType::ThreeD, ProjectionType::Perspective}
 };
 
 // Map from start frame type to rotation matrix.
@@ -80,8 +80,8 @@ static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, Cam
       {ViewType::ThreeD, CameraStartFrameType::Crosshairs_Coronal_LSA}}}
 };
 
-camera::ViewRenderMode reconcileRenderModeForViewType(
-  const ViewType& viewType, const camera::ViewRenderMode& currentRenderMode
+ViewRenderMode reconcileRenderModeForViewType(
+  const ViewType& viewType, const ViewRenderMode& currentRenderMode
 )
 {
   /// @todo Write this function properly by accounting for
@@ -90,13 +90,13 @@ camera::ViewRenderMode reconcileRenderModeForViewType(
   if (ViewType::ThreeD == viewType)
   {
     // If switching to ViewType::ThreeD, then switch to ViewRenderMode::VolumeRender:
-    return camera::ViewRenderMode::VolumeRender;
+    return ViewRenderMode::VolumeRender;
   }
-  else if (camera::ViewRenderMode::VolumeRender == currentRenderMode)
+  else if (ViewRenderMode::VolumeRender == currentRenderMode)
   {
     // If NOT switching to ViewType::ThreeD and currently using ViewRenderMode::VolumeRender,
     // then switch to ViewRenderMode::Image:
-    return camera::ViewRenderMode::Image;
+    return ViewRenderMode::Image;
   }
 
   return currentRenderMode;
@@ -108,8 +108,8 @@ View::View(
   glm::vec4 winClipViewport,
   ViewOffsetSetting offsetSetting,
   ViewType viewType,
-  camera::ViewRenderMode renderMode,
-  camera::IntensityProjectionMode ipMode,
+  ViewRenderMode renderMode,
+  IntensityProjectionMode ipMode,
   UiControls uiControls,
   std::function<ViewConvention()> viewConventionProvider,
   std::optional<uuids::uuid> cameraRotationSyncGroupUid,
@@ -154,8 +154,8 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
   static constexpr size_t k_maxNumWarnings = 10;
   static size_t warnCount = 0;
 
-  const glm::vec3 worldCameraOrigin = camera::worldOrigin(m_camera);
-  const glm::vec3 worldCameraFront = camera::worldDirection(m_camera, Directions::View::Front);
+  const glm::vec3 worldCameraOrigin = helper::worldOrigin(m_camera);
+  const glm::vec3 worldCameraFront = helper::worldDirection(m_camera, Directions::View::Front);
 
   // Compute the depth of the view plane in camera Clip space, because it is needed for the
   // coordinates of the quad that is textured with the image.
@@ -173,7 +173,7 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
         worldCameraOrigin, worldCameraFront, worldViewPlane, worldCameraToPlaneDistance
       ))
   {
-    camera::setWorldTarget(
+    helper::setWorldTarget(
       m_camera, worldCameraOrigin + worldCameraToPlaneDistance * worldCameraFront, std::nullopt
     );
 
@@ -197,7 +197,7 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
     return worldCrosshairs;
   }
 
-  const glm::vec4 clipPlanePos = camera::clip_T_world(m_camera) * glm::vec4{worldPlanePos, 1.0f};
+  const glm::vec4 clipPlanePos = helper::clip_T_world(m_camera) * glm::vec4{worldPlanePos, 1.0f};
   m_clipPlaneDepth = clipPlanePos.z / clipPlanePos.w;
 
   return worldPlanePos;
@@ -262,22 +262,22 @@ void View::setViewType(const ViewType& newViewType)
   {
     spdlog::debug(
       "Changing camera projection from {} to {}",
-      camera::typeString(m_projectionType),
-      camera::typeString(newProjType)
+      typeString(m_projectionType),
+      typeString(newProjType)
     );
 
-    std::unique_ptr<camera::Projection> projection;
+    std::unique_ptr<Projection> projection;
 
     switch (newProjType)
     {
-    case camera::ProjectionType::Orthographic:
+    case ProjectionType::Orthographic:
     {
-      projection = std::make_unique<camera::OrthographicProjection>();
+      projection = std::make_unique<OrthographicProjection>();
       break;
     }
-    case camera::ProjectionType::Perspective:
+    case ProjectionType::Perspective:
     {
-      projection = std::make_unique<camera::PerspectiveProjection>();
+      projection = std::make_unique<PerspectiveProjection>();
       break;
     }
     }
@@ -323,7 +323,7 @@ void View::setViewType(const ViewType& newViewType)
     {
       // Transitioning to an Orthogonal view type from an Oblique view type.
       // Reset the manually applied view transformations, because view might have rotations applied.
-      camera::resetViewTransformation(m_camera);
+      helper::resetViewTransformation(m_camera);
     }
   }
 
@@ -357,11 +357,11 @@ const ViewOffsetSetting& View::offsetSetting() const
   return m_offset;
 }
 
-const camera::Camera& View::camera() const
+const Camera& View::camera() const
 {
   return m_camera;
 }
-camera::Camera& View::camera()
+Camera& View::camera()
 {
   return m_camera;
 }

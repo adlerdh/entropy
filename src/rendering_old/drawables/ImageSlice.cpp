@@ -249,7 +249,7 @@ void ImageSlice::setUseIntensityThresolding(bool set)
 }
 
 void ImageSlice::doUpdate(
-  double /*time*/, const Viewport&, const camera::Camera& camera, const CoordinateFrame& crosshairs
+  double /*time*/, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs
 )
 {
   using PositionType = glm::vec3;

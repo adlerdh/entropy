@@ -126,7 +126,7 @@ void CrosshairsInteractionHandler::setRotationModeEnabled(bool enabled)
 }
 
 bool CrosshairsInteractionHandler::moveToObjectAtNdcPosition(
-  const camera::Camera& camera, const glm::vec2& ndcPosXY
+  const Camera& camera, const glm::vec2& ndcPosXY
 )
 {
   bool handled = false;
@@ -196,13 +196,13 @@ bool CrosshairsInteractionHandler::moveToObjectAtNdcPosition(
 }
 
 bool CrosshairsInteractionHandler::
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
 {
   return false;
 }
 
 bool CrosshairsInteractionHandler::doHandleMouseMoveEvent(
-  const QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   if (MouseMoveMode::None == m_mouseMoveMode)
@@ -289,7 +289,7 @@ bool CrosshairsInteractionHandler::doHandleMouseMoveEvent(
 }
 
 bool CrosshairsInteractionHandler::doHandleMousePressEvent(
-  const QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   bool handled = false;
@@ -345,7 +345,7 @@ bool CrosshairsInteractionHandler::doHandleMousePressEvent(
 }
 
 bool CrosshairsInteractionHandler::
-  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangeDoneBroadcaster)
   {
@@ -384,7 +384,7 @@ bool CrosshairsInteractionHandler::
 }
 
 bool CrosshairsInteractionHandler::doHandleWheelEvent(
-  const QWheelEvent* event, const Viewport&, const camera::Camera& camera
+  const QWheelEvent* event, const Viewport&, const Camera& camera
 )
 {
   //    event->orientation(); Qt::Orientation;

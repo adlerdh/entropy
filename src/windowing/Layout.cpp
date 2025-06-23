@@ -14,8 +14,8 @@ Layout::Layout(bool isLightbox)
   : ControlFrame(
     sk_winClipFullWindowViewport,
     ViewType::Axial,
-    camera::ViewRenderMode::Image,
-    camera::IntensityProjectionMode::None,
+    ViewRenderMode::Image,
+    IntensityProjectionMode::None,
     UiControls(isLightbox)
   )
   ,
@@ -72,13 +72,13 @@ void Layout::setViewType(const ViewType& viewType)
   updateAllViewsInLayout();
 }
 
-void Layout::setRenderMode(const camera::ViewRenderMode& renderMode)
+void Layout::setRenderMode(const ViewRenderMode& renderMode)
 {
   ControlFrame::setRenderMode(renderMode);
   updateAllViewsInLayout();
 }
 
-void Layout::setIntensityProjectionMode(const camera::IntensityProjectionMode& ipMode)
+void Layout::setIntensityProjectionMode(const IntensityProjectionMode& ipMode)
 {
   ControlFrame::setIntensityProjectionMode(ipMode);
   updateAllViewsInLayout();

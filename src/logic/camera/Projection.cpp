@@ -3,9 +3,6 @@
 #include <glm/glm.hpp>
 #define GLM_FORCE_RADIANS
 
-namespace camera
-{
-
 Projection::Projection()
   : m_aspectRatio(1.0f)
   , m_nearDistance(0.1f)
@@ -84,5 +81,3 @@ float Projection::getZoom() const
 {
   return m_zoom;
 }
-
-} // namespace camera

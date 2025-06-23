@@ -108,7 +108,7 @@ bool AnnotationExtrusion::isOpaque() const
 }
 
 void AnnotationExtrusion::
-  doUpdate(double, const Viewport&, const camera::Camera& camera, const CoordinateFrame&)
+  doUpdate(double, const Viewport&, const Camera& camera, const CoordinateFrame&)
 {
   if (!m_mesh || !m_thicknessProvider || !m_annotToWorldTxProvider)
   {
@@ -166,7 +166,7 @@ void AnnotationExtrusion::
     std::back_inserter(worldOffsets),
     [&camera, &world_O_annot](const glm::vec3& annotCorner)
     {
-      return camera::computeSmallestWorldDepthOffset(
+      return helper::computeSmallestWorldDepthOffset(
         camera, applyMatrix(*world_O_annot, glm::vec4{annotCorner, 1.0f})
       );
     }

@@ -36,7 +36,7 @@ CameraInteractionHandler::CameraInteractionHandler()
   m_mouseMoveMode = msk_defaultInternalModeMap.at(m_primaryMode);
 }
 
-void CameraInteractionHandler::setCameraProvider(GetterType<camera::Camera*> provider)
+void CameraInteractionHandler::setCameraProvider(GetterType<Camera*> provider)
 {
   m_cameraProvider = provider;
 }
@@ -80,13 +80,13 @@ void CameraInteractionHandler::setMode(const CameraInteractionMode& mode)
 }
 
 bool CameraInteractionHandler::
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
 {
   return false;
 }
 
 bool CameraInteractionHandler::
-  doHandleMouseMoveEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMouseMoveEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   if (MouseMoveMode::None == m_mouseMoveMode)
   {
@@ -262,7 +262,7 @@ bool CameraInteractionHandler::
 }
 
 bool CameraInteractionHandler::doHandleMousePressEvent(
-  const QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   bool handled = false;
@@ -361,7 +361,7 @@ bool CameraInteractionHandler::doHandleMousePressEvent(
 }
 
 bool CameraInteractionHandler::
-  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 
@@ -389,7 +389,7 @@ bool CameraInteractionHandler::
 }
 
 bool CameraInteractionHandler::
-  doHandleWheelEvent(const QWheelEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleWheelEvent(const QWheelEvent* event, const Viewport& viewport, const Camera&)
 {
   if (!m_crosshairsOriginProvider || !m_cameraProvider)
   {
@@ -498,14 +498,14 @@ bool CameraInteractionHandler::
 }
 
 bool CameraInteractionHandler::
-  doHandlePanGesture(const QPanGesture*, const Viewport&, const camera::Camera&)
+  doHandlePanGesture(const QPanGesture*, const Viewport&, const Camera&)
 {
   bool handled = false;
   return handled;
 }
 
 bool CameraInteractionHandler::
-  doHandlePinchGesture(const QPinchGesture* gesture, const Viewport& viewport, const camera::Camera&)
+  doHandlePinchGesture(const QPinchGesture* gesture, const Viewport& viewport, const Camera&)
 {
   if (!m_cameraProvider)
   {
@@ -565,7 +565,7 @@ bool CameraInteractionHandler::
 }
 
 bool CameraInteractionHandler::
-  doHandleSwipeGesture(const QSwipeGesture* gesture, const Viewport&, const camera::Camera&)
+  doHandleSwipeGesture(const QSwipeGesture* gesture, const Viewport&, const Camera&)
 {
   bool handled = false;
 

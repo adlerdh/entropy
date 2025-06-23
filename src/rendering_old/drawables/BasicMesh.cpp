@@ -550,7 +550,7 @@ void BasicMesh::doRender(const RenderStage& stage)
 }
 
 void BasicMesh::doUpdate(
-  double, const Viewport&, const camera::Camera& camera, const CoordinateFrame& crosshairs
+  double, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs
 )
 {
   static const glm::vec4 sk_lightColor{1.0f, 1.0f, 1.0f, 1.0f};

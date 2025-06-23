@@ -787,7 +787,7 @@ std::array<glm::vec4, 6> worldFrustumPlanes(const Camera& camera)
 }
 
 glm::vec4 world_O_view(
-  const Viewport& viewport, const camera::Camera& camera, const glm::vec2& viewPos, float ndcZ
+  const Viewport& viewport, const Camera& camera, const glm::vec2& viewPos, float ndcZ
 )
 {
   /// @note Maybe replace ndcZ with focal distance in clip space?
@@ -798,7 +798,7 @@ glm::vec4 world_O_view(
 
 /// @todo Make this function valid for perspective views, too!
 /// Currently not valid for perspective projection.
-glm::vec2 worldPixelSize(const Viewport& viewport, const camera::Camera& camera)
+glm::vec2 worldPixelSize(const Viewport& viewport, const Camera& camera)
 {
   static constexpr float nearPlaneZ = -1.0f;
 
@@ -815,7 +815,7 @@ glm::vec2 worldPixelSize(const Viewport& viewport, const camera::Camera& camera)
 
 // This version of the function is valid for both orthogonal and perspective projections
 glm::vec2 worldPixelSizeAtWorldPosition(
-  const Viewport& viewport, const camera::Camera& camera, const glm::vec3& worldPos
+  const Viewport& viewport, const Camera& camera, const glm::vec3& worldPos
 )
 {
   static const glm::vec2 viewX(1.0f, 0.0f);
@@ -834,7 +834,7 @@ glm::vec2 worldPixelSizeAtWorldPosition(
   return glm::vec2{glm::length(worldViewX - worldViewO), glm::length(worldViewY - worldViewO)};
 }
 
-float computeSmallestWorldDepthOffset(const camera::Camera& camera, const glm::vec3& worldPos)
+float computeSmallestWorldDepthOffset(const Camera& camera, const glm::vec3& worldPos)
 {
   // Small epsilon in NDC space. Using a float32 depth buffer, as we do,
   // this value should be just large enough to differentiate depths

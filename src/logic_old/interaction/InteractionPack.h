@@ -28,7 +28,7 @@ class InteractionPack
 public:
   InteractionPack(
     const gui::ViewType& viewType,
-    std::unique_ptr<camera::Camera> camera,
+    std::unique_ptr<Camera> camera,
     std::unique_ptr<CameraInteractionHandler> cameraHandler,
     std::unique_ptr<CrosshairsInteractionHandler> crosshairsHandler,
     std::unique_ptr<RefImageInteractionHandler> refImageHandler,
@@ -43,7 +43,7 @@ public:
   const gui::ViewType& getViewType() const;
 
   /// Get non-owning pointer to the camera
-  camera::Camera* getCamera();
+  Camera* getCamera();
 
   /// Get non-owning pointers to the interaction handlers
   CameraInteractionHandler* getCameraHandler();
@@ -62,7 +62,7 @@ public:
 private:
   const gui::ViewType m_viewType;
 
-  std::unique_ptr<camera::Camera> m_camera;
+  std::unique_ptr<Camera> m_camera;
 
   std::unique_ptr<CameraInteractionHandler> m_cameraHandler;
   std::unique_ptr<CrosshairsInteractionHandler> m_crosshairsHandler;

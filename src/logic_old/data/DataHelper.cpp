@@ -170,7 +170,7 @@ std::pair<gui::ViewSliderParams, gui::ViewSliderParams> viewScrollBarParams(
   DataManager& dataManager,
   const glm::vec3& worldCrosshairsOrigin,
   const glm::mat4& world_O_slideStack,
-  const camera::Camera& camera
+  const Camera& camera
 )
 {
   // The planes are ordered as follows:
@@ -271,7 +271,7 @@ gui::ViewSliderParams viewSliceSliderParams(
   DataManager& dataManager,
   const glm::vec3& worldCrosshairsOrigin,
   const glm::mat4& world_O_slideStack,
-  const camera::Camera& camera
+  const Camera& camera
 )
 {
   const auto worldAABBCorners = math::makeAABBoxCorners(

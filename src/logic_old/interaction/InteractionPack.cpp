@@ -10,7 +10,7 @@
 
 InteractionPack::InteractionPack(
   const gui::ViewType& viewType,
-  std::unique_ptr<camera::Camera> camera,
+  std::unique_ptr<Camera> camera,
   std::unique_ptr<CameraInteractionHandler> cameraHandler,
   std::unique_ptr<CrosshairsInteractionHandler> crosshairsHandler,
   std::unique_ptr<RefImageInteractionHandler> refImageHandler,
@@ -38,7 +38,7 @@ const gui::ViewType& InteractionPack::getViewType() const
   return m_viewType;
 }
 
-camera::Camera* InteractionPack::getCamera()
+Camera* InteractionPack::getCamera()
 {
   return m_camera.get();
 }

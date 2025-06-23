@@ -1083,7 +1083,7 @@ void CallbackHandler::doWindowLevel(
 
   const float multipler = fineAdjustment ? 0.1f : 1.0f;
 
-  if (camera::IntensityProjectionMode::Xray == viewToWL->intensityProjectionMode())
+  if (IntensityProjectionMode::Xray == viewToWL->intensityProjectionMode())
   {
     // Special logic to adjust W/L for views rendering in x-ray projection mode:
 
@@ -1189,7 +1189,7 @@ void CallbackHandler::doCameraTranslate2d(
 
   const auto backupCamera = viewToTranslate->camera();
 
-  panRelativeToWorldPosition(
+  helper::panRelativeToWorldPosition(
     viewToTranslate->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin
   );
 
@@ -1208,11 +1208,11 @@ void CallbackHandler::doCameraTranslate2d(
       if (syncedView->viewType() != viewToTranslate->viewType())
         continue;
 
-      if (camera::areViewDirectionsParallel(
+      if (helper::areViewDirectionsParallel(
             syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees
           ))
       {
-        panRelativeToWorldPosition(
+        helper::panRelativeToWorldPosition(
           syncedView->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin
         );
       }
@@ -1252,20 +1252,20 @@ void CallbackHandler::doCameraRotate2d(
   case RotationOrigin::CameraEye:
   case RotationOrigin::ViewCenter:
   {
-    worldRotationCenterPos = camera::worldOrigin(viewToRotate->camera());
+    worldRotationCenterPos = helper::worldOrigin(viewToRotate->camera());
     break;
   }
   }
 
   glm::vec4 clipRotationCenterPos
-    = camera::clip_T_world(viewToRotate->camera())
+    = helper::clip_T_world(viewToRotate->camera())
       * glm::vec4{m_appData.state().worldCrosshairs().worldOrigin(), 1.0f};
 
   clipRotationCenterPos /= clipRotationCenterPos.w;
 
   const auto backupCamera = viewToRotate->camera();
 
-  camera::rotateInPlane(
+  helper::rotateInPlane(
     viewToRotate->camera(),
     prevHit.viewClipPos,
     currHit.viewClipPos,
@@ -1288,14 +1288,14 @@ void CallbackHandler::doCameraRotate2d(
       if (syncedView->viewType() != viewToRotate->viewType())
         continue;
 
-      if (!camera::areViewDirectionsParallel(
+      if (!helper::areViewDirectionsParallel(
             syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees
           ))
       {
         continue;
       }
 
-      camera::rotateInPlane(
+      helper::rotateInPlane(
         syncedView->camera(),
         prevHit.viewClipPos,
         currHit.viewClipPos,
@@ -1362,12 +1362,12 @@ void CallbackHandler::doCameraRotate3d(
   case RotationOrigin::CameraEye:
   case RotationOrigin::ViewCenter:
   {
-    worldRotationCenterPos = camera::worldOrigin(viewToRotate->camera());
+    worldRotationCenterPos = helper::worldOrigin(viewToRotate->camera());
     break;
   }
   }
 
-  camera::rotateAboutWorldPoint(
+  helper::rotateAboutWorldPoint(
     viewToRotate->camera(), viewClipPrevPos, viewClipCurrPos, worldRotationCenterPos
   );
 
@@ -1389,14 +1389,14 @@ void CallbackHandler::doCameraRotate3d(
       if (syncedView->viewType() != viewToRotate->viewType())
         continue;
 
-      if (!camera::areViewDirectionsParallel(
+      if (!helper::areViewDirectionsParallel(
             syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees
           ))
       {
         continue;
       }
 
-      camera::rotateAboutWorldPoint(
+      helper::rotateAboutWorldPoint(
         syncedView->camera(), viewClipPrevPos, viewClipCurrPos, worldRotationCenterPos
       );
     }
@@ -1410,19 +1410,23 @@ void CallbackHandler::doCameraRotate3d(
   auto& windowData = m_appData.windowData();
 
   View* view = windowData.getView(viewUid);
-  if (!view)
+  if (!view) {
     return;
+  }
 
-  if (camera::ViewRenderMode::Disabled == view->renderMode())
+  if (ViewRenderMode::Disabled == view->renderMode()) {
     return;
-  if (ViewType::Oblique != view->viewType())
+  }
+
+  if (ViewType::Oblique != view->viewType()) {
     return;
+  }
 
   const glm::vec3 worldOrigin = m_appData.state().worldCrosshairs().worldOrigin();
 
   const auto backupCamera = view->camera();
 
-  camera::applyViewRotationAboutWorldPoint(view->camera(), camera_T_world_rotationDelta, worldOrigin);
+  helper::applyViewRotationAboutWorldPoint(view->camera(), camera_T_world_rotationDelta, worldOrigin);
 
   if (const auto rotGroupUid = view->cameraRotationSyncGroupUid())
   {
@@ -1438,14 +1442,14 @@ void CallbackHandler::doCameraRotate3d(
       if (syncedView->viewType() != view->viewType())
         continue;
 
-      if (!camera::areViewDirectionsParallel(
+      if (!helper::areViewDirectionsParallel(
             syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees
           ))
       {
         continue;
       }
 
-      camera::applyViewRotationAboutWorldPoint(
+      helper::applyViewRotationAboutWorldPoint(
         syncedView->camera(), camera_T_world_rotationDelta, worldOrigin
       );
     }
@@ -1453,8 +1457,7 @@ void CallbackHandler::doCameraRotate3d(
 }
 
 void CallbackHandler::handleSetViewForwardDirection(
-  const uuids::uuid& viewUid, const glm::vec3& worldForwardDirection
-)
+  const uuids::uuid& viewUid, const glm::vec3& worldForwardDirection)
 {
   auto& windowData = m_appData.windowData();
 
@@ -1462,14 +1465,17 @@ void CallbackHandler::handleSetViewForwardDirection(
   if (!view)
     return;
 
-  if (camera::ViewRenderMode::Disabled == view->renderMode())
+  if (ViewRenderMode::Disabled == view->renderMode()) {
     return;
-  if (ViewType::Oblique != view->viewType())
+  }
+
+  if (ViewType::Oblique != view->viewType()) {
     return;
+  }
 
   const glm::vec3 worldXhairsPos = m_appData.state().worldCrosshairs().worldOrigin();
-  camera::setWorldForwardDirection(view->camera(), worldForwardDirection);
-  camera::setWorldTarget(view->camera(), worldXhairsPos, std::nullopt);
+  helper::setWorldForwardDirection(view->camera(), worldForwardDirection);
+  helper::setWorldTarget(view->camera(), worldXhairsPos, std::nullopt);
 
   if (const auto rotGroupUid = view->cameraRotationSyncGroupUid())
   {
@@ -1485,8 +1491,8 @@ void CallbackHandler::handleSetViewForwardDirection(
       if (syncedView->viewType() != view->viewType())
         continue;
 
-      camera::setWorldForwardDirection(syncedView->camera(), worldForwardDirection);
-      camera::setWorldTarget(syncedView->camera(), worldXhairsPos, std::nullopt);
+      helper::setWorldForwardDirection(syncedView->camera(), worldForwardDirection);
+      helper::setWorldTarget(syncedView->camera(), worldXhairsPos, std::nullopt);
     }
   }
 }
@@ -1516,12 +1522,12 @@ void CallbackHandler::doCameraZoomDrag(
     case ZoomBehavior::ToCrosshairs:
     {
       viewClipCenterPos
-        = camera::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
+        = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
       break;
     }
     case ZoomBehavior::ToStartPosition:
     {
-      const glm::vec4 _viewClipStartPos = camera::clip_T_world(view->camera()) * startHit.worldPos;
+      const glm::vec4 _viewClipStartPos = helper::clip_T_world(view->camera()) * startHit.worldPos;
       viewClipCenterPos = glm::vec2{_viewClipStartPos / _viewClipStartPos.w};
       break;
     }
@@ -1536,7 +1542,7 @@ void CallbackHandler::doCameraZoomDrag(
   };
 
   const float factor = 2.0f * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f + 1.0f;
-  camera::zoomNdc(viewToZoom->camera(), factor, getCenterViewClipPos(viewToZoom));
+  helper::zoomNdc(viewToZoom->camera(), factor, getCenterViewClipPos(viewToZoom));
 
   if (syncZoomForAllViews)
   {
@@ -1548,7 +1554,7 @@ void CallbackHandler::doCameraZoomDrag(
 
       if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid))
       {
-        camera::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
+        helper::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
       }
     }
   }
@@ -1562,7 +1568,7 @@ void CallbackHandler::doCameraZoomDrag(
 
       if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid))
       {
-        camera::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
+        helper::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
       }
     }
   }
@@ -1593,12 +1599,12 @@ void CallbackHandler::doCameraZoomScroll(
     case ZoomBehavior::ToCrosshairs:
     {
       viewClipCenterPos
-        = camera::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
+        = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
       break;
     }
     case ZoomBehavior::ToStartPosition:
     {
-      const glm::vec4 _viewClipCurrPos = camera::clip_T_world(view->camera()) * hit.worldPos;
+      const glm::vec4 _viewClipCurrPos = helper::clip_T_world(view->camera()) * hit.worldPos;
       viewClipCenterPos = glm::vec2{_viewClipCurrPos / _viewClipCurrPos.w};
       break;
     }
@@ -1614,7 +1620,7 @@ void CallbackHandler::doCameraZoomScroll(
 
   const float factor = 1.0f + sk_zoomFactor * scrollOffset.y;
 
-  camera::zoomNdc(hit.view->camera(), factor, getCenterViewClipPos(hit.view));
+  helper::zoomNdc(hit.view->camera(), factor, getCenterViewClipPos(hit.view));
 
   if (syncZoomForAllViews)
   {
@@ -1626,7 +1632,7 @@ void CallbackHandler::doCameraZoomScroll(
 
       if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid))
       {
-        camera::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
+        helper::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
       }
     }
   }
@@ -1640,7 +1646,7 @@ void CallbackHandler::doCameraZoomScroll(
 
       if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid))
       {
-        camera::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
+        helper::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
       }
     }
   }
@@ -1686,9 +1692,9 @@ void CallbackHandler::doImageTranslate(
     static const float ndcZ = -1.0f;
 
     // Note: for 3D in-plane translation, we'll want to use this instead:
-    //camera::ndcZofWorldPoint( view->camera(), imgTx.getWorldSubjectOrigin() );
+    //helper::ndcZofWorldPoint( view->camera(), imgTx.getWorldSubjectOrigin() );
 
-    T = camera::translationInCameraPlane(
+    T = helper::translationInCameraPlane(
       viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos, ndcZ
     );
   }
@@ -1698,12 +1704,11 @@ void CallbackHandler::doImageTranslate(
     // proportional to the slice distance of the active image (the one being translated)
     const float scrollDistance = data::sliceScrollDistance(startHit.worldFrontAxis, *activeImage);
 
-    T = translationAboutCameraFrontBack(
+    T = helper::translationAboutCameraFrontBack(
       viewToUse->camera(),
       prevHit.viewClipPos,
       currHit.viewClipPos,
-      sk_imageFrontBackTranslationScaleFactor * scrollDistance
-    );
+      sk_imageFrontBackTranslationScaleFactor * scrollDistance);
   }
 
   auto& imgTx = activeImage->transformations();
@@ -1754,9 +1759,9 @@ void CallbackHandler::doImageRotate(
 
   if (inPlane)
   {
-    const glm::vec2 ndcRotationCenter = ndc_T_world(viewToUse->camera(), worldRotationCenter);
+    const glm::vec2 ndcRotationCenter = helper::ndc_T_world(viewToUse->camera(), worldRotationCenter);
 
-    const glm::quat R = camera::rotation2dInCameraPlane(
+    const glm::quat R = helper::rotation2dInCameraPlane(
       viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos, ndcRotationCenter
     );
 
@@ -1764,8 +1769,8 @@ void CallbackHandler::doImageRotate(
   }
   else
   {
-    const glm::quat R
-      = rotation3dAboutCameraPlane(viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos);
+    const glm::quat R = helper::rotation3dAboutCameraPlane(
+      viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos);
 
     math::rotateFrameAboutWorldPos(imageFrame, R, worldRotationCenter);
   }
@@ -2131,8 +2136,8 @@ void CallbackHandler::moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, i
     return;
 
   const glm::vec3 worldRightAxis
-    = camera::worldDirection(hit.view->camera(), Directions::View::Right);
-  const glm::vec3 worldUpAxis = camera::worldDirection(hit.view->camera(), Directions::View::Up);
+    = helper::worldDirection(hit.view->camera(), Directions::View::Right);
+  const glm::vec3 worldUpAxis = helper::worldDirection(hit.view->camera(), Directions::View::Up);
 
   const glm::vec2 moveDistances = data::sliceMoveDistance(
     m_appData, worldRightAxis, worldUpAxis, ImageSelection::VisibleImagesInView, hit.view

@@ -57,26 +57,25 @@ void renderViewSettingsComboWindow(
 
   const glm::vec2& contentScales,
 
-  size_t numImages,
+  std::size_t numImages,
 
-  const std::function<bool(size_t index)>& isImageRendered,
-  const std::function<void(size_t index, bool visible)>& setImageRendered,
+  const std::function<bool(std::size_t index)>& isImageRendered,
+  const std::function<void(std::size_t index, bool visible)>& setImageRendered,
 
-  const std::function<bool(size_t index)>& isImageUsedForMetric,
-  const std::function<void(size_t index, bool visible)>& setImageUsedForMetric,
+  const std::function<bool(std::size_t index)>& isImageUsedForMetric,
+  const std::function<void(std::size_t index, bool visible)>& setImageUsedForMetric,
 
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
-  const std::function<bool(size_t imageIndex)>& getImageVisibilitySetting,
-  const std::function<bool(size_t imageIndex)>& getImageIsActive,
+  const std::function<std::pair<const char*, const char*>(std::size_t index)>& getImageDisplayAndFileName,
+  const std::function<bool(std::size_t imageIndex)>& getImageVisibilitySetting,
+  const std::function<bool(std::size_t imageIndex)>& getImageIsActive,
 
   const ViewType& viewType,
-  const camera::ViewRenderMode& renderMode,
-  const camera::IntensityProjectionMode& intensityProjMode,
+  const ViewRenderMode& renderMode,
+  const IntensityProjectionMode& intensityProjMode,
 
   const std::function<void(const ViewType& viewType)>& setViewType,
-  const std::function<void(const camera::ViewRenderMode& renderMode)>& setRenderMode,
-  const std::function<void(const camera::IntensityProjectionMode& projMode)>&
-    setIntensityProjectionMode,
+  const std::function<void(const ViewRenderMode& renderMode)>& setRenderMode,
+  const std::function<void(const IntensityProjectionMode& projMode)>& setIntensityProjectionMode,
   const std::function<void()>& recenter,
 
   const std::function<void(const uuids::uuid& viewUid)>& applyImageSelectionAndShaderToAllViews,
@@ -119,24 +118,24 @@ void renderViewSettingsComboWindow(
 
     switch (renderMode)
     {
-    case camera::ViewRenderMode::Image:
-    case camera::ViewRenderMode::VolumeRender:
+    case ViewRenderMode::Image:
+    case ViewRenderMode::VolumeRender:
     {
       label = ICON_FK_EYE;
       break;
     }
-    case camera::ViewRenderMode::Quadrants:
-    case camera::ViewRenderMode::Checkerboard:
-    case camera::ViewRenderMode::Flashlight:
-    case camera::ViewRenderMode::Overlay:
-    case camera::ViewRenderMode::Difference:
-    case camera::ViewRenderMode::CrossCorrelation:
-    case camera::ViewRenderMode::JointHistogram:
+    case ViewRenderMode::Quadrants:
+    case ViewRenderMode::Checkerboard:
+    case ViewRenderMode::Flashlight:
+    case ViewRenderMode::Overlay:
+    case ViewRenderMode::Difference:
+    case ViewRenderMode::CrossCorrelation:
+    case ViewRenderMode::JointHistogram:
     {
       label = ICON_FK_EYE;
       break;
     }
-    case camera::ViewRenderMode::Disabled:
+    case ViewRenderMode::Disabled:
     default:
     {
       label = ICON_FK_EYE_SLASH;
@@ -175,7 +174,7 @@ void renderViewSettingsComboWindow(
       // Popup window with images to be rendered and their visibility:
       if (uiControls.m_hasImageComboBox)
       {
-        if (camera::ViewRenderMode::Image == renderMode || camera::ViewRenderMode::VolumeRender == renderMode)
+        if (ViewRenderMode::Image == renderMode || ViewRenderMode::VolumeRender == renderMode)
         {
           // Image visibility:
           if (ImGui::Button(label))
@@ -193,7 +192,7 @@ void renderViewSettingsComboWindow(
           {
             ImGui::Text("Visible images:");
 
-            for (size_t i = 0; i < numImages; ++i)
+            for (std::size_t i = 0; i < numImages; ++i)
             {
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
 
@@ -232,7 +231,7 @@ void renderViewSettingsComboWindow(
             ImGui::EndPopup();
           }
         }
-        else if (camera::ViewRenderMode::Disabled == renderMode)
+        else if (ViewRenderMode::Disabled == renderMode)
         {
           ImGui::Button(label);
         }
@@ -255,7 +254,7 @@ void renderViewSettingsComboWindow(
           {
             ImGui::Text("Compared images:");
 
-            for (size_t i = 0; i < numImages; ++i)
+            for (std::size_t i = 0; i < numImages; ++i)
             {
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
 
@@ -305,13 +304,13 @@ void renderViewSettingsComboWindow(
         if (ImGui::BeginCombo("##shaderTypeCombo", ICON_FK_TELEVISION))
         {
           auto renderSelectablesForRenderModes =
-            [&renderMode, &setRenderMode](const std::vector<camera::ViewRenderMode>& renderModes)
+            [&renderMode, &setRenderMode](const std::vector<ViewRenderMode>& renderModes)
           {
             for (const auto& st : renderModes)
             {
               const bool isSelected = (st == renderMode);
 
-              if (ImGui::Selectable(camera::typeString(st).c_str(), isSelected))
+              if (ImGui::Selectable(typeString(st).c_str(), isSelected))
               {
                 setRenderMode(st);
               }
@@ -327,8 +326,8 @@ void renderViewSettingsComboWindow(
           {
             // If there are two or more images, all shader types can be used:
             const auto allRenderModes = (ViewType::ThreeD != viewType)
-                                          ? camera::All2dViewRenderModes
-                                          : camera::All3dViewRenderModes;
+                                          ? All2dViewRenderModes
+                                          : All3dViewRenderModes;
 
             renderSelectablesForRenderModes(allRenderModes);
           }
@@ -336,8 +335,8 @@ void renderViewSettingsComboWindow(
           {
             // If there is only one image, then only non-metric shader types can be used:
             const auto singleImageRenderModes = (ViewType::ThreeD != viewType)
-                                                  ? camera::All2dNonMetricRenderModes
-                                                  : camera::All3dNonMetricRenderModes;
+                                                  ? All2dNonMetricRenderModes
+                                                  : All3dNonMetricRenderModes;
 
             renderSelectablesForRenderModes(singleImageRenderModes);
           }
@@ -349,12 +348,12 @@ void renderViewSettingsComboWindow(
         if (ImGui::IsItemHovered())
         {
           static const std::string sk_viewTypeString("Render mode: ");
-          ImGui::SetTooltip("%s", (sk_viewTypeString + camera::descriptionString(renderMode)).c_str());
+          ImGui::SetTooltip("%s", (sk_viewTypeString + descriptionString(renderMode)).c_str());
         }
       }
 
       // Popup window with intensity projection mode:
-      if (uiControls.m_hasMipTypeComboBox && (camera::ViewRenderMode::VolumeRender != renderMode))
+      if (uiControls.m_hasMipTypeComboBox && (ViewRenderMode::VolumeRender != renderMode))
       {
         ImGui::SameLine();
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
@@ -364,18 +363,18 @@ void renderViewSettingsComboWindow(
           ImGui::Text("Intensity projection mode:");
           ImGui::Spacing();
 
-          for (const auto& ip : camera::AllIntensityProjectionModes)
+          for (const auto& ip : AllIntensityProjectionModes)
           {
             const bool isSelected = (ip == intensityProjMode);
 
-            if (ImGui::Selectable(camera::typeString(ip).c_str(), isSelected))
+            if (ImGui::Selectable(typeString(ip).c_str(), isSelected))
             {
               setIntensityProjectionMode(ip);
             }
 
             if (ImGui::IsItemHovered())
             {
-              ImGui::SetTooltip("%s", camera::descriptionString(ip).c_str());
+              ImGui::SetTooltip("%s", descriptionString(ip).c_str());
             }
 
             if (isSelected)
@@ -384,7 +383,7 @@ void renderViewSettingsComboWindow(
             }
           }
 
-          if (camera::IntensityProjectionMode::None != intensityProjMode)
+          if (IntensityProjectionMode::None != intensityProjMode)
           {
             ImGui::Spacing();
             ImGui::Separator();
@@ -421,7 +420,7 @@ void renderViewSettingsComboWindow(
             helpMarker("Compute intensity projection over the full image extent");
           }
 
-          if (camera::IntensityProjectionMode::Xray == intensityProjMode)
+          if (IntensityProjectionMode::Xray == intensityProjMode)
           {
             ImGui::Spacing();
             ImGui::Separator();
@@ -481,7 +480,7 @@ void renderViewSettingsComboWindow(
 
         if (ImGui::IsItemHovered())
         {
-          ImGui::SetTooltip("%s", camera::descriptionString(intensityProjMode).c_str());
+          ImGui::SetTooltip("%s", descriptionString(intensityProjMode).c_str());
         }
       }
 
@@ -582,9 +581,9 @@ void renderViewSettingsComboWindow(
 
         bool first = true; // The first image gets no comma in front of it
 
-        if (camera::ViewRenderMode::Image == renderMode || camera::ViewRenderMode::VolumeRender == renderMode)
+        if (ViewRenderMode::Image == renderMode || ViewRenderMode::VolumeRender == renderMode)
         {
-          for (size_t i = 0; i < numImages; ++i)
+          for (std::size_t i = 0; i < numImages; ++i)
           {
             if (isImageRendered(i) && getImageVisibilitySetting(i))
             {
@@ -597,14 +596,14 @@ void renderViewSettingsComboWindow(
             }
           }
         }
-        else if (camera::ViewRenderMode::Disabled == renderMode)
+        else if (ViewRenderMode::Disabled == renderMode)
         {
           // render no text
           imageNamesText = "";
         }
         else
         {
-          for (size_t i = 0; i < numImages; ++i)
+          for (std::size_t i = 0; i < numImages; ++i)
           {
             if (isImageUsedForMetric(i) && getImageVisibilitySetting(i))
             {
@@ -890,11 +889,11 @@ void renderViewOrientationToolWindow(
 void renderImagePropertiesWindow(
   AppData& appData,
   size_t numImages,
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<const char*, const char*>(std::size_t index)>& getImageDisplayAndFileName,
   const std::function<size_t(void)>& getActiveImageIndex,
-  const std::function<void(size_t)>& setActiveImageIndex,
+  const std::function<void(std::size_t)>& setActiveImageIndex,
   const std::function<size_t(void)>& getNumImageColorMaps,
-  const std::function<ImageColorMap*(size_t cmapIndex)>& getImageColorMap,
+  const std::function<ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageBackward,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageForward,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToBack,
@@ -970,9 +969,9 @@ void renderImagePropertiesWindow(
 
 void renderSegmentationPropertiesWindow(
   AppData& appData,
-  const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable,
+  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable,
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
-  const std::function<void(size_t labelColorTableIndex)>& updateLabelColorTableTexture,
+  const std::function<void(std::size_t labelColorTableIndex)>& updateLabelColorTableTexture,
   const std::function<void(const uuids::uuid& imageUid, size_t labelIndex)>&
     moveCrosshairsToSegLabelCentroid,
   const std::function<std::optional<uuids::uuid>(
@@ -1011,7 +1010,7 @@ void renderSegmentationPropertiesWindow(
           [&imageUid, updateImageUniforms]() { updateImageUniforms(imageUid); },
           getLabelTable,
           updateLabelColorTableTexture,
-          [&imageUid, moveCrosshairsToSegLabelCentroid](size_t labelIndex)
+          [&imageUid, moveCrosshairsToSegLabelCentroid](std::size_t labelIndex)
           { moveCrosshairsToSegLabelCentroid(imageUid, labelIndex); },
           createBlankSeg,
           clearSeg,
@@ -1117,7 +1116,7 @@ void renderIsosurfacesWindow(
 void renderSettingsWindow(
   AppData& appData,
   const std::function<size_t(void)>& getNumImageColorMaps,
-  const std::function<const ImageColorMap*(size_t cmapIndex)>& getImageColorMap,
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
   const std::function<void(void)>& updateMetricUniforms,
   const AllViewsRecenterType& recenterAllViews
 )
@@ -1223,7 +1222,7 @@ void renderSettingsWindow(
     helpMarker("Select/invert the metric colormap");
 
     auto getColormapIndex = [&metricParams]() { return metricParams.m_colorMapIndex; };
-    auto setColormapIndex = [&metricParams](size_t cmapIndex)
+    auto setColormapIndex = [&metricParams](std::size_t cmapIndex)
     { metricParams.m_colorMapIndex = cmapIndex; };
 
     auto getImageColorMapInverted = [&metricParams]() { return metricParams.m_invertCmap; };
@@ -2056,14 +2055,14 @@ void renderSettingsWindow(
 void renderInspectionWindow(
   AppData& appData,
   size_t numImages,
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<const char*, const char*>(std::size_t index)>& getImageDisplayAndFileName,
   const std::function<glm::vec3()>& getWorldDeformedPos,
-  const std::function<std::optional<glm::vec3>(size_t imageIndex)>& getSubjectPos,
-  const std::function<std::optional<glm::ivec3>(size_t imageIndex)>& getVoxelPos,
-  const std::function<std::optional<double>(size_t imageIndex)>& getImageValueNN,
-  const std::function<std::optional<double>(size_t imageIndex)>& getImageValueLinear,
-  const std::function<std::optional<int64_t>(size_t imageIndex)>& getSegLabel,
-  const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable
+  const std::function<std::optional<glm::vec3>(std::size_t imageIndex)>& getSubjectPos,
+  const std::function<std::optional<glm::ivec3>(std::size_t imageIndex)>& getVoxelPos,
+  const std::function<std::optional<double>(std::size_t imageIndex)>& getImageValueNN,
+  const std::function<std::optional<double>(std::size_t imageIndex)>& getImageValueLinear,
+  const std::function<std::optional<int64_t>(std::size_t imageIndex)>& getSegLabel,
+  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable
 )
 {
   std::ignore = getImageValueLinear;
@@ -2110,7 +2109,7 @@ void renderInspectionWindow(
       //                    ImGui::SetTooltip( "Show World-space crosshairs coordinates" );
       //                }
 
-      for (size_t imageIndex = 0; imageIndex < numImages; ++imageIndex)
+      for (std::size_t imageIndex = 0; imageIndex < numImages; ++imageIndex)
       {
         const auto imageUid = appData.imageUid(imageIndex);
         if (!imageUid)
@@ -2224,7 +2223,7 @@ void renderInspectionWindow(
     bool firstImageShown = true;
     bool showedAtLeastOneImage = false; // is info for at least one image shown?
 
-    for (size_t imageIndex = 0; imageIndex < numImages; ++imageIndex)
+    for (std::size_t imageIndex = 0; imageIndex < numImages; ++imageIndex)
     {
       const auto imageUid = appData.imageUid(imageIndex);
       const Image* image = (imageUid ? appData.image(*imageUid) : nullptr);
@@ -2367,17 +2366,17 @@ void renderInspectionWindow(
 
 void renderInspectionWindowWithTable(
   AppData& appData,
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
-  const std::function<std::optional<glm::vec3>(size_t imageIndex)>& getSubjectPos,
-  const std::function<std::optional<glm::ivec3>(size_t imageIndex)>& getVoxelPos,
-  const std::function<void(size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
-  const std::function<void(size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos,
-  const std::function<std::vector<double>(size_t imageIndex, bool getOnlyActiveComponent)>&
+  const std::function<std::pair<const char*, const char*>(std::size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::optional<glm::vec3>(std::size_t imageIndex)>& getSubjectPos,
+  const std::function<std::optional<glm::ivec3>(std::size_t imageIndex)>& getVoxelPos,
+  const std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
+  const std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos,
+  const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>&
     getImageValuesNN,
-  const std::function<std::vector<double>(size_t imageIndex, bool getOnlyActiveComponent)>&
+  const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>&
     getImageValuesLinear,
-  const std::function<std::optional<int64_t>(size_t imageIndex)>& getSegLabel,
-  const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable
+  const std::function<std::optional<int64_t>(std::size_t imageIndex)>& getSegLabel,
+  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable
 )
 {
   static bool s_firstRun = true; // Is this the first run?
@@ -2430,7 +2429,7 @@ void renderInspectionWindowWithTable(
   {
     if (ImGui::BeginMenu("Show..."))
     {
-      for (size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex)
+      for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex)
       {
         const auto imageUid = appData.imageUid(imageIndex);
         if (!imageUid)
@@ -2580,7 +2579,7 @@ void renderInspectionWindowWithTable(
 
       ImGui::TableHeadersRow();
 
-      for (size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex)
+      for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex)
       {
         const auto imageUid = appData.imageUid(imageIndex);
         Image* image = (imageUid ? appData.image(*imageUid) : nullptr);
@@ -2698,7 +2697,7 @@ void renderInspectionWindowWithTable(
             {
               std::vector<int64_t> imageValuesNNInt;
 
-              for (size_t i = 0; i < imageValuesNN.size(); ++i)
+              for (std::size_t i = 0; i < imageValuesNN.size(); ++i)
               {
                 imageValuesNNInt.push_back(static_cast<int64_t>(imageValuesNN[i]));
               }
@@ -3105,7 +3104,7 @@ void renderOpacityBlenderWindow(
     size_t imgIndexLo = static_cast<size_t>(std::floor(imgIndex));
     size_t imgIndexHi = static_cast<size_t>(std::ceil(imgIndex));
 
-    for (size_t i = 0; i < appData.numImages(); ++i)
+    for (std::size_t i = 0; i < appData.numImages(); ++i)
     {
       const auto imgUid = appData.imageUid(i);
       if (!imgUid)

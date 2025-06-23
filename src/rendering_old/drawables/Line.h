@@ -37,7 +37,7 @@ public:
 private:
   void doRender(const RenderStage& stage) override;
 
-  void doUpdate(double time, const Viewport&, const camera::Camera&, const CoordinateFrame&) override;
+  void doUpdate(double time, const Viewport&, const Camera&, const CoordinateFrame&) override;
 
   void initBuffers();
   void initVaos();

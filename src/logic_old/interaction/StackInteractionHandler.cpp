@@ -59,13 +59,13 @@ void SlideStackInteractionHandler::setMode(const StackInteractionMode& mode)
 }
 
 bool SlideStackInteractionHandler::
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
 {
   return false;
 }
 
 bool SlideStackInteractionHandler::doHandleMouseMoveEvent(
-  const QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   bool handled = false;
@@ -163,7 +163,7 @@ bool SlideStackInteractionHandler::doHandleMouseMoveEvent(
 }
 
 bool SlideStackInteractionHandler::
-  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 
@@ -254,7 +254,7 @@ bool SlideStackInteractionHandler::
 }
 
 bool SlideStackInteractionHandler::
-  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 

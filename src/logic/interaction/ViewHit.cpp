@@ -45,15 +45,15 @@ std::optional<ViewHit> getViewHit(
     return std::nullopt;
   }
 
-  if (camera::ViewRenderMode::Disabled == hit.view->renderMode())
+  if (ViewRenderMode::Disabled == hit.view->renderMode())
   {
     return std::nullopt;
   }
 
-  hit.worldFrontAxis = camera::worldDirection(txView->camera(), Directions::View::Front);
+  hit.worldFrontAxis = helper::worldDirection(txView->camera(), Directions::View::Front);
 
   const glm::vec4 winClipPos(
-    camera::windowNdc_T_window(appData.windowData().viewport(), windowPos),
+    helper::windowNdc_T_window(appData.windowData().viewport(), windowPos),
     txView->clipPlaneDepth(),
     1.0f
   );
@@ -65,7 +65,7 @@ std::optional<ViewHit> getViewHit(
 
   hit.viewClipPos = glm::vec2{viewClipPos};
 
-  const glm::mat4 world_T_clip = camera::world_T_clip(txView->camera());
+  const glm::mat4 world_T_clip = helper::world_T_clip(txView->camera());
 
   // Apply view's offset from crosshairs in order to calculate the view plane position:
   const float offsetDist

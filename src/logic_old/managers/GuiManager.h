@@ -142,7 +142,7 @@ public:
   void setSlideStackView3dModeSetter(SetterType<bool>);
 
   /// Set the function that provides the camera
-  void setCameraQuerier(QuerierType<camera::Camera*, UID>);
+  void setCameraQuerier(QuerierType<Camera*, UID>);
 
   /// Set the function that provides the crosshairs
   void setCrosshairsQuerier(QuerierType<CoordinateFrame, gui::ViewType>);
@@ -399,7 +399,7 @@ private:
   ProjectSaverType m_projectSaver;
   SetterType<bool> m_slideStackViews3dModeSetter;
 
-  QuerierType<camera::Camera*, UID> m_cameraQuerier;
+  QuerierType<Camera*, UID> m_cameraQuerier;
   QuerierType<CoordinateFrame, gui::ViewType> m_crosshairsQuerier;
   QuerierType<IInteractionHandler*, UID> m_interactionHandlerQuerier;
 

@@ -20,7 +20,7 @@ class View;
 
 void drawImageQuad(
   GLShaderProgram& program,
-  const camera::ViewRenderMode& renderMode,
+  const ViewRenderMode& renderMode,
   RenderData::Quad& quad,
   const View& view,
   const Viewport& windowViewport,

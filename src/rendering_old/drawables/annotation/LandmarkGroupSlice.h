@@ -37,7 +37,7 @@ public:
   //    DrawableOpacity opacityFlag() const override;
 
 private:
-  void doUpdate(double, const Viewport&, const camera::Camera&, const CoordinateFrame&) override;
+  void doUpdate(double, const Viewport&, const Camera&, const CoordinateFrame&) override;
 
   bool isMeshGpuRecordCurrent() const;
 

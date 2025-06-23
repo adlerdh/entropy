@@ -68,12 +68,12 @@ void renderViewSettingsComboWindow(
   const std::function<bool(size_t imageIndex)>& getImageIsActive,
 
   const ViewType& viewType,
-  const camera::ViewRenderMode& renderMode,
-  const camera::IntensityProjectionMode& intensityProjMode,
+  const ViewRenderMode& renderMode,
+  const IntensityProjectionMode& intensityProjMode,
 
   const std::function<void(const ViewType& viewType)>& setViewType,
-  const std::function<void(const camera::ViewRenderMode& renderMode)>& setRenderMode,
-  const std::function<void(const camera::IntensityProjectionMode& projMode)>&
+  const std::function<void(const ViewRenderMode& renderMode)>& setRenderMode,
+  const std::function<void(const IntensityProjectionMode& projMode)>&
     setIntensityProjectionMode,
   const std::function<void()>& recenter,
 

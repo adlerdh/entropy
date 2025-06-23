@@ -2,9 +2,6 @@
 
 #include <unordered_map>
 
-namespace camera
-{
-
 std::string typeString(const ProjectionType& projectionType)
 {
   static const std::unordered_map<ProjectionType, std::string> s_typeToStringMap{
@@ -108,5 +105,3 @@ ShaderGroup getShaderGroup(const ViewRenderMode& renderMode)
   }
   }
 }
-
-} // namespace camera

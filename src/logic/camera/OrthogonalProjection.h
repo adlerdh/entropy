@@ -1,10 +1,6 @@
-#ifndef CAMERA_ORTHOGRAPHIC_PROJECTION_H
-#define CAMERA_ORTHOGRAPHIC_PROJECTION_H
+#pragma once
 
 #include "logic/camera/Projection.h"
-
-namespace camera
-{
 
 class OrthographicProjection final : public Projection
 {
@@ -20,7 +16,3 @@ public:
 
   float angle() const override;
 };
-
-} // namespace camera
-
-#endif // CAMERA_ORTHOGRAPHIC_PROJECTION_H

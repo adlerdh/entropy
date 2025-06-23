@@ -218,7 +218,7 @@ void Line::doRender(const RenderStage& stage)
 }
 
 void Line::
-  doUpdate(double /*time*/, const Viewport&, const camera::Camera& camera, const CoordinateFrame&)
+  doUpdate(double /*time*/, const Viewport&, const Camera& camera, const CoordinateFrame&)
 {
   m_clip_O_camera = camera.clip_T_camera();
   m_camera_O_world = camera.camera_T_world();

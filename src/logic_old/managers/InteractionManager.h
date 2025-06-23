@@ -69,7 +69,7 @@ public:
   InteractionPack* getInteractionPack(const UID& viewUid);
 
   /// Get non-owning pointer to the camera for a given view
-  camera::Camera* getCamera(const UID& viewUid);
+  Camera* getCamera(const UID& viewUid);
 
   /// Set the main interaction handler type
   void setInteractionModeType(const InteractionModeType&);
@@ -91,7 +91,7 @@ public:
   void alignCamerasToFrames();
   void resetCameras();
 
-  camera::CameraType getCameraType(const gui::ViewType&) const;
+  CameraType getCameraType(const gui::ViewType&) const;
   CrosshairsType getCrosshairsType(const gui::ViewType&) const;
 
   void applyExtraToCameras(const LinkedFrameType& linkedFrameType, const glm::mat4& extra);
@@ -140,7 +140,7 @@ private:
   std::unordered_map<UID, std::unique_ptr<InteractionPack> > m_interactionPacks;
 
   /// Current map from view type to camera type
-  std::unordered_map<gui::ViewType, camera::CameraType> m_viewTypeToCameraTypeMap;
+  std::unordered_map<gui::ViewType, CameraType> m_viewTypeToCameraTypeMap;
 
   /// Map from view type to default crosshairs type
   static const std::unordered_map<gui::ViewType, CrosshairsType>
@@ -148,25 +148,25 @@ private:
   static CrosshairsType getDefaultCrosshairsType(const gui::ViewType&);
 
   /// Map from view type to default camera type
-  static const std::unordered_map<gui::ViewType, camera::CameraType>
+  static const std::unordered_map<gui::ViewType, CameraType>
     smk_viewTypeToDefaultCameraTypeMap;
-  static camera::CameraType getDefaultCameraType(const gui::ViewType&);
+  static CameraType getDefaultCameraType(const gui::ViewType&);
 
   /// Map from camera type to projection type
-  static const std::unordered_map<camera::CameraType, camera::ProjectionType>
+  static const std::unordered_map<CameraType, camera::ProjectionType>
     smk_cameraTypeToProjectionTypeMap;
-  static camera::ProjectionType getProjectionType(const camera::CameraType&);
+  static camera::ProjectionType getProjectionType(const CameraType&);
 
   /// Map from camera type to default start frame linking type. This defines the
   /// Coordinate frame to which a camera start frame is linked.
-  static const std::unordered_map<camera::CameraType, LinkedFrameType>
+  static const std::unordered_map<CameraType, LinkedFrameType>
     smk_cameraStartFrameTypeToDefaultLinkedStartFrameTypeMap;
-  static LinkedFrameType getDefaultLinkedStartFrameType(const camera::CameraType&);
+  static LinkedFrameType getDefaultLinkedStartFrameType(const CameraType&);
 
   /// Map from camera type to default camera start frame type
-  static const std::unordered_map<camera::CameraType, CameraStartFrameType>
+  static const std::unordered_map<CameraType, CameraStartFrameType>
     smk_cameraTypeToDefaultStartFrameTypeMap;
-  static CameraStartFrameType getDefaultCameraStartFrameType(const camera::CameraType&);
+  static CameraStartFrameType getDefaultCameraStartFrameType(const CameraType&);
 
   /// Default map from start frame type to start frame
   /// Anatomical coordinate frame transformation applied atop the linked frame,

@@ -305,18 +305,18 @@ std::array<glm::vec4, 6> worldFrustumPlanes(const Camera&);
  * @return Position in World space
  */
 glm::vec4 world_O_view(
-  const Viewport& viewport, const camera::Camera& camera, const glm::vec2& viewPos, float ndcZ = -1.0f
+  const Viewport& viewport, const Camera& camera, const glm::vec2& viewPos, float ndcZ = -1.0f
 );
 
 /// @todo Make this function valid for perspective views, too!
 /// Currently not valid for perspective projection.
-glm::vec2 worldPixelSize(const Viewport& viewport, const camera::Camera& camera);
+glm::vec2 worldPixelSize(const Viewport& viewport, const Camera& camera);
 
 glm::vec2 worldPixelSizeAtWorldPosition(
-  const Viewport& viewport, const camera::Camera& camera, const glm::vec3& worldPos
+  const Viewport& viewport, const Camera& camera, const glm::vec3& worldPos
 );
 
-float computeSmallestWorldDepthOffset(const camera::Camera& camera, const glm::vec3& worldPos);
+float computeSmallestWorldDepthOffset(const Camera& camera, const glm::vec3& worldPos);
 
 } // namespace camera
 

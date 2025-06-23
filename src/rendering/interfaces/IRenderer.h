@@ -35,7 +35,7 @@ public:
      * @param[in] camera Scene view camera
      * @param[in] crosshairs Coordinate frame of scene crosshairs
      */
-  virtual void update(const camera::Camera& camera, const CoordinateFrame& crosshairs) = 0;
+  virtual void update(const Camera& camera, const CoordinateFrame& crosshairs) = 0;
 
   /**
      * @brief Set the renderer's ability to point pick object IDs and depths in the scene.

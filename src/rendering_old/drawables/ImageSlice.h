@@ -71,7 +71,7 @@ public:
 private:
   void setupChildren();
 
-  void doUpdate(double time, const Viewport&, const camera::Camera&, const CoordinateFrame&) override;
+  void doUpdate(double time, const Viewport&, const Camera&, const CoordinateFrame&) override;
 
   /// 3D image record being rendered in this slice
   std::weak_ptr<ImageRecord> m_image3dRecord;

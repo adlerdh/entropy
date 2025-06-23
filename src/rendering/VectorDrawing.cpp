@@ -266,7 +266,7 @@ void drawImageViewIntersections(
 
     for (size_t i = 0; i < worldIntersections->size(); ++i)
     {
-      const glm::vec2 currPos = camera::miewport_T_world(
+      const glm::vec2 currPos = helper::miewport_T_world(
         appData.windowData().viewport(),
         view.camera(),
         view.windowClip_T_viewClip(),
@@ -527,7 +527,7 @@ void drawLandmarks(
 
   const float strokeWidth = appData.renderData().m_globalLandmarkParams.strokeWidth;
 
-  const glm::vec3 worldViewNormal = camera::worldDirection(view.camera(), Directions::View::Back);
+  const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
   const glm::vec4 worldViewPlane = math::makePlane(worldViewNormal, worldCrosshairs);
 
   // Render landmarks for each image
@@ -613,7 +613,7 @@ void drawLandmarks(
           continue;
         }
 
-        const glm::vec2 miewportPos = camera::miewport_T_world(
+        const glm::vec2 miewportPos = helper::miewport_T_world(
           appData.windowData().viewport(), view.camera(), view.windowClip_T_viewClip(), worldLmPos3
         );
 
@@ -714,7 +714,7 @@ void drawAnnotations(
     const glm::vec4 worldPos = image.transformations().worldDef_T_subject()
                                * glm::vec4{subjectPos, 1.0f};
 
-    return camera::miewport_T_world(
+    return helper::miewport_T_world(
       appData.windowData().viewport(),
       view.camera(),
       view.windowClip_T_viewClip(),
@@ -735,7 +735,7 @@ void drawAnnotations(
     miewportViewBounds.viewport[3]
   );
 
-  const glm::vec3 worldViewNormal = camera::worldDirection(view.camera(), Directions::View::Back);
+  const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
 
   // Render annotations for each image
   for (const auto& imgSegPair : I)

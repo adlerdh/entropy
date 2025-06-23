@@ -19,7 +19,7 @@ void DynamicTransformation::setMatrixProvider(GetterType<std::optional<glm::mat4
 }
 
 void DynamicTransformation::
-  doUpdate(double /*time*/, const Viewport&, const camera::Camera&, const CoordinateFrame&)
+  doUpdate(double /*time*/, const Viewport&, const Camera&, const CoordinateFrame&)
 {
   if (!m_thisToParentTxProvider)
   {

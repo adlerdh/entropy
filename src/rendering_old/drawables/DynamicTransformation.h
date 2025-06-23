@@ -22,7 +22,7 @@ public:
   void setMatrixProvider(GetterType<std::optional<glm::mat4> >);
 
 private:
-  void doUpdate(double /*time*/, const Viewport&, const camera::Camera&, const CoordinateFrame&)
+  void doUpdate(double /*time*/, const Viewport&, const Camera&, const CoordinateFrame&)
     override;
 
   GetterType<std::optional<glm::mat4> > m_thisToParentTxProvider;

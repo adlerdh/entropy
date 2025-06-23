@@ -50,7 +50,7 @@ public:
 private:
   void setupChildren();
 
-  void doUpdate(double time, const Viewport&, const camera::Camera&, const CoordinateFrame&) override;
+  void doUpdate(double time, const Viewport&, const Camera&, const CoordinateFrame&) override;
 
   /// Function that returns true iff the provided UID is for the active slide
   QuerierType<bool, uuids::uuid> m_activeSlideQuerier;

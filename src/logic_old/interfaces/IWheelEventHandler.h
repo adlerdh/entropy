@@ -14,7 +14,7 @@ class IWheelEventHandler
 public:
   virtual ~IWheelEventHandler() = default;
 
-  virtual bool handleWheelEvent(QWheelEvent*, const Viewport&, const camera::Camera&) = 0;
+  virtual bool handleWheelEvent(QWheelEvent*, const Viewport&, const Camera&) = 0;
 };
 
 #endif // I_WHEEL_EVENT_HANDLER_H

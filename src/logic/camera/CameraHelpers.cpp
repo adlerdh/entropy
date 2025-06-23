@@ -35,11 +35,11 @@ static const float sk_eps = glm::epsilon<float>();
 
 } // namespace
 
+namespace helper
+{
+
 /// @todo Differentiate names of functions that return mat4 transformations
 /// (a_T_b) from those that actually do the transforming (tx_a_T_b)?
-
-namespace camera
-{
 
 //void doExtra( Camera& camera, const CoordinateFrame& frame )
 //{
@@ -774,7 +774,7 @@ void orientCameraToWorldTargetNormalDirection(
   applyViewTransformation(camera, math::fromToRotation(cameraFromVector, cameraToVector));
 }
 
-void setWorldForwardDirection(camera::Camera& camera, const glm::vec3& worldForwardDirection)
+void setWorldForwardDirection(Camera& camera, const glm::vec3& worldForwardDirection)
 {
   static const CoordinateFrame IDENT;
 
@@ -797,7 +797,7 @@ void setWorldForwardDirection(camera::Camera& camera, const glm::vec3& worldForw
   // otherwise, worldRight = superior X worldBack.
 
   const glm::vec3 worldDesiredUp
-    = (camera::areVectorsParallel(worldBack, sk_worldDesiredUp_superior, sk_angleThresh_degrees))
+    = (helper::areVectorsParallel(worldBack, sk_worldDesiredUp_superior, sk_angleThresh_degrees))
         ? sk_worldDesiredUp_anterior
         : sk_worldDesiredUp_superior;
 
@@ -930,7 +930,7 @@ std::array<glm::vec4, 6> worldFrustumPlanes(const Camera& camera)
 }
 
 glm::vec4 world_T_view(
-  const Viewport& viewport, const camera::Camera& camera, const glm::vec2& viewPos, float ndcZ
+  const Viewport& viewport, const Camera& camera, const glm::vec2& viewPos, float ndcZ
 )
 {
   /// @note Maybe replace ndcZ with focal distance in clip space?
@@ -941,7 +941,7 @@ glm::vec4 world_T_view(
 
 /// @todo Make this function valid for perspective views, too!
 /// Currently not valid for perspective projection.
-glm::vec2 worldPixelSize(const Viewport& viewport, const camera::Camera& camera)
+glm::vec2 worldPixelSize(const Viewport& viewport, const Camera& camera)
 {
   static constexpr float nearPlaneZ = -1.0f;
 
@@ -958,7 +958,7 @@ glm::vec2 worldPixelSize(const Viewport& viewport, const camera::Camera& camera)
 
 // This version of the function is valid for both orthogonal and perspective projections
 glm::vec2 worldPixelSizeAtWorldPosition(
-  const Viewport& viewport, const camera::Camera& camera, const glm::vec3& worldPos
+  const Viewport& viewport, const Camera& camera, const glm::vec3& worldPos
 )
 {
   static const glm::vec2 viewX(1.0f, 0.0f);
@@ -977,7 +977,7 @@ glm::vec2 worldPixelSizeAtWorldPosition(
   return glm::vec2{glm::length(worldViewX - worldViewO), glm::length(worldViewY - worldViewO)};
 }
 
-float computeSmallestWorldDepthOffset(const camera::Camera& camera, const glm::vec3& worldPos)
+float computeSmallestWorldDepthOffset(const Camera& camera, const glm::vec3& worldPos)
 {
   // Small epsilon in NDC space. Using a float32 depth buffer, as we do,
   // this value should be just large enough to differentiate depths
@@ -991,7 +991,7 @@ float computeSmallestWorldDepthOffset(const camera::Camera& camera, const glm::v
 
 glm::vec2 miewport_T_world(
   const Viewport& windowVP,
-  const camera::Camera& camera,
+  const Camera& camera,
   const glm::mat4& windowClip_T_viewClip,
   const glm::vec3& worldPos
 )
@@ -1006,7 +1006,7 @@ glm::vec2 miewport_T_world(
 
 glm::vec3 world_T_miewport(
   const Viewport& windowVP,
-  const camera::Camera& camera,
+  const Camera& camera,
   const glm::mat4& viewClip_T_windowClip,
   const glm::vec2& miewportPos
 )
@@ -1023,7 +1023,7 @@ glm::vec3 world_T_miewport(
 }
 
 glm::vec2 worldPixelSize(
-  const Viewport& windowVP, const camera::Camera& camera, const glm::mat4& viewClip_T_windowClip
+  const Viewport& windowVP, const Camera& camera, const glm::mat4& viewClip_T_windowClip
 )
 {
   static const glm::vec2 miewO(0.0f, 0.0f);
@@ -1049,7 +1049,7 @@ glm::mat4 compute_windowClip_T_viewClip(const glm::vec4& windowClipViewport)
   return glm::translate(T) * glm::scale(S);
 }
 
-glm::quat computeCameraRotationRelativeToWorld(const camera::Camera& camera)
+glm::quat computeCameraRotationRelativeToWorld(const Camera& camera)
 {
   const glm::vec3 cameraX = cameraDirectionOfWorld(camera, Directions::Cartesian::X);
   const glm::vec3 cameraY = cameraDirectionOfWorld(camera, Directions::Cartesian::Y);
@@ -1063,8 +1063,8 @@ FrameBounds computeMiewportFrameBounds(
   const glm::vec4& windowClipFrameViewport, const glm::vec4& windowViewport
 )
 {
-  const glm::mat4 miewport_T_windowClip = camera::miewport_T_viewport(windowViewport[3])
-                                          * camera::viewport_T_windowClip(windowViewport);
+  const glm::mat4 miewport_T_windowClip = helper::miewport_T_viewport(windowViewport[3])
+                                          * helper::viewport_T_windowClip(windowViewport);
 
   const glm::vec4 winClipViewBL{windowClipFrameViewport[0], windowClipFrameViewport[1], 0.0f, 1.0f};
 
@@ -1090,8 +1090,8 @@ FrameBounds computeMindowFrameBounds(
   const glm::vec4& windowClipFrameViewport, const glm::vec4& windowViewport, float wholeWindowHeight
 )
 {
-  const glm::mat4 mindow_T_windowClip = camera::mindow_T_window(wholeWindowHeight)
-                                        * camera::window_T_windowClip(windowViewport);
+  const glm::mat4 mindow_T_windowClip = helper::mindow_T_window(wholeWindowHeight)
+                                        * helper::window_T_windowClip(windowViewport);
 
   const glm::vec4 winClipViewBL{windowClipFrameViewport[0], windowClipFrameViewport[1], 0.0f, 1.0f};
 
@@ -1113,7 +1113,7 @@ FrameBounds computeMindowFrameBounds(
   ); // height
 }
 
-bool looksAlongOrthogonalAxis(const camera::Camera& camera)
+bool looksAlongOrthogonalAxis(const Camera& camera)
 {
   const glm::vec3 frontDir = worldDirection(camera, Directions::View::Front);
 
@@ -1142,8 +1142,8 @@ bool areVectorsParallel(const glm::vec3& a, const glm::vec3& b, float angleThres
 }
 
 bool areViewDirectionsParallel(
-  const camera::Camera& camera1,
-  const camera::Camera& camera2,
+  const Camera& camera1,
+  const Camera& camera2,
   const Directions::View& dir,
   float angleThreshold_degrees
 )
@@ -1153,4 +1153,4 @@ bool areViewDirectionsParallel(
   );
 }
 
-} // namespace camera
+} // namespace helper

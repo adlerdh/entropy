@@ -121,7 +121,7 @@ void PointLandmarkGroup::doRender(const RenderStage& stage)
 void PointLandmarkGroup::doUpdate(
   double time,
   const Viewport& viewport,
-  const camera::Camera& camera,
+  const Camera& camera,
   const CoordinateFrame& crosshairs
 )
 {

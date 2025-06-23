@@ -57,13 +57,13 @@ void WindowLevelInteractionHandler::setMode(const WindowLevelInteractionMode& mo
 }
 
 bool WindowLevelInteractionHandler::
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
 {
   return false;
 }
 
 bool WindowLevelInteractionHandler::
-  doHandleMouseMoveEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMouseMoveEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 
@@ -133,7 +133,7 @@ bool WindowLevelInteractionHandler::
 }
 
 bool WindowLevelInteractionHandler::
-  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 
@@ -189,7 +189,7 @@ bool WindowLevelInteractionHandler::
 }
 
 bool WindowLevelInteractionHandler::
-  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 
@@ -224,7 +224,7 @@ bool WindowLevelInteractionHandler::
 }
 
 bool WindowLevelInteractionHandler::
-  doHandleWheelEvent(const QWheelEvent* event, const Viewport&, const camera::Camera&)
+  doHandleWheelEvent(const QWheelEvent* event, const Viewport&, const Camera&)
 {
   bool handled = false;
 

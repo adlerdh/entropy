@@ -47,7 +47,7 @@ public:
   void render() override;
   void teardown() override;
   void resize(const Viewport&) override;
-  void update(const camera::Camera&, const CoordinateFrame&) override;
+  void update(const Camera&, const CoordinateFrame&) override;
 
   void setEnablePointPicking(bool enable) override;
   std::pair<uint16_t, float> pickObjectIdAndNdcDepth(const glm::vec2& ndcPos) override;

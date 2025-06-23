@@ -1,5 +1,4 @@
-#ifndef DATA_HELPER_H
-#define DATA_HELPER_H
+#pragma once
 
 #include "windowing/View.h"
 
@@ -16,12 +15,8 @@
 
 class Annotation;
 class AppData;
-class Image;
-
-namespace camera
-{
 class Camera;
-}
+class Image;
 
 /**
  * This is an aggregation of free functions for helping out with application data.
@@ -112,5 +107,3 @@ glm::vec3 snapWorldPointToImageVoxels(
 std::size_t computeNumImageSlicesAlongWorldDirection(const Image& image, const glm::vec3& worldDir);
 
 } // namespace data
-
-#endif // DATA_HELPER_H

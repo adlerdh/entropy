@@ -13,9 +13,6 @@ static const float sk_maxAngle = glm::radians(120.0f);
 
 } // namespace
 
-namespace camera
-{
-
 PerspectiveProjection::PerspectiveProjection()
   : Projection()
 {
@@ -43,5 +40,3 @@ float PerspectiveProjection::angle() const
 {
   return glm::clamp(sk_initAngle / m_zoom, sk_minAngle, sk_maxAngle);
 }
-
-} // namespace camera

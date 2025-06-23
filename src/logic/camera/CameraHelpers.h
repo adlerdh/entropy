@@ -1,6 +1,6 @@
-#ifndef CAMERA_HELPERS_H
-#define CAMERA_HELPERS_H
+#pragma once
 
+#include "logic/camera/Camera.h"
 #include "logic/camera/Projection.h"
 
 #include "common/DirectionMaps.h"
@@ -20,10 +20,8 @@ class Viewport;
 /**
  * Free functions defined for the Camera.
  */
-namespace camera
+namespace helper
 {
-
-class Camera;
 
 /**
  * @brief Create a camera projection of a given type.
@@ -350,36 +348,36 @@ std::array<glm::vec4, 6> worldFrustumPlanes(const Camera&);
  * @return Position in World space
  */
 glm::vec4 world_T_view(
-  const Viewport& viewport, const camera::Camera& camera, const glm::vec2& viewPos, float ndcZ = -1.0f
+  const Viewport& viewport, const Camera& camera, const glm::vec2& viewPos, float ndcZ = -1.0f
 );
 
 /// @todo Make this function valid for perspective views, too!
 /// Currently not valid for perspective projection.
-glm::vec2 worldPixelSize(const Viewport& viewport, const camera::Camera& camera);
+glm::vec2 worldPixelSize(const Viewport& viewport, const Camera& camera);
 
 glm::vec2 worldPixelSizeAtWorldPosition(
-  const Viewport& viewport, const camera::Camera& camera, const glm::vec3& worldPos
+  const Viewport& viewport, const Camera& camera, const glm::vec3& worldPos
 );
 
-float computeSmallestWorldDepthOffset(const camera::Camera& camera, const glm::vec3& worldPos);
+float computeSmallestWorldDepthOffset(const Camera& camera, const glm::vec3& worldPos);
 
 /// Convert a 3D position from World space to the view's Miewport space
 glm::vec2 miewport_T_world(
   const Viewport& windowVP,
-  const camera::Camera& camera,
+  const Camera& camera,
   const glm::mat4& windowClip_T_viewClip,
   const glm::vec3& worldPos
 );
 
 glm::vec3 world_T_miewport(
   const Viewport& windowVP,
-  const camera::Camera& camera,
+  const Camera& camera,
   const glm::mat4& viewClip_T_windowClip,
   const glm::vec2& miewportPos
 );
 
 glm::vec2 worldPixelSize(
-  const Viewport& windowVP, const camera::Camera& camera, const glm::mat4& viewClip_T_windowClip
+  const Viewport& windowVP, const Camera& camera, const glm::mat4& viewClip_T_windowClip
 );
 
 /**
@@ -391,7 +389,7 @@ glm::vec2 worldPixelSize(
  */
 glm::mat4 compute_windowClip_T_viewClip(const glm::vec4& winClipVP);
 
-glm::quat computeCameraRotationRelativeToWorld(const camera::Camera& camera);
+glm::quat computeCameraRotationRelativeToWorld(const Camera& camera);
 
 /**
  * @brief Compute the min and max coordinates of a frame
@@ -407,7 +405,7 @@ FrameBounds computeMindowFrameBounds(
   const glm::vec4& winClipFrameViewport, const glm::vec4& windowViewport, float wholeWindowHeight
 );
 
-bool looksAlongOrthogonalAxis(const camera::Camera& camera);
+bool looksAlongOrthogonalAxis(const Camera& camera);
 
 /**
  * @brief areVectorsParallel
@@ -419,12 +417,10 @@ bool looksAlongOrthogonalAxis(const camera::Camera& camera);
 bool areVectorsParallel(const glm::vec3& a, const glm::vec3& b, float angleThreshold_degrees);
 
 bool areViewDirectionsParallel(
-  const camera::Camera& camera1,
-  const camera::Camera& camera2,
+  const Camera& camera1,
+  const Camera& camera2,
   const Directions::View& dir,
   float angleThreshold_degrees
 );
 
-} // namespace camera
-
-#endif // CAMERA_HELPERS_H
+} // namespace helper

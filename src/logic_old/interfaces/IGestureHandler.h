@@ -18,11 +18,11 @@ class IGestureHandler
 public:
   virtual ~IGestureHandler() = default;
 
-  virtual bool handlePanGesture(QPanGesture*, const Viewport&, const camera::Camera&) = 0;
-  virtual bool handlePinchGesture(QPinchGesture*, const Viewport&, const camera::Camera&) = 0;
-  virtual bool handleSwipeGesture(QSwipeGesture*, const Viewport&, const camera::Camera&) = 0;
-  virtual bool handleTapGesture(QTapGesture*, const Viewport&, const camera::Camera&) = 0;
-  virtual bool handleTapAndHoldGesture(QTapAndHoldGesture*, const Viewport&, const camera::Camera&)
+  virtual bool handlePanGesture(QPanGesture*, const Viewport&, const Camera&) = 0;
+  virtual bool handlePinchGesture(QPinchGesture*, const Viewport&, const Camera&) = 0;
+  virtual bool handleSwipeGesture(QSwipeGesture*, const Viewport&, const Camera&) = 0;
+  virtual bool handleTapGesture(QTapGesture*, const Viewport&, const Camera&) = 0;
+  virtual bool handleTapAndHoldGesture(QTapAndHoldGesture*, const Viewport&, const Camera&)
     = 0;
 };
 

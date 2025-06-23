@@ -89,13 +89,13 @@ void RefImageInteractionHandler::setMode(const RefImageInteractionMode& mode)
 }
 
 bool RefImageInteractionHandler::
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
 {
   return false;
 }
 
 bool RefImageInteractionHandler::doHandleMouseMoveEvent(
-  const QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   if (MouseMoveMode::None == m_mouseMoveMode)
@@ -197,7 +197,7 @@ bool RefImageInteractionHandler::doHandleMouseMoveEvent(
 }
 
 bool RefImageInteractionHandler::
-  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 
@@ -288,7 +288,7 @@ bool RefImageInteractionHandler::
 }
 
 bool RefImageInteractionHandler::
-  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 

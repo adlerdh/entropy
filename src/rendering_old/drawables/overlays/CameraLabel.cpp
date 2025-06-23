@@ -289,7 +289,7 @@ void CameraLabel::doRender(const RenderStage& stage)
 void CameraLabel::doUpdate(
   double /*time*/,
   const Viewport& viewport,
-  const camera::Camera& camera,
+  const Camera& camera,
   const CoordinateFrame& /*crosshairs*/
 )
 {

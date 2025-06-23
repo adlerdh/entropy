@@ -19,42 +19,42 @@ public:
   void setAllViewsUpdater(AllViewsUpdaterType);
   void setMyViewUpdater(MyViewUpdater);
 
-  bool handleMouseDoubleClickEvent(QMouseEvent*, const Viewport&, const camera::Camera&) override;
-  bool handleMouseMoveEvent(QMouseEvent*, const Viewport&, const camera::Camera&) override;
-  bool handleMousePressEvent(QMouseEvent*, const Viewport&, const camera::Camera&) override;
-  bool handleMouseReleaseEvent(QMouseEvent*, const Viewport&, const camera::Camera&) override;
+  bool handleMouseDoubleClickEvent(QMouseEvent*, const Viewport&, const Camera&) override;
+  bool handleMouseMoveEvent(QMouseEvent*, const Viewport&, const Camera&) override;
+  bool handleMousePressEvent(QMouseEvent*, const Viewport&, const Camera&) override;
+  bool handleMouseReleaseEvent(QMouseEvent*, const Viewport&, const Camera&) override;
 
-  bool handleTabletEvent(QTabletEvent*, const Viewport&, const camera::Camera&) override;
+  bool handleTabletEvent(QTabletEvent*, const Viewport&, const Camera&) override;
 
-  bool handleWheelEvent(QWheelEvent*, const Viewport&, const camera::Camera&) override;
+  bool handleWheelEvent(QWheelEvent*, const Viewport&, const Camera&) override;
 
-  bool dispatchGestureEvent(QGestureEvent*, const Viewport&, const camera::Camera&) override;
-  bool handlePanGesture(QPanGesture*, const Viewport&, const camera::Camera&) override;
-  bool handlePinchGesture(QPinchGesture*, const Viewport&, const camera::Camera&) override;
-  bool handleSwipeGesture(QSwipeGesture*, const Viewport&, const camera::Camera&) override;
-  bool handleTapGesture(QTapGesture*, const Viewport&, const camera::Camera&) override;
-  bool handleTapAndHoldGesture(QTapAndHoldGesture*, const Viewport&, const camera::Camera&) override;
+  bool dispatchGestureEvent(QGestureEvent*, const Viewport&, const Camera&) override;
+  bool handlePanGesture(QPanGesture*, const Viewport&, const Camera&) override;
+  bool handlePinchGesture(QPinchGesture*, const Viewport&, const Camera&) override;
+  bool handleSwipeGesture(QSwipeGesture*, const Viewport&, const Camera&) override;
+  bool handleTapGesture(QTapGesture*, const Viewport&, const Camera&) override;
+  bool handleTapAndHoldGesture(QTapAndHoldGesture*, const Viewport&, const Camera&) override;
 
 protected:
   virtual bool
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
     = 0;
-  virtual bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const camera::Camera&) = 0;
-  virtual bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  virtual bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const Camera&) = 0;
+  virtual bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const Camera&)
     = 0;
-  virtual bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  virtual bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const Camera&)
     = 0;
 
-  virtual bool doHandleTabletEvent(const QTabletEvent*, const Viewport&, const camera::Camera&) = 0;
+  virtual bool doHandleTabletEvent(const QTabletEvent*, const Viewport&, const Camera&) = 0;
 
-  virtual bool doHandleWheelEvent(const QWheelEvent*, const Viewport&, const camera::Camera&) = 0;
+  virtual bool doHandleWheelEvent(const QWheelEvent*, const Viewport&, const Camera&) = 0;
 
-  virtual bool doHandlePanGesture(const QPanGesture*, const Viewport&, const camera::Camera&) = 0;
-  virtual bool doHandlePinchGesture(const QPinchGesture*, const Viewport&, const camera::Camera&) = 0;
-  virtual bool doHandleSwipeGesture(const QSwipeGesture*, const Viewport&, const camera::Camera&) = 0;
-  virtual bool doHandleTapGesture(const QTapGesture*, const Viewport&, const camera::Camera&) = 0;
+  virtual bool doHandlePanGesture(const QPanGesture*, const Viewport&, const Camera&) = 0;
+  virtual bool doHandlePinchGesture(const QPinchGesture*, const Viewport&, const Camera&) = 0;
+  virtual bool doHandleSwipeGesture(const QSwipeGesture*, const Viewport&, const Camera&) = 0;
+  virtual bool doHandleTapGesture(const QTapGesture*, const Viewport&, const Camera&) = 0;
   virtual bool
-  doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const camera::Camera&)
+  doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&)
     = 0;
 
   void setUpdatesViewsOnEventHandled(bool doUpdate);

@@ -158,7 +158,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   const bool shiftDown = ImGui::IsKeyDown(ImGuiKey_LeftShift)
                          || ImGui::IsKeyDown(ImGuiKey_RightShift);
 
-  const glm::vec2 windowCurrentPos = camera::window_T_mindow(
+  const glm::vec2 windowCurrentPos = helper::window_T_mindow(
     static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY}
   );
 
@@ -514,7 +514,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   double mindowCursorPosX, mindowCursorPosY;
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
 
-  const glm::vec2 windowCursorPos = camera::window_T_mindow(
+  const glm::vec2 windowCursorPos = helper::window_T_mindow(
     static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY}
   );
 
@@ -567,7 +567,7 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
   cursorPosCallback(window, mindowCursorPosX, mindowCursorPosY);
 
-  const glm::vec2 windowCursorPos = camera::window_T_mindow(
+  const glm::vec2 windowCursorPos = helper::window_T_mindow(
     static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY}
   );
 
@@ -638,7 +638,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
   double mindowCursorPosX, mindowCursorPosY;
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
 
-  const glm::vec2 windowCursorPos = camera::window_T_mindow(
+  const glm::vec2 windowCursorPos = helper::window_T_mindow(
     static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY}
   );
 

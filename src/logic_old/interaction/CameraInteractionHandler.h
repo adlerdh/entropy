@@ -45,7 +45,7 @@ public:
   explicit CameraInteractionHandler();
   ~CameraInteractionHandler() override = default;
 
-  void setCameraProvider(GetterType<camera::Camera*> cameraProvider);
+  void setCameraProvider(GetterType<Camera*> cameraProvider);
   void setCrosshairsOriginProvider(CrosshairsOriginProviderType);
   void setRefSpaceAABBoxCenterProvider(RefSpaceAABBoxCenterProviderType);
   void setRefSpaceAABBoxSizeProvider(RefSpaceAABBoxSizeProviderType);
@@ -69,33 +69,33 @@ private:
     None
   };
 
-  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
     override;
-  bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const camera::Camera&) override;
-  bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const camera::Camera&) override;
-  bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const camera::Camera&) override;
+  bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
+  bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
+  bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
 
-  bool doHandleTabletEvent(const QTabletEvent*, const Viewport&, const camera::Camera&) override
+  bool doHandleTabletEvent(const QTabletEvent*, const Viewport&, const Camera&) override
   {
     return false;
   }
 
-  bool doHandleWheelEvent(const QWheelEvent*, const Viewport&, const camera::Camera&) override;
+  bool doHandleWheelEvent(const QWheelEvent*, const Viewport&, const Camera&) override;
 
-  bool doHandlePanGesture(const QPanGesture*, const Viewport&, const camera::Camera&) override;
-  bool doHandlePinchGesture(const QPinchGesture*, const Viewport&, const camera::Camera&) override;
-  bool doHandleSwipeGesture(const QSwipeGesture*, const Viewport&, const camera::Camera&) override;
-  bool doHandleTapGesture(const QTapGesture*, const Viewport&, const camera::Camera&) override
+  bool doHandlePanGesture(const QPanGesture*, const Viewport&, const Camera&) override;
+  bool doHandlePinchGesture(const QPinchGesture*, const Viewport&, const Camera&) override;
+  bool doHandleSwipeGesture(const QSwipeGesture*, const Viewport&, const Camera&) override;
+  bool doHandleTapGesture(const QTapGesture*, const Viewport&, const Camera&) override
   {
     return false;
   }
-  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const camera::Camera&)
+  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&)
     override
   {
     return false;
   }
 
-  GetterType<camera::Camera*> m_cameraProvider;
+  GetterType<Camera*> m_cameraProvider;
   CrosshairsOriginProviderType m_crosshairsOriginProvider;
   RefSpaceAABBoxCenterProviderType m_refSpaceCenterProvider;
   RefSpaceVoxelScaleProviderType m_refSpaceVoxelScaleProvider;

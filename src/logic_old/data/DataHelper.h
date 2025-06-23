@@ -80,7 +80,7 @@ std::pair<gui::ViewSliderParams, gui::ViewSliderParams> viewScrollBarParams(
   DataManager&,
   const glm::vec3& worldCrosshairsOrigin,
   const glm::mat4& world_O_slideStack,
-  const camera::Camera& camera
+  const Camera& camera
 );
 
 /**
@@ -100,7 +100,7 @@ gui::ViewSliderParams viewSliceSliderParams(
   DataManager&,
   const glm::vec3& worldCrosshairsOrigin,
   const glm::mat4& world_O_slideStack,
-  const camera::Camera& camera
+  const Camera& camera
 );
 
 /// Get the default view slider parameters (applies to the scroll bars and slice sliders)

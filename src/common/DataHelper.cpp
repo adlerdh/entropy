@@ -543,7 +543,7 @@ std::vector<uuids::uuid> findAnnotationsForImage(
       d2 = -d2;
     }
 
-    const bool normalMatch = camera::areVectorsParallel(n1, n2, sk_parallelThreshold_degrees);
+    const bool normalMatch = helper::areVectorsParallel(n1, n2, sk_parallelThreshold_degrees);
     const bool offsetMatch = (std::abs(d1 - d2) < planeDistanceThresh);
 
     if (normalMatch && offsetMatch)
@@ -582,7 +582,7 @@ std::string getAnnotationSubjectPlaneName(const Annotation& annotation)
 
   for (const auto& dir : sk_directionToName)
   {
-    if (camera::areVectorsParallel(
+    if (helper::areVectorsParallel(
           Directions::get(dir.first), subjectPlaneNormal, sk_parallelThreshold_degrees
         ))
     {

@@ -25,9 +25,6 @@ static const glm::mat4 sk_ident(1.0f);
 
 } // namespace
 
-namespace camera
-{
-
 Camera::Camera(
   std::unique_ptr<Projection> projection, GetterType<CoordinateFrame> anatomy_T_start_provider
 )
@@ -269,4 +266,3 @@ float Camera::farDistance() const
   return m_projection->farDistance();
 }
 
-} // namespace camera

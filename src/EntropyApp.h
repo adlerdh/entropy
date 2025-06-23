@@ -19,7 +19,6 @@
 #include <atomic>
 #include <future>
 #include <optional>
-#include <string>
 
 /**
  * @brief This class basically runs the show. Its responsibilities are

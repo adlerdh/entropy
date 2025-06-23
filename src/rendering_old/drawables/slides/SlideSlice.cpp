@@ -255,7 +255,7 @@ void SlideSlice::setupChildren()
 }
 
 void SlideSlice::doUpdate(
-  double /*time*/, const Viewport&, const camera::Camera& camera, const CoordinateFrame& crosshairs
+  double /*time*/, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs
 )
 {
   static constexpr GLintptr sk_offset = static_cast<GLintptr>(0);

@@ -44,8 +44,8 @@ public:
     glm::vec4 winClipViewport,
     ViewOffsetSetting offsetSetting,
     ViewType viewType,
-    camera::ViewRenderMode renderMode,
-    camera::IntensityProjectionMode ipMode,
+    ViewRenderMode renderMode,
+    IntensityProjectionMode ipMode,
     UiControls uiControls,
     std::function<ViewConvention()> viewConventionProvider,
     std::optional<uuids::uuid> cameraRotationSyncGroupUid,
@@ -55,8 +55,8 @@ public:
 
   void setViewType(const ViewType& newViewType) override;
 
-  const camera::Camera& camera() const;
-  camera::Camera& camera();
+  const Camera& camera() const;
+  Camera& camera();
 
   /**
      * @brief Update the view's camera based on the crosshairs World-space position.
@@ -84,8 +84,8 @@ private:
   /// View offset setting
   ViewOffsetSetting m_offset;
 
-  camera::ProjectionType m_projectionType;
-  camera::Camera m_camera;
+  ProjectionType m_projectionType;
+  Camera m_camera;
 
   std::function<ViewConvention()> m_viewConventionProvider;
 

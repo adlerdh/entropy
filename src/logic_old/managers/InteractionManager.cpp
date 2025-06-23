@@ -55,7 +55,7 @@ std::unique_ptr<InteractionPack> createInteractionPack(
 )
 {
   auto camera
-    = std::make_unique<camera::Camera>(std::move(cameraProjection), cameraStartFrameProvider);
+    = std::make_unique<Camera>(std::move(cameraProjection), cameraStartFrameProvider);
 
   auto cameraHandler = std::make_unique<CameraInteractionHandler>();
   auto crosshairsHandler = std::make_unique<CrosshairsInteractionHandler>();
@@ -103,71 +103,71 @@ const std::unordered_map<gui::ViewType, CrosshairsType>
     {gui::ViewType::Reg_RefImageAtSlide, CrosshairsType::SlideStack}
   };
 
-const std::unordered_map<gui::ViewType, camera::CameraType>
+const std::unordered_map<gui::ViewType, CameraType>
   InteractionManager::smk_viewTypeToDefaultCameraTypeMap = {
-    {gui::ViewType::Image_Axial, camera::CameraType::Axial},
-    {gui::ViewType::Image_Coronal, camera::CameraType::Coronal},
-    {gui::ViewType::Image_Sagittal, camera::CameraType::Sagittal},
-    {gui::ViewType::Image_3D, camera::CameraType::Main3D},
+    {gui::ViewType::Image_Axial, CameraType::Axial},
+    {gui::ViewType::Image_Coronal, CameraType::Coronal},
+    {gui::ViewType::Image_Sagittal, CameraType::Sagittal},
+    {gui::ViewType::Image_3D, CameraType::Main3D},
 
-    {gui::ViewType::Image_Big3D, camera::CameraType::Big3D},
+    {gui::ViewType::Image_Big3D, CameraType::Big3D},
 
-    {gui::ViewType::Stack_StackSide1, camera::CameraType::StackSide1},
-    {gui::ViewType::Stack_StackSide2, camera::CameraType::StackSide2},
-    {gui::ViewType::Stack_ActiveSlide, camera::CameraType::SlideActive_TopToBottomSlide},
+    {gui::ViewType::Stack_StackSide1, CameraType::StackSide1},
+    {gui::ViewType::Stack_StackSide2, CameraType::StackSide2},
+    {gui::ViewType::Stack_ActiveSlide, CameraType::SlideActive_TopToBottomSlide},
 
-    {gui::ViewType::Stack_3D, camera::CameraType::Stack3D},
+    {gui::ViewType::Stack_3D, CameraType::Stack3D},
 
-    {gui::ViewType::Reg_ActiveSlide, camera::CameraType::SlideActive_TopToBottomSlide},
-    {gui::ViewType::Reg_RefImageAtSlide, camera::CameraType::SlideActive_TopToBottomSlide}
+    {gui::ViewType::Reg_ActiveSlide, CameraType::SlideActive_TopToBottomSlide},
+    {gui::ViewType::Reg_RefImageAtSlide, CameraType::SlideActive_TopToBottomSlide}
 };
 
-const std::unordered_map<camera::CameraType, camera::ProjectionType>
+const std::unordered_map<CameraType, camera::ProjectionType>
   InteractionManager::smk_cameraTypeToProjectionTypeMap = {
-    {camera::CameraType::Axial, camera::ProjectionType::Orthographic},
-    {camera::CameraType::Coronal, camera::ProjectionType::Orthographic},
-    {camera::CameraType::Sagittal, camera::ProjectionType::Orthographic},
-    {camera::CameraType::Main3D, camera::ProjectionType::Perspective},
+    {CameraType::Axial, camera::ProjectionType::Orthographic},
+    {CameraType::Coronal, camera::ProjectionType::Orthographic},
+    {CameraType::Sagittal, camera::ProjectionType::Orthographic},
+    {CameraType::Main3D, camera::ProjectionType::Perspective},
 
-    {camera::CameraType::Big3D, camera::ProjectionType::Perspective},
+    {CameraType::Big3D, camera::ProjectionType::Perspective},
 
-    {camera::CameraType::StackSide1, camera::ProjectionType::Orthographic},
-    {camera::CameraType::StackSide2, camera::ProjectionType::Orthographic},
-    {camera::CameraType::SlideActive_TopToBottomSlide, camera::ProjectionType::Orthographic},
-    {camera::CameraType::SlideActive_BottomToTopSlide, camera::ProjectionType::Orthographic},
+    {CameraType::StackSide1, camera::ProjectionType::Orthographic},
+    {CameraType::StackSide2, camera::ProjectionType::Orthographic},
+    {CameraType::SlideActive_TopToBottomSlide, camera::ProjectionType::Orthographic},
+    {CameraType::SlideActive_BottomToTopSlide, camera::ProjectionType::Orthographic},
 
-    {camera::CameraType::Stack3D, camera::ProjectionType::Perspective}
+    {CameraType::Stack3D, camera::ProjectionType::Perspective}
 };
 
-const std::unordered_map<camera::CameraType, CameraStartFrameType>
+const std::unordered_map<CameraType, CameraStartFrameType>
   InteractionManager::smk_cameraTypeToDefaultStartFrameTypeMap = {
-    {camera::CameraType::Axial, CameraStartFrameType::Crosshairs_Axial_LAI},
-    {camera::CameraType::Coronal, CameraStartFrameType::Crosshairs_Coronal_LSA},
-    {camera::CameraType::Sagittal, CameraStartFrameType::Crosshairs_Sagittal_PSL},
-    {camera::CameraType::Main3D, CameraStartFrameType::Crosshairs_Coronal_LSA},
+    {CameraType::Axial, CameraStartFrameType::Crosshairs_Axial_LAI},
+    {CameraType::Coronal, CameraStartFrameType::Crosshairs_Coronal_LSA},
+    {CameraType::Sagittal, CameraStartFrameType::Crosshairs_Sagittal_PSL},
+    {CameraType::Main3D, CameraStartFrameType::Crosshairs_Coronal_LSA},
 
-    {camera::CameraType::Big3D, CameraStartFrameType::Crosshairs_Coronal_LSA},
+    {CameraType::Big3D, CameraStartFrameType::Crosshairs_Coronal_LSA},
 
-    {camera::CameraType::StackSide1, CameraStartFrameType::SlideStack_FacingNegX},
-    {camera::CameraType::StackSide2, CameraStartFrameType::SlideStack_FacingNegY},
-    {camera::CameraType::SlideActive_TopToBottomSlide, CameraStartFrameType::SlideStack_FacingNegZ},
-    {camera::CameraType::SlideActive_BottomToTopSlide, CameraStartFrameType::SlideStack_FacingPosZ},
+    {CameraType::StackSide1, CameraStartFrameType::SlideStack_FacingNegX},
+    {CameraType::StackSide2, CameraStartFrameType::SlideStack_FacingNegY},
+    {CameraType::SlideActive_TopToBottomSlide, CameraStartFrameType::SlideStack_FacingNegZ},
+    {CameraType::SlideActive_BottomToTopSlide, CameraStartFrameType::SlideStack_FacingPosZ},
 
-    {camera::CameraType::Stack3D, CameraStartFrameType::SlideStack_FacingNegZ}
+    {CameraType::Stack3D, CameraStartFrameType::SlideStack_FacingNegZ}
 };
 
-const std::unordered_map<camera::CameraType, LinkedFrameType>
+const std::unordered_map<CameraType, LinkedFrameType>
   InteractionManager::smk_cameraStartFrameTypeToDefaultLinkedStartFrameTypeMap{
-    {camera::CameraType::Axial, LinkedFrameType::Crosshairs},
-    {camera::CameraType::Coronal, LinkedFrameType::Crosshairs},
-    {camera::CameraType::Sagittal, LinkedFrameType::Crosshairs},
-    {camera::CameraType::Main3D, LinkedFrameType::None},
-    {camera::CameraType::Big3D, LinkedFrameType::None},
-    {camera::CameraType::StackSide1, LinkedFrameType::SlideStack},
-    {camera::CameraType::StackSide2, LinkedFrameType::SlideStack},
-    {camera::CameraType::SlideActive_TopToBottomSlide, LinkedFrameType::SlideStack},
-    {camera::CameraType::SlideActive_BottomToTopSlide, LinkedFrameType::SlideStack},
-    {camera::CameraType::Stack3D, LinkedFrameType::SlideStack}
+    {CameraType::Axial, LinkedFrameType::Crosshairs},
+    {CameraType::Coronal, LinkedFrameType::Crosshairs},
+    {CameraType::Sagittal, LinkedFrameType::Crosshairs},
+    {CameraType::Main3D, LinkedFrameType::None},
+    {CameraType::Big3D, LinkedFrameType::None},
+    {CameraType::StackSide1, LinkedFrameType::SlideStack},
+    {CameraType::StackSide2, LinkedFrameType::SlideStack},
+    {CameraType::SlideActive_TopToBottomSlide, LinkedFrameType::SlideStack},
+    {CameraType::SlideActive_BottomToTopSlide, LinkedFrameType::SlideStack},
+    {CameraType::Stack3D, LinkedFrameType::SlideStack}
   };
 
 const std::unordered_map<CameraStartFrameType, glm::quat>
@@ -200,25 +200,25 @@ CrosshairsType InteractionManager::getDefaultCrosshairsType(const gui::ViewType&
   return smk_viewTypeToDefaultCrosshairsTypeMap.at(viewType);
 }
 
-camera::CameraType InteractionManager::getDefaultCameraType(const gui::ViewType& viewType)
+CameraType InteractionManager::getDefaultCameraType(const gui::ViewType& viewType)
 {
   return smk_viewTypeToDefaultCameraTypeMap.at(viewType);
 }
 
-camera::ProjectionType InteractionManager::getProjectionType(const camera::CameraType& cameraType)
+camera::ProjectionType InteractionManager::getProjectionType(const CameraType& cameraType)
 {
   return smk_cameraTypeToProjectionTypeMap.at(cameraType);
 }
 
 CameraStartFrameType InteractionManager::getDefaultCameraStartFrameType(
-  const camera::CameraType& cameraType
+  const CameraType& cameraType
 )
 {
   return smk_cameraTypeToDefaultStartFrameTypeMap.at(cameraType);
 }
 
 LinkedFrameType InteractionManager::getDefaultLinkedStartFrameType(
-  const camera::CameraType& cameraType
+  const CameraType& cameraType
 )
 {
   return smk_cameraStartFrameTypeToDefaultLinkedStartFrameTypeMap.at(cameraType);
@@ -391,7 +391,7 @@ void InteractionManager::setInteractionModeType(const InteractionModeType& mode)
   }
 }
 
-camera::Camera* InteractionManager::getCamera(const UID& viewUid)
+Camera* InteractionManager::getCamera(const UID& viewUid)
 {
   if (auto pack = getInteractionPack(viewUid))
   {
@@ -688,13 +688,13 @@ void InteractionManager::setActiveSlideViewDirection(
   case ActiveSlideViewDirection::TopToBottomSlide:
   {
     m_viewTypeToCameraTypeMap[gui::ViewType::Stack_ActiveSlide]
-      = camera::CameraType::SlideActive_TopToBottomSlide;
+      = CameraType::SlideActive_TopToBottomSlide;
     break;
   }
   case ActiveSlideViewDirection::BottomToTopSlide:
   {
     m_viewTypeToCameraTypeMap[gui::ViewType::Stack_ActiveSlide]
-      = camera::CameraType::SlideActive_BottomToTopSlide;
+      = CameraType::SlideActive_BottomToTopSlide;
     break;
   }
   }
@@ -704,11 +704,11 @@ InteractionManager::ActiveSlideViewDirection InteractionManager::getActiveSlideV
 {
   auto cameraType = m_viewTypeToCameraTypeMap.at(gui::ViewType::Stack_ActiveSlide);
 
-  if (camera::CameraType::SlideActive_TopToBottomSlide == cameraType)
+  if (CameraType::SlideActive_TopToBottomSlide == cameraType)
   {
     return InteractionManager::ActiveSlideViewDirection::TopToBottomSlide;
   }
-  else if (camera::CameraType::SlideActive_BottomToTopSlide == cameraType)
+  else if (CameraType::SlideActive_BottomToTopSlide == cameraType)
   {
     return InteractionManager::ActiveSlideViewDirection::BottomToTopSlide;
   }
@@ -718,7 +718,7 @@ InteractionManager::ActiveSlideViewDirection InteractionManager::getActiveSlideV
   }
 }
 
-camera::CameraType InteractionManager::getCameraType(const gui::ViewType& viewType) const
+CameraType InteractionManager::getCameraType(const gui::ViewType& viewType) const
 {
   auto it = m_viewTypeToCameraTypeMap.find(viewType);
   if (std::end(m_viewTypeToCameraTypeMap) != it)

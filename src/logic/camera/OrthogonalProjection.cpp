@@ -30,9 +30,6 @@ glm::vec2 computeCameraFov(const glm::vec2& minFov, float aspectRatio, float zoo
 
 } // namespace
 
-namespace camera
-{
-
 OrthographicProjection::OrthographicProjection()
   : Projection()
 {
@@ -70,5 +67,3 @@ float OrthographicProjection::angle() const
   // The angle of view for an orthographic projection is zero.
   return 0.0f;
 }
-
-} // namespace camera

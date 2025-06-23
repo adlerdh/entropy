@@ -29,7 +29,7 @@ void InteractionHandlerBase::setMyViewUpdater(MyViewUpdater updater)
 }
 
 bool InteractionHandlerBase::handleMouseDoubleClickEvent(
-  QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
@@ -46,7 +46,7 @@ bool InteractionHandlerBase::handleMouseDoubleClickEvent(
 }
 
 bool InteractionHandlerBase::handleMouseMoveEvent(
-  QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
@@ -63,7 +63,7 @@ bool InteractionHandlerBase::handleMouseMoveEvent(
 }
 
 bool InteractionHandlerBase::handleMousePressEvent(
-  QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
@@ -80,7 +80,7 @@ bool InteractionHandlerBase::handleMousePressEvent(
 }
 
 bool InteractionHandlerBase::handleMouseReleaseEvent(
-  QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
@@ -97,7 +97,7 @@ bool InteractionHandlerBase::handleMouseReleaseEvent(
 }
 
 bool InteractionHandlerBase::handleTabletEvent(
-  QTabletEvent* event, const Viewport& viewport, const camera::Camera& camera
+  QTabletEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
@@ -114,7 +114,7 @@ bool InteractionHandlerBase::handleTabletEvent(
 }
 
 bool InteractionHandlerBase::handleWheelEvent(
-  QWheelEvent* event, const Viewport& viewport, const camera::Camera& camera
+  QWheelEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   if (!event)
@@ -131,7 +131,7 @@ bool InteractionHandlerBase::handleWheelEvent(
 }
 
 bool InteractionHandlerBase::dispatchGestureEvent(
-  QGestureEvent* event, const Viewport& viewport, const camera::Camera& camera
+  QGestureEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   if (!event)
@@ -188,7 +188,7 @@ bool InteractionHandlerBase::dispatchGestureEvent(
 }
 
 bool InteractionHandlerBase::handlePanGesture(
-  QPanGesture* gesture, const Viewport& viewport, const camera::Camera& camera
+  QPanGesture* gesture, const Viewport& viewport, const Camera& camera
 )
 {
   if (!gesture)
@@ -203,7 +203,7 @@ bool InteractionHandlerBase::handlePanGesture(
 }
 
 bool InteractionHandlerBase::handlePinchGesture(
-  QPinchGesture* gesture, const Viewport& viewport, const camera::Camera& camera
+  QPinchGesture* gesture, const Viewport& viewport, const Camera& camera
 )
 {
   if (!gesture)
@@ -218,7 +218,7 @@ bool InteractionHandlerBase::handlePinchGesture(
 }
 
 bool InteractionHandlerBase::handleSwipeGesture(
-  QSwipeGesture* gesture, const Viewport& viewport, const camera::Camera& camera
+  QSwipeGesture* gesture, const Viewport& viewport, const Camera& camera
 )
 {
   if (!gesture)
@@ -233,7 +233,7 @@ bool InteractionHandlerBase::handleSwipeGesture(
 }
 
 bool InteractionHandlerBase::handleTapGesture(
-  QTapGesture* gesture, const Viewport& viewport, const camera::Camera& camera
+  QTapGesture* gesture, const Viewport& viewport, const Camera& camera
 )
 {
   if (!gesture)
@@ -248,7 +248,7 @@ bool InteractionHandlerBase::handleTapGesture(
 }
 
 bool InteractionHandlerBase::handleTapAndHoldGesture(
-  QTapAndHoldGesture* gesture, const Viewport& viewport, const camera::Camera& camera
+  QTapAndHoldGesture* gesture, const Viewport& viewport, const Camera& camera
 )
 {
   if (!gesture)

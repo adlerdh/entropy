@@ -1,5 +1,4 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#pragma once
 
 #include "common/CoordinateFrame.h"
 #include "common/PublicTypes.h"
@@ -9,9 +8,6 @@
 
 #include <memory>
 #include <optional>
-
-namespace camera
-{
 
 /**
  * @brief Camera class that manages the mapping World space to OpenGL Clip space via a sequence of
@@ -162,7 +158,3 @@ private:
 
   glm::mat4 m_start_T_world;
 };
-
-} // namespace camera
-
-#endif // CAMERA_H

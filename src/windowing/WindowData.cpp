@@ -29,8 +29,6 @@ namespace
 
 Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
 {
-  using namespace camera;
-
   const UiControls uiControls(true);
 
   const auto noRotationSyncGroup = std::nullopt;
@@ -140,8 +138,6 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
 
 Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
 {
-  using namespace camera;
-
   const UiControls uiControls(true);
 
   const auto noRotationSyncGroup = std::nullopt;
@@ -229,8 +225,6 @@ Layout createTriTopBottomLayout(
   std::size_t numRows, std::function<ViewConvention()> conventionProvider
 )
 {
-  using namespace camera;
-
   const UiControls uiControls(true);
 
   const auto axiRotationSyncGroupUid = generateRandomUuid();
@@ -363,8 +357,8 @@ Layout createGridLayout(
   const std::optional<uuids::uuid>& imageUidForLightbox
 )
 {
-  static const camera::ViewRenderMode s_shaderType = camera::ViewRenderMode::Image;
-  static const camera::IntensityProjectionMode s_ipMode = camera::IntensityProjectionMode::None;
+  static const ViewRenderMode s_shaderType = ViewRenderMode::Image;
+  static const IntensityProjectionMode s_ipMode = IntensityProjectionMode::None;
 
   Layout layout(isLightbox);
 
@@ -705,16 +699,16 @@ void WindowData::recenterView(
 {
   if (resetZoom)
   {
-    camera::resetZoom(view.camera());
+    helper::resetZoom(view.camera());
   }
 
   if (resetObliqueOrientation && (ViewType::Oblique == view.viewType()))
   {
     // Reset the view orientation for oblique views:
-    camera::resetViewTransformation(view.camera());
+    helper::resetViewTransformation(view.camera());
   }
 
-  camera::positionCameraForWorldTargetAndFov(view.camera(), worldFov, worldCenter);
+  helper::positionCameraForWorldTargetAndFov(view.camera(), worldFov, worldCenter);
 }
 
 uuid_range_t WindowData::currentViewUids() const
@@ -776,10 +770,11 @@ View* WindowData::getView(const uuids::uuid& uid)
 
 std::optional<uuids::uuid> WindowData::currentViewUidAtCursor(const glm::vec2& windowPos) const
 {
-  if (m_layouts.empty())
+  if (m_layouts.empty()) {
     return std::nullopt;
+  }
 
-  const glm::vec2 winClipPos = camera::windowNdc_T_window(m_viewport, windowPos);
+  const glm::vec2 winClipPos = helper::windowNdc_T_window(m_viewport, windowPos);
 
   for (const auto& view : m_layouts.at(m_currentLayout).views())
   {
@@ -1042,13 +1037,13 @@ std::vector<uuids::uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3&
   for (auto& viewUid : currentViewUids())
   {
     const View* view = getCurrentView(viewUid);
-    if (!view)
+    if (!view) {
       continue;
+    }
 
-    const glm::vec3 viewBackDir = camera::worldDirection(view->camera(), Directions::View::Back);
+    const glm::vec3 viewBackDir = helper::worldDirection(view->camera(), Directions::View::Back);
 
-    if (camera::areVectorsParallel(worldNormal, viewBackDir, sk_parallelThreshold_degrees))
-    {
+    if (helper::areVectorsParallel(worldNormal, viewBackDir, sk_parallelThreshold_degrees)) {
       viewUids.push_back(viewUid);
     }
   }

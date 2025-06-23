@@ -1057,7 +1057,7 @@ void AnnotationStateMachine::pasteAnnotation() const
 
   // World-space view normal direction
   const glm::vec3 worldViewBackDir
-    = camera::worldDirection(selectedView->camera(), Directions::View::Back);
+    = helper::worldDirection(selectedView->camera(), Directions::View::Back);
 
   // World-space crosshairs position on this view slice (accounting for view offest)
   const glm::vec3 worldXhairsPos
@@ -1068,7 +1068,7 @@ void AnnotationStateMachine::pasteAnnotation() const
     activeImage->transformations().subject_T_worldDef(), worldViewBackDir, worldXhairsPos
   );
 
-  if (!camera::areVectorsParallel(
+  if (!helper::areVectorsParallel(
         glm::vec3{subjectPlaneEquation},
         glm::vec3{annot->getSubjectPlaneEquation()},
         sk_parallelThreshold_degrees
@@ -1168,7 +1168,7 @@ void AnnotationStateMachine::flipSelectedAnnotation(const FlipDirection& flipDir
   {
     const glm::vec3 subjectPoint = annot->unprojectFromAnnotationPlaneToSubjectPoint(annotPoint);
 
-    const glm::vec4 clipPoint = camera::clip_T_world(selectedView->camera())
+    const glm::vec4 clipPoint = helper::clip_T_world(selectedView->camera())
                                 * activeImage->transformations().worldDef_T_subject()
                                 * glm::vec4{subjectPoint, 1.0f};
 
@@ -1202,7 +1202,7 @@ void AnnotationStateMachine::flipSelectedAnnotation(const FlipDirection& flipDir
     }
 
     const glm::vec4 subjectVertexFlipped = activeImage->transformations().subject_T_worldDef()
-                                           * camera::world_T_clip(selectedView->camera())
+                                           * helper::world_T_clip(selectedView->camera())
                                            * clipVertexFlipped;
 
     // Project flipped vertex back into annotation plane:
@@ -1244,7 +1244,7 @@ std::vector<std::pair<uuids::uuid, size_t> > AnnotationStateMachine::findHitVert
   const auto activeImageUid = ms_appData->activeImageUid();
 
   // Number of mm per pixel in the x and y directions:
-  const glm::vec2 mmPerPixel = camera::worldPixelSize(
+  const glm::vec2 mmPerPixel = helper::worldPixelSize(
     ms_appData->windowData().viewport(), hit.view->camera(), hit.view->viewClip_T_windowClip()
   );
 

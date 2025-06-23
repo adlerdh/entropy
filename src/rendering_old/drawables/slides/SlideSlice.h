@@ -71,7 +71,7 @@ private:
   using TexCoord2DType = glm::vec2;
   using VertexIndexType = uint32_t;
 
-  void doUpdate(double, const Viewport&, const camera::Camera&, const CoordinateFrame&) override;
+  void doUpdate(double, const Viewport&, const Camera&, const CoordinateFrame&) override;
 
   void setupChildren();
 

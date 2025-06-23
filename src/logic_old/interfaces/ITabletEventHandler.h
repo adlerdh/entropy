@@ -23,7 +23,7 @@ class ITabletEventHandler
 public:
   virtual ~ITabletEventHandler() = default;
 
-  virtual bool handleTabletEvent(QTabletEvent*, const Viewport&, const camera::Camera&) = 0;
+  virtual bool handleTabletEvent(QTabletEvent*, const Viewport&, const Camera&) = 0;
 };
 
 #endif // I_TABLET_EVENT_HANDLER_H

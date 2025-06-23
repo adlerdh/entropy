@@ -55,7 +55,7 @@ bool intersectDoubleSidedRayWithPlane(
 }
 
 std::array<float, 3> distancesFromCrosshairToFrustumPlanes(
-  const camera::Camera& camera, const CoordinateFrame& crosshairs
+  const Camera& camera, const CoordinateFrame& crosshairs
 )
 {
   static const glm::vec3 sk_ndcLeftPlanePos{-1.0f, 0.0f, -1.0f};
@@ -63,13 +63,13 @@ std::array<float, 3> distancesFromCrosshairToFrustumPlanes(
   static const glm::vec3 sk_ndcBottomPlanePos{0.0f, -1.0f, -1.0f};
   static const glm::vec3 sk_ndcTopPlanePos{0.0f, 1.0f, -1.0f};
 
-  const glm::vec3 leftPlanePos = camera::world_T_ndc(camera, sk_ndcLeftPlanePos);
-  const glm::vec3 rightPlanePos = camera::world_T_ndc(camera, sk_ndcRightPlanePos);
-  const glm::vec3 bottomPlanePos = camera::world_T_ndc(camera, sk_ndcBottomPlanePos);
-  const glm::vec3 topPlanePos = camera::world_T_ndc(camera, sk_ndcTopPlanePos);
+  const glm::vec3 leftPlanePos = helper::world_T_ndc(camera, sk_ndcLeftPlanePos);
+  const glm::vec3 rightPlanePos = helper::world_T_ndc(camera, sk_ndcRightPlanePos);
+  const glm::vec3 bottomPlanePos = helper::world_T_ndc(camera, sk_ndcBottomPlanePos);
+  const glm::vec3 topPlanePos = helper::world_T_ndc(camera, sk_ndcTopPlanePos);
 
-  const glm::vec3 lrPlaneNormal = camera::worldDirection(camera, Directions::View::Right);
-  const glm::vec3 btPlaneNormal = camera::worldDirection(camera, Directions::View::Up);
+  const glm::vec3 lrPlaneNormal = helper::worldDirection(camera, Directions::View::Right);
+  const glm::vec3 btPlaneNormal = helper::worldDirection(camera, Directions::View::Up);
 
   const glm::vec3 rayPos = crosshairs.worldOrigin();
 
@@ -216,7 +216,7 @@ DrawableOpacity Crosshairs::opacityFlag() const
 void Crosshairs::doUpdate(
   double /*time*/,
   const Viewport& viewport,
-  const camera::Camera& camera,
+  const Camera& camera,
   const CoordinateFrame& crosshairs
 )
 {

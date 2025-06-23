@@ -267,7 +267,7 @@ void GuiManager::setSlideStackView3dModeSetter(SetterType<bool> setter)
   m_slideStackViews3dModeSetter = setter;
 }
 
-void GuiManager::setCameraQuerier(QuerierType<camera::Camera*, UID> querier)
+void GuiManager::setCameraQuerier(QuerierType<Camera*, UID> querier)
 {
   m_cameraQuerier = querier;
 }

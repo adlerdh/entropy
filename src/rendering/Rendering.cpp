@@ -64,6 +64,7 @@ using Vec3Vector = std::vector<glm::vec3>;
 
 namespace
 {
+using namespace uuids;
 
 static const glm::vec3 WHITE{1.0f};
 
@@ -75,8 +76,6 @@ static const glm::vec3 sk_zeroVec3{0.0f, 0.0f, 0.0f};
 static const glm::vec4 sk_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
 
 static const glm::ivec2 sk_zeroIVec2{0, 0};
-
-static const std::string ROBOTO_LIGHT("robotoLight");
 
 /**
  * @brief Create the Dual-Depth Peel renderer for a given view
@@ -134,12 +133,8 @@ const Uniforms::SamplerIndexType Rendering::msk_jumpTexSampler{4};
 
 Rendering::Rendering(AppData& appData)
   : m_appData(appData)
-  ,
-
-  m_nvg(nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES /*| NVG_DEBUG*/))
-  ,
-
-  m_crossCorrelationProgram("CrossCorrelationProgram")
+  , m_nvg(nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES /*| NVG_DEBUG*/))
+  , m_crossCorrelationProgram("CrossCorrelationProgram")
   , m_differenceProgram("DifferenceProgram")
   , m_edgeProgram("EdgeProgram")
   , m_imageProgram("ImageProgram")
@@ -148,11 +143,12 @@ Rendering::Rendering(AppData& appData)
   , m_overlayProgram("OverlayProgram")
   , m_raycastIsoSurfaceProgram("RayCastIsoSurfaceProgram")
   , m_simpleProgram("SimpleProgram")
-  ,
-
-  m_isAppDoneLoadingImages(false)
+  , m_segProgram("SegProgram")
+  , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
 {
+  static const std::string ROBOTO_LIGHT("robotoLight");
+
   if (!m_nvg)
   {
     spdlog::error("Could not initialize 'nanovg' vector graphcis library. "
@@ -307,22 +303,22 @@ void Rendering::initTextures()
     throw_debug("No image color map textures loaded")
   }
 
-  const std::vector<uuids::uuid> imageUidsOfCreatedTextures
+  const std::vector<uuid> imageUidsOfCreatedTextures
     = createImageTextures(m_appData, m_appData.imageUidsOrdered());
 
   if (imageUidsOfCreatedTextures.size() != m_appData.numImages())
   {
     spdlog::error("Not all image textures were created");
-    /// TODO: remove the image sfor which the texture was not created
+    /// @todo remove the images for which the texture was not created
   }
 
-  const std::vector<uuids::uuid> segUidsOfCreatedTextures
+  const std::vector<uuid> segUidsOfCreatedTextures
     = createSegTextures(m_appData, m_appData.segUidsOrdered());
 
   if (segUidsOfCreatedTextures.size() != m_appData.numSegs())
   {
     spdlog::error("Not all segmentation textures were created");
-    /// TODO: remove the segs for which the texture was not created
+    /// @todo remove the segs for which the texture was not created
   }
 
   m_appData.renderData().m_distanceMapTextures = createDistanceMapTextures(m_appData);
@@ -330,7 +326,7 @@ void Rendering::initTextures()
   m_isAppDoneLoadingImages = true;
 }
 
-bool Rendering::createLabelColorTableTexture(const uuids::uuid& labelTableUid)
+bool Rendering::createLabelColorTableTexture(const uuid& labelTableUid)
 {
   // static const glm::vec4 sk_border{ 0.0f, 0.0f, 0.0f, 0.0f };
 
@@ -368,14 +364,13 @@ bool Rendering::createLabelColorTableTexture(const uuids::uuid& labelTableUid)
   GLBufferTexture& T = it.first->second;
 
   T.generate();
-
   T.allocate(table->numColorBytes_RGBA_U8(), table->colorData_RGBA_nonpremult_U8());
 
   spdlog::debug("Generated buffer texture for label color table {}", labelTableUid);
   return true;
 }
 
-bool Rendering::removeSegTexture(const uuids::uuid& segUid)
+bool Rendering::removeSegTexture(const uuid& segUid)
 {
   const auto* seg = m_appData.seg(segUid);
   if (!seg)
@@ -397,7 +392,7 @@ bool Rendering::removeSegTexture(const uuids::uuid& segUid)
 }
 
 /*
-bool Rendering::createImageTexture( const uuids::uuid& imageUid )
+bool Rendering::createImageTexture( const uuid& imageUid )
 {
     static constexpr GLint sk_mipmapLevel = 0; // Load seg data into first mipmap level
     static constexpr GLint sk_alignment = 1; // Pixel pack/unpack alignment is 1 byte
@@ -451,7 +446,7 @@ bool Rendering::createImageTexture( const uuids::uuid& imageUid )
 */
 
 void Rendering::updateSegTexture(
-  const uuids::uuid& segUid,
+  const uuid& segUid,
   const ComponentType& compType,
   const glm::uvec3& startOffsetVoxel,
   const glm::uvec3& sizeInVoxels,
@@ -489,7 +484,7 @@ void Rendering::updateSegTexture(
 }
 
 void Rendering::updateSegTextureWithInt64Data(
-  const uuids::uuid& segUid,
+  const uuid& segUid,
   const ComponentType& compType,
   const glm::uvec3& startOffsetVoxel,
   const glm::uvec3& sizeInVoxels,
@@ -547,9 +542,9 @@ void Rendering::updateSegTextureWithInt64Data(
 }
 
 /// @todo Need to fix this to handle multicomponent images like
-/// std::vector<uuids::uuid> createImageTextures( AppData& appData, uuid_range_t imageUids )
+/// std::vector<uuid> createImageTextures( AppData& appData, uuid_range_t imageUids )
 void Rendering::updateImageTexture(
-  const uuids::uuid& imageUid,
+  const uuid& imageUid,
   uint32_t comp,
   const ComponentType& compType,
   const glm::uvec3& startOffsetVoxel,
@@ -593,80 +588,74 @@ void Rendering::updateImageTexture(
   );
 }
 
-Rendering::CurrentImages Rendering::getImageAndSegUidsForMetricShaders(
-  const std::list<uuids::uuid>& metricImageUids
-) const
+Rendering::CurrentImages
+Rendering::getImageAndSegUidsForMetricShaders(const std::list<uuid>& metricImageUids) const
 {
+  const RenderData& R = m_appData.renderData();
   CurrentImages I;
 
   for (const auto& imageUid : metricImageUids)
   {
-    if (I.size() >= NUM_METRIC_IMAGES)
+    if (I.size() >= NUM_METRIC_IMAGES) {
+      // Stop after NUM_METRIC_IMAGES images reached
       break;
+    }
 
-    if (std::end(m_appData.renderData().m_imageTextures) != m_appData.renderData().m_imageTextures.find(imageUid))
+    if (std::end(R.m_imageTextures) != R.m_imageTextures.find(imageUid))
     {
       ImgSegPair imgSegPair;
-
-      // The texture for this image exists
-      imgSegPair.first = imageUid;
+      imgSegPair.first = imageUid; // The texture for this image exists
 
       // Find the segmentation that belongs to this image
       if (const auto segUid = m_appData.imageToActiveSegUid(imageUid))
       {
-        if (std::end(m_appData.renderData().m_segTextures) != m_appData.renderData().m_segTextures.find(*segUid))
-        {
-          // The texture for this seg exists
-          imgSegPair.second = *segUid;
+        if (std::end(R.m_segTextures) != R.m_segTextures.find(*segUid)) {
+          imgSegPair.second = *segUid; // The texture for this segmentation exists
         }
       }
 
-      I.push_back(imgSegPair);
+      I.emplace_back(std::move(imgSegPair));
     }
   }
 
-  // Always return at least two elements.
+  // Always return at least two elements
   while (I.size() < Rendering::NUM_METRIC_IMAGES)
   {
-    I.push_back(ImgSegPair());
+    I.emplace_back(ImgSegPair());
   }
 
   return I;
 }
 
-Rendering::CurrentImages Rendering::getImageAndSegUidsForImageShaders(
-  const std::list<uuids::uuid>& imageUids
-) const
+Rendering::CurrentImages
+Rendering::getImageAndSegUidsForImageShaders(const std::list<uuid>& imageUids) const
 {
+  const RenderData& R = m_appData.renderData();
   CurrentImages I;
 
   for (const auto& imageUid : imageUids)
   {
-    if (std::end(m_appData.renderData().m_imageTextures) != m_appData.renderData().m_imageTextures.find(imageUid))
+    if (std::end(R.m_imageTextures) != R.m_imageTextures.find(imageUid))
     {
-      std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > p;
-
-      // The texture for this image exists
-      p.first = imageUid;
+      std::pair<std::optional<uuid>, std::optional<uuid>> imgSegPair;
+      imgSegPair.first = imageUid; // The texture for this image exists
 
       // Find the segmentation that belongs to this image
       if (const auto segUid = m_appData.imageToActiveSegUid(imageUid))
       {
-        if (std::end(m_appData.renderData().m_segTextures) != m_appData.renderData().m_segTextures.find(*segUid))
-        {
-          // The texture for this segmentation exists
-          p.second = *segUid;
+        if (std::end(R.m_segTextures) != R.m_segTextures.find(*segUid)) {
+          imgSegPair.second = *segUid; // The texture for this segmentation exists
         }
       }
 
-      I.emplace_back(std::move(p));
+      I.emplace_back(std::move(imgSegPair));
     }
   }
 
   return I;
 }
 
-void Rendering::updateImageInterpolation(const uuids::uuid& imageUid)
+void Rendering::updateImageInterpolation(const uuid& imageUid)
 {
   const auto* image = m_appData.image(imageUid);
   if (!image)
@@ -795,7 +784,7 @@ void Rendering::updateImageColorMapInterpolation(std::size_t cmapIndex)
   spdlog::debug("Set interpolation mode for image color map {}", *cmapUid);
 }
 
-void Rendering::updateLabelColorTableTexture(size_t tableIndex)
+void Rendering::updateLabelColorTableTexture(std::size_t tableIndex)
 {
   spdlog::trace("Begin updating texture for 1D label color map at index {}", tableIndex);
 
@@ -862,7 +851,7 @@ void Rendering::updateImageUniforms(uuid_range_t imageUids)
   }
 }
 
-void Rendering::updateImageUniforms(const uuids::uuid& imageUid)
+void Rendering::updateImageUniforms(const uuid& imageUid)
 {
   auto it = m_appData.renderData().m_uniforms.find(imageUid);
 
@@ -1124,7 +1113,8 @@ void Rendering::updateMetricUniforms()
   update(m_appData.renderData().m_jointHistogramParams, "Joint Histogram");
 }
 
-std::list<std::reference_wrapper<GLTexture> > Rendering::bindImageTextures(const ImgSegPair& p)
+std::list<std::reference_wrapper<GLTexture>>
+Rendering::bindImageTextures(const ImgSegPair& p)
 {
   std::list<std::reference_wrapper<GLTexture> > textures;
 
@@ -1343,7 +1333,7 @@ void Rendering::unbindBufferTextures(
 }
 
 std::list<std::reference_wrapper<GLTexture> > Rendering::bindMetricImageTextures(
-  const CurrentImages& I, const camera::ViewRenderMode& metricType
+  const CurrentImages& I, const ViewRenderMode& metricType
 )
 {
   std::list<std::reference_wrapper<GLTexture> > textures;
@@ -1355,36 +1345,36 @@ std::list<std::reference_wrapper<GLTexture> > Rendering::bindMetricImageTextures
 
   switch (metricType)
   {
-  case camera::ViewRenderMode::Difference:
+  case ViewRenderMode::Difference:
   {
     usesMetricColormap = true;
     metricCmapIndex = R.m_squaredDifferenceParams.m_colorMapIndex;
     break;
   }
-  case camera::ViewRenderMode::CrossCorrelation:
+  case ViewRenderMode::CrossCorrelation:
   {
     usesMetricColormap = true;
     metricCmapIndex = R.m_crossCorrelationParams.m_colorMapIndex;
     break;
   }
-  case camera::ViewRenderMode::JointHistogram:
+  case ViewRenderMode::JointHistogram:
   {
     usesMetricColormap = true;
     metricCmapIndex = R.m_jointHistogramParams.m_colorMapIndex;
     break;
   }
-  case camera::ViewRenderMode::Overlay:
+  case ViewRenderMode::Overlay:
   {
     usesMetricColormap = false;
     break;
   }
-  case camera::ViewRenderMode::Disabled:
+  case ViewRenderMode::Disabled:
   {
     return textures;
   }
   default:
   {
-    spdlog::error("Invalid metric shader type {}", camera::typeString(metricType));
+    spdlog::error("Invalid metric shader type {}", typeString(metricType));
     return textures;
   }
   }
@@ -1408,7 +1398,7 @@ std::list<std::reference_wrapper<GLTexture> > Rendering::bindMetricImageTextures
     }
   }
 
-  size_t i = 0;
+  std::size_t i = 0;
 
   for (const auto& imgSegPair : I)
   {
@@ -1460,7 +1450,7 @@ void Rendering::renderOneImage(
   bool showEdges
 )
 {
-  auto getImage = [this](const std::optional<uuids::uuid>& imageUid) -> const Image*
+  auto getImage = [this](const std::optional<uuid>& imageUid) -> const Image*
   { return (imageUid ? m_appData.image(*imageUid) : nullptr); };
 
   auto& renderData = m_appData.renderData();
@@ -1516,7 +1506,7 @@ void Rendering::volumeRenderOneImage(
   const View& view, GLShaderProgram& program, const CurrentImages& I
 )
 {
-  auto getImage = [this](const std::optional<uuids::uuid>& imageUid) -> const Image*
+  auto getImage = [this](const std::optional<uuid>& imageUid) -> const Image*
   { return (imageUid ? m_appData.image(*imageUid) : nullptr); };
 
   drawRaycastQuad(program, m_appData.renderData().m_quad, view, I, getImage);
@@ -1525,57 +1515,54 @@ void Rendering::volumeRenderOneImage(
 }
 
 void Rendering::renderAllImages(
-  const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs
-)
+  const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs)
 {
-  std::list<std::reference_wrapper<GLTexture> > boundImageTextures;
-  std::list<std::reference_wrapper<GLTexture> > boundMetricTextures;
-  std::list<std::reference_wrapper<GLBufferTexture> > boundBufferTextures;
-
   static const RenderData::ImageUniforms sk_defaultImageUniforms;
+
+  std::list<std::reference_wrapper<GLTexture>> boundImageTextures;
+  std::list<std::reference_wrapper<GLTexture>> boundMetricTextures;
+  std::list<std::reference_wrapper<GLBufferTexture>> boundBufferTextures;
 
   const RenderData& renderData = m_appData.renderData();
   const bool modSegOpacity = renderData.m_modulateSegOpacityWithImageOpacity;
-  const camera::ViewRenderMode renderMode = view.renderMode();
+  const ViewRenderMode renderMode = view.renderMode();
+  const bool doXray = (IntensityProjectionMode::Xray == view.intensityProjectionMode());
 
-  const std::list<uuids::uuid>& metricImages = view.metricImages();
-  const std::list<uuids::uuid>& renderedImages = view.renderedImages();
+  const std::list<uuid>& metricImages = view.metricImages();
+  const std::list<uuid>& renderedImages = view.renderedImages();
 
   switch (getShaderGroup(renderMode))
   {
-  case camera::ShaderGroup::Image:
+  case ShaderGroup::Image:
   {
     CurrentImages I;
 
     int displayModeUniform = 0;
 
-    if (camera::ViewRenderMode::Image == renderMode)
-    {
+    if (ViewRenderMode::Image == renderMode) {
       displayModeUniform = 0;
       I = getImageAndSegUidsForImageShaders(renderedImages);
     }
-    else if (camera::ViewRenderMode::Checkerboard == renderMode)
-    {
+    else if (ViewRenderMode::Checkerboard == renderMode) {
       displayModeUniform = 1;
       I = getImageAndSegUidsForMetricShaders(metricImages); // guaranteed size 2
     }
-    else if (camera::ViewRenderMode::Quadrants == renderMode)
-    {
+    else if (ViewRenderMode::Quadrants == renderMode) {
       displayModeUniform = 2;
       I = getImageAndSegUidsForMetricShaders(metricImages);
     }
-    else if (camera::ViewRenderMode::Flashlight == renderMode)
-    {
+    else if (ViewRenderMode::Flashlight == renderMode) {
       displayModeUniform = 3;
       I = getImageAndSegUidsForMetricShaders(metricImages);
     }
 
-    bool isFixedImage = true; // true for the first image
+    // The first image in the stack is the fixed one:
+    bool isFixedImage = true;
 
     for (const auto& imgSegPair : I)
     {
-      if (!imgSegPair.first)
-      {
+      if (!imgSegPair.first) {
+        // A non-existent image cannot be fixed, either:
         isFixedImage = false;
         continue;
       }
@@ -1583,156 +1570,153 @@ void Rendering::renderAllImages(
       boundImageTextures = bindImageTextures(imgSegPair);
       boundBufferTextures = bindBufferTextures(std::vector<ImgSegPair>{imgSegPair});
 
-      const auto& U = renderData.m_uniforms.at(*imgSegPair.first);
+      const uuid& imgUid = *imgSegPair.first;
+      const RenderData::ImageUniforms& U = renderData.m_uniforms.at(imgUid);
 
-      const Image* img = m_appData.image(*imgSegPair.first);
-
-      if (!img)
-      {
+      const Image* img = m_appData.image(imgUid);
+      if (!img) {
         spdlog::error("Null image during render");
         return;
       }
 
-      const bool doXray = (camera::IntensityProjectionMode::Xray == view.intensityProjectionMode());
+      GLShaderProgram* imgProg = nullptr;
 
-      GLShaderProgram* P = nullptr;
-
-      if (img->settings().displayImageAsColor())
-      {
-        P = &m_imageRgbaProgram;
+      if (img->settings().displayImageAsColor()) {
+        imgProg = &m_imageRgbaProgram;
       }
       else
       {
-        if (U.showEdges)
-        {
-          P = &m_edgeProgram;
+        if (U.showEdges) {
+          imgProg = &m_edgeProgram;
         }
         else
         {
-          if (doXray)
-          {
-            P = &m_xrayProgram;
+          if (doXray) {
+            imgProg = &m_xrayProgram;
           }
-          else
-          {
-            P = &m_imageProgram;
+          else {
+            imgProg = &m_imageProgram;
           }
         }
       }
 
-      if (!P)
-      {
-        spdlog::error("Null program when rendering image {}", *imgSegPair.first);
+      if (!imgProg) {
+        spdlog::error("Null image program when rendering image {}", imgUid);
         return;
       }
 
-      P->use();
+      // GLShaderProgram* segProg = &m_segProgram;
+      // if (!segProg) {
+      //   spdlog::error("Null segmentation program when rendering image {}", imgUid);
+      //   return;
+      // }
+
+      imgProg->use();
 
       if (!img->settings().displayImageAsColor())
       {
         // Greyscale image:
 
-        P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
-        P->setSamplerUniform("u_segTex", msk_segTexSampler.index);
-        P->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
-        P->setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSampler.index);
+        imgProg->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
+        imgProg->setSamplerUniform("u_segTex", msk_segTexSampler.index);
+        imgProg->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
+        imgProg->setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSampler.index);
 
         // P->setUniform( "u_useTricubicInterpolation",
         //     ( InterpolationMode::Tricubic == img->settings().interpolationMode() ) );
 
-        P->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
-        P->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
-        P->setUniform("u_segTexture_T_world", U.segTexture_T_world);
-        P->setUniform("u_segVoxel_T_world", U.segVoxel_T_world);
+        imgProg->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
+        imgProg->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+        imgProg->setUniform("u_segTexture_T_world", U.segTexture_T_world);
+        imgProg->setUniform("u_segVoxel_T_world", U.segVoxel_T_world);
 
         if (!doXray)
         {
-          P->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
-          P->setUniform("u_imgCmapHsvModFactors", U.hsvModFactors);
+          imgProg->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
+          imgProg->setUniform("u_imgCmapHsvModFactors", U.hsvModFactors);
 
           if (!U.showEdges)
           {
             updateIsosurfaceDataFor2d(m_appData, *imgSegPair.first);
 
-            P->setUniform("u_isoValues", renderData.m_isosurfaceData.values);
-            P->setUniform("u_isoOpacities", renderData.m_isosurfaceData.opacities);
-            P->setUniform("u_isoColors", renderData.m_isosurfaceData.colors);
-            P->setUniform("u_isoWidth", renderData.m_isosurfaceData.widthIn2d);
+            imgProg->setUniform("u_isoValues", renderData.m_isosurfaceData.values);
+            imgProg->setUniform("u_isoOpacities", renderData.m_isosurfaceData.opacities);
+            imgProg->setUniform("u_isoColors", renderData.m_isosurfaceData.colors);
+            imgProg->setUniform("u_isoWidth", renderData.m_isosurfaceData.widthIn2d);
           }
         }
         else
         {
-          P->setUniform("imgSlope_native_T_texture", U.slope_native_T_texture);
+          imgProg->setUniform("imgSlope_native_T_texture", U.slope_native_T_texture);
 
-          P->setUniform("waterAttenCoeff", renderData.m_waterMassAttenCoeff);
-          P->setUniform("airAttenCoeff", renderData.m_airMassAttenCoeff);
+          imgProg->setUniform("waterAttenCoeff", renderData.m_waterMassAttenCoeff);
+          imgProg->setUniform("airAttenCoeff", renderData.m_airMassAttenCoeff);
         }
 
-        P->setUniform("u_imgCmapSlopeIntercept", U.cmapSlopeIntercept);
-        P->setUniform("u_imgCmapQuantLevels", U.cmapQuantLevels);
-        P->setUniform("u_imgThresholds", U.thresholds);
-        P->setUniform("u_imgMinMax", U.minMax);
+        imgProg->setUniform("u_imgCmapSlopeIntercept", U.cmapSlopeIntercept);
+        imgProg->setUniform("u_imgCmapQuantLevels", U.cmapQuantLevels);
+        imgProg->setUniform("u_imgThresholds", U.thresholds);
+        imgProg->setUniform("u_imgMinMax", U.minMax);
 
-        P->setUniform("u_imgOpacity", U.imgOpacity);
-        P->setUniform("u_segOpacity", U.segOpacity * (modSegOpacity ? U.imgOpacity : 1.0f));
-        P->setUniform("u_masking", renderData.m_maskedImages);
-        P->setUniform("u_quadrants", renderData.m_quadrants);
-        P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
-        P->setUniform("u_renderMode", displayModeUniform);
+        imgProg->setUniform("u_imgOpacity", U.imgOpacity);
+        imgProg->setUniform("u_segOpacity", U.segOpacity * (modSegOpacity ? U.imgOpacity : 1.0f));
+        imgProg->setUniform("u_masking", renderData.m_maskedImages);
+        imgProg->setUniform("u_quadrants", renderData.m_quadrants);
+        imgProg->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+        imgProg->setUniform("u_renderMode", displayModeUniform);
 
         if (U.showEdges)
         {
-          P->setUniform("u_imgSlopeInterceptLargest", U.largestSlopeIntercept);
-          P->setUniform("u_thresholdEdges", U.thresholdEdges);
-          P->setUniform("u_edgeMagnitude", U.edgeMagnitude);
-          //                     P.setUniform( "useFreiChen", U.useFreiChen );
-          P->setUniform("u_overlayEdges", U.overlayEdges);
-          P->setUniform("u_colormapEdges", U.colormapEdges);
-          P->setUniform("u_edgeColor", U.edgeColor);
+          imgProg->setUniform("u_imgSlopeInterceptLargest", U.largestSlopeIntercept);
+          imgProg->setUniform("u_thresholdEdges", U.thresholdEdges);
+          imgProg->setUniform("u_edgeMagnitude", U.edgeMagnitude);
+          // P.setUniform( "useFreiChen", U.useFreiChen );
+          imgProg->setUniform("u_overlayEdges", U.overlayEdges);
+          imgProg->setUniform("u_colormapEdges", U.colormapEdges);
+          imgProg->setUniform("u_edgeColor", U.edgeColor);
         }
 
-        renderOneImage(
-          view, miewportViewBounds, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges
-        );
+        renderOneImage(view, miewportViewBounds, worldOffsetXhairs, *imgProg,
+                       CurrentImages{imgSegPair}, U.showEdges);
       }
       else
       {
         // Color image:
 
-        P->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
-        P->setSamplerUniform("u_segTex", msk_segTexSampler.index);
-        P->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
-        P->setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSampler.index);
+        imgProg->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
+        imgProg->setSamplerUniform("u_segTex", msk_segTexSampler.index);
+        imgProg->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
+        imgProg->setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSampler.index);
 
-        // P->setUniform( "u_useTricubicInterpolation", ( InterpolationMode::Tricubic == img->settings().colorInterpolationMode() ) );
+        // P->setUniform("u_useTricubicInterpolation",
+        //   (InterpolationMode::Tricubic == img->settings().colorInterpolationMode()));
 
-        P->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
-        P->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
-        P->setUniform("u_segTexture_T_world", U.segTexture_T_world);
-        P->setUniform("u_segVoxel_T_world", U.segVoxel_T_world);
+        imgProg->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
+        imgProg->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+        imgProg->setUniform("u_segTexture_T_world", U.segTexture_T_world);
+        imgProg->setUniform("u_segVoxel_T_world", U.segVoxel_T_world);
 
-        P->setUniform("u_imgSlopeIntercept", U.slopeInterceptRgba_normalized_T_texture);
-        P->setUniform("u_imgThresholds", U.thresholdsRgba);
-        P->setUniform("u_imgMinMax", U.minMaxRgba);
+        imgProg->setUniform("u_imgSlopeIntercept", U.slopeInterceptRgba_normalized_T_texture);
+        imgProg->setUniform("u_imgThresholds", U.thresholdsRgba);
+        imgProg->setUniform("u_imgMinMax", U.minMaxRgba);
 
-        const bool forceAlphaToOne
-          = (img->settings().ignoreAlpha() || 3 == img->header().numComponentsPerPixel());
+        const bool forceAlphaToOne =
+          (img->settings().ignoreAlpha() || 3 == img->header().numComponentsPerPixel());
 
-        P->setUniform("u_alphaIsOne", forceAlphaToOne);
+        imgProg->setUniform("u_alphaIsOne", forceAlphaToOne);
 
-        P->setUniform("u_imgOpacity", U.imgOpacityRgba);
-        P->setUniform("u_segOpacity", U.segOpacity * (modSegOpacity ? U.imgOpacityRgba[3] : 1.0f));
-        P->setUniform("u_masking", renderData.m_maskedImages);
-        P->setUniform("u_quadrants", renderData.m_quadrants);
-        P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
-        P->setUniform("renderMode", displayModeUniform);
+        imgProg->setUniform("u_imgOpacity", U.imgOpacityRgba);
+        imgProg->setUniform("u_segOpacity", U.segOpacity * (modSegOpacity ? U.imgOpacityRgba[3] : 1.0f));
+        imgProg->setUniform("u_masking", renderData.m_maskedImages);
+        imgProg->setUniform("u_quadrants", renderData.m_quadrants);
+        imgProg->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+        imgProg->setUniform("renderMode", displayModeUniform);
 
-        renderOneImage(
-          view, miewportViewBounds, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges
-        );
+        renderOneImage(view, miewportViewBounds, worldOffsetXhairs, *imgProg,
+                       CurrentImages{imgSegPair}, U.showEdges);
       }
 
-      P->stopUse();
+      imgProg->stopUse();
 
       unbindTextures(boundImageTextures);
       unbindBufferTextures(boundBufferTextures);
@@ -1743,7 +1727,7 @@ void Rendering::renderAllImages(
     break;
   }
 
-  case camera::ShaderGroup::Metric:
+  case ShaderGroup::Metric:
   {
     // This function guarantees that I has size at least 2:
     const CurrentImages I = getImageAndSegUidsForMetricShaders(metricImages);
@@ -1756,7 +1740,7 @@ void Rendering::renderAllImages(
     boundMetricTextures = bindMetricImageTextures(I, renderMode);
     boundBufferTextures = bindBufferTextures(I);
 
-    if (camera::ViewRenderMode::Difference == renderMode)
+    if (ViewRenderMode::Difference == renderMode)
     {
       const auto& metricParams = renderData.m_squaredDifferenceParams;
       GLShaderProgram& P = m_differenceProgram;
@@ -1768,20 +1752,11 @@ void Rendering::renderAllImages(
         P.setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSamplers);
         P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
 
-        P.setUniform(
-          "u_imgTexture_T_world",
-          std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world}
-        );
-        P.setUniform(
-          "u_segTexture_T_world",
-          std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world}
-        );
+        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
+        P.setUniform("u_segTexture_T_world", std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world});
         P.setUniform("img1Tex_T_img0Tex", U1.imgTexture_T_world * glm::inverse(U0.imgTexture_T_world));
 
-        P.setUniform(
-          "u_imgSlopeIntercept",
-          std::vector<glm::vec2>{U0.largestSlopeIntercept, U1.largestSlopeIntercept}
-        );
+        P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{U0.largestSlopeIntercept, U1.largestSlopeIntercept});
         P.setUniform("u_segOpacity", std::vector<float>{U0.segOpacity, U1.segOpacity});
 
         P.setUniform("u_metricCmapSlopeIntercept", metricParams.m_cmapSlopeIntercept);
@@ -1794,7 +1769,7 @@ void Rendering::renderAllImages(
       }
       P.stopUse();
     }
-    else if (camera::ViewRenderMode::CrossCorrelation == renderMode)
+    else if (ViewRenderMode::CrossCorrelation == renderMode)
     {
       const auto& metricParams = renderData.m_crossCorrelationParams;
       GLShaderProgram& P = m_crossCorrelationProgram;
@@ -1806,29 +1781,20 @@ void Rendering::renderAllImages(
         P.setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSamplers);
         P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
 
-        P.setUniform(
-          "u_imgTexture_T_world",
-          std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world}
-        );
-        P.setUniform(
-          "u_segTexture_T_world",
-          std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world}
-        );
+        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
+        P.setUniform("u_segTexture_T_world", std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world});
         P.setUniform("u_segOpacity", std::vector<float>{U0.segOpacity, U1.segOpacity});
-
         P.setUniform("u_metricCmapSlopeIntercept", metricParams.m_cmapSlopeIntercept);
         P.setUniform("u_metricSlopeIntercept", metricParams.m_slopeIntercept);
         P.setUniform("u_metricMasking", metricParams.m_doMasking);
 
-        P.setUniform(
-          "u_texture1_T_texture0", U1.imgTexture_T_world * glm::inverse(U0.imgTexture_T_world)
-        );
+        P.setUniform("u_texture1_T_texture0", U1.imgTexture_T_world * glm::inverse(U0.imgTexture_T_world));
 
         renderOneImage(view, miewportViewBounds, worldOffsetXhairs, P, I, false);
       }
       P.stopUse();
     }
-    else if (camera::ViewRenderMode::Overlay == renderMode)
+    else if (ViewRenderMode::Overlay == renderMode)
     {
       GLShaderProgram& P = m_overlayProgram;
 
@@ -1838,31 +1804,17 @@ void Rendering::renderAllImages(
         P.setSamplerUniform("u_segTex", msk_segTexSamplers);
         P.setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSamplers);
 
-        P.setUniform(
-          "u_imgTexture_T_world",
-          std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world}
-        );
-        P.setUniform(
-          "u_segTexture_T_world",
-          std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world}
-        );
-        P.setUniform(
-          "u_imgSlopeIntercept",
-          std::vector<glm::vec2>{
-            U0.slopeIntercept_normalized_T_texture, U1.slopeIntercept_normalized_T_texture
-          }
-        );
+        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
+        P.setUniform("u_segTexture_T_world", std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world});
+        P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{
+          U0.slopeIntercept_normalized_T_texture, U1.slopeIntercept_normalized_T_texture});
         P.setUniform("u_imgThresholds", std::vector<glm::vec2>{U0.thresholds, U1.thresholds});
         P.setUniform("u_imgMinMax", std::vector<glm::vec2>{U0.minMax, U1.minMax});
         P.setUniform("u_imgOpacity", std::vector<float>{U0.imgOpacity, U1.imgOpacity});
 
-        P.setUniform(
-          "u_segOpacity",
-          std::vector<float>{
+        P.setUniform("u_segOpacity", std::vector<float>{
             U0.segOpacity * (modSegOpacity ? U0.imgOpacity : 1.0f),
-            U1.segOpacity * (modSegOpacity ? U1.imgOpacity : 1.0f)
-          }
-        );
+            U1.segOpacity * (modSegOpacity ? U1.imgOpacity : 1.0f)});
 
         P.setUniform("magentaCyan", renderData.m_overlayMagentaCyan);
 
@@ -1877,32 +1829,28 @@ void Rendering::renderAllImages(
     break;
   }
 
-  case camera::ShaderGroup::Volume:
+  case ShaderGroup::Volume:
   {
     const CurrentImages I = getImageAndSegUidsForImageShaders(renderedImages);
 
-    if (I.empty())
-    {
+    if (I.empty()) {
       return;
     }
 
     // Only volume render the first image:
+
     /// @todo Either 1) let use only select one image or
     /// 2) enable rendering more than one image
     const auto& imgSegPair = I.front();
 
     const Image* image = m_appData.image(*imgSegPair.first);
-
-    if (!image)
-    {
+    if (!image) {
       spdlog::warn("Null image {} when raycasting", *imgSegPair.first);
       return;
     }
 
     const ImageSettings& settings = image->settings();
-
-    if (!settings.isosurfacesVisible())
-    {
+    if (!settings.isosurfacesVisible()) {
       return; // Hide all surfaces
     }
 
@@ -1910,9 +1858,7 @@ void Rendering::renderAllImages(
     const uint32_t activeComp = image->settings().activeComponent();
 
     const auto isosurfaceUids = m_appData.isosurfaceUids(*imgSegPair.first, activeComp);
-
-    if (isosurfaceUids.empty())
-    {
+    if (isosurfaceUids.empty()) {
       return;
     }
 
@@ -1939,7 +1885,7 @@ void Rendering::renderAllImages(
       // The camera is positioned at the crosshairs:
       P.setUniform("worldEyePos", worldOffsetXhairs);
 
-      //            P.setUniform( "voxelSpacing", U.voxelSpacing );
+      // P.setUniform( "voxelSpacing", U.voxelSpacing );
       P.setUniform("texGrads", U.textureGradientStep);
 
       P.setUniform("u_isoValues", renderData.m_isosurfaceData.values);
@@ -1957,12 +1903,8 @@ void Rendering::renderAllImages(
       P.setUniform("renderFrontFaces", renderData.m_renderFrontFaces);
       P.setUniform("renderBackFaces", renderData.m_renderBackFaces);
 
-      P.setUniform(
-        "segMasksIn", (RenderData::SegMaskingForRaycasting::SegMasksIn == renderData.m_segMasking)
-      );
-      P.setUniform(
-        "segMasksOut", (RenderData::SegMaskingForRaycasting::SegMasksOut == renderData.m_segMasking)
-      );
+      P.setUniform("segMasksIn", (RenderData::SegMaskingForRaycasting::SegMasksIn == renderData.m_segMasking));
+      P.setUniform("segMasksOut", (RenderData::SegMaskingForRaycasting::SegMasksOut == renderData.m_segMasking));
 
       P.setUniform("bgColor", renderData.m_3dBackgroundColor.a * renderData.m_3dBackgroundColor);
       P.setUniform("noHitTransparent", renderData.m_3dTransparentIfNoHit);
@@ -1977,7 +1919,7 @@ void Rendering::renderAllImages(
     break;
   }
 
-  case camera::ShaderGroup::None:
+  case ShaderGroup::None:
   default:
   {
     return;
@@ -1995,7 +1937,7 @@ void Rendering::renderAllLandmarks(
 
   CurrentImages I;
 
-  if (camera::ViewRenderMode::Image == shaderType)
+  if (ViewRenderMode::Image == shaderType)
   {
     I = getImageAndSegUidsForImageShaders(renderedImages);
 
@@ -2008,7 +1950,7 @@ void Rendering::renderAllLandmarks(
       setupOpenGlState();
     }
   }
-  else if (camera::ViewRenderMode::Checkerboard == shaderType || camera::ViewRenderMode::Quadrants == shaderType || camera::ViewRenderMode::Flashlight == shaderType)
+  else if (ViewRenderMode::Checkerboard == shaderType || ViewRenderMode::Quadrants == shaderType || ViewRenderMode::Flashlight == shaderType)
   {
     I = getImageAndSegUidsForMetricShaders(metricImages); // guaranteed size 2
 
@@ -2021,7 +1963,7 @@ void Rendering::renderAllLandmarks(
       setupOpenGlState();
     }
   }
-  else if (camera::ViewRenderMode::Disabled == shaderType)
+  else if (ViewRenderMode::Disabled == shaderType)
   {
     return;
   }
@@ -2051,7 +1993,7 @@ void Rendering::renderAllAnnotations(
 
   CurrentImages I;
 
-  if (camera::ViewRenderMode::Image == shaderType)
+  if (ViewRenderMode::Image == shaderType)
   {
     I = getImageAndSegUidsForImageShaders(renderedImages);
 
@@ -2064,7 +2006,7 @@ void Rendering::renderAllAnnotations(
       setupOpenGlState();
     }
   }
-  else if (camera::ViewRenderMode::Checkerboard == shaderType || camera::ViewRenderMode::Quadrants == shaderType || camera::ViewRenderMode::Flashlight == shaderType)
+  else if (ViewRenderMode::Checkerboard == shaderType || ViewRenderMode::Quadrants == shaderType || ViewRenderMode::Flashlight == shaderType)
   {
     I = getImageAndSegUidsForMetricShaders(metricImages); // guaranteed size 2
 
@@ -2077,7 +2019,7 @@ void Rendering::renderAllAnnotations(
       setupOpenGlState();
     }
   }
-  else if (camera::ViewRenderMode::Disabled == shaderType)
+  else if (ViewRenderMode::Disabled == shaderType)
   {
     return;
   }
@@ -2099,45 +2041,40 @@ void Rendering::renderAllAnnotations(
 
 void Rendering::renderImageData()
 {
-  if (!m_isAppDoneLoadingImages)
-  {
+  if (!m_isAppDoneLoadingImages) {
     // Don't render images if the app is still loading them
     return;
   }
 
-  auto& renderData = m_appData.renderData();
-
+  const auto& renderData = m_appData.renderData();
   const bool renderLandmarksOnTop = renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
   const bool renderAnnotationsOnTop = renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
 
   // Render images for each view in the layout
-  for (const auto& V : m_appData.windowData().currentLayout().views())
+  for (const auto& [viewUid, view] : m_appData.windowData().currentLayout().views())
   {
-    if (!V.second)
+    if (!view) {
       continue;
-    View& view = *(V.second);
+    }
 
     // Offset the crosshairs according to the image slice in the view
-    const glm::vec3 worldOffsetXhairs
-      = view.updateImageSlice(m_appData, m_appData.state().worldCrosshairs().worldOrigin());
+    const glm::vec3 worldOffsetXhairs =
+      view->updateImageSlice(m_appData, m_appData.state().worldCrosshairs().worldOrigin());
 
-    const auto miewportViewBounds = camera::computeMiewportFrameBounds(
-      view.windowClipViewport(), m_appData.windowData().viewport().getAsVec4()
-    );
+    const auto miewportViewBounds = helper::computeMiewportFrameBounds(
+      view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4());
 
-    renderAllImages(view, miewportViewBounds, worldOffsetXhairs);
+    renderAllImages(*view, miewportViewBounds, worldOffsetXhairs);
 
     // Do not render landmarks and annotations in volume rendering mode
-    if (camera::ViewRenderMode::VolumeRender != view.renderMode())
+    if (ViewRenderMode::VolumeRender != view->renderMode())
     {
-      if (renderLandmarksOnTop)
-      {
-        renderAllLandmarks(view, miewportViewBounds, worldOffsetXhairs);
+      if (renderLandmarksOnTop) {
+        renderAllLandmarks(*view, miewportViewBounds, worldOffsetXhairs);
       }
 
-      if (renderAnnotationsOnTop)
-      {
-        renderAllAnnotations(view, miewportViewBounds, worldOffsetXhairs);
+      if (renderAnnotationsOnTop) {
+        renderAllAnnotations(*view, miewportViewBounds, worldOffsetXhairs);
       }
     }
   }
@@ -2152,17 +2089,17 @@ void Rendering::renderOverlays()
         {
             switch ( view.renderMode() )
             {
-            case camera::ShaderType::Image:
-            case camera::ShaderType::MetricMI:
-            case camera::ShaderType::MetricNCC:
-            case camera::ShaderType::MetricSSD:
-            case camera::ShaderType::Checkerboard:
+            case ShaderType::Image:
+            case ShaderType::MetricMI:
+            case ShaderType::MetricNCC:
+            case ShaderType::MetricSSD:
+            case ShaderType::Checkerboard:
             {
                 renderCrosshairs( m_simpleProgram, m_appData.renderData().m_quad, view,
                                   m_appData.m_worldCrosshairs.worldOrigin() );
                 break;
             }
-            case camera::ShaderType::None:
+            case ShaderType::None:
             {
                 break;
             }
@@ -2217,11 +2154,11 @@ void Rendering::renderVectorOverlays()
       continue;
 
     // Bounds of the view frame in Miewport space:
-    const auto miewportViewBounds
-      = camera::computeMiewportFrameBounds(view->windowClipViewport(), windowVP.getAsVec4());
+    const auto miewportViewBounds = helper::computeMiewportFrameBounds(
+      view->windowClipViewport(), windowVP.getAsVec4());
 
     // Do not render vector overlays when view is disabled
-    if (m_showOverlays && camera::ViewRenderMode::Disabled != view->renderMode())
+    if (m_showOverlays && ViewRenderMode::Disabled != view->renderMode())
     {
       const auto labelPosInfo = math::computeAnatomicalLabelPosInfo(
         miewportViewBounds,
@@ -2233,7 +2170,7 @@ void Rendering::renderVectorOverlays()
       );
 
       // Do not render crosshairs in volume rendering mode
-      if (camera::ViewRenderMode::VolumeRender != view->renderMode())
+      if (ViewRenderMode::VolumeRender != view->renderMode())
       {
         drawCrosshairs(
           m_nvg, miewportViewBounds, *view, m_appData.renderData().m_crosshairsColor, labelPosInfo
@@ -3167,7 +3104,7 @@ void Rendering::setShowVectorOverlays(bool show)
   m_showOverlays = show;
 }
 
-void Rendering::updateIsosurfaceDataFor2d(AppData& appData, const uuids::uuid& imageUid)
+void Rendering::updateIsosurfaceDataFor2d(AppData& appData, const uuid& imageUid)
 {
   auto& isoData = appData.renderData().m_isosurfaceData;
   const Image* image = appData.image(imageUid);
@@ -3244,7 +3181,7 @@ void Rendering::updateIsosurfaceDataFor2d(AppData& appData, const uuids::uuid& i
   }
 }
 
-void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& imageUid)
+void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid)
 {
   auto& isoData = appData.renderData().m_isosurfaceData;
   const Image* image = appData.image(imageUid);

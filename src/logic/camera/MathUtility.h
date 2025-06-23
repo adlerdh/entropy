@@ -1,5 +1,4 @@
-#ifndef MATH_UTILITY_H
-#define MATH_UTILITY_H
+#pragma once
 
 #include "common/AABB.h"
 #include "common/Types.h"
@@ -32,12 +31,8 @@
 #undef min
 #undef max
 
-class Viewport;
-
-namespace camera
-{
 class Camera;
-}
+class Viewport;
 
 /// @note These math functions mostly come from HistoloZee.
 namespace math
@@ -105,7 +100,7 @@ glm::vec2 projectPointToPlaneLocal2dCoords(
  * @param[in,out] modelPositions Model-space vertex positions that are modified
  */
 void applyLayeringOffsetsToModelPositions(
-  const camera::Camera& camera,
+  const Camera& camera,
   const glm::mat4& model_T_world,
   uint32_t layer,
   std::vector<glm::vec3>& modelPositions
@@ -705,12 +700,10 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelsForView(
 std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   const FrameBounds& miewportViewBounds,
   const Viewport& windowVP,
-  const camera::Camera& camera,
+  const Camera& camera,
   const glm::mat4& world_T_subject,
   const glm::mat4& windowClip_T_viewClip,
   const glm::vec3& worldCrosshairsPos
 );
 
 } // namespace math
-
-#endif // MATH_UTILITY_H

@@ -61,13 +61,13 @@ void SlideInteractionHandler::setMode(const SlideInteractionMode& mode)
 }
 
 bool SlideInteractionHandler::
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const camera::Camera&)
+  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
 {
   return false;
 }
 
 bool SlideInteractionHandler::doHandleMouseMoveEvent(
-  const QMouseEvent* event, const Viewport& viewport, const camera::Camera& camera
+  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
 )
 {
   bool handled = false;
@@ -220,7 +220,7 @@ bool SlideInteractionHandler::doHandleMouseMoveEvent(
 }
 
 bool SlideInteractionHandler::
-  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 
@@ -292,7 +292,7 @@ bool SlideInteractionHandler::
 }
 
 bool SlideInteractionHandler::
-  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const camera::Camera&)
+  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
 {
   bool handled = false;
 

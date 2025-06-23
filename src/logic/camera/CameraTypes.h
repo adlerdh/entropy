@@ -1,12 +1,8 @@
-#ifndef CAMERA_TYPES_H
-#define CAMERA_TYPES_H
+#pragma once
 
 #include <array>
 #include <string>
 #include <vector>
-
-namespace camera
-{
 
 /**
  * @brief Types of camera projections
@@ -150,7 +146,3 @@ std::string descriptionString(const IntensityProjectionMode& ipMode);
  * @return Shader group
  */
 ShaderGroup getShaderGroup(const ViewRenderMode& renderMode);
-
-} // namespace camera
-
-#endif // CAMERA_TYPES_H

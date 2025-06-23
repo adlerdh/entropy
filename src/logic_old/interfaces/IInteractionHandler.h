@@ -35,7 +35,7 @@ public:
 
   /// Dispatch handling of the gesture event, since it may be either a
   /// swipe, pan, pinch, tap, or tap-and-hold event
-  virtual bool dispatchGestureEvent(QGestureEvent*, const Viewport&, const camera::Camera&) = 0;
+  virtual bool dispatchGestureEvent(QGestureEvent*, const Viewport&, const Camera&) = 0;
 };
 
 #endif // I_INTERACTION_HANDLER_H
