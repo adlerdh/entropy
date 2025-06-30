@@ -1607,12 +1607,6 @@ void Rendering::renderAllImages(
         return;
       }
 
-      GLShaderProgram* segProg = &m_segProgram;
-      if (!segProg) {
-        spdlog::error("Null segmentation program when rendering image {}", imgUid);
-        return;
-      }
-
       imgProg->use();
 
       if (!img->settings().displayImageAsColor())
@@ -1720,6 +1714,13 @@ void Rendering::renderAllImages(
       }
 
       imgProg->stopUse();
+
+      /// @todo Make a different segment program for outlines, filled, etc.
+      GLShaderProgram* segProg = &m_segProgram;
+      if (!segProg) {
+        spdlog::error("Null segmentation program when rendering image {}", imgUid);
+        return;
+      }
 
       unbindTextures(boundImageTextures);
       unbindBufferTextures(boundBufferTextures);
@@ -2336,6 +2337,7 @@ bool Rendering::createImageProgram(GLShaderProgram& program)
 
     fsUniforms.insertUniform("u_masking", UniformType::Bool, false);
 
+    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
     fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
     fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
     fsUniforms.insertUniform(
@@ -2450,6 +2452,7 @@ bool Rendering::createImageRgbaProgram(GLShaderProgram& program)
 
     fsUniforms.insertUniform("u_masking", UniformType::Bool, false);
 
+    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
     fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
     fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
     fsUniforms.insertUniform(
@@ -2548,6 +2551,7 @@ bool Rendering::createXrayProgram(GLShaderProgram& program)
 
     fsUniforms.insertUniform("u_masking", UniformType::Bool, false);
 
+    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
     fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
     fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
     fsUniforms.insertUniform(
@@ -2739,6 +2743,7 @@ bool Rendering::createEdgeProgram(GLShaderProgram& program)
 
     fsUniforms.insertUniform("u_masking", UniformType::Bool, false);
 
+    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
     fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2);
     fsUniforms.insertUniform("u_showFix", UniformType::Bool, true);
     fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
@@ -3154,6 +3159,7 @@ bool Rendering::createSegProgram(GLShaderProgram& program)
 
     fsUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
 
+    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
     fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
     fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
 

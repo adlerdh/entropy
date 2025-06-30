@@ -46,11 +46,11 @@ uniform float u_flashlightRadius;
 // When false, the flashlight replaces the fixed image with the moving image.
 uniform bool u_flashlightOverlays;
 
-// Texture sampling directions (horizontal and vertical) for calculating the segmentation outline
-uniform vec3 u_texSamplingDirsForSegOutline[2];
-
 // Opacity of the interior of the segmentation
 uniform float u_segInteriorOpacity;
+
+// Texture sampling directions (horizontal and vertical) for calculating the segmentation outline
+uniform vec3 u_texSamplingDirsForSegOutline[2];
 
 // OPTIONS:
 // 1) Image projection: none, enabled (per image setting)

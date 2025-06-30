@@ -637,7 +637,7 @@ target_compile_options(${entropy_EXE} PRIVATE
 )
 
 set_target_properties(${entropy_EXE} PROPERTIES
-  CXX_STANDARD 20
+  CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )

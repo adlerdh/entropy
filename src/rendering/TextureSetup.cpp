@@ -288,15 +288,22 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > create
   {
     spdlog::debug("Begin creating distance map texture(s) for components of image {}", imageUid);
 
-    const auto* image = appData.image(imageUid);
+    // const auto* image = appData.image(imageUid);
+    // if (!image)
+    // {
+    //   spdlog::warn("Image {} is invalid", imageUid);
+    //   continue;
+    // }
 
-    if (!image)
-    {
-      spdlog::warn("Image {} is invalid", imageUid);
+    const auto result = appData.getImage(imageUid);
+    if (!result) {
+      spdlog::warn("{}", result.error());
       continue;
     }
 
-    const uint32_t numComp = image->header().numComponentsPerPixel();
+    const Image& image = result->get();
+
+    const uint32_t numComp = image.header().numComponentsPerPixel();
 
     // Map of component index to texture
     std::unordered_map<uint32_t, GLTexture> componentTextures;

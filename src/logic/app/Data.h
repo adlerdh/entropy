@@ -23,6 +23,8 @@
 
 #include <uuid.h>
 
+#include <expected>
+#include <functional> // for std::reference_wrapper
 #include <list>
 #include <map>
 #include <memory>
@@ -166,6 +168,9 @@ public:
 
   const Image* image(const uuids::uuid& imageUid) const;
   Image* image(const uuids::uuid& imageUid);
+
+  std::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuids::uuid& imageUid) const;
+  std::expected<std::reference_wrapper<Image>, std::string> getImage(const uuids::uuid& imageUid);
 
   const Image* seg(const uuids::uuid& segUid) const;
   Image* seg(const uuids::uuid& segUid);

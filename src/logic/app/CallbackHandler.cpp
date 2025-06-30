@@ -1919,26 +1919,35 @@ void CallbackHandler::flipImageInterpolation()
 void CallbackHandler::toggleImageVisibility()
 {
   const auto imageUid = m_appData.activeImageUid();
-  if (!imageUid)
+  if (!imageUid) {
     return;
+  }
 
-  Image* image = m_appData.image(*imageUid);
-  if (!image)
+  // Image* image = m_appData.image(*imageUid);
+  // if (!image)
+  //   return;
+
+  const auto result = m_appData.getImage(*imageUid);
+  if (!result) {
+    spdlog::warn("{}", result.error());
     return;
+  }
+
+  Image& image = result->get();
 
   // Toggle the global visibility if this is a multi-component images and
   // each component is stored as a separate image.
-  const bool isMulticomponentImage = ( image->header().numComponentsPerPixel() > 1
-            && Image::MultiComponentBufferType::SeparateImages == image->bufferType() );
+  const bool isMulticomponentImage = ( image.header().numComponentsPerPixel() > 1
+            && Image::MultiComponentBufferType::SeparateImages == image.bufferType() );
 
   if (isMulticomponentImage)
   {
-    image->settings().setGlobalVisibility(!image->settings().globalVisibility());
+    image.settings().setGlobalVisibility(!image.settings().globalVisibility());
   }
   else
   {
     // Otherwise, toggle visibility of the active component only:
-    image->settings().setVisibility(!image->settings().visibility());
+    image.settings().setVisibility(!image.settings().visibility());
   }
 
   m_rendering.updateImageUniforms(*imageUid);

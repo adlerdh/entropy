@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <format>
 #include <sstream>
 
 CMRC_DECLARE(colormaps);
@@ -786,8 +787,9 @@ bool AppData::removeIsosurface(
 const Image* AppData::image(const uuid& imageUid) const
 {
   auto it = m_images.find(imageUid);
-  if (std::end(m_images) != it)
+  if (std::end(m_images) != it) {
     return &it->second;
+  }
   return nullptr;
 }
 
@@ -796,11 +798,42 @@ Image* AppData::image(const uuid& imageUid)
   return const_cast<Image*>(const_cast<const AppData*>(this)->image(imageUid));
 }
 
+/*
+auto result = appData.getImage(someUuid);
+if (result) {
+    const Image& img = result->get();  // or just: *result
+    // use img...
+} else {
+    std::cerr << result.error() << '\n';
+}
+*/
+
+std::expected<std::reference_wrapper<const Image>, std::string>
+AppData::getImage(const uuids::uuid& imageUid) const
+{
+  auto it = m_images.find(imageUid);
+  if (std::end(m_images) != it) {
+    return std::cref(it->second);
+  }
+  return std::unexpected(std::format("Image {} does not exist", to_string(imageUid)));
+}
+
+std::expected<std::reference_wrapper<Image>, std::string>
+AppData::getImage(const uuids::uuid& imageUid)
+{
+  const auto result = const_cast<const AppData*>(this)->getImage(imageUid);
+  if (!result) {
+    return std::unexpected(result.error());
+  }
+  return std::ref(const_cast<Image&>(result->get()));
+}
+
 const Image* AppData::seg(const uuid& segUid) const
 {
   auto it = m_segs.find(segUid);
-  if (std::end(m_segs) != it)
+  if (std::end(m_segs) != it) {
     return &it->second;
+  }
   return nullptr;
 }
 
@@ -896,14 +929,22 @@ const Isosurface* AppData::isosurface(
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
-  const Image* img = image(imageUid);
-  if (!img)
-  {
-    spdlog::error("Cannot get isosurface from invalid image {}.", imageUid);
+  // const Image* img = image(imageUid);
+  // if (!img)
+  // {
+  //   spdlog::error("Cannot get isosurface from invalid image {}.", imageUid);
+  //   return nullptr;
+  // }
+
+  const auto result = getImage(imageUid);
+  if (!result) {
+    spdlog::warn("Cannot get isosurface: {}", result.error());
     return nullptr;
   }
 
-  const uint32_t numComps = img->header().numComponentsPerPixel();
+  const Image& img = result->get();
+
+  const uint32_t numComps = img.header().numComponentsPerPixel();
   if (component >= numComps)
   {
     spdlog::error("Cannot get isosurface from invalid component {} of image {}.", component, imageUid);
