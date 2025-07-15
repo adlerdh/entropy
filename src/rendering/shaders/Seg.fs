@@ -21,36 +21,40 @@ in VS_OUT
 
 layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
 
-uniform usampler3D u_segTex; // Texture unit 0: segmentation (scalar)
-uniform samplerBuffer u_segLabelCmapTex; // Texutre unit 1: label color map (non-pre-multiplied RGBA)
+uniform usampler3D u_segTex; // Texture unit 1: segmentation (scalar)
+uniform samplerBuffer u_segLabelCmapTex; // Texutre unit 3: label color map (non-pre-multiplied RGBA)
 
 uniform float u_segOpacity; // Segmentation opacity
 uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
+uniform float u_aspectRatio; // View aspect ratio (width / height)
 
 // Should quadrants comparison mode be done along the x, y directions?
 // If x is true, then compare along x; if y is true, then compare along y.
 // If both are true, then compare along both.
 uniform bvec2 u_quadrants;
 
-// Should the fixed image be rendered (true) or the moving image (false).
+// Should the fixed image be rendered (true) or the moving image (false)?
 uniform bool u_showFix;
 
 // Render mode (0: normal, 1: checkerboard, 2: u_quadrants, 3: flashlight)
 uniform int u_renderMode;
 
-uniform float u_aspectRatio; // View aspect ratio (width / height)
-
-uniform float u_flashlightRadius;
-
 // When true, the flashlight overlays the moving image on top of fixed image.
 // When false, the flashlight replaces the fixed image with the moving image.
 uniform bool u_flashlightOverlays;
+uniform float u_flashlightRadius;
 
 // Opacity of the interior of the segmentation
 uniform float u_segInteriorOpacity;
 
-// Texture sampling directions (horizontal and vertical) for calculating the segmentation outline
+// Texture sampling directions (horizontal and vertical) for calculating the seg outline
 uniform vec3 u_texSamplingDirsForSegOutline[2];
+
+/// Linear lookup:
+//uniform vec3 u_texSamplingDirsForSmoothSeg[2];
+
+//// Interpolation cut-off for segmentation (in [0, 1])
+//uniform float u_segInterpCutoff;
 
 // OPTIONS:
 // 1) Image projection: none, enabled (per image setting)
@@ -92,7 +96,6 @@ bool isInsideTexture(vec3 a)
   return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) &&
           all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
 }
-
 
 //! Tricubic interpolated texture lookup
 //! Fast implementation, using 8 trilinear lookups.
@@ -173,7 +176,6 @@ vec4 computeLabelColor(int label)
   return color.a * color; // pre-multiply by alpha
 }
 
-
 /// Look up segmentation texture label value
 
 /// Default nearest-neighbor lookup:
@@ -183,12 +185,6 @@ uint getSegValue(vec3 texOffset, out float opacity)
   return texture(u_segTex, fs_in.v_segTexCoords + texOffset)[0];
 }
 
-
-/// Linear lookup:
-//uniform vec3 u_texSamplingDirsForSmoothSeg[2];
-
-//// Interpolation cut-off for segmentation (in [0, 1])
-//uniform float u_segInterpCutoff;
 
 //uint getSegValue(vec3 texOffset, out float opacity)
 //{
@@ -342,7 +338,6 @@ bool doRender()
   return render;
 }
 
-
 void main()
 {
   if (!doRender()) discard;
@@ -357,8 +352,8 @@ void main()
   float segAlpha = u_segOpacity * segInterpOpacity * getSegInteriorAlpha(seg) * float(segMask);
 
   // Look up segmentation color:
-  vec4 segLayer = computeLabelColor(int(seg)) * segAlpha;
+  vec4 segLayerColor = computeLabelColor(int(seg)) * segAlpha;
 
   o_color = vec4(0.0, 0.0, 0.0, 0.0);
-  o_color = segLayer + (1.0 - segLayer.a) * o_color;
+  o_color = segLayerColor + (1.0 - segLayerColor.a) * o_color;
 }

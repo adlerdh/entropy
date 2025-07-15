@@ -44,13 +44,13 @@ void GLVertexArrayObject::destroy()
   glDeleteVertexArrays(1, &m_id);
 }
 
-void GLVertexArrayObject::bind()
+void GLVertexArrayObject::bind() const
 {
   glBindVertexArray(m_id);
   CHECK_GL_ERROR(m_errorChecker)
 }
 
-void GLVertexArrayObject::release()
+void GLVertexArrayObject::release() const
 {
   glBindVertexArray(0);
   CHECK_GL_ERROR(m_errorChecker)
@@ -129,14 +129,13 @@ void GLVertexArrayObject::disableVertexAttribute(GLuint index)
 //    glVertexAttrib4f( index, values[0], values[1], values[2], values[3] );
 //}
 
-void GLVertexArrayObject::drawElements(const IndexedDrawParams& params)
+void GLVertexArrayObject::drawElements(const IndexedDrawParams& params) const
 {
   glDrawElements(
     params.primitiveMode(),
     static_cast<GLsizei>(params.elementCount()),
     params.indexType(),
-    params.indices()
-  );
+    params.indices());
 }
 
 GLVertexArrayObject::IndexedDrawParams::IndexedDrawParams(

@@ -14,8 +14,6 @@
 in VS_OUT
 {
   vec3 v_imgTexCoords;
-  vec3 v_segTexCoords;
-  vec3 v_segVoxCoords;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 } fs_in;
@@ -23,8 +21,6 @@ in VS_OUT
 layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
 
 uniform sampler3D u_imgTex[4]; // Texture units 0, 5, 6, 7: Red, green, blue, alpha images
-uniform usampler3D u_segTex; // Texture unit 1: segmentation
-uniform samplerBuffer u_segLabelCmapTex; // Texutre unit 3: label color map (pre-mult RGBA)
 
 // uniform bool u_useTricubicInterpolation; // Whether to use tricubic interpolation
 
@@ -35,18 +31,9 @@ uniform vec2 u_imgSlopeIntercept[4];
 uniform bool u_alphaIsOne;
 
 uniform float u_imgOpacity[4]; // Image opacities
-uniform float u_segOpacity; // Segmentation opacities
-
-// Texture sampling directions (horizontal and vertical) for calculating the segmentation outline
-uniform vec3 u_texSamplingDirsForSegOutline[2];
-
-// Opacity of the interior of the segmentation
-uniform float u_segInteriorOpacity;
 
 uniform vec2 u_imgMinMax[4]; // Min and max image values
 uniform vec2 u_imgThresholds[4]; // Image lower and upper thresholds, mapped to OpenGL texture intensity
-
-uniform bool u_masking; // Whether to mask image based on segmentation
 
 uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
 
@@ -69,7 +56,6 @@ uniform float u_flashlightRadius;
 // When false, the flashlight replaces the fixed image with the moving image.
 uniform bool u_flashlightOverlays;
 
-
 float hardThreshold(float value, vec2 thresholds)
 {
   return float(thresholds[0] <= value && value <= thresholds[1]);
@@ -89,8 +75,6 @@ bool isInsideTexture(vec3 a)
   return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) &&
        all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
 }
-
-
 
 //! Tricubic interpolated texture lookup, using unnormalized coordinates.
 //! Fast implementation, using 8 trilinear lookups.
@@ -153,23 +137,6 @@ float getImageValue(sampler3D tex, vec3 texCoord, vec2 minMax)
   // interpolateTricubicFast(tex, texCoord)
 }
 
-int when_lt(int x, int y)
-{
-  return max(sign(y - x), 0);
-}
-
-int when_ge(int x, int y)
-{
-  return (1 - when_lt(x, y));
-}
-
-vec4 computeLabelColor(int label)
-{
-  label -= label * when_ge(label, textureSize(u_segLabelCmapTex));
-  vec4 color = texelFetch(u_segLabelCmapTex, label);
-  return color.a * color;
-}
-
 bool doRender()
 {
   // Indicator of the quadrant of the crosshairs that the fragment is in:
@@ -201,48 +168,12 @@ bool doRender()
   return render;
 }
 
-
-// Compute alpha of fragments based on whether or not they are inside the
-// segmentation boundary. Fragments on the boundary are assigned alpha of 1,
-// whereas fragments inside are assigned alpha of 'u_segInteriorOpacity'.
-float getSegInteriorAlpha(uint seg)
-{
-  float segInteriorAlpha = u_segInteriorOpacity;
-
-  // Look up texture values in 8 neighbors surrounding the center fragment.
-  // These may be either neighboring image voxels or neighboring view pixels.
-  // The center fragment has index i = 4 (row = 0, col = 0).
-  for (int i = 0; i < 9; ++i)
-  {
-    float row = float(mod(i, 3) - 1); // runs -1 to 1
-    float col = float(floor(float(i / 3)) - 1); // runs -1 to 1
-
-    vec3 texSamplingPos = row * u_texSamplingDirsForSegOutline[0] +
-      col * u_texSamplingDirsForSegOutline[1];
-
-    // Segmentation value of neighbor at (row, col) offset
-    uint nseg = texture(u_segTex, fs_in.v_segTexCoords + texSamplingPos)[0];
-
-    // Fragment (with segmentation 'seg') is on the boundary (and hence gets
-    // full alpha) if its value is not equal to one of its neighbors.
-    if (nseg != seg)
-    {
-      segInteriorAlpha = 1.0;
-      break;
-    }
-  }
-
-  return segInteriorAlpha;
-}
-
-
 void main()
 {
   if (! doRender()) discard;
 
-  // Image and segmentation masks based on texture coordinates:
+  // Image mask based on texture coordinates:
   bool imgMask = isInsideTexture(fs_in.v_imgTexCoords);
-  bool segMask = isInsideTexture(fs_in.v_segTexCoords);
 
   // Look up the image values (after mapping to GL texture units):
   // vec4 img = vec4(texture(u_imgTex[0], fs_in.v_imgTexCoords)[0],
@@ -255,12 +186,6 @@ void main()
     getImageValue(u_imgTex[1], fs_in.v_imgTexCoords, u_imgMinMax[1]),
     getImageValue(u_imgTex[2], fs_in.v_imgTexCoords, u_imgMinMax[2]),
     getImageValue(u_imgTex[3], fs_in.v_imgTexCoords, u_imgMinMax[3]));
-
-  // Look up segmentation texture label value:
-  uint seg = texture(u_segTex, fs_in.v_segTexCoords)[0];
-
-  // Compute the image mask:
-  float mask = float(imgMask && (u_masking && (seg > 0u) || ! u_masking));
 
   // Apply window/level to normalize image values in [0.0, 1.0] range:
   vec4 imgNorm = vec4(0.0, 0.0, 0.0, 0.0);
@@ -281,7 +206,7 @@ void main()
 
   for (int i = 0; i <= 3; ++i)
   {
-    imgAlpha[i] = u_imgOpacity[i] * mask * thresh[i];
+    imgAlpha[i] = u_imgOpacity[i] * float(imgMask) * thresh[i];
     imgNorm[i] = clamp(u_imgSlopeIntercept[i][0] * img[i] + u_imgSlopeIntercept[i][1], 0.0, 1.0);
   }
 
@@ -295,14 +220,7 @@ void main()
 
   vec4 imgLayer = imgNorm.a * vec4(imgNorm.rgb, 1.0);
 
-  // Compute segmentation alpha based on opacity and mask:
-  float segAlpha = getSegInteriorAlpha(seg) * u_segOpacity * float(segMask);
-
-  // Look up segmentation color and apply:
-  vec4 segLayer = computeLabelColor(int(seg)) * segAlpha;
-
   // Blend layers:
   o_color = vec4(0.0, 0.0, 0.0, 0.0);
   o_color = imgLayer + (1.0 - imgLayer.a) * o_color;
-  o_color = segLayer + (1.0 - segLayer.a) * o_color;
 }

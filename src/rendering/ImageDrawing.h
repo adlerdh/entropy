@@ -33,12 +33,21 @@ void drawImageQuad(
   float xrayIntensityLevel,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& I,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage,
-  bool showEdges,
+  bool showEdges);
+
+void drawSegQuad(
+  GLShaderProgram& program,
+  const RenderData::Quad& quad,
+  const Image& seg,
+  const View& view,
+  const Viewport& windowViewport,
+  const glm::vec3& worldOrigin,
+  float flashlightRadius,
+  bool flashlightOverlays,
   const SegmentationOutlineStyle& segOutlineStyle,
   float segInteriorOpacity,
   const SegmentationInterpolation& segInterpolation,
-  float segInterpCutoff
-);
+  float segInterpCutoff);
 
 void drawRaycastQuad(
   GLShaderProgram& program,

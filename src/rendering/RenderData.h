@@ -25,8 +25,8 @@
 struct RenderData
 {
   /**
-     * @brief Uniforms for a single image component
-     */
+    * @brief Uniforms for a single image component
+    */
   struct ImageUniforms
   {
     glm::vec2 cmapSlopeIntercept{1.0f, 0.0f};  // Slope and intercept for image colormap
@@ -53,13 +53,14 @@ struct RenderData
     }; // Image intensity slope and intercept (with W-L)
 
     // Image intensity slope and intercept (with W-L) for color images
-    std::vector<glm::vec2>
-      slopeInterceptRgba_normalized_T_texture{{1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f}};
+    std::vector<glm::vec2> slopeInterceptRgba_normalized_T_texture{
+      {1.0f, 0.0f},
+      {1.0f, 0.0f},
+      {1.0f, 0.0f},
+      {1.0f, 0.0f}};
 
     float slope_native_T_texture{1.0f}; // Map texture to native intensity (NO W-L)
-    glm::vec2 largestSlopeIntercept{
-      1.0f, 0.0f
-    }; // Image intensity slope and intercept (giving the largest window)
+    glm::vec2 largestSlopeIntercept{1.0f, 0.0f}; // Image intensity slope and intercept (giving the largest window)
 
     // Image min and max:
     glm::vec2 minMax{0.0f, 1.0f};
@@ -119,9 +120,9 @@ struct RenderData
   RenderData();
 
   /**
-     * @brief Set the energy of x-rays used for x-ray intensity projection mode
-     * @param energyMeV X-ray energy in MeV
-     */
+    * @brief Set the energy of x-rays used for x-ray intensity projection mode
+    * @param energyMeV X-ray energy in MeV
+    */
   void setXrayEnergy(float energyMeV);
 
   Quad m_quad;
@@ -152,9 +153,6 @@ struct RenderData
 
   /// Should crosshairs snap to voxels?
   CrosshairsSnapping m_snapCrosshairs;
-
-  // Should the images only be shown inside of masked regions?
-  bool m_maskedImages;
 
   // Should image segmentation opacity be modulated by the image opacity?
   bool m_modulateSegOpacityWithImageOpacity;
@@ -202,7 +200,7 @@ struct RenderData
   glm::vec4 m_crosshairsColor;      // Crosshairs color (non-premultiplied by alpha)
   glm::vec4 m_anatomicalLabelColor; // Anatomical label text color (non-premultiplied by alpha)
 
-  AnatomicalLabelType m_anatomicalLabelType;
+  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human;
 
   bool m_renderFrontFaces; // Flag to render back faces in 3D raycasting
   bool m_renderBackFaces;  // Flag to render back faces in 3D raycasting
@@ -219,15 +217,15 @@ struct RenderData
   SegMaskingForRaycasting m_segMasking;
 
   // Segmentation outline style
-  SegmentationOutlineStyle m_segOutlineStyle;
+  SegmentationOutlineStyle m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
 
-  SegmentationInterpolation m_segInterpolation;
+  SegmentationInterpolation m_segInterpolation = SegmentationInterpolation::NearestNeighbor;
 
   // Opacity of interior of segmentation, when outlining is applied
-  float m_segInteriorOpacity;
+  float m_segInteriorOpacity = 0.1f;
 
   // Cutoff for segmentation with linear interpolation used
-  float m_segInterpCutoff;
+  float m_segInterpCutoff = 0.5f;
 
   /// @brief Metric parameters
   struct MetricParams
@@ -264,26 +262,26 @@ struct RenderData
   MetricParams m_crossCorrelationParams;
   MetricParams m_jointHistogramParams;
 
-  // Edge detection magnitude and smoothing
+  /// Edge detection magnitude and smoothing
   glm::vec2 m_edgeMagnitudeSmoothing;
 
-  // Number of squares along the longest dimensions for the checkerboard shader
+  /// Number of squares along the longest dimensions for the checkerboard shader
   int m_numCheckerboardSquares;
 
-  // Magenta/cyan (true) overlay colors or red/green (false)?
+  /// Magenta/cyan (true) overlay colors or red/green (false)?
   bool m_overlayMagentaCyan;
 
-  // Should comparison be done in x,y directions?
+  /// Should comparison be done in x,y directions?
   glm::ivec2 m_quadrants;
 
-  // Should the difference metric use squared difference (true) or absolute difference (false)?
+  /// Should the difference metric use squared difference (true) or absolute difference (false)?
   bool m_useSquare;
 
-  // Flashlight radius
+  /// Flashlight radius
   float m_flashlightRadius;
 
-  // When true, the flashlight overlays the moving image on top of fixed image.
-  // When false, the flashlight replaces the fixed image with the moving image.
+  /// When true, the flashlight overlays the moving image on top of fixed image.
+  /// When false, the flashlight replaces the fixed image with the moving image.
   bool m_flashlightOverlays;
 
   struct LandmarkParams
@@ -332,7 +330,7 @@ struct RenderData
     std::vector<float> edgeStrengths;
     std::vector<glm::vec3> colors;
 
-    // Material lighting colors:
+    /// Material lighting colors:
     std::vector<glm::vec3> ambientLights;
     std::vector<glm::vec3> diffuseLights;
     std::vector<glm::vec3> specularLights;

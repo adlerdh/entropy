@@ -40,7 +40,6 @@ void main()
   gl_Position = u_view_T_clip * clipPos3d;
 
   vec4 worldPos = u_world_T_clip * clipPos3d;
-
   vec4 segTexPos = u_segTexture_T_world * worldPos;
   vec4 segVoxPos = u_segVoxel_T_world * worldPos;
 

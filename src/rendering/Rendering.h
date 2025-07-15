@@ -4,6 +4,7 @@
 #include "common/Types.h"
 #include "common/UuidRange.h"
 
+#include "image/Image.h"
 #include "logic/camera/CameraTypes.h"
 
 #include "rendering/common/ShaderProviderType.h"
@@ -135,12 +136,16 @@ private:
 
   void renderOneImage(
     const View& view,
-    const FrameBounds& miewportViewBounds,
     const glm::vec3& worldOffsetXhairs,
     GLShaderProgram& program,
     const CurrentImages& I,
-    bool showEdges
-  );
+    bool showEdges);
+
+  void renderOneImage_overlays(
+    const View& view,
+    const FrameBounds& miewportViewBounds,
+    const glm::vec3& worldOffsetXhairs,
+    const CurrentImages& I);
 
   void volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I);
 

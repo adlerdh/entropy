@@ -151,29 +151,18 @@ void drawImageQuad(
   bool doMaxExtentMip,
   float xrayIntensityWindow,
   float xrayIntensityLevel,
-  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& I,
+  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage,
-  bool showEdges,
-  const SegmentationOutlineStyle& segOutlineStyle,
-  float segInteriorOpacity,
-  const SegmentationInterpolation& segInterpolation,
-  float segInterpCutoff
-)
+  bool showEdges)
 {
-  static const glm::vec4 sk_clipO{0.0f, 0.0f, -1.0f, 1.0};
-  static const glm::vec4 sk_clipX{1.0f, 0.0f, -1.0f, 1.0};
-  static const glm::vec4 sk_clipY{0.0f, 1.0f, -1.0f, 1.0};
-
-  if (I.empty())
-  {
+  if (I.empty()) {
     spdlog::error("No images provided when rendering plane");
     return;
   }
 
   const Image* image0 = getImage(I[0].first);
 
-  if (!image0)
-  {
+  if (!image0) {
     spdlog::error("Null image when rendering textured quad");
     return;
   }
@@ -195,82 +184,37 @@ void drawImageQuad(
     const glm::mat4 pixel_T_clip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
     texSamplingDirZ = computeTexSamplingDir(
-      pixel_T_clip, image0->transformations().invPixelDimensions(), Directions::View::Back
-    );
+      pixel_T_clip, image0->transformations().invPixelDimensions(), Directions::View::Back);
 
-    const auto s
-      = computeMipSamplingParams(view.camera(), *image0, mipSlabThickness_mm, doMaxExtentMip);
+    const auto s = computeMipSamplingParams(view.camera(), *image0, mipSlabThickness_mm, doMaxExtentMip);
     halfNumMipSamples = s.first;
     mipSamplingDistance_cm = s.second;
   }
 
   std::vector<glm::vec3> voxelSamplingDirs{glm::vec3{0.0f}, glm::vec3{0.0f}};
-  std::vector<glm::vec3> texSamplingDirsForSegOutline{glm::vec3{0.0f}, glm::vec3{0.0f}};
-  std::vector<glm::vec3> texSamplingDirsForSmoothSeg{glm::vec3{0.0f}, glm::vec3{0.0f}};
   std::vector<glm::vec3> texSamplingDirsForEdges{glm::vec3{0.0f}, glm::vec3{0.0f}};
 
   {
     const auto posInfo = math::computeAnatomicalLabelsForView(
-      view.camera().camera_T_world(), image0->transformations().worldDef_T_subject()
-    );
+      view.camera().camera_T_world(), image0->transformations().worldDef_T_subject());
 
-    const glm::mat4 voxel_T_viewClip = image0->transformations().pixel_T_worldDef()
-                                       * world_T_viewClip;
+    const glm::mat4 voxel_T_viewClip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
     for (int i = 0; i < 2; ++i)
     {
       voxelSamplingDirs[i] = computeTextureSamplingDirectionForImageVoxelOffset(
-        voxel_T_viewClip,
-        windowViewport,
-        view.viewClip_T_windowClip(),
-        image0->transformations().invPixelDimensions(),
-        posInfo[i].viewClipDir
-      );
+        voxel_T_viewClip, windowViewport, view.viewClip_T_windowClip(),
+        image0->transformations().invPixelDimensions(), posInfo[i].viewClipDir);
 
-      // For edges and smooth segmentation sampling,
-      // use sampling directions based on image voxels:
+      // For edges sampling, use sampling directions based on image voxels:
       texSamplingDirsForEdges = voxelSamplingDirs;
-      texSamplingDirsForSmoothSeg = voxelSamplingDirs;
     }
-  }
-
-  switch (segOutlineStyle) {
-  case SegmentationOutlineStyle::ImageVoxel: {
-    texSamplingDirsForSegOutline = voxelSamplingDirs;
-    break;
-  }
-  case SegmentationOutlineStyle::ViewPixel: {
-    const auto posInfo = math::computeAnatomicalLabelsForView(
-      view.camera().camera_T_world(), image0->transformations().worldDef_T_subject()
-      );
-
-    const glm::mat4 texture_T_viewClip = image0->transformations().texture_T_worldDef()
-                                         * world_T_viewClip;
-
-    for (int i = 0; i < 2; ++i)
-    {
-      texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForViewPixelOffset(
-        texture_T_viewClip, windowViewport, view.viewClip_T_windowClip(), posInfo[i].viewClipDir
-        );
-    }
-    break;
-  }
-  case SegmentationOutlineStyle::Disabled: {
-    break;
-  }
   }
 
   // Set the view transformation uniforms that are common to all image plane rendering programs:
   program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
   program.setUniform("u_world_T_clip", world_T_viewClip);
   program.setUniform("u_clipDepth", view.clipPlaneDepth());
-
-  // Segmentation outlines:
-  program.setUniform("u_texSamplingDirsForSegOutline", texSamplingDirsForSegOutline);
-  program.setUniform(
-    "u_segInteriorOpacity",
-    (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity
-  );
 
   if (ViewRenderMode::Image == renderMode ||
       ViewRenderMode::Checkerboard == renderMode ||
@@ -281,8 +225,7 @@ void drawImageQuad(
     program.setUniform("u_flashlightRadius", flashlightRadius);
     program.setUniform("u_flashlightOverlays", flashlightOverlays);
 
-    const glm::vec4 clipXhairs = helper::clip_T_world(view.camera())
-                                 * glm::vec4{worldCrosshairs, 1.0f};
+    const glm::vec4 clipXhairs = helper::clip_T_world(view.camera()) * glm::vec4{worldCrosshairs, 1.0f};
 
     program.setUniform("u_clipCrosshairs", glm::vec2{clipXhairs / clipXhairs.w});
 
@@ -292,14 +235,6 @@ void drawImageQuad(
     }
     else
     {
-      if (SegmentationInterpolation::Linear == segInterpolation)
-      {
-        // Segmentation interpolation:
-        // For now, only used in Image.fs. Add this to all shaders.
-        program.setUniform("u_texSamplingDirsForSmoothSeg", texSamplingDirsForSmoothSeg);
-        program.setUniform("u_segInterpCutoff", segInterpCutoff);
-      }
-
       // Only render with intensity projection when edges are not visible:
       program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
       program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
@@ -328,6 +263,10 @@ void drawImageQuad(
   }
   else if (ViewRenderMode::CrossCorrelation == renderMode)
   {
+    static const glm::vec4 sk_clipO{0.0f, 0.0f, -1.0f, 1.0};
+    static const glm::vec4 sk_clipX{1.0f, 0.0f, -1.0f, 1.0};
+    static const glm::vec4 sk_clipY{0.0f, 1.0f, -1.0f, 1.0};
+
     if (2 != I.size())
     {
       spdlog::error("Not enough images provided when rendering plane with cross-correlation metric");
@@ -343,8 +282,7 @@ void drawImageQuad(
       return;
     }
 
-    const glm::mat4 img0Pixel_T_clip = img0->transformations().pixel_T_worldDef()
-                                       * world_T_viewClip;
+    const glm::mat4 img0Pixel_T_clip = img0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
     const glm::vec4 ppO = img0Pixel_T_clip * sk_clipO;
     const glm::vec4 ppX = img0Pixel_T_clip * sk_clipX;
@@ -369,13 +307,101 @@ void drawImageQuad(
   quad.m_vao.release();
 }
 
+/// @todo We're going to have to put back std::vector<Image*>
+/// as the input to this function, since the metric shaders render more than one seg.
+void drawSegQuad(
+  GLShaderProgram& program,
+  const RenderData::Quad& quad,
+  const Image& seg,
+  const View& view,
+  const Viewport& windowViewport,
+  const glm::vec3& worldCrosshairs,
+  float flashlightRadius,
+  bool flashlightOverlays,
+  const SegmentationOutlineStyle& segOutlineStyle,
+  float segInteriorOpacity,
+  const SegmentationInterpolation& segInterpolation,
+  float /*segInterpCutoff*/)
+{
+  std::vector<glm::vec3> voxelSamplingDirs{glm::vec3{0.0f}, glm::vec3{0.0f}};
+  std::vector<glm::vec3> texSamplingDirsForSmoothSeg{glm::vec3{0.0f}, glm::vec3{0.0f}};
+  std::vector<glm::vec3> texSamplingDirsForSegOutline{glm::vec3{0.0f}, glm::vec3{0.0f}};
+
+  const auto posInfo = math::computeAnatomicalLabelsForView(
+    view.camera().camera_T_world(), seg.transformations().worldDef_T_subject());
+
+  const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
+  const glm::mat4 voxel_T_viewClip = seg.transformations().pixel_T_worldDef() * world_T_viewClip;
+
+  for (int i = 0; i < 2; ++i)
+  {
+    voxelSamplingDirs[i] = computeTextureSamplingDirectionForImageVoxelOffset(
+      voxel_T_viewClip, windowViewport, view.viewClip_T_windowClip(),
+      seg.transformations().invPixelDimensions(), posInfo[i].viewClipDir);
+
+    // For smooth segmentation sampling, use sampling directions based on image voxels:
+    texSamplingDirsForSmoothSeg = voxelSamplingDirs;
+  }
+
+  switch (segOutlineStyle) {
+  case SegmentationOutlineStyle::ImageVoxel: {
+    texSamplingDirsForSegOutline = voxelSamplingDirs;
+    break;
+  }
+  case SegmentationOutlineStyle::ViewPixel: {
+    const glm::mat4 texture_T_viewClip = seg.transformations().texture_T_worldDef() * world_T_viewClip;
+
+    for (int i = 0; i < 2; ++i)
+    {
+      texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForViewPixelOffset(
+        texture_T_viewClip, windowViewport, view.viewClip_T_windowClip(), posInfo[i].viewClipDir);
+    }
+    break;
+  }
+  case SegmentationOutlineStyle::Disabled: {
+    break;
+  }
+  }
+
+  const glm::vec4 clipXhairs = helper::clip_T_world(view.camera()) * glm::vec4{worldCrosshairs, 1.0f};
+  program.setUniform("u_clipCrosshairs", glm::vec2{clipXhairs / clipXhairs.w});
+
+  program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
+  program.setUniform("u_world_T_clip", world_T_viewClip);
+  program.setUniform("u_clipDepth", view.clipPlaneDepth());
+
+  program.setUniform("u_aspectRatio", view.camera().aspectRatio());
+  program.setUniform("u_flashlightRadius", flashlightRadius);
+  program.setUniform("u_flashlightOverlays", flashlightOverlays);
+
+  program.setUniform("u_texSamplingDirsForSegOutline", texSamplingDirsForSegOutline);
+  program.setUniform("u_segInteriorOpacity", (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity);
+
+  switch (segInterpolation)
+  {
+  case SegmentationInterpolation::NearestNeighbor: {
+    break;
+  }
+  case SegmentationInterpolation::Linear: {
+    // program.setUniform("u_texSamplingDirsForSmoothSeg", texSamplingDirsForSmoothSeg);
+    // program.setUniform("u_segInterpCutoff", segInterpCutoff);
+    // break;
+  }
+  }
+
+  quad.m_vao.bind();
+  {
+    quad.m_vao.drawElements(quad.m_vaoParams);
+  }
+  quad.m_vao.release();
+}
+
 void drawRaycastQuad(
   GLShaderProgram& program,
   RenderData::Quad& quad,
   const View& view,
-  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& I,
-  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage
-)
+  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
+  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage)
 {
   if (I.empty())
   {

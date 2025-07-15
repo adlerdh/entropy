@@ -6,8 +6,6 @@
 in VS_OUT // Redeclared vertex shader outputs: now the fragment shader inputs
 {
   vec3 v_imgTexCoords;
-  vec3 v_segTexCoords;
-  vec3 v_segVoxCoords;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 } fs_in;
@@ -15,12 +13,9 @@ in VS_OUT // Redeclared vertex shader outputs: now the fragment shader inputs
 layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
 
 uniform sampler3D u_imgTex; // Texture unit 0: image
-uniform usampler3D u_segTex; // Texture unit 1: segmentation
 uniform sampler1D u_imgCmapTex; // Texture unit 2: image color map (pre-mult RGBA)
-uniform samplerBuffer u_segLabelCmapTex; // Texutre unit 3: label color map (pre-mult RGBA)
 
 // uniform bool u_useTricubicInterpolation; // Whether to use tricubic interpolation
-
 uniform vec2 u_imgSlopeIntercept; // Slopes and intercepts for image normalization and window-leveling
 uniform vec2 u_imgSlopeInterceptLargest; // Slopes and intercepts for image normalization
 uniform vec2 u_imgCmapSlopeIntercept; // Slopes and intercepts for the image color maps
@@ -30,9 +25,6 @@ uniform vec3 u_imgCmapHsvModFactors; // HSV modification factors for image color
 uniform vec2 u_imgMinMax; // Min and max image values
 uniform vec2 u_imgThresholds; // Image lower and upper thresholds, mapped to OpenGL texture intensity
 uniform float u_imgOpacity; // Image opacities
-uniform float u_segOpacity; // Segmentation opacities
-
-uniform bool u_masking; // Whether to mask image based on segmentation
 
 uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
 
@@ -64,13 +56,6 @@ uniform vec4 u_edgeColor; // RGBA, pre-multiplied by alpha
 //uniform bool useFreiChen;
 
 uniform vec3 u_texSamplingDirsForEdges[2];
-
-// Texture sampling directions (horizontal and vertical) for calculating the segmentation outline
-uniform vec3 u_texSamplingDirsForSegOutline[2];
-
-// Opacity of the interior of the segmentation
-uniform float u_segInteriorOpacity;
-
 
 /// Copied from https://www.laurivan.com/rgb-to-hsv-to-rgb-for-shaders/
 vec3 rgb2hsv(vec3 c)
@@ -116,7 +101,6 @@ const float SobelFactor = 1.0 / (2.0*A + B);
 //  1.0 / 3.0 * mat3(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
 //);
 
-
 float smoothThreshold(float value, vec2 thresholds)
 {
   return smoothstep(thresholds[0] - 0.01, thresholds[0], value) -
@@ -133,8 +117,6 @@ bool isInsideTexture(vec3 a)
   return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) &&
        all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
 }
-
-
 
 //! Tricubic interpolated texture lookup, using unnormalized coordinates.
 //! Fast implementation, using 8 trilinear lookups.
@@ -191,58 +173,10 @@ float interpolateTricubicFast(sampler3D tex, vec3 coord)
   return mix(tex001, tex000, g0.z); // weigh along the z-direction
 }
 
-
-// Compute alpha of fragments based on whether or not they are inside the
-// segmentation boundary. Fragments on the boundary are assigned alpha of 1,
-// whereas fragments inside are assigned alpha of 'u_segInteriorOpacity'.
-float getSegInteriorAlpha(uint seg)
-{
-  // Look up texture values in 8 neighbors surrounding the center fragment.
-  // These may be either neighboring image voxels or neighboring view pixels.
-  // The center fragment has index i = 4 (row = 0, col = 0).
-  for (int i = 0; i <= 8; ++i)
-  {
-    float row = float(mod(i, 3) - 1); // runs -1 to 1
-    float col = float(floor(float(i / 3)) - 1); // runs -1 to 1
-
-    vec3 texSamplingPos = row * u_texSamplingDirsForSegOutline[0] +
-                col * u_texSamplingDirsForSegOutline[1];
-
-    // Segmentation value of neighbor at (row, col) offset
-    uint nseg = texture(u_segTex, fs_in.v_segTexCoords + texSamplingPos)[0];
-
-    // Fragment (with segmentation 'seg') is on the boundary (and hence gets
-    // full alpha) if its value is not equal to one of its neighbors.
-    if (seg != nseg)
-    {
-      return 1.0;
-    }
-  }
-
-  return u_segInteriorOpacity;
-}
-
 float getImageValue(vec3 texCoord)
 {
   return clamp(texture(u_imgTex, texCoord)[0], u_imgMinMax[0], u_imgMinMax[1]);
   // interpolateTricubicFast(u_imgTex, texCoord)
-}
-
-int when_lt(int x, int y)
-{
-  return max(sign(y - x), 0);
-}
-
-int when_ge(int x, int y)
-{
-  return (1 - when_lt(x, y));
-}
-
-vec4 computeLabelColor(int label)
-{
-  label -= label * when_ge(label, textureSize(u_segLabelCmapTex));
-  vec4 color = texelFetch(u_segLabelCmapTex, label);
-  return color.a * color;
 }
 
 void main()
@@ -265,9 +199,8 @@ void main()
 
   if (! doRender) discard;
 
-  // Foreground masks, based on whether texture coordinates are in range [0.0, 1.0]^3:
+  // Foreground mask based on whether texture coordinates are in range [0.0, 1.0]^3:
   bool imgMask = isInsideTexture(fs_in.v_imgTexCoords);
-  bool segMask = isInsideTexture(fs_in.v_segTexCoords);
 
   // Image values in a 3x3 neighborhood:
   mat3 V;
@@ -316,22 +249,17 @@ void main()
   // If u_thresholdEdges is true, then threshold gradMag against u_edgeMagnitude:
   gradMag = mix(gradMag, float(gradMag > u_edgeMagnitude), float(u_thresholdEdges));
 
-  // Get the image and segmentation label values:
+  // Get the image value:
   // float img = texture(u_imgTex, fs_in.v_imgTexCoords).r;
 
   float img = getImageValue(fs_in.v_imgTexCoords);
 
-  uint seg = texture(u_segTex, fs_in.v_segTexCoords).r;
-
   // Apply window/level and normalize value in [0.0, 1.0]:
   float imgNorm = clamp(u_imgSlopeIntercept[0] * img + u_imgSlopeIntercept[1], 0.0, 1.0);
 
-  // Mask that accounts for the image boundaries and (if masking is true) the segmentation mask:
-  float mask = float(imgMask && (u_masking && (seg > 0u) || ! u_masking));
-
   // Alpha accounts for opacity, masking, and thresholding:
   // Alpha will be applied to the image and edge layers.
-  float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds);
+  float alpha = u_imgOpacity * float(imgMask) * hardThreshold(img, u_imgThresholds);
 
   // Apply color map to the image intensity:
   // Disable the image color if u_overlayEdges is false.
@@ -340,17 +268,16 @@ void main()
   float cmapCoord = mix(floor(float(u_imgCmapQuantLevels) * imgNorm) / float(u_imgCmapQuantLevels - 1), imgNorm, float(0 == u_imgCmapQuantLevels));
   cmapCoord = u_imgCmapSlopeIntercept[0] * cmapCoord + u_imgCmapSlopeIntercept[1];
 
-
-//  // Look up image color (RGBA):
+  // Look up image color (RGBA):
   vec4 imgColor = texture(u_imgCmapTex, cmapCoord);
 
-//  // Convert RGBA to HSV and apply HSV modification factors:
+  // Convert RGBA to HSV and apply HSV modification factors:
   vec3 imgColorHsv = rgb2hsv(imgColor.rgb);
 
   imgColorHsv.r += u_imgCmapHsvModFactors.r;
   imgColorHsv.g *= u_imgCmapHsvModFactors.g;
 
-//  // Convert back to RGB
+  // Convert back to RGB
   imgColor.rgb = hsv2rgb(imgColorHsv);
 
   vec4 imageLayer = alpha * float(u_overlayEdges) * imgColor.a * vec4(imgColor.rgb, 1.0);
@@ -362,13 +289,8 @@ void main()
   // For the edge layer, use either the solid edge color or the colormapped gradient magnitude:
   vec4 edgeLayer = alpha * mix(gradMag * u_edgeColor, gradColormap, float(u_colormapEdges));
 
-  // Look up label colors:
-  vec4 segColor = computeLabelColor(int(seg)) * getSegInteriorAlpha(seg) * u_segOpacity * float(segMask);
-
-
   // Blend colors:
   o_color = vec4(0.0, 0.0, 0.0, 0.0);
   o_color = imageLayer + (1.0 - imageLayer.a) * o_color;
   o_color = edgeLayer + (1.0 - edgeLayer.a) * o_color;
-  o_color = segColor + (1.0 - segColor.a) * o_color;
 }

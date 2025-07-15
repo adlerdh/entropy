@@ -15,8 +15,8 @@ public:
   GLErrorChecker() = default;
   ~GLErrorChecker() = default;
 
-  void operator()(const char* file, const char* function, int line);
-  void operator()();
+  void operator()(const char* file, const char* function, int line) const;
+  void operator()() const;
 };
 
 #endif // GLERRORCHECKER_H

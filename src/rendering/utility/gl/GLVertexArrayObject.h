@@ -11,9 +11,6 @@
 
 #include <glad/glad.h>
 
-#include <string>
-#include <unordered_map>
-
 class GLVertexArrayObject final
 {
 public:
@@ -24,8 +21,7 @@ public:
       const PrimitiveMode& primitiveMode,
       std::size_t elementCount,
       const IndexType& indexType,
-      std::size_t indexOffset
-    );
+      std::size_t indexOffset);
 
     IndexedDrawParams(const VertexIndicesInfo& indicesInfo);
 
@@ -55,8 +51,8 @@ public:
   void generate();
   void destroy();
 
-  void bind();
-  void release();
+  void bind() const;
+  void release() const;
 
   GLuint id() const;
 
@@ -86,11 +82,10 @@ public:
   void enableVertexAttribute(GLuint index);
   void disableVertexAttribute(GLuint index);
 
-  void drawElements(const IndexedDrawParams& params);
+  void drawElements(const IndexedDrawParams& params) const;
 
 private:
   GLuint m_id;
-
   GLErrorChecker m_errorChecker;
 };
 

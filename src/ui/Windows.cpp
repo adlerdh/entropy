@@ -1309,85 +1309,12 @@ void renderSettingsWindow(
                 */
 
         // Anatomical coordinate directions (including crosshairs) rotation locking
-        bool lockDirectionsToReference = appData.settings()
-                                           .lockAnatomicalCoordinateAxesWithReferenceImage();
-        if (ImGui::Checkbox(
-              "Lock anatomical directions to reference image", &(lockDirectionsToReference)
-            ))
-        {
-          appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(
-            lockDirectionsToReference
-          );
+        bool lockDirectionsToReference = appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage();
+        if (ImGui::Checkbox("Lock anatomical directions to reference image", &(lockDirectionsToReference))) {
+          appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(lockDirectionsToReference);
         }
         ImGui::SameLine();
         helpMarker("Lock anatomical directions and crosshairs to reference image orientation");
-
-        // Image masking
-        ImGui::Checkbox("Mask images by segmentation", &(renderData.m_maskedImages));
-        ImGui::SameLine();
-        helpMarker("Render images only in regions masked by a segmentation label");
-
-        // Modulate opacity of segmentation with opacity of image:
-        ImGui::Checkbox(
-          "Modulate segmentation with image opacity",
-          &renderData.m_modulateSegOpacityWithImageOpacity
-        );
-        ImGui::SameLine();
-        helpMarker("Modulate opacity of segmentation with opacity of image");
-
-        ImGui::Dummy(ImVec2(0.0f, 1.0f));
-
-        ImGui::Text("Segmentation boundary outline:");
-        if (ImGui::RadioButton(
-              "Outline image voxels",
-              SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle
-            ))
-        {
-          renderData.m_segOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
-        }
-        ImGui::SameLine();
-        helpMarker("Outline the outer voxels of the image segmentation regions");
-
-        if (ImGui::RadioButton(
-              "Outline view pixels",
-              SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle
-            ))
-        {
-          renderData.m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
-        }
-        ImGui::SameLine();
-        helpMarker("Outline the outer view pixels of the image segmentation regions");
-
-        if (ImGui::RadioButton(
-              "Disabled", SegmentationOutlineStyle::Disabled == renderData.m_segOutlineStyle
-            ))
-        {
-          renderData.m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
-        }
-        ImGui::SameLine();
-        helpMarker("Disable segmentation outlining");
-
-        if (SegmentationOutlineStyle::Disabled != renderData.m_segOutlineStyle)
-        {
-          ImGui::Spacing();
-          ImGui::Dummy(ImVec2(0.0f, 1.0f));
-
-          // Modulate opacity of interior of segmentation:
-          mySliderF32("Opacity of seg. interior", &(renderData.m_segInteriorOpacity), 0.0f, 1.0f);
-          ImGui::SameLine();
-          helpMarker("Modulate opacity of interior of segmentation");
-        }
-
-        // check if using interpolation of segs
-        // if (  )
-        {
-          ImGui::Spacing();
-          ImGui::Dummy(ImVec2(0.0f, 1.0f));
-
-          mySliderF32("Seg. interpolation cutoff", &(renderData.m_segInterpCutoff), 0.05f, 0.95f);
-          ImGui::SameLine();
-          helpMarker("Interpolation cutoff");
-        }
 
         ImGui::Spacing();
         ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -1397,36 +1324,29 @@ void renderSettingsWindow(
 
         if (ImGui::TreeNode("Crosshairs"))
         {
-          ImGui::ColorEdit4(
-            "Color", glm::value_ptr(renderData.m_crosshairsColor), sk_colorAlphaEditFlags
-          );
+          ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_crosshairsColor), sk_colorAlphaEditFlags);
 
           ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
           ImGui::Text("Snap crosshairs:");
-          if (ImGui::RadioButton(
-                "To reference image voxels",
-                CrosshairsSnapping::ReferenceImage == renderData.m_snapCrosshairs
-              ))
+          if (ImGui::RadioButton("To reference image voxels",
+                                 CrosshairsSnapping::ReferenceImage == renderData.m_snapCrosshairs))
           {
             renderData.m_snapCrosshairs = CrosshairsSnapping::ReferenceImage;
           }
           ImGui::SameLine();
           helpMarker("Snap crosshairs to reference image voxel centers");
 
-          if (ImGui::RadioButton(
-                "To active image voxels",
-                CrosshairsSnapping::ActiveImage == renderData.m_snapCrosshairs
-              ))
+          if (ImGui::RadioButton("To active image voxels",
+                                 CrosshairsSnapping::ActiveImage == renderData.m_snapCrosshairs))
           {
             renderData.m_snapCrosshairs = CrosshairsSnapping::ActiveImage;
           }
           ImGui::SameLine();
           helpMarker("Snap crosshairs to active image voxel centers");
 
-          if (ImGui::RadioButton(
-                "Disabled", CrosshairsSnapping::Disabled == renderData.m_snapCrosshairs
-              ))
+          if (ImGui::RadioButton("Disable (no snapping)",
+                                 CrosshairsSnapping::Disabled == renderData.m_snapCrosshairs))
           {
             renderData.m_snapCrosshairs = CrosshairsSnapping::Disabled;
           }
@@ -1447,10 +1367,8 @@ void renderSettingsWindow(
           ImGui::SameLine();
           helpMarker("Default view and crosshairs centering behavior");
 
-          if (ImGui::RadioButton(
-                "Reference image",
-                ImageSelection::ReferenceImage == appData.state().recenteringMode()
-              ))
+          if (ImGui::RadioButton("Reference image",
+                                 ImageSelection::ReferenceImage == appData.state().recenteringMode()))
           {
             appData.state().setRecenteringMode(ImageSelection::ReferenceImage);
 
@@ -1658,6 +1576,62 @@ void renderSettingsWindow(
         ImGui::Separator();
         ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
         ImGui::Checkbox("Show ImPlot demo window", &(appData.guiData().m_showImPlotDemoWindow));
+
+        ImGui::EndTabItem();
+      }
+
+      if (ImGui::BeginTabItem("Segmentation"))
+      {
+        // Modulate opacity of segmentation with opacity of image:
+        ImGui::Checkbox("Modulate segmentation with image opacity",
+                        &renderData.m_modulateSegOpacityWithImageOpacity);
+        ImGui::SameLine();
+        helpMarker("Modulate opacity of segmentation with opacity of image");
+
+        ImGui::Dummy(ImVec2(0.0f, 1.0f));
+
+        ImGui::Text("Boundary outline:");
+        if (ImGui::RadioButton("Outline view pixels",
+                               SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle)) {
+          renderData.m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
+        }
+        ImGui::SameLine();
+        helpMarker("Outline the outer view pixels of the image segmentation regions");
+
+        if (ImGui::RadioButton("Outline image voxels",
+                               SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle)) {
+          renderData.m_segOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
+        }
+        ImGui::SameLine();
+        helpMarker("Outline the outer voxels of the image segmentation regions");
+
+        if (ImGui::RadioButton("Disable (no outline)", SegmentationOutlineStyle::Disabled == renderData.m_segOutlineStyle)) {
+          renderData.m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
+        }
+        ImGui::SameLine();
+        helpMarker("Disable segmentation outlining");
+
+        if (SegmentationOutlineStyle::Disabled != renderData.m_segOutlineStyle)
+        {
+          ImGui::Spacing();
+          ImGui::Dummy(ImVec2(0.0f, 1.0f));
+
+          // Modulate opacity of interior of segmentation:
+          mySliderF32("Interior opacity", &(renderData.m_segInteriorOpacity), 0.0f, 1.0f);
+          ImGui::SameLine();
+          helpMarker("Modulate opacity of interior of segmentation");
+        }
+
+        // check if using interpolation of segs
+        // if (  )
+        {
+          ImGui::Spacing();
+          ImGui::Dummy(ImVec2(0.0f, 1.0f));
+
+          mySliderF32("Interpolation cutoff", &(renderData.m_segInterpCutoff), 0.05f, 0.95f);
+          ImGui::SameLine();
+          helpMarker("Interpolation cutoff");
+        }
 
         ImGui::EndTabItem();
       }
@@ -1879,7 +1853,7 @@ void renderSettingsWindow(
         helpMarker("Mask image based on segmentation value");
 
         if (ImGui::RadioButton(
-              "Disabled", RenderData::SegMaskingForRaycasting::Disabled == renderData.m_segMasking
+              "Disable", RenderData::SegMaskingForRaycasting::Disabled == renderData.m_segMasking
             ))
         {
           renderData.m_segMasking = RenderData::SegMaskingForRaycasting::Disabled;

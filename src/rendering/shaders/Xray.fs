@@ -10,13 +10,10 @@
 #define QUADRANTS_RENDER_MODE  2
 #define FLASHLIGHT_RENDER_MODE 3
 
-
 // Redeclared vertex shader outputs, which are now the fragment shader inputs
 in VS_OUT
 {
   vec3 v_imgTexCoords;
-  vec3 v_segTexCoords;
-  vec3 v_segVoxCoords;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 } fs_in;
@@ -24,9 +21,7 @@ in VS_OUT
 layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
 
 uniform sampler3D u_imgTex; // Texture unit 0: image
-uniform usampler3D u_segTex; // Texture unit 1: segmentation
 uniform sampler1D u_imgCmapTex; // Texture unit 2: image color map (pre-mult RGBA)
-uniform samplerBuffer u_segLabelCmapTex; // Texutre unit 3: label color map (pre-mult RGBA)
 
 // uniform bool u_useTricubicInterpolation; // Whether to use tricubic interpolation
 
@@ -44,15 +39,6 @@ uniform vec2 slopeInterceptWindowLevel;
 uniform vec2 u_imgCmapSlopeIntercept; // Slopes and intercepts for the image color maps
 
 uniform float u_imgOpacity; // Image opacities
-uniform float u_segOpacity; // Segmentation opacities
-
-// Texture sampling directions (horizontal and vertical) for calculating the segmentation outline
-uniform vec3 u_texSamplingDirsForSegOutline[2];
-
-// Opacity of the interior of the segmentation
-uniform float u_segInteriorOpacity;
-
-uniform bool u_masking; // Whether to mask image based on segmentation
 
 uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
 
@@ -88,15 +74,12 @@ uniform vec3 u_texSamplingDirZ;
 uniform float waterAttenCoeff;
 uniform float airAttenCoeff;
 
-
 // Check if inside texture coordinates
 bool isInsideTexture(vec3 a)
 {
   return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) &&
        all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
 }
-
-
 
 //! Tricubic interpolated texture lookup, using unnormalized coordinates.
 //! Fast implementation, using 8 trilinear lookups.
@@ -105,7 +88,7 @@ bool isInsideTexture(vec3 a)
 //! @see https://github.com/DannyRuijters/CubicInterpolationCUDA/blob/master/examples/glCubicRayCast/tricubic.shader
 float interpolateTricubicFast(sampler3D tex, vec3 coord)
 {
-	// Shift the coordinate from [0,1] to [-0.5, nrOfVoxels-0.5]
+  // Shift the coordinate from [0,1] to [-0.5, nrOfVoxels-0.5]
   vec3 nrOfVoxels = vec3(textureSize(tex, 0));
   vec3 coord_grid = coord * nrOfVoxels - 0.5;
   vec3 index = floor(coord_grid);
@@ -153,31 +136,11 @@ float interpolateTricubicFast(sampler3D tex, vec3 coord)
   return mix(tex001, tex000, g0.z); // weigh along the z-direction
 }
 
-
 float getImageValue(vec3 texCoord)
 {
   return clamp(texture(u_imgTex, texCoord)[0], u_imgMinMax[0], u_imgMinMax[1]);
   //    interpolateTricubicFast(u_imgTex, texCoord),
 }
-
-
-int when_lt(int x, int y)
-{
-  return max(sign(y - x), 0);
-}
-
-int when_ge(int x, int y)
-{
-  return (1 - when_lt(x, y));
-}
-
-vec4 computeLabelColor(int label)
-{
-  label -= label * when_ge(label, textureSize(u_segLabelCmapTex));
-  vec4 color = texelFetch(u_segLabelCmapTex, label);
-  return color.a * color;
-}
-
 
 // Convert texture intensity to Hounsefield Units, then to Photon Mass Attenuation coefficient
 float convertTexToAtten(float texValue)
@@ -188,7 +151,6 @@ float convertTexToAtten(float texValue)
   // Photon mass attenuation coefficient:
   return max((hu / 1000.0) * (waterAttenCoeff - airAttenCoeff) + waterAttenCoeff, 0.0);
 }
-
 
 bool doRender()
 {
@@ -221,54 +183,17 @@ bool doRender()
   return render;
 }
 
-
 float hardThreshold(float value, vec2 thresholds)
 {
   return float(thresholds[0] <= value && value <= thresholds[1]);
 }
 
-
-// Compute alpha of fragments based on whether or not they are inside the
-// segmentation boundary. Fragments on the boundary are assigned alpha of 1,
-// whereas fragments inside are assigned alpha of 'u_segInteriorOpacity'.
-float getSegInteriorAlpha(uint seg)
-{
-  float segInteriorAlpha = u_segInteriorOpacity;
-
-  // Look up texture values in 8 neighbors surrounding the center fragment.
-  // These may be either neighboring image voxels or neighboring view pixels.
-  // The center fragment has index i = 4 (row = 0, col = 0).
-  for (int i = 0; i < 9; ++i)
-  {
-    float row = float(mod(i, 3) - 1); // runs -1 to 1
-    float col = float(floor(float(i / 3)) - 1); // runs -1 to 1
-
-    vec3 texSamplingPos = row * u_texSamplingDirsForSegOutline[0] +
-      col * u_texSamplingDirsForSegOutline[1];
-
-    // Segmentation value of neighbor at (row, col) offset
-    uint nseg = texture(u_segTex, fs_in.v_segTexCoords + texSamplingPos)[0];
-
-    // Fragment (with segmentation 'seg') is on the boundary (and hence gets
-    // full alpha) if its value is not equal to one of its neighbors.
-    if (nseg != seg)
-    {
-      segInteriorAlpha = 1.0;
-      break;
-    }
-  }
-
-  return segInteriorAlpha;
-}
-
-
 void main()
 {
   if (! doRender()) discard;
 
-  // Image and segmentation masks based on texture coordinates:
+  // Image mask based on texture coordinates:
   bool imgMask = isInsideTexture(fs_in.v_imgTexCoords);
-  bool segMask = isInsideTexture(fs_in.v_segTexCoords);
 
   // Look up the texture values and convert to mass attenuation coefficient.
   // Keep a running sum of attenuation for all samples.
@@ -309,26 +234,13 @@ void main()
   // Apply window-leveling:
   float invAttenWL = slopeInterceptWindowLevel[0] * invAtten + slopeInterceptWindowLevel[1];
 
-  // Look up segmentation texture label value:
-  uint seg = texture(u_segTex, fs_in.v_segTexCoords).r;
-
-  // Compute the image mask:
-  float mask = float(imgMask && (u_masking && (seg > 0u) || ! u_masking));
-
   // Compute image alpha based on opacity, mask, and thresholds:
-  float imgAlpha = u_imgOpacity * mask;
-
-  // Compute segmentation alpha based on opacity and mask:
-  float segAlpha = getSegInteriorAlpha(seg) * u_segOpacity * float(segMask);
+  float imgAlpha = u_imgOpacity * float(imgMask);
 
   // Look up image color and apply alpha:
   vec4 imgColor = texture(u_imgCmapTex, u_imgCmapSlopeIntercept[0] * invAttenWL + u_imgCmapSlopeIntercept[1]) * imgAlpha;
 
-  // Look up segmentation color and apply:
-  vec4 segColor = computeLabelColor(int(seg)) * segAlpha;
-
   // Blend colors:
   o_color = vec4(0.0, 0.0, 0.0, 0.0);
   o_color = imgColor + (1.0 - imgColor.a) * o_color;
-  o_color = segColor + (1.0 - segColor.a) * o_color;
 }

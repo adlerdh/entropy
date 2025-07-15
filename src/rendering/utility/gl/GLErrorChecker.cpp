@@ -7,7 +7,7 @@
 #include <sstream>
 #include <string>
 
-void GLErrorChecker::operator()(const char* file, const char* function, int line)
+void GLErrorChecker::operator()(const char* file, const char* function, int line) const
 {
   static const char* INVALID_ENUM_MSG = "Enumeration parameter not legal for function.";
   static const char* INVALID_VALUE_MSG = "Value parameter not legal for function.";
@@ -72,7 +72,7 @@ void GLErrorChecker::operator()(const char* file, const char* function, int line
   }
 }
 
-void GLErrorChecker::operator()()
+void GLErrorChecker::operator()() const
 {
   // no-op
 }
