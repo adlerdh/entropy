@@ -485,6 +485,7 @@ set(entropy_SHADERS
   ${entropy_SRC_DIR}/rendering/shaders/RaycastIsoSurface.fs
   ${entropy_SRC_DIR}/rendering/shaders/RaycastIsoSurface.vs
   ${entropy_SRC_DIR}/rendering/shaders/Seg.fs
+  ${entropy_SRC_DIR}/rendering/shaders/Seg_linear.fs
   ${entropy_SRC_DIR}/rendering/shaders/Seg.vs
   ${entropy_SRC_DIR}/rendering/shaders/Simple.fs
   ${entropy_SRC_DIR}/rendering/shaders/Simple.vs

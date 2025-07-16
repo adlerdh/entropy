@@ -129,6 +129,7 @@ private:
   bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);
   bool createSimpleProgram(GLShaderProgram& program);
   bool createSegProgram(GLShaderProgram& program);
+  bool createSegLinearProgram(GLShaderProgram& program);
 
   void renderImageData();
   void renderOverlays();
@@ -171,7 +172,7 @@ private:
   );
 
   // Bind/unbind label tables
-  std::list<std::reference_wrapper<GLBufferTexture> > bindBufferTextures(const CurrentImages& I);
+  std::list<std::reference_wrapper<GLBufferTexture> > bindSegBufferTextures(const CurrentImages& I);
   void unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture> >& textures);
 
   // Get current image and segmentation UIDs to render in the metric shaders
@@ -197,6 +198,7 @@ private:
   GLShaderProgram m_simpleProgram;
 
   GLShaderProgram m_segProgram;
+  GLShaderProgram m_segLinearProgram;
 
   // Samplers for metric shaders:
   static const Uniforms::SamplerIndexVectorType msk_imgTexSamplers;        // pair of images

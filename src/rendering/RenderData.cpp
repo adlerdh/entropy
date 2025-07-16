@@ -159,8 +159,7 @@ RenderData::RenderData()
   , m_segMasking(SegMaskingForRaycasting::Disabled)
 
   , m_segOutlineStyle(SegmentationOutlineStyle::Disabled)
-  , m_segInterpolation(SegmentationInterpolation::NearestNeighbor)
-  , m_segInteriorOpacity(0.1f)
+  , m_segInteriorOpacity(0.2f)
   , m_segInterpCutoff(0.5f)
 
   , m_squaredDifferenceParams()

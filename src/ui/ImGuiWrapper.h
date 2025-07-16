@@ -38,7 +38,7 @@ public:
     std::function<bool(void)> getOverlayVisibility,
     std::function<void(bool)> setOverlayVisibility,
     std::function<void(void)> updateAllImageUniforms,
-    std::function<void(const uuids::uuid& viewUid)> updateImageUniforms,
+    std::function<void(const uuids::uuid& imageUid)> updateImageUniforms,
     std::function<void(const uuids::uuid& imageUid)> updateImageInterpolationMode,
     std::function<void(std::size_t cmapUid)> updateImageColorMapInterpolationMode,
     std::function<void(std::size_t tableIndex)> updateLabelColorTableTexture,
@@ -88,8 +88,8 @@ private:
   std::function<bool(void)> m_getOverlayVisibility = nullptr;
   std::function<void(bool)> m_setOverlayVisibility = nullptr;
   std::function<void(void)> m_updateAllImageUniforms = nullptr;
-  std::function<void(const uuids::uuid& viewUid)> m_updateImageUniforms = nullptr;
-  std::function<void(const uuids::uuid& viewUid)> m_updateImageInterpolationMode = nullptr;
+  std::function<void(const uuids::uuid& imageUid)> m_updateImageUniforms = nullptr;
+  std::function<void(const uuids::uuid& imageUid)> m_updateImageInterpolationMode = nullptr;
   std::function<void(std::size_t cmapIndex)> m_updateImageColorMapInterpolationMode = nullptr;
   std::function<void(std::size_t tableIndex)> m_updateLabelColorTableTexture = nullptr;
   std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)>

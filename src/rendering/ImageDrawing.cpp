@@ -320,8 +320,7 @@ void drawSegQuad(
   bool flashlightOverlays,
   const SegmentationOutlineStyle& segOutlineStyle,
   float segInteriorOpacity,
-  const SegmentationInterpolation& segInterpolation,
-  float /*segInterpCutoff*/)
+  float segInterpCutoff)
 {
   std::vector<glm::vec3> voxelSamplingDirs{glm::vec3{0.0f}, glm::vec3{0.0f}};
   std::vector<glm::vec3> texSamplingDirsForSmoothSeg{glm::vec3{0.0f}, glm::vec3{0.0f}};
@@ -377,15 +376,16 @@ void drawSegQuad(
   program.setUniform("u_texSamplingDirsForSegOutline", texSamplingDirsForSegOutline);
   program.setUniform("u_segInteriorOpacity", (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity);
 
-  switch (segInterpolation)
+  switch (seg.settings().interpolationMode())
   {
-  case SegmentationInterpolation::NearestNeighbor: {
+  case InterpolationMode::NearestNeighbor: {
     break;
   }
-  case SegmentationInterpolation::Linear: {
-    // program.setUniform("u_texSamplingDirsForSmoothSeg", texSamplingDirsForSmoothSeg);
-    // program.setUniform("u_segInterpCutoff", segInterpCutoff);
-    // break;
+  case InterpolationMode::Trilinear:
+  case InterpolationMode::Tricubic: {
+    program.setUniform("u_texSamplingDirsForSmoothSeg", texSamplingDirsForSmoothSeg);
+    program.setUniform("u_segInterpCutoff", segInterpCutoff);
+    break;
   }
   }
 

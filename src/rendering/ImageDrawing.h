@@ -46,7 +46,6 @@ void drawSegQuad(
   bool flashlightOverlays,
   const SegmentationOutlineStyle& segOutlineStyle,
   float segInteriorOpacity,
-  const SegmentationInterpolation& segInterpolation,
   float segInterpCutoff);
 
 void drawRaycastQuad(

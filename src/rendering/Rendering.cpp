@@ -146,6 +146,7 @@ Rendering::Rendering(AppData& appData)
   , m_raycastIsoSurfaceProgram("RayCastIsoSurfaceProgram")
   , m_simpleProgram("SimpleProgram")
   , m_segProgram("SegProgram")
+  , m_segLinearProgram("SegLinearProgram")
   , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
 {
@@ -1277,7 +1278,7 @@ void Rendering::unbindTextures(const std::list<std::reference_wrapper<GLTexture>
 }
 
 std::list<std::reference_wrapper<GLBufferTexture>>
-Rendering::bindBufferTextures(const CurrentImages& I)
+Rendering::bindSegBufferTextures(const CurrentImages& I)
 {
   std::list<std::reference_wrapper<GLBufferTexture> > bufferTextures;
 
@@ -1505,7 +1506,9 @@ void Rendering::renderAllImages(
 
   std::list<std::reference_wrapper<GLTexture>> boundImageTextures;
   std::list<std::reference_wrapper<GLTexture>> boundMetricTextures;
-  std::list<std::reference_wrapper<GLBufferTexture>> boundBufferTextures;
+
+  // Buffer textures bound for the segmentation: label color look up table
+  std::list<std::reference_wrapper<GLBufferTexture>> boundSegBufferTextures;
 
   const RenderData& renderData = m_appData.renderData();
   const bool modSegOpacity = renderData.m_modulateSegOpacityWithImageOpacity;
@@ -1690,12 +1693,15 @@ void Rendering::renderAllImages(
 
       if (seg)
       {
-        boundBufferTextures = bindBufferTextures(std::vector<ImgSegPair>{imgSegPair});
+        boundSegBufferTextures = bindSegBufferTextures(std::vector<ImgSegPair>{imgSegPair});
 
-        /// @todo Make a different segment program for outlines, filled, etc.
-        GLShaderProgram* segProg = &m_segProgram;
+        const InterpolationMode& interpMode = seg->settings().interpolationMode();
+
+        GLShaderProgram* segProg = (InterpolationMode::NearestNeighbor == interpMode)
+                                   ? &m_segProgram : &m_segLinearProgram;
 
         if (!segProg) {
+          /// @todo Automatically unbind textures... should use RAII
           spdlog::error("Null segmentation program when rendering image {}", imgUid);
           return;
         }
@@ -1721,11 +1727,11 @@ void Rendering::renderAllImages(
             view, m_appData.windowData().viewport(), worldOffsetXhairs,
             renderData.m_flashlightRadius, renderData.m_flashlightOverlays,
             renderData.m_segOutlineStyle, renderData.m_segInteriorOpacity,
-            renderData.m_segInterpolation, renderData.m_segInterpCutoff);
+            renderData.m_segInterpCutoff);
         }
         segProg->stopUse();
 
-        unbindBufferTextures(boundBufferTextures);
+        unbindBufferTextures(boundSegBufferTextures);
       }
 
       /// @todo separate these textures into ones for images and ones for segs
@@ -1755,7 +1761,7 @@ void Rendering::renderAllImages(
                                                    : sk_defaultImageUniforms;
 
     boundMetricTextures = bindMetricImageTextures(I, renderMode);
-    boundBufferTextures = bindBufferTextures(I);
+    boundSegBufferTextures = bindSegBufferTextures(I);
 
     if (ViewRenderMode::Difference == renderMode)
     {
@@ -1847,7 +1853,7 @@ void Rendering::renderAllImages(
     }
 
     unbindTextures(boundMetricTextures);
-    unbindBufferTextures(boundBufferTextures);
+    unbindBufferTextures(boundSegBufferTextures);
 
     break;
   }
@@ -1888,7 +1894,7 @@ void Rendering::renderAllImages(
     updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first);
 
     boundImageTextures = bindImageTextures(imgSegPair);
-    boundBufferTextures = bindBufferTextures(std::vector<ImgSegPair>{imgSegPair});
+    boundSegBufferTextures = bindSegBufferTextures(std::vector<ImgSegPair>{imgSegPair});
 
     const auto& U = renderData.m_uniforms.at(*imgSegPair.first);
 
@@ -1937,7 +1943,7 @@ void Rendering::renderAllImages(
     P.stopUse();
 
     unbindTextures(boundImageTextures);
-    unbindBufferTextures(boundBufferTextures);
+    unbindBufferTextures(boundSegBufferTextures);
 
     break;
   }
@@ -2288,6 +2294,11 @@ void Rendering::createShaderPrograms()
   if (!createSegProgram(m_segProgram))
   {
     throw_debug("Failed to create segmentation program")
+  }
+
+  if (!createSegLinearProgram(m_segLinearProgram))
+  {
+    throw_debug("Failed to create segmentation linear program")
   }
 }
 
@@ -3069,56 +3080,133 @@ bool Rendering::createSegProgram(GLShaderProgram& program)
     throw_debug("Unable to load shader")
   }
 
+  Uniforms vsUniforms;
+  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+
+  // For checkerboarding:
+  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
+  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+
+  vsUniforms.insertUniform("u_segTexture_T_world", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_segVoxel_T_world", UniformType::Mat4, sk_identMat4);
+
+  auto vs = std::make_shared<GLShader>("vsSeg", ShaderType::Vertex, vsSource.c_str());
+  vs->setRegisteredUniforms(std::move(vsUniforms));
+  program.attachShader(vs);
+
+  spdlog::debug("Compiled vertex shader {}", vsFileName);
+
+  Uniforms fsUniforms;
+  fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
+  fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_labelTableTexSampler);
+
+  fsUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
+
+  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
+  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
+
+  // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
+  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
+
+  // For flashlighting:
+  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
+  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+
+  fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
+  fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+
+  ////// DO THESE FOR LINEAR INTERP ONLY:
+  // fsUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f);
+  // fsUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+
+  auto fs = std::make_shared<GLShader>("fsSeg", ShaderType::Fragment, fsSource.c_str());
+  fs->setRegisteredUniforms(std::move(fsUniforms));
+  program.attachShader(fs);
+
+  spdlog::debug("Compiled fragment shader {}", fsFileName);
+
+  if (!program.link())
   {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-
-    // For checkerboarding:
-    vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-    vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
-
-    vsUniforms.insertUniform("u_segTexture_T_world", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_segVoxel_T_world", UniformType::Mat4, sk_identMat4);
-
-    auto vs = std::make_shared<GLShader>("vsSeg", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
-
-    spdlog::debug("Compiled vertex shader {}", vsFileName);
+    spdlog::critical("Failed to link shader program {}", program.name());
+    return false;
   }
 
+  spdlog::debug("Linked shader program {}", program.name());
+  return true;
+}
+
+bool Rendering::createSegLinearProgram(GLShaderProgram& program)
+{
+  static const std::string vsFileName{"src/rendering/shaders/Seg.vs"};
+  static const std::string fsFileName{"src/rendering/shaders/Seg_linear.fs"};
+
+  auto filesystem = cmrc::shaders::get_filesystem();
+  std::string vsSource;
+  std::string fsSource;
+
+  try
   {
-    Uniforms fsUniforms;
+    cmrc::file vsData = filesystem.open(vsFileName.c_str());
+    cmrc::file fsData = filesystem.open(fsFileName.c_str());
 
-    fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
-    fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_labelTableTexSampler);
-
-    fsUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
-
-    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
-    fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
-
-    // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
-    fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
-
-    // For flashlighting:
-    fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-    fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
-
-    fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
-    // fsUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f);
-    fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-    // fsUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-
-    auto fs = std::make_shared<GLShader>("fsSeg", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
-
-    spdlog::debug("Compiled fragment shader {}", fsFileName);
+    vsSource = std::string(vsData.begin(), vsData.end());
+    fsSource = std::string(fsData.begin(), fsData.end());
   }
+  catch (const std::exception& e)
+  {
+    spdlog::critical("Exception when loading shader file: {}", e.what());
+    throw_debug("Unable to load shader")
+  }
+
+  Uniforms vsUniforms;
+  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+
+  // For checkerboarding:
+  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
+  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+
+  vsUniforms.insertUniform("u_segTexture_T_world", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_segVoxel_T_world", UniformType::Mat4, sk_identMat4);
+
+  auto vs = std::make_shared<GLShader>("vsSeg", ShaderType::Vertex, vsSource.c_str());
+  vs->setRegisteredUniforms(std::move(vsUniforms));
+  program.attachShader(vs);
+
+  spdlog::debug("Compiled vertex shader {}", vsFileName);
+
+  Uniforms fsUniforms;
+  fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
+  fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_labelTableTexSampler);
+
+  fsUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
+
+  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
+  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
+
+  // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
+  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
+
+  // For flashlighting:
+  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
+  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+
+  fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
+  fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+
+  fsUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f); //////// new
+  fsUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3}); //////// new
+
+  auto fs = std::make_shared<GLShader>("fsSeg", ShaderType::Fragment, fsSource.c_str());
+  fs->setRegisteredUniforms(std::move(fsUniforms));
+  program.attachShader(fs);
+
+  spdlog::debug("Compiled fragment shader {}", fsFileName);
 
   if (!program.link())
   {

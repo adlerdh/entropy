@@ -1264,14 +1264,12 @@ void renderImageHeader(
         ImGui::SameLine(); helpMarker("Set window based on percentiles of the image histogram");
 */
 
-    auto getImageInterpMode = [&imgSettings]()
-    {
+    auto getImageInterpMode = [&imgSettings]() {
       return (imgSettings.displayImageAsColor()) ? imgSettings.colorInterpolationMode()
                                                  : imgSettings.interpolationMode();
     };
 
-    auto setImageInterpMode = [&imgSettings](const InterpolationMode& mode)
-    {
+    auto setImageInterpMode = [&imgSettings](const InterpolationMode& mode) {
       (imgSettings.displayImageAsColor()) ? imgSettings.setColorInterpolationMode(mode)
                                           : imgSettings.setInterpolationMode(mode);
     };
@@ -1285,8 +1283,7 @@ void renderImageHeader(
           setImageInterpMode(mode);
           updateImageInterpolationMode();
 
-          if (mode == getImageInterpMode())
-          {
+          if (mode == getImageInterpMode()) {
             ImGui::SetItemDefaultFocus();
           }
         }
@@ -1999,8 +1996,7 @@ void renderSegmentationHeader(
   const std::function<void(size_t tableIndex)>& updateLabelColorTableTexture,
   const std::function<void(size_t labelIndex)>& moveCrosshairsToSegLabelCentroid,
   const std::function<std::optional<uuids::uuid>(
-    const uuids::uuid& matchingImageUid, const std::string& segDisplayName
-  )>& createBlankSeg,
+    const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>& createBlankSeg,
   const std::function<bool(const uuids::uuid& segUid)>& clearSeg,
   const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
   const AllViewsRecenterType& recenterAllViews
@@ -2289,6 +2285,25 @@ void renderSegmentationHeader(
       ImGui::SameLine();
       helpMarker("Segmentation layer opacity");
     }
+    ImGui::Spacing();
+
+    if (ImGui::BeginCombo("Sampling", typeString(segSettings.interpolationMode()).c_str()))
+    {
+      for (const auto& mode : AllInterpolationModes)
+      {
+        if (ImGui::Selectable(typeString(mode).c_str(), (mode == segSettings.interpolationMode())))
+        {
+          segSettings.setInterpolationMode(mode);
+
+          if (mode == segSettings.interpolationMode()) {
+            ImGui::SetItemDefaultFocus();
+          }
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::SameLine();
+    helpMarker("Select the segmentation interpolation type");
 
     ImGui::Spacing();
     ImGui::Separator();

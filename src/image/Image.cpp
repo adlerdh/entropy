@@ -188,15 +188,25 @@ Image::Image(
   }
 
   std::vector<ComponentStats> componentStats = computeImageStatistics(*this);
+
   m_settings = ImageSettings(
     getFileName(fileName.string(), false),
     m_header.numPixels(),
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
-    std::move(componentStats)
-  );
+    std::move(componentStats));
 
-  m_settings.histogramSettings();
+  switch (m_imageRep)
+  {
+  case ImageRepresentation::Image: {
+    m_settings.setInterpolationMode(InterpolationMode::Trilinear);
+    break;
+  }
+  case ImageRepresentation::Segmentation: {
+    m_settings.setInterpolationMode(InterpolationMode::NearestNeighbor);
+    break;
+  }
+  }
 }
 
 Image::Image(
@@ -438,13 +448,25 @@ Image::Image(
   }
 
   std::vector<ComponentStats> componentStats = computeImageStatistics(*this);
+
   m_settings = ImageSettings(
     displayName,
     m_header.numPixels(),
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
-    std::move(componentStats)
-  );
+    std::move(componentStats));
+
+  switch (m_imageRep)
+  {
+  case ImageRepresentation::Image: {
+    m_settings.setInterpolationMode(InterpolationMode::Trilinear);
+    break;
+  }
+  case ImageRepresentation::Segmentation: {
+    m_settings.setInterpolationMode(InterpolationMode::NearestNeighbor);
+    break;
+  }
+  }
 }
 
 bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path>& newFileName)

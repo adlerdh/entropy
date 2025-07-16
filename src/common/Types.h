@@ -299,15 +299,6 @@ enum class SegmentationOutlineStyle
 };
 
 /**
- * @brief The SegmentationInterpolation enum
- */
-enum class SegmentationInterpolation
-{
-  NearestNeighbor,
-  Linear
-};
-
-/**
  * @brief Information needed for positioning a single anatomical label and the crosshair
  * that corresponds to this label.
  */

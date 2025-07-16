@@ -1622,16 +1622,15 @@ void renderSettingsWindow(
           helpMarker("Modulate opacity of interior of segmentation");
         }
 
-        // check if using interpolation of segs
-        // if (  )
-        {
-          ImGui::Spacing();
-          ImGui::Dummy(ImVec2(0.0f, 1.0f));
+        ImGui::Spacing();
+        ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
-          mySliderF32("Interpolation cutoff", &(renderData.m_segInterpCutoff), 0.05f, 0.95f);
-          ImGui::SameLine();
-          helpMarker("Interpolation cutoff");
+        float interpCutoff = renderData.m_segInterpCutoff;
+        if (mySliderF32("Erosion factor", &interpCutoff, 0.5f, 1.0f)) {
+          renderData.m_segInterpCutoff = interpCutoff;
         }
+        ImGui::SameLine();
+        helpMarker("Cutoff used to erode segmentation boundaries in linear or cubic interpolation mode");
 
         ImGui::EndTabItem();
       }

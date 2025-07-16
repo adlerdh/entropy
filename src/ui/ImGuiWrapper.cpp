@@ -132,7 +132,7 @@ void ImGuiWrapper::setCallbacks(
   std::function<bool(void)> getOverlayVisibility,
   std::function<void(bool)> setOverlayVisibility,
   std::function<void(void)> updateAllImageUniforms,
-  std::function<void(const uuids::uuid& viewUid)> updateImageUniforms,
+  std::function<void(const uuids::uuid& imageUid)> updateImageUniforms,
   std::function<void(const uuids::uuid& imageUid)> updateImageInterpolationMode,
   std::function<void(std::size_t cmapIndex)> updateImageColorMapInterpolationMode,
   std::function<void(std::size_t tableIndex)> updateLabelColorTableTexture,

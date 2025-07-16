@@ -219,10 +219,8 @@ struct RenderData
   // Segmentation outline style
   SegmentationOutlineStyle m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
 
-  SegmentationInterpolation m_segInterpolation = SegmentationInterpolation::NearestNeighbor;
-
   // Opacity of interior of segmentation, when outlining is applied
-  float m_segInteriorOpacity = 0.1f;
+  float m_segInteriorOpacity = 0.2f;
 
   // Cutoff for segmentation with linear interpolation used
   float m_segInterpCutoff = 0.5f;
