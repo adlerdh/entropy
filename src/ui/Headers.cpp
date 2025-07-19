@@ -2289,7 +2289,7 @@ void renderSegmentationHeader(
 
     if (ImGui::BeginCombo("Sampling", typeString(segSettings.interpolationMode()).c_str()))
     {
-      for (const auto& mode : AllInterpolationModes)
+      for (const auto& mode : {InterpolationMode::NearestNeighbor, InterpolationMode::Trilinear})
       {
         if (ImGui::Selectable(typeString(mode).c_str(), (mode == segSettings.interpolationMode())))
         {

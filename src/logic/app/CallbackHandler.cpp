@@ -1968,36 +1968,53 @@ void CallbackHandler::toggleImageEdges()
   m_rendering.updateImageUniforms(*imageUid);
 }
 
-void CallbackHandler::decreaseSegOpacity()
+void CallbackHandler::changeSegOpacity(double delta, bool interior)
 {
-  const auto imgUid = m_appData.activeImageUid();
-  if (!imgUid)
-    return;
+  if (interior) {
+    const float op = m_appData.renderData().m_segInteriorOpacity;
+    m_appData.renderData().m_segInteriorOpacity =
+      std::clamp(op + static_cast<float>(delta), 0.0f, 1.0f);
+  }
+  else {
+    const auto imgUid = m_appData.activeImageUid();
+    if (!imgUid) {
+      return;
+    }
 
-  const auto segUid = m_appData.imageToActiveSegUid(*imgUid);
-  if (!segUid)
-    return;
+    const auto segUid = m_appData.imageToActiveSegUid(*imgUid);
+    if (!segUid) {
+      return;
+    }
 
-  Image* seg = m_appData.seg(*segUid);
+    Image* seg = m_appData.seg(*segUid);
+    if (!seg) {
+      return;
+    }
 
-  const double op = seg->settings().opacity();
-  seg->settings().setOpacity(std::max(op - 0.05, 0.0));
+    const double op = seg->settings().opacity();
+    seg->settings().setOpacity(std::clamp(op + delta, 0.0, 1.0));
 
-  // Update all image uniforms, since the segmentation may be shared by more than one image:
-  m_rendering.updateImageUniforms(m_appData.imageUidsOrdered());
+    // Update all image uniforms, since the segmentation may be shared by more than one image:
+    m_rendering.updateImageUniforms(m_appData.imageUidsOrdered());
+  }
 }
 
 void CallbackHandler::toggleSegVisibility()
 {
   const auto imgUid = m_appData.activeImageUid();
-  if (!imgUid)
+  if (!imgUid) {
     return;
+  }
 
   const auto segUid = m_appData.imageToActiveSegUid(*imgUid);
-  if (!segUid)
+  if (!segUid) {
     return;
+  }
 
   Image* seg = m_appData.seg(*segUid);
+  if (!seg) {
+    return;
+  }
 
   const bool vis = seg->settings().visibility();
   seg->settings().setVisibility(!vis);
@@ -2006,23 +2023,23 @@ void CallbackHandler::toggleSegVisibility()
   m_rendering.updateImageUniforms(m_appData.imageUidsOrdered());
 }
 
-void CallbackHandler::increaseSegOpacity()
+void CallbackHandler::toggleSegGlobalOutline()
 {
-  const auto imgUid = m_appData.activeImageUid();
-  if (!imgUid)
-    return;
-
-  const auto segUid = m_appData.imageToActiveSegUid(*imgUid);
-  if (!segUid)
-    return;
-
-  Image* seg = m_appData.seg(*segUid);
-
-  const double op = seg->settings().opacity();
-  seg->settings().setOpacity(std::min(op + 0.05, 1.0));
-
-  // Update all image uniforms, since the segmentation may be shared by more than one image:
-  m_rendering.updateImageUniforms(m_appData.imageUidsOrdered());
+  switch (m_appData.renderData().m_segOutlineStyle)
+  {
+  case SegmentationOutlineStyle::Disabled: {
+    m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
+    break;
+  }
+  case SegmentationOutlineStyle::ViewPixel: {
+    m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
+    break;
+  }
+  case SegmentationOutlineStyle::ImageVoxel: {
+    m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
+    break;
+  }
+  }
 }
 
 void CallbackHandler::cyclePrevLayout()

@@ -474,22 +474,28 @@ set(entropy_SOURCES
 )
 
 set(entropy_SHADERS
-  ${entropy_SRC_DIR}/rendering/shaders/Correlation.fs
+  # ${entropy_SRC_DIR}/rendering/shaders/Correlation.fs
   ${entropy_SRC_DIR}/rendering/shaders/Difference.fs
   ${entropy_SRC_DIR}/rendering/shaders/Edge.fs
-  ${entropy_SRC_DIR}/rendering/shaders/Image.fs
-  ${entropy_SRC_DIR}/rendering/shaders/ImageRgba.fs
   ${entropy_SRC_DIR}/rendering/shaders/Image.vs
+  ${entropy_SRC_DIR}/rendering/shaders/ImageGrey.fs
+  ${entropy_SRC_DIR}/rendering/shaders/ImageColor.fs
   ${entropy_SRC_DIR}/rendering/shaders/Metric.vs
   ${entropy_SRC_DIR}/rendering/shaders/Overlay.fs
   ${entropy_SRC_DIR}/rendering/shaders/RaycastIsoSurface.fs
   ${entropy_SRC_DIR}/rendering/shaders/RaycastIsoSurface.vs
   ${entropy_SRC_DIR}/rendering/shaders/Seg.fs
-  ${entropy_SRC_DIR}/rendering/shaders/Seg_linear.fs
   ${entropy_SRC_DIR}/rendering/shaders/Seg.vs
   ${entropy_SRC_DIR}/rendering/shaders/Simple.fs
   ${entropy_SRC_DIR}/rendering/shaders/Simple.vs
   ${entropy_SRC_DIR}/rendering/shaders/Xray.fs
+  ${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_NoOutline.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/SegValue_Linear.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/SegValue_Nearest.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/TextureLookup_Cubic.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/TextureLookup_Linear.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/UIntTextureLookup_Linear.glsl
 )
 
 set(entropy_SHADERS_OLD

@@ -78,6 +78,49 @@ static const glm::vec4 sk_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
 static const glm::ivec2 sk_zeroIVec2{0, 0};
 
 /**
+ * @brief Create map of replacement key to replacement value string
+ * @param placeholderToFileMap Map of replacement key to file containing replacement value
+ * @return Map of replacement key to value string
+ */
+std::unordered_map<std::string, std::string>
+loadReplacementStrings(const std::unordered_map<std::string, std::string>& placeholderToFilenameMap)
+{
+  std::unordered_map<std::string, std::string> placeholderToReplacementStringMap;
+  const auto filesystem = cmrc::shaders::get_filesystem();
+
+  for (const auto& [placeholder, filename] : placeholderToFilenameMap) {
+    const cmrc::file data = filesystem.open(filename.c_str());
+    placeholderToReplacementStringMap.emplace(
+      std::make_pair(placeholder, std::string(data.begin(), data.end())));
+  }
+
+  return placeholderToReplacementStringMap;
+}
+
+/**
+ * @brief Replace placeholders in source string
+ * @param source
+ * @param placeholdersToStringMap Map of placeholders to replacement strings
+ * @return Source string with placeholders replaced
+ */
+std::string replacePlaceholders(
+  const std::string& source,
+  const std::unordered_map<std::string, std::string>& placeholdersToStringMap)
+{
+  std::string result = source;
+  for (const auto& [placeholder, replacement] : placeholdersToStringMap) {
+    std::size_t pos = 0;
+    while ((pos = result.find(placeholder, pos)) != std::string::npos)
+    {
+      result.replace(pos, placeholder.length(), replacement);
+      pos += replacement.length();
+    }
+  }
+  return result;
+}
+
+
+/**
  * @brief Create the Dual-Depth Peel renderer for a given view
  * @param viewUid View UID
  * @param shaderActivator Function that activates shader programs
@@ -113,40 +156,47 @@ std::unique_ptr<DepthPeelRenderer> createDdpRenderer(
   return renderer;
 }
 #endif
-} // namespace
 
 /// @note OpenGL should have a at least a minimum of 16 texture units
 
+// Samplers for grayscale image shaders:
+const Uniforms::SamplerIndexType msk_imgTexSampler{0}; // one image
+const Uniforms::SamplerIndexType msk_imgCmapTexSampler{1}; // one image colormap
+
+// Samplers for color image shaders:
+const Uniforms::SamplerIndexVectorType msk_imgRgbaTexSamplers{{0, 1, 2, 3}}; // Four (RGBA) images
+
+// Samplers for segmentation shaders:
+const Uniforms::SamplerIndexType msk_segTexSampler{0}; // one segmentation
+const Uniforms::SamplerIndexType msk_segLabelTableTexSampler{1}; // one label table
+
+// Sampler for volume rendering shader:
+const Uniforms::SamplerIndexType msk_jumpTexSampler{4}; // distance map texture
+
 /// @todo Change these to account for segs being in their own shader:
-const Uniforms::SamplerIndexVectorType Rendering::msk_imgTexSamplers{{0, 1}};
-const Uniforms::SamplerIndexVectorType Rendering::msk_segTexSamplers{{2, 3}};
-const Uniforms::SamplerIndexVectorType Rendering::msk_labelTableTexSamplers{{4, 5}};
-const Uniforms::SamplerIndexVectorType Rendering::msk_imgCmapTexSamplers{{6, 7}};
-const Uniforms::SamplerIndexType Rendering::msk_metricCmapTexSampler{6};
-
-const Uniforms::SamplerIndexType Rendering::msk_imgTexSampler{0}; /// @note leave at 0 (image shader)
-const Uniforms::SamplerIndexType Rendering::msk_segTexSampler{1}; /// @todo change to 0 (seg shader)
-const Uniforms::SamplerIndexType Rendering::msk_imgCmapTexSampler{2}; /// @todo change to 1 (image shader)
-const Uniforms::SamplerIndexType Rendering::msk_labelTableTexSampler{3}; /// @todo change to 1 (seg shader)
-
-const Uniforms::SamplerIndexVectorType Rendering::msk_imgRgbaTexSamplers{{0, 5, 6, 7}};
-
-const Uniforms::SamplerIndexType Rendering::msk_jumpTexSampler{4};
+// Samplers for metric shaders:
+const Uniforms::SamplerIndexVectorType msk_metricImgTexSamplers{{0, 1}};
+const Uniforms::SamplerIndexType msk_metricCmapTexSampler{2};
+} // namespace
 
 Rendering::Rendering(AppData& appData)
   : m_appData(appData)
   , m_nvg(nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES /*| NVG_DEBUG*/))
-  , m_crossCorrelationProgram("CrossCorrelationProgram")
-  , m_differenceProgram("DifferenceProgram")
-  , m_edgeProgram("EdgeProgram")
-  , m_imageProgram("ImageProgram")
-  , m_imageRgbaProgram("ImageRgbaProgram")
-  , m_xrayProgram("XrayProgram")
+  , m_imageGreyTexLookupLinearProgram("ImageTexLookupLinearProgram")
+  , m_imageGreyTexLookupCubicProgram("ImageTexLookupCubicProgram")
+  , m_imageColorTexLookupLinearProgram("ImageColorTexLookupLinearProgram")
+  , m_imageColorTexLookupCubicProgram("ImageColorTexLookupCubicProgram")
+  , m_edgeTexLookupLinearProgram("EdgeTexLookupLinearProgram")
+  , m_edgeTexLookupCubicProgram("EdgeTexLookupCubicProgram")
+  , m_xrayTexLookupLinearProgram("XrayTexLookupLinearProgram")
+  , m_xrayTexLookupCubicProgram("XrayTexLookupCubicProgram")
+  , m_differenceTexLookupLinearProgram("DifferenceTexLookupLinearProgram")
+  , m_differenceTexLookupCubicProgram("DifferenceTexLookupCubicProgram")
   , m_overlayProgram("OverlayProgram")
   , m_raycastIsoSurfaceProgram("RayCastIsoSurfaceProgram")
   , m_simpleProgram("SimpleProgram")
-  , m_segProgram("SegProgram")
-  , m_segLinearProgram("SegLinearProgram")
+  , m_segNearestProgram("SegNoOutliningProgram")
+  , m_segLinearProgram("SegWithOutliningProgram")
   , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
 {
@@ -1014,19 +1064,15 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   // Map the native thresholds to OpenGL texture values:
   uniforms.thresholds = glm::vec2{
     static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.thresholds().first)),
-    static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.thresholds().second))
-  };
+    static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.thresholds().second))};
 
   // Map the native image values to OpenGL texture values:
   uniforms.minMax = glm::vec2{
-    static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange().first)
-    ),
-    static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange().second
-    ))
-  };
+    static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange().first)),
+    static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange().second))};
 
-  uniforms.imgOpacity
-    = (static_cast<float>(imgSettings.globalVisibility() && imgSettings.visibility()) ? 1.0 : 0.0)
+  uniforms.imgOpacity =
+    (static_cast<float>(imgSettings.globalVisibility() && imgSettings.visibility()) ? 1.0 : 0.0)
       * imgSettings.opacity()
       * ((imgSettings.numComponents() > 0) ? imgSettings.globalOpacity() : 1.0f);
 
@@ -1038,51 +1084,37 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   //    uniforms.windowedEdges = imgSettings.windowedEdges();
   uniforms.overlayEdges = imgSettings.overlayEdges();
   uniforms.colormapEdges = imgSettings.colormapEdges();
-  uniforms.edgeColor = static_cast<float>(imgSettings.edgeOpacity())
-                       * glm::vec4{imgSettings.edgeColor(), 1.0f};
+  uniforms.edgeColor = static_cast<float>(imgSettings.edgeOpacity()) * glm::vec4{imgSettings.edgeColor(), 1.0f};
 
   // The segmentation linked to this image:
   const auto& segUid = m_appData.imageToActiveSegUid(imageUid);
-
-  if (!segUid)
-  {
+  if (!segUid) {
     // The image has no segmentation
     uniforms.segOpacity = 0.0f;
     return;
   }
 
   Image* seg = m_appData.seg(*segUid);
-
-  if (!seg)
-  {
+  if (!seg) {
     spdlog::error("Segmentation {} is null on updating uniforms for image {}", *segUid, imageUid);
     return;
   }
 
   // The texture_T_world transformation of the segmentation uses the manual affine component
   // (subject_T_worldDef) of the image.
-  uniforms.segTexture_T_world = seg->transformations().texture_T_subject()
-                                * img->transformations().subject_T_worldDef();
-
-  uniforms.segVoxel_T_world = seg->transformations().pixel_T_subject()
-                              * img->transformations().subject_T_worldDef();
+  uniforms.segTexture_T_world = seg->transformations().texture_T_subject() * img->transformations().subject_T_worldDef();
+  uniforms.segVoxel_T_world = seg->transformations().pixel_T_subject() * img->transformations().subject_T_worldDef();
 
   // Both the image and segmenation must have visibility true for the segmentation to be shown
-  if (imgSettings.numComponents() > 1)
-  {
+  if (imgSettings.numComponents() > 1) {
     uniforms.segOpacity = static_cast<float>(
       ((seg->settings().visibility() && imgSettings.globalVisibility()) ? 1.0 : 0.0)
-      * seg->settings().opacity()
-    );
+      * seg->settings().opacity());
   }
-  else
-  {
+  else {
     uniforms.segOpacity = static_cast<float>(
       ((seg->settings().visibility() && imgSettings.visibility(0) && imgSettings.globalVisibility())
-         ? 1.0
-         : 0.0)
-      * seg->settings().opacity()
-    );
+         ? 1.0 : 0.0) * seg->settings().opacity());
   }
 }
 
@@ -1117,157 +1149,160 @@ void Rendering::updateMetricUniforms()
 }
 
 std::list<std::reference_wrapper<GLTexture>>
-Rendering::bindImageTextures(const ImgSegPair& p)
+Rendering::bindScalarImageTextures(const ImgSegPair& p)
 {
-  std::list<std::reference_wrapper<GLTexture>> textures;
+  const auto& imgUid = p.first;
+  const Image* image = (imgUid ? m_appData.image(*imgUid) : nullptr);
 
+  std::list<std::reference_wrapper<GLTexture>> boundTextures;
   auto& R = m_appData.renderData();
 
-  const auto& imageUid = p.first;
-  const auto& segUid = p.second;
-
-  const Image* image = (imageUid ? m_appData.image(*imageUid) : nullptr);
-
-  const auto cmapUid = (image ? m_appData.imageColorMapUid(image->settings().colorMapIndex()) : std::nullopt);
-
-  if (image)
-  {
-    const ImageSettings& imgSettings = image->settings();
-
-    // Bind the active component of the image
-    const uint32_t activeComp = imgSettings.activeComponent();
-
-    const bool useDistMap = imgSettings.useDistanceMapForRaycasting();
-
-    // Uncomment this to render the image's distance map instead:
-    // GLTexture& imgTex = R.m_distanceMapTextures.at( *imageUid ).at( activeComp );
-
-    if (imgSettings.displayImageAsColor())
-    {
-      if (3 == imgSettings.numComponents() || 4 == imgSettings.numComponents())
-      {
-        GLTexture& imgRedTex = R.m_imageTextures.at(*imageUid).at(0);
-        GLTexture& imgGreenTex = R.m_imageTextures.at(*imageUid).at(1);
-        GLTexture& imgBlueTex = R.m_imageTextures.at(*imageUid).at(2);
-
-        // If the image has no 4th (alpha) component, or if alpha is ignored,
-        // then bind the white texture as alpha.
-        GLTexture& imgAlphaTex = (4 == imgSettings.numComponents())
-                                   ? R.m_imageTextures.at(*imageUid).at(3)
-                                   : R.m_blankImageBlackTransparentTexture;
-
-        imgRedTex.bind(msk_imgRgbaTexSamplers.indices[0]);
-        imgGreenTex.bind(msk_imgRgbaTexSamplers.indices[1]);
-        imgBlueTex.bind(msk_imgRgbaTexSamplers.indices[2]);
-        imgAlphaTex.bind(msk_imgRgbaTexSamplers.indices[3]);
-
-        textures.push_back(imgRedTex);
-        textures.push_back(imgGreenTex);
-        textures.push_back(imgBlueTex);
-        textures.push_back(imgAlphaTex);
-      }
-      else
-      {
-        spdlog::error("Textures for color image {} cannot be bound: it has {} components",
-                      *imageUid, imgSettings.numComponents());
-      }
-    }
-    else
-    {
-      GLTexture& imgTex = R.m_imageTextures.at(*imageUid).at(activeComp);
-      imgTex.bind(msk_imgTexSampler.index);
-      textures.push_back(imgTex);
-    }
-
-    static bool alreadyShowedWarning = false;
-
-    if (useDistMap)
-    {
-      const auto& distMaps = m_appData.distanceMaps(*imageUid, activeComp);
-
-      if (distMaps.empty()) {
-        if (!alreadyShowedWarning) {
-          spdlog::warn("No distance map for component {} of image {}", activeComp, *imageUid);
-          alreadyShowedWarning = true;
-
-          // Disable use of distance map for this image:
-          if (Image* image2 = (imageUid ? m_appData.image(*imageUid) : nullptr)) {
-            image2->settings().setUseDistanceMapForRaycasting(false);
-          }
-        }
-      }
-    }
-
-    bool foundMap = false;
-
-    if (useDistMap)
-    {
-      auto it = R.m_distanceMapTextures.find(*imageUid);
-      if (std::end(R.m_distanceMapTextures) != it)
-      {
-        auto it2 = it->second.find(activeComp);
-        if (std::end(it->second) != it2) {
-          foundMap = true;
-          GLTexture& distTex = it2->second;
-          distTex.bind(msk_jumpTexSampler.index);
-          textures.push_back(distTex);
-        }
-      }
-    }
-
-    if (!useDistMap || !foundMap)
-    {
-      // Bind blank (zero) distance map:
-      GLTexture& distTex = R.m_blankDistMapTexture;
-      distTex.bind(msk_jumpTexSampler.index);
-      textures.push_back(distTex);
-    }
-  }
-  else
-  {
+  if (!image) {
     // No image, so bind the blank one:
     GLTexture& imgTex = R.m_blankImageBlackTransparentTexture;
     imgTex.bind(msk_imgTexSampler.index);
-    textures.push_back(imgTex);
+    boundTextures.push_back(imgTex);
 
+    // Bind the first available colormap:
+    auto it = std::begin(R.m_colormapTextures);
+    GLTexture& cmapTex = it->second;
+    cmapTex.bind(msk_imgCmapTexSampler.index);
+    boundTextures.push_back(cmapTex);
+
+    ///////////////////////////////// PUT THIS INTO SEPARATE BINDER THAT ONLY RUNS FOR VOLUME RENDERING
     // Also bind blank distance map:
     GLTexture& distTex = R.m_blankDistMapTexture;
     distTex.bind(msk_jumpTexSampler.index);
-    textures.push_back(distTex);
+    boundTextures.push_back(distTex);
+    ///////////////////////////////// PUT THIS INTO SEPARATE BINDER THAT ONLY RUNS FOR VOLUME RENDERING
+
+    return boundTextures;
   }
 
-  if (segUid)
-  {
-    // Uncomment this to render the image's distance map instead:
-    // GLTexture& segTex = R.m_distanceMapTextures.at( *imageUid ).at( 0 );
-    GLTexture& segTex = R.m_segTextures.at(*segUid);
-    segTex.bind(msk_segTexSampler.index);
-    textures.push_back(segTex);
-  }
-  else
-  {
-    // No segmentation, so bind the blank one:
-    GLTexture& segTex = R.m_blankSegTexture;
-    segTex.bind(msk_segTexSampler.index);
-    textures.push_back(segTex);
-  }
+  const ImageSettings& S = image->settings();
 
-  if (cmapUid)
-  {
+  // Uncomment this to render the image's distance map instead:
+  // GLTexture& imgTex = R.m_distanceMapTextures.at(*imageUid).at(imgSettings.activeComponent());
+
+  // Bind the active component of the image
+  GLTexture& imgTex = R.m_imageTextures.at(*imgUid).at(S.activeComponent());
+  imgTex.bind(msk_imgTexSampler.index);
+  boundTextures.push_back(imgTex);
+
+  // Bind the color map
+  const auto cmapUid = image ? m_appData.imageColorMapUid(image->settings().colorMapIndex()) : std::nullopt;
+
+  if (cmapUid) {
     GLTexture& cmapTex = R.m_colormapTextures.at(*cmapUid);
     cmapTex.bind(msk_imgCmapTexSampler.index);
-    textures.push_back(cmapTex);
+    boundTextures.push_back(cmapTex);
   }
-  else
-  {
+  else {
     // No colormap, so bind the first available one:
     auto it = std::begin(R.m_colormapTextures);
     GLTexture& cmapTex = it->second;
     cmapTex.bind(msk_imgCmapTexSampler.index);
-    textures.push_back(cmapTex);
+    boundTextures.push_back(cmapTex);
   }
 
-  return textures;
+  ///////////////////////////////// PUT THIS INTO SEPARATE BINDER THAT ONLY RUNS FOR VOLUME RENDERING
+  const bool useDistMap = S.useDistanceMapForRaycasting();
+  bool foundMap = false;
+
+  if (useDistMap)
+  {
+    const auto& distMaps = m_appData.distanceMaps(*imgUid, S.activeComponent());
+
+    if (distMaps.empty()) {
+      static bool alreadyShowedWarning = false;
+      if (!alreadyShowedWarning) {
+        spdlog::warn("No distance map for component {} of image {}", S.activeComponent(), *imgUid);
+        alreadyShowedWarning = true;
+
+        // Disable use of distance map for this image:
+        if (Image* imageNonConst = (imgUid ? m_appData.image(*imgUid) : nullptr)) {
+          imageNonConst->settings().setUseDistanceMapForRaycasting(false);
+        }
+      }
+    }
+
+    auto it = R.m_distanceMapTextures.find(*imgUid);
+    if (std::end(R.m_distanceMapTextures) != it)
+    {
+      auto it2 = it->second.find(S.activeComponent());
+      if (std::end(it->second) != it2) {
+        foundMap = true;
+        GLTexture& distTex = it2->second;
+        distTex.bind(msk_jumpTexSampler.index);
+        boundTextures.push_back(distTex);
+      }
+    }
+  }
+
+  if (!useDistMap || !foundMap) {
+    // Bind blank (zero) distance map:
+    GLTexture& distTex = R.m_blankDistMapTexture;
+    distTex.bind(msk_jumpTexSampler.index);
+    boundTextures.push_back(distTex);
+  }
+  ///////////////////////////////// PUT THIS INTO SEPARATE BINDER THAT ONLY RUNS FOR VOLUME RENDERING
+
+  return boundTextures;
+}
+
+std::list<std::reference_wrapper<GLTexture>>
+Rendering::bindColorImageTextures(const ImgSegPair& p)
+{
+  const auto& imgUid = p.first;
+  const Image* image = (imgUid ? m_appData.image(*imgUid) : nullptr);
+
+  auto& R = m_appData.renderData();
+  std::list<std::reference_wrapper<GLTexture>> boundTextures;
+
+  if (!image) {
+    // No image, so bind the blank one:
+    GLTexture& imgTex = R.m_blankImageBlackTransparentTexture;
+    imgTex.bind(msk_imgTexSampler.index);
+    boundTextures.push_back(imgTex);
+    return boundTextures;
+  }
+
+  // Bind the four (RGBA) components:
+  auto& compTextures = R.m_imageTextures.at(*imgUid);
+
+  for (std::size_t i = 0; i < 4; ++i) {
+    const bool compExists = (i < image->settings().numComponents() && i < compTextures.size());
+    GLTexture& tex = compExists ? compTextures.at(i) : R.m_blankImageBlackTransparentTexture;
+    tex.bind(msk_imgRgbaTexSamplers.indices[i]);
+    boundTextures.push_back(tex);
+  }
+
+  return boundTextures;
+}
+
+std::list<std::reference_wrapper<GLTexture>>
+Rendering::bindSegTextures(const ImgSegPair& p)
+{
+  const auto& segUid = p.second;
+
+  std::list<std::reference_wrapper<GLTexture>> boundTextures;
+  auto& R = m_appData.renderData();
+
+  if (segUid) {
+    // Uncomment this to render the image's distance map instead:
+    // GLTexture& segTex = R.m_distanceMapTextures.at( *imageUid ).at( 0 );
+    GLTexture& segTex = R.m_segTextures.at(*segUid);
+    segTex.bind(msk_segTexSampler.index);
+    boundTextures.push_back(segTex);
+  }
+  else {
+    // No segmentation, so bind the blank one:
+    GLTexture& segTex = R.m_blankSegTexture;
+    segTex.bind(msk_segTexSampler.index);
+    boundTextures.push_back(segTex);
+  }
+
+  return boundTextures;
 }
 
 void Rendering::unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures)
@@ -1277,39 +1312,34 @@ void Rendering::unbindTextures(const std::list<std::reference_wrapper<GLTexture>
   }
 }
 
+/// @todo Do we need to take in the vector of image/seg IDs?
 std::list<std::reference_wrapper<GLBufferTexture>>
-Rendering::bindSegBufferTextures(const CurrentImages& I)
+Rendering::bindSegBufferTextures(const ImgSegPair& p)
 {
-  std::list<std::reference_wrapper<GLBufferTexture> > bufferTextures;
-
+  std::list<std::reference_wrapper<GLBufferTexture>> boundBufferTextures;
   auto& R = m_appData.renderData();
 
-  for (const auto& [imgUid, segUid] : I)
-  {
-    if (!segUid) {
-      continue;
-    }
+  const auto& segUid = p.second;
 
-    const Image* seg = (segUid ? m_appData.seg(*segUid) : nullptr);
-    const auto tableUid = (seg ? m_appData.labelTableUid(seg->settings().labelTableIndex()) : std::nullopt);
+  const Image* seg = segUid ? m_appData.seg(*p.second) : nullptr;
+  const auto tableUid = seg ? m_appData.labelTableUid(seg->settings().labelTableIndex()) : std::nullopt;
 
-    if (tableUid) {
-      GLBufferTexture& tblTex = R.m_labelBufferTextures.at(*tableUid);
-      tblTex.bind(msk_labelTableTexSampler.index);
-      tblTex.attachBufferToTexture(msk_labelTableTexSampler.index);
-      bufferTextures.push_back(tblTex);
-    }
-    else {
-      // No label table, so bind the first available one:
-      auto it = std::begin(R.m_labelBufferTextures);
-      GLBufferTexture& tblTex = it->second;
-      tblTex.bind(msk_labelTableTexSampler.index);
-      tblTex.attachBufferToTexture(msk_labelTableTexSampler.index);
-      bufferTextures.push_back(tblTex);
-    }
+  if (tableUid) {
+    GLBufferTexture& tblTex = R.m_labelBufferTextures.at(*tableUid);
+    tblTex.bind(msk_segLabelTableTexSampler.index);
+    tblTex.attachBufferToTexture(msk_segLabelTableTexSampler.index);
+    boundBufferTextures.push_back(tblTex);
+  }
+  else {
+    // No label table, so bind the first available one:
+    auto it = std::begin(R.m_labelBufferTextures);
+    GLBufferTexture& tblTex = it->second;
+    tblTex.bind(msk_segLabelTableTexSampler.index);
+    tblTex.attachBufferToTexture(msk_segLabelTableTexSampler.index);
+    boundBufferTextures.push_back(tblTex);
   }
 
-  return bufferTextures;
+  return boundBufferTextures;
 }
 
 void Rendering::unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture> >& textures)
@@ -1331,35 +1361,31 @@ Rendering::bindMetricImageTextures(const CurrentImages& I, const ViewRenderMode&
 
   switch (metricType)
   {
-  case ViewRenderMode::Difference:
-  {
+  case ViewRenderMode::Difference: {
     usesMetricColormap = true;
     metricCmapIndex = R.m_squaredDifferenceParams.m_colorMapIndex;
     break;
   }
-  case ViewRenderMode::CrossCorrelation:
-  {
+  /*
+  case ViewRenderMode::CrossCorrelation: {
     usesMetricColormap = true;
     metricCmapIndex = R.m_crossCorrelationParams.m_colorMapIndex;
     break;
   }
-  case ViewRenderMode::JointHistogram:
-  {
+  */
+  case ViewRenderMode::JointHistogram: {
     usesMetricColormap = true;
     metricCmapIndex = R.m_jointHistogramParams.m_colorMapIndex;
     break;
   }
-  case ViewRenderMode::Overlay:
-  {
+  case ViewRenderMode::Overlay: {
     usesMetricColormap = false;
     break;
   }
-  case ViewRenderMode::Disabled:
-  {
+  case ViewRenderMode::Disabled: {
     return textures;
   }
-  default:
-  {
+  default: {
     spdlog::error("Invalid metric shader type {}", typeString(metricType));
     return textures;
   }
@@ -1369,14 +1395,12 @@ Rendering::bindMetricImageTextures(const CurrentImages& I, const ViewRenderMode&
   {
     const auto cmapUid = m_appData.imageColorMapUid(metricCmapIndex);
 
-    if (cmapUid)
-    {
+    if (cmapUid) {
       GLTexture& T = R.m_colormapTextures.at(*cmapUid);
       T.bind(msk_metricCmapTexSampler.index);
       textures.push_back(T);
     }
-    else
-    {
+    else {
       auto it = std::begin(R.m_colormapTextures);
       GLTexture& T = it->second;
       T.bind(msk_metricCmapTexSampler.index);
@@ -1389,35 +1413,18 @@ Rendering::bindMetricImageTextures(const CurrentImages& I, const ViewRenderMode&
   for (const auto& imgSegPair : I)
   {
     const auto& imageUid = imgSegPair.first;
-    const auto& segUid = imgSegPair.second;
-
     const Image* image = (imageUid ? m_appData.image(*imageUid) : nullptr);
 
-    if (image)
-    {
+    if (image) {
       // Bind the active component
       const uint32_t activeComp = image->settings().activeComponent();
       GLTexture& T = R.m_imageTextures.at(*imageUid).at(activeComp);
-      T.bind(msk_imgTexSamplers.indices[i]);
+      T.bind(msk_metricImgTexSamplers.indices[i]);
       textures.push_back(T);
     }
-    else
-    {
+    else {
       GLTexture& T = R.m_blankImageBlackTransparentTexture;
-      T.bind(msk_imgTexSamplers.indices[i]);
-      textures.push_back(T);
-    }
-
-    if (segUid)
-    {
-      GLTexture& T = R.m_segTextures.at(*segUid);
-      T.bind(msk_segTexSamplers.indices[i]);
-      textures.push_back(T);
-    }
-    else
-    {
-      GLTexture& T = R.m_blankSegTexture;
-      T.bind(msk_segTexSamplers.indices[i]);
+      T.bind(msk_metricImgTexSamplers.indices[i]);
       textures.push_back(T);
     }
 
@@ -1487,9 +1494,7 @@ void Rendering::renderOneImage_overlays(
   setupOpenGlState();
 }
 
-void Rendering::volumeRenderOneImage(
-  const View& view, GLShaderProgram& program, const CurrentImages& I
-)
+void Rendering::volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I)
 {
   auto getImage = [this](const std::optional<uuid>& imageUid) -> const Image*
   { return (imageUid ? m_appData.image(*imageUid) : nullptr); };
@@ -1503,45 +1508,32 @@ void Rendering::renderAllImages(
   const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs)
 {
   static const RenderData::ImageUniforms sk_defaultImageUniforms;
-
-  std::list<std::reference_wrapper<GLTexture>> boundImageTextures;
-  std::list<std::reference_wrapper<GLTexture>> boundMetricTextures;
-
-  // Buffer textures bound for the segmentation: label color look up table
-  std::list<std::reference_wrapper<GLBufferTexture>> boundSegBufferTextures;
-
   const RenderData& renderData = m_appData.renderData();
-  const bool modSegOpacity = renderData.m_modulateSegOpacityWithImageOpacity;
 
-  const ViewRenderMode renderMode = view.renderMode();
-  const bool doXray = (IntensityProjectionMode::Xray == view.intensityProjectionMode());
-
-  const std::list<uuid>& metricImages = view.metricImages();
-  const std::list<uuid>& renderedImages = view.renderedImages();
-
-  switch (getShaderGroup(renderMode))
+  switch (getShaderGroup(view.renderMode()))
   {
   case ShaderGroup::Image:
   {
+    const bool doXray = (IntensityProjectionMode::Xray == view.intensityProjectionMode());
     CurrentImages I;
 
     int displayModeUniform = 0;
 
-    if (ViewRenderMode::Image == renderMode) {
+    if (ViewRenderMode::Image == view.renderMode()) {
       displayModeUniform = 0;
-      I = getImageAndSegUidsForImageShaders(renderedImages);
+      I = getImageAndSegUidsForImageShaders(view.renderedImages());
     }
-    else if (ViewRenderMode::Checkerboard == renderMode) {
+    else if (ViewRenderMode::Checkerboard == view.renderMode()) {
       displayModeUniform = 1;
-      I = getImageAndSegUidsForMetricShaders(metricImages); // guaranteed size 2
+      I = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
     }
-    else if (ViewRenderMode::Quadrants == renderMode) {
+    else if (ViewRenderMode::Quadrants == view.renderMode()) {
       displayModeUniform = 2;
-      I = getImageAndSegUidsForMetricShaders(metricImages);
+      I = getImageAndSegUidsForMetricShaders(view.metricImages());
     }
-    else if (ViewRenderMode::Flashlight == renderMode) {
+    else if (ViewRenderMode::Flashlight == view.renderMode()) {
       displayModeUniform = 3;
-      I = getImageAndSegUidsForMetricShaders(metricImages);
+      I = getImageAndSegUidsForMetricShaders(view.metricImages());
     }
 
     // The first image in the stack is the fixed one:
@@ -1554,195 +1546,197 @@ void Rendering::renderAllImages(
         continue;
       }
 
-      /// @todo Split this up into two functions: one for for binding textures only needed for images
-      /// and one for textures only needed for segs
-      boundImageTextures = bindImageTextures(imgSegPair);
-
       const uuid& imgUid = *imgSegPair.first;
-      const RenderData::ImageUniforms& U = renderData.m_uniforms.at(imgUid);
       const Image* img = m_appData.image(imgUid);
-
       if (!img) {
         spdlog::error("Null image during render");
         return;
       }
 
-      GLShaderProgram* imgProg = nullptr;
-
-      if (img->settings().displayImageAsColor()) {
-        imgProg = &m_imageRgbaProgram;
-      }
-      else
-      {
-        if (U.showEdges) {
-          imgProg = &m_edgeProgram;
-        }
-        else
-        {
-          if (doXray) {
-            imgProg = &m_xrayProgram;
-          }
-          else {
-            imgProg = &m_imageProgram;
-          }
-        }
-      }
-
-      if (!imgProg) {
-        spdlog::error("Null image program when rendering image {}", imgUid);
-        return;
-      }
-
-      imgProg->use();
+      const RenderData::ImageUniforms& U = renderData.m_uniforms.at(imgUid);
 
       if (!img->settings().displayImageAsColor())
       {
         // Greyscale image:
-        imgProg->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
-        imgProg->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
+        GLShaderProgram* P = nullptr;
 
-        // P->setUniform( "u_useTricubicInterpolation",
-        //     ( InterpolationMode::Tricubic == img->settings().interpolationMode() ) );
-
-        imgProg->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
-        imgProg->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
-
-        if (!doXray)
-        {
-          imgProg->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
-          imgProg->setUniform("u_imgCmapHsvModFactors", U.hsvModFactors);
-
-          if (!U.showEdges)
-          {
-            updateIsosurfaceDataFor2d(m_appData, *imgSegPair.first);
-
-            imgProg->setUniform("u_isoValues", renderData.m_isosurfaceData.values);
-            imgProg->setUniform("u_isoOpacities", renderData.m_isosurfaceData.opacities);
-            imgProg->setUniform("u_isoColors", renderData.m_isosurfaceData.colors);
-
-            imgProg->setUniform("u_isoWidth", renderData.m_isosurfaceData.widthIn2d);
+        switch (img->settings().interpolationMode()) {
+        case InterpolationMode::NearestNeighbor:
+        case InterpolationMode::Trilinear: {
+          if (U.showEdges) {
+            P = &m_edgeTexLookupLinearProgram;
           }
+          else if (doXray) {
+            P = &m_xrayTexLookupLinearProgram;
+          }
+          else {
+            P = &m_imageGreyTexLookupLinearProgram;
+          }
+          break;
         }
-        else
+        case InterpolationMode::Tricubic: {
+          if (U.showEdges) {
+            P = &m_edgeTexLookupCubicProgram;
+          }
+          else if (doXray) {
+            P = &m_xrayTexLookupCubicProgram;
+          }
+          else {
+            P = &m_imageGreyTexLookupCubicProgram;
+          }
+          break;
+        }
+        }
+
+        if (!P) {
+          spdlog::error("Null image program when rendering image {}", imgUid);
+          return;
+        }
+
+        const auto boundTextures = bindScalarImageTextures(imgSegPair);
+        P->use();
         {
-          imgProg->setUniform("imgSlope_native_T_texture", U.slope_native_T_texture);
+          P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
+          P->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
 
-          imgProg->setUniform("waterAttenCoeff", renderData.m_waterMassAttenCoeff);
-          imgProg->setUniform("airAttenCoeff", renderData.m_airMassAttenCoeff);
+          P->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
+          P->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+
+          if (doXray) {
+            P->setUniform("imgSlope_native_T_texture", U.slope_native_T_texture);
+            P->setUniform("waterAttenCoeff", renderData.m_waterMassAttenCoeff);
+            P->setUniform("airAttenCoeff", renderData.m_airMassAttenCoeff);
+          }
+          else {
+            P->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
+
+            /// @todo Render iso-surfaces in separate shader and overlay atop image
+            if (!U.showEdges) {
+              updateIsosurfaceDataFor2d(m_appData, *imgSegPair.first);
+              P->setUniform("u_isoValues", renderData.m_isosurfaceData.values);
+              P->setUniform("u_isoOpacities", renderData.m_isosurfaceData.opacities);
+              P->setUniform("u_isoColors", renderData.m_isosurfaceData.colors);
+              P->setUniform("u_isoWidth", renderData.m_isosurfaceData.widthIn2d);
+            }
+          }
+
+          // Flag whether HSV modification is used
+          const bool useHsv = (U.hsvModFactors.x != 0.0f) || (U.hsvModFactors.y != 1.0f) || (U.hsvModFactors.z != 1.0f);
+          P->setUniform("u_useHsv", useHsv);
+          P->setUniform("u_imgCmapHsvModFactors", U.hsvModFactors);
+          P->setUniform("u_imgCmapSlopeIntercept", U.cmapSlopeIntercept);
+          P->setUniform("u_imgCmapQuantLevels", U.cmapQuantLevels);
+          P->setUniform("u_imgThresholds", U.thresholds);
+          P->setUniform("u_imgMinMax", U.minMax);
+          P->setUniform("u_imgOpacity", U.imgOpacity);
+          P->setUniform("u_quadrants", renderData.m_quadrants);
+          P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+          P->setUniform("u_renderMode", displayModeUniform);
+
+          /// @todo Render edges in separate shader and overlay atop image
+          if (U.showEdges) {
+            P->setUniform("u_imgSlopeInterceptLargest", U.largestSlopeIntercept);
+            P->setUniform("u_thresholdEdges", U.thresholdEdges);
+            P->setUniform("u_edgeMagnitude", U.edgeMagnitude);
+            // P.setUniform( "useFreiChen", U.useFreiChen );
+            P->setUniform("u_overlayEdges", U.overlayEdges);
+            P->setUniform("u_colormapEdges", U.colormapEdges);
+            P->setUniform("u_edgeColor", U.edgeColor);
+          }
+
+          renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
         }
-
-        imgProg->setUniform("u_imgCmapSlopeIntercept", U.cmapSlopeIntercept);
-        imgProg->setUniform("u_imgCmapQuantLevels", U.cmapQuantLevels);
-        imgProg->setUniform("u_imgThresholds", U.thresholds);
-        imgProg->setUniform("u_imgMinMax", U.minMax);
-
-        imgProg->setUniform("u_imgOpacity", U.imgOpacity);
-        imgProg->setUniform("u_quadrants", renderData.m_quadrants);
-        imgProg->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
-        imgProg->setUniform("u_renderMode", displayModeUniform);
-
-        if (U.showEdges)
-        {
-          imgProg->setUniform("u_imgSlopeInterceptLargest", U.largestSlopeIntercept);
-          imgProg->setUniform("u_thresholdEdges", U.thresholdEdges);
-          imgProg->setUniform("u_edgeMagnitude", U.edgeMagnitude);
-          // P.setUniform( "useFreiChen", U.useFreiChen );
-          imgProg->setUniform("u_overlayEdges", U.overlayEdges);
-          imgProg->setUniform("u_colormapEdges", U.colormapEdges);
-          imgProg->setUniform("u_edgeColor", U.edgeColor);
-        }
-
-        renderOneImage(view, worldOffsetXhairs, *imgProg,
-                       CurrentImages{imgSegPair}, U.showEdges);
+        P->stopUse();
+        unbindTextures(boundTextures);
       }
       else
       {
         // Color image:
-        imgProg->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
-        imgProg->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
+        GLShaderProgram* P = nullptr;
 
-        // P->setUniform("u_useTricubicInterpolation",
-        //   (InterpolationMode::Tricubic == img->settings().colorInterpolationMode()));
+        switch (img->settings().colorInterpolationMode()) {
+        case InterpolationMode::NearestNeighbor:
+        case InterpolationMode::Trilinear: {
+          P = &m_imageColorTexLookupLinearProgram;
+          break;
+        }
+        case InterpolationMode::Tricubic: {
+          P = &m_imageColorTexLookupCubicProgram;
+          break;
+        }
+        }
 
-        imgProg->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
-        imgProg->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+        if (!P) {
+          spdlog::error("Null image program when rendering image {}", imgUid);
+          return;
+        }
 
-        imgProg->setUniform("u_imgSlopeIntercept", U.slopeInterceptRgba_normalized_T_texture);
-        imgProg->setUniform("u_imgThresholds", U.thresholdsRgba);
-        imgProg->setUniform("u_imgMinMax", U.minMaxRgba);
+        const auto boundTextures = bindColorImageTextures(imgSegPair);
+        P->use();
+        {
+          P->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
+          P->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
 
-        const bool forceAlphaToOne =
-          (img->settings().ignoreAlpha() || 3 == img->header().numComponentsPerPixel());
+          P->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
+          P->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+          P->setUniform("u_imgSlopeIntercept", U.slopeInterceptRgba_normalized_T_texture);
+          P->setUniform("u_imgThresholds", U.thresholdsRgba);
+          P->setUniform("u_imgMinMax", U.minMaxRgba);
 
-        imgProg->setUniform("u_alphaIsOne", forceAlphaToOne);
+          const bool forceAlphaToOne = (img->settings().ignoreAlpha() || 3 == img->header().numComponentsPerPixel());
+          P->setUniform("u_alphaIsOne", forceAlphaToOne);
+          P->setUniform("u_imgOpacity", U.imgOpacityRgba);
+          P->setUniform("u_quadrants", renderData.m_quadrants);
+          P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+          P->setUniform("renderMode", displayModeUniform);
 
-        imgProg->setUniform("u_imgOpacity", U.imgOpacityRgba);
-        imgProg->setUniform("u_quadrants", renderData.m_quadrants);
-        imgProg->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
-        imgProg->setUniform("renderMode", displayModeUniform);
-
-        renderOneImage(view, worldOffsetXhairs, *imgProg,
-                       CurrentImages{imgSegPair}, U.showEdges);
+          renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
+        }
+        P->stopUse();
+        unbindTextures(boundTextures);
       }
 
-      imgProg->stopUse();
-
-
-      const auto segUid = imgSegPair.second;
+      const auto& segUid = imgSegPair.second;
       const Image* seg = segUid ? m_appData.seg(*segUid) : nullptr;
 
       if (seg)
       {
-        boundSegBufferTextures = bindSegBufferTextures(std::vector<ImgSegPair>{imgSegPair});
+        GLShaderProgram& P = (InterpolationMode::NearestNeighbor == seg->settings().interpolationMode())
+                               ? m_segNearestProgram : m_segLinearProgram;
 
-        const InterpolationMode& interpMode = seg->settings().interpolationMode();
+        const auto boundTextures = bindSegTextures(imgSegPair);
+        const auto boundBufferTextures = bindSegBufferTextures(imgSegPair);
 
-        GLShaderProgram* segProg = (InterpolationMode::NearestNeighbor == interpMode)
-                                   ? &m_segProgram : &m_segLinearProgram;
-
-        if (!segProg) {
-          /// @todo Automatically unbind textures... should use RAII
-          spdlog::error("Null segmentation program when rendering image {}", imgUid);
-          return;
-        }
-
-        segProg->use();
+        P.use();
         {
-          segProg->setSamplerUniform("u_segTex", msk_segTexSampler.index);
-          segProg->setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSampler.index);
+          P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
+          P.setSamplerUniform("u_segLabelCmapTex", msk_segLabelTableTexSampler.index);
 
-          segProg->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
-          segProg->setUniform("u_segTexture_T_world", U.segTexture_T_world);
-          segProg->setUniform("u_segVoxel_T_world", U.segVoxel_T_world);
-
-          segProg->setUniform("u_segOpacity", U.segOpacity * (modSegOpacity ? U.imgOpacity : 1.0f));
-          segProg->setUniform("u_quadrants", renderData.m_quadrants);
-          segProg->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
-          segProg->setUniform("u_renderMode", displayModeUniform);
+          P.setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
+          P.setUniform("u_segTexture_T_world", U.segTexture_T_world);
+          P.setUniform("u_segVoxel_T_world", U.segVoxel_T_world);
+          P.setUniform("u_segOpacity", U.segOpacity * (renderData.m_modulateSegOpacityWithImageOpacity ? U.imgOpacity : 1.0f));
+          P.setUniform("u_quadrants", renderData.m_quadrants);
+          P.setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+          P.setUniform("u_renderMode", displayModeUniform);
 
           /// @todo We're going to have to send in std::vector<Image*>
           /// as the input to this function, since the metric shaders render more than one seg.
           drawSegQuad(
-            *segProg, renderData.m_quad, *seg,
+            P, renderData.m_quad, *seg,
             view, m_appData.windowData().viewport(), worldOffsetXhairs,
             renderData.m_flashlightRadius, renderData.m_flashlightOverlays,
             renderData.m_segOutlineStyle, renderData.m_segInteriorOpacity,
             renderData.m_segInterpCutoff);
         }
-        segProg->stopUse();
+        P.stopUse();
 
-        unbindBufferTextures(boundSegBufferTextures);
+        unbindBufferTextures(boundBufferTextures);
+        unbindTextures(boundTextures);
       }
 
-      /// @todo separate these textures into ones for images and ones for segs
-      unbindTextures(boundImageTextures);
-
-
       // Render the annotation and landmark overlays:
-      renderOneImage_overlays(view,
-                     miewportViewBounds,
-                     worldOffsetXhairs,
-                     CurrentImages{imgSegPair});
+      renderOneImage_overlays(view, miewportViewBounds, worldOffsetXhairs, CurrentImages{imgSegPair});
 
       isFixedImage = false;
     }
@@ -1753,47 +1747,42 @@ void Rendering::renderAllImages(
   case ShaderGroup::Metric:
   {
     // This function guarantees that I has size at least 2:
-    const CurrentImages I = getImageAndSegUidsForMetricShaders(metricImages);
+    const CurrentImages I = getImageAndSegUidsForMetricShaders(view.metricImages());
 
-    const auto& U0 = (I.size() >= 1 && I[0].first) ? renderData.m_uniforms.at(*I[0].first)
-                                                   : sk_defaultImageUniforms;
-    const auto& U1 = (I.size() >= 2 && I[1].first) ? renderData.m_uniforms.at(*I[1].first)
-                                                   : sk_defaultImageUniforms;
+    const auto& U0 = (I.size() >= 1 && I[0].first) ? renderData.m_uniforms.at(*I[0].first) : sk_defaultImageUniforms;
+    const auto& U1 = (I.size() >= 2 && I[1].first) ? renderData.m_uniforms.at(*I[1].first) : sk_defaultImageUniforms;
 
-    boundMetricTextures = bindMetricImageTextures(I, renderMode);
-    boundSegBufferTextures = bindSegBufferTextures(I);
+    const Image* img0 = I[0].first ? m_appData.image(*I[0].first) : nullptr;
+    const Image* img1 = I[1].first ? m_appData.image(*I[1].first) : nullptr;
 
-    if (ViewRenderMode::Difference == renderMode)
+    const bool useTricubic = img0 && img1 &&
+                             (InterpolationMode::Tricubic == img0->settings().interpolationMode()) &&
+                             (InterpolationMode::Tricubic == img1->settings().interpolationMode());
+
+    const auto boundTextures = bindMetricImageTextures(I, view.renderMode());
+
+    if (ViewRenderMode::Difference == view.renderMode())
     {
+      GLShaderProgram& P = useTricubic ? m_differenceTexLookupCubicProgram : m_differenceTexLookupLinearProgram;
       const auto& metricParams = renderData.m_squaredDifferenceParams;
-      GLShaderProgram& P = m_differenceProgram;
 
       P.use();
       {
-        P.setSamplerUniform("u_imgTex", msk_imgTexSamplers);
-        P.setSamplerUniform("u_segTex", msk_segTexSamplers);
-        P.setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSamplers);
+        P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
         P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
 
         P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
-        P.setUniform("u_segTexture_T_world", std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world});
         P.setUniform("img1Tex_T_img0Tex", U1.imgTexture_T_world * glm::inverse(U0.imgTexture_T_world));
-
         P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{U0.largestSlopeIntercept, U1.largestSlopeIntercept});
-        P.setUniform("u_segOpacity", std::vector<float>{U0.segOpacity, U1.segOpacity});
-
         P.setUniform("u_metricCmapSlopeIntercept", metricParams.m_cmapSlopeIntercept);
         P.setUniform("u_metricSlopeIntercept", metricParams.m_slopeIntercept);
-        P.setUniform("u_metricMasking", metricParams.m_doMasking);
-
         P.setUniform("u_useSquare", renderData.m_useSquare);
 
-        renderOneImage(view,
-                       // miewportViewBounds,
-                       worldOffsetXhairs, P, I, false);
+        renderOneImage(view, worldOffsetXhairs, P, I, false);
       }
       P.stopUse();
     }
+    /*
     else if (ViewRenderMode::CrossCorrelation == renderMode)
     {
       const auto& metricParams = renderData.m_crossCorrelationParams;
@@ -1815,21 +1804,20 @@ void Rendering::renderAllImages(
 
         P.setUniform("u_texture1_T_texture0", U1.imgTexture_T_world * glm::inverse(U0.imgTexture_T_world));
 
-        renderOneImage(view,
-                       // miewportViewBounds,
-                       worldOffsetXhairs, P, I, false);
+        renderOneImage(view, worldOffsetXhairs, P, I, false);
       }
       P.stopUse();
     }
-    else if (ViewRenderMode::Overlay == renderMode)
+    */
+    else if (ViewRenderMode::Overlay == view.renderMode())
     {
       GLShaderProgram& P = m_overlayProgram;
 
       P.use();
       {
-        P.setSamplerUniform("u_imgTex", msk_imgTexSamplers);
-        P.setSamplerUniform("u_segTex", msk_segTexSamplers);
-        P.setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSamplers);
+        // P.setSamplerUniform("u_imgTex", msk_imgTexSamplers);
+        // P.setSamplerUniform("u_segTex", msk_segTexSamplers);
+        // P.setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSamplers);
 
         P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
         P.setUniform("u_segTexture_T_world", std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world});
@@ -1840,27 +1828,31 @@ void Rendering::renderAllImages(
         P.setUniform("u_imgOpacity", std::vector<float>{U0.imgOpacity, U1.imgOpacity});
 
         P.setUniform("u_segOpacity", std::vector<float>{
-            U0.segOpacity * (modSegOpacity ? U0.imgOpacity : 1.0f),
-            U1.segOpacity * (modSegOpacity ? U1.imgOpacity : 1.0f)});
+            U0.segOpacity * (renderData.m_modulateSegOpacityWithImageOpacity ? U0.imgOpacity : 1.0f),
+            U1.segOpacity * (renderData.m_modulateSegOpacityWithImageOpacity ? U1.imgOpacity : 1.0f)});
 
         P.setUniform("magentaCyan", renderData.m_overlayMagentaCyan);
 
-        renderOneImage(view,
-                       // miewportViewBounds,
-                       worldOffsetXhairs, P, I, false);
+        renderOneImage(view, worldOffsetXhairs, P, I, false);
       }
       P.stopUse();
     }
 
-    unbindTextures(boundMetricTextures);
-    unbindBufferTextures(boundSegBufferTextures);
+    unbindTextures(boundTextures);
+
+    //////////////// RENDER SEGS here!!!!!!!!!!!!!!!
+    // const auto boundSegTextures = bindSegTextures(I);
+    // const auto boundSegBufferTextures = bindSegBufferTextures(I);
+    // DO SEG RENDER!
+    // unbindBufferTextures(boundSegBufferTextures);
+    // unbindTextures(boundSegTextures);
 
     break;
   }
 
   case ShaderGroup::Volume:
   {
-    const CurrentImages I = getImageAndSegUidsForImageShaders(renderedImages);
+    const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
 
     if (I.empty()) {
       return;
@@ -1893,8 +1885,8 @@ void Rendering::renderAllImages(
 
     updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first);
 
-    boundImageTextures = bindImageTextures(imgSegPair);
-    boundSegBufferTextures = bindSegBufferTextures(std::vector<ImgSegPair>{imgSegPair});
+    const auto boundImageTextures = bindScalarImageTextures(imgSegPair);
+    const auto boundSegBufferTextures = bindSegBufferTextures(imgSegPair);
 
     const auto& U = renderData.m_uniforms.at(*imgSegPair.first);
 
@@ -1957,114 +1949,72 @@ void Rendering::renderAllImages(
 }
 
 void Rendering::renderAllLandmarks(
-  const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs
-)
+  const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs)
 {
-  const auto shaderType = view.renderMode();
-  const auto metricImages = view.metricImages();
-  const auto renderedImages = view.renderedImages();
-
-  CurrentImages I;
-
-  if (ViewRenderMode::Image == shaderType)
+  switch (view.renderMode())
   {
-    I = getImageAndSegUidsForImageShaders(renderedImages);
-
-    for (const auto& imgSegPair : I)
-    {
-      drawLandmarks(
-        m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair}
-      );
-
+  case ViewRenderMode::Image: {
+    const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
+    for (const auto& imgSegPair : I) {
+      drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
       setupOpenGlState();
     }
+    break;
   }
-  else if (ViewRenderMode::Checkerboard == shaderType || ViewRenderMode::Quadrants == shaderType || ViewRenderMode::Flashlight == shaderType)
-  {
-    I = getImageAndSegUidsForMetricShaders(metricImages); // guaranteed size 2
-
-    for (const auto& imgSegPair : I)
-    {
-      drawLandmarks(
-        m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair}
-      );
-
+  case ViewRenderMode::Checkerboard:
+  case ViewRenderMode::Quadrants:
+  case ViewRenderMode::Flashlight: {
+    const CurrentImages I = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
+    for (const auto& imgSegPair : I) {
+      drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
       setupOpenGlState();
     }
+    break;
   }
-  else if (ViewRenderMode::Disabled == shaderType)
-  {
+  case ViewRenderMode::Disabled: {
     return;
   }
-  else
-  {
+  default: {
     // This function guarantees that I has size at least 2:
-    drawLandmarks(
-      m_nvg,
-      miewportViewBounds,
-      worldOffsetXhairs,
-      m_appData,
-      view,
-      getImageAndSegUidsForMetricShaders(metricImages)
-    );
+    drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData,
+                  view, getImageAndSegUidsForMetricShaders(view.metricImages()));
 
     setupOpenGlState();
+  }
   }
 }
 
 void Rendering::renderAllAnnotations(
-  const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs
-)
+  const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs)
 {
-  const auto shaderType = view.renderMode();
-  const auto& metricImages = view.metricImages();
-  const auto& renderedImages = view.renderedImages();
-
-  CurrentImages I;
-
-  if (ViewRenderMode::Image == shaderType)
+  switch (view.renderMode())
   {
-    I = getImageAndSegUidsForImageShaders(renderedImages);
-
-    for (const auto& imgSegPair : I)
-    {
-      drawAnnotations(
-        m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair}
-      );
-
+  case ViewRenderMode::Image: {
+    const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
+    for (const auto& imgSegPair : I) {
+      drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
+      setupOpenGlState();
+    }
+    break;
+  }
+  case ViewRenderMode::Checkerboard:
+  case ViewRenderMode::Quadrants:
+  case ViewRenderMode::Flashlight: {
+    const CurrentImages I = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
+    for (const auto& imgSegPair : I) {
+      drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
       setupOpenGlState();
     }
   }
-  else if (ViewRenderMode::Checkerboard == shaderType || ViewRenderMode::Quadrants == shaderType || ViewRenderMode::Flashlight == shaderType)
-  {
-    I = getImageAndSegUidsForMetricShaders(metricImages); // guaranteed size 2
-
-    for (const auto& imgSegPair : I)
-    {
-      drawAnnotations(
-        m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair}
-      );
-
-      setupOpenGlState();
-    }
-  }
-  else if (ViewRenderMode::Disabled == shaderType)
-  {
+  case ViewRenderMode::Disabled: {
     return;
   }
-  else
-  {
+  default: {
     // This function guarantees that I has size at least 2:
-    drawAnnotations(
-      m_nvg,
-      miewportViewBounds,
-      worldOffsetXhairs,
-      m_appData,
-      view,
-      getImageAndSegUidsForMetricShaders(metricImages)
-    );
-
+    drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData,
+                    view, getImageAndSegUidsForMetricShaders(view.metricImages()));
     setupOpenGlState();
+  }
   }
 }
 
@@ -2075,9 +2025,9 @@ void Rendering::renderImageData()
     return;
   }
 
-  const auto& renderData = m_appData.renderData();
-  const bool renderLandmarksOnTop = renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
-  const bool renderAnnotationsOnTop = renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
+  const auto& R = m_appData.renderData();
+  const bool renderLandmarksOnTop = R.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
+  const bool renderAnnotationsOnTop = R.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
 
   // Render images for each view in the layout
   for (const auto& [viewUid, view] : m_appData.windowData().currentLayout().views())
@@ -2141,11 +2091,13 @@ void Rendering::renderOverlays()
 
 void Rendering::renderVectorOverlays()
 {
-  if (!m_nvg)
+  if (!m_nvg) {
     return;
+  }
 
   const WindowData& windowData = m_appData.windowData();
   const Viewport& windowVP = windowData.viewport();
+  const auto& R = m_appData.renderData();
 
   if (!m_isAppDoneLoadingImages)
   {
@@ -2168,10 +2120,8 @@ void Rendering::renderVectorOverlays()
 
   glm::mat4 world_T_refSubject(1.0f);
 
-  if (m_appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage())
-  {
-    if (const Image* refImage = m_appData.refImage())
-    {
+  if (m_appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage()) {
+    if (const Image* refImage = m_appData.refImage()) {
       world_T_refSubject = refImage->transformations().worldDef_T_subject();
     }
   }
@@ -2179,8 +2129,9 @@ void Rendering::renderVectorOverlays()
   for (const auto& viewUid : windowData.currentViewUids())
   {
     const View* view = windowData.getCurrentView(viewUid);
-    if (!view)
+    if (!view) {
       continue;
+    }
 
     // Bounds of the view frame in Miewport space:
     const auto miewportViewBounds = helper::computeMiewportFrameBounds(
@@ -2190,32 +2141,20 @@ void Rendering::renderVectorOverlays()
     if (m_showOverlays && ViewRenderMode::Disabled != view->renderMode())
     {
       const auto labelPosInfo = math::computeAnatomicalLabelPosInfo(
-        miewportViewBounds,
-        windowVP,
-        view->camera(),
-        world_T_refSubject,
-        view->windowClip_T_viewClip(),
-        m_appData.state().worldCrosshairs().worldOrigin()
-      );
+        miewportViewBounds, windowVP, view->camera(),
+        world_T_refSubject, view->windowClip_T_viewClip(),
+        m_appData.state().worldCrosshairs().worldOrigin());
 
       // Do not render crosshairs in volume rendering mode
-      if (ViewRenderMode::VolumeRender != view->renderMode())
-      {
-        drawCrosshairs(
-          m_nvg, miewportViewBounds, *view, m_appData.renderData().m_crosshairsColor, labelPosInfo
-        );
+      if (ViewRenderMode::VolumeRender != view->renderMode()) {
+        drawCrosshairs(m_nvg, miewportViewBounds, *view, R.m_crosshairsColor, labelPosInfo);
       }
 
-      if (AnatomicalLabelType::Disabled != m_appData.renderData().m_anatomicalLabelType)
+      if (AnatomicalLabelType::Disabled != R.m_anatomicalLabelType)
       {
         drawAnatomicalLabels(
-          m_nvg,
-          miewportViewBounds,
-          (ViewType::Oblique == view->viewType()),
-          m_appData.renderData().m_anatomicalLabelColor,
-          m_appData.renderData().m_anatomicalLabelType,
-          labelPosInfo
-        );
+          m_nvg, miewportViewBounds, (ViewType::Oblique == view->viewType()),
+          R.m_anatomicalLabelColor, R.m_anatomicalLabelType, labelPosInfo);
       }
     }
 
@@ -2226,12 +2165,10 @@ void Rendering::renderVectorOverlays()
       const auto hoveredViewUid = ASM::current_state_ptr->hoveredViewUid();
       const auto selectedViewUid = ASM::current_state_ptr->selectedViewUid();
 
-      if (selectedViewUid && (viewUid == *selectedViewUid))
-      {
+      if (selectedViewUid && (viewUid == *selectedViewUid)) {
         outlineMode = ViewOutlineMode::Selected;
       }
-      else if (hoveredViewUid && (viewUid == *hoveredViewUid))
-      {
+      else if (hoveredViewUid && (viewUid == *hoveredViewUid)) {
         outlineMode = ViewOutlineMode::Hovered;
       }
     }
@@ -2246,43 +2183,58 @@ void Rendering::renderVectorOverlays()
 
 void Rendering::createShaderPrograms()
 {
-  if (!createCrossCorrelationProgram(m_crossCorrelationProgram))
-  {
-    throw_debug("Failed to create cross-correlation metric program")
+  static const std::string texLookupLinearPath("src/rendering/shaders/functions/TextureLookup_Linear.glsl");
+  static const std::string texLookupCubicPath("src/rendering/shaders/functions/TextureLookup_Cubic.glsl");
+
+  const auto texLinearReplacement = loadReplacementStrings({{"{{TEXTURE_LOOKUP_FUNCTION}}", texLookupLinearPath}});
+  const auto texCubicReplacement = loadReplacementStrings({{"{{TEXTURE_LOOKUP_FUNCTION}}", texLookupCubicPath}});
+
+  if (!createImageGreyProgram(m_imageGreyTexLookupLinearProgram, texLinearReplacement)) {
+    throw_debug("Failed to create greyscale image program with linear texture lookup")
   }
 
-  if (!createDifferenceProgram(m_differenceProgram))
-  {
-    throw_debug("Failed to create difference metric program")
+  if (!createImageGreyProgram(m_imageGreyTexLookupCubicProgram, texCubicReplacement)) {
+    throw_debug("Failed to create greyscale image program with cubic texture lookup")
   }
 
-  if (!createEdgeProgram(m_edgeProgram))
-  {
-    throw_debug("Failed to create edge detection program")
+  if (!createImageColorProgram(m_imageColorTexLookupLinearProgram, texLinearReplacement)) {
+    throw_debug("Failed to create color image program with linear texture lookup")
   }
 
-  if (!createImageProgram(m_imageProgram))
-  {
-    throw_debug("Failed to create image program")
+  if (!createImageColorProgram(m_imageColorTexLookupCubicProgram, texCubicReplacement)) {
+    throw_debug("Failed to create color image program with cubic texture lookup")
   }
 
-  if (!createImageRgbaProgram(m_imageRgbaProgram))
-  {
-    throw_debug("Failed to create color image program")
+  if (!createEdgeProgram(m_edgeTexLookupLinearProgram, texLinearReplacement)) {
+    throw_debug("Failed to create edge detection program with linear texture lookup")
   }
 
-  if (!createXrayProgram(m_xrayProgram))
-  {
-    throw_debug("Failed to create x-ray projection program")
+  if (!createEdgeProgram(m_edgeTexLookupCubicProgram, texCubicReplacement)) {
+    throw_debug("Failed to create edge detection program with cubic texture lookup")
   }
 
-  if (!createOverlayProgram(m_overlayProgram))
-  {
-    throw_debug("Failed to create overlay program")
+  if (!createXrayProgram(m_xrayTexLookupLinearProgram, texLinearReplacement)) {
+    throw_debug("Failed to create x-ray projection program with linear texture lookup")
   }
 
-  if (!createSimpleProgram(m_simpleProgram))
-  {
+  if (!createXrayProgram(m_xrayTexLookupCubicProgram, texCubicReplacement)) {
+    throw_debug("Failed to create x-ray projection program with cubic texture lookup")
+  }
+
+  if (!createDifferenceProgram(m_differenceTexLookupLinearProgram, texLinearReplacement)) {
+    throw_debug("Failed to create difference metric program with linear texture lookup")
+  }
+
+  if (!createDifferenceProgram(m_differenceTexLookupCubicProgram, texCubicReplacement)) {
+    throw_debug("Failed to create difference metric program with cubic texture lookup")
+  }
+
+  // if (!createOverlayProgram(m_overlayProgram))
+  // {
+  //   throw_debug("Failed to create overlay program")
+  // }
+
+  if (!createSimpleProgram(m_simpleProgram)) {
     throw_debug("Failed to create simple program")
   }
 
@@ -2291,21 +2243,125 @@ void Rendering::createShaderPrograms()
     throw_debug("Failed to create isosurface raycasting program")
   }
 
-  if (!createSegProgram(m_segProgram))
+  if (!createSegProgram(
+        m_segNearestProgram,
+        loadReplacementStrings({{"{{UINT_TEXTURE_LOOKUP_FUNCTION}}", "src/rendering/shaders/functions/UIntTextureLookup_Linear.glsl"},
+                                {"{{GET_SEG_VALUE_FUNCTION}}", "src/rendering/shaders/functions/SegValue_Nearest.glsl"},
+                                {"{{GET_SEG_INTERIOR_ALPHA_FUNCTION}}", "src/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl"}}), false))
   {
-    throw_debug("Failed to create segmentation program")
+    throw_debug("Failed to create segmentation program with nearest-neighbor texture lookup")
   }
 
-  if (!createSegLinearProgram(m_segLinearProgram))
+  if (!createSegProgram(
+        m_segLinearProgram,
+        loadReplacementStrings({{"{{UINT_TEXTURE_LOOKUP_FUNCTION}}", "src/rendering/shaders/functions/UIntTextureLookup_Linear.glsl"},
+                                {"{{GET_SEG_VALUE_FUNCTION}}", "src/rendering/shaders/functions/SegValue_Linear.glsl"},
+                                {"{{GET_SEG_INTERIOR_ALPHA_FUNCTION}}", "src/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl"}}), true))
   {
-    throw_debug("Failed to create segmentation linear program")
+    throw_debug("Failed to create segmentation program with linear texture lookup")
   }
 }
 
-bool Rendering::createImageProgram(GLShaderProgram& program)
+bool Rendering::createImageGreyProgram(
+  GLShaderProgram& program,
+  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
 {
   static const std::string vsFileName{"src/rendering/shaders/Image.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/Image.fs"};
+  static const std::string fsFileName{"src/rendering/shaders/ImageGrey.fs"};
+
+  const auto filesystem = cmrc::shaders::get_filesystem();
+  std::string vsSource;
+  std::string fsSource;
+
+  try
+  {
+    const cmrc::file vsData = filesystem.open(vsFileName.c_str());
+    const cmrc::file fsData = filesystem.open(fsFileName.c_str());
+
+    vsSource = std::string(vsData.begin(), vsData.end());
+    fsSource = std::string(fsData.begin(), fsData.end());
+  }
+  catch (const std::exception& e)
+  {
+    spdlog::critical("Exception when loading shader file: {}", e.what());
+    throw_debug("Unable to load shader")
+  }
+
+  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
+
+  Uniforms vsUniforms;
+  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+
+  // For checkerboarding:
+  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
+  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+
+  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+
+  auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
+  vs->setRegisteredUniforms(std::move(vsUniforms));
+  program.attachShader(vs);
+
+  spdlog::debug("Compiled vertex shader {}", vsFileName);
+
+  Uniforms fsUniforms;
+
+  fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
+  fsUniforms.insertUniform("u_imgCmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+
+  fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgCmapQuantLevels", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_imgCmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
+  fsUniforms.insertUniform("u_useHsv", UniformType::Bool, false);
+
+  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+
+  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
+  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
+  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
+
+  // For flashlighting:
+  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
+  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+
+  // For intensity projection:
+  // 0: none, 1: max, 2: mean, 3: min, 4: x-ray (not used in image shader)
+  fsUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+
+  fsUniforms.insertUniform("u_isoValues", UniformType::FloatVector, FloatVector{0.0f});
+  fsUniforms.insertUniform("u_isoOpacities", UniformType::FloatVector, FloatVector{1.0f});
+  fsUniforms.insertUniform("u_isoColors", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+  fsUniforms.insertUniform("u_isoWidth", UniformType::Float, 0.0f);
+
+  auto fs = std::make_shared<GLShader>("fsImage", ShaderType::Fragment, fsSource.c_str());
+  fs->setRegisteredUniforms(std::move(fsUniforms));
+  program.attachShader(fs);
+
+  spdlog::debug("Compiled fragment shader {}", fsFileName);
+
+  if (!program.link()) {
+    spdlog::critical("Failed to link shader program {}", program.name());
+    return false;
+  }
+
+  spdlog::debug("Linked shader program {}", program.name());
+  return true;
+}
+
+bool Rendering::createImageColorProgram(
+  GLShaderProgram& program,
+  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
+{
+  static const std::string vsFileName{"src/rendering/shaders/Image.vs"};
+  static const std::string fsFileName{"src/rendering/shaders/ImageColor.fs"};
 
   auto filesystem = cmrc::shaders::get_filesystem();
   std::string vsSource;
@@ -2325,66 +2381,48 @@ bool Rendering::createImageProgram(GLShaderProgram& program)
     throw_debug("Unable to load shader")
   }
 
-  {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
 
-    // For checkerboarding:
-    vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-    vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+  Uniforms vsUniforms;
+  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
 
-    vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+  // For checkerboarding:
+  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
+  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
 
-    auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
+  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
 
-    spdlog::debug("Compiled vertex shader {}", vsFileName);
-  }
+  auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
+  vs->setRegisteredUniforms(std::move(vsUniforms));
+  program.attachShader(vs);
 
-  {
-    Uniforms fsUniforms;
+  spdlog::debug("Compiled vertex shader {}", vsFileName);
 
-    fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-    fsUniforms.insertUniform("u_imgCmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+  Uniforms fsUniforms;
 
-    fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgCmapQuantLevels", UniformType::Int, 0);
-    fsUniforms.insertUniform("u_imgCmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 0.5f});
+  fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgRgbaTexSamplers);
 
-    fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
+  fsUniforms.insertUniform("u_alphaIsOne", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f});
+  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
+  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
 
-    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
-    fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
-    fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
+  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
+  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
+  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
 
-    // For flashlighting:
-    fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-    fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
+  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
 
-    // For intensity projection:
-    // 0: none, 1: max, 2: mean, 3: min, 4: x-ray (not used in image shader)
-    fsUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
-    fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
-    fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  auto fs = std::make_shared<GLShader>("fsImage", ShaderType::Fragment, fsSource.c_str());
+  fs->setRegisteredUniforms(std::move(fsUniforms));
+  program.attachShader(fs);
 
-    fsUniforms.insertUniform("u_isoValues", UniformType::FloatVector, FloatVector{0.0f});
-    fsUniforms.insertUniform("u_isoOpacities", UniformType::FloatVector, FloatVector{1.0f});
-    fsUniforms.insertUniform("u_isoColors", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-    fsUniforms.insertUniform("u_isoWidth", UniformType::Float, 0.0f);
-
-    auto fs = std::make_shared<GLShader>("fsImage", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
-
-    spdlog::debug("Compiled fragment shader {}", fsFileName);
-  }
+  spdlog::debug("Compiled fragment shader {}", fsFileName);
 
   if (!program.link())
   {
@@ -2396,88 +2434,9 @@ bool Rendering::createImageProgram(GLShaderProgram& program)
   return true;
 }
 
-bool Rendering::createImageRgbaProgram(GLShaderProgram& program)
-{
-  static const std::string vsFileName{"src/rendering/shaders/Image.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/ImageRgba.fs"};
-
-  auto filesystem = cmrc::shaders::get_filesystem();
-  std::string vsSource;
-  std::string fsSource;
-
-  try
-  {
-    cmrc::file vsData = filesystem.open(vsFileName.c_str());
-    cmrc::file fsData = filesystem.open(fsFileName.c_str());
-
-    vsSource = std::string(vsData.begin(), vsData.end());
-    fsSource = std::string(fsData.begin(), fsData.end());
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
-  }
-
-  {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-
-    // For checkerboarding:
-    vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-    vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
-
-    vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
-
-    auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
-
-    spdlog::debug("Compiled vertex shader {}", vsFileName);
-  }
-
-  {
-    Uniforms fsUniforms;
-
-    fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgRgbaTexSamplers);
-
-    // fsUniforms.insertUniform( "u_useTricubicInterpolation", UniformType::Bool, false );
-
-    fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
-    fsUniforms.insertUniform("u_alphaIsOne", UniformType::Bool, true);
-    fsUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f});
-    fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
-    fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
-
-    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
-    fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
-    fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
-
-    // For flashlighting:
-    fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-    fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
-
-    auto fs = std::make_shared<GLShader>("fsImage", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
-
-    spdlog::debug("Compiled fragment shader {}", fsFileName);
-  }
-
-  if (!program.link())
-  {
-    spdlog::critical("Failed to link shader program {}", program.name());
-    return false;
-  }
-
-  spdlog::debug("Linked shader program {}", program.name());
-  return true;
-}
-
-bool Rendering::createXrayProgram(GLShaderProgram& program)
+bool Rendering::createXrayProgram(
+  GLShaderProgram& program,
+  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
 {
   static const std::string vsFileName{"src/rendering/shaders/Image.vs"};
   static const std::string fsFileName{"src/rendering/shaders/Xray.fs"};
@@ -2500,69 +2459,64 @@ bool Rendering::createXrayProgram(GLShaderProgram& program)
     throw_debug("Unable to load shader")
   }
 
-  {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
 
-    // For checkerboarding:
-    vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-    vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+  Uniforms vsUniforms;
+  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
 
-    vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+  // For checkerboarding:
+  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
+  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
 
-    auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
+  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
 
-    spdlog::debug("Compiled vertex shader {}", vsFileName);
-  }
+  auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
+  vs->setRegisteredUniforms(std::move(vsUniforms));
+  program.attachShader(vs);
 
-  {
-    Uniforms fsUniforms;
+  spdlog::debug("Compiled vertex shader {}", vsFileName);
 
-    fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-    fsUniforms.insertUniform("u_imgCmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+  Uniforms fsUniforms;
 
-    // fsUniforms.insertUniform( "u_useTricubicInterpolation", UniformType::Bool, false );
+  fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
+  fsUniforms.insertUniform("u_imgCmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
 
-    fsUniforms.insertUniform("imgSlope_native_T_texture", UniformType::Float, 1.0f);
-    fsUniforms.insertUniform("u_imgCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-    //        fsUniforms.insertUniform( "u_imgCmapQuantLevels", UniformType::Int, 0 );
-    fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("slopeInterceptWindowLevel", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("imgSlope_native_T_texture", UniformType::Float, 1.0f);
+  fsUniforms.insertUniform("u_imgCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  //        fsUniforms.insertUniform( "u_imgCmapQuantLevels", UniformType::Int, 0 );
+  fsUniforms.insertUniform("u_imgCmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
+  fsUniforms.insertUniform("u_useHsv", UniformType::Bool, false);
 
-    fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("slopeInterceptWindowLevel", UniformType::Vec2, sk_zeroVec2);
 
-    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
-    fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
-    fsUniforms.insertUniform(
-      "u_renderMode", UniformType::Int, 0
-    ); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
+  fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
 
-    // For flashlighting:
-    fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-    fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
+  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
+  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
 
-    // For X-ray projection mode:
-    fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
-    fsUniforms.insertUniform("mipSamplingDistance_cm", UniformType::Float, 0.0f);
-    fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
-    fsUniforms.insertUniform("waterAttenCoeff", UniformType::Float, 0.0f);
-    fsUniforms.insertUniform("airAttenCoeff", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
+  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
 
-    auto fs = std::make_shared<GLShader>("fsXray", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
+  // For X-ray projection mode:
+  fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
+  fsUniforms.insertUniform("mipSamplingDistance_cm", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  fsUniforms.insertUniform("waterAttenCoeff", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("airAttenCoeff", UniformType::Float, 0.0f);
 
-    spdlog::debug("Compiled fragment shader {}", fsFileName);
-  }
+  auto fs = std::make_shared<GLShader>("fsXray", ShaderType::Fragment, fsSource.c_str());
+  fs->setRegisteredUniforms(std::move(fsUniforms));
+  program.attachShader(fs);
 
-  if (!program.link())
-  {
+  spdlog::debug("Compiled fragment shader {}", fsFileName);
+
+  if (!program.link()) {
     spdlog::critical("Failed to link shader program {}", program.name());
     return false;
   }
@@ -2615,8 +2569,6 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
     fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
     fsUniforms.insertUniform("u_jumpTex", UniformType::Sampler, msk_jumpTexSampler);
 
-    // fsUniforms.insertUniform( "u_useTricubicInterpolation", UniformType::Bool, false );
-
     fsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
     fsUniforms.insertUniform("world_T_imgTexture", UniformType::Mat4, sk_identMat4);
 
@@ -2660,7 +2612,9 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
   return true;
 }
 
-bool Rendering::createEdgeProgram(GLShaderProgram& program)
+bool Rendering::createEdgeProgram(
+  GLShaderProgram& program,
+  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
 {
   static const std::string vsFileName{"src/rendering/shaders/Image.vs"};
   static const std::string fsFileName{"src/rendering/shaders/Edge.fs"};
@@ -2683,69 +2637,64 @@ bool Rendering::createEdgeProgram(GLShaderProgram& program)
     throw_debug("Unable to load shader")
   }
 
-  {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
 
-    // For checkerboarding:
-    vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-    vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+  Uniforms vsUniforms;
+  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
 
-    vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+  // For checkerboarding:
+  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
+  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
 
-    auto vs = std::make_shared<GLShader>("vsEdge", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
+  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
 
-    spdlog::debug("Compiled vertex shader {}", vsFileName);
-  }
+  auto vs = std::make_shared<GLShader>("vsEdge", ShaderType::Vertex, vsSource.c_str());
+  vs->setRegisteredUniforms(std::move(vsUniforms));
+  program.attachShader(vs);
 
-  {
-    Uniforms fsUniforms;
+  spdlog::debug("Compiled vertex shader {}", vsFileName);
 
-    fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-    fsUniforms.insertUniform("u_imgCmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+  Uniforms fsUniforms;
 
-    // fsUniforms.insertUniform( "u_useTricubicInterpolation", UniformType::Bool, false );
+  fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
+  fsUniforms.insertUniform("u_imgCmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
 
-    fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgSlopeInterceptLargest", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgCmapQuantLevels", UniformType::Int, 0);
-    fsUniforms
-      .insertUniform("u_imgCmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 0.5f});
+  fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgSlopeInterceptLargest", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgCmapQuantLevels", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_imgCmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
+  fsUniforms.insertUniform("u_useHsv", UniformType::Bool, false);
 
-    fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
 
-    fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2);
-    fsUniforms.insertUniform("u_showFix", UniformType::Bool, true);
-    fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2);
+  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
 
-    // For flashlighting:
-    fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-    fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
+  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
 
-    fsUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
-    fsUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
-    //        fsUniforms.insertUniform( "useFreiChen", UniformType::Bool, false );
-    //        fsUniforms.insertUniform( "windowedEdges", UniformType::Bool, false );
-    fsUniforms.insertUniform("u_overlayEdges", UniformType::Bool, false);
-    fsUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
-    fsUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
+  fsUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
+  //        fsUniforms.insertUniform( "useFreiChen", UniformType::Bool, false );
+  //        fsUniforms.insertUniform( "windowedEdges", UniformType::Bool, false );
+  fsUniforms.insertUniform("u_overlayEdges", UniformType::Bool, false);
+  fsUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
+  fsUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
 
-    fsUniforms.insertUniform("u_texSamplingDirsForEdges", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+  fsUniforms.insertUniform("u_texSamplingDirsForEdges", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
 
-    auto fs = std::make_shared<GLShader>("fsEdge", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
+  auto fs = std::make_shared<GLShader>("fsEdge", ShaderType::Fragment, fsSource.c_str());
+  fs->setRegisteredUniforms(std::move(fsUniforms));
+  program.attachShader(fs);
 
-    spdlog::debug("Compiled fragment shader {}", fsFileName);
-  }
+  spdlog::debug("Compiled fragment shader {}", fsFileName);
 
   if (!program.link())
   {
@@ -2799,22 +2748,15 @@ bool Rendering::createOverlayProgram(GLShaderProgram& program)
   {
     Uniforms fsUniforms;
 
-    fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgTexSamplers);
-    fsUniforms.insertUniform("u_segTex", UniformType::SamplerVector, msk_segTexSamplers);
+    // fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgTexSamplers);
+    // fsUniforms.insertUniform("u_segTex", UniformType::SamplerVector, msk_segTexSamplers);
 
-    fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::SamplerVector, msk_labelTableTexSamplers);
+    // fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::SamplerVector, msk_labelTableTexSamplers);
 
-    // fsUniforms.insertUniform( "u_useTricubicInterpolation", UniformType::Bool, false );
+    fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
 
-    fsUniforms.insertUniform(
-      "u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2}
-    );
-
-    fsUniforms
-      .insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
-    fsUniforms.insertUniform(
-      "u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2}
-    );
+    fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+    fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
     fsUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
     fsUniforms.insertUniform("u_segOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
 
@@ -2840,7 +2782,8 @@ bool Rendering::createOverlayProgram(GLShaderProgram& program)
   return true;
 }
 
-bool Rendering::createDifferenceProgram(GLShaderProgram& program)
+bool Rendering::createDifferenceProgram(
+  GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap)
 {
   static const std::string vsFileName{"src/rendering/shaders/Metric.vs"};
   static const std::string fsFileName{"src/rendering/shaders/Difference.fs"};
@@ -2863,57 +2806,41 @@ bool Rendering::createDifferenceProgram(GLShaderProgram& program)
     throw_debug("Unable to load shader")
   }
 
-  {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
 
-    vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
-    vsUniforms.insertUniform("u_segTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
+  Uniforms vsUniforms;
+  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
 
-    auto vs = std::make_shared<GLShader>("vsDiff", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
+  auto vs = std::make_shared<GLShader>("vsDiff", ShaderType::Vertex, vsSource.c_str());
+  vs->setRegisteredUniforms(std::move(vsUniforms));
+  program.attachShader(vs);
 
-    spdlog::debug("Compiled vertex shader {}", vsFileName);
-  }
+  spdlog::debug("Compiled vertex shader {}", vsFileName);
 
-  {
-    Uniforms fsUniforms;
+  Uniforms fsUniforms;
 
-    fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgTexSamplers);
-    fsUniforms.insertUniform("u_segTex", UniformType::SamplerVector, msk_segTexSamplers);
-    fsUniforms.insertUniform("u_metricCmapTex", UniformType::Sampler, msk_metricCmapTexSampler);
-    fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::SamplerVector, msk_labelTableTexSamplers);
+  fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
+  fsUniforms.insertUniform("u_metricCmapTex", UniformType::Sampler, msk_metricCmapTexSampler);
+  fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+  fsUniforms.insertUniform("u_metricCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_useSquare", UniformType::Bool, true);
 
-    // fsUniforms.insertUniform( "u_useTricubicInterpolation", UniformType::Bool, false );
+  // For intensity projection:
+  // 0: none, 1: max, 2: mean, 3: min, 4: xray
+  fsUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  fsUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
 
-    fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
-    fsUniforms.insertUniform("u_segOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
+  auto fs = std::make_shared<GLShader>("fsDiff", ShaderType::Fragment, fsSource.c_str());
+  fs->setRegisteredUniforms(std::move(fsUniforms));
+  program.attachShader(fs);
 
-    fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
-    fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-
-    fsUniforms.insertUniform("u_metricCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-    fsUniforms.insertUniform("u_metricMasking", UniformType::Bool, false);
-
-    fsUniforms.insertUniform("u_useSquare", UniformType::Bool, true);
-
-    // For intensity projection:
-    // 0: none, 1: max, 2: mean, 3: min, 4: xray
-    fsUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
-    fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
-    fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
-    fsUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
-
-    auto fs = std::make_shared<GLShader>("fsDiff", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
-
-    spdlog::debug("Compiled fragment shader {}", fsFileName);
-  }
+  spdlog::debug("Compiled fragment shader {}", fsFileName);
 
   if (!program.link())
   {
@@ -2925,6 +2852,7 @@ bool Rendering::createDifferenceProgram(GLShaderProgram& program)
   return true;
 }
 
+/*
 bool Rendering::createCrossCorrelationProgram(GLShaderProgram& program)
 {
   static const std::string vsFileName{"src/rendering/shaders/Metric.vs"};
@@ -2972,8 +2900,6 @@ bool Rendering::createCrossCorrelationProgram(GLShaderProgram& program)
     fsUniforms.insertUniform("u_metricCmapTex", UniformType::Sampler, msk_metricCmapTexSampler);
     fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::SamplerVector, msk_labelTableTexSamplers);
 
-    // fsUniforms.insertUniform( "u_useTricubicInterpolation", UniformType::Bool, false );
-
     fsUniforms.insertUniform("u_segOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
 
     fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
@@ -3003,6 +2929,7 @@ bool Rendering::createCrossCorrelationProgram(GLShaderProgram& program)
   spdlog::debug("Linked shader program {}", program.name());
   return true;
 }
+*/
 
 bool Rendering::createSimpleProgram(GLShaderProgram& program)
 {
@@ -3057,7 +2984,10 @@ bool Rendering::createSimpleProgram(GLShaderProgram& program)
   return true;
 }
 
-bool Rendering::createSegProgram(GLShaderProgram& program)
+bool Rendering::createSegProgram(
+  GLShaderProgram& program,
+  const std::unordered_map<std::string, std::string>& placeholderToStringMap,
+  bool linearInterpolation)
 {
   static const std::string vsFileName{"src/rendering/shaders/Seg.vs"};
   static const std::string fsFileName{"src/rendering/shaders/Seg.fs"};
@@ -3080,86 +3010,7 @@ bool Rendering::createSegProgram(GLShaderProgram& program)
     throw_debug("Unable to load shader")
   }
 
-  Uniforms vsUniforms;
-  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-
-  // For checkerboarding:
-  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
-
-  vsUniforms.insertUniform("u_segTexture_T_world", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_segVoxel_T_world", UniformType::Mat4, sk_identMat4);
-
-  auto vs = std::make_shared<GLShader>("vsSeg", ShaderType::Vertex, vsSource.c_str());
-  vs->setRegisteredUniforms(std::move(vsUniforms));
-  program.attachShader(vs);
-
-  spdlog::debug("Compiled vertex shader {}", vsFileName);
-
-  Uniforms fsUniforms;
-  fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
-  fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_labelTableTexSampler);
-
-  fsUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
-
-  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
-  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
-
-  // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
-  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
-
-  // For flashlighting:
-  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
-
-  fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
-  fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-
-  ////// DO THESE FOR LINEAR INTERP ONLY:
-  // fsUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f);
-  // fsUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-
-  auto fs = std::make_shared<GLShader>("fsSeg", ShaderType::Fragment, fsSource.c_str());
-  fs->setRegisteredUniforms(std::move(fsUniforms));
-  program.attachShader(fs);
-
-  spdlog::debug("Compiled fragment shader {}", fsFileName);
-
-  if (!program.link())
-  {
-    spdlog::critical("Failed to link shader program {}", program.name());
-    return false;
-  }
-
-  spdlog::debug("Linked shader program {}", program.name());
-  return true;
-}
-
-bool Rendering::createSegLinearProgram(GLShaderProgram& program)
-{
-  static const std::string vsFileName{"src/rendering/shaders/Seg.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/Seg_linear.fs"};
-
-  auto filesystem = cmrc::shaders::get_filesystem();
-  std::string vsSource;
-  std::string fsSource;
-
-  try
-  {
-    cmrc::file vsData = filesystem.open(vsFileName.c_str());
-    cmrc::file fsData = filesystem.open(fsFileName.c_str());
-
-    vsSource = std::string(vsData.begin(), vsData.end());
-    fsSource = std::string(fsData.begin(), fsData.end());
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
-  }
+  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
 
   Uniforms vsUniforms;
   vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
@@ -3181,7 +3032,7 @@ bool Rendering::createSegLinearProgram(GLShaderProgram& program)
 
   Uniforms fsUniforms;
   fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
-  fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_labelTableTexSampler);
+  fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_segLabelTableTexSampler);
 
   fsUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
 
@@ -3199,8 +3050,10 @@ bool Rendering::createSegLinearProgram(GLShaderProgram& program)
   fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
   fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
 
-  fsUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f); //////// new
-  fsUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3}); //////// new
+  if (linearInterpolation) {
+    fsUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f);
+    fsUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+  }
 
   auto fs = std::make_shared<GLShader>("fsSeg", ShaderType::Fragment, fsSource.c_str());
   fs->setRegisteredUniforms(std::move(fsUniforms));

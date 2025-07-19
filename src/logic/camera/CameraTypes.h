@@ -30,7 +30,7 @@ enum class ViewRenderMode
   Quadrants,    //!< Image pair rendered in 2D, with each image occupying opposing view quadrants
   Flashlight, //!< Image pair rendered in 2D, with moving image appearing as circular region at crosshairs
   Difference,       //!< Absolute or squared difference of the image pair rendered in 2D
-  CrossCorrelation, //!< Cross-correlation of the image pair rendered in 2D
+  // CrossCorrelation, //!< Cross-correlation of the image pair rendered in 2D
   JointHistogram,   //!< Joint intensity histogram of the image pair
   VolumeRender,     //!< Volume rendering of one image using raycasting
   Disabled,         //!< Disabled (no rendering)

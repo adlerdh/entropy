@@ -5,9 +5,9 @@
 #define MAX_IMAGE_TEXCOORD vec3(1.0)
 
 // Rendering modes:
-#define IMAGE_RENDER_MODE    0
-#define CHECKER_RENDER_MODE  1
-#define QUADRANTS_RENDER_MODE  2
+#define IMAGE_RENDER_MODE 0
+#define CHECKER_RENDER_MODE 1
+#define QUADRANTS_RENDER_MODE 2
 #define FLASHLIGHT_RENDER_MODE 3
 
 // Redeclared vertex shader outputs, which are now the fragment shader inputs
@@ -21,9 +21,7 @@ in VS_OUT
 layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
 
 uniform sampler3D u_imgTex; // Texture unit 0: image
-uniform sampler1D u_imgCmapTex; // Texture unit 2: image color map (pre-mult RGBA)
-
-// uniform bool u_useTricubicInterpolation; // Whether to use tricubic interpolation
+uniform sampler1D u_imgCmapTex; // Texture unit 1: image color map (pre-mult RGBA)
 
 // Slope for mapping texture intensity to native image intensity, NOT accounting for window-leveling
 uniform float imgSlope_native_T_texture;
@@ -37,6 +35,9 @@ uniform vec2 u_imgThresholds;
 uniform vec2 slopeInterceptWindowLevel;
 
 uniform vec2 u_imgCmapSlopeIntercept; // Slopes and intercepts for the image color maps
+uniform int u_imgCmapQuantLevels; // Number of image color map quantization levels
+uniform vec3 u_imgCmapHsvModFactors; // HSV modification factors for image color
+uniform bool u_useHsv; // Flag that HSV modification is used
 
 uniform float u_imgOpacity; // Image opacities
 
@@ -74,79 +75,39 @@ uniform vec3 u_texSamplingDirZ;
 uniform float waterAttenCoeff;
 uniform float airAttenCoeff;
 
+/// Copied from https://www.laurivan.com/rgb-to-hsv-to-rgb-for-shaders/
+vec3 rgb2hsv(vec3 c)
+{
+  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+  float d = q.x - min(q.w, q.y);
+  float e = 1.0e-10;
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv2rgb(vec3 c)
+{
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 // Check if inside texture coordinates
 bool isInsideTexture(vec3 a)
 {
   return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) &&
-       all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
+          all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
 }
 
-//! Tricubic interpolated texture lookup, using unnormalized coordinates.
-//! Fast implementation, using 8 trilinear lookups.
-//! @param[in] tex  3D texture
-//! @param[in] coord  normalized 3D texture coordinate
-//! @see https://github.com/DannyRuijters/CubicInterpolationCUDA/blob/master/examples/glCubicRayCast/tricubic.shader
-float interpolateTricubicFast(sampler3D tex, vec3 coord)
-{
-  // Shift the coordinate from [0,1] to [-0.5, nrOfVoxels-0.5]
-  vec3 nrOfVoxels = vec3(textureSize(tex, 0));
-  vec3 coord_grid = coord * nrOfVoxels - 0.5;
-  vec3 index = floor(coord_grid);
-  vec3 fraction = coord_grid - index;
-  vec3 one_frac = 1.0 - fraction;
-
-  vec3 w0 = 1.0/6.0 * one_frac*one_frac*one_frac;
-  vec3 w1 = 2.0/3.0 - 0.5 * fraction*fraction*(2.0-fraction);
-  vec3 w2 = 2.0/3.0 - 0.5 * one_frac*one_frac*(2.0-one_frac);
-  vec3 w3 = 1.0/6.0 * fraction*fraction*fraction;
-
-  vec3 g0 = w0 + w1;
-  vec3 g1 = w2 + w3;
-  vec3 mult = 1.0 / nrOfVoxels;
-
-  // h0 = w1/g0 - 1, move from [-0.5, nrOfVoxels-0.5] to [0,1]
-  vec3 h0 = mult * ((w1 / g0) - 0.5 + index);
-
-  // h1 = w3/g1 + 1, move from [-0.5, nrOfVoxels-0.5] to [0,1]
-  vec3 h1 = mult * ((w3 / g1) + 1.5 + index);
-
-	// Fetch the eight linear interpolations
-	// weighting and fetching is interleaved for performance and stability reasons
-  float tex000 = texture(tex, h0)[0];
-  float tex100 = texture(tex, vec3(h1.x, h0.y, h0.z))[0];
-
-  tex000 = mix(tex100, tex000, g0.x); // weigh along the x-direction
-  float tex010 = texture(tex, vec3(h0.x, h1.y, h0.z))[0];
-  float tex110 = texture(tex, vec3(h1.x, h1.y, h0.z))[0];
-
-  tex010 = mix(tex110, tex010, g0.x); // weigh along the x-direction
-  tex000 = mix(tex010, tex000, g0.y); // weigh along the y-direction
-
-  float tex001 = texture(tex, vec3(h0.x, h0.y, h1.z))[0];
-  float tex101 = texture(tex, vec3(h1.x, h0.y, h1.z))[0];
-
-  tex001 = mix(tex101, tex001, g0.x); // weigh along the x-direction
-
-  float tex011 = texture(tex, vec3(h0.x, h1.y, h1.z))[0];
-  float tex111 = texture(tex, h1)[0];
-
-  tex011 = mix(tex111, tex011, g0.x); // weigh along the x-direction
-  tex001 = mix(tex011, tex001, g0.y); // weigh along the y-direction
-
-  return mix(tex001, tex000, g0.z); // weigh along the z-direction
-}
-
-float getImageValue(vec3 texCoord)
-{
-  return clamp(texture(u_imgTex, texCoord)[0], u_imgMinMax[0], u_imgMinMax[1]);
-  //    interpolateTricubicFast(u_imgTex, texCoord),
-}
+// float textureLookup(sampler3D texture, vec3 texCoords);
+{{TEXTURE_LOOKUP_FUNCTION}}
 
 // Convert texture intensity to Hounsefield Units, then to Photon Mass Attenuation coefficient
 float convertTexToAtten(float texValue)
 {
-  // Hounsefield units:
-  float hu = imgSlope_native_T_texture * texValue;
+  float hu = imgSlope_native_T_texture * texValue; // Hounsefield units
 
   // Photon mass attenuation coefficient:
   return max((hu / 1000.0) * (waterAttenCoeff - airAttenCoeff) + waterAttenCoeff, 0.0);
@@ -190,42 +151,34 @@ float hardThreshold(float value, vec2 thresholds)
 
 void main()
 {
-  if (! doRender()) discard;
-
-  // Image mask based on texture coordinates:
-  bool imgMask = isInsideTexture(fs_in.v_imgTexCoords);
+  if (!doRender()) discard;
 
   // Look up the texture values and convert to mass attenuation coefficient.
   // Keep a running sum of attenuation for all samples.
-  float texValue = getImageValue(fs_in.v_imgTexCoords);
+  float texValue = clamp(textureLookup(u_imgTex, fs_in.v_imgTexCoords), u_imgMinMax[0], u_imgMinMax[1]);
   float thresh = hardThreshold(texValue, u_imgThresholds);
   float totalAtten = thresh * convertTexToAtten(texValue);
-
-  // Number of samples used for computing the final image value:
-  int numSamples = int(thresh);
 
   // Accumulate intensity projection in forwards (+Z) direction:
   for (int i = 1; i <= u_halfNumMipSamples; ++i)
   {
     vec3 tc = fs_in.v_imgTexCoords + i * u_texSamplingDirZ;
-    if (! isInsideTexture(tc)) break;
+    if (!isInsideTexture(tc)) break;
 
-    texValue = getImageValue(tc);
+    texValue = clamp(textureLookup(u_imgTex, tc), u_imgMinMax[0], u_imgMinMax[1]);
     thresh = hardThreshold(texValue, u_imgThresholds);
     totalAtten += thresh * convertTexToAtten(texValue);
-    numSamples += int(thresh);
   }
 
   // Accumulate intensity projection in backwards (-Z) direction:
   for (int i = 1; i <= u_halfNumMipSamples; ++i)
   {
     vec3 tc = fs_in.v_imgTexCoords - i * u_texSamplingDirZ;
-    if (! isInsideTexture(tc)) break;
+    if (!isInsideTexture(tc)) break;
 
-    texValue = getImageValue(tc);
+    texValue = clamp(textureLookup(u_imgTex, tc), u_imgMinMax[0], u_imgMinMax[1]);
     thresh = hardThreshold(texValue, u_imgThresholds);
     totalAtten += thresh * convertTexToAtten(texValue);
-    numSamples += int(thresh);
   }
 
   // Compute inverse of the total photon attenuation, which is in range [0.0, 1):
@@ -234,13 +187,23 @@ void main()
   // Apply window-leveling:
   float invAttenWL = slopeInterceptWindowLevel[0] * invAtten + slopeInterceptWindowLevel[1];
 
-  // Compute image alpha based on opacity, mask, and thresholds:
-  float imgAlpha = u_imgOpacity * float(imgMask);
+  // Compute coords into the image color map, accounting for quantization levels:
+  float cmapCoord = mix(floor(float(u_imgCmapQuantLevels) * invAttenWL) / float(u_imgCmapQuantLevels - 1),
+                        invAttenWL, float(0 == u_imgCmapQuantLevels));
+  cmapCoord = u_imgCmapSlopeIntercept[0] * cmapCoord + u_imgCmapSlopeIntercept[1]; // normalize coords
 
-  // Look up image color and apply alpha:
-  vec4 imgColor = texture(u_imgCmapTex, u_imgCmapSlopeIntercept[0] * invAttenWL + u_imgCmapSlopeIntercept[1]) * imgAlpha;
+  vec4 imgColorOrig = texture(u_imgCmapTex, cmapCoord); // image color (non-pre-mult. RGBA)
 
-  // Blend colors:
+  // Apply HSV modification factors:
+  vec3 imgColorHsv = rgb2hsv(imgColorOrig.rgb);
+  imgColorHsv.x += u_imgCmapHsvModFactors.x;
+  imgColorHsv.yz *= u_imgCmapHsvModFactors.yz;
+
+  // Conditionally use HSV modified colors
+  float mask = float(isInsideTexture(fs_in.v_imgTexCoords)); // image mask based on texture coords
+  float alpha = u_imgOpacity * mask; // alpha = opacity * mask
+  vec4 imgLayer = alpha * imgColorOrig.a * vec4(mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_useHsv)), 1.0);
+
   o_color = vec4(0.0, 0.0, 0.0, 0.0);
-  o_color = imgColor + (1.0 - imgColor.a) * o_color;
+  o_color = imgLayer + (1.0 - imgLayer.a) * o_color;
 }

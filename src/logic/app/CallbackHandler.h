@@ -259,9 +259,9 @@ public:
   void toggleImageVisibility();
   void toggleImageEdges();
 
-  void decreaseSegOpacity();
+  void changeSegOpacity(double delta, bool interior);
   void toggleSegVisibility();
-  void increaseSegOpacity();
+  void toggleSegGlobalOutline();
 
   void cyclePrevLayout();
   void cycleNextLayout();

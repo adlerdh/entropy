@@ -21,8 +21,8 @@ in VS_OUT
 
 layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
 
-uniform usampler3D u_segTex; // Texture unit 1: segmentation (scalar)
-uniform samplerBuffer u_segLabelCmapTex; // Texutre unit 3: label color map (non-pre-multiplied RGBA)
+uniform usampler3D u_segTex; // Texture unit 0: segmentation (scalar)
+uniform samplerBuffer u_segLabelCmapTex; // Texutre unit 1: label color map (non-pre-multiplied RGBA)
 
 uniform float u_segOpacity; // Segmentation opacity
 uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
@@ -94,65 +94,6 @@ bool isInsideTexture(vec3 a)
           all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
 }
 
-
-// ##### START INSERT
-
-//! Tricubic interpolated texture lookup
-//! Fast implementation, using 8 trilinear lookups.
-//! @param[in] tex 3D texture sampler
-//! @param[in] coord Normalized 3D texture coordinate
-//! @see https://github.com/DannyRuijters/CubicInterpolationCUDA/blob/master/examples/glCubicRayCast/tricubic.shader
-float interpolateTricubicFast(sampler3D tex, vec3 coord)
-{
-  // Shift the coordinate from [0,1] to [-0.5, nrOfVoxels - 0.5]
-  vec3 nrOfVoxels = vec3(textureSize(tex, 0));
-  vec3 coord_grid = coord * nrOfVoxels - 0.5;
-  vec3 index = floor(coord_grid);
-  vec3 fraction = coord_grid - index;
-  vec3 one_frac = 1.0 - fraction;
-
-  vec3 w0 = 1.0/6.0 * one_frac*one_frac*one_frac;
-  vec3 w1 = 2.0/3.0 - 0.5 * fraction*fraction*(2.0-fraction);
-  vec3 w2 = 2.0/3.0 - 0.5 * one_frac*one_frac*(2.0-one_frac);
-  vec3 w3 = 1.0/6.0 * fraction*fraction*fraction;
-
-  vec3 g0 = w0 + w1;
-  vec3 g1 = w2 + w3;
-  vec3 mult = 1.0 / nrOfVoxels;
-
-  // h0 = w1/g0 - 1, move from [-0.5, nrOfVoxels-0.5] to [0,1]
-  vec3 h0 = mult * ((w1 / g0) - 0.5 + index);
-
-  // h1 = w3/g1 + 1, move from [-0.5, nrOfVoxels-0.5] to [0,1]
-  vec3 h1 = mult * ((w3 / g1) + 1.5 + index);
-
-  // Fetch the eight linear interpolations.
-  // Weighting and feching is interleaved for performance and stability reasons.
-  float tex000 = texture(tex, h0)[0];
-  float tex100 = texture(tex, vec3(h1.x, h0.y, h0.z))[0];
-
-  tex000 = mix(tex100, tex000, g0.x); // weigh along the x-direction
-  float tex010 = texture(tex, vec3(h0.x, h1.y, h0.z))[0];
-  float tex110 = texture(tex, vec3(h1.x, h1.y, h0.z))[0];
-
-  tex010 = mix(tex110, tex010, g0.x); // weigh along the x-direction
-  tex000 = mix(tex010, tex000, g0.y); // weigh along the y-direction
-
-  float tex001 = texture(tex, vec3(h0.x, h0.y, h1.z))[0];
-  float tex101 = texture(tex, vec3(h1.x, h0.y, h1.z))[0];
-
-  tex001 = mix(tex101, tex001, g0.x); // weigh along the x-direction
-
-  float tex011 = texture(tex, vec3(h0.x, h1.y, h1.z))[0];
-  float tex111 = texture(tex, h1)[0];
-
-  tex011 = mix(tex111, tex011, g0.x); // weigh along the x-direction
-  tex001 = mix(tex011, tex001, g0.y); // weigh along the y-direction
-
-  return mix(tex001, tex000, g0.z); // weigh along the z-direction
-}
-// ##### FINISH INSERT
-
 vec4 computeLabelColor(int label)
 {
   // Labels greater than the size of the segmentation labelc color texture are mapped to 0
@@ -162,46 +103,16 @@ vec4 computeLabelColor(int label)
   return color.a * color; // pre-multiply by alpha
 }
 
-/// Look up segmentation texture label value (after mapping to GL texture units)
+// float uintTextureLookup(sampler3D texture, vec3 texCoords);
+{{UINT_TEXTURE_LOOKUP_FUNCTION}}
 
-// ##### START INSERT
-/// Default nearest-neighbor lookup:
-uint getSegValue(vec3 texOffset, out float opacity)
-{
-  opacity = 1.0;
-  return texture(u_segTex, fs_in.v_segTexCoords + texOffset)[0];
-}
-// ##### FINISH INSERT
+// Look up segmentation texture label value (after mapping to GL texture units):
+// uint getSegValue(vec3 texOffset, out float opacity);
+{{GET_SEG_VALUE_FUNCTION}}
 
-/// Compute alpha of fragments based on whether or not they are inside the
-/// segmentation boundary. Fragments on the boundary are assigned alpha of 1,
-/// whereas fragments inside are assigned alpha of 'u_segInteriorOpacity'.
-float getSegInteriorAlpha(uint seg)
-{
-  // Look up texture values in 8 neighbors surrounding the center fragment.
-  // These may be either neighboring image voxels or neighboring view pixels.
-  // The center fragment (row = 0, col = 0) has index i = 4.
-  for (int i = 0; i <= 8; ++i)
-  {
-    float row = float(mod(i, 3) - 1); // [-1,0,1]
-    float col = float(floor(float(i / 3)) - 1); // [-1,0,1]
-
-    vec3 texPosOffset = row * u_texSamplingDirsForSegOutline[0] +
-                        col * u_texSamplingDirsForSegOutline[1];
-
-    // Segmentation value of neighbor at (row, col) offset:
-    float ignore;
-
-    if (seg != getSegValue(texPosOffset, ignore))
-    {
-      // Fragment (with segmentation 'seg') is on the segmentation boundary,
-      // since its value is not equal to one of its neighbors. Therefore, it gets full alpha.
-      return 1.0;
-    }
-  }
-
-  return u_segInteriorOpacity;
-}
+// Look up alpha of segmentation interior:
+// float getSegInteriorAlpha(uint seg)
+{{GET_SEG_INTERIOR_ALPHA_FUNCTION}}
 
 bool doRender()
 {

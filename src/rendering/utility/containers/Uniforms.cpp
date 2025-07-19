@@ -131,7 +131,7 @@ GLint Uniforms::queryAndSetLocation(
 
   if (-1 == loc)
   {
-    spdlog::error("Unrecognized unform '{}'", name);
+    spdlog::error("Unrecognized uniform '{}'", name);
     return loc;
   }
 
@@ -147,7 +147,7 @@ int Uniforms::queryAndSetAllLocations(std::function<GLint(const std::string&)> l
 
     if (-1 == loc)
     {
-      spdlog::error("Unrecognized unform '{}'", uniform.first);
+      spdlog::error("Unrecognized uniform '{}'", uniform.first);
       return 1;
     }
   }

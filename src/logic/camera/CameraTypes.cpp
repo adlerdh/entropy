@@ -20,7 +20,7 @@ std::string typeString(const ViewRenderMode& mode)
     {ViewRenderMode::Quadrants, "Quadrants"},
     {ViewRenderMode::Flashlight, "Flashlight"},
     {ViewRenderMode::Difference, "Difference"},
-    {ViewRenderMode::CrossCorrelation, "Correlation"},
+    // {ViewRenderMode::CrossCorrelation, "Correlation"},
     {ViewRenderMode::JointHistogram, "Joint Histogram"},
     {ViewRenderMode::VolumeRender, "Volume Render"},
     {ViewRenderMode::Disabled, "Disabled"}
@@ -51,7 +51,7 @@ std::string descriptionString(const ViewRenderMode& mode)
     {ViewRenderMode::Quadrants, "Quadrants comparison"},
     {ViewRenderMode::Flashlight, "Flashlight comparison"},
     {ViewRenderMode::Difference, "Difference metric"},
-    {ViewRenderMode::CrossCorrelation, "Correlation metric"},
+    // {ViewRenderMode::CrossCorrelation, "Correlation metric"},
     {ViewRenderMode::JointHistogram, "Joint histogram metric"},
     {ViewRenderMode::VolumeRender, "Volume rendering"},
     {ViewRenderMode::Disabled, "Disabled"}
@@ -87,7 +87,7 @@ ShaderGroup getShaderGroup(const ViewRenderMode& renderMode)
 
   case ViewRenderMode::Overlay:
   case ViewRenderMode::Difference:
-  case ViewRenderMode::CrossCorrelation:
+  // case ViewRenderMode::CrossCorrelation:
   case ViewRenderMode::JointHistogram:
   {
     return ShaderGroup::Metric;

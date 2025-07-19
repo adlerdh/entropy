@@ -24,7 +24,6 @@ out VS_OUT
   vec2 v_clipPos; // 2D clip position
 } vs_out;
 
-
 void main()
 {
   vs_out.v_clipPos = clipPos;

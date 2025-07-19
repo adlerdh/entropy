@@ -15,8 +15,6 @@ uniform sampler3D u_imgTex; // Texture unit 0: image
 uniform usampler3D u_segTex; // Texture unit 1: segmentation
 uniform usampler3D u_jumpTex; // Texture unit 5: distance texture
 
-// uniform bool u_useTricubicInterpolation; // Whether to use tricubic interpolation
-
 uniform mat4 u_imgTexture_T_world;
 uniform mat4 world_T_imgTexture;
 

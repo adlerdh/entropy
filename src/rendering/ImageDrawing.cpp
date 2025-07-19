@@ -261,6 +261,7 @@ void drawImageQuad(
     program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
     program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
   }
+  /*
   else if (ViewRenderMode::CrossCorrelation == renderMode)
   {
     static const glm::vec4 sk_clipO{0.0f, 0.0f, -1.0f, 1.0};
@@ -299,6 +300,7 @@ void drawImageQuad(
     program.setUniform("u_tex0SamplingDirX", tex0SamplingDirX);
     program.setUniform("u_tex0SamplingDirY", tex0SamplingDirY);
   }
+  */
 
   quad.m_vao.bind();
   {

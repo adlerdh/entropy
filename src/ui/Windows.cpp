@@ -129,7 +129,7 @@ void renderViewSettingsComboWindow(
     case ViewRenderMode::Flashlight:
     case ViewRenderMode::Overlay:
     case ViewRenderMode::Difference:
-    case ViewRenderMode::CrossCorrelation:
+    // case ViewRenderMode::CrossCorrelation:
     case ViewRenderMode::JointHistogram:
     {
       label = ICON_FK_EYE;
@@ -1196,6 +1196,7 @@ void renderSettingsWindow(
     ImGui::SameLine();
     helpMarker("Minimum and maximum of the metric window range");
 
+    /*
     // Metric masking:
     bool doMasking = metricParams.m_doMasking;
     if (ImGui::Checkbox("Masking", &doMasking))
@@ -1205,6 +1206,7 @@ void renderSettingsWindow(
     }
     ImGui::SameLine();
     helpMarker("Only compute the metric within masked regions");
+    */
 
     // Metric colormap dialog:
     bool* showImageColormapWindow = &showColormapWindow;
@@ -1670,6 +1672,7 @@ void renderSettingsWindow(
           ImGui::TreePop();
         }
 
+        /*
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
         if (ImGui::TreeNode("Cross-correlation"))
         {
@@ -1684,6 +1687,7 @@ void renderSettingsWindow(
           ImGui::PopID(); // "crosscorr"
           ImGui::TreePop();
         }
+        */
 
         ImGui::PopID(); /*** PopID metrics ***/
         ImGui::EndTabItem();

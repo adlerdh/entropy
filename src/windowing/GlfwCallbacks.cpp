@@ -650,8 +650,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
   {
   case GLFW_KEY_Q:
   {
-    if (s_modifierState.control)
-    {
+    if (s_modifierState.control) {
       glfwSetWindowShouldClose(window, true);
     }
     break;
@@ -682,15 +681,24 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     H.setMouseMode(MouseMode::CameraTranslate);
     break;
 
-  case GLFW_KEY_A:
-    H.decreaseSegOpacity();
+  case GLFW_KEY_A: {
+    const bool interior = s_modifierState.shift;
+    H.changeSegOpacity(-0.05, interior);
     break;
-  case GLFW_KEY_S:
+  }
+  case GLFW_KEY_S: {
     H.toggleSegVisibility();
     break;
-  case GLFW_KEY_D:
-    H.increaseSegOpacity();
+  }
+  case GLFW_KEY_D: {
+    const bool interior = s_modifierState.shift;
+    H.changeSegOpacity(0.05, interior);
     break;
+  }
+  case GLFW_KEY_SPACE: {
+    H.toggleSegGlobalOutline();
+    break;
+  }
 
   case GLFW_KEY_W:
     H.toggleImageVisibility();

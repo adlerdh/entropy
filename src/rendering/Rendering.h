@@ -1,5 +1,4 @@
-#ifndef RENDERING_H
-#define RENDERING_H
+#pragma once
 
 #include "common/Types.h"
 #include "common/UuidRange.h"
@@ -64,21 +63,13 @@ public:
   /// Update a label color table texture
   void updateLabelColorTableTexture(size_t tableIndex);
 
-  /**
-     * @brief Updates the texture representation of a segmentation
-     * @param segUid
-     * @param compType
-     * @param startOffsetVoxel
-     * @param sizeInVoxels
-     * @param data
-     */
+  /// Updates the texture representation of a segmentation
   void updateSegTexture(
     const uuids::uuid& segUid,
     const ComponentType& compType,
     const glm::uvec3& startOffsetVoxel,
     const glm::uvec3& sizeInVoxels,
-    const void* data
-  );
+    const void* data);
 
   /// @todo Is this function needed?
   void updateSegTextureWithInt64Data(
@@ -86,8 +77,7 @@ public:
     const ComponentType& compType,
     const glm::uvec3& startOffsetVoxel,
     const glm::uvec3& sizeInVoxels,
-    const int64_t* data
-  );
+    const int64_t* data);
 
   void updateImageTexture(
     const uuids::uuid& imageUid,
@@ -95,8 +85,7 @@ public:
     const ComponentType& compType,
     const glm::uvec3& startOffsetVoxel,
     const glm::uvec3& sizeInVoxels,
-    const void* data
-  );
+    const void* data);
 
   bool createLabelColorTableTexture(const uuids::uuid& labelTableUid);
 
@@ -119,65 +108,52 @@ private:
 
   void createShaderPrograms();
 
-  bool createCrossCorrelationProgram(GLShaderProgram& program);
-  bool createDifferenceProgram(GLShaderProgram& program);
-  bool createEdgeProgram(GLShaderProgram& program);
-  bool createImageProgram(GLShaderProgram& program);
-  bool createImageRgbaProgram(GLShaderProgram& program);
-  bool createXrayProgram(GLShaderProgram& program);
+  bool createImageGreyProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
+  bool createImageColorProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
+  bool createEdgeProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
+  bool createXrayProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
+
+  bool createDifferenceProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
+
   bool createOverlayProgram(GLShaderProgram& program);
   bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);
   bool createSimpleProgram(GLShaderProgram& program);
-  bool createSegProgram(GLShaderProgram& program);
-  bool createSegLinearProgram(GLShaderProgram& program);
+
+  bool createSegProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap,
+                        bool linearInterpolation);
 
   void renderImageData();
   void renderOverlays();
   void renderVectorOverlays();
 
-  void renderOneImage(
-    const View& view,
-    const glm::vec3& worldOffsetXhairs,
-    GLShaderProgram& program,
-    const CurrentImages& I,
-    bool showEdges);
+  void renderOneImage(const View& view, const glm::vec3& worldOffsetXhairs,
+                      GLShaderProgram& program, const CurrentImages& I, bool showEdges);
 
-  void renderOneImage_overlays(
-    const View& view,
-    const FrameBounds& miewportViewBounds,
-    const glm::vec3& worldOffsetXhairs,
-    const CurrentImages& I);
+  void renderOneImage_overlays(const View& view, const FrameBounds& miewportViewBounds,
+                               const glm::vec3& worldOffsetXhairs, const CurrentImages& I);
 
   void volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I);
 
-  void renderAllImages(
-    const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs
-  );
+  void renderAllImages(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
+  void renderAllLandmarks(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
+  void renderAllAnnotations(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
 
-  void renderAllLandmarks(
-    const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs
-  );
-
-  void renderAllAnnotations(
-    const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs
-  );
-
-  // Bind/unbind images, segmentations, and color maps
-  std::list<std::reference_wrapper<GLTexture> > bindImageTextures(const ImgSegPair& P);
+  // Bind/unbind textures for images, segmentations, and image color maps
+  std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& P);
+  std::list<std::reference_wrapper<GLTexture>> bindColorImageTextures(const ImgSegPair& P);
+  std::list<std::reference_wrapper<GLTexture>> bindSegTextures(const ImgSegPair& P);
   void unbindTextures(const std::list<std::reference_wrapper<GLTexture> >& textures);
 
-  // Bind/unbind images, segmentations, and color maps
-  std::list<std::reference_wrapper<GLTexture> > bindMetricImageTextures(
-    const CurrentImages& I, const ViewRenderMode& metricType
-  );
+  // Bind/unbind metric images and color map
+  std::list<std::reference_wrapper<GLTexture>> bindMetricImageTextures(
+    const CurrentImages& I, const ViewRenderMode& metricType);
 
-  // Bind/unbind label tables
-  std::list<std::reference_wrapper<GLBufferTexture> > bindSegBufferTextures(const CurrentImages& I);
+  // Bind/unbind buffer textures (e.g. label color tables)
+  std::list<std::reference_wrapper<GLBufferTexture>> bindSegBufferTextures(const ImgSegPair& p);
   void unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture> >& textures);
 
   // Get current image and segmentation UIDs to render in the metric shaders
-  CurrentImages getImageAndSegUidsForMetricShaders(const std::list<uuids::uuid>& metricImageUids
-  ) const;
+  CurrentImages getImageAndSegUidsForMetricShaders(const std::list<uuids::uuid>& metricImageUids) const;
 
   // Get current image and segmentation UIDs to render in the image shaders
   CurrentImages getImageAndSegUidsForImageShaders(const std::list<uuids::uuid>& imageUids) const;
@@ -187,35 +163,27 @@ private:
   // NanoVG context for vector graphics (owned by this class)
   NVGcontext* m_nvg;
 
-  GLShaderProgram m_crossCorrelationProgram;
-  GLShaderProgram m_differenceProgram;
-  GLShaderProgram m_edgeProgram;
-  GLShaderProgram m_imageProgram;
-  GLShaderProgram m_imageRgbaProgram;
-  GLShaderProgram m_xrayProgram;
+  GLShaderProgram m_imageGreyTexLookupLinearProgram;
+  GLShaderProgram m_imageGreyTexLookupCubicProgram;
+
+  GLShaderProgram m_imageColorTexLookupLinearProgram;
+  GLShaderProgram m_imageColorTexLookupCubicProgram;
+
+  GLShaderProgram m_edgeTexLookupLinearProgram;
+  GLShaderProgram m_edgeTexLookupCubicProgram;
+
+  GLShaderProgram m_xrayTexLookupLinearProgram;
+  GLShaderProgram m_xrayTexLookupCubicProgram;
+
+  GLShaderProgram m_differenceTexLookupLinearProgram;
+  GLShaderProgram m_differenceTexLookupCubicProgram;
+
   GLShaderProgram m_overlayProgram;
   GLShaderProgram m_raycastIsoSurfaceProgram;
   GLShaderProgram m_simpleProgram;
 
-  GLShaderProgram m_segProgram;
+  GLShaderProgram m_segNearestProgram;
   GLShaderProgram m_segLinearProgram;
-
-  // Samplers for metric shaders:
-  static const Uniforms::SamplerIndexVectorType msk_imgTexSamplers;        // pair of images
-  static const Uniforms::SamplerIndexVectorType msk_segTexSamplers;        // pair of segmentations
-  static const Uniforms::SamplerIndexVectorType msk_labelTableTexSamplers; // pair of label tables
-  static const Uniforms::SamplerIndexVectorType msk_imgCmapTexSamplers; // pair of image colormaps
-  static const Uniforms::SamplerIndexType msk_metricCmapTexSampler;     // one colormap
-
-  // Samplers for image shaders:
-  static const Uniforms::SamplerIndexType msk_imgTexSampler;            // one image
-  static const Uniforms::SamplerIndexVectorType msk_imgRgbaTexSamplers; // Four (RGBA) images
-  static const Uniforms::SamplerIndexType msk_segTexSampler;            // one segmentation
-  static const Uniforms::SamplerIndexType msk_imgCmapTexSampler;        // one image colormap
-  static const Uniforms::SamplerIndexType msk_labelTableTexSampler;     // one label table
-
-  // Samplers for volume rendering shader:
-  static const Uniforms::SamplerIndexType msk_jumpTexSampler; // distance map texture
 
   /// Is the application done loading images?
   bool m_isAppDoneLoadingImages;
@@ -240,5 +208,3 @@ private:
   DrawableProviderType m_overlayDrawableProvider;
 #endif
 };
-
-#endif // RENDERING_H

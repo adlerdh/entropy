@@ -1,7 +1,14 @@
 #version 330 core
 
+// 3D texture coordinates (s,t,p) are in [0.0, 1.0]^3
 #define MIN_IMAGE_TEXCOORD vec3(0.0)
 #define MAX_IMAGE_TEXCOORD vec3(1.0)
+
+// Rendering modes:
+#define IMAGE_RENDER_MODE 0
+#define CHECKER_RENDER_MODE 1
+#define QUADRANTS_RENDER_MODE 2
+#define FLASHLIGHT_RENDER_MODE 3
 
 in VS_OUT // Redeclared vertex shader outputs: now the fragment shader inputs
 {
@@ -13,14 +20,14 @@ in VS_OUT // Redeclared vertex shader outputs: now the fragment shader inputs
 layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
 
 uniform sampler3D u_imgTex; // Texture unit 0: image
-uniform sampler1D u_imgCmapTex; // Texture unit 2: image color map (pre-mult RGBA)
+uniform sampler1D u_imgCmapTex; // Texture unit 1: image color map (pre-mult RGBA)
 
-// uniform bool u_useTricubicInterpolation; // Whether to use tricubic interpolation
 uniform vec2 u_imgSlopeIntercept; // Slopes and intercepts for image normalization and window-leveling
 uniform vec2 u_imgSlopeInterceptLargest; // Slopes and intercepts for image normalization
 uniform vec2 u_imgCmapSlopeIntercept; // Slopes and intercepts for the image color maps
 uniform int u_imgCmapQuantLevels; // Number of quantization levels
 uniform vec3 u_imgCmapHsvModFactors; // HSV modification factors for image color
+uniform bool u_useHsv; // Flag that HSV modification is used
 
 uniform vec2 u_imgMinMax; // Min and max image values
 uniform vec2 u_imgThresholds; // Image lower and upper thresholds, mapped to OpenGL texture intensity
@@ -104,7 +111,7 @@ const float SobelFactor = 1.0 / (2.0*A + B);
 float smoothThreshold(float value, vec2 thresholds)
 {
   return smoothstep(thresholds[0] - 0.01, thresholds[0], value) -
-       smoothstep(thresholds[1], thresholds[1] + 0.01, value);
+         smoothstep(thresholds[1], thresholds[1] + 0.01, value);
 }
 
 float hardThreshold(float value, vec2 thresholds)
@@ -115,105 +122,50 @@ float hardThreshold(float value, vec2 thresholds)
 bool isInsideTexture(vec3 a)
 {
   return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) &&
-       all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
+          all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
 }
 
-//! Tricubic interpolated texture lookup, using unnormalized coordinates.
-//! Fast implementation, using 8 trilinear lookups.
-//! @param[in] tex  3D texture
-//! @param[in] coord  normalized 3D texture coordinate
-//! @see https://github.com/DannyRuijters/CubicInterpolationCUDA/blob/master/examples/glCubicRayCast/tricubic.shader
-float interpolateTricubicFast(sampler3D tex, vec3 coord)
+// float textureLookup(sampler3D texture, vec3 texCoords);
+{{TEXTURE_LOOKUP_FUNCTION}}
+
+bool doRender()
 {
-	// Shift the coordinate from [0,1] to [-0.5, nrOfVoxels-0.5]
-  vec3 nrOfVoxels = vec3(textureSize(tex, 0));
-  vec3 coord_grid = coord * nrOfVoxels - 0.5;
-  vec3 index = floor(coord_grid);
-  vec3 fraction = coord_grid - index;
-  vec3 one_frac = 1.0 - fraction;
+  // Indicator of the quadrant of the crosshairs that the fragment is in:
+  bvec2 Q = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x, fs_in.v_clipPos.y > u_clipCrosshairs.y);
 
-  vec3 w0 = 1.0/6.0 * one_frac*one_frac*one_frac;
-  vec3 w1 = 2.0/3.0 - 0.5 * fraction*fraction*(2.0-fraction);
-  vec3 w2 = 2.0/3.0 - 0.5 * one_frac*one_frac*(2.0-one_frac);
-  vec3 w3 = 1.0/6.0 * fraction*fraction*fraction;
+  // Distance of the fragment from the crosshairs, accounting for aspect ratio:
+  float flashlightDist = sqrt(pow(u_aspectRatio * (fs_in.v_clipPos.x - u_clipCrosshairs.x), 2.0) +
+                              pow(fs_in.v_clipPos.y - u_clipCrosshairs.y, 2.0));
 
-  vec3 g0 = w0 + w1;
-  vec3 g1 = w2 + w3;
-  vec3 mult = 1.0 / nrOfVoxels;
+  bool render = (IMAGE_RENDER_MODE == u_renderMode); // Flag indicating whether the fragment will be rendere
 
-  // h0 = w1/g0 - 1, move from [-0.5, nrOfVoxels-0.5] to [0,1]
-  vec3 h0 = mult * ((w1 / g0) - 0.5 + index);
+  // If in Checkerboard/Quadrants/Flashlight mode, then render the fragment?
+  render = render || ((CHECKER_RENDER_MODE == u_renderMode) &&
+    (u_showFix == bool(mod(floor(fs_in.v_checkerCoord.x) + floor(fs_in.v_checkerCoord.y), 2.0) > 0.5)));
 
-  // h1 = w3/g1 + 1, move from [-0.5, nrOfVoxels-0.5] to [0,1]
-  vec3 h1 = mult * ((w3 / g1) + 1.5 + index);
+  render = render || ((QUADRANTS_RENDER_MODE == u_renderMode) &&
+    (u_showFix == ((! u_quadrants.x || Q.x) == (! u_quadrants.y || Q.y))));
 
-	// Fetch the eight linear interpolations
-	// weighting and fetching is interleaved for performance and stability reasons
-  float tex000 = texture(tex, h0)[0];
-  float tex100 = texture(tex, vec3(h1.x, h0.y, h0.z))[0];
+  render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&
+    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightOverlays && u_showFix)));
 
-  tex000 = mix(tex100, tex000, g0.x); // weigh along the x-direction
-  float tex010 = texture(tex, vec3(h0.x, h1.y, h0.z))[0];
-  float tex110 = texture(tex, vec3(h1.x, h1.y, h0.z))[0];
-
-  tex010 = mix(tex110, tex010, g0.x); // weigh along the x-direction
-  tex000 = mix(tex010, tex000, g0.y); // weigh along the y-direction
-
-  float tex001 = texture(tex, vec3(h0.x, h0.y, h1.z))[0];
-  float tex101 = texture(tex, vec3(h1.x, h0.y, h1.z))[0];
-
-  tex001 = mix(tex101, tex001, g0.x); // weigh along the x-direction
-
-  float tex011 = texture(tex, vec3(h0.x, h1.y, h1.z))[0];
-  float tex111 = texture(tex, h1)[0];
-
-  tex011 = mix(tex111, tex011, g0.x); // weigh along the x-direction
-  tex001 = mix(tex011, tex001, g0.y); // weigh along the y-direction
-
-  return mix(tex001, tex000, g0.z); // weigh along the z-direction
-}
-
-float getImageValue(vec3 texCoord)
-{
-  return clamp(texture(u_imgTex, texCoord)[0], u_imgMinMax[0], u_imgMinMax[1]);
-  // interpolateTricubicFast(u_imgTex, texCoord)
+  return render;
 }
 
 void main()
 {
-  bvec2 Q = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x, fs_in.v_clipPos.y > u_clipCrosshairs.y);
+  if (!doRender()) discard;
 
-  float flashlightDist = sqrt(pow(u_aspectRatio * (fs_in.v_clipPos.x - u_clipCrosshairs.x), 2.0) +
-                 pow(fs_in.v_clipPos.y - u_clipCrosshairs.y, 2.0));
+  mat3 V; // Image values in a 3x3 neighborhood
 
-  bool doRender = (0 == u_renderMode);
-
-  doRender = doRender || ((1 == u_renderMode) &&
-    (u_showFix == bool(mod(floor(fs_in.v_checkerCoord.x) + floor(fs_in.v_checkerCoord.y), 2.0) > 0.5)));
-
-  doRender = doRender || ((2 == u_renderMode) &&
-    (u_showFix == ((! u_quadrants.x || Q.x) == (! u_quadrants.y || Q.y))));
-
-  doRender = doRender || ((3 == u_renderMode) &&
-    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightOverlays && u_showFix)));
-
-  if (! doRender) discard;
-
-  // Foreground mask based on whether texture coordinates are in range [0.0, 1.0]^3:
-  bool imgMask = isInsideTexture(fs_in.v_imgTexCoords);
-
-  // Image values in a 3x3 neighborhood:
-  mat3 V;
-
-  for (int j = 0; j <= 2; ++j)
-  {
+  for (int j = 0; j <= 2; ++j) {
     for (int i = 0; i <= 2; ++i)
     {
       vec3 texSamplingPos = float(i - 1) * u_texSamplingDirsForEdges[0] +
-        float(j - 1) * u_texSamplingDirsForEdges[1];
+                            float(j - 1) * u_texSamplingDirsForEdges[1];
 
       //float v = texture(u_imgTex, fs_in.v_imgTexCoords + texSamplingPos).r;
-      float v = getImageValue(fs_in.v_imgTexCoords + texSamplingPos);
+      float v = clamp(textureLookup(u_imgTex, fs_in.v_imgTexCoords + texSamplingPos), u_imgMinMax[0], u_imgMinMax[1]);
 
       // Apply maximum window/level to normalize value in [0.0, 1.0]:
       V[i][j] = u_imgSlopeInterceptLargest[0] * v + u_imgSlopeInterceptLargest[1];
@@ -222,13 +174,11 @@ void main()
 
   // Convolutions for all masks:
   float C_Sobel[2];
-  for (int i = 0; i <= 1; ++i)
-  {
+  for (int i = 0; i <= 1; ++i) {
     C_Sobel[i] = dot(Filter_Sobel[i][0], V[0]) + dot(Filter_Sobel[i][1], V[1]) + dot(Filter_Sobel[i][2], V[2]);
     C_Sobel[i] *= C_Sobel[i];
   }
 
-  // Gradient magnitude:
   float gradMag_Sobel = SobelFactor * sqrt(C_Sobel[0] + C_Sobel[1]) / max(u_edgeMagnitude, 0.01);
 
 //  float C_FC[9];
@@ -252,36 +202,31 @@ void main()
   // Get the image value:
   // float img = texture(u_imgTex, fs_in.v_imgTexCoords).r;
 
-  float img = getImageValue(fs_in.v_imgTexCoords);
+  float img = clamp(textureLookup(u_imgTex, fs_in.v_imgTexCoords), u_imgMinMax[0], u_imgMinMax[1]);
 
   // Apply window/level and normalize value in [0.0, 1.0]:
   float imgNorm = clamp(u_imgSlopeIntercept[0] * img + u_imgSlopeIntercept[1], 0.0, 1.0);
 
+  // Apply color map to the image intensity:
+  // Compute coords into the image color map, accounting for quantization levels:
+  float cmapCoord = mix(floor(float(u_imgCmapQuantLevels) * imgNorm) / float(u_imgCmapQuantLevels - 1), imgNorm, float(0 == u_imgCmapQuantLevels));
+  cmapCoord = u_imgCmapSlopeIntercept[0] * cmapCoord + u_imgCmapSlopeIntercept[1]; // normalize coords
+
+  vec4 imgColorOrig = texture(u_imgCmapTex, cmapCoord); // image color (non-pre-mult. RGBA)
+
+  // Apply HSV modification factors:
+  vec3 imgColorHsv = rgb2hsv(imgColorOrig.rgb);
+  imgColorHsv.x += u_imgCmapHsvModFactors.x;
+  imgColorHsv.yz *= u_imgCmapHsvModFactors.yz;
+
   // Alpha accounts for opacity, masking, and thresholding:
   // Alpha will be applied to the image and edge layers.
-  float alpha = u_imgOpacity * float(imgMask) * hardThreshold(img, u_imgThresholds);
+  // Foreground mask based on whether texture coordinates are in range [0.0, 1.0]^3:
+  float mask = float(isInsideTexture(fs_in.v_imgTexCoords));
+  float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds);
 
-  // Apply color map to the image intensity:
-  // Disable the image color if u_overlayEdges is false.
-
-  // Quantize the color map.
-  float cmapCoord = mix(floor(float(u_imgCmapQuantLevels) * imgNorm) / float(u_imgCmapQuantLevels - 1), imgNorm, float(0 == u_imgCmapQuantLevels));
-  cmapCoord = u_imgCmapSlopeIntercept[0] * cmapCoord + u_imgCmapSlopeIntercept[1];
-
-  // Look up image color (RGBA):
-  vec4 imgColor = texture(u_imgCmapTex, cmapCoord);
-
-  // Convert RGBA to HSV and apply HSV modification factors:
-  vec3 imgColorHsv = rgb2hsv(imgColor.rgb);
-
-  imgColorHsv.r += u_imgCmapHsvModFactors.r;
-  imgColorHsv.g *= u_imgCmapHsvModFactors.g;
-
-  // Convert back to RGB
-  imgColor.rgb = hsv2rgb(imgColorHsv);
-
-  vec4 imageLayer = alpha * float(u_overlayEdges) * imgColor.a * vec4(imgColor.rgb, 1.0);
-//  vec4 imageLayer = alpha * float(u_overlayEdges) * texture(u_imgCmapTex, cmapCoord);
+  // Disable the image color if u_overlayEdges is false
+  vec4 imgLayer = alpha * float(u_overlayEdges) * imgColorOrig.a * vec4(mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_useHsv)), 1.0);
 
   // Apply color map to gradient magnitude:
   vec4 gradColormap = texture(u_imgCmapTex, u_imgCmapSlopeIntercept[0] * gradMag + u_imgCmapSlopeIntercept[1]);
@@ -291,6 +236,6 @@ void main()
 
   // Blend colors:
   o_color = vec4(0.0, 0.0, 0.0, 0.0);
-  o_color = imageLayer + (1.0 - imageLayer.a) * o_color;
+  o_color = imgLayer + (1.0 - imgLayer.a) * o_color;
   o_color = edgeLayer + (1.0 - edgeLayer.a) * o_color;
 }
