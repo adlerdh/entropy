@@ -2,15 +2,11 @@
 
 #include "common/Types.h"
 #include "common/UuidRange.h"
-
-#include "image/Image.h"
 #include "logic/camera/CameraTypes.h"
-
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 
 #include <glm/fwd.hpp>
-
 #include <uuid.h>
 
 #include <functional>
@@ -114,8 +110,8 @@ private:
   bool createXrayProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
 
   bool createDifferenceProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
+  bool createOverlayProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
 
-  bool createOverlayProgram(GLShaderProgram& program);
   bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);
   bool createSimpleProgram(GLShaderProgram& program);
 
@@ -123,7 +119,6 @@ private:
                         bool linearInterpolation);
 
   void renderImageData();
-  void renderOverlays();
   void renderVectorOverlays();
 
   void renderOneImage(const View& view, const glm::vec3& worldOffsetXhairs,
@@ -178,7 +173,9 @@ private:
   GLShaderProgram m_differenceTexLookupLinearProgram;
   GLShaderProgram m_differenceTexLookupCubicProgram;
 
-  GLShaderProgram m_overlayProgram;
+  GLShaderProgram m_overlayTexLookupLinearProgram;
+  GLShaderProgram m_overlayTexLookupCubicProgram;
+
   GLShaderProgram m_raycastIsoSurfaceProgram;
   GLShaderProgram m_simpleProgram;
 

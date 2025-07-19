@@ -25,10 +25,10 @@ enum class ProjectionType
 enum class ViewRenderMode
 {
   Image,        //!< Images rendered in 2D using color maps
-  Overlay,      //!< Image pair rendered in 2D with overlap highlighted
   Checkerboard, //!< Image pair rendered in 2D using checkerboard pattern
   Quadrants,    //!< Image pair rendered in 2D, with each image occupying opposing view quadrants
   Flashlight, //!< Image pair rendered in 2D, with moving image appearing as circular region at crosshairs
+  Overlay,      //!< Image pair rendered in 2D with overlap highlighted
   Difference,       //!< Absolute or squared difference of the image pair rendered in 2D
   // CrossCorrelation, //!< Cross-correlation of the image pair rendered in 2D
   JointHistogram,   //!< Joint intensity histogram of the image pair
@@ -67,10 +67,10 @@ enum class IntensityProjectionMode : int
  */
 inline std::vector<ViewRenderMode> const All2dViewRenderModes = {
   ViewRenderMode::Image,
-  ViewRenderMode::Overlay,
   ViewRenderMode::Checkerboard,
   ViewRenderMode::Quadrants,
   ViewRenderMode::Flashlight,
+  ViewRenderMode::Overlay,
   ViewRenderMode::Difference,
   ViewRenderMode::JointHistogram,
   ViewRenderMode::Disabled

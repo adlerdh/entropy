@@ -8,11 +8,6 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-#include <fstream>
-//#include <iostream>
-//#include <sstream>
-//#include <variant>
-
 GLShaderProgram::GLShaderProgram(std::string name)
   : m_name(std::move(name))
   , m_handle(0u)
@@ -22,8 +17,7 @@ GLShaderProgram::GLShaderProgram(std::string name)
 
 GLShaderProgram::~GLShaderProgram()
 {
-  if (!m_handle)
-  {
+  if (!m_handle) {
     return;
   }
 
@@ -34,16 +28,13 @@ GLShaderProgram::~GLShaderProgram()
   GLsizei actualShaderCount = 0;
   glGetAttachedShaders(m_handle, numAttachedShaders, &actualShaderCount, &shaders[0]);
 
-  for (int i = 0; i < actualShaderCount; ++i)
-  {
-    if (glIsShader(shaders[uint32_t(i)]))
-    {
+  for (int i = 0; i < actualShaderCount; ++i) {
+    if (glIsShader(shaders[uint32_t(i)])) {
       glDetachShader(m_handle, shaders[uint32_t(i)]);
     }
   }
 
-  if (glIsProgram(m_handle))
-  {
+  if (glIsProgram(m_handle)) {
     glDeleteProgram(m_handle);
   }
 }
@@ -65,18 +56,14 @@ bool GLShaderProgram::isLinked() const
 
 void GLShaderProgram::attachShader(std::shared_ptr<GLShader> shader)
 {
-  if (!shader || !shader->isValid())
-  {
+  if (!shader || !shader->isValid()) {
     spdlog::error("Invalid shader; cannot attach to program '{}'", m_name);
     throw_debug("Invalid shader; cannot attach to program")
   }
 
-  if (!m_handle)
-  {
+  if (!m_handle) {
     m_handle = glCreateProgram();
-
-    if (!m_handle)
-    {
+    if (!m_handle) {
       spdlog::error("Unable to create shader program '{}'", m_name);
       throw_debug("Unable to create shader program");
     }
@@ -93,13 +80,11 @@ void GLShaderProgram::attachShader(std::shared_ptr<GLShader> shader)
 
 bool GLShaderProgram::link()
 {
-  if (!m_handle)
-  {
+  if (!m_handle) {
     spdlog::error("Program '{}' has not been compiled", m_name);
     return false;
   }
-  else if (m_linked)
-  {
+  else if (m_linked) {
     spdlog::error("Program '{}' has already been linked", m_name);
     return false;
   }
@@ -116,8 +101,7 @@ bool GLShaderProgram::link()
 
     glGetProgramiv(m_handle, GL_INFO_LOG_LENGTH, &logLength);
 
-    if (logLength > 0)
-    {
+    if (logLength > 0) {
       std::vector<GLchar> cLog(static_cast<size_t>(logLength));
       GLsizei actualLength = 0;
       glGetProgramInfoLog(m_handle, logLength, &actualLength, &cLog[0]);
@@ -135,9 +119,7 @@ bool GLShaderProgram::link()
 
   /// Get locations for all of the program's registered uniforms
   const int ret = m_registeredUniforms.queryAndSetAllLocations(locationGetter);
-
-  if (1 == ret)
-  {
+  if (1 == ret) {
     spdlog::error("Setting uniform(s) in program '{}' failed", m_name);
     throw_debug("Error")
   }
@@ -147,12 +129,10 @@ bool GLShaderProgram::link()
 
 void GLShaderProgram::use()
 {
-  if (m_handle && m_linked)
-  {
+  if (m_handle && m_linked) {
     glUseProgram(m_handle);
   }
-  else
-  {
+  else {
     spdlog::error("Program '{}' is not valid", m_name);
     return;
   }
@@ -181,12 +161,10 @@ GLint GLShaderProgram::getAttribLocation(const std::string& name)
 
 GLint GLShaderProgram::getUniformLocation(const std::string& name)
 {
-  if (const std::optional<GLint> locOpt = m_registeredUniforms.location(name))
-  {
+  if (const std::optional<GLint> locOpt = m_registeredUniforms.location(name)) {
     return *locOpt;
   }
-  else
-  {
+  else {
     const GLint loc = glGetUniformLocation(m_handle, name.c_str());
     m_registeredUniforms.insertUniform(name, Uniforms::Decl());
     m_registeredUniforms.setLocation(name, loc);
@@ -197,9 +175,7 @@ GLint GLShaderProgram::getUniformLocation(const std::string& name)
 bool GLShaderProgram::setUniform(const std::string& name, GLboolean val)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -210,9 +186,7 @@ bool GLShaderProgram::setUniform(const std::string& name, GLboolean val)
 bool GLShaderProgram::setUniform(const std::string& name, GLint val)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -223,9 +197,7 @@ bool GLShaderProgram::setUniform(const std::string& name, GLint val)
 bool GLShaderProgram::setUniform(const std::string& name, GLuint val)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -236,9 +208,7 @@ bool GLShaderProgram::setUniform(const std::string& name, GLuint val)
 bool GLShaderProgram::setUniform(const std::string& name, GLfloat val)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -249,9 +219,7 @@ bool GLShaderProgram::setUniform(const std::string& name, GLfloat val)
 bool GLShaderProgram::setUniform(const std::string& name, GLfloat x, GLfloat y, GLfloat z)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -262,9 +230,7 @@ bool GLShaderProgram::setUniform(const std::string& name, GLfloat x, GLfloat y, 
 bool GLShaderProgram::setUniform(const std::string& name, const glm::ivec2& v)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -275,9 +241,7 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::ivec2& v)
 bool GLShaderProgram::setUniform(const std::string& name, const glm::vec2& v)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -288,9 +252,7 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::vec2& v)
 bool GLShaderProgram::setUniform(const std::string& name, const glm::vec3& v)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -301,9 +263,7 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::vec3& v)
 bool GLShaderProgram::setUniform(const std::string& name, const glm::vec4& v)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -314,9 +274,7 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::vec4& v)
 bool GLShaderProgram::setUniform(const std::string& name, const glm::mat2& m)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -327,9 +285,7 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::mat2& m)
 bool GLShaderProgram::setUniform(const std::string& name, const glm::mat3& m)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -340,9 +296,7 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::mat3& m)
 bool GLShaderProgram::setUniform(const std::string& name, const glm::mat4& m)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -353,9 +307,7 @@ bool GLShaderProgram::setUniform(const std::string& name, const glm::mat4& m)
 bool GLShaderProgram::setSamplerUniform(const std::string& name, GLint sampler)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0)
-  {
+  if (loc < 0) {
     return false;
   }
 
@@ -363,12 +315,9 @@ bool GLShaderProgram::setSamplerUniform(const std::string& name, GLint sampler)
   return true;
 }
 
-bool GLShaderProgram::setSamplerUniform(
-  const std::string& name, const Uniforms::SamplerIndexVectorType& samplers
-)
+bool GLShaderProgram::setSamplerUniform(const std::string& name, const Uniforms::SamplerIndexVectorType& samplers)
 {
   const GLint loc = getUniformLocation(name);
-
   if (loc < 0 || samplers.indices.empty())
   {
     return false;
@@ -381,24 +330,18 @@ bool GLShaderProgram::setSamplerUniform(
 bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm::mat4>& matrices)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0 || matrices.empty())
-  {
+  if (loc < 0 || matrices.empty()) {
     return false;
   }
 
-  glUniformMatrix4fv(
-    loc, static_cast<GLint>(matrices.size()), GL_FALSE, glm::value_ptr(matrices.at(0))
-  );
+  glUniformMatrix4fv(loc, static_cast<GLint>(matrices.size()), GL_FALSE, glm::value_ptr(matrices.at(0)));
   return true;
 }
 
 bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm::vec2>& vectors)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0 || vectors.empty())
-  {
+  if (loc < 0 || vectors.empty()) {
     return false;
   }
 
@@ -409,9 +352,7 @@ bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm:
 bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm::vec3>& vectors)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0 || vectors.empty())
-  {
+  if (loc < 0 || vectors.empty()) {
     return false;
   }
 
@@ -422,9 +363,7 @@ bool GLShaderProgram::setUniform(const std::string& name, const std::vector<glm:
 bool GLShaderProgram::setUniform(const std::string& name, const std::vector<float>& floats)
 {
   const GLint loc = getUniformLocation(name);
-
-  if (loc < 0 || floats.empty())
-  {
+  if (loc < 0 || floats.empty()) {
     return false;
   }
 
@@ -436,11 +375,9 @@ void GLShaderProgram::applyUniforms(Uniforms& uniforms)
 {
   UniformSetter setter(*this);
 
-  for (auto& uniform : uniforms())
-  {
+  for (auto& uniform : uniforms()) {
     const Uniforms::Decl& u = uniform.second;
-    if (u.m_isDirty)
-    {
+    if (u.m_isDirty) {
       setter.setLocation(u.m_location);
       std::visit(setter, u.m_value);
 
@@ -482,20 +419,12 @@ void GLShaderProgram::printActiveUniforms()
     GLint arraySize;
     GLenum type;
 
-    glGetActiveUniform(
-      m_handle, GLuint(i), maxUniformNameLength, &actualLength, &arraySize, &type, &nameData[0]
-    );
+    glGetActiveUniform(m_handle, GLuint(i), maxUniformNameLength, &actualLength, &arraySize, &type, &nameData[0]);
 
     const std::string name(&nameData[0], static_cast<size_t>(actualLength));
     const GLint location = glGetUniformLocation(m_handle, &nameData[0]);
 
-    spdlog::info(
-      "uniform {}: location = {}, name = {}, type = {}",
-      i,
-      location,
-      name,
-      Uniforms::getUniformTypeString(type)
-    );
+    spdlog::info("uniform {}: location = {}, name = {}, type = {}", i, location, name, Uniforms::getUniformTypeString(type));
   }
 
 #if 0
@@ -540,49 +469,31 @@ void GLShaderProgram::printActiveUniformBlocks()
     GLsizei actualLength;
     GLint binding;
 
-    glGetActiveUniformBlockName(
-      m_handle, i, maxUniformBlockNameLength, &actualLength, &uniformBlockNameData[0]
-    );
-
+    glGetActiveUniformBlockName(m_handle, i, maxUniformBlockNameLength, &actualLength, &uniformBlockNameData[0]);
     glGetActiveUniformBlockiv(m_handle, i, GL_UNIFORM_BLOCK_BINDING, &binding);
 
     const std::string uniformBlockName(&uniformBlockNameData[0], actualLength);
-
     spdlog::info("block {}: name = {}, binding = {}", i, uniformBlockName, binding);
 
     GLint numUniforms;
     glGetActiveUniformBlockiv(m_handle, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &numUniforms);
 
     std::vector<GLint> uniformIndices(numUniforms);
-    glGetActiveUniformBlockiv(
-      m_handle, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, &uniformIndices[0]
-    );
+    glGetActiveUniformBlockiv(m_handle, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, &uniformIndices[0]);
 
     for (GLint u = 0; u < numUniforms; ++u)
     {
       GLint arraySize;
       GLenum type;
 
-      glGetActiveUniform(
-        m_handle,
-        uniformIndices[u],
-        maxUniformNameLength,
-        &actualLength,
-        &arraySize,
-        &type,
-        &uniformNameData[0]
-      );
+      glGetActiveUniform(m_handle, uniformIndices[u], maxUniformNameLength,
+                         &actualLength, &arraySize, &type, &uniformNameData[0]);
 
       const std::string uniformName(&uniformNameData[0], actualLength);
       const GLint location = glGetUniformLocation(m_handle, &uniformName[0]);
 
-      spdlog::info(
-        "uniform {}: location = {}, name = {}, type = {}",
-        u,
-        location,
-        uniformName,
-        Uniforms::getUniformTypeString(type)
-      );
+      spdlog::info("uniform {}: location = {}, name = {}, type = {}", u, location, uniformName,
+                   Uniforms::getUniformTypeString(type));
     }
   }
 
@@ -642,20 +553,13 @@ void GLShaderProgram::printActiveAttribs()
     GLint arraySize;
     GLenum type;
 
-    glGetActiveAttrib(
-      m_handle, i, maxAttribNameLength, &actualLength, &arraySize, &type, &nameData[0]
-    );
+    glGetActiveAttrib(m_handle, i, maxAttribNameLength, &actualLength, &arraySize, &type, &nameData[0]);
 
     const std::string name(&nameData[0], actualLength);
     const GLint location = glGetAttribLocation(m_handle, &nameData[0]);
 
-    spdlog::info(
-      "attribute {}: location = {}, name = {}, type = {}",
-      i,
-      location,
-      name,
-      Uniforms::getUniformTypeString(type)
-    );
+    spdlog::info("attribute {}: location = {}, name = {}, type = {}", i, location,name,
+                 Uniforms::getUniformTypeString(type));
   }
 
 #if 0
@@ -684,18 +588,15 @@ void GLShaderProgram::printActiveAttribs()
 
 bool GLShaderProgram::isValid()
 {
-  if (!m_handle)
-  {
+  if (!m_handle) {
     spdlog::error("Program '{}' is not compiled", m_name);
     return false;
   }
-  else if (!m_linked)
-  {
+  else if (!m_linked) {
     spdlog::error("Program '{}' is not linked", m_name);
     return false;
   }
-  else if (!glIsProgram(m_handle))
-  {
+  else if (!glIsProgram(m_handle)) {
     spdlog::error("Handle '{}' is not a program", m_handle);
     return false;
   }
@@ -711,8 +612,7 @@ bool GLShaderProgram::isValid()
 
     std::string logString;
 
-    if (logLength > 0)
-    {
+    if (logLength > 0) {
       std::vector<GLchar> cLog(logLength);
       GLsizei actualLength = 0;
       glGetProgramInfoLog(m_handle, logLength, &actualLength, &cLog[0]);
@@ -790,43 +690,36 @@ void GLShaderProgram::UniformSetter::operator()(const glm::mat4& mat)
 
 void GLShaderProgram::UniformSetter::operator()(const Uniforms::SamplerIndexVectorType& samplers)
 {
-  if (!samplers.indices.empty())
-  {
+  if (!samplers.indices.empty()) {
     glUniform1iv(m_loc, static_cast<GLint>(samplers.indices.size()), samplers.indices.data());
   }
 }
 
 void GLShaderProgram::UniformSetter::operator()(const std::vector<float>& floats)
 {
-  if (!floats.empty())
-  {
+  if (!floats.empty()) {
     glUniform1fv(m_loc, static_cast<GLint>(floats.size()), floats.data());
   }
 }
 
 void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::vec2>& vectors)
 {
-  if (!vectors.empty())
-  {
+  if (!vectors.empty()) {
     glUniform2fv(m_loc, static_cast<GLint>(vectors.size()), glm::value_ptr(vectors.at(0)));
   }
 }
 
 void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::vec3>& vectors)
 {
-  if (!vectors.empty())
-  {
+  if (!vectors.empty()) {
     glUniform3fv(m_loc, static_cast<GLint>(vectors.size()), glm::value_ptr(vectors.at(0)));
   }
 }
 
 void GLShaderProgram::UniformSetter::operator()(const std::vector<glm::mat4>& matrices)
 {
-  if (!matrices.empty())
-  {
-    glUniformMatrix4fv(
-      m_loc, static_cast<GLint>(matrices.size()), GL_FALSE, glm::value_ptr(matrices.at(0))
-    );
+  if (!matrices.empty()) {
+    glUniformMatrix4fv(m_loc, static_cast<GLint>(matrices.size()), GL_FALSE, glm::value_ptr(matrices.at(0)));
   }
 }
 

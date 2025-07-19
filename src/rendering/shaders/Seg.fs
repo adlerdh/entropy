@@ -135,7 +135,7 @@ bool doRender()
 
   // If in Quadrants mode, then render the fragment?
   render = render || ((QUADRANTS_RENDER_MODE == u_renderMode) &&
-    (u_showFix == ((! u_quadrants.x || Q.x) == (! u_quadrants.y || Q.y))));
+    (u_showFix == ((!u_quadrants.x || Q.x) == (!u_quadrants.y || Q.y))));
 
   // If in Flashlight mode, then render the fragment?
   render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&

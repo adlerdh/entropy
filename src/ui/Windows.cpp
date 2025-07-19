@@ -1702,16 +1702,13 @@ void renderSettingsWindow(
         // Overlap style:
         ImGui::Text("Overlap:");
 
-        if (ImGui::RadioButton("Magenta/cyan", true == renderData.m_overlayMagentaCyan))
-        {
+        if (ImGui::RadioButton("Cyan, magenta, white", true == renderData.m_overlayMagentaCyan)) {
           renderData.m_overlayMagentaCyan = true;
         }
-
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Red/green overlay", false == renderData.m_overlayMagentaCyan))
-        {
+        if (ImGui::RadioButton("Red, green, yellow", false == renderData.m_overlayMagentaCyan)) {
           renderData.m_overlayMagentaCyan = false;
         }
+
         ImGui::SameLine();
         helpMarker("Color style for 'overlay' views");
         ImGui::Spacing();

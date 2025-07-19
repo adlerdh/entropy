@@ -20,15 +20,10 @@ uniform sampler3D u_imgTex[2]; // Texture units 0/1: images
 uniform sampler1D u_metricCmapTex; // Texture unit 2: metric colormap (pre-mult RGBA)
 
 uniform vec2 u_imgSlopeIntercept[2]; // Slopes and intercepts for image window-leveling
-
 uniform vec2 u_metricCmapSlopeIntercept; // Slope and intercept for the metric colormap
 uniform vec2 u_metricSlopeIntercept; // Slope and intercept for the final metric
-
-// Whether to use squared difference (true) or absolute difference (false)
-uniform bool u_useSquare;
-
-// MIP mode (0: none, 1: max, 2: mean, 3: min, 4: xray)
-uniform int u_mipMode;
+uniform bool u_useSquare; // use squared difference (true) or absolute difference (false)
+uniform int u_mipMode; // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: xray)
 
 // Half the number of samples for MIP (for image 0). Is set to 0 when u_mipMode == 0.
 uniform int u_halfNumMipSamples;
@@ -66,13 +61,10 @@ float computeMetricAndMask(in int sampleOffset, out bool hitBoundary)
   }
 
   float imgNorm[2];
-
-  // Loop over the two images:
   for (int i = 0; i < 2; ++i)
   {
     float img;
-    switch (i)
-    {
+    switch (i) {
     case 0: {
       img = textureLookup(u_imgTex[0], img_tc[i]);
       break;
@@ -112,7 +104,6 @@ void main()
     metric = float(MAX_IP_MODE == u_mipMode) * max(metric, m) +
              float(MEAN_IP_MODE == u_mipMode) * (metric + m) +
              float(MIN_IP_MODE == u_mipMode) * min(metric, m);
-
     ++numSamples;
   }
 
@@ -125,7 +116,6 @@ void main()
     metric = float(MAX_IP_MODE == u_mipMode) * max(metric, m) +
              float(MEAN_IP_MODE == u_mipMode) * (metric + m) +
              float(MIN_IP_MODE == u_mipMode) * min(metric, m);
-
     ++numSamples;
   }
 
@@ -136,12 +126,9 @@ void main()
   // Apply slope and intercept to metric:
   metric = clamp(u_metricSlopeIntercept[0] * metric + u_metricSlopeIntercept[1], 0.0, 1.0);
 
-  // Index into colormap:
-  float cmapValue = u_metricCmapSlopeIntercept[0] * metric + u_metricCmapSlopeIntercept[1];
-
   // Apply colormap and masking (by pre-multiplying RGBA with alpha mask):
-  vec4 metricLayer = texture(u_metricCmapTex, cmapValue);
+  float cmapValue = u_metricCmapSlopeIntercept[0] * metric + u_metricCmapSlopeIntercept[1];
+  vec4 metricColor = texture(u_metricCmapTex, cmapValue);
 
-  o_color = vec4(0.0, 0.0, 0.0, 0.0);
-  o_color = metricLayer + (1.0 - metricLayer.a) * o_color;
+  o_color = metricColor;
 }

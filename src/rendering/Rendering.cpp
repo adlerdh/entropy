@@ -192,7 +192,8 @@ Rendering::Rendering(AppData& appData)
   , m_xrayTexLookupCubicProgram("XrayTexLookupCubicProgram")
   , m_differenceTexLookupLinearProgram("DifferenceTexLookupLinearProgram")
   , m_differenceTexLookupCubicProgram("DifferenceTexLookupCubicProgram")
-  , m_overlayProgram("OverlayProgram")
+  , m_overlayTexLookupLinearProgram("OverlayTexLookupLinearProgram")
+  , m_overlayTexLookupCubicProgram("OverlayTexLookupCubicProgram")
   , m_raycastIsoSurfaceProgram("RayCastIsoSurfaceProgram")
   , m_simpleProgram("SimpleProgram")
   , m_segNearestProgram("SegNoOutliningProgram")
@@ -283,8 +284,7 @@ Rendering::Rendering(AppData& appData)
 
 Rendering::~Rendering()
 {
-  if (m_nvg)
-  {
+  if (m_nvg) {
     nvgDeleteGL3(m_nvg);
     m_nvg = nullptr;
   }
@@ -908,59 +908,44 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
 {
   auto it = m_appData.renderData().m_uniforms.find(imageUid);
 
-  if (std::end(m_appData.renderData().m_uniforms) == it)
-  {
+  if (std::end(m_appData.renderData().m_uniforms) == it) {
     spdlog::debug("Adding rendering uniforms for image {}", imageUid);
-
     m_appData.renderData().m_uniforms.insert(std::make_pair(imageUid, RenderData::ImageUniforms()));
   }
 
   RenderData::ImageUniforms& uniforms = m_appData.renderData().m_uniforms[imageUid];
-
   Image* img = m_appData.image(imageUid);
-
-  if (!img)
-  {
+  if (!img) {
     uniforms.imgOpacity = 0.0f;
     uniforms.segOpacity = 0.0f;
     uniforms.showEdges = false;
-    spdlog::error(
-      "Image {} is null on updating its uniforms; setting default uniform values", imageUid
-    );
+    spdlog::error("Image {} is null on updating its uniforms; setting default uniform values", imageUid);
     return;
   }
 
   const auto& imgSettings = img->settings();
 
-  uniforms.cmapQuantLevels = imgSettings.colorMapContinuous()
-                               ? 0
-                               : imgSettings.colorMapQuantizationLevels();
+  uniforms.cmapQuantLevels = imgSettings.colorMapContinuous() ? 0 : imgSettings.colorMapQuantizationLevels();
   uniforms.hsvModFactors = imgSettings.colorMapHsvModFactors();
 
   if (const auto cmapUid = m_appData.imageColorMapUid(imgSettings.colorMapIndex()))
   {
-    if (const ImageColorMap* map = m_appData.imageColorMap(*cmapUid))
-    {
+    if (const ImageColorMap* map = m_appData.imageColorMap(*cmapUid)) {
       uniforms.cmapSlopeIntercept = map->slopeIntercept(imgSettings.isColorMapInverted());
 
       // If the color map has nearest-neighbor interpolation, then do NOT quantize:
-      if (ImageColorMap::InterpolationMode::Nearest == map->interpolationMode())
-      {
+      if (ImageColorMap::InterpolationMode::Nearest == map->interpolationMode()) {
         uniforms.cmapQuantLevels = 0;
       }
     }
-    else
-    {
+    else {
       spdlog::error("Null image color map {} on updating uniforms for image {}", *cmapUid, imageUid);
     }
   }
   else
   {
-    spdlog::error(
-      "Invalid image color map at index {} on updating uniforms for image {}",
-      imgSettings.colorMapIndex(),
-      imageUid
-    );
+    spdlog::error("Invalid image color map at index {} on updating uniforms for image {}",
+                  imgSettings.colorMapIndex(), imageUid);
   }
 
   glm::mat4 imgTexture_T_world(1.0f);
@@ -1007,27 +992,19 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   {
     for (uint32_t i = 0; i < imgSettings.numComponents(); ++i)
     {
-      uniforms.slopeInterceptRgba_normalized_T_texture[i]
-        = imgSettings.slopeInterceptVec2_normalized_T_texture(i);
+      uniforms.slopeInterceptRgba_normalized_T_texture[i] = imgSettings.slopeInterceptVec2_normalized_T_texture(i);
 
       uniforms.thresholdsRgba[i] = glm::vec2{
         static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.thresholds(i).first)),
-        static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.thresholds(i).second))
-      };
+        static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.thresholds(i).second))};
 
       uniforms.minMaxRgba[i] = glm::vec2{
-        static_cast<float>(
-          imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange(i).first)
-        ),
-        static_cast<float>(
-          imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange(i).second)
-        )
-      };
+        static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange(i).first)),
+        static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange(i).second))};
 
       uniforms.imgOpacityRgba[i] = static_cast<float>(
-        ((imgSettings.globalVisibility() && imgSettings.visibility(i)) ? 1.0 : 0.0)
-        * imgSettings.globalOpacity() * imgSettings.opacity(i)
-      );
+        ((imgSettings.globalVisibility() && imgSettings.visibility(i)) ? 1.0 : 0.0) *
+        imgSettings.globalOpacity() * imgSettings.opacity(i));
     }
 
     if (3 == imgSettings.numComponents())
@@ -1038,14 +1015,12 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
       uniforms.minMaxRgba[3] = glm::vec2{0.0f, 1.0f};
 
       uniforms.imgOpacityRgba[3] = static_cast<float>(
-        (imgSettings.globalVisibility() ? 1.0 : 0.0) * imgSettings.globalOpacity()
-      );
+        (imgSettings.globalVisibility() ? 1.0 : 0.0) * imgSettings.globalOpacity());
     }
   }
   else
   {
-    uniforms.slopeIntercept_normalized_T_texture = imgSettings
-                                                     .slopeInterceptVec2_normalized_T_texture();
+    uniforms.slopeIntercept_normalized_T_texture = imgSettings.slopeInterceptVec2_normalized_T_texture();
   }
 
   uniforms.slope_native_T_texture = imgSettings.slope_native_T_texture();
@@ -1056,8 +1031,7 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   uniforms.textureGradientStep = glm::mat3{
     glm::vec3{1.0f / dims[0], 0.0f, 0.0f},
     glm::vec3{0.0f, 1.0f / dims[1], 0.0f},
-    glm::vec3{0.0f, 0.0f, 1.0f / dims[2]}
-  };
+    glm::vec3{0.0f, 0.0f, 1.0f / dims[2]}};
 
   uniforms.voxelSpacing = img->header().spacing();
 
@@ -1122,24 +1096,17 @@ void Rendering::updateMetricUniforms()
 {
   auto update = [this](RenderData::MetricParams& params, const char* name)
   {
-    if (const auto cmapUid = m_appData.imageColorMapUid(params.m_colorMapIndex))
-    {
-      if (const auto* map = m_appData.imageColorMap(*cmapUid))
-      {
+    if (const auto cmapUid = m_appData.imageColorMapUid(params.m_colorMapIndex)) {
+      if (const auto* map = m_appData.imageColorMap(*cmapUid)) {
         params.m_cmapSlopeIntercept = map->slopeIntercept(params.m_invertCmap);
       }
-      else
-      {
+      else {
         spdlog::error("Null image color map {} on updating uniforms for {} metric", *cmapUid, name);
       }
     }
-    else
-    {
-      spdlog::error(
-        "Invalid image color map at index {} on updating uniforms for {} metric",
-        params.m_colorMapIndex,
-        name
-      );
+    else {
+      spdlog::error("Invalid image color map at index {} on updating uniforms for {} metric",
+                    params.m_colorMapIndex, name);
     }
   };
 
@@ -1352,10 +1319,9 @@ void Rendering::unbindBufferTextures(const std::list<std::reference_wrapper<GLBu
 std::list<std::reference_wrapper<GLTexture>>
 Rendering::bindMetricImageTextures(const CurrentImages& I, const ViewRenderMode& metricType)
 {
-  std::list<std::reference_wrapper<GLTexture> > textures;
+  std::list<std::reference_wrapper<GLTexture>> textures;
 
   auto& R = m_appData.renderData();
-
   bool usesMetricColormap = false;
   std::size_t metricCmapIndex = 0;
 
@@ -1394,7 +1360,6 @@ Rendering::bindMetricImageTextures(const CurrentImages& I, const ViewRenderMode&
   if (usesMetricColormap)
   {
     const auto cmapUid = m_appData.imageColorMapUid(metricCmapIndex);
-
     if (cmapUid) {
       GLTexture& T = R.m_colormapTextures.at(*cmapUid);
       T.bind(msk_metricCmapTexSampler.index);
@@ -1410,15 +1375,13 @@ Rendering::bindMetricImageTextures(const CurrentImages& I, const ViewRenderMode&
 
   std::size_t i = 0;
 
-  for (const auto& imgSegPair : I)
+  for (const auto& [imgUid, segUid] : I)
   {
-    const auto& imageUid = imgSegPair.first;
-    const Image* image = (imageUid ? m_appData.image(*imageUid) : nullptr);
-
+    const Image* image = (imgUid ? m_appData.image(*imgUid) : nullptr);
     if (image) {
       // Bind the active component
       const uint32_t activeComp = image->settings().activeComponent();
-      GLTexture& T = R.m_imageTextures.at(*imageUid).at(activeComp);
+      GLTexture& T = R.m_imageTextures.at(*imgUid).at(activeComp);
       T.bind(msk_metricImgTexSamplers.indices[i]);
       textures.push_back(T);
     }
@@ -1427,7 +1390,6 @@ Rendering::bindMetricImageTextures(const CurrentImages& I, const ViewRenderMode&
       T.bind(msk_metricImgTexSamplers.indices[i]);
       textures.push_back(T);
     }
-
     ++i;
   }
 
@@ -1444,24 +1406,12 @@ void Rendering::renderOneImage(
   auto getImage = [this](const std::optional<uuid>& imageUid) -> const Image*
   { return (imageUid ? m_appData.image(*imageUid) : nullptr); };
 
-  auto& renderData = m_appData.renderData();
+  auto& R = m_appData.renderData();
 
-  drawImageQuad(
-    program,
-    view.renderMode(),
-    renderData.m_quad,
-    view,
-    m_appData.windowData().viewport(),
-    worldOffsetXhairs,
-    renderData.m_flashlightRadius,
-    renderData.m_flashlightOverlays,
-    renderData.m_intensityProjectionSlabThickness,
-    renderData.m_doMaxExtentIntensityProjection,
-    renderData.m_xrayIntensityWindow,
-    renderData.m_xrayIntensityLevel,
-    I,
-    getImage,
-    showEdges);
+  drawImageQuad(program, view.renderMode(), R.m_quad, view, m_appData.windowData().viewport(), worldOffsetXhairs,
+                R.m_flashlightRadius, R.m_flashlightOverlays, R.m_intensityProjectionSlabThickness,
+                R.m_doMaxExtentIntensityProjection, R.m_xrayIntensityWindow, R.m_xrayIntensityLevel,
+                I, getImage, showEdges);
 }
 
 void Rendering::renderOneImage_overlays(
@@ -1482,14 +1432,9 @@ void Rendering::renderOneImage_overlays(
     setupOpenGlState();
   }
 
-  drawImageViewIntersections(
-    m_nvg,
-    miewportViewBounds,
-    worldOffsetXhairs,
-    m_appData,
-    view,
-    I,
-    renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
+  drawImageViewIntersections(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData,
+                             view, I,
+                             renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
 
   setupOpenGlState();
 }
@@ -1508,7 +1453,7 @@ void Rendering::renderAllImages(
   const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs)
 {
   static const RenderData::ImageUniforms sk_defaultImageUniforms;
-  const RenderData& renderData = m_appData.renderData();
+  const RenderData& R = m_appData.renderData();
 
   switch (getShaderGroup(view.renderMode()))
   {
@@ -1553,7 +1498,7 @@ void Rendering::renderAllImages(
         return;
       }
 
-      const RenderData::ImageUniforms& U = renderData.m_uniforms.at(imgUid);
+      const RenderData::ImageUniforms& U = R.m_uniforms.at(imgUid);
 
       if (!img->settings().displayImageAsColor())
       {
@@ -1599,13 +1544,13 @@ void Rendering::renderAllImages(
           P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
           P->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
 
-          P->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
+          P->setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
           P->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
 
           if (doXray) {
             P->setUniform("imgSlope_native_T_texture", U.slope_native_T_texture);
-            P->setUniform("waterAttenCoeff", renderData.m_waterMassAttenCoeff);
-            P->setUniform("airAttenCoeff", renderData.m_airMassAttenCoeff);
+            P->setUniform("waterAttenCoeff", R.m_waterMassAttenCoeff);
+            P->setUniform("airAttenCoeff", R.m_airMassAttenCoeff);
           }
           else {
             P->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
@@ -1613,10 +1558,10 @@ void Rendering::renderAllImages(
             /// @todo Render iso-surfaces in separate shader and overlay atop image
             if (!U.showEdges) {
               updateIsosurfaceDataFor2d(m_appData, *imgSegPair.first);
-              P->setUniform("u_isoValues", renderData.m_isosurfaceData.values);
-              P->setUniform("u_isoOpacities", renderData.m_isosurfaceData.opacities);
-              P->setUniform("u_isoColors", renderData.m_isosurfaceData.colors);
-              P->setUniform("u_isoWidth", renderData.m_isosurfaceData.widthIn2d);
+              P->setUniform("u_isoValues", R.m_isosurfaceData.values);
+              P->setUniform("u_isoOpacities", R.m_isosurfaceData.opacities);
+              P->setUniform("u_isoColors", R.m_isosurfaceData.colors);
+              P->setUniform("u_isoWidth", R.m_isosurfaceData.widthIn2d);
             }
           }
 
@@ -1629,7 +1574,7 @@ void Rendering::renderAllImages(
           P->setUniform("u_imgThresholds", U.thresholds);
           P->setUniform("u_imgMinMax", U.minMax);
           P->setUniform("u_imgOpacity", U.imgOpacity);
-          P->setUniform("u_quadrants", renderData.m_quadrants);
+          P->setUniform("u_quadrants", R.m_quadrants);
           P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
           P->setUniform("u_renderMode", displayModeUniform);
 
@@ -1638,7 +1583,6 @@ void Rendering::renderAllImages(
             P->setUniform("u_imgSlopeInterceptLargest", U.largestSlopeIntercept);
             P->setUniform("u_thresholdEdges", U.thresholdEdges);
             P->setUniform("u_edgeMagnitude", U.edgeMagnitude);
-            // P.setUniform( "useFreiChen", U.useFreiChen );
             P->setUniform("u_overlayEdges", U.overlayEdges);
             P->setUniform("u_colormapEdges", U.colormapEdges);
             P->setUniform("u_edgeColor", U.edgeColor);
@@ -1677,7 +1621,7 @@ void Rendering::renderAllImages(
           P->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
           P->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
 
-          P->setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
+          P->setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
           P->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
           P->setUniform("u_imgSlopeIntercept", U.slopeInterceptRgba_normalized_T_texture);
           P->setUniform("u_imgThresholds", U.thresholdsRgba);
@@ -1686,7 +1630,7 @@ void Rendering::renderAllImages(
           const bool forceAlphaToOne = (img->settings().ignoreAlpha() || 3 == img->header().numComponentsPerPixel());
           P->setUniform("u_alphaIsOne", forceAlphaToOne);
           P->setUniform("u_imgOpacity", U.imgOpacityRgba);
-          P->setUniform("u_quadrants", renderData.m_quadrants);
+          P->setUniform("u_quadrants", R.m_quadrants);
           P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
           P->setUniform("renderMode", displayModeUniform);
 
@@ -1712,22 +1656,17 @@ void Rendering::renderAllImages(
           P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
           P.setSamplerUniform("u_segLabelCmapTex", msk_segLabelTableTexSampler.index);
 
-          P.setUniform("u_numSquares", static_cast<float>(renderData.m_numCheckerboardSquares));
+          P.setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
           P.setUniform("u_segTexture_T_world", U.segTexture_T_world);
           P.setUniform("u_segVoxel_T_world", U.segVoxel_T_world);
-          P.setUniform("u_segOpacity", U.segOpacity * (renderData.m_modulateSegOpacityWithImageOpacity ? U.imgOpacity : 1.0f));
-          P.setUniform("u_quadrants", renderData.m_quadrants);
+          P.setUniform("u_segOpacity", U.segOpacity * (R.m_modulateSegOpacityWithImageOpacity ? U.imgOpacity : 1.0f));
+          P.setUniform("u_quadrants", R.m_quadrants);
           P.setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
           P.setUniform("u_renderMode", displayModeUniform);
 
-          /// @todo We're going to have to send in std::vector<Image*>
-          /// as the input to this function, since the metric shaders render more than one seg.
-          drawSegQuad(
-            P, renderData.m_quad, *seg,
-            view, m_appData.windowData().viewport(), worldOffsetXhairs,
-            renderData.m_flashlightRadius, renderData.m_flashlightOverlays,
-            renderData.m_segOutlineStyle, renderData.m_segInteriorOpacity,
-            renderData.m_segInterpCutoff);
+          drawSegQuad(P, R.m_quad, *seg, view, m_appData.windowData().viewport(), worldOffsetXhairs,
+                      R.m_flashlightRadius, R.m_flashlightOverlays, R.m_segOutlineStyle, R.m_segInteriorOpacity,
+                      R.m_segInterpCutoff);
         }
         P.stopUse();
 
@@ -1749,34 +1688,40 @@ void Rendering::renderAllImages(
     // This function guarantees that I has size at least 2:
     const CurrentImages I = getImageAndSegUidsForMetricShaders(view.metricImages());
 
-    const auto& U0 = (I.size() >= 1 && I[0].first) ? renderData.m_uniforms.at(*I[0].first) : sk_defaultImageUniforms;
-    const auto& U1 = (I.size() >= 2 && I[1].first) ? renderData.m_uniforms.at(*I[1].first) : sk_defaultImageUniforms;
+    const std::array<Image*, 2> imgs{
+      I[0].first ? m_appData.image(*I[0].first) : nullptr,
+      I[1].first ? m_appData.image(*I[1].first) : nullptr};
 
-    const Image* img0 = I[0].first ? m_appData.image(*I[0].first) : nullptr;
-    const Image* img1 = I[1].first ? m_appData.image(*I[1].first) : nullptr;
+    const std::array<Image*, 2> segs{
+      I[0].second ? m_appData.seg(*I[0].second) : nullptr,
+      I[1].second ? m_appData.seg(*I[1].second) : nullptr};
 
-    const bool useTricubic = img0 && img1 &&
-                             (InterpolationMode::Tricubic == img0->settings().interpolationMode()) &&
-                             (InterpolationMode::Tricubic == img1->settings().interpolationMode());
+    const std::array<RenderData::ImageUniforms, 2> U{
+      (I.size() >= 1 && I[0].first) ? R.m_uniforms.at(*I[0].first) : sk_defaultImageUniforms,
+      (I.size() >= 2 && I[1].first) ? R.m_uniforms.at(*I[1].first) : sk_defaultImageUniforms};
 
-    const auto boundTextures = bindMetricImageTextures(I, view.renderMode());
+    const bool useTricubic = imgs[0] && imgs[1] &&
+                             (InterpolationMode::Tricubic == imgs[0]->settings().interpolationMode()) &&
+                             (InterpolationMode::Tricubic == imgs[1]->settings().interpolationMode());
+
+    const auto boundMetricTextures = bindMetricImageTextures(I, view.renderMode());
 
     if (ViewRenderMode::Difference == view.renderMode())
     {
       GLShaderProgram& P = useTricubic ? m_differenceTexLookupCubicProgram : m_differenceTexLookupLinearProgram;
-      const auto& metricParams = renderData.m_squaredDifferenceParams;
+      const auto& params = R.m_squaredDifferenceParams;
 
       P.use();
       {
         P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
         P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
 
-        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
-        P.setUniform("img1Tex_T_img0Tex", U1.imgTexture_T_world * glm::inverse(U0.imgTexture_T_world));
-        P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{U0.largestSlopeIntercept, U1.largestSlopeIntercept});
-        P.setUniform("u_metricCmapSlopeIntercept", metricParams.m_cmapSlopeIntercept);
-        P.setUniform("u_metricSlopeIntercept", metricParams.m_slopeIntercept);
-        P.setUniform("u_useSquare", renderData.m_useSquare);
+        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
+        P.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
+        P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{U[0].largestSlopeIntercept, U[1].largestSlopeIntercept});
+        P.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
+        P.setUniform("u_metricSlopeIntercept", params.m_slopeIntercept);
+        P.setUniform("u_useSquare", R.m_useSquare);
 
         renderOneImage(view, worldOffsetXhairs, P, I, false);
       }
@@ -1785,23 +1730,18 @@ void Rendering::renderAllImages(
     /*
     else if (ViewRenderMode::CrossCorrelation == renderMode)
     {
-      const auto& metricParams = renderData.m_crossCorrelationParams;
+      const auto& params = renderData.m_crossCorrelationParams;
       GLShaderProgram& P = m_crossCorrelationProgram;
 
       P.use();
       {
         P.setSamplerUniform("u_imgTex", msk_imgTexSamplers);
-        P.setSamplerUniform("u_segTex", msk_segTexSamplers);
-        P.setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSamplers);
         P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
 
         P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
-        P.setUniform("u_segTexture_T_world", std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world});
-        P.setUniform("u_segOpacity", std::vector<float>{U0.segOpacity, U1.segOpacity});
-        P.setUniform("u_metricCmapSlopeIntercept", metricParams.m_cmapSlopeIntercept);
-        P.setUniform("u_metricSlopeIntercept", metricParams.m_slopeIntercept);
-        P.setUniform("u_metricMasking", metricParams.m_doMasking);
-
+        P.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
+        P.setUniform("u_metricSlopeIntercept", params.m_slopeIntercept);
+        P.setUniform("u_metricMasking", params.m_doMasking);
         P.setUniform("u_texture1_T_texture0", U1.imgTexture_T_world * glm::inverse(U0.imgTexture_T_world));
 
         renderOneImage(view, worldOffsetXhairs, P, I, false);
@@ -1811,41 +1751,60 @@ void Rendering::renderAllImages(
     */
     else if (ViewRenderMode::Overlay == view.renderMode())
     {
-      GLShaderProgram& P = m_overlayProgram;
+      GLShaderProgram& P = useTricubic ? m_overlayTexLookupCubicProgram : m_overlayTexLookupLinearProgram;
 
       P.use();
       {
-        // P.setSamplerUniform("u_imgTex", msk_imgTexSamplers);
-        // P.setSamplerUniform("u_segTex", msk_segTexSamplers);
-        // P.setSamplerUniform("u_segLabelCmapTex", msk_labelTableTexSamplers);
+        P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
 
-        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
-        P.setUniform("u_segTexture_T_world", std::vector<glm::mat4>{U0.segTexture_T_world, U1.segTexture_T_world});
-        P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{
-          U0.slopeIntercept_normalized_T_texture, U1.slopeIntercept_normalized_T_texture});
-        P.setUniform("u_imgThresholds", std::vector<glm::vec2>{U0.thresholds, U1.thresholds});
-        P.setUniform("u_imgMinMax", std::vector<glm::vec2>{U0.minMax, U1.minMax});
-        P.setUniform("u_imgOpacity", std::vector<float>{U0.imgOpacity, U1.imgOpacity});
-
-        P.setUniform("u_segOpacity", std::vector<float>{
-            U0.segOpacity * (renderData.m_modulateSegOpacityWithImageOpacity ? U0.imgOpacity : 1.0f),
-            U1.segOpacity * (renderData.m_modulateSegOpacityWithImageOpacity ? U1.imgOpacity : 1.0f)});
-
-        P.setUniform("magentaCyan", renderData.m_overlayMagentaCyan);
+        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
+        P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{U[0].slopeIntercept_normalized_T_texture, U[1].slopeIntercept_normalized_T_texture});
+        P.setUniform("u_imgMinMax", std::vector<glm::vec2>{U[0].minMax, U[1].minMax});
+        P.setUniform("u_imgThresholds", std::vector<glm::vec2>{U[0].thresholds, U[1].thresholds});
+        P.setUniform("u_imgOpacity", std::vector<float>{U[0].imgOpacity, U[1].imgOpacity});
+        P.setUniform("u_magentaCyan", R.m_overlayMagentaCyan);
 
         renderOneImage(view, worldOffsetXhairs, P, I, false);
       }
       P.stopUse();
     }
 
-    unbindTextures(boundTextures);
+    unbindTextures(boundMetricTextures);
 
-    //////////////// RENDER SEGS here!!!!!!!!!!!!!!!
-    // const auto boundSegTextures = bindSegTextures(I);
-    // const auto boundSegBufferTextures = bindSegBufferTextures(I);
-    // DO SEG RENDER!
-    // unbindBufferTextures(boundSegBufferTextures);
-    // unbindTextures(boundSegTextures);
+    for (unsigned int i = 0; i < 2; ++i)
+    {
+      if (!segs[i]) {
+        continue;
+      }
+
+      GLShaderProgram& P = (InterpolationMode::NearestNeighbor == segs[i]->settings().interpolationMode())
+                             ? m_segNearestProgram : m_segLinearProgram;
+
+      const auto boundTextures = bindSegTextures(I[i]);
+      const auto boundBufferTextures = bindSegBufferTextures(I[i]);
+
+      P.use();
+      {
+        P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
+        P.setSamplerUniform("u_segLabelCmapTex", msk_segLabelTableTexSampler.index);
+
+        P.setUniform("u_numSquares", 1.0f); // checkerboarding disabled
+        P.setUniform("u_segTexture_T_world", U[i].segTexture_T_world);
+        P.setUniform("u_segVoxel_T_world", U[i].segVoxel_T_world);
+        P.setUniform("u_segOpacity", U[i].segOpacity * (R.m_modulateSegOpacityWithImageOpacity ? U[i].imgOpacity : 1.0f));
+        P.setUniform("u_quadrants", glm::ivec2{0, 0});
+        P.setUniform("u_showFix", true); // ignored if not checkerboard or quadrants
+        P.setUniform("u_renderMode", 0); // disabled
+
+        drawSegQuad(P, R.m_quad, *segs[i], view, m_appData.windowData().viewport(), worldOffsetXhairs,
+                    R.m_flashlightRadius, R.m_flashlightOverlays, R.m_segOutlineStyle, R.m_segInteriorOpacity,
+                    R.m_segInterpCutoff);
+      }
+      P.stopUse();
+
+      unbindBufferTextures(boundBufferTextures);
+      unbindTextures(boundTextures);
+    }
 
     break;
   }
@@ -1888,7 +1847,7 @@ void Rendering::renderAllImages(
     const auto boundImageTextures = bindScalarImageTextures(imgSegPair);
     const auto boundSegBufferTextures = bindSegBufferTextures(imgSegPair);
 
-    const auto& U = renderData.m_uniforms.at(*imgSegPair.first);
+    const auto& U = R.m_uniforms.at(*imgSegPair.first);
 
     GLShaderProgram& P = m_raycastIsoSurfaceProgram;
 
@@ -1909,26 +1868,26 @@ void Rendering::renderAllImages(
       // P.setUniform( "voxelSpacing", U.voxelSpacing );
       P.setUniform("texGrads", U.textureGradientStep);
 
-      P.setUniform("u_isoValues", renderData.m_isosurfaceData.values);
-      P.setUniform("u_isoOpacities", renderData.m_isosurfaceData.opacities);
-      P.setUniform("isoEdges", renderData.m_isosurfaceData.edgeStrengths);
+      P.setUniform("u_isoValues", R.m_isosurfaceData.values);
+      P.setUniform("u_isoOpacities", R.m_isosurfaceData.opacities);
+      P.setUniform("isoEdges", R.m_isosurfaceData.edgeStrengths);
 
-      P.setUniform("lightAmbient", renderData.m_isosurfaceData.ambientLights);
-      P.setUniform("lightDiffuse", renderData.m_isosurfaceData.diffuseLights);
-      P.setUniform("lightSpecular", renderData.m_isosurfaceData.specularLights);
-      P.setUniform("lightShininess", renderData.m_isosurfaceData.shininesses);
+      P.setUniform("lightAmbient", R.m_isosurfaceData.ambientLights);
+      P.setUniform("lightDiffuse", R.m_isosurfaceData.diffuseLights);
+      P.setUniform("lightSpecular", R.m_isosurfaceData.specularLights);
+      P.setUniform("lightShininess", R.m_isosurfaceData.shininesses);
 
       /// @todo Set this to larger sampling factor when the user is moving the slider
-      P.setUniform("samplingFactor", renderData.m_raycastSamplingFactor);
+      P.setUniform("samplingFactor", R.m_raycastSamplingFactor);
 
-      P.setUniform("renderFrontFaces", renderData.m_renderFrontFaces);
-      P.setUniform("renderBackFaces", renderData.m_renderBackFaces);
+      P.setUniform("renderFrontFaces", R.m_renderFrontFaces);
+      P.setUniform("renderBackFaces", R.m_renderBackFaces);
 
-      P.setUniform("segMasksIn", (RenderData::SegMaskingForRaycasting::SegMasksIn == renderData.m_segMasking));
-      P.setUniform("segMasksOut", (RenderData::SegMaskingForRaycasting::SegMasksOut == renderData.m_segMasking));
+      P.setUniform("segMasksIn", (RenderData::SegMaskingForRaycasting::SegMasksIn == R.m_segMasking));
+      P.setUniform("segMasksOut", (RenderData::SegMaskingForRaycasting::SegMasksOut == R.m_segMasking));
 
-      P.setUniform("bgColor", renderData.m_3dBackgroundColor.a * renderData.m_3dBackgroundColor);
-      P.setUniform("noHitTransparent", renderData.m_3dTransparentIfNoHit);
+      P.setUniform("bgColor", R.m_3dBackgroundColor.a * R.m_3dBackgroundColor);
+      P.setUniform("noHitTransparent", R.m_3dTransparentIfNoHit);
 
       volumeRenderOneImage(view, P, CurrentImages{imgSegPair});
     }
@@ -1978,7 +1937,6 @@ void Rendering::renderAllLandmarks(
     // This function guarantees that I has size at least 2:
     drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData,
                   view, getImageAndSegUidsForMetricShaders(view.metricImages()));
-
     setupOpenGlState();
   }
   }
@@ -2057,36 +2015,6 @@ void Rendering::renderImageData()
       }
     }
   }
-}
-
-void Rendering::renderOverlays()
-{
-  /*
-    m_simpleProgram.use();
-    {
-        for ( const auto& view : m_appData.m_windowData.currentViews() )
-        {
-            switch ( view.renderMode() )
-            {
-            case ShaderType::Image:
-            case ShaderType::MetricMI:
-            case ShaderType::MetricNCC:
-            case ShaderType::MetricSSD:
-            case ShaderType::Checkerboard:
-            {
-                renderCrosshairs( m_simpleProgram, m_appData.renderData().m_quad, view,
-                                  m_appData.m_worldCrosshairs.worldOrigin() );
-                break;
-            }
-            case ShaderType::None:
-            {
-                break;
-            }
-            }
-        }
-    }
-    m_simpleProgram.stopUse();
-    */
 }
 
 void Rendering::renderVectorOverlays()
@@ -2229,10 +2157,13 @@ void Rendering::createShaderPrograms()
     throw_debug("Failed to create difference metric program with cubic texture lookup")
   }
 
-  // if (!createOverlayProgram(m_overlayProgram))
-  // {
-  //   throw_debug("Failed to create overlay program")
-  // }
+  if (!createOverlayProgram(m_overlayTexLookupLinearProgram, texLinearReplacement)) {
+    throw_debug("Failed to create overlay metric program with linear texture lookup")
+  }
+
+  if (!createOverlayProgram(m_overlayTexLookupCubicProgram, texCubicReplacement)) {
+    throw_debug("Failed to create overlay metric program with cubic texture lookup")
+  }
 
   if (!createSimpleProgram(m_simpleProgram)) {
     throw_debug("Failed to create simple program")
@@ -2682,8 +2613,6 @@ bool Rendering::createEdgeProgram(
 
   fsUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
   fsUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
-  //        fsUniforms.insertUniform( "useFreiChen", UniformType::Bool, false );
-  //        fsUniforms.insertUniform( "windowedEdges", UniformType::Bool, false );
   fsUniforms.insertUniform("u_overlayEdges", UniformType::Bool, false);
   fsUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
   fsUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
@@ -2706,7 +2635,9 @@ bool Rendering::createEdgeProgram(
   return true;
 }
 
-bool Rendering::createOverlayProgram(GLShaderProgram& program)
+bool Rendering::createOverlayProgram(
+  GLShaderProgram& program,
+  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
 {
   static const std::string vsFileName{"src/rendering/shaders/Metric.vs"};
   static const std::string fsFileName{"src/rendering/shaders/Overlay.fs"};
@@ -2729,48 +2660,33 @@ bool Rendering::createOverlayProgram(GLShaderProgram& program)
     throw_debug("Unable to load shader")
   }
 
-  {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
 
-    vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
-    vsUniforms.insertUniform("u_segTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
+  Uniforms vsUniforms;
+  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
 
-    auto vs = std::make_shared<GLShader>("vsOverlay", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
+  auto vs = std::make_shared<GLShader>("vsOverlay", ShaderType::Vertex, vsSource.c_str());
+  vs->setRegisteredUniforms(std::move(vsUniforms));
+  program.attachShader(vs);
 
-    spdlog::debug("Compiled vertex shader {}", vsFileName);
-  }
+  spdlog::debug("Compiled vertex shader {}", vsFileName);
 
-  {
-    Uniforms fsUniforms;
+  Uniforms fsUniforms;
+  fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
+  fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+  fsUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
+  fsUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
 
-    // fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgTexSamplers);
-    // fsUniforms.insertUniform("u_segTex", UniformType::SamplerVector, msk_segTexSamplers);
+  auto fs = std::make_shared<GLShader>("fsOverlay", ShaderType::Fragment, fsSource.c_str());
+  fs->setRegisteredUniforms(std::move(fsUniforms));
+  program.attachShader(fs);
 
-    // fsUniforms.insertUniform("u_segLabelCmapTex", UniformType::SamplerVector, msk_labelTableTexSamplers);
-
-    fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
-
-    fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
-    fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
-    fsUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
-    fsUniforms.insertUniform("u_segOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
-
-    fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
-    fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-
-    fsUniforms.insertUniform("magentaCyan", UniformType::Bool, true);
-
-    auto fs = std::make_shared<GLShader>("fsOverlay", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
-
-    spdlog::debug("Compiled fragment shader {}", fsFileName);
-  }
+  spdlog::debug("Compiled fragment shader {}", fsFileName);
 
   if (!program.link())
   {
@@ -2821,7 +2737,6 @@ bool Rendering::createDifferenceProgram(
   spdlog::debug("Compiled vertex shader {}", vsFileName);
 
   Uniforms fsUniforms;
-
   fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
   fsUniforms.insertUniform("u_metricCmapTex", UniformType::Sampler, msk_metricCmapTexSampler);
   fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
@@ -2829,8 +2744,7 @@ bool Rendering::createDifferenceProgram(
   fsUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsUniforms.insertUniform("u_useSquare", UniformType::Bool, true);
 
-  // For intensity projection:
-  // 0: none, 1: max, 2: mean, 3: min, 4: xray
+  // For intensity projection: 0: none, 1: max, 2: mean, 3: min, 4: xray
   fsUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
   fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
   fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
