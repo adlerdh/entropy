@@ -1085,31 +1085,20 @@ void renderAnnotationWindow(
 void renderIsosurfacesWindow(
   AppData& appData,
   std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue
-)
+  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
-  if (ImGui::Begin(
-        "Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow), ImGuiWindowFlags_AlwaysAutoResize
-      ))
+  if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow), ImGuiWindowFlags_AlwaysAutoResize))
   {
-    size_t imageIndex = 0;
+    std::size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 
-    for (const auto& imageUid : appData.imageUidsOrdered())
-    {
+    for (const auto& imageUid : appData.imageUidsOrdered()) {
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
 
-      renderIsosurfacesHeader(
-        appData,
-        imageUid,
-        imageIndex++,
-        isActiveImage,
-        storeFuture,
-        addTaskToIsosurfaceGpuMeshGenerationQueue
-      );
+      renderIsosurfacesHeader(appData, imageUid, imageIndex++, isActiveImage,
+                              storeFuture, addTaskToIsosurfaceGpuMeshGenerationQueue);
     }
   }
-
   ImGui::End();
 }
 
@@ -1585,8 +1574,7 @@ void renderSettingsWindow(
       if (ImGui::BeginTabItem("Segmentation"))
       {
         // Modulate opacity of segmentation with opacity of image:
-        ImGui::Checkbox("Modulate segmentation with image opacity",
-                        &renderData.m_modulateSegOpacityWithImageOpacity);
+        ImGui::Checkbox("Modulate segmentation with image opacity", &renderData.m_modulateSegOpacityWithImageOpacity);
         ImGui::SameLine();
         helpMarker("Modulate opacity of segmentation with opacity of image");
 

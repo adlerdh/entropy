@@ -136,6 +136,7 @@ RenderData::RenderData()
 
   , m_snapCrosshairs(CrosshairsSnapping::Disabled)
   , m_modulateSegOpacityWithImageOpacity(true)
+  , m_modulateIsocontourOpacityWithImageOpacity(false)
   , m_opacityMixMode(false)
   , m_intensityProjectionSlabThickness(10.0f)
   , m_doMaxExtentIntensityProjection(false) //!< @todo Initialize based on ref image
@@ -266,17 +267,4 @@ RenderData::Circle::Circle()
   m_vao.release();
 
   spdlog::debug("Created image quad vertex array object");
-}
-
-RenderData::IsosurfaceData::IsosurfaceData()
-  : values(MAX_NUM_ISOSURFACES, 0.0f)
-  , opacities(MAX_NUM_ISOSURFACES, 0.0f)
-  , edgeStrengths(MAX_NUM_ISOSURFACES, 0.0f)
-  , colors(MAX_NUM_ISOSURFACES, glm::vec3{0.0f})
-  , ambientLights(MAX_NUM_ISOSURFACES, glm::vec3{0.0f})
-  , diffuseLights(MAX_NUM_ISOSURFACES, glm::vec3{0.0f})
-  , specularLights(MAX_NUM_ISOSURFACES, glm::vec3{0.0f})
-  , shininesses(MAX_NUM_ISOSURFACES, 0.0f)
-  , widthIn2d(0.0f)
-{
 }

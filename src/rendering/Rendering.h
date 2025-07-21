@@ -108,6 +108,7 @@ private:
   bool createImageColorProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
   bool createEdgeProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
   bool createXrayProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
+  bool createIsoContourProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
 
   bool createDifferenceProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
   bool createOverlayProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
@@ -169,6 +170,9 @@ private:
 
   GLShaderProgram m_xrayTexLookupLinearProgram;
   GLShaderProgram m_xrayTexLookupCubicProgram;
+
+  GLShaderProgram m_isoContourTexLookupLinearProgram;
+  GLShaderProgram m_isoContourTexLookupCubicProgram;
 
   GLShaderProgram m_differenceTexLookupLinearProgram;
   GLShaderProgram m_differenceTexLookupCubicProgram;

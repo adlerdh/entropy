@@ -16,9 +16,6 @@
 #define MEAN_IP_MODE 2
 #define MIN_IP_MODE 3
 
-// Maximum number of isosurfaces:
-#define NISO 16
-
 // Redeclared vertex shader outputs, which are now the fragment shader inputs
 in VS_OUT
 {
@@ -43,7 +40,6 @@ uniform bool u_useHsv; // Flag that HSV modification is used
 
 uniform vec2 u_imgMinMax; // Min and max image values (in texture intenstiy units)
 uniform vec2 u_imgThresholds; // Image lower and upper thresholds (in texture intensity units)
-
 uniform float u_imgOpacity; // Image opacity
 
 uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
@@ -75,17 +71,6 @@ uniform int u_halfNumMipSamples;
 
 // Z view camera direction, represented in texture sampling space
 uniform vec3 u_texSamplingDirZ;
-
-uniform float u_isoValues[NISO]; // Isosurface values
-uniform float u_isoOpacities[NISO]; // Isosurface opacities
-uniform vec3 u_isoColors[NISO]; // Isosurface colors
-uniform float u_isoWidth; // Width of isosurface
-
-// OPTIONS:
-// 1) Image interpolation: linear, cubic (per image setting)
-// 2) Image projection: none, enabled (per image setting)
-// 3) Segmentation interpolation: nn, linear (global setting)
-// 4) Outlining: solid, outline (global setting)
 
 /// Copied from https://www.laurivan.com/rgb-to-hsv-to-rgb-for-shaders/
 vec3 rgb2hsv(vec3 c)
@@ -123,14 +108,6 @@ float hardThreshold(float value, vec2 thresholds)
 //  float a = 0.5*pow(2.0*((x<0.5)?x:1.0-x), k);
 //  return (x<0.5)?a:1.0-a;
 //}
-
-float cubicPulse(float center, float width, float x)
-{
-  x = abs(x - center);
-  if (x > width) return 0.0;
-  x /= width;
-  return 1.0 - x * x * (3.0 - 2.0 * x);
-}
 
 // Check if inside texture coordinates
 bool isInsideTexture(vec3 a)
@@ -220,15 +197,6 @@ void main()
   float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds); // alpha = opacity * mask * threshold
   vec4 imgLayer = alpha * imgColorOrig.a * vec4(mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_useHsv)), 1.0);
 
-  vec4 isoLayer = vec4(0.0, 0.0, 0.0, 0.0);
-  for (int i = 0; i < NISO; ++i) {
-    vec4 color = mask * u_isoOpacities[i] * cubicPulse(u_isoValues[i], u_isoWidth, img) * vec4(u_isoColors[i], 1.0);
-    isoLayer = color + (1.0 - color.a) * isoLayer;
-  }
-
-  // Blend all layers in order (1) image, (2) isosurfaces
-  o_color = vec4(0.0, 0.0, 0.0, 0.0);
-  o_color = imgLayer + (1.0 - imgLayer.a) * o_color;
-  o_color = isoLayer + (1.0 - isoLayer.a) * o_color;
+  o_color = imgLayer;
   //o_color.rgb = pow(o_color.rgb, vec3(1.8));
 }

@@ -30,7 +30,7 @@ ImageSettings::ImageSettings(
   , m_isosurfacesVisible{true}
   , m_applyImageColormapToIsosurfaces{false}
   , m_showIsosurfacesIn2d{true}
-  , m_isosurfaceWidthIn2d{2.5}
+  , m_isosurfaceWidthIn2d{2.0}
   , m_isosurfaceOpacityModulator{1.0f}
   , m_numPixels(numPixels)
   , m_numComponents(numComponents)

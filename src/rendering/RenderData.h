@@ -157,6 +157,9 @@ struct RenderData
   // Should image segmentation opacity be modulated by the image opacity?
   bool m_modulateSegOpacityWithImageOpacity;
 
+  // Should image isocontour opacity be modulated by the image opacity?
+  bool m_modulateIsocontourOpacityWithImageOpacity;
+
   // Flag that image opacities are adjusted in "mix" mode, which allows
   // blending between a pair of images
   bool m_opacityMixMode;
@@ -316,13 +319,9 @@ struct RenderData
   AnnotationParams m_globalAnnotationParams;
   SliceIntersectionParams m_globalSliceIntersectionParams;
 
+  /// @todo This can be removed eventually, only used for 3D rendering
   struct IsosurfaceData
   {
-    IsosurfaceData();
-
-    /// Maximum number of isosurfaces
-    static constexpr size_t MAX_NUM_ISOSURFACES = 16;
-
     std::vector<float> values;
     std::vector<float> opacities;
     std::vector<float> edgeStrengths;

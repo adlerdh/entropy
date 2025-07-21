@@ -190,6 +190,8 @@ Rendering::Rendering(AppData& appData)
   , m_edgeTexLookupCubicProgram("EdgeTexLookupCubicProgram")
   , m_xrayTexLookupLinearProgram("XrayTexLookupLinearProgram")
   , m_xrayTexLookupCubicProgram("XrayTexLookupCubicProgram")
+  , m_isoContourTexLookupLinearProgram("IsoContourTexLookupLinearProgram")
+  , m_isoContourTexLookupCubicProgram("IsoContourTexLookupCubicProgram")
   , m_differenceTexLookupLinearProgram("DifferenceTexLookupLinearProgram")
   , m_differenceTexLookupCubicProgram("DifferenceTexLookupCubicProgram")
   , m_overlayTexLookupLinearProgram("OverlayTexLookupLinearProgram")
@@ -203,8 +205,7 @@ Rendering::Rendering(AppData& appData)
 {
   static const std::string ROBOTO_LIGHT("robotoLight");
 
-  if (!m_nvg)
-  {
+  if (!m_nvg) {
     spdlog::error("Could not initialize 'nanovg' vector graphcis library. "
                   "Proceeding without vector graphics.");
   }
@@ -216,20 +217,15 @@ Rendering::Rendering(AppData& appData)
     const cmrc::file robotoFont = filesystem.open("resources/fonts/Roboto/Roboto-Light.ttf");
 
     const int robotoLightFont = nvgCreateFontMem(
-      m_nvg,
-      ROBOTO_LIGHT.c_str(),
+      m_nvg, ROBOTO_LIGHT.c_str(),
       reinterpret_cast<uint8_t*>(const_cast<char*>(robotoFont.begin())),
-      static_cast<int32_t>(robotoFont.size()),
-      0
-    );
+      static_cast<int32_t>(robotoFont.size()), 0);
 
-    if (-1 == robotoLightFont)
-    {
+    if (-1 == robotoLightFont) {
       spdlog::error("Could not load font {}", ROBOTO_LIGHT);
     }
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     spdlog::error("Exception when loading font file: {}", e.what());
   }
 
@@ -342,34 +338,30 @@ void Rendering::initTextures()
 {
   m_appData.renderData().m_labelBufferTextures = createLabelColorTableTextures(m_appData);
 
-  if (m_appData.renderData().m_labelBufferTextures.empty())
-  {
+  if (m_appData.renderData().m_labelBufferTextures.empty()) {
     spdlog::critical("No label buffer textures loaded");
     throw_debug("No label buffer textures loaded")
   }
 
   m_appData.renderData().m_colormapTextures = createImageColorMapTextures(m_appData);
 
-  if (m_appData.renderData().m_colormapTextures.empty())
-  {
+  if (m_appData.renderData().m_colormapTextures.empty()) {
     spdlog::critical("No image color map textures loaded");
     throw_debug("No image color map textures loaded")
   }
 
-  const std::vector<uuid> imageUidsOfCreatedTextures
-    = createImageTextures(m_appData, m_appData.imageUidsOrdered());
+  const std::vector<uuid> imageUidsOfCreatedTextures =
+    createImageTextures(m_appData, m_appData.imageUidsOrdered());
 
-  if (imageUidsOfCreatedTextures.size() != m_appData.numImages())
-  {
+  if (imageUidsOfCreatedTextures.size() != m_appData.numImages()) {
     spdlog::error("Not all image textures were created");
     /// @todo remove the images for which the texture was not created
   }
 
-  const std::vector<uuid> segUidsOfCreatedTextures
-    = createSegTextures(m_appData, m_appData.segUidsOrdered());
+  const std::vector<uuid> segUidsOfCreatedTextures =
+    createSegTextures(m_appData, m_appData.segUidsOrdered());
 
-  if (segUidsOfCreatedTextures.size() != m_appData.numSegs())
-  {
+  if (segUidsOfCreatedTextures.size() != m_appData.numSegs()) {
     spdlog::error("Not all segmentation textures were created");
     /// @todo remove the segs for which the texture was not created
   }
@@ -384,8 +376,7 @@ bool Rendering::createLabelColorTableTexture(const uuid& labelTableUid)
   // static const glm::vec4 sk_border{ 0.0f, 0.0f, 0.0f, 0.0f };
 
   const auto* table = m_appData.labelTable(labelTableUid);
-  if (!table)
-  {
+  if (!table) {
     spdlog::warn("Label table {} is invalid", labelTableUid);
     return false;
   }
@@ -393,29 +384,24 @@ bool Rendering::createLabelColorTableTexture(const uuid& labelTableUid)
   int maxBufTexSize;
   glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufTexSize);
 
-  if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize))
-  {
+  if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize)) {
     spdlog::error(
       "Number of bytes ({}) in label color table {} exceeds "
       "maximum buffer texture size of {} bytes",
-      table->numColorBytes_RGBA_U8(),
-      labelTableUid,
-      maxBufTexSize
-    );
+      table->numColorBytes_RGBA_U8(), labelTableUid, maxBufTexSize);
     return false;
   }
 
   auto it = m_appData.renderData().m_labelBufferTextures.emplace(
     std::piecewise_construct,
     std::forward_as_tuple(labelTableUid),
-    std::forward_as_tuple(table->bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw)
-  );
+    std::forward_as_tuple(table->bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw));
 
-  if (!it.second)
+  if (!it.second) {
     return false;
+  }
 
   GLBufferTexture& T = it.first->second;
-
   T.generate();
   T.allocate(table->numColorBytes_RGBA_U8(), table->colorData_RGBA_nonpremult_U8());
 
@@ -426,16 +412,14 @@ bool Rendering::createLabelColorTableTexture(const uuid& labelTableUid)
 bool Rendering::removeSegTexture(const uuid& segUid)
 {
   const auto* seg = m_appData.seg(segUid);
-  if (!seg)
-  {
+  if (!seg) {
     spdlog::warn("Segmentation {} is invalid", segUid);
     return false;
   }
 
   auto it = m_appData.renderData().m_segTextures.find(segUid);
 
-  if (std::end(m_appData.renderData().m_segTextures) == it)
-  {
+  if (std::end(m_appData.renderData().m_segTextures) == it) {
     spdlog::warn("Texture for segmentation {} does not exist and cannot be removed", segUid);
     return false;
   }
@@ -503,37 +487,27 @@ void Rendering::updateSegTexture(
   const ComponentType& compType,
   const glm::uvec3& startOffsetVoxel,
   const glm::uvec3& sizeInVoxels,
-  const void* data
-)
+  const void* data)
 {
   // Load seg data into first mipmap level
   static constexpr GLint sk_mipmapLevel = 0;
 
   auto it = m_appData.renderData().m_segTextures.find(segUid);
-  if (std::end(m_appData.renderData().m_segTextures) == it)
-  {
+  if (std::end(m_appData.renderData().m_segTextures) == it) {
     spdlog::error("Cannot update segmentation {}: texture not found.", segUid);
     return;
   }
 
-  GLTexture& T = it->second;
-
   const auto* seg = m_appData.seg(segUid);
-
-  if (!seg)
-  {
+  if (!seg) {
     spdlog::warn("Segmentation {} is invalid", segUid);
     return;
   }
 
-  T.setSubData(
-    sk_mipmapLevel,
-    startOffsetVoxel,
-    sizeInVoxels,
-    GLTexture::getBufferPixelRedFormat(compType),
-    GLTexture::getBufferPixelDataType(compType),
-    data
-  );
+  GLTexture& T = it->second;
+  T.setSubData(sk_mipmapLevel, startOffsetVoxel, sizeInVoxels,
+               GLTexture::getBufferPixelRedFormat(compType),
+               GLTexture::getBufferPixelDataType(compType), data);
 }
 
 void Rendering::updateSegTextureWithInt64Data(
@@ -541,22 +515,17 @@ void Rendering::updateSegTextureWithInt64Data(
   const ComponentType& compType,
   const glm::uvec3& startOffsetVoxel,
   const glm::uvec3& sizeInVoxels,
-  const int64_t* data
-)
+  const int64_t* data)
 {
-  if (!data)
-  {
+  if (!data) {
     spdlog::error("Null segmentation texture data pointer");
     return;
   }
 
-  if (!isValidSegmentationComponentType(compType))
-  {
+  if (!isValidSegmentationComponentType(compType)) {
     spdlog::error(
-      "Unable to update segmentation texture using buffer with invalid "
-      "component type {}",
-      componentTypeString(compType)
-    );
+      "Unable to update segmentation texture using buffer with invalid component type {}",
+      componentTypeString(compType));
     return;
   }
 
@@ -565,32 +534,21 @@ void Rendering::updateSegTextureWithInt64Data(
 
   switch (compType)
   {
-  case ComponentType::UInt8:
-  {
+  case ComponentType::UInt8: {
     const std::vector<uint8_t> castData(data, data + N);
-
-    return updateSegTexture(
-      segUid, compType, startOffsetVoxel, sizeInVoxels, static_cast<const void*>(castData.data())
-    );
+    return updateSegTexture(segUid, compType, startOffsetVoxel, sizeInVoxels, static_cast<const void*>(castData.data()));
   }
-  case ComponentType::UInt16:
-  {
+  case ComponentType::UInt16: {
     const std::vector<uint16_t> castData(data, data + N);
-
-    return updateSegTexture(
-      segUid, compType, startOffsetVoxel, sizeInVoxels, static_cast<const void*>(castData.data())
-    );
+    return updateSegTexture(segUid, compType, startOffsetVoxel, sizeInVoxels, static_cast<const void*>(castData.data()));
   }
-  case ComponentType::UInt32:
-  {
+  case ComponentType::UInt32: {
     const std::vector<uint32_t> castData(data, data + N);
-
-    return updateSegTexture(
-      segUid, compType, startOffsetVoxel, sizeInVoxels, static_cast<const void*>(castData.data())
-    );
+    return updateSegTexture(segUid, compType, startOffsetVoxel, sizeInVoxels, static_cast<const void*>(castData.data()));
   }
-  default:
+  default: {
     return;
+  }
   }
 }
 
@@ -602,8 +560,7 @@ void Rendering::updateImageTexture(
   const ComponentType& compType,
   const glm::uvec3& startOffsetVoxel,
   const glm::uvec3& sizeInVoxels,
-  const void* data
-)
+  const void* data)
 {
   // Load data into first mipmap level
   static constexpr GLint sk_mipmapLevel = 0;
@@ -617,28 +574,20 @@ void Rendering::updateImageTexture(
 
   std::vector<GLTexture>& T = it->second;
 
-  if (comp >= T.size())
-  {
+  if (comp >= T.size()) {
     spdlog::error("Cannot update invalid component {} of image {}", comp, imageUid);
     return;
   }
 
   const auto* img = m_appData.image(imageUid);
-
-  if (!img)
-  {
+  if (!img) {
     spdlog::warn("Segmentation {} is invalid", imageUid);
     return;
   }
 
-  T.at(comp).setSubData(
-    sk_mipmapLevel,
-    startOffsetVoxel,
-    sizeInVoxels,
-    GLTexture::getBufferPixelRedFormat(compType),
-    GLTexture::getBufferPixelDataType(compType),
-    data
-  );
+  T.at(comp).setSubData(sk_mipmapLevel, startOffsetVoxel, sizeInVoxels,
+                        GLTexture::getBufferPixelRedFormat(compType),
+                        GLTexture::getBufferPixelDataType(compType), data);
 }
 
 Rendering::CurrentImages
@@ -886,20 +835,17 @@ void Rendering::render()
     m_appData.renderData().m_2dBackgroundColor.r,
     m_appData.renderData().m_2dBackgroundColor.g,
     m_appData.renderData().m_2dBackgroundColor.b,
-    1.0f
-  );
+    1.0f);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   renderImageData();
-  //    renderOverlays();
   renderVectorOverlays();
 }
 
 void Rendering::updateImageUniforms(uuid_range_t imageUids)
 {
-  for (const auto& imageUid : imageUids)
-  {
+  for (const auto& imageUid : imageUids) {
     updateImageUniforms(imageUid);
   }
 }
@@ -1554,15 +1500,6 @@ void Rendering::renderAllImages(
           }
           else {
             P->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
-
-            /// @todo Render iso-surfaces in separate shader and overlay atop image
-            if (!U.showEdges) {
-              updateIsosurfaceDataFor2d(m_appData, *imgSegPair.first);
-              P->setUniform("u_isoValues", R.m_isosurfaceData.values);
-              P->setUniform("u_isoOpacities", R.m_isosurfaceData.opacities);
-              P->setUniform("u_isoColors", R.m_isosurfaceData.colors);
-              P->setUniform("u_isoWidth", R.m_isosurfaceData.widthIn2d);
-            }
           }
 
           // Flag whether HSV modification is used
@@ -1592,6 +1529,67 @@ void Rendering::renderAllImages(
         }
         P->stopUse();
         unbindTextures(boundTextures);
+
+        // Render isosurfaces:
+        const auto& S = img->settings();
+        if (S.isosurfacesVisible() && S.showIsosurfacesIn2d())
+        {
+          const auto& vp = m_appData.windowData().viewport();
+          const glm::vec2 windowSize{vp.width(), vp.height()};
+          const glm::vec2 viewSize = 0.5f * glm::vec2{view.windowClipViewport()[2], view.windowClipViewport()[3]} * windowSize;
+
+          const uint32_t activeComp = S.activeComponent();
+
+          GLShaderProgram& isoP = m_isoContourTexLookupLinearProgram;
+          const auto boundIsoTextures = bindScalarImageTextures(imgSegPair);
+          isoP.use();
+
+          for (const auto& surfaceUid : m_appData.isosurfaceUids(imgUid, activeComp))
+          {
+            const Isosurface* surface = m_appData.isosurface(imgUid, activeComp, surfaceUid);
+            if (!surface) {
+              spdlog::warn("Null isosurface {} for image {}", surfaceUid, imgUid);
+              continue;
+            }
+
+            if (!surface->visible || !surface->showIn2d) {
+              continue;
+            }
+
+            /// @note This case is only needed when the image is transparent, since otherwise the
+            /// isoline color is the same as the image color
+
+            static constexpr bool premult = false;
+            const glm::vec3 color = glm::vec3{getIsosurfaceColor(m_appData, *surface, S, activeComp, premult)};
+
+            const float imgOp = R.m_modulateIsocontourOpacityWithImageOpacity ? U.imgOpacity : 1.0f;
+            const float opacityMod = S.isosurfaceOpacityModulator() * imgOp; // global opacity mod
+
+            isoP.setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
+
+            isoP.setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
+            isoP.setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+
+            isoP.setUniform("u_isoValue", static_cast<float>(S.mapNativeIntensityToTexture(surface->value)));
+            isoP.setUniform("u_fillOpacity", static_cast<float>(opacityMod * surface->fillOpacity));
+            isoP.setUniform("u_lineOpacity", static_cast<float>(opacityMod * surface->opacity));
+            isoP.setUniform("u_color", color);
+            isoP.setUniform("u_contourWidth", static_cast<float>(S.isosurfaceWidthIn2d()));
+            isoP.setUniform("u_useFloatingInterp", 0.0f);
+            isoP.setUniform("u_viewSize", viewSize);
+            isoP.setUniform("u_imgMinMax", U.minMax);
+            isoP.setUniform("u_imgThresholds", U.thresholds);
+            isoP.setUniform("u_imgOpacity", U.imgOpacity);
+            isoP.setUniform("u_quadrants", R.m_quadrants);
+            isoP.setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+            isoP.setUniform("u_renderMode", displayModeUniform);
+
+            renderOneImage(view, worldOffsetXhairs, isoP, CurrentImages{imgSegPair}, false);
+          }
+
+          isoP.stopUse();
+          unbindTextures(boundIsoTextures);
+        }
       }
       else
       {
@@ -1758,7 +1756,8 @@ void Rendering::renderAllImages(
         P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
 
         P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
-        P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{U[0].slopeIntercept_normalized_T_texture, U[1].slopeIntercept_normalized_T_texture});
+        P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{
+          U[0].slopeIntercept_normalized_T_texture, U[1].slopeIntercept_normalized_T_texture});
         P.setUniform("u_imgMinMax", std::vector<glm::vec2>{U[0].minMax, U[1].minMax});
         P.setUniform("u_imgThresholds", std::vector<glm::vec2>{U[0].thresholds, U[1].thresholds});
         P.setUniform("u_imgOpacity", std::vector<float>{U[0].imgOpacity, U[1].imgOpacity});
@@ -1771,7 +1770,7 @@ void Rendering::renderAllImages(
 
     unbindTextures(boundMetricTextures);
 
-    for (unsigned int i = 0; i < 2; ++i)
+    for (unsigned int i = 0; i < NUM_METRIC_IMAGES; ++i)
     {
       if (!segs[i]) {
         continue;
@@ -1868,10 +1867,10 @@ void Rendering::renderAllImages(
       // P.setUniform( "voxelSpacing", U.voxelSpacing );
       P.setUniform("texGrads", U.textureGradientStep);
 
+      /// @todo Shader expects 16 values, but we're not giving that to the shader!!
       P.setUniform("u_isoValues", R.m_isosurfaceData.values);
       P.setUniform("u_isoOpacities", R.m_isosurfaceData.opacities);
       P.setUniform("isoEdges", R.m_isosurfaceData.edgeStrengths);
-
       P.setUniform("lightAmbient", R.m_isosurfaceData.ambientLights);
       P.setUniform("lightDiffuse", R.m_isosurfaceData.diffuseLights);
       P.setUniform("lightSpecular", R.m_isosurfaceData.specularLights);
@@ -2149,6 +2148,14 @@ void Rendering::createShaderPrograms()
     throw_debug("Failed to create x-ray projection program with cubic texture lookup")
   }
 
+  if (!createIsoContourProgram(m_isoContourTexLookupLinearProgram, texLinearReplacement)) {
+    throw_debug("Failed to create iso-contour program with linear texture lookup")
+  }
+
+  if (!createIsoContourProgram(m_isoContourTexLookupCubicProgram, texCubicReplacement)) {
+    throw_debug("Failed to create iso-contour program with cubic texture lookup")
+  }
+
   if (!createDifferenceProgram(m_differenceTexLookupLinearProgram, texLinearReplacement)) {
     throw_debug("Failed to create difference metric program with linear texture lookup")
   }
@@ -2266,11 +2273,6 @@ bool Rendering::createImageGreyProgram(
   fsUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
   fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
   fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
-
-  fsUniforms.insertUniform("u_isoValues", UniformType::FloatVector, FloatVector{0.0f});
-  fsUniforms.insertUniform("u_isoOpacities", UniformType::FloatVector, FloatVector{1.0f});
-  fsUniforms.insertUniform("u_isoColors", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-  fsUniforms.insertUniform("u_isoWidth", UniformType::Float, 0.0f);
 
   auto fs = std::make_shared<GLShader>("fsImage", ShaderType::Fragment, fsSource.c_str());
   fs->setRegisteredUniforms(std::move(fsUniforms));
@@ -2442,6 +2444,95 @@ bool Rendering::createXrayProgram(
   fsUniforms.insertUniform("airAttenCoeff", UniformType::Float, 0.0f);
 
   auto fs = std::make_shared<GLShader>("fsXray", ShaderType::Fragment, fsSource.c_str());
+  fs->setRegisteredUniforms(std::move(fsUniforms));
+  program.attachShader(fs);
+
+  spdlog::debug("Compiled fragment shader {}", fsFileName);
+
+  if (!program.link()) {
+    spdlog::critical("Failed to link shader program {}", program.name());
+    return false;
+  }
+
+  spdlog::debug("Linked shader program {}", program.name());
+  return true;
+}
+
+bool Rendering::createIsoContourProgram(
+  GLShaderProgram& program,
+  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
+{
+  static const std::string vsFileName{"src/rendering/shaders/Image.vs"};
+  static const std::string fsFileName{"src/rendering/shaders/IsoContour.fs"};
+
+  auto filesystem = cmrc::shaders::get_filesystem();
+  std::string vsSource;
+  std::string fsSource;
+
+  try
+  {
+    cmrc::file vsData = filesystem.open(vsFileName.c_str());
+    cmrc::file fsData = filesystem.open(fsFileName.c_str());
+
+    vsSource = std::string(vsData.begin(), vsData.end());
+    fsSource = std::string(fsData.begin(), fsData.end());
+  }
+  catch (const std::exception& e)
+  {
+    spdlog::critical("Exception when loading shader file: {}", e.what());
+    throw_debug("Unable to load shader")
+  }
+
+  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
+
+  Uniforms vsUniforms;
+  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+
+  // For checkerboarding:
+  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
+  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+
+  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+
+  auto vs = std::make_shared<GLShader>("vsIsoContour", ShaderType::Vertex, vsSource.c_str());
+  vs->setRegisteredUniforms(std::move(vsUniforms));
+  program.attachShader(vs);
+
+  spdlog::debug("Compiled vertex shader {}", vsFileName);
+
+  Uniforms fsUniforms;
+
+  fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
+  fsUniforms.insertUniform("u_isoValue", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("u_fillOpacity", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("u_lineOpacity", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("u_color", UniformType::Vec3, sk_zeroVec3);
+  fsUniforms.insertUniform("u_contourWidth", UniformType::Float, 0.0f);
+  fsUniforms.insertUniform("u_viewSize", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_useFloatingInterp", UniformType::Float, 0.0f);
+
+  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+
+  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
+  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
+  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
+
+  // For flashlighting:
+  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
+  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+
+  // For intensity projection:
+  // 0: none, 1: max, 2: mean, 3: min, 4: x-ray (not used in image shader)
+  fsUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+
+  auto fs = std::make_shared<GLShader>("fsIsoContour", ShaderType::Fragment, fsSource.c_str());
   fs->setRegisteredUniforms(std::move(fsUniforms));
   program.attachShader(fs);
 
@@ -2989,6 +3080,7 @@ bool Rendering::showVectorOverlays() const
 {
   return m_showOverlays;
 }
+
 void Rendering::setShowVectorOverlays(bool show)
 {
   m_showOverlays = show;
@@ -3001,68 +3093,48 @@ void Rendering::updateIsosurfaceDataFor2d(AppData& appData, const uuid& imageUid
   const ImageSettings& settings = image->settings();
 
   // Turn off all of the isosurfaces
-  std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
+  // std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
 
   // Set width of isovalue threshold as a percentage of the image intensity range:
-  const double w = settings.isosurfaceWidthIn2d()
-                   * (settings.minMaxImageRange().second - settings.minMaxImageRange().first)
-                   / 100.0;
+  const double w = settings.isosurfaceWidthIn2d() *
+                   (settings.minMaxImageRange().second - settings.minMaxImageRange().first) / 100.0;
 
-  isoData.widthIn2d = std::max(
-    1.0e-4f,
-    static_cast<float>(
-      settings.mapNativeIntensityToTexture(w) - settings.mapNativeIntensityToTexture(0.0)
-    )
-  );
+  isoData.widthIn2d = std::max(1.0e-4f,
+    static_cast<float>(settings.mapNativeIntensityToTexture(w) - settings.mapNativeIntensityToTexture(0.0)));
 
-  if (!settings.showIsosurfacesIn2d() || !settings.isosurfacesVisible())
-  {
+  if (!settings.showIsosurfacesIn2d() || !settings.isosurfacesVisible()) {
     return;
   }
 
   const uint32_t activeComp = settings.activeComponent();
 
-  size_t i = 0;
-
+  std::size_t i = 0;
   for (const auto& surfaceUid : appData.isosurfaceUids(imageUid, activeComp))
   {
-    if (i >= RenderData::IsosurfaceData::MAX_NUM_ISOSURFACES)
-    {
-      // Only render the first MAX_NUM_ISOSURFACES surfaces
-      break;
-    }
-
     const Isosurface* surface = m_appData.isosurface(imageUid, activeComp, surfaceUid);
-
-    if (!surface)
-    {
+    if (!surface) {
       spdlog::warn("Null isosurface {} for image {}", surfaceUid, imageUid);
       continue;
     }
 
-    if (!surface->visible)
-    {
+    if (!surface->visible) {
       continue;
     }
 
     // Map isovalue from native image intensity to texture intensity:
-    const double texValue = settings.mapNativeIntensityToTexture(surface->value);
-
-    isoData.values[i] = static_cast<float>(texValue);
+    isoData.values[i] = static_cast<float>(settings.mapNativeIntensityToTexture(surface->value));
 
     // The isolines are hidden if the image is hidden
     isoData.opacities[i] = settings.visibility()
-                             ? surface->opacity * settings.isosurfaceOpacityModulator()
-                             : 0.0f;
+      ? surface->opacity * settings.isosurfaceOpacityModulator() : 0.0f;
 
-    if (settings.applyImageColormapToIsosurfaces())
-    {
+    if (settings.applyImageColormapToIsosurfaces()) {
       /// @note This case is only needed when the image is transparent, since otherwise the
       /// isoline color is the same as the image color
-      isoData.colors[i] = getIsosurfaceColor(m_appData, *surface, settings, activeComp);
+      static constexpr bool premult = false;
+      isoData.colors[i] = getIsosurfaceColor(m_appData, *surface, settings, activeComp, premult);
     }
-    else
-    {
+    else {
       // Color the surface using its explicitly defined color:
       isoData.colors[i] = surface->color;
     }
@@ -3078,61 +3150,47 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
   const ImageSettings& settings = image->settings();
 
   // Turn off all of the isosurfaces
-  std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
+  // std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
 
-  if (!settings.isosurfacesVisible())
-  {
+  if (!settings.isosurfacesVisible()) {
     return;
   }
 
   const uint32_t activeComp = settings.activeComponent();
 
-  size_t i = 0;
-
+  std::size_t i = 0;
   for (const auto& surfaceUid : appData.isosurfaceUids(imageUid, activeComp))
   {
-    if (i >= RenderData::IsosurfaceData::MAX_NUM_ISOSURFACES)
-    {
-      // Only render the first MAX_NUM_ISOSURFACES surfaces
-      break;
-    }
-
     const Isosurface* surface = m_appData.isosurface(imageUid, activeComp, surfaceUid);
 
-    if (!surface)
-    {
+    if (!surface) {
       spdlog::warn("Null isosurface {} for image {}", surfaceUid, imageUid);
       continue;
     }
 
-    if (!surface->visible)
-    {
+    if (!surface->visible) {
       continue;
     }
 
     // Map isovalue from native image intensity to texture intensity:
-    const double texValue = settings.mapNativeIntensityToTexture(surface->value);
-
-    isoData.values[i] = static_cast<float>(texValue);
+    isoData.values[i] = static_cast<float>(settings.mapNativeIntensityToTexture(surface->value));
 
     // The isosurfaces are hidden if the image is hidden
     isoData.opacities[i] = settings.visibility()
-                             ? surface->opacity * settings.isosurfaceOpacityModulator()
-                             : 0.0f;
+      ? surface->opacity * settings.isosurfaceOpacityModulator() : 0.0f;
 
     isoData.edgeStrengths[i] = surface->edgeStrength;
     isoData.shininesses[i] = surface->material.shininess;
 
-    if (settings.applyImageColormapToIsosurfaces())
-    {
+    if (settings.applyImageColormapToIsosurfaces()) {
       // Color the surface using the current image colormap:
-      const glm::vec3 cmapColor = getIsosurfaceColor(m_appData, *surface, settings, activeComp);
+      static constexpr bool premult = false;
+      const glm::vec3 cmapColor = getIsosurfaceColor(m_appData, *surface, settings, activeComp, premult);
       isoData.ambientLights[i] = surface->material.ambient * cmapColor;
       isoData.diffuseLights[i] = surface->material.diffuse * cmapColor;
       isoData.specularLights[i] = surface->material.specular * WHITE;
     }
-    else
-    {
+    else {
       // Color the surface using its explicitly defined color:
       isoData.ambientLights[i] = surface->ambientColor();
       isoData.diffuseLights[i] = surface->diffuseColor();

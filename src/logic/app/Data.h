@@ -145,8 +145,7 @@ public:
      * otherwise \c std::nullpt
      */
   std::optional<uuids::uuid> addIsosurface(
-    const uuids::uuid& imageUid, ComponentIndexType component, Isosurface isosurface
-  );
+    const uuids::uuid& imageUid, ComponentIndexType component, Isosurface isosurface);
 
   //    bool removeImage( const uuids::uuid& imageUid );
   bool removeSeg(const uuids::uuid& segUid);
@@ -163,8 +162,7 @@ public:
      * @return True iff the isosurface was successfully removed.
      */
   bool removeIsosurface(
-    const uuids::uuid& imageUid, ComponentIndexType component, const uuids::uuid& isosurfaceUid
-  );
+    const uuids::uuid& imageUid, ComponentIndexType component, const uuids::uuid& isosurfaceUid);
 
   const Image* image(const uuids::uuid& imageUid) const;
   Image* image(const uuids::uuid& imageUid);
@@ -198,12 +196,10 @@ public:
      * @return Pointer to the isosurface if it exists; otherwise nullptr
      */
   const Isosurface* isosurface(
-    const uuids::uuid& imageUid, ComponentIndexType component, const uuids::uuid& isosurfaceUid
-  ) const;
+    const uuids::uuid& imageUid, ComponentIndexType component, const uuids::uuid& isosurfaceUid) const;
 
   Isosurface* isosurface(
-    const uuids::uuid& imageUid, ComponentIndexType component, const uuids::uuid& isosurfaceUid
-  );
+    const uuids::uuid& imageUid, ComponentIndexType component, const uuids::uuid& isosurfaceUid);
 
   /*
   bool updateIsosurfaceMeshCpuRecord(
@@ -390,11 +386,12 @@ private:
     std::map<uint32_t, Image> m_noiseEstimates;
 
     /// Isosurfaces for the component
-    typedef std::unique_ptr<Isosurface> IsosurfacePtr;
-    typedef std::unordered_map<uuids::uuid, IsosurfacePtr> IsoSurfaceMap;
-    std::unique_ptr<Isosurface> aDummyStub; //<-- add this line
+    using IsosurfacePtr = std::unique_ptr<Isosurface>;
+    using IsoSurfaceMap = std::unordered_map<uuids::uuid, IsosurfacePtr>;
+    // std::unique_ptr<Isosurface> aDummyStub; //<-- add this line
 
-    std::unordered_map<uuids::uuid, Isosurface> m_isosurfaces;
+    std::vector<uuids::uuid> m_isosurfaceUidsSorted; //!< Sorted isosurface uids
+    std::unordered_map<uuids::uuid, Isosurface> m_isosurfaces; //!< Isosurfaces
   };
 
   mutable std::mutex m_componentDataMutex;

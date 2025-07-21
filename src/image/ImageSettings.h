@@ -523,8 +523,9 @@ private:
   bool m_isosurfacesVisible;          //!< Visibility of image isosurfaces
   bool m_applyImageColormapToIsosurfaces; //!< Color image isosurfaces using the image colormap
   bool m_showIsosurfacesIn2d;             //!< Visibility of isosurface edges in 2D image slices
-  double
-    m_isosurfaceWidthIn2d; //!< Width of isovalue lines in 2D as a percentage of the image intensity range
+
+  /// Width of isovalue lines in 2D, roughly in terms of pixels
+  double m_isosurfaceWidthIn2d;
   float m_isosurfaceOpacityModulator; //!< Modality of surface opacity for the image
 
   /*** End settings for all components ***/

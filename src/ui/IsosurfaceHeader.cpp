@@ -251,13 +251,10 @@ std::optional<uuids::uuid> addNewSurface(
 } // namespace
 
 void renderIsosurfacesHeader(
-  AppData& appData,
-  const uuids::uuid& imageUid,
-  size_t imageIndex,
-  bool isActiveImage,
+  AppData& appData, const uuids::uuid& imageUid,
+  std::size_t imageIndex, bool isActiveImage,
   std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue
-)
+  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
   static const ImGuiColorEditFlags sk_colorNoAlphaEditFlags = ImGuiColorEditFlags_PickerHueBar
                                                               | ImGuiColorEditFlags_DisplayRGB
@@ -274,32 +271,26 @@ void renderIsosurfacesHeader(
                                                             | ImGuiColorEditFlags_Uint8
                                                             | ImGuiColorEditFlags_InputRGB;
 
-  static const std::string sk_addSurfaceButtonText = std::string(ICON_FK_FILE_O)
-                                                     + std::string(" Add surface");
-
-  static const std::string sk_removeSurfaceButtonText = std::string(ICON_FK_TRASH_O)
-                                                        + std::string(" Remove");
-
-  static const std::string sk_saveSurfacesButtonText = std::string(ICON_FK_FLOPPY_O)
-                                                       + std::string(" Save...");
+  static const std::string sk_addSurfaceButtonText = std::string(ICON_FK_FILE_O) + std::string(" Add surface");
+  static const std::string sk_removeSurfaceButtonText = std::string(ICON_FK_TRASH_O) + std::string(" Remove");
+  static const std::string sk_saveSurfacesButtonText = std::string(ICON_FK_FLOPPY_O) + std::string(" Save...");
 
   //    static const char* sk_saveSurfaceDialogTitle( "Save Isosurface Mesh" );
   //    static const std::vector< const char* > sk_saveSurfaceDialogFilters{};
 
   static const float sk_textBaseHeight = ImGui::GetTextLineHeightWithSpacing();
 
-  static const IsosurfaceTableItemContentsType sk_contentsType
-    = IsosurfaceTableItemContentsType::SelectableSpanRow;
+  static const IsosurfaceTableItemContentsType sk_contentsType = IsosurfaceTableItemContentsType::SelectableSpanRow;
 
-  static const ImGuiSelectableFlags sk_selectableFlags
-    = (IsosurfaceTableItemContentsType::SelectableSpanRow == sk_contentsType)
+  static const ImGuiSelectableFlags sk_selectableFlags =
+    (IsosurfaceTableItemContentsType::SelectableSpanRow == sk_contentsType)
         ? (ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)
         : ImGuiSelectableFlags_None;
 
   static constexpr int sk_freezeCols = 1;
   static constexpr int sk_freezeRows = 1;
 
-  static const ImVec2 sk_outerSizeValue = ImVec2(0.0f, sk_textBaseHeight * 12);
+  static const ImVec2 sk_outerSizeValue(0.0f, sk_textBaseHeight * 12);
   static constexpr float sk_minRowHeight = 0.0f;         // Auto
   static constexpr float sk_innerWidthWithScroll = 0.0f; // Auto-extend
 
@@ -316,20 +307,20 @@ void renderIsosurfacesHeader(
   std::optional<uuids::uuid> selectedSurfaceUid = std::nullopt;
 
   Image* image = appData.image(imageUid);
-  if (!image)
+  if (!image) {
     return;
+  }
 
   ImageSettings& imgSettings = image->settings();
 
   ImGuiTreeNodeFlags headerFlags = ImGuiTreeNodeFlags_CollapsingHeader;
 
   /// @todo This annoyingly pops up the active header each time... not sure why
-  if (isActiveImage)
-  {
+  if (isActiveImage) {
     headerFlags |= ImGuiTreeNodeFlags_DefaultOpen;
   }
 
-  ImGui::PushID(uuids::to_string(imageUid).c_str()); /** PushID imageUid **/
+  ImGui::PushID(uuids::to_string(imageUid).c_str()); // imageUid
 
   // Header is ID'ed only by the image index.
   // ### allows the header name to change without changing its ID.
@@ -344,8 +335,7 @@ void renderIsosurfacesHeader(
 
   ImGui::PopStyleColor(2); // ImGuiCol_Header, ImGuiCol_Text
 
-  if (!open)
-  {
+  if (!open) {
     ImGui::PopID(); // imageUid
     return;
   }
@@ -358,25 +348,22 @@ void renderIsosurfacesHeader(
   // Component selection combo selection list. The component selection is shown only for
   // multi-component images, where each component is stored as a separate image.
   const bool showComponentSelection =
-            ( image->header().numComponentsPerPixel() > 1 &&
-              Image::MultiComponentBufferType::SeparateImages == image->bufferType() );
+            (image->header().numComponentsPerPixel() > 1 &&
+            Image::MultiComponentBufferType::SeparateImages == image->bufferType());
 
   if (showComponentSelection)
   {
-    if (ImGui::BeginCombo("Image component", std::to_string(componentToAdjust).c_str()))
-    {
-      for (uint32_t comp = 0; comp < image->header().numComponentsPerPixel(); ++comp)
-      {
+    if (ImGui::BeginCombo("Image component", std::to_string(componentToAdjust).c_str())) {
+      for (uint32_t comp = 0; comp < image->header().numComponentsPerPixel(); ++comp) {
         const bool isSelected = (componentToAdjust == comp);
-        if (ImGui::Selectable(std::to_string(comp).c_str(), isSelected))
-        {
+        if (ImGui::Selectable(std::to_string(comp).c_str(), isSelected)) {
           componentToAdjust = comp;
         }
 
-        if (isSelected)
+        if (isSelected) {
           ImGui::SetItemDefaultFocus();
+        }
       }
-
       ImGui::EndCombo();
     }
 
@@ -395,19 +382,18 @@ void renderIsosurfacesHeader(
 
     ImGui::Spacing();
     const bool addSurface = ImGui::Button(sk_addSurfaceButtonText.c_str());
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Add new isosurface");
     }
 
-    if (addSurface)
-    {
-      if (const auto uid = addNewSurface(appData, image, imageUid, componentToAdjust, 1, storeFuture, addTaskToIsosurfaceGpuMeshGenerationQueue))
+    if (addSurface) {
+      if (const auto uid = addNewSurface(appData, image, imageUid, componentToAdjust, 1,
+                                         storeFuture, addTaskToIsosurfaceGpuMeshGenerationQueue))
       {
         selectedSurfaceUid = *uid;
         imageToSelectedSurfaceUid[imageUid] = *uid;
       }
-
+      ImGui::PopID(); // imageUid
       return;
     }
 
@@ -425,22 +411,17 @@ void renderIsosurfacesHeader(
   bool validSelectedUid = false;
 
   const auto it = imageToSelectedSurfaceUid.find(imageUid);
-
-  if (std::end(imageToSelectedSurfaceUid) == it)
-  {
+  if (std::end(imageToSelectedSurfaceUid) == it) {
     selectedSurfaceUid = std::nullopt;
   }
-  else
-  {
+  else {
     selectedSurfaceUid = it->second;
   }
 
   for (const auto& uid : appData.isosurfaceUids(imageUid, componentToAdjust))
   {
     Isosurface* surface = appData.isosurface(imageUid, componentToAdjust, uid);
-
-    if (!surface)
-    {
+    if (!surface) {
       spdlog::error("Isosurface {} is null: it is being removed", uid);
       appData.removeIsosurface(imageUid, componentToAdjust, uid);
       continue;
@@ -452,8 +433,7 @@ void renderIsosurfacesHeader(
     validSelectedUid = validSelectedUid | (selectedSurfaceUid && *selectedSurfaceUid == uid);
   }
 
-  if (selectedSurfaceUid && !validSelectedUid)
-  {
+  if (selectedSurfaceUid && !validSelectedUid) {
     // Selected UID was invalid, so remove it
     spdlog::warn("Invalid isosurface UID {} selected", *selectedSurfaceUid);
     selectedSurfaceUid = std::nullopt;
@@ -461,14 +441,11 @@ void renderIsosurfacesHeader(
   }
 
   const float innerWidthToUse = (sk_isosurfaceTableFlags & ImGuiTableFlags_ScrollX)
-                                  ? sk_innerWidthWithScroll
-                                  : 0.0f;
+    ? sk_innerWidthWithScroll : 0.0f;
 
   const ImVec2 outerSize = sk_outerSizeEnabled ? sk_outerSizeValue : ImVec2(0, 0);
 
-  if (ImGui::BeginTable(
-        "isosurfaceSettingsTable", 2, sk_isosurfaceTableFlags, outerSize, innerWidthToUse
-      ))
+  if (ImGui::BeginTable("isosurfaceSettingsTable", 2, sk_isosurfaceTableFlags, outerSize, innerWidthToUse))
   {
     // Declare columns:
     ImGui::TableSetupColumn("Surface", sk_nameColumnFlags, 150.0f, TableColumnId::Name);
@@ -480,19 +457,14 @@ void renderIsosurfacesHeader(
     if (ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs())
     {
       // Force the sort to always happen:
-      if (sortSpecs->SpecsDirty | true)
-      {
+      if (sortSpecs->SpecsDirty | true) {
         itemsNeedSort = true;
       }
 
-      if (itemsNeedSort && tableItems.size() > 1)
-      {
-        std::sort(
-          std::begin(tableItems),
-          std::end(tableItems),
+      if (itemsNeedSort && tableItems.size() > 1) {
+        std::sort(std::begin(tableItems), std::end(tableItems),
           [sortSpecs](const IsosurfaceTableItem& a, const IsosurfaceTableItem& b)
-          { return compareWithSortSpecs(a, b, *sortSpecs); }
-        );
+          { return compareWithSortSpecs(a, b, *sortSpecs); });
 
         sortSpecs->SpecsDirty = false;
       }
@@ -500,26 +472,21 @@ void renderIsosurfacesHeader(
 
     itemsNeedSort = false;
 
-    if (sk_showHeaders)
-    {
+    if (sk_showHeaders) {
       ImGui::TableHeadersRow();
     }
 
     ImGui::PushButtonRepeat(true);
 
     // Always selected at least one item (the first one, by default):
-    if (!selectedSurfaceUid)
-    {
+    if (!selectedSurfaceUid) {
       selectedSurfaceUid = tableItems.front().m_surfaceUid;
       imageToSelectedSurfaceUid[imageUid] = tableItems.front().m_surfaceUid;
     }
 
     for (IsosurfaceTableItem& item : tableItems)
     {
-      const bool itemIsSelected = (selectedSurfaceUid && *selectedSurfaceUid == item.m_surfaceUid);
-
-      /*** PushID item.surfaceUid ***/
-      ImGui::PushID(uuids::to_string(item.m_surfaceUid).c_str());
+      ImGui::PushID(uuids::to_string(item.m_surfaceUid).c_str()); // item.surfaceUid
 
       ImGui::TableNextRow(ImGuiTableRowFlags_None, sk_minRowHeight);
 
@@ -529,20 +496,17 @@ void renderIsosurfacesHeader(
       ImGui::Checkbox("##visible", &(item.m_surface->visible));
       ImGui::SameLine();
 
-      glm::vec4 color
-        = getIsosurfaceColor(appData, *(item.m_surface), imgSettings, componentToAdjust);
+      // Non-pm-RGBA:
+      static constexpr bool premult = false;
+      glm::vec4 color = getIsosurfaceColor(appData, *(item.m_surface), imgSettings, componentToAdjust, premult);
 
       // Disable editing the surface color when the image colormap is used:
       const bool disableEdit = imgSettings.applyImageColormapToIsosurfaces();
 
       const ImGuiColorEditFlags disableEditFlag = (disableEdit) ? ImGuiColorEditFlags_NoPicker : 0;
 
-      if (ImGui::ColorEdit4(
-            "##color", glm::value_ptr(color), sk_colorAlphaEditFlags | disableEditFlag
-          ))
-      {
-        if (!disableEdit)
-        {
+      if (ImGui::ColorEdit4("##color", glm::value_ptr(color), sk_colorAlphaEditFlags | disableEditFlag)) {
+        if (!disableEdit) {
           item.m_surface->color = glm::vec3{color};
           item.m_surface->opacity = color.a;
         }
@@ -550,13 +514,8 @@ void renderIsosurfacesHeader(
 
       ImGui::SameLine();
 
-      if (ImGui::Selectable(
-            item.m_surface->name.c_str(),
-            itemIsSelected,
-            sk_selectableFlags,
-            ImVec2(0, sk_minRowHeight)
-          ))
-      {
+      const bool itemIsSelected = (selectedSurfaceUid && *selectedSurfaceUid == item.m_surfaceUid);
+      if (ImGui::Selectable(item.m_surface->name.c_str(), itemIsSelected, sk_selectableFlags, ImVec2(0, sk_minRowHeight))) {
         selectedSurfaceUid = item.m_surfaceUid;
         imageToSelectedSurfaceUid[imageUid] = item.m_surfaceUid;
       }
@@ -564,35 +523,27 @@ void renderIsosurfacesHeader(
       // Column with isosurface value:
       if (ImGui::TableSetColumnIndex(TableColumnId::Value))
       {
+        static constexpr double sk_step = 0.1;
+        static constexpr double sk_stepFast = 10.0;
+
         const auto& stats = image->settings().componentStatistics(componentToAdjust);
 
         //                const double k_step = ( valueMax - valueMin ) / 2000.0;
         //                const double k_stepFast = sk_step / 100.0;
 
-        static constexpr double sk_step = 0.1;
-        static constexpr double sk_stepFast = 10.0;
-
         ImGui::PushItemWidth(-1);
 
         double value = item.m_surface->value;
 
-        if (ImGui::InputDouble(
-              "##isovalue",
-              &value,
-              sk_step,
-              sk_stepFast,
-              appData.guiData().m_imageValuePrecisionFormat.c_str()
-            ))
-        {
-          if (stats.m_minimum <= value && value <= stats.m_maximum)
-          {
+        if (ImGui::InputDouble("##isovalue", &value, sk_step, sk_stepFast,
+                               appData.guiData().m_imageValuePrecisionFormat.c_str())) {
+          if (stats.m_minimum <= value && value <= stats.m_maximum) {
             item.m_surface->value = value;
           }
 
           // To avoid triggering a sort while holding the button;
           // only trigger it when the button has been released
-          if (ImGui::IsItemDeactivated())
-          {
+          if (ImGui::IsItemDeactivated()) {
             itemsNeedSort = true;
           }
         }
@@ -600,7 +551,7 @@ void renderIsosurfacesHeader(
         ImGui::PopItemWidth();
       }
 
-      ImGui::PopID(); /*** item.surfaceUid ***/
+      ImGui::PopID(); // item.surfaceUid
     }
     ImGui::PopButtonRepeat();
 
@@ -614,13 +565,13 @@ void renderIsosurfacesHeader(
     ImGui::SetTooltip("Add new isosurface");
   }
 
-  if (addSurface)
-  {
-    if (const auto uid = addNewSurface(appData, image, imageUid, componentToAdjust, tableItems.size() + 1, storeFuture, addTaskToIsosurfaceGpuMeshGenerationQueue))
-    {
+  if (addSurface) {
+    if (const auto uid = addNewSurface(appData, image, imageUid, componentToAdjust, tableItems.size() + 1,
+                                       storeFuture, addTaskToIsosurfaceGpuMeshGenerationQueue)) {
       selectedSurfaceUid = *uid;
       imageToSelectedSurfaceUid[imageUid] = *uid;
       ImGui::PopStyleColor();
+      ImGui::PopID(); // imageUid
       return;
     }
   }
@@ -629,32 +580,31 @@ void renderIsosurfacesHeader(
   {
     ImGui::SameLine();
     const bool removeSurface = ImGui::Button(sk_removeSurfaceButtonText.c_str());
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Remove isosurface");
     }
 
     if (removeSurface)
     {
-      if (appData.removeIsosurface(imageUid, componentToAdjust, *selectedSurfaceUid))
-      {
+      if (appData.removeIsosurface(imageUid, componentToAdjust, *selectedSurfaceUid)) {
         spdlog::info("Removed isosurface {}", *selectedSurfaceUid);
         selectedSurfaceUid = std::nullopt;
         imageToSelectedSurfaceUid.erase(imageUid);
         ImGui::PopStyleColor();
+        ImGui::PopID(); // imageUid
         return;
       }
     }
 
     ImGui::SameLine();
     const bool saveSurface = ImGui::Button(sk_saveSurfacesButtonText.c_str());
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Save isosurface...");
     }
 
     if (saveSurface)
     {
+      /// @todo Save
     }
 
     ImGui::Spacing();
@@ -675,13 +625,8 @@ void renderIsosurfacesHeader(
       const double valueMin = image->settings().componentStatistics(componentToAdjust).m_minimum;
       const double valueMax = image->settings().componentStatistics(componentToAdjust).m_maximum;
 
-      if (mySliderF64(
-            "Isovalue",
-            &(surface->value),
-            valueMin,
-            valueMax,
-            appData.guiData().m_imageValuePrecisionFormat.c_str()
-          ))
+      if (mySliderF64("Isovalue", &(surface->value), valueMin,
+                      valueMax, appData.guiData().m_imageValuePrecisionFormat.c_str()))
       {
         // updateImageUniforms();
       }
@@ -693,38 +638,37 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Show/hide the surface");
 
-      glm::vec4 color = getIsosurfaceColor(appData, *surface, imgSettings, componentToAdjust);
+      static constexpr bool premult = false;
+      glm::vec4 color = getIsosurfaceColor(appData, *surface, imgSettings, componentToAdjust, premult);
       glm::vec3 color3{color};
 
       // Disable editing the surface color when the image colormap is used:
       const bool disableEdit = imgSettings.applyImageColormapToIsosurfaces();
-
       const ImGuiColorEditFlags disableEditFlag = (disableEdit) ? ImGuiColorEditFlags_NoPicker : 0;
 
-      if (ImGui::ColorEdit3(
-            "Color", glm::value_ptr(color3), sk_colorNoAlphaEditFlags | disableEditFlag
-          ))
-      {
-        if (!disableEdit)
-        {
+      if (ImGui::ColorEdit3("Color", glm::value_ptr(color3), sk_colorNoAlphaEditFlags | disableEditFlag)) {
+        if (!disableEdit) {
           surface->color = color3;
         }
       }
       ImGui::SameLine();
       helpMarker("Surface color");
 
-      mySliderF32("Opacity", &surface->opacity, 0.0f, 1.0f);
+      mySliderF32("Surface opacity", &surface->opacity, 0.0f, 1.0f);
       ImGui::SameLine();
-      helpMarker("Surface opacity");
+      helpMarker("Surface opacity (3D), contour opacity (2D)");
+
+      mySliderF32("Fill opacity", &surface->fillOpacity, 0.0f, 1.0f);
+      ImGui::SameLine();
+      helpMarker("Fill opacity in 2D views");
 
       int edgeStrength = surface->edgeStrength;
-      if (mySliderS32("Edges", &edgeStrength, 0, 5))
-      {
+      if (mySliderS32("Edges", &edgeStrength, 0, 5)) {
         surface->edgeStrength = static_cast<float>(edgeStrength);
       }
 
       ImGui::SameLine();
-      helpMarker("Strength of surface edges");
+      helpMarker("Strength of surface edges (3D)");
 
       ImGui::Spacing();
       ImGui::Separator();
@@ -749,51 +693,48 @@ void renderIsosurfacesHeader(
       if (imgSettings.isosurfacesVisible())
       {
         bool showIn2d = imgSettings.showIsosurfacesIn2d();
-        if (ImGui::Checkbox("Show isosurface outlines in 2D", &showIn2d))
-        {
+        if (ImGui::Checkbox("Show isocontours outlines in 2D", &showIn2d)) {
           imgSettings.setShowIsosurfacesIn2d(showIn2d);
         }
         ImGui::SameLine();
-        helpMarker("Show isosurface outlines in 2D image planes");
+        helpMarker("Show isocontours in 2D image planes");
 
         bool applyColormap = imgSettings.applyImageColormapToIsosurfaces();
-        if (ImGui::Checkbox("Color isosurfaces using image colormap", &applyColormap))
-        {
+        if (ImGui::Checkbox("Color isosurfaces using image colormap", &applyColormap)) {
           imgSettings.setApplyImageColormapToIsosurfaces(applyColormap);
         }
         ImGui::SameLine();
         helpMarker("Color isosurfaces using the image colormap");
 
         bool useDistMap = imgSettings.useDistanceMapForRaycasting();
-        if (ImGui::Checkbox("Accelerate raycasting using distance map", &useDistMap))
-        {
+        if (ImGui::Checkbox("Accelerate raycasting using distance map", &useDistMap)) {
           imgSettings.setUseDistanceMapForRaycasting(useDistMap);
         }
         ImGui::SameLine();
         helpMarker("Accelerate raycasting using distance map");
 
         float opacityMod = imgSettings.isosurfaceOpacityModulator();
-        if (mySliderF32("Global opacity", &opacityMod, 0.0f, 1.0f, "%0.2f"))
-        {
+        if (mySliderF32("Global opacity", &opacityMod, 0.0f, 1.0f, "%0.2f")) {
           imgSettings.setIsosurfaceOpacityModulator(opacityMod);
         }
         ImGui::SameLine();
         helpMarker("Global opacity modulator for all image isosurfaces");
 
-        if (imgSettings.showIsosurfacesIn2d())
-        {
+        /*
+        // Modulate opacity of segmentation with opacity of image:
+        ImGui::Checkbox("Modulate segmentation with image opacity", &renderData.m_modulateSegOpacityWithImageOpacity);
+        ImGui::SameLine();
+        helpMarker("Modulate opacity of segmentation with opacity of image");
+        */
+
+        if (imgSettings.showIsosurfacesIn2d()) {
           float width = static_cast<float>(imgSettings.isosurfaceWidthIn2d());
-          // if ( mySliderF32( "Iso-line width", &width, 0.001f, 10.000f, "%0.3f \%" ) )
-          if (ImGui::DragFloat(
-                "Iso-line width", &width, 0.001f, 0.001f, 10.000f, "%0.3f \%", ImGuiSliderFlags_AlwaysClamp
-              ))
-          {
+          // if (ImGui::DragFloat("Iso-line width", &width, 0.001f, 0.001f, 10.000f, "%0.3f \%", ImGuiSliderFlags_AlwaysClamp)) {
+          if ( mySliderF32("Isocontour width", &width, 1.0f, 10.0f, "%0.1f \%")) {
             imgSettings.setIsosurfaceWidthIn2d(static_cast<double>(width));
           }
           ImGui::SameLine();
-          helpMarker(
-            "Width of isosurface lines in 2D views, as a percentage of the image intensity range"
-          );
+          helpMarker("Width of isocontours in 2D views");
         }
       }
 

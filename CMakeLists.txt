@@ -480,6 +480,7 @@ set(entropy_SHADERS
   ${entropy_SRC_DIR}/rendering/shaders/Image.vs
   ${entropy_SRC_DIR}/rendering/shaders/ImageGrey.fs
   ${entropy_SRC_DIR}/rendering/shaders/ImageColor.fs
+  ${entropy_SRC_DIR}/rendering/shaders/IsoContour.fs
   ${entropy_SRC_DIR}/rendering/shaders/Metric.vs
   ${entropy_SRC_DIR}/rendering/shaders/Overlay.fs
   ${entropy_SRC_DIR}/rendering/shaders/RaycastIsoSurface.fs

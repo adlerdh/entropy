@@ -138,22 +138,13 @@ std::pair<int, float> computeMipSamplingParams(
 
 } // namespace
 
-void drawImageQuad(
-  GLShaderProgram& program,
-  const ViewRenderMode& renderMode,
-  RenderData::Quad& quad,
-  const View& view,
-  const Viewport& windowViewport,
-  const glm::vec3& worldCrosshairs,
-  float flashlightRadius,
-  bool flashlightOverlays,
-  float mipSlabThickness_mm,
-  bool doMaxExtentMip,
-  float xrayIntensityWindow,
-  float xrayIntensityLevel,
-  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
-  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage,
-  bool showEdges)
+void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, RenderData::Quad& quad,
+                   const View& view, const Viewport& windowViewport, const glm::vec3& worldCrosshairs,
+                   float flashlightRadius, bool flashlightOverlays, float mipSlabThickness_mm,
+                   bool doMaxExtentMip, float xrayIntensityWindow, float xrayIntensityLevel,
+                   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
+                   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage,
+                   bool showEdges)
 {
   if (I.empty()) {
     spdlog::error("No images provided when rendering plane");
@@ -161,7 +152,6 @@ void drawImageQuad(
   }
 
   const Image* image0 = getImage(I[0].first);
-
   if (!image0) {
     spdlog::error("Null image when rendering textured quad");
     return;
