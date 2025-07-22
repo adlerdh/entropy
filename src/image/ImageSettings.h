@@ -99,16 +99,16 @@ public:
   bool applyImageColormapToIsosurfaces() const;
 
   /// Set whether the image isosurfaces are visible in 2D slices (global setting for all surfaces)
-  void setShowIsosurfacesIn2d(bool show);
+  void setShowIsoscontoursIn2D(bool show);
 
   /// Get whether the image isosurfaces are visible in 2D slices (global setting for all surfaces)
-  bool showIsosurfacesIn2d() const;
+  bool showIsocontoursIn2D() const;
 
   /// Set isosurface line width in 2D, as a percentage of the image threshold range (global setting for all surfaces)
   void setIsosurfaceWidthIn2d(double width);
 
   /// Get isosurface line width in 2D, as a percentage of the image threshold range (global setting for all surfaces)
-  double isosurfaceWidthIn2d() const;
+  double isoContourLineWidthIn2D() const;
 
   /// Set opacity modulator for all image isosurfaces (global setting for all surfaces)
   void setIsosurfaceOpacityModulator(float opacityMod);
@@ -505,7 +505,7 @@ private:
     HistogramSettings m_histogramSettings; //!< Histogram calculation and display settings
   };
 
-  /*** Start settings for all components ***/
+  /*** Start settings that apply for all components ***/
   std::string m_displayName; //!< Display name of the image in the UI
   bool m_globalVisibility;   //!< Global visibility
   float m_globalOpacity;     //!< Global opacity
@@ -515,19 +515,17 @@ private:
   // The following settings only apply to images with 3 or 4 components:
   bool m_displayAsColor; //!< Display the image as RGB/RGBA color
   bool m_ignoreAlpha;    //!< Ignore the alpha component of the image
-  InterpolationMode m_colorInterpolationMode
-    = InterpolationMode::NearestNeighbor; //!< Interpolation mode
+  InterpolationMode m_colorInterpolationMode = InterpolationMode::NearestNeighbor; //!< Interpolation mode
 
   // These apply to the image's isosurfaces:
   bool m_useDistanceMapForRaycasting; //!< Use the distance map to accelerate raycasting of the image
   bool m_isosurfacesVisible;          //!< Visibility of image isosurfaces
   bool m_applyImageColormapToIsosurfaces; //!< Color image isosurfaces using the image colormap
-  bool m_showIsosurfacesIn2d;             //!< Visibility of isosurface edges in 2D image slices
+  bool m_showIsocontoursIn2D;             //!< Visibility of isosurface edges in 2D image slices
 
   /// Width of isovalue lines in 2D, roughly in terms of pixels
-  double m_isosurfaceWidthIn2d;
+  double m_isocontourLineWidthIn2D;
   float m_isosurfaceOpacityModulator; //!< Modality of surface opacity for the image
-
   /*** End settings for all components ***/
 
   std::size_t m_numPixels;       //!< Number of pixels in the image (and hence in each component)

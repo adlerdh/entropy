@@ -692,12 +692,17 @@ void renderIsosurfacesHeader(
 
       if (imgSettings.isosurfacesVisible())
       {
-        bool showIn2d = imgSettings.showIsosurfacesIn2d();
+        bool showIn2d = imgSettings.showIsocontoursIn2D();
         if (ImGui::Checkbox("Show isocontours outlines in 2D", &showIn2d)) {
-          imgSettings.setShowIsosurfacesIn2d(showIn2d);
+          imgSettings.setShowIsoscontoursIn2D(showIn2d);
         }
         ImGui::SameLine();
         helpMarker("Show isocontours in 2D image planes");
+
+        ImGui::Checkbox("Floating-point linear image interpolation",
+                        &appData.renderData().m_isocontourFloatingPointInterpolation);
+        ImGui::SameLine();
+        helpMarker("Use floating-point (instead of 8-bit fixed-point) linear image interpolation for the isocontours");
 
         bool applyColormap = imgSettings.applyImageColormapToIsosurfaces();
         if (ImGui::Checkbox("Color isosurfaces using image colormap", &applyColormap)) {
@@ -713,6 +718,12 @@ void renderIsosurfacesHeader(
         ImGui::SameLine();
         helpMarker("Accelerate raycasting using distance map");
 
+        // Modulate opacity of isocontour with opacity of image:
+        ImGui::Checkbox("Modulate isocontour opacity with image",
+                        &appData.renderData().m_modulateIsocontourOpacityWithImageOpacity);
+        ImGui::SameLine();
+        helpMarker("Modulate isocontour opacity with image opacity");
+
         float opacityMod = imgSettings.isosurfaceOpacityModulator();
         if (mySliderF32("Global opacity", &opacityMod, 0.0f, 1.0f, "%0.2f")) {
           imgSettings.setIsosurfaceOpacityModulator(opacityMod);
@@ -720,15 +731,8 @@ void renderIsosurfacesHeader(
         ImGui::SameLine();
         helpMarker("Global opacity modulator for all image isosurfaces");
 
-        /*
-        // Modulate opacity of segmentation with opacity of image:
-        ImGui::Checkbox("Modulate segmentation with image opacity", &renderData.m_modulateSegOpacityWithImageOpacity);
-        ImGui::SameLine();
-        helpMarker("Modulate opacity of segmentation with opacity of image");
-        */
-
-        if (imgSettings.showIsosurfacesIn2d()) {
-          float width = static_cast<float>(imgSettings.isosurfaceWidthIn2d());
+        if (imgSettings.showIsocontoursIn2D()) {
+          float width = static_cast<float>(imgSettings.isoContourLineWidthIn2D());
           // if (ImGui::DragFloat("Iso-line width", &width, 0.001f, 0.001f, 10.000f, "%0.3f \%", ImGuiSliderFlags_AlwaysClamp)) {
           if ( mySliderF32("Isocontour width", &width, 1.0f, 10.0f, "%0.1f \%")) {
             imgSettings.setIsosurfaceWidthIn2d(static_cast<double>(width));

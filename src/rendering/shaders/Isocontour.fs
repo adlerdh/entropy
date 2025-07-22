@@ -40,14 +40,8 @@ uniform vec3 u_color;
 uniform float u_contourWidth; // pixels
 uniform vec2 u_viewSize; // pixels
 
-// switch between fixed point (0.0) and floating point (1.0) interpolation
-uniform float u_useFloatingInterp;
-
-
-
 uniform vec2 u_imgMinMax; // Min and max image values (in texture intenstiy units)
 uniform vec2 u_imgThresholds; // Image lower and upper thresholds (in texture intensity units)
-uniform float u_imgOpacity; // Image opacity
 
 uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
 
@@ -79,79 +73,14 @@ uniform int u_halfNumMipSamples;
 // Z view camera direction, represented in texture sampling space
 uniform vec3 u_texSamplingDirZ;
 
-
 float hardThreshold(float value, vec2 thresholds)
 {
   return float(thresholds[0] <= value && value <= thresholds[1]);
 }
 
-// Trinlinear interpolation using float points as alternative to GPU-based interpolation,
-// which is based on 24.8 fixed-point arithmetic with 8 bits for the fractional part,
-// and hence 256 intermediate values between adjacent pixels.
-// See: https://iquilezles.org/articles/interpolation/
-float textureLinear(sampler3D tex, vec3 texCoord)
-{
-  vec3 res = vec3(textureSize(tex, 0));
-  vec3 vox = (fract(texCoord) - 0.5 / res) * res;
-  ivec3 i = ivec3(floor(vox));
-  vec3 w = fract(vox);
-
-  float t000 = texelFetch(tex, (i + ivec3(0, 0, 0)), 0).r;
-  float t100 = texelFetch(tex, (i + ivec3(1, 0, 0)), 0).r;
-  float t010 = texelFetch(tex, (i + ivec3(0, 1, 0)), 0).r;
-  float t110 = texelFetch(tex, (i + ivec3(1, 1, 0)), 0).r;
-  float t001 = texelFetch(tex, (i + ivec3(0, 0, 1)), 0).r;
-  float t101 = texelFetch(tex, (i + ivec3(1, 0, 1)), 0).r;
-  float t011 = texelFetch(tex, (i + ivec3(0, 1, 1)), 0).r;
-  float t111 = texelFetch(tex, (i + ivec3(1, 1, 1)), 0).r;
-
-  float tx00 = mix(t000, t100, w.x);
-  float tx10 = mix(t010, t110, w.x);
-  float tx01 = mix(t001, t101, w.x);
-  float tx11 = mix(t011, t111, w.x);
-
-  float txy0 = mix(tx00, tx10, w.y);
-  float txy1 = mix(tx01, tx11, w.y);
-
-  return mix(txy0, txy1, w.z);
-}
-
-float textureValue(sampler3D tex, vec3 texCoord)
-{
-  return mix(texture(tex, texCoord).r, textureLinear(tex, texCoord), u_useFloatingInterp);
-}
-
-// 2D signed distance from point p to line segment a, b.
-// https://iquilezles.org/articles/distfunctions2d/
-// https://www.shadertoy.com/view/3tdSDj
-//float sdLine(in vec2 p, in vec2 a, in vec2 b)
-//{
-//  vec2 ba = b - a;
-//  vec2 pa = p - a;
-//  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-//  return length(pa - h * ba);
-//}
-
-// Do Marching Squares on u_texture at clip position p with depth z.
-// https://www.shadertoy.com/view/ttVcWw
-//float msquares(in vec2 p, float z)
-//{
-//  return 0.0;
-//}
-
 bool isInsideTexture(vec3 a)
 {
   return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) && all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
-}
-
-float cubicPulse(float c, float w, float x)
-{
-  x = abs(x - c);
-  if (x > w) {
-    return 0.0;
-  }
-  x /= w;
-  return 1.0 - x * x * (3.0 - 2.0 * x);
 }
 
 // float textureLookup(sampler3D texture, vec3 texCoords);
@@ -217,11 +146,12 @@ void main()
     discard;
   }
 
-  float img = clamp(textureValue(u_imgTex, fs_in.v_imgTexCoords), u_imgMinMax[0], u_imgMinMax[1]);
+  float img = clamp(textureLookup(u_imgTex, fs_in.v_imgTexCoords), u_imgMinMax[0], u_imgMinMax[1]);
   img = computeProjection(img);
 
   /*
   // Optimizationm when using distance maps:
+  // Add option to apply distance map optimization that then does this early return...
   float voxelDiag = length(u_voxelSize);
 
   if (img > u_isoValue + voxelDiag) {
@@ -245,10 +175,10 @@ void main()
 
   mat4 texture_T_clip = u_imgTexture_T_world * u_world_T_clip;
 
-  float a_v = textureValue(u_imgTex, vec3(texture_T_clip * vec4(pa, u_clipDepth, 1.0)));
-  float b_v = textureValue(u_imgTex, vec3(texture_T_clip * vec4(pb, u_clipDepth, 1.0)));
-  float c_v = textureValue(u_imgTex, vec3(texture_T_clip * vec4(pc, u_clipDepth, 1.0)));
-  float d_v = textureValue(u_imgTex, vec3(texture_T_clip * vec4(pd, u_clipDepth, 1.0)));
+  float a_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pa, u_clipDepth, 1.0)));
+  float b_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pb, u_clipDepth, 1.0)));
+  float c_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pc, u_clipDepth, 1.0)));
+  float d_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pd, u_clipDepth, 1.0)));
 
   vec2 grad = vec2((b_v - a_v) / (2.0 * dx), (d_v - c_v) / (2.0 * dy));
 
@@ -263,12 +193,11 @@ void main()
   float c_feather = clamp(cneg + cpos, 0.0, 1.0);
 
   /// TODO: use thresholding?
-  float alpha = u_imgOpacity * hardThreshold(img, u_imgThresholds);
+  float alpha = hardThreshold(img, u_imgThresholds);
   vec4 lineColor = alpha * u_lineOpacity * c_feather * vec4(u_color, 1.0);
   vec4 fillColor = alpha * u_fillOpacity * float(img < u_isoValue) * vec4(u_color, 1.0);
 
-  // Draw contour atop fill:
-  o_color = vec4(0.0, 0.0, 0.0, 0.0);
-  o_color = fillColor + (1.0 - fillColor.a) * o_color;
+  // Draw line contour atop fill:
+  o_color = fillColor;
   o_color = lineColor + (1.0 - lineColor.a) * o_color;
 }

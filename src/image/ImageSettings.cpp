@@ -29,8 +29,8 @@ ImageSettings::ImageSettings(
   , m_useDistanceMapForRaycasting{false}
   , m_isosurfacesVisible{true}
   , m_applyImageColormapToIsosurfaces{false}
-  , m_showIsosurfacesIn2d{true}
-  , m_isosurfaceWidthIn2d{2.0}
+  , m_showIsocontoursIn2D{true}
+  , m_isocontourLineWidthIn2D{2.0}
   , m_isosurfaceOpacityModulator{1.0f}
   , m_numPixels(numPixels)
   , m_numComponents(numComponents)
@@ -144,22 +144,22 @@ bool ImageSettings::applyImageColormapToIsosurfaces() const
   return m_applyImageColormapToIsosurfaces;
 }
 
-void ImageSettings::setShowIsosurfacesIn2d(bool show)
+void ImageSettings::setShowIsoscontoursIn2D(bool show)
 {
-  m_showIsosurfacesIn2d = show;
+  m_showIsocontoursIn2D = show;
 }
-bool ImageSettings::showIsosurfacesIn2d() const
+bool ImageSettings::showIsocontoursIn2D() const
 {
-  return m_showIsosurfacesIn2d;
+  return m_showIsocontoursIn2D;
 }
 
 void ImageSettings::setIsosurfaceWidthIn2d(double width)
 {
-  m_isosurfaceWidthIn2d = width;
+  m_isocontourLineWidthIn2D = width;
 }
-double ImageSettings::isosurfaceWidthIn2d() const
+double ImageSettings::isoContourLineWidthIn2D() const
 {
-  return m_isosurfaceWidthIn2d;
+  return m_isocontourLineWidthIn2D;
 }
 
 void ImageSettings::setIsosurfaceOpacityModulator(float opacityMod)

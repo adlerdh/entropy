@@ -190,6 +190,7 @@ Rendering::Rendering(AppData& appData)
   , m_edgeTexLookupCubicProgram("EdgeTexLookupCubicProgram")
   , m_xrayTexLookupLinearProgram("XrayTexLookupLinearProgram")
   , m_xrayTexLookupCubicProgram("XrayTexLookupCubicProgram")
+  , m_isoContourTexLookupFloatingPointLinearProgram("IsoContourTexLookupFloatingPointLinearProgram")
   , m_isoContourTexLookupLinearProgram("IsoContourTexLookupLinearProgram")
   , m_isoContourTexLookupCubicProgram("IsoContourTexLookupCubicProgram")
   , m_differenceTexLookupLinearProgram("DifferenceTexLookupLinearProgram")
@@ -1531,18 +1532,46 @@ void Rendering::renderAllImages(
         unbindTextures(boundTextures);
 
         // Render isosurfaces:
-        const auto& S = img->settings();
-        if (S.isosurfacesVisible() && S.showIsosurfacesIn2d())
+        const auto& imgS = img->settings();
+
+        if (imgS.isosurfacesVisible() && imgS.showIsocontoursIn2D())
         {
           const auto& vp = m_appData.windowData().viewport();
           const glm::vec2 windowSize{vp.width(), vp.height()};
           const glm::vec2 viewSize = 0.5f * glm::vec2{view.windowClipViewport()[2], view.windowClipViewport()[3]} * windowSize;
 
-          const uint32_t activeComp = S.activeComponent();
+          const uint32_t activeComp = imgS.activeComponent();
 
-          GLShaderProgram& isoP = m_isoContourTexLookupLinearProgram;
+          GLShaderProgram* isoP = nullptr;
+
+          /// @todo Turn on floating-pointer interpolation automatically when zoom is high enough
+          switch (img->settings().interpolationMode()) {
+          case InterpolationMode::NearestNeighbor: {
+            // Unfortunately, the (fixed-point) linear program looks bad when NN sampling is used for the image.
+            // Therefore, we use the floating-point linear program instead (the only option). This effectively
+            // never allows us to show NN isocontours.
+            // isoP = &m_isoContourTexLookupLinearProgram; // fixed-point (disabled)
+            isoP = &m_isoContourTexLookupFloatingPointLinearProgram;
+            break;
+          }
+          case InterpolationMode::Trilinear: {
+            if (R.m_isocontourFloatingPointInterpolation) {
+              // Floating-point interpolation is linear only (at this time)
+              isoP = &m_isoContourTexLookupFloatingPointLinearProgram;
+            }
+            else {
+              isoP = &m_isoContourTexLookupLinearProgram; // fixed-point
+            }
+            break;
+          }
+          case InterpolationMode::Tricubic: {
+            isoP = &m_isoContourTexLookupCubicProgram; // fixed-point
+            break;
+          }
+          }
+
           const auto boundIsoTextures = bindScalarImageTextures(imgSegPair);
-          isoP.use();
+          isoP->use();
 
           for (const auto& surfaceUid : m_appData.isosurfaceUids(imgUid, activeComp))
           {
@@ -1560,34 +1589,32 @@ void Rendering::renderAllImages(
             /// isoline color is the same as the image color
 
             static constexpr bool premult = false;
-            const glm::vec3 color = glm::vec3{getIsosurfaceColor(m_appData, *surface, S, activeComp, premult)};
+            const glm::vec3 color = glm::vec3{getIsosurfaceColor(m_appData, *surface, imgS, activeComp, premult)};
 
             const float imgOp = R.m_modulateIsocontourOpacityWithImageOpacity ? U.imgOpacity : 1.0f;
-            const float opacityMod = S.isosurfaceOpacityModulator() * imgOp; // global opacity mod
+            const float isoOp = imgS.isosurfaceOpacityModulator() * imgOp; // global opacity mod
 
-            isoP.setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
+            isoP->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
 
-            isoP.setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
-            isoP.setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+            isoP->setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
+            isoP->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
 
-            isoP.setUniform("u_isoValue", static_cast<float>(S.mapNativeIntensityToTexture(surface->value)));
-            isoP.setUniform("u_fillOpacity", static_cast<float>(opacityMod * surface->fillOpacity));
-            isoP.setUniform("u_lineOpacity", static_cast<float>(opacityMod * surface->opacity));
-            isoP.setUniform("u_color", color);
-            isoP.setUniform("u_contourWidth", static_cast<float>(S.isosurfaceWidthIn2d()));
-            isoP.setUniform("u_useFloatingInterp", 0.0f);
-            isoP.setUniform("u_viewSize", viewSize);
-            isoP.setUniform("u_imgMinMax", U.minMax);
-            isoP.setUniform("u_imgThresholds", U.thresholds);
-            isoP.setUniform("u_imgOpacity", U.imgOpacity);
-            isoP.setUniform("u_quadrants", R.m_quadrants);
-            isoP.setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
-            isoP.setUniform("u_renderMode", displayModeUniform);
+            isoP->setUniform("u_isoValue", static_cast<float>(imgS.mapNativeIntensityToTexture(surface->value)));
+            isoP->setUniform("u_fillOpacity", static_cast<float>(isoOp * surface->fillOpacity));
+            isoP->setUniform("u_lineOpacity", static_cast<float>(isoOp * surface->opacity));
+            isoP->setUniform("u_contourWidth", static_cast<float>(imgS.isoContourLineWidthIn2D()));
+            isoP->setUniform("u_color", color);
+            isoP->setUniform("u_viewSize", viewSize);
+            isoP->setUniform("u_imgMinMax", U.minMax);
+            isoP->setUniform("u_imgThresholds", U.thresholds);
+            isoP->setUniform("u_quadrants", R.m_quadrants);
+            isoP->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+            isoP->setUniform("u_renderMode", displayModeUniform);
 
-            renderOneImage(view, worldOffsetXhairs, isoP, CurrentImages{imgSegPair}, false);
+            renderOneImage(view, worldOffsetXhairs, *isoP, CurrentImages{imgSegPair}, false);
           }
 
-          isoP.stopUse();
+          isoP->stopUse();
           unbindTextures(boundIsoTextures);
         }
       }
@@ -2110,9 +2137,11 @@ void Rendering::renderVectorOverlays()
 
 void Rendering::createShaderPrograms()
 {
+  static const std::string texLookupFloatingPointLinearPath("src/rendering/shaders/functions/TextureLookup_FloatingPoint_Linear.glsl");
   static const std::string texLookupLinearPath("src/rendering/shaders/functions/TextureLookup_Linear.glsl");
   static const std::string texLookupCubicPath("src/rendering/shaders/functions/TextureLookup_Cubic.glsl");
 
+  const auto texFloatingPointLinearReplacement = loadReplacementStrings({{"{{TEXTURE_LOOKUP_FUNCTION}}", texLookupFloatingPointLinearPath}});
   const auto texLinearReplacement = loadReplacementStrings({{"{{TEXTURE_LOOKUP_FUNCTION}}", texLookupLinearPath}});
   const auto texCubicReplacement = loadReplacementStrings({{"{{TEXTURE_LOOKUP_FUNCTION}}", texLookupCubicPath}});
 
@@ -2146,6 +2175,10 @@ void Rendering::createShaderPrograms()
 
   if (!createXrayProgram(m_xrayTexLookupCubicProgram, texCubicReplacement)) {
     throw_debug("Failed to create x-ray projection program with cubic texture lookup")
+  }
+
+  if (!createIsoContourProgram(m_isoContourTexLookupFloatingPointLinearProgram, texFloatingPointLinearReplacement)) {
+    throw_debug("Failed to create iso-contour program with floating-point linear texture lookup")
   }
 
   if (!createIsoContourProgram(m_isoContourTexLookupLinearProgram, texLinearReplacement)) {
@@ -2511,11 +2544,9 @@ bool Rendering::createIsoContourProgram(
   fsUniforms.insertUniform("u_color", UniformType::Vec3, sk_zeroVec3);
   fsUniforms.insertUniform("u_contourWidth", UniformType::Float, 0.0f);
   fsUniforms.insertUniform("u_viewSize", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_useFloatingInterp", UniformType::Float, 0.0f);
 
   fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
   fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
 
   fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
   fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
@@ -3096,13 +3127,13 @@ void Rendering::updateIsosurfaceDataFor2d(AppData& appData, const uuid& imageUid
   // std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
 
   // Set width of isovalue threshold as a percentage of the image intensity range:
-  const double w = settings.isosurfaceWidthIn2d() *
+  const double w = settings.isoContourLineWidthIn2D() *
                    (settings.minMaxImageRange().second - settings.minMaxImageRange().first) / 100.0;
 
   isoData.widthIn2d = std::max(1.0e-4f,
     static_cast<float>(settings.mapNativeIntensityToTexture(w) - settings.mapNativeIntensityToTexture(0.0)));
 
-  if (!settings.showIsosurfacesIn2d() || !settings.isosurfacesVisible()) {
+  if (!settings.showIsocontoursIn2D() || !settings.isosurfacesVisible()) {
     return;
   }
 

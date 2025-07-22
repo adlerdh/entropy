@@ -160,6 +160,11 @@ struct RenderData
   // Should image isocontour opacity be modulated by the image opacity?
   bool m_modulateIsocontourOpacityWithImageOpacity;
 
+  // Should floating point interpolation be used for the isocontours?
+  // If not, then the default 8-bit fixed-point interpolation will be used,
+  // which results in banding and a noisy contour when zoomed int.
+  bool m_isocontourFloatingPointInterpolation;
+
   // Flag that image opacities are adjusted in "mix" mode, which allows
   // blending between a pair of images
   bool m_opacityMixMode;

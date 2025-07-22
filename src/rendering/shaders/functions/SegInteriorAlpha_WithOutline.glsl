@@ -5,6 +5,10 @@
 /// whereas fragments inside are assigned alpha of 'u_segInteriorOpacity'.
 float getSegInteriorAlpha(uint seg)
 {
+  if (u_segInteriorOpacity >= 1.0) {
+    return 1.0;
+  }
+
   // Look up texture values in 8 neighbors surrounding the center fragment.
   // These may be either neighboring image voxels or neighboring view pixels.
   // The center fragment (row = 0, col = 0) has index i = 4.
@@ -20,9 +24,7 @@ float getSegInteriorAlpha(uint seg)
 
     // Segmentation value of neighbor at (row, col) offset:
     float ignore;
-
-    if (seg != getSegValue(texPosOffset, ignore))
-    {
+    if (seg != getSegValue(texPosOffset, ignore)) {
       // Fragment (with segmentation 'seg') is on the segmentation boundary,
       // since its value is not equal to one of its neighbors. Therefore, it gets full alpha.
       return 1.0;

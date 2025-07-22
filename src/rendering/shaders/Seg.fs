@@ -58,10 +58,6 @@ uniform vec3 u_texSamplingDirsForSmoothSeg[2];
 // Linear interpolation cut-off for segmentation (in [0, 1])
 uniform float u_segInterpCutoff;
 
-const uvec3 neigh[8] = uvec3[8](
-  uvec3(0, 0, 0), uvec3(0, 0, 1), uvec3(0, 1, 0), uvec3(0, 1, 1),
-  uvec3(1, 0, 0), uvec3(1, 0, 1), uvec3(1, 1, 0), uvec3(1, 1, 1));
-
 int when_lt(int x, int y)
 {
   return max(sign(y - x), 0);

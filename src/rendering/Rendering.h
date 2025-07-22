@@ -171,6 +171,7 @@ private:
   GLShaderProgram m_xrayTexLookupLinearProgram;
   GLShaderProgram m_xrayTexLookupCubicProgram;
 
+  GLShaderProgram m_isoContourTexLookupFloatingPointLinearProgram;
   GLShaderProgram m_isoContourTexLookupLinearProgram;
   GLShaderProgram m_isoContourTexLookupCubicProgram;
 

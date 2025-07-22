@@ -496,6 +496,7 @@ set(entropy_SHADERS
   ${entropy_SRC_DIR}/rendering/shaders/functions/SegValue_Nearest.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/TextureLookup_Cubic.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/TextureLookup_Linear.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/TextureLookup_FloatingPoint_Linear.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/UIntTextureLookup_Linear.glsl
 )
 
