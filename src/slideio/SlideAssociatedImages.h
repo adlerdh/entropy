@@ -26,7 +26,7 @@ public:
   void setLabelImage(std::shared_ptr<std::vector<uint32_t> > data, const glm::i64vec2& dims);
 
 private:
-  // All images are stored in pre-multiplied ARGB format.
+  // All images are stored in premultiplied ARGB format.
   // If not loaded, the pointers are null.
 
   /// Thumbnail image from slide file. The image is generated from the lowest resolution

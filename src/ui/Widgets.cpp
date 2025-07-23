@@ -157,7 +157,7 @@ void renderSegLabelsChildWindow(
     bool labelVisible = labelTable->getVisible(i);
     std::string labelName = labelTable->getName(i);
 
-    // ImGui::ColorEdit represents color as non-pre-multiplied colors
+    // ImGui::ColorEdit represents color as non-premultiplied colors
     glm::vec4 labelColor = glm::vec4{labelTable->getColor(i), labelTable->getAlpha(i)} / 255.0f;
 
     ImGui::PushID(static_cast<int>(i)); /*** PushID i ***/

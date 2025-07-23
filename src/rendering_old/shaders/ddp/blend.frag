@@ -4,7 +4,7 @@ R"(
 
 // This shader blends the texel in tempTexture atop the draw buffer
 // (the back-blender texture). Blending is done with "over" compositing,
-// assuming colors that are pre-multiplied by alpha:
+// assuming colors that are premultiplied by alpha:
 // resultRGBA = frontRGBA + ( 1 - frontRGBA.a ) * backRGBA
 
 // Output intermediate blending result:

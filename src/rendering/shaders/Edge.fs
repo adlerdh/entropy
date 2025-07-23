@@ -10,61 +10,70 @@
 #define QUADRANTS_RENDER_MODE 2
 #define FLASHLIGHT_RENDER_MODE 3
 
-in VS_OUT // Redeclared vertex shader outputs: now the fragment shader inputs
+in VS_OUT
 {
-  vec3 v_imgTexCoords;
+  vec3 v_texCoord;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 } fs_in;
 
-layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
+layout (location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
 
-uniform sampler3D u_imgTex; // Texture unit 0: image
-uniform sampler1D u_imgCmapTex; // Texture unit 1: image color map (pre-mult RGBA)
+// Texture samplers:
+uniform sampler3D u_imgTex; // image (scalar, red channel only)
+uniform sampler1D u_cmapTex; // image color map (non-premultiplied RGBA)
 
-uniform vec2 u_imgSlopeIntercept; // Slopes and intercepts for image normalization and window-leveling
-uniform vec2 u_imgSlopeInterceptLargest; // Slopes and intercepts for image normalization
-uniform vec2 u_imgCmapSlopeIntercept; // Slopes and intercepts for the image color maps
-uniform int u_imgCmapQuantLevels; // Number of quantization levels
-uniform vec3 u_imgCmapHsvModFactors; // HSV modification factors for image color
-uniform bool u_useHsv; // Flag that HSV modification is used
+// Image adjustment uniforms:
+uniform vec2 u_imgSlopeIntercept; // map texture to normalized intensity [0, 1], plus window/leveling
+uniform vec2 u_imgSlopeInterceptLargest; // slope/intercept for normalization to the largest window
+uniform vec2 u_imgMinMax; // min/max image values (texture intenstiy units)
+uniform vec2 u_imgThresholds; // lower/upper image thresholds (texture intensity units)
+uniform float u_imgOpacity; // image opacity
 
-uniform vec2 u_imgMinMax; // Min and max image values
-uniform vec2 u_imgThresholds; // Image lower and upper thresholds, mapped to OpenGL texture intensity
-uniform float u_imgOpacity; // Image opacities
+// Image color map adjustment uniforms:
+uniform vec2 u_cmapSlopeIntercept; // map texels to normalized range [0, 1]
+uniform int u_cmapQuantLevels; // number of color map quantization levels
+uniform vec3 u_cmapHsvModFactors; // HSV modification factors for color map
+uniform bool u_applyHsvMod; // flag that HSV modification is applied
 
-uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
+// View render mode uniforms:
+uniform int u_renderMode; // mode (0: normal, 1: checkerboard, 2: quadrants, 3: flashlight)
+uniform vec2 u_clipCrosshairs; // crosshairs position in Clip space
 
-// Should comparison be done in x,y directions?
-// If x is true, then compare along x; if y is true, then compare along y;
-// if both are true, then compare along both.
+// Should quadrants comparison mode be done along the x, y directions?
+// If x is true, then compare along x; if y is true, then compare along y.
+// If both are true, then compare along both.
 uniform bvec2 u_quadrants;
-
-// Should the fixed image be rendered (true) or the moving image (false):
-uniform bool u_showFix;
-
-// Render mode: 0 - normal, 1 - checkerboard, 2 - u_quadrants, 3 - flashlight
-uniform int u_renderMode;
-
-uniform float u_aspectRatio;
-
-uniform float u_flashlightRadius;
-
-// When true, the flashlight overlays the moving image on top of fixed image.
-// When false, the flashlight replaces the fixed image with the moving image.
-uniform bool u_flashlightOverlays;
+uniform bool u_showFix; // flag that the either the fixed (true) or moving image is shown
+uniform float u_aspectRatio; // view aspect ratio (width / height)
+uniform float u_flashlightRadius; // flashlight circle radius
+uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
 // Edge properties:
-uniform bool u_thresholdEdges; // Threshold the edges
-uniform float u_edgeMagnitude; // Magnitude of edges to compute
-uniform bool u_overlayEdges; // Overlay edges on image
-uniform bool u_colormapEdges; // Apply colormap to edges
-uniform vec4 u_edgeColor; // RGBA, pre-multiplied by alpha
+uniform bool u_thresholdEdges; // flag to threshold the edges
+uniform float u_edgeMagnitude; // magnitude of edges to compute
+uniform bool u_overlayEdges; // flag to overlay edges on image
+uniform bool u_colormapEdges; // flag to apply colormap to edges
+uniform vec4 u_edgeColor; // edge color (premultiplied RGBA)
+uniform vec3 u_texSamplingDirsForEdges[2]; // texture sampling direction for edges
 //uniform bool useFreiChen;
 
-uniform vec3 u_texSamplingDirsForEdges[2];
+/// float textureLookup(sampler3D texture, vec3 texCoord);
+{{TEXTURE_LOOKUP_FUNCTION}}
 
-/// Copied from https://www.laurivan.com/rgb-to-hsv-to-rgb-for-shaders/
+/**
+ * @brief Check if coordinates are inside the image texture
+ */
+bool isInsideTexture(vec3 texCoord)
+{
+  return (all(greaterThanEqual(texCoord, MIN_IMAGE_TEXCOORD)) &&
+          all(lessThanEqual(texCoord, MAX_IMAGE_TEXCOORD)));
+}
+
+/**
+ * @brief Convert RGB to HSV color representation
+ * @cite https://www.laurivan.com/rgb-to-hsv-to-rgb-for-shaders/
+ */
 vec3 rgb2hsv(vec3 c)
 {
   vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -76,11 +85,23 @@ vec3 rgb2hsv(vec3 c)
   return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
+/**
+ * @brief Convert HSV to RGB color representation
+ * @cite https://www.laurivan.com/rgb-to-hsv-to-rgb-for-shaders/
+ */
 vec3 hsv2rgb(vec3 c)
 {
   vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
   vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
   return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+/**
+ * @brief Hard lower and upper thresholding
+ */
+float hardThreshold(float value, vec2 thresholds)
+{
+  return float(thresholds[0] <= value && value <= thresholds[1]);
 }
 
 // Sobel edge detection convolution filters:
@@ -108,53 +129,43 @@ const float SobelFactor = 1.0 / (2.0*A + B);
 //  1.0 / 3.0 * mat3(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
 //);
 
-float smoothThreshold(float value, vec2 thresholds)
-{
-  return smoothstep(thresholds[0] - 0.01, thresholds[0], value) -
-         smoothstep(thresholds[1], thresholds[1] + 0.01, value);
-}
+//float smoothThreshold(float value, vec2 thresholds)
+//{
+//  return smoothstep(thresholds[0] - 0.01, thresholds[0], value) -
+//         smoothstep(thresholds[1], thresholds[1] + 0.01, value);
+//}
 
-float hardThreshold(float value, vec2 thresholds)
-{
-  return float(thresholds[0] <= value && value <= thresholds[1]);
-}
-
-bool isInsideTexture(vec3 a)
-{
-  return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) &&
-          all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
-}
-
-// float textureLookup(sampler3D texture, vec3 texCoords);
-{{TEXTURE_LOOKUP_FUNCTION}}
-
+/**
+ * @brief Encapsulate logic for whether to render the fragment based on the view render mode
+ */
 bool doRender()
 {
-  // Indicator of the quadrant of the crosshairs that the fragment is in:
-  bvec2 Q = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x, fs_in.v_clipPos.y > u_clipCrosshairs.y);
+  // Indicator for which crosshairs quadrant the fragment is in:
+  bvec2 quadrant = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x, fs_in.v_clipPos.y > u_clipCrosshairs.y);
 
   // Distance of the fragment from the crosshairs, accounting for aspect ratio:
   float flashlightDist = sqrt(pow(u_aspectRatio * (fs_in.v_clipPos.x - u_clipCrosshairs.x), 2.0) +
                               pow(fs_in.v_clipPos.y - u_clipCrosshairs.y, 2.0));
 
-  bool render = (IMAGE_RENDER_MODE == u_renderMode); // Flag indicating whether the fragment will be rendere
+  // Flag indicating whether the fragment is rendered
+  bool render = (IMAGE_RENDER_MODE == u_renderMode);
 
-  // If in Checkerboard/Quadrants/Flashlight mode, then render the fragment?
+  // Check whether to render the fragment based on the mode (Checkerboard/Quadrants/Flashlight):
   render = render || ((CHECKER_RENDER_MODE == u_renderMode) &&
     (u_showFix == bool(mod(floor(fs_in.v_checkerCoord.x) + floor(fs_in.v_checkerCoord.y), 2.0) > 0.5)));
 
   render = render || ((QUADRANTS_RENDER_MODE == u_renderMode) &&
-    (u_showFix == ((! u_quadrants.x || Q.x) == (! u_quadrants.y || Q.y))));
+    (u_showFix == ((! u_quadrants.x || quadrant.x) == (! u_quadrants.y || quadrant.y))));
 
   render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&
-    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightOverlays && u_showFix)));
+    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightMovingOnFixed && u_showFix)));
 
   return render;
 }
 
 void main()
 {
-  if (!doRender()) discard;
+  if (!doRender()) { discard; }
 
   mat3 V; // Image values in a 3x3 neighborhood
 
@@ -164,8 +175,7 @@ void main()
       vec3 texSamplingPos = float(i - 1) * u_texSamplingDirsForEdges[0] +
                             float(j - 1) * u_texSamplingDirsForEdges[1];
 
-      //float v = texture(u_imgTex, fs_in.v_imgTexCoords + texSamplingPos).r;
-      float v = clamp(textureLookup(u_imgTex, fs_in.v_imgTexCoords + texSamplingPos), u_imgMinMax[0], u_imgMinMax[1]);
+      float v = clamp(textureLookup(u_imgTex, fs_in.v_texCoord + texSamplingPos), u_imgMinMax[0], u_imgMinMax[1]);
 
       // Apply maximum window/level to normalize value in [0.0, 1.0]:
       V[i][j] = u_imgSlopeInterceptLargest[0] * v + u_imgSlopeInterceptLargest[1];
@@ -200,41 +210,37 @@ void main()
   gradMag = mix(gradMag, float(gradMag > u_edgeMagnitude), float(u_thresholdEdges));
 
   // Get the image value:
-  // float img = texture(u_imgTex, fs_in.v_imgTexCoords).r;
+  // float img = texture(u_imgTex, fs_in.v_texCoord).r;
 
-  float img = clamp(textureLookup(u_imgTex, fs_in.v_imgTexCoords), u_imgMinMax[0], u_imgMinMax[1]);
+  float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
 
   // Apply window/level and normalize value in [0.0, 1.0]:
   float imgNorm = clamp(u_imgSlopeIntercept[0] * img + u_imgSlopeIntercept[1], 0.0, 1.0);
 
-  // Apply color map to the image intensity:
-  // Compute coords into the image color map, accounting for quantization levels:
-  float cmapCoord = mix(floor(float(u_imgCmapQuantLevels) * imgNorm) / float(u_imgCmapQuantLevels - 1), imgNorm, float(0 == u_imgCmapQuantLevels));
-  cmapCoord = u_imgCmapSlopeIntercept[0] * cmapCoord + u_imgCmapSlopeIntercept[1]; // normalize coords
+  // Compute color map coords, accounting for quantization levels:
+  float cmapCoord = mix(floor(float(u_cmapQuantLevels) * imgNorm) / float(u_cmapQuantLevels - 1), imgNorm, float(0 == u_cmapQuantLevels));
+  cmapCoord = u_cmapSlopeIntercept[0] * cmapCoord + u_cmapSlopeIntercept[1]; // normalize
 
-  vec4 imgColorOrig = texture(u_imgCmapTex, cmapCoord); // image color (non-pre-mult. RGBA)
+  vec4 imgColorOrig = texture(u_cmapTex, cmapCoord); // image color (non-pre-mult. RGBA)
 
   // Apply HSV modification factors:
   vec3 imgColorHsv = rgb2hsv(imgColorOrig.rgb);
-  imgColorHsv.x += u_imgCmapHsvModFactors.x;
-  imgColorHsv.yz *= u_imgCmapHsvModFactors.yz;
+  imgColorHsv.x += u_cmapHsvModFactors.x;
+  imgColorHsv.yz *= u_cmapHsvModFactors.yz;
 
-  // Alpha accounts for opacity, masking, and thresholding:
-  // Alpha will be applied to the image and edge layers.
-  // Foreground mask based on whether texture coordinates are in range [0.0, 1.0]^3:
-  float mask = float(isInsideTexture(fs_in.v_imgTexCoords));
+  float mask = float(isInsideTexture(fs_in.v_texCoord));
   float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds);
 
-  // Disable the image color if u_overlayEdges is false
-  vec4 imgLayer = alpha * float(u_overlayEdges) * imgColorOrig.a * vec4(mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_useHsv)), 1.0);
+  // Disable the image color if u_overlayEdges is false:
+  vec4 imgLayer = alpha * float(u_overlayEdges) * imgColorOrig.a * vec4(mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_applyHsvMod)), 1.0);
 
   // Apply color map to gradient magnitude:
-  vec4 gradColormap = texture(u_imgCmapTex, u_imgCmapSlopeIntercept[0] * gradMag + u_imgCmapSlopeIntercept[1]);
+  vec4 gradColormap = texture(u_cmapTex, u_cmapSlopeIntercept[0] * gradMag + u_cmapSlopeIntercept[1]);
 
   // For the edge layer, use either the solid edge color or the colormapped gradient magnitude:
   vec4 edgeLayer = alpha * mix(gradMag * u_edgeColor, gradColormap, float(u_colormapEdges));
 
-  // Blend colors:
+  // Output color (premult. RGBA):
   o_color = vec4(0.0, 0.0, 0.0, 0.0);
   o_color = imgLayer + (1.0 - imgLayer.a) * o_color;
   o_color = edgeLayer + (1.0 - edgeLayer.a) * o_color;

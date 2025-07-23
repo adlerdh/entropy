@@ -5,10 +5,10 @@
 
 in VS_OUT
 {
-  vec3 v_imgTexCoords[2];
+  vec3 v_texCoord[2];
 } fs_in;
 
-layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
+layout (location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
 
 uniform sampler3D u_imgTex[2]; // Texture units 0/1: images
 
@@ -35,11 +35,11 @@ void main()
     float val;
     switch (i) {
     case 0: {
-      val = clamp(textureLookup(u_imgTex[0], fs_in.v_imgTexCoords[i]), u_imgMinMax[i][0], u_imgMinMax[i][1]);
+      val = clamp(textureLookup(u_imgTex[0], fs_in.v_texCoord[i]), u_imgMinMax[i][0], u_imgMinMax[i][1]);
       break;
     }
     case 1: {
-      val = clamp(textureLookup(u_imgTex[1], fs_in.v_imgTexCoords[i]), u_imgMinMax[i][0], u_imgMinMax[i][1]);
+      val = clamp(textureLookup(u_imgTex[1], fs_in.v_texCoord[i]), u_imgMinMax[i][0], u_imgMinMax[i][1]);
       break;
     }
     }
@@ -48,8 +48,8 @@ void main()
     float norm = clamp(u_imgSlopeIntercept[i][0] * val + u_imgSlopeIntercept[i][1], 0.0, 1.0);
 
     // Foreground mask, based on whether texture coordinates are in range [0.0, 1.0]^3:
-    bool mask = !(any(lessThan(fs_in.v_imgTexCoords[i], MIN_IMAGE_TEXCOORD)) ||
-                  any(greaterThan(fs_in.v_imgTexCoords[i], MAX_IMAGE_TEXCOORD)));
+    bool mask = !(any(lessThan(fs_in.v_texCoord[i], MIN_IMAGE_TEXCOORD)) ||
+                  any(greaterThan(fs_in.v_texCoord[i], MAX_IMAGE_TEXCOORD)));
 
     // Apply opacity, mask, and thresholds:
     float alpha = u_imgOpacity[i] * float(mask) * hardThreshold(val, u_imgThresholds[i]);

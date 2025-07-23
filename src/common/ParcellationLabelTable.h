@@ -66,10 +66,10 @@ public:
   /// Set label mesh visibility (in 3D views)
   void setShowMesh(std::size_t index, bool show);
 
-  /// Get label color (non-pre-multiplied RGB)
+  /// Get label color (non-premultiplied RGB)
   glm::u8vec3 getColor(std::size_t index) const;
 
-  /// Set label color (non-pre-multiplied RGB)
+  /// Set label color (non-premultiplied RGB)
   void setColor(std::size_t index, const glm::u8vec3& color);
 
   /// Get label alpha
@@ -107,14 +107,14 @@ private:
   void checkLabelIndex(std::size_t index) const;
 
   /**
-     * @brief Update the non-pre-multiplied RGBA color at given label index in order to
+     * @brief Update the non-premultiplied RGBA color at given label index in order to
      * match it with the label properties
      *
      * @param index Label index
      */
   void updateVector(std::size_t index);
 
-  /// Vector of NON-pre-multiplied alpha colors represented using unsigned char values
+  /// Vector of NON-premultiplied alpha colors represented using unsigned char values
   /// per RGBA component. Components are in range [0, 255]. The size of this vector
   /// matches the size of \c m_properties.
   std::vector<glm::u8vec4> m_colors_RGBA_U8;

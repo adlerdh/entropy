@@ -52,7 +52,7 @@ glm::vec4 getIsosurfaceColor(const AppData& appData, const Isosurface& surface,
 
   // Index into the colormap:
   const auto colorIndex = mapContinuousToIndex(valueNormFlipClamp, cmap->numColors());
-  glm::vec4 cmapColor = cmap->color_RGBA_F32(colorIndex); // Get the pre-multiplied RGBA value
+  glm::vec4 cmapColor = cmap->color_RGBA_F32(colorIndex); // Get the premultiplied RGBA value
 
   if (premult) {
     return cmapColor;

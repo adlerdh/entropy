@@ -1,3 +1,26 @@
+// float cubicPulse(float center, float width, float x)
+// {
+//   x = abs(x - center);
+//   if (x > width) return 0.0;
+//   x /= width;
+//   return 1.0 - x * x * (3.0 - 2.0 * x);
+// }
+
+int lt(int x, int y) {
+  return max(sign(y - x), 0);
+}
+
+int ge(int x, int y) {
+  return (1 - lt(x, y));
+}
+
+bool isLabelVisible(int label)
+{
+  // Labels greater than the size of the segmentation labelc color texture are mapped to 0
+  label -= label * ge(label, textureSize(u_segLabelCmapTex));
+  return (texelFetch(u_segLabelCmapTex, label).a > 0.0);
+}
+
 const uvec3 neigh[8] = uvec3[8](
   uvec3(0, 0, 0), uvec3(0, 0, 1), uvec3(0, 1, 0), uvec3(0, 1, 1),
   uvec3(1, 0, 0), uvec3(1, 0, 1), uvec3(1, 1, 0), uvec3(1, 1, 1));
@@ -7,7 +30,7 @@ uint getSegValue(vec3 texOffset, out float opacity)
 {
   opacity = 1.0;
 
-  vec3 c = floor(fs_in.v_segVoxCoords);
+  vec3 c = floor(fs_in.v_voxCoord);
   vec3 d = pow(vec3(textureSize(u_segTex, 0)), vec3(-1));
 
   // texture coordinates corresponding to the CENTER of the voxel
@@ -18,7 +41,7 @@ uint getSegValue(vec3 texOffset, out float opacity)
     neighCenterLabels[i] = uintTextureLookup(u_segTex, t + texOffset + neigh[i] * d);
   }
 
-  vec3 fracPart = fs_in.v_segVoxCoords + texOffset * vec3(textureSize(u_segTex, 0)) - c; // fractional part
+  vec3 fracPart = fs_in.v_voxCoord + texOffset * vec3(textureSize(u_segTex, 0)) - c; // fractional part
   vec3 w[2] = vec3[2](vec3(1.0) - fracPart, fracPart); // interpolation weights
 
   // float segEdgeWidth = 0.02;
@@ -35,7 +58,7 @@ uint getSegValue(vec3 texOffset, out float opacity)
     vec3 texPos = row * u_texSamplingDirsForSmoothSeg[0] + col * u_texSamplingDirsForSmoothSeg[1];
 
     // Segmentation value of neighbor at (row, col) offset
-    uint label = uintTextureLookup(u_segTex, fs_in.v_segTexCoords + texPos);
+    uint label = uintTextureLookup(u_segTex, fs_in.v_texCoord + texPos);
 
     float interp = 0.0;
     for (int j = 0; j <= 7; ++j) {
@@ -48,7 +71,7 @@ uint getSegValue(vec3 texOffset, out float opacity)
     //   clamp(u_segInterpCutoff + segEdgeWidth/2.0, 0.0, 1.0), interp);
     // opacity = cubicPulse(u_segInterpCutoff, segEdgeWidth, interp);
 
-    if (interp > maxInterp && interp >= u_segInterpCutoff && computeLabelColor(int(label)).a > 0.0) {
+    if (interp > maxInterp && interp >= u_segInterpCutoff && isLabelVisible(int(label))) {
       maxInterp = interp;
       return label;
     }

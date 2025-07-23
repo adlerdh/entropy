@@ -73,14 +73,14 @@ public:
   /// Set label alpha
   void setAlpha(size_t index, float alpha);
 
-  /// Get label color as pre-multiplied alpha RGBA with float components in [0.0, 1.0]
+  /// Get label color as premultiplied alpha RGBA with float components in [0.0, 1.0]
   glm::vec4 color_RGBA_premult_F32(size_t index) const;
 
   /// Get number of bytes used to represent the color table
   size_t numColorBytes_RGBA_F32() const;
 
   /// Get const pointer to raw label color buffer data.
-  /// Colors are RGBA with pre-multiplied alpha.
+  /// Colors are RGBA with premultiplied alpha.
   const float* colorData_RGBA_premult_F32() const;
 
   /// Get the sized internal texture format for the label RGBA color buffer
@@ -95,14 +95,14 @@ private:
   void checkLabelIndex(size_t index) const;
 
   /**
-     * @brief Update the pre-multiplied RGBA color at given label index in order to
+     * @brief Update the premultiplied RGBA color at given label index in order to
      * match it with the label properties
      *
      * @param index Label index
      */
   void updateColorRGBA(size_t index);
 
-  /// Vector of pre-multiplied alpha colors represented using 32-bit floating point values
+  /// Vector of premultiplied alpha colors represented using 32-bit floating point values
   /// per RGBA component. Components are in range [0.0, 1.0]. RGBA colors in this vector
   /// account for opacity and 2D visibility. In other words, the RGBA components are
   /// modulated by label opacity and 2D visibility settings. The size of this vector
@@ -112,7 +112,7 @@ private:
   struct LabelProperties
   {
     std::string m_name;      //!< Name
-    glm::vec3 m_color;       //!< RGB color (non-pre-multiplied) in [0, 1]
+    glm::vec3 m_color;       //!< RGB color (non-premultiplied) in [0, 1]
     float m_alpha;           //!< Alpha channel opacity in [0, 1]
     bool m_visible = true;   //!< Global visibility of label in all view types
     bool m_showMesh = false; //!< Mesh visibility in 3D views

@@ -10,153 +10,117 @@
 #define QUADRANTS_RENDER_MODE 2
 #define FLASHLIGHT_RENDER_MODE 3
 
-// Redeclared vertex shader outputs, which are now the fragment shader inputs
 in VS_OUT
 {
-  vec3 v_segTexCoords;
-  vec3 v_segVoxCoords;
+  vec3 v_texCoord;
+  vec3 v_voxCoord;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 } fs_in;
 
-layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
+layout (location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha)
 
-uniform usampler3D u_segTex; // Texture unit 0: segmentation (scalar)
-uniform samplerBuffer u_segLabelCmapTex; // Texutre unit 1: label color map (non-pre-multiplied RGBA)
+uniform usampler3D u_segTex; // segmentation (scalar, red channel only)
+uniform samplerBuffer u_segLabelCmapTex; // seg label color map (non-premultiplied RGBA)
 
-uniform float u_segOpacity; // Segmentation opacity
-uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
-uniform float u_aspectRatio; // View aspect ratio (width / height)
+// Segmentation adjustment uniforms:
+uniform float u_segOpacity; // overall seg opacity
+uniform float u_segFillOpacity; // opacity of the seg interior
+
+uniform vec3 u_texSamplingDirsForSegOutline[2]; // sampling dirs (horiz/vert) for outlining in texture space
+uniform vec3 u_texSamplingDirsForSmoothSeg[2]; // sampling dirs (linear lookup only)
+uniform float u_segInterpCutoff; // linear interpolation cut-off in [0.5, 1.0]
+
+// View render mode uniforms:
+uniform int u_renderMode; // mode (0: normal, 1: checkerboard, 2: quadrants, 3: flashlight)
+uniform vec2 u_clipCrosshairs; // crosshairs position in Clip space
 
 // Should quadrants comparison mode be done along the x, y directions?
 // If x is true, then compare along x; if y is true, then compare along y.
 // If both are true, then compare along both.
 uniform bvec2 u_quadrants;
+uniform bool u_showFix; // flag that the either the fixed (true) or moving image is shown
+uniform float u_aspectRatio; // view aspect ratio (width / height)
+uniform float u_flashlightRadius; // flashlight circle radius
+uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
-// Should the fixed image be rendered (true) or the moving image (false)?
-uniform bool u_showFix;
+/// float uintTextureLookup(sampler3D texture, vec3 texCoord);
+{{UINT_TEXTURE_LOOKUP_FUNCTION}}
 
-// Render mode (0: normal, 1: checkerboard, 2: u_quadrants, 3: flashlight)
-uniform int u_renderMode;
+/// Look up segmentation texture label value (after mapping to GL texture units):
+/// uint getSegValue(vec3 texOffset, out float opacity);
+{{GET_SEG_VALUE_FUNCTION}}
 
-// When true, the flashlight overlays the moving image on top of fixed image.
-// When false, the flashlight replaces the fixed image with the moving image.
-uniform bool u_flashlightOverlays;
-uniform float u_flashlightRadius;
+/// Look up alpha of segmentation interior:
+/// float getSegInteriorAlpha(uint seg)
+{{GET_SEG_INTERIOR_ALPHA_FUNCTION}}
 
-// Opacity of the interior of the segmentation
-uniform float u_segInteriorOpacity;
-
-// Texture sampling directions (horizontal and vertical) for calculating the seg outline
-uniform vec3 u_texSamplingDirsForSegOutline[2];
-
-// These are for linear only:
-
-// For linear lookup:
-uniform vec3 u_texSamplingDirsForSmoothSeg[2];
-
-// Linear interpolation cut-off for segmentation (in [0, 1])
-uniform float u_segInterpCutoff;
-
-int when_lt(int x, int y)
+/**
+ * @brief Check if coordinates are inside the image texture
+ */
+bool isInsideTexture(vec3 texCoord)
 {
+  return (all(greaterThanEqual(texCoord, MIN_IMAGE_TEXCOORD)) &&
+          all(lessThanEqual(texCoord, MAX_IMAGE_TEXCOORD)));
+}
+
+/**
+ * @brief Encapsulate logic for whether to render the fragment based on the view render mode
+ */
+bool doRender()
+{
+  // Indicator for which crosshairs quadrant the fragment is in:
+  bvec2 quadrant = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x, fs_in.v_clipPos.y > u_clipCrosshairs.y);
+
+  // Distance of the fragment from the crosshairs, accounting for aspect ratio:
+  float flashlightDist = sqrt(pow(u_aspectRatio * (fs_in.v_clipPos.x - u_clipCrosshairs.x), 2.0) +
+                              pow(fs_in.v_clipPos.y - u_clipCrosshairs.y, 2.0));
+
+  // Flag indicating whether the fragment is rendered
+  bool render = (IMAGE_RENDER_MODE == u_renderMode);
+
+  // Check whether to render the fragment based on the mode (Checkerboard/Quadrants/Flashlight):
+  render = render || ((CHECKER_RENDER_MODE == u_renderMode) &&
+    (u_showFix == bool(mod(floor(fs_in.v_checkerCoord.x) + floor(fs_in.v_checkerCoord.y), 2.0) > 0.5)));
+
+  render = render || ((QUADRANTS_RENDER_MODE == u_renderMode) &&
+    (u_showFix == ((! u_quadrants.x || quadrant.x) == (! u_quadrants.y || quadrant.y))));
+
+  render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&
+    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightMovingOnFixed && u_showFix)));
+
+  return render;
+}
+
+int when_lt(int x, int y) {
   return max(sign(y - x), 0);
 }
 
-int when_ge(int x, int y)
-{
+int when_ge(int x, int y) {
   return (1 - when_lt(x, y));
 }
 
-// Remapping the unit interval into the unit interval by expanding the
-// sides and compressing the center, and keeping 1/2 mapped to 1/2,
-// that can be done with the gain() function. This was a common function
-// in RSL tutorials (the Renderman Shading Language). k=1 is the identity curve,
-// k<1 produces the classic gain() shape, and k>1 produces "s" shaped curces.
-// The curves are symmetric (and inverse) for k=a and k=1/a.
-
-float cubicPulse(float center, float width, float x)
-{
-  x = abs(x - center);
-  if (x > width) return 0.0;
-  x /= width;
-  return 1.0 - x * x * (3.0 - 2.0 * x);
-}
-
-// Check if inside texture coordinates
-bool isInsideTexture(vec3 a)
-{
-  return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) &&
-          all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
-}
-
-vec4 computeLabelColor(int label)
+/**
+ * @brief Get the label color as premultiplied RGBA
+ */
+vec4 getLabelColor(int label)
 {
   // Labels greater than the size of the segmentation labelc color texture are mapped to 0
   label -= label * when_ge(label, textureSize(u_segLabelCmapTex));
 
   vec4 color = texelFetch(u_segLabelCmapTex, label);
-  return color.a * color; // pre-multiply by alpha
-}
-
-// float uintTextureLookup(sampler3D texture, vec3 texCoords);
-{{UINT_TEXTURE_LOOKUP_FUNCTION}}
-
-// Look up segmentation texture label value (after mapping to GL texture units):
-// uint getSegValue(vec3 texOffset, out float opacity);
-{{GET_SEG_VALUE_FUNCTION}}
-
-// Look up alpha of segmentation interior:
-// float getSegInteriorAlpha(uint seg)
-{{GET_SEG_INTERIOR_ALPHA_FUNCTION}}
-
-bool doRender()
-{
-  // Indicator of the quadrant of the crosshairs that the fragment is in:
-  bvec2 Q = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x,
-           fs_in.v_clipPos.y > u_clipCrosshairs.y);
-
-  // Distance of the fragment from the crosshairs, accounting for aspect ratio:
-  float flashlightDist = sqrt(
-    pow(u_aspectRatio * (fs_in.v_clipPos.x - u_clipCrosshairs.x), 2.0) +
-    pow(fs_in.v_clipPos.y - u_clipCrosshairs.y, 2.0));
-
-  // Flag indicating whether the fragment will be rendered:
-  bool render = (IMAGE_RENDER_MODE == u_renderMode);
-
-  // If in Checkerboard mode, then render the fragment?
-  render = render || ((CHECKER_RENDER_MODE == u_renderMode) &&
-    (u_showFix == bool(mod(floor(fs_in.v_checkerCoord.x) +
-                           floor(fs_in.v_checkerCoord.y), 2.0) > 0.5)));
-
-  // If in Quadrants mode, then render the fragment?
-  render = render || ((QUADRANTS_RENDER_MODE == u_renderMode) &&
-    (u_showFix == ((!u_quadrants.x || Q.x) == (!u_quadrants.y || Q.y))));
-
-  // If in Flashlight mode, then render the fragment?
-  render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&
-    ((u_showFix == (flashlightDist > u_flashlightRadius)) ||
-      (u_flashlightOverlays && u_showFix)));
-
-  return render;
+  return color.a * color;
 }
 
 void main()
 {
-  if (!doRender()) discard;
+  if (!doRender()) { discard; }
 
-  float segInterpOpacity = 1.0;
-  uint seg = getSegValue(vec3(0, 0, 0), segInterpOpacity);
+  float interpOpacity = 1.0;
+  uint seg = getSegValue(vec3(0, 0, 0), interpOpacity);
+  float mask = float(isInsideTexture(fs_in.v_texCoord));
+  float alpha = u_segOpacity * interpOpacity * getSegInteriorAlpha(seg) * mask;
 
-  // Segmentation mask based on texture coordinates:
-  bool segMask = isInsideTexture(fs_in.v_segTexCoords);
-
-  // Compute segmentation alpha based on opacity and mask:
-  float segAlpha = u_segOpacity * segInterpOpacity * getSegInteriorAlpha(seg) * float(segMask);
-
-  // Look up segmentation color:
-  vec4 segLayerColor = computeLabelColor(int(seg)) * segAlpha;
-
-  o_color = vec4(0.0, 0.0, 0.0, 0.0);
-  o_color = segLayerColor + (1.0 - segLayerColor.a) * o_color;
+  // Output color (premult. RGBA)
+  o_color = alpha * getLabelColor(int(seg));
 }

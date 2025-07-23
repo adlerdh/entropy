@@ -14,7 +14,7 @@ in VS_OUT
     vec2 TexCoords2D;
     vec3 ImageTexCoords3D;
     vec3 LabelTexCoords3D;
-    vec4 Color; // pre-multiplied
+    vec4 Color; // premultiplied
 } fs_in;
 
 
@@ -114,7 +114,7 @@ int when_gt(int x, int y) {
 
 vec4 composeLayers( vec4 layers[NUM_LAYERS] );
 vec4 computeImageColor();
-vec4 computeLabelColor();
+vec4 getLabelColor();
 float computeOpacity( vec3 viewDir, float image3DAlpha );
 vec4 computeShadedColor();
 vec4 CalcSimpleLight( SimpleLight light, vec3 normal, vec3 lightDir, vec3 viewDir, vec4 image3DColor );
@@ -265,7 +265,7 @@ vec4 computeImageColor()
 }
 
 
-vec4 computeLabelColor()
+vec4 getLabelColor()
 {
     int label = int( texture( labelTex3D, fs_in.LabelTexCoords3D ).r );
     label -= label * when_ge( label, textureSize(labelColormapTexture) );
@@ -282,7 +282,7 @@ vec4 CalcSimpleLight( SimpleLight light, vec3 normal, vec3 lightDir, vec3 viewDi
         layerOpacities[1] * fs_in.Color,                         // Vertex
         layerOpacities[2] * computeImage2dColor(),               // Texture 2D
         layerOpacities[3] * image3DColor,                        // Image 3D
-        layerOpacities[4] * computeLabelColor() );               // Parcellation 3D
+        layerOpacities[4] * getLabelColor() );               // Parcellation 3D
 
     vec4 composedColor = composeLayers( layers );
 

@@ -7,11 +7,11 @@
 
 in VS_OUT // Redeclared vertex shader outputs: now the fragment shader inputs
 {
-  vec3 v_imgTexCoords[N];
-  vec3 v_segTexCoords[N];
+  vec3 v_texCoord[N];
+  vec3 v_texCoord[N];
 } fs_in;
 
-layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
+layout (location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
 
 uniform sampler3D u_imgTex[N]; // Texture units 0/1: images
 uniform usampler3D u_segTex[N]; // Texture units 2/3: segmentations
@@ -23,7 +23,7 @@ uniform float u_segOpacity[N]; // Segmentation opacities
 uniform vec3 u_texSamplingDirsForSegOutline[2];
 
 // Opacity of the interior of the segmentation
-uniform float u_segInteriorOpacity;
+uniform float u_segFillOpacity;
 
 uniform sampler1D u_metricCmapTex; // Texture unit 4: metric colormap (pre-mult RGBA)
 uniform vec2 u_metricCmapSlopeIntercept; // Slope and intercept for the metric colormap
@@ -37,10 +37,10 @@ uniform vec3 u_tex0SamplingDirY;
 
 // Compute alpha of fragments based on whether or not they are inside the
 // segmentation boundary. Fragments on the boundary are assigned alpha of 1,
-// whereas fragments inside are assigned alpha of 'u_segInteriorOpacity'.
+// whereas fragments inside are assigned alpha of 'u_segFillOpacity'.
 float getSegInteriorAlpha(int texNum, uint seg)
 {
-  float segInteriorAlpha = u_segInteriorOpacity;
+  float segInteriorAlpha = u_segFillOpacity;
 
   // Look up texture values in 8 neighbors surrounding the center fragment.
   // These may be either neighboring image voxels or neighboring view pixels.
@@ -54,19 +54,19 @@ float getSegInteriorAlpha(int texNum, uint seg)
       col * u_texSamplingDirsForSegOutline[1];
 
     // Segmentation value of neighbor at (row, col) offset
-//    uint nseg = texture(u_segTex[texNum], fs_in.v_segTexCoords[texNum] + texSamplingPos)[0];
+//    uint nseg = texture(u_segTex[texNum], fs_in.v_texCoord[texNum] + texSamplingPos)[0];
     uint nseg;
 
     switch (texNum)
     {
     case 0:
     {
-      nseg = texture(u_segTex[0], fs_in.v_segTexCoords[texNum] + texSamplingPos)[0];
+      nseg = texture(u_segTex[0], fs_in.v_texCoord[texNum] + texSamplingPos)[0];
       break;
     }
     case 1:
     {
-      nseg = texture(u_segTex[1], fs_in.v_segTexCoords[texNum] + texSamplingPos)[0];
+      nseg = texture(u_segTex[1], fs_in.v_texCoord[texNum] + texSamplingPos)[0];
       break;
     }
     }
@@ -98,7 +98,7 @@ int when_ge(int x, int y)
   return (1 - when_lt(x, y));
 }
 
-vec4 computeLabelColor(int label, int i)
+vec4 getLabelColor(int label, int i)
 {
 //  label -= label * when_ge(label, textureSize(u_segLabelCmapTex[i]));
 //  vec4 color = texelFetch(u_segLabelCmapTex[i], label);
@@ -133,25 +133,25 @@ void main()
   for (int i = 0; i < N; ++i)
   {
     // Foreground masks, based on whether texture coordinates are in range [0.0, 1.0]^3:
-    bool imgMask = ! (any( lessThan(fs_in.v_imgTexCoords[i], MIN_IMAGE_TEXCOORD + u_texSampleSize[i])) ||
-               any(greaterThan(fs_in.v_imgTexCoords[i], MAX_IMAGE_TEXCOORD - u_texSampleSize[i])));
+    bool imgMask = ! (any( lessThan(fs_in.v_texCoord[i], MIN_IMAGE_TEXCOORD + u_texSampleSize[i])) ||
+               any(greaterThan(fs_in.v_texCoord[i], MAX_IMAGE_TEXCOORD - u_texSampleSize[i])));
 
-    bool segMask = ! (any( lessThan(fs_in.v_segTexCoords[i], MIN_IMAGE_TEXCOORD + u_texSampleSize[i])) ||
-               any(greaterThan(fs_in.v_segTexCoords[i], MAX_IMAGE_TEXCOORD - u_texSampleSize[i])));
+    bool segMask = ! (any( lessThan(fs_in.v_texCoord[i], MIN_IMAGE_TEXCOORD + u_texSampleSize[i])) ||
+               any(greaterThan(fs_in.v_texCoord[i], MAX_IMAGE_TEXCOORD - u_texSampleSize[i])));
 
-    // uint label = texture(u_segTex[i], fs_in.v_segTexCoords[i]).r; // Label value
+    // uint label = texture(u_segTex[i], fs_in.v_texCoord[i]).r; // Label value
     uint label;
 
     switch (i)
     {
     case 0:
     {
-      label = texture(u_segTex[0], fs_in.v_segTexCoords[i]).r; // Label value
+      label = texture(u_segTex[0], fs_in.v_texCoord[i]).r; // Label value
       break;
     }
     case 1:
     {
-      label = texture(u_segTex[1], fs_in.v_segTexCoords[i]).r; // Label value
+      label = texture(u_segTex[1], fs_in.v_texCoord[i]).r; // Label value
       break;
     }
     }
@@ -160,7 +160,7 @@ void main()
     mask[i] = float(imgMask && (u_metricMasking && (label > 0u) || ! u_metricMasking));
 
     // Look up label colors:
-    segColor[i] = computeLabelColor(int(label), i) * getSegInteriorAlpha(i, label) * u_segOpacity[i] * float(segMask);
+    segColor[i] = getLabelColor(int(label), i) * getSegInteriorAlpha(i, label) * u_segOpacity[i] * float(segMask);
   }
 
   float val0[9];
@@ -171,7 +171,7 @@ void main()
   {
     for (int i = -1; i <= 1; ++i)
     {
-      vec3 tex0Pos = fs_in.v_imgTexCoords[0] + float(i) * u_tex0SamplingDirX + float(j) * u_tex0SamplingDirY;
+      vec3 tex0Pos = fs_in.v_texCoord[0] + float(i) * u_tex0SamplingDirX + float(j) * u_tex0SamplingDirY;
       vec3 tex1Pos = vec3(u_texture1_T_texture0 * vec4(tex0Pos, 1.0));
 
       // val0[count] = texture(u_imgTex[0], tex0Pos).r;

@@ -2,7 +2,7 @@ R"(
 
 #version 330 core
 
-// Output RGBA color (pre-multiplied alpha)
+// Output RGBA color (premultiplied alpha)
 layout (location = 0) out vec4 OutColor;
 
 // Output object ID
@@ -14,7 +14,7 @@ in VS_OUT
 {
     vec3 WorldPos; // Vertex position in World space
     vec3 WorldNormal; // Vertex normal vector in World space
-    vec4 Color; // Vertex RGBA color (with pre-multiplied alpha)
+    vec4 Color; // Vertex RGBA color (with premultiplied alpha)
 } fs_in;
 
 

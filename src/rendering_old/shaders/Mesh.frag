@@ -2,7 +2,7 @@ R"(
 
 #version 330 core
 
-// Output RGBA color (pre-multiplied alpha)
+// Output RGBA color (premultiplied alpha)
 layout (location = 0) out vec4 OutColor;
 
 // Output object ID
@@ -16,7 +16,7 @@ in VS_OUT
     vec2 TexCoords2D; // Vertex 2D texture coordinates
     vec3 ImageTexCoords3D; // 3D Image texture coordinates
     vec3 LabelTexCoords3D; // 3D Parcellation texture coordinates
-    vec4 Color; // Vertex RGBA color (with pre-multiplied alpha)
+    vec4 Color; // Vertex RGBA color (with premultiplied alpha)
 } fs_in;
 
 
@@ -95,7 +95,7 @@ uniform uint layerPermutation[NUM_LAYERS];
 // Permutation of the 3D image layers
 //uniform uint imagePermutation[NUM_IMAGES];
 
-// Texture unit 2: The 2D image texture with pre-multiplied RGBA colors
+// Texture unit 2: The 2D image texture with premultiplied RGBA colors
 uniform sampler2D tex2D;
 
 // Texture unit 3: The 3D image texture with scalar values
@@ -105,10 +105,10 @@ uniform sampler3D imageTex3D;
 // Texture unit 4: The 3D image parcellation texture
 uniform usampler3D labelTex3D;
 
-// Texture unit 5: The label color lookup table texture with pre-multiplied RGBA colors
+// Texture unit 5: The label color lookup table texture with premultiplied RGBA colors
 uniform samplerBuffer labelColormapTexture;
 
-// Texture unit 6: The image colormap texture with RGBA pre-multiplied colors
+// Texture unit 6: The image colormap texture with RGBA premultiplied colors
 uniform sampler1D imageColorMapTexture;
 //uniform sampler1D imageColorMapTexture[NUM_IMAGES];
 
@@ -154,7 +154,7 @@ float smoothedThreshold( float value, float lowThreshold, float highThreshold )
 
 vec4 composeLayers( vec4 layers[NUM_LAYERS] );
 vec4 computeImageColor();
-vec4 computeLabelColor();
+vec4 getLabelColor();
 float computeOpacity( vec3 viewDir, float image3DAlpha );
 vec4 computeShadedColor();
 vec4 CalcSimpleLight( SimpleLight light, vec3 normal, vec3 lightDir, vec3 viewDir, vec4 image3DColor );
@@ -219,7 +219,7 @@ vec4 computeImageColor()
 }
 
 
-vec4 computeLabelColor()
+vec4 getLabelColor()
 {
     int label = int( texture( labelTex3D, fs_in.LabelTexCoords3D ).r );
     label -= label * when_ge( label, textureSize(labelColormapTexture) );
@@ -236,7 +236,7 @@ vec4 CalcSimpleLight( SimpleLight light, vec3 normal, vec3 lightDir, vec3 viewDi
         layerOpacities[1] * fs_in.Color,                         // Vertex
         layerOpacities[2] * computeImage2dColor(),               // Texture 2D
         layerOpacities[3] * image3DColor,                        // Image 3D
-        layerOpacities[4] * computeLabelColor() );               // Parcellation 3D
+        layerOpacities[4] * getLabelColor() );               // Parcellation 3D
 
     vec4 composedColor = composeLayers( layers );
 

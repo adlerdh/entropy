@@ -19,17 +19,17 @@
 // Redeclared vertex shader outputs, which are now the fragment shader inputs
 in VS_OUT
 {
-  vec3 v_imgTexCoords;
+  vec3 v_texCoord;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 } fs_in;
 
-layout (location = 0) out vec4 o_color; // Output RGBA color (pre-multiplied alpha)
+layout (location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
 
 uniform sampler3D u_imgTex; // Texture unit 0: image (scalar)
 
 // Uniforms from vertex shader:
-uniform mat4 u_imgTexture_T_world;
+uniform mat4 u_tex_T_world;
 uniform mat4 u_world_T_clip;
 uniform float u_clipDepth;
 
@@ -62,7 +62,7 @@ uniform float u_flashlightRadius;
 
 // When true, the flashlight overlays the moving image on top of fixed image.
 // When false, the flashlight replaces the fixed image with the moving image.
-uniform bool u_flashlightOverlays;
+uniform bool u_flashlightMovingOnFixed;
 
 // Intensity Projection (MIP) mode (0: none, 1: Max, 2: Mean, 3: Min, 4: X-ray)
 uniform int u_mipMode;
@@ -97,7 +97,7 @@ float computeProjection(float img)
   {
     for (int dir = -1; dir <= 1; dir += 2)
     {
-      vec3 c = fs_in.v_imgTexCoords + dir * i * u_texSamplingDirZ;
+      vec3 c = fs_in.v_texCoord + dir * i * u_texSamplingDirZ;
       if (!isInsideTexture(c)) break;
 
       float a = clamp(textureLookup(u_imgTex, c), u_imgMinMax[0], u_imgMinMax[1]);
@@ -133,7 +133,7 @@ bool doRender()
     (u_showFix == ((! u_quadrants.x || Q.x) == (! u_quadrants.y || Q.y))));
 
   render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&
-    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightOverlays && u_showFix)));
+    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightMovingOnFixed && u_showFix)));
 
   return render;
 }
@@ -142,11 +142,11 @@ void main()
 {
   if (!doRender()) discard;
 
-  if (!isInsideTexture(fs_in.v_imgTexCoords)) {
+  if (!isInsideTexture(fs_in.v_texCoord)) {
     discard;
   }
 
-  float img = clamp(textureLookup(u_imgTex, fs_in.v_imgTexCoords), u_imgMinMax[0], u_imgMinMax[1]);
+  float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
   img = computeProjection(img);
 
   /*
@@ -173,7 +173,7 @@ void main()
   vec2 pc = p + vec2(0.0, -dy);
   vec2 pd = p + vec2(0.0, dy);
 
-  mat4 texture_T_clip = u_imgTexture_T_world * u_world_T_clip;
+  mat4 texture_T_clip = u_tex_T_world * u_world_T_clip;
 
   float a_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pa, u_clipDepth, 1.0)));
   float b_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pb, u_clipDepth, 1.0)));

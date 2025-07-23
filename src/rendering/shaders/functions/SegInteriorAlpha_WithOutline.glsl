@@ -2,10 +2,10 @@
 
 /// Compute alpha of fragments based on whether or not they are inside the
 /// segmentation boundary. Fragments on the boundary are assigned alpha of 1,
-/// whereas fragments inside are assigned alpha of 'u_segInteriorOpacity'.
+/// whereas fragments inside are assigned alpha of 'u_segFillOpacity'.
 float getSegInteriorAlpha(uint seg)
 {
-  if (u_segInteriorOpacity >= 1.0) {
+  if (u_segFillOpacity >= 1.0) {
     return 1.0;
   }
 
@@ -19,8 +19,7 @@ float getSegInteriorAlpha(uint seg)
     float row = float(mod(i, 3) - 1);
     float col = float(floor(float(i / 3)) - 1);
 
-    vec3 texPosOffset = row * u_texSamplingDirsForSegOutline[0] +
-                        col * u_texSamplingDirsForSegOutline[1];
+    vec3 texPosOffset = row * u_texSamplingDirsForSegOutline[0] + col * u_texSamplingDirsForSegOutline[1];
 
     // Segmentation value of neighbor at (row, col) offset:
     float ignore;
@@ -31,5 +30,5 @@ float getSegInteriorAlpha(uint seg)
     }
   }
 
-  return u_segInteriorOpacity;
+  return u_segFillOpacity;
 }

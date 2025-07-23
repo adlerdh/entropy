@@ -250,7 +250,7 @@ void ParcellationLabelTable::updateColorRGBA(size_t index)
   // Modulate opacity by visibility:
   const float a = getAlpha(index) * (getVisible(index) ? 1.0f : 0.0f);
 
-  // Pre-multiplied RGBA:
+  // premultiplied RGBA:
   m_colors_RGBA_F32[index] = a * glm::vec4{getColor(index), 1.0f};
 }
 

@@ -15,7 +15,7 @@ uniform sampler3D u_imgTex; // Texture unit 0: image
 uniform usampler3D u_segTex; // Texture unit 1: segmentation
 uniform usampler3D u_jumpTex; // Texture unit 5: distance texture
 
-uniform mat4 u_imgTexture_T_world;
+uniform mat4 u_tex_T_world;
 uniform mat4 world_T_imgTexture;
 
 uniform mat4 clip_T_world;
@@ -34,7 +34,7 @@ uniform vec3 lightDiffuse[NISO];
 uniform vec3 lightSpecular[NISO];
 uniform float lightShininess[NISO];
 
-uniform vec4 bgColor; // pre-multiplied by alpha
+uniform vec4 bgColor; // premultiplied by alpha
 
 uniform bool renderFrontFaces;
 uniform bool renderBackFaces;
@@ -180,7 +180,7 @@ void main()
   vec4 color = vec4(0.0);
 
   // The ray direction must be re-normalized after interpolation from Vertex to Fragment stage:
-  vec3 texRayDir = mat3(u_imgTexture_T_world) * normalize(fs_in.v_worldRayDir);
+  vec3 texRayDir = mat3(u_tex_T_world) * normalize(fs_in.v_worldRayDir);
 
   // Convert physical (mm) to texel units along the ray direction
   float texel_T_mm = length(texRayDir);
@@ -198,7 +198,7 @@ void main()
     spacing.z * sqrt(1 + (dirSq.x + dirSq.y)) / max(dirSq.z, 1.0e-6));
 
   // Randomly purturb the ray starting positions along the ray direction:
-  vec4 texEyePos = u_imgTexture_T_world * vec4(worldEyePos, 1.0);
+  vec4 texEyePos = u_tex_T_world * vec4(worldEyePos, 1.0);
   vec3 texStartPos = vec3(texEyePos) + 0.5 * texStep * rand(gl_FragCoord.xy) * texRayDir;
 
   vec2 interx = slabs(texStartPos, texRayDir);

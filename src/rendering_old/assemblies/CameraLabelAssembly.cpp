@@ -13,7 +13,7 @@ namespace
 {
 
 /**
- * @brief Create shared pointer to texture from 2D image with pre-multiplied RGBA format,
+ * @brief Create shared pointer to texture from 2D image with premultiplied RGBA format,
  * uint8_t per pixel component.
  *
  * @param size Size of image

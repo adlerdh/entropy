@@ -11,7 +11,7 @@ layout (location = 1) in vec4 modelNormal;
 // Vertex texture coordinates for 2D texture mapping
 layout (location = 2) in vec2 texCoords2D;
 
-// Vertex RGBA color (with pre-multiplied alpha)
+// Vertex RGBA color (with premultiplied alpha)
 layout (location = 3) in vec4 color;
 
 // Vertex shader outputs
@@ -22,7 +22,7 @@ out VS_OUT
     vec2 TexCoords2D; // Vertex texture coordinates
     vec3 ImageTexCoords3D; // 3D Image texture coordinates
     vec3 LabelTexCoords3D; // 3D Parcellation texture coordinates
-    vec4 Color; // Vertex RGBA color (with pre-multiplied alpha)
+    vec4 Color; // Vertex RGBA color (with premultiplied alpha)
 } vs_out;
 
 // In order to write to the gl_ClipDistance array, we must first redeclare this array

@@ -213,7 +213,7 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
   {
     program.setUniform("u_aspectRatio", view.camera().aspectRatio());
     program.setUniform("u_flashlightRadius", flashlightRadius);
-    program.setUniform("u_flashlightOverlays", flashlightOverlays);
+    program.setUniform("u_flashlightMovingOnFixed", flashlightOverlays);
 
     const glm::vec4 clipXhairs = helper::clip_T_world(view.camera()) * glm::vec4{worldCrosshairs, 1.0f};
 
@@ -363,10 +363,10 @@ void drawSegQuad(
 
   program.setUniform("u_aspectRatio", view.camera().aspectRatio());
   program.setUniform("u_flashlightRadius", flashlightRadius);
-  program.setUniform("u_flashlightOverlays", flashlightOverlays);
+  program.setUniform("u_flashlightMovingOnFixed", flashlightOverlays);
 
   program.setUniform("u_texSamplingDirsForSegOutline", texSamplingDirsForSegOutline);
-  program.setUniform("u_segInteriorOpacity", (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity);
+  program.setUniform("u_segFillOpacity", (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity);
 
   switch (seg.settings().interpolationMode())
   {

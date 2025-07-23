@@ -1,21 +1,17 @@
 #version 330 core
 
-#define N 2
-
 layout (location = 0) in vec2 clipPos;
 
-// View transformation data:
-uniform mat4 u_view_T_clip;
-uniform mat4 u_world_T_clip;
-uniform float u_clipDepth;
+// Transformation uniforms:
+uniform mat4 u_view_T_clip; // Clip to View space
+uniform mat4 u_world_T_clip; // Clip to World space
+uniform float u_clipDepth; // view plane depth in Clip space
+uniform mat4 u_tex_T_world[2]; // World to image texture space
 
-// Image transformation data:
-uniform mat4 u_imgTexture_T_world[N];
-
-// Vertex shader outputs (varyings):
+// Vertex shader outputs/varyings:
 out VS_OUT
 {
-  vec3 v_imgTexCoords[N]; // Image texture coords
+  vec3 v_texCoord[2]; // Image texture coords of the vertex
 } vs_out;
 
 void main()
@@ -25,8 +21,8 @@ void main()
 
   vec4 worldPos = u_world_T_clip * clipPos3d;
 
-  for (int i = 0; i < N; ++i) {
-    vec4 imgTexPos = u_imgTexture_T_world[i] * worldPos;
-    vs_out.v_imgTexCoords[i] = vec3(imgTexPos / imgTexPos.w);
+  for (int i = 0; i < 2; ++i) {
+    vec4 imgTexPos = u_tex_T_world[i] * worldPos;
+    vs_out.v_texCoord[i] = vec3(imgTexPos / imgTexPos.w);
   }
 }

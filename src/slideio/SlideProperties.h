@@ -45,7 +45,7 @@ public:
 private:
   std::string m_displayName; //!< Display name for slide
 
-  glm::vec3 m_borderColor; //!< Slide border color (non-pre-multiplied RGB)
+  glm::vec3 m_borderColor; //!< Slide border color (non-premultiplied RGB)
 
   bool m_visible;  //!< Global slide visibility
   float m_opacity; //! Global slide opacity

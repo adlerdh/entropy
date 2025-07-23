@@ -1489,10 +1489,10 @@ void Rendering::renderAllImages(
         P->use();
         {
           P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
-          P->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
+          P->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
 
-          P->setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
-          P->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+          P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+          P->setUniform("u_tex_T_world", U.imgTexture_T_world);
 
           if (doXray) {
             P->setUniform("imgSlope_native_T_texture", U.slope_native_T_texture);
@@ -1505,10 +1505,10 @@ void Rendering::renderAllImages(
 
           // Flag whether HSV modification is used
           const bool useHsv = (U.hsvModFactors.x != 0.0f) || (U.hsvModFactors.y != 1.0f) || (U.hsvModFactors.z != 1.0f);
-          P->setUniform("u_useHsv", useHsv);
-          P->setUniform("u_imgCmapHsvModFactors", U.hsvModFactors);
-          P->setUniform("u_imgCmapSlopeIntercept", U.cmapSlopeIntercept);
-          P->setUniform("u_imgCmapQuantLevels", U.cmapQuantLevels);
+          P->setUniform("u_applyHsvMod", useHsv);
+          P->setUniform("u_cmapHsvModFactors", U.hsvModFactors);
+          P->setUniform("u_cmapSlopeIntercept", U.cmapSlopeIntercept);
+          P->setUniform("u_cmapQuantLevels", U.cmapQuantLevels);
           P->setUniform("u_imgThresholds", U.thresholds);
           P->setUniform("u_imgMinMax", U.minMax);
           P->setUniform("u_imgOpacity", U.imgOpacity);
@@ -1596,8 +1596,8 @@ void Rendering::renderAllImages(
 
             isoP->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
 
-            isoP->setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
-            isoP->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+            isoP->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+            isoP->setUniform("u_tex_T_world", U.imgTexture_T_world);
 
             isoP->setUniform("u_isoValue", static_cast<float>(imgS.mapNativeIntensityToTexture(surface->value)));
             isoP->setUniform("u_fillOpacity", static_cast<float>(isoOp * surface->fillOpacity));
@@ -1644,10 +1644,10 @@ void Rendering::renderAllImages(
         P->use();
         {
           P->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
-          P->setSamplerUniform("u_imgCmapTex", msk_imgCmapTexSampler.index);
+          P->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
 
-          P->setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
-          P->setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+          P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+          P->setUniform("u_tex_T_world", U.imgTexture_T_world);
           P->setUniform("u_imgSlopeIntercept", U.slopeInterceptRgba_normalized_T_texture);
           P->setUniform("u_imgThresholds", U.thresholdsRgba);
           P->setUniform("u_imgMinMax", U.minMaxRgba);
@@ -1681,9 +1681,9 @@ void Rendering::renderAllImages(
           P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
           P.setSamplerUniform("u_segLabelCmapTex", msk_segLabelTableTexSampler.index);
 
-          P.setUniform("u_numSquares", static_cast<float>(R.m_numCheckerboardSquares));
-          P.setUniform("u_segTexture_T_world", U.segTexture_T_world);
-          P.setUniform("u_segVoxel_T_world", U.segVoxel_T_world);
+          P.setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+          P.setUniform("u_tex_T_world", U.segTexture_T_world);
+          P.setUniform("u_voxel_T_world", U.segVoxel_T_world);
           P.setUniform("u_segOpacity", U.segOpacity * (R.m_modulateSegOpacityWithImageOpacity ? U.imgOpacity : 1.0f));
           P.setUniform("u_quadrants", R.m_quadrants);
           P.setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
@@ -1741,7 +1741,7 @@ void Rendering::renderAllImages(
         P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
         P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
 
-        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
+        P.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
         P.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
         P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{U[0].largestSlopeIntercept, U[1].largestSlopeIntercept});
         P.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
@@ -1763,7 +1763,7 @@ void Rendering::renderAllImages(
         P.setSamplerUniform("u_imgTex", msk_imgTexSamplers);
         P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
 
-        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
+        P.setUniform("u_tex_T_world", std::vector<glm::mat4>{U0.imgTexture_T_world, U1.imgTexture_T_world});
         P.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
         P.setUniform("u_metricSlopeIntercept", params.m_slopeIntercept);
         P.setUniform("u_metricMasking", params.m_doMasking);
@@ -1782,7 +1782,7 @@ void Rendering::renderAllImages(
       {
         P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
 
-        P.setUniform("u_imgTexture_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
+        P.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
         P.setUniform("u_imgSlopeIntercept", std::vector<glm::vec2>{
           U[0].slopeIntercept_normalized_T_texture, U[1].slopeIntercept_normalized_T_texture});
         P.setUniform("u_imgMinMax", std::vector<glm::vec2>{U[0].minMax, U[1].minMax});
@@ -1814,9 +1814,9 @@ void Rendering::renderAllImages(
         P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
         P.setSamplerUniform("u_segLabelCmapTex", msk_segLabelTableTexSampler.index);
 
-        P.setUniform("u_numSquares", 1.0f); // checkerboarding disabled
-        P.setUniform("u_segTexture_T_world", U[i].segTexture_T_world);
-        P.setUniform("u_segVoxel_T_world", U[i].segVoxel_T_world);
+        P.setUniform("u_numCheckers", 1.0f); // checkerboarding disabled
+        P.setUniform("u_tex_T_world", U[i].segTexture_T_world);
+        P.setUniform("u_voxel_T_world", U[i].segVoxel_T_world);
         P.setUniform("u_segOpacity", U[i].segOpacity * (R.m_modulateSegOpacityWithImageOpacity ? U[i].imgOpacity : 1.0f));
         P.setUniform("u_quadrants", glm::ivec2{0, 0});
         P.setUniform("u_showFix", true); // ignored if not checkerboard or quadrants
@@ -1885,7 +1885,7 @@ void Rendering::renderAllImages(
 
       /// @todo Put a lot of these into the uniform settings...
 
-      P.setUniform("u_imgTexture_T_world", U.imgTexture_T_world);
+      P.setUniform("u_tex_T_world", U.imgTexture_T_world);
       P.setUniform("world_T_imgTexture", U.world_T_imgTexture);
 
       // The camera is positioned at the crosshairs:
@@ -2267,9 +2267,9 @@ bool Rendering::createImageGreyProgram(
 
   // For checkerboarding:
   vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+  vsUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
 
-  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
 
   auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
   vs->setRegisteredUniforms(std::move(vsUniforms));
@@ -2280,13 +2280,13 @@ bool Rendering::createImageGreyProgram(
   Uniforms fsUniforms;
 
   fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-  fsUniforms.insertUniform("u_imgCmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+  fsUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
 
   fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgCmapQuantLevels", UniformType::Int, 0);
-  fsUniforms.insertUniform("u_imgCmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
-  fsUniforms.insertUniform("u_useHsv", UniformType::Bool, false);
+  fsUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_cmapQuantLevels", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_cmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
+  fsUniforms.insertUniform("u_applyHsvMod", UniformType::Bool, false);
 
   fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
   fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
@@ -2299,7 +2299,7 @@ bool Rendering::createImageGreyProgram(
 
   // For flashlighting:
   fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_flashlightMovingOnFixed", UniformType::Bool, true);
 
   // For intensity projection:
   // 0: none, 1: max, 2: mean, 3: min, 4: x-ray (not used in image shader)
@@ -2356,9 +2356,9 @@ bool Rendering::createImageColorProgram(
 
   // For checkerboarding:
   vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+  vsUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
 
-  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
 
   auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
   vs->setRegisteredUniforms(std::move(vsUniforms));
@@ -2382,7 +2382,7 @@ bool Rendering::createImageColorProgram(
   fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
 
   fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_flashlightMovingOnFixed", UniformType::Bool, true);
 
   auto fs = std::make_shared<GLShader>("fsImage", ShaderType::Fragment, fsSource.c_str());
   fs->setRegisteredUniforms(std::move(fsUniforms));
@@ -2434,9 +2434,9 @@ bool Rendering::createXrayProgram(
 
   // For checkerboarding:
   vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+  vsUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
 
-  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
 
   auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
   vs->setRegisteredUniforms(std::move(vsUniforms));
@@ -2447,13 +2447,13 @@ bool Rendering::createXrayProgram(
   Uniforms fsUniforms;
 
   fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-  fsUniforms.insertUniform("u_imgCmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+  fsUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
 
   fsUniforms.insertUniform("imgSlope_native_T_texture", UniformType::Float, 1.0f);
-  fsUniforms.insertUniform("u_imgCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  //        fsUniforms.insertUniform( "u_imgCmapQuantLevels", UniformType::Int, 0 );
-  fsUniforms.insertUniform("u_imgCmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
-  fsUniforms.insertUniform("u_useHsv", UniformType::Bool, false);
+  fsUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  //        fsUniforms.insertUniform( "u_cmapQuantLevels", UniformType::Int, 0 );
+  fsUniforms.insertUniform("u_cmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
+  fsUniforms.insertUniform("u_applyHsvMod", UniformType::Bool, false);
 
   fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
   fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
@@ -2467,7 +2467,7 @@ bool Rendering::createXrayProgram(
   fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
 
   fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_flashlightMovingOnFixed", UniformType::Bool, true);
 
   // For X-ray projection mode:
   fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
@@ -2525,9 +2525,9 @@ bool Rendering::createIsoContourProgram(
 
   // For checkerboarding:
   vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+  vsUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
 
-  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
 
   auto vs = std::make_shared<GLShader>("vsIsoContour", ShaderType::Vertex, vsSource.c_str());
   vs->setRegisteredUniforms(std::move(vsUniforms));
@@ -2555,7 +2555,7 @@ bool Rendering::createIsoContourProgram(
 
   // For flashlighting:
   fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_flashlightMovingOnFixed", UniformType::Bool, true);
 
   // For intensity projection:
   // 0: none, 1: max, 2: mean, 3: min, 4: x-ray (not used in image shader)
@@ -2622,7 +2622,7 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
     fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
     fsUniforms.insertUniform("u_jumpTex", UniformType::Sampler, msk_jumpTexSampler);
 
-    fsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+    fsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
     fsUniforms.insertUniform("world_T_imgTexture", UniformType::Mat4, sk_identMat4);
 
     fsUniforms.insertUniform("worldEyePos", UniformType::Vec3, sk_zeroVec3);
@@ -2699,9 +2699,9 @@ bool Rendering::createEdgeProgram(
 
   // For checkerboarding:
   vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+  vsUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
 
-  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
 
   auto vs = std::make_shared<GLShader>("vsEdge", ShaderType::Vertex, vsSource.c_str());
   vs->setRegisteredUniforms(std::move(vsUniforms));
@@ -2712,14 +2712,14 @@ bool Rendering::createEdgeProgram(
   Uniforms fsUniforms;
 
   fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-  fsUniforms.insertUniform("u_imgCmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+  fsUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
 
   fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsUniforms.insertUniform("u_imgSlopeInterceptLargest", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgCmapQuantLevels", UniformType::Int, 0);
-  fsUniforms.insertUniform("u_imgCmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
-  fsUniforms.insertUniform("u_useHsv", UniformType::Bool, false);
+  fsUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsUniforms.insertUniform("u_cmapQuantLevels", UniformType::Int, 0);
+  fsUniforms.insertUniform("u_cmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
+  fsUniforms.insertUniform("u_applyHsvMod", UniformType::Bool, false);
 
   fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
   fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
@@ -2731,7 +2731,7 @@ bool Rendering::createEdgeProgram(
   fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
 
   fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_flashlightMovingOnFixed", UniformType::Bool, true);
 
   fsUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
   fsUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
@@ -2788,7 +2788,7 @@ bool Rendering::createOverlayProgram(
   vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
   vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
   vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
+  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
 
   auto vs = std::make_shared<GLShader>("vsOverlay", ShaderType::Vertex, vsSource.c_str());
   vs->setRegisteredUniforms(std::move(vsUniforms));
@@ -2850,7 +2850,7 @@ bool Rendering::createDifferenceProgram(
   vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
   vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
   vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-  vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
+  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
 
   auto vs = std::make_shared<GLShader>("vsDiff", ShaderType::Vertex, vsSource.c_str());
   vs->setRegisteredUniforms(std::move(vsUniforms));
@@ -2918,8 +2918,8 @@ bool Rendering::createCrossCorrelationProgram(GLShaderProgram& program)
     vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
     vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
 
-    vsUniforms.insertUniform("u_imgTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
-    vsUniforms.insertUniform("u_segTexture_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
+    vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
+    vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
 
     auto vs = std::make_shared<GLShader>("vsCorr", ShaderType::Vertex, vsSource.c_str());
     vs->setRegisteredUniforms(std::move(vsUniforms));
@@ -2938,7 +2938,7 @@ bool Rendering::createCrossCorrelationProgram(GLShaderProgram& program)
 
     fsUniforms.insertUniform("u_segOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
 
-    fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
+    fsUniforms.insertUniform("u_segFillOpacity", UniformType::Float, 1.0f);
     fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
 
     fsUniforms.insertUniform("u_metricCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
@@ -3055,10 +3055,10 @@ bool Rendering::createSegProgram(
 
   // For checkerboarding:
   vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numSquares", UniformType::Int, 1);
+  vsUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
 
-  vsUniforms.insertUniform("u_segTexture_T_world", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_segVoxel_T_world", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
+  vsUniforms.insertUniform("u_voxel_T_world", UniformType::Mat4, sk_identMat4);
 
   auto vs = std::make_shared<GLShader>("vsSeg", ShaderType::Vertex, vsSource.c_str());
   vs->setRegisteredUniforms(std::move(vsUniforms));
@@ -3081,9 +3081,9 @@ bool Rendering::createSegProgram(
 
   // For flashlighting:
   fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightOverlays", UniformType::Bool, true);
+  fsUniforms.insertUniform("u_flashlightMovingOnFixed", UniformType::Bool, true);
 
-  fsUniforms.insertUniform("u_segInteriorOpacity", UniformType::Float, 1.0f);
+  fsUniforms.insertUniform("u_segFillOpacity", UniformType::Float, 1.0f);
   fsUniforms.insertUniform("u_texSamplingDirsForSegOutline", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
 
   if (linearInterpolation) {

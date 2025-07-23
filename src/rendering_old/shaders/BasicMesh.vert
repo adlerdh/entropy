@@ -8,7 +8,7 @@ layout (location = 0) in vec3 modelPosition;
 // Vetex normal vector in local Model space (w coord. is ignored)
 layout (location = 1) in vec4 modelNormal;
 
-// Vertex RGBA color (with pre-multiplied alpha)
+// Vertex RGBA color (with premultiplied alpha)
 layout (location = 2) in vec4 color;
 
 // Vertex shader outputs
@@ -16,7 +16,7 @@ out VS_OUT
 {
     vec3 WorldPos; // Vertex position in World space
     vec3 WorldNormal; // Vertex normal vector in World space
-    vec4 Color; // Vertex RGBA color (with pre-multiplied alpha)
+    vec4 Color; // Vertex RGBA color (with premultiplied alpha)
 } vs_out;
 
 // In order to write to the gl_ClipDistance array, we must first redeclare this array

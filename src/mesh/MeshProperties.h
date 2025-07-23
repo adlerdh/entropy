@@ -13,7 +13,7 @@ public:
   void setMaterialColor(const glm::vec3& color);
 
 private:
-  /// Mesh color as RGBA, non-pre-multiplied by alpha
+  /// Mesh color as RGBA, non-premultiplied by alpha
   glm::vec3 m_materialColor;
 };
 

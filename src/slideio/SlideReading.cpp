@@ -320,7 +320,7 @@ readSlide(const std::string& /*fileName*/, const glm::vec2& /*pixelSize*/, float
             level.m_data = std::make_unique< uint32_t[] >(
                         static_cast<size_t>( level.m_dims.x * level.m_dims.y ) );
 
-            // Copy pre-multiplied ARGB data from a whole slide image
+            // Copy premultiplied ARGB data from a whole slide image
             openslide_read_region( reader, level.m_data.get(), 0, 0,
                                    i, level.m_dims.x, level.m_dims.y );
 

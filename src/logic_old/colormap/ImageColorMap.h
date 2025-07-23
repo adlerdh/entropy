@@ -32,7 +32,7 @@ public:
   );
 
   /**
-     * @brief Construct color map from a vector of pre-multiplied RGBA 32-bit float tuples.
+     * @brief Construct color map from a vector of premultiplied RGBA 32-bit float tuples.
      * @param name Short name of color map
      * @param technicalName Technically descriptive name for color map
      * @param description More lengthy description of color map

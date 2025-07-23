@@ -1,10 +1,10 @@
 /**
- * @brief Default trilinear texture lookup.
- * @param[in] tex 3D texture sampler
- * @param[in] coord Normalized 3D texture coordinate
+ * @brief Default (GPU fixed-point) trilinear texture lookup.
+ * @param[in] tex 3D floating point texture sampler
+ * @param[in] texCoord Normalized 3D texture coordinate
  * @return Interpolated texture value
  */
-float textureLookup(sampler3D tex, vec3 texCoords)
+float textureLookup(sampler3D tex, vec3 texCoord)
 {
-  return texture(tex, texCoords)[0];
+  return texture(tex, texCoord)[0];
 }

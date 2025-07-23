@@ -496,7 +496,7 @@ void MeshAssembly::updateMeshColors()
 
       const double y = std::min(std::max(slope * isoValue + intercept, 0.0), 1.0);
       const size_t i = std::min(static_cast<size_t>(static_cast<double>(N - 1) * y), N - 1);
-      const glm::vec4 color = colorMap->color_RGBA_F32(i); // Pre-multiplied RGBA
+      const glm::vec4 color = colorMap->color_RGBA_F32(i); // premultiplied RGBA
 
       materialAlpha = 1.0f;
       visible = true; // Iso meshes are always enabled (for now)
