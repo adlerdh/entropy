@@ -8,6 +8,13 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+GLShaderProgram::GLShaderProgram()
+  : m_name()
+  , m_handle(0u)
+  , m_linked(false)
+{
+}
+
 GLShaderProgram::GLShaderProgram(std::string name)
   : m_name(std::move(name))
   , m_handle(0u)
@@ -54,18 +61,18 @@ bool GLShaderProgram::isLinked() const
   return m_linked;
 }
 
-void GLShaderProgram::attachShader(std::shared_ptr<GLShader> shader)
+bool GLShaderProgram::attachShader(std::shared_ptr<GLShader> shader)
 {
   if (!shader || !shader->isValid()) {
     spdlog::error("Invalid shader; cannot attach to program '{}'", m_name);
-    throw_debug("Invalid shader; cannot attach to program")
+    return false;
   }
 
   if (!m_handle) {
     m_handle = glCreateProgram();
     if (!m_handle) {
       spdlog::error("Unable to create shader program '{}'", m_name);
-      throw_debug("Unable to create shader program");
+      return false;
     }
   }
 
@@ -76,6 +83,7 @@ void GLShaderProgram::attachShader(std::shared_ptr<GLShader> shader)
   m_registeredUniforms.insertUniforms(shader->getRegisteredUniforms());
 
   m_linked = false;
+  return true;
 }
 
 bool GLShaderProgram::link()

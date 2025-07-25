@@ -73,18 +73,13 @@ uniform int u_halfNumMipSamples;
 // Z view camera direction, represented in texture sampling space
 uniform vec3 u_texSamplingDirZ;
 
-float hardThreshold(float value, vec2 thresholds)
-{
-  return float(thresholds[0] <= value && value <= thresholds[1]);
-}
-
-bool isInsideTexture(vec3 a)
-{
-  return (all(greaterThanEqual(a, MIN_IMAGE_TEXCOORD)) && all(lessThanEqual(a, MAX_IMAGE_TEXCOORD)));
-}
+{{HELPER_FUNCTIONS}}
 
 // float textureLookup(sampler3D texture, vec3 texCoords);
 {{TEXTURE_LOOKUP_FUNCTION}}
+
+/// bool doRender(vec2 clipPos, vec2 checkerCoord);
+{{DO_RENDER_FUNCTION}}
 
 /// Compute min/mean/max projection. Returns img when MIP is not used (i.e. u_halfNumMipSamples == 0)
 float computeProjection(float img)
@@ -114,33 +109,11 @@ float computeProjection(float img)
   return img / mix(1.0, float(numSamples), float(MEAN_IP_MODE == u_mipMode));
 }
 
-bool doRender()
-{
-  // Indicator of the quadrant of the crosshairs that the fragment is in:
-  bvec2 Q = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x, fs_in.v_clipPos.y > u_clipCrosshairs.y);
-
-  // Distance of the fragment from the crosshairs, accounting for aspect ratio:
-  float flashlightDist = sqrt(pow(u_aspectRatio * (fs_in.v_clipPos.x - u_clipCrosshairs.x), 2.0) +
-                              pow(fs_in.v_clipPos.y - u_clipCrosshairs.y, 2.0));
-
-  bool render = (IMAGE_RENDER_MODE == u_renderMode); // Flag indicating whether the fragment will be rendere
-
-  // If in Checkerboard/Quadrants/Flashlight mode, then render the fragment?
-  render = render || ((CHECKER_RENDER_MODE == u_renderMode) &&
-    (u_showFix == bool(mod(floor(fs_in.v_checkerCoord.x) + floor(fs_in.v_checkerCoord.y), 2.0) > 0.5)));
-
-  render = render || ((QUADRANTS_RENDER_MODE == u_renderMode) &&
-    (u_showFix == ((! u_quadrants.x || Q.x) == (! u_quadrants.y || Q.y))));
-
-  render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&
-    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightMovingOnFixed && u_showFix)));
-
-  return render;
-}
-
 void main()
 {
-  if (!doRender()) discard;
+  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {
+    discard;
+  }
 
   if (!isInsideTexture(fs_in.v_texCoord)) {
     discard;

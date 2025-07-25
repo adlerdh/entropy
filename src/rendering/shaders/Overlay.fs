@@ -8,22 +8,21 @@ in VS_OUT
   vec3 v_texCoord[2];
 } fs_in;
 
-layout (location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
+layout (location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
-uniform sampler3D u_imgTex[2]; // Texture units 0/1: images
+// Texture samplers:
+uniform sampler3D u_imgTex[2]; // images (scalar, red channel only)
 
-uniform vec2 u_imgSlopeIntercept[2]; // Slopes and intercepts for image window-leveling
-uniform vec2 u_imgMinMax[2]; // Min and max image values
-uniform vec2 u_imgThresholds[2]; // Image lower and upper thresholds, mapped to OpenGL texture intensity
-uniform float u_imgOpacity[2]; // Image opacities
-uniform bool u_magentaCyan;
+// Image adjustment uniforms:
+uniform vec2 u_imgSlopeIntercept[2]; // map texture to normalized intensity [0, 1], plus window/leveling
+uniform vec2 u_imgMinMax[2]; // min/max image values (texture intenstiy units)
+uniform vec2 u_imgThresholds[2]; // lower/upper image thresholds (texture intensity units)
+uniform float u_imgOpacity[2]; // image opacity
+uniform bool u_magentaCyan; // flag to use magenta/cyan/white comparison colors
 
-float hardThreshold(float value, vec2 thresholds)
-{
-  return float(thresholds[0] <= value && value <= thresholds[1]);
-}
+{{HELPER_FUNCTIONS}}
 
-// float textureLookup(sampler3D texture, vec3 texCoords);
+/// float textureLookup(sampler3D texture, vec3 texCoord);
 {{TEXTURE_LOOKUP_FUNCTION}}
 
 void main()
@@ -44,19 +43,12 @@ void main()
     }
     }
 
-    // Apply W/L:
     float norm = clamp(u_imgSlopeIntercept[i][0] * val + u_imgSlopeIntercept[i][1], 0.0, 1.0);
-
-    // Foreground mask, based on whether texture coordinates are in range [0.0, 1.0]^3:
-    bool mask = !(any(lessThan(fs_in.v_texCoord[i], MIN_IMAGE_TEXCOORD)) ||
-                  any(greaterThan(fs_in.v_texCoord[i], MAX_IMAGE_TEXCOORD)));
-
-    // Apply opacity, mask, and thresholds:
-    float alpha = u_imgOpacity[i] * float(mask) * hardThreshold(val, u_imgThresholds[i]);
+    float mask = float(isInsideTexture(fs_in.v_texCoord[i]));
+    float alpha = u_imgOpacity[i] * mask * hardThreshold(val, u_imgThresholds[i]);
     overlapColor[i] = alpha * norm;
   }
 
-  // Apply magenta/cyan option:
   overlapColor.b = float(u_magentaCyan) * max(overlapColor.r, overlapColor.g);
 
   // Turn on overlap color if either the reference or moving image is present:

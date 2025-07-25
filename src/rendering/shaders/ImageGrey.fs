@@ -59,51 +59,14 @@ uniform int u_mipMode; // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
 uniform int u_halfNumMipSamples; // half number of MIP samples (0 when no projection used)
 uniform vec3 u_texSamplingDirZ; // Z view camera direction (in texture sampling space)
 
+{{HELPER_FUNCTIONS}}
+{{COLOR_HELPER_FUNCTIONS}}
+
 /// float textureLookup(sampler3D texture, vec3 texCoord);
 {{TEXTURE_LOOKUP_FUNCTION}}
 
-/**
- * @brief Check if coordinates are inside the image texture
- */
-bool isInsideTexture(vec3 texCoord)
-{
-  return (all(greaterThanEqual(texCoord, MIN_IMAGE_TEXCOORD)) &&
-          all(lessThanEqual(texCoord, MAX_IMAGE_TEXCOORD)));
-}
-
-/**
- * @brief Convert RGB to HSV color representation
- * @cite https://www.laurivan.com/rgb-to-hsv-to-rgb-for-shaders/
- */
-vec3 rgb2hsv(vec3 c)
-{
-  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-
-  float d = q.x - min(q.w, q.y);
-  float e = 1.0e-10;
-  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-}
-
-/**
- * @brief Convert HSV to RGB color representation
- * @cite https://www.laurivan.com/rgb-to-hsv-to-rgb-for-shaders/
- */
-vec3 hsv2rgb(vec3 c)
-{
-  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
-
-/**
- * @brief Hard lower and upper thresholding
- */
-float hardThreshold(float value, vec2 thresholds)
-{
-  return float(thresholds[0] <= value && value <= thresholds[1]);
-}
+/// bool doRender(vec2 clipPos, vec2 checkerCoord);
+{{DO_RENDER_FUNCTION}}
 
 /**
  * @brief Compute min/mean/max intensity projection.
@@ -139,37 +102,11 @@ float computeProjection(float img)
   return img / mix(1.0, float(numSamples), float(MEAN_IP_MODE == u_mipMode));
 }
 
-/**
- * @brief Encapsulate logic for whether to render the fragment based on the view render mode
- */
-bool doRender()
-{
-  // Indicator for which crosshairs quadrant the fragment is in:
-  bvec2 quadrant = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x, fs_in.v_clipPos.y > u_clipCrosshairs.y);
-
-  // Distance of the fragment from the crosshairs, accounting for aspect ratio:
-  float flashlightDist = sqrt(pow(u_aspectRatio * (fs_in.v_clipPos.x - u_clipCrosshairs.x), 2.0) +
-                              pow(fs_in.v_clipPos.y - u_clipCrosshairs.y, 2.0));
-
-  // Flag indicating whether the fragment is rendered
-  bool render = (IMAGE_RENDER_MODE == u_renderMode);
-
-  // Check whether to render the fragment based on the mode (Checkerboard/Quadrants/Flashlight):
-  render = render || ((CHECKER_RENDER_MODE == u_renderMode) &&
-    (u_showFix == bool(mod(floor(fs_in.v_checkerCoord.x) + floor(fs_in.v_checkerCoord.y), 2.0) > 0.5)));
-
-  render = render || ((QUADRANTS_RENDER_MODE == u_renderMode) &&
-    (u_showFix == ((! u_quadrants.x || quadrant.x) == (! u_quadrants.y || quadrant.y))));
-
-  render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&
-    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightMovingOnFixed && u_showFix)));
-
-  return render;
-}
-
 void main()
 {
-  if (!doRender()) { discard; }
+  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {
+    discard;
+  }
 
   float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
   img = computeProjection(img);

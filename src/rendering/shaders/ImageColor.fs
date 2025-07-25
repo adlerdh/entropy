@@ -41,57 +41,19 @@ uniform float u_aspectRatio; // view aspect ratio (width / height)
 uniform float u_flashlightRadius; // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
+{{HELPER_FUNCTIONS}}
+
 /// float textureLookup(sampler3D texture, vec3 texCoord);
 {{TEXTURE_LOOKUP_FUNCTION}}
 
-/**
- * @brief Check if coordinates are inside the image texture
- */
-bool isInsideTexture(vec3 texCoord)
-{
-  return (all(greaterThanEqual(texCoord, MIN_IMAGE_TEXCOORD)) &&
-          all(lessThanEqual(texCoord, MAX_IMAGE_TEXCOORD)));
-}
-
-/**
- * @brief Hard lower and upper thresholding
- */
-float hardThreshold(float value, vec2 thresholds)
-{
-  return float(thresholds[0] <= value && value <= thresholds[1]);
-}
-
-/**
- * @brief Encapsulate logic for whether to render the fragment based on the view render mode
- */
-bool doRender()
-{
-  // Indicator for which crosshairs quadrant the fragment is in:
-  bvec2 quadrant = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x, fs_in.v_clipPos.y > u_clipCrosshairs.y);
-
-  // Distance of the fragment from the crosshairs, accounting for aspect ratio:
-  float flashlightDist = sqrt(pow(u_aspectRatio * (fs_in.v_clipPos.x - u_clipCrosshairs.x), 2.0) +
-                              pow(fs_in.v_clipPos.y - u_clipCrosshairs.y, 2.0));
-
-  // Flag indicating whether the fragment is rendered
-  bool render = (IMAGE_RENDER_MODE == u_renderMode);
-
-  // Check whether to render the fragment based on the mode (Checkerboard/Quadrants/Flashlight):
-  render = render || ((CHECKER_RENDER_MODE == u_renderMode) &&
-    (u_showFix == bool(mod(floor(fs_in.v_checkerCoord.x) + floor(fs_in.v_checkerCoord.y), 2.0) > 0.5)));
-
-  render = render || ((QUADRANTS_RENDER_MODE == u_renderMode) &&
-    (u_showFix == ((! u_quadrants.x || quadrant.x) == (! u_quadrants.y || quadrant.y))));
-
-  render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&
-    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightMovingOnFixed && u_showFix)));
-
-  return render;
-}
+/// bool doRender(vec2 clipPos, vec2 checkerCoord);
+{{DO_RENDER_FUNCTION}}
 
 void main()
 {
-  if (!doRender()) { discard; }
+  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {
+    discard;
+  }
 
   // Look up the image values (after mapping to GL texture units):
   vec4 img = vec4(

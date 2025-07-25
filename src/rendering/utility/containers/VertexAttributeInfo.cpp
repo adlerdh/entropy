@@ -8,8 +8,7 @@ VertexAttributeInfo::VertexAttributeInfo(
   int numComponents,
   int strideInBytes,
   int offsetInBytes,
-  uint64_t vertexCount
-)
+  uint64_t vertexCount)
   : m_componentType(std::move(componentType))
   , m_normalizeValues(std::move(normalizeValues))
   , m_numComponents(numComponents)

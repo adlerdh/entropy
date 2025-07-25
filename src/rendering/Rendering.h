@@ -4,6 +4,7 @@
 #include "common/UuidRange.h"
 #include "logic/camera/CameraTypes.h"
 #include "rendering/common/ShaderProviderType.h"
+#include "rendering/common/ShaderType.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 
 #include <glm/fwd.hpp>
@@ -103,9 +104,6 @@ private:
   void setupOpenGlState();
 
   void createShaderPrograms();
-
-  bool createImageGreyProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
-  bool createImageColorProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
   bool createEdgeProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
   bool createXrayProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
   bool createIsoContourProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
@@ -115,9 +113,6 @@ private:
 
   bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);
   bool createSimpleProgram(GLShaderProgram& program);
-
-  bool createSegProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap,
-                        bool linearInterpolation);
 
   void renderImageData();
   void renderVectorOverlays();
@@ -159,11 +154,7 @@ private:
   // NanoVG context for vector graphics (owned by this class)
   NVGcontext* m_nvg;
 
-  GLShaderProgram m_imageGreyTexLookupLinearProgram;
-  GLShaderProgram m_imageGreyTexLookupCubicProgram;
-
-  GLShaderProgram m_imageColorTexLookupLinearProgram;
-  GLShaderProgram m_imageColorTexLookupCubicProgram;
+  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
 
   GLShaderProgram m_edgeTexLookupLinearProgram;
   GLShaderProgram m_edgeTexLookupCubicProgram;
@@ -183,9 +174,6 @@ private:
 
   GLShaderProgram m_raycastIsoSurfaceProgram;
   GLShaderProgram m_simpleProgram;
-
-  GLShaderProgram m_segNearestProgram;
-  GLShaderProgram m_segLinearProgram;
 
   /// Is the application done loading images?
   bool m_isAppDoneLoadingImages;

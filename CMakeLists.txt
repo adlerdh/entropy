@@ -434,6 +434,8 @@ set(entropy_SOURCES
   ${entropy_SRC_DIR}/rendering/TextureSetup.cpp
   ${entropy_SRC_DIR}/rendering/VectorDrawing.cpp
 
+  ${entropy_SRC_DIR}/rendering/Common/ShaderType.cpp
+
   ${entropy_SRC_DIR}/rendering/utility/containers/VertexAttributeInfo.cpp
   ${entropy_SRC_DIR}/rendering/utility/containers/VertexIndicesInfo.cpp
   ${entropy_SRC_DIR}/rendering/utility/containers/Uniforms.cpp
@@ -490,6 +492,9 @@ set(entropy_SHADERS
   ${entropy_SRC_DIR}/rendering/shaders/Simple.fs
   ${entropy_SRC_DIR}/rendering/shaders/Simple.vs
   ${entropy_SRC_DIR}/rendering/shaders/Xray.fs
+  ${entropy_SRC_DIR}/rendering/shaders/functions/ColorHelpers.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/DoRender.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/Helpers.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_NoOutline.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/SegValue_Linear.glsl

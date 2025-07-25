@@ -1,12 +1,10 @@
-#ifndef GL_SHADER_H
-#define GL_SHADER_H
+#pragma once
 
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/gl/GLShaderType.h"
 
 #include <glm/fwd.hpp>
-
 #include <glad/glad.h>
 
 #include <istream>
@@ -55,5 +53,3 @@ private:
 
   bool checkShaderStatus(GLuint handle);
 };
-
-#endif // GL_SHADER_H

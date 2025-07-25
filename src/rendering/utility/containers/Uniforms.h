@@ -1,5 +1,4 @@
-#ifndef UNIFORMS_H
-#define UNIFORMS_H
+#pragma once
 
 #include "rendering/utility/gl/GLUniformTypes.h"
 
@@ -33,6 +32,7 @@ public:
   {
     int32_t index;
   };
+
   struct SamplerIndexVectorType
   {
     std::vector<int32_t> indices;
@@ -141,4 +141,3 @@ private:
   UniformsMap m_uniformsMap;
 };
 
-#endif // UNIFORMS_H

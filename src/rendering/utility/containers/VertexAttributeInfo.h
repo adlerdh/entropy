@@ -1,5 +1,4 @@
-#ifndef VERTEX_ATTRIBUTE_INFO_H
-#define VERTEX_ATTRIBUTE_INFO_H
+#pragma once
 
 #include "rendering/utility/gl/GLBufferTypes.h"
 
@@ -12,8 +11,7 @@ public:
     int numComponents,
     int strideInBytes,
     int offsetInBytes,
-    uint64_t vertexCount
-  );
+    uint64_t vertexCount);
 
   BufferComponentType componentType() const;
   BufferNormalizeValues normalizeValues() const;
@@ -21,7 +19,6 @@ public:
   int strideInBytes() const;
   int offsetInBytes() const;
   uint64_t vertexCount() const;
-
   void setVertexCount(uint64_t n);
 
 private:
@@ -32,5 +29,3 @@ private:
   int m_offsetInBytes;
   uint64_t m_vertexCount;
 };
-
-#endif // VERTEX_ATTRIBUTE_INFO_H

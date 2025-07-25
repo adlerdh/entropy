@@ -41,8 +41,7 @@ bool Uniforms::insertUniform(const std::string& name, const Uniforms::Decl& unif
 }
 
 bool Uniforms::insertUniform(
-  const std::string& name, const UniformType& type, ValueType defaultValue, bool isRequired
-)
+  const std::string& name, const UniformType& type, ValueType defaultValue, bool isRequired)
 {
   auto result = m_uniformsMap.emplace(
     std::piecewise_construct,
@@ -71,20 +70,17 @@ const Uniforms::UniformsMap& Uniforms::operator()() const
 bool Uniforms::containsKey(const std::string& name) const
 {
   auto itr = m_uniformsMap.find(name);
-  if (std::end(m_uniformsMap) != itr)
-  {
+  if (std::end(m_uniformsMap) != itr) {
     return true;
   }
-  else
-  {
+  else {
     return false;
   }
 }
 
 void Uniforms::resetAllToDefaults()
 {
-  for (auto& uniform : m_uniformsMap)
-  {
+  for (auto& uniform : m_uniformsMap) {
     Decl& u = uniform.second;
     u.m_value = u.m_defaultValue;
     u.m_isDirty = true;
@@ -113,24 +109,20 @@ void Uniforms::setLocation(const std::string& name, GLint loc)
 std::optional<GLint> Uniforms::location(const std::string& name) const
 {
   const auto itr = m_uniformsMap.find(name);
-  if (std::end(m_uniformsMap) != itr)
-  {
+  if (std::end(m_uniformsMap) != itr) {
     return itr->second.m_location;
   }
-  else
-  {
+  else {
     return std::nullopt;
   }
 }
 
 GLint Uniforms::queryAndSetLocation(
-  const std::string& name, std::function<GLint(const std::string&)> locationGetter
-)
+  const std::string& name, std::function<GLint(const std::string&)> locationGetter)
 {
   const GLint loc = locationGetter(name);
 
-  if (-1 == loc)
-  {
+  if (-1 == loc) {
     spdlog::error("Unrecognized uniform '{}'", name);
     return loc;
   }
@@ -144,9 +136,7 @@ int Uniforms::queryAndSetAllLocations(std::function<GLint(const std::string&)> l
   for (auto& uniform : m_uniformsMap)
   {
     GLint loc = queryAndSetLocation(uniform.first, locationGetter);
-
-    if (-1 == loc)
-    {
+    if (-1 == loc) {
       spdlog::error("Unrecognized uniform '{}'", uniform.first);
       return 1;
     }

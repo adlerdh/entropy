@@ -1,5 +1,4 @@
-#ifndef GLSHADERPROGRAM_H
-#define GLSHADERPROGRAM_H
+#pragma once
 
 #include "rendering/utility/gl/GLShader.h"
 //#include "rendering/utility/gl/GLErrorChecker.h"
@@ -13,12 +12,12 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
-#include <utility>
 
 /// @todo Implement call for glDetachShader()
 class GLShaderProgram
 {
 public:
+  GLShaderProgram();
   explicit GLShaderProgram(std::string name);
 
   GLShaderProgram(const GLShaderProgram&) = delete;
@@ -33,7 +32,7 @@ public:
   bool isLinked() const;
 
   // this class shares ownership of the shader
-  void attachShader(std::shared_ptr<GLShader> shader);
+  bool attachShader(std::shared_ptr<GLShader> shader);
 
   /// meant to be called directly before a draw call with that shader bound and
   /// all the bindings (VAO, textures) set. Its purpose is to ensure that the shader
@@ -97,13 +96,13 @@ public:
   void printActiveAttribs();
 
 private:
-  const std::string m_name;
+  std::string m_name;
   GLuint m_handle;
   bool m_linked;
 
   //    GLErrorChecker m_errorChecker;
 
-  std::unordered_set<std::shared_ptr<GLShader> > m_attachedShaders;
+  std::unordered_set<std::shared_ptr<GLShader>> m_attachedShaders;
 
   Uniforms m_registeredUniforms;
 
@@ -144,5 +143,3 @@ private:
     GLint m_loc = -1;
   };
 };
-
-#endif // GLSHADERPROGRAM_H

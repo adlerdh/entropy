@@ -44,6 +44,8 @@ uniform float u_aspectRatio; // view aspect ratio (width / height)
 uniform float u_flashlightRadius; // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
+{{HELPER_FUNCTIONS}}
+
 /// float uintTextureLookup(sampler3D texture, vec3 texCoord);
 {{UINT_TEXTURE_LOOKUP_FUNCTION}}
 
@@ -55,42 +57,8 @@ uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) 
 /// float getSegInteriorAlpha(uint seg)
 {{GET_SEG_INTERIOR_ALPHA_FUNCTION}}
 
-/**
- * @brief Check if coordinates are inside the image texture
- */
-bool isInsideTexture(vec3 texCoord)
-{
-  return (all(greaterThanEqual(texCoord, MIN_IMAGE_TEXCOORD)) &&
-          all(lessThanEqual(texCoord, MAX_IMAGE_TEXCOORD)));
-}
-
-/**
- * @brief Encapsulate logic for whether to render the fragment based on the view render mode
- */
-bool doRender()
-{
-  // Indicator for which crosshairs quadrant the fragment is in:
-  bvec2 quadrant = bvec2(fs_in.v_clipPos.x <= u_clipCrosshairs.x, fs_in.v_clipPos.y > u_clipCrosshairs.y);
-
-  // Distance of the fragment from the crosshairs, accounting for aspect ratio:
-  float flashlightDist = sqrt(pow(u_aspectRatio * (fs_in.v_clipPos.x - u_clipCrosshairs.x), 2.0) +
-                              pow(fs_in.v_clipPos.y - u_clipCrosshairs.y, 2.0));
-
-  // Flag indicating whether the fragment is rendered
-  bool render = (IMAGE_RENDER_MODE == u_renderMode);
-
-  // Check whether to render the fragment based on the mode (Checkerboard/Quadrants/Flashlight):
-  render = render || ((CHECKER_RENDER_MODE == u_renderMode) &&
-    (u_showFix == bool(mod(floor(fs_in.v_checkerCoord.x) + floor(fs_in.v_checkerCoord.y), 2.0) > 0.5)));
-
-  render = render || ((QUADRANTS_RENDER_MODE == u_renderMode) &&
-    (u_showFix == ((! u_quadrants.x || quadrant.x) == (! u_quadrants.y || quadrant.y))));
-
-  render = render || ((FLASHLIGHT_RENDER_MODE == u_renderMode) &&
-    ((u_showFix == (flashlightDist > u_flashlightRadius)) || (u_flashlightMovingOnFixed && u_showFix)));
-
-  return render;
-}
+/// bool doRender(vec2 clipPos, vec2 checkerCoord);
+{{DO_RENDER_FUNCTION}}
 
 int when_lt(int x, int y) {
   return max(sign(y - x), 0);
@@ -114,7 +82,9 @@ vec4 getLabelColor(int label)
 
 void main()
 {
-  if (!doRender()) { discard; }
+  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {
+    discard;
+  }
 
   float interpOpacity = 1.0;
   uint seg = getSegValue(vec3(0, 0, 0), interpOpacity);
