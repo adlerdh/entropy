@@ -129,8 +129,8 @@ std::expected<std::unique_ptr<GLShaderProgram>, std::string>
 createShaderProgram(
   const std::string& programName,
   const std::string& vsName, const std::string& fsName,
-  const Uniforms& vsUniforms, const Uniforms& fsUniforms,
-  const std::unordered_map<std::string, std::string>& fsReplacements)
+  const std::unordered_map<std::string, std::string>& fsReplacements,
+  const Uniforms& vsUniforms, const Uniforms& fsUniforms)
 {
   static const std::string shaderPath("src/rendering/shaders/");
 
@@ -220,17 +220,6 @@ std::unique_ptr<DepthPeelRenderer> createDdpRenderer(
 Rendering::Rendering(AppData& appData)
   : m_appData(appData)
   , m_nvg(nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES /*| NVG_DEBUG*/))
-  , m_edgeTexLookupLinearProgram("EdgeTexLookupLinearProgram")
-  , m_edgeTexLookupCubicProgram("EdgeTexLookupCubicProgram")
-  , m_xrayTexLookupLinearProgram("XrayTexLookupLinearProgram")
-  , m_xrayTexLookupCubicProgram("XrayTexLookupCubicProgram")
-  , m_isoContourTexLookupFloatingPointLinearProgram("IsoContourTexLookupFloatingPointLinearProgram")
-  , m_isoContourTexLookupLinearProgram("IsoContourTexLookupLinearProgram")
-  , m_isoContourTexLookupCubicProgram("IsoContourTexLookupCubicProgram")
-  , m_differenceTexLookupLinearProgram("DifferenceTexLookupLinearProgram")
-  , m_differenceTexLookupCubicProgram("DifferenceTexLookupCubicProgram")
-  , m_overlayTexLookupLinearProgram("OverlayTexLookupLinearProgram")
-  , m_overlayTexLookupCubicProgram("OverlayTexLookupCubicProgram")
   , m_raycastIsoSurfaceProgram("RayCastIsoSurfaceProgram")
   , m_simpleProgram("SimpleProgram")
   , m_isAppDoneLoadingImages(false)
@@ -1488,25 +1477,25 @@ void Rendering::renderAllImages(
         case InterpolationMode::NearestNeighbor:
         case InterpolationMode::Trilinear: {
           if (U.showEdges) {
-            P = &m_edgeTexLookupLinearProgram;
+            P = m_shaderPrograms.at(ShaderProgramType::EdgeLinear).get();
           }
           else if (doXray) {
-            P = &m_xrayTexLookupLinearProgram;
+            P = m_shaderPrograms.at(ShaderProgramType::XrayLinear).get();
           }
           else {
-            P = m_shaderPrograms.at(ShaderProgramType::ImageGrayLinearTextureLookup).get();
+            P = m_shaderPrograms.at(ShaderProgramType::ImageGrayLinear).get();
           }
           break;
         }
         case InterpolationMode::Tricubic: {
           if (U.showEdges) {
-            P = &m_edgeTexLookupCubicProgram;
+            P = m_shaderPrograms.at(ShaderProgramType::EdgeCubic).get();
           }
           else if (doXray) {
-            P = &m_xrayTexLookupCubicProgram;
+            P = m_shaderPrograms.at(ShaderProgramType::XrayCubic).get();
           }
           else {
-            P = m_shaderPrograms.at(ShaderProgramType::ImageGrayCubicTextureLookup).get();
+            P = m_shaderPrograms.at(ShaderProgramType::ImageGrayCubic).get();
           }
           break;
         }
@@ -1527,9 +1516,9 @@ void Rendering::renderAllImages(
           P->setUniform("u_tex_T_world", U.imgTexture_T_world);
 
           if (doXray) {
-            P->setUniform("imgSlope_native_T_texture", U.slope_native_T_texture);
-            P->setUniform("waterAttenCoeff", R.m_waterMassAttenCoeff);
-            P->setUniform("airAttenCoeff", R.m_airMassAttenCoeff);
+            P->setUniform("u_imgSlope_native_T_texture", U.slope_native_T_texture);
+            P->setUniform("u_waterAttenCoeff", R.m_waterMassAttenCoeff);
+            P->setUniform("u_airAttenCoeff", R.m_airMassAttenCoeff);
           }
           else {
             P->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
@@ -1583,21 +1572,21 @@ void Rendering::renderAllImages(
             // Therefore, we use the floating-point linear program instead (the only option). This effectively
             // never allows us to show NN isocontours.
             // isoP = &m_isoContourTexLookupLinearProgram; // fixed-point (disabled)
-            isoP = &m_isoContourTexLookupFloatingPointLinearProgram;
+            isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourLinearFloating).get();
             break;
           }
           case InterpolationMode::Trilinear: {
             if (R.m_isocontourFloatingPointInterpolation) {
               // Floating-point interpolation is linear only (at this time)
-              isoP = &m_isoContourTexLookupFloatingPointLinearProgram;
+              isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourLinearFloating).get();
             }
             else {
-              isoP = &m_isoContourTexLookupLinearProgram; // fixed-point
+              isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourLinearFixed).get();
             }
             break;
           }
           case InterpolationMode::Tricubic: {
-            isoP = &m_isoContourTexLookupCubicProgram; // fixed-point
+            isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourCubicFixed).get();
             break;
           }
           }
@@ -1658,11 +1647,11 @@ void Rendering::renderAllImages(
         switch (img->settings().colorInterpolationMode()) {
         case InterpolationMode::NearestNeighbor:
         case InterpolationMode::Trilinear: {
-          P = m_shaderPrograms.at(ShaderProgramType::ImageColorLinearTextureLookup).get();
+          P = m_shaderPrograms.at(ShaderProgramType::ImageColorLinear).get();
           break;
         }
         case InterpolationMode::Tricubic: {
-          P = m_shaderPrograms.at(ShaderProgramType::ImageColorCubicTextureLookup).get();
+          P = m_shaderPrograms.at(ShaderProgramType::ImageColorCubic).get();
           break;
         }
         }
@@ -1703,8 +1692,8 @@ void Rendering::renderAllImages(
       if (seg)
       {
         GLShaderProgram& P = (InterpolationMode::NearestNeighbor == seg->settings().interpolationMode())
-                               ? *m_shaderPrograms.at(ShaderProgramType::SegmentationNearestTextureLookup)
-                               : *m_shaderPrograms.at(ShaderProgramType::SegmentationLinearTextureLookup);
+                               ? *m_shaderPrograms.at(ShaderProgramType::SegmentationNearest)
+                               : *m_shaderPrograms.at(ShaderProgramType::SegmentationLinear);
 
         const auto boundTextures = bindSegTextures(imgSegPair);
         const auto boundBufferTextures = bindSegBufferTextures(imgSegPair);
@@ -1766,7 +1755,10 @@ void Rendering::renderAllImages(
 
     if (ViewRenderMode::Difference == view.renderMode())
     {
-      GLShaderProgram& P = useTricubic ? m_differenceTexLookupCubicProgram : m_differenceTexLookupLinearProgram;
+      GLShaderProgram& P = useTricubic
+        ? *m_shaderPrograms.at(ShaderProgramType::DifferenceCubic)
+        : *m_shaderPrograms.at(ShaderProgramType::DifferenceLinear);
+
       const auto& params = R.m_squaredDifferenceParams;
 
       P.use();
@@ -1809,7 +1801,9 @@ void Rendering::renderAllImages(
     */
     else if (ViewRenderMode::Overlay == view.renderMode())
     {
-      GLShaderProgram& P = useTricubic ? m_overlayTexLookupCubicProgram : m_overlayTexLookupLinearProgram;
+      GLShaderProgram& P = useTricubic
+        ? *m_shaderPrograms.at(ShaderProgramType::OverlapCubic)
+        : *m_shaderPrograms.at(ShaderProgramType::OverlapLinear);
 
       P.use();
       {
@@ -1837,8 +1831,8 @@ void Rendering::renderAllImages(
       }
 
       GLShaderProgram& P = (InterpolationMode::NearestNeighbor == segs[i]->settings().interpolationMode())
-                             ? *m_shaderPrograms.at(ShaderProgramType::SegmentationNearestTextureLookup)
-                             : *m_shaderPrograms.at(ShaderProgramType::SegmentationLinearTextureLookup);
+                             ? *m_shaderPrograms.at(ShaderProgramType::SegmentationNearest)
+                             : *m_shaderPrograms.at(ShaderProgramType::SegmentationLinear);
 
       const auto boundTextures = bindSegTextures(I[i]);
       const auto boundBufferTextures = bindSegBufferTextures(I[i]);
@@ -2183,9 +2177,7 @@ void Rendering::createShaderPrograms()
   const std::string segValueLinearRep = loadFile(shaderPath + "functions/SegValue_Linear.glsl");
   const std::string segInteriorAlphaWithOutlineRep = loadFile(shaderPath + "functions/SegInteriorAlpha_WithOutline.glsl");
 
-  std::unordered_map<ShaderProgramType, Uniforms> vsUniforms;
-  std::unordered_map<ShaderProgramType, Uniforms> fsUniforms;
-
+  // All the vertex shader uniforms:
   Uniforms vsTransformUniforms;
   vsTransformUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
   vsTransformUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
@@ -2200,18 +2192,16 @@ void Rendering::createShaderPrograms()
   vsImageUniforms.insertUniforms(vsTransformUniforms);
   vsImageUniforms.insertUniforms(vsViewModeUniforms);
 
-  vsUniforms.insert({ShaderProgramType::ImageGrayLinearTextureLookup, vsImageUniforms});
-  vsUniforms.insert({ShaderProgramType::ImageGrayCubicTextureLookup, vsImageUniforms});
-  vsUniforms.insert({ShaderProgramType::ImageColorLinearTextureLookup, vsImageUniforms});
-  vsUniforms.insert({ShaderProgramType::ImageColorCubicTextureLookup, vsImageUniforms});
-
   Uniforms vsSegUniforms;
   vsSegUniforms.insertUniform("u_voxel_T_world", UniformType::Mat4, sk_identMat4);
 
-  vsUniforms.insert({ShaderProgramType::SegmentationNearestTextureLookup, vsSegUniforms});
-  vsUniforms.insert({ShaderProgramType::SegmentationLinearTextureLookup, vsSegUniforms});
+  Uniforms vsMetricUniforms;
+  vsMetricUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsMetricUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsMetricUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
+  vsMetricUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
 
-
+  // All the fragment shader uniforms:
   Uniforms fsImageAdjustmentUniforms;
   fsImageAdjustmentUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsImageAdjustmentUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
@@ -2245,10 +2235,6 @@ void Rendering::createShaderPrograms()
   fsImageGrayUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
   fsImageGrayUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
 
-  fsUniforms.insert({ShaderProgramType::ImageGrayLinearTextureLookup, fsImageGrayUniforms});
-  fsUniforms.insert({ShaderProgramType::ImageGrayCubicTextureLookup, fsImageGrayUniforms});
-
-
   Uniforms fsImageColorUniforms; // image color FS
   fsImageColorUniforms.insertUniforms(fsRenderModeUniforms);
   fsImageColorUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgRgbaTexSamplers);
@@ -2258,10 +2244,32 @@ void Rendering::createShaderPrograms()
   fsImageColorUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
   fsImageColorUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
 
-  fsUniforms.insert({ShaderProgramType::ImageColorLinearTextureLookup, fsImageColorUniforms});
-  fsUniforms.insert({ShaderProgramType::ImageColorCubicTextureLookup, fsImageColorUniforms});
+  Uniforms fsEdgeUniforms;
+  fsEdgeUniforms.insertUniforms(fsImageAdjustmentUniforms);
+  fsEdgeUniforms.insertUniforms(fsColorMapUniforms);
+  fsEdgeUniforms.insertUniforms(fsRenderModeUniforms);
+  fsEdgeUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
+  fsEdgeUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+  fsEdgeUniforms.insertUniform("u_imgSlopeInterceptLargest", UniformType::Vec2, sk_zeroVec2);
+  fsEdgeUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
+  fsEdgeUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
+  fsEdgeUniforms.insertUniform("u_overlayEdges", UniformType::Bool, false);
+  fsEdgeUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
+  fsEdgeUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
+  fsEdgeUniforms.insertUniform("u_texSamplingDirsForEdges", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
 
+  Uniforms fsXrayUniforms;
+  fsXrayUniforms.insertUniforms(fsImageAdjustmentUniforms);
+  fsXrayUniforms.insertUniforms(fsColorMapUniforms);
+  fsXrayUniforms.insertUniforms(fsRenderModeUniforms);
+  fsXrayUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
+  fsXrayUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+  fsXrayUniforms.insertUniform("u_imgSlope_native_T_texture", UniformType::Float, 1.0f);
 
+  fsXrayUniforms.insertUniforms(fsIntensityProjectionUniforms);
+  fsXrayUniforms.insertUniform("u_mipSamplingDistance_cm", UniformType::Float, 0.0f);
+  fsXrayUniforms.insertUniform("u_waterAttenCoeff", UniformType::Float, 0.0f);
+  fsXrayUniforms.insertUniform("u_airAttenCoeff", UniformType::Float, 0.0f);
 
   Uniforms fsSegAdjustmentUniforms;
   fsSegAdjustmentUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
@@ -2274,198 +2282,231 @@ void Rendering::createShaderPrograms()
   fsSegNearestUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
   fsSegNearestUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_segLabelTableTexSampler);
 
-  fsUniforms.insert({ShaderProgramType::SegmentationNearestTextureLookup, fsSegNearestUniforms});
-
   Uniforms fsSegLinearUniforms; // seg linear shader
   fsSegLinearUniforms.insertUniforms(fsSegNearestUniforms);
   fsSegLinearUniforms.insertUniform("u_segInterpCutoff", UniformType::Float, 0.5f);
   fsSegLinearUniforms.insertUniform("u_texSamplingDirsForSmoothSeg", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
 
-  fsUniforms.insert({ShaderProgramType::SegmentationLinearTextureLookup, fsSegLinearUniforms});
+  Uniforms fsIsoUniforms;
+  fsIsoUniforms.insertUniforms(fsRenderModeUniforms);
+  fsIsoUniforms.insertUniforms(fsIntensityProjectionUniforms);
+  fsIsoUniforms.insertUniform("u_isoValue", UniformType::Float, 0.0f);
+  fsIsoUniforms.insertUniform("u_fillOpacity", UniformType::Float, 0.0f);
+  fsIsoUniforms.insertUniform("u_lineOpacity", UniformType::Float, 0.0f);
+  fsIsoUniforms.insertUniform("u_color", UniformType::Vec3, sk_zeroVec3);
+  fsIsoUniforms.insertUniform("u_contourWidth", UniformType::Float, 0.0f);
+  fsIsoUniforms.insertUniform("u_viewSize", UniformType::Vec2, sk_zeroVec2);
+  fsIsoUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
+  fsIsoUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
+  fsIsoUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
 
+  Uniforms fsDiffUniforms;
+  fsDiffUniforms.insertUniforms(fsIntensityProjectionUniforms);
+  fsDiffUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
+  fsDiffUniforms.insertUniform("u_metricCmapTex", UniformType::Sampler, msk_metricCmapTexSampler);
+  fsDiffUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+  fsDiffUniforms.insertUniform("u_metricCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsDiffUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsDiffUniforms.insertUniform("u_useSquare", UniformType::Bool, true);
+  fsDiffUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
+
+  Uniforms fsOverlayUniforms;
+  fsOverlayUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
+  fsOverlayUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+  fsOverlayUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+  fsOverlayUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+  fsOverlayUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
+  fsOverlayUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
+
+  constexpr std::array<ShaderProgramType, 17> allShaders = {
+    ShaderProgramType::ImageGrayLinear,
+    ShaderProgramType::ImageGrayCubic,
+    ShaderProgramType::ImageColorLinear,
+    ShaderProgramType::ImageColorCubic,
+    ShaderProgramType::EdgeLinear,
+    ShaderProgramType::EdgeCubic,
+    ShaderProgramType::XrayLinear,
+    ShaderProgramType::XrayCubic,
+    ShaderProgramType::SegmentationNearest,
+    ShaderProgramType::SegmentationLinear,
+    ShaderProgramType::IsoContourLinearFloating,
+    ShaderProgramType::IsoContourLinearFixed,
+    ShaderProgramType::IsoContourCubicFixed,
+    ShaderProgramType::DifferenceLinear,
+    ShaderProgramType::DifferenceCubic,
+    ShaderProgramType::OverlapLinear,
+    ShaderProgramType::OverlapCubic
+  };
+
+  struct ShaderInfo
   {
-    const auto type = ShaderProgramType::ImageGrayLinearTextureLookup;
-    auto prog = createShaderProgram(to_string(type), "Image.vs", "ImageGrey.fs", vsUniforms.at(type), fsUniforms.at(type),
+    std::string vsFileName;
+    std::string fsFileName;
+    std::unordered_map<std::string, std::string> fsReplacements;
+    Uniforms vsUniforms;
+    Uniforms fsUniforms;
+  };
+
+  const std::unordered_map<ShaderProgramType, ShaderInfo> shaderTypeToInfo{
+    {ShaderProgramType::ImageGrayLinear,
+     {"Image.vs", "ImageGrey.fs",
       {{"{{HELPER_FUNCTIONS}}", helpersRep},
        {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
        {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
-       {"{{DO_RENDER_FUNCTION}}", doRenderRep}});
-
-    if (prog) {
-      m_shaderPrograms.emplace(type, std::move(*prog));
-    } else {
-      spdlog::error(prog.error());
-      throw_debug(std::format("Failed to create shader program {}", to_string(type)))
-    }
-  }
-
-  {
-    const auto type = ShaderProgramType::ImageGrayCubicTextureLookup;
-    auto prog = createShaderProgram(to_string(type), "Image.vs", "ImageGrey.fs", vsUniforms.at(type), fsUniforms.at(type),
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsImageUniforms, fsImageGrayUniforms
+     }
+    },
+    {ShaderProgramType::ImageGrayCubic,
+     {"Image.vs", "ImageGrey.fs",
       {{"{{HELPER_FUNCTIONS}}", helpersRep},
        {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
        {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
-       {"{{DO_RENDER_FUNCTION}}", doRenderRep}});
-
-    if (prog) {
-      m_shaderPrograms.emplace(type, std::move(*prog));
-    } else {
-      spdlog::error(prog.error());
-      throw_debug(std::format("Failed to create shader program {}", to_string(type)))
-    }
-  }
-
-  {
-    const auto type = ShaderProgramType::ImageColorLinearTextureLookup;
-    auto prog = createShaderProgram(to_string(type), "Image.vs", "ImageColor.fs", vsUniforms.at(type), fsUniforms.at(type),
-                                    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-                                     {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
-                                     {"{{DO_RENDER_FUNCTION}}", doRenderRep}});
-
-    if (prog) {
-      m_shaderPrograms.emplace(type, std::move(*prog));
-    } else {
-      spdlog::error(prog.error());
-      throw_debug(std::format("Failed to create shader program {}", to_string(type)))
-    }
-  }
-
-  {
-    const auto type = ShaderProgramType::ImageColorCubicTextureLookup;
-    auto prog = createShaderProgram(to_string(type), "Image.vs", "ImageColor.fs", vsUniforms.at(type), fsUniforms.at(type),
-                                    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-                                     {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
-                                     {"{{DO_RENDER_FUNCTION}}", doRenderRep}});
-
-    if (prog) {
-      m_shaderPrograms.emplace(type, std::move(*prog));
-    } else {
-      spdlog::error(prog.error());
-      throw_debug(std::format("Failed to create shader program {}", to_string(type)))
-    }
-  }
-
-  {
-    const auto type = ShaderProgramType::SegmentationNearestTextureLookup;
-    auto prog = createShaderProgram(to_string(type), "Seg.vs", "Seg.fs", vsUniforms.at(type), fsUniforms.at(type),
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsImageUniforms, fsImageGrayUniforms
+     }
+    },
+    {ShaderProgramType::ImageColorLinear,
+     {"Image.vs", "ImageColor.fs",
+      {{"{{HELPER_FUNCTIONS}}", helpersRep},
+       {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
+       {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+       vsImageUniforms, fsImageColorUniforms
+     }
+    },
+    {ShaderProgramType::ImageColorCubic,
+     {"Image.vs", "ImageColor.fs",
+      {{"{{HELPER_FUNCTIONS}}", helpersRep},
+       {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsImageUniforms, fsImageColorUniforms
+     }
+    },
+    {ShaderProgramType::EdgeLinear,
+     {"Image.vs", "Edge.fs",
+      {{"{{HELPER_FUNCTIONS}}", helpersRep},
+       {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
+       {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsImageUniforms, fsEdgeUniforms
+     }
+    },
+    {ShaderProgramType::EdgeCubic,
+     {"Image.vs", "Edge.fs",
+      {{"{{HELPER_FUNCTIONS}}", helpersRep},
+       {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
+       {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsImageUniforms, fsEdgeUniforms
+     }
+    },
+    {ShaderProgramType::XrayLinear,
+     {"Image.vs", "Xray.fs",
+      {{"{{HELPER_FUNCTIONS}}", helpersRep},
+       {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
+       {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsImageUniforms, fsXrayUniforms
+     }
+    },
+    {ShaderProgramType::XrayCubic,
+     {"Image.vs", "Xray.fs",
+      {{"{{HELPER_FUNCTIONS}}", helpersRep},
+       {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
+       {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsImageUniforms, fsXrayUniforms
+     }
+    },
+    {ShaderProgramType::SegmentationNearest,
+     {"Seg.vs", "Seg.fs",
       {{"{{HELPER_FUNCTIONS}}", helpersRep},
        {"{{UINT_TEXTURE_LOOKUP_FUNCTION}}", uintTexLookupLinearRep},
        {"{{GET_SEG_VALUE_FUNCTION}}", segValueNearestRep},
        {"{{GET_SEG_INTERIOR_ALPHA_FUNCTION}}", segInteriorAlphaWithOutlineRep},
-       {"{{DO_RENDER_FUNCTION}}", doRenderRep}});
-
-    if (prog) {
-      m_shaderPrograms.emplace(type, std::move(*prog));
-    } else {
-      spdlog::error(prog.error());
-      throw_debug(std::format("Failed to create shader program {}", to_string(type)))
-    }
-  }
-
-  {
-    const auto type = ShaderProgramType::SegmentationLinearTextureLookup;
-    auto prog = createShaderProgram(to_string(type), "Seg.vs", "Seg.fs", vsUniforms.at(type), fsUniforms.at(type),
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsSegUniforms, fsSegNearestUniforms
+     }
+    },
+    {ShaderProgramType::SegmentationLinear,
+     {"Seg.vs", "Seg.fs",
       {{"{{HELPER_FUNCTIONS}}", helpersRep},
        {"{{UINT_TEXTURE_LOOKUP_FUNCTION}}", uintTexLookupLinearRep},
        {"{{GET_SEG_VALUE_FUNCTION}}", segValueLinearRep},
        {"{{GET_SEG_INTERIOR_ALPHA_FUNCTION}}", segInteriorAlphaWithOutlineRep},
-       {"{{DO_RENDER_FUNCTION}}", doRenderRep}});
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsSegUniforms, fsSegLinearUniforms
+     }
+    },
+    {ShaderProgramType::IsoContourLinearFloating,
+     {"Image.vs", "IsoContour.fs",
+      {{"{{HELPER_FUNCTIONS}}", helpersRep},
+       {"{{TEXTURE_LOOKUP_FUNCTION}}", texFloatingPointLinearRep},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+       vsImageUniforms, fsIsoUniforms
+     }
+    },
+    {ShaderProgramType::IsoContourLinearFixed,
+     {"Image.vs", "IsoContour.fs",
+      {{"{{HELPER_FUNCTIONS}}", helpersRep},
+       {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+       vsImageUniforms, fsIsoUniforms
+     }
+    },
+    {ShaderProgramType::IsoContourCubicFixed,
+     {"Image.vs", "IsoContour.fs",
+      {{"{{HELPER_FUNCTIONS}}", helpersRep},
+       {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+      vsImageUniforms, fsIsoUniforms
+     }
+    },
+    {ShaderProgramType::DifferenceLinear,
+      {"Metric.vs", "Difference.fs",
+       {{"{{HELPER_FUNCTIONS}}", helpersRep},
+        {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep}},
+        vsMetricUniforms, fsDiffUniforms
+      }
+    },
+    {ShaderProgramType::DifferenceCubic,
+      {"Metric.vs", "Difference.fs",
+       {{"{{HELPER_FUNCTIONS}}", helpersRep},
+        {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep}},
+        vsMetricUniforms, fsDiffUniforms
+      }
+    },
+    {ShaderProgramType::OverlapLinear,
+      {"Metric.vs", "Overlay.fs",
+        {{"{{HELPER_FUNCTIONS}}", helpersRep},
+         {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep}},
+        vsMetricUniforms, fsOverlayUniforms
+      }
+    },
+    {ShaderProgramType::OverlapCubic,
+      {"Metric.vs", "Overlay.fs",
+       {{"{{HELPER_FUNCTIONS}}", helpersRep},
+        {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep}},
+       vsMetricUniforms, fsOverlayUniforms
+      }
+    }
+  };
+
+  for (auto shaderType : allShaders)
+  {
+    const auto& info = shaderTypeToInfo.at(shaderType);
+
+    auto prog = createShaderProgram(
+      to_string(shaderType), info.vsFileName, info.fsFileName, info.fsReplacements,
+      info.vsUniforms, info.fsUniforms);
 
     if (prog) {
-      m_shaderPrograms.emplace(type, std::move(*prog));
+      m_shaderPrograms.emplace(shaderType, std::move(*prog));
     } else {
       spdlog::error(prog.error());
-      throw_debug(std::format("Failed to create shader program {}", to_string(type)))
+      throw_debug(std::format("Failed to create shader program {}", to_string(shaderType)))
     }
-  }
-
-
-
-  if (!createEdgeProgram(m_edgeTexLookupLinearProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
-           {"{{DO_RENDER_FUNCTION}}", doRenderRep}}))
-  {
-    throw_debug("Failed to create edge detection program with linear texture lookup")
-  }
-
-  if (!createEdgeProgram(m_edgeTexLookupCubicProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
-           {"{{DO_RENDER_FUNCTION}}", doRenderRep}}))
-  {
-    throw_debug("Failed to create edge detection program with cubic texture lookup")
-  }
-
-  if (!createXrayProgram(m_xrayTexLookupLinearProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
-           {"{{DO_RENDER_FUNCTION}}", doRenderRep}})) {
-    throw_debug("Failed to create x-ray projection program with linear texture lookup")
-  }
-
-  if (!createXrayProgram(m_xrayTexLookupCubicProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
-           {"{{DO_RENDER_FUNCTION}}", doRenderRep}}))
-  {
-    throw_debug("Failed to create x-ray projection program with cubic texture lookup")
-  }
-
-  if (!createIsoContourProgram(m_isoContourTexLookupFloatingPointLinearProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texFloatingPointLinearRep},
-           {"{{DO_RENDER_FUNCTION}}", doRenderRep}}))
-  {
-    throw_debug("Failed to create iso-contour program with floating-point linear texture lookup")
-  }
-
-  if (!createIsoContourProgram(m_isoContourTexLookupLinearProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
-           {"{{DO_RENDER_FUNCTION}}", doRenderRep}}))
-  {
-    throw_debug("Failed to create iso-contour program with linear texture lookup")
-  }
-
-  if (!createIsoContourProgram(m_isoContourTexLookupCubicProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
-           {"{{DO_RENDER_FUNCTION}}", doRenderRep}}))
-  {
-    throw_debug("Failed to create iso-contour program with cubic texture lookup")
-  }
-
-  if (!createDifferenceProgram(m_differenceTexLookupLinearProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep}}))
-  {
-    throw_debug("Failed to create difference metric program with linear texture lookup")
-  }
-
-  if (!createDifferenceProgram(m_differenceTexLookupCubicProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep}}))
-  {
-    throw_debug("Failed to create difference metric program with cubic texture lookup")
-  }
-
-  if (!createOverlayProgram(m_overlayTexLookupLinearProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep}}))
-  {
-    throw_debug("Failed to create overlay metric program with linear texture lookup")
-  }
-
-  if (!createOverlayProgram(m_overlayTexLookupCubicProgram,
-    {{"{{HELPER_FUNCTIONS}}", helpersRep},
-           {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep}}))
-  {
-    throw_debug("Failed to create overlay metric program with cubic texture lookup")
   }
 
   if (!createRaycastIsoSurfaceProgram(m_raycastIsoSurfaceProgram))
@@ -2476,184 +2517,6 @@ void Rendering::createShaderPrograms()
   if (!createSimpleProgram(m_simpleProgram)) {
     throw_debug("Failed to create simple program")
   }
-}
-
-bool Rendering::createXrayProgram(
-  GLShaderProgram& program,
-  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
-{
-  static const std::string vsFileName{"src/rendering/shaders/Image.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/Xray.fs"};
-
-  auto filesystem = cmrc::shaders::get_filesystem();
-  std::string vsSource;
-  std::string fsSource;
-
-  try
-  {
-    cmrc::file vsData = filesystem.open(vsFileName.c_str());
-    cmrc::file fsData = filesystem.open(fsFileName.c_str());
-
-    vsSource = std::string(vsData.begin(), vsData.end());
-    fsSource = std::string(fsData.begin(), fsData.end());
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
-  }
-
-  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
-
-  Uniforms vsUniforms;
-  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-
-  // For checkerboarding:
-  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
-
-  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
-
-  auto vs = std::make_shared<GLShader>("vsImage", ShaderType::Vertex, vsSource.c_str());
-  vs->setRegisteredUniforms(std::move(vsUniforms));
-  program.attachShader(vs);
-
-  spdlog::debug("Compiled vertex shader {}", vsFileName);
-
-  Uniforms fsUniforms;
-
-  fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-  fsUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
-
-  fsUniforms.insertUniform("imgSlope_native_T_texture", UniformType::Float, 1.0f);
-  fsUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  //        fsUniforms.insertUniform( "u_cmapQuantLevels", UniformType::Int, 0 );
-  fsUniforms.insertUniform("u_cmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
-  fsUniforms.insertUniform("u_applyHsvMod", UniformType::Bool, false);
-
-  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("slopeInterceptWindowLevel", UniformType::Vec2, sk_zeroVec2);
-
-  fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
-
-  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
-  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
-  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
-
-  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightMovingOnFixed", UniformType::Bool, true);
-
-  // For X-ray projection mode:
-  fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
-  fsUniforms.insertUniform("mipSamplingDistance_cm", UniformType::Float, 0.0f);
-  fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
-  fsUniforms.insertUniform("waterAttenCoeff", UniformType::Float, 0.0f);
-  fsUniforms.insertUniform("airAttenCoeff", UniformType::Float, 0.0f);
-
-  auto fs = std::make_shared<GLShader>("fsXray", ShaderType::Fragment, fsSource.c_str());
-  fs->setRegisteredUniforms(std::move(fsUniforms));
-  program.attachShader(fs);
-
-  spdlog::debug("Compiled fragment shader {}", fsFileName);
-
-  if (!program.link()) {
-    spdlog::critical("Failed to link shader program {}", program.name());
-    return false;
-  }
-
-  spdlog::debug("Linked shader program {}", program.name());
-  return true;
-}
-
-bool Rendering::createIsoContourProgram(
-  GLShaderProgram& program,
-  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
-{
-  static const std::string vsFileName{"src/rendering/shaders/Image.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/IsoContour.fs"};
-
-  auto filesystem = cmrc::shaders::get_filesystem();
-  std::string vsSource;
-  std::string fsSource;
-
-  try
-  {
-    cmrc::file vsData = filesystem.open(vsFileName.c_str());
-    cmrc::file fsData = filesystem.open(fsFileName.c_str());
-
-    vsSource = std::string(vsData.begin(), vsData.end());
-    fsSource = std::string(fsData.begin(), fsData.end());
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
-  }
-
-  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
-
-  Uniforms vsUniforms;
-  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-
-  // For checkerboarding:
-  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
-
-  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
-
-  auto vs = std::make_shared<GLShader>("vsIsoContour", ShaderType::Vertex, vsSource.c_str());
-  vs->setRegisteredUniforms(std::move(vsUniforms));
-  program.attachShader(vs);
-
-  spdlog::debug("Compiled vertex shader {}", vsFileName);
-
-  Uniforms fsUniforms;
-
-  fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-  fsUniforms.insertUniform("u_isoValue", UniformType::Float, 0.0f);
-  fsUniforms.insertUniform("u_fillOpacity", UniformType::Float, 0.0f);
-  fsUniforms.insertUniform("u_lineOpacity", UniformType::Float, 0.0f);
-  fsUniforms.insertUniform("u_color", UniformType::Vec3, sk_zeroVec3);
-  fsUniforms.insertUniform("u_contourWidth", UniformType::Float, 0.0f);
-  fsUniforms.insertUniform("u_viewSize", UniformType::Vec2, sk_zeroVec2);
-
-  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
-
-  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2); // For quadrants
-  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true); // For checkerboarding
-  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0); // 0: image, 1: checkerboard, 2: quadrants, 3: flashlight
-
-  // For flashlighting:
-  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightMovingOnFixed", UniformType::Bool, true);
-
-  // For intensity projection:
-  // 0: none, 1: max, 2: mean, 3: min, 4: x-ray (not used in image shader)
-  fsUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
-  fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
-  fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
-
-  auto fs = std::make_shared<GLShader>("fsIsoContour", ShaderType::Fragment, fsSource.c_str());
-  fs->setRegisteredUniforms(std::move(fsUniforms));
-  program.attachShader(fs);
-
-  spdlog::debug("Compiled fragment shader {}", fsFileName);
-
-  if (!program.link()) {
-    spdlog::critical("Failed to link shader program {}", program.name());
-    return false;
-  }
-
-  spdlog::debug("Linked shader program {}", program.name());
-  return true;
 }
 
 bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
@@ -2743,272 +2606,8 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
   return true;
 }
 
-bool Rendering::createEdgeProgram(
-  GLShaderProgram& program,
-  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
-{
-  static const std::string vsFileName{"src/rendering/shaders/Image.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/Edge.fs"};
-
-  auto filesystem = cmrc::shaders::get_filesystem();
-  std::string vsSource;
-  std::string fsSource;
-
-  try
-  {
-    cmrc::file vsData = filesystem.open(vsFileName.c_str());
-    cmrc::file fsData = filesystem.open(fsFileName.c_str());
-
-    vsSource = std::string(vsData.begin(), vsData.end());
-    fsSource = std::string(fsData.begin(), fsData.end());
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
-  }
-
-  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
-
-  Uniforms vsUniforms;
-  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-
-  // For checkerboarding:
-  vsUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
-  vsUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
-
-  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
-
-  auto vs = std::make_shared<GLShader>("vsEdge", ShaderType::Vertex, vsSource.c_str());
-  vs->setRegisteredUniforms(std::move(vsUniforms));
-  program.attachShader(vs);
-
-  spdlog::debug("Compiled vertex shader {}", vsFileName);
-
-  Uniforms fsUniforms;
-
-  fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-  fsUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
-
-  fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgSlopeInterceptLargest", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_cmapQuantLevels", UniformType::Int, 0);
-  fsUniforms.insertUniform("u_cmapHsvModFactors", UniformType::Vec3, glm::vec3{0.0f, 1.0f, 1.0f});
-  fsUniforms.insertUniform("u_applyHsvMod", UniformType::Bool, false);
-
-  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
-
-  fsUniforms.insertUniform("u_clipCrosshairs", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_quadrants", UniformType::IVec2, sk_zeroIVec2);
-  fsUniforms.insertUniform("u_showFix", UniformType::Bool, true);
-  fsUniforms.insertUniform("u_renderMode", UniformType::Int, 0);
-
-  fsUniforms.insertUniform("u_flashlightRadius", UniformType::Float, 0.5f);
-  fsUniforms.insertUniform("u_flashlightMovingOnFixed", UniformType::Bool, true);
-
-  fsUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
-  fsUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
-  fsUniforms.insertUniform("u_overlayEdges", UniformType::Bool, false);
-  fsUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
-  fsUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
-
-  fsUniforms.insertUniform("u_texSamplingDirsForEdges", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-
-  auto fs = std::make_shared<GLShader>("fsEdge", ShaderType::Fragment, fsSource.c_str());
-  fs->setRegisteredUniforms(std::move(fsUniforms));
-  program.attachShader(fs);
-
-  spdlog::debug("Compiled fragment shader {}", fsFileName);
-
-  if (!program.link())
-  {
-    spdlog::critical("Failed to link shader program {}", program.name());
-    return false;
-  }
-
-  spdlog::debug("Linked shader program {}", program.name());
-  return true;
-}
-
-bool Rendering::createOverlayProgram(
-  GLShaderProgram& program,
-  const std::unordered_map<std::string, std::string>& placeholderToStringMap)
-{
-  static const std::string vsFileName{"src/rendering/shaders/Metric.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/Overlay.fs"};
-
-  auto filesystem = cmrc::shaders::get_filesystem();
-  std::string vsSource;
-  std::string fsSource;
-
-  try
-  {
-    cmrc::file vsData = filesystem.open(vsFileName.c_str());
-    cmrc::file fsData = filesystem.open(fsFileName.c_str());
-
-    vsSource = std::string(vsData.begin(), vsData.end());
-    fsSource = std::string(fsData.begin(), fsData.end());
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
-  }
-
-  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
-
-  Uniforms vsUniforms;
-  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
-
-  auto vs = std::make_shared<GLShader>("vsOverlay", ShaderType::Vertex, vsSource.c_str());
-  vs->setRegisteredUniforms(std::move(vsUniforms));
-  program.attachShader(vs);
-
-  spdlog::debug("Compiled vertex shader {}", vsFileName);
-
-  Uniforms fsUniforms;
-  fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
-  fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
-  fsUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
-  fsUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
-  fsUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
-  fsUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
-
-  auto fs = std::make_shared<GLShader>("fsOverlay", ShaderType::Fragment, fsSource.c_str());
-  fs->setRegisteredUniforms(std::move(fsUniforms));
-  program.attachShader(fs);
-
-  spdlog::debug("Compiled fragment shader {}", fsFileName);
-
-  if (!program.link())
-  {
-    spdlog::critical("Failed to link shader program {}", program.name());
-    return false;
-  }
-
-  spdlog::debug("Linked shader program {}", program.name());
-  return true;
-}
-
-bool Rendering::createDifferenceProgram(
-  GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap)
-{
-  static const std::string vsFileName{"src/rendering/shaders/Metric.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/Difference.fs"};
-
-  auto filesystem = cmrc::shaders::get_filesystem();
-  std::string vsSource;
-  std::string fsSource;
-
-  try
-  {
-    cmrc::file vsData = filesystem.open(vsFileName.c_str());
-    cmrc::file fsData = filesystem.open(fsFileName.c_str());
-
-    vsSource = std::string(vsData.begin(), vsData.end());
-    fsSource = std::string(fsData.begin(), fsData.end());
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
-  }
-
-  fsSource = replacePlaceholders(fsSource, placeholderToStringMap);
-
-  Uniforms vsUniforms;
-  vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-  vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-  vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
-
-  auto vs = std::make_shared<GLShader>("vsDiff", ShaderType::Vertex, vsSource.c_str());
-  vs->setRegisteredUniforms(std::move(vsUniforms));
-  program.attachShader(vs);
-
-  spdlog::debug("Compiled vertex shader {}", vsFileName);
-
-  Uniforms fsUniforms;
-  fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
-  fsUniforms.insertUniform("u_metricCmapTex", UniformType::Sampler, msk_metricCmapTexSampler);
-  fsUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
-  fsUniforms.insertUniform("u_metricCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsUniforms.insertUniform("u_useSquare", UniformType::Bool, true);
-
-  // For intensity projection: 0: none, 1: max, 2: mean, 3: min, 4: xray
-  fsUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
-  fsUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
-  fsUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
-  fsUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
-
-  auto fs = std::make_shared<GLShader>("fsDiff", ShaderType::Fragment, fsSource.c_str());
-  fs->setRegisteredUniforms(std::move(fsUniforms));
-  program.attachShader(fs);
-
-  spdlog::debug("Compiled fragment shader {}", fsFileName);
-
-  if (!program.link())
-  {
-    spdlog::critical("Failed to link shader program {}", program.name());
-    return false;
-  }
-
-  spdlog::debug("Linked shader program {}", program.name());
-  return true;
-}
-
+// For the cross-correlation shader:
 /*
-bool Rendering::createCrossCorrelationProgram(GLShaderProgram& program)
-{
-  static const std::string vsFileName{"src/rendering/shaders/Metric.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/Correlation.fs"};
-
-  auto filesystem = cmrc::shaders::get_filesystem();
-  std::string vsSource;
-  std::string fsSource;
-
-  try
-  {
-    cmrc::file vsData = filesystem.open(vsFileName.c_str());
-    cmrc::file fsData = filesystem.open(fsFileName.c_str());
-
-    vsSource = std::string(vsData.begin(), vsData.end());
-    fsSource = std::string(fsData.begin(), fsData.end());
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
-  }
-
-  {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-
-    vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
-    vsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
-
-    auto vs = std::make_shared<GLShader>("vsCorr", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
-
-    spdlog::debug("Compiled vertex shader {}", vsFileName);
-  }
-
-  {
-    Uniforms fsUniforms;
-
     fsUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgTexSamplers);
     fsUniforms.insertUniform("u_segTex", UniformType::SamplerVector, msk_segTexSamplers);
     fsUniforms.insertUniform("u_metricCmapTex", UniformType::Sampler, msk_metricCmapTexSampler);
@@ -3026,23 +2625,6 @@ bool Rendering::createCrossCorrelationProgram(GLShaderProgram& program)
     fsUniforms.insertUniform("u_texture1_T_texture0", UniformType::Mat4, sk_identMat4);
     fsUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3);
     fsUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3);
-
-    auto fs = std::make_shared<GLShader>("fsCorr", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
-
-    spdlog::debug("Compiled fragment shader {}", fsFileName);
-  }
-
-  if (!program.link())
-  {
-    spdlog::critical("Failed to link shader program {}", program.name());
-    return false;
-  }
-
-  spdlog::debug("Linked shader program {}", program.name());
-  return true;
-}
 */
 
 bool Rendering::createSimpleProgram(GLShaderProgram& program)
@@ -3106,63 +2688,6 @@ bool Rendering::showVectorOverlays() const
 void Rendering::setShowVectorOverlays(bool show)
 {
   m_showOverlays = show;
-}
-
-void Rendering::updateIsosurfaceDataFor2d(AppData& appData, const uuid& imageUid)
-{
-  auto& isoData = appData.renderData().m_isosurfaceData;
-  const Image* image = appData.image(imageUid);
-  const ImageSettings& settings = image->settings();
-
-  // Turn off all of the isosurfaces
-  // std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
-
-  // Set width of isovalue threshold as a percentage of the image intensity range:
-  const double w = settings.isoContourLineWidthIn2D() *
-                   (settings.minMaxImageRange().second - settings.minMaxImageRange().first) / 100.0;
-
-  isoData.widthIn2d = std::max(1.0e-4f,
-    static_cast<float>(settings.mapNativeIntensityToTexture(w) - settings.mapNativeIntensityToTexture(0.0)));
-
-  if (!settings.showIsocontoursIn2D() || !settings.isosurfacesVisible()) {
-    return;
-  }
-
-  const uint32_t activeComp = settings.activeComponent();
-
-  std::size_t i = 0;
-  for (const auto& surfaceUid : appData.isosurfaceUids(imageUid, activeComp))
-  {
-    const Isosurface* surface = m_appData.isosurface(imageUid, activeComp, surfaceUid);
-    if (!surface) {
-      spdlog::warn("Null isosurface {} for image {}", surfaceUid, imageUid);
-      continue;
-    }
-
-    if (!surface->visible) {
-      continue;
-    }
-
-    // Map isovalue from native image intensity to texture intensity:
-    isoData.values[i] = static_cast<float>(settings.mapNativeIntensityToTexture(surface->value));
-
-    // The isolines are hidden if the image is hidden
-    isoData.opacities[i] = settings.visibility()
-      ? surface->opacity * settings.isosurfaceOpacityModulator() : 0.0f;
-
-    if (settings.applyImageColormapToIsosurfaces()) {
-      /// @note This case is only needed when the image is transparent, since otherwise the
-      /// isoline color is the same as the image color
-      static constexpr bool premult = false;
-      isoData.colors[i] = getIsosurfaceColor(m_appData, *surface, settings, activeComp, premult);
-    }
-    else {
-      // Color the surface using its explicitly defined color:
-      isoData.colors[i] = surface->color;
-    }
-
-    ++i;
-  }
 }
 
 void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid)

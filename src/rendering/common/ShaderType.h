@@ -4,12 +4,23 @@
 
 enum class ShaderProgramType
 {
-  ImageGrayLinearTextureLookup,
-  ImageGrayCubicTextureLookup,
-  ImageColorLinearTextureLookup,
-  ImageColorCubicTextureLookup,
-  SegmentationNearestTextureLookup,
-  SegmentationLinearTextureLookup
+  ImageGrayLinear,
+  ImageGrayCubic,
+  ImageColorLinear,
+  ImageColorCubic,
+  EdgeLinear,
+  EdgeCubic,
+  XrayLinear,
+  XrayCubic,
+  SegmentationNearest,
+  SegmentationLinear,
+  IsoContourLinearFloating,
+  IsoContourLinearFixed,
+  IsoContourCubicFixed,
+  DifferenceLinear,
+  DifferenceCubic,
+  OverlapLinear,
+  OverlapCubic
 };
 
 std::string to_string(ShaderProgramType type);

@@ -10,6 +10,8 @@
 #define QUADRANTS_RENDER_MODE 2
 #define FLASHLIGHT_RENDER_MODE 3
 
+#define XRAY_IP_MODE 4
+
 in VS_OUT
 {
   vec3 v_texCoord;
@@ -24,11 +26,11 @@ uniform sampler3D u_imgTex; // image (scalar, red channel only)
 uniform sampler1D u_cmapTex; // image color map (non-premultiplied RGBA)
 
 // Image adjustment uniforms:
-uniform float imgSlope_native_T_texture; // slope to map texture intensity to native image intensity (NOT accounting for window-leveling)
-uniform vec2 slopeInterceptWindowLevel; // slope/intercept for window-leveling the attenuation value
+uniform vec2 u_imgSlopeIntercept; // slope/intercept for window-leveling the attenuation value
 uniform vec2 u_imgMinMax; // min/max image values (texture intenstiy units)
 uniform vec2 u_imgThresholds; // lower/upper image thresholds (texture intensity units)
 uniform float u_imgOpacity; // image opacity
+uniform float u_imgSlope_native_T_texture; // slope to map texture intensity to native image intensity (NOT accounting for window-leveling)
 
 // Image color map adjustment uniforms:
 uniform vec2 u_cmapSlopeIntercept; // map texels to normalized range [0, 1]
@@ -55,14 +57,11 @@ uniform int u_halfNumMipSamples; // half number of MIP samples (0 when no projec
 uniform vec3 u_texSamplingDirZ; // Z view camera direction (in texture sampling space)
 
 // Sampling distance in centimeters (used for X-ray IP mode)
-uniform float mipSamplingDistance_cm;
-
-// Z view camera direction, represented in texture sampling space
-//uniform vec3 u_texSamplingDirZ;
+uniform float u_mipSamplingDistance_cm;
 
 // Photon mass attenuation coefficients [1/cm] of liquid water and dry air (at sea level):
-uniform float waterAttenCoeff;
-uniform float airAttenCoeff;
+uniform float u_waterAttenCoeff;
+uniform float u_airAttenCoeff;
 
 {{HELPER_FUNCTIONS}}
 {{COLOR_HELPER_FUNCTIONS}}
@@ -78,10 +77,10 @@ uniform float airAttenCoeff;
  */
 float convertTexToAtten(float img)
 {
-  float hu = imgSlope_native_T_texture * img; // Hounsefield units
+  float hu = u_imgSlope_native_T_texture * img; // Hounsefield units
 
   // Photon mass attenuation coefficient:
-  return max((hu / 1000.0) * (waterAttenCoeff - airAttenCoeff) + waterAttenCoeff, 0.0);
+  return max((hu / 1000.0) * (u_waterAttenCoeff - u_airAttenCoeff) + u_waterAttenCoeff, 0.0);
 }
 
 void main()
@@ -95,6 +94,7 @@ void main()
   float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
   float thresh = hardThreshold(img, u_imgThresholds);
   float atten = thresh * convertTexToAtten(img);
+  float useXray = float(XRAY_IP_MODE == u_mipMode);
 
   // Accumulate intensity projection in forwards (+Z) and backwards (-Z) directions:
   for (int dir = -1; dir <= 1; dir += 2) // dir in {-1, 1}
@@ -106,13 +106,13 @@ void main()
 
       img = clamp(textureLookup(u_imgTex, tc), u_imgMinMax[0], u_imgMinMax[1]);
       thresh = hardThreshold(img, u_imgThresholds);
-      atten += thresh * convertTexToAtten(img);
+      atten += useXray * thresh * convertTexToAtten(img);
     }
   }
 
   // Inverse of the total photon attenuation, which is in range [0.0, 1):
-  float invAtten = 1.0 - exp(-atten * mipSamplingDistance_cm);
-  float invAttenWL = slopeInterceptWindowLevel[0] * invAtten + slopeInterceptWindowLevel[1]; // apply W/L
+  float invAtten = 1.0 - exp(-atten * u_mipSamplingDistance_cm);
+  float invAttenWL = u_imgSlopeIntercept[0] * invAtten + u_imgSlopeIntercept[1]; // apply W/L
 
   // Compute coords into the image color map, accounting for quantization levels:
   float cmapCoord = mix(floor(float(u_cmapQuantLevels) * invAttenWL) / float(u_cmapQuantLevels - 1),

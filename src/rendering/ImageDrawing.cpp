@@ -228,20 +228,17 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
       // Only render with intensity projection when edges are not visible:
       program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
       program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
+      program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
 
-      if (IntensityProjectionMode::Xray != view.intensityProjectionMode())
-      {
-        program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
-      }
-      else
+      if (IntensityProjectionMode::Xray == view.intensityProjectionMode())
       {
         // Convert window/level to slope/intercept:
         const float window = std::max(xrayIntensityWindow, 1.0e-3f);
 
         const glm::vec2 slopeIntercept{1.0f / window, 0.5f - xrayIntensityLevel / window};
 
-        program.setUniform("slopeInterceptWindowLevel", slopeIntercept);
-        program.setUniform("mipSamplingDistance_cm", mipSamplingDistance_cm);
+        program.setUniform("u_imgSlopeIntercept", slopeIntercept);
+        program.setUniform("u_mipSamplingDistance_cm", mipSamplingDistance_cm);
       }
     }
   }

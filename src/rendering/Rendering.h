@@ -104,13 +104,6 @@ private:
   void setupOpenGlState();
 
   void createShaderPrograms();
-  bool createEdgeProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
-  bool createXrayProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
-  bool createIsoContourProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
-
-  bool createDifferenceProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
-  bool createOverlayProgram(GLShaderProgram& program, const std::unordered_map<std::string, std::string>& placeholderToStringMap);
-
   bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);
   bool createSimpleProgram(GLShaderProgram& program);
 
@@ -156,22 +149,6 @@ private:
 
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
 
-  GLShaderProgram m_edgeTexLookupLinearProgram;
-  GLShaderProgram m_edgeTexLookupCubicProgram;
-
-  GLShaderProgram m_xrayTexLookupLinearProgram;
-  GLShaderProgram m_xrayTexLookupCubicProgram;
-
-  GLShaderProgram m_isoContourTexLookupFloatingPointLinearProgram;
-  GLShaderProgram m_isoContourTexLookupLinearProgram;
-  GLShaderProgram m_isoContourTexLookupCubicProgram;
-
-  GLShaderProgram m_differenceTexLookupLinearProgram;
-  GLShaderProgram m_differenceTexLookupCubicProgram;
-
-  GLShaderProgram m_overlayTexLookupLinearProgram;
-  GLShaderProgram m_overlayTexLookupCubicProgram;
-
   GLShaderProgram m_raycastIsoSurfaceProgram;
   GLShaderProgram m_simpleProgram;
 
@@ -180,7 +157,6 @@ private:
 
   bool m_showOverlays;
 
-  void updateIsosurfaceDataFor2d(AppData& appData, const uuids::uuid& imageUid);
   void updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& imageUid);
 
 #if 0
