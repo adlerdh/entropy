@@ -41,6 +41,13 @@ public:
   /// Create image and segmentation textures
   void initTextures();
 
+  /// @brief Framerate limiter
+  /// Manual frame limiting can help if we want non-standard framerates (e.g., 30 FPS)
+  /// @param[in, out] lastFrameTime Time point of last rendered frame.
+  /// It is updated in this function.
+  using Clock = std::chrono::steady_clock;
+  void framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime);
+
   /// Render the scene
   void render();
 

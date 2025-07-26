@@ -1264,9 +1264,7 @@ void renderSettingsWindow(
     }
   };
 
-  if (ImGui::Begin(
-        "Settings", &(appData.guiData().m_showSettingsWindow), ImGuiWindowFlags_AlwaysAutoResize
-      ))
+  if (ImGui::Begin("Settings", &(appData.guiData().m_showSettingsWindow), ImGuiWindowFlags_AlwaysAutoResize))
   {
     static const ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
 
@@ -1279,8 +1277,7 @@ void renderSettingsWindow(
         // Show image-view intersection border
         ImGui::Checkbox(
           "Show image borders",
-          &(renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections)
-        );
+          &(renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections));
         ImGui::SameLine();
         helpMarker("Show borders of image intersections with views");
 
@@ -1563,10 +1560,6 @@ void renderSettingsWindow(
           ImGui::Spacing();
           ImGui::TreePop();
         }
-
-        ImGui::Separator();
-        ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
-        ImGui::Checkbox("Show ImPlot demo window", &(appData.guiData().m_showImPlotDemoWindow));
 
         ImGui::EndTabItem();
       }
@@ -1868,6 +1861,44 @@ void renderSettingsWindow(
         helpMarker("Segmentation masks image out");
 
         ImGui::PopID(); /*** PopID raycasting ***/
+        ImGui::EndTabItem();
+      }
+
+      if (ImGui::BeginTabItem("Rendering"))
+      {
+        ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
+        ImGui::SameLine();
+        helpMarker("Manually limit the rendering frame rate");
+
+        if (renderData.m_manualFramerateLimiter) {
+          constexpr double hzSpeed = 1.0e-1;
+          constexpr double hzMin = 1.0;
+          constexpr double hzMax = 240.0;
+
+          constexpr double secSpeed = 1.0e-4;
+          constexpr double secMin = 1.0 / hzMax;
+          constexpr double secMax = 1.0 / hzMin;
+
+          double hz = 1.0 / renderData.m_targetFrameTimeSeconds;
+          if (ImGui::DragScalar("Hz", ImGuiDataType_Double, &hz,
+                                hzSpeed, &hzMin, &hzMax, "%.1f", ImGuiSliderFlags_ClampOnInput)) {
+            renderData.m_targetFrameTimeSeconds = 1.0 / hz;
+          }
+
+          double sec = renderData.m_targetFrameTimeSeconds;
+          if (ImGui::DragScalar("sec", ImGuiDataType_Double, &sec,
+                                secSpeed, &secMin, &secMax, "%.4f", ImGuiSliderFlags_ClampOnInput)) {
+            renderData.m_targetFrameTimeSeconds = sec;
+          }
+
+          ImGui::Spacing();
+          ImGui::Dummy(ImVec2(0.0f, 1.0f));
+        }
+
+        ImGui::Separator();
+        ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
+        ImGui::Checkbox("Show ImPlot demo window", &(appData.guiData().m_showImPlotDemoWindow));
+
         ImGui::EndTabItem();
       }
 

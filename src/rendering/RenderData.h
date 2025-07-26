@@ -290,6 +290,12 @@ struct RenderData
   /// When false, the flashlight replaces the fixed image with the moving image.
   bool m_flashlightOverlays;
 
+  /// Flag to enable limiting of the framerate
+  bool m_manualFramerateLimiter = false;
+
+  /// Target framerate in seconds
+  double m_targetFrameTimeSeconds = 1.0 / 60.0;
+
   struct LandmarkParams
   {
     float strokeWidth = 1.0f;

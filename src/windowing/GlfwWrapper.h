@@ -4,6 +4,7 @@
 #include "common/Types.h"
 
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <unordered_map>
 
@@ -57,7 +58,10 @@ public:
      * @param renderScene
      * @param renderGui
      */
-  void setCallbacks(std::function<void()> renderScene, std::function<void()> renderGui);
+  void setCallbacks(
+    std::function<void(std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime)> framerateLimiter,
+    std::function<void()> renderScene,
+    std::function<void()> renderGui);
 
   /// @brief Set the event processing mode for the render loop
   void setEventProcessingMode(EventProcessingMode mode);
@@ -131,6 +135,7 @@ private:
   double m_waitTimoutSeconds;
 
   // Rendering callbacks:
+  std::function<void(std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime)> m_framerateLimiter;
   std::function<void()> m_renderScene;
   std::function<void()> m_renderGui;
 

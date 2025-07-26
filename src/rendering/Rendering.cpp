@@ -44,10 +44,12 @@
 #define NANOVG_GL3_IMPLEMENTATION
 #include <nanovg_gl.h>
 
+#include <chrono>
 #include <expected>
 #include <functional>
 #include <list>
 #include <memory>
+#include <thread>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -314,6 +316,114 @@ void Rendering::setupOpenGlState()
 
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
   glFrontFace(GL_CCW);
+
+  /// @todo This check should be done only once at initialization:
+  /*
+  GLint encoding;
+  glGetFramebufferAttachmentParameteriv(
+    GL_FRAMEBUFFER, GL_BACK_LEFT, GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING, &encoding);
+
+  const std::string sRGBCapable = (encoding == GL_SRGB)
+    ? "Yes, framebuffer is sRGB" : "No, framebuffer is linear";
+  spdlog::warn("Check whether framebuffer is sRGB-capable: {}", sRGBCapable);
+  */
+
+  // Enables gamma correction, but only if the framebuffer is sRGB-capable:
+  // glEnable(GL_FRAMEBUFFER_SRGB);
+
+/*
+On macOS, the system may be gamma-correcting for you, even if you don't ask for it.
+
+Even though your OpenGL framebuffer is linear, and your shader outputs linear color,
+the colors look correct because macOS applies gamma correction when compositing your
+OpenGL output to the screen.
+
+1. macOS Uses a Color-Managed Windowing System
+When OpenGL draws to a window (NSView-backed), macOS treats the framebuffer as being in linear space.
+macOS then automatically applies the correct color space transform when compositing the window to the
+display, which expects sRGB.
+
+So your linear output is gamma corrected by the OS, not OpenGL. This is different from most platforms
+(e.g., Windows or Linux), where the GPU outputs pixels directly to the screen without OS-level color
+correction unless you manage it yourself.
+
+2. The Retina Display Pipeline Is Fully Color-Managed
+On Retina MacBooks, the entire rendering pipeline — from OpenGL → CALayer → Quartz Compositor → Display
+— is color-aware. This includes proper application of ICC profiles and conversion to display-referred sRGB.
+
+You might read:
+
+"If you're rendering to a linear framebuffer, you must gamma correct in the shader."
+But on macOS, that advice does not always apply, because the OS is silently helping you.
+
+There is no official way to completely disable macOS’s automatic color correction for an OpenGL window
+created via standard means like GLFW or NSOpenGLView.
+
+macOS assumes that OpenGL window surfaces are in linear space, and it automatically applies color space
+conversion to sRGB (or whatever the display’s ICC profile requires) when compositing your app’s window onto the screen.
+
+3 Ways to Avoid Double Gamma Correction:
+
+Option 1: Don’t Gamma Correct in Shader on macOS
+Let macOS handle it:
+#ifdef __APPLE__
+    fragColor = vec4(intensity); // Linear output only
+#else
+    float gamma = 1.0 / 2.2;
+    fragColor = vec4(pow(intensity, gamma)); // Manual gamma correction
+#endif
+
+Option 3: Render to a linear framebuffer texture and show it with a color-managed blit pass
+This is the most robust cross-platform strategy.
+
+Render your grayscale image to a linear float texture (e.g., GL_R16F)
+Then, in a second pass, apply gamma correction and draw a fullscreen quad to your main window
+On macOS, skip gamma correction in the second pass
+Again, platform-specific, but cleanly separates concerns:
+
+bool needsGammaCorrection =
+#ifdef __APPLE__
+    false;
+#else
+    true;
+#endif
+
+
+To make rendering look visually consistent across platforms (macOS, Windows, Linux),
+especially for grayscale or color medical images, you must take control of the entire gamma correction path
+— both in shader outputs and framebuffer setup — instead of relying on platform-specific behavior
+like macOS's automatic color correction.
+
+1. Take Full Control: Always Output Gamma-Corrected Color
+
+Strategy:
+Treat your output as linear in the shader
+Always apply gamma correction yourself
+Always render to a linear framebuffer
+This ensures consistent appearance whether the OS applies color correction or not
+
+Shader Output:
+float linearGray = ...; // e.g., 0.0 to 1.0 linear intensity
+float gamma = 1.0 / 2.2; // sRGB gamma
+float corrected = pow(linearGray, gamma);
+fragColor = vec4(corrected, corrected, corrected, 1.0);
+
+2. Use a Linear Framebuffer (default on all platforms)
+By default, the main framebuffer is not sRGB-correcting unless explicitly requested —
+and on platforms like Windows/Linux, you get raw linear output to the screen.
+
+So: just don’t enable GL_FRAMEBUFFER_SRGB
+Don’t request GL_SRGB_CAPABLE framebuffer
+Output gamma-corrected colors from shader as shown above
+This gives you:
+
+Linear framebuffer
+Manual gamma correction
+Platform-independent appearance
+
+*/
+
+
 
   // This is the state touched by NanoVG:
   //    glEnable(GL_CULL_FACE);
@@ -810,6 +920,22 @@ void Rendering::updateLabelColorTableTexture(std::size_t tableIndex)
   spdlog::trace("Done updating buffer texture for label color table {}", *tableUid);
 }
 
+void Rendering::framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime)
+{
+  if (!m_appData.renderData().m_manualFramerateLimiter) {
+    return;
+  }
+
+  const double elapsed = std::chrono::duration<double>(Clock::now() - lastFrameTime).count();
+  const double targetTime = m_appData.renderData().m_targetFrameTimeSeconds;
+
+  if (elapsed < targetTime) {
+    std::this_thread::sleep_for(std::chrono::duration<double>(targetTime - elapsed));
+  }
+
+  lastFrameTime = Clock::now();
+}
+
 void Rendering::render()
 {
   // Set up OpenGL state, because it changes after NanoVG calls in the render of the prior frame
@@ -819,12 +945,8 @@ void Rendering::render()
   const glm::ivec4 deviceViewport = m_appData.windowData().viewport().getDeviceAsVec4();
   glViewport(deviceViewport[0], deviceViewport[1], deviceViewport[2], deviceViewport[3]);
 
-  glClearColor(
-    m_appData.renderData().m_2dBackgroundColor.r,
-    m_appData.renderData().m_2dBackgroundColor.g,
-    m_appData.renderData().m_2dBackgroundColor.b,
-    1.0f);
-
+  const auto& bg = m_appData.renderData().m_2dBackgroundColor;
+  glClearColor(bg.r, bg.g, bg.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   renderImageData();

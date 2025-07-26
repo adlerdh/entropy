@@ -1345,7 +1345,11 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
 void EntropyApp::setCallbacks()
 {
-  m_glfw.setCallbacks([this]() { m_rendering.render(); }, [this]() { m_imgui.render(); });
+  m_glfw.setCallbacks(
+    [this](std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime) { m_rendering.framerateLimiter(lastFrameTime); },
+    [this]() { m_rendering.render(); },
+    [this]() { m_imgui.render(); }
+  );
 
   m_imgui.setCallbacks(
     [this]() { m_glfw.postEmptyEvent(); },
