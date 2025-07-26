@@ -44,7 +44,6 @@
 #define NANOVG_GL3_IMPLEMENTATION
 #include <nanovg_gl.h>
 
-#include <algorithm>
 #include <expected>
 #include <functional>
 #include <list>
@@ -138,16 +137,13 @@ createShaderProgram(
   std::string vsSource;
   std::string fsSource;
 
-  try
-  {
+  try {
     const cmrc::file vsData = filesystem.open(shaderPath + vsName);
     const cmrc::file fsData = filesystem.open(shaderPath + fsName);
-
     vsSource = std::string(vsData.begin(), vsData.end());
     fsSource = std::string(fsData.begin(), fsData.end());
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     return std::unexpected(std::format("Exception loading shader for program {}: {}", programName, e.what()));
   }
 
@@ -221,7 +217,6 @@ Rendering::Rendering(AppData& appData)
   : m_appData(appData)
   , m_nvg(nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES /*| NVG_DEBUG*/))
   , m_raycastIsoSurfaceProgram("RayCastIsoSurfaceProgram")
-  , m_simpleProgram("SimpleProgram")
   , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
 {
@@ -588,14 +583,12 @@ void Rendering::updateImageTexture(
   static constexpr GLint sk_mipmapLevel = 0;
 
   auto it = m_appData.renderData().m_imageTextures.find(imageUid);
-  if (std::end(m_appData.renderData().m_imageTextures) == it)
-  {
+  if (std::end(m_appData.renderData().m_imageTextures) == it) {
     spdlog::error("Cannot update image {}: texture not found.", imageUid);
     return;
   }
 
   std::vector<GLTexture>& T = it->second;
-
   if (comp >= T.size()) {
     spdlog::error("Cannot update invalid component {} of image {}", comp, imageUid);
     return;
@@ -621,8 +614,7 @@ Rendering::getImageAndSegUidsForMetricShaders(const std::list<uuid>& metricImage
   for (const auto& imageUid : metricImageUids)
   {
     if (I.size() >= NUM_METRIC_IMAGES) {
-      // Stop after NUM_METRIC_IMAGES images reached
-      break;
+      break; // Stop after NUM_METRIC_IMAGES images reached
     }
 
     if (std::end(R.m_imageTextures) != R.m_imageTextures.find(imageUid))
@@ -631,8 +623,7 @@ Rendering::getImageAndSegUidsForMetricShaders(const std::list<uuid>& metricImage
       imgSegPair.first = imageUid; // The texture for this image exists
 
       // Find the segmentation that belongs to this image
-      if (const auto segUid = m_appData.imageToActiveSegUid(imageUid))
-      {
+      if (const auto segUid = m_appData.imageToActiveSegUid(imageUid)) {
         if (std::end(R.m_segTextures) != R.m_segTextures.find(*segUid)) {
           imgSegPair.second = *segUid; // The texture for this segmentation exists
         }
@@ -643,8 +634,7 @@ Rendering::getImageAndSegUidsForMetricShaders(const std::list<uuid>& metricImage
   }
 
   // Always return at least two elements
-  while (I.size() < Rendering::NUM_METRIC_IMAGES)
-  {
+  while (I.size() < Rendering::NUM_METRIC_IMAGES) {
     I.emplace_back(ImgSegPair());
   }
 
@@ -665,8 +655,7 @@ Rendering::getImageAndSegUidsForImageShaders(const std::list<uuid>& imageUids) c
       imgSegPair.first = imageUid; // The texture for this image exists
 
       // Find the segmentation that belongs to this image
-      if (const auto segUid = m_appData.imageToActiveSegUid(imageUid))
-      {
+      if (const auto segUid = m_appData.imageToActiveSegUid(imageUid)) {
         if (std::end(R.m_segTextures) != R.m_segTextures.find(*segUid)) {
           imgSegPair.second = *segUid; // The texture for this segmentation exists
         }
@@ -682,8 +671,7 @@ Rendering::getImageAndSegUidsForImageShaders(const std::list<uuid>& imageUids) c
 void Rendering::updateImageInterpolation(const uuid& imageUid)
 {
   const auto* image = m_appData.image(imageUid);
-  if (!image)
-  {
+  if (!image) {
     spdlog::warn("Image {} is invalid", imageUid);
     return;
   }
@@ -692,7 +680,6 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
   {
     // Modify the active component
     const uint32_t activeComp = image->settings().activeComponent();
-
     GLTexture& texture = m_appData.renderData().m_imageTextures.at(imageUid).at(activeComp);
 
     tex::MinificationFilter minFilter;
@@ -700,15 +687,13 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
 
     switch (image->settings().interpolationMode(activeComp))
     {
-    case InterpolationMode::NearestNeighbor:
-    {
+    case InterpolationMode::NearestNeighbor: {
       minFilter = tex::MinificationFilter::Nearest;
       maxFilter = tex::MagnificationFilter::Nearest;
       break;
     }
     case InterpolationMode::Trilinear:
-    case InterpolationMode::Tricubic:
-    {
+    case InterpolationMode::Tricubic: {
       minFilter = tex::MinificationFilter::Linear;
       maxFilter = tex::MagnificationFilter::Linear;
       break;
@@ -717,7 +702,6 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
 
     texture.setMinificationFilter(minFilter);
     texture.setMagnificationFilter(maxFilter);
-
     spdlog::debug("Set image interpolation mode for image {}", imageUid);
   }
   else
@@ -726,21 +710,18 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
     for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i)
     {
       GLTexture& texture = m_appData.renderData().m_imageTextures.at(imageUid).at(i);
-
       tex::MinificationFilter minFilter;
       tex::MagnificationFilter maxFilter;
 
       switch (image->settings().colorInterpolationMode())
       {
-      case InterpolationMode::NearestNeighbor:
-      {
+      case InterpolationMode::NearestNeighbor: {
         minFilter = tex::MinificationFilter::Nearest;
         maxFilter = tex::MagnificationFilter::Nearest;
         break;
       }
       case InterpolationMode::Trilinear:
-      case InterpolationMode::Tricubic:
-      {
+      case InterpolationMode::Tricubic: {
         minFilter = tex::MinificationFilter::Linear;
         maxFilter = tex::MagnificationFilter::Linear;
         break;
@@ -749,7 +730,6 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
 
       texture.setMinificationFilter(minFilter);
       texture.setMagnificationFilter(maxFilter);
-
       spdlog::debug("Set image interpolation mode for color image {}", imageUid);
     }
   }
@@ -758,44 +738,35 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
 void Rendering::updateImageColorMapInterpolation(std::size_t cmapIndex)
 {
   const auto cmapUid = m_appData.imageColorMapUid(cmapIndex);
-
-  if (!cmapUid)
-  {
+  if (!cmapUid) {
     spdlog::warn("Image color map index {} is invalid", cmapIndex);
     return;
   }
 
   const auto* map = m_appData.imageColorMap(*cmapUid);
-
-  if (!map)
-  {
+  if (!map) {
     spdlog::warn("Image color map {} is invalid", *cmapUid);
     return;
   }
 
   ImageColorMap* cmap = m_appData.imageColorMap(*cmapUid);
-
-  if (!cmap)
-  {
+  if (!cmap) {
     spdlog::warn("Image color map {} is null", *cmapUid);
     return;
   }
 
   GLTexture& texture = m_appData.renderData().m_colormapTextures.at(*cmapUid);
-
   tex::MinificationFilter minFilter;
   tex::MagnificationFilter maxFilter;
 
   switch (cmap->interpolationMode())
   {
-  case ImageColorMap::InterpolationMode::Nearest:
-  {
+  case ImageColorMap::InterpolationMode::Nearest: {
     minFilter = tex::MinificationFilter::Nearest;
     maxFilter = tex::MagnificationFilter::Nearest;
     break;
   }
-  case ImageColorMap::InterpolationMode::Linear:
-  {
+  case ImageColorMap::InterpolationMode::Linear: {
     minFilter = tex::MinificationFilter::Linear;
     maxFilter = tex::MagnificationFilter::Linear;
     break;
@@ -812,35 +783,30 @@ void Rendering::updateLabelColorTableTexture(std::size_t tableIndex)
 {
   spdlog::trace("Begin updating texture for 1D label color map at index {}", tableIndex);
 
-  if (tableIndex >= m_appData.numLabelTables())
-  {
+  if (tableIndex >= m_appData.numLabelTables()) {
     spdlog::error("Label color table at index {} does not exist", tableIndex);
     return;
   }
 
   const auto tableUid = m_appData.labelTableUid(tableIndex);
-  if (!tableUid)
-  {
+  if (!tableUid) {
     spdlog::error("Label table index {} is invalid", tableIndex);
     return;
   }
 
   const auto* table = m_appData.labelTable(*tableUid);
-  if (!table)
-  {
+  if (!table) {
     spdlog::error("Label table {} is invalid", *tableUid);
     return;
   }
 
   auto it = m_appData.renderData().m_labelBufferTextures.find(*tableUid);
-  if (std::end(m_appData.renderData().m_labelBufferTextures) == it)
-  {
+  if (std::end(m_appData.renderData().m_labelBufferTextures) == it) {
     spdlog::error("Buffer texture for label color table {} is invalid", *tableUid);
     return;
   }
 
   it->second.write(0, table->numColorBytes_RGBA_U8(), table->colorData_RGBA_nonpremult_U8());
-
   spdlog::trace("Done updating buffer texture for label color table {}", *tableUid);
 }
 
@@ -1470,13 +1436,12 @@ void Rendering::renderAllImages(
 
       if (!img->settings().displayImageAsColor())
       {
-        // Greyscale image:
         GLShaderProgram* P = nullptr;
 
         switch (img->settings().interpolationMode()) {
         case InterpolationMode::NearestNeighbor:
         case InterpolationMode::Trilinear: {
-          if (U.showEdges) {
+          if (U.showEdges && !U.overlayEdges) {
             P = m_shaderPrograms.at(ShaderProgramType::EdgeLinear).get();
           }
           else if (doXray) {
@@ -1488,7 +1453,7 @@ void Rendering::renderAllImages(
           break;
         }
         case InterpolationMode::Tricubic: {
-          if (U.showEdges) {
+          if (U.showEdges && !U.overlayEdges) {
             P = m_shaderPrograms.at(ShaderProgramType::EdgeCubic).get();
           }
           else if (doXray) {
@@ -1499,11 +1464,6 @@ void Rendering::renderAllImages(
           }
           break;
         }
-        }
-
-        if (!P) {
-          spdlog::error("Null image program when rendering image {}", imgUid);
-          return;
         }
 
         const auto boundTextures = bindScalarImageTextures(imgSegPair);
@@ -1519,6 +1479,9 @@ void Rendering::renderAllImages(
             P->setUniform("u_imgSlope_native_T_texture", U.slope_native_T_texture);
             P->setUniform("u_waterAttenCoeff", R.m_waterMassAttenCoeff);
             P->setUniform("u_airAttenCoeff", R.m_airMassAttenCoeff);
+          }
+          else if (U.showEdges) {
+            P->setUniform("u_imgSlopeIntercept", U.largestSlopeIntercept);
           }
           else {
             P->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
@@ -1537,12 +1500,9 @@ void Rendering::renderAllImages(
           P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
           P->setUniform("u_renderMode", displayModeUniform);
 
-          /// @todo Render edges in separate shader and overlay atop image
           if (U.showEdges) {
-            P->setUniform("u_imgSlopeInterceptLargest", U.largestSlopeIntercept);
             P->setUniform("u_thresholdEdges", U.thresholdEdges);
             P->setUniform("u_edgeMagnitude", U.edgeMagnitude);
-            P->setUniform("u_overlayEdges", U.overlayEdges);
             P->setUniform("u_colormapEdges", U.colormapEdges);
             P->setUniform("u_edgeColor", U.edgeColor);
           }
@@ -1550,7 +1510,50 @@ void Rendering::renderAllImages(
           renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
         }
         P->stopUse();
+
+
+        // Now do the edge overlay
+        if (U.showEdges && U.overlayEdges)
+        {
+          switch (img->settings().interpolationMode()) {
+          case InterpolationMode::NearestNeighbor:
+          case InterpolationMode::Trilinear: {
+            P = m_shaderPrograms.at(ShaderProgramType::EdgeLinear).get();
+            break;
+          }
+          case InterpolationMode::Tricubic: {
+            P = m_shaderPrograms.at(ShaderProgramType::EdgeCubic).get();
+            break;
+          }
+          }
+
+          P->use();
+          {
+            P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
+            P->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
+
+            P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+            P->setUniform("u_tex_T_world", U.imgTexture_T_world);
+            P->setUniform("u_imgSlopeIntercept", U.largestSlopeIntercept);
+            P->setUniform("u_imgThresholds", U.thresholds);
+            P->setUniform("u_imgMinMax", U.minMax);
+            P->setUniform("u_imgOpacity", U.imgOpacity);
+            P->setUniform("u_cmapSlopeIntercept", U.cmapSlopeIntercept);
+            P->setUniform("u_quadrants", R.m_quadrants);
+            P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+            P->setUniform("u_renderMode", displayModeUniform);
+            P->setUniform("u_thresholdEdges", U.thresholdEdges);
+            P->setUniform("u_edgeMagnitude", U.edgeMagnitude);
+            P->setUniform("u_colormapEdges", U.colormapEdges);
+            P->setUniform("u_edgeColor", U.edgeColor);
+
+            renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
+          }
+          P->stopUse();
+        }
+
         unbindTextures(boundTextures);
+
 
         // Render isosurfaces:
         const auto& imgS = img->settings();
@@ -1654,11 +1657,6 @@ void Rendering::renderAllImages(
           P = m_shaderPrograms.at(ShaderProgramType::ImageColorCubic).get();
           break;
         }
-        }
-
-        if (!P) {
-          spdlog::error("Null image program when rendering image {}", imgUid);
-          return;
         }
 
         const auto boundTextures = bindColorImageTextures(imgSegPair);
@@ -2246,14 +2244,12 @@ void Rendering::createShaderPrograms()
 
   Uniforms fsEdgeUniforms;
   fsEdgeUniforms.insertUniforms(fsImageAdjustmentUniforms);
-  fsEdgeUniforms.insertUniforms(fsColorMapUniforms);
   fsEdgeUniforms.insertUniforms(fsRenderModeUniforms);
   fsEdgeUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
   fsEdgeUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
-  fsEdgeUniforms.insertUniform("u_imgSlopeInterceptLargest", UniformType::Vec2, sk_zeroVec2);
+  fsEdgeUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsEdgeUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
   fsEdgeUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
-  fsEdgeUniforms.insertUniform("u_overlayEdges", UniformType::Bool, false);
   fsEdgeUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
   fsEdgeUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
   fsEdgeUniforms.insertUniform("u_texSamplingDirsForEdges", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
@@ -2513,10 +2509,6 @@ void Rendering::createShaderPrograms()
   {
     throw_debug("Failed to create isosurface raycasting program")
   }
-
-  if (!createSimpleProgram(m_simpleProgram)) {
-    throw_debug("Failed to create simple program")
-  }
 }
 
 bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
@@ -2627,59 +2619,6 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
     fsUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3);
 */
 
-bool Rendering::createSimpleProgram(GLShaderProgram& program)
-{
-  auto filesystem = cmrc::shaders::get_filesystem();
-  std::string vsSource;
-  std::string fsSource;
-
-  try
-  {
-    cmrc::file vsData = filesystem.open("src/rendering/shaders/Simple.vs");
-    cmrc::file fsData = filesystem.open("src/rendering/shaders/Simple.fs");
-
-    vsSource = std::string(vsData.begin(), vsData.end());
-    fsSource = std::string(fsData.begin(), fsData.end());
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::critical("Exception when loading shader file: {}", e.what());
-    throw_debug("Unable to load shader")
-  }
-
-  {
-    Uniforms vsUniforms;
-    vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-    vsUniforms.insertUniform("u_clipMin", UniformType::Float, 0.0f);
-    vsUniforms.insertUniform("u_clipMax", UniformType::Float, 0.0f);
-
-    auto vs = std::make_shared<GLShader>("vsSimple", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
-    program.attachShader(vs);
-    spdlog::debug("Compiled simple vertex shader");
-  }
-
-  {
-    Uniforms fsUniforms;
-    fsUniforms.insertUniform("color", UniformType::Vec4, glm::vec4{0.0f, 0.0f, 0.0f, 1.0f});
-
-    auto fs = std::make_shared<GLShader>("fsSimple", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
-    program.attachShader(fs);
-    spdlog::debug("Compiled simple fragment shader");
-  }
-
-  if (!program.link())
-  {
-    spdlog::critical("Failed to link shader program {}", program.name());
-    return false;
-  }
-
-  spdlog::debug("Linked shader program {}", program.name());
-  return true;
-}
-
 bool Rendering::showVectorOverlays() const
 {
   return m_showOverlays;
@@ -2709,7 +2648,6 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
   for (const auto& surfaceUid : appData.isosurfaceUids(imageUid, activeComp))
   {
     const Isosurface* surface = m_appData.isosurface(imageUid, activeComp, surfaceUid);
-
     if (!surface) {
       spdlog::warn("Null isosurface {} for image {}", surfaceUid, imageUid);
       continue;

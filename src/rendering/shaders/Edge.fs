@@ -24,17 +24,13 @@ uniform sampler3D u_imgTex; // image (scalar, red channel only)
 uniform sampler1D u_cmapTex; // image color map (non-premultiplied RGBA)
 
 // Image adjustment uniforms:
-uniform vec2 u_imgSlopeIntercept; // map texture to normalized intensity [0, 1], plus window/leveling
-uniform vec2 u_imgSlopeInterceptLargest; // slope/intercept for normalization to the largest window
+uniform vec2 u_imgSlopeIntercept; // slope/intercept for normalization to the largest window
 uniform vec2 u_imgMinMax; // min/max image values (texture intenstiy units)
 uniform vec2 u_imgThresholds; // lower/upper image thresholds (texture intensity units)
 uniform float u_imgOpacity; // image opacity
 
 // Image color map adjustment uniforms:
 uniform vec2 u_cmapSlopeIntercept; // map texels to normalized range [0, 1]
-uniform int u_cmapQuantLevels; // number of color map quantization levels
-uniform vec3 u_cmapHsvModFactors; // HSV modification factors for color map
-uniform bool u_applyHsvMod; // flag that HSV modification is applied
 
 // View render mode uniforms:
 uniform int u_renderMode; // mode (0: normal, 1: checkerboard, 2: quadrants, 3: flashlight)
@@ -52,7 +48,6 @@ uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) 
 // Edge properties:
 uniform bool u_thresholdEdges; // flag to threshold the edges
 uniform float u_edgeMagnitude; // magnitude of edges to compute
-uniform bool u_overlayEdges; // flag to overlay edges on image
 uniform bool u_colormapEdges; // flag to apply colormap to edges
 uniform vec4 u_edgeColor; // edge color (premultiplied RGBA)
 uniform vec3 u_texSamplingDirsForEdges[2]; // texture sampling direction for edges
@@ -115,7 +110,7 @@ void main()
       float v = clamp(textureLookup(u_imgTex, fs_in.v_texCoord + texSamplingPos), u_imgMinMax[0], u_imgMinMax[1]);
 
       // Apply maximum window/level to normalize value in [0.0, 1.0]:
-      V[i][j] = u_imgSlopeInterceptLargest[0] * v + u_imgSlopeInterceptLargest[1];
+      V[i][j] = u_imgSlopeIntercept[0] * v + u_imgSlopeIntercept[1];
     }
   }
 
@@ -146,39 +141,14 @@ void main()
   // If u_thresholdEdges is true, then threshold gradMag against u_edgeMagnitude:
   gradMag = mix(gradMag, float(gradMag > u_edgeMagnitude), float(u_thresholdEdges));
 
-  // Get the image value:
-  // float img = texture(u_imgTex, fs_in.v_texCoord).r;
-
-  float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
-
-  // Apply window/level and normalize value in [0.0, 1.0]:
-  float imgNorm = clamp(u_imgSlopeIntercept[0] * img + u_imgSlopeIntercept[1], 0.0, 1.0);
-
-  // Compute color map coords, accounting for quantization levels:
-  float cmapCoord = mix(floor(float(u_cmapQuantLevels) * imgNorm) / float(u_cmapQuantLevels - 1), imgNorm, float(0 == u_cmapQuantLevels));
-  cmapCoord = u_cmapSlopeIntercept[0] * cmapCoord + u_cmapSlopeIntercept[1]; // normalize
-
-  vec4 imgColorOrig = texture(u_cmapTex, cmapCoord); // image color (non-pre-mult. RGBA)
-
-  // Apply HSV modification factors:
-  vec3 imgColorHsv = rgb2hsv(imgColorOrig.rgb);
-  imgColorHsv.x += u_cmapHsvModFactors.x;
-  imgColorHsv.yz *= u_cmapHsvModFactors.yz;
-
   float mask = float(isInsideTexture(fs_in.v_texCoord));
+  float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
   float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds);
-
-  // Disable the image color if u_overlayEdges is false:
-  vec4 imgLayer = alpha * float(u_overlayEdges) * imgColorOrig.a * vec4(mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_applyHsvMod)), 1.0);
 
   // Apply color map to gradient magnitude:
   vec4 gradColormap = texture(u_cmapTex, u_cmapSlopeIntercept[0] * gradMag + u_cmapSlopeIntercept[1]);
 
-  // For the edge layer, use either the solid edge color or the colormapped gradient magnitude:
-  vec4 edgeLayer = alpha * mix(gradMag * u_edgeColor, gradColormap, float(u_colormapEdges));
-
+  // For the edge layer, use either the solid edge color or the colormapped gradient magnitude.
   // Output color (premult. RGBA):
-  o_color = vec4(0.0, 0.0, 0.0, 0.0);
-  o_color = imgLayer + (1.0 - imgLayer.a) * o_color;
-  o_color = edgeLayer + (1.0 - edgeLayer.a) * o_color;
+  o_color = alpha * mix(gradMag * u_edgeColor, gradColormap, float(u_colormapEdges));
 }

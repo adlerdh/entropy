@@ -105,7 +105,6 @@ private:
 
   void createShaderPrograms();
   bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);
-  bool createSimpleProgram(GLShaderProgram& program);
 
   void renderImageData();
   void renderVectorOverlays();
@@ -150,7 +149,6 @@ private:
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
 
   GLShaderProgram m_raycastIsoSurfaceProgram;
-  GLShaderProgram m_simpleProgram;
 
   /// Is the application done loading images?
   bool m_isAppDoneLoadingImages;
