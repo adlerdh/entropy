@@ -1,5 +1,4 @@
-#ifndef CONTROL_FRAME_H
-#define CONTROL_FRAME_H
+#pragma once
 
 #include "common/UuidRange.h"
 
@@ -24,8 +23,7 @@ public:
     ViewType viewType,
     ViewRenderMode renderMode,
     IntensityProjectionMode ipMode,
-    UiControls uiControls
-  );
+    UiControls uiControls);
 
   virtual ~ControlFrame() = default;
 
@@ -44,19 +42,19 @@ public:
   IntensityProjectionMode intensityProjectionMode() const;
   virtual void setIntensityProjectionMode(const IntensityProjectionMode& ipMode);
 
-  bool isImageRendered(const AppData& appData, size_t index);
+  bool isImageRendered(const AppData& appData, std::size_t index);
   bool isImageRendered(const uuids::uuid& imageUid);
 
-  virtual void setImageRendered(const AppData& appData, size_t index, bool visible);
+  virtual void setImageRendered(const AppData& appData, std::size_t index, bool visible);
   virtual void setImageRendered(const AppData& appData, const uuids::uuid& imageUid, bool visible);
 
   const std::list<uuids::uuid>& renderedImages() const;
   virtual void setRenderedImages(const std::list<uuids::uuid>& imageUids, bool filterByDefaults);
 
-  bool isImageUsedForMetric(const AppData& appData, size_t index);
+  bool isImageUsedForMetric(const AppData& appData, std::size_t index);
   bool isImageUsedForMetric(const uuids::uuid& imageUid);
 
-  virtual void setImageUsedForMetric(const AppData& appData, size_t index, bool visible);
+  virtual void setImageUsedForMetric(const AppData& appData, std::size_t index, bool visible);
 
   const std::list<uuids::uuid>& metricImages() const;
   virtual void setMetricImages(const std::list<uuids::uuid>& imageUids);
@@ -64,8 +62,8 @@ public:
   /// This one accounts for both rendered and metric images.
   const std::list<uuids::uuid>& visibleImages() const;
 
-  void setPreferredDefaultRenderedImages(std::set<size_t> imageIndices);
-  const std::set<size_t>& preferredDefaultRenderedImages() const;
+  void setPreferredDefaultRenderedImages(std::set<std::size_t> imageIndices);
+  const std::set<std::size_t>& preferredDefaultRenderedImages() const;
 
   void setDefaultRenderAllImages(bool renderAll);
   bool defaultRenderAllImages() const;
@@ -97,24 +95,15 @@ protected:
   std::list<uuids::uuid> m_metricImageUids;
 
   /// What images does this view prefer to render by default?
-  std::set<size_t> m_preferredDefaultRenderedImages;
+  std::set<std::size_t> m_preferredDefaultRenderedImages;
 
   /// Flag to render all images in this vew by default.
   /// When true, the set \c m_preferredDefaultRenderedImages is ignored and all images
   /// are rendered; when false, \c m_preferredDefaultRenderedImages is used.
   bool m_defaultRenderAllImages;
 
-  /// View type
-  ViewType m_viewType;
-
-  /// Rendering mode
-  ViewRenderMode m_renderMode;
-
-  /// Intensity projection mode
-  IntensityProjectionMode m_intensityProjectionMode;
-
-  /// What UI controls are show in the frame?
-  UiControls m_uiControls;
+  ViewType m_viewType; //!< View type
+  ViewRenderMode m_renderMode; //!< Render mode
+  IntensityProjectionMode m_intensityProjectionMode; //!< Intensity projection mode
+  UiControls m_uiControls; //!< UI controls shown in the frame
 };
-
-#endif // CONTROL_FRAME_H

@@ -35,18 +35,17 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
   const auto noTranslationSyncGroup = std::nullopt;
   const auto noZoomSyncGroup = std::nullopt;
 
-  const auto zoomSyncGroupUid = generateRandomUuid();
-
   Layout layout(false);
 
-  auto zoomGroup = layout.cameraZoomSyncGroups().try_emplace(zoomSyncGroupUid).first;
+  auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
+  auto* zoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, zoomSyncGroupUid);
 
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetMode = ViewOffsetMode::None;
 
   {
     // top right
-    auto view = std::make_shared<View>(
+    auto view = std::make_unique<View>(
       glm::vec4{0.0f, 0.0f, 1.0f, 1.0f},
       offsetSetting,
       ViewType::Coronal,
@@ -56,19 +55,15 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
       conventionProvider,
       noRotationSyncGroup,
       noTranslationSyncGroup,
-      zoomSyncGroupUid
-    );
+      zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-
-    const auto viewUid = generateRandomUuid();
-    layout.views().emplace(viewUid, std::move(view));
-    zoomGroup->second.push_back(viewUid);
+    zoomGroup->push_back(layout.addView(std::move(view)));
   }
   {
     // top left
-    auto view = std::make_shared<View>(
+    auto view = std::make_unique<View>(
       glm::vec4{-1.0f, 0.0f, 1.0f, 1.0f},
       offsetSetting,
       ViewType::Sagittal,
@@ -78,19 +73,15 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
       conventionProvider,
       noRotationSyncGroup,
       noTranslationSyncGroup,
-      zoomSyncGroupUid
-    );
+      zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-
-    const auto viewUid = generateRandomUuid();
-    layout.views().emplace(viewUid, std::move(view));
-    zoomGroup->second.push_back(viewUid);
+    zoomGroup->push_back(layout.addView(std::move(view)));
   }
   {
     // bottom left
-    auto view = std::make_shared<View>(
+    auto view = std::make_unique<View>(
       glm::vec4{-1.0f, -1.0f, 1.0f, 1.0f},
       offsetSetting,
       ViewType::ThreeD,
@@ -105,14 +96,11 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-
-    const auto viewUid = generateRandomUuid();
-    layout.views().emplace(viewUid, std::move(view));
-    zoomGroup->second.push_back(viewUid);
+    zoomGroup->push_back(layout.addView(std::move(view)));
   }
   {
     // bottom right
-    auto view = std::make_shared<View>(
+    auto view = std::make_unique<View>(
       glm::vec4{0.0f, -1.0f, 1.0f, 1.0f},
       offsetSetting,
       ViewType::Axial,
@@ -122,15 +110,11 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
       conventionProvider,
       noRotationSyncGroup,
       noTranslationSyncGroup,
-      zoomSyncGroupUid
-    );
+      zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-
-    const auto viewUid = generateRandomUuid();
-    layout.views().emplace(viewUid, std::move(view));
-    zoomGroup->second.push_back(viewUid);
+    zoomGroup->push_back(layout.addView(std::move(view)));
   }
 
   return layout;
@@ -143,18 +127,18 @@ Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
   const auto noRotationSyncGroup = std::nullopt;
   const auto noTranslationSyncGroup = std::nullopt;
   const auto noZoomSyncGroup = std::nullopt;
-  const auto zoomSyncGroupUid = generateRandomUuid();
 
   Layout layout(false);
 
-  auto zoomGroup = layout.cameraZoomSyncGroups().try_emplace(zoomSyncGroupUid).first;
+  auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
+  auto* zoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, zoomSyncGroupUid);
 
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetMode = ViewOffsetMode::None;
 
   {
     // left
-    auto view = std::make_shared<View>(
+    auto view = std::make_unique<View>(
       glm::vec4{-1.0f, -1.0f, 1.5f, 2.0f},
       offsetSetting,
       ViewType::Axial,
@@ -164,18 +148,15 @@ Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
       conventionProvider,
       noRotationSyncGroup,
       noTranslationSyncGroup,
-      noZoomSyncGroup
-    );
+      noZoomSyncGroup);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-
-    const auto viewUid = generateRandomUuid();
-    layout.views().emplace(viewUid, std::move(view));
+    layout.addView(std::move(view));
   }
   {
     // bottom right
-    auto view = std::make_shared<View>(
+    auto view = std::make_unique<View>(
       glm::vec4{0.5f, -1.0f, 0.5f, 1.0f},
       offsetSetting,
       ViewType::Coronal,
@@ -185,19 +166,15 @@ Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
       conventionProvider,
       noRotationSyncGroup,
       noTranslationSyncGroup,
-      zoomSyncGroupUid
-    );
+      zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-
-    const auto viewUid = generateRandomUuid();
-    layout.views().emplace(viewUid, std::move(view));
-    zoomGroup->second.push_back(viewUid);
+    zoomGroup->push_back(layout.addView(std::move(view)));
   }
   {
     // top right
-    auto view = std::make_shared<View>(
+    auto view = std::make_unique<View>(
       glm::vec4{0.5f, 0.0f, 0.5f, 1.0f},
       offsetSetting,
       ViewType::Sagittal,
@@ -207,15 +184,11 @@ Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
       conventionProvider,
       noRotationSyncGroup,
       noTranslationSyncGroup,
-      zoomSyncGroupUid
-    );
+      zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-
-    const auto viewUid = generateRandomUuid();
-    layout.views().emplace(viewUid, std::move(view));
-    zoomGroup->second.push_back(viewUid);
+    zoomGroup->push_back(layout.addView(std::move(view)));
   }
 
   return layout;
@@ -227,35 +200,35 @@ Layout createTriTopBottomLayout(
 {
   const UiControls uiControls(true);
 
-  const auto axiRotationSyncGroupUid = generateRandomUuid();
-  const auto corRotationSyncGroupUid = generateRandomUuid();
-  const auto sagRotationSyncGroupUid = generateRandomUuid();
-
-  const auto axiTranslationSyncGroupUid = generateRandomUuid();
-  const auto corTranslationSyncGroupUid = generateRandomUuid();
-  const auto sagTranslationSyncGroupUid = generateRandomUuid();
-
-  const auto axiZoomSyncGroupUid = generateRandomUuid();
-  const auto corZoomSyncGroupUid = generateRandomUuid();
-  const auto sagZoomSyncGroupUid = generateRandomUuid();
-
   Layout layout(false);
 
-  auto axiRotGroup = layout.cameraRotationSyncGroups().try_emplace(axiRotationSyncGroupUid).first;
-  auto corRotGroup = layout.cameraRotationSyncGroups().try_emplace(corRotationSyncGroupUid).first;
-  auto sagRotGroup = layout.cameraRotationSyncGroups().try_emplace(sagRotationSyncGroupUid).first;
+  auto axiRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Rotation);
+  auto* axiRotGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Rotation, axiRotationSyncGroupUid);
 
-  auto axiTransGroup
-    = layout.cameraTranslationSyncGroups().try_emplace(axiTranslationSyncGroupUid).first;
-  auto corTransGroup
-    = layout.cameraTranslationSyncGroups().try_emplace(corTranslationSyncGroupUid).first;
-  auto sagTransGroup
-    = layout.cameraTranslationSyncGroups().try_emplace(sagTranslationSyncGroupUid).first;
+  auto corRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Rotation);
+  auto* corRotGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Rotation, corRotationSyncGroupUid);
+
+  auto sagRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Rotation);
+  auto* sagRotGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Rotation, sagRotationSyncGroupUid);
+
+  auto axiTranslationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Translation);
+  auto* axiTransGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Translation, axiTranslationSyncGroupUid);
+
+  auto corTranslationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Translation);
+  auto* corTransGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Translation, corTranslationSyncGroupUid);
+
+  auto sagTranslationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Translation);
+  auto* sagTransGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Translation, sagTranslationSyncGroupUid);
 
   // Should zoom be synchronized across columns or across rows?
-  auto axiZoomGroup = layout.cameraZoomSyncGroups().try_emplace(axiZoomSyncGroupUid).first;
-  auto corZoomGroup = layout.cameraZoomSyncGroups().try_emplace(corZoomSyncGroupUid).first;
-  auto sagZoomGroup = layout.cameraZoomSyncGroups().try_emplace(sagZoomSyncGroupUid).first;
+  auto axiZoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
+  auto* axiZoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, axiZoomSyncGroupUid);
+
+  auto corZoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
+  auto* corZoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, corZoomSyncGroupUid);
+
+  auto sagZoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
+  auto* sagZoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, sagZoomSyncGroupUid);
 
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetMode = ViewOffsetMode::None;
@@ -267,7 +240,7 @@ Layout createTriTopBottomLayout(
 
     {
       // axial
-      auto view = std::make_shared<View>(
+      auto view = std::make_unique<View>(
         glm::vec4{-1.0f, bottom, 2.0f / 3.0f, height},
         offsetSetting,
         ViewType::Axial,
@@ -277,23 +250,20 @@ Layout createTriTopBottomLayout(
         conventionProvider,
         axiRotationSyncGroupUid,
         axiTranslationSyncGroupUid,
-        axiZoomSyncGroupUid
-      );
+        axiZoomSyncGroupUid);
 
       view->setPreferredDefaultRenderedImages({r});
       view->setDefaultRenderAllImages(false);
 
-      const auto viewUid = generateRandomUuid();
-      layout.views().emplace(viewUid, std::move(view));
-
-      axiRotGroup->second.push_back(viewUid);
-      axiTransGroup->second.push_back(viewUid);
-      axiZoomGroup->second.push_back(viewUid);
+      const auto viewUid = layout.addView(std::move(view));
+      axiRotGroup->push_back(viewUid);
+      axiTransGroup->push_back(viewUid);
+      axiZoomGroup->push_back(viewUid);
     }
 
     {
       // coronal
-      auto view = std::make_shared<View>(
+      auto view = std::make_unique<View>(
         glm::vec4{-1.0f / 3.0f, bottom, 2.0f / 3.0f, height},
         offsetSetting,
         ViewType::Coronal,
@@ -309,16 +279,14 @@ Layout createTriTopBottomLayout(
       view->setPreferredDefaultRenderedImages({r});
       view->setDefaultRenderAllImages(false);
 
-      const auto viewUid = generateRandomUuid();
-      layout.views().emplace(viewUid, std::move(view));
-
-      corRotGroup->second.push_back(viewUid);
-      corTransGroup->second.push_back(viewUid);
-      corZoomGroup->second.push_back(viewUid);
+      const auto viewUid = layout.addView(std::move(view));
+      corRotGroup->push_back(viewUid);
+      corTransGroup->push_back(viewUid);
+      corZoomGroup->push_back(viewUid);
     }
     {
       // sagittal
-      auto view = std::make_shared<View>(
+      auto view = std::make_unique<View>(
         glm::vec4{1.0f / 3.0f, bottom, 2.0f / 3.0f, height},
         offsetSetting,
         ViewType::Sagittal,
@@ -334,12 +302,10 @@ Layout createTriTopBottomLayout(
       view->setPreferredDefaultRenderedImages({r});
       view->setDefaultRenderAllImages(false);
 
-      const auto viewUid = generateRandomUuid();
-      layout.views().emplace(viewUid, std::move(view));
-
-      sagRotGroup->second.push_back(viewUid);
-      sagTransGroup->second.push_back(viewUid);
-      sagZoomGroup->second.push_back(viewUid);
+      const auto viewUid = layout.addView(std::move(view));
+      sagRotGroup->push_back(viewUid);
+      sagTransGroup->push_back(viewUid);
+      sagZoomGroup->push_back(viewUid);
     }
   }
 
@@ -354,16 +320,14 @@ Layout createGridLayout(
   bool isLightbox,
   std::function<ViewConvention()> conventionProvider,
   const std::optional<size_t>& imageIndexForLightbox,
-  const std::optional<uuids::uuid>& imageUidForLightbox
-)
+  const std::optional<uuids::uuid>& imageUidForLightbox)
 {
   static const ViewRenderMode s_shaderType = ViewRenderMode::Image;
   static const IntensityProjectionMode s_ipMode = IntensityProjectionMode::None;
 
   Layout layout(isLightbox);
 
-  if (isLightbox)
-  {
+  if (isLightbox) {
     layout.setViewType(viewType);
     layout.setRenderMode(s_shaderType);
     layout.setIntensityProjectionMode(s_ipMode);
@@ -372,13 +336,14 @@ Layout createGridLayout(
     layout.setDefaultRenderAllImages(false);
   }
 
-  const auto rotationSyncGroupUid = generateRandomUuid();
-  const auto translationSyncGroupUid = generateRandomUuid();
-  const auto zoomSyncGroupUid = generateRandomUuid();
+  const auto rotSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Rotation);
+  auto* rotGroup =layout.getCameraSyncGroup(CameraSynchronizationMode::Rotation, rotSyncGroupUid);
 
-  auto rotGroup = layout.cameraRotationSyncGroups().try_emplace(rotationSyncGroupUid).first;
-  auto transGroup = layout.cameraTranslationSyncGroups().try_emplace(translationSyncGroupUid).first;
-  auto zoomGroup = layout.cameraZoomSyncGroups().try_emplace(zoomSyncGroupUid).first;
+  const auto transSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Translation);
+  auto* transGroup =layout.getCameraSyncGroup(CameraSynchronizationMode::Translation, transSyncGroupUid);
+
+  const auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
+  auto* zoomGroup =layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, zoomSyncGroupUid);
 
   const float w = 2.0f / static_cast<float>(width);
   const float h = 2.0f / static_cast<float>(height);
@@ -390,12 +355,10 @@ Layout createGridLayout(
 
   if (imageIndexForLightbox)
   {
-    if (0 == *imageIndexForLightbox)
-    {
+    if (0 == *imageIndexForLightbox) {
       offsetSetting.m_offsetMode = ViewOffsetMode::RelativeToRefImageScrolls;
     }
-    else
-    {
+    else {
       offsetSetting.m_offsetMode = ViewOffsetMode::RelativeToImageScrolls;
 
       // Need to offset according to reference image scrolls, since the crosshairs
@@ -421,7 +384,7 @@ Layout createGridLayout(
                                               ? (counter - static_cast<int>(width * height) / 2)
                                               : 0;
 
-      auto view = std::make_shared<View>(
+      auto view = std::make_unique<View>(
         glm::vec4{l, b, w, h},
         offsetSetting,
         viewType,
@@ -429,10 +392,9 @@ Layout createGridLayout(
         s_ipMode,
         UiControls(!isLightbox),
         conventionProvider,
-        rotationSyncGroupUid,
-        translationSyncGroupUid,
-        zoomSyncGroupUid
-      );
+        rotSyncGroupUid,
+        transSyncGroupUid,
+        zoomSyncGroupUid);
 
       if (!isLightbox)
       {
@@ -441,13 +403,11 @@ Layout createGridLayout(
         view->setDefaultRenderAllImages(false);
       }
 
-      const auto viewUid = generateRandomUuid();
-      layout.views().emplace(viewUid, std::move(view));
-
       // Synchronize rotations, translations, and zooms for all views in the layout:
-      rotGroup->second.push_back(viewUid);
-      transGroup->second.push_back(viewUid);
-      zoomGroup->second.push_back(viewUid);
+      const auto viewUid = layout.addView(std::move(view));
+      rotGroup->push_back(viewUid);
+      transGroup->push_back(viewUid);
+      zoomGroup->push_back(viewUid);
 
       ++count;
     }
@@ -503,21 +463,14 @@ void WindowData::addGridLayout(
   bool offsetViews,
   bool isLightbox,
   std::size_t imageIndexForLightbox,
-  const uuids::uuid& imageUidForLightbox
-)
+  const uuids::uuid& imageUidForLightbox)
 {
   auto conventionProvider = [this]() { return m_viewConvention; };
 
   m_layouts.emplace_back(createGridLayout(
-    viewType,
-    width,
-    height,
-    offsetViews,
-    isLightbox,
-    conventionProvider,
-    imageIndexForLightbox,
-    imageUidForLightbox
-  ));
+    viewType, width, height,
+    offsetViews, isLightbox,
+    conventionProvider, imageIndexForLightbox, imageUidForLightbox));
 
   updateAllViews();
 }
@@ -588,12 +541,12 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t 
     return;
   }
 
-  for (auto& view : layout.views())
+  for (auto& [viewUid, view] : layout.views())
   {
-    if (!view.second)
-      continue;
-    view.second->setRenderedImages(renderedImages, s_filterAgainstDefaults);
-    view.second->setMetricImages(metricImages);
+    if (view) {
+      view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
+      view->setMetricImages(metricImages);
+    }
   }
 }
 
@@ -627,12 +580,12 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImage
       continue;
     }
 
-    for (auto& view : layout.views())
+    for (auto& [viewUid, view] : layout.views())
     {
-      if (!view.second)
-        continue;
-      view.second->setRenderedImages(renderedImages, s_filterAgainstDefaults);
-      view.second->setMetricImages(metricImages);
+      if (view) {
+        view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
+        view->setMetricImages(metricImages);
+      }
     }
   }
 }
@@ -647,11 +600,11 @@ void WindowData::updateImageOrdering(uuid_range_t orderedImageUids)
       continue;
     }
 
-    for (auto& view : layout.views())
+    for (auto& [viewUid, view] : layout.views())
     {
-      if (!view.second)
-        continue;
-      view.second->updateImageOrdering(orderedImageUids);
+      if (view) {
+        view->updateImageOrdering(orderedImageUids);
+      }
     }
   }
 }
@@ -665,11 +618,9 @@ void WindowData::recenterAllViews(
 {
   for (auto& layout : m_layouts)
   {
-    for (auto& view : layout.views())
-    {
-      if (view.second)
-      {
-        recenterView(*view.second, worldCenter, worldFov, resetZoom, resetObliqueOrientation);
+    for (auto& [viewUid, view] : layout.views()) {
+      if (view) {
+        recenterView(*view, worldCenter, worldFov, resetZoom, resetObliqueOrientation);
       }
     }
   }
@@ -722,8 +673,9 @@ const View* WindowData::getCurrentView(const uuids::uuid& uid) const
   auto it = views.find(uid);
   if (std::end(views) != it)
   {
-    if (it->second)
+    if (it->second) {
       return it->second.get();
+    }
   }
   return nullptr;
 }
@@ -732,10 +684,10 @@ View* WindowData::getCurrentView(const uuids::uuid& uid)
 {
   auto& views = m_layouts.at(m_currentLayout).views();
   auto it = views.find(uid);
-  if (std::end(views) != it)
-  {
-    if (it->second)
+  if (std::end(views) != it) {
+    if (it->second) {
       return it->second.get();
+    }
   }
   return nullptr;
 }
@@ -952,30 +904,13 @@ ViewConvention WindowData::getViewOrientationConvention() const
   return m_viewConvention;
 }
 
-uuid_range_t WindowData::cameraRotationGroupViewUids(const uuids::uuid& syncGroupUid) const
+uuid_range_t WindowData::cameraSyncGroupViewUids(
+  CameraSynchronizationMode mode, const uuids::uuid& syncGroupUid) const
 {
   const auto& currentLayout = m_layouts.at(m_currentLayout);
-  const auto it = currentLayout.cameraRotationSyncGroups().find(syncGroupUid);
-  if (std::end(currentLayout.cameraRotationSyncGroups()) != it)
-    return it->second;
-  return {};
-}
-
-uuid_range_t WindowData::cameraTranslationGroupViewUids(const uuids::uuid& syncGroupUid) const
-{
-  const auto& currentLayout = m_layouts.at(m_currentLayout);
-  const auto it = currentLayout.cameraTranslationSyncGroups().find(syncGroupUid);
-  if (std::end(currentLayout.cameraTranslationSyncGroups()) != it)
-    return it->second;
-  return {};
-}
-
-uuid_range_t WindowData::cameraZoomGroupViewUids(const uuids::uuid& syncGroupUid) const
-{
-  const auto& currentLayout = m_layouts.at(m_currentLayout);
-  const auto it = currentLayout.cameraZoomSyncGroups().find(syncGroupUid);
-  if (std::end(currentLayout.cameraZoomSyncGroups()) != it)
-    return it->second;
+  if (const auto* group = currentLayout.getCameraSyncGroup(mode, syncGroupUid)) {
+    return *group;
+  }
   return {};
 }
 
@@ -1087,22 +1022,21 @@ void WindowData::recomputeCameraAspectRatios()
 {
   for (auto& layout : m_layouts)
   {
-    for (auto& view : layout.views())
+    for (auto& [viewUid, view] : layout.views())
     {
-      if (auto& v = view.second)
+      if (view)
       {
         // The view camera's aspect ratio is the product of the main window's
         // aspect ratio and the view's aspect ratio:
-        const float h = v->windowClipViewport()[3];
+        const float h = view->windowClipViewport()[3];
 
-        if (glm::epsilonEqual(h, 0.0f, glm::epsilon<float>()))
-        {
-          spdlog::error("View {} has zero height: setting it to 1.", view.first);
-          v->setWindowClipViewport(glm::vec4{glm::vec3{v->windowClipViewport()}, 1.0f});
+        if (glm::epsilonEqual(h, 0.0f, glm::epsilon<float>())) {
+          spdlog::error("View {} has zero height: setting it to 1.", viewUid);
+          view->setWindowClipViewport(glm::vec4{glm::vec3{view->windowClipViewport()}, 1.0f});
         }
 
-        const float viewAspect = v->windowClipViewport()[2] / v->windowClipViewport()[3];
-        v->camera().setAspectRatio(m_viewport.aspectRatio() * viewAspect);
+        const float viewAspect = view->windowClipViewport()[2] / view->windowClipViewport()[3];
+        view->camera().setAspectRatio(m_viewport.aspectRatio() * viewAspect);
       }
     }
   }

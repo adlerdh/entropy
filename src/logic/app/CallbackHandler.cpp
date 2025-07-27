@@ -1175,46 +1175,39 @@ void CallbackHandler::doOpacity(const ViewHit& prevHit, const ViewHit& currHit)
   m_rendering.updateImageUniforms(*activeImageUid);
 }
 
-void CallbackHandler::doCameraTranslate2d(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit
-)
+void CallbackHandler::doCameraTranslate2d(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
 {
   const glm::vec3 worldOrigin = m_appData.state().worldCrosshairs().worldOrigin();
 
   View* viewToTranslate = startHit.view;
-  if (!viewToTranslate)
+  if (!viewToTranslate) {
     return;
+  }
 
   const auto& viewUidToTranslate = startHit.viewUid;
 
   const auto backupCamera = viewToTranslate->camera();
-
-  helper::panRelativeToWorldPosition(
-    viewToTranslate->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin
-  );
+  helper::panRelativeToWorldPosition(viewToTranslate->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin);
 
   if (const auto transGroupUid = viewToTranslate->cameraTranslationSyncGroupUid())
   {
-    for (const auto& syncedViewUid :
-         m_appData.windowData().cameraTranslationGroupViewUids(*transGroupUid))
+    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSynchronizationMode::Translation, *transGroupUid))
     {
-      if (syncedViewUid == viewUidToTranslate)
+      if (syncedViewUid == viewUidToTranslate) {
         continue;
+      }
 
       View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
-
-      if (!syncedView)
+      if (!syncedView) {
         continue;
-      if (syncedView->viewType() != viewToTranslate->viewType())
+      }
+      else if (syncedView->viewType() != viewToTranslate->viewType()) {
         continue;
+      }
 
-      if (helper::areViewDirectionsParallel(
-            syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees
-          ))
+      if (helper::areViewDirectionsParallel(syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees))
       {
-        helper::panRelativeToWorldPosition(
-          syncedView->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin
-        );
+        helper::panRelativeToWorldPosition(syncedView->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin);
       }
     }
   }
@@ -1224,18 +1217,17 @@ void CallbackHandler::doCameraRotate2d(
   const ViewHit& startHit,
   const ViewHit& prevHit,
   const ViewHit& currHit,
-  const RotationOrigin& rotationOrigin
-)
+  const RotationOrigin& rotationOrigin)
 {
   View* viewToRotate = startHit.view;
-  if (!viewToRotate)
+  if (!viewToRotate) {
     return;
+  }
 
   const auto& viewUidToRotate = startHit.viewUid;
 
   // Only allow rotation of oblique and 3D views
-  if (ViewType::Oblique != viewToRotate->viewType() && ViewType::ThreeD != viewToRotate->viewType())
-  {
+  if (ViewType::Oblique != viewToRotate->viewType() && ViewType::ThreeD != viewToRotate->viewType()) {
     return;
   }
 
@@ -1244,63 +1236,48 @@ void CallbackHandler::doCameraRotate2d(
 
   switch (rotationOrigin)
   {
-  case RotationOrigin::Crosshairs:
-  {
+  case RotationOrigin::Crosshairs: {
     worldRotationCenterPos = m_appData.state().worldCrosshairs().worldOrigin();
     break;
   }
   case RotationOrigin::CameraEye:
-  case RotationOrigin::ViewCenter:
-  {
+  case RotationOrigin::ViewCenter: {
     worldRotationCenterPos = helper::worldOrigin(viewToRotate->camera());
     break;
   }
   }
 
-  glm::vec4 clipRotationCenterPos
-    = helper::clip_T_world(viewToRotate->camera())
-      * glm::vec4{m_appData.state().worldCrosshairs().worldOrigin(), 1.0f};
+  glm::vec4 clipRotationCenterPos = helper::clip_T_world(viewToRotate->camera())
+                                    * glm::vec4{m_appData.state().worldCrosshairs().worldOrigin(), 1.0f};
 
   clipRotationCenterPos /= clipRotationCenterPos.w;
 
   const auto backupCamera = viewToRotate->camera();
-
-  helper::rotateInPlane(
-    viewToRotate->camera(),
-    prevHit.viewClipPos,
-    currHit.viewClipPos,
-    glm::vec2{clipRotationCenterPos}
-  );
+  helper::rotateInPlane(viewToRotate->camera(), prevHit.viewClipPos, currHit.viewClipPos, glm::vec2{clipRotationCenterPos});
 
   // Rotate the synchronized views:
   if (const auto rotGroupUid = viewToRotate->cameraRotationSyncGroupUid())
   {
-    for (const auto& syncedViewUid :
-         m_appData.windowData().cameraRotationGroupViewUids(*rotGroupUid))
+    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSynchronizationMode::Rotation, *rotGroupUid))
     {
-      if (syncedViewUid == viewUidToRotate)
+      if (syncedViewUid == viewUidToRotate) {
         continue;
+      }
 
       View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
-
-      if (!syncedView)
+      if (!syncedView) {
         continue;
-      if (syncedView->viewType() != viewToRotate->viewType())
+      }
+      else if (syncedView->viewType() != viewToRotate->viewType()) {
         continue;
+      }
 
-      if (!helper::areViewDirectionsParallel(
-            syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees
-          ))
+      if (!helper::areViewDirectionsParallel(syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees))
       {
         continue;
       }
 
-      helper::rotateInPlane(
-        syncedView->camera(),
-        prevHit.viewClipPos,
-        currHit.viewClipPos,
-        glm::vec2{clipRotationCenterPos}
-      );
+      helper::rotateInPlane(syncedView->camera(), prevHit.viewClipPos, currHit.viewClipPos, glm::vec2{clipRotationCenterPos});
     }
   }
 }
@@ -1314,8 +1291,9 @@ void CallbackHandler::doCameraRotate3d(
 )
 {
   View* viewToRotate = startHit.view;
-  if (!viewToRotate)
+  if (!viewToRotate) {
     return;
+  }
 
   const auto& viewUidToRotate = startHit.viewUid;
 
@@ -1330,21 +1308,18 @@ void CallbackHandler::doCameraRotate3d(
 
   switch (constraint)
   {
-  case AxisConstraint::X:
-  {
+  case AxisConstraint::X: {
     viewClipPrevPos.x = 0.0f;
     viewClipCurrPos.x = 0.0f;
     break;
   }
-  case AxisConstraint::Y:
-  {
+  case AxisConstraint::Y: {
     viewClipPrevPos.y = 0.0f;
     viewClipCurrPos.y = 0.0f;
     break;
   }
   case AxisConstraint::None:
-  default:
-  {
+  default: {
     break;
   }
   }
@@ -1354,58 +1329,49 @@ void CallbackHandler::doCameraRotate3d(
 
   switch (rotationOrigin)
   {
-  case RotationOrigin::Crosshairs:
-  {
+  case RotationOrigin::Crosshairs: {
     worldRotationCenterPos = m_appData.state().worldCrosshairs().worldOrigin();
     break;
   }
   case RotationOrigin::CameraEye:
-  case RotationOrigin::ViewCenter:
-  {
+  case RotationOrigin::ViewCenter: {
     worldRotationCenterPos = helper::worldOrigin(viewToRotate->camera());
     break;
   }
   }
 
-  helper::rotateAboutWorldPoint(
-    viewToRotate->camera(), viewClipPrevPos, viewClipCurrPos, worldRotationCenterPos
-  );
-
   const auto backupCamera = viewToRotate->camera();
+  helper::rotateAboutWorldPoint(viewToRotate->camera(), viewClipPrevPos, viewClipCurrPos, worldRotationCenterPos);
 
   // Rotate the synchronized views:
   if (const auto rotGroupUid = viewToRotate->cameraRotationSyncGroupUid())
   {
-    for (const auto& syncedViewUid :
-         m_appData.windowData().cameraRotationGroupViewUids(*rotGroupUid))
+    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSynchronizationMode::Rotation, *rotGroupUid))
     {
-      if (syncedViewUid == viewUidToRotate)
+      if (syncedViewUid == viewUidToRotate) {
         continue;
+      }
 
       View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
-
-      if (!syncedView)
+      if (!syncedView) {
         continue;
-      if (syncedView->viewType() != viewToRotate->viewType())
+      }
+      else if (syncedView->viewType() != viewToRotate->viewType()) {
         continue;
+      }
 
       if (!helper::areViewDirectionsParallel(
-            syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees
-          ))
+            syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees))
       {
         continue;
       }
 
-      helper::rotateAboutWorldPoint(
-        syncedView->camera(), viewClipPrevPos, viewClipCurrPos, worldRotationCenterPos
-      );
+      helper::rotateAboutWorldPoint(syncedView->camera(), viewClipPrevPos, viewClipCurrPos, worldRotationCenterPos);
     }
   }
 }
 
-void CallbackHandler::doCameraRotate3d(
-  const uuids::uuid& viewUid, const glm::quat& camera_T_world_rotationDelta
-)
+void CallbackHandler::doCameraRotate3d(const uuids::uuid& viewUid, const glm::quat& camera_T_world_rotationDelta)
 {
   auto& windowData = m_appData.windowData();
 
@@ -1425,33 +1391,30 @@ void CallbackHandler::doCameraRotate3d(
   const glm::vec3 worldOrigin = m_appData.state().worldCrosshairs().worldOrigin();
 
   const auto backupCamera = view->camera();
-
   helper::applyViewRotationAboutWorldPoint(view->camera(), camera_T_world_rotationDelta, worldOrigin);
 
   if (const auto rotGroupUid = view->cameraRotationSyncGroupUid())
   {
-    for (const auto& syncedViewUid : windowData.cameraRotationGroupViewUids(*rotGroupUid))
+    for (const auto& syncedViewUid : windowData.cameraSyncGroupViewUids(CameraSynchronizationMode::Rotation, *rotGroupUid))
     {
-      if (syncedViewUid == viewUid)
+      if (syncedViewUid == viewUid) {
         continue;
+      }
 
       View* syncedView = windowData.getCurrentView(syncedViewUid);
-
-      if (!syncedView)
+      if (!syncedView) {
         continue;
-      if (syncedView->viewType() != view->viewType())
+      }
+      else if (syncedView->viewType() != view->viewType()) {
         continue;
+      }
 
-      if (!helper::areViewDirectionsParallel(
-            syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees
-          ))
+      if (!helper::areViewDirectionsParallel(syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees))
       {
         continue;
       }
 
-      helper::applyViewRotationAboutWorldPoint(
-        syncedView->camera(), camera_T_world_rotationDelta, worldOrigin
-      );
+      helper::applyViewRotationAboutWorldPoint(syncedView->camera(), camera_T_world_rotationDelta, worldOrigin);
     }
   }
 }
@@ -1479,17 +1442,19 @@ void CallbackHandler::handleSetViewForwardDirection(
 
   if (const auto rotGroupUid = view->cameraRotationSyncGroupUid())
   {
-    for (const auto& syncedViewUid : windowData.cameraRotationGroupViewUids(*rotGroupUid))
+    for (const auto& syncedViewUid : windowData.cameraSyncGroupViewUids(CameraSynchronizationMode::Rotation, *rotGroupUid))
     {
-      if (syncedViewUid == viewUid)
+      if (syncedViewUid == viewUid) {
         continue;
+      }
 
       View* syncedView = windowData.getCurrentView(syncedViewUid);
-
-      if (!syncedView)
+      if (!syncedView) {
         continue;
-      if (syncedView->viewType() != view->viewType())
+      }
+      else if (syncedView->viewType() != view->viewType()) {
         continue;
+      }
 
       helper::setWorldForwardDirection(syncedView->camera(), worldForwardDirection);
       helper::setWorldTarget(syncedView->camera(), worldXhairsPos, std::nullopt);
@@ -1549,11 +1514,11 @@ void CallbackHandler::doCameraZoomDrag(
     // Apply zoom to all other views:
     for (const auto& otherViewUid : m_appData.windowData().currentViewUids())
     {
-      if (otherViewUid == viewUidToZoom)
+      if (otherViewUid == viewUidToZoom) {
         continue;
+      }
 
-      if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid))
-      {
+      if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid)) {
         helper::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
       }
     }
@@ -1561,13 +1526,13 @@ void CallbackHandler::doCameraZoomDrag(
   else if (const auto zoomGroupUid = viewToZoom->cameraZoomSyncGroupUid())
   {
     // Apply zoom to all views other synchronized with the view:
-    for (const auto& syncedViewUid : m_appData.windowData().cameraZoomGroupViewUids(*zoomGroupUid))
+    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSynchronizationMode::Zoom, *zoomGroupUid))
     {
-      if (syncedViewUid == viewUidToZoom)
+      if (syncedViewUid == viewUidToZoom) {
         continue;
+      }
 
-      if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid))
-      {
+      if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid)) {
         helper::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
       }
     }
@@ -1627,11 +1592,11 @@ void CallbackHandler::doCameraZoomScroll(
     // Apply zoom to all other views:
     for (const auto& otherViewUid : m_appData.windowData().currentViewUids())
     {
-      if (otherViewUid == hit.viewUid)
+      if (otherViewUid == hit.viewUid) {
         continue;
+      }
 
-      if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid))
-      {
+      if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid)) {
         helper::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
       }
     }
@@ -1639,13 +1604,13 @@ void CallbackHandler::doCameraZoomScroll(
   else if (const auto zoomGroupUid = hit.view->cameraZoomSyncGroupUid())
   {
     // Apply zoom all other views synchronized with this view:
-    for (const auto& syncedViewUid : m_appData.windowData().cameraZoomGroupViewUids(*zoomGroupUid))
+    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSynchronizationMode::Zoom, *zoomGroupUid))
     {
-      if (syncedViewUid == hit.viewUid)
+      if (syncedViewUid == hit.viewUid) {
         continue;
+      }
 
-      if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid))
-      {
+      if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid)) {
         helper::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
       }
     }
@@ -2071,12 +2036,14 @@ void CallbackHandler::cycleOverlayAndUiVisibility()
 void CallbackHandler::cycleImageComponent(int i)
 {
   const auto imageUid = m_appData.activeImageUid();
-  if (!imageUid)
+  if (!imageUid) {
     return;
+  }
 
   Image* image = m_appData.image(*imageUid);
-  if (!image)
+  if (!image) {
     return;
+  }
 
   const int N = static_cast<int>(image->settings().numComponents());
   const int c = static_cast<int>(image->settings().activeComponent());
@@ -2087,12 +2054,14 @@ void CallbackHandler::cycleImageComponent(int i)
 void CallbackHandler::cycleActiveImage(int i)
 {
   const auto imageUid = m_appData.activeImageUid();
-  if (!imageUid)
+  if (!imageUid) {
     return;
+  }
 
   const auto imageIndex = m_appData.imageIndex(*imageUid);
-  if (!imageIndex)
+  if (!imageIndex) {
     return;
+  }
 
   const int N = static_cast<int>(m_appData.numImages());
   const int idx = static_cast<int>(*imageIndex);
@@ -2100,8 +2069,9 @@ void CallbackHandler::cycleActiveImage(int i)
   const std::size_t newImageIndex = static_cast<size_t>((N + idx + i) % N);
 
   const auto newImageUid = m_appData.imageUid(newImageIndex);
-  if (!newImageUid)
+  if (!newImageUid) {
     return;
+  }
 
   m_appData.setActiveImageUid(*newImageUid);
 }
@@ -2114,8 +2084,7 @@ void CallbackHandler::cycleForegroundSegLabel(int i)
   LabelType label = static_cast<LabelType>(m_appData.settings().foregroundLabel());
   label = std::max(label + i, k_minLabel);
 
-  if (const auto* table = m_appData.activeLabelTable())
-  {
+  if (const auto* table = m_appData.activeLabelTable()) {
     m_appData.settings().setForegroundLabel(static_cast<size_t>(label), *table);
   }
 }
@@ -2128,8 +2097,7 @@ void CallbackHandler::cycleBackgroundSegLabel(int i)
   LabelType label = static_cast<LabelType>(m_appData.settings().backgroundLabel());
   label = std::max(label + i, k_minLabel);
 
-  if (const auto* table = m_appData.activeLabelTable())
-  {
+  if (const auto* table = m_appData.activeLabelTable()) {
     m_appData.settings().setBackgroundLabel(static_cast<size_t>(label), *table);
   }
 }
@@ -2151,30 +2119,27 @@ bool CallbackHandler::showOverlays() const
 void CallbackHandler::setShowOverlays(bool show)
 {
   m_appData.settings().setOverlays(show); // this holds the data
-
   m_rendering.setShowVectorOverlays(show);
   m_appData.guiData().m_renderUiOverlays = show;
 }
 
 void CallbackHandler::moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, int stepY)
 {
-  if (!hit.view)
+  if (!hit.view) {
     return;
+  }
 
-  const glm::vec3 worldRightAxis
-    = helper::worldDirection(hit.view->camera(), Directions::View::Right);
+  const glm::vec3 worldRightAxis = helper::worldDirection(hit.view->camera(), Directions::View::Right);
   const glm::vec3 worldUpAxis = helper::worldDirection(hit.view->camera(), Directions::View::Up);
 
   const glm::vec2 moveDistances = data::sliceMoveDistance(
-    m_appData, worldRightAxis, worldUpAxis, ImageSelection::VisibleImagesInView, hit.view
-  );
+    m_appData, worldRightAxis, worldUpAxis, ImageSelection::VisibleImagesInView, hit.view);
 
   const glm::vec3 worldCrosshairs = m_appData.state().worldCrosshairs().worldOrigin();
 
   m_appData.state().setWorldCrosshairsPos(
     worldCrosshairs + static_cast<float>(stepX) * moveDistances.x * worldRightAxis
-    + static_cast<float>(stepY) * moveDistances.y * worldUpAxis
-  );
+    + static_cast<float>(stepY) * moveDistances.y * worldUpAxis);
 }
 
 void CallbackHandler::moveCrosshairsToSegLabelCentroid(
@@ -2184,12 +2149,14 @@ void CallbackHandler::moveCrosshairsToSegLabelCentroid(
   static constexpr uint32_t sk_comp0 = 0;
 
   const auto activeSegUid = m_appData.imageToActiveSegUid(imageUid);
-  if (!activeSegUid)
+  if (!activeSegUid) {
     return;
+  }
 
   Image* seg = m_appData.seg(*activeSegUid);
-  if (!seg)
+  if (!seg) {
     return;
+  }
 
   const void* data = seg->bufferAsVoid(sk_comp0);
   const glm::ivec3 dims{seg->header().pixelDimensions()};
@@ -2225,13 +2192,11 @@ void CallbackHandler::moveCrosshairsToSegLabelCentroid(
     break;
   }
 
-  if (!pixelCentroid)
-  {
+  if (!pixelCentroid) {
     return;
   }
 
-  const glm::vec4 worldCentroid = seg->transformations().worldDef_T_pixel()
-                                  * glm::vec4{*pixelCentroid, 1.0f};
+  const glm::vec4 worldCentroid = seg->transformations().worldDef_T_pixel() * glm::vec4{*pixelCentroid, 1.0f};
   glm::vec3 worldPos{worldCentroid / worldCentroid.w};
 
   worldPos = data::snapWorldPointToImageVoxels(m_appData, worldPos);
@@ -2252,16 +2217,15 @@ void CallbackHandler::toggleFullScreenMode(bool forceWindowMode)
 bool CallbackHandler::setLockManualImageTransformation(const uuids::uuid& imageUid, bool locked)
 {
   Image* image = m_appData.image(imageUid);
-  if (!image)
+  if (!image) {
     return false;
+  }
 
   image->transformations().set_worldDef_T_affine_locked(locked);
 
   // Lock/unlock all of the image's segmentations:
-  for (const auto segUid : m_appData.imageToSegUids(imageUid))
-  {
-    if (auto* seg = m_appData.seg(segUid))
-    {
+  for (const auto segUid : m_appData.imageToSegUids(imageUid)) {
+    if (auto* seg = m_appData.seg(segUid)) {
       seg->transformations().set_worldDef_T_affine_locked(locked);
     }
   }
@@ -2269,56 +2233,39 @@ bool CallbackHandler::setLockManualImageTransformation(const uuids::uuid& imageU
   return true;
 }
 
-bool CallbackHandler::syncManualImageTransformation(
-  const uuids::uuid& refImageUid, const uuids::uuid& otherImageUid
-)
+bool CallbackHandler::syncManualImageTransformation(const uuids::uuid& refImageUid, const uuids::uuid& otherImageUid)
 {
   const Image* refImage = m_appData.image(refImageUid);
-  if (!refImage)
+  if (!refImage) {
     return false;
+  }
 
   Image* otherImage = m_appData.image(otherImageUid);
-  if (!otherImage)
+  if (!otherImage) {
     return false;
+  }
 
-  otherImage->transformations().set_worldDef_T_affine_locked(
-    refImage->transformations().is_worldDef_T_affine_locked()
-  );
-  otherImage->transformations().set_worldDef_T_affine_scale(
-    refImage->transformations().get_worldDef_T_affine_scale()
-  );
-  otherImage->transformations().set_worldDef_T_affine_rotation(
-    refImage->transformations().get_worldDef_T_affine_rotation()
-  );
-  otherImage->transformations().set_worldDef_T_affine_translation(
-    refImage->transformations().get_worldDef_T_affine_translation()
-  );
-
+  otherImage->transformations().set_worldDef_T_affine_locked(refImage->transformations().is_worldDef_T_affine_locked());
+  otherImage->transformations().set_worldDef_T_affine_scale(refImage->transformations().get_worldDef_T_affine_scale());
+  otherImage->transformations().set_worldDef_T_affine_rotation(refImage->transformations().get_worldDef_T_affine_rotation());
+  otherImage->transformations().set_worldDef_T_affine_translation(refImage->transformations().get_worldDef_T_affine_translation());
   return true;
 }
 
 bool CallbackHandler::syncManualImageTransformationOnSegs(const uuids::uuid& imageUid)
 {
   const Image* image = m_appData.image(imageUid);
-  if (!image)
+  if (!image) {
     return false;
+  }
 
   for (const auto segUid : m_appData.imageToSegUids(imageUid))
   {
-    if (auto* seg = m_appData.seg(segUid))
-    {
-      seg->transformations().set_worldDef_T_affine_locked(
-        image->transformations().is_worldDef_T_affine_locked()
-      );
-      seg->transformations().set_worldDef_T_affine_scale(
-        image->transformations().get_worldDef_T_affine_scale()
-      );
-      seg->transformations().set_worldDef_T_affine_rotation(
-        image->transformations().get_worldDef_T_affine_rotation()
-      );
-      seg->transformations().set_worldDef_T_affine_translation(
-        image->transformations().get_worldDef_T_affine_translation()
-      );
+    if (auto* seg = m_appData.seg(segUid)) {
+      seg->transformations().set_worldDef_T_affine_locked(image->transformations().is_worldDef_T_affine_locked());
+      seg->transformations().set_worldDef_T_affine_scale(image->transformations().get_worldDef_T_affine_scale());
+      seg->transformations().set_worldDef_T_affine_rotation(image->transformations().get_worldDef_T_affine_rotation());
+      seg->transformations().set_worldDef_T_affine_translation(image->transformations().get_worldDef_T_affine_translation());
     }
   }
 
@@ -2329,10 +2276,8 @@ bool CallbackHandler::checkAndSetActiveView(const uuids::uuid& viewUid)
 {
   if (const auto activeViewUid = m_appData.windowData().activeViewUid())
   {
-    if (*activeViewUid != viewUid)
-    {
-      // There is an active view is not this view
-      return false;
+    if (*activeViewUid != viewUid) {
+      return false; // There is an active view is not this view
     }
   }
 

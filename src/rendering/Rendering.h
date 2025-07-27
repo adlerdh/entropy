@@ -113,7 +113,11 @@ private:
   void createShaderPrograms();
   bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);
 
+  /**
+   * @brief Render data associated with images: image slices, segmentations, annotations, and landmarks.
+   */
   void renderImageData();
+
   void renderVectorOverlays();
 
   void renderOneImage(const View& view, const glm::vec3& worldOffsetXhairs,

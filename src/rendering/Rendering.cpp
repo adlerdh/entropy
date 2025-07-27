@@ -2159,23 +2159,23 @@ void Rendering::renderImageData()
     }
 
     // Offset the crosshairs according to the image slice in the view
-    const glm::vec3 worldOffsetXhairs =
+    const glm::vec3 worldXhairsOffset =
       view->updateImageSlice(m_appData, m_appData.state().worldCrosshairs().worldOrigin());
 
     const auto miewportViewBounds = helper::computeMiewportFrameBounds(
       view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4());
 
-    renderAllImages(*view, miewportViewBounds, worldOffsetXhairs);
+    renderAllImages(*view, miewportViewBounds, worldXhairsOffset);
 
     // Do not render landmarks and annotations in volume rendering mode
     if (ViewRenderMode::VolumeRender != view->renderMode())
     {
       if (renderLandmarksOnTop) {
-        renderAllLandmarks(*view, miewportViewBounds, worldOffsetXhairs);
+        renderAllLandmarks(*view, miewportViewBounds, worldXhairsOffset);
       }
 
       if (renderAnnotationsOnTop) {
-        renderAllAnnotations(*view, miewportViewBounds, worldOffsetXhairs);
+        renderAllAnnotations(*view, miewportViewBounds, worldXhairsOffset);
       }
     }
   }

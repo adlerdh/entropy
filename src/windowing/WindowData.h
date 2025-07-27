@@ -156,14 +156,8 @@ public:
   void setViewOrientationConvention(const ViewConvention& convention);
   ViewConvention getViewOrientationConvention() const;
 
-  /// Get view UIDs in a camera rotation synchronization group
-  uuid_range_t cameraRotationGroupViewUids(const uuids::uuid& syncGroupUid) const;
-
-  /// Get view UIDs in a camera translation synchronization group
-  uuid_range_t cameraTranslationGroupViewUids(const uuids::uuid& syncGroupUid) const;
-
-  /// Get view UIDs in a camera zoom synchronization group
-  uuid_range_t cameraZoomGroupViewUids(const uuids::uuid& syncGroupUid) const;
+  /// Get view UIDs in a camera synchronization group
+  uuid_range_t cameraSyncGroupViewUids(CameraSynchronizationMode mode, const uuids::uuid& syncGroupUid) const;
 
   /// Apply a given view's image selection to all views of the current layout
   void applyImageSelectionToAllCurrentViews(const uuids::uuid& referenceViewUid);
