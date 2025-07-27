@@ -1527,14 +1527,14 @@ void renderImageHeader(
       //                HelpMarker("Compute edges after applying windowing (width/level) to the image");
 
       // Use Sobel or Frei-Chen:
-      //                bool useFreiChen = imgSettings.useFreiChen();
-      //                if (ImGui::Checkbox("Frei-Chen filter", &useFreiChen))
-      //                {
-      //                    imgSettings.setUseFreiChen(useFreiChen);
-      //                    updateImageUniforms();
-      //                }
-      //                ImGui::SameLine();
-      //                HelpMarker("Compute edges using Sobel or Frei-Chen convolution filters");
+      bool useFreiChen = imgSettings.useFreiChen();
+      if (ImGui::Checkbox("Frei-Chen filter", &useFreiChen))
+      {
+        imgSettings.setUseFreiChen(useFreiChen);
+        updateImageUniforms();
+      }
+      ImGui::SameLine();
+      helpMarker("Compute edges using Sobel or Frei-Chen convolution filters");
 
       // Overlay edges:
       bool overlayEdges = imgSettings.overlayEdges();

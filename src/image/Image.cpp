@@ -1022,22 +1022,15 @@ bool Image::loadSegBuffer(
     {
       spdlog::warn(
         "Size conversion: Possible loss of information when casting segmentation pixel component "
-        "from type "
-        "{} to {}",
-        m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
-        newTypeString
-      );
+        "from type {} to {}", m_ioInfoOnDisk.m_componentInfo.m_componentTypeString, newTypeString);
     }
 
     if (warnSignConversion)
     {
       spdlog::warn(
         "Signed to unsigned integer conversion: Possible loss of information when casting "
-        "segmentation pixel "
-        "component from type {} to {}",
-        m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
-        newTypeString
-      );
+        "segmentation pixel component from type {} to {}",
+        m_ioInfoOnDisk.m_componentInfo.m_componentTypeString, newTypeString);
     }
   }
 

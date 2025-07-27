@@ -3,7 +3,9 @@
 std::string to_string(ShaderProgramType type) {
   switch (type) {
   case ShaderProgramType::ImageGrayLinear:
-    return "Image - GrayLinearTextureLookup";
+    return "Image - Gray - Linear - Fixed-Point";
+  case ShaderProgramType::ImageGrayLinearFloating:
+    return "Image - Gray - Linear - Floating-Point";
   case ShaderProgramType::ImageGrayCubic:
     return "Image - GrayCubicTextureLookup";
   case ShaderProgramType::ImageColorLinear:

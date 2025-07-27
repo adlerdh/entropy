@@ -221,7 +221,7 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
 
     if (showEdges)
     {
-      program.setUniform("u_texSamplingDirsForEdges", texSamplingDirsForEdges);
+      program.setUniform("u_texelDirs", texSamplingDirsForEdges);
     }
     else
     {

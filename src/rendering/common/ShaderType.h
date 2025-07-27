@@ -5,6 +5,7 @@
 enum class ShaderProgramType
 {
   ImageGrayLinear,
+  ImageGrayLinearFloating,
   ImageGrayCubic,
   ImageColorLinear,
   ImageColorCubic,

@@ -305,7 +305,7 @@ Rendering::~Rendering()
   }
 }
 
-void Rendering::setupOpenGlState()
+void Rendering::setupOpenGLState()
 {
   glEnable(GL_BLEND);
   glDisable(GL_CULL_FACE);
@@ -332,11 +332,10 @@ void Rendering::setupOpenGlState()
   // glEnable(GL_FRAMEBUFFER_SRGB);
 
 /*
-On macOS, the system may be gamma-correcting for you, even if you don't ask for it.
+On macOS, the system may be gamma-correcting, even if we don't ask for it.
 
-Even though your OpenGL framebuffer is linear, and your shader outputs linear color,
-the colors look correct because macOS applies gamma correction when compositing your
-OpenGL output to the screen.
+Even though the OpenGL framebuffer is linear, and shader outputs linear color, the colors look correct
+because macOS applies gamma correction when compositing the OpenGL output to the screen.
 
 1. macOS Uses a Color-Managed Windowing System
 When OpenGL draws to a window (NSView-backed), macOS treats the framebuffer as being in linear space.
@@ -939,7 +938,7 @@ void Rendering::framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime)
 void Rendering::render()
 {
   // Set up OpenGL state, because it changes after NanoVG calls in the render of the prior frame
-  setupOpenGlState();
+  setupOpenGLState();
 
   // Set the OpenGL viewport in device units:
   const glm::ivec4 deviceViewport = m_appData.windowData().viewport().getDeviceAsVec4();
@@ -1111,7 +1110,6 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   uniforms.thresholdEdges = imgSettings.thresholdEdges();
   uniforms.edgeMagnitude = static_cast<float>(imgSettings.edgeMagnitude());
   uniforms.useFreiChen = imgSettings.useFreiChen();
-  //    uniforms.windowedEdges = imgSettings.windowedEdges();
   uniforms.overlayEdges = imgSettings.overlayEdges();
   uniforms.colormapEdges = imgSettings.colormapEdges();
   uniforms.edgeColor = static_cast<float>(imgSettings.edgeOpacity()) * glm::vec4{imgSettings.edgeColor(), 1.0f};
@@ -1480,19 +1478,19 @@ void Rendering::renderOneImage_overlays(
 
   if (!renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
     drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, I);
-    setupOpenGlState();
+    setupOpenGLState();
   }
 
   if (!renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes) {
     drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, I);
-    setupOpenGlState();
+    setupOpenGLState();
   }
 
   drawImageViewIntersections(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData,
                              view, I,
                              renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
 
-  setupOpenGlState();
+  setupOpenGLState();
 }
 
 void Rendering::volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I)
@@ -1502,7 +1500,7 @@ void Rendering::volumeRenderOneImage(const View& view, GLShaderProgram& program,
 
   drawRaycastQuad(program, m_appData.renderData().m_quad, view, I, getImage);
 
-  setupOpenGlState();
+  setupOpenGLState();
 }
 
 void Rendering::renderAllImages(
@@ -1558,85 +1556,77 @@ void Rendering::renderAllImages(
 
       if (!img->settings().displayImageAsColor())
       {
-        GLShaderProgram* P = nullptr;
-
-        switch (img->settings().interpolationMode()) {
-        case InterpolationMode::NearestNeighbor:
-        case InterpolationMode::Trilinear: {
-          if (U.showEdges && !U.overlayEdges) {
-            P = m_shaderPrograms.at(ShaderProgramType::EdgeLinear).get();
-          }
-          else if (doXray) {
-            P = m_shaderPrograms.at(ShaderProgramType::XrayLinear).get();
-          }
-          else {
+        // Render greyscale image
+        if (!U.showEdges || (U.showEdges && U.overlayEdges))
+        {
+          GLShaderProgram* P = nullptr;
+          switch (img->settings().interpolationMode()) {
+          case InterpolationMode::NearestNeighbor: {
             P = m_shaderPrograms.at(ShaderProgramType::ImageGrayLinear).get();
+            break;
           }
-          break;
-        }
-        case InterpolationMode::Tricubic: {
-          if (U.showEdges && !U.overlayEdges) {
-            P = m_shaderPrograms.at(ShaderProgramType::EdgeCubic).get();
+          case InterpolationMode::Trilinear: {
+            if (doXray) {
+              P = m_shaderPrograms.at(ShaderProgramType::XrayLinear).get();
+            }
+            else {
+              P = R.m_imageGrayFloatingPointInterpolation
+                  ? m_shaderPrograms.at(ShaderProgramType::ImageGrayLinearFloating).get()
+                  : m_shaderPrograms.at(ShaderProgramType::ImageGrayLinear).get();
+            }
+            break;
           }
-          else if (doXray) {
-            P = m_shaderPrograms.at(ShaderProgramType::XrayCubic).get();
+          case InterpolationMode::Tricubic: {
+            if (doXray) {
+              P = m_shaderPrograms.at(ShaderProgramType::XrayCubic).get();
+            }
+            else {
+              P = m_shaderPrograms.at(ShaderProgramType::ImageGrayCubic).get();
+            }
+            break;
           }
-          else {
-            P = m_shaderPrograms.at(ShaderProgramType::ImageGrayCubic).get();
           }
-          break;
-        }
+
+          const auto boundTextures = bindScalarImageTextures(imgSegPair);
+          P->use();
+          {
+            P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
+            P->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
+
+            P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+            P->setUniform("u_tex_T_world", U.imgTexture_T_world);
+
+            if (doXray) {
+              P->setUniform("u_imgSlope_native_T_texture", U.slope_native_T_texture);
+              P->setUniform("u_waterAttenCoeff", R.m_waterMassAttenCoeff);
+              P->setUniform("u_airAttenCoeff", R.m_airMassAttenCoeff);
+            }
+            else {
+              P->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
+            }
+
+            const bool useHsv = (U.hsvModFactors.x != 0.0f) || (U.hsvModFactors.y != 1.0f) || (U.hsvModFactors.z != 1.0f);
+            P->setUniform("u_applyHsvMod", useHsv);
+            P->setUniform("u_cmapHsvModFactors", U.hsvModFactors);
+            P->setUniform("u_cmapSlopeIntercept", U.cmapSlopeIntercept);
+            P->setUniform("u_cmapQuantLevels", U.cmapQuantLevels);
+            P->setUniform("u_imgThresholds", U.thresholds);
+            P->setUniform("u_imgMinMax", U.minMax);
+            P->setUniform("u_imgOpacity", U.imgOpacity);
+            P->setUniform("u_quadrants", R.m_quadrants);
+            P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+            P->setUniform("u_renderMode", displayModeUniform);
+
+            renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
+          }
+          P->stopUse();
+          unbindTextures(boundTextures);
         }
 
-        const auto boundTextures = bindScalarImageTextures(imgSegPair);
-        P->use();
+        // Render edges
+        if (U.showEdges)
         {
-          P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
-          P->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
-
-          P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
-          P->setUniform("u_tex_T_world", U.imgTexture_T_world);
-
-          if (doXray) {
-            P->setUniform("u_imgSlope_native_T_texture", U.slope_native_T_texture);
-            P->setUniform("u_waterAttenCoeff", R.m_waterMassAttenCoeff);
-            P->setUniform("u_airAttenCoeff", R.m_airMassAttenCoeff);
-          }
-          else if (U.showEdges) {
-            P->setUniform("u_imgSlopeIntercept", U.largestSlopeIntercept);
-          }
-          else {
-            P->setUniform("u_imgSlopeIntercept", U.slopeIntercept_normalized_T_texture);
-          }
-
-          // Flag whether HSV modification is used
-          const bool useHsv = (U.hsvModFactors.x != 0.0f) || (U.hsvModFactors.y != 1.0f) || (U.hsvModFactors.z != 1.0f);
-          P->setUniform("u_applyHsvMod", useHsv);
-          P->setUniform("u_cmapHsvModFactors", U.hsvModFactors);
-          P->setUniform("u_cmapSlopeIntercept", U.cmapSlopeIntercept);
-          P->setUniform("u_cmapQuantLevels", U.cmapQuantLevels);
-          P->setUniform("u_imgThresholds", U.thresholds);
-          P->setUniform("u_imgMinMax", U.minMax);
-          P->setUniform("u_imgOpacity", U.imgOpacity);
-          P->setUniform("u_quadrants", R.m_quadrants);
-          P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
-          P->setUniform("u_renderMode", displayModeUniform);
-
-          if (U.showEdges) {
-            P->setUniform("u_thresholdEdges", U.thresholdEdges);
-            P->setUniform("u_edgeMagnitude", U.edgeMagnitude);
-            P->setUniform("u_colormapEdges", U.colormapEdges);
-            P->setUniform("u_edgeColor", U.edgeColor);
-          }
-
-          renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
-        }
-        P->stopUse();
-
-
-        // Now do the edge overlay
-        if (U.showEdges && U.overlayEdges)
-        {
+          GLShaderProgram* P = nullptr;
           switch (img->settings().interpolationMode()) {
           case InterpolationMode::NearestNeighbor:
           case InterpolationMode::Trilinear: {
@@ -1649,6 +1639,7 @@ void Rendering::renderAllImages(
           }
           }
 
+          const auto boundTextures = bindScalarImageTextures(imgSegPair);
           P->use();
           {
             P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
@@ -1666,16 +1657,15 @@ void Rendering::renderAllImages(
             P->setUniform("u_renderMode", displayModeUniform);
             P->setUniform("u_thresholdEdges", U.thresholdEdges);
             P->setUniform("u_edgeMagnitude", U.edgeMagnitude);
+            P->setUniform("u_useFreiChen", U.useFreiChen);
             P->setUniform("u_colormapEdges", U.colormapEdges);
             P->setUniform("u_edgeColor", U.edgeColor);
 
             renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
           }
           P->stopUse();
+          unbindTextures(boundTextures);
         }
-
-        unbindTextures(boundTextures);
-
 
         // Render isosurfaces:
         const auto& imgS = img->settings();
@@ -2090,7 +2080,7 @@ void Rendering::renderAllLandmarks(
     const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
     for (const auto& imgSegPair : I) {
       drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
-      setupOpenGlState();
+      setupOpenGLState();
     }
     break;
   }
@@ -2100,7 +2090,7 @@ void Rendering::renderAllLandmarks(
     const CurrentImages I = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
     for (const auto& imgSegPair : I) {
       drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
-      setupOpenGlState();
+      setupOpenGLState();
     }
     break;
   }
@@ -2111,7 +2101,7 @@ void Rendering::renderAllLandmarks(
     // This function guarantees that I has size at least 2:
     drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData,
                   view, getImageAndSegUidsForMetricShaders(view.metricImages()));
-    setupOpenGlState();
+    setupOpenGLState();
   }
   }
 }
@@ -2125,7 +2115,7 @@ void Rendering::renderAllAnnotations(
     const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
     for (const auto& imgSegPair : I) {
       drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
-      setupOpenGlState();
+      setupOpenGLState();
     }
     break;
   }
@@ -2135,7 +2125,7 @@ void Rendering::renderAllAnnotations(
     const CurrentImages I = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
     for (const auto& imgSegPair : I) {
       drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
-      setupOpenGlState();
+      setupOpenGLState();
     }
   }
   case ViewRenderMode::Disabled: {
@@ -2145,7 +2135,7 @@ void Rendering::renderAllAnnotations(
     // This function guarantees that I has size at least 2:
     drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData,
                     view, getImageAndSegUidsForMetricShaders(view.metricImages()));
-    setupOpenGlState();
+    setupOpenGLState();
   }
   }
 }
@@ -2372,9 +2362,10 @@ void Rendering::createShaderPrograms()
   fsEdgeUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsEdgeUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
   fsEdgeUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
+  fsEdgeUniforms.insertUniform("u_useFreiChen", UniformType::Bool, 0.0f);
   fsEdgeUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
   fsEdgeUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
-  fsEdgeUniforms.insertUniform("u_texSamplingDirsForEdges", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+  fsEdgeUniforms.insertUniform("u_texelDirs", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
 
   Uniforms fsXrayUniforms;
   fsXrayUniforms.insertUniforms(fsImageAdjustmentUniforms);
@@ -2436,8 +2427,9 @@ void Rendering::createShaderPrograms()
   fsOverlayUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
   fsOverlayUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
 
-  constexpr std::array<ShaderProgramType, 17> allShaders = {
+  constexpr std::array<ShaderProgramType, 18> allShaders = {
     ShaderProgramType::ImageGrayLinear,
+    ShaderProgramType::ImageGrayLinearFloating,
     ShaderProgramType::ImageGrayCubic,
     ShaderProgramType::ImageColorLinear,
     ShaderProgramType::ImageColorCubic,
@@ -2474,6 +2466,15 @@ void Rendering::createShaderPrograms()
        {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
       vsImageUniforms, fsImageGrayUniforms
      }
+    },
+    {ShaderProgramType::ImageGrayLinearFloating,
+      {"Image.vs", "ImageGrey.fs",
+        {{"{{HELPER_FUNCTIONS}}", helpersRep},
+         {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
+         {"{{TEXTURE_LOOKUP_FUNCTION}}", texFloatingPointLinearRep},
+         {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+        vsImageUniforms, fsImageGrayUniforms
+      }
     },
     {ShaderProgramType::ImageGrayCubic,
      {"Image.vs", "ImageGrey.fs",

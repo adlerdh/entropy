@@ -14,3 +14,11 @@ float hardThreshold(float value, vec2 thresholds)
 {
   return float(thresholds[0] <= value && value <= thresholds[1]);
 }
+
+/*
+float smoothThreshold(float value, vec2 thresholds)
+{
+  return smoothstep(thresholds[0] - 0.01, thresholds[0], value) -
+         smoothstep(thresholds[1], thresholds[1] + 0.01, value);
+}
+*/

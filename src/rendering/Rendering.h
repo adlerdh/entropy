@@ -108,7 +108,7 @@ private:
   // Vector of current image/segmentation pairs rendered by image shaders
   using CurrentImages = std::vector<ImgSegPair>;
 
-  void setupOpenGlState();
+  void setupOpenGLState();
 
   void createShaderPrograms();
   bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);

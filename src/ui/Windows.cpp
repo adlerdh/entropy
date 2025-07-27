@@ -1890,10 +1890,15 @@ void renderSettingsWindow(
                                 secSpeed, &secMin, &secMax, "%.4f", ImGuiSliderFlags_ClampOnInput)) {
             renderData.m_targetFrameTimeSeconds = sec;
           }
-
-          ImGui::Spacing();
-          ImGui::Dummy(ImVec2(0.0f, 1.0f));
         }
+
+        ImGui::Spacing();
+        ImGui::Dummy(ImVec2(0.0f, 1.0f));
+
+        ImGui::Checkbox("Floating-point linear image interpolation",
+                        &appData.renderData().m_imageGrayFloatingPointInterpolation);
+        ImGui::SameLine();
+        helpMarker("Use floating-point (instead of 8-bit fixed-point) linear image interpolation for the images");
 
         ImGui::Separator();
         ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));

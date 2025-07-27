@@ -279,7 +279,7 @@ void GlfwWrapper::renderLoop(
   const std::function<void(void)>& onImagesReady)
 {
   using Clock = std::chrono::steady_clock;
-  constexpr bool logFramerate = true;
+  constexpr bool logFramerate = false;
 
   if (!m_renderScene || !m_renderGui) {
     spdlog::critical("Rendering callbacks not initialized");
