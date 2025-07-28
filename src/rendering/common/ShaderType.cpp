@@ -12,10 +12,10 @@ std::string to_string(ShaderProgramType type) {
     return "Image - ColorLinearTextureLookup";
   case ShaderProgramType::ImageColorCubic:
     return "Image - ColorCubicTextureLookup";
-  case ShaderProgramType::EdgeLinear:
-    return "Edge - LinearTextureLookup";
-  case ShaderProgramType::EdgeCubic:
-    return "Edge - CubicTextureLookup";
+  case ShaderProgramType::EdgeSobelLinear:
+    return "Edge - Sobel - LinearTextureLookup";
+  case ShaderProgramType::EdgeSobelCubic:
+    return "Edge - Sobel - CubicTextureLookup";
   case ShaderProgramType::XrayLinear:
     return "Xray - LinearTextureLookup";
   case ShaderProgramType::XrayCubic:

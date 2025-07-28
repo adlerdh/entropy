@@ -25,16 +25,13 @@ static const glm::mat4 sk_ident(1.0f);
 
 } // namespace
 
-Camera::Camera(
-  std::unique_ptr<Projection> projection, GetterType<CoordinateFrame> anatomy_T_start_provider
-)
+Camera::Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFrame> anatomy_T_start_provider)
   : m_projection(std::move(projection))
   , m_anatomy_T_start_provider(anatomy_T_start_provider)
   , m_camera_T_anatomy(1.0f)
   , m_start_T_world(1.0f)
 {
-  if (!m_projection)
-  {
+  if (!m_projection) {
     throw_debug("Cannot construct Camera with null Projection")
   }
 }
@@ -120,12 +117,10 @@ const GetterType<CoordinateFrame>& Camera::anatomy_T_start_provider() const
 
 std::optional<CoordinateFrame> Camera::startFrame() const
 {
-  if (m_anatomy_T_start_provider)
-  {
+  if (m_anatomy_T_start_provider) {
     return m_anatomy_T_start_provider();
   }
-  else
-  {
+  else {
     return std::nullopt;
   }
 }
@@ -145,15 +140,13 @@ void Camera::set_camera_T_anatomy(glm::mat4 M)
 
   if (det <= 0.0f || std::abs(det - 1.0f) > EPS)
   {
-    spdlog::debug(
-      "Cannot set camera_T_anatomy to {} because it is non-rigid; 3x3 determinant = {}",
-      glm::to_string(M),
-      det
-    );
+    spdlog::debug("Cannot set camera_T_anatomy to {} because it is non-rigid; 3x3 determinant = {}",
+                  glm::to_string(M), det);
     return;
   }
 
-  if (glm::epsilonNotEqual(M[0][3], 0.0f, EPS) || glm::epsilonNotEqual(M[1][3], 0.0f, EPS) || glm::epsilonNotEqual(M[2][3], 0.0f, EPS) || glm::epsilonNotEqual(M[3][3], 1.0f, EPS))
+  if (glm::epsilonNotEqual(M[0][3], 0.0f, EPS) || glm::epsilonNotEqual(M[1][3], 0.0f, EPS) ||
+      glm::epsilonNotEqual(M[2][3], 0.0f, EPS) || glm::epsilonNotEqual(M[3][3], 1.0f, EPS))
   {
     spdlog::debug("Cannot set camera_T_anatomy to {} because it is not affine", glm::to_string(M));
     return;

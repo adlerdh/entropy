@@ -1109,7 +1109,6 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   uniforms.showEdges = imgSettings.showEdges();
   uniforms.thresholdEdges = imgSettings.thresholdEdges();
   uniforms.edgeMagnitude = static_cast<float>(imgSettings.edgeMagnitude());
-  uniforms.useFreiChen = imgSettings.useFreiChen();
   uniforms.overlayEdges = imgSettings.overlayEdges();
   uniforms.colormapEdges = imgSettings.colormapEdges();
   uniforms.edgeColor = static_cast<float>(imgSettings.edgeOpacity()) * glm::vec4{imgSettings.edgeColor(), 1.0f};
@@ -1503,7 +1502,7 @@ void Rendering::volumeRenderOneImage(const View& view, GLShaderProgram& program,
   setupOpenGLState();
 }
 
-void Rendering::renderAllImages(
+void Rendering::renderAllImagesForView(
   const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs)
 {
   static const RenderData::ImageUniforms sk_defaultImageUniforms;
@@ -1630,11 +1629,11 @@ void Rendering::renderAllImages(
           switch (img->settings().interpolationMode()) {
           case InterpolationMode::NearestNeighbor:
           case InterpolationMode::Trilinear: {
-            P = m_shaderPrograms.at(ShaderProgramType::EdgeLinear).get();
+            P = m_shaderPrograms.at(ShaderProgramType::EdgeSobelLinear).get();
             break;
           }
           case InterpolationMode::Tricubic: {
-            P = m_shaderPrograms.at(ShaderProgramType::EdgeCubic).get();
+            P = m_shaderPrograms.at(ShaderProgramType::EdgeSobelCubic).get();
             break;
           }
           }
@@ -1657,7 +1656,6 @@ void Rendering::renderAllImages(
             P->setUniform("u_renderMode", displayModeUniform);
             P->setUniform("u_thresholdEdges", U.thresholdEdges);
             P->setUniform("u_edgeMagnitude", U.edgeMagnitude);
-            P->setUniform("u_useFreiChen", U.useFreiChen);
             P->setUniform("u_colormapEdges", U.colormapEdges);
             P->setUniform("u_edgeColor", U.edgeColor);
 
@@ -2071,7 +2069,7 @@ void Rendering::renderAllImages(
   }
 }
 
-void Rendering::renderAllLandmarks(
+void Rendering::renderAllLandmarksForView(
   const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs)
 {
   switch (view.renderMode())
@@ -2106,7 +2104,7 @@ void Rendering::renderAllLandmarks(
   }
 }
 
-void Rendering::renderAllAnnotations(
+void Rendering::renderAllAnnotationsForView(
   const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs)
 {
   switch (view.renderMode())
@@ -2159,23 +2157,22 @@ void Rendering::renderImageData()
     }
 
     // Offset the crosshairs according to the image slice in the view
-    const glm::vec3 worldXhairsOffset =
-      view->updateImageSlice(m_appData, m_appData.state().worldCrosshairs().worldOrigin());
+    const glm::vec3 worldXhairsOffset = view->updateImageSlice(m_appData, m_appData.state().worldCrosshairs().worldOrigin());
 
     const auto miewportViewBounds = helper::computeMiewportFrameBounds(
       view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4());
 
-    renderAllImages(*view, miewportViewBounds, worldXhairsOffset);
+    renderAllImagesForView(*view, miewportViewBounds, worldXhairsOffset);
 
     // Do not render landmarks and annotations in volume rendering mode
     if (ViewRenderMode::VolumeRender != view->renderMode())
     {
       if (renderLandmarksOnTop) {
-        renderAllLandmarks(*view, miewportViewBounds, worldXhairsOffset);
+        renderAllLandmarksForView(*view, miewportViewBounds, worldXhairsOffset);
       }
 
       if (renderAnnotationsOnTop) {
-        renderAllAnnotations(*view, miewportViewBounds, worldXhairsOffset);
+        renderAllAnnotationsForView(*view, miewportViewBounds, worldXhairsOffset);
       }
     }
   }
@@ -2198,14 +2195,16 @@ void Rendering::renderVectorOverlays()
     endNvgFrame(m_nvg);
     return;
 
-    //            nvgFontSize( m_nvg, 64.0f );
-    //            const char* txt = "Text me up.";
-    //            float bounds[4];
-    //            nvgTextBounds( m_nvg, 10, 10, txt, NULL, bounds );
-    //            nvgBeginPath( m_nvg );
-    ////            nvgRoundedRect( m_nvg, bounds[0],bounds[1], bounds[2]-bounds[0], bounds[3]-bounds[1], 0 );
-    //            nvgText( m_nvg, vp.width() / 2, vp.height() / 2, "Loading images...", NULL );
-    //            nvgFill( m_nvg );
+    /*
+    nvgFontSize( m_nvg, 64.0f );
+    const char* txt = "Text me up.";
+    float bounds[4];
+    nvgTextBounds( m_nvg, 10, 10, txt, NULL, bounds );
+    nvgBeginPath( m_nvg );
+    // nvgRoundedRect( m_nvg, bounds[0],bounds[1], bounds[2]-bounds[0], bounds[3]-bounds[1], 0 );
+    nvgText( m_nvg, vp.width() / 2, vp.height() / 2, "Loading images...", NULL );
+    nvgFill( m_nvg );
+    */
   }
 
   startNvgFrame(m_nvg, windowVP);
@@ -2242,11 +2241,10 @@ void Rendering::renderVectorOverlays()
         drawCrosshairs(m_nvg, miewportViewBounds, *view, R.m_crosshairsColor, labelPosInfo);
       }
 
-      if (AnatomicalLabelType::Disabled != R.m_anatomicalLabelType)
-      {
-        drawAnatomicalLabels(
-          m_nvg, miewportViewBounds, (ViewType::Oblique == view->viewType()),
-          R.m_anatomicalLabelColor, R.m_anatomicalLabelType, labelPosInfo);
+      if (AnatomicalLabelType::Disabled != R.m_anatomicalLabelType) {
+        const bool isOblique = ViewType::Oblique == view->viewType();
+        drawAnatomicalLabels(m_nvg, miewportViewBounds, isOblique,
+                             R.m_anatomicalLabelColor, R.m_anatomicalLabelType, labelPosInfo);
       }
     }
 
@@ -2286,6 +2284,8 @@ void Rendering::createShaderPrograms()
   const std::string segValueNearestRep = loadFile(shaderPath + "functions/SegValue_Nearest.glsl");
   const std::string segValueLinearRep = loadFile(shaderPath + "functions/SegValue_Linear.glsl");
   const std::string segInteriorAlphaWithOutlineRep = loadFile(shaderPath + "functions/SegInteriorAlpha_WithOutline.glsl");
+  const std::string edgeFreiChen = loadFile(shaderPath + "functions/ComputeEdge_FreiChen.glsl");
+  const std::string edgeSobel = loadFile(shaderPath + "functions/ComputeEdge_Sobel.glsl");
 
   // All the vertex shader uniforms:
   Uniforms vsTransformUniforms;
@@ -2362,7 +2362,7 @@ void Rendering::createShaderPrograms()
   fsEdgeUniforms.insertUniform("u_cmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsEdgeUniforms.insertUniform("u_thresholdEdges", UniformType::Bool, true);
   fsEdgeUniforms.insertUniform("u_edgeMagnitude", UniformType::Float, 0.0f);
-  fsEdgeUniforms.insertUniform("u_useFreiChen", UniformType::Bool, 0.0f);
+  // fsEdgeUniforms.insertUniform("u_useFreiChen", UniformType::Bool, 0.0f);
   fsEdgeUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
   fsEdgeUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
   fsEdgeUniforms.insertUniform("u_texelDirs", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
@@ -2433,8 +2433,8 @@ void Rendering::createShaderPrograms()
     ShaderProgramType::ImageGrayCubic,
     ShaderProgramType::ImageColorLinear,
     ShaderProgramType::ImageColorCubic,
-    ShaderProgramType::EdgeLinear,
-    ShaderProgramType::EdgeCubic,
+    ShaderProgramType::EdgeSobelLinear,
+    ShaderProgramType::EdgeSobelCubic,
     ShaderProgramType::XrayLinear,
     ShaderProgramType::XrayCubic,
     ShaderProgramType::SegmentationNearest,
@@ -2502,19 +2502,21 @@ void Rendering::createShaderPrograms()
       vsImageUniforms, fsImageColorUniforms
      }
     },
-    {ShaderProgramType::EdgeLinear,
+    {ShaderProgramType::EdgeSobelLinear,
      {"Image.vs", "Edge.fs",
       {{"{{HELPER_FUNCTIONS}}", helpersRep},
        {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
+       {"{{COMPUTE_EDGE_FUNCTION}}", edgeSobel},
        {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
        {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
       vsImageUniforms, fsEdgeUniforms
      }
     },
-    {ShaderProgramType::EdgeCubic,
+    {ShaderProgramType::EdgeSobelCubic,
      {"Image.vs", "Edge.fs",
       {{"{{HELPER_FUNCTIONS}}", helpersRep},
        {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
+       {"{{COMPUTE_EDGE_FUNCTION}}", edgeSobel},
        {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
        {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
       vsImageUniforms, fsEdgeUniforms

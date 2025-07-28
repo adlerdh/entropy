@@ -82,8 +82,7 @@ struct RenderData
     bool showEdges = false;
     bool thresholdEdges = true;
     float edgeMagnitude = 0.0f;
-    bool useFreiChen = false;
-    //        bool windowedEdges = false;
+    // bool windowedEdges = false;
     bool overlayEdges = false;
     bool colormapEdges = false;
     glm::vec4 edgeColor{0.0f}; // RGBA, premultiplied by alpha

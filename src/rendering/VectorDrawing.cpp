@@ -985,8 +985,7 @@ void drawCrosshairs(
   const FrameBounds& miewportViewBounds,
   const View& view,
   const glm::vec4& color,
-  const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo
-)
+  const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo)
 {
   // Line segment stipple length in pixels
   static constexpr float sk_stippleLen = 8.0f;
@@ -997,43 +996,31 @@ void drawCrosshairs(
   const auto& offset = view.offsetSetting();
 
   // Is the view offset from the crosshairs position?
-  const bool viewIsOffset
-    = (ViewOffsetMode::RelativeToRefImageScrolls == offset.m_offsetMode
-       && 0 != offset.m_relativeOffsetSteps)
-      ||
+  const bool viewIsOffset =
+    (ViewOffsetMode::RelativeToRefImageScrolls == offset.m_offsetMode && 0 != offset.m_relativeOffsetSteps)
+    || (ViewOffsetMode::RelativeToImageScrolls == offset.m_offsetMode && 0 != offset.m_relativeOffsetSteps)
+    || (ViewOffsetMode::Absolute == offset.m_offsetMode && glm::epsilonNotEqual(offset.m_absoluteOffset, 0.0f, glm::epsilon<float>()));
 
-      (ViewOffsetMode::RelativeToImageScrolls == offset.m_offsetMode
-       && 0 != offset.m_relativeOffsetSteps)
-      ||
-
-      (ViewOffsetMode::Absolute == offset.m_offsetMode
-       && glm::epsilonNotEqual(offset.m_absoluteOffset, 0.0f, glm::epsilon<float>()));
-
-  if (viewIsOffset)
-  {
+  if (viewIsOffset) {
     // Offset views get thinner, transparent crosshairs
     nvgStrokeWidth(nvg, 1.0f);
     nvgStrokeColor(nvg, nvgRGBAf(color.r, color.g, color.b, 0.5f * color.a));
   }
-  else
-  {
+  else {
     nvgStrokeWidth(nvg, 2.0f);
     nvgStrokeColor(nvg, nvgRGBAf(color.r, color.g, color.b, color.a));
   }
 
   // Clip against the view bounds, even though not strictly necessary with how lines are defined
-  nvgScissor(
-    nvg,
+  nvgScissor(nvg,
     miewportViewBounds.viewport[0],
     miewportViewBounds.viewport[1],
     miewportViewBounds.viewport[2],
-    miewportViewBounds.viewport[3]
-  );
+    miewportViewBounds.viewport[3]);
 
   for (const auto& pos : labelPosInfo)
   {
-    if (!pos.miewportXhairPositions)
-    {
+    if (!pos.miewportXhairPositions) {
       // Only render crosshairs when there are two intersections with the view box:
       continue;
     }
@@ -1054,21 +1041,21 @@ void drawCrosshairs(
       // Oblique views get stippled crosshairs:
       for (std::size_t line = 0; line < 2; ++line)
       {
-        const uint32_t numLines = static_cast<uint32_t>(
-          glm::distance(hits[line], pos.miewportXhairCenterPos) / sk_stippleLen
-        );
+        const auto numLines = static_cast<uint32_t>(
+          glm::distance(hits[line], pos.miewportXhairCenterPos) / sk_stippleLen);
 
         nvgBeginPath(nvg);
         for (uint32_t i = 0; i <= numLines; ++i)
         {
           const float t = static_cast<float>(i) / static_cast<float>(numLines);
-          const glm::vec2 p = pos.miewportXhairCenterPos
-                              + t * (hits[line] - pos.miewportXhairCenterPos);
+          const glm::vec2 p = pos.miewportXhairCenterPos + t * (hits[line] - pos.miewportXhairCenterPos);
 
-          if (i % 2)
+          if (i % 2) {
             nvgLineTo(nvg, p.x, p.y); // when i odd
-          else
+          }
+          else {
             nvgMoveTo(nvg, p.x, p.y); // when i even
+          }
         }
         nvgClosePath(nvg);
         nvgStroke(nvg);

@@ -703,7 +703,6 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   const Camera& camera,
   const glm::mat4& world_T_subject,
   const glm::mat4& windowClip_T_viewClip,
-  const glm::vec3& worldCrosshairsPos
-);
+  const glm::vec3& worldCrosshairsPos);
 
 } // namespace math

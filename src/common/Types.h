@@ -304,14 +304,8 @@ enum class SegmentationOutlineStyle
  */
 struct AnatomicalLabelPosInfo
 {
-  AnatomicalLabelPosInfo()
-    : labelIndex(0)
-  {
-  }
-  AnatomicalLabelPosInfo(int l)
-    : labelIndex(l)
-  {
-  }
+  AnatomicalLabelPosInfo() : labelIndex(0) {}
+  AnatomicalLabelPosInfo(int l) : labelIndex(l) {}
 
   /// The anatomical label index (0: L, 1: P, 2: S)
   int labelIndex;
@@ -328,7 +322,7 @@ struct AnatomicalLabelPosInfo
   /// Positions of the crosshair-view intersections (in Miewport space).
   /// Equal to std::nullopt if there is no intersection of the crosshair with the
   /// view AABB for this label.
-  std::optional<std::array<glm::vec2, 2> > miewportXhairPositions = std::nullopt;
+  std::optional<std::array<glm::vec2, 2>> miewportXhairPositions = std::nullopt;
 };
 
 /**

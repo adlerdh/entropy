@@ -56,8 +56,8 @@ void ControlFrame::setImageRendered(const AppData& appData, const uuids::uuid& i
     return;
   }
 
-  if (std::end(m_renderedImageUids) != std::find(std::begin(m_renderedImageUids),
-                                                 std::end(m_renderedImageUids), imageUid))
+  if (std::end(m_renderedImageUids) !=
+      std::find(std::begin(m_renderedImageUids), std::end(m_renderedImageUids), imageUid))
   {
     return; // image already exists, so do nothing
   }
@@ -143,8 +143,8 @@ void ControlFrame::setImageUsedForMetric(const AppData& appData, std::size_t ind
     return;
   }
 
-  if (std::end(m_metricImageUids) != std::find(std::begin(m_metricImageUids),
-                                               std::end(m_metricImageUids), *imageUid))
+  if (std::end(m_metricImageUids) !=
+      std::find(std::begin(m_metricImageUids), std::end(m_metricImageUids), *imageUid))
   {
     return; // image already exists, so do nothing
   }

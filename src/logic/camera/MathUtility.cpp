@@ -198,8 +198,7 @@ void applyLayeringOffsetsToModelPositions(
 }
 
 glm::mat3 computeSubjectAxesInCamera(
-  const glm::mat3& camera_T_world_rotation, const glm::mat3& world_T_subject_rotation
-)
+  const glm::mat3& camera_T_world_rotation, const glm::mat3& world_T_subject_rotation)
 {
   return glm::inverseTranspose(camera_T_world_rotation * world_T_subject_rotation);
 }
@@ -222,8 +221,7 @@ std::pair<glm::vec4, glm::vec3> computeSubjectPlaneEquation(
 }
 
 std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelsForView(
-  const glm::mat4& camera_T_world, const glm::mat4& world_T_subject
-)
+  const glm::mat4& camera_T_world, const glm::mat4& world_T_subject)
 {
   // Shortcuts for the three orthogonal anatomical directions
   static constexpr int L = 0;
@@ -235,25 +233,21 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelsForView(
 
   // The reference subject's left, posterior, and superior directions in Camera space.
   // Columns 0, 1, and 2 of the matrix correspond to Left, Posterior, and Superior, respectively.
-  const glm::mat3 axes
-    = math::computeSubjectAxesInCamera(glm::mat3{camera_T_world}, glm::mat3{world_T_subject});
+  const glm::mat3 axes = math::computeSubjectAxesInCamera(glm::mat3{camera_T_world}, glm::mat3{world_T_subject});
 
   const glm::mat3 axesAbs{glm::abs(axes[0]), glm::abs(axes[1]), glm::abs(axes[2])};
   const glm::mat3 axesSgn{glm::sign(axes[0]), glm::sign(axes[1]), glm::sign(axes[2])};
 
   // Render the two sets of labels that are closest to the view plane:
-  if (axesAbs[L].z > axesAbs[P].z && axesAbs[L].z > axesAbs[S].z)
-  {
+  if (axesAbs[L].z > axesAbs[P].z && axesAbs[L].z > axesAbs[S].z) {
     labels[0] = AnatomicalLabelPosInfo{P};
     labels[1] = AnatomicalLabelPosInfo{S};
   }
-  else if (axesAbs[P].z > axesAbs[L].z && axesAbs[P].z > axesAbs[S].z)
-  {
+  else if (axesAbs[P].z > axesAbs[L].z && axesAbs[P].z > axesAbs[S].z) {
     labels[0] = AnatomicalLabelPosInfo{L};
     labels[1] = AnatomicalLabelPosInfo{S};
   }
-  else if (axesAbs[S].z > axesAbs[L].z && axesAbs[S].z > axesAbs[P].z)
-  {
+  else if (axesAbs[S].z > axesAbs[L].z && axesAbs[S].z > axesAbs[P].z) {
     labels[0] = AnatomicalLabelPosInfo{L};
     labels[1] = AnatomicalLabelPosInfo{P};
   }
@@ -262,10 +256,9 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelsForView(
   for (auto& label : labels)
   {
     const int i = label.labelIndex;
-
     label.viewClipDir = (axesAbs[i].x > 0.0f && axesAbs[i].y / axesAbs[i].x <= 1.0f)
-                          ? glm::vec2{axesSgn[i].x, axesSgn[i].y * axesAbs[i].y / axesAbs[i].x}
-                          : glm::vec2{axesSgn[i].x * axesAbs[i].x / axesAbs[i].y, axesSgn[i].y};
+      ? glm::vec2{axesSgn[i].x, axesSgn[i].y * axesAbs[i].y / axesAbs[i].x}
+      : glm::vec2{axesSgn[i].x * axesAbs[i].x / axesAbs[i].y, axesSgn[i].y};
   }
 
   return labels;
@@ -277,8 +270,7 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   const Camera& camera,
   const glm::mat4& world_T_subject,
   const glm::mat4& windowClip_T_viewClip,
-  const glm::vec3& worldCrosshairsPos
-)
+  const glm::vec3& worldCrosshairsPos)
 {
   // Compute intersections of the anatomical label ray with the view box:
   static constexpr bool sk_doBothLabelDirs = false;
@@ -296,11 +288,11 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
 
   const float aspectRatio = miewportViewBounds.bounds.width / miewportViewBounds.bounds.height;
 
-  const glm::vec2 aspectRatioScale = (aspectRatio < 1.0f) ? glm::vec2{aspectRatio, 1.0f}
-                                                          : glm::vec2{1.0f, 1.0f / aspectRatio};
+  const glm::vec2 aspectRatioScale = (aspectRatio < 1.0f)
+    ? glm::vec2{aspectRatio, 1.0f}
+    : glm::vec2{1.0f, 1.0f / aspectRatio};
 
-  const glm::vec2
-    miewportMinCorner(miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset);
+  const glm::vec2 miewportMinCorner(miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset);
   const glm::vec2 miewportSize(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height);
   const glm::vec2 miewportCenter = miewportMinCorner + 0.5f * miewportSize;
 
@@ -323,22 +315,18 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
 
     // Intersections for the positive label (L, P, or S):
     const auto posLabelHits = math::computeRayAABoxIntersections(
-      miewportCenter, miewportXhairDir, miewportMinCorner, miewportSize, sk_doBothLabelDirs
-    );
+      miewportCenter, miewportXhairDir, miewportMinCorner, miewportSize, sk_doBothLabelDirs);
 
     // Intersections for the negative label (R, A, or I):
     const auto negLabelHits = math::computeRayAABoxIntersections(
-      miewportCenter, -miewportXhairDir, miewportMinCorner, miewportSize, sk_doBothLabelDirs
-    );
+      miewportCenter, -miewportXhairDir, miewportMinCorner, miewportSize, sk_doBothLabelDirs);
 
     if (1 != posLabelHits.size() || 1 != negLabelHits.size())
     {
       spdlog::warn(
         "Expected two intersections when computing anatomical label positions for view. "
         "Got {} and {} intersections in the positive and negative directions, respectively.",
-        posLabelHits.size(),
-        negLabelHits.size()
-      );
+        posLabelHits.size(), negLabelHits.size());
       continue;
     }
 
@@ -349,16 +337,13 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
       miewportXhairDir,
       miewportMinCorner,
       miewportSize,
-      sk_doBothXhairDirs
-    );
+      sk_doBothXhairDirs);
 
-    if (2 != crosshairHits.size())
-    {
+    if (2 != crosshairHits.size()) {
       // Only render crosshairs when there are two intersections with the view box:
       label.miewportXhairPositions = std::nullopt;
     }
-    else
-    {
+    else {
       label.miewportXhairPositions = std::array<glm::vec2, 2>{crosshairHits[0], crosshairHits[1]};
     }
   }

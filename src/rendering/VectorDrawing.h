@@ -19,15 +19,11 @@ class Viewport;
 
 struct NVGcontext;
 
-using ImageSegPairs
-  = std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >;
+using ImageSegPairs = std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >;
 
 void startNvgFrame(NVGcontext* nvg, const Viewport& windowVP);
-
 void endNvgFrame(NVGcontext* nvg);
-
 void drawLoadingOverlay(NVGcontext* nvg, const Viewport& windowVP);
-
 void drawWindowOutline(NVGcontext* nvg, const Viewport& windowVP);
 
 enum class ViewOutlineMode
@@ -38,8 +34,9 @@ enum class ViewOutlineMode
 };
 
 void drawViewOutline(
-  NVGcontext* nvg, const FrameBounds& miewportViewBounds, const ViewOutlineMode& outlineMode
-);
+  NVGcontext* nvg,
+  const FrameBounds& miewportViewBounds,
+  const ViewOutlineMode& outlineMode);
 
 void drawImageViewIntersections(
   NVGcontext* nvg,
@@ -48,8 +45,7 @@ void drawImageViewIntersections(
   AppData& appData,
   const View& view,
   const ImageSegPairs& I,
-  bool renderInactiveImageIntersections
-);
+  bool renderInactiveImageIntersections);
 
 void drawAnatomicalLabels(
   NVGcontext* nvg,
@@ -57,8 +53,7 @@ void drawAnatomicalLabels(
   bool isObliqueView,
   const glm::vec4& color,
   const AnatomicalLabelType& anatLabelType,
-  const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo
-);
+  const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo);
 
 void drawCircle(
   NVGcontext* nvg,
@@ -66,8 +61,7 @@ void drawCircle(
   float radius,
   const glm::vec4& fillColor,
   const glm::vec4& strokeColor,
-  float strokeWidth
-);
+  float strokeWidth);
 
 void drawText(
   NVGcontext* nvg,
@@ -76,8 +70,7 @@ void drawText(
   const std::string& offsetString,
   const glm::vec4& textColor,
   float offset,
-  float fontSizePixels
-);
+  float fontSizePixels);
 
 void drawLandmarks(
   NVGcontext* nvg,
@@ -85,8 +78,7 @@ void drawLandmarks(
   const glm::vec3& worldCrosshairs,
   AppData& appData,
   const View& view,
-  const ImageSegPairs& I
-);
+  const ImageSegPairs& I);
 
 void drawAnnotations(
   NVGcontext* nvg,
@@ -94,15 +86,13 @@ void drawAnnotations(
   const glm::vec3& worldCrosshairs,
   AppData& appData,
   const View& view,
-  const ImageSegPairs& I
-);
+  const ImageSegPairs& I);
 
 void drawCrosshairs(
   NVGcontext* nvg,
   const FrameBounds& miewportViewBounds,
   const View& view,
   const glm::vec4& color,
-  const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo
-);
+  const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo);
 
 #endif // VECTOR_DRAWING_H

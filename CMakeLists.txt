@@ -494,6 +494,8 @@ set(entropy_SHADERS
   ${entropy_SRC_DIR}/rendering/shaders/Xray.fs
   ${entropy_SRC_DIR}/rendering/shaders/functions/ColorHelpers.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/DoRender.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/ComputeEdge_FreiChen.glsl
+  ${entropy_SRC_DIR}/rendering/shaders/functions/ComputeEdge_Sobel.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/Helpers.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_NoOutline.glsl
   ${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl

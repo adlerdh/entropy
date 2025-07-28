@@ -46,10 +46,11 @@ public:
   /// to the Start space. (i.e. anatomy_T_start is identity)
   Camera(
     std::unique_ptr<Projection> projection,
-    GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr
-  );
+    GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
 
-  Camera(ProjectionType projType, GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
+  Camera(
+    ProjectionType projType,
+    GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
 
   Camera(const Camera&);
   const Camera& operator=(const Camera&);

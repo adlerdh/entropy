@@ -31,7 +31,6 @@
 
 namespace
 {
-
 static const glm::vec3 sk_origin{0.0f};
 
 // Map from view type to projection type
@@ -71,6 +70,7 @@ static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, Cam
       {ViewType::Sagittal, CameraStartFrameType::Crosshairs_Sagittal_PSL},
       {ViewType::Oblique, CameraStartFrameType::Crosshairs_Axial_LAI},
       {ViewType::ThreeD, CameraStartFrameType::Crosshairs_Coronal_LSA}}},
+
     // Left/right are swapped in axial and coronal views
     {ViewConvention::Neurological,
      {{ViewType::Axial, CameraStartFrameType::Crosshairs_Axial_RAS},
@@ -117,24 +117,14 @@ View::View(
   std::optional<uuids::uuid> cameraZoomSyncGroup
 )
   : ControlFrame(winClipViewport, viewType, renderMode, ipMode, uiControls)
-  ,
-
-  m_offset(std::move(offsetSetting))
-  ,
-
-  m_projectionType(sk_viewTypeToDefaultProjectionTypeMap.at(m_viewType))
+  , m_offset(std::move(offsetSetting))
+  , m_projectionType(sk_viewTypeToDefaultProjectionTypeMap.at(m_viewType))
   , m_camera(m_projectionType)
-  ,
-
-  m_viewConventionProvider(viewConventionProvider)
-  ,
-
-  m_cameraRotationSyncGroupUid(cameraRotationSyncGroupUid)
+  , m_viewConventionProvider(viewConventionProvider)
+  , m_cameraRotationSyncGroupUid(cameraRotationSyncGroupUid)
   , m_cameraTranslationSyncGroupUid(cameraTranslationSyncGroup)
   , m_cameraZoomSyncGroupUid(cameraZoomSyncGroup)
-  ,
-
-  m_clipPlaneDepth(0.0f)
+  , m_clipPlaneDepth(0.0f)
 {
   m_camera.set_anatomy_T_start_provider(
     [this]()
@@ -240,10 +230,9 @@ std::optional<intersection::IntersectionVerticesVec4> View::computeImageSliceInt
   // Convert Subject intersection positions to World space
   intersection::IntersectionVerticesVec4 worldIntersectionPositions;
 
-  for (uint32_t i = 0; i < SliceIntersector::s_numVertices; ++i)
-  {
-    worldIntersectionPositions[i] = world_T_pixel
-                                    * glm::vec4{(*pixelIntersectionPositions)[i], 1.0f};
+  for (uint32_t i = 0; i < SliceIntersector::s_numVertices; ++i) {
+    worldIntersectionPositions[i] =
+      world_T_pixel * glm::vec4{(*pixelIntersectionPositions)[i], 1.0f};
   }
 
   return worldIntersectionPositions;
@@ -251,8 +240,7 @@ std::optional<intersection::IntersectionVerticesVec4> View::computeImageSliceInt
 
 void View::setViewType(const ViewType& newViewType)
 {
-  if (newViewType == m_viewType)
-  {
+  if (newViewType == m_viewType) {
     return;
   }
 
@@ -260,23 +248,17 @@ void View::setViewType(const ViewType& newViewType)
 
   if (m_projectionType != newProjType)
   {
-    spdlog::debug(
-      "Changing camera projection from {} to {}",
-      typeString(m_projectionType),
-      typeString(newProjType)
-    );
+    spdlog::debug("Changing camera projection from {} to {}", typeString(m_projectionType),
+                  typeString(newProjType));
 
     std::unique_ptr<Projection> projection;
-
     switch (newProjType)
     {
-    case ProjectionType::Orthographic:
-    {
+    case ProjectionType::Orthographic: {
       projection = std::make_unique<OrthographicProjection>();
       break;
     }
-    case ProjectionType::Perspective:
-    {
+    case ProjectionType::Perspective: {
       projection = std::make_unique<PerspectiveProjection>();
       break;
     }
@@ -303,8 +285,7 @@ void View::setViewType(const ViewType& newViewType)
     // Transitioning to an Oblique view type from an Orthogonal view type:
     // The new anatomy_T_start frame is set to the (old) Orthogonal view type's anatomy_T_start frame.
     const auto& rotationMap = sk_cameraStartFrameTypeToDefaultAnatomicalRotationMap.at(
-      sk_viewConventionToStartFrameTypeMap.at(m_viewConventionProvider()).at(m_viewType)
-    );
+      sk_viewConventionToStartFrameTypeMap.at(m_viewConventionProvider()).at(m_viewType));
 
     anatomy_T_start = CoordinateFrame(sk_origin, rotationMap);
 
@@ -314,8 +295,7 @@ void View::setViewType(const ViewType& newViewType)
   {
     // Transitioning to an Orthogonal view type:
     const auto& rotationMap = sk_cameraStartFrameTypeToDefaultAnatomicalRotationMap.at(
-      sk_viewConventionToStartFrameTypeMap.at(m_viewConventionProvider()).at(newViewType)
-    );
+      sk_viewConventionToStartFrameTypeMap.at(m_viewConventionProvider()).at(newViewType));
 
     anatomy_T_start = CoordinateFrame(sk_origin, rotationMap);
 

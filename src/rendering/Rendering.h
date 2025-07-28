@@ -118,6 +118,11 @@ private:
    */
   void renderImageData();
 
+  /// Render all images/landmarks/annotations for a view
+  void renderAllImagesForView(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
+  void renderAllLandmarksForView(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
+  void renderAllAnnotationsForView(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
+
   void renderVectorOverlays();
 
   void renderOneImage(const View& view, const glm::vec3& worldOffsetXhairs,
@@ -127,10 +132,6 @@ private:
                                const glm::vec3& worldOffsetXhairs, const CurrentImages& I);
 
   void volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I);
-
-  void renderAllImages(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
-  void renderAllLandmarks(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
-  void renderAllAnnotations(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
 
   // Bind/unbind textures for images, segmentations, and image color maps
   std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& P);
