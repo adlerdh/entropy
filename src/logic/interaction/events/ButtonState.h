@@ -1,5 +1,4 @@
-#ifndef BUTTON_STATE_H
-#define BUTTON_STATE_H
+#pragma once
 
 struct ButtonState
 {
@@ -21,5 +20,3 @@ struct ModifierState
   bool capsLock = false;
   bool numLock = false;
 };
-
-#endif // BUTTON_STATE_H

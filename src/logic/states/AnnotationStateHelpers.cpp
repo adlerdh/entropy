@@ -7,9 +7,8 @@
 #include "logic/annotation/Annotation.h"
 #include "logic/app/Data.h"
 
-namespace state
+namespace state::annot
 {
-
 bool isInStateWhereAnnotationHighlightsAreVisible()
 {
   if (ASM::is_in_state<StandbyState>() || ASM::is_in_state<VertexSelectedState>())
@@ -21,7 +20,9 @@ bool isInStateWhereAnnotationHighlightsAreVisible()
 
 bool isInStateWhereVertexHighlightsAreVisible()
 {
-  if (isInStateWhereAnnotationHighlightsAreVisible() || ASM::is_in_state<CreatingNewAnnotationState>() || ASM::is_in_state<AddingVertexToNewAnnotationState>())
+  if (isInStateWhereAnnotationHighlightsAreVisible() ||
+      ASM::is_in_state<CreatingNewAnnotationState>() ||
+      ASM::is_in_state<AddingVertexToNewAnnotationState>())
   {
     return true;
   }
@@ -30,7 +31,11 @@ bool isInStateWhereVertexHighlightsAreVisible()
 
 bool isInStateWhereViewsCanScroll()
 {
-  if (ASM::is_in_state<AnnotationOffState>() || ASM::is_in_state<ViewBeingSelectedState>() || ASM::is_in_state<StandbyState>() || ASM::is_in_state<CreatingNewAnnotationState>() || ASM::is_in_state<VertexSelectedState>())
+  if (ASM::is_in_state<AnnotationOffState>() ||
+      ASM::is_in_state<ViewBeingSelectedState>() ||
+      ASM::is_in_state<StandbyState>() ||
+      ASM::is_in_state<CreatingNewAnnotationState>() ||
+      ASM::is_in_state<VertexSelectedState>())
   {
     return true;
   }
@@ -246,5 +251,4 @@ bool showToolbarFlipAnnotationButtons()
   }
   return false;
 }
-
-} // namespace state
+} // namespace state::annot

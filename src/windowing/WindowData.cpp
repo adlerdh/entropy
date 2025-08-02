@@ -27,7 +27,9 @@
 namespace
 {
 
-Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
+Layout createFourUpLayout(
+  const CrosshairsState& crosshairs,
+  std::function<ViewConvention()> conventionProvider)
 {
   const UiControls uiControls(true);
 
@@ -37,8 +39,8 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
 
   Layout layout(false);
 
-  auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
-  auto* zoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, zoomSyncGroupUid);
+  auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
+  auto* zoomGroup = layout.getCameraSyncGroup(CameraSyncMode::Zoom, zoomSyncGroupUid);
 
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetMode = ViewOffsetMode::None;
@@ -53,13 +55,15 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
       IntensityProjectionMode::None,
       uiControls,
       conventionProvider,
+      crosshairs,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-    zoomGroup->push_back(layout.addView(std::move(view)));
+    zoomGroup->push_back(view->uid());
+    layout.addView(std::move(view));
   }
   {
     // top left
@@ -71,13 +75,15 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
       IntensityProjectionMode::None,
       uiControls,
       conventionProvider,
+      crosshairs,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-    zoomGroup->push_back(layout.addView(std::move(view)));
+    zoomGroup->push_back(view->uid());
+    layout.addView(std::move(view));
   }
   {
     // bottom left
@@ -89,6 +95,7 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
       IntensityProjectionMode::None,
       uiControls,
       conventionProvider,
+      crosshairs,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       noZoomSyncGroup
@@ -96,7 +103,8 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-    zoomGroup->push_back(layout.addView(std::move(view)));
+    zoomGroup->push_back(view->uid());
+    layout.addView(std::move(view));
   }
   {
     // bottom right
@@ -108,19 +116,23 @@ Layout createFourUpLayout(std::function<ViewConvention()> conventionProvider)
       IntensityProjectionMode::None,
       uiControls,
       conventionProvider,
+      crosshairs,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-    zoomGroup->push_back(layout.addView(std::move(view)));
+    zoomGroup->push_back(view->uid());
+    layout.addView(std::move(view));
   }
 
   return layout;
 }
 
-Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
+Layout createTriLayout(
+  const CrosshairsState& crosshairs,
+  std::function<ViewConvention()> conventionProvider)
 {
   const UiControls uiControls(true);
 
@@ -130,8 +142,8 @@ Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
 
   Layout layout(false);
 
-  auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
-  auto* zoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, zoomSyncGroupUid);
+  auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
+  auto* zoomGroup = layout.getCameraSyncGroup(CameraSyncMode::Zoom, zoomSyncGroupUid);
 
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetMode = ViewOffsetMode::None;
@@ -146,6 +158,7 @@ Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
       IntensityProjectionMode::None,
       uiControls,
       conventionProvider,
+      crosshairs,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       noZoomSyncGroup);
@@ -164,13 +177,15 @@ Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
       IntensityProjectionMode::None,
       uiControls,
       conventionProvider,
+      crosshairs,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-    zoomGroup->push_back(layout.addView(std::move(view)));
+    zoomGroup->push_back(view->uid());
+    layout.addView(std::move(view));
   }
   {
     // top right
@@ -182,53 +197,56 @@ Layout createTriLayout(std::function<ViewConvention()> conventionProvider)
       IntensityProjectionMode::None,
       uiControls,
       conventionProvider,
+      crosshairs,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
-    zoomGroup->push_back(layout.addView(std::move(view)));
+    zoomGroup->push_back(view->uid());
+    layout.addView(std::move(view));
   }
 
   return layout;
 }
 
 Layout createTriTopBottomLayout(
-  std::size_t numRows, std::function<ViewConvention()> conventionProvider
-)
+  std::size_t numRows,
+  const CrosshairsState& crosshairs,
+  std::function<ViewConvention()> conventionProvider)
 {
   const UiControls uiControls(true);
 
   Layout layout(false);
 
-  auto axiRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Rotation);
-  auto* axiRotGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Rotation, axiRotationSyncGroupUid);
+  auto axiRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Rotation);
+  auto* axiRotGroup = layout.getCameraSyncGroup(CameraSyncMode::Rotation, axiRotationSyncGroupUid);
 
-  auto corRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Rotation);
-  auto* corRotGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Rotation, corRotationSyncGroupUid);
+  auto corRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Rotation);
+  auto* corRotGroup = layout.getCameraSyncGroup(CameraSyncMode::Rotation, corRotationSyncGroupUid);
 
-  auto sagRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Rotation);
-  auto* sagRotGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Rotation, sagRotationSyncGroupUid);
+  auto sagRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Rotation);
+  auto* sagRotGroup = layout.getCameraSyncGroup(CameraSyncMode::Rotation, sagRotationSyncGroupUid);
 
-  auto axiTranslationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Translation);
-  auto* axiTransGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Translation, axiTranslationSyncGroupUid);
+  auto axiTranslationSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Translation);
+  auto* axiTransGroup = layout.getCameraSyncGroup(CameraSyncMode::Translation, axiTranslationSyncGroupUid);
 
-  auto corTranslationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Translation);
-  auto* corTransGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Translation, corTranslationSyncGroupUid);
+  auto corTranslationSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Translation);
+  auto* corTransGroup = layout.getCameraSyncGroup(CameraSyncMode::Translation, corTranslationSyncGroupUid);
 
-  auto sagTranslationSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Translation);
-  auto* sagTransGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Translation, sagTranslationSyncGroupUid);
+  auto sagTranslationSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Translation);
+  auto* sagTransGroup = layout.getCameraSyncGroup(CameraSyncMode::Translation, sagTranslationSyncGroupUid);
 
   // Should zoom be synchronized across columns or across rows?
-  auto axiZoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
-  auto* axiZoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, axiZoomSyncGroupUid);
+  auto axiZoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
+  auto* axiZoomGroup = layout.getCameraSyncGroup(CameraSyncMode::Zoom, axiZoomSyncGroupUid);
 
-  auto corZoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
-  auto* corZoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, corZoomSyncGroupUid);
+  auto corZoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
+  auto* corZoomGroup = layout.getCameraSyncGroup(CameraSyncMode::Zoom, corZoomSyncGroupUid);
 
-  auto sagZoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
-  auto* sagZoomGroup = layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, sagZoomSyncGroupUid);
+  auto sagZoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
+  auto* sagZoomGroup = layout.getCameraSyncGroup(CameraSyncMode::Zoom, sagZoomSyncGroupUid);
 
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetMode = ViewOffsetMode::None;
@@ -248,6 +266,7 @@ Layout createTriTopBottomLayout(
         IntensityProjectionMode::None,
         uiControls,
         conventionProvider,
+        crosshairs,
         axiRotationSyncGroupUid,
         axiTranslationSyncGroupUid,
         axiZoomSyncGroupUid);
@@ -255,10 +274,11 @@ Layout createTriTopBottomLayout(
       view->setPreferredDefaultRenderedImages({r});
       view->setDefaultRenderAllImages(false);
 
-      const auto viewUid = layout.addView(std::move(view));
-      axiRotGroup->push_back(viewUid);
-      axiTransGroup->push_back(viewUid);
-      axiZoomGroup->push_back(viewUid);
+      axiRotGroup->push_back(view->uid());
+      axiTransGroup->push_back(view->uid());
+      axiZoomGroup->push_back(view->uid());
+
+      layout.addView(std::move(view));
     }
 
     {
@@ -271,6 +291,7 @@ Layout createTriTopBottomLayout(
         IntensityProjectionMode::None,
         uiControls,
         conventionProvider,
+        crosshairs,
         corRotationSyncGroupUid,
         corTranslationSyncGroupUid,
         corZoomSyncGroupUid
@@ -279,10 +300,11 @@ Layout createTriTopBottomLayout(
       view->setPreferredDefaultRenderedImages({r});
       view->setDefaultRenderAllImages(false);
 
-      const auto viewUid = layout.addView(std::move(view));
-      corRotGroup->push_back(viewUid);
-      corTransGroup->push_back(viewUid);
-      corZoomGroup->push_back(viewUid);
+      corRotGroup->push_back(view->uid());
+      corTransGroup->push_back(view->uid());
+      corZoomGroup->push_back(view->uid());
+
+      layout.addView(std::move(view));
     }
     {
       // sagittal
@@ -294,6 +316,7 @@ Layout createTriTopBottomLayout(
         IntensityProjectionMode::None,
         uiControls,
         conventionProvider,
+        crosshairs,
         sagRotationSyncGroupUid,
         sagTranslationSyncGroupUid,
         sagZoomSyncGroupUid
@@ -302,10 +325,11 @@ Layout createTriTopBottomLayout(
       view->setPreferredDefaultRenderedImages({r});
       view->setDefaultRenderAllImages(false);
 
-      const auto viewUid = layout.addView(std::move(view));
-      sagRotGroup->push_back(viewUid);
-      sagTransGroup->push_back(viewUid);
-      sagZoomGroup->push_back(viewUid);
+      sagRotGroup->push_back(view->uid());
+      sagTransGroup->push_back(view->uid());
+      sagZoomGroup->push_back(view->uid());
+
+      layout.addView(std::move(view));
     }
   }
 
@@ -318,6 +342,7 @@ Layout createGridLayout(
   std::size_t height,
   bool offsetViews,
   bool isLightbox,
+  const CrosshairsState& crosshairs,
   std::function<ViewConvention()> conventionProvider,
   const std::optional<size_t>& imageIndexForLightbox,
   const std::optional<uuids::uuid>& imageUidForLightbox)
@@ -336,14 +361,14 @@ Layout createGridLayout(
     layout.setDefaultRenderAllImages(false);
   }
 
-  const auto rotSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Rotation);
-  auto* rotGroup =layout.getCameraSyncGroup(CameraSynchronizationMode::Rotation, rotSyncGroupUid);
+  const auto rotSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Rotation);
+  auto* rotGroup =layout.getCameraSyncGroup(CameraSyncMode::Rotation, rotSyncGroupUid);
 
-  const auto transSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Translation);
-  auto* transGroup =layout.getCameraSyncGroup(CameraSynchronizationMode::Translation, transSyncGroupUid);
+  const auto transSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Translation);
+  auto* transGroup =layout.getCameraSyncGroup(CameraSyncMode::Translation, transSyncGroupUid);
 
-  const auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSynchronizationMode::Zoom);
-  auto* zoomGroup =layout.getCameraSyncGroup(CameraSynchronizationMode::Zoom, zoomSyncGroupUid);
+  const auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
+  auto* zoomGroup =layout.getCameraSyncGroup(CameraSyncMode::Zoom, zoomSyncGroupUid);
 
   const float w = 2.0f / static_cast<float>(width);
   const float h = 2.0f / static_cast<float>(height);
@@ -392,6 +417,7 @@ Layout createGridLayout(
         s_ipMode,
         UiControls(!isLightbox),
         conventionProvider,
+        crosshairs,
         rotSyncGroupUid,
         transSyncGroupUid,
         zoomSyncGroupUid);
@@ -404,34 +430,30 @@ Layout createGridLayout(
       }
 
       // Synchronize rotations, translations, and zooms for all views in the layout:
-      const auto viewUid = layout.addView(std::move(view));
-      rotGroup->push_back(viewUid);
-      transGroup->push_back(viewUid);
-      zoomGroup->push_back(viewUid);
+      rotGroup->push_back(view->uid());
+      transGroup->push_back(view->uid());
+      zoomGroup->push_back(view->uid());
 
+      layout.addView(std::move(view));
       ++count;
     }
   }
 
   return layout;
 }
-
 } // namespace
 
-WindowData::WindowData()
-  : m_viewport(0, 0, 800, 800)
+WindowData::WindowData(const CrosshairsState& crosshairs)
+  : m_crosshairs(crosshairs)
+  , m_viewport(0, 0, 800, 800)
   , m_windowPos(0, 0)
   , m_windowSize(800, 800)
   , m_framebufferSize(800, 800)
   , m_contentScaleRatio(1.0f, 1.0f)
-  ,
-
-  m_layouts()
+  , m_layouts()
   , m_currentLayout(0)
   , m_activeViewUid(std::nullopt)
-  ,
-
-  m_viewConvention(ViewConvention::Radiological)
+  , m_viewConvention(ViewConvention::Radiological)
 {
   setupViews();
   setCurrentLayoutIndex(0);
@@ -444,13 +466,13 @@ void WindowData::setupViews()
 {
   auto conventionProvider = [this]() { return m_viewConvention; };
 
-  m_layouts.emplace_back(createFourUpLayout(conventionProvider));
-  m_layouts.emplace_back(createTriLayout(conventionProvider));
+  m_layouts.emplace_back(createFourUpLayout(m_crosshairs, conventionProvider));
+  m_layouts.emplace_back(createTriLayout(m_crosshairs, conventionProvider));
 
   static constexpr std::size_t refImage = 0;
 
   m_layouts.emplace_back(
-    createGridLayout(ViewType::Axial, 1, 1, false, false, conventionProvider, refImage, std::nullopt)
+    createGridLayout(ViewType::Axial, 1, 1, false, false, m_crosshairs, conventionProvider, refImage, std::nullopt)
   );
 
   updateAllViews();
@@ -470,14 +492,14 @@ void WindowData::addGridLayout(
   m_layouts.emplace_back(createGridLayout(
     viewType, width, height,
     offsetViews, isLightbox,
-    conventionProvider, imageIndexForLightbox, imageUidForLightbox));
+    m_crosshairs, conventionProvider,
+    imageIndexForLightbox, imageUidForLightbox));
 
   updateAllViews();
 }
 
 void WindowData::addLightboxLayoutForImage(
-  const ViewType& viewType, std::size_t numSlices, std::size_t imageIndex, const uuids::uuid& imageUid
-)
+  const ViewType& viewType, std::size_t numSlices, std::size_t imageIndex, const uuids::uuid& imageUid)
 {
   static constexpr bool k_offsetViews = true;
   static constexpr bool k_isLightbox = true;
@@ -486,22 +508,15 @@ void WindowData::addLightboxLayoutForImage(
   const auto div = std::div(static_cast<int>(numSlices), w);
   const int h = div.quot + (div.rem > 0 ? 1 : 0);
 
-  addGridLayout(
-    viewType,
-    static_cast<std::size_t>(w),
-    static_cast<std::size_t>(h),
-    k_offsetViews,
-    k_isLightbox,
-    imageIndex,
-    imageUid
-  );
+  addGridLayout(viewType, static_cast<std::size_t>(w), static_cast<std::size_t>(h),
+                k_offsetViews, k_isLightbox, imageIndex, imageUid);
 }
 
 void WindowData::addAxCorSagLayout(std::size_t numImages)
 {
   auto conventionProvider = [this]() { return m_viewConvention; };
 
-  m_layouts.emplace_back(createTriTopBottomLayout(numImages, conventionProvider));
+  m_layouts.emplace_back(createTriTopBottomLayout(numImages, m_crosshairs, conventionProvider));
   updateAllViews();
 }
 
@@ -905,7 +920,7 @@ ViewConvention WindowData::getViewOrientationConvention() const
 }
 
 uuid_range_t WindowData::cameraSyncGroupViewUids(
-  CameraSynchronizationMode mode, const uuids::uuid& syncGroupUid) const
+  CameraSyncMode mode, const uuids::uuid& syncGroupUid) const
 {
   const auto& currentLayout = m_layouts.at(m_currentLayout);
   if (const auto* group = currentLayout.getCameraSyncGroup(mode, syncGroupUid)) {

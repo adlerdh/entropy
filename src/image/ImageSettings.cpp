@@ -16,27 +16,12 @@ ImageSettings::ImageSettings(
   std::size_t numPixels,
   uint32_t numComponents,
   ComponentType componentType,
-  std::vector<ComponentStats> componentStats
-)
+  std::vector<ComponentStats> componentStats)
   : m_displayName(std::move(displayName))
-  , m_globalVisibility(true)
-  , m_globalOpacity(1.0f)
-  , m_borderColor{1.0f, 0.0f, 1.0f}
-  , m_lockedToReference{true}
-  , m_displayAsColor{false}
-  , m_ignoreAlpha{false}
-  , m_colorInterpolationMode{InterpolationMode::Trilinear}
-  , m_useDistanceMapForRaycasting{false}
-  , m_isosurfacesVisible{true}
-  , m_applyImageColormapToIsosurfaces{false}
-  , m_showIsocontoursIn2D{true}
-  , m_isocontourLineWidthIn2D{2.0}
-  , m_isosurfaceOpacityModulator{1.0f}
   , m_numPixels(numPixels)
   , m_numComponents(numComponents)
   , m_componentType(std::move(componentType))
   , m_componentSettings(numComponents)
-  , m_activeComponent(0)
 {
   if (0 == m_numPixels)
   {

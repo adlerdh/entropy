@@ -603,7 +603,7 @@ void renderImageHeader(
   {
     // We force the reference image transformation to always be locked. The reference image
     // cannot be transformed, since it defines the reference space.
-    const bool forceLocked = (isRef);
+    const bool forceLocked = isRef;
     const bool isLocked = (forceLocked || image->transformations().is_worldDef_T_affine_locked());
 
     ImGui::PushStyleColor(ImGuiCol_Button, (isLocked ? inactiveColor : activeColor));
@@ -1698,12 +1698,14 @@ void renderImageHeader(
 
       glm::mat4 aff_T_sub = glm::transpose(imgTx.get_affine_T_subject());
 
+      ImGui::PushID("initAffineTx");
       ImGui::PushItemWidth(-1);
-      ImGui::InputFloat4("", glm::value_ptr(aff_T_sub[0]), txFormat, ImGuiInputTextFlags_ReadOnly);
-      ImGui::InputFloat4("", glm::value_ptr(aff_T_sub[1]), txFormat, ImGuiInputTextFlags_ReadOnly);
-      ImGui::InputFloat4("", glm::value_ptr(aff_T_sub[2]), txFormat, ImGuiInputTextFlags_ReadOnly);
-      ImGui::InputFloat4("", glm::value_ptr(aff_T_sub[3]), txFormat, ImGuiInputTextFlags_ReadOnly);
+      ImGui::InputFloat4("##init_col0", glm::value_ptr(aff_T_sub[0]), txFormat, ImGuiInputTextFlags_ReadOnly);
+      ImGui::InputFloat4("##init_col1", glm::value_ptr(aff_T_sub[1]), txFormat, ImGuiInputTextFlags_ReadOnly);
+      ImGui::InputFloat4("##init_col2", glm::value_ptr(aff_T_sub[2]), txFormat, ImGuiInputTextFlags_ReadOnly);
+      ImGui::InputFloat4("##init_col3", glm::value_ptr(aff_T_sub[3]), txFormat, ImGuiInputTextFlags_ReadOnly);
       ImGui::PopItemWidth();
+      ImGui::PopID();
     }
 
     ImGui::Spacing();
@@ -1725,13 +1727,11 @@ void renderImageHeader(
     if (forceDisableInitialTxs)
     {
       helpMarker("Enable/disable application of the manual affine transformation from Subject to "
-                 "World space. "
-                 "Always disabled for the reference image.");
+                 "World space. Always disabled for the reference image.");
     }
     else
     {
-      helpMarker("Enable/disable application of the manual affine transformation from Subject to "
-                 "World space.");
+      helpMarker("Enable/disable application of the manual affine transformation from Subject to World space.");
     }
 
     if (enable_worldDef_T_affine && !forceDisableInitialTxs)
@@ -1806,59 +1806,45 @@ void renderImageHeader(
       ImGui::Spacing();
       glm::mat4 world_T_affine = glm::transpose(imgTx.get_worldDef_T_affine());
 
+      ImGui::PushID("subjectToWorld");
       ImGui::PushItemWidth(-1);
       ImGui::Text("Subject-to-World matrix:");
-      ImGui::InputFloat4(
-        "", glm::value_ptr(world_T_affine[0]), txFormat, ImGuiInputTextFlags_ReadOnly
-      );
-      ImGui::InputFloat4(
-        "", glm::value_ptr(world_T_affine[1]), txFormat, ImGuiInputTextFlags_ReadOnly
-      );
-      ImGui::InputFloat4(
-        "", glm::value_ptr(world_T_affine[2]), txFormat, ImGuiInputTextFlags_ReadOnly
-      );
-      ImGui::InputFloat4(
-        "", glm::value_ptr(world_T_affine[3]), txFormat, ImGuiInputTextFlags_ReadOnly
-      );
+      ImGui::InputFloat4("##sTw_col0", glm::value_ptr(world_T_affine[0]), txFormat, ImGuiInputTextFlags_ReadOnly);
+      ImGui::InputFloat4("##sTw_col1", glm::value_ptr(world_T_affine[1]), txFormat, ImGuiInputTextFlags_ReadOnly);
+      ImGui::InputFloat4("##sTw_col2", glm::value_ptr(world_T_affine[2]), txFormat, ImGuiInputTextFlags_ReadOnly);
+      ImGui::InputFloat4("##sTw_col3", glm::value_ptr(world_T_affine[3]), txFormat, ImGuiInputTextFlags_ReadOnly);
       ImGui::PopItemWidth();
+      ImGui::PopID();
 
       ImGui::Spacing();
       ImGui::Separator();
       ImGui::Spacing();
 
-      if (ImGui::Button("Reset manual transformation to identity"))
-      {
+      if (ImGui::Button("Reset manual transformation to identity")) {
         imgTx.reset_worldDef_T_affine();
         updateImageUniforms();
       }
       ImGui::SameLine();
-      helpMarker(
-        "Reset the manual component of the affine transformation matrix from Subject to World space"
-      );
+      helpMarker("Reset the manual component of the affine transformation matrix from Subject to World space");
 
       // Save manual tx to file:
       static const char* sk_buttonText("Save manual transformation...");
       static const char* sk_dialogTitle("Select Manual Transformation");
       static const std::vector<std::string> sk_dialogFilters{};
 
-      const auto selectedManualTxFile
-        = ImGui::renderFileButtonDialogAndWindow(sk_buttonText, sk_dialogTitle, sk_dialogFilters);
+      const auto selectedManualTxFile =
+        ImGui::renderFileButtonDialogAndWindow(sk_buttonText, sk_dialogTitle, sk_dialogFilters);
 
       ImGui::SameLine();
-      helpMarker(
-        "Save the manual component of the affine transformation matrix from Subject to World space"
-      );
+      helpMarker("Save the manual component of the affine transformation matrix from Subject to World space");
 
       if (selectedManualTxFile)
       {
         const glm::dmat4 worldDef_T_affine{imgTx.get_worldDef_T_affine()};
-
-        if (serialize::saveAffineTxFile(worldDef_T_affine, *selectedManualTxFile))
-        {
+        if (serialize::saveAffineTxFile(worldDef_T_affine, *selectedManualTxFile)) {
           spdlog::info("Saved manual transformation matrix to file {}", *selectedManualTxFile);
         }
-        else
-        {
+        else {
           spdlog::error("Error saving manual transformation matrix to file {}", *selectedManualTxFile);
         }
       }
@@ -1866,42 +1852,27 @@ void renderImageHeader(
       if (imgTx.get_enable_affine_T_subject())
       {
         // Save concatenated initial + manual tx to file:
-        static const char* sk_saveInitAndManualTxButtonText(
-          "Save initial + manual transformation..."
-        );
-        static const char* sk_saveInitAndManualTxDialogTitle(
-          "Select Concatenated Initial and Manual Transformation"
-        );
+        static const char* sk_saveInitAndManualTxButtonText("Save initial + manual transformation...");
+        static const char* sk_saveInitAndManualTxDialogTitle("Select Concatenated Initial and Manual Transformation");
 
         const auto selectedInitAndManualConcatTxFile = ImGui::renderFileButtonDialogAndWindow(
-          sk_saveInitAndManualTxButtonText, sk_saveInitAndManualTxDialogTitle, sk_dialogFilters
-        );
+          sk_saveInitAndManualTxButtonText, sk_saveInitAndManualTxDialogTitle, sk_dialogFilters);
 
         ImGui::SameLine();
-        helpMarker("Save the concatenated initial and manual affine transformation matrix from "
-                   "Subject to World space");
+        helpMarker("Save the concatenated initial and manual affine transformation matrix from Subject to World space");
 
         if (selectedInitAndManualConcatTxFile)
         {
           const glm::dmat4 affine_T_subject{imgTx.get_affine_T_subject()};
           const glm::dmat4 worldDef_T_affine{imgTx.get_worldDef_T_affine()};
 
-          if (serialize::saveAffineTxFile(
-                worldDef_T_affine * affine_T_subject, *selectedInitAndManualConcatTxFile
-              ))
-          {
-            spdlog::info(
-              "Saved concatenated initial and manual affine transformation matrix to file {}",
-              *selectedInitAndManualConcatTxFile
-            );
+          if (serialize::saveAffineTxFile(worldDef_T_affine * affine_T_subject, *selectedInitAndManualConcatTxFile)) {
+            spdlog::info("Saved concatenated initial and manual affine transformation matrix to file {}",
+                         *selectedInitAndManualConcatTxFile);
           }
-          else
-          {
-            spdlog::error(
-              "Error saving concatenated initial and manual affine transformation matrix to file "
-              "{}",
-              *selectedInitAndManualConcatTxFile
-            );
+          else {
+            spdlog::error("Error saving concatenated initial and manual affine transformation matrix to file {}",
+                          *selectedInitAndManualConcatTxFile);
           }
         }
       }
@@ -1921,12 +1892,9 @@ void renderImageHeader(
 
   if (ImGui::TreeNode("Histogram"))
   {
-    if (image->header().numPixels() > std::numeric_limits<int32_t>::max())
-    {
-      spdlog::warn(
-        "Number of pixels in image ({}) exceeds maximum supported by image histogram",
-        image->header().numPixels()
-      );
+    if (image->header().numPixels() > std::numeric_limits<int32_t>::max()) {
+      spdlog::warn("Number of pixels in image ({}) exceeds maximum supported by image histogram",
+                   image->header().numPixels());
     }
 
     const uint32_t comp = imgSettings.activeComponent();

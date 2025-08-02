@@ -1,5 +1,4 @@
-#ifndef IMAGE_SETTINGS_H
-#define IMAGE_SETTINGS_H
+#pragma once
 
 #include "common/HistogramSettings.h"
 #include "common/Types.h"
@@ -442,8 +441,8 @@ private:
     std::pair<double, double> m_minMaxThresholdRange{0.0, 0.0};    //!< Valid threshold range
 
     /// Window center and width in native image intensity units
-    double m_windowCenter = 0.0;
-    double m_windowWidth = 0.0;
+    double m_windowCenter{0.0};
+    double m_windowWidth{0.0};
 
     std::pair<double, double> m_windowQuantilesLowHigh{0.0, 0.0};
 
@@ -457,84 +456,79 @@ private:
 
     /// @note The following slope (m) and intercept (b) are used to map NATIVE image intensity
     /// values (x) into the range [0.0, 1.0], via m*x + b
-    double m_slope_native = 0.0;     //!< Slope (m) computed from window
-    double m_intercept_native = 0.0; //!< Intercept (b) computed from window and level
+    double m_slope_native{0.0};     //!< Slope (m) computed from window
+    double m_intercept_native{0.0}; //!< Intercept (b) computed from window and level
 
     /// @note The following slope (m) and intercept (b) are used to map image TEXTURE intensity
     /// values (x) into the range [0.0, 1.0], via m*x + b
-    double m_slope_texture = 0.0;     //!< Slope computed from window
-    double m_intercept_texture = 0.0; //!< Intercept computed from window and level
+    double m_slope_texture{0.0};     //!< Slope computed from window
+    double m_intercept_texture{0.0}; //!< Intercept computed from window and level
 
     /// @note The following values of slope (m) and intercept (b) are used to map image TEXTURE intensity
     /// values (x) into the range [0.0, 1.0], via m*x + b
     /// These values represent the largest window possible
-    double m_largest_slope_texture = 0.0;     //!< Slope computed from window
-    double m_largest_intercept_texture = 0.0; //!< Intercept computed from window and level
+    double m_largest_slope_texture{0.0}; //!< Slope computed from window
+    double m_largest_intercept_texture{0.0}; //!< Intercept computed from window and level
 
-    double m_opacity = 0.0; //!< Opacity in range [0.0, 1.0]
-    bool m_visible = false; //!< Visibility flag (show/hide the component)
+    double m_opacity{0.0}; //!< Opacity in range [0.0, 1.0]
+    bool m_visible{false}; //!< Visibility flag (show/hide the component)
 
-    bool m_showEdges = false;      //!< Flag to show edges
-    bool m_thresholdEdges = false; //!< Flag to threshold edges
-    bool m_useFreiChen = false;    //!< Flag to use Frei-Chen filters
-    double m_edgeMagnitude
-      = 0.0; //!< Magnitude of edges to show [0.0, 4.0] if thresholding is turned one
-    bool m_windowedEdges
-      = false; //!< Flag to compute edges after applying windowing (width/level) to the image
-    bool m_overlayEdges
-      = false; //!< Flag to overlay edges atop image (true) or show edges on their own (false)
-    bool m_colormapEdges
-      = false; //!< Flag to apply colormap to edges (true) or to render edges with a solid color (false)
-    glm::vec3 m_edgeColor = glm::vec3{0.0f
-    };                          //!< Edge color (used if not rendering edges using colormap)
-    double m_edgeOpacity = 0.0; //!< Edge opacity: only applies when shown as an overlay atop the image
+    bool m_showEdges{false}; //!< Flag to show edges
+    bool m_thresholdEdges{false}; //!< Flag to threshold edges
+    bool m_useFreiChen{false}; //!< Flag to use Frei-Chen filters
+    double m_edgeMagnitude{0.0}; //!< Magnitude of edges to show [0.0, 4.0] if thresholding is turned one
+    bool m_windowedEdges{false}; //!< Flag to compute edges after applying windowing (width/level) to the image
+    bool m_overlayEdges{false}; //!< Flag to overlay edges atop image (true) or show edges on their own (false)
+    bool m_colormapEdges{false}; //!< Flag to apply colormap to edges (true) or to render edges with a solid color (false)
+    glm::vec3 m_edgeColor{0.0f}; //!< Edge color (used if not rendering edges using colormap)
+    double m_edgeOpacity{0.0}; //!< Edge opacity: only applies when shown as an overlay atop the image
 
-    std::size_t m_colorMapIndex = 0; //!< Color map index
-    bool m_colorMapInverted = false; //!< Whether the color map is inverted
+    std::size_t m_colorMapIndex{0}; //!< Color map index
+    bool m_colorMapInverted{false}; //!< Whether the color map is inverted
 
-    bool m_colorMapContinuous = true; //!< Whether the color map is continuous or discrete
-    uint32_t m_numColorMapLevels = 8; //!< Number of quantization levels
+    bool m_colorMapContinuous{true}; //!< Whether the color map is continuous (true) or discrete (false)
+    uint32_t m_numColorMapLevels{8}; //!< Number of quantization levels
 
     glm::vec3 m_hsvModFactors{0.0f, 1.0f, 1.0f}; //!< HSV modification factors
 
-    std::size_t m_labelTableIndex = 0; //!< Label table index (for segmentation images only)
+    std::size_t m_labelTableIndex{0}; //!< Label table index (for segmentation images only)
 
     /// Interpolation mode
-    InterpolationMode m_interpolationMode = InterpolationMode::NearestNeighbor;
+    InterpolationMode m_interpolationMode{InterpolationMode::Trilinear};
 
     HistogramSettings m_histogramSettings; //!< Histogram calculation and display settings
   };
 
   /*** Start settings that apply for all components ***/
   std::string m_displayName; //!< Display name of the image in the UI
-  bool m_globalVisibility;   //!< Global visibility
-  float m_globalOpacity;     //!< Global opacity
-  glm::vec3 m_borderColor;   //!< Border color
-  bool m_lockedToReference;  //!< Lock this image to the reference image
+  bool m_globalVisibility{true}; //!< Global visibility
+  float m_globalOpacity{1.0f}; //!< Global opacity
+  glm::vec3 m_borderColor{1.0f, 0.0f, 1.0f}; //!< Border color
+  bool m_lockedToReference{true}; //!< Lock this image to the reference image
 
   // The following settings only apply to images with 3 or 4 components:
-  bool m_displayAsColor; //!< Display the image as RGB/RGBA color
-  bool m_ignoreAlpha;    //!< Ignore the alpha component of the image
-  InterpolationMode m_colorInterpolationMode = InterpolationMode::NearestNeighbor; //!< Interpolation mode
+  bool m_displayAsColor{false}; //!< Display the image as RGB/RGBA color
+  bool m_ignoreAlpha{false}; //!< Ignore the alpha component of the image
+  InterpolationMode m_colorInterpolationMode{InterpolationMode::Trilinear}; //!< Interpolation mode
 
   // These apply to the image's isosurfaces:
-  bool m_useDistanceMapForRaycasting; //!< Use the distance map to accelerate raycasting of the image
-  bool m_isosurfacesVisible;          //!< Visibility of image isosurfaces
-  bool m_applyImageColormapToIsosurfaces; //!< Color image isosurfaces using the image colormap
-  bool m_showIsocontoursIn2D;             //!< Visibility of isosurface edges in 2D image slices
+  bool m_useDistanceMapForRaycasting{false}; //!< Use the distance map to accelerate raycasting of the image
+  bool m_isosurfacesVisible{true}; //!< Visibility of image isosurfaces
+  bool m_applyImageColormapToIsosurfaces{false}; //!< Color image isosurfaces using the image colormap
+  bool m_showIsocontoursIn2D{true}; //!< Visibility of isosurface edges in 2D image slices
 
   /// Width of isovalue lines in 2D, roughly in terms of pixels
-  double m_isocontourLineWidthIn2D;
-  float m_isosurfaceOpacityModulator; //!< Modality of surface opacity for the image
+  double m_isocontourLineWidthIn2D{2.0};
+  float m_isosurfaceOpacityModulator{1.0f}; //!< Modulator of surface opacity for the image
   /*** End settings for all components ***/
 
-  std::size_t m_numPixels;       //!< Number of pixels in the image (and hence in each component)
-  uint32_t m_numComponents;      //!< Number of components per pixel
+  std::size_t m_numPixels; //!< Number of pixels in the image (and hence in each component)
+  uint32_t m_numComponents; //!< Number of components per pixel
   ComponentType m_componentType; //!< Component type
-  std::vector<ComponentStats> m_componentStats;       //!< Per-component statistics
+  std::vector<ComponentStats> m_componentStats; //!< Per-component statistics
   std::vector<ComponentSettings> m_componentSettings; //!< Per-component settings
 
-  uint32_t m_activeComponent; //!< Active component
+  uint32_t m_activeComponent{0}; //!< Active component
 };
 
 std::ostream& operator<<(std::ostream&, const ImageSettings&);
@@ -546,5 +540,3 @@ struct fmt::formatter<ImageSettings> : ostream_formatter
 {
 };
 #endif
-
-#endif // IMAGE_SETTINGS_H

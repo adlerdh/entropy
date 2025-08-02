@@ -11,6 +11,7 @@
 #include "image/Image.h"
 
 #include "logic/app/Data.h"
+#include "logic/camera/MathUtility.h"
 #include "logic/states/AnnotationStateHelpers.h"
 
 #include <IconsForkAwesome.h>
@@ -55,6 +56,7 @@ void renderViewSettingsComboWindow(
   bool /*hasFrameAndBackground*/,
   bool showApplyToAllButton,
 
+  const CoordinateFrame& worldCrosshairs,
   const glm::vec2& contentScales,
 
   std::size_t numImages,
@@ -518,13 +520,9 @@ void renderViewSettingsComboWindow(
           ImGui::PushStyleColor(ImGuiCol_Text, activeColor);
         }
 
-        // Disable opening the view type combo box if the ASM is in a state where
-        // it should not change.
-
-        static constexpr bool sk_xhairsNotRotated = false;
-
-        const bool clickedViewTypeCombo
-          = ImGui::BeginCombo("##viewTypeCombo", typeString(viewType, sk_xhairsNotRotated).c_str());
+        // Disable opening the view type combo box if the ASM is in a state where it should not change.
+        const bool xhairsRotated = math::isRotationIdentity(worldCrosshairs.world_T_frame_rotation());
+        const bool clickedViewTypeCombo = ImGui::BeginCombo("##viewTypeCombo", to_string(viewType, !xhairsRotated).c_str());
 
         if (isOblique)
         {
@@ -533,13 +531,12 @@ void renderViewSettingsComboWindow(
 
         if (clickedViewTypeCombo)
         {
-          if (state::isInStateWhereViewTypeCanChange(viewOrLayoutUid))
+          if (state::annot::isInStateWhereViewTypeCanChange(viewOrLayoutUid))
           {
             for (const auto& vt : AllViewTypes)
             {
               const bool isSelected = (vt == viewType);
-
-              if (ImGui::Selectable(typeString(vt, sk_xhairsNotRotated).c_str(), isSelected))
+              if (ImGui::Selectable(to_string(vt, !xhairsRotated).c_str(), isSelected))
               {
                 setViewType(vt);
                 recenter();
@@ -664,8 +661,7 @@ void renderViewOrientationToolWindow(
     return;
   }
 
-  const std::string uidString = std::string("OrientationTool##")
-                                + uuids::to_string(viewOrLayoutUid);
+  const std::string uidString = std::string("OrientationTool##") + uuids::to_string(viewOrLayoutUid);
 
   bool windowOpen = false;
 
@@ -1963,14 +1959,11 @@ void renderSettingsWindow(
               "%d"
             ))
         {
-          appData.guiData().m_imageValuePrecision
-            = std::min(std::max(valuePrecision, sk_minPrecision), sk_maxPrecision);
+          appData.guiData().m_imageValuePrecision =
+            std::min(std::max(valuePrecision, sk_minPrecision), sk_maxPrecision);
 
-          appData.guiData().m_imageValuePrecisionFormat = std::string("%0.")
-                                                          + std::to_string(
-                                                            appData.guiData().m_imageValuePrecision
-                                                          )
-                                                          + std::string("f");
+          appData.guiData().m_imageValuePrecisionFormat =
+            std::string("%0.") + std::to_string(appData.guiData().m_imageValuePrecision) + std::string("f");
         }
         ImGui::SameLine();
         helpMarker("Floating-point precision of image values (e.g. in Inspector window)");
@@ -2021,11 +2014,8 @@ void renderSettingsWindow(
           appData.guiData().m_percentilePrecision
             = std::min(std::max(percentilePrecision, sk_minPrecision), sk_maxPrecision);
 
-          appData.guiData().m_percentilePrecisionFormat = std::string("%0.")
-                                                          + std::to_string(
-                                                            appData.guiData().m_percentilePrecision
-                                                          )
-                                                          + std::string("f");
+          appData.guiData().m_percentilePrecisionFormat =
+            std::string("%0.") + std::to_string(appData.guiData().m_percentilePrecision) + std::string("f");
         }
         ImGui::SameLine();
         helpMarker("Floating-point precision of percentiles (e.g. in histogram)");
@@ -3008,8 +2998,9 @@ void renderOpacityBlenderWindow(
   for (const auto& imageUid : appData.imageUidsOrdered())
   {
     Image* image = appData.image(imageUid);
-    if (!image)
+    if (!image) {
       continue;
+    }
 
     ImageSettings& imgSettings = image->settings();
     const ImageHeader& imgHeader = image->header();
@@ -3027,29 +3018,17 @@ void renderOpacityBlenderWindow(
 
     ImGui::PushID(imageIndex);
 
-    ImGui::PushStyleColor(
-      ImGuiCol_FrameBg, ImVec4(frameBgColor.r, frameBgColor.g, frameBgColor.b, 1.0f)
-    );
-    ImGui::PushStyleColor(
-      ImGuiCol_FrameBgActive,
-      ImVec4(frameBgActiveColor.r, frameBgActiveColor.g, frameBgActiveColor.b, 1.0f)
-    );
-    ImGui::PushStyleColor(
-      ImGuiCol_FrameBgHovered,
-      ImVec4(frameBgHoveredColor.r, frameBgHoveredColor.g, frameBgHoveredColor.b, 1.0f)
-    );
-    ImGui::PushStyleColor(
-      ImGuiCol_SliderGrab, ImVec4(sliderGrabColor.r, sliderGrabColor.g, sliderGrabColor.b, 1.0f)
-    );
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(frameBgColor.r, frameBgColor.g, frameBgColor.b, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(frameBgActiveColor.r, frameBgActiveColor.g, frameBgActiveColor.b, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(frameBgHoveredColor.r, frameBgHoveredColor.g, frameBgHoveredColor.b, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(sliderGrabColor.r, sliderGrabColor.g, sliderGrabColor.b, 1.0f));
 
     const std::string name = imgSettings.displayName() + "##" + std::to_string(imageIndex);
 
     if (imgSettings.displayImageAsColor())
     {
       double opacity = imgSettings.globalOpacity();
-
-      if (mySliderF64(name.c_str(), &opacity, 0.0, 1.0) && !renderData.m_opacityMixMode)
-      {
+      if (mySliderF64(name.c_str(), &opacity, 0.0, 1.0) && !renderData.m_opacityMixMode) {
         imgSettings.setGlobalOpacity(opacity);
         updateImageUniforms(imageUid);
       }
@@ -3057,9 +3036,7 @@ void renderOpacityBlenderWindow(
     else
     {
       double opacity = imgSettings.opacity();
-
-      if (mySliderF64(name.c_str(), &opacity, 0.0, 1.0) && !renderData.m_opacityMixMode)
-      {
+      if (mySliderF64(name.c_str(), &opacity, 0.0, 1.0) && !renderData.m_opacityMixMode) {
         imgSettings.setOpacity(opacity);
         updateImageUniforms(imageUid);
       }

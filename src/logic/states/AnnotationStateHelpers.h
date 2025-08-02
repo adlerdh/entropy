@@ -1,11 +1,9 @@
-#ifndef ANNOTATION_STATE_HELPERS_H
-#define ANNOTATION_STATE_HELPERS_H
+#pragma once
 
 #include <uuid.h>
 
-namespace state
+namespace state::annot
 {
-
 /// Are annotation selections/highlights visible?
 bool isInStateWhereAnnotationHighlightsAreVisible();
 
@@ -43,7 +41,4 @@ bool showToolbarCutSelectedAnnotationButton();    // Cut selected annotation
 bool showToolbarCopySelectedAnnotationButton();   // Copy selected annotation
 bool showToolbarPasteSelectedAnnotationButton();  // Paste selected annotation
 bool showToolbarFlipAnnotationButtons();          // Flip selected annotation
-
-} // namespace state
-
-#endif // ANNOTATION_STATE_HELPERS_H
+} // namespace state::annot

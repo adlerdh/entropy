@@ -311,9 +311,7 @@ glm::dmat3 computeClosestOrthogonalDirectionMatrix(const glm::dmat3& directions)
   return closestMatrix;
 }
 
-void rotateFrameAboutWorldPos(
-  CoordinateFrame& frame, const glm::quat& rotation, const glm::vec3& worldCenter
-)
+void rotateFrameAboutWorldPos(CoordinateFrame& frame, const glm::quat& rotation, const glm::vec3& worldCenter)
 {
   const glm::quat oldRotation = frame.world_T_frame_rotation();
   const glm::vec3 oldOrigin = frame.worldOrigin();

@@ -1,9 +1,9 @@
-#ifndef APP_STATE_H
-#define APP_STATE_H
+#pragma once
 
 #include "common/CoordinateFrame.h"
 #include "common/Types.h"
 
+#include "logic/app/CrosshairsState.h"
 #include "logic/annotation/Annotation.h"
 #include "logic/interaction/events/ButtonState.h"
 //#include "logic/ipc/IPCHandler.h"
@@ -20,11 +20,21 @@
 class AppState
 {
 public:
-  AppState();
+  AppState() = default;
   ~AppState() = default;
 
-  void setWorldCrosshairsPos(const glm::vec3& worldCrosshairs);
+  void setWorldCrosshairsPos(const glm::vec3& worldPos);
+  void setWorldCrosshairs(CoordinateFrame worldCrosshairs);
+
   const CoordinateFrame& worldCrosshairs() const;
+  const CrosshairsState& crosshairsState() const;
+
+  /// Saves current crosshairs position to "old"
+  void saveOldCrosshairs();
+
+  /// Set UID of view using the old crosshairs.
+  /// std::nullopt to clear it
+  void setViewUsingOldCrosshairs(const std::optional<uuids::uuid>& viewUid);
 
   void setWorldRotationCenter(const std::optional<glm::vec3>& worldRotationCenter);
 
@@ -58,18 +68,21 @@ private:
   // void broadcastCrosshairsPosition();
   // IPCHandler m_ipcHandler;
 
-  MouseMode m_mouseMode;            //!< Current mouse interaction mode
-  ButtonState m_buttonState;        //!< Global mouse button and keyboard modifier state
-  ImageSelection m_recenteringMode; //!< Image selection to use when recentering views and crosshairs
+  MouseMode m_mouseMode{MouseMode::Pointer}; //!< Current mouse interaction mode
+  ButtonState m_buttonState; //!< Global mouse button and keyboard modifier state
 
-  bool m_animating; //!< Is the application currently animating something?
+  /// Image selection to use when recentering views and crosshairs
+  ImageSelection m_recenteringMode{ImageSelection::AllLoadedImages};
 
-  CoordinateFrame m_worldCrosshairs; //!< Crosshairs coordinate frame, defined in World space
-  std::optional<glm::vec3> m_worldRotationCenter; //!< Rotation center position, defined in World space
+  bool m_animating{false}; //!< Is the application currently animating something?
 
-  std::optional<Annotation> m_copiedAnnotation; //!< Annotation copied to the clipboard
+  CrosshairsState m_crosshairsState;
 
-  std::atomic<bool> m_quitApp; //!< Flag to quit the application
+  /// Rotation center position, defined in World space
+  std::optional<glm::vec3> m_worldRotationCenter{std::nullopt};
+
+  /// Annotation copied to the clipboard
+  std::optional<Annotation> m_copiedAnnotation{std::nullopt};
+
+  std::atomic<bool> m_quitApp{false}; //!< Flag to quit the application
 };
-
-#endif // APP_STATE_H

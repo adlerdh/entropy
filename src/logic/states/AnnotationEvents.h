@@ -1,26 +1,22 @@
-#ifndef ANNOTATION_EVENTS_H
-#define ANNOTATION_EVENTS_H
+#pragma once
 
 #include "logic/interaction/ViewHit.h"
 #include "logic/interaction/events/ButtonState.h"
 
 #include <tinyfsm.hpp>
 
-namespace state
+namespace state::annot
 {
-
 /// MouseEvent is a base class for mouse press, release, and move events.
 struct MouseEvent : public tinyfsm::Event
 {
   MouseEvent(
-    const ViewHit& prevHit, const ViewHit& currHit, const ButtonState& b, const ModifierState& m
-  )
+    const ViewHit& prevHit, const ViewHit& currHit, const ButtonState& b, const ModifierState& m)
     : m_prevHit(prevHit)
     , m_currHit(currHit)
     , buttonState(b)
     , modifierState(m)
-  {
-  }
+  {}
 
   virtual ~MouseEvent() = default;
 
@@ -34,9 +30,7 @@ struct MouseEvent : public tinyfsm::Event
 struct MousePressEvent : public MouseEvent
 {
   MousePressEvent(const ViewHit& currHit, const ButtonState& b, const ModifierState& m)
-    : MouseEvent(currHit, currHit, b, m)
-  {
-  }
+    : MouseEvent(currHit, currHit, b, m) {}
 
   ~MousePressEvent() override = default;
 };
@@ -45,9 +39,7 @@ struct MousePressEvent : public MouseEvent
 struct MouseReleaseEvent : public MouseEvent
 {
   MouseReleaseEvent(const ViewHit& currHit, const ButtonState& b, const ModifierState& m)
-    : MouseEvent(currHit, currHit, b, m)
-  {
-  }
+    : MouseEvent(currHit, currHit, b, m) {}
 
   ~MouseReleaseEvent() override = default;
 };
@@ -55,91 +47,58 @@ struct MouseReleaseEvent : public MouseEvent
 /// Mouse pointer moved
 struct MouseMoveEvent : public MouseEvent
 {
-  MouseMoveEvent(
-    const ViewHit& prevHit, const ViewHit& currHit, const ButtonState& b, const ModifierState& m
-  )
-    : MouseEvent(prevHit, currHit, b, m)
-  {
-  }
+  MouseMoveEvent(const ViewHit& prevHit, const ViewHit& currHit,
+                 const ButtonState& b, const ModifierState& m)
+    : MouseEvent(prevHit, currHit, b, m) {}
 
   ~MouseMoveEvent() override = default;
 };
 
 /// User has turned on annotation mode: they want to create or edit annotations
-struct TurnOnAnnotationModeEvent : public tinyfsm::Event
-{
-};
+struct TurnOnAnnotationModeEvent : public tinyfsm::Event {};
 
 /// User has turned off annotation mode: they want to stop annotating
-struct TurnOffAnnotationModeEvent : public tinyfsm::Event
-{
-};
+struct TurnOffAnnotationModeEvent : public tinyfsm::Event {};
 
 /// User wants to create a new annotation
-struct CreateNewAnnotationEvent : public tinyfsm::Event
-{
-};
+struct CreateNewAnnotationEvent : public tinyfsm::Event {};
 
 /// User wants to complete the new annotation that is currently in progress
-struct CompleteNewAnnotationEvent : public tinyfsm::Event
-{
-};
+struct CompleteNewAnnotationEvent : public tinyfsm::Event {};
 
 /// User wants to close the new annotation that is currently in progress
-struct CloseNewAnnotationEvent : public tinyfsm::Event
-{
-};
+struct CloseNewAnnotationEvent : public tinyfsm::Event {};
 
 /// User wants to undo the last annotation vertex that was created for the current
 /// annotation in progress
-struct UndoVertexEvent : public tinyfsm::Event
-{
-};
+struct UndoVertexEvent : public tinyfsm::Event {};
 
 /// User wants to cancel creating the new annotation that is currently in progress
-struct CancelNewAnnotationEvent : public tinyfsm::Event
-{
-};
+struct CancelNewAnnotationEvent : public tinyfsm::Event {};
 
 /// User wants to insert a new vertex following the currently selected annotation vertex
-struct InsertVertexEvent : public tinyfsm::Event
-{
-};
+struct InsertVertexEvent : public tinyfsm::Event {};
 
 /// User wants to remove the currently selected annotation vertex
-struct RemoveSelectedVertexEvent : public tinyfsm::Event
-{
-};
+struct RemoveSelectedVertexEvent : public tinyfsm::Event {};
 
 /// User wants to remove the currently selected annotation
-struct RemoveSelectedAnnotationEvent : public tinyfsm::Event
-{
-};
+struct RemoveSelectedAnnotationEvent : public tinyfsm::Event {};
 
 /// User wants to cut (copy + remove) the selected annotation
-struct CutSelectedAnnotationEvent : public tinyfsm::Event
-{
-};
+struct CutSelectedAnnotationEvent : public tinyfsm::Event {};
 
 /// User wants to copy the selected annotation to the clipboard
-struct CopySelectedAnnotationEvent : public tinyfsm::Event
-{
-};
+struct CopySelectedAnnotationEvent : public tinyfsm::Event {};
 
 /// User wants to paste the selected annotation from the clipboard
-struct PasteAnnotationEvent : public tinyfsm::Event
-{
-};
+struct PasteAnnotationEvent : public tinyfsm::Event {};
 
 /// User wants to horizontally flip the selected annotation
-struct HorizontallyFlipSelectedAnnotationEvent : public tinyfsm::Event
-{
-};
+struct HorizontallyFlipSelectedAnnotationEvent : public tinyfsm::Event {};
 
 /// User wants to horizontally flip the selected annotation
-struct VerticallyFlipSelectedAnnotationEvent : public tinyfsm::Event
-{
-};
+struct VerticallyFlipSelectedAnnotationEvent : public tinyfsm::Event {};
 
 /// Defines the direction (in the view) in which to flip the annotation polygon
 enum class FlipDirection
@@ -147,7 +106,4 @@ enum class FlipDirection
   Horizontal,
   Vertical
 };
-
-} // namespace state
-
-#endif // ANNOTATION_EVENTS_H
+} // namespace state::annot

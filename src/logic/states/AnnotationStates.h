@@ -1,11 +1,9 @@
-#ifndef ANNOTATION_STATES_H
-#define ANNOTATION_STATES_H
+#pragma once
 
 #include "logic/states/AnnotationStateMachine.h"
 
-namespace state
+namespace state::annot
 {
-
 /// @todo Create AnnotatingState: { Nothing, PickingPoint, MovingPoint, SelectingPoint }
 
 /**
@@ -114,7 +112,4 @@ class VertexSelectedState : public AnnotationStateMachine
   void react(const CopySelectedAnnotationEvent&) override;
   void react(const PasteAnnotationEvent&) override;
 };
-
-} // namespace state
-
-#endif // ANNOTATION_STATES_H
+} // namespace state::annot

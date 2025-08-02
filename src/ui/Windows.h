@@ -1,7 +1,7 @@
-#ifndef UI_WINDOWS_H
-#define UI_WINDOWS_H
+#pragma once
 
 #include "common/AsyncTasks.h"
+#include "common/CoordinateFrame.h"
 #include "common/PublicTypes.h"
 #include "common/Types.h"
 
@@ -53,6 +53,7 @@ void renderViewSettingsComboWindow(
   bool /*hasFrameAndBackground*/,
   bool showApplyToAllButton,
 
+  const CoordinateFrame& worldCrosshairs,
   const glm::vec2& contentScales,
 
   size_t numImages,
@@ -73,8 +74,7 @@ void renderViewSettingsComboWindow(
 
   const std::function<void(const ViewType& viewType)>& setViewType,
   const std::function<void(const ViewRenderMode& renderMode)>& setRenderMode,
-  const std::function<void(const IntensityProjectionMode& projMode)>&
-    setIntensityProjectionMode,
+  const std::function<void(const IntensityProjectionMode& projMode)>& setIntensityProjectionMode,
   const std::function<void()>& recenter,
 
   const std::function<void(const uuids::uuid& viewUid)>& applyImageSelectionAndShaderToAllViews,
@@ -92,8 +92,7 @@ void renderViewSettingsComboWindow(
   const std::function<void(float window)>& setXrayProjectionLevel,
 
   const std::function<float()>& getXrayProjectionEnergy,
-  const std::function<void(float window)>& setXrayProjectionEnergy
-);
+  const std::function<void(float window)>& setXrayProjectionEnergy);
 
 void renderViewOrientationToolWindow(
   const uuids::uuid& viewOrLayoutUid,
@@ -105,9 +104,7 @@ void renderViewOrientationToolWindow(
   const std::function<void(const glm::quat& camera_T_world_rotationDelta)>& setViewCameraRotation,
   const std::function<void(const glm::vec3& worldDirection)>& setViewCameraDirection,
   const std::function<glm::vec3()>& getViewNormal,
-  const std::function<std::vector<glm::vec3>(const uuids::uuid& viewUidToExclude)>&
-    getObliqueViewDirections
-);
+  const std::function<std::vector<glm::vec3>(const uuids::uuid& viewUidToExclude)>& getObliqueViewDirections);
 
 /**
  * @brief renderImagePropertiesWindow
@@ -143,8 +140,7 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
   const std::function<void(const uuids::uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
-  const std::function<bool(const uuids::uuid& imageUid, bool locked)>&
-    setLockManualImageTransformation,
+  const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const AllViewsRecenterType& recenterAllViews
 );
 
@@ -168,8 +164,7 @@ void renderSegmentationPropertiesWindow(
     const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>& createBlankSeg,
   const std::function<bool(const uuids::uuid& segUid)>& clearSeg,
   const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
-  const AllViewsRecenterType& recenterAllViews
-);
+  const AllViewsRecenterType& recenterAllViews);
 
 /**
  * @brief renderLandmarkPropertiesWindow
@@ -185,17 +180,14 @@ void renderLandmarkPropertiesWindow(AppData& appData, const AllViewsRecenterType
  */
 void renderAnnotationWindow(
   AppData& appData,
-  const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>&
-    setViewCameraDirection,
+  const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>& setViewCameraDirection,
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
-  const AllViewsRecenterType& recenterAllViews
-);
+  const AllViewsRecenterType& recenterAllViews);
 
 void renderIsosurfacesWindow(
   AppData& appData,
   std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue
-);
+  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue);
 
 /**
  * @brief renderSettingsWindow
@@ -210,8 +202,7 @@ void renderSettingsWindow(
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(size_t cmapIndex)>& getImageColorMap,
   const std::function<void(void)>& updateMetricUniforms,
-  const AllViewsRecenterType& recenterAllViews
-);
+  const AllViewsRecenterType& recenterAllViews);
 
 /**
  * @brief renderInspectionWindow
@@ -235,8 +226,7 @@ void renderInspectionWindow(
   const std::function<std::optional<double>(size_t imageIndex)>& getImageValueNN,
   const std::function<std::optional<double>(size_t imageIndex)>& getImageValueLinear,
   const std::function<std::optional<int64_t>(size_t imageIndex)>& getSegLabel,
-  const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable
-);
+  const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable);
 
 /**
  * @brief renderInspectionWindowWithTable
@@ -255,13 +245,10 @@ void renderInspectionWindowWithTable(
   const std::function<std::optional<glm::ivec3>(size_t imageIndex)>& getVoxelPos,
   const std::function<void(size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
   const std::function<void(size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos,
-  const std::function<std::vector<double>(size_t imageIndex, bool getOnlyActiveComponent)>&
-    getImageValuesNN,
-  const std::function<std::vector<double>(size_t imageIndex, bool getOnlyActiveComponent)>&
-    getImageValuesLinear,
+  const std::function<std::vector<double>(size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesNN,
+  const std::function<std::vector<double>(size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesLinear,
   const std::function<std::optional<int64_t>(size_t imageIndex)>& getSegLabel,
-  const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable
-);
+  const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable);
 
 /**
  * @brief renderOpacityBlenderWindow
@@ -269,7 +256,4 @@ void renderInspectionWindowWithTable(
  * @param updateImageUniforms
  */
 void renderOpacityBlenderWindow(
-  AppData& appData, const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms
-);
-
-#endif // UI_WINDOWS_H
+  AppData& appData, const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms);

@@ -97,17 +97,26 @@ void renderAddLayoutModalPopup(
 
 void renderAboutDialogModalPopup(bool open)
 {
-  static const std::string sk_gitInfo = std::string("Git commit hash: ") + GIT_COMMIT_SHA1
-                                        + "\n" + std::string("Git commit timestamp: ")
-                                        + GIT_COMMIT_TIMESTAMP + "\n"
-                                        + std::string("Git branch: ") + GIT_BRANCH + "\n\n"
-                                        + std::string("Build timestamp: ") + BUILD_TIMESTAMP
-                                        + " (UTC)" + "\n" + std::string("Build OS: ") + HOST_OS_NAME
-                                        + " (" + HOST_OS_VERSION + ")\n"
-                                        + std::string("Build processor: ") + HOST_SYSTEM_PROCESSOR;
+  static const std::string sk_gitInfo =
+    std::string("Git:\n") +
+    std::string("-branch: ") + GIT_BRANCH + "\n" +
+    std::string("-commit: ") + GIT_COMMIT_SHA1 + "\n" +
+    std::string("-timestamp: ") + GIT_COMMIT_TIMESTAMP + "\n\n" +
 
-  if (open && !ImGui::IsPopupOpen("About Entropy"))
-  {
+    std::string("Build:\n") +
+    std::string("-timestamp: ") + BUILD_TIMESTAMP + " (UTC)\n" +
+    std::string("-type: ") + CMAKE_BUILD_TYPE + " (shared libs: " + CMAKE_BUILD_SHARED_LIBS + ")\n" +
+    std::string("-compiler: ") + COMPILER_ID + " (" + COMPILER_VERSION + ")\n" +
+    std::string("-generator: ") + CMAKE_GENERATOR + "\n" +
+    std::string("-CMake: ") + CMAKE_VERSION + "\n\n" +
+
+    std::string("Host:\n") +
+    std::string("-OS: ") + HOST_OS_NAME + " (" + HOST_OS_RELEASE + ", " + HOST_OS_VERSION + ")\n" +
+    std::string("-system: ") + HOST_SYSTEM_NAME + " (" + HOST_SYSTEM_VERSION + ")\n" +
+    std::string("-processor: ") + HOST_SYSTEM_PROCESSOR + " (" + HOST_PROCESSOR_NAME + ")\n" +
+    std::string("-platform: ") + HOST_OS_PLATFORM;
+
+  if (open && !ImGui::IsPopupOpen("About Entropy")) {
     ImGui::OpenPopup("About Entropy", ImGuiWindowFlags_AlwaysAutoResize);
   }
 
@@ -115,32 +124,30 @@ void renderAboutDialogModalPopup(bool open)
 
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-  ImGui::SetNextWindowSize(ImVec2(500.0f, 0));
+  ImGui::SetNextWindowSize(ImVec2(600.0f, 0));
 
   if (ImGui::BeginPopupModal("About Entropy", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
   {
     ImGui::Text("%s (version %s)", APP_NAME, VERSION_FULL);
-    ImGui::Text("%s", APP_DESCRIPTION);
+    ImGui::Text("--> %s", APP_DESCRIPTION);
 
     ImGui::Spacing();
-    ImGui::Text("%s,", ORG_NAME);
-    ImGui::Text("%s,", COPYRIGHT_LINE);
+    ImGui::Text("%s,", ORG_NAME_1);
+    ImGui::Text("%s", ORG_NAME_2);
+
+    ImGui::Spacing();
+    ImGui::Text("%s", COPYRIGHT_LINE);
     ImGui::Text("%s", LICENSE_LINE);
 
     ImGui::Spacing();
     ImGui::Spacing();
     ImGui::Text("Build information:");
 
-    ImGui::InputTextMultiline(
-      "##gitInfo",
-      const_cast<char*>(sk_gitInfo.c_str()),
-      sk_gitInfo.length(),
-      ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 8),
-      ImGuiInputTextFlags_ReadOnly
-    );
+    ImGui::InputTextMultiline("##gitInfo", const_cast<char*>(sk_gitInfo.c_str()),
+                              sk_gitInfo.length(), ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 18),
+                              ImGuiInputTextFlags_ReadOnly);
 
-    if (ImGui::Button("OK", ImVec2(80, 0)))
-    {
+    if (ImGui::Button("Close", ImVec2(80, 0))) {
       ImGui::CloseCurrentPopup();
     }
     ImGui::SetItemDefaultFocus();

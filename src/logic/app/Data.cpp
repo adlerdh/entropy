@@ -31,7 +31,7 @@ AppData::AppData()
   , m_state()
   , m_guiData()
   , m_renderData()
-  , m_windowData()
+  , m_windowData(m_state.crosshairsState())
   , m_project()
   , m_images()
   , m_imageUidsOrdered()
@@ -66,6 +66,7 @@ AppData::AppData()
   // m_ipcHandler.Attach( IPCHandler::GetUserPreferencesFileName().c_str(),
   //                      (short) IPCMessage::VERSION, sizeof( IPCMessage ) );
 
+  // m_windowData.setWorldCrosshairsProvider([this](){ return m_state.worldCrosshairs(); });
   spdlog::debug("Constructed application data");
 }
 

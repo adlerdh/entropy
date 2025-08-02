@@ -1,9 +1,10 @@
-#ifndef WINDOW_DATA_H
-#define WINDOW_DATA_H
+#pragma once
 
 #include "common/Types.h"
 #include "common/UuidRange.h"
 #include "common/Viewport.h"
+
+#include "logic/app/CrosshairsState.h"
 
 #include "windowing/Layout.h"
 #include "windowing/View.h"
@@ -19,7 +20,9 @@
 class WindowData
 {
 public:
-  WindowData();
+  /// @todo Create some other object that handles the crosshairs stuff better...
+  /// needs to give us current, old, and views that use old vs current
+  WindowData(const CrosshairsState& crosshairs);
   ~WindowData() = default;
 
   void setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImageUids);
@@ -157,7 +160,7 @@ public:
   ViewConvention getViewOrientationConvention() const;
 
   /// Get view UIDs in a camera synchronization group
-  uuid_range_t cameraSyncGroupViewUids(CameraSynchronizationMode mode, const uuids::uuid& syncGroupUid) const;
+  uuid_range_t cameraSyncGroupViewUids(CameraSyncMode mode, const uuids::uuid& syncGroupUid) const;
 
   /// Apply a given view's image selection to all views of the current layout
   void applyImageSelectionToAllCurrentViews(const uuids::uuid& referenceViewUid);
@@ -181,6 +184,8 @@ private:
 
   // Recompute view aspect ratios and corners
   void updateAllViews();
+
+  const CrosshairsState& m_crosshairs;
 
   // Window viewport (encompassing all views)
   Viewport m_viewport;
@@ -206,5 +211,3 @@ private:
   // Default view orientation convention used for all views
   ViewConvention m_viewConvention;
 };
-
-#endif // WINDOW_DATA_H

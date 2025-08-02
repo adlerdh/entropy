@@ -3,9 +3,8 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-namespace state
+namespace state::annot
 {
-
 void AnnotationOffState::entry()
 {
   if (!ms_appData)
@@ -358,5 +357,4 @@ void VertexSelectedState::react(const PasteAnnotationEvent&)
 {
   pasteAnnotation();
 }
-
-} // namespace state
+} // namespace state::annot

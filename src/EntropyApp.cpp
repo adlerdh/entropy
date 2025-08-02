@@ -99,9 +99,9 @@ void EntropyApp::init()
   spdlog::debug("Begin initializing application");
 
   // Start the annotation state machine
-  state::fsm_list::start();
+  state::annot::fsm_list::start();
 
-  if (auto* state = state::fsm_list::current_state_ptr)
+  if (auto* state = state::annot::fsm_list::current_state_ptr)
   {
     state->setAppData(&m_data);
     state->setCallbacks([this]() { m_imgui.render(); });
@@ -345,7 +345,7 @@ WindowData& EntropyApp::windowData()
 void EntropyApp::logPreamble()
 {
   spdlog::info("{} (version {})", APP_NAME, VERSION_FULL);
-  spdlog::info("{}", ORG_NAME);
+  spdlog::info("{}\n", ORG_NAME_1, ORG_NAME_2);
 
   spdlog::debug("Git branch: {}", GIT_BRANCH);
   spdlog::debug("Git commit hash: {}", GIT_COMMIT_SHA1);
@@ -677,7 +677,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   image->transformations().set_enable_worldDef_T_affine(isReferenceImage ? false : true);
   image->transformations().set_enable_affine_T_subject(isReferenceImage ? false : true);
 
-  // Lock all affine transformations to the reference image, which defines the World spae:
+  // Lock all affine transformations to the reference image, which defines the World space:
   image->transformations().set_worldDef_T_affine_locked(true);
 
   // Load and set affine transformation from file (for non-reference images only):
@@ -687,28 +687,20 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
 
     if (isReferenceImage)
     {
-      spdlog::warn(
-        "An affine transformation file ({}) was provided for the reference image. "
-        "It will be ignored, since the reference image defines the World coordinate "
-        "space, which cannot be transformed.",
-        *serializedImage.m_affineTxFileName
-      );
+      spdlog::warn("An affine transformation file ({}) was provided for the reference image. "
+                   "It will be ignored, since the reference image defines the World coordinate "
+                   "space, which cannot be transformed.", *serializedImage.m_affineTxFileName);
 
       image->transformations().set_affine_T_subject_fileName(std::nullopt);
     }
     else
     {
-      if (!serialize::openAffineTxFile(affine_T_subject, *serializedImage.m_affineTxFileName))
-      {
+      if (!serialize::openAffineTxFile(affine_T_subject, *serializedImage.m_affineTxFileName)) {
+        spdlog::error("Unable to read affine transformation from {} for image {}",
+                      *serializedImage.m_affineTxFileName, *imageUid);
+
         image->transformations().set_affine_T_subject_fileName(std::nullopt);
-
-        spdlog::error(
-          "Unable to read affine transformation from {} for image {}",
-          *serializedImage.m_affineTxFileName,
-          *imageUid
-        );
       }
-
       image->transformations().set_affine_T_subject_fileName(serializedImage.m_affineTxFileName);
       image->transformations().set_affine_T_subject(glm::mat4{affine_T_subject});
     }

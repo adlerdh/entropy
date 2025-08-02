@@ -1,5 +1,4 @@
-#ifndef GLFW_CALLBACKS_H
-#define GLFW_CALLBACKS_H
+#pragma once
 
 struct GLFWwindow;
 
@@ -14,5 +13,3 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void scrollCallback(GLFWwindow* window, double offsetX, double offsetY);
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void dropCallback(GLFWwindow* window, int count, const char** paths);
-
-#endif // GLFW_CALLBACKS_H

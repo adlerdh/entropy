@@ -5,8 +5,9 @@ if(POLICY CMP0175)
 endif()
 
 set(APP_NAME "Entropy")
-set(APP_DESCRIPTION "Tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images")
-set(ORG_NAME "Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania")
+set(APP_DESCRIPTION "Visualize, compare, segment, and annotate 3D medical images")
+set(ORG_NAME_1 "Penn Image Computing and Science Lab (PICSL)")
+set(ORG_NAME_2 "Department of Radiology, University of Pennsylvania")
 set(COPYRIGHT_LINE "Copyright Daniel H. Adler and PICSL")
 set(LICENSE_LINE "Apache License, Version 2.0")
 

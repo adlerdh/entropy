@@ -4,33 +4,6 @@
 
 #include <algorithm>
 
-AppSettings::AppSettings()
-  : m_synchronizeZoom(true)
-  , m_overlays(true)
-  ,
-
-  m_foregroundLabel(1u)
-  , m_backgroundLabel(0u)
-  , m_replaceBackgroundWithForeground(false)
-  , m_use3dBrush(false)
-  , m_useIsotropicBrush(true)
-  , m_useVoxelBrushSize(true)
-  , m_useRoundBrush(true)
-  , m_crosshairsMoveWithBrush(false)
-  , m_brushSizeInVoxels(1)
-  , m_brushSizeInMm(1.0f)
-  ,
-
-  m_graphCutsWeightsAmplitude(1.0)
-  , m_graphCutsWeightsSigma(0.01)
-  , m_graphCutsNeighborhood(GraphNeighborhoodType::Neighbors6)
-  ,
-
-  m_crosshairsMoveWhileAnnotating(false)
-  , m_lockAnatomicalCoordinateAxesWithReferenceImage(false)
-{
-}
-
 void AppSettings::adjustActiveSegmentationLabels(const ParcellationLabelTable& activeLabelTable)
 {
   m_foregroundLabel = std::min(m_foregroundLabel, activeLabelTable.numLabels() - 1);
@@ -64,23 +37,23 @@ void AppSettings::setOverlays(bool set)
   m_overlays = set;
 }
 
-void AppSettings::setForegroundLabel(size_t label, const ParcellationLabelTable& activeLabelTable)
+void AppSettings::setForegroundLabel(std::size_t label, const ParcellationLabelTable& activeLabelTable)
 {
   m_foregroundLabel = label;
   adjustActiveSegmentationLabels(activeLabelTable);
 }
 
-void AppSettings::setBackgroundLabel(size_t label, const ParcellationLabelTable& activeLabelTable)
+void AppSettings::setBackgroundLabel(std::size_t label, const ParcellationLabelTable& activeLabelTable)
 {
   m_backgroundLabel = label;
   adjustActiveSegmentationLabels(activeLabelTable);
 }
 
-size_t AppSettings::foregroundLabel() const
+std::size_t AppSettings::foregroundLabel() const
 {
   return m_foregroundLabel;
 }
-size_t AppSettings::backgroundLabel() const
+std::size_t AppSettings::backgroundLabel() const
 {
   return m_backgroundLabel;
 }

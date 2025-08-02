@@ -2209,9 +2209,23 @@ void Rendering::renderVectorOverlays()
 
   startNvgFrame(m_nvg, windowVP);
 
+  /// @note This is the transformation used for rotating the crosshairs.
+  /// It was designed initialially to show the mapping of subject (usually reference subject)
+  /// in the view/camera. However, it need not be a subject-to-world transformation.
+  /// We can also use the xhairs/frame-to-world transformation!!!
+
+  /// @todo Add application state for this
+  constexpr bool alignToCrosshairs = true;
+
   glm::mat4 world_T_refSubject(1.0f);
 
-  if (m_appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage()) {
+  /// @todo Figure out this logic
+  if (alignToCrosshairs) {
+    // Align to crosshairs:
+    world_T_refSubject = m_appData.state().worldCrosshairs().world_T_frame();
+  }
+  else if (m_appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage()) {
+    // Align to reference image:
     if (const Image* refImage = m_appData.refImage()) {
       world_T_refSubject = refImage->transformations().worldDef_T_subject();
     }
@@ -2250,7 +2264,7 @@ void Rendering::renderVectorOverlays()
 
     ViewOutlineMode outlineMode = ViewOutlineMode::None;
 
-    if (state::isInStateWhereViewSelectionsVisible() && ASM::current_state_ptr)
+    if (state::annot::isInStateWhereViewSelectionsVisible() && ASM::current_state_ptr)
     {
       const auto hoveredViewUid = ASM::current_state_ptr->hoveredViewUid();
       const auto selectedViewUid = ASM::current_state_ptr->selectedViewUid();

@@ -961,6 +961,7 @@ void ImGuiWrapper::render()
       true,
       false,
 
+      m_appData.state().worldCrosshairs(),
       m_appData.windowData().getContentScaleRatios(),
 
       m_appData.numImages(),
@@ -1070,6 +1071,7 @@ void ImGuiWrapper::render()
         false,
         true,
 
+        m_appData.state().worldCrosshairs(),
         m_appData.windowData().getContentScaleRatios(),
 
         m_appData.numImages(),
@@ -1133,7 +1135,7 @@ void ImGuiWrapper::render()
 
 void ImGuiWrapper::annotationToolbar(const std::function<void()> paintActiveAnnotation)
 {
-  if (!state::isInStateWhereToolbarVisible())
+  if (!state::annot::isInStateWhereToolbarVisible())
   {
     return;
   }

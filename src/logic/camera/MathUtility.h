@@ -225,6 +225,17 @@ bool areMatricesEqual(const gmat4<T>& A, const gmat4<T>& B, float epsilon = glm:
   return true;
 }
 
+template<typename T>
+bool isRotationIdentity(const glm::qua<T>& q)
+{
+  const glm::qua<T> identity(T(1), T(0), T(0), T(0));
+
+  // Quaternions can be negated and still represent the same rotation,
+  // so we take the absolute value of the dot product with identity
+  const T dot = glm::abs(glm::dot(q, identity));
+  return glm::abs(T(1) - dot) < glm::epsilon<T>();
+}
+
 /**
  * @brief Create plane (A, B, C, D) in form Ax + By + Cz + D = 0
  * with given normal vector (A, B, C) and passing through a given point.

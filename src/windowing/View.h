@@ -1,9 +1,7 @@
-#ifndef VIEW_H
-#define VIEW_H
+#pragma once
 
-#include "common/CoordinateFrame.h"
 #include "common/Types.h"
-
+#include "logic/app/CrosshairsState.h"
 #include "logic/camera/Camera.h"
 #include "rendering/utility/math/SliceIntersectorTypes.h"
 #include "windowing/ControlFrame.h"
@@ -25,6 +23,8 @@ class Image;
  */
 class View : public ControlFrame
 {
+  using uuid = uuids::uuid;;
+
 public:
   /**
      * @brief Construct a view
@@ -48,10 +48,12 @@ public:
     IntensityProjectionMode ipMode,
     UiControls uiControls,
     std::function<ViewConvention()> viewConventionProvider,
-    std::optional<uuids::uuid> cameraRotationSyncGroupUid,
-    std::optional<uuids::uuid> translationSyncGroup,
-    std::optional<uuids::uuid> zoomSyncGroup
-  );
+    const CrosshairsState& crosshairs,
+    std::optional<uuid> cameraRotationSyncGroupUid,
+    std::optional<uuid> translationSyncGroup,
+    std::optional<uuid> zoomSyncGroup);
+
+  const uuid& uid() const;
 
   void setViewType(const ViewType& newViewType) override;
 
@@ -66,20 +68,23 @@ public:
      */
   glm::vec3 updateImageSlice(const AppData& appData, const glm::vec3& worldCrosshairs);
 
-  std::optional<intersection::IntersectionVerticesVec4> computeImageSliceIntersection(
-    const Image* image, const CoordinateFrame& crosshairs
-  ) const;
+  std::optional<intersection::IntersectionVerticesVec4>
+  computeImageSliceIntersection(const Image* image, const CoordinateFrame& crosshairs) const;
 
   float clipPlaneDepth() const;
 
   const ViewOffsetSetting& offsetSetting() const;
 
-  std::optional<uuids::uuid> cameraRotationSyncGroupUid() const;
-  std::optional<uuids::uuid> cameraTranslationSyncGroupUid() const;
-  std::optional<uuids::uuid> cameraZoomSyncGroupUid() const;
+  std::optional<uuid> cameraRotationSyncGroupUid() const;
+  std::optional<uuid> cameraTranslationSyncGroupUid() const;
+  std::optional<uuid> cameraZoomSyncGroupUid() const;
 
 private:
+  CoordinateFrame get_anatomy_T_start(const ViewType& viewType) const;
+
   bool updateImageSliceIntersection(const AppData& appData, const glm::vec3& worldCrosshairs);
+
+  const uuid m_uid; //!< This view's uid
 
   /// View offset setting
   ViewOffsetSetting m_offset;
@@ -89,13 +94,13 @@ private:
 
   std::function<ViewConvention()> m_viewConventionProvider;
 
+  const CrosshairsState& m_crosshairs;
+
   /// ID of the camera synchronization groups to which this view belongs
-  std::optional<uuids::uuid> m_cameraRotationSyncGroupUid;
-  std::optional<uuids::uuid> m_cameraTranslationSyncGroupUid;
-  std::optional<uuids::uuid> m_cameraZoomSyncGroupUid;
+  std::optional<uuid> m_cameraRotationSyncGroupUid;
+  std::optional<uuid> m_cameraTranslationSyncGroupUid;
+  std::optional<uuid> m_cameraZoomSyncGroupUid;
 
   /// Depth (z component) of any point on the image plane to be rendered (defined in Clip space)
   float m_clipPlaneDepth;
 };
-
-#endif // VIEW_H

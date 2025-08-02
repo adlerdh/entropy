@@ -927,7 +927,7 @@ void drawAnnotations(
       const bool showSelections = (annot->getOpacity() > 0.0f);
 
       // Highlight vertices with circles:
-      if (showSelections && state::isInStateWhereVertexHighlightsAreVisible())
+      if (showSelections && state::annot::isInStateWhereVertexHighlightsAreVisible())
       {
         for (const auto& highlightedVertex : annot->highlightedVertices())
         {
@@ -955,7 +955,7 @@ void drawAnnotations(
       }
 
       // Draw the annotation outer boundary bounding box:
-      if (showSelections && state::isInStateWhereAnnotationHighlightsAreVisible() && annot->isHighlighted())
+      if (showSelections && state::annot::isInStateWhereAnnotationHighlightsAreVisible() && annot->isHighlighted())
       {
         nvgStrokeWidth(nvg, sk_bboxSelectionStrokeWidth);
         nvgStrokeColor(nvg, nvgRGBAf(sk_green.r, sk_green.g, sk_green.b, sk_green.a));

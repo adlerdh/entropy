@@ -1,5 +1,4 @@
-#ifndef VIEW_TYPES_H
-#define VIEW_TYPES_H
+#pragma once
 
 #include <array>
 #include <string>
@@ -21,8 +20,8 @@ enum class ViewType
 /**
  * @brief Array of all view types accessible to the application
  */
-inline std::array<ViewType, 5> const AllViewTypes
-  = {ViewType::Axial, ViewType::Coronal, ViewType::Sagittal, ViewType::Oblique, ViewType::ThreeD};
+inline std::array<ViewType, 5> const AllViewTypes{
+  ViewType::Axial, ViewType::Coronal, ViewType::Sagittal, ViewType::Oblique, ViewType::ThreeD};
 
 /**
  * @brief Get the display string of a view type
@@ -30,6 +29,4 @@ inline std::array<ViewType, 5> const AllViewTypes
  * @param[in] crosshairsRotated
  * @return Type string
  */
-std::string typeString(const ViewType& viewType, bool crosshairsRotated);
-
-#endif // VIEW_TYPES_H
+std::string to_string(const ViewType& viewType, bool crosshairsRotated);

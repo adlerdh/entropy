@@ -31,7 +31,7 @@
  * directions Left, Posterior, and Superior (or, LPS) for human subjects.
  *
  * AFFINE-REGISTERED SUBJECT SPACE (A): Space of the image following affine registration. The affine
- * as registration is loaded from a file on disk and is not set manually in Entropy.
+ * registration is loaded from a file on disk and is not set manually in Entropy.
  *
  * DEFORMED SUBJECT SPACE (D): Space of the image following manual registration in Entropy.
  *
@@ -71,8 +71,7 @@ public:
     const glm::uvec3& pixelDimensions,
     const glm::vec3& pixelSpacing,
     const glm::vec3& pixelOrigin,
-    const glm::mat3& pixelDirections
-  );
+    const glm::mat3& pixelDirections);
 
   ImageTransformations(const ImageTransformations&) = default;
   ImageTransformations& operator=(const ImageTransformations&) = default;

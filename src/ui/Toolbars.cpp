@@ -86,12 +86,10 @@ void renderModeToolbar(
   const std::function<bool(void)>& getOverlayVisibility,
   const std::function<void(bool)>& setOverlayVisibility,
   const std::function<void(int step)>& cycleViews,
-
   size_t numImages,
   const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
   const std::function<size_t(void)>& getActiveImageIndex,
-  const std::function<void(size_t)>& setActiveImageIndex
-)
+  const std::function<void(size_t)>& setActiveImageIndex)
 {
   GuiData& guiData = appData.guiData();
 
@@ -199,25 +197,24 @@ void renderModeToolbar(
 
         ImGui::PushStyleColor(ImGuiCol_Button, (isModeActive ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(toolbarButtonIcon(mouseMode), buttonSize))
-          {
+          if (ImGui::Button(toolbarButtonIcon(mouseMode), buttonSize)) {
             isModeActive = !isModeActive;
-            if (isModeActive)
-            {
+            if (isModeActive) {
               setMouseMode(mouseMode);
             }
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", typeString(mouseMode).c_str());
           }
 
-          if (MouseMode::CameraZoom == mouseMode || MouseMode::Annotate == mouseMode)
-          {
+          if (MouseMode::CameraTranslate == mouseMode ||
+              MouseMode::CrosshairsRotate == mouseMode ||
+              MouseMode::Annotate == mouseMode) {
             // Put a small dummy space after these buttons
-            if (isHoriz)
+            if (isHoriz) {
               ImGui::SameLine();
+            }
             ImGui::Dummy(buttonSpace);
           }
         }
@@ -242,8 +239,7 @@ void renderModeToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_PICTURE_O, buttonSize))
-      {
+      if (ImGui::Button(ICON_FK_PICTURE_O, buttonSize)) {
         ImGui::OpenPopup("imagePopup");
       }
 
@@ -252,8 +248,7 @@ void renderModeToolbar(
         ImGui::SetTooltip("%s", "Set active image");
       }
 
-      if (ImGui::BeginPopup("imagePopup"))
-      {
+      if (ImGui::BeginPopup("imagePopup")) {
         const size_t activeIndex = getActiveImageIndex();
 
         for (size_t i = 0; i < numImages; ++i)
@@ -319,8 +314,7 @@ void renderModeToolbar(
           ImGuiCol_Button, (guiData.m_showSegmentationsWindow ? activeColor : inactiveColor)
         );
         {
-          //if ( ImGui::Button( ICON_FK_TH, buttonSize) )
-          if (ImGui::Button(ICON_FK_LIST_OL, buttonSize))
+          if (ImGui::Button(ICON_FK_STAR_O, buttonSize)) // ICON_FK_LIST_OL
           {
             guiData.m_showSegmentationsWindow = !guiData.m_showSegmentationsWindow;
           }
@@ -372,7 +366,7 @@ void renderModeToolbar(
           ImGuiCol_Button, (guiData.m_showAnnotationsWindow ? activeColor : inactiveColor)
         );
         {
-          if (ImGui::Button(ICON_FK_STAR_O, buttonSize))
+          if (ImGui::Button(ICON_FK_OBJECT_UNGROUP, buttonSize)) // ICON_FK_STAR_O
           {
             guiData.m_showAnnotationsWindow = !guiData.m_showAnnotationsWindow;
           }
@@ -736,7 +730,7 @@ void renderSegToolbar(
 
   const bool inSegmentationMode = (MouseMode::Segment == appData.state().mouseMode());
   const bool inAnnotationMode
-    = (state::isInStateWhereToolbarVisible() && state::showToolbarFillButton());
+    = (state::annot::isInStateWhereToolbarVisible() && state::annot::showToolbarFillButton());
 
   GuiData& guiData = appData.guiData();
 
@@ -1635,7 +1629,7 @@ void renderAnnotationToolbar(
 
     bool needsSpace = false;
 
-    if (state::showToolbarInsertVertexButton())
+    if (state::annot::showToolbarInsertVertexButton())
     {
       if (isHoriz)
         ImGui::SameLine();
@@ -1645,7 +1639,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_remove.c_str()))
         {
-          send_event(state::InsertVertexEvent());
+          send_event(state::annot::InsertVertexEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1658,7 +1652,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarRemoveSelectedVertexButton())
+    if (state::annot::showToolbarRemoveSelectedVertexButton())
     {
       if (needsSpace)
       {
@@ -1675,7 +1669,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_remove.c_str()))
         {
-          send_event(state::RemoveSelectedVertexEvent());
+          send_event(state::annot::RemoveSelectedVertexEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1688,7 +1682,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarUndoButton())
+    if (state::annot::showToolbarUndoButton())
     {
       if (needsSpace)
       {
@@ -1705,7 +1699,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_cancel.c_str()))
         {
-          send_event(state::UndoVertexEvent());
+          send_event(state::annot::UndoVertexEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1718,7 +1712,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarCreateButton())
+    if (state::annot::showToolbarCreateButton())
     {
       if (needsSpace)
       {
@@ -1734,7 +1728,7 @@ void renderAnnotationToolbar(
         static const std::string sk_addNew = std::string(ICON_FK_PLUS) + " New polygon";
         if (ImGui::Button(sk_addNew.c_str()))
         {
-          send_event(state::CreateNewAnnotationEvent());
+          send_event(state::annot::CreateNewAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1747,7 +1741,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarCloseButton())
+    if (state::annot::showToolbarCloseButton())
     {
       if (needsSpace)
       {
@@ -1764,7 +1758,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_close.c_str()))
         {
-          send_event(state::CloseNewAnnotationEvent());
+          send_event(state::annot::CloseNewAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1777,7 +1771,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarCompleteButton())
+    if (state::annot::showToolbarCompleteButton())
     {
       if (needsSpace)
       {
@@ -1794,7 +1788,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_complete.c_str()))
         {
-          send_event(state::CompleteNewAnnotationEvent());
+          send_event(state::annot::CompleteNewAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1807,7 +1801,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarCancelButton())
+    if (state::annot::showToolbarCancelButton())
     {
       if (needsSpace)
       {
@@ -1824,7 +1818,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_cancel.c_str()))
         {
-          send_event(state::CancelNewAnnotationEvent());
+          send_event(state::annot::CancelNewAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1837,7 +1831,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarRemoveSelectedAnnotationButton())
+    if (state::annot::showToolbarRemoveSelectedAnnotationButton())
     {
       if (needsSpace)
       {
@@ -1854,7 +1848,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_remove.c_str()))
         {
-          send_event(state::RemoveSelectedAnnotationEvent());
+          send_event(state::annot::RemoveSelectedAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1867,7 +1861,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarCutSelectedAnnotationButton())
+    if (state::annot::showToolbarCutSelectedAnnotationButton())
     {
       if (needsSpace)
       {
@@ -1884,7 +1878,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_cut.c_str()))
         {
-          send_event(state::CutSelectedAnnotationEvent());
+          send_event(state::annot::CutSelectedAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1897,7 +1891,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarCopySelectedAnnotationButton())
+    if (state::annot::showToolbarCopySelectedAnnotationButton())
     {
       if (needsSpace)
       {
@@ -1914,7 +1908,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_copy.c_str()))
         {
-          send_event(state::CopySelectedAnnotationEvent());
+          send_event(state::annot::CopySelectedAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1927,7 +1921,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarPasteSelectedAnnotationButton())
+    if (state::annot::showToolbarPasteSelectedAnnotationButton())
     {
       if (needsSpace)
       {
@@ -1944,7 +1938,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_paste.c_str()))
         {
-          send_event(state::PasteAnnotationEvent());
+          send_event(state::annot::PasteAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -1957,7 +1951,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarFlipAnnotationButtons())
+    if (state::annot::showToolbarFlipAnnotationButtons())
     {
       if (needsSpace)
       {
@@ -1974,7 +1968,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_flipHoriz.c_str()))
         {
-          send_event(state::HorizontallyFlipSelectedAnnotationEvent());
+          send_event(state::annot::HorizontallyFlipSelectedAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -2001,7 +1995,7 @@ void renderAnnotationToolbar(
 
         if (ImGui::Button(sk_flipHoriz.c_str()))
         {
-          send_event(state::VerticallyFlipSelectedAnnotationEvent());
+          send_event(state::annot::VerticallyFlipSelectedAnnotationEvent());
         }
         if (ImGui::IsItemHovered())
         {
@@ -2014,7 +2008,7 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::showToolbarFillButton())
+    if (state::annot::showToolbarFillButton())
     {
       if (needsSpace)
       {

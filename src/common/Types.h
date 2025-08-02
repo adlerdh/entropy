@@ -124,6 +124,7 @@ enum class MouseMode
   CameraTranslate, //!< Translate the view camera in plane
   CameraRotate,    //!< Rotate the view camera in plane and out of plane
   CameraZoom,      //!< Zoom the view camera
+  CrosshairsRotate,//!< Crosshairs rotation
   ImageTranslate,  //!< Translate the active image in 2D and 3D
   ImageRotate,     //!< Rotate the active image in 2D and 3D
   ImageScale       //!< Scale the active image in 2D
@@ -132,12 +133,13 @@ enum class MouseMode
 /**
  * @brief Array of all available mouse modes in the Toolbar
  */
-inline std::array<MouseMode, 9> const AllMouseModes = {
+inline std::array<MouseMode, 10> const AllMouseModes = {
   MouseMode::Pointer,
   MouseMode::WindowLevel,
+  MouseMode::CameraZoom,
   MouseMode::CameraTranslate,
   MouseMode::CameraRotate,
-  MouseMode::CameraZoom,
+  MouseMode::CrosshairsRotate,
   MouseMode::Segment,
   MouseMode::Annotate,
   MouseMode::ImageTranslate,

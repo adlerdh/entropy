@@ -20,7 +20,6 @@
 
 namespace
 {
-
 static ButtonState s_mouseButtonState;
 static ModifierState s_modifierState;
 
@@ -33,10 +32,8 @@ static std::optional<ViewHit> s_startHit;
 // Should zooms be synchronized for all views?
 bool syncZoomsForAllViews(const ModifierState& modState)
 {
-  return (modState.shift) || ImGui::IsKeyDown(ImGuiKey_LeftShift)
-         || ImGui::IsKeyDown(ImGuiKey_RightShift);
+  return (modState.shift || ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift));
 }
-
 } // namespace
 
 void errorCallback(int error, const char* description)
@@ -131,48 +128,42 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   static constexpr bool outOfPlane = false;
 
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in cursor position callback");
     return;
   }
 
   const ImGuiIO& io = ImGui::GetIO();
 
-  if (io.WantCaptureMouse)
-  {
+  if (io.WantCaptureMouse) {
     // Poll events, so that the UI is responsive:
     app->glfw().setEventProcessingMode(EventProcessingMode::Poll);
 
     // Since ImGui has captured the event, do not send it to the app:
     return;
   }
-  else if (!app->appData().state().animating())
-  {
+  else if (!app->appData().state().animating()) {
     // Mouse is not captured by the UI and the app is not animating,
     // so wait for events to save processing power:
     app->glfw().setEventProcessingMode(EventProcessingMode::Wait);
   }
 
   // Since modifier state is not passed to this callback
-  const bool shiftDown = ImGui::IsKeyDown(ImGuiKey_LeftShift)
-                         || ImGui::IsKeyDown(ImGuiKey_RightShift);
+  const bool shiftDown = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
 
   const glm::vec2 windowCurrentPos = helper::window_T_mindow(
-    static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY}
-  );
+    static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY});
 
-  if (!s_startHit)
-  {
+  if (!s_startHit) {
     s_startHit = getViewHit(app->appData(), windowCurrentPos);
   }
 
   View* startView = s_startHit->view;
-  if (!startView)
+  if (!startView) {
     return;
+  }
 
-  if (!s_prevHit)
-  {
+  if (!s_prevHit) {
     s_prevHit = getViewHit(app->appData(), windowCurrentPos);
   }
 
@@ -185,12 +176,10 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   // hit from being valid if the cursor hits outside of a view.
   const auto currHit_invalidOutsideView = getViewHit(app->appData(), windowCurrentPos);
 
-  // Send event to annotation state machine
-  if (currHit_invalidOutsideView)
-  {
-    send_event(state::MouseMoveEvent(
-      *s_prevHit, *currHit_invalidOutsideView, s_mouseButtonState, s_modifierState
-    ));
+  // Send event to annotation and crosshairs-rotation state machines
+  if (currHit_invalidOutsideView) {
+    send_event(state::annot::MouseMoveEvent(*s_prevHit, *currHit_invalidOutsideView,
+                                            s_mouseButtonState, s_modifierState));
   }
 
   CallbackHandler& H = app->callbackHandler();
@@ -201,26 +190,24 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   {
     if (s_mouseButtonState.left)
     {
-      if (!currHit_invalidOutsideView)
+      if (!currHit_invalidOutsideView) {
         break;
+      }
       H.doCrosshairsMove(*currHit_invalidOutsideView);
     }
     else if (s_mouseButtonState.right)
     {
-      if (!currHit_withOverride)
+      if (!currHit_withOverride) {
         break;
-      H.doCameraZoomDrag(
-        *s_startHit,
-        *s_prevHit,
-        *currHit_withOverride,
-        ZoomBehavior::ToCrosshairs,
-        syncZoomsForAllViews(s_modifierState)
-      );
+      }
+      H.doCameraZoomDrag(*s_startHit, *s_prevHit, *currHit_withOverride,
+                         ZoomBehavior::ToCrosshairs, syncZoomsForAllViews(s_modifierState));
     }
     else if (s_mouseButtonState.middle)
     {
-      if (!currHit_withOverride)
+      if (!currHit_withOverride) {
         break;
+      }
       H.doCameraTranslate2d(*s_startHit, *s_prevHit, *currHit_withOverride);
     }
     break;
@@ -250,7 +237,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
 
     if (s_mouseButtonState.left)
     {
-      if (app->appData().settings().crosshairsMoveWhileAnnotating() && state::isInStateWhereCrosshairsCanMove())
+      if (app->appData().settings().crosshairsMoveWhileAnnotating() && state::annot::isInStateWhereCrosshairsCanMove())
       {
         H.doCrosshairsMove(*currHit_invalidOutsideView);
       }
@@ -340,15 +327,15 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   }
   case MouseMode::CameraRotate:
   {
-    if (!currHit_withOverride)
+    if (!currHit_withOverride) {
       break;
+    }
 
     switch (startView->viewType())
     {
     case ViewType::Oblique:
     {
-      if (s_mouseButtonState.left)
-      {
+      if (s_mouseButtonState.left) {
         H.doCameraRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride, RotationOrigin::ViewCenter);
       }
       else if (s_mouseButtonState.right)
@@ -356,41 +343,20 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
         // Depending on which mouse button key modifier is held, a different axis constraint is
         // applied to the 3D camera rotation.
 
-        if (s_modifierState.shift)
-        {
-          H.doCameraRotate3d(
-            *s_startHit,
-            *s_prevHit,
-            *currHit_withOverride,
-            RotationOrigin::Crosshairs,
-            AxisConstraint::X
-          );
+        if (s_modifierState.shift) {
+          H.doCameraRotate3d(*s_startHit, *s_prevHit, *currHit_withOverride,
+                             RotationOrigin::Crosshairs, AxisConstraint::X);
         }
-        else if (s_modifierState.control)
-        {
-          H.doCameraRotate3d(
-            *s_startHit,
-            *s_prevHit,
-            *currHit_withOverride,
-            RotationOrigin::Crosshairs,
-            AxisConstraint::Y
-          );
+        else if (s_modifierState.control) {
+          H.doCameraRotate3d(*s_startHit, *s_prevHit, *currHit_withOverride,
+                             RotationOrigin::Crosshairs, AxisConstraint::Y);
         }
-        else if (s_modifierState.alt)
-        {
-          H.doCameraRotate2d(
-            *s_startHit, *s_prevHit, *currHit_withOverride, RotationOrigin::Crosshairs
-          );
+        else if (s_modifierState.alt) {
+          H.doCameraRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride, RotationOrigin::Crosshairs);
         }
-        else
-        {
-          H.doCameraRotate3d(
-            *s_startHit,
-            *s_prevHit,
-            *currHit_withOverride,
-            RotationOrigin::Crosshairs,
-            AxisConstraint::None
-          );
+        else {
+          H.doCameraRotate3d(*s_startHit, *s_prevHit, *currHit_withOverride,
+                             RotationOrigin::Crosshairs, AxisConstraint::None);
         }
       }
       break;
@@ -443,43 +409,73 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
 
     break;
   }
-  case MouseMode::ImageTranslate:
+  case MouseMode::CrosshairsRotate:
   {
-    if (!currHit_withOverride)
+    if (!currHit_withOverride) {
       break;
+    }
 
-    if (s_mouseButtonState.left)
-    {
-      H.doImageTranslate(*s_startHit, *s_prevHit, *currHit_withOverride, inPlane);
+    if (ViewType::Oblique == startView->viewType() ||
+        ViewType::ThreeD == startView->viewType()) {
+      break; // Do not rotate crosshairs in Oblique or 3D view
+    }
+
+    if (s_mouseButtonState.left) {
+      H.doCrosshairsRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride);
     }
     else if (s_mouseButtonState.right)
     {
+      if (!currHit_withOverride) {
+        break;
+      }
+      H.doCameraZoomDrag(*s_startHit, *s_prevHit, *currHit_withOverride,
+                         ZoomBehavior::ToCrosshairs, syncZoomsForAllViews(s_modifierState));
+    }
+    else if (s_mouseButtonState.middle)
+    {
+      if (!currHit_withOverride) {
+        break;
+      }
+      H.doCameraTranslate2d(*s_startHit, *s_prevHit, *currHit_withOverride);
+    }
+
+    break;
+  }
+  case MouseMode::ImageTranslate:
+  {
+    if (!currHit_withOverride) {
+      break;
+    }
+
+    if (s_mouseButtonState.left) {
+      H.doImageTranslate(*s_startHit, *s_prevHit, *currHit_withOverride, inPlane);
+    }
+    else if (s_mouseButtonState.right) {
       H.doImageTranslate(*s_startHit, *s_prevHit, *currHit_withOverride, outOfPlane);
     }
     break;
   }
   case MouseMode::ImageRotate:
   {
-    if (!currHit_withOverride)
+    if (!currHit_withOverride) {
       break;
+    }
 
-    if (s_mouseButtonState.left)
-    {
+    if (s_mouseButtonState.left) {
       H.doImageRotate(*s_startHit, *s_prevHit, *currHit_withOverride, inPlane);
     }
-    else if (s_mouseButtonState.right)
-    {
+    else if (s_mouseButtonState.right) {
       H.doImageRotate(*s_startHit, *s_prevHit, *currHit_withOverride, outOfPlane);
     }
     break;
   }
   case MouseMode::ImageScale:
   {
-    if (!currHit_withOverride)
+    if (!currHit_withOverride) {
       break;
+    }
 
-    if (s_mouseButtonState.left)
-    {
+    if (s_mouseButtonState.left) {
       const bool constrainIsotropic = s_modifierState.shift;
       H.doImageScale(*s_startHit, *s_prevHit, *currHit_withOverride, constrainIsotropic);
     }
@@ -493,15 +489,15 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in mouse button callback");
     return;
   }
 
   const ImGuiIO& io = ImGui::GetIO();
-  if (io.WantCaptureMouse)
+  if (io.WantCaptureMouse) {
     return; // ImGui has captured event
+  }
 
   // Update button state
   s_mouseButtonState.updateFromGlfwEvent(button, action);
@@ -515,28 +511,24 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
 
   const glm::vec2 windowCursorPos = helper::window_T_mindow(
-    static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY}
-  );
+    static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY});
 
   // Get a hit that will be invalid (null) if the cursor is not in any view:
   const auto hit_invalidOutsideView = getViewHit(app->appData(), windowCursorPos);
-  if (!hit_invalidOutsideView)
+  if (!hit_invalidOutsideView) {
     return;
+  }
 
   // Send event to the annotation state machine
   switch (action)
   {
-  case GLFW_PRESS:
-  {
-    send_event(state::MousePressEvent(*hit_invalidOutsideView, s_mouseButtonState, s_modifierState));
+  case GLFW_PRESS: {
+    send_event(state::annot::MousePressEvent(*hit_invalidOutsideView, s_mouseButtonState, s_modifierState));
     break;
   }
-  case GLFW_RELEASE:
-  {
+  case GLFW_RELEASE: {
     app->appData().windowData().setActiveViewUid(std::nullopt);
-
-    send_event(state::MouseReleaseEvent(*hit_invalidOutsideView, s_mouseButtonState, s_modifierState)
-    );
+    send_event(state::annot::MouseReleaseEvent(*hit_invalidOutsideView, s_mouseButtonState, s_modifierState));
     break;
   }
   default:
@@ -583,6 +575,7 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
   case MouseMode::Segment:
   case MouseMode::CameraTranslate:
   case MouseMode::CameraRotate:
+  case MouseMode::CrosshairsRotate:
   case MouseMode::ImageRotate:
   case MouseMode::ImageTranslate:
   case MouseMode::ImageScale:
@@ -598,14 +591,12 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
       *hit_invalidOutsideView,
       {scrollOffsetX, scrollOffsetY},
       ZoomBehavior::ToCrosshairs,
-      syncZoomsForAllViews(s_modifierState)
-    );
+      syncZoomsForAllViews(s_modifierState));
     break;
   }
   case MouseMode::Annotate:
   {
-    if (state::isInStateWhereViewsCanScroll())
-    {
+    if (state::annot::isInStateWhereViewsCanScroll()){
       const bool fineScroll = shiftDown; // ( s_modifierState.shift );
       H.doCrosshairsScroll(*hit_invalidOutsideView, {scrollOffsetX, scrollOffsetY}, fineScroll);
     }

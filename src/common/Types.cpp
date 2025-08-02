@@ -144,6 +144,8 @@ std::string typeString(const MouseMode& mouseMode)
      "Shift/Ctrl to lock rotation about view X/Y)"},
     {MouseMode::CameraZoom,
      "Zoom view (Z)\nLeft button: zoom to crosshairs\nRight button: zoom to cursor"},
+    {MouseMode::CrosshairsRotate,
+     "Rotate crosshairs\nLeft button: rotate in plane\nRight button: zoom to cursor"},
     {MouseMode::Segment,
      "Segment (B)\nLeft button: paint foreground label\nRight button: paint background label"},
     {MouseMode::Annotate, "Annotate"},
@@ -202,6 +204,7 @@ const char* toolbarButtonIcon(const MouseMode& mouseMode)
     {MouseMode::CameraTranslate, ICON_FK_HAND_PAPER_O},
     {MouseMode::CameraRotate, ICON_FK_FUTBOL_O},
     {MouseMode::CameraZoom, ICON_FK_SEARCH},
+    {MouseMode::CrosshairsRotate, ICON_FK_CROSSHAIRS},
     {MouseMode::ImageTranslate, ICON_FK_ARROWS},
     {MouseMode::ImageRotate, ICON_FK_UNDO},
     {MouseMode::ImageScale, ICON_FK_EXPAND}
