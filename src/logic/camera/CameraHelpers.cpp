@@ -754,8 +754,7 @@ void positionCameraForWorldTargetAndFov(
 }
 
 void positionCameraForWorldTarget(
-  Camera& camera, const glm::vec3& worldBoxSize, const glm::vec3& worldTarget
-)
+  Camera& camera, const glm::vec3& worldBoxSize, const glm::vec3& worldTarget)
 {
   const auto [pullBackDistance, farDistance] = computePullbackAndFarDistances(camera, worldBoxSize);
   camera.setFarDistance(farDistance);

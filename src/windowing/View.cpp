@@ -48,7 +48,7 @@ static const std::unordered_map<ViewType, ProjectionType>
 };
 
 // Map from view convention to the maps of view type to camera start frame type
-static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, CameraStartFrameType> >
+static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, CameraStartFrameType>>
   sk_viewConventionToStartFrameTypeMap = {
     {ViewConvention::Radiological,
      {{ViewType::Axial, CameraStartFrameType::Crosshairs_Axial_LAI},
@@ -67,19 +67,16 @@ static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, Cam
 };
 
 ViewRenderMode reconcileRenderModeForViewType(
-  const ViewType& viewType, const ViewRenderMode& currentRenderMode
-)
+  const ViewType& viewType, const ViewRenderMode& currentRenderMode)
 {
   /// @todo Write this function properly by accounting for
   /// All2dViewRenderModes, All3dViewRenderModes, All2dNonMetricRenderModes, All3dNonMetricRenderModes
 
-  if (ViewType::ThreeD == viewType)
-  {
+  if (ViewType::ThreeD == viewType) {
     // If switching to ViewType::ThreeD, then switch to ViewRenderMode::VolumeRender:
     return ViewRenderMode::VolumeRender;
   }
-  else if (ViewRenderMode::VolumeRender == currentRenderMode)
-  {
+  else if (ViewRenderMode::VolumeRender == currentRenderMode) {
     // If NOT switching to ViewType::ThreeD and currently using ViewRenderMode::VolumeRender,
     // then switch to ViewRenderMode::Image:
     return ViewRenderMode::Image;

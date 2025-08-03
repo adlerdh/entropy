@@ -26,6 +26,7 @@
 
 namespace
 {
+using uuid = uuids::uuid;
 
 Layout createFourUpLayout(
   const CrosshairsState& crosshairs,
@@ -356,7 +357,7 @@ Layout createGridLayout(
   const ViewAlignmentMode& viewAlignment,
   const ViewConvention& viewConvention,
   const std::optional<size_t>& imageIndexForLightbox,
-  const std::optional<uuids::uuid>& imageUidForLightbox)
+  const std::optional<uuid>& imageUidForLightbox)
 {
   static const ViewRenderMode s_shaderType = ViewRenderMode::Image;
   static const IntensityProjectionMode s_ipMode = IntensityProjectionMode::None;
@@ -491,7 +492,7 @@ void WindowData::addGridLayout(
   bool offsetViews,
   bool isLightbox,
   std::size_t imageIndexForLightbox,
-  const uuids::uuid& imageUidForLightbox)
+  const uuid& imageUidForLightbox)
 {
   m_layouts.emplace_back(createGridLayout(
     viewType, width, height,
@@ -503,7 +504,7 @@ void WindowData::addGridLayout(
 }
 
 void WindowData::addLightboxLayoutForImage(
-  const ViewType& viewType, std::size_t numSlices, std::size_t imageIndex, const uuids::uuid& imageUid)
+  const ViewType& viewType, std::size_t numSlices, std::size_t imageIndex, const uuid& imageUid)
 {
   static constexpr bool k_offsetViews = true;
   static constexpr bool k_isLightbox = true;
@@ -535,8 +536,8 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t 
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
-  std::list<uuids::uuid> renderedImages;
-  std::list<uuids::uuid> metricImages;
+  std::list<uuid> renderedImages;
+  std::list<uuid> metricImages;
 
   std::size_t count = 0;
 
@@ -569,8 +570,8 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImage
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
-  std::list<uuids::uuid> renderedImages;
-  std::list<uuids::uuid> metricImages;
+  std::list<uuid> renderedImages;
+  std::list<uuid> metricImages;
 
   std::size_t count = 0;
 
@@ -635,7 +636,7 @@ void WindowData::recenterAllViews(
 }
 
 void WindowData::recenterView(
-  const uuids::uuid& viewUid,
+  const uuid& viewUid,
   const glm::vec3& worldCenter,
   const glm::vec3& worldFov,
   bool resetZoom,
@@ -673,7 +674,7 @@ uuid_range_t WindowData::currentViewUids() const
   return (m_layouts.at(m_currentLayout).views() | boost::adaptors::map_keys);
 }
 
-const View* WindowData::getCurrentView(const uuids::uuid& uid) const
+const View* WindowData::getCurrentView(const uuid& uid) const
 {
   const auto& views = m_layouts.at(m_currentLayout).views();
   auto it = views.find(uid);
@@ -685,7 +686,7 @@ const View* WindowData::getCurrentView(const uuids::uuid& uid) const
   return nullptr;
 }
 
-View* WindowData::getCurrentView(const uuids::uuid& uid)
+View* WindowData::getCurrentView(const uuid& uid)
 {
   auto& views = m_layouts.at(m_currentLayout).views();
   auto it = views.find(uid);
@@ -697,7 +698,7 @@ View* WindowData::getCurrentView(const uuids::uuid& uid)
   return nullptr;
 }
 
-const View* WindowData::getView(const uuids::uuid& uid) const
+const View* WindowData::getView(const uuid& uid) const
 {
   for (const auto& layout : m_layouts)
   {
@@ -711,7 +712,7 @@ const View* WindowData::getView(const uuids::uuid& uid) const
   return nullptr;
 }
 
-View* WindowData::getView(const uuids::uuid& uid)
+View* WindowData::getView(const uuid& uid)
 {
   for (const auto& layout : m_layouts)
   {
@@ -724,7 +725,7 @@ View* WindowData::getView(const uuids::uuid& uid)
   return nullptr;
 }
 
-std::optional<uuids::uuid> WindowData::currentViewUidAtCursor(const glm::vec2& windowPos) const
+std::optional<uuid> WindowData::currentViewUidAtCursor(const glm::vec2& windowPos) const
 {
   if (m_layouts.empty()) {
     return std::nullopt;
@@ -750,12 +751,12 @@ std::optional<uuids::uuid> WindowData::currentViewUidAtCursor(const glm::vec2& w
   return std::nullopt;
 }
 
-std::optional<uuids::uuid> WindowData::activeViewUid() const
+std::optional<uuid> WindowData::activeViewUid() const
 {
   return m_activeViewUid;
 }
 
-void WindowData::setActiveViewUid(const std::optional<uuids::uuid>& uid)
+void WindowData::setActiveViewUid(const std::optional<uuid>& uid)
 {
   m_activeViewUid = uid;
 }
@@ -912,7 +913,7 @@ void WindowData::setViewAlignmentMode(ViewAlignmentMode mode)
 }
 
 uuid_range_t WindowData::cameraSyncGroupViewUids(
-  CameraSyncMode mode, const uuids::uuid& syncGroupUid) const
+  CameraSyncMode mode, const uuid& syncGroupUid) const
 {
   const auto& currentLayout = m_layouts.at(m_currentLayout);
   if (const auto* group = currentLayout.getCameraSyncGroup(mode, syncGroupUid)) {
@@ -921,7 +922,7 @@ uuid_range_t WindowData::cameraSyncGroupViewUids(
   return {};
 }
 
-void WindowData::applyImageSelectionToAllCurrentViews(const uuids::uuid& referenceViewUid)
+void WindowData::applyImageSelectionToAllCurrentViews(const uuid& referenceViewUid)
 {
   static constexpr bool s_filterAgainstDefaults = false;
 
@@ -946,7 +947,7 @@ void WindowData::applyImageSelectionToAllCurrentViews(const uuids::uuid& referen
 }
 
 void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(
-  const uuids::uuid& referenceViewUid)
+  const uuid& referenceViewUid)
 {
   const View* referenceView = getCurrentView(referenceViewUid);
   if (!referenceView) {
@@ -972,12 +973,12 @@ void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(
   }
 }
 
-std::vector<uuids::uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3& worldNormal) const
+std::vector<uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3& worldNormal) const
 {
   // Angle threshold (in degrees) for checking whether two vectors are parallel
   static constexpr float sk_parallelThreshold_degrees = 0.1f;
 
-  std::vector<uuids::uuid> viewUids;
+  std::vector<uuid> viewUids;
 
   for (auto& viewUid : currentViewUids())
   {
@@ -995,9 +996,9 @@ std::vector<uuids::uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3&
   return viewUids;
 }
 
-uuids::uuid WindowData::findLargestCurrentView() const
+uuid WindowData::findLargestCurrentView() const
 {
-  uuids::uuid largestViewUid = currentViewUids().front();
+  uuid largestViewUid = currentViewUids().front();
   const View* largestView = getCurrentView(largestViewUid);
 
   if (!largestView) {
@@ -1052,4 +1053,9 @@ void WindowData::recomputeCameraAspectRatios()
 void WindowData::updateAllViews()
 {
   recomputeCameraAspectRatios();
+}
+
+void WindowData::saveAllViewWorldCenterPositions()
+{
+
 }

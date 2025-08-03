@@ -727,8 +727,7 @@ bool CallbackHandler::executePoissonSegmentation(
       potImage->header().memoryComponentType(),
       glm::uvec3{0},
       potImage->header().pixelDimensions(),
-      potImage->bufferAsVoid(i)
-    );
+      potImage->bufferAsVoid(i));
   }
   spdlog::debug("Done updating potential image textures");
 
@@ -771,7 +770,7 @@ void CallbackHandler::recenterViews(
     m_appData.state().setWorldCrosshairsPos(worldPosSnapped);
   }
 
-  const glm::vec3 worldCenter = (recenterOnCurrentCrosshairsPos)
+  const glm::vec3 worldCenter = recenterOnCurrentCrosshairsPos
     ? m_appData.state().worldCrosshairs().worldOrigin()
     : math::computeAABBoxCenter(worldBox);
 
@@ -2088,7 +2087,11 @@ void CallbackHandler::doCrosshairsRotate2D(
     return;
   }
 
-  // Rotate the crosshairs frame in the 2D view plane about the crosshairs position
+  if (ViewType::Oblique == viewToUse->viewType() ||
+      ViewType::ThreeD == viewToUse->viewType()) {
+    return; // Do not rotate crosshairs in Oblique or 3D view
+  }
+
   AppState& state = m_appData.state();
 
   if (!state.viewWithRotatingCrosshairs()) {
@@ -2097,19 +2100,26 @@ void CallbackHandler::doCrosshairsRotate2D(
     state.setViewWithRotatingCrosshairs(startHit.viewUid);
   }
 
-  CoordinateFrame worldXhairsRotated = state.worldCrosshairs();
+  // Rotate the crosshairs frame in the 2D view plane about the crosshairs position
   const glm::vec3 worldRotCenter = state.worldCrosshairs().worldOrigin();
   const glm::vec2 ndcRotCenter = helper::ndc_T_world(viewToUse->camera(), worldRotCenter);
   const glm::quat R = helper::rotation2dInCameraPlane(
     viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos, ndcRotCenter);
 
+  CoordinateFrame worldXhairsRotated = state.worldCrosshairs();
   math::rotateFrameAboutWorldPos(worldXhairsRotated, R, worldRotCenter);
+
+  // m_appData.windowData().saveAllViewCenterPositions();
+
+  // m_appData.windowData().recenterAllViews(
+  //   worldCenter,
+  //   sk_viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox),
+  //   _resetZoom, resetObliqueOrientation);
 
   // Set new crosshairs (used by all other views except the one in which rotation is being done):
   state.setWorldCrosshairs(worldXhairsRotated);
 
   /// @todo Option to snap to 15 degree increments with rotation
-  /// @todo The crosshairs are moving around on the other views... need to keep them stable
 }
 
 void CallbackHandler::moveCrosshairsToSegLabelCentroid(const uuid& imageUid, std::size_t labelIndex)
