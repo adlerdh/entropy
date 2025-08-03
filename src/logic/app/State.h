@@ -29,12 +29,11 @@ public:
   const CoordinateFrame& worldCrosshairs() const;
   const CrosshairsState& crosshairsState() const;
 
-  /// Saves current crosshairs position to "old"
-  void saveOldCrosshairs();
-
   /// Set UID of view using the old crosshairs.
   /// std::nullopt to clear it
-  void setViewUsingOldCrosshairs(const std::optional<uuids::uuid>& viewUid);
+  /// Saves current crosshairs position to "old"
+  void setViewWithRotatingCrosshairs(const std::optional<uuids::uuid>& viewUid);
+  std::optional<uuids::uuid> viewWithRotatingCrosshairs() const;
 
   void setWorldRotationCenter(const std::optional<glm::vec3>& worldRotationCenter);
 

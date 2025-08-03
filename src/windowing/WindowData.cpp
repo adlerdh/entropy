@@ -628,11 +628,9 @@ void WindowData::recenterAllViews(
   const glm::vec3& worldCenter,
   const glm::vec3& worldFov,
   bool resetZoom,
-  bool resetObliqueOrientation
-)
+  bool resetObliqueOrientation)
 {
-  for (auto& layout : m_layouts)
-  {
+  for (auto& layout : m_layouts) {
     for (auto& [viewUid, view] : layout.views()) {
       if (view) {
         recenterView(*view, worldCenter, worldFov, resetZoom, resetObliqueOrientation);
@@ -646,11 +644,9 @@ void WindowData::recenterView(
   const glm::vec3& worldCenter,
   const glm::vec3& worldFov,
   bool resetZoom,
-  bool resetObliqueOrientation
-)
+  bool resetObliqueOrientation)
 {
-  if (View* view = getView(viewUid))
-  {
+  if (View* view = getView(viewUid)) {
     recenterView(*view, worldCenter, worldFov, resetZoom, resetObliqueOrientation);
   }
 }
@@ -660,18 +656,18 @@ void WindowData::recenterView(
   const glm::vec3& worldCenter,
   const glm::vec3& worldFov,
   bool resetZoom,
-  bool resetObliqueOrientation
-)
+  bool resetObliqueOrientation)
 {
-  if (resetZoom)
-  {
+  if (resetZoom) {
     helper::resetZoom(view.camera());
   }
 
-  if (resetObliqueOrientation && (ViewType::Oblique == view.viewType()))
+  if (resetObliqueOrientation)
   {
-    // Reset the view orientation for oblique views:
-    helper::resetViewTransformation(view.camera());
+    if (ViewType::Oblique == view.viewType()) {
+      // Reset the view orientation for oblique views:
+      helper::resetViewTransformation(view.camera());
+    }
   }
 
   helper::positionCameraForWorldTargetAndFov(view.camera(), worldFov, worldCenter);

@@ -9,8 +9,8 @@
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
-#include "logic/states/AnnotationStateHelpers.h"
-#include "logic/states/AnnotationStateMachine.h"
+#include "logic/states/annotation/AnnotationStateHelpers.h"
+#include "logic/states/annotation/AnnotationStateMachine.h"
 
 #include "windowing/View.h"
 

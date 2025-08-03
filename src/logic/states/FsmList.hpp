@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logic/states/AnnotationStateMachine.h"
+#include "logic/states/annotation/AnnotationStateMachine.h"
 
 #include <tinyfsm.hpp>
 

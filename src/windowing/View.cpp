@@ -160,7 +160,7 @@ CoordinateFrame View::get_anatomy_T_start(const ViewType& viewType) const
   glm::mat3 R{1.0f};
 
   if (alignToCrosshairs) {
-    if (m_crosshairs.viewUidWithOldCrosshairs && (*m_crosshairs.viewUidWithOldCrosshairs == m_uid)) {
+    if (m_crosshairs.viewWithRotatingCrosshairs && (*m_crosshairs.viewWithRotatingCrosshairs == m_uid)) {
       R = glm::mat3{m_crosshairs.worldCrosshairsOld.world_T_frame()};
     }
     else {

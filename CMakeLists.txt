@@ -422,9 +422,9 @@ set(entropy_SOURCES
 
   ${entropy_SRC_DIR}/logic/serialization/ProjectSerialization.cpp
 
-  ${entropy_SRC_DIR}/logic/states/AnnotationStateHelpers.cpp
-  ${entropy_SRC_DIR}/logic/states/AnnotationStateMachine.cpp
-  ${entropy_SRC_DIR}/logic/states/AnnotationStates.cpp
+  ${entropy_SRC_DIR}/logic/states/annotation/AnnotationStateHelpers.cpp
+  ${entropy_SRC_DIR}/logic/states/annotation/AnnotationStateMachine.cpp
+  ${entropy_SRC_DIR}/logic/states/annotation/AnnotationStates.cpp
 
   # We were testing IPC with ITK-SNAP. This functionality is not currently hooked up to Entropy.
   # ${entropy_SRC_DIR}/logic/ipc/IPCHandler.cxx

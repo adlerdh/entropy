@@ -12,7 +12,7 @@
 
 #include "logic/app/Data.h"
 #include "logic/camera/MathUtility.h"
-#include "logic/states/AnnotationStateHelpers.h"
+#include "logic/states/annotation/AnnotationStateHelpers.h"
 
 #include <IconsForkAwesome.h>
 

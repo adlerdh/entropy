@@ -1,5 +1,5 @@
-#include "logic/states/AnnotationStateMachine.h"
-#include "logic/states/AnnotationStates.h"
+#include "logic/states/annotation/AnnotationStateMachine.h"
+#include "logic/states/annotation/AnnotationStates.h"
 
 #include "common/DataHelper.h"
 #include "common/MathFuncs.h"

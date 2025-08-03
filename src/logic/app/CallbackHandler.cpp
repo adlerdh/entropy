@@ -750,16 +750,14 @@ void CallbackHandler::recenterViews(
   bool recenterCrosshairs,
   bool recenterOnCurrentCrosshairsPos,
   bool resetObliqueOrientation,
-  const std::optional<bool>& resetZoom
-)
+  const std::optional<bool>& resetZoom)
 {
   // On view recenter, force the crosshairs and views to snap to the center of the
   // reference image voxels. This is so that crosshairs/views don't land on a voxel
   // boundary (which causes jitter on view zoom).
   static constexpr CrosshairsSnapping forceSnapping = CrosshairsSnapping::ReferenceImage;
 
-  if (0 == m_appData.numImages())
-  {
+  if (0 == m_appData.numImages()) {
     spdlog::warn("No images loaded: preparing views using default bounds");
   }
 
@@ -770,15 +768,14 @@ void CallbackHandler::recenterViews(
   {
     // Crosshairs always snap to voxels
     const glm::vec3 worldPos = math::computeAABBoxCenter(worldBox);
-    const glm::vec3 worldPosSnapped
-      = data::snapWorldPointToImageVoxels(m_appData, worldPos, forceSnapping);
+    const glm::vec3 worldPosSnapped = data::snapWorldPointToImageVoxels(m_appData, worldPos, forceSnapping);
 
     m_appData.state().setWorldCrosshairsPos(worldPosSnapped);
   }
 
   const glm::vec3 worldCenter = (recenterOnCurrentCrosshairsPos)
-                                  ? m_appData.state().worldCrosshairs().worldOrigin()
-                                  : math::computeAABBoxCenter(worldBox);
+    ? m_appData.state().worldCrosshairs().worldOrigin()
+    : math::computeAABBoxCenter(worldBox);
 
   // const glm::vec3 worldCenterSnapped = data::snapWorldPointToImageVoxels( m_appData, worldCenter, forceSnapping );
 
@@ -788,8 +785,7 @@ void CallbackHandler::recenterViews(
     worldCenter,
     sk_viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox),
     _resetZoom,
-    resetObliqueOrientation
-  );
+    resetObliqueOrientation);
 }
 
 void CallbackHandler::recenterView(const ImageSelection& imageSelection, const uuid& viewUid)
@@ -2098,7 +2094,8 @@ void CallbackHandler::moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, i
     static_cast<float>(stepY) * moveDistances.y * worldUpAxis);
 }
 
-void CallbackHandler::doCrosshairsRotate2d(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
+void CallbackHandler::doCrosshairsRotate2d(
+  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
 {
   View* viewToUse = startHit.view;
   if (!viewToUse) {
@@ -2107,18 +2104,21 @@ void CallbackHandler::doCrosshairsRotate2d(const ViewHit& startHit, const ViewHi
 
   // Rotate the crosshairs frame in the 2D view plane about the crosshairs position
   AppState& state = m_appData.state();
+
+  if (!state.viewWithRotatingCrosshairs()) {
+    // Not in a rotating state, so transition to rotating state. This is done by
+    // setting this view as the one rotating crosshairs.
+    state.setViewWithRotatingCrosshairs(startHit.viewUid);
+  }
+
   CoordinateFrame worldCrosshairsRotated = state.worldCrosshairs(); // Current crosshairs: will be rotated
   const glm::vec3 worldRotCenter = state.worldCrosshairs().worldOrigin();
   const glm::vec2 ndcRotCenter = helper::ndc_T_world(viewToUse->camera(), worldRotCenter);
   const glm::quat R = helper::rotation2dInCameraPlane(viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos, ndcRotCenter);
   math::rotateFrameAboutWorldPos(worldCrosshairsRotated, R, worldRotCenter);
 
-  if (startHit.viewClipPos == currHit.viewClipPos) {
-    state.setViewUsingOldCrosshairs(startHit.viewUid); // Set this view as using old crosshairs
-    state.saveOldCrosshairs(); // Save crosshairs before rotating
-  }
-
-  state.setWorldCrosshairs(worldCrosshairsRotated); // Set new crosshairs (used by all other views)
+  // Set new crosshairs (used by all other views except the one in which rotation is being done):
+  state.setWorldCrosshairs(worldCrosshairsRotated);
 
   /// @todo Option to snap to 15 degree increments with rotation
   /// @todo The crosshairs are moving around on the other views... need to keep them stable

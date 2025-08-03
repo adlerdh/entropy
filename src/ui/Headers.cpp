@@ -17,7 +17,7 @@
 #include "image/ImageUtility.h"
 
 #include "logic/app/Data.h"
-#include "logic/states/AnnotationStateMachine.h"
+#include "logic/states/annotation/AnnotationStateMachine.h"
 
 #include <IconsForkAwesome.h>
 

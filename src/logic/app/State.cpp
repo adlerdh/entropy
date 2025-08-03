@@ -37,14 +37,15 @@ const CrosshairsState& AppState::crosshairsState() const
   return m_crosshairsState;
 }
 
-void AppState::saveOldCrosshairs()
+void AppState::setViewWithRotatingCrosshairs(const std::optional<uuids::uuid>& viewUid)
 {
+  m_crosshairsState.viewWithRotatingCrosshairs = viewUid;
   m_crosshairsState.worldCrosshairsOld = m_crosshairsState.worldCrosshairs;
 }
 
-void AppState::setViewUsingOldCrosshairs(const std::optional<uuids::uuid>& viewUid)
+std::optional<uuids::uuid> AppState::viewWithRotatingCrosshairs() const
 {
-  m_crosshairsState.viewUidWithOldCrosshairs = viewUid;
+  return m_crosshairsState.viewWithRotatingCrosshairs;
 }
 
 void AppState::setMouseMode(MouseMode mode)
@@ -57,6 +58,12 @@ void AppState::setMouseMode(MouseMode mode)
   }
   else if (MouseMode::Annotate != oldMode && MouseMode::Annotate == mode) {
     send_event(state::annot::TurnOnAnnotationModeEvent());
+  }
+
+  if (MouseMode::CrosshairsRotate != mode) {
+    // Turn off rotation
+    /// @todo Could be handled by dedicated state machine for crosshairs
+    setViewWithRotatingCrosshairs(std::nullopt);
   }
 }
 

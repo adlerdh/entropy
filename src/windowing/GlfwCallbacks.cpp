@@ -6,7 +6,7 @@
 #include "logic/camera/CameraHelpers.h"
 #include "logic/interaction/ViewHit.h"
 #include "logic/interaction/events/ButtonState.h"
-#include "logic/states/AnnotationStateHelpers.h"
+#include "logic/states/annotation/AnnotationStateHelpers.h"
 #include "logic/states/FsmList.hpp"
 
 #include <glm/glm.hpp>
@@ -529,6 +529,10 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   case GLFW_RELEASE: {
     app->appData().windowData().setActiveViewUid(std::nullopt);
     send_event(state::annot::MouseReleaseEvent(*hit_invalidOutsideView, s_mouseButtonState, s_modifierState));
+
+    // When the mouse is released, transition to a state where crosshairs are not rotating:
+    /// @todo This could be handled by a dedicated state machine
+    app->appState().setViewWithRotatingCrosshairs(std::nullopt);
     break;
   }
   default:

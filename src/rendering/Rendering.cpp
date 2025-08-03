@@ -9,7 +9,7 @@
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
-#include "logic/states/AnnotationStateHelpers.h"
+#include "logic/states/annotation/AnnotationStateHelpers.h"
 #include "logic/states/FsmList.hpp"
 
 #include "rendering/ImageDrawing.h"
@@ -2209,27 +2209,25 @@ void Rendering::renderVectorOverlays()
 
   startNvgFrame(m_nvg, windowVP);
 
-  /// @note This is the transformation used for rotating the crosshairs.
-  /// It was designed initialially to show the mapping of subject (usually reference subject)
-  /// in the view/camera. However, it need not be a subject-to-world transformation.
-  /// We can also use the xhairs/frame-to-world transformation!!!
-
-  /// @todo Add application state for this
-  constexpr bool alignToCrosshairs = true;
-
+  // Transformation used for anatomical labels in the view
   glm::mat4 world_T_refSubject(1.0f);
 
-  /// @todo Figure out this logic
-  if (alignToCrosshairs) {
-    // Align to crosshairs:
-    world_T_refSubject = m_appData.state().worldCrosshairs().world_T_frame();
-  }
-  else if (m_appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage()) {
+  if (m_appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage()) {
     // Align to reference image:
     if (const Image* refImage = m_appData.refImage()) {
       world_T_refSubject = refImage->transformations().worldDef_T_subject();
     }
   }
+
+  /// @note This is the transformation used for rotating the crosshairs.
+  /// It was designed initialially to show the mapping of subject (usually reference subject)
+  /// in the view/camera. However, it need not be a subject-to-world transformation.
+  /// We can also use the xhairs/frame-to-world transformation!!!
+
+  // Transformation used for crosshairs labels:
+  // (If the view is set to NOT align with crosshairs, then it equals world_T_refSubject)
+  const glm::mat4 world_T_crosshairsFrame = m_appData.settings().alignViewsToCrosshairs()
+    ? m_appData.state().worldCrosshairs().world_T_frame() : world_T_refSubject;
 
   for (const auto& viewUid : windowData.currentViewUids())
   {
@@ -2245,20 +2243,29 @@ void Rendering::renderVectorOverlays()
     // Do not render vector overlays when view is disabled
     if (m_showOverlays && ViewRenderMode::Disabled != view->renderMode())
     {
-      const auto labelPosInfo = math::computeAnatomicalLabelPosInfo(
+      const auto labelPosInfo_forLabels = math::computeAnatomicalLabelPosInfo(
         miewportViewBounds, windowVP, view->camera(),
         world_T_refSubject, view->windowClip_T_viewClip(),
         m_appData.state().worldCrosshairs().worldOrigin());
 
       // Do not render crosshairs in volume rendering mode
-      if (ViewRenderMode::VolumeRender != view->renderMode()) {
-        drawCrosshairs(m_nvg, miewportViewBounds, *view, R.m_crosshairsColor, labelPosInfo);
+      if (ViewRenderMode::VolumeRender != view->renderMode())
+      {
+        const auto labelPosInfo_forXhairs = m_appData.settings().alignViewsToCrosshairs()
+          ? math::computeAnatomicalLabelPosInfo(
+              miewportViewBounds, windowVP, view->camera(),
+              world_T_crosshairsFrame, view->windowClip_T_viewClip(),
+              m_appData.state().worldCrosshairs().worldOrigin())
+          : labelPosInfo_forLabels;
+
+        drawCrosshairs(m_nvg, miewportViewBounds, *view, R.m_crosshairsColor, labelPosInfo_forXhairs);
       }
 
-      if (AnatomicalLabelType::Disabled != R.m_anatomicalLabelType) {
+      if (AnatomicalLabelType::Disabled != R.m_anatomicalLabelType)
+      {
         const bool isOblique = ViewType::Oblique == view->viewType();
         drawAnatomicalLabels(m_nvg, miewportViewBounds, isOblique,
-                             R.m_anatomicalLabelColor, R.m_anatomicalLabelType, labelPosInfo);
+                             R.m_anatomicalLabelColor, R.m_anatomicalLabelType, labelPosInfo_forLabels);
       }
     }
 

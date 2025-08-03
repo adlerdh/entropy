@@ -1,8 +1,7 @@
 #pragma once
 
 #include "logic/interaction/ViewHit.h"
-#include "logic/interaction/events/ButtonState.h"
-#include "logic/states/AnnotationEvents.h"
+#include "logic/states/annotation/AnnotationEvents.h"
 
 #include <tinyfsm.hpp>
 #include <uuid.h>

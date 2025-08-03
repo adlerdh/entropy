@@ -1,4 +1,4 @@
-#include "logic/states/AnnotationStates.h"
+#include "logic/states/annotation/AnnotationStates.h"
 
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>

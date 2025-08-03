@@ -5,7 +5,7 @@
 #include "ui/Widgets.h"
 
 #include "logic/app/Data.h"
-#include "logic/states/AnnotationStateHelpers.h"
+#include "logic/states/annotation/AnnotationStateHelpers.h"
 #include "logic/states/FsmList.hpp"
 
 #include <IconsForkAwesome.h>
@@ -210,7 +210,8 @@ void renderModeToolbar(
 
           if (MouseMode::CameraTranslate == mouseMode ||
               MouseMode::CrosshairsRotate == mouseMode ||
-              MouseMode::Annotate == mouseMode) {
+              MouseMode::Annotate == mouseMode)
+          {
             // Put a small dummy space after these buttons
             if (isHoriz) {
               ImGui::SameLine();
@@ -474,16 +475,14 @@ void renderModeToolbar(
       {
         if (ImGui::Button(ICON_FK_CROSSHAIRS, buttonSize))
         {
-          // Shift does a "hard" reset of the crosshairs, oblique orientations, and zoom
-          const bool hardReset = ImGui::IsKeyDown(ImGuiKey_LeftShift)
-                                 || ImGui::IsKeyDown(ImGuiKey_RightShift);
+          // Shift does a "hard" reset of the crosshairs, oblique orientations, rotated crosshairs, and zoom
+          const bool hardReset = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
           const bool recenterCrosshairs = hardReset;
           const bool resetObliqueOrientation = hardReset;
           static constexpr bool recenterOnCurrentCrosshairsPosition = true;
 
           std::optional<bool> resetZoom = std::nullopt;
-          if (hardReset)
-          {
+          if (hardReset) {
             resetZoom = true;
           }
 
@@ -491,8 +490,7 @@ void renderModeToolbar(
             recenterCrosshairs,
             recenterOnCurrentCrosshairsPosition,
             resetObliqueOrientation,
-            resetZoom
-          );
+            resetZoom);
         }
         if (ImGui::IsItemHovered())
         {

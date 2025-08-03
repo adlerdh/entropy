@@ -203,7 +203,7 @@ public:
   void moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, int stepY);
 
   /**
-     * @brief 2D rotation of the crosshairs
+     * @brief Rotate the crosshairs frame in the 2D view plane about the crosshairs position
      * @param[in] windowLastPos
      * @param[in] windowCurrPos
      * @param[in] windowStartPos
@@ -218,8 +218,8 @@ public:
      * @param recenterOnCurrentCrosshairsPos
      * @param resetObliqueOrientation
      */
-  void recenterViews(const ImageSelection&,
-                     bool recenterCrosshairs, bool recenterOnCurrentCrosshairsPos, bool resetObliqueOrientation,
+  void recenterViews(const ImageSelection&, bool recenterCrosshairs, bool recenterOnCurrentCrosshairsPos,
+                     bool resetObliqueOrientation,
                      const std::optional<bool>& resetZoom = std::nullopt);
 
   /**

@@ -178,3 +178,13 @@ void AppSettings::setLockAnatomicalCoordinateAxesWithReferenceImage(bool lock)
 {
   m_lockAnatomicalCoordinateAxesWithReferenceImage = lock;
 }
+
+bool AppSettings::alignViewsToCrosshairs() const
+{
+  return m_alignViewsToCrosshairs;
+}
+
+void AppSettings::setAlignViewsToCrosshairs(bool align)
+{
+  m_alignViewsToCrosshairs = align;
+}
