@@ -2226,8 +2226,10 @@ void Rendering::renderVectorOverlays()
 
   // Transformation used for crosshairs labels:
   // (If the view is set to NOT align with crosshairs, then it equals world_T_refSubject)
-  const glm::mat4 world_T_crosshairsFrame = m_appData.settings().alignViewsToCrosshairs()
-    ? m_appData.state().worldCrosshairs().world_T_frame() : world_T_refSubject;
+  const glm::mat4 world_T_crosshairsFrame =
+    (ViewAlignmentMode::Crosshairs == m_appData.windowData().viewAlignmentMode())
+    ? m_appData.state().worldCrosshairs().world_T_frame()
+    : world_T_refSubject;
 
   for (const auto& viewUid : windowData.currentViewUids())
   {
@@ -2243,6 +2245,7 @@ void Rendering::renderVectorOverlays()
     // Do not render vector overlays when view is disabled
     if (m_showOverlays && ViewRenderMode::Disabled != view->renderMode())
     {
+      // Label positions are based on the reference image transform (world_T_refSubject)
       const auto labelPosInfo_forLabels = math::computeAnatomicalLabelPosInfo(
         miewportViewBounds, windowVP, view->camera(),
         world_T_refSubject, view->windowClip_T_viewClip(),
@@ -2251,7 +2254,10 @@ void Rendering::renderVectorOverlays()
       // Do not render crosshairs in volume rendering mode
       if (ViewRenderMode::VolumeRender != view->renderMode())
       {
-        const auto labelPosInfo_forXhairs = m_appData.settings().alignViewsToCrosshairs()
+        // If aligning views to crosshairs, then crosshairs are based on the crosshairs
+        // transform (world_T_crosshairsFrame)
+        const auto labelPosInfo_forXhairs =
+          (ViewAlignmentMode::Crosshairs == m_appData.windowData().viewAlignmentMode())
           ? math::computeAnatomicalLabelPosInfo(
               miewportViewBounds, windowVP, view->camera(),
               world_T_crosshairsFrame, view->windowClip_T_viewClip(),

@@ -2,6 +2,7 @@
 
 #include "common/ParcellationLabelTable.h"
 #include "common/SegmentationTypes.h"
+#include "common/Types.h"
 
 #include <glm/vec3.hpp>
 
@@ -71,9 +72,6 @@ public:
   bool lockAnatomicalCoordinateAxesWithReferenceImage() const;
   void setLockAnatomicalCoordinateAxesWithReferenceImage(bool lock);
 
-  bool alignViewsToCrosshairs() const;
-  void setAlignViewsToCrosshairs(bool align);
-
 private:
   bool m_synchronizeZoom = true; //!< Synchronize zoom between views
   bool m_overlays = true; //!< Render UI and vector overlays
@@ -85,11 +83,6 @@ private:
   /// and crosshairs rotate, too? When this option is true, the rotation of the
   /// coordinate axes are locked with the reference image.
   bool m_lockAnatomicalCoordinateAxesWithReferenceImage = false;
-
-  /// Flag to align views with crosshairs (which may be rotated) instead of to either
-  /// 1) World XYZ/LPS (if m_lockAnatomicalCoordinateAxesWithReferenceImage is false)
-  /// 2) Reference image XYZ/LPS (if m_lockAnatomicalCoordinateAxesWithReferenceImage is true)
-  bool m_alignViewsToCrosshairs = true;
 
   /* Begin segmentation drawing variables */
   std::size_t m_foregroundLabel = 1u; //!< Foreground segmentation label

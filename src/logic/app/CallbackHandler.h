@@ -208,7 +208,7 @@ public:
      * @param[in] windowCurrPos
      * @param[in] windowStartPos
      */
-  void doCrosshairsRotate2d(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit);
+  void doCrosshairsRotate2D(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit);
 
   void moveCrosshairsToSegLabelCentroid(const uuid& imageUid, size_t labelIndex);
 

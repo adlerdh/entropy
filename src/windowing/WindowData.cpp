@@ -29,7 +29,8 @@ namespace
 
 Layout createFourUpLayout(
   const CrosshairsState& crosshairs,
-  std::function<ViewConvention()> conventionProvider)
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention)
 {
   const UiControls uiControls(true);
 
@@ -54,8 +55,9 @@ Layout createFourUpLayout(
       ViewRenderMode::Image,
       IntensityProjectionMode::None,
       uiControls,
-      conventionProvider,
+      viewConvention,
       crosshairs,
+      viewAlignment,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
@@ -74,8 +76,9 @@ Layout createFourUpLayout(
       ViewRenderMode::Image,
       IntensityProjectionMode::None,
       uiControls,
-      conventionProvider,
+      viewConvention,
       crosshairs,
+      viewAlignment,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
@@ -94,12 +97,12 @@ Layout createFourUpLayout(
       ViewRenderMode::Disabled,
       IntensityProjectionMode::None,
       uiControls,
-      conventionProvider,
+      viewConvention,
       crosshairs,
+      viewAlignment,
       noRotationSyncGroup,
       noTranslationSyncGroup,
-      noZoomSyncGroup
-    );
+      noZoomSyncGroup);
 
     view->setPreferredDefaultRenderedImages({});
     view->setDefaultRenderAllImages(true);
@@ -115,8 +118,9 @@ Layout createFourUpLayout(
       ViewRenderMode::Image,
       IntensityProjectionMode::None,
       uiControls,
-      conventionProvider,
+      viewConvention,
       crosshairs,
+      viewAlignment,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
@@ -132,7 +136,8 @@ Layout createFourUpLayout(
 
 Layout createTriLayout(
   const CrosshairsState& crosshairs,
-  std::function<ViewConvention()> conventionProvider)
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention)
 {
   const UiControls uiControls(true);
 
@@ -157,8 +162,9 @@ Layout createTriLayout(
       ViewRenderMode::Image,
       IntensityProjectionMode::None,
       uiControls,
-      conventionProvider,
+      viewConvention,
       crosshairs,
+      viewAlignment,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       noZoomSyncGroup);
@@ -176,8 +182,9 @@ Layout createTriLayout(
       ViewRenderMode::Image,
       IntensityProjectionMode::None,
       uiControls,
-      conventionProvider,
+      viewConvention,
       crosshairs,
+      viewAlignment,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
@@ -196,8 +203,9 @@ Layout createTriLayout(
       ViewRenderMode::Image,
       IntensityProjectionMode::None,
       uiControls,
-      conventionProvider,
+      viewConvention,
       crosshairs,
+      viewAlignment,
       noRotationSyncGroup,
       noTranslationSyncGroup,
       zoomSyncGroupUid);
@@ -214,7 +222,8 @@ Layout createTriLayout(
 Layout createTriTopBottomLayout(
   std::size_t numRows,
   const CrosshairsState& crosshairs,
-  std::function<ViewConvention()> conventionProvider)
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention)
 {
   const UiControls uiControls(true);
 
@@ -265,8 +274,9 @@ Layout createTriTopBottomLayout(
         ViewRenderMode::Image,
         IntensityProjectionMode::None,
         uiControls,
-        conventionProvider,
+        viewConvention,
         crosshairs,
+        viewAlignment,
         axiRotationSyncGroupUid,
         axiTranslationSyncGroupUid,
         axiZoomSyncGroupUid);
@@ -290,12 +300,12 @@ Layout createTriTopBottomLayout(
         ViewRenderMode::Image,
         IntensityProjectionMode::None,
         uiControls,
-        conventionProvider,
+        viewConvention,
         crosshairs,
+        viewAlignment,
         corRotationSyncGroupUid,
         corTranslationSyncGroupUid,
-        corZoomSyncGroupUid
-      );
+        corZoomSyncGroupUid);
 
       view->setPreferredDefaultRenderedImages({r});
       view->setDefaultRenderAllImages(false);
@@ -315,12 +325,12 @@ Layout createTriTopBottomLayout(
         ViewRenderMode::Image,
         IntensityProjectionMode::None,
         uiControls,
-        conventionProvider,
+        viewConvention,
         crosshairs,
+        viewAlignment,
         sagRotationSyncGroupUid,
         sagTranslationSyncGroupUid,
-        sagZoomSyncGroupUid
-      );
+        sagZoomSyncGroupUid);
 
       view->setPreferredDefaultRenderedImages({r});
       view->setDefaultRenderAllImages(false);
@@ -343,7 +353,8 @@ Layout createGridLayout(
   bool offsetViews,
   bool isLightbox,
   const CrosshairsState& crosshairs,
-  std::function<ViewConvention()> conventionProvider,
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention,
   const std::optional<size_t>& imageIndexForLightbox,
   const std::optional<uuids::uuid>& imageUidForLightbox)
 {
@@ -416,14 +427,14 @@ Layout createGridLayout(
         s_shaderType,
         s_ipMode,
         UiControls(!isLightbox),
-        conventionProvider,
+        viewConvention,
         crosshairs,
+        viewAlignment,
         rotSyncGroupUid,
         transSyncGroupUid,
         zoomSyncGroupUid);
 
-      if (!isLightbox)
-      {
+      if (!isLightbox) {
         // Make each view render a different image by default:
         view->setPreferredDefaultRenderedImages({count});
         view->setDefaultRenderAllImages(false);
@@ -450,10 +461,7 @@ WindowData::WindowData(const CrosshairsState& crosshairs)
   , m_windowSize(800, 800)
   , m_framebufferSize(800, 800)
   , m_contentScaleRatio(1.0f, 1.0f)
-  , m_layouts()
   , m_currentLayout(0)
-  , m_activeViewUid(std::nullopt)
-  , m_viewConvention(ViewConvention::Radiological)
 {
   setupViews();
   setCurrentLayoutIndex(0);
@@ -464,16 +472,14 @@ WindowData::WindowData(const CrosshairsState& crosshairs)
 
 void WindowData::setupViews()
 {
-  auto conventionProvider = [this]() { return m_viewConvention; };
-
-  m_layouts.emplace_back(createFourUpLayout(m_crosshairs, conventionProvider));
-  m_layouts.emplace_back(createTriLayout(m_crosshairs, conventionProvider));
+  m_layouts.emplace_back(createFourUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
+  m_layouts.emplace_back(createTriLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
 
   static constexpr std::size_t refImage = 0;
 
   m_layouts.emplace_back(
-    createGridLayout(ViewType::Axial, 1, 1, false, false, m_crosshairs, conventionProvider, refImage, std::nullopt)
-  );
+    createGridLayout(ViewType::Axial, 1, 1, false, false,
+                     m_crosshairs, m_viewAlignment, m_viewConvention, refImage, std::nullopt));
 
   updateAllViews();
 }
@@ -487,12 +493,10 @@ void WindowData::addGridLayout(
   std::size_t imageIndexForLightbox,
   const uuids::uuid& imageUidForLightbox)
 {
-  auto conventionProvider = [this]() { return m_viewConvention; };
-
   m_layouts.emplace_back(createGridLayout(
     viewType, width, height,
     offsetViews, isLightbox,
-    m_crosshairs, conventionProvider,
+    m_crosshairs, m_viewAlignment, m_viewConvention,
     imageIndexForLightbox, imageUidForLightbox));
 
   updateAllViews();
@@ -514,16 +518,15 @@ void WindowData::addLightboxLayoutForImage(
 
 void WindowData::addAxCorSagLayout(std::size_t numImages)
 {
-  auto conventionProvider = [this]() { return m_viewConvention; };
-
-  m_layouts.emplace_back(createTriTopBottomLayout(numImages, m_crosshairs, conventionProvider));
+  m_layouts.emplace_back(createTriTopBottomLayout(numImages, m_crosshairs, m_viewAlignment, m_viewConvention));
   updateAllViews();
 }
 
 void WindowData::removeLayout(std::size_t index)
 {
-  if (index >= m_layouts.size())
+  if (index >= m_layouts.size()) {
     return;
+  }
 
   m_layouts.erase(std::begin(m_layouts) + static_cast<long>(index));
 }
@@ -541,23 +544,20 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t 
   {
     renderedImages.push_back(uid);
 
-    if (count < 2)
-    {
+    if (count < 2) {
       // By default, compute the metric using the first two images:
       metricImages.push_back(uid);
       ++count;
     }
   }
 
-  if (layout.isLightbox())
-  {
+  if (layout.isLightbox()) {
     layout.setRenderedImages(renderedImages, s_filterAgainstDefaults);
     layout.setMetricImages(metricImages);
     return;
   }
 
-  for (auto& [viewUid, view] : layout.views())
-  {
+  for (auto& [viewUid, view] : layout.views()) {
     if (view) {
       view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
       view->setMetricImages(metricImages);
@@ -578,8 +578,7 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImage
   {
     renderedImages.push_back(uid);
 
-    if (count < 2)
-    {
+    if (count < 2) {
       // By default, compute the metric using the first two images:
       metricImages.push_back(uid);
       ++count;
@@ -588,15 +587,13 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImage
 
   for (auto& layout : m_layouts)
   {
-    if (layout.isLightbox())
-    {
+    if (layout.isLightbox()) {
       layout.setRenderedImages(renderedImages, s_filterAgainstDefaults);
       layout.setMetricImages(metricImages);
       continue;
     }
 
-    for (auto& [viewUid, view] : layout.views())
-    {
+    for (auto& [viewUid, view] : layout.views()) {
       if (view) {
         view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
         view->setMetricImages(metricImages);
@@ -609,14 +606,12 @@ void WindowData::updateImageOrdering(uuid_range_t orderedImageUids)
 {
   for (auto& layout : m_layouts)
   {
-    if (layout.isLightbox())
-    {
+    if (layout.isLightbox()) {
       layout.updateImageOrdering(orderedImageUids);
       continue;
     }
 
-    for (auto& [viewUid, view] : layout.views())
-    {
+    for (auto& [viewUid, view] : layout.views()) {
       if (view) {
         view->updateImageOrdering(orderedImageUids);
       }
@@ -682,8 +677,7 @@ const View* WindowData::getCurrentView(const uuids::uuid& uid) const
 {
   const auto& views = m_layouts.at(m_currentLayout).views();
   auto it = views.find(uid);
-  if (std::end(views) != it)
-  {
+  if (std::end(views) != it) {
     if (it->second) {
       return it->second.get();
     }
@@ -708,10 +702,10 @@ const View* WindowData::getView(const uuids::uuid& uid) const
   for (const auto& layout : m_layouts)
   {
     auto it = layout.views().find(uid);
-    if (std::end(layout.views()) != it)
-    {
-      if (it->second)
+    if (std::end(layout.views()) != it) {
+      if (it->second) {
         return it->second.get();
+      }
     }
   }
   return nullptr;
@@ -722,8 +716,7 @@ View* WindowData::getView(const uuids::uuid& uid)
   for (const auto& layout : m_layouts)
   {
     auto it = layout.views().find(uid);
-    if (std::end(layout.views()) != it)
-    {
+    if (std::end(layout.views()) != it) {
       if (it->second)
         return it->second.get();
     }
@@ -741,14 +734,14 @@ std::optional<uuids::uuid> WindowData::currentViewUidAtCursor(const glm::vec2& w
 
   for (const auto& view : m_layouts.at(m_currentLayout).views())
   {
-    if (!view.second)
+    if (!view.second) {
       continue;
+    }
+
     const glm::vec4& winClipVp = view.second->windowClipViewport();
 
-    if ( ( winClipVp[0] <= winClipPos.x ) &&
-             ( winClipPos.x < winClipVp[0] + winClipVp[2] ) &&
-             ( winClipVp[1] <= winClipPos.y ) &&
-             ( winClipPos.y < winClipVp[1] + winClipVp[3] ) )
+    if ((winClipVp[0] <= winClipPos.x ) && (winClipPos.x < winClipVp[0] + winClipVp[2]) &&
+        (winClipVp[1] <= winClipPos.y) && (winClipPos.y < winClipVp[1] + winClipVp[3]))
     {
       return view.first;
     }
@@ -779,8 +772,7 @@ size_t WindowData::currentLayoutIndex() const
 
 const Layout* WindowData::layout(std::size_t index) const
 {
-  if (index < m_layouts.size())
-  {
+  if (index < m_layouts.size()) {
     return &(m_layouts.at(index));
   }
   return nullptr;
@@ -798,8 +790,9 @@ Layout& WindowData::currentLayout()
 
 void WindowData::setCurrentLayoutIndex(std::size_t index)
 {
-  if (index >= m_layouts.size())
+  if (index >= m_layouts.size()) {
     return;
+  }
   m_currentLayout = index;
 }
 
@@ -807,7 +800,6 @@ void WindowData::cycleCurrentLayout(int step)
 {
   const int i = static_cast<int>(currentLayoutIndex());
   const int N = static_cast<int>(numLayouts());
-
   setCurrentLayoutIndex(static_cast<size_t>((N + i + step) % N));
 }
 
@@ -827,8 +819,7 @@ void WindowData::setViewport(float left, float bottom, float width, float height
 
 void WindowData::setContentScaleRatios(const glm::vec2& scale)
 {
-  if (m_contentScaleRatio == scale)
-  {
+  if (m_contentScaleRatio == scale) {
     return;
   }
 
@@ -861,13 +852,11 @@ void WindowData::setWindowSize(int width, int height)
 {
   static const glm::ivec2 sk_minWindowSize{1, 1};
 
-  if (m_windowSize.x == width && m_windowSize.y == height)
-  {
+  if (m_windowSize.x == width && m_windowSize.y == height) {
     return;
   }
 
   m_windowSize = glm::max(glm::ivec2{width, height}, sk_minWindowSize);
-
   m_viewport.setDevicePixelRatio(computeFramebufferToWindowRatio());
   updateAllViews();
 }
@@ -881,13 +870,11 @@ void WindowData::setFramebufferSize(int width, int height)
 {
   static const glm::ivec2 sk_minFramebufferSize{1, 1};
 
-  if (m_framebufferSize.x == width && m_framebufferSize.y == height)
-  {
+  if (m_framebufferSize.x == width && m_framebufferSize.y == height) {
     return;
   }
 
   m_framebufferSize = glm::max(glm::ivec2{width, height}, sk_minFramebufferSize);
-
   m_viewport.setDevicePixelRatio(computeFramebufferToWindowRatio());
   updateAllViews();
 }
@@ -901,8 +888,7 @@ glm::vec2 WindowData::computeFramebufferToWindowRatio() const
 {
   return glm::vec2{
     static_cast<float>(m_framebufferSize.x) / static_cast<float>(m_windowSize.x),
-    static_cast<float>(m_framebufferSize.y) / static_cast<float>(m_windowSize.y)
-  };
+    static_cast<float>(m_framebufferSize.y) / static_cast<float>(m_windowSize.y)};
 }
 
 void WindowData::setViewOrientationConvention(const ViewConvention& convention)
@@ -913,6 +899,16 @@ void WindowData::setViewOrientationConvention(const ViewConvention& convention)
 ViewConvention WindowData::getViewOrientationConvention() const
 {
   return m_viewConvention;
+}
+
+ViewAlignmentMode WindowData::viewAlignmentMode() const
+{
+  return m_viewAlignment;
+}
+
+void WindowData::setViewAlignmentMode(ViewAlignmentMode mode)
+{
+  m_viewAlignment = mode;
 }
 
 uuid_range_t WindowData::cameraSyncGroupViewUids(
@@ -930,8 +926,9 @@ void WindowData::applyImageSelectionToAllCurrentViews(const uuids::uuid& referen
   static constexpr bool s_filterAgainstDefaults = false;
 
   const View* referenceView = getCurrentView(referenceViewUid);
-  if (!referenceView)
+  if (!referenceView) {
     return;
+  }
 
   const auto renderedImages = referenceView->renderedImages();
   const auto metricImages = referenceView->metricImages();
@@ -939,20 +936,22 @@ void WindowData::applyImageSelectionToAllCurrentViews(const uuids::uuid& referen
   for (auto& viewUid : currentViewUids())
   {
     View* view = getCurrentView(viewUid);
-    if (!view)
+    if (!view) {
       continue;
+    }
 
     view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
     view->setMetricImages(metricImages);
   }
 }
 
-void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(const uuids::uuid& referenceViewUid
-)
+void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(
+  const uuids::uuid& referenceViewUid)
 {
   const View* referenceView = getCurrentView(referenceViewUid);
-  if (!referenceView)
+  if (!referenceView) {
     return;
+  }
 
   const auto renderMode = referenceView->renderMode();
   const auto ipMode = referenceView->intensityProjectionMode();
@@ -960,11 +959,11 @@ void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(const uuids::
   for (auto& viewUid : currentViewUids())
   {
     View* view = getCurrentView(viewUid);
-    if (!view)
+    if (!view) {
       continue;
+    }
 
-    if (ViewType::ThreeD != view->viewType())
-    {
+    if (ViewType::ThreeD != view->viewType()) {
       // Don't allow changing render mode of 3D views
       view->setRenderMode(renderMode);
     }
@@ -988,7 +987,6 @@ std::vector<uuids::uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3&
     }
 
     const glm::vec3 viewBackDir = helper::worldDirection(view->camera(), Directions::View::Back);
-
     if (helper::areVectorsParallel(worldNormal, viewBackDir, sk_parallelThreshold_degrees)) {
       viewUids.push_back(viewUid);
     }
@@ -1000,11 +998,9 @@ std::vector<uuids::uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3&
 uuids::uuid WindowData::findLargestCurrentView() const
 {
   uuids::uuid largestViewUid = currentViewUids().front();
-
   const View* largestView = getCurrentView(largestViewUid);
 
-  if (!largestView)
-  {
+  if (!largestView) {
     spdlog::error("The current layout has no views");
     throw_debug("The current layout has no views")
   }
@@ -1014,13 +1010,12 @@ uuids::uuid WindowData::findLargestCurrentView() const
   for (auto& viewUid : currentViewUids())
   {
     const View* view = getCurrentView(viewUid);
-    if (!view)
+    if (!view) {
       continue;
+    }
 
     const float area = view->windowClipViewport()[2] * view->windowClipViewport()[3];
-
-    if (area > largestArea)
-    {
+    if (area > largestArea) {
       largestArea = area;
       largestViewUid = viewUid;
     }
@@ -1035,20 +1030,21 @@ void WindowData::recomputeCameraAspectRatios()
   {
     for (auto& [viewUid, view] : layout.views())
     {
-      if (view)
-      {
-        // The view camera's aspect ratio is the product of the main window's
-        // aspect ratio and the view's aspect ratio:
-        const float h = view->windowClipViewport()[3];
-
-        if (glm::epsilonEqual(h, 0.0f, glm::epsilon<float>())) {
-          spdlog::error("View {} has zero height: setting it to 1.", viewUid);
-          view->setWindowClipViewport(glm::vec4{glm::vec3{view->windowClipViewport()}, 1.0f});
-        }
-
-        const float viewAspect = view->windowClipViewport()[2] / view->windowClipViewport()[3];
-        view->camera().setAspectRatio(m_viewport.aspectRatio() * viewAspect);
+      if (!view) {
+        continue;
       }
+
+      // The view camera's aspect ratio is the product of the main window's
+      // aspect ratio and the view's aspect ratio:
+      const float h = view->windowClipViewport()[3];
+
+      if (glm::epsilonEqual(h, 0.0f, glm::epsilon<float>())) {
+        spdlog::error("View {} has zero height: setting it to 1.", viewUid);
+        view->setWindowClipViewport(glm::vec4{glm::vec3{view->windowClipViewport()}, 1.0f});
+      }
+
+      const float viewAspect = view->windowClipViewport()[2] / view->windowClipViewport()[3];
+      view->camera().setAspectRatio(m_viewport.aspectRatio() * viewAspect);
     }
   }
 }

@@ -36,8 +36,7 @@ public:
     const glm::vec3& worldCenter,
     const glm::vec3& worldFov,
     bool resetZoom,
-    bool resetObliqueOrientation
-  );
+    bool resetObliqueOrientation);
 
   /// Recenter a view to the given center position, without changing its FOV.
   /// (FOV is passed in only to adjust camera pullback distance.)
@@ -46,16 +45,14 @@ public:
     const glm::vec3& worldCenter,
     const glm::vec3& worldFov,
     bool resetZoom,
-    bool resetObliqueOrientation
-  );
+    bool resetObliqueOrientation);
 
   void recenterView(
     View& view,
     const glm::vec3& worldCenter,
     const glm::vec3& worldFov,
     bool resetZoom,
-    bool resetObliqueOrientation
-  );
+    bool resetObliqueOrientation);
 
   /// Get all current view UIDs
   uuid_range_t currentViewUids() const;
@@ -99,16 +96,14 @@ public:
     bool offsetViews,
     bool isLightbox,
     std::size_t imageIndexForLightbox,
-    const uuids::uuid& imageUidForLightbox
-  );
+    const uuids::uuid& imageUidForLightbox);
 
   /// Add a lightbox grid layout with enough views to hold a given number of slices
   void addLightboxLayoutForImage(
     const ViewType& viewType,
     std::size_t numSlices,
     std::size_t imageIndex,
-    const uuids::uuid& imageUid
-  );
+    const uuids::uuid& imageUid);
 
   /// Add a layout with one row per image and columns for axial, coronal, and sagittal views
   void addAxCorSagLayout(std::size_t numImages);
@@ -159,6 +154,9 @@ public:
   void setViewOrientationConvention(const ViewConvention& convention);
   ViewConvention getViewOrientationConvention() const;
 
+  ViewAlignmentMode viewAlignmentMode() const;
+  void setViewAlignmentMode(ViewAlignmentMode mode);
+
   /// Get view UIDs in a camera synchronization group
   uuid_range_t cameraSyncGroupViewUids(CameraSyncMode mode, const uuids::uuid& syncGroupUid) const;
 
@@ -201,13 +199,17 @@ private:
 
   glm::vec2 m_contentScaleRatio;
 
+  /// @todo Map from uuid to layout
   std::vector<Layout> m_layouts; // All view layouts
   std::size_t m_currentLayout;   // Index of the layout currently on display
 
   // UID of the view in which the user is currently interacting with the mouse.
   // The mouse must be held down for the view to be active.
-  std::optional<uuids::uuid> m_activeViewUid;
+  std::optional<uuids::uuid> m_activeViewUid = std::nullopt;
 
   // Default view orientation convention used for all views
-  ViewConvention m_viewConvention;
+  ViewConvention m_viewConvention = ViewConvention::Radiological;
+
+  /// View alignment mode
+  ViewAlignmentMode m_viewAlignment = ViewAlignmentMode::Crosshairs;
 };

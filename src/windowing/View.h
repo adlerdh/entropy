@@ -11,7 +11,6 @@
 
 #include <uuid.h>
 
-#include <functional>
 #include <optional>
 
 class Image;
@@ -47,8 +46,9 @@ public:
     ViewRenderMode renderMode,
     IntensityProjectionMode ipMode,
     UiControls uiControls,
-    std::function<ViewConvention()> viewConventionProvider,
+    const ViewConvention& viewConvention,
     const CrosshairsState& crosshairs,
+    const ViewAlignmentMode& viewAlignment,
     std::optional<uuid> cameraRotationSyncGroupUid,
     std::optional<uuid> translationSyncGroup,
     std::optional<uuid> zoomSyncGroup);
@@ -92,9 +92,9 @@ private:
   ProjectionType m_projectionType;
   Camera m_camera;
 
-  std::function<ViewConvention()> m_viewConventionProvider;
-
+  const ViewConvention& m_viewConvention;
   const CrosshairsState& m_crosshairs;
+  const ViewAlignmentMode& m_viewAlignment;
 
   /// ID of the camera synchronization groups to which this view belongs
   std::optional<uuid> m_cameraRotationSyncGroupUid;

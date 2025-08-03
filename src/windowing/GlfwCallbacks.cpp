@@ -421,7 +421,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
     }
 
     if (s_mouseButtonState.left) {
-      H.doCrosshairsRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride);
+      H.doCrosshairsRotate2D(*s_startHit, *s_prevHit, *currHit_withOverride);
     }
     else if (s_mouseButtonState.right)
     {

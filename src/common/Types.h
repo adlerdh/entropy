@@ -109,8 +109,8 @@ enum class InterpolationMode
 /**
  * @brief Array of all available interpolation modes
  */
-inline std::array<InterpolationMode, 3> const AllInterpolationModes
-  = {InterpolationMode::NearestNeighbor, InterpolationMode::Trilinear, InterpolationMode::Tricubic};
+inline std::array<InterpolationMode, 3> const AllInterpolationModes{
+  InterpolationMode::NearestNeighbor, InterpolationMode::Trilinear, InterpolationMode::Tricubic};
 
 /**
  * @brief The current mouse mode
@@ -133,7 +133,7 @@ enum class MouseMode
 /**
  * @brief Array of all available mouse modes in the Toolbar
  */
-inline std::array<MouseMode, 10> const AllMouseModes = {
+inline std::array<MouseMode, 10> const AllMouseModes{
   MouseMode::Pointer,
   MouseMode::WindowLevel,
   MouseMode::CameraZoom,
@@ -288,6 +288,22 @@ enum class CrosshairsSnapping
   Disabled,
   ReferenceImage,
   ActiveImage
+};
+
+/**
+ * @brief What do views align to?
+  /// 1) World XYZ/LPS (if m_lockAnatomicalCoordinateAxesWithReferenceImage is false)
+  /// 2)
+ */
+enum class ViewAlignmentMode
+{
+  /// Align to either the Reference image XYZ/LPS axes
+  /// (if m_lockAnatomicalCoordinateAxesWithReferenceImage is true)
+  /// or to the World XYZ (LPS) axes (if m_lockAnatomicalCoordinateAxesWithReferenceImage is false)
+  WorldOrReferenceImage,
+
+  /// Align to crosshairs XYZ axes (which may be rotated)
+  Crosshairs
 };
 
 /**

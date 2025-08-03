@@ -97,9 +97,6 @@ glm::quat get_world_T_startFrame(
   const glm::vec3 y = world_T_frame[1];
   const glm::vec3 z = world_T_frame[2];
 
-  // spdlog::info("R = {}", glm::to_string(worldCrosshairs.world_T_frame()));
-  // spdlog::info("x = {}, y = {}, z = {}", glm::to_string(x), glm::to_string(y), glm::to_string(z));
-
   switch (startFrameType)
   {
   case CameraStartFrameType::Crosshairs_Axial_LAI:
@@ -127,8 +124,9 @@ View::View(
   ViewRenderMode renderMode,
   IntensityProjectionMode ipMode,
   UiControls uiControls,
-  std::function<ViewConvention()> viewConventionProvider,
+  const ViewConvention& viewConvention,
   const CrosshairsState& crosshairs,
+  const ViewAlignmentMode& viewAlignment,
   std::optional<uuid> cameraRotationSyncGroupUid,
   std::optional<uuid> cameraTranslationSyncGroup,
   std::optional<uuid> cameraZoomSyncGroup)
@@ -137,8 +135,9 @@ View::View(
   , m_offset(std::move(offsetSetting))
   , m_projectionType(sk_viewTypeToDefaultProjectionTypeMap.at(m_viewType))
   , m_camera(m_projectionType, [this](){ return get_anatomy_T_start(m_viewType); })
-  , m_viewConventionProvider(viewConventionProvider)
+  , m_viewConvention(viewConvention)
   , m_crosshairs(crosshairs)
+  , m_viewAlignment(viewAlignment)
   , m_cameraRotationSyncGroupUid(cameraRotationSyncGroupUid)
   , m_cameraTranslationSyncGroupUid(cameraTranslationSyncGroup)
   , m_cameraZoomSyncGroupUid(cameraZoomSyncGroup)
@@ -152,34 +151,36 @@ const uuid& View::uid() const
 
 CoordinateFrame View::get_anatomy_T_start(const ViewType& viewType) const
 {
-  /// @todo This will be a mode:
-  constexpr bool alignToCrosshairs = true;
+  const bool thisViewRotatesWithXhairs =
+    (m_crosshairs.viewWithRotatingCrosshairs && (*m_crosshairs.viewWithRotatingCrosshairs == m_uid));
 
   // R is identity when the view aligns with the Ax/Cor/Sag planes.
   // When the view aligns with crosshairs, it is the crosshairs transformation.
   glm::mat3 R{1.0f};
 
-  if (alignToCrosshairs) {
-    if (m_crosshairs.viewWithRotatingCrosshairs && (*m_crosshairs.viewWithRotatingCrosshairs == m_uid)) {
-      R = glm::mat3{m_crosshairs.worldCrosshairsOld.world_T_frame()};
-    }
-    else {
-      R = glm::mat3{m_crosshairs.worldCrosshairs.world_T_frame()};
-    }
+  switch (m_viewAlignment)
+  {
+  case ViewAlignmentMode::Crosshairs: {
+    R = thisViewRotatesWithXhairs
+      ? glm::mat3{m_crosshairs.worldCrosshairsOld.world_T_frame()}
+      : glm::mat3{m_crosshairs.worldCrosshairs.world_T_frame()};
+    break;
   }
-  else {
+  case ViewAlignmentMode::WorldOrReferenceImage: {
     R = I;
+    break;
+  }
   }
 
-  const auto& startFrameTypeMap = sk_viewConventionToStartFrameTypeMap.at(m_viewConventionProvider());
+  const auto& startFrameTypeMap = sk_viewConventionToStartFrameTypeMap.at(m_viewConvention);
   const glm::quat world_T_startFrame = get_world_T_startFrame(startFrameTypeMap.at(viewType), R);
   return CoordinateFrame(sk_origin, world_T_startFrame);
 }
 
 glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldCrosshairs)
 {
-  static constexpr size_t k_maxNumWarnings = 10;
-  static size_t warnCount = 0;
+  static constexpr std::size_t k_maxNumWarnings = 10;
+  static std::size_t warnCount = 0;
 
   const glm::vec3 worldCameraOrigin = helper::worldOrigin(m_camera);
   const glm::vec3 worldCameraFront = helper::worldDirection(m_camera, Directions::View::Front);
