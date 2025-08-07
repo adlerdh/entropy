@@ -1057,5 +1057,40 @@ void WindowData::updateAllViews()
 
 void WindowData::saveAllViewWorldCenterPositions()
 {
+  m_savedViewWorldCenterPositions.clear();
+
+  for (const auto& layout : m_layouts)
+  {
+    MapViewUidToCenterPos m;
+    for (const auto& [viewUid, view] : layout.views()) {
+      m.emplace(viewUid, helper::worldOrigin(view->camera()));
+    }
+
+    m_savedViewWorldCenterPositions.emplace_back(std::move(m));
+  }
+
+  spdlog::info("\nSAVING");
+  for (const auto& [viewUid, view] : m_layouts.at(m_currentLayout).views()) {
+    spdlog::info("{} : {}", viewUid, glm::to_string(helper::worldOrigin(view->camera())));
+  }
+}
+
+void WindowData::restoreAllViewWorldCenterPositions()
+{
+  spdlog::info("\nRESTORING");
+  for (const auto& [viewUid, view] : m_layouts.at(m_currentLayout).views()) {
+    spdlog::info("{} : {}", viewUid, glm::to_string(helper::worldOrigin(view->camera())));
+  }
+
+  for (std::size_t layoutIndex = 0; layoutIndex < m_savedViewWorldCenterPositions.size(); ++layoutIndex)
+  {
+    const auto& mapViewUidToWorldCameraPos = m_savedViewWorldCenterPositions.at(layoutIndex);
+
+    for (const auto& [viewUid, worldPos] : mapViewUidToWorldCameraPos) {
+      if (View* view = getView(viewUid)) {
+        helper::setCameraOrigin(view->camera(), worldPos);
+      }
+    }
+  }
 
 }

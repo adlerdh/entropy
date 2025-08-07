@@ -85,9 +85,7 @@ ViewRenderMode reconcileRenderModeForViewType(
   return currentRenderMode;
 }
 
-glm::quat get_world_T_startFrame(
-  CameraStartFrameType startFrameType,
-  const glm::mat3& world_T_frame)
+glm::quat get_world_T_startFrame(CameraStartFrameType startFrameType, const glm::mat3& world_T_frame)
 {
   // Axes of the start frame in World space
   const glm::vec3 x = world_T_frame[0];
@@ -193,8 +191,8 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
   // Compute the World-space distance between the camera origin and the view plane
   float worldCameraToPlaneDistance;
 
-  if (math::vectorPlaneIntersection(
-        worldCameraOrigin, worldCameraFront, worldViewPlane, worldCameraToPlaneDistance))
+  if (math::vectorPlaneIntersection(worldCameraOrigin, worldCameraFront,
+                                    worldViewPlane, worldCameraToPlaneDistance))
   {
     helper::setWorldTarget(m_camera, worldCameraOrigin + worldCameraToPlaneDistance * worldCameraFront, std::nullopt);
     warnCount = 0; // Reset warning counter

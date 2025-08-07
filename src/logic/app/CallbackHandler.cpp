@@ -2098,6 +2098,8 @@ void CallbackHandler::doCrosshairsRotate2D(
     // Not in a rotating state, so transition to rotating state. This is done by
     // setting this view as the one rotating crosshairs.
     state.setViewWithRotatingCrosshairs(startHit.viewUid);
+
+    // m_appData.windowData().saveAllViewWorldCenterPositions();
   }
 
   // Rotate the crosshairs frame in the 2D view plane about the crosshairs position
@@ -2109,15 +2111,12 @@ void CallbackHandler::doCrosshairsRotate2D(
   CoordinateFrame worldXhairsRotated = state.worldCrosshairs();
   math::rotateFrameAboutWorldPos(worldXhairsRotated, R, worldRotCenter);
 
-  // m_appData.windowData().saveAllViewCenterPositions();
-
-  // m_appData.windowData().recenterAllViews(
-  //   worldCenter,
-  //   sk_viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox),
-  //   _resetZoom, resetObliqueOrientation);
+  // m_appData.windowData().saveAllViewWorldCenterPositions();
 
   // Set new crosshairs (used by all other views except the one in which rotation is being done):
   state.setWorldCrosshairs(worldXhairsRotated);
+
+  // m_appData.windowData().restoreAllViewWorldCenterPositions();
 
   /// @todo Option to snap to 15 degree increments with rotation
 }

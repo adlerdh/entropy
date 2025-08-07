@@ -2157,7 +2157,8 @@ void Rendering::renderImageData()
     }
 
     // Offset the crosshairs according to the image slice in the view
-    const glm::vec3 worldXhairsOffset = view->updateImageSlice(m_appData, m_appData.state().worldCrosshairs().worldOrigin());
+    const glm::vec3 worldXhairsOffset = view->updateImageSlice(
+      m_appData, m_appData.state().worldCrosshairs().worldOrigin());
 
     const auto miewportViewBounds = helper::computeMiewportFrameBounds(
       view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4());

@@ -22,7 +22,7 @@ class Image;
  */
 class View : public ControlFrame
 {
-  using uuid = uuids::uuid;;
+  using uuid = uuids::uuid;
 
 public:
   /**

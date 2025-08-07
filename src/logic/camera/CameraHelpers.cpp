@@ -274,18 +274,15 @@ void setCameraOrigin(Camera& camera, const glm::vec3& worldPos)
   applyViewTransformation(camera, glm::translate(-cameraOrigin));
 }
 
-void setWorldTarget(
-  Camera& camera, const glm::vec3& worldPos, const std::optional<float>& targetDistance
-)
+void setWorldTarget(Camera& camera, const glm::vec3& worldPos, const std::optional<float>& targetDistance)
 {
   // By default, push camera back from its target on the view plane by a distance equal to
   // 10% of the view frustum depth, so that it doesn't clip the image quad vertices:
   static constexpr float sk_pushBackFraction = 0.10f;
 
   const float eyeToTargetOffset = targetDistance
-                                    ? *targetDistance
-                                    : sk_pushBackFraction
-                                        * (camera.farDistance() - camera.nearDistance());
+    ? *targetDistance
+    : sk_pushBackFraction * (camera.farDistance() - camera.nearDistance());
 
   const glm::vec3 front = worldDirection(camera, Directions::View::Front);
   setCameraOrigin(camera, worldPos - eyeToTargetOffset * front);
@@ -448,7 +445,8 @@ glm::quat rotation2dInCameraPlane(
   const glm::vec2& ndcRotationCenter
 )
 {
-  if (glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) || glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
+  if (glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) ||
+      glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
   {
     return sk_unitRot;
   }
@@ -550,10 +548,8 @@ glm::vec2 scaleFactorsAboutWorldAxis(
   static const glm::vec3 sk_slideAxis(0.0f, 0.0f, 1.0f);
 
   // Projections onto slide:
-  const glm::vec3 projSlideOldPos = slideOldPos
-                                    - glm::dot(sk_slideAxis, slideOldPos) * sk_slideAxis;
-  const glm::vec3 projSlideNewPos = slideNewPos
-                                    - glm::dot(sk_slideAxis, slideNewPos) * sk_slideAxis;
+  const glm::vec3 projSlideOldPos = slideOldPos - glm::dot(sk_slideAxis, slideOldPos) * sk_slideAxis;
+  const glm::vec3 projSlideNewPos = slideNewPos - glm::dot(sk_slideAxis, slideNewPos) * sk_slideAxis;
 
   // Vectors from center:
   const glm::vec2 numer = glm::vec2(projSlideNewPos - slideRotationCenter);

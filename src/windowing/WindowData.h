@@ -178,6 +178,8 @@ public:
   /// Save the World-space coordinates of the centers of all views
   void saveAllViewWorldCenterPositions();
 
+  void restoreAllViewWorldCenterPositions();
+
 private:
   // Create the default view layouts
   void setupViews();
@@ -217,4 +219,8 @@ private:
 
   /// View alignment mode
   ViewAlignmentMode m_viewAlignment = ViewAlignmentMode::Crosshairs;
+
+  /// For each layout, save the World-space position of the center of each view
+  using MapViewUidToCenterPos = std::unordered_map<uuid, glm::vec3>;
+  std::vector<MapViewUidToCenterPos> m_savedViewWorldCenterPositions;
 };

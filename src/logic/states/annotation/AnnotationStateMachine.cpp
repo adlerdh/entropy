@@ -978,40 +978,35 @@ void AnnotationStateMachine::pasteAnnotation() const
   // Angle threshold (in degrees) for checking whether two vectors are parallel
   static constexpr float sk_parallelThreshold_degrees = 0.1f;
 
-  if (!checkAppData())
+  if (!checkAppData()) {
     return;
+  }
 
   std::optional<Annotation> annot = ms_appData->state().getCopiedAnnotation();
-
-  if (!annot)
-  {
+  if (!annot) {
     spdlog::debug("There is no polygon in the clipboard to paste.");
     return;
   }
 
-  if (!ms_selectedViewUid)
-  {
+  if (!ms_selectedViewUid) {
     spdlog::warn("A view must be selected before pasting the polygon.");
     return;
   }
 
   const auto activeImageUid = ms_appData->activeImageUid();
-  if (!activeImageUid)
-  {
+  if (!activeImageUid) {
     spdlog::debug("There is no active image on which to paste the polygon.");
     return;
   }
 
   const Image* activeImage = ms_appData->image(*activeImageUid);
-  if (!activeImage)
-  {
+  if (!activeImage) {
     spdlog::error("The active image is null.");
     return;
   }
 
   View* selectedView = ms_appData->windowData().getView(*ms_selectedViewUid);
-  if (!selectedView)
-  {
+  if (!selectedView) {
     spdlog::error("The selected view is null.");
     return;
   }
@@ -1021,23 +1016,18 @@ void AnnotationStateMachine::pasteAnnotation() const
   // the view normal vector and a point on the view plane (i.e. the offset crosshairs).
 
   // World-space view normal direction
-  const glm::vec3 worldViewBackDir
-    = helper::worldDirection(selectedView->camera(), Directions::View::Back);
+  const glm::vec3 worldViewBackDir =
+    helper::worldDirection(selectedView->camera(), Directions::View::Back);
 
   // World-space crosshairs position on this view slice (accounting for view offest)
-  const glm::vec3 worldXhairsPos
-    = selectedView
-        ->updateImageSlice(*ms_appData, ms_appData->state().worldCrosshairs().worldOrigin());
+  const glm::vec3 worldXhairsPos = selectedView->updateImageSlice(
+    *ms_appData, ms_appData->state().worldCrosshairs().worldOrigin());
 
   const auto [subjectPlaneEquation, subjectPlanePoint] = math::computeSubjectPlaneEquation(
-    activeImage->transformations().subject_T_worldDef(), worldViewBackDir, worldXhairsPos
-  );
+    activeImage->transformations().subject_T_worldDef(), worldViewBackDir, worldXhairsPos);
 
-  if (!helper::areVectorsParallel(
-        glm::vec3{subjectPlaneEquation},
-        glm::vec3{annot->getSubjectPlaneEquation()},
-        sk_parallelThreshold_degrees
-      ))
+  if (!helper::areVectorsParallel(glm::vec3{subjectPlaneEquation}, glm::vec3{annot->getSubjectPlaneEquation()},
+                                  sk_parallelThreshold_degrees))
   {
     spdlog::warn("The normal vector of the view plane and the normal vector of the "
                  "pasted annotation polygon do not match. The pasted polygon may be "
@@ -1051,18 +1041,13 @@ void AnnotationStateMachine::pasteAnnotation() const
   annot->setDisplayName(annot->getDisplayName() + " (copy)");
 
   // Add the annotation to the active image:
-  if (const auto pastedAnnotUid = ms_appData->addAnnotation(*activeImageUid, *annot))
-  {
+  if (const auto pastedAnnotUid = ms_appData->addAnnotation(*activeImageUid, *annot)) {
     // Make this the active annotation
     ms_appData->assignActiveAnnotationUidToImage(*activeImageUid, *pastedAnnotUid);
     synchronizeAnnotationHighlights();
-
-    spdlog::info(
-      "Pasted new annotation {} from clipboard to image {}", *pastedAnnotUid, *activeImageUid
-    );
+    spdlog::info("Pasted new annotation {} from clipboard to image {}", *pastedAnnotUid, *activeImageUid);
   }
-  else
-  {
+  else {
     spdlog::error("Unable to add pasted annotation to image {}", *activeImageUid);
   }
 }
