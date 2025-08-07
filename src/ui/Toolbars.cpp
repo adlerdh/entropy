@@ -481,10 +481,7 @@ void renderModeToolbar(
           const bool resetObliqueOrientation = hardReset;
           static constexpr bool recenterOnCurrentCrosshairsPosition = true;
 
-          std::optional<bool> resetZoom = std::nullopt;
-          if (hardReset) {
-            resetZoom = true;
-          }
+          const bool resetZoom = hardReset ? true : recenterOnCurrentCrosshairsPosition;
 
           recenterAllViews(
             recenterCrosshairs,
@@ -684,11 +681,7 @@ void renderModeToolbar(
   const bool resetObliqueOrientation = hardReset;
   static constexpr bool recenterOnCurrentCrosshairsPosition = true;
 
-  std::optional<bool> resetZoom = std::nullopt;
-  if (hardReset)
-  {
-    resetZoom = true;
-  }
+  const bool resetZoom = hardReset ? true : recenterOnCurrentCrosshairsPosition;
 
   renderAddLayoutModalPopup(
     appData,

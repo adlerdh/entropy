@@ -2,7 +2,6 @@
 #define COMMON_PUBLIC_TYPES_H
 
 #include <functional>
-#include <optional>
 
 /// @note These convenience types were used in HistoloZee, but haven't yet been used in Entropy.
 
@@ -19,8 +18,7 @@ using AllViewsRecenterType = std::function<void(
   bool recenterCrosshairs,
   bool recenterOnCurrentCrosshairsPosition,
   bool resetObliqueOrientation,
-  const std::optional<bool>& resetZoom
-)>;
+  bool resetZoom)>;
 
 /// Shorthand for a function that returns an object
 template<class T>

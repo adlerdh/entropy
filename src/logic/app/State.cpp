@@ -64,6 +64,8 @@ void AppState::setMouseMode(MouseMode mode)
     // Turn off rotation
     /// @todo Could be handled by dedicated state machine for crosshairs
     setViewWithRotatingCrosshairs(std::nullopt);
+
+    /// @todo Need to recenter the views
   }
 }
 

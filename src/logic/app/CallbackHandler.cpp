@@ -749,7 +749,8 @@ void CallbackHandler::recenterViews(
   bool recenterCrosshairs,
   bool recenterOnCurrentCrosshairsPos,
   bool resetObliqueOrientation,
-  const std::optional<bool>& resetZoom)
+  bool resetZoom,
+  const std::set<uuid>& excludedViews)
 {
   // On view recenter, force the crosshairs and views to snap to the center of the
   // reference image voxels. This is so that crosshairs/views don't land on a voxel
@@ -776,12 +777,10 @@ void CallbackHandler::recenterViews(
 
   // const glm::vec3 worldCenterSnapped = data::snapWorldPointToImageVoxels( m_appData, worldCenter, forceSnapping );
 
-  const bool _resetZoom = resetZoom ? *resetZoom : !recenterOnCurrentCrosshairsPos;
-
   m_appData.windowData().recenterAllViews(
     worldCenter,
     sk_viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox),
-    _resetZoom, resetObliqueOrientation);
+    resetZoom, resetObliqueOrientation, excludedViews);
 }
 
 void CallbackHandler::recenterView(const ImageSelection& imageSelection, const uuid& viewUid)
@@ -2099,7 +2098,7 @@ void CallbackHandler::doCrosshairsRotate2D(
     // setting this view as the one rotating crosshairs.
     state.setViewWithRotatingCrosshairs(startHit.viewUid);
 
-    // m_appData.windowData().saveAllViewWorldCenterPositions();
+    // m_appData.saveAllViewWorldCenterPositions();
   }
 
   // Rotate the crosshairs frame in the 2D view plane about the crosshairs position
@@ -2111,12 +2110,17 @@ void CallbackHandler::doCrosshairsRotate2D(
   CoordinateFrame worldXhairsRotated = state.worldCrosshairs();
   math::rotateFrameAboutWorldPos(worldXhairsRotated, R, worldRotCenter);
 
-  // m_appData.windowData().saveAllViewWorldCenterPositions();
+  // m_appData.saveAllViewWorldCenterPositions();
+  const std::set excludedViews{startHit.viewUid};
+  // recenterViews(m_appData.state().recenteringMode(), false, true, false, false, excludedViews);
 
   // Set new crosshairs (used by all other views except the one in which rotation is being done):
   state.setWorldCrosshairs(worldXhairsRotated);
 
-  // m_appData.windowData().restoreAllViewWorldCenterPositions();
+  recenterViews(m_appData.state().recenteringMode(), false, true, false, false, excludedViews);
+  // m_appData.restoreAllViewWorldCenterPositions();
+
+  /// @todo make sure to recenter views when changing the mouse mode away from crosshairs rotation, too
 
   /// @todo Option to snap to 15 degree increments with rotation
 }

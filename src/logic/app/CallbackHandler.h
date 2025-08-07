@@ -5,8 +5,10 @@
 #include "logic/interaction/ViewHit.h"
 
 #include <glm/fwd.hpp>
-#include <optional>
 #include <uuid.h>
+
+#include <optional>
+#include <set>
 
 class AppData;
 class GlfwWrapper;
@@ -218,9 +220,12 @@ public:
      * @param recenterOnCurrentCrosshairsPos
      * @param resetObliqueOrientation
      */
-  void recenterViews(const ImageSelection&, bool recenterCrosshairs, bool recenterOnCurrentCrosshairsPos,
+  void recenterViews(const ImageSelection&,
+                     bool recenterCrosshairs,
+                     bool recenterOnCurrentCrosshairsPos,
                      bool resetObliqueOrientation,
-                     const std::optional<bool>& resetZoom = std::nullopt);
+                     bool resetZoom,
+                     const std::set<uuid>& excludedViews = {});
 
   /**
      * @brief Recenter one view

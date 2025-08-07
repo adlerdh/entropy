@@ -1355,7 +1355,7 @@ void EntropyApp::setCallbacks()
       bool recenterCrosshairs,
       bool recenterOnCurrentCrosshairsPosition,
       bool resetObliqueOrientation,
-      const std::optional<bool>& resetZoom
+      bool resetZoom
     )
     {
       m_callbackHandler.recenterViews(

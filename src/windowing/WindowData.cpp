@@ -624,10 +624,15 @@ void WindowData::recenterAllViews(
   const glm::vec3& worldCenter,
   const glm::vec3& worldFov,
   bool resetZoom,
-  bool resetObliqueOrientation)
+  bool resetObliqueOrientation,
+  const std::set<uuid>& excludedViews)
 {
   for (auto& layout : m_layouts) {
     for (auto& [viewUid, view] : layout.views()) {
+      if (excludedViews.contains(viewUid)) {
+        continue;
+      }
+
       if (view) {
         recenterView(*view, worldCenter, worldFov, resetZoom, resetObliqueOrientation);
       }
@@ -761,12 +766,17 @@ void WindowData::setActiveViewUid(const std::optional<uuid>& uid)
   m_activeViewUid = uid;
 }
 
-size_t WindowData::numLayouts() const
+std::size_t WindowData::numLayouts() const
 {
   return m_layouts.size();
 }
 
-size_t WindowData::currentLayoutIndex() const
+const std::vector<Layout>& WindowData::layouts() const
+{
+  return m_layouts;
+}
+
+std::size_t WindowData::currentLayoutIndex() const
 {
   return m_currentLayout;
 }
@@ -1053,44 +1063,4 @@ void WindowData::recomputeCameraAspectRatios()
 void WindowData::updateAllViews()
 {
   recomputeCameraAspectRatios();
-}
-
-void WindowData::saveAllViewWorldCenterPositions()
-{
-  m_savedViewWorldCenterPositions.clear();
-
-  for (const auto& layout : m_layouts)
-  {
-    MapViewUidToCenterPos m;
-    for (const auto& [viewUid, view] : layout.views()) {
-      m.emplace(viewUid, helper::worldOrigin(view->camera()));
-    }
-
-    m_savedViewWorldCenterPositions.emplace_back(std::move(m));
-  }
-
-  spdlog::info("\nSAVING");
-  for (const auto& [viewUid, view] : m_layouts.at(m_currentLayout).views()) {
-    spdlog::info("{} : {}", viewUid, glm::to_string(helper::worldOrigin(view->camera())));
-  }
-}
-
-void WindowData::restoreAllViewWorldCenterPositions()
-{
-  spdlog::info("\nRESTORING");
-  for (const auto& [viewUid, view] : m_layouts.at(m_currentLayout).views()) {
-    spdlog::info("{} : {}", viewUid, glm::to_string(helper::worldOrigin(view->camera())));
-  }
-
-  for (std::size_t layoutIndex = 0; layoutIndex < m_savedViewWorldCenterPositions.size(); ++layoutIndex)
-  {
-    const auto& mapViewUidToWorldCameraPos = m_savedViewWorldCenterPositions.at(layoutIndex);
-
-    for (const auto& [viewUid, worldPos] : mapViewUidToWorldCameraPos) {
-      if (View* view = getView(viewUid)) {
-        helper::setCameraOrigin(view->camera(), worldPos);
-      }
-    }
-  }
-
 }

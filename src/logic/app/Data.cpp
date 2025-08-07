@@ -1,6 +1,7 @@
 #include "logic/app/Data.h"
 
 #include "common/UuidUtility.h"
+#include "logic/camera/CameraHelpers.h"
 
 #include <glm/glm.hpp>
 
@@ -23,7 +24,7 @@ CMRC_DECLARE(colormaps);
 
 namespace
 {
-using namespace uuids;
+using uuid = uuids::uuid;
 }
 
 AppData::AppData()
@@ -797,7 +798,7 @@ if (result) {
 */
 
 std::expected<std::reference_wrapper<const Image>, std::string>
-AppData::getImage(const uuids::uuid& imageUid) const
+AppData::getImage(const uuid& imageUid) const
 {
   auto it = m_images.find(imageUid);
   if (std::end(m_images) != it) {
@@ -807,7 +808,7 @@ AppData::getImage(const uuids::uuid& imageUid) const
 }
 
 std::expected<std::reference_wrapper<Image>, std::string>
-AppData::getImage(const uuids::uuid& imageUid)
+AppData::getImage(const uuid& imageUid)
 {
   const auto result = const_cast<const AppData*>(this)->getImage(imageUid);
   if (!result) {
@@ -1930,4 +1931,82 @@ const WindowData& AppData::windowData() const
 WindowData& AppData::windowData()
 {
   return m_windowData;
+}
+
+void AppData::saveAllViewWorldCenterPositions()
+{
+  // const Image* img = refImage();
+  // if (!img) {
+  //   return;
+  // }
+
+  // const glm::mat4 refSubject_T_world = img->transformations().subject_T_worldDef();
+
+  m_savedViewWorldCenterPositions.clear();
+
+  for (const auto& layout : m_windowData.layouts())
+  {
+    MapViewUidToCenterPos m;
+    for (const auto& [viewUid, view] : layout.views())
+    {
+      if (view) {
+        // const glm::vec4 worldPos{helper::worldOrigin(view->camera()), 1};
+        // const glm::vec4 refSubjectPos = refSubject_T_world * worldPos;
+        // m.emplace(viewUid, glm::vec3{refSubjectPos / refSubjectPos.w});
+
+        const glm::vec4 anatomyPos = glm::inverse(view->camera().camera_T_anatomy()) * glm::vec4{0, 0, 0, 1};
+        m.emplace(viewUid, glm::vec3{anatomyPos});
+      }
+    }
+
+    m_savedViewWorldCenterPositions.emplace_back(std::move(m));
+  }
+
+  // spdlog::info("\nSAVING");
+  // for (const auto& [viewUid, view] : m_windowData.layouts().at(m_windowData.currentLayoutIndex()).views()) {
+  //   // const glm::vec4 worldPos{helper::worldOrigin(view->camera()), 1};
+  //   // const glm::vec4 refSubjectPos = refSubject_T_world * worldPos;
+  //   // spdlog::info("{} : {}", viewUid, glm::to_string(refSubjectPos));
+
+  //   const glm::vec4 anatomyPos = glm::inverse(view->camera().camera_T_anatomy()) * glm::vec4{0, 0, 0, 1};
+  //   spdlog::info("{} : {}", viewUid, glm::to_string(glm::vec3{anatomyPos}));
+  // }
+}
+
+void AppData::restoreAllViewWorldCenterPositions()
+{
+  // const Image* img = refImage();
+  // if (!img) {
+  //   return;
+  // }
+
+  // const glm::mat4 world_T_refSubject = img->transformations().worldDef_T_subject();
+
+  for (std::size_t layoutIndex = 0; layoutIndex < m_savedViewWorldCenterPositions.size(); ++layoutIndex)
+  {
+    const auto& mapViewUidToWorldCameraPos = m_savedViewWorldCenterPositions.at(layoutIndex);
+
+    //for (const auto& [viewUid, refSubjectPos] : mapViewUidToWorldCameraPos) {
+    for (const auto& [viewUid, anatomyPos] : mapViewUidToWorldCameraPos) {
+      if (View* view = m_windowData.getView(viewUid))
+      {
+        // const glm::vec4 worldPos = world_T_refSubject * glm::vec4{refSubjectPos, 1};
+        // helper::setCameraOrigin(view->camera(), glm::vec3{worldPos / worldPos.w});
+
+        const glm::vec4 worldPos = glm::inverse(view->camera().anatomy_T_start()) * glm::vec4{anatomyPos, 1};
+
+        helper::setCameraOrigin(view->camera(), glm::vec3{worldPos / worldPos.w});
+      }
+    }
+  }
+
+  // spdlog::info("\nRESTORING");
+  // const glm::mat4 refSubject_T_world = img->transformations().subject_T_worldDef();
+
+  // for (const auto& [viewUid, view] : m_windowData.layouts().at(m_windowData.currentLayoutIndex()).views())
+  // {
+  //   const glm::vec4 worldPos{helper::worldOrigin(view->camera()), 1};
+  //   const glm::vec4 refSubjectPos = refSubject_T_world * worldPos;
+  //   spdlog::info("{} : {}", viewUid, glm::to_string(glm::vec3{refSubjectPos}));
+  // }
 }

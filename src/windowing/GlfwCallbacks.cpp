@@ -532,7 +532,17 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 
     // When the mouse is released, transition to a state where crosshairs are not rotating:
     /// @todo This could be handled by a dedicated state machine
-    app->appState().setViewWithRotatingCrosshairs(std::nullopt);
+
+    if (app->appState().viewWithRotatingCrosshairs()) {
+      app->appState().setViewWithRotatingCrosshairs(std::nullopt);
+
+      CallbackHandler& H = app->callbackHandler();
+      H.recenterViews(app->appData().state().recenteringMode(), false, true, false, false);
+      // app->appData().restoreAllViewWorldCenterPositions(); /// @todo keep?
+
+      /// @todo make sure to do this when changing the mouse mode away from crosshairs rotation, too
+    }
+
     break;
   }
   default:
@@ -712,21 +722,14 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     const bool recenterCrosshairs = hardReset;
     const bool resetObliqueOrientation = hardReset;
     const bool recenterOnCurrentCrosshairsPosition = true;
-
-    std::optional<bool> resetZoom = std::nullopt;
-
-    if (hardReset)
-    {
-      resetZoom = true;
-    }
+    const bool resetZoom = hardReset ? true : recenterOnCurrentCrosshairsPosition;
 
     H.recenterViews(
       app->appData().state().recenteringMode(),
       recenterCrosshairs,
       recenterOnCurrentCrosshairsPosition,
       resetObliqueOrientation,
-      resetZoom
-    );
+      resetZoom);
     break;
   }
 

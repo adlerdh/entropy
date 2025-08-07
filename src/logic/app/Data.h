@@ -43,6 +43,8 @@ using ComponentIndexType = uint32_t;
  */
 class AppData
 {
+  using uuid = uuids::uuid;
+
 public:
   AppData();
   ~AppData();
@@ -72,21 +74,21 @@ public:
      * @param[in] image The image.
      * @return The image's newly generated unique identifier
      */
-  uuids::uuid addImage(Image image);
+  uuid addImage(Image image);
 
   /**
      * @brief Add a segmentation.
      * @param[in] seg Segmentation image. The image must have unsigned integer pixel component type.
      * @return If added, the segmentation image's newly generated unique identifier; else nullopt.
      */
-  std::optional<uuids::uuid> addSeg(Image seg);
+  std::optional<uuid> addSeg(Image seg);
 
   /**
      * @brief Add an image deformation field
      * @param[in] def Deformation field image. The image must have at least three components (x, y, z) per pixel.
      * @return If added, deformation field image's newly generated unique identifier; else nullpt.
      */
-  std::optional<uuids::uuid> addDef(Image def);
+  std::optional<uuid> addDef(Image def);
 
   /**
      * @brief Add a segmentation label color table
@@ -101,7 +103,7 @@ public:
      * @param[in] lmGroup Landmark group.
      * @return The landmark group's newly generated unique identifier
      */
-  uuids::uuid addLandmarkGroup(LandmarkGroup lmGroup);
+  uuid addLandmarkGroup(LandmarkGroup lmGroup);
 
   /**
      * @brief Add an annotation and associate it with an image
@@ -110,7 +112,7 @@ public:
      * @return If the image exists, return the annotation's newly generated unique identifier;
      * otherwise return nullopt.
      */
-  std::optional<uuids::uuid> addAnnotation(const uuids::uuid& imageUid, Annotation annotation);
+  std::optional<uuid> addAnnotation(const uuid& imageUid, Annotation annotation);
 
   /**
      * @brief Add a distance map to an image component. The maps are used to accelerate
@@ -124,14 +126,14 @@ public:
      * @return True iff the distance map was successfully added for the image component.
      */
   bool addDistanceMap(
-    const uuids::uuid& imageUid,
+    const uuid& imageUid,
     ComponentIndexType component,
     Image distanceMap,
     double boundaryIsoValue
   );
 
   bool addNoiseEstimate(
-    const uuids::uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius
+    const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius
   );
 
   /**
@@ -144,13 +146,13 @@ public:
      * @return Unique ID of the isosurface iff it was successfully added for the image component;
      * otherwise \c std::nullpt
      */
-  std::optional<uuids::uuid> addIsosurface(
-    const uuids::uuid& imageUid, ComponentIndexType component, Isosurface isosurface);
+  std::optional<uuid> addIsosurface(
+    const uuid& imageUid, ComponentIndexType component, Isosurface isosurface);
 
-  //    bool removeImage( const uuids::uuid& imageUid );
-  bool removeSeg(const uuids::uuid& segUid);
-  bool removeDef(const uuids::uuid& defUid);
-  bool removeAnnotation(const uuids::uuid& defUid);
+  //    bool removeImage( const uuid& imageUid );
+  bool removeSeg(const uuid& segUid);
+  bool removeDef(const uuid& defUid);
+  bool removeAnnotation(const uuid& defUid);
 
   /**
      * @brief Remove an isosurface from an image component.
@@ -162,28 +164,28 @@ public:
      * @return True iff the isosurface was successfully removed.
      */
   bool removeIsosurface(
-    const uuids::uuid& imageUid, ComponentIndexType component, const uuids::uuid& isosurfaceUid);
+    const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid);
 
-  const Image* image(const uuids::uuid& imageUid) const;
-  Image* image(const uuids::uuid& imageUid);
+  const Image* image(const uuid& imageUid) const;
+  Image* image(const uuid& imageUid);
 
-  std::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuids::uuid& imageUid) const;
-  std::expected<std::reference_wrapper<Image>, std::string> getImage(const uuids::uuid& imageUid);
+  std::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuid& imageUid) const;
+  std::expected<std::reference_wrapper<Image>, std::string> getImage(const uuid& imageUid);
 
-  const Image* seg(const uuids::uuid& segUid) const;
-  Image* seg(const uuids::uuid& segUid);
+  const Image* seg(const uuid& segUid) const;
+  Image* seg(const uuid& segUid);
 
-  const Image* def(const uuids::uuid& defUid) const;
-  Image* def(const uuids::uuid& defUid);
+  const Image* def(const uuid& defUid) const;
+  Image* def(const uuid& defUid);
 
   /// Get the distance maps (keyed by isosurface value) associated with an image component
   const std::map<double, Image>& distanceMaps(
-    const uuids::uuid& imageUid, ComponentIndexType component
+    const uuid& imageUid, ComponentIndexType component
   ) const;
 
   /// Get the noise estimate images (keyed by radius value) associated with an image component
   const std::map<uint32_t, Image>& noiseEstimates(
-    const uuids::uuid& imageUid, ComponentIndexType component
+    const uuid& imageUid, ComponentIndexType component
   ) const;
 
   /**
@@ -196,35 +198,35 @@ public:
      * @return Pointer to the isosurface if it exists; otherwise nullptr
      */
   const Isosurface* isosurface(
-    const uuids::uuid& imageUid, ComponentIndexType component, const uuids::uuid& isosurfaceUid) const;
+    const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid) const;
 
   Isosurface* isosurface(
-    const uuids::uuid& imageUid, ComponentIndexType component, const uuids::uuid& isosurfaceUid);
+    const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid);
 
   /*
   bool updateIsosurfaceMeshCpuRecord(
-    const uuids::uuid& imageUid,
+    const uuid& imageUid,
     ComponentIndexType component,
-    const uuids::uuid& isosurfaceUid,
+    const uuid& isosurfaceUid,
     std::unique_ptr<MeshCpuRecord> cpuRecord
   );
 
   bool updateIsosurfaceMeshGpuRecord(
-    const uuids::uuid& imageUid,
+    const uuid& imageUid,
     ComponentIndexType component,
-    const uuids::uuid& isosurfaceUid,
+    const uuid& isosurfaceUid,
     std::unique_ptr<MeshGpuRecord> gpuRecord
   );
 */
 
-  const ImageColorMap* imageColorMap(const uuids::uuid& mapUid) const;
-  ImageColorMap* imageColorMap(const uuids::uuid& mapUid);
+  const ImageColorMap* imageColorMap(const uuid& mapUid) const;
+  ImageColorMap* imageColorMap(const uuid& mapUid);
 
-  const ParcellationLabelTable* labelTable(const uuids::uuid& tableUid) const;
-  ParcellationLabelTable* labelTable(const uuids::uuid& tableUid);
+  const ParcellationLabelTable* labelTable(const uuid& tableUid) const;
+  ParcellationLabelTable* labelTable(const uuid& tableUid);
 
-  const LandmarkGroup* landmarkGroup(const uuids::uuid& lmGroupUid) const;
-  LandmarkGroup* landmarkGroup(const uuids::uuid& lmGroupUid);
+  const LandmarkGroup* landmarkGroup(const uuid& lmGroupUid) const;
+  LandmarkGroup* landmarkGroup(const uuid& lmGroupUid);
 
   /**
      * @brief Get an annotation by UID
@@ -232,17 +234,17 @@ public:
      * @return Raw pointer to the annotation if it exists;
      * nullptr if the annotation does not exist
      */
-  const Annotation* annotation(const uuids::uuid& annotUid) const;
-  Annotation* annotation(const uuids::uuid& annotUid);
+  const Annotation* annotation(const uuid& annotUid) const;
+  Annotation* annotation(const uuid& annotUid);
 
   /// Set/get the reference image UID
-  bool setRefImageUid(const uuids::uuid& refImageUid);
-  std::optional<uuids::uuid> refImageUid() const;
+  bool setRefImageUid(const uuid& refImageUid);
+  std::optional<uuid> refImageUid() const;
 
   /// Set/get the UID of the active image: the one that is currently being transformed or
   /// whose settings are currently being changed by the user
-  bool setActiveImageUid(const uuids::uuid& activeImageUid);
-  std::optional<uuids::uuid> activeImageUid() const;
+  bool setActiveImageUid(const uuid& activeImageUid);
+  std::optional<uuid> activeImageUid() const;
 
   /// Set rainbow colors for the image border and edges
   void setRainbowColorsForAllImages();
@@ -254,20 +256,20 @@ public:
   /// Move the image backward/forward in layers (decrease/increase its layer order)
   /// @note It is important that these take arguments by value, since imageUids are being swapped
   /// internally. Potential for nasty bugs if a reference is used.
-  bool moveImageBackwards(const uuids::uuid imageUid);
-  bool moveImageForwards(const uuids::uuid imageUid);
+  bool moveImageBackwards(const uuid imageUid);
+  bool moveImageForwards(const uuid imageUid);
 
   /// Move the image to the backmost/frontmost layer
-  bool moveImageToBack(const uuids::uuid imageUid);
-  bool moveImageToFront(const uuids::uuid imageUid);
+  bool moveImageToBack(const uuid imageUid);
+  bool moveImageToFront(const uuid imageUid);
 
   /// Move the image annotation backward/forward in layers (decrease/increase its layer order)
-  bool moveAnnotationBackwards(const uuids::uuid imageUid, const uuids::uuid annotUid);
-  bool moveAnnotationForwards(const uuids::uuid imageUid, const uuids::uuid annotUid);
+  bool moveAnnotationBackwards(const uuid imageUid, const uuid annotUid);
+  bool moveAnnotationForwards(const uuid imageUid, const uuid annotUid);
 
   /// Move the image annotation to the backmost/frontmost layer
-  bool moveAnnotationToBack(const uuids::uuid imageUid, const uuids::uuid annotUid);
-  bool moveAnnotationToFront(const uuids::uuid imageUid, const uuids::uuid annotUid);
+  bool moveAnnotationToBack(const uuid imageUid, const uuid annotUid);
+  bool moveAnnotationToFront(const uuid imageUid, const uuid annotUid);
 
   std::size_t numImages() const;
   std::size_t numSegs() const;
@@ -284,45 +286,45 @@ public:
   uuid_range_t labelTableUidsOrdered() const;
   uuid_range_t landmarkGroupUidsOrdered() const;
 
-  uuid_range_t isosurfaceUids(const uuids::uuid& imageUid, ComponentIndexType component) const;
+  uuid_range_t isosurfaceUids(const uuid& imageUid, ComponentIndexType component) const;
 
   /// Set/get the active segmentation for an image
-  bool assignActiveSegUidToImage(const uuids::uuid& imageUid, const uuids::uuid& activeSegUid);
-  std::optional<uuids::uuid> imageToActiveSegUid(const uuids::uuid& imageUid) const;
+  bool assignActiveSegUidToImage(const uuid& imageUid, const uuid& activeSegUid);
+  std::optional<uuid> imageToActiveSegUid(const uuid& imageUid) const;
 
   /// Set/get the active deformation field for an image
-  bool assignActiveDefUidToImage(const uuids::uuid& imageUid, const uuids::uuid& activeDefUid);
-  std::optional<uuids::uuid> imageToActiveDefUid(const uuids::uuid& imageUid) const;
+  bool assignActiveDefUidToImage(const uuid& imageUid, const uuid& activeDefUid);
+  std::optional<uuid> imageToActiveDefUid(const uuid& imageUid) const;
 
   /// Assign a segmentation to an image.
   /// Makes it the active segmentation if it is the first one.
-  bool assignSegUidToImage(const uuids::uuid& imageUid, const uuids::uuid& segUid);
+  bool assignSegUidToImage(const uuid& imageUid, const uuid& segUid);
 
   /// Assign a deformation field to an image.
   /// Makes it the active deformation field if it is the first one.
-  bool assignDefUidToImage(const uuids::uuid& imageUid, const uuids::uuid& defUid);
+  bool assignDefUidToImage(const uuid& imageUid, const uuid& defUid);
 
   /// Get all segmentations for an image
-  std::vector<uuids::uuid> imageToSegUids(const uuids::uuid& imageUid) const;
+  std::vector<uuid> imageToSegUids(const uuid& imageUid) const;
 
   /// Get all deformation fields for an image
-  std::vector<uuids::uuid> imageToDefUids(const uuids::uuid& imageUid) const;
+  std::vector<uuid> imageToDefUids(const uuid& imageUid) const;
 
   /// Assign a group of landmarks to an image
-  bool assignLandmarkGroupUidToImage(const uuids::uuid& imageUid, uuids::uuid lmGroupUid);
-  const std::vector<uuids::uuid>& imageToLandmarkGroupUids(const uuids::uuid& imageUid) const;
+  bool assignLandmarkGroupUidToImage(const uuid& imageUid, uuid lmGroupUid);
+  const std::vector<uuid>& imageToLandmarkGroupUids(const uuid& imageUid) const;
 
   /// Set/get the active landmark group for an image
   bool assignActiveLandmarkGroupUidToImage(
-    const uuids::uuid& imageUid, const uuids::uuid& lmGroupUid
+    const uuid& imageUid, const uuid& lmGroupUid
   );
-  std::optional<uuids::uuid> imageToActiveLandmarkGroupUid(const uuids::uuid& imageUid) const;
+  std::optional<uuid> imageToActiveLandmarkGroupUid(const uuid& imageUid) const;
 
   /// Set/get the active annotation for an image
   bool assignActiveAnnotationUidToImage(
-    const uuids::uuid& imageUid, const std::optional<uuids::uuid>& annotUid
+    const uuid& imageUid, const std::optional<uuid>& annotUid
   );
-  std::optional<uuids::uuid> imageToActiveAnnotationUid(const uuids::uuid& imageUid) const;
+  std::optional<uuid> imageToActiveAnnotationUid(const uuid& imageUid) const;
 
   /**
      * @brief Get a list of all annotations assigned to a given image. The annotation order
@@ -331,29 +333,29 @@ public:
      * @return List of (ordered) annotation UIDs for the image.
      * The list is empty if the image has no annotations or the image UID is invalid.
      */
-  const std::list<uuids::uuid>& annotationsForImage(const uuids::uuid& imageUid) const;
+  const std::list<uuid>& annotationsForImage(const uuid& imageUid) const;
 
   /// Set/get whether the image is
-  void setImageBeingSegmented(const uuids::uuid& imageUid, bool set);
-  bool isImageBeingSegmented(const uuids::uuid& imageUid) const;
+  void setImageBeingSegmented(const uuid& imageUid, bool set);
+  bool isImageBeingSegmented(const uuid& imageUid) const;
 
   uuid_range_t imagesBeingSegmented() const;
 
-  std::optional<uuids::uuid> imageUid(std::size_t index) const;
-  std::optional<uuids::uuid> segUid(std::size_t index) const;
-  std::optional<uuids::uuid> defUid(std::size_t index) const;
-  std::optional<uuids::uuid> imageColorMapUid(std::size_t index) const;
-  std::optional<uuids::uuid> labelTableUid(std::size_t index) const;
-  std::optional<uuids::uuid> landmarkGroupUid(std::size_t index) const;
+  std::optional<uuid> imageUid(std::size_t index) const;
+  std::optional<uuid> segUid(std::size_t index) const;
+  std::optional<uuid> defUid(std::size_t index) const;
+  std::optional<uuid> imageColorMapUid(std::size_t index) const;
+  std::optional<uuid> labelTableUid(std::size_t index) const;
+  std::optional<uuid> landmarkGroupUid(std::size_t index) const;
 
-  std::optional<std::size_t> imageIndex(const uuids::uuid& imageUid) const;
-  std::optional<std::size_t> segIndex(const uuids::uuid& segUid) const;
-  std::optional<std::size_t> defIndex(const uuids::uuid& defUid) const;
-  std::optional<std::size_t> imageColorMapIndex(const uuids::uuid& mapUid) const;
-  std::optional<std::size_t> labelTableIndex(const uuids::uuid& tableUid) const;
-  std::optional<std::size_t> landmarkGroupIndex(const uuids::uuid& lmGroupUid) const;
+  std::optional<std::size_t> imageIndex(const uuid& imageUid) const;
+  std::optional<std::size_t> segIndex(const uuid& segUid) const;
+  std::optional<std::size_t> defIndex(const uuid& defUid) const;
+  std::optional<std::size_t> imageColorMapIndex(const uuid& mapUid) const;
+  std::optional<std::size_t> labelTableIndex(const uuid& tableUid) const;
+  std::optional<std::size_t> landmarkGroupIndex(const uuid& lmGroupUid) const;
   std::optional<std::size_t> annotationIndex(
-    const uuids::uuid& imageUid, const uuids::uuid& annotUid
+    const uuid& imageUid, const uuid& annotUid
   ) const;
 
   /// @todo Put into DataHelper
@@ -368,6 +370,11 @@ public:
   ParcellationLabelTable* activeLabelTable();
 
   std::string getAllImageDisplayNames() const;
+
+  /// Save the World-space coordinates of the centers of all views
+  void saveAllViewWorldCenterPositions();
+
+  void restoreAllViewWorldCenterPositions();
 
 private:
   /// @brief Data associated with the individual image components
@@ -387,11 +394,11 @@ private:
 
     /// Isosurfaces for the component
     using IsosurfacePtr = std::unique_ptr<Isosurface>;
-    using IsoSurfaceMap = std::unordered_map<uuids::uuid, IsosurfacePtr>;
+    using IsoSurfaceMap = std::unordered_map<uuid, IsosurfacePtr>;
     // std::unique_ptr<Isosurface> aDummyStub; //<-- add this line
 
-    std::vector<uuids::uuid> m_isosurfaceUidsSorted; //!< Sorted isosurface uids
-    std::unordered_map<uuids::uuid, Isosurface> m_isosurfaces; //!< Isosurfaces
+    std::vector<uuid> m_isosurfaceUidsSorted; //!< Sorted isosurface uids
+    std::unordered_map<uuid, Isosurface> m_isosurfaces; //!< Isosurfaces
   };
 
   mutable std::mutex m_componentDataMutex;
@@ -412,64 +419,68 @@ private:
 
   serialize::EntropyProject m_project; //!< Project that is used for serialization
 
-  std::unordered_map<uuids::uuid, Image> m_images; //!< Images
-  std::vector<uuids::uuid> m_imageUidsOrdered;     //!< Image UIDs in order
+  std::unordered_map<uuid, Image> m_images; //!< Images
+  std::vector<uuid> m_imageUidsOrdered;     //!< Image UIDs in order
 
-  std::unordered_map<uuids::uuid, Image> m_segs; //!< Segmentations, also stored as images
-  std::vector<uuids::uuid> m_segUidsOrdered;     //!< Segmentation UIDs in order
+  std::unordered_map<uuid, Image> m_segs; //!< Segmentations, also stored as images
+  std::vector<uuid> m_segUidsOrdered;     //!< Segmentation UIDs in order
 
-  std::unordered_map<uuids::uuid, Image> m_defs; //!< Deformation fields, also stored as images
-  std::vector<uuids::uuid> m_defUidsOrdered;     //!< Deformation field UIDs in order
+  std::unordered_map<uuid, Image> m_defs; //!< Deformation fields, also stored as images
+  std::vector<uuid> m_defUidsOrdered;     //!< Deformation field UIDs in order
 
-  std::unordered_map<uuids::uuid, ImageColorMap> m_imageColorMaps; //!< Image color maps
-  std::vector<uuids::uuid> m_imageColorMapUidsOrdered; //!< Image color map UIDs in order
+  std::unordered_map<uuid, ImageColorMap> m_imageColorMaps; //!< Image color maps
+  std::vector<uuid> m_imageColorMapUidsOrdered; //!< Image color map UIDs in order
 
-  std::unordered_map<uuids::uuid, ParcellationLabelTable> m_labelTables; //!< Segmentation label tables
-  std::vector<uuids::uuid> m_labelTablesUidsOrdered; //!< Segmentation label table UIDs in order
+  std::unordered_map<uuid, ParcellationLabelTable> m_labelTables; //!< Segmentation label tables
+  std::vector<uuid> m_labelTablesUidsOrdered; //!< Segmentation label table UIDs in order
 
-  std::unordered_map<uuids::uuid, LandmarkGroup> m_landmarkGroups; //!< Landmark groups
-  std::vector<uuids::uuid> m_landmarkGroupUidsOrdered;             //!< Landmark group UIDs in order
+  std::unordered_map<uuid, LandmarkGroup> m_landmarkGroups; //!< Landmark groups
+  std::vector<uuid> m_landmarkGroupUidsOrdered;             //!< Landmark group UIDs in order
 
-  std::unordered_map<uuids::uuid, Annotation> m_annotations; //!< Annotations
+  std::unordered_map<uuid, Annotation> m_annotations; //!< Annotations
 
   /// ID of the reference image. This is null iff there are no images.
-  std::optional<uuids::uuid> m_refImageUid;
+  std::optional<uuid> m_refImageUid;
 
   /// ID of the image being actively transformed or whose settings are being changed.
   /// This is null iff there are no images.
-  std::optional<uuids::uuid> m_activeImageUid;
+  std::optional<uuid> m_activeImageUid;
 
   /// Map of image to its segmentations
-  std::unordered_map<uuids::uuid, std::vector<uuids::uuid> > m_imageToSegs;
+  std::unordered_map<uuid, std::vector<uuid> > m_imageToSegs;
 
   /// Map of image to its active segmentation
-  std::unordered_map<uuids::uuid, uuids::uuid> m_imageToActiveSeg;
+  std::unordered_map<uuid, uuid> m_imageToActiveSeg;
 
   /// Map of image to its deformation fields
-  std::unordered_map<uuids::uuid, std::vector<uuids::uuid> > m_imageToDefs;
+  std::unordered_map<uuid, std::vector<uuid> > m_imageToDefs;
 
   /// Map of image to its active deformation field
-  std::unordered_map<uuids::uuid, uuids::uuid> m_imageToActiveDef;
+  std::unordered_map<uuid, uuid> m_imageToActiveDef;
 
   /// Map of image to its landmark groups
-  std::unordered_map<uuids::uuid, std::vector<uuids::uuid> > m_imageToLandmarkGroups;
+  std::unordered_map<uuid, std::vector<uuid> > m_imageToLandmarkGroups;
 
   /// Map of image to its active landmark group
-  std::unordered_map<uuids::uuid, uuids::uuid> m_imageToActiveLandmarkGroup;
+  std::unordered_map<uuid, uuid> m_imageToActiveLandmarkGroup;
 
   /// Map of image to its annotations.
   /// The order of the annotations matches the order in the list.
-  std::unordered_map<uuids::uuid, std::list<uuids::uuid> > m_imageToAnnotations;
+  std::unordered_map<uuid, std::list<uuid> > m_imageToAnnotations;
 
   /// Map of image to its active/selected annotation
-  std::unordered_map<uuids::uuid, uuids::uuid> m_imageToActiveAnnotation;
+  std::unordered_map<uuid, uuid> m_imageToActiveAnnotation;
 
   /// Map of image to its per-component data
-  std::unordered_map<uuids::uuid, std::vector<ComponentData> > m_imageToComponentData;
+  std::unordered_map<uuid, std::vector<ComponentData> > m_imageToComponentData;
 
   /// Is an image being segmented (in addition to the active image)?
   /// @todo Move to AppState
-  std::unordered_set<uuids::uuid> m_imagesBeingSegmented;
+  std::unordered_set<uuid> m_imagesBeingSegmented;
+
+  /// For each layout, save the World-space position of the center of each view
+  using MapViewUidToCenterPos = std::unordered_map<uuid, glm::vec3>;
+  std::vector<MapViewUidToCenterPos> m_savedViewWorldCenterPositions;
 };
 
 #endif // APP_DATA_H

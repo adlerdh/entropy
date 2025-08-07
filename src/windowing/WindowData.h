@@ -12,6 +12,7 @@
 #include <uuid.h>
 
 #include <optional>
+#include <set>
 #include <vector>
 
 /**
@@ -22,8 +23,6 @@ class WindowData
   using uuid = uuids::uuid;
 
 public:
-  /// @todo Create some other object that handles the crosshairs stuff better...
-  /// needs to give us current, old, and views that use old vs current
   WindowData(const CrosshairsState& crosshairs);
   ~WindowData() = default;
 
@@ -38,7 +37,8 @@ public:
     const glm::vec3& worldCenter,
     const glm::vec3& worldFov,
     bool resetZoom,
-    bool resetObliqueOrientation);
+    bool resetObliqueOrientation,
+    const std::set<uuid>& excludedViews = {});
 
   /// Recenter a view to the given center position, without changing its FOV.
   /// (FOV is passed in only to adjust camera pullback distance.)
@@ -78,6 +78,8 @@ public:
 
   /// Number of layouts
   std::size_t numLayouts() const;
+
+  const std::vector<Layout>& layouts() const;
 
   /// Current layout index
   std::size_t currentLayoutIndex() const;
@@ -175,11 +177,6 @@ public:
   /// Find the largest view (in terms of area) in the current layout.
   uuid findLargestCurrentView() const;
 
-  /// Save the World-space coordinates of the centers of all views
-  void saveAllViewWorldCenterPositions();
-
-  void restoreAllViewWorldCenterPositions();
-
 private:
   // Create the default view layouts
   void setupViews();
@@ -219,8 +216,4 @@ private:
 
   /// View alignment mode
   ViewAlignmentMode m_viewAlignment = ViewAlignmentMode::Crosshairs;
-
-  /// For each layout, save the World-space position of the center of each view
-  using MapViewUidToCenterPos = std::unordered_map<uuid, glm::vec3>;
-  std::vector<MapViewUidToCenterPos> m_savedViewWorldCenterPositions;
 };

@@ -15,21 +15,21 @@
  *
  * clip_T_world = clip_T_camera * camera_T_world,
  *
- * where clip_T_camera is a projection transformation, either orthogonal or perpspective,
- * and camera_T_world is a rigid-body matrix, sometimes referred to as the Model-View transformation
+ * where clip_T_camera is a Projection transformation, either orthogonal or perpspective,
+ * and camera_T_world is a rigid-body matrix, sometimes referred to as the View transformation
  * that maps World to Camera space. Its parts are
  *
  * camera_T_world = camera_T_anatomy * anatomy_T_start * start_T_world,
  * where:
  *
  * i) start_T_world: User manipulations applied to the camera BEFORE the anatomical transformation.
- * Currently fixed as the identity.
+ * Currently fixed as the identity, so that Start == World space.
  *
- * ii) anatomy_T_start: The "Model" matrix. Anatomical starting frame of reference that is linked
+ * ii) anatomy_T_start: Anatomical starting frame of reference that is linked
  * to an external callback. This is where axial, coronal, sagittal, and crosshairs-Z/Y/X view
  * orientations are set.
  *
- * iii) camera_T_anatomy: The "View" matrix. This holds user manipulations applied to the camera AFTER
+ * iii) camera_T_anatomy: This holds user manipulations applied to the camera AFTER
  * the anatomical transformation. This is used for manual user view manipulations
  * (e.g. translation, rotation).
  *
@@ -39,6 +39,22 @@
  * Anatomy -- Anatomical frame of reference of a subject (in physical coordinates)
  * Start -- Starting frame of reference (in physical coordinates)
  * World -- World space, common to all objects of the scene (in physical coordinates)
+ *
+ * Note: the transformation world_T_subject is the MODEL matrix (M), so the full chain can also be
+ * written as clip_T_subject = P * V * M = clip_T_camera * camera_T_world * world_T_subject.
+ *
+ * We can also call "anatomy" space the "crosshairs" space. Then...
+ * Suppose we start with a point in image/subject space, and want to go all the way to clip space.
+ * Here's what happens step-by-step:
+ *   M = world_T_subject      Maps from image/subject space to world space (image header transformation)
+ *   R = crosshairs_T_world   Maps from world space to crosshairs-aligned space (custom rotated axes)
+ *   V = camera_T_crosshairs  Maps from crosshairs space to camera space (accounts for zoom, pan, etc.)
+ *   P = clip_T_camera        Maps from camera space to clip space (perspective or orthographic projection)
+ *
+ * So the full transform
+ *   clipPos = P * V * R * M * subjectPos
+ * is
+ *   clipPos = clip_T_camera * camera_T_crosshairs * crosshairs_T_world * world_T_subject * subjectPos
  */
 class Camera
 {
