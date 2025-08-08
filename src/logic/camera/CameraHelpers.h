@@ -199,8 +199,16 @@ glm::quat rotation2dInCameraPlane(
   const Camera&,
   const glm::vec2& ndcOldPos,
   const glm::vec2& ndcNewPos,
-  const glm::vec2& ndcRotationCenter = glm::vec2{0.0f, 0.0f}
-);
+  const glm::vec2& ndcRotationCenter = glm::vec2{0.0f, 0.0f});
+
+glm::quat rotation2dInCameraPlaneWithSnapping(
+  const Camera&,
+  const glm::vec2& ndcStartPos,
+  const glm::vec2& ndcOldPos,
+  const glm::vec2& ndcNewPos,
+  float snapAngleDegrees,
+  float angleTolerance,
+  const glm::vec2& ndcRotationCenter = glm::vec2{0.0f, 0.0f});
 
 glm::quat rotation3dAboutCameraPlane(
   const Camera&, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos

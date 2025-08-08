@@ -67,7 +67,7 @@ void renderViewSettingsComboWindow(
   const std::function<bool(std::size_t index)>& isImageUsedForMetric,
   const std::function<void(std::size_t index, bool visible)>& setImageUsedForMetric,
 
-  const std::function<std::pair<const char*, const char*>(std::size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(std::size_t index)>& getImageDisplayAndFileName,
   const std::function<bool(std::size_t imageIndex)>& getImageVisibilitySetting,
   const std::function<bool(std::size_t imageIndex)>& getImageIsActive,
 
@@ -193,6 +193,7 @@ void renderViewSettingsComboWindow(
           if (ImGui::BeginPopup("imageVisibilityPopup"))
           {
             ImGui::Text("Visible images:");
+            ImGui::PushID("visibleimages"); /*** ID = visibleimages ***/
 
             for (std::size_t i = 0; i < numImages; ++i)
             {
@@ -224,11 +225,13 @@ void renderViewSettingsComboWindow(
 
               if (ImGui::IsItemHovered())
               {
-                ImGui::SetTooltip("%s", displayAndFileName.second);
+                ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
               }
 
               ImGui::PopID(); /*** ID = i ***/
             }
+
+            ImGui::PopID(); /*** ID = visibleimages ***/
 
             ImGui::EndPopup();
           }
@@ -286,7 +289,7 @@ void renderViewSettingsComboWindow(
 
               if (ImGui::IsItemHovered())
               {
-                ImGui::SetTooltip("%s", displayAndFileName.second);
+                ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
               }
 
               ImGui::PopID(); /*** ID = i ***/
@@ -885,7 +888,7 @@ void renderViewOrientationToolWindow(
 void renderImagePropertiesWindow(
   AppData& appData,
   size_t numImages,
-  const std::function<std::pair<const char*, const char*>(std::size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(std::size_t index)>& getImageDisplayAndFileName,
   const std::function<size_t(void)>& getActiveImageIndex,
   const std::function<void(std::size_t)>& setActiveImageIndex,
   const std::function<size_t(void)>& getNumImageColorMaps,
@@ -898,8 +901,7 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
   const std::function<void(const uuids::uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
-  const std::function<bool(const uuids::uuid& imageUid, bool locked)>&
-    setLockManualImageTransformation,
+  const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const AllViewsRecenterType& recenterAllViews
 )
 {
@@ -1107,6 +1109,7 @@ void renderSettingsWindow(
 )
 {
   static constexpr bool sk_recenterCrosshairs = true;
+  static constexpr bool sk_realignCrosshairs = true;
   static constexpr bool sk_doNotRecenterOnCurrentCrosshairsPosition = false;
   static constexpr bool sk_doNotResetObliqueOrientation = false;
   static constexpr bool sk_resetZoom = true;
@@ -1357,7 +1360,7 @@ void renderSettingsWindow(
             appData.state().setRecenteringMode(ImageSelection::ReferenceImage);
 
             recenterAllViews(
-              sk_recenterCrosshairs,
+              sk_recenterCrosshairs, sk_realignCrosshairs,
               sk_doNotRecenterOnCurrentCrosshairsPosition,
               sk_doNotResetObliqueOrientation,
               sk_resetZoom
@@ -1373,7 +1376,7 @@ void renderSettingsWindow(
             appData.state().setRecenteringMode(ImageSelection::ActiveImage);
 
             recenterAllViews(
-              sk_recenterCrosshairs,
+              sk_recenterCrosshairs, sk_realignCrosshairs,
               sk_doNotRecenterOnCurrentCrosshairsPosition,
               sk_doNotResetObliqueOrientation,
               sk_resetZoom
@@ -1390,7 +1393,7 @@ void renderSettingsWindow(
             appData.state().setRecenteringMode(ImageSelection::ReferenceAndActiveImages);
 
             recenterAllViews(
-              sk_recenterCrosshairs,
+              sk_recenterCrosshairs, sk_realignCrosshairs,
               sk_doNotRecenterOnCurrentCrosshairsPosition,
               sk_doNotResetObliqueOrientation,
               sk_resetZoom
@@ -1438,7 +1441,7 @@ void renderSettingsWindow(
             appData.state().setRecenteringMode(ImageSelection::AllLoadedImages);
 
             recenterAllViews(
-              sk_recenterCrosshairs,
+              sk_recenterCrosshairs, sk_realignCrosshairs,
               sk_doNotRecenterOnCurrentCrosshairsPosition,
               sk_doNotResetObliqueOrientation,
               sk_resetZoom
@@ -1515,6 +1518,7 @@ void renderSettingsWindow(
           ImGui::Text("View orientation convention:");
 
           static constexpr bool sk_orientChangeRecenterCrosshairs = false;
+          static constexpr bool sk_orientChangeRealignCrosshairs = false;
           static constexpr bool sk_orientChangeRecenterOnXhairs = true;
           static constexpr bool sk_orientChangeResetObliqueOrientation = false;
           static constexpr bool sk_orientChangeResetZoom = false;
@@ -1527,7 +1531,7 @@ void renderSettingsWindow(
             appData.windowData().setViewOrientationConvention(ViewConvention::Radiological);
 
             recenterAllViews(
-              sk_orientChangeRecenterCrosshairs,
+              sk_orientChangeRecenterCrosshairs, sk_orientChangeRealignCrosshairs,
               sk_orientChangeRecenterOnXhairs,
               sk_orientChangeResetObliqueOrientation,
               sk_orientChangeResetZoom
@@ -1544,7 +1548,7 @@ void renderSettingsWindow(
             appData.windowData().setViewOrientationConvention(ViewConvention::Neurological);
 
             recenterAllViews(
-              sk_orientChangeRecenterCrosshairs,
+              sk_orientChangeRecenterCrosshairs, sk_orientChangeRealignCrosshairs,
               sk_orientChangeRecenterOnXhairs,
               sk_orientChangeResetObliqueOrientation,
               sk_orientChangeResetZoom
@@ -2043,7 +2047,7 @@ void renderSettingsWindow(
 void renderInspectionWindow(
   AppData& appData,
   size_t numImages,
-  const std::function<std::pair<const char*, const char*>(std::size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(std::size_t index)>& getImageDisplayAndFileName,
   const std::function<glm::vec3()>& getWorldDeformedPos,
   const std::function<std::optional<glm::vec3>(std::size_t imageIndex)>& getSubjectPos,
   const std::function<std::optional<glm::ivec3>(std::size_t imageIndex)>& getVoxelPos,
@@ -2107,14 +2111,14 @@ void renderInspectionWindow(
 
         const auto names = getImageDisplayAndFileName(imageIndex);
 
-        if (ImGui::MenuItem(names.first, nullptr, visible))
+        if (ImGui::MenuItem(names.first.c_str(), nullptr, visible))
         {
           visible = !visible;
         }
 
         if (ImGui::IsItemHovered())
         {
-          ImGui::SetTooltip("%s", names.second);
+          ImGui::SetTooltip("%s", names.second.c_str());
         }
       }
 
@@ -2241,16 +2245,16 @@ void renderInspectionWindow(
 
       if (sk_refIndex == imageIndex)
       {
-        ImGui::TextColored(blueColor, "%s (ref.):", names.first);
+        ImGui::TextColored(blueColor, "%s (ref.):", names.first.c_str());
       }
       else
       {
-        ImGui::TextColored(blueColor, "%s:", names.first);
+        ImGui::TextColored(blueColor, "%s:", names.first.c_str());
       }
 
       if (ImGui::IsItemHovered())
       {
-        ImGui::SetTooltip("%s", names.second);
+        ImGui::SetTooltip("%s", names.second.c_str());
       }
 
       /// @todo Do we want to show subject coords for all images?
@@ -2354,7 +2358,7 @@ void renderInspectionWindow(
 
 void renderInspectionWindowWithTable(
   AppData& appData,
-  const std::function<std::pair<const char*, const char*>(std::size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(std::size_t index)>& getImageDisplayAndFileName,
   const std::function<std::optional<glm::vec3>(std::size_t imageIndex)>& getSubjectPos,
   const std::function<std::optional<glm::ivec3>(std::size_t imageIndex)>& getVoxelPos,
   const std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
@@ -2432,14 +2436,14 @@ void renderInspectionWindowWithTable(
         bool& visible = s_showSubject[*imageUid];
         const auto names = getImageDisplayAndFileName(imageIndex);
 
-        if (ImGui::MenuItem(names.first, nullptr, visible))
+        if (ImGui::MenuItem(names.first.c_str(), nullptr, visible))
         {
           visible = !visible;
         }
 
         if (ImGui::IsItemHovered())
         {
-          ImGui::SetTooltip("%s", names.second);
+          ImGui::SetTooltip("%s", names.second.c_str());
         }
       }
 

@@ -254,6 +254,7 @@ void renderImageHeaderInformation(
   if (Image::ImageRepresentation::Image == image.imageRep())
   {
     static constexpr bool sk_recenterCrosshairs = true;
+    static constexpr bool sk_realignCrosshairs = true;
     static constexpr bool sk_recenterOnCurrentCrosshairsPosition = true;
     static constexpr bool sk_doNotResetObliqueOrientation = false;
     static constexpr bool sk_doNotResetZoom = false;
@@ -277,6 +278,7 @@ void renderImageHeaderInformation(
 
       recenterAllViews(
         sk_recenterCrosshairs,
+        sk_realignCrosshairs,
         sk_recenterOnCurrentCrosshairsPosition,
         sk_doNotResetObliqueOrientation,
         sk_doNotResetZoom
@@ -294,6 +296,7 @@ void renderImageHeaderInformation(
 
       recenterAllViews(
         sk_recenterCrosshairs,
+        sk_realignCrosshairs,
         sk_recenterOnCurrentCrosshairsPosition,
         sk_doNotResetObliqueOrientation,
         sk_doNotResetZoom
@@ -312,6 +315,7 @@ void renderImageHeaderInformation(
 
       recenterAllViews(
         sk_recenterCrosshairs,
+        sk_realignCrosshairs,
         sk_recenterOnCurrentCrosshairsPosition,
         sk_doNotResetObliqueOrientation,
         sk_doNotResetZoom
@@ -2632,6 +2636,7 @@ void renderAnnotationsHeader(
 )
 {
   static constexpr bool sk_doNotRecenterCrosshairs = false;
+  static constexpr bool sk_doNotRealignCrosshairs = false;
   static constexpr bool sk_doNotRecenterOnCurrentCrosshairsPosition = false;
   static constexpr bool sk_doNotResetObliqueOrientation = false;
   static constexpr bool sk_doNotResetZoom = false;
@@ -2811,6 +2816,7 @@ void renderAnnotationsHeader(
 
           recenterAllViews(
             sk_doNotRecenterCrosshairs,
+            sk_doNotRealignCrosshairs,
             sk_doNotRecenterOnCurrentCrosshairsPosition,
             sk_doNotResetObliqueOrientation,
             sk_doNotResetZoom

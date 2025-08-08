@@ -114,6 +114,8 @@ public:
      */
   void setIdentity();
 
+  void setIdentityRotation();
+
   /**
     * @brief operator+= for composing this frame (lhs) with another frame (rhs).
     * The frame origins are added and the rotations are multiplied.

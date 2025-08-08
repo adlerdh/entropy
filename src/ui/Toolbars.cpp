@@ -87,7 +87,7 @@ void renderModeToolbar(
   const std::function<void(bool)>& setOverlayVisibility,
   const std::function<void(int step)>& cycleViews,
   size_t numImages,
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(size_t index)>& getImageDisplayAndFileName,
   const std::function<size_t(void)>& getActiveImageIndex,
   const std::function<void(size_t)>& setActiveImageIndex)
 {
@@ -259,7 +259,7 @@ void renderModeToolbar(
             const auto displayAndFileName = getImageDisplayAndFileName(i);
 
             bool isSelected = (i == activeIndex);
-            if (ImGui::MenuItem(displayAndFileName.first, "", &isSelected))
+            if (ImGui::MenuItem(displayAndFileName.first.c_str(), "", &isSelected))
             {
               if (isSelected)
               {
@@ -270,7 +270,7 @@ void renderModeToolbar(
 
             if (ImGui::IsItemHovered())
             {
-              ImGui::SetTooltip("%s", displayAndFileName.second);
+              ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
             }
           }
           ImGui::PopID(); // i
@@ -478,6 +478,7 @@ void renderModeToolbar(
           // Shift does a "hard" reset of the crosshairs, oblique orientations, rotated crosshairs, and zoom
           const bool hardReset = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
           const bool recenterCrosshairs = hardReset;
+          const bool realignCrosshairs = hardReset;
           const bool resetObliqueOrientation = hardReset;
           static constexpr bool recenterOnCurrentCrosshairsPosition = true;
 
@@ -485,6 +486,7 @@ void renderModeToolbar(
 
           recenterAllViews(
             recenterCrosshairs,
+            realignCrosshairs,
             recenterOnCurrentCrosshairsPosition,
             resetObliqueOrientation,
             resetZoom);
@@ -678,6 +680,7 @@ void renderModeToolbar(
   const bool hardReset = ImGui::IsKeyDown(ImGuiKey_LeftShift)
                          || ImGui::IsKeyDown(ImGuiKey_RightShift);
   const bool recenterCrosshairs = hardReset;
+  const bool realignCrosshairs = hardReset;
   const bool resetObliqueOrientation = hardReset;
   static constexpr bool recenterOnCurrentCrosshairsPosition = true;
 
@@ -686,11 +689,10 @@ void renderModeToolbar(
   renderAddLayoutModalPopup(
     appData,
     openAddLayoutPopup,
-    [&recenterAllViews, &recenterCrosshairs, &resetObliqueOrientation, &resetZoom]()
+    [&recenterAllViews, &recenterCrosshairs, &realignCrosshairs, &resetObliqueOrientation, &resetZoom]()
     {
       recenterAllViews(
-        recenterCrosshairs, recenterOnCurrentCrosshairsPosition, resetObliqueOrientation, resetZoom
-      );
+        recenterCrosshairs, realignCrosshairs, recenterOnCurrentCrosshairsPosition, resetObliqueOrientation, resetZoom);
     }
   );
 
@@ -700,7 +702,7 @@ void renderModeToolbar(
 void renderSegToolbar(
   AppData& appData,
   size_t numImages,
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(size_t index)>& getImageDisplayAndFileName,
   const std::function<size_t(void)>& getActiveImageIndex,
   const std::function<void(size_t)>& setActiveImageIndex,
   const std::function<bool(size_t imageIndex)>& getImageHasActiveSeg,
@@ -1496,7 +1498,7 @@ void renderSegToolbar(
           // Image is selected if its seg is active
           bool isSelected = getImageHasActiveSeg(i);
 
-          if (ImGui::Selectable(displayAndFileName.first, &isSelected))
+          if (ImGui::Selectable(displayAndFileName.first.c_str(), &isSelected))
           {
             if (isSelected)
             {
@@ -1511,7 +1513,7 @@ void renderSegToolbar(
 
           if (ImGui::IsItemHovered())
           {
-            ImGui::SetTooltip("%s", displayAndFileName.second);
+            ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
           }
         }
 

@@ -210,7 +210,12 @@ public:
      * @param[in] windowCurrPos
      * @param[in] windowStartPos
      */
-  void doCrosshairsRotate2D(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit);
+  void doCrosshairsRotate2D(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
+                            bool snapCrosshairs);
+
+  /// @brief When the mouse is released, transition to a state where crosshairs are not rotating
+  /// @todo Could be handled by dedicated state machine for crosshairs
+  void endCrosshairsRotate2D();
 
   void moveCrosshairsToSegLabelCentroid(const uuid& imageUid, size_t labelIndex);
 
@@ -222,6 +227,7 @@ public:
      */
   void recenterViews(const ImageSelection&,
                      bool recenterCrosshairs,
+                     bool realignCrosshairs,
                      bool recenterOnCurrentCrosshairsPos,
                      bool resetObliqueOrientation,
                      bool resetZoom,

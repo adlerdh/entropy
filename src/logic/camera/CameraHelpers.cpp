@@ -29,10 +29,19 @@
 
 namespace
 {
-
 static const glm::quat sk_unitRot(1.0f, 0.0f, 0.0f, 0.0f);
 static const float sk_eps = glm::epsilon<float>();
 
+bool isIntegerMultiple(float a, float b, float tolerance)
+{
+  if (b == 0.0f) {
+    return false;
+  }
+
+  const float k = std::round(a / b); // Nearest integer multiple
+  const float difference = std::fabs(a - k * b); // Distance from exact multiple
+  return (difference < tolerance);
+}
 } // namespace
 
 namespace helper
@@ -442,8 +451,7 @@ glm::quat rotation2dInCameraPlane(
   const Camera& camera,
   const glm::vec2& ndcOldPos,
   const glm::vec2& ndcNewPos,
-  const glm::vec2& ndcRotationCenter
-)
+  const glm::vec2& ndcRotationCenter)
 {
   if (glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) ||
       glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
@@ -458,6 +466,41 @@ glm::quat rotation2dInCameraPlane(
   const glm::mat3 w_T_c = inverseTranspose(glm::mat3{world_T_clip(camera)});
 
   return glm::quat_cast(glm::rotate(angle, w_T_c[2]));
+}
+
+glm::quat rotation2dInCameraPlaneWithSnapping(
+  const Camera& camera,
+  const glm::vec2& ndcStartPos,
+  const glm::vec2& ndcOldPos,
+  const glm::vec2& ndcNewPos,
+  float snapAngleDegrees,
+  float angleTolerance,
+  const glm::vec2& ndcRotationCenter)
+{
+  if (glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) ||
+      glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
+  {
+    return sk_unitRot;
+  }
+
+  const glm::vec2 startVec = glm::normalize(ndcStartPos - ndcRotationCenter);
+  // const glm::vec2 oldVec = glm::normalize(ndcOldPos - ndcRotationCenter);
+  const glm::vec2 newVec = glm::normalize(ndcNewPos - ndcRotationCenter);
+
+  const float totalAngleRad = glm::orientedAngle(startVec, newVec);
+  const float totalAngleDeg = glm::degrees(totalAngleRad);
+
+  // Check if total angle is within 2 degrees of an integer multiple of snapAngleDegrees:
+  if (!isIntegerMultiple(totalAngleDeg, snapAngleDegrees, angleTolerance)) {
+    const glm::mat3 w_T_c = inverseTranspose(glm::mat3{world_T_clip(camera)});
+    return glm::quat_cast(glm::rotate(-totalAngleRad, w_T_c[2]));
+  }
+
+  // Rounded to nearest integer multiple of snapAngleDegrees
+  const float angleRad = glm::radians(-std::round(totalAngleDeg / snapAngleDegrees) * snapAngleDegrees);
+
+  const glm::mat3 w_T_c = inverseTranspose(glm::mat3{world_T_clip(camera)});
+  return glm::quat_cast(glm::rotate(angleRad, w_T_c[2]));
 }
 
 glm::quat rotation3dAboutCameraPlane(

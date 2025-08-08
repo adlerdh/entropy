@@ -138,6 +138,7 @@ void EntropyApp::onImagesReady()
 {
   // Recenter the crosshairs, but don't recenter views on the crosshairs:
   static constexpr bool sk_recenterCrosshairs = true;
+  static constexpr bool sk_realignCrosshairs = true;
   static constexpr bool sk_doNotRecenterOnCurrentCrosshairsPos = false;
   static constexpr bool sk_resetObliqueOrientation = true;
   static constexpr bool sk_resetZoom = true;
@@ -233,10 +234,10 @@ void EntropyApp::onImagesReady()
   m_callbackHandler.recenterViews(
     m_data.state().recenteringMode(),
     sk_recenterCrosshairs,
+    sk_realignCrosshairs,
     sk_doNotRecenterOnCurrentCrosshairsPos,
     sk_resetObliqueOrientation,
-    sk_resetZoom
-  );
+    sk_resetZoom);
 
   m_callbackHandler.setMouseMode(MouseMode::Pointer);
 
@@ -1353,18 +1354,18 @@ void EntropyApp::setCallbacks()
 
     [this](
       bool recenterCrosshairs,
+      bool realignCrosshairs,
       bool recenterOnCurrentCrosshairsPosition,
       bool resetObliqueOrientation,
-      bool resetZoom
-    )
+      bool resetZoom)
     {
       m_callbackHandler.recenterViews(
         m_data.state().recenteringMode(),
         recenterCrosshairs,
+        realignCrosshairs,
         recenterOnCurrentCrosshairsPosition,
         resetObliqueOrientation,
-        resetZoom
-      );
+        resetZoom);
     },
 
     [this]() { return m_callbackHandler.showOverlays(); },

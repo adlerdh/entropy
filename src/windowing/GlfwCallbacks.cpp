@@ -193,7 +193,17 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       if (!currHit_invalidOutsideView) {
         break;
       }
-      H.doCrosshairsMove(*currHit_invalidOutsideView);
+
+      if (s_modifierState.control || s_modifierState.super) {
+        if (ViewType::Oblique != startView->viewType() && ViewType::ThreeD != startView->viewType()) {
+          // Do not rotate crosshairs in Oblique or 3D view
+          const bool snapCrosshairs = s_modifierState.shift;
+          H.doCrosshairsRotate2D(*s_startHit, *s_prevHit, *currHit_withOverride, snapCrosshairs);
+        }
+      }
+      else {
+        H.doCrosshairsMove(*currHit_invalidOutsideView);
+      }
     }
     else if (s_mouseButtonState.right)
     {
@@ -214,13 +224,13 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   }
   case MouseMode::Segment:
   {
-    if (!currHit_invalidOutsideView)
+    if (!currHit_invalidOutsideView) {
       break;
+    }
 
     if (s_mouseButtonState.left || s_mouseButtonState.right)
     {
-      if (app->appData().settings().crosshairsMoveWithBrush())
-      {
+      if (app->appData().settings().crosshairsMoveWithBrush()) {
         H.doCrosshairsMove(*currHit_invalidOutsideView);
       }
 
@@ -264,63 +274,49 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   }
   case MouseMode::WindowLevel:
   {
-    if (!currHit_withOverride)
+    if (!currHit_withOverride) {
       break;
+    }
 
     const bool fineAdjustment = shiftDown;
 
-    if (s_mouseButtonState.left)
-    {
+    if (s_mouseButtonState.left) {
       H.doWindowLevel(*s_startHit, *s_prevHit, *currHit_withOverride, fineAdjustment);
     }
-    else if (s_mouseButtonState.right)
-    {
+    else if (s_mouseButtonState.right) {
       H.doOpacity(*s_prevHit, *currHit_withOverride);
     }
     break;
   }
   case MouseMode::CameraZoom:
   {
-    if (!currHit_withOverride)
+    if (!currHit_withOverride) {
       break;
+    }
 
-    if (s_mouseButtonState.left)
-    {
-      H.doCameraZoomDrag(
-        *s_startHit,
-        *s_prevHit,
-        *currHit_withOverride,
-        ZoomBehavior::ToCrosshairs,
-        syncZoomsForAllViews(s_modifierState)
-      );
+    if (s_mouseButtonState.left) {
+      H.doCameraZoomDrag(*s_startHit, *s_prevHit, *currHit_withOverride,
+                         ZoomBehavior::ToCrosshairs, syncZoomsForAllViews(s_modifierState));
     }
-    else if (s_mouseButtonState.right)
-    {
-      H.doCameraZoomDrag(
-        *s_startHit,
-        *s_prevHit,
-        *currHit_withOverride,
-        ZoomBehavior::ToStartPosition,
-        syncZoomsForAllViews(s_modifierState)
-      );
+    else if (s_mouseButtonState.right) {
+      H.doCameraZoomDrag(*s_startHit, *s_prevHit, *currHit_withOverride,
+                         ZoomBehavior::ToStartPosition, syncZoomsForAllViews(s_modifierState));
     }
-    else if (s_mouseButtonState.middle)
-    {
+    else if (s_mouseButtonState.middle) {
       H.doCameraTranslate2d(*s_startHit, *s_prevHit, *currHit_withOverride);
     }
     break;
   }
   case MouseMode::CameraTranslate:
   {
-    if (!currHit_withOverride)
+    if (!currHit_withOverride) {
       break;
+    }
 
-    if (s_mouseButtonState.left)
-    {
+    if (s_mouseButtonState.left) {
       H.doCameraTranslate2d(*s_startHit, *s_prevHit, *currHit_withOverride);
     }
-    else if (s_mouseButtonState.right)
-    {
+    else if (s_mouseButtonState.right) {
       // do 3D translate
     }
     break;
@@ -365,40 +361,22 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
     {
       if (s_mouseButtonState.left)
       {
-        if (s_modifierState.alt)
-        {
-          H.doCameraRotate2d(
-            *s_startHit, *s_prevHit, *currHit_withOverride, RotationOrigin::Crosshairs
-          );
+        if (s_modifierState.alt) {
+          H.doCameraRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride, RotationOrigin::Crosshairs);
         }
-        else
-        {
-          H.doCameraRotate3d(
-            *s_startHit,
-            *s_prevHit,
-            *currHit_withOverride,
-            RotationOrigin::Crosshairs,
-            AxisConstraint::None
-          );
+        else {
+          H.doCameraRotate3d(*s_startHit, *s_prevHit, *currHit_withOverride,
+                             RotationOrigin::Crosshairs, AxisConstraint::None);
         }
       }
       else if (s_mouseButtonState.right)
       {
-        if (s_modifierState.alt)
-        {
-          H.doCameraRotate2d(
-            *s_startHit, *s_prevHit, *currHit_withOverride, RotationOrigin::CameraEye
-          );
+        if (s_modifierState.alt) {
+          H.doCameraRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride, RotationOrigin::CameraEye);
         }
-        else
-        {
-          H.doCameraRotate3d(
-            *s_startHit,
-            *s_prevHit,
-            *currHit_withOverride,
-            RotationOrigin::CameraEye,
-            AxisConstraint::None
-          );
+        else {
+          H.doCameraRotate3d(*s_startHit, *s_prevHit, *currHit_withOverride,
+                             RotationOrigin::CameraEye, AxisConstraint::None);
         }
       }
       break;
@@ -421,7 +399,8 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
     }
 
     if (s_mouseButtonState.left) {
-      H.doCrosshairsRotate2D(*s_startHit, *s_prevHit, *currHit_withOverride);
+      const bool snapCrosshairs = s_modifierState.shift;
+      H.doCrosshairsRotate2D(*s_startHit, *s_prevHit, *currHit_withOverride, snapCrosshairs);
     }
     else if (s_mouseButtonState.right)
     {
@@ -519,7 +498,9 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     return;
   }
 
-  // Send event to the annotation state machine
+  CallbackHandler& H = app->callbackHandler();
+
+  // Send event to the annotation state machine and also end crosshairs rotation (if in progress)
   switch (action)
   {
   case GLFW_PRESS: {
@@ -530,19 +511,10 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     app->appData().windowData().setActiveViewUid(std::nullopt);
     send_event(state::annot::MouseReleaseEvent(*hit_invalidOutsideView, s_mouseButtonState, s_modifierState));
 
-    // When the mouse is released, transition to a state where crosshairs are not rotating:
-    /// @todo This could be handled by a dedicated state machine
-
-    if (app->appState().viewWithRotatingCrosshairs()) {
-      app->appState().setViewWithRotatingCrosshairs(std::nullopt);
-
-      CallbackHandler& H = app->callbackHandler();
-      H.recenterViews(app->appData().state().recenteringMode(), false, true, false, false);
-      // app->appData().restoreAllViewWorldCenterPositions(); /// @todo keep?
-
-      /// @todo make sure to do this when changing the mouse mode away from crosshairs rotation, too
+    // Releasing the left button will end crosshairs rotation:
+    if (GLFW_MOUSE_BUTTON_LEFT == button) {
+      H.endCrosshairsRotate2D();
     }
-
     break;
   }
   default:
@@ -720,16 +692,16 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     // Shift does a "hard" reset of the crosshairs, oblique orientations, and zoom
     const bool hardReset = (s_modifierState.shift);
     const bool recenterCrosshairs = hardReset;
+    const bool realignCrosshairs = hardReset;
     const bool resetObliqueOrientation = hardReset;
     const bool recenterOnCurrentCrosshairsPosition = true;
     const bool resetZoom = hardReset ? true : recenterOnCurrentCrosshairsPosition;
 
     H.recenterViews(
       app->appData().state().recenteringMode(),
-      recenterCrosshairs,
+      recenterCrosshairs, realignCrosshairs,
       recenterOnCurrentCrosshairsPosition,
-      resetObliqueOrientation,
-      resetZoom);
+      resetObliqueOrientation, resetZoom);
     break;
   }
 

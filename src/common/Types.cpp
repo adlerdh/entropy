@@ -133,7 +133,8 @@ std::string componentTypeString(const ComponentType& compType)
 std::string typeString(const MouseMode& mouseMode)
 {
   static const std::unordered_map<MouseMode, std::string> s_typeToStringMap{
-    {MouseMode::Pointer, "Pointer (V)\nMove the crosshairs"},
+    {MouseMode::Pointer,
+     "Pointer (V)\nMove crosshairs\nCtrl: rotate crosshairs"},
     {MouseMode::WindowLevel,
      "Window/level and opacity (L)\nLeft button: window/level\nRight button: opacity"},
     {MouseMode::CameraTranslate,

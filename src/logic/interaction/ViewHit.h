@@ -1,5 +1,4 @@
-#ifndef VIEW_HIT_H
-#define VIEW_HIT_H
+#pragma once
 
 #include "windowing/View.h"
 
@@ -29,7 +28,4 @@ struct ViewHit
 std::optional<ViewHit> getViewHit(
   AppData& appData,
   const glm::vec2& windowPos,
-  const std::optional<uuids::uuid>& viewUidForOverride = std::nullopt
-);
-
-#endif // VIEW_HIT_H
+  const std::optional<uuids::uuid>& viewUidForOverride = std::nullopt);

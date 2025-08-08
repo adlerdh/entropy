@@ -159,13 +159,11 @@ std::optional<uuids::uuid> addNewSurface(
   uint32_t component,
   size_t index,
   std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> /*storeFuture*/,
-  std::function<void(const uuids::uuid& taskUid)> /*addTaskToIsosurfaceGpuMeshGenerationQueue*/
-)
+  std::function<void(const uuids::uuid& taskUid)> /*addTaskToIsosurfaceGpuMeshGenerationQueue*/)
 {
   static constexpr uint32_t sk_defaultIsovalueQuantile = 75;
 
-  if (!image)
-  {
+  if (!image) {
     return std::nullopt;
   }
 
@@ -180,13 +178,8 @@ std::optional<uuids::uuid> addNewSurface(
 
   if (const auto isosurfaceUid = appData.addIsosurface(imageUid, component, std::move(surface)))
   {
-    spdlog::debug(
-      "Added new isosurface {} for image {} (component {}) at isovalue {}",
-      *isosurfaceUid,
-      imageUid,
-      component,
-      surface.value
-    );
+    spdlog::debug("Added new isosurface {} for image {} (component {}) at isovalue {}",
+                  *isosurfaceUid, imageUid, component, surface.value);
 
 #if 0
     // Function to update the mesh record in AppData after the mesh is generated
@@ -272,6 +265,7 @@ void renderIsosurfacesHeader(
                                                             | ImGuiColorEditFlags_InputRGB;
 
   static const std::string sk_addSurfaceButtonText = std::string(ICON_FK_FILE_O) + std::string(" Add surface");
+  static const std::string sk_addSurfacesButtonText = std::string(ICON_FK_FILE_TEXT_O) + std::string(" Add surfaces");
   static const std::string sk_removeSurfaceButtonText = std::string(ICON_FK_TRASH_O) + std::string(" Remove");
   static const std::string sk_saveSurfacesButtonText = std::string(ICON_FK_FLOPPY_O) + std::string(" Save...");
 
@@ -576,6 +570,23 @@ void renderIsosurfacesHeader(
     }
   }
 
+  // const bool addSurfaces = ImGui::Button(sk_addSurfacesButtonText.c_str());
+  // if (ImGui::IsItemHovered())
+  // {
+  //   ImGui::SetTooltip("Add new isosurfaces");
+  // }
+
+  // if (addSurfaces) {
+  //   if (const auto uids = addNewSurfaces(appData, image, imageUid, componentToAdjust, tableItems.size() + 1,
+  //                                        storeFuture, addTaskToIsosurfaceGpuMeshGenerationQueue)) {
+  //     selectedSurfaceUid = uid;
+  //     imageToSelectedSurfaceUid[imageUid] = *uid;
+  //     ImGui::PopStyleColor();
+  //     ImGui::PopID(); // imageUid
+  //     return;
+  //   }
+  // }
+
   if (selectedSurfaceUid)
   {
     ImGui::SameLine();
@@ -654,11 +665,11 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Surface color");
 
-      mySliderF32("Surface opacity", &surface->opacity, 0.0f, 1.0f);
+      mySliderF32("Opacity", &surface->opacity, 0.0f, 1.0f);
       ImGui::SameLine();
-      helpMarker("Surface opacity (3D), contour opacity (2D)");
+      helpMarker("Surface (3D) and contour (2D) opacity");
 
-      mySliderF32("Fill opacity", &surface->fillOpacity, 0.0f, 1.0f);
+      mySliderF32("Fill", &surface->fillOpacity, 0.0f, 1.0f);
       ImGui::SameLine();
       helpMarker("Fill opacity in 2D views");
 
@@ -683,7 +694,7 @@ void renderIsosurfacesHeader(
       ImGui::Spacing();
 
       bool hideAll = !imgSettings.isosurfacesVisible();
-      if (ImGui::Checkbox("Hide all isosurfaces", &hideAll))
+      if (ImGui::Checkbox("Hide all", &hideAll))
       {
         imgSettings.setIsosurfacesVisible(!hideAll);
       }
@@ -693,36 +704,36 @@ void renderIsosurfacesHeader(
       if (imgSettings.isosurfacesVisible())
       {
         bool showIn2d = imgSettings.showIsocontoursIn2D();
-        if (ImGui::Checkbox("Show isocontours outlines in 2D", &showIn2d)) {
+        if (ImGui::Checkbox("Show isocontours in 2D", &showIn2d)) {
           imgSettings.setShowIsoscontoursIn2D(showIn2d);
         }
         ImGui::SameLine();
         helpMarker("Show isocontours in 2D image planes");
 
-        ImGui::Checkbox("Floating-point linear image interpolation",
+        ImGui::Checkbox("Floating-point interpolation",
                         &appData.renderData().m_isocontourFloatingPointInterpolation);
         ImGui::SameLine();
         helpMarker("Use floating-point (instead of 8-bit fixed-point) linear image interpolation for the isocontours");
 
         bool applyColormap = imgSettings.applyImageColormapToIsosurfaces();
-        if (ImGui::Checkbox("Color isosurfaces using image colormap", &applyColormap)) {
+        if (ImGui::Checkbox("Color using image colormap", &applyColormap)) {
           imgSettings.setApplyImageColormapToIsosurfaces(applyColormap);
         }
         ImGui::SameLine();
         helpMarker("Color isosurfaces using the image colormap");
 
+        // Modulate opacity of isocontour with opacity of image:
+        ImGui::Checkbox("Modulate opacity with image",
+                        &appData.renderData().m_modulateIsocontourOpacityWithImageOpacity);
+        ImGui::SameLine();
+        helpMarker("Modulate isocontour opacity with image opacity");
+
         bool useDistMap = imgSettings.useDistanceMapForRaycasting();
-        if (ImGui::Checkbox("Accelerate raycasting using distance map", &useDistMap)) {
+        if (ImGui::Checkbox("Raycast using distance map", &useDistMap)) {
           imgSettings.setUseDistanceMapForRaycasting(useDistMap);
         }
         ImGui::SameLine();
         helpMarker("Accelerate raycasting using distance map");
-
-        // Modulate opacity of isocontour with opacity of image:
-        ImGui::Checkbox("Modulate isocontour opacity with image",
-                        &appData.renderData().m_modulateIsocontourOpacityWithImageOpacity);
-        ImGui::SameLine();
-        helpMarker("Modulate isocontour opacity with image opacity");
 
         float opacityMod = imgSettings.isosurfaceOpacityModulator();
         if (mySliderF32("Global opacity", &opacityMod, 0.0f, 1.0f, "%0.2f")) {

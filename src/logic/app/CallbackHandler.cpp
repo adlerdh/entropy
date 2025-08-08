@@ -747,6 +747,7 @@ bool CallbackHandler::executePoissonSegmentation(
 void CallbackHandler::recenterViews(
   const ImageSelection& imageSelection,
   bool recenterCrosshairs,
+  bool realignCrosshairs,
   bool recenterOnCurrentCrosshairsPos,
   bool resetObliqueOrientation,
   bool resetZoom,
@@ -769,6 +770,12 @@ void CallbackHandler::recenterViews(
     const glm::vec3 worldPos = math::computeAABBoxCenter(worldBox);
     const glm::vec3 worldPosSnapped = data::snapWorldPointToImageVoxels(m_appData, worldPos, forceSnapping);
     m_appData.state().setWorldCrosshairsPos(worldPosSnapped);
+  }
+
+  if (realignCrosshairs) {
+    CoordinateFrame xhairs = m_appData.state().worldCrosshairs();
+    xhairs.setIdentityRotation();
+    m_appData.state().setWorldCrosshairs(xhairs);
   }
 
   const glm::vec3 worldCenter = recenterOnCurrentCrosshairsPos
@@ -2079,15 +2086,14 @@ void CallbackHandler::moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, i
 }
 
 void CallbackHandler::doCrosshairsRotate2D(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
+  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool snapCrosshairs)
 {
   View* viewToUse = startHit.view;
   if (!viewToUse) {
     return;
   }
 
-  if (ViewType::Oblique == viewToUse->viewType() ||
-      ViewType::ThreeD == viewToUse->viewType()) {
+  if (ViewType::Oblique == viewToUse->viewType() || ViewType::ThreeD == viewToUse->viewType()) {
     return; // Do not rotate crosshairs in Oblique or 3D view
   }
 
@@ -2097,32 +2103,58 @@ void CallbackHandler::doCrosshairsRotate2D(
     // Not in a rotating state, so transition to rotating state. This is done by
     // setting this view as the one rotating crosshairs.
     state.setViewWithRotatingCrosshairs(startHit.viewUid);
-
     // m_appData.saveAllViewWorldCenterPositions();
   }
 
   // Rotate the crosshairs frame in the 2D view plane about the crosshairs position
   const glm::vec3 worldRotCenter = state.worldCrosshairs().worldOrigin();
   const glm::vec2 ndcRotCenter = helper::ndc_T_world(viewToUse->camera(), worldRotCenter);
-  const glm::quat R = helper::rotation2dInCameraPlane(
-    viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos, ndcRotCenter);
 
-  CoordinateFrame worldXhairsRotated = state.worldCrosshairs();
-  math::rotateFrameAboutWorldPos(worldXhairsRotated, R, worldRotCenter);
+  if (!snapCrosshairs) {
+    // Incremental rotation between previous and current hits:
+    const glm::quat R = helper::rotation2dInCameraPlane(
+      viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos, ndcRotCenter);
 
-  // m_appData.saveAllViewWorldCenterPositions();
-  const std::set excludedViews{startHit.viewUid};
-  // recenterViews(m_appData.state().recenteringMode(), false, true, false, false, excludedViews);
+    // Rotate the current crosshairs by the incremental amount:
+    CoordinateFrame worldXhairsRotated = state.worldCrosshairs();
+    math::rotateFrameAboutWorldPos(worldXhairsRotated, R, worldRotCenter);
 
-  // Set new crosshairs (used by all other views except the one in which rotation is being done):
-  state.setWorldCrosshairs(worldXhairsRotated);
+    // Set new crosshairs (used by all other views except the one in which rotation is being done):
+    // m_appData.saveAllViewWorldCenterPositions();
+    state.setWorldCrosshairs(worldXhairsRotated);
+    // m_appData.restoreAllViewWorldCenterPositions();
+  }
+  else
+  {
+    constexpr float snapAngleDegrees = 15.0f;
+    constexpr float clampToleranceDegrees = snapAngleDegrees / 2.0f;
 
-  recenterViews(m_appData.state().recenteringMode(), false, true, false, false, excludedViews);
-  // m_appData.restoreAllViewWorldCenterPositions();
+    // Total rotation between start and current hits:
+    const glm::quat R = helper::rotation2dInCameraPlaneWithSnapping(
+      viewToUse->camera(), startHit.viewClipPos, prevHit.viewClipPos, currHit.viewClipPos,
+      snapAngleDegrees, clampToleranceDegrees, ndcRotCenter);
 
-  /// @todo make sure to recenter views when changing the mouse mode away from crosshairs rotation, too
+    // Rotate the old crosshairs by the total amount:
+    CoordinateFrame worldXhairsOldRotated = state.crosshairsState().worldCrosshairsOld;
+    math::rotateFrameAboutWorldPos(worldXhairsOldRotated, R, worldRotCenter);
 
-  /// @todo Option to snap to 15 degree increments with rotation
+    // Set new crosshairs (used by all other views except the one in which rotation is being done):
+    // m_appData.saveAllViewWorldCenterPositions();
+    state.setWorldCrosshairs(worldXhairsOldRotated);
+    // m_appData.restoreAllViewWorldCenterPositions();
+  }
+
+  // Recenter all views on the crosshairs except the current view in which crosshairs are rotating
+  recenterViews(m_appData.state().recenteringMode(), false, false, true, false, false, {startHit.viewUid});
+}
+
+void CallbackHandler::endCrosshairsRotate2D()
+{
+  AppState& state = m_appData.state();
+  if (state.viewWithRotatingCrosshairs()) {
+    state.setViewWithRotatingCrosshairs(std::nullopt);
+    recenterViews(state.recenteringMode(), false, false, true, false, false);
+  }
 }
 
 void CallbackHandler::moveCrosshairsToSegLabelCentroid(const uuid& imageUid, std::size_t labelIndex)
@@ -2186,8 +2218,15 @@ void CallbackHandler::moveCrosshairsToSegLabelCentroid(const uuid& imageUid, std
 
 void CallbackHandler::setMouseMode(MouseMode mode)
 {
+  if (MouseMode::CrosshairsRotate == m_appData.state().mouseMode() &&
+      MouseMode::CrosshairsRotate != mode) {
+    // Transition out of crosshairs rotation mode:
+    endCrosshairsRotate2D();
+  }
+
   m_appData.state().setMouseMode(mode);
-  //    return m_glfw.cursor( mode );
+
+  // return m_glfw.cursor( mode );
 }
 
 void CallbackHandler::toggleFullScreenMode(bool forceWindowMode)

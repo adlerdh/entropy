@@ -5,48 +5,38 @@
 #include "logic/camera/CameraHelpers.h"
 
 std::optional<ViewHit> getViewHit(
-  AppData& appData, const glm::vec2& windowPos, const std::optional<uuids::uuid>& viewUidForOverride
-)
+  AppData& appData, const glm::vec2& windowPos, const std::optional<uuids::uuid>& viewUidForOverride)
 {
   ViewHit hit;
 
-  if (const auto viewUid = appData.windowData().currentViewUidAtCursor(windowPos))
-  {
-    // Hit a view
-    hit.viewUid = *viewUid;
+  if (const auto viewUid = appData.windowData().currentViewUidAtCursor(windowPos)) {
+    hit.viewUid = *viewUid; // Hit a view
   }
-  else if (viewUidForOverride)
-  {
+  else if (viewUidForOverride) {
     // Did not hit a view, so use the override view
     hit.viewUid = *viewUidForOverride;
   }
-  else
-  {
+  else {
     // Did not hit a view and no override provided, so return null
     return std::nullopt;
   }
 
   hit.view = appData.windowData().getCurrentView(hit.viewUid);
 
-  if (!hit.view)
-  {
-    // Invalid view
-    return std::nullopt;
+  if (!hit.view) {
+    return std::nullopt; // Invalid view
   }
 
   // View to use for transformations. Use the override if provided:
   const View* txView = (viewUidForOverride)
-                         ? appData.windowData().getCurrentView(*viewUidForOverride)
-                         : hit.view;
+    ? appData.windowData().getCurrentView(*viewUidForOverride)
+    : hit.view;
 
-  if (!txView)
-  {
-    // Invalid view
-    return std::nullopt;
+  if (!txView) {
+    return std::nullopt; // Invalid view
   }
 
-  if (ViewRenderMode::Disabled == hit.view->renderMode())
-  {
+  if (ViewRenderMode::Disabled == hit.view->renderMode()) {
     return std::nullopt;
   }
 
@@ -54,9 +44,7 @@ std::optional<ViewHit> getViewHit(
 
   const glm::vec4 winClipPos(
     helper::windowNdc_T_window(appData.windowData().viewport(), windowPos),
-    txView->clipPlaneDepth(),
-    1.0f
-  );
+    txView->clipPlaneDepth(), 1.0f);
 
   hit.windowClipPos = glm::vec2{winClipPos};
 
@@ -68,8 +56,7 @@ std::optional<ViewHit> getViewHit(
   const glm::mat4 world_T_clip = helper::world_T_clip(txView->camera());
 
   // Apply view's offset from crosshairs in order to calculate the view plane position:
-  const float offsetDist
-    = data::computeViewOffsetDistance(appData, txView->offsetSetting(), hit.worldFrontAxis);
+  const float offsetDist = data::computeViewOffsetDistance(appData, txView->offsetSetting(), hit.worldFrontAxis);
 
   const glm::vec4 offset{offsetDist * hit.worldFrontAxis, 0.0f};
 

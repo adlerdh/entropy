@@ -155,7 +155,7 @@ private:
      */
   void storeFuture(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future);
 
-  std::pair<const char*, const char*> getImageDisplayAndFileNames(std::size_t imageIndex) const;
+  std::pair<std::string, std::string> getImageDisplayAndFileNames(std::size_t imageIndex) const;
 };
 
 #endif // IMGUI_WRAPPER_H

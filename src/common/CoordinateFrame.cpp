@@ -85,6 +85,11 @@ void CoordinateFrame::setIdentity()
   m_world_T_frame_rotation = {1.0f, 0.0f, 0.0f, 0.0f};
 }
 
+void CoordinateFrame::setIdentityRotation()
+{
+  m_world_T_frame_rotation = {1.0f, 0.0f, 0.0f, 0.0f};
+}
+
 glm::vec3 CoordinateFrame::worldOrigin() const
 {
   return m_worldFrameOrigin;

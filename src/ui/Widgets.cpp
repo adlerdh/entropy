@@ -29,7 +29,7 @@
 
 void renderActiveImageSelectionCombo(
   size_t numImages,
-  const std::function<std::pair<const char*, const char*>(std::size_t index)>&
+  const std::function<std::pair<std::string, std::string>(std::size_t index)>&
     getImageDisplayAndFileName,
   const std::function<std::size_t(void)>& getActiveImageIndex,
   const std::function<void(std::size_t)>& setActiveImageIndex,
@@ -50,7 +50,7 @@ void renderActiveImageSelectionCombo(
   //    ImGui::Text( "Active image:" );
 
   //    ImGui::PushItemWidth( -1 );
-  if (ImGui::BeginCombo(nameString.c_str(), getImageDisplayAndFileName(activeIndex).first))
+  if (ImGui::BeginCombo(nameString.c_str(), getImageDisplayAndFileName(activeIndex).first.c_str()))
   {
     for (std::size_t i = 0; i < numImages; ++i)
     {
@@ -58,7 +58,7 @@ void renderActiveImageSelectionCombo(
       const bool isSelected = (i == activeIndex);
 
       ImGui::PushID(i); // needed in case two images have the same display name
-      if (ImGui::Selectable(displayAndFileName.first, isSelected))
+      if (ImGui::Selectable(displayAndFileName.first.c_str(), isSelected))
       {
         setActiveImageIndex(i);
       }
@@ -485,7 +485,7 @@ void renderLandmarkChildWindow(
 
       // With second argument set to true, this function centers all views on the crosshairs.
       // That way, views show the crosshairs even if they were not in the original view bounds.
-      recenterAllViews(false, true, false, false);
+      recenterAllViews(false, false, true, false, false);
     }
     if (ImGui::IsItemHovered())
     {

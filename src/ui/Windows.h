@@ -64,7 +64,7 @@ void renderViewSettingsComboWindow(
   const std::function<bool(size_t index)>& isImageUsedForMetric,
   const std::function<void(size_t index, bool visible)>& setImageUsedForMetric,
 
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(size_t index)>& getImageDisplayAndFileName,
   const std::function<bool(size_t imageIndex)>& getImageVisibilitySetting,
   const std::function<bool(size_t imageIndex)>& getImageIsActive,
 
@@ -127,7 +127,7 @@ void renderViewOrientationToolWindow(
 void renderImagePropertiesWindow(
   AppData& appData,
   size_t numImages,
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(size_t index)>& getImageDisplayAndFileName,
   const std::function<size_t(void)>& getActiveImageIndex,
   const std::function<void(size_t)>& setActiveImageIndex,
   const std::function<size_t(void)>& getNumImageColorMaps,
@@ -219,7 +219,7 @@ void renderSettingsWindow(
 void renderInspectionWindow(
   AppData& appData,
   size_t numImages,
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(size_t index)>& getImageDisplayAndFileName,
   const std::function<glm::vec3()>& getWorldDeformedPos,
   const std::function<std::optional<glm::vec3>(size_t imageIndex)>& getSubjectPos,
   const std::function<std::optional<glm::ivec3>(size_t imageIndex)>& getVoxelPos,
@@ -240,7 +240,7 @@ void renderInspectionWindow(
  */
 void renderInspectionWindowWithTable(
   AppData& appData,
-  const std::function<std::pair<const char*, const char*>(size_t index)>& getImageDisplayAndFileName,
+  const std::function<std::pair<std::string, std::string>(size_t index)>& getImageDisplayAndFileName,
   const std::function<std::optional<glm::vec3>(size_t imageIndex)>& getSubjectPos,
   const std::function<std::optional<glm::ivec3>(size_t imageIndex)>& getVoxelPos,
   const std::function<void(size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,

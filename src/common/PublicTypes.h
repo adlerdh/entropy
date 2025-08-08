@@ -16,6 +16,7 @@ using AllViewsResetterType = std::function<void()>;
 /// Function that recenters cameras of all views
 using AllViewsRecenterType = std::function<void(
   bool recenterCrosshairs,
+  bool realignCrosshairs,
   bool recenterOnCurrentCrosshairsPosition,
   bool resetObliqueOrientation,
   bool resetZoom)>;

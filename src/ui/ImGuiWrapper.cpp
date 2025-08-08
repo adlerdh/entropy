@@ -558,7 +558,7 @@ void ImGuiWrapper::initializeFonts()
   spdlog::debug("Done loading fonts");
 }
 
-std::pair<const char*, const char*> ImGuiWrapper::getImageDisplayAndFileNames(std::size_t imageIndex
+std::pair<std::string, std::string> ImGuiWrapper::getImageDisplayAndFileNames(std::size_t imageIndex
 ) const
 {
   static const std::string s_empty("<unknown>");
@@ -567,7 +567,7 @@ std::pair<const char*, const char*> ImGuiWrapper::getImageDisplayAndFileNames(st
   {
     if (const Image* image = m_appData.image(*imageUid))
     {
-      return {image->settings().displayName().c_str(), image->header().fileName().string().c_str()};
+      return {image->settings().displayName(), image->header().fileName().string()};
     }
   }
 
@@ -643,7 +643,7 @@ void ImGuiWrapper::render()
   /// @todo remove this
   auto getMouseMode = [this]() { return m_appData.state().mouseMode(); };
 
-  auto setMouseMode = [this](MouseMode mouseMode) { m_appData.state().setMouseMode(mouseMode); };
+  auto setMouseMode = [this](MouseMode mouseMode) { m_callbackHandler.setMouseMode(mouseMode); };
 
   auto cycleViewLayout = [this](int step) { m_appData.windowData().cycleCurrentLayout(step); };
 
@@ -944,6 +944,7 @@ void ImGuiWrapper::render()
     // Per-layout UI controls:
 
     static constexpr bool sk_recenterCrosshairs = false;
+    static constexpr bool sk_realignCrosshairs = false;
     static constexpr bool sk_doNotRecenterOnCurrentCrosshairsPosition = false;
     static constexpr bool sk_resetObliqueOrientation = false;
     static constexpr bool sk_resetZoom = true;
@@ -993,6 +994,7 @@ void ImGuiWrapper::render()
       {
         m_recenterAllViews(
           sk_recenterCrosshairs,
+          sk_realignCrosshairs,
           sk_doNotRecenterOnCurrentCrosshairsPosition,
           sk_resetObliqueOrientation,
           sk_resetZoom
