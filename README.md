@@ -30,10 +30,10 @@ cmake --build ${BUILD_DIR} -- -j ${NPROCS}
 ```
 
 ### Operating systems
-Entropy builds on Linux, Windows, and macOS and is currently tested on
+Entropy builds and runs on the following versions of Linux, Windows, and macOS:
 * Ubuntu 22.04, 24.04 (with gcc 12.3.0, 13.3.0)
 * Windows 10, 11 (with MSVC++ 17.3.4)
-* macOS 14.6.1, 15.3.1, Apple arm64 architecture (with clang 15.0.0, 16.0.0)
+* macOS 14.6.1, 15.3.1, 15.6.1, 26.0.1 Apple arm64 architecture (with clang 15.0.0, 16.0.0, 17.0.0)
 * ~~macOS 10.14.6, Intel x86_64 architecture (with clang 11.0.0)~~ (not supported)
 
 ### External dependencies
