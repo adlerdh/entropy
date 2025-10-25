@@ -551,33 +551,35 @@ template<typename T>
 QuantileOfValue convertValueToQuantile(const std::span<const T> dataSorted, T value)
 {
   const std::size_t N = dataSorted.size();
-
   if (0 == N)
   {
     spdlog::error("Sorted data has zero elements");
     throw_debug("Sorted data is empty")
   }
 
-  QuantileOfValue Q;
+  QuantileOfValue Q{};
 
-  auto lower = std::lower_bound(std::begin(dataSorted), std::end(dataSorted), value);
+  // Find lower and upper bounds
+  auto lower = std::lower_bound(dataSorted.begin(), dataSorted.end(), value);
+  auto upper = std::upper_bound(dataSorted.begin(), dataSorted.end(), value);
 
-  if (std::end(dataSorted) == lower)
-  {
-    // value is greater than the largest element of dataSorted
-    Q.foundValue = false;
-    return Q;
-  }
+  // Compute indices, clamped to valid range
+  std::size_t lowerIndex = std::distance(dataSorted.begin(), lower);
+  std::size_t upperIndex = std::distance(dataSorted.begin(), upper);
 
-  auto upper = std::upper_bound(std::begin(dataSorted), std::end(dataSorted), value);
+  // Clamp indices for out-of-range values
+  lowerIndex = std::min(lowerIndex, N - 1);
+  upperIndex = std::min(upperIndex, N - 1);
 
-  Q.foundValue = true;
-  Q.lowerIndex = std::distance(std::begin(dataSorted), lower);
-  Q.upperIndex = std::distance(std::begin(dataSorted), upper);
-  Q.lowerQuantile = static_cast<double>(Q.lowerIndex) / N;
-  Q.upperQuantile = static_cast<double>(Q.upperIndex) / N;
-  Q.lowerValue = *lower;
-  Q.upperValue = *upper;
+  Q.foundValue = (value >= dataSorted.front() && value <= dataSorted.back());
+  Q.lowerIndex = lowerIndex;
+  Q.upperIndex = upperIndex;
+  Q.lowerQuantile = static_cast<double>(lowerIndex) / N;
+  Q.upperQuantile = static_cast<double>(upperIndex) / N;
+
+  Q.lowerValue = dataSorted[lowerIndex];
+  Q.upperValue = dataSorted[upperIndex];
+
   return Q;
 }
 
