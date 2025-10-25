@@ -100,6 +100,11 @@ ExternalProject_Add(cmakerc
   SOURCE_DIR "${cmakerc_PREFIX}/src"
   BINARY_DIR "${cmakerc_PREFIX}/build"
 
+  # Fix to make cmrc work with up to CMake 4.2
+  PATCH_COMMAND
+    ${CMAKE_COMMAND} -E echo "Patching CMakeRC CMakeLists..." &&
+    ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> bash -c "sed -i '37c cmake_minimum_required(VERSION 3.5...4.2)\ncmake_policy(VERSION 3.5...4.2)' CMakeRC.cmake"
+
   CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DBUILD_TESTS:BOOL=OFF
