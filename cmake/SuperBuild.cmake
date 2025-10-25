@@ -82,6 +82,13 @@ ExternalProject_Add(Boost
 
 message(STATUS "Adding external library CMakeRC in ${cmakerc_PREFIX}")
 
+set(PATCH_FILE "${cmakerc_PREFIX}/patch_cmakerc.cmake")
+file(WRITE "${PATCH_FILE}" "
+file(READ \"${cmakerc_PREFIX}/src/CMakeRC.cmake\" contents)
+string(REPLACE \"cmake_minimum_required(VERSION 3.3)\" \"cmake_minimum_required(VERSION 3.5...4.2)\\ncmake_policy(VERSION 3.5...4.2)\" contents \"\${contents}\")
+file(WRITE \"${cmakerc_PREFIX}/src/CMakeRC.cmake\" \"\${contents}\")
+")
+
 ExternalProject_Add(cmakerc
   URL "https://github.com/vector-of-bool/cmrc/archive/refs/tags/${cmakerc_VERSION}.tar.gz"
   URL_HASH SHA256=edad5faaa0bea1df124b5e8cb00bf0adbd2faeccecd3b5c146796cbcb8b5b71b
@@ -101,9 +108,7 @@ ExternalProject_Add(cmakerc
   BINARY_DIR "${cmakerc_PREFIX}/build"
 
   # Fix to make cmrc work with up to CMake 4.2
-  PATCH_COMMAND
-    ${CMAKE_COMMAND} -E echo "Patching CMakeRC CMakeLists..." &&
-    ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> bash -c "sed -i '37c cmake_minimum_required(VERSION 3.5...4.2)\ncmake_policy(VERSION 3.5...4.2)' CMakeRC.cmake"
+  PATCH_COMMAND ${CMAKE_COMMAND} -P "${PATCH_FILE}"
 
   CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
