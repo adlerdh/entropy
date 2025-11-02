@@ -1,5 +1,4 @@
-#ifndef UI_WIDGETS_H
-#define UI_WIDGETS_H
+#pragma once
 
 #include "common/PublicTypes.h"
 
@@ -77,5 +76,3 @@ void renderPaletteWindow(
 );
 
 void renderColorMapWindow();
-
-#endif // UI_WIDGETS_H

@@ -35,18 +35,16 @@ namespace
 {
 using uuid = uuids::uuid;
 
-static constexpr float sk_viewAABBoxScaleFactor = 1.10f;
+constexpr float viewAABBoxScaleFactor = 1.10f;
 
 // Angle threshold (in degrees) for checking whether two vectors are parallel
-static constexpr float sk_parallelThreshold_degrees = 0.1f;
+constexpr float parallelThreshold_degrees = 0.1f;
 
-static constexpr float sk_imageFrontBackTranslationScaleFactor = 10.0f;
+constexpr float imageFrontBackTranslationScaleFactor = 10.0f;
 } // namespace
 
 CallbackHandler::CallbackHandler(AppData& appData, GlfwWrapper& glfwWrapper, Rendering& rendering)
-  : m_appData(appData)
-  , m_glfw(glfwWrapper)
-  , m_rendering(rendering)
+  : m_appData(appData), m_glfw(glfwWrapper), m_rendering(rendering)
 {}
 
 bool CallbackHandler::clearSegVoxels(const uuid& segUid)
@@ -68,11 +66,8 @@ bool CallbackHandler::clearSegVoxels(const uuid& segUid)
 }
 
 std::optional<uuid> CallbackHandler::createBlankImageAndTexture(
-  const uuid& matchImageUid,
-  const ComponentType& componentType,
-  uint32_t numComponents,
-  const std::string& displayName,
-  bool createSegmentation)
+  const uuid& matchImageUid, const ComponentType& componentType, uint32_t numComponents,
+  const std::string& displayName, bool createSegmentation)
 {
   const Image* matchImg = m_appData.image(matchImageUid);
   if (!matchImg) {
@@ -206,13 +201,8 @@ std::optional<uuid> CallbackHandler::createBlankSeg(
   const std::vector<uint8_t> buffer(newHeader.numPixels(), 0u);
   const std::vector<const void*> imageData{static_cast<const void*>(buffer.data())};
 
-  Image seg(
-    newHeader,
-    displayName,
-    Image::ImageRepresentation::Segmentation,
-    Image::MultiComponentBufferType::SeparateImages,
-    imageData
-  );
+  Image seg(newHeader, displayName, Image::ImageRepresentation::Segmentation,
+            Image::MultiComponentBufferType::SeparateImages, imageData);
 
   seg.setHeaderOverrides(matchImg->getHeaderOverrides());
   seg.settings().setOpacity(0.5); // Default opacity
@@ -233,34 +223,26 @@ std::optional<uuid> CallbackHandler::createBlankSeg(
 }
 
 std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
-  const uuid& matchImageUid, const std::string& displayName
-)
+  const uuid& matchImageUid, const std::string& displayName)
 {
-  spdlog::info(
-    "Creating blank segmentation {} with color table for image {}", displayName, matchImageUid
-  );
+  spdlog::info("Creating blank segmentation {} with color table for image {}", displayName, matchImageUid);
 
   const Image* matchImage = m_appData.image(matchImageUid);
-  if (!matchImage)
-  {
+  if (!matchImage) {
     spdlog::error("Cannot create blank segmentation for invalid image {}", matchImageUid);
     return std::nullopt;
   }
 
   auto segUid = createBlankSeg(matchImageUid, displayName);
-  if (!segUid)
-  {
+  if (!segUid) {
     spdlog::error("Error creating blank segmentation for image {}", matchImageUid);
     return std::nullopt;
   }
 
-  spdlog::debug(
-    "Created blank segmentation {} ('{}') for image {}", matchImageUid, displayName, matchImageUid
-  );
+  spdlog::debug("Created blank segmentation {} ('{}') for image {}", matchImageUid, displayName, matchImageUid);
 
   Image* seg = m_appData.seg(*segUid);
-  if (!seg)
-  {
+  if (!seg) {
     spdlog::error("Null segmentation created {}", *segUid);
     m_appData.removeSeg(*segUid);
     return std::nullopt;
@@ -269,32 +251,23 @@ std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
   const auto tableUid = data::createLabelColorTableForSegmentation(m_appData, *segUid);
   bool createdTableTexture = false;
 
-  if (tableUid)
-  {
+  if (tableUid) {
     spdlog::trace("Creating texture for label color table {}", *tableUid);
     createdTableTexture = m_rendering.createLabelColorTableTexture(*tableUid);
   }
 
-  if (!tableUid || !createdTableTexture)
-  {
+  if (!tableUid || !createdTableTexture) {
     constexpr size_t k_defaultTableIndex = 0;
 
-    spdlog::error(
-      "Unable to create label color table for segmentation {}. "
-      "Defaulting to table index {}.",
-      *segUid,
-      k_defaultTableIndex
-    );
-
+    spdlog::error("Unable to create label color table for segmentation {}. Defaulting to table index {}.",
+                  *segUid, k_defaultTableIndex);
     seg->settings().setLabelTableIndex(k_defaultTableIndex);
   }
 
-  if (m_appData.assignSegUidToImage(matchImageUid, *segUid))
-  {
+  if (m_appData.assignSegUidToImage(matchImageUid, *segUid)) {
     spdlog::info("Assigned segmentation {} to image {}", *segUid, matchImageUid);
   }
-  else
-  {
+  else {
     spdlog::error("Unable to assign segmentation {} to image {}", *segUid, matchImageUid);
     m_appData.removeSeg(*segUid);
     return std::nullopt;
@@ -305,11 +278,9 @@ std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
 
   spdlog::trace("Creating texture for segmentation {}", *segUid);
 
-  const std::vector<uuid> createdSegTexUids
-    = createSegTextures(m_appData, std::vector<uuid>{*segUid});
+  const std::vector<uuid> createdSegTexUids = createSegTextures(m_appData, std::vector<uuid>{*segUid});
 
-  if (createdSegTexUids.empty())
-  {
+  if (createdSegTexUids.empty()) {
     spdlog::error("Unable to create texture for segmentation {}", *segUid);
     m_appData.removeSeg(*segUid);
     return std::nullopt;
@@ -328,100 +299,78 @@ std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
 }
 
 bool CallbackHandler::executeGraphCutsSegmentation(
-  const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType
-)
+  const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType)
 {
   // Inputs to algorithm:
   const Image* image = m_appData.image(imageUid);
   const Image* seedSeg = m_appData.seg(seedSegUid);
 
-  if (!image)
-  {
+  if (!image) {
     spdlog::error("Null image {} input to graph cuts segmentation", imageUid);
     return false;
   }
 
-  if (!seedSeg)
-  {
+  if (!seedSeg) {
     spdlog::error("Null seed segmentation {} input to graph cuts segmentation", seedSegUid);
     return false;
   }
 
-  if (image->header().pixelDimensions() != seedSeg->header().pixelDimensions())
-  {
-    spdlog::error(
-      "Dimensions of input image {} ({}) and seed segmentation {} ({}) do not match",
-      imageUid,
-      glm::to_string(image->header().pixelDimensions()),
-      seedSegUid,
-      glm::to_string(seedSeg->header().pixelDimensions())
-    );
+  if (image->header().pixelDimensions() != seedSeg->header().pixelDimensions()) {
+    spdlog::error("Dimensions of input image {} ({}) and seed segmentation {} ({}) do not match",
+                  imageUid, glm::to_string(image->header().pixelDimensions()),
+                  seedSegUid, glm::to_string(seedSeg->header().pixelDimensions()));
     return false;
   }
 
   const size_t numSegsForImage = m_appData.imageToSegUids(imageUid).size();
 
   const std::string resultSegDisplayName = (SeedSegmentationType::Binary == segType)
-                                             ? std::string("Binary graph cuts segmentation ")
-                                             : std::string("Multi-label graph cuts segmentation ")
-                                                 + std::to_string(numSegsForImage + 1)
-                                                 + " for image '" + image->settings().displayName()
-                                                 + "'";
+    ? std::string("Binary graph cuts segmentation ")
+    : std::string("Multi-label graph cuts segmentation ") + std::to_string(numSegsForImage + 1) +
+      " for image '" + image->settings().displayName() + "'";
 
   const auto resultSegUid = createBlankSegWithColorTableAndTextures(imageUid, resultSegDisplayName);
 
-  if (!resultSegUid)
-  {
+  if (!resultSegUid) {
     spdlog::error("Unable to create blank segmentation for graph cuts");
     return false;
   }
 
   Image* resultSeg = m_appData.seg(*resultSegUid);
 
-  if (!resultSeg)
-  {
+  if (!resultSeg) {
     spdlog::error("Null result segmentation {} for graph cuts", *resultSegUid);
     return false;
   }
 
-  spdlog::info(
-    "Executing graph cuts segmentation on image {} with seeds {}; "
-    "resulting segmentation: {}",
-    imageUid,
-    seedSegUid,
-    *resultSegUid
-  );
+  spdlog::info("Executing graph cuts segmentation on image {} with seeds {}; resulting segmentation: {}",
+               imageUid, seedSegUid, *resultSegUid);
 
   const uint32_t imComp = image->settings().activeComponent();
 
   const VoxelDistances voxelDists = computeVoxelDistances(image->header().spacing(), true);
 
-  const double imLow = image->settings().componentStatistics(imComp).m_quantiles[1];
-  const double imHigh = image->settings().componentStatistics(imComp).m_quantiles[99];
+  const double imLow = image->settings().componentStatistics(imComp).quantiles[1];
+  const double imHigh = image->settings().componentStatistics(imComp).quantiles[99];
 
-  auto weight = [this, &imLow, &imHigh](double diff) -> double
-  {
+  auto weight = [this, &imLow, &imHigh](double diff) -> double {
     const double amplitude = m_appData.settings().graphCutsWeightsAmplitude();
     const double sigma = m_appData.settings().graphCutsWeightsSigma();
     const double diffNorm = (diff - imLow) / (imHigh - imLow);
-
     return amplitude * std::exp(-0.5 * std::pow(diffNorm / sigma, 2.0));
   };
 
-  auto getImageWeight =
-    [&weight, &image, &imComp](int x, int y, int z, int dx, int dy, int dz) -> double
+  auto getImageWeight = [&weight, &image, &imComp](int x, int y, int z, int dx, int dy, int dz) -> double
   {
     const auto a = image->value<double>(imComp, x, y, z);
     const auto b = image->value<double>(imComp, x + dx, y + dy, z + dz);
 
-    if (a && b)
-    {
+    if (a && b) {
       return weight((*a) - (*b));
     }
-    else
-    {
-      return 0.0;
-    } // weight for very different image values
+    else {
+      return 0.0; // weight for very different image values
+    }
   };
 
   auto getImageWeight1D = [&weight, &image, &imComp](int index1, int index2) -> double
@@ -429,14 +378,12 @@ bool CallbackHandler::executeGraphCutsSegmentation(
     const auto a = image->value<double>(imComp, index1);
     const auto b = image->value<double>(imComp, index2);
 
-    if (a && b)
-    {
+    if (a && b) {
       return weight((*a) - (*b));
     }
-    else
-    {
-      return 0.0;
-    } // weight for very different image values
+    else {
+      return 0.0; // weight for very different image values
+    }
   };
 
   auto getSeedValue = [&seedSeg](int x, int y, int z) -> LabelType
@@ -449,93 +396,66 @@ bool CallbackHandler::executeGraphCutsSegmentation(
 
   switch (segType)
   {
-  case SeedSegmentationType::Binary:
-  {
+  case SeedSegmentationType::Binary: {
     success = graphCutsBinarySegmentation(
       m_appData.settings().graphCutsNeighborhood(),
       m_appData.settings().graphCutsWeightsAmplitude(),
       static_cast<LabelType>(m_appData.settings().foregroundLabel()),
       static_cast<LabelType>(m_appData.settings().backgroundLabel()),
       glm::ivec3{image->header().pixelDimensions()},
-      voxelDists,
-      getImageWeight,
-      getSeedValue,
-      setResultSegValue
-    );
+      voxelDists, getImageWeight, getSeedValue, setResultSegValue);
     break;
   }
-  case SeedSegmentationType::MultiLabel:
-  {
+  case SeedSegmentationType::MultiLabel: {
     success = graphCutsMultiLabelSegmentation(
       m_appData.settings().graphCutsNeighborhood(),
       m_appData.settings().graphCutsWeightsAmplitude(),
       glm::ivec3{image->header().pixelDimensions()},
-      voxelDists,
-      getImageWeight,
-      getImageWeight1D,
-      getSeedValue,
-      setResultSegValue
-    );
+      voxelDists, getImageWeight, getImageWeight1D, getSeedValue, setResultSegValue);
     break;
   }
   }
 
-  if (!success)
-  {
+  if (!success) {
     spdlog::error("Failure during execution of graph cuts segmentation");
     return false;
   }
 
   spdlog::debug("Start updating segmentation texture");
 
-  m_rendering.updateSegTexture(
-    *resultSegUid,
-    resultSeg->header().memoryComponentType(),
-    glm::uvec3{0},
-    resultSeg->header().pixelDimensions(),
-    resultSeg->bufferAsVoid(0)
-  );
+  m_rendering.updateSegTexture(*resultSegUid, resultSeg->header().memoryComponentType(),
+                               glm::uvec3{0}, resultSeg->header().pixelDimensions(), resultSeg->bufferAsVoid(0));
 
   spdlog::debug("Done updating segmentation texture");
-
   return true;
 }
 
 bool CallbackHandler::executePoissonSegmentation(
-  const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType
-)
+  const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType)
 {
   // Algorithm inputs:
   const Image* image = m_appData.image(imageUid);
   const Image* seedSeg = m_appData.seg(seedSegUid);
 
-  if (!image)
-  {
+  if (!image) {
     spdlog::error("Null image {} input to Poisson segmentation", imageUid);
     return false;
   }
 
-  if (!seedSeg)
-  {
+  if (!seedSeg) {
     spdlog::error("Null seed segmentation {} input to Poisson segmentation", seedSegUid);
     return false;
   }
 
-  if (image->header().pixelDimensions() != seedSeg->header().pixelDimensions())
-  {
-    spdlog::error(
-      "Dimensions of image {} ({}) and seed segmentation {} ({}) do not match",
-      imageUid,
-      glm::to_string(image->header().pixelDimensions()),
-      seedSegUid,
-      glm::to_string(seedSeg->header().pixelDimensions())
-    );
+  if (image->header().pixelDimensions() != seedSeg->header().pixelDimensions()) {
+    spdlog::error("Dimensions of image {} ({}) and seed segmentation {} ({}) do not match",
+                  imageUid, glm::to_string(image->header().pixelDimensions()),
+                  seedSegUid, glm::to_string(seedSeg->header().pixelDimensions()));
     return false;
   }
 
   const uint32_t imComp = image->settings().activeComponent();
-  const uint32_t sk_seedComp = 0;
-
+  const uint32_t seedComp = 0;
   const glm::ivec3 dims{seedSeg->header().pixelDimensions()};
 
   // Buffer will either point to data of the image (if the image has float components)
@@ -543,15 +463,12 @@ bool CallbackHandler::executePoissonSegmentation(
   const float* imageBuffer = nullptr;
   std::vector<float> imageVector;
 
-  if (ComponentType::Float32 == image->header().memoryComponentType())
-  {
+  if (ComponentType::Float32 == image->header().memoryComponentType()) {
     imageBuffer = static_cast<const float*>(image->bufferAsVoid(imComp));
   }
-  else
-  {
+  else {
     imageVector.resize(image->header().numPixels(), 0.0f);
-    for (std::size_t i = 0; i < image->header().numPixels(); ++i)
-    {
+    for (std::size_t i = 0; i < image->header().numPixels(); ++i) {
       imageVector[i] = image->value<float>(imComp, i).value_or(0.0f);
     }
     imageBuffer = imageVector.data();
@@ -559,34 +476,26 @@ bool CallbackHandler::executePoissonSegmentation(
 
   // Buffer will either point to data of the seed segmentation, with all components converted to uint8_t
   // and labels compressed to be in a contiguous range.
-  static constexpr bool sk_ignoreBackgroundLabel = false;
+  constexpr bool ignoreBackgroundLabel = false;
 
   std::vector<uint8_t> seedSegVector(seedSeg->header().numPixels(), 0u);
 
-  for (std::size_t i = 0; i < seedSeg->header().numPixels(); ++i)
-  {
-    seedSegVector[i] = seedSeg->value<uint8_t>(sk_seedComp, i).value_or(0u);
+  for (std::size_t i = 0; i < seedSeg->header().numPixels(); ++i) {
+    seedSegVector[i] = seedSeg->value<uint8_t>(seedComp, i).value_or(0u);
   }
 
   const uint8_t* seedSegBuffer = seedSegVector.data();
-
-  const LabelIndexMaps labelMaps
-    = createLabelIndexMaps(dims, seedSegBuffer, sk_ignoreBackgroundLabel);
-
+  const LabelIndexMaps labelMaps = createLabelIndexMaps(dims, seedSegBuffer, ignoreBackgroundLabel);
   const size_t numSegsForImage = m_appData.imageToSegUids(imageUid).size();
 
   const std::string resultSegDisplayName = ((SeedSegmentationType::Binary == segType)
-                                              ? std::string("Binary Poisson segmentation ")
-                                              : std::string("Multi-label Poisson segmentation "))
-                                           + std::to_string(numSegsForImage + 1) + " for image '"
-                                           + image->settings().displayName() + "'";
+    ? std::string("Binary Poisson segmentation ") : std::string("Multi-label Poisson segmentation "))
+      + std::to_string(numSegsForImage + 1) + " for image '" + image->settings().displayName() + "'";
 
   //    spdlog::trace( "resultSegDisplayName = {}", resultSegDisplayName );
 
   const auto resultSegUid = createBlankSegWithColorTableAndTextures(imageUid, resultSegDisplayName);
-
-  if (!resultSegUid)
-  {
+  if (!resultSegUid) {
     spdlog::error("Unable to create blank segmentation matching image {}", imageUid);
     return false;
   }
@@ -603,11 +512,9 @@ bool CallbackHandler::executePoissonSegmentation(
 
   // Create potential image with float components
   const auto potImageUid = createBlankImageAndTexture(
-    imageUid, ComponentType::Float32, numComps, potDisplayName, numComps
-  );
+    imageUid, ComponentType::Float32, numComps, potDisplayName, numComps);
 
-  if (!potImageUid)
-  {
+  if (!potImageUid) {
     spdlog::error("Unable to create blank potential image matching image {}", imageUid);
     return false;
   }
@@ -618,50 +525,34 @@ bool CallbackHandler::executePoissonSegmentation(
   Image* resultSeg = m_appData.seg(*resultSegUid);
   Image* potImage = m_appData.image(*potImageUid);
 
-  if (!resultSeg)
-  {
+  if (!resultSeg) {
     spdlog::error("Null result segmentation {} for Poisson", *resultSegUid);
     return false;
   }
 
-  if (!potImage)
-  {
+  if (!potImage) {
     spdlog::error("Null potential image {} for Poisson", *potImageUid);
     return false;
   }
 
-  if (image->header().pixelDimensions() != resultSeg->header().pixelDimensions())
-  {
-    spdlog::error(
-      "Dimensions of image {} ({}) and result segmentation {} ({}) do not match",
-      imageUid,
-      glm::to_string(image->header().pixelDimensions()),
-      *resultSegUid,
-      glm::to_string(resultSeg->header().pixelDimensions())
-    );
+  if (image->header().pixelDimensions() != resultSeg->header().pixelDimensions()) {
+    spdlog::error("Dimensions of image {} ({}) and result segmentation {} ({}) do not match",
+                  imageUid, glm::to_string(image->header().pixelDimensions()),
+                  *resultSegUid, glm::to_string(resultSeg->header().pixelDimensions()));
     return false;
   }
 
   if (image->header().pixelDimensions() != potImage->header().pixelDimensions())
   {
-    spdlog::error(
-      "Dimensions of image {} ({}) and potential image {} ({}) do not match",
-      imageUid,
-      glm::to_string(image->header().pixelDimensions()),
-      *potImageUid,
-      glm::to_string(potImage->header().pixelDimensions())
-    );
+    spdlog::error("Dimensions of image {} ({}) and potential image {} ({}) do not match",
+                  imageUid, glm::to_string(image->header().pixelDimensions()),
+                  *potImageUid, glm::to_string(potImage->header().pixelDimensions()));
     return false;
   }
 
-  spdlog::info(
-    "Executing Poisson segmentation on image {} with seeds {}; "
-    "resulting segmentation: {}; resulting potential: {}",
-    imageUid,
-    seedSegUid,
-    *resultSegUid,
-    *potImageUid
-  );
+  spdlog::info("Executing Poisson segmentation on image {} with seeds {}; "
+               "resulting segmentation: {}; resulting potential: {}",
+               imageUid, seedSegUid, *resultSegUid, *potImageUid);
 
   const VoxelDistances voxelDists = computeVoxelDistances(image->header().spacing(), true);
 
@@ -721,24 +612,14 @@ bool CallbackHandler::executePoissonSegmentation(
   spdlog::debug("Start updating potential image textures");
   for (uint32_t i = 0; i < numComps; ++i)
   {
-    m_rendering.updateImageTexture(
-      *potImageUid,
-      i,
-      potImage->header().memoryComponentType(),
-      glm::uvec3{0},
-      potImage->header().pixelDimensions(),
-      potImage->bufferAsVoid(i));
+    m_rendering.updateImageTexture(*potImageUid, i, potImage->header().memoryComponentType(), glm::uvec3{0},
+                                   potImage->header().pixelDimensions(), potImage->bufferAsVoid(i));
   }
   spdlog::debug("Done updating potential image textures");
 
   spdlog::debug("Start updating segmentation texture");
-  m_rendering.updateSegTexture(
-    *resultSegUid,
-    resultSeg->header().memoryComponentType(),
-    glm::uvec3{0},
-    resultSeg->header().pixelDimensions(),
-    resultSeg->bufferAsVoid(0)
-  );
+  m_rendering.updateSegTexture(*resultSegUid, resultSeg->header().memoryComponentType(), glm::uvec3{0},
+                               resultSeg->header().pixelDimensions(), resultSeg->bufferAsVoid(0));
   spdlog::debug("Done updating segmentation texture");
 
   return true;
@@ -779,14 +660,13 @@ void CallbackHandler::recenterViews(
   }
 
   const glm::vec3 worldCenter = recenterOnCurrentCrosshairsPos
-    ? m_appData.state().worldCrosshairs().worldOrigin()
-    : math::computeAABBoxCenter(worldBox);
+    ? m_appData.state().worldCrosshairs().worldOrigin() : math::computeAABBoxCenter(worldBox);
 
   // const glm::vec3 worldCenterSnapped = data::snapWorldPointToImageVoxels( m_appData, worldCenter, forceSnapping );
 
   m_appData.windowData().recenterAllViews(
     worldCenter,
-    sk_viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox),
+    viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox),
     resetZoom, resetObliqueOrientation, excludedViews);
 }
 
@@ -796,8 +676,8 @@ void CallbackHandler::recenterView(const ImageSelection& imageSelection, const u
   // reference image voxels. This is so that crosshairs/views don't land on a voxel
   // boundary (which causes jitter on view zoom).
   constexpr CrosshairsSnapping forceSnapping = CrosshairsSnapping::ReferenceImage;
-  constexpr bool k_resetZoom = false;
-  constexpr bool k_resetObliqueOrientation = true;
+  constexpr bool resetZoom = false;
+  constexpr bool resetObliqueOrientation = true;
 
   if (0 == m_appData.numImages()) {
     spdlog::warn("No images loaded, so recentering view {} using default bounds", viewUid);
@@ -810,11 +690,8 @@ void CallbackHandler::recenterView(const ImageSelection& imageSelection, const u
   const glm::vec3 worldPos = m_appData.state().worldCrosshairs().worldOrigin();
   const glm::vec3 worldPosSnapped = data::snapWorldPointToImageVoxels(m_appData, worldPos, forceSnapping);
 
-  m_appData.windowData().recenterView(
-    viewUid,
-    worldPosSnapped,
-    sk_viewAABBoxScaleFactor * worldBoxSize,
-    k_resetZoom, k_resetObliqueOrientation);
+  m_appData.windowData().recenterView(viewUid, worldPosSnapped, viewAABBoxScaleFactor * worldBoxSize,
+                                      resetZoom, resetObliqueOrientation);
 }
 
 void CallbackHandler::doCrosshairsMove(const ViewHit& hit)
@@ -826,8 +703,7 @@ void CallbackHandler::doCrosshairsMove(const ViewHit& hit)
   m_appData.state().setWorldCrosshairsPos(glm::vec3{hit.worldPos});
 }
 
-void CallbackHandler::doCrosshairsScroll(
-  const ViewHit& hit, const glm::vec2& scrollOffset, bool fineScroll)
+void CallbackHandler::doCrosshairsScroll(const ViewHit& hit, const glm::vec2& scrollOffset, bool fineScroll)
 {
   const float multiplier = fineScroll ? 0.1f : 1.0f;
 
@@ -843,43 +719,46 @@ void CallbackHandler::doCrosshairsScroll(
 
 void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
 {
-  static const glm::ivec3 sk_voxelZero{0, 0, 0};
+  const glm::ivec3 voxelZero{0, 0, 0};
 
-  if (!hit.view)
+  if (!hit.view) {
     return;
+  }
 
   const auto activeImageUid = m_appData.activeImageUid();
-  if (!activeImageUid)
+  if (!activeImageUid) {
     return;
+  }
 
-  if (!checkAndSetActiveView(hit.viewUid))
+  if (!checkAndSetActiveView(hit.viewUid)) {
     return;
+  }
 
-  if (0 == std::count(std::begin(hit.view->visibleImages()), std::end(hit.view->visibleImages()), *activeImageUid))
-  {
+  if (0 == std::count(std::begin(hit.view->visibleImages()), std::end(hit.view->visibleImages()),
+                      *activeImageUid)) {
     return; // The active image is not visible
   }
 
   const auto activeSegUid = m_appData.imageToActiveSegUid(*activeImageUid);
-  if (!activeSegUid)
+  if (!activeSegUid) {
     return;
+  }
 
   // The position is in the view bounds; make this the active view:
   m_appData.windowData().setActiveViewUid(hit.viewUid);
 
   // Do nothing if the active segmentation is null
   Image* activeSeg = m_appData.seg(*activeSegUid);
-  if (!activeSeg)
+  if (!activeSeg) {
     return;
+  }
 
   // Gather all synchronized segmentations
   std::unordered_set<uuid> segUids;
   segUids.insert(*activeSegUid);
 
-  for (const auto& imageUid : m_appData.imagesBeingSegmented())
-  {
-    if (const auto segUid = m_appData.imageToActiveSegUid(imageUid))
-    {
+  for (const auto& imageUid : m_appData.imagesBeingSegmented()) {
+    if (const auto segUid = m_appData.imageToActiveSegUid(imageUid)) {
       segUids.insert(*segUid);
     }
   }
@@ -890,12 +769,10 @@ void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
   // Therefore, the offset is not applied.
 
   const LabelType labelToPaint = static_cast<LabelType>(
-    swapFgAndBg ? m_appData.settings().backgroundLabel() : m_appData.settings().foregroundLabel()
-  );
+    swapFgAndBg ? m_appData.settings().backgroundLabel() : m_appData.settings().foregroundLabel());
 
   const LabelType labelToReplace = static_cast<LabelType>(
-    swapFgAndBg ? m_appData.settings().foregroundLabel() : m_appData.settings().backgroundLabel()
-  );
+    swapFgAndBg ? m_appData.settings().foregroundLabel() : m_appData.settings().backgroundLabel());
 
   const int brushSize = static_cast<int>(m_appData.settings().brushSizeInVoxels());
 
@@ -905,8 +782,9 @@ void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
   for (const auto& segUid : segUids)
   {
     Image* seg = m_appData.seg(segUid);
-    if (!seg)
+    if (!seg) {
       continue;
+    }
 
     const glm::ivec3 dims{seg->header().pixelDimensions()};
 
@@ -916,134 +794,106 @@ void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
     const glm::vec3 pixelPos3 = pixelPos / pixelPos.w;
     const glm::ivec3 roundedPixelPos{glm::round(pixelPos3)};
 
-    if (glm::any(glm::lessThan(roundedPixelPos, sk_voxelZero)) || glm::any(glm::greaterThanEqual(roundedPixelPos, dims)))
-    {
+    if (glm::any(glm::lessThan(roundedPixelPos, voxelZero)) ||
+        glm::any(glm::greaterThanEqual(roundedPixelPos, dims))) {
       continue; // This pixel is outside the image
     }
 
     // View plane normal vector transformed into Voxel space:
     const glm::vec3 voxelViewPlaneNormal = glm::normalize(
-      glm::inverseTranspose(glm::mat3(pixel_T_worldDef)) * (-hit.worldFrontAxis)
-    );
+      glm::inverseTranspose(glm::mat3(pixel_T_worldDef)) * (-hit.worldFrontAxis));
 
     // View plane equation:
     const glm::vec4 voxelViewPlane = math::makePlane(voxelViewPlaneNormal, pixelPos3);
 
-    auto updateSegTexture = [this, &segUid](
-                              const ComponentType& memoryComponentType,
-                              const glm::uvec3& dataOffset,
-                              const glm::uvec3& dataSize,
-                              const LabelType* data
-                            )
+    auto updateSegTexture = [this, &segUid]
+      (const ComponentType& memoryComponentType, const glm::uvec3& dataOffset,
+       const glm::uvec3& dataSize, const LabelType* data)
     {
-      m_rendering
-        .updateSegTextureWithInt64Data(segUid, memoryComponentType, dataOffset, dataSize, data);
+      m_rendering.updateSegTextureWithInt64Data(segUid, memoryComponentType, dataOffset, dataSize, data);
     };
 
-    paintSegmentation(
-      *seg,
-      labelToPaint,
-      labelToReplace,
-      settings.replaceBackgroundWithForeground(),
-      settings.useRoundBrush(),
-      settings.use3dBrush(),
-      settings.useIsotropicBrush(),
-      brushSize,
-      roundedPixelPos,
-      voxelViewPlane,
-      updateSegTexture
-    );
+    paintSegmentation(*seg, labelToPaint, labelToReplace,
+                      settings.replaceBackgroundWithForeground(),
+                      settings.useRoundBrush(),
+                      settings.use3dBrush(),
+                      settings.useIsotropicBrush(),
+                      brushSize, roundedPixelPos, voxelViewPlane, updateSegTexture);
   }
 }
 
 void CallbackHandler::paintActiveSegmentationWithAnnotation()
 {
   const auto activeImageUid = m_appData.activeImageUid();
-  if (!activeImageUid)
+  if (!activeImageUid) {
     return;
+  }
 
   const auto activeSegUid = m_appData.imageToActiveSegUid(*activeImageUid);
-  if (!activeSegUid)
-  {
+  if (!activeSegUid) {
     spdlog::debug("There is no active segmentation to paint for image {}", *activeImageUid);
     return;
   }
 
   const auto activeAnnotUid = m_appData.imageToActiveAnnotationUid(*activeImageUid);
-  if (!activeAnnotUid)
-  {
+  if (!activeAnnotUid) {
     spdlog::debug("There is no active annotation to paint for image {}", *activeImageUid);
     return;
   }
 
   Image* seg = m_appData.seg(*activeSegUid);
-  if (!seg)
-  {
+  if (!seg) {
     spdlog::error("Segmentation {} is null", *activeSegUid);
     return;
   }
 
   const Annotation* annot = m_appData.annotation(*activeAnnotUid);
-  if (!annot)
-  {
+  if (!annot) {
     spdlog::error("Annotation {} is null", *activeAnnotUid);
     return;
   }
 
   /// @todo Implement algorithm for filling smoothed polygons.
 
-  if (!annot->isClosed())
-  {
-    spdlog::warn(
-      "Annotation {} is not closed and so cannot be filled to paint segmentation {}",
-      *activeAnnotUid,
-      *activeSegUid
-    );
+  if (!annot->isClosed()) {
+    spdlog::warn("Annotation {} is not closed and so cannot be filled to paint segmentation {}",
+                 *activeAnnotUid, *activeSegUid);
     return;
   }
 
   if (annot->isSmoothed())
   {
-    spdlog::warn(
-      "Annotation {} is smoothed and so cannot be filled to paint segmentation {}",
-      *activeAnnotUid,
-      *activeSegUid
-    );
+    spdlog::warn("Annotation {} is smoothed and so cannot be filled to paint segmentation {}",
+                 *activeAnnotUid, *activeSegUid);
     return;
   }
 
-  auto updateSegTexture = [this, &activeSegUid](
-                            const ComponentType& memoryComponentType,
-                            const glm::uvec3& dataOffset,
-                            const glm::uvec3& dataSize,
-                            const LabelType* data
-                          )
+  auto updateSegTexture = [this, &activeSegUid]
+    (const ComponentType& memoryComponentType, const glm::uvec3& dataOffset,
+     const glm::uvec3& dataSize, const LabelType* data)
   {
-    if (!activeSegUid)
+    if (!activeSegUid) {
       return;
+    }
 
-    m_rendering
-      .updateSegTextureWithInt64Data(*activeSegUid, memoryComponentType, dataOffset, dataSize, data);
+    m_rendering.updateSegTextureWithInt64Data(*activeSegUid, memoryComponentType, dataOffset, dataSize, data);
   };
 
-  fillSegmentationWithPolygon(
-    *seg,
-    annot,
-    static_cast<LabelType>(m_appData.settings().foregroundLabel()),
-    static_cast<LabelType>(m_appData.settings().backgroundLabel()),
-    m_appData.settings().replaceBackgroundWithForeground(),
-    updateSegTexture
-  );
+  fillSegmentationWithPolygon(*seg, annot,
+                              static_cast<LabelType>(m_appData.settings().foregroundLabel()),
+                              static_cast<LabelType>(m_appData.settings().backgroundLabel()),
+                              m_appData.settings().replaceBackgroundWithForeground(),
+                              updateSegTexture);
 }
 
 void CallbackHandler::doWindowLevel(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool fineAdjustment
-)
+  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool fineAdjustment)
 {
   View* viewToWL = startHit.view;
 
-  if (!viewToWL)
+  if (!viewToWL) {
     return;
+  }
 
   const float multipler = fineAdjustment ? 0.1f : 1.0f;
 
@@ -1052,19 +902,16 @@ void CallbackHandler::doWindowLevel(
     // Special logic to adjust W/L for views rendering in x-ray projection mode:
 
     // Level/width values for x-ray projection mode are in range [0.0, 1.0]
-    static constexpr float levelMin = 0.0f;
-    static constexpr float levelMax = 1.0f;
-    static constexpr float winMin = 0.0f;
-    static constexpr float winMax = 1.0f;
+    constexpr float levelMin = 0.0f;
+    constexpr float levelMax = 1.0f;
+    constexpr float winMin = 0.0f;
+    constexpr float winMax = 1.0f;
 
     float oldLevel = m_appData.renderData().m_xrayIntensityLevel;
     float oldWindow = m_appData.renderData().m_xrayIntensityWindow;
 
-    const float levelDelta = multipler * (levelMax - levelMin)
-                             * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f;
-
-    const float winDelta = multipler * (winMax - winMin)
-                           * (currHit.windowClipPos.x - prevHit.windowClipPos.x) / 2.0f;
+    const float levelDelta = multipler * (levelMax - levelMin) * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f;
+    const float winDelta = multipler * (winMax - winMin) * (currHit.windowClipPos.x - prevHit.windowClipPos.x) / 2.0f;
 
     const float newLevel = std::min(std::max(oldLevel + levelDelta, levelMin), levelMax);
     const float newWindow = std::min(std::max(oldWindow + winDelta, winMin), winMax);
@@ -1075,27 +922,27 @@ void CallbackHandler::doWindowLevel(
   else
   {
     const auto activeImageUid = m_appData.activeImageUid();
-    if (!activeImageUid)
+    if (!activeImageUid) {
       return;
+    }
 
     Image* activeImage = m_appData.image(*activeImageUid);
-    if (!activeImage)
+    if (!activeImage) {
       return;
+    }
 
-    if (0 == std::count(std::begin(viewToWL->visibleImages()), std::end(viewToWL->visibleImages()), *activeImageUid))
-    {
+    if (0 == std::count(std::begin(viewToWL->visibleImages()), std::end(viewToWL->visibleImages()),
+                        *activeImageUid)) {
       return; // The active image is not visible
     }
 
     auto& S = activeImage->settings();
 
-    const double centerDelta
-      = multipler * (S.minMaxWindowCenterRange().second - S.minMaxWindowCenterRange().first)
-        * static_cast<double>(currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0;
+    const double centerDelta = multipler * (S.minMaxWindowCenterRange().second - S.minMaxWindowCenterRange().first) *
+                               static_cast<double>(currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0;
 
-    const double windowDelta
-      = multipler * (S.minMaxWindowWidthRange().second - S.minMaxWindowWidthRange().first)
-        * static_cast<double>(currHit.windowClipPos.x - prevHit.windowClipPos.x) / 2.0;
+    const double windowDelta = multipler * (S.minMaxWindowWidthRange().second - S.minMaxWindowWidthRange().first) *
+                               static_cast<double>(currHit.windowClipPos.x - prevHit.windowClipPos.x) / 2.0;
 
     S.setWindowCenter(S.windowCenter() + centerDelta);
     S.setWindowWidth(S.windowWidth() + windowDelta);
@@ -1106,40 +953,40 @@ void CallbackHandler::doWindowLevel(
 
 void CallbackHandler::doOpacity(const ViewHit& prevHit, const ViewHit& currHit)
 {
-  static constexpr double sk_opMin = 0.0;
-  static constexpr double sk_opMax = 1.0;
+  constexpr double opMin = 0.0;
+  constexpr double opMax = 1.0;
 
-  if (!currHit.view)
+  if (!currHit.view) {
     return;
+  }
 
   const auto activeImageUid = m_appData.activeImageUid();
-  if (!activeImageUid)
+  if (!activeImageUid) {
     return;
+  }
 
-  if (0 == std::count(std::begin(currHit.view->visibleImages()), std::end(currHit.view->visibleImages()), *activeImageUid))
-  {
+  if (0 == std::count(std::begin(currHit.view->visibleImages()), std::end(currHit.view->visibleImages()),
+                      *activeImageUid)) {
     return; // The active image is not visible
   }
 
   Image* activeImage = m_appData.image(*activeImageUid);
-  if (!activeImage)
+  if (!activeImage) {
     return;
+  }
 
-  const double opacityDelta = (sk_opMax - sk_opMin)
-                              * static_cast<double>(
-                                currHit.windowClipPos.y - prevHit.windowClipPos.y
-                              )
-                              / 2.0;
+  const double opacityDelta = (opMax - opMin) *
+                              static_cast<double>(currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0;
 
-  const double newOpacity
-    = std::min(std::max(activeImage->settings().opacity() + opacityDelta, sk_opMin), sk_opMax);
+  const double newOpacity = std::min(std::max(activeImage->settings().opacity() + opacityDelta, opMin), opMax);
 
   activeImage->settings().setOpacity(newOpacity);
 
   m_rendering.updateImageUniforms(*activeImageUid);
 }
 
-void CallbackHandler::doCameraTranslate2d(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
+void CallbackHandler::doCameraTranslate2d(
+  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
 {
   const glm::vec3 worldOrigin = m_appData.state().worldCrosshairs().worldOrigin();
 
@@ -1155,7 +1002,8 @@ void CallbackHandler::doCameraTranslate2d(const ViewHit& startHit, const ViewHit
 
   if (const auto transGroupUid = viewToTranslate->cameraTranslationSyncGroupUid())
   {
-    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Translation, *transGroupUid))
+    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(
+           CameraSyncMode::Translation, *transGroupUid))
     {
       if (syncedViewUid == viewUidToTranslate) {
         continue;
@@ -1169,8 +1017,8 @@ void CallbackHandler::doCameraTranslate2d(const ViewHit& startHit, const ViewHit
         continue;
       }
 
-      if (helper::areViewDirectionsParallel(syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees))
-      {
+      if (helper::areViewDirectionsParallel(syncedView->camera(), backupCamera,
+                                            Directions::View::Back, parallelThreshold_degrees)) {
         helper::panRelativeToWorldPosition(syncedView->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin);
       }
     }
@@ -1178,9 +1026,7 @@ void CallbackHandler::doCameraTranslate2d(const ViewHit& startHit, const ViewHit
 }
 
 void CallbackHandler::doCameraRotate2d(
-  const ViewHit& startHit,
-  const ViewHit& prevHit,
-  const ViewHit& currHit,
+  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
   const RotationOrigin& rotationOrigin)
 {
   View* viewToRotate = startHit.view;
@@ -1211,8 +1057,8 @@ void CallbackHandler::doCameraRotate2d(
   }
   }
 
-  glm::vec4 clipRotationCenterPos = helper::clip_T_world(viewToRotate->camera())
-                                    * glm::vec4{m_appData.state().worldCrosshairs().worldOrigin(), 1.0f};
+  glm::vec4 clipRotationCenterPos = helper::clip_T_world(viewToRotate->camera()) *
+                                    glm::vec4{m_appData.state().worldCrosshairs().worldOrigin(), 1.0f};
 
   clipRotationCenterPos /= clipRotationCenterPos.w;
 
@@ -1236,8 +1082,8 @@ void CallbackHandler::doCameraRotate2d(
         continue;
       }
 
-      if (!helper::areViewDirectionsParallel(syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees))
-      {
+      if (!helper::areViewDirectionsParallel(syncedView->camera(), backupCamera,
+                                             Directions::View::Back, parallelThreshold_degrees)) {
         continue;
       }
 
@@ -1247,12 +1093,8 @@ void CallbackHandler::doCameraRotate2d(
 }
 
 void CallbackHandler::doCameraRotate3d(
-  const ViewHit& startHit,
-  const ViewHit& prevHit,
-  const ViewHit& currHit,
-  const RotationOrigin& rotationOrigin,
-  const AxisConstraint& constraint
-)
+  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
+  const RotationOrigin& rotationOrigin, const AxisConstraint& constraint)
 {
   View* viewToRotate = startHit.view;
   if (!viewToRotate) {
@@ -1262,8 +1104,7 @@ void CallbackHandler::doCameraRotate3d(
   const auto& viewUidToRotate = startHit.viewUid;
 
   // Only allow rotation of oblique and 3D views
-  if (ViewType::Oblique != viewToRotate->viewType() && ViewType::ThreeD != viewToRotate->viewType())
-  {
+  if (ViewType::Oblique != viewToRotate->viewType() && ViewType::ThreeD != viewToRotate->viewType()) {
     return;
   }
 
@@ -1325,8 +1166,7 @@ void CallbackHandler::doCameraRotate3d(
       }
 
       if (!helper::areViewDirectionsParallel(
-            syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees))
-      {
+            syncedView->camera(), backupCamera, Directions::View::Back, parallelThreshold_degrees)){
         continue;
       }
 
@@ -1373,7 +1213,7 @@ void CallbackHandler::doCameraRotate3d(const uuid& viewUid, const glm::quat& cam
         continue;
       }
 
-      if (!helper::areViewDirectionsParallel(syncedView->camera(), backupCamera, Directions::View::Back, sk_parallelThreshold_degrees))
+      if (!helper::areViewDirectionsParallel(syncedView->camera(), backupCamera, Directions::View::Back, parallelThreshold_degrees))
       {
         continue;
       }
@@ -1389,8 +1229,9 @@ void CallbackHandler::handleSetViewForwardDirection(
   auto& windowData = m_appData.windowData();
 
   View* view = windowData.getView(viewUid);
-  if (!view)
+  if (!view) {
     return;
+  }
 
   if (ViewRenderMode::Disabled == view->renderMode()) {
     return;
@@ -1427,42 +1268,35 @@ void CallbackHandler::handleSetViewForwardDirection(
 }
 
 void CallbackHandler::doCameraZoomDrag(
-  const ViewHit& startHit,
-  const ViewHit& prevHit,
-  const ViewHit& currHit,
-  const ZoomBehavior& zoomBehavior,
-  bool syncZoomForAllViews
-)
+  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
+  const ZoomBehavior& zoomBehavior, bool syncZoomForAllViews)
 {
-  static const glm::vec2 sk_ndcCenter{0.0f, 0.0f};
+  const glm::vec2 ndcCenter{0.0f, 0.0f};
 
   View* viewToZoom = startHit.view;
-  if (!viewToZoom)
+  if (!viewToZoom) {
     return;
+  }
 
   const auto& viewUidToZoom = startHit.viewUid;
 
-  auto getCenterViewClipPos = [this, &zoomBehavior, &startHit](const View* view) -> glm::vec2
+  auto getCenterViewClipPos = [this, &zoomBehavior, &startHit, &ndcCenter](const View* view) -> glm::vec2
   {
     glm::vec2 viewClipCenterPos{0.0f};
 
     switch (zoomBehavior)
     {
-    case ZoomBehavior::ToCrosshairs:
-    {
-      viewClipCenterPos
-        = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
+    case ZoomBehavior::ToCrosshairs: {
+      viewClipCenterPos = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
       break;
     }
-    case ZoomBehavior::ToStartPosition:
-    {
+    case ZoomBehavior::ToStartPosition: {
       const glm::vec4 _viewClipStartPos = helper::clip_T_world(view->camera()) * startHit.worldPos;
       viewClipCenterPos = glm::vec2{_viewClipStartPos / _viewClipStartPos.w};
       break;
     }
-    case ZoomBehavior::ToViewCenter:
-    {
-      viewClipCenterPos = sk_ndcCenter;
+    case ZoomBehavior::ToViewCenter: {
+      viewClipCenterPos = ndcCenter;
       break;
     }
     }
@@ -1504,42 +1338,36 @@ void CallbackHandler::doCameraZoomDrag(
 }
 
 void CallbackHandler::doCameraZoomScroll(
-  const ViewHit& hit,
-  const glm::vec2& scrollOffset,
-  const ZoomBehavior& zoomBehavior,
-  bool syncZoomForAllViews
-)
+  const ViewHit& hit, const glm::vec2& scrollOffset,
+  const ZoomBehavior& zoomBehavior, bool syncZoomForAllViews)
 {
-  static constexpr float sk_zoomFactor = 0.01f;
-  static const glm::vec2 sk_ndcCenter{0.0f, 0.0f};
+  constexpr float zoomFactor = 0.01f;
+  const glm::vec2 ndcCenter{0.0f, 0.0f};
 
-  if (!hit.view)
+  if (!hit.view) {
     return;
+  }
 
   // The pointer is in the view bounds! Make this the active view
   m_appData.windowData().setActiveViewUid(hit.viewUid);
 
-  auto getCenterViewClipPos = [this, &zoomBehavior, &hit](const View* view) -> glm::vec2
+  auto getCenterViewClipPos = [this, &zoomBehavior, &hit, &ndcCenter](const View* view) -> glm::vec2
   {
     glm::vec2 viewClipCenterPos{0.0f};
 
     switch (zoomBehavior)
     {
-    case ZoomBehavior::ToCrosshairs:
-    {
-      viewClipCenterPos
-        = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
+    case ZoomBehavior::ToCrosshairs: {
+      viewClipCenterPos = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
       break;
     }
-    case ZoomBehavior::ToStartPosition:
-    {
+    case ZoomBehavior::ToStartPosition: {
       const glm::vec4 _viewClipCurrPos = helper::clip_T_world(view->camera()) * hit.worldPos;
       viewClipCenterPos = glm::vec2{_viewClipCurrPos / _viewClipCurrPos.w};
       break;
     }
-    case ZoomBehavior::ToViewCenter:
-    {
-      viewClipCenterPos = sk_ndcCenter;
+    case ZoomBehavior::ToViewCenter: {
+      viewClipCenterPos = ndcCenter;
       break;
     }
     }
@@ -1547,7 +1375,7 @@ void CallbackHandler::doCameraZoomScroll(
     return viewClipCenterPos;
   };
 
-  const float factor = 1.0f + sk_zoomFactor * scrollOffset.y;
+  const float factor = 1.0f + zoomFactor * scrollOffset.y;
 
   helper::zoomNdc(hit.view->camera(), factor, getCenterViewClipPos(hit.view));
 
@@ -1568,7 +1396,8 @@ void CallbackHandler::doCameraZoomScroll(
   else if (const auto zoomGroupUid = hit.view->cameraZoomSyncGroupUid())
   {
     // Apply zoom all other views synchronized with this view:
-    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Zoom, *zoomGroupUid))
+    for (const auto& syncedViewUid :
+         m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Zoom, *zoomGroupUid))
     {
       if (syncedViewUid == hit.viewUid) {
         continue;
@@ -1631,7 +1460,7 @@ void CallbackHandler::doImageTranslate(
 
     T = helper::translationAboutCameraFrontBack(
       viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos,
-      sk_imageFrontBackTranslationScaleFactor * scrollDistance);
+      imageFrontBackTranslationScaleFactor * scrollDistance);
   }
 
   auto& imgTx = activeImage->transformations();
@@ -1708,27 +1537,30 @@ void CallbackHandler::doImageRotate(
 void CallbackHandler::doImageScale(
   const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool constrainIsotropic)
 {
-  static const glm::vec3 sk_zero(0.0f, 0.0f, 0.0f);
-  static const glm::vec3 sk_minScale(0.1f);
-  static const glm::vec3 sk_maxScale(10.0f);
+  const glm::vec3 zero(0.0f, 0.0f, 0.0f);
+  const glm::vec3 k_minScale(0.1f);
+  const glm::vec3 k_maxScale(10.0f);
 
   View* viewToUse = startHit.view;
-  if (!viewToUse)
+  if (!viewToUse) {
     return;
+  }
 
   const auto activeImageUid = m_appData.activeImageUid();
-  if (!activeImageUid)
+  if (!activeImageUid) {
     return;
+  }
 
-  if (0 == std::count(std::begin(viewToUse->visibleImages()), std::end(viewToUse->visibleImages()), *activeImageUid))
-  {
+  if (0 == std::count(std::begin(viewToUse->visibleImages()), std::end(viewToUse->visibleImages()),
+                      *activeImageUid)) {
     // The active image is not visible
     return;
   }
 
   Image* activeImage = m_appData.image(*activeImageUid);
-  if (!activeImage)
+  if (!activeImage) {
     return;
+  }
 
   /// @todo Forbid transformation if the view does NOT show the active image [1]
 
@@ -1750,8 +1582,7 @@ void CallbackHandler::doImageScale(
   const glm::vec3 numer = glm::vec3{currSubjectPos} - glm::vec3{subjectScaleCenter};
   const glm::vec3 denom = glm::vec3{lastSubjectPos} - glm::vec3{subjectScaleCenter};
 
-  if (glm::any(glm::epsilonEqual(denom, sk_zero, glm::epsilon<float>())))
-  {
+  if (glm::any(glm::epsilonEqual(denom, zero, glm::epsilon<float>()))) {
     return;
   }
 
@@ -1777,29 +1608,25 @@ void CallbackHandler::doImageScale(
     float minScale = glm::compMin(scaleDelta);
     float maxScale = glm::compMax(scaleDelta);
 
-    if (maxScale > 1.0f)
-    {
+    if (maxScale > 1.0f) {
       scaleDelta = glm::vec3(maxScale);
     }
-    else
-    {
+    else {
       scaleDelta = glm::vec3(minScale);
     }
   }
 
   // To prevent flipping and making the slide too small:
-  if (glm::any(glm::lessThan(scaleDelta, sk_minScale)) || glm::any(glm::greaterThan(scaleDelta, sk_maxScale)))
-  {
+  if (glm::any(glm::lessThan(scaleDelta, k_minScale)) ||
+      glm::any(glm::greaterThan(scaleDelta, k_maxScale))) {
     return;
   }
 
   imgTx.set_worldDef_T_affine_scale(scaleDelta * imgTx.get_worldDef_T_affine_scale());
 
   // Apply same transformation to the segmentations:
-  for (const auto segUid : m_appData.imageToSegUids(*activeImageUid))
-  {
-    if (auto* seg = m_appData.seg(segUid))
-    {
+  for (const auto segUid : m_appData.imageToSegUids(*activeImageUid)) {
+    if (auto* seg = m_appData.seg(segUid)) {
       auto& segTx = seg->transformations();
       segTx.set_worldDef_T_affine_scale(scaleDelta * segTx.get_worldDef_T_affine_scale());
     }
@@ -1849,15 +1676,13 @@ void CallbackHandler::toggleImageVisibility()
 
   // Toggle the global visibility if this is a multi-component images and
   // each component is stored as a separate image.
-  const bool isMulticomponentImage = ( image.header().numComponentsPerPixel() > 1
-            && Image::MultiComponentBufferType::SeparateImages == image.bufferType() );
+  const bool isMulticomponentImage = (image.header().numComponentsPerPixel() > 1 &&
+                                      Image::MultiComponentBufferType::SeparateImages == image.bufferType());
 
-  if (isMulticomponentImage)
-  {
+  if (isMulticomponentImage) {
     image.settings().setGlobalVisibility(!image.settings().globalVisibility());
   }
-  else
-  {
+  else {
     // Otherwise, toggle visibility of the active component only:
     image.settings().setVisibility(!image.settings().visibility());
   }
@@ -1868,15 +1693,16 @@ void CallbackHandler::toggleImageVisibility()
 void CallbackHandler::toggleImageEdges()
 {
   const auto imageUid = m_appData.activeImageUid();
-  if (!imageUid)
+  if (!imageUid) {
     return;
+  }
 
   Image* image = m_appData.image(*imageUid);
-  if (!image)
+  if (!image) {
     return;
+  }
 
   image->settings().setShowEdges(!image->settings().showEdges());
-
   m_rendering.updateImageUniforms(*imageUid);
 }
 
@@ -1884,8 +1710,7 @@ void CallbackHandler::changeSegOpacity(double delta, bool interior)
 {
   if (interior) {
     const float op = m_appData.renderData().m_segInteriorOpacity;
-    m_appData.renderData().m_segInteriorOpacity =
-      std::clamp(op + static_cast<float>(delta), 0.0f, 1.0f);
+    m_appData.renderData().m_segInteriorOpacity = std::clamp(op + static_cast<float>(delta), 0.0f, 1.0f);
   }
   else {
     const auto imgUid = m_appData.activeImageUid();
@@ -2024,10 +1849,10 @@ void CallbackHandler::cycleActiveImage(int i)
 /// @todo Put into DataHelper
 void CallbackHandler::cycleForegroundSegLabel(int i)
 {
-  constexpr LabelType k_minLabel = 0;
+  constexpr LabelType minLabel = 0;
 
   LabelType label = static_cast<LabelType>(m_appData.settings().foregroundLabel());
-  label = std::max(label + i, k_minLabel);
+  label = std::max(label + i, minLabel);
 
   if (const auto* table = m_appData.activeLabelTable()) {
     m_appData.settings().setForegroundLabel(static_cast<size_t>(label), *table);
@@ -2037,10 +1862,10 @@ void CallbackHandler::cycleForegroundSegLabel(int i)
 /// @todo Put into DataHelper
 void CallbackHandler::cycleBackgroundSegLabel(int i)
 {
-  constexpr LabelType k_minLabel = 0;
+  constexpr LabelType minLabel = 0;
 
   LabelType label = static_cast<LabelType>(m_appData.settings().backgroundLabel());
-  label = std::max(label + i, k_minLabel);
+  label = std::max(label + i, minLabel);
 
   if (const auto* table = m_appData.activeLabelTable()) {
     m_appData.settings().setBackgroundLabel(static_cast<size_t>(label), *table);
@@ -2159,7 +1984,7 @@ void CallbackHandler::endCrosshairsRotate2D()
 
 void CallbackHandler::moveCrosshairsToSegLabelCentroid(const uuid& imageUid, std::size_t labelIndex)
 {
-  static constexpr uint32_t sk_comp0 = 0;
+  constexpr uint32_t comp0 = 0;
 
   const auto activeSegUid = m_appData.imageToActiveSegUid(imageUid);
   if (!activeSegUid) {
@@ -2171,7 +1996,7 @@ void CallbackHandler::moveCrosshairsToSegLabelCentroid(const uuid& imageUid, std
     return;
   }
 
-  const void* data = seg->bufferAsVoid(sk_comp0);
+  const void* data = seg->bufferAsVoid(comp0);
   const glm::ivec3 dims{seg->header().pixelDimensions()};
   const LabelType label = static_cast<LabelType>(labelIndex);
 
@@ -2279,8 +2104,7 @@ bool CallbackHandler::syncManualImageTransformationOnSegs(const uuid& imageUid)
     return false;
   }
 
-  for (const auto segUid : m_appData.imageToSegUids(imageUid))
-  {
+  for (const auto segUid : m_appData.imageToSegUids(imageUid)) {
     if (auto* seg = m_appData.seg(segUid)) {
       seg->transformations().set_worldDef_T_affine_locked(image->transformations().is_worldDef_T_affine_locked());
       seg->transformations().set_worldDef_T_affine_scale(image->transformations().get_worldDef_T_affine_scale());
@@ -2294,8 +2118,7 @@ bool CallbackHandler::syncManualImageTransformationOnSegs(const uuid& imageUid)
 
 bool CallbackHandler::checkAndSetActiveView(const uuid& viewUid)
 {
-  if (const auto activeViewUid = m_appData.windowData().activeViewUid())
-  {
+  if (const auto activeViewUid = m_appData.windowData().activeViewUid()) {
     if (*activeViewUid != viewUid) {
       return false; // There is an active view is not this view
     }

@@ -45,24 +45,27 @@
 namespace
 {
 
-static const ImVec4 sk_whiteText(1, 1, 1, 1);
-static const ImVec4 sk_blackText(0, 0, 0, 1);
+/// @todo Expose this value
+constexpr bool useExactQuantiles = false;
+
+const ImVec4 whiteText(1, 1, 1, 1);
+const ImVec4 blackText(0, 0, 0, 1);
 
 /// Size of small toolbar buttons (pixels)
 ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
 {
-  static const ImVec2 sk_smallToolbarButtonSize(24, 24);
+  static const ImVec2 smallToolbarButtonSize(24, 24);
   return ImVec2{
-    contentScale.x * sk_smallToolbarButtonSize.x, contentScale.y * sk_smallToolbarButtonSize.y
+    contentScale.x * smallToolbarButtonSize.x, contentScale.y * smallToolbarButtonSize.y
   };
 }
 
-const char* sk_referenceAndActiveImageMessage = "This is the reference and active image";
-const char* sk_referenceImageMessage = "This is the reference image";
-const char* sk_activeImageMessage = "This is the active image";
-const char* sk_nonActiveImageMessage = "This is not the active image";
+const char* referenceAndActiveImageMessage = "This is the reference and active image";
+const char* referenceImageMessage = "This is the reference image";
+const char* activeImageMessage = "This is the active image";
+const char* nonActiveImageMessage = "This is not the active image";
 
-static const ImGuiColorEditFlags sk_colorEditFlags = ImGuiColorEditFlags_NoInputs
+static const ImGuiColorEditFlags colorEditFlags = ImGuiColorEditFlags_NoInputs
                                                      | ImGuiColorEditFlags_PickerHueBar
                                                      | ImGuiColorEditFlags_DisplayRGB
                                                      | ImGuiColorEditFlags_DisplayHSV
@@ -78,8 +81,8 @@ std::pair<ImVec4, ImVec4> computeHeaderBgAndTextColors(const glm::vec3& color)
 
   const ImVec4
     headerColor(darkerBorderColorRgb.r, darkerBorderColorRgb.g, darkerBorderColorRgb.b, 1.0f);
-  const ImVec4 headerTextColor = (glm::luminosity(darkerBorderColorRgb) < 0.75f) ? sk_whiteText
-                                                                                 : sk_blackText;
+  const ImVec4 headerTextColor = (glm::luminosity(darkerBorderColorRgb) < 0.75f) ? whiteText
+                                                                                 : blackText;
 
   return {headerColor, headerTextColor};
 }
@@ -91,8 +94,7 @@ void renderImageHeaderInformation(
   const uuids::uuid& imageUid,
   Image& image,
   const std::function<void(void)>& updateImageUniforms,
-  const AllViewsRecenterType& recenterAllViews
-)
+  const AllViewsRecenterType& recenterAllViews)
 {
   const char* txFormat = appData.guiData().m_txPrecisionFormat.c_str();
   const char* coordFormat = appData.guiData().m_coordsPrecisionFormat.c_str();
@@ -253,11 +255,11 @@ void renderImageHeaderInformation(
 
   if (Image::ImageRepresentation::Image == image.imageRep())
   {
-    static constexpr bool sk_recenterCrosshairs = true;
-    static constexpr bool sk_realignCrosshairs = true;
-    static constexpr bool sk_recenterOnCurrentCrosshairsPosition = true;
-    static constexpr bool sk_doNotResetObliqueOrientation = false;
-    static constexpr bool sk_doNotResetZoom = false;
+    static constexpr bool recenterCrosshairs = true;
+    static constexpr bool realignCrosshairs = true;
+    static constexpr bool recenterOnCurrentCrosshairsPosition = true;
+    static constexpr bool doNotResetObliqueOrientation = false;
+    static constexpr bool doNotResetZoom = false;
 
     ImGui::Separator();
     ImGui::Spacing();
@@ -277,11 +279,11 @@ void renderImageHeaderInformation(
       updateImageUniforms();
 
       recenterAllViews(
-        sk_recenterCrosshairs,
-        sk_realignCrosshairs,
-        sk_recenterOnCurrentCrosshairsPosition,
-        sk_doNotResetObliqueOrientation,
-        sk_doNotResetZoom
+        recenterCrosshairs,
+        realignCrosshairs,
+        recenterOnCurrentCrosshairsPosition,
+        doNotResetObliqueOrientation,
+        doNotResetZoom
       );
     }
     ImGui::SameLine();
@@ -295,11 +297,11 @@ void renderImageHeaderInformation(
       updateImageUniforms();
 
       recenterAllViews(
-        sk_recenterCrosshairs,
-        sk_realignCrosshairs,
-        sk_recenterOnCurrentCrosshairsPosition,
-        sk_doNotResetObliqueOrientation,
-        sk_doNotResetZoom
+        recenterCrosshairs,
+        realignCrosshairs,
+        recenterOnCurrentCrosshairsPosition,
+        doNotResetObliqueOrientation,
+        doNotResetZoom
       );
     }
     ImGui::SameLine();
@@ -314,11 +316,11 @@ void renderImageHeaderInformation(
       updateImageUniforms();
 
       recenterAllViews(
-        sk_recenterCrosshairs,
-        sk_realignCrosshairs,
-        sk_recenterOnCurrentCrosshairsPosition,
-        sk_doNotResetObliqueOrientation,
-        sk_doNotResetZoom
+        recenterCrosshairs,
+        realignCrosshairs,
+        recenterOnCurrentCrosshairsPosition,
+        doNotResetObliqueOrientation,
+        doNotResetZoom
       );
     }
     ImGui::SameLine();
@@ -425,14 +427,14 @@ void renderImageHeader(
   const AllViewsRecenterType& recenterAllViews
 )
 {
-  static const ImGuiColorEditFlags sk_colorNoAlphaEditFlags = ImGuiColorEditFlags_NoInputs
+  static const ImGuiColorEditFlags colorNoAlphaEditFlags = ImGuiColorEditFlags_NoInputs
                                                               | ImGuiColorEditFlags_PickerHueBar
                                                               | ImGuiColorEditFlags_DisplayRGB
                                                               | ImGuiColorEditFlags_DisplayHex
                                                               | ImGuiColorEditFlags_Uint8
                                                               | ImGuiColorEditFlags_InputRGB;
 
-  static const ImGuiColorEditFlags sk_colorAlphaEditFlags = ImGuiColorEditFlags_PickerHueBar
+  static const ImGuiColorEditFlags colorAlphaEditFlags = ImGuiColorEditFlags_PickerHueBar
                                                             | ImGuiColorEditFlags_DisplayRGB
                                                             | ImGuiColorEditFlags_DisplayHex
                                                             | ImGuiColorEditFlags_AlphaBar
@@ -461,13 +463,15 @@ void renderImageHeader(
                                                 + appData.guiData().m_percentilePrecisionFormat
                                                 + "%%";
 
+#if 1
   const char* minPercentilesFormat = minPercentileFormatString.c_str();
   const char* maxPercentilesFormat = maxPercentileFormatString.c_str();
+  const float windowPercentileStep = std::pow(10.0f, -1.0f * appData.guiData().m_percentilePrecision);
+#endif
 
   const char* valuesFormat = appData.guiData().m_imageValuePrecisionFormat.c_str();
   const char* txFormat = appData.guiData().m_txPrecisionFormat.c_str();
 
-  const float windowPercentileStep = std::pow(10.0f, -1.0f * appData.guiData().m_percentilePrecision);
 
   /// @todo ADD visibility control for gamma
   if (!image)
@@ -522,7 +526,7 @@ void renderImageHeader(
   // Border color:
   glm::vec3 borderColor{imgSettings.borderColor()};
 
-  if (ImGui::ColorEdit3("##BorderColor", glm::value_ptr(borderColor), sk_colorNoAlphaEditFlags))
+  if (ImGui::ColorEdit3("##BorderColor", glm::value_ptr(borderColor), colorNoAlphaEditFlags))
   {
     imgSettings.setBorderColor(borderColor);
     imgSettings.setEdgeColor(borderColor); // Set edge color to border color
@@ -588,19 +592,19 @@ void renderImageHeader(
 
   if (isRef && isActiveImage)
   {
-    ImGui::Text("%s", sk_referenceAndActiveImageMessage);
+    ImGui::Text("%s", referenceAndActiveImageMessage);
   }
   else if (isRef)
   {
-    ImGui::Text("%s", sk_referenceImageMessage);
+    ImGui::Text("%s", referenceImageMessage);
   }
   else if (isActiveImage)
   {
-    ImGui::Text("%s", sk_activeImageMessage);
+    ImGui::Text("%s", activeImageMessage);
   }
   else
   {
-    ImGui::Text("%s", sk_nonActiveImageMessage);
+    ImGui::Text("%s", nonActiveImageMessage);
   }
 
   if (isActiveImage)
@@ -812,11 +816,11 @@ void renderImageHeader(
       ImGui::Spacing();
 
       static const std::vector<std::string>
-        sk_rgbaLetters{" (red)", " (green)", " (blue)", " (alpha)"};
+        rgbaLetters{" (red)", " (green)", " (blue)", " (alpha)"};
 
       const std::string previewValue = (imgSettings.displayImageAsColor())
                                          ? std::to_string(imgSettings.activeComponent())
-                                             + sk_rgbaLetters[imgSettings.activeComponent()]
+                                             + rgbaLetters[imgSettings.activeComponent()]
                                          : std::to_string(imgSettings.activeComponent());
 
       if (ImGui::BeginCombo("Image component", previewValue.c_str()))
@@ -824,7 +828,7 @@ void renderImageHeader(
         for (uint32_t comp = 0; comp < imgHeader.numComponentsPerPixel(); ++comp)
         {
           const std::string selectableValue = (imgSettings.displayImageAsColor())
-                                                ? std::to_string(comp) + sk_rgbaLetters[comp]
+                                                ? std::to_string(comp) + rgbaLetters[comp]
                                                 : std::to_string(comp);
 
           const bool isSelected = (imgSettings.activeComponent() == comp);
@@ -851,18 +855,18 @@ void renderImageHeader(
     // Visibility checkbox:
     bool visible = imgSettings.visibility();
 
-    static const std::string sk_compVisibleText("Component visible");
-    static const std::string sk_imageVisibleText("Image visible");
-    static const std::string sk_compOpacityText("Component opacity");
-    static const std::string sk_imageOpacityText("Image opacity");
+    static const std::string compVisibleText("Component visible");
+    static const std::string imageVisibleText("Image visible");
+    static const std::string compOpacityText("Component opacity");
+    static const std::string imageOpacityText("Image opacity");
 
     const char* visibleCheckText = (image->header().numComponentsPerPixel() > 1)
-                                     ? sk_compVisibleText.c_str()
-                                     : sk_imageVisibleText.c_str();
+                                     ? compVisibleText.c_str()
+                                     : imageVisibleText.c_str();
 
     const char* opacitySliderText = (image->header().numComponentsPerPixel() > 1)
-                                      ? sk_compOpacityText.c_str()
-                                      : sk_imageOpacityText.c_str();
+                                      ? compOpacityText.c_str()
+                                      : imageOpacityText.c_str();
 
     if (ImGui::Checkbox(visibleCheckText, &visible))
     {
@@ -979,6 +983,7 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum values of the window range");
 
+#if 1
       const QuantileOfValue qLow = image->valueToQuantile(imgSettings.activeComponent(), windowLow);
       const QuantileOfValue qHigh = image->valueToQuantile(imgSettings.activeComponent(), windowHigh);
 
@@ -1003,40 +1008,51 @@ void renderImageHeader(
             ImGuiSliderFlags_AlwaysClamp
           ))
       {
-        if (windowPercentileLowCurrent != windowPercentileLowAttempted)
+        if (useExactQuantiles)
         {
-          const double windowPercentileLowBumped = bumpQuantile(
-            *image,
-            imgSettings.activeComponent(),
-            windowPercentileLowCurrent / 100.0,
-            windowPercentileLowAttempted / 100.0,
-            windowLow
-          );
+          if (windowPercentileLowCurrent != windowPercentileLowAttempted)
+          {
+            const double windowPercentileLowBumped = bumpQuantile(
+              *image,
+              imgSettings.activeComponent(),
+              windowPercentileLowCurrent / 100.0,
+              windowPercentileLowAttempted / 100.0,
+              windowLow
+              );
 
-          const double newWindowLow
-            = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowBumped);
-          imgSettings.setWindowValueLow(newWindowLow);
-          updateImageUniforms();
+            const double newWindowLow = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowBumped);
+            imgSettings.setWindowValueLow(newWindowLow);
+            updateImageUniforms();
+          }
+
+          if (windowPercentileHighCurrent != windowPercentileHighAttempted)
+          {
+            const double windowPercentileHighBumped = bumpQuantile(
+              *image,
+              imgSettings.activeComponent(),
+              windowPercentileHighCurrent / 100.0,
+              windowPercentileHighAttempted / 100.0,
+              windowHigh
+              );
+
+            const double newWindowHigh = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighBumped);
+            imgSettings.setWindowValueHigh(newWindowHigh);
+            updateImageUniforms();
+          }
         }
-
-        if (windowPercentileHighCurrent != windowPercentileHighAttempted)
+        else
         {
-          const double windowPercentileHighBumped = bumpQuantile(
-            *image,
-            imgSettings.activeComponent(),
-            windowPercentileHighCurrent / 100.0,
-            windowPercentileHighAttempted / 100.0,
-            windowHigh
-          );
-
-          const double newWindowHigh
-            = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighBumped);
-          imgSettings.setWindowValueHigh(newWindowHigh);
+          /// @todo Need to bump these percentiles until we hit a different image value
+          const double valueLow = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowAttempted / 100.0);
+          const double valueHigh = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighAttempted / 100.0);
+          imgSettings.setWindowValueLow(valueLow);
+          imgSettings.setWindowValueHigh(valueHigh);
           updateImageUniforms();
         }
       }
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum percentiles of the window range");
+#endif
 
       float threshLow = static_cast<float>(imgSettings.thresholds().first);
       float threshHigh = static_cast<float>(imgSettings.thresholds().second);
@@ -1111,17 +1127,8 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker("Window level (center)");
 
-      if (ImGui::DragIntRange2(
-            "Values",
-            &windowLow,
-            &windowHigh,
-            speed,
-            windowMin,
-            windowMax,
-            "Min: %d",
-            "Max: %d",
-            ImGuiSliderFlags_AlwaysClamp
-          ))
+      if (ImGui::DragIntRange2("Values", &windowLow, &windowHigh, speed, windowMin, windowMax,
+                               "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp))
       {
         imgSettings.setWindowValueLow(windowLow);
         imgSettings.setWindowValueHigh(windowHigh);
@@ -1130,10 +1137,9 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum of the window range");
 
-      const QuantileOfValue qLow
-        = image->valueToQuantile(imgSettings.activeComponent(), static_cast<int64_t>(windowLow));
-      const QuantileOfValue qHigh
-        = image->valueToQuantile(imgSettings.activeComponent(), static_cast<int64_t>(windowHigh));
+#if 1
+      const QuantileOfValue qLow = image->valueToQuantile(imgSettings.activeComponent(), static_cast<int64_t>(windowLow));
+      const QuantileOfValue qHigh = image->valueToQuantile(imgSettings.activeComponent(), static_cast<int64_t>(windowHigh));
 
       constexpr float windowPercentileMin = 0.0f;
       constexpr float windowPercentileMax = 100.0f;
@@ -1144,52 +1150,47 @@ void renderImageHeader(
       float windowPercentileLowAttempted = windowPercentileLowCurrent;
       float windowPercentileHighAttempted = windowPercentileHighCurrent;
 
-      if (ImGui::DragFloatRange2(
-            "Percentiles",
-            &windowPercentileLowAttempted,
-            &windowPercentileHighAttempted,
-            windowPercentileStep,
-            windowPercentileMin,
-            windowPercentileMax,
-            minPercentilesFormat,
-            maxPercentilesFormat,
-            ImGuiSliderFlags_AlwaysClamp
-          ))
+      if (ImGui::DragFloatRange2("Percentiles", &windowPercentileLowAttempted, &windowPercentileHighAttempted,
+                                 windowPercentileStep, windowPercentileMin, windowPercentileMax,
+                                 minPercentilesFormat, maxPercentilesFormat, ImGuiSliderFlags_AlwaysClamp))
       {
-        if (windowPercentileLowCurrent != windowPercentileLowAttempted)
+        if (useExactQuantiles)
         {
-          const double windowPercentileLowBumped = bumpQuantile(
-            *image,
-            imgSettings.activeComponent(),
-            windowPercentileLowCurrent / 100.0,
-            windowPercentileLowAttempted / 100.0,
-            windowLow
-          );
+          if (windowPercentileLowCurrent != windowPercentileLowAttempted)
+          {
+            const double windowPercentileLowBumped = bumpQuantile(
+              *image, imgSettings.activeComponent(),
+              windowPercentileLowCurrent / 100.0, windowPercentileLowAttempted / 100.0, windowLow);
 
-          const double newWindowLow
-            = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowBumped);
-          imgSettings.setWindowValueLow(newWindowLow);
-          updateImageUniforms();
+            const double newWindowLow = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowBumped);
+            imgSettings.setWindowValueLow(newWindowLow);
+            updateImageUniforms();
+          }
+
+          if (windowPercentileHighCurrent != windowPercentileHighAttempted)
+          {
+            const double windowPercentileHighBumped = bumpQuantile(
+              *image, imgSettings.activeComponent(),
+              windowPercentileHighCurrent / 100.0, windowPercentileHighAttempted / 100.0, windowHigh);
+
+            const double newWindowHigh = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighBumped);
+            imgSettings.setWindowValueHigh(newWindowHigh);
+            updateImageUniforms();
+          }
         }
-
-        if (windowPercentileHighCurrent != windowPercentileHighAttempted)
+        else
         {
-          const double windowPercentileHighBumped = bumpQuantile(
-            *image,
-            imgSettings.activeComponent(),
-            windowPercentileHighCurrent / 100.0,
-            windowPercentileHighAttempted / 100.0,
-            windowHigh
-          );
-
-          const double newWindowHigh
-            = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighBumped);
-          imgSettings.setWindowValueHigh(newWindowHigh);
+          /// @todo Need to bump these percentiles until we hit a different image value
+          const double valueLow = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowAttempted / 100.0);
+          const double valueHigh = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighAttempted / 100.0);
+          imgSettings.setWindowValueLow(valueLow);
+          imgSettings.setWindowValueHigh(valueHigh);
           updateImageUniforms();
         }
       }
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum percentiles of the window range");
+#endif
 
       // Threshold range:
       const int32_t threshMin = static_cast<int32_t>(imgSettings.thresholdRange().first);
@@ -1585,7 +1586,7 @@ void renderImageHeader(
       {
         glm::vec4 edgeColor{imgSettings.edgeColor(), imgSettings.edgeOpacity()};
 
-        if (ImGui::ColorEdit4("Edge color", glm::value_ptr(edgeColor), sk_colorAlphaEditFlags))
+        if (ImGui::ColorEdit4("Edge color", glm::value_ptr(edgeColor), colorAlphaEditFlags))
         {
           imgSettings.setEdgeColor(edgeColor);
           imgSettings.setEdgeOpacity(static_cast<double>(edgeColor.a));
@@ -1832,12 +1833,12 @@ void renderImageHeader(
       helpMarker("Reset the manual component of the affine transformation matrix from Subject to World space");
 
       // Save manual tx to file:
-      static const char* sk_buttonText("Save manual transformation...");
-      static const char* sk_dialogTitle("Select Manual Transformation");
-      static const std::vector<std::string> sk_dialogFilters{};
+      static const char* buttonText("Save manual transformation...");
+      static const char* dialogTitle("Select Manual Transformation");
+      static const std::vector<std::string> dialogFilters{};
 
       const auto selectedManualTxFile =
-        ImGui::renderFileButtonDialogAndWindow(sk_buttonText, sk_dialogTitle, sk_dialogFilters);
+        ImGui::renderFileButtonDialogAndWindow(buttonText, dialogTitle, dialogFilters);
 
       ImGui::SameLine();
       helpMarker("Save the manual component of the affine transformation matrix from Subject to World space");
@@ -1856,11 +1857,11 @@ void renderImageHeader(
       if (imgTx.get_enable_affine_T_subject())
       {
         // Save concatenated initial + manual tx to file:
-        static const char* sk_saveInitAndManualTxButtonText("Save initial + manual transformation...");
-        static const char* sk_saveInitAndManualTxDialogTitle("Select Concatenated Initial and Manual Transformation");
+        static const char* saveInitAndManualTxButtonText("Save initial + manual transformation...");
+        static const char* saveInitAndManualTxDialogTitle("Select Concatenated Initial and Manual Transformation");
 
         const auto selectedInitAndManualConcatTxFile = ImGui::renderFileButtonDialogAndWindow(
-          sk_saveInitAndManualTxButtonText, sk_saveInitAndManualTxDialogTitle, sk_dialogFilters);
+          saveInitAndManualTxButtonText, saveInitAndManualTxDialogTitle, dialogFilters);
 
         ImGui::SameLine();
         helpMarker("Save the concatenated initial and manual affine transformation matrix from Subject to World space");
@@ -1974,12 +1975,12 @@ void renderSegmentationHeader(
   const AllViewsRecenterType& recenterAllViews
 )
 {
-  static const std::string sk_addNewSegString = std::string(ICON_FK_FILE_O)
+  static const std::string addNewSegString = std::string(ICON_FK_FILE_O)
                                                 + std::string(" Create");
-  static const std::string sk_clearSegString = std::string(ICON_FK_ERASER) + std::string(" Clear");
-  static const std::string sk_removeSegString = std::string(ICON_FK_TRASH_O)
+  static const std::string clearSegString = std::string(ICON_FK_ERASER) + std::string(" Clear");
+  static const std::string removeSegString = std::string(ICON_FK_TRASH_O)
                                                 + std::string(" Remove");
-  static const std::string sk_SaveSegString = std::string(ICON_FK_FLOPPY_O)
+  static const std::string SaveSegString = std::string(ICON_FK_FLOPPY_O)
                                               + std::string(" Save...");
 
   if (!image)
@@ -2046,19 +2047,19 @@ void renderSegmentationHeader(
 
   if (isRef && isActiveImage)
   {
-    ImGui::Text("%s", sk_referenceAndActiveImageMessage);
+    ImGui::Text("%s", referenceAndActiveImageMessage);
   }
   else if (isRef)
   {
-    ImGui::Text("%s", sk_referenceImageMessage);
+    ImGui::Text("%s", referenceImageMessage);
   }
   else if (isActiveImage)
   {
-    ImGui::Text("%s", sk_activeImageMessage);
+    ImGui::Text("%s", activeImageMessage);
   }
   else
   {
-    ImGui::Text("%s", sk_nonActiveImageMessage);
+    ImGui::Text("%s", nonActiveImageMessage);
   }
 
   const auto segUids = appData.imageToSegUids(imageUid);
@@ -2127,7 +2128,7 @@ void renderSegmentationHeader(
   /// @todo Add button for copying the segmentation to a new segmentation
 
   // Add segmentation:
-  if (ImGui::Button(sk_addNewSegString.c_str()))
+  if (ImGui::Button(addNewSegString.c_str()))
   {
     const size_t numSegsForImage = appData.imageToSegUids(imageUid).size();
 
@@ -2154,7 +2155,7 @@ void renderSegmentationHeader(
   if (appData.imageToSegUids(imageUid).size() > 1)
   {
     ImGui::SameLine();
-    if (ImGui::Button(sk_removeSegString.c_str()))
+    if (ImGui::Button(removeSegString.c_str()))
     {
       if (removeSeg(*activeSegUid))
       {
@@ -2171,7 +2172,7 @@ void renderSegmentationHeader(
 
   // Clear segmentation:
   ImGui::SameLine();
-  if (ImGui::Button(sk_clearSegString.c_str()))
+  if (ImGui::Button(clearSegString.c_str()))
   {
     clearSeg(*activeSegUid);
   }
@@ -2181,12 +2182,12 @@ void renderSegmentationHeader(
   }
 
   // Save segmentation:
-  static const char* sk_dialogTitle("Select Segmentation Image");
-  static const std::vector<std::string> sk_dialogFilters{};
+  static const char* dialogTitle("Select Segmentation Image");
+  static const std::vector<std::string> dialogFilters{};
 
   ImGui::SameLine();
   const auto selectedFile = ImGui::renderFileButtonDialogAndWindow(
-    sk_SaveSegString.c_str(), sk_dialogTitle, sk_dialogFilters
+    SaveSegString.c_str(), dialogTitle, dialogFilters
   );
 
   if (ImGui::IsItemHovered())
@@ -2196,9 +2197,9 @@ void renderSegmentationHeader(
 
   if (selectedFile)
   {
-    static constexpr uint32_t sk_compToSave = 0;
+    static constexpr uint32_t compToSave = 0;
 
-    if (activeSeg->saveComponentToDisk(sk_compToSave, *selectedFile))
+    if (activeSeg->saveComponentToDisk(compToSave, *selectedFile))
     {
       spdlog::info("Saved segmentation image to file {}", *selectedFile);
       activeSeg->header().setFileName(*selectedFile);
@@ -2320,10 +2321,10 @@ void renderLandmarkGroupHeader(
   const AllViewsRecenterType& recenterAllViews
 )
 {
-  static const char* sk_newLmGroupButtonText("Create new group of landmarks");
-  static const char* sk_saveLmsButtonText("Save landmarks...");
-  static const char* sk_saveLmsDialogTitle("Save Landmark Group");
-  static const std::vector<std::string> sk_saveLmsDialogFilters{};
+  static const char* newLmGroupButtonText("Create new group of landmarks");
+  static const char* saveLmsButtonText("Save landmarks...");
+  static const char* saveLmsDialogTitle("Save Landmark Group");
+  static const std::vector<std::string> saveLmsDialogFilters{};
 
   Image* image = appData.image(imageUid);
   if (!image)
@@ -2331,7 +2332,7 @@ void renderLandmarkGroupHeader(
 
   auto addNewLmGroupButton = [&appData, &image, &imageUid]()
   {
-    if (ImGui::Button(sk_newLmGroupButtonText))
+    if (ImGui::Button(newLmGroupButtonText))
     {
       LandmarkGroup newGroup;
       newGroup.setName(std::string("Landmarks for ") + image->settings().displayName());
@@ -2534,7 +2535,7 @@ void renderLandmarkGroupHeader(
     auto groupColor = activeLmGroup->getColor();
 
     ImGui::SameLine();
-    if (ImGui::ColorEdit3("##uniformColor", glm::value_ptr(groupColor), sk_colorEditFlags))
+    if (ImGui::ColorEdit3("##uniformColor", glm::value_ptr(groupColor), colorEditFlags))
     {
       activeLmGroup->setColor(groupColor);
     }
@@ -2546,7 +2547,7 @@ void renderLandmarkGroupHeader(
   if (activeLmGroup->getTextColor().has_value())
   {
     auto textColor = activeLmGroup->getTextColor().value();
-    if (ImGui::ColorEdit3("Text color", glm::value_ptr(textColor), sk_colorEditFlags))
+    if (ImGui::ColorEdit3("Text color", glm::value_ptr(textColor), colorEditFlags))
     {
       activeLmGroup->setTextColor(textColor);
     }
@@ -2598,7 +2599,7 @@ void renderLandmarkGroupHeader(
 
   // Save landmarks to CSV and save settings to project file:
   const auto selectedFile = ImGui::renderFileButtonDialogAndWindow(
-    sk_saveLmsButtonText, sk_saveLmsDialogTitle, sk_saveLmsDialogFilters
+    saveLmsButtonText, saveLmsDialogTitle, saveLmsDialogFilters
   );
 
   ImGui::SameLine();
@@ -2635,16 +2636,16 @@ void renderAnnotationsHeader(
   const AllViewsRecenterType& recenterAllViews
 )
 {
-  static constexpr bool sk_doNotRecenterCrosshairs = false;
-  static constexpr bool sk_doNotRealignCrosshairs = false;
-  static constexpr bool sk_doNotRecenterOnCurrentCrosshairsPosition = false;
-  static constexpr bool sk_doNotResetObliqueOrientation = false;
-  static constexpr bool sk_doNotResetZoom = false;
+  static constexpr bool doNotRecenterCrosshairs = false;
+  static constexpr bool doNotRealignCrosshairs = false;
+  static constexpr bool doNotRecenterOnCurrentCrosshairsPosition = false;
+  static constexpr bool doNotResetObliqueOrientation = false;
+  static constexpr bool doNotResetZoom = false;
 
-  static constexpr size_t sk_minNumLines = 6;
-  static constexpr size_t sk_maxNumLines = 12;
+  static constexpr size_t minNumLines = 6;
+  static constexpr size_t maxNumLines = 12;
 
-  static const ImGuiColorEditFlags sk_annotColorEditFlags = ImGuiColorEditFlags_PickerHueBar
+  static const ImGuiColorEditFlags annotColorEditFlags = ImGuiColorEditFlags_PickerHueBar
                                                             | ImGuiColorEditFlags_DisplayRGB
                                                             | ImGuiColorEditFlags_DisplayHex
                                                             | ImGuiColorEditFlags_AlphaBar
@@ -2652,17 +2653,17 @@ void renderAnnotationsHeader(
                                                             | ImGuiColorEditFlags_Uint8
                                                             | ImGuiColorEditFlags_InputRGB;
 
-  static const std::string sk_saveAnnotButtonText = std::string(ICON_FK_FLOPPY_O)
+  static const std::string saveAnnotButtonText = std::string(ICON_FK_FLOPPY_O)
                                                     + std::string(" Save all...");
 
-  static const std::string sk_removeAnnotButtonText = std::string(ICON_FK_TRASH_O)
+  static const std::string removeAnnotButtonText = std::string(ICON_FK_TRASH_O)
                                                       + std::string(" Remove");
 
-  static const std::string sk_fillAnnotButtonText = std::string(ICON_FK_PAINT_BRUSH)
+  static const std::string fillAnnotButtonText = std::string(ICON_FK_PAINT_BRUSH)
                                                     + std::string(" Fill segmentation");
 
-  static const char* sk_saveAnnotDialogTitle("Save Annotations to JSON");
-  static const std::vector<std::string> sk_saveAnnotDialogFilters{};
+  static const char* saveAnnotDialogTitle("Save Annotations to JSON");
+  static const std::vector<std::string> saveAnnotDialogFilters{};
 
   Image* image = appData.image(imageUid);
   if (!image)
@@ -2767,7 +2768,7 @@ void renderAnnotationsHeader(
   const ImVec4* colors = ImGui::GetStyle().Colors;
   ImGui::PushStyleColor(ImGuiCol_Header, colors[ImGuiCol_ButtonActive]);
 
-  const size_t numLines = std::max(std::min(annotUids.size(), sk_maxNumLines), sk_minNumLines);
+  const size_t numLines = std::max(std::min(annotUids.size(), maxNumLines), minNumLines);
 
   /// @todo Change this into a child window, like for Landmarks.
   /// then do ImGui::SetScrollHereY(1.0f); to put activeAnnot at bottom
@@ -2815,11 +2816,11 @@ void renderAnnotationsHeader(
           alignViewToAnnotationPlane(*activeAnnot);
 
           recenterAllViews(
-            sk_doNotRecenterCrosshairs,
-            sk_doNotRealignCrosshairs,
-            sk_doNotRecenterOnCurrentCrosshairsPosition,
-            sk_doNotResetObliqueOrientation,
-            sk_doNotResetZoom
+            doNotRecenterCrosshairs,
+            doNotRealignCrosshairs,
+            doNotRecenterOnCurrentCrosshairsPosition,
+            doNotResetObliqueOrientation,
+            doNotResetZoom
           );
         }
         else
@@ -2915,7 +2916,7 @@ void renderAnnotationsHeader(
   static bool doNotAskAagain = false;
 
   ImGui::Spacing();
-  const bool clickedRemoveButton = ImGui::Button(sk_removeAnnotButtonText.c_str());
+  const bool clickedRemoveButton = ImGui::Button(removeAnnotButtonText.c_str());
   if (ImGui::IsItemHovered())
   {
     ImGui::SetTooltip("Remove the annotation. (The saved file on disk will not be deleted.)");
@@ -2937,7 +2938,7 @@ void renderAnnotationsHeader(
   if (activeAnnot->isClosed() && !activeAnnot->isSmoothed())
   {
     ImGui::SameLine();
-    if (ImGui::Button(sk_fillAnnotButtonText.c_str()))
+    if (ImGui::Button(fillAnnotButtonText.c_str()))
     {
       if (paintActiveSegmentationWithActivePolygon)
       {
@@ -3094,7 +3095,7 @@ void renderAnnotationsHeader(
 
   // Line color:
   glm::vec4 annotLineColor = activeAnnot->getLineColor();
-  if (ImGui::ColorEdit4("Line color", glm::value_ptr(annotLineColor), sk_annotColorEditFlags))
+  if (ImGui::ColorEdit4("Line color", glm::value_ptr(annotLineColor), annotColorEditFlags))
   {
     activeAnnot->setLineColor(annotLineColor);
     activeAnnot->setVertexColor(annotLineColor);
@@ -3120,7 +3121,7 @@ void renderAnnotationsHeader(
 
     // Fill color:
     glm::vec4 annotFillColor = activeAnnot->getFillColor();
-    if (ImGui::ColorEdit4("Fill color", glm::value_ptr(annotFillColor), sk_annotColorEditFlags))
+    if (ImGui::ColorEdit4("Fill color", glm::value_ptr(annotFillColor), annotColorEditFlags))
     {
       activeAnnot->setFillColor(annotFillColor);
     }
@@ -3128,14 +3129,12 @@ void renderAnnotationsHeader(
     helpMarker("Annotation fill color");
 
     ImGui::SameLine();
-    if (ImGui::Button(ICON_FK_LEVEL_UP))
-    {
+    if (ImGui::Button(ICON_FK_LEVEL_UP)) {
       glm::vec4 lineColor{annotFillColor};
       lineColor.a = activeAnnot->getLineColor().a;
       activeAnnot->setLineColor(lineColor);
     }
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Match line color to fill color");
     }
   }
@@ -3160,12 +3159,9 @@ void renderAnnotationsHeader(
 
   // Number of vertices
   static constexpr size_t OUTER_BOUNDARY = 0;
-  if (activeAnnot->polygon().numBoundaries() > 0)
-  {
+  if (activeAnnot->polygon().numBoundaries() > 0) {
     ImGui::Spacing();
-    ImGui::Text(
-      "Polygon has %ld vertices", activeAnnot->polygon().getBoundaryVertices(OUTER_BOUNDARY).size()
-    );
+    ImGui::Text("Polygon has %ld vertices", activeAnnot->polygon().getBoundaryVertices(OUTER_BOUNDARY).size());
   }
 
   ImGui::Spacing();
@@ -3182,8 +3178,7 @@ void renderAnnotationsHeader(
   {
     // Save annotations to disk:
     const auto selectedFile = ImGui::renderFileButtonDialogAndWindow(
-      sk_saveAnnotButtonText.c_str(), sk_saveAnnotDialogTitle, sk_saveAnnotDialogFilters
-    );
+      saveAnnotButtonText.c_str(), saveAnnotDialogTitle, saveAnnotDialogFilters);
 
     if (ImGui::IsItemHovered())
       ImGui::SetTooltip("Save annotations to disk");
@@ -3194,21 +3189,17 @@ void renderAnnotationsHeader(
       // then save the json to disk.
       nlohmann::json j;
 
-      for (const auto& annotUid : appData.annotationsForImage(imageUid))
-      {
-        if (const Annotation* annot = appData.annotation(annotUid))
-        {
+      for (const auto& annotUid : appData.annotationsForImage(imageUid)) {
+        if (const Annotation* annot = appData.annotation(annotUid)) {
           serialize::appendAnnotationToJson(*annot, j);
         }
       }
 
-      if (serialize::saveToJsonFile(j, *selectedFile))
-      {
+      if (serialize::saveToJsonFile(j, *selectedFile)) {
         spdlog::info("Saved annotations for image {} to JSON file {}", imageUid, *selectedFile);
         activeAnnot->setFileName(*selectedFile);
       }
-      else
-      {
+      else {
         spdlog::error("Error saving annotation to SVG file {}", *selectedFile);
       }
     }

@@ -1,8 +1,9 @@
-#ifndef IMAGE_UTILITY_H
-#define IMAGE_UTILITY_H
+#pragma once
 
 #include "common/Types.h"
 #include "image/Image.h"
+
+#include "TDigest.h"
 
 #include <glm/vec3.hpp>
 
@@ -39,18 +40,15 @@ std::pair<double, double> componentRange(const ComponentType& componentType);
 
 std::pair<glm::vec3, glm::vec3> computeWorldMinMaxCornersOfImage(const Image& image);
 
-std::vector<ComponentStats> computeImageStatistics(const Image& image);
+std::vector<ComponentStats> computeImageStatisticsOnSortedValues(const Image& image);
+std::vector<OnlineStats> computeImageStatisticsOnUnsortedValues(const Image& image);
 
-double bumpQuantile(
-  const Image& image,
-  uint32_t comp,
-  double currentQuantile,
-  double attemptedQuantile,
-  double currentValue
-);
+/// @brief Compute a T-digest for each image component
+std::vector<tdigest::TDigest> computeTDigests(const Image& image);
+
+double bumpQuantile(const Image& image, uint32_t comp,
+                    double currentQuantile, double attemptedQuantile, double currentValue);
 
 std::optional<std::size_t> computeNumHistogramBins(
   const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats
 );
-
-#endif // IMAGE_UTILITY_H

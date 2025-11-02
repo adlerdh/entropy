@@ -45,12 +45,10 @@ bool promptForChar(const char* prompt, char& readch)
   if (std::getline(std::cin, tmp))
   {
     // Only accept single character input
-    if (1 == tmp.length())
-    {
+    if (1 == tmp.length()) {
       readch = tmp[0];
     }
-    else
-    {
+    else {
       // For most input, char zero is an appropriate sentinel
       readch = '\0';
     }
@@ -101,13 +99,11 @@ void EntropyApp::init()
   // Start the annotation state machine
   state::annot::fsm_list::start();
 
-  if (auto* state = state::annot::fsm_list::current_state_ptr)
-  {
+  if (auto* state = state::annot::fsm_list::current_state_ptr) {
     state->setAppData(&m_data);
     state->setCallbacks([this]() { m_imgui.render(); });
   }
-  else
-  {
+  else {
     spdlog::error("Null annotation state machine");
     throw_debug("Null annotation state machine")
   }
@@ -124,9 +120,8 @@ void EntropyApp::run()
 
   auto checkIfAppShouldQuit = [this]() { return m_data.state().quitApp(); };
 
-  m_glfw.renderLoop(
-    m_imagesReady, m_imageLoadFailed, checkIfAppShouldQuit, [this]() { onImagesReady(); }
-  );
+  m_glfw.renderLoop(m_imagesReady, m_imageLoadFailed, checkIfAppShouldQuit,
+                    [this]() { onImagesReady(); });
 
   // Cancel image loading, in case it's still going on
   m_imageLoadCancelled = true;
@@ -137,18 +132,16 @@ void EntropyApp::run()
 void EntropyApp::onImagesReady()
 {
   // Recenter the crosshairs, but don't recenter views on the crosshairs:
-  static constexpr bool sk_recenterCrosshairs = true;
-  static constexpr bool sk_realignCrosshairs = true;
-  static constexpr bool sk_doNotRecenterOnCurrentCrosshairsPos = false;
-  static constexpr bool sk_resetObliqueOrientation = true;
-  static constexpr bool sk_resetZoom = true;
+  constexpr bool recenterCrosshairs = true;
+  constexpr bool realignCrosshairs = true;
+  constexpr bool doNotRecenterOnCurrentCrosshairsPos = false;
+  constexpr bool resetObliqueOrientation = true;
+  constexpr bool resetZoom = true;
 
   spdlog::debug("Images are loaded.");
 
   const Image* refImg = m_data.refImage();
-
-  if (!refImg)
-  {
+  if (!refImg) {
     // At a minimum, we need a reference image to do anything.
     // If the reference image is null, then image loading has failed.
     spdlog::critical("The reference image is null");
@@ -181,9 +174,8 @@ void EntropyApp::onImagesReady()
 
     if (const auto& refUid = m_data.refImageUid())
     {
-      m_data.windowData().addGridLayout(
-        ViewType::Axial, m_data.numImages(), 1, sk_offsetViews, sk_isLightbox, 0, *refUid
-      );
+      m_data.windowData().addGridLayout(ViewType::Axial, m_data.numImages(), 1,
+                                        sk_offsetViews, sk_isLightbox, 0, *refUid);
     }
   }
 
@@ -196,35 +188,21 @@ void EntropyApp::onImagesReady()
   for (const auto& imageUid : m_data.imageUidsOrdered())
   {
     const Image* image = m_data.image(imageUid);
-    if (!image)
+    if (!image) {
       continue;
+    }
 
     m_data.windowData().addLightboxLayoutForImage(
-      ViewType::Axial,
-      data::computeNumImageSlicesAlongWorldDirection(
-        *image, Directions::get(Directions::Anatomy::Inferior)
-      ),
-      imageIndex,
-      imageUid
-    );
+      ViewType::Axial, data::computeNumImageSlicesAlongWorldDirection(
+        *image, Directions::get(Directions::Anatomy::Inferior)), imageIndex, imageUid);
 
     m_data.windowData().addLightboxLayoutForImage(
-      ViewType::Coronal,
-      data::computeNumImageSlicesAlongWorldDirection(
-        *image, Directions::get(Directions::Anatomy::Anterior)
-      ),
-      imageIndex,
-      imageUid
-    );
+      ViewType::Coronal, data::computeNumImageSlicesAlongWorldDirection(
+        *image, Directions::get(Directions::Anatomy::Anterior)), imageIndex, imageUid);
 
     m_data.windowData().addLightboxLayoutForImage(
-      ViewType::Sagittal,
-      data::computeNumImageSlicesAlongWorldDirection(
-        *image, Directions::get(Directions::Anatomy::Right)
-      ),
-      imageIndex,
-      imageUid
-    );
+      ViewType::Sagittal, data::computeNumImageSlicesAlongWorldDirection(
+        *image, Directions::get(Directions::Anatomy::Right)), imageIndex, imageUid);
 
     ++imageIndex;
   }
@@ -232,12 +210,8 @@ void EntropyApp::onImagesReady()
   m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data.imageUidsOrdered());
 
   m_callbackHandler.recenterViews(
-    m_data.state().recenteringMode(),
-    sk_recenterCrosshairs,
-    sk_realignCrosshairs,
-    sk_doNotRecenterOnCurrentCrosshairsPos,
-    sk_resetObliqueOrientation,
-    sk_resetZoom);
+    m_data.state().recenteringMode(), recenterCrosshairs, realignCrosshairs,
+    doNotRecenterOnCurrentCrosshairsPos, resetObliqueOrientation, resetZoom);
 
   m_callbackHandler.setMouseMode(MouseMode::Pointer);
 
@@ -263,8 +237,7 @@ void EntropyApp::resize(int windowWidth, int windowHeight)
 
   // Set viewport to account for margins
   windowData().setViewport(
-    margins.left,
-    margins.bottom,
+    margins.left, margins.bottom,
     static_cast<float>(windowWidth) - (margins.left + margins.right),
     static_cast<float>(windowHeight) - (margins.bottom + margins.top)
   );
@@ -365,20 +338,18 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadImage(
     for (const auto& imageUid : m_data.imageUidsOrdered())
     {
       const Image* image = m_data.image(imageUid);
-      if (!image)
+      if (!image) {
         continue;
+      }
 
-      if (image->header().fileName() == fileName)
-      {
+      if (image->header().fileName() == fileName) {
         spdlog::info("Image {} has already been loaded as {}", fileName, imageUid);
         return {imageUid, false};
       }
     }
   }
 
-  Image image(
-    fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages
-  );
+  Image image(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
 
   spdlog::info("Read image from file {}", fileName);
 
@@ -398,23 +369,20 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
 )
 {
   // Setting indicating that the same segmentation image file can be loaded twice:
-  static constexpr bool sk_canLoadSameSegFileTwice = false;
-
-  static constexpr float EPS = glm::epsilon<float>();
+  constexpr bool canLoadSameSegFileTwice = false;
+  constexpr auto EPS = glm::epsilon<float>();
 
   // Return value indicating that segmentation was not loaded:
-  static const std::pair<std::optional<uuids::uuid>, bool> sk_noSegLoaded{std::nullopt, false};
+  static const std::pair<std::optional<uuids::uuid>, bool> noSegLoaded{std::nullopt, false};
 
   // Has this segmentation already been loaded? Search for its file name:
   for (const auto& segUid : m_data.segUidsOrdered())
   {
     const Image* seg = m_data.seg(segUid);
-    if (seg && seg->header().fileName() == fileName)
-    {
+    if (seg && seg->header().fileName() == fileName) {
       spdlog::info("Segmentation from file {} has already been loaded as {}", fileName, segUid);
 
-      if (!sk_canLoadSameSegFileTwice)
-      {
+      if (!canLoadSameSegFileTwice) {
         return {segUid, false};
       }
     }
@@ -422,11 +390,8 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
 
   // Creating an image as a segmentation will convert the pixel components to the most
   // suitable unsigned integer type
-  Image seg(
-    fileName,
-    Image::ImageRepresentation::Segmentation,
-    Image::MultiComponentBufferType::SeparateImages
-  );
+  Image seg(fileName, Image::ImageRepresentation::Segmentation,
+            Image::MultiComponentBufferType::SeparateImages);
 
   // Set the default opacity:
   seg.settings().setOpacity(0.5);
@@ -446,13 +411,11 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
   {
     // No valid image was provided to match with this segmentation.
     // Add just the segmentation without pairing it to an image.
-    if (const auto segUid = m_data.addSeg(std::move(seg)))
-    {
+    if (const auto segUid = m_data.addSeg(std::move(seg))) {
       return {*segUid, true};
     }
-    else
-    {
-      return sk_noSegLoaded;
+    else {
+      return noSegLoaded;
     }
   }
 
@@ -466,55 +429,34 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
 
   if (!math::areMatricesEqual(imgTx.subject_T_texture(), segTx.subject_T_texture()))
   {
-    spdlog::warn(
-      "The subject_T_texture transformations for image {} "
-      "and segmentation from file {} do not match:",
-      *matchingImageUid,
-      fileName
-    );
+    spdlog::warn("The subject_T_texture transformations for image {} "
+                 "and segmentation from file {} do not match:",
+                 *matchingImageUid, fileName);
 
     spdlog::info("subject_T_texture matrix for image:\n{}", glm::to_string(imgTx.subject_T_texture()));
-    spdlog::info(
-      "subject_T_texture matrix for segmentation:\n{}", glm::to_string(segTx.subject_T_texture())
-    );
+    spdlog::info("subject_T_texture matrix for segmentation:\n{}", glm::to_string(segTx.subject_T_texture()));
 
     const auto& imgHdr = matchImg->header();
     const auto& segHdr = seg.header();
 
-    if (glm::any(glm::epsilonNotEqual(imgHdr.origin(), segHdr.origin(), EPS)))
-    {
-      spdlog::warn(
-        "The origins of image ({}) and segmentation ({}) do not match",
-        glm::to_string(imgHdr.origin()),
-        glm::to_string(segHdr.origin())
-      );
+    if (glm::any(glm::epsilonNotEqual(imgHdr.origin(), segHdr.origin(), EPS))) {
+      spdlog::warn("The origins of image ({}) and segmentation ({}) do not match",
+                   glm::to_string(imgHdr.origin()), glm::to_string(segHdr.origin()));
     }
 
-    if (glm::any(glm::epsilonNotEqual(imgHdr.spacing(), segHdr.spacing(), EPS)))
-    {
-      spdlog::warn(
-        "The voxel spacings of image ({}) and segmentation ({}) do not match",
-        glm::to_string(imgHdr.spacing()),
-        glm::to_string(segHdr.spacing())
-      );
+    if (glm::any(glm::epsilonNotEqual(imgHdr.spacing(), segHdr.spacing(), EPS))) {
+      spdlog::warn("The voxel spacings of image ({}) and segmentation ({}) do not match",
+                   glm::to_string(imgHdr.spacing()), glm::to_string(segHdr.spacing()));
     }
 
-    if (!math::areMatricesEqual(imgHdr.directions(), segHdr.directions()))
-    {
-      spdlog::warn(
-        "The direction vectors of image ({}) and segmentation ({}) do not match",
-        glm::to_string(imgHdr.directions()),
-        glm::to_string(segHdr.directions())
-      );
+    if (!math::areMatricesEqual(imgHdr.directions(), segHdr.directions())) {
+      spdlog::warn("The direction vectors of image ({}) and segmentation ({}) do not match",
+                   glm::to_string(imgHdr.directions()), glm::to_string(segHdr.directions()));
     }
 
-    if (imgHdr.pixelDimensions() != segHdr.pixelDimensions())
-    {
-      spdlog::warn(
-        "The pixel dimensions of image ({}) and segmentation ({}) do not match",
-        glm::to_string(imgHdr.pixelDimensions()),
-        glm::to_string(segHdr.pixelDimensions())
-      );
+    if (imgHdr.pixelDimensions() != segHdr.pixelDimensions()) {
+      spdlog::warn("The pixel dimensions of image ({}) and segmentation ({}) do not match",
+                   glm::to_string(imgHdr.pixelDimensions()), glm::to_string(segHdr.pixelDimensions()));
     }
 
     char type = '\0';
@@ -523,18 +465,12 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
       promptForChar("\nContinue loading the segmentation despite transformation mismatch? [y/n]", type)
     )
     {
-      if ('n' == type || 'N' == type)
-      {
+      if ('n' == type || 'N' == type) {
         spdlog::info("The segmentation from file {} will be loaded", fileName);
-        return sk_noSegLoaded;
+        return noSegLoaded;
       }
-      else if ('y' == type || 'Y' == type)
-      {
-        spdlog::info(
-          "The segmentation from file {} will not be loaded due to "
-          "subject_T_texture mismatch",
-          fileName
-        );
+      else if ('y' == type || 'Y' == type) {
+        spdlog::info("The segmentation from file {} will not be loaded due to subject_T_texture mismatch", fileName);
         break;
       }
     }
@@ -544,39 +480,32 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
 
   if (!isComponentUnsignedInt(seg.header().memoryComponentType()))
   {
-    spdlog::error(
-      "The segmentation from file {} does not have unsigned integer pixel "
-      "component type and so will not be loaded.",
-      fileName
-    );
-    return sk_noSegLoaded;
+    spdlog::error("The segmentation from file {} does not have unsigned integer pixel "
+                  "component type and so will not be loaded.", fileName);
+    return noSegLoaded;
   }
 
   // Synchronize transformation on all segmentations of the image:
   m_callbackHandler.syncManualImageTransformationOnSegs(*matchingImageUid);
 
-  if (const auto segUid = m_data.addSeg(std::move(seg)))
-  {
+  if (const auto segUid = m_data.addSeg(std::move(seg))) {
     spdlog::info("Loaded segmentation from file {}", fileName);
     return {*segUid, true};
   }
 
-  return sk_noSegLoaded;
+  return noSegLoaded;
 }
 
 std::pair<std::optional<uuids::uuid>, bool>
 EntropyApp::loadDeformationField(const fs::path& fileName)
 {
   // Return value indicating that deformation field was not loaded:
-  static const std::pair<std::optional<uuids::uuid>, bool> sk_noDefLoaded{std::nullopt, false};
+  const std::pair<std::optional<uuids::uuid>, bool> noDefLoaded{std::nullopt, false};
 
   // Has this deformation field already been loaded? Search for its file name:
-  for (const auto& defUid : m_data.defUidsOrdered())
-  {
-    if (const Image* def = m_data.def(defUid))
-    {
-      if (def->header().fileName() == fileName)
-      {
+  for (const auto& defUid : m_data.defUidsOrdered()) {
+    if (const Image* def = m_data.def(defUid)) {
+      if (def->header().fileName() == fileName) {
         spdlog::info("Deformation field from {} has already been loaded as {}", fileName, defUid);
         return {defUid, false};
       }
@@ -584,18 +513,12 @@ EntropyApp::loadDeformationField(const fs::path& fileName)
   }
 
   // Components of a deformation field image are loaded as interleaved images
-  Image def(
-    fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::InterleavedImage
-  );
+  Image def(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::InterleavedImage);
 
-  if (def.header().numComponentsPerPixel() < 3)
-  {
-    spdlog::error(
-      "The deformation field from file {} has fewer than three components per pixel "
-      "and so will not be loaded.",
-      fileName
-    );
-    return sk_noDefLoaded;
+  if (def.header().numComponentsPerPixel() < 3) {
+    spdlog::error("The deformation field from file {} has fewer than three components per pixel "
+                  "and so will not be loaded.", fileName);
+    return noDefLoaded;
   }
 
   spdlog::info("Read deformation field image from file {}", fileName);
@@ -610,64 +533,52 @@ EntropyApp::loadDeformationField(const fs::path& fileName)
 
   /// @todo Do check of deformation field header against the reference image header?
 
-  if (const auto defUid = m_data.addDef(std::move(def)))
-  {
+  if (const auto defUid = m_data.addDef(std::move(def))) {
     spdlog::info("Loaded deformation field image from file {} as {}", fileName, *defUid);
     return {*defUid, true};
   }
 
-  return sk_noDefLoaded;
+  return noDefLoaded;
 }
 
 bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bool isReferenceImage)
 {
-  static constexpr size_t sk_defaultImageColorMapIndex = 0;
+  constexpr size_t defaultImageColorMapIndex = 0;
 
   // Do NOT ignore images if they have already been loaded:
   // (i.e. load duplicate images again anyway):
-  static constexpr bool sk_ignoreImageIfAlreadyLoaded = false;
+  constexpr bool ignoreImageIfAlreadyLoaded = false;
 
   // Load image:
   std::optional<uuids::uuid> imageUid;
   bool isNewImage = false;
 
-  try
-  {
+  try {
     spdlog::debug("Attempting to load image from {}", serializedImage.m_imageFileName);
-
-    std::tie(imageUid, isNewImage)
-      = loadImage(serializedImage.m_imageFileName, sk_ignoreImageIfAlreadyLoaded);
+    std::tie(imageUid, isNewImage) = loadImage(serializedImage.m_imageFileName, ignoreImageIfAlreadyLoaded);
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     spdlog::error("Exception loading image from {}: {}", serializedImage.m_imageFileName, e.what());
     return false;
   }
 
-  if (!imageUid)
-  {
+  if (!imageUid) {
     spdlog::error("Unable to load image from {}", serializedImage.m_imageFileName);
     return false;
   }
 
   if (!isNewImage)
   {
-    spdlog::info(
-      "Image from {} already exists in this project as {}",
-      serializedImage.m_imageFileName,
-      *imageUid
-    );
+    spdlog::info("Image from {} already exists in this project as {}", serializedImage.m_imageFileName, *imageUid);
 
-    if (sk_ignoreImageIfAlreadyLoaded)
-    {
+    if (ignoreImageIfAlreadyLoaded) {
       // Because this setting is true, cancel loading the rest of the data for this image:
       return true;
     }
   }
 
   Image* image = m_data.image(*imageUid);
-  if (!image)
-  {
+  if (!image) {
     spdlog::error("Null image {}", *imageUid);
     return false;
   }
@@ -686,8 +597,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   {
     glm::dmat4 affine_T_subject(1.0);
 
-    if (isReferenceImage)
-    {
+    if (isReferenceImage) {
       spdlog::warn("An affine transformation file ({}) was provided for the reference image. "
                    "It will be ignored, since the reference image defines the World coordinate "
                    "space, which cannot be transformed.", *serializedImage.m_affineTxFileName);
@@ -702,6 +612,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
 
         image->transformations().set_affine_T_subject_fileName(std::nullopt);
       }
+
       image->transformations().set_affine_T_subject_fileName(serializedImage.m_affineTxFileName);
       image->transformations().set_affine_T_subject(glm::mat4{affine_T_subject});
     }
@@ -724,71 +635,47 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
     std::optional<uuids::uuid> deformationUid;
     bool isDeformationNewImage = false;
 
-    try
-    {
-      spdlog::debug(
-        "Attempting to load deformation field image from {}", *serializedImage.m_deformationFileName
-      );
-
-      std::tie(deformationUid, isDeformationNewImage) = loadDeformationField(
-        *serializedImage.m_deformationFileName
-      );
+    try {
+      spdlog::debug("Attempting to load deformation field image from {}", *serializedImage.m_deformationFileName);
+      std::tie(deformationUid, isDeformationNewImage) = loadDeformationField(*serializedImage.m_deformationFileName);
     }
-    catch (const std::exception& e)
-    {
-      spdlog::error(
-        "Exception loading deformation field from {}: {}",
-        *serializedImage.m_deformationFileName,
-        e.what()
-      );
+    catch (const std::exception& e) {
+      spdlog::error("Exception loading deformation field from {}: {}",
+                    *serializedImage.m_deformationFileName, e.what());
     }
 
     do
     {
-      if (!deformationUid)
-      {
-        spdlog::error(
-          "Unable to load deformation field from {} for image {}",
-          *serializedImage.m_deformationFileName,
-          *imageUid
-        );
+      if (!deformationUid) {
+        spdlog::error("Unable to load deformation field from {} for image {}",
+                      *serializedImage.m_deformationFileName, *imageUid);
         break;
       }
 
-      if (!isDeformationNewImage)
-      {
-        spdlog::info(
-          "Deformation field from {} already exists in this project as image {}",
-          *serializedImage.m_deformationFileName,
-          *deformationUid
-        );
+      if (!isDeformationNewImage) {
+        spdlog::info("Deformation field from {} already exists in this project as image {}",
+                     *serializedImage.m_deformationFileName, *deformationUid);
         break;
       }
 
       Image* deformation = m_data.def(*deformationUid);
 
-      if (!deformation)
-      {
+      if (!deformation) {
         spdlog::error("Null deformation field image {}", *deformationUid);
         break;
       }
 
-      deformation->settings().setDisplayName(
-        deformation->settings().displayName() + " (deformation)"
-      );
+      deformation->settings().setDisplayName(deformation->settings().displayName() + " (deformation)");
 
       /// @todo Load this from project settings
-      for (uint32_t i = 0; i < deformation->header().numComponentsPerPixel(); ++i)
-      {
+      for (uint32_t i = 0; i < deformation->header().numComponentsPerPixel(); ++i) {
         deformation->settings().setColorMapIndex(i, 25);
       }
 
-      if (m_data.assignDefUidToImage(*imageUid, *deformationUid))
-      {
+      if (m_data.assignDefUidToImage(*imageUid, *deformationUid)) {
         spdlog::info("Assigned deformation field {} to image {}", *deformationUid, *imageUid);
       }
-      else
-      {
+      else {
         spdlog::error("Unable to assign deformation field {} to image {}", *deformationUid, *imageUid);
         m_data.removeDef(*deformationUid);
         break;
@@ -823,30 +710,25 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
         // Assign the annotation the file name from which it was read:
         annot.setFileName(*serializedImage.m_annotationsFileName);
 
-        if (const auto annotUid = m_data.addAnnotation(*imageUid, annot))
-        {
+        if (const auto annotUid = m_data.addAnnotation(*imageUid, annot)) {
           m_data.assignActiveAnnotationUidToImage(*imageUid, *annotUid);
           spdlog::debug("Added annotation {} for image {}", *annotUid, *imageUid);
         }
-        else
-        {
+        else {
           spdlog::error("Unable to add annotation to image {}", *imageUid);
         }
       }
     }
     else
     {
-      spdlog::error(
-        "Unable to open annotations from JSON file {} for image {}",
-        *serializedImage.m_annotationsFileName,
-        *imageUid
-      );
+      spdlog::error("Unable to open annotations from JSON file {} for image {}",
+                    *serializedImage.m_annotationsFileName, *imageUid);
     }
   }
 
-  static const auto sk_hueMinMax = std::make_pair(0.0f, 360.0f);
-  static const auto sk_satMinMax = std::make_pair(0.6f, 1.0f);
-  static const auto sk_valMinMax = std::make_pair(0.6f, 1.0f);
+  const auto hueMinMax = std::make_pair(0.0f, 360.0f);
+  const auto satMinMax = std::make_pair(0.6f, 1.0f);
+  const auto valMinMax = std::make_pair(0.6f, 1.0f);
 
   // Set landmarks from file:
   for (const auto& lm : serializedImage.m_landmarkGroups)
@@ -863,11 +745,9 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
       for (auto& p : landmarks)
       {
         const auto colors = math::generateRandomHsvSamples(
-          1, sk_hueMinMax, sk_satMinMax, sk_valMinMax, static_cast<uint32_t>(p.first)
-        );
+          1, hueMinMax, satMinMax, valMinMax, static_cast<uint32_t>(p.first));
 
-        if (!colors.empty())
-        {
+        if (!colors.empty()) {
           p.second.setColor(glm::rgbColor(colors[0]));
         }
       }
@@ -878,40 +758,29 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
       lmGroup.setPoints(landmarks);
       lmGroup.setRenderLandmarkNames(false);
 
-      if (lm.m_inVoxelSpace)
-      {
+      if (lm.m_inVoxelSpace) {
         lmGroup.setInVoxelSpace(true);
         spdlog::info("Landmarks are defined in Voxel space");
       }
-      else
-      {
+      else {
         lmGroup.setInVoxelSpace(false);
         spdlog::info("Landmarks are defined in physical Subject space");
       }
 
-      for (const auto& p : landmarks)
-      {
-        spdlog::trace(
-          "Landmark {} ('{}') : {}",
-          p.first,
-          p.second.getName(),
-          glm::to_string(p.second.getPosition())
-        );
+      for (const auto& p : landmarks) {
+        spdlog::trace("Landmark {} ('{}') : {}", p.first, p.second.getName(),
+                      glm::to_string(p.second.getPosition()));
       }
 
       const auto lmGroupUid = m_data.addLandmarkGroup(lmGroup);
       const bool linked = m_data.assignLandmarkGroupUidToImage(*imageUid, lmGroupUid);
 
-      if (!linked)
-      {
+      if (!linked) {
         spdlog::error("Unable to assigned landmark group {} to image {}", lmGroupUid, *imageUid);
       }
     }
-    else
-    {
-      spdlog::error(
-        "Unable to open landmarks from CSV file {} for image {}", lm.m_csvFileName, *imageUid
-      );
+    else {
+      spdlog::error("Unable to open landmarks from CSV file {} for image {}", lm.m_csvFileName, *imageUid);
     }
   }
 
@@ -928,26 +797,21 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   // To conserve GPU memory, the map is downsampled by a factor of 0.5 relative to the
   // original image size. Also, the map is stored with uint8_t components.
   /// @todo make configurable
-  static constexpr float sk_downsamplingFactor = 0.5f;
+  constexpr float downsamplingFactor = 0.5f;
 
   // The isosurface threshold for separating foreground and background is set at the
   // 50th quantile image value. This seems to do a pretty good job for CT, T1, and T2 images.
   /// @todo Eventually, we should do a proper foreground/background segmentation.
-  static constexpr uint32_t sk_thresholdQuantile = 50; // 50th percentile
+  constexpr uint32_t hresholdQuantile = 50; // 50th percentile
 
   // If the image has multiple, interleaved components, then do not compute the distance map
   // for the components, since we have not yet written functions to perform distance map
   // calculations on images with interleaved components.
-  if (image->header().interleavedComponents())
-  {
-    spdlog::info(
-      "Image {} has multiple, interleaved components, "
-      "so the distance and noise estimate maps will not be computed",
-      *imageUid
-    );
+  if (image->header().interleavedComponents()) {
+    spdlog::info("Image {} has multiple, interleaved components, "
+                 "so the distance and noise estimate maps will not be computed", *imageUid);
   }
-  else if (!image->settings().useDistanceMapForRaycasting())
-  {
+  else if (!image->settings().useDistanceMapForRaycasting()) {
     spdlog::info("Image {} has disabled using the distance map for raycasting", *imageUid);
   }
   else
@@ -970,79 +834,53 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
       /// especially since the image was originally loaded using ITK. But the utility
       /// functions that we use require an ITK image as input.
 
-      const ImageType::Pointer compImage
-        = createItkImageFromImageComponent<ItkImageCompType>(*image, comp);
-      const NoiseImageType::Pointer noiseEstimateItkImage
-        = computeNoiseEstimate<ItkImageCompType>(compImage, radius);
+      const ImageType::Pointer compImage = createItkImageFromImageComponent<ItkImageCompType>(*image, comp);
+      const NoiseImageType::Pointer noiseEstimateItkImage = computeNoiseEstimate<ItkImageCompType>(compImage, radius);
 
       if (noiseEstimateItkImage)
       {
-        const std::string displayName = std::string("Noise estimate for component ")
-                                        + std::to_string(comp) + " of '"
-                                        + image->settings().displayName() + "'";
+        const std::string displayName = std::string("Noise estimate for component ") + std::to_string(comp) +
+                                        " of '" + image->settings().displayName() + "'";
 
-        Image noiseEstimateImage
-          = createImageFromItkImage<ItkImageCompType>(noiseEstimateItkImage, displayName);
+        Image noiseEstimateImage = createImageFromItkImage<ItkImageCompType>(noiseEstimateItkImage, displayName);
         const glm::uvec3 noiseImgSize = noiseEstimateImage.header().pixelDimensions();
 
         // m_data.addImage( noiseEstimateImage ); // Add noise estimate as an image for debug purposes
         m_data.addNoiseEstimate(*imageUid, comp, std::move(noiseEstimateImage), radius);
 
-        spdlog::debug(
-          "Created noise estimate map (with dimensions {}x{}x{} voxels) with radius {} for "
-          "component {} of image {}",
-          noiseImgSize.x,
-          noiseImgSize.y,
-          noiseImgSize.z,
-          radius,
-          comp,
-          *imageUid
-        );
+        spdlog::debug("Created noise estimate map (with dimensions {}x{}x{} voxels) with radius {} for "
+                      "component {} of image {}", noiseImgSize.x, noiseImgSize.y, noiseImgSize.z,
+                      radius, comp, *imageUid);
       }
-      else
-      {
+      else {
         spdlog::error("Unable to create noise estimate for component {} of image {}", comp, *imageUid);
       }
 
       // Compute foreground distance map for image component:
       const auto& stats = image->settings().componentStatistics(comp);
-      const float minThreshold = static_cast<float>(stats.m_quantiles[sk_thresholdQuantile]);
-      const float maxThreshold = static_cast<float>(stats.m_maximum);
+      const float minThreshold = static_cast<float>(stats.quantiles[hresholdQuantile]);
+      const float maxThreshold = static_cast<float>(stats.onlineStats.max);
 
-      const DistanceMapImageType::Pointer distMapItkImage
-        = computeEuclideanDistanceMap<ItkImageCompType, DistanceMapCompType>(
-          compImage, comp, minThreshold, maxThreshold, sk_downsamplingFactor
-        );
+      const DistanceMapImageType::Pointer distMapItkImage =
+        computeEuclideanDistanceMap<ItkImageCompType, DistanceMapCompType>(
+          compImage, comp, minThreshold, maxThreshold, downsamplingFactor);
 
       if (distMapItkImage)
       {
-        const std::string displayName = std::string("Distance map for component ")
-                                        + std::to_string(comp) + " of '"
-                                        + image->settings().displayName() + "'";
+        const std::string displayName = std::string("Distance map for component ") + std::to_string(comp) +
+                                        " of '" + image->settings().displayName() + "'";
 
-        Image distMapImage
-          = createImageFromItkImage<DistanceMapCompType>(distMapItkImage, displayName);
+        Image distMapImage = createImageFromItkImage<DistanceMapCompType>(distMapItkImage, displayName);
         const glm::uvec3 distMapSize = distMapImage.header().pixelDimensions();
 
         // m_data.addImage( distMapImage ); // Add distance map as an image for debug purposes
-        m_data.addDistanceMap(
-          *imageUid, comp, std::move(distMapImage), static_cast<double>(minThreshold)
-        );
+        m_data.addDistanceMap(*imageUid, comp, std::move(distMapImage), static_cast<double>(minThreshold));
 
-        spdlog::debug(
-          "Created distance map (with dimensions {}x{}x{} voxels) to foreground region [{}, {}] "
-          "of component {} of image {}",
-          distMapSize.x,
-          distMapSize.y,
-          distMapSize.z,
-          minThreshold,
-          maxThreshold,
-          comp,
-          *imageUid
-        );
+        spdlog::debug("Created distance map (with dimensions {}x{}x{} voxels) to foreground region [{}, {}] "
+                      "of component {} of image {}", distMapSize.x, distMapSize.y, distMapSize.z,
+                      minThreshold, maxThreshold, comp, *imageUid);
       }
-      else
-      {
+      else {
         spdlog::error("Unable to create distance map for component {} of image {}", comp, *imageUid);
       }
     }
@@ -1065,18 +903,12 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   {
     SegInfo segInfo;
 
-    try
-    {
+    try {
       spdlog::debug("Attempting to load segmentation image from {}", serializedSeg.m_segFileName);
-
-      std::tie(segInfo.uid, segInfo.isNewSeg)
-        = loadSegmentation(serializedSeg.m_segFileName, *imageUid);
+      std::tie(segInfo.uid, segInfo.isNewSeg) = loadSegmentation(serializedSeg.m_segFileName, *imageUid);
     }
-    catch (const std::exception& e)
-    {
-      spdlog::error(
-        "Exception loading segmentation from {}: {}", serializedSeg.m_segFileName, e.what()
-      );
+    catch (const std::exception& e) {
+      spdlog::error("Exception loading segmentation from {}: {}", serializedSeg.m_segFileName, e.what());
       continue; // Skip this segmentation
     }
 
@@ -1215,7 +1047,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
 
   for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i)
   {
-    image->settings().setColorMapIndex(i, sk_defaultImageColorMapIndex);
+    image->settings().setColorMapIndex(i, defaultImageColorMapIndex);
   }
 
   return true;

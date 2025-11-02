@@ -171,7 +171,7 @@ std::optional<uuids::uuid> addNewSurface(
 
   Isosurface surface;
   surface.name = "Surface " + std::to_string(index);
-  surface.value = stats.m_quantiles[sk_defaultIsovalueQuantile];
+  surface.value = stats.quantiles[sk_defaultIsovalueQuantile];
   surface.color = glm::vec3{0.5f, 0.75f, 1.0f};
   surface.opacity = 1.0f;
   surface.meshInSync = false;
@@ -531,7 +531,7 @@ void renderIsosurfacesHeader(
 
         if (ImGui::InputDouble("##isovalue", &value, sk_step, sk_stepFast,
                                appData.guiData().m_imageValuePrecisionFormat.c_str())) {
-          if (stats.m_minimum <= value && value <= stats.m_maximum) {
+          if (stats.onlineStats.min <= value && value <= stats.onlineStats.max) {
             item.m_surface->value = value;
           }
 
@@ -633,12 +633,11 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Edit the name of the surface");
 
-      const double valueMin = image->settings().componentStatistics(componentToAdjust).m_minimum;
-      const double valueMax = image->settings().componentStatistics(componentToAdjust).m_maximum;
+      const double valueMin = image->settings().componentStatistics(componentToAdjust).onlineStats.min;
+      const double valueMax = image->settings().componentStatistics(componentToAdjust).onlineStats.max;
 
       if (mySliderF64("Isovalue", &(surface->value), valueMin,
-                      valueMax, appData.guiData().m_imageValuePrecisionFormat.c_str()))
-      {
+                      valueMax, appData.guiData().m_imageValuePrecisionFormat.c_str())) {
         // updateImageUniforms();
       }
       ImGui::SameLine();

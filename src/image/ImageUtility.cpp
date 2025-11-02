@@ -322,7 +322,7 @@ std::pair<glm::vec3, glm::vec3> computeWorldMinMaxCornersOfImage(const Image& im
   return math::computeMinMaxCornersOfAABBox(worldCorners);
 }
 
-std::vector<ComponentStats> computeImageStatistics(const Image& image)
+std::vector<ComponentStats> computeImageStatisticsOnSortedValues(const Image& image)
 {
   std::vector<ComponentStats> componentStats;
 
@@ -334,60 +334,36 @@ std::vector<ComponentStats> computeImageStatistics(const Image& image)
 
     switch (image.header().memoryComponentType())
     {
-    case ComponentType::Int8:
-    {
-      componentStats.emplace_back(
-        computeImageStatistics<int8_t>(std::span(static_cast<const int8_t*>(bufferSorted), N))
-      );
+    case ComponentType::Int8: {
+      componentStats.emplace_back(computeStatisticsOnSortedIntensities<int8_t>(std::span(static_cast<const int8_t*>(bufferSorted), N)));
       break;
     }
-    case ComponentType::UInt8:
-    {
-      componentStats.emplace_back(
-        computeImageStatistics<uint8_t>(std::span(static_cast<const uint8_t*>(bufferSorted), N))
-      );
+    case ComponentType::UInt8: {
+      componentStats.emplace_back(computeStatisticsOnSortedIntensities<uint8_t>(std::span(static_cast<const uint8_t*>(bufferSorted), N)));
       break;
     }
-    case ComponentType::Int16:
-    {
-      componentStats.emplace_back(
-        computeImageStatistics<int16_t>(std::span(static_cast<const int16_t*>(bufferSorted), N))
-      );
+    case ComponentType::Int16: {
+      componentStats.emplace_back(computeStatisticsOnSortedIntensities<int16_t>(std::span(static_cast<const int16_t*>(bufferSorted), N)));
       break;
     }
-    case ComponentType::UInt16:
-    {
-      componentStats.emplace_back(
-        computeImageStatistics<uint16_t>(std::span(static_cast<const uint16_t*>(bufferSorted), N))
-      );
+    case ComponentType::UInt16: {
+      componentStats.emplace_back(computeStatisticsOnSortedIntensities<uint16_t>(std::span(static_cast<const uint16_t*>(bufferSorted), N)));
       break;
     }
-    case ComponentType::Int32:
-    {
-      componentStats.emplace_back(
-        computeImageStatistics<int32_t>(std::span(static_cast<const int32_t*>(bufferSorted), N))
-      );
+    case ComponentType::Int32: {
+      componentStats.emplace_back(computeStatisticsOnSortedIntensities<int32_t>(std::span(static_cast<const int32_t*>(bufferSorted), N)));
       break;
     }
-    case ComponentType::UInt32:
-    {
-      componentStats.emplace_back(
-        computeImageStatistics<uint32_t>(std::span(static_cast<const uint32_t*>(bufferSorted), N))
-      );
+    case ComponentType::UInt32: {
+      componentStats.emplace_back(computeStatisticsOnSortedIntensities<uint32_t>(std::span(static_cast<const uint32_t*>(bufferSorted), N)));
       break;
     }
-    case ComponentType::Float32:
-    {
-      componentStats.emplace_back(
-        computeImageStatistics<float>(std::span(static_cast<const float*>(bufferSorted), N))
-      );
+    case ComponentType::Float32: {
+      componentStats.emplace_back(computeStatisticsOnSortedIntensities<float>(std::span(static_cast<const float*>(bufferSorted), N)) );
       break;
     }
-    default:
-    {
-      spdlog::error(
-        "Invalid component type '{}'", componentTypeString(image.header().memoryComponentType())
-      );
+    default: {
+      spdlog::error("Invalid component type '{}'", componentTypeString(image.header().memoryComponentType()));
       return componentStats;
     }
     }
@@ -396,18 +372,113 @@ std::vector<ComponentStats> computeImageStatistics(const Image& image)
   return componentStats;
 }
 
-double bumpQuantile(
-  const Image& image,
-  uint32_t comp,
-  double currentQuantile,
-  double attemptedQuantile,
-  double currentValue
-)
+std::vector<OnlineStats> computeImageStatisticsOnUnsortedValues(const Image& image)
+{
+  std::vector<OnlineStats> componentStats;
+
+  const std::size_t N = image.header().numPixels();
+
+  for (uint32_t i = 0; i < image.header().numComponentsPerPixel(); ++i)
+  {
+    const void* buffer = image.bufferAsVoid(i);
+
+    switch (image.header().memoryComponentType())
+    {
+    case ComponentType::Int8: {
+      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<int8_t>(std::span(static_cast<const int8_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::UInt8: {
+      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<uint8_t>(std::span(static_cast<const uint8_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::Int16: {
+      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<int16_t>(std::span(static_cast<const int16_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::UInt16: {
+      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<uint16_t>(std::span(static_cast<const uint16_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::Int32: {
+      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<int32_t>(std::span(static_cast<const int32_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::UInt32: {
+      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<uint32_t>(std::span(static_cast<const uint32_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::Float32: {
+      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<float>(std::span(static_cast<const float*>(buffer), N)) );
+      break;
+    }
+    default: {
+      spdlog::error("Invalid image component type '{}'", componentTypeString(image.header().memoryComponentType()));
+      return componentStats;
+    }
+    }
+  }
+
+  return componentStats;
+}
+
+std::vector<tdigest::TDigest> computeTDigests(const Image& image)
+{
+  spdlog::debug("Computing T-digest for image intensities");
+
+  const std::size_t N = image.header().numPixels();
+  std::vector<tdigest::TDigest> digests;
+
+  for (uint32_t i = 0; i < image.header().numComponentsPerPixel(); ++i)
+  {
+    const void* buffer = image.bufferAsVoid(i);
+
+    switch (image.header().memoryComponentType())
+    {
+    case ComponentType::Int8: {
+      digests.emplace_back(buildTDigest<int8_t>(std::span(static_cast<const int8_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::UInt8: {
+      digests.emplace_back(buildTDigest<uint8_t>(std::span(static_cast<const uint8_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::Int16: {
+      digests.emplace_back(buildTDigest<int16_t>(std::span(static_cast<const int16_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::UInt16: {
+      digests.emplace_back(buildTDigest<uint16_t>(std::span(static_cast<const uint16_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::Int32: {
+      digests.emplace_back(buildTDigest<int32_t>(std::span(static_cast<const int32_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::UInt32: {
+      digests.emplace_back(buildTDigest<uint32_t>(std::span(static_cast<const uint32_t*>(buffer), N)));
+      break;
+    }
+    case ComponentType::Float32: {
+      digests.emplace_back(buildTDigest<float>(std::span(static_cast<const float*>(buffer), N)) );
+      break;
+    }
+    default: {
+      spdlog::error("Invalid image component type '{}'",
+                    componentTypeString(image.header().memoryComponentType()));
+      return digests;
+    }
+    }
+  }
+
+  return digests;
+}
+
+double bumpQuantile(const Image& image, uint32_t comp, double currentQuantile,
+                    double attemptedQuantile, double currentValue)
 {
   const int dir = sgn(attemptedQuantile - currentQuantile);
-
-  if (0 == dir)
-  {
+  if (0 == dir) {
     return currentQuantile;
   }
 
@@ -422,12 +493,10 @@ double bumpQuantile(
     const QuantileOfValue Q = image.valueToQuantile(comp, oldValue);
     oldValue = newValue;
 
-    if (dir < 0)
-    {
+    if (dir < 0) {
       newQuant = (0 == Q.lowerIndex) ? 0.0 : static_cast<double>(Q.lowerIndex - 1) / N;
     }
-    else if (dir > 0)
-    {
+    else if (dir > 0) {
       newQuant = (N == Q.upperIndex) ? 1.0 : static_cast<double>(Q.upperIndex + 1) / N;
     }
 
@@ -442,51 +511,43 @@ double bumpQuantile(
 }
 
 std::optional<std::size_t> computeNumHistogramBins(
-  const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats
-)
+  const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats)
 {
-  if (0 == numPixels)
-  {
+  if (0 == numPixels) {
     spdlog::warn("Cannot compute number of histogram bins for image component with zero pixels");
     return std::nullopt;
   }
 
   switch (method)
   {
-  case NumBinsComputationMethod::SquareRoot:
-  {
+  case NumBinsComputationMethod::SquareRoot: {
     return static_cast<std::size_t>(std::ceil(std::sqrt(numPixels)));
   }
-  case NumBinsComputationMethod::Sturges:
-  {
+  case NumBinsComputationMethod::Sturges: {
     return static_cast<std::size_t>(std::ceil(std::log2(numPixels)) + 1);
   }
-  case NumBinsComputationMethod::Rice:
-  {
+  case NumBinsComputationMethod::Rice: {
     return static_cast<std::size_t>(std::ceil(2.0 * std::pow(numPixels, 1.0 / 3.0)));
   }
-  case NumBinsComputationMethod::Scott:
-  {
-    if (glm::epsilonEqual(stats.m_stdDeviation, 0.0, glm::epsilon<double>()))
-    {
+  case NumBinsComputationMethod::Scott: {
+    if (glm::epsilonEqual(static_cast<double>(stats.onlineStats.stdev), 0.0, glm::epsilon<double>())) {
       spdlog::warn("Image component has zero standard deviation");
       return std::nullopt;
     }
 
-    const double binWidth = 3.49 * stats.m_stdDeviation / std::pow(numPixels, 1.0 / 3.0);
-    return static_cast<std::size_t>(std::ceil((stats.m_maximum - stats.m_minimum) / binWidth));
+    const double binWidth = 3.49 * stats.onlineStats.stdev / std::pow(numPixels, 1.0 / 3.0);
+    return static_cast<std::size_t>(std::ceil((stats.onlineStats.max - stats.onlineStats.min) / binWidth));
   }
   case NumBinsComputationMethod::FreedmanDiaconis:
   {
-    const double IQR = (stats.m_quantiles[75] - stats.m_quantiles[25]);
-    if (glm::epsilonEqual(IQR, 0.0, glm::epsilon<double>()))
-    {
+    const double IQR = (stats.quantiles[75] - stats.quantiles[25]);
+    if (glm::epsilonEqual(IQR, 0.0, glm::epsilon<double>())) {
       spdlog::warn("Image component has zero interquartile range");
       return std::nullopt;
     }
 
     const double binWidth = 2.0 * IQR / std::pow(numPixels, 1.0 / 3.0);
-    return static_cast<std::size_t>(std::ceil((stats.m_maximum - stats.m_minimum) / binWidth));
+    return static_cast<std::size_t>(std::ceil((stats.onlineStats.max - stats.onlineStats.min) / binWidth));
   }
   }
 

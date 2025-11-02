@@ -70,19 +70,27 @@ enum class PixelType
   Undefined
 };
 
+/// Computable by sequential updates in a single linear scan
+struct OnlineStats
+{
+  long double min = 0.0;
+  long double max = 0.0;
+  long double mean = 0.0;
+  long double stdev = 0.0;
+  long double variance = 0.0;
+  long double sum = 0.0;
+  std::size_t count = 0;
+};
+
 /**
  * @brief Statistics of a single image component
  */
 struct ComponentStats
 {
-  double m_minimum = 0;
-  double m_maximum = 0;
-  std::array<double, 101> m_quantiles;
+  OnlineStats onlineStats;
 
-  double m_mean = 0;
-  double m_stdDeviation = 0;
-  double m_variance = 0;
-  double m_sum = 0;
+  /// Order statistics
+  std::array<long double, 101> quantiles;
 };
 
 struct QuantileOfValue

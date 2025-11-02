@@ -1,10 +1,12 @@
-#ifndef IMAGE_UTILITY_TPP
-#define IMAGE_UTILITY_TPP
+#pragma once
 
 #include "common/Exception.hpp"
 #include "common/Types.h"
 #include "common/Filesystem.h"
 #include "image/Image.h"
+#include "image/Histogram.h"
+
+#include "TDigest.h"
 
 #include <itkBinaryThresholdImageFilter.h>
 #include <itkCastImageFilter.h>
@@ -13,7 +15,6 @@
 #include <itkImageFileReader.h>
 #include <itkImageFileWriter.h>
 #include <itkImageToHistogramFilter.h>
-// #include <itkImageToVTKImageFilter.h>
 #include <itkImportImageFilter.h>
 #include <itkLinearInterpolateImageFunction.h>
 #include <itkNoiseImageFilter.h>
@@ -22,8 +23,6 @@
 #include <itkStatisticsImageFilter.h>
 #include <itkVectorImage.h>
 
-// #include <vtkSmartPointer.h>
-
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -31,8 +30,10 @@
 #include <chrono>
 #include <cmath>
 #include <numeric>
+#include <optional>
 #include <span>
 #include <string>
+#include <thread>
 #include <type_traits>
 #include <vector>
 
@@ -521,14 +522,11 @@ T convertQuantileToValue(const std::span<const T> dataSorted, double quantile)
 {
   const std::size_t N = dataSorted.size();
 
-  if (0 == N)
-  {
+  if (0 == N) {
     spdlog::error("Sorted data has zero elements");
     throw_debug("Sorted data is empty")
   }
-
-  if (1 == N)
-  {
+  else if (1 == N) {
     return dataSorted.front();
   }
 
@@ -544,15 +542,13 @@ T convertQuantileToValue(const std::span<const T> dataSorted, double quantile)
   const T dataLeft = dataSorted[indexLeft];
   const T dataRight = dataSorted[indexRight];
   return lerp<T>(dataLeft, dataRight, index - static_cast<double>(indexLeft));
-  ;
 }
 
 template<typename T>
 QuantileOfValue convertValueToQuantile(const std::span<const T> dataSorted, T value)
 {
   const std::size_t N = dataSorted.size();
-  if (0 == N)
-  {
+  if (0 == N) {
     spdlog::error("Sorted data has zero elements");
     throw_debug("Sorted data is empty")
   }
@@ -584,38 +580,168 @@ QuantileOfValue convertValueToQuantile(const std::span<const T> dataSorted, T va
 }
 
 template<typename T>
-ComponentStats computeImageStatistics(const std::span<const T> dataSorted)
+tdigest::TDigest buildTDigest(
+  const std::span<const T>& data,
+  unsigned int numThreads = std::thread::hardware_concurrency())
 {
-  ComponentStats stats;
-  stats.m_minimum = static_cast<double>(dataSorted.front());
-  stats.m_maximum = static_cast<double>(dataSorted.back());
+  using TD = tdigest::TDigest;
 
-  for (std::size_t i = 0; i <= 100; ++i)
-  {
-    const double quantile = static_cast<double>(i) / 100.0;
-    const T value = convertQuantileToValue(dataSorted, quantile);
-    stats.m_quantiles[i] = static_cast<double>(value);
+  const auto N = data.size();
+  if (0 == N) {
+    return TD{};
   }
 
+  // Adjust compression and batchSize heuristics for performance.
+  // -memory use (bytes) ≈ 30 × 15 × compression ≈ 450 × compression
+  // -compression of 1000 takes about 450 kB, gives 99.9% quantile error of 1e-4,
+  //  with high-fidelity tails
+  const double compression = std::clamp(200.0 * std::cbrt(N / 1.0e6), 200.0, 1000.0);
+
+  const auto batchSize = std::clamp<std::size_t>(
+    static_cast<std::size_t>(N / (numThreads * 1000)), 10'000, 1'000'000);
+
+  // launch one digest per thread
+  std::vector<std::unique_ptr<TD>> localDigests;
+  localDigests.reserve(numThreads);
+
+  for (unsigned int i = 0; i < numThreads; ++i) {
+    localDigests.emplace_back(std::make_unique<TD>(compression));
+  }
+
+  std::vector<std::thread> threads;
+  const std::size_t chunkSize = (N + numThreads - 1) / numThreads;
+
+  for (unsigned int t = 0; t < numThreads; ++t)
+  {
+    auto& td = localDigests[t];
+
+    threads.emplace_back([&, t]() {
+      const auto start = t * chunkSize;
+      const auto end = std::min(start + chunkSize, N);
+
+      // Process in batches to improve cache and reduce compress overhead
+      for (std::size_t i = start; i < end; i += batchSize) {
+        const auto e = std::min(i + batchSize, end);
+        for (std::size_t j = i; j < e; ++j) {
+          td->add(data[j]);
+        }
+      }
+
+      td->compress(); // finalize local digest
+    });
+  }
+
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  // merge results
+  TD globalDigest(compression);
+  for (auto& td : localDigests) {
+    globalDigest.merge(td.get());
+  }
+
+  globalDigest.compress();
+
+  return globalDigest;
+}
+
+template<typename T>
+OnlineStats computeStatisticsOnUnsortedIntensities(const std::span<const T> data)
+{
+  spdlog::debug("Computing statistics on unsorted image intensities");
+
+  OnlineStats s;
+  const auto N = data.size();
+
+  if (0 == N) {
+    spdlog::error("Image contains no data on which to compute statistics");
+    return s;
+  }
+
+  s.count = N;
+  s.min = s.max = data[0];
+  s.sum = 0.0L;
+  s.mean = static_cast<long double>(data[0]);
+  long double ssd = 0.0L; // sum of squares of differences from the mean
+
+  // Welford's online algorithm
+  for (std::size_t i = 0; i < N; ++i) {
+    const auto x = static_cast<long double>(data[i]);
+
+    if (x < s.min) {
+      s.min = x;
+    }
+
+    if (x > s.max) {
+      s.max = x;
+    }
+
+    s.sum += x;
+
+    const auto delta = x - s.mean;
+    s.mean += delta / (i + 1);
+    ssd += delta * (x - s.mean);
+  }
+
+  s.variance = (N > 1) ? ssd / (N - 1) : 0.0L;
+  s.stdev = std::sqrt(s.variance);
+  return s;
+}
+
+template<typename T>
+ComponentStats computeStatisticsOnSortedIntensities(const std::span<const T> dataSorted)
+{
+  OnlineStats os;
+  os.min = static_cast<double>(dataSorted.front());
+  os.max = static_cast<double>(dataSorted.back());
+
   const std::size_t N = dataSorted.size();
-  stats.m_sum = std::accumulate(std::begin(dataSorted), std::end(dataSorted), 0.0);
-  stats.m_mean = stats.m_sum / N;
+  os.sum = std::accumulate(std::begin(dataSorted), std::end(dataSorted), 0.0);
+  os.mean = os.sum / N;
 
   std::vector<double> diff(N);
-  std::transform(
-    std::begin(dataSorted),
-    std::end(dataSorted),
-    std::begin(diff),
-    [&stats](double x) { return x - stats.m_mean; }
-  );
+  std::transform(std::begin(dataSorted), std::end(dataSorted), std::begin(diff),
+    [&os](double x) { return x - os.mean; });
 
-  const double squaredSum
-    = std::inner_product(std::begin(diff), std::end(diff), std::begin(diff), 0.0);
-  stats.m_variance = squaredSum / N;
-  stats.m_stdDeviation = std::sqrt(stats.m_variance);
+  const double squaredSum = std::inner_product(std::begin(diff), std::end(diff), std::begin(diff), 0.0);
+  os.variance = squaredSum / N;
+  os.stdev = std::sqrt(os.variance);
 
-  return stats;
+  ComponentStats compStats;
+  compStats.onlineStats = os;
+
+  for (std::size_t i = 0; i <= 100; ++i) {
+    const double quantile = static_cast<double>(i) / 100.0;
+    const T value = convertQuantileToValue(dataSorted, quantile);
+    compStats.quantiles[i] = static_cast<double>(value);
+  }
+
+  return compStats;
 }
+
+template <typename T>
+std::tuple<T, T, T> compute_exact_quartiles(std::vector<T> data)
+{
+  const size_t n = data.size();
+  if (n == 0) return {T{}, T{}, T{}};
+
+  size_t q1_idx = n / 4;
+  size_t q2_idx = n / 2;
+  size_t q3_idx = 3 * n / 4;
+
+  std::nth_element(data.begin(), data.begin() + q1_idx, data.end());
+  T q1 = data[q1_idx];
+
+  std::nth_element(data.begin(), data.begin() + q2_idx, data.end());
+  T q2 = data[q2_idx];
+
+  std::nth_element(data.begin(), data.begin() + q3_idx, data.end());
+  T q3 = data[q3_idx];
+
+  return {q1, q2, q3};
+}
+
 
 /*
 template<typename T>
@@ -1328,5 +1454,3 @@ bool loadImage(
 
   return true;
 }
-
-#endif // IMAGE_UTILITY_TPP

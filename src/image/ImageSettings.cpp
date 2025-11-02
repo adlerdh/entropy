@@ -39,7 +39,7 @@ ImageSettings::ImageSettings(
     throw_debug("Invalid number of components provided to construct settings for image")
   }
 
-  static constexpr bool sk_setDefaultVisibilitySettings = true;
+  constexpr bool sk_setDefaultVisibilitySettings = true;
   updateWithNewComponentStatistics(componentStats, sk_setDefaultVisibilitySettings);
 }
 
@@ -959,14 +959,13 @@ void ImageSettings::setActiveComponent(uint32_t component)
 }
 
 void ImageSettings::updateWithNewComponentStatistics(
-  std::vector<ComponentStats> componentStats, bool setDefaultVisibilitySettings
-)
+  std::vector<ComponentStats> componentStats, bool setDefaultVisibilitySettings)
 {
   // Default window covers 1st to 99th quantile intensity range of the first pixel component.
   // Recall that the histogram has 1001 bins.
-  static constexpr int qLow = 1;   // 1% level
-  static constexpr int qHigh = 99; // 99% level
-  static constexpr int qMax = 100; // 100% level
+  constexpr int qLow = 1;   // 1% level
+  constexpr int qHigh = 99; // 99% level
+  constexpr int qMax = 100; // 100% level
 
   if (componentStats.size() != m_numComponents)
   {
@@ -986,25 +985,25 @@ void ImageSettings::updateWithNewComponentStatistics(
     ComponentSettings& setting = m_componentSettings[i];
 
     // Min/max window width/center and threshold ranges are based on min/max component values:
-    setting.m_minMaxImageRange = std::make_pair(stats.m_minimum, stats.m_maximum);
-    setting.m_minMaxThresholdRange = std::make_pair(stats.m_minimum, stats.m_maximum);
+    setting.m_minMaxImageRange = std::make_pair(stats.onlineStats.min, stats.onlineStats.max);
+    setting.m_minMaxThresholdRange = std::make_pair(stats.onlineStats.min, stats.onlineStats.max);
 
-    setting.m_minMaxWindowCenterRange = std::make_pair(stats.m_minimum, stats.m_maximum);
-    setting.m_minMaxWindowWidthRange = std::make_pair(0.0, stats.m_maximum - stats.m_minimum);
+    setting.m_minMaxWindowCenterRange = std::make_pair(stats.onlineStats.min, stats.onlineStats.max);
+    setting.m_minMaxWindowWidthRange = std::make_pair(0.0, stats.onlineStats.max - stats.onlineStats.min);
 
     // Default thresholds are min/max values:
-    setting.m_thresholds = std::make_pair(stats.m_minimum, stats.m_maximum);
+    setting.m_thresholds = std::make_pair(stats.onlineStats.min, stats.onlineStats.max);
 
     // Default window limits are the low and high quantiles:
-    const double winLow = stats.m_quantiles[qLow];
-    const double winHigh = stats.m_quantiles[qHigh];
+    const double winLow = stats.quantiles[qLow];
+    const double winHigh = stats.quantiles[qHigh];
 
     setting.m_windowCenter = 0.5 * (winLow + winHigh);
     setting.m_windowWidth = winHigh - winLow;
 
     // Use the [1%, 100%] intensity range to define foreground
     // (until we have an algorithm to compute a foreground mask)
-    setting.m_foregroundThresholds = std::make_pair(stats.m_quantiles[qLow], stats.m_quantiles[qMax]);
+    setting.m_foregroundThresholds = std::make_pair(stats.quantiles[qLow], stats.quantiles[qMax]);
 
     // Update histogram settings
     setting.m_histogramSettings.m_numBinsMethod = NumBinsComputationMethod::FreedmanDiaconis;
@@ -1013,16 +1012,13 @@ void ImageSettings::updateWithNewComponentStatistics(
     setting.m_histogramSettings.m_isHorizontal = false;
     setting.m_histogramSettings.m_isLogScale = false;
     setting.m_histogramSettings.m_useCustomIntensityRange = false;
-    setting.m_histogramSettings.m_intensityRange[0] = stats.m_minimum;
-    setting.m_histogramSettings.m_intensityRange[1] = stats.m_maximum;
+    setting.m_histogramSettings.m_intensityRange[0] = stats.onlineStats.min;
+    setting.m_histogramSettings.m_intensityRange[1] = stats.onlineStats.max;
 
     if (0 == m_numPixels)
     {
-      spdlog::warn(
-        "Component {} of image {} has zero pixels, so setting number of histogram bins to one",
-        i,
-        m_displayName
-      );
+      spdlog::warn("Component {} of image {} has zero pixels, so setting number of histogram bins to one",
+                   i, m_displayName);
       setting.m_histogramSettings.m_numBins = 1;
     }
     else
@@ -1033,22 +1029,17 @@ void ImageSettings::updateWithNewComponentStatistics(
 
       if (!numBins)
       {
-        spdlog::warn(
-          "Could not compute number of histogram for component {} of image {}", i, m_displayName
-        );
+        spdlog::warn("Could not compute number of histogram for component {} of image {}", i, m_displayName);
         spdlog::info("Falling back to Sturge's method for computing number of histogram bins");
 
         setting.m_histogramSettings.m_numBinsMethod = NumBinsComputationMethod::Sturges;
-        numBins = computeNumHistogramBins(
-          setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]
-        );
+        numBins = computeNumHistogramBins(setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]);
       }
 
       setting.m_histogramSettings.m_numBins = numBins.value_or(1);
 
-      setting.m_histogramSettings.m_binWidth = (m_componentStats[i].m_maximum
-                                                - m_componentStats[i].m_minimum)
-                                               / setting.m_histogramSettings.m_numBins;
+      setting.m_histogramSettings.m_binWidth = (m_componentStats[i].onlineStats.max - m_componentStats[i].onlineStats.min) /
+                                               setting.m_histogramSettings.m_numBins;
     }
 
     if (setDefaultVisibilitySettings)
@@ -1275,10 +1266,11 @@ std::ostream& operator<<(std::ostream& os, const ImageSettings& settings)
     const auto& t = settings.m_componentStats[i];
 
     os << "\nStatistics (component " << i << "):"
-       << "\n\tMin: " << t.m_minimum << "\n\tQ01: " << t.m_quantiles[1]
-       << "\n\tQ25: " << t.m_quantiles[25] << "\n\tMed: " << t.m_quantiles[50]
-       << "\n\tQ75: " << t.m_quantiles[75] << "\n\tQ99: " << t.m_quantiles[99]
-       << "\n\tMax: " << t.m_maximum << "\n\tAvg: " << t.m_mean << "\n\tStd: " << t.m_stdDeviation;
+       << "\n\tMin: " << t.onlineStats.min << "\n\tQ01: " << t.quantiles[1]
+       << "\n\tQ25: " << t.quantiles[25] << "\n\tMed: " << t.quantiles[50]
+       << "\n\tQ75: " << t.quantiles[75] << "\n\tQ99: " << t.quantiles[99]
+       << "\n\tMax: " << t.onlineStats.max << "\n\tAvg: "
+       << t.onlineStats.mean << "\n\tStd: " << t.onlineStats.stdev;
 
     os << "\n\n\tWindow: [" << s.m_windowCenter - 0.5 * s.m_windowWidth << ", "
        << s.m_windowCenter + 0.5 * s.m_windowWidth << "]"

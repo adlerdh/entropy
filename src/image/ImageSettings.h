@@ -29,8 +29,7 @@ public:
     std::size_t numPixels,
     uint32_t numComponents,
     ComponentType componentType,
-    std::vector<ComponentStats> componentStats
-  );
+    std::vector<ComponentStats> componentStats);
 
   ImageSettings(const ImageSettings&) = default;
   ImageSettings& operator=(const ImageSettings&) = default;

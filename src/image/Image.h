@@ -1,5 +1,4 @@
-#ifndef IMAGE_H
-#define IMAGE_H
+#pragma once
 
 #include "common/Types.h"
 #include "common/Filesystem.h"
@@ -9,6 +8,8 @@
 #include "image/ImageIoInfo.h"
 #include "image/ImageSettings.h"
 #include "image/ImageTransformations.h"
+
+#include "TDigest.h"
 
 #include <glm/glm.hpp>
 
@@ -49,8 +50,7 @@ public:
   Image(
     const fs::path& fileName,
     const ImageRepresentation& imageRep,
-    const MultiComponentBufferType& bufferType
-  );
+    const MultiComponentBufferType& bufferType);
 
   /**
      * @brief Construct Image from a header and raw data
@@ -67,8 +67,7 @@ public:
     const std::string& displayName,
     const ImageRepresentation& imageRep,
     const MultiComponentBufferType& bufferType,
-    const std::vector<const void*>& imageDataComponents
-  );
+    const std::vector<const void*>& imageDataComponents);
 
   Image(const Image&) = default;
   Image& operator=(const Image&) = default;
@@ -160,15 +159,14 @@ public:
     const glm::u64vec3& dims = m_header.pixelDimensions();
 
     if (i < 0 || j < 0 || k < 0 ||
-            i >= static_cast<int64_t>(dims.x) ||
-            j >= static_cast<int64_t>(dims.y) ||
-            k >= static_cast<int64_t>(dims.z))
-    {
+        i >= static_cast<int64_t>(dims.x) ||
+        j >= static_cast<int64_t>(dims.y) ||
+        k >= static_cast<int64_t>(dims.z)) {
       return std::nullopt;
     }
 
-    const std::size_t index = dims.x * dims.y * static_cast<std::size_t>(k)
-                              + dims.x * static_cast<std::size_t>(j) + static_cast<std::size_t>(i);
+    const std::size_t index = dims.x * dims.y * static_cast<std::size_t>(k) +
+                              dims.x * static_cast<std::size_t>(j) + static_cast<std::size_t>(i);
 
     return value<T>(component, index);
   }
@@ -177,13 +175,11 @@ public:
   template<typename T>
   std::optional<T> valueLinear(uint32_t comp, double i, double j, double k) const
   {
-    static const glm::dvec3 ZERO{0.0};
-    static const glm::dvec3 ONE{1.0};
-
+    const glm::dvec3 ZERO{0.0};
+    const glm::dvec3 ONE{1.0};
     const glm::u64vec3& dims = m_header.pixelDimensions();
 
-    if (i < -0.5 || j < -0.5 || k < -0.5 || i > dims.x - 0.5 || j > dims.y - 0.5 || k > dims.z - 0.5)
-    {
+    if (i < -0.5 || j < -0.5 || k < -0.5 || i > dims.x - 0.5 || j > dims.y - 0.5 || k > dims.z - 0.5) {
       return std::nullopt;
     }
 
@@ -208,100 +204,79 @@ public:
     // Interpolate along x, ignoring invalid samples:
     std::optional<double> c00, c01, c10, c11;
 
-    if (c000 && c100)
-    {
+    if (c000 && c100) {
       c00 = c000.value() * (1.0 - diff.x) + c100.value() * diff.x;
     }
-    else if (c000)
-    {
+    else if (c000) {
       c00 = c000.value();
     }
-    else if (c100)
-    {
+    else if (c100) {
       c00 = c100.value();
     }
 
-    if (c001 && c101)
-    {
+    if (c001 && c101) {
       c01 = c001.value() * (1.0 - diff.x) + c101.value() * diff.x;
     }
-    else if (c001)
-    {
+    else if (c001) {
       c01 = c001.value();
     }
-    else if (c101)
-    {
+    else if (c101) {
       c01 = c101.value();
     }
 
-    if (c010 && c110)
-    {
+    if (c010 && c110) {
       c10 = c010.value() * (1.0 - diff.x) + c110.value() * diff.x;
     }
-    else if (c010)
-    {
+    else if (c010) {
       c10 = c010.value();
     }
-    else if (c110)
-    {
+    else if (c110) {
       c10 = c110.value();
     }
 
-    if (c011 && c111)
-    {
+    if (c011 && c111) {
       c11 = c011.value() * (1.0 - diff.x) + c111.value() * diff.x;
     }
-    else if (c011)
-    {
+    else if (c011) {
       c11 = c011.value();
     }
-    else if (c111)
-    {
+    else if (c111) {
       c11 = c111.value();
     }
 
     // Interpolate along y, ignoring invalid samples:
     std::optional<double> c0, c1;
 
-    if (c00 && c10)
-    {
+    if (c00 && c10) {
       c0 = c00.value() * (1.0 - diff.y) + c10.value() * diff.y;
     }
-    else if (c00)
-    {
+    else if (c00) {
       c0 = c00.value();
     }
-    else if (c10)
-    {
+    else if (c10) {
       c0 = c10.value();
     }
 
-    if (c01 && c11)
-    {
+    if (c01 && c11) {
       c1 = c01.value() * (1.0 - diff.y) + c11.value() * diff.y;
     }
-    else if (c01)
-    {
+    else if (c01) {
       c1 = c01.value();
     }
-    else if (c11)
-    {
+    else if (c11) {
       c1 = c11.value();
     }
 
     // Interpolate along z, ignoring invalid samples:
     std::optional<double> c;
 
-    if (c0 && c1)
-    {
+    if (c0 && c1) {
       c = c0.value() * (1.0 - diff.z) + c1.value() * diff.z;
     }
-    else if (c0)
-    {
+    else if (c0) {
       c = c0.value();
     }
-    else if (c1)
-    {
+    else if (c1) {
       c = c1.value();
     }
 
@@ -315,16 +290,14 @@ public:
     const glm::u64vec3& dims = m_header.pixelDimensions();
 
     if (i < 0 || j < 0 || k < 0 ||
-            i >= static_cast<int64_t>(dims.x) ||
-            j >= static_cast<int64_t>(dims.y) ||
-            k >= static_cast<int64_t>(dims.z))
-    {
+        i >= static_cast<int64_t>(dims.x) ||
+        j >= static_cast<int64_t>(dims.y) ||
+        k >= static_cast<int64_t>(dims.z)) {
       return false;
     }
 
     const auto compAndOffset = getComponentAndOffsetForBuffer(component, i, j, k);
-    if (!compAndOffset)
-    {
+    if (!compAndOffset) {
       return false;
     }
 
@@ -333,27 +306,34 @@ public:
 
     switch (m_header.memoryComponentType())
     {
-    case ComponentType::Int8:
+    case ComponentType::Int8: {
       m_data_int8.at(c)[offset] = static_cast<int8_t>(value);
       return true;
-    case ComponentType::UInt8:
+    }
+    case ComponentType::UInt8: {
       m_data_uint8.at(c)[offset] = static_cast<uint8_t>(value);
       return true;
-    case ComponentType::Int16:
+    }
+    case ComponentType::Int16: {
       m_data_int16.at(c)[offset] = static_cast<int16_t>(value);
       return true;
-    case ComponentType::UInt16:
+    }
+    case ComponentType::UInt16: {
       m_data_uint16.at(c)[offset] = static_cast<uint16_t>(value);
       return true;
-    case ComponentType::Int32:
+    }
+    case ComponentType::Int32: {
       m_data_int32.at(c)[offset] = static_cast<int32_t>(value);
       return true;
-    case ComponentType::UInt32:
+    }
+    case ComponentType::UInt32: {
       m_data_uint32.at(c)[offset] = static_cast<uint32_t>(value);
       return true;
-    case ComponentType::Float32:
+    }
+    case ComponentType::Float32: {
       m_data_float32.at(c)[offset] = static_cast<float>(value);
       return true;
+    }
     default:
       return false;
     }
@@ -366,58 +346,44 @@ public:
   {
     switch (m_header.memoryComponentType())
     {
-    case ComponentType::Int8:
-    {
-      for (auto& C : m_data_int8)
-      {
+    case ComponentType::Int8: {
+      for (auto& C : m_data_int8) {
         std::fill(std::begin(C), std::end(C), v);
       }
       return;
     }
-    case ComponentType::UInt8:
-    {
-      for (auto& C : m_data_uint8)
-      {
+    case ComponentType::UInt8: {
+      for (auto& C : m_data_uint8) {
         std::fill(std::begin(C), std::end(C), v);
       }
       return;
     }
-    case ComponentType::Int16:
-    {
-      for (auto& C : m_data_int16)
-      {
+    case ComponentType::Int16: {
+      for (auto& C : m_data_int16) {
         std::fill(std::begin(C), std::end(C), v);
       }
       return;
     }
-    case ComponentType::UInt16:
-    {
-      for (auto& C : m_data_uint16)
-      {
+    case ComponentType::UInt16: {
+      for (auto& C : m_data_uint16) {
         std::fill(std::begin(C), std::end(C), v);
       }
       return;
     }
-    case ComponentType::Int32:
-    {
-      for (auto& C : m_data_int32)
-      {
+    case ComponentType::Int32: {
+      for (auto& C : m_data_int32) {
         std::fill(std::begin(C), std::end(C), v);
       }
       return;
     }
-    case ComponentType::UInt32:
-    {
-      for (auto& C : m_data_uint32)
-      {
+    case ComponentType::UInt32: {
+      for (auto& C : m_data_uint32) {
         std::fill(std::begin(C), std::end(C), v);
       }
       return;
     }
-    case ComponentType::Float32:
-    {
-      for (auto& C : m_data_float32)
-      {
+    case ComponentType::Float32: {
+      for (auto& C : m_data_float32) {
         std::fill(std::begin(C), std::end(C), v);
       }
       return;
@@ -485,15 +451,13 @@ private:
   /// 1) component buffer to index
   /// 2) offset into that buffer
   std::optional<std::pair<std::size_t, std::size_t>> getComponentAndOffsetForBuffer(
-    uint32_t comp, int i, int j, int k
-  ) const;
+    uint32_t comp, int i, int j, int k) const;
 
   /// For a given image component and 1D pixel index, return a pair consisting of:
   /// 1) component buffer to index
   /// 2) offset into that buffer
   std::optional<std::pair<std::size_t, std::size_t>> getComponentAndOffsetForBuffer(
-    uint32_t comp, std::size_t index
-  ) const;
+    uint32_t comp, std::size_t index) const;
 
   /**
      * @remark If the image has a multi-component pixels and m_bufferType == MultiComponentBufferType::SeparateImages,
@@ -525,6 +489,8 @@ private:
   std::vector<std::vector<uint32_t>> m_dataSorted_uint32;
   std::vector<std::vector<float>> m_dataSorted_float32;
 
+  mutable std::vector<tdigest::TDigest> m_tdigests;
+
   ImageRepresentation m_imageRep;        //!< Is this an image or a segmentation?
   MultiComponentBufferType m_bufferType; //!< How are multi-component images represented?
 
@@ -536,5 +502,3 @@ private:
   ImageTransformations m_tx;
   ImageSettings m_settings;
 };
-
-#endif // IMAGE_H
