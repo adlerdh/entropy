@@ -421,6 +421,9 @@ public:
   /// Get the active component
   uint32_t activeComponent() const;
 
+  void setUsingExactQuantiles(bool);
+  bool usingExactQuantiles() const;
+
   /// Map a native image value to its representation as an OpenGL texture.
   /// This mappings accounts for component type.
   /// @see https://www.khronos.org/opengl/wiki/Normalized_Integer
@@ -528,6 +531,9 @@ private:
   std::vector<ComponentSettings> m_componentSettings; //!< Per-component settings
 
   uint32_t m_activeComponent{0}; //!< Active component
+
+  /// Exact quantiles requires sorted buffers
+  bool m_usingExactQuantiles = false;
 };
 
 std::ostream& operator<<(std::ostream&, const ImageSettings&);

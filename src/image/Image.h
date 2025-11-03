@@ -489,6 +489,7 @@ private:
   std::vector<std::vector<uint32_t>> m_dataSorted_uint32;
   std::vector<std::vector<float>> m_dataSorted_float32;
 
+  /// One T-digest per image component
   mutable std::vector<tdigest::TDigest> m_tdigests;
 
   ImageRepresentation m_imageRep;        //!< Is this an image or a segmentation?

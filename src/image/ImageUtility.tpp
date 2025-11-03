@@ -4,7 +4,6 @@
 #include "common/Types.h"
 #include "common/Filesystem.h"
 #include "image/Image.h"
-#include "image/Histogram.h"
 
 #include "TDigest.h"
 

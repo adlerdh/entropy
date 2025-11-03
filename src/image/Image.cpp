@@ -1012,9 +1012,7 @@ QuantileOfValue Image::valueToQuantile(uint32_t comp, int64_t value) const
     throw_debug("Invalid image component")
   }
 
-  constexpr bool useSorted = false;
-
-  if (useSorted)
+  if (m_settings.usingExactQuantiles())
   {
   switch (m_header.memoryComponentType())
     {
@@ -1070,9 +1068,7 @@ QuantileOfValue Image::valueToQuantile(uint32_t comp, double value) const
     throw_debug("Invalid image component")
   }
 
-  constexpr bool useSorted = false;
-
-  if (useSorted)
+  if (m_settings.usingExactQuantiles())
   {
     switch (m_header.memoryComponentType())
     {
@@ -1129,9 +1125,7 @@ double Image::quantileToValue(uint32_t comp, double quantile) const
     throw_debug("Invalid image component")
   }
 
-  constexpr bool useSorted = false;
-
-  if (useSorted)
+  if (m_settings.usingExactQuantiles())
   {
     switch (m_header.memoryComponentType())
     {
@@ -1256,9 +1250,10 @@ void Image::updateComponentStats()
   m_settings.updateWithNewComponentStatistics(std::move(componentStats), false);
 }
 
-
+/// @todo Put this back when using sorted buffers for stats
 // if (!generateSortedBuffers()) {
 //   spdlog::error("Error generating sorted image component buffers");
 //   throw_debug("Error generating sorted image component buffers")
 // }
+// m_settings.setUsingExactQuantiles(true);
 //std::vector<ComponentStats> componentStats = computeImageStatisticsOnSortedValues(*this);

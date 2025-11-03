@@ -1074,6 +1074,16 @@ uint32_t ImageSettings::activeComponent() const
   return m_activeComponent;
 }
 
+void ImageSettings::setUsingExactQuantiles(bool set)
+{
+  m_usingExactQuantiles = set;
+}
+
+bool ImageSettings::usingExactQuantiles() const
+{
+  return m_usingExactQuantiles;
+}
+
 void ImageSettings::updateInternals()
 {
   for (uint32_t i = 0; i < m_componentSettings.size(); ++i)

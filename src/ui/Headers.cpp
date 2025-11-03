@@ -44,10 +44,6 @@
 
 namespace
 {
-
-/// @todo Expose this value
-constexpr bool useExactQuantiles = false;
-
 const ImVec4 whiteText(1, 1, 1, 1);
 const ImVec4 blackText(0, 0, 0, 1);
 
@@ -65,13 +61,9 @@ const char* referenceImageMessage = "This is the reference image";
 const char* activeImageMessage = "This is the active image";
 const char* nonActiveImageMessage = "This is not the active image";
 
-static const ImGuiColorEditFlags colorEditFlags = ImGuiColorEditFlags_NoInputs
-                                                     | ImGuiColorEditFlags_PickerHueBar
-                                                     | ImGuiColorEditFlags_DisplayRGB
-                                                     | ImGuiColorEditFlags_DisplayHSV
-                                                     | ImGuiColorEditFlags_DisplayHex
-                                                     | ImGuiColorEditFlags_Uint8
-                                                     | ImGuiColorEditFlags_InputRGB;
+const ImGuiColorEditFlags colorEditFlags =
+  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB |
+  ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;
 
 std::pair<ImVec4, ImVec4> computeHeaderBgAndTextColors(const glm::vec3& color)
 {
@@ -79,10 +71,8 @@ std::pair<ImVec4, ImVec4> computeHeaderBgAndTextColors(const glm::vec3& color)
   darkerBorderColorHsv[2] = std::max(0.5f * darkerBorderColorHsv[2], 0.0f);
   const glm::vec3 darkerBorderColorRgb = glm::rgbColor(darkerBorderColorHsv);
 
-  const ImVec4
-    headerColor(darkerBorderColorRgb.r, darkerBorderColorRgb.g, darkerBorderColorRgb.b, 1.0f);
-  const ImVec4 headerTextColor = (glm::luminosity(darkerBorderColorRgb) < 0.75f) ? whiteText
-                                                                                 : blackText;
+  const ImVec4 headerColor(darkerBorderColorRgb.r, darkerBorderColorRgb.g, darkerBorderColorRgb.b, 1.0f);
+  const ImVec4 headerTextColor = (glm::luminosity(darkerBorderColorRgb) < 0.75f) ? whiteText : blackText;
 
   return {headerColor, headerTextColor};
 }
@@ -90,9 +80,7 @@ std::pair<ImVec4, ImVec4> computeHeaderBgAndTextColors(const glm::vec3& color)
 } // namespace
 
 void renderImageHeaderInformation(
-  AppData& appData,
-  const uuids::uuid& imageUid,
-  Image& image,
+  AppData& appData, const uuids::uuid& imageUid, Image& image,
   const std::function<void(void)>& updateImageUniforms,
   const AllViewsRecenterType& recenterAllViews)
 {
@@ -422,25 +410,16 @@ void renderImageHeader(
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageForward,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToBack,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToFront,
-  const std::function<bool(const uuids::uuid& imageUid, bool locked)>&
-    setLockManualImageTransformation,
-  const AllViewsRecenterType& recenterAllViews
-)
+  const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
+  const AllViewsRecenterType& recenterAllViews)
 {
-  static const ImGuiColorEditFlags colorNoAlphaEditFlags = ImGuiColorEditFlags_NoInputs
-                                                              | ImGuiColorEditFlags_PickerHueBar
-                                                              | ImGuiColorEditFlags_DisplayRGB
-                                                              | ImGuiColorEditFlags_DisplayHex
-                                                              | ImGuiColorEditFlags_Uint8
-                                                              | ImGuiColorEditFlags_InputRGB;
+  const ImGuiColorEditFlags colorNoAlphaEditFlags =
+    ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB |
+    ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;
 
-  static const ImGuiColorEditFlags colorAlphaEditFlags = ImGuiColorEditFlags_PickerHueBar
-                                                            | ImGuiColorEditFlags_DisplayRGB
-                                                            | ImGuiColorEditFlags_DisplayHex
-                                                            | ImGuiColorEditFlags_AlphaBar
-                                                            | ImGuiColorEditFlags_AlphaPreviewHalf
-                                                            | ImGuiColorEditFlags_Uint8
-                                                            | ImGuiColorEditFlags_InputRGB;
+  const ImGuiColorEditFlags colorAlphaEditFlags =
+    ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHex |
+    ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;;
 
   const auto buttonSize = scaledToolbarButtonSize(appData.windowData().getContentScaleRatios());
 
@@ -448,34 +427,27 @@ void renderImageHeader(
   const ImVec4 activeColor = colors[ImGuiCol_ButtonActive];
   ImVec4 inactiveColor = colors[ImGuiCol_Button];
 
-  const std::string minValuesFormatString = std::string("Min: ")
-                                            + appData.guiData().m_imageValuePrecisionFormat;
-  const std::string maxValuesFormatString = std::string("Max: ")
-                                            + appData.guiData().m_imageValuePrecisionFormat;
+  const std::string minValuesFormatString = std::string("Min: ") + appData.guiData().m_imageValuePrecisionFormat;
+  const std::string maxValuesFormatString = std::string("Max: ") + appData.guiData().m_imageValuePrecisionFormat;
 
   const char* minValuesFormat = minValuesFormatString.c_str();
   const char* maxValuesFormat = maxValuesFormatString.c_str();
 
-  const std::string minPercentileFormatString = std::string("Min: ")
-                                                + appData.guiData().m_percentilePrecisionFormat
-                                                + "%%";
-  const std::string maxPercentileFormatString = std::string("Max: ")
-                                                + appData.guiData().m_percentilePrecisionFormat
-                                                + "%%";
+  const std::string minPercentileFormatString = std::string("Min: ") + appData.guiData().m_percentilePrecisionFormat + "%%";
+  const std::string maxPercentileFormatString = std::string("Max: ") + appData.guiData().m_percentilePrecisionFormat + "%%";
 
-#if 1
   const char* minPercentilesFormat = minPercentileFormatString.c_str();
   const char* maxPercentilesFormat = maxPercentileFormatString.c_str();
   const float windowPercentileStep = std::pow(10.0f, -1.0f * appData.guiData().m_percentilePrecision);
-#endif
 
   const char* valuesFormat = appData.guiData().m_imageValuePrecisionFormat.c_str();
   const char* txFormat = appData.guiData().m_txPrecisionFormat.c_str();
 
 
   /// @todo ADD visibility control for gamma
-  if (!image)
+  if (!image) {
     return;
+  }
 
   const auto& imgHeader = image->header();
   auto& imgSettings = image->settings();
@@ -483,6 +455,8 @@ void renderImageHeader(
 
   auto activeSegUid = appData.imageToActiveSegUid(imageUid);
   Image* activeSeg = (activeSegUid) ? appData.seg(*activeSegUid) : nullptr;
+
+  const uint32_t activeComp = imgSettings.activeComponent();
 
   auto getCurrentImageColormapIndex = [&imgSettings]() { return imgSettings.colorMapIndex(); };
 
@@ -504,8 +478,7 @@ void renderImageHeader(
   /// @todo Provide a function shortenedDisplayName that takes an argument indicating
   /// the max number N of characters. It removes the last characters of the name, such that the
   /// total length is N.
-  const std::string headerName = std::to_string(imageIndex) + ") " + imgSettings.displayName()
-                                 + "###" + std::to_string(imageIndex);
+  const std::string headerName = std::to_string(imageIndex) + ") " + imgSettings.displayName() + "###" + std::to_string(imageIndex);
 
   const auto headerColors = computeHeaderBgAndTextColors(imgSettings.borderColor());
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
@@ -819,28 +792,25 @@ void renderImageHeader(
         rgbaLetters{" (red)", " (green)", " (blue)", " (alpha)"};
 
       const std::string previewValue = (imgSettings.displayImageAsColor())
-                                         ? std::to_string(imgSettings.activeComponent())
-                                             + rgbaLetters[imgSettings.activeComponent()]
-                                         : std::to_string(imgSettings.activeComponent());
+        ? std::to_string(activeComp) + rgbaLetters[activeComp] : std::to_string(activeComp);
 
       if (ImGui::BeginCombo("Image component", previewValue.c_str()))
       {
         for (uint32_t comp = 0; comp < imgHeader.numComponentsPerPixel(); ++comp)
         {
           const std::string selectableValue = (imgSettings.displayImageAsColor())
-                                                ? std::to_string(comp) + rgbaLetters[comp]
-                                                : std::to_string(comp);
+            ? std::to_string(comp) + rgbaLetters[comp] : std::to_string(comp);
 
-          const bool isSelected = (imgSettings.activeComponent() == comp);
+          const bool isSelected = (activeComp == comp);
 
-          if (ImGui::Selectable(selectableValue.c_str(), isSelected))
-          {
+          if (ImGui::Selectable(selectableValue.c_str(), isSelected)) {
             imgSettings.setActiveComponent(comp);
             updateImageUniforms();
           }
 
-          if (isSelected)
+          if (isSelected) {
             ImGui::SetItemDefaultFocus();
+          }
         }
 
         ImGui::EndCombo();
@@ -861,12 +831,10 @@ void renderImageHeader(
     static const std::string imageOpacityText("Image opacity");
 
     const char* visibleCheckText = (image->header().numComponentsPerPixel() > 1)
-                                     ? compVisibleText.c_str()
-                                     : imageVisibleText.c_str();
+      ? compVisibleText.c_str() : imageVisibleText.c_str();
 
     const char* opacitySliderText = (image->header().numComponentsPerPixel() > 1)
-                                      ? compOpacityText.c_str()
-                                      : imageOpacityText.c_str();
+      ? compOpacityText.c_str() : imageOpacityText.c_str();
 
     if (ImGui::Checkbox(visibleCheckText, &visible))
     {
@@ -948,34 +916,22 @@ void renderImageHeader(
 
       ImGui::Text("Windowing:");
 
-      if (mySliderF64("Width", &windowWidth, windowWidthMin, windowWidthMax, valuesFormat))
-      {
+      if (mySliderF64("Width", &windowWidth, windowWidthMin, windowWidthMax, valuesFormat)) {
         imgSettings.setWindowWidth(windowWidth);
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Window width");
 
-      if (mySliderF64("Level", &windowCenter, windowCenterMin, windowCenterMax, valuesFormat))
-      {
+      if (mySliderF64("Level", &windowCenter, windowCenterMin, windowCenterMax, valuesFormat)) {
         imgSettings.setWindowCenter(windowCenter);
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Window level (center)");
 
-      if (ImGui::DragFloatRange2(
-            "Values",
-            &windowLow,
-            &windowHigh,
-            speed,
-            windowMin,
-            windowMax,
-            minValuesFormat,
-            maxValuesFormat,
-            ImGuiSliderFlags_AlwaysClamp
-          ))
-      {
+      if (ImGui::DragFloatRange2("Values", &windowLow, &windowHigh, speed, windowMin, windowMax,
+            minValuesFormat, maxValuesFormat, ImGuiSliderFlags_AlwaysClamp)) {
         imgSettings.setWindowValueLow(windowLow);
         imgSettings.setWindowValueHigh(windowHigh);
         updateImageUniforms();
@@ -983,9 +939,8 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum values of the window range");
 
-#if 1
-      const QuantileOfValue qLow = image->valueToQuantile(imgSettings.activeComponent(), windowLow);
-      const QuantileOfValue qHigh = image->valueToQuantile(imgSettings.activeComponent(), windowHigh);
+      const QuantileOfValue qLow = image->valueToQuantile(activeComp, windowLow);
+      const QuantileOfValue qHigh = image->valueToQuantile(activeComp, windowHigh);
 
       constexpr float windowPercentileMin = 0.0f;
       constexpr float windowPercentileMax = 100.0f;
@@ -996,79 +951,40 @@ void renderImageHeader(
       float windowPercentileLowAttempted = windowPercentileLowCurrent;
       float windowPercentileHighAttempted = windowPercentileHighCurrent;
 
-      if (ImGui::DragFloatRange2(
-            "Percentiles",
-            &windowPercentileLowAttempted,
-            &windowPercentileHighAttempted,
-            windowPercentileStep,
-            windowPercentileMin,
-            windowPercentileMax,
-            minPercentilesFormat,
-            maxPercentilesFormat,
-            ImGuiSliderFlags_AlwaysClamp
-          ))
+      if (ImGui::DragFloatRange2("Percentiles", &windowPercentileLowAttempted, &windowPercentileHighAttempted,
+            windowPercentileStep, windowPercentileMin, windowPercentileMax,
+            minPercentilesFormat, maxPercentilesFormat, ImGuiSliderFlags_AlwaysClamp))
       {
-        if (useExactQuantiles)
+        if (windowPercentileLowCurrent != windowPercentileLowAttempted)
         {
-          if (windowPercentileLowCurrent != windowPercentileLowAttempted)
-          {
-            const double windowPercentileLowBumped = bumpQuantile(
-              *image,
-              imgSettings.activeComponent(),
-              windowPercentileLowCurrent / 100.0,
-              windowPercentileLowAttempted / 100.0,
-              windowLow
-              );
+          const double windowPercentileLowBumped = bumpQuantile(
+            *image, activeComp, windowPercentileLowCurrent / 100.0, windowPercentileLowAttempted / 100.0, windowLow,
+            imgSettings.usingExactQuantiles());
 
-            const double newWindowLow = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowBumped);
-            imgSettings.setWindowValueLow(newWindowLow);
-            updateImageUniforms();
-          }
-
-          if (windowPercentileHighCurrent != windowPercentileHighAttempted)
-          {
-            const double windowPercentileHighBumped = bumpQuantile(
-              *image,
-              imgSettings.activeComponent(),
-              windowPercentileHighCurrent / 100.0,
-              windowPercentileHighAttempted / 100.0,
-              windowHigh
-              );
-
-            const double newWindowHigh = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighBumped);
-            imgSettings.setWindowValueHigh(newWindowHigh);
-            updateImageUniforms();
-          }
+          const double newWindowLow = image->quantileToValue(activeComp, windowPercentileLowBumped);
+          imgSettings.setWindowValueLow(newWindowLow);
+          updateImageUniforms();
         }
-        else
+
+        if (windowPercentileHighCurrent != windowPercentileHighAttempted)
         {
-          /// @todo Need to bump these percentiles until we hit a different image value
-          const double valueLow = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowAttempted / 100.0);
-          const double valueHigh = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighAttempted / 100.0);
-          imgSettings.setWindowValueLow(valueLow);
-          imgSettings.setWindowValueHigh(valueHigh);
+          const double windowPercentileHighBumped = bumpQuantile(
+            *image, activeComp, windowPercentileHighCurrent / 100.0, windowPercentileHighAttempted / 100.0, windowHigh,
+            imgSettings.usingExactQuantiles());
+
+          const double newWindowHigh = image->quantileToValue(activeComp, windowPercentileHighBumped);
+          imgSettings.setWindowValueHigh(newWindowHigh);
           updateImageUniforms();
         }
       }
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum percentiles of the window range");
-#endif
 
       float threshLow = static_cast<float>(imgSettings.thresholds().first);
       float threshHigh = static_cast<float>(imgSettings.thresholds().second);
 
-      if (ImGui::DragFloatRange2(
-            "Thresholds",
-            &threshLow,
-            &threshHigh,
-            speed,
-            threshMin,
-            threshMax,
-            minValuesFormat,
-            maxValuesFormat,
-            ImGuiSliderFlags_AlwaysClamp
-          ))
-      {
+      if (ImGui::DragFloatRange2("Thresholds", &threshLow, &threshHigh, speed, threshMin, threshMax,
+            minValuesFormat, maxValuesFormat, ImGuiSliderFlags_AlwaysClamp)) {
         imgSettings.setThresholdLow(static_cast<double>(threshLow));
         imgSettings.setThresholdHigh(static_cast<double>(threshHigh));
         updateImageUniforms();
@@ -1082,26 +998,14 @@ void renderImageHeader(
       constexpr float speed = 1.0f;
 
       // Window/level sliders:
-      const int32_t windowWidthMin = static_cast<int32_t>(
-        std::floor(imgSettings.minMaxWindowWidthRange().first)
-      );
-      const int32_t windowWidthMax = static_cast<int32_t>(
-        std::ceil(imgSettings.minMaxWindowWidthRange().second)
-      );
+      const int32_t windowWidthMin = static_cast<int32_t>(std::floor(imgSettings.minMaxWindowWidthRange().first));
+      const int32_t windowWidthMax = static_cast<int32_t>(std::ceil(imgSettings.minMaxWindowWidthRange().second));
 
-      const int32_t windowCenterMin = static_cast<int32_t>(
-        std::floor(imgSettings.minMaxWindowCenterRange().first)
-      );
-      const int32_t windowCenterMax = static_cast<int32_t>(
-        std::ceil(imgSettings.minMaxWindowCenterRange().second)
-      );
+      const int32_t windowCenterMin = static_cast<int32_t>(std::floor(imgSettings.minMaxWindowCenterRange().first));
+      const int32_t windowCenterMax = static_cast<int32_t>(std::ceil(imgSettings.minMaxWindowCenterRange().second));
 
-      const int32_t windowMin = static_cast<int32_t>(
-        std::floor(imgSettings.minMaxWindowRange().first)
-      );
-      const int32_t windowMax = static_cast<int32_t>(
-        std::ceil(imgSettings.minMaxWindowRange().second)
-      );
+      const int32_t windowMin = static_cast<int32_t>(std::floor(imgSettings.minMaxWindowRange().first));
+      const int32_t windowMax = static_cast<int32_t>(std::ceil(imgSettings.minMaxWindowRange().second));
 
       int32_t windowLow = static_cast<int32_t>(imgSettings.windowValuesLowHigh().first);
       int32_t windowHigh = static_cast<int32_t>(imgSettings.windowValuesLowHigh().second);
@@ -1111,16 +1015,14 @@ void renderImageHeader(
 
       ImGui::Text("Windowing:");
 
-      if (mySliderS64("Width", &windowWidth, windowWidthMin, windowWidthMax))
-      {
+      if (mySliderS64("Width", &windowWidth, windowWidthMin, windowWidthMax)) {
         imgSettings.setWindowWidth(windowWidth);
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Window width");
 
-      if (mySliderS64("Level", &windowCenter, windowCenterMin, windowCenterMax))
-      {
+      if (mySliderS64("Level", &windowCenter, windowCenterMin, windowCenterMax)) {
         imgSettings.setWindowCenter(windowCenter);
         updateImageUniforms();
       }
@@ -1128,8 +1030,7 @@ void renderImageHeader(
       helpMarker("Window level (center)");
 
       if (ImGui::DragIntRange2("Values", &windowLow, &windowHigh, speed, windowMin, windowMax,
-                               "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp))
-      {
+                               "Min: %d", "Max: %d", ImGuiSliderFlags_AlwaysClamp)) {
         imgSettings.setWindowValueLow(windowLow);
         imgSettings.setWindowValueHigh(windowHigh);
         updateImageUniforms();
@@ -1137,9 +1038,8 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum of the window range");
 
-#if 1
-      const QuantileOfValue qLow = image->valueToQuantile(imgSettings.activeComponent(), static_cast<int64_t>(windowLow));
-      const QuantileOfValue qHigh = image->valueToQuantile(imgSettings.activeComponent(), static_cast<int64_t>(windowHigh));
+      const QuantileOfValue qLow = image->valueToQuantile(activeComp, static_cast<int64_t>(windowLow));
+      const QuantileOfValue qHigh = image->valueToQuantile(activeComp, static_cast<int64_t>(windowHigh));
 
       constexpr float windowPercentileMin = 0.0f;
       constexpr float windowPercentileMax = 100.0f;
@@ -1154,43 +1054,31 @@ void renderImageHeader(
                                  windowPercentileStep, windowPercentileMin, windowPercentileMax,
                                  minPercentilesFormat, maxPercentilesFormat, ImGuiSliderFlags_AlwaysClamp))
       {
-        if (useExactQuantiles)
+        if (windowPercentileLowCurrent != windowPercentileLowAttempted)
         {
-          if (windowPercentileLowCurrent != windowPercentileLowAttempted)
-          {
-            const double windowPercentileLowBumped = bumpQuantile(
-              *image, imgSettings.activeComponent(),
-              windowPercentileLowCurrent / 100.0, windowPercentileLowAttempted / 100.0, windowLow);
+          const double windowPercentileLowBumped = bumpQuantile(
+            *image, activeComp, windowPercentileLowCurrent / 100.0, windowPercentileLowAttempted / 100.0, windowLow,
+            imgSettings.usingExactQuantiles());
 
-            const double newWindowLow = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowBumped);
-            imgSettings.setWindowValueLow(newWindowLow);
-            updateImageUniforms();
-          }
+          const double newWindowLow = image->quantileToValue(activeComp, windowPercentileLowBumped);
 
-          if (windowPercentileHighCurrent != windowPercentileHighAttempted)
-          {
-            const double windowPercentileHighBumped = bumpQuantile(
-              *image, imgSettings.activeComponent(),
-              windowPercentileHighCurrent / 100.0, windowPercentileHighAttempted / 100.0, windowHigh);
-
-            const double newWindowHigh = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighBumped);
-            imgSettings.setWindowValueHigh(newWindowHigh);
-            updateImageUniforms();
-          }
+          imgSettings.setWindowValueLow(newWindowLow);
+          updateImageUniforms();
         }
-        else
+
+        if (windowPercentileHighCurrent != windowPercentileHighAttempted)
         {
-          /// @todo Need to bump these percentiles until we hit a different image value
-          const double valueLow = image->quantileToValue(imgSettings.activeComponent(), windowPercentileLowAttempted / 100.0);
-          const double valueHigh = image->quantileToValue(imgSettings.activeComponent(), windowPercentileHighAttempted / 100.0);
-          imgSettings.setWindowValueLow(valueLow);
-          imgSettings.setWindowValueHigh(valueHigh);
+          const double windowPercentileHighBumped = bumpQuantile(
+            *image, activeComp, windowPercentileHighCurrent / 100.0, windowPercentileHighAttempted / 100.0, windowHigh,
+            imgSettings.usingExactQuantiles());
+
+          const double newWindowHigh = image->quantileToValue(activeComp, windowPercentileHighBumped);
+          imgSettings.setWindowValueHigh(newWindowHigh);
           updateImageUniforms();
         }
       }
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum percentiles of the window range");
-#endif
 
       // Threshold range:
       const int32_t threshMin = static_cast<int32_t>(imgSettings.thresholdRange().first);
@@ -1224,7 +1112,7 @@ void renderImageHeader(
     /*
         ImGui::Text("Auto window: "); ImGui::SameLine();
 
-        const auto& stats = imgSettings.componentStatistics(imgSettings.activeComponent());
+        const auto& stats = imgSettings.componentStatistics(activeComp);
 
         if (ImGui::Button("Max"))
         {
@@ -1469,7 +1357,7 @@ void renderImageHeader(
       renderPaletteWindow(
         std::string(
           "Select colormap for image '" + imgSettings.displayName() + "' (component "
-          + std::to_string(imgSettings.activeComponent()) + ")"
+          + std::to_string(activeComp) + ")"
         )
           .c_str(),
         showImageColormapWindow,
@@ -1902,50 +1790,42 @@ void renderImageHeader(
                    image->header().numPixels());
     }
 
-    const uint32_t comp = imgSettings.activeComponent();
-    const void* buffer = image->bufferSortedAsVoid(comp);
+    const uint32_t comp = activeComp;
+    const void* buffer = image->bufferAsVoid(comp);
     const int bufferSize = static_cast<int>(image->header().numPixels());
     const std::string& format = appData.guiData().m_imageValuePrecisionFormat;
 
     switch (image->header().memoryComponentType())
     {
-    case ComponentType::Int8:
-    {
+    case ComponentType::Int8: {
       drawImageHistogram(static_cast<const int8_t*>(buffer), bufferSize, imgSettings, format);
       break;
     }
-    case ComponentType::UInt8:
-    {
+    case ComponentType::UInt8: {
       drawImageHistogram(static_cast<const uint8_t*>(buffer), bufferSize, imgSettings, format);
       break;
     }
-    case ComponentType::Int16:
-    {
+    case ComponentType::Int16: {
       drawImageHistogram(static_cast<const int16_t*>(buffer), bufferSize, imgSettings, format);
       break;
     }
-    case ComponentType::UInt16:
-    {
+    case ComponentType::UInt16: {
       drawImageHistogram(static_cast<const uint16_t*>(buffer), bufferSize, imgSettings, format);
       break;
     }
-    case ComponentType::Int32:
-    {
+    case ComponentType::Int32: {
       drawImageHistogram(static_cast<const int32_t*>(buffer), bufferSize, imgSettings, format);
       break;
     }
-    case ComponentType::UInt32:
-    {
+    case ComponentType::UInt32: {
       drawImageHistogram(static_cast<const uint32_t*>(buffer), bufferSize, imgSettings, format);
       break;
     }
-    case ComponentType::Float32:
-    {
+    case ComponentType::Float32: {
       drawImageHistogram(static_cast<const float*>(buffer), bufferSize, imgSettings, format);
       break;
     }
-    default:
-    {
+    default: {
       break;
     }
     }

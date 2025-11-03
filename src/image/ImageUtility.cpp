@@ -474,8 +474,9 @@ std::vector<tdigest::TDigest> computeTDigests(const Image& image)
   return digests;
 }
 
-double bumpQuantile(const Image& image, uint32_t comp, double currentQuantile,
-                    double attemptedQuantile, double currentValue)
+double bumpQuantile(
+  const Image& image, uint32_t comp, double currentQuantile,
+  double attemptedQuantile, double currentValue, bool usingExactQuantiles)
 {
   const int dir = sgn(attemptedQuantile - currentQuantile);
   if (0 == dir) {
@@ -494,17 +495,30 @@ double bumpQuantile(const Image& image, uint32_t comp, double currentQuantile,
     oldValue = newValue;
 
     if (dir < 0) {
-      newQuant = (0 == Q.lowerIndex) ? 0.0 : static_cast<double>(Q.lowerIndex - 1) / N;
+      if (usingExactQuantiles) {
+        newQuant = (0 == Q.lowerIndex) ? 0.0 : static_cast<double>(Q.lowerIndex - 1) / N;
+      }
+      else {
+        newQuant = (0 == Q.lowerIndex) ? 0.0 : newQuant - 1.0 / N;
+      }
     }
     else if (dir > 0) {
-      newQuant = (N == Q.upperIndex) ? 1.0 : static_cast<double>(Q.upperIndex + 1) / N;
+      if (usingExactQuantiles) {
+        newQuant = (N == Q.upperIndex) ? 1.0 : static_cast<double>(Q.upperIndex + 1) / N;
+      }
+      else {
+        newQuant = (N == Q.upperIndex) ? 1.0 : newQuant + 1.0 / N;
+      }
     }
 
     newValue = image.quantileToValue(comp, newQuant);
 
     // The loop should theoretically need to run only once.
     // But more loops may be required if there are some numerical errors.
-    break;
+
+    if (usingExactQuantiles) {
+      break;
+    }
   }
 
   return newQuant;
