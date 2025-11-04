@@ -135,6 +135,8 @@ createShaderProgram(
 {
   static const std::string shaderPath("src/rendering/shaders/");
 
+  spdlog::debug("Creating shader program '{}'", programName);
+
   const auto filesystem = cmrc::shaders::get_filesystem();
   std::string vsSource;
   std::string fsSource;

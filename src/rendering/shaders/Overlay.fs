@@ -1,8 +1,5 @@
 #version 330 core
 
-#define MIN_IMAGE_TEXCOORD vec3(0.0)
-#define MAX_IMAGE_TEXCOORD vec3(1.0)
-
 in VS_OUT
 {
   vec3 v_texCoord[2];

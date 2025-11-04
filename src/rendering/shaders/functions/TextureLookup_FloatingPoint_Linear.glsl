@@ -1,3 +1,6 @@
+// 3D texture coordinates (s,t,p) are in [0.0, 1.0]^3
+#define MIN_VOX_COORD ivec3(0)
+
 /**
  * @brief Trilinear interpolation using floating points as alternative to GPU-based interpolation,
  * which is based on 24.8 fixed-point arithmetic with 8 bits for the fractional part, and hence 256
@@ -12,18 +15,20 @@
 float textureLookup(sampler3D tex, vec3 texCoords)
 {
   vec3 res = vec3(textureSize(tex, 0));
+  ivec3 voxMax = ivec3(res) - ivec3(1);
+
   vec3 vox = (fract(texCoords) - 0.5 / res) * res;
-  ivec3 i = ivec3(floor(vox));
+  ivec3 i = max(ivec3(floor(vox)), MIN_VOX_COORD);
   vec3 w = fract(vox);
 
-  float t000 = texelFetch(tex, (i + ivec3(0, 0, 0)), 0)[0];
-  float t100 = texelFetch(tex, (i + ivec3(1, 0, 0)), 0)[0];
-  float t010 = texelFetch(tex, (i + ivec3(0, 1, 0)), 0)[0];
-  float t110 = texelFetch(tex, (i + ivec3(1, 1, 0)), 0)[0];
-  float t001 = texelFetch(tex, (i + ivec3(0, 0, 1)), 0)[0];
-  float t101 = texelFetch(tex, (i + ivec3(1, 0, 1)), 0)[0];
-  float t011 = texelFetch(tex, (i + ivec3(0, 1, 1)), 0)[0];
-  float t111 = texelFetch(tex, (i + ivec3(1, 1, 1)), 0)[0];
+  float t000 = texelFetch(tex, min(i + ivec3(0, 0, 0), voxMax), 0)[0];
+  float t100 = texelFetch(tex, min(i + ivec3(1, 0, 0), voxMax), 0)[0];
+  float t010 = texelFetch(tex, min(i + ivec3(0, 1, 0), voxMax), 0)[0];
+  float t110 = texelFetch(tex, min(i + ivec3(1, 1, 0), voxMax), 0)[0];
+  float t001 = texelFetch(tex, min(i + ivec3(0, 0, 1), voxMax), 0)[0];
+  float t101 = texelFetch(tex, min(i + ivec3(1, 0, 1), voxMax), 0)[0];
+  float t011 = texelFetch(tex, min(i + ivec3(0, 1, 1), voxMax), 0)[0];
+  float t111 = texelFetch(tex, min(i + ivec3(1, 1, 1), voxMax), 0)[0];
 
   float tx00 = mix(t000, t100, w.x);
   float tx10 = mix(t010, t110, w.x);

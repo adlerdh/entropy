@@ -1,5 +1,4 @@
-#ifndef IMAGE_IO_INFO_H
-#define IMAGE_IO_INFO_H
+#pragma once
 
 #include "common/Filesystem.h"
 
@@ -15,7 +14,7 @@
 class FileInfo
 {
 public:
-  FileInfo();
+  FileInfo() = default;
   FileInfo(const ::itk::ImageIOBase::Pointer imageIo);
 
   bool set(const ::itk::ImageIOBase::Pointer imageIo);
@@ -23,12 +22,12 @@ public:
 
   fs::path m_fileName;
 
-  itk::IOByteOrderEnum m_byteOrder;
-  std::string m_byteOrderString;
-  bool m_useCompression;
+  itk::IOByteOrderEnum m_byteOrder{itk::IOByteOrderEnum::OrderNotApplicable};
+  std::string m_byteOrderString{"OrderNotApplicable"};
+  bool m_useCompression{false};
 
-  itk::IOFileEnum m_fileType;
-  std::string m_fileTypeString;
+  itk::IOFileEnum m_fileType{itk::IOFileEnum::TypeNotApplicable};
+  std::string m_fileTypeString{"TypeNotApplicable"};
 
   std::vector<std::string> m_supportedReadExtensions;
   std::vector<std::string> m_supportedWriteExtensions;
@@ -37,58 +36,58 @@ public:
 class ComponentInfo
 {
 public:
-  ComponentInfo();
+  ComponentInfo() = default;
   ComponentInfo(const ::itk::ImageIOBase::Pointer imageIo);
 
   bool set(const ::itk::ImageIOBase::Pointer imageIo);
   bool validate() const;
 
-  itk::IOComponentEnum m_componentType;
-  std::string m_componentTypeString;
-  uint32_t m_componentSizeInBytes;
+  itk::IOComponentEnum m_componentType{itk::IOComponentEnum::UNKNOWNCOMPONENTTYPE};
+  std::string m_componentTypeString{"UNKNOWNCOMPONENTTYPE"};
+  uint32_t m_componentSizeInBytes{0u};
 };
 
 class PixelInfo
 {
 public:
-  PixelInfo();
+  PixelInfo() = default;
   PixelInfo(const ::itk::ImageIOBase::Pointer imageIo);
 
   bool set(const ::itk::ImageIOBase::Pointer imageIo);
   bool validate() const;
 
-  itk::IOPixelEnum m_pixelType;
-  std::string m_pixelTypeString;
-  uint32_t m_numComponents;
-  uint32_t m_pixelStrideInBytes;
+  itk::IOPixelEnum m_pixelType{itk::IOPixelEnum::UNKNOWNPIXELTYPE};
+  std::string m_pixelTypeString{"UNKNOWNPIXELTYPE"};
+  uint32_t m_numComponents{0u};
+  uint32_t m_pixelStrideInBytes{0u};
 };
 
 class SizeInfo
 {
 public:
-  SizeInfo();
+  SizeInfo() = default;
   SizeInfo(const ::itk::ImageIOBase::Pointer imageIo);
 
   bool set(const ::itk::ImageIOBase::Pointer imageIo);
   bool set(const typename ::itk::ImageBase<3>::Pointer imageBase, const size_t componentSizeInBytes);
   bool validate() const;
 
-  size_t m_imageSizeInComponents;
-  size_t m_imageSizeInPixels;
-  size_t m_imageSizeInBytes;
+  std::size_t m_imageSizeInComponents{0u};
+  std::size_t m_imageSizeInPixels{0u};
+  std::size_t m_imageSizeInBytes{0u};
 };
 
 class SpaceInfo
 {
 public:
-  SpaceInfo();
+  SpaceInfo() = default;
   SpaceInfo(const ::itk::ImageIOBase::Pointer imageIo);
 
   bool set(const ::itk::ImageIOBase::Pointer imageIo);
   bool set(const typename ::itk::ImageBase<3>::Pointer imageBase);
   bool validate() const;
 
-  uint32_t m_numDimensions;
+  uint32_t m_numDimensions{0u};
   std::vector<size_t> m_dimensions;
   std::vector<double> m_origin;
   std::vector<double> m_spacing;
@@ -140,5 +139,3 @@ public:
   SpaceInfo m_spaceInfo;
   MetaDataMap m_metaData;
 };
-
-#endif // IMAGE_IO_INFO_H

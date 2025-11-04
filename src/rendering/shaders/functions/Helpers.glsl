@@ -1,3 +1,7 @@
+// 3D texture coordinates (s,t,p) are in [0.0, 1.0]^3
+#define MIN_IMAGE_TEXCOORD vec3(0.0)
+#define MAX_IMAGE_TEXCOORD vec3(1.0)
+
 /**
  * @brief Check if coordinates are inside the image texture
  */

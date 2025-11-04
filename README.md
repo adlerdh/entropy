@@ -20,13 +20,13 @@ BUILD_DIR=build-${BUILD_TYPE}-shared-${SHARED_LIBS}
 Execute superbuild and set flags:
 ```
 cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_SHARED_LIBS=${SHARED_LIBS}
-cmake --build ${BUILD_DIR} -- -j ${NPROCS}
+cmake --build ${BUILD_DIR} -- -j ${NPROCS-1}
 ```
 
 Execute Entropy build:
 ```
 cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=0
-cmake --build ${BUILD_DIR} -- -j ${NPROCS}
+cmake --build ${BUILD_DIR} -- -j ${NPROCS-1}
 ```
 
 ### Operating systems

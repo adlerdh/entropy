@@ -1,9 +1,5 @@
 #version 330 core
 
-// 3D texture coordinates (s,t,p) are in [0.0, 1.0]^3
-#define MIN_IMAGE_TEXCOORD vec3(0.0)
-#define MAX_IMAGE_TEXCOORD vec3(1.0)
-
 // Rendering modes:
 #define IMAGE_RENDER_MODE 0
 #define CHECKER_RENDER_MODE 1
@@ -123,7 +119,7 @@ void main()
   img = computeProjection(img);
 
   /*
-  // Optimizationm when using distance maps:
+  // Optimization when using distance maps:
   // Add option to apply distance map optimization that then does this early return...
   float voxelDiag = length(u_voxelSize);
 
@@ -148,10 +144,19 @@ void main()
 
   mat4 texture_T_clip = u_tex_T_world * u_world_T_clip;
 
-  float a_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pa, u_clipDepth, 1.0)));
-  float b_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pb, u_clipDepth, 1.0)));
-  float c_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pc, u_clipDepth, 1.0)));
-  float d_v = textureLookup(u_imgTex, vec3(texture_T_clip * vec4(pd, u_clipDepth, 1.0)));
+  vec3 ta = vec3(texture_T_clip * vec4(pa, u_clipDepth, 1.0));
+  vec3 tb = vec3(texture_T_clip * vec4(pb, u_clipDepth, 1.0));
+  vec3 tc = vec3(texture_T_clip * vec4(pc, u_clipDepth, 1.0));
+  vec3 td = vec3(texture_T_clip * vec4(pd, u_clipDepth, 1.0));
+
+  if (!isInsideTexture(ta) || !isInsideTexture(tb) || !isInsideTexture(tc) || !isInsideTexture(td)) {
+    discard;
+  }
+
+  float a_v = textureLookup(u_imgTex, ta);
+  float b_v = textureLookup(u_imgTex, tb);
+  float c_v = textureLookup(u_imgTex, tc);
+  float d_v = textureLookup(u_imgTex, td);
 
   vec2 grad = vec2((b_v - a_v) / (2.0 * dx), (d_v - c_v) / (2.0 * dy));
 
@@ -159,10 +164,10 @@ void main()
   float eps = u_contourWidth * min(dx, dy);
 
   // Feather the contour:
-  //   -ve: [iso - eps, iso]
-  //   +ve: (iso, iso + eps/2]
-  float cneg = float(-eps <= de) * float(de <= 0.0) * max(1.0 - pow(de / (-1.0 * eps), 6.0), 0.0); // -ve side of u_isoValue
-  float cpos = float(0.0 < de) * float(de <= 0.5 * eps) * max(1.0 - pow(de / (0.5 * eps), 2.0), 0.0); // +ve side of u_isoValue
+  // -ve: [iso - eps, iso]
+  // +ve: (iso, iso + eps/2]
+  float cneg = float(-eps <= de) * float(de <= 0.0) * max(1.0 - pow(de / (-1.0 * eps), 6.0), 0.0);
+  float cpos = float(0.0 < de) * float(de <= 0.5 * eps) * max(1.0 - pow(de / (0.5 * eps), 2.0), 0.0);
   float c_feather = clamp(cneg + cpos, 0.0, 1.0);
 
   /// TODO: use thresholding?

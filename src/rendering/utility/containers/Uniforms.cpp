@@ -123,26 +123,27 @@ GLint Uniforms::queryAndSetLocation(
   const GLint loc = locationGetter(name);
 
   if (-1 == loc) {
-    spdlog::error("Unrecognized uniform '{}'", name);
+    spdlog::warn("Unrecognized uniform '{}': its location will not be set", name);
     return loc;
   }
-
-  setLocation(name, loc);
+  else {
+    setLocation(name, loc);
+  }
   return loc;
 }
 
 int Uniforms::queryAndSetAllLocations(std::function<GLint(const std::string&)> locationGetter)
 {
+  bool foundOne = false;
   for (auto& uniform : m_uniformsMap)
   {
-    GLint loc = queryAndSetLocation(uniform.first, locationGetter);
-    if (-1 == loc) {
-      spdlog::error("Unrecognized uniform '{}'", uniform.first);
-      return 1;
+    const GLint loc = queryAndSetLocation(uniform.first, locationGetter);
+    if (-1 != loc) {
+      foundOne = true;
     }
   }
 
-  return 0;
+  return (foundOne ? 0 : 1);
 }
 
 void Uniforms::setDirty(const std::string& name, bool dirty)

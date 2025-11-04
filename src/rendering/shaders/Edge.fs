@@ -1,9 +1,5 @@
 #version 330 core
 
-// 3D texture coordinates (s,t,p) are in [0.0, 1.0]^3
-#define MIN_IMAGE_TEXCOORD vec3(0.0)
-#define MAX_IMAGE_TEXCOORD vec3(1.0)
-
 // Rendering modes:
 #define IMAGE_RENDER_MODE 0
 #define CHECKER_RENDER_MODE 1

@@ -44,8 +44,7 @@ void errorCallback(int error, const char* description)
 void windowContentScaleCallback(GLFWwindow* window, float contentScaleX, float contentScaleY)
 {
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in window content scale callback");
     return;
   }
@@ -59,8 +58,7 @@ void windowContentScaleCallback(GLFWwindow* window, float contentScaleX, float c
 void windowCloseCallback(GLFWwindow* window)
 {
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in window close callback");
     return;
   }
@@ -77,8 +75,7 @@ void windowCloseCallback(GLFWwindow* window)
 void windowPositionCallback(GLFWwindow* window, int screenWindowPosX, int screenWindowPosY)
 {
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in window size callback");
     return;
   }
@@ -90,8 +87,7 @@ void windowPositionCallback(GLFWwindow* window, int screenWindowPosX, int screen
 void windowSizeCallback(GLFWwindow* window, int windowWidth, int windowHeight)
 {
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in window size callback");
     return;
   }
@@ -108,8 +104,7 @@ void windowSizeCallback(GLFWwindow* window, int windowWidth, int windowHeight)
 void framebufferSizeCallback(GLFWwindow* window, int fbWidth, int fbHeight)
 {
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in framebuffer size callback");
     return;
   }
@@ -242,32 +237,31 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   }
   case MouseMode::Annotate:
   {
-    if (!currHit_invalidOutsideView)
+    if (!currHit_invalidOutsideView) {
       break;
+    }
 
     if (s_mouseButtonState.left)
     {
-      if (app->appData().settings().crosshairsMoveWhileAnnotating() && state::annot::isInStateWhereCrosshairsCanMove())
-      {
+      if (app->appData().settings().crosshairsMoveWhileAnnotating() &&
+          state::annot::isInStateWhereCrosshairsCanMove()) {
         H.doCrosshairsMove(*currHit_invalidOutsideView);
       }
     }
     else if (s_mouseButtonState.right)
     {
-      if (!currHit_withOverride)
+      if (!currHit_withOverride) {
         break;
-      H.doCameraZoomDrag(
-        *s_startHit,
-        *s_prevHit,
-        *currHit_withOverride,
-        ZoomBehavior::ToCrosshairs,
-        syncZoomsForAllViews(s_modifierState)
-      );
+      }
+
+      H.doCameraZoomDrag(*s_startHit, *s_prevHit, *currHit_withOverride,
+                         ZoomBehavior::ToCrosshairs, syncZoomsForAllViews(s_modifierState));
     }
     else if (s_mouseButtonState.middle)
     {
-      if (!currHit_withOverride)
+      if (!currHit_withOverride) {
         break;
+      }
       H.doCameraTranslate2d(*s_startHit, *s_prevHit, *currHit_withOverride);
     }
     break;
@@ -546,8 +540,7 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
   cursorPosCallback(window, mindowCursorPosX, mindowCursorPosY);
 
   const glm::vec2 windowCursorPos = helper::window_T_mindow(
-    static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY}
-  );
+    static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY});
 
   const auto hit_invalidOutsideView = getViewHit(app->appData(), windowCursorPos);
   if (!hit_invalidOutsideView)
@@ -573,11 +566,8 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
   }
   case MouseMode::CameraZoom:
   {
-    H.doCameraZoomScroll(
-      *hit_invalidOutsideView,
-      {scrollOffsetX, scrollOffsetY},
-      ZoomBehavior::ToCrosshairs,
-      syncZoomsForAllViews(s_modifierState));
+    H.doCameraZoomScroll(*hit_invalidOutsideView, {scrollOffsetX, scrollOffsetY},
+                         ZoomBehavior::ToCrosshairs, syncZoomsForAllViews(s_modifierState));
     break;
   }
   case MouseMode::Annotate:
@@ -586,7 +576,6 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
       const bool fineScroll = shiftDown; // ( s_modifierState.shift );
       H.doCrosshairsScroll(*hit_invalidOutsideView, {scrollOffsetX, scrollOffsetY}, fineScroll);
     }
-
     break;
   }
   }
@@ -595,29 +584,28 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
 void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
 {
   const ImGuiIO& io = ImGui::GetIO();
-  if (io.WantCaptureKeyboard)
+  if (io.WantCaptureKeyboard) {
     return; // ImGui has captured event
+  }
 
   s_modifierState.updateFromGlfwEvent(mods);
 
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in key callback");
     return;
   }
 
   // Do actions on GLFW_PRESS and GLFW_REPEAT only
-  if (GLFW_RELEASE == action)
+  if (GLFW_RELEASE == action) {
     return;
+  }
 
   double mindowCursorPosX, mindowCursorPosY;
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
 
   const glm::vec2 windowCursorPos = helper::window_T_mindow(
-    static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY}
-  );
+    static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY});
 
   const auto hit_invalidOutsideView = getViewHit(app->appData(), windowCursorPos);
 
@@ -625,8 +613,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
 
   switch (key)
   {
-  case GLFW_KEY_Q:
-  {
+  case GLFW_KEY_Q: {
     if (s_modifierState.control) {
       glfwSetWindowShouldClose(window, true);
     }
@@ -649,7 +636,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
   case GLFW_KEY_T:
     H.setMouseMode(MouseMode::ImageTranslate);
     break;
-    //    case GLFW_KEY_Y: H.setMouseMode( MouseMode::ImageScale ); break;
+//case GLFW_KEY_Y: H.setMouseMode( MouseMode::ImageScale ); break;
 
   case GLFW_KEY_Z:
     H.setMouseMode(MouseMode::CameraZoom);
@@ -677,15 +664,18 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     break;
   }
 
-  case GLFW_KEY_W:
+  case GLFW_KEY_W: {
     H.toggleImageVisibility();
     break;
-  case GLFW_KEY_E:
+  }
+  case GLFW_KEY_E: {
     H.toggleImageEdges();
     break;
-  case GLFW_KEY_O:
+  }
+  case GLFW_KEY_O: {
     H.cycleOverlayAndUiVisibility();
     break;
+  }
 
   case GLFW_KEY_C:
   {
@@ -695,100 +685,97 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     const bool realignCrosshairs = hardReset;
     const bool resetObliqueOrientation = hardReset;
     const bool recenterOnCurrentCrosshairsPosition = true;
-    const bool resetZoom = hardReset ? true : recenterOnCurrentCrosshairsPosition;
+    const bool resetZoom = hardReset; // ? true : recenterOnCurrentCrosshairsPosition;
 
-    H.recenterViews(
-      app->appData().state().recenteringMode(),
-      recenterCrosshairs, realignCrosshairs,
-      recenterOnCurrentCrosshairsPosition,
-      resetObliqueOrientation, resetZoom);
+    H.recenterViews(app->appData().state().recenteringMode(), recenterCrosshairs, realignCrosshairs,
+                    recenterOnCurrentCrosshairsPosition, resetObliqueOrientation, resetZoom);
     break;
   }
 
-  case GLFW_KEY_F4:
+  case GLFW_KEY_F4: {
     H.toggleFullScreenMode();
     break;
-  case GLFW_KEY_ESCAPE:
+  }
+  case GLFW_KEY_ESCAPE: {
     H.toggleFullScreenMode(true);
     break;
+  }
 
   case GLFW_KEY_PAGE_DOWN:
   {
-    if (s_modifierState.shift)
-    {
+    if (s_modifierState.shift) {
       H.cycleImageComponent(-1);
     }
-    else
-    {
-      if (!hit_invalidOutsideView)
+    else {
+      if (!hit_invalidOutsideView) {
         break;
+      }
       H.scrollViewSlice(*hit_invalidOutsideView, -1);
     }
     break;
   }
   case GLFW_KEY_PAGE_UP:
   {
-    if (s_modifierState.shift)
-    {
+    if (s_modifierState.shift) {
       H.cycleImageComponent(1);
     }
-    else
-    {
-      if (!hit_invalidOutsideView)
+    else {
+      if (!hit_invalidOutsideView) {
         break;
+      }
       H.scrollViewSlice(*hit_invalidOutsideView, 1);
     }
     break;
   }
   case GLFW_KEY_LEFT:
   {
-    if (!hit_invalidOutsideView)
+    if (!hit_invalidOutsideView) {
       break;
+    }
     H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, -1, 0);
     break;
   }
   case GLFW_KEY_RIGHT:
   {
-    if (!hit_invalidOutsideView)
+    if (!hit_invalidOutsideView) {
       break;
+    }
     H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 1, 0);
     break;
   }
   case GLFW_KEY_UP:
   {
-    if (!hit_invalidOutsideView)
+    if (!hit_invalidOutsideView) {
       break;
+    }
     H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 0, 1);
     break;
   }
   case GLFW_KEY_DOWN:
   {
-    if (!hit_invalidOutsideView)
+    if (!hit_invalidOutsideView) {
       break;
+    }
     H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 0, -1);
     break;
   }
 
   case GLFW_KEY_LEFT_BRACKET:
   {
-    if (s_modifierState.shift)
-    {
+    if (s_modifierState.shift) {
       H.cycleActiveImage(-1);
     }
-    else
-    {
+    else {
       H.cyclePrevLayout();
     }
     break;
   }
   case GLFW_KEY_RIGHT_BRACKET:
   {
-    if (s_modifierState.shift)
-    {
+    if (s_modifierState.shift) {
       H.cycleActiveImage(1);
     }
-    else
-    {
+    else {
       H.cycleNextLayout();
     }
     break;
@@ -796,24 +783,20 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
 
   case GLFW_KEY_COMMA:
   {
-    if (s_modifierState.shift)
-    {
+    if (s_modifierState.shift) {
       H.cycleBackgroundSegLabel(-1);
     }
-    else
-    {
+    else {
       H.cycleForegroundSegLabel(-1);
     }
     break;
   }
   case GLFW_KEY_PERIOD:
   {
-    if (s_modifierState.shift)
-    {
+    if (s_modifierState.shift) {
       H.cycleBackgroundSegLabel(1);
     }
-    else
-    {
+    else {
       H.cycleForegroundSegLabel(1);
     }
     break;
@@ -886,20 +869,19 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
 
 void dropCallback(GLFWwindow* window, int count, const char** paths)
 {
-  if (0 == count || !paths)
+  if (0 == count || !paths) {
     return;
+  }
 
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in drop callback");
     return;
   }
 
   for (int i = 0; i < count; ++i)
   {
-    if (paths[i])
-    {
+    if (paths[i]) {
       spdlog::info("Dropped file {}: {}", i, paths[i]);
 
       serialize::Image serializedImage;

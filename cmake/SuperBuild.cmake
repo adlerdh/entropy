@@ -307,13 +307,6 @@ ExternalProject_Add(implot
 
 message(STATUS "Adding external library ITK in ${itk_PREFIX}")
 
-find_library(ICONV_LIBRARY iconv)
-if(ICONV_LIBRARY)
-  message(STATUS "Found iconv library (required for ITK) in ${ICONV_LIBRARY}")
-else()
-  message(FATAL_ERROR "iconv library not found, which is required for ITK")
-endif()
-
 ExternalProject_Add(ITK
   URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${itk_VERSION}/InsightToolkit-${itk_VERSION}.tar.gz"
   URL_HASH SHA512=39e9003cc76a08f486c28e47df4b66944d1ba1e7917ad986ace84422acf2abc6956956929bebb08f37b04a9905f251eb941443a3d873c40852130aa1c189cf4b
@@ -335,11 +328,9 @@ ExternalProject_Add(ITK
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
     -DBUILD_STATIC_LIBS:BOOL=${BUILD_STATIC_LIBS}
-    -DCMAKE_EXE_LINKER_FLAGS="-liconv"
-    -DCMAKE_SHARED_LINKER_FLAGS="-liconv"
-    -DCMAKE_MODULE_LINKER_FLAGS="-liconv"
     -DBUILD_EXAMPLES:BOOL=OFF
     -DBUILD_TESTING:BOOL=OFF
+    -DModule_ITKIOGDCM:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ITK install step"

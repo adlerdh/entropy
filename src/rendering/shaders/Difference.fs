@@ -1,8 +1,5 @@
 #version 330 core
 
-#define MIN_IMAGE_TEXCOORD vec3(0.0)
-#define MAX_IMAGE_TEXCOORD vec3(1.0)
-
 #define NO_IP_MODE 0
 #define MAX_IP_MODE 1
 #define MEAN_IP_MODE 2
