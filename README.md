@@ -12,7 +12,7 @@ Define build flags:
 - `NPROCS`: number of concurrent processes during build (e.g. `nproc` on Linux, `sysctl -n hw.ncpu` on macOS, or `echo %NUMBER_OF_PROCESSORS%` on Windows)
 ```bash
 BUILD_TYPE=Release
-SHARED_LIBS=0
+SHARED_LIBS=1
 NPROCS=$(python3 -c "import os; print(os.cpu_count())")
 BUILD_DIR=build-${BUILD_TYPE}-shared-${SHARED_LIBS}
 ```

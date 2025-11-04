@@ -435,7 +435,7 @@ set(entropy_SOURCES
   ${entropy_SRC_DIR}/rendering/TextureSetup.cpp
   ${entropy_SRC_DIR}/rendering/VectorDrawing.cpp
 
-  ${entropy_SRC_DIR}/rendering/Common/ShaderType.cpp
+  ${entropy_SRC_DIR}/rendering/common/ShaderType.cpp
 
   ${entropy_SRC_DIR}/rendering/utility/containers/VertexAttributeInfo.cpp
   ${entropy_SRC_DIR}/rendering/utility/containers/VertexIndicesInfo.cpp
