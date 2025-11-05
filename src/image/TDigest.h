@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <numbers>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -132,7 +133,38 @@ class TDigest {
     return w;
   }
 
-  TDigest& operator=(TDigest&& o) {
+  TDigest(const TDigest& o)
+    :
+    compression_(o.compression_),
+    min_(o.min_),
+    max_(o.max_),
+    maxProcessed_(o.maxProcessed_),
+    maxUnprocessed_(o.maxUnprocessed_),
+    processedWeight_(o.processedWeight_),
+    unprocessedWeight_(o.unprocessedWeight_),
+    processed_(o.processed_),
+    unprocessed_(o.unprocessed_),
+    cumulative_(o.cumulative_)
+  {}
+
+  TDigest& operator=(const TDigest& o)
+  {
+    if (this != &o) {
+      compression_ = o.compression_;
+      maxProcessed_ = o.maxProcessed_;
+      maxUnprocessed_ = o.maxUnprocessed_;
+      processedWeight_ = o.processedWeight_;
+      unprocessedWeight_ = o.unprocessedWeight_;
+      processed_ = o.processed_;
+      unprocessed_ = o.unprocessed_;
+      cumulative_ = o.cumulative_;
+      min_ = o.min_;
+      max_ = o.max_;
+    }
+    return *this;
+  }
+
+  TDigest& operator=(TDigest&& o) noexcept {
     compression_ = o.compression_;
     maxProcessed_ = o.maxProcessed_;
     maxUnprocessed_ = o.maxUnprocessed_;
@@ -146,9 +178,9 @@ class TDigest {
     return *this;
   }
 
-  TDigest(TDigest&& o)
-      : TDigest(std::move(o.processed_), std::move(o.unprocessed_), o.compression_, o.maxUnprocessed_,
-                o.maxProcessed_) {}
+  TDigest(TDigest&& o) noexcept
+    : TDigest(std::move(o.processed_), std::move(o.unprocessed_), o.compression_, o.maxUnprocessed_,
+              o.maxProcessed_) {}
 
   static inline Index processedSize(Index size, Value compression) noexcept {
     return (size == 0) ? static_cast<Index>(2 * std::ceil(compression)) : size;
@@ -576,11 +608,11 @@ class TDigest {
    * @return The centroid scale value corresponding to q.
    */
   inline Value integratedLocation(Value q) const {
-    return compression_ * (std::asin(2.0 * q - 1.0) + M_PI / 2) / M_PI;
+    return compression_ * (std::asin(2.0 * q - 1.0) + std::numbers::pi / 2) / std::numbers::pi;
   }
 
   inline Value integratedQ(Value k) const {
-    return (std::sin(std::min(k, compression_) * M_PI / compression_ - M_PI / 2) + 1) / 2;
+    return (std::sin(std::min(k, compression_) * std::numbers::pi / compression_ - std::numbers::pi / 2) + 1) / 2;
   }
 
   /**

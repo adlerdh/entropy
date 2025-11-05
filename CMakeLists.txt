@@ -65,12 +65,7 @@ message(STATUS "BUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-
-if(UNIX)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-else()
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-endif()
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 
 # External library versions:
@@ -190,7 +185,7 @@ endif()
 
 # NanoVG: A small antialiased vector graphics rendering library for OpenGL
 set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
-add_library(nanovg "${nanovg_SRC_DIR}/nanovg.c")
+add_library(nanovg STATIC "${nanovg_SRC_DIR}/nanovg.c")
 target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
 
 # Niels Lohmann's JSON for Modern C++
@@ -258,7 +253,7 @@ endif()
 set(glad_DIR ${entropy_EXT_DIR}/glad/${glad_BASE})
 set(glad_INCLUDE_DIR ${glad_DIR}/include)
 
-add_library(glad ${glad_DIR}/src/glad.c)
+add_library(glad STATIC ${glad_DIR}/src/glad.c)
 target_include_directories(glad PRIVATE ${glad_INCLUDE_DIR})
 
 #--------------------------------------------------------------------------------
@@ -279,7 +274,7 @@ list(APPEND imgui_SOURCES
   ${imgui_SRC_DIR}/imgui/backends/imgui_impl_opengl3.cpp # OpenGL 3 bindings for ImGui
 )
 
-add_library(imgui ${imgui_SOURCES})
+add_library(imgui STATIC ${imgui_SOURCES})
 
 target_compile_definitions(imgui PRIVATE IMGUI_USER_CONFIG="ui/entropy_imgui_config.h")
 
@@ -325,7 +320,7 @@ list(APPEND IMPLOT_SOURCES
   ${implot_SRC_DIR}/implot/implot.cpp
 )
 
-add_library(implot ${IMPLOT_SOURCES})
+add_library(implot STATIC ${IMPLOT_SOURCES})
 
 target_include_directories(implot PRIVATE
   ${implot_SRC_DIR}/implot

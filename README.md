@@ -20,13 +20,13 @@ BUILD_DIR=build-${BUILD_TYPE}-shared-${SHARED_LIBS}
 Execute superbuild and set flags:
 ```
 cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_SHARED_LIBS=${SHARED_LIBS}
-cmake --build ${BUILD_DIR} -- -j ${NPROCS-1}
+cmake --build ${BUILD_DIR} --parallel ${NPROCS-1}
 ```
 
 Execute Entropy build:
 ```
 cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=0
-cmake --build ${BUILD_DIR} -- -j ${NPROCS-1}
+cmake --build ${BUILD_DIR} --parallel ${NPROCS-1}
 ```
 
 ### Operating systems
@@ -59,6 +59,7 @@ The following external sources and libraries have been committed directly to the
 * [GridCut](https://gridcut.com): fast max-flow/min-cut graph-cuts optimized for grid graphs 
 * [ImGui file browser](https://github.com/AirGuanZ/imgui-filebrowser) with local modifications
 * [imGuIZMO.quat](https://github.com/AirGuanZ/imgui-filebrowser) with local modifications
+* [T-Digest for C++](https://github.com/derrickburns/tdigest) with local modifications to fix build
 
 ### Development libraries for Debian Linux
 You may need to install additional development libraries for Mesa 3D Graphics, Wayland, Xorg, Xrandr, Xinerama, Xcursor, xkbcommon, and xi on Linux. On Debian, this can be done using
