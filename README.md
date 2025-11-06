@@ -143,3 +143,19 @@ With this input format, each image may have only one segmentation.
 > Note: The project file format is subject to change!
 
 Logs are output to the console and to files saved in the `logs` folder. Log level can be set using the `-l` argument. See help (`-h`) for more details.
+
+### Keyboard shortcuts
+* **V**: Crosshairs Mode
+  - left button: move crosshairs
+  - CTRL + left button: rotate crosshairs
+  - middle button: pan
+  - right button: zoom
+* **L**: Image Adjustment Mode
+  - left button: window (left/right) and level (up/down)
+  - right button: opacity
+* **Z**: Zoom Mode
+  - left button: zoom to crosshairs
+  - right button: zoom to cursor
+* **X**: Pan/Dolly Mode
+  - left button: pan in plane
+  - right button: dolly in/out of plane (3D views)

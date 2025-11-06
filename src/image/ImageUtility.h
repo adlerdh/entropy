@@ -51,5 +51,4 @@ double bumpQuantile(const Image& image, uint32_t comp,
                     bool usingExactQuantiles);
 
 std::optional<std::size_t> computeNumHistogramBins(
-  const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats
-);
+  const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats);

@@ -30,6 +30,7 @@ Image::Image(
     throw_debug("Error creating itk::ImageIOBase")
   }
 
+  /// @todo Handle 4D images
   if (!m_ioInfoOnDisk.set(imageIo)) {
     spdlog::error("Error setting image IO information for image from file {}", fileName);
     throw_debug("Error setting image IO information")

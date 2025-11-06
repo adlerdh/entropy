@@ -134,7 +134,7 @@ std::string typeString(const MouseMode& mouseMode)
 {
   static const std::unordered_map<MouseMode, std::string> s_typeToStringMap{
     {MouseMode::Pointer,
-     "Pointer (V)\nMove crosshairs\nCtrl: rotate crosshairs"},
+     "Pointer (V)\nLeft button: move crosshairs\n+Ctrl: rotate crosshairs\nMiddle button: pan\nRight button: zoom"},
     {MouseMode::WindowLevel,
      "Window/level and opacity (L)\nLeft button: window/level\nRight button: opacity"},
     {MouseMode::CameraTranslate,

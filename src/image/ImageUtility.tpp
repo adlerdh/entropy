@@ -621,12 +621,13 @@ tdigest::TDigest buildTDigest(
   }
 
   globalDigest.compress();
+  globalDigest.cdf(0.0); // Force it to process
 
   return globalDigest;
 }
 
 template<typename T>
-OnlineStats computeStatisticsOnUnsortedIntensities(const std::span<const T> data)
+OnlineStats computeStatsOnUnsortedBuffers(const std::span<const T> data)
 {
   spdlog::debug("Computing statistics on unsorted image intensities");
 
@@ -669,7 +670,7 @@ OnlineStats computeStatisticsOnUnsortedIntensities(const std::span<const T> data
 }
 
 template<typename T>
-ComponentStats computeStatisticsOnSortedIntensities(const std::span<const T> dataSorted)
+ComponentStats computeStatsOnSortedBuffers(const std::span<const T> dataSorted)
 {
   OnlineStats os;
   os.min = static_cast<double>(dataSorted.front());

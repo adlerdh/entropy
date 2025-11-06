@@ -21,7 +21,7 @@
 #include <vector>
 
 /**
- * @brief Encapsulates a 3D medical image with one or more components per pixel
+ * @brief Encapsulates a 1D, 2D, or 3D medical image with one or more components per pixel
  */
 class Image
 {
@@ -117,14 +117,12 @@ public:
   template<typename T>
   std::optional<T> value(uint32_t component, std::size_t index) const
   {
-    if (index >= m_header.numPixels())
-    {
+    if (index >= m_header.numPixels()) {
       return std::nullopt;
     }
 
     const auto compAndOffset = getComponentAndOffsetForBuffer(component, index);
-    if (!compAndOffset)
-    {
+    if (!compAndOffset) {
       return std::nullopt;
     }
 

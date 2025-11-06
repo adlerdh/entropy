@@ -335,31 +335,38 @@ std::vector<ComponentStats> computeImageStatisticsOnSortedValues(const Image& im
     switch (image.header().memoryComponentType())
     {
     case ComponentType::Int8: {
-      componentStats.emplace_back(computeStatisticsOnSortedIntensities<int8_t>(std::span(static_cast<const int8_t*>(bufferSorted), N)));
+      componentStats.emplace_back(computeStatsOnSortedBuffers<int8_t>(
+        std::span(static_cast<const int8_t*>(bufferSorted), N)));
       break;
     }
     case ComponentType::UInt8: {
-      componentStats.emplace_back(computeStatisticsOnSortedIntensities<uint8_t>(std::span(static_cast<const uint8_t*>(bufferSorted), N)));
+      componentStats.emplace_back(computeStatsOnSortedBuffers<uint8_t>(
+        std::span(static_cast<const uint8_t*>(bufferSorted), N)));
       break;
     }
     case ComponentType::Int16: {
-      componentStats.emplace_back(computeStatisticsOnSortedIntensities<int16_t>(std::span(static_cast<const int16_t*>(bufferSorted), N)));
+      componentStats.emplace_back(computeStatsOnSortedBuffers<int16_t>(
+        std::span(static_cast<const int16_t*>(bufferSorted), N)));
       break;
     }
     case ComponentType::UInt16: {
-      componentStats.emplace_back(computeStatisticsOnSortedIntensities<uint16_t>(std::span(static_cast<const uint16_t*>(bufferSorted), N)));
+      componentStats.emplace_back(computeStatsOnSortedBuffers<uint16_t>(
+        std::span(static_cast<const uint16_t*>(bufferSorted), N)));
       break;
     }
     case ComponentType::Int32: {
-      componentStats.emplace_back(computeStatisticsOnSortedIntensities<int32_t>(std::span(static_cast<const int32_t*>(bufferSorted), N)));
+      componentStats.emplace_back(computeStatsOnSortedBuffers<int32_t>(
+        std::span(static_cast<const int32_t*>(bufferSorted), N)));
       break;
     }
     case ComponentType::UInt32: {
-      componentStats.emplace_back(computeStatisticsOnSortedIntensities<uint32_t>(std::span(static_cast<const uint32_t*>(bufferSorted), N)));
+      componentStats.emplace_back(computeStatsOnSortedBuffers<uint32_t>(
+        std::span(static_cast<const uint32_t*>(bufferSorted), N)));
       break;
     }
     case ComponentType::Float32: {
-      componentStats.emplace_back(computeStatisticsOnSortedIntensities<float>(std::span(static_cast<const float*>(bufferSorted), N)) );
+      componentStats.emplace_back(computeStatsOnSortedBuffers<float>(
+        std::span(static_cast<const float*>(bufferSorted), N)) );
       break;
     }
     default: {
@@ -385,31 +392,38 @@ std::vector<OnlineStats> computeImageStatisticsOnUnsortedValues(const Image& ima
     switch (image.header().memoryComponentType())
     {
     case ComponentType::Int8: {
-      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<int8_t>(std::span(static_cast<const int8_t*>(buffer), N)));
+      componentStats.emplace_back(computeStatsOnUnsortedBuffers<int8_t>(
+        std::span(static_cast<const int8_t*>(buffer), N)));
       break;
     }
     case ComponentType::UInt8: {
-      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<uint8_t>(std::span(static_cast<const uint8_t*>(buffer), N)));
+      componentStats.emplace_back(computeStatsOnUnsortedBuffers<uint8_t>(
+        std::span(static_cast<const uint8_t*>(buffer), N)));
       break;
     }
     case ComponentType::Int16: {
-      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<int16_t>(std::span(static_cast<const int16_t*>(buffer), N)));
+      componentStats.emplace_back(computeStatsOnUnsortedBuffers<int16_t>(
+        std::span(static_cast<const int16_t*>(buffer), N)));
       break;
     }
     case ComponentType::UInt16: {
-      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<uint16_t>(std::span(static_cast<const uint16_t*>(buffer), N)));
+      componentStats.emplace_back(computeStatsOnUnsortedBuffers<uint16_t>(
+        std::span(static_cast<const uint16_t*>(buffer), N)));
       break;
     }
     case ComponentType::Int32: {
-      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<int32_t>(std::span(static_cast<const int32_t*>(buffer), N)));
+      componentStats.emplace_back(computeStatsOnUnsortedBuffers<int32_t>(
+        std::span(static_cast<const int32_t*>(buffer), N)));
       break;
     }
     case ComponentType::UInt32: {
-      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<uint32_t>(std::span(static_cast<const uint32_t*>(buffer), N)));
+      componentStats.emplace_back(computeStatsOnUnsortedBuffers<uint32_t>(
+        std::span(static_cast<const uint32_t*>(buffer), N)));
       break;
     }
     case ComponentType::Float32: {
-      componentStats.emplace_back(computeStatisticsOnUnsortedIntensities<float>(std::span(static_cast<const float*>(buffer), N)) );
+      componentStats.emplace_back(computeStatsOnUnsortedBuffers<float>(
+        std::span(static_cast<const float*>(buffer), N)) );
       break;
     }
     default: {
@@ -466,8 +480,7 @@ std::vector<tdigest::TDigest> computeTDigests(const Image& image)
       break;
     }
     default: {
-      spdlog::error("Invalid image component type '{}'",
-                    componentTypeString(image.header().memoryComponentType()));
+      spdlog::error("Invalid image component type '{}'", componentTypeString(image.header().memoryComponentType()));
       return digests;
     }
     }
