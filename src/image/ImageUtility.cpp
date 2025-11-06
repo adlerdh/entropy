@@ -429,6 +429,8 @@ std::vector<tdigest::TDigest> computeTDigests(const Image& image)
   const std::size_t N = image.header().numPixels();
   std::vector<tdigest::TDigest> digests;
 
+  const unsigned int numTh = std::max(std::thread::hardware_concurrency() - 1, 1u);
+
   for (uint32_t i = 0; i < image.header().numComponentsPerPixel(); ++i)
   {
     const void* buffer = image.bufferAsVoid(i);
@@ -436,31 +438,31 @@ std::vector<tdigest::TDigest> computeTDigests(const Image& image)
     switch (image.header().memoryComponentType())
     {
     case ComponentType::Int8: {
-      digests.emplace_back(buildTDigest<int8_t>(std::span(static_cast<const int8_t*>(buffer), N)));
+      digests.emplace_back(buildTDigest<int8_t>(std::span(static_cast<const int8_t*>(buffer), N), numTh));
       break;
     }
     case ComponentType::UInt8: {
-      digests.emplace_back(buildTDigest<uint8_t>(std::span(static_cast<const uint8_t*>(buffer), N)));
+      digests.emplace_back(buildTDigest<uint8_t>(std::span(static_cast<const uint8_t*>(buffer), N), numTh));
       break;
     }
     case ComponentType::Int16: {
-      digests.emplace_back(buildTDigest<int16_t>(std::span(static_cast<const int16_t*>(buffer), N)));
+      digests.emplace_back(buildTDigest<int16_t>(std::span(static_cast<const int16_t*>(buffer), N), numTh));
       break;
     }
     case ComponentType::UInt16: {
-      digests.emplace_back(buildTDigest<uint16_t>(std::span(static_cast<const uint16_t*>(buffer), N)));
+      digests.emplace_back(buildTDigest<uint16_t>(std::span(static_cast<const uint16_t*>(buffer), N), numTh));
       break;
     }
     case ComponentType::Int32: {
-      digests.emplace_back(buildTDigest<int32_t>(std::span(static_cast<const int32_t*>(buffer), N)));
+      digests.emplace_back(buildTDigest<int32_t>(std::span(static_cast<const int32_t*>(buffer), N), numTh));
       break;
     }
     case ComponentType::UInt32: {
-      digests.emplace_back(buildTDigest<uint32_t>(std::span(static_cast<const uint32_t*>(buffer), N)));
+      digests.emplace_back(buildTDigest<uint32_t>(std::span(static_cast<const uint32_t*>(buffer), N), numTh));
       break;
     }
     case ComponentType::Float32: {
-      digests.emplace_back(buildTDigest<float>(std::span(static_cast<const float*>(buffer), N)) );
+      digests.emplace_back(buildTDigest<float>(std::span(static_cast<const float*>(buffer), N), numTh));
       break;
     }
     default: {

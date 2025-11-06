@@ -46,7 +46,7 @@ Image::Image(
   // Source and destination component ITK types: Floating point images are loaded with 32-bit float
   // components and integer images are loaded with 64-bit signed integer components.
   const itk::IOComponentEnum srcItkCompType = isComponentFloatingPoint
-    ? itk::IOComponentEnum::FLOAT : itk::IOComponentEnum::LONG;
+    ? itk::IOComponentEnum::FLOAT : itk::IOComponentEnum::LONGLONG;
 
   const itk::IOComponentEnum dstItkCompType = m_ioInfoInMemory.m_componentInfo.m_componentType;
 

@@ -48,13 +48,11 @@ typename itk::Image<T, 3>::Pointer makeScalarImage(
   const std::array<double, 3>& imageOrigin,
   const std::array<double, 3>& imageSpacing,
   const std::array<std::array<double, 3>, 3>& imageDirection,
-  const T* imageData
-)
+  const T* imageData)
 {
   using ImportFilterType = itk::ImportImageFilter<T, 3>;
 
-  if (!imageData)
-  {
+  if (!imageData) {
     spdlog::error("Null data array provided when creating new scalar image");
     return nullptr;
   }
@@ -77,16 +75,14 @@ typename itk::Image<T, 3>::Pointer makeScalarImage(
     origin[i] = imageOrigin[i];
     spacing[i] = imageSpacing[i];
 
-    for (uint32_t j = 0; j < 3; ++j)
-    {
+    for (uint32_t j = 0; j < 3; ++j) {
       direction[i][j] = imageDirection[j][i];
     }
   }
 
   const std::size_t numPixels = size[0] * size[1] * size[2];
 
-  if (0 == numPixels)
-  {
+  if (0 == numPixels) {
     spdlog::error("Cannot create new scalar image with size zero");
     return nullptr;
   }
@@ -104,11 +100,9 @@ typename itk::Image<T, 3>::Pointer makeScalarImage(
     importer->SetDirection(direction);
     importer->SetImportPointer(const_cast<T*>(imageData), numPixels, filterOwnsBuffer);
     importer->Update();
-
     return importer->GetOutput();
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     spdlog::error("Exception creating new ITK scalar image from data array: {}", e.what());
     return nullptr;
   }
@@ -120,8 +114,7 @@ typename itk::Image<itk::Vector<T, VectorDim>, 3>::Pointer makeVectorImage(
   const std::array<double, 3>& imageOrigin,
   const std::array<double, 3>& imageSpacing,
   const std::array<std::array<double, 3>, 3>& imageDirection,
-  const T* imageData
-)
+  const T* imageData)
 {
   /*
     // This works just as well!
@@ -186,8 +179,7 @@ typename itk::Image<itk::Vector<T, VectorDim>, 3>::Pointer makeVectorImage(
   using VectorPixelType = itk::Vector<T, VectorDim>;
   using ImportFilterType = itk::ImportImageFilter<VectorPixelType, 3>;
 
-  if (!imageData)
-  {
+  if (!imageData) {
     spdlog::error("Null data array provided when creating new vector image");
     return nullptr;
   }
@@ -210,16 +202,14 @@ typename itk::Image<itk::Vector<T, VectorDim>, 3>::Pointer makeVectorImage(
     origin[i] = imageOrigin[i];
     spacing[i] = imageSpacing[i];
 
-    for (uint32_t j = 0; j < 3; ++j)
-    {
+    for (uint32_t j = 0; j < 3; ++j) {
       direction[i][j] = imageDirection[j][i];
     }
   }
 
   const std::size_t numPixels = size[0] * size[1] * size[2];
 
-  if (0 == numPixels)
-  {
+  if (0 == numPixels) {
     spdlog::error("Cannot create new vector image with size zero");
     return nullptr;
   }
@@ -236,8 +226,7 @@ typename itk::Image<itk::Vector<T, VectorDim>, 3>::Pointer makeVectorImage(
     importer->SetSpacing(spacing);
     importer->SetDirection(direction);
     importer->SetImportPointer(
-      reinterpret_cast<VectorPixelType*>(const_cast<T*>(imageData)), numPixels, filterOwnsBuffer
-    );
+      reinterpret_cast<VectorPixelType*>(const_cast<T*>(imageData)), numPixels, filterOwnsBuffer);
     importer->Update();
 
     return importer->GetOutput();
@@ -267,13 +256,9 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
 
   const ImageHeader& header = image.header();
 
-  if (component >= header.numComponentsPerPixel())
-  {
-    spdlog::error(
-      "Invalid image component {} to convert to ITK image; image has only {} components",
-      component,
-      header.numComponentsPerPixel()
-    );
+  if (component >= header.numComponentsPerPixel()) {
+    spdlog::error("Invalid image component {} to convert to ITK image; image has only {} components",
+                  component, header.numComponentsPerPixel());
     return nullptr;
   }
 
@@ -292,8 +277,7 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
     directions[i] = {
       static_cast<double>(header.directions()[ii].x),
       static_cast<double>(header.directions()[ii].y),
-      static_cast<double>(header.directions()[ii].z)
-    };
+      static_cast<double>(header.directions()[ii].z)};
   }
 
   switch (header.memoryComponentType())
@@ -306,11 +290,11 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
     typename FilterType::Pointer caster = FilterType::New();
 
     InputImageType::Pointer compImage = makeScalarImage(
-      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component))
-    );
+      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component)));
 
-    if (!compImage)
+    if (!compImage) {
       return nullptr;
+    }
     caster->SetInput(compImage);
     caster->Update();
     return caster->GetOutput();
@@ -323,11 +307,11 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
     typename FilterType::Pointer caster = FilterType::New();
 
     InputImageType::Pointer compImage = makeScalarImage(
-      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component))
-    );
+      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component)));
 
-    if (!compImage)
+    if (!compImage) {
       return nullptr;
+    }
     caster->SetInput(compImage);
     caster->Update();
     return caster->GetOutput();
@@ -340,11 +324,11 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
     typename FilterType::Pointer caster = FilterType::New();
 
     InputImageType::Pointer compImage = makeScalarImage(
-      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component))
-    );
+      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component)));
 
-    if (!compImage)
+    if (!compImage) {
       return nullptr;
+    }
     caster->SetInput(compImage);
     caster->Update();
     return caster->GetOutput();
@@ -357,11 +341,11 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
     typename FilterType::Pointer caster = FilterType::New();
 
     InputImageType::Pointer compImage = makeScalarImage(
-      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component))
-    );
+      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component)));
 
-    if (!compImage)
+    if (!compImage) {
       return nullptr;
+    }
     caster->SetInput(compImage);
     caster->Update();
     return caster->GetOutput();
@@ -374,11 +358,11 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
     typename FilterType::Pointer caster = FilterType::New();
 
     InputImageType::Pointer compImage = makeScalarImage(
-      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component))
-    );
+      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component)));
 
-    if (!compImage)
+    if (!compImage) {
       return nullptr;
+    }
     caster->SetInput(compImage);
     caster->Update();
     return caster->GetOutput();
@@ -391,11 +375,11 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
     typename FilterType::Pointer caster = FilterType::New();
 
     InputImageType::Pointer compImage = makeScalarImage(
-      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component))
-    );
+      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component)));
 
-    if (!compImage)
+    if (!compImage) {
       return nullptr;
+    }
     caster->SetInput(compImage);
     caster->Update();
     return caster->GetOutput();
@@ -408,21 +392,19 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
     typename FilterType::Pointer caster = FilterType::New();
 
     InputImageType::Pointer compImage = makeScalarImage(
-      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component))
-    );
+      dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component)));
 
-    if (!compImage)
+    if (!compImage) {
       return nullptr;
+    }
     caster->SetInput(compImage);
     caster->Update();
     return caster->GetOutput();
   }
   default:
   {
-    spdlog::error(
-      "Invalid image component type '{}' upon conversion of component to ITK image",
-      header.memoryComponentTypeAsString()
-    );
+    spdlog::error("Invalid image component type '{}' upon conversion of component to ITK image",
+                  header.memoryComponentTypeAsString());
     return nullptr;
   }
   }
@@ -595,9 +577,7 @@ tdigest::TDigest buildTDigest(
   // -compression of 1000 takes about 450 kB, gives 99.9% quantile error of 1e-4,
   //  with high-fidelity tails
   const double compression = std::clamp(200.0 * std::cbrt(N / 1.0e6), 200.0, 1000.0);
-
-  const auto batchSize = std::clamp<std::size_t>(
-    static_cast<std::size_t>(N / (numThreads * 1000)), 10'000, 1'000'000);
+  const auto batchSize = std::clamp<std::size_t>(static_cast<std::size_t>(N / (numThreads * 1000)), 10'000, 1'000'000);
 
   // launch one digest per thread
   std::vector<std::unique_ptr<TD>> localDigests;
@@ -723,7 +703,9 @@ template <typename T>
 std::tuple<T, T, T> compute_exact_quartiles(std::vector<T> data)
 {
   const size_t n = data.size();
-  if (n == 0) return {T{}, T{}, T{}};
+  if (n == 0) {
+    return {T{}, T{}, T{}};
+  }
 
   size_t q1_idx = n / 4;
   size_t q2_idx = n / 2;
@@ -801,17 +783,14 @@ std::vector<ComponentStats<T>> computeImageStatistics(const Image& image)
 
 template<class ComponentType, uint32_t NDim>
 typename itk::Image<ComponentType, NDim>::Pointer downcastImageBaseToImage(
-  const typename itk::ImageBase<NDim>::Pointer& imageBase
-)
+  const typename itk::ImageBase<NDim>::Pointer& imageBase)
 {
-  typename itk::Image<ComponentType, NDim>::Pointer child
-    = dynamic_cast<itk::Image<ComponentType, NDim>*>(imageBase.GetPointer());
+  typename itk::Image<ComponentType, NDim>::Pointer child =
+    dynamic_cast<itk::Image<ComponentType, NDim>*>(imageBase.GetPointer());
 
   if (!child.GetPointer() || child.IsNull())
   {
-    spdlog::error(
-      "Unable to downcast ImageBase to Image with component type {}", typeid(ComponentType).name()
-    );
+    spdlog::error("Unable to downcast ImageBase to Image with component type {}", typeid(ComponentType).name());
     return nullptr;
   }
 
@@ -820,18 +799,15 @@ typename itk::Image<ComponentType, NDim>::Pointer downcastImageBaseToImage(
 
 template<class ComponentType, uint32_t NDim>
 typename itk::VectorImage<ComponentType, NDim>::Pointer downcastImageBaseToVectorImage(
-  const typename itk::ImageBase<NDim>::Pointer& imageBase
-)
+  const typename itk::ImageBase<NDim>::Pointer& imageBase)
 {
-  typename itk::VectorImage<ComponentType, NDim>::Pointer child
-    = dynamic_cast<itk::VectorImage<ComponentType, NDim>*>(imageBase.GetPointer());
+  typename itk::VectorImage<ComponentType, NDim>::Pointer child =
+    dynamic_cast<itk::VectorImage<ComponentType, NDim>*>(imageBase.GetPointer());
 
   if (!child.GetPointer() || child.IsNull())
   {
-    spdlog::error(
-      "Unable to downcast ImageBase to VectorImage with component type {}",
-      typeid(ComponentType).name()
-    );
+    spdlog::error("Unable to downcast ImageBase to VectorImage with component type {}",
+                  typeid(ComponentType).name());
     return nullptr;
   }
 
@@ -841,8 +817,7 @@ typename itk::VectorImage<ComponentType, NDim>::Pointer downcastImageBaseToVecto
 template<uint32_t NDim>
 bool isVectorImage(const typename itk::ImageBase<NDim>::Pointer& imageBase)
 {
-  return (imageBase && imageBase.IsNotNull()) ? (imageBase->GetNumberOfComponentsPerPixel() > 1)
-                                              : false;
+  return (imageBase && imageBase.IsNotNull()) ? (imageBase->GetNumberOfComponentsPerPixel() > 1) : false;
 }
 
 /**
@@ -862,11 +837,10 @@ std::vector<typename itk::Image<ComponentType, NDim>::Pointer> splitImageIntoCom
 
   if (isVectorImage<NDim>(imageBase))
   {
-    const typename VectorImageType::Pointer vectorImage
-      = downcastImageBaseToVectorImage<ComponentType, NDim>(imageBase);
+    const typename VectorImageType::Pointer vectorImage =
+      downcastImageBaseToVectorImage<ComponentType, NDim>(imageBase);
 
-    if (!vectorImage || vectorImage.IsNull())
-    {
+    if (!vectorImage || vectorImage.IsNull()) {
       spdlog::error("Error casting ImageBase to vector image");
       return splitImages;
     }
@@ -891,8 +865,7 @@ std::vector<typename itk::Image<ComponentType, NDim>::Pointer> splitImageIntoCom
       // Copy pixels from component i of vectorImage (the source),
       // which are offset from each other by a stride of numComponents,
       // into pixels of the i'th split image (the destination)
-      while (dest < end)
-      {
+      while (dest < end) {
         *dest = *source;
         ++dest;
         source += numComponents;
@@ -902,11 +875,9 @@ std::vector<typename itk::Image<ComponentType, NDim>::Pointer> splitImageIntoCom
   else
   {
     // Image has only one component
-    const typename ImageType::Pointer image = downcastImageBaseToImage<ComponentType, NDim>(imageBase
-    );
+    const typename ImageType::Pointer image = downcastImageBaseToImage<ComponentType, NDim>(imageBase);
 
-    if (!image || image.IsNull())
-    {
+    if (!image || image.IsNull()) {
       spdlog::error("Error casting ImageBase to image");
       return splitImages;
     }
@@ -921,8 +892,7 @@ std::vector<typename itk::Image<ComponentType, NDim>::Pointer> splitImageIntoCom
 template<class ComponentType, uint32_t NDim, bool PixelIsVector>
 typename itk::ImageBase<NDim>::Pointer readImage(const std::string& fileName)
 {
-  using ImageType = typename std::conditional<
-    PixelIsVector,
+  using ImageType = typename std::conditional<PixelIsVector,
     itk::VectorImage<ComponentType, NDim>,
     itk::Image<ComponentType, NDim>>::type;
 
@@ -931,9 +901,7 @@ typename itk::ImageBase<NDim>::Pointer readImage(const std::string& fileName)
   try
   {
     auto reader = ReaderType::New();
-
-    if (!reader)
-    {
+    if (!reader) {
       spdlog::error("Null ITK ImageFileReader on reading image from {}", fileName);
       return nullptr;
     }
@@ -942,8 +910,7 @@ typename itk::ImageBase<NDim>::Pointer readImage(const std::string& fileName)
     reader->Update();
     return static_cast<itk::ImageBase<3>::Pointer>(reader->GetOutput());
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     spdlog::error("Exception reading image from {}: {}", fileName, e.what());
     return nullptr;
   }
@@ -952,12 +919,10 @@ typename itk::ImageBase<NDim>::Pointer readImage(const std::string& fileName)
 template<class T, uint32_t NDim, bool PixelIsVector>
 bool writeImage(typename itk::Image<T, NDim>::Pointer image, const fs::path& fileName)
 {
-  using ImageType =
-    typename std::conditional<PixelIsVector, itk::VectorImage<T, NDim>, itk::Image<T, NDim>>::type;
+  using ImageType = typename std::conditional<PixelIsVector, itk::VectorImage<T, NDim>, itk::Image<T, NDim>>::type;
   using WriterType = itk::ImageFileWriter<ImageType>;
 
-  if (!image)
-  {
+  if (!image) {
     spdlog::error("Null image cannot be written to {}", fileName);
     return false;
   }
@@ -965,8 +930,7 @@ bool writeImage(typename itk::Image<T, NDim>::Pointer image, const fs::path& fil
   try
   {
     auto writer = WriterType::New();
-    if (!writer)
-    {
+    if (!writer) {
       spdlog::error("Null ITK ImageFileWriter on writing image to '{}'", fileName);
       return false;
     }
@@ -977,8 +941,7 @@ bool writeImage(typename itk::Image<T, NDim>::Pointer image, const fs::path& fil
     writer->Update();
     return true;
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     spdlog::error("Exception writing image to '{}': {}", fileName, e.what());
     return false;
   }
@@ -998,8 +961,7 @@ bool writeImage(typename itk::Image<T, NDim>::Pointer image, const fs::path& fil
  */
 template<class T>
 Image createImageFromItkImage(
-  const typename itk::Image<T, 3>::Pointer itkImage, const std::string& displayName
-)
+  const typename itk::Image<T, 3>::Pointer itkImage, const std::string& displayName)
 {
   /*
     using DirectionType = itk::Image<T, 3>::DirectionType;
@@ -1045,18 +1007,14 @@ Image createImageFromItkImage(
   writeImage<T, 3, false>(itkImage, filename);
   spdlog::debug("Wrote temporary image file {}", filename);
 
-  Image image(
-    filename.string(),
-    Image::ImageRepresentation::Image,
-    Image::MultiComponentBufferType::SeparateImages
-  );
+  Image image(filename.string(), Image::ImageRepresentation::Image,
+              Image::MultiComponentBufferType::SeparateImages);
 
   image.header().setExistsOnDisk(false);
   image.header().setFileName("<none>");
   image.settings().setDisplayName(displayName);
 
-  if (!std::remove(filename.string().c_str()))
-  {
+  if (!std::remove(filename.string().c_str())) {
     spdlog::warn("Unable to remove temporary image file {}", filename);
   }
 
@@ -1065,8 +1023,7 @@ Image createImageFromItkImage(
 
 template<typename T>
 typename itk::Image<T, 3>::Pointer computeNoiseEstimate(
-  const typename itk::Image<T, 3>::Pointer image, uint32_t radius
-)
+  const typename itk::Image<T, 3>::Pointer image, uint32_t radius)
 {
   using ImageType = itk::Image<T, 3>;
   using NoiseImageFilterType = itk::NoiseImageFilter<ImageType, ImageType>;
@@ -1102,12 +1059,8 @@ typename itk::Image<T, 3>::Pointer computeNoiseEstimate(
  */
 template<typename T, typename U>
 typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
-  const typename itk::Image<T, 3>::Pointer image,
-  uint32_t component,
-  const T& lowerBoundaryValue,
-  const T& upperBoundaryValue,
-  float downsampleFactor
-)
+  const typename itk::Image<T, 3>::Pointer image, uint32_t component,
+  const T& lowerBoundaryValue, const T& upperBoundaryValue, float downsampleFactor)
 {
   using Timer = std::chrono::time_point<std::chrono::system_clock>;
 
@@ -1119,21 +1072,16 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
 
   typename DistanceImageType::Pointer outputDistanceMap;
 
-  if (!image)
-  {
+  if (!image) {
     spdlog::error("Input image is null when computing Euclidean distance transformation");
     return nullptr;
   }
 
   float scale = downsampleFactor;
 
-  if (downsampleFactor <= 0.0f || 1.0f < downsampleFactor)
-  {
-    spdlog::warn(
-      "Invalid downsampling factor {} provided to Euclidean distance transformation; "
-      "using 1.0 (no downsampling) instead",
-      downsampleFactor
-    );
+  if (downsampleFactor <= 0.0f || 1.0f < downsampleFactor) {
+    spdlog::warn("Invalid downsampling factor {} provided to Euclidean distance transformation; "
+                 "using 1.0 (no downsampling) instead", downsampleFactor);
     scale = 1.0f;
   }
 
@@ -1161,15 +1109,13 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
   for (uint32_t i = 0; i < 3; ++i)
   {
     // 1 is the minimum value for any dimension:
-    outputSize[i]
-      = std::max(static_cast<std::size_t>(inputSize[i] * scale), static_cast<std::size_t>(1ul));
+    outputSize[i] = std::max(static_cast<std::size_t>(inputSize[i] * scale), static_cast<std::size_t>(1ul));
 
     // Adjust the scale factor
     scale = std::max(scale, static_cast<float>(outputSize[i]) / static_cast<float>(inputSize[i]));
   }
 
-  for (uint32_t i = 0; i < 3; ++i)
-  {
+  for (uint32_t i = 0; i < 3; ++i) {
     outputSpacing[i] = inputSpacing[i] / scale;
     outputOrigin[i] = inputOrigin[i] + 0.5 * (outputSpacing[i] - inputSpacing[i]);
   }
@@ -1207,15 +1153,12 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
   ceilFilter->Update();
   const Timer stopThreshold = std::chrono::system_clock::now();
 
-  spdlog::debug(
-    "Took {} msec to compute image threshold, resampling, and ceiling",
-    std::chrono::duration_cast<std::chrono::milliseconds>(stopThreshold - startThreshold).count()
-  );
+  spdlog::debug("Took {} msec to compute image threshold, resampling, and ceiling",
+                std::chrono::duration_cast<std::chrono::milliseconds>(stopThreshold - startThreshold).count());
 
   // Compute the distance map in mm from every voxel to the boundary. Distances are computed for
   // voxels that are both inside and outside the boundary.
-  using DistanceFilterType
-    = itk::SignedMaurerDistanceMapImageFilter<BoundaryImageType, FloatImageType>;
+  using DistanceFilterType = itk::SignedMaurerDistanceMapImageFilter<BoundaryImageType, FloatImageType>;
   typename DistanceFilterType::Pointer distanceFilter = DistanceFilterType::New();
 
   distanceFilter->SetInput(ceilFilter->GetOutput());
@@ -1226,10 +1169,8 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
   distanceFilter->Update();
   const Timer stopDistance = std::chrono::system_clock::now();
 
-  spdlog::debug(
-    "Took {} msec to compute distance map to resampled boundary",
-    std::chrono::duration_cast<std::chrono::milliseconds>(stopDistance - startDistance).count()
-  );
+  spdlog::debug("Took {} msec to compute distance map to resampled boundary",
+                std::chrono::duration_cast<std::chrono::milliseconds>(stopDistance - startDistance).count());
 
   auto distImage = distanceFilter->GetOutput();
 
@@ -1243,8 +1184,7 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
 
     it.GoToBegin();
 
-    while (!it.IsAtEnd())
-    {
+    while (!it.IsAtEnd()){
       const float d = it.Get();
       it.Set((d < 0.0f) ? std::ceil(d) : std::floor(d));
       ++it;
@@ -1310,15 +1250,11 @@ vtkSmartPointer<vtkImageData> convertItkImageToVtkImageData(
 #endif
 
 template<typename ReadComponentType>
-bool loadImage(
-  const fs::path& fileName,
-  std::size_t numPixels,
-  uint32_t numComps,
-  uint32_t numCompsToLoad,
-  bool isVectorImage,
-  const Image::MultiComponentBufferType bufferType,
-  std::function<bool(const void* buffer, std::size_t numElements)> loadBuffer
-)
+bool loadImage(const fs::path& fileName, std::size_t numPixels,
+               uint32_t numComps, uint32_t numCompsToLoad,
+               bool isVectorImage,
+               const Image::MultiComponentBufferType bufferType,
+               std::function<bool(const void* buffer, std::size_t numElements)> loadBuffer)
 {
   using ReadImageType = itk::Image<ReadComponentType, 3>;
 
@@ -1326,27 +1262,20 @@ bool loadImage(
   {
     // Load multi-component image
     constexpr bool pixelIsVector = true;
-    typename itk::ImageBase<3>::Pointer baseImage = readImage<ReadComponentType, 3, pixelIsVector>(
-      fileName.string()
-    );
-    if (!baseImage)
-    {
+    typename itk::ImageBase<3>::Pointer baseImage = readImage<ReadComponentType, 3, pixelIsVector>(fileName.string());
+    if (!baseImage) {
       spdlog::error("Unable to read vector ImageBase for image {}", fileName);
       return false;
     }
 
     // Split the base image into component images. Load a maximum of MAX_COMPS components
     // for an image with interleaved component buffers.
-    std::vector<typename ReadImageType::Pointer> componentImages
-      = splitImageIntoComponents<ReadComponentType, 3>(baseImage);
+    std::vector<typename ReadImageType::Pointer> componentImages =
+      splitImageIntoComponents<ReadComponentType, 3>(baseImage);
 
-    if (componentImages.size() < numCompsToLoad)
-    {
-      spdlog::error(
-        "Only {} image components were loaded, but {} components were expected",
-        componentImages.size(),
-        numCompsToLoad
-      );
+    if (componentImages.size() < numCompsToLoad) {
+      spdlog::error("Only {} image components were loaded, but {} components were expected",
+                    componentImages.size(), numCompsToLoad);
       return false;
     }
 
@@ -1356,8 +1285,7 @@ bool loadImage(
     if (Image::MultiComponentBufferType::InterleavedImage == bufferType)
     {
       allComponentBuffers = std::make_unique<ReadComponentType[]>(numPixels * numCompsToLoad);
-      if (!allComponentBuffers)
-      {
+      if (!allComponentBuffers) {
         spdlog::error("Null buffer holding all components of image file {}", fileName);
         return false;
       }
@@ -1366,15 +1294,13 @@ bool loadImage(
     // Load the buffers from the component images
     for (uint32_t i = 0; i < numCompsToLoad; ++i)
     {
-      if (!componentImages[i])
-      {
+      if (!componentImages[i]) {
         spdlog::error("Null vector image component {} for image file {}", i, fileName);
         return false;
       }
 
       const ReadComponentType* buffer = componentImages[i]->GetBufferPointer();
-      if (!buffer)
-      {
+      if (!buffer) {
         spdlog::error("Null buffer of vector image component {} for image file {}", i, fileName);
         return false;
       }
@@ -1383,11 +1309,8 @@ bool loadImage(
       {
       case Image::MultiComponentBufferType::SeparateImages:
       {
-        if (!loadBuffer(static_cast<const void*>(buffer), numPixels))
-        {
-          spdlog::error(
-            "Error loading separated image component buffer {} for image file {}", i, fileName
-          );
+        if (!loadBuffer(static_cast<const void*>(buffer), numPixels)) {
+          spdlog::error("Error loading separated image component buffer {} for image file {}", i, fileName);
           return false;
         }
         break;
@@ -1395,21 +1318,17 @@ bool loadImage(
       case Image::MultiComponentBufferType::InterleavedImage:
       {
         // Fill the interleaved buffer
-        for (std::size_t p = 0; p < numPixels; ++p)
-        {
-          allComponentBuffers[numComps * p + i] = buffer[p];
+        for (std::size_t p = 0; p < numPixels; ++p) {
+          allComponentBuffers[numCompsToLoad * p + i] = buffer[p];
         }
         break;
       }
       }
     }
 
-    if (Image::MultiComponentBufferType::InterleavedImage == bufferType)
-    {
+    if (Image::MultiComponentBufferType::InterleavedImage == bufferType) {
       const std::size_t numElements = numPixels * numComps;
-
-      if (!loadBuffer(static_cast<const void*>(allComponentBuffers.get()), numElements))
-      {
+      if (!loadBuffer(static_cast<const void*>(allComponentBuffers.get()), numElements)) {
         spdlog::error("Error loading interleaved buffer for image file {}", fileName);
         return false;
       }
@@ -1420,32 +1339,25 @@ bool loadImage(
     // Load scalar, single-component image
     constexpr bool pixelIsVector = false;
 
-    typename itk::ImageBase<3>::Pointer baseImage = readImage<ReadComponentType, 3, pixelIsVector>(
-      fileName.string()
-    );
-    if (!baseImage)
-    {
+    typename itk::ImageBase<3>::Pointer baseImage = readImage<ReadComponentType, 3, pixelIsVector>(fileName.string());
+    if (!baseImage) {
       spdlog::error("Unable to read ImageBase from file {}", fileName);
       return false;
     }
 
-    typename ReadImageType::Pointer image = downcastImageBaseToImage<ReadComponentType, 3>(baseImage
-    );
-    if (!image)
-    {
+    typename ReadImageType::Pointer image = downcastImageBaseToImage<ReadComponentType, 3>(baseImage);
+    if (!image) {
       spdlog::error("Null image for file {} following downcast from ImageBase", fileName);
       return false;
     }
 
     const ReadComponentType* buffer = image->GetBufferPointer();
-    if (!buffer)
-    {
+    if (!buffer) {
       spdlog::error("Null buffer of scalar image file {}", fileName);
       return false;
     }
 
-    if (!loadBuffer(static_cast<const void*>(buffer), numPixels))
-    {
+    if (!loadBuffer(static_cast<const void*>(buffer), numPixels)) {
       spdlog::error("Error loading buffer for image file {}", fileName);
       return false;
     }
