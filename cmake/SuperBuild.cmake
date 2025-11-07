@@ -304,6 +304,11 @@ ExternalProject_Add(implot
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ImPlot install step"
 )
 
+if(APPLE)
+  set(ICONV_LINK_FLAG "-liconv")
+else()
+  set(ICONV_LINK_FLAG "")
+endif()
 
 message(STATUS "Adding external library ITK in ${itk_PREFIX}")
 
@@ -326,6 +331,9 @@ ExternalProject_Add(ITK
 
   CMAKE_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_EXE_LINKER_FLAGS=${ICONV_LINK_FLAG}
+    -DCMAKE_SHARED_LINKER_FLAGS=${ICONV_LINK_FLAG}
+    -DCMAKE_MODULE_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
     -DBUILD_STATIC_LIBS:BOOL=${BUILD_STATIC_LIBS}
     -DBUILD_EXAMPLES:BOOL=OFF
