@@ -4,12 +4,12 @@
 Copyright Daniel H. Adler and the Penn Image Computing and Science Lab, Department of Radiology, University of Pennsylvania. All rights reserved.
 
 ## Building
-Entropy requires C++20 and build generation uses CMake 3.24.0. The "superbuild" pattern is used order to retrieve and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ITK](https://github.com/InsightSoftwareConsortium/ITKSphinxExamples/tree/master/Superbuild), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), and [Slicer](https://github.com/Slicer/Slicer). Here are sample build instructions.
+Entropy requires C++20 and build generation uses CMake 3.24.0 or later. The "superbuild" pattern is used order to retrieve and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ITK](https://github.com/InsightSoftwareConsortium/ITKSphinxExamples/tree/master/Superbuild), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), and [Slicer](https://github.com/Slicer/Slicer). Here are sample build instructions.
 
 Define build flags:
-- `BUILD_TYPE`: Debug, Release, RelWithDebInfo, or MinSizeRel
-- `SHARED_LIBS`: 0 for static; 1 for shared
-- `NPROCS`: number of concurrent processes during build (e.g. `nproc` on Linux, `sysctl -n hw.ncpu` on macOS, or `echo %NUMBER_OF_PROCESSORS%` on Windows)
+- `BUILD_TYPE`: Debug, Release, RelWithDebInfo, or MinSizeRel.
+- `SHARED_LIBS`: 0 for static; 1 for shared. Static libraries are recommended for distribution.
+- `NPROCS`: Number of concurrent processes during build (e.g. `nproc` on Linux, `sysctl -n hw.ncpu` on macOS, or `echo %NUMBER_OF_PROCESSORS%` on Windows).
 ```bash
 BUILD_TYPE=Release
 SHARED_LIBS=1
@@ -36,6 +36,11 @@ Entropy builds and runs on the following versions of Linux, Windows, and macOS:
 * macOS 14.6.1, 15.3.1, 15.6.1, 26.0.1 Apple arm64 architecture (with clang 15.0.0, 16.0.0, 17.0.0)
 * ~~macOS 10.14.6, Intel x86_64 architecture (with clang 11.0.0)~~ (not supported)
 
+### Development libraries for Debian Linux
+You may need to install additional development libraries for Mesa 3D Graphics, Wayland, Xorg, Xrandr, Xinerama, Xcursor, xkbcommon, and xi on Linux. On Debian, this can be done using
+
+`sudo apt-get install libgl1-mesa-dev libwayland-dev xorg-dev libxkbcommon-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev`
+
 ### External dependencies
 The following dependencies are added as external projects during CMake superbuild generation:
 * [argparse](https://github.com/p-ranav/argparse/tree/v3.2) (v3.2)
@@ -61,14 +66,8 @@ The following external sources and libraries have been committed directly to the
 * [imGuIZMO.quat](https://github.com/AirGuanZ/imgui-filebrowser) with local modifications
 * [T-Digest for C++](https://github.com/derrickburns/tdigest) with local modifications to fix build
 
-### Development libraries for Debian Linux
-You may need to install additional development libraries for Mesa 3D Graphics, Wayland, Xorg, Xrandr, Xinerama, Xcursor, xkbcommon, and xi on Linux. On Debian, this can be done using
-
-`sudo apt-get install libgl1-mesa-dev libwayland-dev xorg-dev libxkbcommon-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev`
-
 ### External resources
 The following external resources have been committed directly to the Entropy repository:
-
 * [Cousine font](https://fonts.google.com/specimen/Cousine)
 * [Roboto fonts](https://fonts.google.com/specimen/Roboto)
 * ["Library of Perceptually Uniform Colour Maps"](https://colorcet.com) (by Peter Kovesi)
@@ -144,18 +143,55 @@ With this input format, each image may have only one segmentation.
 
 Logs are output to the console and to files saved in the `logs` folder. Log level can be set using the `-l` argument. See help (`-h`) for more details.
 
-### Keyboard shortcuts
-* **V**: Crosshairs Mode
-  - left button: move crosshairs
-  - CTRL + left button: rotate crosshairs
-  - middle button: pan
-  - right button: zoom
-* **L**: Image Adjustment Mode
-  - left button: window (left/right) and level (up/down)
-  - right button: opacity
-* **Z**: Zoom Mode
-  - left button: zoom to crosshairs
-  - right button: zoom to cursor
-* **X**: Pan/Dolly Mode
-  - left button: pan in plane
-  - right button: dolly in/out of plane (3D views)
+## Keyboard shortcuts
+
+### Modes
+* **v**: Crosshairs Mode
+  - *left button*: move crosshairs
+  - *CTRL + left button*: rotate crosshairs
+  - *middle button*: pan image
+  - *right button*: zoom image
+* **z**: Zoom Mode
+  - *left button*: zoom to crosshairs
+  - *right button*: zoom to cursor pointer
+* **x**: Pan/Dolly Mode
+  - *left button*: pan image in plane
+  - *right button*: dolly in/out of plane (3D views only)
+* **l**: Image Adjustment Mode
+  - *left button*: adjust image window (left/right) and level (up/down)
+  - *right button*: adjust image opacity
+* **t**: Image Translation Mode
+  - *left button*: translate image in plane
+  - *right button*: translate image in/out of plane
+* **r**: Image Rotation Mode
+  - *left button*: rotate image in plane
+  - *right button*: rotate image in/out of plane
+* **b**: Image Segmentation Mode (brush)
+  - *left button*: paint foreground label
+  - *right button*: paint background label
+
+### View properties
+* **w**: Toggle image visibility
+* **e**: Toggle image edges
+* **s**: Toggle segmentation visibility
+* **a**: Reduce segmentation opacity
+* **d**: Increase segmentation opacity
+* **space**: Toggle segmentation outline
+* **c**: Center views on crosshairs
+  - *shift*: Reset zoom; recenter and realign crosshairs
+* **o**: Cycle visibility of all UI overlays
+* **F4**: Toggle full-screen mode (ESC to exit)
+
+### Image navigation
+* **left/right/down/up** arrows: Move crosshairs
+* **page down/up**: Scroll slices
+  - *shift*: Cycle active image component
+
+### Layouts
+* **[**, **]**: Cycle view layout
+  - *shift*: Cycle active image
+
+### Segmentation brush
+* **<**, **>**: Cycle foreground label
+  - *shift*: Cycle background label
+* **-**, **+**: Decrease/increase brush size

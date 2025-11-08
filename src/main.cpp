@@ -7,22 +7,20 @@
 
 int main(int argc, char* argv[])
 {
-  auto logFailure = []()
-  { spdlog::debug("------------------------ END SESSION (FAILURE) ------------------------"); };
+  auto logFailure = []() {
+    spdlog::debug("------------------------ END SESSION (FAILURE) ------------------------");
+  };
 
   Logging logging;
 
-  try
-  {
+  try {
     logging.setup();
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     std::cerr << "Exception when setting up logger: " << e.what() << std::endl;
     return EXIT_FAILURE;
   }
-  catch (...)
-  {
+  catch (...) {
     std::cerr << "Unknown exception when setting up logger" << std::endl;
     return EXIT_FAILURE;
   }
@@ -34,14 +32,12 @@ int main(int argc, char* argv[])
 
     InputParams params;
 
-    if (EXIT_FAILURE == parseCommandLine(argc, argv, params))
-    {
+    if (EXIT_FAILURE == parseCommandLine(argc, argv, params)) {
       logFailure();
       return EXIT_FAILURE;
     }
 
-    if (!params.set)
-    {
+    if (!params.set) {
       spdlog::debug("Command line arguments not specified");
       logFailure();
       return EXIT_FAILURE;

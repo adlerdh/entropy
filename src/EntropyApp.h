@@ -1,5 +1,4 @@
-#ifndef ENTROPY_APP_H
-#define ENTROPY_APP_H
+#pragma once
 
 #include "common/InputParams.h"
 #include "common/Filesystem.h"
@@ -54,27 +53,26 @@ public:
   void loadImagesFromParams(const InputParams&);
 
   /**
-     * @brief Load a serialized image from disk
-     * @param image Serialized image structure
-     * @param isReferenceImage Flag indicating whether this is the reference image
-     * @return True iff the image was successfully loaded
-     */
+   * @brief Load a serialized image from disk
+   * @param image Serialized image structure
+   * @param isReferenceImage Flag indicating whether this is the reference image
+   * @return True iff the image was successfully loaded
+   */
   bool loadSerializedImage(const serialize::Image& image, bool isReferenceImage);
 
   /// Load a segmentation from disk. If its header does not match the given image, then it is not loaded
   /// @return Uid and flag if loaded.
   /// False indcates that it was already loaded and that we are returning an existing image.
   std::pair<std::optional<uuids::uuid>, bool> loadSegmentation(
-    const fs::path& fileName, const std::optional<uuids::uuid>& imageUid = std::nullopt
-  );
+    const fs::path& fileName, const std::optional<uuids::uuid>& imageUid = std::nullopt);
 
   /**
-     * @brief Load a deformation field from disk.
-     * @return UID and flag if loaded. False indcates that it was already loaded and that we are
-     * returning an existing image.
+   * @brief Load a deformation field from disk.
+   * @return UID and flag if loaded. False indcates that it was already loaded and that we are
+   * returning an existing image.
      *
-     * @todo If its header does not match the given image, then it is not loaded
-     */
+   * @todo If its header does not match the given image, then it is not loaded
+   */
   std::pair<std::optional<uuids::uuid>, bool> loadDeformationField(const fs::path& fileName);
 
   CallbackHandler& callbackHandler();
@@ -117,8 +115,7 @@ private:
   /// @return Uid and flag if loaded.
   /// False indcates that it was already loaded and that we are returning an existing image.
   std::pair<std::optional<uuids::uuid>, bool> loadImage(
-    const fs::path& fileName, bool ignoreIfAlreadyLoaded
-  );
+    const fs::path& fileName, bool ignoreIfAlreadyLoaded);
 
   std::future<void> m_futureLoadProject;
 
@@ -139,5 +136,3 @@ private:
   CallbackHandler m_callbackHandler; //!< UI callback handlers
   ImGuiWrapper m_imgui;              //!< ImGui wrapper
 };
-
-#endif // ENTROPY_APP_H

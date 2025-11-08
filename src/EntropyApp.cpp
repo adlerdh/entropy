@@ -239,8 +239,7 @@ void EntropyApp::resize(int windowWidth, int windowHeight)
   windowData().setViewport(
     margins.left, margins.bottom,
     static_cast<float>(windowWidth) - (margins.left + margins.right),
-    static_cast<float>(windowHeight) - (margins.bottom + margins.top)
-  );
+    static_cast<float>(windowHeight) - (margins.bottom + margins.top));
 }
 
 void EntropyApp::render()
@@ -257,6 +256,7 @@ const AppData& EntropyApp::appData() const
 {
   return m_data;
 }
+
 AppData& EntropyApp::appData()
 {
   return m_data;
@@ -266,6 +266,7 @@ const AppSettings& EntropyApp::appSettings() const
 {
   return m_data.settings();
 }
+
 AppSettings& EntropyApp::appSettings()
 {
   return m_data.settings();
@@ -275,6 +276,7 @@ const AppState& EntropyApp::appState() const
 {
   return m_data.state();
 }
+
 AppState& EntropyApp::appState()
 {
   return m_data.state();
@@ -284,6 +286,7 @@ const GuiData& EntropyApp::guiData() const
 {
   return m_data.guiData();
 }
+
 GuiData& EntropyApp::guiData()
 {
   return m_data.guiData();
@@ -293,6 +296,7 @@ const GlfwWrapper& EntropyApp::glfw() const
 {
   return m_glfw;
 }
+
 GlfwWrapper& EntropyApp::glfw()
 {
   return m_glfw;
@@ -302,6 +306,7 @@ const ImGuiWrapper& EntropyApp::imgui() const
 {
   return m_imgui;
 }
+
 ImGuiWrapper& EntropyApp::imgui()
 {
   return m_imgui;
@@ -311,6 +316,7 @@ const WindowData& EntropyApp::windowData() const
 {
   return m_data.windowData();
 }
+
 WindowData& EntropyApp::windowData()
 {
   return m_data.windowData();
@@ -329,8 +335,7 @@ void EntropyApp::logPreamble()
 }
 
 std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadImage(
-  const fs::path& fileName, bool ignoreIfAlreadyLoaded
-)
+  const fs::path& fileName, bool ignoreIfAlreadyLoaded)
 {
   if (ignoreIfAlreadyLoaded)
   {
@@ -365,8 +370,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadImage(
 }
 
 std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
-  const fs::path& fileName, const std::optional<uuids::uuid>& matchingImageUid
-)
+  const fs::path& fileName, const std::optional<uuids::uuid>& matchingImageUid)
 {
   // Setting indicating that the same segmentation image file can be loaded twice:
   constexpr bool canLoadSameSegFileTwice = false;
@@ -478,8 +482,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
 
   // The image and segmentation transformations match!
 
-  if (!isComponentUnsignedInt(seg.header().memoryComponentType()))
-  {
+  if (!isComponentUnsignedInt(seg.header().memoryComponentType())) {
     spdlog::error("The segmentation from file {} does not have unsigned integer pixel "
                   "component type and so will not be loaded.", fileName);
     return noSegLoaded;
@@ -699,11 +702,8 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
 
     if (serialize::openAnnotationsFromJsonFile(annots, *serializedImage.m_annotationsFileName))
     {
-      spdlog::info(
-        "Loaded annotations from JSON file {} for image {}",
-        *serializedImage.m_annotationsFileName,
-        *imageUid
-      );
+      spdlog::info("Loaded annotations from JSON file {} for image {}",
+                   *serializedImage.m_annotationsFileName, *imageUid);
 
       for (auto& annot : annots)
       {
@@ -719,8 +719,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
         }
       }
     }
-    else
-    {
+    else {
       spdlog::error("Unable to open annotations from JSON file {} for image {}",
                     *serializedImage.m_annotationsFileName, *imageUid);
     }
@@ -916,24 +915,17 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
     {
       if (segInfo.isNewSeg)
       {
-        spdlog::info(
-          "Loaded segmentation from file {} for image {} as {}",
-          serializedSeg.m_segFileName,
-          *imageUid,
-          *segInfo.uid
-        );
+        spdlog::info("Loaded segmentation from file {} for image {} as {}",
+                     serializedSeg.m_segFileName, *imageUid, *segInfo.uid);
 
         // New segmentation needs a new table
         segInfo.needsNewLabelColorTable = true;
       }
       else
       {
-        spdlog::info(
-          "Segmentation from {} already exists as {}, so it was not loaded again. "
-          "This segmentation will be shared across all images that reference it.",
-          serializedSeg.m_segFileName,
-          *segInfo.uid
-        );
+        spdlog::info("Segmentation from {} already exists as {}, so it was not loaded again. "
+                     "This segmentation will be shared across all images that reference it.",
+                     serializedSeg.m_segFileName, *segInfo.uid);
 
         // Existing segmentation does not need a new table
         segInfo.needsNewLabelColorTable = false;
@@ -950,35 +942,28 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
 
     try
     {
-      const std::string segDisplayName = std::string("Untitled segmentation for image '")
-                                         + image->settings().displayName() + "'";
+      const std::string segDisplayName =
+        std::string("Untitled segmentation for image '") + image->settings().displayName() + "'";
 
       SegInfo segInfo;
       segInfo.uid = m_callbackHandler.createBlankSeg(*imageUid, segDisplayName);
       segInfo.isNewSeg = true;
       segInfo.needsNewLabelColorTable = true;
 
-      if (segInfo.uid)
-      {
-        spdlog::debug(
-          "Created blank segmentation {} ('{}') for image {}", *segInfo.uid, segDisplayName, *imageUid
-        );
+      if (segInfo.uid) {
+        spdlog::debug("Created blank segmentation {} ('{}') for image {}",
+                      *segInfo.uid, segDisplayName, *imageUid);
       }
-      else
-      {
+      else {
         // This is a problem that we can't recover from:
-        spdlog::error(
-          "Error creating blank segmentation for image {}. "
-          "No segmentation will be assigned to the image.",
-          *imageUid
-        );
+        spdlog::error("Error creating blank segmentation for image {}. "
+                      "No segmentation will be assigned to the image.", *imageUid);
         return false;
       }
 
       allSegInfos.push_back(segInfo);
     }
-    catch (const std::exception& e)
-    {
+    catch (const std::exception& e) {
       spdlog::error("Exception creating blank segmentation for image {}: {}", *imageUid, e.what());
       spdlog::error("No segmentation will be assigned to the image.");
       return false;
@@ -990,8 +975,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   {
     Image* seg = m_data.seg(*segInfo.uid);
 
-    if (!seg)
-    {
+    if (!seg) {
       spdlog::error("Null segmentation {}", *segInfo.uid);
       m_data.removeSeg(*segInfo.uid);
       continue;
@@ -1001,25 +985,19 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
     {
       if (!data::createLabelColorTableForSegmentation(m_data, *segInfo.uid))
       {
-        constexpr size_t k_defaultTableIndex = 0;
+        constexpr size_t defaultTableIndex = 0;
 
-        spdlog::error(
-          "Unable to create label color table for segmentation {}. "
-          "Defaulting to table index {}.",
-          *segInfo.uid,
-          k_defaultTableIndex
-        );
+        spdlog::error("Unable to create label color table for segmentation {}. "
+                      "Defaulting to table index {}.", *segInfo.uid, defaultTableIndex);
 
-        seg->settings().setLabelTableIndex(k_defaultTableIndex);
+        seg->settings().setLabelTableIndex(defaultTableIndex);
       }
     }
 
-    if (m_data.assignSegUidToImage(*imageUid, *segInfo.uid))
-    {
+    if (m_data.assignSegUidToImage(*imageUid, *segInfo.uid)) {
       spdlog::info("Assigned segmentation {} to image {}", *segInfo.uid, *imageUid);
     }
-    else
-    {
+    else {
       spdlog::error("Unable to assign segmentation {} to image {}", *segInfo.uid, *imageUid);
       m_data.removeSeg(*segInfo.uid);
       continue;
@@ -1030,13 +1008,11 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   }
 
   // Checks that the image has at least one segmentation:
-  if (m_data.imageToSegUids(*imageUid).empty())
-  {
+  if (m_data.imageToSegUids(*imageUid).empty()) {
     spdlog::error("Image {} has no segmentation", *imageUid);
     return false;
   }
-  else if (!m_data.imageToActiveSegUid(*imageUid))
-  {
+  else if (!m_data.imageToActiveSegUid(*imageUid)) {
     // The image has no active segmentation, so assign the first seg as the active one:
     const auto firstSegUid = m_data.imageToSegUids(*imageUid).front();
     m_data.assignActiveSegUidToImage(*imageUid, firstSegUid);
@@ -1045,8 +1021,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   /// @todo Load from project settings
   //    static constexpr uint32_t sk_defaultIsovalueQuantile = 750;
 
-  for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i)
-  {
+  for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i) {
     image->settings().setColorMapIndex(i, defaultImageColorMapIndex);
   }
 
@@ -1059,13 +1034,11 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
   // The image loader function is called from a new thread
   auto projectLoader =
-    [this](
-      const serialize::EntropyProject& project,
-      const std::function<void(bool projectLoadedSuccessfully)>& onProjectLoadingDone
-    )
+    [this](const serialize::EntropyProject& project,
+           const std::function<void(bool projectLoadedSuccessfully)>& onProjectLoadingDone)
   {
-    static constexpr size_t sk_defaultReferenceImageIndex = 0;
-    static constexpr size_t sk_defaultActiveImageIndex = 1;
+    static constexpr size_t defaultReferenceImageIndex = 0;
+    static constexpr size_t defaultActiveImageIndex = 1;
 
     // Set event processing mode to poll, so that we have continuous animation while loading
     m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
@@ -1073,61 +1046,50 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
     spdlog::debug("Begin loading images in new thread");
 
-    if (m_imageLoadCancelled)
-    {
+    if (m_imageLoadCancelled) {
       onProjectLoadingDone(false);
     }
 
     if (!loadSerializedImage(project.m_referenceImage, true))
     {
-      spdlog::critical(
-        "Could not load reference image from {}", project.m_referenceImage.m_imageFileName
-      );
+      spdlog::critical("Could not load reference image from {}",
+                       project.m_referenceImage.m_imageFileName);
       onProjectLoadingDone(false);
     }
 
-    if (m_imageLoadCancelled)
-    {
+    if (m_imageLoadCancelled) {
       onProjectLoadingDone(false);
     }
 
     for (const auto& additionalImage : project.m_additionalImages)
     {
-      if (!loadSerializedImage(additionalImage, false))
-      {
-        spdlog::error(
-          "Could not load additional image from {}; skipping it", additionalImage.m_imageFileName
-        );
+      if (!loadSerializedImage(additionalImage, false)) {
+        spdlog::error("Could not load additional image from {}; skipping it",
+                      additionalImage.m_imageFileName);
       }
 
-      if (m_imageLoadCancelled)
-      {
+      if (m_imageLoadCancelled) {
         onProjectLoadingDone(false);
       }
     }
 
-    const auto refImageUid = m_data.imageUid(sk_defaultReferenceImageIndex);
+    const auto refImageUid = m_data.imageUid(defaultReferenceImageIndex);
 
-    if (refImageUid && m_data.setRefImageUid(*refImageUid))
-    {
+    if (refImageUid && m_data.setRefImageUid(*refImageUid)) {
       spdlog::info("Set {} as the reference image", *refImageUid);
     }
-    else
-    {
+    else {
       spdlog::critical("Unable to set {} as the reference image", *refImageUid);
       onProjectLoadingDone(false);
     }
 
-    const auto desiredActiveImageUid = (sk_defaultActiveImageIndex < m_data.numImages())
-                                         ? m_data.imageUid(sk_defaultActiveImageIndex)
-                                         : *refImageUid;
+    const auto desiredActiveImageUid = (defaultActiveImageIndex < m_data.numImages())
+      ? m_data.imageUid(defaultActiveImageIndex) : *refImageUid;
 
-    if (desiredActiveImageUid && m_data.setActiveImageUid(*desiredActiveImageUid))
-    {
+    if (desiredActiveImageUid && m_data.setActiveImageUid(*desiredActiveImageUid)) {
       spdlog::info("Set {} as the active image", *desiredActiveImageUid);
     }
-    else
-    {
+    else {
       spdlog::error("Unable to set {} as the active image", *desiredActiveImageUid);
     }
 
@@ -1143,15 +1105,13 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
   auto onProjectLoadingDone = [this](bool projectLoadedSuccessfully)
   {
-    if (projectLoadedSuccessfully)
-    {
+    if (projectLoadedSuccessfully) {
       m_imagesReady = true;
       m_imageLoadFailed = false;
       m_glfw.postEmptyEvent(); // Post an empty event to notify render thread
       spdlog::debug("Done loading images");
     }
-    else
-    {
+    else {
       spdlog::critical("Failed to load images");
       m_imagesReady = true;
       m_imageLoadFailed = false;
@@ -1162,8 +1122,7 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
   m_data.setProject(serialize::createProjectFromInputParams(params));
 
-  m_futureLoadProject
-    = std::async(std::launch::async, projectLoader, m_data.project(), onProjectLoadingDone);
+  m_futureLoadProject = std::async(std::launch::async, projectLoader, m_data.project(), onProjectLoadingDone);
 
   spdlog::debug("Done loading images from parameters");
 }
@@ -1221,11 +1180,12 @@ void EntropyApp::setCallbacks()
     {
       const auto imageUid = m_data.imageUid(imageIndex);
       const Image* image = imageUid ? m_data.image(*imageUid) : nullptr;
-      if (!image)
+      if (!image) {
         return std::nullopt;
+      }
 
-      const glm::vec4 subjectPos = image->transformations().subject_T_worldDef()
-                                   * glm::vec4{m_data.state().worldCrosshairs().worldOrigin(), 1.0f};
+      const glm::vec4 subjectPos = image->transformations().subject_T_worldDef() *
+                                   glm::vec4{m_data.state().worldCrosshairs().worldOrigin(), 1.0f};
 
       return glm::vec3{subjectPos / subjectPos.w};
     },
@@ -1237,11 +1197,11 @@ void EntropyApp::setCallbacks()
     {
       const auto imageUid = m_data.imageUid(imageIndex);
       const Image* image = imageUid ? m_data.image(*imageUid) : nullptr;
-      if (!image)
+      if (!image) {
         return;
+      }
 
-      const glm::vec4 worldPos = image->transformations().worldDef_T_subject()
-                                 * glm::vec4{subjectPos, 1.0f};
+      const glm::vec4 worldPos = image->transformations().worldDef_T_subject() * glm::vec4{subjectPos, 1.0f};
 
       m_data.state().setWorldCrosshairsPos(glm::vec3{worldPos / worldPos.w});
     },
@@ -1251,17 +1211,16 @@ void EntropyApp::setCallbacks()
     {
       const auto imageUid = m_data.imageUid(imageIndex);
       const Image* image = imageUid ? m_data.image(*imageUid) : nullptr;
-      if (!image)
+      if (!image) {
         return;
+      }
 
       /// @todo Put this in CallbackHandler as separate function, because it is used frequently
       /// @todo All logic related to rounding crosshairs positions should be in one place!
 
-      const glm::vec4 worldPos = image->transformations().worldDef_T_pixel()
-                                 * glm::vec4{voxelPos, 1.0f};
-
-      const glm::vec3 worldPosRounded
-        = data::roundPointToNearestImageVoxelCenter(*image, glm::vec3{worldPos / worldPos.w});
+      const glm::vec4 worldPos = image->transformations().worldDef_T_pixel() * glm::vec4{voxelPos, 1.0f};
+      const glm::vec3 worldPosRounded = data::roundPointToNearestImageVoxelCenter(
+        *image, glm::vec3{worldPos / worldPos.w});
 
       m_data.state().setWorldCrosshairsPos(worldPosRounded);
     },
@@ -1273,34 +1232,30 @@ void EntropyApp::setCallbacks()
 
       const auto imageUid = m_data.imageUid(imageIndex);
       const Image* image = imageUid ? m_data.image(*imageUid) : nullptr;
-      if (!image)
+      if (!image) {
         return values;
+      }
 
       if (const auto coords = data::getImageVoxelCoordsAtCrosshairs(m_data, imageIndex))
       {
         if (getOnlyActiveComponent)
         {
-          if ( const auto a = image->value<double>( image->settings().activeComponent(),
-                             coords->x, coords->y, coords->z ) )
-          {
+          if (const auto a = image->value<double>(
+                image->settings().activeComponent(), coords->x, coords->y, coords->z)) {
             // Return empty vector if component has undefined value
             values.push_back(*a);
           }
-          else
-          {
+          else {
             return std::vector<double>{};
           }
         }
         else
         {
-          for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i)
-          {
-            if (const auto a = image->value<double>(i, coords->x, coords->y, coords->z))
-            {
+          for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i) {
+            if (const auto a = image->value<double>(i, coords->x, coords->y, coords->z)) {
               values.push_back(*a);
             }
-            else
-            {
+            else {
               // Return empty vector if any component has undefined value
               return std::vector<double>{};
             }
@@ -1318,21 +1273,20 @@ void EntropyApp::setCallbacks()
 
       const auto imageUid = m_data.imageUid(imageIndex);
       const Image* image = imageUid ? m_data.image(*imageUid) : nullptr;
-      if (!image)
+      if (!image) {
         return values;
+      }
 
       if (const auto coords = data::getImageVoxelCoordsContinuousAtCrosshairs(m_data, imageIndex))
       {
         if (getOnlyActiveComponent)
         {
-          if ( const auto a = image->valueLinear<double>(
-                            image->settings().activeComponent(), coords->x, coords->y, coords->z ) )
-          {
+          if (const auto a = image->valueLinear<double>(
+                image->settings().activeComponent(), coords->x, coords->y, coords->z)) {
             // Return empty vector if component has undefined value
             values.push_back(*a);
           }
-          else
-          {
+          else {
             return std::vector<double>{};
           }
         }
@@ -1340,12 +1294,10 @@ void EntropyApp::setCallbacks()
         {
           for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i)
           {
-            if (const auto a = image->valueLinear<double>(i, coords->x, coords->y, coords->z))
-            {
+            if (const auto a = image->valueLinear<double>(i, coords->x, coords->y, coords->z)) {
               values.push_back(*a);
             }
-            else
-            {
+            else {
               // Return empty vector if any component has undefined value
               return std::vector<double>{};
             }
@@ -1360,16 +1312,17 @@ void EntropyApp::setCallbacks()
     [this](size_t imageIndex) -> std::optional<int64_t>
     {
       const auto imageUid = m_data.imageUid(imageIndex);
-      if (!imageUid)
+      if (!imageUid) {
         return std::nullopt;
+      }
 
       const auto segUid = m_data.imageToActiveSegUid(*imageUid);
       const Image* seg = segUid ? m_data.seg(*segUid) : nullptr;
-      if (!seg)
+      if (!seg) {
         return std::nullopt;
+      }
 
-      if (const auto coords = data::getSegVoxelCoordsAtCrosshairs(m_data, *segUid, *imageUid))
-      {
+      if (const auto coords = data::getSegVoxelCoordsAtCrosshairs(m_data, *segUid, *imageUid)) {
         const uint32_t activeComp = seg->settings().activeComponent();
         return seg->value<int64_t>(activeComp, coords->x, coords->y, coords->z);
       }
@@ -1379,8 +1332,7 @@ void EntropyApp::setCallbacks()
 
     [this](const uuids::uuid& matchingImageUid, const std::string& segDisplayName)
     {
-      return m_callbackHandler
-        .createBlankSegWithColorTableAndTextures(matchingImageUid, segDisplayName);
+      return m_callbackHandler.createBlankSegWithColorTableAndTextures(matchingImageUid, segDisplayName);
     },
 
     [this](const uuids::uuid& segUid) -> bool { return m_callbackHandler.clearSegVoxels(segUid); },
@@ -1393,14 +1345,10 @@ void EntropyApp::setCallbacks()
       return success;
     },
 
-    [this](
-      const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType
-    ) -> bool
+    [this](const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType) -> bool
     { return m_callbackHandler.executeGraphCutsSegmentation(imageUid, seedSegUid, segType); },
 
-    [this](
-      const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType
-    ) -> bool
+    [this](const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType) -> bool
     { return m_callbackHandler.executePoissonSegmentation(imageUid, seedSegUid, segType); },
 
     [this](const uuids::uuid& imageUid, bool locked) -> bool
