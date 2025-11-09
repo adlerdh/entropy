@@ -34,9 +34,10 @@
 
 namespace
 {
+using uuid = uuids::uuid;
 
-static const ImVec4 sk_whiteText(1, 1, 1, 1);
-static const ImVec4 sk_blackText(0, 0, 0, 1);
+const ImVec4 whiteText(1, 1, 1, 1);
+const ImVec4 blackText(0, 0, 0, 1);
 
 // static const std::string sk_NA("<N/A>");
 
@@ -49,7 +50,7 @@ ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
 } // namespace
 
 void renderViewSettingsComboWindow(
-  const uuids::uuid& viewOrLayoutUid,
+  const uuid& viewOrLayoutUid,
 
   const FrameBounds& mindowFrameBounds,
   const UiControls& uiControls,
@@ -80,7 +81,7 @@ void renderViewSettingsComboWindow(
   const std::function<void(const IntensityProjectionMode& projMode)>& setIntensityProjectionMode,
   const std::function<void()>& recenter,
 
-  const std::function<void(const uuids::uuid& viewUid)>& applyImageSelectionAndShaderToAllViews,
+  const std::function<void(const uuid& viewUid)>& applyImageSelectionAndShaderToAllViews,
 
   const std::function<float()>& getIntensityProjectionSlabThickness,
   const std::function<void(float thickness)>& setIntensityProjectionSlabThickness,
@@ -147,17 +148,13 @@ void renderViewSettingsComboWindow(
 
     const ImVec2 mindowTopLeftPos(
       mindowFrameBounds.bounds.xoffset + sk_framePad.x,
-      mindowFrameBounds.bounds.yoffset + sk_framePad.y
-    );
+      mindowFrameBounds.bounds.yoffset + sk_framePad.y);
 
     ImGui::SetNextWindowPos(mindowTopLeftPos, ImGuiCond_Always);
 
-    static const ImGuiWindowFlags sk_defaultWindowFlags = ImGuiWindowFlags_NoMove
-                                                          | ImGuiWindowFlags_AlwaysAutoResize
-                                                          | ImGuiWindowFlags_NoSavedSettings
-                                                          | ImGuiWindowFlags_NoDecoration
-                                                          | ImGuiWindowFlags_NoFocusOnAppearing
-                                                          | ImGuiWindowFlags_NoBringToFrontOnFocus;
+    static const ImGuiWindowFlags sk_defaultWindowFlags =
+      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     ImGuiWindowFlags windowFlags = sk_defaultWindowFlags;
 
@@ -179,13 +176,11 @@ void renderViewSettingsComboWindow(
         if (ViewRenderMode::Image == renderMode || ViewRenderMode::VolumeRender == renderMode)
         {
           // Image visibility:
-          if (ImGui::Button(label))
-          {
+          if (ImGui::Button(label)) {
             ImGui::OpenPopup("imageVisibilityPopup");
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             static const std::string sk_selectImages("Select visible images");
             ImGui::SetTooltip("%s", (sk_selectImages).c_str());
           }
@@ -198,18 +193,14 @@ void renderViewSettingsComboWindow(
             for (std::size_t i = 0; i < numImages; ++i)
             {
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
-
               auto displayAndFileName = getImageDisplayAndFileName(i);
-
               std::string displayName = displayAndFileName.first;
 
-              if (false == getImageVisibilitySetting(i))
-              {
+              if (false == getImageVisibilitySetting(i)) {
                 displayName += " (hidden)";
               }
 
-              if (getImageIsActive(i))
-              {
+              if (getImageIsActive(i)) {
                 displayName += " (active)";
               }
 
@@ -218,13 +209,11 @@ void renderViewSettingsComboWindow(
 
               ImGui::MenuItem(displayName.c_str(), "", &rendered);
 
-              if (oldRendered != rendered)
-              {
+              if (oldRendered != rendered) {
                 setImageRendered(i, rendered);
               }
 
-              if (ImGui::IsItemHovered())
-              {
+              if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
               }
 
@@ -236,21 +225,17 @@ void renderViewSettingsComboWindow(
             ImGui::EndPopup();
           }
         }
-        else if (ViewRenderMode::Disabled == renderMode)
-        {
+        else if (ViewRenderMode::Disabled == renderMode) {
           ImGui::Button(label);
         }
         else
         {
           // Image choice for the metric calculation:
-
-          if (ImGui::Button(label))
-          {
+          if (ImGui::Button(label)) {
             ImGui::OpenPopup("metricVisibilityPopup");
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             static const std::string sk_selectImages("Select images to compare");
             ImGui::SetTooltip("%s", (sk_selectImages).c_str());
           }
@@ -264,16 +249,13 @@ void renderViewSettingsComboWindow(
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
 
               const auto displayAndFileName = getImageDisplayAndFileName(i);
-
               std::string displayName = displayAndFileName.first;
 
-              if (false == getImageVisibilitySetting(i))
-              {
+              if (false == getImageVisibilitySetting(i)) {
                 displayName += " (hidden)";
               }
 
-              if (getImageIsActive(i))
-              {
+              if (getImageIsActive(i)) {
                 displayName += " (active)";
               }
 
@@ -282,13 +264,11 @@ void renderViewSettingsComboWindow(
 
               ImGui::MenuItem(displayName.c_str(), "", &rendered);
 
-              if (oldRendered != rendered)
-              {
+              if (oldRendered != rendered) {
                 setImageUsedForMetric(i, rendered);
               }
 
-              if (ImGui::IsItemHovered())
-              {
+              if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
               }
 
@@ -314,14 +294,11 @@ void renderViewSettingsComboWindow(
             for (const auto& st : renderModes)
             {
               const bool isSelected = (st == renderMode);
-
-              if (ImGui::Selectable(typeString(st).c_str(), isSelected))
-              {
+              if (ImGui::Selectable(typeString(st).c_str(), isSelected)) {
                 setRenderMode(st);
               }
 
-              if (isSelected)
-              {
+              if (isSelected) {
                 ImGui::SetItemDefaultFocus();
               }
             }
@@ -330,19 +307,13 @@ void renderViewSettingsComboWindow(
           if (numImages > 1)
           {
             // If there are two or more images, all shader types can be used:
-            const auto allRenderModes = (ViewType::ThreeD != viewType)
-                                          ? All2dViewRenderModes
-                                          : All3dViewRenderModes;
-
+            const auto allRenderModes = (ViewType::ThreeD != viewType) ? All2dViewRenderModes : All3dViewRenderModes;
             renderSelectablesForRenderModes(allRenderModes);
           }
-          else if (1 == numImages)
-          {
+          else if (1 == numImages) {
             // If there is only one image, then only non-metric shader types can be used:
             const auto singleImageRenderModes = (ViewType::ThreeD != viewType)
-                                                  ? All2dNonMetricRenderModes
-                                                  : All3dNonMetricRenderModes;
-
+              ? All2dNonMetricRenderModes : All3dNonMetricRenderModes;
             renderSelectablesForRenderModes(singleImageRenderModes);
           }
 
@@ -372,18 +343,15 @@ void renderViewSettingsComboWindow(
           {
             const bool isSelected = (ip == intensityProjMode);
 
-            if (ImGui::Selectable(typeString(ip).c_str(), isSelected))
-            {
+            if (ImGui::Selectable(typeString(ip).c_str(), isSelected)) {
               setIntensityProjectionMode(ip);
             }
 
-            if (ImGui::IsItemHovered())
-            {
+            if (ImGui::IsItemHovered()) {
               ImGui::SetTooltip("%s", descriptionString(ip).c_str());
             }
 
-            if (isSelected)
-            {
+            if (isSelected) {
               ImGui::SetItemDefaultFocus();
             }
           }
@@ -440,16 +408,8 @@ void renderViewSettingsComboWindow(
             // User can select energy from 1 KeV (1.0e-3 MeV) to 20e3 KeV (20 MeV):
             static constexpr float speed = 10.0f;
 
-            if (ImGui::DragFloat(
-                  "Energy",
-                  &energy,
-                  speed,
-                  1.0f,
-                  20.0e3f,
-                  "%0.3f KeV",
-                  ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic
-                ))
-            {
+            if (ImGui::DragFloat("Energy", &energy, speed, 1.0f, 20.0e3f, "%0.3f KeV",
+                                 ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic)) {
               setXrayProjectionEnergy(energy);
             }
 
@@ -464,15 +424,13 @@ void renderViewSettingsComboWindow(
             ImGui::SameLine();
             helpMarker("Adjust x-ray projection contrast with window/leveling");
 
-            if (mySliderF32("Width", &window, 1.0e-3f, 1.0f, "%0.3f"))
-            {
+            if (mySliderF32("Width", &window, 1.0e-3f, 1.0f, "%0.3f")) {
               setXrayProjectionWindow(window);
             }
             ImGui::SameLine();
             helpMarker("Window width");
 
-            if (mySliderF32("Level", &level, 0.0f, 1.0f, "%0.3f"))
-            {
+            if (mySliderF32("Level", &level, 0.0f, 1.0f, "%0.3f")) {
               setXrayProjectionLevel(level);
             }
             ImGui::SameLine();
@@ -483,8 +441,7 @@ void renderViewSettingsComboWindow(
         }
         ImGui::PopItemWidth();
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", descriptionString(intensityProjMode).c_str());
         }
       }
@@ -492,16 +449,12 @@ void renderViewSettingsComboWindow(
       if (showApplyToAllButton)
       {
         ImGui::SameLine();
-        if (ImGui::Button(ICON_FK_RSS))
-        {
+        if (ImGui::Button(ICON_FK_RSS)) {
           // Apply image and shader settings to all views in this layout
           applyImageSelectionAndShaderToAllViews(viewOrLayoutUid);
         }
-        if (ImGui::IsItemHovered())
-        {
-          ImGui::SetTooltip(
-            "%s", "Apply this view's image selection and render mode to all views in the layout"
-          );
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", "Apply this view's image selection and render mode to all views in the layout");
         }
       }
 
@@ -510,15 +463,12 @@ void renderViewSettingsComboWindow(
       {
         ImGui::SameLine();
         // ImGui::PushItemWidth( 100.0f + 2.0f * ImGui::GetStyle().FramePadding.x );
-        ImGui::PushItemWidth(
-          ImGui::CalcTextSize("Sagittal").x + 2.0f * ImGui::GetStyle().FramePadding.x
-          + ImGui::GetTextLineHeightWithSpacing()
-        );
+        ImGui::PushItemWidth(ImGui::CalcTextSize("Sagittal").x + 2.0f * ImGui::GetStyle().FramePadding.x +
+                             ImGui::GetTextLineHeightWithSpacing());
 
         const bool isOblique = (ViewType::Oblique == viewType);
 
-        if (isOblique)
-        {
+        if (isOblique) {
           // Set text marking oblique view type with different color
           ImGui::PushStyleColor(ImGuiCol_Text, activeColor);
         }
@@ -527,8 +477,7 @@ void renderViewSettingsComboWindow(
         const bool xhairsRotated = math::isRotationIdentity(worldCrosshairs.world_T_frame_rotation());
         const bool clickedViewTypeCombo = ImGui::BeginCombo("##viewTypeCombo", to_string(viewType, !xhairsRotated).c_str());
 
-        if (isOblique)
-        {
+        if (isOblique) {
           ImGui::PopStyleColor(1); // ImGuiCol_Text
         }
 
@@ -539,14 +488,12 @@ void renderViewSettingsComboWindow(
             for (const auto& vt : AllViewTypes)
             {
               const bool isSelected = (vt == viewType);
-              if (ImGui::Selectable(to_string(vt, !xhairsRotated).c_str(), isSelected))
-              {
+              if (ImGui::Selectable(to_string(vt, !xhairsRotated).c_str(), isSelected)) {
                 setViewType(vt);
                 recenter();
               }
 
-              if (isSelected)
-              {
+              if (isSelected) {
                 ImGui::SetItemDefaultFocus();
               }
             }
@@ -559,8 +506,7 @@ void renderViewSettingsComboWindow(
               ImGui::Spacing();
 
               static bool viewPositionFollowsXhairs = false;
-              if (ImGui::Checkbox("View position follows crosshairs", &viewPositionFollowsXhairs))
-              {
+              if (ImGui::Checkbox("View position follows crosshairs", &viewPositionFollowsXhairs)) {
                 viewPositionFollowsXhairs = !viewPositionFollowsXhairs;
               }
               ImGui::SameLine();
@@ -578,35 +524,25 @@ void renderViewSettingsComboWindow(
       /// @todo Replace this with NanoVG text
       {
         std::string imageNamesText;
-
         bool first = true; // The first image gets no comma in front of it
 
-        if (ViewRenderMode::Image == renderMode || ViewRenderMode::VolumeRender == renderMode)
-        {
-          for (std::size_t i = 0; i < numImages; ++i)
-          {
-            if (isImageRendered(i) && getImageVisibilitySetting(i))
-            {
+        if (ViewRenderMode::Image == renderMode || ViewRenderMode::VolumeRender == renderMode) {
+          for (std::size_t i = 0; i < numImages; ++i) {
+            if (isImageRendered(i) && getImageVisibilitySetting(i)) {
               const std::string comma = (first ? "" : ", ");
-
-              imageNamesText += comma + std::string(getImageDisplayAndFileName(i).first)
-                                + (getImageIsActive(i) ? " (active)" : "");
-
+              imageNamesText += comma + std::string(getImageDisplayAndFileName(i).first) +
+                                (getImageIsActive(i) ? " (active)" : "");
               first = false;
             }
           }
         }
-        else if (ViewRenderMode::Disabled == renderMode)
-        {
+        else if (ViewRenderMode::Disabled == renderMode) {
           // render no text
           imageNamesText = "";
         }
-        else
-        {
-          for (std::size_t i = 0; i < numImages; ++i)
-          {
-            if (isImageUsedForMetric(i) && getImageVisibilitySetting(i))
-            {
+        else {
+          for (std::size_t i = 0; i < numImages; ++i) {
+            if (isImageUsedForMetric(i) && getImageVisibilitySetting(i)) {
               const std::string comma = (first ? "" : ", ");
               imageNamesText += comma + std::string(getImageDisplayAndFileName(i).first);
               first = false;
@@ -629,7 +565,7 @@ void renderViewSettingsComboWindow(
 }
 
 void renderViewOrientationToolWindow(
-  const uuids::uuid& viewOrLayoutUid,
+  const uuid& viewOrLayoutUid,
   const FrameBounds& mindowFrameBounds,
   const UiControls& /*uiControls*/,
   bool /*hasFrameAndBackground*/,
@@ -638,9 +574,7 @@ void renderViewOrientationToolWindow(
   const std::function<void(const glm::quat& camera_T_world_rotationDelta)>& setViewCameraRotation,
   const std::function<void(const glm::vec3& worldDirection)>& setViewCameraDirection,
   const std::function<glm::vec3()>& getViewNormal,
-  const std::function<std::vector<glm::vec3>(const uuids::uuid& viewUidToExclude)>&
-    getObliqueViewDirections
-)
+  const std::function<std::vector<glm::vec3>(const uuid& viewUidToExclude)>& getObliqueViewDirections)
 {
   static const glm::vec2 sk_framePad{4.0f, 4.0f};
   static const ImVec2 sk_windowPadding(0.0f, 0.0f);
@@ -893,15 +827,15 @@ void renderImagePropertiesWindow(
   const std::function<void(std::size_t)>& setActiveImageIndex,
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
-  const std::function<bool(const uuids::uuid& imageUid)>& moveImageBackward,
-  const std::function<bool(const uuids::uuid& imageUid)>& moveImageForward,
-  const std::function<bool(const uuids::uuid& imageUid)>& moveImageToBack,
-  const std::function<bool(const uuids::uuid& imageUid)>& moveImageToFront,
+  const std::function<bool(const uuid& imageUid)>& moveImageBackward,
+  const std::function<bool(const uuid& imageUid)>& moveImageForward,
+  const std::function<bool(const uuid& imageUid)>& moveImageToBack,
+  const std::function<bool(const uuid& imageUid)>& moveImageToFront,
   const std::function<void(void)>& updateAllImageUniforms,
-  const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
-  const std::function<void(const uuids::uuid& imageUid)>& updateImageInterpolationMode,
+  const std::function<void(const uuid& imageUid)>& updateImageUniforms,
+  const std::function<void(const uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
-  const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
+  const std::function<bool(const uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const AllViewsRecenterType& recenterAllViews
 )
 {
@@ -968,15 +902,15 @@ void renderImagePropertiesWindow(
 void renderSegmentationPropertiesWindow(
   AppData& appData,
   const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable,
-  const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
+  const std::function<void(const uuid& imageUid)>& updateImageUniforms,
   const std::function<void(std::size_t labelColorTableIndex)>& updateLabelColorTableTexture,
-  const std::function<void(const uuids::uuid& imageUid, size_t labelIndex)>&
+  const std::function<void(const uuid& imageUid, size_t labelIndex)>&
     moveCrosshairsToSegLabelCentroid,
-  const std::function<std::optional<uuids::uuid>(
-    const uuids::uuid& matchingImageUid, const std::string& segDisplayName
+  const std::function<std::optional<uuid>(
+    const uuid& matchingImageUid, const std::string& segDisplayName
   )>& createBlankSeg,
-  const std::function<bool(const uuids::uuid& segUid)>& clearSeg,
-  const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
+  const std::function<bool(const uuid& segUid)>& clearSeg,
+  const std::function<bool(const uuid& segUid)>& removeSeg,
   const AllViewsRecenterType& recenterAllViews
 )
 {
@@ -1048,32 +982,20 @@ void renderLandmarkPropertiesWindow(
 
 void renderAnnotationWindow(
   AppData& appData,
-  const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>&
-    setViewCameraDirection,
+  const std::function<void(const uuid& viewUid, const glm::vec3& worldFwdDirection)>& setViewCameraDirection,
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
-  const AllViewsRecenterType& recenterAllViews
-)
+  const AllViewsRecenterType& recenterAllViews)
 {
-  if (ImGui::Begin(
-        "Annotations", &(appData.guiData().m_showAnnotationsWindow), ImGuiWindowFlags_AlwaysAutoResize
-      ))
+  if (ImGui::Begin("Annotations", &(appData.guiData().m_showAnnotationsWindow),
+                   ImGuiWindowFlags_AlwaysAutoResize))
   {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 
-    for (const auto& imageUid : appData.imageUidsOrdered())
-    {
+    for (const auto& imageUid : appData.imageUidsOrdered()) {
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
-
-      renderAnnotationsHeader(
-        appData,
-        imageUid,
-        imageIndex++,
-        isActiveImage,
-        setViewCameraDirection,
-        paintActiveSegmentationWithActivePolygon,
-        recenterAllViews
-      );
+      renderAnnotationsHeader(appData, imageUid, imageIndex++, isActiveImage, setViewCameraDirection,
+                              paintActiveSegmentationWithActivePolygon, recenterAllViews);
     }
   }
 
@@ -1082,8 +1004,8 @@ void renderAnnotationWindow(
 
 void renderIsosurfacesWindow(
   AppData& appData,
-  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
+  std::function<void(const uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
+  std::function<void(const uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
   if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow), ImGuiWindowFlags_AlwaysAutoResize))
   {
@@ -2075,7 +1997,7 @@ void renderInspectionWindow(
   static const ImVec4 blueColor(0.0f, 0.5f, 1.0f, 1.0f);
 
   // For which images to show coordinates?
-  static std::unordered_map<uuids::uuid, bool> s_showSubject;
+  static std::unordered_map<uuid, bool> s_showSubject;
 
   if (s_firstRun)
   {
@@ -2404,7 +2326,7 @@ void renderInspectionWindowWithTable(
   static bool s_showTitleBar = false;
 
   // For which images to show coordinates?
-  static std::unordered_map<uuids::uuid, bool> s_showSubject;
+  static std::unordered_map<uuid, bool> s_showSubject;
 
   if (s_firstRun)
   {
@@ -2616,8 +2538,8 @@ void renderInspectionWindowWithTable(
           darkerBorderColorRgb.r, darkerBorderColorRgb.g, darkerBorderColorRgb.b, 1.0f
         );
         const ImVec4 inputTextFgColor = (glm::luminosity(darkerBorderColorRgb) < 0.75f)
-                                          ? sk_whiteText
-                                          : sk_blackText;
+                                          ? whiteText
+                                          : blackText;
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, inputTextBgColor);
         ImGui::PushStyleColor(ImGuiCol_Text, inputTextFgColor);
@@ -2972,7 +2894,7 @@ void renderInspectionWindowWithTable(
 }
 
 void renderOpacityBlenderWindow(
-  AppData& appData, const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms
+  AppData& appData, const std::function<void(const uuid& imageUid)>& updateImageUniforms
 )
 {
   /// @todo Use the "Drag and drop to copy/swap items" ImGui demo in order to allow reordering image layers

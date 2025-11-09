@@ -23,28 +23,6 @@ class AppData;
 class ImageColorMap;
 class ParcellationLabelTable;
 
-/**
- * @brief renderViewSettingsComboWindow
- * @param viewOrLayoutUid
- * @param winMouseMinMaxCoords
- * @param uiControls
- * @param hasFrameAndBackground
- * @param showApplyToAllButton
- * @param contentScaleRatios
- * @param getNumImages
- * @param isImageRendered
- * @param setImageRendered
- * @param isImageUsedForMetric
- * @param setImageUsedForMetric
- * @param getImageDisplayAndFileName
- * @param getImageVisibilitySetting
- * @param viewType
- * @param shaderType
- * @param setViewType
- * @param setRenderMode
- * @param recenter
- * @param applyImageSelectionAndShaderToAllViews
- */
 void renderViewSettingsComboWindow(
   const uuids::uuid& viewOrLayoutUid,
 
@@ -106,24 +84,6 @@ void renderViewOrientationToolWindow(
   const std::function<glm::vec3()>& getViewNormal,
   const std::function<std::vector<glm::vec3>(const uuids::uuid& viewUidToExclude)>& getObliqueViewDirections);
 
-/**
- * @brief renderImagePropertiesWindow
- * @param appData
- * @param getNumImages
- * @param getImageDisplayAndFileName
- * @param getActiveImageIndex
- * @param setActiveImageIndex
- * @param getNumImageColorMaps
- * @param getImageColorMap
- * @param moveImageBackward
- * @param moveImageForward
- * @param moveImageToBack
- * @param moveImageToFront
- * @param updateAllImageUniforms
- * @param updateImageUniforms
- * @param updateImageInterpolationMode
- * @param setLockManualImageTransformation
- */
 void renderImagePropertiesWindow(
   AppData& appData,
   size_t numImages,
@@ -141,19 +101,8 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuids::uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
   const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
-  const AllViewsRecenterType& recenterAllViews
-);
+  const AllViewsRecenterType& recenterAllViews);
 
-/**
- * @brief renderSegmentationPropertiesWindow
- * @param appData
- * @param getLabelTable
- * @param updateImageUniforms
- * @param updateLabelColorTableTexture
- * @param createBlankSeg
- * @param clearSeg
- * @param removeSeg
- */
 void renderSegmentationPropertiesWindow(
   AppData& appData,
   const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable,
@@ -166,18 +115,10 @@ void renderSegmentationPropertiesWindow(
   const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
   const AllViewsRecenterType& recenterAllViews);
 
-/**
- * @brief renderLandmarkPropertiesWindow
- * @param appData
- * @param recenterAllViews
- */
-void renderLandmarkPropertiesWindow(AppData& appData, const AllViewsRecenterType& recenterAllViews);
+void renderLandmarkPropertiesWindow(
+  AppData& appData,
+  const AllViewsRecenterType& recenterAllViews);
 
-/**
- * @brief renderAnnotationWindow
- * @param appData
- * @param recenterAllViews
- */
 void renderAnnotationWindow(
   AppData& appData,
   const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>& setViewCameraDirection,
@@ -189,14 +130,6 @@ void renderIsosurfacesWindow(
   std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
   std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue);
 
-/**
- * @brief renderSettingsWindow
- * @param appData
- * @param getNumImageColorMaps
- * @param getImageColorMap
- * @param updateMetricUniforms
- * @param recenterAllViews
- */
 void renderSettingsWindow(
   AppData& appData,
   const std::function<size_t(void)>& getNumImageColorMaps,
@@ -204,18 +137,6 @@ void renderSettingsWindow(
   const std::function<void(void)>& updateMetricUniforms,
   const AllViewsRecenterType& recenterAllViews);
 
-/**
- * @brief renderInspectionWindow
- * @param appData
- * @param getNumImages
- * @param getImageDisplayAndFileName
- * @param getWorldDeformedPos
- * @param getSubjectPos
- * @param getVoxelPos
- * @param getImageValue
- * @param getSegLabel
- * @param getLabelTable
- */
 void renderInspectionWindow(
   AppData& appData,
   size_t numImages,
@@ -228,16 +149,6 @@ void renderInspectionWindow(
   const std::function<std::optional<int64_t>(size_t imageIndex)>& getSegLabel,
   const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable);
 
-/**
- * @brief renderInspectionWindowWithTable
- * @param appData
- * @param getImageDisplayAndFileName
- * @param getSubjectPos
- * @param getVoxelPos
- * @param getImageValue
- * @param getSegLabel
- * @param getLabelTable
- */
 void renderInspectionWindowWithTable(
   AppData& appData,
   const std::function<std::pair<std::string, std::string>(size_t index)>& getImageDisplayAndFileName,
@@ -250,10 +161,6 @@ void renderInspectionWindowWithTable(
   const std::function<std::optional<int64_t>(size_t imageIndex)>& getSegLabel,
   const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable);
 
-/**
- * @brief renderOpacityBlenderWindow
- * @param appData
- * @param updateImageUniforms
- */
 void renderOpacityBlenderWindow(
-  AppData& appData, const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms);
+  AppData& appData,
+  const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms);

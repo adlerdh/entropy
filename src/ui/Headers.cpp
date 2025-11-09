@@ -1852,19 +1852,14 @@ void renderSegmentationHeader(
     const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>& createBlankSeg,
   const std::function<bool(const uuids::uuid& segUid)>& clearSeg,
   const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
-  const AllViewsRecenterType& recenterAllViews
-)
+  const AllViewsRecenterType& recenterAllViews)
 {
-  static const std::string addNewSegString = std::string(ICON_FK_FILE_O)
-                                                + std::string(" Create");
-  static const std::string clearSegString = std::string(ICON_FK_ERASER) + std::string(" Clear");
-  static const std::string removeSegString = std::string(ICON_FK_TRASH_O)
-                                                + std::string(" Remove");
-  static const std::string SaveSegString = std::string(ICON_FK_FLOPPY_O)
-                                              + std::string(" Save...");
+  static const std::string addNewSegString = std::string(ICON_FK_FILE_O) + " Create";
+  static const std::string clearSegString = std::string(ICON_FK_ERASER) + " Clear";
+  static const std::string removeSegString = std::string(ICON_FK_TRASH_O) + " Remove";
+  static const std::string SaveSegString = std::string(ICON_FK_FLOPPY_O) + " Save...";
 
-  if (!image)
-  {
+  if (!image) {
     spdlog::error("Null image");
     return;
   }
@@ -1873,9 +1868,7 @@ void renderSegmentationHeader(
   const ImVec4 activeColor = colors[ImGuiCol_ButtonActive];
 
   ImGuiTreeNodeFlags headerFlags = ImGuiTreeNodeFlags_CollapsingHeader;
-
-  if (isActiveImage)
-  {
+  if (isActiveImage) {
     // Open header for the active image by default:
     headerFlags |= ImGuiTreeNodeFlags_DefaultOpen;
   }
@@ -1884,8 +1877,8 @@ void renderSegmentationHeader(
 
   // Header is ID'ed only by the image index.
   // ### allows the header name to change without changing its ID.
-  const std::string headerName = std::to_string(imageIndex) + ") " + imgSettings.displayName()
-                                 + "###" + std::to_string(imageIndex);
+  const std::string headerName = std::to_string(imageIndex) + ") " + imgSettings.displayName() +
+                                 "###" + std::to_string(imageIndex);
 
   const auto headerColors = computeHeaderBgAndTextColors(imgSettings.borderColor());
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
@@ -1895,8 +1888,7 @@ void renderSegmentationHeader(
 
   ImGui::PopStyleColor(2); // ImGuiCol_Header, ImGuiCol_Text
 
-  if (!open)
-  {
+  if (!open) {
     return;
   }
 
@@ -1904,18 +1896,16 @@ void renderSegmentationHeader(
 
   if (!isActiveImage)
   {
-    if (ImGui::Button(ICON_FK_TOGGLE_OFF))
-    {
-      if (appData.setActiveImageUid(imageUid))
+    if (ImGui::Button(ICON_FK_TOGGLE_OFF)) {
+      if (appData.setActiveImageUid(imageUid)) {
         return;
+      }
     }
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Make this the active image");
     }
   }
-  else
-  {
+  else {
     ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
     ImGui::Button(ICON_FK_TOGGLE_ON);
     ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -1925,43 +1915,34 @@ void renderSegmentationHeader(
 
   ImGui::SameLine();
 
-  if (isRef && isActiveImage)
-  {
+  if (isRef && isActiveImage) {
     ImGui::Text("%s", referenceAndActiveImageMessage);
   }
-  else if (isRef)
-  {
+  else if (isRef) {
     ImGui::Text("%s", referenceImageMessage);
   }
-  else if (isActiveImage)
-  {
+  else if (isActiveImage) {
     ImGui::Text("%s", activeImageMessage);
   }
-  else
-  {
+  else {
     ImGui::Text("%s", nonActiveImageMessage);
   }
 
   const auto segUids = appData.imageToSegUids(imageUid);
-  if (segUids.empty())
-  {
+  if (segUids.empty()) {
     ImGui::Text("This image has no segmentation");
     spdlog::error("Image {} has no segmentations", imageUid);
     return;
   }
 
   auto activeSegUid = appData.imageToActiveSegUid(imageUid);
-
-  if (!activeSegUid)
-  {
+  if (!activeSegUid) {
     spdlog::error("Image {} has no active segmentation", imageUid);
     return;
   }
 
   Image* activeSeg = appData.seg(*activeSegUid);
-
-  if (!activeSeg)
-  {
+  if (!activeSeg) {
     spdlog::error("Active segmentation for image {} is null", imageUid);
     return;
   }
@@ -1982,19 +1963,17 @@ void renderSegmentationHeader(
     {
       ImGui::PushID(static_cast<int>(segIndex++));
       {
-        if (Image* seg = appData.seg(segUid))
-        {
+        if (Image* seg = appData.seg(segUid)) {
           const bool isSelected = (segUid == *activeSegUid);
-
-          if (ImGui::Selectable(seg->settings().displayName().c_str(), isSelected))
-          {
+          if (ImGui::Selectable(seg->settings().displayName().c_str(), isSelected)) {
             appData.assignActiveSegUidToImage(imageUid, segUid);
             activeSeg = appData.seg(segUid);
             updateImageUniforms();
           }
 
-          if (isSelected)
+          if (isSelected) {
             ImGui::SetItemDefaultFocus();
+          }
         }
       }
       ImGui::PopID(); // lmGroupIndex
@@ -2012,21 +1991,18 @@ void renderSegmentationHeader(
   {
     const size_t numSegsForImage = appData.imageToSegUids(imageUid).size();
 
-    std::string segDisplayName = std::string("Untitled segmentation ")
-                                 + std::to_string(numSegsForImage + 1) + " for image '"
-                                 + image->settings().displayName() + "'";
+    std::string segDisplayName = std::string("Untitled segmentation ") +
+                                 std::to_string(numSegsForImage + 1) + " for image '" +
+                                 image->settings().displayName() + "'";
 
-    if (createBlankSeg(imageUid, std::move(segDisplayName)))
-    {
+    if (createBlankSeg(imageUid, std::move(segDisplayName))) {
       updateImageUniforms();
     }
-    else
-    {
+    else {
       spdlog::error("Error creating new blank segmentation for image {}", imageUid);
     }
   }
-  if (ImGui::IsItemHovered())
-  {
+  if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Create a new blank segmentation for this image");
   }
 
@@ -2035,29 +2011,24 @@ void renderSegmentationHeader(
   if (appData.imageToSegUids(imageUid).size() > 1)
   {
     ImGui::SameLine();
-    if (ImGui::Button(removeSegString.c_str()))
-    {
-      if (removeSeg(*activeSegUid))
-      {
+    if (ImGui::Button(removeSegString.c_str())) {
+      if (removeSeg(*activeSegUid)) {
         updateImageUniforms();
         ImGui::PopID(); /*** PopID activeSegUid ***/
         return;
       }
     }
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Remove this segmentation from the image");
     }
   }
 
   // Clear segmentation:
   ImGui::SameLine();
-  if (ImGui::Button(clearSegString.c_str()))
-  {
+  if (ImGui::Button(clearSegString.c_str())) {
     clearSeg(*activeSegUid);
   }
-  if (ImGui::IsItemHovered())
-  {
+  if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Clear all values in this segmentation");
   }
 
@@ -2067,11 +2038,9 @@ void renderSegmentationHeader(
 
   ImGui::SameLine();
   const auto selectedFile = ImGui::renderFileButtonDialogAndWindow(
-    SaveSegString.c_str(), dialogTitle, dialogFilters
-  );
+    SaveSegString.c_str(), dialogTitle, dialogFilters);
 
-  if (ImGui::IsItemHovered())
-  {
+  if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Save the segmentation to an image file on disk");
   }
 
@@ -2079,13 +2048,11 @@ void renderSegmentationHeader(
   {
     static constexpr uint32_t compToSave = 0;
 
-    if (activeSeg->saveComponentToDisk(compToSave, *selectedFile))
-    {
+    if (activeSeg->saveComponentToDisk(compToSave, *selectedFile)) {
       spdlog::info("Saved segmentation image to file {}", *selectedFile);
       activeSeg->header().setFileName(*selectedFile);
     }
-    else
-    {
+    else {
       spdlog::error("Error saving segmentation image to file {}", *selectedFile);
     }
   }
@@ -2095,8 +2062,7 @@ void renderSegmentationHeader(
   ImGui::Spacing();
 
   // Double check that we still have the active segmentation:
-  if (!activeSeg)
-  {
+  if (!activeSeg) {
     spdlog::error("Active segmentation for image {} is null", imageUid);
     ImGui::PopID(); /*** PopID activeSegUid ***/
     return;
@@ -2106,8 +2072,8 @@ void renderSegmentationHeader(
 
   // Header is ID'ed only by "seg_" and the image index.
   // ### allows the header name to change without changing its ID.
-  const std::string segHeaderName = std::string("Seg: ") + segSettings.displayName() + "###seg_"
-                                    + std::to_string(imageIndex);
+  const std::string segHeaderName = std::string("Seg: ") + segSettings.displayName() + "###seg_" +
+                                    std::to_string(imageIndex);
 
   /// @todo add "*" to end of name and change color of seg header if seg has been modified
 
@@ -2118,8 +2084,7 @@ void renderSegmentationHeader(
   {
     // Visibility:
     bool segVisible = segSettings.visibility();
-    if (ImGui::Checkbox("Visible", &segVisible))
-    {
+    if (ImGui::Checkbox("Visible", &segVisible)) {
       segSettings.setVisibility(segVisible);
       updateImageUniforms();
     }
@@ -2130,8 +2095,7 @@ void renderSegmentationHeader(
     {
       // Opacity (only shown if segmentation is visible):
       double segOpacity = segSettings.opacity();
-      if (mySliderF64("Opacity", &segOpacity, 0.0, 1.0))
-      {
+      if (mySliderF64("Opacity", &segOpacity, 0.0, 1.0)) {
         segSettings.setOpacity(segOpacity);
         updateImageUniforms();
       }
@@ -2144,10 +2108,8 @@ void renderSegmentationHeader(
     {
       for (const auto& mode : {InterpolationMode::NearestNeighbor, InterpolationMode::Trilinear})
       {
-        if (ImGui::Selectable(typeString(mode).c_str(), (mode == segSettings.interpolationMode())))
-        {
+        if (ImGui::Selectable(typeString(mode).c_str(), (mode == segSettings.interpolationMode()))) {
           segSettings.setInterpolationMode(mode);
-
           if (mode == segSettings.interpolationMode()) {
             ImGui::SetItemDefaultFocus();
           }
@@ -2167,12 +2129,8 @@ void renderSegmentationHeader(
 
   if (ImGui::TreeNode("Segmentation Labels"))
   {
-    renderSegLabelsChildWindow(
-      segSettings.labelTableIndex(),
-      getLabelTable(segSettings.labelTableIndex()),
-      updateLabelColorTableTexture,
-      moveCrosshairsToSegLabelCentroid
-    );
+    renderSegLabelsChildWindow(segSettings.labelTableIndex(), getLabelTable(segSettings.labelTableIndex()),
+                               updateLabelColorTableTexture, moveCrosshairsToSegLabelCentroid);
 
     ImGui::Spacing();
     ImGui::Separator();
@@ -2181,15 +2139,12 @@ void renderSegmentationHeader(
     ImGui::TreePop();
   }
 
-  if (ImGui::TreeNode("Header Information"))
-  {
+  if (ImGui::TreeNode("Header Information")) {
     renderImageHeaderInformation(appData, imageUid, *activeSeg, updateImageUniforms, recenterAllViews);
-
     ImGui::TreePop();
   }
 
   ImGui::Spacing();
-
   ImGui::PopID(); /*** PopID activeSegUid ***/
 }
 
@@ -2198,8 +2153,7 @@ void renderLandmarkGroupHeader(
   const uuids::uuid& imageUid,
   size_t imageIndex,
   bool isActiveImage,
-  const AllViewsRecenterType& recenterAllViews
-)
+  const AllViewsRecenterType& recenterAllViews)
 {
   static const char* newLmGroupButtonText("Create new group of landmarks");
   static const char* saveLmsButtonText("Save landmarks...");
@@ -2207,13 +2161,13 @@ void renderLandmarkGroupHeader(
   static const std::vector<std::string> saveLmsDialogFilters{};
 
   Image* image = appData.image(imageUid);
-  if (!image)
+  if (!image) {
     return;
+  }
 
   auto addNewLmGroupButton = [&appData, &image, &imageUid]()
   {
-    if (ImGui::Button(newLmGroupButtonText))
-    {
+    if (ImGui::Button(newLmGroupButtonText)) {
       LandmarkGroup newGroup;
       newGroup.setName(std::string("Landmarks for ") + image->settings().displayName());
 
@@ -2227,8 +2181,7 @@ void renderLandmarkGroupHeader(
   ImGuiTreeNodeFlags headerFlags = ImGuiTreeNodeFlags_CollapsingHeader;
 
   /// @todo This annoyingly pops up the active header each time... not sure why
-  if (isActiveImage)
-  {
+  if (isActiveImage) {
     headerFlags |= ImGuiTreeNodeFlags_DefaultOpen;
   }
 
@@ -2236,8 +2189,8 @@ void renderLandmarkGroupHeader(
 
   // Header is ID'ed only by the image index.
   // ### allows the header name to change without changing its ID.
-  const std::string headerName = std::to_string(imageIndex) + ") " + image->settings().displayName()
-                                 + "###" + std::to_string(imageIndex);
+  const std::string headerName = std::to_string(imageIndex) + ") " +
+                                 image->settings().displayName() + "###" + std::to_string(imageIndex);
 
   const auto imgSettings = image->settings();
 
@@ -2249,8 +2202,7 @@ void renderLandmarkGroupHeader(
 
   ImGui::PopStyleColor(2); // ImGuiCol_Header, ImGuiCol_Text
 
-  if (!open)
-  {
+  if (!open) {
     ImGui::PopID(); // imageUid
     return;
   }
@@ -2258,9 +2210,7 @@ void renderLandmarkGroupHeader(
   ImGui::Spacing();
 
   const auto lmGroupUids = appData.imageToLandmarkGroupUids(imageUid);
-
-  if (lmGroupUids.empty())
-  {
+  if (lmGroupUids.empty()) {
     ImGui::Text("This image has no landmarks.");
     addNewLmGroupButton();
     ImGui::PopID(); // imageUid
@@ -2275,12 +2225,10 @@ void renderLandmarkGroupHeader(
   // The default active landmark group is at index 0
   if (!activeLmGroupUid)
   {
-    if (appData.assignActiveLandmarkGroupUidToImage(imageUid, lmGroupUids[0]))
-    {
+    if (appData.assignActiveLandmarkGroupUidToImage(imageUid, lmGroupUids[0])) {
       activeLmGroupUid = appData.imageToActiveLandmarkGroupUid(imageUid);
     }
-    else
-    {
+    else {
       spdlog::error("Unable to assign active landmark group {} to image {}", lmGroupUids[0], imageUid);
       ImGui::PopID(); // imageUid
       return;
@@ -2289,8 +2237,7 @@ void renderLandmarkGroupHeader(
 
   LandmarkGroup* activeLmGroup = appData.landmarkGroup(*activeLmGroupUid);
 
-  if (!activeLmGroup)
-  {
+  if (!activeLmGroup) {
     spdlog::error("Landmark group {} for image {} is null", *activeLmGroupUid, imageUid);
     ImGui::PopID(); // imageUid
     return;
@@ -2308,17 +2255,15 @@ void renderLandmarkGroupHeader(
         if (LandmarkGroup* lmGroup = appData.landmarkGroup(lmGroupUid))
         {
           const bool isSelected = (lmGroupUid == *activeLmGroupUid);
-
-          if (ImGui::Selectable(lmGroup->getName().c_str(), isSelected))
-          {
+          if (ImGui::Selectable(lmGroup->getName().c_str(), isSelected)) {
             appData.assignActiveLandmarkGroupUidToImage(imageUid, lmGroupUid);
             activeLmGroup = appData.landmarkGroup(lmGroupUid);
           }
 
-          if (isSelected)
+          if (isSelected) {
             ImGui::SetItemDefaultFocus();
+          }
         }
-
         ImGui::PopID(); // lmGroupIndex
       }
 
@@ -2342,8 +2287,7 @@ void renderLandmarkGroupHeader(
 
   // Landmark group display name:
   std::string groupName = activeLmGroup->getName();
-  if (ImGui::InputText("Name", &groupName))
-  {
+  if (ImGui::InputText("Name", &groupName)) {
     activeLmGroup->setName(groupName);
   }
   ImGui::SameLine();
@@ -2358,8 +2302,7 @@ void renderLandmarkGroupHeader(
 
   // Visibility checkbox:
   bool groupVisible = activeLmGroup->getVisibility();
-  if (ImGui::Checkbox("Visible", &groupVisible))
-  {
+  if (ImGui::Checkbox("Visible", &groupVisible)) {
     activeLmGroup->setVisibility(groupVisible);
   }
   ImGui::SameLine();
@@ -2367,8 +2310,7 @@ void renderLandmarkGroupHeader(
 
   // Opacity slider:
   float groupOpacity = activeLmGroup->getOpacity();
-  if (mySliderF32("Opacity", &groupOpacity, 0.0f, 1.0f))
-  {
+  if (mySliderF32("Opacity", &groupOpacity, 0.0f, 1.0f)) {
     activeLmGroup->setOpacity(groupOpacity);
   }
   ImGui::SameLine();
@@ -2376,8 +2318,7 @@ void renderLandmarkGroupHeader(
 
   // Radius slider:
   float groupRadius = 100.0f * activeLmGroup->getRadiusFactor();
-  if (mySliderF32("Radius", &groupRadius, 0.1f, 10.0f))
-  {
+  if (mySliderF32("Radius", &groupRadius, 0.1f, 10.0f)) {
     activeLmGroup->setRadiusFactor(groupRadius / 100.0f);
   }
   ImGui::SameLine();
@@ -2386,8 +2327,7 @@ void renderLandmarkGroupHeader(
 
   // Rendering of landmark indices:
   bool renderLandmarkIndices = activeLmGroup->getRenderLandmarkIndices();
-  if (ImGui::Checkbox("Show indices", &renderLandmarkIndices))
-  {
+  if (ImGui::Checkbox("Show indices", &renderLandmarkIndices)) {
     activeLmGroup->setRenderLandmarkIndices(renderLandmarkIndices);
   }
   ImGui::SameLine();
@@ -2395,8 +2335,7 @@ void renderLandmarkGroupHeader(
 
   // Rendering of landmark indices:
   bool renderLandmarkNames = activeLmGroup->getRenderLandmarkNames();
-  if (ImGui::Checkbox("Show names", &renderLandmarkNames))
-  {
+  if (ImGui::Checkbox("Show names", &renderLandmarkNames)) {
     activeLmGroup->setRenderLandmarkNames(renderLandmarkNames);
   }
   ImGui::SameLine();
@@ -2405,18 +2344,15 @@ void renderLandmarkGroupHeader(
   // Uniform color for all landmarks:
   bool hasGroupColor = activeLmGroup->getColorOverride();
 
-  if (ImGui::Checkbox("Global color", &hasGroupColor))
-  {
+  if (ImGui::Checkbox("Global color", &hasGroupColor)) {
     activeLmGroup->setColorOverride(hasGroupColor);
   }
 
   if (hasGroupColor)
   {
     auto groupColor = activeLmGroup->getColor();
-
     ImGui::SameLine();
-    if (ImGui::ColorEdit3("##uniformColor", glm::value_ptr(groupColor), colorEditFlags))
-    {
+    if (ImGui::ColorEdit3("##uniformColor", glm::value_ptr(groupColor), colorEditFlags)) {
       activeLmGroup->setColor(groupColor);
     }
   }
@@ -2427,8 +2363,7 @@ void renderLandmarkGroupHeader(
   if (activeLmGroup->getTextColor().has_value())
   {
     auto textColor = activeLmGroup->getTextColor().value();
-    if (ImGui::ColorEdit3("Text color", glm::value_ptr(textColor), colorEditFlags))
-    {
+    if (ImGui::ColorEdit3("Text color", glm::value_ptr(textColor), colorEditFlags)) {
       activeLmGroup->setTextColor(textColor);
     }
     ImGui::SameLine();
@@ -2441,14 +2376,12 @@ void renderLandmarkGroupHeader(
   ImGui::Text("Landmark coordinate space:");
   int inVoxelSpace = activeLmGroup->getInVoxelSpace() ? 1 : 0;
 
-  if (ImGui::RadioButton("Physical subject (mm)", &inVoxelSpace, 0))
-  {
+  if (ImGui::RadioButton("Physical subject (mm)", &inVoxelSpace, 0)) {
     activeLmGroup->setInVoxelSpace((1 == inVoxelSpace) ? true : false);
   }
 
   ImGui::SameLine();
-  if (ImGui::RadioButton("Voxels", &inVoxelSpace, 1))
-  {
+  if (ImGui::RadioButton("Voxels", &inVoxelSpace, 1)) {
     activeLmGroup->setInVoxelSpace((1 == inVoxelSpace) ? true : false);
   }
 
@@ -2460,16 +2393,13 @@ void renderLandmarkGroupHeader(
   ImGui::Dummy(ImVec2(0.0f, 4.0f));
 
   auto setWorldCrosshairsPos = [&appData](const glm::vec3& worldCrosshairsPos)
-  { appData.state().setWorldCrosshairsPos(worldCrosshairsPos); };
+  {
+    appData.state().setWorldCrosshairsPos(worldCrosshairsPos);
+  };
 
-  renderLandmarkChildWindow(
-    appData,
-    image->transformations(),
-    activeLmGroup,
-    appData.state().worldCrosshairs().worldOrigin(),
-    setWorldCrosshairsPos,
-    recenterAllViews
-  );
+  renderLandmarkChildWindow(appData, image->transformations(), activeLmGroup,
+                            appData.state().worldCrosshairs().worldOrigin(),
+                            setWorldCrosshairsPos, recenterAllViews);
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -2479,29 +2409,25 @@ void renderLandmarkGroupHeader(
 
   // Save landmarks to CSV and save settings to project file:
   const auto selectedFile = ImGui::renderFileButtonDialogAndWindow(
-    saveLmsButtonText, saveLmsDialogTitle, saveLmsDialogFilters
-  );
+    saveLmsButtonText, saveLmsDialogTitle, saveLmsDialogFilters);
 
   ImGui::SameLine();
   helpMarker("Save the landmarks to a CSV file");
 
   if (selectedFile)
   {
-    if (serialize::saveLandmarkGroupCsvFile(activeLmGroup->getPoints(), *selectedFile))
-    {
+    if (serialize::saveLandmarkGroupCsvFile(activeLmGroup->getPoints(), *selectedFile)) {
       spdlog::info("Saved landmarks to CSV file {}", *selectedFile);
 
       /// @todo How to handle changing the file name?
       activeLmGroup->setFileName(*selectedFile);
     }
-    else
-    {
+    else {
       spdlog::error("Error saving landmarks to CSV file {}", *selectedFile);
     }
   }
 
   ImGui::Spacing();
-
   ImGui::PopID(); /** PopID imageUid **/
 }
 
@@ -2510,11 +2436,9 @@ void renderAnnotationsHeader(
   const uuids::uuid& imageUid,
   size_t imageIndex,
   bool isActiveImage,
-  const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>&
-    setViewDirection,
+  const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>& setViewDirection,
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
-  const AllViewsRecenterType& recenterAllViews
-)
+  const AllViewsRecenterType& recenterAllViews)
 {
   static constexpr bool doNotRecenterCrosshairs = false;
   static constexpr bool doNotRealignCrosshairs = false;
@@ -2525,50 +2449,40 @@ void renderAnnotationsHeader(
   static constexpr size_t minNumLines = 6;
   static constexpr size_t maxNumLines = 12;
 
-  static const ImGuiColorEditFlags annotColorEditFlags = ImGuiColorEditFlags_PickerHueBar
-                                                            | ImGuiColorEditFlags_DisplayRGB
-                                                            | ImGuiColorEditFlags_DisplayHex
-                                                            | ImGuiColorEditFlags_AlphaBar
-                                                            | ImGuiColorEditFlags_AlphaPreviewHalf
-                                                            | ImGuiColorEditFlags_Uint8
-                                                            | ImGuiColorEditFlags_InputRGB;
+  static const ImGuiColorEditFlags annotColorEditFlags =
+    ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB |
+    ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_AlphaBar |
+    ImGuiColorEditFlags_AlphaPreviewHalf | ImGuiColorEditFlags_Uint8 |
+    ImGuiColorEditFlags_InputRGB;
 
-  static const std::string saveAnnotButtonText = std::string(ICON_FK_FLOPPY_O)
-                                                    + std::string(" Save all...");
-
-  static const std::string removeAnnotButtonText = std::string(ICON_FK_TRASH_O)
-                                                      + std::string(" Remove");
-
-  static const std::string fillAnnotButtonText = std::string(ICON_FK_PAINT_BRUSH)
-                                                    + std::string(" Fill segmentation");
+  static const std::string saveAnnotButtonText = std::string(ICON_FK_FLOPPY_O) + " Save all...";
+  static const std::string removeAnnotButtonText = std::string(ICON_FK_TRASH_O) + " Remove";
+  static const std::string fillAnnotButtonText = std::string(ICON_FK_PAINT_BRUSH) + " Fill segmentation";
 
   static const char* saveAnnotDialogTitle("Save Annotations to JSON");
   static const std::vector<std::string> saveAnnotDialogFilters{};
 
   Image* image = appData.image(imageUid);
-  if (!image)
+  if (!image) {
     return;
+  }
 
-  auto moveCrosshairsToAnnotationCenter = [&appData, &image](const Annotation& annot)
-  {
-    const glm::vec4 subjectCentroid{
-      annot.unprojectFromAnnotationPlaneToSubjectPoint(annot.polygon().getCentroid()), 1.0f
-    };
+  auto moveCrosshairsToAnnotationCenter = [&appData, &image](const Annotation& annot) {
+    const glm::vec4 subjectCentroid{annot.unprojectFromAnnotationPlaneToSubjectPoint(annot.polygon().getCentroid()), 1.0f};
     const glm::vec4 worldCentroid = image->transformations().worldDef_T_subject() * subjectCentroid;
     appData.state().setWorldCrosshairsPos(glm::vec3{worldCentroid / worldCentroid.w});
   };
 
   // Finds a view with normal vector maching the annotation plane. (Todo: make this view active.)
   // If none found, make the largest view oblique and align it to the annotation.
-  auto alignViewToAnnotationPlane =
-    [&appData, &imageUid, &image, &setViewDirection](const Annotation& annot)
+  auto alignViewToAnnotationPlane = [&appData, &imageUid, &image, &setViewDirection]
+    (const Annotation& annot)
   {
     const glm::mat3 world_T_subject_invTranspose = glm::inverseTranspose(
-      glm::mat3{image->transformations().worldDef_T_subject()}
-    );
+      glm::mat3{image->transformations().worldDef_T_subject()});
+
     const glm::vec3 worldAnnotNormal = glm::normalize(
-      world_T_subject_invTranspose * glm::vec3{annot.getSubjectPlaneEquation()}
-    );
+      world_T_subject_invTranspose * glm::vec3{annot.getSubjectPlaneEquation()});
 
     // Does the current layout have a view with this orientaion?
     const auto viewsWithNormal = appData.windowData().findCurrentViewsWithNormal(worldAnnotNormal);
@@ -2586,19 +2500,14 @@ void renderAnnotationsHeader(
         setViewDirection(largestCurrentViewUid, worldAnnotNormal);
 
         // Render the image in this view if not currently rendered:
-        if (!view->isImageRendered(imageUid))
-        {
+        if (!view->isImageRendered(imageUid)) {
           view->setImageRendered(appData, imageUid, true);
         }
 
-        spdlog::trace(
-          "Changed view {} normal direction to {}",
-          largestCurrentViewUid,
-          glm::to_string(worldAnnotNormal)
-        );
+        spdlog::trace("Changed view {} normal direction to {}",
+                      largestCurrentViewUid, glm::to_string(worldAnnotNormal));
       }
-      else
-      {
+      else {
         spdlog::error("Unable to orient a view to the annotation plane");
       }
     }
@@ -2607,8 +2516,7 @@ void renderAnnotationsHeader(
   ImGuiTreeNodeFlags headerFlags = ImGuiTreeNodeFlags_CollapsingHeader;
 
   /// @todo This annoyingly pops up the active header each time... not sure why
-  if (isActiveImage)
-  {
+  if (isActiveImage) {
     headerFlags |= ImGuiTreeNodeFlags_DefaultOpen;
   }
 
@@ -2616,19 +2524,17 @@ void renderAnnotationsHeader(
 
   // Header is ID'ed only by the image index.
   // ### allows the header name to change without changing its ID.
-  const std::string headerName = std::to_string(imageIndex) + ") " + image->settings().displayName()
-                                 + "###" + std::to_string(imageIndex);
+  const std::string headerName = std::to_string(imageIndex) + ") " + image->settings().displayName() +
+                                 "###" + std::to_string(imageIndex);
 
   const auto headerColors = computeHeaderBgAndTextColors(image->settings().borderColor());
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
   ImGui::PushStyleColor(ImGuiCol_Text, headerColors.second);
 
   const bool open = ImGui::CollapsingHeader(headerName.c_str(), headerFlags);
-
   ImGui::PopStyleColor(2); // ImGuiCol_Header, ImGuiCol_Text
 
-  if (!open)
-  {
+  if (!open) {
     ImGui::PopID(); // imageUid
     return;
   }
@@ -2636,8 +2542,7 @@ void renderAnnotationsHeader(
   ImGui::Spacing();
 
   const auto& annotUids = appData.annotationsForImage(imageUid);
-  if (annotUids.empty())
-  {
+  if (annotUids.empty()) {
     ImGui::Text("This image has no annotations.");
     ImGui::PopID(); // imageUid
     return;
@@ -2664,8 +2569,7 @@ void renderAnnotationsHeader(
       ImGui::PushID(static_cast<int>(annotIndex++));
 
       Annotation* annot = appData.annotation(annotUid);
-      if (!annot)
-      {
+      if (!annot) {
         spdlog::error("Null annotation {}", annotUid);
         ImGui::PopID(); // lmGroupIndex
       }
@@ -2673,16 +2577,13 @@ void renderAnnotationsHeader(
       /// @see Line 2791 of demo:
       /// ImGui::SetScrollHereY(i * 0.25f); // 0.0f:top, 0.5f:center, 1.0f:bottom
 
-      const std::string text = annot->getDisplayName() + " ["
-                               + data::getAnnotationSubjectPlaneName(*annot) + "]";
-
+      const std::string text = annot->getDisplayName() + " [" + data::getAnnotationSubjectPlaneName(*annot) + "]";
       const bool isSelected = (activeAnnotUid && (annotUid == *activeAnnotUid));
 
       if (ImGui::Selectable(text.c_str(), isSelected))
       {
         // Make the annotation active and move crosshairs to it:
-        if (!appData.assignActiveAnnotationUidToImage(imageUid, annotUid))
-        {
+        if (!appData.assignActiveAnnotationUidToImage(imageUid, annotUid)) {
           spdlog::error("Unable to assign active annotation {} to image {}", annotUid, imageUid);
         }
 
@@ -2690,28 +2591,22 @@ void renderAnnotationsHeader(
         // state of annotations.
         ASM::synchronizeAnnotationHighlights();
 
-        if (const Annotation* activeAnnot = appData.annotation(annotUid))
-        {
+        if (const Annotation* activeAnnot = appData.annotation(annotUid)) {
           moveCrosshairsToAnnotationCenter(*activeAnnot);
           alignViewToAnnotationPlane(*activeAnnot);
 
-          recenterAllViews(
-            doNotRecenterCrosshairs,
-            doNotRealignCrosshairs,
-            doNotRecenterOnCurrentCrosshairsPosition,
-            doNotResetObliqueOrientation,
-            doNotResetZoom
-          );
+          recenterAllViews(doNotRecenterCrosshairs, doNotRealignCrosshairs, doNotRecenterOnCurrentCrosshairsPosition,
+                           doNotResetObliqueOrientation, doNotResetZoom);
         }
-        else
-        {
+        else {
           spdlog::error("Null active annotation {}", annotUid);
         }
       }
 
       // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-      if (isSelected)
+      if (isSelected) {
         ImGui::SetItemDefaultFocus();
+      }
 
       ImGui::PopID(); // lmGroupIndex
     }
@@ -2721,24 +2616,23 @@ void renderAnnotationsHeader(
   ImGui::PopStyleColor(1); // ImGuiCol_Header
 
   activeAnnotUid = appData.imageToActiveAnnotationUid(imageUid);
-  if (!activeAnnotUid)
-  {
+  if (!activeAnnotUid) {
     // If there is no active/selected annotation, then do not render the rest of the header,
     // which shows view properites of the annotation
+    ImGui::PopID(); // imageUid
     return;
   }
 
   Annotation* activeAnnot = appData.annotation(*activeAnnotUid);
-  if (!activeAnnot)
-  {
+  if (!activeAnnot) {
     spdlog::error("Null active annotation {}", *activeAnnotUid);
+    ImGui::PopID(); // imageUid
     return;
   }
 
   // Annotation display name:
   std::string displayName = activeAnnot->getDisplayName();
-  if (ImGui::InputText("Name", &displayName))
-  {
+  if (ImGui::InputText("Name", &displayName)) {
     activeAnnot->setDisplayName(displayName);
   }
   ImGui::SameLine();
@@ -2749,42 +2643,34 @@ void renderAnnotationsHeader(
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
 
   ImGui::SameLine();
-  if (ImGui::Button(ICON_FK_FAST_BACKWARD))
-  {
+  if (ImGui::Button(ICON_FK_FAST_BACKWARD)) {
     appData.moveAnnotationToBack(imageUid, *activeAnnotUid);
   }
-  if (ImGui::IsItemHovered())
-  {
+  if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Move annotation to backmost layer");
   }
 
   ImGui::SameLine();
-  if (ImGui::Button(ICON_FK_BACKWARD))
-  {
+  if (ImGui::Button(ICON_FK_BACKWARD)) {
     appData.moveAnnotationBackwards(imageUid, *activeAnnotUid);
   }
-  if (ImGui::IsItemHovered())
-  {
+  if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Move annotation backward in layers (decrease the annotation order)");
   }
 
   ImGui::SameLine();
-  if (ImGui::Button(ICON_FK_FORWARD))
-  {
+  if (ImGui::Button(ICON_FK_FORWARD)) {
     appData.moveAnnotationForwards(imageUid, *activeAnnotUid);
   }
-  if (ImGui::IsItemHovered())
-  {
+  if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Move annotation forward in layers (increase the annotation order)");
   }
 
   ImGui::SameLine();
-  if (ImGui::Button(ICON_FK_FAST_FORWARD))
-  {
+  if (ImGui::Button(ICON_FK_FAST_FORWARD)) {
     appData.moveAnnotationToFront(imageUid, *activeAnnotUid);
   }
-  if (ImGui::IsItemHovered())
-  {
+  if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Move annotation to frontmost layer");
   }
 
@@ -2797,19 +2683,16 @@ void renderAnnotationsHeader(
 
   ImGui::Spacing();
   const bool clickedRemoveButton = ImGui::Button(removeAnnotButtonText.c_str());
-  if (ImGui::IsItemHovered())
-  {
+  if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Remove the annotation. (The saved file on disk will not be deleted.)");
   }
 
   if (clickedRemoveButton)
   {
-    if (!doNotAskAagain && !ImGui::IsPopupOpen("Remove Annotation"))
-    {
+    if (!doNotAskAagain && !ImGui::IsPopupOpen("Remove Annotation")) {
       ImGui::OpenPopup("Remove Annotation", ImGuiWindowFlags_AlwaysAutoResize);
     }
-    else if (doNotAskAagain)
-    {
+    else if (doNotAskAagain) {
       removeAnnot = true;
     }
   }
@@ -2818,15 +2701,12 @@ void renderAnnotationsHeader(
   if (activeAnnot->isClosed() && !activeAnnot->isSmoothed())
   {
     ImGui::SameLine();
-    if (ImGui::Button(fillAnnotButtonText.c_str()))
-    {
-      if (paintActiveSegmentationWithActivePolygon)
-      {
+    if (ImGui::Button(fillAnnotButtonText.c_str())) {
+      if (paintActiveSegmentationWithActivePolygon) {
         paintActiveSegmentationWithActivePolygon();
       }
     }
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Fill the active image segmentation with the selected annotation polygon");
     }
   }
@@ -2837,25 +2717,21 @@ void renderAnnotationsHeader(
 
   if (ImGui::BeginPopupModal("Remove Annotation", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
   {
-    ImGui::Text(
-      "Are you sure that you want to remove annotation '%s'?", activeAnnot->getDisplayName().c_str()
-    );
+    ImGui::Text("Are you sure that you want to remove annotation '%s'?", activeAnnot->getDisplayName().c_str());
     ImGui::Separator();
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     ImGui::Checkbox("Do not ask again", &doNotAskAagain);
     ImGui::PopStyleVar();
 
-    if (ImGui::Button("Yes", ImVec2(80, 0)))
-    {
+    if (ImGui::Button("Yes", ImVec2(80, 0))) {
       removeAnnot = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::SetItemDefaultFocus();
 
     ImGui::SameLine();
-    if (ImGui::Button("No", ImVec2(80, 0)))
-    {
+    if (ImGui::Button("No", ImVec2(80, 0))) {
       removeAnnot = false;
       ImGui::CloseCurrentPopup();
     }
@@ -2865,13 +2741,12 @@ void renderAnnotationsHeader(
 
   if (removeAnnot)
   {
-    if (appData.removeAnnotation(*activeAnnotUid))
-    {
+    if (appData.removeAnnotation(*activeAnnotUid)) {
       spdlog::info("Removed annotation {}", *activeAnnotUid);
+      ImGui::PopID(); // imageUid
       return;
     }
-    else
-    {
+    else {
       spdlog::error("Unable to remove annotation {}", *activeAnnotUid);
     }
   }
@@ -2882,14 +2757,12 @@ void renderAnnotationsHeader(
 
   // Boundary:
   bool isClosed = activeAnnot->isClosed();
-  if (ImGui::RadioButton("Open", !isClosed))
-  {
+  if (ImGui::RadioButton("Open", !isClosed)) {
     activeAnnot->setClosed(false);
   }
 
   ImGui::SameLine();
-  if (ImGui::RadioButton("Closed boundary", isClosed))
-  {
+  if (ImGui::RadioButton("Closed boundary", isClosed)) {
     activeAnnot->setClosed(true);
   }
   ImGui::SameLine();
@@ -2897,18 +2770,15 @@ void renderAnnotationsHeader(
 
   // Smoothing:
   bool smooth = activeAnnot->isSmoothed();
-  if (ImGui::Checkbox("Smooth", &smooth))
-  {
+  if (ImGui::Checkbox("Smooth", &smooth)) {
     activeAnnot->setSmoothed(smooth);
   }
   ImGui::SameLine();
   helpMarker("Smooth the annotation boundary");
 
-  if (activeAnnot->isSmoothed())
-  {
+  if (activeAnnot->isSmoothed()) {
     float smoothing = activeAnnot->getSmoothingFactor();
-    if (mySliderF32("Smoothing", &smoothing, 0.0f, 0.2f, "%0.2f"))
-    {
+    if (mySliderF32("Smoothing", &smoothing, 0.0f, 0.2f, "%0.2f")) {
       activeAnnot->setSmoothingFactor(smoothing);
     }
     ImGui::SameLine();
@@ -2921,19 +2791,16 @@ void renderAnnotationsHeader(
 
   // Visibility checkbox:
   bool annotVisible = activeAnnot->isVisible();
-  if (ImGui::Checkbox("Visible", &annotVisible))
-  {
+  if (ImGui::Checkbox("Visible", &annotVisible)) {
     activeAnnot->setVisible(annotVisible);
   }
   ImGui::SameLine();
   helpMarker("Show/hide the annotation");
 
   // Show vertices checkbox:
-  if (!appData.renderData().m_globalAnnotationParams.hidePolygonVertices)
-  {
+  if (!appData.renderData().m_globalAnnotationParams.hidePolygonVertices) {
     bool showVertices = activeAnnot->getVertexVisibility();
-    if (ImGui::Checkbox("Show vertices", &showVertices))
-    {
+    if (ImGui::Checkbox("Show vertices", &showVertices)) {
       activeAnnot->setVertexVisibility(showVertices);
     }
     ImGui::SameLine();
@@ -2941,11 +2808,9 @@ void renderAnnotationsHeader(
   }
 
   // Filled checkbox:
-  if (activeAnnot->isClosed())
-  {
+  if (activeAnnot->isClosed()) {
     bool filled = activeAnnot->isFilled();
-    if (ImGui::Checkbox("Filled", &filled))
-    {
+    if (ImGui::Checkbox("Filled", &filled)) {
       activeAnnot->setFilled(filled);
     }
     ImGui::SameLine();
@@ -2954,8 +2819,7 @@ void renderAnnotationsHeader(
 
   // Opacity slider:
   float annotOpacity = activeAnnot->getOpacity();
-  if (mySliderF32("Opacity", &annotOpacity, 0.0f, 1.0f))
-  {
+  if (mySliderF32("Opacity", &annotOpacity, 0.0f, 1.0f)) {
     activeAnnot->setOpacity(annotOpacity);
   }
   ImGui::SameLine();
@@ -2963,10 +2827,8 @@ void renderAnnotationsHeader(
 
   // Line stroke thickness:
   float annotThickness = activeAnnot->getLineThickness();
-  if (ImGui::InputFloat("Line thickness", &annotThickness, 0.1f, 1.0f, "%0.2f"))
-  {
-    if (annotThickness >= 0.0f)
-    {
+  if (ImGui::InputFloat("Line thickness", &annotThickness, 0.1f, 1.0f, "%0.2f")) {
+    if (annotThickness >= 0.0f) {
       activeAnnot->setLineThickness(annotThickness);
     }
   }
@@ -2975,8 +2837,7 @@ void renderAnnotationsHeader(
 
   // Line color:
   glm::vec4 annotLineColor = activeAnnot->getLineColor();
-  if (ImGui::ColorEdit4("Line color", glm::value_ptr(annotLineColor), annotColorEditFlags))
-  {
+  if (ImGui::ColorEdit4("Line color", glm::value_ptr(annotLineColor), annotColorEditFlags)) {
     activeAnnot->setLineColor(annotLineColor);
     activeAnnot->setVertexColor(annotLineColor);
   }
@@ -2988,21 +2849,18 @@ void renderAnnotationsHeader(
   if (showFillColorButton)
   {
     ImGui::SameLine();
-    if (ImGui::Button(ICON_FK_LEVEL_DOWN))
-    {
+    if (ImGui::Button(ICON_FK_LEVEL_DOWN)) {
       glm::vec4 fillColor{annotLineColor};
       fillColor.a = activeAnnot->getFillColor().a;
       activeAnnot->setFillColor(fillColor);
     }
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Match fill color to line color");
     }
 
     // Fill color:
     glm::vec4 annotFillColor = activeAnnot->getFillColor();
-    if (ImGui::ColorEdit4("Fill color", glm::value_ptr(annotFillColor), annotColorEditFlags))
-    {
+    if (ImGui::ColorEdit4("Fill color", glm::value_ptr(annotFillColor), annotColorEditFlags)) {
       activeAnnot->setFillColor(annotFillColor);
     }
     ImGui::SameLine();
@@ -3060,8 +2918,9 @@ void renderAnnotationsHeader(
     const auto selectedFile = ImGui::renderFileButtonDialogAndWindow(
       saveAnnotButtonText.c_str(), saveAnnotDialogTitle, saveAnnotDialogFilters);
 
-    if (ImGui::IsItemHovered())
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Save annotations to disk");
+    }
 
     if (selectedFile)
     {
