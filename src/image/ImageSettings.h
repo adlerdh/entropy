@@ -24,12 +24,11 @@ public:
      * @param componentType Component type
      * @param componentStats Vector of pixel statistics, one per image component
      */
-  ImageSettings(
-    std::string displayName,
-    std::size_t numPixels,
-    uint32_t numComponents,
-    ComponentType componentType,
-    std::vector<ComponentStats> componentStats);
+  ImageSettings(std::string displayName,
+                std::size_t numPixels,
+                uint32_t numComponents,
+                ComponentType componentType,
+                std::vector<ComponentStats> componentStats);
 
   ImageSettings(const ImageSettings&) = default;
   ImageSettings& operator=(const ImageSettings&) = default;
@@ -541,7 +540,5 @@ std::ostream& operator<<(std::ostream&, const ImageSettings&);
 #include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000
 template<>
-struct fmt::formatter<ImageSettings> : ostream_formatter
-{
-};
+struct fmt::formatter<ImageSettings> : ostream_formatter {};
 #endif

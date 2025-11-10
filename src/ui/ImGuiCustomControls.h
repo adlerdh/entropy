@@ -1,3 +1,5 @@
+#pragma once
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui/imgui.h>
 
@@ -34,12 +36,10 @@ IMGUI_API bool paletteButton(
   bool quantize,
   int quantizationLevels,
   const glm::vec3& hsvModFactors,
-  const ImVec2& size
-);
+  const ImVec2& size);
 
 std::optional<std::string> renderFileButtonDialogAndWindow(
-  const char* buttonText, const char* dialogTitle, const std::vector<std::string> dialogFilters
-);
+  const char* buttonText, const char* dialogTitle, const std::vector<std::string> dialogFilters);
 
 bool SliderScalarN_multiComp(
   const char* label,
@@ -49,7 +49,6 @@ bool SliderScalarN_multiComp(
   const void** v_min,
   const void** v_max,
   const char** format,
-  ImGuiSliderFlags flags
-);
+  ImGuiSliderFlags flags);
 
 } // namespace ImGui

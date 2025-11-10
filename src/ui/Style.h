@@ -1,5 +1,4 @@
-#ifndef UI_STYLE_H
-#define UI_STYLE_H
+#pragma once
 
 #include <imgui/imgui.h>
 
@@ -14,5 +13,3 @@ void applyCustomDarkStyle2();
 void applyCustomLightStyle(bool bStyleDark_, float alpha_);
 
 void applyCustomSoftStyle(ImGuiStyle* dst);
-
-#endif // UI_STYLE_H

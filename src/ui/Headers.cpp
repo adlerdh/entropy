@@ -2044,10 +2044,8 @@ void renderSegmentationHeader(
     ImGui::SetTooltip("Save the segmentation to an image file on disk");
   }
 
-  if (selectedFile)
-  {
+  if (selectedFile) {
     static constexpr uint32_t compToSave = 0;
-
     if (activeSeg->saveComponentToDisk(compToSave, *selectedFile)) {
       spdlog::info("Saved segmentation image to file {}", *selectedFile);
       activeSeg->header().setFileName(*selectedFile);

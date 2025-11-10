@@ -50,23 +50,21 @@ namespace ImGui
  * @note Minor modifications have been made to this function for Entropy
  */
 bool paletteButton(
-  const char* label,
-  const std::vector<glm::vec4>& colors,
-  bool inverted,
-  bool quantize,
-  int quantizationLevels,
-  const glm::vec3& hsvModFactors,
-  const ImVec2& size
-)
+  const char* label, const std::vector<glm::vec4>& colors,
+  bool inverted, bool quantize, int quantizationLevels,
+  const glm::vec3& hsvModFactors, const ImVec2& size)
 {
   ImGuiWindow* window = GetCurrentWindow();
 
-  if (!window)
+  if (!window) {
     return false;
-  if (window->SkipItems)
+  }
+  if (window->SkipItems) {
     return false;
-  if (!GImGui)
+  }
+  if (!GImGui) {
     return false;
+  }
 
   // const ImGuiStyle& style = GImGui->Style;
 
@@ -78,11 +76,8 @@ bool paletteButton(
 
   const ImRect bb(
     ImVec2(window->DC.CursorPos.x /*+ style.FramePadding.x*/, window->DC.CursorPos.y),
-    ImVec2(
-      window->DC.CursorPos.x + size.x /*- 2.0f * style.FramePadding.x*/,
-      window->DC.CursorPos.y + lineH
-    )
-  );
+    ImVec2(window->DC.CursorPos.x + size.x /*- 2.0f * style.FramePadding.x*/,
+           window->DC.CursorPos.y + lineH));
 
   ItemSize(bb);
 
@@ -147,17 +142,11 @@ bool paletteButton(
         const float normIndex = static_cast<float>(i) / static_cast<float>(colors.size() - 1);
 
         // Index quantized from 0 to size - 1:
-        index = static_cast<std::size_t>(
-          std::min(
-            std::max(std::floor(quantizationLevels * normIndex) / (quantizationLevels - 1), 0.0f),
-            1.0f
-          )
-          * (colors.size() - 1)
-        );
+        index = static_cast<std::size_t>(std::min(std::max(
+          std::floor(quantizationLevels * normIndex) / (quantizationLevels - 1), 0.0f), 1.0f) * (colors.size() - 1));
       }
 
-      if (inverted)
-      {
+      if (inverted) {
         index = colors.size() - 1 - index;
       }
 
@@ -175,12 +164,8 @@ bool paletteButton(
         ImVec2(minX, posMin.y),
         ImVec2(minX + step, posMax.y),
 
-        IM_COL32(
-          255.0f * colorRgb.r,
-          255.0f * colorRgb.g,
-          255.0f * colorRgb.b,
-          255.0f * alpha * colors[index].a
-        )
+        IM_COL32(255.0f * colorRgb.r, 255.0f * colorRgb.g, 255.0f * colorRgb.b,
+                 255.0f * alpha * colors[index].a)
       );
     }
   };
@@ -192,35 +177,29 @@ bool paletteButton(
 
   const ImU32 col = GetColorU32(
     (held && hovered) ? ImGuiCol_ButtonActive
-    : hovered         ? ImGuiCol_ButtonHovered
-                      : ImGuiCol_Button
-  );
+    : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
   drawList->AddRect(posMin, posMax, col, 0.0f, 0, 0.5f);
 
   return pressed;
 }
 
 std::optional<std::string> renderFileButtonDialogAndWindow(
-  const char* buttonText, const char* dialogTitle, const std::vector<std::string> dialogFilters
-)
+  const char* buttonText, const char* dialogTitle, const std::vector<std::string> dialogFilters)
 {
   static ImGui::FileBrowser saveDialog(
-    ImGuiFileBrowserFlags_EnterNewFilename | ImGuiFileBrowserFlags_CloseOnEsc
-    | ImGuiFileBrowserFlags_CreateNewDir
-  );
+    ImGuiFileBrowserFlags_EnterNewFilename | ImGuiFileBrowserFlags_CloseOnEsc |
+    ImGuiFileBrowserFlags_CreateNewDir);
 
   saveDialog.SetTitle(dialogTitle);
   saveDialog.SetTypeFilters(dialogFilters);
 
-  if (ImGui::Button(buttonText))
-  {
+  if (ImGui::Button(buttonText)) {
     saveDialog.Open();
   }
 
   saveDialog.Display();
 
-  if (saveDialog.HasSelected())
-  {
+  if (saveDialog.HasSelected()) {
     const fs::path selectedFile = saveDialog.GetSelected();
     saveDialog.ClearSelected();
     return selectedFile.string();
@@ -230,19 +209,14 @@ std::optional<std::string> renderFileButtonDialogAndWindow(
 }
 
 bool SliderScalarN_multiComp(
-  const char* label,
-  ImGuiDataType data_type,
-  void* v,
-  int components,
-  const void** v_min,
-  const void** v_max,
-  const char** format,
-  ImGuiSliderFlags flags
-)
+  const char* label, ImGuiDataType data_type, void* v,
+  int components, const void** v_min, const void** v_max,
+  const char** format, ImGuiSliderFlags flags)
 {
   ImGuiWindow* window = GetCurrentWindow();
-  if (window->SkipItems)
+  if (window->SkipItems) {
     return false;
+  }
 
   ImGuiContext& g = *GImGui;
   bool value_changed = false;
@@ -253,8 +227,9 @@ bool SliderScalarN_multiComp(
   for (int i = 0; i < components; i++)
   {
     PushID(i);
-    if (i > 0)
+    if (i > 0) {
       SameLine(0, g.Style.ItemInnerSpacing.x);
+    }
     value_changed |= SliderScalar("", data_type, v, v_min[i], v_max[i], format[i], flags);
     PopID();
     PopItemWidth();
@@ -263,8 +238,7 @@ bool SliderScalarN_multiComp(
   PopID();
 
   const char* label_end = FindRenderedTextEnd(label);
-  if (label != label_end)
-  {
+  if (label != label_end) {
     SameLine(0, g.Style.ItemInnerSpacing.x);
     TextEx(label, label_end);
   }

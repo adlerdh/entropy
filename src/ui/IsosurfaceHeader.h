@@ -1,5 +1,4 @@
-#ifndef UI_ISOSURFACE_HEADERS_H
-#define UI_ISOSURFACE_HEADERS_H
+#pragma once
 
 #include "common/AsyncTasks.h"
 
@@ -16,7 +15,4 @@ void renderIsosurfacesHeader(
   size_t imageIndex,
   bool isActiveImage,
   std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue
-);
-
-#endif // UI_ISOSURFACE_HEADERS_H
+  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue);

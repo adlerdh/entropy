@@ -1,5 +1,4 @@
-#ifndef IMGUI_WRAPPER_H
-#define IMGUI_WRAPPER_H
+#pragma once
 
 #include "common/AsyncTasks.h"
 #include "common/PublicTypes.h"
@@ -42,33 +41,23 @@ public:
     std::function<void(const uuids::uuid& imageUid)> updateImageInterpolationMode,
     std::function<void(std::size_t cmapUid)> updateImageColorMapInterpolationMode,
     std::function<void(std::size_t tableIndex)> updateLabelColorTableTexture,
-    std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)>
-      moveCrosshairsToSegLabelCentroid,
+    std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)> moveCrosshairsToSegLabelCentroid,
     std::function<void()> updateMetricUniforms,
     std::function<glm::vec3()> getWorldDeformedPos,
     std::function<std::optional<glm::vec3>(std::size_t imageIndex)> getSubjectPos,
     std::function<std::optional<glm::ivec3>(std::size_t imageIndex)> getVoxelPos,
     std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
     std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos,
-    std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>
-      getImageValuesNN,
-    std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>
-      getImageValuesLinear,
+    std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesNN,
+    std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesLinear,
     std::function<std::optional<int64_t>(std::size_t imageIndex)> getSegLabel,
-    std::function<std::optional<uuids::uuid>(
-      const uuids::uuid& matchingImageUid, const std::string& segDisplayName
-    )> createBlankSeg,
+    std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)> createBlankSeg,
     std::function<bool(const uuids::uuid& segUid)> clearSeg,
     std::function<bool(const uuids::uuid& segUid)> removeSeg,
-    std::function<bool(
-      const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType
-    )> executeGraphCutsSeg,
-    std::function<bool(
-      const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType
-    )> executePoissonSeg,
+    std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)> executeGraphCutsSeg,
+    std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)> executePoissonSeg,
     std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
-    std::function<void()> paintActiveSegmentationWithActivePolygon
-  );
+    std::function<void()> paintActiveSegmentationWithActivePolygon);
 
   void render();
 
@@ -92,32 +81,22 @@ private:
   std::function<void(const uuids::uuid& imageUid)> m_updateImageInterpolationMode = nullptr;
   std::function<void(std::size_t cmapIndex)> m_updateImageColorMapInterpolationMode = nullptr;
   std::function<void(std::size_t tableIndex)> m_updateLabelColorTableTexture = nullptr;
-  std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)>
-    m_moveCrosshairsToSegLabelCentroid = nullptr;
+  std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)> m_moveCrosshairsToSegLabelCentroid = nullptr;
   std::function<void(void)> m_updateMetricUniforms = nullptr;
   std::function<glm::vec3()> m_getWorldDeformedPos = nullptr;
   std::function<std::optional<glm::vec3>(std::size_t imageIndex)> m_getSubjectPos = nullptr;
   std::function<std::optional<glm::ivec3>(std::size_t imageIndex)> m_getVoxelPos = nullptr;
   std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> m_setSubjectPos = nullptr;
   std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> m_setVoxelPos = nullptr;
-  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>
-    m_getImageValuesNN = nullptr;
-  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>
-    m_getImageValuesLinear = nullptr;
+  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> m_getImageValuesNN = nullptr;
+  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> m_getImageValuesLinear = nullptr;
   std::function<std::optional<int64_t>(std::size_t imageIndex)> m_getSegLabel = nullptr;
-  std::function<std::optional<
-    uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>
-    m_createBlankSeg = nullptr;
+  std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)> m_createBlankSeg = nullptr;
   std::function<bool(const uuids::uuid& segUid)> m_clearSeg = nullptr;
   std::function<bool(const uuids::uuid& segUid)> m_removeSeg = nullptr;
-  std::function<
-    bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
-    m_executeGraphCutsSeg = nullptr;
-  std::function<
-    bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
-    m_executePoissonSeg = nullptr;
-  std::function<bool(const uuids::uuid& imageUid, bool locked)> m_setLockManualImageTransformation
-    = nullptr;
+  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)> m_executeGraphCutsSeg = nullptr;
+  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)> m_executePoissonSeg = nullptr;
+  std::function<bool(const uuids::uuid& imageUid, bool locked)> m_setLockManualImageTransformation = nullptr;
   std::function<void()> m_paintActiveSegmentationWithActivePolygon = nullptr;
 
   /// Scaling for the UI elements and fonts
@@ -157,5 +136,3 @@ private:
 
   std::pair<std::string, std::string> getImageDisplayAndFileNames(std::size_t imageIndex) const;
 };
-
-#endif // IMGUI_WRAPPER_H

@@ -1,5 +1,4 @@
-#ifndef GUI_DATA_H
-#define GUI_DATA_H
+#pragma once
 
 #include <glm/vec2.hpp>
 #include <imgui/imgui.h>
@@ -93,5 +92,3 @@ struct GuiData
   /// Compute UI margins based on visibility of the menu, toolbars, and status bar
   Margins computeMargins() const;
 };
-
-#endif // GUI_DATA_H

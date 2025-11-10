@@ -34,7 +34,6 @@ CMRC_DECLARE(fonts);
 
 namespace
 {
-
 static const glm::quat sk_identityRotation{1.0f, 0.0f, 0.0f, 0.0f};
 static const glm::vec3 sk_zeroVec{0.0f, 0.0f, 0.0f};
 
@@ -42,8 +41,7 @@ ImFont* loadFont(
   const std::string& fontPath,
   const ImFontConfig& fontConfig,
   float fontSize,
-  const ImWchar* glyphRange = nullptr
-)
+  const ImWchar* glyphRange = nullptr)
 {
   auto filesystem = cmrc::fonts::get_filesystem();
 
@@ -52,8 +50,7 @@ ImFont* loadFont(
   // ImGui will take ownership of the font (and be responsible for deleting it), so make a copy:
   char* fontData = new char[fontFile.size()];
 
-  for (std::size_t i = 0; i < fontFile.size(); ++i)
-  {
+  for (std::size_t i = 0; i < fontFile.size(); ++i) {
     fontData[i] = fontFile.cbegin()[i];
   }
 
@@ -62,12 +59,8 @@ ImFont* loadFont(
   // Set font_cfg->FontDataOwnedByAtlas=false to keep ownership of data and it won't be freed.
 
   return ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
-    static_cast<void*>(fontData),
-    static_cast<int32_t>(fontFile.size()),
-    static_cast<float>(fontSize),
-    &fontConfig,
-    glyphRange
-  );
+    static_cast<void*>(fontData), static_cast<int32_t>(fontFile.size()),
+    static_cast<float>(fontSize), &fontConfig, glyphRange);
 }
 
 } // namespace
@@ -136,33 +129,23 @@ void ImGuiWrapper::setCallbacks(
   std::function<void(const uuids::uuid& imageUid)> updateImageInterpolationMode,
   std::function<void(std::size_t cmapIndex)> updateImageColorMapInterpolationMode,
   std::function<void(std::size_t tableIndex)> updateLabelColorTableTexture,
-  std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)>
-    moveCrosshairsToSegLabelCentroid,
+  std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)> moveCrosshairsToSegLabelCentroid,
   std::function<void()> updateMetricUniforms,
   std::function<glm::vec3()> getWorldDeformedPos,
   std::function<std::optional<glm::vec3>(std::size_t imageIndex)> getSubjectPos,
   std::function<std::optional<glm::ivec3>(std::size_t imageIndex)> getVoxelPos,
   std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
   std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos,
-  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>
-    getImageValuesNN,
-  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>
-    getImageValuesLinear,
+  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesNN,
+  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesLinear,
   std::function<std::optional<int64_t>(std::size_t imageIndex)> getSegLabel,
-  std::function<std::optional<uuids::uuid>(
-    const uuids::uuid& matchingImageUid, const std::string& segDisplayName
-  )> createBlankSeg,
+  std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)> createBlankSeg,
   std::function<bool(const uuids::uuid& segUid)> clearSeg,
   std::function<bool(const uuids::uuid& segUid)> removeSeg,
-  std::function<
-    bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
-    executeGraphCutsSeg,
-  std::function<
-    bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
-    executePoissonSeg,
+  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)> executeGraphCutsSeg,
+  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)> executePoissonSeg,
   std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
-  std::function<void()> paintActiveSegmentationWithActivePolygon
-)
+  std::function<void()> paintActiveSegmentationWithActivePolygon)
 {
   m_postEmptyGlfwEvent = postEmptyGlfwEvent;
   m_readjustViewport = readjustViewport;
@@ -198,17 +181,14 @@ void ImGuiWrapper::storeFuture(const uuids::uuid& taskUid, std::future<AsyncTask
 {
   std::lock_guard<std::mutex> lock(m_futuresMutex);
 
-  if (!future.valid())
-  {
+  if (!future.valid()) {
     spdlog::warn("Future for task {} is not valid", taskUid);
     return;
   }
 
   m_futures.emplace(taskUid, std::move(future));
 
-  spdlog::debug(
-    "Storing future for UI task {}. Total number of UI task futures: {}", taskUid, m_futures.size()
-  );
+  spdlog::debug("Storing future for UI task {}. Total number of UI task futures: {}", taskUid, m_futures.size());
 }
 
 void ImGuiWrapper::addTaskToIsosurfaceGpuMeshGenerationQueue(const uuids::uuid& taskUid)
@@ -218,8 +198,7 @@ void ImGuiWrapper::addTaskToIsosurfaceGpuMeshGenerationQueue(const uuids::uuid& 
   m_isosurfaceTaskQueueForGpuMeshGeneration.push(taskUid);
 
   // Post an empty event to notify render thread
-  if (m_postEmptyGlfwEvent)
-  {
+  if (m_postEmptyGlfwEvent) {
     m_postEmptyGlfwEvent();
   }
 }
@@ -234,9 +213,7 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
     m_isosurfaceTaskQueueForGpuMeshGeneration.pop();
 
     auto it = m_futures.find(taskUid);
-
-    if (std::end(m_futures) == it)
-    {
+    if (std::end(m_futures) == it) {
       spdlog::error("Invalid task {}", taskUid);
       continue;
     }
@@ -251,10 +228,8 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
     // Remove the future
     m_futures.erase(it);
 
-    if ( AsyncTasks::IsosurfaceMeshGeneration != value.task ||
-            false == value.success ||
-            ! value.imageUid || ! value.imageComponent || ! value.objectUid )
-    {
+    if (AsyncTasks::IsosurfaceMeshGeneration != value.task || false == value.success ||
+        !value.imageUid || !value.imageComponent || !value.objectUid) {
       spdlog::error("Failed task {}", taskUid);
       continue;
     }
@@ -262,14 +237,9 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
     spdlog::info("Task {}: Start generating GPU mesh for isosurface {} ", taskUid, *value.objectUid);
 
     // Get the isosurface associated with this task
-    const Isosurface* surface
-      = m_appData.isosurface(*value.imageUid, *value.imageComponent, *value.objectUid);
-
-    if (!surface)
-    {
-      spdlog::error(
-        "Null isosurface for isosurface {} of image {}", *value.objectUid, *value.imageUid
-      );
+    const Isosurface* surface = m_appData.isosurface(*value.imageUid, *value.imageComponent, *value.objectUid);
+    if (!surface) {
+      spdlog::error("Null isosurface for isosurface {} of image {}", *value.objectUid, *value.imageUid);
       continue;
     }
 
@@ -337,8 +307,7 @@ reference values such as ImGui::GetFontSize() or ImGui::GetFrameHeight(). So e.g
 */
 void ImGuiWrapper::setContentScale(float scale)
 {
-  if (m_contentScale == scale)
-  {
+  if (m_contentScale == scale) {
     return;
   }
 
@@ -356,15 +325,11 @@ void ImGuiWrapper::setContentScale(float scale)
 void ImGuiWrapper::initializeFonts()
 {
   static const std::string cousineFontPath("resources/fonts/Cousine/Cousine-Regular.ttf");
-  static const std::string helveticaFontPath("resources/fonts/HelveticaNeue/HelveticaNeue-Light.ttf"
-  );
-  static const std::string spaceGroteskFontPath(
-    "resources/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf"
-  );
+  static const std::string helveticaFontPath("resources/fonts/HelveticaNeue/HelveticaNeue-Light.ttf");
+  static const std::string spaceGroteskFontPath("resources/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf");
   static const std::string sfMonoFontPath("resources/fonts/SFMono/SFMono-Regular.ttf");
   static const std::string sfProFontPath("resources/fonts/SFPro/sf-pro-text-regular.ttf");
-  static const std::string forkAwesomeFontPath = std::string("resources/fonts/ForkAwesome/")
-                                                 + FONT_ICON_FILE_NAME_FK;
+  static const std::string forkAwesomeFontPath = std::string("resources/fonts/ForkAwesome/") + FONT_ICON_FILE_NAME_FK;
 
   spdlog::debug("Begin loading fonts");
 
@@ -372,56 +337,36 @@ void ImGuiWrapper::initializeFonts()
   const float cousineFontSize = 14.0f;
 
   myImFormatString(
-    cousineFontConfig.Name,
-    IM_ARRAYSIZE(cousineFontConfig.Name),
-    "%s, %.0fpx",
-    "Cousine Regular",
-    cousineFontSize
-  );
+    cousineFontConfig.Name, IM_ARRAYSIZE(cousineFontConfig.Name),
+    "%s, %.0fpx", "Cousine Regular", cousineFontSize);
 
   ImFontConfig helveticaFontConfig;
   const float helveticaFontSize = 16.0f;
 
   myImFormatString(
-    helveticaFontConfig.Name,
-    IM_ARRAYSIZE(helveticaFontConfig.Name),
-    "%s, %.0fpx",
-    "Helvetica Neue Light",
-    helveticaFontSize
-  );
+    helveticaFontConfig.Name, IM_ARRAYSIZE(helveticaFontConfig.Name),
+    "%s, %.0fpx", "Helvetica Neue Light", helveticaFontSize);
 
   ImFontConfig spaceGroteskFontConfig;
   const float spaceGroteskFontSize = 16.0f;
 
   myImFormatString(
-    spaceGroteskFontConfig.Name,
-    IM_ARRAYSIZE(spaceGroteskFontConfig.Name),
-    "%s, %.0fpx",
-    "Space Grotesk Light",
-    spaceGroteskFontSize
-  );
+    spaceGroteskFontConfig.Name, IM_ARRAYSIZE(spaceGroteskFontConfig.Name),
+    "%s, %.0fpx", "Space Grotesk Light", spaceGroteskFontSize);
 
   ImFontConfig sfMonoFontConfig;
   const float sfMonoFontSize = 14.0f;
 
   myImFormatString(
-    sfMonoFontConfig.Name,
-    IM_ARRAYSIZE(sfMonoFontConfig.Name),
-    "%s, %.0fpx",
-    "SF Mono Regular",
-    sfMonoFontSize
-  );
+    sfMonoFontConfig.Name, IM_ARRAYSIZE(sfMonoFontConfig.Name),
+    "%s, %.0fpx", "SF Mono Regular", sfMonoFontSize);
 
   ImFontConfig sfProFontConfig;
   const float sfProFontSize = 16.0f;
 
   myImFormatString(
-    sfProFontConfig.Name,
-    IM_ARRAYSIZE(sfProFontConfig.Name),
-    "%s, %.0fpx",
-    "SF Pro Regular",
-    sfProFontSize
-  );
+    sfProFontConfig.Name, IM_ARRAYSIZE(sfProFontConfig.Name),
+    "%s, %.0fpx", "SF Pro Regular", sfProFontSize);
 
   // Merge in icons from Fork Awesome:
   ImFontConfig forkAwesomeFontConfig;
@@ -431,12 +376,8 @@ void ImGuiWrapper::initializeFonts()
   const float forkAwesomeFontSize = 14.0f;
 
   myImFormatString(
-    forkAwesomeFontConfig.Name,
-    IM_ARRAYSIZE(forkAwesomeFontConfig.Name),
-    "%s, %.0fpx",
-    "Fork Awesome",
-    forkAwesomeFontSize
-  );
+    forkAwesomeFontConfig.Name, IM_ARRAYSIZE(forkAwesomeFontConfig.Name),
+    "%s, %.0fpx", "Fork Awesome", forkAwesomeFontSize);
 
   /// @see For details about Fork Awesome fonts: https://forkaweso.me/Fork-Awesome/icons/
   static const ImWchar forkAwesomeIconGlyphRange[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
@@ -454,51 +395,20 @@ void ImGuiWrapper::initializeFonts()
   // calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
   /// @todo use Freetype Rasterizer and Small Font Sizes
 
-  ImFont* cousineFontPtr
-    = loadFont(cousineFontPath, cousineFontConfig, m_contentScale * cousineFontSize, nullptr);
-  ImFont* fork1Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange
-  );
+  ImFont* cousineFontPtr = loadFont(cousineFontPath, cousineFontConfig, m_contentScale * cousineFontSize, nullptr);
+  ImFont* fork1Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
 
-  ImFont* helveticaFontPtr
-    = loadFont(helveticaFontPath, helveticaFontConfig, m_contentScale * helveticaFontSize, nullptr);
-  ImFont* fork2Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange
-  );
+  ImFont* helveticaFontPtr = loadFont(helveticaFontPath, helveticaFontConfig, m_contentScale * helveticaFontSize, nullptr);
+  ImFont* fork2Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
 
-  ImFont* spaceFontPtr = loadFont(
-    spaceGroteskFontPath, spaceGroteskFontConfig, m_contentScale * spaceGroteskFontSize, nullptr
-  );
-  ImFont* fork3Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange
-  );
+  ImFont* spaceFontPtr = loadFont(spaceGroteskFontPath, spaceGroteskFontConfig, m_contentScale * spaceGroteskFontSize, nullptr);
+  ImFont* fork3Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
 
-  ImFont* sfMonoFontPtr
-    = loadFont(sfMonoFontPath, sfMonoFontConfig, m_contentScale * sfMonoFontSize, nullptr);
-  ImFont* fork4Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange
-  );
+  ImFont* sfMonoFontPtr = loadFont(sfMonoFontPath, sfMonoFontConfig, m_contentScale * sfMonoFontSize, nullptr);
+  ImFont* fork4Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
 
-  ImFont* sfProFontPtr
-    = loadFont(sfProFontPath, sfProFontConfig, m_contentScale * sfProFontSize, nullptr);
-  ImFont* fork5Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange
-  );
+  ImFont* sfProFontPtr = loadFont(sfProFontPath, sfProFontConfig, m_contentScale * sfProFontSize, nullptr);
+  ImFont* fork5Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
 
   if (cousineFontPtr && fork1Ptr)
   {

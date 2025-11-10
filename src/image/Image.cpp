@@ -370,7 +370,7 @@ bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path
   const fs::path fileName = (newFileName) ? *newFileName : m_header.fileName();
 
   if (component >= m_header.numComponentsPerPixel()) {
-    spdlog::error("Invalid image component {} to save to disk; image has only {} components",
+    spdlog::error("Invalid image component {} to save to disk; the image has {} components",
                   component, m_header.numComponentsPerPixel());
     return false;
   }
@@ -393,43 +393,35 @@ bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path
 
   switch (m_header.memoryComponentType())
   {
-  case ComponentType::Int8:
-  {
+  case ComponentType::Int8: {
     auto image = makeScalarImage(dims, origin, spacing, directions, m_data_int8[component].data());
     return writeImage<int8_t, DIM, isVectorImage>(image, fileName);
   }
-  case ComponentType::UInt8:
-  {
+  case ComponentType::UInt8: {
     auto image = makeScalarImage(dims, origin, spacing, directions, m_data_uint8[component].data());
     return writeImage<uint8_t, DIM, isVectorImage>(image, fileName);
   }
-  case ComponentType::Int16:
-  {
+  case ComponentType::Int16: {
     auto image = makeScalarImage(dims, origin, spacing, directions, m_data_int16[component].data());
     return writeImage<int16_t, DIM, isVectorImage>(image, fileName);
   }
-  case ComponentType::UInt16:
-  {
+  case ComponentType::UInt16: {
     auto image = makeScalarImage(dims, origin, spacing, directions, m_data_uint16[component].data());
     return writeImage<uint16_t, DIM, isVectorImage>(image, fileName);
   }
-  case ComponentType::Int32:
-  {
+  case ComponentType::Int32: {
     auto image = makeScalarImage(dims, origin, spacing, directions, m_data_int32[component].data());
     return writeImage<int32_t, DIM, isVectorImage>(image, fileName);
   }
-  case ComponentType::UInt32:
-  {
+  case ComponentType::UInt32: {
     auto image = makeScalarImage(dims, origin, spacing, directions, m_data_uint32[component].data());
     return writeImage<uint32_t, DIM, isVectorImage>(image, fileName);
   }
-  case ComponentType::Float32:
-  {
+  case ComponentType::Float32: {
     auto image = makeScalarImage(dims, origin, spacing, directions, m_data_float32[component].data());
     return writeImage<float, DIM, isVectorImage>(image, fileName);
   }
-  default:
-  {
+  default: {
     return false;
   }
   }

@@ -18,8 +18,7 @@ void renderActiveImageSelectionCombo(
   const std::function<std::pair<std::string, std::string>(size_t index)>& getImageDisplayAndFileName,
   const std::function<size_t(void)>& getActiveImageIndex,
   const std::function<void(size_t)>& setActiveImageIndex,
-  bool showText = true
-);
+  bool showText = true);
 
 /**
  * @brief Render child window that shows the labels for a given segmentation label table
@@ -31,8 +30,7 @@ void renderSegLabelsChildWindow(
   size_t tableIndex,
   ParcellationLabelTable* labelTable,
   const std::function<void(size_t tableIndex)>& updateLabelColorTableTexture,
-  const std::function<void(size_t labelIndex)>& moveCrosshairsToSegLabelCentroid
-);
+  const std::function<void(size_t labelIndex)>& moveCrosshairsToSegLabelCentroid);
 
 /**
  * @brief renderLandmarkChildWindow
@@ -48,8 +46,7 @@ void renderLandmarkChildWindow(
   LandmarkGroup* activeLmGroup,
   const glm::vec3& worldCrosshairsPos,
   const std::function<void(const glm::vec3& worldCrosshairsPos)>& setWorldCrosshairsPos,
-  const AllViewsRecenterType& recenterAllViews
-);
+  const AllViewsRecenterType& recenterAllViews);
 
 /**
  * @brief renderPaletteWindow
@@ -72,7 +69,6 @@ void renderPaletteWindow(
   const std::function<bool(void)>& getImageColorMapContinuous,
   const std::function<int(void)>& getImageColorMapLevels,
   const glm::vec3& hsvModFactors,
-  const std::function<void(void)>& updateImageUniforms
-);
+  const std::function<void(void)>& updateImageUniforms);
 
 void renderColorMapWindow();

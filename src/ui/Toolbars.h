@@ -1,5 +1,4 @@
-#ifndef UI_TOOLBARS_H
-#define UI_TOOLBARS_H
+#pragma once
 
 #include "common/PublicTypes.h"
 #include "common/SegmentationTypes.h"
@@ -8,7 +7,6 @@
 #include <uuid.h>
 
 #include <functional>
-#include <vector>
 
 class AppData;
 
@@ -25,8 +23,7 @@ void renderModeToolbar(
   size_t numImages,
   const std::function<std::pair<std::string, std::string>(size_t index)>& getImageDisplayAndFileName,
   const std::function<size_t(void)>& getActiveImageIndex,
-  const std::function<void(size_t)>& setActiveImageIndex
-);
+  const std::function<void(size_t)>& setActiveImageIndex);
 
 void renderSegToolbar(
   AppData& appData,
@@ -38,18 +35,10 @@ void renderSegToolbar(
   const std::function<void(size_t imageIndex, bool set)>& setImageHasActiveSeg,
   const std::function<void(void)>& readjustViewport,
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
-  const std::function<
-    bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
-    executeGraphCutsSeg,
-  const std::function<
-    bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
-    executePoissonSeg
-);
+  const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>& executeGraphCutsSeg,
+  const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>& executePoissonSeg);
 
 void renderAnnotationToolbar(
   AppData& appData,
   const FrameBounds& mindowFrameBounds,
-  const std::function<void()> paintActiveAnnotation
-);
-
-#endif // UI_TOOLBARS_H
+  const std::function<void()> paintActiveAnnotation);

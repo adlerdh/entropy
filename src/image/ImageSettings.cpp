@@ -29,13 +29,9 @@ ImageSettings::ImageSettings(
     throw_debug("Invalid number of pixels provided to construct settings for image")
   }
 
-  if (componentStats.size() != m_numComponents)
-  {
-    spdlog::error(
-      "Invalid number of components ({}) provided to construct settings for image {}",
-      numComponents,
-      displayName
-    );
+  if (componentStats.size() != m_numComponents) {
+    spdlog::error("Invalid number of components ({}) provided to construct settings for image {}",
+                  numComponents, displayName);
     throw_debug("Invalid number of components provided to construct settings for image")
   }
 
@@ -47,6 +43,7 @@ void ImageSettings::setDisplayName(std::string name)
 {
   m_displayName = std::move(name);
 }
+
 const std::string& ImageSettings::displayName() const
 {
   return m_displayName;
@@ -61,6 +58,7 @@ void ImageSettings::setBorderColor(glm::vec3 borderColor)
 {
   m_borderColor = std::move(borderColor);
 }
+
 const glm::vec3& ImageSettings::borderColor() const
 {
   return m_borderColor;
@@ -70,6 +68,7 @@ void ImageSettings::setLockedToReference(bool locked)
 {
   m_lockedToReference = locked;
 }
+
 bool ImageSettings::isLockedToReference() const
 {
   return m_lockedToReference;
@@ -79,6 +78,7 @@ void ImageSettings::setDisplayImageAsColor(bool doColor)
 {
   m_displayAsColor = doColor;
 }
+
 bool ImageSettings::displayImageAsColor() const
 {
   return m_displayAsColor;
@@ -88,6 +88,7 @@ void ImageSettings::setIgnoreAlpha(bool ignore)
 {
   m_ignoreAlpha = ignore;
 }
+
 bool ImageSettings::ignoreAlpha() const
 {
   return m_ignoreAlpha;
@@ -97,6 +98,7 @@ void ImageSettings::setColorInterpolationMode(InterpolationMode mode)
 {
   m_colorInterpolationMode = mode;
 }
+
 InterpolationMode ImageSettings::colorInterpolationMode() const
 {
   return m_colorInterpolationMode;
@@ -106,6 +108,7 @@ void ImageSettings::setUseDistanceMapForRaycasting(bool use)
 {
   m_useDistanceMapForRaycasting = use;
 }
+
 bool ImageSettings::useDistanceMapForRaycasting() const
 {
   return m_useDistanceMapForRaycasting;
@@ -115,6 +118,7 @@ void ImageSettings::setIsosurfacesVisible(bool visible)
 {
   m_isosurfacesVisible = visible;
 }
+
 bool ImageSettings::isosurfacesVisible() const
 {
   return m_isosurfacesVisible;
@@ -124,6 +128,7 @@ void ImageSettings::setApplyImageColormapToIsosurfaces(bool apply)
 {
   m_applyImageColormapToIsosurfaces = apply;
 }
+
 bool ImageSettings::applyImageColormapToIsosurfaces() const
 {
   return m_applyImageColormapToIsosurfaces;
@@ -133,6 +138,7 @@ void ImageSettings::setShowIsoscontoursIn2D(bool show)
 {
   m_showIsocontoursIn2D = show;
 }
+
 bool ImageSettings::showIsocontoursIn2D() const
 {
   return m_showIsocontoursIn2D;
@@ -142,6 +148,7 @@ void ImageSettings::setIsosurfaceWidthIn2d(double width)
 {
   m_isocontourLineWidthIn2D = width;
 }
+
 double ImageSettings::isoContourLineWidthIn2D() const
 {
   return m_isocontourLineWidthIn2D;
@@ -151,6 +158,7 @@ void ImageSettings::setIsosurfaceOpacityModulator(float opacityMod)
 {
   m_isosurfaceOpacityModulator = opacityMod;
 }
+
 float ImageSettings::isosurfaceOpacityModulator() const
 {
   return m_isosurfaceOpacityModulator;
@@ -160,6 +168,7 @@ std::pair<double, double> ImageSettings::minMaxImageRange(uint32_t i) const
 {
   return m_componentSettings[i].m_minMaxImageRange;
 }
+
 std::pair<double, double> ImageSettings::minMaxImageRange() const
 {
   return minMaxImageRange(m_activeComponent);
@@ -169,6 +178,7 @@ std::pair<double, double> ImageSettings::minMaxWindowWidthRange(uint32_t i) cons
 {
   return m_componentSettings[i].m_minMaxWindowWidthRange;
 }
+
 std::pair<double, double> ImageSettings::minMaxWindowWidthRange() const
 {
   return minMaxWindowWidthRange(m_activeComponent);
@@ -178,6 +188,7 @@ std::pair<double, double> ImageSettings::minMaxWindowCenterRange(uint32_t i) con
 {
   return m_componentSettings[i].m_minMaxWindowCenterRange;
 }
+
 std::pair<double, double> ImageSettings::minMaxWindowCenterRange() const
 {
   return minMaxWindowCenterRange(m_activeComponent);
@@ -185,10 +196,8 @@ std::pair<double, double> ImageSettings::minMaxWindowCenterRange() const
 
 std::pair<double, double> ImageSettings::minMaxWindowRange(uint32_t i) const
 {
-  return {
-    minMaxWindowCenterRange(i).first - 0.5 * minMaxWindowWidthRange(i).second,
-    minMaxWindowCenterRange(i).second + 0.5 * minMaxWindowWidthRange(i).second
-  };
+  return {minMaxWindowCenterRange(i).first - 0.5 * minMaxWindowWidthRange(i).second,
+          minMaxWindowCenterRange(i).second + 0.5 * minMaxWindowWidthRange(i).second};
 }
 
 std::pair<double, double> ImageSettings::minMaxWindowRange() const
@@ -200,6 +209,7 @@ std::pair<double, double> ImageSettings::minMaxThresholdRange(uint32_t i) const
 {
   return m_componentSettings[i].m_minMaxThresholdRange;
 }
+
 std::pair<double, double> ImageSettings::minMaxThresholdRange() const
 {
   return minMaxThresholdRange(m_activeComponent);
@@ -213,15 +223,12 @@ void ImageSettings::setWindowValueLow(uint32_t i, double wLow, bool clampValues)
   const double wMax = minMaxWindowRange(i).second;
   double wLowAdjusted = wLow;
 
-  if (!clampValues)
-  {
-    if (wLow > (wHigh - narrowestWidth) || wLow < wMin || wMax < wLow)
-    {
+  if (!clampValues) {
+    if (wLow > (wHigh - narrowestWidth) || wLow < wMin || wMax < wLow) {
       return;
     }
   }
-  else
-  {
+  else {
     wLowAdjusted = std::clamp(std::min(wLowAdjusted, wHigh - narrowestWidth), wMin, wMax);
   }
 
@@ -243,15 +250,12 @@ void ImageSettings::setWindowValueHigh(uint32_t i, double wHigh, bool clampValue
   const double narrowestWidth = minMaxWindowWidthRange(i).first;
   double wHighAdjusted = wHigh;
 
-  if (!clampValues)
-  {
-    if (wHigh < (wLow + narrowestWidth) || wHigh < wMin || wMax < wHigh)
-    {
+  if (!clampValues) {
+    if (wHigh < (wLow + narrowestWidth) || wHigh < wMin || wMax < wHigh) {
       return;
     }
   }
-  else
-  {
+  else {
     wHighAdjusted = std::clamp(std::max(wHighAdjusted, wLow + narrowestWidth), wMin, wMax);
   }
 
@@ -269,6 +273,7 @@ void ImageSettings::setWindowValueLow(double wLow, bool clampValues)
 {
   setWindowValueLow(m_activeComponent, wLow, clampValues);
 }
+
 void ImageSettings::setWindowValueHigh(double wHigh, bool clampValues)
 {
   setWindowValueHigh(m_activeComponent, wHigh, clampValues);
@@ -302,6 +307,7 @@ void ImageSettings::setWindowQuantileLow(double pLow, bool clampValues)
 {
   setWindowQuantileLow(m_activeComponent, pLow, clampValues);
 }
+
 void ImageSettings::setWindowQuantileHigh(double pHigh, bool clampValues)
 {
   setWindowQuantileHigh(m_activeComponent, pHigh, clampValues);
@@ -321,6 +327,7 @@ double ImageSettings::windowWidth(uint32_t i) const
 {
   return m_componentSettings[i].m_windowWidth;
 }
+
 double ImageSettings::windowWidth() const
 {
   return windowWidth(m_activeComponent);
@@ -330,6 +337,7 @@ double ImageSettings::windowCenter(uint32_t i) const
 {
   return m_componentSettings[i].m_windowCenter;
 }
+
 double ImageSettings::windowCenter() const
 {
   return windowCenter(m_activeComponent);
@@ -337,8 +345,8 @@ double ImageSettings::windowCenter() const
 
 void ImageSettings::setWindowWidth(uint32_t i, double width)
 {
-  m_componentSettings[i].m_windowWidth
-    = std::clamp(width, minMaxWindowWidthRange(i).first, minMaxWindowWidthRange(i).second);
+  m_componentSettings[i].m_windowWidth =
+    std::clamp(width, minMaxWindowWidthRange(i).first, minMaxWindowWidthRange(i).second);
   updateInternals();
 }
 
@@ -349,8 +357,8 @@ void ImageSettings::setWindowWidth(double width)
 
 void ImageSettings::setWindowCenter(uint32_t i, double center)
 {
-  m_componentSettings[i].m_windowCenter
-    = std::clamp(center, minMaxWindowCenterRange(i).first, minMaxWindowCenterRange(i).second);
+  m_componentSettings[i].m_windowCenter =
+    std::clamp(center, minMaxWindowCenterRange(i).first, minMaxWindowCenterRange(i).second);
   updateInternals();
 }
 
@@ -361,19 +369,17 @@ void ImageSettings::setWindowCenter(double center)
 
 void ImageSettings::setThresholdLow(uint32_t i, double tLow)
 {
-  if (tLow <= m_componentSettings[i].m_thresholds.second)
-  {
-    m_componentSettings[i].m_thresholds.first
-      = std::max(tLow, m_componentSettings[i].m_minMaxThresholdRange.first);
+  if (tLow <= m_componentSettings[i].m_thresholds.second) {
+    m_componentSettings[i].m_thresholds.first =
+      std::max(tLow, m_componentSettings[i].m_minMaxThresholdRange.first);
   }
 }
 
 void ImageSettings::setThresholdHigh(uint32_t i, double tHigh)
 {
-  if (m_componentSettings[i].m_thresholds.first <= tHigh)
-  {
-    m_componentSettings[i].m_thresholds.second
-      = std::min(tHigh, m_componentSettings[i].m_minMaxThresholdRange.second);
+  if (m_componentSettings[i].m_thresholds.first <= tHigh) {
+    m_componentSettings[i].m_thresholds.second =
+      std::min(tHigh, m_componentSettings[i].m_minMaxThresholdRange.second);
   }
 }
 
@@ -381,6 +387,7 @@ void ImageSettings::setThresholdLow(double tLow)
 {
   setThresholdLow(m_activeComponent, tLow);
 }
+
 void ImageSettings::setThresholdHigh(double tHigh)
 {
   setThresholdHigh(m_activeComponent, tHigh);
@@ -390,6 +397,7 @@ std::pair<double, double> ImageSettings::thresholds(uint32_t i) const
 {
   return m_componentSettings[i].m_thresholds;
 }
+
 std::pair<double, double> ImageSettings::thresholds() const
 {
   return thresholds(m_activeComponent);
@@ -398,11 +406,8 @@ std::pair<double, double> ImageSettings::thresholds() const
 bool ImageSettings::thresholdsActive(uint32_t i) const
 {
   const auto& S = m_componentSettings[i];
-
-  return (
-    S.m_minMaxThresholdRange.first < S.m_thresholds.first
-    || S.m_thresholds.second < S.m_minMaxThresholdRange.second
-  );
+  return (S.m_minMaxThresholdRange.first < S.m_thresholds.first ||
+          S.m_thresholds.second < S.m_minMaxThresholdRange.second);
 }
 
 bool ImageSettings::thresholdsActive() const
@@ -414,22 +419,27 @@ void ImageSettings::setForegroundThresholdLow(uint32_t i, double fgThreshLow)
 {
   m_componentSettings[i].m_foregroundThresholds.first = fgThreshLow;
 }
+
 void ImageSettings::setForegroundThresholdLow(double fgThreshLow)
 {
   setForegroundThresholdLow(m_activeComponent, fgThreshLow);
 }
+
 void ImageSettings::setForegroundThresholdHigh(uint32_t i, double fgThreshHigh)
 {
   m_componentSettings[i].m_foregroundThresholds.second = fgThreshHigh;
 }
+
 void ImageSettings::setForegroundThresholdHigh(double fgThreshHigh)
 {
   setForegroundThresholdHigh(m_activeComponent, fgThreshHigh);
 }
+
 std::pair<double, double> ImageSettings::foregroundThresholds(uint32_t i) const
 {
   return m_componentSettings[i].m_foregroundThresholds;
 }
+
 std::pair<double, double> ImageSettings::foregroundThresholds() const
 {
   return foregroundThresholds(m_activeComponent);
@@ -439,14 +449,17 @@ void ImageSettings::setOpacity(uint32_t i, double op)
 {
   m_componentSettings[i].m_opacity = std::max(std::min(op, 1.0), 0.0);
 }
+
 void ImageSettings::setOpacity(double op)
 {
   setOpacity(m_activeComponent, op);
 }
+
 double ImageSettings::opacity(uint32_t i) const
 {
   return m_componentSettings[i].m_opacity;
 }
+
 double ImageSettings::opacity() const
 {
   return opacity(m_activeComponent);
@@ -456,14 +469,17 @@ void ImageSettings::setVisibility(uint32_t i, bool visible)
 {
   m_componentSettings[i].m_visible = visible;
 }
+
 void ImageSettings::setVisibility(bool visible)
 {
   setVisibility(m_activeComponent, visible);
 }
+
 bool ImageSettings::visibility(uint32_t i) const
 {
   return m_componentSettings[i].m_visible;
 }
+
 bool ImageSettings::visibility() const
 {
   return visibility(m_activeComponent);
@@ -473,6 +489,7 @@ void ImageSettings::setGlobalVisibility(bool visible)
 {
   m_globalVisibility = visible;
 }
+
 bool ImageSettings::globalVisibility() const
 {
   return m_globalVisibility;
@@ -492,6 +509,7 @@ void ImageSettings::setShowEdges(uint32_t i, bool show)
 {
   m_componentSettings[i].m_showEdges = show;
 }
+
 void ImageSettings::setShowEdges(bool show)
 {
   setShowEdges(m_activeComponent, show);
@@ -501,6 +519,7 @@ bool ImageSettings::showEdges(uint32_t i) const
 {
   return m_componentSettings[i].m_showEdges;
 }
+
 bool ImageSettings::showEdges() const
 {
   return showEdges(m_activeComponent);
@@ -510,6 +529,7 @@ void ImageSettings::setThresholdEdges(uint32_t i, bool threshold)
 {
   m_componentSettings[i].m_thresholdEdges = threshold;
 }
+
 void ImageSettings::setThresholdEdges(bool threshold)
 {
   setThresholdEdges(m_activeComponent, threshold);
@@ -519,6 +539,7 @@ bool ImageSettings::thresholdEdges(uint32_t i) const
 {
   return m_componentSettings[i].m_thresholdEdges;
 }
+
 bool ImageSettings::thresholdEdges() const
 {
   return thresholdEdges(m_activeComponent);
@@ -528,6 +549,7 @@ void ImageSettings::setUseFreiChen(uint32_t i, bool use)
 {
   m_componentSettings[i].m_useFreiChen = use;
 }
+
 void ImageSettings::setUseFreiChen(bool use)
 {
   setUseFreiChen(m_activeComponent, use);
@@ -537,6 +559,7 @@ bool ImageSettings::useFreiChen(uint32_t i) const
 {
   return m_componentSettings[i].m_useFreiChen;
 }
+
 bool ImageSettings::useFreiChen() const
 {
   return useFreiChen(m_activeComponent);
@@ -546,6 +569,7 @@ void ImageSettings::setEdgeMagnitude(uint32_t i, double mag)
 {
   m_componentSettings[i].m_edgeMagnitude = mag;
 }
+
 void ImageSettings::setEdgeMagnitude(double mag)
 {
   setEdgeMagnitude(m_activeComponent, mag);
@@ -555,6 +579,7 @@ double ImageSettings::edgeMagnitude(uint32_t i) const
 {
   return m_componentSettings[i].m_edgeMagnitude;
 }
+
 double ImageSettings::edgeMagnitude() const
 {
   return edgeMagnitude(m_activeComponent);
@@ -564,6 +589,7 @@ void ImageSettings::setWindowedEdges(uint32_t i, bool windowed)
 {
   m_componentSettings[i].m_windowedEdges = windowed;
 }
+
 void ImageSettings::setWindowedEdges(bool windowed)
 {
   setWindowedEdges(m_activeComponent, windowed);
@@ -573,6 +599,7 @@ bool ImageSettings::windowedEdges(uint32_t i) const
 {
   return m_componentSettings[i].m_windowedEdges;
 }
+
 bool ImageSettings::windowedEdges() const
 {
   return windowedEdges(m_activeComponent);
@@ -582,6 +609,7 @@ void ImageSettings::setOverlayEdges(uint32_t i, bool overlay)
 {
   m_componentSettings[i].m_overlayEdges = overlay;
 }
+
 void ImageSettings::setOverlayEdges(bool overlay)
 {
   setOverlayEdges(m_activeComponent, overlay);
@@ -591,6 +619,7 @@ bool ImageSettings::overlayEdges(uint32_t i) const
 {
   return m_componentSettings[i].m_overlayEdges;
 }
+
 bool ImageSettings::overlayEdges() const
 {
   return overlayEdges(m_activeComponent);
@@ -600,6 +629,7 @@ void ImageSettings::setColormapEdges(uint32_t i, bool showEdges)
 {
   m_componentSettings[i].m_colormapEdges = showEdges;
 }
+
 void ImageSettings::setColormapEdges(bool showEdges)
 {
   setColormapEdges(m_activeComponent, showEdges);
@@ -609,6 +639,7 @@ bool ImageSettings::colormapEdges(uint32_t i) const
 {
   return m_componentSettings[i].m_colormapEdges;
 }
+
 bool ImageSettings::colormapEdges() const
 {
   return colormapEdges(m_activeComponent);
@@ -618,6 +649,7 @@ void ImageSettings::setEdgeColor(uint32_t i, glm::vec3 color)
 {
   m_componentSettings[i].m_edgeColor = std::move(color);
 }
+
 void ImageSettings::setEdgeColor(glm::vec3 color)
 {
   setEdgeColor(m_activeComponent, color);
@@ -627,6 +659,7 @@ glm::vec3 ImageSettings::edgeColor(uint32_t i) const
 {
   return m_componentSettings[i].m_edgeColor;
 }
+
 glm::vec3 ImageSettings::edgeColor() const
 {
   return edgeColor(m_activeComponent);
@@ -636,6 +669,7 @@ void ImageSettings::setEdgeOpacity(uint32_t i, double opacity)
 {
   m_componentSettings[i].m_edgeOpacity = opacity;
 }
+
 void ImageSettings::setEdgeOpacity(double opacity)
 {
   setEdgeOpacity(m_activeComponent, opacity);
@@ -645,6 +679,7 @@ double ImageSettings::edgeOpacity(uint32_t i) const
 {
   return m_componentSettings[i].m_edgeOpacity;
 }
+
 double ImageSettings::edgeOpacity() const
 {
   return edgeOpacity(m_activeComponent);
@@ -654,6 +689,7 @@ void ImageSettings::setColorMapIndex(uint32_t i, std::size_t index)
 {
   m_componentSettings[i].m_colorMapIndex = index;
 }
+
 void ImageSettings::setColorMapIndex(std::size_t index)
 {
   setColorMapIndex(m_activeComponent, index);
@@ -663,6 +699,7 @@ size_t ImageSettings::colorMapIndex(uint32_t i) const
 {
   return m_componentSettings[i].m_colorMapIndex;
 }
+
 size_t ImageSettings::colorMapIndex() const
 {
   return colorMapIndex(m_activeComponent);
@@ -672,6 +709,7 @@ void ImageSettings::setColorMapInverted(uint32_t i, bool inverted)
 {
   m_componentSettings[i].m_colorMapInverted = inverted;
 }
+
 void ImageSettings::setColorMapInverted(bool inverted)
 {
   setColorMapInverted(m_activeComponent, inverted);
@@ -681,6 +719,7 @@ bool ImageSettings::isColorMapInverted(uint32_t i) const
 {
   return m_componentSettings[i].m_colorMapInverted;
 }
+
 bool ImageSettings::isColorMapInverted() const
 {
   return isColorMapInverted(m_activeComponent);
@@ -690,6 +729,7 @@ void ImageSettings::setColorMapQuantization(uint32_t i, uint32_t levels)
 {
   m_componentSettings[i].m_numColorMapLevels = levels;
 }
+
 void ImageSettings::setColorMapQuantizationLevels(uint32_t levels)
 {
   setColorMapQuantization(m_activeComponent, levels);
@@ -699,6 +739,7 @@ size_t ImageSettings::colorMapQuantizationLevels(uint32_t i) const
 {
   return m_componentSettings[i].m_numColorMapLevels;
 }
+
 size_t ImageSettings::colorMapQuantizationLevels() const
 {
   return colorMapQuantizationLevels(m_activeComponent);
@@ -708,6 +749,7 @@ void ImageSettings::setColorMapContinuous(uint32_t i, bool continuous)
 {
   m_componentSettings[i].m_colorMapContinuous = continuous;
 }
+
 void ImageSettings::setColorMapContinuous(bool continuous)
 {
   setColorMapContinuous(m_activeComponent, continuous);
@@ -717,6 +759,7 @@ bool ImageSettings::colorMapContinuous(uint32_t i) const
 {
   return m_componentSettings[i].m_colorMapContinuous;
 }
+
 bool ImageSettings::colorMapContinuous() const
 {
   return colorMapContinuous(m_activeComponent);
@@ -726,10 +769,12 @@ void ImageSettings::setColorMapHueModFactor(uint32_t i, double hueMod)
 {
   m_componentSettings[i].m_hsvModFactors[0] = hueMod;
 }
+
 void ImageSettings::setColorMapSatModFactor(uint32_t i, double satMod)
 {
   m_componentSettings[i].m_hsvModFactors[1] = satMod;
 }
+
 void ImageSettings::setColorMapValModFactor(uint32_t i, double valMod)
 {
   m_componentSettings[i].m_hsvModFactors[2] = valMod;
@@ -739,10 +784,12 @@ void ImageSettings::setColorMapHueModFactor(double hueMod)
 {
   setColorMapHueModFactor(m_activeComponent, hueMod);
 }
+
 void ImageSettings::setColorMapSatModFactor(double satMod)
 {
   setColorMapSatModFactor(m_activeComponent, satMod);
 }
+
 void ImageSettings::setColorMapValModFactor(double valMod)
 {
   setColorMapValModFactor(m_activeComponent, valMod);
@@ -752,6 +799,7 @@ void ImageSettings::setColormapHsvModfactors(uint32_t i, const glm::vec3& hsvMod
 {
   m_componentSettings[i].m_hsvModFactors = hsvMods;
 }
+
 void ImageSettings::setColormapHsvModfactors(const glm::vec3& hsvMods)
 {
   setColormapHsvModfactors(m_activeComponent, hsvMods);
@@ -761,6 +809,7 @@ const glm::vec3& ImageSettings::colorMapHsvModFactors(uint32_t i) const
 {
   return m_componentSettings[i].m_hsvModFactors;
 }
+
 const glm::vec3& ImageSettings::colorMapHsvModFactors() const
 {
   return colorMapHsvModFactors(m_activeComponent);
@@ -770,6 +819,7 @@ void ImageSettings::setLabelTableIndex(uint32_t i, std::size_t index)
 {
   m_componentSettings[i].m_labelTableIndex = index;
 }
+
 void ImageSettings::setLabelTableIndex(std::size_t index)
 {
   setLabelTableIndex(m_activeComponent, index);
@@ -779,6 +829,7 @@ size_t ImageSettings::labelTableIndex(uint32_t i) const
 {
   return m_componentSettings[i].m_labelTableIndex;
 }
+
 size_t ImageSettings::labelTableIndex() const
 {
   return labelTableIndex(m_activeComponent);
@@ -788,6 +839,7 @@ void ImageSettings::setInterpolationMode(uint32_t i, InterpolationMode mode)
 {
   m_componentSettings[i].m_interpolationMode = mode;
 }
+
 void ImageSettings::setInterpolationMode(InterpolationMode mode)
 {
   setInterpolationMode(m_activeComponent, mode);
@@ -797,6 +849,7 @@ InterpolationMode ImageSettings::interpolationMode(uint32_t i) const
 {
   return m_componentSettings[i].m_interpolationMode;
 }
+
 InterpolationMode ImageSettings::interpolationMode() const
 {
   return interpolationMode(m_activeComponent);
@@ -806,6 +859,7 @@ std::pair<double, double> ImageSettings::thresholdRange(uint32_t i) const
 {
   return m_componentSettings[i].m_minMaxThresholdRange;
 }
+
 std::pair<double, double> ImageSettings::thresholdRange() const
 {
   return thresholdRange(m_activeComponent);
@@ -815,6 +869,7 @@ std::pair<double, double> ImageSettings::slopeIntercept_normalized_T_native(uint
 {
   return {m_componentSettings[i].m_slope_native, m_componentSettings[i].m_intercept_native};
 }
+
 std::pair<double, double> ImageSettings::slopeIntercept_normalized_T_native() const
 {
   return slopeIntercept_normalized_T_native(m_activeComponent);
@@ -824,6 +879,7 @@ std::pair<double, double> ImageSettings::slopeIntercept_normalized_T_texture(uin
 {
   return {m_componentSettings[i].m_slope_texture, m_componentSettings[i].m_intercept_texture};
 }
+
 std::pair<double, double> ImageSettings::slopeIntercept_normalized_T_texture() const
 {
   return slopeIntercept_normalized_T_texture(m_activeComponent);
@@ -833,6 +889,7 @@ glm::dvec2 ImageSettings::slopeInterceptVec2_normalized_T_texture(uint32_t i) co
 {
   return {m_componentSettings[i].m_slope_texture, m_componentSettings[i].m_intercept_texture};
 }
+
 glm::dvec2 ImageSettings::slopeInterceptVec2_normalized_T_texture() const
 {
   return slopeInterceptVec2_normalized_T_texture(m_activeComponent);
@@ -853,36 +910,28 @@ float ImageSettings::slope_native_T_texture() const
 
   switch (m_componentType)
   {
-  case ComponentType::Int8:
-  {
+  case ComponentType::Int8: {
     return static_cast<float>(std::numeric_limits<int8_t>::max());
   }
-  case ComponentType::Int16:
-  {
+  case ComponentType::Int16: {
     return static_cast<float>(std::numeric_limits<int16_t>::max());
   }
-  case ComponentType::Int32:
-  {
+  case ComponentType::Int32: {
     return static_cast<float>(std::numeric_limits<int32_t>::max());
   }
-  case ComponentType::UInt8:
-  {
+  case ComponentType::UInt8: {
     return static_cast<float>(std::numeric_limits<uint8_t>::max());
   }
-  case ComponentType::UInt16:
-  {
+  case ComponentType::UInt16: {
     return static_cast<float>(std::numeric_limits<uint16_t>::max());
   }
-  case ComponentType::UInt32:
-  {
+  case ComponentType::UInt32: {
     return static_cast<float>(std::numeric_limits<uint32_t>::max());
   }
-  case ComponentType::Float32:
-  {
+  case ComponentType::Float32: {
     return 1.0f;
   }
-  default:
-  {
+  default: {
     spdlog::error("Invalid component type {}", componentTypeString(m_componentType));
     return 1.0f;
   }
@@ -891,10 +940,8 @@ float ImageSettings::slope_native_T_texture() const
 
 glm::dvec2 ImageSettings::largestSlopeInterceptTextureVec2(uint32_t i) const
 {
-  return {
-    m_componentSettings[i].m_largest_slope_texture,
-    m_componentSettings[i].m_largest_intercept_texture
-  };
+  return {m_componentSettings[i].m_largest_slope_texture,
+          m_componentSettings[i].m_largest_intercept_texture};
 }
 
 glm::dvec2 ImageSettings::largestSlopeInterceptTextureVec2() const
@@ -909,8 +956,7 @@ uint32_t ImageSettings::numComponents() const
 
 const ComponentStats& ImageSettings::componentStatistics(uint32_t i) const
 {
-  if (m_componentStats.size() <= i)
-  {
+  if (m_componentStats.size() <= i) {
     spdlog::error("Invalid image component {}", i);
     throw_debug("Invalid image component")
   }
@@ -927,6 +973,7 @@ const HistogramSettings& ImageSettings::histogramSettings(uint32_t comp) const
 {
   return m_componentSettings.at(comp).m_histogramSettings;
 }
+
 const HistogramSettings& ImageSettings::histogramSettings() const
 {
   return histogramSettings(m_activeComponent);
@@ -936,6 +983,7 @@ HistogramSettings& ImageSettings::histogramSettings(uint32_t comp)
 {
   return m_componentSettings.at(comp).m_histogramSettings;
 }
+
 HistogramSettings& ImageSettings::histogramSettings()
 {
   return histogramSettings(m_activeComponent);
@@ -943,18 +991,12 @@ HistogramSettings& ImageSettings::histogramSettings()
 
 void ImageSettings::setActiveComponent(uint32_t component)
 {
-  if (component < m_numComponents)
-  {
+  if (component < m_numComponents) {
     m_activeComponent = component;
   }
-  else
-  {
-    spdlog::error(
-      "Attempting to set invalid active component {} (only {} components total for image {})",
-      component,
-      m_numComponents,
-      m_displayName
-    );
+  else {
+    spdlog::error("Attempting to set invalid active component {} (only {} components total for image {})",
+                  component, m_numComponents, m_displayName);
   }
 }
 
@@ -967,13 +1009,9 @@ void ImageSettings::updateWithNewComponentStatistics(
   constexpr int qHigh = 99; // 99% level
   constexpr int qMax = 100; // 100% level
 
-  if (componentStats.size() != m_numComponents)
-  {
-    spdlog::error(
-      "Component statistics has {} components, where {} are expected",
-      componentStats.size(),
-      m_numComponents
-    );
+  if (componentStats.size() != m_numComponents) {
+    spdlog::error("Component statistics has {} components, where {} are expected",
+                  componentStats.size(), m_numComponents);
     return;
   }
 
@@ -1015,8 +1053,7 @@ void ImageSettings::updateWithNewComponentStatistics(
     setting.m_histogramSettings.m_intensityRange[0] = stats.onlineStats.min;
     setting.m_histogramSettings.m_intensityRange[1] = stats.onlineStats.max;
 
-    if (0 == m_numPixels)
-    {
+    if (0 == m_numPixels) {
       spdlog::warn("Component {} of image {} has zero pixels, so setting number of histogram bins to one",
                    i, m_displayName);
       setting.m_histogramSettings.m_numBins = 1;
@@ -1024,8 +1061,7 @@ void ImageSettings::updateWithNewComponentStatistics(
     else
     {
       std::optional<std::size_t> numBins = computeNumHistogramBins(
-        setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]
-      );
+        setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]);
 
       if (!numBins)
       {
@@ -1038,7 +1074,8 @@ void ImageSettings::updateWithNewComponentStatistics(
 
       setting.m_histogramSettings.m_numBins = numBins.value_or(1);
 
-      setting.m_histogramSettings.m_binWidth = (m_componentStats[i].onlineStats.max - m_componentStats[i].onlineStats.min) /
+      setting.m_histogramSettings.m_binWidth =
+        (m_componentStats[i].onlineStats.max - m_componentStats[i].onlineStats.min) /
                                                setting.m_histogramSettings.m_numBins;
     }
 
@@ -1113,7 +1150,7 @@ void ImageSettings::updateInternals()
     S.m_intercept_native = 0.5 - windowCenter(i) / windowWidth(i);
 
     /**
-         * @note In OpenGL, UNSIGNED normalized floats are computed as
+      * @note In OpenGL, UNSIGNED normalized floats are computed as
          * float = int / MAX, where MAX = 2^B - 1 = 255
          *
          * SIGNED normalized floats are computed as either
@@ -1131,38 +1168,34 @@ void ImageSettings::updateInternals()
     switch (m_componentType)
     {
     case ComponentType::Int8:
-    case ComponentType::UInt8:
-    {
+    case ComponentType::UInt8: {
       M = static_cast<double>(std::numeric_limits<uint8_t>::max());
       break;
     }
     case ComponentType::Int16:
-    case ComponentType::UInt16:
-    {
+    case ComponentType::UInt16: {
       M = static_cast<double>(std::numeric_limits<uint16_t>::max());
       break;
     }
     case ComponentType::Int32:
-    case ComponentType::UInt32:
-    {
+    case ComponentType::UInt32: {
       M = static_cast<double>(std::numeric_limits<uint32_t>::max());
       break;
     }
-    case ComponentType::Float32:
-    {
+    case ComponentType::Float32: {
       M = 0.0;
       break;
     }
-    default:
+    default: {
       break;
+    }
     }
 
     switch (m_componentType)
     {
     case ComponentType::Int8:
     case ComponentType::Int16:
-    case ComponentType::Int32:
-    {
+    case ComponentType::Int32: {
       /// @todo This mapping may be slightly wrong for the signed integer case
       S.m_slope_texture = 0.5 * M / imageRange;
       S.m_intercept_texture = -(S.m_minMaxImageRange.first + 0.5) / imageRange;
@@ -1170,14 +1203,12 @@ void ImageSettings::updateInternals()
     }
     case ComponentType::UInt8:
     case ComponentType::UInt16:
-    case ComponentType::UInt32:
-    {
+    case ComponentType::UInt32: {
       S.m_slope_texture = M / imageRange;
       S.m_intercept_texture = -S.m_minMaxImageRange.first / imageRange;
       break;
     }
-    case ComponentType::Float32:
-    {
+    case ComponentType::Float32: {
       S.m_slope_texture = 1.0 / imageRange;
       S.m_intercept_texture = -S.m_minMaxImageRange.first / imageRange;
       break;
@@ -1223,43 +1254,35 @@ double ImageSettings::mapNativeIntensityToTexture(double nativeImageValue) const
 
   switch (m_componentType)
   {
-  case ComponentType::Int8:
-  {
+  case ComponentType::Int8: {
     constexpr double M = static_cast<double>(std::numeric_limits<int8_t>::max());
     return std::max(nativeImageValue / M, -1.0);
   }
-  case ComponentType::Int16:
-  {
+  case ComponentType::Int16: {
     constexpr double M = static_cast<double>(std::numeric_limits<int16_t>::max());
     return std::max(nativeImageValue / M, -1.0);
     // return (2.0 * nativeImageValue + 1.0) / 65535.0;
   }
-  case ComponentType::Int32:
-  {
+  case ComponentType::Int32: {
     constexpr double M = static_cast<double>(std::numeric_limits<int32_t>::max());
     return std::max(nativeImageValue / M, -1.0);
   }
-  case ComponentType::UInt8:
-  {
+  case ComponentType::UInt8: {
     constexpr double M = static_cast<double>(std::numeric_limits<uint8_t>::max());
     return nativeImageValue / M;
   }
-  case ComponentType::UInt16:
-  {
+  case ComponentType::UInt16: {
     constexpr double M = static_cast<double>(std::numeric_limits<uint16_t>::max());
     return nativeImageValue / M;
   }
-  case ComponentType::UInt32:
-  {
+  case ComponentType::UInt32: {
     constexpr double M = static_cast<double>(std::numeric_limits<uint32_t>::max());
     return nativeImageValue / M;
   }
-  case ComponentType::Float32:
-  {
+  case ComponentType::Float32: {
     return nativeImageValue;
   }
-  default:
-  {
+  default: {
     spdlog::error("Invalid component type {}", componentTypeString(m_componentType));
     return nativeImageValue;
   }

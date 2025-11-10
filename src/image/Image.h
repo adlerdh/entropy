@@ -47,10 +47,9 @@ public:
      * @param[in] bufferType Indicates whether multi-component images are loaded as
      * multiple buffers or as a single buffer with interleaved pixel components
      */
-  Image(
-    const fs::path& fileName,
-    const ImageRepresentation& imageRep,
-    const MultiComponentBufferType& bufferType);
+  Image(const fs::path& fileName,
+        const ImageRepresentation& imageRep,
+        const MultiComponentBufferType& bufferType);
 
   /**
      * @brief Construct Image from a header and raw data
@@ -62,12 +61,11 @@ public:
      * @param[in] imageDataComponents Must match the format specified in \c bufferType.
      * If the components are interleaved, then component 0 holds all buffers
      */
-  Image(
-    const ImageHeader& header,
-    const std::string& displayName,
-    const ImageRepresentation& imageRep,
-    const MultiComponentBufferType& bufferType,
-    const std::vector<const void*>& imageDataComponents);
+  Image(const ImageHeader& header,
+        const std::string& displayName,
+        const ImageRepresentation& imageRep,
+        const MultiComponentBufferType& bufferType,
+        const std::vector<const void*>& imageDataComponents);
 
   Image(const Image&) = default;
   Image& operator=(const Image&) = default;
@@ -434,16 +432,14 @@ private:
     const void* buffer,
     std::size_t numElements,
     const itk::IOComponentEnum& srcComponentType,
-    const itk::IOComponentEnum& dstComponentType
-  );
+    const itk::IOComponentEnum& dstComponentType);
 
   /// Load a buffer as a segmentation component
   bool loadSegBuffer(
     const void* buffer,
     std::size_t numElements,
     const itk::IOComponentEnum& srcComponentType,
-    const itk::IOComponentEnum& dstComponentType
-  );
+    const itk::IOComponentEnum& dstComponentType);
 
   /// For a given image component and 3D pixel indices, return a pair consisting of:
   /// 1) component buffer to index

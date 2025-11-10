@@ -8,13 +8,13 @@
 
 void helpMarker(const char* tooltip, bool sameLine)
 {
-  if (sameLine)
+  if (sameLine) {
     ImGui::SameLine();
+  }
 
   ImGui::TextDisabled(ICON_FK_QUESTION_CIRCLE_O);
 
-  if (ImGui::IsItemHovered())
-  {
+  if (ImGui::IsItemHovered()) {
     ImGui::BeginTooltip();
     ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
     ImGui::TextUnformatted(tooltip);
@@ -50,11 +50,11 @@ int myImFormatString(char* buf, size_t buf_size, const char* fmt, ...)
   int w = vsnprintf(buf, buf_size, fmt, args);
   va_end(args);
 
-  if (!buf)
+  if (!buf) {
     return w;
+  }
 
-  if (-1 == w || (int) buf_size <= w)
-  {
+  if (-1 == w || (int) buf_size <= w) {
     w = static_cast<int>(buf_size) - 1;
   }
 

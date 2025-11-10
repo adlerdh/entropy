@@ -1,5 +1,4 @@
-#ifndef UI_CONTROLS
-#define UI_CONTROLS
+#pragma once
 
 /**
  * @brief Settings for UI controls for a view or lightbox layout
@@ -8,7 +7,7 @@ struct UiControls
 {
   UiControls() = default;
 
-  UiControls(bool visible)
+  explicit UiControls(bool visible)
     : m_hasImageComboBox(visible)
     , m_hasViewTypeComboBox(visible)
     , m_hasShaderTypeComboBox(visible)
@@ -21,5 +20,3 @@ struct UiControls
   bool m_hasShaderTypeComboBox = false;
   bool m_hasMipTypeComboBox = false;
 };
-
-#endif // UI_CONTROLS
