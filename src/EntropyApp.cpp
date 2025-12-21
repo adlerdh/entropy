@@ -546,6 +546,8 @@ EntropyApp::loadDeformationField(const fs::path& fileName)
 
 bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bool isReferenceImage)
 {
+  constexpr bool k_computeNoiseEstimate = false;
+
   constexpr size_t defaultImageColorMapIndex = 0;
 
   // Do NOT ignore images if they have already been loaded:
@@ -801,7 +803,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   // The isosurface threshold for separating foreground and background is set at the
   // 50th quantile image value. This seems to do a pretty good job for CT, T1, and T2 images.
   /// @todo Eventually, we should do a proper foreground/background segmentation.
-  constexpr uint32_t hresholdQuantile = 50; // 50th percentile
+  constexpr uint32_t thresholdQuantile = 75; // 50th percentile
 
   // If the image has multiple, interleaved components, then do not compute the distance map
   // for the components, since we have not yet written functions to perform distance map
@@ -834,31 +836,39 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
       /// functions that we use require an ITK image as input.
 
       const ImageType::Pointer compImage = createItkImageFromImageComponent<ItkImageCompType>(*image, comp);
-      const NoiseImageType::Pointer noiseEstimateItkImage = computeNoiseEstimate<ItkImageCompType>(compImage, radius);
 
-      if (noiseEstimateItkImage)
+      if (k_computeNoiseEstimate)
       {
-        const std::string displayName = std::string("Noise estimate for component ") + std::to_string(comp) +
-                                        " of '" + image->settings().displayName() + "'";
+        const NoiseImageType::Pointer noiseEstimateItkImage =
+          computeNoiseEstimate<ItkImageCompType>(compImage, radius);
 
-        Image noiseEstimateImage = createImageFromItkImage<ItkImageCompType>(noiseEstimateItkImage, displayName);
-        const glm::uvec3 noiseImgSize = noiseEstimateImage.header().pixelDimensions();
+        if (noiseEstimateItkImage)
+        {
+          const std::string displayName = std::string("Noise estimate for component ") + std::to_string(comp) +
+                                          " of '" + image->settings().displayName() + "'";
 
-        // m_data.addImage( noiseEstimateImage ); // Add noise estimate as an image for debug purposes
-        m_data.addNoiseEstimate(*imageUid, comp, std::move(noiseEstimateImage), radius);
+          Image noiseEstimateImage = createImageFromItkImage<ItkImageCompType>(noiseEstimateItkImage, displayName);
+          const glm::uvec3 noiseImgSize = noiseEstimateImage.header().pixelDimensions();
 
-        spdlog::debug("Created noise estimate map (with dimensions {}x{}x{} voxels) with radius {} for "
-                      "component {} of image {}", noiseImgSize.x, noiseImgSize.y, noiseImgSize.z,
-                      radius, comp, *imageUid);
-      }
-      else {
-        spdlog::error("Unable to create noise estimate for component {} of image {}", comp, *imageUid);
+          // m_data.addImage( noiseEstimateImage ); // Add noise estimate as an image for debug purposes
+          m_data.addNoiseEstimate(*imageUid, comp, std::move(noiseEstimateImage), radius);
+
+          spdlog::debug("Created noise estimate map (with dimensions {}x{}x{} voxels) with radius {} for "
+                        "component {} of image {}", noiseImgSize.x, noiseImgSize.y, noiseImgSize.z,
+                        radius, comp, *imageUid);
+        }
+        else {
+          spdlog::error("Unable to create noise estimate for component {} of image {}", comp, *imageUid);
+        }
       }
 
       // Compute foreground distance map for image component:
       const auto& stats = image->settings().componentStatistics(comp);
-      const float minThreshold = static_cast<float>(stats.quantiles[hresholdQuantile]);
+      const float minThreshold = static_cast<float>(stats.quantiles[thresholdQuantile]);
       const float maxThreshold = static_cast<float>(stats.onlineStats.max);
+
+      spdlog::debug("Computing Euclidean distance map for image {} using thresholds {} and {}",
+                    *imageUid, minThreshold, maxThreshold);
 
       const DistanceMapImageType::Pointer distMapItkImage =
         computeEuclideanDistanceMap<ItkImageCompType, DistanceMapCompType>(
@@ -872,7 +882,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
         Image distMapImage = createImageFromItkImage<DistanceMapCompType>(distMapItkImage, displayName);
         const glm::uvec3 distMapSize = distMapImage.header().pixelDimensions();
 
-        // m_data.addImage( distMapImage ); // Add distance map as an image for debug purposes
+        m_data.addImage(distMapImage); // Add distance map as an image for debug purposes
         m_data.addDistanceMap(*imageUid, comp, std::move(distMapImage), static_cast<double>(minThreshold));
 
         spdlog::debug("Created distance map (with dimensions {}x{}x{} voxels) to foreground region [{}, {}] "

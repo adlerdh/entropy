@@ -1,6 +1,6 @@
 #version 330 core
 
-#define NISO 16
+#define NISO 8
 #define NUM_BISECTIONS 5
 #define MAX_HITS 100
 #define MAX_JUMPS 1000
@@ -13,7 +13,7 @@ out vec4 FragColor;
 
 uniform sampler3D u_imgTex; // Texture unit 0: image
 uniform usampler3D u_segTex; // Texture unit 1: segmentation
-uniform usampler3D u_jumpTex; // Texture unit 5: distance texture
+uniform usampler3D u_jumpTex; // Texture unit 2: distance texture
 
 uniform mat4 u_tex_T_world;
 uniform mat4 world_T_imgTexture;

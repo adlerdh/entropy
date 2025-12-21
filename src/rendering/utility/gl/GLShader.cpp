@@ -93,7 +93,7 @@ GLuint GLShader::handle() const
   return m_handle;
 }
 
-bool GLShader::isValid()
+bool GLShader::isValid() const
 {
   return (m_handle && glIsShader(m_handle));
 }

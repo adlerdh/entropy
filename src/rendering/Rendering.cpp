@@ -90,7 +90,7 @@ const Uniforms::SamplerIndexType msk_segTexSampler{0}; // one segmentation
 const Uniforms::SamplerIndexType msk_segLabelTableTexSampler{1}; // one label table
 
 // Sampler for volume rendering shader:
-const Uniforms::SamplerIndexType msk_jumpTexSampler{4}; // distance map texture
+const Uniforms::SamplerIndexType msk_jumpTexSampler{2}; // distance map texture
 
 /// @todo Change these to account for segs being in their own shader:
 // Samplers for metric shaders:
@@ -153,11 +153,11 @@ createShaderProgram(
 
   fsSource = replacePlaceholders(fsSource, fsReplacements);
 
-  auto vs = std::make_shared<GLShader>(vsName, ShaderType::Vertex, vsSource.c_str());
-  vs->setRegisteredUniforms(vsUniforms);
+  GLShader vs(vsName, ShaderType::Vertex, vsSource.c_str());
+  vs.setRegisteredUniforms(vsUniforms);
 
-  auto fs = std::make_shared<GLShader>(fsName, ShaderType::Fragment, fsSource.c_str());
-  fs->setRegisteredUniforms(fsUniforms);
+  GLShader fs(fsName, ShaderType::Fragment, fsSource.c_str());
+  fs.setRegisteredUniforms(fsUniforms);
 
   auto program = std::make_unique<GLShaderProgram>(programName);
 
@@ -513,16 +513,14 @@ bool Rendering::createLabelColorTableTexture(const uuid& labelTableUid)
   glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufTexSize);
 
   if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize)) {
-    spdlog::error(
-      "Number of bytes ({}) in label color table {} exceeds "
-      "maximum buffer texture size of {} bytes",
-      table->numColorBytes_RGBA_U8(), labelTableUid, maxBufTexSize);
+    spdlog::error("Number of bytes ({}) in label color table {} exceeds "
+                  "maximum buffer texture size of {} bytes",
+                  table->numColorBytes_RGBA_U8(), labelTableUid, maxBufTexSize);
     return false;
   }
 
   auto it = m_appData.renderData().m_labelBufferTextures.emplace(
-    std::piecewise_construct,
-    std::forward_as_tuple(labelTableUid),
+    std::piecewise_construct, std::forward_as_tuple(labelTableUid),
     std::forward_as_tuple(table->bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw));
 
   if (!it.second) {
@@ -651,9 +649,8 @@ void Rendering::updateSegTextureWithInt64Data(
   }
 
   if (!isValidSegmentationComponentType(compType)) {
-    spdlog::error(
-      "Unable to update segmentation texture using buffer with invalid component type {}",
-      componentTypeString(compType));
+    spdlog::error("Unable to update segmentation texture using buffer with invalid component type {}",
+                  componentTypeString(compType));
     return;
   }
 
@@ -664,15 +661,18 @@ void Rendering::updateSegTextureWithInt64Data(
   {
   case ComponentType::UInt8: {
     const std::vector<uint8_t> castData(data, data + N);
-    return updateSegTexture(segUid, compType, startOffsetVoxel, sizeInVoxels, static_cast<const void*>(castData.data()));
+    return updateSegTexture(segUid, compType, startOffsetVoxel, sizeInVoxels,
+                            static_cast<const void*>(castData.data()));
   }
   case ComponentType::UInt16: {
     const std::vector<uint16_t> castData(data, data + N);
-    return updateSegTexture(segUid, compType, startOffsetVoxel, sizeInVoxels, static_cast<const void*>(castData.data()));
+    return updateSegTexture(segUid, compType, startOffsetVoxel, sizeInVoxels,
+                            static_cast<const void*>(castData.data()));
   }
   case ComponentType::UInt32: {
     const std::vector<uint32_t> castData(data, data + N);
-    return updateSegTexture(segUid, compType, startOffsetVoxel, sizeInVoxels, static_cast<const void*>(castData.data()));
+    return updateSegTexture(segUid, compType, startOffsetVoxel, sizeInVoxels,
+                            static_cast<const void*>(castData.data()));
   }
   default: {
     return;
@@ -1045,11 +1045,13 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   uniforms.imgTexture_T_world = imgTexture_T_world;
   uniforms.world_T_imgTexture = glm::inverse(imgTexture_T_world);
 
-  if (imgSettings.displayImageAsColor() && (3 == imgSettings.numComponents() || 4 == imgSettings.numComponents()))
+  if (imgSettings.displayImageAsColor() &&
+      (3 == imgSettings.numComponents() || 4 == imgSettings.numComponents()))
   {
     for (uint32_t i = 0; i < imgSettings.numComponents(); ++i)
     {
-      uniforms.slopeInterceptRgba_normalized_T_texture[i] = imgSettings.slopeInterceptVec2_normalized_T_texture(i);
+      uniforms.slopeInterceptRgba_normalized_T_texture[i] =
+        imgSettings.slopeInterceptVec2_normalized_T_texture(i);
 
       uniforms.thresholdsRgba[i] = glm::vec2{
         static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.thresholds(i).first)),
@@ -1102,10 +1104,8 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
     static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange().first)),
     static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange().second))};
 
-  uniforms.imgOpacity =
-    (static_cast<float>(imgSettings.globalVisibility() && imgSettings.visibility()) ? 1.0 : 0.0)
-      * imgSettings.opacity()
-      * ((imgSettings.numComponents() > 0) ? imgSettings.globalOpacity() : 1.0f);
+  uniforms.imgOpacity = (static_cast<float>(imgSettings.globalVisibility() && imgSettings.visibility()) ? 1.0 : 0.0) *
+                        imgSettings.opacity() * ((imgSettings.numComponents() > 0) ? imgSettings.globalOpacity() : 1.0f);
 
   // Edges
   uniforms.showEdges = imgSettings.showEdges();
@@ -1976,15 +1976,12 @@ void Rendering::renderAllImagesForView(
   case ShaderGroup::Volume:
   {
     const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
-
     if (I.empty()) {
       return;
     }
 
     // Only volume render the first image:
-
-    /// @todo Either 1) let use only select one image or
-    /// 2) enable rendering more than one image
+    /// @todo Either 1) let use only select one image or 2) enable rendering more than one image
     const auto& imgSegPair = I.front();
 
     const Image* image = m_appData.image(*imgSegPair.first);
@@ -2032,7 +2029,7 @@ void Rendering::renderAllImagesForView(
       // P.setUniform( "voxelSpacing", U.voxelSpacing );
       P.setUniform("texGrads", U.textureGradientStep);
 
-      /// @todo Shader expects 16 values, but we're not giving that to the shader!!
+      /// @note Shader expects 8 values
       P.setUniform("u_isoValues", R.m_isosurfaceData.values);
       P.setUniform("u_isoOpacities", R.m_isosurfaceData.opacities);
       P.setUniform("isoEdges", R.m_isosurfaceData.edgeStrengths);
@@ -2053,13 +2050,13 @@ void Rendering::renderAllImagesForView(
       P.setUniform("bgColor", R.m_3dBackgroundColor.a * R.m_3dBackgroundColor);
       P.setUniform("noHitTransparent", R.m_3dTransparentIfNoHit);
 
+      // spdlog::trace("{} : {}", __PRETTY_FUNCTION__, __LINE__);
       volumeRenderOneImage(view, P, CurrentImages{imgSegPair});
     }
     P.stopUse();
 
     unbindTextures(boundImageTextures);
     unbindBufferTextures(boundSegBufferTextures);
-
     break;
   }
 
@@ -2644,7 +2641,7 @@ void Rendering::createShaderPrograms()
     }
   };
 
-  for (auto shaderType : allShaders)
+  for (const auto& shaderType : allShaders)
   {
     const auto& info = shaderTypeToInfo.at(shaderType);
 
@@ -2696,8 +2693,8 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
     vsUniforms.insertUniform("clip_T_world", UniformType::Mat4, sk_identMat4);
     vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
 
-    auto vs = std::make_shared<GLShader>("vsRaycast", ShaderType::Vertex, vsSource.c_str());
-    vs->setRegisteredUniforms(std::move(vsUniforms));
+    GLShader vs("vsRaycast", ShaderType::Vertex, vsSource.c_str());
+    vs.setRegisteredUniforms(std::move(vsUniforms));
     program.attachShader(vs);
 
     spdlog::debug("Compiled vertex shader {}", vsFileName);
@@ -2736,8 +2733,8 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
     fsUniforms.insertUniform("segMasksIn", UniformType::Bool, false);
     fsUniforms.insertUniform("segMasksOut", UniformType::Bool, false);
 
-    auto fs = std::make_shared<GLShader>("fsRaycast", ShaderType::Fragment, fsSource.c_str());
-    fs->setRegisteredUniforms(std::move(fsUniforms));
+    GLShader fs("fsRaycast", ShaderType::Fragment, fsSource.c_str());
+    fs.setRegisteredUniforms(std::move(fsUniforms));
     program.attachShader(fs);
 
     spdlog::debug("Compiled fragment shader {}", fsFileName);
@@ -2788,6 +2785,10 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
 {
   auto& isoData = appData.renderData().m_isosurfaceData;
   const Image* image = appData.image(imageUid);
+  if (!image) {
+    return;
+  }
+
   const ImageSettings& settings = image->settings();
 
   // Turn off all of the isosurfaces
@@ -2838,5 +2839,9 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
     }
 
     ++i;
+
+    if (i >= 8) {
+      break; // Max of 8 iso-surfaces
+    }
   }
 }

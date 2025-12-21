@@ -392,16 +392,13 @@ void drawRaycastQuad(
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage)
 {
-  if (I.empty())
-  {
+  if (I.empty()) {
     spdlog::error("No images provided when raycasting");
     return;
   }
 
   const Image* image0 = getImage(I[0].first);
-
-  if (!image0)
-  {
+  if (!image0) {
     spdlog::error("Null image when raycasting");
     return;
   }

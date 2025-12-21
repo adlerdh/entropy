@@ -61,9 +61,9 @@ bool GLShaderProgram::isLinked() const
   return m_linked;
 }
 
-bool GLShaderProgram::attachShader(std::shared_ptr<GLShader> shader)
+bool GLShaderProgram::attachShader(const GLShader& shader)
 {
-  if (!shader || !shader->isValid()) {
+  if (!shader.isValid()) {
     spdlog::error("Invalid shader; cannot attach to program '{}'", m_name);
     return false;
   }
@@ -76,11 +76,10 @@ bool GLShaderProgram::attachShader(std::shared_ptr<GLShader> shader)
     }
   }
 
-  glAttachShader(m_handle, shader->handle());
-  m_attachedShaders.insert(shader);
+  glAttachShader(m_handle, shader.handle());
 
   /// @internal Register shader's uniforms with the program
-  m_registeredUniforms.insertUniforms(shader->getRegisteredUniforms());
+  m_registeredUniforms.insertUniforms(shader.getRegisteredUniforms());
 
   m_linked = false;
   return true;

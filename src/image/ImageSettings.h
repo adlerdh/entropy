@@ -513,7 +513,7 @@ private:
   InterpolationMode m_colorInterpolationMode{InterpolationMode::Trilinear}; //!< Interpolation mode
 
   // These apply to the image's isosurfaces:
-  bool m_useDistanceMapForRaycasting{false}; //!< Use the distance map to accelerate raycasting of the image
+  bool m_useDistanceMapForRaycasting{true}; //!< Use the distance map to accelerate raycasting of the image
   bool m_isosurfacesVisible{true}; //!< Visibility of image isosurfaces
   bool m_applyImageColormapToIsosurfaces{false}; //!< Color image isosurfaces using the image colormap
   bool m_showIsocontoursIn2D{true}; //!< Visibility of isosurface edges in 2D image slices

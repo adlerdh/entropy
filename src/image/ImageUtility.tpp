@@ -248,9 +248,8 @@ typename itk::Image<itk::Vector<T, VectorDim>, 3>::Pointer makeVectorImage(
  * @return Scalar ITK image of the component
  */
 template<class T>
-typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(
-  const Image& image, uint32_t component
-)
+typename itk::Image<T, 3>::Pointer
+createItkImageFromImageComponent(const Image& image, uint32_t component)
 {
   using OutputImageType = itk::Image<T, 3>;
 
@@ -952,7 +951,7 @@ bool writeImage(typename itk::Image<T, NDim>::Pointer image, const fs::path& fil
  * @brief Create an Entropy image from an ITK image
  *
  * @todo Finish this function and use it to convert the distance maps (stored as ITK images)
- * into Entropy images.
+ * into Entropy images. We should not have to write/read a temp image from disk to load an Image
  *
  * @tparam T Component type of image
  * @param[in] itkImage ITK image
@@ -1065,13 +1064,10 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
 {
   using Timer = std::chrono::time_point<std::chrono::system_clock>;
 
-  using InputImageType = itk::Image<T, 3>;
-  using DistanceImageType = itk::Image<U, 3>;
-
-  using BoundaryImageType = itk::Image<uint8_t, 3>;
-  using FloatImageType = itk::Image<float, 3>;
-
-  typename DistanceImageType::Pointer outputDistanceMap;
+  using TInputImage = itk::Image<T, 3>;
+  using TDistImage = itk::Image<U, 3>;
+  using TBoundaryImage = itk::Image<uint8_t, 3>;
+  using TFloatImage = itk::Image<float, 3>;
 
   if (!image) {
     spdlog::error("Input image is null when computing Euclidean distance transformation");
@@ -1087,9 +1083,7 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
   }
 
   // Binarize the original image, with values 1 inside and 0 outside
-  using ThresholdFilterType = itk::BinaryThresholdImageFilter<InputImageType, InputImageType>;
-  typename ThresholdFilterType::Pointer thresholdFilter = ThresholdFilterType::New();
-
+  auto thresholdFilter = itk::BinaryThresholdImageFilter<TInputImage, TInputImage>::New();
   thresholdFilter->SetInput(image);
   thresholdFilter->SetLowerThreshold(lowerBoundaryValue);
   thresholdFilter->SetUpperThreshold(upperBoundaryValue);
@@ -1098,14 +1092,14 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
 
   // Downsample the thresholded boundary image in order to reduce the size of the resulting distance map,
   // especially since the distance map is loaded as a 3D texture on the GPU
-  const typename InputImageType::RegionType inputRegion = image->GetLargestPossibleRegion();
-  const typename InputImageType::SizeType inputSize = inputRegion.GetSize();
-  const typename InputImageType::SpacingType inputSpacing = image->GetSpacing();
-  const typename InputImageType::PointType inputOrigin = image->GetOrigin();
+  const typename TInputImage::RegionType inputRegion = image->GetLargestPossibleRegion();
+  const typename TInputImage::SizeType inputSize = inputRegion.GetSize();
+  const typename TInputImage::SpacingType inputSpacing = image->GetSpacing();
+  const typename TInputImage::PointType inputOrigin = image->GetOrigin();
 
-  typename InputImageType::SizeType outputSize;
-  typename InputImageType::SpacingType outputSpacing;
-  typename InputImageType::PointType outputOrigin;
+  typename TInputImage::SizeType outputSize;
+  typename TInputImage::SpacingType outputSpacing;
+  typename TInputImage::PointType outputOrigin;
 
   for (uint32_t i = 0; i < 3; ++i)
   {
@@ -1121,15 +1115,12 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
     outputOrigin[i] = inputOrigin[i] + 0.5 * (outputSpacing[i] - inputSpacing[i]);
   }
 
-  using CoordType = double;
-  using LinearInterpolatorType = itk::LinearInterpolateImageFunction<InputImageType, CoordType>;
-  typename LinearInterpolatorType::Pointer interpolator = LinearInterpolatorType::New();
+  using TCoord = double;
+  auto interpolator = itk::LinearInterpolateImageFunction<TInputImage, TCoord>::New();
 
   // Resample to floating point image type, so that partial voluming can be correctly resolved
   // with a subsequent ceiling filter
-  using ResampleFilterType = itk::ResampleImageFilter<InputImageType, FloatImageType>;
-  typename ResampleFilterType::Pointer resampleFilter = ResampleFilterType::New();
-
+  auto resampleFilter = itk::ResampleImageFilter<TInputImage, TFloatImage>::New();
   resampleFilter->SetInput(thresholdFilter->GetOutput());
   resampleFilter->SetInterpolator(interpolator);
   resampleFilter->SetSize(outputSize);
@@ -1140,13 +1131,10 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
 
   // Compute the ceiling of the resampled values, so that any value even slightly larger than
   // zero gets mapped to one (inside the boundary). That way the boundary is never underestimated.
-  using CeilFilterType = itk::BinaryThresholdImageFilter<FloatImageType, BoundaryImageType>;
-  typename CeilFilterType::Pointer ceilFilter = CeilFilterType::New();
-
+  auto ceilFilter = itk::BinaryThresholdImageFilter<TFloatImage, TBoundaryImage>::New();
   ceilFilter->SetInput(resampleFilter->GetOutput());
   ceilFilter->SetLowerThreshold(0.0f);
   ceilFilter->SetUpperThreshold(0.0f);
-
   ceilFilter->SetOutsideValue(1);
   ceilFilter->SetInsideValue(0);
 
@@ -1159,9 +1147,7 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
 
   // Compute the distance map in mm from every voxel to the boundary. Distances are computed for
   // voxels that are both inside and outside the boundary.
-  using DistanceFilterType = itk::SignedMaurerDistanceMapImageFilter<BoundaryImageType, FloatImageType>;
-  typename DistanceFilterType::Pointer distanceFilter = DistanceFilterType::New();
-
+  auto distanceFilter = itk::SignedMaurerDistanceMapImageFilter<TBoundaryImage, TFloatImage>::New();
   distanceFilter->SetInput(ceilFilter->GetOutput());
   distanceFilter->UseImageSpacingOn();
   distanceFilter->SquaredDistanceOff();
@@ -1180,9 +1166,7 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
 
   if (std::is_integral<U>())
   {
-    using IteratorType = itk::ImageRegionIterator<FloatImageType>;
-    IteratorType it(distImage, distImage->GetLargestPossibleRegion());
-
+    itk::ImageRegionIterator<TFloatImage> it(distImage, distImage->GetLargestPossibleRegion());
     it.GoToBegin();
 
     while (!it.IsAtEnd()){
@@ -1192,18 +1176,14 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
     }
   }
 
-  // Clamp and cast pixels to the range of the output image type DistanceImageType (U).
+  // Clamp and cast pixels to the range of the output image type TDistImage (U).
   // Note that by default, the clamp bounds equal the range supported by type U.
-  using ClampFilterType = itk::ClampImageFilter<FloatImageType, DistanceImageType>;
-  typename ClampFilterType::Pointer clampFilter = ClampFilterType::New();
-
+  auto clampFilter = itk::ClampImageFilter<TFloatImage, TDistImage>::New();
   clampFilter->SetInput(distImage);
   clampFilter->Update();
 
-  if (DEBUG_IMAGE_OUTPUT)
-  {
+  if (DEBUG_IMAGE_OUTPUT) {
     const std::string ending = "_" + std::to_string(component) + ".nii.gz";
-
     writeImage<T, 3, false>(image, "0.image.nii.gz");
     writeImage<T, 3, false>(thresholdFilter->GetOutput(), "1.thresh" + ending);
     writeImage<float, 3, false>(resampleFilter->GetOutput(), "2.resample" + ending);

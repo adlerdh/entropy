@@ -9,9 +9,7 @@
 #include <glad/glad.h>
 
 #include <array>
-#include <memory>
 #include <string>
-#include <unordered_set>
 
 /// @todo Implement call for glDetachShader()
 class GLShaderProgram
@@ -31,8 +29,7 @@ public:
   bool link();
   bool isLinked() const;
 
-  // this class shares ownership of the shader
-  bool attachShader(std::shared_ptr<GLShader> shader);
+  bool attachShader(const GLShader& shader);
 
   /// meant to be called directly before a draw call with that shader bound and
   /// all the bindings (VAO, textures) set. Its purpose is to ensure that the shader
@@ -66,19 +63,17 @@ public:
   bool setUniform(const std::string& name, const std::vector<glm::mat4>& matrices);
 
   /**
-     * @tparam N Uniform index
+     * @tparam N Number of array elements
      */
-  template<GLint N>
+  template<uint32_t N>
   bool setUniform(const std::string& name, const std::array<float, N>& a)
   {
     const GLint loc = getUniformLocation(name);
-
-    if (loc < 0)
-    {
+    if (loc < 0) {
       return false;
     }
 
-    glUniform1fv(loc, N, a.data());
+    glUniform1fv(loc, static_cast<int>(N), a.data());
     return true;
   }
 
@@ -101,8 +96,6 @@ private:
   bool m_linked;
 
   //    GLErrorChecker m_errorChecker;
-
-  std::unordered_set<std::shared_ptr<GLShader>> m_attachedShaders;
 
   Uniforms m_registeredUniforms;
 

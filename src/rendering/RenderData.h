@@ -335,8 +335,11 @@ struct RenderData
   SliceIntersectionParams m_globalSliceIntersectionParams;
 
   /// @todo This can be removed eventually, only used for 3D rendering
+  /// @note Hard-coded for 8 iso-surfaces
   struct IsosurfaceData
   {
+    IsosurfaceData();
+
     std::vector<float> values;
     std::vector<float> opacities;
     std::vector<float> edgeStrengths;
@@ -347,8 +350,6 @@ struct RenderData
     std::vector<glm::vec3> diffuseLights;
     std::vector<glm::vec3> specularLights;
     std::vector<float> shininesses;
-
-    float widthIn2d;
   };
 
   IsosurfaceData m_isosurfaceData;

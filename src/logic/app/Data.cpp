@@ -514,40 +514,31 @@ bool AppData::addDistanceMap(
 }
 
 bool AppData::addNoiseEstimate(
-  const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius
-)
+  const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
   const Image* img = image(imageUid);
-  if (!img)
-  {
+  if (!img) {
     return false; // invalid image UID
   }
 
   const uint32_t numComps = img->header().numComponentsPerPixel();
-  if (component >= numComps)
-  {
-    spdlog::error(
-      "Invalid component {} for image {}. Cannot set noise estimate for it.", component, imageUid
-    );
+  if (component >= numComps) {
+    spdlog::error("Invalid component {} for image {}. Cannot set noise estimate for it.",
+                  component, imageUid);
     return false;
   }
 
   auto compDataIt = m_imageToComponentData.find(imageUid);
-
-  if (std::end(m_imageToComponentData) != compDataIt)
-  {
-    if (component >= compDataIt->second.size())
-    {
+  if (std::end(m_imageToComponentData) != compDataIt) {
+    if (component >= compDataIt->second.size()) {
       compDataIt->second.resize(numComps);
     }
-
     compDataIt->second.at(component).m_noiseEstimates.emplace(radius, std::move(noiseEstimate));
     return true;
   }
-  else
-  {
+  else {
     spdlog::error("No component data for image {}. Cannot set noise estimate.", imageUid);
     return false;
   }
@@ -878,9 +869,8 @@ const std::map<double, Image>& AppData::distanceMaps(
   return EMPTY;
 }
 
-const std::map<uint32_t, Image>& AppData::noiseEstimates(
-  const uuid& imageUid, ComponentIndexType component
-) const
+const std::map<uint32_t, Image>&
+AppData::noiseEstimates(const uuid& imageUid, ComponentIndexType component) const
 {
   // Map of noise estimates (keyed by radius value) for the component:
   static const std::map<uint32_t, Image> EMPTY;
@@ -889,22 +879,17 @@ const std::map<uint32_t, Image>& AppData::noiseEstimates(
 
   auto compDataIt = m_imageToComponentData.find(imageUid);
 
-  if (std::end(m_imageToComponentData) != compDataIt)
-  {
-    if (component < compDataIt->second.size())
-    {
+  if (std::end(m_imageToComponentData) != compDataIt) {
+    if (component < compDataIt->second.size()) {
       return compDataIt->second.at(component).m_noiseEstimates;
     }
-    else
-    {
-      spdlog::error(
-        "Invalid component {} for image {}. Cannot get distance map for it.", component, imageUid
-      );
+    else {
+      spdlog::error("Invalid component {} for image {}. Cannot get distance map for it.",
+                    component, imageUid);
       return EMPTY;
     }
   }
-  else
-  {
+  else {
     spdlog::error("No component data for image {}. Cannot get distance map for it.", imageUid);
     return EMPTY;
   }

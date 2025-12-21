@@ -270,3 +270,15 @@ RenderData::Circle::Circle()
 
   spdlog::debug("Created image quad vertex array object");
 }
+
+RenderData::IsosurfaceData::IsosurfaceData()
+  :
+  values(8, 0.0f),
+  opacities(8, 0.0f),
+  edgeStrengths(8, 0.0f),
+  colors(8, glm::vec3{0.0f}),
+  ambientLights(8, glm::vec3{0.0f}),
+  diffuseLights(8, glm::vec3{0.0f}),
+  specularLights(8, glm::vec3{0.0f}),
+  shininesses(8, 0.0f)
+{}

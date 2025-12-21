@@ -28,7 +28,7 @@ public:
   const std::string& name() const;
   ShaderType type() const;
   GLuint handle() const;
-  bool isValid();
+  bool isValid() const;
   bool isCompiled() const;
 
   void setRegisteredUniforms(Uniforms uniforms);
