@@ -340,15 +340,16 @@ struct RenderData
   {
     IsosurfaceData();
 
-    std::vector<float> values;
+    int numIsos{0u}; //!< Actual number of surfaces
+    std::vector<float> values; //!< Iso-values
     std::vector<float> opacities;
     std::vector<float> edgeStrengths;
     std::vector<glm::vec3> colors;
 
-    /// Material lighting colors:
-    std::vector<glm::vec3> ambientLights;
-    std::vector<glm::vec3> diffuseLights;
-    std::vector<glm::vec3> specularLights;
+    // Material lighting colors
+    std::vector<glm::vec3> ambient;
+    std::vector<glm::vec3> diffuse;
+    std::vector<glm::vec3> specular;
     std::vector<float> shininesses;
   };
 

@@ -90,7 +90,7 @@ const Uniforms::SamplerIndexType msk_segTexSampler{0}; // one segmentation
 const Uniforms::SamplerIndexType msk_segLabelTableTexSampler{1}; // one label table
 
 // Sampler for volume rendering shader:
-const Uniforms::SamplerIndexType msk_jumpTexSampler{2}; // distance map texture
+const Uniforms::SamplerIndexType msk_jumpTexSampler{1}; // distance map texture
 
 /// @todo Change these to account for segs being in their own shader:
 // Samplers for metric shaders:
@@ -1981,7 +1981,7 @@ void Rendering::renderAllImagesForView(
     }
 
     // Only volume render the first image:
-    /// @todo Either 1) let use only select one image or 2) enable rendering more than one image
+    /// @todo Either 1) let user only select one image or 2) enable rendering more than one image
     const auto& imgSegPair = I.front();
 
     const Image* image = m_appData.image(*imgSegPair.first);
@@ -2015,42 +2015,41 @@ void Rendering::renderAllImagesForView(
     P.use();
     {
       P.setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
-      P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
+      // P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
       P.setSamplerUniform("u_jumpTex", msk_jumpTexSampler.index);
 
       /// @todo Put a lot of these into the uniform settings...
 
       P.setUniform("u_tex_T_world", U.imgTexture_T_world);
-      P.setUniform("world_T_imgTexture", U.world_T_imgTexture);
+      P.setUniform("u_world_T_imgTex", U.world_T_imgTexture);
 
       // The camera is positioned at the crosshairs:
-      P.setUniform("worldEyePos", worldOffsetXhairs);
-
-      // P.setUniform( "voxelSpacing", U.voxelSpacing );
-      P.setUniform("texGrads", U.textureGradientStep);
+      P.setUniform("u_worldEyePos", worldOffsetXhairs);
+      P.setUniform("u_texGrads", U.textureGradientStep);
 
       /// @note Shader expects 8 values
+      P.setUniform("u_numIsos", R.m_isosurfaceData.numIsos);
       P.setUniform("u_isoValues", R.m_isosurfaceData.values);
       P.setUniform("u_isoOpacities", R.m_isosurfaceData.opacities);
-      P.setUniform("isoEdges", R.m_isosurfaceData.edgeStrengths);
-      P.setUniform("lightAmbient", R.m_isosurfaceData.ambientLights);
-      P.setUniform("lightDiffuse", R.m_isosurfaceData.diffuseLights);
-      P.setUniform("lightSpecular", R.m_isosurfaceData.specularLights);
-      P.setUniform("lightShininess", R.m_isosurfaceData.shininesses);
+      P.setUniform("u_isoEdges", R.m_isosurfaceData.edgeStrengths);
+      P.setUniform("u_ambient", R.m_isosurfaceData.ambient);
+      P.setUniform("u_diffuse", R.m_isosurfaceData.diffuse);
+      P.setUniform("u_specular", R.m_isosurfaceData.specular);
+      P.setUniform("u_shininess", R.m_isosurfaceData.shininesses);
 
       /// @todo Set this to larger sampling factor when the user is moving the slider
-      P.setUniform("samplingFactor", R.m_raycastSamplingFactor);
+      P.setUniform("u_samplingFactor", R.m_raycastSamplingFactor);
+      P.setUniform("u_imgInvDims", 1.0f / glm::vec3{image->header().pixelDimensions()});
 
-      P.setUniform("renderFrontFaces", R.m_renderFrontFaces);
-      P.setUniform("renderBackFaces", R.m_renderBackFaces);
+      P.setUniform("u_renderFrontFaces", R.m_renderFrontFaces);
+      P.setUniform("u_renderBackFaces", R.m_renderBackFaces);
 
-      P.setUniform("segMasksIn", (RenderData::SegMaskingForRaycasting::SegMasksIn == R.m_segMasking));
-      P.setUniform("segMasksOut", (RenderData::SegMaskingForRaycasting::SegMasksOut == R.m_segMasking));
+      // P.setUniform("u_segMasksIn", (RenderData::SegMaskingForRaycasting::SegMasksIn == R.m_segMasking));
+      // P.setUniform("u_segMasksOut", (RenderData::SegMaskingForRaycasting::SegMasksOut == R.m_segMasking));
 
-      P.setUniform("bgColor", R.m_3dBackgroundColor.a * R.m_3dBackgroundColor);
-      P.setUniform("noHitTransparent", R.m_3dTransparentIfNoHit);
+      P.setUniform("u_bgColor", R.m_3dBackgroundColor.a * R.m_3dBackgroundColor);
+      P.setUniform("u_noHitTransparent", R.m_3dTransparentIfNoHit);
 
-      // spdlog::trace("{} : {}", __PRETTY_FUNCTION__, __LINE__);
       volumeRenderOneImage(view, P, CurrentImages{imgSegPair});
     }
     P.stopUse();
@@ -2690,7 +2689,6 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
     Uniforms vsUniforms;
     vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
     vsUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-    vsUniforms.insertUniform("clip_T_world", UniformType::Mat4, sk_identMat4);
     vsUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
 
     GLShader vs("vsRaycast", ShaderType::Vertex, vsSource.c_str());
@@ -2704,34 +2702,37 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
     Uniforms fsUniforms;
 
     fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
-    fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
+    // fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
     fsUniforms.insertUniform("u_jumpTex", UniformType::Sampler, msk_jumpTexSampler);
 
     fsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
-    fsUniforms.insertUniform("world_T_imgTexture", UniformType::Mat4, sk_identMat4);
+    fsUniforms.insertUniform("u_clip_T_world", UniformType::Mat4, sk_identMat4);
+    fsUniforms.insertUniform("u_world_T_imgTex", UniformType::Mat4, sk_identMat4);
 
-    fsUniforms.insertUniform("worldEyePos", UniformType::Vec3, sk_zeroVec3);
-    fsUniforms.insertUniform("texGrads", UniformType::Mat3, sk_identMat3);
+    fsUniforms.insertUniform("u_worldEyePos", UniformType::Vec3, sk_zeroVec3);
+    fsUniforms.insertUniform("u_texGrads", UniformType::Mat3, sk_identMat3);
 
+    fsUniforms.insertUniform("u_numIsos", UniformType::Int, 0);
     fsUniforms.insertUniform("u_isoValues", UniformType::FloatVector, FloatVector{0.0f});
     fsUniforms.insertUniform("u_isoOpacities", UniformType::FloatVector, FloatVector{1.0f});
-    fsUniforms.insertUniform("isoEdges", UniformType::FloatVector, FloatVector{0.0f});
+    fsUniforms.insertUniform("u_isoEdges", UniformType::FloatVector, FloatVector{0.0f});
 
-    fsUniforms.insertUniform("lightAmbient", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-    fsUniforms.insertUniform("lightDiffuse", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-    fsUniforms.insertUniform("lightSpecular", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
-    fsUniforms.insertUniform("lightShininess", UniformType::FloatVector, FloatVector{0.0f});
+    fsUniforms.insertUniform("u_ambient", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+    fsUniforms.insertUniform("u_diffuse", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+    fsUniforms.insertUniform("u_specular", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+    fsUniforms.insertUniform("u_shininess", UniformType::FloatVector, FloatVector{0.0f});
 
-    fsUniforms.insertUniform("bgColor", UniformType::Vec4, sk_zeroVec4);
+    fsUniforms.insertUniform("u_bgColor", UniformType::Vec4, sk_zeroVec4);
 
-    fsUniforms.insertUniform("samplingFactor", UniformType::Float, 1.0f);
+    fsUniforms.insertUniform("u_samplingFactor", UniformType::Float, 1.0f);
+    fsUniforms.insertUniform("u_imgInvDims", UniformType::Vec3, glm::vec3{1.0f});
 
-    fsUniforms.insertUniform("renderFrontFaces", UniformType::Bool, true);
-    fsUniforms.insertUniform("renderBackFaces", UniformType::Bool, true);
-    fsUniforms.insertUniform("noHitTransparent", UniformType::Bool, true);
+    fsUniforms.insertUniform("u_renderFrontFaces", UniformType::Bool, true);
+    fsUniforms.insertUniform("u_renderBackFaces", UniformType::Bool, true);
+    fsUniforms.insertUniform("u_noHitTransparent", UniformType::Bool, true);
 
-    fsUniforms.insertUniform("segMasksIn", UniformType::Bool, false);
-    fsUniforms.insertUniform("segMasksOut", UniformType::Bool, false);
+    // fsUniforms.insertUniform("u_segMasksIn", UniformType::Bool, false);
+    // fsUniforms.insertUniform("u_segMasksOut", UniformType::Bool, false);
 
     GLShader fs("fsRaycast", ShaderType::Fragment, fsSource.c_str());
     fs.setRegisteredUniforms(std::move(fsUniforms));
@@ -2783,6 +2784,8 @@ void Rendering::setShowVectorOverlays(bool show)
 
 void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid)
 {
+  constexpr int maxNumIsos = 8;
+
   auto& isoData = appData.renderData().m_isosurfaceData;
   const Image* image = appData.image(imageUid);
   if (!image) {
@@ -2799,8 +2802,8 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
   }
 
   const uint32_t activeComp = settings.activeComponent();
+  int i = 0;
 
-  std::size_t i = 0;
   for (const auto& surfaceUid : appData.isosurfaceUids(imageUid, activeComp))
   {
     const Isosurface* surface = m_appData.isosurface(imageUid, activeComp, surfaceUid);
@@ -2827,21 +2830,22 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
       // Color the surface using the current image colormap:
       static constexpr bool premult = false;
       const glm::vec3 cmapColor = getIsosurfaceColor(m_appData, *surface, settings, activeComp, premult);
-      isoData.ambientLights[i] = surface->material.ambient * cmapColor;
-      isoData.diffuseLights[i] = surface->material.diffuse * cmapColor;
-      isoData.specularLights[i] = surface->material.specular * WHITE;
+      isoData.ambient[i] = surface->material.ambient * cmapColor;
+      isoData.diffuse[i] = surface->material.diffuse * cmapColor;
+      isoData.specular[i] = surface->material.specular * WHITE;
     }
     else {
       // Color the surface using its explicitly defined color:
-      isoData.ambientLights[i] = surface->ambientColor();
-      isoData.diffuseLights[i] = surface->diffuseColor();
-      isoData.specularLights[i] = surface->specularColor();
+      isoData.ambient[i] = surface->ambientColor();
+      isoData.diffuse[i] = surface->diffuseColor();
+      isoData.specular[i] = surface->specularColor();
     }
 
     ++i;
+    isoData.numIsos = i;
 
-    if (i >= 8) {
-      break; // Max of 8 iso-surfaces
+    if (i >= maxNumIsos) {
+      break;
     }
   }
 }

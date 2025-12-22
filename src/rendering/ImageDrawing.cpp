@@ -406,7 +406,7 @@ void drawRaycastQuad(
   // Set the view transformation uniforms that are common to all raycast rendering programs:
   program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
   program.setUniform("u_world_T_clip", helper::world_T_clip(view.camera()));
-  program.setUniform("clip_T_world", helper::clip_T_world(view.camera()));
+  program.setUniform("u_clip_T_world", helper::clip_T_world(view.camera()));
 
   /// @todo This must match the camera eye position
   program.setUniform("u_clipDepth", view.clipPlaneDepth());

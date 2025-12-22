@@ -803,7 +803,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   // The isosurface threshold for separating foreground and background is set at the
   // 50th quantile image value. This seems to do a pretty good job for CT, T1, and T2 images.
   /// @todo Eventually, we should do a proper foreground/background segmentation.
-  constexpr uint32_t thresholdQuantile = 75; // 50th percentile
+  constexpr uint32_t thresholdQuantile = 50; // 50th percentile
 
   // If the image has multiple, interleaved components, then do not compute the distance map
   // for the components, since we have not yet written functions to perform distance map
@@ -882,7 +882,7 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
         Image distMapImage = createImageFromItkImage<DistanceMapCompType>(distMapItkImage, displayName);
         const glm::uvec3 distMapSize = distMapImage.header().pixelDimensions();
 
-        m_data.addImage(distMapImage); // Add distance map as an image for debug purposes
+        // m_data.addImage(distMapImage); // Add distance map as an image for debug purposes
         m_data.addDistanceMap(*imageUid, comp, std::move(distMapImage), static_cast<double>(minThreshold));
 
         spdlog::debug("Created distance map (with dimensions {}x{}x{} voxels) to foreground region [{}, {}] "

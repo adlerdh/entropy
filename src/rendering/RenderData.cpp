@@ -273,12 +273,13 @@ RenderData::Circle::Circle()
 
 RenderData::IsosurfaceData::IsosurfaceData()
   :
+  numIsos(0),
   values(8, 0.0f),
   opacities(8, 0.0f),
   edgeStrengths(8, 0.0f),
   colors(8, glm::vec3{0.0f}),
-  ambientLights(8, glm::vec3{0.0f}),
-  diffuseLights(8, glm::vec3{0.0f}),
-  specularLights(8, glm::vec3{0.0f}),
+  ambient(8, glm::vec3{0.0f}),
+  diffuse(8, glm::vec3{0.0f}),
+  specular(8, glm::vec3{0.0f}),
   shininesses(8, 0.0f)
 {}
