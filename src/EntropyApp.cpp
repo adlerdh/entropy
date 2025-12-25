@@ -14,6 +14,8 @@
 #include "logic/camera/MathUtility.h"
 #include "logic/serialization/ProjectSerialization.h"
 #include "logic/states/FsmList.hpp"
+#include "logic/DistanceMap.h"
+
 //#include "logic/ipc/IPCMessage.h"
 
 #include <glm/glm.hpp>
@@ -546,8 +548,6 @@ EntropyApp::loadDeformationField(const fs::path& fileName)
 
 bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bool isReferenceImage)
 {
-  constexpr bool k_computeNoiseEstimate = false;
-
   constexpr size_t defaultImageColorMapIndex = 0;
 
   // Do NOT ignore images if they have already been loaded:
@@ -785,115 +785,10 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
     }
   }
 
-  //        spdlog::info( "Quantiles..." );
-  //        int qq = 0;
-  //        for ( const auto& x : image->settings().componentStatistics(0).m_quantiles )
-  //        {
-  //            std::cout << qq++ << " " << x << std::endl;
-  //        }
-
-  // Compute the distance transformation map for the foreground of image component:
-  /// @todo Put this in separate function, so that the distance map can be calculated upon user request.
-
-  // To conserve GPU memory, the map is downsampled by a factor of 0.5 relative to the
-  // original image size. Also, the map is stored with uint8_t components.
-  /// @todo make configurable
-  constexpr float downsamplingFactor = 0.5f;
-
-  // The isosurface threshold for separating foreground and background is set at the
-  // 50th quantile image value. This seems to do a pretty good job for CT, T1, and T2 images.
-  /// @todo Eventually, we should do a proper foreground/background segmentation.
-  constexpr uint32_t thresholdQuantile = 50; // 50th percentile
-
-  // If the image has multiple, interleaved components, then do not compute the distance map
-  // for the components, since we have not yet written functions to perform distance map
-  // calculations on images with interleaved components.
-  if (image->header().interleavedComponents()) {
-    spdlog::info("Image {} has multiple, interleaved components, "
-                 "so the distance and noise estimate maps will not be computed", *imageUid);
-  }
-  else if (!image->settings().useDistanceMapForRaycasting()) {
-    spdlog::info("Image {} has disabled using the distance map for raycasting", *imageUid);
-  }
-  else
-  {
-    // Create ITK images with float components from which distance maps and noise estimates are computed
-    using ItkImageCompType = float;
-
-    // To save GPU memory, use uint8_t components for the distance map image
-    using DistanceMapCompType = uint8_t;
-
-    using ImageType = itk::Image<ItkImageCompType, 3>;
-    using NoiseImageType = itk::Image<ItkImageCompType, 3>;
-    using DistanceMapImageType = itk::Image<DistanceMapCompType, 3>;
-
-    constexpr uint32_t radius = 1;
-
-    for (uint32_t comp = 0; comp < image->header().numComponentsPerPixel(); ++comp)
-    {
-      /// @note It is somewhat wasteful to recreate an ITK image for each component,
-      /// especially since the image was originally loaded using ITK. But the utility
-      /// functions that we use require an ITK image as input.
-
-      const ImageType::Pointer compImage = createItkImageFromImageComponent<ItkImageCompType>(*image, comp);
-
-      if (k_computeNoiseEstimate)
-      {
-        const NoiseImageType::Pointer noiseEstimateItkImage =
-          computeNoiseEstimate<ItkImageCompType>(compImage, radius);
-
-        if (noiseEstimateItkImage)
-        {
-          const std::string displayName = std::string("Noise estimate for component ") + std::to_string(comp) +
-                                          " of '" + image->settings().displayName() + "'";
-
-          Image noiseEstimateImage = createImageFromItkImage<ItkImageCompType>(noiseEstimateItkImage, displayName);
-          const glm::uvec3 noiseImgSize = noiseEstimateImage.header().pixelDimensions();
-
-          // m_data.addImage( noiseEstimateImage ); // Add noise estimate as an image for debug purposes
-          m_data.addNoiseEstimate(*imageUid, comp, std::move(noiseEstimateImage), radius);
-
-          spdlog::debug("Created noise estimate map (with dimensions {}x{}x{} voxels) with radius {} for "
-                        "component {} of image {}", noiseImgSize.x, noiseImgSize.y, noiseImgSize.z,
-                        radius, comp, *imageUid);
-        }
-        else {
-          spdlog::error("Unable to create noise estimate for component {} of image {}", comp, *imageUid);
-        }
-      }
-
-      // Compute foreground distance map for image component:
-      const auto& stats = image->settings().componentStatistics(comp);
-      const float minThreshold = static_cast<float>(stats.quantiles[thresholdQuantile]);
-      const float maxThreshold = static_cast<float>(stats.onlineStats.max);
-
-      spdlog::debug("Computing Euclidean distance map for image {} using thresholds {} and {}",
-                    *imageUid, minThreshold, maxThreshold);
-
-      const DistanceMapImageType::Pointer distMapItkImage =
-        computeEuclideanDistanceMap<ItkImageCompType, DistanceMapCompType>(
-          compImage, comp, minThreshold, maxThreshold, downsamplingFactor);
-
-      if (distMapItkImage)
-      {
-        const std::string displayName = std::string("Distance map for component ") + std::to_string(comp) +
-                                        " of '" + image->settings().displayName() + "'";
-
-        Image distMapImage = createImageFromItkImage<DistanceMapCompType>(distMapItkImage, displayName);
-        const glm::uvec3 distMapSize = distMapImage.header().pixelDimensions();
-
-        // m_data.addImage(distMapImage); // Add distance map as an image for debug purposes
-        m_data.addDistanceMap(*imageUid, comp, std::move(distMapImage), static_cast<double>(minThreshold));
-
-        spdlog::debug("Created distance map (with dimensions {}x{}x{} voxels) to foreground region [{}, {}] "
-                      "of component {} of image {}", distMapSize.x, distMapSize.y, distMapSize.z,
-                      minThreshold, maxThreshold, comp, *imageUid);
-      }
-      else {
-        spdlog::error("Unable to create distance map for component {} of image {}", comp, *imageUid);
-      }
-    }
-  }
+  // Create distance maps for all components:
+  // To conserve GPU memory, the map is downsampled by 0.25 relative to the original image size
+  constexpr float distanceMapDownsample = 0.25f;
+  createDistanceMaps(*image, *imageUid, distanceMapDownsample, m_data);
 
   // Load segmentation images:
 
@@ -923,16 +818,14 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
 
     if (segInfo.uid)
     {
-      if (segInfo.isNewSeg)
-      {
+      if (segInfo.isNewSeg) {
         spdlog::info("Loaded segmentation from file {} for image {} as {}",
                      serializedSeg.m_segFileName, *imageUid, *segInfo.uid);
 
         // New segmentation needs a new table
         segInfo.needsNewLabelColorTable = true;
       }
-      else
-      {
+      else {
         spdlog::info("Segmentation from {} already exists as {}, so it was not loaded again. "
                      "This segmentation will be shared across all images that reference it.",
                      serializedSeg.m_segFileName, *segInfo.uid);
@@ -1029,8 +922,6 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   }
 
   /// @todo Load from project settings
-  //    static constexpr uint32_t sk_defaultIsovalueQuantile = 750;
-
   for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i) {
     image->settings().setColorMapIndex(i, defaultImageColorMapIndex);
   }
@@ -1062,8 +953,7 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
     if (!loadSerializedImage(project.m_referenceImage, true))
     {
-      spdlog::critical("Could not load reference image from {}",
-                       project.m_referenceImage.m_imageFileName);
+      spdlog::critical("Could not load reference image from {}", project.m_referenceImage.m_imageFileName);
       onProjectLoadingDone(false);
     }
 
@@ -1074,8 +964,7 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
     for (const auto& additionalImage : project.m_additionalImages)
     {
       if (!loadSerializedImage(additionalImage, false)) {
-        spdlog::error("Could not load additional image from {}; skipping it",
-                      additionalImage.m_imageFileName);
+        spdlog::error("Could not load additional image from {}; skipping it", additionalImage.m_imageFileName);
       }
 
       if (m_imageLoadCancelled) {
@@ -1129,11 +1018,8 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
   };
 
   m_glfw.setWindowTitleStatus("Loading project...");
-
   m_data.setProject(serialize::createProjectFromInputParams(params));
-
   m_futureLoadProject = std::async(std::launch::async, projectLoader, m_data.project(), onProjectLoadingDone);
-
   spdlog::debug("Done loading images from parameters");
 }
 

@@ -384,10 +384,6 @@ public:
   void setForegroundThresholdLow(uint32_t component, double background);
   void setForegroundThresholdLow(double background);
 
-  /// Get foreground low threshold (in native image intensity units) for a given component
-  double foregroundThresholdLow(uint32_t component) const;
-  double foregroundThresholdLow() const;
-
   /// Set foreground high threshold (in native image intensity units) for a given component.
   void setForegroundThresholdHigh(uint32_t component, double background);
   void setForegroundThresholdHigh(double background);
@@ -514,6 +510,7 @@ private:
 
   // These apply to the image's isosurfaces:
   bool m_useDistanceMapForRaycasting{true}; //!< Use the distance map to accelerate raycasting of the image
+
   bool m_isosurfacesVisible{true}; //!< Visibility of image isosurfaces
   bool m_applyImageColormapToIsosurfaces{false}; //!< Color image isosurfaces using the image colormap
   bool m_showIsocontoursIn2D{true}; //!< Visibility of isosurface edges in 2D image slices

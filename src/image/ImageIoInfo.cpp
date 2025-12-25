@@ -327,24 +327,23 @@ bool SpaceInfo::set(const itk::ImageIOBase::Pointer imageIo)
   return true;
 }
 
-bool SpaceInfo::set(const typename ::itk::ImageBase<3>::Pointer imageBase)
+bool SpaceInfo::set(const typename itk::ImageBase<3>::Pointer imageBase)
 {
   if (!imageBase || imageBase.IsNull()) {
     return false;
   }
 
   m_numDimensions = 3;
-
   m_dimensions.resize(m_numDimensions);
   m_origin.resize(m_numDimensions);
   m_spacing.resize(m_numDimensions);
   m_directions.resize(m_numDimensions);
 
-  const typename ::itk::ImageBase<3>::RegionType region = imageBase->GetLargestPossibleRegion();
-  const typename ::itk::ImageBase<3>::RegionType::SizeType size = region.GetSize();
-  const typename ::itk::ImageBase<3>::PointType origin = imageBase->GetOrigin();
-  const typename ::itk::ImageBase<3>::SpacingType spacing = imageBase->GetSpacing();
-  const typename ::itk::ImageBase<3>::DirectionType direction = imageBase->GetDirection();
+  const auto region = imageBase->GetLargestPossibleRegion();
+  const auto size = region.GetSize();
+  const auto origin = imageBase->GetOrigin();
+  const auto spacing = imageBase->GetSpacing();
+  const auto direction = imageBase->GetDirection();
 
   for (uint32_t i = 0; i < m_numDimensions; ++i) {
     m_dimensions[i] = static_cast<uint64_t>(size[i]);

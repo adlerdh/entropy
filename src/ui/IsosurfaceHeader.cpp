@@ -727,13 +727,6 @@ void renderIsosurfacesHeader(
         ImGui::SameLine();
         helpMarker("Modulate isocontour opacity with image opacity");
 
-        bool useDistMap = imgSettings.useDistanceMapForRaycasting();
-        if (ImGui::Checkbox("Raycast using distance map", &useDistMap)) {
-          imgSettings.setUseDistanceMapForRaycasting(useDistMap);
-        }
-        ImGui::SameLine();
-        helpMarker("Accelerate raycasting using distance map");
-
         float opacityMod = imgSettings.isosurfaceOpacityModulator();
         if (mySliderF32("Global opacity", &opacityMod, 0.0f, 1.0f, "%0.2f")) {
           imgSettings.setIsosurfaceOpacityModulator(opacityMod);
@@ -749,6 +742,48 @@ void renderIsosurfacesHeader(
           }
           ImGui::SameLine();
           helpMarker("Width of isocontours in 2D views");
+        }
+
+        ImGui::Spacing();
+        bool useDistMap = imgSettings.useDistanceMapForRaycasting();
+        if (ImGui::Checkbox("Raycast using distance map", &useDistMap)) {
+          imgSettings.setUseDistanceMapForRaycasting(useDistMap);
+        }
+        ImGui::SameLine();
+        helpMarker("Accelerate raycasting using distance map to foreground mask");
+
+        if (imgSettings.useDistanceMapForRaycasting()) {
+          bool distMapChanged = false;
+          const double valueMin = image->settings().componentStatistics(componentToAdjust).onlineStats.min;
+          const double valueMax = image->settings().componentStatistics(componentToAdjust).onlineStats.max;
+
+          double threshLow = imgSettings.foregroundThresholds(componentToAdjust).first;
+          double threshHigh = imgSettings.foregroundThresholds(componentToAdjust).second;
+
+          if (mySliderF64("Low thresh.", &threshLow, valueMin, valueMax,
+                          appData.guiData().m_imageValuePrecisionFormat.c_str())) {
+            if (threshLow <= threshHigh) {
+              imgSettings.setForegroundThresholdLow(threshLow);
+              distMapChanged = true;
+            }
+          }
+
+          if (mySliderF64("High thresh.", &threshHigh, valueMin, valueMax,
+                          appData.guiData().m_imageValuePrecisionFormat.c_str())) {
+            if (threshLow <= threshHigh) {
+              imgSettings.setForegroundThresholdHigh(threshHigh);
+              distMapChanged = true;
+            }
+          }
+
+          ImGui::SameLine();
+          helpMarker("Distance map is computed to foreground mask of image, which is defined by lower and upper thresholds");
+
+          /// @todo If the thresholds changed, then create a new distance map (\c createDistanceMaps)
+          /// and texture (\c createDistanceMapTextures)
+          if (distMapChanged) {
+            /// @todo create button "Regenerate distance map"
+          }
         }
       }
 

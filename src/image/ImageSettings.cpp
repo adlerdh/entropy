@@ -1039,9 +1039,13 @@ void ImageSettings::updateWithNewComponentStatistics(
     setting.m_windowCenter = 0.5 * (winLow + winHigh);
     setting.m_windowWidth = winHigh - winLow;
 
-    // Use the [1%, 100%] intensity range to define foreground
-    // (until we have an algorithm to compute a foreground mask)
     setting.m_foregroundThresholds = std::make_pair(stats.quantiles[qLow], stats.quantiles[qMax]);
+
+    // Default thresholds for foreground mask that is used for the raycasting distance map:
+    // Use the [50%, 100%] intensity range to define foreground
+    // (until we have an algorithm to compute a foreground mask)
+    setting.m_foregroundThresholds.first = stats.quantiles[50];
+    setting.m_foregroundThresholds.second = stats.quantiles[qMax];
 
     // Update histogram settings
     setting.m_histogramSettings.m_numBinsMethod = NumBinsComputationMethod::FreedmanDiaconis;

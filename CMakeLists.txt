@@ -421,6 +421,8 @@ set(entropy_SOURCES
   ${entropy_SRC_DIR}/logic/states/annotation/AnnotationStateMachine.cpp
   ${entropy_SRC_DIR}/logic/states/annotation/AnnotationStates.cpp
 
+  ${entropy_SRC_DIR}/logic/DistanceMap.cpp
+
   # We were testing IPC with ITK-SNAP. This functionality is not currently hooked up to Entropy.
   # ${entropy_SRC_DIR}/logic/ipc/IPCHandler.cxx
 

@@ -15,9 +15,9 @@ class FileInfo
 {
 public:
   FileInfo() = default;
-  FileInfo(const ::itk::ImageIOBase::Pointer imageIo);
+  FileInfo(const itk::ImageIOBase::Pointer imageIo);
 
-  bool set(const ::itk::ImageIOBase::Pointer imageIo);
+  bool set(const itk::ImageIOBase::Pointer imageIo);
   bool validate() const;
 
   fs::path m_fileName;
@@ -51,9 +51,9 @@ class PixelInfo
 {
 public:
   PixelInfo() = default;
-  PixelInfo(const ::itk::ImageIOBase::Pointer imageIo);
+  PixelInfo(const itk::ImageIOBase::Pointer imageIo);
 
-  bool set(const ::itk::ImageIOBase::Pointer imageIo);
+  bool set(const itk::ImageIOBase::Pointer imageIo);
   bool validate() const;
 
   itk::IOPixelEnum m_pixelType{itk::IOPixelEnum::UNKNOWNPIXELTYPE};
@@ -66,10 +66,10 @@ class SizeInfo
 {
 public:
   SizeInfo() = default;
-  SizeInfo(const ::itk::ImageIOBase::Pointer imageIo);
+  SizeInfo(const itk::ImageIOBase::Pointer imageIo);
 
-  bool set(const ::itk::ImageIOBase::Pointer imageIo);
-  bool set(const typename ::itk::ImageBase<3>::Pointer imageBase, const size_t componentSizeInBytes);
+  bool set(const itk::ImageIOBase::Pointer imageIo);
+  bool set(const typename itk::ImageBase<3>::Pointer imageBase, const size_t componentSizeInBytes);
   bool validate() const;
 
   std::size_t m_imageSizeInComponents{0u};
@@ -88,7 +88,7 @@ public:
   bool validate() const;
 
   uint32_t m_numDimensions{0u};
-  std::vector<size_t> m_dimensions;
+  std::vector<std::size_t> m_dimensions;
   std::vector<double> m_origin;
   std::vector<double> m_spacing;
   std::vector<std::vector<double>> m_directions;
@@ -127,9 +127,9 @@ class ImageIoInfo
 {
 public:
   ImageIoInfo() = default;
-  ImageIoInfo(const ::itk::ImageIOBase::Pointer imageIo);
+  ImageIoInfo(const itk::ImageIOBase::Pointer imageIo);
 
-  bool set(const ::itk::ImageIOBase::Pointer imageIo);
+  bool set(const itk::ImageIOBase::Pointer imageIo);
   bool validate() const;
 
   FileInfo m_fileInfo;

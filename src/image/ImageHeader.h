@@ -21,9 +21,8 @@ class ImageHeader
 public:
   explicit ImageHeader() = default;
 
-  ImageHeader(
-    const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioInfoInMemory, bool interleavedComponents
-  );
+  ImageHeader(const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioInfoInMemory,
+              bool interleavedComponents);
 
   ImageHeader(const ImageHeader&) = default;
   ImageHeader& operator=(const ImageHeader&) = default;
@@ -67,8 +66,7 @@ public:
   const glm::uvec3& pixelDimensions() const; //!< Pixel dimensions (i.e. pixel matrix size)
   const glm::vec3& origin() const;           //!< Origin in physical Subject space
   const glm::vec3& spacing() const;          //!< Pixel spacing in physical Subject space
-  const glm::mat3& directions(
-  ) const; //!< Axis directions in physical Subject space, stored column-wise
+  const glm::mat3& directions() const; //!< Axis directions in physical Subject space, column-major
 
   /// All corners of the image's AXIS-ALIGNED bounding box in Voxel space
   const std::array<glm::vec3, 8>& pixelBBoxCorners() const;
@@ -162,9 +160,7 @@ std::ostream& operator<<(std::ostream&, const ImageHeader&);
 #include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000
 template<>
-struct fmt::formatter<ImageHeader> : ostream_formatter
-{
-};
+struct fmt::formatter<ImageHeader> : ostream_formatter {};
 #endif
 
 #endif // IMAGE_HEADER_H

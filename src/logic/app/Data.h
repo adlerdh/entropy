@@ -1,5 +1,4 @@
-#ifndef APP_DATA_H
-#define APP_DATA_H
+#pragma once
 
 #include "common/ParcellationLabelTable.h"
 #include "common/UuidRange.h"
@@ -377,6 +376,7 @@ public:
   void restoreAllViewWorldCenterPositions();
 
 private:
+
   /// @brief Data associated with the individual image components
   struct ComponentData
   {
@@ -385,7 +385,7 @@ private:
     /// (defined by a single isosurface) in the image. Each component of the image has its own
     /// distance map. Each map is paired with its corresponding boundary isosurface value.
 
-    /// Distance maps for the component, keyed by boundary isosurface value
+    /// Distance map for the component
     std::map<double, Image> m_distanceMaps;
 
     /// Voxel-wise noise estimates of the image, keyed by the radius of the neighborhood
@@ -482,5 +482,3 @@ private:
   using MapViewUidToCenterPos = std::unordered_map<uuid, glm::vec3>;
   std::vector<MapViewUidToCenterPos> m_savedViewWorldCenterPositions;
 };
-
-#endif // APP_DATA_H

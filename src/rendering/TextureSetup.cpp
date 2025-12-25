@@ -239,9 +239,8 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
   return createdImageTexUids;
 }
 
-std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > createDistanceMapTextures(
-  const AppData& appData
-)
+std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>>
+createDistanceMapTextures(const AppData& appData)
 {
   static constexpr GLint sk_mipmapLevel = 0; // Load distance map data into first mipmap level
   static constexpr GLint sk_alignment = 1;   // Pixel pack/unpack alignment is 1 byte
@@ -256,15 +255,14 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > create
   static const tex::MagnificationFilter sk_maxFilter = tex::MagnificationFilter::Nearest;
 
   // Use Red integer format for each distance map texture:
-  const tex::SizedInternalFormat k_sizedInternalNormalizedFormat
-    = GLTexture::getSizedInternalRedFormat(sk_compType);
+  const tex::SizedInternalFormat k_sizedInternalNormalizedFormat =
+    GLTexture::getSizedInternalRedFormat(sk_compType);
 
   // Use this for Red float format:
   // GLTexture::getSizedInternalNormalizedRedFormat( sk_compType );
 
-  const tex::BufferPixelFormat k_bufferPixelNormalizedFormat = GLTexture::getBufferPixelRedFormat(
-    sk_compType
-  );
+  const tex::BufferPixelFormat k_bufferPixelNormalizedFormat =
+    GLTexture::getBufferPixelRedFormat(sk_compType);
 
   // Use this for Red float format:
   // GLTexture::getBufferPixelNormalizedRedFormat( sk_compType );
@@ -272,8 +270,7 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > create
   // Map from image UID to vector of textures for the distance maps of the image components.
   std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > mapTextures;
 
-  if (0 == appData.numImages())
-  {
+  if (0 == appData.numImages()) {
     spdlog::warn("No images are loaded for which to create distance map textures");
     return mapTextures;
   }
@@ -289,8 +286,7 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > create
     spdlog::debug("Begin creating distance map texture(s) for components of image {}", imageUid);
 
     // const auto* image = appData.image(imageUid);
-    // if (!image)
-    // {
+    // if (!image) {
     //   spdlog::warn("Image {} is invalid", imageUid);
     //   continue;
     // }
@@ -302,7 +298,6 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > create
     }
 
     const Image& image = result->get();
-
     const uint32_t numComp = image.header().numComponentsPerPixel();
 
     // Map of component index to texture
@@ -311,9 +306,7 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > create
     for (uint32_t comp = 0; comp < numComp; ++comp)
     {
       const std::map<double, Image>& maps = appData.distanceMaps(imageUid, comp);
-
-      if (maps.empty())
-      {
+      if (maps.empty()) {
         spdlog::warn("No distance map for component {} of image {}", comp, imageUid);
         continue;
       }
@@ -322,15 +315,9 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > create
       const Image& map = maps.begin()->second;
 
       auto it = componentTextures.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(comp),
-        std::forward_as_tuple(
-          tex::Target::Texture3D,
-          GLTexture::MultisampleSettings(),
-          pixelPackSettings,
-          pixelUnpackSettings
-        )
-      );
+        std::piecewise_construct, std::forward_as_tuple(comp),
+        std::forward_as_tuple(tex::Target::Texture3D,
+          GLTexture::MultisampleSettings(), pixelPackSettings, pixelUnpackSettings));
 
       it.first->second.generate();
       it.first->second.setMinificationFilter(sk_minFilter);
@@ -340,18 +327,11 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > create
       it.first->second.setSize(map.header().pixelDimensions());
 
       it.first->second.setData(
-        sk_mipmapLevel,
-        k_sizedInternalNormalizedFormat,
-        k_bufferPixelNormalizedFormat,
-        GLTexture::getBufferPixelDataType(sk_compType),
-        map.bufferAsVoid(0)
-      );
+        sk_mipmapLevel, k_sizedInternalNormalizedFormat, k_bufferPixelNormalizedFormat,
+        GLTexture::getBufferPixelDataType(sk_compType), map.bufferAsVoid(0));
     }
 
-    spdlog::debug(
-      "Done creating {} distance map textures for image components", componentTextures.size()
-    );
-
+    spdlog::debug("Done creating {} distance map textures for image components", componentTextures.size());
     mapTextures.emplace(imageUid, std::move(componentTextures));
   }
 

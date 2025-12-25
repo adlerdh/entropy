@@ -158,7 +158,10 @@ Image::Image(
   const ImageRepresentation& imageRep,
   const MultiComponentBufferType& bufferType,
   const std::vector<const void*>& imageDataComponents)
-  : m_imageRep(imageRep) , m_bufferType(bufferType) , m_header(header)
+  :
+  m_imageRep(imageRep),
+  m_bufferType(bufferType),
+  m_header(header)
 {
   if (imageDataComponents.empty()) {
     spdlog::error("No image data buffers provided for constructing Image");

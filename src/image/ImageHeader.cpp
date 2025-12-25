@@ -12,50 +12,37 @@
 #include <spdlog/spdlog.h>
 
 ImageHeader::ImageHeader(
-  const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioInfoInMemory, bool interleavedComponents
-)
-  : m_ioInfoOnDisk(ioInfoOnDisk)
-  , m_ioInfoInMemory(ioInfoInMemory)
-  , m_interleavedComponents(interleavedComponents)
-  ,
-
+  const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioInfoInMemory, bool interleavedComponents)
+  :
+  m_ioInfoOnDisk(ioInfoOnDisk),
+  m_ioInfoInMemory(ioInfoInMemory),
+  m_interleavedComponents(interleavedComponents),
   m_existsOnDisk(true)
+
   , m_fileName(ioInfoOnDisk.m_fileInfo.m_fileName)
   , m_numComponentsPerPixel(ioInfoOnDisk.m_pixelInfo.m_numComponents)
   , m_numPixels(ioInfoOnDisk.m_sizeInfo.m_imageSizeInPixels)
-  ,
-
-  m_fileImageSizeInBytes(ioInfoOnDisk.m_sizeInfo.m_imageSizeInBytes)
+  , m_fileImageSizeInBytes(ioInfoOnDisk.m_sizeInfo.m_imageSizeInBytes)
   , m_memoryImageSizeInBytes(ioInfoInMemory.m_sizeInfo.m_imageSizeInBytes)
-  ,
-
-  m_pixelType(fromItkPixelType(ioInfoOnDisk.m_pixelInfo.m_pixelType))
+  , m_pixelType(fromItkPixelType(ioInfoOnDisk.m_pixelInfo.m_pixelType))
   , m_pixelTypeAsString(ioInfoOnDisk.m_pixelInfo.m_pixelTypeString)
-  ,
 
-  m_fileComponentType(fromItkComponentType(ioInfoOnDisk.m_componentInfo.m_componentType))
+  , m_fileComponentType(fromItkComponentType(ioInfoOnDisk.m_componentInfo.m_componentType))
   , m_fileComponentTypeAsString(ioInfoOnDisk.m_componentInfo.m_componentTypeString)
   , m_fileComponentSizeInBytes(ioInfoOnDisk.m_componentInfo.m_componentSizeInBytes)
-  ,
 
-  m_memoryComponentType(fromItkComponentType(ioInfoInMemory.m_componentInfo.m_componentType))
+  , m_memoryComponentType(fromItkComponentType(ioInfoInMemory.m_componentInfo.m_componentType))
   , m_memoryComponentTypeAsString(ioInfoInMemory.m_componentInfo.m_componentTypeString)
   , m_memoryComponentSizeInBytes(ioInfoInMemory.m_componentInfo.m_componentSizeInBytes)
 {
-  if (ComponentType::Undefined == m_memoryComponentType)
-  {
-    spdlog::error(
-      "Cannot set header for image {} with undefined component type",
-      ioInfoInMemory.m_fileInfo.m_fileName
-    );
+  if (ComponentType::Undefined == m_memoryComponentType) {
+    spdlog::error("Cannot set header for image {} with undefined component type",
+                  ioInfoInMemory.m_fileInfo.m_fileName);
     throw_debug("Undefined component type")
   }
-  else if (PixelType::Undefined == m_pixelType)
-  {
-    spdlog::error(
-      "Cannot set header for image {} with undefined pixel type",
-      ioInfoInMemory.m_fileInfo.m_fileName
-    );
+  else if (PixelType::Undefined == m_pixelType) {
+    spdlog::error("Cannot set header for image {} with undefined pixel type",
+                  ioInfoInMemory.m_fileInfo.m_fileName);
     throw_debug("undefined pixel type")
   }
 
@@ -86,14 +73,8 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
   // Expect a 3D image
   if (numDim != 3 || orig.size() != 3 || spacing.size() != 3 || dims.size() != 3 || dirs.size() != 3)
   {
-    spdlog::debug(
-      "Vector sizes: numDims = {}, origin = {}, spacing = {}, dims = {}, directions = {}",
-      numDim,
-      orig.size(),
-      spacing.size(),
-      dims.size(),
-      dirs.size()
-    );
+    spdlog::debug("Vector sizes: numDims = {}, origin = {}, spacing = {}, dims = {}, directions = {}",
+                  numDim, orig.size(), spacing.size(), dims.size(), dirs.size());
 
     if (numDim == 1 && orig.size() == 1 && spacing.size() == 1 && dims.size() == 1 && dirs.size() == 1)
     {
@@ -116,8 +97,7 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
       const glm::dvec3 d1 = glm::normalize(glm::dvec3{0.0, 1.0, 0.0});
       const glm::dvec3 d2 = glm::normalize(glm::cross(d0, d1));
 
-      for (uint32_t i = 0; i < 3; ++i)
-      {
+      for (uint32_t i = 0; i < 3; ++i) {
         d3x3[0][i] = d0[i];
         d3x3[1][i] = d1[i];
         d3x3[2][i] = d2[i];
@@ -141,8 +121,7 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
       const glm::dvec3 d1 = glm::normalize(glm::dvec3{dirs[1][0], dirs[1][1], 0.0});
       const glm::dvec3 d2 = glm::normalize(glm::cross(d0, d1));
 
-      for (uint32_t i = 0; i < 3; ++i)
-      {
+      for (uint32_t i = 0; i < 3; ++i) {
         d3x3[0][i] = d0[i];
         d3x3[1][i] = d1[i];
         d3x3[2][i] = d2[i];
@@ -185,7 +164,7 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
   }
   else if (m_headerOverrides.m_snapToClosestOrthogonalPixelDirections)
   {
-    m_directions = m_headerOverrides.m_closestOrthogonalDirections;
+    m_directions = m_headerOverrides.m_closestOrthogonalDirs;
   }
 
   std::tie(m_spiralCode, m_isOblique) = math::computeSpiralCodeFromDirectionMatrix(m_directions);
@@ -354,18 +333,16 @@ uint64_t ImageHeader::numPixels() const
 
 void ImageHeader::setNumComponentsPerPixel(uint32_t numComponents)
 {
-  if (0 == numComponents)
-  {
+  if (0 == numComponents) {
     spdlog::error("Unable to set number of image components to {}", numComponents);
     return;
   }
 
   m_numComponentsPerPixel = numComponents;
-
   m_fileImageSizeInBytes = m_fileComponentSizeInBytes * m_numComponentsPerPixel * m_numPixels;
   m_memoryImageSizeInBytes = m_memoryComponentSizeInBytes * m_numComponentsPerPixel * m_numPixels;
 
-  /// @note \c m_ioInfoInMemoryhas not been updated. It is never retrieved by the client or used later.
+  /// @note \c m_ioInfoInMemory has not been updated. It is never retrieved by the client or used later.
   /// m_ioInfoInMemory.m_pixelInfo.m_numComponents = m_numComponentsPerPixel;
 }
 

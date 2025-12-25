@@ -6,11 +6,9 @@
 
 namespace
 {
-
-static const float sk_initAngle = glm::pi<float>() / 3.0f;
-static const float sk_minAngle = glm::radians(0.5f);
-static const float sk_maxAngle = glm::radians(120.0f);
-
+constexpr float k_initAngle = glm::pi<float>() / 3.0f;
+constexpr float k_minAngle = glm::radians(0.5f);
+constexpr float k_maxAngle = glm::radians(120.0f);
 } // namespace
 
 PerspectiveProjection::PerspectiveProjection()
@@ -32,11 +30,11 @@ void PerspectiveProjection::setZoom(float factor)
 {
   if (factor > 0.0f)
   {
-    m_zoom = glm::clamp(factor, sk_initAngle / sk_maxAngle, sk_initAngle / sk_minAngle);
+    m_zoom = glm::clamp(factor, k_initAngle / k_maxAngle, k_initAngle / k_minAngle);
   }
 }
 
 float PerspectiveProjection::angle() const
 {
-  return glm::clamp(sk_initAngle / m_zoom, sk_minAngle, sk_maxAngle);
+  return glm::clamp(k_initAngle / m_zoom, k_minAngle, k_maxAngle);
 }

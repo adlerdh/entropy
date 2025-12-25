@@ -68,8 +68,7 @@ typename itk::Image<T, 3>::Pointer makeScalarImage(
   itk::SpacePrecisionType origin[3];
   itk::SpacePrecisionType spacing[3];
 
-  for (uint32_t i = 0; i < 3; ++i)
-  {
+  for (uint32_t i = 0; i < 3; ++i) {
     start[i] = 0.0;
     size[i] = imageDims[i];
     origin[i] = imageOrigin[i];
@@ -91,9 +90,8 @@ typename itk::Image<T, 3>::Pointer makeScalarImage(
   region.SetIndex(start);
   region.SetSize(size);
 
-  try
-  {
-    typename ImportFilterType::Pointer importer = ImportFilterType::New();
+  try {
+    auto importer = ImportFilterType::New();
     importer->SetRegion(region);
     importer->SetOrigin(origin);
     importer->SetSpacing(spacing);
@@ -195,8 +193,7 @@ typename itk::Image<itk::Vector<T, VectorDim>, 3>::Pointer makeVectorImage(
   itk::SpacePrecisionType origin[3];
   itk::SpacePrecisionType spacing[3];
 
-  for (uint32_t i = 0; i < 3; ++i)
-  {
+  for (uint32_t i = 0; i < 3; ++i) {
     start[i] = 0.0;
     size[i] = imageDims[i];
     origin[i] = imageOrigin[i];
@@ -218,9 +215,8 @@ typename itk::Image<itk::Vector<T, VectorDim>, 3>::Pointer makeVectorImage(
   region.SetIndex(start);
   region.SetSize(size);
 
-  try
-  {
-    typename ImportFilterType::Pointer importer = ImportFilterType::New();
+  try {
+    auto importer = ImportFilterType::New();
     importer->SetRegion(region);
     importer->SetOrigin(origin);
     importer->SetSpacing(spacing);
@@ -231,8 +227,7 @@ typename itk::Image<itk::Vector<T, VectorDim>, 3>::Pointer makeVectorImage(
 
     return importer->GetOutput();
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     spdlog::error("Exception creating new ITK vector image from data array: {}", e.what());
     return nullptr;
   }
@@ -252,7 +247,6 @@ typename itk::Image<T, 3>::Pointer
 createItkImageFromImageComponent(const Image& image, uint32_t component)
 {
   using OutputImageType = itk::Image<T, 3>;
-
   const ImageHeader& header = image.header();
 
   if (component >= header.numComponentsPerPixel()) {
@@ -266,8 +260,7 @@ createItkImageFromImageComponent(const Image& image, uint32_t component)
   std::array<double, 3> spacing;
   std::array<std::array<double, 3>, 3> directions;
 
-  for (uint32_t i = 0; i < 3; ++i)
-  {
+  for (uint32_t i = 0; i < 3; ++i) {
     const int ii = static_cast<int>(i);
     dims[i] = header.pixelDimensions()[ii];
     origin[i] = static_cast<double>(header.origin()[ii]);
@@ -286,7 +279,7 @@ createItkImageFromImageComponent(const Image& image, uint32_t component)
     using S = int8_t;
     using InputImageType = itk::Image<S, 3>;
     using FilterType = itk::CastImageFilter<InputImageType, OutputImageType>;
-    typename FilterType::Pointer caster = FilterType::New();
+    auto caster = FilterType::New();
 
     InputImageType::Pointer compImage = makeScalarImage(
       dims, origin, spacing, directions, static_cast<const S*>(image.bufferAsVoid(component)));
@@ -311,6 +304,7 @@ createItkImageFromImageComponent(const Image& image, uint32_t component)
     if (!compImage) {
       return nullptr;
     }
+
     caster->SetInput(compImage);
     caster->Update();
     return caster->GetOutput();
@@ -552,10 +546,8 @@ QuantileOfValue convertValueToQuantile(const std::span<const T> dataSorted, T va
   Q.upperIndex = upperIndex;
   Q.lowerQuantile = static_cast<double>(lowerIndex) / N;
   Q.upperQuantile = static_cast<double>(upperIndex) / N;
-
   Q.lowerValue = dataSorted[lowerIndex];
   Q.upperValue = dataSorted[upperIndex];
-
   return Q;
 }
 
@@ -875,7 +867,7 @@ std::vector<typename itk::Image<ComponentType, NDim>::Pointer> splitImageIntoCom
   else
   {
     // Image has only one component
-    const typename ImageType::Pointer image = downcastImageBaseToImage<ComponentType, NDim>(imageBase);
+    const auto image = downcastImageBaseToImage<ComponentType, NDim>(imageBase);
 
     if (!image || image.IsNull()) {
       spdlog::error("Error casting ImageBase to image");
@@ -963,45 +955,57 @@ template<class T>
 Image createImageFromItkImage(
   const typename itk::Image<T, 3>::Pointer itkImage, const std::string& displayName)
 {
-  /*
-    using DirectionType = itk::Image<T, 3>::DirectionType;
-    using PointType = itk::Image<T, 3>::PointType;
-    using RegionType = itk::Image<T, 3>::RegionType;
-    using SizeType = itk::Image<T, 3>::SizeType;
-    using SpacingType = itk::Image<T, 3>::SpacingType;
+#if 1
+  const auto itkRegion = itkImage->GetLargestPossibleRegion();
+  const auto itkSize = itkRegion.GetSize();
+  const auto itkSpacing = itkImage->GetSpacing();
+  const auto itkOrigin = itkImage->GetOrigin();
+  const auto itkDir = itkImage->GetDirection();
 
-    const DirectionType itkDir = itkImage->GetDirection();
-    const PointType itkOrigin = itkImage->GetOrigin();
-    const RegionType itkRegion = itkImage->GetLargestPossibleRegion();
-    const SizeType itkSize = itkRegion.GetSize();
-    const SpacingType itkSpacing = itkImage->GetSpacing();
+  ImageIoInfo info;
+  info.m_componentInfo.m_componentType = itk::IOComponentEnum::UCHAR;
+  info.m_componentInfo.m_componentTypeString = "unsigned_char";
+  info.m_componentInfo.m_componentSizeInBytes = 1;
 
-    const glm::uvec3 dims{ itkSize[0], itkSize[1], itkSize[2] };
-    const glm::vec3 origin{ itkOrigin[0], itkOrigin[1], itkOrigin[2] };
-    const glm::vec3 spacing{ itkSpacing[0], itkSpacing[1], itkSpacing[2] };
+  info.m_pixelInfo.m_pixelType = itk::IOPixelEnum::SCALAR;
+  info.m_pixelInfo.m_pixelTypeString = "scalar";
+  info.m_pixelInfo.m_numComponents = 1;
+  info.m_pixelInfo.m_pixelStrideInBytes = 1;
 
-    // Set matrix of direction vectors in column-major order
-    // Todo: make sure that this isn't transposed!
-    const glm::mat3 directions{
-        itkDir[0][0], itkDir[0][1], itkDir[0][2],
-        itkDir[1][0], itkDir[1][1], itkDir[1][2],
-        itkDir[2][0], itkDir[2][1], itkDir[2][2]
-    };
+  const std::size_t N = itkSize[0] * itkSize[1] * itkSize[2];
+  info.m_sizeInfo.m_imageSizeInComponents = N;
+  info.m_sizeInfo.m_imageSizeInPixels = N;
+  info.m_sizeInfo.m_imageSizeInBytes = N;
 
-    ImageHeader header;
-    header.setFileName("<none>");
-    header.setExistsOnDisk(false);
-    header.setNumComponentsPerPixel(1);
-    header.setHeaderOverrides(ImageHeaderOverrides(dims, spacing, origin, directions));
-    */
+  info.m_spaceInfo.m_numDimensions = 3;
+  info.m_spaceInfo.m_dimensions = {itkSize[0], itkSize[1], itkSize[2]};
+  info.m_spaceInfo.m_origin = {itkOrigin[0], itkOrigin[1], itkOrigin[2]};
+  info.m_spaceInfo.m_spacing = {itkSpacing[0], itkSpacing[1], itkSpacing[2]};
+  info.m_spaceInfo.m_directions = {
+    {itkDir[0][0], itkDir[1][0], itkDir[2][0]},
+    {itkDir[0][1], itkDir[1][1], itkDir[2][1]},
+    {itkDir[0][2], itkDir[1][2], itkDir[2][2]}};
 
-  // Image image(header, displayName,
-  //              Image::ImageRepresentation::Image,
-  //              Image::MultiComponentBufferType::SeparateImages,
-  //              std::vector<const T*>{ itkImage->GetBufferPointer() });
+  const glm::uvec3 dims{itkSize[0], itkSize[1], itkSize[2]};
+  const glm::vec3 origin{itkOrigin[0], itkOrigin[1], itkOrigin[2]};
+  const glm::vec3 spacing{itkSpacing[0], itkSpacing[1], itkSpacing[2]};
 
-  // return image;
+  // Set matrix of direction vectors in column-major order
+  const glm::mat3 dir{itkDir[0][0], itkDir[0][1], itkDir[0][2],
+                      itkDir[1][0], itkDir[1][1], itkDir[1][2],
+                      itkDir[2][0], itkDir[2][1], itkDir[2][2]};
 
+  ImageHeader header(info, info, false);
+  header.setFileName("<none>");
+  header.setExistsOnDisk(false);
+  header.setHeaderOverrides(ImageHeaderOverrides(dims, spacing, origin, dir));
+
+  Image image(header, displayName, Image::ImageRepresentation::Image,
+              Image::MultiComponentBufferType::SeparateImages,
+              std::vector<const void*>{itkImage->GetBufferPointer()});
+
+  return image;
+#else
   const fs::path filename = fs::temp_directory_path() / "temp.nii.gz";
 
   writeImage<T, 3, false>(itkImage, filename);
@@ -1019,6 +1023,7 @@ Image createImageFromItkImage(
   }
 
   return image;
+#endif
 }
 
 template<typename T>
@@ -1092,10 +1097,11 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
 
   // Downsample the thresholded boundary image in order to reduce the size of the resulting distance map,
   // especially since the distance map is loaded as a 3D texture on the GPU
-  const typename TInputImage::RegionType inputRegion = image->GetLargestPossibleRegion();
-  const typename TInputImage::SizeType inputSize = inputRegion.GetSize();
-  const typename TInputImage::SpacingType inputSpacing = image->GetSpacing();
-  const typename TInputImage::PointType inputOrigin = image->GetOrigin();
+  const auto inputRegion = image->GetLargestPossibleRegion();
+  const auto inputSize = inputRegion.GetSize();
+  const auto inputSpacing = image->GetSpacing();
+  const auto inputOrigin = image->GetOrigin();
+  const auto inputDir = image->GetDirection();
 
   typename TInputImage::SizeType outputSize;
   typename TInputImage::SpacingType outputSpacing;
@@ -1110,10 +1116,14 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
     scale = std::max(scale, static_cast<float>(outputSize[i]) / static_cast<float>(inputSize[i]));
   }
 
+  itk::Vector<double, 3> delta;
+
   for (uint32_t i = 0; i < 3; ++i) {
     outputSpacing[i] = inputSpacing[i] / scale;
-    outputOrigin[i] = inputOrigin[i] + 0.5 * (outputSpacing[i] - inputSpacing[i]);
+    delta[i] = 0.5 * (outputSpacing[i] - inputSpacing[i]);
   }
+
+  outputOrigin = inputOrigin + inputDir * delta;
 
   using TCoord = double;
   auto interpolator = itk::LinearInterpolateImageFunction<TInputImage, TCoord>::New();

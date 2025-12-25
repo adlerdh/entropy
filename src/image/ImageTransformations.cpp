@@ -285,7 +285,7 @@ void ImageTransformations::initializeTransformations()
                              ? glm::vec3(0.0f)
                              : m_headerOverrides.m_originalOrigin;
 
-  glm::mat3 directions = m_headerOverrides.m_originalDirections;
+  glm::mat3 directions = m_headerOverrides.m_originalDirs;
 
   if (m_headerOverrides.m_useIdentityPixelDirections)
   {
@@ -293,7 +293,7 @@ void ImageTransformations::initializeTransformations()
   }
   else if (m_headerOverrides.m_snapToClosestOrthogonalPixelDirections)
   {
-    directions = m_headerOverrides.m_closestOrthogonalDirections;
+    directions = m_headerOverrides.m_closestOrthogonalDirs;
   }
 
   m_subject_T_pixel = math::computeImagePixelToSubjectTransformation(directions, spacing, origin);
@@ -301,7 +301,7 @@ void ImageTransformations::initializeTransformations()
   m_pixel_T_subject = glm::inverse(m_subject_T_pixel);
 
   m_texture_T_pixel = math::computeImagePixelToTextureTransformation(
-    m_headerOverrides.m_originalDimensions
+    m_headerOverrides.m_originalDims
   );
 
   m_pixel_T_texture = glm::inverse(m_texture_T_pixel);
