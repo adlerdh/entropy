@@ -67,12 +67,12 @@ static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, Cam
 };
 
 ViewRenderMode reconcileRenderModeForViewType(
-  const ViewType& viewType, const ViewRenderMode& currentRenderMode)
+  const ViewType& newViewType, const ViewRenderMode& currentRenderMode)
 {
   /// @todo Write this function properly by accounting for
   /// All2dViewRenderModes, All3dViewRenderModes, All2dNonMetricRenderModes, All3dNonMetricRenderModes
 
-  if (ViewType::ThreeD == viewType) {
+  if (ViewType::ThreeD == newViewType) {
     // If switching to ViewType::ThreeD, then switch to ViewRenderMode::VolumeRender:
     return ViewRenderMode::VolumeRender;
   }
@@ -125,7 +125,8 @@ View::View(
   std::optional<uuid> cameraRotationSyncGroupUid,
   std::optional<uuid> cameraTranslationSyncGroup,
   std::optional<uuid> cameraZoomSyncGroup)
-  : ControlFrame(winClipViewport, viewType, renderMode, ipMode, uiControls)
+  :
+  ControlFrame(winClipViewport, viewType, renderMode, ipMode, uiControls)
   , m_uid(generateRandomUuid())
   , m_offset(std::move(offsetSetting))
   , m_projectionType(sk_viewTypeToDefaultProjectionTypeMap.at(m_viewType))
@@ -137,6 +138,7 @@ View::View(
   , m_cameraTranslationSyncGroupUid(cameraTranslationSyncGroup)
   , m_cameraZoomSyncGroupUid(cameraZoomSyncGroup)
   , m_clipPlaneDepth(0.0f)
+  , m_anatomy_T_start(get_anatomy_T_start(m_viewType))
 {}
 
 const uuid& View::uid() const
@@ -146,7 +148,7 @@ const uuid& View::uid() const
 
 CoordinateFrame View::get_anatomy_T_start(const ViewType& viewType) const
 {
-  const bool thisViewRotatesWithXhairs =
+  const bool thisViewHasRotatingXhairs =
     (m_crosshairs.viewWithRotatingCrosshairs && (*m_crosshairs.viewWithRotatingCrosshairs == m_uid));
 
   // R is identity when the view aligns with the Ax/Cor/Sag planes.
@@ -156,7 +158,7 @@ CoordinateFrame View::get_anatomy_T_start(const ViewType& viewType) const
   switch (m_viewAlignment)
   {
   case ViewAlignmentMode::Crosshairs: {
-    R = thisViewRotatesWithXhairs
+    R = thisViewHasRotatingXhairs
       ? glm::mat3{m_crosshairs.worldCrosshairsOld.world_T_frame()}
       : glm::mat3{m_crosshairs.worldCrosshairs.world_T_frame()};
     break;
@@ -268,48 +270,51 @@ void View::setViewType(const ViewType& newViewType)
     spdlog::debug("Changing camera projection from {} to {}",
                   typeString(m_projectionType), typeString(newProjType));
 
-    std::unique_ptr<Projection> projection;
+    std::unique_ptr<Projection> newProj;
     switch (newProjType)
     {
     case ProjectionType::Orthographic: {
-      projection = std::make_unique<OrthographicProjection>();
+      newProj = std::make_unique<OrthographicProjection>();
       break;
     }
     case ProjectionType::Perspective: {
-      projection = std::make_unique<PerspectiveProjection>();
+      newProj = std::make_unique<PerspectiveProjection>();
       break;
     }
     }
 
     // Transfer the current projection parameters to the new projection:
-    projection->setAspectRatio(m_camera.projection()->aspectRatio());
-    projection->setDefaultFov(m_camera.projection()->defaultFov());
-    projection->setFarDistance(m_camera.projection()->farDistance());
-    projection->setNearDistance(m_camera.projection()->nearDistance());
-    projection->setZoom(m_camera.projection()->getZoom());
+    const Projection* currProj = m_camera.projection();
+    if (!currProj) {
+      spdlog::error("Camera has null projection");
+      return;
+    }
 
-    m_camera.setProjection(std::move(projection));
+    newProj->setAspectRatio(currProj->aspectRatio());
+    newProj->setDefaultFov(currProj->defaultFov());
+    newProj->setFarDistance(currProj->farDistance());
+    newProj->setNearDistance(currProj->nearDistance());
+    newProj->setZoom(currProj->getZoom());
+
+    m_camera.setProjection(std::move(newProj));
   }
 
   // Since different view types have different allowable render modes, the render mode must be
   // reconciled with the change in view type:
   m_renderMode = reconcileRenderModeForViewType(newViewType, m_renderMode);
 
-  /// @todo This should be a member variable
-  CoordinateFrame anatomy_T_start;
-
   if (ViewType::Oblique == newViewType)
   {
     // Transitioning to an Oblique view type from an Orthogonal view type:
     // The new anatomy_T_start frame is set to the (old) Orthogonal view type's anatomy_T_start frame.
-    anatomy_T_start = get_anatomy_T_start(m_viewType);
+    m_anatomy_T_start = get_anatomy_T_start(m_viewType);
 
     /// @todo Set anatomy_T_start equal to anatomy_T_start for the rotationSyncGroup of this view instead!!
   }
-  else
+  else if (ViewType::ThreeD != newViewType)
   {
     // Transitioning to an Orthogonal view type:
-    anatomy_T_start = get_anatomy_T_start(newViewType);
+    m_anatomy_T_start = get_anatomy_T_start(newViewType);
 
     if (ViewType::Oblique == m_viewType) {
       // Transitioning to an Orthogonal view type from an Oblique view type.
@@ -318,8 +323,7 @@ void View::setViewType(const ViewType& newViewType)
     }
   }
 
-  m_camera.set_anatomy_T_start_provider([anatomy_T_start]() { return anatomy_T_start; });
-
+  m_camera.set_anatomy_T_start_provider([this]() { return m_anatomy_T_start; });
   m_viewType = newViewType;
 }
 

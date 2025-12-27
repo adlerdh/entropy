@@ -18,6 +18,7 @@ uniform usampler3D u_jumpTex; // distance texture
 uniform mat4 u_tex_T_world;
 uniform mat4 u_world_T_imgTex;
 uniform mat4 u_clip_T_world;
+uniform mat4 u_clip_T_imgTex;
 
 uniform vec3 u_worldEyePos;
 uniform mat3 u_texGrads;
@@ -224,7 +225,9 @@ void main()
 
   FragColor = color + (1.0 - color.a) * u_bgColor;
 
-  vec4 clip1stHitPos = u_clip_T_world * u_world_T_imgTex * vec4(texFirstHitPos, 1.0);
-  float ndc1stHitDepth = clip1stHitPos.z / clip1stHitPos.w;
-  gl_FragDepth = 0.5 * ((gl_DepthRange.far - gl_DepthRange.near) * ndc1stHitDepth + gl_DepthRange.near + gl_DepthRange.far);
+  vec4 clipFirstHitPos = u_clip_T_imgTex * vec4(texFirstHitPos, 1.0);
+  float ndcFirstHitDepth = clipFirstHitPos.z / clipFirstHitPos.w;
+
+  gl_FragDepth = 0.5 * ((gl_DepthRange.far - gl_DepthRange.near) * ndcFirstHitDepth +
+                 gl_DepthRange.near + gl_DepthRange.far);
 }

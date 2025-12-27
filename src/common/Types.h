@@ -1,5 +1,4 @@
-#ifndef TYPES_H
-#define TYPES_H
+#pragma once
 
 #include <uuid.h>
 
@@ -357,9 +356,7 @@ struct AnatomicalLabelPosInfo
 union FrameBounds
 {
   FrameBounds(glm::vec4 v)
-    : viewport(std::move(v))
-  {
-  }
+    : viewport(std::move(v)) {}
 
   glm::vec4 viewport;
 
@@ -372,4 +369,3 @@ union FrameBounds
   } bounds;
 };
 
-#endif // TYPES_H

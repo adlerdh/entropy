@@ -79,20 +79,21 @@ inline std::vector<ViewRenderMode> const All2dViewRenderModes = {
 /**
  * @brief Vector of all render modes available for 2D view types with only one image
  */
-inline std::vector<ViewRenderMode> const All2dNonMetricRenderModes
-  = {ViewRenderMode::Image, ViewRenderMode::Disabled};
+inline std::vector<ViewRenderMode> const All2dNonMetricRenderModes =
+  {ViewRenderMode::Image, ViewRenderMode::Disabled};
 
 /**
  * @brief Vector of all render modes available for 3D view types with two or more images
+ * @todo Need new type of volume renderer that handles two or more images
  */
-inline std::vector<ViewRenderMode> const All3dViewRenderModes
-  = {ViewRenderMode::VolumeRender, ViewRenderMode::Disabled};
+inline std::vector<ViewRenderMode> const All3dViewRenderModes =
+  {ViewRenderMode::VolumeRender, ViewRenderMode::Disabled};
 
 /**
  * @brief Vector of all render modes available for 3D view types with only one image
  */
-inline std::vector<ViewRenderMode> const All3dNonMetricRenderModes
-  = {ViewRenderMode::VolumeRender, ViewRenderMode::Disabled};
+inline std::vector<ViewRenderMode> const All3dNonMetricRenderModes =
+  {ViewRenderMode::VolumeRender, ViewRenderMode::Disabled};
 
 /**
  * @brief Array of all intensity projection modes

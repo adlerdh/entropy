@@ -103,4 +103,6 @@ private:
 
   /// Depth (z component) of any point on the image plane to be rendered (defined in Clip space)
   float m_clipPlaneDepth;
+
+  CoordinateFrame m_anatomy_T_start;
 };

@@ -53,7 +53,7 @@ std::string descriptionString(const ViewRenderMode& mode)
     {ViewRenderMode::Difference, "Difference metric"},
     // {ViewRenderMode::CrossCorrelation, "Correlation metric"},
     {ViewRenderMode::JointHistogram, "Joint histogram metric"},
-    {ViewRenderMode::VolumeRender, "Volume rendering"},
+    {ViewRenderMode::VolumeRender, "Iso-surface volume rendering"},
     {ViewRenderMode::Disabled, "Disabled"}
   };
 

@@ -220,7 +220,7 @@ std::unique_ptr<DepthPeelRenderer> createDdpRenderer(
 Rendering::Rendering(AppData& appData)
   : m_appData(appData)
   , m_nvg(nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES /*| NVG_DEBUG*/))
-  , m_raycastIsoSurfaceProgram("RayCastIsoSurfaceProgram")
+  , m_raycastIsoProgram("RaycastIsoSurfaceProgram")
   , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
 {
@@ -2010,7 +2010,7 @@ void Rendering::renderAllImagesForView(
 
     const auto& U = R.m_uniforms.at(*imgSegPair.first);
 
-    GLShaderProgram& P = m_raycastIsoSurfaceProgram;
+    GLShaderProgram& P = m_raycastIsoProgram;
 
     P.use();
     {
@@ -2656,16 +2656,16 @@ void Rendering::createShaderPrograms()
     }
   }
 
-  if (!createRaycastIsoSurfaceProgram(m_raycastIsoSurfaceProgram))
+  if (!createRaycastIsoProgram(m_raycastIsoProgram))
   {
     throw_debug("Failed to create isosurface raycasting program")
   }
 }
 
-bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
+bool Rendering::createRaycastIsoProgram(GLShaderProgram& program)
 {
-  static const std::string vsFileName{"src/rendering/shaders/RaycastIsoSurface.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/RaycastIsoSurface.fs"};
+  static const std::string vsFileName{"src/rendering/shaders/RaycastIso.vs"};
+  static const std::string fsFileName{"src/rendering/shaders/RaycastIso.fs"};
 
   auto filesystem = cmrc::shaders::get_filesystem();
   std::string vsSource;
@@ -2708,6 +2708,7 @@ bool Rendering::createRaycastIsoSurfaceProgram(GLShaderProgram& program)
     fsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
     fsUniforms.insertUniform("u_clip_T_world", UniformType::Mat4, sk_identMat4);
     fsUniforms.insertUniform("u_world_T_imgTex", UniformType::Mat4, sk_identMat4);
+    fsUniforms.insertUniform("u_clip_T_imgTex", UniformType::Mat4, sk_identMat4);
 
     fsUniforms.insertUniform("u_worldEyePos", UniformType::Vec3, sk_zeroVec3);
     fsUniforms.insertUniform("u_texGrads", UniformType::Mat3, sk_identMat3);

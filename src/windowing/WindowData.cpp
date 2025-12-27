@@ -95,7 +95,7 @@ Layout createFourUpLayout(
       glm::vec4{-1.0f, -1.0f, 1.0f, 1.0f},
       offsetSetting,
       ViewType::ThreeD,
-      ViewRenderMode::Disabled,
+      ViewRenderMode::VolumeRender,
       IntensityProjectionMode::None,
       uiControls,
       viewConvention,

@@ -404,9 +404,13 @@ void drawRaycastQuad(
   }
 
   // Set the view transformation uniforms that are common to all raycast rendering programs:
+  const glm::mat4 clip_T_world = helper::clip_T_world(view.camera());
+  const glm::mat4 world_T_clip = helper::world_T_clip(view.camera());
+
   program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
-  program.setUniform("u_world_T_clip", helper::world_T_clip(view.camera()));
-  program.setUniform("u_clip_T_world", helper::clip_T_world(view.camera()));
+  program.setUniform("u_world_T_clip", world_T_clip);
+  program.setUniform("u_clip_T_world", clip_T_world);
+  program.setUniform("u_clip_T_imgTex", clip_T_world * world_T_clip);
 
   /// @todo This must match the camera eye position
   program.setUniform("u_clipDepth", view.clipPlaneDepth());

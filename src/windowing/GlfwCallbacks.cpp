@@ -158,6 +158,11 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
     return;
   }
 
+  if (ViewType::ThreeD == startView->viewType()) {
+    /// @todo Create handlers for 3D view
+    return;
+  }
+
   if (!s_prevHit) {
     s_prevHit = getViewHit(app->appData(), windowCurrentPos);
   }
@@ -205,6 +210,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       if (!currHit_withOverride) {
         break;
       }
+
       H.doCameraZoomDrag(*s_startHit, *s_prevHit, *currHit_withOverride,
                          ZoomBehavior::ToCrosshairs, syncZoomsForAllViews(s_modifierState));
     }
@@ -213,6 +219,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       if (!currHit_withOverride) {
         break;
       }
+
       H.doCameraTranslate2d(*s_startHit, *s_prevHit, *currHit_withOverride);
     }
     break;
@@ -522,18 +529,17 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffsetY)
 {
   const ImGuiIO& io = ImGui::GetIO();
-  if (io.WantCaptureMouse)
+  if (io.WantCaptureMouse) {
     return; // ImGui has captured event
+  }
 
   auto app = reinterpret_cast<EntropyApp*>(glfwGetWindowUserPointer(window));
-  if (!app)
-  {
+  if (!app) {
     spdlog::warn("App is null in scroll callback");
     return;
   }
 
-  const bool shiftDown = ImGui::IsKeyDown(ImGuiKey_LeftShift)
-                         || ImGui::IsKeyDown(ImGuiKey_RightShift);
+  const bool shiftDown = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
 
   double mindowCursorPosX, mindowCursorPosY;
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
@@ -543,8 +549,9 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
     static_cast<float>(app->windowData().getWindowSize().y), {mindowCursorPosX, mindowCursorPosY});
 
   const auto hit_invalidOutsideView = getViewHit(app->appData(), windowCursorPos);
-  if (!hit_invalidOutsideView)
+  if (!hit_invalidOutsideView) {
     return;
+  }
 
   CallbackHandler& H = app->callbackHandler();
 
@@ -558,20 +565,17 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
   case MouseMode::ImageRotate:
   case MouseMode::ImageTranslate:
   case MouseMode::ImageScale:
-  case MouseMode::WindowLevel:
-  {
+  case MouseMode::WindowLevel: {
     const bool fineScroll = shiftDown; // ( s_modifierState.shift );
     H.doCrosshairsScroll(*hit_invalidOutsideView, {scrollOffsetX, scrollOffsetY}, fineScroll);
     break;
   }
-  case MouseMode::CameraZoom:
-  {
+  case MouseMode::CameraZoom: {
     H.doCameraZoomScroll(*hit_invalidOutsideView, {scrollOffsetX, scrollOffsetY},
                          ZoomBehavior::ToCrosshairs, syncZoomsForAllViews(s_modifierState));
     break;
   }
-  case MouseMode::Annotate:
-  {
+  case MouseMode::Annotate: {
     if (state::annot::isInStateWhereViewsCanScroll()){
       const bool fineScroll = shiftDown; // ( s_modifierState.shift );
       H.doCrosshairsScroll(*hit_invalidOutsideView, {scrollOffsetX, scrollOffsetY}, fineScroll);
@@ -620,30 +624,38 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     break;
   }
 
-  case GLFW_KEY_V:
+  case GLFW_KEY_V: {
     H.setMouseMode(MouseMode::Pointer);
     break;
-  case GLFW_KEY_B:
+  }
+  case GLFW_KEY_B: {
     H.setMouseMode(MouseMode::Segment);
     break;
-  case GLFW_KEY_L:
+  }
+  case GLFW_KEY_L: {
     H.setMouseMode(MouseMode::WindowLevel);
     break;
+  }
 
-  case GLFW_KEY_R:
+  case GLFW_KEY_R: {
     H.setMouseMode(MouseMode::ImageRotate);
     break;
-  case GLFW_KEY_T:
+  }
+  case GLFW_KEY_T: {
     H.setMouseMode(MouseMode::ImageTranslate);
     break;
+  }
+
 //case GLFW_KEY_Y: H.setMouseMode( MouseMode::ImageScale ); break;
 
-  case GLFW_KEY_Z:
+  case GLFW_KEY_Z: {
     H.setMouseMode(MouseMode::CameraZoom);
     break;
-  case GLFW_KEY_X:
+  }
+  case GLFW_KEY_X: {
     H.setMouseMode(MouseMode::CameraTranslate);
     break;
+  }
 
   case GLFW_KEY_A: {
     const bool interior = s_modifierState.shift;
@@ -701,8 +713,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     break;
   }
 
-  case GLFW_KEY_PAGE_DOWN:
-  {
+  case GLFW_KEY_PAGE_DOWN: {
     if (s_modifierState.shift) {
       H.cycleImageComponent(-1);
     }
@@ -714,8 +725,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     }
     break;
   }
-  case GLFW_KEY_PAGE_UP:
-  {
+  case GLFW_KEY_PAGE_UP: {
     if (s_modifierState.shift) {
       H.cycleImageComponent(1);
     }
@@ -727,32 +737,28 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     }
     break;
   }
-  case GLFW_KEY_LEFT:
-  {
+  case GLFW_KEY_LEFT: {
     if (!hit_invalidOutsideView) {
       break;
     }
     H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, -1, 0);
     break;
   }
-  case GLFW_KEY_RIGHT:
-  {
+  case GLFW_KEY_RIGHT: {
     if (!hit_invalidOutsideView) {
       break;
     }
     H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 1, 0);
     break;
   }
-  case GLFW_KEY_UP:
-  {
+  case GLFW_KEY_UP: {
     if (!hit_invalidOutsideView) {
       break;
     }
     H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 0, 1);
     break;
   }
-  case GLFW_KEY_DOWN:
-  {
+  case GLFW_KEY_DOWN: {
     if (!hit_invalidOutsideView) {
       break;
     }
@@ -760,8 +766,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     break;
   }
 
-  case GLFW_KEY_LEFT_BRACKET:
-  {
+  case GLFW_KEY_LEFT_BRACKET: {
     if (s_modifierState.shift) {
       H.cycleActiveImage(-1);
     }
@@ -770,8 +775,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     }
     break;
   }
-  case GLFW_KEY_RIGHT_BRACKET:
-  {
+  case GLFW_KEY_RIGHT_BRACKET: {
     if (s_modifierState.shift) {
       H.cycleActiveImage(1);
     }
@@ -781,8 +785,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     break;
   }
 
-  case GLFW_KEY_COMMA:
-  {
+  case GLFW_KEY_COMMA: {
     if (s_modifierState.shift) {
       H.cycleBackgroundSegLabel(-1);
     }
@@ -791,8 +794,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     }
     break;
   }
-  case GLFW_KEY_PERIOD:
-  {
+  case GLFW_KEY_PERIOD: {
     if (s_modifierState.shift) {
       H.cycleBackgroundSegLabel(1);
     }
@@ -803,15 +805,13 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
   }
 
   case GLFW_KEY_KP_ADD:
-  case GLFW_KEY_EQUAL:
-  {
+  case GLFW_KEY_EQUAL: {
     H.cycleBrushSize(1);
     break;
   }
 
   case GLFW_KEY_KP_SUBTRACT:
-  case GLFW_KEY_MINUS:
-  {
+  case GLFW_KEY_MINUS: {
     H.cycleBrushSize(-1);
     break;
   }

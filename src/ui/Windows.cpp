@@ -122,8 +122,7 @@ void renderViewSettingsComboWindow(
     switch (renderMode)
     {
     case ViewRenderMode::Image:
-    case ViewRenderMode::VolumeRender:
-    {
+    case ViewRenderMode::VolumeRender: {
       label = ICON_FK_EYE;
       break;
     }
@@ -133,14 +132,12 @@ void renderViewSettingsComboWindow(
     case ViewRenderMode::Overlay:
     case ViewRenderMode::Difference:
     // case ViewRenderMode::CrossCorrelation:
-    case ViewRenderMode::JointHistogram:
-    {
+    case ViewRenderMode::JointHistogram: {
       label = ICON_FK_EYE;
       break;
     }
     case ViewRenderMode::Disabled:
-    default:
-    {
+    default: {
       label = ICON_FK_EYE_SLASH;
       break;
     }

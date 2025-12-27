@@ -19,16 +19,14 @@ glm::mat4 Projection::camera_T_clip() const
 
 void Projection::setAspectRatio(float aspect)
 {
-  if (aspect > 0.0f)
-  {
+  if (aspect > 0.0f) {
     m_aspectRatio = aspect;
   }
 }
 
 void Projection::setNearDistance(float distance)
 {
-  if (0.0f < distance && distance < m_farDistance)
-  {
+  if (0.0f < distance && distance < m_farDistance) {
     m_nearDistance = distance;
   }
 }
@@ -58,8 +56,7 @@ float Projection::farDistance() const
 
 void Projection::setDefaultFov(const glm::vec2& fov)
 {
-  if (fov.x <= 0.0f || fov.y <= 0.0f)
-  {
+  if (fov.x <= 0.0f || fov.y <= 0.0f) {
     return;
   }
 

@@ -111,7 +111,7 @@ private:
   void setupOpenGLState();
 
   void createShaderPrograms();
-  bool createRaycastIsoSurfaceProgram(GLShaderProgram& program);
+  bool createRaycastIsoProgram(GLShaderProgram& program);
 
   /**
    * @brief Render data associated with images: image slices, segmentations, annotations, and landmarks.
@@ -160,7 +160,7 @@ private:
 
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
 
-  GLShaderProgram m_raycastIsoSurfaceProgram;
+  GLShaderProgram m_raycastIsoProgram;
 
   /// Is the application done loading images?
   bool m_isAppDoneLoadingImages;

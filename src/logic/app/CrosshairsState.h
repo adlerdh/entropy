@@ -8,8 +8,8 @@
 /// @brief Holds crosshairs coordinate frames, defined in World space
 struct CrosshairsState
 {
-  /// Saved crosshairs, prior to rotation starting. The single view in which crosshairs,
-  /// are being rotated, will align to these crosshairs.
+  /// Saved crosshairs, prior to rotation starting. The single view in which crosshairs
+  /// are being rotated will align to these crosshairs.
   CoordinateFrame worldCrosshairsOld;
 
   /// Current crosshairs. This accounts for the current rotation being done.
