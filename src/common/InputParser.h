@@ -1,5 +1,4 @@
-#ifndef PARSER_H
-#define PARSER_H
+#pragma once
 
 #include "common/InputParams.h"
 
@@ -10,9 +9,6 @@
  * @param[in] argv Array of command line arguments
  * @param[out] params Parsed parameters
  *
- * @return 0 iff parsing succceeded without errors
- *         1 if parsing failed
+ * @return True iff parsing succceeded without errors
  */
-int parseCommandLine(const int argc, char* argv[], InputParams& params);
-
-#endif // PARSER_H
+bool parseCommandLine(const int argc, char* argv[], InputParams& params);

@@ -18,12 +18,8 @@ class AppData;
 class ControlFrame
 {
 public:
-  ControlFrame(
-    glm::vec4 winClipViewport,
-    ViewType viewType,
-    ViewRenderMode renderMode,
-    IntensityProjectionMode ipMode,
-    UiControls uiControls);
+  ControlFrame(glm::vec4 winClipViewport, ViewType viewType, ViewRenderMode renderMode,
+               IntensityProjectionMode ipMode, UiControls uiControls);
 
   virtual ~ControlFrame() = default;
 

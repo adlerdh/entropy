@@ -1,5 +1,4 @@
-#ifndef PARSE_ARGUMENTS_H
-#define PARSE_ARGUMENTS_H
+#pragma once
 
 #include "common/InputParams.h"
 #include "common/Filesystem.h"
@@ -22,7 +21,7 @@ namespace serialize
 /// @todo Create enum for all image color maps
 /// @todo Serialize rest of app data, like custom layouts
 
-/// Serialized data for image settings
+/// @brief Serialized data for image settings
 struct ImageSettings
 {
   std::string m_displayName;
@@ -38,7 +37,7 @@ struct ImageSettings
   /// @todo Add isosurfaces
 };
 
-/// Serialized data for image segmentation settings
+/// @brief Serialized data for image segmentation settings
 struct SegSettings
 {
   double m_opacity = 1.0f;
@@ -50,18 +49,14 @@ struct SegSettings
 /// @brief Serialized data for a segmentation image
 struct Segmentation
 {
-  /// Segmentation image file
-  fs::path m_segFileName;
-
-  /// Segmentation settings
-  serialize::SegSettings m_settings;
+  fs::path m_segFileName; //!< Segmentation image file
+  serialize::SegSettings m_settings; //!< Segmentation settings
 };
 
 /// @brief Serialized data for a group of image landmarks
 struct LandmarkGroup
 {
-  /// CSV file holding the landmarks
-  std::string m_csvFileName;
+  std::string m_csvFileName; //!< CSV file holding the landmarks
 
   /// Flag indicating whether landmarks are defined in image voxel space (true)
   /// or in physical/subject space (false)
@@ -71,8 +66,7 @@ struct LandmarkGroup
 /// @brief Serialized data for an image in Entropy
 struct Image
 {
-  /// Image file name
-  fs::path m_imageFileName;
+  fs::path m_imageFileName; //!< Image file name
 
   /// Optional 4x4 affine transformation text file name
   std::optional<fs::path> m_affineTxFileName = std::nullopt;
@@ -89,8 +83,7 @@ struct Image
   /// Landmark groups (each image can have multiple landmark groups)
   std::vector<serialize::LandmarkGroup> m_landmarkGroups;
 
-  /// Image settings
-  serialize::ImageSettings m_settings;
+  serialize::ImageSettings m_settings; //!< Image settings
 };
 
 /// @brief Serialized data for an Entropy project
@@ -130,8 +123,7 @@ bool saveAffineTxFile(const glm::dmat4& matrix, const fs::path& fileName);
  * @return
  */
 bool openLandmarkGroupCsvFile(
-  std::map<std::size_t, PointRecord<glm::vec3> >& landmarks, const fs::path& csvFileName
-);
+  std::map<std::size_t, PointRecord<glm::vec3> >& landmarks, const fs::path& csvFileName);
 
 /**
  * @brief saveLandmarkGroupCsvFile
@@ -140,8 +132,7 @@ bool openLandmarkGroupCsvFile(
  * @return
  */
 bool saveLandmarkGroupCsvFile(
-  const std::map<std::size_t, PointRecord<glm::vec3> >& landmarks, const fs::path& csvFileName
-);
+  const std::map<std::size_t, PointRecord<glm::vec3> >& landmarks, const fs::path& csvFileName);
 
 /**
  * @brief Open annotations from a JSON file
@@ -159,13 +150,11 @@ bool openAnnotationsFromJsonFile(std::vector<Annotation>& annots, const fs::path
 void appendAnnotationToJson(const Annotation& annot, nlohmann::json& j);
 
 /**
- * @brief Save a JSON structure to disk
- * @param[in] j JSON structure
+ * @brief Save a JSON object to disk
+ * @param[in] j JSON object
  * @param[in] jsonFileName File name
  * @return True iff the JSON structure was saved to the file on disk
  */
 bool saveToJsonFile(const nlohmann::json& j, const fs::path& jsonFileName);
 
 } // namespace serialize
-
-#endif // PARSE_ARGUMENTS_H

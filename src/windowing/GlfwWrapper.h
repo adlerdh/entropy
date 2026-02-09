@@ -1,5 +1,4 @@
-#ifndef GLFW_WRAPPER_H
-#define GLFW_WRAPPER_H
+#pragma once
 
 #include "common/Types.h"
 
@@ -45,19 +44,19 @@ class GlfwWrapper
 {
 public:
   /**
-     * @brief Construct the GLFW wrapper
-     * @param app Pointer to the app that will be embedded in the GLFW window
-     * @param glMajorVersion
-     * @param glMinorVersion
-     */
+   * @brief Construct the GLFW wrapper
+   * @param app Pointer to the app that will be embedded in the GLFW window
+   * @param glMajorVersion
+   * @param glMinorVersion
+   */
   GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion);
   ~GlfwWrapper();
 
   /**
-     * @brief setCallbacks
-     * @param renderScene
-     * @param renderGui
-     */
+   * @brief setCallbacks
+   * @param renderScene
+   * @param renderGui
+   */
   void setCallbacks(
     std::function<void(std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime)> framerateLimiter,
     std::function<void()> renderScene,
@@ -71,20 +70,20 @@ public:
   void setWaitTimeout(double waitTimoutSeconds);
 
   /**
-     * @brief init
-     * @note Requires rendering to be initialized, since it kicks off a frame render in the
-     * framebufferSizeCallback
-     */
+   * @brief init
+   * @note Requires rendering to be initialized, since it kicks off a frame render in the
+   * framebufferSizeCallback
+   */
   void init();
 
   /**
-     * @brief Execute the render loop
-     *
-     * @param[in,out] imagesReady True iff images have been loaded into memory.
-     * Set to false after onImagesReady is called.
-     * @param[in] checkAppQuit Function to check if the application should quit
-     * @param[in] onImagesReady Function to call when images are ready
-     */
+   * @brief Execute the render loop
+   *
+   * @param[in,out] imagesReady True iff images have been loaded into memory.
+   * Set to false after onImagesReady is called.
+   * @param[in] checkAppQuit Function to check if the application should quit
+   * @param[in] onImagesReady Function to call when images are ready
+   */
   void renderLoop(
     std::atomic<bool>& imagesReady,
     const std::atomic<bool>& imageLoadFailed,
@@ -93,15 +92,15 @@ public:
   );
 
   /**
-     * @brief Render one frame
-     */
+   * @brief Render one frame
+   */
   void renderOnce();
 
   /**
-     * @brief Post an empty event from the current thread to the GLFW event queue,
-     * causing glfwWaitEvents() to return.
-     * @note This may be called from any thread.
-     */
+   * @brief Post an empty event from the current thread to the GLFW event queue,
+   * causing glfwWaitEvents() to return.
+   * @note This may be called from any thread.
+   */
   void postEmptyEvent();
 
   const GLFWwindow* window() const;
@@ -147,5 +146,3 @@ private:
   int m_backupWindowWidth;
   int m_backupWindowHeight;
 };
-
-#endif // GLFW_WRAPPER_H

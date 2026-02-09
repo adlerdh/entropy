@@ -104,8 +104,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   int width = static_cast<int>(app->windowData().viewport().width());
   int height = static_cast<int>(app->windowData().viewport().height());
 
-  if (GLFWmonitor* monitor = glfwGetPrimaryMonitor())
-  {
+  if (GLFWmonitor* monitor = glfwGetPrimaryMonitor()) {
     int xpos, ypos;
     glfwGetMonitorWorkarea(monitor, &xpos, &ypos, &width, &height);
   }

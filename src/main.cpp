@@ -8,7 +8,7 @@
 int main(int argc, char* argv[])
 {
   auto logFailure = []() {
-    spdlog::debug("------------------------ END SESSION (FAILURE) ------------------------");
+    spdlog::debug("------------------- End session (failure) -------------------");
   };
 
   Logging logging;
@@ -27,12 +27,12 @@ int main(int argc, char* argv[])
 
   try
   {
-    spdlog::debug("------------------------ BEGIN SESSION ------------------------");
+    spdlog::debug("------------------- Being session -------------------");
     EntropyApp::logPreamble();
 
     InputParams params;
 
-    if (EXIT_FAILURE == parseCommandLine(argc, argv, params)) {
+    if (!parseCommandLine(argc, argv, params)) {
       logFailure();
       return EXIT_FAILURE;
     }
@@ -75,6 +75,6 @@ int main(int argc, char* argv[])
     return EXIT_FAILURE;
   }
 
-  spdlog::debug("------------------------ END SESSION (SUCCESS) ------------------------");
+  spdlog::debug("------------------- End session (success) -------------------");
   return EXIT_SUCCESS;
 }

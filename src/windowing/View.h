@@ -26,32 +26,24 @@ class View : public ControlFrame
 
 public:
   /**
-     * @brief Construct a view
-     *
-     * @param[in] winClipViewport Viewport (left, bottom, width, height) of the view,
-     * defined in Clip space of its enclosing window's viewport
-     * (e.g. (-1, -1, 2, 2) is a view that covers the full window viewport and
-     * (0, 0, 1, 1) is a view that covers the top-right quadrant of the window viewport)
-     *
-     * @param[in] numOffsets Number of scroll offsets (relative to the reference image)
-     * from the crosshairs at which to render this view's image planes
-     *
-     * @param[in] viewType Type of view
-     * @param[in] shaderType Shader type of the view
-     */
-  View(
-    glm::vec4 winClipViewport,
-    ViewOffsetSetting offsetSetting,
-    ViewType viewType,
-    ViewRenderMode renderMode,
-    IntensityProjectionMode ipMode,
-    UiControls uiControls,
-    const ViewConvention& viewConvention,
-    const CrosshairsState& crosshairs,
-    const ViewAlignmentMode& viewAlignment,
-    std::optional<uuid> cameraRotationSyncGroupUid,
-    std::optional<uuid> translationSyncGroup,
-    std::optional<uuid> zoomSyncGroup);
+   * @brief Construct a view
+   *
+   * @param[in] winClipViewport Viewport (left, bottom, width, height) of the view,
+   * defined in Clip space of its enclosing window's viewport
+   * (e.g. (-1, -1, 2, 2) is a view that covers the full window viewport and
+   * (0, 0, 1, 1) is a view that covers the top-right quadrant of the window viewport)
+   *
+   * @param[in] numOffsets Number of scroll offsets (relative to the reference image)
+   * from the crosshairs at which to render this view's image planes
+   *
+   * @param[in] viewType Type of view
+   * @param[in] shaderType Shader type of the view
+   */
+  View(glm::vec4 winClipViewport, ViewOffsetSetting offsetSetting, ViewType viewType,
+       ViewRenderMode renderMode, IntensityProjectionMode ipMode, UiControls uiControls,
+       const ViewConvention& viewConvention, const CrosshairsState& crosshairs,
+       const ViewAlignmentMode& viewAlignment, std::optional<uuid> cameraRotationSyncGroupUid,
+       std::optional<uuid> translationSyncGroup, std::optional<uuid> zoomSyncGroup);
 
   const uuid& uid() const;
 
@@ -61,11 +53,11 @@ public:
   Camera& camera();
 
   /**
-     * @brief Update the view's camera based on the crosshairs World-space position.
-     * @param[in] appData
-     * @param[in] worldCrosshairs
-     * @return The crosshairs position on the slice
-     */
+   * @brief Update the view's camera based on the crosshairs World-space position.
+   * @param[in] appData
+   * @param[in] worldCrosshairs
+   * @return The crosshairs position on the slice
+   */
   glm::vec3 updateImageSlice(const AppData& appData, const glm::vec3& worldCrosshairs);
 
   std::optional<intersection::IntersectionVerticesVec4>

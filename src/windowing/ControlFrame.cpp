@@ -99,8 +99,7 @@ void ControlFrame::setRenderedImages(const std::list<uuids::uuid>& imageUids, bo
     m_renderedImageUids.clear();
     std::size_t index = 0;
 
-    for (const auto& imageUid : imageUids)
-    {
+    for (const auto& imageUid : imageUids) {
       if (m_preferredDefaultRenderedImages.count(index) > 0) {
         m_renderedImageUids.push_back(imageUid);
       }
