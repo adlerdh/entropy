@@ -1098,7 +1098,7 @@ void ImageSettings::updateWithNewComponentStatistics(
       setting.m_colormapEdges = false;
       setting.m_edgeColor = glm::vec3{1.0f, 0.0f, 1.0f};
       setting.m_edgeOpacity = 1.0;
-      setting.m_interpolationMode = InterpolationMode::Trilinear;
+      setting.m_interpolationMode = InterpolationMode::Linear;
 
       // Use the first color map and label table
       setting.m_colorMapIndex = 0;

@@ -109,15 +109,36 @@ struct QuantileOfValue
 enum class InterpolationMode
 {
   NearestNeighbor,
-  Trilinear,
-  Tricubic
+  Linear,
+
+  /// Fast separable tricubic B-spline texture filtering (cubic B-spline convolution)
+  /// using trilinear hardware (via 8 trilinear fetches): B-spline filter applied to raw
+  /// texture values, which produces a smoothed (non-interpolating) approximation.
+  /// Take the texture samples as the control values and reconstruct by weighting the
+  /// 4×4×4 neighborhood with the cubic B-spline basis (separable in x/y/z).
+  /// -B-spline filtering/convolution on the stored texels
+  /// -separable tricubic in 3D
+  /// -accelerated by factoring the weights into a small number of trilinear samples
+  CubicBsplineConvolution,
+
+  /// Cubic B-spline interpolation via B-spline coefficient (prefilter) decomposition:
+  /// A spline defined by coefficients computed from the original samples, just like
+  /// \c itk::BSplineInterpolateImageFunction (true spline interpolation model) that
+  /// first converts the sampled image values into B-spline coefficients via
+  /// \c itk::BSplineDecompositionImageFilter. It valuates a uniform cubic B-spline
+  /// basis expansion where the coefficients are obtained by B-spline decomposition
+  /// (an inverse filtering step) so that the reconstructed function interpolates the
+  /// original samples at grid points.
+  // CubicBsplineInterpolation
 };
 
 /**
  * @brief Array of all available interpolation modes
  */
 inline std::array<InterpolationMode, 3> const AllInterpolationModes{
-  InterpolationMode::NearestNeighbor, InterpolationMode::Trilinear, InterpolationMode::Tricubic};
+  InterpolationMode::NearestNeighbor,
+  InterpolationMode::Linear,
+  InterpolationMode::CubicBsplineConvolution};
 
 /**
  * @brief The current mouse mode

@@ -6,6 +6,26 @@
  * which is based on 24.8 fixed-point arithmetic with 8 bits for the fractional part, and hence 256
  * intermediate values between adjacent pixels.
  *
+ * The GPU uses limited-precision sampler weight / coordinate math in the fixed-function texture unit.
+ * This is not limited precision of the stored texel values themselves.
+ *
+ *
+ * For hardware trilinear filtering, the GPU does:
+ * 1. Convert normalized texture coordinates to texel space (multiply by size, apply wrapping/clamp, subtract 0.5).
+ * 2. Split into integer base index + fractional part.
+ * 3. Use the fractional part as the interpolation weights for the 8 neighbors.
+ * On many GPUs, steps 2 and 3 use a fixed-point representation for the fractional coordinate
+ * (or equivalently for the lerp weights). A common precision is 8 fractional bits (described as "24.8" or
+ * "8-bit sub-texel precision"), meaning there are only 256 distinct weight values between adjacent texels
+ * along an axis. That produces stair step artifacts: the weights only change in 1/256 increments,
+ * so the output changes in visible quantized steps when the texture values are smooth/high precision.
+ *
+ * This version does two key things differently:
+ * 1. It uses texelFetch to load the 8 texels exactly (no filtering).
+ * 2. It computes the weights w in floating point and performs the lerps (mix) in floating point.
+ * So the interpolation parameter is not quantized to 8-bit (or whatever the sampler uses).
+ * Instead, it has ~23 bits of mantissa if the shader is using 32-bit floats.
+ *
  * @see https://iquilezles.org/articles/interpolation/
  *
  * @param[in] tex 3D texture sampler

@@ -9,7 +9,32 @@ endif()
 
 set(GIT_PROTOCOL "https")
 
+set(SUPERBUILD_PARALLEL "8" CACHE STRING "Parallel level for ExternalProject builds")
 
+# Detect whether the generator is multi-config
+get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+
+if(_isMultiConfig)
+  if(NOT DEFINED SUPERBUILD_CONFIG)
+    set(SUPERBUILD_CONFIG "Release" CACHE STRING "Build config for multi-config generators")
+    set_property(CACHE SUPERBUILD_CONFIG PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+  endif()
+  set(_cfg_arg "--config" "${SUPERBUILD_CONFIG}")
+else()
+  set(_cfg_arg "")
+endif()
+
+# For single-config generators, propagate CMAKE_BUILD_TYPE into externals
+set(_ext_cmake_build_type_args)
+if(NOT _isMultiConfig AND CMAKE_BUILD_TYPE)
+  list(APPEND _ext_cmake_build_type_args -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
+endif()
+
+set(_ext_cxx_std_args
+  -DCMAKE_CXX_STANDARD=23
+  -DCMAKE_CXX_STANDARD_REQUIRED=ON
+  -DCMAKE_CXX_EXTENSIONS=OFF
+)
 
 message(STATUS "Adding external library argparse in ${argparse_PREFIX}")
 
@@ -33,11 +58,14 @@ ExternalProject_Add(argparse
   INSTALL_DIR "${argparse_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    ${_ext_cmake_build_type_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DARGPARSE_BUILD_SAMPLES:BOOL=OFF
     -DARGPARSE_BUILD_TESTS:BOOL=OFF
     -DARGPARSE_INSTALL:BOOL=ON
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
 )
@@ -83,6 +111,8 @@ ExternalProject_Add(Boost
 message(STATUS "Adding external library CMakeRC in ${cmakerc_PREFIX}")
 
 set(PATCH_FILE "${cmakerc_PREFIX}/patch_cmakerc.cmake")
+file(MAKE_DIRECTORY "${cmakerc_PREFIX}")
+
 file(WRITE "${PATCH_FILE}" "
 file(READ \"${cmakerc_PREFIX}/src/CMakeRC.cmake\" contents)
 string(REPLACE \"cmake_minimum_required(VERSION 3.3)\" \"cmake_minimum_required(VERSION 3.5...4.2)\\ncmake_policy(VERSION 3.5...4.2)\" contents \"\${contents}\")
@@ -111,13 +141,12 @@ ExternalProject_Add(cmakerc
   PATCH_COMMAND ${CMAKE_COMMAND} -P "${PATCH_FILE}"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    ${_ext_cmake_build_type_args}
     -DBUILD_TESTS:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping CMakeRC install step"
 )
-
 
 
 message(STATUS "Adding external library ghc::filesystem in ${ghc_filesystem_PREFIX}")
@@ -142,12 +171,15 @@ ExternalProject_Add(ghc_filesystem
   INSTALL_DIR "${ghc_filesystem_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    ${_ext_cmake_build_type_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DGHC_FILESYSTEM_BUILD_EXAMPLES:BOOL=OFF
     -DGHC_FILESYSTEM_BUILD_STD_TESTING:BOOL=OFF
     -DGHC_FILESYSTEM_BUILD_TESTING:BOOL=OFF
     -DGHC_FILESYSTEM_WITH_INSTALL:BOOL=ON
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
 )
@@ -174,13 +206,17 @@ ExternalProject_Add(glfw
   INSTALL_DIR "${glfw_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    ${_ext_cmake_build_type_args}
+    ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
     -DGLFW_BUILD_DOCS:BOOL=OFF
     -DGLFW_BUILD_EXAMPLES:BOOL=OFF
     -DGLFW_BUILD_TESTS:BOOL=OFF
     -DGLFW_INSTALL:BOOL=ON
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
 )
@@ -208,7 +244,8 @@ ExternalProject_Add(glm
   INSTALL_DIR "${glm_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    ${_ext_cmake_build_type_args}
+    ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
     -DGLM_BUILD_INSTALL:BOOL=ON
@@ -231,6 +268,9 @@ ExternalProject_Add(glm
     -DGLM_ENABLE_SIMD_SSE4_2:BOOL=OFF
     -DGLM_ENABLE_SIMD_SSSE3:BOOL=OFF
     -DGLM_FORCE_PURE:BOOL=OFF
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
 )
@@ -330,7 +370,7 @@ ExternalProject_Add(ITK
   BINARY_DIR "${itk_PREFIX}/build"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    ${_ext_cmake_build_type_args}
     -DCMAKE_EXE_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DCMAKE_SHARED_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DCMAKE_MODULE_LINKER_FLAGS=${ICONV_LINK_FLAG}
@@ -340,8 +380,10 @@ ExternalProject_Add(ITK
     -DBUILD_TESTING:BOOL=OFF
     -DModule_ITKIOGDCM:BOOL=OFF
 
-  CMAKE_GENERATOR ${gen}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ITK install step"
+
+  CMAKE_GENERATOR ${gen}
 )
 
 
@@ -387,7 +429,7 @@ ExternalProject_Add(nlohmann_json
   INSTALL_DIR "${nlohmann_json_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    ${_ext_cmake_build_type_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_TESTING:BOOL=OFF
     -DJSON_BuildTests:BOOL=OFF
@@ -403,6 +445,9 @@ ExternalProject_Add(nlohmann_json
     -DJSON_MultipleHeaders:BOOL=ON
     -DJSON_SystemInclude:BOOL=OFF
     -DJSON_Valgrind:BOOL=OFF
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
 )
@@ -431,7 +476,8 @@ ExternalProject_Add(spdlog
   INSTALL_DIR "${spdlog_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    ${_ext_cmake_build_type_args}
+    ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DSPDLOG_BUILD_ALL:BOOL=OFF
     -DSPDLOG_BUILD_BENCH:BOOL=OFF
@@ -463,6 +509,9 @@ ExternalProject_Add(spdlog
     -DSPDLOG_WCHAR_FILENAMES:BOOL=OFF
     -DSPDLOG_WCHAR_SUPPORT:BOOL=OFF
 
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
+
   CMAKE_GENERATOR ${gen}
 )
 
@@ -489,13 +538,16 @@ ExternalProject_Add(stduuid
   INSTALL_DIR "${stduuid_PREFIX}/install"
 
   CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    ${_ext_cmake_build_type_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DUUID_BUILD_TESTS:BOOL=OFF
     -DUUID_ENABLE_INSTALL:BOOL=ON
     -DUUID_SYSTEM_GENERATOR:BOOL=OFF
     -DUUID_TIME_GENERATOR:BOOL=OFF
     -DUUID_USING_CXX20_SPAN:BOOL=OFF
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
 )
@@ -505,7 +557,7 @@ message(STATUS "Adding external library TinyFSM in ${tinyfsm_PREFIX}")
 
 ExternalProject_Add(tinyfsm
   GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/digint/tinyfsm.git"
-  GIT_TAG "01908cab0397fcdadb0a14e9a3187c308e2708ca" # tag: v${tinyfsm_PREFIX}
+  GIT_TAG "01908cab0397fcdadb0a14e9a3187c308e2708ca" # tag: v${tinyfsm_VERSION}
   GIT_PROGRESS true
 
   PREFIX "${tinyfsm_PREFIX}"
@@ -517,4 +569,32 @@ ExternalProject_Add(tinyfsm
   CONFIGURE_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM configure step"
   BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM build step"
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM install step"
+)
+
+
+message(STATUS "Adding external library tl::expected in ${tl_expected_PREFIX}")
+
+ExternalProject_Add(tl_expected
+  URL "https://github.com/TartanLlama/expected/archive/refs/tags/v${tl_expected_VERSION}.tar.gz"
+  URL_HASH SHA256=9a04f4f472fbb5c30bf60402f1ca626c4a76987f867978d0b8a35d7ab3fb8fe7
+  DOWNLOAD_NAME "tl_expected-v${tl_expected_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  PREFIX "${tl_expected_PREFIX}"
+  TMP_DIR "${tl_expected_PREFIX}/tmp"
+  STAMP_DIR "${tl_expected_PREFIX}/stamp"
+  DOWNLOAD_DIR "${tl_expected_PREFIX}/download"
+  SOURCE_DIR "${tl_expected_PREFIX}/src"
+  BINARY_DIR "${tl_expected_PREFIX}/build"
+  INSTALL_DIR "${tl_expected_PREFIX}/install"
+
+  CMAKE_ARGS
+    ${_ext_cmake_build_type_args}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DEXPECTED_BUILD_TESTS:BOOL=OFF
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
+
+  CMAKE_GENERATOR ${gen}
 )

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/Expected.h"
 #include "common/ParcellationLabelTable.h"
 #include "common/UuidRange.h"
 
@@ -22,7 +23,6 @@
 
 #include <uuid.h>
 
-#include <expected>
 #include <functional> // for std::reference_wrapper
 #include <list>
 #include <map>
@@ -168,8 +168,8 @@ public:
   const Image* image(const uuid& imageUid) const;
   Image* image(const uuid& imageUid);
 
-  std::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuid& imageUid) const;
-  std::expected<std::reference_wrapper<Image>, std::string> getImage(const uuid& imageUid);
+  entropy_expected::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuid& imageUid) const;
+  entropy_expected::expected<std::reference_wrapper<Image>, std::string> getImage(const uuid& imageUid);
 
   const Image* seg(const uuid& segUid) const;
   Image* seg(const uuid& segUid);

@@ -1184,7 +1184,7 @@ void renderImageHeader(
       ImGui::EndCombo();
     }
     ImGui::SameLine();
-    helpMarker("Select the image interpolation type");
+    helpMarker("Select the image resampling strategy");
 
     std::size_t cmapIndex = getCurrentImageColormapIndex();
 
@@ -2104,7 +2104,7 @@ void renderSegmentationHeader(
 
     if (ImGui::BeginCombo("Sampling", typeString(segSettings.interpolationMode()).c_str()))
     {
-      for (const auto& mode : {InterpolationMode::NearestNeighbor, InterpolationMode::Trilinear})
+      for (const auto& mode : {InterpolationMode::NearestNeighbor, InterpolationMode::Linear})
       {
         if (ImGui::Selectable(typeString(mode).c_str(), (mode == segSettings.interpolationMode()))) {
           segSettings.setInterpolationMode(mode);

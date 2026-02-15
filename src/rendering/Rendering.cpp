@@ -1,6 +1,7 @@
 #include "rendering/Rendering.h"
 
 #include "common/Exception.hpp"
+#include "common/Expected.h"
 #include "common/Types.h"
 
 #include "image/ImageColorMap.h"
@@ -45,7 +46,6 @@
 #include <nanovg_gl.h>
 
 #include <chrono>
-#include <expected>
 #include <functional>
 #include <list>
 #include <memory>
@@ -126,7 +126,7 @@ std::string replacePlaceholders(
   return result;
 }
 
-std::expected<std::unique_ptr<GLShaderProgram>, std::string>
+entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string>
 createShaderProgram(
   const std::string& programName,
   const std::string& vsName, const std::string& fsName,
@@ -148,7 +148,7 @@ createShaderProgram(
     fsSource = std::string(fsData.begin(), fsData.end());
   }
   catch (const std::exception& e) {
-    return std::unexpected(std::format("Exception loading shader for program {}: {}", programName, e.what()));
+    return entropy_expected::unexpected(std::format("Exception loading shader for program {}: {}", programName, e.what()));
   }
 
   fsSource = replacePlaceholders(fsSource, fsReplacements);
@@ -162,17 +162,17 @@ createShaderProgram(
   auto program = std::make_unique<GLShaderProgram>(programName);
 
   if (!program->attachShader(vs)) {
-    return std::unexpected(std::format("Unable to compile vertex shader {}", vsName));
+    return entropy_expected::unexpected(std::format("Unable to compile vertex shader {}", vsName));
   }
   spdlog::debug("Compiled vertex shader {}", vsName);
 
   if (!program->attachShader(fs)) {
-    return std::unexpected(std::format("Unable to compile fragment shader {}", fsName));
+    return entropy_expected::unexpected(std::format("Unable to compile fragment shader {}", fsName));
   }
   spdlog::debug("Compiled fragment shader {}", fsName);
 
   if (!program->link()) {
-    return std::unexpected(std::format("Failed to link shader program {}", programName));
+    return entropy_expected::unexpected(std::format("Failed to link shader program {}", programName));
   }
 
   spdlog::debug("Linked shader program {}", programName);
@@ -803,8 +803,8 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
       maxFilter = tex::MagnificationFilter::Nearest;
       break;
     }
-    case InterpolationMode::Trilinear:
-    case InterpolationMode::Tricubic: {
+    case InterpolationMode::Linear:
+    case InterpolationMode::CubicBsplineConvolution: {
       minFilter = tex::MinificationFilter::Linear;
       maxFilter = tex::MagnificationFilter::Linear;
       break;
@@ -831,8 +831,8 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
         maxFilter = tex::MagnificationFilter::Nearest;
         break;
       }
-      case InterpolationMode::Trilinear:
-      case InterpolationMode::Tricubic: {
+      case InterpolationMode::Linear:
+      case InterpolationMode::CubicBsplineConvolution: {
         minFilter = tex::MinificationFilter::Linear;
         maxFilter = tex::MagnificationFilter::Linear;
         break;
@@ -1566,7 +1566,7 @@ void Rendering::renderAllImagesForView(
             P = m_shaderPrograms.at(ShaderProgramType::ImageGrayLinear).get();
             break;
           }
-          case InterpolationMode::Trilinear: {
+          case InterpolationMode::Linear: {
             if (doXray) {
               P = m_shaderPrograms.at(ShaderProgramType::XrayLinear).get();
             }
@@ -1577,7 +1577,7 @@ void Rendering::renderAllImagesForView(
             }
             break;
           }
-          case InterpolationMode::Tricubic: {
+          case InterpolationMode::CubicBsplineConvolution: {
             if (doXray) {
               P = m_shaderPrograms.at(ShaderProgramType::XrayCubic).get();
             }
@@ -1630,11 +1630,11 @@ void Rendering::renderAllImagesForView(
           GLShaderProgram* P = nullptr;
           switch (img->settings().interpolationMode()) {
           case InterpolationMode::NearestNeighbor:
-          case InterpolationMode::Trilinear: {
+          case InterpolationMode::Linear: {
             P = m_shaderPrograms.at(ShaderProgramType::EdgeSobelLinear).get();
             break;
           }
-          case InterpolationMode::Tricubic: {
+          case InterpolationMode::CubicBsplineConvolution: {
             P = m_shaderPrograms.at(ShaderProgramType::EdgeSobelCubic).get();
             break;
           }
@@ -1690,7 +1690,7 @@ void Rendering::renderAllImagesForView(
             isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourLinearFloating).get();
             break;
           }
-          case InterpolationMode::Trilinear: {
+          case InterpolationMode::Linear: {
             if (R.m_isocontourFloatingPointInterpolation) {
               // Floating-point interpolation is linear only (at this time)
               isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourLinearFloating).get();
@@ -1700,7 +1700,7 @@ void Rendering::renderAllImagesForView(
             }
             break;
           }
-          case InterpolationMode::Tricubic: {
+          case InterpolationMode::CubicBsplineConvolution: {
             isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourCubicFixed).get();
             break;
           }
@@ -1761,11 +1761,11 @@ void Rendering::renderAllImagesForView(
 
         switch (img->settings().colorInterpolationMode()) {
         case InterpolationMode::NearestNeighbor:
-        case InterpolationMode::Trilinear: {
+        case InterpolationMode::Linear: {
           P = m_shaderPrograms.at(ShaderProgramType::ImageColorLinear).get();
           break;
         }
-        case InterpolationMode::Tricubic: {
+        case InterpolationMode::CubicBsplineConvolution: {
           P = m_shaderPrograms.at(ShaderProgramType::ImageColorCubic).get();
           break;
         }
@@ -1858,8 +1858,8 @@ void Rendering::renderAllImagesForView(
       (I.size() >= 2 && I[1].first) ? R.m_uniforms.at(*I[1].first) : sk_defaultImageUniforms};
 
     const bool useTricubic = imgs[0] && imgs[1] &&
-                             (InterpolationMode::Tricubic == imgs[0]->settings().interpolationMode()) &&
-                             (InterpolationMode::Tricubic == imgs[1]->settings().interpolationMode());
+                             (InterpolationMode::CubicBsplineConvolution == imgs[0]->settings().interpolationMode()) &&
+                             (InterpolationMode::CubicBsplineConvolution == imgs[1]->settings().interpolationMode());
 
     const auto boundMetricTextures = bindMetricImageTextures(I, view.renderMode());
 

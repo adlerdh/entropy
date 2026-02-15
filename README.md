@@ -4,30 +4,71 @@
 Copyright Daniel H. Adler and the Penn Image Computing and Science Lab, Department of Radiology, University of Pennsylvania. All rights reserved.
 
 ## Building
-Entropy requires C++20 and build generation uses CMake 3.24.0 or later. The "superbuild" pattern is used order to retrieve and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ITK](https://github.com/InsightSoftwareConsortium/ITKSphinxExamples/tree/master/Superbuild), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), and [Slicer](https://github.com/Slicer/Slicer). Here are sample build instructions.
+Entropy requires C++23 and build generation uses CMake 3.24.0 or later. The “superbuild” pattern is used in order to retrieve and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ITK](https://github.com/InsightSoftwareConsortium/ITKSphinxExamples/tree/master/Superbuild), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), and [Slicer](https://github.com/Slicer/Slicer). Here are sample build instructions.
 
 Define build flags:
 - `BUILD_TYPE`: Debug, Release, RelWithDebInfo, or MinSizeRel.
-- `SHARED_LIBS`: 0 for static; 1 for shared. Static libraries are recommended for distribution.
-- `NPROCS`: Number of concurrent processes during build (e.g. `nproc` on Linux, `sysctl -n hw.ncpu` on macOS, or `echo %NUMBER_OF_PROCESSORS%` on Windows).
+- `SHARED_LIBS`: `OFF` for static; `ON` for shared. Static libraries are recommended for distribution.
+- `NPROCS`: number of concurrent processes during build (e.g., `nproc` on Linux, `sysctl -n hw.ncpu` on macOS).
+
 ```bash
 BUILD_TYPE=Release
 SHARED_LIBS=1
-NPROCS=$(python3 -c "import os; print(os.cpu_count())")
-BUILD_DIR=build-${BUILD_TYPE}-shared-${SHARED_LIBS}
+BUILD_DIR="build-${BUILD_TYPE}-shared-${SHARED_LIBS}"
+NPROCS=$(python3 -c "import os; print(os.cpu_count() or 1)")
+PARALLEL=$(( NPROCS > 1 ? NPROCS - 1 : 1 ))
 ```
 
-Execute superbuild and set flags:
-```
-cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_SHARED_LIBS=${SHARED_LIBS}
-cmake --build ${BUILD_DIR} --parallel ${NPROCS-1}
+Note on generators:
+- For single-config generators (Ninja, Unix Makefiles), use `-DCMAKE_BUILD_TYPE=...` at configure time.
+- For multi-config generators (Visual Studio, Xcode, Ninja Multi-Config), `CMAKE_BUILD_TYPE` is ignored. Instead, pass the configuration at build time via `cmake --build ... --config ${BUILD_TYPE}`.
+
+The steps below intentionally reconfigure the same build directory: first to run the superbuild, then to build Entropy after dependencies are available.
+
+### Single-config generators (Ninja, Unix Makefiles)
+Configure and build the superbuild:
+```sh
+cmake -S . -B ${BUILD_DIR} \
+  -DEntropy_SUPERBUILD=ON \
+  -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+  -DBUILD_SHARED_LIBS=${SHARED_LIBS} \
+  -DSUPERBUILD_PARALLEL=${PARALLEL}
+
+cmake --build ${BUILD_DIR} --parallel ${PARALLEL}
 ```
 
-Execute Entropy build:
+Reconfigure the same build directory to build Entropy (after dependencies are built):
+```sh
+cmake -S . -B ${BUILD_DIR} \
+  -DEntropy_SUPERBUILD=OFF \
+  -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+  -DBUILD_SHARED_LIBS=${SHARED_LIBS}
+
+cmake --build ${BUILD_DIR} --parallel ${PARALLEL}
 ```
-cmake -S . -B ${BUILD_DIR} -DEntropy_SUPERBUILD=0
-cmake --build ${BUILD_DIR} --parallel ${NPROCS-1}
+
+### Multi-config generators (Visual Studio, Xcode, Ninja Multi-Config)
+Configure and build the superbuild:
+```sh
+cmake -S . -B ${BUILD_DIR} \
+  -DEntropy_SUPERBUILD=ON \
+  -DBUILD_SHARED_LIBS=${SHARED_LIBS}
+
+cmake --build ${BUILD_DIR} --config ${BUILD_TYPE} --parallel ${PARALLEL}
 ```
+
+Reconfigure the same build directory to build Entropy:
+```sh
+cmake -S . -B ${BUILD_DIR} \
+  -DEntropy_SUPERBUILD=OFF \
+  -DBUILD_SHARED_LIBS=${SHARED_LIBS}
+
+cmake --build ${BUILD_DIR} --config ${BUILD_TYPE} --parallel ${PARALLEL}
+```
+
+### Run
+- On Linux or macOS: `./${BUILD_DIR}/bin/Entropy`
+- On Windows: `.\${BUILD_DIR}\bin\Entropy.exe`
 
 ### Operating systems
 Entropy builds and runs on the following versions of Linux, Windows, and macOS:
@@ -58,6 +99,7 @@ The following dependencies are added as external projects during CMake superbuil
 * [spdlog](https://github.com/gabime/spdlog/tree/v1.15.1) (v1.15.1)
 * [stduuid](https://github.com/mariusbancila/stduuid/tree/v1.2.3) (v1.2.3)
 * [TinyFSM](https://github.com/digint/tinyfsm/tree/v0.3.3) (v1.15.1)
+* [tl::expected](https://github.com/TartanLlama/expected/tree/v1.3.1) (v1.3.1)
 
 The following external sources and libraries have been committed directly to the Entropy repository:
 * [GLAD OpenGL loaders](https://github.com/Dav1dde/glad.git) (generated from webservice)

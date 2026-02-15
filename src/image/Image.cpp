@@ -142,7 +142,7 @@ Image::Image(
   switch (m_imageRep)
   {
   case ImageRepresentation::Image: {
-    m_settings.setInterpolationMode(InterpolationMode::Trilinear);
+    m_settings.setInterpolationMode(InterpolationMode::Linear);
     break;
   }
   case ImageRepresentation::Segmentation: {
@@ -356,7 +356,7 @@ Image::Image(
   switch (m_imageRep)
   {
   case ImageRepresentation::Image: {
-    m_settings.setInterpolationMode(InterpolationMode::Trilinear);
+    m_settings.setInterpolationMode(InterpolationMode::Linear);
     break;
   }
   case ImageRepresentation::Segmentation: {

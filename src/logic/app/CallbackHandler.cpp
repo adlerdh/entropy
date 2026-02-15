@@ -1649,7 +1649,7 @@ void CallbackHandler::flipImageInterpolation()
 
   const InterpolationMode newMode =
     (InterpolationMode::NearestNeighbor == image->settings().interpolationMode())
-    ? InterpolationMode::Trilinear : InterpolationMode::NearestNeighbor;
+    ? InterpolationMode::Linear : InterpolationMode::NearestNeighbor;
 
   image->settings().setInterpolationMode(newMode);
   m_rendering.updateImageInterpolation(*imgUid);

@@ -782,22 +782,22 @@ if (result) {
 }
 */
 
-std::expected<std::reference_wrapper<const Image>, std::string>
+entropy_expected::expected<std::reference_wrapper<const Image>, std::string>
 AppData::getImage(const uuid& imageUid) const
 {
   auto it = m_images.find(imageUid);
   if (std::end(m_images) != it) {
     return std::cref(it->second);
   }
-  return std::unexpected(std::format("Image {} does not exist", to_string(imageUid)));
+  return entropy_expected::unexpected(std::format("Image {} does not exist", to_string(imageUid)));
 }
 
-std::expected<std::reference_wrapper<Image>, std::string>
+entropy_expected::expected<std::reference_wrapper<Image>, std::string>
 AppData::getImage(const uuid& imageUid)
 {
   const auto result = const_cast<const AppData*>(this)->getImage(imageUid);
   if (!result) {
-    return std::unexpected(result.error());
+    return entropy_expected::unexpected(result.error());
   }
   return std::ref(const_cast<Image&>(result->get()));
 }

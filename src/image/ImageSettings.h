@@ -491,7 +491,7 @@ private:
     std::size_t m_labelTableIndex{0}; //!< Label table index (for segmentation images only)
 
     /// Interpolation mode
-    InterpolationMode m_interpolationMode{InterpolationMode::Trilinear};
+    InterpolationMode m_interpolationMode{InterpolationMode::Linear};
 
     HistogramSettings m_histogramSettings; //!< Histogram calculation and display settings
   };
@@ -506,7 +506,7 @@ private:
   // The following settings only apply to images with 3 or 4 components:
   bool m_displayAsColor{false}; //!< Display the image as RGB/RGBA color
   bool m_ignoreAlpha{false}; //!< Ignore the alpha component of the image
-  InterpolationMode m_colorInterpolationMode{InterpolationMode::Trilinear}; //!< Interpolation mode
+  InterpolationMode m_colorInterpolationMode{InterpolationMode::Linear}; //!< Interpolation mode
 
   // These apply to the image's isosurfaces:
   bool m_useDistanceMapForRaycasting{true}; //!< Use the distance map to accelerate raycasting of the image

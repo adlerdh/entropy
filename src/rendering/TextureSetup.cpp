@@ -77,8 +77,8 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
         maxFilter = tex::MagnificationFilter::Nearest;
         break;
       }
-      case InterpolationMode::Trilinear:
-      case InterpolationMode::Tricubic:
+      case InterpolationMode::Linear:
+      case InterpolationMode::CubicBsplineConvolution:
       {
         minFilter = tex::MinificationFilter::Linear;
         maxFilter = tex::MagnificationFilter::Linear;
@@ -180,8 +180,8 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
           maxFilter = tex::MagnificationFilter::Nearest;
           break;
         }
-        case InterpolationMode::Trilinear:
-        case InterpolationMode::Tricubic:
+        case InterpolationMode::Linear:
+        case InterpolationMode::CubicBsplineConvolution:
         {
           minFilter = tex::MinificationFilter::Linear;
           maxFilter = tex::MagnificationFilter::Linear;

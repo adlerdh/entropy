@@ -370,8 +370,8 @@ void drawSegQuad(
   case InterpolationMode::NearestNeighbor: {
     break;
   }
-  case InterpolationMode::Trilinear:
-  case InterpolationMode::Tricubic: {
+  case InterpolationMode::Linear:
+  case InterpolationMode::CubicBsplineConvolution: {
     program.setUniform("u_texSamplingDirsForSmoothSeg", texSamplingDirsForSmoothSeg);
     program.setUniform("u_segInterpCutoff", segInterpCutoff);
     break;
