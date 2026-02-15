@@ -9,8 +9,6 @@ endif()
 
 set(GIT_PROTOCOL "https")
 
-set(SUPERBUILD_PARALLEL "8" CACHE STRING "Parallel level for ExternalProject builds")
-
 # Detect whether the generator is multi-config
 get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 

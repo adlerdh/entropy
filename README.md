@@ -20,12 +20,12 @@ PARALLEL=$(( NPROCS > 1 ? NPROCS - 1 : 1 ))
 ```
 
 Note on generators:
-- For single-config generators (Ninja, Unix Makefiles), use `-DCMAKE_BUILD_TYPE=...` at configure time.
-- For multi-config generators (Visual Studio, Xcode, Ninja Multi-Config), `CMAKE_BUILD_TYPE` is ignored. Instead, pass the configuration at build time via `cmake --build ... --config ${BUILD_TYPE}`.
+- For single-config generators (e.g. Ninja, Unix Makefiles), use `-DCMAKE_BUILD_TYPE=...` at configure time.
+- For multi-config generators (e.g. Visual Studio, Xcode, Ninja Multi-Config), `CMAKE_BUILD_TYPE` is ignored. Instead, pass the configuration at build time via `cmake --build ... --config ${BUILD_TYPE}`.
 
 The steps below intentionally reconfigure the same build directory: first to run the superbuild, then to build Entropy after dependencies are available.
 
-### Single-config generators (Ninja, Unix Makefiles)
+### Single-config generators (e.g. Ninja, Unix Makefiles)
 Configure and build the superbuild:
 ```sh
 cmake -S . -B ${BUILD_DIR} \
@@ -47,12 +47,13 @@ cmake -S . -B ${BUILD_DIR} \
 cmake --build ${BUILD_DIR} --parallel ${PARALLEL}
 ```
 
-### Multi-config generators (Visual Studio, Xcode, Ninja Multi-Config)
+### Multi-config generators (e.g. Visual Studio, Xcode, Ninja Multi-Config)
 Configure and build the superbuild:
 ```sh
 cmake -S . -B ${BUILD_DIR} \
   -DEntropy_SUPERBUILD=ON \
-  -DBUILD_SHARED_LIBS=${SHARED_LIBS}
+  -DBUILD_SHARED_LIBS=${SHARED_LIBS} \
+  -DSUPERBUILD_PARALLEL=${PARALLEL}
 
 cmake --build ${BUILD_DIR} --config ${BUILD_TYPE} --parallel ${PARALLEL}
 ```
@@ -66,21 +67,17 @@ cmake -S . -B ${BUILD_DIR} \
 cmake --build ${BUILD_DIR} --config ${BUILD_TYPE} --parallel ${PARALLEL}
 ```
 
-### Run
-- On Linux or macOS: `./${BUILD_DIR}/bin/Entropy`
-- On Windows: `.\${BUILD_DIR}\bin\Entropy.exe`
-
 ### Operating systems
 Entropy builds and runs on the following versions of Linux, Windows, and macOS:
-* Ubuntu 22.04, 24.04 (with gcc 12.3.0, 13.3.0)
-* Windows 10, 11 (with MSVC++ 17.3.4)
-* macOS 14.6.1, 15.3.1, 15.6.1, 26.0.1 Apple arm64 architecture (with clang 15.0.0, 16.0.0, 17.0.0)
-* ~~macOS 10.14.6, Intel x86_64 architecture (with clang 11.0.0)~~ (not supported)
+* Ubuntu 22.04, 24.04 (with gcc 13.3.0+)
+* Windows 10, 11 (with MSVC++ 17.3.4+)
+* macOS 14.6.1, 15.3.1, 15.6.1, 26.0.1 Apple arm64 architecture (with clang 15.0.0+)
+* ~~macOS Intel x86_64 architecture~~ (not supported)
 
 ### Development libraries for Debian Linux
 You may need to install additional development libraries for Mesa 3D Graphics, Wayland, Xorg, Xrandr, Xinerama, Xcursor, xkbcommon, and xi on Linux. On Debian, this can be done using
 
-`sudo apt-get install libgl1-mesa-dev libwayland-dev xorg-dev libxkbcommon-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev`
+`sudo apt-get install xorg-dev libgl1-mesa-dev libxcursor-dev libxkbcommon-dev libxinerama-dev libxi-dev libxrandr-dev libwayland-dev`
 
 ### External dependencies
 The following dependencies are added as external projects during CMake superbuild generation:
@@ -120,10 +117,12 @@ Original attributions and licenses have been preserved and committed for all ext
 
 ## Running
 Entropy is run from the terminal. Images can be specified directly as command line arguments or from a JSON project file.
+- On Linux or macOS: `./${BUILD_DIR}/bin/Entropy`
+- On Windows: `.\${BUILD_DIR}\bin\Entropy.exe`
 
 1. A list of images can be provided as positional arguments. If an image has an accompanying segmentation, then it is separated from the image filename using a comma (,) and no space. e.g.:
 
-`./Entropy reference_image.nii.gz,reference_seg.nii.gz additional_image1.nii.gz additional_image2.nii.gz,additional_image2_seg.nii.gz`
+`Entropy reference_image.nii.gz,reference_seg.nii.gz additional_image1.nii.gz additional_image2.nii.gz,additional_image2_seg.nii.gz`
 
 With this input format, each image may have only one segmentation.
 

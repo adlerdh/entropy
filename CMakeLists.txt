@@ -26,6 +26,8 @@ set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 # CMake will generate a file compile_commands.json under the build directory.
 # VSCode is able to parse the file and find the include path based on its content.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+set(SUPERBUILD_PARALLEL "8" CACHE STRING "Parallel level for ExternalProject builds")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -35,8 +37,6 @@ if(_isMultiConfig)
   set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;MinSizeRel"
       CACHE STRING "Configs" FORCE)
 endif()
-
-set(CMAKE_VERBOSE_MAKEFILE ON)
 
 add_library(entropy_warnings INTERFACE)
 target_compile_options(entropy_warnings INTERFACE
