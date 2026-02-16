@@ -121,6 +121,9 @@ private:
   // as the monitor with the largest overlap with the window.
   GLFWmonitor* currentMonitor() const;
 
+  /// Platform that was selected during initialization
+  int m_platform;
+
   // GLFW window that is owned by this class:
   GLFWwindow* m_window;
 
@@ -128,21 +131,22 @@ private:
   std::unordered_map<MouseMode, GLFWcursor*> m_mouseModeToCursor;
 
   // Allows this class to change how window events are processed:
-  EventProcessingMode m_eventProcessingMode;
+  EventProcessingMode m_eventProcessingMode = EventProcessingMode::Wait;
 
   // For EventProcessingMode::WaitTimeout, this is the timeout in seconds:
-  double m_waitTimoutSeconds;
+  double m_waitTimoutSeconds = 1.0 / 3.0;
 
   // Rendering callbacks:
-  std::function<void(std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime)> m_framerateLimiter;
-  std::function<void()> m_renderScene;
-  std::function<void()> m_renderGui;
+  std::function<void(std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime)> m_framerateLimiter = nullptr;
+  std::function<void()> m_renderScene = nullptr;
+  std::function<void()> m_renderGui = nullptr;
 
-  // Backups of window position and size, which are restored when changing
-  // from full-screen to windowed mode
-  int m_backupWindowPosX;
-  int m_backupWindowPosY;
+  // Backups of window position and size, which are restored when changing from full-screen to windowed mode
+  int m_backupWindowPosX = 0;
+  int m_backupWindowPosY = 0;
 
-  int m_backupWindowWidth;
-  int m_backupWindowHeight;
+  int m_backupWindowWidth = 1;
+  int m_backupWindowHeight = 1;
+
+  bool m_backupMaximized = true;
 };

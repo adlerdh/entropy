@@ -12,15 +12,6 @@
 #include <GLFW/glfw3.h>
 
 GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion)
-  : m_eventProcessingMode(EventProcessingMode::Wait)
-  , m_waitTimoutSeconds(1.0 / 30.0)
-  , m_framerateLimiter(nullptr)
-  , m_renderScene(nullptr)
-  , m_renderGui(nullptr)
-  , m_backupWindowPosX(0)
-  , m_backupWindowPosY(0)
-  , m_backupWindowWidth(1)
-  , m_backupWindowHeight(1)
 {
   if (!app) {
     spdlog::critical("The application is null on GLFW creation");
@@ -35,6 +26,14 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   }
 
   spdlog::debug("Initialized GLFW windowing library");
+
+  glfwSetErrorCallback(errorCallback);
+
+  m_platform = glfwGetPlatform();
+  if (m_platform == GLFW_PLATFORM_NULL) {
+    spdlog::critical("GLFW was not initialized");
+    throw_debug("GLFW was not initialized")
+  }
 
   // Set OpenGL version
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glMajorVersion);
@@ -61,7 +60,6 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 
   glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
   glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-
   glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 
   // Window will be given input focus when glfwShowWindow is called
@@ -109,6 +107,21 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
     glfwGetMonitorWorkarea(monitor, &xpos, &ypos, &width, &height);
   }
 
+  m_window = glfwCreateWindow(width, height, "Entropy", nullptr, nullptr);
+
+  if (!m_window) {
+    glfwTerminate();
+    throw_debug("Failed to create GLFW window and context")
+  }
+
+  spdlog::debug("Created GLFW window and context");
+
+  // Embed pointer to application data in GLFW window
+  glfwSetWindowUserPointer(m_window, reinterpret_cast<void*>(app));
+
+  // Make window's context current on this thread
+  glfwMakeContextCurrent(m_window);
+
   // Enable VSync (sync to monitor refresh rate).
   // Vsync synchronizes the application's frame swaps (glfwSwapBuffers) with the display's
   // refresh rate (usually 60Hz or 120Hz on your MacBook Pro)/
@@ -155,27 +168,10 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
    * may not be fully honored, especially on high refresh displays.
    */
 
-  m_window = glfwCreateWindow(width, height, "Entropy", nullptr, nullptr);
-
-  if (!m_window) {
-    glfwTerminate();
-    throw_debug("Failed to create GLFW window and context")
-  }
-
-  spdlog::debug("Created GLFW window and context");
-
-  // Embed pointer to application data in GLFW window
-  glfwSetWindowUserPointer(m_window, reinterpret_cast<void*>(app));
-
-  // Make window's context current on this thread
-  glfwMakeContextCurrent(m_window);
-
   // Set callbacks:
-  glfwSetErrorCallback(errorCallback);
-
   glfwSetWindowContentScaleCallback(m_window, windowContentScaleCallback);
   glfwSetWindowCloseCallback(m_window, windowCloseCallback);
-  glfwSetWindowPosCallback(m_window, windowPositionCallback);
+  glfwSetWindowPosCallback(m_window, windowPositionCallback); // not called on Wayland
   glfwSetWindowSizeCallback(m_window, windowSizeCallback);
   glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
 
@@ -251,10 +247,15 @@ void GlfwWrapper::setWaitTimeout(double waitTimoutSeconds)
 
 void GlfwWrapper::init()
 {
-  glfwGetWindowPos(m_window, &m_backupWindowPosX, &m_backupWindowPosY);
+  if (m_platform != GLFW_PLATFORM_WAYLAND && m_platform != GLFW_PLATFORM_NULL) {
+    glfwGetWindowPos(m_window, &m_backupWindowPosX, &m_backupWindowPosY);
+  }
+
   windowPositionCallback(m_window, m_backupWindowPosX, m_backupWindowPosY);
 
   glfwGetWindowSize(m_window, &m_backupWindowWidth, &m_backupWindowHeight);
+  m_backupMaximized = (glfwGetWindowAttrib(m_window, GLFW_MAXIMIZED) == GLFW_TRUE);
+
   windowSizeCallback(m_window, m_backupWindowWidth, m_backupWindowHeight);
 
   int fbWidth = 0;
@@ -408,8 +409,12 @@ void GlfwWrapper::toggleFullScreenMode(bool forceWindowMode)
   else if (!isFullScreen)
   {
     // Switch to full-screen mode after backing up position and size:
-    glfwGetWindowPos(m_window, &m_backupWindowPosX, &m_backupWindowPosY);
+    if (m_platform != GLFW_PLATFORM_WAYLAND && m_platform != GLFW_PLATFORM_NULL) {
+      glfwGetWindowPos(m_window, &m_backupWindowPosX, &m_backupWindowPosY);
+    }
+
     glfwGetWindowSize(m_window, &m_backupWindowWidth, &m_backupWindowHeight);
+    m_backupMaximized = (glfwGetWindowAttrib(m_window, GLFW_MAXIMIZED) == GLFW_TRUE);
 
     GLFWmonitor* monitor = currentMonitor();
     if (!monitor) {
@@ -436,7 +441,11 @@ GLFWmonitor* GlfwWrapper::currentMonitor() const
   int largestOverlap = 0;
 
   int winPosX, winPosY, winWidth, winHeight;
-  glfwGetWindowPos(m_window, &winPosX, &winPosY);
+
+  if (m_platform != GLFW_PLATFORM_WAYLAND && m_platform != GLFW_PLATFORM_NULL) {
+    glfwGetWindowPos(m_window, &winPosX, &winPosY);
+  }
+
   glfwGetWindowSize(m_window, &winWidth, &winHeight);
 
   int numMonitors;
