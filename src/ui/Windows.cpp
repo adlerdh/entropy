@@ -708,14 +708,14 @@ void renderViewOrientationToolWindow(
 
       if (ImGui::Button("+X (L)"))
       {
-        worldNewFwdDir = Directions::get(Directions::Cartesian::X);
+        worldNewFwdDir = Directions::get(Directions::Cartesian::PosX);
         applyRotation = true;
       }
 
       ImGui::SameLine();
       if (ImGui::Button("-X (R)"))
       {
-        worldNewFwdDir = -Directions::get(Directions::Cartesian::X);
+        worldNewFwdDir = -Directions::get(Directions::Cartesian::PosX);
         applyRotation = true;
       }
 
@@ -724,14 +724,14 @@ void renderViewOrientationToolWindow(
 
       if (ImGui::Button("+Y (P)"))
       {
-        worldNewFwdDir = Directions::get(Directions::Cartesian::Y);
+        worldNewFwdDir = Directions::get(Directions::Cartesian::PosY);
         applyRotation = true;
       }
 
       ImGui::SameLine();
       if (ImGui::Button("-Y (A)"))
       {
-        worldNewFwdDir = -Directions::get(Directions::Cartesian::Y);
+        worldNewFwdDir = -Directions::get(Directions::Cartesian::PosY);
         applyRotation = true;
       }
 
@@ -740,14 +740,14 @@ void renderViewOrientationToolWindow(
 
       if (ImGui::Button("+Z (S)"))
       {
-        worldNewFwdDir = Directions::get(Directions::Cartesian::Z);
+        worldNewFwdDir = Directions::get(Directions::Cartesian::PosZ);
         applyRotation = true;
       }
 
       ImGui::SameLine();
       if (ImGui::Button("-Z (I)"))
       {
-        worldNewFwdDir = -Directions::get(Directions::Cartesian::Z);
+        worldNewFwdDir = -Directions::get(Directions::Cartesian::PosZ);
         applyRotation = true;
       }
 
@@ -1397,36 +1397,30 @@ void renderSettingsWindow(
 
         if (ImGui::TreeNode("Anatomical Labels"))
         {
-          ImGui::ColorEdit4(
-            "Text color", glm::value_ptr(renderData.m_anatomicalLabelColor), sk_colorAlphaEditFlags
-          );
-
+          ImGui::ColorEdit4("Text color", glm::value_ptr(renderData.m_anatomicalLabelColor), sk_colorAlphaEditFlags);
           ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
           ImGui::Text("Anatomical directions:");
 
-          if (ImGui::RadioButton(
-                "Human", AnatomicalLabelType::Human == renderData.m_anatomicalLabelType
-              ))
-          {
+          if (ImGui::RadioButton("Human", AnatomicalLabelType::Human == renderData.m_anatomicalLabelType)) {
             renderData.m_anatomicalLabelType = AnatomicalLabelType::Human;
           }
           ImGui::SameLine();
           helpMarker("Left, Right, Posterior, Anterior, Superior, Inferior");
 
-          if (ImGui::RadioButton(
-                "Rodent", AnatomicalLabelType::Rodent == renderData.m_anatomicalLabelType
-              ))
-          {
+          if (ImGui::RadioButton("Cartesian", AnatomicalLabelType::Cartesian == renderData.m_anatomicalLabelType)) {
+            renderData.m_anatomicalLabelType = AnatomicalLabelType::Cartesian;
+          }
+          ImGui::SameLine();
+          helpMarker("+x, -x, +y, -y, +z, -z");
+
+          if (ImGui::RadioButton("Rodent", AnatomicalLabelType::Rodent == renderData.m_anatomicalLabelType)) {
             renderData.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
           }
           ImGui::SameLine();
           helpMarker("Left, Right, Dorsal, Ventral, Caudal, Rostral");
 
-          if (ImGui::RadioButton(
-                "Disabled", AnatomicalLabelType::Disabled == renderData.m_anatomicalLabelType
-              ))
-          {
+          if (ImGui::RadioButton("Disabled", AnatomicalLabelType::Disabled == renderData.m_anatomicalLabelType)){
             renderData.m_anatomicalLabelType = AnatomicalLabelType::Disabled;
           }
           ImGui::SameLine();
@@ -1442,10 +1436,7 @@ void renderSettingsWindow(
           static constexpr bool sk_orientChangeResetObliqueOrientation = false;
           static constexpr bool sk_orientChangeResetZoom = false;
 
-          if (ImGui::RadioButton(
-                "Radiological",
-                ViewConvention::Radiological == appData.windowData().getViewOrientationConvention()
-              ))
+          if (ImGui::RadioButton("Radiological", ViewConvention::Radiological == appData.windowData().getViewOrientationConvention()))
           {
             appData.windowData().setViewOrientationConvention(ViewConvention::Radiological);
 
@@ -1459,10 +1450,7 @@ void renderSettingsWindow(
           ImGui::SameLine();
           helpMarker("Anatomical left is on view right; anatomical right is on view left");
 
-          if (ImGui::RadioButton(
-                "Neurological",
-                ViewConvention::Neurological == appData.windowData().getViewOrientationConvention()
-              ))
+          if (ImGui::RadioButton("Neurological",ViewConvention::Neurological == appData.windowData().getViewOrientationConvention()))
           {
             appData.windowData().setViewOrientationConvention(ViewConvention::Neurological);
 
@@ -1493,15 +1481,13 @@ void renderSettingsWindow(
         ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
         ImGui::Text("Boundary outline:");
-        if (ImGui::RadioButton("Outline view pixels",
-                               SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle)) {
+        if (ImGui::RadioButton("Outline view pixels", SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle)) {
           renderData.m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
         }
         ImGui::SameLine();
         helpMarker("Outline the outer view pixels of the image segmentation regions");
 
-        if (ImGui::RadioButton("Outline image voxels",
-                               SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle)) {
+        if (ImGui::RadioButton("Outline image voxels",SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle)) {
           renderData.m_segOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
         }
         ImGui::SameLine();

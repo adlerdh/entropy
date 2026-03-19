@@ -2,17 +2,20 @@
 
 #include <glm/glm.hpp>
 
-const Directions::CartesianDirectionsMap Directions::s_cartesianDirections = {
-  {Directions::Cartesian::X, glm::vec3{1, 0, 0}},
-  {Directions::Cartesian::Y, glm::vec3{0, 1, 0}},
-  {Directions::Cartesian::Z, glm::vec3{0, 0, 1}},
+const std::map<Directions::Cartesian, glm::vec3> Directions::s_cartesianDirections = {
+  {Directions::Cartesian::PosX, glm::vec3{1, 0, 0}},
+  {Directions::Cartesian::PosY, glm::vec3{0, 1, 0}},
+  {Directions::Cartesian::PosZ, glm::vec3{0, 0, 1}},
+  {Directions::Cartesian::NegX, glm::vec3{-1, 0, 0}},
+  {Directions::Cartesian::NegY, glm::vec3{0, -1, 0}},
+  {Directions::Cartesian::NegZ, glm::vec3{0, 0, -1}},
   {Directions::Cartesian::XY, glm::normalize(glm::vec3{1, 1, 0})},
   {Directions::Cartesian::YZ, glm::normalize(glm::vec3{0, 1, 1})},
   {Directions::Cartesian::ZX, glm::normalize(glm::vec3{1, 0, 1})},
   {Directions::Cartesian::XYZ, glm::normalize(glm::vec3{1, 1, 1})},
 };
 
-const Directions::ViewDirectionsMap Directions::s_viewDirections = {
+const std::map<Directions::View, glm::vec3> Directions::s_viewDirections = {
   {Directions::View::Left, -glm::vec3{1, 0, 0}},
   {Directions::View::Right, glm::vec3{1, 0, 0}},
   {Directions::View::Down, -glm::vec3{0, 1, 0}},
@@ -21,7 +24,7 @@ const Directions::ViewDirectionsMap Directions::s_viewDirections = {
   {Directions::View::Back, glm::vec3{0, 0, 1}}
 };
 
-const Directions::AnatomicalDirectionsMap Directions::s_anatomicalDirections = {
+const std::map<Directions::Anatomy, glm::vec3> Directions::s_anatomicalDirections = {
   {Directions::Anatomy::Right, -glm::vec3{1, 0, 0}},
   {Directions::Anatomy::Left, glm::vec3{1, 0, 0}},
   {Directions::Anatomy::Anterior, -glm::vec3{0, 1, 0}},
@@ -30,7 +33,7 @@ const Directions::AnatomicalDirectionsMap Directions::s_anatomicalDirections = {
   {Directions::Anatomy::Superior, glm::vec3{0, 0, 1}}
 };
 
-const Directions::AnimalDirectionsMap Directions::s_animalDirections = {
+const std::map<Directions::Animal, glm::vec3> Directions::s_animalDirections = {
   {Directions::Animal::Right, -glm::vec3{1, 0, 0}},
   {Directions::Animal::Left, glm::vec3{1, 0, 0}},
   {Directions::Animal::Ventral, -glm::vec3{0, 1, 0}},
@@ -39,7 +42,7 @@ const Directions::AnimalDirectionsMap Directions::s_animalDirections = {
   {Directions::Animal::Rostral, glm::vec3{0, 0, 1}}
 };
 
-const Directions::AnatomicalAbbreviationMap Directions::s_anatomicalAbbrevs = {
+const std::map<Directions::Anatomy, std::string> Directions::s_anatomicalAbbrevs = {
   {Directions::Anatomy::Right, "R"},
   {Directions::Anatomy::Left, "L"},
   {Directions::Anatomy::Anterior, "A"},
@@ -48,13 +51,26 @@ const Directions::AnatomicalAbbreviationMap Directions::s_anatomicalAbbrevs = {
   {Directions::Anatomy::Superior, "S"}
 };
 
-const Directions::AnimalAbbreviationMap Directions::s_animalAbbrevs = {
+const std::map<Directions::Animal, std::string> Directions::s_animalAbbrevs = {
   {Directions::Animal::Right, "R"},
   {Directions::Animal::Left, "L"},
-  {Directions::Animal::Rostral, "Rost."},
-  {Directions::Animal::Dorsal, "Dors."},
-  {Directions::Animal::Caudal, "Caud."},
-  {Directions::Animal::Ventral, "Vent."}
+  {Directions::Animal::Rostral, "Ros"},
+  {Directions::Animal::Dorsal, "Dor"},
+  {Directions::Animal::Caudal, "Cau"},
+  {Directions::Animal::Ventral, "Ven"}
+};
+
+const std::map<Directions::Cartesian, std::string> Directions::s_cartesianAbbrevs = {
+  {Directions::Cartesian::PosX, "+x"},
+  {Directions::Cartesian::PosY, "+y"},
+  {Directions::Cartesian::PosZ, "+z"},
+  {Directions::Cartesian::NegX, "-x"},
+  {Directions::Cartesian::NegY, "-y"},
+  {Directions::Cartesian::NegZ, "-z"},
+  {Directions::Cartesian::XY, "xy"},
+  {Directions::Cartesian::YZ, "yz"},
+  {Directions::Cartesian::ZX, "zx"},
+  {Directions::Cartesian::XYZ, "xyz"}
 };
 
 glm::vec3 Directions::get(const Cartesian& dir)
@@ -75,6 +91,11 @@ glm::vec3 Directions::get(const Anatomy& dir)
 glm::vec3 Directions::get(const Animal& dir)
 {
   return s_animalDirections.at(dir);
+}
+
+const std::string& Directions::abbrev(const Cartesian& dir)
+{
+  return s_cartesianAbbrevs.at(dir);
 }
 
 const std::string& Directions::abbrev(const Anatomy& dir)
