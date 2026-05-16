@@ -3,11 +3,16 @@
 #include "common/Types.h"
 #include "common/UuidRange.h"
 #include "logic/camera/CameraTypes.h"
+#include "rendering/AsciiAtlas.h"
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/common/ShaderType.h"
+#include "rendering/utility/gl/GLFrameBufferObject.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
+#include "rendering/utility/gl/GLTexture.h"
+#include "rendering/utility/gl/GLVertexArrayObject.h"
 
 #include <glm/fwd.hpp>
+#include <glm/vec2.hpp>
 #include <uuid.h>
 
 #include <functional>
@@ -18,7 +23,6 @@
 
 class AppData;
 class GLBufferTexture;
-class GLTexture;
 class IDrawable;
 class IRenderer;
 class View;
@@ -111,6 +115,13 @@ private:
   void setupOpenGLState();
 
   void createShaderPrograms();
+
+  /// Build (or rebuild) the ASCII glyph atlas from the embedded Cousine font
+  void buildAsciiAtlas();
+
+  /// Allocate/reallocate the scene FBO color attachment when the device size changes
+  void ensureSceneFboSize(glm::ivec2 deviceSize);
+
   bool createRaycastIsoProgram(GLShaderProgram& program);
 
   /**
@@ -157,6 +168,15 @@ private:
 
   // NanoVG context for vector graphics (owned by this class)
   NVGcontext* m_nvg;
+
+  // ASCII glyph atlas, built once at init from the embedded Cousine-Regular.ttf
+  AsciiAtlas m_asciiAtlas;
+
+  // FBO and color attachment for the ASCII post-process pass
+  GLFrameBufferObject m_sceneFbo;
+  std::optional<GLTexture> m_sceneColorTex;
+  glm::ivec2 m_sceneFboSize{0, 0};
+  GLVertexArrayObject m_asciiPostVao;
 
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
 

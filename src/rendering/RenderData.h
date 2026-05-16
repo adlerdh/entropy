@@ -11,6 +11,8 @@
 #include "rendering/utility/gl/GLVertexArrayObject.h"
 
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 #include <uuid.h>
@@ -286,6 +288,16 @@ struct RenderData
 
   /// Should the difference metric use squared difference (true) or absolute difference (false)?
   bool m_useSquare;
+
+  /// ASCII rendering settings
+  bool m_asciiEnabled = false;
+  glm::vec2 m_asciiCellSizePx{8.f, 16.f};
+  int m_asciiCharsetIndex = 0;
+  glm::vec3 m_asciiFgColor{1.f, 1.f, 1.f};
+  glm::vec3 m_asciiBgColor{0.f, 0.f, 0.f};
+  float m_asciiBgAlpha = 1.f;
+  bool m_asciiUseColormap = false;
+  bool m_asciiAtlasNeedsRebuild = false; // set by UI when charset changes
 
   /// Flashlight radius
   float m_flashlightRadius;

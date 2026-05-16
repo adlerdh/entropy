@@ -21,7 +21,8 @@ enum class ShaderProgramType
   DifferenceLinear,
   DifferenceCubic,
   OverlapLinear,
-  OverlapCubic
+  OverlapCubic,
+  AsciiPost
 };
 
 std::string to_string(ShaderProgramType type);

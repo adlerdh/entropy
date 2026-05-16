@@ -18,6 +18,7 @@
 #include "rendering/VectorDrawing.h"
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLShader.h"
+#include "rendering/utility/gl/GLTextureTypes.h"
 
 // #include "rendering/renderers/DepthPeelRenderer.h"
 // #include "rendering/utility/CreateGLObjects.h"
@@ -58,6 +59,13 @@
 CMRC_DECLARE(fonts);
 CMRC_DECLARE(shaders);
 
+// Built-in ASCII character sets (darkest-to-brightest ordering):
+static const std::vector<std::string> sk_asciiCharsets = {
+  " .,:-=+*#%@",
+  " .'\"`,:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
+  " 01"
+};
+
 // These types are used when setting uniforms in the shaders
 using FloatVector = std::vector<float>;
 using Mat4Vector = std::vector<glm::mat4>;
@@ -96,6 +104,9 @@ const Uniforms::SamplerIndexType msk_jumpTexSampler{1}; // distance map texture
 // Samplers for metric shaders:
 const Uniforms::SamplerIndexVectorType msk_metricImgTexSamplers{{0, 1}};
 const Uniforms::SamplerIndexType msk_metricCmapTexSampler{2};
+
+// Sampler for ASCII atlas (unit 2 — safe because ASCII programs don't use metric samplers):
+const Uniforms::SamplerIndexType msk_asciiAtlasSampler{2};
 
 std::string loadFile(const std::string& path)
 {
@@ -179,6 +190,32 @@ createShaderProgram(
   return program;
 }
 
+ShaderProgramType selectGrayImageProgram(
+    InterpolationMode interp,
+    bool doXray,
+    bool floatingPointInterp)
+{
+    if (doXray) {
+        const bool cubic = (InterpolationMode::CubicBsplineConvolution == interp);
+        return cubic ? ShaderProgramType::XrayCubic
+                     : ShaderProgramType::XrayLinear;
+    }
+
+    switch (interp) {
+    case InterpolationMode::NearestNeighbor:
+        return ShaderProgramType::ImageGrayLinear;
+
+    case InterpolationMode::Linear:
+        return floatingPointInterp
+                 ? ShaderProgramType::ImageGrayLinearFloating
+                 : ShaderProgramType::ImageGrayLinear;
+
+    case InterpolationMode::CubicBsplineConvolution:
+        return ShaderProgramType::ImageGrayCubic;
+    }
+    std::unreachable();
+}
+
 /**
  * @brief Create the Dual-Depth Peel renderer for a given view
  * @param viewUid View UID
@@ -220,6 +257,7 @@ std::unique_ptr<DepthPeelRenderer> createDdpRenderer(
 Rendering::Rendering(AppData& appData)
   : m_appData(appData)
   , m_nvg(nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES /*| NVG_DEBUG*/))
+  , m_sceneFbo("SceneAsciiPostFbo")
   , m_raycastIsoProgram("RaycastIsoSurfaceProgram")
   , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
@@ -457,9 +495,31 @@ Platform-independent appearance
 #endif
 }
 
+void Rendering::buildAsciiAtlas()
+{
+  const RenderData& R = m_appData.renderData();
+  const int charsetIdx = std::clamp(R.m_asciiCharsetIndex, 0,
+                                    static_cast<int>(sk_asciiCharsets.size()) - 1);
+  const std::string& charset = sk_asciiCharsets[charsetIdx];
+
+  try {
+    const glm::ivec2 cellPx{static_cast<int>(R.m_asciiCellSizePx.x),
+                             static_cast<int>(R.m_asciiCellSizePx.y)};
+
+    if (!m_asciiAtlas.build(nullptr, 0, charset, cellPx)) {
+      spdlog::error("Failed to build ASCII atlas");
+    }
+  }
+  catch (const std::exception& e) {
+    spdlog::error("Exception building ASCII atlas: {}", e.what());
+  }
+}
+
 void Rendering::init()
 {
   nvgReset(m_nvg);
+  buildAsciiAtlas();
+  m_asciiPostVao.generate();
 }
 
 void Rendering::initTextures()
@@ -939,6 +999,13 @@ void Rendering::framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime)
 
 void Rendering::render()
 {
+  // Rebuild ASCII atlas if the charset changed via the UI
+  RenderData& renderDataMut = m_appData.renderData();
+  if (renderDataMut.m_asciiAtlasNeedsRebuild) {
+    renderDataMut.m_asciiAtlasNeedsRebuild = false;
+    buildAsciiAtlas();
+  }
+
   // Set up OpenGL state, because it changes after NanoVG calls in the render of the prior frame
   setupOpenGLState();
 
@@ -1560,33 +1627,11 @@ void Rendering::renderAllImagesForView(
         // Render greyscale image
         if (!U.showEdges || (U.showEdges && U.overlayEdges))
         {
-          GLShaderProgram* P = nullptr;
-          switch (img->settings().interpolationMode()) {
-          case InterpolationMode::NearestNeighbor: {
-            P = m_shaderPrograms.at(ShaderProgramType::ImageGrayLinear).get();
-            break;
-          }
-          case InterpolationMode::Linear: {
-            if (doXray) {
-              P = m_shaderPrograms.at(ShaderProgramType::XrayLinear).get();
-            }
-            else {
-              P = R.m_imageGrayFloatingPointInterpolation
-                  ? m_shaderPrograms.at(ShaderProgramType::ImageGrayLinearFloating).get()
-                  : m_shaderPrograms.at(ShaderProgramType::ImageGrayLinear).get();
-            }
-            break;
-          }
-          case InterpolationMode::CubicBsplineConvolution: {
-            if (doXray) {
-              P = m_shaderPrograms.at(ShaderProgramType::XrayCubic).get();
-            }
-            else {
-              P = m_shaderPrograms.at(ShaderProgramType::ImageGrayCubic).get();
-            }
-            break;
-          }
-          }
+          const ShaderProgramType progType = selectGrayImageProgram(
+              img->settings().interpolationMode(),
+              doXray,
+              R.m_imageGrayFloatingPointInterpolation);
+          GLShaderProgram* P = m_shaderPrograms.at(progType).get();
 
           const auto boundTextures = bindScalarImageTextures(imgSegPair);
           P->use();
@@ -2136,34 +2181,138 @@ void Rendering::renderAllAnnotationsForView(
   }
 }
 
+void Rendering::ensureSceneFboSize(glm::ivec2 deviceSize)
+{
+  if (deviceSize == m_sceneFboSize) {
+    return;
+  }
+  m_sceneFboSize = deviceSize;
+
+  using namespace tex;
+  const glm::uvec3 texSize{static_cast<uint32_t>(deviceSize.x), static_cast<uint32_t>(deviceSize.y), 1u};
+
+  if (!m_sceneColorTex) {
+    m_sceneColorTex.emplace(tex::Target::Texture2D);
+    m_sceneColorTex->generate();
+    m_sceneColorTex->setMinificationFilter(tex::MinificationFilter::Nearest);
+    m_sceneColorTex->setMagnificationFilter(tex::MagnificationFilter::Nearest);
+    m_sceneColorTex->setWrapMode(tex::WrapMode::ClampToEdge);
+  }
+
+  // Allocate (or reallocate) texture storage before attaching to FBO,
+  // because attach2DTexture calls checkStatus() which requires complete storage.
+  m_sceneColorTex->setSize(texSize);
+  m_sceneColorTex->bind(std::nullopt);
+  m_sceneColorTex->setData(
+    0,
+    SizedInternalFormat::RGBA8_UNorm,
+    BufferPixelFormat::RGBA,
+    BufferPixelDataType::UInt8,
+    nullptr);
+  m_sceneColorTex->unbind();
+
+  if (m_sceneFbo.id() == 0) {
+    m_sceneFbo.generate();
+    m_sceneFbo.bind(fbo::TargetType::DrawAndRead);
+    m_sceneFbo.attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, *m_sceneColorTex, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  }
+}
+
 void Rendering::renderImageData()
 {
   if (!m_isAppDoneLoadingImages) {
-    // Don't render images if the app is still loading them
     return;
   }
 
   const auto& R = m_appData.renderData();
+  const bool doAscii = R.m_asciiEnabled && (m_asciiAtlas.textureId() != 0);
   const bool renderLandmarksOnTop = R.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
   const bool renderAnnotationsOnTop = R.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
 
-  // Render images for each view in the layout
+  const Viewport& windowVP = m_appData.windowData().viewport();
+  const glm::vec4 deviceVP = windowVP.getDeviceAsVec4();
+
+  if (doAscii) {
+    ensureSceneFboSize(glm::ivec2{static_cast<int>(deviceVP[2]), static_cast<int>(deviceVP[3])});
+  }
+
+  GLShaderProgram* asciiPostProg = doAscii
+    ? m_shaderPrograms.at(ShaderProgramType::AsciiPost).get()
+    : nullptr;
+
   for (const auto& [viewUid, view] : m_appData.windowData().currentLayout().views())
   {
     if (!view) {
       continue;
     }
 
-    // Offset the crosshairs according to the image slice in the view
     const glm::vec3 worldXhairsOffset = view->updateImageSlice(
       m_appData, m_appData.state().worldCrosshairs().worldOrigin());
 
     const auto miewportViewBounds = helper::computeMiewportFrameBounds(
       view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4());
 
-    renderAllImagesForView(*view, miewportViewBounds, worldXhairsOffset);
+    if (doAscii)
+    {
+      // Render image pass into the scene FBO
+      m_sceneFbo.bind(fbo::TargetType::Draw);
+      glViewport(
+        static_cast<GLint>(deviceVP[0]), static_cast<GLint>(deviceVP[1]),
+        static_cast<GLsizei>(deviceVP[2]), static_cast<GLsizei>(deviceVP[3]));
+      glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
 
-    // Do not render landmarks and annotations in volume rendering mode
+      renderAllImagesForView(*view, miewportViewBounds, worldXhairsOffset);
+
+      // Composite via ASCII post-process into default framebuffer
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glViewport(
+        static_cast<GLint>(deviceVP[0]), static_cast<GLint>(deviceVP[1]),
+        static_cast<GLsizei>(deviceVP[2]), static_cast<GLsizei>(deviceVP[3]));
+
+      const glm::vec2 viewSizePx{
+        static_cast<float>(deviceVP[2]),
+        static_cast<float>(deviceVP[3])
+      };
+
+      asciiPostProg->use();
+      {
+        // Bind scene texture to unit 3
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, m_sceneColorTex->id());
+        asciiPostProg->setSamplerUniform("u_sceneTex", 3);
+
+        // Bind atlas to unit 2
+        glActiveTexture(GL_TEXTURE0 + msk_asciiAtlasSampler.index);
+        glBindTexture(GL_TEXTURE_2D, m_asciiAtlas.textureId());
+        asciiPostProg->setSamplerUniform("u_asciiAtlas", msk_asciiAtlasSampler.index);
+
+        asciiPostProg->setUniform("u_viewSizePx",      viewSizePx);
+        asciiPostProg->setUniform("u_asciiCellSizePx", R.m_asciiCellSizePx);
+        asciiPostProg->setUniform("u_asciiGlyphCount", m_asciiAtlas.glyphCount());
+        asciiPostProg->setUniform("u_asciiFgColor",    R.m_asciiFgColor);
+        asciiPostProg->setUniform("u_asciiBgColor",    R.m_asciiBgColor);
+        asciiPostProg->setUniform("u_asciiBgAlpha",    R.m_asciiBgAlpha);
+        asciiPostProg->setUniform("u_asciiUseColormap",R.m_asciiUseColormap);
+
+        m_asciiPostVao.bind();
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        m_asciiPostVao.release();
+      }
+      asciiPostProg->stopUse();
+
+      glActiveTexture(GL_TEXTURE3);
+      glBindTexture(GL_TEXTURE_2D, 0);
+      glActiveTexture(GL_TEXTURE0 + msk_asciiAtlasSampler.index);
+      glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    else
+    {
+      renderAllImagesForView(*view, miewportViewBounds, worldXhairsOffset);
+    }
+
+    // Overlays always go to default framebuffer
     if (ViewRenderMode::VolumeRender != view->renderMode())
     {
       if (renderLandmarksOnTop) {
@@ -2312,6 +2461,7 @@ void Rendering::createShaderPrograms()
   const std::string segInteriorAlphaWithOutlineRep = loadFile(shaderPath + "functions/SegInteriorAlpha_WithOutline.glsl");
   const std::string edgeFreiChen = loadFile(shaderPath + "functions/ComputeEdge_FreiChen.glsl");
   const std::string edgeSobel = loadFile(shaderPath + "functions/ComputeEdge_Sobel.glsl");
+  const std::string ipFunctionRep = loadFile(shaderPath + "functions/IntensityProjection.glsl");
 
   // All the vertex shader uniforms:
   Uniforms vsTransformUniforms;
@@ -2371,6 +2521,7 @@ void Rendering::createShaderPrograms()
   fsImageGrayUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
   fsImageGrayUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
 
+
   Uniforms fsImageColorUniforms; // image color FS
   fsImageColorUniforms.insertUniforms(fsRenderModeUniforms);
   fsImageColorUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgRgbaTexSamplers);
@@ -2405,6 +2556,17 @@ void Rendering::createShaderPrograms()
   fsXrayUniforms.insertUniform("u_mipSamplingDistance_cm", UniformType::Float, 0.0f);
   fsXrayUniforms.insertUniform("u_waterAttenCoeff", UniformType::Float, 0.0f);
   fsXrayUniforms.insertUniform("u_airAttenCoeff", UniformType::Float, 0.0f);
+
+  Uniforms fsAsciiPostUniforms;
+  fsAsciiPostUniforms.insertUniform("u_sceneTex",        UniformType::Sampler, Uniforms::SamplerIndexType{3});
+  fsAsciiPostUniforms.insertUniform("u_asciiAtlas",      UniformType::Sampler, msk_asciiAtlasSampler);
+  fsAsciiPostUniforms.insertUniform("u_viewSizePx",      UniformType::Vec2,    sk_zeroVec2);
+  fsAsciiPostUniforms.insertUniform("u_asciiCellSizePx", UniformType::Vec2,    sk_zeroVec2);
+  fsAsciiPostUniforms.insertUniform("u_asciiGlyphCount", UniformType::Int,     0);
+  fsAsciiPostUniforms.insertUniform("u_asciiFgColor",    UniformType::Vec3,    glm::vec3{1.f});
+  fsAsciiPostUniforms.insertUniform("u_asciiBgColor",    UniformType::Vec3,    sk_zeroVec3);
+  fsAsciiPostUniforms.insertUniform("u_asciiBgAlpha",    UniformType::Float,   1.f);
+  fsAsciiPostUniforms.insertUniform("u_asciiUseColormap",UniformType::Bool,    false);
 
   Uniforms fsSegAdjustmentUniforms;
   fsSegAdjustmentUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
@@ -2453,7 +2615,7 @@ void Rendering::createShaderPrograms()
   fsOverlayUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
   fsOverlayUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
 
-  constexpr std::array<ShaderProgramType, 18> allShaders = {
+  constexpr std::array<ShaderProgramType, 19> allShaders = {
     ShaderProgramType::ImageGrayLinear,
     ShaderProgramType::ImageGrayLinearFloating,
     ShaderProgramType::ImageGrayCubic,
@@ -2471,7 +2633,8 @@ void Rendering::createShaderPrograms()
     ShaderProgramType::DifferenceLinear,
     ShaderProgramType::DifferenceCubic,
     ShaderProgramType::OverlapLinear,
-    ShaderProgramType::OverlapCubic
+    ShaderProgramType::OverlapCubic,
+    ShaderProgramType::AsciiPost
   };
 
   struct ShaderInfo
@@ -2489,7 +2652,8 @@ void Rendering::createShaderPrograms()
       {{"{{HELPER_FUNCTIONS}}", helpersRep},
        {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
        {"{{TEXTURE_LOOKUP_FUNCTION}}", texLinearRep},
-       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep},
+       {"{{IP_FUNCTION}}", ipFunctionRep}},
       vsImageUniforms, fsImageGrayUniforms
      }
     },
@@ -2498,7 +2662,8 @@ void Rendering::createShaderPrograms()
         {{"{{HELPER_FUNCTIONS}}", helpersRep},
          {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
          {"{{TEXTURE_LOOKUP_FUNCTION}}", texFloatingPointLinearRep},
-         {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+         {"{{DO_RENDER_FUNCTION}}", doRenderRep},
+         {"{{IP_FUNCTION}}", ipFunctionRep}},
         vsImageUniforms, fsImageGrayUniforms
       }
     },
@@ -2507,7 +2672,8 @@ void Rendering::createShaderPrograms()
       {{"{{HELPER_FUNCTIONS}}", helpersRep},
        {"{{COLOR_HELPER_FUNCTIONS}}", colorHelpersRep},
        {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep},
-       {"{{DO_RENDER_FUNCTION}}", doRenderRep}},
+       {"{{DO_RENDER_FUNCTION}}", doRenderRep},
+       {"{{IP_FUNCTION}}", ipFunctionRep}},
       vsImageUniforms, fsImageGrayUniforms
      }
     },
@@ -2637,6 +2803,12 @@ void Rendering::createShaderPrograms()
         {"{{TEXTURE_LOOKUP_FUNCTION}}", texCubicRep}},
        vsMetricUniforms, fsOverlayUniforms
       }
+    },
+    {ShaderProgramType::AsciiPost,
+     {"AsciiPost.vs", "AsciiPost.fs",
+      {},
+      Uniforms{}, fsAsciiPostUniforms
+     }
     }
   };
 
