@@ -453,6 +453,7 @@ set(entropy_SOURCES
   # We were testing IPC with ITK-SNAP. This functionality is not currently hooked up to Entropy.
   # "${entropy_SRC_DIR}/logic/ipc/IPCHandler.cxx"
 
+  "${entropy_SRC_DIR}/rendering/AsciiAtlas.cpp"
   "${entropy_SRC_DIR}/rendering/ImageDrawing.cpp"
   "${entropy_SRC_DIR}/rendering/Rendering.cpp"
   "${entropy_SRC_DIR}/rendering/RenderData.cpp"
@@ -502,6 +503,8 @@ set(entropy_SOURCES
 
 set(entropy_SHADERS
   # "${entropy_SRC_DIR}/rendering/shaders/Correlation.fs"
+  "${entropy_SRC_DIR}/rendering/shaders/AsciiPost.vs"
+  "${entropy_SRC_DIR}/rendering/shaders/AsciiPost.fs"
   "${entropy_SRC_DIR}/rendering/shaders/Difference.fs"
   "${entropy_SRC_DIR}/rendering/shaders/Edge.fs"
   "${entropy_SRC_DIR}/rendering/shaders/Image.vs"
@@ -522,6 +525,7 @@ set(entropy_SHADERS
   "${entropy_SRC_DIR}/rendering/shaders/functions/ComputeEdge_FreiChen.glsl"
   "${entropy_SRC_DIR}/rendering/shaders/functions/ComputeEdge_Sobel.glsl"
   "${entropy_SRC_DIR}/rendering/shaders/functions/Helpers.glsl"
+  "${entropy_SRC_DIR}/rendering/shaders/functions/IntensityProjection.glsl"
   "${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_NoOutline.glsl"
   "${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl"
   "${entropy_SRC_DIR}/rendering/shaders/functions/SegValue_Linear.glsl"

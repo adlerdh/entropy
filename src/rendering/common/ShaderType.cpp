@@ -38,6 +38,8 @@ std::string to_string(ShaderProgramType type) {
     return "Overlap - Linear";
   case ShaderProgramType::OverlapCubic:
     return "Overlap - Cubic";
+  case ShaderProgramType::AsciiPost:
+    return "ASCII Post-Process";
   default:
     return "Unknown shader program type";
   }

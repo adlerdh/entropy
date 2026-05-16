@@ -1806,6 +1806,53 @@ void renderSettingsWindow(
         helpMarker("Use floating-point (instead of 8-bit fixed-point) linear image interpolation for the images");
 
         ImGui::Separator();
+
+        // ASCII rendering controls
+        if (ImGui::CollapsingHeader("ASCII Shading"))
+        {
+          RenderData& rd = appData.renderData();
+
+          ImGui::PushID("ascii");
+
+          ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
+          ImGui::SameLine();
+          helpMarker("Render grayscale images as ASCII art");
+
+          if (rd.m_asciiEnabled)
+          {
+            static const char* charsetNames[] = {
+              " .,:-=+*#%@  (short)",
+              "Paul Bourke 70-char",
+              "01 (binary)"
+            };
+            if (ImGui::Combo("Charset", &rd.m_asciiCharsetIndex, charsetNames, IM_ARRAYSIZE(charsetNames)))
+            {
+              // Signal that the atlas needs to be rebuilt — caller checks this flag
+              rd.m_asciiAtlasNeedsRebuild = true;
+            }
+
+            bool wChanged = ImGui::SliderFloat("Cell width (px)",  &rd.m_asciiCellSizePx.x, 4.f, 64.f, "%.0f");
+            bool hChanged = ImGui::SliderFloat("Cell height (px)", &rd.m_asciiCellSizePx.y, 4.f, 64.f, "%.0f");
+            if (wChanged || hChanged)
+            {
+              rd.m_asciiAtlasNeedsRebuild = true;
+            }
+
+            ImGui::Checkbox("Use colormap as foreground", &rd.m_asciiUseColormap);
+            ImGui::SameLine();
+            helpMarker("Replace the foreground color with the image colormap color");
+
+            if (!rd.m_asciiUseColormap) {
+              ImGui::ColorEdit3("Foreground color", &rd.m_asciiFgColor.x);
+            }
+            ImGui::ColorEdit3("Background color", &rd.m_asciiBgColor.x);
+            ImGui::SliderFloat("Background alpha", &rd.m_asciiBgAlpha, 0.f, 1.f);
+          }
+
+          ImGui::PopID(); /*** PopID ascii ***/
+        }
+
+        ImGui::Separator();
         ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
         ImGui::Checkbox("Show ImPlot demo window", &(appData.guiData().m_showImPlotDemoWindow));
 
