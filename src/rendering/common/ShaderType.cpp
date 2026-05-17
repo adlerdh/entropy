@@ -40,6 +40,12 @@ std::string to_string(ShaderProgramType type) {
     return "Overlap - Cubic";
   case ShaderProgramType::AsciiPost:
     return "ASCII Post-Process";
+  case ShaderProgramType::AsciiCellMean:
+    return "ASCII Cell Mean Downsample";
+  case ShaderProgramType::AsciiCellRegions:
+    return "ASCII Cell Regions Downsample";
+  case ShaderProgramType::AsciiPostSpatial:
+    return "ASCII Post-Process Spatial";
   default:
     return "Unknown shader program type";
   }

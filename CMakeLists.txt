@@ -454,6 +454,7 @@ set(entropy_SOURCES
   # "${entropy_SRC_DIR}/logic/ipc/IPCHandler.cxx"
 
   "${entropy_SRC_DIR}/rendering/AsciiAtlas.cpp"
+  "${entropy_SRC_DIR}/rendering/AsciiAtlasBaker.cpp"
   "${entropy_SRC_DIR}/rendering/ImageDrawing.cpp"
   "${entropy_SRC_DIR}/rendering/Rendering.cpp"
   "${entropy_SRC_DIR}/rendering/RenderData.cpp"
@@ -505,6 +506,9 @@ set(entropy_SHADERS
   # "${entropy_SRC_DIR}/rendering/shaders/Correlation.fs"
   "${entropy_SRC_DIR}/rendering/shaders/AsciiPost.vs"
   "${entropy_SRC_DIR}/rendering/shaders/AsciiPost.fs"
+  "${entropy_SRC_DIR}/rendering/shaders/AsciiCellMean.fs"
+  "${entropy_SRC_DIR}/rendering/shaders/AsciiCellRegions.fs"
+  "${entropy_SRC_DIR}/rendering/shaders/AsciiPostSpatial.fs"
   "${entropy_SRC_DIR}/rendering/shaders/Difference.fs"
   "${entropy_SRC_DIR}/rendering/shaders/Edge.fs"
   "${entropy_SRC_DIR}/rendering/shaders/Image.vs"

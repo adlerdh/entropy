@@ -4,6 +4,7 @@
 #include "common/UuidRange.h"
 #include "logic/camera/CameraTypes.h"
 #include "rendering/AsciiAtlas.h"
+#include "rendering/AsciiAtlasBaker.h"
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/utility/gl/GLFrameBufferObject.h"
@@ -122,6 +123,11 @@ private:
   /// Allocate/reallocate the scene FBO color attachment when the device size changes
   void ensureSceneFboSize(glm::ivec2 deviceSize);
 
+  /// Allocate/reallocate the cell-mean FBO when cell size or viewport changes
+  void ensureAsciiCellFbo(glm::ivec2 viewSizeDevPx, glm::vec2 cellSizePxDev);
+
+  void renderImageDataAscii();
+
   bool createRaycastIsoProgram(GLShaderProgram& program);
 
   /**
@@ -177,6 +183,28 @@ private:
   std::optional<GLTexture> m_sceneColorTex;
   glm::ivec2 m_sceneFboSize{0, 0};
   GLVertexArrayObject m_asciiPostVao;
+
+  // FBO and color attachment for the ASCII cell-mean downsample pass (Pass 1.5)
+  std::optional<GLTexture>       m_asciiCellMeanTex;
+  std::optional<GLFrameBufferObject> m_asciiCellMeanFbo;
+  glm::ivec2                     m_asciiCellMeanTexSize{0, 0};
+
+  // 256x1 R8 LUT texture: maps luminance bin -> normalized glyph index
+  // Rebuilt whenever cellPxDev changes
+  std::optional<GLTexture> m_asciiLumLutTex;
+  glm::vec2                m_asciiLumLutCellPx{0.0f, 0.0f};
+
+  // Spatial glyph matching state (m_asciiSpatialMode lives in RenderData, readable by UI)
+  std::optional<GLTexture>      m_asciiCellRegionsTex;        // RGBA16F, regions 0–3
+  std::optional<GLTexture>      m_asciiCellRegionsTexB;       // RG16F,   regions 4–5
+  std::vector<glm::vec4>        m_glyphProfilesPackedA;       // regions 0–3, N entries
+  std::vector<glm::vec4>        m_glyphProfilesPackedB;       // regions 4–5 in .xy, .zw=0
+  glm::vec2                     m_asciiSpatialProfileCellPx{-1.0f, -1.0f};
+  std::vector<int>              m_glyphRankToIndex;          // rank -> glyph index, padded to kMaxGlyphs
+  float                         m_asciiSpatialDensityWindow{3.0f};
+  std::array<float, kSpatialK>  m_glyphRegionMax{};
+  float                         m_lastUploadedExponent{-1.0f};
+  std::vector<GlyphProfile>     m_glyphProfilesNormalized;
 
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
 

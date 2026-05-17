@@ -289,10 +289,11 @@ enum class MinificationFilter : uint32_t
   Linear = GL_LINEAR,
   NearestWithMipmapNearest = GL_NEAREST_MIPMAP_NEAREST,
   NearestWithMipmapLinear = GL_NEAREST_MIPMAP_LINEAR,
-  LinearWithMipmapNearest = GL_LINEAR_MIPMAP_NEAREST
+  LinearWithMipmapNearest = GL_LINEAR_MIPMAP_NEAREST,
 
-  // Note: We have had problems with this interpolating to black slide texture mipmap:
-  // LinearWithMipmapLinear = GL_LINEAR_MIPMAP_LINEAR
+  /// Trilinear filtering. Safe for FBO color attachments (e.g. m_sceneColorTex).
+  /// Do NOT apply to slide or volume textures — that has caused them to go black.
+  LinearWithMipmapLinear = GL_LINEAR_MIPMAP_LINEAR
 };
 
 enum class MagnificationFilter : uint32_t
