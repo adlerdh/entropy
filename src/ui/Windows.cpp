@@ -1831,12 +1831,7 @@ void renderSettingsWindow(
               rd.m_asciiAtlasNeedsRebuild = true;
             }
 
-            bool wChanged = ImGui::SliderFloat("Cell width (px)",  &rd.m_asciiCellSizePx.x, 4.f, 64.f, "%.0f");
-            bool hChanged = ImGui::SliderFloat("Cell height (px)", &rd.m_asciiCellSizePx.y, 4.f, 64.f, "%.0f");
-            if (wChanged || hChanged)
-            {
-              rd.m_asciiAtlasNeedsRebuild = true;
-            }
+            ImGui::SliderFloat("Cell size (px)", &rd.m_asciiCellSizePx.y, 4.f, 64.f, "%.0f");
 
             ImGui::Checkbox("Use colormap as foreground", &rd.m_asciiUseColormap);
             ImGui::SameLine();
@@ -1847,6 +1842,12 @@ void renderSettingsWindow(
             }
             ImGui::ColorEdit3("Background color", &rd.m_asciiBgColor.x);
             ImGui::SliderFloat("Background alpha", &rd.m_asciiBgAlpha, 0.f, 1.f);
+
+            ImGui::Checkbox("Spatial matching (2\xc3\x97" "2)", &rd.m_asciiSpatialMode);
+            if (ImGui::IsItemHovered())
+              ImGui::SetTooltip("Match glyphs by 2x2 quadrant luminance profile instead of total brightness");
+            if (rd.m_asciiSpatialMode)
+              ImGui::SliderFloat("Spatial Exponent", &rd.m_asciiSpatialExponent, 0.25f, 4.0f, "%.2f");
           }
 
           ImGui::PopID(); /*** PopID ascii ***/
