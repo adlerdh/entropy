@@ -373,6 +373,7 @@ void drawAnatomicalLabels(
       return "";
     }
     }
+    return "";
   };
 
   const float inwardShiftMultiplier =
