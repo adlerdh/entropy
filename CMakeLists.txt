@@ -455,6 +455,7 @@ set(entropy_SOURCES
 
   "${entropy_SRC_DIR}/rendering/AsciiAtlas.cpp"
   "${entropy_SRC_DIR}/rendering/AsciiAtlasBaker.cpp"
+  "${entropy_SRC_DIR}/rendering/AsciiRenderer.cpp"
   "${entropy_SRC_DIR}/rendering/ImageDrawing.cpp"
   "${entropy_SRC_DIR}/rendering/Rendering.cpp"
   "${entropy_SRC_DIR}/rendering/RenderData.cpp"
@@ -524,6 +525,7 @@ set(entropy_SHADERS
   "${entropy_SRC_DIR}/rendering/shaders/Simple.fs"
   "${entropy_SRC_DIR}/rendering/shaders/Simple.vs"
   "${entropy_SRC_DIR}/rendering/shaders/Xray.fs"
+  "${entropy_SRC_DIR}/rendering/shaders/functions/AsciiComposite.glsl"
   "${entropy_SRC_DIR}/rendering/shaders/functions/ColorHelpers.glsl"
   "${entropy_SRC_DIR}/rendering/shaders/functions/DoRender.glsl"
   "${entropy_SRC_DIR}/rendering/shaders/functions/ComputeEdge_FreiChen.glsl"

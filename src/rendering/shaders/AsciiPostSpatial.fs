@@ -31,29 +31,15 @@ uniform bool  u_asciiUseColormap;
 uniform float u_asciiSdfPadding;
 uniform float u_asciiPixDistScale;
 uniform float u_asciiSpatialDensityWindow;
-uniform vec4 u_regionMaxA;
-uniform vec2 u_regionMaxB;
+uniform vec4  u_regionMaxA;
+uniform vec2  u_regionMaxB;
 uniform float u_asciiSpatialExponent;
 
 uniform vec4 u_glyphProfilesA[128];   // regions 0–3 per glyph
 uniform vec4 u_glyphProfilesB[128];   // regions 4–5 in .xy, .zw unused
 uniform int  u_glyphRankToIndex[128]; // rank -> glyph index
 
-
-vec3 rgb2hsv(vec3 c) {
-    vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-    float d = q.x - min(q.w, q.y);
-    float e = 1e-10;
-    return vec3(abs(q.z + (q.w - q.y) / (6.0*d + e)), d / (q.x + e), q.x);
-}
-
-vec3 hsv2rgb(vec3 c) {
-    vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
-    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
+{{ASCII_COMPOSITE_FUNCTIONS}}
 
 void main()
 {
@@ -105,32 +91,13 @@ void main()
         if (d2 < bestD) { bestD = d2; gIdx = g; }
     }
 
-    vec2 uvCell  = (fragPx - cellCoord * u_asciiCellSizePx) / u_asciiCellSizePx;
-    // Map cell UV [0,1] -> slot UV, skipping SDF padding on each side
-    vec2 halfTexel = vec2(0.5) / u_asciiSlotSizePx;
-    vec2 padFrac   = vec2(u_asciiSdfPadding) / u_asciiSlotSizePx + halfTexel;
-    vec2 uvSlot    = padFrac + uvCell * (vec2(1.0) - 2.0 * padFrac);
-    vec2 uvAtlas   = vec2((float(gIdx) + uvSlot.x) / float(u_asciiGlyphCount), uvSlot.y);
-    float sdf      = texture(u_asciiAtlas, uvAtlas).r;
+    vec2 uvCell = (fragPx - cellCoord * u_asciiCellSizePx) / u_asciiCellSizePx;
+    float glyph = sampleGlyphCoverage(u_asciiAtlas, gIdx, u_asciiGlyphCount,
+                                      uvCell, u_asciiSlotSizePx,
+                                      u_asciiSdfPadding, u_asciiPixDistScale,
+                                      u_asciiCellSizePx);
 
-    float atlasTexelsPerScreenPx = u_asciiSlotSizePx.y / u_asciiCellSizePx.y;
-    float sdfPerScreenPx = (u_asciiPixDistScale / 255.0) * atlasTexelsPerScreenPx;
-    float soft    = clamp((atlasTexelsPerScreenPx - 2.0) * 0.5, 0.0, 1.0);
-    float aaSharp = max(sdfPerScreenPx * 0.5, 1.0 / 255.0);
-    float aaSoft  = 0.25;
-    float aa      = mix(aaSharp, aaSoft, soft);
-    float edge    = 128.0 / 255.0;
-    float glyph   = smoothstep(edge - aa, edge + aa, sdf);
-
-    vec3 fg;
-    if (u_asciiUseColormap) {
-        vec3 hsv = rgb2hsv(srcRgb);
-        hsv.z = 1.0;
-        fg = hsv2rgb(hsv);
-    } else {
-        fg = u_asciiFgColor;
-    }
-    vec3 rgb = mix(u_asciiBgColor, fg, glyph);
-    float a  = mix(u_asciiBgAlpha, 1.0, glyph) * srcPM.a;
-    o_color  = vec4(rgb * a, a);
+    o_color = asciiComposite(glyph, srcPM,
+                             u_asciiFgColor, u_asciiBgColor, u_asciiBgAlpha,
+                             u_asciiUseColormap);
 }
