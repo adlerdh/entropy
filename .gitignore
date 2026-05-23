@@ -1,6 +1,7 @@
 **/.DS_Store
 .vs/**
 .vscode/**
+.cache/**
 build*/**
 out/**
 log*/**
