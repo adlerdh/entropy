@@ -113,6 +113,8 @@ The following external resources have been committed directly to the Entropy rep
 * [matplotlib color maps](https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html)
 * ["Cividis" color map](https://www.ncl.ucar.edu/Document/Graphics/color_table_gallery.shtml)
 
+The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](https://alexharri.com/blog/ascii-rendering) and [Yusef28's Shadertoy work](https://www.shadertoy.com/user/Yusef28).
+
 Original attributions and licenses have been preserved and committed for all external sources and resources.
 
 ## Running
