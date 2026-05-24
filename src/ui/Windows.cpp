@@ -1857,9 +1857,9 @@ void renderSettingsWindow(
             ImGui::ColorEdit3("Background color", &rd.m_asciiBgColor.x);
             ImGui::SliderFloat("Background alpha", &rd.m_asciiBgAlpha, 0.f, 1.f);
 
-            ImGui::Checkbox("Spatial matching (2\xc3\x97" "2)", &rd.m_asciiSpatialMode);
+            ImGui::Checkbox("Spatial matching (3\xc3\x97" "2)", &rd.m_asciiSpatialMode);
             if (ImGui::IsItemHovered())
-              ImGui::SetTooltip("Match glyphs by 2x2 quadrant luminance profile instead of total brightness");
+              ImGui::SetTooltip("Match glyphs by 3x2 quadrant luminance profile instead of total brightness");
             if (rd.m_asciiSpatialMode)
               ImGui::SliderFloat("Spatial Exponent", &rd.m_asciiSpatialExponent, 0.25f, 4.0f, "%.2f");
           }
