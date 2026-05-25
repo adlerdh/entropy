@@ -25,6 +25,39 @@ Note on generators:
 
 The steps below intentionally reconfigure the same build directory: first to run the superbuild, then to build Entropy after dependencies are available.
 
+### CMake presets
+The recommended developer build uses the checked-in CMake presets. These presets use the Ninja generator, build shared libraries, default to `RelWithDebInfo`, and use `ccache` automatically when it is available. Install Ninja before using these presets. On Debian/Ubuntu:
+
+```sh
+sudo apt-get install ninja-build ccache
+```
+
+Configure and build dependencies first, then reconfigure the same build directory for the Entropy application:
+
+```sh
+cmake --preset superbuild
+cmake --build --preset superbuild --parallel
+
+cmake --preset app
+cmake --build --preset app --parallel
+```
+
+The default preset build directory is `build-default`. The `--parallel` option without an explicit job count lets the native build tool choose the parallelism. If the machine becomes memory constrained, pass a smaller number, for example `--parallel 16`.
+
+Additional presets are available for debug and release builds:
+
+```sh
+cmake --preset debug-superbuild
+cmake --build --preset debug-superbuild --parallel
+cmake --preset debug-app
+cmake --build --preset debug-app --parallel
+
+cmake --preset release-superbuild
+cmake --build --preset release-superbuild --parallel
+cmake --preset release-app
+cmake --build --preset release-app --parallel
+```
+
 ### Single-config generators (e.g. Ninja, Unix Makefiles)
 Configure and build the superbuild:
 ```sh
@@ -85,8 +118,6 @@ Entropy uses external projects through the CMake superbuild and also carries som
 The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](https://alexharri.com/blog/ascii-rendering) and [Yusef28's Shadertoy work](https://www.shadertoy.com/user/Yusef28).
 
 Original attributions and licenses have been preserved and committed for all external sources and resources.
-
-The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](https://alexharri.com/blog/ascii-rendering) and [Yusef28's Shadertoy work](https://www.shadertoy.com/user/Yusef28).
 
 ## Running
 Entropy is run from the terminal. Images can be specified directly as command line arguments or from a JSON project file.
@@ -160,52 +191,42 @@ Logs are output to the console and to files saved in the `logs` folder. Log leve
 ## Keyboard shortcuts
 
 ### Modes
-* **v**: Crosshairs Mode
-  - *left button*: move crosshairs
-  - *CTRL + left button*: rotate crosshairs
-  - *middle button*: pan image
-  - *right button*: zoom image
-* **z**: Zoom Mode
-  - *left button*: zoom to crosshairs
-  - *right button*: zoom to cursor pointer
-* **x**: Pan/Dolly Mode
-  - *left button*: pan image in plane
-  - *right button*: dolly in/out of plane (3D views only)
-* **l**: Image Adjustment Mode
-  - *left button*: adjust image window (left/right) and level (up/down)
-  - *right button*: adjust image opacity
-* **t**: Image Translation Mode
-  - *left button*: translate image in plane
-  - *right button*: translate image in/out of plane
-* **r**: Image Rotation Mode
-  - *left button*: rotate image in plane
-  - *right button*: rotate image in/out of plane
-* **b**: Image Segmentation Mode (brush)
-  - *left button*: paint foreground label
-  - *right button*: paint background label
+| Key | Mode | Controls |
+| --- | --- | --- |
+| `v` | Crosshairs | - left button: move crosshairs<br>- CTRL + left button: rotate crosshairs<br>- middle button: pan image<br>- right button: zoom image |
+| `z` | Zoom | - left button: zoom to crosshairs<br>- right button: zoom to cursor pointer |
+| `x` | Pan/dolly | - left button: pan image in plane<br>- right button: dolly in/out of plane (3D views only) |
+| `l` | Image adjustment | - left button: adjust image window left/right and level up/down<br>- right button: adjust image opacity |
+| `t` | Image translation | - left button: translate image in plane<br>- right button: translate image in/out of plane |
+| `r` | Image rotation | - left button: rotate image in plane<br>- right button: rotate image in/out of plane |
+| `b` | Image segmentation (brush) | - left button: paint foreground label<br>- right button: paint background label |
 
 ### View properties
-* **w**: Toggle image visibility
-* **e**: Toggle image edges
-* **s**: Toggle segmentation visibility
-* **a**: Reduce segmentation opacity
-* **d**: Increase segmentation opacity
-* **space**: Toggle segmentation outline
-* **c**: Center views on crosshairs
-  - *shift*: Reset zoom; recenter and realign crosshairs
-* **o**: Cycle visibility of all UI overlays
-* **F4**: Toggle full-screen mode (ESC to exit)
+| Key | Action |
+| --- | --- |
+| `w` | Toggle image visibility |
+| `e` | Toggle image edges |
+| `s` | Toggle segmentation visibility |
+| `a` | Reduce segmentation opacity |
+| `d` | Increase segmentation opacity |
+| `space` | Toggle segmentation outline |
+| `c` | Center views on crosshairs<br>- shift: reset zoom, recenter, and realign crosshairs |
+| `o` | Cycle visibility of all UI overlays |
+| `F4` | Toggle full-screen mode (ESC to exit) |
 
 ### Image navigation
-* **left/right/down/up** arrows: Move crosshairs
-* **page down/up**: Scroll slices
-  - *shift*: Cycle active image component
+| Key | Action |
+| --- | --- |
+| `left/right/down/up` arrows | Move crosshairs |
+| `page down/up` | Scroll slices<br>- shift: cycle active image component |
 
 ### Layouts
-* **[**, **]**: Cycle view layout
-  - *shift*: Cycle active image
+| Key | Action |
+| --- | --- |
+| `[`, `]` | Cycle view layout<br>- shift: cycle active image |
 
 ### Segmentation brush
-* **<**, **>**: Cycle foreground label
-  - *shift*: Cycle background label
-* **-**, **+**: Decrease/increase brush size
+| Key | Action |
+| --- | --- |
+| `<`, `>` | Cycle foreground label<br>- shift: cycle background label |
+| `-`, `+` | Decrease/increase brush size |
