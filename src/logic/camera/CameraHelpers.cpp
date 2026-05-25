@@ -1089,9 +1089,9 @@ glm::mat4 compute_windowClip_T_viewClip(const glm::vec4& windowClipViewport)
 
 glm::quat computeCameraRotationRelativeToWorld(const Camera& camera)
 {
-  const glm::vec3 cameraX = cameraDirectionOfWorld(camera, Directions::Cartesian::X);
-  const glm::vec3 cameraY = cameraDirectionOfWorld(camera, Directions::Cartesian::Y);
-  const glm::vec3 cameraZ = cameraDirectionOfWorld(camera, Directions::Cartesian::Z);
+  const glm::vec3 cameraX = cameraDirectionOfWorld(camera, Directions::Cartesian::PosX);
+  const glm::vec3 cameraY = cameraDirectionOfWorld(camera, Directions::Cartesian::PosY);
+  const glm::vec3 cameraZ = cameraDirectionOfWorld(camera, Directions::Cartesian::PosZ);
 
   const glm::mat3 rotation_camera_T_world{cameraX, cameraY, cameraZ};
   return glm::quat_cast(rotation_camera_T_world);
@@ -1155,9 +1155,9 @@ bool looksAlongOrthogonalAxis(const Camera& camera)
 {
   const glm::vec3 frontDir = worldDirection(camera, Directions::View::Front);
 
-  const float dotX = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::X)));
-  const float dotY = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::Y)));
-  const float dotZ = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::Z)));
+  const float dotX = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::PosX)));
+  const float dotY = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::PosY)));
+  const float dotZ = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::PosZ)));
 
   if (glm::epsilonEqual(dotX, 1.0f, sk_eps) || glm::epsilonEqual(dotY, 1.0f, sk_eps) || glm::epsilonEqual(dotZ, 1.0f, sk_eps))
   {

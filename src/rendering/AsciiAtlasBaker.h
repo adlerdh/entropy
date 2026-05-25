@@ -30,7 +30,7 @@ struct GlyphProfile {
     std::array<float, kSpatialK> regionFill;  // mean SDF-rendered ink fraction per region
 };
 
-// Compute per-glyph 2×2 quadrant profiles (same SDF+AA simulation as computeGlyphCoverage).
+// Compute per-glyph 3x2 region profiles (same SDF+AA simulation as computeGlyphCoverage).
 // Returns N profiles in the same sorted order as fillFractions().
 std::vector<GlyphProfile> computeGlyphSpatialProfiles(
     const std::vector<std::vector<uint8_t>>& slotPixels,

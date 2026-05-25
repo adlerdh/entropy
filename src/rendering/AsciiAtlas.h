@@ -80,7 +80,7 @@ public:
   /// Call when cell size changes; uses m_slotPixels (built at build() time).
   std::vector<float> computeRenderedCoverage(glm::vec2 cellSizePx) const;
 
-  /// CPU simulation of 2×2 quadrant spatial profiles per glyph at the given screen cell size.
+  /// CPU simulation of 3x2 region spatial profiles per glyph at the given screen cell size.
   /// Returns N GlyphProfile entries in the same sorted order as fillFractions().
   std::vector<GlyphProfile> computeRenderedSpatialProfiles(glm::vec2 cellSizePx) const;
 

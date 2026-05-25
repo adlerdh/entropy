@@ -1,5 +1,4 @@
-#ifndef DIRECTION_MAPS_H
-#define DIRECTION_MAPS_H
+#pragma once
 
 #include <glm/vec3.hpp>
 
@@ -11,9 +10,12 @@ class Directions
 public:
   enum class Cartesian
   {
-    X,  //!< (1, 0, 0)
-    Y,  //!< (0, 1, 0)
-    Z,  //!< (0, 0, 1)
+    PosX, //!< (1, 0, 0)
+    PosY, //!< (0, 1, 0)
+    PosZ, //!< (0, 0, 1)
+    NegX, //!< (-1, 0, 0)
+    NegY, //!< (0, -1, 0)
+    NegZ, //!< (0, 0, -1)
     XY, //!< (1, 1, 0)
     YZ, //!< (0, 1, 1)
     ZX, //!< (1, 0, 1)
@@ -58,27 +60,17 @@ public:
   static glm::vec3 get(const Anatomy& dir);
   static glm::vec3 get(const Animal& dir);
 
+  static const std::string& abbrev(const Cartesian& dir);
   static const std::string& abbrev(const Anatomy& dir);
   static const std::string& abbrev(const Animal& dir);
 
-  using AnatomicalAbbreviationMap = std::map<Anatomy, std::string>;
-  static const AnatomicalAbbreviationMap s_anatomicalAbbrevs;
-
-  using AnimalAbbreviationMap = std::map<Animal, std::string>;
-  static const AnimalAbbreviationMap s_animalAbbrevs;
-
 private:
-  using CartesianDirectionsMap = std::map<Cartesian, glm::vec3>;
-  static const CartesianDirectionsMap s_cartesianDirections;
+  static const std::map<Cartesian, glm::vec3> s_cartesianDirections;
+  static const std::map<View, glm::vec3> s_viewDirections;
+  static const std::map<Anatomy, glm::vec3> s_anatomicalDirections;
+  static const std::map<Animal, glm::vec3> s_animalDirections;
 
-  using ViewDirectionsMap = std::map<View, glm::vec3>;
-  static const ViewDirectionsMap s_viewDirections;
-
-  using AnatomicalDirectionsMap = std::map<Anatomy, glm::vec3>;
-  static const AnatomicalDirectionsMap s_anatomicalDirections;
-
-  using AnimalDirectionsMap = std::map<Animal, glm::vec3>;
-  static const AnimalDirectionsMap s_animalDirections;
+  static const std::map<Cartesian, std::string> s_cartesianAbbrevs;
+  static const std::map<Anatomy, std::string> s_anatomicalAbbrevs;
+  static const std::map<Animal, std::string> s_animalAbbrevs;
 };
-
-#endif // DIRECTION_MAPS_H

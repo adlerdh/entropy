@@ -297,7 +297,7 @@ struct RenderData
   glm::vec3 m_asciiBgColor{0.f, 0.f, 0.f};
   float m_asciiBgAlpha = 1.f;
   bool m_asciiUseColormap = false;
-  bool m_asciiSpatialMode = false;       // spatial 2×2 quadrant glyph matching
+  bool m_asciiSpatialMode = false;       // spatial 3x2 region glyph matching
   float m_asciiSpatialExponent = 1.0f;  // local-max exponent shaping (1.0 = identity)
   bool m_asciiAtlasNeedsRebuild = false; // set by UI when charset changes
 

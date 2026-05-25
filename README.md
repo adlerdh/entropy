@@ -79,39 +79,10 @@ You may need to install additional development libraries for Mesa 3D Graphics, W
 
 `sudo apt-get install xorg-dev libgl1-mesa-dev libxcursor-dev libxkbcommon-dev libxinerama-dev libxi-dev libxrandr-dev libwayland-dev`
 
-### External dependencies
-The following dependencies are added as external projects during CMake superbuild generation:
-* [argparse](https://github.com/p-ranav/argparse/tree/v3.2) (v3.2)
-* [Boost](https://github.com/boostorg/boost/tree/boost-1.87.0), headers only (v1.87.0)
-* [CMakeRC](https://github.com/vector-of-bool/cmrc/tree/2.0.1) (v2.0.1)
-* [Dear ImGui](https://github.com/ocornut/imgui/tree/v1.91.8) (v1.91.8)
-* [ghc::filesystem](https://github.com/gulrak/filesystem/tree/v1.5.14) (v1.5.14)
-* [GLFW](https://github.com/glfw/glfw/tree/3.4) (v3.4)
-* [GLM](https://github.com/g-truc/glm/tree/1.0.1) (v1.0.1)
-* [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders/commit/ef464d2fe5a568d30d7c88138e78d7fac7cfebc5) (ef464d2)
-* [ImPlot](https://github.com/epezent/implot/tree/v0.16) (v0.16)
-* [Insight Toolkit (ITK)](https://github.com/InsightSoftwareConsortium/ITK/tree/v5.4.2) (v5.4.2)
-* [NanoVG](https://github.com/memononen/nanovg/commit/f93799c078fa11ed61c078c65a53914c8782c00b) (f93799c)
-* [nlohmann::json](https://github.com/nlohmann/json/tree/v3.11.3) (v3.11.3)
-* [spdlog](https://github.com/gabime/spdlog/tree/v1.15.1) (v1.15.1)
-* [stduuid](https://github.com/mariusbancila/stduuid/tree/v1.2.3) (v1.2.3)
-* [TinyFSM](https://github.com/digint/tinyfsm/tree/v0.3.3) (v1.15.1)
-* [tl::expected](https://github.com/TartanLlama/expected/tree/v1.3.1) (v1.3.1)
+### Third-party dependencies and resources
+Entropy uses external projects through the CMake superbuild and also carries some vendored source and resource files in this repository. Versions, source URLs, and license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-The following external sources and libraries have been committed directly to the Entropy repository:
-* [GLAD OpenGL loaders](https://github.com/Dav1dde/glad.git) (generated from webservice)
-* [GridCut](https://gridcut.com): fast max-flow/min-cut graph-cuts optimized for grid graphs 
-* [ImGui file browser](https://github.com/AirGuanZ/imgui-filebrowser) with local modifications
-* [imGuIZMO.quat](https://github.com/AirGuanZ/imgui-filebrowser) with local modifications
-* [T-Digest for C++](https://github.com/derrickburns/tdigest) with local modifications to fix build
-
-### External resources
-The following external resources have been committed directly to the Entropy repository:
-* [Cousine font](https://fonts.google.com/specimen/Cousine)
-* [Roboto fonts](https://fonts.google.com/specimen/Roboto)
-* ["Library of Perceptually Uniform Colour Maps"](https://colorcet.com) (by Peter Kovesi)
-* [matplotlib color maps](https://matplotlib.org/3.1.1/gallery/color/colormap_reference.html)
-* ["Cividis" color map](https://www.ncl.ucar.edu/Document/Graphics/color_table_gallery.shtml)
+The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](https://alexharri.com/blog/ascii-rendering) and [Yusef28's Shadertoy work](https://www.shadertoy.com/user/Yusef28).
 
 Original attributions and licenses have been preserved and committed for all external sources and resources.
 

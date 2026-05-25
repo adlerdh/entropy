@@ -294,6 +294,7 @@ struct ViewOffsetSetting
  */
 enum class AnatomicalLabelType
 {
+  Cartesian,
   Human,
   Rodent,
   Disabled
