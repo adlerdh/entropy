@@ -3,17 +3,17 @@
 in vec2 v_uv;
 out vec4 o_color;
 
-// Spatial glyph matching mode: uses per-cell 3×2 region luminance profiles
+// Spatial glyph matching mode: uses per-cell 2×3 region luminance profiles
 // and per-glyph region profiles, combined with cell-mean for colormap/alpha.
 //
 // Region convention (matches AsciiAtlasBaker.h and AsciiCellRegions.fs):
-// 3 columns × 2 rows layout:
-//   Region 0: top-left      (x < W/3,        y >= H/2 in GL y-up)
-//   Region 1: top-center    (W/3 <= x < 2W/3, y >= H/2)
-//   Region 2: top-right     (x >= 2W/3,      y >= H/2)
-//   Region 3: bottom-left   (x < W/3,        y < H/2)
-//   Region 4: bottom-center (W/3 <= x < 2W/3, y < H/2)
-//   Region 5: bottom-right  (x >= 2W/3,      y < H/2)
+// 2 columns × 3 rows layout (glyphs are taller than wide):
+//   Region 0: top-left    (x < W/2,   y >= 2H/3 in GL y-up)
+//   Region 1: top-right   (x >= W/2,  y >= 2H/3)
+//   Region 2: mid-left    (x < W/2,   H/3 <= y < 2H/3)
+//   Region 3: mid-right   (x >= W/2,  H/3 <= y < 2H/3)
+//   Region 4: bot-left    (x < W/2,   y < H/3)
+//   Region 5: bot-right   (x >= W/2,  y < H/3)
 
 uniform sampler2D u_cellRegionsTex;  // regions 0–3 in RGBA
 uniform sampler2D u_cellRegionsTexB; // regions 4–5 in RG

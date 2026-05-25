@@ -1,7 +1,7 @@
 #version 330 core
 
-layout(location = 0) out vec4 o_regionsA; // regions 0–3 (top-left, top-center, top-right, bottom-left)
-layout(location = 1) out vec2 o_regionsB; // regions 4–5 (bottom-center, bottom-right)
+layout(location = 0) out vec4 o_regionsA;  // regions 0–3 (top-left, top-right, mid-left, mid-right)
+layout(location = 1) out vec2 o_regionsB;  // regions 4–5 (bot-left, bot-right)
 
 uniform sampler2D u_sceneTex;
 uniform vec2 u_viewSizePx;     // device pixels
@@ -9,17 +9,17 @@ uniform vec2 u_cellSizePx;     // device pixels
 uniform ivec2 u_cellSizePxInt; // integer cell size = round(u_cellSizePx)
 
 // Region convention (matches AsciiAtlasBaker.h and AsciiPostSpatial.fs):
-// 3 columns × 2 rows layout:
-//   Region 0: top-left      (x < W/3,        y >= H/2 in GL y-up)
-//   Region 1: top-center    (W/3 <= x < 2W/3, y >= H/2)
-//   Region 2: top-right     (x >= 2W/3,      y >= H/2)
-//   Region 3: bottom-left   (x < W/3,        y < H/2)
-//   Region 4: bottom-center (W/3 <= x < 2W/3, y < H/2)
-//   Region 5: bottom-right  (x >= 2W/3,      y < H/2)
+// 2 columns × 3 rows layout (glyphs are taller than wide):
+//   Region 0: top-left    (x < W/2,   y >= 2H/3 in GL y-up)
+//   Region 1: top-right   (x >= W/2,  y >= 2H/3)
+//   Region 2: mid-left    (x < W/2,   H/3 <= y < 2H/3)
+//   Region 3: mid-right   (x >= W/2,  H/3 <= y < 2H/3)
+//   Region 4: bot-left    (x < W/2,   y < H/3)
+//   Region 5: bot-right   (x >= W/2,  y < H/3)
 //
-//   col = (lx < W/3) ? 0 : (lx < 2W/3) ? 1 : 2
-//   row = (ly >= H/2) ? 0 : 1
-//   reg = row * 3 + col
+//   col = (lx < W/2) ? 0 : 1
+//   row = (ly >= 2H/3) ? 0 : (ly >= H/3) ? 1 : 2
+//   reg = row * 2 + col
 
 void main()
 {
@@ -34,8 +34,8 @@ void main()
     counts[i] = 0.0;
   }
 
-  int thirdW = u_cellSizePxInt.x / 3;
-  int halfH = u_cellSizePxInt.y / 2;
+  int halfW  = u_cellSizePxInt.x / 2;
+  int thirdH = u_cellSizePxInt.y / 3;
 
   for (int dy = cellOrigin.y; dy < cellEnd.y; ++dy) {
     for (int dx = cellOrigin.x; dx < cellEnd.x; ++dx) {
@@ -47,11 +47,11 @@ void main()
       int lx = dx - cellOrigin.x;
       int ly = dy - cellOrigin.y;
 
-      // 3-column index — integer arithmetic matching baker's sampleW/3
-      int col = (lx < thirdW) ? 0 : (lx < 2 * thirdW) ? 1 : 2;
-      // GL y-up: higher y = top
-      bool isTop = (ly >= halfH);
-      int reg = (isTop ? 0 : 1) * 3 + col;
+      // 2-column index
+      int col = (lx < halfW) ? 0 : 1;
+      // GL y-up: higher y = top; 3-row index
+      int row = (ly >= 2 * thirdH) ? 0 : (ly >= thirdH) ? 1 : 2;
+      int reg = row * 2 + col;
 
       sums[reg] += lum;
       counts[reg] += 1.0;

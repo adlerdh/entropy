@@ -8,21 +8,22 @@
 // ---------------------------------------------------------------------------
 // Spatial-glyph-matching constants
 // ---------------------------------------------------------------------------
-// kSpatialK == 6: the 3×2 region count (3 columns × 2 rows).
+// kSpatialK == 6: the 2×3 region count (2 columns × 3 rows).
+// Glyphs are taller than wide, so more vertical divisions give better discrimination.
 //
 // Region convention (must be consistent in baker, AsciiCellRegions.fs, and
 // AsciiPostSpatial.fs):
 //
-//   Region 0: top-left      x < cellW/3,        y >= cellH/2  (GL y-up: top = high y)
-//   Region 1: top-center    cellW/3 <= x < 2W/3, y >= cellH/2
-//   Region 2: top-right     x >= 2*cellW/3,     y >= cellH/2
-//   Region 3: bottom-left   x < cellW/3,        y <  cellH/2
-//   Region 4: bottom-center cellW/3 <= x < 2W/3, y <  cellH/2
-//   Region 5: bottom-right  x >= 2*cellW/3,     y <  cellH/2
+//   Region 0: top-left    x < W/2,   y >= 2H/3  (GL y-up: top = high y)
+//   Region 1: top-right   x >= W/2,  y >= 2H/3
+//   Region 2: mid-left    x < W/2,   H/3 <= y < 2H/3
+//   Region 3: mid-right   x >= W/2,  H/3 <= y < 2H/3
+//   Region 4: bot-left    x < W/2,   y < H/3
+//   Region 5: bot-right   x >= W/2,  y < H/3
 //
-//   col = (x < W/3) ? 0 : (x < 2*W/3) ? 1 : 2
-//   row = (y >= H/2) ? 0 : 1
-//   reg = row * 3 + col
+//   col = (x < W/2) ? 0 : 1
+//   row = (y >= 2H/3) ? 0 : (y >= H/3) ? 1 : 2
+//   reg = row * 2 + col
 // ---------------------------------------------------------------------------
 constexpr int kSpatialK = 6;
 
