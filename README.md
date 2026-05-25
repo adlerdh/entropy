@@ -86,6 +86,8 @@ The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](ht
 
 Original attributions and licenses have been preserved and committed for all external sources and resources.
 
+The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](https://alexharri.com/blog/ascii-rendering) and [Yusef28's Shadertoy work](https://www.shadertoy.com/user/Yusef28).
+
 ## Running
 Entropy is run from the terminal. Images can be specified directly as command line arguments or from a JSON project file.
 - On Linux or macOS: `./${BUILD_DIR}/bin/Entropy`
