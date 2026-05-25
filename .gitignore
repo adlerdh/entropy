@@ -10,3 +10,4 @@ CMakeFiles/**
 CMakeCache.txt
 CMakeLists.txt.user*
 entropy_ui.ini
+CMakeUserPresets.json

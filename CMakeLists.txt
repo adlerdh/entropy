@@ -19,6 +19,19 @@ set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION
 
 project(Entropy VERSION ${VERSION_FULL} LANGUAGES C CXX)
 
+option(Entropy_USE_CCACHE "Use ccache as the compiler launcher when available" ON)
+
+if(Entropy_USE_CCACHE)
+  find_program(CCACHE_PROGRAM ccache)
+  if(CCACHE_PROGRAM)
+    message(STATUS "Using ccache compiler launcher: ${CCACHE_PROGRAM}")
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE FILEPATH "C compiler launcher" FORCE)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE FILEPATH "CXX compiler launcher" FORCE)
+  else()
+    message(STATUS "ccache was requested but was not found")
+  endif()
+endif()
+
 set(entropy_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(entropy_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
@@ -27,7 +40,7 @@ set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 # VSCode is able to parse the file and find the include path based on its content.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(SUPERBUILD_PARALLEL "8" CACHE STRING "Parallel level for ExternalProject builds")
+set(SUPERBUILD_PARALLEL "" CACHE STRING "Parallel level for ExternalProject builds; empty uses the native build tool default")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 

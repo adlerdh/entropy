@@ -1,0 +1,121 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "ninja-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "BUILD_SHARED_LIBS": true,
+        "Entropy_USE_CCACHE": true,
+        "SUPERBUILD_PARALLEL": ""
+      }
+    },
+    {
+      "name": "default",
+      "displayName": "Default Ninja app configure",
+      "description": "Configure Entropy with Ninja after the matching superbuild stage has populated dependencies.",
+      "inherits": "ninja-base",
+      "binaryDir": "${sourceDir}/build-default",
+      "cacheVariables": {
+        "Entropy_SUPERBUILD": false
+      }
+    },
+    {
+      "name": "superbuild",
+      "displayName": "Default Ninja superbuild configure",
+      "description": "Configure the dependency superbuild with Ninja.",
+      "inherits": "ninja-base",
+      "binaryDir": "${sourceDir}/build-default",
+      "cacheVariables": {
+        "Entropy_SUPERBUILD": true
+      }
+    },
+    {
+      "name": "app",
+      "displayName": "Default Ninja app configure",
+      "description": "Configure the Entropy app with Ninja after running the superbuild preset.",
+      "inherits": "default"
+    },
+    {
+      "name": "debug-superbuild",
+      "displayName": "Debug Ninja superbuild configure",
+      "inherits": "superbuild",
+      "binaryDir": "${sourceDir}/build-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "debug-app",
+      "displayName": "Debug Ninja app configure",
+      "inherits": "app",
+      "binaryDir": "${sourceDir}/build-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release-superbuild",
+      "displayName": "Release Ninja superbuild configure",
+      "inherits": "superbuild",
+      "binaryDir": "${sourceDir}/build-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "release-app",
+      "displayName": "Release Ninja app configure",
+      "inherits": "app",
+      "binaryDir": "${sourceDir}/build-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "superbuild",
+      "displayName": "Build default dependencies",
+      "configurePreset": "superbuild"
+    },
+    {
+      "name": "app",
+      "displayName": "Build default app",
+      "configurePreset": "app"
+    },
+    {
+      "name": "default",
+      "displayName": "Build default app",
+      "configurePreset": "default"
+    },
+    {
+      "name": "debug-superbuild",
+      "displayName": "Build Debug dependencies",
+      "configurePreset": "debug-superbuild"
+    },
+    {
+      "name": "debug-app",
+      "displayName": "Build Debug app",
+      "configurePreset": "debug-app"
+    },
+    {
+      "name": "release-superbuild",
+      "displayName": "Build Release dependencies",
+      "configurePreset": "release-superbuild"
+    },
+    {
+      "name": "release-app",
+      "displayName": "Build Release app",
+      "configurePreset": "release-app"
+    }
+  ]
+}
