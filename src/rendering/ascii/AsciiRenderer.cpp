@@ -1,4 +1,4 @@
-#include "rendering/AsciiRenderer.h"
+#include "rendering/ascii/AsciiRenderer.h"
 
 #include "common/Exception.hpp"
 #include "common/Expected.h"
@@ -10,7 +10,7 @@
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/CameraTypes.h"
 
-#include "rendering/AsciiAtlasBaker.h"
+#include "rendering/ascii/AsciiAtlasBaker.h"
 #include "rendering/RenderData.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/utility/containers/Uniforms.h"

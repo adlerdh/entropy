@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/AsciiAtlasBaker.h"
+#include "rendering/ascii/AsciiAtlasBaker.h"
 
 #include <glad/glad.h>
 #include <glm/vec2.hpp>

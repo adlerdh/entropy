@@ -466,9 +466,9 @@ set(entropy_SOURCES
   # We were testing IPC with ITK-SNAP. This functionality is not currently hooked up to Entropy.
   # "${entropy_SRC_DIR}/logic/ipc/IPCHandler.cxx"
 
-  "${entropy_SRC_DIR}/rendering/AsciiAtlas.cpp"
-  "${entropy_SRC_DIR}/rendering/AsciiAtlasBaker.cpp"
-  "${entropy_SRC_DIR}/rendering/AsciiRenderer.cpp"
+  "${entropy_SRC_DIR}/rendering/ascii/AsciiAtlas.cpp"
+  "${entropy_SRC_DIR}/rendering/ascii/AsciiAtlasBaker.cpp"
+  "${entropy_SRC_DIR}/rendering/ascii/AsciiRenderer.cpp"
   "${entropy_SRC_DIR}/rendering/ImageDrawing.cpp"
   "${entropy_SRC_DIR}/rendering/Rendering.cpp"
   "${entropy_SRC_DIR}/rendering/RenderData.cpp"

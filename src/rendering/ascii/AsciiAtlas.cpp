@@ -1,5 +1,5 @@
-#include "rendering/AsciiAtlas.h"
-#include "rendering/AsciiAtlasBaker.h"
+#include "rendering/ascii/AsciiAtlas.h"
+#include "rendering/ascii/AsciiAtlasBaker.h"
 
 #include <glad/glad.h>
 

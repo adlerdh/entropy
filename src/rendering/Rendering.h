@@ -3,7 +3,7 @@
 #include "common/Types.h"
 #include "common/UuidRange.h"
 #include "logic/camera/CameraTypes.h"
-#include "rendering/AsciiRenderer.h"
+#include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/utility/gl/GLShaderProgram.h"

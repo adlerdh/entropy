@@ -1,8 +1,8 @@
 #pragma once
 
 #include "common/Types.h"
-#include "rendering/AsciiAtlas.h"
-#include "rendering/AsciiAtlasBaker.h"
+#include "rendering/ascii/AsciiAtlas.h"
+#include "rendering/ascii/AsciiAtlasBaker.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/utility/gl/GLFrameBufferObject.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
