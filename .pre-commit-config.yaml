@@ -6,4 +6,4 @@ repos:
         entry: clang-format -i
         language: system
         files: ^src/.*\.(c|cc|cpp|cxx|h|hh|hpp|hxx|tpp|txx|inc|fs|vs|gs|frag|vert|geom|glsl)$
-        exclude: ^(external|build[^/]*)/
+        exclude: ^(external|build[^/]*|src/ui/imgui)/
