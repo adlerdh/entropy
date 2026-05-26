@@ -50,11 +50,16 @@ void renderEmptyWorkspace(
   static ImGui::FileBrowser imageDialog(ImGuiFileBrowserFlags_CloseOnEsc);
   static ImGui::FileBrowser projectDialog(ImGuiFileBrowserFlags_CloseOnEsc);
 
+  /// @todo Fix filters and image/project loading, which currently fail with
+  /// Exception: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
+
+  /// @todo Add native file dialogs
+
   imageDialog.SetTitle("Open Image");
-  imageDialog.SetTypeFilters({".nii", ".nii.gz", ".nrrd", ".nhdr", ".mha", ".mhd", ".dcm", ".img", ".hdr"});
+  // imageDialog.SetTypeFilters({".nii", ".nii.gz", ".nrrd", ".nhdr", ".mha", ".mhd", ".dcm", ".img", ".hdr"});
 
   projectDialog.SetTitle("Open Project");
-  projectDialog.SetTypeFilters({".json"});
+  // projectDialog.SetTypeFilters({".json"});
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
   const ImVec2 panelSize{360.0f, 150.0f};

@@ -41,41 +41,21 @@ uniform float u_aspectRatio;            // view aspect ratio (width / height)
 uniform float u_flashlightRadius;       // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
-{
-  {
-    HELPER_FUNCTIONS
-  }
-}
+$$HELPER_FUNCTIONS$$
 
 /// float uintTextureLookup(sampler3D texture, vec3 texCoord);
-{
-  {
-    UINT_TEXTURE_LOOKUP_FUNCTION
-  }
-}
+$$UINT_TEXTURE_LOOKUP_FUNCTION$$
 
 /// Look up segmentation texture label value (after mapping to GL texture units):
 /// uint getSegValue(vec3 texOffset, out float opacity);
-{
-  {
-    GET_SEG_VALUE_FUNCTION
-  }
-}
+$$GET_SEG_VALUE_FUNCTION$$
 
 /// Look up alpha of segmentation interior:
 /// float getSegInteriorAlpha(uint seg)
-{
-  {
-    GET_SEG_INTERIOR_ALPHA_FUNCTION
-  }
-}
+$$GET_SEG_INTERIOR_ALPHA_FUNCTION$$
 
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-{
-  {
-    DO_RENDER_FUNCTION
-  }
-}
+$$DO_RENDER_FUNCTION$$
 
 int when_lt(int x, int y)
 {

@@ -61,30 +61,14 @@ uniform float u_mipSamplingDistance_cm;
 uniform float u_waterAttenCoeff;
 uniform float u_airAttenCoeff;
 
-{
-  {
-    HELPER_FUNCTIONS
-  }
-}
-{
-  {
-    COLOR_HELPER_FUNCTIONS
-  }
-}
+$$HELPER_FUNCTIONS$$
+$$COLOR_HELPER_FUNCTIONS$$
 
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-{
-  {
-    TEXTURE_LOOKUP_FUNCTION
-  }
-}
+$$TEXTURE_LOOKUP_FUNCTION$$
 
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-{
-  {
-    DO_RENDER_FUNCTION
-  }
-}
+$$DO_RENDER_FUNCTION$$
 
 /**
  * @brief Convert texture intensity to Hounsefield Units, then to Photon Mass Attenuation

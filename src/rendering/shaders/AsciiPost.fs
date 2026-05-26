@@ -17,11 +17,7 @@ uniform float u_asciiSdfPadding;
 uniform float u_asciiPixDistScale;
 uniform sampler2D u_asciiLumLut;
 
-{
-  {
-    ASCII_COMPOSITE_FUNCTIONS
-  }
-}
+$$ASCII_COMPOSITE_FUNCTIONS$$
 
 void main()
 {

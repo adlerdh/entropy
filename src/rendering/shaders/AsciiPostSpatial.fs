@@ -39,11 +39,7 @@ uniform vec4 u_glyphProfilesA[128];  // regions 0–3 per glyph
 uniform vec4 u_glyphProfilesB[128];  // regions 4–5 in .xy, .zw unused
 uniform int u_glyphRankToIndex[128]; // rank -> glyph index
 
-{
-  {
-    ASCII_COMPOSITE_FUNCTIONS
-  }
-}
+$$ASCII_COMPOSITE_FUNCTIONS$$
 
 void main()
 {

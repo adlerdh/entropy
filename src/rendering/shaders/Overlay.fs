@@ -18,18 +18,10 @@ uniform vec2 u_imgThresholds[2];     // lower/upper image thresholds (texture in
 uniform float u_imgOpacity[2];       // image opacity
 uniform bool u_magentaCyan;          // flag to use magenta/cyan/white comparison colors
 
-{
-  {
-    HELPER_FUNCTIONS
-  }
-}
+$$HELPER_FUNCTIONS$$
 
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-{
-  {
-    TEXTURE_LOOKUP_FUNCTION
-  }
-}
+$$TEXTURE_LOOKUP_FUNCTION$$
 
 void main()
 {

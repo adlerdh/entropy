@@ -56,37 +56,17 @@ uniform int u_mipMode;           // MIP mode (0: none, 1: max, 2: mean, 3: min, 
 uniform int u_halfNumMipSamples; // half number of MIP samples (0 when no projection used)
 uniform vec3 u_texSamplingDirZ;  // Z view camera direction (in texture sampling space)
 
-{
-  {
-    HELPER_FUNCTIONS
-  }
-}
-{
-  {
-    COLOR_HELPER_FUNCTIONS
-  }
-}
+$$HELPER_FUNCTIONS$$
+$$COLOR_HELPER_FUNCTIONS$$
 
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-{
-  {
-    TEXTURE_LOOKUP_FUNCTION
-  }
-}
+$$TEXTURE_LOOKUP_FUNCTION$$
 
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-{
-  {
-    DO_RENDER_FUNCTION
-  }
-}
+$$DO_RENDER_FUNCTION$$
 
 /// float computeProjection(vec3 baseTc, float img);
-{
-  {
-    IP_FUNCTION
-  }
-}
+$$IP_FUNCTION$$
 
 void main()
 {

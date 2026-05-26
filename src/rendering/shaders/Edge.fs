@@ -49,37 +49,17 @@ uniform bool u_colormapEdges;  // flag to apply colormap to edges
 uniform vec4 u_edgeColor;      // edge color (premultiplied RGBA)
 uniform vec3 u_texelDirs[2];   // texture sampling direction for edges
 
-{
-  {
-    HELPER_FUNCTIONS
-  }
-}
-{
-  {
-    COLOR_HELPER_FUNCTIONS
-  }
-}
+$$HELPER_FUNCTIONS$$
+$$COLOR_HELPER_FUNCTIONS$$
 
 /// float computeEdge(mat3 v, float edgeMagnitude);
-{
-  {
-    COMPUTE_EDGE_FUNCTION
-  }
-}
+$$COMPUTE_EDGE_FUNCTION$$
 
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-{
-  {
-    TEXTURE_LOOKUP_FUNCTION
-  }
-}
+$$TEXTURE_LOOKUP_FUNCTION$$
 
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-{
-  {
-    DO_RENDER_FUNCTION
-  }
-}
+$$DO_RENDER_FUNCTION$$
 
 void main()
 {

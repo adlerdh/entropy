@@ -70,25 +70,13 @@ uniform int u_halfNumMipSamples;
 // Z view camera direction, represented in texture sampling space
 uniform vec3 u_texSamplingDirZ;
 
-{
-  {
-    HELPER_FUNCTIONS
-  }
-}
+$$HELPER_FUNCTIONS$$
 
 // float textureLookup(sampler3D texture, vec3 texCoords);
-{
-  {
-    TEXTURE_LOOKUP_FUNCTION
-  }
-}
+$$TEXTURE_LOOKUP_FUNCTION$$
 
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-{
-  {
-    DO_RENDER_FUNCTION
-  }
-}
+$$DO_RENDER_FUNCTION$$
 
 /// Compute min/mean/max projection. Returns img when MIP is not used (i.e. u_halfNumMipSamples ==
 /// 0)

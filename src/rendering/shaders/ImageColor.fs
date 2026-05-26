@@ -38,25 +38,13 @@ uniform float u_aspectRatio;            // view aspect ratio (width / height)
 uniform float u_flashlightRadius;       // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
-{
-  {
-    HELPER_FUNCTIONS
-  }
-}
+$$HELPER_FUNCTIONS$$
 
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-{
-  {
-    TEXTURE_LOOKUP_FUNCTION
-  }
-}
+$$TEXTURE_LOOKUP_FUNCTION$$
 
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-{
-  {
-    DO_RENDER_FUNCTION
-  }
-}
+$$DO_RENDER_FUNCTION$$
 
 void main()
 {

@@ -31,18 +31,10 @@ uniform int u_mipMode;           // MIP mode (0: none, 1: max, 2: mean, 3: min, 
 uniform int u_halfNumMipSamples; // half number of MIP samples (0 when no projection used)
 uniform vec3 u_texSamplingDirZ;  // Z view camera direction (in texture sampling space)
 
-{
-  {
-    HELPER_FUNCTIONS
-  }
-}
+$$HELPER_FUNCTIONS$$
 
 /// float textureLookup(sampler3D texture, vec3 texCoords);
-{
-  {
-    TEXTURE_LOOKUP_FUNCTION
-  }
-}
+$$TEXTURE_LOOKUP_FUNCTION$$
 
 /**
  * @brief Compute the  metric

@@ -169,7 +169,7 @@ void AsciiRenderer::registerShaderPrograms(
   }
 
   const std::unordered_map<std::string, std::string> compositePlaceholder{
-    {"{{ASCII_COMPOSITE_FUNCTIONS}}", compositeFunctions}};
+    {"$$ASCII_COMPOSITE_FUNCTIONS$$", compositeFunctions}};
 
   Uniforms fsAsciiCellMeanUniforms;
   fsAsciiCellMeanUniforms.insertUniform("u_sceneTex", UniformType::Sampler, Uniforms::SamplerIndexType{3});
