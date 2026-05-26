@@ -33,11 +33,8 @@ class DataManager
 public:
   /// Range of weak pointers to Records
   template<class Record>
-  using weak_record_range_t = boost::any_range<
-    std::weak_ptr<Record>,
-    boost::forward_traversal_tag,
-    std::weak_ptr<Record>&,
-    std::ptrdiff_t>;
+  using weak_record_range_t =
+    boost::any_range<std::weak_ptr<Record>, boost::forward_traversal_tag, std::weak_ptr<Record>&, std::ptrdiff_t>;
 
   DataManager();
 
@@ -80,16 +77,13 @@ public:
   std::optional<UID> insertLabelMeshRecord(const UID& parcelUid, std::shared_ptr<MeshRecord>);
 
   /// Insert a reference image landmark group record associated with the given image
-  std::optional<UID>
-  insertRefImageLandmarkGroupRecord(const UID& imageUid, std::shared_ptr<LandmarkGroupRecord>);
+  std::optional<UID> insertRefImageLandmarkGroupRecord(const UID& imageUid, std::shared_ptr<LandmarkGroupRecord>);
 
   /// Insert a slide landmark group record associated with the given slide
-  std::optional<UID>
-  insertSlideLandmarkGroupRecord(const UID& slideUid, std::shared_ptr<LandmarkGroupRecord>);
+  std::optional<UID> insertSlideLandmarkGroupRecord(const UID& slideUid, std::shared_ptr<LandmarkGroupRecord>);
 
   /// Insert a slide annotation record associated with the given slide
-  std::optional<UID>
-  insertSlideAnnotationRecord(const UID& slideUid, std::shared_ptr<SlideAnnotationRecord>);
+  std::optional<UID> insertSlideAnnotationRecord(const UID& slideUid, std::shared_ptr<SlideAnnotationRecord>);
 
   /// Associate an image color map with a given image.
   /// Return true iff the image and color map exist and association is successful.
@@ -126,8 +120,9 @@ public:
   /// Set the ordering of slides. Return true iff successful.
   bool setSlideOrder(const std::list<UID>& orderedSlideUids);
 
-  /// Get the "active" image, which is currently being manipulated (i.e. transformed, window-leveled,
-  /// highlighted) by user. This image also defines the coordinate system of the views.
+  /// Get the "active" image, which is currently being manipulated (i.e. transformed,
+  /// window-leveled, highlighted) by user. This image also defines the coordinate system of the
+  /// views.
   std::optional<UID> activeImageUid() const;
 
   /// Get parcellation currently being displayed

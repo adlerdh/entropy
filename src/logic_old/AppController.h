@@ -29,7 +29,20 @@ class TransformationManager;
 class AppController
 {
 public:
-  AppController(std::unique_ptr<ActionManager>, std::unique_ptr<AssemblyManager>, std::unique_ptr<ConnectionManager>, std::unique_ptr<DataManager>, std::unique_ptr<GuiManager>, std::unique_ptr<InteractionManager>, std::unique_ptr<LayoutManager>, std::unique_ptr<TransformationManager>, std::unique_ptr<ImageDataUiMapper>, std::unique_ptr<ParcellationDataUiMapper>, std::unique_ptr<SlideStackDataUiMapper>, std::unique_ptr<ShaderProgramContainer>, std::shared_ptr<BlankTextures>);
+  AppController(
+    std::unique_ptr<ActionManager>,
+    std::unique_ptr<AssemblyManager>,
+    std::unique_ptr<ConnectionManager>,
+    std::unique_ptr<DataManager>,
+    std::unique_ptr<GuiManager>,
+    std::unique_ptr<InteractionManager>,
+    std::unique_ptr<LayoutManager>,
+    std::unique_ptr<TransformationManager>,
+    std::unique_ptr<ImageDataUiMapper>,
+    std::unique_ptr<ParcellationDataUiMapper>,
+    std::unique_ptr<SlideStackDataUiMapper>,
+    std::unique_ptr<ShaderProgramContainer>,
+    std::shared_ptr<BlankTextures>);
 
   ~AppController();
 

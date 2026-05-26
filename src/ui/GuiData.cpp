@@ -20,10 +20,8 @@ GuiData::Margins GuiData::computeMargins() const
 
   // Corners: -1 custom, 0 top-left, 1 top-right, 2 bottom-left, 3 bottom-right
 
-  if (m_showModeToolbar)
-  {
-    if (m_isModeToolbarHorizontal)
-    {
+  if (m_showModeToolbar) {
+    if (m_isModeToolbarHorizontal) {
       if (0 == m_modeToolbarCorner || 1 == m_modeToolbarCorner) {
         margins.top = std::max(margins.top, m_modeToolbarDockDims.y);
       }
@@ -31,8 +29,7 @@ GuiData::Margins GuiData::computeMargins() const
         margins.bottom = std::max(margins.bottom, m_modeToolbarDockDims.y);
       }
     }
-    else
-    {
+    else {
       if (0 == m_modeToolbarCorner || 2 == m_modeToolbarCorner) {
         margins.left = std::max(margins.left, m_modeToolbarDockDims.x);
       }
@@ -42,10 +39,8 @@ GuiData::Margins GuiData::computeMargins() const
     }
   }
 
-  if (m_showSegToolbar)
-  {
-    if (m_isSegToolbarHorizontal)
-    {
+  if (m_showSegToolbar) {
+    if (m_isSegToolbarHorizontal) {
       if (0 == m_segToolbarCorner || 1 == m_segToolbarCorner) {
         margins.top = std::max(margins.top, m_segToolbarDockDims.y);
       }
@@ -53,8 +48,7 @@ GuiData::Margins GuiData::computeMargins() const
         margins.bottom = std::max(margins.bottom, m_segToolbarDockDims.y);
       }
     }
-    else
-    {
+    else {
       if (0 == m_segToolbarCorner || 2 == m_segToolbarCorner) {
         margins.left = std::max(margins.left, m_segToolbarDockDims.x);
       }

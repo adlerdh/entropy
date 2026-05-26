@@ -37,9 +37,8 @@ bool voxelInterectsPlane(const glm::vec4& voxelViewPlane, const glm::vec3& voxel
 bool isVoxelInSeg(const glm::ivec3 segDims, const glm::ivec3& voxelPos)
 {
   return (
-    voxelPos.x >= 0 && voxelPos.x < segDims.x && voxelPos.y >= 0 && voxelPos.y < segDims.y
-    && voxelPos.z >= 0 && voxelPos.z < segDims.z
-  );
+    voxelPos.x >= 0 && voxelPos.x < segDims.x && voxelPos.y >= 0 && voxelPos.y < segDims.y && voxelPos.z >= 0 &&
+    voxelPos.z < segDims.z);
 }
 
 std::tuple<std::unordered_set<glm::ivec3>, glm::ivec3, glm::ivec3> paintBrush2d(
@@ -48,8 +47,7 @@ std::tuple<std::unordered_set<glm::ivec3>, glm::ivec3, glm::ivec3> paintBrush2d(
   const glm::ivec3& roundedPixelPos,
   const std::array<float, 3>& mmToVoxelSpacings,
   int brushSizeInVoxels,
-  bool brushIsRound
-)
+  bool brushIsRound)
 {
   // Queue of voxels to test for intersection with the view plane
   std::queue<glm::ivec3> voxelsToTest;
@@ -67,8 +65,7 @@ std::tuple<std::unordered_set<glm::ivec3>, glm::ivec3, glm::ivec3> paintBrush2d(
   // This voxel should intersect the view plane, since it was clicked by the mouse,
   // but test it to make sure.
 
-  if (isVoxelInSeg(segDims, roundedPixelPos) && voxelInterectsPlane(voxelViewPlane, roundedPixelPos))
-  {
+  if (isVoxelInSeg(segDims, roundedPixelPos) && voxelInterectsPlane(voxelViewPlane, roundedPixelPos)) {
     voxelsToTest.push(roundedPixelPos);
     voxelsProcessed.insert(roundedPixelPos);
   }
@@ -78,26 +75,29 @@ std::tuple<std::unordered_set<glm::ivec3>, glm::ivec3, glm::ivec3> paintBrush2d(
   const float radius = static_cast<float>(brushSizeInVoxels - 1);
 
   // Loop over all voxels in the test queue
-  while (!voxelsToTest.empty())
-  {
+  while (!voxelsToTest.empty()) {
     const glm::ivec3 q = voxelsToTest.front();
     voxelsToTest.pop();
 
     // Check if the voxel is inside the brush
     const glm::vec3 d = q - roundedPixelPos;
 
-    if (!brushIsRound)
-    {
+    if (!brushIsRound) {
       // Equation for a rectangle:
-      if (std::max(std::max(std::abs(d.x / mmToVoxelSpacings[0]), std::abs(d.y / mmToVoxelSpacings[1])), std::abs(d.z / mmToVoxelSpacings[2])) > radius)
+      if (
+        std::max(
+          std::max(std::abs(d.x / mmToVoxelSpacings[0]), std::abs(d.y / mmToVoxelSpacings[1])),
+          std::abs(d.z / mmToVoxelSpacings[2])) > radius)
       {
         voxelsToIgnore.insert(q);
         continue;
       }
     }
-    else
-    {
-      if ((d.x * d.x / (mmToVoxelSpacings[0] * mmToVoxelSpacings[0]) + d.y * d.y / (mmToVoxelSpacings[1] * mmToVoxelSpacings[1]) + d.z * d.z / (mmToVoxelSpacings[2] * mmToVoxelSpacings[2])) > radius * radius)
+    else {
+      if (
+        (d.x * d.x / (mmToVoxelSpacings[0] * mmToVoxelSpacings[0]) +
+         d.y * d.y / (mmToVoxelSpacings[1] * mmToVoxelSpacings[1]) +
+         d.z * d.z / (mmToVoxelSpacings[2] * mmToVoxelSpacings[2])) > radius * radius)
       {
         voxelsToIgnore.insert(q);
         continue;
@@ -117,15 +117,15 @@ std::tuple<std::unordered_set<glm::ivec3>, glm::ivec3, glm::ivec3> paintBrush2d(
     neighbors[4].z -= 1;
     neighbors[5].z += 1;
 
-    for (const auto& n : neighbors)
-    {
-      if (0 == voxelsProcessed.count(n) && 0 == voxelsToIgnore.count(n) && 0 == voxelsToPaint.count(n) && voxelInterectsPlane(voxelViewPlane, n) && isVoxelInSeg(segDims, n))
+    for (const auto& n : neighbors) {
+      if (
+        0 == voxelsProcessed.count(n) && 0 == voxelsToIgnore.count(n) && 0 == voxelsToPaint.count(n) &&
+        voxelInterectsPlane(voxelViewPlane, n) && isVoxelInSeg(segDims, n))
       {
         voxelsToTest.push(n);
         voxelsProcessed.insert(n);
       }
-      else
-      {
+      else {
         voxelsToIgnore.insert(n);
       }
     }
@@ -138,8 +138,7 @@ std::tuple<std::unordered_set<glm::ivec3>, glm::ivec3, glm::ivec3> paintBrush2d(
   glm::ivec3 minVoxel{std::numeric_limits<int>::max()};
   glm::ivec3 maxVoxel{std::numeric_limits<int>::lowest()};
 
-  for (const auto& p : voxelsToPaint)
-  {
+  for (const auto& p : voxelsToPaint) {
     voxelsToChange.insert(p);
     minVoxel = glm::min(minVoxel, p);
     maxVoxel = glm::max(maxVoxel, p);
@@ -154,8 +153,7 @@ std::tuple<std::unordered_set<glm::ivec3>, glm::ivec3, glm::ivec3> paintBrush3d(
   const std::array<float, 3>& mmToVoxelSpacings,
   const std::array<int, 3>& mmToVoxelCoeffs,
   int brushSizeInVoxels,
-  bool brushIsRound
-)
+  bool brushIsRound)
 {
   // Set of unique voxels to change:
   std::unordered_set<glm::ivec3> voxelToChange;
@@ -167,23 +165,17 @@ std::tuple<std::unordered_set<glm::ivec3>, glm::ivec3, glm::ivec3> paintBrush3d(
   const int radius_int = brushSizeInVoxels - 1;
   const float radius_f = static_cast<float>(radius_int);
 
-  for (int k = -mmToVoxelCoeffs[2] * radius_int; k <= mmToVoxelCoeffs[2] * radius_int; ++k)
-  {
+  for (int k = -mmToVoxelCoeffs[2] * radius_int; k <= mmToVoxelCoeffs[2] * radius_int; ++k) {
     const int K = roundedPixelPos.z + k;
-    if (K < 0 || K >= segDims.z)
-      continue;
+    if (K < 0 || K >= segDims.z) continue;
 
-    for (int j = -mmToVoxelCoeffs[1] * radius_int; j <= mmToVoxelCoeffs[1] * radius_int; ++j)
-    {
+    for (int j = -mmToVoxelCoeffs[1] * radius_int; j <= mmToVoxelCoeffs[1] * radius_int; ++j) {
       const int J = roundedPixelPos.y + j;
-      if (J < 0 || J >= segDims.y)
-        continue;
+      if (J < 0 || J >= segDims.y) continue;
 
-      for (int i = -mmToVoxelCoeffs[0] * radius_int; i <= mmToVoxelCoeffs[0] * radius_int; ++i)
-      {
+      for (int i = -mmToVoxelCoeffs[0] * radius_int; i <= mmToVoxelCoeffs[0] * radius_int; ++i) {
         const int I = roundedPixelPos.x + i;
-        if (I < 0 || I >= segDims.x)
-          continue;
+        if (I < 0 || I >= segDims.x) continue;
 
         const glm::ivec3 p{I, J, K};
         bool changed = false;
@@ -192,27 +184,30 @@ std::tuple<std::unordered_set<glm::ivec3>, glm::ivec3, glm::ivec3> paintBrush3d(
         const float jj = static_cast<float>(j);
         const float kk = static_cast<float>(k);
 
-        if (!brushIsRound)
-        {
+        if (!brushIsRound) {
           // Square brush
-          if (std::max(std::max(std::abs(ii / mmToVoxelSpacings[0]), std::abs(jj / mmToVoxelSpacings[1])), std::abs(kk / mmToVoxelSpacings[2])) <= radius_f)
+          if (
+            std::max(
+              std::max(std::abs(ii / mmToVoxelSpacings[0]), std::abs(jj / mmToVoxelSpacings[1])),
+              std::abs(kk / mmToVoxelSpacings[2])) <= radius_f)
           {
             voxelToChange.insert(p);
             changed = true;
           }
         }
-        else
-        {
+        else {
           // Round brush: additional check that voxel is inside the sphere of radius N
-          if ((ii * ii / (mmToVoxelSpacings[0] * mmToVoxelSpacings[0]) + jj * jj / (mmToVoxelSpacings[1] * mmToVoxelSpacings[1]) + kk * kk / (mmToVoxelSpacings[2] * mmToVoxelSpacings[2])) <= radius_f * radius_f)
+          if (
+            (ii * ii / (mmToVoxelSpacings[0] * mmToVoxelSpacings[0]) +
+             jj * jj / (mmToVoxelSpacings[1] * mmToVoxelSpacings[1]) +
+             kk * kk / (mmToVoxelSpacings[2] * mmToVoxelSpacings[2])) <= radius_f * radius_f)
           {
             voxelToChange.insert(p);
             changed = true;
           }
         }
 
-        if (changed)
-        {
+        if (changed) {
           minVoxel = glm::min(minVoxel, p);
           maxVoxel = glm::max(maxVoxel, p);
         }
@@ -238,9 +233,7 @@ void updateSeg(
     const ComponentType& memoryComponentType,
     const glm::uvec3& offset,
     const glm::uvec3& size,
-    const int64_t* data
-  )>& updateSegTexture
-)
+    const int64_t* data)>& updateSegTexture)
 {
   static constexpr std::size_t sk_comp = 0;
   static const glm::ivec3 sk_voxelOne{1, 1, 1};
@@ -249,38 +242,29 @@ void updateSeg(
   std::vector<glm::ivec3> voxelPositions;
   std::vector<int64_t> voxelValues;
 
-  for (int k = minVoxel.z; k <= maxVoxel.z; ++k)
-  {
-    for (int j = minVoxel.y; j <= maxVoxel.y; ++j)
-    {
-      for (int i = minVoxel.x; i <= maxVoxel.x; ++i)
-      {
+  for (int k = minVoxel.z; k <= maxVoxel.z; ++k) {
+    for (int j = minVoxel.y; j <= maxVoxel.y; ++j) {
+      for (int i = minVoxel.x; i <= maxVoxel.x; ++i) {
         const glm::ivec3 p{i, j, k};
         voxelPositions.emplace_back(p);
 
-        if (voxelsToChange.count(p) > 0)
-        {
+        if (voxelsToChange.count(p) > 0) {
           // Marked to change, so paint it:
-          if (brushReplacesBgWithFg)
-          {
+          if (brushReplacesBgWithFg) {
             const int64_t currentLabel = seg.value<int64_t>(sk_comp, i, j, k).value_or(0);
 
-            if (labelToReplace == currentLabel)
-            {
+            if (labelToReplace == currentLabel) {
               voxelValues.emplace_back(labelToPaint);
             }
-            else
-            {
+            else {
               voxelValues.emplace_back(currentLabel);
             }
           }
-          else
-          {
+          else {
             voxelValues.emplace_back(labelToPaint);
           }
         }
-        else
-        {
+        else {
           // Not marked to change, so replace with the current label:
           voxelValues.emplace_back(seg.value<int64_t>(sk_comp, i, j, k).value_or(0));
         }
@@ -288,8 +272,7 @@ void updateSeg(
     }
   }
 
-  if (voxelPositions.empty())
-  {
+  if (voxelPositions.empty()) {
     return;
   }
 
@@ -297,21 +280,17 @@ void updateSeg(
   const glm::uvec3 dataSize{maxVoxel - minVoxel + sk_voxelOne};
 
   // Safety check:
-  const std::size_t N = static_cast<std::size_t>(dataSize.x) * static_cast<std::size_t>(dataSize.y)
-                        * static_cast<std::size_t>(dataSize.z);
+  const std::size_t N =
+    static_cast<std::size_t>(dataSize.x) * static_cast<std::size_t>(dataSize.y) * static_cast<std::size_t>(dataSize.z);
 
-  if (N != voxelPositions.size() || N != voxelValues.size())
-  {
+  if (N != voxelPositions.size() || N != voxelValues.size()) {
     spdlog::error("Invalid number of voxels when performing segmentation");
     return;
   }
 
   // Set values in the segmentation image:
-  for (std::size_t i = 0; i < voxelPositions.size(); ++i)
-  {
-    seg.setValue(
-      sk_comp, voxelPositions[i].x, voxelPositions[i].y, voxelPositions[i].z, voxelValues[i]
-    );
+  for (std::size_t i = 0; i < voxelPositions.size(); ++i) {
+    seg.setValue(sk_comp, voxelPositions[i].x, voxelPositions[i].y, voxelPositions[i].z, voxelValues[i]);
   }
 
   updateSegTexture(seg.header().memoryComponentType(), dataOffset, dataSize, voxelValues.data());
@@ -337,9 +316,7 @@ void paintSegmentation(
     const ComponentType& memoryComponentType,
     const glm::uvec3& offset,
     const glm::uvec3& size,
-    const int64_t* data
-  )>& updateSegTexture
-)
+    const int64_t* data)>& updateSegTexture)
 {
   // Set the brush radius (not including the central voxel): Radius = (brush width - 1) / 2
   // A single voxel brush has radius zero, a width 3 voxel brush has radius 1,
@@ -351,16 +328,14 @@ void paintSegmentation(
   // Integer versions of the mm to voxel coefficients:
   std::array<int, 3> mmToVoxelCoeffs{1, 1, 1};
 
-  if (brushIsIsotropic)
-  {
+  if (brushIsIsotropic) {
     // Compute factors that account for anisotropic spacing:
     static constexpr bool sk_isotropicAlongMaxSpacingAxis = false;
 
-    const float spacing = (sk_isotropicAlongMaxSpacingAxis) ? glm::compMax(seg.header().spacing())
-                                                            : glm::compMin(seg.header().spacing());
+    const float spacing =
+      (sk_isotropicAlongMaxSpacingAxis) ? glm::compMax(seg.header().spacing()) : glm::compMin(seg.header().spacing());
 
-    for (uint32_t i = 0; i < 3; ++i)
-    {
+    for (uint32_t i = 0; i < 3; ++i) {
       mmToVoxelSpacings[i] = spacing / seg.header().spacing()[static_cast<int>(i)];
       mmToVoxelCoeffs[i] = std::max(static_cast<int>(std::ceil(mmToVoxelSpacings[i])), 1);
     }
@@ -373,27 +348,23 @@ void paintSegmentation(
   glm::ivec3 maxVoxel{std::numeric_limits<int>::lowest()};
   glm::ivec3 minVoxel{std::numeric_limits<int>::max()};
 
-  if (brushIs3d)
-  {
+  if (brushIs3d) {
     std::tie(voxelsToChange, minVoxel, maxVoxel) = paintBrush3d(
       seg.header().pixelDimensions(),
       roundedPixelPos,
       mmToVoxelSpacings,
       mmToVoxelCoeffs,
       brushSizeInVoxels,
-      brushIsRound
-    );
+      brushIsRound);
   }
-  else
-  {
+  else {
     std::tie(voxelsToChange, minVoxel, maxVoxel) = paintBrush2d(
       voxelViewPlane,
       seg.header().pixelDimensions(),
       roundedPixelPos,
       mmToVoxelSpacings,
       brushSizeInVoxels,
-      brushIsRound
-    );
+      brushIsRound);
   }
 
   updateSeg(
@@ -404,8 +375,7 @@ void paintSegmentation(
     labelToReplace,
     brushReplacesBgWithFg,
     seg,
-    updateSegTexture
-  );
+    updateSegTexture);
 }
 
 /// @todo Implement algorithm for filling smoothed polygons.
@@ -421,9 +391,7 @@ void fillSegmentationWithPolygon(
     const ComponentType& memoryComponentType,
     const glm::uvec3& offset,
     const glm::uvec3& size,
-    const int64_t* data
-  )>& updateSegTexture
-)
+    const int64_t* data)>& updateSegTexture)
 {
   static constexpr std::size_t OUTER_BOUNDARY = 0;
 
@@ -433,8 +401,7 @@ void fillSegmentationWithPolygon(
   /// @todo Make this a setting
   static constexpr bool sk_fillBasedOnCorners = true;
 
-  if (!annot->isClosed() || annot->isSmoothed())
-  {
+  if (!annot->isClosed() || annot->isSmoothed()) {
     spdlog::warn("Cannot fill annotation polygon that is not closed and not smoothed.");
     return;
   }
@@ -443,59 +410,45 @@ void fillSegmentationWithPolygon(
   const glm::mat4& subject_T_pixel = seg.transformations().subject_T_pixel();
 
   // Convert from space of the annotation plane to segmentation pixel coordinates
-  auto convertPointFromAnnotPlaneToRoundedSegPixelCoords =
-    [&pixel_T_subject, &annot](const glm::vec2& annotPlanePos)
-  {
-    const glm::vec4
-      subjectPos{annot->unprojectFromAnnotationPlaneToSubjectPoint(annotPlanePos), 1.0f};
+  auto convertPointFromAnnotPlaneToRoundedSegPixelCoords = [&pixel_T_subject, &annot](const glm::vec2& annotPlanePos) {
+    const glm::vec4 subjectPos{annot->unprojectFromAnnotationPlaneToSubjectPoint(annotPlanePos), 1.0f};
     const glm::vec4 pixelPos = pixel_T_subject * subjectPos;
     return glm::ivec3{glm::round(glm::vec3{pixelPos / pixelPos.w})};
   };
 
   // Convert from segmentation pixel coordinates to the space of the annotation plane
-  auto convertPointFromSegPixelCoordsToAnnotPlane =
-    [&subject_T_pixel, &annot](const glm::vec3& pixelPos)
-  {
+  auto convertPointFromSegPixelCoordsToAnnotPlane = [&subject_T_pixel, &annot](const glm::vec3& pixelPos) {
     const glm::vec4 subjectPos = subject_T_pixel * glm::vec4{pixelPos, 1.0f};
     return annot->projectSubjectPointToAnnotationPlane(glm::vec3{subjectPos / subjectPos.w});
   };
 
   // Min and max corners of the polygon AABB in annotation plane space:
   const auto aabb = annot->polygon().getAABBox();
-  if (!aabb)
-    return;
+  if (!aabb) return;
 
   const glm::vec2 annotPlaneAabbMinCorner = aabb->first;
   const glm::vec2 annotPlaneAabbMaxCorner = aabb->second;
 
-  const glm::ivec3 pixelAabbMinCorner = convertPointFromAnnotPlaneToRoundedSegPixelCoords(
-    annotPlaneAabbMinCorner
-  );
-  const glm::ivec3 pixelAabbMaxCorner = convertPointFromAnnotPlaneToRoundedSegPixelCoords(
-    annotPlaneAabbMaxCorner
-  );
+  const glm::ivec3 pixelAabbMinCorner = convertPointFromAnnotPlaneToRoundedSegPixelCoords(annotPlaneAabbMinCorner);
+  const glm::ivec3 pixelAabbMaxCorner = convertPointFromAnnotPlaneToRoundedSegPixelCoords(annotPlaneAabbMaxCorner);
 
   // Polygon vertices in the space of the annotation plane
   const std::vector<glm::vec2>& annotPlaneVertices = annot->getBoundaryVertices(OUTER_BOUNDARY);
-  if (annotPlaneVertices.empty())
-    return;
+  if (annotPlaneVertices.empty()) return;
 
   // Subject plane normal vector transformed into Voxel space:
-  const glm::vec3 pixelAnnotPlaneNormal = glm::normalize(
-    glm::inverseTranspose(glm::mat3(pixel_T_subject)) * glm::vec3{annot->getSubjectPlaneEquation()}
-  );
+  const glm::vec3 pixelAnnotPlaneNormal =
+    glm::normalize(glm::inverseTranspose(glm::mat3(pixel_T_subject)) * glm::vec3{annot->getSubjectPlaneEquation()});
 
   // First vertex in Subject space, then in Pixel space:
-  const glm::vec3 subjectAnnotPlanePoint = annot->unprojectFromAnnotationPlaneToSubjectPoint(
-    annotPlaneVertices.front()
-  );
+  const glm::vec3 subjectAnnotPlanePoint =
+    annot->unprojectFromAnnotationPlaneToSubjectPoint(annotPlaneVertices.front());
 
   const glm::vec4 pixelAnnotPlanePoint = pixel_T_subject * glm::vec4{subjectAnnotPlanePoint, 1.0f};
 
   // Annotation plane in Pixel space:
-  const glm::vec4 pixelPlaneEquation = math::makePlane(
-    pixelAnnotPlaneNormal, glm::vec3{pixelAnnotPlanePoint / pixelAnnotPlanePoint.w}
-  );
+  const glm::vec4 pixelPlaneEquation =
+    math::makePlane(pixelAnnotPlaneNormal, glm::vec3{pixelAnnotPlanePoint / pixelAnnotPlanePoint.w});
 
   // Loop over the AABB in Pixel/Voxel space. Note that this is inefficient and tests
   // too many voxels when the annotation plane is oblique in Voxel space.
@@ -514,27 +467,48 @@ void fillSegmentationWithPolygon(
 
   const glm::ivec3 segDims{seg.header().pixelDimensions()};
 
-  for (int k = minK; k <= maxK; ++k)
-  {
-    for (int j = minJ; j <= maxJ; ++j)
-    {
-      for (int i = minI; i <= maxI; ++i)
-      {
+  for (int k = minK; k <= maxK; ++k) {
+    for (int j = minJ; j <= maxJ; ++j) {
+      for (int i = minI; i <= maxI; ++i) {
         const glm::ivec3 roundedPixelPos{i, j, k};
         const glm::vec3 pixelPos{roundedPixelPos};
 
-        if (!isVoxelInSeg(segDims, roundedPixelPos))
-          continue;
+        if (!isVoxelInSeg(segDims, roundedPixelPos)) continue;
 
         // Does the voxel intersect the annotation plane?
         // This check is needed when the annotation plane is oblique in Pixel space
         // due to our inefficient algorithm.
-        if (!voxelInterectsPlane(pixelPlaneEquation, pixelPos))
-          continue;
+        if (!voxelInterectsPlane(pixelPlaneEquation, pixelPos)) continue;
 
         const glm::vec2 annotPlanePos = convertPointFromSegPixelCoordsToAnnotPlane(pixelPos);
 
-        if (math::pnpoly(annotPlaneVertices, annotPlanePos) || (sk_fillBasedOnCorners && (math::pnpoly(annotPlaneVertices, convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, 0.5f, 0.5f})) || math::pnpoly(annotPlaneVertices, convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, 0.5f, -0.5f})) || math::pnpoly(annotPlaneVertices, convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, -0.5f, 0.5f})) || math::pnpoly(annotPlaneVertices, convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, -0.5f, -0.5f})) || math::pnpoly(annotPlaneVertices, convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, 0.5f, 0.5f})) || math::pnpoly(annotPlaneVertices, convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, 0.5f, -0.5f})) || math::pnpoly(annotPlaneVertices, convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, -0.5f, 0.5f})) || math::pnpoly(annotPlaneVertices, convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, -0.5f, -0.5f})))))
+        if (
+          math::pnpoly(annotPlaneVertices, annotPlanePos) ||
+          (sk_fillBasedOnCorners &&
+           (math::pnpoly(
+              annotPlaneVertices,
+              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, 0.5f, 0.5f})) ||
+            math::pnpoly(
+              annotPlaneVertices,
+              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, 0.5f, -0.5f})) ||
+            math::pnpoly(
+              annotPlaneVertices,
+              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, -0.5f, 0.5f})) ||
+            math::pnpoly(
+              annotPlaneVertices,
+              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{0.5f, -0.5f, -0.5f})) ||
+            math::pnpoly(
+              annotPlaneVertices,
+              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, 0.5f, 0.5f})) ||
+            math::pnpoly(
+              annotPlaneVertices,
+              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, 0.5f, -0.5f})) ||
+            math::pnpoly(
+              annotPlaneVertices,
+              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, -0.5f, 0.5f})) ||
+            math::pnpoly(
+              annotPlaneVertices,
+              convertPointFromSegPixelCoordsToAnnotPlane(pixelPos + glm::vec3{-0.5f, -0.5f, -0.5f})))))
         {
           voxelsToChange.insert(roundedPixelPos);
           continue;
@@ -547,8 +521,7 @@ void fillSegmentationWithPolygon(
   glm::ivec3 maxVoxel{std::numeric_limits<int>::lowest()};
   glm::ivec3 minVoxel{std::numeric_limits<int>::max()};
 
-  for (const auto& p : voxelsToChange)
-  {
+  for (const auto& p : voxelsToChange) {
     minVoxel = glm::min(minVoxel, p);
     maxVoxel = glm::max(maxVoxel, p);
   }
@@ -561,6 +534,5 @@ void fillSegmentationWithPolygon(
     labelToReplace,
     brushReplacesBgWithFg,
     seg,
-    updateSegTexture
-  );
+    updateSegTexture);
 }

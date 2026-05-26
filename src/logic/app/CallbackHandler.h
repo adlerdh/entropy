@@ -27,10 +27,10 @@ public:
   ~CallbackHandler() = default;
 
   /**
-     * @brief Clears all voxels in a segmentation, setting them to 0
-     * @param segUid
-     * @return
-     */
+   * @brief Clears all voxels in a segmentation, setting them to 0
+   * @param segUid
+   * @return
+   */
   bool clearSegVoxels(const uuid& segUid);
 
   /// Create a blank multi-component image with the same header as the given image
@@ -43,175 +43,186 @@ public:
 
   /// Create a blank segmentation with the same header as the given image
   /// Does not create texture
-  std::optional<uuid> createBlankSeg(
-    const uuid& matchImageUid, const std::string& displayName);
+  std::optional<uuid> createBlankSeg(const uuid& matchImageUid, const std::string& displayName);
 
   /// Create a blank segmentation with the same header as the given image
   std::optional<uuid> createBlankSegWithColorTableAndTextures(
-    const uuid& matchImageUid, const std::string& displayName);
+    const uuid& matchImageUid,
+    const std::string& displayName);
 
-  bool executeGraphCutsSegmentation(
-    const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType);
+  bool executeGraphCutsSegmentation(const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType);
 
-  bool executePoissonSegmentation(
-    const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType);
+  bool executePoissonSegmentation(const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType);
 
   /**
-     * @brief Move the crosshairs
-     * @param windowLastPos
-     * @param windowCurrPos
-     */
+   * @brief Move the crosshairs
+   * @param windowLastPos
+   * @param windowCurrPos
+   */
   void doCrosshairsMove(const ViewHit& hit);
 
   /**
-     * @brief Scroll the crosshairs
-     * @param windowCurrPos
-     * @param scrollOffset
-     */
+   * @brief Scroll the crosshairs
+   * @param windowCurrPos
+   * @param scrollOffset
+   */
   void doCrosshairsScroll(const ViewHit& hit, const glm::vec2& scrollOffset, bool fineScroll);
 
   /**
-     * @brief Segment the image
-     * @param windowLastPos
-     * @param windowCurrPos
-     * @param leftButton
-     */
+   * @brief Segment the image
+   * @param windowLastPos
+   * @param windowCurrPos
+   * @param leftButton
+   */
   void doSegment(const ViewHit& hit, bool swapFgAndBg);
 
   /**
-     * @brief Paint the active segmentation of the active image with the
-     * filled active annotation polygon. Do all of this in the annotation plane.
-     */
+   * @brief Paint the active segmentation of the active image with the
+   * filled active annotation polygon. Do all of this in the annotation plane.
+   */
   void paintActiveSegmentationWithAnnotation();
 
   /**
-     * @brief Adjust image window/level
-     * @param windowLastPos
-     * @param windowCurrPos
-     */
+   * @brief Adjust image window/level
+   * @param windowLastPos
+   * @param windowCurrPos
+   */
   void doWindowLevel(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool fineAdjustment);
 
   /**
-     * @brief Adjust image opacity
-     * @param windowLastPos
-     * @param windowCurrPos
-     */
+   * @brief Adjust image opacity
+   * @param windowLastPos
+   * @param windowCurrPos
+   */
   void doOpacity(const ViewHit& prevHit, const ViewHit& currHit);
 
   /**
-     * @brief 2D translation of the camera (panning)
-     * @param windowLastPos
-     * @param windowCurrPos
-     * @param windowStartPos
-     */
+   * @brief 2D translation of the camera (panning)
+   * @param windowLastPos
+   * @param windowCurrPos
+   * @param windowStartPos
+   */
   void doCameraTranslate2d(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit);
 
   /**
-     * @brief 2D rotation of the camera
-     * @param[in] windowLastPos
-     * @param[in] windowCurrPos
-     * @param[in] windowStartPos
-     * @param[in] rotationOrigin
-     */
-  void doCameraRotate2d(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
-                        const RotationOrigin& rotationOrigin);
+   * @brief 2D rotation of the camera
+   * @param[in] windowLastPos
+   * @param[in] windowCurrPos
+   * @param[in] windowStartPos
+   * @param[in] rotationOrigin
+   */
+  void doCameraRotate2d(
+    const ViewHit& startHit,
+    const ViewHit& prevHit,
+    const ViewHit& currHit,
+    const RotationOrigin& rotationOrigin);
 
   /**
-     * @brief 3D rotation of the camera
-     * @param[in] windowLastPos
-     * @param[in] windowCurrPos
-     * @param[in] windowStartPos
-     * @param[in] rotationOrigin
-     * @param[in] constraint
-     */
-  void doCameraRotate3d(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
-                        const RotationOrigin& rotationOrigin, const AxisConstraint& constraint);
+   * @brief 3D rotation of the camera
+   * @param[in] windowLastPos
+   * @param[in] windowCurrPos
+   * @param[in] windowStartPos
+   * @param[in] rotationOrigin
+   * @param[in] constraint
+   */
+  void doCameraRotate3d(
+    const ViewHit& startHit,
+    const ViewHit& prevHit,
+    const ViewHit& currHit,
+    const RotationOrigin& rotationOrigin,
+    const AxisConstraint& constraint);
 
   /**
-     * @brief 3D rotation of the camera
-     * @param viewUid
-     * @param camera_T_world_rotationDelta
-     */
+   * @brief 3D rotation of the camera
+   * @param viewUid
+   * @param camera_T_world_rotationDelta
+   */
   void doCameraRotate3d(const uuid& viewUid, const glm::quat& camera_T_world_rotationDelta);
 
   /**
-     * @brief Set the forward direction of a view and synchronize with its linked views
-     * @param worldForwardDirection
-     */
+   * @brief Set the forward direction of a view and synchronize with its linked views
+   * @param worldForwardDirection
+   */
   void handleSetViewForwardDirection(const uuid& viewUid, const glm::vec3& worldForwardDirection);
 
   /**
-     * @brief 2D zoom of the camera
-     * @param windowLastPos
-     * @param windowCurrPos
-     * @param windowStartPos
-     * @param zoomBehavior
-     * @param syncZoomForAllViews
-     */
-  void doCameraZoomDrag(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
-                        const ZoomBehavior& zoomBehavior, bool syncZoomForAllViews);
+   * @brief 2D zoom of the camera
+   * @param windowLastPos
+   * @param windowCurrPos
+   * @param windowStartPos
+   * @param zoomBehavior
+   * @param syncZoomForAllViews
+   */
+  void doCameraZoomDrag(
+    const ViewHit& startHit,
+    const ViewHit& prevHit,
+    const ViewHit& currHit,
+    const ZoomBehavior& zoomBehavior,
+    bool syncZoomForAllViews);
 
   /**
-     * @brief doCameraZoomScroll
-     * @param scrollOffset
-     * @param windowStartPos
-     * @param zoomBehavior
-     * @param syncZoomForAllViews
-     */
-  void doCameraZoomScroll(const ViewHit& hit, const glm::vec2& scrollOffset,
-                          const ZoomBehavior& zoomBehavior, bool syncZoomForAllViews);
+   * @brief doCameraZoomScroll
+   * @param scrollOffset
+   * @param windowStartPos
+   * @param zoomBehavior
+   * @param syncZoomForAllViews
+   */
+  void doCameraZoomScroll(
+    const ViewHit& hit,
+    const glm::vec2& scrollOffset,
+    const ZoomBehavior& zoomBehavior,
+    bool syncZoomForAllViews);
 
   /**
-     * @brief Image rotation
-     * @param windowLastPos
-     * @param windowCurrPos
-     * @param windowStartPos
-     * @param inPlane
-     */
+   * @brief Image rotation
+   * @param windowLastPos
+   * @param windowCurrPos
+   * @param windowStartPos
+   * @param inPlane
+   */
   void doImageRotate(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool inPlane);
 
   /**
-     * @brief Image translation
-     * @param windowLastPos
-     * @param windowCurrPos
-     * @param windowStartPos
-     * @param inPlane
-     */
+   * @brief Image translation
+   * @param windowLastPos
+   * @param windowCurrPos
+   * @param windowStartPos
+   * @param inPlane
+   */
   void doImageTranslate(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool inPlane);
 
   /**
-     * @brief Image scale
-     * @param windowLastPos
-     * @param windowCurrPos
-     * @param windowStartPos
-     * @param constrainIsotropic
-     */
-  void doImageScale(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
-                    bool constrainIsotropic);
+   * @brief Image scale
+   * @param windowLastPos
+   * @param windowCurrPos
+   * @param windowStartPos
+   * @param constrainIsotropic
+   */
+  void doImageScale(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool constrainIsotropic);
 
   /**
-     * @brief scrollViewSlice
-     * @param windowCurrPos
-     * @param numSlices
-     */
+   * @brief scrollViewSlice
+   * @param windowCurrPos
+   * @param numSlices
+   */
   void scrollViewSlice(const ViewHit& hit, int numSlices);
 
   /**
-     * @brief moveCrosshairsOnViewSlice
-     * @param windowCurrPos
-     * @param stepX
-     * @param stepY
-     */
+   * @brief moveCrosshairsOnViewSlice
+   * @param windowCurrPos
+   * @param stepX
+   * @param stepY
+   */
   void moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, int stepY);
 
   /**
-     * @brief Rotate the crosshairs frame in the 2D view plane about the crosshairs position
-     * @param[in] windowLastPos
-     * @param[in] windowCurrPos
-     * @param[in] windowStartPos
-     */
-  void doCrosshairsRotate2D(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
-                            bool snapCrosshairs);
+   * @brief Rotate the crosshairs frame in the 2D view plane about the crosshairs position
+   * @param[in] windowLastPos
+   * @param[in] windowCurrPos
+   * @param[in] windowStartPos
+   */
+  void
+  doCrosshairsRotate2D(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool snapCrosshairs);
 
   /// @brief When the mouse is released, transition to a state where crosshairs are not rotating
   /// @todo Could be handled by dedicated state machine for crosshairs
@@ -220,23 +231,24 @@ public:
   void moveCrosshairsToSegLabelCentroid(const uuid& imageUid, size_t labelIndex);
 
   /**
-     * @brief Recenter all views on the selected images. Optionally recenter crosshairs there too.
-     * @param recenterCrosshairs
-     * @param recenterOnCurrentCrosshairsPos
-     * @param resetObliqueOrientation
-     */
-  void recenterViews(const ImageSelection&,
-                     bool recenterCrosshairs,
-                     bool realignCrosshairs,
-                     bool recenterOnCurrentCrosshairsPos,
-                     bool resetObliqueOrientation,
-                     bool resetZoom,
-                     const std::set<uuid>& excludedViews = {});
+   * @brief Recenter all views on the selected images. Optionally recenter crosshairs there too.
+   * @param recenterCrosshairs
+   * @param recenterOnCurrentCrosshairsPos
+   * @param resetObliqueOrientation
+   */
+  void recenterViews(
+    const ImageSelection&,
+    bool recenterCrosshairs,
+    bool realignCrosshairs,
+    bool recenterOnCurrentCrosshairsPos,
+    bool resetObliqueOrientation,
+    bool resetZoom,
+    const std::set<uuid>& excludedViews = {});
 
   /**
-     * @brief Recenter one view
-     * @param viewUid
-     */
+   * @brief Recenter one view
+   * @param viewUid
+   */
   void recenterView(const ImageSelection&, const uuid& viewUid);
 
   void flipImageInterpolation();
@@ -282,12 +294,12 @@ private:
   Rendering& m_rendering;
 
   /**
-     * @brief This function is intended to run prior to cursor callbacks that require an active view.
-     * If there is an active view and the active is NOT equal to the given view UID, then return false.
-     * Otherwise, set the given view as active and return true. For callbacks that require an active view,
-     * the returned false flag indicates that the callback should NOT proceed.
-     *
-     * @param[in] viewUid View UID to check against the active UID.
-     */
+   * @brief This function is intended to run prior to cursor callbacks that require an active view.
+   * If there is an active view and the active is NOT equal to the given view UID, then return
+   * false. Otherwise, set the given view as active and return true. For callbacks that require an
+   * active view, the returned false flag indicates that the callback should NOT proceed.
+   *
+   * @param[in] viewUid View UID to check against the active UID.
+   */
   bool checkAndSetActiveView(const uuid& viewUid);
 };

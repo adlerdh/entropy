@@ -16,6 +16,6 @@ enum class ShaderType : uint32_t
   //    COMPUTE = GL_COMPUTE_SHADER
 };
 
-//using ShaderType_utype = std::underlying_type< ShaderType >::type;
+// using ShaderType_utype = std::underlying_type< ShaderType >::type;
 
 #endif // GL_SHADER_TYPE_H

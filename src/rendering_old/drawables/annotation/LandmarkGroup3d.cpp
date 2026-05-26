@@ -38,8 +38,10 @@ LandmarkGroup3d::Landmark::Landmark(LandmarkGroup3d& lmGroup)
   ,
 
   m_mesh(std::make_shared<BasicMesh>(
-    "landmarkMesh", lmGroup.m_shaderActivator, lmGroup.m_uniformsProvider, lmGroup.m_meshGpuRecord
-  ))
+    "landmarkMesh",
+    lmGroup.m_shaderActivator,
+    lmGroup.m_uniformsProvider,
+    lmGroup.m_meshGpuRecord))
 {
   m_tx->addChild(m_mesh);
 
@@ -70,8 +72,7 @@ LandmarkGroup3d::LandmarkGroup3d(
   std::weak_ptr<LandmarkGroupRecord> landmarkGroupRecord,
   std::weak_ptr<MeshGpuRecord> meshGpuRecord,
   GetterType<std::optional<DrawableScaling> > scalingProvider,
-  GetterType<std::optional<std::pair<glm::mat4, glm::mat4> > > landmarkToWorldTxProvider
-)
+  GetterType<std::optional<std::pair<glm::mat4, glm::mat4> > > landmarkToWorldTxProvider)
   : DrawableBase(std::move(name), DrawableType::Landmark)
   ,
 
@@ -98,17 +99,14 @@ void LandmarkGroup3d::setScalingInfoProvider(GetterType<std::optional<DrawableSc
 }
 
 void LandmarkGroup3d::setLandmarkToWorldTxProvider(
-  GetterType<std::optional<std::pair<glm::mat4, glm::mat4> > > provider
-)
+  GetterType<std::optional<std::pair<glm::mat4, glm::mat4> > > provider)
 {
   m_landmarkToWorldTxProvider = provider;
 }
 
-void LandmarkGroup3d::
-  doUpdate(double, const Viewport& viewport, const Camera& camera, const CoordinateFrame&)
+void LandmarkGroup3d::doUpdate(double, const Viewport& viewport, const Camera& camera, const CoordinateFrame&)
 {
-  if (!m_scalingProvider || !m_landmarkToWorldTxProvider)
-  {
+  if (!m_scalingProvider || !m_landmarkToWorldTxProvider) {
     setVisible(false);
     return;
   }
@@ -116,16 +114,14 @@ void LandmarkGroup3d::
   const auto world_O_landmark = m_landmarkToWorldTxProvider();
   const auto scaling = m_scalingProvider();
 
-  if (!world_O_landmark || !scaling)
-  {
+  if (!world_O_landmark || !scaling) {
     setVisible(false);
     return;
   }
 
   auto lmGroup = m_landmarkGroupRecord.lock();
 
-  if (!lmGroup || !lmGroup->cpuData())
-  {
+  if (!lmGroup || !lmGroup->cpuData()) {
     setVisible(false);
     return;
   }
@@ -141,8 +137,7 @@ void LandmarkGroup3d::
   std::unordered_set<uuids::uuid> landmarksInLandmarkGroup;
 
   // Loop over all points in the landmark group
-  for (const auto& point : cpuRecord->getPoints().getPoints())
-  {
+  for (const auto& point : cpuRecord->getPoints().getPoints()) {
     landmarksInLandmarkGroup.insert(point.uid());
 
     // If the point is not yet a child of this group, then emplace it
@@ -150,14 +145,12 @@ void LandmarkGroup3d::
 
     Landmark& landmark = ret.first->second;
 
-    if (!landmark.m_mesh || !landmark.m_tx)
-    {
+    if (!landmark.m_mesh || !landmark.m_tx) {
       // Error!!!
       continue;
     }
 
-    if (ret.second)
-    {
+    if (ret.second) {
       addChild(landmark.m_tx);
     }
 
@@ -182,26 +175,20 @@ void LandmarkGroup3d::
     const glm::vec3 worldPos = applyMatrix(world_O_landmark->first, point.getPosition());
 
     // Size of one pixel in World space
-    const float worldPixelSize = glm::compMax(
-      worldPixelSizeAtWorldPosition(viewport, camera, worldPos)
-    );
+    const float worldPixelSize = glm::compMax(worldPixelSizeAtWorldPosition(viewport, camera, worldPos));
 
     glm::vec3 scaleFactors{1.0f};
 
-    for (uint32_t i = 0; i < 3; ++i)
-    {
-      switch ((*scaling)[i].m_scalingMode)
-      {
-      case ScalingMode::FixedInPhysicalWorld:
-      {
-        scaleFactors[int(i)] = (*scaling)[i].m_scale;
-        break;
-      }
-      case ScalingMode::FixedInViewPixels:
-      {
-        scaleFactors[int(i)] = (*scaling)[i].m_scale * worldPixelSize;
-        break;
-      }
+    for (uint32_t i = 0; i < 3; ++i) {
+      switch ((*scaling)[i].m_scalingMode) {
+        case ScalingMode::FixedInPhysicalWorld: {
+          scaleFactors[int(i)] = (*scaling)[i].m_scale;
+          break;
+        }
+        case ScalingMode::FixedInViewPixels: {
+          scaleFactors[int(i)] = (*scaling)[i].m_scale * worldPixelSize;
+          break;
+        }
       }
     }
 
@@ -209,10 +196,8 @@ void LandmarkGroup3d::
   }
 
   // Delete child landmarks that are not in the group any more:
-  for (const auto& landmark : m_landmarks)
-  {
-    if (!landmarksInLandmarkGroup.count(landmark.first))
-    {
+  for (const auto& landmark : m_landmarks) {
+    if (!landmarksInLandmarkGroup.count(landmark.first)) {
       // Note: this is safe because rehashing is forbidden
       removeChild(*landmark.second.m_tx);
       m_landmarks.erase(landmark.first);

@@ -20,8 +20,7 @@ DdpFinalPassQuad::DdpFinalPassQuad(
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
   std::array<GLTexture, 2>& frontBlenderTextures,
-  GLTexture& backBlenderTexture
-)
+  GLTexture& backBlenderTexture)
   : FullScreenQuad(name)
   ,
 
@@ -34,12 +33,10 @@ DdpFinalPassQuad::DdpFinalPassQuad(
   , m_backBlenderTexture(backBlenderTexture)
   , m_currentTextureId(0)
 {
-  if (m_uniformsProvider)
-  {
+  if (m_uniformsProvider) {
     m_uniforms = m_uniformsProvider(DDPFinalProgram::name);
   }
-  else
-  {
+  else {
     spdlog::error("Unable to access UniformsProvider in '{}'", m_name);
     throw_debug("Unable to access UniformsProvider");
   }
@@ -52,14 +49,12 @@ void DdpFinalPassQuad::setCurrentTextureId(uint32_t i)
 
 void DdpFinalPassQuad::doRender(const RenderStage& /*stage*/)
 {
-  if (!m_shaderProgramActivator)
-  {
+  if (!m_shaderProgramActivator) {
     spdlog::error("Unable to access ShaderProgramActivator in '{}'", m_name);
     throw_debug("Unable to access ShaderProgramActivator");
   }
 
-  if (auto program = m_shaderProgramActivator(DDPFinalProgram::name))
-  {
+  if (auto program = m_shaderProgramActivator(DDPFinalProgram::name)) {
     m_frontBlenderTextures[m_currentTextureId].bind(s_frontTexSamplerIndex.index);
     m_backBlenderTexture.bind(s_backTexSamplerIndex.index);
 

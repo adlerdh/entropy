@@ -26,12 +26,9 @@ namespace
 static const ImVec4 sk_darkTextColor(0.0f, 0.0f, 0.0f, 1.0f);
 static const ImVec4 sk_lightTextColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-static const ImGuiWindowFlags sk_toolbarWindowFlags = 0 | ImGuiWindowFlags_AlwaysAutoResize
-                                                      | ImGuiWindowFlags_NoFocusOnAppearing
-                                                      | ImGuiWindowFlags_NoResize
-                                                      | ImGuiWindowFlags_NoScrollbar
-                                                      | ImGuiWindowFlags_NoBackground
-                                                      | ImGuiWindowFlags_NoNav;
+static const ImGuiWindowFlags sk_toolbarWindowFlags =
+  0 | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoResize |
+  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
 
 /**
  * @brief renderPlacementContextMenu
@@ -40,18 +37,12 @@ static const ImGuiWindowFlags sk_toolbarWindowFlags = 0 | ImGuiWindowFlags_Alway
  */
 void renderPlacementContextMenu(int& corner, bool& /*isHoriz*/)
 {
-  if (ImGui::BeginMenu("Position"))
-  {
-    if (ImGui::MenuItem("Custom", nullptr, corner == -1))
-      corner = -1;
-    if (ImGui::MenuItem("Top-left", nullptr, corner == 0))
-      corner = 0;
-    if (ImGui::MenuItem("Top-right", nullptr, corner == 1))
-      corner = 1;
-    if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2))
-      corner = 2;
-    if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3))
-      corner = 3;
+  if (ImGui::BeginMenu("Position")) {
+    if (ImGui::MenuItem("Custom", nullptr, corner == -1)) corner = -1;
+    if (ImGui::MenuItem("Top-left", nullptr, corner == 0)) corner = 0;
+    if (ImGui::MenuItem("Top-right", nullptr, corner == 1)) corner = 1;
+    if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2)) corner = 2;
+    if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3)) corner = 3;
     ImGui::EndMenu();
   }
 
@@ -98,8 +89,7 @@ void renderModeToolbar(
 
   static bool s_lastShowState = guiData.m_showModeToolbar;
 
-  if (!guiData.m_showModeToolbar)
-  {
+  if (!guiData.m_showModeToolbar) {
     readjustViewport();
     s_lastShowState = false;
     return;
@@ -125,22 +115,17 @@ void renderModeToolbar(
   const bool isHoriz = guiData.m_isModeToolbarHorizontal;
   const int corner = guiData.m_modeToolbarCorner;
 
-  const ImVec2 buttonSpace
-    = (appData.guiData().m_isModeToolbarHorizontal ? ImVec2(2.0f, 0.0f) : ImVec2(0.0f, 2.0f));
+  const ImVec2 buttonSpace = (appData.guiData().m_isModeToolbarHorizontal ? ImVec2(2.0f, 0.0f) : ImVec2(0.0f, 2.0f));
 
-  if (corner != -1)
-  {
+  if (corner != -1) {
     //        windowFlags |= ImGuiWindowFlags_NoMove;
 
     ImVec2 windowPos(
       (corner & 1) ? io.DisplaySize.x - padSize.x : padSize.x,
-      (corner & 2) ? io.DisplaySize.y - padSize.y : padSize.y
-    );
+      (corner & 2) ? io.DisplaySize.y - padSize.y : padSize.y);
 
-    if (guiData.m_showMainMenuBar)
-    {
-      if (0 == corner || 1 == corner)
-      {
+    if (guiData.m_showMainMenuBar) {
+      if (0 == corner || 1 == corner) {
         windowPos.y += guiData.m_mainMenuBarDims.y;
       }
     }
@@ -161,22 +146,19 @@ void renderModeToolbar(
 
   //    static bool isCollapsed = false;
 
-  /// @note The trick with isCollapsed does not work: the toolbar is too narrow in vertical orientation
-  /// to show the text "Tools".
+  /// @note The trick with isCollapsed does not work: the toolbar is too narrow in vertical
+  /// orientation to show the text "Tools".
 
   const char* title = ((isHoriz /*| isCollapsed*/) ? "Tools###ToolbarWindow" : "###ToolbarWindow");
 
   ImGui::PushID("toolbar");
 
-  if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags))
-  {
+  if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags)) {
     //        isCollapsed = false;
 
-    if (s_lastShowState != guiData.m_showModeToolbar)
-    {
+    if (s_lastShowState != guiData.m_showModeToolbar) {
       const ImVec2 winSize = ImGui::GetContentRegionAvail();
-      guiData.m_modeToolbarDockDims = glm::vec2{winSize.x, winSize.y}
-                                      + 2.0f * glm::vec2{padSize.x, padSize.y};
+      guiData.m_modeToolbarDockDims = glm::vec2{winSize.x, winSize.y} + 2.0f * glm::vec2{padSize.x, padSize.y};
       readjustViewport();
       s_lastShowState = guiData.m_showModeToolbar;
     }
@@ -185,8 +167,7 @@ void renderModeToolbar(
 
     const MouseMode activeMouseMode = getMouseMode();
 
-    for (const MouseMode& mouseMode : AllMouseModes)
-    {
+    for (const MouseMode& mouseMode : AllMouseModes) {
       ImGui::PushID(id);
       {
         bool isModeActive = (activeMouseMode == mouseMode);
@@ -208,9 +189,9 @@ void renderModeToolbar(
             ImGui::SetTooltip("%s", typeString(mouseMode).c_str());
           }
 
-          if (MouseMode::CameraTranslate == mouseMode ||
-              MouseMode::CrosshairsRotate == mouseMode ||
-              MouseMode::Annotate == mouseMode)
+          if (
+            MouseMode::CameraTranslate == mouseMode || MouseMode::CrosshairsRotate == mouseMode ||
+            MouseMode::Annotate == mouseMode)
           {
             // Put a small dummy space after these buttons
             if (isHoriz) {
@@ -244,32 +225,27 @@ void renderModeToolbar(
         ImGui::OpenPopup("imagePopup");
       }
 
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Set active image");
       }
 
       if (ImGui::BeginPopup("imagePopup")) {
         const size_t activeIndex = getActiveImageIndex();
 
-        for (size_t i = 0; i < numImages; ++i)
-        {
+        for (size_t i = 0; i < numImages; ++i) {
           ImGui::PushID(static_cast<int>(i));
           {
             const auto displayAndFileName = getImageDisplayAndFileName(i);
 
             bool isSelected = (i == activeIndex);
-            if (ImGui::MenuItem(displayAndFileName.first.c_str(), "", &isSelected))
-            {
-              if (isSelected)
-              {
+            if (ImGui::MenuItem(displayAndFileName.first.c_str(), "", &isSelected)) {
+              if (isSelected) {
                 setActiveImageIndex(i);
                 ImGui::SetItemDefaultFocus();
               }
             }
 
-            if (ImGui::IsItemHovered())
-            {
+            if (ImGui::IsItemHovered()) {
               ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
             }
           }
@@ -285,17 +261,13 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(
-          ImGuiCol_Button, (guiData.m_showImagePropertiesWindow ? activeColor : inactiveColor)
-        );
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showImagePropertiesWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_SLIDERS, buttonSize))
-          {
+          if (ImGui::Button(ICON_FK_SLIDERS, buttonSize)) {
             guiData.m_showImagePropertiesWindow = !guiData.m_showImagePropertiesWindow;
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Show image properties");
           }
         }
@@ -311,17 +283,14 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(
-          ImGuiCol_Button, (guiData.m_showSegmentationsWindow ? activeColor : inactiveColor)
-        );
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showSegmentationsWindow ? activeColor : inactiveColor));
         {
           if (ImGui::Button(ICON_FK_STAR_O, buttonSize)) // ICON_FK_LIST_OL
           {
             guiData.m_showSegmentationsWindow = !guiData.m_showSegmentationsWindow;
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Show segmentation properties");
           }
         }
@@ -337,17 +306,13 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(
-          ImGuiCol_Button, (guiData.m_showLandmarksWindow ? activeColor : inactiveColor)
-        );
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showLandmarksWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_MAP_MARKER, buttonSize))
-          {
+          if (ImGui::Button(ICON_FK_MAP_MARKER, buttonSize)) {
             guiData.m_showLandmarksWindow = !guiData.m_showLandmarksWindow;
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Show landmark properties");
           }
         }
@@ -363,17 +328,14 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(
-          ImGuiCol_Button, (guiData.m_showAnnotationsWindow ? activeColor : inactiveColor)
-        );
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showAnnotationsWindow ? activeColor : inactiveColor));
         {
           if (ImGui::Button(ICON_FK_OBJECT_UNGROUP, buttonSize)) // ICON_FK_STAR_O
           {
             guiData.m_showAnnotationsWindow = !guiData.m_showAnnotationsWindow;
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Show annotation properties");
           }
         }
@@ -389,17 +351,13 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(
-          ImGuiCol_Button, (guiData.m_showIsosurfacesWindow ? activeColor : inactiveColor)
-        );
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showIsosurfacesWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_SHIP, buttonSize))
-          {
+          if (ImGui::Button(ICON_FK_SHIP, buttonSize)) {
             guiData.m_showIsosurfacesWindow = !guiData.m_showIsosurfacesWindow;
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Show isosurface properties");
           }
         }
@@ -415,17 +373,13 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(
-          ImGuiCol_Button, (guiData.m_showSettingsWindow ? activeColor : inactiveColor)
-        );
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showSettingsWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_COGS, buttonSize))
-          {
+          if (ImGui::Button(ICON_FK_COGS, buttonSize)) {
             guiData.m_showSettingsWindow = !guiData.m_showSettingsWindow;
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Show settings");
           }
         }
@@ -441,17 +395,13 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(
-          ImGuiCol_Button, (guiData.m_showInspectionWindow ? activeColor : inactiveColor)
-        );
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showInspectionWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_EYEDROPPER, buttonSize))
-          {
+          if (ImGui::Button(ICON_FK_EYEDROPPER, buttonSize)) {
             guiData.m_showInspectionWindow = !guiData.m_showInspectionWindow;
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Show cursor inspector");
           }
         }
@@ -473,9 +423,9 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        if (ImGui::Button(ICON_FK_CROSSHAIRS, buttonSize))
-        {
-          // Shift does a "hard" reset of the crosshairs, oblique orientations, rotated crosshairs, and zoom
+        if (ImGui::Button(ICON_FK_CROSSHAIRS, buttonSize)) {
+          // Shift does a "hard" reset of the crosshairs, oblique orientations, rotated crosshairs,
+          // and zoom
           const bool hardReset = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
           const bool recenterCrosshairs = hardReset;
           const bool realignCrosshairs = hardReset;
@@ -491,8 +441,7 @@ void renderModeToolbar(
             resetObliqueOrientation,
             resetZoom);
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Recenter views (C)");
         }
         ++id;
@@ -509,14 +458,12 @@ void renderModeToolbar(
 
         ImGui::PushStyleColor(ImGuiCol_Button, (isOverlayVisible ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_CLONE, buttonSize))
-          {
+          if (ImGui::Button(ICON_FK_CLONE, buttonSize)) {
             isOverlayVisible = !isOverlayVisible;
             setOverlayVisibility(isOverlayVisible);
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Toggle view overlays (O)");
           }
         }
@@ -534,12 +481,10 @@ void renderModeToolbar(
       {
         //                ImGui::PushStyleColor( ImGuiCol_Button, highlightColor );
         {
-          if (ImGui::Button(ICON_FK_CHEVRON_LEFT, buttonSize))
-          {
+          if (ImGui::Button(ICON_FK_CHEVRON_LEFT, buttonSize)) {
             cycleViews(-1);
           }
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Previous layout ([)");
           }
         }
@@ -556,12 +501,10 @@ void renderModeToolbar(
       {
         //                ImGui::PushStyleColor( ImGuiCol_Button, highlightColor );
         {
-          if (ImGui::Button(ICON_FK_CHEVRON_RIGHT, buttonSize))
-          {
+          if (ImGui::Button(ICON_FK_CHEVRON_RIGHT, buttonSize)) {
             cycleViews(1);
           }
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Next layout (])");
           }
         }
@@ -576,13 +519,11 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        if (ImGui::Button(ICON_FK_TH, buttonSize))
-        {
+        if (ImGui::Button(ICON_FK_TH, buttonSize)) {
           openAddLayoutPopup = true;
         }
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Add new layout");
         }
 
@@ -596,11 +537,9 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        if (ImGui::Button(ICON_FK_WINDOW_CLOSE_O, buttonSize))
-        {
+        if (ImGui::Button(ICON_FK_WINDOW_CLOSE_O, buttonSize)) {
           auto& wd = appData.windowData();
-          if (wd.numLayouts() >= 2)
-          {
+          if (wd.numLayouts() >= 2) {
             // Only delete a layout if there are at least two, so that one is left.
             const size_t layoutToDelete = wd.currentLayoutIndex();
             wd.cycleCurrentLayout(-1);
@@ -608,8 +547,7 @@ void renderModeToolbar(
           }
         }
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Remove current layout");
         }
 
@@ -629,13 +567,11 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        if (ImGui::Button(ICON_FK_INFO, buttonSize))
-        {
+        if (ImGui::Button(ICON_FK_INFO, buttonSize)) {
           openAboutDialogPopup = true;
         }
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "About Entropy");
         }
 
@@ -649,11 +585,9 @@ void renderModeToolbar(
 
     // Save the new toolbar size:
     const ImVec2 winSize = ImGui::GetContentRegionAvail();
-    guiData.m_modeToolbarDockDims = glm::vec2{winSize.x, winSize.y}
-                                    + 2.0f * glm::vec2{padSize.x, padSize.y};
+    guiData.m_modeToolbarDockDims = glm::vec2{winSize.x, winSize.y} + 2.0f * glm::vec2{padSize.x, padSize.y};
 
-    if (ImGui::BeginPopupContextWindow())
-    {
+    if (ImGui::BeginPopupContextWindow()) {
       renderPlacementContextMenu(guiData.m_modeToolbarCorner, guiData.m_isModeToolbarHorizontal);
       readjustViewport();
       ImGui::EndPopup();
@@ -677,8 +611,7 @@ void renderModeToolbar(
   ImGui::PopID();
 
   // Shift does a "hard" reset of the crosshairs, oblique orientations, and zoom
-  const bool hardReset = ImGui::IsKeyDown(ImGuiKey_LeftShift)
-                         || ImGui::IsKeyDown(ImGuiKey_RightShift);
+  const bool hardReset = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
   const bool recenterCrosshairs = hardReset;
   const bool realignCrosshairs = hardReset;
   const bool resetObliqueOrientation = hardReset;
@@ -689,12 +622,14 @@ void renderModeToolbar(
   renderAddLayoutModalPopup(
     appData,
     openAddLayoutPopup,
-    [&recenterAllViews, &recenterCrosshairs, &realignCrosshairs, &resetObliqueOrientation, &resetZoom]()
-    {
+    [&recenterAllViews, &recenterCrosshairs, &realignCrosshairs, &resetObliqueOrientation, &resetZoom]() {
       recenterAllViews(
-        recenterCrosshairs, realignCrosshairs, recenterOnCurrentCrosshairsPosition, resetObliqueOrientation, resetZoom);
-    }
-  );
+        recenterCrosshairs,
+        realignCrosshairs,
+        recenterOnCurrentCrosshairsPosition,
+        resetObliqueOrientation,
+        resetZoom);
+    });
 
   renderAboutDialogModalPopup(openAboutDialogPopup);
 }
@@ -709,32 +644,26 @@ void renderSegToolbar(
   const std::function<void(size_t imageIndex, bool set)>& setImageHasActiveSeg,
   const std::function<void(void)>& readjustViewport,
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
-  const std::function<
-    bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
+  const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
     executeGraphCutsSeg,
-  const std::function<
-    bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
-    executePoissonSeg
-)
+  const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
+    executePoissonSeg)
 {
   // Show the segmentation toolbar in either Segmentation mode,
   // in Annotation mode (when the Fill button is also visible),
   // or when the Annotations Window is visible
 
   const bool inSegmentationMode = (MouseMode::Segment == appData.state().mouseMode());
-  const bool inAnnotationMode
-    = (state::annot::isInStateWhereToolbarVisible() && state::annot::showToolbarFillButton());
+  const bool inAnnotationMode = (state::annot::isInStateWhereToolbarVisible() && state::annot::showToolbarFillButton());
 
   GuiData& guiData = appData.guiData();
 
   const auto buttonSize = scaledToolbarButtonSize(appData.windowData().getContentScaleRatios());
   const auto padSize = scaledPad(appData.windowData().getContentScaleRatios());
 
-  guiData.m_showSegToolbar
-    = (inSegmentationMode && !inAnnotationMode && !appData.guiData().m_showAnnotationsWindow);
+  guiData.m_showSegToolbar = (inSegmentationMode && !inAnnotationMode && !appData.guiData().m_showAnnotationsWindow);
 
-  if (!guiData.m_showSegToolbar)
-  {
+  if (!guiData.m_showSegToolbar) {
     readjustViewport();
     return;
   }
@@ -746,46 +675,38 @@ void renderSegToolbar(
   const int corner = guiData.m_segToolbarCorner;
 
   const auto activeImageUid = appData.activeImageUid();
-  if (!activeImageUid)
-  {
+  if (!activeImageUid) {
     spdlog::error("There is no active image to segment");
     return;
   }
 
   const auto activeSegUid = appData.imageToActiveSegUid(*activeImageUid);
-  if (!activeSegUid)
-  {
+  if (!activeSegUid) {
     spdlog::error("There is no active segmentation for image {}", *activeImageUid);
     return;
   }
 
   const Image* activeSeg = appData.seg(*activeSegUid);
-  if (!activeSeg)
-  {
+  if (!activeSeg) {
     spdlog::error("The active segmentation {} is null for image {}", *activeSegUid, *activeImageUid);
     return;
   }
 
   const size_t activeLabelTableIndex = activeSeg->settings().labelTableIndex();
   const auto activeLabelTableUid = appData.labelTableUid(activeLabelTableIndex);
-  if (!activeLabelTableUid)
-  {
+  if (!activeLabelTableUid) {
     spdlog::error("There is no label table for active segmentation {}", *activeSegUid);
     return;
   }
 
   const ParcellationLabelTable* activeLabelTable = appData.labelTable(*activeLabelTableUid);
 
-  if (!activeLabelTable)
-  {
-    spdlog::error(
-      "The label table {} for active segmentation {} is null", *activeLabelTableUid, *activeSegUid
-    );
+  if (!activeLabelTable) {
+    spdlog::error("The label table {} for active segmentation {} is null", *activeLabelTableUid, *activeSegUid);
     return;
   }
 
-  const ImVec2 buttonSpace
-    = (appData.guiData().m_isSegToolbarHorizontal ? ImVec2(2.0f, 0.0f) : ImVec2(0.0f, 2.0f));
+  const ImVec2 buttonSpace = (appData.guiData().m_isSegToolbarHorizontal ? ImVec2(2.0f, 0.0f) : ImVec2(0.0f, 2.0f));
 
   const ImVec4* colors = ImGui::GetStyle().Colors;
   ImVec4 activeColor = colors[ImGuiCol_ButtonActive];
@@ -801,19 +722,15 @@ void renderSegToolbar(
 
   //    ImGuiWindowFlags windowFlags = sk_toolbarWindowFlags;
 
-  if (corner != -1)
-  {
+  if (corner != -1) {
     //        windowFlags |= ImGuiWindowFlags_NoMove;
 
     ImVec2 windowPos = ImVec2(
       (corner & 1) ? io.DisplaySize.x - padSize.x : padSize.x,
-      (corner & 2) ? io.DisplaySize.y - padSize.y : padSize.y
-    );
+      (corner & 2) ? io.DisplaySize.y - padSize.y : padSize.y);
 
-    if (guiData.m_showMainMenuBar)
-    {
-      if (0 == corner || 1 == corner)
-      {
+    if (guiData.m_showMainMenuBar) {
+      if (0 == corner || 1 == corner) {
         windowPos.y += guiData.m_mainMenuBarDims.y;
       }
     }
@@ -832,11 +749,9 @@ void renderSegToolbar(
 
   ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, activeColor);
 
-  const char* title
-    = ((isHoriz /*| isCollapsed*/) ? "Segmentation###SegToolbarWindow" : "###SegToolbarWindow");
+  const char* title = ((isHoriz /*| isCollapsed*/) ? "Segmentation###SegToolbarWindow" : "###SegToolbarWindow");
 
-  if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags))
-  {
+  if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags)) {
     int id = 0;
 
     const size_t fgLabel = appData.settings().foregroundLabel();
@@ -861,18 +776,14 @@ void renderSegToolbar(
     }
 
     ImGui::PushStyleColor(ImGuiCol_Button, fgImGuiColor);
-    ImGui::PushStyleColor(
-      ImGuiCol_Text, (useDarkTextForFgColor ? sk_darkTextColor : sk_lightTextColor)
-    );
+    ImGui::PushStyleColor(ImGuiCol_Text, (useDarkTextForFgColor ? sk_darkTextColor : sk_lightTextColor));
     {
-      if (ImGui::Button(fgButtonLabel.c_str(), buttonSize))
-      {
+      if (ImGui::Button(fgButtonLabel.c_str(), buttonSize)) {
         ImGui::OpenPopup("foregroundLabelPopup");
       }
     }
     ImGui::PopStyleColor(2); // ImGuiCol_Button, ImGuiCol_Text
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("%s", "Select foreground label (<,>)");
     }
 
@@ -881,32 +792,25 @@ void renderSegToolbar(
     }
 
     ImGui::PushStyleColor(ImGuiCol_Button, bgImGuiColor);
-    ImGui::PushStyleColor(
-      ImGuiCol_Text, (useDarkTextForBgColor ? sk_darkTextColor : sk_lightTextColor)
-    );
+    ImGui::PushStyleColor(ImGuiCol_Text, (useDarkTextForBgColor ? sk_darkTextColor : sk_lightTextColor));
     {
-      if (ImGui::Button(bgButtonLabel.c_str(), buttonSize))
-      {
+      if (ImGui::Button(bgButtonLabel.c_str(), buttonSize)) {
         ImGui::OpenPopup("backgroundLabelPopup");
       }
     }
     ImGui::PopStyleColor(2); // ImGuiCol_Button, ImGuiCol_Text
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("%s", "Select background label (shift + <,>)");
     }
 
-    if (activeLabelTable && ImGui::BeginPopup("foregroundLabelPopup"))
-    {
+    if (activeLabelTable && ImGui::BeginPopup("foregroundLabelPopup")) {
       const float sz = ImGui::GetTextLineHeight();
 
-      for (size_t i = 0; i < activeLabelTable->numLabels(); ++i)
-      {
+      for (size_t i = 0; i < activeLabelTable->numLabels(); ++i) {
         const std::string labelName = std::to_string(i) + ") " + activeLabelTable->getName(i);
         const glm::vec3 labelColor = glm::vec3{activeLabelTable->getColor(i)} / 255.0f;
-        const ImU32 labelColorU32 = ImGui::ColorConvertFloat4ToU32(
-          ImVec4(labelColor.r, labelColor.g, labelColor.b, 1.0f)
-        );
+        const ImU32 labelColorU32 =
+          ImGui::ColorConvertFloat4ToU32(ImVec4(labelColor.r, labelColor.g, labelColor.b, 1.0f));
 
         const ImVec2 p = ImGui::GetCursorScreenPos();
         ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + sz, p.y + sz), labelColorU32);
@@ -914,10 +818,8 @@ void renderSegToolbar(
         ImGui::SameLine();
 
         bool isSelected = (fgLabel == i);
-        if (ImGui::MenuItem(labelName.c_str(), "", &isSelected))
-        {
-          if (isSelected)
-          {
+        if (ImGui::MenuItem(labelName.c_str(), "", &isSelected)) {
+          if (isSelected) {
             appData.settings().setForegroundLabel(i, *activeLabelTable);
             ImGui::SetItemDefaultFocus();
           }
@@ -927,17 +829,14 @@ void renderSegToolbar(
       ImGui::EndPopup();
     }
 
-    if (activeLabelTable && ImGui::BeginPopup("backgroundLabelPopup"))
-    {
+    if (activeLabelTable && ImGui::BeginPopup("backgroundLabelPopup")) {
       const float sz = ImGui::GetTextLineHeight();
 
-      for (size_t i = 0; i < activeLabelTable->numLabels(); ++i)
-      {
+      for (size_t i = 0; i < activeLabelTable->numLabels(); ++i) {
         const std::string labelName = std::to_string(i) + ") " + activeLabelTable->getName(i);
         const glm::vec3 labelColor = glm::vec3{activeLabelTable->getColor(i)} / 255.0f;
-        const ImU32 labelColorU32 = ImGui::ColorConvertFloat4ToU32(
-          ImVec4(labelColor.r, labelColor.g, labelColor.b, 1.0f)
-        );
+        const ImU32 labelColorU32 =
+          ImGui::ColorConvertFloat4ToU32(ImVec4(labelColor.r, labelColor.g, labelColor.b, 1.0f));
 
         const ImVec2 p = ImGui::GetCursorScreenPos();
         ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + sz, p.y + sz), labelColorU32);
@@ -945,10 +844,8 @@ void renderSegToolbar(
         ImGui::SameLine();
 
         bool isSelected = (bgLabel == i);
-        if (ImGui::MenuItem(labelName.c_str(), "", &isSelected))
-        {
-          if (isSelected)
-          {
+        if (ImGui::MenuItem(labelName.c_str(), "", &isSelected)) {
+          if (isSelected) {
             appData.settings().setBackgroundLabel(i, *activeLabelTable);
             ImGui::SetItemDefaultFocus();
           }
@@ -964,12 +861,10 @@ void renderSegToolbar(
 
     ImGui::PushID(id);
     {
-      if (ImGui::Button(ICON_FK_RANDOM, buttonSize))
-      {
+      if (ImGui::Button(ICON_FK_RANDOM, buttonSize)) {
         appData.settings().swapForegroundAndBackgroundLabels(*activeLabelTable);
       }
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Swap foreground and background labels");
       }
       ++id;
@@ -991,14 +886,12 @@ void renderSegToolbar(
       bool replaceBgWithFg = appData.settings().replaceBackgroundWithForeground();
       ImGui::PushStyleColor(ImGuiCol_Button, (replaceBgWithFg ? activeColor : inactiveColor));
       {
-        if (ImGui::Button(ICON_FK_PENCIL_SQUARE, buttonSize))
-        {
+        if (ImGui::Button(ICON_FK_PENCIL_SQUARE, buttonSize)) {
           replaceBgWithFg = !replaceBgWithFg;
           appData.settings().setReplaceBackgroundWithForeground(replaceBgWithFg);
         }
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Draw foreground label only on top of background label");
         }
       }
@@ -1009,8 +902,7 @@ void renderSegToolbar(
     ImGui::PopID();
 
     // Only show these segmentation toolbar buttons when in Segmentation mode
-    if (inSegmentationMode)
-    {
+    if (inSegmentationMode) {
       if (isHoriz) {
         ImGui::SameLine();
       }
@@ -1020,14 +912,12 @@ void renderSegToolbar(
         bool use3d = appData.settings().use3dBrush();
         ImGui::PushStyleColor(ImGuiCol_Button, (use3d ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_CUBE, buttonSize))
-          {
+          if (ImGui::Button(ICON_FK_CUBE, buttonSize)) {
             use3d = !use3d;
             appData.settings().setUse3dBrush(use3d);
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", "Set 2D/3D brush");
           }
         }
@@ -1045,14 +935,12 @@ void renderSegToolbar(
       {
         bool roundBrush = appData.settings().useRoundBrush();
 
-        if (ImGui::Button(roundBrush ? ICON_FK_CIRCLE_THIN : ICON_FK_SQUARE_O, buttonSize))
-        {
+        if (ImGui::Button(roundBrush ? ICON_FK_CIRCLE_THIN : ICON_FK_SQUARE_O, buttonSize)) {
           roundBrush = !roundBrush;
           appData.settings().setUseRoundBrush(roundBrush);
         }
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Set round/square brush shape");
         }
 
@@ -1064,13 +952,11 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_BULLSEYE, buttonSize))
-      {
+      if (ImGui::Button(ICON_FK_BULLSEYE, buttonSize)) {
         ImGui::OpenPopup("brushSizePopup");
       }
 
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Brush options");
       }
 
@@ -1084,15 +970,13 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_PLUS_CIRCLE, buttonSize))
-      {
+      if (ImGui::Button(ICON_FK_PLUS_CIRCLE, buttonSize)) {
         /// @todo replace with EntropyApp::cycleBrushSize
         uint32_t brushSizeVox = appData.settings().brushSizeInVoxels();
         brushSizeVox = std::max(brushSizeVox + 1, 1u);
         appData.settings().setBrushSizeInVoxels(brushSizeVox);
       }
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Increase brush size (+)");
       }
 
@@ -1121,8 +1005,7 @@ void renderSegToolbar(
         ImGui::PopStyleColor(1); // ImGuiCol_ButtonActive
       }
 
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Brush size (voxels)");
       }
 
@@ -1130,15 +1013,13 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_MINUS_CIRCLE, buttonSize))
-      {
+      if (ImGui::Button(ICON_FK_MINUS_CIRCLE, buttonSize)) {
         /// @todo replace with EntropyApp::cycleBrushSize
         uint32_t brushSizeVox = appData.settings().brushSizeInVoxels();
         brushSizeVox = std::max(brushSizeVox - 1, 1u);
         appData.settings().setBrushSizeInVoxels(brushSizeVox);
       }
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Decrease brush size (-)");
       }
 
@@ -1150,8 +1031,7 @@ void renderSegToolbar(
       ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
       ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
 
-      if (ImGui::BeginPopup("brushSizePopup"))
-      {
+      if (ImGui::BeginPopup("brushSizePopup")) {
         bool useVoxels = appData.settings().useVoxelBrushSize();
         bool replaceBgWithFg = appData.settings().replaceBackgroundWithForeground();
         bool use3d = appData.settings().use3dBrush();
@@ -1163,16 +1043,13 @@ void renderSegToolbar(
         ImGui::Separator();
         ImGui::Spacing();
 
-        if (useVoxels)
-        {
+        if (useVoxels) {
           uint32_t brushSizeVox = appData.settings().brushSizeInVoxels();
           uint32_t stepSmall = 1;
           uint32_t stepBig = 5;
 
           ImGui::PushItemWidth(120);
-          if (ImGui::InputScalar(
-                " width (vox)##brushSizeVox", ImGuiDataType_U32, &brushSizeVox, &stepSmall, &stepBig
-              ))
+          if (ImGui::InputScalar(" width (vox)##brushSizeVox", ImGuiDataType_U32, &brushSizeVox, &stepSmall, &stepBig))
           {
             static constexpr uint32_t minBrushVox = 1;
             static constexpr uint32_t maxBrushVox = 511;
@@ -1186,7 +1063,8 @@ void renderSegToolbar(
         //                {
         //                    float brushSizeMm = appData.brushSizeInMm();
 
-        //                    if ( ImGui::SliderFloat( "size (mm)##brushSizeMmSlider", &brushSizeMm, 0.001f, 100.000f, "%.3f" ) )
+        //                    if ( ImGui::SliderFloat( "size (mm)##brushSizeMmSlider", &brushSizeMm,
+        //                    0.001f, 100.000f, "%.3f" ) )
         //                    {
         //                        appData.setBrushSizeInMm( brushSizeMm );
         //                    }
@@ -1207,56 +1085,50 @@ void renderSegToolbar(
         //                    appData.setUseVoxelBrushSize( useVoxels );
         //                }
         //                ImGui::SameLine(); ImGui::Dummy( ImVec2( 2.0f, 0.0f ) );
-        //                ImGui::SameLine(); HelpMarker( "Set brush size in units of either voxels or millimeters" );
+        //                ImGui::SameLine(); HelpMarker( "Set brush size in units of either voxels
+        //                or millimeters" );
 
-        if (ImGui::RadioButton("Round", useRound))
-        {
+        if (ImGui::RadioButton("Round", useRound)) {
           useRound = true;
           appData.settings().setUseRoundBrush(useRound);
         }
 
         ImGui::SameLine();
-        if (ImGui::RadioButton("Square", !useRound))
-        {
+        if (ImGui::RadioButton("Square", !useRound)) {
           useRound = false;
           appData.settings().setUseRoundBrush(useRound);
         }
         ImGui::SameLine();
         helpMarker("Set either round or square brush shape");
 
-        if (ImGui::RadioButton("2D", !use3d))
-        {
+        if (ImGui::RadioButton("2D", !use3d)) {
           use3d = false;
           appData.settings().setUse3dBrush(use3d);
         }
 
         ImGui::SameLine();
-        if (ImGui::RadioButton("3D", use3d))
-        {
+        if (ImGui::RadioButton("3D", use3d)) {
           use3d = true;
           appData.settings().setUse3dBrush(use3d);
         }
         ImGui::SameLine();
         helpMarker("Set either 2D (planar) or 3D (volumetric) brush shape");
 
-        if (ImGui::Checkbox("Isotropic brush", &useIso))
-        {
+        if (ImGui::Checkbox("Isotropic brush", &useIso)) {
           appData.settings().setUseIsotropicBrush(useIso);
         }
         ImGui::SameLine();
         helpMarker("Set either anisotropic or isotropic brush dimensions");
 
-        if (ImGui::Checkbox("Replace background with foreground", &replaceBgWithFg))
-        {
+        if (ImGui::Checkbox("Replace background with foreground", &replaceBgWithFg)) {
           appData.settings().setReplaceBackgroundWithForeground(replaceBgWithFg);
         }
         ImGui::SameLine();
         helpMarker(
-          "When enabled, the brush only draws the foreground label on top of the background label"
-        );
+          "When enabled, the brush only draws the foreground label on top of the background "
+          "label");
 
-        if (ImGui::Checkbox("Crosshairs move with brush", &xhairsMove))
-        {
+        if (ImGui::Checkbox("Crosshairs move with brush", &xhairsMove)) {
           appData.settings().setCrosshairsMoveWithBrush(xhairsMove);
         }
         ImGui::SameLine();
@@ -1273,10 +1145,7 @@ void renderSegToolbar(
         double amplitude = appData.settings().graphCutsWeightsAmplitude();
         double sigma = appData.settings().graphCutsWeightsSigma();
 
-        if (ImGui::InputScalar(
-              "Amplitude", ImGuiDataType_Double, &amplitude, nullptr, nullptr, "%.3f"
-            ))
-        {
+        if (ImGui::InputScalar("Amplitude", ImGuiDataType_Double, &amplitude, nullptr, nullptr, "%.3f")) {
           appData.settings().setGraphCutsWeightsAmplitude(amplitude);
         }
         ImGui::SameLine();
@@ -1286,8 +1155,7 @@ void renderSegToolbar(
         //                {
         //                    appData.settings().setGraphCutsWeightsSigma( sigma );
         //                }
-        if (mySliderF64("Std. dev.", &sigma, 0.0, 0.05, "%.3f"))
-        {
+        if (mySliderF64("Std. dev.", &sigma, 0.0, 0.05, "%.3f")) {
           appData.settings().setGraphCutsWeightsSigma(sigma);
         }
         ImGui::SameLine();
@@ -1297,15 +1165,13 @@ void renderSegToolbar(
 
         ImGui::Text("Neighborhood type: ");
         ImGui::SameLine();
-        if (ImGui::RadioButton("6", GraphNeighborhoodType::Neighbors6 == hoodType))
-        {
+        if (ImGui::RadioButton("6", GraphNeighborhoodType::Neighbors6 == hoodType)) {
           hoodType = GraphNeighborhoodType::Neighbors6;
           appData.settings().setGraphCutsNeighborhood(hoodType);
         }
 
         ImGui::SameLine();
-        if (ImGui::RadioButton("26", GraphNeighborhoodType::Neighbors26 == hoodType))
-        {
+        if (ImGui::RadioButton("26", GraphNeighborhoodType::Neighbors26 == hoodType)) {
           hoodType = GraphNeighborhoodType::Neighbors26;
           appData.settings().setGraphCutsNeighborhood(hoodType);
         }
@@ -1336,16 +1202,14 @@ void renderSegToolbar(
 
         ImGui::PushStyleColor(ImGuiCol_Button, (xhairsMove ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(xhairsMove ? ICON_FK_LINK : ICON_FK_CHAIN_BROKEN, buttonSize))
-          {
+          if (ImGui::Button(xhairsMove ? ICON_FK_LINK : ICON_FK_CHAIN_BROKEN, buttonSize)) {
             xhairsMove = !xhairsMove;
             appData.settings().setCrosshairsMoveWithBrush(xhairsMove);
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Crosshairs linked to brush");
         }
 
@@ -1357,13 +1221,11 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_RSS, buttonSize))
-      {
+      if (ImGui::Button(ICON_FK_RSS, buttonSize)) {
         ImGui::OpenPopup("segSyncPopup");
       }
 
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Synchronize drawing of segmentations on multiple images");
       }
 
@@ -1371,19 +1233,16 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_CUBE, buttonSize))
-      {
+      if (ImGui::Button(ICON_FK_CUBE, buttonSize)) {
         const auto imageUid = appData.activeImageUid();
         const auto seedSegUid = appData.imageToActiveSegUid(*imageUid);
 
-        if (imageUid && seedSegUid)
-        {
+        if (imageUid && seedSegUid) {
           executeGraphCutsSeg(*imageUid, *seedSegUid, SeedSegmentationType::Binary);
           updateImageUniforms(*imageUid);
         }
       }
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Execute binary Graph Cuts segmentation");
       }
 
@@ -1391,19 +1250,16 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_CUBES, buttonSize))
-      {
+      if (ImGui::Button(ICON_FK_CUBES, buttonSize)) {
         const auto imageUid = appData.activeImageUid();
         const auto seedSegUid = appData.imageToActiveSegUid(*imageUid);
 
-        if (imageUid && seedSegUid)
-        {
+        if (imageUid && seedSegUid) {
           executeGraphCutsSeg(*imageUid, *seedSegUid, SeedSegmentationType::MultiLabel);
           updateImageUniforms(*imageUid);
         }
       }
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Execute multi-label Graph Cuts segmentation");
       }
 
@@ -1411,19 +1267,15 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
-      if (ImGui::Button(ICON_FK_PLUG, buttonSize))
-      {
-        if (const auto imageUid = appData.activeImageUid())
-        {
-          if (const auto seedSegUid = appData.imageToActiveSegUid(*imageUid))
-          {
+      if (ImGui::Button(ICON_FK_PLUG, buttonSize)) {
+        if (const auto imageUid = appData.activeImageUid()) {
+          if (const auto seedSegUid = appData.imageToActiveSegUid(*imageUid)) {
             executePoissonSeg(*imageUid, *seedSegUid, SeedSegmentationType::Binary);
             updateImageUniforms(*imageUid);
           }
         }
       }
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", "Execute multi-label Poisson segmentation");
       }
     }
@@ -1436,8 +1288,7 @@ void renderSegToolbar(
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
 
-    if (ImGui::BeginPopup("segSyncPopup"))
-    {
+    if (ImGui::BeginPopup("segSyncPopup")) {
       const size_t activeIndex = getActiveImageIndex();
 
       /*
@@ -1478,41 +1329,37 @@ void renderSegToolbar(
       ImGui::Text("Select the active image to segment:");
 
       renderActiveImageSelectionCombo(
-        numImages, getImageDisplayAndFileName, getActiveImageIndex, setActiveImageIndex, false
-      );
+        numImages,
+        getImageDisplayAndFileName,
+        getActiveImageIndex,
+        setActiveImageIndex,
+        false);
 
       ImGui::Separator();
 
       ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 
-      if (ImGui::TreeNode("Synchronize drawing on additional images:"))
-      {
-        for (size_t i = 0; i < numImages; ++i)
-        {
+      if (ImGui::TreeNode("Synchronize drawing on additional images:")) {
+        for (size_t i = 0; i < numImages; ++i) {
           // Active image is not shown
-          if (i == activeIndex)
-            continue;
+          if (i == activeIndex) continue;
 
           const auto displayAndFileName = getImageDisplayAndFileName(i);
 
           // Image is selected if its seg is active
           bool isSelected = getImageHasActiveSeg(i);
 
-          if (ImGui::Selectable(displayAndFileName.first.c_str(), &isSelected))
-          {
-            if (isSelected)
-            {
+          if (ImGui::Selectable(displayAndFileName.first.c_str(), &isSelected)) {
+            if (isSelected) {
               setImageHasActiveSeg(i, true);
               ImGui::SetItemDefaultFocus();
             }
-            else
-            {
+            else {
               setImageHasActiveSeg(i, false);
             }
           }
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
           }
         }
@@ -1530,16 +1377,14 @@ void renderSegToolbar(
 
     ImGui::PopStyleColor(1); // ImGuiCol_Button
 
-    if (ImGui::BeginPopupContextWindow())
-    {
+    if (ImGui::BeginPopupContextWindow()) {
       renderPlacementContextMenu(guiData.m_segToolbarCorner, guiData.m_isSegToolbarHorizontal);
       ImGui::EndPopup();
     }
 
     // Save the new toolbar size:
     const ImVec2 winSize = ImGui::GetContentRegionAvail();
-    guiData.m_segToolbarDockDims = glm::vec2{winSize.x, winSize.y}
-                                   + 2.0f * glm::vec2{padSize.x, padSize.y};
+    guiData.m_segToolbarDockDims = glm::vec2{winSize.x, winSize.y} + 2.0f * glm::vec2{padSize.x, padSize.y};
     readjustViewport();
   }
 
@@ -1559,8 +1404,7 @@ void renderSegToolbar(
 void renderAnnotationToolbar(
   AppData& appData,
   const FrameBounds& mindowFrameBounds,
-  const std::function<void()> paintActiveAnnotation
-)
+  const std::function<void()> paintActiveAnnotation)
 {
   // Always keep the toolbar open by setting this to null
   static bool* toolbarWindowOpen = nullptr;
@@ -1584,16 +1428,14 @@ void renderAnnotationToolbar(
 
   //    ImGuiWindowFlags windowFlags = sk_toolbarWindowFlags;
 
-  if (corner != -1)
-  {
+  if (corner != -1) {
     //        windowFlags |= ImGuiWindowFlags_NoMove;
 
     const ImVec2 windowPos(
       (corner & 1) ? mindowFrameBounds.bounds.xoffset + mindowFrameBounds.bounds.width - padSize.x
                    : mindowFrameBounds.bounds.xoffset + padSize.x,
       (corner & 2) ? mindowFrameBounds.bounds.yoffset + mindowFrameBounds.bounds.height - padSize.y
-                   : mindowFrameBounds.bounds.yoffset + padSize.y
-    );
+                   : mindowFrameBounds.bounds.yoffset + padSize.y);
 
     const ImVec2 windowPosPivot((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
 
@@ -1611,31 +1453,25 @@ void renderAnnotationToolbar(
   ImGui::PushStyleColor(ImGuiCol_TitleBgActive, activeColor);
   ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, activeColor);
 
-  const char* title
-    = ((isHoriz /*| isCollapsed*/) ? "Annotation###AnnotToolbarWindow" : "###AnnotToolbarWindow");
+  const char* title = ((isHoriz /*| isCollapsed*/) ? "Annotation###AnnotToolbarWindow" : "###AnnotToolbarWindow");
 
-  if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags))
-  {
+  if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags)) {
     int id = 0;
 
     ImGui::PushStyleColor(ImGuiCol_Button, inactiveColor); // PUSH color
 
     bool needsSpace = false;
 
-    if (state::annot::showToolbarInsertVertexButton())
-    {
-      if (isHoriz)
-        ImGui::SameLine();
+    if (state::annot::showToolbarInsertVertexButton()) {
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_remove = std::string(ICON_FK_PLUS_SQUARE_O) + " Insert vertex";
 
-        if (ImGui::Button(sk_remove.c_str()))
-        {
+        if (ImGui::Button(sk_remove.c_str())) {
           send_event(state::annot::InsertVertexEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Insert a vertex after the selected polygon vertex");
         }
         ++id;
@@ -1645,27 +1481,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarRemoveSelectedVertexButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarRemoveSelectedVertexButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_remove = std::string(ICON_FK_MINUS_SQUARE_O) + " Remove vertex";
 
-        if (ImGui::Button(sk_remove.c_str()))
-        {
+        if (ImGui::Button(sk_remove.c_str())) {
           send_event(state::annot::RemoveSelectedVertexEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Remove the selected polygon vertex");
         }
         ++id;
@@ -1675,27 +1505,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarUndoButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarUndoButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_cancel = std::string(ICON_FK_UNDO) + " Undo vertex";
 
-        if (ImGui::Button(sk_cancel.c_str()))
-        {
+        if (ImGui::Button(sk_cancel.c_str())) {
           send_event(state::annot::UndoVertexEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Undo the last polygon vertex");
         }
         ++id;
@@ -1705,26 +1529,20 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarCreateButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarCreateButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_addNew = std::string(ICON_FK_PLUS) + " New polygon";
-        if (ImGui::Button(sk_addNew.c_str()))
-        {
+        if (ImGui::Button(sk_addNew.c_str())) {
           send_event(state::annot::CreateNewAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Create a new polygon");
         }
         ++id;
@@ -1734,27 +1552,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarCloseButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarCloseButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_close = std::string(ICON_FK_CIRCLE_O_NOTCH) + " Close polygon";
 
-        if (ImGui::Button(sk_close.c_str()))
-        {
+        if (ImGui::Button(sk_close.c_str())) {
           send_event(state::annot::CloseNewAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Close the polygon");
         }
         ++id;
@@ -1764,27 +1576,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarCompleteButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarCompleteButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_complete = std::string(ICON_FK_CHECK) + " Complete";
 
-        if (ImGui::Button(sk_complete.c_str()))
-        {
+        if (ImGui::Button(sk_complete.c_str())) {
           send_event(state::annot::CompleteNewAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Complete the polygon");
         }
         ++id;
@@ -1794,27 +1600,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarCancelButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarCancelButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_cancel = std::string(ICON_FK_TIMES) + " Cancel";
 
-        if (ImGui::Button(sk_cancel.c_str()))
-        {
+        if (ImGui::Button(sk_cancel.c_str())) {
           send_event(state::annot::CancelNewAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Cancel creating the polygon");
         }
         ++id;
@@ -1824,27 +1624,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarRemoveSelectedAnnotationButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarRemoveSelectedAnnotationButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_remove = std::string(ICON_FK_TRASH_O) + " Remove polygon";
 
-        if (ImGui::Button(sk_remove.c_str()))
-        {
+        if (ImGui::Button(sk_remove.c_str())) {
           send_event(state::annot::RemoveSelectedAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Remove the selected polygon");
         }
         ++id;
@@ -1854,27 +1648,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarCutSelectedAnnotationButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarCutSelectedAnnotationButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_cut = std::string(ICON_FK_SCISSORS) + " Cut";
 
-        if (ImGui::Button(sk_cut.c_str()))
-        {
+        if (ImGui::Button(sk_cut.c_str())) {
           send_event(state::annot::CutSelectedAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Cut the selected polygon to the clipboard");
         }
         ++id;
@@ -1884,27 +1672,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarCopySelectedAnnotationButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarCopySelectedAnnotationButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_copy = std::string(ICON_FK_FILES_O) + " Copy";
 
-        if (ImGui::Button(sk_copy.c_str()))
-        {
+        if (ImGui::Button(sk_copy.c_str())) {
           send_event(state::annot::CopySelectedAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Copy the selected polygon to the clipboard");
         }
         ++id;
@@ -1914,27 +1696,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarPasteSelectedAnnotationButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarPasteSelectedAnnotationButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_paste = std::string(ICON_FK_CLIPBOARD) + " Paste";
 
-        if (ImGui::Button(sk_paste.c_str()))
-        {
+        if (ImGui::Button(sk_paste.c_str())) {
           send_event(state::annot::PasteAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Paste the polygon from the clipboard");
         }
         ++id;
@@ -1944,27 +1720,21 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarFlipAnnotationButtons())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarFlipAnnotationButtons()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_flipHoriz = std::string(ICON_FK_ARROWS_H) + " Flip";
 
-        if (ImGui::Button(sk_flipHoriz.c_str()))
-        {
+        if (ImGui::Button(sk_flipHoriz.c_str())) {
           send_event(state::annot::HorizontallyFlipSelectedAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Flip the polygon horizontally");
         }
         ++id;
@@ -1973,25 +1743,20 @@ void renderAnnotationToolbar(
 
       needsSpace = true;
 
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_flipHoriz = std::string(ICON_FK_ARROWS_V) + " Flip";
 
-        if (ImGui::Button(sk_flipHoriz.c_str()))
-        {
+        if (ImGui::Button(sk_flipHoriz.c_str())) {
           send_event(state::annot::VerticallyFlipSelectedAnnotationEvent());
         }
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", "Flip the polygon vertically");
         }
         ++id;
@@ -2001,30 +1766,22 @@ void renderAnnotationToolbar(
       needsSpace = true;
     }
 
-    if (state::annot::showToolbarFillButton())
-    {
-      if (needsSpace)
-      {
-        if (isHoriz)
-          ImGui::SameLine();
+    if (state::annot::showToolbarFillButton()) {
+      if (needsSpace) {
+        if (isHoriz) ImGui::SameLine();
         ImGui::Dummy(buttonSpace);
       }
 
-      if (isHoriz)
-        ImGui::SameLine();
+      if (isHoriz) ImGui::SameLine();
       ImGui::PushID(id);
       {
         static const std::string sk_fill = std::string(ICON_FK_PAINT_BRUSH) + " Fill";
 
-        if (ImGui::Button(sk_fill.c_str()))
-        {
+        if (ImGui::Button(sk_fill.c_str())) {
           paintActiveAnnotation();
         }
-        if (ImGui::IsItemHovered())
-        {
-          ImGui::SetTooltip(
-            "%s", "Fill the active image segmentation with the selected annotation polygon"
-          );
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", "Fill the active image segmentation with the selected annotation polygon");
         }
         ++id;
       }
@@ -2080,8 +1837,7 @@ void renderAnnotationToolbar(
 
     ImGui::PopStyleColor(1); // ImGuiCol_Button
 
-    if (ImGui::BeginPopupContextWindow())
-    {
+    if (ImGui::BeginPopupContextWindow()) {
       /// @todo Disable placement in top-left corner
       renderPlacementContextMenu(corner, isHoriz);
       ImGui::EndPopup();

@@ -18,8 +18,7 @@
 #include <glm/gtx/vector_query.hpp>
 
 CoordinateFrame::CoordinateFrame(glm::vec3 worldOrigin, glm::quat world_T_frame_rotation)
-  : m_worldFrameOrigin(std::move(worldOrigin))
-  , m_world_T_frame_rotation(std::move(world_T_frame_rotation))
+  : m_worldFrameOrigin(std::move(worldOrigin)), m_world_T_frame_rotation(std::move(world_T_frame_rotation))
 {
 }
 
@@ -31,8 +30,10 @@ CoordinateFrame::CoordinateFrame(glm::vec3 worldOrigin, float angleDegress, cons
 
 CoordinateFrame::CoordinateFrame(
   glm::vec3 worldOrigin,
-  const glm::vec3& frameAxis1, const glm::vec3& worldAxis1,
-  const glm::vec3& frameAxis2, const glm::vec3& worldAxis2)
+  const glm::vec3& frameAxis1,
+  const glm::vec3& worldAxis1,
+  const glm::vec3& frameAxis2,
+  const glm::vec3& worldAxis2)
   : m_worldFrameOrigin(std::move(worldOrigin))
 {
   static constexpr bool k_requireEqualAngles = false;
@@ -56,8 +57,10 @@ void CoordinateFrame::setFrameToWorldRotation(float angleDegrees, const glm::vec
 }
 
 void CoordinateFrame::setFrameToWorldRotation(
-  const glm::vec3& frameAxis1, const glm::vec3& worldAxis1,
-  const glm::vec3& frameAxis2, const glm::vec3& worldAxis2,
+  const glm::vec3& frameAxis1,
+  const glm::vec3& worldAxis1,
+  const glm::vec3& frameAxis2,
+  const glm::vec3& worldAxis2,
   bool requireEqualAngles)
 {
   const float frameAngle = glm::angle(frameAxis1, frameAxis2);
@@ -67,8 +70,10 @@ void CoordinateFrame::setFrameToWorldRotation(
     throw_debug("Angle between input frame and world axes are not equal.")
   }
 
-  if (glm::epsilonEqual(frameAngle, 0.0f, glm::epsilon<float>()) ||
-      glm::epsilonEqual(worldAngle, 0.0f, glm::epsilon<float>())) {
+  if (
+    glm::epsilonEqual(frameAngle, 0.0f, glm::epsilon<float>()) ||
+    glm::epsilonEqual(worldAngle, 0.0f, glm::epsilon<float>()))
+  {
     throw_debug("Input axes are equal.")
   }
 

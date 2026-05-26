@@ -49,7 +49,7 @@ struct SegSettings
 /// @brief Serialized data for a segmentation image
 struct Segmentation
 {
-  fs::path m_segFileName; //!< Segmentation image file
+  fs::path m_segFileName;            //!< Segmentation image file
   serialize::SegSettings m_settings; //!< Segmentation settings
 };
 
@@ -122,8 +122,7 @@ bool saveAffineTxFile(const glm::dmat4& matrix, const fs::path& fileName);
  * @param csvFileName
  * @return
  */
-bool openLandmarkGroupCsvFile(
-  std::map<std::size_t, PointRecord<glm::vec3> >& landmarks, const fs::path& csvFileName);
+bool openLandmarkGroupCsvFile(std::map<std::size_t, PointRecord<glm::vec3> >& landmarks, const fs::path& csvFileName);
 
 /**
  * @brief saveLandmarkGroupCsvFile
@@ -132,7 +131,8 @@ bool openLandmarkGroupCsvFile(
  * @return
  */
 bool saveLandmarkGroupCsvFile(
-  const std::map<std::size_t, PointRecord<glm::vec3> >& landmarks, const fs::path& csvFileName);
+  const std::map<std::size_t, PointRecord<glm::vec3> >& landmarks,
+  const fs::path& csvFileName);
 
 /**
  * @brief Open annotations from a JSON file

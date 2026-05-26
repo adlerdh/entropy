@@ -40,8 +40,7 @@ private:
     None
   };
 
-  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
-    override;
+  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
   bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
   bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
   bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
@@ -72,8 +71,7 @@ private:
   {
     return false;
   }
-  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&)
-    override
+  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&) override
   {
     return false;
   }

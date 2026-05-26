@@ -27,8 +27,8 @@
 struct RenderData
 {
   /**
-    * @brief Uniforms for a single image component
-    */
+   * @brief Uniforms for a single image component
+   */
   struct ImageUniforms
   {
     glm::vec2 cmapSlopeIntercept{1.0f, 0.0f};  // Slope and intercept for image colormap
@@ -50,9 +50,7 @@ struct RenderData
     // (1.0 / dimX, 0, 0), (0, 1.0 / dimY, 0), and (0, 0, 1.0 / dimZ)
     glm::mat3 textureGradientStep{1.0f};
 
-    glm::vec2 slopeIntercept_normalized_T_texture{
-      1.0f, 0.0f
-    }; // Image intensity slope and intercept (with W-L)
+    glm::vec2 slopeIntercept_normalized_T_texture{1.0f, 0.0f}; // Image intensity slope and intercept (with W-L)
 
     // Image intensity slope and intercept (with W-L) for color images
     std::vector<glm::vec2> slopeInterceptRgba_normalized_T_texture{
@@ -61,7 +59,7 @@ struct RenderData
       {1.0f, 0.0f},
       {1.0f, 0.0f}};
 
-    float slope_native_T_texture{1.0f}; // Map texture to native intensity (NO W-L)
+    float slope_native_T_texture{1.0f};          // Map texture to native intensity (NO W-L)
     glm::vec2 largestSlopeIntercept{1.0f, 0.0f}; // Image intensity slope and intercept (giving the largest window)
 
     // Image min and max:
@@ -121,9 +119,9 @@ struct RenderData
   RenderData();
 
   /**
-    * @brief Set the energy of x-rays used for x-ray intensity projection mode
-    * @param energyMeV X-ray energy in MeV
-    */
+   * @brief Set the energy of x-rays used for x-ray intensity projection mode
+   * @param energyMeV X-ray energy in MeV
+   */
   void setXrayEnergy(float energyMeV);
 
   Quad m_quad;
@@ -208,7 +206,8 @@ struct RenderData
   // Background color of 3D views (non-premultiplied by alpha)
   glm::vec4 m_3dBackgroundColor;
 
-  // Flag to make background transparent in 3D views if there is no ray hit on the volume bounding box
+  // Flag to make background transparent in 3D views if there is no ray hit on the volume bounding
+  // box
   bool m_3dTransparentIfNoHit;
 
   glm::vec4 m_crosshairsColor;      // Crosshairs color (non-premultiplied by alpha)
@@ -298,7 +297,7 @@ struct RenderData
   float m_asciiBgAlpha = 1.f;
   bool m_asciiUseColormap = false;
   bool m_asciiSpatialMode = false;       // spatial 3x2 region glyph matching
-  float m_asciiSpatialExponent = 1.0f;  // local-max exponent shaping (1.0 = identity)
+  float m_asciiSpatialExponent = 1.0f;   // local-max exponent shaping (1.0 = identity)
   bool m_asciiAtlasNeedsRebuild = false; // set by UI when charset changes
 
   /// Flashlight radius
@@ -354,7 +353,7 @@ struct RenderData
   {
     IsosurfaceData();
 
-    int numIsos{0u}; //!< Actual number of surfaces
+    int numIsos{0u};           //!< Actual number of surfaces
     std::vector<float> values; //!< Iso-values
     std::vector<float> opacities;
     std::vector<float> edgeStrengths;

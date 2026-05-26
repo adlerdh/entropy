@@ -4,11 +4,7 @@
 #define GLM_FORCE_RADIANS
 
 Projection::Projection()
-  : m_aspectRatio(1.0f)
-  , m_nearDistance(0.1f)
-  , m_farDistance(1000.0f)
-  , m_defaultFov(5.0f)
-  , m_zoom(1.0f)
+  : m_aspectRatio(1.0f), m_nearDistance(0.1f), m_farDistance(1000.0f), m_defaultFov(5.0f), m_zoom(1.0f)
 {
 }
 
@@ -33,8 +29,7 @@ void Projection::setNearDistance(float distance)
 
 void Projection::setFarDistance(float distance)
 {
-  if (0.0f < distance && m_nearDistance < distance)
-  {
+  if (0.0f < distance && m_nearDistance < distance) {
     m_farDistance = distance;
   }
 }

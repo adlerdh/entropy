@@ -73,10 +73,10 @@ AppData::AppData()
 
 AppData::~AppData()
 {
-  //if ( m_ipcHandler.IsAttached() )
+  // if ( m_ipcHandler.IsAttached() )
   //{
-  //    m_ipcHandler.Close();
-  //}
+  //     m_ipcHandler.Close();
+  // }
 }
 
 void AppData::setProject(serialize::EntropyProject project)
@@ -123,66 +123,90 @@ void AppData::loadLinearRampImageColorMaps()
   m_imageColorMaps.emplace(
     greyMapUid,
     ImageColorMap::createLinearImageColorMap(
-      black, white, sk_numSteps, "Linear grey", "Linear grey", "linear_grey_0-100_n1024"
-    )
-  );
+      black,
+      white,
+      sk_numSteps,
+      "Linear grey",
+      "Linear grey",
+      "linear_grey_0-100_n1024"));
 
   m_imageColorMaps.emplace(
     redMapUid,
     ImageColorMap::createLinearImageColorMap(
-      black, red, sk_numSteps, "Linear red", "Linear red", "linear_red_0-100_n1024"
-    )
-  );
+      black,
+      red,
+      sk_numSteps,
+      "Linear red",
+      "Linear red",
+      "linear_red_0-100_n1024"));
 
   m_imageColorMaps.emplace(
     greenMapUid,
     ImageColorMap::createLinearImageColorMap(
-      black, green, sk_numSteps, "Linear green", "Linear green", "linear_green_0-100_n1024"
-    )
-  );
+      black,
+      green,
+      sk_numSteps,
+      "Linear green",
+      "Linear green",
+      "linear_green_0-100_n1024"));
 
   m_imageColorMaps.emplace(
     blueMapUid,
     ImageColorMap::createLinearImageColorMap(
-      black, blue, sk_numSteps, "Linear blue", "Linear blue", "linear_blue_0-100_n1024"
-    )
-  );
+      black,
+      blue,
+      sk_numSteps,
+      "Linear blue",
+      "Linear blue",
+      "linear_blue_0-100_n1024"));
 
   m_imageColorMaps.emplace(
     yellowMapUid,
     ImageColorMap::createLinearImageColorMap(
-      black, yellow, sk_numSteps, "Linear yellow", "Linear yellow", "linear_yellow_0-100_n1024"
-    )
-  );
+      black,
+      yellow,
+      sk_numSteps,
+      "Linear yellow",
+      "Linear yellow",
+      "linear_yellow_0-100_n1024"));
 
   m_imageColorMaps.emplace(
     cyanMapUid,
     ImageColorMap::createLinearImageColorMap(
-      black, cyan, sk_numSteps, "Linear cyan", "Linear cyan", "linear_cyan_0-100_n1024"
-    )
-  );
+      black,
+      cyan,
+      sk_numSteps,
+      "Linear cyan",
+      "Linear cyan",
+      "linear_cyan_0-100_n1024"));
 
   m_imageColorMaps.emplace(
     magentaMapUid,
     ImageColorMap::createLinearImageColorMap(
-      black, magenta, sk_numSteps, "Linear magenta", "Linear magenta", "linear_magenta_0-100_n1024"
-    )
-  );
+      black,
+      magenta,
+      sk_numSteps,
+      "Linear magenta",
+      "Linear magenta",
+      "linear_magenta_0-100_n1024"));
 
   const glm::vec4 transparentBlack{0.0f};
 
   ImageColorMap constantWhiteMap = ImageColorMap::createLinearImageColorMap(
-    white, white, 1024, "Constant white", "Constant white", "constant_white_n1024"
-  );
+    white,
+    white,
+    1024,
+    "Constant white",
+    "Constant white",
+    "constant_white_n1024");
 
   constantWhiteMap.setInterpolationMode(ImageColorMap::InterpolationMode::Nearest);
   constantWhiteMap.setTransparentBorder(true);
   constantWhiteMap.setColorRGBA(0, transparentBlack); // Not sure why this is needed
   m_imageColorMaps.emplace(constantWhiteMapUid, std::move(constantWhiteMap));
 
-  ImageColorMap constantRedMap = ImageColorMap::createLinearImageColorMap(
-    red, red, 1024, "Constant red", "Constant red", "constant_red_n1024"
-  );
+  ImageColorMap constantRedMap =
+    ImageColorMap::createLinearImageColorMap(red, red, 1024, "Constant red", "Constant red", "constant_red_n1024");
 
   constantRedMap.setInterpolationMode(ImageColorMap::InterpolationMode::Nearest);
   constantRedMap.setTransparentBorder(true);
@@ -230,9 +254,7 @@ void AppData::loadDiscreteImageColorMaps()
       "Black, white discrete color map",
       "Black-white_discrete",
       ImageColorMap::InterpolationMode::Nearest,
-      std::vector<glm::vec4>{blackOpaque, white}
-    )
-  );
+      std::vector<glm::vec4>{blackOpaque, white}));
 
   m_imageColorMaps.emplace(
     krMapUid,
@@ -241,9 +263,7 @@ void AppData::loadDiscreteImageColorMaps()
       "Black, red discrete color map",
       "Black-red_discrete",
       ImageColorMap::InterpolationMode::Nearest,
-      std::vector<glm::vec4>{blackOpaque, red}
-    )
-  );
+      std::vector<glm::vec4>{blackOpaque, red}));
 
   m_imageColorMaps.emplace(
     twMapUid,
@@ -252,9 +272,7 @@ void AppData::loadDiscreteImageColorMaps()
       "Transparent-white discrete color map",
       "Transparent-white_discrete",
       ImageColorMap::InterpolationMode::Nearest,
-      std::vector<glm::vec4>{blackTransparent, white}
-    )
-  );
+      std::vector<glm::vec4>{blackTransparent, white}));
 
   m_imageColorMaps.emplace(
     trMapUid,
@@ -263,9 +281,7 @@ void AppData::loadDiscreteImageColorMaps()
       "Transparent-red discrete color map",
       "Transparent-red_discrete",
       ImageColorMap::InterpolationMode::Nearest,
-      std::vector<glm::vec4>{blackTransparent, red}
-    )
-  );
+      std::vector<glm::vec4>{blackTransparent, red}));
 
   m_imageColorMaps.emplace(
     rgbMapUid,
@@ -274,9 +290,7 @@ void AppData::loadDiscreteImageColorMaps()
       "Red-green-blue discrete color map",
       "Red-green-blue_discrete",
       ImageColorMap::InterpolationMode::Nearest,
-      std::vector<glm::vec4>{red, green, blue}
-    )
-  );
+      std::vector<glm::vec4>{red, green, blue}));
 
   m_imageColorMaps.emplace(
     rgbyMapUid,
@@ -285,9 +299,7 @@ void AppData::loadDiscreteImageColorMaps()
       "Red-green-blue-yellow discrete color map",
       "Red-green-blue-yellow_discrete",
       ImageColorMap::InterpolationMode::Nearest,
-      std::vector<glm::vec4>{red, green, blue, yellow}
-    )
-  );
+      std::vector<glm::vec4>{red, green, blue, yellow}));
 
   m_imageColorMaps.emplace(
     rgbycmMapUid,
@@ -296,9 +308,7 @@ void AppData::loadDiscreteImageColorMaps()
       "Red-green-blue-yellow-cyan-magnenta discrete color map",
       "Red-green-blue-yellow-cyan-magenta_discrete",
       ImageColorMap::InterpolationMode::Nearest,
-      std::vector<glm::vec4>{red, green, blue, yellow, cyan, magenta}
-    )
-  );
+      std::vector<glm::vec4>{red, green, blue, yellow, cyan, magenta}));
 
   m_imageColorMaps.emplace(
     rygcbmMapUid,
@@ -307,9 +317,7 @@ void AppData::loadDiscreteImageColorMaps()
       "Red-yellow-green-cyan-blue-magnenta discrete color map",
       "Red-yellow-green-cyan-blue-magnenta_discrete",
       ImageColorMap::InterpolationMode::Nearest,
-      std::vector<glm::vec4>{red, yellow, green, cyan, blue, magenta}
-    )
-  );
+      std::vector<glm::vec4>{red, yellow, green, cyan, blue, magenta}));
 
   m_imageColorMaps.emplace(
     krgbycmwMapUid,
@@ -318,9 +326,7 @@ void AppData::loadDiscreteImageColorMaps()
       "Black-red-green-blue-yellow-cyan-magnenta-white discrete color map",
       "Black-red-green-blue-yellow-cyan-magenta-white_discrete",
       ImageColorMap::InterpolationMode::Nearest,
-      std::vector<glm::vec4>{blackOpaque, red, green, blue, yellow, cyan, magenta, white}
-    )
-  );
+      std::vector<glm::vec4>{blackOpaque, red, green, blue, yellow, cyan, magenta, white}));
 
   m_imageColorMapUidsOrdered.push_back(twMapUid);
   m_imageColorMapUidsOrdered.push_back(trMapUid);
@@ -335,25 +341,20 @@ void AppData::loadDiscreteImageColorMaps()
 
 void AppData::loadImageColorMapsFromDisk()
 {
-  try
-  {
+  try {
     spdlog::debug("Begin loading image color maps from disk");
 
-    auto loadMapsFromDir = [this](const std::string& dir)
-    {
+    auto loadMapsFromDir = [this](const std::string& dir) {
       auto filesystem = cmrc::colormaps::get_filesystem();
       auto dirIter = filesystem.iterate_directory(dir);
 
-      for (const auto& i : dirIter)
-      {
-        if (!i.is_file())
-          continue;
+      for (const auto& i : dirIter) {
+        if (!i.is_file()) continue;
 
         cmrc::file f = filesystem.open(dir + i.filename());
         std::istringstream iss(std::string(f.begin(), f.end()));
 
-        if (auto cmap = ImageColorMap::loadImageColorMap(iss))
-        {
+        if (auto cmap = ImageColorMap::loadImageColorMap(iss)) {
           const auto uid = generateRandomUuid();
           m_imageColorMaps.emplace(uid, std::move(*cmap));
           m_imageColorMapUidsOrdered.push_back(uid);
@@ -365,8 +366,7 @@ void AppData::loadImageColorMapsFromDisk()
     loadMapsFromDir("resources/colormaps/ncl/");
     loadMapsFromDir("resources/colormaps/peter_kovesi/");
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     spdlog::critical("Exception when loading image colormap file: {}", e.what());
   }
 }
@@ -390,8 +390,7 @@ uuid AppData::addImage(Image image)
   m_images.emplace(uid, std::move(image));
   m_imageUidsOrdered.push_back(uid);
 
-  if (1 == m_images.size())
-  {
+  if (1 == m_images.size()) {
     // The first loaded image becomes the reference image and the active image
     m_refImageUid = uid;
     m_activeImageUid = uid;
@@ -405,13 +404,11 @@ uuid AppData::addImage(Image image)
 
 std::optional<uuid> AppData::addSeg(Image seg)
 {
-  if (!isComponentUnsignedInt(seg.header().memoryComponentType()))
-  {
+  if (!isComponentUnsignedInt(seg.header().memoryComponentType())) {
     spdlog::error(
       "Segmentation image {} with non-unsigned integer component type {} cannot be added",
       seg.settings().displayName(),
-      seg.header().memoryComponentTypeAsString()
-    );
+      seg.header().memoryComponentTypeAsString());
     return std::nullopt;
   }
 
@@ -423,13 +420,11 @@ std::optional<uuid> AppData::addSeg(Image seg)
 
 std::optional<uuid> AppData::addDef(Image def)
 {
-  if (def.header().numComponentsPerPixel() < 3)
-  {
+  if (def.header().numComponentsPerPixel() < 3) {
     spdlog::error(
       "Deformation field image {} with only {} components cannot be added",
       def.settings().displayName(),
-      def.header().numComponentsPerPixel()
-    );
+      def.header().numComponentsPerPixel());
     return std::nullopt;
   }
 
@@ -449,8 +444,7 @@ uuid AppData::addLandmarkGroup(LandmarkGroup lmGroup)
 
 std::optional<uuid> AppData::addAnnotation(const uuid& imageUid, Annotation annotation)
 {
-  if (!image(imageUid))
-  {
+  if (!image(imageUid)) {
     return std::nullopt; // invalid image UID
   }
 
@@ -460,8 +454,7 @@ std::optional<uuid> AppData::addAnnotation(const uuid& imageUid, Annotation anno
 
   // If this is the first annotation or there is no active annotation for the image,
   // then make this the active annotation:
-  if (1 == m_imageToAnnotations[imageUid].size() || !imageToActiveAnnotationUid(imageUid))
-  {
+  if (1 == m_imageToAnnotations[imageUid].size() || !imageToActiveAnnotationUid(imageUid)) {
     assignActiveAnnotationUidToImage(imageUid, annotUid);
   }
 
@@ -469,8 +462,10 @@ std::optional<uuid> AppData::addAnnotation(const uuid& imageUid, Annotation anno
 }
 
 bool AppData::addDistanceMap(
-  const uuid& imageUid, ComponentIndexType component,
-  Image distanceMap, double boundaryIsoValue)
+  const uuid& imageUid,
+  ComponentIndexType component,
+  Image distanceMap,
+  double boundaryIsoValue)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
@@ -504,8 +499,7 @@ bool AppData::addDistanceMap(
   return false;
 }
 
-bool AppData::addNoiseEstimate(
-  const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius)
+bool AppData::addNoiseEstimate(const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
@@ -516,8 +510,7 @@ bool AppData::addNoiseEstimate(
 
   const uint32_t numComps = img->header().numComponentsPerPixel();
   if (component >= numComps) {
-    spdlog::error("Invalid component {} for image {}. Cannot set noise estimate for it.",
-                  component, imageUid);
+    spdlog::error("Invalid component {} for image {}. Cannot set noise estimate for it.", component, imageUid);
     return false;
   }
 
@@ -566,8 +559,7 @@ std::optional<uuid> AppData::addIsosurface(const uuid& imageUid, ComponentIndexT
   }
 
   auto it = m_imageToComponentData.find(imageUid);
-  if (std::end(m_imageToComponentData) == it)
-  {
+  if (std::end(m_imageToComponentData) == it) {
     spdlog::error("No component data for image {}; cannot add isosurface", imageUid);
     return std::nullopt;
   }
@@ -583,62 +575,52 @@ std::optional<uuid> AppData::addIsosurface(const uuid& imageUid, ComponentIndexT
   return uid;
 }
 
-//bool AppData::removeImage( const uuid& /*imageUid*/ )
+// bool AppData::removeImage( const uuid& /*imageUid*/ )
 //{
-//    return false;
-//}
+//     return false;
+// }
 
 bool AppData::removeSeg(const uuid& segUid)
 {
   auto segMapIt = m_segs.find(segUid);
-  if (std::end(m_segs) != segMapIt)
-  {
+  if (std::end(m_segs) != segMapIt) {
     // Remove the segmentation
     m_segs.erase(segMapIt);
   }
-  else
-  {
+  else {
     // This segmentation does not exist
     return false;
   }
 
   auto segVecIt = std::find(std::begin(m_segUidsOrdered), std::end(m_segUidsOrdered), segUid);
-  if (std::end(m_segUidsOrdered) != segVecIt)
-  {
+  if (std::end(m_segUidsOrdered) != segVecIt) {
     m_segUidsOrdered.erase(segVecIt);
   }
-  else
-  {
+  else {
     return false;
   }
 
   // Remove segmentation from image-to-segmentation map for all images
-  for (auto& m : m_imageToSegs)
-  {
+  for (auto& m : m_imageToSegs) {
     m.second.erase(std::remove(std::begin(m.second), std::end(m.second), segUid), std::end(m.second));
   }
 
   // Remove it as an active segmentation
-  for (auto it = std::begin(m_imageToActiveSeg); it != std::end(m_imageToActiveSeg);)
-  {
-    if (segUid == it->second)
-    {
+  for (auto it = std::begin(m_imageToActiveSeg); it != std::end(m_imageToActiveSeg);) {
+    if (segUid == it->second) {
       const auto imageUid = it->first;
 
       it = m_imageToActiveSeg.erase(it);
 
       // Set a new active segmentation for this image, if one exists
-      if (m_imageToSegs.count(imageUid) > 0)
-      {
-        if (!m_imageToSegs[imageUid].empty())
-        {
+      if (m_imageToSegs.count(imageUid) > 0) {
+        if (!m_imageToSegs[imageUid].empty()) {
           // Set the image's first segmentation as its active one
           m_imageToActiveSeg[imageUid] = m_imageToSegs[imageUid][0];
         }
       }
     }
-    else
-    {
+    else {
       ++it;
     }
   }
@@ -649,42 +631,34 @@ bool AppData::removeSeg(const uuid& segUid)
 bool AppData::removeDef(const uuid& defUid)
 {
   auto defMapIt = m_defs.find(defUid);
-  if (std::end(m_defs) != defMapIt)
-  {
+  if (std::end(m_defs) != defMapIt) {
     // Remove the deformation
     m_defs.erase(defMapIt);
   }
-  else
-  {
+  else {
     // This deformation does not exist
     return false;
   }
 
   auto defVecIt = std::find(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), defUid);
-  if (std::end(m_defUidsOrdered) != defVecIt)
-  {
+  if (std::end(m_defUidsOrdered) != defVecIt) {
     m_defUidsOrdered.erase(defVecIt);
   }
-  else
-  {
+  else {
     return false;
   }
 
   // Remove deformation from image-to-deformation map for all images
-  for (auto& m : m_imageToDefs)
-  {
+  for (auto& m : m_imageToDefs) {
     m.second.erase(std::remove(std::begin(m.second), std::end(m.second), defUid), std::end(m.second));
   }
 
   // Remove it as an active deformation
-  for (auto it = std::begin(m_imageToActiveDef); it != std::end(m_imageToActiveDef);)
-  {
-    if (defUid == it->second)
-    {
+  for (auto it = std::begin(m_imageToActiveDef); it != std::end(m_imageToActiveDef);) {
+    if (defUid == it->second) {
       it = m_imageToActiveDef.erase(it);
     }
-    else
-    {
+    else {
       ++it;
     }
   }
@@ -695,33 +669,26 @@ bool AppData::removeDef(const uuid& defUid)
 bool AppData::removeAnnotation(const uuid& annotUid)
 {
   auto annotMapIt = m_annotations.find(annotUid);
-  if (std::end(m_annotations) != annotMapIt)
-  {
+  if (std::end(m_annotations) != annotMapIt) {
     // Remove the annotation
     m_annotations.erase(annotMapIt);
   }
-  else
-  {
+  else {
     // This deformation does not exist
     return false;
   }
 
   // Remove annotation from image-to-annotation map
-  for (auto& p : m_imageToAnnotations)
-  {
-    p.second
-      .erase(std::remove(std::begin(p.second), std::end(p.second), annotUid), std::end(p.second));
+  for (auto& p : m_imageToAnnotations) {
+    p.second.erase(std::remove(std::begin(p.second), std::end(p.second), annotUid), std::end(p.second));
   }
 
   // Remove it as the active annotation
-  for (auto it = std::begin(m_imageToActiveAnnotation); it != std::end(m_imageToActiveDef);)
-  {
-    if (annotUid == it->second)
-    {
+  for (auto it = std::begin(m_imageToActiveAnnotation); it != std::end(m_imageToActiveDef);) {
+    if (annotUid == it->second) {
       it = m_imageToActiveAnnotation.erase(it);
     }
-    else
-    {
+    else {
       ++it;
     }
   }
@@ -745,15 +712,15 @@ bool AppData::removeIsosurface(const uuid& imageUid, ComponentIndexType comp, co
   }
 
   auto it = m_imageToComponentData.find(imageUid);
-  if (std::end(m_imageToComponentData) == it || comp >=  it->second.size()) {
+  if (std::end(m_imageToComponentData) == it || comp >= it->second.size()) {
     return false;
   }
 
   auto& data = it->second.at(comp);
 
   data.m_isosurfaceUidsSorted.erase(
-    std::remove(data.m_isosurfaceUidsSorted.begin(), data.m_isosurfaceUidsSorted.end(),
-                isosurfaceUid), data.m_isosurfaceUidsSorted.end());
+    std::remove(data.m_isosurfaceUidsSorted.begin(), data.m_isosurfaceUidsSorted.end(), isosurfaceUid),
+    data.m_isosurfaceUidsSorted.end());
 
   return (data.m_isosurfaces.erase(isosurfaceUid) > 0);
 }
@@ -782,8 +749,8 @@ if (result) {
 }
 */
 
-entropy_expected::expected<std::reference_wrapper<const Image>, std::string>
-AppData::getImage(const uuid& imageUid) const
+entropy_expected::expected<std::reference_wrapper<const Image>, std::string> AppData::getImage(
+  const uuid& imageUid) const
 {
   auto it = m_images.find(imageUid);
   if (std::end(m_images) != it) {
@@ -792,8 +759,7 @@ AppData::getImage(const uuid& imageUid) const
   return entropy_expected::unexpected(std::format("Image {} does not exist", to_string(imageUid)));
 }
 
-entropy_expected::expected<std::reference_wrapper<Image>, std::string>
-AppData::getImage(const uuid& imageUid)
+entropy_expected::expected<std::reference_wrapper<Image>, std::string> AppData::getImage(const uuid& imageUid)
 {
   const auto result = const_cast<const AppData*>(this)->getImage(imageUid);
   if (!result) {
@@ -819,8 +785,7 @@ Image* AppData::seg(const uuid& segUid)
 const Image* AppData::def(const uuid& defUid) const
 {
   auto it = m_defs.find(defUid);
-  if (std::end(m_defs) != it)
-    return &it->second;
+  if (std::end(m_defs) != it) return &it->second;
   return nullptr;
 }
 
@@ -829,8 +794,7 @@ Image* AppData::def(const uuid& defUid)
   return const_cast<Image*>(const_cast<const AppData*>(this)->def(defUid));
 }
 
-const std::map<double, Image>& AppData::distanceMaps(
-  const uuid& imageUid, ComponentIndexType component) const
+const std::map<double, Image>& AppData::distanceMaps(const uuid& imageUid, ComponentIndexType component) const
 {
   // Map of distance maps (keyed by isosurface value) for the component:
   static const std::map<double, Image> EMPTY;
@@ -838,14 +802,12 @@ const std::map<double, Image>& AppData::distanceMaps(
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
   auto compDataIt = m_imageToComponentData.find(imageUid);
-  if (std::end(m_imageToComponentData) != compDataIt)
-  {
+  if (std::end(m_imageToComponentData) != compDataIt) {
     if (component < compDataIt->second.size()) {
       return compDataIt->second.at(component).m_distanceMaps;
     }
     else {
-      spdlog::error("Invalid component {} for image {}. Cannot get distance map for it.",
-                    component, imageUid);
+      spdlog::error("Invalid component {} for image {}. Cannot get distance map for it.", component, imageUid);
       return EMPTY;
     }
   }
@@ -857,8 +819,7 @@ const std::map<double, Image>& AppData::distanceMaps(
   return EMPTY;
 }
 
-const std::map<uint32_t, Image>&
-AppData::noiseEstimates(const uuid& imageUid, ComponentIndexType component) const
+const std::map<uint32_t, Image>& AppData::noiseEstimates(const uuid& imageUid, ComponentIndexType component) const
 {
   // Map of noise estimates (keyed by radius value) for the component:
   static const std::map<uint32_t, Image> EMPTY;
@@ -872,8 +833,7 @@ AppData::noiseEstimates(const uuid& imageUid, ComponentIndexType component) cons
       return compDataIt->second.at(component).m_noiseEstimates;
     }
     else {
-      spdlog::error("Invalid component {} for image {}. Cannot get distance map for it.",
-                    component, imageUid);
+      spdlog::error("Invalid component {} for image {}. Cannot get distance map for it.", component, imageUid);
       return EMPTY;
     }
   }
@@ -985,8 +945,7 @@ bool AppData::updateIsosurfaceMeshGpuRecord(
 const ImageColorMap* AppData::imageColorMap(const uuid& colorMapUid) const
 {
   auto it = m_imageColorMaps.find(colorMapUid);
-  if (std::end(m_imageColorMaps) != it)
-    return &it->second;
+  if (std::end(m_imageColorMaps) != it) return &it->second;
   return nullptr;
 }
 
@@ -998,8 +957,7 @@ ImageColorMap* AppData::imageColorMap(const uuid& colorMapUid)
 const ParcellationLabelTable* AppData::labelTable(const uuid& labelUid) const
 {
   auto it = m_labelTables.find(labelUid);
-  if (std::end(m_labelTables) != it)
-    return &it->second;
+  if (std::end(m_labelTables) != it) return &it->second;
   return nullptr;
 }
 
@@ -1011,8 +969,7 @@ ParcellationLabelTable* AppData::labelTable(const uuid& labelUid)
 const LandmarkGroup* AppData::landmarkGroup(const uuid& lmGroupUid) const
 {
   auto it = m_landmarkGroups.find(lmGroupUid);
-  if (std::end(m_landmarkGroups) != it)
-    return &it->second;
+  if (std::end(m_landmarkGroups) != it) return &it->second;
   return nullptr;
 }
 
@@ -1024,8 +981,7 @@ LandmarkGroup* AppData::landmarkGroup(const uuid& lmGroupUid)
 const Annotation* AppData::annotation(const uuid& annotUid) const
 {
   auto it = m_annotations.find(annotUid);
-  if (std::end(m_annotations) != it)
-    return &it->second;
+  if (std::end(m_annotations) != it) return &it->second;
   return nullptr;
 }
 
@@ -1041,8 +997,7 @@ std::optional<uuid> AppData::refImageUid() const
 
 bool AppData::setRefImageUid(const uuid& uid)
 {
-  if (image(uid))
-  {
+  if (image(uid)) {
     m_refImageUid = uid;
     return true;
   }
@@ -1057,17 +1012,14 @@ std::optional<uuid> AppData::activeImageUid() const
 
 bool AppData::setActiveImageUid(const uuid& uid)
 {
-  if (image(uid))
-  {
+  if (image(uid)) {
     m_activeImageUid = uid;
 
-    if (const auto* table = activeLabelTable())
-    {
+    if (const auto* table = activeLabelTable()) {
       m_settings.adjustActiveSegmentationLabels(*table);
       return true;
     }
-    else
-    {
+    else {
       return false;
     }
   }
@@ -1086,10 +1038,8 @@ void AppData::setRainbowColorsForAllImages()
   const float N = static_cast<float>(m_imageUidsOrdered.size());
   std::size_t i = 0;
 
-  for (const auto& imageUid : m_imageUidsOrdered)
-  {
-    if (Image* img = image(imageUid))
-    {
+  for (const auto& imageUid : m_imageUidsOrdered) {
+    if (Image* img = image(imageUid)) {
       const float a = (1.0f + sk_startHue + static_cast<float>(i) / N);
 
       float fractPart, intPart;
@@ -1101,8 +1051,7 @@ void AppData::setRainbowColorsForAllImages()
       img->settings().setBorderColor(color);
 
       // All image components get the same edge color
-      for (uint32_t c = 0; c < img->header().numComponentsPerPixel(); ++c)
-      {
+      for (uint32_t c = 0; c < img->header().numComponentsPerPixel(); ++c) {
         img->settings().setEdgeColor(c, color);
       }
     }
@@ -1113,16 +1062,12 @@ void AppData::setRainbowColorsForAllImages()
 void AppData::setRainbowColorsForAllLandmarkGroups()
 {
   // Landmark group color is set to image border color
-  for (const auto imageUid : m_imageUidsOrdered)
-  {
+  for (const auto imageUid : m_imageUidsOrdered) {
     const Image* img = image(imageUid);
-    if (!img)
-      continue;
+    if (!img) continue;
 
-    for (const auto lmGroupUid : imageToLandmarkGroupUids(imageUid))
-    {
-      if (auto* lmGroup = landmarkGroup(lmGroupUid))
-      {
+    for (const auto lmGroupUid : imageToLandmarkGroupUids(imageUid)) {
+      if (auto* lmGroup = landmarkGroup(lmGroupUid)) {
         lmGroup->setColorOverride(true);
         lmGroup->setColor(img->settings().borderColor());
       }
@@ -1133,15 +1078,13 @@ void AppData::setRainbowColorsForAllLandmarkGroups()
 bool AppData::moveImageBackwards(const uuid imageUid)
 {
   const auto index = imageIndex(imageUid);
-  if (!index)
-    return false;
+  if (!index) return false;
 
   const long i = static_cast<long>(*index);
 
   // Only allow moving backwards images with index 2 or greater, because
   // image 1 cannot become 0: that is the reference image index.
-  if (2 <= i)
-  {
+  if (2 <= i) {
     auto itFirst = std::begin(m_imageUidsOrdered);
     auto itSecond = std::begin(m_imageUidsOrdered);
 
@@ -1158,20 +1101,17 @@ bool AppData::moveImageBackwards(const uuid imageUid)
 bool AppData::moveImageForwards(const uuid imageUid)
 {
   const auto index = imageIndex(imageUid);
-  if (!index)
-    return false;
+  if (!index) return false;
 
   const long i = static_cast<long>(*index);
   const long N = static_cast<long>(m_imageUidsOrdered.size());
 
-  if (0 == N)
-  {
+  if (0 == N) {
     return false;
   }
 
   // Do not allow moving the reference image or the last image:
-  if (0 < i && i < N - 1)
-  {
+  if (0 < i && i < N - 1) {
     auto itFirst = std::begin(m_imageUidsOrdered);
     auto itSecond = std::begin(m_imageUidsOrdered);
 
@@ -1188,13 +1128,10 @@ bool AppData::moveImageForwards(const uuid imageUid)
 bool AppData::moveImageToBack(const uuid imageUid)
 {
   auto index = imageIndex(imageUid);
-  if (!index)
-    return false;
+  if (!index) return false;
 
-  while (index && *index > 1)
-  {
-    if (!moveImageBackwards(imageUid))
-    {
+  while (index && *index > 1) {
+    if (!moveImageBackwards(imageUid)) {
       return false;
     }
 
@@ -1207,21 +1144,17 @@ bool AppData::moveImageToBack(const uuid imageUid)
 bool AppData::moveImageToFront(const uuid imageUid)
 {
   auto index = imageIndex(imageUid);
-  if (!index)
-    return false;
+  if (!index) return false;
 
   const long i = static_cast<long>(*index);
   const long N = static_cast<long>(m_imageUidsOrdered.size());
 
-  if (0 == N)
-  {
+  if (0 == N) {
     return false;
   }
 
-  while (index && i < N - 1)
-  {
-    if (!moveImageForwards(imageUid))
-    {
+  while (index && i < N - 1) {
+    if (!moveImageForwards(imageUid)) {
       return false;
     }
 
@@ -1234,19 +1167,16 @@ bool AppData::moveImageToFront(const uuid imageUid)
 bool AppData::moveAnnotationBackwards(const uuid imageUid, const uuid annotUid)
 {
   const auto index = annotationIndex(imageUid, annotUid);
-  if (!index)
-    return false;
+  if (!index) return false;
 
   const long i = static_cast<long>(*index);
 
   // Only allow moving backwards annotations with index 1 or greater
-  if (0 == i)
-  {
+  if (0 == i) {
     // Already the backmost index
     return true;
   }
-  else if (1 <= i)
-  {
+  else if (1 <= i) {
     auto& annotList = m_imageToAnnotations.at(imageUid);
     auto itFirst = std::begin(annotList);
     auto itSecond = std::begin(annotList);
@@ -1264,21 +1194,18 @@ bool AppData::moveAnnotationBackwards(const uuid imageUid, const uuid annotUid)
 bool AppData::moveAnnotationForwards(const uuid imageUid, const uuid annotUid)
 {
   const auto index = annotationIndex(imageUid, annotUid);
-  if (!index)
-    return false;
+  if (!index) return false;
 
   const long i = static_cast<long>(*index);
 
   auto& annotList = m_imageToAnnotations.at(imageUid);
   const long N = static_cast<long>(annotList.size());
 
-  if (i == N - 1)
-  {
+  if (i == N - 1) {
     // Already the frontmost index
     return true;
   }
-  else if (i <= N - 2)
-  {
+  else if (i <= N - 2) {
     auto itFirst = std::begin(annotList);
     auto itSecond = std::begin(annotList);
 
@@ -1295,13 +1222,10 @@ bool AppData::moveAnnotationForwards(const uuid imageUid, const uuid annotUid)
 bool AppData::moveAnnotationToBack(const uuid imageUid, const uuid annotUid)
 {
   auto index = annotationIndex(imageUid, annotUid);
-  if (!index)
-    return false;
+  if (!index) return false;
 
-  while (index && *index >= 1)
-  {
-    if (!moveAnnotationBackwards(imageUid, annotUid))
-    {
+  while (index && *index >= 1) {
+    if (!moveAnnotationBackwards(imageUid, annotUid)) {
       return false;
     }
 
@@ -1314,16 +1238,13 @@ bool AppData::moveAnnotationToBack(const uuid imageUid, const uuid annotUid)
 bool AppData::moveAnnotationToFront(const uuid imageUid, const uuid annotUid)
 {
   auto index = annotationIndex(imageUid, annotUid);
-  if (!index)
-    return false;
+  if (!index) return false;
 
   auto& annotList = m_imageToAnnotations.at(imageUid);
   const long N = static_cast<long>(annotList.size());
 
-  while (index && static_cast<long>(*index) < N - 1)
-  {
-    if (!moveAnnotationForwards(imageUid, annotUid))
-    {
+  while (index && static_cast<long>(*index) < N - 1) {
+    if (!moveAnnotationForwards(imageUid, annotUid)) {
       return false;
     }
 
@@ -1417,8 +1338,7 @@ uuid_range_t AppData::isosurfaceUids(const uuid& imageUid, ComponentIndexType co
 std::optional<uuid> AppData::imageToActiveSegUid(const uuid& imageUid) const
 {
   auto it = m_imageToActiveSeg.find(imageUid);
-  if (std::end(m_imageToActiveSeg) != it)
-  {
+  if (std::end(m_imageToActiveSeg) != it) {
     return it->second;
   }
   return std::nullopt;
@@ -1426,17 +1346,14 @@ std::optional<uuid> AppData::imageToActiveSegUid(const uuid& imageUid) const
 
 bool AppData::assignActiveSegUidToImage(const uuid& imageUid, const uuid& activeSegUid)
 {
-  if (image(imageUid) && seg(activeSegUid))
-  {
+  if (image(imageUid) && seg(activeSegUid)) {
     m_imageToActiveSeg[imageUid] = activeSegUid;
 
-    if (const auto* table = activeLabelTable())
-    {
+    if (const auto* table = activeLabelTable()) {
       m_settings.adjustActiveSegmentationLabels(*table);
       return true;
     }
-    else
-    {
+    else {
       return false;
     }
   }
@@ -1446,8 +1363,7 @@ bool AppData::assignActiveSegUidToImage(const uuid& imageUid, const uuid& active
 std::optional<uuid> AppData::imageToActiveDefUid(const uuid& imageUid) const
 {
   auto it = m_imageToActiveDef.find(imageUid);
-  if (std::end(m_imageToActiveDef) != it)
-  {
+  if (std::end(m_imageToActiveDef) != it) {
     return it->second;
   }
   return std::nullopt;
@@ -1455,8 +1371,7 @@ std::optional<uuid> AppData::imageToActiveDefUid(const uuid& imageUid) const
 
 bool AppData::assignActiveDefUidToImage(const uuid& imageUid, const uuid& activeDefUid)
 {
-  if (image(imageUid) && seg(activeDefUid))
-  {
+  if (image(imageUid) && seg(activeDefUid)) {
     m_imageToActiveDef[imageUid] = activeDefUid;
     return true;
   }
@@ -1466,8 +1381,7 @@ bool AppData::assignActiveDefUidToImage(const uuid& imageUid, const uuid& active
 std::vector<uuid> AppData::imageToSegUids(const uuid& imageUid) const
 {
   auto it = m_imageToSegs.find(imageUid);
-  if (std::end(m_imageToSegs) != it)
-  {
+  if (std::end(m_imageToSegs) != it) {
     return it->second;
   }
   return std::vector<uuid>{};
@@ -1476,8 +1390,7 @@ std::vector<uuid> AppData::imageToSegUids(const uuid& imageUid) const
 std::vector<uuid> AppData::imageToDefUids(const uuid& imageUid) const
 {
   auto it = m_imageToDefs.find(imageUid);
-  if (std::end(m_imageToDefs) != it)
-  {
+  if (std::end(m_imageToDefs) != it) {
     return it->second;
   }
   return std::vector<uuid>{};
@@ -1485,23 +1398,19 @@ std::vector<uuid> AppData::imageToDefUids(const uuid& imageUid) const
 
 bool AppData::assignSegUidToImage(const uuid& imageUid, const uuid& segUid)
 {
-  if (image(imageUid) && seg(segUid))
-  {
+  if (image(imageUid) && seg(segUid)) {
     m_imageToSegs[imageUid].emplace_back(segUid);
 
-    if (1 == m_imageToSegs[imageUid].size())
-    {
+    if (1 == m_imageToSegs[imageUid].size()) {
       // If this is the first segmentation, make it the active one
       assignActiveSegUidToImage(imageUid, segUid);
     }
 
-    if (const auto* table = activeLabelTable())
-    {
+    if (const auto* table = activeLabelTable()) {
       m_settings.adjustActiveSegmentationLabels(*table);
       return true;
     }
-    else
-    {
+    else {
       return false;
     }
   }
@@ -1511,12 +1420,10 @@ bool AppData::assignSegUidToImage(const uuid& imageUid, const uuid& segUid)
 
 bool AppData::assignDefUidToImage(const uuid& imageUid, const uuid& defUid)
 {
-  if (image(imageUid) && def(defUid))
-  {
+  if (image(imageUid) && def(defUid)) {
     m_imageToDefs[imageUid].emplace_back(defUid);
 
-    if (1 == m_imageToDefs[imageUid].size())
-    {
+    if (1 == m_imageToDefs[imageUid].size()) {
       // If this is the first deformation field, make it the active one
       assignActiveDefUidToImage(imageUid, defUid);
     }
@@ -1532,19 +1439,15 @@ const std::vector<uuid>& AppData::imageToLandmarkGroupUids(const uuid& imageUid)
   static const std::vector<uuid> sk_emptyUidVector{};
 
   auto it = m_imageToLandmarkGroups.find(imageUid);
-  if (std::end(m_imageToLandmarkGroups) != it)
-  {
+  if (std::end(m_imageToLandmarkGroups) != it) {
     return it->second;
   }
   return sk_emptyUidVector;
 }
 
-bool AppData::assignActiveLandmarkGroupUidToImage(
-  const uuid& imageUid, const uuid& lmGroupUid
-)
+bool AppData::assignActiveLandmarkGroupUidToImage(const uuid& imageUid, const uuid& lmGroupUid)
 {
-  if (image(imageUid) && landmarkGroup(lmGroupUid))
-  {
+  if (image(imageUid) && landmarkGroup(lmGroupUid)) {
     m_imageToActiveLandmarkGroup[imageUid] = lmGroupUid;
     return true;
   }
@@ -1554,8 +1457,7 @@ bool AppData::assignActiveLandmarkGroupUidToImage(
 std::optional<uuid> AppData::imageToActiveLandmarkGroupUid(const uuid& imageUid) const
 {
   auto it = m_imageToActiveLandmarkGroup.find(imageUid);
-  if (std::end(m_imageToActiveLandmarkGroup) != it)
-  {
+  if (std::end(m_imageToActiveLandmarkGroup) != it) {
     return it->second;
   }
   return std::nullopt;
@@ -1563,14 +1465,12 @@ std::optional<uuid> AppData::imageToActiveLandmarkGroupUid(const uuid& imageUid)
 
 bool AppData::assignLandmarkGroupUidToImage(const uuid& imageUid, uuid lmGroupUid)
 {
-  if (image(imageUid) && landmarkGroup(lmGroupUid))
-  {
+  if (image(imageUid) && landmarkGroup(lmGroupUid)) {
     m_imageToLandmarkGroups[imageUid].emplace_back(lmGroupUid);
 
     // If this is the first landmark group for the image, or if the image has no active
     // landmark group, then make this the image's active landmark group:
-    if (1 == m_imageToLandmarkGroups[imageUid].size() || !imageToActiveLandmarkGroupUid(imageUid))
-    {
+    if (1 == m_imageToLandmarkGroups[imageUid].size() || !imageToActiveLandmarkGroupUid(imageUid)) {
       assignActiveLandmarkGroupUidToImage(imageUid, lmGroupUid);
     }
 
@@ -1579,19 +1479,14 @@ bool AppData::assignLandmarkGroupUidToImage(const uuid& imageUid, uuid lmGroupUi
   return false;
 }
 
-bool AppData::assignActiveAnnotationUidToImage(
-  const uuid& imageUid, const std::optional<uuid>& annotUid
-)
+bool AppData::assignActiveAnnotationUidToImage(const uuid& imageUid, const std::optional<uuid>& annotUid)
 {
-  if (image(imageUid))
-  {
-    if (annotUid && annotation(*annotUid))
-    {
+  if (image(imageUid)) {
+    if (annotUid && annotation(*annotUid)) {
       m_imageToActiveAnnotation[imageUid] = *annotUid;
       return true;
     }
-    else if (!annotUid)
-    {
+    else if (!annotUid) {
       m_imageToActiveAnnotation.erase(imageUid);
       return true;
     }
@@ -1602,8 +1497,7 @@ bool AppData::assignActiveAnnotationUidToImage(
 std::optional<uuid> AppData::imageToActiveAnnotationUid(const uuid& imageUid) const
 {
   auto it = m_imageToActiveAnnotation.find(imageUid);
-  if (std::end(m_imageToActiveAnnotation) != it)
-  {
+  if (std::end(m_imageToActiveAnnotation) != it) {
     return it->second;
   }
   return std::nullopt;
@@ -1614,8 +1508,7 @@ const std::list<uuid>& AppData::annotationsForImage(const uuid& imageUid) const
   static const std::list<uuid> sk_emptyUidList{};
 
   auto it = m_imageToAnnotations.find(imageUid);
-  if (std::end(m_imageToAnnotations) != it)
-  {
+  if (std::end(m_imageToAnnotations) != it) {
     return it->second;
   }
   return sk_emptyUidList;
@@ -1623,12 +1516,10 @@ const std::list<uuid>& AppData::annotationsForImage(const uuid& imageUid) const
 
 void AppData::setImageBeingSegmented(const uuid& imageUid, bool set)
 {
-  if (set)
-  {
+  if (set) {
     m_imagesBeingSegmented.insert(imageUid);
   }
-  else
-  {
+  else {
     m_imagesBeingSegmented.erase(imageUid);
   }
 }
@@ -1645,8 +1536,7 @@ uuid_range_t AppData::imagesBeingSegmented() const
 
 std::optional<uuid> AppData::imageUid(std::size_t index) const
 {
-  if (index < m_imageUidsOrdered.size())
-  {
+  if (index < m_imageUidsOrdered.size()) {
     return m_imageUidsOrdered[index];
   }
   return std::nullopt;
@@ -1654,8 +1544,7 @@ std::optional<uuid> AppData::imageUid(std::size_t index) const
 
 std::optional<uuid> AppData::segUid(std::size_t index) const
 {
-  if (index < m_segUidsOrdered.size())
-  {
+  if (index < m_segUidsOrdered.size()) {
     return m_segUidsOrdered.at(index);
   }
   return std::nullopt;
@@ -1663,8 +1552,7 @@ std::optional<uuid> AppData::segUid(std::size_t index) const
 
 std::optional<uuid> AppData::defUid(std::size_t index) const
 {
-  if (index < m_defUidsOrdered.size())
-  {
+  if (index < m_defUidsOrdered.size()) {
     return m_defUidsOrdered.at(index);
   }
   return std::nullopt;
@@ -1672,8 +1560,7 @@ std::optional<uuid> AppData::defUid(std::size_t index) const
 
 std::optional<uuid> AppData::imageColorMapUid(std::size_t index) const
 {
-  if (index < m_imageColorMapUidsOrdered.size())
-  {
+  if (index < m_imageColorMapUidsOrdered.size()) {
     return m_imageColorMapUidsOrdered.at(index);
   }
   return std::nullopt;
@@ -1681,8 +1568,7 @@ std::optional<uuid> AppData::imageColorMapUid(std::size_t index) const
 
 std::optional<uuid> AppData::labelTableUid(std::size_t index) const
 {
-  if (index < m_labelTablesUidsOrdered.size())
-  {
+  if (index < m_labelTablesUidsOrdered.size()) {
     return m_labelTablesUidsOrdered.at(index);
   }
   return std::nullopt;
@@ -1690,8 +1576,7 @@ std::optional<uuid> AppData::labelTableUid(std::size_t index) const
 
 std::optional<uuid> AppData::landmarkGroupUid(std::size_t index) const
 {
-  if (index < m_landmarkGroupUidsOrdered.size())
-  {
+  if (index < m_landmarkGroupUidsOrdered.size()) {
     return m_landmarkGroupUidsOrdered.at(index);
   }
   return std::nullopt;
@@ -1700,10 +1585,8 @@ std::optional<uuid> AppData::landmarkGroupUid(std::size_t index) const
 std::optional<std::size_t> AppData::imageIndex(const uuid& imageUid) const
 {
   std::size_t i = 0;
-  for (const auto& uid : m_imageUidsOrdered)
-  {
-    if (uid == imageUid)
-    {
+  for (const auto& uid : m_imageUidsOrdered) {
+    if (uid == imageUid) {
       return i;
     }
     ++i;
@@ -1713,10 +1596,8 @@ std::optional<std::size_t> AppData::imageIndex(const uuid& imageUid) const
 
 std::optional<std::size_t> AppData::segIndex(const uuid& segUid) const
 {
-  for (std::size_t i = 0; i < m_segUidsOrdered.size(); ++i)
-  {
-    if (m_segUidsOrdered.at(i) == segUid)
-    {
+  for (std::size_t i = 0; i < m_segUidsOrdered.size(); ++i) {
+    if (m_segUidsOrdered.at(i) == segUid) {
       return i;
     }
   }
@@ -1725,10 +1606,8 @@ std::optional<std::size_t> AppData::segIndex(const uuid& segUid) const
 
 std::optional<std::size_t> AppData::defIndex(const uuid& defUid) const
 {
-  for (std::size_t i = 0; i < m_defUidsOrdered.size(); ++i)
-  {
-    if (m_defUidsOrdered.at(i) == defUid)
-    {
+  for (std::size_t i = 0; i < m_defUidsOrdered.size(); ++i) {
+    if (m_defUidsOrdered.at(i) == defUid) {
       return i;
     }
   }
@@ -1737,10 +1616,8 @@ std::optional<std::size_t> AppData::defIndex(const uuid& defUid) const
 
 std::optional<std::size_t> AppData::imageColorMapIndex(const uuid& mapUid) const
 {
-  for (std::size_t i = 0; i < m_imageColorMapUidsOrdered.size(); ++i)
-  {
-    if (m_imageColorMapUidsOrdered.at(i) == mapUid)
-    {
+  for (std::size_t i = 0; i < m_imageColorMapUidsOrdered.size(); ++i) {
+    if (m_imageColorMapUidsOrdered.at(i) == mapUid) {
       return i;
     }
   }
@@ -1749,10 +1626,8 @@ std::optional<std::size_t> AppData::imageColorMapIndex(const uuid& mapUid) const
 
 std::optional<std::size_t> AppData::labelTableIndex(const uuid& tableUid) const
 {
-  for (std::size_t i = 0; i < m_labelTablesUidsOrdered.size(); ++i)
-  {
-    if (m_labelTablesUidsOrdered.at(i) == tableUid)
-    {
+  for (std::size_t i = 0; i < m_labelTablesUidsOrdered.size(); ++i) {
+    if (m_labelTablesUidsOrdered.at(i) == tableUid) {
       return i;
     }
   }
@@ -1761,25 +1636,19 @@ std::optional<std::size_t> AppData::labelTableIndex(const uuid& tableUid) const
 
 std::optional<std::size_t> AppData::landmarkGroupIndex(const uuid& lmGroupUid) const
 {
-  for (std::size_t i = 0; i < m_landmarkGroupUidsOrdered.size(); ++i)
-  {
-    if (m_landmarkGroupUidsOrdered.at(i) == lmGroupUid)
-    {
+  for (std::size_t i = 0; i < m_landmarkGroupUidsOrdered.size(); ++i) {
+    if (m_landmarkGroupUidsOrdered.at(i) == lmGroupUid) {
       return i;
     }
   }
   return std::nullopt;
 }
 
-std::optional<std::size_t> AppData::annotationIndex(
-  const uuid& imageUid, const uuid& annotUid
-) const
+std::optional<std::size_t> AppData::annotationIndex(const uuid& imageUid, const uuid& annotUid) const
 {
   std::size_t i = 0;
-  for (const auto& uid : annotationsForImage(imageUid))
-  {
-    if (annotUid == uid)
-    {
+  for (const auto& uid : annotationsForImage(imageUid)) {
+    if (annotUid == uid) {
       return i;
     }
     ++i;
@@ -1810,12 +1679,10 @@ const Image* AppData::activeImage() const
 Image* AppData::activeSeg()
 {
   const auto imgUid = activeImageUid();
-  if (!imgUid)
-    return nullptr;
+  if (!imgUid) return nullptr;
 
   const auto segUid = imageToActiveSegUid(*imgUid);
-  if (!segUid)
-    return nullptr;
+  if (!segUid) return nullptr;
 
   return seg(*segUid);
 }
@@ -1824,14 +1691,10 @@ ParcellationLabelTable* AppData::activeLabelTable()
 {
   ParcellationLabelTable* activeLabelTable = nullptr;
 
-  if (m_activeImageUid)
-  {
-    if (const auto activeSegUid = imageToActiveSegUid(*m_activeImageUid))
-    {
-      if (const Image* activeSeg = seg(*activeSegUid))
-      {
-        if (const auto tableUid = labelTableUid(activeSeg->settings().labelTableIndex()))
-        {
+  if (m_activeImageUid) {
+    if (const auto activeSegUid = imageToActiveSegUid(*m_activeImageUid)) {
+      if (const Image* activeSeg = seg(*activeSegUid)) {
+        if (const auto tableUid = labelTableUid(activeSeg->settings().labelTableIndex())) {
           activeLabelTable = labelTable(*tableUid);
         }
       }
@@ -1847,12 +1710,9 @@ std::string AppData::getAllImageDisplayNames() const
 
   bool first = true;
 
-  for (const auto& imageUid : imageUidsOrdered())
-  {
-    if (const Image* img = image(imageUid))
-    {
-      if (!first)
-        allImageDisplayNames << ", ";
+  for (const auto& imageUid : imageUidsOrdered()) {
+    if (const Image* img = image(imageUid)) {
+      if (!first) allImageDisplayNames << ", ";
       allImageDisplayNames << img->settings().displayName();
       first = false;
     }
@@ -1917,11 +1777,9 @@ void AppData::saveAllViewWorldCenterPositions()
 
   m_savedViewWorldCenterPositions.clear();
 
-  for (const auto& layout : m_windowData.layouts())
-  {
+  for (const auto& layout : m_windowData.layouts()) {
     MapViewUidToCenterPos m;
-    for (const auto& [viewUid, view] : layout.views())
-    {
+    for (const auto& [viewUid, view] : layout.views()) {
       if (view) {
         // const glm::vec4 worldPos{helper::worldOrigin(view->camera()), 1};
         // const glm::vec4 refSubjectPos = refSubject_T_world * worldPos;
@@ -1936,13 +1794,14 @@ void AppData::saveAllViewWorldCenterPositions()
   }
 
   // spdlog::info("\nSAVING");
-  // for (const auto& [viewUid, view] : m_windowData.layouts().at(m_windowData.currentLayoutIndex()).views()) {
+  // for (const auto& [viewUid, view] :
+  // m_windowData.layouts().at(m_windowData.currentLayoutIndex()).views()) {
   //   // const glm::vec4 worldPos{helper::worldOrigin(view->camera()), 1};
   //   // const glm::vec4 refSubjectPos = refSubject_T_world * worldPos;
   //   // spdlog::info("{} : {}", viewUid, glm::to_string(refSubjectPos));
 
-  //   const glm::vec4 anatomyPos = glm::inverse(view->camera().camera_T_anatomy()) * glm::vec4{0, 0, 0, 1};
-  //   spdlog::info("{} : {}", viewUid, glm::to_string(glm::vec3{anatomyPos}));
+  //   const glm::vec4 anatomyPos = glm::inverse(view->camera().camera_T_anatomy()) * glm::vec4{0,
+  //   0, 0, 1}; spdlog::info("{} : {}", viewUid, glm::to_string(glm::vec3{anatomyPos}));
   // }
 }
 
@@ -1955,14 +1814,12 @@ void AppData::restoreAllViewWorldCenterPositions()
 
   // const glm::mat4 world_T_refSubject = img->transformations().worldDef_T_subject();
 
-  for (std::size_t layoutIndex = 0; layoutIndex < m_savedViewWorldCenterPositions.size(); ++layoutIndex)
-  {
+  for (std::size_t layoutIndex = 0; layoutIndex < m_savedViewWorldCenterPositions.size(); ++layoutIndex) {
     const auto& mapViewUidToWorldCameraPos = m_savedViewWorldCenterPositions.at(layoutIndex);
 
-    //for (const auto& [viewUid, refSubjectPos] : mapViewUidToWorldCameraPos) {
+    // for (const auto& [viewUid, refSubjectPos] : mapViewUidToWorldCameraPos) {
     for (const auto& [viewUid, anatomyPos] : mapViewUidToWorldCameraPos) {
-      if (View* view = m_windowData.getView(viewUid))
-      {
+      if (View* view = m_windowData.getView(viewUid)) {
         // const glm::vec4 worldPos = world_T_refSubject * glm::vec4{refSubjectPos, 1};
         // helper::setCameraOrigin(view->camera(), glm::vec3{worldPos / worldPos.w});
 
@@ -1976,7 +1833,8 @@ void AppData::restoreAllViewWorldCenterPositions()
   // spdlog::info("\nRESTORING");
   // const glm::mat4 refSubject_T_world = img->transformations().subject_T_worldDef();
 
-  // for (const auto& [viewUid, view] : m_windowData.layouts().at(m_windowData.currentLayoutIndex()).views())
+  // for (const auto& [viewUid, view] :
+  // m_windowData.layouts().at(m_windowData.currentLayoutIndex()).views())
   // {
   //   const glm::vec4 worldPos{helper::worldOrigin(view->camera()), 1};
   //   const glm::vec4 refSubjectPos = refSubject_T_world * worldPos;

@@ -18,8 +18,7 @@ DdpBlendPassQuad::DdpBlendPassQuad(
   const std::string& name,
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
-  std::array<GLTexture, 2>& backTempTextures
-)
+  std::array<GLTexture, 2>& backTempTextures)
   : FullScreenQuad(name)
   ,
 
@@ -31,12 +30,10 @@ DdpBlendPassQuad::DdpBlendPassQuad(
   m_backTempTextures(backTempTextures)
   , m_currentTextureId(0)
 {
-  if (m_uniformsProvider)
-  {
+  if (m_uniformsProvider) {
     m_uniforms = m_uniformsProvider(DDPBlendProgram::name);
   }
-  else
-  {
+  else {
     throw_debug("Unable to access UniformsProvider");
   }
 }
@@ -48,13 +45,11 @@ void DdpBlendPassQuad::setCurrentTextureId(uint32_t i)
 
 void DdpBlendPassQuad::doRender(const RenderStage& /*stage*/)
 {
-  if (!m_shaderProgramActivator)
-  {
+  if (!m_shaderProgramActivator) {
     throw_debug("Unable to access ShaderProgramActivator");
   }
 
-  if (auto program = m_shaderProgramActivator(DDPBlendProgram::name))
-  {
+  if (auto program = m_shaderProgramActivator(DDPBlendProgram::name)) {
     m_backTempTextures[m_currentTextureId].bind(s_tempTexSamplerIndex.index);
     m_uniforms.setValue(DDPBlendProgram::frag::tempTexture, s_tempTexSamplerIndex);
 

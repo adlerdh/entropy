@@ -54,7 +54,7 @@ int myImFormatString(char* buf, size_t buf_size, const char* fmt, ...)
     return w;
   }
 
-  if (-1 == w || (int) buf_size <= w) {
+  if (-1 == w || (int)buf_size <= w) {
     w = static_cast<int>(buf_size) - 1;
   }
 

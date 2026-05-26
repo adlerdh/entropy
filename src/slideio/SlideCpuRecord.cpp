@@ -15,11 +15,7 @@ namespace slideio
 {
 
 SlideCpuRecord::SlideCpuRecord(SlideHeader header, SlideProperties props)
-  : m_header(std::move(header))
-  , m_properties(std::move(props))
-  , m_transformation()
-  , m_fileLevels()
-  , m_createdLevels()
+  : m_header(std::move(header)), m_properties(std::move(props)), m_transformation(), m_fileLevels(), m_createdLevels()
 {
 }
 
@@ -80,8 +76,7 @@ size_t SlideCpuRecord::numCreatedLevels() const
 
 const SlideLevel& SlideCpuRecord::fileLevel(size_t i) const
 {
-  if (i < m_fileLevels.size())
-  {
+  if (i < m_fileLevels.size()) {
     return m_fileLevels.at(i);
   }
 
@@ -92,8 +87,7 @@ const SlideLevel& SlideCpuRecord::fileLevel(size_t i) const
 
 const SlideLevel& SlideCpuRecord::createdLevel(size_t i) const
 {
-  if (i < m_createdLevels.size())
-  {
+  if (i < m_createdLevels.size()) {
     return m_createdLevels.at(i);
   }
 

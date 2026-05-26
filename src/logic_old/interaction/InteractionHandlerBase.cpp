@@ -6,10 +6,7 @@
 #include <QSwipeGesture>
 
 InteractionHandlerBase::InteractionHandlerBase(const InteractionHandlerType& type)
-  : m_type(type)
-  , m_allViewsUpdater(nullptr)
-  , m_myViewUpdater(nullptr)
-  , m_updatesViewsOnEventHandled(true)
+  : m_type(type), m_allViewsUpdater(nullptr), m_myViewUpdater(nullptr), m_updatesViewsOnEventHandled(true)
 {
 }
 
@@ -29,11 +26,11 @@ void InteractionHandlerBase::setMyViewUpdater(MyViewUpdater updater)
 }
 
 bool InteractionHandlerBase::handleMouseDoubleClickEvent(
-  QMouseEvent* event, const Viewport& viewport, const Camera& camera
-)
+  QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera& camera)
 {
-  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
-  {
+  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/) {
     return false;
   }
 
@@ -45,12 +42,9 @@ bool InteractionHandlerBase::handleMouseDoubleClickEvent(
   return handled;
 }
 
-bool InteractionHandlerBase::handleMouseMoveEvent(
-  QMouseEvent* event, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::handleMouseMoveEvent(QMouseEvent* event, const Viewport& viewport, const Camera& camera)
 {
-  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
-  {
+  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/) {
     return false;
   }
 
@@ -62,12 +56,9 @@ bool InteractionHandlerBase::handleMouseMoveEvent(
   return handled;
 }
 
-bool InteractionHandlerBase::handleMousePressEvent(
-  QMouseEvent* event, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::handleMousePressEvent(QMouseEvent* event, const Viewport& viewport, const Camera& camera)
 {
-  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
-  {
+  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/) {
     return false;
   }
 
@@ -79,12 +70,9 @@ bool InteractionHandlerBase::handleMousePressEvent(
   return handled;
 }
 
-bool InteractionHandlerBase::handleMouseReleaseEvent(
-  QMouseEvent* event, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::handleMouseReleaseEvent(QMouseEvent* event, const Viewport& viewport, const Camera& camera)
 {
-  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
-  {
+  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/) {
     return false;
   }
 
@@ -96,12 +84,9 @@ bool InteractionHandlerBase::handleMouseReleaseEvent(
   return handled;
 }
 
-bool InteractionHandlerBase::handleTabletEvent(
-  QTabletEvent* event, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::handleTabletEvent(QTabletEvent* event, const Viewport& viewport, const Camera& camera)
 {
-  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/)
-  {
+  if (!event /*|| ! (Qt::MouseEventNotSynthesized & event->source())*/) {
     return false;
   }
 
@@ -113,12 +98,9 @@ bool InteractionHandlerBase::handleTabletEvent(
   return handled;
 }
 
-bool InteractionHandlerBase::handleWheelEvent(
-  QWheelEvent* event, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::handleWheelEvent(QWheelEvent* event, const Viewport& viewport, const Camera& camera)
 {
-  if (!event)
-  {
+  if (!event) {
     return false;
   }
 
@@ -130,54 +112,39 @@ bool InteractionHandlerBase::handleWheelEvent(
   return handled;
 }
 
-bool InteractionHandlerBase::dispatchGestureEvent(
-  QGestureEvent* event, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::dispatchGestureEvent(QGestureEvent* event, const Viewport& viewport, const Camera& camera)
 {
-  if (!event)
-  {
+  if (!event) {
     return false;
   }
 
   bool handled = false;
 
-  if (QGesture* swipe = event->gesture(Qt::SwipeGesture))
-  {
-    if ((handled |= handleSwipeGesture(dynamic_cast<QSwipeGesture*>(swipe), viewport, camera)))
-    {
+  if (QGesture* swipe = event->gesture(Qt::SwipeGesture)) {
+    if ((handled |= handleSwipeGesture(dynamic_cast<QSwipeGesture*>(swipe), viewport, camera))) {
       event->accept(Qt::SwipeGesture);
     }
   }
-  else if (QGesture* pan = event->gesture(Qt::PanGesture))
-  {
-    if ((handled |= handlePanGesture(dynamic_cast<QPanGesture*>(pan), viewport, camera)))
-    {
+  else if (QGesture* pan = event->gesture(Qt::PanGesture)) {
+    if ((handled |= handlePanGesture(dynamic_cast<QPanGesture*>(pan), viewport, camera))) {
       event->accept(Qt::PanGesture);
     }
   }
 
-  if (QGesture* pinch = event->gesture(Qt::PinchGesture))
-  {
-    if ((handled |= handlePinchGesture(dynamic_cast<QPinchGesture*>(pinch), viewport, camera)))
-    {
+  if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
+    if ((handled |= handlePinchGesture(dynamic_cast<QPinchGesture*>(pinch), viewport, camera))) {
       event->accept(Qt::PinchGesture);
     }
   }
 
-  if (QGesture* tap = event->gesture(Qt::TapGesture))
-  {
-    if ((handled |= handleTapGesture(dynamic_cast<QTapGesture*>(tap), viewport, camera)))
-    {
+  if (QGesture* tap = event->gesture(Qt::TapGesture)) {
+    if ((handled |= handleTapGesture(dynamic_cast<QTapGesture*>(tap), viewport, camera))) {
       event->accept(Qt::TapGesture);
     }
   }
 
-  if (QGesture* tapAndHold = event->gesture(Qt::TapAndHoldGesture))
-  {
-    if ((handled
-         |= handleTapAndHoldGesture(dynamic_cast<QTapAndHoldGesture*>(tapAndHold), viewport, camera)
-        ))
-    {
+  if (QGesture* tapAndHold = event->gesture(Qt::TapAndHoldGesture)) {
+    if ((handled |= handleTapAndHoldGesture(dynamic_cast<QTapAndHoldGesture*>(tapAndHold), viewport, camera))) {
       event->accept(Qt::TapGesture);
     }
   }
@@ -187,12 +154,9 @@ bool InteractionHandlerBase::dispatchGestureEvent(
   return handled;
 }
 
-bool InteractionHandlerBase::handlePanGesture(
-  QPanGesture* gesture, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::handlePanGesture(QPanGesture* gesture, const Viewport& viewport, const Camera& camera)
 {
-  if (!gesture)
-  {
+  if (!gesture) {
     return false;
   }
 
@@ -202,12 +166,9 @@ bool InteractionHandlerBase::handlePanGesture(
   return handled;
 }
 
-bool InteractionHandlerBase::handlePinchGesture(
-  QPinchGesture* gesture, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::handlePinchGesture(QPinchGesture* gesture, const Viewport& viewport, const Camera& camera)
 {
-  if (!gesture)
-  {
+  if (!gesture) {
     return false;
   }
 
@@ -217,12 +178,9 @@ bool InteractionHandlerBase::handlePinchGesture(
   return handled;
 }
 
-bool InteractionHandlerBase::handleSwipeGesture(
-  QSwipeGesture* gesture, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::handleSwipeGesture(QSwipeGesture* gesture, const Viewport& viewport, const Camera& camera)
 {
-  if (!gesture)
-  {
+  if (!gesture) {
     return false;
   }
 
@@ -232,12 +190,9 @@ bool InteractionHandlerBase::handleSwipeGesture(
   return handled;
 }
 
-bool InteractionHandlerBase::handleTapGesture(
-  QTapGesture* gesture, const Viewport& viewport, const Camera& camera
-)
+bool InteractionHandlerBase::handleTapGesture(QTapGesture* gesture, const Viewport& viewport, const Camera& camera)
 {
-  if (!gesture)
-  {
+  if (!gesture) {
     return false;
   }
 
@@ -248,11 +203,11 @@ bool InteractionHandlerBase::handleTapGesture(
 }
 
 bool InteractionHandlerBase::handleTapAndHoldGesture(
-  QTapAndHoldGesture* gesture, const Viewport& viewport, const Camera& camera
-)
+  QTapAndHoldGesture* gesture,
+  const Viewport& viewport,
+  const Camera& camera)
 {
-  if (!gesture)
-  {
+  if (!gesture) {
     return false;
   }
 
@@ -269,15 +224,13 @@ void InteractionHandlerBase::setUpdatesViewsOnEventHandled(bool doUpdate)
 
 void InteractionHandlerBase::viewUpdater(bool eventHandled)
 {
-  if (m_updatesViewsOnEventHandled && eventHandled)
-  {
-    /// @todo Substitute this with explicit rules for when to update all views versus just this view:
-    if (m_allViewsUpdater)
-    {
+  if (m_updatesViewsOnEventHandled && eventHandled) {
+    /// @todo Substitute this with explicit rules for when to update all views versus just this
+    /// view:
+    if (m_allViewsUpdater) {
       m_allViewsUpdater();
     }
-    else if (m_myViewUpdater)
-    {
+    else if (m_myViewUpdater) {
       m_myViewUpdater();
     }
   }

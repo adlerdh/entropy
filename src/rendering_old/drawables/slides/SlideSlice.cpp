@@ -36,7 +36,7 @@ namespace
 static const glm::vec3 sk_black(0.0f, 0.0f, 0.0f);
 
 /// Default color to highlight the slide when it is active
-//static const glm::vec3 sk_activeSlideHighlightColor( 0.0f, 0.64f, 1.0f );
+// static const glm::vec3 sk_activeSlideHighlightColor( 0.0f, 0.64f, 1.0f );
 
 /// Default opacity to apply to the slide's highlight
 static const float sk_activeSlideHighlightOpacity = 0.15f;
@@ -55,8 +55,7 @@ SlideSlice::SlideSlice(
   std::weak_ptr<MeshGpuRecord> sliceMeshGpuRecord,
   std::weak_ptr<SlideRecord> slideRecord,
   QuerierType<bool, uuids::uuid> activeSlideQuerier,
-  GetterType<float> image3dLayerOpacityProvider
-)
+  GetterType<float> image3dLayerOpacityProvider)
   : DrawableBase(std::move(name), DrawableType::SlideSlice)
   ,
 
@@ -76,20 +75,16 @@ SlideSlice::SlideSlice(
     shaderProgramActivator,
     uniformsProvider,
     blankTextures,
-    [this]() -> MeshGpuRecord*
-    {
-      if (auto gpuRecord = m_sliceMeshGpuRecord.lock())
-      {
+    [this]() -> MeshGpuRecord* {
+      if (auto gpuRecord = m_sliceMeshGpuRecord.lock()) {
         return gpuRecord.get();
       }
       return nullptr;
-    }
-  ))
+    }))
   ,
 
-  m_sliceOutline(std::make_shared<Line>(
-    m_name + "_sliceOutline", shaderProgramActivator, uniformsProvider, PrimitiveMode::LineLoop
-  ))
+  m_sliceOutline(
+    std::make_shared<Line>(m_name + "_sliceOutline", shaderProgramActivator, uniformsProvider, PrimitiveMode::LineLoop))
   ,
 
   m_modelPlaneNormal(1.0f, 0.0f, 0.0f)
@@ -120,8 +115,7 @@ bool SlideSlice::isOpaque() const
   //        }
   //    }
 
-  if (m_sliceMesh && m_sliceOutline)
-  {
+  if (m_sliceMesh && m_sliceOutline) {
     return (m_sliceMesh->isOpaque() && m_sliceOutline->isOpaque());
   }
   return DrawableBase::isOpaque();
@@ -134,32 +128,28 @@ DrawableOpacity SlideSlice::opacityFlag() const
 
 void SlideSlice::setImage3dRecord(std::weak_ptr<ImageRecord> record)
 {
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setImage3dRecord(record);
   }
 }
 
 void SlideSlice::setParcellationRecord(std::weak_ptr<ParcellationRecord> record)
 {
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setParcellationRecord(record);
   }
 }
 
 void SlideSlice::setImageColorMapRecord(std::weak_ptr<ImageColorMapRecord> record)
 {
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setImageColorMapRecord(record);
   }
 }
 
 void SlideSlice::setLabelTableRecord(std::weak_ptr<LabelTableRecord> record)
 {
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setLabelTableRecord(record);
   }
 }
@@ -169,16 +159,14 @@ void SlideSlice::setUseIntensityThresolding(bool set)
   m_sliceMesh->setUseImage2dThresholdMode(set);
 }
 
-void SlideSlice::setPositioningMethod(
-  const intersection::PositioningMethod& method, const std::optional<glm::vec3>& p
-)
+void SlideSlice::setPositioningMethod(const intersection::PositioningMethod& method, const std::optional<glm::vec3>& p)
 {
   m_sliceIntersector.setPositioningMethod(method, p);
 }
 
 void SlideSlice::setAlignmentMethod(
-  const intersection::AlignmentMethod& method, const std::optional<glm::vec3>& worldNormal
-)
+  const intersection::AlignmentMethod& method,
+  const std::optional<glm::vec3>& worldNormal)
 {
   m_sliceIntersector.setAlignmentMethod(method, worldNormal);
 }
@@ -190,22 +178,18 @@ void SlideSlice::setShowOutline(const bool show)
 
 void SlideSlice::setupChildren()
 {
-  if (!m_stack_O_slide_tx || !m_sliceMesh || !m_sliceOutline)
-  {
+  if (!m_stack_O_slide_tx || !m_sliceMesh || !m_sliceOutline) {
     throw_debug("Null child drawable");
   }
 
   addChild(m_stack_O_slide_tx);
   m_stack_O_slide_tx->addChild(m_sliceMesh);
 
-  if (m_showOutline)
-  {
+  if (m_showOutline) {
     m_stack_O_slide_tx->addChild(m_sliceOutline);
   }
-  else
-  {
-    if (auto s = m_sliceOutline)
-    {
+  else {
+    if (auto s = m_sliceOutline) {
       m_stack_O_slide_tx->removeChild(*s);
     }
   }
@@ -220,8 +204,7 @@ void SlideSlice::setupChildren()
   // Define the ordering of layers for the slide box mesh. Layer "Image2D" is the slide image;
   // layers "Image3D" and "Parcellation3D" are from the 3D reference image; and layer "Material"
   // is for highlightin the slide.
-  std::array<TexturedMeshColorLayer, static_cast<size_t>(TexturedMeshColorLayer::NumLayers)>
-    layerPerm;
+  std::array<TexturedMeshColorLayer, static_cast<size_t>(TexturedMeshColorLayer::NumLayers)> layerPerm;
 
   layerPerm[0] = TexturedMeshColorLayer::Vertex; // bottom layer
   layerPerm[1] = TexturedMeshColorLayer::Image2D;
@@ -250,22 +233,15 @@ void SlideSlice::setupChildren()
   // than other objects without polygon offset defined. This substantially eliminates
   // Z-fighting with image slices and other meshes.
   m_sliceMesh->setEnablePolygonOffset(true);
-  m_sliceMesh
-    ->setPolygonOffsetValues(PolygonOffset::slideSlices.first, PolygonOffset::slideSlices.second);
+  m_sliceMesh->setPolygonOffsetValues(PolygonOffset::slideSlices.first, PolygonOffset::slideSlices.second);
 }
 
-void SlideSlice::doUpdate(
-  double /*time*/, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs
-)
+void SlideSlice::doUpdate(double /*time*/, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs)
 {
   static constexpr GLintptr sk_offset = static_cast<GLintptr>(0);
-  static constexpr GLintptr sk_positionsSize = static_cast<GLintptr>(
-    sk_numVerts * sizeof(PositionType)
-  );
+  static constexpr GLintptr sk_positionsSize = static_cast<GLintptr>(sk_numVerts * sizeof(PositionType));
   static constexpr GLintptr sk_normalsSize = static_cast<GLintptr>(sk_numVerts * sizeof(NormalType));
-  static constexpr GLintptr sk_texCoordsSize = static_cast<GLintptr>(
-    sk_numVerts * sizeof(TexCoord2DType)
-  );
+  static constexpr GLintptr sk_texCoordsSize = static_cast<GLintptr>(sk_numVerts * sizeof(TexCoord2DType));
 
   // Slide corners are defined in "modeling" coordinates of the slide:
   static const PositionType p000{0.0, 0.0, 0.0};
@@ -277,31 +253,25 @@ void SlideSlice::doUpdate(
   static const PositionType p110{1.0, 1.0, 0.0};
   static const PositionType p111{1.0, 1.0, 1.0};
 
-  static const std::array<PositionType, 8> sk_slideCorners = {
-    {p000, p001, p010, p011, p100, p101, p110, p111}
-  };
+  static const std::array<PositionType, 8> sk_slideCorners = {{p000, p001, p010, p011, p100, p101, p110, p111}};
 
-  if (!m_sliceMesh)
-  {
+  if (!m_sliceMesh) {
     throw_debug("Null slice mesh");
   }
 
-  if (!m_sliceOutline)
-  {
+  if (!m_sliceOutline) {
     throw_debug("Null line");
   }
 
   auto slideRecord = m_slideRecord.lock();
-  if (!slideRecord || !slideRecord->cpuData() || !slideRecord->gpuData())
-  {
+  if (!slideRecord || !slideRecord->cpuData() || !slideRecord->gpuData()) {
     std::cerr << "Null slide record during update" << std::endl;
     setVisible(false);
     return;
   }
 
   auto sliceMeshGpuRecord = m_sliceMeshGpuRecord.lock();
-  if (!sliceMeshGpuRecord)
-  {
+  if (!sliceMeshGpuRecord) {
     throw_debug("Null mesh object record");
   }
 
@@ -320,12 +290,10 @@ void SlideSlice::doUpdate(
 
   std::optional<intersection::IntersectionVertices> slideIntersectionPositions;
 
-  std::tie(slideIntersectionPositions, m_modelPlaneNormal)
-    = m_sliceIntersector
-        .computePlaneIntersections(slide_O_camera, slide_O_crosshairsFrame, sk_slideCorners);
+  std::tie(slideIntersectionPositions, m_modelPlaneNormal) =
+    m_sliceIntersector.computePlaneIntersections(slide_O_camera, slide_O_crosshairsFrame, sk_slideCorners);
 
-  if (!slideIntersectionPositions)
-  {
+  if (!slideIntersectionPositions) {
     setVisible(false);
     return;
   }
@@ -335,15 +303,13 @@ void SlideSlice::doUpdate(
 
   std::array<glm::vec2, sk_numVerts> texCoords;
 
-  for (uint32_t i = 0; i < sk_numVerts; ++i)
-  {
+  for (uint32_t i = 0; i < sk_numVerts; ++i) {
     texCoords[i] = glm::vec2{(*slideIntersectionPositions)[i] - p000};
   }
 
   // Offset slice positions towards the viewer. Increase offset of the slide slice layer by
   // an additional 2, to make sure that there is no z-fighting with image slices.
-  std::vector<glm::vec3>
-    positions(std::begin(*slideIntersectionPositions), std::end(*slideIntersectionPositions));
+  std::vector<glm::vec3> positions(std::begin(*slideIntersectionPositions), std::end(*slideIntersectionPositions));
 
   math::applyLayeringOffsetsToModelPositions(camera, slide_O_world, 2, positions);
 
@@ -351,8 +317,7 @@ void SlideSlice::doUpdate(
   auto& normalsObject = sliceMeshGpuRecord->normalsObject();
   auto& texCoordsObject = sliceMeshGpuRecord->texCoordsObject();
 
-  if (!normalsObject || !texCoordsObject)
-  {
+  if (!normalsObject || !texCoordsObject) {
     throw_debug("Null mesh normals and texCoords objects");
   }
 
@@ -360,14 +325,12 @@ void SlideSlice::doUpdate(
   normalsObject->write(sk_offset, sk_normalsSize, slideNormalsBuffer.data());
   texCoordsObject->write(sk_offset, sk_texCoordsSize, texCoords.data());
 
-  if (m_showOutline)
-  {
+  if (m_showOutline) {
     m_sliceOutline->setVisible(true);
     m_sliceOutline->setVertices(glm::value_ptr(positions[0]), sk_numVerts);
     m_sliceOutline->setColor(glm::vec4{math::convertVecToRGB(m_modelPlaneNormal), 1.0f});
   }
-  else
-  {
+  else {
     m_sliceOutline->setVisible(false);
   }
 
@@ -381,32 +344,27 @@ void SlideSlice::doUpdate(
   m_sliceMesh->setVisible(slideProps.visible());
   m_sliceMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Image2D, slideProps.opacity());
 
-  if (m_activeSlideQuerier(slideRecord->uid()))
-  {
+  if (m_activeSlideQuerier(slideRecord->uid())) {
     // If this is the active slide, then highlight it.
-    m_sliceMesh
-      ->setLayerOpacityMultiplier(TexturedMeshColorLayer::Material, sk_activeSlideHighlightOpacity);
+    m_sliceMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Material, sk_activeSlideHighlightOpacity);
     m_sliceMesh->setMaterialColor(slideProps.borderColor());
   }
-  else
-  {
+  else {
     m_sliceMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Material, 0.0f);
     m_sliceMesh->setMaterialColor(sk_black);
   }
 
-  if (m_image3dLayerOpacityProvider)
-  {
+  if (m_image3dLayerOpacityProvider) {
     // Set the opacity of the Image3D and Parcellation3D layers.
     m_sliceMesh->setLayerOpacityMultiplier(
-      TexturedMeshColorLayer::Image3D, m_image3dLayerOpacityProvider() * slideProps.opacity()
-    );
+      TexturedMeshColorLayer::Image3D,
+      m_image3dLayerOpacityProvider() * slideProps.opacity());
 
     m_sliceMesh->setLayerOpacityMultiplier(
-      TexturedMeshColorLayer::Parcellation3D, m_image3dLayerOpacityProvider() * slideProps.opacity()
-    );
+      TexturedMeshColorLayer::Parcellation3D,
+      m_image3dLayerOpacityProvider() * slideProps.opacity());
   }
-  else
-  {
+  else {
     m_sliceMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Image3D, 0.0f);
     m_sliceMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Parcellation3D, 0.0f);
   }

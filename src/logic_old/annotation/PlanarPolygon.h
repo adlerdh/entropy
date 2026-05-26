@@ -39,8 +39,8 @@ public:
   /// subsequent vectors define boundaries of holes within the outer boundary.
   void setAllVertices(std::vector<std::vector<PointType> > vertices);
 
-  /// Get all vertices from all boundaries. The first vector contains vertices of the outer boundary;
-  /// subsequent vectors contain vertices of holes.
+  /// Get all vertices from all boundaries. The first vector contains vertices of the outer
+  /// boundary; subsequent vectors contain vertices of holes.
   const std::vector<std::vector<PointType> >& getAllVertices() const;
 
   /// Set vertices for a given boundary, where 0 refers to the outer boundary; subsequent boundaries
@@ -55,8 +55,8 @@ public:
   /// an outer boundary.
   void addHole(std::vector<PointType> vertices);
 
-  /// Get all vertices of a given boundary, where 0 refers to the outer boundary; subsequent boundaries
-  /// are holes.
+  /// Get all vertices of a given boundary, where 0 refers to the outer boundary; subsequent
+  /// boundaries are holes.
   /// @throws For an invalid boundary
   const std::vector<PointType>& getBoundaryVertices(size_t boundary) const;
 
@@ -66,8 +66,8 @@ public:
   /// Get the total number of vertices among all boundaries, including the outer boundary and holes.
   size_t numVertices() const;
 
-  /// Get the i'th vertex of a given boundary, where 0 is the outer boundary and subsequent bounaries
-  /// define holes.
+  /// Get the i'th vertex of a given boundary, where 0 is the outer boundary and subsequent
+  /// bounaries define holes.
   /// @throws For an invalid boundary
   const PointType& getBoundaryVertex(size_t boundary, size_t i) const;
 

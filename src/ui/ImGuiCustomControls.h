@@ -39,7 +39,9 @@ IMGUI_API bool paletteButton(
   const ImVec2& size);
 
 std::optional<std::string> renderFileButtonDialogAndWindow(
-  const char* buttonText, const char* dialogTitle, const std::vector<std::string> dialogFilters);
+  const char* buttonText,
+  const char* dialogTitle,
+  const std::vector<std::string> dialogFilters);
 
 bool SliderScalarN_multiComp(
   const char* label,

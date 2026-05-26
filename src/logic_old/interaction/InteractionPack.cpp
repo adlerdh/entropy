@@ -16,8 +16,7 @@ InteractionPack::InteractionPack(
   std::unique_ptr<RefImageInteractionHandler> refImageHandler,
   std::unique_ptr<SlideStackInteractionHandler> stackHandler,
   std::unique_ptr<SlideInteractionHandler> slideHandler,
-  std::unique_ptr<WindowLevelInteractionHandler> wlHandler
-)
+  std::unique_ptr<WindowLevelInteractionHandler> wlHandler)
   : m_viewType(viewType)
   , m_camera(std::move(camera))
   , m_cameraHandler(std::move(cameraHandler))
@@ -31,7 +30,7 @@ InteractionPack::InteractionPack(
   setActiveHandlerType(InteractionHandlerType::Crosshairs);
 }
 
-//InteractionPack::~InteractionPack() = default;
+// InteractionPack::~InteractionPack() = default;
 
 const gui::ViewType& InteractionPack::getViewType() const
 {
@@ -80,37 +79,30 @@ IInteractionHandler* InteractionPack::getActiveHandler()
 
 void InteractionPack::setActiveHandlerType(const InteractionHandlerType& type)
 {
-  switch (type)
-  {
-  case InteractionHandlerType::Camera:
-  {
-    m_activeHandler = m_cameraHandler.get();
-    break;
-  }
-  case InteractionHandlerType::Crosshairs:
-  {
-    m_activeHandler = m_crosshairsHandler.get();
-    break;
-  }
-  case InteractionHandlerType::RefImageTransform:
-  {
-    m_activeHandler = m_refImageHandler.get();
-    break;
-  }
-  case InteractionHandlerType::SlideTransform:
-  {
-    m_activeHandler = m_slideHandler.get();
-    break;
-  }
-  case InteractionHandlerType::StackTransform:
-  {
-    m_activeHandler = m_stackHandler.get();
-    break;
-  }
-  case InteractionHandlerType::WindowLevel:
-  {
-    m_activeHandler = m_windowLevelHandler.get();
-    break;
-  }
+  switch (type) {
+    case InteractionHandlerType::Camera: {
+      m_activeHandler = m_cameraHandler.get();
+      break;
+    }
+    case InteractionHandlerType::Crosshairs: {
+      m_activeHandler = m_crosshairsHandler.get();
+      break;
+    }
+    case InteractionHandlerType::RefImageTransform: {
+      m_activeHandler = m_refImageHandler.get();
+      break;
+    }
+    case InteractionHandlerType::SlideTransform: {
+      m_activeHandler = m_slideHandler.get();
+      break;
+    }
+    case InteractionHandlerType::StackTransform: {
+      m_activeHandler = m_stackHandler.get();
+      break;
+    }
+    case InteractionHandlerType::WindowLevel: {
+      m_activeHandler = m_windowLevelHandler.get();
+      break;
+    }
   }
 }

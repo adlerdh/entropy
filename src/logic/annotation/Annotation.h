@@ -29,9 +29,7 @@ class AppData;
 class Annotation
 {
 public:
-  explicit Annotation(
-    std::string displayName, const glm::vec4& color, const glm::vec4& subjectPlaneEquation
-  );
+  explicit Annotation(std::string displayName, const glm::vec4& color, const glm::vec4& subjectPlaneEquation);
 
   Annotation();
 
@@ -60,20 +58,20 @@ public:
   void addPlanePointToBoundary(size_t boundary, const glm::vec2& planePoint);
 
   /**
-     * @brief insertPlanePointIntoBoundary
-     * @param boundary
-     * @param vertexIndex
-     * @param vertex
-     * @return True iff the vertex was inserted at position \c vertexIndex
-     */
+   * @brief insertPlanePointIntoBoundary
+   * @param boundary
+   * @param vertexIndex
+   * @param vertex
+   * @return True iff the vertex was inserted at position \c vertexIndex
+   */
   bool insertPlanePointIntoBoundary(size_t boundary, size_t vertexIndex, const glm::vec2& vertex);
 
   /**
-     * @brief Add a 3D Subject point to the annotation polygon.
-     * @param[in] boundary Boundary to add point to
-     * @param[in] subjectPoint 3D point in Subject space to project
-     * @return Projected point in 2D Subject plane coordinates
-     */
+   * @brief Add a 3D Subject point to the annotation polygon.
+   * @param[in] boundary Boundary to add point to
+   * @param[in] subjectPoint 3D point in Subject space to project
+   * @return Projected point in 2D Subject plane coordinates
+   */
   std::optional<glm::vec2> addSubjectPointToBoundary(size_t boundary, const glm::vec3& subjectPoint);
 
   /// Remove the vertex highlights
@@ -86,16 +84,16 @@ public:
   /// where the vertex index is for the given boundary
   const std::set<std::pair<size_t, size_t> >& highlightedVertices() const;
 
-  /// Get the highlighted edges: { boundary index, {first edge vertex index, second edge vertex index} },
-  /// where the vertex indices are for the given boundary.
+  /// Get the highlighted edges: { boundary index, {first edge vertex index, second edge vertex
+  /// index} }, where the vertex indices are for the given boundary.
   const std::set<std::pair<size_t, std::pair<size_t, size_t> > >& highlightedEdges() const;
 
   /// Add a highlighted vertex: { boundary index, vertex index },
   /// where the vertex index is for the given boundary.
   void setVertexHighlight(const std::pair<size_t, size_t>& vertex, bool highlight);
 
-  /// Add a highlighted edge: pairs of { boundary index, {first edge vertex index, second edge vertex index} },
-  /// where the vertex indices are for the given boundary.
+  /// Add a highlighted edge: pairs of { boundary index, {first edge vertex index, second edge
+  /// vertex index} }, where the vertex indices are for the given boundary.
   void setEdgeHighlight(const std::pair<size_t, std::pair<size_t, size_t> >& edge, bool highlight);
 
   /// @brief Set/get the annotation highlighted state

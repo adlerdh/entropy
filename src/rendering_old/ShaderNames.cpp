@@ -62,8 +62,7 @@ namespace BasicMeshProgram
 
 const char* const name = "basic_mesh";
 
-const char* const vert::worldClipPlanes[3]
-  = {"worldClipPlanes[0]", "worldClipPlanes[1]", "worldClipPlanes[2]"};
+const char* const vert::worldClipPlanes[3] = {"worldClipPlanes[0]", "worldClipPlanes[1]", "worldClipPlanes[2]"};
 
 const char* const frag::objectId = "objectId";
 const char* const frag::masterOpacityMultiplier = "masterOpacityMultiplier";
@@ -85,8 +84,7 @@ namespace MeshProgram
 {
 const char* const name = "mesh";
 
-const char* const vert::worldClipPlanes[3]
-  = {"worldClipPlanes[0]", "worldClipPlanes[1]", "worldClipPlanes[2]"};
+const char* const vert::worldClipPlanes[3] = {"worldClipPlanes[0]", "worldClipPlanes[1]", "worldClipPlanes[2]"};
 
 const char* const vert::imageTexCoords_O_world = "imageTexCoords_O_world";
 const char* const vert::labelTexCoords_O_world = "labelTexCoords_O_world";
@@ -116,7 +114,7 @@ const char* const frag::image3DThresholdMode = "image3DThresholdMode";
 const char* const frag::xrayMode = "xrayMode";
 const char* const frag::xrayPower = "xrayPower";
 
-//const char* const frag::labelTexCoords_O_view = "labelTexCoords_O_view";
+// const char* const frag::labelTexCoords_O_view = "labelTexCoords_O_view";
 } // namespace MeshProgram
 
 namespace MeshDDPPeelProgram
@@ -133,8 +131,7 @@ namespace DDPInitProgram
 {
 const char* const name = "meshDDPInit";
 
-const char* const vert::worldClipPlanes[3]
-  = {"worldClipPlanes[0]", "worldClipPlanes[1]", "worldClipPlanes[2]"};
+const char* const vert::worldClipPlanes[3] = {"worldClipPlanes[0]", "worldClipPlanes[1]", "worldClipPlanes[2]"};
 
 const char* const frag::opaqueDepthTex = "opaqueDepthTex";
 } // namespace DDPInitProgram

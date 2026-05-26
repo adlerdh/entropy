@@ -1,9 +1,6 @@
 #include "mesh/MeshProperties.h"
 
-MeshProperties::MeshProperties()
-  : m_materialColor(1.0f, 1.0f, 1.0f)
-{
-}
+MeshProperties::MeshProperties() : m_materialColor(1.0f, 1.0f, 1.0f) {}
 
 const glm::vec3& MeshProperties::materialColor() const
 {

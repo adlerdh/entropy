@@ -21,7 +21,11 @@ enum class ViewType
  * @brief Array of all view types accessible to the application
  */
 inline std::array<ViewType, 5> const AllViewTypes{
-  ViewType::Axial, ViewType::Coronal, ViewType::Sagittal, ViewType::Oblique, ViewType::ThreeD};
+  ViewType::Axial,
+  ViewType::Coronal,
+  ViewType::Sagittal,
+  ViewType::Oblique,
+  ViewType::ThreeD};
 
 /**
  * @brief Get the display string of a view type

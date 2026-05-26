@@ -3,8 +3,8 @@
 
 #include "rendering/utility/gl/GLTexture.h"
 
-//#include <QImage>
-//#include <QPixmap>
+// #include <QImage>
+// #include <QPixmap>
 
 #include <sstream>
 #include <vector>
@@ -33,8 +33,7 @@ std::shared_ptr<GLTexture> createTexture2d(const glm::i64vec2& size, const void*
     tex::SizedInternalFormat::RGBA8_UNorm,
     tex::BufferPixelFormat::RGBA,
     tex::BufferPixelDataType::UInt8,
-    data
-  );
+    data);
 
   //    static const glm::vec4 sk_transparentBlack{ 0.0f, 0.0f, 0.0f, 0.0f };
   //    texture->setBorderColor( sk_transparentBlack );
@@ -58,8 +57,7 @@ const std::array<std::string, 6> CameraLabelAssembly::smk_labels{"S", "P", "I", 
 CameraLabelAssembly::CameraLabelAssembly(
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
-  GetterType<glm::mat4> activeSubjectToWorldProvider
-)
+  GetterType<glm::mat4> activeSubjectToWorldProvider)
   : m_shaderActivator(shaderProgramActivator)
   , m_uniformsProvider(uniformsProvider)
   , m_activeSubjectToWorldProvider(activeSubjectToWorldProvider)
@@ -73,17 +71,14 @@ void CameraLabelAssembly::initialize()
 {
   std::array<std::weak_ptr<GLTexture>, 6> weakLetterTextures;
 
-  for (uint i = 0; i < 6; ++i)
-  {
+  for (uint i = 0; i < 6; ++i) {
     const auto& label = smk_labels[i];
 
     std::ostringstream ss;
     ss << smk_lettersImagePath << label << ".png";
 
     QPixmap pixmap(ss.str().c_str());
-    const QImage image = pixmap.toImage().convertToFormat(
-      QImage::Format::Format_RGBA8888_Premultiplied
-    );
+    const QImage image = pixmap.toImage().convertToFormat(QImage::Format::Format_RGBA8888_Premultiplied);
     const glm::i64vec2 dims{image.size().width(), image.size().height()};
 
     m_letterTextures[i] = createTexture2d(dims, image.bits());
@@ -94,37 +89,34 @@ void CameraLabelAssembly::initialize()
   ss << "CameraLabelAssembly_#" << numCreated() << std::ends;
 
   m_root = std::make_shared<CameraLabel>(
-    ss.str(), m_shaderActivator, m_uniformsProvider, m_activeSubjectToWorldProvider, weakLetterTextures
-  );
+    ss.str(),
+    m_shaderActivator,
+    m_uniformsProvider,
+    m_activeSubjectToWorldProvider,
+    weakLetterTextures);
 }
 
-void CameraLabelAssembly::setActiveSubjectToWorldProvider(
-  GetterType<std::optional<glm::mat4> > provider
-)
+void CameraLabelAssembly::setActiveSubjectToWorldProvider(GetterType<std::optional<glm::mat4> > provider)
 {
-  if (m_root)
-  {
+  if (m_root) {
     m_root->setSubjectToWorldProvider(provider);
   }
 }
 
 std::weak_ptr<DrawableBase> CameraLabelAssembly::getRoot(const SceneType& type)
 {
-  switch (type)
-  {
-  case SceneType::ReferenceImage2d:
-  case SceneType::SlideStack2d:
-  case SceneType::Registration_Image2d:
-  case SceneType::Registration_Slide2d:
-  case SceneType::ReferenceImage3d:
-  case SceneType::SlideStack3d:
-  {
-    return std::static_pointer_cast<DrawableBase>(m_root);
-  }
-  default:
-  case SceneType::None:
-  {
-    return {};
-  }
+  switch (type) {
+    case SceneType::ReferenceImage2d:
+    case SceneType::SlideStack2d:
+    case SceneType::Registration_Image2d:
+    case SceneType::Registration_Slide2d:
+    case SceneType::ReferenceImage3d:
+    case SceneType::SlideStack3d: {
+      return std::static_pointer_cast<DrawableBase>(m_root);
+    }
+    default:
+    case SceneType::None: {
+      return {};
+    }
   }
 }

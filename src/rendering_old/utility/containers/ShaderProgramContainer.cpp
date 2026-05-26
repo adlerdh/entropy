@@ -33,12 +33,7 @@ static const char* ks_meshPeelFShaderName = "fsMeshPeel";
 
 } // namespace
 
-ShaderProgramContainer::ShaderProgramContainer()
-  : m_programs()
-  , m_shaders()
-  , m_validateBeforeUse(false)
-{
-}
+ShaderProgramContainer::ShaderProgramContainer() : m_programs(), m_shaders(), m_validateBeforeUse(false) {}
 
 void ShaderProgramContainer::initializeGL()
 {
@@ -70,15 +65,13 @@ GLShaderProgram* ShaderProgramContainer::getProgram(const std::string& name)
 {
   const auto& itr = m_programs.find(name);
 
-  if (std::end(m_programs) == itr)
-  {
+  if (std::end(m_programs) == itr) {
     std::ostringstream ss;
     ss << "Shader program " << name << " not found" << std::ends;
     throw_debug(ss.str());
   }
 
-  if (!itr->second)
-  {
+  if (!itr->second) {
     std::ostringstream ss;
     ss << "Invalid program " << name << std::ends;
     throw_debug(ss.str());
@@ -91,12 +84,9 @@ GLShaderProgram* ShaderProgramContainer::useProgram(const std::string& name)
 {
   const auto& itr = m_programs.find(name);
 
-  if (std::end(m_programs) != itr)
-  {
-    if (auto program = itr->second)
-    {
-      if (m_validateBeforeUse && !program->isValid())
-      {
+  if (std::end(m_programs) != itr) {
+    if (auto program = itr->second) {
+      if (m_validateBeforeUse && !program->isValid()) {
         std::ostringstream ss;
         ss << "Invalid program " << name << std::ends;
         throw_debug(ss.str());
@@ -105,8 +95,7 @@ GLShaderProgram* ShaderProgramContainer::useProgram(const std::string& name)
       program->use();
       return program.get();
     }
-    else
-    {
+    else {
       std::ostringstream ss;
       ss << "Unable to access shader program " << name << std::ends;
       throw_debug(ss.str());
@@ -121,15 +110,13 @@ GLShaderProgram* ShaderProgramContainer::useProgram(const std::string& name)
 const Uniforms& ShaderProgramContainer::getRegisteredUniforms(const std::string& name) const
 {
   const auto& itr = m_programs.find(name);
-  if (std::end(m_programs) == itr)
-  {
+  if (std::end(m_programs) == itr) {
     std::ostringstream ss;
     ss << "Unable to find uniforms for shader program " << name << std::ends;
     throw_debug(ss.str());
   }
 
-  if (!itr->second)
-  {
+  if (!itr->second) {
     std::ostringstream ss;
     ss << "Invalid shader program " << name << std::ends;
     throw_debug(ss.str());
@@ -175,12 +162,10 @@ void ShaderProgramContainer::generateFlatShadingProgram()
     using namespace FlatPeelProgram;
 
     fsPeelUniforms.insertUniforms(fsCommonUniforms);
-    fsPeelUniforms.insertUniform(
-      frag::depthBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired
-    );
-    fsPeelUniforms.insertUniform(
-      frag::frontBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{1}, sk_isRequired
-    );
+    fsPeelUniforms
+      .insertUniform(frag::depthBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired);
+    fsPeelUniforms
+      .insertUniform(frag::frontBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{1}, sk_isRequired);
   }
 
   auto vsStd = std::make_shared<GLShader>("vsStdFlat", ShaderType::Vertex, vsStdSource);
@@ -218,8 +203,7 @@ void ShaderProgramContainer::generateSimpleProgram()
     vsUniforms.insertUniform(vert::clip_O_camera, UniformType::Mat4, sk_ident, sk_isRequired);
     vsUniforms.insertUniform(vert::color, UniformType::Vec3, sk_white, sk_isRequired);
 
-    fsUniforms
-      .insertUniform(frag::tex2D, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired);
+    fsUniforms.insertUniform(frag::tex2D, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired);
     fsUniforms.insertUniform(frag::opacity, UniformType::Float, 1.0f, sk_isRequired);
     fsUniforms.insertUniform(frag::objectId, UniformType::UInt, 0, !sk_isRequired);
   }
@@ -256,43 +240,29 @@ void ShaderProgramContainer::generateBasicMeshPrograms()
     vsStdUniforms.insertUniform(vert::world_O_model, UniformType::Mat4, sk_ident, sk_isRequired);
     vsStdUniforms.insertUniform(vert::camera_O_world, UniformType::Mat4, sk_ident, sk_isRequired);
     vsStdUniforms.insertUniform(vert::clip_O_camera, UniformType::Mat4, sk_ident, sk_isRequired);
-    vsStdUniforms
-      .insertUniform(vert::world_O_model_inv_trans, UniformType::Mat4, sk_ident, sk_isRequired);
+    vsStdUniforms.insertUniform(vert::world_O_model_inv_trans, UniformType::Mat4, sk_ident, sk_isRequired);
 
     vsStdUniforms.insertUniform(vert::worldClipPlanes[0], UniformType::Vec4, sk_zero, sk_isRequired);
     vsStdUniforms.insertUniform(vert::worldClipPlanes[1], UniformType::Vec4, sk_zero, sk_isRequired);
     vsStdUniforms.insertUniform(vert::worldClipPlanes[2], UniformType::Vec4, sk_zero, sk_isRequired);
 
-    fsCommonUniforms
-      .insertUniform(frag::material_diffuse, UniformType::Vec3, sk_white, !sk_isRequired);
-    fsCommonUniforms
-      .insertUniform(frag::material_specular, UniformType::Vec3, sk_white, sk_isRequired);
-    fsCommonUniforms
-      .insertUniform(frag::material_shininess, UniformType::Float, sk_shininess, sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::material_diffuse, UniformType::Vec3, sk_white, !sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::material_specular, UniformType::Vec3, sk_white, sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::material_shininess, UniformType::Float, sk_shininess, sk_isRequired);
 
-    fsCommonUniforms
-      .insertUniform(frag::simpleLight_position, UniformType::Vec3, sk_origin, sk_isRequired);
-    fsCommonUniforms
-      .insertUniform(frag::simpleLight_direction, UniformType::Vec3, sk_zAxis, sk_isRequired);
-    fsCommonUniforms
-      .insertUniform(frag::simpleLight_ambient, UniformType::Vec3, sk_white, sk_isRequired);
-    fsCommonUniforms
-      .insertUniform(frag::simpleLight_diffuse, UniformType::Vec3, sk_white, sk_isRequired);
-    fsCommonUniforms
-      .insertUniform(frag::simpleLight_specular, UniformType::Vec3, sk_white, sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::simpleLight_position, UniformType::Vec3, sk_origin, sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::simpleLight_direction, UniformType::Vec3, sk_zAxis, sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::simpleLight_ambient, UniformType::Vec3, sk_white, sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::simpleLight_diffuse, UniformType::Vec3, sk_white, sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::simpleLight_specular, UniformType::Vec3, sk_white, sk_isRequired);
 
     fsCommonUniforms.insertUniform(frag::cameraPos, UniformType::Vec3, sk_origin, sk_isRequired);
     fsCommonUniforms.insertUniform(frag::cameraDir, UniformType::Vec3, sk_zAxis, sk_isRequired);
-    fsCommonUniforms
-      .insertUniform(frag::cameraIsOrthographic, UniformType::Bool, true, sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::cameraIsOrthographic, UniformType::Bool, true, sk_isRequired);
 
     fsCommonUniforms.insertUniform(frag::objectId, UniformType::UInt, 0, !sk_isRequired);
-    fsCommonUniforms.insertUniform(
-      frag::masterOpacityMultiplier, UniformType::Float, sk_masterOpacity, sk_isRequired
-    );
-    fsCommonUniforms.insertUniform(
-      frag::layerOpacities, UniformType::FloatArray5, sk_layerOpacities, sk_isRequired
-    );
+    fsCommonUniforms.insertUniform(frag::masterOpacityMultiplier, UniformType::Float, sk_masterOpacity, sk_isRequired);
+    fsCommonUniforms.insertUniform(frag::layerOpacities, UniformType::FloatArray5, sk_layerOpacities, sk_isRequired);
 
     fsCommonUniforms.insertUniform(frag::xrayMode, UniformType::Float, 0.0f, sk_isRequired);
     fsCommonUniforms.insertUniform(frag::xrayPower, UniformType::Float, 3.0f, sk_isRequired);
@@ -307,12 +277,10 @@ void ShaderProgramContainer::generateBasicMeshPrograms()
     using namespace BasicMeshDualDepthPeelProgram;
 
     fsPeelUniforms.insertUniforms(fsCommonUniforms);
-    fsPeelUniforms.insertUniform(
-      frag::depthBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired
-    );
-    fsPeelUniforms.insertUniform(
-      frag::frontBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{1}, sk_isRequired
-    );
+    fsPeelUniforms
+      .insertUniform(frag::depthBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired);
+    fsPeelUniforms
+      .insertUniform(frag::frontBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{1}, sk_isRequired);
   }
 
   auto vsStd = std::make_shared<GLShader>("vsBasicMesh", ShaderType::Vertex, vsStdSource);
@@ -343,13 +311,10 @@ void ShaderProgramContainer::generateMeshVertexShader()
     vsStdUniforms.insertUniform(vert::world_O_model, UniformType::Mat4, sk_ident, sk_isRequired);
     vsStdUniforms.insertUniform(vert::camera_O_world, UniformType::Mat4, sk_ident, sk_isRequired);
     vsStdUniforms.insertUniform(vert::clip_O_camera, UniformType::Mat4, sk_ident, sk_isRequired);
-    vsStdUniforms
-      .insertUniform(vert::world_O_model_inv_trans, UniformType::Mat4, sk_ident, sk_isRequired);
+    vsStdUniforms.insertUniform(vert::world_O_model_inv_trans, UniformType::Mat4, sk_ident, sk_isRequired);
 
-    vsStdUniforms
-      .insertUniform(vert::imageTexCoords_O_world, UniformType::Mat4, sk_ident, sk_isRequired);
-    vsStdUniforms
-      .insertUniform(vert::labelTexCoords_O_world, UniformType::Mat4, sk_ident, sk_isRequired);
+    vsStdUniforms.insertUniform(vert::imageTexCoords_O_world, UniformType::Mat4, sk_ident, sk_isRequired);
+    vsStdUniforms.insertUniform(vert::labelTexCoords_O_world, UniformType::Mat4, sk_ident, sk_isRequired);
 
     vsStdUniforms.insertUniform(vert::worldClipPlanes[0], UniformType::Vec4, sk_zero, sk_isRequired);
     vsStdUniforms.insertUniform(vert::worldClipPlanes[1], UniformType::Vec4, sk_zero, sk_isRequired);
@@ -378,50 +343,30 @@ void ShaderProgramContainer::generateMeshFragmentShaders()
 
     fsStdUniforms.insertUniform(frag::material_diffuse, UniformType::Vec3, sk_white, !sk_isRequired);
     fsStdUniforms.insertUniform(frag::material_specular, UniformType::Vec3, sk_white, sk_isRequired);
-    fsStdUniforms
-      .insertUniform(frag::material_shininess, UniformType::Float, sk_shininess, sk_isRequired);
+    fsStdUniforms.insertUniform(frag::material_shininess, UniformType::Float, sk_shininess, sk_isRequired);
 
-    fsStdUniforms
-      .insertUniform(frag::simpleLight_position, UniformType::Vec3, sk_origin, sk_isRequired);
-    fsStdUniforms
-      .insertUniform(frag::simpleLight_direction, UniformType::Vec3, sk_zAxis, sk_isRequired);
-    fsStdUniforms
-      .insertUniform(frag::simpleLight_ambient, UniformType::Vec3, sk_white, sk_isRequired);
-    fsStdUniforms
-      .insertUniform(frag::simpleLight_diffuse, UniformType::Vec3, sk_white, sk_isRequired);
-    fsStdUniforms
-      .insertUniform(frag::simpleLight_specular, UniformType::Vec3, sk_white, sk_isRequired);
+    fsStdUniforms.insertUniform(frag::simpleLight_position, UniformType::Vec3, sk_origin, sk_isRequired);
+    fsStdUniforms.insertUniform(frag::simpleLight_direction, UniformType::Vec3, sk_zAxis, sk_isRequired);
+    fsStdUniforms.insertUniform(frag::simpleLight_ambient, UniformType::Vec3, sk_white, sk_isRequired);
+    fsStdUniforms.insertUniform(frag::simpleLight_diffuse, UniformType::Vec3, sk_white, sk_isRequired);
+    fsStdUniforms.insertUniform(frag::simpleLight_specular, UniformType::Vec3, sk_white, sk_isRequired);
 
     fsStdUniforms.insertUniform(frag::cameraPos, UniformType::Vec3, sk_origin, sk_isRequired);
     fsStdUniforms.insertUniform(frag::cameraDir, UniformType::Vec3, sk_zAxis, sk_isRequired);
     fsStdUniforms.insertUniform(frag::cameraIsOrthographic, UniformType::Bool, true, sk_isRequired);
 
     fsStdUniforms.insertUniform(frag::objectId, UniformType::UInt, 0, !sk_isRequired);
-    fsStdUniforms.insertUniform(
-      frag::masterOpacityMultiplier, UniformType::Float, sk_masterOpacity, sk_isRequired
-    );
-    fsStdUniforms.insertUniform(
-      frag::layerOpacities, UniformType::FloatArray5, sk_layerOpacities, sk_isRequired
-    );
-    fsStdUniforms.insertUniform(
-      frag::layerPermutation, UniformType::UIntArray5, sk_layerPermutation, sk_isRequired
-    );
+    fsStdUniforms.insertUniform(frag::masterOpacityMultiplier, UniformType::Float, sk_masterOpacity, sk_isRequired);
+    fsStdUniforms.insertUniform(frag::layerOpacities, UniformType::FloatArray5, sk_layerOpacities, sk_isRequired);
+    fsStdUniforms.insertUniform(frag::layerPermutation, UniformType::UIntArray5, sk_layerPermutation, sk_isRequired);
 
-    fsStdUniforms.insertUniform(
-      frag::tex2D, UniformType::Sampler, Uniforms::SamplerIndexType{2}, !sk_isRequired
-    );
-    fsStdUniforms.insertUniform(
-      frag::imageTex3D, UniformType::Sampler, Uniforms::SamplerIndexType{3}, !sk_isRequired
-    );
-    fsStdUniforms.insertUniform(
-      frag::labelTex3D, UniformType::Sampler, Uniforms::SamplerIndexType{4}, !sk_isRequired
-    );
-    fsStdUniforms.insertUniform(
-      frag::labelColormapTexture, UniformType::Sampler, Uniforms::SamplerIndexType{5}, !sk_isRequired
-    );
-    fsStdUniforms.insertUniform(
-      frag::imageColorMapTexture, UniformType::Sampler, Uniforms::SamplerIndexType{6}, !sk_isRequired
-    );
+    fsStdUniforms.insertUniform(frag::tex2D, UniformType::Sampler, Uniforms::SamplerIndexType{2}, !sk_isRequired);
+    fsStdUniforms.insertUniform(frag::imageTex3D, UniformType::Sampler, Uniforms::SamplerIndexType{3}, !sk_isRequired);
+    fsStdUniforms.insertUniform(frag::labelTex3D, UniformType::Sampler, Uniforms::SamplerIndexType{4}, !sk_isRequired);
+    fsStdUniforms
+      .insertUniform(frag::labelColormapTexture, UniformType::Sampler, Uniforms::SamplerIndexType{5}, !sk_isRequired);
+    fsStdUniforms
+      .insertUniform(frag::imageColorMapTexture, UniformType::Sampler, Uniforms::SamplerIndexType{6}, !sk_isRequired);
 
     fsStdUniforms.insertUniform(frag::slope, UniformType::Float, 1.0f, sk_isRequired);
     fsStdUniforms.insertUniform(frag::intercept, UniformType::Float, 0.0f, sk_isRequired);
@@ -437,7 +382,8 @@ void ShaderProgramContainer::generateMeshFragmentShaders()
     fsStdUniforms.insertUniform(frag::xrayMode, UniformType::Float, 0.0f, sk_isRequired);
     fsStdUniforms.insertUniform(frag::xrayPower, UniformType::Float, 3.0f, sk_isRequired);
 
-    //        fsStdUniforms.insertUniform( frag::labelTexCoords_O_view, UniformType::Mat4, sk_ident, sk_isRequired );
+    //        fsStdUniforms.insertUniform( frag::labelTexCoords_O_view, UniformType::Mat4, sk_ident,
+    //        sk_isRequired );
   }
 
   Uniforms fsPeelUniforms;
@@ -445,12 +391,10 @@ void ShaderProgramContainer::generateMeshFragmentShaders()
     using namespace MeshDDPPeelProgram;
 
     fsPeelUniforms.insertUniforms(fsStdUniforms);
-    fsPeelUniforms.insertUniform(
-      frag::depthBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired
-    );
-    fsPeelUniforms.insertUniform(
-      frag::frontBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{1}, sk_isRequired
-    );
+    fsPeelUniforms
+      .insertUniform(frag::depthBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired);
+    fsPeelUniforms
+      .insertUniform(frag::frontBlenderTex, UniformType::Sampler, Uniforms::SamplerIndexType{1}, sk_isRequired);
   }
 
   /// @todo add these to uniform list when not optimized out
@@ -459,10 +403,8 @@ void ShaderProgramContainer::generateMeshFragmentShaders()
   //    uniform SpotLight spotLight;
   //    uniform PointLight pointLights[MAX_NR_POINT_LIGHTS];
 
-  auto fragStdShader
-    = std::make_shared<GLShader>(ks_meshStdFShaderName, ShaderType::Fragment, fsStdSource);
-  auto fragPeelShader
-    = std::make_shared<GLShader>(ks_meshPeelFShaderName, ShaderType::Fragment, fsPeelSource);
+  auto fragStdShader = std::make_shared<GLShader>(ks_meshStdFShaderName, ShaderType::Fragment, fsStdSource);
+  auto fragPeelShader = std::make_shared<GLShader>(ks_meshPeelFShaderName, ShaderType::Fragment, fsPeelSource);
 
   fragStdShader->setRegisteredUniforms(fsStdUniforms);
   fragPeelShader->setRegisteredUniforms(fsPeelUniforms);
@@ -478,8 +420,7 @@ void ShaderProgramContainer::generateMeshPrograms()
   auto fsStdIter = m_shaders.find(ks_meshStdFShaderName);
   auto fsPeelIter = m_shaders.find(ks_meshPeelFShaderName);
 
-  if (std::end(m_shaders) == vsIter || std::end(m_shaders) == fsStdIter || std::end(m_shaders) == fsPeelIter)
-  {
+  if (std::end(m_shaders) == vsIter || std::end(m_shaders) == fsStdIter || std::end(m_shaders) == fsPeelIter) {
     std::ostringstream ss;
     ss << "Required shader was not found" << std::ends;
     throw_debug(ss.str());
@@ -520,30 +461,20 @@ void ShaderProgramContainer::generateDualDepthPeelingPrograms()
     ;
 
   Uniforms vsInitUniforms;
-  vsInitUniforms
-    .insertUniform(DDPInitProgram::vert::world_O_model, UniformType::Mat4, sk_ident, sk_isRequired);
-  vsInitUniforms
-    .insertUniform(DDPInitProgram::vert::camera_O_world, UniformType::Mat4, sk_ident, sk_isRequired);
-  vsInitUniforms
-    .insertUniform(DDPInitProgram::vert::clip_O_camera, UniformType::Mat4, sk_ident, sk_isRequired);
+  vsInitUniforms.insertUniform(DDPInitProgram::vert::world_O_model, UniformType::Mat4, sk_ident, sk_isRequired);
+  vsInitUniforms.insertUniform(DDPInitProgram::vert::camera_O_world, UniformType::Mat4, sk_ident, sk_isRequired);
+  vsInitUniforms.insertUniform(DDPInitProgram::vert::clip_O_camera, UniformType::Mat4, sk_ident, sk_isRequired);
 
-  vsInitUniforms.insertUniform(
-    DDPInitProgram::vert::worldClipPlanes[0], UniformType::Vec4, sk_zero, sk_isRequired
-  );
-  vsInitUniforms.insertUniform(
-    DDPInitProgram::vert::worldClipPlanes[1], UniformType::Vec4, sk_zero, sk_isRequired
-  );
-  vsInitUniforms.insertUniform(
-    DDPInitProgram::vert::worldClipPlanes[2], UniformType::Vec4, sk_zero, sk_isRequired
-  );
+  vsInitUniforms.insertUniform(DDPInitProgram::vert::worldClipPlanes[0], UniformType::Vec4, sk_zero, sk_isRequired);
+  vsInitUniforms.insertUniform(DDPInitProgram::vert::worldClipPlanes[1], UniformType::Vec4, sk_zero, sk_isRequired);
+  vsInitUniforms.insertUniform(DDPInitProgram::vert::worldClipPlanes[2], UniformType::Vec4, sk_zero, sk_isRequired);
 
   Uniforms fsInitUniforms;
   fsInitUniforms.insertUniform(
     DDPInitProgram::frag::opaqueDepthTex,
     UniformType::Sampler,
     Uniforms::SamplerIndexType{0},
-    sk_isRequired
-  );
+    sk_isRequired);
 
   Uniforms vsBlendUniforms;
   Uniforms fsBlendUniforms;
@@ -551,22 +482,19 @@ void ShaderProgramContainer::generateDualDepthPeelingPrograms()
     DDPBlendProgram::frag::tempTexture,
     UniformType::Sampler,
     Uniforms::SamplerIndexType{0},
-    sk_isRequired
-  );
+    sk_isRequired);
 
   Uniforms fsFinalUniforms;
   fsFinalUniforms.insertUniform(
     DDPFinalProgram::frag::frontBlenderTexture,
     UniformType::Sampler,
     Uniforms::SamplerIndexType{0},
-    sk_isRequired
-  );
+    sk_isRequired);
   fsFinalUniforms.insertUniform(
     DDPFinalProgram::frag::backBlenderTexture,
     UniformType::Sampler,
     Uniforms::SamplerIndexType{1},
-    sk_isRequired
-  );
+    sk_isRequired);
 
   Uniforms vsDebugUniforms;
   Uniforms fsDebugUniforms;
@@ -574,8 +502,7 @@ void ShaderProgramContainer::generateDualDepthPeelingPrograms()
     DebugProgram::frag::debugTexture,
     UniformType::Sampler,
     Uniforms::SamplerIndexType{0},
-    sk_isRequired
-  );
+    sk_isRequired);
 
   auto vsInit = std::make_shared<GLShader>("vsMeshInit", ShaderType::Vertex, vsInitSource);
   auto fsInit = std::make_shared<GLShader>("fsMeshInit", ShaderType::Fragment, fsInitSource);
@@ -627,8 +554,7 @@ void ShaderProgramContainer::generatePolygonizerProgram()
     glm::vec3{0.0f, 0.0f, sk_step.z},
     glm::vec3{sk_step.x, 0.0f, sk_step.z},
     glm::vec3{sk_step.x, sk_step.y, sk_step.z},
-    glm::vec3{0.0f, sk_step.y, sk_step.z}
-  };
+    glm::vec3{0.0f, sk_step.y, sk_step.z}};
 
   static const glm::mat3 sk_gradDeltas{1.0f};
 
@@ -638,14 +564,10 @@ void ShaderProgramContainer::generatePolygonizerProgram()
   vsUniforms.insertUniform(vert::tex_O_image, UniformType::Mat4, sk_ident, sk_isRequired);
 
   Uniforms gsUniforms;
-  gsUniforms
-    .insertUniform(geom::tex3D, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired);
-  gsUniforms.insertUniform(
-    geom::triTableTex, UniformType::Sampler, Uniforms::SamplerIndexType{1}, sk_isRequired
-  );
+  gsUniforms.insertUniform(geom::tex3D, UniformType::Sampler, Uniforms::SamplerIndexType{0}, sk_isRequired);
+  gsUniforms.insertUniform(geom::triTableTex, UniformType::Sampler, Uniforms::SamplerIndexType{1}, sk_isRequired);
   gsUniforms.insertUniform(geom::isolevel, UniformType::Float, 0.0f, sk_isRequired);
-  gsUniforms
-    .insertUniform(geom::vertDecals, UniformType::Vec3Array8, sk_defaultVertDecals, sk_isRequired);
+  gsUniforms.insertUniform(geom::vertDecals, UniformType::Vec3Array8, sk_defaultVertDecals, sk_isRequired);
   gsUniforms.insertUniform(geom::gradDeltas, UniformType::Mat3, sk_gradDeltas, sk_isRequired);
   gsUniforms.insertUniform(geom::world_O_tex, UniformType::Mat4, sk_ident, sk_isRequired);
 
@@ -658,14 +580,11 @@ void ShaderProgramContainer::generatePolygonizerProgram()
   generateProgram(PolygonizerProgram::name, ShaderSet{vs, gs}, true);
 }
 
-void ShaderProgramContainer::generateProgram(
-  const std::string& name, const ShaderSourceMap& shaderSources
-)
+void ShaderProgramContainer::generateProgram(const std::string& name, const ShaderSourceMap& shaderSources)
 {
   auto program = std::make_shared<GLShaderProgram>(name.c_str());
 
-  for (const auto& source : shaderSources)
-  {
+  for (const auto& source : shaderSources) {
     const auto shaderType = source.first;
 
     std::ostringstream shaderName;
@@ -677,8 +596,7 @@ void ShaderProgramContainer::generateProgram(
 
   const bool linked = program->link();
 
-  if (!linked)
-  {
+  if (!linked) {
     std::ostringstream ss;
     ss << "Failed to link program " << name << std::ends;
     throw_debug(ss.str());
@@ -687,19 +605,15 @@ void ShaderProgramContainer::generateProgram(
   m_programs.insert(std::make_pair(name, program));
 }
 
-void ShaderProgramContainer::generateProgram(
-  const std::string& name, const ShaderSet& shaders, bool set
-)
+void ShaderProgramContainer::generateProgram(const std::string& name, const ShaderSet& shaders, bool set)
 {
   auto program = std::make_shared<GLShaderProgram>(name.c_str());
 
-  for (const auto& shader : shaders)
-  {
+  for (const auto& shader : shaders) {
     program->attachShader(shader);
   }
 
-  if (set)
-  {
+  if (set) {
     // Feed back two varying variables:
     const GLchar* varyings[] = {"outPosition", "outNormal"};
 
@@ -708,8 +622,7 @@ void ShaderProgramContainer::generateProgram(
 
   bool linked = program->link();
 
-  if (!linked)
-  {
+  if (!linked) {
     std::ostringstream ss;
     ss << "Failed to link program " << name << std::ends;
     throw_debug(ss.str());

@@ -6,11 +6,13 @@
 //   return 1.0 - x * x * (3.0 - 2.0 * x);
 // }
 
-int lt(int x, int y) {
+int lt(int x, int y)
+{
   return max(sign(y - x), 0);
 }
 
-int ge(int x, int y) {
+int ge(int x, int y)
+{
   return (1 - lt(x, y));
 }
 
@@ -22,8 +24,14 @@ bool isLabelVisible(int label)
 }
 
 const uvec3 neigh[8] = uvec3[8](
-  uvec3(0, 0, 0), uvec3(0, 0, 1), uvec3(0, 1, 0), uvec3(0, 1, 1),
-  uvec3(1, 0, 0), uvec3(1, 0, 1), uvec3(1, 1, 0), uvec3(1, 1, 1));
+  uvec3(0, 0, 0),
+  uvec3(0, 0, 1),
+  uvec3(0, 1, 0),
+  uvec3(0, 1, 1),
+  uvec3(1, 0, 0),
+  uvec3(1, 0, 1),
+  uvec3(1, 1, 0),
+  uvec3(1, 1, 1));
 
 /// This does a LINEAR loookup over texture values in the segmentation.
 uint getSegValue(vec3 texOffset, out float opacity)
@@ -42,17 +50,16 @@ uint getSegValue(vec3 texOffset, out float opacity)
   }
 
   vec3 fracPart = fs_in.v_voxCoord + texOffset * vec3(textureSize(u_segTex, 0)) - c; // fractional part
-  vec3 w[2] = vec3[2](vec3(1.0) - fracPart, fracPart); // interpolation weights
+  vec3 w[2] = vec3[2](vec3(1.0) - fracPart, fracPart);                               // interpolation weights
 
   // float segEdgeWidth = 0.02;
   float maxInterp = 0.0;
 
   // Look up texture values in the fragment and its 8 neighbors.
   // The center fragment (row = 0, col = 0) has index i = 4.
-  for (int i = 0; i <= 8; ++i)
-  {
-    int j = int(mod(i + 4, 9)); // j = [4, 5, 6, 7, 8, 0, 1, 2, 3]
-    float row = float(mod(j, 3) - 1); // [-1, 0, 1]
+  for (int i = 0; i <= 8; ++i) {
+    int j = int(mod(i + 4, 9));                 // j = [4, 5, 6, 7, 8, 0, 1, 2, 3]
+    float row = float(mod(j, 3) - 1);           // [-1, 0, 1]
     float col = float(floor(float(j / 3)) - 1); // [-1, 0, 1]
 
     vec3 texPos = row * u_texSamplingDirsForSmoothSeg[0] + col * u_texSamplingDirsForSmoothSeg[1];

@@ -38,7 +38,7 @@ bool isIntegerMultiple(float a, float b, float tolerance)
     return false;
   }
 
-  const float k = std::round(a / b); // Nearest integer multiple
+  const float k = std::round(a / b);             // Nearest integer multiple
   const float difference = std::fabs(a - k * b); // Distance from exact multiple
   return (difference < tolerance);
 }
@@ -50,27 +50,24 @@ namespace helper
 /// @todo Differentiate names of functions that return mat4 transformations
 /// (a_T_b) from those that actually do the transforming (tx_a_T_b)?
 
-//void doExtra( Camera& camera, const CoordinateFrame& frame )
+// void doExtra( Camera& camera, const CoordinateFrame& frame )
 //{
-//    glm::mat4 Q = glm::toMat4( frame.world_T_frame_rotation() );
-//    glm::mat4 Qinv = glm::inverse( Q );
-//    glm::mat4 T = glm::translate( glm::mat4{1.0f}, frame.worldOrigin() );
-//    glm::mat4 Tinv = glm::inverse( T );
-//    camera.setExtra( T * Qinv * Tinv * camera.extra() );
-//}
+//     glm::mat4 Q = glm::toMat4( frame.world_T_frame_rotation() );
+//     glm::mat4 Qinv = glm::inverse( Q );
+//     glm::mat4 T = glm::translate( glm::mat4{1.0f}, frame.worldOrigin() );
+//     glm::mat4 Tinv = glm::inverse( T );
+//     camera.setExtra( T * Qinv * Tinv * camera.extra() );
+// }
 
 std::unique_ptr<Projection> createCameraProjection(const ProjectionType& projectionType)
 {
-  switch (projectionType)
-  {
-  case ProjectionType::Orthographic:
-  {
-    return std::make_unique<OrthographicProjection>();
-  }
-  case ProjectionType::Perspective:
-  {
-    return std::make_unique<PerspectiveProjection>();
-  }
+  switch (projectionType) {
+    case ProjectionType::Orthographic: {
+      return std::make_unique<OrthographicProjection>();
+    }
+    case ProjectionType::Perspective: {
+      return std::make_unique<PerspectiveProjection>();
+    }
   }
 
   return std::make_unique<OrthographicProjection>();
@@ -163,19 +160,18 @@ float ndcZofWorldPoint(const Camera& camera, const glm::vec3& worldPos)
 float ndcZofWorldPoint_v2(const Camera& camera, const glm::vec3& worldPoint)
 {
   const glm::vec3 v = worldOrigin(camera) - worldPoint;
-  const float d = glm::length(v)
-                  * glm::sign(glm::dot(v, worldDirection(camera, Directions::View::Back)));
+  const float d = glm::length(v) * glm::sign(glm::dot(v, worldDirection(camera, Directions::View::Back)));
 
-  return 2.0f * (1.0f / d - 1.0f / camera.nearDistance())
-           / (1.0f / camera.farDistance() - 1.0f / camera.nearDistance())
-         - 1.0f;
+  return 2.0f * (1.0f / d - 1.0f / camera.nearDistance()) /
+           (1.0f / camera.farDistance() - 1.0f / camera.nearDistance()) -
+         1.0f;
 }
 
 float ndcZOfCameraDistance(const Camera& camera, const float cameraDistance)
 {
-  return 2.0f * (1.0f / cameraDistance - 1.0f / camera.nearDistance())
-           / (1.0f / camera.farDistance() - 1.0f / camera.nearDistance())
-         - 1.0f;
+  return 2.0f * (1.0f / cameraDistance - 1.0f / camera.nearDistance()) /
+           (1.0f / camera.farDistance() - 1.0f / camera.nearDistance()) -
+         1.0f;
 }
 
 void applyViewTransformation(Camera& camera, const glm::mat4& m)
@@ -183,13 +179,9 @@ void applyViewTransformation(Camera& camera, const glm::mat4& m)
   camera.set_camera_T_anatomy(m * camera.camera_T_anatomy());
 }
 
-void applyViewRotationAboutWorldPoint(
-  Camera& camera, const glm::quat& rotation, const glm::vec3& worldRotationPos
-)
+void applyViewRotationAboutWorldPoint(Camera& camera, const glm::quat& rotation, const glm::vec3& worldRotationPos)
 {
-  const glm::vec3 cameraRotationCenter = glm::vec3{
-    camera.camera_T_world() * glm::vec4{worldRotationPos, 1.0f}
-  };
+  const glm::vec3 cameraRotationCenter = glm::vec3{camera.camera_T_world() * glm::vec4{worldRotationPos, 1.0f}};
 
   translateAboutCamera(camera, cameraRotationCenter);
   applyViewTransformation(camera, glm::toMat4(rotation));
@@ -219,8 +211,10 @@ void translateAboutCamera(Camera& camera, const glm::vec3& cameraVec)
 }
 
 void panRelativeToWorldPosition(
-  Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos, const glm::vec3& worldPos
-)
+  Camera& camera,
+  const glm::vec2& ndcOldPos,
+  const glm::vec2& ndcNewPos,
+  const glm::vec3& worldPos)
 {
   const float ndcZ = ndcZofWorldPoint(camera, worldPos);
   const float flip = (ndcZ >= 1.0f) ? -1.0f : 1.0f;
@@ -245,16 +239,12 @@ void rotateAboutOrigin(Camera& camera, const glm::vec3& cameraVec, float angleRa
   applyViewTransformation(camera, glm::rotate(angleRadians, cameraVec));
 }
 
-void rotate(
-  Camera& camera, const Directions::View& eyeAxis, float angleRadians, const glm::vec3& cameraCenter
-)
+void rotate(Camera& camera, const Directions::View& eyeAxis, float angleRadians, const glm::vec3& cameraCenter)
 {
   rotate(camera, Directions::get(eyeAxis), angleRadians, cameraCenter);
 }
 
-void rotate(
-  Camera& camera, const glm::vec3& cameraAxis, float angleRadians, const glm::vec3& cameraCenter
-)
+void rotate(Camera& camera, const glm::vec3& cameraAxis, float angleRadians, const glm::vec3& cameraCenter)
 {
   translateAboutCamera(camera, cameraCenter);
   rotateAboutOrigin(camera, cameraAxis, -angleRadians);
@@ -263,8 +253,7 @@ void rotate(
 
 void zoom(Camera& camera, float factor, const glm::vec2& cameraCenterPos)
 {
-  if (factor <= 0.0f)
-  {
+  if (factor <= 0.0f) {
     return;
   }
 
@@ -289,36 +278,32 @@ void setWorldTarget(Camera& camera, const glm::vec3& worldPos, const std::option
   // 10% of the view frustum depth, so that it doesn't clip the image quad vertices:
   static constexpr float sk_pushBackFraction = 0.10f;
 
-  const float eyeToTargetOffset = targetDistance
-    ? *targetDistance
-    : sk_pushBackFraction * (camera.farDistance() - camera.nearDistance());
+  const float eyeToTargetOffset =
+    targetDistance ? *targetDistance : sk_pushBackFraction * (camera.farDistance() - camera.nearDistance());
 
   const glm::vec3 front = worldDirection(camera, Directions::View::Front);
   setCameraOrigin(camera, worldPos - eyeToTargetOffset * front);
 }
 
-void translateInOut(
-  Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos, float scale
-)
+void translateInOut(Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos, float scale)
 {
   translateAboutCamera(camera, Directions::View::Front, scale * (ndcNewPos.y - ndcOldPos.y));
 }
 
 void rotateInPlane(Camera& camera, float angle, const glm::vec2& ndcRotationCenter)
 {
-  rotate(
-    camera, Directions::View::Front, angle, camera_T_ndc(camera, glm::vec3{ndcRotationCenter, -1.0f})
-  );
+  rotate(camera, Directions::View::Front, angle, camera_T_ndc(camera, glm::vec3{ndcRotationCenter, -1.0f}));
 }
 
 void rotateInPlane(
   Camera& camera,
   const glm::vec2& ndcOldPos,
   const glm::vec2& ndcNewPos,
-  const glm::vec2& ndcRotationCenter
-)
+  const glm::vec2& ndcRotationCenter)
 {
-  if (glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) || glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
+  if (
+    glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) ||
+    glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
   {
     return;
   }
@@ -350,14 +335,11 @@ void rotateAboutWorldPoint(
   Camera& camera,
   const glm::vec2& ndcOldPos,
   const glm::vec2& ndcNewPos,
-  const glm::vec3& worldRotationPos
-)
+  const glm::vec3& worldRotationPos)
 {
   const glm::vec2 angles = glm::pi<float>() * (ndcNewPos - ndcOldPos);
 
-  const glm::vec3 cameraRotationCenter = glm::vec3{
-    camera.camera_T_world() * glm::vec4{worldRotationPos, 1.0f}
-  };
+  const glm::vec3 cameraRotationCenter = glm::vec3{camera.camera_T_world() * glm::vec4{worldRotationPos, 1.0f}};
 
   rotate(camera, Directions::View::Down, angles.x, cameraRotationCenter);
   rotate(camera, Directions::View::Right, angles.y, cameraRotationCenter);
@@ -368,12 +350,7 @@ void zoomNdc(Camera& camera, float factor, const glm::vec2& ndcCenterPos)
   zoom(camera, factor, glm::vec2{camera_T_ndc(camera, glm::vec3{ndcCenterPos, -1.0f})});
 }
 
-void zoomNdc(
-  Camera& camera,
-  const glm::vec2& ndcOldPos,
-  const glm::vec2& ndcNewPos,
-  const glm::vec2& ndcCenterPos
-)
+void zoomNdc(Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos, const glm::vec2& ndcCenterPos)
 {
   const float factor = (ndcNewPos.y - ndcOldPos.y) / 2.0f + 1.0f;
   zoomNdc(camera, factor, ndcCenterPos);
@@ -402,9 +379,7 @@ float convertOpenGlDepthToNdc(float depth)
   return (2.0f * depth - sk_depthRangeNear - sk_depthRangeFar) / sk_depthRange;
 }
 
-glm::vec3 sphere_T_ndc(
-  const Camera& camera, const glm::vec2& ndcPos, const glm::vec3& worldSphereCenter
-)
+glm::vec3 sphere_T_ndc(const Camera& camera, const glm::vec2& ndcPos, const glm::vec3& worldSphereCenter)
 {
   static constexpr float sk_ndcRadius = 1.0f;
   const glm::vec4 clipSphereCenter = clip_T_world(camera) * glm::vec4{worldSphereCenter, 1.0f};
@@ -412,12 +387,10 @@ glm::vec3 sphere_T_ndc(
   const glm::vec2 unitCirclePos = (ndcPos - ndcSphereCenter) / sk_ndcRadius;
   const float rSq = glm::length2(unitCirclePos);
 
-  if (rSq < 1.0f)
-  {
+  if (rSq < 1.0f) {
     return glm::vec3(unitCirclePos, 1.0f - rSq);
   }
-  else
-  {
+  else {
     return glm::vec3(glm::normalize(unitCirclePos), 0.0f);
   }
 }
@@ -426,8 +399,7 @@ glm::quat rotationAlongArc(
   const Camera& camera,
   const glm::vec2& ndcStartPos,
   const glm::vec2& ndcNewPos,
-  const glm::vec3& worldSphereCenter
-)
+  const glm::vec3& worldSphereCenter)
 {
   static constexpr float sk_minAngle = 0.001f;
 
@@ -436,8 +408,7 @@ glm::quat rotationAlongArc(
 
   const float angle = std::acos(glm::clamp(glm::dot(sphereStartPos, sphereNewPos), -1.0f, 1.0f));
 
-  if (std::abs(angle) < sk_minAngle)
-  {
+  if (std::abs(angle) < sk_minAngle) {
     return sk_unitRot;
   }
 
@@ -453,8 +424,9 @@ glm::quat rotation2dInCameraPlane(
   const glm::vec2& ndcNewPos,
   const glm::vec2& ndcRotationCenter)
 {
-  if (glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) ||
-      glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
+  if (
+    glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) ||
+    glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
   {
     return sk_unitRot;
   }
@@ -477,8 +449,9 @@ glm::quat rotation2dInCameraPlaneWithSnapping(
   float angleTolerance,
   const glm::vec2& ndcRotationCenter)
 {
-  if (glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) ||
-      glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
+  if (
+    glm::all(glm::epsilonEqual(ndcOldPos, ndcRotationCenter, sk_eps)) ||
+    glm::all(glm::epsilonEqual(ndcNewPos, ndcRotationCenter, sk_eps)))
   {
     return sk_unitRot;
   }
@@ -503,9 +476,7 @@ glm::quat rotation2dInCameraPlaneWithSnapping(
   return glm::quat_cast(glm::rotate(angleRad, w_T_c[2]));
 }
 
-glm::quat rotation3dAboutCameraPlane(
-  const Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos
-)
+glm::quat rotation3dAboutCameraPlane(const Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos)
 {
   const glm::vec2 angles = glm::pi<float>() * (ndcNewPos - ndcOldPos);
   const glm::mat3 w_T_c = inverseTranspose(glm::mat3{world_T_clip(camera)});
@@ -516,9 +487,8 @@ glm::quat rotation3dAboutCameraPlane(
   return glm::quat_cast(R_horiz * R_vert);
 }
 
-glm::vec3 translationInCameraPlane(
-  const Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos, float ndcZ
-)
+glm::vec3
+translationInCameraPlane(const Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos, float ndcZ)
 {
   // If the frame origin is behind the camera origin, then flip the
   // delta vector, so that we still translate in the correct direction
@@ -531,8 +501,10 @@ glm::vec3 translationInCameraPlane(
 }
 
 glm::vec3 translationAboutCameraFrontBack(
-  const Camera& camera, const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos, float scale
-)
+  const Camera& camera,
+  const glm::vec2& ndcOldPos,
+  const glm::vec2& ndcNewPos,
+  float scale)
 {
   const float distance = scale * (ndcNewPos.y - ndcOldPos.y);
   const glm::vec3 front = worldDirection(camera, Directions::View::Front);
@@ -544,8 +516,7 @@ float axisTranslationAlongWorldAxis(
   const glm::vec2& ndcOldPos,
   const glm::vec2& ndcNewPos,
   float ndcZ,
-  const glm::vec3& worldAxis
-)
+  const glm::vec3& worldAxis)
 {
   const glm::vec3 oldWorldPos = world_T_ndc(camera, glm::vec3{ndcOldPos, ndcZ});
   const glm::vec3 newWorldPos = world_T_ndc(camera, glm::vec3{ndcNewPos, ndcZ});
@@ -559,8 +530,7 @@ float rotationAngleAboutWorldAxis(
   const glm::vec2& ndcNewPos,
   float ndcZ,
   const glm::vec3& worldRotationAxis,
-  const glm::vec3& worldRotationCenter
-)
+  const glm::vec3& worldRotationCenter)
 {
   const glm::vec3 oldWorldPos = world_T_ndc(camera, glm::vec3{ndcOldPos, ndcZ});
   const glm::vec3 newWorldPos = world_T_ndc(camera, glm::vec3{ndcNewPos, ndcZ});
@@ -579,8 +549,7 @@ glm::vec2 scaleFactorsAboutWorldAxis(
   const glm::vec2& ndcNewPos,
   float ndcZ,
   const glm::mat4& slide_T_world,
-  const glm::vec3& slideRotationCenter
-)
+  const glm::vec3& slideRotationCenter)
 {
   const glm::vec4 a = slide_T_world * world_T_clip(camera) * glm::vec4{ndcOldPos, ndcZ, 1.0f};
   const glm::vec4 b = slide_T_world * world_T_clip(camera) * glm::vec4{ndcNewPos, ndcZ, 1.0f};
@@ -600,8 +569,7 @@ glm::vec2 scaleFactorsAboutWorldAxis(
 
   static const glm::vec2 sk_zero(0.0f, 0.0f);
 
-  if (glm::any(glm::epsilonEqual(denom, sk_zero, glm::epsilon<float>())))
-  {
+  if (glm::any(glm::epsilonEqual(denom, sk_zero, glm::epsilon<float>()))) {
     static const glm::vec2 sk_ident(1.0f, 1.0f);
     return sk_ident;
   }
@@ -632,8 +600,7 @@ glm::vec3 worldTranslationPerpendicularToWorldAxis(
   const glm::vec2& ndcOldPos,
   const glm::vec2& ndcNewPos,
   float ndcZ,
-  const glm::vec3& worldAxis
-)
+  const glm::vec3& worldAxis)
 {
   const glm::vec3 oldWorldPos = world_T_ndc(camera, glm::vec3{ndcOldPos, ndcZ});
   const glm::vec3 newWorldPos = world_T_ndc(camera, glm::vec3{ndcNewPos, ndcZ});
@@ -652,8 +619,7 @@ glm::vec2 windowNdc_T_window(const Viewport& windowViewport, const glm::vec2& wi
 {
   return glm::vec2(
     2.0f * (windowPixelPos.x - windowViewport.left()) / windowViewport.width() - 1.0f,
-    2.0f * (windowPixelPos.y - windowViewport.bottom()) / windowViewport.height() - 1.0f
-  );
+    2.0f * (windowPixelPos.y - windowViewport.bottom()) / windowViewport.height() - 1.0f);
 }
 
 glm::vec2 viewDevice_T_ndc(const Viewport& viewport, const glm::vec2& ndcPos)
@@ -665,24 +631,21 @@ glm::vec2 window_T_windowClip(const Viewport& viewport, const glm::vec2& ndcPos)
 {
   return glm::vec2(
     (ndcPos.x + 1.0f) * viewport.width() / 2.0f + viewport.left(),
-    (ndcPos.y + 1.0f) * viewport.height() / 2.0f + viewport.bottom()
-  );
+    (ndcPos.y + 1.0f) * viewport.height() / 2.0f + viewport.bottom());
 }
 
 glm::vec2 viewport_T_windowClip(const Viewport& windowViewport, const glm::vec2& windowClipPos)
 {
   return glm::vec2(
     (windowClipPos.x + 1.0f) * windowViewport.width() / 2.0f,
-    (windowClipPos.y + 1.0f) * windowViewport.height() / 2.0f
-  );
+    (windowClipPos.y + 1.0f) * windowViewport.height() / 2.0f);
 }
 
 glm::vec2 windowClip_T_viewport(const Viewport& windowViewport, const glm::vec2& viewportPos)
 {
   return glm::vec2(
     (2.0f * viewportPos.x / windowViewport.width() - 1.0f),
-    (2.0f * viewportPos.y / windowViewport.height() - 1.0f)
-  );
+    (2.0f * viewportPos.y / windowViewport.height() - 1.0f));
 }
 
 glm::mat4 window_T_windowClip(const Viewport& viewport)
@@ -691,13 +654,7 @@ glm::mat4 window_T_windowClip(const Viewport& viewport)
     glm::vec4{viewport.width() / 2.0f, 0.0f, 0.0f, 0.0f},
     glm::vec4{0.0f, viewport.height() / 2.0f, 0.0f, 0.0f},
     glm::vec4{0.0f, 0.0f, 1.0f, 0.0f},
-    glm::vec4{
-      viewport.left() + viewport.width() / 2.0f,
-      viewport.bottom() + viewport.height() / 2.0f,
-      1.0f,
-      1.0f
-    }
-  };
+    glm::vec4{viewport.left() + viewport.width() / 2.0f, viewport.bottom() + viewport.height() / 2.0f, 1.0f, 1.0f}};
 }
 
 glm::mat4 viewport_T_windowClip(const Viewport& windowViewport)
@@ -706,8 +663,7 @@ glm::mat4 viewport_T_windowClip(const Viewport& windowViewport)
     glm::vec4{windowViewport.width() / 2.0f, 0.0f, 0.0f, 0.0f},
     glm::vec4{0.0f, windowViewport.height() / 2.0f, 0.0f, 0.0f},
     glm::vec4{0.0f, 0.0f, 1.0f, 0.0f},
-    glm::vec4{windowViewport.width() / 2.0f, windowViewport.height() / 2.0f, 1.0f, 1.0f}
-  };
+    glm::vec4{windowViewport.width() / 2.0f, windowViewport.height() / 2.0f, 1.0f, 1.0f}};
 }
 
 glm::vec2 window_T_mindow(float wholeWindowHeight, const glm::vec2& mousePos)
@@ -721,8 +677,7 @@ glm::mat4 window_T_mindow(float wholeWindowHeight)
     glm::vec4{1.0f, 0.0f, 0.0f, 0.0f},
     glm::vec4{0.0f, -1.0f, 0.0f, 0.0f},
     glm::vec4{0.0f, 0.0f, 1.0f, 0.0f},
-    glm::vec4{0.0f, wholeWindowHeight, 0.0f, 1.0f}
-  };
+    glm::vec4{0.0f, wholeWindowHeight, 0.0f, 1.0f}};
 }
 
 glm::mat4 mindow_T_window(float wholeWindowHeight)
@@ -746,13 +701,11 @@ glm::mat4 miewport_T_viewport(float viewportHeight)
     glm::vec4{1.0f, 0.0f, 0.0f, 0.0f},
     glm::vec4{0.0f, -1.0f, 0.0f, 0.0f},
     glm::vec4{0.0f, 0.0f, 1.0f, 0.0f},
-    glm::vec4{0.0f, viewportHeight, 0.0f, 1.0f}
-  };
+    glm::vec4{0.0f, viewportHeight, 0.0f, 1.0f}};
 }
 
-std::optional<glm::vec3> worldCameraPlaneIntersection(
-  const Camera& camera, const glm::vec2& ndcRayPos, const glm::vec3& worldPlanePos
-)
+std::optional<glm::vec3>
+worldCameraPlaneIntersection(const Camera& camera, const glm::vec2& ndcRayPos, const glm::vec3& worldPlanePos)
 {
   static constexpr float sk_ndcNearPlane = -1.0f;
 
@@ -762,28 +715,22 @@ std::optional<glm::vec3> worldCameraPlaneIntersection(
 
   float intersectionDistance;
 
-  bool intersected = glm::intersectRayPlane(
-    worldRayPos, worldRayDir, worldPlanePos, worldPlaneNormal, intersectionDistance
-  );
+  bool intersected =
+    glm::intersectRayPlane(worldRayPos, worldRayDir, worldPlanePos, worldPlaneNormal, intersectionDistance);
 
-  if (intersected)
-  {
+  if (intersected) {
     return worldRayPos + intersectionDistance * worldRayDir;
   }
-  else
-  {
+  else {
     return std::nullopt;
   }
 }
 
-void positionCameraForWorldTargetAndFov(
-  Camera& camera, const glm::vec3& worldBoxSize, const glm::vec3& worldTarget
-)
+void positionCameraForWorldTargetAndFov(Camera& camera, const glm::vec3& worldBoxSize, const glm::vec3& worldTarget)
 {
   const auto [pullBackDistance, farDistance] = computePullbackAndFarDistances(camera, worldBoxSize);
 
-  if (camera.isOrthographic())
-  {
+  if (camera.isOrthographic()) {
     const float fov = glm::compMax(worldBoxSize);
     camera.setDefaultFov(glm::vec2{fov, fov});
   }
@@ -792,22 +739,19 @@ void positionCameraForWorldTargetAndFov(
   setWorldTarget(camera, worldTarget, pullBackDistance);
 }
 
-void positionCameraForWorldTarget(
-  Camera& camera, const glm::vec3& worldBoxSize, const glm::vec3& worldTarget)
+void positionCameraForWorldTarget(Camera& camera, const glm::vec3& worldBoxSize, const glm::vec3& worldTarget)
 {
   const auto [pullBackDistance, farDistance] = computePullbackAndFarDistances(camera, worldBoxSize);
   camera.setFarDistance(farDistance);
   setWorldTarget(camera, worldTarget, pullBackDistance);
 }
 
-void orientCameraToWorldTargetNormalDirection(
-  Camera& camera, const glm::vec3& targetWorldNormalDirection
-)
+void orientCameraToWorldTargetNormalDirection(Camera& camera, const glm::vec3& targetWorldNormalDirection)
 {
   static const glm::vec3 cameraToVector{0, 0, 1};
 
-  const glm::vec3 cameraFromVector = glm::inverseTranspose(glm::mat3{camera.camera_T_world()})
-                                     * glm::normalize(targetWorldNormalDirection);
+  const glm::vec3 cameraFromVector =
+    glm::inverseTranspose(glm::mat3{camera.camera_T_world()}) * glm::normalize(targetWorldNormalDirection);
 
   applyViewTransformation(camera, math::fromToRotation(cameraFromVector, cameraToVector));
 }
@@ -822,8 +766,7 @@ void setWorldForwardDirection(Camera& camera, const glm::vec3& worldForwardDirec
   static const glm::vec3 sk_worldDesiredUp_superior = Directions::get(Directions::Anatomy::Superior);
   static const glm::vec3 sk_worldDesiredUp_anterior = Directions::get(Directions::Anatomy::Anterior);
 
-  if (glm::length(worldForwardDirection) < sk_lengthThresh)
-  {
+  if (glm::length(worldForwardDirection) < sk_lengthThresh) {
     return;
   }
 
@@ -834,25 +777,25 @@ void setWorldForwardDirection(Camera& camera, const glm::vec3& worldForwardDirec
   // then worldRight = anterior X worldBack;
   // otherwise, worldRight = superior X worldBack.
 
-  const glm::vec3 worldDesiredUp
-    = (helper::areVectorsParallel(worldBack, sk_worldDesiredUp_superior, sk_angleThresh_degrees))
-        ? sk_worldDesiredUp_anterior
-        : sk_worldDesiredUp_superior;
+  const glm::vec3 worldDesiredUp =
+    (helper::areVectorsParallel(worldBack, sk_worldDesiredUp_superior, sk_angleThresh_degrees))
+      ? sk_worldDesiredUp_anterior
+      : sk_worldDesiredUp_superior;
 
   const glm::vec3 worldRight = glm::normalize(glm::cross(worldDesiredUp, worldBack));
   const glm::vec3 worldUp = glm::normalize(glm::cross(worldBack, worldRight));
 
   const glm::mat4 anatomy_T_camera{
-    glm::vec4{worldRight, 0}, glm::vec4{worldUp, 0}, glm::vec4{worldBack, 0}, glm::vec4{0, 0, 0, 1}
-  };
+    glm::vec4{worldRight, 0},
+    glm::vec4{worldUp, 0},
+    glm::vec4{worldBack, 0},
+    glm::vec4{0, 0, 0, 1}};
 
   camera.set_anatomy_T_start_provider([]() { return IDENT; });
   camera.set_camera_T_anatomy(glm::inverse(anatomy_T_camera));
 }
 
-std::pair<float, float> computePullbackAndFarDistances(
-  const Camera& camera, const glm::vec3& worldBoxSize
-)
+std::pair<float, float> computePullbackAndFarDistances(const Camera& camera, const glm::vec3& worldBoxSize)
 {
   // Camera target is image bounding box center.
   // FOV at focal plane equals maximum reference space bounding box size.
@@ -866,12 +809,10 @@ std::pair<float, float> computePullbackAndFarDistances(
 
   float pullBackDistance = 0.0f;
 
-  if (camera.isOrthographic())
-  {
+  if (camera.isOrthographic()) {
     pullBackDistance = 2.0f * minDistance;
   }
-  else
-  {
+  else {
     pullBackDistance = std::max(0.5f * fov / std::tan(camera.angle()), minDistance);
   }
 
@@ -931,8 +872,7 @@ std::array<glm::vec3, 8> worldFrustumCorners(const Camera& camera)
     std::begin(sk_ndCorners),
     std::end(sk_ndCorners),
     std::begin(worldCorners),
-    std::bind(&world_T_ndc, std::ref(camera), std::placeholders::_1)
-  );
+    std::bind(&world_T_ndc, std::ref(camera), std::placeholders::_1));
 
   return worldCorners;
 }
@@ -959,17 +899,14 @@ std::array<glm::vec4, 6> worldFrustumPlanes(const Camera& camera)
 
   std::array<glm::vec4, 6> planes;
 
-  for (uint32_t i = 0; i < 6; ++i)
-  {
+  for (uint32_t i = 0; i < 6; ++i) {
     planes[i] = math::makePlane(normals[i], p[i]);
   }
 
   return planes;
 }
 
-glm::vec4 world_T_view(
-  const Viewport& viewport, const Camera& camera, const glm::vec2& viewPos, float ndcZ
-)
+glm::vec4 world_T_view(const Viewport& viewport, const Camera& camera, const glm::vec2& viewPos, float ndcZ)
 {
   /// @note Maybe replace ndcZ with focal distance in clip space?
   const glm::vec4 clipPos{windowNdc_T_window(viewport, viewPos), ndcZ, 1.0f};
@@ -995,9 +932,7 @@ glm::vec2 worldPixelSize(const Viewport& viewport, const Camera& camera)
 }
 
 // This version of the function is valid for both orthogonal and perspective projections
-glm::vec2 worldPixelSizeAtWorldPosition(
-  const Viewport& viewport, const Camera& camera, const glm::vec3& worldPos
-)
+glm::vec2 worldPixelSizeAtWorldPosition(const Viewport& viewport, const Camera& camera, const glm::vec3& worldPos)
 {
   static const glm::vec2 viewX(1.0f, 0.0f);
   static const glm::vec2 viewY(0.0f, 1.0f);
@@ -1031,11 +966,9 @@ glm::vec2 miewport_T_world(
   const Viewport& windowVP,
   const Camera& camera,
   const glm::mat4& windowClip_T_viewClip,
-  const glm::vec3& worldPos
-)
+  const glm::vec3& worldPos)
 {
-  const glm::vec4 winClipPos = windowClip_T_viewClip * clip_T_world(camera)
-                               * glm::vec4{worldPos, 1.0f};
+  const glm::vec4 winClipPos = windowClip_T_viewClip * clip_T_world(camera) * glm::vec4{worldPos, 1.0f};
 
   const glm::vec2 viewportPos = viewport_T_windowClip(windowVP, glm::vec2{winClipPos / winClipPos.w});
 
@@ -1046,23 +979,20 @@ glm::vec3 world_T_miewport(
   const Viewport& windowVP,
   const Camera& camera,
   const glm::mat4& viewClip_T_windowClip,
-  const glm::vec2& miewportPos
-)
+  const glm::vec2& miewportPos)
 {
   static constexpr float sk_nearPlaneClip = -1.0f;
 
   const glm::vec2 viewportPos = viewport_T_miewport(windowVP.height(), miewportPos);
   const glm::vec2 winClipPos = windowClip_T_viewport(windowVP, viewportPos);
 
-  const glm::vec4 worldPos = world_T_clip(camera) * viewClip_T_windowClip
-                             * glm::vec4{winClipPos, sk_nearPlaneClip, 1.0f};
+  const glm::vec4 worldPos =
+    world_T_clip(camera) * viewClip_T_windowClip * glm::vec4{winClipPos, sk_nearPlaneClip, 1.0f};
 
   return worldPos / worldPos.w;
 }
 
-glm::vec2 worldPixelSize(
-  const Viewport& windowVP, const Camera& camera, const glm::mat4& viewClip_T_windowClip
-)
+glm::vec2 worldPixelSize(const Viewport& windowVP, const Camera& camera, const glm::mat4& viewClip_T_windowClip)
 {
   static const glm::vec2 miewO(0.0f, 0.0f);
   static const glm::vec2 miewX(1.0f, 0.0f);
@@ -1077,10 +1007,10 @@ glm::vec2 worldPixelSize(
 
 glm::mat4 compute_windowClip_T_viewClip(const glm::vec4& windowClipViewport)
 {
-  const glm::vec3
-    T{windowClipViewport[0] + 0.5f * windowClipViewport[2],
-      windowClipViewport[1] + 0.5f * windowClipViewport[3],
-      0.0f};
+  const glm::vec3 T{
+    windowClipViewport[0] + 0.5f * windowClipViewport[2],
+    windowClipViewport[1] + 0.5f * windowClipViewport[3],
+    0.0f};
 
   const glm::vec3 S{0.5f * windowClipViewport[2], 0.5f * windowClipViewport[3], 1.0f};
 
@@ -1097,12 +1027,10 @@ glm::quat computeCameraRotationRelativeToWorld(const Camera& camera)
   return glm::quat_cast(rotation_camera_T_world);
 }
 
-FrameBounds computeMiewportFrameBounds(
-  const glm::vec4& windowClipFrameViewport, const glm::vec4& windowViewport
-)
+FrameBounds computeMiewportFrameBounds(const glm::vec4& windowClipFrameViewport, const glm::vec4& windowViewport)
 {
-  const glm::mat4 miewport_T_windowClip = helper::miewport_T_viewport(windowViewport[3])
-                                          * helper::viewport_T_windowClip(windowViewport);
+  const glm::mat4 miewport_T_windowClip =
+    helper::miewport_T_viewport(windowViewport[3]) * helper::viewport_T_windowClip(windowViewport);
 
   const glm::vec4 winClipViewBL{windowClipFrameViewport[0], windowClipFrameViewport[1], 0.0f, 1.0f};
 
@@ -1110,26 +1038,25 @@ FrameBounds computeMiewportFrameBounds(
     windowClipFrameViewport[0] + windowClipFrameViewport[2],
     windowClipFrameViewport[1] + windowClipFrameViewport[3],
     0.0f,
-    1.0f
-  };
+    1.0f};
 
   const glm::vec2 miewportViewBL{miewport_T_windowClip * winClipViewBL};
   const glm::vec2 miewportViewTR{miewport_T_windowClip * winClipViewTR};
 
   return glm::vec4(
-    miewportViewBL.x,                    // x offset
-    miewportViewTR.y,                    // y offset
-    miewportViewTR.x - miewportViewBL.x, // width
-    miewportViewBL.y - miewportViewTR.y
-  ); // height
+    miewportViewBL.x,                     // x offset
+    miewportViewTR.y,                     // y offset
+    miewportViewTR.x - miewportViewBL.x,  // width
+    miewportViewBL.y - miewportViewTR.y); // height
 }
 
 FrameBounds computeMindowFrameBounds(
-  const glm::vec4& windowClipFrameViewport, const glm::vec4& windowViewport, float wholeWindowHeight
-)
+  const glm::vec4& windowClipFrameViewport,
+  const glm::vec4& windowViewport,
+  float wholeWindowHeight)
 {
-  const glm::mat4 mindow_T_windowClip = helper::mindow_T_window(wholeWindowHeight)
-                                        * helper::window_T_windowClip(windowViewport);
+  const glm::mat4 mindow_T_windowClip =
+    helper::mindow_T_window(wholeWindowHeight) * helper::window_T_windowClip(windowViewport);
 
   const glm::vec4 winClipViewBL{windowClipFrameViewport[0], windowClipFrameViewport[1], 0.0f, 1.0f};
 
@@ -1137,18 +1064,16 @@ FrameBounds computeMindowFrameBounds(
     windowClipFrameViewport[0] + windowClipFrameViewport[2],
     windowClipFrameViewport[1] + windowClipFrameViewport[3],
     0.0f,
-    1.0f
-  };
+    1.0f};
 
   const glm::vec2 mindowViewBL{mindow_T_windowClip * winClipViewBL};
   const glm::vec2 mindowViewTR{mindow_T_windowClip * winClipViewTR};
 
   return glm::vec4(
-    mindowViewBL.x,                  // x offset
-    mindowViewTR.y,                  // y offset
-    mindowViewTR.x - mindowViewBL.x, // width
-    mindowViewBL.y - mindowViewTR.y
-  ); // height
+    mindowViewBL.x,                   // x offset
+    mindowViewTR.y,                   // y offset
+    mindowViewTR.x - mindowViewBL.x,  // width
+    mindowViewBL.y - mindowViewTR.y); // height
 }
 
 bool looksAlongOrthogonalAxis(const Camera& camera)
@@ -1159,7 +1084,9 @@ bool looksAlongOrthogonalAxis(const Camera& camera)
   const float dotY = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::PosY)));
   const float dotZ = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::PosZ)));
 
-  if (glm::epsilonEqual(dotX, 1.0f, sk_eps) || glm::epsilonEqual(dotY, 1.0f, sk_eps) || glm::epsilonEqual(dotZ, 1.0f, sk_eps))
+  if (
+    glm::epsilonEqual(dotX, 1.0f, sk_eps) || glm::epsilonEqual(dotY, 1.0f, sk_eps) ||
+    glm::epsilonEqual(dotZ, 1.0f, sk_eps))
   {
     return true;
   }
@@ -1171,8 +1098,7 @@ bool areVectorsParallel(const glm::vec3& a, const glm::vec3& b, float angleThres
 {
   const float dotProdThreshold = 1.0f - std::cos(glm::radians(angleThreshold_degrees));
 
-  if (std::abs(std::abs(glm::dot(a, b)) - 1.0f) > dotProdThreshold)
-  {
+  if (std::abs(std::abs(glm::dot(a, b)) - 1.0f) > dotProdThreshold) {
     return false;
   }
 
@@ -1183,12 +1109,9 @@ bool areViewDirectionsParallel(
   const Camera& camera1,
   const Camera& camera2,
   const Directions::View& dir,
-  float angleThreshold_degrees
-)
+  float angleThreshold_degrees)
 {
-  return areVectorsParallel(
-    worldDirection(camera1, dir), worldDirection(camera2, dir), angleThreshold_degrees
-  );
+  return areVectorsParallel(worldDirection(camera1, dir), worldDirection(camera2, dir), angleThreshold_degrees);
 }
 
 } // namespace helper

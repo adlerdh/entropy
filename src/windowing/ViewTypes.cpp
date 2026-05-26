@@ -10,8 +10,7 @@ std::string to_string(const ViewType& type, bool crosshairsRotated)
     {ViewType::Coronal, "Coronal"},
     {ViewType::Sagittal, "Sagittal"},
     {ViewType::ThreeD, "3D"},
-    {ViewType::Oblique, "Oblique"}
-  };
+    {ViewType::Oblique, "Oblique"}};
 
   // View type names when the crosshairs ARE rotated:
   static const std::unordered_map<ViewType, std::string> s_rotatedTypeToStringMap{
@@ -19,8 +18,7 @@ std::string to_string(const ViewType& type, bool crosshairsRotated)
     {ViewType::Coronal, "Y"},
     {ViewType::Sagittal, "X"},
     {ViewType::ThreeD, "3D"},
-    {ViewType::Oblique, "Oblique"}
-  };
+    {ViewType::Oblique, "Oblique"}};
 
   return crosshairsRotated ? s_rotatedTypeToStringMap.at(type) : s_typeToStringMap.at(type);
 }

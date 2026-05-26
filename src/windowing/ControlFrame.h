@@ -18,8 +18,12 @@ class AppData;
 class ControlFrame
 {
 public:
-  ControlFrame(glm::vec4 winClipViewport, ViewType viewType, ViewRenderMode renderMode,
-               IntensityProjectionMode ipMode, UiControls uiControls);
+  ControlFrame(
+    glm::vec4 winClipViewport,
+    ViewType viewType,
+    ViewRenderMode renderMode,
+    IntensityProjectionMode ipMode,
+    UiControls uiControls);
 
   virtual ~ControlFrame() = default;
 
@@ -98,8 +102,8 @@ protected:
   /// are rendered; when false, \c m_preferredDefaultRenderedImages is used.
   bool m_defaultRenderAllImages;
 
-  ViewType m_viewType; //!< View type
-  ViewRenderMode m_renderMode; //!< Render mode
+  ViewType m_viewType;                               //!< View type
+  ViewRenderMode m_renderMode;                       //!< Render mode
   IntensityProjectionMode m_intensityProjectionMode; //!< Intensity projection mode
-  UiControls m_uiControls; //!< UI controls shown in the frame
+  UiControls m_uiControls;                           //!< UI controls shown in the frame
 };

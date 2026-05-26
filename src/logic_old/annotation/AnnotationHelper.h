@@ -41,7 +41,8 @@ enum class LayerChangeType
  * @param layerChange Change to apply to the layer
  */
 void changeSlideAnnotationLayering(
-  DataManager& dataManager, const uuids::uuid& slideAnnotUid, const LayerChangeType& layerChange
-);
+  DataManager& dataManager,
+  const uuids::uuid& slideAnnotUid,
+  const LayerChangeType& layerChange);
 
 #endif // ANNOTATION_HELPER_H

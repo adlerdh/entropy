@@ -25,8 +25,8 @@ static constexpr bool sk_isFixedDiameter3d = true;
 } // namespace
 
 CrosshairsAssembly::CrosshairsAssembly(
-  ShaderProgramActivatorType shaderProgramActivator, UniformsProviderType uniformsProvider
-)
+  ShaderProgramActivatorType shaderProgramActivator,
+  UniformsProviderType uniformsProvider)
   : m_shaderActivator(shaderProgramActivator)
   , m_uniformsProvider(uniformsProvider)
   ,
@@ -57,36 +57,38 @@ void CrosshairsAssembly::initialize()
   m_meshGpuRecord3d = gpuhelper::createCrosshairMeshGpuRecord(sk_coneToCylinderRatio3d);
 
   m_crosshairs2d = std::make_shared<Crosshairs>(
-    ss2D.str(), m_shaderActivator, m_uniformsProvider, m_meshGpuRecord2d, sk_isFixedDiameter2d
-  );
+    ss2D.str(),
+    m_shaderActivator,
+    m_uniformsProvider,
+    m_meshGpuRecord2d,
+    sk_isFixedDiameter2d);
 
   m_crosshairs3d = std::make_shared<Crosshairs>(
-    ss3D.str(), m_shaderActivator, m_uniformsProvider, m_meshGpuRecord3d, sk_isFixedDiameter3d
-  );
+    ss3D.str(),
+    m_shaderActivator,
+    m_uniformsProvider,
+    m_meshGpuRecord3d,
+    sk_isFixedDiameter3d);
 }
 
 std::weak_ptr<DrawableBase> CrosshairsAssembly::getRoot(const SceneType& type)
 {
-  switch (type)
-  {
-  // All the views with orthonormal camera projections show the "2D crosshairs":
-  case SceneType::ReferenceImage2d:
-  case SceneType::SlideStack2d:
-  case SceneType::Registration_Image2d:
-  case SceneType::Registration_Slide2d:
-  {
-    return std::static_pointer_cast<DrawableBase>(m_crosshairs2d);
-  }
-  case SceneType::ReferenceImage3d:
-  case SceneType::SlideStack3d:
-  {
-    return std::static_pointer_cast<DrawableBase>(m_crosshairs3d);
-  }
-  default:
-  case SceneType::None:
-  {
-    return {};
-  }
+  switch (type) {
+    // All the views with orthonormal camera projections show the "2D crosshairs":
+    case SceneType::ReferenceImage2d:
+    case SceneType::SlideStack2d:
+    case SceneType::Registration_Image2d:
+    case SceneType::Registration_Slide2d: {
+      return std::static_pointer_cast<DrawableBase>(m_crosshairs2d);
+    }
+    case SceneType::ReferenceImage3d:
+    case SceneType::SlideStack3d: {
+      return std::static_pointer_cast<DrawableBase>(m_crosshairs3d);
+    }
+    default:
+    case SceneType::None: {
+      return {};
+    }
   }
 
   return {};
@@ -94,16 +96,14 @@ std::weak_ptr<DrawableBase> CrosshairsAssembly::getRoot(const SceneType& type)
 
 void CrosshairsAssembly::setCrosshairs2dLength(float lengthInMm)
 {
-  if (m_crosshairs2d)
-  {
+  if (m_crosshairs2d) {
     m_crosshairs2d->setLength(lengthInMm);
   }
 }
 
 void CrosshairsAssembly::setCrosshairs3dLength(float lengthInMm)
 {
-  if (m_crosshairs3d)
-  {
+  if (m_crosshairs3d) {
     m_crosshairs3d->setLength(lengthInMm);
   }
 }

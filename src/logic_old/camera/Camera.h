@@ -29,9 +29,10 @@ namespace camera
  * 1) camera_O_world is a rigid-body matrix, sometimes referred to as the View transformation that
  * maps World to Camera space. Its parts are
  *
- *    a) camera_O_anatomy: User manipulations applied to the camera AFTER the anatomical transformation
- *    b) anatomy_O_start: Anatomical starting frame of reference that is linked to an external callback
- *    c) start_O_world: User manipulations applied to the camera BEFORE the anatomical transformation
+ *    a) camera_O_anatomy: User manipulations applied to the camera AFTER the anatomical
+ * transformation b) anatomy_O_start: Anatomical starting frame of reference that is linked to an
+ * external callback c) start_O_world: User manipulations applied to the camera BEFORE the
+ * anatomical transformation
  *
  * 2) clip_O_camera is a perspective projection: either orthogonal or perpspective.
  */
@@ -42,10 +43,7 @@ public:
   /// a functional that returns the camera's starting coordinate frame. If no functional is
   /// supplied, then the starting coordinate frame is equal to World space
   /// (i.e. camera_O_frameA is identity)
-  Camera(
-    std::unique_ptr<Projection> projection,
-    GetterType<CoordinateFrame> frameB_O_frameA_provider = nullptr
-  );
+  Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFrame> frameB_O_frameA_provider = nullptr);
 
   Camera(const Camera&) = delete;
   Camera& operator=(const Camera&) = delete;
@@ -87,7 +85,8 @@ public:
   /// but this constraint is not enforced.
   void set_camera_O_frameB(glm::mat4 camera_O_frameB);
 
-  /// Get the transformation from the camera's anatomical frame of reference to its nominal orientation.
+  /// Get the transformation from the camera's anatomical frame of reference to its nominal
+  /// orientation.
   const glm::mat4& camera_O_frameB() const;
 
   /// Get the camera's model-view transformation. This is equal to

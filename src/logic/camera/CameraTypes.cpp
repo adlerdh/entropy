@@ -5,8 +5,8 @@
 std::string typeString(const ProjectionType& projectionType)
 {
   static const std::unordered_map<ProjectionType, std::string> s_typeToStringMap{
-    {ProjectionType::Orthographic, "Orthographic"}, {ProjectionType::Perspective, "Perspective"}
-  };
+    {ProjectionType::Orthographic, "Orthographic"},
+    {ProjectionType::Perspective, "Perspective"}};
 
   return s_typeToStringMap.at(projectionType);
 }
@@ -23,8 +23,7 @@ std::string typeString(const ViewRenderMode& mode)
     // {ViewRenderMode::CrossCorrelation, "Correlation"},
     {ViewRenderMode::JointHistogram, "Joint Histogram"},
     {ViewRenderMode::VolumeRender, "Volume Render"},
-    {ViewRenderMode::Disabled, "Disabled"}
-  };
+    {ViewRenderMode::Disabled, "Disabled"}};
 
   return s_modeToStringMap.at(mode);
 }
@@ -36,8 +35,7 @@ std::string typeString(const IntensityProjectionMode& mode)
     {IntensityProjectionMode::Maximum, "Maximum Projection"},
     {IntensityProjectionMode::Mean, "Mean Projection"},
     {IntensityProjectionMode::Minimum, "Minimum Projection"},
-    {IntensityProjectionMode::Xray, "X-ray Projection"}
-  };
+    {IntensityProjectionMode::Xray, "X-ray Projection"}};
 
   return s_modeToStringMap.at(mode);
 }
@@ -54,8 +52,7 @@ std::string descriptionString(const ViewRenderMode& mode)
     // {ViewRenderMode::CrossCorrelation, "Correlation metric"},
     {ViewRenderMode::JointHistogram, "Joint histogram metric"},
     {ViewRenderMode::VolumeRender, "Iso-surface volume rendering"},
-    {ViewRenderMode::Disabled, "Disabled"}
-  };
+    {ViewRenderMode::Disabled, "Disabled"}};
 
   return s_modeToStringMap.at(mode);
 }
@@ -67,41 +64,35 @@ std::string descriptionString(const IntensityProjectionMode& mode)
     {IntensityProjectionMode::Maximum, "Maximum intensity projection"},
     {IntensityProjectionMode::Mean, "Mean intensity projection"},
     {IntensityProjectionMode::Minimum, "Minimum intensity projection"},
-    {IntensityProjectionMode::Xray, "X-ray intensity projection"}
-  };
+    {IntensityProjectionMode::Xray, "X-ray intensity projection"}};
 
   return s_modeToStringMap.at(mode);
 }
 
 ShaderGroup getShaderGroup(const ViewRenderMode& renderMode)
 {
-  switch (renderMode)
-  {
-  case ViewRenderMode::Image:
-  case ViewRenderMode::Checkerboard:
-  case ViewRenderMode::Quadrants:
-  case ViewRenderMode::Flashlight:
-  {
-    return ShaderGroup::Image;
-  }
+  switch (renderMode) {
+    case ViewRenderMode::Image:
+    case ViewRenderMode::Checkerboard:
+    case ViewRenderMode::Quadrants:
+    case ViewRenderMode::Flashlight: {
+      return ShaderGroup::Image;
+    }
 
-  case ViewRenderMode::Overlay:
-  case ViewRenderMode::Difference:
-  // case ViewRenderMode::CrossCorrelation:
-  case ViewRenderMode::JointHistogram:
-  {
-    return ShaderGroup::Metric;
-  }
+    case ViewRenderMode::Overlay:
+    case ViewRenderMode::Difference:
+    // case ViewRenderMode::CrossCorrelation:
+    case ViewRenderMode::JointHistogram: {
+      return ShaderGroup::Metric;
+    }
 
-  case ViewRenderMode::VolumeRender:
-  {
-    return ShaderGroup::Volume;
-  }
+    case ViewRenderMode::VolumeRender: {
+      return ShaderGroup::Volume;
+    }
 
-  case ViewRenderMode::Disabled:
-  default:
-  {
-    return ShaderGroup::None;
-  }
+    case ViewRenderMode::Disabled:
+    default: {
+      return ShaderGroup::None;
+    }
   }
 }

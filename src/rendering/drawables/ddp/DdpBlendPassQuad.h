@@ -14,8 +14,7 @@ public:
     const std::string& name,
     ShaderProgramActivatorType shaderProgramActivator,
     UniformsProviderType uniformsProvider,
-    std::array<GLTexture, 2>& backTempTextures
-  );
+    std::array<GLTexture, 2>& backTempTextures);
 
   DdpBlendPassQuad(const DdpBlendPassQuad&) = delete;
   DdpBlendPassQuad& operator=(const DdpBlendPassQuad&) = delete;

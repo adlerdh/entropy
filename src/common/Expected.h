@@ -7,12 +7,13 @@
 
 #include <tl/expected.hpp>
 
-namespace entropy_expected {
+namespace entropy_expected
+{
 using tl::expected;
-using tl::unexpected;
-using tl::unexpect;
 using tl::make_unexpected;
-}
+using tl::unexpect;
+using tl::unexpected;
+} // namespace entropy_expected
 
 #else
 
@@ -24,27 +25,30 @@ using tl::make_unexpected;
 
 #if defined(__cpp_lib_expected) && (__cpp_lib_expected >= 202211L)
 
-namespace entropy_expected {
+namespace entropy_expected
+{
 using std::expected;
-using std::unexpected;
 using std::unexpect;
+using std::unexpected;
 
 template<class E>
-constexpr std::unexpected<std::decay_t<E>> make_unexpected(E&& e) {
-  return std::unexpected<std::decay_t<E>>(std::forward<E>(e));
+constexpr std::unexpected<std::decay_t<E> > make_unexpected(E&& e)
+{
+  return std::unexpected<std::decay_t<E> >(std::forward<E>(e));
 }
-}
+} // namespace entropy_expected
 
 #else
 
 #include <tl/expected.hpp>
 
-namespace entropy_expected {
+namespace entropy_expected
+{
 using tl::expected;
-using tl::unexpected;
-using tl::unexpect;
 using tl::make_unexpected;
-}
+using tl::unexpect;
+using tl::unexpected;
+} // namespace entropy_expected
 
 #endif
 #endif

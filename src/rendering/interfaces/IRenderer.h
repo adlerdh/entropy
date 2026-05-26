@@ -25,28 +25,28 @@ public:
   virtual void teardown() = 0;
 
   /**
-     * @brief Resize the viewport of the render target
-     * @param[in] viewport Target viewport
-     */
+   * @brief Resize the viewport of the render target
+   * @param[in] viewport Target viewport
+   */
   virtual void resize(const Viewport& viewport) = 0;
 
   /**
-     * @brief Update the rendering of the scene
-     * @param[in] camera Scene view camera
-     * @param[in] crosshairs Coordinate frame of scene crosshairs
-     */
+   * @brief Update the rendering of the scene
+   * @param[in] camera Scene view camera
+   * @param[in] crosshairs Coordinate frame of scene crosshairs
+   */
   virtual void update(const Camera& camera, const CoordinateFrame& crosshairs) = 0;
 
   /**
-     * @brief Set the renderer's ability to point pick object IDs and depths in the scene.
-     */
+   * @brief Set the renderer's ability to point pick object IDs and depths in the scene.
+   */
   virtual void setEnablePointPicking(bool enable) = 0;
 
   /**
-     * @brief Get ID and depth of point picked in rendered scene
-     * @param[in] ndcPos 2D NDC coordinates of point
-     * @return ID and NDC z-depth of drawable object picked (ID 0 means no object picked)
-     */
+   * @brief Get ID and depth of point picked in rendered scene
+   * @param[in] ndcPos 2D NDC coordinates of point
+   * @return ID and NDC z-depth of drawable object picked (ID 0 means no object picked)
+   */
   virtual std::pair<uint16_t, float> pickObjectIdAndNdcDepth(const glm::vec2& ndcPos) = 0;
 };
 

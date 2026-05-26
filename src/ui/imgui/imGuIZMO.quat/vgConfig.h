@@ -7,7 +7,7 @@
 //  twitter: https://twitter.com/BrutPitt - github: https://github.com/BrutPitt
 //
 //  mailto:brutpitt@gmail.com - mailto:me@michelemorrone.eu
-//  
+//
 //  This software is distributed under the terms of the BSD 2-Clause license
 //------------------------------------------------------------------------------
 #pragma once
@@ -22,7 +22,7 @@
 //      It automatically enable also VGM_USES_TEMPLATE (read below)
 // Default ==> SINGLE precision: float
 //------------------------------------------------------------------------------
-//#define VGM_USES_DOUBLE_PRECISION
+// #define VGM_USES_DOUBLE_PRECISION
 
 //------------------------------------------------------------------------------
 // uncomment to use TEMPLATE internal vgMath classes/types
@@ -34,12 +34,12 @@
 //          double ==> dvec2 / dvec3 / dvec4 / dquat / dmat3|dmat3x3 / dmat4|dmat4x4
 //          int    ==> ivec2 / ivec3 / ivec4
 //          uint   ==> uvec2 / uvec3 / uvec4
-// If you select TEMPLATE classes the widget too will use internally them 
+// If you select TEMPLATE classes the widget too will use internally them
 //      with single precision (float)
 //
 // Default ==> NO template
 //------------------------------------------------------------------------------
-//#define VGM_USES_TEMPLATE
+// #define VGM_USES_TEMPLATE
 
 //------------------------------------------------------------------------------
 // uncomment to use "glm" (0.9.9 or higher) library instead of vgMath
@@ -59,14 +59,14 @@
 #define VGIZMO_USES_GLM
 
 //------------------------------------------------------------------------------
-// uncomment to use LeftHanded 
+// uncomment to use LeftHanded
 //
 // This is used only in: lookAt / perspective / ortho / frustrum - functions
 //      DX is LeftHanded, OpenGL is RightHanded
 //
 // Default ==> RightHanded
 //------------------------------------------------------------------------------
-//#define VGM_USES_LEFT_HAND_AXES
+// #define VGM_USES_LEFT_HAND_AXES
 
 //------------------------------------------------------------------------------
 // uncomment to avoid vgMath.h add folow line code:
@@ -81,7 +81,7 @@
 //
 // Default ==> vgMath.h add: using namespace vgm | glm;
 //------------------------------------------------------------------------------
-//#define VGM_DISABLE_AUTO_NAMESPACE
+// #define VGM_DISABLE_AUTO_NAMESPACE
 
 //------------------------------------------------------------------------------
 // uncomment to use HLSL name types (in addition!)
@@ -96,7 +96,7 @@
 //
 // Default ==> NO HLSL alia types defined
 //------------------------------------------------------------------------------
-//#define VGM_USES_HLSL_TYPES 
+// #define VGM_USES_HLSL_TYPES
 
 //------------------------------------------------------------------------------
 // imGuiZmo.quat - v3.0 and later - (used only inside it)
@@ -108,20 +108,20 @@
 //          virtualGizmoClass that uses only "quat" rotations
 //          uncomment for very low resources ==> Pan & Dolly will be disabled
 //
-// Default ==> Pan & Dolly enabled 
+// Default ==> Pan & Dolly enabled
 //------------------------------------------------------------------------------
-//#define IMGUIZMO_USE_ONLY_ROT
+// #define IMGUIZMO_USE_ONLY_ROT
 
 //------------------------------------------------------------------------------
 // imGuiZmo.quat - v3.0 and later - (used only inside it)
 //
 //      used to specify where ImGui include files should be searched
-//          #define IMGUIZMO_IMGUI_FOLDER  
+//          #define IMGUIZMO_IMGUI_FOLDER
 //              is equivalent to use:
 //                  #include <imgui.h>
 //                  #include <imgui_internal.h>
 //          #define IMGUIZMO_IMGUI_FOLDER myLibs/ImGui/
-//              (final slash is REQUIRED) is equivalent to use: 
+//              (final slash is REQUIRED) is equivalent to use:
 //                  #include <myLib/ImGui/imgui.h>
 //                  #include <myLib/ImGui/imgui_internal.h>
 //          Default: IMGUIZMO_IMGUI_FOLDER commented/undefined

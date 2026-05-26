@@ -18,12 +18,10 @@ struct adl_serializer<std::optional<T> >
 {
   static void to_json(json& j, const std::optional<T>& opt)
   {
-    if (!opt)
-    {
+    if (!opt) {
       j = nullptr;
     }
-    else
-    {
+    else {
       // Calls adl_serializer<T>::to_json, which will
       // find the free function to_json in T's namespace
       j = *opt;
@@ -32,12 +30,10 @@ struct adl_serializer<std::optional<T> >
 
   static void from_json(const json& j, std::optional<T>& opt)
   {
-    if (j.is_null())
-    {
+    if (j.is_null()) {
       opt = std::nullopt;
     }
-    else
-    {
+    else {
       // Same as above, but with adl_serializer<T>::from_json
       opt = j.get<T>();
     }

@@ -1,7 +1,7 @@
 #version 330 core
 
 // View corner vertex position in Clip space
-layout (location = 0) in vec2 clipVertexPos;
+layout(location = 0) in vec2 clipVertexPos;
 
 uniform mat4 u_view_T_clip;
 uniform mat4 u_world_T_clip;
@@ -11,8 +11,8 @@ uniform float u_clipDepth;
 out VS_OUT
 {
   vec3 v_worldRayDir; // Ray direction in World space (NOT normalized)
-} vs_out;
-
+}
+vs_out;
 
 void main()
 {

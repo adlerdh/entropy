@@ -5,28 +5,22 @@
 LabelIndexMaps createLabelIndexMaps(
   const glm::ivec3& dims,
   std::function<LabelType(int x, int y, int z)> getSeedValue,
-  bool ignoreBackgroundZeroLabel
-)
+  bool ignoreBackgroundZeroLabel)
 {
   LabelIndexMaps labelMaps;
 
   std::size_t labelIndex = 0;
 
-  for (int z = 0; z < dims.z; ++z)
-  {
-    for (int y = 0; y < dims.y; ++y)
-    {
-      for (int x = 0; x < dims.x; ++x)
-      {
+  for (int z = 0; z < dims.z; ++z) {
+    for (int y = 0; y < dims.y; ++y) {
+      for (int x = 0; x < dims.x; ++x) {
         const LabelType label = getSeedValue(x, y, z);
 
         // Ignore the background (0) label if ignoreBackgroundZeroLabel is true
-        if (0 < label || (0 == label && !ignoreBackgroundZeroLabel))
-        {
+        if (0 < label || (0 == label && !ignoreBackgroundZeroLabel)) {
           const auto [iter, inserted] = labelMaps.labelToIndex.emplace(label, labelIndex);
 
-          if (inserted)
-          {
+          if (inserted) {
             labelMaps.indexToLabel.emplace(labelIndex++, label);
           }
         }

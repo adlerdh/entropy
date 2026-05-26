@@ -49,8 +49,8 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   glfwWindowHint(GLFW_STENCIL_BITS, 8);
 
   /// @note GLFW_SRGB_CAPABLE specifies whether the framebuffer should be sRGB capable.
-  /// If enabled and supported by the system, the GL_FRAMEBUFFER_SRGB enable will control sRGB rendering.
-  /// By default, sRGB rendering will be disabled.
+  /// If enabled and supported by the system, the GL_FRAMEBUFFER_SRGB enable will control sRGB
+  /// rendering. By default, sRGB rendering will be disabled.
 
   // GLFW_SRGB_CAPABLE might do nothing on macOS as all framebuffers on macOS are sRGB capable.
   // glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
@@ -87,7 +87,8 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_TRUE);
 
   // Disable Automatic Graphics Switching, i.e. do not allow the system to choose the integrated GPU
-  // for the OpenGL context and move it between GPUs if necessary. Forces it to always run on the discrete GPU.
+  // for the OpenGL context and move it between GPUs if necessary. Forces it to always run on the
+  // discrete GPU.
   glfwWindowHint(GLFW_COCOA_GRAPHICS_SWITCHING, GLFW_FALSE);
 
   glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
@@ -137,34 +138,41 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   glfwSwapInterval(1);
 
   /**
-   * @note How it works with ImGui: ImGui’s rendering is typically done every frame we call ImGui::Render().
-   * By enabling VSync via glfwSwapInterval(1), the glfwSwapBuffers() call will block until the
-   * next vertical blank, effectively limiting FPS. This reduces GPU load and power consumption
-   * automatically.
+   * @note How it works with ImGui: ImGui’s rendering is typically done every frame we call
+   * ImGui::Render(). By enabling VSync via glfwSwapInterval(1), the glfwSwapBuffers() call will
+   * block until the next vertical blank, effectively limiting FPS. This reduces GPU load and power
+   * consumption automatically.
    */
 
   /**
    * @note macOS (especially with Apple Silicon and ProMotion displays), glfwSwapInterval()
    * often does not behave as expected.
    *
-   * On macOS (especially with ProMotion and Apple Silicon), the actual behavior of glfwSwapInterval()
-   * may be ignored or limited, especially when trying to disable vsync (0) or use custom intervals (2).
-   * We may not see any visible change in FPS when calling it—even mid-frame—due to system-level vsync enforcement.
+   * On macOS (especially with ProMotion and Apple Silicon), the actual behavior of
+   glfwSwapInterval()
+   * may be ignored or limited, especially when trying to disable vsync (0) or use custom intervals
+   (2).
+   * We may not see any visible change in FPS when calling it—even mid-frame—due to system-level
+   vsync enforcement.
    *
    * 1. macOS enforces vsync at the system level
-   * Even if we call glfwSwapInterval(0) (i.e. "disable vsync"), macOS may still throttle buffer swaps
+   * Even if we call glfwSwapInterval(0) (i.e. "disable vsync"), macOS may still throttle buffer
+   swaps
    * to the display refresh rate—especially when using OpenGL.
    * This is intentional for power savings and thermal control, and macOS provides no API to truly
    * disable vsync in OpenGL.
    *
    * 2. ProMotion's 120Hz adaptive refresh
-   * MacBook Pro Max has a 120Hz ProMotion display, and macOS will adaptively ramp up to 120Hz if the app
+   * MacBook Pro Max has a 120Hz ProMotion display, and macOS will adaptively ramp up to 120Hz if
+   the app
    * is producing frames fast enough.
-   * If we consistently see 120 FPS regardless of glfwSwapInterval, it means macOS is locking to 120Hz vsync,
+   * If we consistently see 120 FPS regardless of glfwSwapInterval, it means macOS is locking to
+   120Hz vsync,
    * and ignoring our request for 0 or 2.
 
    * 3. OpenGL on macOS is deprecated
-   * On modern macOS versions, OpenGL is no longer actively maintained, and low-level control (like swap interval)
+   * On modern macOS versions, OpenGL is no longer actively maintained, and low-level control (like
+   swap interval)
    * may not be fully honored, especially on high refresh displays.
    */
 
@@ -192,17 +200,16 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   spdlog::debug("Created GLFW cursors");
 
   //    GLFWimage images[1];
-  //    images[0].pixels = stbi_load("PATH", &images[0].width, &images[0].height, 0, 4); //rgba channels
-  //    glfwSetWindowIcon(window, 1, images);
-  //    stbi_image_free(images[0].pixels);
+  //    images[0].pixels = stbi_load("PATH", &images[0].width, &images[0].height, 0, 4); //rgba
+  //    channels glfwSetWindowIcon(window, 1, images); stbi_image_free(images[0].pixels);
 
   //    GLFWimage icons[1];
-  //    icons[0].pixels = SOIL_load_image("icon.png", &icons[0].width, &icons[0].height, 0, SOIL_LOAD_RGBA);
-  //    glfwSetWindowIcon(window.window, 1, icons);
+  //    icons[0].pixels = SOIL_load_image("icon.png", &icons[0].width, &icons[0].height, 0,
+  //    SOIL_LOAD_RGBA); glfwSetWindowIcon(window.window, 1, icons);
   //    SOIL_free_image_data(icons[0].pixels);
 
   // Load all OpenGL function pointers with GLAD
-  if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     glfwTerminate();
     spdlog::critical("Failed to load OpenGL function pointers with GLAD");
     throw_debug("Failed to load OpenGL function pointers with GLAD")
@@ -213,8 +220,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 
 GlfwWrapper::~GlfwWrapper()
 {
-  for (auto& cursor : m_mouseModeToCursor)
-  {
+  for (auto& cursor : m_mouseModeToCursor) {
     if (cursor.second) {
       glfwDestroyCursor(cursor.second);
     }
@@ -290,8 +296,7 @@ void GlfwWrapper::renderLoop(
 
   auto lastFrameTime = Clock::now();
 
-  while (!glfwWindowShouldClose(m_window))
-  {
+  while (!glfwWindowShouldClose(m_window)) {
     if (checkAppQuit()) {
       spdlog::info("User has quit the application");
       break;
@@ -317,20 +322,19 @@ void GlfwWrapper::renderLoop(
 
     glfwSwapBuffers(m_window);
 
-    switch (m_eventProcessingMode)
-    {
-    case EventProcessingMode::Poll: {
-      glfwPollEvents();
-      break;
-    }
-    case EventProcessingMode::Wait: {
-      glfwWaitEvents();
-      break;
-    }
-    case EventProcessingMode::WaitTimeout: {
-      glfwWaitEventsTimeout(m_waitTimoutSeconds);
-      break;
-    }
+    switch (m_eventProcessingMode) {
+      case EventProcessingMode::Poll: {
+        glfwPollEvents();
+        break;
+      }
+      case EventProcessingMode::Wait: {
+        glfwWaitEvents();
+        break;
+      }
+      case EventProcessingMode::WaitTimeout: {
+        glfwWaitEventsTimeout(m_waitTimoutSeconds);
+        break;
+      }
     }
 
     if (logFramerate) {
@@ -376,8 +380,7 @@ GLFWwindow* GlfwWrapper::window()
 GLFWcursor* GlfwWrapper::cursor(MouseMode mode)
 {
   const auto it = m_mouseModeToCursor.find(mode);
-  if (std::end(m_mouseModeToCursor) != it)
-  {
+  if (std::end(m_mouseModeToCursor) != it) {
     return it->second;
   }
   return nullptr;
@@ -400,14 +403,18 @@ void GlfwWrapper::toggleFullScreenMode(bool forceWindowMode)
 {
   const bool isFullScreen = (nullptr != glfwGetWindowMonitor(m_window));
 
-  if (forceWindowMode || isFullScreen)
-  {
+  if (forceWindowMode || isFullScreen) {
     // Restore windowed mode with backup of position and size:
-    glfwSetWindowMonitor(m_window, nullptr, m_backupWindowPosX, m_backupWindowPosY,
-                         m_backupWindowWidth, m_backupWindowHeight, GLFW_DONT_CARE);
+    glfwSetWindowMonitor(
+      m_window,
+      nullptr,
+      m_backupWindowPosX,
+      m_backupWindowPosY,
+      m_backupWindowWidth,
+      m_backupWindowHeight,
+      GLFW_DONT_CARE);
   }
-  else if (!isFullScreen)
-  {
+  else if (!isFullScreen) {
     // Switch to full-screen mode after backing up position and size:
     if (m_platform != GLFW_PLATFORM_WAYLAND && m_platform != GLFW_PLATFORM_NULL) {
       glfwGetWindowPos(m_window, &m_backupWindowPosX, &m_backupWindowPosY);
@@ -451,8 +458,7 @@ GLFWmonitor* GlfwWrapper::currentMonitor() const
   int numMonitors;
   GLFWmonitor** monitors = glfwGetMonitors(&numMonitors);
 
-  for (int i = 0; i < numMonitors; ++i)
-  {
+  for (int i = 0; i < numMonitors; ++i) {
     if (!monitors[i]) {
       spdlog::debug("Monitor {} is null", i);
       continue;
@@ -470,11 +476,11 @@ GLFWmonitor* GlfwWrapper::currentMonitor() const
     const int monitorWidth = mode->width;
     const int monitorHeight = mode->height;
 
-    const int overlapX = std::max(
-      std::min(winPosX + winWidth, monitorPosX + monitorWidth) - std::max(winPosX, monitorPosX), 0);
+    const int overlapX =
+      std::max(std::min(winPosX + winWidth, monitorPosX + monitorWidth) - std::max(winPosX, monitorPosX), 0);
 
-    const int overlapY = std::max(
-      std::min(winPosY + winHeight, monitorPosY + monitorHeight) - std::max(winPosY, monitorPosY), 0);
+    const int overlapY =
+      std::max(std::min(winPosY + winHeight, monitorPosY + monitorHeight) - std::max(winPosY, monitorPosY), 0);
 
     const int overlap = overlapX * overlapY;
 

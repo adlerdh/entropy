@@ -33,8 +33,7 @@ static constexpr float sk_pageToSingleStepRatio = 10.0f;
 
 static constexpr bool sk_disabledSlider = false;
 
-static const gui::ViewSliderParams
-  sk_defaultViewSliderParams{0.0, 1.0, 1.0, 1.0, 0.0, sk_disabledSlider};
+static const gui::ViewSliderParams sk_defaultViewSliderParams{0.0, 1.0, 1.0, 1.0, 0.0, sk_disabledSlider};
 
 } // namespace
 
@@ -44,25 +43,20 @@ namespace data
 AABB<float> refSpaceAABBox(DataManager& dataManager, const glm::mat4& world_O_slideStack)
 {
   const auto imageAABB = activeRefImageAABBox(dataManager);
-  const auto stackAABB
-    = slideio::slideStackAABBoxInWorld(dataManager.slideRecords(), world_O_slideStack);
+  const auto stackAABB = slideio::slideStackAABBoxInWorld(dataManager.slideRecords(), world_O_slideStack);
 
   AABB<float> box;
 
-  if (imageAABB && stackAABB)
-  {
+  if (imageAABB && stackAABB) {
     box = math::computeBoundingAABBox(*imageAABB, *stackAABB);
   }
-  else if (imageAABB)
-  {
+  else if (imageAABB) {
     box = *imageAABB;
   }
-  else if (stackAABB)
-  {
+  else if (stackAABB) {
     box = *stackAABB;
   }
-  else
-  {
+  else {
     box = sk_defaultRefSpaceAABBox;
   }
 
@@ -76,8 +70,7 @@ AABB<float> refSpaceAABBox(DataManager& dataManager, const glm::mat4& world_O_sl
 std::optional<AABB<float> > activeRefImageAABBox(DataManager& dataManager)
 {
   auto record = dataManager.activeImageRecord().lock();
-  if (record && record->cpuData())
-  {
+  if (record && record->cpuData()) {
     const auto aabb = record->cpuData()->header().m_boundingBoxMinMaxCorners;
     return std::make_pair(glm::vec3{aabb.first}, glm::vec3{aabb.second});
   }
@@ -88,8 +81,7 @@ std::optional<AABB<float> > activeRefImageAABBox(DataManager& dataManager)
 std::optional<CoordinateFrame> getActiveImageSubjectToWorldFrame(DataManager& dataManager)
 {
   auto record = dataManager.activeImageRecord().lock();
-  if (record && record->cpuData())
-  {
+  if (record && record->cpuData()) {
     const auto& T = record->cpuData()->transformations();
     glm::vec3 origin = T.getWorldSubjectOrigin();
     glm::quat rotation = T.getSubjectToWorldRotation();
@@ -99,13 +91,10 @@ std::optional<CoordinateFrame> getActiveImageSubjectToWorldFrame(DataManager& da
   return std::nullopt;
 }
 
-void setActiveImageSubjectToWorldFrame(
-  DataManager& dataManager, const CoordinateFrame& world_O_subject
-)
+void setActiveImageSubjectToWorldFrame(DataManager& dataManager, const CoordinateFrame& world_O_subject)
 {
   auto record = dataManager.activeImageRecord().lock();
-  if (record && record->cpuData())
-  {
+  if (record && record->cpuData()) {
     record->cpuData()->setWorldSubjectOrigin(world_O_subject.worldOrigin());
     record->cpuData()->setSubjectToWorldRotation(world_O_subject.world_O_frame_rotation());
   }
@@ -114,10 +103,8 @@ void setActiveImageSubjectToWorldFrame(
 float refSpaceVoxelScale(DataManager& dataManager)
 {
   // Define reference space voxel scale as the diagonal length of voxels in the active image
-  if (auto record = dataManager.activeImageRecord().lock())
-  {
-    if (auto r = record->cpuData())
-    {
+  if (auto record = dataManager.activeImageRecord().lock()) {
+    if (auto r = record->cpuData()) {
       return static_cast<float>(glm::length(r->header().m_spacing));
     }
   }
@@ -128,14 +115,12 @@ float refSpaceVoxelScale(DataManager& dataManager)
 float refSpaceSliceScrollDistance(DataManager& dataManager, const glm::vec3& worldCameraFrontDir)
 {
   auto activeImage = dataManager.activeImageRecord().lock();
-  if (!activeImage)
-  {
+  if (!activeImage) {
     return sk_defaultSliceScrollDistance;
   }
 
   auto record = activeImage->cpuData();
-  if (!record)
-  {
+  if (!record) {
     return sk_defaultSliceScrollDistance;
   }
 
@@ -154,8 +139,7 @@ float slideStackPositiveExtent(DataManager& dataManager)
 
 bool isSlideActive(DataManager& dataManager, const UID& slideUid)
 {
-  if (const auto activeUid = dataManager.activeSlideUid())
-  {
+  if (const auto activeUid = dataManager.activeSlideUid()) {
     return (slideUid == *activeUid);
   }
   return false;
@@ -170,8 +154,7 @@ std::pair<gui::ViewSliderParams, gui::ViewSliderParams> viewScrollBarParams(
   DataManager& dataManager,
   const glm::vec3& worldCrosshairsOrigin,
   const glm::mat4& world_O_slideStack,
-  const Camera& camera
-)
+  const Camera& camera)
 {
   // The planes are ordered as follows:
   // [0] right, [1] top, [2] left, [3] bottom, [4] near, [5] far.
@@ -184,9 +167,7 @@ std::pair<gui::ViewSliderParams, gui::ViewSliderParams> viewScrollBarParams(
   const auto worldPlanes = worldFrustumPlanes(camera);
 
   // All eight corners of the reference space AABB:
-  const auto worldAABBCorners = math::makeAABBoxCorners(
-    refSpaceAABBox(dataManager, world_O_slideStack)
-  );
+  const auto worldAABBCorners = math::makeAABBoxCorners(refSpaceAABBox(dataManager, world_O_slideStack));
 
   // Compute the AABB corners that are farthest out w.r.t. the right, top, left,
   // and bottom planes of the view frustum. Also compute the distances from
@@ -194,17 +175,17 @@ std::pair<gui::ViewSliderParams, gui::ViewSliderParams> viewScrollBarParams(
   glm::vec3 rightmost, topmost, leftmost, bottommost;
   float rightDist, topDist, leftDist, bottomDist;
 
-  std::tie(std::ignore, std::ignore, rightmost, rightDist)
-    = math::computeNearAndFarAABBoxCorners(worldAABBCorners, worldPlanes[RIGHT]);
+  std::tie(std::ignore, std::ignore, rightmost, rightDist) =
+    math::computeNearAndFarAABBoxCorners(worldAABBCorners, worldPlanes[RIGHT]);
 
-  std::tie(std::ignore, std::ignore, topmost, topDist)
-    = math::computeNearAndFarAABBoxCorners(worldAABBCorners, worldPlanes[TOP]);
+  std::tie(std::ignore, std::ignore, topmost, topDist) =
+    math::computeNearAndFarAABBoxCorners(worldAABBCorners, worldPlanes[TOP]);
 
-  std::tie(std::ignore, std::ignore, leftmost, leftDist)
-    = math::computeNearAndFarAABBoxCorners(worldAABBCorners, worldPlanes[LEFT]);
+  std::tie(std::ignore, std::ignore, leftmost, leftDist) =
+    math::computeNearAndFarAABBoxCorners(worldAABBCorners, worldPlanes[LEFT]);
 
-  std::tie(std::ignore, std::ignore, bottommost, bottomDist)
-    = math::computeNearAndFarAABBoxCorners(worldAABBCorners, worldPlanes[BOTTOM]);
+  std::tie(std::ignore, std::ignore, bottommost, bottomDist) =
+    math::computeNearAndFarAABBoxCorners(worldAABBCorners, worldPlanes[BOTTOM]);
 
   // min/max values of the horizontal scroll bars
   const double xMin = static_cast<double>(std::min(-leftDist, 0.0f));
@@ -217,23 +198,19 @@ std::pair<gui::ViewSliderParams, gui::ViewSliderParams> viewScrollBarParams(
   // NDC z coordinate at which to compute view frustum's FOV
   float ndcZ;
 
-  if (camera.isOrthographic())
-  {
+  if (camera.isOrthographic()) {
     // Irrelevant for orthographic projections, since the FOV is constant
     // at all camera depths
     ndcZ = -1.0f;
   }
-  else
-  {
+  else {
     // For perspective projections, use the depth of the crosshairs origin
     const glm::vec3 cameraPos = camera_O_world(camera, worldCrosshairsOrigin);
 
-    if (cameraPos.z >= 0.0f)
-    {
+    if (cameraPos.z >= 0.0f) {
       ndcZ = -1.0f;
     }
-    else
-    {
+    else {
       ndcZ = glm::clamp(ndc_O_world(camera, worldCrosshairsOrigin).z, -1.0f, 1.0f);
     }
   }
@@ -271,27 +248,23 @@ gui::ViewSliderParams viewSliceSliderParams(
   DataManager& dataManager,
   const glm::vec3& worldCrosshairsOrigin,
   const glm::mat4& world_O_slideStack,
-  const Camera& camera
-)
+  const Camera& camera)
 {
-  const auto worldAABBCorners = math::makeAABBoxCorners(
-    refSpaceAABBox(dataManager, world_O_slideStack)
-  );
+  const auto worldAABBCorners = math::makeAABBoxCorners(refSpaceAABBox(dataManager, world_O_slideStack));
 
   // Define a plane at the current world crosshairs position that is facing the
   // front direction of the view camera frustum
 
   // For an orthographic camera, this is equivalent to
   // worldDirection( *pack->m_camera, Directions::View::Front )
-  const glm::vec3 worldFrontDir
-    = worldRayDirection(camera, glm::vec2{ndc_O_world(camera, worldCrosshairsOrigin)});
+  const glm::vec3 worldFrontDir = worldRayDirection(camera, glm::vec2{ndc_O_world(camera, worldCrosshairsOrigin)});
 
   const glm::vec4 crosshairsPlane = math::makePlane(worldFrontDir, worldCrosshairsOrigin);
 
   // Near and far AABB corners w.r.t. the camera:
   glm::vec3 nearCorner, farCorner;
-  std::tie(nearCorner, std::ignore, farCorner, std::ignore)
-    = math::computeNearAndFarAABBoxCorners(worldAABBCorners, crosshairsPlane);
+  std::tie(nearCorner, std::ignore, farCorner, std::ignore) =
+    math::computeNearAndFarAABBoxCorners(worldAABBCorners, crosshairsPlane);
 
   // Distance between near and far corners of AABB w.r.t. the camera front direction
   const float nearFarDistance = glm::dot(worldFrontDir, farCorner - nearCorner);
@@ -299,8 +272,7 @@ gui::ViewSliderParams viewSliceSliderParams(
   // Distance from the world position to the near corner along the front direction
   const float worldPosDistance = glm::dot(worldFrontDir, worldCrosshairsOrigin - nearCorner);
 
-  if (nearFarDistance < 0.0f)
-  {
+  if (nearFarDistance < 0.0f) {
     // The near-far corner distance must not be negative
     return sk_defaultViewSliderParams;
   }
@@ -321,8 +293,7 @@ gui::ViewSliderParams viewSliceSliderParams(
     static_cast<double>(singleStep),
     static_cast<double>(pageStep),
     static_cast<double>(value),
-    sk_enabledSlider
-  };
+    sk_enabledSlider};
 }
 
 } // namespace data

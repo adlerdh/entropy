@@ -57,8 +57,7 @@ private:
     None
   };
 
-  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
-    override;
+  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
   bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
   bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
   bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
@@ -86,8 +85,7 @@ private:
   {
     return false;
   }
-  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&)
-    override
+  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&) override
   {
     return false;
   }
@@ -119,8 +117,7 @@ private:
   glm::vec2 m_ndcRightButtonLastPos;
   //    glm::vec2 m_ndcMiddleButtonLastPos;
 
-  const static std::unordered_map<CrosshairsInteractionMode, MouseMoveMode>
-    msk_defaultInternalModeMap;
+  const static std::unordered_map<CrosshairsInteractionMode, MouseMoveMode> msk_defaultInternalModeMap;
 };
 
 #endif // CROSSHAIRS_INTERACTION_HANDLER_H

@@ -7,7 +7,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-//#include "opencv2/highgui/highgui.hpp"
+// #include "opencv2/highgui/highgui.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -22,8 +22,7 @@ std::vector<glm::vec3> generateRandomHSVSamples(
   size_t numSamples,
   const std::pair<float, float>& hueMinMax,
   const std::pair<float, float>& satMinMax,
-  const std::pair<float, float>& valMinMax
-)
+  const std::pair<float, float>& valMinMax)
 {
   // Could randomly seed the random number generator, but let's use a fixed seed for now,
   // so that we always get the same color table.
@@ -40,16 +39,15 @@ std::vector<glm::vec3> generateRandomHSVSamples(
 
   const float B = satMinMax.first * satMinMax.first;
 
-  const float C = ( valMinMax.second * valMinMax.second * valMinMax.second -
-                      valMinMax.first * valMinMax.first * valMinMax.first );
+  const float C =
+    (valMinMax.second * valMinMax.second * valMinMax.second - valMinMax.first * valMinMax.first * valMinMax.first);
 
   const float D = valMinMax.first * valMinMax.first * valMinMax.first;
 
   std::vector<glm::vec3> samples;
   samples.reserve(numSamples);
 
-  for (size_t i = 0; i < numSamples; ++i)
-  {
+  for (size_t i = 0; i < numSamples; ++i) {
     float hue = (hueMinMax.second - hueMinMax.first) * dist(generator) + hueMinMax.first;
     float sat = std::sqrt(dist(generator) * A + B);
     float val = std::pow(dist(generator) * C + D, 1.0f / 3.0f);
@@ -73,14 +71,11 @@ glm::vec3 convertHSVtoRGB(const glm::vec3& hsv)
 
 } // namespace
 
-ParcellationLabelTable::ParcellationLabelTable(size_t labelCount)
-  : m_colors_RGBA_F32()
-  , m_properties()
+ParcellationLabelTable::ParcellationLabelTable(size_t labelCount) : m_colors_RGBA_F32(), m_properties()
 {
   static const std::vector<float> sk_startAngles{0.0f, 120.0f, 240.0f, 60.0f, 180.0f, 300.0f};
 
-  if (labelCount < 7)
-  {
+  if (labelCount < 7) {
     throw_debug("Parcellation must have at least 7 labels");
   }
 
@@ -90,8 +85,7 @@ ParcellationLabelTable::ParcellationLabelTable(size_t labelCount)
   rgbValues.push_back(glm::vec3{0.0f, 0.0f, 0.0f});
 
   // Insert the six primary colors for labels 1-7:
-  for (float s : sk_startAngles)
-  {
+  for (float s : sk_startAngles) {
     rgbValues.push_back(convertHSVtoRGB(glm::vec3{s, 1.0f, 1.0f}));
   }
 
@@ -99,23 +93,19 @@ ParcellationLabelTable::ParcellationLabelTable(size_t labelCount)
   static const auto sk_satMinMax = std::make_pair(0.6f, 1.0f);
   static const auto sk_valMinMax = std::make_pair(0.7f, 1.0f);
 
-  const std::vector<glm::vec3> hsvSamples
-    = generateRandomHSVSamples(labelCount - 7, sk_hueMinMax, sk_satMinMax, sk_valMinMax);
+  const std::vector<glm::vec3> hsvSamples =
+    generateRandomHSVSamples(labelCount - 7, sk_hueMinMax, sk_satMinMax, sk_valMinMax);
 
-  std::transform(
-    std::begin(hsvSamples), std::end(hsvSamples), std::back_inserter(rgbValues), convertHSVtoRGB
-  );
+  std::transform(std::begin(hsvSamples), std::end(hsvSamples), std::back_inserter(rgbValues), convertHSVtoRGB);
 
   m_colors_RGBA_F32.resize(labelCount);
 
-  for (size_t i = 0; i < labelCount; ++i)
-  {
+  for (size_t i = 0; i < labelCount; ++i) {
     LabelProperties props;
 
     std::ostringstream ss;
 
-    if (0 == i)
-    {
+    if (0 == i) {
       // Label index 0 is always used as the background label,
       // so it is fully transparent and not visible in 2D/3D views
       ss << "None";
@@ -123,8 +113,7 @@ ParcellationLabelTable::ParcellationLabelTable(size_t labelCount)
       props.m_visible = false;
       props.m_showMesh = false;
     }
-    else
-    {
+    else {
       ss << "Region " << i;
       props.m_alpha = 1.0f;
       props.m_visible = true;
@@ -167,8 +156,7 @@ const float* ParcellationLabelTable::colorData_RGBA_premult_F32() const
 
 tex::SizedInternalBufferTextureFormat ParcellationLabelTable::bufferTextureFormat_RGBA_F32()
 {
-  static const tex::SizedInternalBufferTextureFormat sk_format
-    = tex::SizedInternalBufferTextureFormat::RGBA32F;
+  static const tex::SizedInternalBufferTextureFormat sk_format = tex::SizedInternalBufferTextureFormat::RGBA32F;
 
   return sk_format;
 }
@@ -234,8 +222,7 @@ void ParcellationLabelTable::setAlpha(size_t index, float alpha)
 {
   checkLabelIndex(index);
 
-  if (alpha < 0.0f || 1.0f < alpha)
-  {
+  if (alpha < 0.0f || 1.0f < alpha) {
     return;
   }
 
@@ -256,8 +243,7 @@ void ParcellationLabelTable::updateColorRGBA(size_t index)
 
 void ParcellationLabelTable::checkLabelIndex(size_t index) const
 {
-  if (index >= m_properties.size())
-  {
+  if (index >= m_properties.size()) {
     std::ostringstream ss;
     ss << "Invalid label index " << index << std::ends;
     throw_debug(ss.str());

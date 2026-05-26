@@ -31,15 +31,14 @@ public:
   ~SliceIntersector() = default;
 
   void setPositioningMethod(
-    const intersection::PositioningMethod& method, const std::optional<glm::vec3>& p = std::nullopt
-  );
+    const intersection::PositioningMethod& method,
+    const std::optional<glm::vec3>& p = std::nullopt);
 
   const intersection::PositioningMethod& positioningMethod() const;
 
   void setAlignmentMethod(
     const intersection::AlignmentMethod& method,
-    const std::optional<glm::vec3>& worldNormal = std::nullopt
-  );
+    const std::optional<glm::vec3>& worldNormal = std::nullopt);
 
   const intersection::AlignmentMethod& alignmentMethod() const;
 
@@ -47,8 +46,7 @@ public:
   std::pair<std::optional<intersection::IntersectionVertices>, glm::vec4> computePlaneIntersections(
     const glm::mat4& model_T_camera,
     const glm::mat4& model_T_frame,
-    const std::array<glm::vec3, 8>& modelBoxCorners
-  );
+    const std::array<glm::vec3, 8>& modelBoxCorners);
 
 private:
   void updatePlaneEquation(const glm::mat4& model_O_camera, const glm::mat4& model_O_frame);

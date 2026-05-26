@@ -35,8 +35,7 @@ public:
     std::weak_ptr<MeshGpuRecord> sliceMeshGpuRecord,
     std::weak_ptr<SlideRecord> slideRecord,
     QuerierType<bool, uuids::uuid> activeSlideQuerier,
-    GetterType<float> image3dLayerOpacityProvider
-  );
+    GetterType<float> image3dLayerOpacityProvider);
 
   SlideSlice(const SlideSlice&) = delete;
   SlideSlice& operator=(const SlideSlice&) = delete;
@@ -53,13 +52,12 @@ public:
   void setLabelTableRecord(std::weak_ptr<LabelTableRecord>) override;
 
   void setPositioningMethod(
-    const intersection::PositioningMethod& method, const std::optional<glm::vec3>& p = std::nullopt
-  );
+    const intersection::PositioningMethod& method,
+    const std::optional<glm::vec3>& p = std::nullopt);
 
   void setAlignmentMethod(
     const intersection::AlignmentMethod& method,
-    const std::optional<glm::vec3>& worldNormal = std::nullopt
-  );
+    const std::optional<glm::vec3>& worldNormal = std::nullopt);
 
   void setShowOutline(bool show);
 

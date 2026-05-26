@@ -21,13 +21,19 @@ namespace util
 template<>
 struct nth<0, PlanarPolygon::PointType>
 {
-  inline static auto get(const PlanarPolygon::PointType& point) { return point[0]; }
+  inline static auto get(const PlanarPolygon::PointType& point)
+  {
+    return point[0];
+  }
 };
 
 template<>
 struct nth<1, Polygon::PointType>
 {
-  inline static auto get(const PlanarPolygon::PointType& point) { return point[1]; }
+  inline static auto get(const PlanarPolygon::PointType& point)
+  {
+    return point[1];
+  }
 };
 
 } // namespace util

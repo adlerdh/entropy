@@ -22,8 +22,7 @@ const std::unordered_map<Target, Binding> GLTexture::s_bindingMap = {
   {Target::Texture2DArray, Binding::TextureBinding2DArray},
   {Target::Texture2DMultisample, Binding::TextureBinding2DMultisample},
   {Target::TextureRectangle, Binding::TextureBindingRectangle},
-  {Target::Texture2DMultisampleArray, Binding::TextureBinding2DMultisampleArray}
-};
+  {Target::Texture2DMultisampleArray, Binding::TextureBinding2DMultisampleArray}};
 
 // Sized internal normalized formats:
 
@@ -35,8 +34,7 @@ const std::unordered_map<ComponentType, SizedInternalFormat>
     {ComponentType::UInt16, SizedInternalFormat::R16_UNorm},
     {ComponentType::Int32, SizedInternalFormat::R32F},
     {ComponentType::UInt32, SizedInternalFormat::R32F},
-    {ComponentType::Float32, SizedInternalFormat::R32F}
-};
+    {ComponentType::Float32, SizedInternalFormat::R32F}};
 
 const std::unordered_map<ComponentType, tex::SizedInternalFormat>
   GLTexture::s_componentTypeToSizedInternalNormalizedRGFormatMap = {
@@ -46,8 +44,7 @@ const std::unordered_map<ComponentType, tex::SizedInternalFormat>
     {ComponentType::UInt16, SizedInternalFormat::RG16_UNorm},
     {ComponentType::Int32, SizedInternalFormat::RG32F},
     {ComponentType::UInt32, SizedInternalFormat::RG32F},
-    {ComponentType::Float32, SizedInternalFormat::RG32F}
-};
+    {ComponentType::Float32, SizedInternalFormat::RG32F}};
 
 const std::unordered_map<ComponentType, tex::SizedInternalFormat>
   GLTexture::s_componentTypeToSizedInternalNormalizedRGBFormatMap = {
@@ -57,8 +54,7 @@ const std::unordered_map<ComponentType, tex::SizedInternalFormat>
     {ComponentType::UInt16, SizedInternalFormat::RGB16_UNorm},
     {ComponentType::Int32, SizedInternalFormat::RGB32F},
     {ComponentType::UInt32, SizedInternalFormat::RGB32F},
-    {ComponentType::Float32, SizedInternalFormat::RGB32F}
-};
+    {ComponentType::Float32, SizedInternalFormat::RGB32F}};
 
 const std::unordered_map<ComponentType, tex::SizedInternalFormat>
   GLTexture::s_componentTypeToSizedInternalNormalizedRGBAFormatMap = {
@@ -68,54 +64,45 @@ const std::unordered_map<ComponentType, tex::SizedInternalFormat>
     {ComponentType::UInt16, SizedInternalFormat::RGBA16_UNorm},
     {ComponentType::Int32, SizedInternalFormat::RGBA32F},
     {ComponentType::UInt32, SizedInternalFormat::RGBA32F},
-    {ComponentType::Float32, SizedInternalFormat::RGBA32F}
-};
+    {ComponentType::Float32, SizedInternalFormat::RGBA32F}};
 
 // Sized internal non-normalized formats:
 
-const std::unordered_map<ComponentType, SizedInternalFormat>
-  GLTexture::s_componentTypeToSizedInternalRedFormatMap = {
-    {ComponentType::Int8, SizedInternalFormat::R8I},
-    {ComponentType::UInt8, SizedInternalFormat::R8U},
-    {ComponentType::Int16, SizedInternalFormat::R16I},
-    {ComponentType::UInt16, SizedInternalFormat::R16U},
-    {ComponentType::Int32, SizedInternalFormat::R32I},
-    {ComponentType::UInt32, SizedInternalFormat::R32U},
-    {ComponentType::Float32, SizedInternalFormat::R32F}
-};
+const std::unordered_map<ComponentType, SizedInternalFormat> GLTexture::s_componentTypeToSizedInternalRedFormatMap = {
+  {ComponentType::Int8, SizedInternalFormat::R8I},
+  {ComponentType::UInt8, SizedInternalFormat::R8U},
+  {ComponentType::Int16, SizedInternalFormat::R16I},
+  {ComponentType::UInt16, SizedInternalFormat::R16U},
+  {ComponentType::Int32, SizedInternalFormat::R32I},
+  {ComponentType::UInt32, SizedInternalFormat::R32U},
+  {ComponentType::Float32, SizedInternalFormat::R32F}};
 
-const std::unordered_map<ComponentType, SizedInternalFormat>
-  GLTexture::s_componentTypeToSizedInternalRGFormatMap = {
-    {ComponentType::Int8, SizedInternalFormat::RG8I},
-    {ComponentType::UInt8, SizedInternalFormat::RG8U},
-    {ComponentType::Int16, SizedInternalFormat::RG16I},
-    {ComponentType::UInt16, SizedInternalFormat::RG16U},
-    {ComponentType::Int32, SizedInternalFormat::RG32I},
-    {ComponentType::UInt32, SizedInternalFormat::RG32U},
-    {ComponentType::Float32, SizedInternalFormat::RG32F}
-};
+const std::unordered_map<ComponentType, SizedInternalFormat> GLTexture::s_componentTypeToSizedInternalRGFormatMap = {
+  {ComponentType::Int8, SizedInternalFormat::RG8I},
+  {ComponentType::UInt8, SizedInternalFormat::RG8U},
+  {ComponentType::Int16, SizedInternalFormat::RG16I},
+  {ComponentType::UInt16, SizedInternalFormat::RG16U},
+  {ComponentType::Int32, SizedInternalFormat::RG32I},
+  {ComponentType::UInt32, SizedInternalFormat::RG32U},
+  {ComponentType::Float32, SizedInternalFormat::RG32F}};
 
-const std::unordered_map<ComponentType, SizedInternalFormat>
-  GLTexture::s_componentTypeToSizedInternalRGBFormatMap = {
-    {ComponentType::Int8, SizedInternalFormat::RGB8I},
-    {ComponentType::UInt8, SizedInternalFormat::RGB8U},
-    {ComponentType::Int16, SizedInternalFormat::RGB16I},
-    {ComponentType::UInt16, SizedInternalFormat::RGB16U},
-    {ComponentType::Int32, SizedInternalFormat::RGB32I},
-    {ComponentType::UInt32, SizedInternalFormat::RGB32U},
-    {ComponentType::Float32, SizedInternalFormat::RGB32F}
-};
+const std::unordered_map<ComponentType, SizedInternalFormat> GLTexture::s_componentTypeToSizedInternalRGBFormatMap = {
+  {ComponentType::Int8, SizedInternalFormat::RGB8I},
+  {ComponentType::UInt8, SizedInternalFormat::RGB8U},
+  {ComponentType::Int16, SizedInternalFormat::RGB16I},
+  {ComponentType::UInt16, SizedInternalFormat::RGB16U},
+  {ComponentType::Int32, SizedInternalFormat::RGB32I},
+  {ComponentType::UInt32, SizedInternalFormat::RGB32U},
+  {ComponentType::Float32, SizedInternalFormat::RGB32F}};
 
-const std::unordered_map<ComponentType, SizedInternalFormat>
-  GLTexture::s_componentTypeToSizedInternalRGBAFormatMap = {
-    {ComponentType::Int8, SizedInternalFormat::RGBA8I},
-    {ComponentType::UInt8, SizedInternalFormat::RGBA8U},
-    {ComponentType::Int16, SizedInternalFormat::RGBA16I},
-    {ComponentType::UInt16, SizedInternalFormat::RGBA16U},
-    {ComponentType::Int32, SizedInternalFormat::RGBA32I},
-    {ComponentType::UInt32, SizedInternalFormat::RGBA32U},
-    {ComponentType::Float32, SizedInternalFormat::RGBA32F}
-};
+const std::unordered_map<ComponentType, SizedInternalFormat> GLTexture::s_componentTypeToSizedInternalRGBAFormatMap = {
+  {ComponentType::Int8, SizedInternalFormat::RGBA8I},
+  {ComponentType::UInt8, SizedInternalFormat::RGBA8U},
+  {ComponentType::Int16, SizedInternalFormat::RGBA16I},
+  {ComponentType::UInt16, SizedInternalFormat::RGBA16U},
+  {ComponentType::Int32, SizedInternalFormat::RGBA32I},
+  {ComponentType::UInt32, SizedInternalFormat::RGBA32U},
+  {ComponentType::Float32, SizedInternalFormat::RGBA32F}};
 
 // Normalized buffer pixel formats:
 
@@ -127,8 +114,7 @@ const std::unordered_map<ComponentType, BufferPixelFormat>
     {ComponentType::UInt16, BufferPixelFormat::Red},
     {ComponentType::Int32, BufferPixelFormat::Red},
     {ComponentType::UInt32, BufferPixelFormat::Red},
-    {ComponentType::Float32, BufferPixelFormat::Red}
-};
+    {ComponentType::Float32, BufferPixelFormat::Red}};
 
 const std::unordered_map<ComponentType, BufferPixelFormat>
   GLTexture::s_componentTypeToBufferPixelRGNormalizedFormatMap = {
@@ -138,8 +124,7 @@ const std::unordered_map<ComponentType, BufferPixelFormat>
     {ComponentType::UInt16, BufferPixelFormat::RG},
     {ComponentType::Int32, BufferPixelFormat::RG},
     {ComponentType::UInt32, BufferPixelFormat::RG},
-    {ComponentType::Float32, BufferPixelFormat::RG}
-};
+    {ComponentType::Float32, BufferPixelFormat::RG}};
 
 const std::unordered_map<ComponentType, BufferPixelFormat>
   GLTexture::s_componentTypeToBufferPixelRGBNormalizedFormatMap = {
@@ -149,8 +134,7 @@ const std::unordered_map<ComponentType, BufferPixelFormat>
     {ComponentType::UInt16, BufferPixelFormat::RGB},
     {ComponentType::Int32, BufferPixelFormat::RGB},
     {ComponentType::UInt32, BufferPixelFormat::RGB},
-    {ComponentType::Float32, BufferPixelFormat::RGB}
-};
+    {ComponentType::Float32, BufferPixelFormat::RGB}};
 
 const std::unordered_map<ComponentType, BufferPixelFormat>
   GLTexture::s_componentTypeToBufferPixelRGBANormalizedFormatMap = {
@@ -160,70 +144,58 @@ const std::unordered_map<ComponentType, BufferPixelFormat>
     {ComponentType::UInt16, BufferPixelFormat::RGBA},
     {ComponentType::Int32, BufferPixelFormat::RGBA},
     {ComponentType::UInt32, BufferPixelFormat::RGBA},
-    {ComponentType::Float32, BufferPixelFormat::RGBA}
-};
+    {ComponentType::Float32, BufferPixelFormat::RGBA}};
 
 // Non-normalized buffer pixel formats:
 
-const std::unordered_map<ComponentType, BufferPixelFormat>
-  GLTexture::s_componentTypeToBufferPixelRedFormatMap = {
-    {ComponentType::Int8, BufferPixelFormat::Red_Integer},
-    {ComponentType::UInt8, BufferPixelFormat::Red_Integer},
-    {ComponentType::Int16, BufferPixelFormat::Red_Integer},
-    {ComponentType::UInt16, BufferPixelFormat::Red_Integer},
-    {ComponentType::Int32, BufferPixelFormat::Red_Integer},
-    {ComponentType::UInt32, BufferPixelFormat::Red_Integer},
-    {ComponentType::Float32, BufferPixelFormat::Red}
-};
+const std::unordered_map<ComponentType, BufferPixelFormat> GLTexture::s_componentTypeToBufferPixelRedFormatMap = {
+  {ComponentType::Int8, BufferPixelFormat::Red_Integer},
+  {ComponentType::UInt8, BufferPixelFormat::Red_Integer},
+  {ComponentType::Int16, BufferPixelFormat::Red_Integer},
+  {ComponentType::UInt16, BufferPixelFormat::Red_Integer},
+  {ComponentType::Int32, BufferPixelFormat::Red_Integer},
+  {ComponentType::UInt32, BufferPixelFormat::Red_Integer},
+  {ComponentType::Float32, BufferPixelFormat::Red}};
 
-const std::unordered_map<ComponentType, BufferPixelFormat>
-  GLTexture::s_componentTypeToBufferPixelRGFormatMap = {
-    {ComponentType::Int8, BufferPixelFormat::RG_Integer},
-    {ComponentType::UInt8, BufferPixelFormat::RG_Integer},
-    {ComponentType::Int16, BufferPixelFormat::RG_Integer},
-    {ComponentType::UInt16, BufferPixelFormat::RG_Integer},
-    {ComponentType::Int32, BufferPixelFormat::RG_Integer},
-    {ComponentType::UInt32, BufferPixelFormat::RG_Integer},
-    {ComponentType::Float32, BufferPixelFormat::RG}
-};
+const std::unordered_map<ComponentType, BufferPixelFormat> GLTexture::s_componentTypeToBufferPixelRGFormatMap = {
+  {ComponentType::Int8, BufferPixelFormat::RG_Integer},
+  {ComponentType::UInt8, BufferPixelFormat::RG_Integer},
+  {ComponentType::Int16, BufferPixelFormat::RG_Integer},
+  {ComponentType::UInt16, BufferPixelFormat::RG_Integer},
+  {ComponentType::Int32, BufferPixelFormat::RG_Integer},
+  {ComponentType::UInt32, BufferPixelFormat::RG_Integer},
+  {ComponentType::Float32, BufferPixelFormat::RG}};
 
-const std::unordered_map<ComponentType, BufferPixelFormat>
-  GLTexture::s_componentTypeToBufferPixelRGBFormatMap = {
-    {ComponentType::Int8, BufferPixelFormat::RGB_Integer},
-    {ComponentType::UInt8, BufferPixelFormat::RGB_Integer},
-    {ComponentType::Int16, BufferPixelFormat::RGB_Integer},
-    {ComponentType::UInt16, BufferPixelFormat::RGB_Integer},
-    {ComponentType::Int32, BufferPixelFormat::RGB_Integer},
-    {ComponentType::UInt32, BufferPixelFormat::RGB_Integer},
-    {ComponentType::Float32, BufferPixelFormat::RGB}
-};
+const std::unordered_map<ComponentType, BufferPixelFormat> GLTexture::s_componentTypeToBufferPixelRGBFormatMap = {
+  {ComponentType::Int8, BufferPixelFormat::RGB_Integer},
+  {ComponentType::UInt8, BufferPixelFormat::RGB_Integer},
+  {ComponentType::Int16, BufferPixelFormat::RGB_Integer},
+  {ComponentType::UInt16, BufferPixelFormat::RGB_Integer},
+  {ComponentType::Int32, BufferPixelFormat::RGB_Integer},
+  {ComponentType::UInt32, BufferPixelFormat::RGB_Integer},
+  {ComponentType::Float32, BufferPixelFormat::RGB}};
 
-const std::unordered_map<ComponentType, BufferPixelFormat>
-  GLTexture::s_componentTypeToBufferPixelRGBAFormatMap = {
-    {ComponentType::Int8, BufferPixelFormat::RGBA_Integer},
-    {ComponentType::UInt8, BufferPixelFormat::RGBA_Integer},
-    {ComponentType::Int16, BufferPixelFormat::RGBA_Integer},
-    {ComponentType::UInt16, BufferPixelFormat::RGBA_Integer},
-    {ComponentType::Int32, BufferPixelFormat::RGBA_Integer},
-    {ComponentType::UInt32, BufferPixelFormat::RGBA_Integer},
-    {ComponentType::Float32, BufferPixelFormat::RGBA}
-};
+const std::unordered_map<ComponentType, BufferPixelFormat> GLTexture::s_componentTypeToBufferPixelRGBAFormatMap = {
+  {ComponentType::Int8, BufferPixelFormat::RGBA_Integer},
+  {ComponentType::UInt8, BufferPixelFormat::RGBA_Integer},
+  {ComponentType::Int16, BufferPixelFormat::RGBA_Integer},
+  {ComponentType::UInt16, BufferPixelFormat::RGBA_Integer},
+  {ComponentType::Int32, BufferPixelFormat::RGBA_Integer},
+  {ComponentType::UInt32, BufferPixelFormat::RGBA_Integer},
+  {ComponentType::Float32, BufferPixelFormat::RGBA}};
 
 // Buffer pixel data type:
 
-const std::unordered_map<ComponentType, BufferPixelDataType>
-  GLTexture::s_componentTypeToBufferPixelDataTypeMap = {
-    {ComponentType::Int8, BufferPixelDataType::Int8},
-    {ComponentType::UInt8, BufferPixelDataType::UInt8},
-    {ComponentType::Int16, BufferPixelDataType::Int16},
-    {ComponentType::UInt16, BufferPixelDataType::UInt16},
-    {ComponentType::Int32, BufferPixelDataType::Int32},
-    {ComponentType::UInt32, BufferPixelDataType::UInt32},
-    {ComponentType::Float32, BufferPixelDataType::Float32}
-};
+const std::unordered_map<ComponentType, BufferPixelDataType> GLTexture::s_componentTypeToBufferPixelDataTypeMap = {
+  {ComponentType::Int8, BufferPixelDataType::Int8},
+  {ComponentType::UInt8, BufferPixelDataType::UInt8},
+  {ComponentType::Int16, BufferPixelDataType::Int16},
+  {ComponentType::UInt16, BufferPixelDataType::UInt16},
+  {ComponentType::Int32, BufferPixelDataType::Int32},
+  {ComponentType::UInt32, BufferPixelDataType::UInt32},
+  {ComponentType::Float32, BufferPixelDataType::Float32}};
 
-SizedInternalFormat GLTexture::getSizedInternalNormalizedRedFormat(const ComponentType& componentType
-)
+SizedInternalFormat GLTexture::getSizedInternalNormalizedRedFormat(const ComponentType& componentType)
 {
   return s_componentTypeToSizedInternalNormalizedRedFormatMap.at(componentType);
 }
@@ -233,14 +205,12 @@ SizedInternalFormat GLTexture::getSizedInternalNormalizedRGFormat(const Componen
   return s_componentTypeToSizedInternalNormalizedRGFormatMap.at(componentType);
 }
 
-SizedInternalFormat GLTexture::getSizedInternalNormalizedRGBFormat(const ComponentType& componentType
-)
+SizedInternalFormat GLTexture::getSizedInternalNormalizedRGBFormat(const ComponentType& componentType)
 {
   return s_componentTypeToSizedInternalNormalizedRGBFormatMap.at(componentType);
 }
 
-SizedInternalFormat GLTexture::getSizedInternalNormalizedRGBAFormat(const ComponentType& componentType
-)
+SizedInternalFormat GLTexture::getSizedInternalNormalizedRGBAFormat(const ComponentType& componentType)
 {
   return s_componentTypeToSizedInternalNormalizedRGBAFormatMap.at(componentType);
 }
@@ -310,9 +280,7 @@ BufferPixelDataType GLTexture::getBufferPixelDataType(const ComponentType& compo
   return s_componentTypeToBufferPixelDataTypeMap.at(componentType);
 }
 
-GLTexture::Binder::Binder(GLTexture& texture)
-  : m_texture(texture)
-  , m_boundID(0)
+GLTexture::Binder::Binder(GLTexture& texture) : m_texture(texture), m_boundID(0)
 {
   glGetIntegerv(underlyingType(s_bindingMap.at(m_texture.m_target)), &m_boundID);
   glBindTexture(m_texture.m_targetEnum, static_cast<GLuint>(m_texture.m_id));
@@ -327,8 +295,7 @@ GLTexture::GLTexture(
   Target target,
   MultisampleSettings multisampleSettings,
   std::optional<PixelStoreSettings> pixelPackSettings,
-  std::optional<PixelStoreSettings> pixelUnpackSettings
-)
+  std::optional<PixelStoreSettings> pixelUnpackSettings)
   : m_target(std::move(target))
   , m_targetEnum(underlyingType(m_target))
   , m_id(0)
@@ -361,8 +328,7 @@ GLTexture::GLTexture(GLTexture&& other) noexcept
 
 GLTexture& GLTexture::operator=(GLTexture&& other) noexcept
 {
-  if (this != &other)
-  {
+  if (this != &other) {
     release();
 
     std::swap(m_id, other.m_id);
@@ -401,8 +367,7 @@ void GLTexture::release(std::optional<uint32_t> textureUnit)
   //    if (reset == QOpenGLTexture::ResetTextureUnit)
   //        texFuncs->glActiveTexture(GL_TEXTURE0 + oldTextureUnit);
 
-  if (textureUnit)
-  {
+  if (textureUnit) {
     glActiveTexture(GL_TEXTURE0 + *textureUnit);
   }
 
@@ -426,17 +391,14 @@ void GLTexture::bind(std::optional<uint32_t> textureUnit)
 
   GLint prevUnit = 0;
 
-  if (textureUnit)
-  {
-    if (rebind)
-      glGetIntegerv(GL_ACTIVE_TEXTURE, &prevUnit);
+  if (textureUnit) {
+    if (rebind) glGetIntegerv(GL_ACTIVE_TEXTURE, &prevUnit);
     glActiveTexture(GL_TEXTURE0 + *textureUnit);
   }
 
   glBindTexture(m_targetEnum, m_id);
 
-  if (rebind && textureUnit)
-  {
+  if (rebind && textureUnit) {
     glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + prevUnit));
   }
 }
@@ -445,8 +407,7 @@ bool GLTexture::isBound(std::optional<uint32_t> textureUnit)
 {
   GLint prevUnit = 0;
 
-  if (textureUnit)
-  {
+  if (textureUnit) {
     glGetIntegerv(GL_ACTIVE_TEXTURE, &prevUnit);
     glActiveTexture(GL_TEXTURE0 + *textureUnit);
   }
@@ -456,8 +417,7 @@ bool GLTexture::isBound(std::optional<uint32_t> textureUnit)
 
   const bool result = (static_cast<GLuint>(boundID) == m_id);
 
-  if (textureUnit)
-  {
+  if (textureUnit) {
     glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + prevUnit));
   }
 
@@ -500,8 +460,7 @@ glm::uvec3 GLTexture::size() const
 
 void GLTexture::setSize(const glm::uvec3& size)
 {
-  if (glm::any(glm::lessThan(size, glm::uvec3{1})))
-  {
+  if (glm::any(glm::lessThan(size, glm::uvec3{1}))) {
     std::ostringstream ss;
     ss << "Invalid texture size " << glm::to_string(size) << std::ends;
     throw_debug(ss.str())
@@ -515,11 +474,9 @@ void GLTexture::setData(
   const SizedInternalFormat& internalFormat,
   const BufferPixelFormat& format,
   const BufferPixelDataType& type,
-  const GLvoid* data
-)
+  const GLvoid* data)
 {
-  if (Target::TextureCubeMap == m_target || Target::TextureBuffer == m_target)
-  {
+  if (Target::TextureCubeMap == m_target || Target::TextureBuffer == m_target) {
     throw_debug("Invalid texture target type ")
   }
 
@@ -532,95 +489,76 @@ void GLTexture::setData(
 
   std::optional<PixelStoreSettings> oldUnpackSettings = std::nullopt;
 
-  if (m_pixelUnpackSettings)
-  {
+  if (m_pixelUnpackSettings) {
     oldUnpackSettings = getPixelUnpackSettings();
     applyPixelUnpackSettings(*m_pixelUnpackSettings);
   }
 
-  switch (m_target)
-  {
-  case Target::Texture1D:
-  {
-    glTexImage1D(m_targetEnum, level, _internalFormat, _size.x, 0, _format, _type, data);
-    break;
-  }
-  case Target::Texture2D:
-  {
-    glTexImage2D(m_targetEnum, level, _internalFormat, _size.x, _size.y, 0, _format, _type, data);
+  switch (m_target) {
+    case Target::Texture1D: {
+      glTexImage1D(m_targetEnum, level, _internalFormat, _size.x, 0, _format, _type, data);
+      break;
+    }
+    case Target::Texture2D: {
+      glTexImage2D(m_targetEnum, level, _internalFormat, _size.x, _size.y, 0, _format, _type, data);
 
-    /// @todo This needs its own function
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 4);
-    //        glSamplerParameteri( m_samplerID, GL_TEXTURE_MAX_LEVEL, 4 );
-    break;
-  }
-  case Target::Texture3D:
-  {
-    glTexImage3D(
-      m_targetEnum, level, _internalFormat, _size.x, _size.y, _size.z, 0, _format, _type, data
-    );
-    break;
-  }
-  case Target::Texture1DArray:
-  {
-    glTexImage2D(m_targetEnum, level, _internalFormat, _size.x, _size.y, 0, _format, _type, data);
-    break;
-  }
-  case Target::Texture2DArray:
-  {
-    glTexImage3D(
-      m_targetEnum, level, _internalFormat, _size.x, _size.y, _size.z, 0, _format, _type, data
-    );
-    break;
-  }
-  case Target::Texture2DMultisample:
-  {
-    glTexImage2DMultisample(
-      m_targetEnum,
-      m_multisampleSettings.m_numSamples,
-      _internalFormat,
-      _size.x,
-      _size.y,
-      m_multisampleSettings.m_fixedSampleLocations
-    );
-    break;
-  }
-  case Target::TextureRectangle:
-  {
-    glTexImage2D(m_targetEnum, 0, _internalFormat, _size.x, _size.y, 0, _format, _type, data);
-    break;
-  }
-  case Target::Texture2DMultisampleArray:
-  {
-    glTexImage3DMultisample(
-      m_targetEnum,
-      m_multisampleSettings.m_numSamples,
-      _internalFormat,
-      _size.x,
-      _size.y,
-      _size.z,
-      m_multisampleSettings.m_fixedSampleLocations
-    );
-    break;
-  }
-  case Target::TextureCubeMap:
-  case Target::TextureBuffer:
-  {
-    break;
-  }
+      /// @todo This needs its own function
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 4);
+      //        glSamplerParameteri( m_samplerID, GL_TEXTURE_MAX_LEVEL, 4 );
+      break;
+    }
+    case Target::Texture3D: {
+      glTexImage3D(m_targetEnum, level, _internalFormat, _size.x, _size.y, _size.z, 0, _format, _type, data);
+      break;
+    }
+    case Target::Texture1DArray: {
+      glTexImage2D(m_targetEnum, level, _internalFormat, _size.x, _size.y, 0, _format, _type, data);
+      break;
+    }
+    case Target::Texture2DArray: {
+      glTexImage3D(m_targetEnum, level, _internalFormat, _size.x, _size.y, _size.z, 0, _format, _type, data);
+      break;
+    }
+    case Target::Texture2DMultisample: {
+      glTexImage2DMultisample(
+        m_targetEnum,
+        m_multisampleSettings.m_numSamples,
+        _internalFormat,
+        _size.x,
+        _size.y,
+        m_multisampleSettings.m_fixedSampleLocations);
+      break;
+    }
+    case Target::TextureRectangle: {
+      glTexImage2D(m_targetEnum, 0, _internalFormat, _size.x, _size.y, 0, _format, _type, data);
+      break;
+    }
+    case Target::Texture2DMultisampleArray: {
+      glTexImage3DMultisample(
+        m_targetEnum,
+        m_multisampleSettings.m_numSamples,
+        _internalFormat,
+        _size.x,
+        _size.y,
+        _size.z,
+        m_multisampleSettings.m_fixedSampleLocations);
+      break;
+    }
+    case Target::TextureCubeMap:
+    case Target::TextureBuffer: {
+      break;
+    }
   }
 
-  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target
-        || Target::Texture2DMultisampleArray == m_target))
+  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
+        Target::Texture2DMultisampleArray == m_target))
   {
-    if (m_autoGenerateMipmaps)
-    {
+    if (m_autoGenerateMipmaps) {
       glGenerateMipmap(m_targetEnum);
     }
   }
 
-  if (oldUnpackSettings)
-  {
+  if (oldUnpackSettings) {
     applyPixelUnpackSettings(*oldUnpackSettings);
   }
 
@@ -633,10 +571,12 @@ void GLTexture::setSubData(
   const glm::uvec3& size,
   const BufferPixelFormat& format,
   const BufferPixelDataType& type,
-  const GLvoid* data
-)
+  const GLvoid* data)
 {
-  if (Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target || Target::Texture2DMultisampleArray == m_target || Target::TextureCubeMap == m_target || Target::TextureBuffer == m_target)
+  if (
+    Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
+    Target::Texture2DMultisampleArray == m_target || Target::TextureCubeMap == m_target ||
+    Target::TextureBuffer == m_target)
   {
     throw_debug("Invalid texture target type ")
   }
@@ -650,68 +590,63 @@ void GLTexture::setSubData(
 
   std::optional<PixelStoreSettings> oldUnpackSettings = std::nullopt;
 
-  if (m_pixelUnpackSettings)
-  {
+  if (m_pixelUnpackSettings) {
     oldUnpackSettings = getPixelUnpackSettings();
     applyPixelUnpackSettings(*m_pixelUnpackSettings);
   }
 
-  switch (m_target)
-  {
-  case Target::Texture1D:
-    glTexSubImage1D(m_targetEnum, level, _offset.x, _size.x, _format, _type, data);
-    break;
+  switch (m_target) {
+    case Target::Texture1D:
+      glTexSubImage1D(m_targetEnum, level, _offset.x, _size.x, _format, _type, data);
+      break;
 
-  case Target::Texture2D:
-    glTexSubImage2D(m_targetEnum, level, _offset.x, _offset.y, _size.x, _size.y, _format, _type, data);
-    break;
+    case Target::Texture2D:
+      glTexSubImage2D(m_targetEnum, level, _offset.x, _offset.y, _size.x, _size.y, _format, _type, data);
+      break;
 
-  case Target::Texture3D:
-    glTexSubImage3D(
-      m_targetEnum,
-      level,
-      _offset.x,
-      _offset.y,
-      _offset.z,
-      _size.x,
-      _size.y,
-      _size.z,
-      _format,
-      _type,
-      data
-    );
-    break;
+    case Target::Texture3D:
+      glTexSubImage3D(
+        m_targetEnum,
+        level,
+        _offset.x,
+        _offset.y,
+        _offset.z,
+        _size.x,
+        _size.y,
+        _size.z,
+        _format,
+        _type,
+        data);
+      break;
 
-  case Target::Texture1DArray:
-    glTexSubImage2D(m_targetEnum, level, _offset.x, _offset.y, _size.x, _size.y, _format, _type, data);
-    break;
+    case Target::Texture1DArray:
+      glTexSubImage2D(m_targetEnum, level, _offset.x, _offset.y, _size.x, _size.y, _format, _type, data);
+      break;
 
-  case Target::Texture2DArray:
-    glTexSubImage3D(
-      m_targetEnum,
-      level,
-      _offset.x,
-      _offset.y,
-      _offset.z,
-      _size.x,
-      _size.y,
-      _size.z,
-      _format,
-      _type,
-      data
-    );
-    break;
+    case Target::Texture2DArray:
+      glTexSubImage3D(
+        m_targetEnum,
+        level,
+        _offset.x,
+        _offset.y,
+        _offset.z,
+        _size.x,
+        _size.y,
+        _size.z,
+        _format,
+        _type,
+        data);
+      break;
 
-  case Target::Texture2DMultisample:
-  case Target::TextureRectangle:
-  case Target::Texture2DMultisampleArray:
-  case Target::TextureCubeMap:
-  case Target::TextureBuffer:
-    break;
+    case Target::Texture2DMultisample:
+    case Target::TextureRectangle:
+    case Target::Texture2DMultisampleArray:
+    case Target::TextureCubeMap:
+    case Target::TextureBuffer:
+      break;
   }
 
-  if (oldUnpackSettings)
-  {
+  if (oldUnpackSettings) {
     applyPixelUnpackSettings(*oldUnpackSettings);
   }
 
@@ -724,8 +659,7 @@ void GLTexture::setCubeMapFaceData(
   const SizedInternalFormat& internalFormat,
   const BufferPixelFormat& format,
   const BufferPixelDataType& type,
-  const GLvoid* data
-)
+  const GLvoid* data)
 {
   //    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
@@ -735,8 +669,7 @@ void GLTexture::setCubeMapFaceData(
 
   std::optional<PixelStoreSettings> oldUnpackSettings = std::nullopt;
 
-  if (m_pixelUnpackSettings)
-  {
+  if (m_pixelUnpackSettings) {
     oldUnpackSettings = getPixelUnpackSettings();
     applyPixelUnpackSettings(*m_pixelUnpackSettings);
   }
@@ -750,27 +683,25 @@ void GLTexture::setCubeMapFaceData(
     0,
     underlyingType(format),
     underlyingType(type),
-    data
-  );
+    data);
 
   //    if ( m_autoGenerateMipmaps )
   //    {
   //        glGenerateMipmap( m_targetEnum );
   //    }
 
-  if (oldUnpackSettings)
-  {
+  if (oldUnpackSettings) {
     applyPixelUnpackSettings(*oldUnpackSettings);
   }
 
   CHECK_GL_ERROR(m_errorChecker);
 }
 
-void GLTexture::readData(
-  GLint level, const BufferPixelFormat& format, const BufferPixelDataType& type, GLvoid* data
-)
+void GLTexture::readData(GLint level, const BufferPixelFormat& format, const BufferPixelDataType& type, GLvoid* data)
 {
-  if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target || Target::TextureCubeMap == m_target)
+  if (
+    Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target ||
+    Target::TextureCubeMap == m_target)
   {
     throw_debug("Invalid texture target type ")
   }
@@ -780,16 +711,14 @@ void GLTexture::readData(
 
   std::optional<PixelStoreSettings> oldPackSettings = std::nullopt;
 
-  if (m_pixelPackSettings)
-  {
+  if (m_pixelPackSettings) {
     oldPackSettings = getPixelPackSettings();
     applyPixelPackSettings(*m_pixelPackSettings);
   }
 
   glGetTexImage(m_targetEnum, level, underlyingType(format), underlyingType(type), data);
 
-  if (oldPackSettings)
-  {
+  if (oldPackSettings) {
     applyPixelPackSettings(*oldPackSettings);
   }
 }
@@ -799,23 +728,20 @@ void GLTexture::readCubeMapFaceData(
   GLint level,
   const BufferPixelFormat& format,
   const BufferPixelDataType& type,
-  GLvoid* data
-)
+  GLvoid* data)
 {
   Binder binder(*this);
 
   std::optional<PixelStoreSettings> oldPackSettings = std::nullopt;
 
-  if (m_pixelPackSettings)
-  {
+  if (m_pixelPackSettings) {
     oldPackSettings = getPixelPackSettings();
     applyPixelPackSettings(*m_pixelPackSettings);
   }
 
   glGetTexImage(underlyingType(face), level, underlyingType(format), underlyingType(type), data);
 
-  if (oldPackSettings)
-  {
+  if (oldPackSettings) {
     applyPixelPackSettings(*oldPackSettings);
   }
 
@@ -824,18 +750,16 @@ void GLTexture::readCubeMapFaceData(
 
 void GLTexture::setMinificationFilter(const MinificationFilter& filter)
 {
-  if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target)
-  {
+  if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target) {
     throw_debug("Invalid texture target type ")
   }
 
   Binder binder(*this);
 
-  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target
-        || Target::Texture2DMultisampleArray == m_target))
+  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
+        Target::Texture2DMultisampleArray == m_target))
   {
-    if (m_autoGenerateMipmaps)
-    {
+    if (m_autoGenerateMipmaps) {
       glGenerateMipmap(m_targetEnum);
     }
   }
@@ -846,18 +770,16 @@ void GLTexture::setMinificationFilter(const MinificationFilter& filter)
 
 void GLTexture::setMagnificationFilter(const MagnificationFilter& filter)
 {
-  if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target)
-  {
+  if (Target::Texture2DMultisample == m_target || Target::Texture2DMultisampleArray == m_target) {
     throw_debug("Invalid texture target type ")
   }
 
   Binder binder(*this);
 
-  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target
-        || Target::Texture2DMultisampleArray == m_target))
+  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
+        Target::Texture2DMultisampleArray == m_target))
   {
-    if (m_autoGenerateMipmaps)
-    {
+    if (m_autoGenerateMipmaps) {
       glGenerateMipmap(m_targetEnum);
     }
   }
@@ -870,15 +792,13 @@ void GLTexture::setSwizzleMask(
   const SwizzleValue& rValue,
   const SwizzleValue& gValue,
   const SwizzleValue& bValue,
-  const SwizzleValue& aValue
-)
+  const SwizzleValue& aValue)
 {
   const GLint mask[] = {
     static_cast<GLint>(underlyingType(rValue)),
     static_cast<GLint>(underlyingType(gValue)),
     static_cast<GLint>(underlyingType(bValue)),
-    static_cast<GLint>(underlyingType(aValue))
-  };
+    static_cast<GLint>(underlyingType(aValue))};
 
   Binder binder(*this);
   glTexParameteriv(m_targetEnum, GL_TEXTURE_SWIZZLE_RGBA, mask);
@@ -889,20 +809,20 @@ void GLTexture::setWrapMode(const WrapMode& mode)
 {
   Binder binder(*this);
 
-  if (Target::Texture1D == m_target || Target::Texture1DArray == m_target)
-  {
+  if (Target::Texture1D == m_target || Target::Texture1DArray == m_target) {
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode));
     //        glSamplerParameteri( m_samplerID, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode) );
   }
-  else if (Target::Texture2D == m_target || Target::Texture2DArray == m_target || Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target || Target::Texture2DMultisampleArray == m_target)
+  else if (
+    Target::Texture2D == m_target || Target::Texture2DArray == m_target || Target::Texture2DMultisample == m_target ||
+    Target::TextureRectangle == m_target || Target::Texture2DMultisampleArray == m_target)
   {
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode));
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_T, underlyingType_asInt32(mode));
     //        glSamplerParameteri( m_samplerID, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode) );
     //        glSamplerParameteri( m_samplerID, GL_TEXTURE_WRAP_T, underlyingType_asInt32(mode) );
   }
-  else if (Target::Texture3D == m_target)
-  {
+  else if (Target::Texture3D == m_target) {
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_S, underlyingType_asInt32(mode));
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_T, underlyingType_asInt32(mode));
     glTexParameteri(m_targetEnum, GL_TEXTURE_WRAP_R, underlyingType_asInt32(mode));
@@ -924,11 +844,10 @@ void GLTexture::setAutoGenerateMipmaps(bool set)
 {
   m_autoGenerateMipmaps = set;
 
-  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target
-        || Target::Texture2DMultisampleArray == m_target))
+  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
+        Target::Texture2DMultisampleArray == m_target))
   {
-    if (m_autoGenerateMipmaps)
-    {
+    if (m_autoGenerateMipmaps) {
       Binder binder(*this);
       glGenerateMipmap(m_targetEnum);
     }

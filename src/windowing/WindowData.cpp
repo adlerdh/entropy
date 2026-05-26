@@ -261,8 +261,7 @@ Layout createTriTopBottomLayout(
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetMode = ViewOffsetMode::None;
 
-  for (std::size_t r = 0; r < numRows; ++r)
-  {
+  for (std::size_t r = 0; r < numRows; ++r) {
     const float height = 2.0f / static_cast<float>(numRows);
     const float bottom = 1.0f - (static_cast<float>(r + 1)) * height;
 
@@ -374,13 +373,13 @@ Layout createGridLayout(
   }
 
   const auto rotSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Rotation);
-  auto* rotGroup =layout.getCameraSyncGroup(CameraSyncMode::Rotation, rotSyncGroupUid);
+  auto* rotGroup = layout.getCameraSyncGroup(CameraSyncMode::Rotation, rotSyncGroupUid);
 
   const auto transSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Translation);
-  auto* transGroup =layout.getCameraSyncGroup(CameraSyncMode::Translation, transSyncGroupUid);
+  auto* transGroup = layout.getCameraSyncGroup(CameraSyncMode::Translation, transSyncGroupUid);
 
   const auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
-  auto* zoomGroup =layout.getCameraSyncGroup(CameraSyncMode::Zoom, zoomSyncGroupUid);
+  auto* zoomGroup = layout.getCameraSyncGroup(CameraSyncMode::Zoom, zoomSyncGroupUid);
 
   const float w = 2.0f / static_cast<float>(width);
   const float h = 2.0f / static_cast<float>(height);
@@ -390,8 +389,7 @@ Layout createGridLayout(
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetImage = imageUidForLightbox;
 
-  if (imageIndexForLightbox)
-  {
+  if (imageIndexForLightbox) {
     if (0 == *imageIndexForLightbox) {
       offsetSetting.m_offsetMode = ViewOffsetMode::RelativeToRefImageScrolls;
     }
@@ -403,23 +401,18 @@ Layout createGridLayout(
       //            offsetSetting.m_offsetMode = ViewOffsetMode::RelativeToRefImageScrolls;
     }
   }
-  else
-  {
+  else {
     offsetSetting.m_offsetMode = ViewOffsetMode::RelativeToImageScrolls;
   }
 
-  for (std::size_t j = 0; j < height; ++j)
-  {
-    for (std::size_t i = 0; i < width; ++i)
-    {
+  for (std::size_t j = 0; j < height; ++j) {
+    for (std::size_t i = 0; i < width; ++i) {
       const float l = -1.0f + static_cast<float>(i) * w;
       const float b = -1.0f + static_cast<float>(j) * h;
 
       const int counter = static_cast<int>(width * j + i);
 
-      offsetSetting.m_relativeOffsetSteps = (offsetViews)
-                                              ? (counter - static_cast<int>(width * height) / 2)
-                                              : 0;
+      offsetSetting.m_relativeOffsetSteps = (offsetViews) ? (counter - static_cast<int>(width * height) / 2) : 0;
 
       auto view = std::make_unique<View>(
         glm::vec4{l, b, w, h},
@@ -478,9 +471,17 @@ void WindowData::setupViews()
 
   static constexpr std::size_t refImage = 0;
 
-  m_layouts.emplace_back(
-    createGridLayout(ViewType::Axial, 1, 1, false, false,
-                     m_crosshairs, m_viewAlignment, m_viewConvention, refImage, std::nullopt));
+  m_layouts.emplace_back(createGridLayout(
+    ViewType::Axial,
+    1,
+    1,
+    false,
+    false,
+    m_crosshairs,
+    m_viewAlignment,
+    m_viewConvention,
+    refImage,
+    std::nullopt));
 
   updateAllViews();
 }
@@ -495,16 +496,25 @@ void WindowData::addGridLayout(
   const uuid& imageUidForLightbox)
 {
   m_layouts.emplace_back(createGridLayout(
-    viewType, width, height,
-    offsetViews, isLightbox,
-    m_crosshairs, m_viewAlignment, m_viewConvention,
-    imageIndexForLightbox, imageUidForLightbox));
+    viewType,
+    width,
+    height,
+    offsetViews,
+    isLightbox,
+    m_crosshairs,
+    m_viewAlignment,
+    m_viewConvention,
+    imageIndexForLightbox,
+    imageUidForLightbox));
 
   updateAllViews();
 }
 
 void WindowData::addLightboxLayoutForImage(
-  const ViewType& viewType, std::size_t numSlices, std::size_t imageIndex, const uuid& imageUid)
+  const ViewType& viewType,
+  std::size_t numSlices,
+  std::size_t imageIndex,
+  const uuid& imageUid)
 {
   static constexpr bool k_offsetViews = true;
   static constexpr bool k_isLightbox = true;
@@ -513,8 +523,14 @@ void WindowData::addLightboxLayoutForImage(
   const auto div = std::div(static_cast<int>(numSlices), w);
   const int h = div.quot + (div.rem > 0 ? 1 : 0);
 
-  addGridLayout(viewType, static_cast<std::size_t>(w), static_cast<std::size_t>(h),
-                k_offsetViews, k_isLightbox, imageIndex, imageUid);
+  addGridLayout(
+    viewType,
+    static_cast<std::size_t>(w),
+    static_cast<std::size_t>(h),
+    k_offsetViews,
+    k_isLightbox,
+    imageIndex,
+    imageUid);
 }
 
 void WindowData::addAxCorSagLayout(std::size_t numImages)
@@ -541,8 +557,7 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t 
 
   std::size_t count = 0;
 
-  for (const auto& uid : orderedImageUids)
-  {
+  for (const auto& uid : orderedImageUids) {
     renderedImages.push_back(uid);
 
     if (count < 2) {
@@ -575,8 +590,7 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImage
 
   std::size_t count = 0;
 
-  for (const auto& uid : orderedImageUids)
-  {
+  for (const auto& uid : orderedImageUids) {
     renderedImages.push_back(uid);
 
     if (count < 2) {
@@ -586,8 +600,7 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImage
     }
   }
 
-  for (auto& layout : m_layouts)
-  {
+  for (auto& layout : m_layouts) {
     if (layout.isLightbox()) {
       layout.setRenderedImages(renderedImages, s_filterAgainstDefaults);
       layout.setMetricImages(metricImages);
@@ -605,8 +618,7 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImage
 
 void WindowData::updateImageOrdering(uuid_range_t orderedImageUids)
 {
-  for (auto& layout : m_layouts)
-  {
+  for (auto& layout : m_layouts) {
     if (layout.isLightbox()) {
       layout.updateImageOrdering(orderedImageUids);
       continue;
@@ -663,8 +675,7 @@ void WindowData::recenterView(
     helper::resetZoom(view.camera());
   }
 
-  if (resetObliqueOrientation)
-  {
+  if (resetObliqueOrientation) {
     if (ViewType::Oblique == view.viewType()) {
       // Reset the view orientation for oblique views:
       helper::resetViewTransformation(view.camera());
@@ -705,8 +716,7 @@ View* WindowData::getCurrentView(const uuid& uid)
 
 const View* WindowData::getView(const uuid& uid) const
 {
-  for (const auto& layout : m_layouts)
-  {
+  for (const auto& layout : m_layouts) {
     auto it = layout.views().find(uid);
     if (std::end(layout.views()) != it) {
       if (it->second) {
@@ -719,12 +729,10 @@ const View* WindowData::getView(const uuid& uid) const
 
 View* WindowData::getView(const uuid& uid)
 {
-  for (const auto& layout : m_layouts)
-  {
+  for (const auto& layout : m_layouts) {
     auto it = layout.views().find(uid);
     if (std::end(layout.views()) != it) {
-      if (it->second)
-        return it->second.get();
+      if (it->second) return it->second.get();
     }
   }
   return nullptr;
@@ -738,16 +746,16 @@ std::optional<uuid> WindowData::currentViewUidAtCursor(const glm::vec2& windowPo
 
   const glm::vec2 winClipPos = helper::windowNdc_T_window(m_viewport, windowPos);
 
-  for (const auto& view : m_layouts.at(m_currentLayout).views())
-  {
+  for (const auto& view : m_layouts.at(m_currentLayout).views()) {
     if (!view.second) {
       continue;
     }
 
     const glm::vec4& winClipVp = view.second->windowClipViewport();
 
-    if ((winClipVp[0] <= winClipPos.x ) && (winClipPos.x < winClipVp[0] + winClipVp[2]) &&
-        (winClipVp[1] <= winClipPos.y) && (winClipPos.y < winClipVp[1] + winClipVp[3]))
+    if (
+      (winClipVp[0] <= winClipPos.x) && (winClipPos.x < winClipVp[0] + winClipVp[2]) &&
+      (winClipVp[1] <= winClipPos.y) && (winClipPos.y < winClipVp[1] + winClipVp[3]))
     {
       return view.first;
     }
@@ -922,8 +930,7 @@ void WindowData::setViewAlignmentMode(ViewAlignmentMode mode)
   m_viewAlignment = mode;
 }
 
-uuid_range_t WindowData::cameraSyncGroupViewUids(
-  CameraSyncMode mode, const uuid& syncGroupUid) const
+uuid_range_t WindowData::cameraSyncGroupViewUids(CameraSyncMode mode, const uuid& syncGroupUid) const
 {
   const auto& currentLayout = m_layouts.at(m_currentLayout);
   if (const auto* group = currentLayout.getCameraSyncGroup(mode, syncGroupUid)) {
@@ -944,8 +951,7 @@ void WindowData::applyImageSelectionToAllCurrentViews(const uuid& referenceViewU
   const auto renderedImages = referenceView->renderedImages();
   const auto metricImages = referenceView->metricImages();
 
-  for (auto& viewUid : currentViewUids())
-  {
+  for (auto& viewUid : currentViewUids()) {
     View* view = getCurrentView(viewUid);
     if (!view) {
       continue;
@@ -956,8 +962,7 @@ void WindowData::applyImageSelectionToAllCurrentViews(const uuid& referenceViewU
   }
 }
 
-void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(
-  const uuid& referenceViewUid)
+void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(const uuid& referenceViewUid)
 {
   const View* referenceView = getCurrentView(referenceViewUid);
   if (!referenceView) {
@@ -967,8 +972,7 @@ void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(
   const auto renderMode = referenceView->renderMode();
   const auto ipMode = referenceView->intensityProjectionMode();
 
-  for (auto& viewUid : currentViewUids())
-  {
+  for (auto& viewUid : currentViewUids()) {
     View* view = getCurrentView(viewUid);
     if (!view) {
       continue;
@@ -990,8 +994,7 @@ std::vector<uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3& worldN
 
   std::vector<uuid> viewUids;
 
-  for (auto& viewUid : currentViewUids())
-  {
+  for (auto& viewUid : currentViewUids()) {
     const View* view = getCurrentView(viewUid);
     if (!view) {
       continue;
@@ -1018,8 +1021,7 @@ uuid WindowData::findLargestCurrentView() const
 
   float largestArea = largestView->windowClipViewport()[2] * largestView->windowClipViewport()[3];
 
-  for (auto& viewUid : currentViewUids())
-  {
+  for (auto& viewUid : currentViewUids()) {
     const View* view = getCurrentView(viewUid);
     if (!view) {
       continue;
@@ -1037,10 +1039,8 @@ uuid WindowData::findLargestCurrentView() const
 
 void WindowData::recomputeCameraAspectRatios()
 {
-  for (auto& layout : m_layouts)
-  {
-    for (auto& [viewUid, view] : layout.views())
-    {
+  for (auto& layout : m_layouts) {
+    for (auto& [viewUid, view] : layout.views()) {
       if (!view) {
         continue;
       }

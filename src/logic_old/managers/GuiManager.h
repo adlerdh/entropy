@@ -77,24 +77,21 @@ private:
 
   /// Function for loading either an anatomical image or a parcellation image. (The same
   /// interface is used to load images and parcellations.)
-  using ImageLoaderType = std::function<
-    void(const std::string& filename, const std::optional<std::string>& dicomSeriesUid)>;
+  using ImageLoaderType =
+    std::function<void(const std::string& filename, const std::optional<std::string>& dicomSeriesUid)>;
 
   /// Function for loading a slide image.
-  using SlideLoaderType
-    = std::function<void(const std::string& filename, bool autoTranslateSlideToTopOfStack)>;
+  using SlideLoaderType = std::function<void(const std::string& filename, bool autoTranslateSlideToTopOfStack)>;
 
   /// Function returning the parameters for a given view's horizontal/vertical scroll bars
   /// and slice slider. The parameters are as a triple in order 1) horizontal scrollbar params,
   /// 2) vertical scrollbar params, 3) slice slider params.
-  using ScrollBarsAndSliderParamsProviderType = std::function<
-    std::tuple<gui::ViewSliderParams, gui::ViewSliderParams, gui::ViewSliderParams>(const UID& viewUid
-    )>;
+  using ScrollBarsAndSliderParamsProviderType =
+    std::function<std::tuple<gui::ViewSliderParams, gui::ViewSliderParams, gui::ViewSliderParams>(const UID& viewUid)>;
 
   /// Function for notifying the application of the horizontal and vertical scroll bar values
   /// in a given view. This will affect the view's Camera position.
-  using ViewScrollBarValuesBroadcasterType
-    = std::function<void(const UID& viewUid, double xValue, double yValue)>;
+  using ViewScrollBarValuesBroadcasterType = std::function<void(const UID& viewUid, double xValue, double yValue)>;
 
   /// Function for notifying the application of the slice slider value in a given view. This will
   /// affect the crosshairs position.
@@ -109,8 +106,7 @@ public:
     RootDrawableProviderType overlayDrawableProvider,
     SceneTypeProviderType sceneTypeProvider,
     ShaderProgramActivatorType shaderActivator,
-    UniformsProviderType uniformsProvider
-  );
+    UniformsProviderType uniformsProvider);
 
   ~GuiManager();
 
@@ -234,14 +230,10 @@ public:
   void sendParcellationSelectionsToUi(const gui::ParcellationSelections_msgToUi&);
 
   /// Set the functional that notifies the app of UI changes to parcellation properties
-  void setParcellationPropertiesPartialPublisher(
-    gui::ParcellationPropertiesPartial_msgFromUi_PublisherType
-  );
+  void setParcellationPropertiesPartialPublisher(gui::ParcellationPropertiesPartial_msgFromUi_PublisherType);
 
   /// Set the functional that responds to request from UI for all parcellation properties
-  void setParcellationPropertiesCompleteResponder(
-    gui::ParcellationPropertiesComplete_msgToUi_ResponderType
-  );
+  void setParcellationPropertiesCompleteResponder(gui::ParcellationPropertiesComplete_msgToUi_ResponderType);
 
   /// Set some parcellation properties for the UI
   void sendParcellationPropertiesPartialToUi(const gui::ParcellationPropertiesPartial_msgToUi&);
@@ -273,9 +265,7 @@ public:
   void setActiveSlidePublisher(gui::ActiveSlide_msgFromUi_PublisherType);
 
   /// Set the functional that notifies the app of UI changes to some slide stack common properties
-  void setSlideCommonPropertiesPartialPublisher(
-    gui::SlideCommonPropertiesPartial_msgFromUi_PublisherType
-  );
+  void setSlideCommonPropertiesPartialPublisher(gui::SlideCommonPropertiesPartial_msgFromUi_PublisherType);
 
   /// Set function to notify the app of some slide header data in UI
   void setSlideHeaderPartialPublisher(gui::SlideHeaderPartial_msgFromUi_PublisherType);
@@ -326,9 +316,7 @@ public:
   void setActiveSlideResponder(gui::ActiveSlide_msgToUi_ResponderType);
 
   /// Set the functional that responds to request from UI for all slide stack common properties
-  void setSlideCommonPropertiesCompleteResponder(
-    gui::SlideCommonPropertiesComplete_msgToUi_ResponderType
-  );
+  void setSlideCommonPropertiesCompleteResponder(gui::SlideCommonPropertiesComplete_msgToUi_ResponderType);
 
   /// Set function that provides the UI with all slide header data
   void setSlideHeaderCompleteResponder(gui::SlideHeaderComplete_msgToUi_ResponderType);

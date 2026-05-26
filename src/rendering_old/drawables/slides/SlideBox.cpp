@@ -18,7 +18,7 @@ namespace
 
 static const glm::vec3 sk_black(0.0f, 0.0f, 0.0f);
 
-//static const glm::vec3 sk_activeSlideHighlightColor( 0.0f, 0.64f, 1.0f );
+// static const glm::vec3 sk_activeSlideHighlightColor( 0.0f, 0.64f, 1.0f );
 static const float sk_activeSlideHighlightOpacity = 0.15f;
 
 } // namespace
@@ -31,8 +31,7 @@ SlideBox::SlideBox(
   std::weak_ptr<MeshGpuRecord> boxMeshGpuRecord,
   std::weak_ptr<SlideRecord> slideRecord,
   QuerierType<bool, uuids::uuid> activeSlideQuerier,
-  GetterType<float> image3dLayerOpacityProvider
-)
+  GetterType<float> image3dLayerOpacityProvider)
   : DrawableBase(name, DrawableType::Slide)
   ,
 
@@ -50,15 +49,12 @@ SlideBox::SlideBox(
     shaderProgramActivator,
     uniformsProvider,
     blankTextures,
-    [this]() -> MeshGpuRecord*
-    {
-      if (auto gpuRecord = m_boxMeshGpuRecord.lock())
-      {
+    [this]() -> MeshGpuRecord* {
+      if (auto gpuRecord = m_boxMeshGpuRecord.lock()) {
         return gpuRecord.get();
       }
       return nullptr;
-    }
-  ))
+    }))
 {
   m_renderId = static_cast<uint32_t>(underlyingType(m_type) << 12) | (numCreated() % 0x1000);
 
@@ -77,8 +73,7 @@ bool SlideBox::isOpaque() const
   //        }
   //    }
 
-  if (m_boxMesh)
-  {
+  if (m_boxMesh) {
     return m_boxMesh->isOpaque();
   }
   return DrawableBase::isOpaque();
@@ -91,32 +86,28 @@ DrawableOpacity SlideBox::opacityFlag() const
 
 void SlideBox::setImage3dRecord(std::weak_ptr<ImageRecord> record)
 {
-  if (m_boxMesh)
-  {
+  if (m_boxMesh) {
     m_boxMesh->setImage3dRecord(record);
   }
 }
 
 void SlideBox::setParcellationRecord(std::weak_ptr<ParcellationRecord> record)
 {
-  if (m_boxMesh)
-  {
+  if (m_boxMesh) {
     m_boxMesh->setParcellationRecord(record);
   }
 }
 
 void SlideBox::setImageColorMapRecord(std::weak_ptr<ImageColorMapRecord> record)
 {
-  if (m_boxMesh)
-  {
+  if (m_boxMesh) {
     m_boxMesh->setImageColorMapRecord(record);
   }
 }
 
 void SlideBox::setLabelTableRecord(std::weak_ptr<LabelTableRecord> record)
 {
-  if (m_boxMesh)
-  {
+  if (m_boxMesh) {
     m_boxMesh->setLabelTableRecord(record);
   }
 }
@@ -128,8 +119,7 @@ void SlideBox::setUseIntensityThresolding(bool set)
 
 void SlideBox::setupChildren()
 {
-  if (!m_stack_O_slide_tx || !m_boxMesh)
-  {
+  if (!m_stack_O_slide_tx || !m_boxMesh) {
     throw_debug("Null child drawable");
   }
 
@@ -147,8 +137,7 @@ void SlideBox::setupChildren()
   // Define the ordering of layers for the slide box mesh. Layer "Image2D" is the slide image;
   // layers "Image3D" and "Parcellation3D" are from the 3D reference image; and layer "Material"
   // is for highlightin the slide.
-  std::array<TexturedMeshColorLayer, static_cast<size_t>(TexturedMeshColorLayer::NumLayers)>
-    layerPerm;
+  std::array<TexturedMeshColorLayer, static_cast<size_t>(TexturedMeshColorLayer::NumLayers)> layerPerm;
 
   layerPerm[0] = TexturedMeshColorLayer::Vertex; // bottom layer
   layerPerm[1] = TexturedMeshColorLayer::Image2D;
@@ -178,8 +167,7 @@ void SlideBox::doUpdate(double, const Viewport&, const Camera&, const Coordinate
 {
   auto record = m_slideRecord.lock();
 
-  if (!record || !record->cpuData() || !record->gpuData() || !m_stack_O_slide_tx)
-  {
+  if (!record || !record->cpuData() || !record->gpuData() || !m_stack_O_slide_tx) {
     std::cerr << "Null slide record during update of " << m_name << std::endl;
     setVisible(false);
     return;
@@ -201,31 +189,23 @@ void SlideBox::doUpdate(double, const Viewport&, const Camera&, const Coordinate
   //    slide.m_annotVisible = props.annotVisible();
   //    slide.m_annotOpacity = props.annotOpacity();
 
-  if (m_activeSlideQuerier(record->uid()))
-  {
+  if (m_activeSlideQuerier(record->uid())) {
     // If this is the active slide, then highlight it.
-    m_boxMesh
-      ->setLayerOpacityMultiplier(TexturedMeshColorLayer::Material, sk_activeSlideHighlightOpacity);
+    m_boxMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Material, sk_activeSlideHighlightOpacity);
     m_boxMesh->setMaterialColor(slideProps.borderColor());
   }
-  else
-  {
+  else {
     m_boxMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Material, 0.0f);
     m_boxMesh->setMaterialColor(sk_black);
   }
 
   // Set the opacity of the Image3D and Parcellation3D layers.
-  if (m_image3dLayerOpacityProvider)
-  {
+  if (m_image3dLayerOpacityProvider) {
     const float layerOp = m_image3dLayerOpacityProvider();
-    m_boxMesh
-      ->setLayerOpacityMultiplier(TexturedMeshColorLayer::Image3D, layerOp * slideProps.opacity());
-    m_boxMesh->setLayerOpacityMultiplier(
-      TexturedMeshColorLayer::Parcellation3D, layerOp * slideProps.opacity()
-    );
+    m_boxMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Image3D, layerOp * slideProps.opacity());
+    m_boxMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Parcellation3D, layerOp * slideProps.opacity());
   }
-  else
-  {
+  else {
     m_boxMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Image3D, 0.0f);
     m_boxMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Parcellation3D, 0.0f);
   }

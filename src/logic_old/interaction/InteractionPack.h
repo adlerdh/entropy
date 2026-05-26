@@ -34,8 +34,7 @@ public:
     std::unique_ptr<RefImageInteractionHandler> refImageHandler,
     std::unique_ptr<SlideStackInteractionHandler> stackHandler,
     std::unique_ptr<SlideInteractionHandler> slideHandler,
-    std::unique_ptr<WindowLevelInteractionHandler> wlHandler
-  );
+    std::unique_ptr<WindowLevelInteractionHandler> wlHandler);
 
   ~InteractionPack() = default;
 

@@ -45,7 +45,8 @@ constexpr float imageFrontBackTranslationScaleFactor = 10.0f;
 
 CallbackHandler::CallbackHandler(AppData& appData, GlfwWrapper& glfwWrapper, Rendering& rendering)
   : m_appData(appData), m_glfw(glfwWrapper), m_rendering(rendering)
-{}
+{
+}
 
 bool CallbackHandler::clearSegVoxels(const uuid& segUid)
 {
@@ -59,15 +60,17 @@ bool CallbackHandler::clearSegVoxels(const uuid& segUid)
   const glm::uvec3 dataOffset = glm::uvec3{0};
   const glm::uvec3 dataSize = glm::uvec3{seg->header().pixelDimensions()};
 
-  m_rendering.updateSegTexture(
-    segUid, seg->header().memoryComponentType(), dataOffset, dataSize, seg->bufferAsVoid(0));
+  m_rendering.updateSegTexture(segUid, seg->header().memoryComponentType(), dataOffset, dataSize, seg->bufferAsVoid(0));
 
   return true;
 }
 
 std::optional<uuid> CallbackHandler::createBlankImageAndTexture(
-  const uuid& matchImageUid, const ComponentType& componentType, uint32_t numComponents,
-  const std::string& displayName, bool createSegmentation)
+  const uuid& matchImageUid,
+  const ComponentType& componentType,
+  uint32_t numComponents,
+  const std::string& displayName,
+  bool createSegmentation)
 {
   const Image* matchImg = m_appData.image(matchImageUid);
   if (!matchImg) {
@@ -92,56 +95,57 @@ std::optional<uuid> CallbackHandler::createBlankImageAndTexture(
   std::vector<uint32_t> buffer_uint32;
   std::vector<float> buffer_float;
 
-  switch (componentType)
-  {
-  case ComponentType::Int8: {
-    buffer_int8.resize(newHeader.numPixels(), 0);
-    buffer = static_cast<const void*>(buffer_int8.data());
-    break;
-  }
-  case ComponentType::UInt8: {
-    buffer_uint8.resize(newHeader.numPixels(), 0u);
-    buffer = static_cast<const void*>(buffer_uint8.data());
-    break;
-  }
-  case ComponentType::Int16: {
-    buffer_int16.resize(newHeader.numPixels(), 0);
-    buffer = static_cast<const void*>(buffer_int16.data());
-    break;
-  }
-  case ComponentType::UInt16: {
-    buffer_uint16.resize(newHeader.numPixels(), 0u);
-    buffer = static_cast<const void*>(buffer_uint16.data());
-    break;
-  }
-  case ComponentType::Int32: {
-    buffer_int32.resize(newHeader.numPixels(), 0);
-    buffer = static_cast<const void*>(buffer_int32.data());
-    break;
-  }
-  case ComponentType::UInt32: {
-    buffer_uint32.resize(newHeader.numPixels(), 0u);
-    buffer = static_cast<const void*>(buffer_uint32.data());
-    break;
-  }
-  case ComponentType::Float32: {
-    buffer_float.resize(newHeader.numPixels(), 0.0f);
-    buffer = static_cast<const void*>(buffer_float.data());
-    break;
-  }
-  default: {
-    spdlog::error("Invalid component type provided to create blank image");
-    return std::nullopt;
-  }
+  switch (componentType) {
+    case ComponentType::Int8: {
+      buffer_int8.resize(newHeader.numPixels(), 0);
+      buffer = static_cast<const void*>(buffer_int8.data());
+      break;
+    }
+    case ComponentType::UInt8: {
+      buffer_uint8.resize(newHeader.numPixels(), 0u);
+      buffer = static_cast<const void*>(buffer_uint8.data());
+      break;
+    }
+    case ComponentType::Int16: {
+      buffer_int16.resize(newHeader.numPixels(), 0);
+      buffer = static_cast<const void*>(buffer_int16.data());
+      break;
+    }
+    case ComponentType::UInt16: {
+      buffer_uint16.resize(newHeader.numPixels(), 0u);
+      buffer = static_cast<const void*>(buffer_uint16.data());
+      break;
+    }
+    case ComponentType::Int32: {
+      buffer_int32.resize(newHeader.numPixels(), 0);
+      buffer = static_cast<const void*>(buffer_int32.data());
+      break;
+    }
+    case ComponentType::UInt32: {
+      buffer_uint32.resize(newHeader.numPixels(), 0u);
+      buffer = static_cast<const void*>(buffer_uint32.data());
+      break;
+    }
+    case ComponentType::Float32: {
+      buffer_float.resize(newHeader.numPixels(), 0.0f);
+      buffer = static_cast<const void*>(buffer_float.data());
+      break;
+    }
+    default: {
+      spdlog::error("Invalid component type provided to create blank image");
+      return std::nullopt;
+    }
   }
 
   // Vector holding numComponents pointers to the same component buffer
   std::vector<const void*> imageComponents(numComponents, buffer);
 
-  Image image(newHeader, displayName,
-              Image::ImageRepresentation::Image,
-              Image::MultiComponentBufferType::SeparateImages,
-              imageComponents);
+  Image image(
+    newHeader,
+    displayName,
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    imageComponents);
 
   image.setHeaderOverrides(matchImg->getHeaderOverrides());
 
@@ -149,16 +153,14 @@ std::optional<uuid> CallbackHandler::createBlankImageAndTexture(
   image.transformations().set_affine_T_subject(matchImg->transformations().get_affine_T_subject());
 
   const std::string imgDisplayName = image.settings().displayName();
-  spdlog::info("Created blank image matching header of existing image {} ({})",
-               imgDisplayName, matchImageUid);
+  spdlog::info("Created blank image matching header of existing image {} ({})", imgDisplayName, matchImageUid);
   spdlog::debug("Image header:\n{}", image.header());
   spdlog::debug("Image transformation:\n{}", image.transformations());
 
   const uuid imageUid = m_appData.addImage(std::move(image));
   spdlog::info("Creating texture for blank image {}", imageUid);
 
-  const std::vector<uuid> createdImageTextureUids =
-    createImageTextures(m_appData, std::vector<uuid>{imageUid});
+  const std::vector<uuid> createdImageTextureUids = createImageTextures(m_appData, std::vector<uuid>{imageUid});
 
   if (createdImageTextureUids.empty()) {
     spdlog::error("Unable to create texture for image {}", imageUid);
@@ -171,19 +173,17 @@ std::optional<uuid> CallbackHandler::createBlankImageAndTexture(
   syncManualImageTransformation(matchImageUid, imageUid);
 
   if (createSegmentation) {
-    const std::string segDisplayName = std::string("Untitled segmentation for image '") +
-                                       imgDisplayName + "'";
+    const std::string segDisplayName = std::string("Untitled segmentation for image '") + imgDisplayName + "'";
     createBlankSegWithColorTableAndTextures(imageUid, segDisplayName);
   }
 
   m_rendering.updateImageUniforms(m_appData.imageUidsOrdered()); // Update uniforms for all images
-  m_appData.setRainbowColorsForAllImages(); // Reassign rainbow colors
+  m_appData.setRainbowColorsForAllImages();                      // Reassign rainbow colors
 
   return imageUid;
 }
 
-std::optional<uuid> CallbackHandler::createBlankSeg(
-  const uuid& matchImageUid, const std::string& displayName)
+std::optional<uuid> CallbackHandler::createBlankSeg(const uuid& matchImageUid, const std::string& displayName)
 {
   const Image* matchImg = m_appData.image(matchImageUid);
   if (!matchImg) {
@@ -201,8 +201,12 @@ std::optional<uuid> CallbackHandler::createBlankSeg(
   const std::vector<uint8_t> buffer(newHeader.numPixels(), 0u);
   const std::vector<const void*> imageData{static_cast<const void*>(buffer.data())};
 
-  Image seg(newHeader, displayName, Image::ImageRepresentation::Segmentation,
-            Image::MultiComponentBufferType::SeparateImages, imageData);
+  Image seg(
+    newHeader,
+    displayName,
+    Image::ImageRepresentation::Segmentation,
+    Image::MultiComponentBufferType::SeparateImages,
+    imageData);
 
   seg.setHeaderOverrides(matchImg->getHeaderOverrides());
   seg.settings().setOpacity(0.5); // Default opacity
@@ -223,7 +227,8 @@ std::optional<uuid> CallbackHandler::createBlankSeg(
 }
 
 std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
-  const uuid& matchImageUid, const std::string& displayName)
+  const uuid& matchImageUid,
+  const std::string& displayName)
 {
   spdlog::info("Creating blank segmentation {} with color table for image {}", displayName, matchImageUid);
 
@@ -259,8 +264,10 @@ std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
   if (!tableUid || !createdTableTexture) {
     constexpr size_t k_defaultTableIndex = 0;
 
-    spdlog::error("Unable to create label color table for segmentation {}. Defaulting to table index {}.",
-                  *segUid, k_defaultTableIndex);
+    spdlog::error(
+      "Unable to create label color table for segmentation {}. Defaulting to table index {}.",
+      *segUid,
+      k_defaultTableIndex);
     seg->settings().setLabelTableIndex(k_defaultTableIndex);
   }
 
@@ -299,7 +306,9 @@ std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
 }
 
 bool CallbackHandler::executeGraphCutsSegmentation(
-  const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType)
+  const uuid& imageUid,
+  const uuid& seedSegUid,
+  const SeedSegmentationType& segType)
 {
   // Inputs to algorithm:
   const Image* image = m_appData.image(imageUid);
@@ -316,18 +325,22 @@ bool CallbackHandler::executeGraphCutsSegmentation(
   }
 
   if (image->header().pixelDimensions() != seedSeg->header().pixelDimensions()) {
-    spdlog::error("Dimensions of input image {} ({}) and seed segmentation {} ({}) do not match",
-                  imageUid, glm::to_string(image->header().pixelDimensions()),
-                  seedSegUid, glm::to_string(seedSeg->header().pixelDimensions()));
+    spdlog::error(
+      "Dimensions of input image {} ({}) and seed segmentation {} ({}) do not match",
+      imageUid,
+      glm::to_string(image->header().pixelDimensions()),
+      seedSegUid,
+      glm::to_string(seedSeg->header().pixelDimensions()));
     return false;
   }
 
   const size_t numSegsForImage = m_appData.imageToSegUids(imageUid).size();
 
   const std::string resultSegDisplayName = (SeedSegmentationType::Binary == segType)
-    ? std::string("Binary graph cuts segmentation ")
-    : std::string("Multi-label graph cuts segmentation ") + std::to_string(numSegsForImage + 1) +
-      " for image '" + image->settings().displayName() + "'";
+                                             ? std::string("Binary graph cuts segmentation ")
+                                             : std::string("Multi-label graph cuts segmentation ") +
+                                                 std::to_string(numSegsForImage + 1) + " for image '" +
+                                                 image->settings().displayName() + "'";
 
   const auto resultSegUid = createBlankSegWithColorTableAndTextures(imageUid, resultSegDisplayName);
 
@@ -343,8 +356,11 @@ bool CallbackHandler::executeGraphCutsSegmentation(
     return false;
   }
 
-  spdlog::info("Executing graph cuts segmentation on image {} with seeds {}; resulting segmentation: {}",
-               imageUid, seedSegUid, *resultSegUid);
+  spdlog::info(
+    "Executing graph cuts segmentation on image {} with seeds {}; resulting segmentation: {}",
+    imageUid,
+    seedSegUid,
+    *resultSegUid);
 
   const uint32_t imComp = image->settings().activeComponent();
 
@@ -360,8 +376,7 @@ bool CallbackHandler::executeGraphCutsSegmentation(
     return amplitude * std::exp(-0.5 * std::pow(diffNorm / sigma, 2.0));
   };
 
-  auto getImageWeight = [&weight, &image, &imComp](int x, int y, int z, int dx, int dy, int dz) -> double
-  {
+  auto getImageWeight = [&weight, &image, &imComp](int x, int y, int z, int dx, int dy, int dz) -> double {
     const auto a = image->value<double>(imComp, x, y, z);
     const auto b = image->value<double>(imComp, x + dx, y + dy, z + dz);
 
@@ -373,8 +388,7 @@ bool CallbackHandler::executeGraphCutsSegmentation(
     }
   };
 
-  auto getImageWeight1D = [&weight, &image, &imComp](int index1, int index2) -> double
-  {
+  auto getImageWeight1D = [&weight, &image, &imComp](int index1, int index2) -> double {
     const auto a = image->value<double>(imComp, index1);
     const auto b = image->value<double>(imComp, index2);
 
@@ -386,34 +400,42 @@ bool CallbackHandler::executeGraphCutsSegmentation(
     }
   };
 
-  auto getSeedValue = [&seedSeg](int x, int y, int z) -> LabelType
-  { return seedSeg->value<int64_t>(0, x, y, z).value_or(0); };
+  auto getSeedValue = [&seedSeg](int x, int y, int z) -> LabelType {
+    return seedSeg->value<int64_t>(0, x, y, z).value_or(0);
+  };
 
-  auto setResultSegValue = [&resultSeg](int x, int y, int z, LabelType value)
-  { resultSeg->setValue(0, x, y, z, value); };
+  auto setResultSegValue = [&resultSeg](int x, int y, int z, LabelType value) {
+    resultSeg->setValue(0, x, y, z, value);
+  };
 
   bool success = false;
 
-  switch (segType)
-  {
-  case SeedSegmentationType::Binary: {
-    success = graphCutsBinarySegmentation(
-      m_appData.settings().graphCutsNeighborhood(),
-      m_appData.settings().graphCutsWeightsAmplitude(),
-      static_cast<LabelType>(m_appData.settings().foregroundLabel()),
-      static_cast<LabelType>(m_appData.settings().backgroundLabel()),
-      glm::ivec3{image->header().pixelDimensions()},
-      voxelDists, getImageWeight, getSeedValue, setResultSegValue);
-    break;
-  }
-  case SeedSegmentationType::MultiLabel: {
-    success = graphCutsMultiLabelSegmentation(
-      m_appData.settings().graphCutsNeighborhood(),
-      m_appData.settings().graphCutsWeightsAmplitude(),
-      glm::ivec3{image->header().pixelDimensions()},
-      voxelDists, getImageWeight, getImageWeight1D, getSeedValue, setResultSegValue);
-    break;
-  }
+  switch (segType) {
+    case SeedSegmentationType::Binary: {
+      success = graphCutsBinarySegmentation(
+        m_appData.settings().graphCutsNeighborhood(),
+        m_appData.settings().graphCutsWeightsAmplitude(),
+        static_cast<LabelType>(m_appData.settings().foregroundLabel()),
+        static_cast<LabelType>(m_appData.settings().backgroundLabel()),
+        glm::ivec3{image->header().pixelDimensions()},
+        voxelDists,
+        getImageWeight,
+        getSeedValue,
+        setResultSegValue);
+      break;
+    }
+    case SeedSegmentationType::MultiLabel: {
+      success = graphCutsMultiLabelSegmentation(
+        m_appData.settings().graphCutsNeighborhood(),
+        m_appData.settings().graphCutsWeightsAmplitude(),
+        glm::ivec3{image->header().pixelDimensions()},
+        voxelDists,
+        getImageWeight,
+        getImageWeight1D,
+        getSeedValue,
+        setResultSegValue);
+      break;
+    }
   }
 
   if (!success) {
@@ -423,15 +445,21 @@ bool CallbackHandler::executeGraphCutsSegmentation(
 
   spdlog::debug("Start updating segmentation texture");
 
-  m_rendering.updateSegTexture(*resultSegUid, resultSeg->header().memoryComponentType(),
-                               glm::uvec3{0}, resultSeg->header().pixelDimensions(), resultSeg->bufferAsVoid(0));
+  m_rendering.updateSegTexture(
+    *resultSegUid,
+    resultSeg->header().memoryComponentType(),
+    glm::uvec3{0},
+    resultSeg->header().pixelDimensions(),
+    resultSeg->bufferAsVoid(0));
 
   spdlog::debug("Done updating segmentation texture");
   return true;
 }
 
 bool CallbackHandler::executePoissonSegmentation(
-  const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType)
+  const uuid& imageUid,
+  const uuid& seedSegUid,
+  const SeedSegmentationType& segType)
 {
   // Algorithm inputs:
   const Image* image = m_appData.image(imageUid);
@@ -448,9 +476,12 @@ bool CallbackHandler::executePoissonSegmentation(
   }
 
   if (image->header().pixelDimensions() != seedSeg->header().pixelDimensions()) {
-    spdlog::error("Dimensions of image {} ({}) and seed segmentation {} ({}) do not match",
-                  imageUid, glm::to_string(image->header().pixelDimensions()),
-                  seedSegUid, glm::to_string(seedSeg->header().pixelDimensions()));
+    spdlog::error(
+      "Dimensions of image {} ({}) and seed segmentation {} ({}) do not match",
+      imageUid,
+      glm::to_string(image->header().pixelDimensions()),
+      seedSegUid,
+      glm::to_string(seedSeg->header().pixelDimensions()));
     return false;
   }
 
@@ -474,8 +505,8 @@ bool CallbackHandler::executePoissonSegmentation(
     imageBuffer = imageVector.data();
   }
 
-  // Buffer will either point to data of the seed segmentation, with all components converted to uint8_t
-  // and labels compressed to be in a contiguous range.
+  // Buffer will either point to data of the seed segmentation, with all components converted to
+  // uint8_t and labels compressed to be in a contiguous range.
   constexpr bool ignoreBackgroundLabel = false;
 
   std::vector<uint8_t> seedSegVector(seedSeg->header().numPixels(), 0u);
@@ -488,9 +519,10 @@ bool CallbackHandler::executePoissonSegmentation(
   const LabelIndexMaps labelMaps = createLabelIndexMaps(dims, seedSegBuffer, ignoreBackgroundLabel);
   const size_t numSegsForImage = m_appData.imageToSegUids(imageUid).size();
 
-  const std::string resultSegDisplayName = ((SeedSegmentationType::Binary == segType)
-    ? std::string("Binary Poisson segmentation ") : std::string("Multi-label Poisson segmentation "))
-      + std::to_string(numSegsForImage + 1) + " for image '" + image->settings().displayName() + "'";
+  const std::string resultSegDisplayName =
+    ((SeedSegmentationType::Binary == segType) ? std::string("Binary Poisson segmentation ")
+                                               : std::string("Multi-label Poisson segmentation ")) +
+    std::to_string(numSegsForImage + 1) + " for image '" + image->settings().displayName() + "'";
 
   //    spdlog::trace( "resultSegDisplayName = {}", resultSegDisplayName );
 
@@ -500,8 +532,7 @@ bool CallbackHandler::executePoissonSegmentation(
     return false;
   }
 
-  const std::string potDisplayName = std::string("Potential maps for '")
-                                     + image->settings().displayName() + "'";
+  const std::string potDisplayName = std::string("Potential maps for '") + image->settings().displayName() + "'";
 
   // The number of components for the output potential image equals the number of
   // labels in the seed segmentation, including label zero. Component 0 of the
@@ -511,8 +542,8 @@ bool CallbackHandler::executePoissonSegmentation(
   const uint32_t numComps = labelMaps.labelToIndex.size();
 
   // Create potential image with float components
-  const auto potImageUid = createBlankImageAndTexture(
-    imageUid, ComponentType::Float32, numComps, potDisplayName, numComps);
+  const auto potImageUid =
+    createBlankImageAndTexture(imageUid, ComponentType::Float32, numComps, potDisplayName, numComps);
 
   if (!potImageUid) {
     spdlog::error("Unable to create blank potential image matching image {}", imageUid);
@@ -536,23 +567,32 @@ bool CallbackHandler::executePoissonSegmentation(
   }
 
   if (image->header().pixelDimensions() != resultSeg->header().pixelDimensions()) {
-    spdlog::error("Dimensions of image {} ({}) and result segmentation {} ({}) do not match",
-                  imageUid, glm::to_string(image->header().pixelDimensions()),
-                  *resultSegUid, glm::to_string(resultSeg->header().pixelDimensions()));
+    spdlog::error(
+      "Dimensions of image {} ({}) and result segmentation {} ({}) do not match",
+      imageUid,
+      glm::to_string(image->header().pixelDimensions()),
+      *resultSegUid,
+      glm::to_string(resultSeg->header().pixelDimensions()));
     return false;
   }
 
-  if (image->header().pixelDimensions() != potImage->header().pixelDimensions())
-  {
-    spdlog::error("Dimensions of image {} ({}) and potential image {} ({}) do not match",
-                  imageUid, glm::to_string(image->header().pixelDimensions()),
-                  *potImageUid, glm::to_string(potImage->header().pixelDimensions()));
+  if (image->header().pixelDimensions() != potImage->header().pixelDimensions()) {
+    spdlog::error(
+      "Dimensions of image {} ({}) and potential image {} ({}) do not match",
+      imageUid,
+      glm::to_string(image->header().pixelDimensions()),
+      *potImageUid,
+      glm::to_string(potImage->header().pixelDimensions()));
     return false;
   }
 
-  spdlog::info("Executing Poisson segmentation on image {} with seeds {}; "
-               "resulting segmentation: {}; resulting potential: {}",
-               imageUid, seedSegUid, *resultSegUid, *potImageUid);
+  spdlog::info(
+    "Executing Poisson segmentation on image {} with seeds {}; "
+    "resulting segmentation: {}; resulting potential: {}",
+    imageUid,
+    seedSegUid,
+    *resultSegUid,
+    *potImageUid);
 
   const VoxelDistances voxelDists = computeVoxelDistances(image->header().spacing(), true);
 
@@ -591,8 +631,7 @@ bool CallbackHandler::executePoissonSegmentation(
   std::vector<const float*> potBuffers(numLabels);
 
   // Loop over all label indices:
-  for (uint8_t i = 1; i <= numLabels; ++i)
-  {
+  for (uint8_t i = 1; i <= numLabels; ++i) {
     // ith component of potential initialized by label i:
     potBuffer = static_cast<float*>(potImage->bufferAsVoid(i));
     potBuffers[i - 1] = potBuffer;
@@ -610,16 +649,24 @@ bool CallbackHandler::executePoissonSegmentation(
   spdlog::debug("Resulting segmentation image stats: {}", resultSeg->settings());
 
   spdlog::debug("Start updating potential image textures");
-  for (uint32_t i = 0; i < numComps; ++i)
-  {
-    m_rendering.updateImageTexture(*potImageUid, i, potImage->header().memoryComponentType(), glm::uvec3{0},
-                                   potImage->header().pixelDimensions(), potImage->bufferAsVoid(i));
+  for (uint32_t i = 0; i < numComps; ++i) {
+    m_rendering.updateImageTexture(
+      *potImageUid,
+      i,
+      potImage->header().memoryComponentType(),
+      glm::uvec3{0},
+      potImage->header().pixelDimensions(),
+      potImage->bufferAsVoid(i));
   }
   spdlog::debug("Done updating potential image textures");
 
   spdlog::debug("Start updating segmentation texture");
-  m_rendering.updateSegTexture(*resultSegUid, resultSeg->header().memoryComponentType(), glm::uvec3{0},
-                               resultSeg->header().pixelDimensions(), resultSeg->bufferAsVoid(0));
+  m_rendering.updateSegTexture(
+    *resultSegUid,
+    resultSeg->header().memoryComponentType(),
+    glm::uvec3{0},
+    resultSeg->header().pixelDimensions(),
+    resultSeg->bufferAsVoid(0));
   spdlog::debug("Done updating segmentation texture");
 
   return true;
@@ -659,15 +706,18 @@ void CallbackHandler::recenterViews(
     m_appData.state().setWorldCrosshairs(xhairs);
   }
 
-  const glm::vec3 worldCenter = recenterOnCurrentCrosshairsPos
-    ? m_appData.state().worldCrosshairs().worldOrigin() : math::computeAABBoxCenter(worldBox);
+  const glm::vec3 worldCenter = recenterOnCurrentCrosshairsPos ? m_appData.state().worldCrosshairs().worldOrigin()
+                                                               : math::computeAABBoxCenter(worldBox);
 
-  // const glm::vec3 worldCenterSnapped = data::snapWorldPointToImageVoxels( m_appData, worldCenter, forceSnapping );
+  // const glm::vec3 worldCenterSnapped = data::snapWorldPointToImageVoxels( m_appData, worldCenter,
+  // forceSnapping );
 
   m_appData.windowData().recenterAllViews(
     worldCenter,
     viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox),
-    resetZoom, resetObliqueOrientation, excludedViews);
+    resetZoom,
+    resetObliqueOrientation,
+    excludedViews);
 }
 
 void CallbackHandler::recenterView(const ImageSelection& imageSelection, const uuid& viewUid)
@@ -690,8 +740,8 @@ void CallbackHandler::recenterView(const ImageSelection& imageSelection, const u
   const glm::vec3 worldPos = m_appData.state().worldCrosshairs().worldOrigin();
   const glm::vec3 worldPosSnapped = data::snapWorldPointToImageVoxels(m_appData, worldPos, forceSnapping);
 
-  m_appData.windowData().recenterView(viewUid, worldPosSnapped, viewAABBoxScaleFactor * worldBoxSize,
-                                      resetZoom, resetObliqueOrientation);
+  m_appData.windowData()
+    .recenterView(viewUid, worldPosSnapped, viewAABBoxScaleFactor * worldBoxSize, resetZoom, resetObliqueOrientation);
 }
 
 void CallbackHandler::doCrosshairsMove(const ViewHit& hit)
@@ -707,11 +757,12 @@ void CallbackHandler::doCrosshairsScroll(const ViewHit& hit, const glm::vec2& sc
 {
   const float multiplier = fineScroll ? 0.1f : 1.0f;
 
-  const float scrollDistance = multiplier * data::sliceScrollDistance(
-    m_appData, hit.worldFrontAxis, ImageSelection::VisibleImagesInView, hit.view);
+  const float scrollDistance =
+    multiplier *
+    data::sliceScrollDistance(m_appData, hit.worldFrontAxis, ImageSelection::VisibleImagesInView, hit.view);
 
-  const glm::vec3 worldPos = m_appData.state().worldCrosshairs().worldOrigin() +
-                             scrollOffset.y * scrollDistance * hit.worldFrontAxis;
+  const glm::vec3 worldPos =
+    m_appData.state().worldCrosshairs().worldOrigin() + scrollOffset.y * scrollDistance * hit.worldFrontAxis;
 
   const glm::vec3 worldPosSnapped = data::snapWorldPointToImageVoxels(m_appData, worldPos);
   m_appData.state().setWorldCrosshairsPos(worldPosSnapped);
@@ -734,8 +785,7 @@ void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
     return;
   }
 
-  if (0 == std::count(std::begin(hit.view->visibleImages()), std::end(hit.view->visibleImages()),
-                      *activeImageUid)) {
+  if (0 == std::count(std::begin(hit.view->visibleImages()), std::end(hit.view->visibleImages()), *activeImageUid)) {
     return; // The active image is not visible
   }
 
@@ -779,8 +829,7 @@ void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
   const AppSettings& settings = m_appData.settings();
 
   // Paint on each segmentation
-  for (const auto& segUid : segUids)
-  {
+  for (const auto& segUid : segUids) {
     Image* seg = m_appData.seg(segUid);
     if (!seg) {
       continue;
@@ -794,31 +843,37 @@ void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
     const glm::vec3 pixelPos3 = pixelPos / pixelPos.w;
     const glm::ivec3 roundedPixelPos{glm::round(pixelPos3)};
 
-    if (glm::any(glm::lessThan(roundedPixelPos, voxelZero)) ||
-        glm::any(glm::greaterThanEqual(roundedPixelPos, dims))) {
+    if (glm::any(glm::lessThan(roundedPixelPos, voxelZero)) || glm::any(glm::greaterThanEqual(roundedPixelPos, dims))) {
       continue; // This pixel is outside the image
     }
 
     // View plane normal vector transformed into Voxel space:
-    const glm::vec3 voxelViewPlaneNormal = glm::normalize(
-      glm::inverseTranspose(glm::mat3(pixel_T_worldDef)) * (-hit.worldFrontAxis));
+    const glm::vec3 voxelViewPlaneNormal =
+      glm::normalize(glm::inverseTranspose(glm::mat3(pixel_T_worldDef)) * (-hit.worldFrontAxis));
 
     // View plane equation:
     const glm::vec4 voxelViewPlane = math::makePlane(voxelViewPlaneNormal, pixelPos3);
 
-    auto updateSegTexture = [this, &segUid]
-      (const ComponentType& memoryComponentType, const glm::uvec3& dataOffset,
-       const glm::uvec3& dataSize, const LabelType* data)
-    {
+    auto updateSegTexture = [this, &segUid](
+                              const ComponentType& memoryComponentType,
+                              const glm::uvec3& dataOffset,
+                              const glm::uvec3& dataSize,
+                              const LabelType* data) {
       m_rendering.updateSegTextureWithInt64Data(segUid, memoryComponentType, dataOffset, dataSize, data);
     };
 
-    paintSegmentation(*seg, labelToPaint, labelToReplace,
-                      settings.replaceBackgroundWithForeground(),
-                      settings.useRoundBrush(),
-                      settings.use3dBrush(),
-                      settings.useIsotropicBrush(),
-                      brushSize, roundedPixelPos, voxelViewPlane, updateSegTexture);
+    paintSegmentation(
+      *seg,
+      labelToPaint,
+      labelToReplace,
+      settings.replaceBackgroundWithForeground(),
+      settings.useRoundBrush(),
+      settings.use3dBrush(),
+      settings.useIsotropicBrush(),
+      brushSize,
+      roundedPixelPos,
+      voxelViewPlane,
+      updateSegTexture);
   }
 }
 
@@ -856,22 +911,26 @@ void CallbackHandler::paintActiveSegmentationWithAnnotation()
   /// @todo Implement algorithm for filling smoothed polygons.
 
   if (!annot->isClosed()) {
-    spdlog::warn("Annotation {} is not closed and so cannot be filled to paint segmentation {}",
-                 *activeAnnotUid, *activeSegUid);
+    spdlog::warn(
+      "Annotation {} is not closed and so cannot be filled to paint segmentation {}",
+      *activeAnnotUid,
+      *activeSegUid);
     return;
   }
 
-  if (annot->isSmoothed())
-  {
-    spdlog::warn("Annotation {} is smoothed and so cannot be filled to paint segmentation {}",
-                 *activeAnnotUid, *activeSegUid);
+  if (annot->isSmoothed()) {
+    spdlog::warn(
+      "Annotation {} is smoothed and so cannot be filled to paint segmentation {}",
+      *activeAnnotUid,
+      *activeSegUid);
     return;
   }
 
-  auto updateSegTexture = [this, &activeSegUid]
-    (const ComponentType& memoryComponentType, const glm::uvec3& dataOffset,
-     const glm::uvec3& dataSize, const LabelType* data)
-  {
+  auto updateSegTexture = [this, &activeSegUid](
+                            const ComponentType& memoryComponentType,
+                            const glm::uvec3& dataOffset,
+                            const glm::uvec3& dataSize,
+                            const LabelType* data) {
     if (!activeSegUid) {
       return;
     }
@@ -879,15 +938,20 @@ void CallbackHandler::paintActiveSegmentationWithAnnotation()
     m_rendering.updateSegTextureWithInt64Data(*activeSegUid, memoryComponentType, dataOffset, dataSize, data);
   };
 
-  fillSegmentationWithPolygon(*seg, annot,
-                              static_cast<LabelType>(m_appData.settings().foregroundLabel()),
-                              static_cast<LabelType>(m_appData.settings().backgroundLabel()),
-                              m_appData.settings().replaceBackgroundWithForeground(),
-                              updateSegTexture);
+  fillSegmentationWithPolygon(
+    *seg,
+    annot,
+    static_cast<LabelType>(m_appData.settings().foregroundLabel()),
+    static_cast<LabelType>(m_appData.settings().backgroundLabel()),
+    m_appData.settings().replaceBackgroundWithForeground(),
+    updateSegTexture);
 }
 
 void CallbackHandler::doWindowLevel(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool fineAdjustment)
+  const ViewHit& startHit,
+  const ViewHit& prevHit,
+  const ViewHit& currHit,
+  bool fineAdjustment)
 {
   View* viewToWL = startHit.view;
 
@@ -897,8 +961,7 @@ void CallbackHandler::doWindowLevel(
 
   const float multipler = fineAdjustment ? 0.1f : 1.0f;
 
-  if (IntensityProjectionMode::Xray == viewToWL->intensityProjectionMode())
-  {
+  if (IntensityProjectionMode::Xray == viewToWL->intensityProjectionMode()) {
     // Special logic to adjust W/L for views rendering in x-ray projection mode:
 
     // Level/width values for x-ray projection mode are in range [0.0, 1.0]
@@ -910,7 +973,8 @@ void CallbackHandler::doWindowLevel(
     float oldLevel = m_appData.renderData().m_xrayIntensityLevel;
     float oldWindow = m_appData.renderData().m_xrayIntensityWindow;
 
-    const float levelDelta = multipler * (levelMax - levelMin) * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f;
+    const float levelDelta =
+      multipler * (levelMax - levelMin) * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f;
     const float winDelta = multipler * (winMax - winMin) * (currHit.windowClipPos.x - prevHit.windowClipPos.x) / 2.0f;
 
     const float newLevel = std::min(std::max(oldLevel + levelDelta, levelMin), levelMax);
@@ -919,8 +983,7 @@ void CallbackHandler::doWindowLevel(
     m_appData.renderData().m_xrayIntensityLevel = newLevel;
     m_appData.renderData().m_xrayIntensityWindow = newWindow;
   }
-  else
-  {
+  else {
     const auto activeImageUid = m_appData.activeImageUid();
     if (!activeImageUid) {
       return;
@@ -931,8 +994,7 @@ void CallbackHandler::doWindowLevel(
       return;
     }
 
-    if (0 == std::count(std::begin(viewToWL->visibleImages()), std::end(viewToWL->visibleImages()),
-                        *activeImageUid)) {
+    if (0 == std::count(std::begin(viewToWL->visibleImages()), std::end(viewToWL->visibleImages()), *activeImageUid)) {
       return; // The active image is not visible
     }
 
@@ -965,8 +1027,10 @@ void CallbackHandler::doOpacity(const ViewHit& prevHit, const ViewHit& currHit)
     return;
   }
 
-  if (0 == std::count(std::begin(currHit.view->visibleImages()), std::end(currHit.view->visibleImages()),
-                      *activeImageUid)) {
+  if (
+    0 ==
+    std::count(std::begin(currHit.view->visibleImages()), std::end(currHit.view->visibleImages()), *activeImageUid))
+  {
     return; // The active image is not visible
   }
 
@@ -975,8 +1039,8 @@ void CallbackHandler::doOpacity(const ViewHit& prevHit, const ViewHit& currHit)
     return;
   }
 
-  const double opacityDelta = (opMax - opMin) *
-                              static_cast<double>(currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0;
+  const double opacityDelta =
+    (opMax - opMin) * static_cast<double>(currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0;
 
   const double newOpacity = std::min(std::max(activeImage->settings().opacity() + opacityDelta, opMin), opMax);
 
@@ -985,8 +1049,7 @@ void CallbackHandler::doOpacity(const ViewHit& prevHit, const ViewHit& currHit)
   m_rendering.updateImageUniforms(*activeImageUid);
 }
 
-void CallbackHandler::doCameraTranslate2d(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
+void CallbackHandler::doCameraTranslate2d(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
 {
   const glm::vec3 worldOrigin = m_appData.state().worldCrosshairs().worldOrigin();
 
@@ -1000,10 +1063,9 @@ void CallbackHandler::doCameraTranslate2d(
   const auto backupCamera = viewToTranslate->camera();
   helper::panRelativeToWorldPosition(viewToTranslate->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin);
 
-  if (const auto transGroupUid = viewToTranslate->cameraTranslationSyncGroupUid())
-  {
-    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(
-           CameraSyncMode::Translation, *transGroupUid))
+  if (const auto transGroupUid = viewToTranslate->cameraTranslationSyncGroupUid()) {
+    for (const auto& syncedViewUid :
+         m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Translation, *transGroupUid))
     {
       if (syncedViewUid == viewUidToTranslate) {
         continue;
@@ -1017,8 +1079,12 @@ void CallbackHandler::doCameraTranslate2d(
         continue;
       }
 
-      if (helper::areViewDirectionsParallel(syncedView->camera(), backupCamera,
-                                            Directions::View::Back, parallelThreshold_degrees)) {
+      if (helper::areViewDirectionsParallel(
+            syncedView->camera(),
+            backupCamera,
+            Directions::View::Back,
+            parallelThreshold_degrees))
+      {
         helper::panRelativeToWorldPosition(syncedView->camera(), prevHit.viewClipPos, currHit.viewClipPos, worldOrigin);
       }
     }
@@ -1026,7 +1092,9 @@ void CallbackHandler::doCameraTranslate2d(
 }
 
 void CallbackHandler::doCameraRotate2d(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
+  const ViewHit& startHit,
+  const ViewHit& prevHit,
+  const ViewHit& currHit,
   const RotationOrigin& rotationOrigin)
 {
   View* viewToRotate = startHit.view;
@@ -1044,31 +1112,34 @@ void CallbackHandler::doCameraRotate2d(
   // Point about which to rotate the view:
   glm::vec3 worldRotationCenterPos;
 
-  switch (rotationOrigin)
-  {
-  case RotationOrigin::Crosshairs: {
-    worldRotationCenterPos = m_appData.state().worldCrosshairs().worldOrigin();
-    break;
-  }
-  case RotationOrigin::CameraEye:
-  case RotationOrigin::ViewCenter: {
-    worldRotationCenterPos = helper::worldOrigin(viewToRotate->camera());
-    break;
-  }
+  switch (rotationOrigin) {
+    case RotationOrigin::Crosshairs: {
+      worldRotationCenterPos = m_appData.state().worldCrosshairs().worldOrigin();
+      break;
+    }
+    case RotationOrigin::CameraEye:
+    case RotationOrigin::ViewCenter: {
+      worldRotationCenterPos = helper::worldOrigin(viewToRotate->camera());
+      break;
+    }
   }
 
-  glm::vec4 clipRotationCenterPos = helper::clip_T_world(viewToRotate->camera()) *
-                                    glm::vec4{m_appData.state().worldCrosshairs().worldOrigin(), 1.0f};
+  glm::vec4 clipRotationCenterPos =
+    helper::clip_T_world(viewToRotate->camera()) * glm::vec4{m_appData.state().worldCrosshairs().worldOrigin(), 1.0f};
 
   clipRotationCenterPos /= clipRotationCenterPos.w;
 
   const auto backupCamera = viewToRotate->camera();
-  helper::rotateInPlane(viewToRotate->camera(), prevHit.viewClipPos, currHit.viewClipPos, glm::vec2{clipRotationCenterPos});
+  helper::rotateInPlane(
+    viewToRotate->camera(),
+    prevHit.viewClipPos,
+    currHit.viewClipPos,
+    glm::vec2{clipRotationCenterPos});
 
   // Rotate the synchronized views:
-  if (const auto rotGroupUid = viewToRotate->cameraRotationSyncGroupUid())
-  {
-    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Rotation, *rotGroupUid))
+  if (const auto rotGroupUid = viewToRotate->cameraRotationSyncGroupUid()) {
+    for (const auto& syncedViewUid :
+         m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Rotation, *rotGroupUid))
     {
       if (syncedViewUid == viewUidToRotate) {
         continue;
@@ -1082,19 +1153,30 @@ void CallbackHandler::doCameraRotate2d(
         continue;
       }
 
-      if (!helper::areViewDirectionsParallel(syncedView->camera(), backupCamera,
-                                             Directions::View::Back, parallelThreshold_degrees)) {
+      if (!helper::areViewDirectionsParallel(
+            syncedView->camera(),
+            backupCamera,
+            Directions::View::Back,
+            parallelThreshold_degrees))
+      {
         continue;
       }
 
-      helper::rotateInPlane(syncedView->camera(), prevHit.viewClipPos, currHit.viewClipPos, glm::vec2{clipRotationCenterPos});
+      helper::rotateInPlane(
+        syncedView->camera(),
+        prevHit.viewClipPos,
+        currHit.viewClipPos,
+        glm::vec2{clipRotationCenterPos});
     }
   }
 }
 
 void CallbackHandler::doCameraRotate3d(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
-  const RotationOrigin& rotationOrigin, const AxisConstraint& constraint)
+  const ViewHit& startHit,
+  const ViewHit& prevHit,
+  const ViewHit& currHit,
+  const RotationOrigin& rotationOrigin,
+  const AxisConstraint& constraint)
 {
   View* viewToRotate = startHit.view;
   if (!viewToRotate) {
@@ -1111,47 +1193,45 @@ void CallbackHandler::doCameraRotate3d(
   glm::vec2 viewClipPrevPos = prevHit.viewClipPos;
   glm::vec2 viewClipCurrPos = currHit.viewClipPos;
 
-  switch (constraint)
-  {
-  case AxisConstraint::X: {
-    viewClipPrevPos.x = 0.0f;
-    viewClipCurrPos.x = 0.0f;
-    break;
-  }
-  case AxisConstraint::Y: {
-    viewClipPrevPos.y = 0.0f;
-    viewClipCurrPos.y = 0.0f;
-    break;
-  }
-  case AxisConstraint::None:
-  default: {
-    break;
-  }
+  switch (constraint) {
+    case AxisConstraint::X: {
+      viewClipPrevPos.x = 0.0f;
+      viewClipCurrPos.x = 0.0f;
+      break;
+    }
+    case AxisConstraint::Y: {
+      viewClipPrevPos.y = 0.0f;
+      viewClipCurrPos.y = 0.0f;
+      break;
+    }
+    case AxisConstraint::None:
+    default: {
+      break;
+    }
   }
 
   // Point about which to rotate the view:
   glm::vec3 worldRotationCenterPos;
 
-  switch (rotationOrigin)
-  {
-  case RotationOrigin::Crosshairs: {
-    worldRotationCenterPos = m_appData.state().worldCrosshairs().worldOrigin();
-    break;
-  }
-  case RotationOrigin::CameraEye:
-  case RotationOrigin::ViewCenter: {
-    worldRotationCenterPos = helper::worldOrigin(viewToRotate->camera());
-    break;
-  }
+  switch (rotationOrigin) {
+    case RotationOrigin::Crosshairs: {
+      worldRotationCenterPos = m_appData.state().worldCrosshairs().worldOrigin();
+      break;
+    }
+    case RotationOrigin::CameraEye:
+    case RotationOrigin::ViewCenter: {
+      worldRotationCenterPos = helper::worldOrigin(viewToRotate->camera());
+      break;
+    }
   }
 
   const auto backupCamera = viewToRotate->camera();
   helper::rotateAboutWorldPoint(viewToRotate->camera(), viewClipPrevPos, viewClipCurrPos, worldRotationCenterPos);
 
   // Rotate the synchronized views:
-  if (const auto rotGroupUid = viewToRotate->cameraRotationSyncGroupUid())
-  {
-    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Rotation, *rotGroupUid))
+  if (const auto rotGroupUid = viewToRotate->cameraRotationSyncGroupUid()) {
+    for (const auto& syncedViewUid :
+         m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Rotation, *rotGroupUid))
     {
       if (syncedViewUid == viewUidToRotate) {
         continue;
@@ -1166,7 +1246,11 @@ void CallbackHandler::doCameraRotate3d(
       }
 
       if (!helper::areViewDirectionsParallel(
-            syncedView->camera(), backupCamera, Directions::View::Back, parallelThreshold_degrees)){
+            syncedView->camera(),
+            backupCamera,
+            Directions::View::Back,
+            parallelThreshold_degrees))
+      {
         continue;
       }
 
@@ -1197,10 +1281,8 @@ void CallbackHandler::doCameraRotate3d(const uuid& viewUid, const glm::quat& cam
   const auto backupCamera = view->camera();
   helper::applyViewRotationAboutWorldPoint(view->camera(), camera_T_world_rotationDelta, worldOrigin);
 
-  if (const auto rotGroupUid = view->cameraRotationSyncGroupUid())
-  {
-    for (const auto& syncedViewUid : windowData.cameraSyncGroupViewUids(CameraSyncMode::Rotation, *rotGroupUid))
-    {
+  if (const auto rotGroupUid = view->cameraRotationSyncGroupUid()) {
+    for (const auto& syncedViewUid : windowData.cameraSyncGroupViewUids(CameraSyncMode::Rotation, *rotGroupUid)) {
       if (syncedViewUid == viewUid) {
         continue;
       }
@@ -1213,7 +1295,11 @@ void CallbackHandler::doCameraRotate3d(const uuid& viewUid, const glm::quat& cam
         continue;
       }
 
-      if (!helper::areViewDirectionsParallel(syncedView->camera(), backupCamera, Directions::View::Back, parallelThreshold_degrees))
+      if (!helper::areViewDirectionsParallel(
+            syncedView->camera(),
+            backupCamera,
+            Directions::View::Back,
+            parallelThreshold_degrees))
       {
         continue;
       }
@@ -1223,8 +1309,7 @@ void CallbackHandler::doCameraRotate3d(const uuid& viewUid, const glm::quat& cam
   }
 }
 
-void CallbackHandler::handleSetViewForwardDirection(
-  const uuid& viewUid, const glm::vec3& worldForwardDirection)
+void CallbackHandler::handleSetViewForwardDirection(const uuid& viewUid, const glm::vec3& worldForwardDirection)
 {
   auto& windowData = m_appData.windowData();
 
@@ -1245,10 +1330,8 @@ void CallbackHandler::handleSetViewForwardDirection(
   helper::setWorldForwardDirection(view->camera(), worldForwardDirection);
   helper::setWorldTarget(view->camera(), worldXhairsPos, std::nullopt);
 
-  if (const auto rotGroupUid = view->cameraRotationSyncGroupUid())
-  {
-    for (const auto& syncedViewUid : windowData.cameraSyncGroupViewUids(CameraSyncMode::Rotation, *rotGroupUid))
-    {
+  if (const auto rotGroupUid = view->cameraRotationSyncGroupUid()) {
+    for (const auto& syncedViewUid : windowData.cameraSyncGroupViewUids(CameraSyncMode::Rotation, *rotGroupUid)) {
       if (syncedViewUid == viewUid) {
         continue;
       }
@@ -1268,8 +1351,11 @@ void CallbackHandler::handleSetViewForwardDirection(
 }
 
 void CallbackHandler::doCameraZoomDrag(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit,
-  const ZoomBehavior& zoomBehavior, bool syncZoomForAllViews)
+  const ViewHit& startHit,
+  const ViewHit& prevHit,
+  const ViewHit& currHit,
+  const ZoomBehavior& zoomBehavior,
+  bool syncZoomForAllViews)
 {
   const glm::vec2 ndcCenter{0.0f, 0.0f};
 
@@ -1280,25 +1366,23 @@ void CallbackHandler::doCameraZoomDrag(
 
   const auto& viewUidToZoom = startHit.viewUid;
 
-  auto getCenterViewClipPos = [this, &zoomBehavior, &startHit, &ndcCenter](const View* view) -> glm::vec2
-  {
+  auto getCenterViewClipPos = [this, &zoomBehavior, &startHit, &ndcCenter](const View* view) -> glm::vec2 {
     glm::vec2 viewClipCenterPos{0.0f};
 
-    switch (zoomBehavior)
-    {
-    case ZoomBehavior::ToCrosshairs: {
-      viewClipCenterPos = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
-      break;
-    }
-    case ZoomBehavior::ToStartPosition: {
-      const glm::vec4 _viewClipStartPos = helper::clip_T_world(view->camera()) * startHit.worldPos;
-      viewClipCenterPos = glm::vec2{_viewClipStartPos / _viewClipStartPos.w};
-      break;
-    }
-    case ZoomBehavior::ToViewCenter: {
-      viewClipCenterPos = ndcCenter;
-      break;
-    }
+    switch (zoomBehavior) {
+      case ZoomBehavior::ToCrosshairs: {
+        viewClipCenterPos = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
+        break;
+      }
+      case ZoomBehavior::ToStartPosition: {
+        const glm::vec4 _viewClipStartPos = helper::clip_T_world(view->camera()) * startHit.worldPos;
+        viewClipCenterPos = glm::vec2{_viewClipStartPos / _viewClipStartPos.w};
+        break;
+      }
+      case ZoomBehavior::ToViewCenter: {
+        viewClipCenterPos = ndcCenter;
+        break;
+      }
     }
 
     return viewClipCenterPos;
@@ -1307,11 +1391,9 @@ void CallbackHandler::doCameraZoomDrag(
   const float factor = 2.0f * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f + 1.0f;
   helper::zoomNdc(viewToZoom->camera(), factor, getCenterViewClipPos(viewToZoom));
 
-  if (syncZoomForAllViews)
-  {
+  if (syncZoomForAllViews) {
     // Apply zoom to all other views:
-    for (const auto& otherViewUid : m_appData.windowData().currentViewUids())
-    {
+    for (const auto& otherViewUid : m_appData.windowData().currentViewUids()) {
       if (otherViewUid == viewUidToZoom) {
         continue;
       }
@@ -1321,10 +1403,10 @@ void CallbackHandler::doCameraZoomDrag(
       }
     }
   }
-  else if (const auto zoomGroupUid = viewToZoom->cameraZoomSyncGroupUid())
-  {
+  else if (const auto zoomGroupUid = viewToZoom->cameraZoomSyncGroupUid()) {
     // Apply zoom to all views other synchronized with the view:
-    for (const auto& syncedViewUid : m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Zoom, *zoomGroupUid))
+    for (const auto& syncedViewUid :
+         m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Zoom, *zoomGroupUid))
     {
       if (syncedViewUid == viewUidToZoom) {
         continue;
@@ -1338,8 +1420,10 @@ void CallbackHandler::doCameraZoomDrag(
 }
 
 void CallbackHandler::doCameraZoomScroll(
-  const ViewHit& hit, const glm::vec2& scrollOffset,
-  const ZoomBehavior& zoomBehavior, bool syncZoomForAllViews)
+  const ViewHit& hit,
+  const glm::vec2& scrollOffset,
+  const ZoomBehavior& zoomBehavior,
+  bool syncZoomForAllViews)
 {
   constexpr float zoomFactor = 0.01f;
   const glm::vec2 ndcCenter{0.0f, 0.0f};
@@ -1351,25 +1435,23 @@ void CallbackHandler::doCameraZoomScroll(
   // The pointer is in the view bounds! Make this the active view
   m_appData.windowData().setActiveViewUid(hit.viewUid);
 
-  auto getCenterViewClipPos = [this, &zoomBehavior, &hit, &ndcCenter](const View* view) -> glm::vec2
-  {
+  auto getCenterViewClipPos = [this, &zoomBehavior, &hit, &ndcCenter](const View* view) -> glm::vec2 {
     glm::vec2 viewClipCenterPos{0.0f};
 
-    switch (zoomBehavior)
-    {
-    case ZoomBehavior::ToCrosshairs: {
-      viewClipCenterPos = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
-      break;
-    }
-    case ZoomBehavior::ToStartPosition: {
-      const glm::vec4 _viewClipCurrPos = helper::clip_T_world(view->camera()) * hit.worldPos;
-      viewClipCenterPos = glm::vec2{_viewClipCurrPos / _viewClipCurrPos.w};
-      break;
-    }
-    case ZoomBehavior::ToViewCenter: {
-      viewClipCenterPos = ndcCenter;
-      break;
-    }
+    switch (zoomBehavior) {
+      case ZoomBehavior::ToCrosshairs: {
+        viewClipCenterPos = helper::ndc_T_world(view->camera(), m_appData.state().worldCrosshairs().worldOrigin());
+        break;
+      }
+      case ZoomBehavior::ToStartPosition: {
+        const glm::vec4 _viewClipCurrPos = helper::clip_T_world(view->camera()) * hit.worldPos;
+        viewClipCenterPos = glm::vec2{_viewClipCurrPos / _viewClipCurrPos.w};
+        break;
+      }
+      case ZoomBehavior::ToViewCenter: {
+        viewClipCenterPos = ndcCenter;
+        break;
+      }
     }
 
     return viewClipCenterPos;
@@ -1379,11 +1461,9 @@ void CallbackHandler::doCameraZoomScroll(
 
   helper::zoomNdc(hit.view->camera(), factor, getCenterViewClipPos(hit.view));
 
-  if (syncZoomForAllViews)
-  {
+  if (syncZoomForAllViews) {
     // Apply zoom to all other views:
-    for (const auto& otherViewUid : m_appData.windowData().currentViewUids())
-    {
+    for (const auto& otherViewUid : m_appData.windowData().currentViewUids()) {
       if (otherViewUid == hit.viewUid) {
         continue;
       }
@@ -1393,8 +1473,7 @@ void CallbackHandler::doCameraZoomScroll(
       }
     }
   }
-  else if (const auto zoomGroupUid = hit.view->cameraZoomSyncGroupUid())
-  {
+  else if (const auto zoomGroupUid = hit.view->cameraZoomSyncGroupUid()) {
     // Apply zoom all other views synchronized with this view:
     for (const auto& syncedViewUid :
          m_appData.windowData().cameraSyncGroupViewUids(CameraSyncMode::Zoom, *zoomGroupUid))
@@ -1412,8 +1491,8 @@ void CallbackHandler::doCameraZoomScroll(
 
 void CallbackHandler::scrollViewSlice(const ViewHit& hit, int numSlices)
 {
-  const float scrollDistance = data::sliceScrollDistance(
-    m_appData, hit.worldFrontAxis, ImageSelection::VisibleImagesInView, hit.view);
+  const float scrollDistance =
+    data::sliceScrollDistance(m_appData, hit.worldFrontAxis, ImageSelection::VisibleImagesInView, hit.view);
 
   m_appData.state().setWorldCrosshairsPos(
     m_appData.state().worldCrosshairs().worldOrigin() +
@@ -1421,7 +1500,10 @@ void CallbackHandler::scrollViewSlice(const ViewHit& hit, int numSlices)
 }
 
 void CallbackHandler::doImageTranslate(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool inPlane)
+  const ViewHit& startHit,
+  const ViewHit& prevHit,
+  const ViewHit& currHit,
+  bool inPlane)
 {
   View* viewToUse = startHit.view;
 
@@ -1430,9 +1512,7 @@ void CallbackHandler::doImageTranslate(
     return;
   }
 
-  if (0 == std::count(std::begin(viewToUse->visibleImages()),
-                      std::end(viewToUse->visibleImages()), *activeImageUid))
-  {
+  if (0 == std::count(std::begin(viewToUse->visibleImages()), std::end(viewToUse->visibleImages()), *activeImageUid)) {
     return; // The active image is not visible
   }
 
@@ -1443,23 +1523,23 @@ void CallbackHandler::doImageTranslate(
 
   glm::vec3 T{0.0f, 0.0f, 0.0f};
 
-  if (inPlane)
-  {
+  if (inPlane) {
     // Translate the image along the view plane
     static const float ndcZ = -1.0f;
     T = helper::translationInCameraPlane(viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos, ndcZ);
 
     // Note: for 3D in-plane translation, we'll want to use this instead:
-    //helper::ndcZofWorldPoint( view->camera(), imgTx.getWorldSubjectOrigin() );    
+    // helper::ndcZofWorldPoint( view->camera(), imgTx.getWorldSubjectOrigin() );
   }
-  else
-  {
+  else {
     // Translate the image in and out of the view plane. Translate by an amount
     // proportional to the slice distance of the active image (the one being translated)
     const float scrollDistance = data::sliceScrollDistance(startHit.worldFrontAxis, *activeImage);
 
     T = helper::translationAboutCameraFrontBack(
-      viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos,
+      viewToUse->camera(),
+      prevHit.viewClipPos,
+      currHit.viewClipPos,
       imageFrontBackTranslationScaleFactor * scrollDistance);
   }
 
@@ -1478,7 +1558,10 @@ void CallbackHandler::doImageTranslate(
 }
 
 void CallbackHandler::doImageRotate(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool inPlane)
+  const ViewHit& startHit,
+  const ViewHit& prevHit,
+  const ViewHit& currHit,
+  bool inPlane)
 {
   View* viewToUse = startHit.view;
   if (!viewToUse) {
@@ -1491,9 +1574,7 @@ void CallbackHandler::doImageRotate(
   }
 
   // Forbid transformation if the view does NOT show the active image
-  if (0 == std::count(std::begin(viewToUse->visibleImages()),
-                      std::end(viewToUse->visibleImages()), *activeImageUid))
-  {
+  if (0 == std::count(std::begin(viewToUse->visibleImages()), std::end(viewToUse->visibleImages()), *activeImageUid)) {
     return; // The active image is not visible
   }
 
@@ -1505,8 +1586,7 @@ void CallbackHandler::doImageRotate(
   const glm::vec3 worldRotCenter = m_appData.state().worldRotationCenter();
   auto& imgTx = activeImage->transformations();
 
-  CoordinateFrame imageFrame(imgTx.get_worldDef_T_affine_translation(),
-                             imgTx.get_worldDef_T_affine_rotation());
+  CoordinateFrame imageFrame(imgTx.get_worldDef_T_affine_translation(), imgTx.get_worldDef_T_affine_rotation());
 
   glm::quat R;
   if (inPlane) {
@@ -1535,7 +1615,10 @@ void CallbackHandler::doImageRotate(
 }
 
 void CallbackHandler::doImageScale(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool constrainIsotropic)
+  const ViewHit& startHit,
+  const ViewHit& prevHit,
+  const ViewHit& currHit,
+  bool constrainIsotropic)
 {
   const glm::vec3 zero(0.0f, 0.0f, 0.0f);
   const glm::vec3 k_minScale(0.1f);
@@ -1551,8 +1634,7 @@ void CallbackHandler::doImageScale(
     return;
   }
 
-  if (0 == std::count(std::begin(viewToUse->visibleImages()), std::end(viewToUse->visibleImages()),
-                      *activeImageUid)) {
+  if (0 == std::count(std::begin(viewToUse->visibleImages()), std::end(viewToUse->visibleImages()), *activeImageUid)) {
     // The active image is not visible
     return;
   }
@@ -1603,8 +1685,7 @@ void CallbackHandler::doImageScale(
   //        scaleDelta = glm::vec3{ 1.0f, 1.0f, scaleDelta.z };
   //    }
 
-  if (constrainIsotropic)
-  {
+  if (constrainIsotropic) {
     float minScale = glm::compMin(scaleDelta);
     float maxScale = glm::compMax(scaleDelta);
 
@@ -1617,8 +1698,7 @@ void CallbackHandler::doImageScale(
   }
 
   // To prevent flipping and making the slide too small:
-  if (glm::any(glm::lessThan(scaleDelta, k_minScale)) ||
-      glm::any(glm::greaterThan(scaleDelta, k_maxScale))) {
+  if (glm::any(glm::lessThan(scaleDelta, k_minScale)) || glm::any(glm::greaterThan(scaleDelta, k_maxScale))) {
     return;
   }
 
@@ -1647,9 +1727,9 @@ void CallbackHandler::flipImageInterpolation()
     return;
   }
 
-  const InterpolationMode newMode =
-    (InterpolationMode::NearestNeighbor == image->settings().interpolationMode())
-    ? InterpolationMode::Linear : InterpolationMode::NearestNeighbor;
+  const InterpolationMode newMode = (InterpolationMode::NearestNeighbor == image->settings().interpolationMode())
+                                      ? InterpolationMode::Linear
+                                      : InterpolationMode::NearestNeighbor;
 
   image->settings().setInterpolationMode(newMode);
   m_rendering.updateImageInterpolation(*imgUid);
@@ -1676,8 +1756,9 @@ void CallbackHandler::toggleImageVisibility()
 
   // Toggle the global visibility if this is a multi-component images and
   // each component is stored as a separate image.
-  const bool isMulticomponentImage = (image.header().numComponentsPerPixel() > 1 &&
-                                      Image::MultiComponentBufferType::SeparateImages == image.bufferType());
+  const bool isMulticomponentImage =
+    (image.header().numComponentsPerPixel() > 1 &&
+     Image::MultiComponentBufferType::SeparateImages == image.bufferType());
 
   if (isMulticomponentImage) {
     image.settings().setGlobalVisibility(!image.settings().globalVisibility());
@@ -1762,20 +1843,19 @@ void CallbackHandler::toggleSegVisibility()
 
 void CallbackHandler::toggleSegGlobalOutline()
 {
-  switch (m_appData.renderData().m_segOutlineStyle)
-  {
-  case SegmentationOutlineStyle::Disabled: {
-    m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
-    break;
-  }
-  case SegmentationOutlineStyle::ViewPixel: {
-    m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
-    break;
-  }
-  case SegmentationOutlineStyle::ImageVoxel: {
-    m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
-    break;
-  }
+  switch (m_appData.renderData().m_segOutlineStyle) {
+    case SegmentationOutlineStyle::Disabled: {
+      m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
+      break;
+    }
+    case SegmentationOutlineStyle::ViewPixel: {
+      m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
+      break;
+    }
+    case SegmentationOutlineStyle::ImageVoxel: {
+      m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
+      break;
+    }
   }
 }
 
@@ -1901,17 +1981,20 @@ void CallbackHandler::moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, i
 
   const glm::vec3 worldRightAxis = helper::worldDirection(hit.view->camera(), Directions::View::Right);
   const glm::vec3 worldUpAxis = helper::worldDirection(hit.view->camera(), Directions::View::Up);
-  const glm::vec2 moveDistances = data::sliceMoveDistance(
-    m_appData, worldRightAxis, worldUpAxis, ImageSelection::VisibleImagesInView, hit.view);
+  const glm::vec2 moveDistances =
+    data::sliceMoveDistance(m_appData, worldRightAxis, worldUpAxis, ImageSelection::VisibleImagesInView, hit.view);
   const glm::vec3 worldCrosshairs = m_appData.state().worldCrosshairs().worldOrigin();
 
-  m_appData.state().setWorldCrosshairsPos(worldCrosshairs +
-    static_cast<float>(stepX) * moveDistances.x * worldRightAxis +
+  m_appData.state().setWorldCrosshairsPos(
+    worldCrosshairs + static_cast<float>(stepX) * moveDistances.x * worldRightAxis +
     static_cast<float>(stepY) * moveDistances.y * worldUpAxis);
 }
 
 void CallbackHandler::doCrosshairsRotate2D(
-  const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool snapCrosshairs)
+  const ViewHit& startHit,
+  const ViewHit& prevHit,
+  const ViewHit& currHit,
+  bool snapCrosshairs)
 {
   View* viewToUse = startHit.view;
   if (!viewToUse) {
@@ -1937,8 +2020,8 @@ void CallbackHandler::doCrosshairsRotate2D(
 
   if (!snapCrosshairs) {
     // Incremental rotation between previous and current hits:
-    const glm::quat R = helper::rotation2dInCameraPlane(
-      viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos, ndcRotCenter);
+    const glm::quat R =
+      helper::rotation2dInCameraPlane(viewToUse->camera(), prevHit.viewClipPos, currHit.viewClipPos, ndcRotCenter);
 
     // Rotate the current crosshairs by the incremental amount:
     CoordinateFrame worldXhairsRotated = state.worldCrosshairs();
@@ -1949,15 +2032,19 @@ void CallbackHandler::doCrosshairsRotate2D(
     state.setWorldCrosshairs(worldXhairsRotated);
     // m_appData.restoreAllViewWorldCenterPositions();
   }
-  else
-  {
+  else {
     constexpr float snapAngleDegrees = 15.0f;
     constexpr float clampToleranceDegrees = snapAngleDegrees / 2.0f;
 
     // Total rotation between start and current hits:
     const glm::quat R = helper::rotation2dInCameraPlaneWithSnapping(
-      viewToUse->camera(), startHit.viewClipPos, prevHit.viewClipPos, currHit.viewClipPos,
-      snapAngleDegrees, clampToleranceDegrees, ndcRotCenter);
+      viewToUse->camera(),
+      startHit.viewClipPos,
+      prevHit.viewClipPos,
+      currHit.viewClipPos,
+      snapAngleDegrees,
+      clampToleranceDegrees,
+      ndcRotCenter);
 
     // Rotate the old crosshairs by the total amount:
     CoordinateFrame worldXhairsOldRotated = state.crosshairsState().worldCrosshairsOld;
@@ -2002,32 +2089,31 @@ void CallbackHandler::moveCrosshairsToSegLabelCentroid(const uuid& imageUid, std
 
   std::optional<glm::vec3> pixelCentroid = std::nullopt;
 
-  switch (seg->header().memoryComponentType())
-  {
-  case ComponentType::Int8:
-    pixelCentroid = computePixelCentroid<int8_t>(data, dims, label);
-    break;
-  case ComponentType::UInt8:
-    pixelCentroid = computePixelCentroid<uint8_t>(data, dims, label);
-    break;
-  case ComponentType::Int16:
-    pixelCentroid = computePixelCentroid<int16_t>(data, dims, label);
-    break;
-  case ComponentType::UInt16:
-    pixelCentroid = computePixelCentroid<uint16_t>(data, dims, label);
-    break;
-  case ComponentType::Int32:
-    pixelCentroid = computePixelCentroid<int32_t>(data, dims, label);
-    break;
-  case ComponentType::UInt32:
-    pixelCentroid = computePixelCentroid<uint32_t>(data, dims, label);
-    break;
-  case ComponentType::Float32:
-    pixelCentroid = computePixelCentroid<float>(data, dims, label);
-    break;
-  default:
-    pixelCentroid = std::nullopt;
-    break;
+  switch (seg->header().memoryComponentType()) {
+    case ComponentType::Int8:
+      pixelCentroid = computePixelCentroid<int8_t>(data, dims, label);
+      break;
+    case ComponentType::UInt8:
+      pixelCentroid = computePixelCentroid<uint8_t>(data, dims, label);
+      break;
+    case ComponentType::Int16:
+      pixelCentroid = computePixelCentroid<int16_t>(data, dims, label);
+      break;
+    case ComponentType::UInt16:
+      pixelCentroid = computePixelCentroid<uint16_t>(data, dims, label);
+      break;
+    case ComponentType::Int32:
+      pixelCentroid = computePixelCentroid<int32_t>(data, dims, label);
+      break;
+    case ComponentType::UInt32:
+      pixelCentroid = computePixelCentroid<uint32_t>(data, dims, label);
+      break;
+    case ComponentType::Float32:
+      pixelCentroid = computePixelCentroid<float>(data, dims, label);
+      break;
+    default:
+      pixelCentroid = std::nullopt;
+      break;
   }
 
   if (!pixelCentroid) {
@@ -2043,8 +2129,7 @@ void CallbackHandler::moveCrosshairsToSegLabelCentroid(const uuid& imageUid, std
 
 void CallbackHandler::setMouseMode(MouseMode mode)
 {
-  if (MouseMode::CrosshairsRotate == m_appData.state().mouseMode() &&
-      MouseMode::CrosshairsRotate != mode) {
+  if (MouseMode::CrosshairsRotate == m_appData.state().mouseMode() && MouseMode::CrosshairsRotate != mode) {
     // Transition out of crosshairs rotation mode:
     endCrosshairsRotate2D();
   }
@@ -2092,8 +2177,10 @@ bool CallbackHandler::syncManualImageTransformation(const uuid& refImageUid, con
 
   otherImage->transformations().set_worldDef_T_affine_locked(refImage->transformations().is_worldDef_T_affine_locked());
   otherImage->transformations().set_worldDef_T_affine_scale(refImage->transformations().get_worldDef_T_affine_scale());
-  otherImage->transformations().set_worldDef_T_affine_rotation(refImage->transformations().get_worldDef_T_affine_rotation());
-  otherImage->transformations().set_worldDef_T_affine_translation(refImage->transformations().get_worldDef_T_affine_translation());
+  otherImage->transformations().set_worldDef_T_affine_rotation(
+    refImage->transformations().get_worldDef_T_affine_rotation());
+  otherImage->transformations().set_worldDef_T_affine_translation(
+    refImage->transformations().get_worldDef_T_affine_translation());
   return true;
 }
 
@@ -2109,7 +2196,8 @@ bool CallbackHandler::syncManualImageTransformationOnSegs(const uuid& imageUid)
       seg->transformations().set_worldDef_T_affine_locked(image->transformations().is_worldDef_T_affine_locked());
       seg->transformations().set_worldDef_T_affine_scale(image->transformations().get_worldDef_T_affine_scale());
       seg->transformations().set_worldDef_T_affine_rotation(image->transformations().get_worldDef_T_affine_rotation());
-      seg->transformations().set_worldDef_T_affine_translation(image->transformations().get_worldDef_T_affine_translation());
+      seg->transformations().set_worldDef_T_affine_translation(
+        image->transformations().get_worldDef_T_affine_translation());
     }
   }
 

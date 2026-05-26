@@ -13,20 +13,12 @@ static const glm::vec3 sk_defaultColor{0.5f, 0.5f, 0.5f};
 } // namespace
 
 SlideAnnotationCpuRecord::SlideAnnotationCpuRecord()
-  : m_polygon(nullptr)
-  , m_layer(0)
-  , m_maxLayer(0)
-  , m_opacity(sk_defaultOpacity)
-  , m_color{sk_defaultColor}
+  : m_polygon(nullptr), m_layer(0), m_maxLayer(0), m_opacity(sk_defaultOpacity), m_color{sk_defaultColor}
 {
 }
 
 SlideAnnotationCpuRecord::SlideAnnotationCpuRecord(std::unique_ptr<PlanarPolygon> polygon)
-  : m_polygon(std::move(polygon))
-  , m_layer(0)
-  , m_maxLayer(0)
-  , m_opacity(sk_defaultOpacity)
-  , m_color{sk_defaultColor}
+  : m_polygon(std::move(polygon)), m_layer(0), m_maxLayer(0), m_opacity(sk_defaultOpacity), m_color{sk_defaultColor}
 {
 }
 
@@ -37,8 +29,7 @@ void SlideAnnotationCpuRecord::setPolygon(std::unique_ptr<PlanarPolygon> polygon
 
 PlanarPolygon* SlideAnnotationCpuRecord::polygon()
 {
-  if (m_polygon)
-  {
+  if (m_polygon) {
     return m_polygon.get();
   }
   return nullptr;
@@ -66,8 +57,7 @@ uint32_t SlideAnnotationCpuRecord::getMaxLayer() const
 
 void SlideAnnotationCpuRecord::setOpacity(float opacity)
 {
-  if (0.0f <= opacity && opacity <= 1.0f)
-  {
+  if (0.0f <= opacity && opacity <= 1.0f) {
     m_opacity = opacity;
   }
 }

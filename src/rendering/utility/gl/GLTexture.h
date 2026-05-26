@@ -19,15 +19,10 @@ class GLTexture final
 public:
   struct MultisampleSettings
   {
-    MultisampleSettings()
-      : m_numSamples(1)
-      , m_fixedSampleLocations(false)
-    {
-    }
+    MultisampleSettings() : m_numSamples(1), m_fixedSampleLocations(false) {}
 
     MultisampleSettings(GLsizei numSamples, GLboolean fixedSampleLocation)
-      : m_numSamples(numSamples)
-      , m_fixedSampleLocations(fixedSampleLocation)
+      : m_numSamples(numSamples), m_fixedSampleLocations(fixedSampleLocation)
     {
     }
 
@@ -57,8 +52,7 @@ public:
       GLint imageHeight,
       GLint rowLength,
       GLboolean lsbFirst,
-      GLboolean swapBytes
-    )
+      GLboolean swapBytes)
       : m_alignment(alignment)
       , m_skipImages(skipImages)
       , m_skipRows(skipRows)
@@ -113,8 +107,7 @@ public:
     tex::Target target,
     MultisampleSettings multisampleSettings = MultisampleSettings(),
     std::optional<PixelStoreSettings> pixelPackSettings = std::nullopt,
-    std::optional<PixelStoreSettings> pixelUnpackSettings = std::nullopt
-  );
+    std::optional<PixelStoreSettings> pixelUnpackSettings = std::nullopt);
 
   GLTexture(const GLTexture&) = delete;
   GLTexture(GLTexture&&) noexcept;
@@ -145,28 +138,27 @@ public:
   void setSize(const glm::uvec3& size);
 
   /**
-     * @brief Allocates mutable storage for a mipmap level of the bound texture object and
-     * optionally writes pixel data to that mipmap level.
-     **/
+   * @brief Allocates mutable storage for a mipmap level of the bound texture object and
+   * optionally writes pixel data to that mipmap level.
+   **/
   void setData(
     GLint level,
     const tex::SizedInternalFormat& internalFormat,
     const tex::BufferPixelFormat& format,
     const tex::BufferPixelDataType& type,
-    const GLvoid* data
-  );
+    const GLvoid* data);
 
   /**
-     * @brief Writes the user's pixel data to some part of the given mipmap of the bound texture object.
-     **/
+   * @brief Writes the user's pixel data to some part of the given mipmap of the bound texture
+   *object.
+   **/
   void setSubData(
     GLint level,
     const glm::uvec3& offset,
     const glm::uvec3& size,
     const tex::BufferPixelFormat& format,
     const tex::BufferPixelDataType& type,
-    const GLvoid* data
-  );
+    const GLvoid* data);
 
   void setCubeMapFaceData(
     const tex::CubeMapFace& face,
@@ -174,32 +166,25 @@ public:
     const tex::SizedInternalFormat& internalFormat,
     const tex::BufferPixelFormat& format,
     const tex::BufferPixelDataType& type,
-    const GLvoid* data
-  );
+    const GLvoid* data);
 
   /**
-     * @remark If the selected texture image does not contain four components, the following mappings
-     * are applied. Single-component textures are treated as RGBA buffers with red set to the
-     * single-component value, green set to 0, blue set to 0, and alpha set to 1.
-     * Two-component textures are treated as RGBA buffers with red set to the value of component zero,
-     * alpha set to the value of component one, and green and blue set to 0. Finally, three-component
-     * textures are treated as RGBA buffers with red set to component zero, green set to component one,
-     * blue set to component two, and alpha set to 1.
-     */
-  void readData(
-    GLint level,
-    const tex::BufferPixelFormat& format,
-    const tex::BufferPixelDataType& type,
-    GLvoid* data
-  );
+   * @remark If the selected texture image does not contain four components, the following mappings
+   * are applied. Single-component textures are treated as RGBA buffers with red set to the
+   * single-component value, green set to 0, blue set to 0, and alpha set to 1.
+   * Two-component textures are treated as RGBA buffers with red set to the value of component zero,
+   * alpha set to the value of component one, and green and blue set to 0. Finally, three-component
+   * textures are treated as RGBA buffers with red set to component zero, green set to component
+   * one, blue set to component two, and alpha set to 1.
+   */
+  void readData(GLint level, const tex::BufferPixelFormat& format, const tex::BufferPixelDataType& type, GLvoid* data);
 
   void readCubeMapFaceData(
     const tex::CubeMapFace& face,
     GLint level,
     const tex::BufferPixelFormat& format,
     const tex::BufferPixelDataType& type,
-    GLvoid* data
-  );
+    GLvoid* data);
 
   void setMinificationFilter(const tex::MinificationFilter& filter);
   void setMagnificationFilter(const tex::MagnificationFilter& filter);
@@ -208,8 +193,7 @@ public:
     const tex::SwizzleValue& rValue,
     const tex::SwizzleValue& gValue,
     const tex::SwizzleValue& bValue,
-    const tex::SwizzleValue& aValue
-  );
+    const tex::SwizzleValue& aValue);
 
   void setWrapMode(const tex::WrapMode& mode);
 
@@ -224,21 +208,13 @@ public:
 
   // Sized internal normalized formats:
 
-  static tex::SizedInternalFormat getSizedInternalNormalizedRedFormat(
-    const ComponentType& componentType
-  );
+  static tex::SizedInternalFormat getSizedInternalNormalizedRedFormat(const ComponentType& componentType);
 
-  static tex::SizedInternalFormat getSizedInternalNormalizedRGFormat(
-    const ComponentType& componentType
-  );
+  static tex::SizedInternalFormat getSizedInternalNormalizedRGFormat(const ComponentType& componentType);
 
-  static tex::SizedInternalFormat getSizedInternalNormalizedRGBFormat(
-    const ComponentType& componentType
-  );
+  static tex::SizedInternalFormat getSizedInternalNormalizedRGBFormat(const ComponentType& componentType);
 
-  static tex::SizedInternalFormat getSizedInternalNormalizedRGBAFormat(
-    const ComponentType& componentType
-  );
+  static tex::SizedInternalFormat getSizedInternalNormalizedRGBAFormat(const ComponentType& componentType);
 
   // Sized internal non-normalized formats:
 
@@ -252,16 +228,13 @@ public:
 
   // Normalized buffer pixel formats:
 
-  static tex::BufferPixelFormat getBufferPixelNormalizedRedFormat(const ComponentType& componentType
-  );
+  static tex::BufferPixelFormat getBufferPixelNormalizedRedFormat(const ComponentType& componentType);
 
   static tex::BufferPixelFormat getBufferPixelNormalizedRGFormat(const ComponentType& componentType);
 
-  static tex::BufferPixelFormat getBufferPixelNormalizedRGBFormat(const ComponentType& componentType
-  );
+  static tex::BufferPixelFormat getBufferPixelNormalizedRGBFormat(const ComponentType& componentType);
 
-  static tex::BufferPixelFormat getBufferPixelNormalizedRGBAFormat(const ComponentType& componentType
-  );
+  static tex::BufferPixelFormat getBufferPixelNormalizedRGBAFormat(const ComponentType& componentType);
 
   // Non-normalized buffer pixel formats:
 
@@ -294,17 +267,13 @@ private:
     s_componentTypeToSizedInternalNormalizedRGBAFormatMap;
 
   // Sized internal non-normalized formats:
-  static const std::unordered_map<ComponentType, tex::SizedInternalFormat>
-    s_componentTypeToSizedInternalRedFormatMap;
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat> s_componentTypeToSizedInternalRedFormatMap;
 
-  static const std::unordered_map<ComponentType, tex::SizedInternalFormat>
-    s_componentTypeToSizedInternalRGFormatMap;
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat> s_componentTypeToSizedInternalRGFormatMap;
 
-  static const std::unordered_map<ComponentType, tex::SizedInternalFormat>
-    s_componentTypeToSizedInternalRGBFormatMap;
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat> s_componentTypeToSizedInternalRGBFormatMap;
 
-  static const std::unordered_map<ComponentType, tex::SizedInternalFormat>
-    s_componentTypeToSizedInternalRGBAFormatMap;
+  static const std::unordered_map<ComponentType, tex::SizedInternalFormat> s_componentTypeToSizedInternalRGBAFormatMap;
 
   // Normalized buffer pixel formats:
   static const std::unordered_map<ComponentType, tex::BufferPixelFormat>
@@ -320,21 +289,16 @@ private:
     s_componentTypeToBufferPixelRGBANormalizedFormatMap;
 
   // Non-normalized buffer pixel formats:
-  static const std::unordered_map<ComponentType, tex::BufferPixelFormat>
-    s_componentTypeToBufferPixelRedFormatMap;
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat> s_componentTypeToBufferPixelRedFormatMap;
 
-  static const std::unordered_map<ComponentType, tex::BufferPixelFormat>
-    s_componentTypeToBufferPixelRGFormatMap;
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat> s_componentTypeToBufferPixelRGFormatMap;
 
-  static const std::unordered_map<ComponentType, tex::BufferPixelFormat>
-    s_componentTypeToBufferPixelRGBFormatMap;
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat> s_componentTypeToBufferPixelRGBFormatMap;
 
-  static const std::unordered_map<ComponentType, tex::BufferPixelFormat>
-    s_componentTypeToBufferPixelRGBAFormatMap;
+  static const std::unordered_map<ComponentType, tex::BufferPixelFormat> s_componentTypeToBufferPixelRGBAFormatMap;
 
   // Buffer pixel data type:
-  static const std::unordered_map<ComponentType, tex::BufferPixelDataType>
-    s_componentTypeToBufferPixelDataTypeMap;
+  static const std::unordered_map<ComponentType, tex::BufferPixelDataType> s_componentTypeToBufferPixelDataTypeMap;
 
   GLErrorChecker m_errorChecker;
 

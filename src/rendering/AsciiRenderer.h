@@ -37,8 +37,7 @@ public:
 
   /// Called from Rendering::createShaderPrograms() — inserts the four ASCII
   /// shader programs into the shared map.
-  void registerShaderPrograms(
-    std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& programs);
+  void registerShaderPrograms(std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& programs);
 
   /// Returns true when ASCII mode is on and the atlas texture is ready.
   bool enabled() const;
@@ -73,31 +72,31 @@ private:
   AsciiAtlas m_asciiAtlas;
 
   // Scene capture FBO
-  GLFrameBufferObject       m_sceneFbo;
-  std::optional<GLTexture>  m_sceneColorTex;
-  glm::ivec2                m_sceneFboSize{0, 0};
+  GLFrameBufferObject m_sceneFbo;
+  std::optional<GLTexture> m_sceneColorTex;
+  glm::ivec2 m_sceneFboSize{0, 0};
 
   // Fullscreen-triangle VAO (no attributes)
   GLVertexArrayObject m_asciiPostVao;
 
   // Cell-mean downsample FBO
-  std::optional<GLTexture>           m_asciiCellMeanTex;
+  std::optional<GLTexture> m_asciiCellMeanTex;
   std::optional<GLFrameBufferObject> m_asciiCellMeanFbo;
-  glm::ivec2                         m_asciiCellMeanTexSize{0, 0};
+  glm::ivec2 m_asciiCellMeanTexSize{0, 0};
 
   // Luminance LUT texture (256×1 R8)
   std::optional<GLTexture> m_asciiLumLutTex;
-  glm::vec2                m_asciiLumLutCellPx{0.0f, 0.0f};
+  glm::vec2 m_asciiLumLutCellPx{0.0f, 0.0f};
 
   // Spatial glyph-matching state
-  std::optional<GLTexture>     m_asciiCellRegionsTex;   // RGBA16F, regions 0–3
-  std::optional<GLTexture>     m_asciiCellRegionsTexB;  // RG16F,   regions 4–5
-  std::vector<glm::vec4>       m_glyphProfilesPackedA;
-  std::vector<glm::vec4>       m_glyphProfilesPackedB;
-  glm::vec2                    m_asciiSpatialProfileCellPx{-1.0f, -1.0f};
-  std::vector<int>             m_glyphRankToIndex;
-  float                        m_asciiSpatialDensityWindow{3.0f};
+  std::optional<GLTexture> m_asciiCellRegionsTex;  // RGBA16F, regions 0–3
+  std::optional<GLTexture> m_asciiCellRegionsTexB; // RG16F,   regions 4–5
+  std::vector<glm::vec4> m_glyphProfilesPackedA;
+  std::vector<glm::vec4> m_glyphProfilesPackedB;
+  glm::vec2 m_asciiSpatialProfileCellPx{-1.0f, -1.0f};
+  std::vector<int> m_glyphRankToIndex;
+  float m_asciiSpatialDensityWindow{3.0f};
   std::array<float, kSpatialK> m_glyphRegionMax{};
-  float                        m_lastUploadedExponent{-1.0f};
-  std::vector<GlyphProfile>    m_glyphProfilesNormalized;
+  float m_lastUploadedExponent{-1.0f};
+  std::vector<GlyphProfile> m_glyphProfilesNormalized;
 };

@@ -8,11 +8,7 @@
 #include <utility>
 
 Viewport::Viewport(float left, float bottom, float width, float height)
-  : m_left(left)
-  , m_bottom(bottom)
-  , m_width(width)
-  , m_height(height)
-  , m_devicePixelRatio(1.0f, 1.0f)
+  : m_left(left), m_bottom(bottom), m_width(width), m_height(height), m_devicePixelRatio(1.0f, 1.0f)
 {
 }
 
@@ -21,10 +17,7 @@ Viewport::Viewport(glm::vec4 viewportAsVec4)
 {
 }
 
-Viewport::Viewport()
-  : Viewport(0.0f, 0.0f, 1.0f, 1.0f)
-{
-}
+Viewport::Viewport() : Viewport(0.0f, 0.0f, 1.0f, 1.0f) {}
 
 void Viewport::setLeft(float l)
 {

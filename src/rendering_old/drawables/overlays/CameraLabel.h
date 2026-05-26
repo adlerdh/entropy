@@ -26,20 +26,21 @@ class CameraLabel : public DrawableBase, public ObjectCounter<CameraLabel>
 {
 public:
   /**
-     * @brief Construct CameraLabel
-     * @param name
-     * @param shaderProgramActivator
-     * @param uniformsProvider
-     * @param subjectToWorldProvider Function providing the transformation from the Subject to World space
-     * @param letterTextures Array of pointers to textures for the S, P, I, R, A and L labels (in that order)
-     */
+   * @brief Construct CameraLabel
+   * @param name
+   * @param shaderProgramActivator
+   * @param uniformsProvider
+   * @param subjectToWorldProvider Function providing the transformation from the Subject to World
+   * space
+   * @param letterTextures Array of pointers to textures for the S, P, I, R, A and L labels (in that
+   * order)
+   */
   CameraLabel(
     std::string name,
     ShaderProgramActivatorType shaderProgramActivator,
     UniformsProviderType uniformsProvider,
     GetterType<std::optional<glm::mat4> > subjectToWorldProvider,
-    std::array<std::weak_ptr<GLTexture>, 6> letterTextures
-  );
+    std::array<std::weak_ptr<GLTexture>, 6> letterTextures);
 
   CameraLabel(const CameraLabel&) = delete;
   CameraLabel& operator=(const CameraLabel&) = delete;
@@ -71,7 +72,7 @@ private:
     std::weak_ptr<GLTexture> m_texture; //!< Label texture
     glm::mat4 m_world_O_model{1.0f};    //!< Transformation from label quad to world space
     glm::vec3 m_solidColor{0.0f};       //!< Label color (currently not used)
-    bool m_visible = true; //!< Visibility flag for label: only visible labels are rendered
+    bool m_visible = true;              //!< Visibility flag for label: only visible labels are rendered
   };
 
   void doRender(const RenderStage&) override;

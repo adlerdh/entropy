@@ -5,8 +5,7 @@
 class VertexIndicesInfo
 {
 public:
-  VertexIndicesInfo(
-    IndexType indexType, PrimitiveMode primitiveMode, uint64_t indexCount, uint64_t indexOffset);
+  VertexIndicesInfo(IndexType indexType, PrimitiveMode primitiveMode, uint64_t indexCount, uint64_t indexOffset);
 
   IndexType indexType() const;
   PrimitiveMode primitiveMode() const;

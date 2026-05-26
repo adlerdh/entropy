@@ -7,8 +7,7 @@ namespace state::annot
 {
 void AnnotationOffState::entry()
 {
-  if (!ms_appData)
-  {
+  if (!ms_appData) {
     // The AppData pointer has not yet been set
     return;
   }
@@ -38,14 +37,12 @@ void ViewBeingSelectedState::entry()
 
 void ViewBeingSelectedState::react(const MousePressEvent& e)
 {
-  if (!selectView(e.m_currHit))
-    return;
+  if (!selectView(e.m_currHit)) return;
   transit<StandbyState>();
 
   /// @note If this is not call, the UI may not update until the next mouse event following the
   /// \c MousePressEvent that should trigger the UI change
-  if (ms_renderUiCallback)
-    ms_renderUiCallback();
+  if (ms_renderUiCallback) ms_renderUiCallback();
 }
 
 void ViewBeingSelectedState::react(const MouseMoveEvent& e)
@@ -64,8 +61,7 @@ void ViewBeingSelectedState::react(const TurnOffAnnotationModeEvent&)
 
 void StandbyState::entry()
 {
-  if (!ms_selectedViewUid)
-  {
+  if (!ms_selectedViewUid) {
     spdlog::error("Entered StandbyState without a selected view");
     transit<ViewBeingSelectedState>();
     return;
@@ -79,25 +75,20 @@ void StandbyState::exit() {}
 
 void StandbyState::react(const MousePressEvent& e)
 {
-  if (!selectView(e.m_currHit))
-    return;
+  if (!selectView(e.m_currHit)) return;
 
-  if (e.buttonState.left)
-  {
-    if (selectAnnotationAndVertex(e.m_currHit))
-    {
+  if (e.buttonState.left) {
+    if (selectAnnotationAndVertex(e.m_currHit)) {
       transit<VertexSelectedState>();
     }
-    else
-    {
+    else {
       selectAnnotation(e.m_currHit);
     }
   }
 
   /// @note If this is not call, the UI may not update until the next mouse event following the
   /// \c MousePressEvent that should trigger the UI change
-  if (ms_renderUiCallback)
-    ms_renderUiCallback();
+  if (ms_renderUiCallback) ms_renderUiCallback();
 }
 
 void StandbyState::react(const MouseReleaseEvent& /*e*/) {}
@@ -107,8 +98,7 @@ void StandbyState::react(const MouseMoveEvent& e)
   hoverView(e.m_currHit);
   hoverAnnotationAndVertex(e.m_currHit);
 
-  if (e.buttonState.left)
-  {
+  if (e.buttonState.left) {
     moveSelectedPolygon(e.m_prevHit, e.m_currHit);
   }
 }
@@ -157,8 +147,7 @@ void StandbyState::react(const VerticallyFlipSelectedAnnotationEvent&)
 
 void CreatingNewAnnotationState::entry()
 {
-  if (!ms_selectedViewUid)
-  {
+  if (!ms_selectedViewUid) {
     spdlog::error("Attempting to create a new annotation without a selected view");
     transit<ViewBeingSelectedState>();
     return;
@@ -173,18 +162,15 @@ void CreatingNewAnnotationState::exit() {}
 
 void CreatingNewAnnotationState::react(const MousePressEvent& e)
 {
-  if (e.buttonState.left)
-  {
-    if (createNewGrowingPolygon(e.m_currHit) && addVertexToGrowingPolygon(e.m_currHit))
-    {
+  if (e.buttonState.left) {
+    if (createNewGrowingPolygon(e.m_currHit) && addVertexToGrowingPolygon(e.m_currHit)) {
       transit<AddingVertexToNewAnnotationState>();
     }
   }
 
   /// @note If this is not call, the UI may not update until the next mouse event following the
   /// \c MousePressEvent that should trigger the UI change
-  if (ms_renderUiCallback)
-    ms_renderUiCallback();
+  if (ms_renderUiCallback) ms_renderUiCallback();
 }
 
 void CreatingNewAnnotationState::react(const MouseMoveEvent& e)
@@ -214,17 +200,16 @@ void CreatingNewAnnotationState::react(const CancelNewAnnotationEvent&)
 
 void AddingVertexToNewAnnotationState::entry()
 {
-  if (!ms_selectedViewUid)
-  {
+  if (!ms_selectedViewUid) {
     spdlog::error("Entered AddingVertexToNewAnnotationState without a selected view");
     transit<ViewBeingSelectedState>();
     return;
   }
 
-  if (!ms_growingAnnotUid)
-  {
-    spdlog::error("Entered AddingVertexToNewAnnotationState without "
-                  "an annotation having been created");
+  if (!ms_growingAnnotUid) {
+    spdlog::error(
+      "Entered AddingVertexToNewAnnotationState without "
+      "an annotation having been created");
     transit<CreatingNewAnnotationState>();
     return;
   }
@@ -234,23 +219,20 @@ void AddingVertexToNewAnnotationState::exit() {}
 
 void AddingVertexToNewAnnotationState::react(const MousePressEvent& e)
 {
-  if (e.buttonState.left)
-  {
+  if (e.buttonState.left) {
     addVertexToGrowingPolygon(e.m_currHit);
   }
 
   /// @note If this is not call, the UI may not update until the next mouse event following the
   /// \c MousePressEvent that should trigger the UI change
-  if (ms_renderUiCallback)
-    ms_renderUiCallback();
+  if (ms_renderUiCallback) ms_renderUiCallback();
 }
 
 void AddingVertexToNewAnnotationState::react(const MouseMoveEvent& e)
 {
   hoverAnnotationAndVertex(e.m_currHit);
 
-  if (e.buttonState.left)
-  {
+  if (e.buttonState.left) {
     addVertexToGrowingPolygon(e.m_currHit);
   }
 }
@@ -295,10 +277,8 @@ void VertexSelectedState::exit()
 
 void VertexSelectedState::react(const MousePressEvent& e)
 {
-  if (e.buttonState.left)
-  {
-    if (!selectAnnotationAndVertex(e.m_currHit))
-    {
+  if (e.buttonState.left) {
+    if (!selectAnnotationAndVertex(e.m_currHit)) {
       // Did not select a vertex, so try selecting an annotation and go to stand-by state
       selectAnnotation(e.m_currHit);
       transit<StandbyState>();
@@ -307,8 +287,7 @@ void VertexSelectedState::react(const MousePressEvent& e)
 
   /// @note If this is not call, the UI may not update until the next mouse event following the
   /// \c MousePressEvent that should trigger the UI change
-  if (ms_renderUiCallback)
-    ms_renderUiCallback();
+  if (ms_renderUiCallback) ms_renderUiCallback();
 }
 
 void VertexSelectedState::react(const MouseReleaseEvent& /*e*/) {}
@@ -317,8 +296,7 @@ void VertexSelectedState::react(const MouseMoveEvent& e)
 {
   hoverAnnotationAndVertex(e.m_currHit);
 
-  if (e.buttonState.left)
-  {
+  if (e.buttonState.left) {
     moveSelectedVertex(e.m_prevHit, e.m_currHit);
   }
 }

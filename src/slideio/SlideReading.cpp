@@ -6,12 +6,12 @@
 
 #include "common/Exception.hpp"
 
-//extern "C"
+// extern "C"
 //{
-//#include <openslide/openslide.h>
-//}
+// #include <openslide/openslide.h>
+// }
 
-//#include <opencv2/opencv.hpp>
+// #include <opencv2/opencv.hpp>
 
 #include <glm/glm.hpp>
 
@@ -46,38 +46,38 @@
 namespace
 {
 
-//static const glm::i64vec2 sk_maxSlideDimsToLoad( 4096, 4096 );
-//static const glm::i64vec2 sk_maxSlideDimsForGPU( 2048, 2048 );
+// static const glm::i64vec2 sk_maxSlideDimsToLoad( 4096, 4096 );
+// static const glm::i64vec2 sk_maxSlideDimsForGPU( 2048, 2048 );
 
 /**
  * @brief Check for an error in the OpenSlide reader. Print its text if present.
  * @param reader Non-owning pointer to reader
  * @return True iff there is an error
  */
-//bool checkOpenSlideError( openslide_t* reader )
+// bool checkOpenSlideError( openslide_t* reader )
 //{
-//    if ( const char* error = openslide_get_error( reader ) )
-//    {
-//        openslide_close( reader );
-//        std::cerr << "OpenSlide error: " << error << std::endl;
-//        return true;
-//    }
-//    return false;
-//}
+//     if ( const char* error = openslide_get_error( reader ) )
+//     {
+//         openslide_close( reader );
+//         std::cerr << "OpenSlide error: " << error << std::endl;
+//         return true;
+//     }
+//     return false;
+// }
 
-//bool checkValidDims( const glm::i64vec2& dims )
+// bool checkValidDims( const glm::i64vec2& dims )
 //{
-//    if ( dims.x <= 0 || dims.y <= 0 )
-//    {
-//        return false;
-//    }
-//    return true;
-//}
+//     if ( dims.x <= 0 || dims.y <= 0 )
+//     {
+//         return false;
+//     }
+//     return true;
+// }
 
-//glm::vec3 readSlideBackgroundColor( openslide_t* reader )
+// glm::vec3 readSlideBackgroundColor( openslide_t* reader )
 //{
-//    const char* backgroundString = openslide_get_property_value(
-//                reader, OPENSLIDE_PROPERTY_NAME_BACKGROUND_COLOR );
+//     const char* backgroundString = openslide_get_property_value(
+//                 reader, OPENSLIDE_PROPERTY_NAME_BACKGROUND_COLOR );
 
 //    if ( backgroundString )
 //    {
@@ -97,9 +97,9 @@ namespace
 //    return sk_white;
 //}
 
-//slideio::AssociatedImage readAssociatedImage( openslide_t* reader, const char* name )
+// slideio::AssociatedImage readAssociatedImage( openslide_t* reader, const char* name )
 //{
-//    static const slideio::AssociatedImage sk_nullRet{ nullptr, {-1, -1} };
+//     static const slideio::AssociatedImage sk_nullRet{ nullptr, {-1, -1} };
 
 //    if ( ! reader )
 //    {
@@ -117,18 +117,18 @@ namespace
 //        return sk_nullRet;
 //    }
 
-//    auto data = std::make_shared< std::vector<uint32_t> >( static_cast<size_t>( dims.x * dims.y ) );
-//    openslide_read_associated_image( reader, name, data.get()->data() );
-//    return std::make_pair( data, dims );
+//    auto data = std::make_shared< std::vector<uint32_t> >( static_cast<size_t>( dims.x * dims.y )
+//    ); openslide_read_associated_image( reader, name, data.get()->data() ); return std::make_pair(
+//    data, dims );
 //}
 
-//void downsample( uint32_t* srcData, const glm::i32vec2& srcSize,
-//                 uint32_t* dstData, const glm::i32vec2& dstSize )
+// void downsample( uint32_t* srcData, const glm::i32vec2& srcSize,
+//                  uint32_t* dstData, const glm::i32vec2& dstSize )
 //{
-//    if ( ! srcData )
-//    {
-//        throw_debug( "Null source image data" );
-//    }
+//     if ( ! srcData )
+//     {
+//         throw_debug( "Null source image data" );
+//     }
 
 //    // no data is copied: external data is not automatically deallocated
 //    cv::Mat srcImage( cv::Size( srcSize.x, srcSize.y ), CV_8UC4, srcData, cv::Mat::AUTO_STEP );
@@ -149,11 +149,11 @@ namespace
 //               reinterpret_cast< uint8_t* >( dstData ) );
 //}
 
-//slideio::SlideAssociatedImages readSlideAssociatedImages( openslide_t* reader )
+// slideio::SlideAssociatedImages readSlideAssociatedImages( openslide_t* reader )
 //{
-//    static const char* sk_thumbName = "thumbnail";
-//    static const char* sk_macroName = "macro";
-//    static const char* sk_labelName = "label";
+//     static const char* sk_thumbName = "thumbnail";
+//     static const char* sk_macroName = "macro";
+//     static const char* sk_labelName = "label";
 
 //    slideio::AssociatedImage thumbImage = readAssociatedImage( reader, sk_thumbName );
 //    slideio::AssociatedImage macroImage = readAssociatedImage( reader, sk_macroName );

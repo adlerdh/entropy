@@ -69,8 +69,7 @@ void SlideHeader::setVendorId(std::string vendorId)
 
 void SlideHeader::setPixelSize(const glm::vec2& size)
 {
-  if (glm::any(glm::lessThanEqual(size, glm::vec2{0.0f, 0.0f})))
-  {
+  if (glm::any(glm::lessThanEqual(size, glm::vec2{0.0f, 0.0f}))) {
     std::cerr << "Invalid pixel size (" << size.x << ", " << size.y << ")" << std::endl;
     return;
   }
@@ -80,8 +79,7 @@ void SlideHeader::setPixelSize(const glm::vec2& size)
 
 void SlideHeader::setPixelSizeX(float x)
 {
-  if (x <= 0.0f)
-  {
+  if (x <= 0.0f) {
     std::cerr << "Invalid x pixel size " << x << std::endl;
     return;
   }
@@ -91,8 +89,7 @@ void SlideHeader::setPixelSizeX(float x)
 
 void SlideHeader::setPixelSizeY(float y)
 {
-  if (y <= 0.0f)
-  {
+  if (y <= 0.0f) {
     std::cerr << "Invalid y pixel size " << y << std::endl;
     return;
   }
@@ -102,8 +99,7 @@ void SlideHeader::setPixelSizeY(float y)
 
 void SlideHeader::setThickness(float z)
 {
-  if (z <= 0.0f)
-  {
+  if (z <= 0.0f) {
     std::cerr << "Invalid thickness " << z << std::endl;
     return;
   }

@@ -26,8 +26,7 @@ bool graphCutsBinarySegmentation(
   const VoxelDistances& voxelDistances,
   std::function<double(int x, int y, int z, int dx, int dy, int dz)> getImageWeight,
   std::function<LabelType(int x, int y, int z)> getSeedValue,
-  std::function<void(int x, int y, int z, LabelType value)> setResultSegValue
-)
+  std::function<void(int x, int y, int z, LabelType value)> setResultSegValue)
 {
   using namespace std::chrono;
 
@@ -44,28 +43,22 @@ bool graphCutsBinarySegmentation(
 
   std::unique_ptr<GridGraph_3D_Base_Wrapper<T, T, T> > grid = nullptr;
 
-  switch (hoodType)
-  {
-  case GraphNeighborhoodType::Neighbors6:
-  {
-    if (multithread)
-    {
-      const int blockSize = std::max(32, std::min(dims.x, std::min(dims.y, dims.z)) / NUM_THREADS);
-      spdlog::info("Number of threads: {}; block size: {}", NUM_THREADS, blockSize);
-      grid = std::make_unique<
-        GridGraph_3D_6C_MT_Wrapper<T, T, T> >(dims.x, dims.y, dims.z, NUM_THREADS, blockSize);
+  switch (hoodType) {
+    case GraphNeighborhoodType::Neighbors6: {
+      if (multithread) {
+        const int blockSize = std::max(32, std::min(dims.x, std::min(dims.y, dims.z)) / NUM_THREADS);
+        spdlog::info("Number of threads: {}; block size: {}", NUM_THREADS, blockSize);
+        grid = std::make_unique<GridGraph_3D_6C_MT_Wrapper<T, T, T> >(dims.x, dims.y, dims.z, NUM_THREADS, blockSize);
+      }
+      else {
+        grid = std::make_unique<GridGraph_3D_6C_Wrapper<T, T, T> >(dims.x, dims.y, dims.z);
+      }
+      break;
     }
-    else
-    {
-      grid = std::make_unique<GridGraph_3D_6C_Wrapper<T, T, T> >(dims.x, dims.y, dims.z);
+    case GraphNeighborhoodType::Neighbors26: {
+      grid = std::make_unique<GridGraph_3D_26C_Wrapper<T, T, T> >(dims.x, dims.y, dims.z);
+      break;
     }
-    break;
-  }
-  case GraphNeighborhoodType::Neighbors26:
-  {
-    grid = std::make_unique<GridGraph_3D_26C_Wrapper<T, T, T> >(dims.x, dims.y, dims.z);
-    break;
-  }
   }
 
   spdlog::trace("Done creating grid");
@@ -74,8 +67,7 @@ bool graphCutsBinarySegmentation(
   auto duration = duration_cast<milliseconds>(stop - start);
   spdlog::trace("Grid creation time: {} msec", duration.count());
 
-  if (!grid)
-  {
+  if (!grid) {
     spdlog::error("Null grid for graph cuts segmentation");
     return false;
   }
@@ -83,8 +75,7 @@ bool graphCutsBinarySegmentation(
   spdlog::trace("Start filling grid");
   start = high_resolution_clock::now();
 
-  if (multithread && GraphNeighborhoodType::Neighbors6 == hoodType)
-  {
+  if (multithread && GraphNeighborhoodType::Neighbors6 == hoodType) {
     const std::size_t N = dims.x * dims.y * dims.z;
 
     std::unique_ptr<T[]> cap_source = std::make_unique<float[]>(N);
@@ -96,20 +87,18 @@ bool graphCutsBinarySegmentation(
     std::unique_ptr<T[]> cap_eel = std::make_unique<float[]>(N);
     std::unique_ptr<T[]> cap_eeg = std::make_unique<float[]>(N);
 
-    auto getIndex = [&dims](int x, int y, int z) -> std::size_t
-    { return z * (dims.x * dims.y) + y * dims.x + x; };
+    auto getIndex = [&dims](int x, int y, int z) -> std::size_t {
+      return z * (dims.x * dims.y) + y * dims.x + x;
+    };
 
     // Compute capacity for edge from X to X + dX
-    auto computeNeighCap =
-      [&getImageWeight](int x, int y, int z, int dx, int dy, int dz, double dist)
-    { return static_cast<T>(getImageWeight(x, y, z, dx, dy, dz) / dist); };
+    auto computeNeighCap = [&getImageWeight](int x, int y, int z, int dx, int dy, int dz, double dist) {
+      return static_cast<T>(getImageWeight(x, y, z, dx, dy, dz) / dist);
+    };
 
-    for (int z = 0; z < dims.z; ++z)
-    {
-      for (int y = 0; y < dims.y; ++y)
-      {
-        for (int x = 0; x < dims.x; ++x)
-        {
+    for (int z = 0; z < dims.z; ++z) {
+      for (int y = 0; y < dims.y; ++y) {
+        for (int x = 0; x < dims.x; ++x) {
           const LabelType seed = getSeedValue(x, y, z);
           const std::size_t index = getIndex(x, y, z);
 
@@ -136,33 +125,26 @@ bool graphCutsBinarySegmentation(
       cap_ele.get(),
       cap_ege.get(),
       cap_eel.get(),
-      cap_eeg.get()
-    );
+      cap_eeg.get());
   }
-  else if (GraphNeighborhoodType::Neighbors26 == hoodType)
-  {
+  else if (GraphNeighborhoodType::Neighbors26 == hoodType) {
     // Set symmetric capacities for edges from X to X + dX and from X + dX to X
-    auto setNeighCaps =
-      [&grid, &getImageWeight](int x, int y, int z, int dx, int dy, int dz, double dist)
-    {
+    auto setNeighCaps = [&grid, &getImageWeight](int x, int y, int z, int dx, int dy, int dz, double dist) {
       const T cap = static_cast<T>(getImageWeight(x, y, z, dx, dy, dz) / dist);
 
       grid->set_neighbor_cap(grid->node_id(x, y, z), dx, dy, dz, cap);
       grid->set_neighbor_cap(grid->node_id(x + dx, y + dy, z + dz), -dx, -dy, -dz, cap);
     };
 
-    for (int z = 0; z < dims.z; ++z)
-    {
+    for (int z = 0; z < dims.z; ++z) {
       const bool ZL = (z > 0);
       const bool ZH = (z < (dims.z - 1));
 
-      for (int y = 0; y < dims.y; ++y)
-      {
+      for (int y = 0; y < dims.y; ++y) {
         const bool YL = (y > 0);
         const bool YH = (y < (dims.y - 1));
 
-        for (int x = 0; x < dims.x; ++x)
-        {
+        for (int x = 0; x < dims.x; ++x) {
           const bool XL = (x > 0);
           const bool XH = (x < (dims.x - 1));
 
@@ -171,66 +153,51 @@ bool graphCutsBinarySegmentation(
           grid->set_terminal_cap(
             grid->node_id(x, y, z),
             (seed > 0 && seed != fgSeedValue) ? terminalCapacity : 0.0,
-            (seed == fgSeedValue) ? terminalCapacity : 0.0
-          );
+            (seed == fgSeedValue) ? terminalCapacity : 0.0);
 
           // 6 face neighbors:
-          if (XH)
-          {
+          if (XH) {
             setNeighCaps(x, y, z, 1, 0, 0, voxelDistances.distX);
           }
-          if (YH)
-          {
+          if (YH) {
             setNeighCaps(x, y, z, 0, 1, 0, voxelDistances.distY);
           }
-          if (ZH)
-          {
+          if (ZH) {
             setNeighCaps(x, y, z, 0, 0, 1, voxelDistances.distZ);
           }
 
-          if (GraphNeighborhoodType::Neighbors26 == hoodType)
-          {
+          if (GraphNeighborhoodType::Neighbors26 == hoodType) {
             // 12 edge neighbors:
-            if (XH && YH)
-            {
+            if (XH && YH) {
               setNeighCaps(x, y, z, 1, 1, 0, voxelDistances.distXY);
             }
-            if (XL && YH)
-            {
+            if (XL && YH) {
               setNeighCaps(x, y, z, -1, 1, 0, voxelDistances.distXY);
             }
-            if (XH && ZH)
-            {
+            if (XH && ZH) {
               setNeighCaps(x, y, z, 1, 0, 1, voxelDistances.distXZ);
             }
-            if (XL && ZH)
-            {
+            if (XL && ZH) {
               setNeighCaps(x, y, z, -1, 0, 1, voxelDistances.distXZ);
             }
-            if (YH && ZH)
-            {
+            if (YH && ZH) {
               setNeighCaps(x, y, z, 0, 1, 1, voxelDistances.distYZ);
             }
-            if (YL && ZH)
-            {
+            if (YL && ZH) {
               setNeighCaps(x, y, z, 0, -1, 1, voxelDistances.distYZ);
             }
 
             // 8 vertex neighbors:
-            if (XH && YH && ZH)
-            {
+            if (XH && YH && ZH) {
               setNeighCaps(x, y, z, 1, 1, 1, voxelDistances.distXYZ);
             }
-            if (XL && YH && ZH)
-            {
+            if (XL && YH && ZH) {
               setNeighCaps(x, y, z, -1, 1, 1, voxelDistances.distXYZ);
             }
-            if (XH && YL && ZH)
-            {
+            if (XH && YL && ZH) {
               setNeighCaps(x, y, z, 1, -1, 1, voxelDistances.distXYZ);
             }
-            if (XH && YH && ZL)
-            {
+            if (XH && YH && ZL) {
               setNeighCaps(x, y, z, 1, 1, -1, voxelDistances.distXYZ);
             }
           }
@@ -257,15 +224,10 @@ bool graphCutsBinarySegmentation(
   spdlog::trace("Graph cuts execution time: {} msec", duration.count());
 
   spdlog::trace("Start reading back segmentation results");
-  for (int z = 0; z < dims.z; ++z)
-  {
-    for (int y = 0; y < dims.y; ++y)
-    {
-      for (int x = 0; x < dims.x; ++x)
-      {
-        const LabelType label = static_cast<LabelType>(
-          grid->get_segment(grid->node_id(x, y, z)) ? fgSeedValue : 0
-        );
+  for (int z = 0; z < dims.z; ++z) {
+    for (int y = 0; y < dims.y; ++y) {
+      for (int x = 0; x < dims.x; ++x) {
+        const LabelType label = static_cast<LabelType>(grid->get_segment(grid->node_id(x, y, z)) ? fgSeedValue : 0);
 
         setResultSegValue(x, y, z, label);
       }
@@ -284,8 +246,7 @@ bool graphCutsMultiLabelSegmentation(
   std::function<double(int x, int y, int z, int dx, int dy, int dz)> /*getImageWeight*/,
   std::function<double(int index1, int index2)> getImageWeight1D,
   std::function<LabelType(int x, int y, int z)> getSeedValue,
-  std::function<void(int x, int y, int z, LabelType value)> setResultSegValue
-)
+  std::function<void(int x, int y, int z, LabelType value)> setResultSegValue)
 {
   using namespace std::chrono;
 
@@ -302,24 +263,19 @@ bool graphCutsMultiLabelSegmentation(
 
   std::vector<T> dataCosts(dims.x * dims.y * dims.z * numLabels, 0);
 
-  auto getIndex = [&dims](int x, int y, int z) -> std::size_t
-  { return z * (dims.x * dims.y) + y * dims.x + x; };
+  auto getIndex = [&dims](int x, int y, int z) -> std::size_t {
+    return z * (dims.x * dims.y) + y * dims.x + x;
+  };
 
-  for (int z = 0; z < dims.z; ++z)
-  {
-    for (int y = 0; y < dims.y; ++y)
-    {
-      for (int x = 0; x < dims.x; ++x)
-      {
+  for (int z = 0; z < dims.z; ++z) {
+    for (int y = 0; y < dims.y; ++y) {
+      for (int x = 0; x < dims.x; ++x) {
         const LabelType seedLabel = getSeedValue(x, y, z);
 
-        for (std::size_t labelIndex = 0; labelIndex < numLabels; ++labelIndex)
-        {
+        for (std::size_t labelIndex = 0; labelIndex < numLabels; ++labelIndex) {
           const LabelType label = labelMaps.indexToLabel.at(labelIndex);
 
-          dataCosts[getIndex(x, y, z) * numLabels + labelIndex] = (seedLabel == label)
-                                                                    ? 0.0f
-                                                                    : terminalCapacity;
+          dataCosts[getIndex(x, y, z) * numLabels + labelIndex] = (seedLabel == label) ? 0.0f : terminalCapacity;
         }
       }
     }
@@ -367,25 +323,40 @@ bool graphCutsMultiLabelSegmentation(
 
                         if ( GraphCutsNeighborhoodType::Neighbors6 == hoodType )
                         {
-                            smoothnessCosts[numSmoothnessTables * index +  0][l] = (XH && B) ? getImageWeight(x, y, z,  1,  0,  0) / voxelDistances.distX : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  1][l] = (YH && B) ? getImageWeight(x, y, z,  0,  1,  0) / voxelDistances.distY : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  2][l] = (ZH && B) ? getImageWeight(x, y, z,  0,  0,  1) / voxelDistances.distZ : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  0][l] = (XH && B) ?
+getImageWeight(x, y, z,  1,  0,  0) / voxelDistances.distX : 0; smoothnessCosts[numSmoothnessTables
+* index +  1][l] = (YH && B) ? getImageWeight(x, y, z,  0,  1,  0) / voxelDistances.distY : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  2][l] = (ZH && B) ?
+getImageWeight(x, y, z,  0,  0,  1) / voxelDistances.distZ : 0;
                         }
                         else
                         {
-                            smoothnessCosts[numSmoothnessTables * index +  0][l] = (XH && B)             ? getImageWeight(x, y, z,  1,  0,  0) / voxelDistances.distX   : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  1][l] = (YH && B)             ? getImageWeight(x, y, z,  0,  1,  0) / voxelDistances.distY   : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  2][l] = (XH && YL && B)       ? getImageWeight(x, y, z,  1, -1,  0) / voxelDistances.distXY  : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  3][l] = (XH && YH && B)       ? getImageWeight(x, y, z,  1,  1,  0) / voxelDistances.distXY  : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  4][l] = (ZH && B)             ? getImageWeight(x, y, z,  0,  0,  1) / voxelDistances.distZ   : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  5][l] = (YL && ZH && B)       ? getImageWeight(x, y, z,  0, -1,  1) / voxelDistances.distYZ  : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  6][l] = (YH && ZH && B)       ? getImageWeight(x, y, z,  0,  1,  1) / voxelDistances.distYZ  : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  7][l] = (XL && ZH && B)       ? getImageWeight(x, y, z, -1,  0,  1) / voxelDistances.distXZ  : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  8][l] = (XL && YL && ZH && B) ? getImageWeight(x, y, z, -1, -1,  1) / voxelDistances.distXYZ : 0;
-                            smoothnessCosts[numSmoothnessTables * index +  9][l] = (XL && YH && ZH && B) ? getImageWeight(x, y, z, -1,  1,  1) / voxelDistances.distXYZ : 0;
-                            smoothnessCosts[numSmoothnessTables * index + 10][l] = (XH && ZH && B)       ? getImageWeight(x, y, z,  1,  0,  1) / voxelDistances.distXZ  : 0;
-                            smoothnessCosts[numSmoothnessTables * index + 11][l] = (XH && YL && ZH && B) ? getImageWeight(x, y, z,  1, -1,  1) / voxelDistances.distXYZ : 0;
-                            smoothnessCosts[numSmoothnessTables * index + 12][l] = (XH && YH && ZH && B) ? getImageWeight(x, y, z,  1,  1,  1) / voxelDistances.distXYZ : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  0][l] = (XH && B) ?
+getImageWeight(x, y, z,  1,  0,  0) / voxelDistances.distX   : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  1][l] = (YH && B) ?
+getImageWeight(x, y, z,  0,  1,  0) / voxelDistances.distY   : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  2][l] = (XH && YL && B)
+? getImageWeight(x, y, z,  1, -1,  0) / voxelDistances.distXY  : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  3][l] = (XH && YH && B)
+? getImageWeight(x, y, z,  1,  1,  0) / voxelDistances.distXY  : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  4][l] = (ZH && B) ?
+getImageWeight(x, y, z,  0,  0,  1) / voxelDistances.distZ   : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  5][l] = (YL && ZH && B)
+? getImageWeight(x, y, z,  0, -1,  1) / voxelDistances.distYZ  : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  6][l] = (YH && ZH && B)
+? getImageWeight(x, y, z,  0,  1,  1) / voxelDistances.distYZ  : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  7][l] = (XL && ZH && B)
+? getImageWeight(x, y, z, -1,  0,  1) / voxelDistances.distXZ  : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  8][l] = (XL && YL && ZH
+&& B) ? getImageWeight(x, y, z, -1, -1,  1) / voxelDistances.distXYZ : 0;
+                            smoothnessCosts[numSmoothnessTables * index +  9][l] = (XL && YH && ZH
+&& B) ? getImageWeight(x, y, z, -1,  1,  1) / voxelDistances.distXYZ : 0;
+                            smoothnessCosts[numSmoothnessTables * index + 10][l] = (XH && ZH && B)
+? getImageWeight(x, y, z,  1,  0,  1) / voxelDistances.distXZ  : 0;
+                            smoothnessCosts[numSmoothnessTables * index + 11][l] = (XH && YL && ZH
+&& B) ? getImageWeight(x, y, z,  1, -1,  1) / voxelDistances.distXYZ : 0;
+                            smoothnessCosts[numSmoothnessTables * index + 12][l] = (XH && YH && ZH
+&& B) ? getImageWeight(x, y, z,  1,  1,  1) / voxelDistances.distXYZ : 0;
                         }
                     }
                 }
@@ -398,45 +369,34 @@ bool graphCutsMultiLabelSegmentation(
   const int yDiff = dims.y;
   const int zDiff = dims.x * dims.y;
 
-  auto smoothFn = [&getImageWeight1D,
-                   &voxelDistances,
-                   &yDiff,
-                   &zDiff](int index1, int index2, int label1, int label2) -> double
-  {
-    if (label1 == label2)
-    {
+  auto smoothFn =
+    [&getImageWeight1D, &voxelDistances, &yDiff, &zDiff](int index1, int index2, int label1, int label2) -> double {
+    if (label1 == label2) {
       return 0.0;
     }
 
     const int diff = std::abs(index1 - index2);
     double dist = 1.0;
 
-    if (xDiff == diff)
-    {
+    if (xDiff == diff) {
       dist = voxelDistances.distX;
     }
-    else if (yDiff == diff)
-    {
+    else if (yDiff == diff) {
       dist = voxelDistances.distY;
     }
-    else if (zDiff == diff)
-    {
+    else if (zDiff == diff) {
       dist = voxelDistances.distZ;
     }
-    else if ((xDiff + yDiff) == diff)
-    {
+    else if ((xDiff + yDiff) == diff) {
       dist = voxelDistances.distXY;
     }
-    else if ((xDiff + zDiff) == diff)
-    {
+    else if ((xDiff + zDiff) == diff) {
       dist = voxelDistances.distXZ;
     }
-    else if ((yDiff + zDiff) == diff)
-    {
+    else if ((yDiff + zDiff) == diff) {
       dist = voxelDistances.distYZ;
     }
-    else if ((xDiff + yDiff + zDiff) == diff)
-    {
+    else if ((xDiff + yDiff + zDiff) == diff) {
       dist = voxelDistances.distXYZ;
     }
 
@@ -445,25 +405,32 @@ bool graphCutsMultiLabelSegmentation(
 
   std::unique_ptr<AlphaExpansion_3D_Base_Wrapper<LabelType, T, T> > expansion = nullptr;
 
-  switch (hoodType)
-  {
-  case GraphNeighborhoodType::Neighbors6:
-  {
-    const int blockSize = std::max(32, std::min(dims.x, std::min(dims.y, dims.z)) / NUM_THREADS);
-    spdlog::info("Number of threads: {}; block size: {}", NUM_THREADS, blockSize);
+  switch (hoodType) {
+    case GraphNeighborhoodType::Neighbors6: {
+      const int blockSize = std::max(32, std::min(dims.x, std::min(dims.y, dims.z)) / NUM_THREADS);
+      spdlog::info("Number of threads: {}; block size: {}", NUM_THREADS, blockSize);
 
-    expansion = std::make_unique<AlphaExpansion_3D_6C_MT_Wrapper<LabelType, T, T> >(
-      dims.x, dims.y, dims.z, numLabels, dataCosts.data(), smoothFn, NUM_THREADS, blockSize
-    );
-    break;
-  }
-  case GraphNeighborhoodType::Neighbors26:
-  {
-    expansion = std::make_unique<AlphaExpansion_3D_26C_Wrapper<LabelType, T, T> >(
-      dims.x, dims.y, dims.z, numLabels, dataCosts.data(), smoothFn
-    );
-    break;
-  }
+      expansion = std::make_unique<AlphaExpansion_3D_6C_MT_Wrapper<LabelType, T, T> >(
+        dims.x,
+        dims.y,
+        dims.z,
+        numLabels,
+        dataCosts.data(),
+        smoothFn,
+        NUM_THREADS,
+        blockSize);
+      break;
+    }
+    case GraphNeighborhoodType::Neighbors26: {
+      expansion = std::make_unique<AlphaExpansion_3D_26C_Wrapper<LabelType, T, T> >(
+        dims.x,
+        dims.y,
+        dims.z,
+        numLabels,
+        dataCosts.data(),
+        smoothFn);
+      break;
+    }
   }
 
   spdlog::debug("Done creating expansion");
@@ -482,12 +449,9 @@ bool graphCutsMultiLabelSegmentation(
   spdlog::debug("Start reading back segmentation results");
   LabelType* labeling = expansion->get_labeling();
 
-  for (int z = 0; z < dims.z; ++z)
-  {
-    for (int y = 0; y < dims.y; ++y)
-    {
-      for (int x = 0; x < dims.x; ++x)
-      {
+  for (int z = 0; z < dims.z; ++z) {
+    for (int y = 0; y < dims.y; ++y) {
+      for (int x = 0; x < dims.x; ++x) {
         const std::size_t labelIndex = labeling[getIndex(x, y, z)];
         const LabelType label = labelMaps.indexToLabel.at(labelIndex);
         setResultSegValue(x, y, z, label);

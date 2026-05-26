@@ -15,8 +15,8 @@
 #include <utility>
 
 template<class Record>
-using weak_record_range_t = boost::
-  any_range<std::weak_ptr<Record>, boost::forward_traversal_tag, std::weak_ptr<Record>&, std::ptrdiff_t>;
+using weak_record_range_t =
+  boost::any_range<std::weak_ptr<Record>, boost::forward_traversal_tag, std::weak_ptr<Record>&, std::ptrdiff_t>;
 
 namespace slideio
 {
@@ -57,13 +57,12 @@ glm::vec2 getTranslationXyInStack(const SlideCpuRecord&);
 glm::vec3 physicalSlideDims(const SlideCpuRecord&);
 
 /**
- * @brief Convert a physical (World-space) slide translation vector to normalized [0,1]^3 Slide-space
+ * @brief Convert a physical (World-space) slide translation vector to normalized [0,1]^3
+ * Slide-space
  * @param physicalTranslation Physical translation vector
  * @return Slide-space translation vector
  */
-glm::vec2 convertPhysicalToNormalizedSlideTranslation(
-  const SlideCpuRecord&, const glm::vec2& physicalTranslation
-);
+glm::vec2 convertPhysicalToNormalizedSlideTranslation(const SlideCpuRecord&, const glm::vec2& physicalTranslation);
 
 /**
  * @brief Return the eight corners of a slide in Stack space coodinates
@@ -80,8 +79,8 @@ std::array<glm::vec3, 8> slideCornersInStack(const SlideCpuRecord&);
  * then std::nullopt is returned.
  */
 std::optional<AABB<float> > slideStackAABBoxInWorld(
-  weak_record_range_t<SlideRecord> slideRecords, const glm::mat4& world_O_slideStack
-);
+  weak_record_range_t<SlideRecord> slideRecords,
+  const glm::mat4& world_O_slideStack);
 
 /**
  * @brief Computes physical height of the slide stack, measured along the stack's z axis.

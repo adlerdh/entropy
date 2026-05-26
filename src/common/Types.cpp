@@ -6,33 +6,29 @@
 
 bool isComponentFloatingPoint(const ComponentType& compType)
 {
-  switch (compType)
-  {
-  case ComponentType::Int8:
-  case ComponentType::UInt8:
-  case ComponentType::Int16:
-  case ComponentType::UInt16:
-  case ComponentType::Int32:
-  case ComponentType::UInt32:
-  case ComponentType::ULong:
-  case ComponentType::Long:
-  case ComponentType::ULongLong:
-  case ComponentType::LongLong:
-  {
-    return false;
-  }
+  switch (compType) {
+    case ComponentType::Int8:
+    case ComponentType::UInt8:
+    case ComponentType::Int16:
+    case ComponentType::UInt16:
+    case ComponentType::Int32:
+    case ComponentType::UInt32:
+    case ComponentType::ULong:
+    case ComponentType::Long:
+    case ComponentType::ULongLong:
+    case ComponentType::LongLong: {
+      return false;
+    }
 
-  case ComponentType::Float32:
-  case ComponentType::Float64:
-  case ComponentType::LongDouble:
-  {
-    return true;
-  }
+    case ComponentType::Float32:
+    case ComponentType::Float64:
+    case ComponentType::LongDouble: {
+      return true;
+    }
 
-  case ComponentType::Undefined:
-  {
-    return false;
-  }
+    case ComponentType::Undefined: {
+      return false;
+    }
   }
 
   return false;
@@ -40,33 +36,29 @@ bool isComponentFloatingPoint(const ComponentType& compType)
 
 bool isComponentUnsignedInt(const ComponentType& compType)
 {
-  switch (compType)
-  {
-  case ComponentType::Int8:
-  case ComponentType::Int16:
-  case ComponentType::Int32:
-  case ComponentType::Long:
-  case ComponentType::LongLong:
-  case ComponentType::Float32:
-  case ComponentType::Float64:
-  case ComponentType::LongDouble:
-  {
-    return false;
-  }
+  switch (compType) {
+    case ComponentType::Int8:
+    case ComponentType::Int16:
+    case ComponentType::Int32:
+    case ComponentType::Long:
+    case ComponentType::LongLong:
+    case ComponentType::Float32:
+    case ComponentType::Float64:
+    case ComponentType::LongDouble: {
+      return false;
+    }
 
-  case ComponentType::UInt8:
-  case ComponentType::UInt16:
-  case ComponentType::UInt32:
-  case ComponentType::ULong:
-  case ComponentType::ULongLong:
-  {
-    return true;
-  }
+    case ComponentType::UInt8:
+    case ComponentType::UInt16:
+    case ComponentType::UInt32:
+    case ComponentType::ULong:
+    case ComponentType::ULongLong: {
+      return true;
+    }
 
-  case ComponentType::Undefined:
-  {
-    return false;
-  }
+    case ComponentType::Undefined: {
+      return false;
+    }
   }
 
   return false;
@@ -74,19 +66,16 @@ bool isComponentUnsignedInt(const ComponentType& compType)
 
 bool isValidSegmentationComponentType(const ComponentType& compType)
 {
-  switch (compType)
-  {
-  case ComponentType::UInt8:
-  case ComponentType::UInt16:
-  case ComponentType::UInt32:
-  {
-    return true;
-  }
+  switch (compType) {
+    case ComponentType::UInt8:
+    case ComponentType::UInt16:
+    case ComponentType::UInt32: {
+      return true;
+    }
 
-  default:
-  {
-    return false;
-  }
+    default: {
+      return false;
+    }
   }
 }
 
@@ -95,8 +84,7 @@ std::string typeString(const InterpolationMode& mode)
   static const std::unordered_map<InterpolationMode, std::string> s_modeToString{
     {InterpolationMode::NearestNeighbor, "Nearest"},
     {InterpolationMode::Linear, "Linear"},
-    {InterpolationMode::CubicBsplineConvolution, "Cubic B-spline conv."}
-  };
+    {InterpolationMode::CubicBsplineConvolution, "Cubic B-spline conv."}};
 
   return s_modeToString.at(mode);
 }
@@ -124,8 +112,7 @@ std::string componentTypeString(const ComponentType& compType)
 
     {ComponentType::LongDouble, "Long double"},
 
-    {ComponentType::Undefined, "Undefined"}
-  };
+    {ComponentType::Undefined, "Undefined"}};
 
   return s_compTypeToStringMap.at(compType);
 }
@@ -134,28 +121,25 @@ std::string typeString(const MouseMode& mouseMode)
 {
   static const std::unordered_map<MouseMode, std::string> s_typeToStringMap{
     {MouseMode::Pointer,
-     "Pointer (V)\nLeft button: move crosshairs\n+Ctrl: rotate crosshairs\nMiddle button: pan\nRight button: zoom"},
-    {MouseMode::WindowLevel,
-     "Window/level and opacity (L)\nLeft button: window/level\nRight button: opacity"},
+     "Pointer (V)\nLeft button: move crosshairs\n+Ctrl: rotate crosshairs\nMiddle button: "
+     "pan\nRight button: zoom"},
+    {MouseMode::WindowLevel, "Window/level and opacity (L)\nLeft button: window/level\nRight button: opacity"},
     {MouseMode::CameraTranslate,
-     "Pan/dolly view (X)\nLeft button: pan in plane\nRight button: dolly in/out of plane (3D views "
+     "Pan/dolly view (X)\nLeft button: pan in plane\nRight button: dolly in/out of plane (3D "
+     "views "
      "only)"},
     {MouseMode::CameraRotate,
      "Rotate view\nLeft button: rotate in plane\nRight button: rotate out of plane\n(Use "
      "Shift/Ctrl to lock rotation about view X/Y)"},
-    {MouseMode::CameraZoom,
-     "Zoom view (Z)\nLeft button: zoom to crosshairs\nRight button: zoom to cursor"},
-    {MouseMode::CrosshairsRotate,
-     "Rotate crosshairs\nLeft button: rotate in plane\nRight button: zoom to cursor"},
-    {MouseMode::Segment,
-     "Segment (B)\nLeft button: paint foreground label\nRight button: paint background label"},
+    {MouseMode::CameraZoom, "Zoom view (Z)\nLeft button: zoom to crosshairs\nRight button: zoom to cursor"},
+    {MouseMode::CrosshairsRotate, "Rotate crosshairs\nLeft button: rotate in plane\nRight button: zoom to cursor"},
+    {MouseMode::Segment, "Segment (B)\nLeft button: paint foreground label\nRight button: paint background label"},
     {MouseMode::Annotate, "Annotate"},
     {MouseMode::ImageTranslate,
-     "Translate image (T)\nLeft button: translate in plane\nRight button: translate out of plane"},
-    {MouseMode::ImageRotate,
-     "Rotate image (R)\nLeft button: rotate in plane\nRight button: rotate out of plane"},
-    {MouseMode::ImageScale, "Scale image (Y)"}
-  };
+     "Translate image (T)\nLeft button: translate in plane\nRight button: translate out of "
+     "plane"},
+    {MouseMode::ImageRotate, "Rotate image (R)\nLeft button: rotate in plane\nRight button: rotate out of plane"},
+    {MouseMode::ImageScale, "Scale image (Y)"}};
 
   return s_typeToStringMap.at(mouseMode);
 }
@@ -167,8 +151,7 @@ bool isIntegerType(const ComponentType& type)
 
 bool isFloatingType(const ComponentType& type)
 {
-  if (ComponentType::Float32 == type || ComponentType::Float64 == type || ComponentType::LongDouble == type)
-  {
+  if (ComponentType::Float32 == type || ComponentType::Float64 == type || ComponentType::LongDouble == type) {
     return true;
   }
 
@@ -177,7 +160,9 @@ bool isFloatingType(const ComponentType& type)
 
 bool isSignedIntegerType(const ComponentType& type)
 {
-  if (ComponentType::Int8 == type || ComponentType::Int16 == type || ComponentType::Int32 == type || ComponentType::Long == type || ComponentType::LongLong == type)
+  if (
+    ComponentType::Int8 == type || ComponentType::Int16 == type || ComponentType::Int32 == type ||
+    ComponentType::Long == type || ComponentType::LongLong == type)
   {
     return true;
   }
@@ -187,7 +172,9 @@ bool isSignedIntegerType(const ComponentType& type)
 
 bool isUnsignedIntegerType(const ComponentType& type)
 {
-  if (ComponentType::UInt8 == type || ComponentType::UInt16 == type || ComponentType::UInt32 == type || ComponentType::ULong == type || ComponentType::ULongLong == type)
+  if (
+    ComponentType::UInt8 == type || ComponentType::UInt16 == type || ComponentType::UInt32 == type ||
+    ComponentType::ULong == type || ComponentType::ULongLong == type)
   {
     return true;
   }
@@ -208,8 +195,7 @@ const char* toolbarButtonIcon(const MouseMode& mouseMode)
     {MouseMode::CrosshairsRotate, ICON_FK_CROSSHAIRS},
     {MouseMode::ImageTranslate, ICON_FK_ARROWS},
     {MouseMode::ImageRotate, ICON_FK_UNDO},
-    {MouseMode::ImageScale, ICON_FK_EXPAND}
-  };
+    {MouseMode::ImageScale, ICON_FK_EXPAND}};
 
   return s_typeToIconMap.at(mouseMode);
 }

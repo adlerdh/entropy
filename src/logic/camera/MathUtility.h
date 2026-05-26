@@ -86,8 +86,7 @@ glm::vec2 projectPointToPlaneLocal2dCoords(
   const glm::vec3& point,
   const glm::vec4& planeEquation,
   const glm::vec3& planeOrigin,
-  const std::pair<glm::vec3, glm::vec3>& planeAxes
-);
+  const std::pair<glm::vec3, glm::vec3>& planeAxes);
 
 /**
  * @brief Add offsets to vertex positions of an object (defined in its own Model space)
@@ -103,8 +102,7 @@ void applyLayeringOffsetsToModelPositions(
   const Camera& camera,
   const glm::mat4& model_T_world,
   uint32_t layer,
-  std::vector<glm::vec3>& modelPositions
-);
+  std::vector<glm::vec3>& modelPositions);
 
 template<typename T>
 gmat4<T> fromToRotation(const gvec3<T>& fromVec, const gvec3<T>& toVec)
@@ -115,35 +113,28 @@ gmat4<T> fromToRotation(const gvec3<T>& fromVec, const gvec3<T>& toVec)
   T e = glm::dot(fromVec, toVec);
   T f = (e < T(0.0)) ? -e : e;
 
-  if (f > T(1.0) - glm::epsilon<T>())
-  {
+  if (f > T(1.0) - glm::epsilon<T>()) {
     /// "from" and "to"-vector almost parallel
 
     /// vector most nearly orthogonal to "from"
     gvec3<T> x = glm::abs(fromVec);
 
-    if (x[0] < x[1])
-    {
-      if (x[0] < x[2])
-      {
+    if (x[0] < x[1]) {
+      if (x[0] < x[2]) {
         x[0] = T(1);
         x[1] = x[2] = T(0);
       }
-      else
-      {
+      else {
         x[2] = T(1);
         x[0] = x[1] = T(0);
       }
     }
-    else
-    {
-      if (x[1] < x[2])
-      {
+    else {
+      if (x[1] < x[2]) {
         x[1] = T(1);
         x[0] = x[2] = T(0);
       }
-      else
-      {
+      else {
         x[2] = T(1);
         x[0] = x[1] = T(0);
       }
@@ -156,19 +147,15 @@ gmat4<T> fromToRotation(const gvec3<T>& fromVec, const gvec3<T>& toVec)
     T c2 = T(2.0) / glm::dot(v_temp, v_temp);
     T c3 = c1 * c2 * glm::dot(u, v_temp);
 
-    for (int row = 0; row < 3; ++row)
-    {
-      for (int col = 0; col < 3; ++col)
-      {
-        R[col][row] = -c1 * u[row] * u[col] - c2 * v_temp[row] * v_temp[col]
-                      + c3 * v_temp[row] * u[col];
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 3; ++col) {
+        R[col][row] = -c1 * u[row] * u[col] - c2 * v_temp[row] * v_temp[col] + c3 * v_temp[row] * u[col];
       }
 
       R[row][row] += T(1);
     }
   }
-  else
-  {
+  else {
     /// the most common case, unless "from" == "to", or "from" == -"to"
 
     T h = T(1.0) / (T(1.0) + e);
@@ -206,7 +193,9 @@ bool areMatricesEqual(const gmat3<T>& A, const gmat3<T>& B)
 {
   static constexpr float EPS = glm::epsilon<float>();
 
-  if (glm::any(glm::epsilonNotEqual(A[0], B[0], EPS)) || glm::any(glm::epsilonNotEqual(A[1], B[1], EPS)) || glm::any(glm::epsilonNotEqual(A[2], B[2], EPS)))
+  if (
+    glm::any(glm::epsilonNotEqual(A[0], B[0], EPS)) || glm::any(glm::epsilonNotEqual(A[1], B[1], EPS)) ||
+    glm::any(glm::epsilonNotEqual(A[2], B[2], EPS)))
   {
     return false;
   }
@@ -217,7 +206,9 @@ bool areMatricesEqual(const gmat3<T>& A, const gmat3<T>& B)
 template<typename T>
 bool areMatricesEqual(const gmat4<T>& A, const gmat4<T>& B, float epsilon = glm::epsilon<float>())
 {
-  if (glm::any(glm::epsilonNotEqual(A[0], B[0], epsilon)) || glm::any(glm::epsilonNotEqual(A[1], B[1], epsilon)) || glm::any(glm::epsilonNotEqual(A[2], B[2], epsilon)) || glm::any(glm::epsilonNotEqual(A[3], B[3], epsilon)))
+  if (
+    glm::any(glm::epsilonNotEqual(A[0], B[0], epsilon)) || glm::any(glm::epsilonNotEqual(A[1], B[1], epsilon)) ||
+    glm::any(glm::epsilonNotEqual(A[2], B[2], epsilon)) || glm::any(glm::epsilonNotEqual(A[3], B[3], epsilon)))
   {
     return false;
   }
@@ -252,12 +243,10 @@ gvec4<T> makePlane(const gvec3<T>& normal, const gvec3<T>& point)
 template<typename T>
 AABB<T> computeAABBox(range<gvec3<T> > points)
 {
-  AABB<T> minMaxCorners = std::make_pair(
-    gvec3<T>(std::numeric_limits<T>::max()), gvec3<T>(std::numeric_limits<T>::lowest())
-  );
+  AABB<T> minMaxCorners =
+    std::make_pair(gvec3<T>(std::numeric_limits<T>::max()), gvec3<T>(std::numeric_limits<T>::lowest()));
 
-  for (const auto& point : points)
-  {
+  for (const auto& point : points) {
     minMaxCorners.first = glm::min(minMaxCorners.first, point);
     minMaxCorners.second = glm::max(minMaxCorners.second, point);
   }
@@ -281,8 +270,7 @@ std::array<gvec3<T>, 8> makeAABBoxCorners(const AABB<T>& box)
     box.first + gvec3<T>{diag.x, diag.y, 0},
     box.first + gvec3<T>{diag.x, 0, diag.z},
     box.first + diag,
-    box.second
-  };
+    box.second};
 }
 
 template<typename T>
@@ -300,9 +288,7 @@ gvec3<T> computeAABBoxSize(const AABB<T>& box)
 template<typename T>
 bool isInside(const AABB<T>& box, const gvec3<T>& point)
 {
-  return (
-    glm::all(glm::lessThanEqual(box.first, point)) && glm::all(glm::lessThanEqual(point, box.second))
-  );
+  return (glm::all(glm::lessThanEqual(box.first, point)) && glm::all(glm::lessThanEqual(point, box.second)));
 }
 
 /**
@@ -316,9 +302,7 @@ AABB<T> computeBoundingAABBox(const AABB<T> box1, const AABB<T> box2)
 }
 
 template<typename T>
-bool testAABBoxPlaneIntersection(
-  const gvec3<T>& boxCenter, const gvec3<T>& boxMaxCorner, const gvec4<T>& plane
-)
+bool testAABBoxPlaneIntersection(const gvec3<T>& boxCenter, const gvec3<T>& boxMaxCorner, const gvec4<T>& plane)
 {
   const gvec3<T> extent = boxMaxCorner - boxCenter;
 
@@ -336,35 +320,30 @@ template<typename T>
 bool computeSortedAABBoxCorners(
   const std::array<gvec3<T>, 8>& corners,
   const gvec4<T>& plane,
-  std::array<gvec3<T>, 8>& sortedCorners
-)
+  std::array<gvec3<T>, 8>& sortedCorners)
 {
-  static const std::unordered_map<int, int> sk_nearFarCornerMap
-    = {{0, 7}, {1, 6}, {2, 5}, {3, 4}, {4, 3}, {5, 2}, {6, 1}, {7, 0}};
+  static const std::unordered_map<int, int> sk_nearFarCornerMap =
+    {{0, 7}, {1, 6}, {2, 5}, {3, 4}, {4, 3}, {5, 2}, {6, 1}, {7, 0}};
 
   T minDistance = std::numeric_limits<T>::max();
   T maxDistance = std::numeric_limits<T>::lowest();
 
   int nearCornerIndex = 0;
 
-  for (int i = 0; i < 8; ++i)
-  {
+  for (int i = 0; i < 8; ++i) {
     T distance = glm::dot(gvec4<T>{corners[i], 1}, plane);
 
-    if (distance < minDistance)
-    {
+    if (distance < minDistance) {
       minDistance = distance;
       nearCornerIndex = i;
     }
 
-    if (distance > maxDistance)
-    {
+    if (distance > maxDistance) {
       maxDistance = distance;
     }
   }
 
-  if (sgn(minDistance) == sgn(maxDistance))
-  {
+  if (sgn(minDistance) == sgn(maxDistance)) {
     //        std::cerr << "There is no intersection!" << std::endl;
     return false;
   }
@@ -394,19 +373,16 @@ bool lineSegmentPlaneIntersection(
   const gvec3<T>& lineStartPoint,
   const gvec3<T>& lineEndPoint,
   const gvec4<T>& plane,
-  T& intersectionDistance
-)
+  T& intersectionDistance)
 {
   static const T sk_eps = glm::epsilon<T>();
 
   const T denom = glm::dot(plane, gvec4<T>{lineEndPoint - lineStartPoint, 0});
 
-  if (std::abs(denom) > sk_eps)
-  {
+  if (std::abs(denom) > sk_eps) {
     intersectionDistance = -glm::dot(plane, gvec4<T>{lineStartPoint, 1}) / denom;
 
-    if (T(0) <= intersectionDistance && intersectionDistance <= T(1))
-    {
+    if (T(0) <= intersectionDistance && intersectionDistance <= T(1)) {
       return true;
     }
   }
@@ -419,15 +395,13 @@ bool vectorPlaneIntersection(
   const gvec3<T>& lineStartPoint,
   const gvec3<T>& lineDirection,
   const gvec4<T>& plane,
-  T& intersectionDistance
-)
+  T& intersectionDistance)
 {
   static const T sk_eps = glm::epsilon<T>();
 
   const T denom = glm::dot(plane, gvec4<T>{lineDirection, 0});
 
-  if (std::abs(denom) > sk_eps)
-  {
+  if (std::abs(denom) > sk_eps) {
     intersectionDistance = -glm::dot(plane, gvec4<T>{lineStartPoint, 1}) / denom;
     return true;
   }
@@ -438,8 +412,8 @@ bool vectorPlaneIntersection(
 // Last intersection is average
 template<typename T>
 std::optional<std::array<gvec3<T>, 7> > computeSliceIntersections(
-  const std::array<gvec3<T>, 8>& sortedCorners, const gvec4<T>& plane
-)
+  const std::array<gvec3<T>, 8>& sortedCorners,
+  const gvec4<T>& plane)
 {
   std::array<gvec3<T>, 7> intersections;
 
@@ -450,54 +424,42 @@ std::optional<std::array<gvec3<T>, 7> > computeSliceIntersections(
 
   T t = 0.0;
 
-  if (lineSegmentPlaneIntersection(sortedCorners[0], sortedCorners[1], plane, t))
-  {
+  if (lineSegmentPlaneIntersection(sortedCorners[0], sortedCorners[1], plane, t)) {
     intersections[0] = sortedCorners[0] + t * (sortedCorners[1] - sortedCorners[0]);
   }
-  else if (lineSegmentPlaneIntersection(sortedCorners[1], sortedCorners[4], plane, t))
-  {
+  else if (lineSegmentPlaneIntersection(sortedCorners[1], sortedCorners[4], plane, t)) {
     intersections[0] = sortedCorners[1] + t * (sortedCorners[4] - sortedCorners[1]);
   }
-  else if (lineSegmentPlaneIntersection(sortedCorners[4], sortedCorners[7], plane, t))
-  {
+  else if (lineSegmentPlaneIntersection(sortedCorners[4], sortedCorners[7], plane, t)) {
     intersections[0] = sortedCorners[4] + t * (sortedCorners[7] - sortedCorners[4]);
   }
-  else
-  {
+  else {
     return std::nullopt;
   }
 
-  if (lineSegmentPlaneIntersection(sortedCorners[0], sortedCorners[2], plane, t))
-  {
+  if (lineSegmentPlaneIntersection(sortedCorners[0], sortedCorners[2], plane, t)) {
     intersections[2] = sortedCorners[0] + t * (sortedCorners[2] - sortedCorners[0]);
   }
-  else if (lineSegmentPlaneIntersection(sortedCorners[2], sortedCorners[5], plane, t))
-  {
+  else if (lineSegmentPlaneIntersection(sortedCorners[2], sortedCorners[5], plane, t)) {
     intersections[2] = sortedCorners[2] + t * (sortedCorners[5] - sortedCorners[2]);
   }
-  else if (lineSegmentPlaneIntersection(sortedCorners[5], sortedCorners[7], plane, t))
-  {
+  else if (lineSegmentPlaneIntersection(sortedCorners[5], sortedCorners[7], plane, t)) {
     intersections[2] = sortedCorners[5] + t * (sortedCorners[7] - sortedCorners[5]);
   }
-  else
-  {
+  else {
     return std::nullopt;
   }
 
-  if (lineSegmentPlaneIntersection(sortedCorners[0], sortedCorners[3], plane, t))
-  {
+  if (lineSegmentPlaneIntersection(sortedCorners[0], sortedCorners[3], plane, t)) {
     intersections[4] = sortedCorners[0] + t * (sortedCorners[3] - sortedCorners[0]);
   }
-  else if (lineSegmentPlaneIntersection(sortedCorners[3], sortedCorners[6], plane, t))
-  {
+  else if (lineSegmentPlaneIntersection(sortedCorners[3], sortedCorners[6], plane, t)) {
     intersections[4] = sortedCorners[3] + t * (sortedCorners[6] - sortedCorners[3]);
   }
-  else if (lineSegmentPlaneIntersection(sortedCorners[6], sortedCorners[7], plane, t))
-  {
+  else if (lineSegmentPlaneIntersection(sortedCorners[6], sortedCorners[7], plane, t)) {
     intersections[4] = sortedCorners[6] + t * (sortedCorners[7] - sortedCorners[6]);
   }
-  else
-  {
+  else {
     return std::nullopt;
   }
 
@@ -509,36 +471,30 @@ std::optional<std::array<gvec3<T>, 7> > computeSliceIntersections(
 
   /// @internal As in Rezk Salama & Kolb, duplicate the intersections
   /// to ensure a total count of 6
-  if (lineSegmentPlaneIntersection(sortedCorners[1], sortedCorners[5], plane, t))
-  {
+  if (lineSegmentPlaneIntersection(sortedCorners[1], sortedCorners[5], plane, t)) {
     intersections[1] = sortedCorners[1] + t * (sortedCorners[5] - sortedCorners[1]);
     intersectionAverage += intersections[1];
     ++count;
   }
-  else
-  {
+  else {
     intersections[1] = intersections[0];
   }
 
-  if (lineSegmentPlaneIntersection(sortedCorners[2], sortedCorners[6], plane, t))
-  {
+  if (lineSegmentPlaneIntersection(sortedCorners[2], sortedCorners[6], plane, t)) {
     intersections[3] = sortedCorners[2] + t * (sortedCorners[6] - sortedCorners[2]);
     intersectionAverage += intersections[3];
     ++count;
   }
-  else
-  {
+  else {
     intersections[3] = intersections[2];
   }
 
-  if (lineSegmentPlaneIntersection(sortedCorners[3], sortedCorners[4], plane, t))
-  {
+  if (lineSegmentPlaneIntersection(sortedCorners[3], sortedCorners[4], plane, t)) {
     intersections[5] = sortedCorners[3] + t * (sortedCorners[4] - sortedCorners[3]);
     intersectionAverage += intersections[5];
     ++count;
   }
-  else
-  {
+  else {
     intersections[5] = intersections[4];
   }
 
@@ -550,29 +506,26 @@ std::optional<std::array<gvec3<T>, 7> > computeSliceIntersections(
 
 template<typename T>
 std::optional<std::array<gvec3<T>, 7> > computeAABBoxPlaneIntersections(
-  const std::array<gvec3<T>, 8>& boxCorners, const gvec4<T>& plane
-)
+  const std::array<gvec3<T>, 8>& boxCorners,
+  const gvec4<T>& plane)
 {
   gvec3<T> boxCenter(0, 0, 0);
   gvec3<T> boxMaxCorner(std::numeric_limits<T>::lowest());
 
-  for (const auto& corner : boxCorners)
-  {
+  for (const auto& corner : boxCorners) {
     boxCenter += corner;
     boxMaxCorner = glm::max(boxMaxCorner, corner);
   }
 
   boxCenter /= static_cast<T>(8.0);
 
-  if (!testAABBoxPlaneIntersection(boxCenter, boxMaxCorner, plane))
-  {
+  if (!testAABBoxPlaneIntersection(boxCenter, boxMaxCorner, plane)) {
     return std::nullopt;
   }
 
   std::array<gvec3<T>, 8> sortedCorners;
 
-  if (!computeSortedAABBoxCorners(boxCorners, plane, sortedCorners))
-  {
+  if (!computeSortedAABBoxCorners(boxCorners, plane, sortedCorners)) {
     return std::nullopt;
   }
 
@@ -584,10 +537,8 @@ std::array<float, N> computeLayerBlendWeights(const std::array<float, N>& layerO
 {
   std::array<float, N> weights = layerOpacities;
 
-  for (size_t i = 0; i < N; ++i)
-  {
-    for (size_t j = i + 1; j < N; ++j)
-    {
+  for (size_t i = 0; i < N; ++i) {
+    for (size_t j = i + 1; j < N; ++j) {
       weights[i] *= (1.0f - layerOpacities[j]);
     }
   }
@@ -604,9 +555,8 @@ float computeOverallOpacity(const std::array<float, N>& layerOpacities)
 }
 
 template<typename T>
-std::optional<gvec3<T> > intersectRayWithAABBox(
-  const gvec3<T>& rayOrig, const gvec3<T>& rayDir, const gvec3<T>& boxMin, const gvec3<T>& boxMax
-)
+std::optional<gvec3<T> >
+intersectRayWithAABBox(const gvec3<T>& rayOrig, const gvec3<T>& rayDir, const gvec3<T>& boxMin, const gvec3<T>& boxMax)
 {
   const gvec3<T> tmin = (boxMin - rayOrig) / rayDir;
   const gvec3<T> tmax = (boxMax - rayOrig) / rayDir;
@@ -614,8 +564,7 @@ std::optional<gvec3<T> > intersectRayWithAABBox(
   const float minmax = glm::compMin(glm::min(tmin, tmax));
   const float maxmin = glm::compMax(glm::max(tmin, tmax));
 
-  if (minmax >= maxmin)
-  {
+  if (minmax >= maxmin) {
     return rayOrig + maxmin * rayDir;
   }
 
@@ -650,8 +599,8 @@ T signedDistancePointToPlane(const gvec3<T>& point, const gvec4<T>& plane)
  */
 template<typename T>
 std::tuple<gvec3<T>, T, gvec3<T>, T> computeNearAndFarAABBoxCorners(
-  const std::array<gvec3<T>, 8>& boxCorners, const gvec4<T>& plane
-)
+  const std::array<gvec3<T>, 8>& boxCorners,
+  const gvec4<T>& plane)
 {
   T nearCornerDistance = std::numeric_limits<T>::max();
   T farCornerDistance = std::numeric_limits<T>::lowest();
@@ -659,18 +608,15 @@ std::tuple<gvec3<T>, T, gvec3<T>, T> computeNearAndFarAABBoxCorners(
   gvec3<T> nearCorner = boxCorners[0];
   gvec3<T> farCorner = boxCorners[1];
 
-  for (const auto& corner : boxCorners)
-  {
+  for (const auto& corner : boxCorners) {
     const T dist = signedDistancePointToPlane(corner, plane);
 
-    if (dist < nearCornerDistance)
-    {
+    if (dist < nearCornerDistance) {
       nearCornerDistance = dist;
       nearCorner = corner;
     }
 
-    if (dist > farCornerDistance)
-    {
+    if (dist > farCornerDistance) {
       farCornerDistance = dist;
       farCorner = corner;
     }
@@ -688,8 +634,8 @@ std::tuple<gvec3<T>, T, gvec3<T>, T> computeNearAndFarAABBoxCorners(
  * @return Left, posterior, and superior directions of the Subject in Camera space
  */
 glm::mat3 computeSubjectAxesInCamera(
-  const glm::mat3& camera_T_world_rotation, const glm::mat3& world_T_subject_rotation
-);
+  const glm::mat3& camera_T_world_rotation,
+  const glm::mat3& world_T_subject_rotation);
 
 /**
  * @brief Compute the equation of the view plane in Subject space
@@ -701,12 +647,11 @@ glm::mat3 computeSubjectAxesInCamera(
 std::pair<glm::vec4, glm::vec3> computeSubjectPlaneEquation(
   const glm::mat4 subject_T_world,
   const glm::vec3& worldPlaneNormal,
-  const glm::vec3& worldPlanePoint
-);
+  const glm::vec3& worldPlanePoint);
 
 std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelsForView(
-  const glm::mat4& camera_T_world, const glm::mat4& world_T_subject
-);
+  const glm::mat4& camera_T_world,
+  const glm::mat4& world_T_subject);
 
 std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   const FrameBounds& miewportViewBounds,

@@ -40,8 +40,7 @@ static const std::array<GLenum, 7> sk_buffers = {
    GL_COLOR_ATTACHMENT3,
    GL_COLOR_ATTACHMENT4,
    GL_COLOR_ATTACHMENT5,
-   GL_COLOR_ATTACHMENT6}
-};
+   GL_COLOR_ATTACHMENT6}};
 
 } // namespace
 
@@ -52,8 +51,7 @@ struct DepthPeelRenderer::Impl
     ShaderProgramActivatorType shaderProgramActivator,
     UniformsProviderType uniformsProvider,
     DrawableProviderType sceneRootProvider,
-    DrawableProviderType overlayRootProvider
-  )
+    DrawableProviderType overlayRootProvider)
     : m_name(std::move(name))
     , m_sceneRootProvider(sceneRootProvider)
     , m_overlayRootProvider(overlayRootProvider)
@@ -85,8 +83,7 @@ struct DepthPeelRenderer::Impl
       tex::Target::Texture2D,
       GLTexture::MultisampleSettings(),
       GLTexture::PixelStoreSettings(2, 0, 0, 0, 0, 0, false, false),
-      GLTexture::PixelStoreSettings(2, 0, 0, 0, 0, 0, false, false)
-    )
+      GLTexture::PixelStoreSettings(2, 0, 0, 0, 0, 0, false, false))
     ,
 
     m_objectDepthTexture(tex::Target::Texture2D)
@@ -111,13 +108,7 @@ struct DepthPeelRenderer::Impl
     m_blendQuad("blendQuad", shaderProgramActivator, uniformsProvider, m_backTempTextures)
     ,
 
-    m_finalQuad(
-      "finalQuad",
-      shaderProgramActivator,
-      uniformsProvider,
-      m_frontBlenderTextures,
-      m_backBlenderTexture
-    )
+    m_finalQuad("finalQuad", shaderProgramActivator, uniformsProvider, m_frontBlenderTextures, m_backBlenderTexture)
   {
   }
 
@@ -210,11 +201,8 @@ DepthPeelRenderer::DepthPeelRenderer(
   ShaderProgramActivatorType programActivator,
   UniformsProviderType uniformsProvider,
   DrawableProviderType rootProvider,
-  DrawableProviderType overlayProvider
-)
-  : m_impl(std::make_unique<Impl>(
-    std::move(name), programActivator, uniformsProvider, rootProvider, overlayProvider
-  ))
+  DrawableProviderType overlayProvider)
+  : m_impl(std::make_unique<Impl>(std::move(name), programActivator, uniformsProvider, rootProvider, overlayProvider))
 {
 }
 
@@ -222,8 +210,7 @@ DepthPeelRenderer::~DepthPeelRenderer() = default;
 
 void DepthPeelRenderer::initialize()
 {
-  if (!m_impl)
-  {
+  if (!m_impl) {
     throw_debug("Null implementation");
   }
   m_impl->initialize();
@@ -239,8 +226,7 @@ void DepthPeelRenderer::initialize()
 
 void DepthPeelRenderer::render()
 {
-  if (!m_impl)
-  {
+  if (!m_impl) {
     throw_debug("Null implementation");
   }
   m_impl->render();
@@ -248,8 +234,7 @@ void DepthPeelRenderer::render()
 
 void DepthPeelRenderer::resize(const Viewport& viewport)
 {
-  if (!m_impl)
-  {
+  if (!m_impl) {
     throw_debug("Null implementation");
   }
   m_impl->resize(viewport);
@@ -257,8 +242,7 @@ void DepthPeelRenderer::resize(const Viewport& viewport)
 
 void DepthPeelRenderer::teardown()
 {
-  if (!m_impl)
-  {
+  if (!m_impl) {
     throw_debug("Null implementation");
   }
   m_impl->teardown();
@@ -266,8 +250,7 @@ void DepthPeelRenderer::teardown()
 
 void DepthPeelRenderer::update(const Camera& camera, const CoordinateFrame& crosshairs)
 {
-  if (!m_impl)
-  {
+  if (!m_impl) {
     throw_debug("Null implementation");
   }
   m_impl->update(camera, crosshairs);
@@ -275,25 +258,21 @@ void DepthPeelRenderer::update(const Camera& camera, const CoordinateFrame& cros
 
 void DepthPeelRenderer::setMaxNumberOfPeels(uint32_t num)
 {
-  if (!m_impl)
-  {
+  if (!m_impl) {
     throw_debug("Null implementation");
   }
-  if (num > 0)
-  {
+  if (num > 0) {
     m_impl->m_maxNumPeels = num;
   }
 }
 
 void DepthPeelRenderer::setOcclusionRatio(float ratio)
 {
-  if (!m_impl)
-  {
+  if (!m_impl) {
     throw_debug("Null implementation");
   }
 
-  if (0.0f <= ratio && ratio <= 1.0f)
-  {
+  if (0.0f <= ratio && ratio <= 1.0f) {
     // Only use occlusion queries if the ratio is less than one
     m_impl->m_useOccQueries = (ratio < 1.0f) ? true : false;
     m_impl->m_occlusionRatio = ratio;
@@ -302,8 +281,7 @@ void DepthPeelRenderer::setOcclusionRatio(float ratio)
 
 void DepthPeelRenderer::setEnablePointPicking(bool enable)
 {
-  if (!m_impl)
-  {
+  if (!m_impl) {
     throw_debug("Null implementation");
   }
   m_impl->m_enableObjectBuffer = enable;
@@ -311,8 +289,7 @@ void DepthPeelRenderer::setEnablePointPicking(bool enable)
 
 std::pair<uint16_t, float> DepthPeelRenderer::pickObjectIdAndNdcDepth(const glm::vec2& ndcPos)
 {
-  if (!m_impl)
-  {
+  if (!m_impl) {
     throw_debug("Null implementation");
   }
   return m_impl->pickObjectIdAndNdcDepth(ndcPos);
@@ -323,8 +300,7 @@ std::pair<uint16_t, float> DepthPeelRenderer::pickObjectIdAndNdcDepth(const glm:
 void DepthPeelRenderer::Impl::renderScene(const RenderStage& stage, const ObjectsToRender& objects)
 {
   auto root = m_sceneRootProvider();
-  if (!root)
-  {
+  if (!root) {
     return;
   }
 
@@ -352,8 +328,7 @@ void DepthPeelRenderer::Impl::renderScene(const RenderStage& stage, const Object
 void DepthPeelRenderer::Impl::renderSingleOverlayLayer(int /*layer*/)
 {
   auto root = m_overlayRootProvider();
-  if (!root)
-  {
+  if (!root) {
     return;
   }
 
@@ -510,8 +485,7 @@ DepthPeelRenderer::Impl::BlendingStatus DepthPeelRenderer::Impl::ddp_blendTarget
   glBlendEquation(GL_FUNC_ADD);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-  if (m_useOccQueries)
-  {
+  if (m_useOccQueries) {
     /// @note Could also query GL_ANY_SAMPLES_PASSED
     glBeginQuery(GL_SAMPLES_PASSED, m_occQueryId);
   }
@@ -522,8 +496,7 @@ DepthPeelRenderer::Impl::BlendingStatus DepthPeelRenderer::Impl::ddp_blendTarget
   bool isBlendingDone = false;
   std::optional<uint32_t> numSamplesPassed = std::nullopt;
 
-  if (m_useOccQueries)
-  {
+  if (m_useOccQueries) {
     glEndQuery(GL_SAMPLES_PASSED);
 
     GLuint result;
@@ -581,41 +554,32 @@ std::pair<uint16_t, float> DepthPeelRenderer::Impl::pickObjectIdAndNdcDepth(cons
 {
   static const std::pair<uint16_t, float> sk_none(0u, -1.0f);
 
-  if (!m_enableObjectBuffer)
-  {
+  if (!m_enableObjectBuffer) {
     return sk_none;
   }
 
   const glm::vec2 viewPos(helper::viewDevice_T_ndc(m_viewport, ndcPos));
 
-  if (viewPos.x < 0.0f || viewPos.y < 0.0f)
-  {
+  if (viewPos.x < 0.0f || viewPos.y < 0.0f) {
     return sk_none;
   }
 
   const glm::uvec2 viewPos_uint = glm::round(viewPos);
 
-  if (viewPos_uint.x >= m_objectIdTexture.size().x || viewPos_uint.y >= m_objectIdTexture.size().y)
-  {
+  if (viewPos_uint.x >= m_objectIdTexture.size().x || viewPos_uint.y >= m_objectIdTexture.size().y) {
     return sk_none;
   }
 
-  if (m_objectBuffersDirty)
-  {
+  if (m_objectBuffersDirty) {
     // Object IDs are stored as 16-bit integers
-    m_objectIdTexture.readData(
-      0,
-      tex::BufferPixelFormat::Red_Integer,
-      tex::BufferPixelDataType::UInt16,
-      m_objectIdBuffer.get()
-    );
+    m_objectIdTexture
+      .readData(0, tex::BufferPixelFormat::Red_Integer, tex::BufferPixelDataType::UInt16, m_objectIdBuffer.get());
 
     m_objectDepthTexture.readData(
       0,
       tex::BufferPixelFormat::DepthComponent,
       tex::BufferPixelDataType::Float32,
-      m_objectDepthBuffer.get()
-    );
+      m_objectDepthBuffer.get());
 
     m_objectBuffersDirty = false;
   }
@@ -671,8 +635,7 @@ void DepthPeelRenderer::Impl::initializeTextureAttachments()
   generateDefaultTextureAttachment(m_objectDepthTexture);
   generateDefaultTextureAttachment(m_resolvedDepthTexture);
 
-  for (uint32_t i = 0; i < 2; ++i)
-  {
+  for (uint32_t i = 0; i < 2; ++i) {
     generateDefaultTextureAttachment(m_depthTextures[i]);
     generateDefaultTextureAttachment(m_frontBlenderTextures[i]);
     generateDefaultTextureAttachment(m_backTempTextures[i]);
@@ -691,11 +654,10 @@ void DepthPeelRenderer::Impl::resizeTextures()
   // Int8 buffers take 46 bytes per pixel // recount!
   static constexpr bool k_useF32Buffers = false;
 
-  static constexpr auto k_rgbaInternalFormat = (k_useF32Buffers) ? SizedInternalFormat::RGBA32F
-                                                                 : SizedInternalFormat::RGBA8_UNorm;
+  static constexpr auto k_rgbaInternalFormat =
+    (k_useF32Buffers) ? SizedInternalFormat::RGBA32F : SizedInternalFormat::RGBA8_UNorm;
 
-  static constexpr auto k_pixelDataType = (k_useF32Buffers) ? BufferPixelDataType::Float32
-                                                            : BufferPixelDataType::UInt8;
+  static constexpr auto k_pixelDataType = (k_useF32Buffers) ? BufferPixelDataType::Float32 : BufferPixelDataType::UInt8;
 
   static constexpr GLint k_level = 0;
 
@@ -708,8 +670,7 @@ void DepthPeelRenderer::Impl::resizeTextures()
   const std::vector<float> sk_emptyObjectDepthData(k_textureSize.x * k_textureSize.y, 1.0f);
 
   // Total: F32: 640 bits; U8: 256 bits
-  for (uint32_t i = 0; i < 2; ++i)
-  {
+  for (uint32_t i = 0; i < 2; ++i) {
     m_depthTextures[i].setSize(k_textureSize);
     m_frontBlenderTextures[i].setSize(k_textureSize);
     m_backTempTextures[i].setSize(k_textureSize);
@@ -720,34 +681,22 @@ void DepthPeelRenderer::Impl::resizeTextures()
       SizedInternalFormat::RG32F,
       BufferPixelFormat::RG,
       BufferPixelDataType::Float32,
-      sk_emptyDepthData.data()
-    );
+      sk_emptyDepthData.data());
 
     // F32: 2 * 4 * 32 bits; U8: 2 * 4 * 8 bits
-    m_frontBlenderTextures[i].setData(
-      k_level,
-      k_rgbaInternalFormat,
-      BufferPixelFormat::RGBA,
-      k_pixelDataType,
-      sk_emptyColorData.data()
-    );
+    m_frontBlenderTextures[i]
+      .setData(k_level, k_rgbaInternalFormat, BufferPixelFormat::RGBA, k_pixelDataType, sk_emptyColorData.data());
 
     // F32: 2 * 4 * 32 bits; U8: 2 * 4 * 8 bits
-    m_backTempTextures[i].setData(
-      k_level,
-      k_rgbaInternalFormat,
-      BufferPixelFormat::RGBA,
-      k_pixelDataType,
-      sk_emptyColorData.data()
-    );
+    m_backTempTextures[i]
+      .setData(k_level, k_rgbaInternalFormat, BufferPixelFormat::RGBA, k_pixelDataType, sk_emptyColorData.data());
   }
 
   m_backBlenderTexture.setSize(k_textureSize);
 
   // F32: 4 * 32 bits; U8: 4 * 8
-  m_backBlenderTexture.setData(
-    k_level, k_rgbaInternalFormat, BufferPixelFormat::RGBA, k_pixelDataType, sk_emptyColorData.data()
-  );
+  m_backBlenderTexture
+    .setData(k_level, k_rgbaInternalFormat, BufferPixelFormat::RGBA, k_pixelDataType, sk_emptyColorData.data());
 
   m_objectIdTexture.setSize(k_textureSize);
   m_objectDepthTexture.setSize(k_textureSize);
@@ -762,8 +711,7 @@ void DepthPeelRenderer::Impl::resizeTextures()
     SizedInternalFormat::R16U,
     BufferPixelFormat::Red_Integer,
     BufferPixelDataType::UInt16,
-    sk_emptyObjectIDData.data()
-  );
+    sk_emptyObjectIDData.data());
 
   // 32 bits
   m_objectDepthTexture.setData(
@@ -771,17 +719,11 @@ void DepthPeelRenderer::Impl::resizeTextures()
     SizedInternalFormat::Depth32F,
     BufferPixelFormat::DepthComponent,
     BufferPixelDataType::Float32,
-    sk_emptyObjectDepthData.data()
-  );
+    sk_emptyObjectDepthData.data());
 
   // 4 * 32 bits; U8: 4 * 8
-  m_opaqueColorTexture.setData(
-    k_level,
-    k_rgbaInternalFormat,
-    BufferPixelFormat::RGBA,
-    k_pixelDataType,
-    sk_emptyObjectDepthData.data()
-  );
+  m_opaqueColorTexture
+    .setData(k_level, k_rgbaInternalFormat, BufferPixelFormat::RGBA, k_pixelDataType, sk_emptyObjectDepthData.data());
 
   // 32 bits
   m_opaqueDepthTexture.setData(
@@ -789,8 +731,7 @@ void DepthPeelRenderer::Impl::resizeTextures()
     SizedInternalFormat::Depth32F,
     BufferPixelFormat::DepthComponent,
     BufferPixelDataType::Float32,
-    sk_emptyObjectDepthData.data()
-  );
+    sk_emptyObjectDepthData.data());
 
   // 32 bits
   m_resolvedDepthTexture.setData(
@@ -798,8 +739,7 @@ void DepthPeelRenderer::Impl::resizeTextures()
     SizedInternalFormat::Depth32F,
     BufferPixelFormat::DepthComponent,
     BufferPixelDataType::Float32,
-    nullptr
-  );
+    nullptr);
 
   m_objectIdBuffer = std::make_unique<uint16_t[]>(k_textureSize.x * k_textureSize.y);
   m_objectDepthBuffer = std::make_unique<float[]>(k_textureSize.x * k_textureSize.y);
@@ -824,20 +764,17 @@ void DepthPeelRenderer::Impl::initializeFbos()
   // bind color and depth attachments for the opaque object resolve pass
   m_opaqueResolveFbo.generate();
   m_opaqueResolveFbo.bind(TargetType::DrawAndRead);
-  m_opaqueResolveFbo
-    .attach2DTexture(TargetType::Draw, AttachmentType::Color, m_backBlenderTexture, 0);
+  m_opaqueResolveFbo.attach2DTexture(TargetType::Draw, AttachmentType::Color, m_backBlenderTexture, 0);
   m_opaqueResolveFbo.attach2DTexture(TargetType::Draw, AttachmentType::Depth, m_resolvedDepthTexture);
 
   // bind the seven color attachments for the depth peeling pass
   m_depthPeelFbo.generate();
   m_depthPeelFbo.bind(TargetType::DrawAndRead);
   m_depthPeelFbo.attach2DTexture(TargetType::Draw, AttachmentType::Color, m_depthTextures[0], 0);
-  m_depthPeelFbo
-    .attach2DTexture(TargetType::Draw, AttachmentType::Color, m_frontBlenderTextures[0], 1);
+  m_depthPeelFbo.attach2DTexture(TargetType::Draw, AttachmentType::Color, m_frontBlenderTextures[0], 1);
   m_depthPeelFbo.attach2DTexture(TargetType::Draw, AttachmentType::Color, m_backTempTextures[0], 2);
   m_depthPeelFbo.attach2DTexture(TargetType::Draw, AttachmentType::Color, m_depthTextures[1], 3);
-  m_depthPeelFbo
-    .attach2DTexture(TargetType::Draw, AttachmentType::Color, m_frontBlenderTextures[1], 4);
+  m_depthPeelFbo.attach2DTexture(TargetType::Draw, AttachmentType::Color, m_frontBlenderTextures[1], 4);
   m_depthPeelFbo.attach2DTexture(TargetType::Draw, AttachmentType::Color, m_backTempTextures[1], 5);
   m_depthPeelFbo.attach2DTexture(TargetType::Draw, AttachmentType::Color, m_backBlenderTexture, 6);
 
@@ -853,7 +790,8 @@ void DepthPeelRenderer::Impl::render()
 {
   // Get the OpenGL ID of the default FBO used by Qt.
   // Do this every render call, in case it changes for some reason.
-  //////////////////////////m_defaultFboId = QOpenGLContext::currentContext()->defaultFramebufferObject();
+  //////////////////////////m_defaultFboId =
+  /// QOpenGLContext::currentContext()->defaultFramebufferObject();
   //    m_defaultFboId = 0; /// @note is this correct?
   //    GLFWwindow* window = glfwGetCurrentContext();
 
@@ -861,13 +799,11 @@ void DepthPeelRenderer::Impl::render()
     static_cast<GLint>(m_viewport.deviceLeft()),
     static_cast<GLint>(m_viewport.deviceBottom()),
     static_cast<GLint>(m_viewport.deviceWidth()),
-    static_cast<GLint>(m_viewport.deviceHeight())
-  );
+    static_cast<GLint>(m_viewport.deviceHeight()));
 
   // This forces a render of object ID every time!
   // We were having problems with not rendering prior to mouse press in crosshairs mode
-  if (m_enableObjectBuffer)
-  {
+  if (m_enableObjectBuffer) {
     /// @todo Optimize by not re-rendering object buffers if scene hasn't changed!
 
     // STEP 0: Render object IDs and depths
@@ -893,8 +829,7 @@ void DepthPeelRenderer::Impl::render()
 
   //    std::cout << "\nname = " << m_name << std::endl;
 
-  for (uint32_t peel = 0; (m_useOccQueries || peel < m_maxNumPeels); ++peel)
-  {
+  for (uint32_t peel = 0; (m_useOccQueries || peel < m_maxNumPeels); ++peel) {
     //        std::cout << "peel = " << peel << std::endl;
 
     // Alternate the draw color attachments between peels
@@ -909,16 +844,12 @@ void DepthPeelRenderer::Impl::render()
     // STEP 7: Full-screen pass to alpha-blend the back color
     const BlendingStatus status = ddp_blendTargets(currentId);
 
-    if (true == status.m_blendingDone)
-    {
+    if (true == status.m_blendingDone) {
       break;
     }
-    else
-    {
-      if (status.m_numSamplesPassed)
-      {
-        if (lastNumSamplesPassed <= *status.m_numSamplesPassed)
-        {
+    else {
+      if (status.m_numSamplesPassed) {
+        if (lastNumSamplesPassed <= *status.m_numSamplesPassed) {
           // If we are using occlusion queries, then perform a check on the
           // number of samples that have passed the query. If the number of
           // passed samples have increased this render peel compared to last peel,
@@ -963,18 +894,15 @@ void DepthPeelRenderer::Impl::update(const Camera& camera, const CoordinateFrame
 
   static const AccumulatedRenderingData rootData{sk_ident, sk_fullOpacity, sk_pickable};
 
-  if (!m_sceneRootProvider() || !m_overlayRootProvider())
-  {
+  if (!m_sceneRootProvider() || !m_overlayRootProvider()) {
     return;
   }
 
-  if (auto sceneRoot = m_sceneRootProvider())
-  {
+  if (auto sceneRoot = m_sceneRootProvider()) {
     sceneRoot->update(m_time, m_viewport, camera, crosshairs, rootData);
   }
 
-  if (auto overlayRoot = m_overlayRootProvider())
-  {
+  if (auto overlayRoot = m_overlayRootProvider()) {
     overlayRoot->update(m_time, m_viewport, camera, crosshairs, rootData);
   }
 }

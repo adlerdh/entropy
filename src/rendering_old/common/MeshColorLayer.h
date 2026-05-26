@@ -5,7 +5,8 @@
 
 /**
  * @brief Defines the layers that are used to color a TexturedMesh. The default rendering order of
- * the layers is as listed in this enumeration. However, the layer order can be changed in the Mesh class.
+ * the layers is as listed in this enumeration. However, the layer order can be changed in the Mesh
+ * class.
  */
 enum class TexturedMeshColorLayer : uint32_t
 {

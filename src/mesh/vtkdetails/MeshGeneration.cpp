@@ -43,8 +43,7 @@ namespace
 vnl_matrix_fixed<double, 4, 4> constructVoxelToSubjectMatrix(
   const vnl_matrix_fixed<double, 3, 3>& directions,
   const vnl_vector_fixed<double, 3>& origin,
-  const vnl_vector_fixed<double, 3>& spacing
-)
+  const vnl_vector_fixed<double, 3>& spacing)
 {
   const vnl_matrix<double> d(directions.data_block(), 3, 3);
 
@@ -62,14 +61,13 @@ vnl_matrix_fixed<double, 4, 4> constructVoxelToSubjectMatrix(
 }
 
 vnl_matrix_fixed<double, 4, 4> constructVTKImageToVoxelsMatrix(
-  const vnl_vector<double>& origin, const vnl_vector<double>& spacing
-)
+  const vnl_vector<double>& origin,
+  const vnl_vector<double>& spacing)
 {
   vnl_matrix_fixed<double, 4, 4> voxels_O_VTK;
   voxels_O_VTK.set_identity();
 
-  for (uint32_t i = 0; i < 3; ++i)
-  {
+  for (uint32_t i = 0; i < 3; ++i) {
     voxels_O_VTK(i, i) = 1.0 / spacing[i];
     voxels_O_VTK(i, 3) = -origin[i] / spacing[i];
   }
@@ -80,14 +78,11 @@ vnl_matrix_fixed<double, 4, 4> constructVTKImageToVoxelsMatrix(
 vnl_matrix_fixed<double, 4, 4> constructVTKImageToSubjectMatrix(
   const vnl_matrix_fixed<double, 3, 3>& directions,
   const vnl_vector<double>& origin,
-  const vnl_vector<double>& spacing
-)
+  const vnl_vector<double>& spacing)
 {
-  const vnl_matrix_fixed<double, 4, 4> voxels_O_VTK
-    = constructVTKImageToVoxelsMatrix(origin, spacing);
+  const vnl_matrix_fixed<double, 4, 4> voxels_O_VTK = constructVTKImageToVoxelsMatrix(origin, spacing);
 
-  const vnl_matrix_fixed<double, 4, 4> subject_O_voxels
-    = constructVoxelToSubjectMatrix(directions, origin, spacing);
+  const vnl_matrix_fixed<double, 4, 4> subject_O_voxels = constructVoxelToSubjectMatrix(directions, origin, spacing);
 
   return subject_O_voxels * voxels_O_VTK;
 }
@@ -108,16 +103,14 @@ void progressFunction(vtkObject* caller, unsigned long /*eventId*/, void* /*clie
 
   FilterType* filter = static_cast<FilterType*>(caller);
 
-  if (filter->GetProgress() > progress + kInc)
-  {
+  if (filter->GetProgress() > progress + kInc) {
     progress += kInc;
   }
 }
 
 bool writePolyData(vtkPolyData* polyData, const char* fileName)
 {
-  if (!polyData)
-  {
+  if (!polyData) {
     return false;
   }
 
@@ -136,16 +129,13 @@ vtkSmartPointer<vtkPolyData> generateIsoSurfaceMesh(
   vtkImageData* imageData,
   const vnl_matrix_fixed<double, 3, 3>& imageDirections,
   const double isoValue,
-  const MeshPrimitiveType& primitiveType
-)
+  const MeshPrimitiveType& primitiveType)
 {
-  if (!imageData)
-  {
+  if (!imageData) {
     return nullptr;
   }
 
-  if (MeshPrimitiveType::TriangleFan == primitiveType)
-  {
+  if (MeshPrimitiveType::TriangleFan == primitiveType) {
     // Not supported
     return nullptr;
   }
@@ -161,8 +151,7 @@ vtkSmartPointer<vtkPolyData> generateIsoSurfaceMesh(
   const vnl_matrix_fixed<double, 4, 4> subject_O_VTK = constructVTKImageToSubjectMatrix(
     imageDirections,
     vnl_vector<double>{imageData->GetOrigin(), 3},
-    vnl_vector<double>{imageData->GetSpacing(), 3}
-  );
+    vnl_vector<double>{imageData->GetSpacing(), 3});
 
   vtkNew<vtkTransform> tx_subject_O_VTK;
   tx_subject_O_VTK->SetMatrix(subject_O_VTK.data_block());
@@ -183,11 +172,9 @@ vtkSmartPointer<vtkPolyData> generateIsoSurfaceMesh(
   triangleFilter->SetInputConnection(pipelineTail->GetOutputPort());
   pipelineTail = triangleFilter.GetPointer();
 
-  if (MeshPrimitiveType::TriangleStrip == primitiveType)
-  {
+  if (MeshPrimitiveType::TriangleStrip == primitiveType) {
     // Generate triangle strips
-    if (!pipelineTail)
-    {
+    if (!pipelineTail) {
       return nullptr;
     }
     triangleStripper->SetInputConnection(pipelineTail->GetOutputPort());
@@ -204,10 +191,8 @@ vtkSmartPointer<vtkPolyData> generateIsoSurfaceMesh(
   pipelineTail = transformToSubjectFilter.GetPointer();
 
   // Reverse the normals if the transformation Jacobian is negative
-  if (tx_subject_O_VTK->GetMatrix()->Determinant() < 0.0)
-  {
-    if (!pipelineTail)
-    {
+  if (tx_subject_O_VTK->GetMatrix()->Determinant() < 0.0) {
+    if (!pipelineTail) {
       return nullptr;
     }
 
@@ -217,8 +202,7 @@ vtkSmartPointer<vtkPolyData> generateIsoSurfaceMesh(
     pipelineTail = reverseNormalsSense.GetPointer();
   }
 
-  if (!pipelineTail)
-  {
+  if (!pipelineTail) {
     return nullptr;
   }
 
@@ -230,9 +214,7 @@ vtkSmartPointer<vtkPolyData> generateIsoSurfaceMesh(
   return surfacePolyData;
 }
 
-std::map<int32_t, double> generateIntegerImageHistogram(
-  vtkImageData* imageData, const std::set<int32_t>& imageValues
-)
+std::map<int32_t, double> generateIntegerImageHistogram(vtkImageData* imageData, const std::set<int32_t>& imageValues)
 {
   vtkNew<vtkImageAccumulate> imageHistogram;
 
@@ -246,8 +228,7 @@ std::map<int32_t, double> generateIntegerImageHistogram(
 
   std::map<int32_t, double> frequencies;
 
-  for (const int32_t i : imageValues)
-  {
+  for (const int32_t i : imageValues) {
     frequencies[i] = imageHistogram->GetOutput()->GetPointData()->GetScalars()->GetTuple1(i);
   }
 
@@ -258,8 +239,7 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   vtkImageData* labelData,
   const vnl_matrix_fixed<double, 3, 3>& imageDirections,
   const uint32_t labelIndex,
-  const MeshPrimitiveType& primitiveType
-)
+  const MeshPrimitiveType& primitiveType)
 {
   // This flag controls whether the label is smoothed prior to meshing:
   static constexpr bool sk_smoothImage = false;
@@ -273,13 +253,11 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   static constexpr double sk_passBand = 0.1;
   static constexpr double sk_featureAngle = 120.0;
 
-  if (!labelData)
-  {
+  if (!labelData) {
     return nullptr;
   }
 
-  if (MeshPrimitiveType::TriangleFan == primitiveType)
-  {
+  if (MeshPrimitiveType::TriangleFan == primitiveType) {
     // Not supported
     return nullptr;
   }
@@ -310,8 +288,7 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   const vnl_matrix_fixed<double, 4, 4> subject_O_VTK = constructVTKImageToSubjectMatrix(
     imageDirections,
     vnl_vector<double>{labelData->GetOrigin(), 3},
-    vnl_vector<double>{labelData->GetSpacing(), 3}
-  );
+    vnl_vector<double>{labelData->GetSpacing(), 3});
 
   tx_subject_O_VTK->SetMatrix(subject_O_VTK.data_block());
 
@@ -325,8 +302,7 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   imagePipelineTail = imageThresholder.GetPointer();
 
   // Cast to floating point, as required by the subsequent Gaussian smoothing filter
-  if (!imagePipelineTail)
-  {
+  if (!imagePipelineTail) {
     return nullptr;
   }
   imageCaster->SetInputConnection(imagePipelineTail->GetOutputPort());
@@ -334,10 +310,8 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   imagePipelineTail = imageCaster.GetPointer();
 
   // Approximate Gaussian smoothing
-  if (sk_smoothImage)
-  {
-    if (!imagePipelineTail)
-    {
+  if (sk_smoothImage) {
+    if (!imagePipelineTail) {
       return nullptr;
     }
     imageSmoother->SetInputConnection(imagePipelineTail->GetOutputPort());
@@ -362,11 +336,9 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   triangleFilter->SetInputConnection(meshPipelineTail->GetOutputPort());
   meshPipelineTail = triangleFilter.GetPointer();
 
-  if (MeshPrimitiveType::TriangleStrip == primitiveType)
-  {
+  if (MeshPrimitiveType::TriangleStrip == primitiveType) {
     // Generate triangle strips
-    if (!meshPipelineTail)
-    {
+    if (!meshPipelineTail) {
       return nullptr;
     }
     triangleStripper->SetInputConnection(meshPipelineTail->GetOutputPort());
@@ -382,10 +354,8 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   //    meshPipelineTail->Update();
 
   // Smooth the surface
-  if (sk_smoothMesh)
-  {
-    if (!meshPipelineTail)
-    {
+  if (sk_smoothMesh) {
+    if (!meshPipelineTail) {
       return nullptr;
     }
     windowedSincSmoother->SetInputConnection(meshPipelineTail->GetOutputPort());
@@ -399,23 +369,20 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
     meshPipelineTail = windowedSincSmoother.GetPointer();
   }
 
-  if (!meshPipelineTail)
-  {
+  if (!meshPipelineTail) {
     return nullptr;
   }
 
   vtkAlgorithmOutput* algOutput = nullptr;
 
-  if (sk_stripScalars)
-  {
+  if (sk_stripScalars) {
     // Strip scalars from the points and cells
     scalarsMask->SetInputConnection(meshPipelineTail->GetOutputPort());
     scalarsMask->CopyAttributeOff(vtkMaskFields::POINT_DATA, vtkDataSetAttributes::SCALARS);
     scalarsMask->CopyAttributeOff(vtkMaskFields::CELL_DATA, vtkDataSetAttributes::SCALARS);
     algOutput = scalarsMask->GetOutputPort();
   }
-  else
-  {
+  else {
     algOutput = meshPipelineTail->GetOutputPort();
   }
 
@@ -424,8 +391,7 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   meshPipelineTail = geometryFilter.GetPointer();
 
   // Transform to subject space
-  if (!meshPipelineTail)
-  {
+  if (!meshPipelineTail) {
     return nullptr;
   }
   transformToSubjectFilter->SetInputConnection(meshPipelineTail->GetOutputPort());
@@ -433,8 +399,7 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   meshPipelineTail = transformToSubjectFilter.GetPointer();
 
   // Generate vertex normal vectors
-  if (!meshPipelineTail)
-  {
+  if (!meshPipelineTail) {
     return nullptr;
   }
   normalsGenerator->SetInputConnection(meshPipelineTail->GetOutputPort());
@@ -451,11 +416,9 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
   vtkSmartPointer<ErrorObserver> errorObserver = vtkSmartPointer<ErrorObserver>::New();
 
   // Select data for a label
-  imageThresholder
-    ->ThresholdBetween(static_cast<double>(labelIndex), static_cast<double>(labelIndex));
+  imageThresholder->ThresholdBetween(static_cast<double>(labelIndex), static_cast<double>(labelIndex));
 
-  if (!meshPipelineTail)
-  {
+  if (!meshPipelineTail) {
     return nullptr;
   }
 

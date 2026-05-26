@@ -16,10 +16,10 @@ public:
     NegX, //!< (-1, 0, 0)
     NegY, //!< (0, -1, 0)
     NegZ, //!< (0, 0, -1)
-    XY, //!< (1, 1, 0)
-    YZ, //!< (0, 1, 1)
-    ZX, //!< (1, 0, 1)
-    XYZ //!< (1, 1, 1)
+    XY,   //!< (1, 1, 0)
+    YZ,   //!< (0, 1, 1)
+    ZX,   //!< (1, 0, 1)
+    XYZ   //!< (1, 1, 1)
   };
 
   /// Directions relative to the viewer looking at the screen

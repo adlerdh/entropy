@@ -39,11 +39,19 @@ public:
    * @param[in] viewType Type of view
    * @param[in] shaderType Shader type of the view
    */
-  View(glm::vec4 winClipViewport, ViewOffsetSetting offsetSetting, ViewType viewType,
-       ViewRenderMode renderMode, IntensityProjectionMode ipMode, UiControls uiControls,
-       const ViewConvention& viewConvention, const CrosshairsState& crosshairs,
-       const ViewAlignmentMode& viewAlignment, std::optional<uuid> cameraRotationSyncGroupUid,
-       std::optional<uuid> translationSyncGroup, std::optional<uuid> zoomSyncGroup);
+  View(
+    glm::vec4 winClipViewport,
+    ViewOffsetSetting offsetSetting,
+    ViewType viewType,
+    ViewRenderMode renderMode,
+    IntensityProjectionMode ipMode,
+    UiControls uiControls,
+    const ViewConvention& viewConvention,
+    const CrosshairsState& crosshairs,
+    const ViewAlignmentMode& viewAlignment,
+    std::optional<uuid> cameraRotationSyncGroupUid,
+    std::optional<uuid> translationSyncGroup,
+    std::optional<uuid> zoomSyncGroup);
 
   const uuid& uid() const;
 
@@ -60,8 +68,9 @@ public:
    */
   glm::vec3 updateImageSlice(const AppData& appData, const glm::vec3& worldCrosshairs);
 
-  std::optional<intersection::IntersectionVerticesVec4>
-  computeImageSliceIntersection(const Image* image, const CoordinateFrame& crosshairs) const;
+  std::optional<intersection::IntersectionVerticesVec4> computeImageSliceIntersection(
+    const Image* image,
+    const CoordinateFrame& crosshairs) const;
 
   float clipPlaneDepth() const;
 

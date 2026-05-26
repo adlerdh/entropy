@@ -122,18 +122,18 @@ public:
   void setViewport(float left, float bottom, float width, float height);
 
   /**
-     * @brief Set/get the window content scale ratio
-     * 
-     * @see GLFW
-     * The content scale is the ratio between the current DPI and the platform's default DPI.
-     * This is especially important for text and any UI elements. If the pixel dimensions of your UI
-     * scaled by this look appropriate on your machine then it should appear at a reasonable size on
-     * other machines regardless of their DPI and scaling settings. This relies on the system DPI and
-     * scaling settings being somewhat correct.
-     * 
-     * On systems where each monitors can have its own content scale, the window content scale will depend
-     * on which monitor the system considers the window to be on.
-     */
+   * @brief Set/get the window content scale ratio
+   *
+   * @see GLFW
+   * The content scale is the ratio between the current DPI and the platform's default DPI.
+   * This is especially important for text and any UI elements. If the pixel dimensions of your UI
+   * scaled by this look appropriate on your machine then it should appear at a reasonable size on
+   * other machines regardless of their DPI and scaling settings. This relies on the system DPI and
+   * scaling settings being somewhat correct.
+   *
+   * On systems where each monitors can have its own content scale, the window content scale will
+   * depend on which monitor the system considers the window to be on.
+   */
   void setContentScaleRatios(const glm::vec2& ratio);
   const glm::vec2& getContentScaleRatios() const;
   float getContentScaleRatio() const;
@@ -195,10 +195,12 @@ private:
   // Window position in screen space with (0, 0) at bottom left corner of the screen
   glm::ivec2 m_windowPos;
 
-  // Window size, measured in "artificial" screen coordinates. This should not be passed to glViewport.
+  // Window size, measured in "artificial" screen coordinates. This should not be passed to
+  // glViewport.
   glm::ivec2 m_windowSize;
 
-  // Window framebuffer size, measured in pixels. This is the size that should be passed to glViewport.
+  // Window framebuffer size, measured in pixels. This is the size that should be passed to
+  // glViewport.
   glm::ivec2 m_framebufferSize;
 
   glm::vec2 m_contentScaleRatio;

@@ -146,13 +146,13 @@ void drawViewOutline(NVGcontext* nvg, const FrameBounds& miewportViewBounds, con
   //    static constexpr float k_padInner = 2.0f;
   static constexpr float k_padActive = 3.0f;
 
-  auto drawRectangle = [&nvg, &miewportViewBounds](float pad, float width, const NVGcolor& color)
-  {
+  auto drawRectangle = [&nvg, &miewportViewBounds](float pad, float width, const NVGcolor& color) {
     nvgStrokeWidth(nvg, width);
     nvgStrokeColor(nvg, color);
 
     nvgBeginPath(nvg);
-    nvgRect(nvg,
+    nvgRect(
+      nvg,
       miewportViewBounds.bounds.xoffset + pad,
       miewportViewBounds.bounds.yoffset + pad,
       miewportViewBounds.bounds.width - 2.0f * pad,
@@ -161,22 +161,18 @@ void drawViewOutline(NVGcontext* nvg, const FrameBounds& miewportViewBounds, con
     nvgStroke(nvg);
   };
 
-  switch (outlineMode)
-  {
-  case ViewOutlineMode::Hovered:
-  {
-    drawRectangle(k_padActive, 2.0f, s_yellowDull);
-    break;
-  }
-  case ViewOutlineMode::Selected:
-  {
-    drawRectangle(k_padActive, 2.0f, s_yellow);
-    break;
-  }
-  case ViewOutlineMode::None:
-  {
-    break;
-  }
+  switch (outlineMode) {
+    case ViewOutlineMode::Hovered: {
+      drawRectangle(k_padActive, 2.0f, s_yellowDull);
+      break;
+    }
+    case ViewOutlineMode::Selected: {
+      drawRectangle(k_padActive, 2.0f, s_yellow);
+      break;
+    }
+    case ViewOutlineMode::None: {
+      break;
+    }
   }
 
   drawRectangle(k_padOuter, sk_outlineStrokeWidth, s_grey50);
@@ -204,15 +200,15 @@ void drawImageViewIntersections(
 
   startNvgFrame(nvg, appData.windowData().viewport()); /*** START FRAME ***/
 
-  nvgScissor(nvg,
+  nvgScissor(
+    nvg,
     miewportViewBounds.viewport[0],
     miewportViewBounds.viewport[1],
     miewportViewBounds.viewport[2],
     miewportViewBounds.viewport[3]);
 
   // Render border for each image
-  for (const auto& imgSegPair : I)
-  {
+  for (const auto& imgSegPair : I) {
     if (!imgSegPair.first) {
       continue;
     }
@@ -238,15 +234,17 @@ void drawImageViewIntersections(
 
     // The last point is the centroid of the intersection. Ignore the centroid and replace it with a
     // duplicate of the first point. We need to double-up that point in order for line stippling to
-    // work correctly. Also, no need to close the path with nvgClosePath if the last point is duplicated.
+    // work correctly. Also, no need to close the path with nvgClosePath if the last point is
+    // duplicated.
     worldIntersections->at(6) = worldIntersections->at(0);
 
     const glm::vec3 color = img->settings().borderColor();
 
     const float opacity = img->settings().displayImageAsColor()
-      ? static_cast<float>(img->settings().globalVisibility() * img->settings().globalOpacity())
-      : static_cast<float>(img->settings().globalVisibility() * img->settings().globalOpacity() *
-                           img->settings().visibility() * img->settings().opacity());
+                            ? static_cast<float>(img->settings().globalVisibility() * img->settings().globalOpacity())
+                            : static_cast<float>(
+                                img->settings().globalVisibility() * img->settings().globalOpacity() *
+                                img->settings().visibility() * img->settings().opacity());
 
     nvgStrokeColor(nvg, nvgRGBAf(color.r, color.g, color.b, opacity));
     nvgStrokeWidth(nvg, isActive ? 1.5f : 1.0f);
@@ -255,14 +253,12 @@ void drawImageViewIntersections(
 
     nvgBeginPath(nvg);
 
-    for (size_t i = 0; i < worldIntersections->size(); ++i)
-    {
+    for (size_t i = 0; i < worldIntersections->size(); ++i) {
       const glm::vec2 currPos = helper::miewport_T_world(
         appData.windowData().viewport(),
         view.camera(),
         view.windowClip_T_viewClip(),
-        worldIntersections->at(i)
-      );
+        worldIntersections->at(i));
 
       if (0 == i) {
         // Move pen to the first point:
@@ -271,8 +267,7 @@ void drawImageViewIntersections(
         continue;
       }
 
-      if (isActive)
-      {
+      if (isActive) {
         // The active image gets a stippled line pattern
         const float dist = glm::distance(lastPos, currPos);
         const uint32_t numLines = static_cast<uint32_t>(dist / sk_stippleLen);
@@ -282,8 +277,7 @@ void drawImageViewIntersections(
           nvgLineTo(nvg, currPos.x, currPos.y);
         }
 
-        for (uint32_t j = 1; j <= numLines; ++j)
-        {
+        for (uint32_t j = 1; j <= numLines; ++j) {
           const float t = static_cast<float>(j) / static_cast<float>(numLines);
           const glm::vec2 pos = lastPos + t * (currPos - lastPos);
 
@@ -297,8 +291,7 @@ void drawImageViewIntersections(
           }
         }
       }
-      else
-      {
+      else {
         // Non-active images get solid lines
         nvgLineTo(nvg, currPos.x, currPos.y);
       }
@@ -329,49 +322,68 @@ void drawAnatomicalLabels(
     return;
   }
 
-  auto getLabelAbbrev = [&anatLabelType](int labelIndex) -> const char*
-  {
-    switch (anatLabelType)
-    {
-    case AnatomicalLabelType::Cartesian: {
-      switch (labelIndex) {
-      case 0: return Directions::abbrev(Directions::Cartesian::PosX).c_str();
-      case 1: return Directions::abbrev(Directions::Cartesian::PosY).c_str();
-      case 2: return Directions::abbrev(Directions::Cartesian::PosZ).c_str();
-      case 3: return Directions::abbrev(Directions::Cartesian::NegX).c_str();
-      case 4: return Directions::abbrev(Directions::Cartesian::NegY).c_str();
-      case 5: return Directions::abbrev(Directions::Cartesian::NegZ).c_str();
-      default: return "";
+  auto getLabelAbbrev = [&anatLabelType](int labelIndex) -> const char* {
+    switch (anatLabelType) {
+      case AnatomicalLabelType::Cartesian: {
+        switch (labelIndex) {
+          case 0:
+            return Directions::abbrev(Directions::Cartesian::PosX).c_str();
+          case 1:
+            return Directions::abbrev(Directions::Cartesian::PosY).c_str();
+          case 2:
+            return Directions::abbrev(Directions::Cartesian::PosZ).c_str();
+          case 3:
+            return Directions::abbrev(Directions::Cartesian::NegX).c_str();
+          case 4:
+            return Directions::abbrev(Directions::Cartesian::NegY).c_str();
+          case 5:
+            return Directions::abbrev(Directions::Cartesian::NegZ).c_str();
+          default:
+            return "";
+        }
+        break;
       }
-      break;
-    }
-    case AnatomicalLabelType::Human: {
-      switch (labelIndex) {
-      case 0: return Directions::abbrev(Directions::Anatomy::Left).c_str();
-      case 1: return Directions::abbrev(Directions::Anatomy::Posterior).c_str();
-      case 2: return Directions::abbrev(Directions::Anatomy::Superior).c_str();
-      case 3: return Directions::abbrev(Directions::Anatomy::Right).c_str();
-      case 4: return Directions::abbrev(Directions::Anatomy::Anterior).c_str();
-      case 5: return Directions::abbrev(Directions::Anatomy::Inferior).c_str();
-      default: return "";
+      case AnatomicalLabelType::Human: {
+        switch (labelIndex) {
+          case 0:
+            return Directions::abbrev(Directions::Anatomy::Left).c_str();
+          case 1:
+            return Directions::abbrev(Directions::Anatomy::Posterior).c_str();
+          case 2:
+            return Directions::abbrev(Directions::Anatomy::Superior).c_str();
+          case 3:
+            return Directions::abbrev(Directions::Anatomy::Right).c_str();
+          case 4:
+            return Directions::abbrev(Directions::Anatomy::Anterior).c_str();
+          case 5:
+            return Directions::abbrev(Directions::Anatomy::Inferior).c_str();
+          default:
+            return "";
+        }
+        break;
       }
-      break;
-    }
-    case AnatomicalLabelType::Rodent: {
-      switch (labelIndex) {
-      case 0: return Directions::abbrev(Directions::Animal::Left).c_str();
-      case 1: return Directions::abbrev(Directions::Animal::Dorsal).c_str();
-      case 2: return Directions::abbrev(Directions::Animal::Rostral).c_str();
-      case 3: return Directions::abbrev(Directions::Animal::Right).c_str();
-      case 4: return Directions::abbrev(Directions::Animal::Ventral).c_str();
-      case 5: return Directions::abbrev(Directions::Animal::Caudal).c_str();
-      default: return "";
+      case AnatomicalLabelType::Rodent: {
+        switch (labelIndex) {
+          case 0:
+            return Directions::abbrev(Directions::Animal::Left).c_str();
+          case 1:
+            return Directions::abbrev(Directions::Animal::Dorsal).c_str();
+          case 2:
+            return Directions::abbrev(Directions::Animal::Rostral).c_str();
+          case 3:
+            return Directions::abbrev(Directions::Animal::Right).c_str();
+          case 4:
+            return Directions::abbrev(Directions::Animal::Ventral).c_str();
+          case 5:
+            return Directions::abbrev(Directions::Animal::Caudal).c_str();
+          default:
+            return "";
+        }
+        break;
       }
-      break;
-    }
-    case AnatomicalLabelType::Disabled: {
-      return "";
-    }
+      case AnatomicalLabelType::Disabled: {
+        return "";
+      }
     }
     return "";
   };
@@ -384,17 +396,20 @@ void drawAnatomicalLabels(
   const glm::vec2 miewportMaxCorner = miewportMinCorner + miewportSize;
 
   // Clip against the view bounds, even though not strictly necessary with how lines are defined
-  nvgScissor(nvg,
+  nvgScissor(
+    nvg,
     miewportViewBounds.viewport[0],
     miewportViewBounds.viewport[1],
     miewportViewBounds.viewport[2],
     miewportViewBounds.viewport[3]);
 
-  const float fontSizePixels = std::max(
-    sk_fontMult * std::min(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height), 8.0f);
+  const float fontSizePixels =
+    std::max(sk_fontMult * std::min(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height), 8.0f);
 
   // For inward shift of the labels:
-  const glm::vec2 inwardFontShift{0.8f * inwardShiftMultiplier * fontSizePixels, 0.8f * inwardShiftMultiplier * fontSizePixels};
+  const glm::vec2 inwardFontShift{
+    0.8f * inwardShiftMultiplier * fontSizePixels,
+    0.8f * inwardShiftMultiplier * fontSizePixels};
 
   // For downward shift of the labels:
   const glm::vec2 vertFontShift{0.0f, 0.35f * fontSizePixels};
@@ -404,13 +419,18 @@ void drawAnatomicalLabels(
   nvgTextAlign(nvg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
 
   // Render the translation vectors for the L (0), P (1), and S (2) labels:
-  for (const auto& label : labelPosInfo)
-  {
+  for (const auto& label : labelPosInfo) {
     const glm::vec2 miewportPositivePos = glm::clamp(
-      label.miewportLabelPositions[0], miewportMinCorner + inwardFontShift, miewportMaxCorner - inwardFontShift) + vertFontShift;
+                                            label.miewportLabelPositions[0],
+                                            miewportMinCorner + inwardFontShift,
+                                            miewportMaxCorner - inwardFontShift) +
+                                          vertFontShift;
 
     const glm::vec2 miewportNegativePos = glm::clamp(
-      label.miewportLabelPositions[1], miewportMinCorner + inwardFontShift, miewportMaxCorner - inwardFontShift) + vertFontShift;
+                                            label.miewportLabelPositions[1],
+                                            miewportMinCorner + inwardFontShift,
+                                            miewportMaxCorner - inwardFontShift) +
+                                          vertFontShift;
 
     const std::size_t idx = static_cast<size_t>(label.labelIndex);
 
@@ -462,8 +482,7 @@ void drawText(
   nvgFontFace(nvg, ROBOTO_LIGHT.c_str());
 
   // Draw centered text
-  if (!centeredString.empty())
-  {
+  if (!centeredString.empty()) {
     nvgFontSize(nvg, 1.0f * fontSizePixels);
     nvgTextAlign(nvg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 
@@ -477,8 +496,7 @@ void drawText(
   }
 
   // Draw offset text
-  if (!offsetString.empty())
-  {
+  if (!offsetString.empty()) {
     nvgFontSize(nvg, 1.15f * fontSizePixels);
     nvgTextAlign(nvg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
 
@@ -506,7 +524,8 @@ void drawLandmarks(
   startNvgFrame(nvg, appData.windowData().viewport()); /*** START FRAME ***/
 
   // Clip against the view bounds
-  nvgScissor(nvg,
+  nvgScissor(
+    nvg,
     miewportViewBounds.viewport[0],
     miewportViewBounds.viewport[1],
     miewportViewBounds.viewport[2],
@@ -518,8 +537,7 @@ void drawLandmarks(
   const glm::vec4 worldViewPlane = math::makePlane(worldViewNormal, worldCrosshairs);
 
   // Render landmarks for each image
-  for (const auto& imgSegPair : I)
-  {
+  for (const auto& imgSegPair : I) {
     if (!imgSegPair.first) {
       // Non-existent image
       continue;
@@ -535,8 +553,9 @@ void drawLandmarks(
 
     // Don't render landmarks for invisible image:
     /// @todo Need to properly manage global visibility vs. visibility for just one component
-    if (!img->settings().globalVisibility() ||
-        (1 == img->header().numComponentsPerPixel() && !img->settings().visibility()))
+    if (
+      !img->settings().globalVisibility() ||
+      (1 == img->header().numComponentsPerPixel() && !img->settings().visibility()))
     {
       continue;
     }
@@ -549,8 +568,7 @@ void drawLandmarks(
     // Slice spacing of the image along the view normal
     const float sliceSpacing = data::sliceScrollDistance(-worldViewNormal, *img);
 
-    for (const auto& lmGroupUid : lmGroupUids)
-    {
+    for (const auto& lmGroupUid : lmGroupUids) {
       const LandmarkGroup* lmGroup = appData.landmarkGroup(lmGroupUid);
       if (!lmGroup) {
         spdlog::error("Null landmark group for image {}", imgUid);
@@ -562,15 +580,13 @@ void drawLandmarks(
       }
 
       // Matrix that transforms landmark position from either Voxel or Subject to World space.
-      const glm::mat4 world_T_landmark = (lmGroup->getInVoxelSpace())
-        ? img->transformations().worldDef_T_pixel()
-        : img->transformations().worldDef_T_subject();
+      const glm::mat4 world_T_landmark = (lmGroup->getInVoxelSpace()) ? img->transformations().worldDef_T_pixel()
+                                                                      : img->transformations().worldDef_T_subject();
 
       const float minDim = std::min(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height);
       const float pixelsMaxLmSize = glm::clamp(lmGroup->getRadiusFactor() * minDim, sk_minSize, sk_maxSize);
 
-      for (const auto& p : lmGroup->getPoints())
-      {
+      for (const auto& p : lmGroup->getPoints()) {
         const std::size_t index = p.first;
         const PointRecord<glm::vec3>& point = p.second;
 
@@ -584,8 +600,7 @@ void drawLandmarks(
 
         // Landmark must be within a distance of half the image slice spacing along the
         // direction of the view to be rendered in the view
-        const float distLmToPlane = std::abs(
-          math::signedDistancePointToPlane(worldLmPos3, worldViewPlane));
+        const float distLmToPlane = std::abs(math::signedDistancePointToPlane(worldLmPos3, worldViewPlane));
 
         // Maximum distance beyond which the landmark is not rendered:
         const float maxDist = 0.5f * sliceSpacing;
@@ -594,7 +609,10 @@ void drawLandmarks(
         }
 
         const glm::vec2 miewportPos = helper::miewport_T_world(
-          appData.windowData().viewport(), view.camera(), view.windowClip_T_viewClip(), worldLmPos3);
+          appData.windowData().viewport(),
+          view.camera(),
+          view.windowClip_T_viewClip(),
+          worldLmPos3);
 
         const bool inView = miewportViewBounds.bounds.xoffset < miewportPos.x &&
                             miewportViewBounds.bounds.yoffset < miewportPos.y &&
@@ -616,8 +634,7 @@ void drawLandmarks(
         /// @todo If landmark is selected, then highlight it here:
         const float strokeOpacity = 1.0f - std::pow((lmGroupOpacity - 1.0f), 2.0f);
 
-        const glm::vec4
-          strokeColor{(lmGroupColorOverride) ? lmGroupColor : point.getColor(), strokeOpacity};
+        const glm::vec4 strokeColor{(lmGroupColorOverride) ? lmGroupColor : point.getColor(), strokeOpacity};
 
         // Landmark radius depends on distance of the view plane from the landmark center
         const float radius = pixelsMaxLmSize * std::sqrt(std::abs(1.0f - std::pow(distLmToPlane / maxDist, 2.0f)));
@@ -627,8 +644,7 @@ void drawLandmarks(
         const bool renderIndices = lmGroup->getRenderLandmarkIndices();
         const bool renderNames = lmGroup->getRenderLandmarkNames();
 
-        if (renderIndices || renderNames)
-        {
+        if (renderIndices || renderNames) {
           const float textOffset = radius + 0.7f;
           const float textSize = 0.9f * pixelsMaxLmSize;
 
@@ -683,8 +699,7 @@ void drawAnnotations(
 
   // Convert vertex coordinates from local annotation plane space to Miewport space:
   auto convertAnnotationPlaneVertexToMiewport =
-    [&appData, &view](const Image& image, const Annotation& annot, const glm::vec2& annotPlaneVertex) -> glm::vec2
-  {
+    [&appData, &view](const Image& image, const Annotation& annot, const glm::vec2& annotPlaneVertex) -> glm::vec2 {
     const glm::vec3 subjectPos = annot.unprojectFromAnnotationPlaneToSubjectPoint(annotPlaneVertex);
     const glm::vec4 worldPos = image.transformations().worldDef_T_subject() * glm::vec4{subjectPos, 1.0f};
 
@@ -700,7 +715,8 @@ void drawAnnotations(
   // Other line cap options: NVG_BUTT, NVG_SQUARE
   nvgLineCap(nvg, NVG_ROUND);
 
-  nvgScissor(nvg,
+  nvgScissor(
+    nvg,
     miewportViewBounds.viewport[0],
     miewportViewBounds.viewport[1],
     miewportViewBounds.viewport[2],
@@ -709,8 +725,7 @@ void drawAnnotations(
   const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
 
   // Render annotations for each image
-  for (const auto& imgSegPair : I)
-  {
+  for (const auto& imgSegPair : I) {
     if (!imgSegPair.first) {
       continue; // Non-existent image
     }
@@ -728,15 +743,16 @@ void drawAnnotations(
     /// @todo Need to account for global visibility when editing annotations! Should not be able
     /// to modify annotations of invisible image!
 
-    if (!img->settings().globalVisibility() ||
-        (1 == img->header().numComponentsPerPixel() && !img->settings().visibility()))
+    if (
+      !img->settings().globalVisibility() ||
+      (1 == img->header().numComponentsPerPixel() && !img->settings().visibility()))
     {
       continue;
     }
 
     // Annotation plane equation in image Subject space:
-    const auto [subjectPlaneEquation, subjectPlanePoint] = math::computeSubjectPlaneEquation(
-      img->transformations().subject_T_worldDef(), worldViewNormal, worldCrosshairs);
+    const auto [subjectPlaneEquation, subjectPlanePoint] =
+      math::computeSubjectPlaneEquation(img->transformations().subject_T_worldDef(), worldViewNormal, worldCrosshairs);
 
     // Slice spacing of the image along the view normal is the plane distance threshold
     // for annotation searching:
@@ -744,8 +760,7 @@ void drawAnnotations(
 
     const auto annotUids = data::findAnnotationsForImage(appData, imgUid, subjectPlaneEquation, sliceSpacing);
 
-    for (const auto& annotUid : annotUids)
-    {
+    for (const auto& annotUid : annotUids) {
       const Annotation* annot = appData.annotation(annotUid);
       if (!annot) {
         continue;
@@ -771,8 +786,7 @@ void drawAnnotations(
       glm::vec2 miewportMaxPos{std::numeric_limits<float>::lowest()};
 
       // Set the annotation outer boundary:
-      if (annot->isSmoothed())
-      {
+      if (annot->isSmoothed()) {
         nvgLineJoin(nvg, NVG_ROUND);
 
         std::vector<glm::vec2> miewportPoints;
@@ -781,8 +795,7 @@ void drawAnnotations(
 
         bool isFirst = true;
 
-        for (const auto& command : annot->getBezierCommands())
-        {
+        for (const auto& command : annot->getBezierCommands()) {
           const glm::vec2 c1 = convertAnnotationPlaneVertexToMiewport(*img, *annot, std::get<0>(command));
           const glm::vec2 c2 = convertAnnotationPlaneVertexToMiewport(*img, *annot, std::get<1>(command));
           const glm::vec2 p = convertAnnotationPlaneVertexToMiewport(*img, *annot, std::get<2>(command));
@@ -808,16 +821,14 @@ void drawAnnotations(
         // Note: unlike for non-smoothed boundaries, the Bezier commands already account
         // for closed polygons. There is no need to draw a vertex back to the beggining.
       }
-      else
-      {
+      else {
         nvgLineJoin(nvg, NVG_MITER);
 
         nvgBeginPath(nvg);
 
         bool isFirst = true;
 
-        for (const glm::vec2& vertex : annotPlaneVertices)
-        {
+        for (const glm::vec2& vertex : annotPlaneVertices) {
           const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(*img, *annot, vertex);
           miewportMinPos = glm::min(miewportMinPos, miewportPos);
           miewportMaxPos = glm::max(miewportMaxPos, miewportPos);
@@ -833,9 +844,9 @@ void drawAnnotations(
         }
 
         // If the annotation is a closed, then create a line back to the first vertex:
-        if (annot->isClosed())
-        {
-          //                    const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(
+        if (annot->isClosed()) {
+          //                    const glm::vec2 miewportPos =
+          //                    convertAnnotationPlaneVertexToMiewport(
           //                                *img, *annot, annotPlaneVertices.front() );
 
           //                    nvgLineTo( nvg, miewportPos.x, miewportPos.y );
@@ -851,18 +862,15 @@ void drawAnnotations(
       nvgStroke(nvg);
 
       // Only fill the annotation if it is closed:
-      if (annot->isClosed() && annot->isFilled())
-      {
+      if (annot->isClosed() && annot->isFilled()) {
         const glm::vec4& fillColor = annot->getFillColor();
         nvgFillColor(nvg, nvgRGBAf(fillColor.r, fillColor.g, fillColor.b, annot->getOpacity() * fillColor.a));
         nvgFill(nvg);
       }
 
       // Draw the annotation outer boundary vertices:
-      if (!appData.renderData().m_globalAnnotationParams.hidePolygonVertices && annot->getVertexVisibility())
-      {
-        for (const glm::vec2& vertex : annotPlaneVertices)
-        {
+      if (!appData.renderData().m_globalAnnotationParams.hidePolygonVertices && annot->getVertexVisibility()) {
+        for (const glm::vec2& vertex : annotPlaneVertices) {
           const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(*img, *annot, vertex);
           const float radius = std::max(sk_vertexRadius, annot->getLineThickness());
           const glm::vec4& vertColor = annot->getVertexColor();
@@ -881,17 +889,14 @@ void drawAnnotations(
       const bool showSelections = (annot->getOpacity() > 0.0f);
 
       // Highlight vertices with circles:
-      if (showSelections && state::annot::isInStateWhereVertexHighlightsAreVisible())
-      {
-        for (const auto& highlightedVertex : annot->highlightedVertices())
-        {
+      if (showSelections && state::annot::isInStateWhereVertexHighlightsAreVisible()) {
+        for (const auto& highlightedVertex : annot->highlightedVertices()) {
           const std::size_t boundary = highlightedVertex.first;
           const std::size_t vertexIndex = highlightedVertex.second;
 
           const auto selectedVertexCoords = annot->polygon().getBoundaryVertex(boundary, vertexIndex);
 
-          if ((OUTER_BOUNDARY == boundary) && selectedVertexCoords)
-          {
+          if ((OUTER_BOUNDARY == boundary) && selectedVertexCoords) {
             const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(*img, *annot, *selectedVertexCoords);
             const float radius = std::max(sk_vertexSelectionRadius, annot->getLineThickness());
 
@@ -907,13 +912,13 @@ void drawAnnotations(
       }
 
       // Draw the annotation outer boundary bounding box:
-      if (showSelections && state::annot::isInStateWhereAnnotationHighlightsAreVisible() && annot->isHighlighted())
-      {
+      if (showSelections && state::annot::isInStateWhereAnnotationHighlightsAreVisible() && annot->isHighlighted()) {
         nvgStrokeWidth(nvg, sk_bboxSelectionStrokeWidth);
         nvgStrokeColor(nvg, nvgRGBAf(sk_green.r, sk_green.g, sk_green.b, sk_green.a));
 
         nvgBeginPath(nvg);
-        nvgRoundedRect(nvg,
+        nvgRoundedRect(
+          nvg,
           miewportMinPos.x,
           miewportMinPos.y,
           miewportMaxPos.x - miewportMinPos.x,
@@ -949,7 +954,8 @@ void drawCrosshairs(
   const bool viewIsOffset =
     (ViewOffsetMode::RelativeToRefImageScrolls == offset.m_offsetMode && 0 != offset.m_relativeOffsetSteps) ||
     (ViewOffsetMode::RelativeToImageScrolls == offset.m_offsetMode && 0 != offset.m_relativeOffsetSteps) ||
-    (ViewOffsetMode::Absolute == offset.m_offsetMode && glm::epsilonNotEqual(offset.m_absoluteOffset, 0.0f, glm::epsilon<float>()));
+    (ViewOffsetMode::Absolute == offset.m_offsetMode &&
+     glm::epsilonNotEqual(offset.m_absoluteOffset, 0.0f, glm::epsilon<float>()));
 
   if (viewIsOffset) {
     // Offset views get thinner, transparent crosshairs
@@ -962,14 +968,14 @@ void drawCrosshairs(
   }
 
   // Clip against the view bounds, even though not strictly necessary with how lines are defined
-  nvgScissor(nvg,
+  nvgScissor(
+    nvg,
     miewportViewBounds.viewport[0],
     miewportViewBounds.viewport[1],
     miewportViewBounds.viewport[2],
     miewportViewBounds.viewport[3]);
 
-  for (const auto& pos : labelPosInfo)
-  {
+  for (const auto& pos : labelPosInfo) {
     if (!pos.miewportXhairPositions) {
       // Only render crosshairs when there are two intersections with the view box:
       continue;
@@ -977,8 +983,7 @@ void drawCrosshairs(
 
     const auto& hits = *(pos.miewportXhairPositions);
 
-    if (ViewType::Oblique != view.viewType())
-    {
+    if (ViewType::Oblique != view.viewType()) {
       // Orthogonal views get solid crosshairs:
       nvgBeginPath(nvg);
       nvgMoveTo(nvg, hits[0].x, hits[0].y);
@@ -986,17 +991,14 @@ void drawCrosshairs(
       nvgClosePath(nvg);
       nvgStroke(nvg);
     }
-    else
-    {
+    else {
       // Oblique views get stippled crosshairs:
-      for (std::size_t line = 0; line < 2; ++line)
-      {
-        const auto numLines = static_cast<uint32_t>(
-          glm::distance(hits[line], pos.miewportXhairCenterPos) / sk_stippleLen);
+      for (std::size_t line = 0; line < 2; ++line) {
+        const auto numLines =
+          static_cast<uint32_t>(glm::distance(hits[line], pos.miewportXhairCenterPos) / sk_stippleLen);
 
         nvgBeginPath(nvg);
-        for (uint32_t i = 0; i <= numLines; ++i)
-        {
+        for (uint32_t i = 0; i <= numLines; ++i) {
           const float t = static_cast<float>(i) / static_cast<float>(numLines);
           const glm::vec2 p = pos.miewportXhairCenterPos + t * (hits[line] - pos.miewportXhairCenterPos);
 
@@ -1017,16 +1019,16 @@ void drawCrosshairs(
 }
 
 /// @see https://community.vcvrack.com/t/advanced-nanovg-custom-label/6769/21
-//void draw (const DrawArgs &args) override {
-//  // draw the text
-//  float bounds[4];
-//  const char* txt = "DEMO";
-//  nvgTextAlign(args.vg, NVG_ALIGN_MIDDLE);
-//      nvgTextBounds(args.vg, 0, 0, txt, NULL, bounds);
-//      nvgBeginPath(args.vg);
-//  nvgFillColor(args.vg, nvgRGBA(0xff, 0xff, 0xff, 0xff));
-//      nvgRect(args.vg, bounds[0], bounds[1], bounds[2]-bounds[0], bounds[3]-bounds[1]);
-//      nvgFill(args.vg);
-//  nvgFillColor(args.vg, nvgRGBA(0x00, 0xff, 0x00, 0xff));
-//  nvgText(args.vg, 0, 0, txt, NULL);
-//}
+// void draw (const DrawArgs &args) override {
+//   // draw the text
+//   float bounds[4];
+//   const char* txt = "DEMO";
+//   nvgTextAlign(args.vg, NVG_ALIGN_MIDDLE);
+//       nvgTextBounds(args.vg, 0, 0, txt, NULL, bounds);
+//       nvgBeginPath(args.vg);
+//   nvgFillColor(args.vg, nvgRGBA(0xff, 0xff, 0xff, 0xff));
+//       nvgRect(args.vg, bounds[0], bounds[1], bounds[2]-bounds[0], bounds[3]-bounds[1]);
+//       nvgFill(args.vg);
+//   nvgFillColor(args.vg, nvgRGBA(0x00, 0xff, 0x00, 0xff));
+//   nvgText(args.vg, 0, 0, txt, NULL);
+// }

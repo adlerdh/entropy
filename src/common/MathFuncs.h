@@ -34,8 +34,7 @@ std::vector<glm::vec3> generateRandomHsvSamples(
   const std::pair<float, float>& hueMinMax,
   const std::pair<float, float>& satMinMax,
   const std::pair<float, float>& valMinMax,
-  const std::optional<uint32_t>& seed
-);
+  const std::optional<uint32_t>& seed);
 
 /**
  * @brief Compute dimensions of image in Subject space
@@ -45,9 +44,7 @@ std::vector<glm::vec3> generateRandomHsvSamples(
  *
  * @return Vector of image dimensions in Subject space
  */
-glm::dvec3 computeSubjectImageDimensions(
-  const glm::u64vec3& pixelDimensions, const glm::dvec3& pixelSpacing
-);
+glm::dvec3 computeSubjectImageDimensions(const glm::u64vec3& pixelDimensions, const glm::dvec3& pixelSpacing);
 
 /**
  * @brief Compute transformation from image Pixel space to Subject space.
@@ -59,12 +56,14 @@ glm::dvec3 computeSubjectImageDimensions(
  * @return 4x4 matrix transforming image Pixel to Subject space
  */
 glm::dmat4 computeImagePixelToSubjectTransformation(
-  const glm::dmat3& directions, const glm::dvec3& pixelSpacing, const glm::dvec3& origin
-);
+  const glm::dmat3& directions,
+  const glm::dvec3& pixelSpacing,
+  const glm::dvec3& origin);
 
 /**
  * @brief Compute transformation from image Pixel space, with coordinates (i, j, k) representing
- * pixel indices in [0, N-1] range,  to image Texture coordinates (s, t, p) in [1/(2N), 1 - 1/(2N)] range
+ * pixel indices in [0, N-1] range,  to image Texture coordinates (s, t, p) in [1/(2N), 1 - 1/(2N)]
+ * range
  *
  * @param[in] pixelDimensions Number of pixels per image dimensions
  *
@@ -95,12 +94,9 @@ std::array<glm::vec3, 8> computeImageSubjectBoundingBoxCorners(
   const glm::u64vec3& pixelDimensions,
   const glm::mat3& directions,
   const glm::vec3& pixelSpacing,
-  const glm::vec3& origin
-);
+  const glm::vec3& origin);
 
-std::pair<glm::vec3, glm::vec3> computeMinMaxCornersOfAABBox(
-  const std::array<glm::vec3, 8>& subjectCorners
-);
+std::pair<glm::vec3, glm::vec3> computeMinMaxCornersOfAABBox(const std::array<glm::vec3, 8>& subjectCorners);
 
 /**
  * @brief Compute the corners of an axis-aligned bounding box with given min/max corners
@@ -110,16 +106,15 @@ std::pair<glm::vec3, glm::vec3> computeMinMaxCornersOfAABBox(
  * @return All eight AABB corners
  */
 std::array<glm::vec3, 8> computeAllAABBoxCornersFromMinMaxCorners(
-  const std::pair<glm::vec3, glm::vec3>& boxMinMaxCorners
-);
+  const std::pair<glm::vec3, glm::vec3>& boxMinMaxCorners);
 
 /**
  * @brief Compute the anatomical direction "SPIRAL" code of an image from its direction matrix
  *
  * @param[in] directions 3x3 direction matrix: columns are the direction vectors
  *
- * @return Pair of the three-letter direction code and boolean flag that is true when the directions are oblique
- * to the coordinate axes
+ * @return Pair of the three-letter direction code and boolean flag that is true when the directions
+ * are oblique to the coordinate axes
  *
  * @todo SPIRAL CODE IS WRONG FOR hippo warp image
  */
@@ -130,8 +125,8 @@ std::pair<std::string, bool> computeSpiralCodeFromDirectionMatrix(const glm::dma
  *
  * @param[in] directions 3x3 direction matrix: columns are the direction vectors
  *
- * @return Pair of the three-letter direction code and boolean flag that is true when the directions are oblique
- * to the coordinate axes
+ * @return Pair of the three-letter direction code and boolean flag that is true when the directions
+ * are oblique to the coordinate axes
  */
 glm::dmat3 computeClosestOrthogonalDirectionMatrix(const glm::dmat3& directions);
 
@@ -141,34 +136,33 @@ glm::dmat3 computeClosestOrthogonalDirectionMatrix(const glm::dmat3& directions)
  * @param rotation Rotation, expressed as a quaternion
  * @param worldCenter Center of rotation in World space
  */
-void rotateFrameAboutWorldPos(
-  CoordinateFrame& frame, const glm::quat& rotation, const glm::vec3& worldCenter
-);
+void rotateFrameAboutWorldPos(CoordinateFrame& frame, const glm::quat& rotation, const glm::vec3& worldCenter);
 
 /**
  * @brief Finds the entering intersection between a ray e1+d and the volume's bounding box.
  */
 float computeRayAABBoxIntersection(
-  const glm::vec3& start, const glm::vec3& dir, const glm::vec3& minCorner, const glm::vec3& maxCorner
-);
+  const glm::vec3& start,
+  const glm::vec3& dir,
+  const glm::vec3& minCorner,
+  const glm::vec3& maxCorner);
 
 std::pair<float, float> hits(glm::vec3 e1, glm::vec3 d, glm::vec3 uMinCorner, glm::vec3 uMaxCorner);
 
-std::tuple<bool, float, float> slabs(
-  glm::vec3 rayPos, glm::vec3 rayDir, glm::vec3 boxMin, glm::vec3 boxMax
-);
+std::tuple<bool, float, float> slabs(glm::vec3 rayPos, glm::vec3 rayDir, glm::vec3 boxMin, glm::vec3 boxMax);
 
 std::optional<float> computeRayLineSegmentIntersection(
-  const glm::vec2& rayOrigin, const glm::vec2& rayDir, const glm::vec2& lineA, const glm::vec2& lineB
-);
+  const glm::vec2& rayOrigin,
+  const glm::vec2& rayDir,
+  const glm::vec2& lineA,
+  const glm::vec2& lineB);
 
 std::vector<glm::vec2> computeRayAABoxIntersections(
   const glm::vec2& rayOrigin,
   const glm::vec2& rayDir,
   const glm::vec2& boxMin,
   const glm::vec2& boxSize,
-  bool doBothRayDirections = false
-);
+  bool doBothRayDirections = false);
 
 /**
  * @brief Point inclusion in polygon test
@@ -182,22 +176,22 @@ std::vector<glm::vec2> computeRayAABoxIntersections(
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  * associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Redistributions of source code must retain the above copyright notice, this list of conditions and
- * the following disclaimers. Redistributions in binary form must reproduce the above copyright notice
- * in the documentation and/or other materials provided with the distribution.
+ * Redistributions of source code must retain the above copyright notice, this list of conditions
+ * and the following disclaimers. Redistributions in binary form must reproduce the above copyright
+ * notice in the documentation and/or other materials provided with the distribution.
  *
  * The name of W. Randolph Franklin may not be used to endorse or promote products derived from this
  * Software without specific prior written permission.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 int pnpoly(const std::vector<glm::vec2>& poly, const glm::vec2& p);
 

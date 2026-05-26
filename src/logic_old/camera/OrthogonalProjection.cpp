@@ -15,13 +15,11 @@ glm::vec2 computeCameraFov(const glm::vec2& minFov, float aspectRatio, float zoo
 {
   glm::vec2 fov;
 
-  if ((minFov.x / minFov.y) < aspectRatio)
-  {
+  if ((minFov.x / minFov.y) < aspectRatio) {
     fov.x = minFov.y * aspectRatio;
     fov.y = minFov.y;
   }
-  else
-  {
+  else {
     fov.x = minFov.x;
     fov.y = minFov.x / aspectRatio;
   }
@@ -34,10 +32,7 @@ glm::vec2 computeCameraFov(const glm::vec2& minFov, float aspectRatio, float zoo
 namespace camera
 {
 
-OrthographicProjection::OrthographicProjection()
-  : Projection()
-{
-}
+OrthographicProjection::OrthographicProjection() : Projection() {}
 
 ProjectionType OrthographicProjection::type() const
 {
@@ -54,14 +49,12 @@ glm::mat4 OrthographicProjection::clip_O_camera() const
     -0.5f * focalPlaneFov.y,
     0.5f * focalPlaneFov.y,
     m_nearDistance,
-    m_farDistance
-  );
+    m_farDistance);
 }
 
 void OrthographicProjection::setZoom(float factor)
 {
-  if (factor > 0.0f)
-  {
+  if (factor > 0.0f) {
     m_zoom = glm::clamp(factor, sk_minMaxZoom.first, sk_minMaxZoom.second);
   }
 }

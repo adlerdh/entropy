@@ -11,13 +11,11 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-ImageHeader::ImageHeader(
-  const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioInfoInMemory, bool interleavedComponents)
-  :
-  m_ioInfoOnDisk(ioInfoOnDisk),
-  m_ioInfoInMemory(ioInfoInMemory),
-  m_interleavedComponents(interleavedComponents),
-  m_existsOnDisk(true)
+ImageHeader::ImageHeader(const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioInfoInMemory, bool interleavedComponents)
+  : m_ioInfoOnDisk(ioInfoOnDisk)
+  , m_ioInfoInMemory(ioInfoInMemory)
+  , m_interleavedComponents(interleavedComponents)
+  , m_existsOnDisk(true)
 
   , m_fileName(ioInfoOnDisk.m_fileInfo.m_fileName)
   , m_numComponentsPerPixel(ioInfoOnDisk.m_pixelInfo.m_numComponents)
@@ -36,13 +34,11 @@ ImageHeader::ImageHeader(
   , m_memoryComponentSizeInBytes(ioInfoInMemory.m_componentInfo.m_componentSizeInBytes)
 {
   if (ComponentType::Undefined == m_memoryComponentType) {
-    spdlog::error("Cannot set header for image {} with undefined component type",
-                  ioInfoInMemory.m_fileInfo.m_fileName);
+    spdlog::error("Cannot set header for image {} with undefined component type", ioInfoInMemory.m_fileInfo.m_fileName);
     throw_debug("Undefined component type")
   }
   else if (PixelType::Undefined == m_pixelType) {
-    spdlog::error("Cannot set header for image {} with undefined pixel type",
-                  ioInfoInMemory.m_fileInfo.m_fileName);
+    spdlog::error("Cannot set header for image {} with undefined pixel type", ioInfoInMemory.m_fileInfo.m_fileName);
     throw_debug("undefined pixel type")
   }
 
@@ -71,13 +67,16 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
   std::vector<std::vector<double> > dirs = spaceInfo.m_directions;
 
   // Expect a 3D image
-  if (numDim != 3 || orig.size() != 3 || spacing.size() != 3 || dims.size() != 3 || dirs.size() != 3)
-  {
-    spdlog::debug("Vector sizes: numDims = {}, origin = {}, spacing = {}, dims = {}, directions = {}",
-                  numDim, orig.size(), spacing.size(), dims.size(), dirs.size());
+  if (numDim != 3 || orig.size() != 3 || spacing.size() != 3 || dims.size() != 3 || dirs.size() != 3) {
+    spdlog::debug(
+      "Vector sizes: numDims = {}, origin = {}, spacing = {}, dims = {}, directions = {}",
+      numDim,
+      orig.size(),
+      spacing.size(),
+      dims.size(),
+      dirs.size());
 
-    if (numDim == 1 && orig.size() == 1 && spacing.size() == 1 && dims.size() == 1 && dirs.size() == 1)
-    {
+    if (numDim == 1 && orig.size() == 1 && spacing.size() == 1 && dims.size() == 1 && dirs.size() == 1) {
       // The image is 1D: augment to 3D
       orig.push_back(0.0);
       orig.push_back(0.0);
@@ -105,8 +104,7 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
 
       dirs = std::move(d3x3);
     }
-    else if (numDim == 2 && orig.size() == 2 && spacing.size() == 2 && dims.size() == 2 && dirs.size() == 2)
-    {
+    else if (numDim == 2 && orig.size() == 2 && spacing.size() == 2 && dims.size() == 2 && dirs.size() == 2) {
       // The image is 2D: augment to 3D
       orig.push_back(0.0);
       spacing.push_back(1.0);
@@ -129,20 +127,17 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
 
       dirs = std::move(d3x3);
     }
-    else
-    {
+    else {
       throw_debug("Image must have dimension of 2 or 3")
     }
   }
 
   m_pixelDimensions = glm::uvec3{dims[0], dims[1], dims[2]};
 
-  m_spacing = m_headerOverrides.m_useIdentityPixelSpacings
-                ? glm::vec3(1.0f)
-                : glm::vec3{spacing[0], spacing[1], spacing[2]};
+  m_spacing =
+    m_headerOverrides.m_useIdentityPixelSpacings ? glm::vec3(1.0f) : glm::vec3{spacing[0], spacing[1], spacing[2]};
 
-  m_origin = m_headerOverrides.m_useZeroPixelOrigin ? glm::vec3(0.0f)
-                                                    : glm::vec3{orig[0], orig[1], orig[2]};
+  m_origin = m_headerOverrides.m_useZeroPixelOrigin ? glm::vec3(0.0f) : glm::vec3{orig[0], orig[1], orig[2]};
 
   // Set matrix of direction vectors in column-major order
   m_directions = glm::mat3{
@@ -154,16 +149,13 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
     dirs[1][2],
     dirs[2][0],
     dirs[2][1],
-    dirs[2][2]
-  };
+    dirs[2][2]};
   ;
 
-  if (m_headerOverrides.m_useIdentityPixelDirections)
-  {
+  if (m_headerOverrides.m_useIdentityPixelDirections) {
     m_directions = glm::mat3{1.0f};
   }
-  else if (m_headerOverrides.m_snapToClosestOrthogonalPixelDirections)
-  {
+  else if (m_headerOverrides.m_snapToClosestOrthogonalPixelDirections) {
     m_directions = m_headerOverrides.m_closestOrthogonalDirs;
   }
 
@@ -176,36 +168,27 @@ void ImageHeader::setBoundingBox()
 {
   m_pixelBBoxCorners = math::computeImagePixelAABBoxCorners(m_pixelDimensions);
 
-  m_subjectBBoxCorners = math::computeImageSubjectBoundingBoxCorners(
-    m_pixelDimensions, m_directions, m_spacing, m_origin
-  );
+  m_subjectBBoxCorners =
+    math::computeImageSubjectBoundingBoxCorners(m_pixelDimensions, m_directions, m_spacing, m_origin);
 
   glm::vec3 subjectMinBBoxCorner{std::numeric_limits<float>::max()};
   glm::vec3 subjectMaxBBoxCorner{std::numeric_limits<float>::lowest()};
 
-  for (const auto& corner : m_subjectBBoxCorners)
-  {
-    if (corner.x < subjectMinBBoxCorner.x)
-      subjectMinBBoxCorner.x = corner.x;
-    if (corner.y < subjectMinBBoxCorner.y)
-      subjectMinBBoxCorner.y = corner.y;
-    if (corner.z < subjectMinBBoxCorner.z)
-      subjectMinBBoxCorner.z = corner.z;
+  for (const auto& corner : m_subjectBBoxCorners) {
+    if (corner.x < subjectMinBBoxCorner.x) subjectMinBBoxCorner.x = corner.x;
+    if (corner.y < subjectMinBBoxCorner.y) subjectMinBBoxCorner.y = corner.y;
+    if (corner.z < subjectMinBBoxCorner.z) subjectMinBBoxCorner.z = corner.z;
 
-    if (subjectMaxBBoxCorner.x < corner.x)
-      subjectMaxBBoxCorner.x = corner.x;
-    if (subjectMaxBBoxCorner.y < corner.y)
-      subjectMaxBBoxCorner.y = corner.y;
-    if (subjectMaxBBoxCorner.z < corner.z)
-      subjectMaxBBoxCorner.z = corner.z;
+    if (subjectMaxBBoxCorner.x < corner.x) subjectMaxBBoxCorner.x = corner.x;
+    if (subjectMaxBBoxCorner.y < corner.y) subjectMaxBBoxCorner.y = corner.y;
+    if (subjectMaxBBoxCorner.z < corner.z) subjectMaxBBoxCorner.z = corner.z;
   }
 
   m_subjectBBoxSize = subjectMaxBBoxCorner - subjectMinBBoxCorner;
 
   m_subjectBBoxCenter = glm::vec3{0.0f, 0.0f, 0.0f};
 
-  for (const auto& p : m_subjectBBoxCorners)
-  {
+  for (const auto& p : m_subjectBBoxCorners) {
     m_subjectBBoxCenter += p;
   }
 
@@ -214,81 +197,69 @@ void ImageHeader::setBoundingBox()
 
 void ImageHeader::adjustComponents(const ComponentType& componentType, uint32_t numComponents)
 {
-  if (numComponents < 1)
-  {
+  if (numComponents < 1) {
     return;
   }
 
   std::string compString;
   uint32_t sizeInBytes;
 
-  switch (componentType)
-  {
-  case ComponentType::Int8:
-  {
-    compString = "char";
-    sizeInBytes = 1;
-    break;
-  };
-  case ComponentType::UInt8:
-  {
-    compString = "uchar";
-    sizeInBytes = 1;
-    break;
-  };
-  case ComponentType::Int16:
-  {
-    compString = "short";
-    sizeInBytes = 2;
-    break;
-  };
-  case ComponentType::UInt16:
-  {
-    compString = "ushort";
-    sizeInBytes = 2;
-    break;
-  };
-  case ComponentType::Int32:
-  {
-    compString = "int";
-    sizeInBytes = 4;
-    break;
-  };
-  case ComponentType::UInt32:
-  {
-    compString = "uint";
-    sizeInBytes = 4;
-    break;
-  };
-  case ComponentType::Float32:
-  {
-    compString = "float";
-    sizeInBytes = 4;
-    break;
-  };
+  switch (componentType) {
+    case ComponentType::Int8: {
+      compString = "char";
+      sizeInBytes = 1;
+      break;
+    };
+    case ComponentType::UInt8: {
+      compString = "uchar";
+      sizeInBytes = 1;
+      break;
+    };
+    case ComponentType::Int16: {
+      compString = "short";
+      sizeInBytes = 2;
+      break;
+    };
+    case ComponentType::UInt16: {
+      compString = "ushort";
+      sizeInBytes = 2;
+      break;
+    };
+    case ComponentType::Int32: {
+      compString = "int";
+      sizeInBytes = 4;
+      break;
+    };
+    case ComponentType::UInt32: {
+      compString = "uint";
+      sizeInBytes = 4;
+      break;
+    };
+    case ComponentType::Float32: {
+      compString = "float";
+      sizeInBytes = 4;
+      break;
+    };
 
-  default:
-  case ComponentType::Float64:
-  case ComponentType::Long:
-  case ComponentType::ULong:
-  case ComponentType::LongLong:
-  case ComponentType::ULongLong:
-  case ComponentType::LongDouble:
-  case ComponentType::Undefined:
-  {
-    return;
-  }
+    default:
+    case ComponentType::Float64:
+    case ComponentType::Long:
+    case ComponentType::ULong:
+    case ComponentType::LongLong:
+    case ComponentType::ULongLong:
+    case ComponentType::LongDouble:
+    case ComponentType::Undefined: {
+      return;
+    }
   }
 
   m_numComponentsPerPixel = numComponents;
 
-  if (1 == numComponents)
-  {
+  if (1 == numComponents) {
     m_pixelType = PixelType::Scalar;
     m_pixelTypeAsString = "scalar";
   }
-  else
-  {
+  else {
     m_pixelType = PixelType::Vector;
     m_pixelTypeAsString = "vector";
   }
@@ -342,8 +313,8 @@ void ImageHeader::setNumComponentsPerPixel(uint32_t numComponents)
   m_fileImageSizeInBytes = m_fileComponentSizeInBytes * m_numComponentsPerPixel * m_numPixels;
   m_memoryImageSizeInBytes = m_memoryComponentSizeInBytes * m_numComponentsPerPixel * m_numPixels;
 
-  /// @note \c m_ioInfoInMemory has not been updated. It is never retrieved by the client or used later.
-  /// m_ioInfoInMemory.m_pixelInfo.m_numComponents = m_numComponentsPerPixel;
+  /// @note \c m_ioInfoInMemory has not been updated. It is never retrieved by the client or used
+  /// later. m_ioInfoInMemory.m_pixelInfo.m_numComponents = m_numComponentsPerPixel;
 }
 
 uint64_t ImageHeader::fileImageSizeInBytes() const
@@ -440,8 +411,8 @@ bool ImageHeader::interleavedComponents() const
 
 std::ostream& operator<<(std::ostream& os, const ImageHeader& header)
 {
-  os << "Exists on disk: " << std::boolalpha << header.m_existsOnDisk
-     << "\nFile name: " << header.m_fileName << "\nPixel type: " << header.m_pixelTypeAsString
+  os << "Exists on disk: " << std::boolalpha << header.m_existsOnDisk << "\nFile name: " << header.m_fileName
+     << "\nPixel type: " << header.m_pixelTypeAsString
      << "\nNum. components per pixel: " << header.m_numComponentsPerPixel
 
      << "\n\nComponent type (disk): " << header.m_fileComponentTypeAsString
@@ -455,8 +426,7 @@ std::ostream& operator<<(std::ostream& os, const ImageHeader& header)
      << "\nImage size (bytes, memory): " << header.m_memoryImageSizeInBytes
 
      << "\n\nDimensions (pixels): " << glm::to_string(header.m_pixelDimensions)
-     << "\nOrigin (mm): " << glm::to_string(header.m_origin)
-     << "\nSpacing (mm): " << glm::to_string(header.m_spacing)
+     << "\nOrigin (mm): " << glm::to_string(header.m_origin) << "\nSpacing (mm): " << glm::to_string(header.m_spacing)
      << "\nDirections: " << glm::to_string(header.m_directions)
 
      << "\n\nBounding box corners (in Subject space):\n"
@@ -469,13 +439,11 @@ std::ostream& operator<<(std::ostream& os, const ImageHeader& header)
      << "\t" << glm::to_string(header.m_subjectBBoxCorners[6]) << std::endl
      << "\t" << glm::to_string(header.m_subjectBBoxCorners[7])
 
-     << "\n\nBounding box center (mm, Subject space): "
-     << glm::to_string(header.m_subjectBBoxCenter)
+     << "\n\nBounding box center (mm, Subject space): " << glm::to_string(header.m_subjectBBoxCenter)
      << "\nBounding box size (mm, Subject space): " << glm::to_string(header.m_subjectBBoxSize)
 
-     << "\n\nOrientation (SPIRAL) code: " << header.m_spiralCode
-     << "\nIs oblique: " << std::boolalpha << header.m_isOblique
-     << "\nInterleaved components: " << std::boolalpha << header.m_interleavedComponents;
+     << "\n\nOrientation (SPIRAL) code: " << header.m_spiralCode << "\nIs oblique: " << std::boolalpha
+     << header.m_isOblique << "\nInterleaved components: " << std::boolalpha << header.m_interleavedComponents;
 
   return os;
 }

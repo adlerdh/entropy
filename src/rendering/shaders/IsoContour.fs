@@ -18,9 +18,10 @@ in VS_OUT
   vec3 v_texCoord;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
-} fs_in;
+}
+fs_in;
 
-layout (location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
+layout(location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
 
 uniform sampler3D u_imgTex; // Texture unit 0: image (scalar)
 
@@ -34,9 +35,9 @@ uniform float u_fillOpacity;
 uniform float u_lineOpacity;
 uniform vec3 u_color;
 uniform float u_contourWidth; // pixels
-uniform vec2 u_viewSize; // pixels
+uniform vec2 u_viewSize;      // pixels
 
-uniform vec2 u_imgMinMax; // Min and max image values (in texture intenstiy units)
+uniform vec2 u_imgMinMax;     // Min and max image values (in texture intenstiy units)
 uniform vec2 u_imgThresholds; // Image lower and upper thresholds (in texture intensity units)
 
 uniform vec2 u_clipCrosshairs; // Crosshairs in Clip space
@@ -69,32 +70,42 @@ uniform int u_halfNumMipSamples;
 // Z view camera direction, represented in texture sampling space
 uniform vec3 u_texSamplingDirZ;
 
-{{HELPER_FUNCTIONS}}
+{
+  {
+    HELPER_FUNCTIONS
+  }
+}
 
 // float textureLookup(sampler3D texture, vec3 texCoords);
-{{TEXTURE_LOOKUP_FUNCTION}}
+{
+  {
+    TEXTURE_LOOKUP_FUNCTION
+  }
+}
 
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-{{DO_RENDER_FUNCTION}}
+{
+  {
+    DO_RENDER_FUNCTION
+  }
+}
 
-/// Compute min/mean/max projection. Returns img when MIP is not used (i.e. u_halfNumMipSamples == 0)
+/// Compute min/mean/max projection. Returns img when MIP is not used (i.e. u_halfNumMipSamples ==
+/// 0)
 float computeProjection(float img)
 {
   // Number of samples used for computing the final image value:
   int numSamples = 1;
 
   // Accumulate intensity projection in forwards (+Z) and backwards (-Z) directions:
-  for (int i = 1; i <= u_halfNumMipSamples; ++i)
-  {
-    for (int dir = -1; dir <= 1; dir += 2)
-    {
+  for (int i = 1; i <= u_halfNumMipSamples; ++i) {
+    for (int dir = -1; dir <= 1; dir += 2) {
       vec3 c = fs_in.v_texCoord + dir * i * u_texSamplingDirZ;
       if (!isInsideTexture(c)) break;
 
       float a = clamp(textureLookup(u_imgTex, c), u_imgMinMax[0], u_imgMinMax[1]);
 
-      img = float(MAX_IP_MODE == u_mipMode) * max(img, a) +
-            float(MEAN_IP_MODE == u_mipMode) * (img + a) +
+      img = float(MAX_IP_MODE == u_mipMode) * max(img, a) + float(MEAN_IP_MODE == u_mipMode) * (img + a) +
             float(MIN_IP_MODE == u_mipMode) * min(img, a);
 
       ++numSamples;

@@ -1,5 +1,5 @@
 #include "logic/app/State.h"
-//#include "logic/ipc/IPCMessage.h"
+// #include "logic/ipc/IPCMessage.h"
 #include "logic/states/FsmList.hpp"
 
 void AppState::setWorldRotationCenter(const std::optional<glm::vec3>& worldRotationCenter)
@@ -137,8 +137,9 @@ void AppState::broadcastCrosshairsPosition()
     const auto& refTx = refImg->transformations();
 
     // Convert World to reference Subject and texture positions:
-    glm::vec4 refSubjectPos = refTx.subject_T_worldDef() * glm::vec4{ worldCrosshairs().worldOrigin(), 1.0f };
-    glm::vec4 refTexturePos = refTx.texture_T_subject() * refSubjectPos;
+    glm::vec4 refSubjectPos = refTx.subject_T_worldDef() * glm::vec4{
+worldCrosshairs().worldOrigin(), 1.0f }; glm::vec4 refTexturePos = refTx.texture_T_subject() *
+refSubjectPos;
 
     refSubjectPos /= refSubjectPos.w;
     refTexturePos /= refTexturePos.w;

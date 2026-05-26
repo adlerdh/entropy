@@ -53,7 +53,6 @@ void drawRaycastQuad(
   RenderData::Quad& quad,
   const View& view,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& I,
-  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage
-);
+  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage);
 
 #endif // IMAGE_DRAWING_H

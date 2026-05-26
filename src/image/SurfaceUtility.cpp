@@ -12,10 +12,14 @@ std::size_t mapContinuousToIndex(T x, std::size_t N)
 {
   return static_cast<std::size_t>(x * (N - 1) + 0.5); // rounding to nearest
 }
-}
+} // namespace
 
-glm::vec4 getIsosurfaceColor(const AppData& appData, const Isosurface& surface,
-                             const ImageSettings& settings, uint32_t comp, bool premult)
+glm::vec4 getIsosurfaceColor(
+  const AppData& appData,
+  const Isosurface& surface,
+  const ImageSettings& settings,
+  uint32_t comp,
+  bool premult)
 {
   if (!settings.applyImageColormapToIsosurfaces()) {
     if (premult) {
@@ -46,7 +50,8 @@ glm::vec4 getIsosurfaceColor(const AppData& appData, const Isosurface& surface,
   const auto imgSlopeIntercept = settings.slopeIntercept_normalized_T_native(comp);
   const auto valueNorm = static_cast<float>(imgSlopeIntercept.first * surface.value + imgSlopeIntercept.second);
 
-  // Flip the value if the colormap is inverted and clamp to [0.0, 1.0], in case it is outside the window:
+  // Flip the value if the colormap is inverted and clamp to [0.0, 1.0], in case it is outside the
+  // window:
   const float valueNormFlip = settings.isColorMapInverted(comp) ? 1.0f - valueNorm : valueNorm;
   const float valueNormFlipClamp = glm::clamp(valueNormFlip, 0.0f, 1.0f);
 

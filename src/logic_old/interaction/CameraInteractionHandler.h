@@ -36,10 +36,9 @@ private:
   using RefSpaceVoxelScaleProviderType = std::function<float(void)>;
 
   /// Function that synchronizes absolute zoom values among cameras linked to the camera of this
-  /// interaction handler. The optional worldCenterPos argument is a World-space point to zoom towards
-  /// in all synchronized views.
-  using ZoomSynchronizer
-    = std::function<void(float absoluteZoomValue, const std::optional<glm::vec3>& worldCenterPos)>;
+  /// interaction handler. The optional worldCenterPos argument is a World-space point to zoom
+  /// towards in all synchronized views.
+  using ZoomSynchronizer = std::function<void(float absoluteZoomValue, const std::optional<glm::vec3>& worldCenterPos)>;
 
 public:
   explicit CameraInteractionHandler();
@@ -69,8 +68,7 @@ private:
     None
   };
 
-  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
-    override;
+  bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
   bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
   bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
   bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const Camera&) override;
@@ -89,8 +87,7 @@ private:
   {
     return false;
   }
-  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&)
-    override
+  bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&) override
   {
     return false;
   }

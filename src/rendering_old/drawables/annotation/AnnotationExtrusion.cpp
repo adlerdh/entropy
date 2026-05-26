@@ -37,8 +37,7 @@ AnnotationExtrusion::AnnotationExtrusion(
   UniformsProviderType uniformsProvider,
   GetterType<std::optional<glm::mat4> > annotToWorldTxProvider,
   GetterType<std::optional<float> > thicknessProvider,
-  std::weak_ptr<SlideAnnotationRecord> slideAnnotationRecord
-)
+  std::weak_ptr<SlideAnnotationRecord> slideAnnotationRecord)
   : DrawableBase(std::move(name), DrawableType::AnnotationSlice)
   ,
 
@@ -63,8 +62,7 @@ AnnotationExtrusion::AnnotationExtrusion(
 void AnnotationExtrusion::setupChildren()
 {
   auto annotRecord = m_slideAnnotationRecord.lock();
-  if (!annotRecord || !annotRecord->gpuData())
-  {
+  if (!annotRecord || !annotRecord->gpuData()) {
     throw_debug("Null slide annotation or GPU record");
   }
 
@@ -72,8 +70,10 @@ void AnnotationExtrusion::setupChildren()
   ss << m_name << "_AnnotationExtrusionMesh" << std::ends;
 
   m_mesh = std::make_shared<BasicMesh>(
-    ss.str(), m_shaderActivator, m_uniformsProvider, annotRecord->gpuData()->getMeshGpuRecord()
-  );
+    ss.str(),
+    m_shaderActivator,
+    m_uniformsProvider,
+    annotRecord->gpuData()->getMeshGpuRecord());
 
   m_mesh->setAdsLightFactors(0.5f, 0.5f, 0.05f);
   m_mesh->setUseOctantClipPlanes(false);
@@ -100,18 +100,15 @@ void AnnotationExtrusion::setupChildren()
 
 bool AnnotationExtrusion::isOpaque() const
 {
-  if (m_mesh)
-  {
+  if (m_mesh) {
     return m_mesh->isOpaque();
   }
   return false;
 }
 
-void AnnotationExtrusion::
-  doUpdate(double, const Viewport&, const Camera& camera, const CoordinateFrame&)
+void AnnotationExtrusion::doUpdate(double, const Viewport&, const Camera& camera, const CoordinateFrame&)
 {
-  if (!m_mesh || !m_thicknessProvider || !m_annotToWorldTxProvider)
-  {
+  if (!m_mesh || !m_thicknessProvider || !m_annotToWorldTxProvider) {
     setVisible(false);
     return;
   }
@@ -119,15 +116,13 @@ void AnnotationExtrusion::
   auto worldThickness = m_thicknessProvider();
   auto world_O_annot = m_annotToWorldTxProvider();
 
-  if (!worldThickness || !world_O_annot)
-  {
+  if (!worldThickness || !world_O_annot) {
     setVisible(false);
     return;
   }
 
   auto annotRecord = m_slideAnnotationRecord.lock();
-  if (!annotRecord || !annotRecord->cpuData() || !annotRecord->cpuData()->polygon())
-  {
+  if (!annotRecord || !annotRecord->cpuData() || !annotRecord->cpuData()->polygon()) {
     setVisible(false);
     return;
   }
@@ -137,8 +132,7 @@ void AnnotationExtrusion::
   // Axis-aligned bounding square of the polygon (2D coordinates)
   const auto aabSquare = annot->polygon()->getAABBox();
 
-  if (!aabSquare)
-  {
+  if (!aabSquare) {
     setVisible(false);
     return;
   }
@@ -164,13 +158,9 @@ void AnnotationExtrusion::
     std::begin(annotAABBoxCorners),
     std::end(annotAABBoxCorners),
     std::back_inserter(worldOffsets),
-    [&camera, &world_O_annot](const glm::vec3& annotCorner)
-    {
-      return helper::computeSmallestWorldDepthOffset(
-        camera, applyMatrix(*world_O_annot, glm::vec4{annotCorner, 1.0f})
-      );
-    }
-  );
+    [&camera, &world_O_annot](const glm::vec3& annotCorner) {
+      return helper::computeSmallestWorldDepthOffset(camera, applyMatrix(*world_O_annot, glm::vec4{annotCorner, 1.0f}));
+    });
 
   // Use the maximum offset for layering:
   const float maxWorldOffset = *std::max_element(std::begin(worldOffsets), std::end(worldOffsets));
@@ -184,7 +174,8 @@ void AnnotationExtrusion::
   const float displacement = static_cast<float>(annot->getLayer() + 2) * annotOffset;
 
   // Scale the mesh along its z axis by an additional factor of 2x, because the scaling is
-  // applied about the center of the mesh. So, the top and bottom faces only move by half this amount.
+  // applied about the center of the mesh. So, the top and bottom faces only move by half this
+  // amount.
   const float zScale = 2.0f * displacement;
   const glm::vec3 scale{1.0f, 1.0f, 1.0f + zScale};
 

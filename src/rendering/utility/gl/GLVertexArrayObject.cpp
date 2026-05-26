@@ -8,24 +8,20 @@ namespace
 
 size_t bytesPerIndexType(const IndexType& indexType)
 {
-  switch (indexType)
-  {
-  case IndexType::UInt8:
-    return 1;
-  case IndexType::UInt16:
-    return 2;
-  case IndexType::UInt32:
-    return 4;
+  switch (indexType) {
+    case IndexType::UInt8:
+      return 1;
+    case IndexType::UInt16:
+      return 2;
+    case IndexType::UInt32:
+      return 4;
   }
   throw_debug("Invalid index type")
 }
 
 } // namespace
 
-GLVertexArrayObject::GLVertexArrayObject()
-  : m_id(0)
-{
-}
+GLVertexArrayObject::GLVertexArrayObject() : m_id(0) {}
 
 GLVertexArrayObject::~GLVertexArrayObject()
 {
@@ -67,8 +63,7 @@ void GLVertexArrayObject::setAttributeBuffer(
   const BufferComponentType& type,
   const BufferNormalizeValues& normalize,
   GLsizei stride,
-  GLint offset
-)
+  GLint offset)
 {
   glVertexAttribPointer(
     index,
@@ -76,8 +71,7 @@ void GLVertexArrayObject::setAttributeBuffer(
     underlyingType(type),
     underlyingType(normalize),
     stride,
-    reinterpret_cast<const GLvoid*>(offset)
-  );
+    reinterpret_cast<const GLvoid*>(offset));
 
   CHECK_GL_ERROR(m_errorChecker)
 }
@@ -90,17 +84,17 @@ void GLVertexArrayObject::setAttributeBuffer(GLuint index, const VertexAttribute
     attribInfo.componentType(),
     attribInfo.normalizeValues(),
     attribInfo.strideInBytes(),
-    attribInfo.offsetInBytes()
-  );
+    attribInfo.offsetInBytes());
 }
 
 void GLVertexArrayObject::setAttributeIntegerBuffer(
-  GLuint index, GLint size, const BufferComponentType& type, GLsizei stride, GLint offset
-)
+  GLuint index,
+  GLint size,
+  const BufferComponentType& type,
+  GLsizei stride,
+  GLint offset)
 {
-  glVertexAttribIPointer(
-    index, size, underlyingType(type), stride, reinterpret_cast<const GLvoid*>(offset)
-  );
+  glVertexAttribIPointer(index, size, underlyingType(type), stride, reinterpret_cast<const GLvoid*>(offset));
 
   CHECK_GL_ERROR(m_errorChecker)
 }
@@ -117,17 +111,17 @@ void GLVertexArrayObject::disableVertexAttribute(GLuint index)
 
 // If an attribute is disabled, its value comes from regular OpenGL state.
 // Namely, the state set by the glVertexAttrib functions
-//void GLVertexArrayObject::setGenericAttribute2f(
+// void GLVertexArrayObject::setGenericAttribute2f(
 //        GLuint index, const glm::vec2& values )
 //{
 //    glVertexAttrib2f( index, values[0], values[1] );
 //}
 
-//void GLVertexArrayObject::setGenericAttribute4f(
-//        GLuint index, const glm::vec4& values )
+// void GLVertexArrayObject::setGenericAttribute4f(
+//         GLuint index, const glm::vec4& values )
 //{
-//    glVertexAttrib4f( index, values[0], values[1], values[2], values[3] );
-//}
+//     glVertexAttrib4f( index, values[0], values[1], values[2], values[3] );
+// }
 
 void GLVertexArrayObject::drawElements(const IndexedDrawParams& params) const
 {
@@ -142,8 +136,7 @@ GLVertexArrayObject::IndexedDrawParams::IndexedDrawParams(
   const PrimitiveMode& primitiveMode,
   std::size_t elementCount,
   const IndexType& indexType,
-  std::size_t indexOffset
-)
+  std::size_t indexOffset)
   : m_primitiveMode(underlyingType(primitiveMode))
   , m_elementCount(0)
   , m_indexType(underlyingType(indexType))
@@ -158,9 +151,7 @@ GLVertexArrayObject::IndexedDrawParams::IndexedDrawParams(const VertexIndicesInf
   , m_indexType(underlyingType(indicesInfo.indexType()))
   ,
 
-  m_indices(reinterpret_cast<GLvoid*>(
-    indicesInfo.indexOffset() * bytesPerIndexType(indicesInfo.indexType())
-  ))
+  m_indices(reinterpret_cast<GLvoid*>(indicesInfo.indexOffset() * bytesPerIndexType(indicesInfo.indexType())))
 {
 }
 
@@ -176,8 +167,7 @@ size_t GLVertexArrayObject::IndexedDrawParams::elementCount() const
 
 void GLVertexArrayObject::IndexedDrawParams::setElementCount(size_t c)
 {
-  if (c > std::numeric_limits<GLsizei>::max())
-  {
+  if (c > std::numeric_limits<GLsizei>::max()) {
     throw_debug("Attempting to set more elements than max count")
   }
 

@@ -42,8 +42,7 @@ SlideTransformation::SlideTransformation()
 /// @todo GLM bug? is angle in degress?
 const glm::mat4& SlideTransformation::stack_O_slide(const glm::vec3& physicalSlideDims) const
 {
-  if (physicalSlideDims != m_cachedPhysicalSlideDims)
-  {
+  if (physicalSlideDims != m_cachedPhysicalSlideDims) {
     m_cachedPhysicalSlideDims = physicalSlideDims;
     m_recomputeSlideToStackTx = true;
   }
@@ -54,8 +53,7 @@ const glm::mat4& SlideTransformation::stack_O_slide(const glm::vec3& physicalSli
 
 const glm::mat4& SlideTransformation::stack_O_slide_rigid(const glm::vec3& physicalSlideDims) const
 {
-  if (physicalSlideDims != m_cachedPhysicalSlideDims)
-  {
+  if (physicalSlideDims != m_cachedPhysicalSlideDims) {
     m_cachedPhysicalSlideDims = physicalSlideDims;
     m_recomputeSlideToStackTx = true;
   }
@@ -74,8 +72,7 @@ void SlideTransformation::recompute(const glm::vec3& physicalSlideDims) const
   // Slides are stacked along the z axis of the Slide Stack
   static const glm::vec3 sk_zAxis(0.0f, 0.0f, 1.0f);
 
-  if (!m_recomputeSlideToStackTx)
-  {
+  if (!m_recomputeSlideToStackTx) {
     return;
   }
 
@@ -91,17 +88,13 @@ void SlideTransformation::recompute(const glm::vec3& physicalSlideDims) const
     glm::translate(glm::vec3{
       m_normalizedTranslationAlongXY.x * physicalSlideDims.x,
       m_normalizedTranslationAlongXY.y * physicalSlideDims.y,
-      0.0f
-    })
-    *
+      0.0f}) *
 
     // Translate back from center of rotation:
     glm::translate(glm::vec3{
       m_normalizedRotationCenterAlongXY.x * physicalSlideDims.x,
       m_normalizedRotationCenterAlongXY.y * physicalSlideDims.y,
-      0.0f
-    })
-    *
+      0.0f}) *
 
     // Rotation about stack Z axis:
     glm::rotate(glm::radians(m_rotationAngleZ_inDegrees), sk_zAxis);
@@ -213,8 +206,7 @@ void SlideTransformation::setRotationAngleZ(float degrees)
 void SlideTransformation::setShearAnglesXY(glm::vec2 degrees)
 {
   // Constrain to [-90, 90]
-  m_shearAnglesAboutXY_inDegrees
-    = glm::vec2{std::remainder(degrees.x, 180.0f), std::remainder(degrees.y, 180.0f)};
+  m_shearAnglesAboutXY_inDegrees = glm::vec2{std::remainder(degrees.x, 180.0f), std::remainder(degrees.y, 180.0f)};
 
   flagRecompute();
 }
@@ -243,8 +235,7 @@ void SlideTransformation::setScaleRotationAngle(float degrees)
 void SlideTransformation::setScaleFactorsXY(glm::vec2 scale)
 {
   static const glm::vec2 sk_zero(0.0f);
-  if (glm::any(glm::epsilonEqual(scale, sk_zero, glm::epsilon<float>())))
-  {
+  if (glm::any(glm::epsilonEqual(scale, sk_zero, glm::epsilon<float>()))) {
     /// @todo Log
     std::cerr << "Invalid scale factor" << std::endl;
     return;
@@ -256,8 +247,7 @@ void SlideTransformation::setScaleFactorsXY(glm::vec2 scale)
 
 void SlideTransformation::setScaleFactorsX(float sx)
 {
-  if (glm::epsilonEqual(sx, 0.0f, glm::epsilon<float>()))
-  {
+  if (glm::epsilonEqual(sx, 0.0f, glm::epsilon<float>())) {
     /// @todo Log
     std::cerr << "Invalid scale factor" << std::endl;
     return;
@@ -269,8 +259,7 @@ void SlideTransformation::setScaleFactorsX(float sx)
 
 void SlideTransformation::setScaleFactorsY(float sy)
 {
-  if (glm::epsilonEqual(sy, 0.0f, glm::epsilon<float>()))
-  {
+  if (glm::epsilonEqual(sy, 0.0f, glm::epsilon<float>())) {
     /// @todo Log
     std::cerr << "Invalid scale factor" << std::endl;
     return;
@@ -321,22 +310,19 @@ glm::mat4 SlideTransformation::computeScaleAndShearTx() const
 {
   static const glm::vec3 sk_zAxis(0.0f, 0.0f, 1.0f);
 
-  switch (m_shearParamMode)
-  {
-  case ShearParamMode::ScaleRotation:
-  {
-    return glm::rotate(glm::radians(-m_scaleAngle_inDegrees), sk_zAxis)
-           * glm::scale(glm::vec3{m_scaleFactorsAlongXY, 1.0f})
-           * glm::rotate(glm::radians(m_scaleAngle_inDegrees), sk_zAxis);
-  }
-  case ShearParamMode::ShearAngles:
-  {
-    glm::mat4 shearTx(1.0f);
-    shearTx[0][1] = std::tan(glm::radians(m_shearAnglesAboutXY_inDegrees.x));
-    shearTx[1][0] = std::tan(glm::radians(m_shearAnglesAboutXY_inDegrees.y));
+  switch (m_shearParamMode) {
+    case ShearParamMode::ScaleRotation: {
+      return glm::rotate(glm::radians(-m_scaleAngle_inDegrees), sk_zAxis) *
+             glm::scale(glm::vec3{m_scaleFactorsAlongXY, 1.0f}) *
+             glm::rotate(glm::radians(m_scaleAngle_inDegrees), sk_zAxis);
+    }
+    case ShearParamMode::ShearAngles: {
+      glm::mat4 shearTx(1.0f);
+      shearTx[0][1] = std::tan(glm::radians(m_shearAnglesAboutXY_inDegrees.x));
+      shearTx[1][0] = std::tan(glm::radians(m_shearAnglesAboutXY_inDegrees.y));
 
-    return shearTx * glm::scale(glm::vec3{m_scaleFactorsAlongXY, 1.0f});
-  }
+      return shearTx * glm::scale(glm::vec3{m_scaleFactorsAlongXY, 1.0f});
+    }
   }
 
   return glm::mat4{1.0f};

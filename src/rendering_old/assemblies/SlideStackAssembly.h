@@ -34,8 +34,7 @@ public:
     std::weak_ptr<BlankTextures> blankTextures,
     GetterType<float> stackHeightProvider,
     GetterType<glm::mat4> slideStackToWorldTxProvider,
-    QuerierType<bool, uuids::uuid> activeSlideQuerier
-  );
+    QuerierType<bool, uuids::uuid> activeSlideQuerier);
 
   ~SlideStackAssembly() override = default;
 

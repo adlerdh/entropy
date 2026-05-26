@@ -14,8 +14,7 @@ public:
   FullScreenDebugQuad(
     const std::string& name,
     ShaderProgramActivatorType shaderProgramActivator,
-    UniformsProviderType uniformsProvider
-  );
+    UniformsProviderType uniformsProvider);
 
   FullScreenDebugQuad(const FullScreenDebugQuad&) = delete;
   FullScreenDebugQuad& operator=(const FullScreenDebugQuad&) = delete;

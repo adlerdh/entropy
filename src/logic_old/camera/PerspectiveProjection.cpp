@@ -20,10 +20,7 @@ static const float sk_maxAngle = glm::radians(120.0f);
 namespace camera
 {
 
-PerspectiveProjection::PerspectiveProjection()
-  : Projection()
-{
-}
+PerspectiveProjection::PerspectiveProjection() : Projection() {}
 
 ProjectionType PerspectiveProjection::type() const
 {
@@ -38,8 +35,7 @@ glm::mat4 PerspectiveProjection::clip_O_camera() const
 
 void PerspectiveProjection::setZoom(float factor)
 {
-  if (factor > 0.0f)
-  {
+  if (factor > 0.0f) {
     m_zoom = glm::clamp(factor, sk_initAngle / sk_maxAngle, sk_initAngle / sk_minAngle);
   }
 }

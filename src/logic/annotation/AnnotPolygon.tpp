@@ -68,7 +68,10 @@ public:
 
   /// Get all vertices from all boundaries. The first list contains vertices of the outer boundary;
   /// subsequent lists contain vertices of holes.
-  const std::vector<std::vector<PointType> >& getAllVertices() const { return m_vertices; }
+  const std::vector<std::vector<PointType> >& getAllVertices() const
+  {
+    return m_vertices;
+  }
 
   void setClosed(bool closed)
   {
@@ -76,7 +79,10 @@ public:
     computeBezier();
   }
 
-  bool isClosed() const { return m_closed; }
+  bool isClosed() const
+  {
+    return m_closed;
+  }
 
   void setSmoothed(bool smoothed)
   {
@@ -84,7 +90,10 @@ public:
     computeBezier();
   }
 
-  bool isSmoothed() const { return m_smoothed; }
+  bool isSmoothed() const
+  {
+    return m_smoothed;
+  }
 
   void setSmoothingFactor(float factor)
   {
@@ -92,7 +101,10 @@ public:
     computeBezier();
   }
 
-  float getSmoothingFactor() const { return m_smoothingFactor; }
+  float getSmoothingFactor() const
+  {
+    return m_smoothingFactor;
+  }
 
   const std::vector<std::tuple<glm::vec2, glm::vec2, glm::vec2> >& getBezierCommands() const
   {
@@ -103,8 +115,7 @@ public:
   /// boundaries >= 1 are for holes.
   bool setBoundaryVertices(size_t boundary, std::vector<PointType> vertices)
   {
-    if (boundary >= m_vertices.size())
-    {
+    if (boundary >= m_vertices.size()) {
       spdlog::warn("Invalid polygon boundary index {}", boundary);
       return false;
     }
@@ -112,8 +123,7 @@ public:
     m_vertices.at(boundary) = std::move(vertices);
     m_triangulation.clear();
 
-    if (0 == boundary)
-    {
+    if (0 == boundary) {
       computeAABBox();
       computeCentroid();
       computeBezier();
@@ -126,16 +136,14 @@ public:
   /// boundaries >= 1 are for holes.
   bool setBoundaryVertex(size_t boundary, size_t vertexIndex, const PointType& vertex)
   {
-    if (boundary >= m_vertices.size())
-    {
+    if (boundary >= m_vertices.size()) {
       spdlog::warn("Invalid polygon boundary index {}", boundary);
       return false;
     }
 
     std::vector<PointType>& boundaryVertices = m_vertices.at(boundary);
 
-    if (vertexIndex >= boundaryVertices.size())
-    {
+    if (vertexIndex >= boundaryVertices.size()) {
       spdlog::warn("Invalid vertex index {} to set for polygon boundary", vertexIndex, boundary);
       return false;
     }
@@ -144,8 +152,7 @@ public:
 
     m_triangulation.clear();
 
-    if (0 == boundary)
-    {
+    if (0 == boundary) {
       computeAABBox();
       computeCentroid();
       computeBezier();
@@ -158,31 +165,24 @@ public:
   /// boundaries >= 1 are for holes
   bool addVertexToBoundary(size_t boundary, const PointType& vertex)
   {
-    if (boundary >= m_vertices.size())
-    {
-      if (0 == boundary)
-      {
+    if (boundary >= m_vertices.size()) {
+      if (0 == boundary) {
         // Allow adding the outer boundary:
         m_vertices.emplace_back(std::vector<PointType>{vertex});
         spdlog::info("Added new polygon boundary with index {}", boundary);
       }
-      else
-      {
-        spdlog::warn(
-          "Unable to add vertex {} to invalid boundary {}", glm::to_string(vertex), boundary
-        );
+      else {
+        spdlog::warn("Unable to add vertex {} to invalid boundary {}", glm::to_string(vertex), boundary);
         return false;
       }
     }
-    else
-    {
+    else {
       m_vertices[boundary].emplace_back(vertex);
     }
 
     m_triangulation.clear();
 
-    if (0 == boundary)
-    {
+    if (0 == boundary) {
       computeAABBox();
       updateCentroid();
       computeBezier();
@@ -195,22 +195,17 @@ public:
   /// boundaries >= 1 are for holes.
   bool insertVertexIntoBoundary(size_t boundary, size_t vertexIndex, const PointType& vertex)
   {
-    if (boundary >= m_vertices.size())
-    {
-      spdlog::error(
-        "Unable to insert vertex {} into invalid boundary {}", glm::to_string(vertex), boundary
-      );
+    if (boundary >= m_vertices.size()) {
+      spdlog::error("Unable to insert vertex {} into invalid boundary {}", glm::to_string(vertex), boundary);
       return false;
     }
-    else if (vertexIndex < m_vertices[boundary].size())
-    {
+    else if (vertexIndex < m_vertices[boundary].size()) {
       m_vertices[boundary].insert(std::begin(m_vertices[boundary]) + vertexIndex, vertex);
     }
 
     m_triangulation.clear();
 
-    if (0 == boundary)
-    {
+    if (0 == boundary) {
       computeAABBox();
       computeCentroid();
       computeBezier();
@@ -222,12 +217,10 @@ public:
   /// Set the vertices of the outer boundary only.
   void setOuterBoundary(std::vector<PointType> vertices)
   {
-    if (m_vertices.size() >= 1)
-    {
+    if (m_vertices.size() >= 1) {
       m_vertices[0] = std::move(vertices);
     }
-    else
-    {
+    else {
       m_vertices.emplace_back(std::move(vertices));
     }
 
@@ -241,12 +234,10 @@ public:
   /// Add a vertex to the outer boundary
   void addVertexToOuterBoundary(PointType vertex)
   {
-    if (m_vertices.size() >= 1)
-    {
+    if (m_vertices.size() >= 1) {
       m_vertices[0].emplace_back(std::move(vertex));
     }
-    else
-    {
+    else {
       m_vertices.emplace_back(std::vector<PointType>{vertex});
     }
 
@@ -260,22 +251,19 @@ public:
   /// Remove a vertex from a boundary
   bool removeVertexFromBoundary(size_t boundary, size_t vertexIndex)
   {
-    if (boundary >= m_vertices.size())
-    {
+    if (boundary >= m_vertices.size()) {
       spdlog::warn("Invalid polygon boundary index {}", boundary);
       return false;
     }
 
     const size_t numVertices = getBoundaryVertices(boundary).size();
 
-    if (1 == numVertices)
-    {
+    if (1 == numVertices) {
       spdlog::warn("Cannot remove the last vertex of a boundary");
       return false;
     }
 
-    if (vertexIndex >= numVertices)
-    {
+    if (vertexIndex >= numVertices) {
       spdlog::warn("Invalid polygon vertex {}", vertexIndex);
       return false;
     }
@@ -288,8 +276,7 @@ public:
 
     m_triangulation.clear();
 
-    if (0 == boundary)
-    {
+    if (0 == boundary) {
       computeAABBox();
       computeCentroid();
       computeBezier();
@@ -302,8 +289,7 @@ public:
   /// an outer boundary.
   bool addHole(std::vector<PointType> vertices)
   {
-    if (m_vertices.size() >= 1)
-    {
+    if (m_vertices.size() >= 1) {
       m_vertices.emplace_back(std::move(vertices));
       m_triangulation.clear();
       return true;
@@ -319,8 +305,7 @@ public:
   {
     static const std::vector<AnnotPolygon::PointType> sk_emptyBoundary;
 
-    if (boundary >= m_vertices.size())
-    {
+    if (boundary >= m_vertices.size()) {
       spdlog::warn("Invalid polygon boundary index {}", boundary);
       return sk_emptyBoundary;
     }
@@ -329,15 +314,17 @@ public:
   }
 
   /// Get the number of boundaries in the polygon, including the outer boundary and all holes.
-  size_t numBoundaries() const { return m_vertices.size(); }
+  size_t numBoundaries() const
+  {
+    return m_vertices.size();
+  }
 
   /// Get the total number of vertices among all boundaries, including the outer boundary and holes.
   size_t numVertices() const
   {
     size_t N = 0;
 
-    for (const auto& boundary : m_vertices)
-    {
+    for (const auto& boundary : m_vertices) {
       N += boundary.size();
     }
 
@@ -349,16 +336,14 @@ public:
   /// @return Null optional if invalid boundary or vertex index
   std::optional<AnnotPolygon::PointType> getBoundaryVertex(size_t boundary, size_t i) const
   {
-    if (boundary >= m_vertices.size())
-    {
+    if (boundary >= m_vertices.size()) {
       spdlog::warn("Invalid polygon boundary index {}", boundary);
       return std::nullopt;
     }
 
     const auto& vertices = m_vertices.at(boundary);
 
-    if (i >= vertices.size())
-    {
+    if (i >= vertices.size()) {
       spdlog::warn("Invalid vertex index {} for polygon boundary {}", i, boundary);
       return std::nullopt;
     }
@@ -373,14 +358,11 @@ public:
   {
     size_t j = i;
 
-    for (const auto& boundary : m_vertices)
-    {
-      if (j < boundary.size())
-      {
+    for (const auto& boundary : m_vertices) {
+      if (j < boundary.size()) {
         return boundary[j];
       }
-      else
-      {
+      else {
         j -= boundary.size();
       }
     }
@@ -391,34 +373,46 @@ public:
 
   /// Get the axis-aligned bounding box of the polygon.
   /// @returns Null optional if the polygon is empty
-  std::optional<AABBoxType> getAABBox() const { return m_aabb; }
+  std::optional<AABBoxType> getAABBox() const
+  {
+    return m_aabb;
+  }
 
   /// Get the centroid of the polygon's outer boundary.
   /// @returns Origin if the outer boundary has no points.
-  const PointType& getCentroid() const { return m_centroid; }
+  const PointType& getCentroid() const
+  {
+    return m_centroid;
+  }
 
   /// Set the triangulation from a vector of indices that refer to vertices of the whole polygon.
   /// Every three consecutive indices form a triangle and triangles must be clockwise.
-  void setTriangulation(std::vector<size_t> indices) { m_triangulation = std::move(indices); }
+  void setTriangulation(std::vector<size_t> indices)
+  {
+    m_triangulation = std::move(indices);
+  }
 
   /// Return true iff the polygon has a valid triangulation.
-  bool hasTriangulation() const { return (!m_triangulation.empty()); }
+  bool hasTriangulation() const
+  {
+    return (!m_triangulation.empty());
+  }
 
   /// Get the polygon triangulation: a vector of indices refering to vertices of the whole polygon.
-  const std::vector<size_t>& getTriangulation() const { return m_triangulation; }
+  const std::vector<size_t>& getTriangulation() const
+  {
+    return m_triangulation;
+  }
 
   /// Get indices of the i'th triangle. The triangle is oriented clockwise.
   std::optional<std::tuple<size_t, size_t, size_t> > getTriangle(size_t i) const
   {
-    if (3 * i + 2 >= m_triangulation.size())
-    {
+    if (3 * i + 2 >= m_triangulation.size()) {
       spdlog::warn("Invalid triangle index {}", i);
       return std::nullopt;
     }
 
-    return std::make_tuple(
-      m_triangulation.at(3 * i + 0), m_triangulation.at(3 * i + 1), m_triangulation.at(3 * i + 2)
-    );
+    return std::make_tuple(m_triangulation.at(3 * i + 0), m_triangulation.at(3 * i + 1), m_triangulation.at(3 * i + 2));
   }
 
   /// Get the number of triangles in the polygon triangulation.
@@ -432,20 +426,17 @@ private:
   /// Compute the 2D AABB of the outer polygon boundary, if it exists.
   void computeAABBox()
   {
-    if (m_vertices.empty() || m_vertices[0].empty())
-    {
+    if (m_vertices.empty() || m_vertices[0].empty()) {
       // There is no outer boundary or there are no vertices in the outer boundary.
       m_aabb = std::nullopt;
       return;
     }
 
     // Compute AABB of outer boundary vertices
-    m_aabb = std::make_pair(
-      PointType(std::numeric_limits<TComp>::max()), PointType(std::numeric_limits<TComp>::lowest())
-    );
+    m_aabb =
+      std::make_pair(PointType(std::numeric_limits<TComp>::max()), PointType(std::numeric_limits<TComp>::lowest()));
 
-    for (const auto& v : m_vertices[0])
-    {
+    for (const auto& v : m_vertices[0]) {
       m_aabb->first = glm::min(m_aabb->first, v);
       m_aabb->second = glm::max(m_aabb->second, v);
     }
@@ -455,8 +446,7 @@ private:
   /// Call this function AFTER adding the new point to the boundary.
   void updateCentroid()
   {
-    if (m_vertices.empty())
-    {
+    if (m_vertices.empty()) {
       // No outer boundary
       m_centroid = PointType{0};
       return;
@@ -465,13 +455,11 @@ private:
     const auto& outerBoundary = m_vertices[0];
     const size_t N = outerBoundary.size();
 
-    if (0 == N)
-    {
+    if (0 == N) {
       m_centroid = PointType{0};
       return;
     }
-    else if (1 == N)
-    {
+    else if (1 == N) {
       m_centroid = outerBoundary.front();
       return;
     }
@@ -484,8 +472,7 @@ private:
   {
     m_centroid = PointType{0};
 
-    if (m_vertices.empty())
-    {
+    if (m_vertices.empty()) {
       // No outer boundary
       return;
     }
@@ -493,13 +480,11 @@ private:
     const auto& outerBoundary = m_vertices[0];
     const size_t N = outerBoundary.size();
 
-    if (0 == N)
-    {
+    if (0 == N) {
       return;
     }
 
-    for (const auto& p : outerBoundary)
-    {
+    for (const auto& p : outerBoundary) {
       m_centroid += p;
     }
 
@@ -511,8 +496,7 @@ private:
   /// Only applies to 2D polygons.
   void computeBezier()
   {
-    if (2 == Dim && !m_vertices.empty() && m_smoothed)
-    {
+    if (2 == Dim && !m_vertices.empty() && m_smoothed) {
       m_bezierCommands = computeBezierCommands(m_vertices[0], m_smoothingFactor, m_closed);
     }
   }

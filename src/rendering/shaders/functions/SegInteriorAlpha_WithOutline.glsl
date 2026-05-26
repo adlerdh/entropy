@@ -14,8 +14,7 @@ float getSegInteriorAlpha(uint seg)
   // The center fragment (row = 0, col = 0) has index i = 4.
 
   // Loop over rows in [-1, 0, 1] and cols in [-1, 0, 1]
-  for (int i = 0; i <= 8; ++i)
-  {
+  for (int i = 0; i <= 8; ++i) {
     float row = float(mod(i, 3) - 1);
     float col = float(floor(float(i / 3)) - 1);
 

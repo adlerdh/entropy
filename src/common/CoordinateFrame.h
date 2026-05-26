@@ -49,9 +49,12 @@ public:
    *
    * @note The angles between the input Frame-space and World-space axes must be equal.
    */
-  CoordinateFrame(glm::vec3 worldOrigin,
-                  const glm::vec3& frameAxis1, const glm::vec3& worldAxis1,
-                  const glm::vec3& frameAxis2, const glm::vec3& worldAxis2);
+  CoordinateFrame(
+    glm::vec3 worldOrigin,
+    const glm::vec3& frameAxis1,
+    const glm::vec3& worldAxis1,
+    const glm::vec3& frameAxis2,
+    const glm::vec3& worldAxis2);
 
   CoordinateFrame(const CoordinateFrame&) = default;
   CoordinateFrame& operator=(const CoordinateFrame&) = default;
@@ -105,8 +108,10 @@ public:
    *            world axes to be equal
    */
   void setFrameToWorldRotation(
-    const glm::vec3& frameAxis1, const glm::vec3& worldAxis1,
-    const glm::vec3& frameAxis2, const glm::vec3& worldAxis2,
+    const glm::vec3& frameAxis1,
+    const glm::vec3& worldAxis1,
+    const glm::vec3& frameAxis2,
+    const glm::vec3& worldAxis2,
     bool requireEqualAngles);
 
   /**

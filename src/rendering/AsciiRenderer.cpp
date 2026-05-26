@@ -44,8 +44,7 @@ CMRC_DECLARE(shaders);
 static const std::vector<std::string> sk_asciiCharsets = {
   " .:-=+*#%@",
   "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ",
-  " 01"
-};
+  " 01"};
 
 namespace
 {
@@ -57,9 +56,7 @@ const glm::ivec2 sk_zeroIVec2{0, 0};
 // Sampler index for the ASCII atlas texture unit (must match Rendering.cpp)
 const Uniforms::SamplerIndexType sk_asciiAtlasSampler{2};
 
-std::string applyReplacements(
-  const std::string& src,
-  const std::unordered_map<std::string, std::string>& replacements)
+std::string applyReplacements(const std::string& src, const std::unordered_map<std::string, std::string>& replacements)
 {
   std::string result = src;
   for (const auto& [placeholder, replacement] : replacements) {
@@ -72,8 +69,7 @@ std::string applyReplacements(
   return result;
 }
 
-entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string>
-buildAsciiShaderProgram(
+entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> buildAsciiShaderProgram(
   const std::string& programName,
   const std::string& vsName,
   const std::string& fsName,
@@ -111,16 +107,13 @@ buildAsciiShaderProgram(
   auto program = std::make_unique<GLShaderProgram>(programName);
 
   if (!program->attachShader(vs)) {
-    return entropy_expected::unexpected(
-      std::format("Unable to compile ASCII vertex shader {}", vsName));
+    return entropy_expected::unexpected(std::format("Unable to compile ASCII vertex shader {}", vsName));
   }
   if (!program->attachShader(fs)) {
-    return entropy_expected::unexpected(
-      std::format("Unable to compile ASCII fragment shader {}", fsName));
+    return entropy_expected::unexpected(std::format("Unable to compile ASCII fragment shader {}", fsName));
   }
   if (!program->link()) {
-    return entropy_expected::unexpected(
-      std::format("Failed to link ASCII shader program {}", programName));
+    return entropy_expected::unexpected(std::format("Failed to link ASCII shader program {}", programName));
   }
 
   spdlog::debug("Linked ASCII shader program '{}'", programName);
@@ -176,76 +169,101 @@ void AsciiRenderer::registerShaderPrograms(
   }
 
   const std::unordered_map<std::string, std::string> compositePlaceholder{
-    {"{{ASCII_COMPOSITE_FUNCTIONS}}", compositeFunctions}
-  };
+    {"{{ASCII_COMPOSITE_FUNCTIONS}}", compositeFunctions}};
 
   Uniforms fsAsciiCellMeanUniforms;
-  fsAsciiCellMeanUniforms.insertUniform("u_sceneTex",   UniformType::Sampler, Uniforms::SamplerIndexType{3});
-  fsAsciiCellMeanUniforms.insertUniform("u_viewSizePx", UniformType::Vec2,    sk_zeroVec2);
-  fsAsciiCellMeanUniforms.insertUniform("u_cellSizePx", UniformType::Vec2,    sk_zeroVec2);
+  fsAsciiCellMeanUniforms.insertUniform("u_sceneTex", UniformType::Sampler, Uniforms::SamplerIndexType{3});
+  fsAsciiCellMeanUniforms.insertUniform("u_viewSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiCellMeanUniforms.insertUniform("u_cellSizePx", UniformType::Vec2, sk_zeroVec2);
 
   Uniforms fsAsciiPostUniforms;
-  fsAsciiPostUniforms.insertUniform("u_cellMeanTex",       UniformType::Sampler, Uniforms::SamplerIndexType{4});
-  fsAsciiPostUniforms.insertUniform("u_asciiAtlas",        UniformType::Sampler, sk_asciiAtlasSampler);
-  fsAsciiPostUniforms.insertUniform("u_viewSizePx",        UniformType::Vec2,    sk_zeroVec2);
-  fsAsciiPostUniforms.insertUniform("u_asciiCellSizePx",   UniformType::Vec2,    sk_zeroVec2);
-  fsAsciiPostUniforms.insertUniform("u_asciiGlyphCount",   UniformType::Int,     0);
-  fsAsciiPostUniforms.insertUniform("u_asciiFgColor",      UniformType::Vec3,    glm::vec3{1.f});
-  fsAsciiPostUniforms.insertUniform("u_asciiBgColor",      UniformType::Vec3,    sk_zeroVec3);
-  fsAsciiPostUniforms.insertUniform("u_asciiBgAlpha",      UniformType::Float,   1.f);
-  fsAsciiPostUniforms.insertUniform("u_asciiUseColormap",  UniformType::Bool,    false);
-  fsAsciiPostUniforms.insertUniform("u_asciiSlotSizePx",   UniformType::Vec2,    sk_zeroVec2);
-  fsAsciiPostUniforms.insertUniform("u_asciiSdfPadding",   UniformType::Float,   0.f);
-  fsAsciiPostUniforms.insertUniform("u_asciiPixDistScale", UniformType::Float,   0.f);
+  fsAsciiPostUniforms.insertUniform("u_cellMeanTex", UniformType::Sampler, Uniforms::SamplerIndexType{4});
+  fsAsciiPostUniforms.insertUniform("u_asciiAtlas", UniformType::Sampler, sk_asciiAtlasSampler);
+  fsAsciiPostUniforms.insertUniform("u_viewSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiPostUniforms.insertUniform("u_asciiCellSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiPostUniforms.insertUniform("u_asciiGlyphCount", UniformType::Int, 0);
+  fsAsciiPostUniforms.insertUniform("u_asciiFgColor", UniformType::Vec3, glm::vec3{1.f});
+  fsAsciiPostUniforms.insertUniform("u_asciiBgColor", UniformType::Vec3, sk_zeroVec3);
+  fsAsciiPostUniforms.insertUniform("u_asciiBgAlpha", UniformType::Float, 1.f);
+  fsAsciiPostUniforms.insertUniform("u_asciiUseColormap", UniformType::Bool, false);
+  fsAsciiPostUniforms.insertUniform("u_asciiSlotSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiPostUniforms.insertUniform("u_asciiSdfPadding", UniformType::Float, 0.f);
+  fsAsciiPostUniforms.insertUniform("u_asciiPixDistScale", UniformType::Float, 0.f);
 
   Uniforms fsAsciiCellRegionsUniforms;
-  fsAsciiCellRegionsUniforms.insertUniform("u_sceneTex",      UniformType::Sampler, Uniforms::SamplerIndexType{3});
-  fsAsciiCellRegionsUniforms.insertUniform("u_viewSizePx",    UniformType::Vec2,    sk_zeroVec2);
-  fsAsciiCellRegionsUniforms.insertUniform("u_cellSizePx",    UniformType::Vec2,    sk_zeroVec2);
-  fsAsciiCellRegionsUniforms.insertUniform("u_cellSizePxInt", UniformType::IVec2,   sk_zeroIVec2);
+  fsAsciiCellRegionsUniforms.insertUniform("u_sceneTex", UniformType::Sampler, Uniforms::SamplerIndexType{3});
+  fsAsciiCellRegionsUniforms.insertUniform("u_viewSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiCellRegionsUniforms.insertUniform("u_cellSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiCellRegionsUniforms.insertUniform("u_cellSizePxInt", UniformType::IVec2, sk_zeroIVec2);
 
   Uniforms fsAsciiPostSpatialUniforms;
-  fsAsciiPostSpatialUniforms.insertUniform("u_cellRegionsTex",    UniformType::Sampler, Uniforms::SamplerIndexType{5});
-  fsAsciiPostSpatialUniforms.insertUniform("u_cellMeanTex",       UniformType::Sampler, Uniforms::SamplerIndexType{4});
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiAtlas",        UniformType::Sampler, sk_asciiAtlasSampler);
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiLumLut",       UniformType::Sampler, Uniforms::SamplerIndexType{6});
-  fsAsciiPostSpatialUniforms.insertUniform("u_viewSizePx",        UniformType::Vec2,    sk_zeroVec2);
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiCellSizePx",   UniformType::Vec2,    sk_zeroVec2);
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiGlyphCount",   UniformType::Int,     0);
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiFgColor",      UniformType::Vec3,    glm::vec3{1.f});
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiBgColor",      UniformType::Vec3,    sk_zeroVec3);
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiBgAlpha",      UniformType::Float,   1.f);
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiUseColormap",  UniformType::Bool,    false);
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiSlotSizePx",   UniformType::Vec2,    sk_zeroVec2);
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiSdfPadding",   UniformType::Float,   0.f);
-  fsAsciiPostSpatialUniforms.insertUniform("u_asciiPixDistScale", UniformType::Float,   0.f);
+  fsAsciiPostSpatialUniforms.insertUniform("u_cellRegionsTex", UniformType::Sampler, Uniforms::SamplerIndexType{5});
+  fsAsciiPostSpatialUniforms.insertUniform("u_cellMeanTex", UniformType::Sampler, Uniforms::SamplerIndexType{4});
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiAtlas", UniformType::Sampler, sk_asciiAtlasSampler);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiLumLut", UniformType::Sampler, Uniforms::SamplerIndexType{6});
+  fsAsciiPostSpatialUniforms.insertUniform("u_viewSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiCellSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiGlyphCount", UniformType::Int, 0);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiFgColor", UniformType::Vec3, glm::vec3{1.f});
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiBgColor", UniformType::Vec3, sk_zeroVec3);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiBgAlpha", UniformType::Float, 1.f);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiUseColormap", UniformType::Bool, false);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiSlotSizePx", UniformType::Vec2, sk_zeroVec2);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiSdfPadding", UniformType::Float, 0.f);
+  fsAsciiPostSpatialUniforms.insertUniform("u_asciiPixDistScale", UniformType::Float, 0.f);
 
-  struct AsciiShaderDesc {
+  struct AsciiShaderDesc
+  {
     ShaderProgramType type;
-    const char*       vsFile;
-    const char*       fsFile;
+    const char* vsFile;
+    const char* fsFile;
     const std::unordered_map<std::string, std::string>* fsReplacements;
-    Uniforms          vsUniforms;
-    Uniforms          fsUniforms;
+    Uniforms vsUniforms;
+    Uniforms fsUniforms;
   };
 
   static const std::unordered_map<std::string, std::string> sk_noReplacements;
 
   const std::array<AsciiShaderDesc, 4> descs = {{
-    {ShaderProgramType::AsciiCellMean,    "AsciiPost.vs", "AsciiCellMean.fs",    &sk_noReplacements,   Uniforms{}, fsAsciiCellMeanUniforms},
-    {ShaderProgramType::AsciiPost,        "AsciiPost.vs", "AsciiPost.fs",        &compositePlaceholder, Uniforms{}, fsAsciiPostUniforms},
-    {ShaderProgramType::AsciiCellRegions, "AsciiPost.vs", "AsciiCellRegions.fs", &sk_noReplacements,   Uniforms{}, fsAsciiCellRegionsUniforms},
-    {ShaderProgramType::AsciiPostSpatial, "AsciiPost.vs", "AsciiPostSpatial.fs", &compositePlaceholder, Uniforms{}, fsAsciiPostSpatialUniforms},
+    {ShaderProgramType::AsciiCellMean,
+     "AsciiPost.vs",
+     "AsciiCellMean.fs",
+     &sk_noReplacements,
+     Uniforms{},
+     fsAsciiCellMeanUniforms},
+    {ShaderProgramType::AsciiPost,
+     "AsciiPost.vs",
+     "AsciiPost.fs",
+     &compositePlaceholder,
+     Uniforms{},
+     fsAsciiPostUniforms},
+    {ShaderProgramType::AsciiCellRegions,
+     "AsciiPost.vs",
+     "AsciiCellRegions.fs",
+     &sk_noReplacements,
+     Uniforms{},
+     fsAsciiCellRegionsUniforms},
+    {ShaderProgramType::AsciiPostSpatial,
+     "AsciiPost.vs",
+     "AsciiPostSpatial.fs",
+     &compositePlaceholder,
+     Uniforms{},
+     fsAsciiPostSpatialUniforms},
   }};
 
   for (const auto& desc : descs) {
     auto prog = buildAsciiShaderProgram(
-      to_string(desc.type), desc.vsFile, desc.fsFile, *desc.fsReplacements,
-      desc.vsUniforms, desc.fsUniforms);
+      to_string(desc.type),
+      desc.vsFile,
+      desc.fsFile,
+      *desc.fsReplacements,
+      desc.vsUniforms,
+      desc.fsUniforms);
 
     if (prog) {
       programs.emplace(desc.type, std::move(*prog));
-    } else {
+    }
+    else {
       spdlog::error(prog.error());
       throw_debug(std::format("Failed to create ASCII shader program {}", to_string(desc.type)))
     }
@@ -270,8 +288,7 @@ void AsciiRenderer::maybeRebuildAtlas()
 void AsciiRenderer::buildAtlas()
 {
   const RenderData& R = m_appData.renderData();
-  const int charsetIdx = std::clamp(R.m_asciiCharsetIndex, 0,
-                                    static_cast<int>(sk_asciiCharsets.size()) - 1);
+  const int charsetIdx = std::clamp(R.m_asciiCharsetIndex, 0, static_cast<int>(sk_asciiCharsets.size()) - 1);
   const std::string& charset = sk_asciiCharsets[charsetIdx];
 
   try {
@@ -285,7 +302,7 @@ void AsciiRenderer::buildAtlas()
       auto fontFs = cmrc::fonts::get_filesystem();
       const cmrc::file f = fontFs.open("resources/fonts/Cousine/Cousine-Regular.ttf");
       fontBuf.assign(f.begin(), f.end());
-      ttfData  = fontBuf.data();
+      ttfData = fontBuf.data();
       ttfBytes = static_cast<int>(fontBuf.size());
     }
     catch (const std::exception& fe) {
@@ -294,7 +311,8 @@ void AsciiRenderer::buildAtlas()
 
     if (!m_asciiAtlas.build(ttfData, ttfBytes, charset, cellPx)) {
       spdlog::error("Failed to build ASCII atlas");
-    } else {
+    }
+    else {
       m_asciiLumLutCellPx = glm::vec2{0.0f};
       m_asciiLumLutTex.reset();
       m_asciiCellRegionsTex.reset();
@@ -315,10 +333,7 @@ void AsciiRenderer::ensureSceneFboSize(glm::ivec2 deviceSize)
   m_sceneFboSize = deviceSize;
 
   using namespace tex;
-  const glm::uvec3 texSize{
-    static_cast<uint32_t>(deviceSize.x),
-    static_cast<uint32_t>(deviceSize.y),
-    1u};
+  const glm::uvec3 texSize{static_cast<uint32_t>(deviceSize.x), static_cast<uint32_t>(deviceSize.y), 1u};
 
   if (!m_sceneColorTex) {
     m_sceneColorTex.emplace(tex::Target::Texture2D);
@@ -330,12 +345,8 @@ void AsciiRenderer::ensureSceneFboSize(glm::ivec2 deviceSize)
 
   m_sceneColorTex->setSize(texSize);
   m_sceneColorTex->bind(std::nullopt);
-  m_sceneColorTex->setData(
-    0,
-    SizedInternalFormat::RGBA8_UNorm,
-    BufferPixelFormat::RGBA,
-    BufferPixelDataType::UInt8,
-    nullptr);
+  m_sceneColorTex
+    ->setData(0, SizedInternalFormat::RGBA8_UNorm, BufferPixelFormat::RGBA, BufferPixelDataType::UInt8, nullptr);
   m_sceneColorTex->unbind();
 
   if (m_sceneFbo.id() == 0) {
@@ -350,8 +361,7 @@ void AsciiRenderer::ensureAsciiCellFbo(glm::ivec2 viewSizeDevPx, glm::vec2 cellS
 {
   const glm::ivec2 cellMeanSize{
     static_cast<int>(std::ceil(static_cast<float>(viewSizeDevPx.x) / cellSizePxDev.x)),
-    static_cast<int>(std::ceil(static_cast<float>(viewSizeDevPx.y) / cellSizePxDev.y))
-  };
+    static_cast<int>(std::ceil(static_cast<float>(viewSizeDevPx.y) / cellSizePxDev.y))};
 
   if (cellMeanSize == m_asciiCellMeanTexSize && m_asciiCellMeanTex && m_asciiCellMeanFbo) {
     return;
@@ -359,11 +369,7 @@ void AsciiRenderer::ensureAsciiCellFbo(glm::ivec2 viewSizeDevPx, glm::vec2 cellS
   m_asciiCellMeanTexSize = cellMeanSize;
 
   using namespace tex;
-  const glm::uvec3 texSize{
-    static_cast<uint32_t>(cellMeanSize.x),
-    static_cast<uint32_t>(cellMeanSize.y),
-    1u
-  };
+  const glm::uvec3 texSize{static_cast<uint32_t>(cellMeanSize.x), static_cast<uint32_t>(cellMeanSize.y), 1u};
 
   if (!m_asciiCellMeanTex) {
     m_asciiCellMeanTex.emplace(tex::Target::Texture2D);
@@ -375,12 +381,8 @@ void AsciiRenderer::ensureAsciiCellFbo(glm::ivec2 viewSizeDevPx, glm::vec2 cellS
 
   m_asciiCellMeanTex->setSize(texSize);
   m_asciiCellMeanTex->bind(std::nullopt);
-  m_asciiCellMeanTex->setData(
-    0,
-    SizedInternalFormat::RGBA16F,
-    BufferPixelFormat::RGBA,
-    BufferPixelDataType::Float32,
-    nullptr);
+  m_asciiCellMeanTex
+    ->setData(0, SizedInternalFormat::RGBA16F, BufferPixelFormat::RGBA, BufferPixelDataType::Float32, nullptr);
   m_asciiCellMeanTex->unbind();
 
   if (!m_asciiCellMeanFbo) {
@@ -403,14 +405,13 @@ void AsciiRenderer::render(
   const bool renderAnnotationsOnTop = R.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
 
   const Viewport& windowVP = m_appData.windowData().viewport();
-  const glm::vec4 deviceVP  = windowVP.getDeviceAsVec4();
+  const glm::vec4 deviceVP = windowVP.getDeviceAsVec4();
   const glm::vec4 logicalVP = windowVP.getAsVec4();
   const glm::ivec2 deviceSize{static_cast<int>(deviceVP[2]), static_cast<int>(deviceVP[3])};
   const glm::vec2 viewSizePx{static_cast<float>(deviceVP[2]), static_cast<float>(deviceVP[3])};
   const glm::vec2 dpr{
     (logicalVP[2] > 0.0f) ? (deviceVP[2] / logicalVP[2]) : 1.0f,
-    (logicalVP[3] > 0.0f) ? (deviceVP[3] / logicalVP[3]) : 1.0f
-  };
+    (logicalVP[3] > 0.0f) ? (deviceVP[3] / logicalVP[3]) : 1.0f};
 
   ensureSceneFboSize(deviceSize);
 
@@ -419,9 +420,7 @@ void AsciiRenderer::render(
     const glm::ivec2 slotPx = m_asciiAtlas.slotSize();
     if (slotPx.y > 0) {
       m_appData.renderData().m_asciiCellSizePx.x =
-        m_appData.renderData().m_asciiCellSizePx.y
-        * static_cast<float>(slotPx.x)
-        / static_cast<float>(slotPx.y);
+        m_appData.renderData().m_asciiCellSizePx.y * static_cast<float>(slotPx.x) / static_cast<float>(slotPx.y);
     }
   }
 
@@ -437,13 +436,12 @@ void AsciiRenderer::render(
     std::vector<uint8_t> lut(256);
     if (N <= 1) {
       std::fill(lut.begin(), lut.end(), static_cast<uint8_t>(0));
-    } else {
+    }
+    else {
       const auto intLut = buildLumLut(coverage);
       for (int bin = 0; bin < 256; ++bin) {
-        lut[static_cast<size_t>(bin)] =
-          static_cast<uint8_t>(std::round(
-            static_cast<float>(intLut[static_cast<size_t>(bin)])
-            / static_cast<float>(N - 1) * 255.0f));
+        lut[static_cast<size_t>(bin)] = static_cast<uint8_t>(
+          std::round(static_cast<float>(intLut[static_cast<size_t>(bin)]) / static_cast<float>(N - 1) * 255.0f));
       }
     }
 
@@ -471,9 +469,9 @@ void AsciiRenderer::render(
   }
 
   // Rebuild spatial profiles if cell size changed
-  if (R.m_asciiSpatialMode &&
-      (cellPxDev != m_asciiSpatialProfileCellPx || m_glyphProfilesPackedA.empty()) &&
-      m_asciiAtlas.glyphCount() > 0)
+  if (
+    R.m_asciiSpatialMode && (cellPxDev != m_asciiSpatialProfileCellPx || m_glyphProfilesPackedA.empty()) &&
+    m_asciiAtlas.glyphCount() > 0)
   {
     m_asciiSpatialProfileCellPx = cellPxDev;
     auto profiles = m_asciiAtlas.computeRenderedSpatialProfiles(cellPxDev);
@@ -494,7 +492,7 @@ void AsciiRenderer::render(
       m_glyphProfilesPackedB[static_cast<size_t>(g)] = {p[4], p[5], 0.0f, 0.0f};
     }
 
-    const auto coverage  = m_asciiAtlas.computeRenderedCoverage(cellPxDev);
+    const auto coverage = m_asciiAtlas.computeRenderedCoverage(cellPxDev);
     const auto rankOrder = buildCoverageRankOrder(coverage);
 
     m_glyphRankToIndex.assign(static_cast<size_t>(AsciiAtlas::kMaxGlyphs), 0);
@@ -509,8 +507,7 @@ void AsciiRenderer::render(
       static_cast<unsigned>(m_asciiCellMeanTexSize.y),
       1u};
 
-    const bool needsReallocA = !m_asciiCellRegionsTex ||
-        (m_asciiCellRegionsTex->size() != regTexSize);
+    const bool needsReallocA = !m_asciiCellRegionsTex || (m_asciiCellRegionsTex->size() != regTexSize);
     if (needsReallocA) {
       if (!m_asciiCellRegionsTex) {
         m_asciiCellRegionsTex.emplace(tex::Target::Texture2D);
@@ -530,8 +527,7 @@ void AsciiRenderer::render(
       m_asciiCellRegionsTex->unbind();
     }
 
-    const bool needsReallocB = !m_asciiCellRegionsTexB ||
-        (m_asciiCellRegionsTexB->size() != regTexSize);
+    const bool needsReallocB = !m_asciiCellRegionsTexB || (m_asciiCellRegionsTexB->size() != regTexSize);
     if (needsReallocB) {
       if (!m_asciiCellRegionsTexB) {
         m_asciiCellRegionsTexB.emplace(tex::Target::Texture2D);
@@ -552,36 +548,36 @@ void AsciiRenderer::render(
     }
   }
 
-  GLShaderProgram& asciiCellMeanProg    = *shaderPrograms.at(ShaderProgramType::AsciiCellMean);
+  GLShaderProgram& asciiCellMeanProg = *shaderPrograms.at(ShaderProgramType::AsciiCellMean);
   GLShaderProgram& asciiCellRegionsProg = *shaderPrograms.at(ShaderProgramType::AsciiCellRegions);
-  GLShaderProgram& asciiPostProg        = *shaderPrograms.at(ShaderProgramType::AsciiPost);
+  GLShaderProgram& asciiPostProg = *shaderPrograms.at(ShaderProgramType::AsciiPost);
   GLShaderProgram& asciiPostSpatialProg = *shaderPrograms.at(ShaderProgramType::AsciiPostSpatial);
 
   // Pre-compute per-view data
-  struct ViewData {
+  struct ViewData
+  {
     View* view;
     glm::vec3 worldXhairsOffset;
     FrameBounds miewportViewBounds;
-    GLint   sx, sy;
+    GLint sx, sy;
     GLsizei sw, sh;
   };
 
   std::vector<ViewData> viewDataList;
-  for (const auto& [viewUid, view] : m_appData.windowData().currentLayout().views())
-  {
+  for (const auto& [viewUid, view] : m_appData.windowData().currentLayout().views()) {
     if (!view) {
       continue;
     }
 
-    const glm::vec3 worldXhairsOffset = view->updateImageSlice(
-      m_appData, m_appData.state().worldCrosshairs().worldOrigin());
+    const glm::vec3 worldXhairsOffset =
+      view->updateImageSlice(m_appData, m_appData.state().worldCrosshairs().worldOrigin());
 
-    const auto miewportViewBounds = helper::computeMiewportFrameBounds(
-      view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4());
+    const auto miewportViewBounds =
+      helper::computeMiewportFrameBounds(view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4());
 
     const glm::vec4 clip = view->windowClipViewport();
-    const GLint   sx = static_cast<GLint>  ((clip[0] * 0.5f + 0.5f) * deviceVP[2]);
-    const GLint   sy = static_cast<GLint>  ((clip[1] * 0.5f + 0.5f) * deviceVP[3]);
+    const GLint sx = static_cast<GLint>((clip[0] * 0.5f + 0.5f) * deviceVP[2]);
+    const GLint sy = static_cast<GLint>((clip[1] * 0.5f + 0.5f) * deviceVP[3]);
     const GLsizei sw = static_cast<GLsizei>(clip[2] * 0.5f * deviceVP[2]);
     const GLsizei sh = static_cast<GLsizei>(clip[3] * 0.5f * deviceVP[3]);
 
@@ -591,13 +587,14 @@ void AsciiRenderer::render(
   // PASS 1: Render all views into scene FBO
   m_sceneFbo.bind(fbo::TargetType::Draw);
   glViewport(
-    static_cast<GLint>(deviceVP[0]), static_cast<GLint>(deviceVP[1]),
-    static_cast<GLsizei>(deviceVP[2]), static_cast<GLsizei>(deviceVP[3]));
+    static_cast<GLint>(deviceVP[0]),
+    static_cast<GLint>(deviceVP[1]),
+    static_cast<GLsizei>(deviceVP[2]),
+    static_cast<GLsizei>(deviceVP[3]));
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  for (const auto& vd : viewDataList)
-  {
+  for (const auto& vd : viewDataList) {
     glEnable(GL_SCISSOR_TEST);
     glScissor(vd.sx, vd.sy, vd.sw, vd.sh);
     drawImages(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
@@ -613,34 +610,31 @@ void AsciiRenderer::render(
   glActiveTexture(GL_TEXTURE3);
   glBindTexture(GL_TEXTURE_2D, m_sceneColorTex->id());
 
-  m_asciiCellMeanFbo->attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color,
-                                      *m_asciiCellMeanTex, 0);
+  m_asciiCellMeanFbo->attach2DTexture(fbo::TargetType::Draw, fbo::AttachmentType::Color, *m_asciiCellMeanTex, 0);
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
   asciiCellMeanProg.use();
-  asciiCellMeanProg.setSamplerUniform("u_sceneTex",  3);
-  asciiCellMeanProg.setUniform("u_viewSizePx",       viewSizePx);
-  asciiCellMeanProg.setUniform("u_cellSizePx",       cellPxDev);
+  asciiCellMeanProg.setSamplerUniform("u_sceneTex", 3);
+  asciiCellMeanProg.setUniform("u_viewSizePx", viewSizePx);
+  asciiCellMeanProg.setUniform("u_cellSizePx", cellPxDev);
   m_asciiPostVao.bind();
   glDrawArrays(GL_TRIANGLES, 0, 3);
   m_asciiPostVao.release();
   asciiCellMeanProg.stopUse();
 
   if (R.m_asciiSpatialMode && m_asciiCellRegionsTex && m_asciiCellRegionsTexB) {
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           m_asciiCellRegionsTex->id(), 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
-                           m_asciiCellRegionsTexB->id(), 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_asciiCellRegionsTex->id(), 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_asciiCellRegionsTexB->id(), 0);
     const GLenum drawBufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     glDrawBuffers(2, drawBufs);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     asciiCellRegionsProg.use();
-    asciiCellRegionsProg.setSamplerUniform("u_sceneTex",  3);
-    asciiCellRegionsProg.setUniform("u_viewSizePx",       viewSizePx);
-    asciiCellRegionsProg.setUniform("u_cellSizePx",    cellPxDev);
+    asciiCellRegionsProg.setSamplerUniform("u_sceneTex", 3);
+    asciiCellRegionsProg.setUniform("u_viewSizePx", viewSizePx);
+    asciiCellRegionsProg.setUniform("u_cellSizePx", cellPxDev);
     asciiCellRegionsProg.setUniform("u_cellSizePxInt", glm::ivec2(glm::round(cellPxDev)));
     m_asciiPostVao.bind();
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -657,11 +651,14 @@ void AsciiRenderer::render(
   // PASS 2: Composite to default FB
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(
-    static_cast<GLint>(deviceVP[0]), static_cast<GLint>(deviceVP[1]),
-    static_cast<GLsizei>(deviceVP[2]), static_cast<GLsizei>(deviceVP[3]));
+    static_cast<GLint>(deviceVP[0]),
+    static_cast<GLint>(deviceVP[1]),
+    static_cast<GLsizei>(deviceVP[2]),
+    static_cast<GLsizei>(deviceVP[3]));
 
-  if (R.m_asciiSpatialMode && m_asciiCellRegionsTex && m_asciiCellRegionsTexB
-      && !m_glyphProfilesPackedA.empty() && m_asciiLumLutTex)
+  if (
+    R.m_asciiSpatialMode && m_asciiCellRegionsTex && m_asciiCellRegionsTexB && !m_glyphProfilesPackedA.empty() &&
+    m_asciiLumLutTex)
   {
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, m_asciiCellMeanTex->id());
@@ -677,52 +674,57 @@ void AsciiRenderer::render(
     glBindTexture(GL_TEXTURE_2D, m_asciiCellRegionsTexB->id());
 
     asciiPostSpatialProg.use();
-    asciiPostSpatialProg.setSamplerUniform("u_cellMeanTex",     4);
-    asciiPostSpatialProg.setSamplerUniform("u_cellRegionsTex",  5);
-    asciiPostSpatialProg.setSamplerUniform("u_asciiAtlas",      sk_asciiAtlasSampler.index);
+    asciiPostSpatialProg.setSamplerUniform("u_cellMeanTex", 4);
+    asciiPostSpatialProg.setSamplerUniform("u_cellRegionsTex", 5);
+    asciiPostSpatialProg.setSamplerUniform("u_asciiAtlas", sk_asciiAtlasSampler.index);
     if (m_asciiLumLutTex) {
       asciiPostSpatialProg.setSamplerUniform("u_asciiLumLut", 6);
     }
     asciiPostSpatialProg.setSamplerUniform("u_cellRegionsTexB", 7);
-    asciiPostSpatialProg.setUniform("u_viewSizePx",             viewSizePx);
-    asciiPostSpatialProg.setUniform("u_asciiCellSizePx",        cellPxDev);
+    asciiPostSpatialProg.setUniform("u_viewSizePx", viewSizePx);
+    asciiPostSpatialProg.setUniform("u_asciiCellSizePx", cellPxDev);
     const int safeN = std::min(m_asciiAtlas.glyphCount(), AsciiAtlas::kMaxGlyphs);
-    asciiPostSpatialProg.setUniform("u_asciiGlyphCount",        safeN);
-    asciiPostSpatialProg.setUniform("u_asciiFgColor",           R.m_asciiFgColor);
-    asciiPostSpatialProg.setUniform("u_asciiBgColor",           R.m_asciiBgColor);
-    asciiPostSpatialProg.setUniform("u_asciiBgAlpha",           R.m_asciiBgAlpha);
-    asciiPostSpatialProg.setUniform("u_asciiUseColormap",       R.m_asciiUseColormap);
+    asciiPostSpatialProg.setUniform("u_asciiGlyphCount", safeN);
+    asciiPostSpatialProg.setUniform("u_asciiFgColor", R.m_asciiFgColor);
+    asciiPostSpatialProg.setUniform("u_asciiBgColor", R.m_asciiBgColor);
+    asciiPostSpatialProg.setUniform("u_asciiBgAlpha", R.m_asciiBgAlpha);
+    asciiPostSpatialProg.setUniform("u_asciiUseColormap", R.m_asciiUseColormap);
     asciiPostSpatialProg.setUniform("u_asciiSpatialDensityWindow", m_asciiSpatialDensityWindow);
     {
       const glm::ivec2 slotPx = m_asciiAtlas.slotSize();
-      asciiPostSpatialProg.setUniform("u_asciiSlotSizePx",
-          glm::vec2{static_cast<float>(slotPx.x), static_cast<float>(slotPx.y)});
+      asciiPostSpatialProg.setUniform(
+        "u_asciiSlotSizePx",
+        glm::vec2{static_cast<float>(slotPx.x), static_cast<float>(slotPx.y)});
     }
-    asciiPostSpatialProg.setUniform("u_asciiSdfPadding",   static_cast<float>(AsciiAtlas::kPadding));
+    asciiPostSpatialProg.setUniform("u_asciiSdfPadding", static_cast<float>(AsciiAtlas::kPadding));
     asciiPostSpatialProg.setUniform("u_asciiPixDistScale", AsciiAtlas::kPixDistScale);
     {
       const GLint locA = asciiPostSpatialProg.getUniformLocation("u_glyphProfilesA");
       if (locA >= 0) {
-        glUniform4fv(locA, AsciiAtlas::kMaxGlyphs,
-            glm::value_ptr(m_glyphProfilesPackedA[0]));
+        glUniform4fv(locA, AsciiAtlas::kMaxGlyphs, glm::value_ptr(m_glyphProfilesPackedA[0]));
       }
       const GLint locB = asciiPostSpatialProg.getUniformLocation("u_glyphProfilesB");
       if (locB >= 0) {
-        glUniform4fv(locB, AsciiAtlas::kMaxGlyphs,
-            glm::value_ptr(m_glyphProfilesPackedB[0]));
+        glUniform4fv(locB, AsciiAtlas::kMaxGlyphs, glm::value_ptr(m_glyphProfilesPackedB[0]));
       }
     }
     {
       const GLint rankToIdxLoc = asciiPostSpatialProg.getUniformLocation("u_glyphRankToIndex");
-      if (rankToIdxLoc >= 0)
-        glUniform1iv(rankToIdxLoc, AsciiAtlas::kMaxGlyphs, m_glyphRankToIndex.data());
+      if (rankToIdxLoc >= 0) glUniform1iv(rankToIdxLoc, AsciiAtlas::kMaxGlyphs, m_glyphRankToIndex.data());
     }
-    glUniform4f(glGetUniformLocation(asciiPostSpatialProg.handle(), "u_regionMaxA"),
-        m_glyphRegionMax[0], m_glyphRegionMax[1], m_glyphRegionMax[2], m_glyphRegionMax[3]);
-    glUniform2f(glGetUniformLocation(asciiPostSpatialProg.handle(), "u_regionMaxB"),
-        m_glyphRegionMax[4], m_glyphRegionMax[5]);
-    glUniform1f(glGetUniformLocation(asciiPostSpatialProg.handle(), "u_asciiSpatialExponent"),
-        R.m_asciiSpatialExponent);
+    glUniform4f(
+      glGetUniformLocation(asciiPostSpatialProg.handle(), "u_regionMaxA"),
+      m_glyphRegionMax[0],
+      m_glyphRegionMax[1],
+      m_glyphRegionMax[2],
+      m_glyphRegionMax[3]);
+    glUniform2f(
+      glGetUniformLocation(asciiPostSpatialProg.handle(), "u_regionMaxB"),
+      m_glyphRegionMax[4],
+      m_glyphRegionMax[5]);
+    glUniform1f(
+      glGetUniformLocation(asciiPostSpatialProg.handle(), "u_asciiSpatialExponent"),
+      R.m_asciiSpatialExponent);
 
     if (R.m_asciiSpatialExponent != m_lastUploadedExponent && !m_glyphProfilesNormalized.empty()) {
       auto shaped = m_glyphProfilesNormalized;
@@ -736,16 +738,13 @@ void AsciiRenderer::render(
         m_glyphProfilesPackedB[static_cast<size_t>(g)] = {p[4], p[5], 0.0f, 0.0f};
       }
       const GLint locA = asciiPostSpatialProg.getUniformLocation("u_glyphProfilesA");
-      if (locA >= 0)
-        glUniform4fv(locA, AsciiAtlas::kMaxGlyphs, glm::value_ptr(m_glyphProfilesPackedA[0]));
+      if (locA >= 0) glUniform4fv(locA, AsciiAtlas::kMaxGlyphs, glm::value_ptr(m_glyphProfilesPackedA[0]));
       const GLint locB = asciiPostSpatialProg.getUniformLocation("u_glyphProfilesB");
-      if (locB >= 0)
-        glUniform4fv(locB, AsciiAtlas::kMaxGlyphs, glm::value_ptr(m_glyphProfilesPackedB[0]));
+      if (locB >= 0) glUniform4fv(locB, AsciiAtlas::kMaxGlyphs, glm::value_ptr(m_glyphProfilesPackedB[0]));
       m_lastUploadedExponent = R.m_asciiSpatialExponent;
     }
 
-    for (const auto& vd : viewDataList)
-    {
+    for (const auto& vd : viewDataList) {
       glEnable(GL_SCISSOR_TEST);
       glScissor(vd.sx, vd.sy, vd.sw, vd.sh);
       m_asciiPostVao.bind();
@@ -771,7 +770,8 @@ void AsciiRenderer::render(
     glActiveTexture(GL_TEXTURE0 + sk_asciiAtlasSampler.index);
     glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE0);
-  } else {
+  }
+  else {
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, m_asciiCellMeanTex->id());
     glActiveTexture(GL_TEXTURE0 + sk_asciiAtlasSampler.index);
@@ -782,28 +782,28 @@ void AsciiRenderer::render(
     }
 
     asciiPostProg.use();
-    asciiPostProg.setSamplerUniform("u_cellMeanTex",    4);
-    asciiPostProg.setSamplerUniform("u_asciiAtlas",     sk_asciiAtlasSampler.index);
+    asciiPostProg.setSamplerUniform("u_cellMeanTex", 4);
+    asciiPostProg.setSamplerUniform("u_asciiAtlas", sk_asciiAtlasSampler.index);
     if (m_asciiLumLutTex) {
       asciiPostProg.setSamplerUniform("u_asciiLumLut", 5);
     }
-    asciiPostProg.setUniform("u_viewSizePx",            viewSizePx);
-    asciiPostProg.setUniform("u_asciiCellSizePx",       cellPxDev);
-    asciiPostProg.setUniform("u_asciiGlyphCount",       m_asciiAtlas.glyphCount());
-    asciiPostProg.setUniform("u_asciiFgColor",          R.m_asciiFgColor);
-    asciiPostProg.setUniform("u_asciiBgColor",          R.m_asciiBgColor);
-    asciiPostProg.setUniform("u_asciiBgAlpha",          R.m_asciiBgAlpha);
-    asciiPostProg.setUniform("u_asciiUseColormap",      R.m_asciiUseColormap);
+    asciiPostProg.setUniform("u_viewSizePx", viewSizePx);
+    asciiPostProg.setUniform("u_asciiCellSizePx", cellPxDev);
+    asciiPostProg.setUniform("u_asciiGlyphCount", m_asciiAtlas.glyphCount());
+    asciiPostProg.setUniform("u_asciiFgColor", R.m_asciiFgColor);
+    asciiPostProg.setUniform("u_asciiBgColor", R.m_asciiBgColor);
+    asciiPostProg.setUniform("u_asciiBgAlpha", R.m_asciiBgAlpha);
+    asciiPostProg.setUniform("u_asciiUseColormap", R.m_asciiUseColormap);
     {
       const glm::ivec2 slotPx = m_asciiAtlas.slotSize();
-      asciiPostProg.setUniform("u_asciiSlotSizePx",
-                               glm::vec2{static_cast<float>(slotPx.x), static_cast<float>(slotPx.y)});
+      asciiPostProg.setUniform(
+        "u_asciiSlotSizePx",
+        glm::vec2{static_cast<float>(slotPx.x), static_cast<float>(slotPx.y)});
     }
-    asciiPostProg.setUniform("u_asciiSdfPadding",   static_cast<float>(AsciiAtlas::kPadding));
+    asciiPostProg.setUniform("u_asciiSdfPadding", static_cast<float>(AsciiAtlas::kPadding));
     asciiPostProg.setUniform("u_asciiPixDistScale", AsciiAtlas::kPixDistScale);
 
-    for (const auto& vd : viewDataList)
-    {
+    for (const auto& vd : viewDataList) {
       glEnable(GL_SCISSOR_TEST);
       glScissor(vd.sx, vd.sy, vd.sw, vd.sh);
       m_asciiPostVao.bind();
@@ -828,10 +828,8 @@ void AsciiRenderer::render(
   }
 
   // Overlays on top of ASCII composite
-  for (const auto& vd : viewDataList)
-  {
-    if (ViewRenderMode::VolumeRender != vd.view->renderMode())
-    {
+  for (const auto& vd : viewDataList) {
+    if (ViewRenderMode::VolumeRender != vd.view->renderMode()) {
       if (renderLandmarksOnTop) {
         drawLandmarks(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
       }

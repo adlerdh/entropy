@@ -26,8 +26,7 @@ template<typename T, size_t N>
 std::array<T, N> multiplyArrays(const std::array<T, N>& a, const std::array<T, N>& b)
 {
   std::array<T, N> c;
-  for (size_t i = 0; i < N; ++i)
-  {
+  for (size_t i = 0; i < N; ++i) {
     c[i] = a[i] * b[i];
   }
   return c;
@@ -39,8 +38,7 @@ BasicMesh::BasicMesh(
   std::string name,
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
-  std::weak_ptr<MeshGpuRecord> meshGpuRecord
-)
+  std::weak_ptr<MeshGpuRecord> meshGpuRecord)
   : DrawableBase(std::move(name), DrawableType::BasicMesh)
   ,
 
@@ -125,14 +123,12 @@ BasicMesh::BasicMesh(
   m_stdShaderName = BasicMeshProgram::name;
   m_peelShaderName = BasicMeshDualDepthPeelProgram::name;
 
-  if (m_uniformsProvider)
-  {
+  if (m_uniformsProvider) {
     m_stdUniforms = m_uniformsProvider(m_stdShaderName);
     m_peelUniforms = m_uniformsProvider(m_peelShaderName);
     m_initUniforms = m_uniformsProvider(DDPInitProgram::name);
   }
-  else
-  {
+  else {
     throw_debug("Unable to access UniformsProvider");
   }
 
@@ -141,16 +137,16 @@ BasicMesh::BasicMesh(
 
 bool BasicMesh::isOpaque() const
 {
-  if (m_xrayMode)
-  {
+  if (m_xrayMode) {
     // Since fragment opacity is modulated when these modes are active,
     // there is no guarantee that the fragment is opaque
     return false;
   }
 
-  if ( m_overallOpacity * // combined opacity of all layers
-         masterOpacityMultiplier() // master opacity multiplier
-         < 1.0f )
+  if (
+    m_overallOpacity *          // combined opacity of all layers
+      masterOpacityMultiplier() // master opacity multiplier
+    < 1.0f)
   {
     return false;
   }
@@ -176,8 +172,7 @@ std::weak_ptr<MeshGpuRecord> BasicMesh::meshGpuRecord()
 
 void BasicMesh::setLayerOpacityMultiplier(BasicMeshColorLayer layer, float m)
 {
-  if (0.0f <= m && m <= 1.0f)
-  {
+  if (0.0f <= m && m <= 1.0f) {
     m_layerOpacityMultipliers[underlyingType(layer)] = m;
     updateLayerOpacities();
   }
@@ -190,8 +185,7 @@ float BasicMesh::getLayerOpacityMultiplier(BasicMeshColorLayer layer) const
 
 void BasicMesh::setLayerOpacity(BasicMeshColorLayer layer, float a)
 {
-  if (0.0f <= a && a <= 1.0f)
-  {
+  if (0.0f <= a && a <= 1.0f) {
     m_layerOpacities[underlyingType(layer)] = a;
     updateLayerOpacities();
   }
@@ -226,8 +220,7 @@ glm::vec3 BasicMesh::getMaterialColor() const
 
 void BasicMesh::setMaterialShininess(float s)
 {
-  if (0.0f <= s)
-  {
+  if (0.0f <= s) {
     m_materialShininess = s;
   }
 }
@@ -275,24 +268,21 @@ void BasicMesh::setUseOctantClipPlanes(bool set)
 
 void BasicMesh::setAmbientLightFactor(float f)
 {
-  if (0.0f <= f && f <= 1.0f)
-  {
+  if (0.0f <= f && f <= 1.0f) {
     m_ambientLightFactor = f;
   }
 }
 
 void BasicMesh::setDiffuseLightFactor(float f)
 {
-  if (0.0f <= f && f <= 1.0f)
-  {
+  if (0.0f <= f && f <= 1.0f) {
     m_diffuseLightFactor = f;
   }
 }
 
 void BasicMesh::setSpecularLightFactor(float f)
 {
-  if (0.0f <= f && f <= 1.0f)
-  {
+  if (0.0f <= f && f <= 1.0f) {
     m_specularLightFactor = f;
   }
 }
@@ -311,8 +301,7 @@ void BasicMesh::initVao()
   static constexpr GLuint sk_colorIndex = 2;
 
   auto gpuRec = m_meshGpuRecord.lock();
-  if (!gpuRec)
-  {
+  if (!gpuRec) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
     throw_debug(ss.str());
@@ -328,8 +317,7 @@ void BasicMesh::initVao()
   auto& indicesObject = gpuRec->indicesObject();
   auto& colorsObject = gpuRec->colorsObject();
 
-  if (!normalsObject || !normalsInfo)
-  {
+  if (!normalsObject || !normalsInfo) {
     throw_debug("No mesh normals");
   }
 
@@ -349,14 +337,12 @@ void BasicMesh::initVao()
     m_vao.setAttributeBuffer(sk_normalIndex, *normalsInfo);
     m_vao.enableVertexAttribute(sk_normalIndex);
 
-    if (colorsObject && colorsInfo)
-    {
+    if (colorsObject && colorsInfo) {
       colorsObject->bind();
       m_vao.setAttributeBuffer(sk_colorIndex, *colorsInfo);
       m_vao.enableVertexAttribute(sk_colorIndex);
     }
-    else
-    {
+    else {
       // static const glm::vec4 sk_defaultColor{ 0.0f, 0.0f, 0.0f, 0.0f };
       m_vao.disableVertexAttribute(sk_colorIndex);
       // m_vao.setGenericAttribute4f( k_colorIndex, sk_defaultColor );
@@ -388,88 +374,74 @@ void BasicMesh::doRender(const RenderStage& stage)
 {
   static const glm::vec3 sk_materialSpecular{1.0f, 1.0f, 1.0f};
 
-  if (!m_shaderProgramActivator)
-  {
+  if (!m_shaderProgramActivator) {
     throw_debug("Unable to access ShaderProgramActivator");
   }
 
   GLShaderProgram* shaderProgram = nullptr;
   Uniforms* uniforms = nullptr;
 
-  switch (stage)
-  {
-  case RenderStage::Initialize:
-  {
-    shaderProgram = m_shaderProgramActivator(DDPInitProgram::name);
-    uniforms = &m_initUniforms;
-    break;
-  }
-  case RenderStage::Opaque:
-  case RenderStage::Overlay:
-  case RenderStage::QuadResolve:
-  {
-    shaderProgram = m_shaderProgramActivator(m_stdShaderName);
-    uniforms = &m_stdUniforms;
-    break;
-  }
-  case RenderStage::DepthPeel:
-  {
-    shaderProgram = m_shaderProgramActivator(m_peelShaderName);
-    uniforms = &m_peelUniforms;
-    break;
-  }
+  switch (stage) {
+    case RenderStage::Initialize: {
+      shaderProgram = m_shaderProgramActivator(DDPInitProgram::name);
+      uniforms = &m_initUniforms;
+      break;
+    }
+    case RenderStage::Opaque:
+    case RenderStage::Overlay:
+    case RenderStage::QuadResolve: {
+      shaderProgram = m_shaderProgramActivator(m_stdShaderName);
+      uniforms = &m_stdUniforms;
+      break;
+    }
+    case RenderStage::DepthPeel: {
+      shaderProgram = m_shaderProgramActivator(m_peelShaderName);
+      uniforms = &m_peelUniforms;
+      break;
+    }
   }
 
-  if (!shaderProgram)
-  {
+  if (!shaderProgram) {
     throw_debug("Null shader program");
   }
 
-  if (!uniforms)
-  {
+  if (!uniforms) {
     throw_debug("Null uniforms");
   }
 
-  if (!m_vaoParams)
-  {
+  if (!m_vaoParams) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
     throw_debug(ss.str());
   }
 
   /// @todo Put these into doSetupState?
-  if (m_wireframe)
-  {
+  if (m_wireframe) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   }
-  else
-  {
+  else {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
 
-  if (m_backfaceCull)
-  {
+  if (m_backfaceCull) {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
     glCullFace(GL_BACK);
   }
 
-  if (m_enablePolygonOffset)
-  {
+  if (m_enablePolygonOffset) {
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(m_polygonOffsetFactor, m_polygonOffsetUnits);
   }
 
-  if (RenderStage::Initialize == stage)
-  {
+  if (RenderStage::Initialize == stage) {
     using namespace DDPInitProgram;
 
     m_initUniforms.setValue(vert::world_O_model, getAccumulatedRenderingData().m_world_T_object);
     m_initUniforms.setValue(vert::camera_O_world, m_camera_O_world);
     m_initUniforms.setValue(vert::clip_O_camera, m_clip_O_camera);
 
-    for (uint32_t i = 0; i < 3; ++i)
-    {
+    for (uint32_t i = 0; i < 3; ++i) {
       m_initUniforms.setValue(vert::worldClipPlanes[i], m_worldClipPlanes[i]);
     }
 
@@ -477,8 +449,7 @@ void BasicMesh::doRender(const RenderStage& stage)
 
     shaderProgram->applyUniforms(m_initUniforms);
   }
-  else
-  {
+  else {
     using namespace BasicMeshDualDepthPeelProgram;
 
     const glm::mat4 world_O_this = getAccumulatedRenderingData().m_world_T_object;
@@ -488,8 +459,7 @@ void BasicMesh::doRender(const RenderStage& stage)
     uniforms->setValue(vert::camera_O_world, m_camera_O_world);
     uniforms->setValue(vert::clip_O_camera, m_clip_O_camera);
 
-    for (uint32_t i = 0; i < 3; ++i)
-    {
+    for (uint32_t i = 0; i < 3; ++i) {
       uniforms->setValue(vert::worldClipPlanes[i], m_worldClipPlanes[i]);
     }
 
@@ -515,8 +485,7 @@ void BasicMesh::doRender(const RenderStage& stage)
 
     uniforms->setValue(frag::layerOpacities, m_finalLayerOpacities);
 
-    if (RenderStage::DepthPeel == stage)
-    {
+    if (RenderStage::DepthPeel == stage) {
       uniforms->setValue(frag::depthBlenderTex, DepthBlenderTexSamplerIndex);
       uniforms->setValue(frag::frontBlenderTex, FrontBlenderTexSamplerIndex);
     }
@@ -532,37 +501,30 @@ void BasicMesh::doRender(const RenderStage& stage)
 
   // Reset default GL states:
 
-  if (m_wireframe)
-  {
+  if (m_wireframe) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
 
-  if (m_backfaceCull)
-  {
+  if (m_backfaceCull) {
     glDisable(GL_CULL_FACE);
   }
 
-  if (m_enablePolygonOffset)
-  {
+  if (m_enablePolygonOffset) {
     glPolygonOffset(0.0f, 0.0f);
     glDisable(GL_POLYGON_OFFSET_FILL);
   }
 }
 
-void BasicMesh::doUpdate(
-  double, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs
-)
+void BasicMesh::doUpdate(double, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs)
 {
   static const glm::vec4 sk_lightColor{1.0f, 1.0f, 1.0f, 1.0f};
 
-  if (m_xrayMode)
-  {
+  if (m_xrayMode) {
     m_ambientLightColor = m_xrayAmbientLightFactor * sk_lightColor;
     m_diffuseLightColor = m_xrayDiffuseLightFactor * sk_lightColor;
     m_specularLightColor = m_xraySpecularLightFactor * sk_lightColor;
   }
-  else
-  {
+  else {
     m_ambientLightColor = m_ambientLightFactor * sk_lightColor;
     m_diffuseLightColor = m_diffuseLightFactor * sk_lightColor;
     m_specularLightColor = m_specularLightFactor * sk_lightColor;
@@ -579,13 +541,11 @@ void BasicMesh::doUpdate(
   m_worldLightPos = m_worldCameraPos;
   m_worldLightDir = m_worldCameraDir;
 
-  if (m_useOctantClipPlanes)
-  {
-    for (uint32_t i = 0; i < 3; ++i)
-    {
+  if (m_useOctantClipPlanes) {
+    for (uint32_t i = 0; i < 3; ++i) {
       // Orient the plane to clip toward the camera normal direction
-      const glm::vec3 worldNormalDir = crosshairs.world_T_frame()[static_cast<int>(i)] * -1.0f
-                                       * glm::sign(glm::dot(m_worldCameraDir, worldNormalDir));
+      const glm::vec3 worldNormalDir =
+        crosshairs.world_T_frame()[static_cast<int>(i)] * -1.0f * glm::sign(glm::dot(m_worldCameraDir, worldNormalDir));
 
       m_worldClipPlanes[i].x = worldNormalDir.x;
       m_worldClipPlanes[i].y = worldNormalDir.y;
@@ -593,12 +553,10 @@ void BasicMesh::doUpdate(
       m_worldClipPlanes[i].w = -glm::dot(worldNormalDir, crosshairs.worldOrigin());
     }
   }
-  else
-  {
+  else {
     static const glm::vec4 k_zero{0.0f};
 
-    for (uint32_t i = 0; i < 3; ++i)
-    {
+    for (uint32_t i = 0; i < 3; ++i) {
       m_worldClipPlanes[i] = k_zero;
     }
   }

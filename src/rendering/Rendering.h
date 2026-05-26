@@ -116,22 +116,37 @@ private:
   bool createRaycastIsoProgram(GLShaderProgram& program);
 
   /**
-   * @brief Render data associated with images: image slices, segmentations, annotations, and landmarks.
+   * @brief Render data associated with images: image slices, segmentations, annotations, and
+   * landmarks.
    */
   void renderImageData();
 
   /// Render all images/landmarks/annotations for a view
-  void renderAllImagesForView(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
-  void renderAllLandmarksForView(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
-  void renderAllAnnotationsForView(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
+  void
+  renderAllImagesForView(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
+  void renderAllLandmarksForView(
+    const View& view,
+    const FrameBounds& miewportViewBounds,
+    const glm::vec3& worldOffsetXhairs);
+  void renderAllAnnotationsForView(
+    const View& view,
+    const FrameBounds& miewportViewBounds,
+    const glm::vec3& worldOffsetXhairs);
 
   void renderVectorOverlays();
 
-  void renderOneImage(const View& view, const glm::vec3& worldOffsetXhairs,
-                      GLShaderProgram& program, const CurrentImages& I, bool showEdges);
+  void renderOneImage(
+    const View& view,
+    const glm::vec3& worldOffsetXhairs,
+    GLShaderProgram& program,
+    const CurrentImages& I,
+    bool showEdges);
 
-  void renderOneImage_overlays(const View& view, const FrameBounds& miewportViewBounds,
-                               const glm::vec3& worldOffsetXhairs, const CurrentImages& I);
+  void renderOneImage_overlays(
+    const View& view,
+    const FrameBounds& miewportViewBounds,
+    const glm::vec3& worldOffsetXhairs,
+    const CurrentImages& I);
 
   void volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I);
 
@@ -139,15 +154,16 @@ private:
   std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& P);
   std::list<std::reference_wrapper<GLTexture>> bindColorImageTextures(const ImgSegPair& P);
   std::list<std::reference_wrapper<GLTexture>> bindSegTextures(const ImgSegPair& P);
-  void unbindTextures(const std::list<std::reference_wrapper<GLTexture> >& textures);
+  void unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures);
 
   // Bind/unbind metric images and color map
   std::list<std::reference_wrapper<GLTexture>> bindMetricImageTextures(
-    const CurrentImages& I, const ViewRenderMode& metricType);
+    const CurrentImages& I,
+    const ViewRenderMode& metricType);
 
   // Bind/unbind buffer textures (e.g. label color tables)
   std::list<std::reference_wrapper<GLBufferTexture>> bindSegBufferTextures(const ImgSegPair& p);
-  void unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture> >& textures);
+  void unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures);
 
   // Get current image and segmentation UIDs to render in the metric shaders
   CurrentImages getImageAndSegUidsForMetricShaders(const std::list<uuids::uuid>& metricImageUids) const;

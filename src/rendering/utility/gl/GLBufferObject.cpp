@@ -6,11 +6,7 @@
 #include <limits>
 
 GLBufferObject::GLBufferObject(const BufferType& type, const BufferUsagePattern& usage)
-  : m_id(0)
-  , m_type(type)
-  , m_typeEnum(underlyingType(type))
-  , m_usagePattern(usage)
-  , m_bufferSizeInBytes(0)
+  : m_id(0), m_type(type), m_typeEnum(underlyingType(type)), m_usagePattern(usage), m_bufferSizeInBytes(0)
 {
 }
 
@@ -32,8 +28,7 @@ GLBufferObject::GLBufferObject(GLBufferObject&& other) noexcept
 
 GLBufferObject& GLBufferObject::operator=(GLBufferObject&& other) noexcept
 {
-  if (this != &other)
-  {
+  if (this != &other) {
     destroy();
 
     std::swap(m_id, other.m_id);
@@ -79,8 +74,7 @@ void GLBufferObject::unbind()
 
 void GLBufferObject::allocate(std::size_t sizeInBytes, const GLvoid* data)
 {
-  if (sizeInBytes > static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max()))
-  {
+  if (sizeInBytes > static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max())) {
     throw_debug("Attempting to allocate GLBufferObject larger than maximum size");
   }
 
@@ -97,15 +91,15 @@ void GLBufferObject::allocate(std::size_t sizeInBytes, const GLvoid* data)
 
 void GLBufferObject::write(std::size_t offset, std::size_t sizeInBytes, const GLvoid* data)
 {
-  if (offset > static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max()) || sizeInBytes > static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max()))
+  if (
+    offset > static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max()) ||
+    sizeInBytes > static_cast<size_t>(std::numeric_limits<GLsizeiptr>::max()))
   {
     throw_debug("Attempting to wrote GLBufferObject larger than maximum size");
   }
 
   bind();
-  glBufferSubData(
-    m_typeEnum, static_cast<GLsizeiptr>(offset), static_cast<GLsizeiptr>(sizeInBytes), data
-  );
+  glBufferSubData(m_typeEnum, static_cast<GLsizeiptr>(offset), static_cast<GLsizeiptr>(sizeInBytes), data);
 
   unbind();
 
@@ -127,12 +121,12 @@ void* GLBufferObject::map(const BufferMapAccessPolicy& access)
 }
 
 void* GLBufferObject::mapRange(
-  GLintptr offset, GLsizeiptr length, const std::set<BufferMapRangeAccessFlag>& accessFlags
-)
+  GLintptr offset,
+  GLsizeiptr length,
+  const std::set<BufferMapRangeAccessFlag>& accessFlags)
 {
   GLbitfield access = 0u;
-  for (const BufferMapRangeAccessFlag& f : accessFlags)
-  {
+  for (const BufferMapRangeAccessFlag& f : accessFlags) {
     access |= underlyingType(f);
   }
 
@@ -151,8 +145,7 @@ void GLBufferObject::copyData(
   GLBufferObject& writeBuffer,
   GLintptr readOffset,
   GLintptr writeOffset,
-  GLsizeiptr size
-)
+  GLsizeiptr size)
 {
   readBuffer.bind();
   writeBuffer.bind();
@@ -162,8 +155,7 @@ void GLBufferObject::copyData(
     underlyingType(writeBuffer.type()),
     readOffset,
     writeOffset,
-    size
-  );
+    size);
 }
 
 GLuint GLBufferObject::id() const

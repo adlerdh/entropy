@@ -20,8 +20,7 @@ public:
     ShaderProgramActivatorType shaderProgramActivator,
     UniformsProviderType uniformsProvider,
     std::weak_ptr<MeshGpuRecord> meshGpuRecord,
-    bool isFixedDiameter = false
-  );
+    bool isFixedDiameter = false);
 
   ~Crosshairs() override = default;
 

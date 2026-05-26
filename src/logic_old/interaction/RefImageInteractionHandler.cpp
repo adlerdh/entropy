@@ -11,9 +11,7 @@ namespace
  * @param rotation Rotation, expressed as a quaternion
  * @param worldCenter Center of rotation in World space
  */
-void rotateFrameAboutWorldPos(
-  CoordinateFrame& frame, const glm::quat& rotation, const glm::vec3& worldCenter
-)
+void rotateFrameAboutWorldPos(CoordinateFrame& frame, const glm::quat& rotation, const glm::vec3& worldCenter)
 {
   const glm::quat oldRotation = frame.world_O_frame_rotation();
   const glm::vec3 oldOrigin = frame.worldOrigin();
@@ -56,23 +54,17 @@ void RefImageInteractionHandler::setCrosshairsOriginProvider(GetterType<glm::vec
   m_crosshairsOriginProvider = provider;
 }
 
-void RefImageInteractionHandler::setImageFrameProvider(
-  GetterType<std::optional<CoordinateFrame> > provider
-)
+void RefImageInteractionHandler::setImageFrameProvider(GetterType<std::optional<CoordinateFrame> > provider)
 {
   m_imageFrameProvider = provider;
 }
 
-void RefImageInteractionHandler::setImageFrameChangedBroadcaster(
-  SetterType<const CoordinateFrame&> broadcaster
-)
+void RefImageInteractionHandler::setImageFrameChangedBroadcaster(SetterType<const CoordinateFrame&> broadcaster)
 {
   m_imageFrameChangedBroadcaster = broadcaster;
 }
 
-void RefImageInteractionHandler::setImageFrameChangeDoneBroadcaster(
-  SetterType<const CoordinateFrame&> broadcaster
-)
+void RefImageInteractionHandler::setImageFrameChangeDoneBroadcaster(SetterType<const CoordinateFrame&> broadcaster)
 {
   m_imageFrameDoneBroadcaster = broadcaster;
 }
@@ -88,29 +80,26 @@ void RefImageInteractionHandler::setMode(const RefImageInteractionMode& mode)
   m_mouseMoveMode = MouseMoveMode::None;
 }
 
-bool RefImageInteractionHandler::
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
+bool RefImageInteractionHandler::doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
 {
   return false;
 }
 
 bool RefImageInteractionHandler::doHandleMouseMoveEvent(
-  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
-)
+  const QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera& camera)
 {
-  if (MouseMoveMode::None == m_mouseMoveMode)
-  {
+  if (MouseMoveMode::None == m_mouseMoveMode) {
     return false;
   }
 
-  if (!m_crosshairsOriginProvider || !m_imageFrameProvider || !m_imageFrameChangedBroadcaster)
-  {
+  if (!m_crosshairsOriginProvider || !m_imageFrameProvider || !m_imageFrameChangedBroadcaster) {
     return false;
   }
 
   auto imageFrame = m_imageFrameProvider();
-  if (!imageFrame)
-  {
+  if (!imageFrame) {
     return false;
   }
 
@@ -120,84 +109,73 @@ bool RefImageInteractionHandler::doHandleMouseMoveEvent(
 
   const bool shiftModifier = (Qt::ShiftModifier & event->modifiers());
 
-  if (Qt::LeftButton & event->buttons())
-  {
-    switch (m_mouseMoveMode)
-    {
-    case MouseMoveMode::TranslateInPlane:
-    {
-      const float ndcZ = ndcZofWorldPoint(camera, imageFrame->worldOrigin());
-      const glm::vec3 T = translationInCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos, ndcZ);
+  if (Qt::LeftButton & event->buttons()) {
+    switch (m_mouseMoveMode) {
+      case MouseMoveMode::TranslateInPlane: {
+        const float ndcZ = ndcZofWorldPoint(camera, imageFrame->worldOrigin());
+        const glm::vec3 T = translationInCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos, ndcZ);
 
-      imageFrame->setWorldOrigin(imageFrame->worldOrigin() + T);
-      handled = true;
-      break;
-    }
-    case MouseMoveMode::TranslateFrontBack:
-    {
-      float scale = (shiftModifier) ? 100.0f : 50.0f;
-
-      if (m_imageVoxelScaleProvider)
-      {
-        scale *= m_imageVoxelScaleProvider();
+        imageFrame->setWorldOrigin(imageFrame->worldOrigin() + T);
+        handled = true;
+        break;
       }
+      case MouseMoveMode::TranslateFrontBack: {
+        float scale = (shiftModifier) ? 100.0f : 50.0f;
 
-      const glm::vec3 T
-        = translationAboutCameraFrontBack(camera, m_ndcLeftButtonLastPos, ndcPos, scale);
+        if (m_imageVoxelScaleProvider) {
+          scale *= m_imageVoxelScaleProvider();
+        }
 
-      imageFrame->setWorldOrigin(imageFrame->worldOrigin() + T);
-      handled = true;
-      break;
-    }
-    case MouseMoveMode::Rotate2dInPlane:
-    {
-      // Center of rotation is the crosshairs origin:
-      const glm::vec3 crosshairsWorldOrigin = m_crosshairsOriginProvider();
-      const glm::vec2 ndcRotationCenter = ndc_O_world(camera, crosshairsWorldOrigin);
-      const glm::quat R
-        = rotation2dInCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos, ndcRotationCenter);
+        const glm::vec3 T = translationAboutCameraFrontBack(camera, m_ndcLeftButtonLastPos, ndcPos, scale);
 
-      rotateFrameAboutWorldPos(*imageFrame, R, crosshairsWorldOrigin);
-      handled = true;
-      break;
-    }
-    case MouseMoveMode::Rotate3dAboutPlane:
-    {
-      // Center of rotation is the crosshairs origin:
-      const glm::vec3 crosshairsWorldOrigin = m_crosshairsOriginProvider();
-      const glm::quat R = rotation3dAboutCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos);
+        imageFrame->setWorldOrigin(imageFrame->worldOrigin() + T);
+        handled = true;
+        break;
+      }
+      case MouseMoveMode::Rotate2dInPlane: {
+        // Center of rotation is the crosshairs origin:
+        const glm::vec3 crosshairsWorldOrigin = m_crosshairsOriginProvider();
+        const glm::vec2 ndcRotationCenter = ndc_O_world(camera, crosshairsWorldOrigin);
+        const glm::quat R = rotation2dInCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos, ndcRotationCenter);
 
-      rotateFrameAboutWorldPos(*imageFrame, R, crosshairsWorldOrigin);
-      handled = true;
-      break;
-    }
-    case MouseMoveMode::None:
-    {
-      break;
-    }
+        rotateFrameAboutWorldPos(*imageFrame, R, crosshairsWorldOrigin);
+        handled = true;
+        break;
+      }
+      case MouseMoveMode::Rotate3dAboutPlane: {
+        // Center of rotation is the crosshairs origin:
+        const glm::vec3 crosshairsWorldOrigin = m_crosshairsOriginProvider();
+        const glm::quat R = rotation3dAboutCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos);
+
+        rotateFrameAboutWorldPos(*imageFrame, R, crosshairsWorldOrigin);
+        handled = true;
+        break;
+      }
+      case MouseMoveMode::None: {
+        break;
+      }
     }
 
     m_ndcLeftButtonLastPos = ndcPos;
   }
-  else if (Qt::RightButton & event->buttons())
-  {
+  else if (Qt::RightButton & event->buttons()) {
     m_ndcRightButtonLastPos = ndcPos;
   }
-  else if (Qt::MiddleButton & event->buttons())
-  {
+  else if (Qt::MiddleButton & event->buttons()) {
     m_ndcMiddleButtonLastPos = ndcPos;
   }
 
-  if (handled)
-  {
+  if (handled) {
     m_imageFrameChangedBroadcaster(*imageFrame);
   }
 
   return handled;
 }
 
-bool RefImageInteractionHandler::
-  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
+bool RefImageInteractionHandler::doHandleMousePressEvent(
+  const QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera&)
 {
   bool handled = false;
 
@@ -206,162 +184,134 @@ bool RefImageInteractionHandler::
   //    const bool shiftModifier = ( Qt::ShiftModifier & event->modifiers() );
   const bool controlModifier = (Qt::ControlModifier & event->modifiers());
 
-  if (Qt::LeftButton & event->button())
-  {
+  if (Qt::LeftButton & event->button()) {
     m_ndcLeftButtonStartPos = ndcPos;
     m_ndcLeftButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case RefImageInteractionMode::Translate:
-    {
-      if (controlModifier)
-      {
-        m_mouseMoveMode = MouseMoveMode::TranslateFrontBack;
+    switch (m_primaryMode) {
+      case RefImageInteractionMode::Translate: {
+        if (controlModifier) {
+          m_mouseMoveMode = MouseMoveMode::TranslateFrontBack;
+        }
+        else {
+          m_mouseMoveMode = MouseMoveMode::TranslateInPlane;
+        }
+        handled = true;
+        break;
       }
-      else
-      {
-        m_mouseMoveMode = MouseMoveMode::TranslateInPlane;
+      case RefImageInteractionMode::Rotate: {
+        if (controlModifier) {
+          m_mouseMoveMode = MouseMoveMode::Rotate3dAboutPlane;
+        }
+        else {
+          m_mouseMoveMode = MouseMoveMode::Rotate2dInPlane;
+        }
+        handled = true;
+        break;
       }
-      handled = true;
-      break;
-    }
-    case RefImageInteractionMode::Rotate:
-    {
-      if (controlModifier)
-      {
-        m_mouseMoveMode = MouseMoveMode::Rotate3dAboutPlane;
-      }
-      else
-      {
-        m_mouseMoveMode = MouseMoveMode::Rotate2dInPlane;
-      }
-      handled = true;
-      break;
-    }
     }
   }
-  else if (Qt::RightButton & event->button())
-  {
+  else if (Qt::RightButton & event->button()) {
     m_ndcRightButtonStartPos = ndcPos;
     m_ndcRightButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case RefImageInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case RefImageInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case RefImageInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case RefImageInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
   }
-  else if (Qt::MiddleButton & event->button())
-  {
+  else if (Qt::MiddleButton & event->button()) {
     m_ndcMiddleButtonStartPos = ndcPos;
     m_ndcMiddleButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case RefImageInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case RefImageInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case RefImageInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case RefImageInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
   }
 
   return handled;
 }
 
-bool RefImageInteractionHandler::
-  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
+bool RefImageInteractionHandler::doHandleMouseReleaseEvent(
+  const QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera&)
 {
   bool handled = false;
 
-  if (!m_imageFrameProvider || !m_imageFrameDoneBroadcaster)
-  {
+  if (!m_imageFrameProvider || !m_imageFrameDoneBroadcaster) {
     return handled;
   }
 
   const glm::vec2 ndcPos = camera::ndc2d_O_mouse(viewport, {event->x(), event->y()});
 
-  if (Qt::LeftButton & event->button())
-  {
+  if (Qt::LeftButton & event->button()) {
     m_ndcLeftButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case RefImageInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case RefImageInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case RefImageInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case RefImageInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
 
-    if (auto frame = m_imageFrameProvider())
-    {
+    if (auto frame = m_imageFrameProvider()) {
       m_imageFrameDoneBroadcaster(*frame);
     }
   }
-  else if (Qt::RightButton & event->button())
-  {
+  else if (Qt::RightButton & event->button()) {
     m_ndcRightButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case RefImageInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case RefImageInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case RefImageInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case RefImageInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
   }
-  else if (Qt::MiddleButton & event->button())
-  {
+  else if (Qt::MiddleButton & event->button()) {
     m_ndcMiddleButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case RefImageInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case RefImageInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case RefImageInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case RefImageInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
   }
 

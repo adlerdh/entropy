@@ -58,8 +58,7 @@ ImageSlice::ImageSlice(
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
   std::weak_ptr<BlankTextures> blankTextures,
-  std::weak_ptr<MeshGpuRecord> sliceMeshGpuRecord
-)
+  std::weak_ptr<MeshGpuRecord> sliceMeshGpuRecord)
   : DrawableBase(std::move(name), DrawableType::ImageSlice)
   ,
 
@@ -75,20 +74,16 @@ ImageSlice::ImageSlice(
     shaderProgramActivator,
     uniformsProvider,
     blankTextures,
-    [this]() -> MeshGpuRecord*
-    {
-      if (auto gpuRecord = m_sliceMeshGpuRecord.lock())
-      {
+    [this]() -> MeshGpuRecord* {
+      if (auto gpuRecord = m_sliceMeshGpuRecord.lock()) {
         return gpuRecord.get();
       }
       return nullptr;
-    }
-  ))
+    }))
   ,
 
-  m_sliceOutline(std::make_shared<Line>(
-    m_name + "_sliceOutline", shaderProgramActivator, uniformsProvider, PrimitiveMode::LineLoop
-  ))
+  m_sliceOutline(
+    std::make_shared<Line>(m_name + "_sliceOutline", shaderProgramActivator, uniformsProvider, PrimitiveMode::LineLoop))
   ,
 
   m_sliceIntersector()
@@ -117,8 +112,7 @@ ImageSlice::ImageSlice(
 
 void ImageSlice::setupChildren()
 {
-  if (!m_sliceMesh || !m_sliceOutline)
-  {
+  if (!m_sliceMesh || !m_sliceOutline) {
     throw_debug("Null child drawable");
   }
 
@@ -149,14 +143,12 @@ void ImageSlice::setupChildren()
   // than other mesh objects without polygon offset defined.
   m_sliceMesh->setEnablePolygonOffset(true);
 
-  m_sliceMesh
-    ->setPolygonOffsetValues(PolygonOffset::imageSlices.first, PolygonOffset::imageSlices.second);
+  m_sliceMesh->setPolygonOffsetValues(PolygonOffset::imageSlices.first, PolygonOffset::imageSlices.second);
 }
 
 bool ImageSlice::isOpaque() const
 {
-  if (m_sliceMesh && m_sliceOutline)
-  {
+  if (m_sliceMesh && m_sliceOutline) {
     return (m_sliceMesh->isOpaque() && m_sliceOutline->isOpaque());
   }
 
@@ -172,8 +164,7 @@ void ImageSlice::setImage3dRecord(std::weak_ptr<ImageRecord> imageRecord)
 {
   m_image3dRecord = imageRecord;
 
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setImage3dRecord(imageRecord);
   }
 }
@@ -182,38 +173,33 @@ void ImageSlice::setParcellationRecord(std::weak_ptr<ParcellationRecord> labelsR
 {
   m_parcelRecord = labelsRecord;
 
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setParcellationRecord(labelsRecord);
   }
 }
 
 void ImageSlice::setImageColorMapRecord(std::weak_ptr<ImageColorMapRecord> mapRecord)
 {
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setImageColorMapRecord(mapRecord);
   }
 }
 
 void ImageSlice::setLabelTableRecord(std::weak_ptr<LabelTableRecord> tableRecord)
 {
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setLabelTableRecord(tableRecord);
   }
 }
 
-void ImageSlice::setPositioningMethod(
-  const intersection::PositioningMethod& method, const std::optional<glm::vec3>& p
-)
+void ImageSlice::setPositioningMethod(const intersection::PositioningMethod& method, const std::optional<glm::vec3>& p)
 {
   m_sliceIntersector.setPositioningMethod(method, p);
 }
 
 void ImageSlice::setAlignmentMethod(
-  const intersection::AlignmentMethod& method, const std::optional<glm::vec3>& worldNormal
-)
+  const intersection::AlignmentMethod& method,
+  const std::optional<glm::vec3>& worldNormal)
 {
   m_sliceIntersector.setAlignmentMethod(method, worldNormal);
 }
@@ -225,61 +211,49 @@ void ImageSlice::setShowOutline(bool show)
 
 void ImageSlice::setShowParcellation(bool show)
 {
-  if (m_sliceMesh)
-  {
-    m_sliceMesh
-      ->setLayerOpacityMultiplier(TexturedMeshColorLayer::Parcellation3D, (show) ? 1.0f : 0.0f);
+  if (m_sliceMesh) {
+    m_sliceMesh->setLayerOpacityMultiplier(TexturedMeshColorLayer::Parcellation3D, (show) ? 1.0f : 0.0f);
   }
 }
 
 void ImageSlice::setUseAutoHiding(bool set)
 {
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setUseAutoHidingMode(set);
   }
 }
 
 void ImageSlice::setUseIntensityThresolding(bool set)
 {
-  if (m_sliceMesh)
-  {
+  if (m_sliceMesh) {
     m_sliceMesh->setUseImage3dThresholdMode(set);
   }
 }
 
-void ImageSlice::doUpdate(
-  double /*time*/, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs
-)
+void ImageSlice::doUpdate(double /*time*/, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs)
 {
   using PositionType = glm::vec3;
   using NormalType = uint32_t;
 
   static constexpr GLintptr sk_offset = static_cast<GLintptr>(0);
-  static constexpr GLintptr sk_positionsSize = static_cast<GLintptr>(
-    sk_numVerts * sizeof(PositionType)
-  );
+  static constexpr GLintptr sk_positionsSize = static_cast<GLintptr>(sk_numVerts * sizeof(PositionType));
   static constexpr GLintptr sk_normalsSize = static_cast<GLintptr>(sk_numVerts * sizeof(NormalType));
 
-  if (!m_sliceMesh)
-  {
+  if (!m_sliceMesh) {
     throw_debug("Null slice mesh");
   }
 
   auto sliceMeshGpuRecord = m_sliceMeshGpuRecord.lock();
-  if (!sliceMeshGpuRecord)
-  {
+  if (!sliceMeshGpuRecord) {
     throw_debug("Null mesh object record");
   }
 
-  if (!m_sliceOutline)
-  {
+  if (!m_sliceOutline) {
     throw_debug("Null line");
   }
 
   auto image3dRecord = m_image3dRecord.lock();
-  if (!image3dRecord || !image3dRecord->cpuData())
-  {
+  if (!image3dRecord || !image3dRecord->cpuData()) {
     // No image to render
     setVisible(false);
     return;
@@ -297,15 +271,13 @@ void ImageSlice::doUpdate(
 
   const auto& H = image3dRecord->cpuData()->header();
 
-  for (uint32_t i = 0; i < 8; ++i)
-  {
+  for (uint32_t i = 0; i < 8; ++i) {
     subjectCorners[i] = glm::vec3{H.subjectBBoxCorners()[i]};
   }
 
   // Compute the intersections in Subject space by transforming the camera and crosshairs
   // from World to Subject space
-  const glm::mat4& world_O_subject = image3dRecord->cpuData()->transformations().worldDef_T_subject(
-  );
+  const glm::mat4& world_O_subject = image3dRecord->cpuData()->transformations().worldDef_T_subject();
   const glm::mat4 subject_O_world = glm::inverse(world_O_subject);
 
   /// @todo We are currently ignoring the modeling transformation of this ImageSlice, i.e.:
@@ -316,29 +288,24 @@ void ImageSlice::doUpdate(
   std::optional<intersection::IntersectionVertices> subjectIntersectionPositions;
   glm::vec3 subjectPlaneNormal;
 
-  std::tie(subjectIntersectionPositions, subjectPlaneNormal)
-    = m_sliceIntersector.computePlaneIntersections(
-      subject_O_world * camera.world_T_camera(),
-      subject_O_world * crosshairs.world_T_frame(),
-      subjectCorners
-    );
+  std::tie(subjectIntersectionPositions, subjectPlaneNormal) = m_sliceIntersector.computePlaneIntersections(
+    subject_O_world * camera.world_T_camera(),
+    subject_O_world * crosshairs.world_T_frame(),
+    subjectCorners);
 
-  if (!subjectIntersectionPositions)
-  {
+  if (!subjectIntersectionPositions) {
     // No slice intersection to render
     setVisible(false);
     return;
   }
-  else
-  {
+  else {
     setVisible(true);
   }
 
   // Convert Subject intersection positions and normal vector to World space
   intersection::IntersectionVertices worldIntersectionPositions;
 
-  for (uint32_t i = 0; i < SliceIntersector::s_numVertices; ++i)
-  {
+  for (uint32_t i = 0; i < SliceIntersector::s_numVertices; ++i) {
     const glm::vec4 subjectPos{(*subjectIntersectionPositions)[i], 1.0f};
     worldIntersectionPositions[i] = glm::vec3{world_O_subject * subjectPos};
   }
@@ -352,31 +319,26 @@ void ImageSlice::doUpdate(
   auto& positionsObject = sliceMeshGpuRecord->positionsObject();
   auto& normalsObject = sliceMeshGpuRecord->normalsObject();
 
-  if (!normalsObject)
-  {
+  if (!normalsObject) {
     throw_debug("Null mesh normals objects");
   }
 
   positionsObject.write(sk_offset, sk_positionsSize, worldIntersectionPositions.data());
   normalsObject->write(sk_offset, sk_normalsSize, slideNormalsBuffer.data());
 
-  if (intersection::AlignmentMethod::CameraZ == m_sliceIntersector.alignmentMethod())
-  {
+  if (intersection::AlignmentMethod::CameraZ == m_sliceIntersector.alignmentMethod()) {
     m_sliceMesh->setAdsLightFactors(sk_ambientFactor2D, sk_diffuseFactor2D, sk_specularFactor2D);
   }
-  else
-  {
+  else {
     m_sliceMesh->setAdsLightFactors(sk_ambientFactor3D, sk_diffuseFactor3D, sk_specularFactor3D);
   }
 
-  if (m_showOutline)
-  {
+  if (m_showOutline) {
     m_sliceOutline->setVisible(true);
     m_sliceOutline->setVertices(glm::value_ptr(worldIntersectionPositions[0]), sk_numVerts - 1);
     m_sliceOutline->setColor(math::convertVecToRGB(glm::vec3{worldPlaneNormal}));
   }
-  else
-  {
+  else {
     m_sliceOutline->setVisible(false);
   }
 }

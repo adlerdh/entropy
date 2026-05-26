@@ -6,7 +6,7 @@
 #include "logic/app/CrosshairsState.h"
 #include "logic/annotation/Annotation.h"
 #include "logic/interaction/events/ButtonState.h"
-//#include "logic/ipc/IPCHandler.h"
+// #include "logic/ipc/IPCHandler.h"
 
 #include <glm/vec3.hpp>
 #include <uuid.h>
@@ -38,10 +38,10 @@ public:
   void setWorldRotationCenter(const std::optional<glm::vec3>& worldRotationCenter);
 
   /**
-     * @brief Get the rotation center in World space. If no rotation has been explicitly set,
-     * then it defaults to the crosshairs origin position.
-     * @return Rotation center (World space)
-     */
+   * @brief Get the rotation center in World space. If no rotation has been explicitly set,
+   * then it defaults to the crosshairs origin position.
+   * @return Rotation center (World space)
+   */
   glm::vec3 worldRotationCenter() const;
 
   void setMouseMode(MouseMode mode);
@@ -68,7 +68,7 @@ private:
   // IPCHandler m_ipcHandler;
 
   MouseMode m_mouseMode{MouseMode::Pointer}; //!< Current mouse interaction mode
-  ButtonState m_buttonState; //!< Global mouse button and keyboard modifier state
+  ButtonState m_buttonState;                 //!< Global mouse button and keyboard modifier state
 
   /// Image selection to use when recentering views and crosshairs
   ImageSelection m_recenteringMode{ImageSelection::AllLoadedImages};

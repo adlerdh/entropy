@@ -10,8 +10,8 @@ static constexpr int sk_numQuadVerts = 4;
 static constexpr int sk_numQuadPosComps = 2;
 
 // Define the vertices and indices of a 2D circle:
-//static constexpr int sk_numCircleVerts = 4;
-//static constexpr int sk_numCirclePosComps = 2;
+// static constexpr int sk_numCircleVerts = 4;
+// static constexpr int sk_numCirclePosComps = 2;
 
 static constexpr int sk_byteOffset = 0;
 static constexpr int sk_indexOffset = 0;
@@ -58,11 +58,7 @@ GLTexture createBlankRgbaTexture(uint8_t value)
   pixelPackSettings.m_alignment = sk_alignment;
   GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
 
-  GLTexture
-    T(tex::Target::Texture3D,
-      GLTexture::MultisampleSettings(),
-      pixelPackSettings,
-      pixelUnpackSettings);
+  GLTexture T(tex::Target::Texture3D, GLTexture::MultisampleSettings(), pixelPackSettings, pixelUnpackSettings);
 
   T.generate();
   T.setMinificationFilter(sk_minFilter);
@@ -76,8 +72,7 @@ GLTexture createBlankRgbaTexture(uint8_t value)
     GLTexture::getSizedInternalRGBAFormat(compType),
     GLTexture::getBufferPixelRGBAFormat(compType),
     GLTexture::getBufferPixelDataType(compType),
-    sk_data_U8.data()
-  );
+    sk_data_U8.data());
 
   spdlog::debug("Created blank RGBA texture");
 
@@ -87,35 +82,27 @@ GLTexture createBlankRgbaTexture(uint8_t value)
 } // namespace
 
 const std::map<float, float> RenderData::msk_waterMassAttenCoeffs{
-  {1.00000E-03, 4.078E+03}, {1.50000E-03, 1.376E+03}, {2.00000E-03, 6.173E+02},
-  {3.00000E-03, 1.929E+02}, {4.00000E-03, 8.278E+01}, {5.00000E-03, 4.258E+01},
-  {6.00000E-03, 2.464E+01}, {8.00000E-03, 1.037E+01}, {1.00000E-02, 5.329E+00},
-  {1.50000E-02, 1.673E+00}, {2.00000E-02, 8.096E-01}, {3.00000E-02, 3.756E-01},
-  {4.00000E-02, 2.683E-01}, {5.00000E-02, 2.269E-01}, {6.00000E-02, 2.059E-01},
-  {8.00000E-02, 1.837E-01}, {1.00000E-01, 1.707E-01}, {1.50000E-01, 1.505E-01},
-  {2.00000E-01, 1.370E-01}, {3.00000E-01, 1.186E-01}, {4.00000E-01, 1.061E-01},
-  {5.00000E-01, 9.687E-02}, {6.00000E-01, 8.956E-02}, {8.00000E-01, 7.865E-02},
-  {1.00000E+00, 7.072E-02}, {1.25000E+00, 6.323E-02}, {1.50000E+00, 5.754E-02},
-  {2.00000E+00, 4.942E-02}, {3.00000E+00, 3.969E-02}, {4.00000E+00, 3.403E-02},
-  {5.00000E+00, 3.031E-02}, {6.00000E+00, 2.770E-02}, {8.00000E+00, 2.429E-02},
-  {1.00000E+01, 2.219E-02}, {1.50000E+01, 1.941E-02}, {2.00000E+01, 1.813E-02}
-};
+  {1.00000E-03, 4.078E+03}, {1.50000E-03, 1.376E+03}, {2.00000E-03, 6.173E+02}, {3.00000E-03, 1.929E+02},
+  {4.00000E-03, 8.278E+01}, {5.00000E-03, 4.258E+01}, {6.00000E-03, 2.464E+01}, {8.00000E-03, 1.037E+01},
+  {1.00000E-02, 5.329E+00}, {1.50000E-02, 1.673E+00}, {2.00000E-02, 8.096E-01}, {3.00000E-02, 3.756E-01},
+  {4.00000E-02, 2.683E-01}, {5.00000E-02, 2.269E-01}, {6.00000E-02, 2.059E-01}, {8.00000E-02, 1.837E-01},
+  {1.00000E-01, 1.707E-01}, {1.50000E-01, 1.505E-01}, {2.00000E-01, 1.370E-01}, {3.00000E-01, 1.186E-01},
+  {4.00000E-01, 1.061E-01}, {5.00000E-01, 9.687E-02}, {6.00000E-01, 8.956E-02}, {8.00000E-01, 7.865E-02},
+  {1.00000E+00, 7.072E-02}, {1.25000E+00, 6.323E-02}, {1.50000E+00, 5.754E-02}, {2.00000E+00, 4.942E-02},
+  {3.00000E+00, 3.969E-02}, {4.00000E+00, 3.403E-02}, {5.00000E+00, 3.031E-02}, {6.00000E+00, 2.770E-02},
+  {8.00000E+00, 2.429E-02}, {1.00000E+01, 2.219E-02}, {1.50000E+01, 1.941E-02}, {2.00000E+01, 1.813E-02}};
 
 const std::map<float, float> RenderData::msk_airMassAttenCoeffs{
-  {1.00000E-03, 3.606E+03}, {1.50000E-03, 1.191E+03}, {2.00000E-03, 5.279E+02},
-  {3.00000E-03, 1.625E+02}, {3.20290E-03, 1.340E+02}, {3.20290E-03, 1.485E+02},
-  {4.00000E-03, 7.788E+01}, {5.00000E-03, 4.027E+01}, {6.00000E-03, 2.341E+01},
-  {8.00000E-03, 9.921E+00}, {1.00000E-02, 5.120E+00}, {1.50000E-02, 1.614E+00},
-  {2.00000E-02, 7.779E-01}, {3.00000E-02, 3.538E-01}, {4.00000E-02, 2.485E-01},
-  {5.00000E-02, 2.080E-01}, {6.00000E-02, 1.875E-01}, {8.00000E-02, 1.662E-01},
-  {1.00000E-01, 1.541E-01}, {1.50000E-01, 1.356E-01}, {2.00000E-01, 1.233E-01},
-  {3.00000E-01, 1.067E-01}, {4.00000E-01, 9.549E-02}, {5.00000E-01, 8.712E-02},
-  {6.00000E-01, 8.055E-02}, {8.00000E-01, 7.074E-02}, {1.00000E+00, 6.358E-02},
-  {1.25000E+00, 5.687E-02}, {1.50000E+00, 5.175E-02}, {2.00000E+00, 4.447E-02},
-  {3.00000E+00, 3.581E-02}, {4.00000E+00, 3.079E-02}, {5.00000E+00, 2.751E-02},
-  {6.00000E+00, 2.522E-02}, {8.00000E+00, 2.225E-02}, {1.00000E+01, 2.045E-02},
-  {1.50000E+01, 1.810E-02}, {2.00000E+01, 1.705E-02}
-};
+  {1.00000E-03, 3.606E+03}, {1.50000E-03, 1.191E+03}, {2.00000E-03, 5.279E+02}, {3.00000E-03, 1.625E+02},
+  {3.20290E-03, 1.340E+02}, {3.20290E-03, 1.485E+02}, {4.00000E-03, 7.788E+01}, {5.00000E-03, 4.027E+01},
+  {6.00000E-03, 2.341E+01}, {8.00000E-03, 9.921E+00}, {1.00000E-02, 5.120E+00}, {1.50000E-02, 1.614E+00},
+  {2.00000E-02, 7.779E-01}, {3.00000E-02, 3.538E-01}, {4.00000E-02, 2.485E-01}, {5.00000E-02, 2.080E-01},
+  {6.00000E-02, 1.875E-01}, {8.00000E-02, 1.662E-01}, {1.00000E-01, 1.541E-01}, {1.50000E-01, 1.356E-01},
+  {2.00000E-01, 1.233E-01}, {3.00000E-01, 1.067E-01}, {4.00000E-01, 9.549E-02}, {5.00000E-01, 8.712E-02},
+  {6.00000E-01, 8.055E-02}, {8.00000E-01, 7.074E-02}, {1.00000E+00, 6.358E-02}, {1.25000E+00, 5.687E-02},
+  {1.50000E+00, 5.175E-02}, {2.00000E+00, 4.447E-02}, {3.00000E+00, 3.581E-02}, {4.00000E+00, 3.079E-02},
+  {5.00000E+00, 2.751E-02}, {6.00000E+00, 2.522E-02}, {8.00000E+00, 2.225E-02}, {1.00000E+01, 2.045E-02},
+  {1.50000E+01, 1.810E-02}, {2.00000E+01, 1.705E-02}};
 
 RenderData::RenderData()
   : m_quad()
@@ -184,9 +171,7 @@ void RenderData::setXrayEnergy(float energyKeV)
 {
   const float MeV = energyKeV / 1000.0f;
 
-  if (MeV < msk_airMassAttenCoeffs.begin()->first ||
-      msk_airMassAttenCoeffs.rbegin()->first < MeV)
-  {
+  if (MeV < msk_airMassAttenCoeffs.begin()->first || msk_airMassAttenCoeffs.rbegin()->first < MeV) {
     return;
   }
 
@@ -197,12 +182,12 @@ void RenderData::setXrayEnergy(float energyKeV)
 
 RenderData::Quad::Quad()
   : m_positionsInfo(
-    BufferComponentType::Float,
-    BufferNormalizeValues::False,
-    sk_numQuadPosComps,
-    sk_numQuadPosComps * sizeof(float),
-    sk_byteOffset,
-    sk_numQuadVerts)
+      BufferComponentType::Float,
+      BufferNormalizeValues::False,
+      sk_numQuadPosComps,
+      sk_numQuadPosComps * sizeof(float),
+      sk_byteOffset,
+      sk_numQuadVerts)
 
   , m_indicesInfo(IndexType::UInt32, PrimitiveMode::TriangleStrip, sk_numQuadVerts, sk_indexOffset)
   , m_positionsObject(BufferType::VertexArray, BufferUsagePattern::StaticDraw)
@@ -214,8 +199,7 @@ RenderData::Quad::Quad()
   m_positionsObject.generate();
   m_indicesObject.generate();
 
-  m_positionsObject
-    .allocate(sk_numQuadVerts * sk_numQuadPosComps * sizeof(float), sk_clipPosBuffer.data());
+  m_positionsObject.allocate(sk_numQuadVerts * sk_numQuadPosComps * sizeof(float), sk_clipPosBuffer.data());
   m_indicesObject.allocate(sk_numQuadVerts * sizeof(uint32_t), sk_indicesBuffer.data());
 
   m_vao.generate();
@@ -236,12 +220,12 @@ RenderData::Quad::Quad()
 
 RenderData::Circle::Circle()
   : m_positionsInfo(
-    BufferComponentType::Float,
-    BufferNormalizeValues::False,
-    sk_numQuadPosComps,
-    sk_numQuadPosComps * sizeof(float),
-    sk_byteOffset,
-    sk_numQuadVerts)
+      BufferComponentType::Float,
+      BufferNormalizeValues::False,
+      sk_numQuadPosComps,
+      sk_numQuadPosComps * sizeof(float),
+      sk_byteOffset,
+      sk_numQuadVerts)
   , m_indicesInfo(IndexType::UInt32, PrimitiveMode::TriangleStrip, sk_numQuadVerts, sk_indexOffset)
   , m_positionsObject(BufferType::VertexArray, BufferUsagePattern::StaticDraw)
   , m_indicesObject(BufferType::Index, BufferUsagePattern::StaticDraw)
@@ -272,14 +256,14 @@ RenderData::Circle::Circle()
 }
 
 RenderData::IsosurfaceData::IsosurfaceData()
-  :
-  numIsos(0),
-  values(8, 0.0f),
-  opacities(8, 0.0f),
-  edgeStrengths(8, 0.0f),
-  colors(8, glm::vec3{0.0f}),
-  ambient(8, glm::vec3{0.0f}),
-  diffuse(8, glm::vec3{0.0f}),
-  specular(8, glm::vec3{0.0f}),
-  shininesses(8, 0.0f)
-{}
+  : numIsos(0)
+  , values(8, 0.0f)
+  , opacities(8, 0.0f)
+  , edgeStrengths(8, 0.0f)
+  , colors(8, glm::vec3{0.0f})
+  , ambient(8, glm::vec3{0.0f})
+  , diffuse(8, glm::vec3{0.0f})
+  , specular(8, glm::vec3{0.0f})
+  , shininesses(8, 0.0f)
+{
+}

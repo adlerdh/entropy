@@ -3,14 +3,7 @@
 const float A = 1.0;
 const float B = 2.0;
 
-const mat3 Filter_Sobel[2] = mat3[](
-  mat3(A,   B,  A,
-       0,   0,  0,
-       -A, -B, -A),
-  mat3(A, 0, -A,
-       B, 0, -B,
-       A, 0, -A)
-);
+const mat3 Filter_Sobel[2] = mat3[](mat3(A, B, A, 0, 0, 0, -A, -B, -A), mat3(A, 0, -A, B, 0, -B, A, 0, -A));
 
 const float SobelFactor = 1.0 / (2.0 * A + B);
 

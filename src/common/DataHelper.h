@@ -24,9 +24,7 @@ class Image;
 namespace data
 {
 
-std::vector<uuids::uuid> selectImages(
-  const AppData& data, const ImageSelection& selection, const View* view
-);
+std::vector<uuids::uuid> selectImages(const AppData& data, const ImageSelection& selection, const View* view);
 
 /**
  * @brief Compute the distance by which to scroll the view plane with each "tick" of the
@@ -35,16 +33,25 @@ std::vector<uuids::uuid> selectImages(
  *
  * @param worldCameraFront Normalized front direction of the camera in World space.
  */
-float sliceScrollDistance(const AppData&, const glm::vec3& worldCameraFrontDir, const ImageSelection&, const View* view);
+float sliceScrollDistance(
+  const AppData&,
+  const glm::vec3& worldCameraFrontDir,
+  const ImageSelection&,
+  const View* view);
 
 float sliceScrollDistance(const glm::vec3& worldCameraFrontDir, const Image&);
 
 glm::vec2 sliceMoveDistance(
-  const AppData&, const glm::vec3& worldCameraRightDir, const glm::vec3& worldCameraUpDir,
-  const ImageSelection&, const View* view);
+  const AppData&,
+  const glm::vec3& worldCameraRightDir,
+  const glm::vec3& worldCameraUpDir,
+  const ImageSelection&,
+  const View* view);
 
 float computeViewOffsetDistance(
-  const AppData& appData, const ViewOffsetSetting& offsetSetting, const glm::vec3& worldCameraFront);
+  const AppData& appData,
+  const ViewOffsetSetting& offsetSetting,
+  const glm::vec3& worldCameraFront);
 
 /**
  * @brief Compute the enclosing World-space AABB of the given image selection
@@ -58,8 +65,8 @@ std::optional<glm::ivec3> getImageVoxelCoordsAtCrosshairs(const AppData& appData
 
 std::optional<glm::vec3> getImageVoxelCoordsContinuousAtCrosshairs(const AppData& appData, size_t imageIndex);
 
-std::optional<glm::ivec3> getSegVoxelCoordsAtCrosshairs(
-  const AppData& appData, const uuids::uuid& segUid, const uuids::uuid& matchingImgUid);
+std::optional<glm::ivec3>
+getSegVoxelCoordsAtCrosshairs(const AppData& appData, const uuids::uuid& segUid, const uuids::uuid& matchingImgUid);
 
 /**
  * @brief Find annotation for a given image. The search is done by matching the
@@ -72,8 +79,10 @@ std::optional<glm::ivec3> getSegVoxelCoordsAtCrosshairs(
  * @return Vector of matching annotation UIDs
  */
 std::vector<uuids::uuid> findAnnotationsForImage(
-  const AppData& appData, const uuids::uuid& imageUid,
-  const glm::vec4& querySubjectPlaneEquation, float planeDistanceThresh);
+  const AppData& appData,
+  const uuids::uuid& imageUid,
+  const glm::vec4& querySubjectPlaneEquation,
+  float planeDistanceThresh);
 
 glm::vec3 roundPointToNearestImageVoxelCenter(const Image& image, const glm::vec3& worldPos);
 
@@ -82,7 +91,8 @@ std::string getAnnotationSubjectPlaneName(const Annotation&);
 std::optional<uuids::uuid> getSelectedAnnotation(const AppData& appData);
 
 glm::vec3 snapWorldPointToImageVoxels(
-  const AppData& appData, const glm::vec3& worldPos,
+  const AppData& appData,
+  const glm::vec3& worldPos,
   const std::optional<CrosshairsSnapping>& force = std::nullopt);
 
 std::size_t computeNumImageSlicesAlongWorldDirection(const Image& image, const glm::vec3& worldDir);

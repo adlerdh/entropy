@@ -19,8 +19,7 @@ public:
     const std::string& name,
     ShaderProgramActivatorType shaderProgramActivator,
     UniformsProviderType uniformsProvider,
-    const PrimitiveMode& primitiveMode
-  );
+    const PrimitiveMode& primitiveMode);
 
   Line(const Line&) = delete;
   Line& operator=(const Line&) = delete;

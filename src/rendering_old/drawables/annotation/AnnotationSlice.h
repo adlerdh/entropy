@@ -28,8 +28,7 @@ public:
     ShaderProgramActivatorType shaderActivator,
     UniformsProviderType uniformsProvider,
     GetterType<std::optional<glm::mat4> > annotToWorldTxProvider,
-    std::weak_ptr<SlideAnnotationRecord> slideAnnotationRecord
-  );
+    std::weak_ptr<SlideAnnotationRecord> slideAnnotationRecord);
 
   ~AnnotationSlice() override = default;
 

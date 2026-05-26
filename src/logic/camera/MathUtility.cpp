@@ -11,8 +11,8 @@
 
 #define EPSILON 0.000001
 
-#define CROSS(dest, v1, v2) \
-  { \
+#define CROSS(dest, v1, v2)                  \
+  {                                          \
     dest[0] = v1[1] * v2[2] - v1[2] * v2[1]; \
     dest[1] = v1[2] * v2[0] - v1[0] * v2[2]; \
     dest[2] = v1[0] * v2[1] - v1[1] * v2[0]; \
@@ -20,8 +20,8 @@
 
 #define DOT(v1, v2) (v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2])
 
-#define SUB(dest, v1, v2) \
-  { \
+#define SUB(dest, v1, v2)    \
+  {                          \
     dest[0] = v1[0] - v2[0]; \
     dest[1] = v1[1] - v2[1]; \
     dest[2] = v1[2] - v2[2]; \
@@ -41,15 +41,13 @@ std::pair<glm::vec3, glm::vec3> buildOrthonormalBasis_branchless(const glm::vec3
 
 std::pair<glm::vec3, glm::vec3> buildOrthonormalBasis(const glm::vec3& n)
 {
-  if (n.z < 0.0f)
-  {
+  if (n.z < 0.0f) {
     const float a = 1.0f / (1.0f - n.z);
     const float b = n.x * n.y * a;
 
     return {{1.0f - n.x * n.x * a, -b, n.x}, {b, n.y * n.y * a - 1.0f, -n.y}};
   }
-  else
-  {
+  else {
     const float a = 1.0f / (1.0f + n.z);
     const float b = -n.x * n.y * a;
 
@@ -70,19 +68,16 @@ glm::u8vec3 convertVecToRGB_uint8(const glm::vec3& v)
 
 std::vector<uint32_t> sortCounterclockwise(const std::vector<glm::vec2>& points)
 {
-  if (points.empty())
-  {
+  if (points.empty()) {
     return std::vector<uint32_t>{};
   }
-  else if (1 == points.size())
-  {
+  else if (1 == points.size()) {
     return std::vector<uint32_t>{0};
   }
 
   glm::vec2 center{0.0f, 0.0f};
 
-  for (const auto& p : points)
-  {
+  for (const auto& p : points) {
     center += p;
   }
   center = center / static_cast<float>(points.size());
@@ -91,8 +86,7 @@ std::vector<uint32_t> sortCounterclockwise(const std::vector<glm::vec2>& points)
 
   std::vector<float> angles;
 
-  for (uint32_t i = 0; i < points.size(); ++i)
-  {
+  for (uint32_t i = 0; i < points.size(); ++i) {
     const glm::vec2 b = points[i] - center;
     const float dot = a.x * b.x + a.y * b.y;
     const float det = a.x * b.y - b.x * a.y;
@@ -103,11 +97,9 @@ std::vector<uint32_t> sortCounterclockwise(const std::vector<glm::vec2>& points)
   std::vector<uint32_t> indices(points.size());
   std::iota(std::begin(indices), std::end(indices), 0);
 
-  std::sort(
-    std::begin(indices),
-    std::end(indices),
-    [&angles](const uint32_t& i, const uint32_t& j) { return (angles[i] <= angles[j]); }
-  );
+  std::sort(std::begin(indices), std::end(indices), [&angles](const uint32_t& i, const uint32_t& j) {
+    return (angles[i] <= angles[j]);
+  });
 
   return indices;
 }
@@ -120,8 +112,7 @@ std::vector<glm::vec2> project3dPointsToPlane(const std::vector<glm::vec3>& A)
 
   std::vector<glm::vec2> B;
 
-  for (auto& a : A)
-  {
+  for (auto& a : A) {
     B.emplace_back(glm::vec2{M * glm::vec4{a, 1.0f}});
   }
 
@@ -134,8 +125,7 @@ glm::vec3 projectPointToPlane(const glm::vec3& point, const glm::vec4& planeEqua
   const glm::vec3 planeNormal{planeEquation};
   const float L = glm::length(planeNormal);
 
-  if (L < glm::epsilon<float>())
-  {
+  if (L < glm::epsilon<float>()) {
     throw_debug("Cannot project point to plane: plane normal has zero length")
   }
 
@@ -150,39 +140,32 @@ glm::vec2 projectPointToPlaneLocal2dCoords(
   const glm::vec3& point,
   const glm::vec4& planeEquation,
   const glm::vec3& planeOrigin,
-  const std::pair<glm::vec3, glm::vec3>& planeAxes
-)
+  const std::pair<glm::vec3, glm::vec3>& planeAxes)
 {
   const glm::vec3 pointProjectedToPlane = projectPointToPlane(point, planeEquation);
 
   // Express projected point in 2D plane coordinates:
   return glm::vec2{
     glm::dot(pointProjectedToPlane - planeOrigin, glm::normalize(planeAxes.first)),
-    glm::dot(pointProjectedToPlane - planeOrigin, glm::normalize(planeAxes.second))
-  };
+    glm::dot(pointProjectedToPlane - planeOrigin, glm::normalize(planeAxes.second))};
 }
 
 void applyLayeringOffsetsToModelPositions(
   const Camera& camera,
   const glm::mat4& model_T_world,
   uint32_t layer,
-  std::vector<glm::vec3>& modelPositions
-)
+  std::vector<glm::vec3>& modelPositions)
 {
-  if (modelPositions.empty())
-  {
+  if (modelPositions.empty()) {
     return;
   }
 
   // Matrix for transforming vectors from Camera to Model space:
-  const glm::mat3 model_T_camera_invTrans = glm::inverseTranspose(
-    glm::mat3{model_T_world * camera.world_T_camera()}
-  );
+  const glm::mat3 model_T_camera_invTrans = glm::inverseTranspose(glm::mat3{model_T_world * camera.world_T_camera()});
 
   // The view's Back direction transformed to Model space:
-  const glm::vec3 modelTowardsViewer = glm::normalize(
-    model_T_camera_invTrans * Directions::get(Directions::View::Back)
-  );
+  const glm::vec3 modelTowardsViewer =
+    glm::normalize(model_T_camera_invTrans * Directions::get(Directions::View::Back));
 
   // Compute offset in World units based on first position (this choice is arbitrary)
   const float worldDepth = helper::computeSmallestWorldDepthOffset(camera, modelPositions.front());
@@ -191,14 +174,14 @@ void applyLayeringOffsetsToModelPositions(
   const float offsetMag = static_cast<float>(layer) * worldDepth;
   const glm::vec3 modelOffset = offsetMag * modelTowardsViewer;
 
-  for (auto& p : modelPositions)
-  {
+  for (auto& p : modelPositions) {
     p += modelOffset;
   }
 }
 
 glm::mat3 computeSubjectAxesInCamera(
-  const glm::mat3& camera_T_world_rotation, const glm::mat3& world_T_subject_rotation)
+  const glm::mat3& camera_T_world_rotation,
+  const glm::mat3& world_T_subject_rotation)
 {
   return glm::inverseTranspose(camera_T_world_rotation * world_T_subject_rotation);
 }
@@ -206,8 +189,7 @@ glm::mat3 computeSubjectAxesInCamera(
 std::pair<glm::vec4, glm::vec3> computeSubjectPlaneEquation(
   const glm::mat4 subject_T_world,
   const glm::vec3& worldPlaneNormal,
-  const glm::vec3& worldPlanePoint
-)
+  const glm::vec3& worldPlanePoint)
 {
   const glm::mat4 subject_T_world_IT = glm::inverseTranspose(subject_T_world);
   const glm::vec3 subjectPlaneNormal{subject_T_world_IT * glm::vec4{worldPlaneNormal, 0.0f}};
@@ -215,13 +197,12 @@ std::pair<glm::vec4, glm::vec3> computeSubjectPlaneEquation(
   glm::vec4 subjectPlanePoint = subject_T_world * glm::vec4{worldPlanePoint, 1.0f};
   subjectPlanePoint /= subjectPlanePoint.w;
 
-  return {
-    math::makePlane(subjectPlaneNormal, glm::vec3{subjectPlanePoint}), glm::vec3{subjectPlanePoint}
-  };
+  return {math::makePlane(subjectPlaneNormal, glm::vec3{subjectPlanePoint}), glm::vec3{subjectPlanePoint}};
 }
 
 std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelsForView(
-  const glm::mat4& camera_T_world, const glm::mat4& world_T_subject)
+  const glm::mat4& camera_T_world,
+  const glm::mat4& world_T_subject)
 {
   // Shortcuts for the three orthogonal anatomical directions
   static constexpr int L = 0;
@@ -253,12 +234,11 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelsForView(
   }
 
   // Render the translation vectors for the L (0), P (1), and S (2) labels:
-  for (auto& label : labels)
-  {
+  for (auto& label : labels) {
     const int i = label.labelIndex;
     label.viewClipDir = (axesAbs[i].x > 0.0f && axesAbs[i].y / axesAbs[i].x <= 1.0f)
-      ? glm::vec2{axesSgn[i].x, axesSgn[i].y * axesAbs[i].y / axesAbs[i].x}
-      : glm::vec2{axesSgn[i].x * axesAbs[i].x / axesAbs[i].y, axesSgn[i].y};
+                          ? glm::vec2{axesSgn[i].x, axesSgn[i].y * axesAbs[i].y / axesAbs[i].x}
+                          : glm::vec2{axesSgn[i].x * axesAbs[i].x / axesAbs[i].y, axesSgn[i].y};
   }
 
   return labels;
@@ -278,9 +258,8 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   // Compute intersections of the crosshair ray with the view box:
   static constexpr bool sk_doBothXhairDirs = true;
 
-  const glm::mat4 miewport_T_viewClip = helper::miewport_T_viewport(windowVP.height())
-                                        * helper::viewport_T_windowClip(windowVP)
-                                        * windowClip_T_viewClip;
+  const glm::mat4 miewport_T_viewClip =
+    helper::miewport_T_viewport(windowVP.height()) * helper::viewport_T_windowClip(windowVP) * windowClip_T_viewClip;
 
   const glm::mat3 miewport_T_viewClip_IT = glm::inverseTranspose(glm::mat3{miewport_T_viewClip});
 
@@ -288,9 +267,8 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
 
   const float aspectRatio = miewportViewBounds.bounds.width / miewportViewBounds.bounds.height;
 
-  const glm::vec2 aspectRatioScale = (aspectRatio < 1.0f)
-    ? glm::vec2{aspectRatio, 1.0f}
-    : glm::vec2{1.0f, 1.0f / aspectRatio};
+  const glm::vec2 aspectRatioScale =
+    (aspectRatio < 1.0f) ? glm::vec2{aspectRatio, 1.0f} : glm::vec2{1.0f, 1.0f / aspectRatio};
 
   const glm::vec2 miewportMinCorner(miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset);
   const glm::vec2 miewportSize(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height);
@@ -302,8 +280,7 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
   glm::vec4 miewportXhairPos = miewport_T_viewClip * viewClipXhairPos;
   miewportXhairPos /= miewportXhairPos.w;
 
-  for (auto& label : labelPosInfo)
-  {
+  for (auto& label : labelPosInfo) {
     const glm::vec3 viewClipXhairDir{label.viewClipDir.x, label.viewClipDir.y, 0.0f};
 
     label.miewportXhairCenterPos = glm::vec2{miewportXhairPos};
@@ -315,18 +292,26 @@ std::array<AnatomicalLabelPosInfo, 2> computeAnatomicalLabelPosInfo(
 
     // Intersections for the positive label (L, P, or S):
     const auto posLabelHits = math::computeRayAABoxIntersections(
-      miewportCenter, miewportXhairDir, miewportMinCorner, miewportSize, sk_doBothLabelDirs);
+      miewportCenter,
+      miewportXhairDir,
+      miewportMinCorner,
+      miewportSize,
+      sk_doBothLabelDirs);
 
     // Intersections for the negative label (R, A, or I):
     const auto negLabelHits = math::computeRayAABoxIntersections(
-      miewportCenter, -miewportXhairDir, miewportMinCorner, miewportSize, sk_doBothLabelDirs);
+      miewportCenter,
+      -miewportXhairDir,
+      miewportMinCorner,
+      miewportSize,
+      sk_doBothLabelDirs);
 
-    if (1 != posLabelHits.size() || 1 != negLabelHits.size())
-    {
+    if (1 != posLabelHits.size() || 1 != negLabelHits.size()) {
       spdlog::warn(
         "Expected two intersections when computing anatomical label positions for view. "
         "Got {} and {} intersections in the positive and negative directions, respectively.",
-        posLabelHits.size(), negLabelHits.size());
+        posLabelHits.size(),
+        negLabelHits.size());
       continue;
     }
 

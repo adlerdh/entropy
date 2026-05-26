@@ -34,8 +34,7 @@ public:
     ShaderProgramActivatorType shaderProgramActivator,
     UniformsProviderType uniformsProvider,
     std::weak_ptr<BlankTextures> blankTextures,
-    std::weak_ptr<MeshGpuRecord> sliceMeshGpuRecord
-  );
+    std::weak_ptr<MeshGpuRecord> sliceMeshGpuRecord);
 
   ImageSlice(const ImageSlice&) = delete;
   ImageSlice& operator=(const ImageSlice&) = delete;
@@ -52,13 +51,12 @@ public:
   void setLabelTableRecord(std::weak_ptr<LabelTableRecord>) override;
 
   void setPositioningMethod(
-    const intersection::PositioningMethod& method, const std::optional<glm::vec3>& p = std::nullopt
-  );
+    const intersection::PositioningMethod& method,
+    const std::optional<glm::vec3>& p = std::nullopt);
 
   void setAlignmentMethod(
     const intersection::AlignmentMethod& method,
-    const std::optional<glm::vec3>& worldNormal = std::nullopt
-  );
+    const std::optional<glm::vec3>& worldNormal = std::nullopt);
 
   void setShowOutline(bool show);
 

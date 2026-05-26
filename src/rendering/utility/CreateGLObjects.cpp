@@ -34,8 +34,7 @@ std::shared_ptr<GLTexture> createTexture2d(const glm::i64vec2& size, const void*
     tex::SizedInternalFormat::RGBA8_UNorm,
     tex::BufferPixelFormat::BGRA,
     tex::BufferPixelDataType::UInt8,
-    data
-  );
+    data);
 
   //    static const glm::vec4 sk_transparentBlack{ 0.0f, 0.0f, 0.0f, 0.0f };
   //    texture->setBorderColor( sk_transparentBlack );
@@ -58,14 +57,12 @@ std::unique_ptr<MeshGpuRecord> convertPolyDataToMeshGpuRecord(vtkSmartPointer<vt
   const auto normalsArrayBuffer = vtkconvert::extractNormalsToUIntArrayBuffer(polyData);
   const auto indicesArrayBuffer = vtkconvert::extractIndicesToUIntArrayBuffer(polyData);
 
-  if (!positionsArrayBuffer->buffer() || !normalsArrayBuffer->buffer() || !indicesArrayBuffer->buffer())
-  {
+  if (!positionsArrayBuffer->buffer() || !normalsArrayBuffer->buffer() || !indicesArrayBuffer->buffer()) {
     spdlog::error("Null mesh buffer data for Crosshair");
     return nullptr;
   }
 
-  if (positionsArrayBuffer->vectorCount() != normalsArrayBuffer->vectorCount())
-  {
+  if (positionsArrayBuffer->vectorCount() != normalsArrayBuffer->vectorCount()) {
     spdlog::error("Point and normal vector arrays for crosshair have different lengths");
     return nullptr;
   }
@@ -76,8 +73,7 @@ std::unique_ptr<MeshGpuRecord> convertPolyDataToMeshGpuRecord(vtkSmartPointer<vt
     3,
     3 * sizeof(float),
     0,
-    positionsArrayBuffer->vectorCount()
-  );
+    positionsArrayBuffer->vectorCount());
 
   VertexAttributeInfo normalsInfo(
     BufferComponentType::Int_2_10_10_10,
@@ -85,11 +81,9 @@ std::unique_ptr<MeshGpuRecord> convertPolyDataToMeshGpuRecord(vtkSmartPointer<vt
     4,
     sizeof(uint32_t),
     0,
-    positionsArrayBuffer->vectorCount()
-  );
+    positionsArrayBuffer->vectorCount());
 
-  VertexIndicesInfo
-    indexInfo(IndexType::UInt32, PrimitiveMode::Triangles, indicesArrayBuffer->length(), 0);
+  VertexIndicesInfo indexInfo(IndexType::UInt32, PrimitiveMode::Triangles, indicesArrayBuffer->length(), 0);
 
   GLBufferObject positionsObject(BufferType::VertexArray, BufferUsagePattern::StaticDraw);
   GLBufferObject normalsObject(BufferType::VertexArray, BufferUsagePattern::StaticDraw);
@@ -106,8 +100,8 @@ std::unique_ptr<MeshGpuRecord> convertPolyDataToMeshGpuRecord(vtkSmartPointer<vt
   // Note: We are not storing the polyData in the CPU record,
   // since it is never needed again and just takes up space.
 
-  auto gpuRecord = std::make_unique<
-    MeshGpuRecord>(std::move(positionsObject), std::move(indicesObject), positionsInfo, indexInfo);
+  auto gpuRecord =
+    std::make_unique<MeshGpuRecord>(std::move(positionsObject), std::move(indicesObject), positionsInfo, indexInfo);
 
   gpuRecord->setNormals(std::move(normalsObject), normalsInfo);
 
@@ -124,15 +118,13 @@ std::unique_ptr<ImageGpuRecord> createImageGpuRecord(
   const uint32_t componentIndex,
   const tex::MinificationFilter& minFilter,
   const tex::MagnificationFilter& magFilter,
-  bool useNormalizedIntegers
-)
+  bool useNormalizedIntegers)
 {
   static constexpr GLint sk_alignment = 1;
   static const tex::WrapMode sk_wrapMode = tex::WrapMode::ClampToEdge;
   //    static const glm::vec4 sk_borderColor( 0.0f, 0.0f, 0.0f, 0.0f );
 
-  if (!imageCpuRecord)
-  {
+  if (!imageCpuRecord) {
     spdlog::error("Null imageCpuRecord");
     return nullptr;
   }
@@ -146,8 +138,10 @@ std::unique_ptr<ImageGpuRecord> createImageGpuRecord(
   GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
 
   auto texture = std::make_shared<GLTexture>(
-    tex::Target::Texture3D, GLTexture::MultisampleSettings(), pixelPackSettings, pixelUnpackSettings
-  );
+    tex::Target::Texture3D,
+    GLTexture::MultisampleSettings(),
+    pixelPackSettings,
+    pixelUnpackSettings);
 
   texture->generate();
 
@@ -158,12 +152,11 @@ std::unique_ptr<ImageGpuRecord> createImageGpuRecord(
 
   static const glm::u32vec3 sk_maxDims(std::numeric_limits<uint32_t>::max());
 
-  if (glm::any(glm::greaterThan(header.pixelDimensions(), sk_maxDims)))
-  {
+  if (glm::any(glm::greaterThan(header.pixelDimensions(), sk_maxDims))) {
     spdlog::error(
-      "Error: Cannot create 3D texture: The pixel dimensions of image {} exceed the uint32_t limit",
-      header.fileName()
-    );
+      "Error: Cannot create 3D texture: The pixel dimensions of image {} exceed the uint32_t "
+      "limit",
+      header.fileName());
     return nullptr;
   }
 
@@ -173,25 +166,21 @@ std::unique_ptr<ImageGpuRecord> createImageGpuRecord(
   // Load data in for the first mipmap level of the texture
   static constexpr GLint sk_mipmapLevel = 0;
 
-  if (useNormalizedIntegers)
-  {
+  if (useNormalizedIntegers) {
     texture->setData(
       sk_mipmapLevel,
       GLTexture::getSizedInternalNormalizedRedFormat(componentType),
       GLTexture::getBufferPixelNormalizedRedFormat(componentType),
       GLTexture::getBufferPixelDataType(componentType),
-      imageCpuRecord->bufferAsVoid(componentIndex)
-    );
+      imageCpuRecord->bufferAsVoid(componentIndex));
   }
-  else
-  {
+  else {
     texture->setData(
       sk_mipmapLevel,
       GLTexture::getSizedInternalRedFormat(componentType),
       GLTexture::getBufferPixelRedFormat(componentType),
       GLTexture::getBufferPixelDataType(componentType),
-      imageCpuRecord->bufferAsVoid(componentIndex)
-    );
+      imageCpuRecord->bufferAsVoid(componentIndex));
   }
 
   return std::make_unique<ImageGpuRecord>(texture);
@@ -221,8 +210,7 @@ std::unique_ptr<MeshGpuRecord> createSliceMeshGpuRecord(const BufferUsagePattern
     sk_numCoords,
     sizeof(PositionType),
     sk_offset,
-    sk_numVerts
-  );
+    sk_numVerts);
 
   VertexAttributeInfo normalsInfo(
     BufferComponentType::Int_2_10_10_10,
@@ -230,8 +218,7 @@ std::unique_ptr<MeshGpuRecord> createSliceMeshGpuRecord(const BufferUsagePattern
     4,
     sizeof(NormalType),
     sk_offset,
-    sk_numVerts
-  );
+    sk_numVerts);
 
   VertexAttributeInfo texCoordsInfo(
     BufferComponentType::Float,
@@ -239,8 +226,7 @@ std::unique_ptr<MeshGpuRecord> createSliceMeshGpuRecord(const BufferUsagePattern
     2,
     sizeof(TexCoord2DType),
     sk_offset,
-    sk_numVerts
-  );
+    sk_numVerts);
 
   VertexIndicesInfo indexInfo(IndexType::UInt32, PrimitiveMode::TriangleFan, sk_numIndices, 0);
 
@@ -267,15 +253,13 @@ std::unique_ptr<MeshGpuRecord> createSliceMeshGpuRecord(const BufferUsagePattern
     std::move(positionsInfo),
     std::move(normalsInfo),
     std::move(texCoordsInfo),
-    std::move(indexInfo)
-  );
+    std::move(indexInfo));
 }
 
 std::unique_ptr<MeshGpuRecord> createSphereMeshGpuRecord()
 {
   vtkSmartPointer<vtkPolyData> polyData = vtkutils::generateSphere();
-  if (!polyData)
-  {
+  if (!polyData) {
     spdlog::error("Null mesh polygon data for sphere");
     return nullptr;
   }
@@ -283,14 +267,11 @@ std::unique_ptr<MeshGpuRecord> createSphereMeshGpuRecord()
   return convertPolyDataToMeshGpuRecord(polyData);
 }
 
-std::unique_ptr<MeshGpuRecord> createCylinderMeshGpuRecord(
-  const glm::dvec3& center, double radius, double height
-)
+std::unique_ptr<MeshGpuRecord> createCylinderMeshGpuRecord(const glm::dvec3& center, double radius, double height)
 {
   vtkSmartPointer<vtkPolyData> polyData = vtkutils::generateCylinder(center, radius, height);
 
-  if (!polyData)
-  {
+  if (!polyData) {
     spdlog::error("Null mesh polygon data for cylinder");
     return nullptr;
   }
@@ -300,16 +281,14 @@ std::unique_ptr<MeshGpuRecord> createCylinderMeshGpuRecord(
 
 std::unique_ptr<MeshGpuRecord> createCrosshairMeshGpuRecord(double coneToCylinderRatio)
 {
-  if (coneToCylinderRatio < 0.0)
-  {
+  if (coneToCylinderRatio < 0.0) {
     spdlog::error("Invalid cone-to-cylinder ratio of {} for crosshairs", coneToCylinderRatio);
     return nullptr;
   }
 
   vtkSmartPointer<vtkPolyData> polyData = vtkutils::generatePointyCylinders(coneToCylinderRatio);
 
-  if (!polyData)
-  {
+  if (!polyData) {
     spdlog::error("Null mesh polygon data for Crosshair");
     return nullptr;
   }
@@ -321,8 +300,7 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecord(
   size_t vertexCount,
   size_t indexCount,
   const PrimitiveMode& primitiveMode,
-  const BufferUsagePattern& bufferUsagePattern
-)
+  const BufferUsagePattern& bufferUsagePattern)
 {
   static constexpr int sk_numCoords = 3;
 
@@ -338,8 +316,7 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecord(
     sk_numCoords,
     sizeof(PositionType),
     sk_offset,
-    vertexCount
-  );
+    vertexCount);
 
   VertexAttributeInfo normalsInfo(
     BufferComponentType::Int_2_10_10_10,
@@ -347,8 +324,7 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecord(
     4,
     sizeof(NormalType),
     sk_offset,
-    vertexCount
-  );
+    vertexCount);
 
   VertexIndicesInfo indexInfo(IndexType::UInt32, primitiveMode, indexCount, 0);
 
@@ -370,8 +346,7 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecord(
     std::move(positionsObject),
     std::move(indicesObject),
     std::move(positionsInfo),
-    std::move(indexInfo)
-  );
+    std::move(indexInfo));
 
   meshGpuRecord->setNormals(std::move(normalsObject), std::move(normalsInfo));
 
@@ -381,34 +356,28 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecord(
 std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
   vtkSmartPointer<vtkPolyData> polyData,
   const MeshPrimitiveType& primitiveType,
-  const BufferUsagePattern& bufferUsagePattern
-)
+  const BufferUsagePattern& bufferUsagePattern)
 {
-  if (!polyData)
-  {
+  if (!polyData) {
     spdlog::error("Null mesh polygon data");
     return nullptr;
   }
 
   PrimitiveMode primitiveMode = PrimitiveMode::Triangles;
 
-  switch (primitiveType)
-  {
-  case MeshPrimitiveType::Triangles:
-  {
-    primitiveMode = PrimitiveMode::Triangles;
-    break;
-  }
-  case MeshPrimitiveType::TriangleFan:
-  {
-    primitiveMode = PrimitiveMode::TriangleFan;
-    break;
-  }
-  case MeshPrimitiveType::TriangleStrip:
-  {
-    primitiveMode = PrimitiveMode::TriangleStrip;
-    break;
-  }
+  switch (primitiveType) {
+    case MeshPrimitiveType::Triangles: {
+      primitiveMode = PrimitiveMode::Triangles;
+      break;
+    }
+    case MeshPrimitiveType::TriangleFan: {
+      primitiveMode = PrimitiveMode::TriangleFan;
+      break;
+    }
+    case MeshPrimitiveType::TriangleStrip: {
+      primitiveMode = PrimitiveMode::TriangleStrip;
+      break;
+    }
   }
 
   /// @todo It is possible to extract different formats of ArrayBuffer from the vtkPolyData.
@@ -418,16 +387,15 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
   const auto texCoordsArrayBuffer = vtkconvert::extractTexCoordsToFloatArrayBuffer(polyData);
   const auto indicesArrayBuffer = vtkconvert::extractIndicesToUIntArrayBuffer(polyData);
 
-  if ( ! positionsArrayBuffer || ! positionsArrayBuffer->buffer() ||
-         ! normalsArrayBuffer || ! normalsArrayBuffer->buffer() ||
-         ! indicesArrayBuffer || ! indicesArrayBuffer->buffer() )
+  if (
+    !positionsArrayBuffer || !positionsArrayBuffer->buffer() || !normalsArrayBuffer || !normalsArrayBuffer->buffer() ||
+    !indicesArrayBuffer || !indicesArrayBuffer->buffer())
   {
     spdlog::error("Null array data extracted from PolyData");
     return nullptr;
   }
 
-  if (positionsArrayBuffer->vectorCount() != normalsArrayBuffer->vectorCount())
-  {
+  if (positionsArrayBuffer->vectorCount() != normalsArrayBuffer->vectorCount()) {
     spdlog::error("Vector arrays of normals extracted from PolyData has incorrect length");
     return nullptr;
   }
@@ -435,8 +403,7 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
   spdlog::info(
     "Creating GPU record for mesh with {} vertices and {} indices",
     positionsArrayBuffer->vectorCount(),
-    indicesArrayBuffer->vectorCount()
-  );
+    indicesArrayBuffer->vectorCount());
 
   VertexAttributeInfo positionsInfo(
     BufferComponentType::Float,
@@ -444,8 +411,7 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
     3,
     3 * sizeof(float),
     0,
-    positionsArrayBuffer->vectorCount()
-  );
+    positionsArrayBuffer->vectorCount());
 
   VertexAttributeInfo normalsInfo(
     BufferComponentType::Int_2_10_10_10,
@@ -453,8 +419,7 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
     4,
     sizeof(uint32_t),
     0,
-    normalsArrayBuffer->vectorCount()
-  );
+    normalsArrayBuffer->vectorCount());
 
   VertexIndicesInfo indexInfo(IndexType::UInt32, primitiveMode, indicesArrayBuffer->length(), 0);
 
@@ -474,21 +439,17 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
     std::move(positionsObject),
     std::move(indicesObject),
     std::move(positionsInfo),
-    std::move(indexInfo)
-  );
+    std::move(indexInfo));
 
   gpuRecord->setNormals(std::move(normalsObject), std::move(normalsInfo));
 
-  if (texCoordsArrayBuffer && texCoordsArrayBuffer->buffer())
-  {
-    if (positionsArrayBuffer->vectorCount() != texCoordsArrayBuffer->vectorCount())
-    {
+  if (texCoordsArrayBuffer && texCoordsArrayBuffer->buffer()) {
+    if (positionsArrayBuffer->vectorCount() != texCoordsArrayBuffer->vectorCount()) {
       spdlog::error(
         "Vector array of texture coordinates extracted from "
         "PolyData has incorrect length {} (vs. {} required)",
         positionsArrayBuffer->vectorCount(),
-        texCoordsArrayBuffer->vectorCount()
-      );
+        texCoordsArrayBuffer->vectorCount());
       return nullptr;
     }
 
@@ -498,8 +459,7 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
       2,
       sizeof(float),
       0,
-      texCoordsArrayBuffer->vectorCount()
-    );
+      texCoordsArrayBuffer->vectorCount());
 
     GLBufferObject texCoordsObject(BufferType::VertexArray, bufferUsagePattern);
 
@@ -545,18 +505,15 @@ std::unique_ptr<MeshGpuRecord> createBoxMeshGpuRecord(const BufferUsagePattern& 
 
   static const std::array<PositionType, sk_numPoints> sk_pointsArray = {
     {p000, p001, p010, p011, p100, p110, p101, p111, p000, p000, p001, p001,
-     p010, p010, p011, p011, p100, p100, p110, p110, p101, p101, p111, p111}
-  };
+     p010, p010, p011, p011, p100, p100, p110, p110, p101, p101, p111, p111}};
 
-  static const std::array<NormalType, sk_numPoints> sk_normalsArray = {
-    {nx0, nx0, nx0, nx0, nx1, nx1, nx1, nx1, ny0, nz0, ny0, nz1,
-     ny1, nz0, ny1, nz1, ny0, nz0, ny1, nz0, ny0, nz1, ny1, nz1}
-  };
+  static const std::array<NormalType, sk_numPoints> sk_normalsArray = {{nx0, nx0, nx0, nx0, nx1, nx1, nx1, nx1,
+                                                                        ny0, nz0, ny0, nz1, ny1, nz0, ny1, nz1,
+                                                                        ny0, nz0, ny1, nz0, ny0, nz1, ny1, nz1}};
 
-  static const std::array<TexCoordType, sk_numPoints> sk_texCoordsArray = {
-    {t00, t00, t01, t01, t10, t11, t10, t11, t00, t00, t00, t00,
-     t01, t01, t01, t01, t10, t10, t11, t11, t10, t10, t11, t11}
-  };
+  static const std::array<TexCoordType, sk_numPoints> sk_texCoordsArray = {{t00, t00, t01, t01, t10, t11, t10, t11,
+                                                                            t00, t00, t00, t00, t01, t01, t01, t01,
+                                                                            t10, t10, t11, t11, t10, t10, t11, t11}};
 
   static const std::array<IndexedTriangleType, sk_numTriangles> sk_indexArray = {
     {{0, 1, 2},
@@ -570,12 +527,10 @@ std::unique_ptr<MeshGpuRecord> createBoxMeshGpuRecord(const BufferUsagePattern& 
      {9, 13, 17},
      {19, 17, 13},
      {11, 21, 15},
-     {23, 15, 21}}
-  };
+     {23, 15, 21}}};
 
-  VertexAttributeInfo positionsInfo(
-    BufferComponentType::Float, BufferNormalizeValues::False, 3, sizeof(PositionType), 0, sk_numPoints
-  );
+  VertexAttributeInfo
+    positionsInfo(BufferComponentType::Float, BufferNormalizeValues::False, 3, sizeof(PositionType), 0, sk_numPoints);
 
   VertexAttributeInfo normalsInfo(
     BufferComponentType::Int_2_10_10_10,
@@ -583,12 +538,10 @@ std::unique_ptr<MeshGpuRecord> createBoxMeshGpuRecord(const BufferUsagePattern& 
     4,
     sizeof(NormalType),
     0,
-    sk_numPoints
-  );
+    sk_numPoints);
 
-  VertexAttributeInfo texCoordsInfo(
-    BufferComponentType::Float, BufferNormalizeValues::False, 2, sizeof(TexCoordType), 0, sk_numPoints
-  );
+  VertexAttributeInfo
+    texCoordsInfo(BufferComponentType::Float, BufferNormalizeValues::False, 2, sizeof(TexCoordType), 0, sk_numPoints);
 
   VertexIndicesInfo indexInfo(IndexType::UInt8, PrimitiveMode::Triangles, 3 * sk_numTriangles, 0);
 
@@ -615,8 +568,7 @@ std::unique_ptr<MeshGpuRecord> createBoxMeshGpuRecord(const BufferUsagePattern& 
     std::move(positionsInfo),
     std::move(normalsInfo),
     std::move(texCoordsInfo),
-    std::move(indexInfo)
-  );
+    std::move(indexInfo));
 }
 
 void createTestColorBuffer(MeshRecord& meshRecord)
@@ -624,16 +576,14 @@ void createTestColorBuffer(MeshRecord& meshRecord)
   MeshCpuRecord* cpuRecord = meshRecord.cpuData();
   MeshGpuRecord* gpuRecord = meshRecord.gpuData();
 
-  if (!cpuRecord || !gpuRecord)
-  {
+  if (!cpuRecord || !gpuRecord) {
     spdlog::error("Null record");
     return;
   }
 
   vtkSmartPointer<vtkPolyData> polyData = meshRecord.cpuData()->polyData();
 
-  if (!polyData)
-  {
+  if (!polyData) {
     spdlog::error("Null vtkPolyData in MeshCPURecord");
     return;
   }
@@ -641,17 +591,15 @@ void createTestColorBuffer(MeshRecord& meshRecord)
   const auto& positionsInfo = gpuRecord->positionsInfo();
   const auto vertexCount = positionsInfo.vertexCount();
 
-  VertexAttributeInfo colorsInfo(
-    BufferComponentType::UByte, BufferNormalizeValues::True, 4, 4 * sizeof(uint8_t), 0, vertexCount
-  );
+  VertexAttributeInfo
+    colorsInfo(BufferComponentType::UByte, BufferNormalizeValues::True, 4, 4 * sizeof(uint8_t), 0, vertexCount);
 
   GLBufferObject colorsBuffer(BufferType::VertexArray, BufferUsagePattern::StaticDraw);
   colorsBuffer.generate();
 
   const auto normalsArrayBuffer = vtkconvert::extractNormalsToUIntArrayBuffer(polyData);
 
-  if (!normalsArrayBuffer)
-  {
+  if (!normalsArrayBuffer) {
     spdlog::error("Null normalsArrayBuffer");
     return;
   }
@@ -661,8 +609,7 @@ void createTestColorBuffer(MeshRecord& meshRecord)
   const size_t byteCount = 4 * vertexCount;
   auto colorBuffer = std::make_unique<uint8_t[]>(byteCount);
 
-  for (size_t i = 0; i < vertexCount; ++i)
-  {
+  for (size_t i = 0; i < vertexCount; ++i) {
     const glm::vec3 normal = glm::abs(glm::vec3{glm::unpackSnorm3x10_1x2(normalsBuffer[i])});
     const float max = glm::compMax(normal);
     const glm::u8vec3 N = glm::u8vec3{(255.0f / max) * normal};
@@ -680,8 +627,7 @@ void createTestColorBuffer(MeshRecord& meshRecord)
 
 std::unique_ptr<SlideGpuRecord> createSlideGpuRecord(const slideio::SlideCpuRecord* cpuRecord)
 {
-  if (!cpuRecord)
-  {
+  if (!cpuRecord) {
     spdlog::error("Null SlideCpuRecord");
     return nullptr;
   }
@@ -694,44 +640,35 @@ std::unique_ptr<SlideGpuRecord> createSlideGpuRecord(const slideio::SlideCpuReco
   const size_t numFileLevels = cpuRecord->numFileLevels();
 
   // Check created levels first
-  if (numCreatedLevels > 0)
-  {
+  if (numCreatedLevels > 0) {
     smallestLevel = &(cpuRecord->createdLevel(numCreatedLevels - 1));
   }
-  else if (numFileLevels > 0)
-  {
+  else if (numFileLevels > 0) {
     smallestLevel = &(cpuRecord->fileLevel(numFileLevels - 1));
   }
-  else
-  {
+  else {
     spdlog::error("No level data");
     return nullptr;
   }
 
-  if ( ! smallestLevel || ! smallestLevel->m_data ||
-         smallestLevel->m_dims.x <= 0 || smallestLevel->m_dims.y <= 0 )
-  {
+  if (!smallestLevel || !smallestLevel->m_data || smallestLevel->m_dims.x <= 0 || smallestLevel->m_dims.y <= 0) {
     spdlog::error("Null level data");
     return nullptr;
   }
 
-  auto texture = createTexture2d(
-    smallestLevel->m_dims, const_cast<const uint32_t*>(smallestLevel->m_data.get())
-  );
+  auto texture = createTexture2d(smallestLevel->m_dims, const_cast<const uint32_t*>(smallestLevel->m_data.get()));
 
   return std::make_unique<SlideGpuRecord>(texture);
 }
 
-std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const PlanarPolygon& polygon
-)
+std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const PlanarPolygon& polygon)
 {
   static const uint32_t sk_upNormal = glm::packSnorm3x10_1x2(glm::vec4{0.0f, 0.0f, 1.0f, 0.0f});
   static const uint32_t sk_downNormal = glm::packSnorm3x10_1x2(glm::vec4{0.0f, 0.0f, -1.0f, 0.0f});
 
   // The first polygon is the outer boundary; subsequent polygons define holes inside of it.
 
-  if (polygon.numBoundaries() < 1)
-  {
+  if (polygon.numBoundaries() < 1) {
     spdlog::error("Error: Annotation must contain at least an outer boundary.");
     return nullptr;
   }
@@ -739,16 +676,13 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
   std::vector<glm::vec3> vertices;
 
   // Add vertices for the bottom face (z = 0) of the mesh:
-  for (const auto& boundary : polygon.getAllVertices())
-  {
-    if (boundary.size() < 3)
-    {
+  for (const auto& boundary : polygon.getAllVertices()) {
+    if (boundary.size() < 3) {
       spdlog::error("Error: Polygon must have at least 3 vertices");
       return nullptr;
     }
 
-    for (const PlanarPolygon::PointType& v : boundary)
-    {
+    for (const PlanarPolygon::PointType& v : boundary) {
       vertices.emplace_back(glm::vec3{v.x, v.y, 0.0f});
     }
   }
@@ -760,8 +694,7 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
   std::vector<uint32_t> normals(N, sk_downNormal);
 
   // Duplicate the vertices for the top face (z = 1) of the mesh:
-  for (size_t i = 0; i < N; ++i)
-  {
+  for (size_t i = 0; i < N; ++i) {
     vertices.emplace_back(glm::vec3{vertices[i].x, vertices[i].y, 1.0f});
   }
 
@@ -771,8 +704,7 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
   // Add indices for bottom face, flipping orientation from clockwise to counter-clockwise:
   std::vector<PlanarPolygon::IndexType> indices;
 
-  for (size_t i = 0; i < polygon.numTriangles(); ++i)
-  {
+  for (size_t i = 0; i < polygon.numTriangles(); ++i) {
     const auto triangle = polygon.getTriangle(i);
     indices.emplace_back(std::get<2>(triangle));
     indices.emplace_back(std::get<1>(triangle));
@@ -781,8 +713,7 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
 
   // Duplicate the indices for the top face, preserving the clockwise orientation,
   // which is correct for the top face:
-  for (size_t i = 0; i < polygon.numTriangles(); ++i)
-  {
+  for (size_t i = 0; i < polygon.numTriangles(); ++i) {
     const auto triangle = polygon.getTriangle(i);
     indices.emplace_back(std::get<0>(triangle) + N);
     indices.emplace_back(std::get<1>(triangle) + N);
@@ -800,10 +731,8 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
   // or for the holes on the inside (false):
   bool outside = true;
 
-  for (const auto& boundary : polygon.getAllVertices())
-  {
-    for (uint32_t i = 0; i < boundary.size(); ++i)
-    {
+  for (const auto& boundary : polygon.getAllVertices()) {
+    for (uint32_t i = 0; i < boundary.size(); ++i) {
       const uint32_t aBot = offset + i;
       const uint32_t aTop = offset + i + N;
       const uint32_t bBot = offset + (i + 1) % boundary.size();
@@ -827,8 +756,7 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
 
       // Flip face orientations based on whether the side belongs to the outside boundary
       // or to the interior holes:
-      if (outside)
-      {
+      if (outside) {
         indices.emplace_back(vCount + 0); // aBot
         indices.emplace_back(vCount + 2); // bBot
         indices.emplace_back(vCount + 3); // bTop
@@ -837,8 +765,7 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
         indices.emplace_back(vCount + 1); // aTop
         indices.emplace_back(vCount + 0); // aBot
       }
-      else
-      {
+      else {
         indices.emplace_back(vCount + 3); // bTop
         indices.emplace_back(vCount + 2); // bBot
         indices.emplace_back(vCount + 0); // aBot
@@ -857,9 +784,8 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
     outside = false;
   }
 
-  VertexAttributeInfo positionsInfo(
-    BufferComponentType::Float, BufferNormalizeValues::False, 3, sizeof(glm::vec3), 0, vertices.size()
-  );
+  VertexAttributeInfo
+    positionsInfo(BufferComponentType::Float, BufferNormalizeValues::False, 3, sizeof(glm::vec3), 0, vertices.size());
 
   VertexAttributeInfo normalsInfo(
     BufferComponentType::Int_2_10_10_10,
@@ -867,8 +793,7 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
     4,
     sizeof(uint32_t),
     0,
-    normals.size()
-  );
+    normals.size());
 
   VertexIndicesInfo indexInfo(IndexType::UInt32, PrimitiveMode::Triangles, indices.size(), 0);
 
@@ -884,8 +809,8 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
   normalsObject.allocate(sizeof(uint32_t) * normals.size(), normals.data());
   indicesObject.allocate(sizeof(uint32_t) * indices.size(), indices.data());
 
-  auto gpuRecord = std::make_shared<
-    MeshGpuRecord>(std::move(positionsObject), std::move(indicesObject), positionsInfo, indexInfo);
+  auto gpuRecord =
+    std::make_shared<MeshGpuRecord>(std::move(positionsObject), std::move(indicesObject), positionsInfo, indexInfo);
 
   gpuRecord->setNormals(std::move(normalsObject), normalsInfo);
 
@@ -894,8 +819,7 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
 
 std::unique_ptr<GLTexture> createImageColorMapTexture(const ImageColorMap* colorMap)
 {
-  if (!colorMap)
-  {
+  if (!colorMap) {
     return nullptr;
   }
 
@@ -909,8 +833,7 @@ std::unique_ptr<GLTexture> createImageColorMapTexture(const ImageColorMap* color
     ImageColorMap::textureFormat_RGBA_F32(),
     tex::BufferPixelFormat::RGBA,
     tex::BufferPixelDataType::Float32,
-    colorMap->data_RGBA_F32()
-  );
+    colorMap->data_RGBA_F32());
 
   // We should never sample outside the texture coordinate range [0.0, 1.0], anyway
   texture->setWrapMode(tex::WrapMode::ClampToEdge);
@@ -923,18 +846,15 @@ std::unique_ptr<GLTexture> createImageColorMapTexture(const ImageColorMap* color
   return texture;
 }
 
-std::unique_ptr<GLBufferTexture> createLabelColorTableTextureBuffer(
-  const ParcellationLabelTable* labels
-)
+std::unique_ptr<GLBufferTexture> createLabelColorTableTextureBuffer(const ParcellationLabelTable* labels)
 {
-  if (!labels)
-  {
+  if (!labels) {
     return nullptr;
   }
 
   // Buffer contents will be modified once and used many times
-  auto colorMapTexture = std::make_unique<
-    GLBufferTexture>(labels->bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw);
+  auto colorMapTexture =
+    std::make_unique<GLBufferTexture>(labels->bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw);
 
   colorMapTexture->generate();
   colorMapTexture->allocate(labels->numColorBytes_RGBA_U8(), labels->colorData_RGBA_nonpremult_U8());
@@ -955,8 +875,7 @@ GLTexture createBlankRGBATexture(const ComponentType& componentType, const tex::
 
   static constexpr GLint sk_alignment = 1;
 
-  if (tex::Target::TextureCubeMap == target || tex::Target::TextureBuffer == target)
-  {
+  if (tex::Target::TextureCubeMap == target || tex::Target::TextureBuffer == target) {
     throw_debug("Invalid texture target type ");
   }
 
@@ -972,44 +891,43 @@ GLTexture createBlankRGBATexture(const ComponentType& componentType, const tex::
 
   GLvoid* data = nullptr;
 
-  switch (componentType)
-  {
-  case ComponentType::Int8:
-    data = sk_data_I8.data();
-    break;
-  case ComponentType::UInt8:
-    data = sk_data_U8.data();
-    break;
-  case ComponentType::Int16:
-    data = sk_data_I16.data();
-    break;
-  case ComponentType::UInt16:
-    data = sk_data_U16.data();
-    break;
-  case ComponentType::Int32:
-    data = sk_data_I32.data();
-    break;
-  case ComponentType::UInt32:
-    data = sk_data_U32.data();
-    break;
-  case ComponentType::Float32:
-    data = sk_data_F32.data();
-    break;
-  case ComponentType::Long:
-    throw_debug("Int64 texture not supported");
-  case ComponentType::ULong:
-    throw_debug("UInt64 texture not supported");
-  case ComponentType::Float64:
-    throw_debug("Float64 texture not supported");
-  case ComponentType::LongLong:
-    throw_debug("LongLong texture not supported");
-  case ComponentType::ULongLong:
-    throw_debug("ULongLong texture not supported");
-  case ComponentType::LongDouble:
-    throw_debug("LongDouble texture not supported");
-  default:
-  case ComponentType::Undefined:
-    throw_debug("Undefined texture not supported");
+  switch (componentType) {
+    case ComponentType::Int8:
+      data = sk_data_I8.data();
+      break;
+    case ComponentType::UInt8:
+      data = sk_data_U8.data();
+      break;
+    case ComponentType::Int16:
+      data = sk_data_I16.data();
+      break;
+    case ComponentType::UInt16:
+      data = sk_data_U16.data();
+      break;
+    case ComponentType::Int32:
+      data = sk_data_I32.data();
+      break;
+    case ComponentType::UInt32:
+      data = sk_data_U32.data();
+      break;
+    case ComponentType::Float32:
+      data = sk_data_F32.data();
+      break;
+    case ComponentType::Long:
+      throw_debug("Int64 texture not supported");
+    case ComponentType::ULong:
+      throw_debug("UInt64 texture not supported");
+    case ComponentType::Float64:
+      throw_debug("Float64 texture not supported");
+    case ComponentType::LongLong:
+      throw_debug("LongLong texture not supported");
+    case ComponentType::ULongLong:
+      throw_debug("ULongLong texture not supported");
+    case ComponentType::LongDouble:
+      throw_debug("LongDouble texture not supported");
+    default:
+    case ComponentType::Undefined:
+      throw_debug("Undefined texture not supported");
   }
 
   texture.setData(
@@ -1017,8 +935,7 @@ GLTexture createBlankRGBATexture(const ComponentType& componentType, const tex::
     GLTexture::getSizedInternalRGBAFormat(componentType),
     GLTexture::getBufferPixelRGBAFormat(componentType),
     GLTexture::getBufferPixelDataType(componentType),
-    data
-  );
+    data);
 
   texture.setWrapMode(tex::WrapMode::ClampToEdge);
 

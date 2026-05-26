@@ -29,8 +29,7 @@ template<typename T, size_t N>
 std::array<T, N> multiplyArrays(const std::array<T, N>& a, const std::array<T, N>& b)
 {
   std::array<T, N> c;
-  for (size_t i = 0; i < N; ++i)
-  {
+  for (size_t i = 0; i < N; ++i) {
     c[i] = a[i] * b[i];
   }
   return c;
@@ -43,8 +42,7 @@ TexturedMesh::TexturedMesh(
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
   std::weak_ptr<BlankTextures> blankTextures,
-  GetterType<MeshGpuRecord*> meshGpuRecordProvider
-)
+  GetterType<MeshGpuRecord*> meshGpuRecordProvider)
   : DrawableBase(std::move(name), DrawableType::TexturedMesh)
   ,
 
@@ -158,14 +156,12 @@ TexturedMesh::TexturedMesh(
 {
   setRenderId((static_cast<uint32_t>(underlyingType(m_type)) << 12) | (numCreated() % 4096));
 
-  if (m_uniformsProvider)
-  {
+  if (m_uniformsProvider) {
     m_stdUniforms = m_uniformsProvider(MeshProgram::name);
     m_peelUniforms = m_uniformsProvider(MeshDDPPeelProgram::name);
     m_initUniforms = m_uniformsProvider(DDPInitProgram::name);
   }
-  else
-  {
+  else {
     throw_debug("Unable to access UniformsProvider");
   }
 
@@ -174,16 +170,19 @@ TexturedMesh::TexturedMesh(
 
 bool TexturedMesh::isOpaque() const
 {
-  if (m_autoHidingMode || m_xrayMode || (m_image2dThresholdMode && m_image2dThresholdActive) || (m_image3dThresholdMode && m_image3dThresholdActive))
+  if (
+    m_autoHidingMode || m_xrayMode || (m_image2dThresholdMode && m_image2dThresholdActive) ||
+    (m_image3dThresholdMode && m_image3dThresholdActive))
   {
     // Since fragment opacity is modulated when these modes are active,
     // there is no guarantee that the fragment is opaque
     return false;
   }
 
-  if ( m_overallOpacity * // combined opacity of all layers
-         getAccumulatedRenderingData().m_masterOpacityMultiplier // master opacity multiplier
-         < 1.0f )
+  if (
+    m_overallOpacity *                                        // combined opacity of all layers
+      getAccumulatedRenderingData().m_masterOpacityMultiplier // master opacity multiplier
+    < 1.0f)
   {
     return false;
   }
@@ -216,17 +215,14 @@ void TexturedMesh::setImage3dRecord(std::weak_ptr<ImageRecord> imageRecord)
 
   auto rec = m_image3dRecord.lock();
 
-  if (rec && rec->cpuData())
-  {
+  if (rec && rec->cpuData()) {
     const auto& H = rec->cpuData()->header();
     const auto& type = H.memoryComponentType();
 
-    if (ComponentType::Long == type || ComponentType::ULong == type || ComponentType::Float64 == type)
-    {
+    if (ComponentType::Long == type || ComponentType::ULong == type || ComponentType::Float64 == type) {
       // Component types Int64, UInt64, and Double64 are not supported
       std::ostringstream ss;
-      ss << "Invalid component type " << H.memoryComponentTypeAsString() << " for image "
-         << H.fileName() << std::ends;
+      ss << "Invalid component type " << H.memoryComponentTypeAsString() << " for image " << H.fileName() << std::ends;
       throw_debug(ss.str());
     }
   }
@@ -258,19 +254,16 @@ std::weak_ptr<ParcellationRecord> TexturedMesh::parcelRecord()
 }
 
 void TexturedMesh::setLayerPermutation(
-  const std::array<TexturedMeshColorLayer, static_cast<size_t>(TexturedMeshColorLayer::NumLayers)>& perm
-)
+  const std::array<TexturedMeshColorLayer, static_cast<size_t>(TexturedMeshColorLayer::NumLayers)>& perm)
 {
-  for (size_t order = 0; order < static_cast<size_t>(TexturedMeshColorLayer::NumLayers); ++order)
-  {
+  for (size_t order = 0; order < static_cast<size_t>(TexturedMeshColorLayer::NumLayers); ++order) {
     m_layerPermutation[order] = underlyingType(perm.at(order));
   }
 }
 
 void TexturedMesh::setLayerOpacityMultiplier(TexturedMeshColorLayer layer, float m)
 {
-  if (0.0f <= m && m <= 1.0f)
-  {
+  if (0.0f <= m && m <= 1.0f) {
     m_layerOpacityMultipliers[underlyingType(layer)] = m;
     updateLayerOpacities();
   }
@@ -283,8 +276,7 @@ float TexturedMesh::getLayerOpacityMultiplier(TexturedMeshColorLayer layer) cons
 
 void TexturedMesh::setLayerOpacity(TexturedMeshColorLayer layer, float a)
 {
-  if (0.0f <= a && a <= 1.0f)
-  {
+  if (0.0f <= a && a <= 1.0f) {
     m_layerOpacities[underlyingType(layer)] = a;
     updateLayerOpacities();
   }
@@ -321,8 +313,7 @@ glm::vec3 TexturedMesh::getMaterialColor() const
 
 void TexturedMesh::setMaterialShininess(float s)
 {
-  if (0.0f <= s)
-  {
+  if (0.0f <= s) {
     m_materialShininess = s;
   }
 }
@@ -395,24 +386,21 @@ void TexturedMesh::setUseOctantClipPlanes(bool set)
 
 void TexturedMesh::setAmbientLightFactor(float f)
 {
-  if (0.0f <= f && f <= 1.0f)
-  {
+  if (0.0f <= f && f <= 1.0f) {
     m_ambientLightFactor = f;
   }
 }
 
 void TexturedMesh::setDiffuseLightFactor(float f)
 {
-  if (0.0f <= f && f <= 1.0f)
-  {
+  if (0.0f <= f && f <= 1.0f) {
     m_diffuseLightFactor = f;
   }
 }
 
 void TexturedMesh::setSpecularLightFactor(float f)
 {
-  if (0.0f <= f && f <= 1.0f)
-  {
+  if (0.0f <= f && f <= 1.0f) {
     m_specularLightFactor = f;
   }
 }
@@ -424,7 +412,7 @@ void TexturedMesh::setAdsLightFactors(float a, float d, float s)
   setSpecularLightFactor(s);
 }
 
-//void Mesh::addClippingPlane() {}
+// void Mesh::addClippingPlane() {}
 
 void TexturedMesh::initVao()
 {
@@ -433,14 +421,12 @@ void TexturedMesh::initVao()
   static constexpr GLuint sk_texCoords2DIndex = 2;
   static constexpr GLuint sk_colorIndex = 3;
 
-  if (!m_meshGpuRecordProvider)
-  {
+  if (!m_meshGpuRecordProvider) {
     throw_debug("Null mesh GPU record");
   }
 
   auto meshGpuRecord = m_meshGpuRecordProvider();
-  if (!meshGpuRecord)
-  {
+  if (!meshGpuRecord) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
     throw_debug(ss.str());
@@ -458,8 +444,7 @@ void TexturedMesh::initVao()
   auto& texCoordsObject = meshGpuRecord->texCoordsObject();
   auto& colorsObject = meshGpuRecord->colorsObject();
 
-  if (!normalsObject || !normalsInfo)
-  {
+  if (!normalsObject || !normalsInfo) {
     throw_debug("No mesh normals");
   }
 
@@ -479,27 +464,23 @@ void TexturedMesh::initVao()
     m_vao.setAttributeBuffer(sk_normalIndex, *normalsInfo);
     m_vao.enableVertexAttribute(sk_normalIndex);
 
-    if (texCoordsObject && texCoordsInfo)
-    {
+    if (texCoordsObject && texCoordsInfo) {
       texCoordsObject->bind();
       m_vao.setAttributeBuffer(sk_texCoords2DIndex, *texCoordsInfo);
       m_vao.enableVertexAttribute(sk_texCoords2DIndex);
     }
-    else
-    {
+    else {
       // static const glm::vec2 sk_defaultTexCoord{ 0.0f, 0.0f };
       m_vao.disableVertexAttribute(sk_texCoords2DIndex);
       // m_vao.setGenericAttribute2f( k_texCoordsIndex, sk_defaultTexCoord );
     }
 
-    if (colorsObject && colorsInfo)
-    {
+    if (colorsObject && colorsInfo) {
       colorsObject->bind();
       m_vao.setAttributeBuffer(sk_colorIndex, *colorsInfo);
       m_vao.enableVertexAttribute(sk_colorIndex);
     }
-    else
-    {
+    else {
       // static const glm::vec4 sk_defaultColor{ 0.0f, 0.0f, 0.0f, 0.0f };
       m_vao.disableVertexAttribute(sk_colorIndex);
       // m_vao.setGenericAttribute4f( k_colorIndex, sk_defaultColor );
@@ -537,88 +518,74 @@ void TexturedMesh::doRender(const RenderStage& stage)
 
   static const glm::vec3 sk_materialSpecular{1.0f, 1.0f, 1.0f};
 
-  if (!m_shaderProgramActivator)
-  {
+  if (!m_shaderProgramActivator) {
     throw_debug("Unable to access ShaderProgramActivator");
   }
 
   GLShaderProgram* shaderProgram = nullptr;
   Uniforms* uniforms = nullptr;
 
-  switch (stage)
-  {
-  case RenderStage::Initialize:
-  {
-    shaderProgram = m_shaderProgramActivator(DDPInitProgram::name);
-    uniforms = &m_initUniforms;
-    break;
-  }
-  case RenderStage::Opaque:
-  case RenderStage::Overlay:
-  case RenderStage::QuadResolve:
-  {
-    shaderProgram = m_shaderProgramActivator(MeshProgram::name);
-    uniforms = &m_stdUniforms;
-    break;
-  }
-  case RenderStage::DepthPeel:
-  {
-    shaderProgram = m_shaderProgramActivator(MeshDDPPeelProgram::name);
-    uniforms = &m_peelUniforms;
-    break;
-  }
+  switch (stage) {
+    case RenderStage::Initialize: {
+      shaderProgram = m_shaderProgramActivator(DDPInitProgram::name);
+      uniforms = &m_initUniforms;
+      break;
+    }
+    case RenderStage::Opaque:
+    case RenderStage::Overlay:
+    case RenderStage::QuadResolve: {
+      shaderProgram = m_shaderProgramActivator(MeshProgram::name);
+      uniforms = &m_stdUniforms;
+      break;
+    }
+    case RenderStage::DepthPeel: {
+      shaderProgram = m_shaderProgramActivator(MeshDDPPeelProgram::name);
+      uniforms = &m_peelUniforms;
+      break;
+    }
   }
 
-  if (!shaderProgram)
-  {
+  if (!shaderProgram) {
     throw_debug("Null shader program");
   }
 
-  if (!uniforms)
-  {
+  if (!uniforms) {
     throw_debug("Null uniforms");
   }
 
-  if (!m_vaoParams)
-  {
+  if (!m_vaoParams) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
     throw_debug(ss.str());
   }
 
   /// @todo Put these into doSetupState?
-  if (m_wireframe)
-  {
+  if (m_wireframe) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   }
-  else
-  {
+  else {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
 
-  if (m_backfaceCull)
-  {
+  if (m_backfaceCull) {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
     glCullFace(GL_BACK);
   }
 
-  if (m_enablePolygonOffset)
-  {
+  if (m_enablePolygonOffset) {
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(m_polygonOffsetFactor, m_polygonOffsetUnits);
   }
 
-  if (RenderStage::Initialize == stage)
-  {
+  if (RenderStage::Initialize == stage) {
     using namespace DDPInitProgram;
 
     m_initUniforms.setValue(vert::world_O_model, getAccumulatedRenderingData().m_world_T_object);
     m_initUniforms.setValue(vert::camera_O_world, m_camera_O_world);
     m_initUniforms.setValue(vert::clip_O_camera, m_clip_O_camera);
 
-    for (uint32_t i = 0; i < 3; ++i)
-    {
+    for (uint32_t i = 0; i < 3; ++i) {
       m_initUniforms.setValue(vert::worldClipPlanes[i], m_worldClipPlanes[i]);
     }
 
@@ -626,8 +593,7 @@ void TexturedMesh::doRender(const RenderStage& stage)
 
     shaderProgram->applyUniforms(m_initUniforms);
   }
-  else
-  {
+  else {
     using namespace MeshDDPPeelProgram;
 
     const glm::mat4 world_O_this = getAccumulatedRenderingData().m_world_T_object;
@@ -637,8 +603,7 @@ void TexturedMesh::doRender(const RenderStage& stage)
     uniforms->setValue(vert::camera_O_world, m_camera_O_world);
     uniforms->setValue(vert::clip_O_camera, m_clip_O_camera);
 
-    for (uint32_t i = 0; i < 3; ++i)
-    {
+    for (uint32_t i = 0; i < 3; ++i) {
       uniforms->setValue(vert::worldClipPlanes[i], m_worldClipPlanes[i]);
     }
 
@@ -658,9 +623,7 @@ void TexturedMesh::doRender(const RenderStage& stage)
 
     uniforms->setValue(frag::objectId, m_renderId);
 
-    uniforms->setValue(
-      frag::masterOpacityMultiplier, getAccumulatedRenderingData().m_masterOpacityMultiplier
-    );
+    uniforms->setValue(frag::masterOpacityMultiplier, getAccumulatedRenderingData().m_masterOpacityMultiplier);
     uniforms->setValue(frag::autoHidingMode, m_autoHidingMode);
     uniforms->setValue(frag::image3DThresholdMode, m_image3dThresholdMode);
     uniforms->setValue(frag::xrayMode, m_xrayMode);
@@ -671,8 +634,7 @@ void TexturedMesh::doRender(const RenderStage& stage)
     uniforms->setValue(frag::layerOpacities, m_finalLayerOpacities);
     uniforms->setValue(frag::layerPermutation, m_layerPermutation);
 
-    if (RenderStage::DepthPeel == stage)
-    {
+    if (RenderStage::DepthPeel == stage) {
       uniforms->setValue(frag::depthBlenderTex, DepthBlenderTexSamplerIndex);
       uniforms->setValue(frag::frontBlenderTex, FrontBlenderTexSamplerIndex);
     }
@@ -682,76 +644,60 @@ void TexturedMesh::doRender(const RenderStage& stage)
     uniforms->setValue(frag::labelTex3D, sk_label3DUnit);
     uniforms->setValue(frag::labelColormapTexture, sk_labelColorMapTexUnit);
 
-    if (auto texture = m_texture2d.lock())
-    {
+    if (auto texture = m_texture2d.lock()) {
       /// @todo: include sampler object in GL texture
       texture->bind(sk_tex2DUnit.index);
       texture->bindSampler(sk_tex2DUnit.index);
 
       uniforms->setValue(frag::image2dThresholds, m_texture2dThresholds);
     }
-    else
-    {
-      if (auto blankTextures = m_blankTextures.lock())
-      {
+    else {
+      if (auto blankTextures = m_blankTextures.lock()) {
         blankTextures->bindImageTexture2D(sk_tex2DUnit.index);
       }
     }
 
     std::optional<glm::mat4> imageSubject_O_world;
 
-    if (auto imageRecord = m_image3dRecord.lock())
-    {
+    if (auto imageRecord = m_image3dRecord.lock()) {
       auto cpuRecord = imageRecord->cpuData();
       auto gpuRecord = imageRecord->gpuData();
 
-      if (cpuRecord && gpuRecord)
-      {
-        if (auto texture = gpuRecord->texture().lock())
-        {
+      if (cpuRecord && gpuRecord) {
+        if (auto texture = gpuRecord->texture().lock()) {
           /// @todo: include sampler object in GL texture
           texture->bind(sk_image3DUnit.index);
           texture->bindSampler(sk_image3DUnit.index);
 
           imageSubject_O_world = cpuRecord->transformations().subject_T_worldDef();
 
-          uniforms->setValue(
-            vert::imageTexCoords_O_world, cpuRecord->transformations().texture_T_worldDef()
-          );
+          uniforms->setValue(vert::imageTexCoords_O_world, cpuRecord->transformations().texture_T_worldDef());
         }
       }
     }
-    else
-    {
-      if (auto blankTextures = m_blankTextures.lock())
-      {
+    else {
+      if (auto blankTextures = m_blankTextures.lock()) {
         uniforms->setValue(vert::imageTexCoords_O_world, sk_ident);
         blankTextures->bindImageTexture3D(sk_image3DUnit.index);
       }
     }
 
-    if (auto parcelRecord = m_parcelRecord.lock())
-    {
+    if (auto parcelRecord = m_parcelRecord.lock()) {
       auto gpuRecord = parcelRecord->gpuData();
       auto cpuRecord = parcelRecord->cpuData();
 
-      if (gpuRecord && cpuRecord)
-      {
-        if (auto texture = gpuRecord->texture().lock())
-        {
+      if (gpuRecord && cpuRecord) {
+        if (auto texture = gpuRecord->texture().lock()) {
           texture->bind(sk_label3DUnit.index);
 
           glm::mat4 parcelTexture_O_world(1.0f);
 
-          if (imageSubject_O_world)
-          {
+          if (imageSubject_O_world) {
             // If there is an image defined, then use its subject_O_world transformation
             // for the parcellation as well
-            parcelTexture_O_world = cpuRecord->transformations().texture_T_subject()
-                                    * (*imageSubject_O_world);
+            parcelTexture_O_world = cpuRecord->transformations().texture_T_subject() * (*imageSubject_O_world);
           }
-          else
-          {
+          else {
             parcelTexture_O_world = cpuRecord->transformations().texture_T_worldDef();
           }
 
@@ -759,44 +705,35 @@ void TexturedMesh::doRender(const RenderStage& stage)
         }
       }
     }
-    else
-    {
-      if (auto blankTextures = m_blankTextures.lock())
-      {
+    else {
+      if (auto blankTextures = m_blankTextures.lock()) {
         uniforms->setValue(vert::labelTexCoords_O_world, sk_ident);
         blankTextures->bindLabelTexture3D(static_cast<uint32_t>(sk_label3DUnit.index));
       }
     }
 
-    if (auto cmapRecord = m_imageColorMapRecord.lock())
-    {
-      if (auto colorMapTexture = cmapRecord->gpuData())
-      {
-        if (colorMapTexture->size().x > 0)
-        {
+    if (auto cmapRecord = m_imageColorMapRecord.lock()) {
+      if (auto colorMapTexture = cmapRecord->gpuData()) {
+        if (colorMapTexture->size().x > 0) {
           colorMapTexture->bind(sk_imageColorMapTexUnit.index);
 
           const float N = static_cast<float>(colorMapTexture->size().x);
           uniforms->setValue(frag::cmapSlope, (N - 1.0f) / N);
           uniforms->setValue(frag::cmapIntercept, 0.5f / N);
         }
-        else
-        {
+        else {
           std::cerr << "Color map texture has zero size" << std::endl;
         }
       }
     }
 
-    if (auto labelTableRecord = m_labelsRecord.lock())
-    {
-      if (auto colorTableTexture = labelTableRecord->gpuData())
-      {
+    if (auto labelTableRecord = m_labelsRecord.lock()) {
+      if (auto colorTableTexture = labelTableRecord->gpuData()) {
         colorTableTexture->bind(sk_labelColorMapTexUnit.index);
       }
     }
 
-    if (auto imageRecord = m_image3dRecord.lock())
-    {
+    if (auto imageRecord = m_image3dRecord.lock()) {
       const auto& imageSettings = imageRecord->cpuData()->settings();
 
       /// @note Used to be called slopeIntercept()
@@ -810,9 +747,7 @@ void TexturedMesh::doRender(const RenderStage& stage)
         frag::thresholds,
         glm::vec2{
           si.first * imageSettings.thresholds(sk_imageComp).first + si.second,
-          si.first * imageSettings.thresholds(sk_imageComp).second + si.second
-        }
-      );
+          si.first * imageSettings.thresholds(sk_imageComp).second + si.second});
     }
 
     shaderProgram->applyUniforms(*uniforms);
@@ -824,19 +759,15 @@ void TexturedMesh::doRender(const RenderStage& stage)
   }
   m_vao.release();
 
-  if (auto texture = m_texture2d.lock())
-  {
+  if (auto texture = m_texture2d.lock()) {
     // Note: unbind here wrecks render when mesh has transparency.
     // texture->unbind();
     texture->unbindSampler(sk_tex2DUnit.index);
   }
 
-  if (auto imageRecord = m_image3dRecord.lock())
-  {
-    if (auto gpuRecord = imageRecord->gpuData())
-    {
-      if (auto texture = gpuRecord->texture().lock())
-      {
+  if (auto imageRecord = m_image3dRecord.lock()) {
+    if (auto gpuRecord = imageRecord->gpuData()) {
+      if (auto texture = gpuRecord->texture().lock()) {
         // Note: unbind here wrecks render when mesh has transparency.
         // texture->unbind();
         texture->unbindSampler(sk_image3DUnit.index);
@@ -846,37 +777,30 @@ void TexturedMesh::doRender(const RenderStage& stage)
 
   // Reset default GL states:
 
-  if (m_wireframe)
-  {
+  if (m_wireframe) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
 
-  if (m_backfaceCull)
-  {
+  if (m_backfaceCull) {
     glDisable(GL_CULL_FACE);
   }
 
-  if (m_enablePolygonOffset)
-  {
+  if (m_enablePolygonOffset) {
     glPolygonOffset(0.0f, 0.0f);
     glDisable(GL_POLYGON_OFFSET_FILL);
   }
 }
 
-void TexturedMesh::doUpdate(
-  double, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs
-)
+void TexturedMesh::doUpdate(double, const Viewport&, const Camera& camera, const CoordinateFrame& crosshairs)
 {
   static const glm::vec4 sk_lightColor{1.0f, 1.0f, 1.0f, 1.0f};
 
-  if (m_xrayMode)
-  {
+  if (m_xrayMode) {
     m_ambientLightColor = m_xrayAmbientLightFactor * sk_lightColor;
     m_diffuseLightColor = m_xrayDiffuseLightFactor * sk_lightColor;
     m_specularLightColor = m_xraySpecularLightFactor * sk_lightColor;
   }
-  else
-  {
+  else {
     m_ambientLightColor = m_ambientLightFactor * sk_lightColor;
     m_diffuseLightColor = m_diffuseLightFactor * sk_lightColor;
     m_specularLightColor = m_specularLightFactor * sk_lightColor;
@@ -893,13 +817,11 @@ void TexturedMesh::doUpdate(
   m_worldLightPos = m_worldCameraPos;
   m_worldLightDir = m_worldCameraDir;
 
-  if (m_useOctantClipPlanes)
-  {
-    for (uint32_t i = 0; i < 3; ++i)
-    {
+  if (m_useOctantClipPlanes) {
+    for (uint32_t i = 0; i < 3; ++i) {
       // Orient the plane to clip toward the camera normal direction
-      const glm::vec3 worldNormalDir = crosshairs.world_T_frame()[static_cast<int>(i)] * -1.0f
-                                       * glm::sign(glm::dot(m_worldCameraDir, worldNormalDir));
+      const glm::vec3 worldNormalDir =
+        crosshairs.world_T_frame()[static_cast<int>(i)] * -1.0f * glm::sign(glm::dot(m_worldCameraDir, worldNormalDir));
 
       m_worldClipPlanes[i].x = worldNormalDir.x;
       m_worldClipPlanes[i].y = worldNormalDir.y;
@@ -907,12 +829,10 @@ void TexturedMesh::doUpdate(
       m_worldClipPlanes[i].w = -glm::dot(worldNormalDir, crosshairs.worldOrigin());
     }
   }
-  else
-  {
+  else {
     static const glm::vec4 k_zero{0.0f};
 
-    for (uint32_t i = 0; i < 3; ++i)
-    {
+    for (uint32_t i = 0; i < 3; ++i) {
       m_worldClipPlanes[i] = k_zero;
     }
   }
@@ -920,20 +840,17 @@ void TexturedMesh::doUpdate(
   static constexpr size_t sk_comp = 0;
 
   auto image3dRecord = m_image3dRecord.lock();
-  if (image3dRecord && image3dRecord->cpuData())
-  {
+  if (image3dRecord && image3dRecord->cpuData()) {
     const auto& S = image3dRecord->cpuData()->settings();
     setLayerOpacity(TexturedMeshColorLayer::Image3D, static_cast<float>(S.opacity(sk_comp)));
     setImage3dThresholdsActive(S.thresholdsActive(0));
   }
-  else
-  {
+  else {
     setLayerOpacity(TexturedMeshColorLayer::Image3D, 0.0f);
   }
 
   auto label3dRecord = m_parcelRecord.lock();
-  if (label3dRecord && label3dRecord->cpuData())
-  {
+  if (label3dRecord && label3dRecord->cpuData()) {
     const auto S = label3dRecord->cpuData()->settings();
     setLayerOpacity(TexturedMeshColorLayer::Parcellation3D, static_cast<float>(S.opacity(sk_comp)));
 
@@ -943,8 +860,7 @@ void TexturedMesh::doUpdate(
     //                helper::world_O_clip( camera ) *
     //                helper::get_ndc_O_view( viewport );
   }
-  else
-  {
+  else {
     setLayerOpacity(TexturedMeshColorLayer::Parcellation3D, 0.0f);
 
     //        m_labelTexCoords_O_view = glm::mat4{ 1.0f };

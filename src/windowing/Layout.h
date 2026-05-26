@@ -57,7 +57,8 @@ public:
   // Returns the UUID of the newly added group.
   uuid addCameraSyncGroup(CameraSyncMode mode);
 
-  // Returns a pointer to the camera synchronization group list with given UID, or nullptr if not found
+  // Returns a pointer to the camera synchronization group list with given UID, or nullptr if not
+  // found
   const std::list<uuid>* getCameraSyncGroup(CameraSyncMode mode, const uuid& groupUid) const;
   std::list<uuid>* getCameraSyncGroup(CameraSyncMode mode, const uuid& groupUid);
 
@@ -73,7 +74,8 @@ private:
   /// Views of the layout, keyed by their UID
   std::unordered_map<uuid, std::unique_ptr<View>> m_views;
 
-  /// For each synchronization mode type, a map of synchronization group UID to the list of view UIDs in the group
+  /// For each synchronization mode type, a map of synchronization group UID to the list of view
+  /// UIDs in the group
   using SyncGroupToViews = std::unordered_map<uuid, std::list<uuid>>;
   std::unordered_map<CameraSyncMode, SyncGroupToViews> m_cameraSyncGroups;
 };

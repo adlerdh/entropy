@@ -145,17 +145,17 @@ inline std::array<InterpolationMode, 3> const AllInterpolationModes{
  */
 enum class MouseMode
 {
-  Pointer,         //!< Move the crosshairs
-  WindowLevel,     //!< Adjust window and level of the active image
-  Segment,         //!< Segment the active image
-  Annotate,        //!< Annotate the active image
-  CameraTranslate, //!< Translate the view camera in plane
-  CameraRotate,    //!< Rotate the view camera in plane and out of plane
-  CameraZoom,      //!< Zoom the view camera
-  CrosshairsRotate,//!< Crosshairs rotation
-  ImageTranslate,  //!< Translate the active image in 2D and 3D
-  ImageRotate,     //!< Rotate the active image in 2D and 3D
-  ImageScale       //!< Scale the active image in 2D
+  Pointer,          //!< Move the crosshairs
+  WindowLevel,      //!< Adjust window and level of the active image
+  Segment,          //!< Segment the active image
+  Annotate,         //!< Annotate the active image
+  CameraTranslate,  //!< Translate the view camera in plane
+  CameraRotate,     //!< Rotate the view camera in plane and out of plane
+  CameraZoom,       //!< Zoom the view camera
+  CrosshairsRotate, //!< Crosshairs rotation
+  ImageTranslate,   //!< Translate the active image in 2D and 3D
+  ImageRotate,      //!< Rotate the active image in 2D and 3D
+  ImageScale        //!< Scale the active image in 2D
 };
 
 /**
@@ -171,8 +171,7 @@ inline std::array<MouseMode, 10> const AllMouseModes{
   MouseMode::Segment,
   MouseMode::Annotate,
   MouseMode::ImageTranslate,
-  MouseMode::ImageRotate
-};
+  MouseMode::ImageRotate};
 
 /// Get the mouse mode as a string
 std::string typeString(const MouseMode& mouseMode);
@@ -377,8 +376,7 @@ struct AnatomicalLabelPosInfo
  */
 union FrameBounds
 {
-  FrameBounds(glm::vec4 v)
-    : viewport(std::move(v)) {}
+  FrameBounds(glm::vec4 v) : viewport(std::move(v)) {}
 
   glm::vec4 viewport;
 
@@ -390,4 +388,3 @@ union FrameBounds
     float height;
   } bounds;
 };
-

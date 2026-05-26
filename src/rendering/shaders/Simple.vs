@@ -1,6 +1,6 @@
 #version 330 core
 
-layout (location = 0) in vec2 clipPos;
+layout(location = 0) in vec2 clipPos;
 
 uniform mat4 u_view_T_clip;
 uniform float u_clipDepth;

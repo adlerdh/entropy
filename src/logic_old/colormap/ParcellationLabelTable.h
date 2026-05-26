@@ -23,13 +23,13 @@ class ParcellationLabelTable
 {
 public:
   /**
-     * @brief Construct the label table with good default colors. The color of label 0 is
-     * fully transparent black. Labels 1 to 6 are the primary colors (red, green, blue,
-     * yellow, cyan, magenta). Following this are colors randomly chosen in HSV space.
-     *
-     * @param labelCount Size of label table to construct. Must be at least 7,
-     * in order to represent mandatory labels 0 to 6.
-     */
+   * @brief Construct the label table with good default colors. The color of label 0 is
+   * fully transparent black. Labels 1 to 6 are the primary colors (red, green, blue,
+   * yellow, cyan, magenta). Following this are colors randomly chosen in HSV space.
+   *
+   * @param labelCount Size of label table to construct. Must be at least 7,
+   * in order to represent mandatory labels 0 to 6.
+   */
   explicit ParcellationLabelTable(size_t labelCount);
 
   ParcellationLabelTable(const ParcellationLabelTable&) = default;
@@ -88,18 +88,18 @@ public:
 
 private:
   /**
-     * @brief Check if label index is valid. If not, throw exception.
-     * @param index Label index
-     * @throw Throw exception if label index is not valid.
-     */
+   * @brief Check if label index is valid. If not, throw exception.
+   * @param index Label index
+   * @throw Throw exception if label index is not valid.
+   */
   void checkLabelIndex(size_t index) const;
 
   /**
-     * @brief Update the premultiplied RGBA color at given label index in order to
-     * match it with the label properties
-     *
-     * @param index Label index
-     */
+   * @brief Update the premultiplied RGBA color at given label index in order to
+   * match it with the label properties
+   *
+   * @param index Label index
+   */
   void updateColorRGBA(size_t index);
 
   /// Vector of premultiplied alpha colors represented using 32-bit floating point values

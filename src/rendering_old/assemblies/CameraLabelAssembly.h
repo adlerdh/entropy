@@ -15,15 +15,13 @@
 class CameraLabel;
 class GLTexture;
 
-class CameraLabelAssembly final : public IDrawableAssembly,
-                                  public ObjectCounter<CameraLabelAssembly>
+class CameraLabelAssembly final : public IDrawableAssembly, public ObjectCounter<CameraLabelAssembly>
 {
 public:
   explicit CameraLabelAssembly(
     ShaderProgramActivatorType,
     UniformsProviderType,
-    GetterType<glm::mat4> activeSubjectToWorldProvider
-  );
+    GetterType<glm::mat4> activeSubjectToWorldProvider);
 
   ~CameraLabelAssembly() override = default;
 

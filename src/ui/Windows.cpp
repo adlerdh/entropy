@@ -96,8 +96,7 @@ void renderViewSettingsComboWindow(
   const std::function<void(float window)>& setXrayProjectionLevel,
 
   const std::function<float()>& getXrayProjectionEnergy,
-  const std::function<void(float window)>& setXrayProjectionEnergy
-)
+  const std::function<void(float window)>& setXrayProjectionEnergy)
 {
   static const glm::vec2 sk_framePad{4.0f, 4.0f};
   static const ImVec2 sk_windowPadding(0.0f, 0.0f);
@@ -119,28 +118,27 @@ void renderViewSettingsComboWindow(
   {
     const char* label;
 
-    switch (renderMode)
-    {
-    case ViewRenderMode::Image:
-    case ViewRenderMode::VolumeRender: {
-      label = ICON_FK_EYE;
-      break;
-    }
-    case ViewRenderMode::Quadrants:
-    case ViewRenderMode::Checkerboard:
-    case ViewRenderMode::Flashlight:
-    case ViewRenderMode::Overlay:
-    case ViewRenderMode::Difference:
-    // case ViewRenderMode::CrossCorrelation:
-    case ViewRenderMode::JointHistogram: {
-      label = ICON_FK_EYE;
-      break;
-    }
-    case ViewRenderMode::Disabled:
-    default: {
-      label = ICON_FK_EYE_SLASH;
-      break;
-    }
+    switch (renderMode) {
+      case ViewRenderMode::Image:
+      case ViewRenderMode::VolumeRender: {
+        label = ICON_FK_EYE;
+        break;
+      }
+      case ViewRenderMode::Quadrants:
+      case ViewRenderMode::Checkerboard:
+      case ViewRenderMode::Flashlight:
+      case ViewRenderMode::Overlay:
+      case ViewRenderMode::Difference:
+      // case ViewRenderMode::CrossCorrelation:
+      case ViewRenderMode::JointHistogram: {
+        label = ICON_FK_EYE;
+        break;
+      }
+      case ViewRenderMode::Disabled:
+      default: {
+        label = ICON_FK_EYE_SLASH;
+        break;
+      }
     }
 
     const ImVec2 mindowTopLeftPos(
@@ -164,14 +162,12 @@ void renderViewSettingsComboWindow(
 
     ImGui::PushID(uidString.c_str()); /*** ID = uidString ***/
 
-    // Windows still need a unique ID set in title (with ##ID) despite having pushed an ID on the stack
-    if (ImGui::Begin(uidString.c_str(), &windowOpen, windowFlags))
-    {
+    // Windows still need a unique ID set in title (with ##ID) despite having pushed an ID on the
+    // stack
+    if (ImGui::Begin(uidString.c_str(), &windowOpen, windowFlags)) {
       // Popup window with images to be rendered and their visibility:
-      if (uiControls.m_hasImageComboBox)
-      {
-        if (ViewRenderMode::Image == renderMode || ViewRenderMode::VolumeRender == renderMode)
-        {
+      if (uiControls.m_hasImageComboBox) {
+        if (ViewRenderMode::Image == renderMode || ViewRenderMode::VolumeRender == renderMode) {
           // Image visibility:
           if (ImGui::Button(label)) {
             ImGui::OpenPopup("imageVisibilityPopup");
@@ -182,13 +178,11 @@ void renderViewSettingsComboWindow(
             ImGui::SetTooltip("%s", (sk_selectImages).c_str());
           }
 
-          if (ImGui::BeginPopup("imageVisibilityPopup"))
-          {
+          if (ImGui::BeginPopup("imageVisibilityPopup")) {
             ImGui::Text("Visible images:");
             ImGui::PushID("visibleimages"); /*** ID = visibleimages ***/
 
-            for (std::size_t i = 0; i < numImages; ++i)
-            {
+            for (std::size_t i = 0; i < numImages; ++i) {
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
               auto displayAndFileName = getImageDisplayAndFileName(i);
               std::string displayName = displayAndFileName.first;
@@ -225,8 +219,7 @@ void renderViewSettingsComboWindow(
         else if (ViewRenderMode::Disabled == renderMode) {
           ImGui::Button(label);
         }
-        else
-        {
+        else {
           // Image choice for the metric calculation:
           if (ImGui::Button(label)) {
             ImGui::OpenPopup("metricVisibilityPopup");
@@ -237,12 +230,10 @@ void renderViewSettingsComboWindow(
             ImGui::SetTooltip("%s", (sk_selectImages).c_str());
           }
 
-          if (ImGui::BeginPopup("metricVisibilityPopup"))
-          {
+          if (ImGui::BeginPopup("metricVisibilityPopup")) {
             ImGui::Text("Compared images:");
 
-            for (std::size_t i = 0; i < numImages; ++i)
-            {
+            for (std::size_t i = 0; i < numImages; ++i) {
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
 
               const auto displayAndFileName = getImageDisplayAndFileName(i);
@@ -278,18 +269,14 @@ void renderViewSettingsComboWindow(
       }
 
       // Shader type combo box:
-      if (uiControls.m_hasShaderTypeComboBox)
-      {
+      if (uiControls.m_hasShaderTypeComboBox) {
         ImGui::SameLine();
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
 
-        if (ImGui::BeginCombo("##shaderTypeCombo", ICON_FK_TELEVISION))
-        {
-          auto renderSelectablesForRenderModes =
-            [&renderMode, &setRenderMode](const std::vector<ViewRenderMode>& renderModes)
-          {
-            for (const auto& st : renderModes)
-            {
+        if (ImGui::BeginCombo("##shaderTypeCombo", ICON_FK_TELEVISION)) {
+          auto renderSelectablesForRenderModes = [&renderMode,
+                                                  &setRenderMode](const std::vector<ViewRenderMode>& renderModes) {
+            for (const auto& st : renderModes) {
               const bool isSelected = (st == renderMode);
               if (ImGui::Selectable(typeString(st).c_str(), isSelected)) {
                 setRenderMode(st);
@@ -301,16 +288,15 @@ void renderViewSettingsComboWindow(
             }
           };
 
-          if (numImages > 1)
-          {
+          if (numImages > 1) {
             // If there are two or more images, all shader types can be used:
             const auto allRenderModes = (ViewType::ThreeD != viewType) ? All2dViewRenderModes : All3dViewRenderModes;
             renderSelectablesForRenderModes(allRenderModes);
           }
           else if (1 == numImages) {
             // If there is only one image, then only non-metric shader types can be used:
-            const auto singleImageRenderModes = (ViewType::ThreeD != viewType)
-              ? All2dNonMetricRenderModes : All3dNonMetricRenderModes;
+            const auto singleImageRenderModes =
+              (ViewType::ThreeD != viewType) ? All2dNonMetricRenderModes : All3dNonMetricRenderModes;
             renderSelectablesForRenderModes(singleImageRenderModes);
           }
 
@@ -318,26 +304,22 @@ void renderViewSettingsComboWindow(
         }
         ImGui::PopItemWidth();
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           static const std::string sk_viewTypeString("Render mode: ");
           ImGui::SetTooltip("%s", (sk_viewTypeString + descriptionString(renderMode)).c_str());
         }
       }
 
       // Popup window with intensity projection mode:
-      if (uiControls.m_hasMipTypeComboBox && (ViewRenderMode::VolumeRender != renderMode))
-      {
+      if (uiControls.m_hasMipTypeComboBox && (ViewRenderMode::VolumeRender != renderMode)) {
         ImGui::SameLine();
         ImGui::PushItemWidth(buttonSize.x + 2.0f * ImGui::GetStyle().FramePadding.x);
 
-        if (ImGui::BeginCombo("##mipModeCombo", ICON_FK_FILM, ImGuiComboFlags_HeightLargest))
-        {
+        if (ImGui::BeginCombo("##mipModeCombo", ICON_FK_FILM, ImGuiComboFlags_HeightLargest)) {
           ImGui::Text("Intensity projection mode:");
           ImGui::Spacing();
 
-          for (const auto& ip : AllIntensityProjectionModes)
-          {
+          for (const auto& ip : AllIntensityProjectionModes) {
             const bool isSelected = (ip == intensityProjMode);
 
             if (ImGui::Selectable(typeString(ip).c_str(), isSelected)) {
@@ -353,16 +335,14 @@ void renderViewSettingsComboWindow(
             }
           }
 
-          if (IntensityProjectionMode::None != intensityProjMode)
-          {
+          if (IntensityProjectionMode::None != intensityProjMode) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
 
             bool doMaxExtent = getDoMaxExtentIntensityProjection();
 
-            if (!doMaxExtent)
-            {
+            if (!doMaxExtent) {
               float thickness = getIntensityProjectionSlabThickness();
 
               ImGui::Spacing();
@@ -371,10 +351,8 @@ void renderViewSettingsComboWindow(
               helpMarker("Intensity projection slab thickness");
 
               ImGui::PushItemWidth(150.0f);
-              if (ImGui::InputFloat("##slabThickness", &thickness, 0.1f, 1.0f, "%0.2f"))
-              {
-                if (thickness >= 0.0f)
-                {
+              if (ImGui::InputFloat("##slabThickness", &thickness, 0.1f, 1.0f, "%0.2f")) {
+                if (thickness >= 0.0f) {
                   setIntensityProjectionSlabThickness(thickness);
                 }
               }
@@ -382,16 +360,14 @@ void renderViewSettingsComboWindow(
             }
 
             ImGui::Spacing();
-            if (ImGui::Checkbox("Use maximum image extent", &doMaxExtent))
-            {
+            if (ImGui::Checkbox("Use maximum image extent", &doMaxExtent)) {
               setDoMaxExtentIntensityProjection(doMaxExtent);
             }
             ImGui::SameLine();
             helpMarker("Compute intensity projection over the full image extent");
           }
 
-          if (IntensityProjectionMode::Xray == intensityProjMode)
-          {
+          if (IntensityProjectionMode::Xray == intensityProjMode) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -405,8 +381,15 @@ void renderViewSettingsComboWindow(
             // User can select energy from 1 KeV (1.0e-3 MeV) to 20e3 KeV (20 MeV):
             static constexpr float speed = 10.0f;
 
-            if (ImGui::DragFloat("Energy", &energy, speed, 1.0f, 20.0e3f, "%0.3f KeV",
-                                 ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic)) {
+            if (ImGui::DragFloat(
+                  "Energy",
+                  &energy,
+                  speed,
+                  1.0f,
+                  20.0e3f,
+                  "%0.3f KeV",
+                  ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic))
+            {
               setXrayProjectionEnergy(energy);
             }
 
@@ -443,8 +426,7 @@ void renderViewSettingsComboWindow(
         }
       }
 
-      if (showApplyToAllButton)
-      {
+      if (showApplyToAllButton) {
         ImGui::SameLine();
         if (ImGui::Button(ICON_FK_RSS)) {
           // Apply image and shader settings to all views in this layout
@@ -456,12 +438,12 @@ void renderViewSettingsComboWindow(
       }
 
       // View type combo box (with preview text):
-      if (uiControls.m_hasViewTypeComboBox)
-      {
+      if (uiControls.m_hasViewTypeComboBox) {
         ImGui::SameLine();
         // ImGui::PushItemWidth( 100.0f + 2.0f * ImGui::GetStyle().FramePadding.x );
-        ImGui::PushItemWidth(ImGui::CalcTextSize("Sagittal").x + 2.0f * ImGui::GetStyle().FramePadding.x +
-                             ImGui::GetTextLineHeightWithSpacing());
+        ImGui::PushItemWidth(
+          ImGui::CalcTextSize("Sagittal").x + 2.0f * ImGui::GetStyle().FramePadding.x +
+          ImGui::GetTextLineHeightWithSpacing());
 
         const bool isOblique = (ViewType::Oblique == viewType);
 
@@ -470,20 +452,19 @@ void renderViewSettingsComboWindow(
           ImGui::PushStyleColor(ImGuiCol_Text, activeColor);
         }
 
-        // Disable opening the view type combo box if the ASM is in a state where it should not change.
+        // Disable opening the view type combo box if the ASM is in a state where it should not
+        // change.
         const bool xhairsRotated = math::isRotationIdentity(worldCrosshairs.world_T_frame_rotation());
-        const bool clickedViewTypeCombo = ImGui::BeginCombo("##viewTypeCombo", to_string(viewType, !xhairsRotated).c_str());
+        const bool clickedViewTypeCombo =
+          ImGui::BeginCombo("##viewTypeCombo", to_string(viewType, !xhairsRotated).c_str());
 
         if (isOblique) {
           ImGui::PopStyleColor(1); // ImGuiCol_Text
         }
 
-        if (clickedViewTypeCombo)
-        {
-          if (state::annot::isInStateWhereViewTypeCanChange(viewOrLayoutUid))
-          {
-            for (const auto& vt : AllViewTypes)
-            {
+        if (clickedViewTypeCombo) {
+          if (state::annot::isInStateWhereViewTypeCanChange(viewOrLayoutUid)) {
+            for (const auto& vt : AllViewTypes) {
               const bool isSelected = (vt == viewType);
               if (ImGui::Selectable(to_string(vt, !xhairsRotated).c_str(), isSelected)) {
                 setViewType(vt);
@@ -495,8 +476,7 @@ void renderViewSettingsComboWindow(
               }
             }
 
-            if (ViewType::ThreeD == viewType)
-            {
+            if (ViewType::ThreeD == viewType) {
               ImGui::Spacing();
               ImGui::Separator();
               ImGui::Spacing();
@@ -527,8 +507,8 @@ void renderViewSettingsComboWindow(
           for (std::size_t i = 0; i < numImages; ++i) {
             if (isImageRendered(i) && getImageVisibilitySetting(i)) {
               const std::string comma = (first ? "" : ", ");
-              imageNamesText += comma + std::string(getImageDisplayAndFileName(i).first) +
-                                (getImageIsActive(i) ? " (active)" : "");
+              imageNamesText +=
+                comma + std::string(getImageDisplayAndFileName(i).first) + (getImageIsActive(i) ? " (active)" : "");
               first = false;
             }
           }
@@ -578,20 +558,16 @@ void renderViewOrientationToolWindow(
   static const float sk_windowRounding(0.0f);
   static const ImVec2 sk_itemSpacing(0.0f, 0.0f);
 
-  static const ImGuiWindowFlags sk_defaultWindowFlags = ImGuiWindowFlags_NoMove
-                                                        | ImGuiWindowFlags_AlwaysAutoResize
-                                                        | ImGuiWindowFlags_NoSavedSettings
-                                                        | ImGuiWindowFlags_NoDecoration
-                                                        | ImGuiWindowFlags_NoFocusOnAppearing
-                                                        | ImGuiWindowFlags_NoBringToFrontOnFocus;
+  static const ImGuiWindowFlags sk_defaultWindowFlags =
+    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
   static constexpr float sk_gizmoSize = 96.0f;
   static constexpr int sk_gizmoMode = (imguiGizmo::mode3Axes | imguiGizmo::cubeAtOrigin);
 
   static constexpr int sk_corner = 2; // bottom-left
 
-  if (ViewType::Oblique != viewType)
-  {
+  if (ViewType::Oblique != viewType) {
     return;
   }
 
@@ -612,8 +588,7 @@ void renderViewOrientationToolWindow(
 
   const ImVec2 mindowBottomLeftPos(
     mindowFrameBounds.bounds.xoffset + sk_framePad.x,
-    mindowFrameBounds.bounds.yoffset + mindowFrameBounds.bounds.height - sk_framePad.y
-  );
+    mindowFrameBounds.bounds.yoffset + mindowFrameBounds.bounds.height - sk_framePad.y);
 
   const ImVec2 windowPosPivot((sk_corner & 1) ? 1.0f : 0.0f, (sk_corner & 2) ? 1.0f : 0.0f);
 
@@ -622,37 +597,30 @@ void renderViewOrientationToolWindow(
 
   ImGui::PushID(uidString.c_str()); /*** ID = uidString ***/
 
-  if (ImGui::Begin(uidString.c_str(), &windowOpen, windowFlags))
-  {
+  if (ImGui::Begin(uidString.c_str(), &windowOpen, windowFlags)) {
     const glm::quat oldQuat = getViewCameraRotation();
     glm::quat newQuat = oldQuat;
 
-    if (ImGui::gizmo3D("", newQuat, sk_gizmoSize, sk_gizmoMode))
-    {
+    if (ImGui::gizmo3D("", newQuat, sk_gizmoSize, sk_gizmoMode)) {
       setViewCameraRotation(newQuat * glm::inverse(oldQuat));
     }
 
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       const glm::dvec3 worldFwdDir{-getViewNormal()};
 
-      if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
-      {
+      if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
         ImGui::SetTooltip(
           "View direction: (%0.3f, %0.3f, %0.3f)\n"
           "Drag or double-click to set direction",
           worldFwdDir.x,
           worldFwdDir.y,
-          worldFwdDir.z
-        );
+          worldFwdDir.z);
       }
-      else
-      {
+      else {
         ImGui::SetTooltip("(%0.3f, %0.3f, %0.3f)", worldFwdDir.x, worldFwdDir.y, worldFwdDir.z);
       }
 
-      if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-      {
+      if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
         ImGui::OpenPopup("setViewDirection");
       }
     }
@@ -661,8 +629,7 @@ void renderViewOrientationToolWindow(
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 4.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
 
-    if (ImGui::BeginPopup("setViewDirection"))
-    {
+    if (ImGui::BeginPopup("setViewDirection")) {
       static const glm::vec3 sk_min(-1, -1, -1);
       static const glm::vec3 sk_max(1, 1, 1);
 
@@ -678,22 +645,25 @@ void renderViewOrientationToolWindow(
 
       ImGui::PushItemWidth(-1);
       if (ImGui::InputScalarN(
-            "##xyz", ImGuiDataType_Float, glm::value_ptr(worldNewFwdDir), 3, nullptr, nullptr, "%0.3f"
-          ))
+            "##xyz",
+            ImGuiDataType_Float,
+            glm::value_ptr(worldNewFwdDir),
+            3,
+            nullptr,
+            nullptr,
+            "%0.3f"))
       {
         worldNewFwdDir = glm::clamp(worldNewFwdDir, sk_min, sk_max);
 
         static constexpr float sk_minLen = 1.0e-4f;
-        if (glm::length(worldNewFwdDir) > sk_minLen)
-        {
+        if (glm::length(worldNewFwdDir) > sk_minLen) {
           worldNewFwdDir = glm::normalize(worldNewFwdDir);
           applyRotation = true;
         }
       }
       ImGui::PopItemWidth();
 
-      if (ImGui::Button("Flip"))
-      {
+      if (ImGui::Button("Flip")) {
         worldNewFwdDir = -worldNewFwdDir;
         applyRotation = true;
       }
@@ -706,15 +676,13 @@ void renderViewOrientationToolWindow(
       ImGui::Text("Orthogonal direction:");
       ImGui::Spacing();
 
-      if (ImGui::Button("+X (L)"))
-      {
+      if (ImGui::Button("+X (L)")) {
         worldNewFwdDir = Directions::get(Directions::Cartesian::PosX);
         applyRotation = true;
       }
 
       ImGui::SameLine();
-      if (ImGui::Button("-X (R)"))
-      {
+      if (ImGui::Button("-X (R)")) {
         worldNewFwdDir = -Directions::get(Directions::Cartesian::PosX);
         applyRotation = true;
       }
@@ -722,15 +690,13 @@ void renderViewOrientationToolWindow(
       ImGui::SameLine();
       ImGui::Text("Sagittal");
 
-      if (ImGui::Button("+Y (P)"))
-      {
+      if (ImGui::Button("+Y (P)")) {
         worldNewFwdDir = Directions::get(Directions::Cartesian::PosY);
         applyRotation = true;
       }
 
       ImGui::SameLine();
-      if (ImGui::Button("-Y (A)"))
-      {
+      if (ImGui::Button("-Y (A)")) {
         worldNewFwdDir = -Directions::get(Directions::Cartesian::PosY);
         applyRotation = true;
       }
@@ -738,15 +704,13 @@ void renderViewOrientationToolWindow(
       ImGui::SameLine();
       ImGui::Text("Coronal");
 
-      if (ImGui::Button("+Z (S)"))
-      {
+      if (ImGui::Button("+Z (S)")) {
         worldNewFwdDir = Directions::get(Directions::Cartesian::PosZ);
         applyRotation = true;
       }
 
       ImGui::SameLine();
-      if (ImGui::Button("-Z (I)"))
-      {
+      if (ImGui::Button("-Z (I)")) {
         worldNewFwdDir = -Directions::get(Directions::Cartesian::PosZ);
         applyRotation = true;
       }
@@ -756,8 +720,7 @@ void renderViewOrientationToolWindow(
 
       const std::vector<glm::vec3> obliqueDirs = getObliqueViewDirections(viewOrLayoutUid);
 
-      if (!obliqueDirs.empty())
-      {
+      if (!obliqueDirs.empty()) {
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::Text("Oblique direction:");
@@ -765,12 +728,10 @@ void renderViewOrientationToolWindow(
         helpMarker("Choose among view directions in other oblique views");
         ImGui::Spacing();
 
-        if (ImGui::BeginListBox("##obliqueDirsList"))
-        {
+        if (ImGui::BeginListBox("##obliqueDirsList")) {
           size_t index = 0;
 
-          for (const glm::vec3& dir : obliqueDirs)
-          {
+          for (const glm::vec3& dir : obliqueDirs) {
             ImGui::PushID(static_cast<int>(index++));
 
             char str[25];
@@ -780,11 +741,9 @@ void renderViewOrientationToolWindow(
               "(%0.3f, %0.3f, %0.3f)",
               static_cast<double>(dir.x),
               static_cast<double>(dir.y),
-              static_cast<double>(dir.z)
-            );
+              static_cast<double>(dir.z));
 
-            if (ImGui::Selectable(str, false))
-            {
+            if (ImGui::Selectable(str, false)) {
               worldNewFwdDir = dir;
               applyRotation = true;
             }
@@ -796,8 +755,7 @@ void renderViewOrientationToolWindow(
         }
       }
 
-      if (applyRotation)
-      {
+      if (applyRotation) {
         setViewCameraDirection(worldNewFwdDir);
       }
 
@@ -833,23 +791,18 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
   const std::function<bool(const uuid& imageUid, bool locked)>& setLockManualImageTransformation,
-  const AllViewsRecenterType& recenterAllViews
-)
+  const AllViewsRecenterType& recenterAllViews)
 {
-  static const std::string sk_showOpacityMixer = std::string(ICON_FK_SLIDERS)
-                                                 + " Show opacity mixer";
+  static const std::string sk_showOpacityMixer = std::string(ICON_FK_SLIDERS) + " Show opacity mixer";
 
   if (ImGui::Begin("Images##Images", &(appData.guiData().m_showImagePropertiesWindow)))
   // ImGuiWindowFlags_AlwaysAutoResize ) )
   /// @todo Do auto resize only on initial loading
   /// look at constrained resize demo in imgui
   {
-    renderActiveImageSelectionCombo(
-      numImages, getImageDisplayAndFileName, getActiveImageIndex, setActiveImageIndex
-    );
+    renderActiveImageSelectionCombo(numImages, getImageDisplayAndFileName, getActiveImageIndex, setActiveImageIndex);
 
-    if (ImGui::Button(sk_showOpacityMixer.c_str()))
-    {
+    if (ImGui::Button(sk_showOpacityMixer.c_str())) {
       appData.guiData().m_showOpacityBlenderWindow = true;
     }
 
@@ -858,10 +811,8 @@ void renderImagePropertiesWindow(
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 
-    for (const auto& imageUid : appData.imageUidsOrdered())
-    {
-      if (Image* image = appData.image(imageUid))
-      {
+    for (const auto& imageUid : appData.imageUidsOrdered()) {
+      if (Image* image = appData.image(imageUid)) {
         const bool isActiveImage = activeUid && (imageUid == *activeUid);
 
         renderImageHeader(
@@ -875,8 +826,9 @@ void renderImagePropertiesWindow(
           updateAllImageUniforms,
           [&imageUid, updateImageUniforms]() { updateImageUniforms(imageUid); },
           [&imageUid, updateImageInterpolationMode]() { updateImageInterpolationMode(imageUid); },
-          [updateImageColorMapInterpolationMode](std::size_t cmapIndex)
-          { updateImageColorMapInterpolationMode(cmapIndex); },
+          [updateImageColorMapInterpolationMode](std::size_t cmapIndex) {
+            updateImageColorMapInterpolationMode(cmapIndex);
+          },
           getNumImageColorMaps,
           getImageColorMap,
           moveImageBackward,
@@ -884,8 +836,7 @@ void renderImagePropertiesWindow(
           moveImageToBack,
           moveImageToFront,
           setLockManualImageTransformation,
-          recenterAllViews
-        );
+          recenterAllViews);
       }
     }
 
@@ -901,33 +852,25 @@ void renderSegmentationPropertiesWindow(
   const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable,
   const std::function<void(const uuid& imageUid)>& updateImageUniforms,
   const std::function<void(std::size_t labelColorTableIndex)>& updateLabelColorTableTexture,
-  const std::function<void(const uuid& imageUid, size_t labelIndex)>&
-    moveCrosshairsToSegLabelCentroid,
-  const std::function<std::optional<uuid>(
-    const uuid& matchingImageUid, const std::string& segDisplayName
-  )>& createBlankSeg,
+  const std::function<void(const uuid& imageUid, size_t labelIndex)>& moveCrosshairsToSegLabelCentroid,
+  const std::function<std::optional<uuid>(const uuid& matchingImageUid, const std::string& segDisplayName)>&
+    createBlankSeg,
   const std::function<bool(const uuid& segUid)>& clearSeg,
   const std::function<bool(const uuid& segUid)>& removeSeg,
-  const AllViewsRecenterType& recenterAllViews
-)
+  const AllViewsRecenterType& recenterAllViews)
 {
   static bool firstRun = false;
 
   ImGuiWindowFlags flags = firstRun ? ImGuiWindowFlags_AlwaysAutoResize : ImGuiWindowFlags_None;
 
-  if (ImGui::Begin(
-        "Segmentations##Segmentations", &(appData.guiData().m_showSegmentationsWindow), flags
-      ))
-  {
+  if (ImGui::Begin("Segmentations##Segmentations", &(appData.guiData().m_showSegmentationsWindow), flags)) {
     firstRun = false;
 
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 
-    for (const auto& imageUid : appData.imageUidsOrdered())
-    {
-      if (Image* image = appData.image(imageUid))
-      {
+    for (const auto& imageUid : appData.imageUidsOrdered()) {
+      if (Image* image = appData.image(imageUid)) {
         const bool isActiveImage = activeUid && (imageUid == *activeUid);
 
         renderSegmentationHeader(
@@ -939,13 +882,13 @@ void renderSegmentationPropertiesWindow(
           [&imageUid, updateImageUniforms]() { updateImageUniforms(imageUid); },
           getLabelTable,
           updateLabelColorTableTexture,
-          [&imageUid, moveCrosshairsToSegLabelCentroid](std::size_t labelIndex)
-          { moveCrosshairsToSegLabelCentroid(imageUid, labelIndex); },
+          [&imageUid, moveCrosshairsToSegLabelCentroid](std::size_t labelIndex) {
+            moveCrosshairsToSegLabelCentroid(imageUid, labelIndex);
+          },
           createBlankSeg,
           clearSeg,
           removeSeg,
-          recenterAllViews
-        );
+          recenterAllViews);
       }
     }
   }
@@ -954,23 +897,22 @@ void renderSegmentationPropertiesWindow(
 }
 
 void renderLandmarkPropertiesWindow(
-  AppData& appData, const AllViewsRecenterType& recenterAllViewsOnCurrentCrosshairsPosition
-)
+  AppData& appData,
+  const AllViewsRecenterType& recenterAllViewsOnCurrentCrosshairsPosition)
 {
-  if (ImGui::Begin(
-        "Landmarks", &(appData.guiData().m_showLandmarksWindow), ImGuiWindowFlags_AlwaysAutoResize
-      ))
-  {
+  if (ImGui::Begin("Landmarks", &(appData.guiData().m_showLandmarksWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 
-    for (const auto& imageUid : appData.imageUidsOrdered())
-    {
+    for (const auto& imageUid : appData.imageUidsOrdered()) {
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
 
       renderLandmarkGroupHeader(
-        appData, imageUid, imageIndex++, isActiveImage, recenterAllViewsOnCurrentCrosshairsPosition
-      );
+        appData,
+        imageUid,
+        imageIndex++,
+        isActiveImage,
+        recenterAllViewsOnCurrentCrosshairsPosition);
     }
   }
 
@@ -983,16 +925,20 @@ void renderAnnotationWindow(
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
   const AllViewsRecenterType& recenterAllViews)
 {
-  if (ImGui::Begin("Annotations", &(appData.guiData().m_showAnnotationsWindow),
-                   ImGuiWindowFlags_AlwaysAutoResize))
-  {
+  if (ImGui::Begin("Annotations", &(appData.guiData().m_showAnnotationsWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 
     for (const auto& imageUid : appData.imageUidsOrdered()) {
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
-      renderAnnotationsHeader(appData, imageUid, imageIndex++, isActiveImage, setViewCameraDirection,
-                              paintActiveSegmentationWithActivePolygon, recenterAllViews);
+      renderAnnotationsHeader(
+        appData,
+        imageUid,
+        imageIndex++,
+        isActiveImage,
+        setViewCameraDirection,
+        paintActiveSegmentationWithActivePolygon,
+        recenterAllViews);
     }
   }
 
@@ -1004,16 +950,20 @@ void renderIsosurfacesWindow(
   std::function<void(const uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
   std::function<void(const uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
-  if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow), ImGuiWindowFlags_AlwaysAutoResize))
-  {
+  if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
     std::size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 
     for (const auto& imageUid : appData.imageUidsOrdered()) {
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
 
-      renderIsosurfacesHeader(appData, imageUid, imageIndex++, isActiveImage,
-                              storeFuture, addTaskToIsosurfaceGpuMeshGenerationQueue);
+      renderIsosurfacesHeader(
+        appData,
+        imageUid,
+        imageIndex++,
+        isActiveImage,
+        storeFuture,
+        addTaskToIsosurfaceGpuMeshGenerationQueue);
     }
   }
   ImGui::End();
@@ -1024,8 +974,7 @@ void renderSettingsWindow(
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
   const std::function<void(void)>& updateMetricUniforms,
-  const AllViewsRecenterType& recenterAllViews
-)
+  const AllViewsRecenterType& recenterAllViews)
 {
   static constexpr bool sk_recenterCrosshairs = true;
   static constexpr bool sk_realignCrosshairs = true;
@@ -1036,27 +985,19 @@ void renderSettingsWindow(
   static const float sk_windowMin = 0.0f;
   static const float sk_windowMax = 1.0f;
 
-  static const ImGuiColorEditFlags sk_colorEditFlags = ImGuiColorEditFlags_NoInputs
-                                                       | ImGuiColorEditFlags_PickerHueBar
-                                                       | ImGuiColorEditFlags_DisplayRGB
-                                                       | ImGuiColorEditFlags_DisplayHex
-                                                       | ImGuiColorEditFlags_Uint8
-                                                       | ImGuiColorEditFlags_InputRGB;
+  static const ImGuiColorEditFlags sk_colorEditFlags = ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar |
+                                                       ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHex |
+                                                       ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;
 
-  static const ImGuiColorEditFlags sk_colorAlphaEditFlags = ImGuiColorEditFlags_NoInputs
-                                                            | ImGuiColorEditFlags_PickerHueBar
-                                                            | ImGuiColorEditFlags_DisplayRGB
-                                                            | ImGuiColorEditFlags_DisplayHex
-                                                            | ImGuiColorEditFlags_AlphaBar
-                                                            | ImGuiColorEditFlags_AlphaPreviewHalf
-                                                            | ImGuiColorEditFlags_Uint8
-                                                            | ImGuiColorEditFlags_InputRGB;
+  static const ImGuiColorEditFlags sk_colorAlphaEditFlags =
+    ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB |
+    ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf |
+    ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;
 
-  auto renderMetricSettingsTab =
-    [&updateMetricUniforms, &getNumImageColorMaps, &getImageColorMap](
-      RenderData::MetricParams& metricParams, bool& showColormapWindow, const char* name
-    )
-  {
+  auto renderMetricSettingsTab = [&updateMetricUniforms, &getNumImageColorMaps, &getImageColorMap](
+                                   RenderData::MetricParams& metricParams,
+                                   bool& showColormapWindow,
+                                   const char* name) {
     // Metric windowing range slider:
     const float slope = metricParams.m_slopeIntercept[0];
     const float xcept = metricParams.m_slopeIntercept[1];
@@ -1076,17 +1017,13 @@ void renderSettingsWindow(
           sk_windowMax,
           "Min: %.2f",
           "Max: %.2f",
-          ImGuiSliderFlags_AlwaysClamp
-        ))
+          ImGuiSliderFlags_AlwaysClamp))
     {
-      if ((windowHigh - windowLow) < 0.01f)
-      {
-        if (windowLow >= 0.99f)
-        {
+      if ((windowHigh - windowLow) < 0.01f) {
+        if (windowLow >= 0.99f) {
           windowLow = windowHigh - 0.01f;
         }
-        else
-        {
+        else {
           windowHigh = windowLow + 0.01f;
         }
       }
@@ -1122,24 +1059,31 @@ void renderSettingsWindow(
     bool invertedCmap = metricParams.m_invertCmap;
 
     ImGui::SameLine();
-    if (ImGui::Checkbox("Inverted", &invertedCmap))
-    {
+    if (ImGui::Checkbox("Inverted", &invertedCmap)) {
       metricParams.m_invertCmap = invertedCmap;
       updateMetricUniforms();
     }
     ImGui::SameLine();
     helpMarker("Select/invert the metric colormap");
 
-    auto getColormapIndex = [&metricParams]() { return metricParams.m_colorMapIndex; };
-    auto setColormapIndex = [&metricParams](std::size_t cmapIndex)
-    { metricParams.m_colorMapIndex = cmapIndex; };
+    auto getColormapIndex = [&metricParams]() {
+      return metricParams.m_colorMapIndex;
+    };
+    auto setColormapIndex = [&metricParams](std::size_t cmapIndex) {
+      metricParams.m_colorMapIndex = cmapIndex;
+    };
 
-    auto getImageColorMapInverted = [&metricParams]() { return metricParams.m_invertCmap; };
+    auto getImageColorMapInverted = [&metricParams]() {
+      return metricParams.m_invertCmap;
+    };
 
-    auto getImageColorMapContinuous = [&metricParams]() { return metricParams.m_cmapContinuous; };
+    auto getImageColorMapContinuous = [&metricParams]() {
+      return metricParams.m_cmapContinuous;
+    };
 
-    auto getImageColorMapLevels = [&metricParams]()
-    { return metricParams.m_cmapQuantizationLevels; };
+    auto getImageColorMapLevels = [&metricParams]() {
+      return metricParams.m_cmapQuantizationLevels;
+    };
 
     renderPaletteWindow(
       std::string("Select colormap for metric image").c_str(),
@@ -1152,8 +1096,7 @@ void renderSettingsWindow(
       getImageColorMapContinuous,
       getImageColorMapLevels,
       glm::vec3{0.0f, 1.0f, 1.0f},
-      updateMetricUniforms
-    );
+      updateMetricUniforms);
 
     // Colormap preview:
     const float contentWidth = ImGui::GetContentRegionAvail().x;
@@ -1163,8 +1106,8 @@ void renderSettingsWindow(
     const ImageColorMap* cmap = getImageColorMap(getColormapIndex());
     snprintf(label, 128, "%s##cmap_%s", cmap->name().c_str(), name);
 
-    const bool doQuantize
-      = (!metricParams.m_cmapContinuous && (ImageColorMap::InterpolationMode::Linear == cmap->interpolationMode()));
+    const bool doQuantize =
+      (!metricParams.m_cmapContinuous && (ImageColorMap::InterpolationMode::Linear == cmap->interpolationMode()));
 
     ImGui::paletteButton(
       label,
@@ -1173,25 +1116,20 @@ void renderSettingsWindow(
       doQuantize,
       metricParams.m_cmapQuantizationLevels,
       glm::vec3{0.0f, 1.0f, 1.0f},
-      ImVec2(contentWidth, height)
-    );
+      ImVec2(contentWidth, height));
 
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("%s", cmap->description().c_str());
     }
   };
 
-  if (ImGui::Begin("Settings", &(appData.guiData().m_showSettingsWindow), ImGuiWindowFlags_AlwaysAutoResize))
-  {
+  if (ImGui::Begin("Settings", &(appData.guiData().m_showSettingsWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
     static const ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
 
     RenderData& renderData = appData.renderData();
 
-    if (ImGui::BeginTabBar("##SettingsTabs", tab_bar_flags))
-    {
-      if (ImGui::BeginTabItem("Views"))
-      {
+    if (ImGui::BeginTabBar("##SettingsTabs", tab_bar_flags)) {
+      if (ImGui::BeginTabItem("Views")) {
         // Show image-view intersection border
         ImGui::Checkbox(
           "Show image borders",
@@ -1228,31 +1166,31 @@ void renderSettingsWindow(
         // Crosshairs
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 
-        if (ImGui::TreeNode("Crosshairs"))
-        {
+        if (ImGui::TreeNode("Crosshairs")) {
           ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_crosshairsColor), sk_colorAlphaEditFlags);
 
           ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
           ImGui::Text("Snap crosshairs:");
-          if (ImGui::RadioButton("To reference image voxels",
-                                 CrosshairsSnapping::ReferenceImage == renderData.m_snapCrosshairs))
+          if (ImGui::RadioButton(
+                "To reference image voxels",
+                CrosshairsSnapping::ReferenceImage == renderData.m_snapCrosshairs))
           {
             renderData.m_snapCrosshairs = CrosshairsSnapping::ReferenceImage;
           }
           ImGui::SameLine();
           helpMarker("Snap crosshairs to reference image voxel centers");
 
-          if (ImGui::RadioButton("To active image voxels",
-                                 CrosshairsSnapping::ActiveImage == renderData.m_snapCrosshairs))
+          if (ImGui::RadioButton(
+                "To active image voxels",
+                CrosshairsSnapping::ActiveImage == renderData.m_snapCrosshairs))
           {
             renderData.m_snapCrosshairs = CrosshairsSnapping::ActiveImage;
           }
           ImGui::SameLine();
           helpMarker("Snap crosshairs to active image voxel centers");
 
-          if (ImGui::RadioButton("Disable (no snapping)",
-                                 CrosshairsSnapping::Disabled == renderData.m_snapCrosshairs))
+          if (ImGui::RadioButton("Disable (no snapping)", CrosshairsSnapping::Disabled == renderData.m_snapCrosshairs))
           {
             renderData.m_snapCrosshairs = CrosshairsSnapping::Disabled;
           }
@@ -1266,105 +1204,112 @@ void renderSettingsWindow(
         // View centering:
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 
-        if (ImGui::TreeNode("View Recentering"))
-        {
+        if (ImGui::TreeNode("View Recentering")) {
           ImGui::Text("Center views and crosshairs on:");
 
           ImGui::SameLine();
           helpMarker("Default view and crosshairs centering behavior");
 
-          if (ImGui::RadioButton("Reference image",
-                                 ImageSelection::ReferenceImage == appData.state().recenteringMode()))
+          if (ImGui::RadioButton(
+                "Reference image",
+                ImageSelection::ReferenceImage == appData.state().recenteringMode()))
           {
             appData.state().setRecenteringMode(ImageSelection::ReferenceImage);
 
             recenterAllViews(
-              sk_recenterCrosshairs, sk_realignCrosshairs,
+              sk_recenterCrosshairs,
+              sk_realignCrosshairs,
               sk_doNotRecenterOnCurrentCrosshairsPosition,
               sk_doNotResetObliqueOrientation,
-              sk_resetZoom
-            );
+              sk_resetZoom);
           }
           ImGui::SameLine();
           helpMarker("Recenter views and crosshairs on the reference image");
 
-          if (ImGui::RadioButton(
-                "Active image", ImageSelection::ActiveImage == appData.state().recenteringMode()
-              ))
-          {
+          if (ImGui::RadioButton("Active image", ImageSelection::ActiveImage == appData.state().recenteringMode())) {
             appData.state().setRecenteringMode(ImageSelection::ActiveImage);
 
             recenterAllViews(
-              sk_recenterCrosshairs, sk_realignCrosshairs,
+              sk_recenterCrosshairs,
+              sk_realignCrosshairs,
               sk_doNotRecenterOnCurrentCrosshairsPosition,
               sk_doNotResetObliqueOrientation,
-              sk_resetZoom
-            );
+              sk_resetZoom);
           }
           ImGui::SameLine();
           helpMarker("Recenter views and crosshairs on the active image");
 
           if (ImGui::RadioButton(
                 "Reference and active images",
-                ImageSelection::ReferenceAndActiveImages == appData.state().recenteringMode()
-              ))
+                ImageSelection::ReferenceAndActiveImages == appData.state().recenteringMode()))
           {
             appData.state().setRecenteringMode(ImageSelection::ReferenceAndActiveImages);
 
             recenterAllViews(
-              sk_recenterCrosshairs, sk_realignCrosshairs,
+              sk_recenterCrosshairs,
+              sk_realignCrosshairs,
               sk_doNotRecenterOnCurrentCrosshairsPosition,
               sk_doNotResetObliqueOrientation,
-              sk_resetZoom
-            );
+              sk_resetZoom);
           }
           ImGui::SameLine();
           helpMarker("Recenter views and crosshairs on the reference and active images");
 
           /// @todo These don't work yet
           /*
-                    if ( ImGui::RadioButton( "All visible images", ImageSelection::VisibleImagesInView == appData.state().recenteringMode() ) )
+                    if ( ImGui::RadioButton( "All visible images",
+             ImageSelection::VisibleImagesInView == appData.state().recenteringMode() ) )
                     {
                         appData.state().setRecenteringMode( ImageSelection::VisibleImagesInView );
-                        recenterAllViews( sk_recenterCrosshairs, sk_doNotRecenterOnCurrentCrosshairsPosition );
+                        recenterAllViews( sk_recenterCrosshairs,
+             sk_doNotRecenterOnCurrentCrosshairsPosition );
                     }
-                    ImGui::SameLine(); helpMarker( "Recenter views and crosshairs on the visible images in each view" );
+                    ImGui::SameLine(); helpMarker( "Recenter views and crosshairs on the visible
+             images in each view" );
 
-                    if ( ImGui::RadioButton( "Fixed image", ImageSelection::FixedImageInView == appData.state().recenteringMode() ) )
+                    if ( ImGui::RadioButton( "Fixed image", ImageSelection::FixedImageInView ==
+             appData.state().recenteringMode() ) )
                     {
                         appData.state().setRecenteringMode( ImageSelection::FixedImageInView );
-                        recenterAllViews( sk_recenterCrosshairs, sk_doNotRecenterOnCurrentCrosshairsPosition );
+                        recenterAllViews( sk_recenterCrosshairs,
+             sk_doNotRecenterOnCurrentCrosshairsPosition );
                     }
-                    ImGui::SameLine(); helpMarker( "Recenter views on the fixed image in each view" );
+                    ImGui::SameLine(); helpMarker( "Recenter views on the fixed image in each view"
+             );
 
-                    if ( ImGui::RadioButton( "Moving image", ImageSelection::MovingImageInView == appData.state().recenteringMode() ) )
+                    if ( ImGui::RadioButton( "Moving image", ImageSelection::MovingImageInView ==
+             appData.state().recenteringMode() ) )
                     {
                         appData.state().setRecenteringMode( ImageSelection::MovingImageInView );
-                        recenterAllViews( sk_recenterCrosshairs, sk_doNotRecenterOnCurrentCrosshairsPosition );
+                        recenterAllViews( sk_recenterCrosshairs,
+             sk_doNotRecenterOnCurrentCrosshairsPosition );
                     }
-                    ImGui::SameLine(); helpMarker( "Recenter views on the moving image in each view" );
+                    ImGui::SameLine(); helpMarker( "Recenter views on the moving image in each view"
+             );
 
-                    if ( ImGui::RadioButton( "Fixed and moving images", ImageSelection::FixedAndMovingImagesInView == appData.state().recenteringMode() ) )
+                    if ( ImGui::RadioButton( "Fixed and moving images",
+             ImageSelection::FixedAndMovingImagesInView == appData.state().recenteringMode() ) )
                     {
-                        appData.state().setRecenteringMode( ImageSelection::FixedAndMovingImagesInView );
-                        recenterAllViews( sk_recenterCrosshairs, sk_doNotRecenterOnCurrentCrosshairsPosition );
+                        appData.state().setRecenteringMode(
+             ImageSelection::FixedAndMovingImagesInView ); recenterAllViews( sk_recenterCrosshairs,
+             sk_doNotRecenterOnCurrentCrosshairsPosition );
                     }
-                    ImGui::SameLine(); helpMarker( "Recenter views on the fixed and moving images in each view" );
+                    ImGui::SameLine(); helpMarker( "Recenter views on the fixed and moving images in
+             each view" );
                     */
 
           if (ImGui::RadioButton(
                 "All loaded images",
-                ImageSelection::AllLoadedImages == appData.state().recenteringMode()
-              ))
+                ImageSelection::AllLoadedImages == appData.state().recenteringMode()))
           {
             appData.state().setRecenteringMode(ImageSelection::AllLoadedImages);
 
             recenterAllViews(
-              sk_recenterCrosshairs, sk_realignCrosshairs,
+              sk_recenterCrosshairs,
+              sk_realignCrosshairs,
               sk_doNotRecenterOnCurrentCrosshairsPosition,
               sk_doNotResetObliqueOrientation,
-              sk_resetZoom
-            );
+              sk_resetZoom);
           }
           ImGui::SameLine();
           helpMarker("Recenter views and crosshairs on all loaded images");
@@ -1376,17 +1321,13 @@ void renderSettingsWindow(
         // View backgrounds:
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 
-        if (ImGui::TreeNode("View Backgrounds"))
-        {
-          ImGui::ColorEdit3(
-            "2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), sk_colorEditFlags
-          );
+        if (ImGui::TreeNode("View Backgrounds")) {
+          ImGui::ColorEdit3("2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), sk_colorEditFlags);
 
           ImGui::ColorEdit4(
             "3D background color",
             glm::value_ptr(renderData.m_3dBackgroundColor),
-            sk_colorAlphaEditFlags
-          );
+            sk_colorAlphaEditFlags);
 
           ImGui::Spacing();
           ImGui::TreePop();
@@ -1395,8 +1336,7 @@ void renderSettingsWindow(
         // Anatomical labels:
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 
-        if (ImGui::TreeNode("Anatomical Labels"))
-        {
+        if (ImGui::TreeNode("Anatomical Labels")) {
           ImGui::ColorEdit4("Text color", glm::value_ptr(renderData.m_anatomicalLabelColor), sk_colorAlphaEditFlags);
           ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
@@ -1420,7 +1360,7 @@ void renderSettingsWindow(
           ImGui::SameLine();
           helpMarker("Left, Right, Dorsal, Ventral, Caudal, Rostral");
 
-          if (ImGui::RadioButton("Disabled", AnatomicalLabelType::Disabled == renderData.m_anatomicalLabelType)){
+          if (ImGui::RadioButton("Disabled", AnatomicalLabelType::Disabled == renderData.m_anatomicalLabelType)) {
             renderData.m_anatomicalLabelType = AnatomicalLabelType::Disabled;
           }
           ImGui::SameLine();
@@ -1436,30 +1376,34 @@ void renderSettingsWindow(
           static constexpr bool sk_orientChangeResetObliqueOrientation = false;
           static constexpr bool sk_orientChangeResetZoom = false;
 
-          if (ImGui::RadioButton("Radiological", ViewConvention::Radiological == appData.windowData().getViewOrientationConvention()))
+          if (ImGui::RadioButton(
+                "Radiological",
+                ViewConvention::Radiological == appData.windowData().getViewOrientationConvention()))
           {
             appData.windowData().setViewOrientationConvention(ViewConvention::Radiological);
 
             recenterAllViews(
-              sk_orientChangeRecenterCrosshairs, sk_orientChangeRealignCrosshairs,
+              sk_orientChangeRecenterCrosshairs,
+              sk_orientChangeRealignCrosshairs,
               sk_orientChangeRecenterOnXhairs,
               sk_orientChangeResetObliqueOrientation,
-              sk_orientChangeResetZoom
-            );
+              sk_orientChangeResetZoom);
           }
           ImGui::SameLine();
           helpMarker("Anatomical left is on view right; anatomical right is on view left");
 
-          if (ImGui::RadioButton("Neurological",ViewConvention::Neurological == appData.windowData().getViewOrientationConvention()))
+          if (ImGui::RadioButton(
+                "Neurological",
+                ViewConvention::Neurological == appData.windowData().getViewOrientationConvention()))
           {
             appData.windowData().setViewOrientationConvention(ViewConvention::Neurological);
 
             recenterAllViews(
-              sk_orientChangeRecenterCrosshairs, sk_orientChangeRealignCrosshairs,
+              sk_orientChangeRecenterCrosshairs,
+              sk_orientChangeRealignCrosshairs,
               sk_orientChangeRecenterOnXhairs,
               sk_orientChangeResetObliqueOrientation,
-              sk_orientChangeResetZoom
-            );
+              sk_orientChangeResetZoom);
           }
           ImGui::SameLine();
           helpMarker("Anatomical left is on view left; anatomical right is on view right");
@@ -1471,8 +1415,7 @@ void renderSettingsWindow(
         ImGui::EndTabItem();
       }
 
-      if (ImGui::BeginTabItem("Segmentation"))
-      {
+      if (ImGui::BeginTabItem("Segmentation")) {
         // Modulate opacity of segmentation with opacity of image:
         ImGui::Checkbox("Modulate segmentation with image opacity", &renderData.m_modulateSegOpacityWithImageOpacity);
         ImGui::SameLine();
@@ -1481,26 +1424,34 @@ void renderSettingsWindow(
         ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
         ImGui::Text("Boundary outline:");
-        if (ImGui::RadioButton("Outline view pixels", SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle)) {
+        if (ImGui::RadioButton(
+              "Outline view pixels",
+              SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle))
+        {
           renderData.m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
         }
         ImGui::SameLine();
         helpMarker("Outline the outer view pixels of the image segmentation regions");
 
-        if (ImGui::RadioButton("Outline image voxels",SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle)) {
+        if (ImGui::RadioButton(
+              "Outline image voxels",
+              SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle))
+        {
           renderData.m_segOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
         }
         ImGui::SameLine();
         helpMarker("Outline the outer voxels of the image segmentation regions");
 
-        if (ImGui::RadioButton("Disable (no outline)", SegmentationOutlineStyle::Disabled == renderData.m_segOutlineStyle)) {
+        if (ImGui::RadioButton(
+              "Disable (no outline)",
+              SegmentationOutlineStyle::Disabled == renderData.m_segOutlineStyle))
+        {
           renderData.m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
         }
         ImGui::SameLine();
         helpMarker("Disable segmentation outlining");
 
-        if (SegmentationOutlineStyle::Disabled != renderData.m_segOutlineStyle)
-        {
+        if (SegmentationOutlineStyle::Disabled != renderData.m_segOutlineStyle) {
           ImGui::Spacing();
           ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
@@ -1523,24 +1474,20 @@ void renderSettingsWindow(
         ImGui::EndTabItem();
       }
 
-      if (ImGui::BeginTabItem("Metrics"))
-      {
+      if (ImGui::BeginTabItem("Metrics")) {
         ImGui::PushID("metrics"); /*** PushID metrics ***/
 
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::TreeNode("Difference"))
-        {
+        if (ImGui::TreeNode("Difference")) {
           ImGui::PushID("diff");
           {
             // Difference type:
-            if (ImGui::RadioButton("Absolute", false == renderData.m_useSquare))
-            {
+            if (ImGui::RadioButton("Absolute", false == renderData.m_useSquare)) {
               renderData.m_useSquare = false;
             }
 
             ImGui::SameLine();
-            if (ImGui::RadioButton("Squared difference", true == renderData.m_useSquare))
-            {
+            if (ImGui::RadioButton("Squared difference", true == renderData.m_useSquare)) {
               renderData.m_useSquare = true;
             }
             ImGui::SameLine();
@@ -1549,8 +1496,7 @@ void renderSettingsWindow(
             renderMetricSettingsTab(
               renderData.m_squaredDifferenceParams,
               appData.guiData().m_showDifferenceColormapWindow,
-              "sqdiff"
-            );
+              "sqdiff");
           }
           ImGui::PopID(); // "diff"
 
@@ -1579,8 +1525,7 @@ void renderSettingsWindow(
         ImGui::EndTabItem();
       }
 
-      if (ImGui::BeginTabItem("Comparison modes"))
-      {
+      if (ImGui::BeginTabItem("Comparison modes")) {
         ImGui::PushID("comparison"); /*** PushID metrics ***/
 
         //                if ( ImGui::TreeNode( "Comparison comparison" ) )
@@ -1605,20 +1550,17 @@ void renderSettingsWindow(
 
         const glm::ivec2 Q = renderData.m_quadrants;
 
-        if (ImGui::RadioButton("X", true == (Q.x && !Q.y)))
-        {
+        if (ImGui::RadioButton("X", true == (Q.x && !Q.y))) {
           renderData.m_quadrants = glm::ivec2{true, false};
         }
 
         ImGui::SameLine();
-        if (ImGui::RadioButton("Y", true == (!Q.x && Q.y)))
-        {
+        if (ImGui::RadioButton("Y", true == (!Q.x && Q.y))) {
           renderData.m_quadrants = glm::ivec2{false, true};
         }
 
         ImGui::SameLine();
-        if (ImGui::RadioButton("X and Y comparison", true == (Q.x && Q.y)))
-        {
+        if (ImGui::RadioButton("X and Y comparison", true == (Q.x && Q.y))) {
           renderData.m_quadrants = glm::ivec2{true, true};
         }
 
@@ -1631,10 +1573,8 @@ void renderSettingsWindow(
         ImGui::Text("Checkerboard:");
 
         int numSquares = renderData.m_numCheckerboardSquares;
-        if (ImGui::InputInt("Number of checkers", &numSquares))
-        {
-          if (2 <= numSquares && numSquares <= 2048)
-          {
+        if (ImGui::InputInt("Number of checkers", &numSquares)) {
+          if (2 <= numSquares && numSquares <= 2048) {
             renderData.m_numCheckerboardSquares = numSquares;
           }
         }
@@ -1652,27 +1592,18 @@ void renderSettingsWindow(
         constexpr int k_minRadius = 1;
         constexpr int k_maxRadius = 100;
 
-        if (ImGui::SliderScalar(
-              "Circle size", ImGuiDataType_S32, &radiusPercent, &k_minRadius, &k_maxRadius, "%d"
-            ))
-        {
+        if (ImGui::SliderScalar("Circle size", ImGuiDataType_S32, &radiusPercent, &k_minRadius, &k_maxRadius, "%d")) {
           renderData.m_flashlightRadius = static_cast<float>(radiusPercent) / 100.0f;
         }
         ImGui::SameLine();
         helpMarker("Circle size (as a percentage of the view size) for Flashlight rendering");
 
         ImGui::Spacing();
-        if (ImGui::RadioButton(
-              "Overlay moving image atop fixed image", true == renderData.m_flashlightOverlays
-            ))
-        {
+        if (ImGui::RadioButton("Overlay moving image atop fixed image", true == renderData.m_flashlightOverlays)) {
           renderData.m_flashlightOverlays = true;
         }
 
-        if (ImGui::RadioButton(
-              "Replace fixed image with moving image", false == renderData.m_flashlightOverlays
-            ))
-        {
+        if (ImGui::RadioButton("Replace fixed image with moving image", false == renderData.m_flashlightOverlays)) {
           renderData.m_flashlightOverlays = false;
         }
         ImGui::SameLine();
@@ -1686,11 +1617,11 @@ void renderSettingsWindow(
         ImGui::EndTabItem();
       }
 
-      if (ImGui::BeginTabItem("Raycasting"))
-      {
+      if (ImGui::BeginTabItem("Raycasting")) {
         ImGui::PushID("raycasting"); /*** PushID raycasting ***/
 
-        /// @todo if these are added to the uniforms, then we'll have update uniforms when they change
+        /// @todo if these are added to the uniforms, then we'll have update uniforms when they
+        /// change
 
         static constexpr float sk_factorStep = 0.1f;
         static constexpr float sk_minFactor = 0.1f;
@@ -1707,8 +1638,7 @@ void renderSettingsWindow(
               sk_minFactor,
               sk_maxFactor,
               "%0.1f",
-              ImGuiSliderFlags_AlwaysClamp
-            ))
+              ImGuiSliderFlags_AlwaysClamp))
         {
           // Update uniforms if m_raycastSamplingFactor gets added to uniforms
         }
@@ -1716,7 +1646,8 @@ void renderSettingsWindow(
         ImGui::Spacing();
         ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
-        // Should the no-hit zone of raycast views be transparent, so that the view background is visible?
+        // Should the no-hit zone of raycast views be transparent, so that the view background is
+        // visible?
         ImGui::Checkbox("Transparent background", &renderData.m_3dTransparentIfNoHit);
         ImGui::SameLine();
         helpMarker("Background of view is transparent outside of image volume");
@@ -1738,27 +1669,19 @@ void renderSettingsWindow(
         ImGui::SameLine();
         helpMarker("Mask image based on segmentation value");
 
-        if (ImGui::RadioButton(
-              "Disable", RenderData::SegMaskingForRaycasting::Disabled == renderData.m_segMasking
-            ))
-        {
+        if (ImGui::RadioButton("Disable", RenderData::SegMaskingForRaycasting::Disabled == renderData.m_segMasking)) {
           renderData.m_segMasking = RenderData::SegMaskingForRaycasting::Disabled;
         }
         ImGui::SameLine();
         helpMarker("Segmentation masking disabled");
 
-        if (ImGui::RadioButton(
-              "Mask in", RenderData::SegMaskingForRaycasting::SegMasksIn == renderData.m_segMasking
-            ))
-        {
+        if (ImGui::RadioButton("Mask in", RenderData::SegMaskingForRaycasting::SegMasksIn == renderData.m_segMasking)) {
           renderData.m_segMasking = RenderData::SegMaskingForRaycasting::SegMasksIn;
         }
         ImGui::SameLine();
         helpMarker("Segmentation masks image in");
 
-        if (ImGui::RadioButton(
-              "Mask out", RenderData::SegMaskingForRaycasting::SegMasksOut == renderData.m_segMasking
-            ))
+        if (ImGui::RadioButton("Mask out", RenderData::SegMaskingForRaycasting::SegMasksOut == renderData.m_segMasking))
         {
           renderData.m_segMasking = RenderData::SegMaskingForRaycasting::SegMasksOut;
         }
@@ -1769,8 +1692,7 @@ void renderSettingsWindow(
         ImGui::EndTabItem();
       }
 
-      if (ImGui::BeginTabItem("Rendering"))
-      {
+      if (ImGui::BeginTabItem("Rendering")) {
         ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
         ImGui::SameLine();
         helpMarker("Manually limit the rendering frame rate");
@@ -1785,14 +1707,30 @@ void renderSettingsWindow(
           constexpr double secMax = 1.0 / hzMin;
 
           double hz = 1.0 / renderData.m_targetFrameTimeSeconds;
-          if (ImGui::DragScalar("Hz", ImGuiDataType_Double, &hz,
-                                hzSpeed, &hzMin, &hzMax, "%.1f", ImGuiSliderFlags_ClampOnInput)) {
+          if (ImGui::DragScalar(
+                "Hz",
+                ImGuiDataType_Double,
+                &hz,
+                hzSpeed,
+                &hzMin,
+                &hzMax,
+                "%.1f",
+                ImGuiSliderFlags_ClampOnInput))
+          {
             renderData.m_targetFrameTimeSeconds = 1.0 / hz;
           }
 
           double sec = renderData.m_targetFrameTimeSeconds;
-          if (ImGui::DragScalar("sec", ImGuiDataType_Double, &sec,
-                                secSpeed, &secMin, &secMax, "%.4f", ImGuiSliderFlags_ClampOnInput)) {
+          if (ImGui::DragScalar(
+                "sec",
+                ImGuiDataType_Double,
+                &sec,
+                secSpeed,
+                &secMin,
+                &secMax,
+                "%.4f",
+                ImGuiSliderFlags_ClampOnInput))
+          {
             renderData.m_targetFrameTimeSeconds = sec;
           }
         }
@@ -1800,16 +1738,18 @@ void renderSettingsWindow(
         ImGui::Spacing();
         ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
-        ImGui::Checkbox("Floating-point linear image interpolation",
-                        &appData.renderData().m_imageGrayFloatingPointInterpolation);
+        ImGui::Checkbox(
+          "Floating-point linear image interpolation",
+          &appData.renderData().m_imageGrayFloatingPointInterpolation);
         ImGui::SameLine();
-        helpMarker("Use floating-point (instead of 8-bit fixed-point) linear image interpolation for the images");
+        helpMarker(
+          "Use floating-point (instead of 8-bit fixed-point) linear image interpolation for the "
+          "images");
 
         ImGui::Separator();
 
         // ASCII rendering controls
-        if (ImGui::CollapsingHeader("ASCII Shading"))
-        {
+        if (ImGui::CollapsingHeader("ASCII Shading")) {
           RenderData& rd = appData.renderData();
 
           ImGui::PushID("ascii");
@@ -1818,15 +1758,9 @@ void renderSettingsWindow(
           ImGui::SameLine();
           helpMarker("Render grayscale images as ASCII art");
 
-          if (rd.m_asciiEnabled)
-          {
-            static const char* charsetNames[] = {
-              " .,:-=+*#%@  (short)",
-              "Paul Bourke 70-char",
-              "01 (binary)"
-            };
-            if (ImGui::Combo("Charset", &rd.m_asciiCharsetIndex, charsetNames, IM_ARRAYSIZE(charsetNames)))
-            {
+          if (rd.m_asciiEnabled) {
+            static const char* charsetNames[] = {" .,:-=+*#%@  (short)", "Paul Bourke 70-char", "01 (binary)"};
+            if (ImGui::Combo("Charset", &rd.m_asciiCharsetIndex, charsetNames, IM_ARRAYSIZE(charsetNames))) {
               // Signal that the atlas needs to be rebuilt — caller checks this flag
               rd.m_asciiAtlasNeedsRebuild = true;
             }
@@ -1860,29 +1794,25 @@ void renderSettingsWindow(
         ImGui::EndTabItem();
       }
 
-      if (ImGui::BeginTabItem("Annotations"))
-      {
+      if (ImGui::BeginTabItem("Annotations")) {
         ImGui::PushID("landmarks"); /*** PushID landmarks ***/
 
         bool annotOnTop = renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
-        if (ImGui::Checkbox("Annotations on top", &annotOnTop))
-        {
+        if (ImGui::Checkbox("Annotations on top", &annotOnTop)) {
           renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes = annotOnTop;
         }
         ImGui::SameLine();
         helpMarker("Render annotations on top of all image layers");
 
         bool lmOnTop = renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
-        if (ImGui::Checkbox("Landmarks on top", &lmOnTop))
-        {
+        if (ImGui::Checkbox("Landmarks on top", &lmOnTop)) {
           renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes = lmOnTop;
         }
         ImGui::SameLine();
         helpMarker("Render landmarks on top of all image layers");
 
         bool hideVertices = renderData.m_globalAnnotationParams.hidePolygonVertices;
-        if (ImGui::Checkbox("Hide all annotation vertices", &hideVertices))
-        {
+        if (ImGui::Checkbox("Hide all annotation vertices", &hideVertices)) {
           renderData.m_globalAnnotationParams.hidePolygonVertices = hideVertices;
         }
         ImGui::SameLine();
@@ -1892,8 +1822,7 @@ void renderSettingsWindow(
         ImGui::EndTabItem();
       }
 
-      if (ImGui::BeginTabItem("Precision"))
-      {
+      if (ImGui::BeginTabItem("Precision")) {
         static constexpr uint32_t sk_minPrecision = 0;
         static constexpr uint32_t sk_maxPrecision = 9;
         static constexpr uint32_t sk_stepPrecision = 1;
@@ -1913,8 +1842,7 @@ void renderSettingsWindow(
               &valuePrecision,
               &sk_stepPrecision,
               &sk_stepPrecision,
-              "%d"
-            ))
+              "%d"))
         {
           appData.guiData().m_imageValuePrecision =
             std::min(std::max(valuePrecision, sk_minPrecision), sk_maxPrecision);
@@ -1931,17 +1859,13 @@ void renderSettingsWindow(
               &coordPrecision,
               &sk_stepPrecision,
               &sk_stepPrecision,
-              "%d"
-            ))
+              "%d"))
         {
-          appData.guiData().m_coordsPrecision
-            = std::min(std::max(coordPrecision, sk_minPrecision), sk_maxPrecision);
+          appData.guiData().m_coordsPrecision = std::min(std::max(coordPrecision, sk_minPrecision), sk_maxPrecision);
           appData.guiData().setCoordsPrecisionFormat();
         }
         ImGui::SameLine();
-        helpMarker(
-          "Floating-point precision of image spatial coordinates (e.g. in Inspector window)"
-        );
+        helpMarker("Floating-point precision of image spatial coordinates (e.g. in Inspector window)");
 
         if (ImGui::InputScalar(
               "Transformations",
@@ -1949,11 +1873,9 @@ void renderSettingsWindow(
               &txPrecision,
               &sk_stepPrecision,
               &sk_stepPrecision,
-              "%d"
-            ))
+              "%d"))
         {
-          appData.guiData().m_txPrecision
-            = std::min(std::max(txPrecision, sk_minPrecision), sk_maxPrecision);
+          appData.guiData().m_txPrecision = std::min(std::max(txPrecision, sk_minPrecision), sk_maxPrecision);
           appData.guiData().setTxPrecisionFormat();
         }
         ImGui::SameLine();
@@ -1965,11 +1887,10 @@ void renderSettingsWindow(
               &percentilePrecision,
               &sk_stepPrecision,
               &sk_stepPrecision,
-              "%d"
-            ))
+              "%d"))
         {
-          appData.guiData().m_percentilePrecision
-            = std::min(std::max(percentilePrecision, sk_minPrecision), sk_maxPrecision);
+          appData.guiData().m_percentilePrecision =
+            std::min(std::max(percentilePrecision, sk_minPrecision), sk_maxPrecision);
 
           appData.guiData().m_percentilePrecisionFormat =
             std::string("%0.") + std::to_string(appData.guiData().m_percentilePrecision) + std::string("f");
@@ -1988,14 +1909,14 @@ void renderSettingsWindow(
   ImGui::End();
 }
 
-//enum class PopupWindowPosition
+// enum class PopupWindowPosition
 //{
-//    Custom,
-//    TopLeft,
-//    TopRight,
-//    BottomLeft,
-//    BottomRight
-//};
+//     Custom,
+//     TopLeft,
+//     TopRight,
+//     BottomLeft,
+//     BottomRight
+// };
 
 void renderInspectionWindow(
   AppData& appData,
@@ -2007,8 +1928,7 @@ void renderInspectionWindow(
   const std::function<std::optional<double>(std::size_t imageIndex)>& getImageValueNN,
   const std::function<std::optional<double>(std::size_t imageIndex)>& getImageValueLinear,
   const std::function<std::optional<int64_t>(std::size_t imageIndex)>& getSegLabel,
-  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable
-)
+  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable)
 {
   std::ignore = getImageValueLinear;
 
@@ -2030,21 +1950,17 @@ void renderInspectionWindow(
   // For which images to show coordinates?
   static std::unordered_map<uuid, bool> s_showSubject;
 
-  if (s_firstRun)
-  {
+  if (s_firstRun) {
     // Show the first (reference) image coordinates by default:
-    if (const auto imageUid = appData.imageUid(sk_refIndex))
-    {
+    if (const auto imageUid = appData.imageUid(sk_refIndex)) {
       s_showSubject.insert({*imageUid, true});
     }
 
     s_firstRun = false;
   }
 
-  auto contextMenu = [&numImages, &appData, &getImageDisplayAndFileName]()
-  {
-    if (ImGui::BeginMenu("Show"))
-    {
+  auto contextMenu = [&numImages, &appData, &getImageDisplayAndFileName]() {
+    if (ImGui::BeginMenu("Show")) {
       //                if ( ImGui::MenuItem( "World", nullptr, s_showWorldCoords ) )
       //                {
       //                    s_showWorldCoords = ! s_showWorldCoords;
@@ -2054,23 +1970,19 @@ void renderInspectionWindow(
       //                    ImGui::SetTooltip( "Show World-space crosshairs coordinates" );
       //                }
 
-      for (std::size_t imageIndex = 0; imageIndex < numImages; ++imageIndex)
-      {
+      for (std::size_t imageIndex = 0; imageIndex < numImages; ++imageIndex) {
         const auto imageUid = appData.imageUid(imageIndex);
-        if (!imageUid)
-          continue;
+        if (!imageUid) continue;
 
         bool& visible = s_showSubject[*imageUid];
 
         const auto names = getImageDisplayAndFileName(imageIndex);
 
-        if (ImGui::MenuItem(names.first.c_str(), nullptr, visible))
-        {
+        if (ImGui::MenuItem(names.first.c_str(), nullptr, visible)) {
           visible = !visible;
         }
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", names.second.c_str());
         }
       }
@@ -2078,58 +1990,45 @@ void renderInspectionWindow(
       ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Position"))
-    {
-      if (ImGui::MenuItem("Custom", nullptr, corner == -1))
-        corner = -1;
-      if (ImGui::MenuItem("Top-left", nullptr, corner == 0))
-        corner = 0;
-      if (ImGui::MenuItem("Top-right", nullptr, corner == 1))
-        corner = 1;
-      if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2))
-        corner = 2;
-      if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3))
-        corner = 3;
+    if (ImGui::BeginMenu("Position")) {
+      if (ImGui::MenuItem("Custom", nullptr, corner == -1)) corner = -1;
+      if (ImGui::MenuItem("Top-left", nullptr, corner == 0)) corner = 0;
+      if (ImGui::MenuItem("Top-right", nullptr, corner == 1)) corner = 1;
+      if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2)) corner = 2;
+      if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3)) corner = 3;
 
       ImGui::EndMenu();
     }
 
-    if (appData.guiData().m_showInspectionWindow && ImGui::MenuItem("Close"))
-    {
+    if (appData.guiData().m_showInspectionWindow && ImGui::MenuItem("Close")) {
       appData.guiData().m_showInspectionWindow = false;
     }
 
     ImGui::EndPopup();
   };
 
-  auto showSelectionButton = []()
-  {
+  auto showSelectionButton = []() {
     ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
-    if (ImGui::Button(ICON_FK_LIST_ALT))
-    {
+    if (ImGui::Button(ICON_FK_LIST_ALT)) {
       ImGui::OpenPopup("selectionPopup");
     }
     ImGui::PopStyleColor(1);
 
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Select image(s) to inspect");
     }
   };
 
   ImGuiIO& io = ImGui::GetIO();
 
-  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
-                                 | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                                 ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 
-  if (corner != -1)
-  {
+  if (corner != -1) {
     windowFlags |= ImGuiWindowFlags_NoMove;
 
-    const ImVec2 windowPos = ImVec2(
-      (corner & 1) ? io.DisplaySize.x - sk_pad : sk_pad,
-      (corner & 2) ? io.DisplaySize.y - sk_pad : sk_pad
-    );
+    const ImVec2 windowPos =
+      ImVec2((corner & 1) ? io.DisplaySize.x - sk_pad : sk_pad, (corner & 2) ? io.DisplaySize.y - sk_pad : sk_pad);
 
     const ImVec2 windowPosPivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
 
@@ -2138,8 +2037,7 @@ void renderInspectionWindow(
 
   ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
 
-  if (ImGui::Begin("##InspectionWindow", &(appData.guiData().m_showInspectionWindow), windowFlags))
-  {
+  if (ImGui::Begin("##InspectionWindow", &(appData.guiData().m_showInspectionWindow), windowFlags)) {
     //        if ( ImGui::IsMousePosValid() && ImGui::IsAnyMouseDown() )
     //        {
     //            ImGui::Text( "Mouse Position: (%.0f, %.0f)",
@@ -2147,8 +2045,7 @@ void renderInspectionWindow(
     //                         static_cast<double>( io.MousePos.y ) );
     //        }
 
-    if (s_showWorldCoords)
-    {
+    if (s_showWorldCoords) {
       const glm::vec3 worldPos = getWorldDeformedPos();
 
       //            ImGui::Text( "World:" );
@@ -2156,11 +2053,9 @@ void renderInspectionWindow(
         "(%.3f, %.3f, %.3f) mm",
         static_cast<double>(worldPos.x),
         static_cast<double>(worldPos.y),
-        static_cast<double>(worldPos.z)
-      );
+        static_cast<double>(worldPos.z));
 
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("World-space coordinates");
       }
     }
@@ -2168,27 +2063,22 @@ void renderInspectionWindow(
     bool firstImageShown = true;
     bool showedAtLeastOneImage = false; // is info for at least one image shown?
 
-    for (std::size_t imageIndex = 0; imageIndex < numImages; ++imageIndex)
-    {
+    for (std::size_t imageIndex = 0; imageIndex < numImages; ++imageIndex) {
       const auto imageUid = appData.imageUid(imageIndex);
       const Image* image = (imageUid ? appData.image(*imageUid) : nullptr);
-      if (!image)
-        continue;
+      if (!image) continue;
 
-      if (0 == s_showSubject.count(*imageUid))
-      {
+      if (0 == s_showSubject.count(*imageUid)) {
         // The reference image is shown by default in this list
         s_showSubject.insert({*imageUid, (sk_refIndex == imageIndex) ? true : false});
       }
 
       const bool visible = s_showSubject[*imageUid];
-      if (!visible)
-        continue;
+      if (!visible) continue;
 
       showedAtLeastOneImage = true;
 
-      if (s_showWorldCoords || !firstImageShown)
-      {
+      if (s_showWorldCoords || !firstImageShown) {
         ImGui::Separator();
       }
 
@@ -2196,66 +2086,48 @@ void renderInspectionWindow(
 
       const auto names = getImageDisplayAndFileName(imageIndex);
 
-      if (sk_refIndex == imageIndex)
-      {
+      if (sk_refIndex == imageIndex) {
         ImGui::TextColored(blueColor, "%s (ref.):", names.first.c_str());
       }
-      else
-      {
+      else {
         ImGui::TextColored(blueColor, "%s:", names.first.c_str());
       }
 
-      if (ImGui::IsItemHovered())
-      {
+      if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", names.second.c_str());
       }
 
       /// @todo Do we want to show subject coords for all images?
-      if (sk_refIndex == imageIndex)
-      {
+      if (sk_refIndex == imageIndex) {
         // Show subject coordinates for the reference image only:
-        if (const auto subjectPos = getSubjectPos(imageIndex))
-        {
+        if (const auto subjectPos = getSubjectPos(imageIndex)) {
           const glm::dvec3 p{*subjectPos};
           ImGui::Text("(%.3f, %.3f, %.3f) mm", p.x, p.y, p.z);
         }
       }
 
-      if (const auto voxelPos = getVoxelPos(imageIndex))
-      {
+      if (const auto voxelPos = getVoxelPos(imageIndex)) {
         ImGui::Text("(%d, %d, %d) vox", voxelPos->x, voxelPos->y, voxelPos->z);
       }
-      else
-      {
+      else {
         ImGui::Text("<N/A>");
       }
 
-      if (const auto imageValue = getImageValueNN(imageIndex))
-      {
-        if (isComponentFloatingPoint(image->header().memoryComponentType()))
-        {
-          if (image->header().numComponentsPerPixel() > 1)
-          {
+      if (const auto imageValue = getImageValueNN(imageIndex)) {
+        if (isComponentFloatingPoint(image->header().memoryComponentType())) {
+          if (image->header().numComponentsPerPixel() > 1) {
             ImGui::Text("Value (comp. %d): %0.3f", image->settings().activeComponent(), *imageValue);
           }
-          else
-          {
+          else {
             ImGui::Text("Value: %0.3f", *imageValue);
           }
         }
-        else
-        {
-          if (image->header().numComponentsPerPixel() > 1)
-          {
+        else {
+          if (image->header().numComponentsPerPixel() > 1) {
             // Multi-component case: show the value of the active component
-            ImGui::Text(
-              "Value (comp. %d): %d",
-              image->settings().activeComponent(),
-              static_cast<int>(*imageValue)
-            );
+            ImGui::Text("Value (comp. %d): %d", image->settings().activeComponent(), static_cast<int>(*imageValue));
           }
-          else
-          {
+          else {
             // Single component case
             ImGui::Text("Value: %d", static_cast<int32_t>(*imageValue));
           }
@@ -2264,42 +2136,35 @@ void renderInspectionWindow(
 
       const auto segUid = appData.imageToActiveSegUid(*imageUid);
       const Image* seg = (segUid ? appData.seg(*segUid) : nullptr);
-      if (!seg)
-        continue;
+      if (!seg) continue;
 
-      if (const auto segLabel = getSegLabel(imageIndex))
-      {
+      if (const auto segLabel = getSegLabel(imageIndex)) {
         ImGui::Text("Label: %" PRId64, static_cast<int64_t>(*segLabel));
 
         const auto* table = getLabelTable(seg->settings().labelTableIndex());
-        if (table && 0 != *segLabel)
-        {
+        if (table && 0 != *segLabel) {
           const char* labelName = table->getName(static_cast<size_t>(*segLabel)).c_str();
           ImGui::SameLine();
           ImGui::Text("(%s)", labelName);
         }
       }
 
-      if (!selectionButtonShown)
-      {
+      if (!selectionButtonShown) {
         ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 24);
         showSelectionButton();
         selectionButtonShown = true;
       }
     }
 
-    if (!showedAtLeastOneImage)
-    {
+    if (!showedAtLeastOneImage) {
       showSelectionButton();
     }
 
-    if (ImGui::BeginPopupContextWindow())
-    {
+    if (ImGui::BeginPopupContextWindow()) {
       // Show context menu on right-button click:
       contextMenu();
     }
-    else if (ImGui::BeginPopup("selectionPopup"))
-    {
+    else if (ImGui::BeginPopup("selectionPopup")) {
       // Show context menu if the user has clicked the popup button:
       contextMenu();
       ImGui::EndPopup();
@@ -2316,13 +2181,10 @@ void renderInspectionWindowWithTable(
   const std::function<std::optional<glm::ivec3>(std::size_t imageIndex)>& getVoxelPos,
   const std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
   const std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos,
-  const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>&
-    getImageValuesNN,
-  const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>&
-    getImageValuesLinear,
+  const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesNN,
+  const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesLinear,
   const std::function<std::optional<int64_t>(std::size_t imageIndex)>& getSegLabel,
-  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable
-)
+  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable)
 {
   static bool s_firstRun = true; // Is this the first run?
 
@@ -2340,62 +2202,47 @@ void renderInspectionWindowWithTable(
   static const ImVec4 buttonColor(0.0f, 0.0f, 0.0f, 0.0f);
   //    static const ImVec4 blueColor( 0.0f, 0.5f, 1.0f, 1.0f );
 
-  static const ImGuiTableFlags sk_tableFlags = ImGuiTableFlags_Resizable
-                                               | ImGuiTableFlags_Reorderable
-                                               | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders
-                                               | ImGuiTableFlags_SizingFixedFit
-                                               | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY;
+  static const ImGuiTableFlags sk_tableFlags =
+    ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders |
+    ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY;
 
-  static const ImGuiWindowFlags sk_windowFlags = ImGuiWindowFlags_MenuBar
-                                                 | ImGuiWindowFlags_AlwaysAutoResize
-                                                 | ImGuiWindowFlags_NoFocusOnAppearing
-                                                 | ImGuiWindowFlags_NoResize
-                                                 | ImGuiWindowFlags_NoScrollbar
-                                                 | ImGuiWindowFlags_NoBackground
-                                                 | ImGuiWindowFlags_NoNav;
+  static const ImGuiWindowFlags sk_windowFlags =
+    ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing |
+    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
 
   static bool s_showTitleBar = false;
 
   // For which images to show coordinates?
   static std::unordered_map<uuid, bool> s_showSubject;
 
-  if (s_firstRun)
-  {
+  if (s_firstRun) {
     // Show all images by default:
-    for (const auto& imageUid : appData.imageUidsOrdered())
-    {
+    for (const auto& imageUid : appData.imageUidsOrdered()) {
       s_showSubject.insert({imageUid, true});
     }
 
     s_firstRun = false;
   }
 
-  auto contextMenu = [&appData, &getImageDisplayAndFileName]()
-  {
-    if (ImGui::BeginMenu("Show..."))
-    {
-      for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex)
-      {
+  auto contextMenu = [&appData, &getImageDisplayAndFileName]() {
+    if (ImGui::BeginMenu("Show...")) {
+      for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
         const auto imageUid = appData.imageUid(imageIndex);
-        if (!imageUid)
-          continue;
+        if (!imageUid) continue;
 
         auto it = s_showSubject.find(*imageUid);
-        if (std::end(s_showSubject) == it)
-        {
+        if (std::end(s_showSubject) == it) {
           s_showSubject.insert({*imageUid, true});
         }
 
         bool& visible = s_showSubject[*imageUid];
         const auto names = getImageDisplayAndFileName(imageIndex);
 
-        if (ImGui::MenuItem(names.first.c_str(), nullptr, visible))
-        {
+        if (ImGui::MenuItem(names.first.c_str(), nullptr, visible)) {
           visible = !visible;
         }
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", names.second.c_str());
         }
       }
@@ -2403,31 +2250,22 @@ void renderInspectionWindowWithTable(
       ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Window"))
-    {
-      if (ImGui::BeginMenu("Position"))
-      {
-        if (ImGui::MenuItem("Custom", nullptr, corner == -1))
-          corner = -1;
-        if (ImGui::MenuItem("Top-left", nullptr, corner == 0))
-          corner = 0;
-        if (ImGui::MenuItem("Top-right", nullptr, corner == 1))
-          corner = 1;
-        if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2))
-          corner = 2;
-        if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3))
-          corner = 3;
+    if (ImGui::BeginMenu("Window")) {
+      if (ImGui::BeginMenu("Position")) {
+        if (ImGui::MenuItem("Custom", nullptr, corner == -1)) corner = -1;
+        if (ImGui::MenuItem("Top-left", nullptr, corner == 0)) corner = 0;
+        if (ImGui::MenuItem("Top-right", nullptr, corner == 1)) corner = 1;
+        if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2)) corner = 2;
+        if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3)) corner = 3;
         ImGui::EndMenu();
       }
 
-      if (ImGui::MenuItem("Show title bar", nullptr, s_showTitleBar))
-      {
+      if (ImGui::MenuItem("Show title bar", nullptr, s_showTitleBar)) {
         s_showTitleBar = !s_showTitleBar;
       }
 
       ImGui::Separator();
-      if (appData.guiData().m_showInspectionWindow && ImGui::MenuItem("Close"))
-      {
+      if (appData.guiData().m_showInspectionWindow && ImGui::MenuItem("Close")) {
         appData.guiData().m_showInspectionWindow = false;
       }
 
@@ -2437,41 +2275,35 @@ void renderInspectionWindowWithTable(
     //        ImGui::EndPopup();
   };
 
-  auto showSelectionButton = []()
-  {
+  auto showSelectionButton = []() {
     ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
-    if (ImGui::Button("..."))
-    {
+    if (ImGui::Button("...")) {
       ImGui::OpenPopup("selectionPopup");
     }
     ImGui::PopStyleColor(1);
 
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Select image(s) to inspect");
     }
   };
 
   ImGuiWindowFlags windowFlags = sk_windowFlags;
 
-  if (corner != -1)
-  {
+  if (corner != -1) {
     windowFlags |= ImGuiWindowFlags_NoMove;
 
     ImGuiIO& io = ImGui::GetIO();
 
     const ImVec2 windowPos(
       (corner & 1) ? io.DisplaySize.x - sk_pad : sk_pad,
-      (corner & 2) ? io.DisplaySize.y - sk_pad : sk_pad
-    );
+      (corner & 2) ? io.DisplaySize.y - sk_pad : sk_pad);
 
     const ImVec2 windowPosPivot((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
 
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, windowPosPivot);
   }
 
-  if (!s_showTitleBar)
-  {
+  if (!s_showTitleBar) {
     windowFlags |= ImGuiWindowFlags_NoDecoration;
   }
 
@@ -2489,20 +2321,15 @@ void renderInspectionWindowWithTable(
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_windowPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, sk_windowRounding);
 
-  if (ImGui::Begin(
-        "Voxel Inspector##InspectionWindow", &(appData.guiData().m_showInspectionWindow), windowFlags
-      ))
-  {
+  if (ImGui::Begin("Voxel Inspector##InspectionWindow", &(appData.guiData().m_showInspectionWindow), windowFlags)) {
     ImGui::PushStyleColor(ImGuiCol_MenuBarBg, menuBarBgColor);
-    if (ImGui::BeginMenuBar())
-    {
+    if (ImGui::BeginMenuBar()) {
       contextMenu();
       ImGui::EndMenuBar();
     }
     ImGui::PopStyleColor(1); // ImGuiCol_MenuBarBg
 
-    if (ImGui::BeginTable("Image Information", 7, sk_tableFlags))
-    {
+    if (ImGui::BeginTable("Image Information", 7, sk_tableFlags)) {
       ImGui::TableSetupScrollFreeze(1, 1);
 
       // The default widths are approximate
@@ -2512,47 +2339,38 @@ void renderInspectionWindowWithTable(
       ImGui::TableSetupColumn(
         "Value (interp.)",
         ImGuiTableColumnFlags_DefaultHide | ImGuiTableColumnFlags_WidthFixed,
-        75.0f
-      );
+        75.0f);
       ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-      ImGui::TableSetupColumn(
-        "Region", ImGuiTableColumnFlags_DefaultHide | ImGuiTableColumnFlags_WidthFixed, 100.0f
-      );
+      ImGui::TableSetupColumn("Region", ImGuiTableColumnFlags_DefaultHide | ImGuiTableColumnFlags_WidthFixed, 100.0f);
 
       ImGui::TableSetupColumn("Voxel", ImGuiTableColumnFlags_WidthFixed, 125.0f);
       ImGui::TableSetupColumn("Subject (mm)", ImGuiTableColumnFlags_WidthFixed, 225.0f);
 
       ImGui::TableHeadersRow();
 
-      for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex)
-      {
+      for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
         const auto imageUid = appData.imageUid(imageIndex);
         Image* image = (imageUid ? appData.image(*imageUid) : nullptr);
-        if (!image)
-          continue;
+        if (!image) continue;
 
         auto it = s_showSubject.find(*imageUid);
-        if (std::end(s_showSubject) == it)
-        {
+        if (std::end(s_showSubject) == it) {
           s_showSubject.insert({*imageUid, true});
         }
 
-        if (!s_showSubject[*imageUid])
-          continue;
+        if (!s_showSubject[*imageUid]) continue;
 
         ImGui::PushID(static_cast<int>(imageIndex)); /** PushID: imageIndex **/
 
         const auto segUid = appData.imageToActiveSegUid(*imageUid);
         const Image* seg = (segUid ? appData.seg(*segUid) : nullptr);
 
-        ParcellationLabelTable* table
-          = (seg ? getLabelTable(seg->settings().labelTableIndex()) : nullptr);
+        ParcellationLabelTable* table = (seg ? getLabelTable(seg->settings().labelTableIndex()) : nullptr);
 
         // Get all image component values
         static constexpr bool sk_getOnlyActiveComponent = false;
         std::vector<double> imageValuesNN = getImageValuesNN(imageIndex, sk_getOnlyActiveComponent);
-        std::vector<double> imageValuesLinear
-          = getImageValuesLinear(imageIndex, sk_getOnlyActiveComponent);
+        std::vector<double> imageValuesLinear = getImageValuesLinear(imageIndex, sk_getOnlyActiveComponent);
 
         const std::optional<int64_t> segLabel = getSegLabel(imageIndex);
 
@@ -2565,28 +2383,22 @@ void renderInspectionWindowWithTable(
         darkerBorderColorHsv[2] = std::max(0.5f * darkerBorderColorHsv[2], 0.0f);
         const glm::vec3 darkerBorderColorRgb = glm::rgbColor(darkerBorderColorHsv);
 
-        const ImVec4 inputTextBgColor(
-          darkerBorderColorRgb.r, darkerBorderColorRgb.g, darkerBorderColorRgb.b, 1.0f
-        );
-        const ImVec4 inputTextFgColor = (glm::luminosity(darkerBorderColorRgb) < 0.75f)
-                                          ? whiteText
-                                          : blackText;
+        const ImVec4 inputTextBgColor(darkerBorderColorRgb.r, darkerBorderColorRgb.g, darkerBorderColorRgb.b, 1.0f);
+        const ImVec4 inputTextFgColor = (glm::luminosity(darkerBorderColorRgb) < 0.75f) ? whiteText : blackText;
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, inputTextBgColor);
         ImGui::PushStyleColor(ImGuiCol_Text, inputTextFgColor);
         ImGui::PushItemWidth(-1);
         {
           std::string displayName = image->settings().displayName();
-          if (ImGui::InputText("##displayName", &displayName))
-          {
+          if (ImGui::InputText("##displayName", &displayName)) {
             image->settings().setDisplayName(displayName);
           }
         }
         ImGui::PopItemWidth();
         ImGui::PopStyleColor(2); // ImGuiCol_FrameBg, ImGuiCol_Text
 
-        if (ImGui::IsItemHovered())
-        {
+        if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("%s", image->header().fileName().c_str());
         }
 
@@ -2595,12 +2407,9 @@ void renderInspectionWindowWithTable(
 
         ImGui::TableNextColumn(); // "Value (NN)"
 
-        if (!imageValuesNN.empty())
-        {
-          if (isComponentFloatingPoint(image->header().memoryComponentType()))
-          {
-            if (image->header().numComponentsPerPixel() > 1)
-            {
+        if (!imageValuesNN.empty()) {
+          if (isComponentFloatingPoint(image->header().memoryComponentType())) {
+            if (image->header().numComponentsPerPixel() > 1) {
               ImGui::PushItemWidth(-1);
               ImGui::InputScalarN(
                 "##imageValuesNN",
@@ -2610,17 +2419,14 @@ void renderInspectionWindowWithTable(
                 nullptr,
                 nullptr,
                 appData.guiData().m_imageValuePrecisionFormat.c_str(),
-                ImGuiInputTextFlags_ReadOnly
-              );
+                ImGuiInputTextFlags_ReadOnly);
               ImGui::PopItemWidth();
 
-              if (ImGui::IsItemHovered())
-              {
+              if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Active component: %d", image->settings().activeComponent());
               }
             }
-            else
-            {
+            else {
               double a = imageValuesNN[0];
 
               ImGui::PushItemWidth(-1);
@@ -2631,19 +2437,15 @@ void renderInspectionWindowWithTable(
                 nullptr,
                 nullptr,
                 appData.guiData().m_imageValuePrecisionFormat.c_str(),
-                ImGuiInputTextFlags_ReadOnly
-              );
+                ImGuiInputTextFlags_ReadOnly);
               ImGui::PopItemWidth();
             }
           }
-          else
-          {
-            if (image->header().numComponentsPerPixel() > 1)
-            {
+          else {
+            if (image->header().numComponentsPerPixel() > 1) {
               std::vector<int64_t> imageValuesNNInt;
 
-              for (std::size_t i = 0; i < imageValuesNN.size(); ++i)
-              {
+              for (std::size_t i = 0; i < imageValuesNN.size(); ++i) {
                 imageValuesNNInt.push_back(static_cast<int64_t>(imageValuesNN[i]));
               }
 
@@ -2656,17 +2458,14 @@ void renderInspectionWindowWithTable(
                 nullptr,
                 nullptr,
                 "%ld",
-                ImGuiInputTextFlags_ReadOnly
-              );
+                ImGuiInputTextFlags_ReadOnly);
               ImGui::PopItemWidth();
 
-              if (ImGui::IsItemHovered())
-              {
+              if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Active component: %d", image->settings().activeComponent());
               }
             }
-            else
-            {
+            else {
               int64_t a = static_cast<int64_t>(imageValuesNN[0]);
 
               ImGui::PushItemWidth(-1);
@@ -2677,26 +2476,23 @@ void renderInspectionWindowWithTable(
                 nullptr,
                 nullptr,
                 "%ld",
-                ImGuiInputTextFlags_ReadOnly
-              );
+                ImGuiInputTextFlags_ReadOnly);
               ImGui::PopItemWidth();
             }
           }
         }
-        else
-        {
+        else {
           ImGui::Text("<N/A>");
         }
 
         ImGui::TableNextColumn(); // "Value (Linear)"
 
-        if (!imageValuesLinear.empty())
-        {
-          // Display linearly interpolated image values using doubles for both floating point and integer images
-          //if ( isComponentFloatingPoint( image->header().memoryComponentType() ) )
+        if (!imageValuesLinear.empty()) {
+          // Display linearly interpolated image values using doubles for both floating point and
+          // integer images
+          // if ( isComponentFloatingPoint( image->header().memoryComponentType() ) )
           {
-            if (image->header().numComponentsPerPixel() > 1)
-            {
+            if (image->header().numComponentsPerPixel() > 1) {
               ImGui::PushItemWidth(-1);
               ImGui::InputScalarN(
                 "##imageValuesLinear",
@@ -2706,17 +2502,14 @@ void renderInspectionWindowWithTable(
                 nullptr,
                 nullptr,
                 appData.guiData().m_imageValuePrecisionFormat.c_str(),
-                ImGuiInputTextFlags_ReadOnly
-              );
+                ImGuiInputTextFlags_ReadOnly);
               ImGui::PopItemWidth();
 
-              if (ImGui::IsItemHovered())
-              {
+              if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Active component: %d", image->settings().activeComponent());
               }
             }
-            else
-            {
+            else {
               double a = imageValuesLinear[0];
 
               ImGui::PushItemWidth(-1);
@@ -2727,8 +2520,7 @@ void renderInspectionWindowWithTable(
                 nullptr,
                 nullptr,
                 appData.guiData().m_imageValuePrecisionFormat.c_str(),
-                ImGuiInputTextFlags_ReadOnly
-              );
+                ImGuiInputTextFlags_ReadOnly);
               ImGui::PopItemWidth();
             }
           }
@@ -2741,18 +2533,20 @@ void renderInspectionWindowWithTable(
 
                             for ( size_t i = 0; i < imageValuesLinear.size(); ++i )
                             {
-                                imageValuesLinearInt.push_back( static_cast<int64_t>( imageValuesLinear[i] ) );
+                                imageValuesLinearInt.push_back( static_cast<int64_t>(
+             imageValuesLinear[i] ) );
                             }
 
                             ImGui::PushItemWidth( -1 );
                             ImGui::InputScalarN( "##imageValuesLinear", ImGuiDataType_S64,
-                                                imageValuesLinearInt.data(), imageValuesLinearInt.size(),
-                                                nullptr, nullptr, "%ld", ImGuiInputTextFlags_ReadOnly );
+                                                imageValuesLinearInt.data(),
+             imageValuesLinearInt.size(), nullptr, nullptr, "%ld", ImGuiInputTextFlags_ReadOnly );
                             ImGui::PopItemWidth();
 
                             if ( ImGui::IsItemHovered() )
                             {
-                                ImGui::SetTooltip( "Active component: %d", image->settings().activeComponent() );
+                                ImGui::SetTooltip( "Active component: %d",
+             image->settings().activeComponent() );
                             }
                         }
                         else
@@ -2760,20 +2554,17 @@ void renderInspectionWindowWithTable(
                             int64_t a = static_cast<int64_t>( imageValuesLinear[0] );
 
                             ImGui::PushItemWidth( -1 );
-                            ImGui::InputScalar( "##imageValuesLinear", ImGuiDataType_S64, &a, nullptr, nullptr, "%ld",
-                                               ImGuiInputTextFlags_ReadOnly );
-                            ImGui::PopItemWidth();
+                            ImGui::InputScalar( "##imageValuesLinear", ImGuiDataType_S64, &a,
+             nullptr, nullptr, "%ld", ImGuiInputTextFlags_ReadOnly ); ImGui::PopItemWidth();
                         }
                     }
                     */
         }
-        else
-        {
+        else {
           ImGui::Text("<N/A>");
         }
 
-        if (segLabel)
-        {
+        if (segLabel) {
           ImGui::TableNextColumn(); // "Label"
 
           // Segmentation labels are unsigned, so we can cast:
@@ -2782,12 +2573,10 @@ void renderInspectionWindowWithTable(
           ImGui::InputScalar("##segLabel", ImGuiDataType_U64, &l, nullptr, nullptr, "%ld");
           ImGui::PopItemWidth();
 
-          if (table)
-          {
+          if (table) {
             std::string labelName = table->getName(l);
 
-            if (ImGui::IsItemHovered())
-            {
+            if (ImGui::IsItemHovered()) {
               // Tooltip for the segmentation label
               ImGui::SetTooltip("%s", labelName.c_str());
             }
@@ -2795,20 +2584,17 @@ void renderInspectionWindowWithTable(
             ImGui::TableNextColumn(); // "Region"
 
             ImGui::PushItemWidth(-1);
-            if (ImGui::InputText("##labelName", &labelName))
-            {
+            if (ImGui::InputText("##labelName", &labelName)) {
               table->setName(l, labelName);
             }
             ImGui::PopItemWidth();
           }
-          else
-          {
+          else {
             ImGui::TableNextColumn(); // "Region"
             ImGui::Text("<N/A>");
           }
         }
-        else
-        {
+        else {
           ImGui::TableNextColumn(); // "Label"
           ImGui::Text("<N/A>");
 
@@ -2816,15 +2602,13 @@ void renderInspectionWindowWithTable(
           ImGui::Text("<N/A>");
         }
 
-        if (voxelPos)
-        {
+        if (voxelPos) {
           static const glm::ivec3 sk_zero{0};
           static const glm::ivec3 sk_minDim{0};
 
           ImGui::TableNextColumn(); // "Voxel"
 
-          const glm::ivec3 sk_maxDim = static_cast<glm::ivec3>(image->header().pixelDimensions())
-                                       - glm::ivec3{1, 1, 1};
+          const glm::ivec3 sk_maxDim = static_cast<glm::ivec3>(image->header().pixelDimensions()) - glm::ivec3{1, 1, 1};
 
           glm::ivec3 a = *voxelPos;
           ImGui::PushItemWidth(-1);
@@ -2836,30 +2620,27 @@ void renderInspectionWindowWithTable(
                 1.0f,
                 glm::value_ptr(sk_minDim),
                 glm::value_ptr(sk_maxDim),
-                "%d"
-              ))
+                "%d"))
           {
-            if ( glm::all( glm::greaterThanEqual( a, sk_zero ) ) &&
-                             glm::all( glm::lessThan( a, glm::ivec3{ image->header().pixelDimensions() } ) ) )
+            if (
+              glm::all(glm::greaterThanEqual(a, sk_zero)) &&
+              glm::all(glm::lessThan(a, glm::ivec3{image->header().pixelDimensions()})))
             {
               setVoxelPos(imageIndex, a);
             }
           }
           ImGui::PopItemWidth();
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("Voxel index (i: column, j: row, k: slice)");
           }
         }
-        else
-        {
+        else {
           ImGui::TableNextColumn(); // "Voxel"
           ImGui::Text("<N/A>");
         }
 
-        if (subjectPos)
-        {
+        if (subjectPos) {
           ImGui::TableNextColumn(); // "Physical"
 
           // Step size is the  minimum voxel spacing
@@ -2875,20 +2656,17 @@ void renderInspectionWindowWithTable(
                 stepSize,
                 nullptr,
                 nullptr,
-                appData.guiData().m_coordsPrecisionFormat.c_str()
-              ))
+                appData.guiData().m_coordsPrecisionFormat.c_str()))
           {
             setSubjectPos(imageIndex, a);
           }
           ImGui::PopItemWidth();
 
-          if (ImGui::IsItemHovered())
-          {
+          if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("Physical subject-space coordinate (x: R->L, y: A->P, z: I->S)");
           }
         }
-        else
-        {
+        else {
           ImGui::TableNextColumn(); // "Physical"
           ImGui::Text("<N/A>");
         }
@@ -2899,13 +2677,11 @@ void renderInspectionWindowWithTable(
       ImGui::EndTable();
     }
 
-    if (ImGui::BeginPopupContextWindow())
-    {
+    if (ImGui::BeginPopupContextWindow()) {
       // Show context menu on right-button click:
       contextMenu();
     }
-    else if (ImGui::BeginPopup("selectionPopup"))
-    {
+    else if (ImGui::BeginPopup("selectionPopup")) {
       // Show context menu if the user has clicked the popup button:
       contextMenu();
       ImGui::EndPopup();
@@ -2924,36 +2700,30 @@ void renderInspectionWindowWithTable(
   ImGui::PopStyleVar(7);
 }
 
-void renderOpacityBlenderWindow(
-  AppData& appData, const std::function<void(const uuid& imageUid)>& updateImageUniforms
-)
+void renderOpacityBlenderWindow(AppData& appData, const std::function<void(const uuid& imageUid)>& updateImageUniforms)
 {
-  /// @todo Use the "Drag and drop to copy/swap items" ImGui demo in order to allow reordering image layers
-  /// by dragging the opacity sliders
+  /// @todo Use the "Drag and drop to copy/swap items" ImGui demo in order to allow reordering image
+  /// layers by dragging the opacity sliders
 
   RenderData& renderData = appData.renderData();
 
   static const char* windowName = "Image Opacity Mixer";
 
-  if (!appData.guiData().m_showOpacityBlenderWindow)
-    return;
+  if (!appData.guiData().m_showOpacityBlenderWindow) return;
 
   const bool showWindow = ImGui::Begin(
     windowName,
     &(appData.guiData().m_showOpacityBlenderWindow),
-    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize
-  );
+    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
 
-  if (!showWindow)
-  {
+  if (!showWindow) {
     ImGui::End();
     return;
   }
 
   int imageIndex = 0;
 
-  for (const auto& imageUid : appData.imageUidsOrdered())
-  {
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
     Image* image = appData.image(imageUid);
     if (!image) {
       continue;
@@ -2976,22 +2746,24 @@ void renderOpacityBlenderWindow(
     ImGui::PushID(imageIndex);
 
     ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(frameBgColor.r, frameBgColor.g, frameBgColor.b, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(frameBgActiveColor.r, frameBgActiveColor.g, frameBgActiveColor.b, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(frameBgHoveredColor.r, frameBgHoveredColor.g, frameBgHoveredColor.b, 1.0f));
+    ImGui::PushStyleColor(
+      ImGuiCol_FrameBgActive,
+      ImVec4(frameBgActiveColor.r, frameBgActiveColor.g, frameBgActiveColor.b, 1.0f));
+    ImGui::PushStyleColor(
+      ImGuiCol_FrameBgHovered,
+      ImVec4(frameBgHoveredColor.r, frameBgHoveredColor.g, frameBgHoveredColor.b, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(sliderGrabColor.r, sliderGrabColor.g, sliderGrabColor.b, 1.0f));
 
     const std::string name = imgSettings.displayName() + "##" + std::to_string(imageIndex);
 
-    if (imgSettings.displayImageAsColor())
-    {
+    if (imgSettings.displayImageAsColor()) {
       double opacity = imgSettings.globalOpacity();
       if (mySliderF64(name.c_str(), &opacity, 0.0, 1.0) && !renderData.m_opacityMixMode) {
         imgSettings.setGlobalOpacity(opacity);
         updateImageUniforms(imageUid);
       }
     }
-    else
-    {
+    else {
       double opacity = imgSettings.opacity();
       if (mySliderF64(name.c_str(), &opacity, 0.0, 1.0) && !renderData.m_opacityMixMode) {
         imgSettings.setOpacity(opacity);
@@ -2999,8 +2771,7 @@ void renderOpacityBlenderWindow(
       }
     }
 
-    if (ImGui::IsItemActive() || ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
       ImGui::SetTooltip("%s", imgHeader.fileName().c_str());
     }
 
@@ -3014,19 +2785,16 @@ void renderOpacityBlenderWindow(
 
   static double mix = 0.0;
 
-  if (appData.numImages() > 1)
-  {
+  if (appData.numImages() > 1) {
     ImGui::Checkbox("Comparison blender", &(renderData.m_opacityMixMode));
     ImGui::SameLine();
     helpMarker("Use a single slider to blend across all adjacent image layers");
   }
-  else
-  {
+  else {
     renderData.m_opacityMixMode = false;
   }
 
-  if (renderData.m_opacityMixMode)
-  {
+  if (renderData.m_opacityMixMode) {
     mySliderF64("Blend", &mix, 0.0, static_cast<double>(appData.numImages() - 1));
 
     const double imgIndex = mix;
@@ -3036,37 +2804,29 @@ void renderOpacityBlenderWindow(
     size_t imgIndexLo = static_cast<size_t>(std::floor(imgIndex));
     size_t imgIndexHi = static_cast<size_t>(std::ceil(imgIndex));
 
-    for (std::size_t i = 0; i < appData.numImages(); ++i)
-    {
+    for (std::size_t i = 0; i < appData.numImages(); ++i) {
       const auto imgUid = appData.imageUid(i);
-      if (!imgUid)
-        continue;
+      if (!imgUid) continue;
 
       Image* img = appData.image(*imgUid);
-      if (!img)
-        continue;
+      if (!img) continue;
 
       double op = 0.0;
 
-      if (i < imgIndexLo || imgIndexHi < i)
-      {
+      if (i < imgIndexLo || imgIndexHi < i) {
         op = 0.0;
       }
-      else if (imgIndexLo == i)
-      {
+      else if (imgIndexLo == i) {
         op = 1.0 - frac;
       }
-      else if (imgIndexHi == i)
-      {
+      else if (imgIndexHi == i) {
         op = frac;
       }
 
-      if (img->settings().displayImageAsColor())
-      {
+      if (img->settings().displayImageAsColor()) {
         img->settings().setGlobalOpacity(op);
       }
-      else
-      {
+      else {
         img->settings().setOpacity(op);
       }
 

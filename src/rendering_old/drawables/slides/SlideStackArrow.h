@@ -24,8 +24,7 @@ public:
     std::weak_ptr<MeshGpuRecord> coneMeshRecord,
     std::weak_ptr<MeshGpuRecord> cylinderMeshRecord,
     std::weak_ptr<MeshGpuRecord> sphereMeshRecord,
-    bool isFixedRadius = false
-  );
+    bool isFixedRadius = false);
 
   ~SlideStackArrow() override = default;
 

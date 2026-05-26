@@ -27,13 +27,14 @@ enum class ViewRenderMode
   Image,        //!< Images rendered in 2D using color maps
   Checkerboard, //!< Image pair rendered in 2D using checkerboard pattern
   Quadrants,    //!< Image pair rendered in 2D, with each image occupying opposing view quadrants
-  Flashlight, //!< Image pair rendered in 2D, with moving image appearing as circular region at crosshairs
+  Flashlight,   //!< Image pair rendered in 2D, with moving image appearing as circular region at
+                //!< crosshairs
   Overlay,      //!< Image pair rendered in 2D with overlap highlighted
-  Difference,       //!< Absolute or squared difference of the image pair rendered in 2D
+  Difference,   //!< Absolute or squared difference of the image pair rendered in 2D
   // CrossCorrelation, //!< Cross-correlation of the image pair rendered in 2D
-  JointHistogram,   //!< Joint intensity histogram of the image pair
-  VolumeRender,     //!< Volume rendering of one image using raycasting
-  Disabled,         //!< Disabled (no rendering)
+  JointHistogram, //!< Joint intensity histogram of the image pair
+  VolumeRender,   //!< Volume rendering of one image using raycasting
+  Disabled,       //!< Disabled (no rendering)
   NumElements
 };
 
@@ -73,27 +74,27 @@ inline std::vector<ViewRenderMode> const All2dViewRenderModes = {
   ViewRenderMode::Overlay,
   ViewRenderMode::Difference,
   ViewRenderMode::JointHistogram,
-  ViewRenderMode::Disabled
-};
+  ViewRenderMode::Disabled};
 
 /**
  * @brief Vector of all render modes available for 2D view types with only one image
  */
-inline std::vector<ViewRenderMode> const All2dNonMetricRenderModes =
-  {ViewRenderMode::Image, ViewRenderMode::Disabled};
+inline std::vector<ViewRenderMode> const All2dNonMetricRenderModes = {ViewRenderMode::Image, ViewRenderMode::Disabled};
 
 /**
  * @brief Vector of all render modes available for 3D view types with two or more images
  * @todo Need new type of volume renderer that handles two or more images
  */
-inline std::vector<ViewRenderMode> const All3dViewRenderModes =
-  {ViewRenderMode::VolumeRender, ViewRenderMode::Disabled};
+inline std::vector<ViewRenderMode> const All3dViewRenderModes = {
+  ViewRenderMode::VolumeRender,
+  ViewRenderMode::Disabled};
 
 /**
  * @brief Vector of all render modes available for 3D view types with only one image
  */
-inline std::vector<ViewRenderMode> const All3dNonMetricRenderModes =
-  {ViewRenderMode::VolumeRender, ViewRenderMode::Disabled};
+inline std::vector<ViewRenderMode> const All3dNonMetricRenderModes = {
+  ViewRenderMode::VolumeRender,
+  ViewRenderMode::Disabled};
 
 /**
  * @brief Array of all intensity projection modes
@@ -103,8 +104,7 @@ inline std::array<IntensityProjectionMode, 5> const AllIntensityProjectionModes 
   IntensityProjectionMode::Maximum,
   IntensityProjectionMode::Mean,
   IntensityProjectionMode::Minimum,
-  IntensityProjectionMode::Xray
-};
+  IntensityProjectionMode::Xray};
 
 /**
  * @brief Get the display string of a projection type

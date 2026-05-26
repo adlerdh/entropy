@@ -26,31 +26,38 @@
 // ---------------------------------------------------------------------------
 constexpr int kSpatialK = 6;
 
-struct GlyphProfile {
-    std::array<float, kSpatialK> regionFill;  // mean SDF-rendered ink fraction per region
+struct GlyphProfile
+{
+  std::array<float, kSpatialK> regionFill; // mean SDF-rendered ink fraction per region
 };
 
 // Compute per-glyph 3x2 region profiles (same SDF+AA simulation as computeGlyphCoverage).
 // Returns N profiles in the same sorted order as fillFractions().
 std::vector<GlyphProfile> computeGlyphSpatialProfiles(
-    const std::vector<std::vector<uint8_t>>& slotPixels,
-    glm::ivec2 slotPx,
-    int padding, float pixDistScale, uint8_t onedgeValue,
-    glm::vec2 cellSizePx);
+  const std::vector<std::vector<uint8_t>>& slotPixels,
+  glm::ivec2 slotPx,
+  int padding,
+  float pixDistScale,
+  uint8_t onedgeValue,
+  glm::vec2 cellSizePx);
 
-struct BakedGlyph {
-    std::vector<uint8_t> slotPixels; // slotW * slotH bytes, R8 SDF, row 0 = bottom (GL convention)
-    float fillFraction;              // filledPixels / (Gw * Gh)
-    char  character;
+struct BakedGlyph
+{
+  std::vector<uint8_t> slotPixels; // slotW * slotH bytes, R8 SDF, row 0 = bottom (GL convention)
+  float fillFraction;              // filledPixels / (Gw * Gh)
+  char character;
 };
 
 /// CPU simulation of a single glyph's rendered coverage at a given screen cell size.
 /// Replicates AsciiPost.fs UV + bilinear + softAA + smoothstep math exactly.
 float computeGlyphCoverage(
-    const std::vector<uint8_t>& slotPixels,
-    int slotW, int slotH,
-    int padding, float pixDistScale, uint8_t onedgeValue,
-    glm::vec2 cellSizePx);
+  const std::vector<uint8_t>& slotPixels,
+  int slotW,
+  int slotH,
+  int padding,
+  float pixDistScale,
+  uint8_t onedgeValue,
+  glm::vec2 cellSizePx);
 
 /// Build a 256-entry luminance-to-glyph LUT from per-glyph coverage values.
 /// lut[b] = glyph index whose rendered coverage best matches luminance b/255,
@@ -75,9 +82,10 @@ void shapeGlyphProfilesInPlace(std::vector<GlyphProfile>& profiles, float expone
 // onedgeValue: stbtt onedge_value (= 128).
 // Returns empty vector on failure (font init failed or charset empty).
 std::vector<BakedGlyph> bakeGlyphs(
-    const uint8_t* ttfData, int ttfBytes,
-    const std::string& charset,
-    glm::ivec2 glyphPx,
-    int padding,
-    float pixDistScale,
-    uint8_t onedgeValue);
+  const uint8_t* ttfData,
+  int ttfBytes,
+  const std::string& charset,
+  glm::ivec2 glyphPx,
+  int padding,
+  float pixDistScale,
+  uint8_t onedgeValue);

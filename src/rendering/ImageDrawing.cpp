@@ -31,9 +31,8 @@ namespace
  * @param[in] axis View axis
  * @return Sampling direction in Texture space
  */
-glm::vec3 computeTexSamplingDir(
-  const glm::mat4& pixel_T_clip, const glm::vec3& invPixelDims, const Directions::View& axis
-)
+glm::vec3
+computeTexSamplingDir(const glm::mat4& pixel_T_clip, const glm::vec3& invPixelDims, const Directions::View& axis)
 {
   static const glm::vec4 clipOrigin{0.0f, 0.0f, -1.0f, 1.0};
   const glm::vec4 clipPos = clipOrigin + glm::vec4{Directions::get(axis), 0.0f};
@@ -50,13 +49,11 @@ glm::vec3 computeTextureSamplingDirectionForViewPixelOffset(
   const glm::mat4& texture_T_viewClip,
   const Viewport& windowViewport,
   const glm::mat4& viewClip_T_windowClip,
-  const glm::vec2& winPixelDir
-)
+  const glm::vec2& winPixelDir)
 {
   static const glm::vec2 winPixelOrigin(0.0f, 0.0f);
 
-  const glm::vec4
-    winNdcOrigin{helper::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
+  const glm::vec4 winNdcOrigin{helper::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
   const glm::vec4 winNdcPos{helper::windowNdc_T_window(windowViewport, winPixelDir), -1.0f, 1.0f};
 
   glm::vec4 viewNdcOrigin = viewClip_T_windowClip * winNdcOrigin;
@@ -77,13 +74,11 @@ glm::vec3 computeTextureSamplingDirectionForImageVoxelOffset(
   const Viewport& windowViewport,
   const glm::mat4& viewClip_T_windowClip,
   const glm::vec3& invPixelDimensions,
-  const glm::vec2& winPixelDir
-)
+  const glm::vec2& winPixelDir)
 {
   static const glm::vec2 winPixelOrigin(0.0f, 0.0f);
 
-  const glm::vec4
-    winNdcOrigin{helper::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
+  const glm::vec4 winNdcOrigin{helper::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
   const glm::vec4 winNdcPos{helper::windowNdc_T_window(windowViewport, winPixelDir), -1.0f, 1.0f};
 
   glm::vec4 viewNdcOrigin = viewClip_T_windowClip * winNdcOrigin;
@@ -110,26 +105,20 @@ glm::vec3 computeTextureSamplingDirectionForImageVoxelOffset(
  * @return Pair containing 1) half the number of image samples to compute per slab;
  * 2) the sampling distance in centimeters
  */
-std::pair<int, float> computeMipSamplingParams(
-  const Camera& camera, const Image& image, float mipSlabThickness_mm, bool doMaxExtentMip
-)
+std::pair<int, float>
+computeMipSamplingParams(const Camera& camera, const Image& image, float mipSlabThickness_mm, bool doMaxExtentMip)
 {
-  const float mmPerSample
-    = data::sliceScrollDistance(helper::worldDirection(camera, Directions::View::Front), image);
+  const float mmPerSample = data::sliceScrollDistance(helper::worldDirection(camera, Directions::View::Front), image);
 
   int halfNumMipSamples = 0;
 
-  if (!doMaxExtentMip)
-  {
+  if (!doMaxExtentMip) {
     halfNumMipSamples = static_cast<int>(std::floor(0.5f * mipSlabThickness_mm / mmPerSample));
   }
-  else
-  {
+  else {
     // To achieve maximum extent, use the number of samples along the image diagonal.
     // That way, the MIP will hit all voxels.
-    halfNumMipSamples = static_cast<int>(
-      std::ceil(glm::length(glm::vec3{image.header().pixelDimensions()}))
-    );
+    halfNumMipSamples = static_cast<int>(std::ceil(glm::length(glm::vec3{image.header().pixelDimensions()})));
   }
 
   // Convert sampling distance from mm to cm:
@@ -138,13 +127,22 @@ std::pair<int, float> computeMipSamplingParams(
 
 } // namespace
 
-void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, RenderData::Quad& quad,
-                   const View& view, const Viewport& windowViewport, const glm::vec3& worldCrosshairs,
-                   float flashlightRadius, bool flashlightOverlays, float mipSlabThickness_mm,
-                   bool doMaxExtentMip, float xrayIntensityWindow, float xrayIntensityLevel,
-                   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
-                   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage,
-                   bool showEdges)
+void drawImageQuad(
+  GLShaderProgram& program,
+  const ViewRenderMode& renderMode,
+  RenderData::Quad& quad,
+  const View& view,
+  const Viewport& windowViewport,
+  const glm::vec3& worldCrosshairs,
+  float flashlightRadius,
+  bool flashlightOverlays,
+  float mipSlabThickness_mm,
+  bool doMaxExtentMip,
+  float xrayIntensityWindow,
+  float xrayIntensityLevel,
+  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
+  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage,
+  bool showEdges)
 {
   if (I.empty()) {
     spdlog::error("No images provided when rendering plane");
@@ -169,12 +167,11 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
   float mipSamplingDistance_cm = 0.0f;
 
   // Only compute these if doing a MIP:
-  if (IntensityProjectionMode::None != view.intensityProjectionMode())
-  {
+  if (IntensityProjectionMode::None != view.intensityProjectionMode()) {
     const glm::mat4 pixel_T_clip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
-    texSamplingDirZ = computeTexSamplingDir(
-      pixel_T_clip, image0->transformations().invPixelDimensions(), Directions::View::Back);
+    texSamplingDirZ =
+      computeTexSamplingDir(pixel_T_clip, image0->transformations().invPixelDimensions(), Directions::View::Back);
 
     const auto s = computeMipSamplingParams(view.camera(), *image0, mipSlabThickness_mm, doMaxExtentMip);
     halfNumMipSamples = s.first;
@@ -186,15 +183,18 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
 
   {
     const auto posInfo = math::computeAnatomicalLabelsForView(
-      view.camera().camera_T_world(), image0->transformations().worldDef_T_subject());
+      view.camera().camera_T_world(),
+      image0->transformations().worldDef_T_subject());
 
     const glm::mat4 voxel_T_viewClip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
-    for (int i = 0; i < 2; ++i)
-    {
+    for (int i = 0; i < 2; ++i) {
       voxelSamplingDirs[i] = computeTextureSamplingDirectionForImageVoxelOffset(
-        voxel_T_viewClip, windowViewport, view.viewClip_T_windowClip(),
-        image0->transformations().invPixelDimensions(), posInfo[i].viewClipDir);
+        voxel_T_viewClip,
+        windowViewport,
+        view.viewClip_T_windowClip(),
+        image0->transformations().invPixelDimensions(),
+        posInfo[i].viewClipDir);
 
       // For edges sampling, use sampling directions based on image voxels:
       texSamplingDirsForEdges = voxelSamplingDirs;
@@ -206,10 +206,9 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
   program.setUniform("u_world_T_clip", world_T_viewClip);
   program.setUniform("u_clipDepth", view.clipPlaneDepth());
 
-  if (ViewRenderMode::Image == renderMode ||
-      ViewRenderMode::Checkerboard == renderMode ||
-      ViewRenderMode::Quadrants == renderMode ||
-      ViewRenderMode::Flashlight == renderMode)
+  if (
+    ViewRenderMode::Image == renderMode || ViewRenderMode::Checkerboard == renderMode ||
+    ViewRenderMode::Quadrants == renderMode || ViewRenderMode::Flashlight == renderMode)
   {
     program.setUniform("u_aspectRatio", view.camera().aspectRatio());
     program.setUniform("u_flashlightRadius", flashlightRadius);
@@ -219,19 +218,16 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
 
     program.setUniform("u_clipCrosshairs", glm::vec2{clipXhairs / clipXhairs.w});
 
-    if (showEdges)
-    {
+    if (showEdges) {
       program.setUniform("u_texelDirs", texSamplingDirsForEdges);
     }
-    else
-    {
+    else {
       // Only render with intensity projection when edges are not visible:
       program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
       program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
       program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
 
-      if (IntensityProjectionMode::Xray == view.intensityProjectionMode())
-      {
+      if (IntensityProjectionMode::Xray == view.intensityProjectionMode()) {
         // Convert window/level to slope/intercept:
         const float window = std::max(xrayIntensityWindow, 1.0e-3f);
 
@@ -242,8 +238,7 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
       }
     }
   }
-  else if (ViewRenderMode::Difference == renderMode)
-  {
+  else if (ViewRenderMode::Difference == renderMode) {
     program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
     program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
     program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
@@ -257,8 +252,8 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
 
     if (2 != I.size())
     {
-      spdlog::error("Not enough images provided when rendering plane with cross-correlation metric");
-      return;
+      spdlog::error("Not enough images provided when rendering plane with cross-correlation
+  metric"); return;
     }
 
     const Image* img0 = getImage(I[0].first);
@@ -270,7 +265,8 @@ void drawImageQuad(GLShaderProgram& program, const ViewRenderMode& renderMode, R
       return;
     }
 
-    const glm::mat4 img0Pixel_T_clip = img0->transformations().pixel_T_worldDef() * world_T_viewClip;
+    const glm::mat4 img0Pixel_T_clip = img0->transformations().pixel_T_worldDef() *
+  world_T_viewClip;
 
     const glm::vec4 ppO = img0Pixel_T_clip * sk_clipO;
     const glm::vec4 ppX = img0Pixel_T_clip * sk_clipX;
@@ -315,40 +311,44 @@ void drawSegQuad(
   std::vector<glm::vec3> texSamplingDirsForSmoothSeg{glm::vec3{0.0f}, glm::vec3{0.0f}};
   std::vector<glm::vec3> texSamplingDirsForSegOutline{glm::vec3{0.0f}, glm::vec3{0.0f}};
 
-  const auto posInfo = math::computeAnatomicalLabelsForView(
-    view.camera().camera_T_world(), seg.transformations().worldDef_T_subject());
+  const auto posInfo =
+    math::computeAnatomicalLabelsForView(view.camera().camera_T_world(), seg.transformations().worldDef_T_subject());
 
   const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
   const glm::mat4 voxel_T_viewClip = seg.transformations().pixel_T_worldDef() * world_T_viewClip;
 
-  for (int i = 0; i < 2; ++i)
-  {
+  for (int i = 0; i < 2; ++i) {
     voxelSamplingDirs[i] = computeTextureSamplingDirectionForImageVoxelOffset(
-      voxel_T_viewClip, windowViewport, view.viewClip_T_windowClip(),
-      seg.transformations().invPixelDimensions(), posInfo[i].viewClipDir);
+      voxel_T_viewClip,
+      windowViewport,
+      view.viewClip_T_windowClip(),
+      seg.transformations().invPixelDimensions(),
+      posInfo[i].viewClipDir);
 
     // For smooth segmentation sampling, use sampling directions based on image voxels:
     texSamplingDirsForSmoothSeg = voxelSamplingDirs;
   }
 
   switch (segOutlineStyle) {
-  case SegmentationOutlineStyle::ImageVoxel: {
-    texSamplingDirsForSegOutline = voxelSamplingDirs;
-    break;
-  }
-  case SegmentationOutlineStyle::ViewPixel: {
-    const glm::mat4 texture_T_viewClip = seg.transformations().texture_T_worldDef() * world_T_viewClip;
-
-    for (int i = 0; i < 2; ++i)
-    {
-      texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForViewPixelOffset(
-        texture_T_viewClip, windowViewport, view.viewClip_T_windowClip(), posInfo[i].viewClipDir);
+    case SegmentationOutlineStyle::ImageVoxel: {
+      texSamplingDirsForSegOutline = voxelSamplingDirs;
+      break;
     }
-    break;
-  }
-  case SegmentationOutlineStyle::Disabled: {
-    break;
-  }
+    case SegmentationOutlineStyle::ViewPixel: {
+      const glm::mat4 texture_T_viewClip = seg.transformations().texture_T_worldDef() * world_T_viewClip;
+
+      for (int i = 0; i < 2; ++i) {
+        texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForViewPixelOffset(
+          texture_T_viewClip,
+          windowViewport,
+          view.viewClip_T_windowClip(),
+          posInfo[i].viewClipDir);
+      }
+      break;
+    }
+    case SegmentationOutlineStyle::Disabled: {
+      break;
+    }
   }
 
   const glm::vec4 clipXhairs = helper::clip_T_world(view.camera()) * glm::vec4{worldCrosshairs, 1.0f};
@@ -363,19 +363,20 @@ void drawSegQuad(
   program.setUniform("u_flashlightMovingOnFixed", flashlightOverlays);
 
   program.setUniform("u_texSamplingDirsForSegOutline", texSamplingDirsForSegOutline);
-  program.setUniform("u_segFillOpacity", (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity);
+  program.setUniform(
+    "u_segFillOpacity",
+    (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity);
 
-  switch (seg.settings().interpolationMode())
-  {
-  case InterpolationMode::NearestNeighbor: {
-    break;
-  }
-  case InterpolationMode::Linear:
-  case InterpolationMode::CubicBsplineConvolution: {
-    program.setUniform("u_texSamplingDirsForSmoothSeg", texSamplingDirsForSmoothSeg);
-    program.setUniform("u_segInterpCutoff", segInterpCutoff);
-    break;
-  }
+  switch (seg.settings().interpolationMode()) {
+    case InterpolationMode::NearestNeighbor: {
+      break;
+    }
+    case InterpolationMode::Linear:
+    case InterpolationMode::CubicBsplineConvolution: {
+      program.setUniform("u_texSamplingDirsForSmoothSeg", texSamplingDirsForSmoothSeg);
+      program.setUniform("u_segInterpCutoff", segInterpCutoff);
+      break;
+    }
   }
 
   quad.m_vao.bind();

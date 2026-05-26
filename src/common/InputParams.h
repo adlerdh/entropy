@@ -37,5 +37,8 @@ std::ostream& operator<<(std::ostream&, const InputParams&);
 
 #include <spdlog/fmt/ostr.h>
 #if FMT_VERSION >= 90000
-template<> struct fmt::formatter<InputParams> : ostream_formatter {};
+template<>
+struct fmt::formatter<InputParams> : ostream_formatter
+{
+};
 #endif

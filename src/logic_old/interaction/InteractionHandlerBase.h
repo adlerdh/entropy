@@ -36,14 +36,10 @@ public:
   bool handleTapAndHoldGesture(QTapAndHoldGesture*, const Viewport&, const Camera&) override;
 
 protected:
-  virtual bool
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
-    = 0;
+  virtual bool doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&) = 0;
   virtual bool doHandleMouseMoveEvent(const QMouseEvent*, const Viewport&, const Camera&) = 0;
-  virtual bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const Camera&)
-    = 0;
-  virtual bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const Camera&)
-    = 0;
+  virtual bool doHandleMousePressEvent(const QMouseEvent*, const Viewport&, const Camera&) = 0;
+  virtual bool doHandleMouseReleaseEvent(const QMouseEvent*, const Viewport&, const Camera&) = 0;
 
   virtual bool doHandleTabletEvent(const QTabletEvent*, const Viewport&, const Camera&) = 0;
 
@@ -53,9 +49,7 @@ protected:
   virtual bool doHandlePinchGesture(const QPinchGesture*, const Viewport&, const Camera&) = 0;
   virtual bool doHandleSwipeGesture(const QSwipeGesture*, const Viewport&, const Camera&) = 0;
   virtual bool doHandleTapGesture(const QTapGesture*, const Viewport&, const Camera&) = 0;
-  virtual bool
-  doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&)
-    = 0;
+  virtual bool doHandleTapAndHoldGesture(const QTapAndHoldGesture*, const Viewport&, const Camera&) = 0;
 
   void setUpdatesViewsOnEventHandled(bool doUpdate);
 

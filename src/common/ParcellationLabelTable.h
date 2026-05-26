@@ -18,20 +18,20 @@
  * - Visibility flag for 3D views
  *
  * Colors are stored with uchar components
- * 
+ *
  * @note Colors are indexed. These indices are NOT the label values.
  */
 class ParcellationLabelTable
 {
 public:
   /**
-     * @brief Construct the label table with good default colors. The color of label 0 is
-     * fully transparent black. Labels 1 to 6 are the primary colors (red, green, blue,
-     * yellow, cyan, magenta). Following this are colors randomly chosen in HSV space.
-     *
-     * @param labelCount Size of label table to construct. Must be at least 7,
-     * in order to represent mandatory labels 0 to 6.
-     */
+   * @brief Construct the label table with good default colors. The color of label 0 is
+   * fully transparent black. Labels 1 to 6 are the primary colors (red, green, blue,
+   * yellow, cyan, magenta). Following this are colors randomly chosen in HSV space.
+   *
+   * @param labelCount Size of label table to construct. Must be at least 7,
+   * in order to represent mandatory labels 0 to 6.
+   */
   explicit ParcellationLabelTable(std::size_t labelCount, std::size_t maxLabelCount);
 
   ParcellationLabelTable(const ParcellationLabelTable&) = default;
@@ -100,18 +100,18 @@ public:
 
 private:
   /**
-     * @brief Check if label index is valid. If not, throw exception.
-     * @param index Label index
-     * @throw Throw exception if label index is not valid.
-     */
+   * @brief Check if label index is valid. If not, throw exception.
+   * @param index Label index
+   * @throw Throw exception if label index is not valid.
+   */
   void checkLabelIndex(std::size_t index) const;
 
   /**
-     * @brief Update the non-premultiplied RGBA color at given label index in order to
-     * match it with the label properties
-     *
-     * @param index Label index
-     */
+   * @brief Update the non-premultiplied RGBA color at given label index in order to
+   * match it with the label properties
+   *
+   * @param index Label index
+   */
   void updateVector(std::size_t index);
 
   /// Vector of NON-premultiplied alpha colors represented using unsigned char values

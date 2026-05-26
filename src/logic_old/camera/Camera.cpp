@@ -26,24 +26,20 @@ static const glm::mat4 sk_ident(1.0f);
 namespace camera
 {
 
-Camera::Camera(
-  std::unique_ptr<Projection> projection, GetterType<CoordinateFrame> frameB_O_frameA_provider
-)
+Camera::Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFrame> frameB_O_frameA_provider)
   : m_projection(std::move(projection))
   , m_frameB_O_frameA_provider(frameB_O_frameA_provider)
   , m_camera_O_frameB(1.0f)
   , m_frameA_O_world(1.0f)
 {
-  if (!m_projection)
-  {
+  if (!m_projection) {
     throw_debug("Cannot construct Camera with null Projection");
   }
 }
 
 void Camera::setProjection(std::unique_ptr<Projection> projection)
 {
-  if (projection)
-  {
+  if (projection) {
     m_projection = std::move(projection);
   }
 }
@@ -60,12 +56,10 @@ void Camera::set_frameB_O_frameA_provider(GetterType<CoordinateFrame> provider)
 
 std::optional<CoordinateFrame> Camera::startFrame() const
 {
-  if (m_frameB_O_frameA_provider)
-  {
+  if (m_frameB_O_frameA_provider) {
     return m_frameB_O_frameA_provider();
   }
-  else
-  {
+  else {
     return std::nullopt;
   }
 }
@@ -123,8 +117,7 @@ glm::mat4 Camera::camera_O_clip() const
 
 void Camera::setAspectRatio(float ratio)
 {
-  if (ratio > 0.0f)
-  {
+  if (ratio > 0.0f) {
     m_projection->setAspectRatio(ratio);
   }
 }
@@ -136,8 +129,7 @@ bool Camera::isOrthographic() const
 
 void Camera::setZoom(float factor)
 {
-  if (factor > 0.0f)
-  {
+  if (factor > 0.0f) {
     m_projection->setZoom(factor);
   }
 }

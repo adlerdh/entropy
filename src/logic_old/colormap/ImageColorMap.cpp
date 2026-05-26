@@ -8,35 +8,36 @@
 #include <algorithm>
 
 ImageColorMap::ImageColorMap(
-  std::string name, std::string technicalName, std::string description, std::vector<glm::vec3> colors
-)
+  std::string name,
+  std::string technicalName,
+  std::string description,
+  std::vector<glm::vec3> colors)
   : m_name(std::move(name))
   , m_technicalName(std::move(technicalName))
   , m_description(std::move(description))
   , m_preview(0)
 {
-  if (colors.empty())
-  {
+  if (colors.empty()) {
     throw_debug("Empty color map");
   }
 
-  for (const auto& x : colors)
-  {
+  for (const auto& x : colors) {
     m_colors_RGBA_F32.push_back(glm::vec4{x.r, x.g, x.b, 1.0f});
   }
 }
 
 ImageColorMap::ImageColorMap(
-  std::string name, std::string technicalName, std::string description, std::vector<glm::vec4> colors
-)
+  std::string name,
+  std::string technicalName,
+  std::string description,
+  std::vector<glm::vec4> colors)
   : m_name(std::move(name))
   , m_technicalName(std::move(technicalName))
   , m_description(std::move(description))
   , m_colors_RGBA_F32(std::move(colors))
   , m_preview(0)
 {
-  if (m_colors_RGBA_F32.empty())
-  {
+  if (m_colors_RGBA_F32.empty()) {
     throw_debug("Empty color map");
   }
 }
@@ -83,8 +84,7 @@ size_t ImageColorMap::numColors() const
 
 glm::vec4 ImageColorMap::color_RGBA_F32(size_t index) const
 {
-  if (index >= m_colors_RGBA_F32.size())
-  {
+  if (index >= m_colors_RGBA_F32.size()) {
     std::ostringstream ss;
     ss << "Invalid color map index " << index << std::ends;
     throw_debug(ss.str());
@@ -116,11 +116,7 @@ void ImageColorMap::cyclicRotate(float fraction)
   const float f = (fraction < 0.0f) ? 1.0f - fraction : fraction;
   const int middle = static_cast<int>(f * m_colors_RGBA_F32.size());
 
-  std::rotate(
-    std::begin(m_colors_RGBA_F32),
-    std::begin(m_colors_RGBA_F32) + middle,
-    std::end(m_colors_RGBA_F32)
-  );
+  std::rotate(std::begin(m_colors_RGBA_F32), std::begin(m_colors_RGBA_F32) + middle, std::end(m_colors_RGBA_F32));
 }
 
 void ImageColorMap::reverse()

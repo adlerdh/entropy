@@ -4,9 +4,8 @@
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
 
-std::optional<ViewHit> getViewHit(
-  AppData& appData, const glm::vec2& windowPos,
-  const std::optional<uuids::uuid>& viewUidForOverride)
+std::optional<ViewHit>
+getViewHit(AppData& appData, const glm::vec2& windowPos, const std::optional<uuids::uuid>& viewUidForOverride)
 {
   ViewHit hit;
 
@@ -26,8 +25,7 @@ std::optional<ViewHit> getViewHit(
   }
 
   // View to use for transformations. Use the override if provided:
-  const View* txView = (viewUidForOverride)
-    ? appData.windowData().getCurrentView(*viewUidForOverride) : hit.view;
+  const View* txView = (viewUidForOverride) ? appData.windowData().getCurrentView(*viewUidForOverride) : hit.view;
 
   if (!txView) {
     return std::nullopt; // Invalid view
@@ -39,8 +37,10 @@ std::optional<ViewHit> getViewHit(
 
   hit.worldFrontAxis = helper::worldDirection(txView->camera(), Directions::View::Front);
 
-  const glm::vec4 winClipPos(helper::windowNdc_T_window(appData.windowData().viewport(), windowPos),
-                             txView->clipPlaneDepth(), 1.0f);
+  const glm::vec4 winClipPos(
+    helper::windowNdc_T_window(appData.windowData().viewport(), windowPos),
+    txView->clipPlaneDepth(),
+    1.0f);
   hit.windowClipPos = glm::vec2{winClipPos};
 
   glm::vec4 viewClipPos = txView->viewClip_T_windowClip() * winClipPos;

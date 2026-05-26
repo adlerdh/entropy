@@ -27,7 +27,14 @@ class QOpenGLContext;
 class ActionManager
 {
 public:
-  ActionManager(GetterType<view_type_range_t> viewUidAndTypeRangeProvider, ShaderProgramActivatorType, UniformsProviderType, AssemblyManager&, DataManager&, GuiManager&, InteractionManager&);
+  ActionManager(
+    GetterType<view_type_range_t> viewUidAndTypeRangeProvider,
+    ShaderProgramActivatorType,
+    UniformsProviderType,
+    AssemblyManager&,
+    DataManager&,
+    GuiManager&,
+    InteractionManager&);
 
   ActionManager(const ActionManager&) = delete;
   ActionManager& operator=(const ActionManager&) = delete;
@@ -70,14 +77,10 @@ public:
   void setupCamerasAndCrosshairsForImage();
 
   /// Load a 3D image from disk and set it as the active image
-  std::optional<UID> loadImage(
-    const std::string& filename, const std::optional<std::string>& dicomSeriesUid
-  );
+  std::optional<UID> loadImage(const std::string& filename, const std::optional<std::string>& dicomSeriesUid);
 
   /// Load a 3D parcellation from disk and set it as the active parcellation
-  std::optional<UID> loadParcellation(
-    const std::string& filename, const std::optional<std::string>& dicomSeriesUid
-  );
+  std::optional<UID> loadParcellation(const std::string& filename, const std::optional<std::string>& dicomSeriesUid);
 
   /// Load a slide image from disk and set it as the active slide
   std::optional<UID> loadSlide(const std::string& filename, bool translateToTopOfStack);

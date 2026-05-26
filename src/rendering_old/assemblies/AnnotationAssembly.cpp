@@ -28,10 +28,8 @@ static const glm::mat4 sk_ident{1.0f};
 AnnotationAssembly::AnnotationAssembly(
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
-  QuerierType<std::optional<std::pair<glm::mat4, glm::mat4> >, uuids::uuid>
-    annotationToWorldTxQuerier,
-  QuerierType<std::optional<float>, uuids::uuid> annotationThicknessQuerier
-)
+  QuerierType<std::optional<std::pair<glm::mat4, glm::mat4> >, uuids::uuid> annotationToWorldTxQuerier,
+  QuerierType<std::optional<float>, uuids::uuid> annotationThicknessQuerier)
   : m_shaderActivator(shaderProgramActivator)
   , m_uniformsProvider(uniformsProvider)
   ,
@@ -71,40 +69,33 @@ void AnnotationAssembly::initialize()
 
 std::weak_ptr<DrawableBase> AnnotationAssembly::getRoot(const SceneType& type)
 {
-  switch (type)
-  {
-  case SceneType::ReferenceImage2d:
-  case SceneType::SlideStack2d:
-  case SceneType::Registration_Image2d:
-  case SceneType::Registration_Slide2d:
-  {
-    return std::static_pointer_cast<DrawableBase>(m_rootFor2dViews);
-  }
-  case SceneType::ReferenceImage3d:
-  case SceneType::SlideStack3d:
-  {
-    return std::static_pointer_cast<DrawableBase>(m_rootFor3dViews);
-  }
-  default:
-  case SceneType::None:
-  {
-    return {};
-  }
+  switch (type) {
+    case SceneType::ReferenceImage2d:
+    case SceneType::SlideStack2d:
+    case SceneType::Registration_Image2d:
+    case SceneType::Registration_Slide2d: {
+      return std::static_pointer_cast<DrawableBase>(m_rootFor2dViews);
+    }
+    case SceneType::ReferenceImage3d:
+    case SceneType::SlideStack3d: {
+      return std::static_pointer_cast<DrawableBase>(m_rootFor3dViews);
+    }
+    default:
+    case SceneType::None: {
+      return {};
+    }
   }
 
   return {};
 }
 
 void AnnotationAssembly::setAnnotationToWorldTxQuerier(
-  QuerierType<std::optional<std::pair<glm::mat4, glm::mat4> >, uuids::uuid> querier
-)
+  QuerierType<std::optional<std::pair<glm::mat4, glm::mat4> >, uuids::uuid> querier)
 {
   m_annotationToWorldTxQuerier = querier;
 }
 
-void AnnotationAssembly::setAnnotationThicknessQuerier(
-  QuerierType<std::optional<float>, uuids::uuid> querier
-)
+void AnnotationAssembly::setAnnotationThicknessQuerier(QuerierType<std::optional<float>, uuids::uuid> querier)
 {
   m_annotationThicknessQuerier = querier;
 }
@@ -112,22 +103,18 @@ void AnnotationAssembly::setAnnotationThicknessQuerier(
 void AnnotationAssembly::setAnnotation(std::weak_ptr<SlideAnnotationRecord> annotRecord)
 {
   auto record = annotRecord.lock();
-  if (!record)
-  {
+  if (!record) {
     return;
   }
 
   // Function that provides the tranformation from annotation to World space
-  auto annotToWorldTxProvider = [this, annotRecord]() -> std::optional<glm::mat4>
-  {
+  auto annotToWorldTxProvider = [this, annotRecord]() -> std::optional<glm::mat4> {
     auto r = annotRecord.lock();
-    if (!r)
-    {
+    if (!r) {
       return std::nullopt;
     }
 
-    if (m_annotationToWorldTxQuerier)
-    {
+    if (m_annotationToWorldTxQuerier) {
       // Get the affine transformation:
       return m_annotationToWorldTxQuerier(r->uid())->first;
     }
@@ -136,16 +123,13 @@ void AnnotationAssembly::setAnnotation(std::weak_ptr<SlideAnnotationRecord> anno
   };
 
   // Function that provides the slide thickness of the annotation
-  auto annotThicknessProvider = [this, annotRecord]() -> std::optional<float>
-  {
+  auto annotThicknessProvider = [this, annotRecord]() -> std::optional<float> {
     auto r = annotRecord.lock();
-    if (!r)
-    {
+    if (!r) {
       return std::nullopt;
     }
 
-    if (m_annotationThicknessQuerier)
-    {
+    if (m_annotationThicknessQuerier) {
       return m_annotationThicknessQuerier(r->uid());
     }
 
@@ -171,15 +155,16 @@ void AnnotationAssembly::setAnnotation(std::weak_ptr<SlideAnnotationRecord> anno
 
   Annotations A;
 
-  A.m_world_O_annot_root2d
-    = std::make_shared<DynamicTransformation>("annotTx2d", annotToWorldTxProvider);
+  A.m_world_O_annot_root2d = std::make_shared<DynamicTransformation>("annotTx2d", annotToWorldTxProvider);
 
-  A.m_world_O_annot_root3d
-    = std::make_shared<DynamicTransformation>("annotTx3d", annotToWorldTxProvider);
+  A.m_world_O_annot_root3d = std::make_shared<DynamicTransformation>("annotTx3d", annotToWorldTxProvider);
 
   A.m_annot2d = std::make_shared<AnnotationSlice>(
-    "annot2d", m_shaderActivator, m_uniformsProvider, annotToWorldTxProvider, annotRecord
-  );
+    "annot2d",
+    m_shaderActivator,
+    m_uniformsProvider,
+    annotToWorldTxProvider,
+    annotRecord);
 
   A.m_annot3d = std::make_shared<AnnotationExtrusion>(
     "annot3d",
@@ -187,8 +172,7 @@ void AnnotationAssembly::setAnnotation(std::weak_ptr<SlideAnnotationRecord> anno
     m_uniformsProvider,
     annotToWorldTxProvider,
     annotThicknessProvider,
-    annotRecord
-  );
+    annotRecord);
 
   A.m_world_O_annot_root2d->addChild(A.m_annot2d);
   A.m_world_O_annot_root3d->addChild(A.m_annot3d);
@@ -237,7 +221,8 @@ void AnnotationAssembly::clearAnnotations()
 */
 
 /*
-void AnnotationAssembly::setAnnotationPoint( const UID& annotUid, const PointRecord<3>& pointRecord )
+void AnnotationAssembly::setAnnotationPoint( const UID& annotUid, const PointRecord<3>& pointRecord
+)
 {
     const auto it = m_landmarks.find( annotUid );
     if ( std::end( m_landmarks ) == it )
@@ -320,17 +305,14 @@ void AnnotationAssembly::updateRenderingProperties()
 {
   const auto& P = m_properties;
 
-  for (auto& annot : m_annotations)
-  {
-    if (auto& a = annot.second.m_annot2d)
-    {
+  for (auto& annot : m_annotations) {
+    if (auto& a = annot.second.m_annot2d) {
       a->setEnabled(P.m_visibleIn2dViews);
       a->setMasterOpacityMultiplier(P.m_masterOpacityMultiplier);
       a->setPickable(P.m_pickable);
     }
 
-    if (auto& a = annot.second.m_annot3d)
-    {
+    if (auto& a = annot.second.m_annot3d) {
       a->setEnabled(P.m_visibleIn3dViews);
       a->setMasterOpacityMultiplier(P.m_masterOpacityMultiplier);
       a->setPickable(P.m_pickable);

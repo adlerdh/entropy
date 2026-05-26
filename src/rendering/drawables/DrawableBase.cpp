@@ -43,19 +43,15 @@ bool DrawableBase::addChild(std::weak_ptr<DrawableBase> child)
 {
   auto c = child.lock();
 
-  if (!c)
-  {
+  if (!c) {
     return false;
   }
 
-  auto pred = [&c](std::weak_ptr<DrawableBase> other)
-  {
-    if (auto o = other.lock())
-    {
+  auto pred = [&c](std::weak_ptr<DrawableBase> other) {
+    if (auto o = other.lock()) {
       return (o->uid() == c->uid());
     }
-    else
-    {
+    else {
       return false;
     }
   };
@@ -63,8 +59,7 @@ bool DrawableBase::addChild(std::weak_ptr<DrawableBase> child)
   // Add the drawable if it is not yet a child
   auto it = std::find_if(std::begin(m_children), std::end(m_children), pred);
 
-  if (std::end(m_children) == it)
-  {
+  if (std::end(m_children) == it) {
     m_children.push_back(child);
     return true;
   }
@@ -74,22 +69,18 @@ bool DrawableBase::addChild(std::weak_ptr<DrawableBase> child)
 
 bool DrawableBase::removeChild(const DrawableBase& child)
 {
-  auto pred = [&child](std::weak_ptr<DrawableBase> other)
-  {
-    if (auto o = other.lock())
-    {
+  auto pred = [&child](std::weak_ptr<DrawableBase> other) {
+    if (auto o = other.lock()) {
       return (o->uid() == child.uid());
     }
-    else
-    {
+    else {
       return false;
     }
   };
 
   auto it = std::find_if(std::begin(m_children), std::end(m_children), pred);
 
-  if (std::end(m_children) != it)
-  {
+  if (std::end(m_children) != it) {
     m_children.erase(it);
     return true;
   }
@@ -99,8 +90,7 @@ bool DrawableBase::removeChild(const DrawableBase& child)
 
 void DrawableBase::render(const RenderStage& stage, const ObjectsToRender& objectsToRender)
 {
-  if (!isEnabled() || !isVisible())
-  {
+  if (!isEnabled() || !isVisible()) {
     // Do not render Drawable or its children
     return;
   }
@@ -109,46 +99,36 @@ void DrawableBase::render(const RenderStage& stage, const ObjectsToRender& objec
 
   doSetupState();
 
-  switch (objectsToRender)
-  {
-  case ObjectsToRender::Opaque:
-  {
-    if (isOpaque())
-    {
-      doRender(stage);
+  switch (objectsToRender) {
+    case ObjectsToRender::Opaque: {
+      if (isOpaque()) {
+        doRender(stage);
+      }
+      break;
     }
-    break;
-  }
-  case ObjectsToRender::Translucent:
-  {
-    if (!isOpaque())
-    {
-      doRender(stage);
+    case ObjectsToRender::Translucent: {
+      if (!isOpaque()) {
+        doRender(stage);
+      }
+      break;
     }
-    break;
-  }
-  case ObjectsToRender::Pickable:
-  {
-    if (isPickable())
-    {
-      doRender(stage);
+    case ObjectsToRender::Pickable: {
+      if (isPickable()) {
+        doRender(stage);
+      }
+      break;
     }
-    break;
-  }
-  case ObjectsToRender::All:
-  {
-    doRender(stage);
-    break;
-  }
+    case ObjectsToRender::All: {
+      doRender(stage);
+      break;
+    }
   }
 
   doTeardownState();
 
   // Render children
-  for (auto& child : m_children)
-  {
-    if (auto c = child.lock())
-    {
+  for (auto& child : m_children) {
+    if (auto c = child.lock()) {
       c->render(stage, objectsToRender);
     }
   }
@@ -159,11 +139,9 @@ void DrawableBase::update(
   const Viewport& viewport,
   const Camera& camera,
   const CoordinateFrame& crosshairs,
-  const AccumulatedRenderingData& parentData
-)
+  const AccumulatedRenderingData& parentData)
 {
-  if (!isEnabled())
-  {
+  if (!isEnabled()) {
     return;
   }
 
@@ -174,10 +152,8 @@ void DrawableBase::update(
   // Update this drawable
   doUpdate(time, viewport, camera, crosshairs);
 
-  for (auto& child : m_children)
-  {
-    if (auto c = child.lock())
-    {
+  for (auto& child : m_children) {
+    if (auto c = child.lock()) {
       c->update(time, viewport, camera, crosshairs, getAccumulatedRenderingData());
     }
   }
@@ -190,8 +166,7 @@ const AccumulatedRenderingData& DrawableBase::getAccumulatedRenderingData() cons
 
 void DrawableBase::setMasterOpacityMultiplier(float multiplier)
 {
-  if (multiplier < 0.0f || 1.0f < multiplier)
-  {
+  if (multiplier < 0.0f || 1.0f < multiplier) {
     return;
   }
 
@@ -239,8 +214,7 @@ bool DrawableBase::isOpaque() const
 {
   // Default implementation of this function returns false (i.e. non-opaque)
   // iff the accumulated master opacity multiplier is less than 1.
-  if (getAccumulatedRenderingData().m_masterOpacityMultiplier < 1.0f)
-  {
+  if (getAccumulatedRenderingData().m_masterOpacityMultiplier < 1.0f) {
     return false;
   }
 
@@ -266,17 +240,14 @@ const glm::mat4& DrawableBase::parent_T_this() const
 void DrawableBase::printTree(int depth) const
 {
   std::string tabs;
-  for (int i = 0; i < depth; ++i)
-  {
+  for (int i = 0; i < depth; ++i) {
     tabs += "\t";
   }
 
   spdlog::info("{}{}", tabs, m_name);
 
-  for (auto& child : m_children)
-  {
-    if (auto c = child.lock())
-    {
+  for (auto& child : m_children) {
+    if (auto c = child.lock()) {
       c->printTree(depth + 1);
     }
   }
@@ -303,8 +274,8 @@ void DrawableBase::updateRenderingData()
   m_myRenderingData.m_world_T_object = m_parentRenderingData.m_world_T_object * m_parent_T_this;
 
   // Multiply the opacity factor of this object with its parent's opacity factor:
-  m_myRenderingData.m_masterOpacityMultiplier = m_parentRenderingData.m_masterOpacityMultiplier
-                                                * m_masterOpacityMultiplier;
+  m_myRenderingData.m_masterOpacityMultiplier =
+    m_parentRenderingData.m_masterOpacityMultiplier * m_masterOpacityMultiplier;
 
   // AND together the pickable flags of this object and its parent:
   m_myRenderingData.m_pickable = (m_parentRenderingData.m_pickable & m_pickable);

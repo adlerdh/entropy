@@ -31,37 +31,70 @@ public:
   ~PointRecord() = default;
 
   /// Get the point's UID
-  const uuids::uuid& uid() const { return m_uid; }
+  const uuids::uuid& uid() const
+  {
+    return m_uid;
+  }
 
   /// Set position of the point
-  void setPosition(PositionType position) { m_point = std::move(position); }
+  void setPosition(PositionType position)
+  {
+    m_point = std::move(position);
+  }
 
   /// Get the point's position
-  const PositionType& getPosition() const { return m_point; }
+  const PositionType& getPosition() const
+  {
+    return m_point;
+  }
 
   /// Set the point name
-  void setName(std::string name) { m_name = std::move(name); }
+  void setName(std::string name)
+  {
+    m_name = std::move(name);
+  }
 
   /// Get the point name
-  const std::string& getName() const { return m_name; }
+  const std::string& getName() const
+  {
+    return m_name;
+  }
 
   /// Set the point description
-  void setDescription(std::string desc) { m_description = std::move(desc); }
+  void setDescription(std::string desc)
+  {
+    m_description = std::move(desc);
+  }
 
   /// Get the point description
-  const std::string& getDescription() const { return m_description; }
+  const std::string& getDescription() const
+  {
+    return m_description;
+  }
 
   /// Set the point color
-  void setColor(glm::vec3 color) { m_color = std::move(color); }
+  void setColor(glm::vec3 color)
+  {
+    m_color = std::move(color);
+  }
 
   /// Get the point color
-  const glm::vec3& getColor() const { return m_color; }
+  const glm::vec3& getColor() const
+  {
+    return m_color;
+  }
 
   /// Set visibility of the point
-  void setVisibility(bool visibility) { m_visibility = std::move(visibility); }
+  void setVisibility(bool visibility)
+  {
+    m_visibility = std::move(visibility);
+  }
 
   /// Get the point's visibility
-  bool getVisibility() const { return m_visibility; }
+  bool getVisibility() const
+  {
+    return m_visibility;
+  }
 
 private:
   uuids::uuid m_uid;         //!< Unique ID

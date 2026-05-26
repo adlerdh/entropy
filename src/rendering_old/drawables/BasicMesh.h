@@ -27,8 +27,7 @@ public:
     std::string name,
     ShaderProgramActivatorType shaderProgramActivator,
     UniformsProviderType uniformsProvider,
-    std::weak_ptr<MeshGpuRecord> meshGpuRecord
-  );
+    std::weak_ptr<MeshGpuRecord> meshGpuRecord);
 
   BasicMesh(const BasicMesh&) = delete;
   BasicMesh& operator=(const BasicMesh&) = delete;
@@ -54,9 +53,9 @@ public:
   void disableLayer(BasicMeshColorLayer);
 
   /**
-     * @brief Set mesh material color as NON-premultiplied RGB
-     * @param color RGB (non-premultiplied)
-     */
+   * @brief Set mesh material color as NON-premultiplied RGB
+   * @param color RGB (non-premultiplied)
+   */
   void setMaterialColor(const glm::vec3& color);
   glm::vec3 getMaterialColor() const;
 
@@ -82,9 +81,7 @@ private:
   void doRender(const RenderStage& stage) override;
   void doTeardownState() override;
 
-  void doUpdate(
-    double time, const Viewport&, const Camera&, const CoordinateFrame& crosshairs
-  ) override;
+  void doUpdate(double time, const Viewport&, const Camera&, const CoordinateFrame& crosshairs) override;
 
   void initVao();
   void updateLayerOpacities();

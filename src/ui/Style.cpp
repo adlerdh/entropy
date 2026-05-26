@@ -8,8 +8,7 @@ void applyCustomLightStyle(bool bStyleDark_, float alpha_)
   style.FrameRounding = 3.0f;
 
   ImVec4* colors = style.Colors;
-  if (!colors)
-    return;
+  if (!colors) return;
 
   colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
   colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
@@ -55,34 +54,27 @@ void applyCustomLightStyle(bool bStyleDark_, float alpha_)
   colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
   colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 
-  if (bStyleDark_)
-  {
-    for (int i = 0; i <= ImGuiCol_COUNT; i++)
-    {
+  if (bStyleDark_) {
+    for (int i = 0; i <= ImGuiCol_COUNT; i++) {
       ImVec4& col = colors[i];
       float H, S, V;
       ImGui::ColorConvertRGBtoHSV(col.x, col.y, col.z, H, S, V);
 
-      if (S < 0.1f)
-      {
+      if (S < 0.1f) {
         V = 1.0f - V;
       }
 
       ImGui::ColorConvertHSVtoRGB(H, S, V, col.x, col.y, col.z);
 
-      if (col.w < 1.00f)
-      {
+      if (col.w < 1.00f) {
         col.w *= alpha_;
       }
     }
   }
-  else
-  {
-    for (int i = 0; i <= ImGuiCol_COUNT; i++)
-    {
+  else {
+    for (int i = 0; i <= ImGuiCol_COUNT; i++) {
       ImVec4& col = colors[i];
-      if (col.w < 1.00f)
-      {
+      if (col.w < 1.00f) {
         col.x *= alpha_;
         col.y *= alpha_;
         col.z *= alpha_;
@@ -104,8 +96,7 @@ void applyCustomDarkStyle()
   style.WindowRounding = 5;
 
   ImVec4* colors = style.Colors;
-  if (!colors)
-    return;
+  if (!colors) return;
 
   colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
   colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -130,7 +121,7 @@ void applyCustomDarkStyle()
   colors[ImGuiCol_SliderGrabActive] = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
   colors[ImGuiCol_Button] = ImVec4(0.44f, 0.44f, 0.44f, 0.40f);
   colors[ImGuiCol_ButtonHovered] = ImVec4(0.46f, 0.47f, 0.48f, 1.00f);
-  //colors[ImGuiCol_ButtonActive]         = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
+  // colors[ImGuiCol_ButtonActive]         = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
   colors[ImGuiCol_ButtonActive] = ImVec4(0.20f, 0.41f, 0.68f, 1.00f);
   colors[ImGuiCol_Header] = ImVec4(0.70f, 0.70f, 0.70f, 0.31f);
   colors[ImGuiCol_HeaderHovered] = ImVec4(0.70f, 0.70f, 0.70f, 0.80f);
@@ -168,8 +159,7 @@ void applyCustomDarkStyle2()
   //    style->WindowRounding = 4.0f;
 
   ImVec4* colors = style->Colors;
-  if (!colors)
-    return;
+  if (!colors) return;
 
   colors[ImGuiCol_Text] = ImVec4(1.000f, 1.000f, 1.000f, 1.000f);
   colors[ImGuiCol_TextDisabled] = ImVec4(0.500f, 0.500f, 0.500f, 1.000f);
@@ -226,8 +216,7 @@ void applyCustomDarkStyle2()
 void applyCustomSoftStyle(ImGuiStyle* dst)
 {
   ImGuiStyle* style = dst ? dst : &ImGui::GetStyle();
-  if (!style)
-    return;
+  if (!style) return;
 
   float hspacing = 8;
   float vspacing = 6;
@@ -252,8 +241,7 @@ void applyCustomSoftStyle(ImGuiStyle* dst)
   style->GrabRounding = 0.0f;
 
   ImVec4* colors = style->Colors;
-  if (!colors)
-    return;
+  if (!colors) return;
 
   ImVec4 white = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
   ImVec4 transparent = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
@@ -293,9 +281,9 @@ void applyCustomSoftStyle(ImGuiStyle* dst)
   colors[ImGuiCol_SliderGrab] = grab;
   colors[ImGuiCol_SliderGrabActive] = darker;
 
-  //colors[ImGuiCol_CloseButton] = transparent;
-  //colors[ImGuiCol_CloseButtonHovered] = transparent;
-  //colors[ImGuiCol_CloseButtonActive] = transparent;
+  // colors[ImGuiCol_CloseButton] = transparent;
+  // colors[ImGuiCol_CloseButtonHovered] = transparent;
+  // colors[ImGuiCol_CloseButtonActive] = transparent;
 
   colors[ImGuiCol_ScrollbarBg] = header;
   colors[ImGuiCol_ScrollbarGrab] = grab;

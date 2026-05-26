@@ -29,8 +29,7 @@ public:
     UniformsProviderType uniformsProvider,
     GetterType<std::optional<glm::mat4> > annotToWorldTxProvider,
     GetterType<std::optional<float> > thicknessProvider,
-    std::weak_ptr<SlideAnnotationRecord> slideAnnotationRecord
-  );
+    std::weak_ptr<SlideAnnotationRecord> slideAnnotationRecord);
 
   ~AnnotationExtrusion() override = default;
 

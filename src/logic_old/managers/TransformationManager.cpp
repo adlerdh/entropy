@@ -11,12 +11,11 @@
 namespace
 {
 
-static const CoordinateFrame
-  sk_defaultFrame{glm::vec3{0.0f, 0.0f, 0.0f}, 0.0f, glm::vec3{0.0f, 0.0f, 1.0f}};
+static const CoordinateFrame sk_defaultFrame{glm::vec3{0.0f, 0.0f, 0.0f}, 0.0f, glm::vec3{0.0f, 0.0f, 1.0f}};
 
 static const std::unordered_map<TransformationState, CoordinateFrame> sk_defaultFrames{
-  {TransformationState::Staged, sk_defaultFrame}, {TransformationState::Committed, sk_defaultFrame}
-};
+  {TransformationState::Staged, sk_defaultFrame},
+  {TransformationState::Committed, sk_defaultFrame}};
 
 } // namespace
 
@@ -33,8 +32,7 @@ void TransformationManager::stageCrosshairsOrigin(const glm::vec3& worldOrigin)
   m_slideStackCrosshairsFrames[TransformationState::Staged].setWorldOrigin(worldOrigin);
 }
 
-const CoordinateFrame& TransformationManager::getCrosshairsFrame(const TransformationState& state
-) const
+const CoordinateFrame& TransformationManager::getCrosshairsFrame(const TransformationState& state) const
 {
   return m_referenceCrosshairsFrames.at(state);
 }
@@ -49,19 +47,16 @@ void TransformationManager::stageCrosshairsFrame(CoordinateFrame frame)
 
 void TransformationManager::commitCrosshairsFrame()
 {
-  m_referenceCrosshairsFrames[TransformationState::Committed]
-    = m_referenceCrosshairsFrames[TransformationState::Staged];
+  m_referenceCrosshairsFrames[TransformationState::Committed] =
+    m_referenceCrosshairsFrames[TransformationState::Staged];
 }
 
-const CoordinateFrame& TransformationManager::getSlideStackCrosshairsFrame(
-  const TransformationState& state
-) const
+const CoordinateFrame& TransformationManager::getSlideStackCrosshairsFrame(const TransformationState& state) const
 {
   return m_slideStackCrosshairsFrames.at(state);
 }
 
-const CoordinateFrame& TransformationManager::getSlideStackFrame(const TransformationState& state
-) const
+const CoordinateFrame& TransformationManager::getSlideStackFrame(const TransformationState& state) const
 {
   return m_slideStackFrames.at(state);
 }
@@ -70,16 +65,13 @@ void TransformationManager::stageSlideStackFrame(CoordinateFrame frame)
 {
   m_slideStackFrames[TransformationState::Staged] = frame;
 
-  m_slideStackCrosshairsFrames[TransformationState::Staged].setFrameToWorldRotation(
-    frame.world_O_frame_rotation()
-  );
+  m_slideStackCrosshairsFrames[TransformationState::Staged].setFrameToWorldRotation(frame.world_O_frame_rotation());
 }
 
 void TransformationManager::commitSlideStackFrame()
 {
-  m_slideStackFrames[TransformationState::Committed]
-    = m_slideStackFrames[TransformationState::Staged];
+  m_slideStackFrames[TransformationState::Committed] = m_slideStackFrames[TransformationState::Staged];
 
-  m_slideStackCrosshairsFrames[TransformationState::Committed]
-    = m_slideStackCrosshairsFrames[TransformationState::Staged];
+  m_slideStackCrosshairsFrames[TransformationState::Committed] =
+    m_slideStackCrosshairsFrames[TransformationState::Staged];
 }

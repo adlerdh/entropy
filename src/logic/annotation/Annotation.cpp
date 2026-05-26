@@ -19,9 +19,7 @@ static const glm::vec4 sk_defaultSubjectPlaneEquation{1.0f, 0.0f, 0.0f, 0.0f};
 
 } // namespace
 
-Annotation::Annotation(
-  std::string name, const glm::vec4& color, const glm::vec4& subjectPlaneEquation
-)
+Annotation::Annotation(std::string name, const glm::vec4& color, const glm::vec4& subjectPlaneEquation)
   : m_displayName(std::move(name))
   , m_fileName()
   , m_polygon()
@@ -46,16 +44,12 @@ Annotation::Annotation(
   , m_subjectPlaneOrigin{0.0f, 0.0f, 0.0f}
   , m_subjectPlaneAxes({1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f})
 {
-  if (!setSubjectPlane(subjectPlaneEquation))
-  {
+  if (!setSubjectPlane(subjectPlaneEquation)) {
     throw_debug("Cannot construct Annotation with invalid plane")
   }
 }
 
-Annotation::Annotation()
-  : Annotation("", sk_defaultColor, sk_defaultSubjectPlaneEquation)
-{
-}
+Annotation::Annotation() : Annotation("", sk_defaultColor, sk_defaultSubjectPlaneEquation) {}
 
 void Annotation::setDisplayName(std::string displayName)
 {
@@ -84,11 +78,8 @@ bool Annotation::setSubjectPlane(const glm::vec4& subjectPlaneEquation)
 
   const glm::vec3 subjectPlaneNormal = glm::vec3{subjectPlaneEquation};
 
-  if (glm::length(subjectPlaneNormal) < k_minLength)
-  {
-    spdlog::error(
-      "The annotation plane normal vector {} is invalid", glm::to_string(subjectPlaneNormal)
-    );
+  if (glm::length(subjectPlaneNormal) < k_minLength) {
+    spdlog::error("The annotation plane normal vector {} is invalid", glm::to_string(subjectPlaneNormal));
     return false;
   }
 
@@ -138,20 +129,18 @@ void Annotation::addPlanePointToBoundary(size_t boundary, const glm::vec2& plane
   m_polygon.addVertexToBoundary(boundary, planePoint);
 }
 
-bool Annotation::insertPlanePointIntoBoundary(
-  size_t boundary, size_t vertexIndex, const glm::vec2& vertex
-)
+bool Annotation::insertPlanePointIntoBoundary(size_t boundary, size_t vertexIndex, const glm::vec2& vertex)
 {
   return m_polygon.insertVertexIntoBoundary(boundary, vertexIndex, vertex);
 }
 
-std::optional<glm::vec2> Annotation::addSubjectPointToBoundary(
-  size_t boundary, const glm::vec3& subjectPoint
-)
+std::optional<glm::vec2> Annotation::addSubjectPointToBoundary(size_t boundary, const glm::vec3& subjectPoint)
 {
   const glm::vec2 projectedPlanePoint = math::projectPointToPlaneLocal2dCoords(
-    subjectPoint, m_subjectPlaneEquation, m_subjectPlaneOrigin, m_subjectPlaneAxes
-  );
+    subjectPoint,
+    m_subjectPlaneEquation,
+    m_subjectPlaneOrigin,
+    m_subjectPlaneAxes);
 
   addPlanePointToBoundary(boundary, projectedPlanePoint);
 
@@ -184,27 +173,22 @@ void Annotation::setVertexHighlight(const std::pair<size_t, size_t>& vertex, boo
   const size_t boundary = vertex.first;
   const size_t vertexIndex = vertex.second;
 
-  if (!m_polygon.getBoundaryVertex(boundary, vertexIndex))
-  {
+  if (!m_polygon.getBoundaryVertex(boundary, vertexIndex)) {
     spdlog::warn("Invalid polygon vertex {} for boundary {}", vertexIndex, boundary);
     return;
   }
 
   const auto it = m_highlightedVertices.find(vertex);
 
-  if (highlight && std::end(m_highlightedVertices) == it)
-  {
+  if (highlight && std::end(m_highlightedVertices) == it) {
     m_highlightedVertices.insert(vertex);
   }
-  else if (!highlight && std::end(m_highlightedVertices) != it)
-  {
+  else if (!highlight && std::end(m_highlightedVertices) != it) {
     m_highlightedVertices.erase(vertex);
   }
 }
 
-void Annotation::setEdgeHighlight(
-  const std::pair<size_t, std::pair<size_t, size_t> >& edge, bool highlight
-)
+void Annotation::setEdgeHighlight(const std::pair<size_t, std::pair<size_t, size_t> >& edge, bool highlight)
 {
   // Is this a valid boundary and pair of vertices (defining an edge) for that boundary?
   const size_t boundary = edge.first;
@@ -213,8 +197,7 @@ void Annotation::setEdgeHighlight(
 
   bool validEdge = true;
 
-  if (!m_polygon.getBoundaryVertex(boundary, vertexIndex1) || !m_polygon.getBoundaryVertex(boundary, vertexIndex2))
-  {
+  if (!m_polygon.getBoundaryVertex(boundary, vertexIndex1) || !m_polygon.getBoundaryVertex(boundary, vertexIndex2)) {
     validEdge = false;
   }
 
@@ -227,31 +210,21 @@ void Annotation::setEdgeHighlight(
   const int v2 = static_cast<int>(vertexIndex2);
   const size_t dist = std::abs(v1 - v2);
 
-  if (1 != dist && (N - 1) != dist)
-  {
+  if (1 != dist && (N - 1) != dist) {
     validEdge = false;
   }
 
-  if (!validEdge)
-  {
-    spdlog::warn(
-      "Invalid polygon edge ({}, {}) for boundary {} of length {}",
-      vertexIndex1,
-      vertexIndex2,
-      boundary,
-      N
-    );
+  if (!validEdge) {
+    spdlog::warn("Invalid polygon edge ({}, {}) for boundary {} of length {}", vertexIndex1, vertexIndex2, boundary, N);
     return;
   }
 
   const auto it = m_highlightedEdges.find(edge);
 
-  if (highlight && std::end(m_highlightedEdges) == it)
-  {
+  if (highlight && std::end(m_highlightedEdges) == it) {
     m_highlightedEdges.insert(edge);
   }
-  else if (!highlight && std::end(m_highlightedEdges) != it)
-  {
+  else if (!highlight && std::end(m_highlightedEdges) != it) {
     m_highlightedEdges.erase(edge);
   }
 }
@@ -318,8 +291,7 @@ float Annotation::getSmoothingFactor() const
 
 void Annotation::setOpacity(float opacity)
 {
-  if (0.0f <= opacity && opacity <= 1.0f)
-  {
+  if (0.0f <= opacity && opacity <= 1.0f) {
     m_opacity = opacity;
   }
 }
@@ -351,8 +323,7 @@ const glm::vec4& Annotation::getLineColor() const
 
 void Annotation::setLineThickness(float thickness)
 {
-  if (thickness >= 0.0f)
-  {
+  if (thickness >= 0.0f) {
     m_lineThickness = thickness;
   }
 }
@@ -400,12 +371,14 @@ const std::pair<glm::vec3, glm::vec3>& Annotation::getSubjectPlaneAxes() const
 glm::vec2 Annotation::projectSubjectPointToAnnotationPlane(const glm::vec3& point3d) const
 {
   return math::projectPointToPlaneLocal2dCoords(
-    point3d, m_subjectPlaneEquation, m_subjectPlaneOrigin, m_subjectPlaneAxes
-  );
+    point3d,
+    m_subjectPlaneEquation,
+    m_subjectPlaneOrigin,
+    m_subjectPlaneAxes);
 }
 
 glm::vec3 Annotation::unprojectFromAnnotationPlaneToSubjectPoint(const glm::vec2& planePoint2d) const
 {
-  return m_subjectPlaneOrigin + planePoint2d[0] * m_subjectPlaneAxes.first
-         + planePoint2d[1] * m_subjectPlaneAxes.second;
+  return m_subjectPlaneOrigin + planePoint2d[0] * m_subjectPlaneAxes.first +
+         planePoint2d[1] * m_subjectPlaneAxes.second;
 }

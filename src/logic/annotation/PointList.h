@@ -18,37 +18,42 @@ class PointList
 {
 public:
   /// Construct empty list.
-  explicit PointList()
-    : m_points()
-  {
-  }
+  explicit PointList() : m_points() {}
 
   /// Construct from list of points.
-  explicit PointList(std::list<PointType> points)
-    : m_points(std::move(points))
-  {
-  }
+  explicit PointList(std::list<PointType> points) : m_points(std::move(points)) {}
 
   ~PointList() = default;
 
   /// Get number of points in list.
-  size_t numPoints() const { return m_points.size(); }
+  size_t numPoints() const
+  {
+    return m_points.size();
+  }
 
   /// Set all points in the list, replacing all existing points.
-  void setPoints(std::list<PointType> points) { m_points = std::move(points); }
+  void setPoints(std::list<PointType> points)
+  {
+    m_points = std::move(points);
+  }
 
   /// Clear all points in the list.
-  void clearPoints() { m_points.clear(); }
+  void clearPoints()
+  {
+    m_points.clear();
+  }
 
   /// Append a point to the end of the list.
-  void appendPoint(PointType point) { m_points.emplace_back(std::move(point)); }
+  void appendPoint(PointType point)
+  {
+    m_points.emplace_back(std::move(point));
+  }
 
   /// Insert a point at the given list index.
   /// @return True iff the point was inserted.
   bool insertPoint(size_t index, PointType point)
   {
-    if (m_points.size() < index)
-    {
+    if (m_points.size() < index) {
       return false;
     }
 
@@ -61,8 +66,7 @@ public:
   /// @return True iff the point was inserted.
   bool insertPoint(const uuids::uuid& pointUid, PointType point)
   {
-    if (const auto index = getPointIndex(pointUid))
-    {
+    if (const auto index = getPointIndex(pointUid)) {
       return insertPoint(*index, std::move(point));
     }
     return false;
@@ -72,8 +76,7 @@ public:
   /// @return True iff the point was replaced.
   bool replacePoint(size_t index, PointType point)
   {
-    if (m_points.size() <= index)
-    {
+    if (m_points.size() <= index) {
       return false;
     }
 
@@ -86,8 +89,7 @@ public:
   /// @return True iff the point was replaced.
   bool replacePoint(const uuids::uuid& pointUid, PointType point)
   {
-    if (const auto index = getPointIndex(pointUid))
-    {
+    if (const auto index = getPointIndex(pointUid)) {
       return replacePoint(*index, std::move(point));
     }
     return false;
@@ -97,8 +99,7 @@ public:
   /// @return True iff the point was erased.
   bool erasePoint(size_t index)
   {
-    if (m_points.size() <= index)
-    {
+    if (m_points.size() <= index) {
       return false;
     }
 
@@ -111,8 +112,7 @@ public:
   /// @return True iff the point was erased.
   bool erasePoint(const uuids::uuid& pointUid)
   {
-    if (const auto index = getPointIndex(pointUid))
-    {
+    if (const auto index = getPointIndex(pointUid)) {
       return erasePoint(*index);
     }
     return false;
@@ -122,8 +122,7 @@ public:
   std::optional<size_t> getPointIndex(const uuids::uuid& pointUid) const
   {
     const auto it = findPoint(pointUid);
-    if (std::end(m_points) == it)
-    {
+    if (std::end(m_points) == it) {
       return std::nullopt;
     }
 
@@ -133,8 +132,7 @@ public:
   /// Get the value of the point at the given index.
   std::optional<PointType> getPoint(size_t index) const
   {
-    if (m_points.size() <= index)
-    {
+    if (m_points.size() <= index) {
       return std::nullopt;
     }
 
@@ -146,24 +144,24 @@ public:
   std::optional<PointType> getPoint(const uuids::uuid& pointUid) const
   {
     const auto it = findPoint(pointUid);
-    if (std::end(m_points) == it)
-    {
+    if (std::end(m_points) == it) {
       return std::nullopt;
     }
     return *it;
   }
 
-  const std::list<PointType>& getPoints() const { return m_points; }
+  const std::list<PointType>& getPoints() const
+  {
+    return m_points;
+  }
 
 private:
   /// Get an iterator to a point with given UID.
   typename std::list<PointType>::iterator findPoint(const uuids::uuid& pointUid) const
   {
-    return std::find_if(
-      std::begin(m_points),
-      std::end(m_points),
-      [&pointUid](const PointType& p) { return (pointUid == p.uid()); }
-    );
+    return std::find_if(std::begin(m_points), std::end(m_points), [&pointUid](const PointType& p) {
+      return (pointUid == p.uid());
+    });
   }
 
   /// Points stored as list

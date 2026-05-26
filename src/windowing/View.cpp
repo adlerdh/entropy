@@ -32,20 +32,19 @@
 
 namespace
 {
-using uuid = uuids::uuid;;
+using uuid = uuids::uuid;
+;
 
 static const glm::vec3 sk_origin{0.0f};
 static const glm::mat3 I{1.0f};
 
 // Map from view type to projection type
-static const std::unordered_map<ViewType, ProjectionType>
-  sk_viewTypeToDefaultProjectionTypeMap = {
-    {ViewType::Axial, ProjectionType::Orthographic},
-    {ViewType::Coronal, ProjectionType::Orthographic},
-    {ViewType::Sagittal, ProjectionType::Orthographic},
-    {ViewType::Oblique, ProjectionType::Orthographic},
-    {ViewType::ThreeD, ProjectionType::Perspective}
-};
+static const std::unordered_map<ViewType, ProjectionType> sk_viewTypeToDefaultProjectionTypeMap = {
+  {ViewType::Axial, ProjectionType::Orthographic},
+  {ViewType::Coronal, ProjectionType::Orthographic},
+  {ViewType::Sagittal, ProjectionType::Orthographic},
+  {ViewType::Oblique, ProjectionType::Orthographic},
+  {ViewType::ThreeD, ProjectionType::Perspective}};
 
 // Map from view convention to the maps of view type to camera start frame type
 static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, CameraStartFrameType>>
@@ -63,14 +62,13 @@ static const std::unordered_map<ViewConvention, std::unordered_map<ViewType, Cam
       {ViewType::Coronal, CameraStartFrameType::Crosshairs_Coronal_RSP},
       {ViewType::Sagittal, CameraStartFrameType::Crosshairs_Sagittal_PSL},
       {ViewType::Oblique, CameraStartFrameType::Crosshairs_Axial_RAS},
-      {ViewType::ThreeD, CameraStartFrameType::Crosshairs_Coronal_LSA}}}
-};
+      {ViewType::ThreeD, CameraStartFrameType::Crosshairs_Coronal_LSA}}}};
 
-ViewRenderMode reconcileRenderModeForViewType(
-  const ViewType& newViewType, const ViewRenderMode& currentRenderMode)
+ViewRenderMode reconcileRenderModeForViewType(const ViewType& newViewType, const ViewRenderMode& currentRenderMode)
 {
   /// @todo Write this function properly by accounting for
-  /// All2dViewRenderModes, All3dViewRenderModes, All2dNonMetricRenderModes, All3dNonMetricRenderModes
+  /// All2dViewRenderModes, All3dViewRenderModes, All2dNonMetricRenderModes,
+  /// All3dNonMetricRenderModes
 
   if (ViewType::ThreeD == newViewType) {
     // If switching to ViewType::ThreeD, then switch to ViewRenderMode::VolumeRender:
@@ -92,22 +90,21 @@ glm::quat get_world_T_startFrame(CameraStartFrameType startFrameType, const glm:
   const glm::vec3 y = world_T_frame[1];
   const glm::vec3 z = world_T_frame[2];
 
-  switch (startFrameType)
-  {
-  case CameraStartFrameType::Crosshairs_Axial_LAI:
-    return glm::quat{glm::mat3{x, -y, -z}};
-  case CameraStartFrameType::Crosshairs_Axial_RAS:
-    return glm::quat{glm::mat3{-x, -y, z}};
-  case CameraStartFrameType::Crosshairs_Coronal_LSA:
-    return glm::quat{glm::mat3{x, z, -y}};
-  case CameraStartFrameType::Crosshairs_Coronal_RSP:
-    return glm::quat{glm::mat3{-x, z, y}};
-  case CameraStartFrameType::Crosshairs_Sagittal_PSL:
-    return glm::quat{glm::mat3{y, z, x}};
-  case CameraStartFrameType::Crosshairs_Sagittal_ASR:
-    return glm::quat{glm::mat3{-y, z, -x}};
-  default:
-    return glm::quat{1, 0, 0, 0};
+  switch (startFrameType) {
+    case CameraStartFrameType::Crosshairs_Axial_LAI:
+      return glm::quat{glm::mat3{x, -y, -z}};
+    case CameraStartFrameType::Crosshairs_Axial_RAS:
+      return glm::quat{glm::mat3{-x, -y, z}};
+    case CameraStartFrameType::Crosshairs_Coronal_LSA:
+      return glm::quat{glm::mat3{x, z, -y}};
+    case CameraStartFrameType::Crosshairs_Coronal_RSP:
+      return glm::quat{glm::mat3{-x, z, y}};
+    case CameraStartFrameType::Crosshairs_Sagittal_PSL:
+      return glm::quat{glm::mat3{y, z, x}};
+    case CameraStartFrameType::Crosshairs_Sagittal_ASR:
+      return glm::quat{glm::mat3{-y, z, -x}};
+    default:
+      return glm::quat{1, 0, 0, 0};
   }
 }
 } // namespace
@@ -125,12 +122,11 @@ View::View(
   std::optional<uuid> cameraRotationSyncGroupUid,
   std::optional<uuid> cameraTranslationSyncGroup,
   std::optional<uuid> cameraZoomSyncGroup)
-  :
-  ControlFrame(winClipViewport, viewType, renderMode, ipMode, uiControls)
+  : ControlFrame(winClipViewport, viewType, renderMode, ipMode, uiControls)
   , m_uid(generateRandomUuid())
   , m_offset(std::move(offsetSetting))
   , m_projectionType(sk_viewTypeToDefaultProjectionTypeMap.at(m_viewType))
-  , m_camera(m_projectionType, [this](){ return get_anatomy_T_start(m_viewType); })
+  , m_camera(m_projectionType, [this]() { return get_anatomy_T_start(m_viewType); })
   , m_viewConvention(viewConvention)
   , m_crosshairs(crosshairs)
   , m_viewAlignment(viewAlignment)
@@ -139,7 +135,8 @@ View::View(
   , m_cameraZoomSyncGroupUid(cameraZoomSyncGroup)
   , m_clipPlaneDepth(0.0f)
   , m_anatomy_T_start(get_anatomy_T_start(m_viewType))
-{}
+{
+}
 
 const uuid& View::uid() const
 {
@@ -155,18 +152,16 @@ CoordinateFrame View::get_anatomy_T_start(const ViewType& viewType) const
   // When the view aligns with crosshairs, it is the crosshairs transformation.
   glm::mat3 R{1.0f};
 
-  switch (m_viewAlignment)
-  {
-  case ViewAlignmentMode::Crosshairs: {
-    R = thisViewHasRotatingXhairs
-      ? glm::mat3{m_crosshairs.worldCrosshairsOld.world_T_frame()}
-      : glm::mat3{m_crosshairs.worldCrosshairs.world_T_frame()};
-    break;
-  }
-  case ViewAlignmentMode::WorldOrReferenceImage: {
-    R = I;
-    break;
-  }
+  switch (m_viewAlignment) {
+    case ViewAlignmentMode::Crosshairs: {
+      R = thisViewHasRotatingXhairs ? glm::mat3{m_crosshairs.worldCrosshairsOld.world_T_frame()}
+                                    : glm::mat3{m_crosshairs.worldCrosshairs.world_T_frame()};
+      break;
+    }
+    case ViewAlignmentMode::WorldOrReferenceImage: {
+      R = I;
+      break;
+    }
   }
 
   const auto& startFrameTypeMap = sk_viewConventionToStartFrameTypeMap.at(m_viewConvention);
@@ -185,7 +180,8 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
   // Compute the depth of the view plane in camera Clip space, because it is needed for the
   // coordinates of the quad that is textured with the image.
 
-  // Apply this view's offset from the crosshairs position in order to calculate the view plane position.
+  // Apply this view's offset from the crosshairs position in order to calculate the view plane
+  // position.
   const float offsetDist = data::computeViewOffsetDistance(appData, m_offset, worldCameraFront);
   const glm::vec3 worldPlanePos = worldCrosshairs + offsetDist * worldCameraFront;
   const glm::vec4 worldViewPlane = math::makePlane(-worldCameraFront, worldPlanePos);
@@ -193,19 +189,18 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
   // Compute the World-space distance between the camera origin and the view plane
   float worldCameraToPlaneDistance;
 
-  if (math::vectorPlaneIntersection(worldCameraOrigin, worldCameraFront,
-                                    worldViewPlane, worldCameraToPlaneDistance))
-  {
+  if (math::vectorPlaneIntersection(worldCameraOrigin, worldCameraFront, worldViewPlane, worldCameraToPlaneDistance)) {
     helper::setWorldTarget(m_camera, worldCameraOrigin + worldCameraToPlaneDistance * worldCameraFront, std::nullopt);
     warnCount = 0; // Reset warning counter
   }
-  else
-  {
+  else {
     if (warnCount++ < k_maxNumWarnings) {
-      spdlog::warn("Camera (front direction = {}) is parallel with the view (plane = {})",
-                   glm::to_string(worldCameraFront), glm::to_string(worldViewPlane));
+      spdlog::warn(
+        "Camera (front direction = {}) is parallel with the view (plane = {})",
+        glm::to_string(worldCameraFront),
+        glm::to_string(worldViewPlane));
     }
-    else if (k_maxNumWarnings == warnCount){
+    else if (k_maxNumWarnings == warnCount) {
       spdlog::warn("Halting warning about camera front direction.");
     }
 
@@ -218,16 +213,17 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
   return worldPlanePos;
 }
 
-std::optional<intersection::IntersectionVerticesVec4>
-View::computeImageSliceIntersection(const Image* image, const CoordinateFrame& crosshairs) const
+std::optional<intersection::IntersectionVerticesVec4> View::computeImageSliceIntersection(
+  const Image* image,
+  const CoordinateFrame& crosshairs) const
 {
-  if (!image)
-    return std::nullopt;
+  if (!image) return std::nullopt;
 
   // Compute the intersections in Pixel space by transforming the camera and crosshairs frame
-  // from World to Pixel space. Pixel space is needed, because the corners form an AABB in that space.
-  const glm::mat4 world_T_pixel = image->transformations().worldDef_T_subject() *
-                                  image->transformations().subject_T_pixel();
+  // from World to Pixel space. Pixel space is needed, because the corners form an AABB in that
+  // space.
+  const glm::mat4 world_T_pixel =
+    image->transformations().worldDef_T_subject() * image->transformations().subject_T_pixel();
 
   const glm::mat4 pixel_T_world = glm::inverse(world_T_pixel);
 
@@ -237,10 +233,12 @@ View::computeImageSliceIntersection(const Image* image, const CoordinateFrame& c
   sliceIntersector.setAlignmentMethod(intersection::AlignmentMethod::CameraZ);
 
   std::optional<intersection::IntersectionVertices> pixelIntersectionPositions =
-    sliceIntersector.computePlaneIntersections(
-          pixel_T_world * m_camera.world_T_camera(),
-          pixel_T_world * crosshairs.world_T_frame(),
-          image->header().pixelBBoxCorners()).first;
+    sliceIntersector
+      .computePlaneIntersections(
+        pixel_T_world * m_camera.world_T_camera(),
+        pixel_T_world * crosshairs.world_T_frame(),
+        image->header().pixelBBoxCorners())
+      .first;
 
   if (!pixelIntersectionPositions) {
     return std::nullopt; // No slice intersection to render
@@ -250,8 +248,7 @@ View::computeImageSliceIntersection(const Image* image, const CoordinateFrame& c
   intersection::IntersectionVerticesVec4 worldIntersectionPositions;
 
   for (uint32_t i = 0; i < SliceIntersector::s_numVertices; ++i) {
-    worldIntersectionPositions[i] =
-      world_T_pixel * glm::vec4{(*pixelIntersectionPositions)[i], 1.0f};
+    worldIntersectionPositions[i] = world_T_pixel * glm::vec4{(*pixelIntersectionPositions)[i], 1.0f};
   }
 
   return worldIntersectionPositions;
@@ -265,22 +262,19 @@ void View::setViewType(const ViewType& newViewType)
 
   const auto newProjType = sk_viewTypeToDefaultProjectionTypeMap.at(newViewType);
 
-  if (m_projectionType != newProjType)
-  {
-    spdlog::debug("Changing camera projection from {} to {}",
-                  typeString(m_projectionType), typeString(newProjType));
+  if (m_projectionType != newProjType) {
+    spdlog::debug("Changing camera projection from {} to {}", typeString(m_projectionType), typeString(newProjType));
 
     std::unique_ptr<Projection> newProj;
-    switch (newProjType)
-    {
-    case ProjectionType::Orthographic: {
-      newProj = std::make_unique<OrthographicProjection>();
-      break;
-    }
-    case ProjectionType::Perspective: {
-      newProj = std::make_unique<PerspectiveProjection>();
-      break;
-    }
+    switch (newProjType) {
+      case ProjectionType::Orthographic: {
+        newProj = std::make_unique<OrthographicProjection>();
+        break;
+      }
+      case ProjectionType::Perspective: {
+        newProj = std::make_unique<PerspectiveProjection>();
+        break;
+      }
     }
 
     // Transfer the current projection parameters to the new projection:
@@ -303,16 +297,16 @@ void View::setViewType(const ViewType& newViewType)
   // reconciled with the change in view type:
   m_renderMode = reconcileRenderModeForViewType(newViewType, m_renderMode);
 
-  if (ViewType::Oblique == newViewType)
-  {
+  if (ViewType::Oblique == newViewType) {
     // Transitioning to an Oblique view type from an Orthogonal view type:
-    // The new anatomy_T_start frame is set to the (old) Orthogonal view type's anatomy_T_start frame.
+    // The new anatomy_T_start frame is set to the (old) Orthogonal view type's anatomy_T_start
+    // frame.
     m_anatomy_T_start = get_anatomy_T_start(m_viewType);
 
-    /// @todo Set anatomy_T_start equal to anatomy_T_start for the rotationSyncGroup of this view instead!!
+    /// @todo Set anatomy_T_start equal to anatomy_T_start for the rotationSyncGroup of this view
+    /// instead!!
   }
-  else if (ViewType::ThreeD != newViewType)
-  {
+  else if (ViewType::ThreeD != newViewType) {
     // Transitioning to an Orthogonal view type:
     m_anatomy_T_start = get_anatomy_T_start(newViewType);
 

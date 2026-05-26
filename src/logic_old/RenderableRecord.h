@@ -13,9 +13,7 @@ class RenderableRecord
 {
 public:
   RenderableRecord(std::unique_ptr<CpuData> cpuData, std::unique_ptr<GpuData> gpuData)
-    : m_uid()
-    , m_cpuData(std::move(cpuData))
-    , m_gpuData(std::move(gpuData))
+    : m_uid(), m_cpuData(std::move(cpuData)), m_gpuData(std::move(gpuData))
   {
   }
 
@@ -27,21 +25,45 @@ public:
 
   ~RenderableRecord() = default;
 
-  void setUid(uuids::uuid uid) { m_uid = std::move(uid); }
+  void setUid(uuids::uuid uid)
+  {
+    m_uid = std::move(uid);
+  }
 
-  void setCpuData(std::unique_ptr<CpuData> cpuData) { m_cpuData = std::move(cpuData); }
+  void setCpuData(std::unique_ptr<CpuData> cpuData)
+  {
+    m_cpuData = std::move(cpuData);
+  }
 
-  void setGpuData(std::unique_ptr<GpuData> gpuData) { m_gpuData = std::move(gpuData); }
+  void setGpuData(std::unique_ptr<GpuData> gpuData)
+  {
+    m_gpuData = std::move(gpuData);
+  }
 
-  const uuids::uuid& uid() const { return m_uid; }
+  const uuids::uuid& uid() const
+  {
+    return m_uid;
+  }
 
-  CpuData* cpuData() { return m_cpuData.get(); }
+  CpuData* cpuData()
+  {
+    return m_cpuData.get();
+  }
 
-  const CpuData* cpuData() const { return m_cpuData.get(); }
+  const CpuData* cpuData() const
+  {
+    return m_cpuData.get();
+  }
 
-  GpuData* gpuData() { return m_gpuData.get(); }
+  GpuData* gpuData()
+  {
+    return m_gpuData.get();
+  }
 
-  const GpuData* gpuData() const { return m_gpuData.get(); }
+  const GpuData* gpuData() const
+  {
+    return m_gpuData.get();
+  }
 
 private:
   uuids::uuid m_uid; //!< Unique identifier of the record

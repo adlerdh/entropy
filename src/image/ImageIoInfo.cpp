@@ -11,31 +11,31 @@ namespace
 {
 namespace so = ::itk::SpatialOrientation;
 
-std::unordered_map<so::ValidCoordinateOrientationFlags, std::string> spiralCodeMap =
-  {{so::ITK_COORDINATE_ORIENTATION_RIP, "RIP"}, {so::ITK_COORDINATE_ORIENTATION_LIP, "LIP"},
-   {so::ITK_COORDINATE_ORIENTATION_RSP, "RSP"}, {so::ITK_COORDINATE_ORIENTATION_LSP, "LSP"},
-   {so::ITK_COORDINATE_ORIENTATION_RIA, "RIA"}, {so::ITK_COORDINATE_ORIENTATION_LIA, "LIA"},
-   {so::ITK_COORDINATE_ORIENTATION_RSA, "RSA"}, {so::ITK_COORDINATE_ORIENTATION_LSA, "LSA"},
-   {so::ITK_COORDINATE_ORIENTATION_IRP, "IRP"}, {so::ITK_COORDINATE_ORIENTATION_ILP, "ILP"},
-   {so::ITK_COORDINATE_ORIENTATION_SRP, "SRP"}, {so::ITK_COORDINATE_ORIENTATION_SLP, "SLP"},
-   {so::ITK_COORDINATE_ORIENTATION_IRA, "IRA"}, {so::ITK_COORDINATE_ORIENTATION_ILA, "ILA"},
-   {so::ITK_COORDINATE_ORIENTATION_SRA, "SRA"}, {so::ITK_COORDINATE_ORIENTATION_SLA, "SLA"},
-   {so::ITK_COORDINATE_ORIENTATION_RPI, "RPI"}, {so::ITK_COORDINATE_ORIENTATION_LPI, "LPI"},
-   {so::ITK_COORDINATE_ORIENTATION_RAI, "RAI"}, {so::ITK_COORDINATE_ORIENTATION_LAI, "LAI"},
-   {so::ITK_COORDINATE_ORIENTATION_RPS, "RPS"}, {so::ITK_COORDINATE_ORIENTATION_LPS, "LPS"},
-   {so::ITK_COORDINATE_ORIENTATION_RAS, "RAS"}, {so::ITK_COORDINATE_ORIENTATION_LAS, "LAS"},
-   {so::ITK_COORDINATE_ORIENTATION_PRI, "PRI"}, {so::ITK_COORDINATE_ORIENTATION_PLI, "PLI"},
-   {so::ITK_COORDINATE_ORIENTATION_ARI, "ARI"}, {so::ITK_COORDINATE_ORIENTATION_ALI, "ALI"},
-   {so::ITK_COORDINATE_ORIENTATION_PRS, "PRS"}, {so::ITK_COORDINATE_ORIENTATION_PLS, "PLS"},
-   {so::ITK_COORDINATE_ORIENTATION_ARS, "ARS"}, {so::ITK_COORDINATE_ORIENTATION_ALS, "ALS"},
-   {so::ITK_COORDINATE_ORIENTATION_IPR, "IPR"}, {so::ITK_COORDINATE_ORIENTATION_SPR, "SPR"},
-   {so::ITK_COORDINATE_ORIENTATION_IAR, "IAR"}, {so::ITK_COORDINATE_ORIENTATION_SAR, "SAR"},
-   {so::ITK_COORDINATE_ORIENTATION_IPL, "IPL"}, {so::ITK_COORDINATE_ORIENTATION_SPL, "SPL"},
-   {so::ITK_COORDINATE_ORIENTATION_IAL, "IAL"}, {so::ITK_COORDINATE_ORIENTATION_SAL, "SAL"},
-   {so::ITK_COORDINATE_ORIENTATION_PIR, "PIR"}, {so::ITK_COORDINATE_ORIENTATION_PSR, "PSR"},
-   {so::ITK_COORDINATE_ORIENTATION_AIR, "AIR"}, {so::ITK_COORDINATE_ORIENTATION_ASR, "ASR"},
-   {so::ITK_COORDINATE_ORIENTATION_PIL, "PIL"}, {so::ITK_COORDINATE_ORIENTATION_PSL, "PSL"},
-   {so::ITK_COORDINATE_ORIENTATION_AIL, "AIL"}, {so::ITK_COORDINATE_ORIENTATION_ASL, "ASL"}};
+std::unordered_map<so::ValidCoordinateOrientationFlags, std::string> spiralCodeMap = {
+  {so::ITK_COORDINATE_ORIENTATION_RIP, "RIP"}, {so::ITK_COORDINATE_ORIENTATION_LIP, "LIP"},
+  {so::ITK_COORDINATE_ORIENTATION_RSP, "RSP"}, {so::ITK_COORDINATE_ORIENTATION_LSP, "LSP"},
+  {so::ITK_COORDINATE_ORIENTATION_RIA, "RIA"}, {so::ITK_COORDINATE_ORIENTATION_LIA, "LIA"},
+  {so::ITK_COORDINATE_ORIENTATION_RSA, "RSA"}, {so::ITK_COORDINATE_ORIENTATION_LSA, "LSA"},
+  {so::ITK_COORDINATE_ORIENTATION_IRP, "IRP"}, {so::ITK_COORDINATE_ORIENTATION_ILP, "ILP"},
+  {so::ITK_COORDINATE_ORIENTATION_SRP, "SRP"}, {so::ITK_COORDINATE_ORIENTATION_SLP, "SLP"},
+  {so::ITK_COORDINATE_ORIENTATION_IRA, "IRA"}, {so::ITK_COORDINATE_ORIENTATION_ILA, "ILA"},
+  {so::ITK_COORDINATE_ORIENTATION_SRA, "SRA"}, {so::ITK_COORDINATE_ORIENTATION_SLA, "SLA"},
+  {so::ITK_COORDINATE_ORIENTATION_RPI, "RPI"}, {so::ITK_COORDINATE_ORIENTATION_LPI, "LPI"},
+  {so::ITK_COORDINATE_ORIENTATION_RAI, "RAI"}, {so::ITK_COORDINATE_ORIENTATION_LAI, "LAI"},
+  {so::ITK_COORDINATE_ORIENTATION_RPS, "RPS"}, {so::ITK_COORDINATE_ORIENTATION_LPS, "LPS"},
+  {so::ITK_COORDINATE_ORIENTATION_RAS, "RAS"}, {so::ITK_COORDINATE_ORIENTATION_LAS, "LAS"},
+  {so::ITK_COORDINATE_ORIENTATION_PRI, "PRI"}, {so::ITK_COORDINATE_ORIENTATION_PLI, "PLI"},
+  {so::ITK_COORDINATE_ORIENTATION_ARI, "ARI"}, {so::ITK_COORDINATE_ORIENTATION_ALI, "ALI"},
+  {so::ITK_COORDINATE_ORIENTATION_PRS, "PRS"}, {so::ITK_COORDINATE_ORIENTATION_PLS, "PLS"},
+  {so::ITK_COORDINATE_ORIENTATION_ARS, "ARS"}, {so::ITK_COORDINATE_ORIENTATION_ALS, "ALS"},
+  {so::ITK_COORDINATE_ORIENTATION_IPR, "IPR"}, {so::ITK_COORDINATE_ORIENTATION_SPR, "SPR"},
+  {so::ITK_COORDINATE_ORIENTATION_IAR, "IAR"}, {so::ITK_COORDINATE_ORIENTATION_SAR, "SAR"},
+  {so::ITK_COORDINATE_ORIENTATION_IPL, "IPL"}, {so::ITK_COORDINATE_ORIENTATION_SPL, "SPL"},
+  {so::ITK_COORDINATE_ORIENTATION_IAL, "IAL"}, {so::ITK_COORDINATE_ORIENTATION_SAL, "SAL"},
+  {so::ITK_COORDINATE_ORIENTATION_PIR, "PIR"}, {so::ITK_COORDINATE_ORIENTATION_PSR, "PSR"},
+  {so::ITK_COORDINATE_ORIENTATION_AIR, "AIR"}, {so::ITK_COORDINATE_ORIENTATION_ASR, "ASR"},
+  {so::ITK_COORDINATE_ORIENTATION_PIL, "PIL"}, {so::ITK_COORDINATE_ORIENTATION_PSL, "PSL"},
+  {so::ITK_COORDINATE_ORIENTATION_AIL, "AIL"}, {so::ITK_COORDINATE_ORIENTATION_ASL, "ASL"}};
 
 template<class T>
 bool setMetaDataEntry(MetaDataMap& metaDataMap, const itk::MetaDataDictionary& dictionary, const std::string& key)
@@ -62,15 +62,14 @@ MetaDataMap getMetaDataMap(const ::itk::ImageIOBase::Pointer imageIo)
   const itk::MetaDataDictionary& dictionary = imageIo->GetMetaDataDictionary();
   itk::MetaDataDictionary::ConstIterator itr;
 
-  for (itr = dictionary.Begin(); itr != dictionary.End(); ++itr)
-  {
+  for (itr = dictionary.Begin(); itr != dictionary.End(); ++itr) {
     const std::string key = itr->first;
     std::string value;
 
-    auto orientFlagsValue = itk::SpatialOrientationEnums::ValidCoordinateOrientations::ITK_COORDINATE_ORIENTATION_INVALID;
+    auto orientFlagsValue =
+      itk::SpatialOrientationEnums::ValidCoordinateOrientations::ITK_COORDINATE_ORIENTATION_INVALID;
 
-    if (itk::ExposeMetaData<std::string>(dictionary, key, value))
-    {
+    if (itk::ExposeMetaData<std::string>(dictionary, key, value)) {
       /// @note For some weird reason, some of the strings returned by this method
       /// contain '\0' characters. We replace them by spaces:
       std::ostringstream sout("");
@@ -86,8 +85,7 @@ MetaDataMap getMetaDataMap(const ::itk::ImageIOBase::Pointer imageIo)
     else if (itk::ExposeMetaData(dictionary, key, orientFlagsValue)) {
       metaDataMap[key] = spiralCodeMap[orientFlagsValue];
     }
-    else
-    {
+    else {
       if (setMetaDataEntry<bool>(metaDataMap, dictionary, key)) {
         continue;
       }
@@ -381,12 +379,14 @@ bool ImageIoInfo::set(const itk::ImageIOBase::Pointer imageIo)
 
   m_metaData = getMetaDataMap(imageIo);
 
-  return (m_fileInfo.set(imageIo) && m_componentInfo.set(imageIo) && m_pixelInfo.set(imageIo)
-          && m_sizeInfo.set(imageIo) && m_spaceInfo.set(imageIo));
+  return (
+    m_fileInfo.set(imageIo) && m_componentInfo.set(imageIo) && m_pixelInfo.set(imageIo) && m_sizeInfo.set(imageIo) &&
+    m_spaceInfo.set(imageIo));
 }
 
 bool ImageIoInfo::validate() const
 {
-  return (m_fileInfo.validate() && m_componentInfo.validate() && m_pixelInfo.validate()
-          && m_sizeInfo.validate() && m_spaceInfo.validate());
+  return (
+    m_fileInfo.validate() && m_componentInfo.validate() && m_pixelInfo.validate() && m_sizeInfo.validate() &&
+    m_spaceInfo.validate());
 }

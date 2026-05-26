@@ -46,9 +46,13 @@ std::vector<OnlineStats> computeImageStatisticsOnUnsortedValues(const Image& ima
 /// @brief Compute a T-digest for each image component
 std::vector<tdigest::TDigest> computeTDigests(const Image& image);
 
-double bumpQuantile(const Image& image, uint32_t comp,
-                    double currentQuantile, double attemptedQuantile, double currentValue,
-                    bool usingExactQuantiles);
+double bumpQuantile(
+  const Image& image,
+  uint32_t comp,
+  double currentQuantile,
+  double attemptedQuantile,
+  double currentValue,
+  bool usingExactQuantiles);
 
-std::optional<std::size_t> computeNumHistogramBins(
-  const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats);
+std::optional<std::size_t>
+computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numPixels, ComponentStats stats);

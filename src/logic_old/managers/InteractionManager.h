@@ -48,8 +48,7 @@ public:
     GetterType<view_type_range_t> viewUidAndTypeRangeProvider,
     GetterType<CoordinateFrame> crosshairsFrameProvider,
     GetterType<CoordinateFrame> slideStackCrosshairsFrameProvider,
-    GetterType<CoordinateFrame> slideStackFrameProvider
-  );
+    GetterType<CoordinateFrame> slideStackFrameProvider);
 
   InteractionManager(const InteractionManager&) = default;
   InteractionManager& operator=(const InteractionManager&) = default;
@@ -109,13 +108,13 @@ private:
   void setWindowLevelInteractionMode(const WindowLevelInteractionMode&);
 
   /**
-     * @brief For a given view type, this computes the coordinate frame mapping the view camera
-     * Start Frame space to World space
-     *
-     * @param[in] viewType View type
-     *
-     * @return Coordinate frame mapping camera Start to World space
-     */
+   * @brief For a given view type, this computes the coordinate frame mapping the view camera
+   * Start Frame space to World space
+   *
+   * @param[in] viewType View type
+   *
+   * @return Coordinate frame mapping camera Start to World space
+   */
   CoordinateFrame computeStartFrame(const gui::ViewType& viewType) const;
 
   GetterType<view_type_range_t> m_viewTypeRangeProvider;
@@ -143,29 +142,24 @@ private:
   std::unordered_map<gui::ViewType, CameraType> m_viewTypeToCameraTypeMap;
 
   /// Map from view type to default crosshairs type
-  static const std::unordered_map<gui::ViewType, CrosshairsType>
-    smk_viewTypeToDefaultCrosshairsTypeMap;
+  static const std::unordered_map<gui::ViewType, CrosshairsType> smk_viewTypeToDefaultCrosshairsTypeMap;
   static CrosshairsType getDefaultCrosshairsType(const gui::ViewType&);
 
   /// Map from view type to default camera type
-  static const std::unordered_map<gui::ViewType, CameraType>
-    smk_viewTypeToDefaultCameraTypeMap;
+  static const std::unordered_map<gui::ViewType, CameraType> smk_viewTypeToDefaultCameraTypeMap;
   static CameraType getDefaultCameraType(const gui::ViewType&);
 
   /// Map from camera type to projection type
-  static const std::unordered_map<CameraType, camera::ProjectionType>
-    smk_cameraTypeToProjectionTypeMap;
+  static const std::unordered_map<CameraType, camera::ProjectionType> smk_cameraTypeToProjectionTypeMap;
   static camera::ProjectionType getProjectionType(const CameraType&);
 
   /// Map from camera type to default start frame linking type. This defines the
   /// Coordinate frame to which a camera start frame is linked.
-  static const std::unordered_map<CameraType, LinkedFrameType>
-    smk_cameraStartFrameTypeToDefaultLinkedStartFrameTypeMap;
+  static const std::unordered_map<CameraType, LinkedFrameType> smk_cameraStartFrameTypeToDefaultLinkedStartFrameTypeMap;
   static LinkedFrameType getDefaultLinkedStartFrameType(const CameraType&);
 
   /// Map from camera type to default camera start frame type
-  static const std::unordered_map<CameraType, CameraStartFrameType>
-    smk_cameraTypeToDefaultStartFrameTypeMap;
+  static const std::unordered_map<CameraType, CameraStartFrameType> smk_cameraTypeToDefaultStartFrameTypeMap;
   static CameraStartFrameType getDefaultCameraStartFrameType(const CameraType&);
 
   /// Default map from start frame type to start frame

@@ -17,18 +17,14 @@
 // Use -1 to ignore parameter
 void ButtonState::updateFromGlfwEvent(int mouseButton, int mouseButtonAction)
 {
-  if (mouseButton >= 0)
-  {
-    if (GLFW_MOUSE_BUTTON_LEFT == mouseButton)
-    {
+  if (mouseButton >= 0) {
+    if (GLFW_MOUSE_BUTTON_LEFT == mouseButton) {
       left = (GLFW_PRESS == mouseButtonAction);
     }
-    else if (GLFW_MOUSE_BUTTON_RIGHT == mouseButton)
-    {
+    else if (GLFW_MOUSE_BUTTON_RIGHT == mouseButton) {
       right = (GLFW_PRESS == mouseButtonAction);
     }
-    else if (GLFW_MOUSE_BUTTON_MIDDLE == mouseButton)
-    {
+    else if (GLFW_MOUSE_BUTTON_MIDDLE == mouseButton) {
       middle = (GLFW_PRESS == mouseButtonAction);
     }
   }
@@ -37,8 +33,7 @@ void ButtonState::updateFromGlfwEvent(int mouseButton, int mouseButtonAction)
 // Use -1 to ignore parameter
 void ModifierState::updateFromGlfwEvent(int keyMods)
 {
-  if (keyMods >= 0)
-  {
+  if (keyMods >= 0) {
     shift = (GLFW_MOD_SHIFT & keyMods);
     control = (GLFW_MOD_CONTROL & keyMods);
     alt = (GLFW_MOD_ALT & keyMods);

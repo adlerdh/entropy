@@ -3,7 +3,8 @@
  * @param[in] tex 3D texture sampler
  * @param[in] coord Normalized 3D texture coordinate
  * @return Interpolated texture value
- * @see https://github.com/DannyRuijters/CubicInterpolationCUDA/blob/master/examples/glCubicRayCast/tricubic.shader
+ * @see
+ * https://github.com/DannyRuijters/CubicInterpolationCUDA/blob/master/examples/glCubicRayCast/tricubic.shader
  */
 float textureLookup(sampler3D tex, vec3 texCoords)
 {
@@ -14,9 +15,9 @@ float textureLookup(sampler3D tex, vec3 texCoords)
   vec3 fraction = coord_grid - index;
   vec3 one_frac = 1.0 - fraction;
 
-  vec3 w0 = 1.0 / 6.0 * one_frac*one_frac*one_frac;
-  vec3 w1 = 2.0 / 3.0 - 0.5 * fraction*fraction * (2.0 - fraction);
-  vec3 w2 = 2.0 / 3.0 - 0.5 * one_frac*one_frac * (2.0 - one_frac);
+  vec3 w0 = 1.0 / 6.0 * one_frac * one_frac * one_frac;
+  vec3 w1 = 2.0 / 3.0 - 0.5 * fraction * fraction * (2.0 - fraction);
+  vec3 w2 = 2.0 / 3.0 - 0.5 * one_frac * one_frac * (2.0 - one_frac);
   vec3 w3 = 1.0 / 6.0 * fraction * fraction * fraction;
 
   vec3 g0 = w0 + w1;

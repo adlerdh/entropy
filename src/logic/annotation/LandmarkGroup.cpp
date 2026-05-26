@@ -74,10 +74,8 @@ size_t LandmarkGroup::addPoint(PointRecord<PositionType> point)
 {
   size_t maxIndex = 0;
 
-  for (const auto& p : m_pointMap)
-  {
-    if (p.first > maxIndex)
-      maxIndex = p.first;
+  for (const auto& p : m_pointMap) {
+    if (p.first > maxIndex) maxIndex = p.first;
   }
 
   const size_t newIndex = maxIndex + 1;
@@ -104,10 +102,8 @@ size_t LandmarkGroup::maxIndex() const
 {
   size_t maxIndex = 0;
 
-  for (const auto& p : m_pointMap)
-  {
-    if (p.first > maxIndex)
-      maxIndex = p.first;
+  for (const auto& p : m_pointMap) {
+    if (p.first > maxIndex) maxIndex = p.first;
   }
 
   return maxIndex;
@@ -140,8 +136,7 @@ bool LandmarkGroup::getVisibility() const
 
 void LandmarkGroup::setOpacity(float opacity)
 {
-  if (0.0f <= opacity && opacity <= 1.0f)
-  {
+  if (0.0f <= opacity && opacity <= 1.0f) {
     m_opacity = opacity;
   }
 }

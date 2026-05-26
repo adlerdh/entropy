@@ -69,84 +69,77 @@ public:
   serialize::EntropyProject& project();
 
   /**
-     * @brief Add an image
-     * @param[in] image The image.
-     * @return The image's newly generated unique identifier
-     */
+   * @brief Add an image
+   * @param[in] image The image.
+   * @return The image's newly generated unique identifier
+   */
   uuid addImage(Image image);
 
   /**
-     * @brief Add a segmentation.
-     * @param[in] seg Segmentation image. The image must have unsigned integer pixel component type.
-     * @return If added, the segmentation image's newly generated unique identifier; else nullopt.
-     */
+   * @brief Add a segmentation.
+   * @param[in] seg Segmentation image. The image must have unsigned integer pixel component type.
+   * @return If added, the segmentation image's newly generated unique identifier; else nullopt.
+   */
   std::optional<uuid> addSeg(Image seg);
 
   /**
-     * @brief Add an image deformation field
-     * @param[in] def Deformation field image. The image must have at least three components (x, y, z) per pixel.
-     * @return If added, deformation field image's newly generated unique identifier; else nullpt.
-     */
+   * @brief Add an image deformation field
+   * @param[in] def Deformation field image. The image must have at least three components (x, y, z)
+   * per pixel.
+   * @return If added, deformation field image's newly generated unique identifier; else nullpt.
+   */
   std::optional<uuid> addDef(Image def);
 
   /**
-     * @brief Add a segmentation label color table
-     * @param[in] numLabels Number of labels in the table
-     * @param[in] maxNumLabels Maximum number of labels allowed in the table
-     * @return Index of the new table
-     */
+   * @brief Add a segmentation label color table
+   * @param[in] numLabels Number of labels in the table
+   * @param[in] maxNumLabels Maximum number of labels allowed in the table
+   * @return Index of the new table
+   */
   std::size_t addLabelColorTable(std::size_t numLabels, std::size_t maxNumLabels);
 
   /**
-     * @brief Add a landmark group
-     * @param[in] lmGroup Landmark group.
-     * @return The landmark group's newly generated unique identifier
-     */
+   * @brief Add a landmark group
+   * @param[in] lmGroup Landmark group.
+   * @return The landmark group's newly generated unique identifier
+   */
   uuid addLandmarkGroup(LandmarkGroup lmGroup);
 
   /**
-     * @brief Add an annotation and associate it with an image
-     * @param[in] imageUid Image UID
-     * @param[in] annotation New annotation
-     * @return If the image exists, return the annotation's newly generated unique identifier;
-     * otherwise return nullopt.
-     */
+   * @brief Add an annotation and associate it with an image
+   * @param[in] imageUid Image UID
+   * @param[in] annotation New annotation
+   * @return If the image exists, return the annotation's newly generated unique identifier;
+   * otherwise return nullopt.
+   */
   std::optional<uuid> addAnnotation(const uuid& imageUid, Annotation annotation);
 
   /**
-     * @brief Add a distance map to an image component. The maps are used to accelerate
-     * volume raycasting by enabling empty space skipping.
-     *
-     * @param[in] imageUid UID of image for which to set the distance map
-     * @param[in] component Image component for which to set the distance map
-     * @param[in] distanceMap Distance map (in physical units) to a boundary in the image
-     * @param[in] boundaryIsoValue Value of the distance used for defining the distance map
-     *
-     * @return True iff the distance map was successfully added for the image component.
-     */
-  bool addDistanceMap(
-    const uuid& imageUid,
-    ComponentIndexType component,
-    Image distanceMap,
-    double boundaryIsoValue
-  );
+   * @brief Add a distance map to an image component. The maps are used to accelerate
+   * volume raycasting by enabling empty space skipping.
+   *
+   * @param[in] imageUid UID of image for which to set the distance map
+   * @param[in] component Image component for which to set the distance map
+   * @param[in] distanceMap Distance map (in physical units) to a boundary in the image
+   * @param[in] boundaryIsoValue Value of the distance used for defining the distance map
+   *
+   * @return True iff the distance map was successfully added for the image component.
+   */
+  bool addDistanceMap(const uuid& imageUid, ComponentIndexType component, Image distanceMap, double boundaryIsoValue);
 
-  bool addNoiseEstimate(
-    const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius
-  );
+  bool addNoiseEstimate(const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius);
 
   /**
-     * @brief Add an isosurface to an image component.
-     *
-     * @param[in] imageUid UID of image to which to add the isosurface
-     * @param[in] component Image component to which to add the isosurface
-     * @param[in] isosurface Isosurface
-     *
-     * @return Unique ID of the isosurface iff it was successfully added for the image component;
-     * otherwise \c std::nullpt
-     */
-  std::optional<uuid> addIsosurface(
-    const uuid& imageUid, ComponentIndexType component, Isosurface isosurface);
+   * @brief Add an isosurface to an image component.
+   *
+   * @param[in] imageUid UID of image to which to add the isosurface
+   * @param[in] component Image component to which to add the isosurface
+   * @param[in] isosurface Isosurface
+   *
+   * @return Unique ID of the isosurface iff it was successfully added for the image component;
+   * otherwise \c std::nullpt
+   */
+  std::optional<uuid> addIsosurface(const uuid& imageUid, ComponentIndexType component, Isosurface isosurface);
 
   //    bool removeImage( const uuid& imageUid );
   bool removeSeg(const uuid& segUid);
@@ -154,16 +147,15 @@ public:
   bool removeAnnotation(const uuid& defUid);
 
   /**
-     * @brief Remove an isosurface from an image component.
-     *
-     * @param[in] imageUid UID of image from which to remove the isosurface
-     * @param[in] component Image component from which to remove the isosurface
-     * @param[in] isosurfaceUid Isosurface UID
-     *
-     * @return True iff the isosurface was successfully removed.
-     */
-  bool removeIsosurface(
-    const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid);
+   * @brief Remove an isosurface from an image component.
+   *
+   * @param[in] imageUid UID of image from which to remove the isosurface
+   * @param[in] component Image component from which to remove the isosurface
+   * @param[in] isosurfaceUid Isosurface UID
+   *
+   * @return True iff the isosurface was successfully removed.
+   */
+  bool removeIsosurface(const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid);
 
   const Image* image(const uuid& imageUid) const;
   Image* image(const uuid& imageUid);
@@ -178,29 +170,23 @@ public:
   Image* def(const uuid& defUid);
 
   /// Get the distance maps (keyed by isosurface value) associated with an image component
-  const std::map<double, Image>& distanceMaps(
-    const uuid& imageUid, ComponentIndexType component
-  ) const;
+  const std::map<double, Image>& distanceMaps(const uuid& imageUid, ComponentIndexType component) const;
 
   /// Get the noise estimate images (keyed by radius value) associated with an image component
-  const std::map<uint32_t, Image>& noiseEstimates(
-    const uuid& imageUid, ComponentIndexType component
-  ) const;
+  const std::map<uint32_t, Image>& noiseEstimates(const uuid& imageUid, ComponentIndexType component) const;
 
   /**
-     * @brief Get an isosurface of an image component.
-     *
-     * @param[in] imageUid UID of image
-     * @param[in] component Image component
-     * @param[in] isosurfaceUid Isosurface UID
-     *
-     * @return Pointer to the isosurface if it exists; otherwise nullptr
-     */
-  const Isosurface* isosurface(
-    const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid) const;
+   * @brief Get an isosurface of an image component.
+   *
+   * @param[in] imageUid UID of image
+   * @param[in] component Image component
+   * @param[in] isosurfaceUid Isosurface UID
+   *
+   * @return Pointer to the isosurface if it exists; otherwise nullptr
+   */
+  const Isosurface* isosurface(const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid) const;
 
-  Isosurface* isosurface(
-    const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid);
+  Isosurface* isosurface(const uuid& imageUid, ComponentIndexType component, const uuid& isosurfaceUid);
 
   /*
   bool updateIsosurfaceMeshCpuRecord(
@@ -228,11 +214,11 @@ public:
   LandmarkGroup* landmarkGroup(const uuid& lmGroupUid);
 
   /**
-     * @brief Get an annotation by UID
-     * @param annotUid Annotation UID
-     * @return Raw pointer to the annotation if it exists;
-     * nullptr if the annotation does not exist
-     */
+   * @brief Get an annotation by UID
+   * @param annotUid Annotation UID
+   * @return Raw pointer to the annotation if it exists;
+   * nullptr if the annotation does not exist
+   */
   const Annotation* annotation(const uuid& annotUid) const;
   Annotation* annotation(const uuid& annotUid);
 
@@ -314,24 +300,20 @@ public:
   const std::vector<uuid>& imageToLandmarkGroupUids(const uuid& imageUid) const;
 
   /// Set/get the active landmark group for an image
-  bool assignActiveLandmarkGroupUidToImage(
-    const uuid& imageUid, const uuid& lmGroupUid
-  );
+  bool assignActiveLandmarkGroupUidToImage(const uuid& imageUid, const uuid& lmGroupUid);
   std::optional<uuid> imageToActiveLandmarkGroupUid(const uuid& imageUid) const;
 
   /// Set/get the active annotation for an image
-  bool assignActiveAnnotationUidToImage(
-    const uuid& imageUid, const std::optional<uuid>& annotUid
-  );
+  bool assignActiveAnnotationUidToImage(const uuid& imageUid, const std::optional<uuid>& annotUid);
   std::optional<uuid> imageToActiveAnnotationUid(const uuid& imageUid) const;
 
   /**
-     * @brief Get a list of all annotations assigned to a given image. The annotation order
-     * corresponds to the order in which the annotations were added to the image.
-     * @param imageUid Image UID
-     * @return List of (ordered) annotation UIDs for the image.
-     * The list is empty if the image has no annotations or the image UID is invalid.
-     */
+   * @brief Get a list of all annotations assigned to a given image. The annotation order
+   * corresponds to the order in which the annotations were added to the image.
+   * @param imageUid Image UID
+   * @return List of (ordered) annotation UIDs for the image.
+   * The list is empty if the image has no annotations or the image UID is invalid.
+   */
   const std::list<uuid>& annotationsForImage(const uuid& imageUid) const;
 
   /// Set/get whether the image is
@@ -353,9 +335,7 @@ public:
   std::optional<std::size_t> imageColorMapIndex(const uuid& mapUid) const;
   std::optional<std::size_t> labelTableIndex(const uuid& tableUid) const;
   std::optional<std::size_t> landmarkGroupIndex(const uuid& lmGroupUid) const;
-  std::optional<std::size_t> annotationIndex(
-    const uuid& imageUid, const uuid& annotUid
-  ) const;
+  std::optional<std::size_t> annotationIndex(const uuid& imageUid, const uuid& annotUid) const;
 
   /// @todo Put into DataHelper
   Image* refImage();
@@ -376,7 +356,6 @@ public:
   void restoreAllViewWorldCenterPositions();
 
 private:
-
   /// @brief Data associated with the individual image components
   struct ComponentData
   {
@@ -397,7 +376,7 @@ private:
     using IsoSurfaceMap = std::unordered_map<uuid, IsosurfacePtr>;
     // std::unique_ptr<Isosurface> aDummyStub; //<-- add this line
 
-    std::vector<uuid> m_isosurfaceUidsSorted; //!< Sorted isosurface uids
+    std::vector<uuid> m_isosurfaceUidsSorted;           //!< Sorted isosurface uids
     std::unordered_map<uuid, Isosurface> m_isosurfaces; //!< Isosurfaces
   };
 
@@ -429,10 +408,10 @@ private:
   std::vector<uuid> m_defUidsOrdered;     //!< Deformation field UIDs in order
 
   std::unordered_map<uuid, ImageColorMap> m_imageColorMaps; //!< Image color maps
-  std::vector<uuid> m_imageColorMapUidsOrdered; //!< Image color map UIDs in order
+  std::vector<uuid> m_imageColorMapUidsOrdered;             //!< Image color map UIDs in order
 
   std::unordered_map<uuid, ParcellationLabelTable> m_labelTables; //!< Segmentation label tables
-  std::vector<uuid> m_labelTablesUidsOrdered; //!< Segmentation label table UIDs in order
+  std::vector<uuid> m_labelTablesUidsOrdered;                     //!< Segmentation label table UIDs in order
 
   std::unordered_map<uuid, LandmarkGroup> m_landmarkGroups; //!< Landmark groups
   std::vector<uuid> m_landmarkGroupUidsOrdered;             //!< Landmark group UIDs in order

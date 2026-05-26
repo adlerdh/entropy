@@ -33,10 +33,7 @@ enum class ViewOutlineMode
   None
 };
 
-void drawViewOutline(
-  NVGcontext* nvg,
-  const FrameBounds& miewportViewBounds,
-  const ViewOutlineMode& outlineMode);
+void drawViewOutline(NVGcontext* nvg, const FrameBounds& miewportViewBounds, const ViewOutlineMode& outlineMode);
 
 void drawImageViewIntersections(
   NVGcontext* nvg,

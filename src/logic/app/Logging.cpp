@@ -7,8 +7,7 @@ void Logging::setup()
 {
   static const std::string sk_logFileName("logs/entropy.txt");
 
-  try
-  {
+  try {
     // Create multi-threaded sinks for console and daily file logging.
     // Assign default sink logging levels.
 
@@ -25,8 +24,7 @@ void Logging::setup()
     spdlog::sinks_init_list sink_list{m_console_sink, m_daily_sink};
 
     // Create synchronous loggers sharing the same sinks
-    auto default_logger
-      = std::make_shared<spdlog::logger>("default", std::begin(sink_list), std::end(sink_list));
+    auto default_logger = std::make_shared<spdlog::logger>("default", std::begin(sink_list), std::end(sink_list));
 
     default_logger->set_level(spdlog::level::trace);
     default_logger->flush_on(spdlog::level::debug);
@@ -35,14 +33,12 @@ void Logging::setup()
     spdlog::register_logger(default_logger);
     spdlog::set_default_logger(default_logger);
   }
-  catch (const spdlog::spdlog_ex& e)
-  {
+  catch (const spdlog::spdlog_ex& e) {
     std::ostringstream ss;
     ss << "Logging construction failed: " << e.what() << std::ends;
     throw_debug(ss.str())
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     std::ostringstream ss;
     ss << "Logging construction failed: " << e.what() << std::ends;
     throw_debug(ss.str())
@@ -53,24 +49,20 @@ void Logging::setup()
 
 void Logging::setConsoleSinkLevel(spdlog::level::level_enum level)
 {
-  if (m_console_sink)
-  {
+  if (m_console_sink) {
     m_console_sink->set_level(level);
   }
-  else
-  {
+  else {
     spdlog::error("Console logging sink is null");
   }
 }
 
 void Logging::setDailyFileSinkLevel(spdlog::level::level_enum level)
 {
-  if (m_daily_sink)
-  {
+  if (m_daily_sink) {
     m_daily_sink->set_level(level);
   }
-  else
-  {
+  else {
     spdlog::error("Daily file logging sink is null");
   }
 }

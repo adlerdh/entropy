@@ -11,9 +11,9 @@
 
 out vec4 FragColor;
 
-uniform sampler3D u_imgTex; // image
+uniform sampler3D u_imgTex;   // image
 uniform usampler3D u_jumpTex; // distance texture
-//uniform usampler3D u_segTex; // segmentation
+// uniform usampler3D u_segTex; // segmentation
 
 uniform mat4 u_tex_T_world;
 uniform mat4 u_world_T_imgTex;
@@ -43,22 +43,38 @@ uniform bool u_renderBackFaces;
 uniform bool u_noHitTransparent;
 
 // Mutually exclusive flags controlling whether the segmentation masks the isosurfaces in or out:
-//uniform bool segMasksIn;
-//uniform bool segMasksOut;
+// uniform bool segMasksIn;
+// uniform bool segMasksOut;
 
 // Redeclared vertex shader outputs: now the fragment shader inputs
 in VS_OUT
 {
   vec3 v_worldRayDir; // Ray direction in World space (NOT normalized)
-} fs_in;
+}
+fs_in;
 
-float rand(vec2 v) { return fract(sin(dot(v.xy, vec2(12.9898, 78.233))) * 43758.5453); }
+float rand(vec2 v)
+{
+  return fract(sin(dot(v.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
 
-float compMax(vec3 v) { return max(max(v.x, v.y), v.z); }
-float compMin(vec3 v) { return min(min(v.x, v.y), v.z); }
+float compMax(vec3 v)
+{
+  return max(max(v.x, v.y), v.z);
+}
+float compMin(vec3 v)
+{
+  return min(min(v.x, v.y), v.z);
+}
 
-float when_lt(float x, float y) { return max(sign(y - x), 0.0); }
-float when_ge(float x, float y) { return 1.0 - when_lt(x, y); }
+float when_lt(float x, float y)
+{
+  return max(sign(y - x), 0.0);
+}
+float when_ge(float x, float y)
+{
+  return 1.0 - when_lt(x, y);
+}
 
 float getImageValue(sampler3D tex, vec3 texCoord)
 {
@@ -127,10 +143,11 @@ void main()
   vec3 dirSq = texRayDir * texRayDir;
 
   // Step size computed as a u_samplingFactor fraction of the voxel spacing along the ray:
-  float texStep = u_samplingFactor * min(min(
-    u_imgInvDims.x * sqrt(1.0 + (dirSq.y + dirSq.z)) / max(dirSq.x, 1.0e-6),
-    u_imgInvDims.y * sqrt(1.0 + (dirSq.z + dirSq.x)) / max(dirSq.y, 1.0e-6)),
-    u_imgInvDims.z * sqrt(1.0 + (dirSq.x + dirSq.y)) / max(dirSq.z, 1.0e-6));
+  float texStep = u_samplingFactor * min(
+                                       min(
+                                         u_imgInvDims.x * sqrt(1.0 + (dirSq.y + dirSq.z)) / max(dirSq.x, 1.0e-6),
+                                         u_imgInvDims.y * sqrt(1.0 + (dirSq.z + dirSq.x)) / max(dirSq.y, 1.0e-6)),
+                                       u_imgInvDims.z * sqrt(1.0 + (dirSq.x + dirSq.y)) / max(dirSq.z, 1.0e-6));
 
   // Randomly purturb the ray starting positions along the ray direction:
   vec4 texEyePos = u_tex_T_world * vec4(u_worldEyePos, 1.0);
@@ -163,8 +180,7 @@ void main()
   vec3 oldTexPos = texPos;
   float oldT = tMin;
 
-  for (float t = tMin; t <= tMax; t += texStep)
-  {
+  for (float t = tMin; t <= tMax; t += texStep) {
     float jump = 0.0;
     int numJumps = 0;
 
@@ -176,28 +192,26 @@ void main()
       ++numJumps;
     } while (jump > texStep && t <= tMax && numJumps <= MAX_JUMPS);
 
-//    FragColor = vec4(vec3(float(numJumps)/10.0), 1.0);
-//    return;
+    //    FragColor = vec4(vec3(float(numJumps)/10.0), 1.0);
+    //    return;
 
     float value = getImageValue(u_imgTex, texPos);
 
-    for (int i = 0; i < u_numIsos; ++i)
-    {
-      bool frontHit = u_renderFrontFaces && value >= u_isoValues[i] && oldValue <  u_isoValues[i];
+    for (int i = 0; i < u_numIsos; ++i) {
+      bool frontHit = u_renderFrontFaces && value >= u_isoValues[i] && oldValue < u_isoValues[i];
       bool backHit = u_renderBackFaces && value < u_isoValues[i] && oldValue >= u_isoValues[i];
 
-      if (u_isoOpacities[i] > 0.0 && (frontHit || backHit))
-      {
+      if (u_isoOpacities[i] > 0.0 && (frontHit || backHit)) {
         ++hitCount;
         vec3 texHitPos = bisect(texStartPos, texRayDir, oldT, t, value - u_isoValues[i], u_isoValues[i]);
         vec3 texLightDir = normalize(texStartPos - texHitPos);
         vec3 texNormal = gradient(texHitPos);
 
-//        float segMask = float(
-//          (!segMasksIn && !segMasksOut) ||
-//          (segMasksIn && texture(u_segTex, texPos).r > 0u) ||
-//          (segMasksOut && texture(u_segTex, texPos).r == 0u));
-//        color += segMask * (1.0 - color.a) * shade(texLightDir, -texRayDir, texNormal, i);
+        //        float segMask = float(
+        //          (!segMasksIn && !segMasksOut) ||
+        //          (segMasksIn && texture(u_segTex, texPos).r > 0u) ||
+        //          (segMasksOut && texture(u_segTex, texPos).r == 0u));
+        //        color += segMask * (1.0 - color.a) * shade(texLightDir, -texRayDir, texNormal, i);
 
         color += (1.0 - color.a) * shade(texLightDir, -texRayDir, texNormal, i); // blend under
 
@@ -220,14 +234,14 @@ void main()
     ++stepCount;
   }
 
-//  float normDistance = abs(oldT - tMin);
-//  float fog = exp(-normDistance*normDistance);
+  //  float normDistance = abs(oldT - tMin);
+  //  float fog = exp(-normDistance*normDistance);
 
   FragColor = color + (1.0 - color.a) * u_bgColor;
 
   vec4 clipFirstHitPos = u_clip_T_imgTex * vec4(texFirstHitPos, 1.0);
   float ndcFirstHitDepth = clipFirstHitPos.z / clipFirstHitPos.w;
 
-  gl_FragDepth = 0.5 * ((gl_DepthRange.far - gl_DepthRange.near) * ndcFirstHitDepth +
-                 gl_DepthRange.near + gl_DepthRange.far);
+  gl_FragDepth =
+    0.5 * ((gl_DepthRange.far - gl_DepthRange.near) * ndcFirstHitDepth + gl_DepthRange.near + gl_DepthRange.far);
 }

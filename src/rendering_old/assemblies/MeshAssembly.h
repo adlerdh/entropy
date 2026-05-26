@@ -20,14 +20,10 @@ class DynamicTransformation;
 class TexturedMesh;
 class Transformation;
 
-class MeshAssembly final : public IDrawableAssembly,
-                           public ITexturable3d,
-                           public ObjectCounter<MeshAssembly>
+class MeshAssembly final : public IDrawableAssembly, public ITexturable3d, public ObjectCounter<MeshAssembly>
 {
 public:
-  explicit MeshAssembly(
-    ShaderProgramActivatorType, UniformsProviderType, std::weak_ptr<BlankTextures> blankTextures
-  );
+  explicit MeshAssembly(ShaderProgramActivatorType, UniformsProviderType, std::weak_ptr<BlankTextures> blankTextures);
 
   ~MeshAssembly() override = default;
 
@@ -39,23 +35,23 @@ public:
   void setParcellationRecord(std::weak_ptr<ParcellationRecord>) override;
 
   /**
-     * @brief Set the image color map record. This also updates iso-surface mesh properties
-     * according to the image color map.
-     */
+   * @brief Set the image color map record. This also updates iso-surface mesh properties
+   * according to the image color map.
+   */
   void setImageColorMapRecord(std::weak_ptr<ImageColorMapRecord>) override;
 
   /**
-     * @brief Set the label table record. This also updates label mesh properties
-     * according to the label table properties.
-     */
+   * @brief Set the label table record. This also updates label mesh properties
+   * according to the label table properties.
+   */
   void setLabelTableRecord(std::weak_ptr<LabelTableRecord>) override;
 
   /**
-     * @brief Set the function that queries the transformation mapping mesh to World space.
-     *
-     * @param querier Function with single input being the mesh UID and output the
-     * transformation world_O_mesh that transforms the mesh vertices to World space.
-     */
+   * @brief Set the function that queries the transformation mapping mesh to World space.
+   *
+   * @param querier Function with single input being the mesh UID and output the
+   * transformation world_O_mesh that transforms the mesh vertices to World space.
+   */
   void setMeshSubjectToWorldTxQuerier(QuerierType<std::optional<glm::mat4>, uuids::uuid>);
 
   void addMesh(const uuids::uuid& meshUid, std::weak_ptr<MeshRecord> meshRecord);

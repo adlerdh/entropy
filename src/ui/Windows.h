@@ -109,15 +109,13 @@ void renderSegmentationPropertiesWindow(
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
   const std::function<void(size_t labelColorTableIndex)>& updateLabelColorTableTexture,
   const std::function<void(const uuids::uuid& imageUid, size_t labelIndex)>& moveCrosshairsToSegLabelCentroid,
-  const std::function<std::optional<uuids::uuid>(
-    const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>& createBlankSeg,
+  const std::function<
+    std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>& createBlankSeg,
   const std::function<bool(const uuids::uuid& segUid)>& clearSeg,
   const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
   const AllViewsRecenterType& recenterAllViews);
 
-void renderLandmarkPropertiesWindow(
-  AppData& appData,
-  const AllViewsRecenterType& recenterAllViews);
+void renderLandmarkPropertiesWindow(AppData& appData, const AllViewsRecenterType& recenterAllViews);
 
 void renderAnnotationWindow(
   AppData& appData,

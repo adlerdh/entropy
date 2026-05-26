@@ -32,48 +32,40 @@ static const std::unordered_map<ShaderType, std::string> sk_shaderTypeStrings = 
   {ShaderType::Geometry, "geometry"},
   {ShaderType::TessControl, "tessControl"},
   {ShaderType::TessEvaluation, "tessEval"},
-  {ShaderType::Fragment, "fragment"}
-};
+  {ShaderType::Fragment, "fragment"}};
 
 } // namespace
 
 GLShader::GLShader(std::string name, const ShaderType& type)
-  : m_name(std::move(name))
-  , m_type(type)
-  , m_handle(0u)
-  , m_isCompiled(false)
+  : m_name(std::move(name)), m_type(type), m_handle(0u), m_isCompiled(false)
 {
 }
 
-GLShader::GLShader(std::string name, const ShaderType& type, const char* source)
-  : GLShader(std::move(name), type)
+GLShader::GLShader(std::string name, const ShaderType& type, const char* source) : GLShader(std::move(name), type)
 {
   compileFromString(source);
 }
 
-GLShader::GLShader(std::string name, const ShaderType& type, std::istream& source)
-  : GLShader(std::move(name), type)
+GLShader::GLShader(std::string name, const ShaderType& type, std::istream& source) : GLShader(std::move(name), type)
 {
   const std::string sourceString(std::istreambuf_iterator<char>(source), {});
   compileFromString(sourceString.c_str());
 }
 
-//GLShader::GLShader( std::string name, const ShaderType& type,
-//                    const std::vector< const char* >& sources )
-//    : GLShader( std::move( name ), type )
+// GLShader::GLShader( std::string name, const ShaderType& type,
+//                     const std::vector< const char* >& sources )
+//     : GLShader( std::move( name ), type )
 //{
-//    compileFromStrings( sources );
-//}
+//     compileFromStrings( sources );
+// }
 
 GLShader::~GLShader()
 {
-  if (!m_handle)
-  {
+  if (!m_handle) {
     return;
   }
 
-  if (glIsShader(m_handle))
-  {
+  if (glIsShader(m_handle)) {
     glDeleteShader(m_handle);
   }
 }
@@ -110,8 +102,7 @@ void GLShader::compileFromString(const char* source)
   glShaderSource(handle, 1, &source, nullptr);
   glCompileShader(handle);
 
-  if (!checkShaderStatus(handle))
-  {
+  if (!checkShaderStatus(handle)) {
     spdlog::error("Cannot compile shader '{}' due to failed status check", m_name);
     m_isCompiled = false;
   }
@@ -122,9 +113,9 @@ void GLShader::compileFromString(const char* source)
   CHECK_GL_ERROR(m_errorChecker)
 }
 
-//void GLShader::compileFromStrings( const std::vector< const char* >& sources )
+// void GLShader::compileFromStrings( const std::vector< const char* >& sources )
 //{
-//    const GLuint handle = glCreateShader( underlyingType(m_type) );
+//     const GLuint handle = glCreateShader( underlyingType(m_type) );
 
 //    glShaderSource( handle, static_cast<GLsizei>( sources.size() ), &sources[0], nullptr );
 //    glCompileShader( handle );
@@ -159,15 +150,13 @@ bool GLShader::checkShaderStatus(GLuint handle)
   GLint status;
   glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
 
-  if (GL_FALSE == status)
-  {
+  if (GL_FALSE == status) {
     GLint logLength = 0;
     glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &logLength);
 
     std::string logString;
 
-    if (logLength > 0)
-    {
+    if (logLength > 0) {
       std::vector<GLchar> cLog(static_cast<size_t>(logLength));
       GLsizei actualLength = 0;
       glGetShaderInfoLog(handle, logLength, &actualLength, &cLog[0]);

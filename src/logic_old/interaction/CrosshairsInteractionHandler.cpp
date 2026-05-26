@@ -14,14 +14,13 @@ namespace
 
 // Distance in World-space units by which to nudge 3D point pick results on meshes into the scene:
 /// @note This could be useful, but has been set to zero (i.e. no nudging) for now
-static constexpr float sk_worldNudge = 0.0f; //1.0e-1f;
+static constexpr float sk_worldNudge = 0.0f; // 1.0e-1f;
 
 } // namespace
 
 const std::unordered_map<CrosshairsInteractionMode, CrosshairsInteractionHandler::MouseMoveMode>
   CrosshairsInteractionHandler::msk_defaultInternalModeMap = {
-    {CrosshairsInteractionMode::Move, CrosshairsInteractionHandler::MouseMoveMode::Translate}
-};
+    {CrosshairsInteractionMode::Move, CrosshairsInteractionHandler::MouseMoveMode::Translate}};
 
 CrosshairsInteractionHandler::CrosshairsInteractionHandler()
   : InteractionHandlerBase(InteractionHandlerType::Crosshairs)
@@ -90,16 +89,13 @@ void CrosshairsInteractionHandler::setCrosshairsFrameProvider(GetterType<Coordin
   //    }
 }
 
-void CrosshairsInteractionHandler::setCrosshairsFrameChangedBroadcaster(
-  SetterType<const CoordinateFrame&> broadcaster
-)
+void CrosshairsInteractionHandler::setCrosshairsFrameChangedBroadcaster(SetterType<const CoordinateFrame&> broadcaster)
 {
   m_crosshairsFrameChangedBroadcaster = broadcaster;
 }
 
 void CrosshairsInteractionHandler::setCrosshairsFrameChangeDoneBroadcaster(
-  SetterType<const CoordinateFrame&> broadcaster
-)
+  SetterType<const CoordinateFrame&> broadcaster)
 {
   m_crosshairsFrameChangeDoneBroadcaster = broadcaster;
 }
@@ -125,58 +121,47 @@ void CrosshairsInteractionHandler::setRotationModeEnabled(bool enabled)
   m_rotationModeEnabled = enabled;
 }
 
-bool CrosshairsInteractionHandler::moveToObjectAtNdcPosition(
-  const Camera& camera, const glm::vec2& ndcPosXY
-)
+bool CrosshairsInteractionHandler::moveToObjectAtNdcPosition(const Camera& camera, const glm::vec2& ndcPosXY)
 {
   bool handled = false;
 
-  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangedBroadcaster)
-  {
+  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangedBroadcaster) {
     return false;
   }
 
   uint16_t objectId;
   float ndcZ;
 
-  switch (m_pointPickingMode)
-  {
-  case CrosshairsPointPickingMode::PlanarPicking:
-  {
-    if (!m_planarPointPicker)
-    {
-      return handled;
-    }
+  switch (m_pointPickingMode) {
+    case CrosshairsPointPickingMode::PlanarPicking: {
+      if (!m_planarPointPicker) {
+        return handled;
+      }
 
-    ndcZ = m_planarPointPicker(ndcPosXY);
-    objectId = 1u;
-    break;
-  }
-  case CrosshairsPointPickingMode::DepthPicking:
-  {
-    if (!m_depthPointPicker)
-    {
-      return handled;
+      ndcZ = m_planarPointPicker(ndcPosXY);
+      objectId = 1u;
+      break;
     }
+    case CrosshairsPointPickingMode::DepthPicking: {
+      if (!m_depthPointPicker) {
+        return handled;
+      }
 
-    std::tie(objectId, ndcZ) = m_depthPointPicker(ndcPosXY);
-    break;
-  }
+      std::tie(objectId, ndcZ) = m_depthPointPicker(ndcPosXY);
+      break;
+    }
   }
 
   /// @todo make filtering dependent on view, so that different views can select different objects
-  if (0 < objectId)
-  {
+  if (0 < objectId) {
     const glm::vec3 ndcPos{ndcPosXY.x, ndcPosXY.y, ndcZ};
     glm::vec3 worldPos = world_O_ndc(camera, ndcPos);
 
     const uint32_t meshType = static_cast<uint32_t>(underlyingType(DrawableType::TexturedMesh));
 
-    if ((objectId >> 12) & meshType)
-    {
+    if ((objectId >> 12) & meshType) {
       // If set hit a mesh, nudge the point a little deeper into the scene.
-      const glm::vec3 nudge = sk_worldNudge
-                              * camera::worldDirection(camera, Directions::View::Front);
+      const glm::vec3 nudge = sk_worldNudge * camera::worldDirection(camera, Directions::View::Front);
       worldPos += nudge;
     }
 
@@ -187,31 +172,28 @@ bool CrosshairsInteractionHandler::moveToObjectAtNdcPosition(
     handled = true;
   }
 
-  if (m_objectIdBroadcaster)
-  {
+  if (m_objectIdBroadcaster) {
     m_objectIdBroadcaster(objectId);
   }
 
   return handled;
 }
 
-bool CrosshairsInteractionHandler::
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
+bool CrosshairsInteractionHandler::doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
 {
   return false;
 }
 
 bool CrosshairsInteractionHandler::doHandleMouseMoveEvent(
-  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
-)
+  const QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera& camera)
 {
-  if (MouseMoveMode::None == m_mouseMoveMode)
-  {
+  if (MouseMoveMode::None == m_mouseMoveMode) {
     return false;
   }
 
-  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangedBroadcaster)
-  {
+  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangedBroadcaster) {
     return false;
   }
 
@@ -219,67 +201,54 @@ bool CrosshairsInteractionHandler::doHandleMouseMoveEvent(
 
   const glm::vec2 ndcPos = camera::ndc2d_O_mouse(viewport, {event->x(), event->y()});
 
-  if (Qt::LeftButton & event->buttons())
-  {
-    switch (m_mouseMoveMode)
-    {
-    case MouseMoveMode::Translate:
-    {
-      handled = moveToObjectAtNdcPosition(camera, ndcPos);
-      break;
-    }
-    case MouseMoveMode::RotateInPlane:
-    {
-      break;
-    }
-    case MouseMoveMode::RotateAboutOrigin:
-    {
-      break;
-    }
-    case MouseMoveMode::None:
-    {
-      break;
-    }
+  if (Qt::LeftButton & event->buttons()) {
+    switch (m_mouseMoveMode) {
+      case MouseMoveMode::Translate: {
+        handled = moveToObjectAtNdcPosition(camera, ndcPos);
+        break;
+      }
+      case MouseMoveMode::RotateInPlane: {
+        break;
+      }
+      case MouseMoveMode::RotateAboutOrigin: {
+        break;
+      }
+      case MouseMoveMode::None: {
+        break;
+      }
     }
 
     m_ndcLeftButtonLastPos = ndcPos;
   }
-  else if (Qt::RightButton & event->buttons())
-  {
-    switch (m_mouseMoveMode)
-    {
-    case MouseMoveMode::Translate:
-    {
-      break;
-    }
-    case MouseMoveMode::RotateInPlane:
-    {
-      auto crosshairs = m_crosshairsFrameProvider();
-      const glm::vec2 ndcRotationCenter = ndc_O_world(camera, crosshairs.worldOrigin());
-      const glm::quat R
-        = rotation2dInCameraPlane(camera, m_ndcRightButtonLastPos, ndcPos, ndcRotationCenter);
+  else if (Qt::RightButton & event->buttons()) {
+    switch (m_mouseMoveMode) {
+      case MouseMoveMode::Translate: {
+        break;
+      }
+      case MouseMoveMode::RotateInPlane: {
+        auto crosshairs = m_crosshairsFrameProvider();
+        const glm::vec2 ndcRotationCenter = ndc_O_world(camera, crosshairs.worldOrigin());
+        const glm::quat R = rotation2dInCameraPlane(camera, m_ndcRightButtonLastPos, ndcPos, ndcRotationCenter);
 
-      crosshairs.setFrameToWorldRotation(R * crosshairs.world_O_frame_rotation());
-      m_crosshairsFrameChangedBroadcaster(crosshairs);
+        crosshairs.setFrameToWorldRotation(R * crosshairs.world_O_frame_rotation());
+        m_crosshairsFrameChangedBroadcaster(crosshairs);
 
-      handled = true;
-      break;
-    }
-    case MouseMoveMode::RotateAboutOrigin:
-    {
-      auto crosshairs = m_crosshairsFrameProvider();
-      const glm::quat R = rotation3dAboutCameraPlane(camera, m_ndcRightButtonLastPos, ndcPos);
+        handled = true;
+        break;
+      }
+      case MouseMoveMode::RotateAboutOrigin: {
+        auto crosshairs = m_crosshairsFrameProvider();
+        const glm::quat R = rotation3dAboutCameraPlane(camera, m_ndcRightButtonLastPos, ndcPos);
 
-      crosshairs.setFrameToWorldRotation(R * crosshairs.world_O_frame_rotation());
-      m_crosshairsFrameChangedBroadcaster(crosshairs);
+        crosshairs.setFrameToWorldRotation(R * crosshairs.world_O_frame_rotation());
+        m_crosshairsFrameChangedBroadcaster(crosshairs);
 
-      handled = true;
-      break;
-    }
-    case MouseMoveMode::None:
-    {
-      break;
-    }
+        handled = true;
+        break;
+      }
+      case MouseMoveMode::None: {
+        break;
+      }
     }
 
     m_ndcRightButtonLastPos = ndcPos;
@@ -289,8 +258,9 @@ bool CrosshairsInteractionHandler::doHandleMouseMoveEvent(
 }
 
 bool CrosshairsInteractionHandler::doHandleMousePressEvent(
-  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
-)
+  const QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera& camera)
 {
   bool handled = false;
 
@@ -299,56 +269,48 @@ bool CrosshairsInteractionHandler::doHandleMousePressEvent(
   const bool controlModifier = (Qt::ControlModifier & event->modifiers());
   //    const bool shiftModifier = ( Qt::ShiftModifier & event->modifiers() );
 
-  if (Qt::LeftButton == event->button())
-  {
+  if (Qt::LeftButton == event->button()) {
     m_ndcLeftButtonStartPos = ndcPos;
     m_ndcLeftButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case CrosshairsInteractionMode::Move:
-    {
-      m_mouseMoveMode = MouseMoveMode::Translate;
-      moveToObjectAtNdcPosition(camera, ndcPos);
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case CrosshairsInteractionMode::Move: {
+        m_mouseMoveMode = MouseMoveMode::Translate;
+        moveToObjectAtNdcPosition(camera, ndcPos);
+        handled = true;
+        break;
+      }
     }
   }
-  else if (Qt::RightButton == event->button())
-  {
+  else if (Qt::RightButton == event->button()) {
     m_ndcRightButtonStartPos = ndcPos;
     m_ndcRightButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case CrosshairsInteractionMode::Move:
-    {
-      if (m_rotationModeEnabled)
-      {
-        if (controlModifier)
-        {
-          m_mouseMoveMode = MouseMoveMode::RotateAboutOrigin;
+    switch (m_primaryMode) {
+      case CrosshairsInteractionMode::Move: {
+        if (m_rotationModeEnabled) {
+          if (controlModifier) {
+            m_mouseMoveMode = MouseMoveMode::RotateAboutOrigin;
+          }
+          else {
+            m_mouseMoveMode = MouseMoveMode::RotateInPlane;
+          }
         }
-        else
-        {
-          m_mouseMoveMode = MouseMoveMode::RotateInPlane;
-        }
+        handled = true;
+        break;
       }
-      handled = true;
-      break;
-    }
     }
   }
 
   return handled;
 }
 
-bool CrosshairsInteractionHandler::
-  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
+bool CrosshairsInteractionHandler::doHandleMouseReleaseEvent(
+  const QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera&)
 {
-  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangeDoneBroadcaster)
-  {
+  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangeDoneBroadcaster) {
     return false;
   }
 
@@ -356,8 +318,7 @@ bool CrosshairsInteractionHandler::
 
   const glm::vec2 ndcPos = camera::ndc2d_O_mouse(viewport, {event->x(), event->y()});
 
-  if (Qt::LeftButton == event->button())
-  {
+  if (Qt::LeftButton == event->button()) {
     m_ndcLeftButtonLastPos = ndcPos;
     m_mouseMoveMode = MouseMoveMode::None;
 
@@ -365,8 +326,7 @@ bool CrosshairsInteractionHandler::
     m_crosshairsFrameChangeDoneBroadcaster(m_crosshairsFrameProvider());
     handled = true;
   }
-  else if (Qt::RightButton == event->button())
-  {
+  else if (Qt::RightButton == event->button()) {
     m_ndcRightButtonLastPos = ndcPos;
     m_mouseMoveMode = MouseMoveMode::None;
 
@@ -383,9 +343,7 @@ bool CrosshairsInteractionHandler::
   return handled;
 }
 
-bool CrosshairsInteractionHandler::doHandleWheelEvent(
-  const QWheelEvent* event, const Viewport&, const Camera& camera
-)
+bool CrosshairsInteractionHandler::doHandleWheelEvent(const QWheelEvent* event, const Viewport&, const Camera& camera)
 {
   //    event->orientation(); Qt::Orientation;
   //    event->phase(); Qt::ScrollPhase;
@@ -396,29 +354,26 @@ bool CrosshairsInteractionHandler::doHandleWheelEvent(
   const float numDegrees = event->angleDelta().y() / 8.0f;
   const float delta = inv * numDegrees / 15.0f;
 
-  switch (m_primaryMode)
-  {
-  case CrosshairsInteractionMode::Move:
-  {
-    if (!m_scrollDistanceProvider || !m_crosshairsFrameProvider || !m_crosshairsFrameChangeDoneBroadcaster)
-    {
-      return handled;
+  switch (m_primaryMode) {
+    case CrosshairsInteractionMode::Move: {
+      if (!m_scrollDistanceProvider || !m_crosshairsFrameProvider || !m_crosshairsFrameChangeDoneBroadcaster) {
+        return handled;
+      }
+
+      // Crosshairs move in direction of the frustum ray passing through the
+      // current crosshairs position. For an orthographic camera, this direction
+      // is equivalent to worldDirection( camera, Directions::View::Front )
+      auto crosshairsFrame = m_crosshairsFrameProvider();
+      const glm::vec3 worldPos = crosshairsFrame.worldOrigin();
+      const glm::vec3 cameraFront = worldRayDirection(camera, glm::vec2{ndc_O_world(camera, worldPos)});
+      const float scrollDistance = m_scrollDistanceProvider(cameraFront);
+
+      crosshairsFrame.setWorldOrigin(delta * scrollDistance * cameraFront + worldPos);
+      m_crosshairsFrameChangeDoneBroadcaster(crosshairsFrame);
+
+      handled = true;
+      break;
     }
-
-    // Crosshairs move in direction of the frustum ray passing through the
-    // current crosshairs position. For an orthographic camera, this direction
-    // is equivalent to worldDirection( camera, Directions::View::Front )
-    auto crosshairsFrame = m_crosshairsFrameProvider();
-    const glm::vec3 worldPos = crosshairsFrame.worldOrigin();
-    const glm::vec3 cameraFront = worldRayDirection(camera, glm::vec2{ndc_O_world(camera, worldPos)});
-    const float scrollDistance = m_scrollDistanceProvider(cameraFront);
-
-    crosshairsFrame.setWorldOrigin(delta * scrollDistance * cameraFront + worldPos);
-    m_crosshairsFrameChangeDoneBroadcaster(crosshairsFrame);
-
-    handled = true;
-    break;
-  }
   }
 
   return handled;

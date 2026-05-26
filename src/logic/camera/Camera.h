@@ -46,30 +46,28 @@
  * We can also call "anatomy" space the "crosshairs" space. Then...
  * Suppose we start with a point in image/subject space, and want to go all the way to clip space.
  * Here's what happens step-by-step:
- *   M = world_T_subject      Maps from image/subject space to world space (image header transformation)
- *   R = crosshairs_T_world   Maps from world space to crosshairs-aligned space (custom rotated axes)
- *   V = camera_T_crosshairs  Maps from crosshairs space to camera space (accounts for zoom, pan, etc.)
- *   P = clip_T_camera        Maps from camera space to clip space (perspective or orthographic projection)
+ *   M = world_T_subject      Maps from image/subject space to world space (image header
+ * transformation) R = crosshairs_T_world   Maps from world space to crosshairs-aligned space
+ * (custom rotated axes) V = camera_T_crosshairs  Maps from crosshairs space to camera space
+ * (accounts for zoom, pan, etc.) P = clip_T_camera        Maps from camera space to clip space
+ * (perspective or orthographic projection)
  *
  * So the full transform
  *   clipPos = P * V * R * M * subjectPos
  * is
- *   clipPos = clip_T_camera * camera_T_crosshairs * crosshairs_T_world * world_T_subject * subjectPos
+ *   clipPos = clip_T_camera * camera_T_crosshairs * crosshairs_T_world * world_T_subject *
+ * subjectPos
  */
 class Camera
 {
 public:
-  /// Construct a camera with a projection (either orthographic or perspective) and a functional that
-  /// returns the transformation from the camera's start coordinate frame to the camera's anatomical
-  /// coordinate frame. If no functional is supplied, then the anatomical coordinate frame is equal
-  /// to the Start space. (i.e. anatomy_T_start is identity)
-  Camera(
-    std::unique_ptr<Projection> projection,
-    GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
+  /// Construct a camera with a projection (either orthographic or perspective) and a functional
+  /// that returns the transformation from the camera's start coordinate frame to the camera's
+  /// anatomical coordinate frame. If no functional is supplied, then the anatomical coordinate
+  /// frame is equal to the Start space. (i.e. anatomy_T_start is identity)
+  Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
 
-  Camera(
-    ProjectionType projType,
-    GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
+  Camera(ProjectionType projType, GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
 
   Camera(const Camera&);
   const Camera& operator=(const Camera&);
@@ -107,10 +105,12 @@ public:
   void set_start_T_world(glm::mat4 start_T_world);
 
   /// Set the matrix defining the camera's position relative to the anatomical frame of reference.
-  /// @note This must be a rigid-body matrix (i.e. orthonormal rotational component) with determinant 1.
+  /// @note This must be a rigid-body matrix (i.e. orthonormal rotational component) with
+  /// determinant 1.
   void set_camera_T_anatomy(glm::mat4 camera_T_anatomy);
 
-  /// Get the transformation from the camera's anatomical frame of reference to its nominal orientation.
+  /// Get the transformation from the camera's anatomical frame of reference to its nominal
+  /// orientation.
   const glm::mat4& camera_T_anatomy() const;
 
   /// Get the camera's model-view transformation. This is equal to

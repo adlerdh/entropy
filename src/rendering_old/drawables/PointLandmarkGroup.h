@@ -24,17 +24,16 @@ public:
     UniformsProviderType uniformsProvider,
     std::weak_ptr<MeshRecord> sphereMeshRecord,
     std::weak_ptr<LandmarkGroupRecord> landmarkGroupRecord,
-    bool isFixedRadius = false
-  );
+    bool isFixedRadius = false);
 
   ~PointLandmarkGroup() override;
 
   void setRadius(float radius);
 
   /**
-     * @brief Set material color as NON-premultiplied RGB
-     * @param color RGB (non-premultiplied)
-     */
+   * @brief Set material color as NON-premultiplied RGB
+   * @param color RGB (non-premultiplied)
+   */
   void setMaterialColor(const glm::vec3& color);
 
 private:

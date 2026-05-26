@@ -37,22 +37,17 @@ Camera::Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFram
 }
 
 Camera::Camera(ProjectionType projType, GetterType<CoordinateFrame> anatomy_T_start_provider)
-  : m_anatomy_T_start_provider(anatomy_T_start_provider)
-  , m_camera_T_anatomy(1.0f)
-  , m_start_T_world(1.0f)
+  : m_anatomy_T_start_provider(anatomy_T_start_provider), m_camera_T_anatomy(1.0f), m_start_T_world(1.0f)
 {
-  switch (projType)
-  {
-  case ProjectionType::Orthographic:
-  {
-    m_projection = std::make_unique<OrthographicProjection>();
-    break;
-  }
-  case ProjectionType::Perspective:
-  {
-    m_projection = std::make_unique<PerspectiveProjection>();
-    break;
-  }
+  switch (projType) {
+    case ProjectionType::Orthographic: {
+      m_projection = std::make_unique<OrthographicProjection>();
+      break;
+    }
+    case ProjectionType::Perspective: {
+      m_projection = std::make_unique<PerspectiveProjection>();
+      break;
+    }
   }
 }
 
@@ -69,18 +64,15 @@ const Camera& Camera::operator=(const Camera& other)
 
   m_projection.reset();
 
-  switch (other.projection()->type())
-  {
-  case ProjectionType::Orthographic:
-  {
-    m_projection = std::make_unique<OrthographicProjection>();
-    break;
-  }
-  case ProjectionType::Perspective:
-  {
-    m_projection = std::make_unique<PerspectiveProjection>();
-    break;
-  }
+  switch (other.projection()->type()) {
+    case ProjectionType::Orthographic: {
+      m_projection = std::make_unique<OrthographicProjection>();
+      break;
+    }
+    case ProjectionType::Perspective: {
+      m_projection = std::make_unique<PerspectiveProjection>();
+      break;
+    }
   }
 
   m_projection->setAspectRatio(other.projection()->aspectRatio());
@@ -94,8 +86,7 @@ const Camera& Camera::operator=(const Camera& other)
 
 void Camera::setProjection(std::unique_ptr<Projection> projection)
 {
-  if (projection)
-  {
+  if (projection) {
     m_projection = std::move(projection);
   }
 }
@@ -138,15 +129,17 @@ void Camera::set_camera_T_anatomy(glm::mat4 M)
   // right-handed coordinate system (i.e. determinant must equal 1):
   const float det = glm::determinant(glm::mat3{M});
 
-  if (det <= 0.0f || std::abs(det - 1.0f) > EPS)
-  {
-    spdlog::debug("Cannot set camera_T_anatomy to {} because it is non-rigid; 3x3 determinant = {}",
-                  glm::to_string(M), det);
+  if (det <= 0.0f || std::abs(det - 1.0f) > EPS) {
+    spdlog::debug(
+      "Cannot set camera_T_anatomy to {} because it is non-rigid; 3x3 determinant = {}",
+      glm::to_string(M),
+      det);
     return;
   }
 
-  if (glm::epsilonNotEqual(M[0][3], 0.0f, EPS) || glm::epsilonNotEqual(M[1][3], 0.0f, EPS) ||
-      glm::epsilonNotEqual(M[2][3], 0.0f, EPS) || glm::epsilonNotEqual(M[3][3], 1.0f, EPS))
+  if (
+    glm::epsilonNotEqual(M[0][3], 0.0f, EPS) || glm::epsilonNotEqual(M[1][3], 0.0f, EPS) ||
+    glm::epsilonNotEqual(M[2][3], 0.0f, EPS) || glm::epsilonNotEqual(M[3][3], 1.0f, EPS))
   {
     spdlog::debug("Cannot set camera_T_anatomy to {} because it is not affine", glm::to_string(M));
     return;
@@ -197,8 +190,7 @@ glm::mat4 Camera::camera_T_clip() const
 
 void Camera::setAspectRatio(float ratio)
 {
-  if (ratio > 0.0f)
-  {
+  if (ratio > 0.0f) {
     m_projection->setAspectRatio(ratio);
   }
 }
@@ -218,8 +210,7 @@ void Camera::setZoom(float factor)
   static constexpr float sk_minZoom = 0.001f;
   static constexpr float sk_maxZoom = 1000.0f;
 
-  if (sk_minZoom <= factor && factor <= sk_maxZoom)
-  {
+  if (sk_minZoom <= factor && factor <= sk_maxZoom) {
     m_projection->setZoom(factor);
   }
 }
@@ -258,4 +249,3 @@ float Camera::farDistance() const
 {
   return m_projection->farDistance();
 }
-

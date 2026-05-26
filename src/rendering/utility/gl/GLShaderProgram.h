@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rendering/utility/gl/GLShader.h"
-//#include "rendering/utility/gl/GLErrorChecker.h"
+// #include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/containers/Uniforms.h"
 
 #include <glm/fwd.hpp>
@@ -63,8 +63,8 @@ public:
   bool setUniform(const std::string& name, const std::vector<glm::mat4>& matrices);
 
   /**
-     * @tparam N Number of array elements
-     */
+   * @tparam N Number of array elements
+   */
   template<uint32_t N>
   bool setUniform(const std::string& name, const std::array<float, N>& a)
   {

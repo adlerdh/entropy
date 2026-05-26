@@ -37,8 +37,8 @@ static constexpr float sk_farDist = 2.0f;
  * @return Left, posterior, and superior directions of the Subject in Camera space
  */
 glm::mat3 computeSubjectAxesInCamera(
-  const glm::mat3& camera_O_world_rotation, const glm::mat3& world_O_subject_rotation
-)
+  const glm::mat3& camera_O_world_rotation,
+  const glm::mat3& world_O_subject_rotation)
 {
   return glm::inverseTranspose(camera_O_world_rotation * world_O_subject_rotation);
 }
@@ -52,8 +52,7 @@ CameraLabel::CameraLabel(
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
   GetterType<std::optional<glm::mat4> > subjectToWorldProvider,
-  std::array<std::weak_ptr<GLTexture>, 6> letterTextures
-)
+  std::array<std::weak_ptr<GLTexture>, 6> letterTextures)
   : DrawableBase(std::move(name), DrawableType::CameraLabel)
   ,
 
@@ -73,17 +72,14 @@ CameraLabel::CameraLabel(
 {
   m_renderId = static_cast<uint32_t>(underlyingType(m_type) << 12) | (numCreated() % 4096);
 
-  if (m_uniformsProvider)
-  {
+  if (m_uniformsProvider) {
     m_uniforms = m_uniformsProvider(SimpleProgram::name);
   }
-  else
-  {
+  else {
     throw_debug("Unable to access UniformsProvider");
   }
 
-  for (uint32_t i = 0; i < m_labels.size(); ++i)
-  {
+  for (uint32_t i = 0; i < m_labels.size(); ++i) {
     m_labels[i].m_texture = letterTextures[i];
     m_labels[i].m_world_O_model = sk_ident;
     m_labels[i].m_solidColor = sk_white;
@@ -151,8 +147,7 @@ void CameraLabel::initBuffer()
     sk_numPosComps,
     sk_numPosComps * sizeof(float),
     0,
-    sk_numVerts
-  );
+    sk_numVerts);
 
   VertexAttributeInfo texCoordsInfo(
     BufferComponentType::Float,
@@ -160,8 +155,7 @@ void CameraLabel::initBuffer()
     sk_numTCComps,
     sk_numTCComps * sizeof(float),
     0,
-    sk_numVerts
-  );
+    sk_numVerts);
 
   VertexIndicesInfo indexInfo(IndexType::UInt32, PrimitiveMode::TriangleStrip, sk_numVerts, 0);
 
@@ -177,8 +171,8 @@ void CameraLabel::initBuffer()
   texCoordsBuffer.allocate(sk_numVerts * sk_numTCComps * sizeof(float), sk_texCoordsBuffer.data());
   indicesBuffer.allocate(sk_numVerts * sizeof(uint32_t), sk_indicesBuffer.data());
 
-  m_meshGpuRecord = std::make_unique<
-    MeshGpuRecord>(std::move(positionsBuffer), std::move(indicesBuffer), positionsInfo, indexInfo);
+  m_meshGpuRecord =
+    std::make_unique<MeshGpuRecord>(std::move(positionsBuffer), std::move(indicesBuffer), positionsInfo, indexInfo);
 
   m_meshGpuRecord->setTexCoords(std::move(texCoordsBuffer), texCoordsInfo);
 }
@@ -188,8 +182,7 @@ void CameraLabel::initVao()
   static constexpr GLuint sk_positionsIndex = 0;
   static constexpr GLuint sk_texCoordsIndex = 1;
 
-  if (!m_meshGpuRecord)
-  {
+  if (!m_meshGpuRecord) {
     return;
   }
 
@@ -201,8 +194,7 @@ void CameraLabel::initVao()
   auto& texCoordsObject = m_meshGpuRecord->texCoordsObject();
   auto& indicesObject = m_meshGpuRecord->indicesObject();
 
-  if (!texCoordsInfo || !texCoordsObject)
-  {
+  if (!texCoordsInfo || !texCoordsObject) {
     throw_debug("No mesh texture data");
   }
 
@@ -227,25 +219,21 @@ void CameraLabel::initVao()
 
 void CameraLabel::doRender(const RenderStage& stage)
 {
-  if (!m_shaderProgramActivator)
-  {
+  if (!m_shaderProgramActivator) {
     throw_debug("Unable to access ShaderProgramActivator");
   }
 
-  if (!m_vaoParams)
-  {
+  if (!m_vaoParams) {
     std::ostringstream ss;
     ss << "Null VAO parameters in " << m_name << std::ends;
     throw_debug(ss.str());
   }
 
-  if (RenderStage::Overlay != stage)
-  {
+  if (RenderStage::Overlay != stage) {
     return;
   }
 
-  if (auto program = m_shaderProgramActivator(SimpleProgram::name))
-  {
+  if (auto program = m_shaderProgramActivator(SimpleProgram::name)) {
     using namespace SimpleProgram;
 
     // These uniforms are common to all labels:
@@ -256,13 +244,10 @@ void CameraLabel::doRender(const RenderStage& stage)
     m_uniforms.setValue(frag::opacity, masterOpacityMultiplier());
 
     // Render all visible labels
-    for (auto& label : m_labels)
-    {
-      if (label.m_visible)
-      {
+    for (auto& label : m_labels) {
+      if (label.m_visible) {
         auto texture = label.m_texture.lock();
-        if (!texture)
-        {
+        if (!texture) {
           continue;
         }
 
@@ -280,8 +265,7 @@ void CameraLabel::doRender(const RenderStage& stage)
       }
     }
   }
-  else
-  {
+  else {
     throw_debug("Null Simple shader program");
   }
 }
@@ -299,15 +283,13 @@ void CameraLabel::doUpdate(
   // Additional amount (in view pixels) by which to move in the labels:
   static constexpr float sk_pixelBorder = 7.0f;
 
-  if (!m_subjectToWorldProvider)
-  {
+  if (!m_subjectToWorldProvider) {
     setVisible(false);
     return;
   }
 
   const auto world_O_subject = m_subjectToWorldProvider();
-  if (!world_O_subject)
-  {
+  if (!world_O_subject) {
     setVisible(false);
     return;
   }
@@ -319,23 +301,20 @@ void CameraLabel::doUpdate(
   const float widthScale = sk_labelSize / viewport.aspectRatio();
   const float heightScale = sk_labelSize * viewport.aspectRatio();
 
-  const glm::vec3 scaleVec = (widthScale > heightScale)
-                               ? glm::vec3{widthScale, sk_labelSize, 1.0f}
-                               : glm::vec3{sk_labelSize, heightScale, 1.0f};
+  const glm::vec3 scaleVec =
+    (widthScale > heightScale) ? glm::vec3{widthScale, sk_labelSize, 1.0f} : glm::vec3{sk_labelSize, heightScale, 1.0f};
 
   const glm::mat4 scaleTx = glm::scale(scaleVec);
 
   // The active image subject's left, posterior, and superior directions in Camera space.
   // Columns 0, 1, and 2 of the matrix correspond to left, posterior, and superior, respectively.
-  const glm::mat3 axes
-    = computeSubjectAxesInCamera(glm::mat3{camera.camera_T_world()}, glm::mat3{*world_O_subject});
+  const glm::mat3 axes = computeSubjectAxesInCamera(glm::mat3{camera.camera_T_world()}, glm::mat3{*world_O_subject});
 
   const glm::mat3 axesAbs{glm::abs(axes[0]), glm::abs(axes[1]), glm::abs(axes[2])};
   const glm::mat3 axesSgn{glm::sign(axes[0]), glm::sign(axes[1]), glm::sign(axes[2])};
 
   // Render the two sets of labels that are closest to the view plane:
-  if (axesAbs[0].z > axesAbs[1].z && axesAbs[0].z > axesAbs[2].z)
-  {
+  if (axesAbs[0].z > axesAbs[1].z && axesAbs[0].z > axesAbs[2].z) {
     m_labels[L].m_visible = false;
     m_labels[R].m_visible = false;
     m_labels[P].m_visible = true;
@@ -343,8 +322,7 @@ void CameraLabel::doUpdate(
     m_labels[S].m_visible = true;
     m_labels[I].m_visible = true;
   }
-  else if (axesAbs[1].z > axesAbs[0].z && axesAbs[1].z > axesAbs[2].z)
-  {
+  else if (axesAbs[1].z > axesAbs[0].z && axesAbs[1].z > axesAbs[2].z) {
     m_labels[L].m_visible = true;
     m_labels[R].m_visible = true;
     m_labels[P].m_visible = false;
@@ -352,8 +330,7 @@ void CameraLabel::doUpdate(
     m_labels[S].m_visible = true;
     m_labels[I].m_visible = true;
   }
-  else if (axesAbs[2].z > axesAbs[0].z && axesAbs[2].z > axesAbs[1].z)
-  {
+  else if (axesAbs[2].z > axesAbs[0].z && axesAbs[2].z > axesAbs[1].z) {
     m_labels[L].m_visible = true;
     m_labels[R].m_visible = true;
     m_labels[P].m_visible = true;
@@ -367,17 +344,14 @@ void CameraLabel::doUpdate(
 
   const glm::vec3 invDims = glm::vec3{1.0f / viewport.width(), 1.0f / viewport.height(), 0.0f};
 
-  const glm::vec3 ndcLabelMin = sk_ndcMin + glm::vec3{scaleVec.x, scaleVec.y, 0.0f}
-                                + 2.0f * sk_pixelBorder * invDims;
+  const glm::vec3 ndcLabelMin = sk_ndcMin + glm::vec3{scaleVec.x, scaleVec.y, 0.0f} + 2.0f * sk_pixelBorder * invDims;
 
-  const glm::vec3 ndcLabelMax = sk_ndcMax - glm::vec3{scaleVec.x, scaleVec.y, 0.0f}
-                                - 2.0f * sk_pixelBorder * invDims;
+  const glm::vec3 ndcLabelMax = sk_ndcMax - glm::vec3{scaleVec.x, scaleVec.y, 0.0f} - 2.0f * sk_pixelBorder * invDims;
 
   // Compute the translation vectors for the L (0), P (1), and S (2) labels:
   glm::mat3 t;
 
-  for (int i = 0; i < 3; ++i)
-  {
+  for (int i = 0; i < 3; ++i) {
     t[i] = (axesAbs[i].x > 0.0f && axesAbs[i].y / axesAbs[i].x <= 1.0f)
              ? glm::vec3{axesSgn[i].x, axesSgn[i].y * axesAbs[i].y / axesAbs[i].x, 0.0f}
              : glm::vec3{axesSgn[i].x * axesAbs[i].x / axesAbs[i].y, axesSgn[i].y, 0.0f};

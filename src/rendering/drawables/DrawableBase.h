@@ -38,8 +38,7 @@ public:
     const Viewport& viewport,
     const Camera& camera,
     const CoordinateFrame& crosshairs,
-    const AccumulatedRenderingData& parentData
-  ) override;
+    const AccumulatedRenderingData& parentData) override;
 
   void printTree(int depth) const override;
 

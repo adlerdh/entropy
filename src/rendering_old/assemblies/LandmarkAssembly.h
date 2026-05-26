@@ -33,8 +33,7 @@ class LandmarkAssembly final : public IDrawableAssembly, public ObjectCounter<La
   /// If it does exist, then two matrices are returned:
   /// 1) Full affine transformation from Landmark Group to World, which includes scale and shear.
   /// 2) Rigid-body transformation from Landmark Group to World, which ignores scale and shear.
-  using LmGroupToWorldTxQuerierType
-    = QuerierType<std::optional<std::pair<glm::mat4, glm::mat4> >, uuids::uuid>;
+  using LmGroupToWorldTxQuerierType = QuerierType<std::optional<std::pair<glm::mat4, glm::mat4> >, uuids::uuid>;
 
 public:
   explicit LandmarkAssembly(
@@ -42,8 +41,7 @@ public:
     UniformsProviderType,
     GetterType<std::unique_ptr<MeshGpuRecord> > meshGpuRecordProvider,
     LmGroupToWorldTxQuerierType landmarkGroupToWorldTxQuerier,
-    QuerierType<DrawableScaling, uuids::uuid> landarkScalingQuerier
-  );
+    QuerierType<DrawableScaling, uuids::uuid> landarkScalingQuerier);
 
   ~LandmarkAssembly() override = default;
 
@@ -107,9 +105,7 @@ private:
 
   /// Hash map of landmark group drawables. (Key: UID of the landmark group).
   /// @todo This map will hold separate 2D and 3D versions of the drawables.
-  std::unordered_map<
-    uuids::uuid,
-    std::pair<std::shared_ptr<LandmarkGroup3d>, std::shared_ptr<LandmarkGroup3d> > >
+  std::unordered_map<uuids::uuid, std::pair<std::shared_ptr<LandmarkGroup3d>, std::shared_ptr<LandmarkGroup3d> > >
     m_lmDrawables;
 
   /// Rendering properties for all landmarks

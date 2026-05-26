@@ -69,8 +69,7 @@ public:
     SceneTypeProviderType sceneTypeProvider,
     GetterType<view_type_range_t> viewUidAndTypeRangeProvider,
     ViewsOfTypeProviderType viewsOfTypeProvider,
-    InteractionPackProviderType interactionPackProvider
-  );
+    InteractionPackProviderType interactionPackProvider);
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager& operator=(const ConnectionManager&) = delete;

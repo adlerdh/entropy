@@ -17,7 +17,7 @@ ControlFrame::ControlFrame(
   , m_renderedImageUids()
   , m_metricImageUids()
   , m_preferredDefaultRenderedImages({}) // Don't specify images to render by default
-  , m_defaultRenderAllImages(true) // Render all images by default in the frame:
+  , m_defaultRenderAllImages(true)       // Render all images by default in the frame:
   , m_viewType(viewType)
   , m_renderMode(renderMode)
   , m_intensityProjectionMode(ipMode)
@@ -56,8 +56,9 @@ void ControlFrame::setImageRendered(const AppData& appData, const uuids::uuid& i
     return;
   }
 
-  if (std::end(m_renderedImageUids) !=
-      std::find(std::begin(m_renderedImageUids), std::end(m_renderedImageUids), imageUid))
+  if (
+    std::end(m_renderedImageUids) !=
+    std::find(std::begin(m_renderedImageUids), std::end(m_renderedImageUids), imageUid))
   {
     return; // image already exists, so do nothing
   }
@@ -69,10 +70,8 @@ void ControlFrame::setImageRendered(const AppData& appData, const uuids::uuid& i
 
   bool inserted = false;
 
-  for (auto it = std::begin(m_renderedImageUids); std::end(m_renderedImageUids) != it; ++it)
-  {
-    if (const auto i = appData.imageIndex(*it))
-    {
+  for (auto it = std::begin(m_renderedImageUids); std::end(m_renderedImageUids) != it; ++it) {
+    if (const auto i = appData.imageIndex(*it)) {
       if (*imageIndex < *i) {
         // Insert the desired image in the right place
         m_renderedImageUids.insert(it, imageUid);
@@ -94,8 +93,7 @@ const std::list<uuids::uuid>& ControlFrame::renderedImages() const
 
 void ControlFrame::setRenderedImages(const std::list<uuids::uuid>& imageUids, bool filterByDefaults)
 {
-  if (filterByDefaults && !m_defaultRenderAllImages)
-  {
+  if (filterByDefaults && !m_defaultRenderAllImages) {
     m_renderedImageUids.clear();
     std::size_t index = 0;
 
@@ -106,8 +104,7 @@ void ControlFrame::setRenderedImages(const std::list<uuids::uuid>& imageUids, bo
       ++index;
     }
   }
-  else
-  {
+  else {
     m_renderedImageUids = imageUids;
   }
 }
@@ -142,9 +139,7 @@ void ControlFrame::setImageUsedForMetric(const AppData& appData, std::size_t ind
     return;
   }
 
-  if (std::end(m_metricImageUids) !=
-      std::find(std::begin(m_metricImageUids), std::end(m_metricImageUids), *imageUid))
-  {
+  if (std::end(m_metricImageUids) != std::find(std::begin(m_metricImageUids), std::end(m_metricImageUids), *imageUid)) {
     return; // image already exists, so do nothing
   }
 
@@ -156,10 +151,8 @@ void ControlFrame::setImageUsedForMetric(const AppData& appData, std::size_t ind
 
   bool inserted = false;
 
-  for (auto it = std::begin(m_metricImageUids); std::end(m_metricImageUids) != it; ++it)
-  {
-    if (const auto i = appData.imageIndex(*it))
-    {
+  for (auto it = std::begin(m_metricImageUids); std::end(m_metricImageUids) != it; ++it) {
+    if (const auto i = appData.imageIndex(*it)) {
       if (index < *i) {
         // Insert the desired image in the right place
         m_metricImageUids.insert(it, *imageUid);
@@ -188,17 +181,16 @@ const std::list<uuids::uuid>& ControlFrame::visibleImages() const
 {
   static const std::list<uuids::uuid> sk_noImages;
 
-  switch (m_renderMode)
-  {
-  case ViewRenderMode::Image: {
-    return renderedImages();
-  }
-  case ViewRenderMode::Disabled: {
-    return sk_noImages;
-  }
-  default: {
-    return metricImages();
-  }
+  switch (m_renderMode) {
+    case ViewRenderMode::Image: {
+      return renderedImages();
+    }
+    case ViewRenderMode::Disabled: {
+      return sk_noImages;
+    }
+    default: {
+      return metricImages();
+    }
   }
 }
 
@@ -208,8 +200,7 @@ void ControlFrame::updateImageOrdering(uuid_range_t orderedImageUids)
   std::list<uuids::uuid> newMetricImageUids;
 
   // Loop through the images in new order:
-  for (const auto& imageUid : orderedImageUids)
-  {
+  for (const auto& imageUid : orderedImageUids) {
     auto it1 = std::find(std::begin(m_renderedImageUids), std::end(m_renderedImageUids), imageUid);
     if (std::end(m_renderedImageUids) != it1) {
       // This image is rendered, so place in new order:

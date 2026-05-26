@@ -59,16 +59,17 @@ ImFont* loadFont(
   // Set font_cfg->FontDataOwnedByAtlas=false to keep ownership of data and it won't be freed.
 
   return ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
-    static_cast<void*>(fontData), static_cast<int32_t>(fontFile.size()),
-    static_cast<float>(fontSize), &fontConfig, glyphRange);
+    static_cast<void*>(fontData),
+    static_cast<int32_t>(fontFile.size()),
+    static_cast<float>(fontSize),
+    &fontConfig,
+    glyphRange);
 }
 
 } // namespace
 
 ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler& callbackHandler)
-  : m_appData(appData)
-  , m_callbackHandler(callbackHandler)
-  , m_contentScale(1.0f)
+  : m_appData(appData), m_callbackHandler(callbackHandler), m_contentScale(1.0f)
 {
   IMGUI_CHECKVERSION();
 
@@ -139,11 +140,14 @@ void ImGuiWrapper::setCallbacks(
   std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesNN,
   std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesLinear,
   std::function<std::optional<int64_t>(std::size_t imageIndex)> getSegLabel,
-  std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)> createBlankSeg,
+  std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>
+    createBlankSeg,
   std::function<bool(const uuids::uuid& segUid)> clearSeg,
   std::function<bool(const uuids::uuid& segUid)> removeSeg,
-  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)> executeGraphCutsSeg,
-  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)> executePoissonSeg,
+  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
+    executeGraphCutsSeg,
+  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
+    executePoissonSeg,
   std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
   std::function<void()> paintActiveSegmentationWithActivePolygon)
 {
@@ -207,8 +211,7 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
 {
   std::lock_guard<std::mutex> lock(m_isosurfaceTaskQueueMutex);
 
-  while (!m_isosurfaceTaskQueueForGpuMeshGeneration.empty())
-  {
+  while (!m_isosurfaceTaskQueueForGpuMeshGeneration.empty()) {
     const uuids::uuid taskUid = m_isosurfaceTaskQueueForGpuMeshGeneration.front();
     m_isosurfaceTaskQueueForGpuMeshGeneration.pop();
 
@@ -228,8 +231,10 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
     // Remove the future
     m_futures.erase(it);
 
-    if (AsyncTasks::IsosurfaceMeshGeneration != value.task || false == value.success ||
-        !value.imageUid || !value.imageComponent || !value.objectUid) {
+    if (
+      AsyncTasks::IsosurfaceMeshGeneration != value.task || false == value.success || !value.imageUid ||
+      !value.imageComponent || !value.objectUid)
+    {
       spdlog::error("Failed task {}", taskUid);
       continue;
     }
@@ -296,14 +301,16 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
 
 /*
 Q: How should I handle DPI in my application?
-The short answer is: obtain the desired DPI scale, load your fonts resized with that scale (always round down fonts
-size to the nearest integer), and scale your Style structure accordingly using style.ScaleAllSizes().
+The short answer is: obtain the desired DPI scale, load your fonts resized with that scale (always
+round down fonts size to the nearest integer), and scale your Style structure accordingly using
+style.ScaleAllSizes().
 
 Your application may want to detect DPI change and reload the fonts and reset style between frames.
 
-Your ui code should avoid using hardcoded constants for size and positioning. Prefer to express values as multiple of
-reference values such as ImGui::GetFontSize() or ImGui::GetFrameHeight(). So e.g. instead of seeing a hardcoded height of
-500 for a given item/window, you may want to use 30*ImGui::GetFontSize() instead.
+Your ui code should avoid using hardcoded constants for size and positioning. Prefer to express
+values as multiple of reference values such as ImGui::GetFontSize() or ImGui::GetFrameHeight(). So
+e.g. instead of seeing a hardcoded height of 500 for a given item/window, you may want to use
+30*ImGui::GetFontSize() instead.
 */
 void ImGuiWrapper::setContentScale(float scale)
 {
@@ -337,36 +344,51 @@ void ImGuiWrapper::initializeFonts()
   const float cousineFontSize = 14.0f;
 
   myImFormatString(
-    cousineFontConfig.Name, IM_ARRAYSIZE(cousineFontConfig.Name),
-    "%s, %.0fpx", "Cousine Regular", cousineFontSize);
+    cousineFontConfig.Name,
+    IM_ARRAYSIZE(cousineFontConfig.Name),
+    "%s, %.0fpx",
+    "Cousine Regular",
+    cousineFontSize);
 
   ImFontConfig helveticaFontConfig;
   const float helveticaFontSize = 16.0f;
 
   myImFormatString(
-    helveticaFontConfig.Name, IM_ARRAYSIZE(helveticaFontConfig.Name),
-    "%s, %.0fpx", "Helvetica Neue Light", helveticaFontSize);
+    helveticaFontConfig.Name,
+    IM_ARRAYSIZE(helveticaFontConfig.Name),
+    "%s, %.0fpx",
+    "Helvetica Neue Light",
+    helveticaFontSize);
 
   ImFontConfig spaceGroteskFontConfig;
   const float spaceGroteskFontSize = 16.0f;
 
   myImFormatString(
-    spaceGroteskFontConfig.Name, IM_ARRAYSIZE(spaceGroteskFontConfig.Name),
-    "%s, %.0fpx", "Space Grotesk Light", spaceGroteskFontSize);
+    spaceGroteskFontConfig.Name,
+    IM_ARRAYSIZE(spaceGroteskFontConfig.Name),
+    "%s, %.0fpx",
+    "Space Grotesk Light",
+    spaceGroteskFontSize);
 
   ImFontConfig sfMonoFontConfig;
   const float sfMonoFontSize = 14.0f;
 
   myImFormatString(
-    sfMonoFontConfig.Name, IM_ARRAYSIZE(sfMonoFontConfig.Name),
-    "%s, %.0fpx", "SF Mono Regular", sfMonoFontSize);
+    sfMonoFontConfig.Name,
+    IM_ARRAYSIZE(sfMonoFontConfig.Name),
+    "%s, %.0fpx",
+    "SF Mono Regular",
+    sfMonoFontSize);
 
   ImFontConfig sfProFontConfig;
   const float sfProFontSize = 16.0f;
 
   myImFormatString(
-    sfProFontConfig.Name, IM_ARRAYSIZE(sfProFontConfig.Name),
-    "%s, %.0fpx", "SF Pro Regular", sfProFontSize);
+    sfProFontConfig.Name,
+    IM_ARRAYSIZE(sfProFontConfig.Name),
+    "%s, %.0fpx",
+    "SF Pro Regular",
+    sfProFontSize);
 
   // Merge in icons from Fork Awesome:
   ImFontConfig forkAwesomeFontConfig;
@@ -376,8 +398,11 @@ void ImGuiWrapper::initializeFonts()
   const float forkAwesomeFontSize = 14.0f;
 
   myImFormatString(
-    forkAwesomeFontConfig.Name, IM_ARRAYSIZE(forkAwesomeFontConfig.Name),
-    "%s, %.0fpx", "Fork Awesome", forkAwesomeFontSize);
+    forkAwesomeFontConfig.Name,
+    IM_ARRAYSIZE(forkAwesomeFontConfig.Name),
+    "%s, %.0fpx",
+    "Fork Awesome",
+    forkAwesomeFontSize);
 
   /// @see For details about Fork Awesome fonts: https://forkaweso.me/Fork-Awesome/icons/
   static const ImWchar forkAwesomeIconGlyphRange[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
@@ -390,93 +415,103 @@ void ImGuiWrapper::initializeFonts()
   // You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
   // AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the
   // font among multiple. If the file cannot be loaded, the function will return NULL.
-  // Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-  // The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when
-  // calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+  // Please handle those errors in your application (e.g. use an assertion, or display an error and
+  // quit). The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture
+  // when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will
+  // call.
   /// @todo use Freetype Rasterizer and Small Font Sizes
 
   ImFont* cousineFontPtr = loadFont(cousineFontPath, cousineFontConfig, m_contentScale * cousineFontSize, nullptr);
-  ImFont* fork1Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
+  ImFont* fork1Ptr = loadFont(
+    forkAwesomeFontPath,
+    forkAwesomeFontConfig,
+    m_contentScale * forkAwesomeFontSize,
+    forkAwesomeIconGlyphRange);
 
-  ImFont* helveticaFontPtr = loadFont(helveticaFontPath, helveticaFontConfig, m_contentScale * helveticaFontSize, nullptr);
-  ImFont* fork2Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
+  ImFont* helveticaFontPtr =
+    loadFont(helveticaFontPath, helveticaFontConfig, m_contentScale * helveticaFontSize, nullptr);
+  ImFont* fork2Ptr = loadFont(
+    forkAwesomeFontPath,
+    forkAwesomeFontConfig,
+    m_contentScale * forkAwesomeFontSize,
+    forkAwesomeIconGlyphRange);
 
-  ImFont* spaceFontPtr = loadFont(spaceGroteskFontPath, spaceGroteskFontConfig, m_contentScale * spaceGroteskFontSize, nullptr);
-  ImFont* fork3Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
+  ImFont* spaceFontPtr =
+    loadFont(spaceGroteskFontPath, spaceGroteskFontConfig, m_contentScale * spaceGroteskFontSize, nullptr);
+  ImFont* fork3Ptr = loadFont(
+    forkAwesomeFontPath,
+    forkAwesomeFontConfig,
+    m_contentScale * forkAwesomeFontSize,
+    forkAwesomeIconGlyphRange);
 
   ImFont* sfMonoFontPtr = loadFont(sfMonoFontPath, sfMonoFontConfig, m_contentScale * sfMonoFontSize, nullptr);
-  ImFont* fork4Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
+  ImFont* fork4Ptr = loadFont(
+    forkAwesomeFontPath,
+    forkAwesomeFontConfig,
+    m_contentScale * forkAwesomeFontSize,
+    forkAwesomeIconGlyphRange);
 
   ImFont* sfProFontPtr = loadFont(sfProFontPath, sfProFontConfig, m_contentScale * sfProFontSize, nullptr);
-  ImFont* fork5Ptr = loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, m_contentScale * forkAwesomeFontSize, forkAwesomeIconGlyphRange);
+  ImFont* fork5Ptr = loadFont(
+    forkAwesomeFontPath,
+    forkAwesomeFontConfig,
+    m_contentScale * forkAwesomeFontSize,
+    forkAwesomeIconGlyphRange);
 
-  if (cousineFontPtr && fork1Ptr)
-  {
+  if (cousineFontPtr && fork1Ptr) {
     m_appData.guiData().m_fonts[cousineFontPath] = cousineFontPtr;
     m_appData.guiData().m_fonts[cousineFontPath + forkAwesomeFontPath] = fork1Ptr;
     spdlog::debug("Loaded font {}", cousineFontPath);
   }
-  else
-  {
+  else {
     spdlog::error("Unable to load font {}", forkAwesomeFontPath);
   }
 
-  if (helveticaFontPtr && fork2Ptr)
-  {
+  if (helveticaFontPtr && fork2Ptr) {
     m_appData.guiData().m_fonts[helveticaFontPath] = helveticaFontPtr;
     m_appData.guiData().m_fonts[helveticaFontPath + forkAwesomeFontPath] = fork2Ptr;
     spdlog::debug("Loaded font {}", helveticaFontPath);
   }
-  else
-  {
+  else {
     spdlog::error("Unable to load font {}", forkAwesomeFontPath);
   }
 
-  if (spaceFontPtr && fork3Ptr)
-  {
+  if (spaceFontPtr && fork3Ptr) {
     m_appData.guiData().m_fonts[spaceGroteskFontPath] = spaceFontPtr;
     m_appData.guiData().m_fonts[spaceGroteskFontPath + forkAwesomeFontPath] = fork3Ptr;
     spdlog::debug("Loaded font {}", spaceGroteskFontPath);
   }
-  else
-  {
+  else {
     spdlog::error("Unable to load font {}", forkAwesomeFontPath);
   }
 
-  if (sfMonoFontPtr && fork4Ptr)
-  {
+  if (sfMonoFontPtr && fork4Ptr) {
     m_appData.guiData().m_fonts[sfMonoFontPath] = sfMonoFontPtr;
     m_appData.guiData().m_fonts[sfMonoFontPath + forkAwesomeFontPath] = fork4Ptr;
     spdlog::debug("Loaded font {}", sfMonoFontPath);
   }
-  else
-  {
+  else {
     spdlog::error("Unable to load font {}", forkAwesomeFontPath);
   }
 
-  if (sfProFontPtr && fork5Ptr)
-  {
+  if (sfProFontPtr && fork5Ptr) {
     m_appData.guiData().m_fonts[sfProFontPath] = sfProFontPtr;
     m_appData.guiData().m_fonts[sfProFontPath + forkAwesomeFontPath] = fork5Ptr;
     spdlog::debug("Loaded font {}", sfProFontPath);
   }
-  else
-  {
+  else {
     spdlog::error("Unable to load font {}", forkAwesomeFontPath);
   }
 
   spdlog::debug("Done loading fonts");
 }
 
-std::pair<std::string, std::string> ImGuiWrapper::getImageDisplayAndFileNames(std::size_t imageIndex
-) const
+std::pair<std::string, std::string> ImGuiWrapper::getImageDisplayAndFileNames(std::size_t imageIndex) const
 {
   static const std::string s_empty("<unknown>");
 
-  if (const auto imageUid = m_appData.imageUid(imageIndex))
-  {
-    if (const Image* image = m_appData.image(*imageUid))
-    {
+  if (const auto imageUid = m_appData.imageUid(imageIndex)) {
+    if (const Image* image = m_appData.image(*imageUid)) {
       return {image->settings().displayName(), image->header().fileName().string()};
     }
   }
@@ -496,12 +531,9 @@ void ImGuiWrapper::render()
   /// @todo Move these functions elsewhere
 
   /// @todo remove this
-  auto getActiveImageIndex = [this]() -> std::size_t
-  {
-    if (const auto imageUid = m_appData.activeImageUid())
-    {
-      if (const auto index = m_appData.imageIndex(*imageUid))
-      {
+  auto getActiveImageIndex = [this]() -> std::size_t {
+    if (const auto imageUid = m_appData.activeImageUid()) {
+      if (const auto index = m_appData.imageIndex(*imageUid)) {
         return *index;
       }
     }
@@ -510,90 +542,79 @@ void ImGuiWrapper::render()
     return 0;
   };
 
-  auto setActiveImageIndex = [this](std::size_t index)
-  {
-    if (const auto imageUid = m_appData.imageUid(index))
-    {
-      if (!m_appData.setActiveImageUid(*imageUid))
-      {
+  auto setActiveImageIndex = [this](std::size_t index) {
+    if (const auto imageUid = m_appData.imageUid(index)) {
+      if (!m_appData.setActiveImageUid(*imageUid)) {
         spdlog::warn("Cannot set active image to {}", *imageUid);
       }
     }
-    else
-    {
+    else {
       spdlog::warn("Cannot set active image to invalid index {}", index);
     }
   };
 
-  auto getImageHasActiveSeg = [this](std::size_t index) -> bool
-  {
-    if (const auto imageUid = m_appData.imageUid(index))
-    {
+  auto getImageHasActiveSeg = [this](std::size_t index) -> bool {
+    if (const auto imageUid = m_appData.imageUid(index)) {
       return m_appData.isImageBeingSegmented(*imageUid);
     }
-    else
-    {
+    else {
       spdlog::warn("Cannot get whether seg is active for invalid image index {}", index);
       return false;
     }
   };
 
-  auto setImageHasActiveSeg = [this](std::size_t index, bool set)
-  {
-    if (const auto imageUid = m_appData.imageUid(index))
-    {
+  auto setImageHasActiveSeg = [this](std::size_t index, bool set) {
+    if (const auto imageUid = m_appData.imageUid(index)) {
       m_appData.setImageBeingSegmented(*imageUid, set);
     }
-    else
-    {
+    else {
       spdlog::warn("Cannot set whether seg is active for invalid image index {}", index);
     }
   };
 
   /// @todo remove this
-  auto getMouseMode = [this]() { return m_appData.state().mouseMode(); };
+  auto getMouseMode = [this]() {
+    return m_appData.state().mouseMode();
+  };
 
-  auto setMouseMode = [this](MouseMode mouseMode) { m_callbackHandler.setMouseMode(mouseMode); };
+  auto setMouseMode = [this](MouseMode mouseMode) {
+    m_callbackHandler.setMouseMode(mouseMode);
+  };
 
-  auto cycleViewLayout = [this](int step) { m_appData.windowData().cycleCurrentLayout(step); };
+  auto cycleViewLayout = [this](int step) {
+    m_appData.windowData().cycleCurrentLayout(step);
+  };
 
   /// @todo remove this
-  auto getNumImageColorMaps = [this]() -> std::size_t { return m_appData.numImageColorMaps(); };
+  auto getNumImageColorMaps = [this]() -> std::size_t {
+    return m_appData.numImageColorMaps();
+  };
 
-  auto getImageColorMap = [this](std::size_t cmapIndex) -> ImageColorMap*
-  {
-    if (const auto cmapUid = m_appData.imageColorMapUid(cmapIndex))
-    {
+  auto getImageColorMap = [this](std::size_t cmapIndex) -> ImageColorMap* {
+    if (const auto cmapUid = m_appData.imageColorMapUid(cmapIndex)) {
       return m_appData.imageColorMap(*cmapUid);
     }
     return nullptr;
   };
 
-  auto getLabelTable = [this](std::size_t tableIndex) -> ParcellationLabelTable*
-  {
-    if (const auto tableUid = m_appData.labelTableUid(tableIndex))
-    {
+  auto getLabelTable = [this](std::size_t tableIndex) -> ParcellationLabelTable* {
+    if (const auto tableUid = m_appData.labelTableUid(tableIndex)) {
       return m_appData.labelTable(*tableUid);
     }
     return nullptr;
   };
 
-  auto getImageIsVisibleSetting = [this](std::size_t imageIndex) -> bool
-  {
-    if (const auto imageUid = m_appData.imageUid(imageIndex))
-    {
-      if (const Image* image = m_appData.image(*imageUid))
-      {
+  auto getImageIsVisibleSetting = [this](std::size_t imageIndex) -> bool {
+    if (const auto imageUid = m_appData.imageUid(imageIndex)) {
+      if (const Image* image = m_appData.image(*imageUid)) {
         return image->settings().visibility();
       }
     }
     return false;
   };
 
-  auto getImageIsActive = [this](std::size_t imageIndex) -> bool
-  {
-    if (const auto imageUid = m_appData.imageUid(imageIndex))
-    {
+  auto getImageIsActive = [this](std::size_t imageIndex) -> bool {
+    if (const auto imageUid = m_appData.imageUid(imageIndex)) {
       const auto activeImageUid = m_appData.activeImageUid();
 
       return (*imageUid == *activeImageUid);
@@ -601,100 +622,77 @@ void ImGuiWrapper::render()
     return false;
   };
 
-  auto moveImageBackward = [this](const uuids::uuid& imageUid) -> bool
-  {
-    if (m_appData.moveImageBackwards(imageUid))
-    {
+  auto moveImageBackward = [this](const uuids::uuid& imageUid) -> bool {
+    if (m_appData.moveImageBackwards(imageUid)) {
       m_appData.windowData().updateImageOrdering(m_appData.imageUidsOrdered());
       return true;
     }
     return false;
   };
 
-  auto moveImageForward = [this](const uuids::uuid& imageUid) -> bool
-  {
-    if (m_appData.moveImageForwards(imageUid))
-    {
+  auto moveImageForward = [this](const uuids::uuid& imageUid) -> bool {
+    if (m_appData.moveImageForwards(imageUid)) {
       m_appData.windowData().updateImageOrdering(m_appData.imageUidsOrdered());
       return true;
     }
     return false;
   };
 
-  auto moveImageToBack = [this](const uuids::uuid& imageUid) -> bool
-  {
-    if (m_appData.moveImageToBack(imageUid))
-    {
+  auto moveImageToBack = [this](const uuids::uuid& imageUid) -> bool {
+    if (m_appData.moveImageToBack(imageUid)) {
       m_appData.windowData().updateImageOrdering(m_appData.imageUidsOrdered());
       return true;
     }
     return false;
   };
 
-  auto moveImageToFront = [this](const uuids::uuid& imageUid) -> bool
-  {
-    if (m_appData.moveImageToFront(imageUid))
-    {
+  auto moveImageToFront = [this](const uuids::uuid& imageUid) -> bool {
+    if (m_appData.moveImageToFront(imageUid)) {
       m_appData.windowData().updateImageOrdering(m_appData.imageUidsOrdered());
       return true;
     }
     return false;
   };
 
-  auto applyImageSelectionAndRenderModesToAllViews = [this](const uuids::uuid& viewUid)
-  {
+  auto applyImageSelectionAndRenderModesToAllViews = [this](const uuids::uuid& viewUid) {
     m_appData.windowData().applyImageSelectionToAllCurrentViews(viewUid);
     m_appData.windowData().applyViewRenderModeAndProjectionToAllCurrentViews(viewUid);
   };
 
-  auto getViewCameraRotation = [this](const uuids::uuid& viewUid) -> glm::quat
-  {
+  auto getViewCameraRotation = [this](const uuids::uuid& viewUid) -> glm::quat {
     const View* view = m_appData.windowData().getCurrentView(viewUid);
-    if (!view)
-      return sk_identityRotation;
+    if (!view) return sk_identityRotation;
 
     return helper::computeCameraRotationRelativeToWorld(view->camera());
   };
 
-  auto setViewCameraRotation =
-    [this](const uuids::uuid& viewUid, const glm::quat& camera_T_world_rotationDelta)
-  { m_callbackHandler.doCameraRotate3d(viewUid, camera_T_world_rotationDelta); };
+  auto setViewCameraRotation = [this](const uuids::uuid& viewUid, const glm::quat& camera_T_world_rotationDelta) {
+    m_callbackHandler.doCameraRotate3d(viewUid, camera_T_world_rotationDelta);
+  };
 
-  auto setViewCameraDirection =
-    [this](const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)
-  { m_callbackHandler.handleSetViewForwardDirection(viewUid, worldFwdDirection); };
+  auto setViewCameraDirection = [this](const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection) {
+    m_callbackHandler.handleSetViewForwardDirection(viewUid, worldFwdDirection);
+  };
 
-  auto getViewNormal = [this](const uuids::uuid& viewUid)
-  {
+  auto getViewNormal = [this](const uuids::uuid& viewUid) {
     View* view = m_appData.windowData().getCurrentView(viewUid);
-    if (!view)
-      return sk_zeroVec;
+    if (!view) return sk_zeroVec;
     return helper::worldDirection(view->camera(), Directions::View::Back);
   };
 
-  auto getObliqueViewDirections = [this](const uuids::uuid& viewUidToExclude
-                                  ) -> std::vector<glm::vec3>
-  {
+  auto getObliqueViewDirections = [this](const uuids::uuid& viewUidToExclude) -> std::vector<glm::vec3> {
     std::vector<glm::vec3> obliqueViewDirections;
 
-    for (std::size_t i = 0; i < m_appData.windowData().numLayouts(); ++i)
-    {
+    for (std::size_t i = 0; i < m_appData.windowData().numLayouts(); ++i) {
       const Layout* layout = m_appData.windowData().layout(i);
-      if (!layout)
-        continue;
+      if (!layout) continue;
 
-      for (const auto& view : layout->views())
-      {
-        if (view.first == viewUidToExclude)
-          continue;
-        if (!view.second)
-          continue;
+      for (const auto& view : layout->views()) {
+        if (view.first == viewUidToExclude) continue;
+        if (!view.second) continue;
 
-        if (!helper::looksAlongOrthogonalAxis(view.second->camera()))
-        {
-          obliqueViewDirections.emplace_back(
-            helper::worldDirection(view.second->camera(), Directions::View::Front)
-          );
+        if (!helper::looksAlongOrthogonalAxis(view.second->camera())) {
+          obliqueViewDirections.emplace_back(helper::worldDirection(view.second->camera(), Directions::View::Front));
         }
       }
     }
@@ -704,42 +702,38 @@ void ImGuiWrapper::render()
 
   ImGui::NewFrame();
 
-  if (m_appData.guiData().m_renderUiWindows)
-  {
+  if (m_appData.guiData().m_renderUiWindows) {
     renderConfirmCloseAppPopup(m_appData);
 
-    if (m_appData.guiData().m_showImGuiDemoWindow)
-    {
+    if (m_appData.guiData().m_showImGuiDemoWindow) {
       ImGui::ShowDemoWindow(&m_appData.guiData().m_showImGuiDemoWindow);
     }
 
-    if (m_appData.guiData().m_showImPlotDemoWindow)
-    {
+    if (m_appData.guiData().m_showImPlotDemoWindow) {
       ImPlot::ShowDemoWindow(&m_appData.guiData().m_showImPlotDemoWindow);
     }
 
     renderMainMenuBar(m_appData.guiData());
 
-    if (m_appData.guiData().m_showIsosurfacesWindow)
-    {
+    if (m_appData.guiData().m_showIsosurfacesWindow) {
       renderIsosurfacesWindow(
         m_appData,
         std::bind(&ImGuiWrapper::storeFuture, this, _1, _2),
-        std::bind(&ImGuiWrapper::addTaskToIsosurfaceGpuMeshGenerationQueue, this, _1)
-      );
+        std::bind(&ImGuiWrapper::addTaskToIsosurfaceGpuMeshGenerationQueue, this, _1));
     }
 
-    if (m_appData.guiData().m_showSettingsWindow)
-    {
+    if (m_appData.guiData().m_showSettingsWindow) {
       renderSettingsWindow(
-        m_appData, getNumImageColorMaps, getImageColorMap, m_updateMetricUniforms, m_recenterAllViews
-      );
+        m_appData,
+        getNumImageColorMaps,
+        getImageColorMap,
+        m_updateMetricUniforms,
+        m_recenterAllViews);
     }
 
     using namespace std::placeholders;
 
-    if (m_appData.guiData().m_showInspectionWindow)
-    {
+    if (m_appData.guiData().m_showInspectionWindow) {
       renderInspectionWindowWithTable(
         m_appData,
         std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
@@ -750,12 +744,10 @@ void ImGuiWrapper::render()
         m_getImageValuesNN,
         m_getImageValuesLinear,
         m_getSegLabel,
-        getLabelTable
-      );
+        getLabelTable);
     }
 
-    if (m_appData.guiData().m_showImagePropertiesWindow)
-    {
+    if (m_appData.guiData().m_showImagePropertiesWindow) {
       renderImagePropertiesWindow(
         m_appData,
         m_appData.numImages(),
@@ -773,12 +765,10 @@ void ImGuiWrapper::render()
         m_updateImageInterpolationMode,
         m_updateImageColorMapInterpolationMode,
         m_setLockManualImageTransformation,
-        m_recenterAllViews
-      );
+        m_recenterAllViews);
     }
 
-    if (m_appData.guiData().m_showSegmentationsWindow)
-    {
+    if (m_appData.guiData().m_showSegmentationsWindow) {
       renderSegmentationPropertiesWindow(
         m_appData,
         getLabelTable,
@@ -788,27 +778,22 @@ void ImGuiWrapper::render()
         m_createBlankSeg,
         m_clearSeg,
         m_removeSeg,
-        m_recenterAllViews
-      );
+        m_recenterAllViews);
     }
 
-    if (m_appData.guiData().m_showLandmarksWindow)
-    {
+    if (m_appData.guiData().m_showLandmarksWindow) {
       renderLandmarkPropertiesWindow(m_appData, m_recenterAllViews);
     }
 
-    if (m_appData.guiData().m_showAnnotationsWindow)
-    {
+    if (m_appData.guiData().m_showAnnotationsWindow) {
       renderAnnotationWindow(
         m_appData,
         setViewCameraDirection,
         m_paintActiveSegmentationWithActivePolygon,
-        m_recenterAllViews
-      );
+        m_recenterAllViews);
     }
 
-    if (m_appData.guiData().m_showOpacityBlenderWindow)
-    {
+    if (m_appData.guiData().m_showOpacityBlenderWindow) {
       renderOpacityBlenderWindow(m_appData, m_updateImageUniforms);
     }
 
@@ -825,8 +810,7 @@ void ImGuiWrapper::render()
       m_appData.numImages(),
       std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
       getActiveImageIndex,
-      setActiveImageIndex
-    );
+      setActiveImageIndex);
 
     renderSegToolbar(
       m_appData,
@@ -839,8 +823,7 @@ void ImGuiWrapper::render()
       m_readjustViewport,
       m_updateImageUniforms,
       m_executeGraphCutsSeg,
-      m_executePoissonSeg
-    );
+      m_executePoissonSeg);
 
     annotationToolbar(m_paintActiveSegmentationWithActivePolygon);
   }
@@ -849,8 +832,7 @@ void ImGuiWrapper::render()
 
   const float wholeWindowHeight = static_cast<float>(m_appData.windowData().getWindowSize().y);
 
-  if (m_appData.guiData().m_renderUiOverlays && currentLayout.isLightbox())
-  {
+  if (m_appData.guiData().m_renderUiOverlays && currentLayout.isLightbox()) {
     // Per-layout UI controls:
 
     static constexpr bool sk_recenterCrosshairs = false;
@@ -862,8 +844,7 @@ void ImGuiWrapper::render()
     const auto mindowFrameBounds = helper::computeMindowFrameBounds(
       currentLayout.windowClipViewport(),
       m_appData.windowData().viewport().getAsVec4(),
-      wholeWindowHeight
-    );
+      wholeWindowHeight);
 
     renderViewSettingsComboWindow(
       currentLayout.uid(),
@@ -876,15 +857,15 @@ void ImGuiWrapper::render()
       m_appData.windowData().getContentScaleRatios(),
 
       m_appData.numImages(),
-      [this, &currentLayout](std::size_t index)
-      { return currentLayout.isImageRendered(m_appData, index); },
-      [this, &currentLayout](std::size_t index, bool visible)
-      { currentLayout.setImageRendered(m_appData, index, visible); },
+      [this, &currentLayout](std::size_t index) { return currentLayout.isImageRendered(m_appData, index); },
+      [this, &currentLayout](std::size_t index, bool visible) {
+        currentLayout.setImageRendered(m_appData, index, visible);
+      },
 
-      [this, &currentLayout](std::size_t index)
-      { return currentLayout.isImageUsedForMetric(m_appData, index); },
-      [this, &currentLayout](std::size_t index, bool visible)
-      { currentLayout.setImageUsedForMetric(m_appData, index, visible); },
+      [this, &currentLayout](std::size_t index) { return currentLayout.isImageUsedForMetric(m_appData, index); },
+      [this, &currentLayout](std::size_t index, bool visible) {
+        currentLayout.setImageUsedForMetric(m_appData, index, visible);
+      },
       std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
 
       getImageIsVisibleSetting,
@@ -895,26 +876,23 @@ void ImGuiWrapper::render()
       currentLayout.intensityProjectionMode(),
 
       [&currentLayout](const ViewType& viewType) { return currentLayout.setViewType(viewType); },
-      [&currentLayout](const ViewRenderMode& renderMode)
-      { return currentLayout.setRenderMode(renderMode); },
-      [&currentLayout](const IntensityProjectionMode& ipMode)
-      { return currentLayout.setIntensityProjectionMode(ipMode); },
+      [&currentLayout](const ViewRenderMode& renderMode) { return currentLayout.setRenderMode(renderMode); },
+      [&currentLayout](const IntensityProjectionMode& ipMode) {
+        return currentLayout.setIntensityProjectionMode(ipMode);
+      },
 
-      [this]()
-      {
+      [this]() {
         m_recenterAllViews(
           sk_recenterCrosshairs,
           sk_realignCrosshairs,
           sk_doNotRecenterOnCurrentCrosshairsPosition,
           sk_resetObliqueOrientation,
-          sk_resetZoom
-        );
+          sk_resetZoom);
       },
       nullptr,
 
       [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },
-      [this](float thickness)
-      { m_appData.renderData().m_intensityProjectionSlabThickness = thickness; },
+      [this](float thickness) { m_appData.renderData().m_intensityProjectionSlabThickness = thickness; },
       [this]() { return m_appData.renderData().m_doMaxExtentIntensityProjection; },
       [this](bool set) { m_appData.renderData().m_doMaxExtentIntensityProjection = set; },
 
@@ -923,8 +901,7 @@ void ImGuiWrapper::render()
       [this]() { return m_appData.renderData().m_xrayIntensityLevel; },
       [this](float level) { m_appData.renderData().m_xrayIntensityLevel = level; },
       [this]() { return m_appData.renderData().m_xrayEnergyKeV; },
-      [this](float energy) { m_appData.renderData().setXrayEnergy(energy); }
-    );
+      [this](float energy) { m_appData.renderData().setXrayEnergy(energy); });
 
     renderViewOrientationToolWindow(
       currentLayout.uid(),
@@ -932,49 +909,43 @@ void ImGuiWrapper::render()
       currentLayout.uiControls(),
       true,
       currentLayout.viewType(),
-      [&getViewCameraRotation, &currentLayout]()
-      { return getViewCameraRotation(currentLayout.uid()); },
-      [&setViewCameraRotation, &currentLayout](const glm::quat& q)
-      { return setViewCameraRotation(currentLayout.uid(), q); },
-      [&setViewCameraDirection, &currentLayout](const glm::vec3& dir)
-      { return setViewCameraDirection(currentLayout.uid(), dir); },
+      [&getViewCameraRotation, &currentLayout]() { return getViewCameraRotation(currentLayout.uid()); },
+      [&setViewCameraRotation, &currentLayout](const glm::quat& q) {
+        return setViewCameraRotation(currentLayout.uid(), q);
+      },
+      [&setViewCameraDirection, &currentLayout](const glm::vec3& dir) {
+        return setViewCameraDirection(currentLayout.uid(), dir);
+      },
       [&getViewNormal, &currentLayout]() { return getViewNormal(currentLayout.uid()); },
-      getObliqueViewDirections
-    );
+      getObliqueViewDirections);
   }
-  else if (m_appData.guiData().m_renderUiOverlays && !currentLayout.isLightbox())
-  {
+  else if (m_appData.guiData().m_renderUiOverlays && !currentLayout.isLightbox()) {
     // Per-view UI controls:
 
-    for (const auto& viewUid : m_appData.windowData().currentViewUids())
-    {
+    for (const auto& viewUid : m_appData.windowData().currentViewUids()) {
       View* view = m_appData.windowData().getCurrentView(viewUid);
-      if (!view)
-        return;
+      if (!view) return;
 
-      auto setViewType = [view](const ViewType& viewType)
-      {
-        if (view)
-          view->setViewType(viewType);
+      auto setViewType = [view](const ViewType& viewType) {
+        if (view) view->setViewType(viewType);
       };
 
-      auto setRenderMode = [view](const ViewRenderMode& renderMode)
-      {
-        if (view)
-          view->setRenderMode(renderMode);
+      auto setRenderMode = [view](const ViewRenderMode& renderMode) {
+        if (view) view->setRenderMode(renderMode);
       };
 
-      auto setIntensityProjectionMode = [view](const IntensityProjectionMode& ipMode)
-      {
-        if (view)
-          view->setIntensityProjectionMode(ipMode);
+      auto setIntensityProjectionMode = [view](const IntensityProjectionMode& ipMode) {
+        if (view) view->setIntensityProjectionMode(ipMode);
       };
 
-      auto recenter = [this, &viewUid]() { m_recenterView(viewUid); };
+      auto recenter = [this, &viewUid]() {
+        m_recenterView(viewUid);
+      };
 
       const auto mindowFrameBounds = helper::computeMindowFrameBounds(
-        view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4(), wholeWindowHeight
-      );
+        view->windowClipViewport(),
+        m_appData.windowData().viewport().getAsVec4(),
+        wholeWindowHeight);
 
       renderViewSettingsComboWindow(
         viewUid,
@@ -988,12 +959,10 @@ void ImGuiWrapper::render()
 
         m_appData.numImages(),
         [this, view](std::size_t index) { return view->isImageRendered(m_appData, index); },
-        [this, view](std::size_t index, bool visible)
-        { view->setImageRendered(m_appData, index, visible); },
+        [this, view](std::size_t index, bool visible) { view->setImageRendered(m_appData, index, visible); },
 
         [this, view](std::size_t index) { return view->isImageUsedForMetric(m_appData, index); },
-        [this, view](std::size_t index, bool visible)
-        { view->setImageUsedForMetric(m_appData, index, visible); },
+        [this, view](std::size_t index, bool visible) { view->setImageUsedForMetric(m_appData, index, visible); },
 
         std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
         getImageIsVisibleSetting,
@@ -1011,8 +980,7 @@ void ImGuiWrapper::render()
         applyImageSelectionAndRenderModesToAllViews,
 
         [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },
-        [this](float thickness)
-        { m_appData.renderData().m_intensityProjectionSlabThickness = thickness; },
+        [this](float thickness) { m_appData.renderData().m_intensityProjectionSlabThickness = thickness; },
         [this]() { return m_appData.renderData().m_doMaxExtentIntensityProjection; },
         [this](bool set) { m_appData.renderData().m_doMaxExtentIntensityProjection = set; },
 
@@ -1021,8 +989,7 @@ void ImGuiWrapper::render()
         [this]() { return m_appData.renderData().m_xrayIntensityLevel; },
         [this](float level) { m_appData.renderData().m_xrayIntensityLevel = level; },
         [this]() { return m_appData.renderData().m_xrayEnergyKeV; },
-        [this](float energy) { m_appData.renderData().setXrayEnergy(energy); }
-      );
+        [this](float energy) { m_appData.renderData().setXrayEnergy(energy); });
 
       renderViewOrientationToolWindow(
         viewUid,
@@ -1031,13 +998,10 @@ void ImGuiWrapper::render()
         false,
         view->viewType(),
         [&getViewCameraRotation, &viewUid]() { return getViewCameraRotation(viewUid); },
-        [&setViewCameraRotation, &viewUid](const glm::quat& q)
-        { return setViewCameraRotation(viewUid, q); },
-        [&setViewCameraDirection, &viewUid](const glm::vec3& dir)
-        { return setViewCameraDirection(viewUid, dir); },
+        [&setViewCameraRotation, &viewUid](const glm::quat& q) { return setViewCameraRotation(viewUid, q); },
+        [&setViewCameraDirection, &viewUid](const glm::vec3& dir) { return setViewCameraDirection(viewUid, dir); },
         [&getViewNormal, &viewUid]() { return getViewNormal(viewUid); },
-        getObliqueViewDirections
-      );
+        getObliqueViewDirections);
     }
   }
 
@@ -1047,28 +1011,23 @@ void ImGuiWrapper::render()
 
 void ImGuiWrapper::annotationToolbar(const std::function<void()> paintActiveAnnotation)
 {
-  if (!state::annot::isInStateWhereToolbarVisible())
-  {
+  if (!state::annot::isInStateWhereToolbarVisible()) {
     return;
   }
 
-  if (!ASM::current_state_ptr || !ASM::current_state_ptr->selectedViewUid())
-  {
+  if (!ASM::current_state_ptr || !ASM::current_state_ptr->selectedViewUid()) {
     return;
   }
 
   // Position the annotation toolbar at the bottom of this view:
-  const View* annotationView = m_appData.windowData().getView(
-    *ASM::current_state_ptr->selectedViewUid()
-  );
+  const View* annotationView = m_appData.windowData().getView(*ASM::current_state_ptr->selectedViewUid());
 
   const float wholeWindowHeight = static_cast<float>(m_appData.windowData().getWindowSize().y);
 
   const auto mindowAnnotViewFrameBounds = helper::computeMindowFrameBounds(
     annotationView->windowClipViewport(),
     m_appData.windowData().viewport().getAsVec4(),
-    wholeWindowHeight
-  );
+    wholeWindowHeight);
 
   renderAnnotationToolbar(m_appData, mindowAnnotViewFrameBounds, paintActiveAnnotation);
 }

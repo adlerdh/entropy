@@ -33,16 +33,13 @@ void SlideStackInteractionHandler::setSlideStackFrameProvider(GetterType<Coordin
   m_stackFrameProvider = responder;
 }
 
-void SlideStackInteractionHandler::setSlideStackFrameChangedBroadcaster(
-  SetterType<const CoordinateFrame&> broadcaster
-)
+void SlideStackInteractionHandler::setSlideStackFrameChangedBroadcaster(SetterType<const CoordinateFrame&> broadcaster)
 {
   m_stackFrameChangedBroadcaster = broadcaster;
 }
 
 void SlideStackInteractionHandler::setSlideStackFrameChangeDoneBroadcaster(
-  SetterType<const CoordinateFrame&> broadcaster
-)
+  SetterType<const CoordinateFrame&> broadcaster)
 {
   m_stackFrameDoneBroadcaster = broadcaster;
 }
@@ -58,25 +55,23 @@ void SlideStackInteractionHandler::setMode(const StackInteractionMode& mode)
   m_mouseMoveMode = MouseMoveMode::None;
 }
 
-bool SlideStackInteractionHandler::
-  doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
+bool SlideStackInteractionHandler::doHandleMouseDoubleClickEvent(const QMouseEvent*, const Viewport&, const Camera&)
 {
   return false;
 }
 
 bool SlideStackInteractionHandler::doHandleMouseMoveEvent(
-  const QMouseEvent* event, const Viewport& viewport, const Camera& camera
-)
+  const QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera& camera)
 {
   bool handled = false;
 
-  if (MouseMoveMode::None == m_mouseMoveMode)
-  {
+  if (MouseMoveMode::None == m_mouseMoveMode) {
     return handled;
   }
 
-  if (!m_stackFrameProvider || !m_stackFrameChangedBroadcaster)
-  {
+  if (!m_stackFrameProvider || !m_stackFrameChangedBroadcaster) {
     return handled;
   }
 
@@ -86,84 +81,73 @@ bool SlideStackInteractionHandler::doHandleMouseMoveEvent(
 
   const bool shiftModifier = (Qt::ShiftModifier & event->modifiers());
 
-  if (Qt::LeftButton & event->buttons())
-  {
-    switch (m_mouseMoveMode)
-    {
-    case MouseMoveMode::TranslateInPlane:
-    {
-      const float ndcZ = ndcZofWorldPoint(camera, stackFrame.worldOrigin());
-      const glm::vec3 T = translationInCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos, ndcZ);
+  if (Qt::LeftButton & event->buttons()) {
+    switch (m_mouseMoveMode) {
+      case MouseMoveMode::TranslateInPlane: {
+        const float ndcZ = ndcZofWorldPoint(camera, stackFrame.worldOrigin());
+        const glm::vec3 T = translationInCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos, ndcZ);
 
-      stackFrame.setWorldOrigin(stackFrame.worldOrigin() + T);
-      handled = true;
+        stackFrame.setWorldOrigin(stackFrame.worldOrigin() + T);
+        handled = true;
 
-      break;
-    }
-    case MouseMoveMode::TranslateFrontBack:
-    {
-      float scale = (shiftModifier) ? 100.0f : 50.0f;
-
-      if (m_activeImageVoxelScaleProvider)
-      {
-        scale *= m_activeImageVoxelScaleProvider();
+        break;
       }
+      case MouseMoveMode::TranslateFrontBack: {
+        float scale = (shiftModifier) ? 100.0f : 50.0f;
 
-      const glm::vec3 T
-        = translationAboutCameraFrontBack(camera, m_ndcLeftButtonLastPos, ndcPos, scale);
+        if (m_activeImageVoxelScaleProvider) {
+          scale *= m_activeImageVoxelScaleProvider();
+        }
 
-      stackFrame.setWorldOrigin(stackFrame.worldOrigin() + T);
-      handled = true;
+        const glm::vec3 T = translationAboutCameraFrontBack(camera, m_ndcLeftButtonLastPos, ndcPos, scale);
 
-      break;
-    }
-    case MouseMoveMode::Rotate2DInPlane:
-    {
-      const glm::vec2 ndcRotationCenter = ndc_O_world(camera, stackFrame.worldOrigin());
+        stackFrame.setWorldOrigin(stackFrame.worldOrigin() + T);
+        handled = true;
 
-      const glm::quat R
-        = rotation2dInCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos, ndcRotationCenter);
+        break;
+      }
+      case MouseMoveMode::Rotate2DInPlane: {
+        const glm::vec2 ndcRotationCenter = ndc_O_world(camera, stackFrame.worldOrigin());
 
-      stackFrame.setFrameToWorldRotation(R * stackFrame.world_O_frame_rotation());
-      handled = true;
+        const glm::quat R = rotation2dInCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos, ndcRotationCenter);
 
-      break;
-    }
-    case MouseMoveMode::Rotate3DAboutPlane:
-    {
-      const glm::quat R = rotation3dAboutCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos);
-      stackFrame.setFrameToWorldRotation(R * stackFrame.world_O_frame_rotation());
-      handled = true;
+        stackFrame.setFrameToWorldRotation(R * stackFrame.world_O_frame_rotation());
+        handled = true;
 
-      break;
-    }
-    case MouseMoveMode::None:
-    {
-      break;
-    }
+        break;
+      }
+      case MouseMoveMode::Rotate3DAboutPlane: {
+        const glm::quat R = rotation3dAboutCameraPlane(camera, m_ndcLeftButtonLastPos, ndcPos);
+        stackFrame.setFrameToWorldRotation(R * stackFrame.world_O_frame_rotation());
+        handled = true;
+
+        break;
+      }
+      case MouseMoveMode::None: {
+        break;
+      }
     }
 
     m_ndcLeftButtonLastPos = ndcPos;
   }
-  else if (Qt::RightButton & event->buttons())
-  {
+  else if (Qt::RightButton & event->buttons()) {
     m_ndcRightButtonLastPos = ndcPos;
   }
-  else if (Qt::MiddleButton & event->buttons())
-  {
+  else if (Qt::MiddleButton & event->buttons()) {
     m_ndcMiddleButtonLastPos = ndcPos;
   }
 
-  if (handled)
-  {
+  if (handled) {
     m_stackFrameChangedBroadcaster(stackFrame);
   }
 
   return handled;
 }
 
-bool SlideStackInteractionHandler::
-  doHandleMousePressEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
+bool SlideStackInteractionHandler::doHandleMousePressEvent(
+  const QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera&)
 {
   bool handled = false;
 
@@ -172,159 +156,132 @@ bool SlideStackInteractionHandler::
   //    const bool shiftModifier = ( Qt::ShiftModifier & event->modifiers() );
   const bool controlModifier = (Qt::ControlModifier & event->modifiers());
 
-  if (Qt::LeftButton & event->button())
-  {
+  if (Qt::LeftButton & event->button()) {
     m_ndcLeftButtonStartPos = ndcPos;
     m_ndcLeftButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case StackInteractionMode::Translate:
-    {
-      if (controlModifier)
-      {
-        m_mouseMoveMode = MouseMoveMode::TranslateFrontBack;
+    switch (m_primaryMode) {
+      case StackInteractionMode::Translate: {
+        if (controlModifier) {
+          m_mouseMoveMode = MouseMoveMode::TranslateFrontBack;
+        }
+        else {
+          m_mouseMoveMode = MouseMoveMode::TranslateInPlane;
+        }
+        handled = true;
+        break;
       }
-      else
-      {
-        m_mouseMoveMode = MouseMoveMode::TranslateInPlane;
+      case StackInteractionMode::Rotate: {
+        if (controlModifier) {
+          m_mouseMoveMode = MouseMoveMode::Rotate3DAboutPlane;
+        }
+        else {
+          m_mouseMoveMode = MouseMoveMode::Rotate2DInPlane;
+        }
+        handled = true;
+        break;
       }
-      handled = true;
-      break;
-    }
-    case StackInteractionMode::Rotate:
-    {
-      if (controlModifier)
-      {
-        m_mouseMoveMode = MouseMoveMode::Rotate3DAboutPlane;
-      }
-      else
-      {
-        m_mouseMoveMode = MouseMoveMode::Rotate2DInPlane;
-      }
-      handled = true;
-      break;
-    }
     }
   }
-  else if (Qt::RightButton & event->button())
-  {
+  else if (Qt::RightButton & event->button()) {
     m_ndcRightButtonStartPos = ndcPos;
     m_ndcRightButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case StackInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case StackInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case StackInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case StackInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
   }
-  else if (Qt::MiddleButton & event->button())
-  {
+  else if (Qt::MiddleButton & event->button()) {
     m_ndcMiddleButtonStartPos = ndcPos;
     m_ndcMiddleButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case StackInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case StackInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case StackInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case StackInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
   }
 
   return handled;
 }
 
-bool SlideStackInteractionHandler::
-  doHandleMouseReleaseEvent(const QMouseEvent* event, const Viewport& viewport, const Camera&)
+bool SlideStackInteractionHandler::doHandleMouseReleaseEvent(
+  const QMouseEvent* event,
+  const Viewport& viewport,
+  const Camera&)
 {
   bool handled = false;
 
-  if (!m_stackFrameProvider || !m_stackFrameDoneBroadcaster)
-  {
+  if (!m_stackFrameProvider || !m_stackFrameDoneBroadcaster) {
     return handled;
   }
 
   const glm::vec2 ndcPos = camera::ndc2d_O_mouse(viewport, {event->x(), event->y()});
 
-  if (Qt::LeftButton & event->button())
-  {
+  if (Qt::LeftButton & event->button()) {
     m_ndcLeftButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case StackInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case StackInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case StackInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case StackInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
 
     m_stackFrameDoneBroadcaster(m_stackFrameProvider());
   }
-  else if (Qt::RightButton & event->button())
-  {
+  else if (Qt::RightButton & event->button()) {
     m_ndcRightButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case StackInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case StackInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case StackInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case StackInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
   }
-  else if (Qt::MiddleButton & event->button())
-  {
+  else if (Qt::MiddleButton & event->button()) {
     m_ndcMiddleButtonLastPos = ndcPos;
 
-    switch (m_primaryMode)
-    {
-    case StackInteractionMode::Translate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
-    case StackInteractionMode::Rotate:
-    {
-      m_mouseMoveMode = MouseMoveMode::None;
-      handled = true;
-      break;
-    }
+    switch (m_primaryMode) {
+      case StackInteractionMode::Translate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
+      case StackInteractionMode::Rotate: {
+        m_mouseMoveMode = MouseMoveMode::None;
+        handled = true;
+        break;
+      }
     }
   }
 

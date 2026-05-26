@@ -19,8 +19,7 @@ GLVersionChecker::GLVersionChecker()
   GLint minorVersion;
   glGetIntegerv(GL_MINOR_VERSION, &minorVersion);
 
-  if (majorVersion < 3 || (majorVersion == 3 && minorVersion < 3))
-  {
+  if (majorVersion < 3 || (majorVersion == 3 && minorVersion < 3)) {
     spdlog::critical("OpenGL version {}.{} is too low and not supported.", majorVersion, minorVersion);
     spdlog::critical("The minimum required OpenGL version is 3.3");
     throw_debug("Invalid OpenGL version found")
@@ -35,12 +34,10 @@ GLVersionChecker::GLVersionChecker()
   ss << "OpenGL context information:" << std::endl;
   ss << "\tVersion: " << glGetString(GL_VERSION);
 
-  if (contextProfileMask & GL_CONTEXT_CORE_PROFILE_BIT)
-  {
+  if (contextProfileMask & GL_CONTEXT_CORE_PROFILE_BIT) {
     ss << " (core profile)";
   }
-  else if (contextProfileMask & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT)
-  {
+  else if (contextProfileMask & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) {
     ss << " (compatibility profile)";
   }
 

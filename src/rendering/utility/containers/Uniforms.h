@@ -105,9 +105,7 @@ public:
   /// Insert a single uniform. Ignores uniforms that already exist.
   bool insertUniform(const std::string& name, const Decl& uniform);
 
-  bool insertUniform(
-    const std::string& name, const UniformType& type, ValueType defaultValue, bool isRequired = true
-  );
+  bool insertUniform(const std::string& name, const UniformType& type, ValueType defaultValue, bool isRequired = true);
 
   /// Insert another set of uniforms. Ignores uniforms that already exist.
   void insertUniforms(const Uniforms& uniforms);
@@ -121,9 +119,7 @@ public:
   void setLocation(const std::string& name, GLint loc);
   std::optional<GLint> location(const std::string& name) const;
 
-  GLint queryAndSetLocation(
-    const std::string& name, std::function<GLint(const std::string&)> locationGetter
-  );
+  GLint queryAndSetLocation(const std::string& name, std::function<GLint(const std::string&)> locationGetter);
 
   int queryAndSetAllLocations(std::function<GLint(const std::string&)> locationGetter);
 
@@ -140,4 +136,3 @@ public:
 private:
   UniformsMap m_uniformsMap;
 };
-

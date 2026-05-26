@@ -30,8 +30,7 @@ static constexpr bool sk_defaultVisibility = true;
 MeshAssembly::MeshAssembly(
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
-  std::weak_ptr<BlankTextures> blankTextures
-)
+  std::weak_ptr<BlankTextures> blankTextures)
   : m_shaderActivator(shaderProgramActivator)
   , m_uniformsProvider(uniformsProvider)
   , m_blankTextures(blankTextures)
@@ -66,25 +65,21 @@ void MeshAssembly::initialize()
 
 std::weak_ptr<DrawableBase> MeshAssembly::getRoot(const SceneType& type)
 {
-  switch (type)
-  {
-  case SceneType::ReferenceImage2d:
-  case SceneType::SlideStack2d:
-  case SceneType::Registration_Image2d:
-  case SceneType::Registration_Slide2d:
-  {
-    return std::static_pointer_cast<DrawableBase>(m_rootTx2d);
-  }
-  case SceneType::ReferenceImage3d:
-  case SceneType::SlideStack3d:
-  {
-    return std::static_pointer_cast<DrawableBase>(m_rootTx3d);
-  }
-  default:
-  case SceneType::None:
-  {
-    return {};
-  }
+  switch (type) {
+    case SceneType::ReferenceImage2d:
+    case SceneType::SlideStack2d:
+    case SceneType::Registration_Image2d:
+    case SceneType::Registration_Slide2d: {
+      return std::static_pointer_cast<DrawableBase>(m_rootTx2d);
+    }
+    case SceneType::ReferenceImage3d:
+    case SceneType::SlideStack3d: {
+      return std::static_pointer_cast<DrawableBase>(m_rootTx3d);
+    }
+    default:
+    case SceneType::None: {
+      return {};
+    }
   }
 
   return {};
@@ -93,8 +88,7 @@ std::weak_ptr<DrawableBase> MeshAssembly::getRoot(const SceneType& type)
 void MeshAssembly::addMesh(const uuids::uuid& meshUid, std::weak_ptr<MeshRecord> meshRecord)
 {
   const auto& itr = m_meshes.find(meshUid);
-  if (std::end(m_meshes) != itr)
-  {
+  if (std::end(m_meshes) != itr) {
     // Meshes for this UID already exist in the Assembly
     return;
   }
@@ -104,19 +98,15 @@ void MeshAssembly::addMesh(const uuids::uuid& meshUid, std::weak_ptr<MeshRecord>
 
   M.m_meshRecord = meshRecord;
 
-  auto subjectToWorldTxProvider = [this, meshUid]() -> std::optional<glm::mat4>
-  {
-    if (m_meshSubjectToWorldQuerier)
-    {
+  auto subjectToWorldTxProvider = [this, meshUid]() -> std::optional<glm::mat4> {
+    if (m_meshSubjectToWorldQuerier) {
       return m_meshSubjectToWorldQuerier(meshUid);
     }
     return std::nullopt;
   };
 
-  auto meshGpuRecordProvider = [meshRecord]() -> MeshGpuRecord*
-  {
-    if (auto record = meshRecord.lock())
-    {
+  auto meshGpuRecordProvider = [meshRecord]() -> MeshGpuRecord* {
+    if (auto record = meshRecord.lock()) {
       return record->gpuData();
     }
     return nullptr;
@@ -125,30 +115,34 @@ void MeshAssembly::addMesh(const uuids::uuid& meshUid, std::weak_ptr<MeshRecord>
   std::ostringstream ss;
 
   ss << "Mesh2dTx@" << meshUid << std::ends;
-  M.m_world_O_subject_for2d
-    = std::make_shared<DynamicTransformation>(ss.str(), subjectToWorldTxProvider);
+  M.m_world_O_subject_for2d = std::make_shared<DynamicTransformation>(ss.str(), subjectToWorldTxProvider);
 
   ss.str(std::string());
   ss << "Mesh2d@" << meshUid << std::ends;
 
   M.m_meshFor2d = std::make_shared<TexturedMesh>(
-    ss.str(), m_shaderActivator, m_uniformsProvider, m_blankTextures, meshGpuRecordProvider
-  );
+    ss.str(),
+    m_shaderActivator,
+    m_uniformsProvider,
+    m_blankTextures,
+    meshGpuRecordProvider);
 
   M.m_world_O_subject_for2d->addChild(M.m_meshFor2d);
 
   ss.str(std::string());
   ss << "Mesh3dTx@" << meshUid << std::ends;
 
-  M.m_world_O_subject_for3d
-    = std::make_shared<DynamicTransformation>(ss.str(), subjectToWorldTxProvider);
+  M.m_world_O_subject_for3d = std::make_shared<DynamicTransformation>(ss.str(), subjectToWorldTxProvider);
 
   ss.str(std::string());
   ss << "Mesh3d@" << meshUid << std::ends;
 
   M.m_meshFor3d = std::make_shared<TexturedMesh>(
-    ss.str(), m_shaderActivator, m_uniformsProvider, m_blankTextures, meshGpuRecordProvider
-  );
+    ss.str(),
+    m_shaderActivator,
+    m_uniformsProvider,
+    m_blankTextures,
+    meshGpuRecordProvider);
 
   M.m_world_O_subject_for3d->addChild(M.m_meshFor3d);
 
@@ -196,22 +190,18 @@ void MeshAssembly::removeMesh(const uuids::uuid& meshUid)
 {
   const auto& itr = m_meshes.find(meshUid);
 
-  if (std::end(m_meshes) != itr)
-  {
-    if (auto tx = itr->second.m_world_O_subject_for2d)
-    {
+  if (std::end(m_meshes) != itr) {
+    if (auto tx = itr->second.m_world_O_subject_for2d) {
       m_rootTx2d->removeChild(*tx);
     }
 
-    if (auto tx = itr->second.m_world_O_subject_for3d)
-    {
+    if (auto tx = itr->second.m_world_O_subject_for3d) {
       m_rootTx3d->removeChild(*tx);
     }
 
     m_meshes.erase(meshUid);
   }
-  else
-  {
+  else {
     std::cerr << "Error: mesh with UID " << meshUid << " not found in collection." << std::endl;
     return;
   }
@@ -219,15 +209,12 @@ void MeshAssembly::removeMesh(const uuids::uuid& meshUid)
 
 void MeshAssembly::clearMeshes()
 {
-  for (auto& mesh : m_meshes)
-  {
-    if (auto tx = mesh.second.m_world_O_subject_for2d)
-    {
+  for (auto& mesh : m_meshes) {
+    if (auto tx = mesh.second.m_world_O_subject_for2d) {
       m_rootTx2d->removeChild(*tx);
     }
 
-    if (auto tx = mesh.second.m_world_O_subject_for3d)
-    {
+    if (auto tx = mesh.second.m_world_O_subject_for3d) {
       m_rootTx3d->removeChild(*tx);
     }
   }
@@ -239,15 +226,12 @@ void MeshAssembly::setImage3dRecord(std::weak_ptr<ImageRecord> record)
 {
   m_image3dRecord = record;
 
-  for (auto& m : m_meshes)
-  {
-    if (m.second.m_meshFor2d)
-    {
+  for (auto& m : m_meshes) {
+    if (m.second.m_meshFor2d) {
       m.second.m_meshFor2d->setImage3dRecord(record);
     }
 
-    if (m.second.m_meshFor3d)
-    {
+    if (m.second.m_meshFor3d) {
       m.second.m_meshFor3d->setImage3dRecord(record);
     }
   }
@@ -260,15 +244,12 @@ void MeshAssembly::setParcellationRecord(std::weak_ptr<ParcellationRecord> recor
 {
   m_parcelRecord = record;
 
-  for (auto& m : m_meshes)
-  {
-    if (m.second.m_meshFor2d)
-    {
+  for (auto& m : m_meshes) {
+    if (m.second.m_meshFor2d) {
       m.second.m_meshFor2d->setParcellationRecord(record);
     }
 
-    if (m.second.m_meshFor3d)
-    {
+    if (m.second.m_meshFor3d) {
       m.second.m_meshFor3d->setParcellationRecord(record);
     }
   }
@@ -278,15 +259,12 @@ void MeshAssembly::setImageColorMapRecord(std::weak_ptr<ImageColorMapRecord> rec
 {
   m_imageColorMapRecord = record;
 
-  for (auto& m : m_meshes)
-  {
-    if (m.second.m_meshFor2d)
-    {
+  for (auto& m : m_meshes) {
+    if (m.second.m_meshFor2d) {
       m.second.m_meshFor2d->setImageColorMapRecord(record);
     }
 
-    if (m.second.m_meshFor3d)
-    {
+    if (m.second.m_meshFor3d) {
       m.second.m_meshFor3d->setImageColorMapRecord(record);
     }
   }
@@ -299,15 +277,12 @@ void MeshAssembly::setLabelTableRecord(std::weak_ptr<LabelTableRecord> record)
 {
   m_labelTableRecord = record;
 
-  for (auto& m : m_meshes)
-  {
-    if (m.second.m_meshFor2d)
-    {
+  for (auto& m : m_meshes) {
+    if (m.second.m_meshFor2d) {
       m.second.m_meshFor2d->setLabelTableRecord(record);
     }
 
-    if (m.second.m_meshFor3d)
-    {
+    if (m.second.m_meshFor3d) {
       m.second.m_meshFor3d->setLabelTableRecord(record);
     }
   }
@@ -316,31 +291,24 @@ void MeshAssembly::setLabelTableRecord(std::weak_ptr<LabelTableRecord> record)
   updateMeshColors();
 }
 
-void MeshAssembly::setMeshSubjectToWorldTxQuerier(
-  QuerierType<std::optional<glm::mat4>, uuids::uuid> querier
-)
+void MeshAssembly::setMeshSubjectToWorldTxQuerier(QuerierType<std::optional<glm::mat4>, uuids::uuid> querier)
 {
   m_meshSubjectToWorldQuerier = querier;
 
-  auto subjectToWorldTxProvider = [this](const uuids::uuid& meshUid) -> std::optional<glm::mat4>
-  {
-    if (m_meshSubjectToWorldQuerier)
-    {
+  auto subjectToWorldTxProvider = [this](const uuids::uuid& meshUid) -> std::optional<glm::mat4> {
+    if (m_meshSubjectToWorldQuerier) {
       return m_meshSubjectToWorldQuerier(meshUid);
     }
     return std::nullopt;
   };
 
   // Propagate new querier to all stored meshes:
-  for (auto& mesh : m_meshes)
-  {
-    if (auto tx = mesh.second.m_world_O_subject_for2d)
-    {
+  for (auto& mesh : m_meshes) {
+    if (auto tx = mesh.second.m_world_O_subject_for2d) {
       tx->setMatrixProvider(std::bind(subjectToWorldTxProvider, mesh.first));
     }
 
-    if (auto tx = mesh.second.m_world_O_subject_for3d)
-    {
+    if (auto tx = mesh.second.m_world_O_subject_for3d) {
       tx->setMatrixProvider(std::bind(subjectToWorldTxProvider, mesh.first));
     }
   }
@@ -378,8 +346,7 @@ void MeshAssembly::setUseXrayMode(bool set)
 
 void MeshAssembly::setXrayPower(float power)
 {
-  if (power > 0.0f)
-  {
+  if (power > 0.0f) {
     m_properties.m_xrayPower = power;
   }
 
@@ -399,10 +366,8 @@ const MeshAssemblyRenderingProperties& MeshAssembly::getRenderingProperties() co
 
 void MeshAssembly::updateMeshRenderingProperties()
 {
-  for (auto& m : m_meshes)
-  {
-    if (auto mesh = m.second.m_meshFor2d)
-    {
+  for (auto& m : m_meshes) {
+    if (auto mesh = m.second.m_meshFor2d) {
       mesh->setEnabled(m_properties.m_visibleIn2dViews);
       mesh->setMasterOpacityMultiplier(m_properties.m_masterOpacityMultiplier);
       mesh->setPickable(m_properties.m_pickable);
@@ -411,8 +376,7 @@ void MeshAssembly::updateMeshRenderingProperties()
       mesh->setXrayPower(m_properties.m_xrayPower);
     }
 
-    if (auto mesh = m.second.m_meshFor3d)
-    {
+    if (auto mesh = m.second.m_meshFor3d) {
       mesh->setEnabled(m_properties.m_visibleIn3dViews);
       mesh->setMasterOpacityMultiplier(m_properties.m_masterOpacityMultiplier);
       mesh->setPickable(m_properties.m_pickable);
@@ -431,22 +395,18 @@ void MeshAssembly::updateMeshColors()
 
   const Image* image = (sharedImageRec) ? sharedImageRec->cpuData() : nullptr;
   const ImageColorMap* colorMap = (sharedCmapRec) ? sharedCmapRec->cpuData() : nullptr;
-  const ParcellationLabelTable* labelTable = (sharedLabelsRec) ? sharedLabelsRec->cpuData()
-                                                               : nullptr;
+  const ParcellationLabelTable* labelTable = (sharedLabelsRec) ? sharedLabelsRec->cpuData() : nullptr;
 
-  for (auto& M : m_meshes)
-  {
+  for (auto& M : m_meshes) {
     auto m2d = M.second.m_meshFor2d;
     auto m3d = M.second.m_meshFor3d;
 
-    if (!m2d || !m3d)
-    {
+    if (!m2d || !m3d) {
       continue;
     }
 
     auto meshRecord = M.second.m_meshRecord.lock();
-    if (!meshRecord || !meshRecord->cpuData())
-    {
+    if (!meshRecord || !meshRecord->cpuData()) {
       continue;
     }
 
@@ -457,20 +417,17 @@ void MeshAssembly::updateMeshColors()
     glm::vec3 materialColor = sk_defaultMaterialColor;
     float materialAlpha = sk_defaultMaterialAlpha;
 
-    if (labelTable && MeshSource::Label == meshInfo.meshSource())
-    {
+    if (labelTable && MeshSource::Label == meshInfo.meshSource()) {
       // Update the label mesh color according to the label index in the table:
       const uint32_t labelIndex = meshInfo.labelIndex();
 
-      if (labelIndex < labelTable->numLabels())
-      {
+      if (labelIndex < labelTable->numLabels()) {
         visible = labelTable->getShowMesh(labelIndex);
         materialColor = labelTable->getColor(labelIndex);
         materialAlpha = labelTable->getAlpha(labelIndex);
       }
     }
-    else if (image && colorMap && MeshSource::IsoSurface == meshInfo.meshSource())
-    {
+    else if (image && colorMap && MeshSource::IsoSurface == meshInfo.meshSource()) {
       /// @todo This section needs to be executed when the image, color map,
       /// or WL change.
 
@@ -489,8 +446,7 @@ void MeshAssembly::updateMeshColors()
 
       // Index into color map according at iso-value after window-level mapping:
       const size_t N = colorMap->numColors();
-      if (N == 0)
-      {
+      if (N == 0) {
         continue;
       }
 
@@ -501,8 +457,7 @@ void MeshAssembly::updateMeshColors()
       materialAlpha = 1.0f;
       visible = true; // Iso meshes are always enabled (for now)
 
-      if (color.a > 0.0f)
-      {
+      if (color.a > 0.0f) {
         materialColor = glm::vec3{color / color.a};
       }
     }

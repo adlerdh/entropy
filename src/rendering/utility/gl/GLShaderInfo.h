@@ -19,8 +19,7 @@ public:
     GLenum severity,
     GLsizei length,
     const GLchar* msg,
-    const void* param
-  );
+    const void* param);
 #endif
 };
 

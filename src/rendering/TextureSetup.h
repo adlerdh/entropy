@@ -18,12 +18,10 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
 std::vector<uuids::uuid> createSegTextures(AppData& appData, uuid_range_t segUids);
 
 std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > createDistanceMapTextures(
-  const AppData& appData
-);
+  const AppData& appData);
 
 std::unordered_map<uuids::uuid, GLTexture> createImageColorMapTextures(const AppData& appData);
 
-std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(const AppData& appData
-);
+std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(const AppData& appData);
 
 #endif // TEXTURE_SETUP_H

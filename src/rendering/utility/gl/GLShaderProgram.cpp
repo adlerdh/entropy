@@ -8,19 +8,9 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-GLShaderProgram::GLShaderProgram()
-  : m_name()
-  , m_handle(0u)
-  , m_linked(false)
-{
-}
+GLShaderProgram::GLShaderProgram() : m_name(), m_handle(0u), m_linked(false) {}
 
-GLShaderProgram::GLShaderProgram(std::string name)
-  : m_name(std::move(name))
-  , m_handle(0u)
-  , m_linked(false)
-{
-}
+GLShaderProgram::GLShaderProgram(std::string name) : m_name(std::move(name)), m_handle(0u), m_linked(false) {}
 
 GLShaderProgram::~GLShaderProgram()
 {
@@ -101,8 +91,7 @@ bool GLShaderProgram::link()
   GLint status = 0;
   glGetProgramiv(m_handle, GL_LINK_STATUS, &status);
 
-  if (GL_FALSE == status)
-  {
+  if (GL_FALSE == status) {
     GLint logLength = 0;
     std::string logString;
 
@@ -121,8 +110,9 @@ bool GLShaderProgram::link()
 
   m_linked = true;
 
-  auto locationGetter = [this](const std::string& name) -> GLint
-  { return glGetUniformLocation(m_handle, name.c_str()); };
+  auto locationGetter = [this](const std::string& name) -> GLint {
+    return glGetUniformLocation(m_handle, name.c_str());
+  };
 
   /// Get locations for all of the program's registered uniforms
   const int ret = m_registeredUniforms.queryAndSetAllLocations(locationGetter);
@@ -325,8 +315,7 @@ bool GLShaderProgram::setSamplerUniform(const std::string& name, GLint sampler)
 bool GLShaderProgram::setSamplerUniform(const std::string& name, const Uniforms::SamplerIndexVectorType& samplers)
 {
   const GLint loc = getUniformLocation(name);
-  if (loc < 0 || samplers.indices.empty())
-  {
+  if (loc < 0 || samplers.indices.empty()) {
     return false;
   }
 
@@ -420,8 +409,7 @@ void GLShaderProgram::printActiveUniforms()
 
   spdlog::info("Active uniforms:");
 
-  for (int i = 0; i < numActiveUniforms; ++i)
-  {
+  for (int i = 0; i < numActiveUniforms; ++i) {
     GLsizei actualLength;
     GLint arraySize;
     GLenum type;
@@ -431,7 +419,12 @@ void GLShaderProgram::printActiveUniforms()
     const std::string name(&nameData[0], static_cast<size_t>(actualLength));
     const GLint location = glGetUniformLocation(m_handle, &nameData[0]);
 
-    spdlog::info("uniform {}: location = {}, name = {}, type = {}", i, location, name, Uniforms::getUniformTypeString(type));
+    spdlog::info(
+      "uniform {}: location = {}, name = {}, type = {}",
+      i,
+      location,
+      name,
+      Uniforms::getUniformTypeString(type));
   }
 
 #if 0
@@ -471,8 +464,7 @@ void GLShaderProgram::printActiveUniformBlocks()
 
   spdlog::info("Active uniform blocks:");
 
-  for (GLint i = 0; i < numUniformBlocks; ++i)
-  {
+  for (GLint i = 0; i < numUniformBlocks; ++i) {
     GLsizei actualLength;
     GLint binding;
 
@@ -488,19 +480,28 @@ void GLShaderProgram::printActiveUniformBlocks()
     std::vector<GLint> uniformIndices(numUniforms);
     glGetActiveUniformBlockiv(m_handle, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, &uniformIndices[0]);
 
-    for (GLint u = 0; u < numUniforms; ++u)
-    {
+    for (GLint u = 0; u < numUniforms; ++u) {
       GLint arraySize;
       GLenum type;
 
-      glGetActiveUniform(m_handle, uniformIndices[u], maxUniformNameLength,
-                         &actualLength, &arraySize, &type, &uniformNameData[0]);
+      glGetActiveUniform(
+        m_handle,
+        uniformIndices[u],
+        maxUniformNameLength,
+        &actualLength,
+        &arraySize,
+        &type,
+        &uniformNameData[0]);
 
       const std::string uniformName(&uniformNameData[0], actualLength);
       const GLint location = glGetUniformLocation(m_handle, &uniformName[0]);
 
-      spdlog::info("uniform {}: location = {}, name = {}, type = {}", u, location, uniformName,
-                   Uniforms::getUniformTypeString(type));
+      spdlog::info(
+        "uniform {}: location = {}, name = {}, type = {}",
+        u,
+        location,
+        uniformName,
+        Uniforms::getUniformTypeString(type));
     }
   }
 
@@ -554,8 +555,7 @@ void GLShaderProgram::printActiveAttribs()
 
   spdlog::info("Active attributes:");
 
-  for (GLint i = 0; i < numActiveAttribs; ++i)
-  {
+  for (GLint i = 0; i < numActiveAttribs; ++i) {
     GLsizei actualLength;
     GLint arraySize;
     GLenum type;
@@ -565,8 +565,12 @@ void GLShaderProgram::printActiveAttribs()
     const std::string name(&nameData[0], actualLength);
     const GLint location = glGetAttribLocation(m_handle, &nameData[0]);
 
-    spdlog::info("attribute {}: location = {}, name = {}, type = {}", i, location,name,
-                 Uniforms::getUniformTypeString(type));
+    spdlog::info(
+      "attribute {}: location = {}, name = {}, type = {}",
+      i,
+      location,
+      name,
+      Uniforms::getUniformTypeString(type));
   }
 
 #if 0
@@ -612,8 +616,7 @@ bool GLShaderProgram::isValid()
   glValidateProgram(m_handle);
   glGetProgramiv(m_handle, GL_VALIDATE_STATUS, &status);
 
-  if (GL_FALSE == status)
-  {
+  if (GL_FALSE == status) {
     GLint logLength = 0;
     glGetProgramiv(m_handle, GL_INFO_LOG_LENGTH, &logLength);
 

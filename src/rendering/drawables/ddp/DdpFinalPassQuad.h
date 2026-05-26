@@ -15,8 +15,7 @@ public:
     ShaderProgramActivatorType shaderProgramActivator,
     UniformsProviderType uniformsProvider,
     std::array<GLTexture, 2>& frontBlenderTextures,
-    GLTexture& backBlenderTexture
-  );
+    GLTexture& backBlenderTexture);
 
   DdpFinalPassQuad(const DdpFinalPassQuad&) = delete;
   DdpFinalPassQuad& operator=(const DdpFinalPassQuad&) = delete;

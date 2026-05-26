@@ -51,9 +51,7 @@
 namespace
 {
 
-static const std::string sk_glContextErrorMsg(
-  "The global shared OpenGL context could not be made current."
-);
+static const std::string sk_glContextErrorMsg("The global shared OpenGL context could not be made current.");
 
 } // namespace
 
@@ -64,8 +62,7 @@ ActionManager::ActionManager(
   AssemblyManager& assemblyManager,
   DataManager& dataManager,
   GuiManager& guiManager,
-  InteractionManager& interactionManager
-)
+  InteractionManager& interactionManager)
   : m_globalContext(QOpenGLContext::globalShareContext())
   ,
 
@@ -85,8 +82,7 @@ ActionManager::ActionManager(
   , m_crosshairsFrameChangedBroadcaster(nullptr)
   , m_crosshairsFrameChangedDoneBroadcaster(nullptr)
 {
-  if (!m_globalContext || !m_globalContext->isValid())
-  {
+  if (!m_globalContext || !m_globalContext->isValid()) {
     std::ostringstream ss;
     ss << "The global, shared OpenGL context is invalid." << std::ends;
     throw_debug(ss.str())
@@ -110,16 +106,12 @@ void ActionManager::setCrosshairsFrameProvider(GetterType<CoordinateFrame> provi
   m_crosshairsFrameProvider = provider;
 }
 
-void ActionManager::setCrosshairsFrameChangedBroadcaster(
-  SetterType<const CoordinateFrame&> broadcaster
-)
+void ActionManager::setCrosshairsFrameChangedBroadcaster(SetterType<const CoordinateFrame&> broadcaster)
 {
   m_crosshairsFrameChangedBroadcaster = broadcaster;
 }
 
-void ActionManager::setCrosshairsFrameChangeDoneBroadcaster(
-  SetterType<const CoordinateFrame&> broadcaster
-)
+void ActionManager::setCrosshairsFrameChangeDoneBroadcaster(SetterType<const CoordinateFrame&> broadcaster)
 {
   m_crosshairsFrameChangedDoneBroadcaster = broadcaster;
 }
@@ -130,16 +122,14 @@ void ActionManager::updateWorldPositionStatus()
   static constexpr uint32_t sk_compIndex = 0;
   static const glm::u64vec3 sk_minIndex(0);
 
-  if (!m_crosshairsFrameProvider)
-  {
+  if (!m_crosshairsFrameProvider) {
     return;
   }
 
   const glm::vec4 worldPos{m_crosshairsFrameProvider().worldOrigin(), 1.0f};
 
   // Get the position in image Subject space
-  auto getImageSubjectPosition = [&worldPos](const imageio::ImageCpuRecord& record) -> glm::vec3
-  {
+  auto getImageSubjectPosition = [&worldPos](const imageio::ImageCpuRecord& record) -> glm::vec3 {
     const glm::vec4 subjectPos = record.transformations().subject_O_world() * worldPos;
     return glm::vec3{subjectPos / subjectPos.w};
   };
@@ -148,21 +138,19 @@ void ActionManager::updateWorldPositionStatus()
   // double precision floating point. If the world position is not inside the image domain,
   // then std::nullopt is returned.
 
-  auto getImagePixelValue = [&worldPos](const imageio::ImageCpuRecord& record
-                            ) -> std::optional<double>
-  {
+  auto getImagePixelValue = [&worldPos](const imageio::ImageCpuRecord& record) -> std::optional<double> {
     const glm::vec4 pixelPos4 = record.transformations().pixel_O_world() * worldPos;
     const glm::vec3 pixelPos{pixelPos4 / pixelPos4.w};
 
     const glm::u64vec3 pixelIndex = glm::round(pixelPos);
 
-    if ( glm::all( glm::greaterThanEqual( pixelIndex, sk_minIndex ) ) &&
-             glm::all( glm::lessThan( pixelIndex, record.header().m_pixelDimensions ) ) )
+    if (
+      glm::all(glm::greaterThanEqual(pixelIndex, sk_minIndex)) &&
+      glm::all(glm::lessThan(pixelIndex, record.header().m_pixelDimensions)))
     {
       // Position is inside the image
       double value;
-      if (bool retrieved = record.pixelValue(sk_compIndex, pixelIndex, value))
-      {
+      if (bool retrieved = record.pixelValue(sk_compIndex, pixelIndex, value)) {
         return value;
       }
     }
@@ -181,15 +169,12 @@ void ActionManager::updateWorldPositionStatus()
   ssImageValue << "Image: <N/A>, ";
   ssLabelValue << "Label: <N/A> ";
 
-  do
-  {
+  do {
     auto imageRecord = m_dataManager.activeImageRecord().lock();
-    if (!imageRecord)
-      break;
+    if (!imageRecord) break;
 
     auto imageCpuRecord = imageRecord->cpuData();
-    if (!imageCpuRecord)
-      break;
+    if (!imageCpuRecord) break;
 
     const glm::vec3 subjectPos = getImageSubjectPosition(*imageCpuRecord);
 
@@ -197,16 +182,13 @@ void ActionManager::updateWorldPositionStatus()
     // World-space position
 
     ssPosition.str(std::string());
-    ssPosition << boost::format("(%.3f, %.3f, %.3f) mm, ") % subjectPos.x % subjectPos.y
-                    % subjectPos.z;
+    ssPosition << boost::format("(%.3f, %.3f, %.3f) mm, ") % subjectPos.x % subjectPos.y % subjectPos.z;
 
     auto imageValue = getImagePixelValue(*imageCpuRecord);
-    if (!imageValue)
-      break;
+    if (!imageValue) break;
 
-    auto format = (imageio::isIntegerType(imageCpuRecord->header().m_componentType))
-                    ? boost::format("Image: %d, ")
-                    : boost::format("Image: %.6f, ");
+    auto format = (imageio::isIntegerType(imageCpuRecord->header().m_componentType)) ? boost::format("Image: %d, ")
+                                                                                     : boost::format("Image: %.6f, ");
 
     ssImageValue.str(std::string());
     ssImageValue << format % (*imageValue);
@@ -214,36 +196,28 @@ void ActionManager::updateWorldPositionStatus()
     break;
   } while (1);
 
-  do
-  {
+  do {
     auto parcelUid = m_dataManager.activeParcellationUid();
-    if (!parcelUid)
-      break;
+    if (!parcelUid) break;
 
     auto parcelRecord = m_dataManager.activeParcellationRecord().lock();
-    if (!parcelRecord)
-      break;
+    if (!parcelRecord) break;
 
     auto parcelCpuRecord = parcelRecord->cpuData();
-    if (!parcelCpuRecord)
-      break;
+    if (!parcelCpuRecord) break;
 
     auto labelTableUid = m_dataManager.labelTableUid_of_parcellation(*parcelUid);
-    if (!labelTableUid)
-      break;
+    if (!labelTableUid) break;
 
     auto labelTableRecord = m_dataManager.labelTableRecord(*labelTableUid).lock();
-    if (!labelTableRecord)
-      break;
+    if (!labelTableRecord) break;
 
     auto labelTableCpuRecord = labelTableRecord->cpuData();
-    if (!labelTableCpuRecord)
-      break;
+    if (!labelTableCpuRecord) break;
 
     // Parcellation stores the index into a map of label values
     auto labelIndexAsDouble = getImagePixelValue(*parcelCpuRecord);
-    if (!labelIndexAsDouble)
-      break;
+    if (!labelIndexAsDouble) break;
 
     // Since image pixel values are generically returned as double,
     // we cast here to size_t.
@@ -254,8 +228,7 @@ void ActionManager::updateWorldPositionStatus()
     ssLabelValue.str(std::string());
 
     const std::optional<int64_t> labelValue = parcelCpuRecord->labelValue(labelIndex);
-    if (labelValue)
-    {
+    if (labelValue) {
       ssLabelValue << boost::format("Label: %d ('%s')") % (*labelValue) % labelName;
     }
 
@@ -272,14 +245,11 @@ void ActionManager::updateWorldPositionStatus()
 
 void ActionManager::centerCrosshairsOnImage(const UID& imageUid)
 {
-  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangedDoneBroadcaster)
-  {
+  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangedDoneBroadcaster) {
     return;
   }
 
-  auto roundPositionToNearestPixel =
-    [](const imageio::ImageCpuRecord& record, const glm::vec3& worldPos)
-  {
+  auto roundPositionToNearestPixel = [](const imageio::ImageCpuRecord& record, const glm::vec3& worldPos) {
     const glm::mat4& pixel_O_world = record.transformations().pixel_O_world();
     const glm::mat4& world_O_pixel = record.transformations().world_O_pixel();
 
@@ -293,8 +263,7 @@ void ActionManager::centerCrosshairsOnImage(const UID& imageUid)
   };
 
   auto record = m_dataManager.imageRecord(imageUid).lock();
-  if (!record || !record->cpuData())
-  {
+  if (!record || !record->cpuData()) {
     return;
   }
 
@@ -309,14 +278,12 @@ void ActionManager::centerCrosshairsOnImage(const UID& imageUid)
 
 void ActionManager::centerCrosshairsOnSlide(const UID& slideUid)
 {
-  if (!m_slideStackFrameProvider || !m_crosshairsFrameChangedDoneBroadcaster)
-  {
+  if (!m_slideStackFrameProvider || !m_crosshairsFrameChangedDoneBroadcaster) {
     return;
   }
 
   auto slideRecord = m_dataManager.slideRecord(slideUid).lock();
-  if (!slideRecord || !slideRecord->cpuData())
-  {
+  if (!slideRecord || !slideRecord->cpuData()) {
     return;
   }
 
@@ -327,37 +294,31 @@ void ActionManager::centerCrosshairsOnSlide(const UID& slideUid)
 
   glm::vec4 slidePosition;
 
-  if (m_assemblyManager.getSlideRenderingProperties().m_activeSlideViewShows2dSlides)
-  {
+  if (m_assemblyManager.getSlideRenderingProperties().m_activeSlideViewShows2dSlides) {
     // If slides are rendered as 2D, then position the crosshairs in the center
     // of the active slide, so that the 2D intersection of the view plane and the slide
     // looks good.
     slidePosition = sk_slideCenter;
   }
-  else
-  {
+  else {
     // If slides are rendered as 3D, then position the crosshairs either at the top
     // or the bottom of the active slide, so that the crosshairs are visible from the
     // viewer's orientation and not embedded within the slide.
-    switch (m_interactionManager.getActiveSlideViewDirection())
-    {
-    case InteractionManager::ActiveSlideViewDirection::TopToBottomSlide:
-    {
-      slidePosition = sk_slideTop;
-      break;
-    }
-    case InteractionManager::ActiveSlideViewDirection::BottomToTopSlide:
-    {
-      slidePosition = sk_slideBottom;
-      break;
-    }
+    switch (m_interactionManager.getActiveSlideViewDirection()) {
+      case InteractionManager::ActiveSlideViewDirection::TopToBottomSlide: {
+        slidePosition = sk_slideTop;
+        break;
+      }
+      case InteractionManager::ActiveSlideViewDirection::BottomToTopSlide: {
+        slidePosition = sk_slideBottom;
+        break;
+      }
     }
   }
 
   const auto stackFrame = m_slideStackFrameProvider();
 
-  const glm::mat4 world_O_slide = stackFrame.world_O_frame()
-                                  * slideio::stack_O_slide(*(slideRecord->cpuData()));
+  const glm::mat4 world_O_slide = stackFrame.world_O_frame() * slideio::stack_O_slide(*(slideRecord->cpuData()));
 
   const glm::vec4 worldPosition = world_O_slide * slidePosition;
 
@@ -366,8 +327,7 @@ void ActionManager::centerCrosshairsOnSlide(const UID& slideUid)
   CoordinateFrame frame;
   frame.setWorldOrigin(glm::vec3{worldPosition / worldPosition.w});
 
-  if (sk_alignCrosshairsToStack)
-  {
+  if (sk_alignCrosshairsToStack) {
     frame.setFrameToWorldRotation(stackFrame.world_O_frame_rotation());
   }
 
@@ -377,16 +337,14 @@ void ActionManager::centerCrosshairsOnSlide(const UID& slideUid)
 void ActionManager::alignCrosshairsToActiveSlide()
 {
   /// @todo Call this when a slide is activated or when the user clicks on the slide stack views.
-  if (const auto slideUid = m_dataManager.activeSlideUid())
-  {
+  if (const auto slideUid = m_dataManager.activeSlideUid()) {
     centerCrosshairsOnSlide(*slideUid);
   }
 }
 
 void ActionManager::alignCrosshairsToSlideStackFrame()
 {
-  if (!m_crosshairsFrameProvider || !m_slideStackFrameProvider || !m_crosshairsFrameChangedDoneBroadcaster)
-  {
+  if (!m_crosshairsFrameProvider || !m_slideStackFrameProvider || !m_crosshairsFrameChangedDoneBroadcaster) {
     return;
   }
 
@@ -397,8 +355,7 @@ void ActionManager::alignCrosshairsToSlideStackFrame()
 
 void ActionManager::alignCrosshairsToSubjectXyzPlanes()
 {
-  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangedDoneBroadcaster)
-  {
+  if (!m_crosshairsFrameProvider || !m_crosshairsFrameChangedDoneBroadcaster) {
     return;
   }
 
@@ -407,10 +364,8 @@ void ActionManager::alignCrosshairsToSubjectXyzPlanes()
   // If there is an active image, then use its world_O_subject transformation.
   // Otherwise, use identity.
   auto activeImage = m_dataManager.activeImageRecord().lock();
-  if (activeImage && activeImage->cpuData())
-  {
-    world_O_subject_rotation = glm::mat3{activeImage->cpuData()->transformations().world_O_subject()
-    };
+  if (activeImage && activeImage->cpuData()) {
+    world_O_subject_rotation = glm::mat3{activeImage->cpuData()->transformations().world_O_subject()};
   }
 
   CoordinateFrame anatomicalFrame;
@@ -436,27 +391,22 @@ void ActionManager::resetViews()
 /// @todo Call when an image is activated
 void ActionManager::setupCamerasAndCrosshairsForImage()
 {
-  if (!m_crosshairsFrameChangedDoneBroadcaster || !m_slideStackFrameProvider)
-  {
+  if (!m_crosshairsFrameChangedDoneBroadcaster || !m_slideStackFrameProvider) {
     return;
   }
 
   const auto stackFrame = m_slideStackFrameProvider();
 
   // Set the crosshairs position and rotation
-  if (const auto imageUid = m_dataManager.activeImageUid())
-  {
+  if (const auto imageUid = m_dataManager.activeImageUid()) {
     // There is an active image, so center on it:
     centerCrosshairsOnImage(*imageUid);
   }
-  else
-  {
+  else {
     // There is no active image, so position the crosshairs at the center of the reference space
     // and align them to the X, Y, Z World axes (identity rotation):
 
-    const glm::vec3 center = math::computeAABBoxCenter(
-      data::refSpaceAABBox(m_dataManager, stackFrame.world_O_frame())
-    );
+    const glm::vec3 center = math::computeAABBoxCenter(data::refSpaceAABBox(m_dataManager, stackFrame.world_O_frame()));
 
     CoordinateFrame frame;
     frame.setWorldOrigin(center);
@@ -465,8 +415,7 @@ void ActionManager::setupCamerasAndCrosshairsForImage()
 
   m_interactionManager.setupCamerasForAABBox(
     data::refSpaceAABBox(m_dataManager, stackFrame.world_O_frame()),
-    data::refSpaceVoxelScale(m_dataManager)
-  );
+    data::refSpaceVoxelScale(m_dataManager));
 
   //    m_interactionManager.setCameraNearDistance( data::refSpaceVoxelScale( m_dataManager ) );
   m_interactionManager.alignCamerasToFrames();
@@ -475,31 +424,27 @@ void ActionManager::setupCamerasAndCrosshairsForImage()
 }
 
 std::optional<UID> ActionManager::loadImage(
-  const std::string& filename, const std::optional<std::string>& dicomSeriesUid
-)
+  const std::string& filename,
+  const std::optional<std::string>& dicomSeriesUid)
 {
   std::optional<UID> imageUid;
 
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     // Loads the image and makes it active
     imageUid = data::loadImage(m_dataManager, filename, dicomSeriesUid);
 
-    if (imageUid)
-    {
+    if (imageUid) {
       // Update the assemblies
       updateImageSliceAssembly();
       m_guiManager.updateAllViewWidgets();
     }
-    else
-    {
+    else {
       std::cerr << "No image loaded from " << filename << std::endl;
     }
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 
@@ -507,30 +452,26 @@ std::optional<UID> ActionManager::loadImage(
 }
 
 std::optional<UID> ActionManager::loadParcellation(
-  const std::string& filename, const std::optional<std::string>& dicomSeriesUid
-)
+  const std::string& filename,
+  const std::optional<std::string>& dicomSeriesUid)
 {
   std::optional<UID> parcelUid;
 
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     parcelUid = data::loadParcellation(m_dataManager, filename, dicomSeriesUid);
 
-    if (parcelUid)
-    {
+    if (parcelUid) {
       // Update the assemblies
       updateImageSliceAssembly();
       m_guiManager.updateAllViewWidgets();
     }
-    else
-    {
+    else {
       std::cerr << "No parcellation loaded from " << filename << std::endl;
     }
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 
@@ -541,26 +482,22 @@ std::optional<UID> ActionManager::loadSlide(const std::string& filename, bool tr
 {
   std::optional<UID> slideUid;
 
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     slideUid = data::loadSlide(m_dataManager, filename, translateToTopOfStack);
 
-    if (slideUid)
-    {
+    if (slideUid) {
       std::cout << "Loaded slide " << *slideUid << std::endl;
 
       updateSlideStackAssembly();
       m_guiManager.updateAllViewWidgets();
     }
-    else
-    {
+    else {
       std::cerr << "No slide image loaded from " << filename << std::endl;
     }
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 
@@ -573,8 +510,7 @@ void ActionManager::saveProject(const std::optional<std::string>& newFileName)
   m_dataManager.updateProject(newFileName);
 
   // Update stack transformation:
-  if (m_slideStackFrameProvider)
-  {
+  if (m_slideStackFrameProvider) {
     m_dataManager.project().m_world_T_slideStack = m_slideStackFrameProvider();
   }
 
@@ -583,64 +519,54 @@ void ActionManager::saveProject(const std::optional<std::string>& newFileName)
 
 void ActionManager::generateIsoSurfaceMesh(double isoValue)
 {
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     const auto activeImageUid = m_dataManager.activeImageUid();
 
-    if (!activeImageUid)
-    {
+    if (!activeImageUid) {
       std::cerr << "No active image for which to generate isosurface" << std::endl;
       return;
     }
 
     const auto meshUid = data::generateIsoSurfaceMesh(m_dataManager, *activeImageUid, isoValue);
 
-    if (meshUid)
-    {
+    if (meshUid) {
       // Update the assemblies
       updateIsoMeshAssembly();
       m_guiManager.updateAllViewWidgets();
     }
-    else
-    {
+    else {
       std::cerr << "No isosurface mesh generated from image " << *activeImageUid << std::endl;
     }
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 }
 
 void ActionManager::generateLabelMeshes()
 {
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     const auto parcelUid = m_dataManager.activeParcellationUid();
-    if (!parcelUid)
-    {
+    if (!parcelUid) {
       std::cerr << "No active parcellation for which to generate label meshes" << std::endl;
       return;
     }
 
     const auto generatedUids = data::generateAllLabelMeshes(m_dataManager, *parcelUid);
 
-    if (!generatedUids.empty())
-    {
+    if (!generatedUids.empty()) {
       updateLabelMeshAssembly();
       m_guiManager.updateAllViewWidgets();
     }
-    else
-    {
+    else {
       std::cerr << "No meshes generated from parcellation " << *parcelUid << std::endl;
     }
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 }
@@ -652,8 +578,7 @@ void ActionManager::transformFeedback()
   computerWidget.show();
   computerWidget.hide();
 
-  if (!computerWidget.isValid())
-  {
+  if (!computerWidget.isValid()) {
     throw_debug(sk_glContextErrorMsg)
   }
 
@@ -664,12 +589,10 @@ void ActionManager::transformFeedback()
     auto activeImageWR = m_dataManager.activeImageRecord();
     auto record = activeImageWR.lock();
 
-    if (record && record->gpuData())
-    {
+    if (record && record->gpuData()) {
       polygonizer.setVolumeTexture(record->gpuData()->texture());
     }
-    else
-    {
+    else {
       std::cerr << "No active image for which to generate isosurface" << std::endl;
       return;
     }
@@ -701,8 +624,7 @@ void ActionManager::transformFeedback()
 void ActionManager::updateImageSliceAssembly()
 {
   const auto activeImageUid = m_dataManager.activeImageUid();
-  if (!activeImageUid)
-  {
+  if (!activeImageUid) {
     std::ostringstream ss;
     ss << "No active image to display" << std::ends;
     std::cerr << ss.str() << std::endl;
@@ -710,8 +632,7 @@ void ActionManager::updateImageSliceAssembly()
   }
 
   const auto activeParcelUid = data::getActiveParcellation(m_dataManager, *activeImageUid);
-  if (!activeParcelUid)
-  {
+  if (!activeParcelUid) {
     std::ostringstream ss;
     ss << "No parcellation to display" << std::ends;
     std::cerr << ss.str() << std::endl;
@@ -719,40 +640,34 @@ void ActionManager::updateImageSliceAssembly()
   }
 
   const auto imageColorMapUid = m_dataManager.imageColorMapUid_of_image(*activeImageUid);
-  if (!imageColorMapUid)
-  {
+  if (!imageColorMapUid) {
     std::ostringstream ss;
     ss << "No color map found for image " << *activeImageUid << std::ends;
     std::cerr << ss.str() << std::endl;
   }
 
   const auto labelsUid = m_dataManager.labelTableUid_of_parcellation(*activeParcelUid);
-  if (!labelsUid)
-  {
+  if (!labelsUid) {
     std::ostringstream ss;
     ss << "No color table found for parcellation " << *activeParcelUid << std::ends;
     std::cerr << ss.str() << std::endl;
   }
 
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     m_assemblyManager.updateImages(*activeImageUid, *activeParcelUid, *imageColorMapUid, *labelsUid);
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 }
 
 void ActionManager::updateIsoMeshAssembly()
 {
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     const auto activeImageUid = m_dataManager.activeImageUid();
-    if (!activeImageUid)
-    {
+    if (!activeImageUid) {
       std::ostringstream ss;
       ss << "No active image to update" << std::ends;
       std::cerr << ss.str() << std::endl;
@@ -763,19 +678,16 @@ void ActionManager::updateIsoMeshAssembly()
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 }
 
 void ActionManager::updateLabelMeshAssembly()
 {
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     const auto activeImageUid = m_dataManager.activeImageUid();
-    if (!activeImageUid)
-    {
+    if (!activeImageUid) {
       std::ostringstream ss;
       ss << "No active image to update" << std::ends;
       std::cerr << ss.str() << std::endl;
@@ -783,8 +695,7 @@ void ActionManager::updateLabelMeshAssembly()
     }
 
     const auto activeParcelUid = data::getActiveParcellation(m_dataManager, *activeImageUid);
-    if (!activeParcelUid)
-    {
+    if (!activeParcelUid) {
       std::ostringstream ss;
       ss << "No parcellation to update" << std::ends;
       std::cerr << ss.str() << std::endl;
@@ -792,8 +703,7 @@ void ActionManager::updateLabelMeshAssembly()
     }
 
     const auto labelsUid = m_dataManager.labelTableUid_of_parcellation(*activeParcelUid);
-    if (!labelsUid)
-    {
+    if (!labelsUid) {
       std::ostringstream ss;
       ss << "No label table found for parcellation " << *activeParcelUid << std::ends;
       std::cerr << ss.str() << std::endl;
@@ -801,13 +711,10 @@ void ActionManager::updateLabelMeshAssembly()
     }
 
     // Get map of label index to mesh UID
-    std::map<uint32_t, UID> labelMeshUidMap = m_dataManager.labelMeshUids_of_parcellation(
-      *activeParcelUid
-    );
+    std::map<uint32_t, UID> labelMeshUidMap = m_dataManager.labelMeshUids_of_parcellation(*activeParcelUid);
 
     std::vector<UID> labelMeshUids;
-    for (const auto& p : labelMeshUidMap)
-    {
+    for (const auto& p : labelMeshUidMap) {
       labelMeshUids.push_back(p.second);
     }
 
@@ -815,25 +722,21 @@ void ActionManager::updateLabelMeshAssembly()
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 }
 
 void ActionManager::updateSlideStackAssembly()
 {
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
-    if (m_slideStackFrameProvider)
-    {
+  if (m_globalContext->makeCurrent(&m_surface)) {
+    if (m_slideStackFrameProvider) {
       m_assemblyManager.updateSlideStack(m_dataManager.orderedSlideUids());
     }
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 }
@@ -841,34 +744,29 @@ void ActionManager::updateSlideStackAssembly()
 void ActionManager::updateLandmarkAssemblies()
 {
   const auto activeImageUid = m_dataManager.activeImageUid();
-  if (!activeImageUid)
-  {
+  if (!activeImageUid) {
     return;
   }
 
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     m_assemblyManager.updateRefImageLandmarkGroups(*activeImageUid);
     m_assemblyManager.updateSlideLandmarkGroups(m_dataManager.orderedSlideUids());
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 }
 
 void ActionManager::updateAnnotationAssemblies()
 {
-  if (m_globalContext->makeCurrent(&m_surface))
-  {
+  if (m_globalContext->makeCurrent(&m_surface)) {
     m_assemblyManager.updateSlideAnnotations(m_dataManager.orderedSlideUids());
 
     m_globalContext->doneCurrent();
   }
-  else
-  {
+  else {
     throw_debug(sk_glContextErrorMsg)
   }
 }

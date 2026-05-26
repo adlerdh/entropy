@@ -22,8 +22,7 @@ FullScreenQuad::FullScreenQuad(const std::string& name)
   bool success = initBuffer();
   success &= initVao();
 
-  if (!success)
-  {
+  if (!success) {
     spdlog::error("Error initialzing '{}'", m_name);
     throw_debug("Error iniitalizing FSQ")
   }
@@ -71,8 +70,7 @@ bool FullScreenQuad::initBuffer()
     sk_numPosComps,
     sk_numPosComps * sizeof(float),
     0,
-    sk_numVerts
-  );
+    sk_numVerts);
 
   VertexAttributeInfo texCoordsInfo(
     BufferComponentType::Float,
@@ -80,8 +78,7 @@ bool FullScreenQuad::initBuffer()
     sk_numTCComps,
     sk_numTCComps * sizeof(float),
     0,
-    sk_numVerts
-  );
+    sk_numVerts);
 
   VertexIndicesInfo indexInfo(IndexType::UInt32, PrimitiveMode::TriangleStrip, sk_numVerts, 0);
 
@@ -93,13 +90,12 @@ bool FullScreenQuad::initBuffer()
   texCoordsBuffer.generate();
   indicesBuffer.generate();
 
-  positionsBuffer
-    .allocate(sk_numVerts * sk_numPosComps * sizeof(float), sk_clipPositionsBuffer.data());
+  positionsBuffer.allocate(sk_numVerts * sk_numPosComps * sizeof(float), sk_clipPositionsBuffer.data());
   texCoordsBuffer.allocate(sk_numVerts * sk_numTCComps * sizeof(float), sk_texCoordsBuffer.data());
   indicesBuffer.allocate(sk_numVerts * sizeof(uint32_t), sk_indicesBuffer.data());
 
-  m_meshGpuRecord = std::make_unique<
-    MeshGpuRecord>(std::move(positionsBuffer), std::move(indicesBuffer), positionsInfo, indexInfo);
+  m_meshGpuRecord =
+    std::make_unique<MeshGpuRecord>(std::move(positionsBuffer), std::move(indicesBuffer), positionsInfo, indexInfo);
 
   m_meshGpuRecord->setTexCoords(std::move(texCoordsBuffer), texCoordsInfo);
   return true;
@@ -110,8 +106,7 @@ bool FullScreenQuad::initVao()
   static constexpr GLuint sk_positionsIndex = 0;
   static constexpr GLuint sk_texCoordsIndex = 1;
 
-  if (!m_meshGpuRecord)
-  {
+  if (!m_meshGpuRecord) {
     return false;
   }
 
@@ -123,8 +118,7 @@ bool FullScreenQuad::initVao()
   auto& texCoordsObject = m_meshGpuRecord->texCoordsObject();
   auto& indicesObject = m_meshGpuRecord->indicesObject();
 
-  if (!texCoordsInfo || !texCoordsObject)
-  {
+  if (!texCoordsInfo || !texCoordsObject) {
     spdlog::error("No mesh texture data when initializing VAO for '{}'", m_name);
     return false;
   }
@@ -151,8 +145,7 @@ bool FullScreenQuad::initVao()
 
 bool FullScreenQuad::drawVao()
 {
-  if (!m_vaoParams)
-  {
+  if (!m_vaoParams) {
     spdlog::error("Null VAO parameters when drawing '{}'", m_name);
     return false;
   }

@@ -51,7 +51,8 @@ std::optional<AABB<float> > activeRefImageAABBox(DataManager&);
 std::optional<CoordinateFrame> getActiveImageSubjectToWorldFrame(DataManager&);
 
 /**
- * @brief For the active image (if one exists), set the coordinate frame mapping Subject to World space.
+ * @brief For the active image (if one exists), set the coordinate frame mapping Subject to World
+ * space.
  */
 void setActiveImageSubjectToWorldFrame(DataManager&, const CoordinateFrame& world_O_subject);
 
@@ -80,8 +81,7 @@ std::pair<gui::ViewSliderParams, gui::ViewSliderParams> viewScrollBarParams(
   DataManager&,
   const glm::vec3& worldCrosshairsOrigin,
   const glm::mat4& world_O_slideStack,
-  const Camera& camera
-);
+  const Camera& camera);
 
 /**
  * @brief Get view slice slider parameters for a given view.
@@ -100,8 +100,7 @@ gui::ViewSliderParams viewSliceSliderParams(
   DataManager&,
   const glm::vec3& worldCrosshairsOrigin,
   const glm::mat4& world_O_slideStack,
-  const Camera& camera
-);
+  const Camera& camera);
 
 /// Get the default view slider parameters (applies to the scroll bars and slice sliders)
 gui::ViewSliderParams defaultViewSliderParams();

@@ -9,31 +9,40 @@
 in VS_OUT
 {
   vec3 v_texCoord[2];
-} fs_in;
+}
+fs_in;
 
-layout (location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
+layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
 // Texture samplers:
-uniform sampler3D u_imgTex[2]; // images (scalar, red channel only)
+uniform sampler3D u_imgTex[2];     // images (scalar, red channel only)
 uniform sampler1D u_metricCmapTex; // metric color map (non-premultiplied RGBA)
 
 uniform mat4 img1Tex_T_img0Tex; // transform from image 0 to image 1 Texture space.
 
 // Image adjustment uniforms:
-uniform vec2 u_imgSlopeIntercept[2]; // map texture to normalized intensity [0, 1], plus window/leveling
+uniform vec2 u_imgSlopeIntercept[2];     // map texture to normalized intensity [0, 1], plus window/leveling
 uniform vec2 u_metricCmapSlopeIntercept; // Slope and intercept for the metric colormap
-uniform vec2 u_metricSlopeIntercept; // Slope and intercept for the final metric
-uniform bool u_useSquare; // use squared difference (true) or absolute difference (false)
+uniform vec2 u_metricSlopeIntercept;     // Slope and intercept for the final metric
+uniform bool u_useSquare;                // use squared difference (true) or absolute difference (false)
 
 // Intensiy Projection mode uniforms:
-uniform int u_mipMode; // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
+uniform int u_mipMode;           // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
 uniform int u_halfNumMipSamples; // half number of MIP samples (0 when no projection used)
-uniform vec3 u_texSamplingDirZ; // Z view camera direction (in texture sampling space)
+uniform vec3 u_texSamplingDirZ;  // Z view camera direction (in texture sampling space)
 
-{{HELPER_FUNCTIONS}}
+{
+  {
+    HELPER_FUNCTIONS
+  }
+}
 
 /// float textureLookup(sampler3D texture, vec3 texCoords);
-{{TEXTURE_LOOKUP_FUNCTION}}
+{
+  {
+    TEXTURE_LOOKUP_FUNCTION
+  }
+}
 
 /**
  * @brief Compute the  metric
@@ -53,18 +62,17 @@ float computeMetricAndMask(in int sampleOffset, out bool hitBoundary)
   }
 
   float imgNorm[2]; // image normalized to [0, 1]
-  for (int i = 0; i < 2; ++i)
-  {
+  for (int i = 0; i < 2; ++i) {
     float img;
     switch (i) {
-    case 0: {
-      img = textureLookup(u_imgTex[0], tc[i]);
-      break;
-    }
-    case 1: {
-      img = textureLookup(u_imgTex[1], tc[i]);
-      break;
-    }
+      case 0: {
+        img = textureLookup(u_imgTex[0], tc[i]);
+        break;
+      }
+      case 1: {
+        img = textureLookup(u_imgTex[1], tc[i]);
+        break;
+      }
     }
     imgNorm[i] = clamp(u_imgSlopeIntercept[i][0] * img + u_imgSlopeIntercept[i][1], 0.0, 1.0);
   }
@@ -83,15 +91,14 @@ void main()
   // Accumulate intensity projection in forwards (+Z) and backwards (-Z) directions:
   for (int dir = -1; dir <= 1; dir += 2) // dir in {-1, 1}
   {
-    for (int i = 1; i <= u_halfNumMipSamples; ++i)
-    {
+    for (int i = 1; i <= u_halfNumMipSamples; ++i) {
       float m = computeMetricAndMask(dir * i, hitBoundary);
-      if (hitBoundary) { break; }
+      if (hitBoundary) {
+        break;
+      }
 
-      metric = float(NO_IP_MODE == u_mipMode) * metric +
-               float(MAX_IP_MODE == u_mipMode) * max(metric, m) +
-               float(MEAN_IP_MODE == u_mipMode) * (metric + m) +
-               float(MIN_IP_MODE == u_mipMode) * min(metric, m);
+      metric = float(NO_IP_MODE == u_mipMode) * metric + float(MAX_IP_MODE == u_mipMode) * max(metric, m) +
+               float(MEAN_IP_MODE == u_mipMode) * (metric + m) + float(MIN_IP_MODE == u_mipMode) * min(metric, m);
 
       ++numSamples;
     }

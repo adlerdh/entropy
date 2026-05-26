@@ -78,7 +78,8 @@ public:
   /// Get the viewport area in device-independent pixel units
   float area() const;
 
-  /// Set the viewport from a vec4 in device-independent pixel units: { left, bottom, width, height }
+  /// Set the viewport from a vec4 in device-independent pixel units: { left, bottom, width, height
+  /// }
   void setAsVec4(const glm::vec4& viewport);
 
   /// Get the viewport as a vec4 in device-independent pixel units: {left, bottom, width, height }

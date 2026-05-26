@@ -1,7 +1,7 @@
 #ifndef GL_FBO_H
 #define GL_FBO_H
 
-//#include "rendering/utility/gl/GLErrorChecker.h"
+// #include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/gl/GLFBOAttachmentTypes.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
@@ -15,8 +15,8 @@ class GLFrameBufferObject final
 {
 public:
   /**
-     * @brief GLFrameBufferObject
-     */
+   * @brief GLFrameBufferObject
+   */
   explicit GLFrameBufferObject(const std::string& name);
 
   GLFrameBufferObject(const GLFrameBufferObject&) = delete;
@@ -26,31 +26,30 @@ public:
   GLFrameBufferObject& operator=(GLFrameBufferObject&&) noexcept;
 
   /**
-     * @brief Deletes the FBO, including storage on GPU
-     */
+   * @brief Deletes the FBO, including storage on GPU
+   */
   ~GLFrameBufferObject();
 
   /**
-     * @brief Generate FBO name
-     */
+   * @brief Generate FBO name
+   */
   void generate();
 
   /**
-     * @brief Destroys the FBO, including all data on GPU
-     */
+   * @brief Destroys the FBO, including all data on GPU
+   */
   void destroy();
 
   /**
-     * @brief Bind the FBO to the current context
-     */
+   * @brief Bind the FBO to the current context
+   */
   void bind(const fbo::TargetType& target);
 
   void attach2DTexture(
     const fbo::TargetType& target,
     const fbo::AttachmentType& attachment,
     const GLTexture& tex,
-    std::optional<int> colorAttachmentIndex = std::nullopt
-  );
+    std::optional<int> colorAttachmentIndex = std::nullopt);
 
   void attachCubeMapTexture(
     const fbo::TargetType& target,
@@ -58,8 +57,7 @@ public:
     const GLTexture& tex,
     const tex::CubeMapFace& cubeMapFace,
     GLint level,
-    std::optional<int> colorAttachmentIndex = std::nullopt
-  );
+    std::optional<int> colorAttachmentIndex = std::nullopt);
 
   GLuint id() const;
 

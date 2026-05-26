@@ -46,10 +46,8 @@ public:
    * @param[in] imageRep Indicates whether this is an image or a segmentation
    * @param[in] bufferType Indicates whether multi-component images are loaded as
    * multiple buffers or as a single buffer with interleaved pixel components
-    */
-  Image(const fs::path& fileName,
-        const ImageRepresentation& imageRep,
-        const MultiComponentBufferType& bufferType);
+   */
+  Image(const fs::path& fileName, const ImageRepresentation& imageRep, const MultiComponentBufferType& bufferType);
 
   /**
    * @brief Construct Image from a header and raw data
@@ -61,11 +59,12 @@ public:
    * @param[in] imageDataComponents Must match the format specified in \c bufferType.
    * If the components are interleaved, then component 0 holds all buffers
    */
-  Image(const ImageHeader& header,
-        const std::string& displayName,
-        const ImageRepresentation& imageRep,
-        const MultiComponentBufferType& bufferType,
-        const std::vector<const void*>& imageDataComponents);
+  Image(
+    const ImageHeader& header,
+    const std::string& displayName,
+    const ImageRepresentation& imageRep,
+    const MultiComponentBufferType& bufferType,
+    const std::vector<const void*>& imageDataComponents);
 
   Image(const Image&) = default;
   Image& operator=(const Image&) = default;
@@ -90,7 +89,8 @@ public:
 
   /** @brief Get a const void pointer to the raw buffer data of an image component.
    * @param[in] component Image component to get
-   * @note If \c MultiComponentBufferType::InterleavedImage, then 0 is the only valid input component
+   * @note If \c MultiComponentBufferType::InterleavedImage, then 0 is the only valid input
+   * component
    * @note The component must be in the range [0, header().numComponentsPerPixel() - 1].
    * To read the data, cast this buffer to the appropriate component type obtained via
    * header().componentType().
@@ -127,24 +127,23 @@ public:
     const std::size_t c = compAndOffset->first;
     const std::size_t offset = compAndOffset->second;
 
-    switch (m_header.memoryComponentType())
-    {
-    case ComponentType::Int8:
-      return static_cast<T>(m_data_int8.at(c)[offset]);
-    case ComponentType::UInt8:
-      return static_cast<T>(m_data_uint8.at(c)[offset]);
-    case ComponentType::Int16:
-      return static_cast<T>(m_data_int16.at(c)[offset]);
-    case ComponentType::UInt16:
-      return static_cast<T>(m_data_uint16.at(c)[offset]);
-    case ComponentType::Int32:
-      return static_cast<T>(m_data_int32.at(c)[offset]);
-    case ComponentType::UInt32:
-      return static_cast<T>(m_data_uint32.at(c)[offset]);
-    case ComponentType::Float32:
-      return static_cast<T>(m_data_float32.at(c)[offset]);
-    default:
-      return std::nullopt;
+    switch (m_header.memoryComponentType()) {
+      case ComponentType::Int8:
+        return static_cast<T>(m_data_int8.at(c)[offset]);
+      case ComponentType::UInt8:
+        return static_cast<T>(m_data_uint8.at(c)[offset]);
+      case ComponentType::Int16:
+        return static_cast<T>(m_data_int16.at(c)[offset]);
+      case ComponentType::UInt16:
+        return static_cast<T>(m_data_uint16.at(c)[offset]);
+      case ComponentType::Int32:
+        return static_cast<T>(m_data_int32.at(c)[offset]);
+      case ComponentType::UInt32:
+        return static_cast<T>(m_data_uint32.at(c)[offset]);
+      case ComponentType::Float32:
+        return static_cast<T>(m_data_float32.at(c)[offset]);
+      default:
+        return std::nullopt;
     }
   }
 
@@ -154,20 +153,21 @@ public:
   {
     const glm::u64vec3& dims = m_header.pixelDimensions();
 
-    if (i < 0 || j < 0 || k < 0 ||
-        i >= static_cast<int64_t>(dims.x) ||
-        j >= static_cast<int64_t>(dims.y) ||
-        k >= static_cast<int64_t>(dims.z)) {
+    if (
+      i < 0 || j < 0 || k < 0 || i >= static_cast<int64_t>(dims.x) || j >= static_cast<int64_t>(dims.y) ||
+      k >= static_cast<int64_t>(dims.z))
+    {
       return std::nullopt;
     }
 
-    const std::size_t index = dims.x * dims.y * static_cast<std::size_t>(k) +
-                              dims.x * static_cast<std::size_t>(j) + static_cast<std::size_t>(i);
+    const std::size_t index = dims.x * dims.y * static_cast<std::size_t>(k) + dims.x * static_cast<std::size_t>(j) +
+                              static_cast<std::size_t>(i);
 
     return value<T>(component, index);
   }
 
-  /// @brief Get the linearly interpolated value of the buffer at continuous image 3D index (i, j, k)
+  /// @brief Get the linearly interpolated value of the buffer at continuous image 3D index (i, j,
+  /// k)
   template<typename T>
   std::optional<T> valueLinear(uint32_t comp, double i, double j, double k) const
   {
@@ -285,10 +285,10 @@ public:
   {
     const glm::u64vec3& dims = m_header.pixelDimensions();
 
-    if (i < 0 || j < 0 || k < 0 ||
-        i >= static_cast<int64_t>(dims.x) ||
-        j >= static_cast<int64_t>(dims.y) ||
-        k >= static_cast<int64_t>(dims.z)) {
+    if (
+      i < 0 || j < 0 || k < 0 || i >= static_cast<int64_t>(dims.x) || j >= static_cast<int64_t>(dims.y) ||
+      k >= static_cast<int64_t>(dims.z))
+    {
       return false;
     }
 
@@ -300,38 +300,37 @@ public:
     const std::size_t c = compAndOffset->first;
     const std::size_t offset = compAndOffset->second;
 
-    switch (m_header.memoryComponentType())
-    {
-    case ComponentType::Int8: {
-      m_data_int8.at(c)[offset] = static_cast<int8_t>(value);
-      return true;
-    }
-    case ComponentType::UInt8: {
-      m_data_uint8.at(c)[offset] = static_cast<uint8_t>(value);
-      return true;
-    }
-    case ComponentType::Int16: {
-      m_data_int16.at(c)[offset] = static_cast<int16_t>(value);
-      return true;
-    }
-    case ComponentType::UInt16: {
-      m_data_uint16.at(c)[offset] = static_cast<uint16_t>(value);
-      return true;
-    }
-    case ComponentType::Int32: {
-      m_data_int32.at(c)[offset] = static_cast<int32_t>(value);
-      return true;
-    }
-    case ComponentType::UInt32: {
-      m_data_uint32.at(c)[offset] = static_cast<uint32_t>(value);
-      return true;
-    }
-    case ComponentType::Float32: {
-      m_data_float32.at(c)[offset] = static_cast<float>(value);
-      return true;
-    }
-    default:
-      return false;
+    switch (m_header.memoryComponentType()) {
+      case ComponentType::Int8: {
+        m_data_int8.at(c)[offset] = static_cast<int8_t>(value);
+        return true;
+      }
+      case ComponentType::UInt8: {
+        m_data_uint8.at(c)[offset] = static_cast<uint8_t>(value);
+        return true;
+      }
+      case ComponentType::Int16: {
+        m_data_int16.at(c)[offset] = static_cast<int16_t>(value);
+        return true;
+      }
+      case ComponentType::UInt16: {
+        m_data_uint16.at(c)[offset] = static_cast<uint16_t>(value);
+        return true;
+      }
+      case ComponentType::Int32: {
+        m_data_int32.at(c)[offset] = static_cast<int32_t>(value);
+        return true;
+      }
+      case ComponentType::UInt32: {
+        m_data_uint32.at(c)[offset] = static_cast<uint32_t>(value);
+        return true;
+      }
+      case ComponentType::Float32: {
+        m_data_float32.at(c)[offset] = static_cast<float>(value);
+        return true;
+      }
+      default:
+        return false;
     }
 
     return false;
@@ -340,52 +339,51 @@ public:
   template<typename T>
   void setAllValues(T v)
   {
-    switch (m_header.memoryComponentType())
-    {
-    case ComponentType::Int8: {
-      for (auto& C : m_data_int8) {
-        std::fill(std::begin(C), std::end(C), v);
+    switch (m_header.memoryComponentType()) {
+      case ComponentType::Int8: {
+        for (auto& C : m_data_int8) {
+          std::fill(std::begin(C), std::end(C), v);
+        }
+        return;
       }
-      return;
-    }
-    case ComponentType::UInt8: {
-      for (auto& C : m_data_uint8) {
-        std::fill(std::begin(C), std::end(C), v);
+      case ComponentType::UInt8: {
+        for (auto& C : m_data_uint8) {
+          std::fill(std::begin(C), std::end(C), v);
+        }
+        return;
       }
-      return;
-    }
-    case ComponentType::Int16: {
-      for (auto& C : m_data_int16) {
-        std::fill(std::begin(C), std::end(C), v);
+      case ComponentType::Int16: {
+        for (auto& C : m_data_int16) {
+          std::fill(std::begin(C), std::end(C), v);
+        }
+        return;
       }
-      return;
-    }
-    case ComponentType::UInt16: {
-      for (auto& C : m_data_uint16) {
-        std::fill(std::begin(C), std::end(C), v);
+      case ComponentType::UInt16: {
+        for (auto& C : m_data_uint16) {
+          std::fill(std::begin(C), std::end(C), v);
+        }
+        return;
       }
-      return;
-    }
-    case ComponentType::Int32: {
-      for (auto& C : m_data_int32) {
-        std::fill(std::begin(C), std::end(C), v);
+      case ComponentType::Int32: {
+        for (auto& C : m_data_int32) {
+          std::fill(std::begin(C), std::end(C), v);
+        }
+        return;
       }
-      return;
-    }
-    case ComponentType::UInt32: {
-      for (auto& C : m_data_uint32) {
-        std::fill(std::begin(C), std::end(C), v);
+      case ComponentType::UInt32: {
+        for (auto& C : m_data_uint32) {
+          std::fill(std::begin(C), std::end(C), v);
+        }
+        return;
       }
-      return;
-    }
-    case ComponentType::Float32: {
-      for (auto& C : m_data_float32) {
-        std::fill(std::begin(C), std::end(C), v);
+      case ComponentType::Float32: {
+        for (auto& C : m_data_float32) {
+          std::fill(std::begin(C), std::end(C), v);
+        }
+        return;
       }
-      return;
-    }
-    default:
-      return;
+      default:
+        return;
     }
   }
 
@@ -444,26 +442,27 @@ private:
   /// For a given image component and 3D pixel indices, return a pair consisting of:
   /// 1) component buffer to index
   /// 2) offset into that buffer
-  std::optional<std::pair<std::size_t, std::size_t>> getComponentAndOffsetForBuffer(
-    uint32_t comp, int i, int j, int k) const;
+  std::optional<std::pair<std::size_t, std::size_t>> getComponentAndOffsetForBuffer(uint32_t comp, int i, int j, int k)
+    const;
 
   /// For a given image component and 1D pixel index, return a pair consisting of:
   /// 1) component buffer to index
   /// 2) offset into that buffer
-  std::optional<std::pair<std::size_t, std::size_t>> getComponentAndOffsetForBuffer(
-    uint32_t comp, std::size_t index) const;
+  std::optional<std::pair<std::size_t, std::size_t>> getComponentAndOffsetForBuffer(uint32_t comp, std::size_t index)
+    const;
 
   /**
-   * @remark If the image has a multi-component pixels and m_bufferType == MultiComponentBufferType::SeparateImages,
-   * then its components are separated and stored in a vector of images. This is so that the buffer to each image
-   * component can be retrieved independently of the others, as required when setting an OpenGL texture.
-   * If the components were not separated, then the original buffer would be accessed as a 1-D array with
-   * interleaved components: buffer[c + numComponents * (x + xSize * (y + ySize * z))];
-   * where c is the desired component.
+   * @remark If the image has a multi-component pixels and m_bufferType ==
+   * MultiComponentBufferType::SeparateImages, then its components are separated and stored in a
+   * vector of images. This is so that the buffer to each image component can be retrieved
+   * independently of the others, as required when setting an OpenGL texture. If the components were
+   * not separated, then the original buffer would be accessed as a 1-D array with interleaved
+   * components: buffer[c + numComponents * (x + xSize * (y + ySize * z))]; where c is the desired
+   * component.
    *
-   * @remark if m_bufferType == MultiComponentBufferType::InterleavedImage then only the 0th component is used to
-   * hold all components
-    */
+   * @remark if m_bufferType == MultiComponentBufferType::InterleavedImage then only the 0th
+   * component is used to hold all components
+   */
 
   std::vector<std::vector<int8_t>> m_data_int8;
   std::vector<std::vector<uint8_t>> m_data_uint8;
@@ -473,8 +472,8 @@ private:
   std::vector<std::vector<uint32_t>> m_data_uint32;
   std::vector<std::vector<float>> m_data_float32;
 
-  /// @note These vectors separate out interleaved pixels into separate vectors for multi-component images
-  /// (regardless of m_bufferType)
+  /// @note These vectors separate out interleaved pixels into separate vectors for multi-component
+  /// images (regardless of m_bufferType)
   std::vector<std::vector<int8_t>> m_dataSorted_int8;
   std::vector<std::vector<uint8_t>> m_dataSorted_uint8;
   std::vector<std::vector<int16_t>> m_dataSorted_int16;

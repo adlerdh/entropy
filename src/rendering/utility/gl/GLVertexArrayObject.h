@@ -62,18 +62,17 @@ public:
     const BufferComponentType& type,
     const BufferNormalizeValues& normalize,
     GLsizei stride,
-    GLint offset
-  );
+    GLint offset);
 
   void setAttributeBuffer(GLuint index, const VertexAttributeInfo& attribInfo);
 
-  void setAttributeIntegerBuffer(
-    GLuint index, GLint size, const BufferComponentType& type, GLsizei stride, GLint offset
-  );
+  void
+  setAttributeIntegerBuffer(GLuint index, GLint size, const BufferComponentType& type, GLsizei stride, GLint offset);
 
   /// @note There is a bug in Qt:
   /// glVertexAttrib family of functions are not defined in the Core profile functions:
-  /// @see https://stackoverflow.com/questions/24595609/why-does-qt-consider-glvertexattrib-methods-as-deprecated-compatibility-profile
+  /// @see
+  /// https://stackoverflow.com/questions/24595609/why-does-qt-consider-glvertexattrib-methods-as-deprecated-compatibility-profile
 
   // This sets global context state: nothing specific to the VAO
   //    void setGenericAttribute2f( GLuint index, const glm::vec2& values );

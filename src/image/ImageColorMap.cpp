@@ -16,8 +16,7 @@ ImageColorMap::ImageColorMap(
   const std::string& technicalName,
   const std::string& description,
   InterpolationMode interpMode,
-  std::vector<glm::vec3> colors
-)
+  std::vector<glm::vec3> colors)
   : m_name(name)
   , m_technicalName(technicalName)
   , m_description(description)
@@ -26,13 +25,11 @@ ImageColorMap::ImageColorMap(
   , m_transparentBorder(false)
 //    m_forcedInterpolationMode( forcedInterpMode )
 {
-  if (colors.empty())
-  {
+  if (colors.empty()) {
     throw_debug("Empty color map")
   }
 
-  for (const auto& x : colors)
-  {
+  for (const auto& x : colors) {
     m_colors_RGBA_F32.push_back(glm::vec4{x.r, x.g, x.b, 1.0f});
   }
 }
@@ -42,8 +39,7 @@ ImageColorMap::ImageColorMap(
   const std::string& technicalName,
   const std::string& description,
   InterpolationMode interpMode,
-  std::vector<glm::vec4> colors
-)
+  std::vector<glm::vec4> colors)
   : m_name(name)
   , m_technicalName(technicalName)
   , m_description(description)
@@ -53,8 +49,7 @@ ImageColorMap::ImageColorMap(
   , m_transparentBorder(false)
 //    m_forcedInterpolationMode( forcedInterpMode )
 {
-  if (m_colors_RGBA_F32.empty())
-  {
+  if (m_colors_RGBA_F32.empty()) {
     throw_debug("Empty color map")
   }
 }
@@ -101,8 +96,7 @@ size_t ImageColorMap::numColors() const
 
 glm::vec4 ImageColorMap::color_RGBA_F32(size_t index) const
 {
-  if (index >= m_colors_RGBA_F32.size())
-  {
+  if (index >= m_colors_RGBA_F32.size()) {
     std::ostringstream ss;
     ss << "Invalid color map index " << index << std::ends;
     throw_debug(ss.str())
@@ -128,8 +122,7 @@ const std::vector<glm::vec4>& ImageColorMap::data_RGBA_asVector() const
 
 bool ImageColorMap::setColorRGBA(std::size_t i, const glm::vec4& rgba)
 {
-  if (i < m_colors_RGBA_F32.size())
-  {
+  if (i < m_colors_RGBA_F32.size()) {
     m_colors_RGBA_F32[i] = rgba;
     return true;
   }
@@ -160,11 +153,7 @@ void ImageColorMap::cyclicRotate(float fraction)
   const float f = (fraction < 0.0f) ? 1.0f - fraction : fraction;
   const int middle = static_cast<int>(f * static_cast<float>(m_colors_RGBA_F32.size()));
 
-  std::rotate(
-    std::begin(m_colors_RGBA_F32),
-    std::begin(m_colors_RGBA_F32) + middle,
-    std::end(m_colors_RGBA_F32)
-  );
+  std::rotate(std::begin(m_colors_RGBA_F32), std::begin(m_colors_RGBA_F32) + middle, std::end(m_colors_RGBA_F32));
 }
 
 void ImageColorMap::reverse()
@@ -182,8 +171,7 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
 {
   /// @todo Throws are not needed here. Just return flag that colormap could not be loaded.
 
-  auto predicate = [](const auto& c) -> bool
-  {
+  auto predicate = [](const auto& c) -> bool {
     static const std::set<char> allowedChars{' ', '-', '_', '(', ')'};
     const auto e = std::end(allowedChars);
     return !(std::isalnum(c) || e != allowedChars.find(c));
@@ -196,43 +184,31 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
 
   std::string line;
 
-  if (std::getline(csv, line))
-  {
+  if (std::getline(csv, line)) {
     briefName = line;
-    briefName.erase(
-      std::remove_if(std::begin(briefName), std::end(briefName), predicate), std::end(briefName)
-    );
+    briefName.erase(std::remove_if(std::begin(briefName), std::end(briefName), predicate), std::end(briefName));
   }
-  else
-  {
+  else {
     spdlog::error("Could not extract brief name of colormap from CSV");
     return std::nullopt;
   }
 
-  if (std::getline(csv, line))
-  {
+  if (std::getline(csv, line)) {
     technicalName = line;
     technicalName.erase(
       std::remove_if(std::begin(technicalName), std::end(technicalName), predicate),
-      std::end(technicalName)
-    );
+      std::end(technicalName));
   }
-  else
-  {
+  else {
     spdlog::error("Could not extract technical name of colormap '{}'", briefName);
     return std::nullopt;
   }
 
-  if (std::getline(csv, line))
-  {
+  if (std::getline(csv, line)) {
     description = line;
-    description.erase(
-      std::remove_if(std::begin(description), std::end(description), predicate),
-      std::end(description)
-    );
+    description.erase(std::remove_if(std::begin(description), std::end(description), predicate), std::end(description));
   }
-  else
-  {
+  else {
     spdlog::error("Could not extract description of colormap '{}'", briefName);
     return std::nullopt;
   }
@@ -241,22 +217,19 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
   std::vector<glm::vec4> colors;
   size_t count = 0;
 
-  while (getline(csv, line))
-  {
+  while (getline(csv, line)) {
     boost::tokenizer<boost::escaped_list_separator<char> > tok(line);
     std::vector<std::string> c;
     c.assign(tok.begin(), tok.end());
 
-    if (3 == c.size())
-    {
+    if (3 == c.size()) {
       // Assume alpha component is 1:
       const float r = std::stof(c[0], nullptr);
       const float g = std::stof(c[1], nullptr);
       const float b = std::stof(c[2], nullptr);
       colors.push_back(glm::vec4{r, g, b, 1.0f});
     }
-    else if (4 == c.size())
-    {
+    else if (4 == c.size()) {
       // Do NOT pre-multiply by the alpha component:
       const float r = std::stof(c[0], nullptr);
       const float g = std::stof(c[1], nullptr);
@@ -264,30 +237,22 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
       const float a = std::stof(c[3], nullptr);
       colors.push_back(glm::vec4{r, g, b, a});
     }
-    else
-    {
-      spdlog::error(
-        "Invalid color map \"{}\": Color {} has {} components", briefName, count, c.size()
-      );
+    else {
+      spdlog::error("Invalid color map \"{}\": Color {} has {} components", briefName, count, c.size());
       return std::nullopt;
     }
 
     ++count;
   }
 
-  if (colors.empty())
-  {
+  if (colors.empty()) {
     spdlog::error("Invalid color map '{}' has no colors", briefName);
     return std::nullopt;
   }
 
-  spdlog::trace(
-    "Loaded image color map \"{}\" (\"{}\") with {} colors", briefName, technicalName, colors.size()
-  );
+  spdlog::trace("Loaded image color map \"{}\" (\"{}\") with {} colors", briefName, technicalName, colors.size());
 
-  return ImageColorMap(
-    briefName, technicalName, description, InterpolationMode::Linear, std::move(colors)
-  );
+  return ImageColorMap(briefName, technicalName, description, InterpolationMode::Linear, std::move(colors));
 }
 
 ImageColorMap ImageColorMap::createLinearImageColorMap(
@@ -296,8 +261,7 @@ ImageColorMap ImageColorMap::createLinearImageColorMap(
   std::size_t numSteps,
   std::string briefName,
   std::string description,
-  std::string technicalName
-)
+  std::string technicalName)
 {
   const std::size_t N = (numSteps >= 2 ? numSteps : 2);
 
@@ -309,8 +273,7 @@ ImageColorMap ImageColorMap::createLinearImageColorMap(
 
   const float Nm1 = static_cast<float>(N - 1);
 
-  for (std::size_t i = 0; i < N; ++i)
-  {
+  for (std::size_t i = 0; i < N; ++i) {
     colors[i] = startColor + static_cast<float>(i) / Nm1 * (endColor - startColor);
   }
 
@@ -318,8 +281,7 @@ ImageColorMap ImageColorMap::createLinearImageColorMap(
 
   std::vector<glm::vec4> previewColors(sk_previewSize);
 
-  for (uint32_t i = 0; i < sk_previewSize; ++i)
-  {
+  for (uint32_t i = 0; i < sk_previewSize; ++i) {
     previewColors[i] = glm::vec4{static_cast<float>(i) / sk_previewSize};
   }
 
@@ -338,32 +300,33 @@ ImageColorMap::InterpolationMode ImageColorMap::interpolationMode() const
   return m_interpolationMode;
 }
 
-//void ImageColorMap::setForcedInterpolationMode( const ImageColorMap::ForcedInterpolationMode& mode )
+// void ImageColorMap::setForcedInterpolationMode( const ImageColorMap::ForcedInterpolationMode&
+// mode )
 //{
-//    m_forcedInterpolationMode = mode;
-//}
+//     m_forcedInterpolationMode = mode;
+// }
 
-//ImageColorMap::ForcedInterpolationMode ImageColorMap::forcedInterpolationMode() const
+// ImageColorMap::ForcedInterpolationMode ImageColorMap::forcedInterpolationMode() const
 //{
-//    return m_forcedInterpolationMode;
-//}
+//     return m_forcedInterpolationMode;
+// }
 
-//ImageColorMap::InterpolationMode ImageColorMap::finalInterpolationMode() const
+// ImageColorMap::InterpolationMode ImageColorMap::finalInterpolationMode() const
 //{
-//    switch ( m_forcedInterpolationMode )
-//    {
-//    case ForcedInterpolationMode::Nearest:
-//    {
-//        return InterpolationMode::Nearest;
-//    }
-//    case ForcedInterpolationMode::Linear:
-//    {
-//        return InterpolationMode::Linear;
-//    }
-//    default:
-//    case ForcedInterpolationMode::None:
-//    {
-//        return m_interpolationMode;
-//    }
-//    }
-//}
+//     switch ( m_forcedInterpolationMode )
+//     {
+//     case ForcedInterpolationMode::Nearest:
+//     {
+//         return InterpolationMode::Nearest;
+//     }
+//     case ForcedInterpolationMode::Linear:
+//     {
+//         return InterpolationMode::Linear;
+//     }
+//     default:
+//     case ForcedInterpolationMode::None:
+//     {
+//         return m_interpolationMode;
+//     }
+//     }
+// }

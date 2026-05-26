@@ -11,39 +11,52 @@ in VS_OUT
   vec3 v_texCoord;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
-} fs_in;
+}
+fs_in;
 
-layout (location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
+layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
 uniform sampler3D u_imgTex[4]; // image RGBA components
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept[4]; // map texture to normalized intensity [0, 1], plus window/leveling
-uniform vec2 u_imgMinMax[4]; // min/max image values (texture intenstiy units)
-uniform vec2 u_imgThresholds[4]; // lower/upper image thresholds (texture intensity units)
-uniform float u_imgOpacity[4]; // image opacity
-uniform bool u_alphaIsOne; // flag to force alpha to 1 (true for 3-component images)
+uniform vec2 u_imgMinMax[4];         // min/max image values (texture intenstiy units)
+uniform vec2 u_imgThresholds[4];     // lower/upper image thresholds (texture intensity units)
+uniform float u_imgOpacity[4];       // image opacity
+uniform bool u_alphaIsOne;           // flag to force alpha to 1 (true for 3-component images)
 
 // View render mode uniforms:
-uniform int u_renderMode; // mode (0: normal, 1: checkerboard, 2: quadrants, 3: flashlight)
+uniform int u_renderMode;      // mode (0: normal, 1: checkerboard, 2: quadrants, 3: flashlight)
 uniform vec2 u_clipCrosshairs; // crosshairs position in Clip space
 
 // Should quadrants comparison mode be done along the x, y directions?
 // If x is true, then compare along x; if y is true, then compare along y.
 // If both are true, then compare along both.
 uniform bvec2 u_quadrants;
-uniform bool u_showFix; // flag that the either the fixed (true) or moving image is shown
-uniform float u_aspectRatio; // view aspect ratio (width / height)
-uniform float u_flashlightRadius; // flashlight circle radius
+uniform bool u_showFix;                 // flag that the either the fixed (true) or moving image is shown
+uniform float u_aspectRatio;            // view aspect ratio (width / height)
+uniform float u_flashlightRadius;       // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
-{{HELPER_FUNCTIONS}}
+{
+  {
+    HELPER_FUNCTIONS
+  }
+}
 
 /// float textureLookup(sampler3D texture, vec3 texCoord);
-{{TEXTURE_LOOKUP_FUNCTION}}
+{
+  {
+    TEXTURE_LOOKUP_FUNCTION
+  }
+}
 
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
-{{DO_RENDER_FUNCTION}}
+{
+  {
+    DO_RENDER_FUNCTION
+  }
+}
 
 void main()
 {

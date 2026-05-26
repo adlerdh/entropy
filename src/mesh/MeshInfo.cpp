@@ -1,13 +1,7 @@
 #include "mesh/MeshInfo.hpp"
 
-MeshInfo::MeshInfo(
-  MeshSource meshSource,
-  MeshPrimitiveType primitiveType,
-  boost::variant<double, uint32_t> scalarValue
-)
-  : m_meshSource(std::move(meshSource))
-  , m_primitiveType(std::move(primitiveType))
-  , m_scalarValue(scalarValue)
+MeshInfo::MeshInfo(MeshSource meshSource, MeshPrimitiveType primitiveType, boost::variant<double, uint32_t> scalarValue)
+  : m_meshSource(std::move(meshSource)), m_primitiveType(std::move(primitiveType)), m_scalarValue(scalarValue)
 {
 }
 

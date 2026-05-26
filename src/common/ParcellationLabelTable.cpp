@@ -26,27 +26,20 @@ static const auto sk_valMinMax = std::make_pair(0.5f, 1.0f);
 } // namespace
 
 ParcellationLabelTable::ParcellationLabelTable(std::size_t labelCount, std::size_t maxLabelCount)
-  : m_colors_RGBA_U8()
-  , m_properties()
-  , m_maxLabelCount(std::min(maxLabelCount, labelCountUpperBound()))
+  : m_colors_RGBA_U8(), m_properties(), m_maxLabelCount(std::min(maxLabelCount, labelCountUpperBound()))
 {
-  static const std::vector<float> sk_startAngles{
-    0.0f, 120.0f, 240.0f, 60.0f, 180.0f, 300.0f, 30.0f, 150.0f, 270.0f, 90.0f, 210.0f, 330.0f
-  };
+  static const std::vector<float>
+    sk_startAngles{0.0f, 120.0f, 240.0f, 60.0f, 180.0f, 300.0f, 30.0f, 150.0f, 270.0f, 90.0f, 210.0f, 330.0f};
 
   std::size_t labelCountAdjusted = labelCount;
 
-  if (labelCountAdjusted < 12)
-  {
+  if (labelCountAdjusted < 12) {
     spdlog::warn("Parcellation label table must have at least 12 labels");
     labelCountAdjusted = 12;
   }
 
-  if (labelCountAdjusted > m_maxLabelCount)
-  {
-    spdlog::warn(
-      "Parcellation label count ({}) exceeds maximum ({})", labelCountAdjusted, m_maxLabelCount
-    );
+  if (labelCountAdjusted > m_maxLabelCount) {
+    spdlog::warn("Parcellation label count ({}) exceeds maximum ({})", labelCountAdjusted, m_maxLabelCount);
     labelCountAdjusted = m_maxLabelCount;
   }
 
@@ -56,28 +49,27 @@ ParcellationLabelTable::ParcellationLabelTable(std::size_t labelCount, std::size
   rgbValues.push_back(glm::vec3{0.0f, 0.0f, 0.0f});
 
   // Insert the twelve "primary colors" for labels 1-12:
-  for (float s : sk_startAngles)
-  {
+  for (float s : sk_startAngles) {
     rgbValues.push_back(glm::rgbColor(glm::vec3{s, 1.0f, 1.0f}));
   }
 
-  const std::vector<glm::vec3> hsvSamples = math::generateRandomHsvSamples(
-    labelCountAdjusted - 12, sk_hueMinMax, sk_satMinMax, sk_valMinMax, sk_seed
-  );
+  const std::vector<glm::vec3> hsvSamples =
+    math::generateRandomHsvSamples(labelCountAdjusted - 12, sk_hueMinMax, sk_satMinMax, sk_valMinMax, sk_seed);
 
-  std::
-    transform(std::begin(hsvSamples), std::end(hsvSamples), std::back_inserter(rgbValues), glm::rgbColor<float, glm::precision::defaultp>);
+  std::transform(
+    std::begin(hsvSamples),
+    std::end(hsvSamples),
+    std::back_inserter(rgbValues),
+    glm::rgbColor<float, glm::precision::defaultp>);
 
   m_colors_RGBA_U8.resize(labelCountAdjusted);
 
-  for (std::size_t i = 0; i < labelCountAdjusted; ++i)
-  {
+  for (std::size_t i = 0; i < labelCountAdjusted; ++i) {
     LabelProperties props;
 
     std::ostringstream ss;
 
-    if (0 == i)
-    {
+    if (0 == i) {
       // Label index 0 is always used as the background label,
       // so it is fully transparent and not visible in 2D/3D views
       ss << "Background";
@@ -85,8 +77,7 @@ ParcellationLabelTable::ParcellationLabelTable(std::size_t labelCount, std::size
       props.m_visible = false;
       props.m_showMesh = false;
     }
-    else
-    {
+    else {
       ss << "Region " << i;
       props.m_alpha = 255u;
       props.m_visible = true;
@@ -131,8 +122,7 @@ const uint8_t* ParcellationLabelTable::colorData_RGBA_nonpremult_U8() const
 
 tex::SizedInternalBufferTextureFormat ParcellationLabelTable::bufferTextureFormat_RGBA_U8()
 {
-  static const tex::SizedInternalBufferTextureFormat sk_format
-    = tex::SizedInternalBufferTextureFormat::RGBA8_UNorm;
+  static const tex::SizedInternalBufferTextureFormat sk_format = tex::SizedInternalBufferTextureFormat::RGBA8_UNorm;
 
   return sk_format;
 }
@@ -214,19 +204,16 @@ std::vector<std::size_t> ParcellationLabelTable::addLabels(std::size_t count)
 {
   std::vector<std::size_t> newIndices;
 
-  if (0 == count)
-  {
+  if (0 == count) {
     return newIndices; // None to add
   }
 
-  if (numLabels() + count > maxNumLabels())
-  {
+  if (numLabels() + count > maxNumLabels()) {
     spdlog::error(
       "Unable to add {} new labels: exceeds maximum number of labels allowed ({}) "
       "for this parcellation label table",
       count,
-      maxNumLabels()
-    );
+      maxNumLabels());
 
     return newIndices;
   }
@@ -235,18 +222,20 @@ std::vector<std::size_t> ParcellationLabelTable::addLabels(std::size_t count)
   const std::size_t last = m_colors_RGBA_U8.size();
   const std::size_t seed = sk_seed + last;
 
-  const std::vector<glm::vec3> hsvSamples
-    = math::generateRandomHsvSamples(count, sk_hueMinMax, sk_satMinMax, sk_valMinMax, seed);
+  const std::vector<glm::vec3> hsvSamples =
+    math::generateRandomHsvSamples(count, sk_hueMinMax, sk_satMinMax, sk_valMinMax, seed);
 
   std::vector<glm::vec3> rgbValues;
 
-  std::
-    transform(std::begin(hsvSamples), std::end(hsvSamples), std::back_inserter(rgbValues), glm::rgbColor<float, glm::precision::defaultp>);
+  std::transform(
+    std::begin(hsvSamples),
+    std::end(hsvSamples),
+    std::back_inserter(rgbValues),
+    glm::rgbColor<float, glm::precision::defaultp>);
 
   m_colors_RGBA_U8.resize(last + count);
 
-  for (std::size_t i = last; i < last + count; ++i)
-  {
+  for (std::size_t i = last; i < last + count; ++i) {
     newIndices.push_back(i);
 
     LabelProperties props;
@@ -279,8 +268,7 @@ void ParcellationLabelTable::updateVector(std::size_t index)
 
 void ParcellationLabelTable::checkLabelIndex(std::size_t index) const
 {
-  if (index >= m_properties.size())
-  {
+  if (index >= m_properties.size()) {
     std::ostringstream ss;
     ss << "Invalid label index " << index << std::ends;
     throw_debug(ss.str())

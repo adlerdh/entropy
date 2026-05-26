@@ -4,8 +4,7 @@ MeshGpuRecord::MeshGpuRecord(
   GLBufferObject positionsObject,
   GLBufferObject indicesObject,
   VertexAttributeInfo positionsInfo,
-  VertexIndicesInfo indicesInfo
-)
+  VertexIndicesInfo indicesInfo)
   : m_positionsObject(std::move(positionsObject))
   , m_normalsObject(std::nullopt)
   , m_texCoordsObject(std::nullopt)
@@ -29,14 +28,12 @@ MeshGpuRecord::MeshGpuRecord(
   VertexAttributeInfo positionsInfo,
   VertexAttributeInfo normalsInfo,
   VertexAttributeInfo texCoordsInfo,
-  VertexIndicesInfo indicesInfo
-)
+  VertexIndicesInfo indicesInfo)
   : MeshGpuRecord(
-    std::move(positionsObject),
-    std::move(indicesObject),
-    std::move(positionsInfo),
-    std::move(indicesInfo)
-  )
+      std::move(positionsObject),
+      std::move(indicesObject),
+      std::move(positionsInfo),
+      std::move(indicesInfo))
 {
   m_normalsObject = std::move(normalsObject);
   m_texCoordsObject = std::move(texCoordsObject);

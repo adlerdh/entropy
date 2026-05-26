@@ -14,21 +14,21 @@
 /**
  * @brief Container for image transformations. There are four image spaces:
  *
- * TEXTURE SPACE (T): Representation of image in GPU texture space, where the 3D volumetric elements are
- * called "texels". Coordinate axes are normalized to the range [0.0, 1.0], with 0.0 and 1.0
+ * TEXTURE SPACE (T): Representation of image in GPU texture space, where the 3D volumetric elements
+ * are called "texels". Coordinate axes are normalized to the range [0.0, 1.0], with 0.0 and 1.0
  * denoting the EDGES of the first and last image pixels (not the pixel centers). Image samples are
  * positioned at the centers of pixels. The three texel coordinates are labeled (s, t, p).
  *
- * PIXEL/VOXEL SPACE (P): Representation of image on disk and RAM. Coordinates along an image dimension run
- * from [0, N-1], where N is the number of pixels along the dimension and where 0 and N-1
- * denote the CENTERS (not edges) of the first and last pixels. Note: the term "pixel" is used
+ * PIXEL/VOXEL SPACE (P): Representation of image on disk and RAM. Coordinates along an image
+ * dimension run from [0, N-1], where N is the number of pixels along the dimension and where 0 and
+ * N-1 denote the CENTERS (not edges) of the first and last pixels. Note: the term "pixel" is used
  * synonymously with "voxel", even for 3D images. The three pixel coordinates are labeled (i, j, k).
  *
  * NATIVE SUBJECT SPACE (S): Native (untransformed) space of the subject in physical units,
- * most commonly millimeters. The transformation from Pixel space to Native Subject space is computed from
- * the image pixel size, origin, and orientation direction vectors. These values are defined in the
- * image header. This space is defined such that positive coordinates (x, y, z) correspond to physical
- * directions Left, Posterior, and Superior (or, LPS) for human subjects.
+ * most commonly millimeters. The transformation from Pixel space to Native Subject space is
+ * computed from the image pixel size, origin, and orientation direction vectors. These values are
+ * defined in the image header. This space is defined such that positive coordinates (x, y, z)
+ * correspond to physical directions Left, Posterior, and Superior (or, LPS) for human subjects.
  *
  * AFFINE-REGISTERED SUBJECT SPACE (A): Space of the image following affine registration. The affine
  * registration is loaded from a file on disk and is not set manually in Entropy.
@@ -37,12 +37,13 @@
  *
  * WORLD SPACE (W): Space of the image following deformable registration. This is the space in
  * which the image is rendered. Prior to registration, it is identical to Subject space
- * (i.e. world_T_subject == identity). However, the user may choose to load and apply affine and non-linear
- * transformations between Subject and World space. This is useful when co-registering images to each other
- * or when otherwise transforming the subject.
+ * (i.e. world_T_subject == identity). However, the user may choose to load and apply affine and
+ * non-linear transformations between Subject and World space. This is useful when co-registering
+ * images to each other or when otherwise transforming the subject.
  *
  * The full image transformation chain is
- * [World (W) <-- Deformed World (D) <-- Affine Subject (A) <-- Native Subject (S) <-- Pixel (P) <-- Texture (T)]
+ * [World (W) <-- Deformed World (D) <-- Affine Subject (A) <-- Native Subject (S) <-- Pixel (P) <--
+ * Texture (T)]
  *
  * The rendering transformation chain is
  * [Window Viewport (pixels) <-- View (pixels) <-- Clip/NDC <-- Camera/Eye <-- World (W)]
@@ -60,13 +61,13 @@ public:
   ImageTransformations() = default;
 
   /**
-     * @brief Construct from image header information
-     *
-     * @param[in] pixelDimensions Image dimensions in pixel/voxel units
-     * @param[in] pixelSpacing Spacings of image pixels/voxels
-     * @param[in] pixelOrigin Position of image pixel/voxel (0, 0, 0) in Subject space
-     * @param[in] pixelDirections Directions of image pixel/voxel axes in Subject space
-     */
+   * @brief Construct from image header information
+   *
+   * @param[in] pixelDimensions Image dimensions in pixel/voxel units
+   * @param[in] pixelSpacing Spacings of image pixels/voxels
+   * @param[in] pixelOrigin Position of image pixel/voxel (0, 0, 0) in Subject space
+   * @param[in] pixelDirections Directions of image pixel/voxel axes in Subject space
+   */
   ImageTransformations(
     const glm::uvec3& pixelDimensions,
     const glm::vec3& pixelSpacing,
@@ -123,8 +124,8 @@ public:
 
   const glm::mat4& worldDef_T_subject() const; //!< Get tx from image Subject to Deformed World space
   const glm::mat4& subject_T_worldDef() const; //!< Get tx from Deformed World to image Subject space
-  const glm::mat3& subject_T_worldDef_invTransp(
-  ) const; /// Get inverse-transpose of tx from World to image Subject space
+  const glm::mat3& subject_T_worldDef_invTransp()
+    const; /// Get inverse-transpose of tx from World to image Subject space
 
   const glm::mat4& subject_T_pixel() const; //!< Get tx from image Pixel to Subject space
   const glm::mat4& pixel_T_subject() const; //!< Get tx from image Subject to Pixel space
@@ -138,17 +139,17 @@ public:
   const glm::mat4& worldDef_T_texture() const; //!< Get tx from image Texture to Deformed World space
   const glm::mat4& texture_T_worldDef() const; //!< Get tx from Deformed World to image Texture space
 
-  const glm::mat4& worldDef_T_pixel() const; //!< Get tx from image Pixel to Deformed World space
-  const glm::mat4& pixel_T_worldDef() const; //!< Get tx from Deformed World to image Pixel space
-  const glm::mat3& pixel_T_worldDef_invTransp(
-  ) const; /// Get inverse-transpose of tx from World to image Pixel space
+  const glm::mat4& worldDef_T_pixel() const;           //!< Get tx from image Pixel to Deformed World space
+  const glm::mat4& pixel_T_worldDef() const;           //!< Get tx from Deformed World to image Pixel space
+  const glm::mat3& pixel_T_worldDef_invTransp() const; /// Get inverse-transpose of tx from World to image Pixel space
 
   friend std::ostream& operator<<(std::ostream&, const ImageTransformations&);
 
 private:
   void initializeTransformations();
 
-  /// Update the transformations that involve Subject space, including world_T_subject (and its inverse)
+  /// Update the transformations that involve Subject space, including world_T_subject (and its
+  /// inverse)
   void updateTransformations();
 
   /// Overrides to the original image header
@@ -173,18 +174,18 @@ private:
   glm::mat4 m_subject_T_texture; //!< Texture to Subject space (inverse of above)
 
   // Parameters of the user-applied manual transformation:
-  glm::vec3
-    m_worldDef_T_affine_translation; //!< Translation component of worldDef_T_affine (applied 3rd)
+  glm::vec3 m_worldDef_T_affine_translation; //!< Translation component of worldDef_T_affine (applied 3rd)
   glm::quat m_worldDef_T_affine_rotation{
-    1.0f, 0.0f, 0.0f, 0.0f
-  };                                   //!< Rotation component of worldDef_T_affine  (applied 2nd)
+    1.0f,
+    0.0f,
+    0.0f,
+    0.0f};                             //!< Rotation component of worldDef_T_affine  (applied 2nd)
   glm::vec3 m_worldDef_T_affine_scale; //!< Scale component of worldDef_T_affine (applied 1st)
 
-  glm::mat4
-    m_worldDef_T_affine; //!< User-applied manual transformation (defined by the above parameters)
+  glm::mat4 m_worldDef_T_affine;   //!< User-applied manual transformation (defined by the above parameters)
   bool m_enable_worldDef_T_affine; //!< Is the worldDef_T_affine transformation used?
 
-  glm::mat4 m_affine_T_subject; //!< Affine matrix loaded from disk, mapping Subject to AffineA space
+  glm::mat4 m_affine_T_subject;   //!< Affine matrix loaded from disk, mapping Subject to AffineA space
   bool m_enable_affine_T_subject; //!< Is the affine_T_subject transformation used?
 
   std::optional<fs::path> m_affine_T_subject_fileName; //!< affine_T_subject matrix file name (if used)

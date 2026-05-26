@@ -28,8 +28,7 @@ PointLandmarkGroup::PointLandmarkGroup(
   UniformsProviderType uniformsProvider,
   std::weak_ptr<MeshRecord> sphereMeshRecord,
   std::weak_ptr<LandmarkGroupRecord> landmarkGroupRecord,
-  bool isFixedRadius
-)
+  bool isFixedRadius)
   : DrawableBase(std::move(name), DrawableType::PointLandmarkGroup)
   ,
 
@@ -38,9 +37,8 @@ PointLandmarkGroup::PointLandmarkGroup(
   , m_scaleTx(1.0f)
   ,
 
-  m_sphere(std::make_unique<BasicMesh>(
-    "landmarkSphereMesh", shaderProgramActivator, uniformsProvider, sphereMeshRecord
-  ))
+  m_sphere(
+    std::make_unique<BasicMesh>("landmarkSphereMesh", shaderProgramActivator, uniformsProvider, sphereMeshRecord))
   ,
 
   m_landmarkGroupRecord(landmarkGroupRecord)
@@ -54,16 +52,14 @@ PointLandmarkGroup::~PointLandmarkGroup() = default;
 
 void PointLandmarkGroup::setRadius(float radius)
 {
-  if (0.0f < radius)
-  {
+  if (0.0f < radius) {
     m_radius = radius;
   }
 }
 
 void PointLandmarkGroup::setMaterialColor(const glm::vec3& color)
 {
-  if (m_sphere)
-  {
+  if (m_sphere) {
     m_sphere->setMaterialColor(color);
   }
 }
@@ -72,8 +68,7 @@ void PointLandmarkGroup::setupSphere()
 {
   static const glm::vec3 sk_white{1.0f, 1.0f, 1.0f};
 
-  if (!m_sphere)
-  {
+  if (!m_sphere) {
     return;
   }
 
@@ -92,21 +87,18 @@ void PointLandmarkGroup::setupSphere()
 
 void PointLandmarkGroup::doRender(const RenderStage& stage)
 {
-  if (!m_sphere)
-  {
+  if (!m_sphere) {
     return;
   }
 
   auto landmarks = m_landmarkGroupRecord.lock();
-  if (!landmarks || !landmarks->cpuRecord())
-  {
+  if (!landmarks || !landmarks->cpuRecord()) {
     return;
   }
 
   uint32_t i = 0;
 
-  for (const auto& point : landmarks->cpuRecord()->getPoints())
-  {
+  for (const auto& point : landmarks->cpuRecord()->getPoints()) {
     m_sphere->setRenderId(m_sphere->getRenderId() + i);
     ++i;
 
@@ -122,11 +114,9 @@ void PointLandmarkGroup::doUpdate(
   double time,
   const Viewport& viewport,
   const Camera& camera,
-  const CoordinateFrame& crosshairs
-)
+  const CoordinateFrame& crosshairs)
 {
-  const float xyFactor = (m_isFixedRadius) ? m_radius
-                                           : glm::compMax(worldPixelSize(viewport, camera));
+  const float xyFactor = (m_isFixedRadius) ? m_radius : glm::compMax(worldPixelSize(viewport, camera));
 
   m_scaleTx = glm::scale(glm::vec3{2.0f * xyFactor});
 

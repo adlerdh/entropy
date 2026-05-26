@@ -9,7 +9,8 @@
 #include <string>
 #include <vector>
 
-struct GlyphMeta {
+struct GlyphMeta
+{
   float u0, u1; // atlas UV x range [0,1]
 };
 
@@ -27,10 +28,10 @@ struct GlyphMeta {
 class AsciiAtlas
 {
 public:
-  static constexpr int     kMaxGlyphs    = 128;
-  static constexpr int     kPadding      = 4;
-  static constexpr float   kPixDistScale = 32.0f;
-  static constexpr uint8_t kOnedgeValue  = 128;
+  static constexpr int kMaxGlyphs = 128;
+  static constexpr int kPadding = 4;
+  static constexpr float kPixDistScale = 32.0f;
+  static constexpr uint8_t kOnedgeValue = 128;
 
   AsciiAtlas();
   ~AsciiAtlas();
@@ -51,29 +52,49 @@ public:
    * @param glyphPx    Glyph cell size in pixels {width, height}
    * @return true on success
    */
-  bool build(const unsigned char* ttfData, int ttfBytes,
-             const std::string& charset, glm::ivec2 glyphPx);
+  bool build(const unsigned char* ttfData, int ttfBytes, const std::string& charset, glm::ivec2 glyphPx);
 
   /// OpenGL texture handle (0 if not built)
-  GLuint textureId() const { return m_texId; }
+  GLuint textureId() const
+  {
+    return m_texId;
+  }
 
   /// Number of glyphs in the atlas
-  int glyphCount() const { return m_glyphCount; }
+  int glyphCount() const
+  {
+    return m_glyphCount;
+  }
 
   /// Glyph cell size in pixels
-  glm::ivec2 glyphSize() const { return m_glyphPx; }
+  glm::ivec2 glyphSize() const
+  {
+    return m_glyphPx;
+  }
 
   /// Fill fractions in sorted glyph order (darkest to brightest)
-  const std::vector<float>& fillFractions() const { return m_fillFractions; }
+  const std::vector<float>& fillFractions() const
+  {
+    return m_fillFractions;
+  }
 
   /// Per-glyph SDF metadata in sorted glyph order
-  const std::vector<GlyphMeta>& glyphMeta() const { return m_glyphMeta; }
+  const std::vector<GlyphMeta>& glyphMeta() const
+  {
+    return m_glyphMeta;
+  }
 
   /// Slot size in atlas pixels {slotW, slotH} (glyph cell + SDF padding on each side)
-  glm::ivec2 slotSize() const { return m_slotPx; }
+  glm::ivec2 slotSize() const
+  {
+    return m_slotPx;
+  }
 
   /// Per-glyph raw slot pixels in sorted order (for testing and coverage computation)
-  const std::vector<std::vector<uint8_t>>& slotPixels() const { return m_slotPixels; }
+  const std::vector<std::vector<uint8_t>>& slotPixels() const
+  {
+    return m_slotPixels;
+  }
 
   /// CPU simulation of rendered coverage per glyph at the given screen cell size.
   /// Returns coverage fraction [0,1] in the same sorted order as fillFractions().
@@ -87,11 +108,11 @@ public:
 private:
   void destroy();
 
-  GLuint             m_texId         = 0;
-  int                m_glyphCount    = 0;
-  glm::ivec2         m_glyphPx       = {0, 0};
-  glm::ivec2         m_slotPx        = {0, 0};
-  std::vector<float>     m_fillFractions;
+  GLuint m_texId = 0;
+  int m_glyphCount = 0;
+  glm::ivec2 m_glyphPx = {0, 0};
+  glm::ivec2 m_slotPx = {0, 0};
+  std::vector<float> m_fillFractions;
   std::vector<GlyphMeta> m_glyphMeta;
   std::vector<std::vector<uint8_t>> m_slotPixels; // per-glyph slot pixels, sorted order
 };

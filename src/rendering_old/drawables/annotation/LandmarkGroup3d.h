@@ -35,8 +35,7 @@ public:
     std::weak_ptr<LandmarkGroupRecord> landmarkGroupRecord,
     std::weak_ptr<MeshGpuRecord> meshGpuRecord,
     GetterType<std::optional<DrawableScaling> > scalingProvider,
-    GetterType<std::optional<std::pair<glm::mat4, glm::mat4> > > landmarkToWorldTxProvider
-  );
+    GetterType<std::optional<std::pair<glm::mat4, glm::mat4> > > landmarkToWorldTxProvider);
 
   ~LandmarkGroup3d() override = default;
 

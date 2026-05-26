@@ -18,7 +18,7 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
 
   // Map from image UID to vector of textures for the image components.
   // Images with interleaved components will have one component texture.
-  std::unordered_map<uuids::uuid, std::vector<GLTexture> > imageTextures;
+  std::unordered_map<uuids::uuid, std::vector<GLTexture>> imageTextures;
 
   std::vector<uuids::uuid> createdImageTexUids;
 
@@ -28,13 +28,11 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
   pixelPackSettings.m_alignment = sk_alignment;
   GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
 
-  for (const auto& imageUid : imageUids)
-  {
+  for (const auto& imageUid : imageUids) {
     spdlog::debug("Begin creating texture(s) for components of image {}", imageUid);
 
     const auto* image = appData.image(imageUid);
-    if (!image)
-    {
+    if (!image) {
       spdlog::warn("Image {} is invalid", imageUid);
       continue;
     }
@@ -44,169 +42,88 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
 
     std::vector<GLTexture> componentTextures;
 
-    switch (image->bufferType())
-    {
-    case Image::MultiComponentBufferType::InterleavedImage:
-    {
-      spdlog::debug(
-        "Image {} has {} interleaved components, so one texture will be created.", imageUid, numComp
-      );
+    switch (image->bufferType()) {
+      case Image::MultiComponentBufferType::InterleavedImage: {
+        spdlog::debug("Image {} has {} interleaved components, so one texture will be created.", imageUid, numComp);
 
-      // For images with interleaved components, all components are at index 0
-      constexpr uint32_t k_comp0 = 0;
+        // For images with interleaved components, all components are at index 0
+        constexpr uint32_t k_comp0 = 0;
 
-      if (4 < numComp)
-      {
-        spdlog::warn(
-          "Image {} has {} interleaved components, exceeding the maximum "
-          "of 4 allowed per texture; it will not be loaded as a texture",
-          imageUid,
-          numComp
-        );
-        continue;
-      }
+        if (4 < numComp) {
+          spdlog::warn(
+            "Image {} has {} interleaved components, exceeding the maximum "
+            "of 4 allowed per texture; it will not be loaded as a texture",
+            imageUid,
+            numComp);
+          continue;
+        }
 
-      tex::MinificationFilter minFilter;
-      tex::MagnificationFilter maxFilter;
-
-      switch (image->settings().interpolationMode(k_comp0))
-      {
-      case InterpolationMode::NearestNeighbor:
-      {
-        minFilter = tex::MinificationFilter::Nearest;
-        maxFilter = tex::MagnificationFilter::Nearest;
-        break;
-      }
-      case InterpolationMode::Linear:
-      case InterpolationMode::CubicBsplineConvolution:
-      {
-        minFilter = tex::MinificationFilter::Linear;
-        maxFilter = tex::MagnificationFilter::Linear;
-        break;
-      }
-      }
-
-      // The texture pixel format types depend on the number of components
-      tex::SizedInternalFormat sizedInternalNormalizedFormat;
-      tex::BufferPixelFormat bufferPixelNormalizedFormat;
-
-      switch (numComp)
-      {
-      case 1:
-      {
-        // Red:
-        sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRedFormat(compType);
-        bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRedFormat(compType);
-        break;
-      }
-      case 2:
-      {
-        // Red, green:
-        sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRGFormat(compType);
-        bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRGFormat(compType);
-        break;
-      }
-      case 3:
-      {
-        // Red, green, blue:
-        sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRGBFormat(compType);
-        bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRGBFormat(compType);
-        break;
-      }
-      case 4:
-      {
-        // Red, green, blue, alpha:
-        sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRGBAFormat(compType);
-        bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRGBAFormat(compType);
-        break;
-      }
-      default:
-      {
-        spdlog::warn(
-          "Image {} has invalid number of components ({}); "
-          "it will not be loaded as a texture",
-          imageUid,
-          numComp
-        );
-        continue;
-      }
-      }
-
-      GLTexture& T = componentTextures.emplace_back(
-        tex::Target::Texture3D,
-        GLTexture::MultisampleSettings(),
-        pixelPackSettings,
-        pixelUnpackSettings
-      );
-
-      T.generate();
-      T.setMinificationFilter(minFilter);
-      T.setMagnificationFilter(maxFilter);
-      //            T.setBorderColor( sk_border );
-      T.setWrapMode(sk_wrapModeClampToEdge);
-      T.setAutoGenerateMipmaps(false); // no mipmapping for images
-      T.setSize(image->header().pixelDimensions());
-
-      T.setData(
-        sk_mipmapLevel,
-        sizedInternalNormalizedFormat,
-        bufferPixelNormalizedFormat,
-        GLTexture::getBufferPixelDataType(compType),
-        image->bufferAsVoid(k_comp0)
-      );
-
-      spdlog::debug("Done creating the texture for all interleaved components of image {}", imageUid);
-      break;
-    }
-    case Image::MultiComponentBufferType::SeparateImages:
-    {
-      spdlog::debug(
-        "Image {} has {} separate components, so {} textures will be created.",
-        imageUid,
-        numComp,
-        numComp
-      );
-
-      for (uint32_t comp = 0; comp < numComp; ++comp)
-      {
         tex::MinificationFilter minFilter;
         tex::MagnificationFilter maxFilter;
 
-        switch (image->settings().interpolationMode(comp))
-        {
-        case InterpolationMode::NearestNeighbor:
-        {
-          minFilter = tex::MinificationFilter::Nearest;
-          maxFilter = tex::MagnificationFilter::Nearest;
-          break;
-        }
-        case InterpolationMode::Linear:
-        case InterpolationMode::CubicBsplineConvolution:
-        {
-          minFilter = tex::MinificationFilter::Linear;
-          maxFilter = tex::MagnificationFilter::Linear;
-          break;
-        }
+        switch (image->settings().interpolationMode(k_comp0)) {
+          case InterpolationMode::NearestNeighbor: {
+            minFilter = tex::MinificationFilter::Nearest;
+            maxFilter = tex::MagnificationFilter::Nearest;
+            break;
+          }
+          case InterpolationMode::Linear:
+          case InterpolationMode::CubicBsplineConvolution: {
+            minFilter = tex::MinificationFilter::Linear;
+            maxFilter = tex::MagnificationFilter::Linear;
+            break;
+          }
         }
 
-        // Use Red format for each component texture:
-        const tex::SizedInternalFormat sizedInternalNormalizedFormat
-          = GLTexture::getSizedInternalNormalizedRedFormat(compType);
+        // The texture pixel format types depend on the number of components
+        tex::SizedInternalFormat sizedInternalNormalizedFormat;
+        tex::BufferPixelFormat bufferPixelNormalizedFormat;
 
-        const tex::BufferPixelFormat bufferPixelNormalizedFormat
-          = GLTexture::getBufferPixelNormalizedRedFormat(compType);
+        switch (numComp) {
+          case 1: {
+            // Red:
+            sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRedFormat(compType);
+            bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRedFormat(compType);
+            break;
+          }
+          case 2: {
+            // Red, green:
+            sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRGFormat(compType);
+            bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRGFormat(compType);
+            break;
+          }
+          case 3: {
+            // Red, green, blue:
+            sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRGBFormat(compType);
+            bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRGBFormat(compType);
+            break;
+          }
+          case 4: {
+            // Red, green, blue, alpha:
+            sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRGBAFormat(compType);
+            bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRGBAFormat(compType);
+            break;
+          }
+          default: {
+            spdlog::warn(
+              "Image {} has invalid number of components ({}); "
+              "it will not be loaded as a texture",
+              imageUid,
+              numComp);
+            continue;
+          }
+        }
 
         GLTexture& T = componentTextures.emplace_back(
           tex::Target::Texture3D,
           GLTexture::MultisampleSettings(),
           pixelPackSettings,
-          pixelUnpackSettings
-        );
+          pixelUnpackSettings);
 
         T.generate();
         T.setMinificationFilter(minFilter);
         T.setMagnificationFilter(maxFilter);
-        //                T.setBorderColor( sk_border );
+        //            T.setBorderColor( sk_border );
         T.setWrapMode(sk_wrapModeClampToEdge);
         T.setAutoGenerateMipmaps(false); // no mipmapping for images
         T.setSize(image->header().pixelDimensions());
@@ -216,22 +133,75 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
           sizedInternalNormalizedFormat,
           bufferPixelNormalizedFormat,
           GLTexture::getBufferPixelDataType(compType),
-          image->bufferAsVoid(comp)
-        );
-      }
+          image->bufferAsVoid(k_comp0));
 
-      spdlog::debug("Done creating {} image component textures", componentTextures.size());
-      break;
-    }
+        spdlog::debug("Done creating the texture for all interleaved components of image {}", imageUid);
+        break;
+      }
+      case Image::MultiComponentBufferType::SeparateImages: {
+        spdlog::debug(
+          "Image {} has {} separate components, so {} textures will be created.",
+          imageUid,
+          numComp,
+          numComp);
+
+        for (uint32_t comp = 0; comp < numComp; ++comp) {
+          tex::MinificationFilter minFilter;
+          tex::MagnificationFilter maxFilter;
+
+          switch (image->settings().interpolationMode(comp)) {
+            case InterpolationMode::NearestNeighbor: {
+              minFilter = tex::MinificationFilter::Nearest;
+              maxFilter = tex::MagnificationFilter::Nearest;
+              break;
+            }
+            case InterpolationMode::Linear:
+            case InterpolationMode::CubicBsplineConvolution: {
+              minFilter = tex::MinificationFilter::Linear;
+              maxFilter = tex::MagnificationFilter::Linear;
+              break;
+            }
+          }
+
+          // Use Red format for each component texture:
+          const tex::SizedInternalFormat sizedInternalNormalizedFormat =
+            GLTexture::getSizedInternalNormalizedRedFormat(compType);
+
+          const tex::BufferPixelFormat bufferPixelNormalizedFormat =
+            GLTexture::getBufferPixelNormalizedRedFormat(compType);
+
+          GLTexture& T = componentTextures.emplace_back(
+            tex::Target::Texture3D,
+            GLTexture::MultisampleSettings(),
+            pixelPackSettings,
+            pixelUnpackSettings);
+
+          T.generate();
+          T.setMinificationFilter(minFilter);
+          T.setMagnificationFilter(maxFilter);
+          //                T.setBorderColor( sk_border );
+          T.setWrapMode(sk_wrapModeClampToEdge);
+          T.setAutoGenerateMipmaps(false); // no mipmapping for images
+          T.setSize(image->header().pixelDimensions());
+
+          T.setData(
+            sk_mipmapLevel,
+            sizedInternalNormalizedFormat,
+            bufferPixelNormalizedFormat,
+            GLTexture::getBufferPixelDataType(compType),
+            image->bufferAsVoid(comp));
+        }
+
+        spdlog::debug("Done creating {} image component textures", componentTextures.size());
+        break;
+      }
     } // end switch ( image->bufferType() )
 
     appData.renderData().m_imageTextures.emplace(imageUid, std::move(componentTextures));
 
     createdImageTexUids.push_back(imageUid);
 
-    spdlog::debug(
-      "Done creating texture(s) for image {} ('{}')", imageUid, image->settings().displayName()
-    );
+    spdlog::debug("Done creating texture(s) for image {} ('{}')", imageUid, image->settings().displayName());
   } // end for ( const auto& imageUid : appData.imageUidsOrdered() )
 
   spdlog::debug("Done creating textures for {} image(s)", imageTextures.size());
@@ -239,8 +209,8 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
   return createdImageTexUids;
 }
 
-std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>>
-createDistanceMapTextures(const AppData& appData)
+std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>> createDistanceMapTextures(
+  const AppData& appData)
 {
   static constexpr GLint sk_mipmapLevel = 0; // Load distance map data into first mipmap level
   static constexpr GLint sk_alignment = 1;   // Pixel pack/unpack alignment is 1 byte
@@ -255,20 +225,18 @@ createDistanceMapTextures(const AppData& appData)
   static const tex::MagnificationFilter sk_maxFilter = tex::MagnificationFilter::Nearest;
 
   // Use Red integer format for each distance map texture:
-  const tex::SizedInternalFormat k_sizedInternalNormalizedFormat =
-    GLTexture::getSizedInternalRedFormat(sk_compType);
+  const tex::SizedInternalFormat k_sizedInternalNormalizedFormat = GLTexture::getSizedInternalRedFormat(sk_compType);
 
   // Use this for Red float format:
   // GLTexture::getSizedInternalNormalizedRedFormat( sk_compType );
 
-  const tex::BufferPixelFormat k_bufferPixelNormalizedFormat =
-    GLTexture::getBufferPixelRedFormat(sk_compType);
+  const tex::BufferPixelFormat k_bufferPixelNormalizedFormat = GLTexture::getBufferPixelRedFormat(sk_compType);
 
   // Use this for Red float format:
   // GLTexture::getBufferPixelNormalizedRedFormat( sk_compType );
 
   // Map from image UID to vector of textures for the distance maps of the image components.
-  std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > mapTextures;
+  std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>> mapTextures;
 
   if (0 == appData.numImages()) {
     spdlog::warn("No images are loaded for which to create distance map textures");
@@ -281,8 +249,7 @@ createDistanceMapTextures(const AppData& appData)
   pixelPackSettings.m_alignment = sk_alignment;
   GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
 
-  for (const auto& imageUid : appData.imageUidsOrdered())
-  {
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
     spdlog::debug("Begin creating distance map texture(s) for components of image {}", imageUid);
 
     // const auto* image = appData.image(imageUid);
@@ -303,8 +270,7 @@ createDistanceMapTextures(const AppData& appData)
     // Map of component index to texture
     std::unordered_map<uint32_t, GLTexture> componentTextures;
 
-    for (uint32_t comp = 0; comp < numComp; ++comp)
-    {
+    for (uint32_t comp = 0; comp < numComp; ++comp) {
       const std::map<double, Image>& maps = appData.distanceMaps(imageUid, comp);
       if (maps.empty()) {
         spdlog::warn("No distance map for component {} of image {}", comp, imageUid);
@@ -315,9 +281,13 @@ createDistanceMapTextures(const AppData& appData)
       const Image& map = maps.begin()->second;
 
       auto it = componentTextures.emplace(
-        std::piecewise_construct, std::forward_as_tuple(comp),
-        std::forward_as_tuple(tex::Target::Texture3D,
-          GLTexture::MultisampleSettings(), pixelPackSettings, pixelUnpackSettings));
+        std::piecewise_construct,
+        std::forward_as_tuple(comp),
+        std::forward_as_tuple(
+          tex::Target::Texture3D,
+          GLTexture::MultisampleSettings(),
+          pixelPackSettings,
+          pixelUnpackSettings));
 
       it.first->second.generate();
       it.first->second.setMinificationFilter(sk_minFilter);
@@ -327,8 +297,11 @@ createDistanceMapTextures(const AppData& appData)
       it.first->second.setSize(map.header().pixelDimensions());
 
       it.first->second.setData(
-        sk_mipmapLevel, k_sizedInternalNormalizedFormat, k_bufferPixelNormalizedFormat,
-        GLTexture::getBufferPixelDataType(sk_compType), map.bufferAsVoid(0));
+        sk_mipmapLevel,
+        k_sizedInternalNormalizedFormat,
+        k_bufferPixelNormalizedFormat,
+        GLTexture::getBufferPixelDataType(sk_compType),
+        map.bufferAsVoid(0));
     }
 
     spdlog::debug("Done creating {} distance map textures for image components", componentTextures.size());
@@ -366,11 +339,9 @@ std::vector<uuids::uuid> createSegTextures(AppData& appData, uuid_range_t segUid
   GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
 
   // Loop through images in order of index
-  for (const auto& segUid : segUids)
-  {
+  for (const auto& segUid : segUids) {
     const auto* seg = appData.seg(segUid);
-    if (!seg)
-    {
+    if (!seg) {
       spdlog::warn("Segmentation {} is invalid", segUid);
       continue;
     }
@@ -382,11 +353,9 @@ std::vector<uuids::uuid> createSegTextures(AppData& appData, uuid_range_t segUid
       tex::Target::Texture3D,
       GLTexture::MultisampleSettings(),
       pixelPackSettings,
-      pixelUnpackSettings
-    );
+      pixelUnpackSettings);
 
-    if (!it.second)
-      continue;
+    if (!it.second) continue;
     GLTexture& T = it.first->second;
 
     T.generate();
@@ -402,8 +371,7 @@ std::vector<uuids::uuid> createSegTextures(AppData& appData, uuid_range_t segUid
       GLTexture::getSizedInternalRedFormat(compType),
       GLTexture::getBufferPixelRedFormat(compType),
       GLTexture::getBufferPixelDataType(compType),
-      seg->bufferAsVoid(k_comp0)
-    );
+      seg->bufferAsVoid(k_comp0));
 
     spdlog::debug("Created texture for segmentation {} ('{}')", segUid, seg->settings().displayName());
 
@@ -419,8 +387,7 @@ std::unordered_map<uuids::uuid, GLTexture> createImageColorMapTextures(const App
   static const glm::vec4 sk_border{0.0f, 0.0f, 0.0f, 0.0f};
   std::unordered_map<uuids::uuid, GLTexture> textures;
 
-  if (0 == appData.numImageColorMaps())
-  {
+  if (0 == appData.numImageColorMaps()) {
     spdlog::warn("No image color maps loaded for which to create textures");
     return textures;
   }
@@ -428,25 +395,21 @@ std::unordered_map<uuids::uuid, GLTexture> createImageColorMapTextures(const App
   spdlog::debug("Begin creating image color map textures");
 
   // Loop through color maps in order of index
-  for (std::size_t i = 0; i < appData.numImageColorMaps(); ++i)
-  {
+  for (std::size_t i = 0; i < appData.numImageColorMaps(); ++i) {
     const auto cmapUid = appData.imageColorMapUid(i);
-    if (!cmapUid)
-    {
+    if (!cmapUid) {
       spdlog::warn("Image color map index {} is invalid", i);
       continue;
     }
 
     const auto* map = appData.imageColorMap(*cmapUid);
-    if (!map)
-    {
+    if (!map) {
       spdlog::warn("Image color map {} is invalid", *cmapUid);
       continue;
     }
 
     auto it = textures.emplace(*cmapUid, tex::Target::Texture1D);
-    if (!it.second)
-      continue;
+    if (!it.second) continue;
 
     GLTexture& T = it.first->second;
 
@@ -458,36 +421,30 @@ std::unordered_map<uuids::uuid, GLTexture> createImageColorMapTextures(const App
       ImageColorMap::textureFormat_RGBA_F32(),
       tex::BufferPixelFormat::RGBA,
       tex::BufferPixelDataType::Float32,
-      map->data_RGBA_F32()
-    );
+      map->data_RGBA_F32());
 
-    if (map->transparentBorder())
-    {
+    if (map->transparentBorder()) {
       T.setWrapMode(tex::WrapMode::ClampToBorder);
       T.setBorderColor(sk_border);
     }
-    else
-    {
+    else {
       // We should never sample outside the texture coordinate range [0.0, 1.0], anyway
       T.setWrapMode(tex::WrapMode::ClampToEdge);
     }
 
     T.setAutoGenerateMipmaps(false);
 
-    switch (map->interpolationMode())
-    {
-    case ImageColorMap::InterpolationMode::Nearest:
-    {
-      T.setMinificationFilter(tex::MinificationFilter::Nearest);
-      T.setMagnificationFilter(tex::MagnificationFilter::Nearest);
-      break;
-    }
-    case ImageColorMap::InterpolationMode::Linear:
-    {
-      T.setMinificationFilter(tex::MinificationFilter::Linear);
-      T.setMagnificationFilter(tex::MagnificationFilter::Linear);
-      break;
-    }
+    switch (map->interpolationMode()) {
+      case ImageColorMap::InterpolationMode::Nearest: {
+        T.setMinificationFilter(tex::MinificationFilter::Nearest);
+        T.setMagnificationFilter(tex::MagnificationFilter::Nearest);
+        break;
+      }
+      case ImageColorMap::InterpolationMode::Linear: {
+        T.setMinificationFilter(tex::MinificationFilter::Linear);
+        T.setMagnificationFilter(tex::MagnificationFilter::Linear);
+        break;
+      }
     }
 
     spdlog::trace("Generated texture for image color map {}", *cmapUid);
@@ -497,15 +454,13 @@ std::unordered_map<uuids::uuid, GLTexture> createImageColorMapTextures(const App
   return textures;
 }
 
-std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(const AppData& appData
-)
+std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(const AppData& appData)
 {
   // static const glm::vec4 sk_border{ 0.0f, 0.0f, 0.0f, 0.0f };
 
   std::unordered_map<uuids::uuid, GLBufferTexture> bufTextures;
 
-  if (0 == appData.numLabelTables())
-  {
+  if (0 == appData.numLabelTables()) {
     spdlog::warn("No parcellation label color tables loaded for which to create buffer textures");
     return bufTextures;
   }
@@ -513,18 +468,15 @@ std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(c
   spdlog::debug("Begin creating label color map buffer textures");
 
   // Loop through label tables in order of index
-  for (std::size_t i = 0; i < appData.numLabelTables(); ++i)
-  {
+  for (std::size_t i = 0; i < appData.numLabelTables(); ++i) {
     const auto tableUid = appData.labelTableUid(i);
-    if (!tableUid)
-    {
+    if (!tableUid) {
       spdlog::error("Label table index {} is invalid", i);
       continue;
     }
 
     const auto* table = appData.labelTable(*tableUid);
-    if (!table)
-    {
+    if (!table) {
       spdlog::error("Label table {} is invalid", *tableUid);
       continue;
     }
@@ -532,26 +484,22 @@ std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(c
     int maxBufTexSize;
     glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufTexSize);
 
-    if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize))
-    {
+    if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize)) {
       spdlog::error(
         "Number of bytes ({}) in label color table {} exceeds "
         "maximum buffer texture size of {} bytes",
         table->numColorBytes_RGBA_U8(),
         *tableUid,
-        maxBufTexSize
-      );
+        maxBufTexSize);
       continue;
     }
 
     auto it = bufTextures.emplace(
       std::piecewise_construct,
       std::forward_as_tuple(*tableUid),
-      std::forward_as_tuple(table->bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw)
-    );
+      std::forward_as_tuple(table->bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw));
 
-    if (!it.second)
-      continue;
+    if (!it.second) continue;
 
     GLBufferTexture& T = it.first->second;
 
@@ -562,8 +510,7 @@ std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(c
     spdlog::debug(
       "Generated and set data for buffer texture of size {} for label color table {}",
       table->numColorBytes_RGBA_U8(),
-      *tableUid
-    );
+      *tableUid);
 
     spdlog::debug("Generated buffer texture for label color table {}", *tableUid);
   }

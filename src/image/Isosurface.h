@@ -42,9 +42,18 @@ public:
   // MeshRecord mesh;         //!< Mesh record of the isosurface
   bool meshInSync = false; //!< Is the mesh in sync with the isosurface value?
 
-  glm::vec3 ambientColor() const { return this->material.ambient * this->color; }
-  glm::vec3 diffuseColor() const { return this->material.diffuse * this->color; }
-  glm::vec3 specularColor() const { return this->material.specular * glm::vec3{1.0f}; }
+  glm::vec3 ambientColor() const
+  {
+    return this->material.ambient * this->color;
+  }
+  glm::vec3 diffuseColor() const
+  {
+    return this->material.diffuse * this->color;
+  }
+  glm::vec3 specularColor() const
+  {
+    return this->material.specular * glm::vec3{1.0f};
+  }
 };
 
 #endif // ISOSURFACE_H

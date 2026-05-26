@@ -62,8 +62,8 @@ void renderSegmentationHeader(
   const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable,
   const std::function<void(size_t tableIndex)>& updateLabelColorTableTexture,
   const std::function<void(size_t labelIndex)>& moveCrosshairsToSegLabelCentroid,
-  const std::function<std::optional<uuids::uuid>(
-    const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>& createBlankSeg,
+  const std::function<
+    std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>& createBlankSeg,
   const std::function<bool(const uuids::uuid& segUid)>& clearSeg,
   const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
   const AllViewsRecenterType& recenterAllViews);
@@ -80,7 +80,6 @@ void renderAnnotationsHeader(
   const uuids::uuid& imageUid,
   size_t imageIndex,
   bool isActiveImage,
-  const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>&
-    setViewCameraDirection,
+  const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>& setViewCameraDirection,
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
   const AllViewsRecenterType& recenterAllViews);

@@ -11,10 +11,7 @@ constexpr float k_minAngle = glm::radians(0.5f);
 constexpr float k_maxAngle = glm::radians(120.0f);
 } // namespace
 
-PerspectiveProjection::PerspectiveProjection()
-  : Projection()
-{
-}
+PerspectiveProjection::PerspectiveProjection() : Projection() {}
 
 ProjectionType PerspectiveProjection::type() const
 {
@@ -28,8 +25,7 @@ glm::mat4 PerspectiveProjection::clip_T_camera() const
 
 void PerspectiveProjection::setZoom(float factor)
 {
-  if (factor > 0.0f)
-  {
+  if (factor > 0.0f) {
     m_zoom = glm::clamp(factor, k_initAngle / k_maxAngle, k_initAngle / k_minAngle);
   }
 }

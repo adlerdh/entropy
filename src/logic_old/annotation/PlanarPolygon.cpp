@@ -4,13 +4,7 @@
 
 #include <glm/glm.hpp>
 
-PlanarPolygon::PlanarPolygon()
-  : m_vertices()
-  , m_triangulation()
-  , m_currentUid()
-  , m_aabb(std::nullopt)
-{
-}
+PlanarPolygon::PlanarPolygon() : m_vertices(), m_triangulation(), m_currentUid(), m_aabb(std::nullopt) {}
 
 void PlanarPolygon::setAllVertices(std::vector<std::vector<PointType> > vertices)
 {
@@ -32,20 +26,17 @@ void PlanarPolygon::setBoundaryVertices(size_t boundary, std::vector<PointType> 
   m_triangulation.clear();
   m_currentUid = uuids::uuid();
 
-  if (0 == boundary)
-  {
+  if (0 == boundary) {
     computeAABBox();
   }
 }
 
 void PlanarPolygon::setOuterBoundary(std::vector<PointType> vertices)
 {
-  if (m_vertices.size() >= 1)
-  {
+  if (m_vertices.size() >= 1) {
     m_vertices[0] = std::move(vertices);
   }
-  else
-  {
+  else {
     m_vertices.emplace_back(std::move(vertices));
   }
 
@@ -57,8 +48,7 @@ void PlanarPolygon::setOuterBoundary(std::vector<PointType> vertices)
 
 void PlanarPolygon::addHole(std::vector<PointType> vertices)
 {
-  if (m_vertices.size() >= 1)
-  {
+  if (m_vertices.size() >= 1) {
     m_vertices.emplace_back(std::move(vertices));
   }
 
@@ -66,8 +56,7 @@ void PlanarPolygon::addHole(std::vector<PointType> vertices)
   m_currentUid = uuids::uuid();
 }
 
-const std::vector<PlanarPolygon::PointType>& PlanarPolygon::getBoundaryVertices(size_t boundary
-) const
+const std::vector<PlanarPolygon::PointType>& PlanarPolygon::getBoundaryVertices(size_t boundary) const
 {
   return m_vertices.at(boundary);
 }
@@ -81,8 +70,7 @@ size_t PlanarPolygon::numVertices() const
 {
   size_t N = 0;
 
-  for (const auto& boundary : m_vertices)
-  {
+  for (const auto& boundary : m_vertices) {
     N += boundary.size();
   }
 
@@ -98,14 +86,11 @@ const PlanarPolygon::PointType& PlanarPolygon::getVertex(size_t i) const
 {
   size_t j = i;
 
-  for (const auto& boundary : m_vertices)
-  {
-    if (j < boundary.size())
-    {
+  for (const auto& boundary : m_vertices) {
+    if (j < boundary.size()) {
       return boundary[j];
     }
-    else
-    {
+    else {
       j -= boundary.size();
     }
   }
@@ -129,12 +114,10 @@ const std::vector<PlanarPolygon::IndexType>& PlanarPolygon::getTriangulation() c
   return m_triangulation;
 }
 
-std::tuple<PlanarPolygon::IndexType, PlanarPolygon::IndexType, PlanarPolygon::IndexType>
-PlanarPolygon::getTriangle(size_t i) const
+std::tuple<PlanarPolygon::IndexType, PlanarPolygon::IndexType, PlanarPolygon::IndexType> PlanarPolygon::getTriangle(
+  size_t i) const
 {
-  return std::make_tuple(
-    m_triangulation.at(3 * i + 0), m_triangulation.at(3 * i + 1), m_triangulation.at(3 * i + 2)
-  );
+  return std::make_tuple(m_triangulation.at(3 * i + 0), m_triangulation.at(3 * i + 1), m_triangulation.at(3 * i + 2));
 }
 
 std::optional<PlanarPolygon::AABBoxType> PlanarPolygon::getAABBox() const
@@ -160,8 +143,7 @@ bool PlanarPolygon::equals(const uuids::uuid& otherPlanarPolygonUid) const
 
 void PlanarPolygon::computeAABBox()
 {
-  if (m_vertices.empty() || m_vertices[0].empty())
-  {
+  if (m_vertices.empty() || m_vertices[0].empty()) {
     // There is no outer boundary or there are no vertices in the outer boundary.
     m_aabb = std::nullopt;
     return;
@@ -170,11 +152,9 @@ void PlanarPolygon::computeAABBox()
   // Compute AABB of outer boundary vertices
   m_aabb = std::make_pair(
     PointType(std::numeric_limits<ComponentType>::max()),
-    PointType(std::numeric_limits<ComponentType>::lowest())
-  );
+    PointType(std::numeric_limits<ComponentType>::lowest()));
 
-  for (const auto& v : m_vertices[0])
-  {
+  for (const auto& v : m_vertices[0]) {
     m_aabb->first = glm::min(m_aabb->first, v);
     m_aabb->second = glm::max(m_aabb->second, v);
   }

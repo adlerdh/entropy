@@ -13,17 +13,16 @@ float computeProjection(vec3 baseTc, float img)
   // Accumulate intensity projection in forwards (+Z) and backwards (-Z) directions:
   for (int dir = -1; dir <= 1; dir += 2) // dir in {-1, 1}
   {
-    for (int i = 1; i <= u_halfNumMipSamples; ++i)
-    {
+    for (int i = 1; i <= u_halfNumMipSamples; ++i) {
       vec3 c = baseTc + dir * i * u_texSamplingDirZ;
-      if (!isInsideTexture(c)) { break; }
+      if (!isInsideTexture(c)) {
+        break;
+      }
 
       float a = clamp(textureLookup(u_imgTex, c), u_imgMinMax[0], u_imgMinMax[1]);
 
-      img = float(NO_IP_MODE == u_mipMode) * img +
-            float(MAX_IP_MODE == u_mipMode) * max(img, a) +
-            float(MEAN_IP_MODE == u_mipMode) * (img + a) +
-            float(MIN_IP_MODE == u_mipMode) * min(img, a);
+      img = float(NO_IP_MODE == u_mipMode) * img + float(MAX_IP_MODE == u_mipMode) * max(img, a) +
+            float(MEAN_IP_MODE == u_mipMode) * (img + a) + float(MIN_IP_MODE == u_mipMode) * min(img, a);
 
       ++numSamples;
     }

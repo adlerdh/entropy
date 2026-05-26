@@ -11,15 +11,16 @@ static const glm::vec4 sk_winClipFullWindowViewport{-1.0f, -1.0f, 2.0f, 2.0f};
 } // namespace
 
 Layout::Layout(bool isLightbox)
-  : ControlFrame(sk_winClipFullWindowViewport, ViewType::Axial, ViewRenderMode::Image,
-                 IntensityProjectionMode::None, UiControls(isLightbox))
+  : ControlFrame(
+      sk_winClipFullWindowViewport,
+      ViewType::Axial,
+      ViewRenderMode::Image,
+      IntensityProjectionMode::None,
+      UiControls(isLightbox))
   , m_uid(generateRandomUuid())
   , m_isLightbox(isLightbox)
   , m_views()
-  , m_cameraSyncGroups{
-      {CameraSyncMode::Rotation, {}},
-      {CameraSyncMode::Translation, {}},
-      {CameraSyncMode::Zoom, {}}}
+  , m_cameraSyncGroups{{CameraSyncMode::Rotation, {}}, {CameraSyncMode::Translation, {}}, {CameraSyncMode::Zoom, {}}}
 {
   // Render the first image by default (and do not render all images):
   m_preferredDefaultRenderedImages = {0};
@@ -27,15 +28,17 @@ Layout::Layout(bool isLightbox)
 }
 
 Layout::Layout(Layout&& other) noexcept
-  :
-  ControlFrame(std::move(other)), // move base class
-  m_uid(std::move(other.m_uid)),
-  m_isLightbox(other.m_isLightbox),
-  m_views(std::move(other.m_views)),
-  m_cameraSyncGroups(std::move(other.m_cameraSyncGroups))
-{}
+  : ControlFrame(std::move(other))
+  , // move base class
+  m_uid(std::move(other.m_uid))
+  , m_isLightbox(other.m_isLightbox)
+  , m_views(std::move(other.m_views))
+  , m_cameraSyncGroups(std::move(other.m_cameraSyncGroups))
+{
+}
 
-Layout& Layout::operator=(Layout&& other) noexcept {
+Layout& Layout::operator=(Layout&& other) noexcept
+{
   if (this != &other) {
     ControlFrame::operator=(std::move(other)); // move-assign base class
     m_uid = std::move(other.m_uid);
@@ -116,7 +119,8 @@ bool Layout::isLightbox() const
   return m_isLightbox;
 }
 
-bool Layout::addView(std::unique_ptr<View> view) {
+bool Layout::addView(std::unique_ptr<View> view)
+{
   if (!view) {
     throw std::invalid_argument("Cannot add null view");
   }

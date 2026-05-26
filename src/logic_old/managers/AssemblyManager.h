@@ -60,20 +60,14 @@ public:
 
   /// Set the function that queries the transformation from a given reference image landmark
   /// group to World space.
-  void setRefImageLandmarkGroupToWorldTxQuerier(QuerierType<
-                                                std::optional<std::pair<glm::mat4, glm::mat4> >,
-                                                UID>);
+  void setRefImageLandmarkGroupToWorldTxQuerier(QuerierType<std::optional<std::pair<glm::mat4, glm::mat4> >, UID>);
 
   /// Set the function that queries the transformation from a given slide landmark group
   /// to World space.
-  void setSlideLandmarkGroupToWorldTxQuerier(QuerierType<
-                                             std::optional<std::pair<glm::mat4, glm::mat4> >,
-                                             UID>);
+  void setSlideLandmarkGroupToWorldTxQuerier(QuerierType<std::optional<std::pair<glm::mat4, glm::mat4> >, UID>);
 
   /// Set the function that queries the transformation from a given slide annotation to World space.
-  void setSlideAnnotationToWorldTxQuerier(QuerierType<
-                                          std::optional<std::pair<glm::mat4, glm::mat4> >,
-                                          UID>);
+  void setSlideAnnotationToWorldTxQuerier(QuerierType<std::optional<std::pair<glm::mat4, glm::mat4> >, UID>);
 
   /// Set the function that queries scaling information for a given reference image landmark group.
   void setRefImageLandmarkGroupScalingQuerier(QuerierType<DrawableScaling, UID>);
@@ -88,59 +82,60 @@ public:
   /// (Used because the active slide is rendered differently.)
   void setActiveSlideQuerier(QuerierType<bool, UID>);
 
-  /// Set the function that provides the transformation from the active image's Subject to World space.
+  /// Set the function that provides the transformation from the active image's Subject to World
+  /// space.
   void setActiveSubjectToWorldProvider(GetterType<std::optional<glm::mat4> >);
 
-  /// Set the function that provides the transformation from a label mesh's "Subject" to World space.
+  /// Set the function that provides the transformation from a label mesh's "Subject" to World
+  /// space.
   void setLabelMeshSubjectToWorldTxQuerier(QuerierType<std::optional<glm::mat4>, UID>);
 
-  /// Set the function that provides the transformation from an isosurface mesh's "Subject" to World space.
+  /// Set the function that provides the transformation from an isosurface mesh's "Subject" to World
+  /// space.
   void setIsoSurfaceMeshSubjectToWorldTxQuerier(QuerierType<std::optional<glm::mat4>, UID>);
 
   /// Initialize the assemblies. This call requires an OpenGL context.
   void initializeGL();
 
   /**
-     * @brief Set the type of scene to be rendered in a given type of view
-     * @param[in] viewType View type
-     * @param[in] sceneType Scene type
-     */
+   * @brief Set the type of scene to be rendered in a given type of view
+   * @param[in] viewType View type
+   * @param[in] sceneType Scene type
+   */
   void setSceneType(const gui::ViewType& viewType, const SceneType& sceneType);
 
   /**
-     * @brief Get the type of scene to be rendered in a given type of view
-     * @param[in] viewType View type
-     */
+   * @brief Get the type of scene to be rendered in a given type of view
+   * @param[in] viewType View type
+   */
   SceneType getSceneType(const gui::ViewType& viewType) const;
 
   /**
-     * @brief Get the root of the tree of scene Drawables for all assemblies for a given view type.
-     * @param[in] viewType View type for which to retrieve the root
-     * @return Pointer to root drawable
-     */
+   * @brief Get the root of the tree of scene Drawables for all assemblies for a given view type.
+   * @param[in] viewType View type for which to retrieve the root
+   * @return Pointer to root drawable
+   */
   std::weak_ptr<IDrawable> getRootDrawable(const gui::ViewType& viewType);
 
   /**
-     * @brief Get the root of the tree of overlay Drawables for a given view type.
-     *
-     * @param[in] viewType View type for which to retrieve the root
-     * @return Pointer to root drawable
-     */
+   * @brief Get the root of the tree of overlay Drawables for a given view type.
+   *
+   * @param[in] viewType View type for which to retrieve the root
+   * @return Pointer to root drawable
+   */
   std::weak_ptr<IDrawable> getOverlayRootDrawable(const gui::ViewType& viewType);
 
   /**
-     * @brief Update the 3D image and parcellation to be rendered across all image
-     * slices, meshes, and slides. This function takes care of updating the image
-     * and parcellation data for all assemblies.
-     *
-     * @param[in] imageUid Image UID
-     * @param[in] parcelUid Parcellation UID
-     * @param[in] imageColorMapUid
-     * @param[in] labelTableUid
-     */
-  void updateImages(
-    const UID& imageUid, const UID& parcelUid, const UID& imageColorMapUid, const UID& labelTableUid
-  );
+   * @brief Update the 3D image and parcellation to be rendered across all image
+   * slices, meshes, and slides. This function takes care of updating the image
+   * and parcellation data for all assemblies.
+   *
+   * @param[in] imageUid Image UID
+   * @param[in] parcelUid Parcellation UID
+   * @param[in] imageColorMapUid
+   * @param[in] labelTableUid
+   */
+  void updateImages(const UID& imageUid, const UID& parcelUid, const UID& imageColorMapUid, const UID& labelTableUid);
 
   void updateIsoSurfaceMeshes(uid_range_t meshUids);
   void updateLabelMeshes(uid_range_t meshUids, const UID& labelTableUid);
@@ -188,28 +183,22 @@ public:
 
   /// Connect an external slot to the signal that image slice assembly has changed
   void connectToImageSliceAssemblyRenderingPropertiesChangedSignal(
-    std::function<void(const UID& imageUid, const ImageSliceAssemblyRenderingProperties&)> slot
-  );
+    std::function<void(const UID& imageUid, const ImageSliceAssemblyRenderingProperties&)> slot);
 
   /// Connect an external slot to the signal that iso-surface mesh assembly has changed
   void connectToIsoMeshAssemblyRenderingPropertiesChangedSignal(
-    std::function<void(const MeshAssemblyRenderingProperties&)> slot
-  );
+    std::function<void(const MeshAssemblyRenderingProperties&)> slot);
 
   /// Connect an external slot to the signal that label mesh assembly has changed
   void connectToLabelMeshAssemblyRenderingPropertiesChangedSignal(
-    std::function<void(const MeshAssemblyRenderingProperties&)> slot
-  );
+    std::function<void(const MeshAssemblyRenderingProperties&)> slot);
 
   /// Connect an external slot to the signal that slide assembly has changed
   void connectToSlideStackAssemblyRenderingPropertiesChangedSignal(
-    std::function<void(const SlideStackAssemblyRenderingProperties&)> slot
-  );
+    std::function<void(const SlideStackAssemblyRenderingProperties&)> slot);
 
   /// Connect an external slot to the signal that slide transformations have changed
-  void connectToSlideTransformationsChangedSignal(
-    std::function<void(const std::list<UID>& slideUids)> slot
-  );
+  void connectToSlideTransformationsChangedSignal(std::function<void(const std::list<UID>& slideUids)> slot);
 
 private:
   struct Impl;

@@ -21,8 +21,7 @@ const std::map<Directions::View, glm::vec3> Directions::s_viewDirections = {
   {Directions::View::Down, -glm::vec3{0, 1, 0}},
   {Directions::View::Up, glm::vec3{0, 1, 0}},
   {Directions::View::Front, -glm::vec3{0, 0, 1}},
-  {Directions::View::Back, glm::vec3{0, 0, 1}}
-};
+  {Directions::View::Back, glm::vec3{0, 0, 1}}};
 
 const std::map<Directions::Anatomy, glm::vec3> Directions::s_anatomicalDirections = {
   {Directions::Anatomy::Right, -glm::vec3{1, 0, 0}},
@@ -30,8 +29,7 @@ const std::map<Directions::Anatomy, glm::vec3> Directions::s_anatomicalDirection
   {Directions::Anatomy::Anterior, -glm::vec3{0, 1, 0}},
   {Directions::Anatomy::Posterior, glm::vec3{0, 1, 0}},
   {Directions::Anatomy::Inferior, -glm::vec3{0, 0, 1}},
-  {Directions::Anatomy::Superior, glm::vec3{0, 0, 1}}
-};
+  {Directions::Anatomy::Superior, glm::vec3{0, 0, 1}}};
 
 const std::map<Directions::Animal, glm::vec3> Directions::s_animalDirections = {
   {Directions::Animal::Right, -glm::vec3{1, 0, 0}},
@@ -39,8 +37,7 @@ const std::map<Directions::Animal, glm::vec3> Directions::s_animalDirections = {
   {Directions::Animal::Ventral, -glm::vec3{0, 1, 0}},
   {Directions::Animal::Dorsal, glm::vec3{0, 1, 0}},
   {Directions::Animal::Caudal, -glm::vec3{0, 0, 1}},
-  {Directions::Animal::Rostral, glm::vec3{0, 0, 1}}
-};
+  {Directions::Animal::Rostral, glm::vec3{0, 0, 1}}};
 
 const std::map<Directions::Anatomy, std::string> Directions::s_anatomicalAbbrevs = {
   {Directions::Anatomy::Right, "R"},
@@ -48,8 +45,7 @@ const std::map<Directions::Anatomy, std::string> Directions::s_anatomicalAbbrevs
   {Directions::Anatomy::Anterior, "A"},
   {Directions::Anatomy::Posterior, "P"},
   {Directions::Anatomy::Inferior, "I"},
-  {Directions::Anatomy::Superior, "S"}
-};
+  {Directions::Anatomy::Superior, "S"}};
 
 const std::map<Directions::Animal, std::string> Directions::s_animalAbbrevs = {
   {Directions::Animal::Right, "R"},
@@ -57,8 +53,7 @@ const std::map<Directions::Animal, std::string> Directions::s_animalAbbrevs = {
   {Directions::Animal::Rostral, "Ros"},
   {Directions::Animal::Dorsal, "Dor"},
   {Directions::Animal::Caudal, "Cau"},
-  {Directions::Animal::Ventral, "Ven"}
-};
+  {Directions::Animal::Ventral, "Ven"}};
 
 const std::map<Directions::Cartesian, std::string> Directions::s_cartesianAbbrevs = {
   {Directions::Cartesian::PosX, "+x"},
@@ -70,8 +65,7 @@ const std::map<Directions::Cartesian, std::string> Directions::s_cartesianAbbrev
   {Directions::Cartesian::XY, "xy"},
   {Directions::Cartesian::YZ, "yz"},
   {Directions::Cartesian::ZX, "zx"},
-  {Directions::Cartesian::XYZ, "xyz"}
-};
+  {Directions::Cartesian::XYZ, "xyz"}};
 
 glm::vec3 Directions::get(const Cartesian& dir)
 {

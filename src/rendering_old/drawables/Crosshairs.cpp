@@ -38,15 +38,13 @@ bool intersectDoubleSidedRayWithPlane(
   const glm::vec3& dir,
   const glm::vec3& planeOrig,
   const glm::vec3& planeNormal,
-  float& intersectionDistance
-)
+  float& intersectionDistance)
 {
   static constexpr float EPS = std::numeric_limits<float>::epsilon();
 
   const float d = std::abs(glm::dot(dir, planeNormal));
 
-  if (d > EPS)
-  {
+  if (d > EPS) {
     intersectionDistance = std::abs(glm::dot(planeOrig - orig, planeNormal)) / d;
     return true;
   }
@@ -54,9 +52,7 @@ bool intersectDoubleSidedRayWithPlane(
   return false;
 }
 
-std::array<float, 3> distancesFromCrosshairToFrustumPlanes(
-  const Camera& camera, const CoordinateFrame& crosshairs
-)
+std::array<float, 3> distancesFromCrosshairToFrustumPlanes(const Camera& camera, const CoordinateFrame& crosshairs)
 {
   static const glm::vec3 sk_ndcLeftPlanePos{-1.0f, 0.0f, -1.0f};
   static const glm::vec3 sk_ndcRightPlanePos{1.0f, 0.0f, -1.0f};
@@ -78,8 +74,7 @@ std::array<float, 3> distancesFromCrosshairToFrustumPlanes(
   // Largest distances from the crosshair's x, y, and z axes
   std::array<float, 3> distances;
 
-  for (uint32_t i = 0; i < 3; ++i)
-  {
+  for (uint32_t i = 0; i < 3; ++i) {
     const glm::vec3 rayDir{world_T_frame_invT[static_cast<int>(i)]};
 
     float d;
@@ -90,40 +85,33 @@ std::array<float, 3> distancesFromCrosshairToFrustumPlanes(
     bool hitXPlane = false;
     bool hitYPlane = false;
 
-    if (intersectDoubleSidedRayWithPlane(rayPos, rayDir, leftPlanePos, lrPlaneNormal, d))
-    {
+    if (intersectDoubleSidedRayWithPlane(rayPos, rayDir, leftPlanePos, lrPlaneNormal, d)) {
       hitXPlane = true;
       horizDist = std::max(horizDist, d);
     }
 
-    if (intersectDoubleSidedRayWithPlane(rayPos, rayDir, rightPlanePos, -lrPlaneNormal, d))
-    {
+    if (intersectDoubleSidedRayWithPlane(rayPos, rayDir, rightPlanePos, -lrPlaneNormal, d)) {
       hitXPlane = true;
       horizDist = std::max(horizDist, d);
     }
 
-    if (intersectDoubleSidedRayWithPlane(rayPos, rayDir, bottomPlanePos, btPlaneNormal, d))
-    {
+    if (intersectDoubleSidedRayWithPlane(rayPos, rayDir, bottomPlanePos, btPlaneNormal, d)) {
       hitYPlane = true;
       vertDist = std::max(vertDist, d);
     }
 
-    if (intersectDoubleSidedRayWithPlane(rayPos, rayDir, topPlanePos, -btPlaneNormal, d))
-    {
+    if (intersectDoubleSidedRayWithPlane(rayPos, rayDir, topPlanePos, -btPlaneNormal, d)) {
       hitYPlane = true;
       vertDist = std::max(vertDist, d);
     }
 
-    if (hitXPlane && hitYPlane)
-    {
+    if (hitXPlane && hitYPlane) {
       distances[i] = std::min(horizDist, vertDist);
     }
-    else if (hitXPlane)
-    {
+    else if (hitXPlane) {
       distances[i] = horizDist;
     }
-    else if (hitYPlane)
-    {
+    else if (hitYPlane) {
       distances[i] = vertDist;
     }
   }
@@ -138,8 +126,7 @@ Crosshairs::Crosshairs(
   ShaderProgramActivatorType shaderProgramActivator,
   UniformsProviderType uniformsProvider,
   std::weak_ptr<MeshGpuRecord> meshGpuRecord,
-  bool isFixedDiameter
-)
+  bool isFixedDiameter)
   : DrawableBase(std::move(name), DrawableType::Crosshairs)
   ,
 
@@ -150,18 +137,13 @@ Crosshairs::Crosshairs(
   m_txs{
     std::make_shared<Transformation>("crosshairTxX", IDENTITY),
     std::make_shared<Transformation>("crosshairTxY", IDENTITY),
-    std::make_shared<Transformation>("crosshairTxZ", IDENTITY)
-  }
+    std::make_shared<Transformation>("crosshairTxZ", IDENTITY)}
   ,
 
   m_crosshairs{
-    std::make_shared<
-      BasicMesh>("crosshairMeshX", shaderProgramActivator, uniformsProvider, meshGpuRecord),
-    std::make_shared<
-      BasicMesh>("crosshairMeshY", shaderProgramActivator, uniformsProvider, meshGpuRecord),
-    std::make_shared<
-      BasicMesh>("crosshairMeshZ", shaderProgramActivator, uniformsProvider, meshGpuRecord)
-  }
+    std::make_shared<BasicMesh>("crosshairMeshX", shaderProgramActivator, uniformsProvider, meshGpuRecord),
+    std::make_shared<BasicMesh>("crosshairMeshY", shaderProgramActivator, uniformsProvider, meshGpuRecord),
+    std::make_shared<BasicMesh>("crosshairMeshZ", shaderProgramActivator, uniformsProvider, meshGpuRecord)}
 {
   m_renderId = static_cast<uint32_t>(underlyingType(m_type) << 12) | (numCreated() % 0x1000);
 
@@ -172,8 +154,7 @@ void Crosshairs::setupChildren()
 {
   const auto offset = PolygonOffset::crosshairs;
 
-  for (uint32_t i = 0; i < 3; ++i)
-  {
+  for (uint32_t i = 0; i < 3; ++i) {
     addChild(m_txs[i]);
 
     m_txs[i]->addChild(m_crosshairs[i]);
@@ -202,8 +183,7 @@ void Crosshairs::setupChildren()
 
 void Crosshairs::setLength(float length)
 {
-  if (0.0f < length)
-  {
+  if (0.0f < length) {
     m_crosshairLength = length;
   }
 }
@@ -217,25 +197,21 @@ void Crosshairs::doUpdate(
   double /*time*/,
   const Viewport& viewport,
   const Camera& camera,
-  const CoordinateFrame& crosshairs
-)
+  const CoordinateFrame& crosshairs)
 {
   static const glm::mat4 sk_xRotTx = glm::rotate(-glm::half_pi<float>(), glm::vec3{1.0f, 0.0f, 0.0f});
 
   static const glm::mat4 sk_yRotTx = glm::rotate(glm::half_pi<float>(), glm::vec3{0.0f, 1.0f, 0.0f});
 
-  const float xyFactor = (m_isFixedDiameter)
-                           ? m_crosshairLength / 5.0f
-                           : 2.0f * glm::compMax(worldPixelSize(viewport, camera));
+  const float xyFactor =
+    (m_isFixedDiameter) ? m_crosshairLength / 5.0f : 2.0f * glm::compMax(worldPixelSize(viewport, camera));
 
   std::array<float, 3> lengths;
 
-  if (camera.isOrthographic())
-  {
+  if (camera.isOrthographic()) {
     lengths = distancesFromCrosshairToFrustumPlanes(camera, crosshairs);
   }
-  else
-  {
+  else {
     lengths = {m_crosshairLength, m_crosshairLength, m_crosshairLength};
   }
 

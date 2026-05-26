@@ -11,16 +11,15 @@
 
 /**
  * A Buffer Texture is a one-dimensional Texture whose storage comes from a Buffer Object.
- * It is used to allow a shader to access a large table of memory that is managed by a buffer object.
+ * It is used to allow a shader to access a large table of memory that is managed by a buffer
+ * object.
  *
  * @see https://www.khronos.org/opengl/wiki/Buffer_Texture
  */
 class GLBufferTexture final
 {
 public:
-  GLBufferTexture(
-    const tex::SizedInternalBufferTextureFormat& format, const BufferUsagePattern& usage
-  );
+  GLBufferTexture(const tex::SizedInternalBufferTextureFormat& format, const BufferUsagePattern& usage);
 
   GLBufferTexture(const GLBufferTexture&) = delete;
   GLBufferTexture& operator=(const GLBufferTexture&) = delete;
@@ -37,8 +36,8 @@ public:
   void unbind();
 
   /**
-     * @return Texture ID
-     */
+   * @return Texture ID
+   */
   GLuint id() const;
 
   // Allocate buffer
@@ -52,17 +51,17 @@ public:
   BufferUsagePattern usagePattern() const;
 
   /**
-     * @note When a buffer texture is accessed in a shader, the results of a texel fetch are undefined
-     * if the specified texel coordinate is negative, or greater than or equal to the clamped number of
-     * texels in the texel array.
-     *
-     * @return Number of texels in the buffer texture's texel array
-     */
+   * @note When a buffer texture is accessed in a shader, the results of a texel fetch are undefined
+   * if the specified texel coordinate is negative, or greater than or equal to the clamped number
+   * of texels in the texel array.
+   *
+   * @return Number of texels in the buffer texture's texel array
+   */
   std::size_t numBytes() const;
 
   /**
-     * @brief Attach buffer object's data store to a buffer texture object.
-     */
+   * @brief Attach buffer object's data store to a buffer texture object.
+   */
   void attachBufferToTexture(std::optional<uint32_t> textureUnit = std::nullopt);
 
   void detatchBufferFromTexture();

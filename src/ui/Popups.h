@@ -11,7 +11,9 @@ class AppData;
  * @param recenterViews
  */
 void renderAddLayoutModalPopup(
-  AppData& appData, bool openAddLayoutPopup, const std::function<void(void)>& recenterViews);
+  AppData& appData,
+  bool openAddLayoutPopup,
+  const std::function<void(void)>& recenterViews);
 
 void renderAboutDialogModalPopup(bool open);
 

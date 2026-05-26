@@ -31,8 +31,7 @@ public:
     std::weak_ptr<MeshGpuRecord> boxMeshGpuRecord,
     std::weak_ptr<SlideRecord> slideRecord,
     QuerierType<bool, uuids::uuid> activeSlideQuerier,
-    GetterType<float> image3dLayerOpacityProvider
-  );
+    GetterType<float> image3dLayerOpacityProvider);
 
   ~SlideBox() override = default;
 

@@ -1,8 +1,7 @@
 #include "mesh/MeshCpuRecord.h"
 
 MeshCpuRecord::MeshCpuRecord(vtkSmartPointer<vtkPolyData> polyData, MeshInfo meshInfo)
-  : m_polyData(polyData)
-  , m_meshInfo(std::move(meshInfo))
+  : m_polyData(polyData), m_meshInfo(std::move(meshInfo))
 {
 }
 

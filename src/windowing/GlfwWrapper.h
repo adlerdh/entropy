@@ -88,8 +88,7 @@ public:
     std::atomic<bool>& imagesReady,
     const std::atomic<bool>& imageLoadFailed,
     const std::function<bool(void)>& checkAppQuit,
-    const std::function<void(void)>& onImagesReady
-  );
+    const std::function<void(void)>& onImagesReady);
 
   /**
    * @brief Render one frame
@@ -141,7 +140,8 @@ private:
   std::function<void()> m_renderScene = nullptr;
   std::function<void()> m_renderGui = nullptr;
 
-  // Backups of window position and size, which are restored when changing from full-screen to windowed mode
+  // Backups of window position and size, which are restored when changing from full-screen to
+  // windowed mode
   int m_backupWindowPosX = 0;
   int m_backupWindowPosY = 0;
 

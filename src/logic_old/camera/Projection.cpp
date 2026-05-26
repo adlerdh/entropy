@@ -8,13 +8,7 @@
 namespace camera
 {
 
-Projection::Projection()
-  : m_nearDistance(0.1f)
-  , m_farDistance(1000.0f)
-  , m_defaultFov(5.0f)
-  , m_zoom(1.0f)
-{
-}
+Projection::Projection() : m_nearDistance(0.1f), m_farDistance(1000.0f), m_defaultFov(5.0f), m_zoom(1.0f) {}
 
 glm::mat4 Projection::camera_O_clip() const
 {
@@ -23,24 +17,21 @@ glm::mat4 Projection::camera_O_clip() const
 
 void Projection::setAspectRatio(float aspect)
 {
-  if (aspect > 0.0f)
-  {
+  if (aspect > 0.0f) {
     m_aspectRatio = aspect;
   }
 }
 
 void Projection::setNearDistance(float distance)
 {
-  if (0.0f < distance && distance < m_farDistance)
-  {
+  if (0.0f < distance && distance < m_farDistance) {
     m_nearDistance = distance;
   }
 }
 
 void Projection::setFarDistance(float distance)
 {
-  if (0.0f < distance && m_nearDistance < distance)
-  {
+  if (0.0f < distance && m_nearDistance < distance) {
     m_farDistance = distance;
   }
 }
@@ -62,8 +53,7 @@ float Projection::farDistance() const
 
 void Projection::setDefaultFov(const glm::vec2& fov)
 {
-  if (fov.x <= 0.0f || fov.y <= 0.0f)
-  {
+  if (fov.x <= 0.0f || fov.y <= 0.0f) {
     return;
   }
 

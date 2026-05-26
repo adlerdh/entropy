@@ -46,17 +46,17 @@ std::unique_ptr<AppController> createAppController()
   auto interactionManager = std::make_unique<InteractionManager>(
     std::bind(&LayoutManager::getViewTypes, layoutManager.get()),
     std::bind(
-      &TransformationManager::getCrosshairsFrame, txManager.get(), TransformationState::Committed
-    ), /// remove
+      &TransformationManager::getCrosshairsFrame,
+      txManager.get(),
+      TransformationState::Committed), /// remove
     std::bind(
       &TransformationManager::getSlideStackCrosshairsFrame,
       txManager.get(),
-      TransformationState::Committed
-    ), /// remove
+      TransformationState::Committed), /// remove
     std::bind(
-      &TransformationManager::getSlideStackFrame, txManager.get(), TransformationState::Committed
-    )
-  ); /// remove
+      &TransformationManager::getSlideStackFrame,
+      txManager.get(),
+      TransformationState::Committed)); /// remove
 
   auto shaderPrograms = std::make_unique<ShaderProgramContainer>();
 
@@ -70,8 +70,7 @@ std::unique_ptr<AppController> createAppController()
     *dataManager,
     std::bind(&ShaderProgramContainer::useProgram, shaderPrograms.get(), _1),
     std::bind(&ShaderProgramContainer::getRegisteredUniforms, shaderPrograms.get(), _1),
-    blankTextures
-  );
+    blankTextures);
 
   // Constructs the GLWidgets and renderers.
   auto guiManager = std::make_unique<GuiManager>(
@@ -82,8 +81,7 @@ std::unique_ptr<AppController> createAppController()
     std::bind(&AssemblyManager::getOverlayRootDrawable, assemblyManager.get(), _1),
     std::bind(&AssemblyManager::getSceneType, assemblyManager.get(), _1),
     std::bind(&ShaderProgramContainer::useProgram, shaderPrograms.get(), _1),
-    std::bind(&ShaderProgramContainer::getRegisteredUniforms, shaderPrograms.get(), _1)
-  );
+    std::bind(&ShaderProgramContainer::getRegisteredUniforms, shaderPrograms.get(), _1));
 
   // Performs actions that are usually triggered by the GUI and that affect the GUI
   auto actionManager = std::make_unique<ActionManager>(
@@ -93,24 +91,21 @@ std::unique_ptr<AppController> createAppController()
     *assemblyManager,
     *dataManager,
     *guiManager,
-    *interactionManager
-  );
+    *interactionManager);
 
   // Object that maps image data between UI and app
   auto imageDataUiMapper = std::make_unique<ImageDataUiMapper>(
     *actionManager,
     *assemblyManager,
     *dataManager,
-    std::bind(&GuiManager::updateAllViewWidgets, guiManager.get())
-  );
+    std::bind(&GuiManager::updateAllViewWidgets, guiManager.get()));
 
   // Object that maps parcellation data between UI and app
   auto parcelDataUiMapper = std::make_unique<ParcellationDataUiMapper>(
     *actionManager,
     *assemblyManager,
     *dataManager,
-    std::bind(&GuiManager::updateAllViewWidgets, guiManager.get())
-  );
+    std::bind(&GuiManager::updateAllViewWidgets, guiManager.get()));
 
   // Object that maps parcellation data between UI and app
   auto slideStackDataUiMapper = std::make_unique<SlideStackDataUiMapper>(
@@ -118,8 +113,7 @@ std::unique_ptr<AppController> createAppController()
     *assemblyManager,
     *dataManager,
     *interactionManager,
-    std::bind(&GuiManager::updateAllViewWidgets, guiManager.get())
-  );
+    std::bind(&GuiManager::updateAllViewWidgets, guiManager.get()));
 
   auto connectionManager = std::make_unique<ConnectionManager>(
     *actionManager,
@@ -138,8 +132,7 @@ std::unique_ptr<AppController> createAppController()
     std::bind(&AssemblyManager::getSceneType, assemblyManager.get(), _1),
     std::bind(&LayoutManager::getViewTypes, layoutManager.get()),
     std::bind(&LayoutManager::getViewUidsOfType, layoutManager.get(), _1),
-    std::bind(&InteractionManager::getInteractionPack, interactionManager.get(), _1)
-  );
+    std::bind(&InteractionManager::getInteractionPack, interactionManager.get(), _1));
 
   return std::make_unique<AppController>(
     std::move(actionManager),
@@ -154,6 +147,5 @@ std::unique_ptr<AppController> createAppController()
     std::move(parcelDataUiMapper),
     std::move(slideStackDataUiMapper),
     std::move(shaderPrograms),
-    std::move(blankTextures)
-  );
+    std::move(blankTextures));
 }

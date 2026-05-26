@@ -15,25 +15,24 @@ class DepthPeelRenderer : public IRenderer
 {
 public:
   /**
-     * @brief DepthPeelRenderer
-     *
-     * @param[in] name
-     * @param[in] shaderProgramActivator
-     * @param[in] uniformsProvider
-     *
-     * @param[in] rootProvider Function returning the root IDrawable of the scene to be rendered.
-     * The scene must be managed externally to this class.
-     *
-     * @param[in] overlayProvider Function returning the root IDrawable of the overlay to be rendered.
-     * The overlay must be managed externally to this class.
-     */
+   * @brief DepthPeelRenderer
+   *
+   * @param[in] name
+   * @param[in] shaderProgramActivator
+   * @param[in] uniformsProvider
+   *
+   * @param[in] rootProvider Function returning the root IDrawable of the scene to be rendered.
+   * The scene must be managed externally to this class.
+   *
+   * @param[in] overlayProvider Function returning the root IDrawable of the overlay to be rendered.
+   * The overlay must be managed externally to this class.
+   */
   DepthPeelRenderer(
     const std::string& name,
     ShaderProgramActivatorType shaderProgramActivator,
     UniformsProviderType uniformsProvider,
     GetterType<IDrawable*> sceneRootProvider,
-    GetterType<IDrawable*> overlayRootProvider
-  );
+    GetterType<IDrawable*> overlayRootProvider);
 
   DepthPeelRenderer(const DepthPeelRenderer&) = delete;
   DepthPeelRenderer& operator=(const DepthPeelRenderer&) = delete;

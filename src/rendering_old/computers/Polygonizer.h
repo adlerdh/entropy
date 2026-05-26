@@ -21,9 +21,7 @@ class VertexIndicesInfo;
 class Polygonizer : public ComputerBase
 {
 public:
-  Polygonizer(
-    ShaderProgramActivatorType shaderProgramActivator, UniformsProviderType uniformsProvider
-  );
+  Polygonizer(ShaderProgramActivatorType shaderProgramActivator, UniformsProviderType uniformsProvider);
 
   Polygonizer(const Polygonizer&) = delete;
   Polygonizer& operator=(const Polygonizer&) = delete;
@@ -74,7 +72,7 @@ private:
   // We originally tried to use a buffer texture to hold the triangle table.
   // Due to an apparent bug in our graphics driver, the buffer texture did not
   // work with transform feedback.
-  //std::unique_ptr<GLBufferTexture> m_triTableBufferTex;
+  // std::unique_ptr<GLBufferTexture> m_triTableBufferTex;
 
   // Marching Cube indices and corner positions
   std::vector<PositionIndexType> m_cubeIndices;

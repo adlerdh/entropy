@@ -12,13 +12,7 @@ template<typename T>
 class VectorArrayBuffer
 {
 public:
-  VectorArrayBuffer()
-    : m_vectorCount(0)
-    , m_bufferLength(0)
-    , m_bufferByteCount(0)
-    , m_buffer(nullptr)
-  {
-  }
+  VectorArrayBuffer() : m_vectorCount(0), m_bufferLength(0), m_bufferByteCount(0), m_buffer(nullptr) {}
 
   VectorArrayBuffer(VectorArrayBuffer& other) = delete;
   VectorArrayBuffer& operator=(const VectorArrayBuffer& other) = delete;
@@ -33,8 +27,7 @@ public:
 
   VectorArrayBuffer& operator=(VectorArrayBuffer&& other)
   {
-    if (this != &other)
-    {
+    if (this != &other) {
       m_vectorCount = other.m_vectorCount;
       m_bufferLength = other.m_bufferLength;
       m_bufferByteCount = other.m_bufferByteCount;
@@ -45,11 +38,23 @@ public:
 
   ~VectorArrayBuffer() = default;
 
-  std::size_t vectorCount() const { return m_vectorCount; }
-  std::size_t length() const { return m_bufferLength; }
-  std::size_t byteCount() const { return m_bufferByteCount; }
+  std::size_t vectorCount() const
+  {
+    return m_vectorCount;
+  }
+  std::size_t length() const
+  {
+    return m_bufferLength;
+  }
+  std::size_t byteCount() const
+  {
+    return m_bufferByteCount;
+  }
 
-  const void* buffer() const { return m_buffer.get(); }
+  const void* buffer() const
+  {
+    return m_buffer.get();
+  }
 
 protected:
   std::size_t m_vectorCount;

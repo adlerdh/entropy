@@ -7,8 +7,7 @@
  */
 bool isInsideTexture(vec3 texCoord)
 {
-  return (all(greaterThanEqual(texCoord, MIN_IMAGE_TEXCOORD)) &&
-          all(lessThanEqual(texCoord, MAX_IMAGE_TEXCOORD)));
+  return (all(greaterThanEqual(texCoord, MIN_IMAGE_TEXCOORD)) && all(lessThanEqual(texCoord, MAX_IMAGE_TEXCOORD)));
 }
 
 /**

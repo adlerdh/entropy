@@ -95,9 +95,9 @@ enum class BufferPixelDataType : uint32_t
   /// @note GL_[base type​]_[size1​]_[size2​]_[size3​]_[size4​](_REV​):
   /// The base type​ is the OpenGL type enumerator name of the fully packed value.
   /// The size​ values represent the sizes of the components (in bits), in that order.
-  /// By default the components are laid out from msb (most-significant bit) to lsb (least-significant bit).
-  /// However, if the type​ has a _REV​ at the end of it, the component order is reversed, and they are laid out
-  /// from lsb-to-msb.
+  /// By default the components are laid out from msb (most-significant bit) to lsb
+  /// (least-significant bit). However, if the type​ has a _REV​ at the end of it, the component
+  /// order is reversed, and they are laid out from lsb-to-msb.
 
   UInt8_RG3B2 = GL_UNSIGNED_BYTE_3_3_2,
   UInt8_RG3B2_Rev = GL_UNSIGNED_BYTE_2_3_3_REV,
@@ -116,16 +116,19 @@ enum class BufferPixelDataType : uint32_t
 /// GL_[components​][size​][type​]
 ///
 /// The components​ field is the list of components that the format stores.
-/// OpenGL only allows "R", "RG", "RGB", or "RGBA"; other combinations are not allowed as internal image formats
+/// OpenGL only allows "R", "RG", "RGB", or "RGBA"; other combinations are not allowed as internal
+/// image formats
 ///
 /// The following suffixes are used:
 /// "": No type suffix means unsigned normalized integer format.
 /// "_SNORM": Signed normalized integer format.
-/// "F": Floating-point. Thus, GL_RGBA32F is a floating-point format where each component is a 32-bit IEEE floating-point value.
-/// "I": Signed integral format. Thus GL_RGBA8I gives a signed integer format where each of the four components is an integer on the range [-128, 127].
-/// "UI": Unsigned integral format. The values go from [0, MAX_INT] for the integer size.
+/// "F": Floating-point. Thus, GL_RGBA32F is a floating-point format where each component is a
+/// 32-bit IEEE floating-point value. "I": Signed integral format. Thus GL_RGBA8I gives a signed
+/// integer format where each of the four components is an integer on the range [-128, 127]. "UI":
+/// Unsigned integral format. The values go from [0, MAX_INT] for the integer size.
 
-/// @note There are a number of color formats that exist outside of the normal syntax described above
+/// @note There are a number of color formats that exist outside of the normal syntax described
+/// above
 enum class SizedInternalFormat : uint32_t
 {
   R8_UNorm = GL_R8,
@@ -194,8 +197,8 @@ enum class SizedInternalFormat : uint32_t
   /// It is an RGB format of type floating-point. The 3 color values have 9 bits of precision,
   /// and they share a single exponent. The computation for these values is not as simple as for
   /// GL_R11F_G11F_B10F, and they aren't appropriate for everything. But they can provide better
-  /// results than that format if most of the colors in the image have approximately the same exponent,
-  /// or are too small to be significant.
+  /// results than that format if most of the colors in the image have approximately the same
+  /// exponent, or are too small to be significant.
   RGB9E5 = GL_RGB9_E5,
 
   R8I = GL_R8I,

@@ -15,8 +15,8 @@ class SlideTransformation
 {
 public:
   /**
-     * @brief Mode used to parameterize the shear transformation
-     */
+   * @brief Mode used to parameterize the shear transformation
+   */
   enum class ShearParamMode
   {
     /// Parameterize shear using two separate shear angles for x and y (2 DOF)
@@ -80,8 +80,8 @@ public:
   void setShearParamMode(const ShearParamMode& mode);
 
   /**
-     * @brief Reset all transformation parameters to identity.
-     */
+   * @brief Reset all transformation parameters to identity.
+   */
   void setIdentity();
 
 private:

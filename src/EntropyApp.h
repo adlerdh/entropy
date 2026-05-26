@@ -21,10 +21,8 @@
 
 /**
  * @brief This class basically runs the show. Its responsibilities are
- * 1) Hold the OpenGL context and all application data, including for the UI, rendering, and windowing
- * 2) Run the rendering loop
- * 3) Load images
- * 4) Execute callbacks from the UI
+ * 1) Hold the OpenGL context and all application data, including for the UI, rendering, and
+ * windowing 2) Run the rendering loop 3) Load images 4) Execute callbacks from the UI
  *
  * @note Might be nice to split this class apart.
  */
@@ -60,17 +58,19 @@ public:
    */
   bool loadSerializedImage(const serialize::Image& image, bool isReferenceImage);
 
-  /// Load a segmentation from disk. If its header does not match the given image, then it is not loaded
+  /// Load a segmentation from disk. If its header does not match the given image, then it is not
+  /// loaded
   /// @return Uid and flag if loaded.
   /// False indcates that it was already loaded and that we are returning an existing image.
   std::pair<std::optional<uuids::uuid>, bool> loadSegmentation(
-    const fs::path& fileName, const std::optional<uuids::uuid>& imageUid = std::nullopt);
+    const fs::path& fileName,
+    const std::optional<uuids::uuid>& imageUid = std::nullopt);
 
   /**
    * @brief Load a deformation field from disk.
    * @return UID and flag if loaded. False indcates that it was already loaded and that we are
    * returning an existing image.
-     *
+   *
    * @todo If its header does not match the given image, then it is not loaded
    */
   std::pair<std::optional<uuids::uuid>, bool> loadDeformationField(const fs::path& fileName);
@@ -114,8 +114,7 @@ private:
   /// Load an image from disk.
   /// @return Uid and flag if loaded.
   /// False indcates that it was already loaded and that we are returning an existing image.
-  std::pair<std::optional<uuids::uuid>, bool> loadImage(
-    const fs::path& fileName, bool ignoreIfAlreadyLoaded);
+  std::pair<std::optional<uuids::uuid>, bool> loadImage(const fs::path& fileName, bool ignoreIfAlreadyLoaded);
 
   std::future<void> m_futureLoadProject;
 

@@ -15,8 +15,7 @@ public:
     GLBufferObject positionsObject,
     GLBufferObject indicesObject,
     VertexAttributeInfo positionsInfo,
-    VertexIndicesInfo indicesInfo
-  );
+    VertexIndicesInfo indicesInfo);
 
   MeshGpuRecord(
     GLBufferObject positionsObject,
@@ -26,8 +25,7 @@ public:
     VertexAttributeInfo positionsInfo,
     VertexAttributeInfo normalsInfo,
     VertexAttributeInfo texCoordsInfo,
-    VertexIndicesInfo indicesInfo
-  );
+    VertexIndicesInfo indicesInfo);
 
   MeshGpuRecord() = delete;
 
@@ -43,7 +41,8 @@ public:
   void setTexCoords(GLBufferObject texCoordsObject, VertexAttributeInfo texCoordsInfo);
   void setColors(GLBufferObject colorsObject, VertexAttributeInfo colorsInfo);
 
-  // Return as non-const reference, since users need access to non-const member functions of GLTexture
+  // Return as non-const reference, since users need access to non-const member functions of
+  // GLTexture
   GLBufferObject& positionsObject();
   std::optional<GLBufferObject>& normalsObject();
   std::optional<GLBufferObject>& texCoordsObject();

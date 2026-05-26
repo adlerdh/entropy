@@ -16,15 +16,15 @@ public:
   virtual ~IDrawableAssembly() = default;
 
   /**
-     * @brief Initialize and create the assembly. This function must be executed prior to requesting
-     * the root drawable of the assembly. It must be assumed that executing function requires an active
-     * OpenGL context.
-     */
+   * @brief Initialize and create the assembly. This function must be executed prior to requesting
+   * the root drawable of the assembly. It must be assumed that executing function requires an
+   * active OpenGL context.
+   */
   virtual void initialize() = 0;
 
   /**
-     * @brief Get a weak pointer to the root drawable of the assembly for a given scene type.
-     */
+   * @brief Get a weak pointer to the root drawable of the assembly for a given scene type.
+   */
   virtual std::weak_ptr<DrawableBase> getRoot(const SceneType& sceneType) = 0;
 };
 

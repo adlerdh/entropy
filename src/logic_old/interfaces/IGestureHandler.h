@@ -22,8 +22,7 @@ public:
   virtual bool handlePinchGesture(QPinchGesture*, const Viewport&, const Camera&) = 0;
   virtual bool handleSwipeGesture(QSwipeGesture*, const Viewport&, const Camera&) = 0;
   virtual bool handleTapGesture(QTapGesture*, const Viewport&, const Camera&) = 0;
-  virtual bool handleTapAndHoldGesture(QTapAndHoldGesture*, const Viewport&, const Camera&)
-    = 0;
+  virtual bool handleTapAndHoldGesture(QTapAndHoldGesture*, const Viewport&, const Camera&) = 0;
 };
 
 #endif // I_GESTURE_EVENT_HANDLER_H

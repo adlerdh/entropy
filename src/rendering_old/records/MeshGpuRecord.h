@@ -15,8 +15,7 @@ public:
     GLBufferObject positionsObject,
     GLBufferObject indicesObject,
     VertexAttributeInfo positionsInfo,
-    VertexIndicesInfo indicesInfo
-  );
+    VertexIndicesInfo indicesInfo);
 
   MeshGpuRecord(
     GLBufferObject positionsObject,
@@ -26,8 +25,7 @@ public:
     VertexAttributeInfo positionsInfo,
     VertexAttributeInfo normalsInfo,
     VertexAttributeInfo texCoordsInfo,
-    VertexIndicesInfo indicesInfo
-  );
+    VertexIndicesInfo indicesInfo);
 
   MeshGpuRecord() = delete;
 

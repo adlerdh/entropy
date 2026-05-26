@@ -18,7 +18,8 @@ class GLShader final
 public:
   GLShader(std::string name, const ShaderType& type, const char* source);
   GLShader(std::string name, const ShaderType& type, std::istream& source);
-  //    GLShader( std::string name, const ShaderType& type, const std::vector< const char* >& sources );
+  //    GLShader( std::string name, const ShaderType& type, const std::vector< const char* >&
+  //    sources );
 
   GLShader(const GLShader&) = delete;
   GLShader& operator=(const GLShader&) = delete;

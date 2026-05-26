@@ -35,8 +35,7 @@ void LandmarkGroupCpuRecord::setPoints(PointList<PointRecord<PositionType> > poi
   m_pointList = std::move(pointList);
 }
 
-const PointList<PointRecord<LandmarkGroupCpuRecord::PositionType> >&
-LandmarkGroupCpuRecord::getPoints() const
+const PointList<PointRecord<LandmarkGroupCpuRecord::PositionType> >& LandmarkGroupCpuRecord::getPoints() const
 {
   return m_pointList;
 }
@@ -73,8 +72,7 @@ bool LandmarkGroupCpuRecord::getVisibility() const
 
 void LandmarkGroupCpuRecord::setOpacity(float opacity)
 {
-  if (0.0f <= opacity && opacity <= 1.0f)
-  {
+  if (0.0f <= opacity && opacity <= 1.0f) {
     m_opacity = opacity;
   }
 }

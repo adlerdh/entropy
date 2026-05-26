@@ -51,11 +51,14 @@ public:
     std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesNN,
     std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesLinear,
     std::function<std::optional<int64_t>(std::size_t imageIndex)> getSegLabel,
-    std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)> createBlankSeg,
+    std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>
+      createBlankSeg,
     std::function<bool(const uuids::uuid& segUid)> clearSeg,
     std::function<bool(const uuids::uuid& segUid)> removeSeg,
-    std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)> executeGraphCutsSeg,
-    std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)> executePoissonSeg,
+    std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)>
+      executeGraphCutsSeg,
+    std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)>
+      executePoissonSeg,
     std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
     std::function<void()> paintActiveSegmentationWithActivePolygon);
 
@@ -89,13 +92,17 @@ private:
   std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> m_setSubjectPos = nullptr;
   std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> m_setVoxelPos = nullptr;
   std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> m_getImageValuesNN = nullptr;
-  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> m_getImageValuesLinear = nullptr;
+  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> m_getImageValuesLinear =
+    nullptr;
   std::function<std::optional<int64_t>(std::size_t imageIndex)> m_getSegLabel = nullptr;
-  std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)> m_createBlankSeg = nullptr;
+  std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>
+    m_createBlankSeg = nullptr;
   std::function<bool(const uuids::uuid& segUid)> m_clearSeg = nullptr;
   std::function<bool(const uuids::uuid& segUid)> m_removeSeg = nullptr;
-  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)> m_executeGraphCutsSeg = nullptr;
-  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)> m_executePoissonSeg = nullptr;
+  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
+    m_executeGraphCutsSeg = nullptr;
+  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
+    m_executePoissonSeg = nullptr;
   std::function<bool(const uuids::uuid& imageUid, bool locked)> m_setLockManualImageTransformation = nullptr;
   std::function<void()> m_paintActiveSegmentationWithActivePolygon = nullptr;
 
@@ -126,12 +133,12 @@ private:
   void generateIsosurfaceMeshGpuRecords();
 
   /**
-     * @brief Store futures from UI tasks in \c m_futures map. Futures need to be stored so that their
-     * destructors are not called. Calling the destructor of a future causes us to wait on the it.
-     *
-     * @param taskUid UID of the task
-     * @param future The future
-     */
+   * @brief Store futures from UI tasks in \c m_futures map. Futures need to be stored so that their
+   * destructors are not called. Calling the destructor of a future causes us to wait on the it.
+   *
+   * @param taskUid UID of the task
+   * @param future The future
+   */
   void storeFuture(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future);
 
   std::pair<std::string, std::string> getImageDisplayAndFileNames(std::size_t imageIndex) const;

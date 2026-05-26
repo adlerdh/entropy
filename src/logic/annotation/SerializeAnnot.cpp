@@ -14,8 +14,7 @@ void to_json(json& j, const AnnotPolygon<float, 2>& poly)
 {
   j.clear();
 
-  for (const auto& vertices : poly.getBoundaryVertices(OUTER_BOUNDARY))
-  {
+  for (const auto& vertices : poly.getBoundaryVertices(OUTER_BOUNDARY)) {
     j.emplace_back(std::vector<float>{vertices.x, vertices.y});
   }
 }
@@ -24,10 +23,8 @@ void from_json(const json& j, AnnotPolygon<float, 2>& poly)
 {
   AnnotPolygon<float, 2> newPoly;
 
-  for (const auto& vertex : j)
-  {
-    if (2 != vertex.size())
-    {
+  for (const auto& vertex : j) {
+    if (2 != vertex.size()) {
       throw_debug("JSON structure contains invalid vertex")
     }
 
@@ -66,8 +63,7 @@ void to_json(json& j, const Annotation& annot)
     {"subjectPlaneAxes",
      {{planeAxes.first.x, planeAxes.first.y, planeAxes.first.z},
       {planeAxes.second.x, planeAxes.second.y, planeAxes.second.z}}},
-    {"polygon", annot.polygon()}
-  };
+    {"polygon", annot.polygon()}};
 }
 
 void from_json(const json& j, Annotation& annot)
@@ -75,70 +71,59 @@ void from_json(const json& j, Annotation& annot)
   // All of these parameters are optional in the JSON:
 
   std::string displayName = "";
-  if (j.count("name"))
-  {
+  if (j.count("name")) {
     displayName = j.at("name").get<std::string>();
   }
 
   bool visible = true;
-  if (j.count("visible"))
-  {
+  if (j.count("visible")) {
     visible = j.at("visible").get<bool>();
   }
 
   float opacity = 1.0f;
-  if (j.count("opacity"))
-  {
+  if (j.count("opacity")) {
     opacity = j.at("opacity").get<float>();
   }
 
   float lineThickness = 2.0f;
-  if (j.count("lineThickness"))
-  {
+  if (j.count("lineThickness")) {
     lineThickness = j.at("lineThickness").get<float>();
   }
 
   std::array<float, 4> lineColor{1.0f, 0.0f, 0.0f, 1.0f};
-  if (j.count("lineColor"))
-  {
+  if (j.count("lineColor")) {
     lineColor = j.at("lineColor").get<std::array<float, 4>>();
   }
   const glm::vec4 lineColorVec4{lineColor[0], lineColor[1], lineColor[2], lineColor[3]};
 
   std::array<float, 4> fillColor{1.0f, 0.0f, 0.0f, 0.5f};
-  if (j.count("fillColor"))
-  {
+  if (j.count("fillColor")) {
     fillColor = j.at("fillColor").get<std::array<float, 4>>();
   }
   const glm::vec4 fillColorVec4{fillColor[0], fillColor[1], fillColor[2], fillColor[3]};
 
   bool verticesVisible = true;
-  if (j.count("verticesVisible"))
-  {
+  if (j.count("verticesVisible")) {
     verticesVisible = j.at("verticesVisible").get<bool>();
   }
 
   bool closed = true;
-  if (j.count("closed"))
-  {
+  if (j.count("closed")) {
     closed = j.at("closed").get<bool>();
   }
 
   bool filled = true;
-  if (j.count("filled"))
-  {
+  if (j.count("filled")) {
     filled = j.at("filled").get<bool>();
   }
 
   bool smoothed = false;
-  if (j.count("smoothed"))
-  {
+  if (j.count("smoothed")) {
     smoothed = j.at("smoothed").get<bool>();
   }
 
   float smoothingFactor = 0.0f;
-  if (j.count("smoothingFactor"))
-  {
+  if (j.count("smoothingFactor")) {
     smoothingFactor = j.at("smoothingFactor").get<float>();
   }
 
@@ -155,14 +140,11 @@ void from_json(const json& j, Annotation& annot)
   AnnotPolygon<float, 2> polygon;
   j.at("polygon").get_to(polygon);
 
-  if (polygon.getAllVertices().empty())
-  {
+  if (polygon.getAllVertices().empty()) {
     spdlog::warn("Polygon read from JSON has no vertices");
   }
 
-  spdlog::debug(
-    "Read polygon JSON with {} vertices", polygon.getBoundaryVertices(OUTER_BOUNDARY).size()
-  );
+  spdlog::debug("Read polygon JSON with {} vertices", polygon.getBoundaryVertices(OUTER_BOUNDARY).size());
 
   Annotation newAnnot;
   newAnnot.setDisplayName(displayName);
@@ -185,8 +167,7 @@ void from_json(const json& j, Annotation& annot)
 
 void from_json(const json& j, std::vector<Annotation>& annots)
 {
-  for (const auto& annotJson : j)
-  {
+  for (const auto& annotJson : j) {
     annots.emplace_back(annotJson);
   }
 }

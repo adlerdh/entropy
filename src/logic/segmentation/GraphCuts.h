@@ -17,8 +17,7 @@ bool graphCutsBinarySegmentation(
   const VoxelDistances& voxelDistances,
   std::function<double(int x, int y, int z, int dx, int dy, int dz)> getImageWeight,
   std::function<LabelType(int x, int y, int z)> getSeedValue,
-  std::function<void(int x, int y, int z, LabelType value)> setResultSegValue
-);
+  std::function<void(int x, int y, int z, LabelType value)> setResultSegValue);
 
 bool graphCutsMultiLabelSegmentation(
   const GraphNeighborhoodType& hoodType,
@@ -28,7 +27,6 @@ bool graphCutsMultiLabelSegmentation(
   std::function<double(int x, int y, int z, int dx, int dy, int dz)> getImageWeight,
   std::function<double(int index1, int index2)> getImageWeight1D,
   std::function<LabelType(int x, int y, int z)> getSeedValue,
-  std::function<void(int x, int y, int z, LabelType value)> setResultSegValue
-);
+  std::function<void(int x, int y, int z, LabelType value)> setResultSegValue);
 
 #endif // GRAPHCUTS_H

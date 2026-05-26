@@ -33,94 +33,88 @@ std::vector<uuids::uuid> selectImages(const AppData& data, const ImageSelection&
 {
   std::vector<uuids::uuid> imageUids;
 
-  switch (selection)
-  {
-  case ImageSelection::ReferenceImage:
-  {
-    if (const auto refUid = data.refImageUid()) {
-      imageUids.push_back(*refUid);
+  switch (selection) {
+    case ImageSelection::ReferenceImage: {
+      if (const auto refUid = data.refImageUid()) {
+        imageUids.push_back(*refUid);
+      }
+      break;
     }
-    break;
-  }
-  case ImageSelection::ActiveImage:
-  {
-    if (const auto actUid = data.activeImageUid()) {
-      imageUids.push_back(*actUid);
+    case ImageSelection::ActiveImage: {
+      if (const auto actUid = data.activeImageUid()) {
+        imageUids.push_back(*actUid);
+      }
+      break;
     }
-    break;
-  }
-  case ImageSelection::ReferenceAndActiveImages:
-  {
-    if (const auto refUid = data.refImageUid()) {
-      imageUids.push_back(*refUid);
-    }
+    case ImageSelection::ReferenceAndActiveImages: {
+      if (const auto refUid = data.refImageUid()) {
+        imageUids.push_back(*refUid);
+      }
 
-    if (const auto actUid = data.activeImageUid()) {
-      imageUids.push_back(*actUid);
-    }
+      if (const auto actUid = data.activeImageUid()) {
+        imageUids.push_back(*actUid);
+      }
 
-    break;
-  }
-  case ImageSelection::AllLoadedImages:
-  {
-    for (const auto& imageUid : data.imageUidsOrdered()) {
-      imageUids.push_back(imageUid);
+      break;
     }
-    break;
-  }
-  case ImageSelection::VisibleImagesInView:
-  {
-    if (view) {
-      for (const auto& viewUid : view->visibleImages()) {
-        imageUids.push_back(viewUid);
+    case ImageSelection::AllLoadedImages: {
+      for (const auto& imageUid : data.imageUidsOrdered()) {
+        imageUids.push_back(imageUid);
       }
+      break;
     }
-    break;
-  }
-  case ImageSelection::FixedImageInView:
-  {
-    if (view && !view->metricImages().empty()) {
-      imageUids.push_back(view->metricImages().front()); // The first image is the fixed one
-    }
-    break;
-  }
-  case ImageSelection::MovingImageInView:
-  {
-    if (view) {
-      int index = 0;
-      for (const auto& viewUid : view->metricImages()) {
-        if (1 == index) {
-          imageUids.push_back(viewUid); // The second image!
-          break;
+    case ImageSelection::VisibleImagesInView: {
+      if (view) {
+        for (const auto& viewUid : view->visibleImages()) {
+          imageUids.push_back(viewUid);
         }
-        ++index;
       }
+      break;
     }
-    break;
-  }
-  case ImageSelection::FixedAndMovingImagesInView:
-  {
-    if (view) {
-      int index = 0;
-      for (const auto& viewUid : view->metricImages()) {
-        if (0 == index || 1 == index) {
-          imageUids.push_back(viewUid); // The first and second images!
-        }
-        else {
-          break;
-        }
-        ++index;
+    case ImageSelection::FixedImageInView: {
+      if (view && !view->metricImages().empty()) {
+        imageUids.push_back(view->metricImages().front()); // The first image is the fixed one
       }
+      break;
     }
-    break;
-  }
+    case ImageSelection::MovingImageInView: {
+      if (view) {
+        int index = 0;
+        for (const auto& viewUid : view->metricImages()) {
+          if (1 == index) {
+            imageUids.push_back(viewUid); // The second image!
+            break;
+          }
+          ++index;
+        }
+      }
+      break;
+    }
+    case ImageSelection::FixedAndMovingImagesInView: {
+      if (view) {
+        int index = 0;
+        for (const auto& viewUid : view->metricImages()) {
+          if (0 == index || 1 == index) {
+            imageUids.push_back(viewUid); // The first and second images!
+          }
+          else {
+            break;
+          }
+          ++index;
+        }
+      }
+      break;
+    }
   }
 
   return imageUids;
 }
 
-float sliceScrollDistance(const AppData& data, const glm::vec3& worldCameraFrontDir,
-                          const ImageSelection& imageSelection, const View* view)
+float sliceScrollDistance(
+  const AppData& data,
+  const glm::vec3& worldCameraFrontDir,
+  const ImageSelection& imageSelection,
+  const View* view)
 {
   if (0 == data.numImages()) {
     return defaultSliceScrollDistance;
@@ -129,8 +123,7 @@ float sliceScrollDistance(const AppData& data, const glm::vec3& worldCameraFront
   float distance = std::numeric_limits<float>::max();
   std::size_t numImagesUsed = 0;
 
-  for (const auto& imageUid : selectImages(data, imageSelection, view))
-  {
+  for (const auto& imageUid : selectImages(data, imageSelection, view)) {
     const Image* image = data.image(imageUid);
     if (!image) {
       continue;
@@ -142,16 +135,17 @@ float sliceScrollDistance(const AppData& data, const glm::vec3& worldCameraFront
     const glm::vec3 pixelDirSq = pixelDir * pixelDir;
 
     const glm::vec3 pixelDirSqInv{
-      glm::epsilonEqual(pixelDirSq.x, 0.0f, glm::epsilon<float>())
-        ? std::numeric_limits<float>::max() : 1.0f / pixelDirSq.x,
-      glm::epsilonEqual(pixelDirSq.y, 0.0f, glm::epsilon<float>())
-        ? std::numeric_limits<float>::max() : 1.0f / pixelDirSq.y,
-      glm::epsilonEqual(pixelDirSq.z, 0.0f, glm::epsilon<float>())
-        ? std::numeric_limits<float>::max() : 1.0f / pixelDirSq.z};
+      glm::epsilonEqual(pixelDirSq.x, 0.0f, glm::epsilon<float>()) ? std::numeric_limits<float>::max()
+                                                                   : 1.0f / pixelDirSq.x,
+      glm::epsilonEqual(pixelDirSq.y, 0.0f, glm::epsilon<float>()) ? std::numeric_limits<float>::max()
+                                                                   : 1.0f / pixelDirSq.y,
+      glm::epsilonEqual(pixelDirSq.z, 0.0f, glm::epsilon<float>()) ? std::numeric_limits<float>::max()
+                                                                   : 1.0f / pixelDirSq.z};
 
     const float d = std::min(
-      std::min(image->header().spacing().x * std::sqrt(1.0f + (pixelDirSq.y + pixelDirSq.z) * pixelDirSqInv.x),
-               image->header().spacing().y * std::sqrt(1.0f + (pixelDirSq.z + pixelDirSq.x) * pixelDirSqInv.y)),
+      std::min(
+        image->header().spacing().x * std::sqrt(1.0f + (pixelDirSq.y + pixelDirSq.z) * pixelDirSqInv.x),
+        image->header().spacing().y * std::sqrt(1.0f + (pixelDirSq.z + pixelDirSq.x) * pixelDirSqInv.y)),
       image->header().spacing().z * std::sqrt(1.0f + (pixelDirSq.x + pixelDirSq.y) * pixelDirSqInv.z));
 
     distance = std::min(distance, d);
@@ -178,44 +172,46 @@ float sliceScrollDistance(const glm::vec3& worldCameraFrontDir, const Image& ima
 }
 
 float computeViewOffsetDistance(
-  const AppData& appData, const ViewOffsetSetting& offsetSetting, const glm::vec3& worldCameraFront)
+  const AppData& appData,
+  const ViewOffsetSetting& offsetSetting,
+  const glm::vec3& worldCameraFront)
 {
-  switch (offsetSetting.m_offsetMode)
-  {
-  case ViewOffsetMode::RelativeToRefImageScrolls:
-  {
-    if (const Image* refImg = appData.refImage()) {
-      return static_cast<float>(offsetSetting.m_relativeOffsetSteps) *
-             data::sliceScrollDistance(worldCameraFront, *refImg);
+  switch (offsetSetting.m_offsetMode) {
+    case ViewOffsetMode::RelativeToRefImageScrolls: {
+      if (const Image* refImg = appData.refImage()) {
+        return static_cast<float>(offsetSetting.m_relativeOffsetSteps) *
+               data::sliceScrollDistance(worldCameraFront, *refImg);
+      }
+
+      return 0.0f; // Invalid reference image, so do not offset
     }
+    case ViewOffsetMode::RelativeToImageScrolls: {
+      const Image* image = (offsetSetting.m_offsetImage) ? appData.image(*(offsetSetting.m_offsetImage)) : nullptr;
 
-    return 0.0f; // Invalid reference image, so do not offset
-  }
-  case ViewOffsetMode::RelativeToImageScrolls:
-  {
-    const Image* image = (offsetSetting.m_offsetImage) ? appData.image(*(offsetSetting.m_offsetImage)) : nullptr;
+      if (image) {
+        return static_cast<float>(offsetSetting.m_relativeOffsetSteps) *
+               data::sliceScrollDistance(worldCameraFront, *image);
+      }
 
-    if (image) {
-      return static_cast<float>(offsetSetting.m_relativeOffsetSteps) *
-             data::sliceScrollDistance(worldCameraFront, *image);
+      return 0.0f; // Invalid image, so do not offset
     }
-
-    return 0.0f; // Invalid image, so do not offset
-  }
-  case ViewOffsetMode::Absolute: {
-    return offsetSetting.m_absoluteOffset;
-  }
-  case ViewOffsetMode::None: {
-    return 0.0f;
-  }
+    case ViewOffsetMode::Absolute: {
+      return offsetSetting.m_absoluteOffset;
+    }
+    case ViewOffsetMode::None: {
+      return 0.0f;
+    }
   }
 
   return 0.0f;
 }
 
-glm::vec2 sliceMoveDistance(const AppData& data, const glm::vec3& worldCameraRightDir,
-                            const glm::vec3& worldCameraUpDir, const ImageSelection& imageSelection,
-                            const View* view)
+glm::vec2 sliceMoveDistance(
+  const AppData& data,
+  const glm::vec3& worldCameraRightDir,
+  const glm::vec3& worldCameraUpDir,
+  const ImageSelection& imageSelection,
+  const View* view)
 {
   if (0 == data.numImages()) {
     return {defaultSliceMoveDistance, defaultSliceMoveDistance};
@@ -225,8 +221,7 @@ glm::vec2 sliceMoveDistance(const AppData& data, const glm::vec3& worldCameraRig
 
   std::size_t numImagesUsed = 0;
 
-  for (const auto& imageUid : selectImages(data, imageSelection, view))
-  {
+  for (const auto& imageUid : selectImages(data, imageSelection, view)) {
     const Image* image = data.image(imageUid);
     if (!image) {
       continue;
@@ -256,30 +251,28 @@ AABB<float> computeWorldAABBoxEnclosingImages(const AppData& appData, const Imag
 {
   const AABB<float> defaultAABB{{-1, -1, -1}, {1, 1, 1}};
 
-  switch (imageSelection)
-  {
-  case ImageSelection::VisibleImagesInView:
-  case ImageSelection::FixedImageInView:
-  case ImageSelection::MovingImageInView:
-  case ImageSelection::FixedAndMovingImagesInView: {
-    // These image selection modes are dependent on a specific view.
-    // Since we want an AABB that applies to all views, just return the default AABB:
-    return defaultAABB;
-  }
+  switch (imageSelection) {
+    case ImageSelection::VisibleImagesInView:
+    case ImageSelection::FixedImageInView:
+    case ImageSelection::MovingImageInView:
+    case ImageSelection::FixedAndMovingImagesInView: {
+      // These image selection modes are dependent on a specific view.
+      // Since we want an AABB that applies to all views, just return the default AABB:
+      return defaultAABB;
+    }
 
-  case ImageSelection::ReferenceImage:
-  case ImageSelection::ActiveImage:
-  case ImageSelection::ReferenceAndActiveImages:
-  case ImageSelection::AllLoadedImages: {
-    break;
-  }
+    case ImageSelection::ReferenceImage:
+    case ImageSelection::ActiveImage:
+    case ImageSelection::ReferenceAndActiveImages:
+    case ImageSelection::AllLoadedImages: {
+      break;
+    }
   }
 
   std::vector<glm::vec3> corners;
   bool anyImagesUsed = false;
 
-  for (const auto& imageUid : selectImages(appData, imageSelection, nullptr))
-  {
+  for (const auto& imageUid : selectImages(appData, imageSelection, nullptr)) {
     const auto* img = appData.image(imageUid);
     if (!img) {
       continue;
@@ -299,9 +292,7 @@ AABB<float> computeWorldAABBoxEnclosingImages(const AppData& appData, const Imag
   return math::computeAABBox<float>(corners);
 }
 
-std::optional<uuids::uuid> createLabelColorTableForSegmentation(
-  AppData& appData, const uuids::uuid& segUid
-)
+std::optional<uuids::uuid> createLabelColorTableForSegmentation(AppData& appData, const uuids::uuid& segUid)
 {
   constexpr auto minNumLabels = static_cast<int64_t>(256);
 
@@ -323,31 +314,45 @@ std::optional<uuids::uuid> createLabelColorTableForSegmentation(
   const int64_t maxNumLabelsInSeg = maxLabelInSeg + 1;
   const int64_t maxNumLabelsForComp = maxLabelForComp + 1;
 
-  spdlog::debug("Maximum label value supported by the component type ({}) of segmentation {} is {}",
-                seg->header().memoryComponentTypeAsString(), segUid, maxLabelForComp);
+  spdlog::debug(
+    "Maximum label value supported by the component type ({}) of segmentation {} is {}",
+    seg->header().memoryComponentTypeAsString(),
+    segUid,
+    maxLabelForComp);
 
   // Allocate a table with at least 256 labels, but no more than the upper bound.
-  const int64_t numLabels = std::min(std::max(maxNumLabelsInSeg, minNumLabels),
-                                     static_cast<int64_t>(ParcellationLabelTable::labelCountUpperBound()));
+  const int64_t numLabels = std::min(
+    std::max(maxNumLabelsInSeg, minNumLabels),
+    static_cast<int64_t>(ParcellationLabelTable::labelCountUpperBound()));
 
   if (maxNumLabelsInSeg > numLabels) {
-    spdlog::warn("A color table is being allocated with {} labels, which is fewer than "
-                 "the number required to represent the maximum label ({}) in segmentation {}",
-                 numLabels, maxNumLabelsInSeg, segUid);
+    spdlog::warn(
+      "A color table is being allocated with {} labels, which is fewer than "
+      "the number required to represent the maximum label ({}) in segmentation {}",
+      numLabels,
+      maxNumLabelsInSeg,
+      segUid);
   }
 
   if (maxNumLabelsForComp > numLabels) {
-    spdlog::info("A color table is being allocated with {} labels, which is fewer than "
-                 "the number of labels ({}) that can be represented by the pixel component type "
-                 "({}) of segmentation {}", numLabels, maxNumLabelsForComp,
-                 seg->header().memoryComponentTypeAsString(), segUid);
+    spdlog::info(
+      "A color table is being allocated with {} labels, which is fewer than "
+      "the number of labels ({}) that can be represented by the pixel component type "
+      "({}) of segmentation {}",
+      numLabels,
+      maxNumLabelsForComp,
+      seg->header().memoryComponentTypeAsString(),
+      segUid);
   }
 
   const size_t newTableIndex = appData.addLabelColorTable(numLabels, maxNumLabelsForComp);
   seg->settings().setLabelTableIndex(newTableIndex);
 
-  spdlog::info("Create new label color table (index {}) with {} labels for segmentation {}",
-               newTableIndex, numLabels, segUid);
+  spdlog::info(
+    "Create new label color table (index {}) with {} labels for segmentation {}",
+    newTableIndex,
+    numLabels,
+    segUid);
 
   return appData.labelTableUid(newTableIndex);
 }
@@ -361,13 +366,15 @@ std::optional<glm::ivec3> getImageVoxelCoordsAtCrosshairs(const AppData& appData
     return std::nullopt;
   }
 
-  const glm::vec4 pixelPos = image->transformations().pixel_T_worldDef() *
-                             glm::vec4{appData.state().worldCrosshairs().worldOrigin(), 1};
+  const glm::vec4 pixelPos =
+    image->transformations().pixel_T_worldDef() * glm::vec4{appData.state().worldCrosshairs().worldOrigin(), 1};
 
   const glm::ivec3 roundedPixelPos = glm::ivec3{glm::round(pixelPos / pixelPos.w)};
 
-  if (glm::any(glm::lessThan(roundedPixelPos, glm::ivec3{0, 0, 0})) ||
-      glm::any(glm::greaterThanEqual(roundedPixelPos, glm::ivec3{image->header().pixelDimensions()}))) {
+  if (
+    glm::any(glm::lessThan(roundedPixelPos, glm::ivec3{0, 0, 0})) ||
+    glm::any(glm::greaterThanEqual(roundedPixelPos, glm::ivec3{image->header().pixelDimensions()})))
+  {
     return std::nullopt;
   }
 
@@ -383,23 +390,25 @@ std::optional<glm::vec3> getImageVoxelCoordsContinuousAtCrosshairs(const AppData
     return std::nullopt;
   }
 
-  const glm::vec4 pixelPos = image->transformations().pixel_T_worldDef() *
-                             glm::vec4{appData.state().worldCrosshairs().worldOrigin(), 1};
+  const glm::vec4 pixelPos =
+    image->transformations().pixel_T_worldDef() * glm::vec4{appData.state().worldCrosshairs().worldOrigin(), 1};
 
   const glm::vec3 pixelPosXYZ = pixelPos / pixelPos.w;
 
   const glm::vec3 HALF_VOXEL{0.5f};
 
-  if (glm::any( glm::lessThan(pixelPosXYZ, -HALF_VOXEL)) ||
-      glm::any( glm::greaterThanEqual(pixelPosXYZ, glm::vec3{image->header().pixelDimensions()} - HALF_VOXEL))) {
+  if (
+    glm::any(glm::lessThan(pixelPosXYZ, -HALF_VOXEL)) ||
+    glm::any(glm::greaterThanEqual(pixelPosXYZ, glm::vec3{image->header().pixelDimensions()} - HALF_VOXEL)))
+  {
     return std::nullopt;
   }
 
   return pixelPosXYZ;
 }
 
-std::optional<glm::ivec3> getSegVoxelCoordsAtCrosshairs(
-  const AppData& appData, const uuids::uuid& segUid, const uuids::uuid& matchingImgUid)
+std::optional<glm::ivec3>
+getSegVoxelCoordsAtCrosshairs(const AppData& appData, const uuids::uuid& segUid, const uuids::uuid& matchingImgUid)
 {
   const Image* seg = appData.seg(segUid);
   if (!seg) {
@@ -420,8 +429,10 @@ std::optional<glm::ivec3> getSegVoxelCoordsAtCrosshairs(
   const glm::vec4 pixelPos = segPixel_T_worldDef * glm::vec4{appData.state().worldCrosshairs().worldOrigin(), 1};
   const glm::ivec3 roundedPixelPos = glm::ivec3{glm::round(pixelPos / pixelPos.w)};
 
-  if (glm::any(glm::lessThan(roundedPixelPos, glm::ivec3{0, 0, 0})) ||
-      glm::any(glm::greaterThanEqual( roundedPixelPos, glm::ivec3{ seg->header().pixelDimensions()}))) {
+  if (
+    glm::any(glm::lessThan(roundedPixelPos, glm::ivec3{0, 0, 0})) ||
+    glm::any(glm::greaterThanEqual(roundedPixelPos, glm::ivec3{seg->header().pixelDimensions()})))
+  {
     return std::nullopt;
   }
 
@@ -429,16 +440,17 @@ std::optional<glm::ivec3> getSegVoxelCoordsAtCrosshairs(
 }
 
 std::vector<uuids::uuid> findAnnotationsForImage(
-  const AppData& appData, const uuids::uuid& imageUid,
-  const glm::vec4& querySubjectPlaneEquation, float planeDistanceThresh)
+  const AppData& appData,
+  const uuids::uuid& imageUid,
+  const glm::vec4& querySubjectPlaneEquation,
+  float planeDistanceThresh)
 {
   // Angle threshold (in degrees) for checking whether two vectors are parallel
   constexpr float sk_parallelThreshold_degrees = 0.1f;
 
   std::vector<uuids::uuid> annotUids;
 
-  for (const auto& annotUid : appData.annotationsForImage(imageUid))
-  {
+  for (const auto& annotUid : appData.annotationsForImage(imageUid)) {
     const Annotation* annot = appData.annotation(annotUid);
     if (!annot) {
       continue;
@@ -485,8 +497,7 @@ std::string getAnnotationSubjectPlaneName(const Annotation& annotation)
   static const std::unordered_map<Directions::Anatomy, std::string> directionToName{
     {Directions::Anatomy::Left, "sagittal"},
     {Directions::Anatomy::Posterior, "coronal"},
-    {Directions::Anatomy::Superior, "axial"}
-  };
+    {Directions::Anatomy::Superior, "axial"}};
 
   const std::string oblique("oblique");
   constexpr float parallelThreshold_degrees = 0.1f;
@@ -512,30 +523,29 @@ std::optional<uuids::uuid> getSelectedAnnotation(const AppData& appData)
 }
 
 glm::vec3 snapWorldPointToImageVoxels(
-  const AppData& appData, const glm::vec3& worldPos, const std::optional<CrosshairsSnapping>& force)
+  const AppData& appData,
+  const glm::vec3& worldPos,
+  const std::optional<CrosshairsSnapping>& force)
 {
   const CrosshairsSnapping snapping = force ? *force : appData.renderData().m_snapCrosshairs;
 
-  switch (snapping)
-  {
-  case CrosshairsSnapping::ReferenceImage:
-  {
-    if (const Image* refImg = appData.refImage()) {
-      return glm::vec4{data::roundPointToNearestImageVoxelCenter(*refImg, worldPos), 1.0f};
+  switch (snapping) {
+    case CrosshairsSnapping::ReferenceImage: {
+      if (const Image* refImg = appData.refImage()) {
+        return glm::vec4{data::roundPointToNearestImageVoxelCenter(*refImg, worldPos), 1.0f};
+      }
+      break;
     }
-    break;
-  }
-  case CrosshairsSnapping::ActiveImage:
-  {
-    if (const Image* activeImg = appData.activeImage()) {
-      return glm::vec4{data::roundPointToNearestImageVoxelCenter(*activeImg, worldPos), 1.0f};
+    case CrosshairsSnapping::ActiveImage: {
+      if (const Image* activeImg = appData.activeImage()) {
+        return glm::vec4{data::roundPointToNearestImageVoxelCenter(*activeImg, worldPos), 1.0f};
+      }
+      break;
     }
-    break;
-  }
-  default:
-  case CrosshairsSnapping::Disabled: {
-    return worldPos;
-  }
+    default:
+    case CrosshairsSnapping::Disabled: {
+      return worldPos;
+    }
   }
 
   return worldPos;

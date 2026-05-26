@@ -28,22 +28,17 @@ std::unique_ptr<ImageGpuRecord> createImageGpuRecord(
   const uint32_t componentIndex,
   const tex::MinificationFilter& minFilter,
   const tex::MagnificationFilter& magFilter,
-  bool useNormalizedIntegers
-);
+  bool useNormalizedIntegers);
 
 std::unique_ptr<MeshGpuRecord> createSliceMeshGpuRecord(
-  const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::DynamicDraw
-);
+  const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::DynamicDraw);
 
 std::unique_ptr<MeshGpuRecord> createBoxMeshGpuRecord(
-  const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::StreamDraw
-);
+  const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::StreamDraw);
 
 std::unique_ptr<MeshGpuRecord> createSphereMeshGpuRecord();
 
-std::unique_ptr<MeshGpuRecord> createCylinderMeshGpuRecord(
-  const glm::dvec3& center, double radius, double height
-);
+std::unique_ptr<MeshGpuRecord> createCylinderMeshGpuRecord(const glm::dvec3& center, double radius, double height);
 
 std::unique_ptr<MeshGpuRecord> createCrosshairMeshGpuRecord(double coneToCylinderRatio);
 
@@ -51,19 +46,16 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecord(
   std::size_t vertexCount,
   std::size_t indexCount,
   const PrimitiveMode& primitiveMode,
-  const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::DynamicDraw
-);
+  const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::DynamicDraw);
 
 std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
   vtkSmartPointer<vtkPolyData> polyData,
   const MeshPrimitiveType& primitiveType,
-  const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::StreamDraw
-);
+  const BufferUsagePattern& bufferUsagePattern = BufferUsagePattern::StreamDraw);
 
 std::unique_ptr<SlideGpuRecord> createSlideGpuRecord(const slideio::SlideCpuRecord*);
 
-std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const PlanarPolygon& polygon
-);
+std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const PlanarPolygon& polygon);
 
 std::unique_ptr<GLTexture> createImageColorMapTexture(const ImageColorMap*);
 

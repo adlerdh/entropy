@@ -25,8 +25,7 @@ int main(int argc, char* argv[])
     return EXIT_FAILURE;
   }
 
-  try
-  {
+  try {
     spdlog::debug("------------------- Being session -------------------");
     EntropyApp::logPreamble();
 
@@ -53,22 +52,19 @@ int main(int argc, char* argv[])
     app.init();
     app.run();
   }
-  catch (const std::runtime_error& e)
-  {
+  catch (const std::runtime_error& e) {
     spdlog::critical("Runtime error: {}", e.what());
     /// @todo use https://en.cppreference.com/w/cpp/utility/basic_stacktrace
     logFailure();
     return EXIT_FAILURE;
   }
-  catch (const std::exception& e)
-  {
+  catch (const std::exception& e) {
     spdlog::critical("Exception: {}", e.what());
     /// @todo use https://en.cppreference.com/w/cpp/utility/basic_stacktrace
     logFailure();
     return EXIT_FAILURE;
   }
-  catch (...)
-  {
+  catch (...) {
     spdlog::critical("Unknown exception");
     /// @todo use https://en.cppreference.com/w/cpp/utility/basic_stacktrace
     logFailure();

@@ -23,15 +23,16 @@ ImageSettings::ImageSettings(
   , m_componentType(std::move(componentType))
   , m_componentSettings(numComponents)
 {
-  if (0 == m_numPixels)
-  {
+  if (0 == m_numPixels) {
     spdlog::error("Zero pixels is invalid when constructing settings for image {}", displayName);
     throw_debug("Invalid number of pixels provided to construct settings for image")
   }
 
   if (componentStats.size() != m_numComponents) {
-    spdlog::error("Invalid number of components ({}) provided to construct settings for image {}",
-                  numComponents, displayName);
+    spdlog::error(
+      "Invalid number of components ({}) provided to construct settings for image {}",
+      numComponents,
+      displayName);
     throw_debug("Invalid number of components provided to construct settings for image")
   }
 
@@ -196,8 +197,9 @@ std::pair<double, double> ImageSettings::minMaxWindowCenterRange() const
 
 std::pair<double, double> ImageSettings::minMaxWindowRange(uint32_t i) const
 {
-  return {minMaxWindowCenterRange(i).first - 0.5 * minMaxWindowWidthRange(i).second,
-          minMaxWindowCenterRange(i).second + 0.5 * minMaxWindowWidthRange(i).second};
+  return {
+    minMaxWindowCenterRange(i).first - 0.5 * minMaxWindowWidthRange(i).second,
+    minMaxWindowCenterRange(i).second + 0.5 * minMaxWindowWidthRange(i).second};
 }
 
 std::pair<double, double> ImageSettings::minMaxWindowRange() const
@@ -370,16 +372,14 @@ void ImageSettings::setWindowCenter(double center)
 void ImageSettings::setThresholdLow(uint32_t i, double tLow)
 {
   if (tLow <= m_componentSettings[i].m_thresholds.second) {
-    m_componentSettings[i].m_thresholds.first =
-      std::max(tLow, m_componentSettings[i].m_minMaxThresholdRange.first);
+    m_componentSettings[i].m_thresholds.first = std::max(tLow, m_componentSettings[i].m_minMaxThresholdRange.first);
   }
 }
 
 void ImageSettings::setThresholdHigh(uint32_t i, double tHigh)
 {
   if (m_componentSettings[i].m_thresholds.first <= tHigh) {
-    m_componentSettings[i].m_thresholds.second =
-      std::min(tHigh, m_componentSettings[i].m_minMaxThresholdRange.second);
+    m_componentSettings[i].m_thresholds.second = std::min(tHigh, m_componentSettings[i].m_minMaxThresholdRange.second);
   }
 }
 
@@ -406,8 +406,8 @@ std::pair<double, double> ImageSettings::thresholds() const
 bool ImageSettings::thresholdsActive(uint32_t i) const
 {
   const auto& S = m_componentSettings[i];
-  return (S.m_minMaxThresholdRange.first < S.m_thresholds.first ||
-          S.m_thresholds.second < S.m_minMaxThresholdRange.second);
+  return (
+    S.m_minMaxThresholdRange.first < S.m_thresholds.first || S.m_thresholds.second < S.m_minMaxThresholdRange.second);
 }
 
 bool ImageSettings::thresholdsActive() const
@@ -908,40 +908,38 @@ float ImageSettings::slope_native_T_texture() const
   // 1.0 maps to 255
   // i.e. NATIVE = M * TEXTURE, where M = 255
 
-  switch (m_componentType)
-  {
-  case ComponentType::Int8: {
-    return static_cast<float>(std::numeric_limits<int8_t>::max());
-  }
-  case ComponentType::Int16: {
-    return static_cast<float>(std::numeric_limits<int16_t>::max());
-  }
-  case ComponentType::Int32: {
-    return static_cast<float>(std::numeric_limits<int32_t>::max());
-  }
-  case ComponentType::UInt8: {
-    return static_cast<float>(std::numeric_limits<uint8_t>::max());
-  }
-  case ComponentType::UInt16: {
-    return static_cast<float>(std::numeric_limits<uint16_t>::max());
-  }
-  case ComponentType::UInt32: {
-    return static_cast<float>(std::numeric_limits<uint32_t>::max());
-  }
-  case ComponentType::Float32: {
-    return 1.0f;
-  }
-  default: {
-    spdlog::error("Invalid component type {}", componentTypeString(m_componentType));
-    return 1.0f;
-  }
+  switch (m_componentType) {
+    case ComponentType::Int8: {
+      return static_cast<float>(std::numeric_limits<int8_t>::max());
+    }
+    case ComponentType::Int16: {
+      return static_cast<float>(std::numeric_limits<int16_t>::max());
+    }
+    case ComponentType::Int32: {
+      return static_cast<float>(std::numeric_limits<int32_t>::max());
+    }
+    case ComponentType::UInt8: {
+      return static_cast<float>(std::numeric_limits<uint8_t>::max());
+    }
+    case ComponentType::UInt16: {
+      return static_cast<float>(std::numeric_limits<uint16_t>::max());
+    }
+    case ComponentType::UInt32: {
+      return static_cast<float>(std::numeric_limits<uint32_t>::max());
+    }
+    case ComponentType::Float32: {
+      return 1.0f;
+    }
+    default: {
+      spdlog::error("Invalid component type {}", componentTypeString(m_componentType));
+      return 1.0f;
+    }
   }
 }
 
 glm::dvec2 ImageSettings::largestSlopeInterceptTextureVec2(uint32_t i) const
 {
-  return {m_componentSettings[i].m_largest_slope_texture,
-          m_componentSettings[i].m_largest_intercept_texture};
+  return {m_componentSettings[i].m_largest_slope_texture, m_componentSettings[i].m_largest_intercept_texture};
 }
 
 glm::dvec2 ImageSettings::largestSlopeInterceptTextureVec2() const
@@ -995,13 +993,17 @@ void ImageSettings::setActiveComponent(uint32_t component)
     m_activeComponent = component;
   }
   else {
-    spdlog::error("Attempting to set invalid active component {} (only {} components total for image {})",
-                  component, m_numComponents, m_displayName);
+    spdlog::error(
+      "Attempting to set invalid active component {} (only {} components total for image {})",
+      component,
+      m_numComponents,
+      m_displayName);
   }
 }
 
 void ImageSettings::updateWithNewComponentStatistics(
-  std::vector<ComponentStats> componentStats, bool setDefaultVisibilitySettings)
+  std::vector<ComponentStats> componentStats,
+  bool setDefaultVisibilitySettings)
 {
   // Default window covers 1st to 99th quantile intensity range of the first pixel component.
   // Recall that the histogram has 1001 bins.
@@ -1010,15 +1012,16 @@ void ImageSettings::updateWithNewComponentStatistics(
   constexpr int qMax = 100; // 100% level
 
   if (componentStats.size() != m_numComponents) {
-    spdlog::error("Component statistics has {} components, where {} are expected",
-                  componentStats.size(), m_numComponents);
+    spdlog::error(
+      "Component statistics has {} components, where {} are expected",
+      componentStats.size(),
+      m_numComponents);
     return;
   }
 
   m_componentStats = std::move(componentStats);
 
-  for (std::size_t i = 0; i < m_numComponents; ++i)
-  {
+  for (std::size_t i = 0; i < m_numComponents; ++i) {
     const auto& stats = m_componentStats[i];
     ComponentSettings& setting = m_componentSettings[i];
 
@@ -1058,33 +1061,33 @@ void ImageSettings::updateWithNewComponentStatistics(
     setting.m_histogramSettings.m_intensityRange[1] = stats.onlineStats.max;
 
     if (0 == m_numPixels) {
-      spdlog::warn("Component {} of image {} has zero pixels, so setting number of histogram bins to one",
-                   i, m_displayName);
+      spdlog::warn(
+        "Component {} of image {} has zero pixels, so setting number of histogram bins to one",
+        i,
+        m_displayName);
       setting.m_histogramSettings.m_numBins = 1;
     }
-    else
-    {
-      std::optional<std::size_t> numBins = computeNumHistogramBins(
-        setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]);
+    else {
+      std::optional<std::size_t> numBins =
+        computeNumHistogramBins(setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]);
 
-      if (!numBins)
-      {
+      if (!numBins) {
         spdlog::warn("Could not compute number of histogram for component {} of image {}", i, m_displayName);
         spdlog::info("Falling back to Sturge's method for computing number of histogram bins");
 
         setting.m_histogramSettings.m_numBinsMethod = NumBinsComputationMethod::Sturges;
-        numBins = computeNumHistogramBins(setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]);
+        numBins =
+          computeNumHistogramBins(setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]);
       }
 
       setting.m_histogramSettings.m_numBins = numBins.value_or(1);
 
       setting.m_histogramSettings.m_binWidth =
         (m_componentStats[i].onlineStats.max - m_componentStats[i].onlineStats.min) /
-                                               setting.m_histogramSettings.m_numBins;
+        setting.m_histogramSettings.m_numBins;
     }
 
-    if (setDefaultVisibilitySettings)
-    {
+    if (setDefaultVisibilitySettings) {
       // Default to max opacity and nearest neighbor interpolation
       setting.m_opacity = 1.0;
       setting.m_visible = true;
@@ -1127,14 +1130,12 @@ bool ImageSettings::usingExactQuantiles() const
 
 void ImageSettings::updateInternals()
 {
-  for (uint32_t i = 0; i < m_componentSettings.size(); ++i)
-  {
+  for (uint32_t i = 0; i < m_componentSettings.size(); ++i) {
     auto& S = m_componentSettings[i];
 
     const double imageRange = S.m_minMaxImageRange.second - S.m_minMaxImageRange.first;
 
-    if (imageRange <= 0.0 || windowWidth(i) <= 0.0)
-    {
+    if (imageRange <= 0.0 || windowWidth(i) <= 0.0) {
       // Resort to default slope/intercept and normalized threshold values
       // if either the image range or the window width are not positive:
 
@@ -1154,71 +1155,69 @@ void ImageSettings::updateInternals()
     S.m_intercept_native = 0.5 - windowCenter(i) / windowWidth(i);
 
     /**
-      * @note In OpenGL, UNSIGNED normalized floats are computed as
-         * float = int / MAX, where MAX = 2^B - 1 = 255
-         *
-         * SIGNED normalized floats are computed as either
-         * float = max(int / MAX, -1) where MAX = 2^(B-1) - 1 = 127
-         * (this is the method used most commonly in OpenGL 4.2 and above)
-         *
-         * or alternatively as (depending on implementation)
-         * float = (2*int + 1) / (2^B - 1) = (2*int + 1) / 255
-         *
-         * @see https://www.khronos.org/opengl/wiki/Normalized_Integer
-         */
+     * @note In OpenGL, UNSIGNED normalized floats are computed as
+     * float = int / MAX, where MAX = 2^B - 1 = 255
+     *
+     * SIGNED normalized floats are computed as either
+     * float = max(int / MAX, -1) where MAX = 2^(B-1) - 1 = 127
+     * (this is the method used most commonly in OpenGL 4.2 and above)
+     *
+     * or alternatively as (depending on implementation)
+     * float = (2*int + 1) / (2^B - 1) = (2*int + 1) / 255
+     *
+     * @see https://www.khronos.org/opengl/wiki/Normalized_Integer
+     */
 
     double M = 0.0;
 
-    switch (m_componentType)
-    {
-    case ComponentType::Int8:
-    case ComponentType::UInt8: {
-      M = static_cast<double>(std::numeric_limits<uint8_t>::max());
-      break;
-    }
-    case ComponentType::Int16:
-    case ComponentType::UInt16: {
-      M = static_cast<double>(std::numeric_limits<uint16_t>::max());
-      break;
-    }
-    case ComponentType::Int32:
-    case ComponentType::UInt32: {
-      M = static_cast<double>(std::numeric_limits<uint32_t>::max());
-      break;
-    }
-    case ComponentType::Float32: {
-      M = 0.0;
-      break;
-    }
-    default: {
-      break;
-    }
+    switch (m_componentType) {
+      case ComponentType::Int8:
+      case ComponentType::UInt8: {
+        M = static_cast<double>(std::numeric_limits<uint8_t>::max());
+        break;
+      }
+      case ComponentType::Int16:
+      case ComponentType::UInt16: {
+        M = static_cast<double>(std::numeric_limits<uint16_t>::max());
+        break;
+      }
+      case ComponentType::Int32:
+      case ComponentType::UInt32: {
+        M = static_cast<double>(std::numeric_limits<uint32_t>::max());
+        break;
+      }
+      case ComponentType::Float32: {
+        M = 0.0;
+        break;
+      }
+      default: {
+        break;
+      }
     }
 
-    switch (m_componentType)
-    {
-    case ComponentType::Int8:
-    case ComponentType::Int16:
-    case ComponentType::Int32: {
-      /// @todo This mapping may be slightly wrong for the signed integer case
-      S.m_slope_texture = 0.5 * M / imageRange;
-      S.m_intercept_texture = -(S.m_minMaxImageRange.first + 0.5) / imageRange;
-      break;
-    }
-    case ComponentType::UInt8:
-    case ComponentType::UInt16:
-    case ComponentType::UInt32: {
-      S.m_slope_texture = M / imageRange;
-      S.m_intercept_texture = -S.m_minMaxImageRange.first / imageRange;
-      break;
-    }
-    case ComponentType::Float32: {
-      S.m_slope_texture = 1.0 / imageRange;
-      S.m_intercept_texture = -S.m_minMaxImageRange.first / imageRange;
-      break;
-    }
-    default:
-      break;
+    switch (m_componentType) {
+      case ComponentType::Int8:
+      case ComponentType::Int16:
+      case ComponentType::Int32: {
+        /// @todo This mapping may be slightly wrong for the signed integer case
+        S.m_slope_texture = 0.5 * M / imageRange;
+        S.m_intercept_texture = -(S.m_minMaxImageRange.first + 0.5) / imageRange;
+        break;
+      }
+      case ComponentType::UInt8:
+      case ComponentType::UInt16:
+      case ComponentType::UInt32: {
+        S.m_slope_texture = M / imageRange;
+        S.m_intercept_texture = -S.m_minMaxImageRange.first / imageRange;
+        break;
+      }
+      case ComponentType::Float32: {
+        S.m_slope_texture = 1.0 / imageRange;
+        S.m_intercept_texture = -S.m_minMaxImageRange.first / imageRange;
+        break;
+      }
+      default:
+        break;
     }
 
     const double a = 1.0 / imageRange;
@@ -1256,40 +1255,39 @@ double ImageSettings::mapNativeIntensityToTexture(double nativeImageValue) const
   // 0 maps to 0
   // 255 maps to 1.0
 
-  switch (m_componentType)
-  {
-  case ComponentType::Int8: {
-    constexpr double M = static_cast<double>(std::numeric_limits<int8_t>::max());
-    return std::max(nativeImageValue / M, -1.0);
-  }
-  case ComponentType::Int16: {
-    constexpr double M = static_cast<double>(std::numeric_limits<int16_t>::max());
-    return std::max(nativeImageValue / M, -1.0);
-    // return (2.0 * nativeImageValue + 1.0) / 65535.0;
-  }
-  case ComponentType::Int32: {
-    constexpr double M = static_cast<double>(std::numeric_limits<int32_t>::max());
-    return std::max(nativeImageValue / M, -1.0);
-  }
-  case ComponentType::UInt8: {
-    constexpr double M = static_cast<double>(std::numeric_limits<uint8_t>::max());
-    return nativeImageValue / M;
-  }
-  case ComponentType::UInt16: {
-    constexpr double M = static_cast<double>(std::numeric_limits<uint16_t>::max());
-    return nativeImageValue / M;
-  }
-  case ComponentType::UInt32: {
-    constexpr double M = static_cast<double>(std::numeric_limits<uint32_t>::max());
-    return nativeImageValue / M;
-  }
-  case ComponentType::Float32: {
-    return nativeImageValue;
-  }
-  default: {
-    spdlog::error("Invalid component type {}", componentTypeString(m_componentType));
-    return nativeImageValue;
-  }
+  switch (m_componentType) {
+    case ComponentType::Int8: {
+      constexpr double M = static_cast<double>(std::numeric_limits<int8_t>::max());
+      return std::max(nativeImageValue / M, -1.0);
+    }
+    case ComponentType::Int16: {
+      constexpr double M = static_cast<double>(std::numeric_limits<int16_t>::max());
+      return std::max(nativeImageValue / M, -1.0);
+      // return (2.0 * nativeImageValue + 1.0) / 65535.0;
+    }
+    case ComponentType::Int32: {
+      constexpr double M = static_cast<double>(std::numeric_limits<int32_t>::max());
+      return std::max(nativeImageValue / M, -1.0);
+    }
+    case ComponentType::UInt8: {
+      constexpr double M = static_cast<double>(std::numeric_limits<uint8_t>::max());
+      return nativeImageValue / M;
+    }
+    case ComponentType::UInt16: {
+      constexpr double M = static_cast<double>(std::numeric_limits<uint16_t>::max());
+      return nativeImageValue / M;
+    }
+    case ComponentType::UInt32: {
+      constexpr double M = static_cast<double>(std::numeric_limits<uint32_t>::max());
+      return nativeImageValue / M;
+    }
+    case ComponentType::Float32: {
+      return nativeImageValue;
+    }
+    default: {
+      spdlog::error("Invalid component type {}", componentTypeString(m_componentType));
+      return nativeImageValue;
+    }
   }
 }
 
@@ -1297,21 +1295,18 @@ std::ostream& operator<<(std::ostream& os, const ImageSettings& settings)
 {
   os << "Display name: " << settings.m_displayName;
 
-  for (std::size_t i = 0; i < settings.m_componentStats.size(); ++i)
-  {
+  for (std::size_t i = 0; i < settings.m_componentStats.size(); ++i) {
     const auto& s = settings.m_componentSettings[i];
     const auto& t = settings.m_componentStats[i];
 
-    os << "\nStatistics (component " << i << "):"
-       << "\n\tMin: " << t.onlineStats.min << "\n\tQ01: " << t.quantiles[1]
-       << "\n\tQ25: " << t.quantiles[25] << "\n\tMed: " << t.quantiles[50]
-       << "\n\tQ75: " << t.quantiles[75] << "\n\tQ99: " << t.quantiles[99]
-       << "\n\tMax: " << t.onlineStats.max << "\n\tAvg: "
-       << t.onlineStats.mean << "\n\tStd: " << t.onlineStats.stdev;
+    os << "\nStatistics (component " << i << "):" << "\n\tMin: " << t.onlineStats.min << "\n\tQ01: " << t.quantiles[1]
+       << "\n\tQ25: " << t.quantiles[25] << "\n\tMed: " << t.quantiles[50] << "\n\tQ75: " << t.quantiles[75]
+       << "\n\tQ99: " << t.quantiles[99] << "\n\tMax: " << t.onlineStats.max << "\n\tAvg: " << t.onlineStats.mean
+       << "\n\tStd: " << t.onlineStats.stdev;
 
     os << "\n\n\tWindow: [" << s.m_windowCenter - 0.5 * s.m_windowWidth << ", "
-       << s.m_windowCenter + 0.5 * s.m_windowWidth << "]"
-       << "\n\tThreshold: [" << s.m_thresholds.first << ", " << s.m_thresholds.second << "]";
+       << s.m_windowCenter + 0.5 * s.m_windowWidth << "]" << "\n\tThreshold: [" << s.m_thresholds.first << ", "
+       << s.m_thresholds.second << "]";
   }
 
   return os;

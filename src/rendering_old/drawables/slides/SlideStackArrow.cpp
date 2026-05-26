@@ -31,8 +31,7 @@ SlideStackArrow::SlideStackArrow(
   std::weak_ptr<MeshGpuRecord> coneMeshGpuRecord,
   std::weak_ptr<MeshGpuRecord> cylinderMeshGpuRecord,
   std::weak_ptr<MeshGpuRecord> sphereMeshGpuRecord,
-  bool isFixedRadius
-)
+  bool isFixedRadius)
   : DrawableBase(std::move(name), DrawableType::SlideStackArrow)
   ,
 
@@ -46,19 +45,18 @@ SlideStackArrow::SlideStackArrow(
   , m_sphereTx(std::make_shared<Transformation>("stackArrowSphereTx", glm::mat4{1.0f}))
   ,
 
-  m_cone(std::make_shared<BasicMesh>(
-    "stackArrowConeMesh", shaderProgramActivator, uniformsProvider, coneMeshGpuRecord
-  ))
+  m_cone(std::make_shared<BasicMesh>("stackArrowConeMesh", shaderProgramActivator, uniformsProvider, coneMeshGpuRecord))
   ,
 
   m_cylinder(std::make_shared<BasicMesh>(
-    "stackArrowCylinderMesh", shaderProgramActivator, uniformsProvider, cylinderMeshGpuRecord
-  ))
+    "stackArrowCylinderMesh",
+    shaderProgramActivator,
+    uniformsProvider,
+    cylinderMeshGpuRecord))
   ,
 
-  m_sphere(std::make_shared<BasicMesh>(
-    "stackArrowSphereMesh", shaderProgramActivator, uniformsProvider, sphereMeshGpuRecord
-  ))
+  m_sphere(
+    std::make_shared<BasicMesh>("stackArrowSphereMesh", shaderProgramActivator, uniformsProvider, sphereMeshGpuRecord))
 {
   setupChildren();
 }
@@ -70,8 +68,7 @@ void SlideStackArrow::setSlideStackHeightProvider(GetterType<float> provider)
 
 void SlideStackArrow::setRadius(float radius)
 {
-  if (0.0f < radius)
-  {
+  if (0.0f < radius) {
     m_cylinderRadius = radius;
   }
 }
@@ -117,21 +114,20 @@ void SlideStackArrow::setupChildren()
   setPickable(false);
 }
 
-void SlideStackArrow::
-  doUpdate(double /*time*/, const Viewport& viewport, const Camera& camera, const CoordinateFrame&)
+void SlideStackArrow::doUpdate(double /*time*/, const Viewport& viewport, const Camera& camera, const CoordinateFrame&)
 {
   static constexpr float sk_defaultCylinderLength(50.0f);
   static constexpr float sk_defaultScaleFactorInPixels(2.0f);
 
-  const float cylinderLength = (m_slideStackHeightProvider) ? (m_slideStackHeightProvider() + 10.0f)
-                                                            : sk_defaultCylinderLength;
+  const float cylinderLength =
+    (m_slideStackHeightProvider) ? (m_slideStackHeightProvider() + 10.0f) : sk_defaultCylinderLength;
 
-  const float xyFactor = (m_isFixedRadius) ? m_cylinderRadius
-                                           : sk_defaultScaleFactorInPixels
-                                               * glm::compMax(worldPixelSize(viewport, camera));
+  const float xyFactor = (m_isFixedRadius)
+                           ? m_cylinderRadius
+                           : sk_defaultScaleFactorInPixels * glm::compMax(worldPixelSize(viewport, camera));
 
-  glm::mat4 coneTx = glm::translate(glm::vec3{0.0f, 0.0f, cylinderLength})
-                     * glm::scale(2.0f * glm::vec3{xyFactor, xyFactor, 2.0f * xyFactor});
+  glm::mat4 coneTx = glm::translate(glm::vec3{0.0f, 0.0f, cylinderLength}) *
+                     glm::scale(2.0f * glm::vec3{xyFactor, xyFactor, 2.0f * xyFactor});
 
   glm::mat4 cylinderTx = glm::scale(glm::vec3{xyFactor, xyFactor, cylinderLength});
 

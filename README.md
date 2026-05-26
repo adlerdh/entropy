@@ -119,6 +119,19 @@ The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](ht
 
 Original attributions and licenses have been preserved and committed for all external sources and resources.
 
+## Formatting
+Install clang-format 18 or newer and pre-commit. This repository uses pre-commit to format staged C and C++ files before each commit. Enable it in a checkout with:
+
+```sh
+pre-commit install
+```
+
+To format all source files manually, run:
+
+```sh
+pre-commit run clang-format --all-files
+```
+
 ## Running
 Entropy is run from the terminal. Images can be specified directly as command line arguments or from a JSON project file.
 - On Linux or macOS: `./${BUILD_DIR}/bin/Entropy`
@@ -207,7 +220,7 @@ Logs are output to the console and to files saved in the `logs` folder. Log leve
 | `w` | Toggle image visibility |
 | `e` | Toggle image edges |
 | `s` | Toggle segmentation visibility |
-| `a` | Reduce segmentation opacity |
+| `a` | Decrease segmentation opacity |
 | `d` | Increase segmentation opacity |
 | `space` | Toggle segmentation outline |
 | `c` | Center views on crosshairs<br>- shift: reset zoom, recenter, and realign crosshairs |

@@ -25,11 +25,8 @@ namespace data
  *
  * @return If generation successful, return the image UID. Otherwise, return std::nullopt.
  */
-std::optional<UID> loadImage(
-  DataManager& dataManager,
-  const std::string& filename,
-  const std::optional<std::string>& dicomSeriesUid
-);
+std::optional<UID>
+loadImage(DataManager& dataManager, const std::string& filename, const std::optional<std::string>& dicomSeriesUid);
 
 /**
  * @brief Attempt to load a parcellation from disk into the DataManager instance.
@@ -47,8 +44,7 @@ std::optional<UID> loadImage(
 std::optional<UID> loadParcellation(
   DataManager& dataManager,
   const std::string& filename,
-  const std::optional<std::string>& dicomSeriesUid
-);
+  const std::optional<std::string>& dicomSeriesUid);
 
 /**
  * @brief Load a slide image from disk and return its assigned UID if successful.
@@ -61,9 +57,7 @@ std::optional<UID> loadParcellation(
  * @return If generation successful, return the slide UID.
  * Otherwise, return std::nullopt.
  */
-std::optional<UID> loadSlide(
-  DataManager& dataManager, const std::string& filename, bool translateToTopOfStack
-);
+std::optional<UID> loadSlide(DataManager& dataManager, const std::string& filename, bool translateToTopOfStack);
 
 /**
  * @brief Get the UID of the active parcellation. If there is no active parcellation,
@@ -88,9 +82,7 @@ std::optional<UID> getActiveParcellation(DataManager& dataManager, const UID& im
  *
  * @return If generation successful, return the mesh UID. Otherwise, return std::nullopt.
  */
-std::optional<UID> generateIsoSurfaceMesh(
-  DataManager& dataManager, const UID& imageUid, double isoValue
-);
+std::optional<UID> generateIsoSurfaceMesh(DataManager& dataManager, const UID& imageUid, double isoValue);
 
 /**
  * @brief Generate surface meshes from a set of given label indices in a parcellation.
@@ -103,9 +95,8 @@ std::optional<UID> generateIsoSurfaceMesh(
  *
  * @return Vector of UIDs of generated meshes
  */
-std::vector<UID> generateLabelMeshes(
-  DataManager& dataManager, const UID& parcelUid, const std::set<uint32_t>& labelsIndices
-);
+std::vector<UID>
+generateLabelMeshes(DataManager& dataManager, const UID& parcelUid, const std::set<uint32_t>& labelsIndices);
 
 /**
  * @brief Generate surface meshes from all label indices in a parcellation.
