@@ -49,6 +49,9 @@ public:
 
   /// Asynchronously load images and notify render loop when done
   void loadImagesFromParams(const InputParams&);
+  void loadImageFile(const fs::path& fileName);
+  void loadProjectFile(const fs::path& fileName);
+  void closeProject();
 
   /**
    * @brief Load a serialized image from disk
@@ -110,6 +113,7 @@ private:
 
   /// Function called when images have been loaded from disk
   void onImagesReady();
+  void loadProject(serialize::EntropyProject project);
 
   /// Load an image from disk.
   /// @return Uid and flag if loaded.

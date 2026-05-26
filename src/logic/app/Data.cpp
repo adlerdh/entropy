@@ -84,6 +84,45 @@ void AppData::setProject(serialize::EntropyProject project)
   m_project = std::move(project);
 }
 
+void AppData::clearProjectData()
+{
+  std::lock_guard<std::mutex> lock(m_componentDataMutex);
+
+  m_project = {};
+
+  m_images.clear();
+  m_imageUidsOrdered.clear();
+  m_segs.clear();
+  m_segUidsOrdered.clear();
+  m_defs.clear();
+  m_defUidsOrdered.clear();
+
+  m_labelTables.clear();
+  m_labelTablesUidsOrdered.clear();
+  m_landmarkGroups.clear();
+  m_landmarkGroupUidsOrdered.clear();
+  m_annotations.clear();
+
+  m_refImageUid = std::nullopt;
+  m_activeImageUid = std::nullopt;
+
+  m_imageToSegs.clear();
+  m_imageToActiveSeg.clear();
+  m_imageToDefs.clear();
+  m_imageToActiveDef.clear();
+  m_imageToLandmarkGroups.clear();
+  m_imageToActiveLandmarkGroup.clear();
+  m_imageToAnnotations.clear();
+  m_imageToActiveAnnotation.clear();
+  m_imageToComponentData.clear();
+  m_imagesBeingSegmented.clear();
+  m_savedViewWorldCenterPositions.clear();
+
+  m_windowData.clearLayouts();
+  m_state.setAnimating(false);
+  m_state.setProjectLoadState(ProjectLoadState::Empty);
+}
+
 const serialize::EntropyProject& AppData::project() const
 {
   return m_project;

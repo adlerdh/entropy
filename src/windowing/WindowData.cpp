@@ -546,6 +546,16 @@ void WindowData::removeLayout(std::size_t index)
   }
 
   m_layouts.erase(std::begin(m_layouts) + static_cast<long>(index));
+  if (m_currentLayout >= m_layouts.size()) {
+    m_currentLayout = 0;
+  }
+}
+
+void WindowData::clearLayouts()
+{
+  m_layouts.clear();
+  m_currentLayout = 0;
+  m_activeViewUid = std::nullopt;
 }
 
 void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t orderedImageUids)

@@ -114,6 +114,7 @@ public:
 
   /// Remove a layout
   void removeLayout(std::size_t index);
+  void clearLayouts();
 
   /// Get the window viewport
   const Viewport& viewport() const;

@@ -121,6 +121,9 @@ ImGuiWrapper::~ImGuiWrapper()
 void ImGuiWrapper::setCallbacks(
   std::function<void(void)> postEmptyGlfwEvent,
   std::function<void(void)> readjustViewport,
+  std::function<void(const fs::path& fileName)> openImageFile,
+  std::function<void(const fs::path& fileName)> openProjectFile,
+  std::function<void()> closeProject,
   std::function<void(const uuids::uuid& viewUid)> recenterView,
   AllViewsRecenterType recenterCurrentViews,
   std::function<bool(void)> getOverlayVisibility,
@@ -153,6 +156,9 @@ void ImGuiWrapper::setCallbacks(
 {
   m_postEmptyGlfwEvent = postEmptyGlfwEvent;
   m_readjustViewport = readjustViewport;
+  m_openImageFile = openImageFile;
+  m_openProjectFile = openProjectFile;
+  m_closeProject = closeProject;
   m_recenterView = recenterView;
   m_recenterAllViews = recenterCurrentViews;
   m_getOverlayVisibility = getOverlayVisibility;
@@ -713,7 +719,14 @@ void ImGuiWrapper::render()
       ImPlot::ShowDemoWindow(&m_appData.guiData().m_showImPlotDemoWindow);
     }
 
-    renderMainMenuBar(m_appData.guiData());
+    renderMainMenuBar(
+      m_appData.guiData(),
+      MainMenuBarCallbacks{
+        .openImageFile = m_openImageFile,
+        .openProjectFile = m_openProjectFile,
+        .closeProject = m_closeProject,
+        .canOpenProject = ProjectLoadState::Loading != m_appData.state().projectLoadState(),
+        .canCloseProject = ProjectLoadState::Empty != m_appData.state().projectLoadState()});
 
     if (m_appData.guiData().m_showIsosurfacesWindow) {
       renderIsosurfacesWindow(

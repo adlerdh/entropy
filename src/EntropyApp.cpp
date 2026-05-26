@@ -85,7 +85,9 @@ EntropyApp::EntropyApp()
 
 EntropyApp::~EntropyApp()
 {
-  m_futureLoadProject.wait();
+  if (m_futureLoadProject.valid()) {
+    m_futureLoadProject.wait();
+  }
 
   //    if ( m_IPCHandler.IsAttached() )
   //    {
@@ -951,13 +953,69 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   return true;
 }
 
+void EntropyApp::loadImageFile(const fs::path& fileName)
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = fileName;
+
+  closeProject();
+  loadProject(std::move(project));
+}
+
+void EntropyApp::loadProjectFile(const fs::path& fileName)
+{
+  serialize::EntropyProject project;
+
+  if (!serialize::open(project, fileName)) {
+    spdlog::error("Could not open project file {}", fileName);
+    m_data.state().setProjectLoadState(ProjectLoadState::Failed);
+    m_glfw.postEmptyEvent();
+    return;
+  }
+
+  closeProject();
+  loadProject(std::move(project));
+}
+
+void EntropyApp::closeProject()
+{
+  m_imageLoadCancelled = true;
+
+  if (m_futureLoadProject.valid()) {
+    m_futureLoadProject.wait();
+    m_futureLoadProject = {};
+  }
+
+  m_imageLoadCancelled = false;
+  m_imagesReady = false;
+  m_imageLoadFailed = false;
+
+  auto& renderData = m_data.renderData();
+  renderData.m_imageTextures.clear();
+  renderData.m_distanceMapTextures.clear();
+  renderData.m_segTextures.clear();
+  renderData.m_labelBufferTextures.clear();
+  renderData.m_colormapTextures.clear();
+  renderData.m_uniforms.clear();
+
+  m_data.clearProjectData();
+  m_glfw.setWindowTitleStatus("");
+  m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+  m_glfw.postEmptyEvent();
+}
+
 void EntropyApp::loadImagesFromParams(const InputParams& params)
+{
+  loadProject(serialize::createProjectFromInputParams(params));
+}
+
+void EntropyApp::loadProject(serialize::EntropyProject project)
 {
   spdlog::debug("Begin loading images from parameters");
 
   // The image loader function is called from a new thread
   auto projectLoader = [this](
-                         const serialize::EntropyProject& project,
+                         const serialize::EntropyProject& projectToLoad,
                          const std::function<void(bool projectLoadedSuccessfully)>& onProjectLoadingDone) {
     static constexpr size_t defaultReferenceImageIndex = 0;
     static constexpr size_t defaultActiveImageIndex = 1;
@@ -971,24 +1029,28 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
     if (m_imageLoadCancelled) {
       onProjectLoadingDone(false);
+      return;
     }
 
-    if (!loadSerializedImage(project.m_referenceImage, true)) {
-      spdlog::critical("Could not load reference image from {}", project.m_referenceImage.m_imageFileName);
+    if (!loadSerializedImage(projectToLoad.m_referenceImage, true)) {
+      spdlog::critical("Could not load reference image from {}", projectToLoad.m_referenceImage.m_imageFileName);
       onProjectLoadingDone(false);
+      return;
     }
 
     if (m_imageLoadCancelled) {
       onProjectLoadingDone(false);
+      return;
     }
 
-    for (const auto& additionalImage : project.m_additionalImages) {
+    for (const auto& additionalImage : projectToLoad.m_additionalImages) {
       if (!loadSerializedImage(additionalImage, false)) {
         spdlog::error("Could not load additional image from {}; skipping it", additionalImage.m_imageFileName);
       }
 
       if (m_imageLoadCancelled) {
         onProjectLoadingDone(false);
+        return;
       }
     }
 
@@ -998,8 +1060,9 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
       spdlog::info("Set {} as the reference image", *refImageUid);
     }
     else {
-      spdlog::critical("Unable to set {} as the reference image", *refImageUid);
+      spdlog::critical("Unable to set reference image");
       onProjectLoadingDone(false);
+      return;
     }
 
     const auto desiredActiveImageUid =
@@ -1041,7 +1104,7 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
   m_glfw.setWindowTitleStatus("Loading project...");
   m_data.state().setProjectLoadState(ProjectLoadState::Loading);
-  m_data.setProject(serialize::createProjectFromInputParams(params));
+  m_data.setProject(std::move(project));
   m_futureLoadProject = std::async(std::launch::async, projectLoader, m_data.project(), onProjectLoadingDone);
   spdlog::debug("Done loading images from parameters");
 }
@@ -1058,6 +1121,9 @@ void EntropyApp::setCallbacks()
   m_imgui.setCallbacks(
     [this]() { m_glfw.postEmptyEvent(); },
     [this]() { resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y); },
+    [this](const fs::path& fileName) { loadImageFile(fileName); },
+    [this](const fs::path& fileName) { loadProjectFile(fileName); },
+    [this]() { closeProject(); },
 
     [this](const uuids::uuid& viewUid) { m_callbackHandler.recenterView(m_data.state().recenteringMode(), viewUid); },
 

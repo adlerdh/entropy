@@ -65,6 +65,7 @@ public:
 
   /// @todo Put into AppState
   void setProject(serialize::EntropyProject project);
+  void clearProjectData();
   const serialize::EntropyProject& project() const;
   serialize::EntropyProject& project();
 

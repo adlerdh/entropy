@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/AsyncTasks.h"
+#include "common/Filesystem.h"
 #include "common/PublicTypes.h"
 #include "common/SegmentationTypes.h"
 
@@ -32,6 +33,9 @@ public:
   void setCallbacks(
     std::function<void(void)> postEmptyGlfwEvent,
     std::function<void(void)> readjustViewport,
+    std::function<void(const fs::path& fileName)> openImageFile,
+    std::function<void(const fs::path& fileName)> openProjectFile,
+    std::function<void()> closeProject,
     std::function<void(const uuids::uuid& viewUid)> recenterView,
     AllViewsRecenterType recenterCurrentViews,
     std::function<bool(void)> getOverlayVisibility,
@@ -75,6 +79,9 @@ private:
   // Callbacks:
   std::function<void(void)> m_postEmptyGlfwEvent = nullptr;
   std::function<void(void)> m_readjustViewport = nullptr;
+  std::function<void(const fs::path& fileName)> m_openImageFile = nullptr;
+  std::function<void(const fs::path& fileName)> m_openProjectFile = nullptr;
+  std::function<void()> m_closeProject = nullptr;
   std::function<void(const uuids::uuid& viewUid)> m_recenterView = nullptr;
   AllViewsRecenterType m_recenterAllViews = nullptr;
   std::function<bool(void)> m_getOverlayVisibility = nullptr;
