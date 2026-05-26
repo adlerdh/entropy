@@ -2,6 +2,7 @@
 
 #include "ui/Helpers.h"
 #include "ui/MainMenuBar.h"
+#include "ui/imgui/imgui-filebrowser/imfilebrowser.h"
 #include "ui/Popups.h"
 #include "ui/Style.h"
 #include "ui/Toolbars.h"
@@ -36,6 +37,68 @@ namespace
 {
 static const glm::quat sk_identityRotation{1.0f, 0.0f, 0.0f, 0.0f};
 static const glm::vec3 sk_zeroVec{0.0f, 0.0f, 0.0f};
+
+void renderEmptyWorkspace(
+  ProjectLoadState projectLoadState,
+  const std::function<void(const fs::path& fileName)>& openImageFile,
+  const std::function<void(const fs::path& fileName)>& openProjectFile)
+{
+  if (ProjectLoadState::Empty != projectLoadState && ProjectLoadState::Failed != projectLoadState) {
+    return;
+  }
+
+  static ImGui::FileBrowser imageDialog(ImGuiFileBrowserFlags_CloseOnEsc);
+  static ImGui::FileBrowser projectDialog(ImGuiFileBrowserFlags_CloseOnEsc);
+
+  imageDialog.SetTitle("Open Image");
+  imageDialog.SetTypeFilters({".nii", ".nii.gz", ".nrrd", ".nhdr", ".mha", ".mhd", ".dcm", ".img", ".hdr"});
+
+  projectDialog.SetTitle("Open Project");
+  projectDialog.SetTypeFilters({".json"});
+
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  const ImVec2 panelSize{360.0f, 150.0f};
+  ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+  ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
+
+  constexpr ImGuiWindowFlags flags =
+    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
+
+  if (ImGui::Begin("EmptyWorkspace", nullptr, flags)) {
+    ImGui::TextUnformatted(
+      ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No project loaded");
+    ImGui::Spacing();
+
+    if (ImGui::Button("Open Image...", ImVec2{160.0f, 0.0f})) {
+      imageDialog.Open();
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Open Project...", ImVec2{160.0f, 0.0f})) {
+      projectDialog.Open();
+    }
+  }
+  ImGui::End();
+
+  imageDialog.Display();
+  if (imageDialog.HasSelected()) {
+    const fs::path selectedFile = imageDialog.GetSelected();
+    imageDialog.ClearSelected();
+    if (openImageFile) {
+      openImageFile(selectedFile);
+    }
+  }
+
+  projectDialog.Display();
+  if (projectDialog.HasSelected()) {
+    const fs::path selectedFile = projectDialog.GetSelected();
+    projectDialog.ClearSelected();
+    if (openProjectFile) {
+      openProjectFile(selectedFile);
+    }
+  }
+}
 
 ImFont* loadFont(
   const std::string& fontPath,
@@ -727,6 +790,8 @@ void ImGuiWrapper::render()
         .closeProject = m_closeProject,
         .canOpenProject = ProjectLoadState::Loading != m_appData.state().projectLoadState(),
         .canCloseProject = ProjectLoadState::Empty != m_appData.state().projectLoadState()});
+
+    renderEmptyWorkspace(m_appData.state().projectLoadState(), m_openImageFile, m_openProjectFile);
 
     if (m_appData.guiData().m_showIsosurfacesWindow) {
       renderIsosurfacesWindow(
