@@ -671,7 +671,9 @@ target_include_directories(${entropy_EXE} PRIVATE
   $<$<BOOL:${ENTROPY_USE_TL_EXPECTED}>:${tl_expected_INCLUDE_DIR}>
 )
 
-# These libraries are in 'system' includes in order to ignore their compiler warnings:
+# Let IDEs index imported package include roots as project code; keep warning-prone vendored headers as system includes below.
+set_target_properties(${entropy_EXE} PROPERTIES NO_SYSTEM_FROM_IMPORTED ON)
+
 target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   "${argparse_INCLUDE_DIR}"
   "${Boost_INCLUDE_DIR}"

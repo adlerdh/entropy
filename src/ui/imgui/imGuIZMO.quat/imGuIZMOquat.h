@@ -16,7 +16,9 @@
 #include "vGizmo.h"
 
 #if !defined(IMGUIZMO_IMGUI_FOLDER)
-#define IMGUIZMO_IMGUI_FOLDER imgui /
+// clang-format off
+#define IMGUIZMO_IMGUI_FOLDER imgui/
+// clang-format on
 #endif
 
 #define GET_PATH(P) P
