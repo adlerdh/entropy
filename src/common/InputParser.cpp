@@ -63,8 +63,9 @@ std::vector<std::string> splitStringByDelimiter(const std::string& stringToSplit
 bool validateParams(InputParams& params)
 {
   if (!params.projectFile && params.imageFiles.empty()) {
-    spdlog::error("No image or project file provided");
-    return false;
+    spdlog::info("No image or project file provided; starting with an empty workspace");
+    params.set = false;
+    return true;
   }
 
   params.set = true;
@@ -184,9 +185,7 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
     spdlog::info("Project file provided: {}", *params.projectFile);
   }
   else {
-    spdlog::critical("No image arguments or project file was provided");
-    std::cout << program;
-    return false;
+    spdlog::info("No image arguments or project file was provided");
   }
 
   // Set the console log level:

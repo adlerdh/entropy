@@ -12,11 +12,20 @@
 #include <uuid.h>
 
 #include <atomic>
+#include <cstdint>
 #include <optional>
 
 /**
  * @brief Collection of application state that changes through its execution.
  */
+enum class ProjectLoadState : std::uint8_t
+{
+  Empty,
+  Loading,
+  Loaded,
+  Failed
+};
+
 class AppState
 {
 public:
@@ -56,6 +65,9 @@ public:
   void setAnimating(bool set);
   bool animating() const;
 
+  void setProjectLoadState(ProjectLoadState state);
+  ProjectLoadState projectLoadState() const;
+
   void setCopiedAnnotation(const Annotation& annot);
   void clearCopiedAnnotation();
   const std::optional<Annotation>& getCopiedAnnotation() const;
@@ -74,6 +86,8 @@ private:
   ImageSelection m_recenteringMode{ImageSelection::AllLoadedImages};
 
   bool m_animating{false}; //!< Is the application currently animating something?
+
+  std::atomic<ProjectLoadState> m_projectLoadState{ProjectLoadState::Empty};
 
   CrosshairsState m_crosshairsState;
 

@@ -2195,8 +2195,7 @@ void Rendering::renderAllAnnotationsForView(
 
 void Rendering::renderImageData()
 {
-  if (!m_isAppDoneLoadingImages) {
-    // Don't render images if the app is still loading them
+  if (ProjectLoadState::Loaded != m_appData.state().projectLoadState() || 0 == m_appData.windowData().numLayouts()) {
     return;
   }
 
@@ -2252,7 +2251,7 @@ void Rendering::renderVectorOverlays()
   const Viewport& windowVP = windowData.viewport();
   const auto& R = m_appData.renderData();
 
-  if (!m_isAppDoneLoadingImages) {
+  if (ProjectLoadState::Loading == m_appData.state().projectLoadState()) {
     startNvgFrame(m_nvg, windowVP);
     drawLoadingOverlay(m_nvg, windowVP);
     endNvgFrame(m_nvg);
@@ -2268,6 +2267,10 @@ void Rendering::renderVectorOverlays()
     nvgText( m_nvg, vp.width() / 2, vp.height() / 2, "Loading images...", NULL );
     nvgFill( m_nvg );
     */
+  }
+
+  if (ProjectLoadState::Loaded != m_appData.state().projectLoadState() || 0 == windowData.numLayouts()) {
+    return;
   }
 
   startNvgFrame(m_nvg, windowVP);

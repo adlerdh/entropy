@@ -828,6 +828,12 @@ void ImGuiWrapper::render()
     annotationToolbar(m_paintActiveSegmentationWithActivePolygon);
   }
 
+  if (ProjectLoadState::Loaded != m_appData.state().projectLoadState() || 0 == m_appData.windowData().numLayouts()) {
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    return;
+  }
+
   Layout& currentLayout = m_appData.windowData().currentLayout();
 
   const float wholeWindowHeight = static_cast<float>(m_appData.windowData().getWindowSize().y);

@@ -36,20 +36,17 @@ int main(int argc, char* argv[])
       return EXIT_FAILURE;
     }
 
-    if (!params.set) {
-      spdlog::debug("Command line arguments not specified");
-      logFailure();
-      return EXIT_FAILURE;
-    }
-
     logging.setConsoleSinkLevel(params.consoleLogLevel);
     logging.setDailyFileSinkLevel(params.consoleLogLevel);
 
     spdlog::debug("Parsed command line parameters:\n{}", params);
 
     EntropyApp app;
-    app.loadImagesFromParams(params);
     app.init();
+
+    if (params.set) {
+      app.loadImagesFromParams(params);
+    }
     app.run();
   }
   catch (const std::runtime_error& e) {

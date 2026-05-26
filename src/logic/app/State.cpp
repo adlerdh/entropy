@@ -96,6 +96,16 @@ bool AppState::animating() const
   return m_animating;
 }
 
+void AppState::setProjectLoadState(ProjectLoadState state)
+{
+  m_projectLoadState = state;
+}
+
+ProjectLoadState AppState::projectLoadState() const
+{
+  return m_projectLoadState;
+}
+
 void AppState::setCopiedAnnotation(const Annotation& annot)
 {
   m_copiedAnnotation = annot;

@@ -109,6 +109,9 @@ void EntropyApp::init()
     throw_debug("Null annotation state machine")
   }
 
+  m_data.guiData().m_renderUiWindows = true;
+  m_data.guiData().m_showMainMenuBar = true;
+
   m_rendering.init();
   m_glfw.init(); // Trigger initial windowing callbacks
 
@@ -232,6 +235,8 @@ void EntropyApp::onImagesReady()
   // Trigger a resize in order to correctly set the viewport, since UI
   // state changes in the render call:
   resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y);
+
+  m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
 
   spdlog::debug("Done setting up window state");
 }
@@ -959,6 +964,7 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
     // Set event processing mode to poll, so that we have continuous animation while loading
     m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
+    m_data.state().setProjectLoadState(ProjectLoadState::Loading);
     m_data.state().setAnimating(true);
 
     spdlog::debug("Begin loading images in new thread");
@@ -1025,12 +1031,16 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
     }
     else {
       spdlog::critical("Failed to load images");
-      m_imagesReady = true;
+      m_data.state().setProjectLoadState(ProjectLoadState::Failed);
+      m_data.state().setAnimating(false);
+      m_imagesReady = false;
       m_imageLoadFailed = false;
+      m_glfw.postEmptyEvent();
     }
   };
 
   m_glfw.setWindowTitleStatus("Loading project...");
+  m_data.state().setProjectLoadState(ProjectLoadState::Loading);
   m_data.setProject(serialize::createProjectFromInputParams(params));
   m_futureLoadProject = std::async(std::launch::async, projectLoader, m_data.project(), onProjectLoadingDone);
   spdlog::debug("Done loading images from parameters");
