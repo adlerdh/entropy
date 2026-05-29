@@ -164,12 +164,12 @@ std::vector<GlyphProfile> computeGlyphSpatialProfiles(
         const float t = std::clamp((sdfVal - lo) / (hi - lo), 0.0f, 1.0f);
         const float glyph = t * t * (3.0f - 2.0f * t);
 
-        // 3-column × 2-row region layout:
-        // col = 0 (left), 1 (center), 2 (right); row = 0 (top), 1 (bottom)
-        // sy >= sampleH/2 => top (row 0); sy < sampleH/2 => bottom (row 1)
-        const int col = (sx < sampleW / 3) ? 0 : (sx < 2 * sampleW / 3) ? 1 : 2;
-        const int row = (sy < sampleH / 2) ? 1 : 0;
-        const int reg = row * 3 + col;
+        // 2-column × 3-row region layout:
+        // col = 0 (left), 1 (right); row = 0 (top), 1 (mid), 2 (bot)
+        // sy increases upward (GL convention: row 0 of slot = bottom)
+        const int col = (sx < sampleW / 2) ? 0 : 1;
+        const int row = (sy >= 2 * sampleH / 3) ? 0 : (sy >= sampleH / 3) ? 1 : 2;
+        const int reg = row * 2 + col;
         totals[static_cast<size_t>(reg)] += glyph;
         counts[static_cast<size_t>(reg)] += 1;
       }
