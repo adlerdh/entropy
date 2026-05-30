@@ -61,3 +61,7 @@ set_target_properties(EntropyImage PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

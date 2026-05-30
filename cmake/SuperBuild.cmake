@@ -41,6 +41,45 @@ set(_ext_cxx_std_args
   -DCMAKE_CXX_EXTENSIONS=OFF
 )
 
+message(STATUS "Adding external library Catch2 in ${catch2_PREFIX}")
+
+ExternalProject_Add(catch2
+  URL "https://github.com/catchorg/Catch2/archive/refs/tags/v${catch2_VERSION}.tar.gz"
+  URL_HASH SHA256=18b3f70ac80fccc340d8c6ff0f339b2ae64944782f8d2fca2bd705cf47cadb79
+  DOWNLOAD_NAME "catch2-v${catch2_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  PREFIX "${catch2_PREFIX}"
+  TMP_DIR "${catch2_PREFIX}/tmp"
+  STAMP_DIR "${catch2_PREFIX}/stamp"
+  DOWNLOAD_DIR "${catch2_PREFIX}/download"
+  SOURCE_DIR "${catch2_PREFIX}/src"
+  BINARY_DIR "${catch2_PREFIX}/build"
+  INSTALL_DIR "${catch2_PREFIX}/install"
+
+  CMAKE_ARGS
+    ${_ext_cmake_build_type_args}
+    ${_ext_compiler_launcher_args}
+    ${_ext_cxx_std_args}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DBUILD_TESTING:BOOL=OFF
+    -DCATCH_BUILD_TESTING:BOOL=OFF
+    -DCATCH_BUILD_EXAMPLES:BOOL=OFF
+    -DCATCH_BUILD_EXTRA_TESTS:BOOL=OFF
+    -DCATCH_BUILD_FUZZERS:BOOL=OFF
+    -DCATCH_BUILD_SURROGATES:BOOL=OFF
+    -DCATCH_DEVELOPMENT_BUILD:BOOL=OFF
+    -DCATCH_ENABLE_WERROR:BOOL=OFF
+    -DCATCH_INSTALL_DOCS:BOOL=OFF
+    -DCATCH_INSTALL_EXTRAS:BOOL=ON
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
+
+  CMAKE_GENERATOR ${gen}
+)
+
+
 message(STATUS "Adding external library CLI11 in ${cli11_PREFIX}")
 
 ExternalProject_Add(cli11

@@ -99,6 +99,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 
 # External library versions:
+set(catch2_VERSION "3.8.1")
 set(cli11_VERSION "2.6.2")
 set(cmakerc_VERSION "2.0.1")
 set(ghc_filesystem_VERSION "1.5.14")
@@ -117,6 +118,7 @@ set(tinyfsm_VERSION "1.15.1")
 
 # External library directories:
 set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
+set(catch2_PREFIX "${EXTERNAL_DIR}/catch2-${catch2_VERSION}")
 set(cli11_PREFIX "${EXTERNAL_DIR}/cli11-${cli11_VERSION}")
 set(cmakerc_PREFIX "${EXTERNAL_DIR}/cmakerc-${cmakerc_VERSION}")
 set(ghc_filesystem_PREFIX "${EXTERNAL_DIR}/ghc_filesystem-${ghc_filesystem_VERSION}")
@@ -135,6 +137,8 @@ set(tinyfsm_PREFIX "${EXTERNAL_DIR}/tinyfsm-${tinyfsm_VERSION}")
 
 option(Entropy_SUPERBUILD "Run the SuperBuild" ON)
 
+include(CTest)
+
 if(Entropy_SUPERBUILD)
   get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
   if(_isMultiConfig)
@@ -148,6 +152,13 @@ if(Entropy_SUPERBUILD)
   return()
 endif()
 
+
+if(BUILD_TESTING)
+  find_package(Catch2 ${catch2_VERSION} REQUIRED
+    HINTS "${catch2_PREFIX}/install")
+  message(STATUS "Using Catch2 in ${Catch2_DIR}")
+  include(Catch)
+endif()
 
 # CLI11: Header-only command line parser
 find_package(CLI11 ${cli11_VERSION} REQUIRED
@@ -666,3 +677,7 @@ set_target_properties(${entropy_EXE} PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
+
+if(BUILD_TESTING)
+  add_subdirectory("${entropy_SRC_DIR}/common/test")
+endif()
