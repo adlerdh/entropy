@@ -155,6 +155,9 @@ void EntropyApp::onImagesReady()
     throw_debug("The reference image is null")
   }
 
+  m_data.windowData().resetDefaultLayouts();
+  m_data.windowData().setCurrentLayoutIndex(1);
+
   m_rendering.initTextures();
   m_rendering.updateImageUniforms(m_data.imageUidsOrdered());
 
@@ -968,7 +971,9 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
 
   if (!serialize::open(project, fileName)) {
     spdlog::error("Could not open project file {}", fileName);
-    m_data.state().setProjectLoadState(ProjectLoadState::Failed);
+    if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
+      m_data.state().setProjectLoadState(ProjectLoadState::Failed);
+    }
     m_glfw.postEmptyEvent();
     return;
   }
@@ -1079,9 +1084,6 @@ void EntropyApp::loadProject(serialize::EntropyProject project)
     m_data.setRainbowColorsForAllImages();
     m_data.setRainbowColorsForAllLandmarkGroups();
 
-    // Show the tri-view layout:
-    m_data.windowData().setCurrentLayoutIndex(1);
-
     onProjectLoadingDone(true);
   };
 
@@ -1094,6 +1096,7 @@ void EntropyApp::loadProject(serialize::EntropyProject project)
     }
     else {
       spdlog::critical("Failed to load images");
+      m_data.clearProjectData();
       m_data.state().setProjectLoadState(ProjectLoadState::Failed);
       m_data.state().setAnimating(false);
       m_imagesReady = false;

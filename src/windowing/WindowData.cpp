@@ -558,6 +558,13 @@ void WindowData::clearLayouts()
   m_activeViewUid = std::nullopt;
 }
 
+void WindowData::resetDefaultLayouts()
+{
+  clearLayouts();
+  setupViews();
+  setCurrentLayoutIndex(0);
+}
+
 void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t orderedImageUids)
 {
   static constexpr bool s_filterAgainstDefaults = true;
@@ -697,11 +704,19 @@ void WindowData::recenterView(
 
 uuid_range_t WindowData::currentViewUids() const
 {
+  static const std::vector<uuid> empty;
+  if (m_currentLayout >= m_layouts.size()) {
+    return empty;
+  }
   return (m_layouts.at(m_currentLayout).views() | boost::adaptors::map_keys);
 }
 
 const View* WindowData::getCurrentView(const uuid& uid) const
 {
+  if (m_currentLayout >= m_layouts.size()) {
+    return nullptr;
+  }
+
   const auto& views = m_layouts.at(m_currentLayout).views();
   auto it = views.find(uid);
   if (std::end(views) != it) {
@@ -714,6 +729,10 @@ const View* WindowData::getCurrentView(const uuid& uid) const
 
 View* WindowData::getCurrentView(const uuid& uid)
 {
+  if (m_currentLayout >= m_layouts.size()) {
+    return nullptr;
+  }
+
   auto& views = m_layouts.at(m_currentLayout).views();
   auto it = views.find(uid);
   if (std::end(views) != it) {
@@ -755,6 +774,10 @@ std::optional<uuid> WindowData::currentViewUidAtCursor(const glm::vec2& windowPo
   }
 
   const glm::vec2 winClipPos = helper::windowNdc_T_window(m_viewport, windowPos);
+
+  if (m_currentLayout >= m_layouts.size()) {
+    return std::nullopt;
+  }
 
   for (const auto& view : m_layouts.at(m_currentLayout).views()) {
     if (!view.second) {
@@ -827,6 +850,10 @@ void WindowData::setCurrentLayoutIndex(std::size_t index)
 
 void WindowData::cycleCurrentLayout(int step)
 {
+  if (m_layouts.empty()) {
+    return;
+  }
+
   const int i = static_cast<int>(currentLayoutIndex());
   const int N = static_cast<int>(numLayouts());
   setCurrentLayoutIndex(static_cast<size_t>((N + i + step) % N));
@@ -942,6 +969,11 @@ void WindowData::setViewAlignmentMode(ViewAlignmentMode mode)
 
 uuid_range_t WindowData::cameraSyncGroupViewUids(CameraSyncMode mode, const uuid& syncGroupUid) const
 {
+  static const std::vector<uuid> empty;
+  if (m_currentLayout >= m_layouts.size()) {
+    return empty;
+  }
+
   const auto& currentLayout = m_layouts.at(m_currentLayout);
   if (const auto* group = currentLayout.getCameraSyncGroup(mode, syncGroupUid)) {
     return *group;
@@ -1021,7 +1053,13 @@ std::vector<uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3& worldN
 
 uuid WindowData::findLargestCurrentView() const
 {
-  uuid largestViewUid = currentViewUids().front();
+  const auto viewUids = currentViewUids();
+  if (boost::empty(viewUids)) {
+    spdlog::error("The current layout has no views");
+    throw_debug("The current layout has no views")
+  }
+
+  uuid largestViewUid = viewUids.front();
   const View* largestView = getCurrentView(largestViewUid);
 
   if (!largestView) {

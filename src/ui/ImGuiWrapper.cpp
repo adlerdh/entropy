@@ -776,6 +776,10 @@ void ImGuiWrapper::render()
 
   ImGui::NewFrame();
 
+  const ProjectLoadState projectLoadState = m_appData.state().projectLoadState();
+  const bool hasLoadedProject =
+    ProjectLoadState::Loaded == projectLoadState && 0 != m_appData.windowData().numLayouts();
+
   if (m_appData.guiData().m_renderUiWindows) {
     renderConfirmCloseAppPopup(m_appData);
 
@@ -793,10 +797,16 @@ void ImGuiWrapper::render()
         .openImageFile = m_openImageFile,
         .openProjectFile = m_openProjectFile,
         .closeProject = m_closeProject,
-        .canOpenProject = ProjectLoadState::Loading != m_appData.state().projectLoadState(),
-        .canCloseProject = ProjectLoadState::Empty != m_appData.state().projectLoadState()});
+        .canOpenProject = ProjectLoadState::Loading != projectLoadState,
+        .canCloseProject = ProjectLoadState::Empty != projectLoadState});
 
-    renderEmptyWorkspace(m_appData.state().projectLoadState(), m_openImageFile, m_openProjectFile);
+    renderEmptyWorkspace(projectLoadState, m_openImageFile, m_openProjectFile);
+
+    if (!hasLoadedProject) {
+      ImGui::Render();
+      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+      return;
+    }
 
     if (m_appData.guiData().m_showIsosurfacesWindow) {
       renderIsosurfacesWindow(
