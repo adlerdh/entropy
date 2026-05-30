@@ -5,6 +5,8 @@
 
 #include <glm/fwd.hpp>
 
+#include "ui/NativeFileDialogs.h"
+
 #include <optional>
 #include <string>
 #include <vector>
@@ -41,7 +43,7 @@ IMGUI_API bool paletteButton(
 std::optional<std::string> renderFileButtonDialogAndWindow(
   const char* buttonText,
   const char* dialogTitle,
-  const std::vector<std::string> dialogFilters);
+  const std::vector<native_dialog::Filter>& dialogFilters);
 
 bool SliderScalarN_multiComp(
   const char* label,

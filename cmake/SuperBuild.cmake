@@ -418,6 +418,44 @@ ExternalProject_Add(NanoVG
 )
 
 
+message(STATUS "Adding external library Native File Dialog Extended in ${nativefiledialog_PREFIX}")
+
+set(_nfd_portal OFF)
+if(UNIX AND NOT APPLE)
+  set(_nfd_portal ON)
+endif()
+
+ExternalProject_Add(nativefiledialog
+  URL "https://github.com/btzy/nativefiledialog-extended/archive/refs/tags/v${nativefiledialog_VERSION}.tar.gz"
+  URL_HASH SHA256=2fea19102cf4d5283a80fb87a784792166988e85bb92baa962d34f72b22dcc1a
+  DOWNLOAD_NAME "nativefiledialog-v${nativefiledialog_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  PREFIX "${nativefiledialog_PREFIX}"
+  TMP_DIR "${nativefiledialog_PREFIX}/tmp"
+  STAMP_DIR "${nativefiledialog_PREFIX}/stamp"
+  DOWNLOAD_DIR "${nativefiledialog_PREFIX}/download"
+  SOURCE_DIR "${nativefiledialog_PREFIX}/src"
+  BINARY_DIR "${nativefiledialog_PREFIX}/build"
+  INSTALL_DIR "${nativefiledialog_PREFIX}/install"
+
+  CMAKE_ARGS
+    ${_ext_cmake_build_type_args}
+    ${_ext_compiler_launcher_args}
+    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DNFD_BUILD_TESTS:BOOL=OFF
+    -DNFD_INSTALL:BOOL=ON
+    -DNFD_PORTAL:BOOL=${_nfd_portal}
+    -DNFD_APPEND_EXTENSION:BOOL=ON
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
+
+  CMAKE_GENERATOR ${gen}
+)
+
+
 message(STATUS "Adding external library nlohmann_json in ${nlohmann_json_PREFIX}")
 
 ExternalProject_Add(nlohmann_json

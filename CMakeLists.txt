@@ -106,6 +106,7 @@ set(imgui_VERSION "1.91.8")
 set(implot_VERSION "0.16")
 set(itk_VERSION "5.4.3")
 set(nanovg_VERSION "f93799c")
+set(nativefiledialog_VERSION "1.3.0")
 set(nlohmann_json_VERSION "3.11.3")
 set(spdlog_VERSION "1.15.1")
 set(stduuid_VERSION "1.2.3")
@@ -125,6 +126,7 @@ set(imgui_PREFIX "${EXTERNAL_DIR}/imgui-${imgui_VERSION}")
 set(implot_PREFIX "${EXTERNAL_DIR}/implot-${implot_VERSION}")
 set(itk_PREFIX "${EXTERNAL_DIR}/itk-${itk_VERSION}")
 set(nanovg_PREFIX "${EXTERNAL_DIR}/nanovg-${nanovg_VERSION}")
+set(nativefiledialog_PREFIX "${EXTERNAL_DIR}/nativefiledialog-${nativefiledialog_VERSION}")
 set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
 set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
 set(stduuid_PREFIX "${EXTERNAL_DIR}/stduuid-${stduuid_VERSION}")
@@ -203,6 +205,12 @@ include("${ITK_USE_FILE}")
 set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
 add_library(nanovg STATIC "${nanovg_SRC_DIR}/nanovg.c")
 target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
+
+# Native File Dialog Extended
+find_package(nfd ${nativefiledialog_VERSION} REQUIRED
+  HINTS "${nativefiledialog_PREFIX}/install")
+
+message(STATUS "Using Native File Dialog Extended in ${nfd_DIR}")
 
 # Niels Lohmann's JSON for Modern C++
 find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED
@@ -498,6 +506,7 @@ set(entropy_SOURCES
   "${entropy_SRC_DIR}/ui/ImGuiCustomControls.cpp"
   "${entropy_SRC_DIR}/ui/ImGuiWrapper.cpp"
   "${entropy_SRC_DIR}/ui/MainMenuBar.cpp"
+  "${entropy_SRC_DIR}/ui/NativeFileDialogs.cpp"
   "${entropy_SRC_DIR}/ui/Popups.cpp"
   "${entropy_SRC_DIR}/ui/Style.cpp"
   "${entropy_SRC_DIR}/ui/Toolbars.cpp"
@@ -648,6 +657,7 @@ target_link_libraries(${entropy_EXE} PRIVATE
   imgui
   implot
   nanovg
+  nfd::nfd
   nlohmann_json::nlohmann_json
   spdlog::spdlog
   stduuid

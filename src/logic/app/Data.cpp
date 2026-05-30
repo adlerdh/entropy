@@ -25,7 +25,25 @@ CMRC_DECLARE(colormaps);
 namespace
 {
 using uuid = uuids::uuid;
+
+template<typename Container>
+bool swapElementsAt(Container& values, const std::size_t first, const std::size_t second)
+{
+  if (first >= values.size() || second >= values.size()) {
+    return false;
+  }
+
+  auto firstIt = std::begin(values);
+  auto secondIt = std::begin(values);
+  std::advance(firstIt, static_cast<typename Container::difference_type>(first));
+  std::advance(secondIt, static_cast<typename Container::difference_type>(second));
+
+  auto value = *firstIt;
+  *firstIt = *secondIt;
+  *secondIt = value;
+  return true;
 }
+} // namespace
 
 AppData::AppData()
   : m_settings()
@@ -1119,19 +1137,12 @@ bool AppData::moveImageBackwards(const uuid imageUid)
   const auto index = imageIndex(imageUid);
   if (!index) return false;
 
-  const long i = static_cast<long>(*index);
+  const std::size_t i = *index;
 
   // Only allow moving backwards images with index 2 or greater, because
   // image 1 cannot become 0: that is the reference image index.
   if (2 <= i) {
-    auto itFirst = std::begin(m_imageUidsOrdered);
-    auto itSecond = std::begin(m_imageUidsOrdered);
-
-    std::advance(itFirst, i - 1);
-    std::advance(itSecond, i);
-
-    std::iter_swap(itFirst, itSecond);
-    return true;
+    return swapElementsAt(m_imageUidsOrdered, i - 1, i);
   }
 
   return false;
@@ -1142,8 +1153,8 @@ bool AppData::moveImageForwards(const uuid imageUid)
   const auto index = imageIndex(imageUid);
   if (!index) return false;
 
-  const long i = static_cast<long>(*index);
-  const long N = static_cast<long>(m_imageUidsOrdered.size());
+  const std::size_t i = *index;
+  const std::size_t N = m_imageUidsOrdered.size();
 
   if (0 == N) {
     return false;
@@ -1151,14 +1162,7 @@ bool AppData::moveImageForwards(const uuid imageUid)
 
   // Do not allow moving the reference image or the last image:
   if (0 < i && i < N - 1) {
-    auto itFirst = std::begin(m_imageUidsOrdered);
-    auto itSecond = std::begin(m_imageUidsOrdered);
-
-    std::advance(itFirst, i);
-    std::advance(itSecond, i + 1);
-
-    std::iter_swap(itFirst, itSecond);
-    return true;
+    return swapElementsAt(m_imageUidsOrdered, i, i + 1);
   }
 
   return false;
@@ -1185,14 +1189,13 @@ bool AppData::moveImageToFront(const uuid imageUid)
   auto index = imageIndex(imageUid);
   if (!index) return false;
 
-  const long i = static_cast<long>(*index);
-  const long N = static_cast<long>(m_imageUidsOrdered.size());
+  const std::size_t N = m_imageUidsOrdered.size();
 
   if (0 == N) {
     return false;
   }
 
-  while (index && i < N - 1) {
+  while (index && *index < N - 1) {
     if (!moveImageForwards(imageUid)) {
       return false;
     }
@@ -1208,7 +1211,7 @@ bool AppData::moveAnnotationBackwards(const uuid imageUid, const uuid annotUid)
   const auto index = annotationIndex(imageUid, annotUid);
   if (!index) return false;
 
-  const long i = static_cast<long>(*index);
+  const std::size_t i = *index;
 
   // Only allow moving backwards annotations with index 1 or greater
   if (0 == i) {
@@ -1217,14 +1220,7 @@ bool AppData::moveAnnotationBackwards(const uuid imageUid, const uuid annotUid)
   }
   else if (1 <= i) {
     auto& annotList = m_imageToAnnotations.at(imageUid);
-    auto itFirst = std::begin(annotList);
-    auto itSecond = std::begin(annotList);
-
-    std::advance(itFirst, i - 1);
-    std::advance(itSecond, i);
-
-    std::iter_swap(itFirst, itSecond);
-    return true;
+    return swapElementsAt(annotList, i - 1, i);
   }
 
   return false;
@@ -1235,24 +1231,17 @@ bool AppData::moveAnnotationForwards(const uuid imageUid, const uuid annotUid)
   const auto index = annotationIndex(imageUid, annotUid);
   if (!index) return false;
 
-  const long i = static_cast<long>(*index);
+  const std::size_t i = *index;
 
   auto& annotList = m_imageToAnnotations.at(imageUid);
-  const long N = static_cast<long>(annotList.size());
+  const std::size_t N = annotList.size();
 
   if (i == N - 1) {
     // Already the frontmost index
     return true;
   }
   else if (i <= N - 2) {
-    auto itFirst = std::begin(annotList);
-    auto itSecond = std::begin(annotList);
-
-    std::advance(itFirst, i);
-    std::advance(itSecond, i + 1);
-
-    std::iter_swap(itFirst, itSecond);
-    return true;
+    return swapElementsAt(annotList, i, i + 1);
   }
 
   return false;

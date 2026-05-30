@@ -2,7 +2,7 @@
 
 #include "ui/Helpers.h"
 #include "ui/MainMenuBar.h"
-#include "ui/imgui/imgui-filebrowser/imfilebrowser.h"
+#include "ui/NativeFileDialogs.h"
 #include "ui/Popups.h"
 #include "ui/Style.h"
 #include "ui/Toolbars.h"
@@ -47,20 +47,6 @@ void renderEmptyWorkspace(
     return;
   }
 
-  static ImGui::FileBrowser imageDialog(ImGuiFileBrowserFlags_CloseOnEsc);
-  static ImGui::FileBrowser projectDialog(ImGuiFileBrowserFlags_CloseOnEsc);
-
-  /// @todo Fix filters and image/project loading, which currently fail with
-  /// Exception: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
-
-  /// @todo Add native file dialogs
-
-  imageDialog.SetTitle("Open Image");
-  // imageDialog.SetTypeFilters({".nii", ".nii.gz", ".nrrd", ".nhdr", ".mha", ".mhd", ".dcm", ".img", ".hdr"});
-
-  projectDialog.SetTitle("Open Project");
-  // projectDialog.SetTypeFilters({".json"});
-
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
   const ImVec2 panelSize{360.0f, 150.0f};
   ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2{0.5f, 0.5f});
@@ -75,34 +61,24 @@ void renderEmptyWorkspace(
     ImGui::Spacing();
 
     if (ImGui::Button("Open Image...", ImVec2{160.0f, 0.0f})) {
-      imageDialog.Open();
+      if (const auto selectedFile = native_dialog::openFile(native_dialog::imageFilters())) {
+        if (openImageFile) {
+          openImageFile(*selectedFile);
+        }
+      }
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("Open Project...", ImVec2{160.0f, 0.0f})) {
-      projectDialog.Open();
+      if (const auto selectedFile = native_dialog::openFile(native_dialog::projectFilters())) {
+        if (openProjectFile) {
+          openProjectFile(*selectedFile);
+        }
+      }
     }
   }
   ImGui::End();
-
-  imageDialog.Display();
-  if (imageDialog.HasSelected()) {
-    const fs::path selectedFile = imageDialog.GetSelected();
-    imageDialog.ClearSelected();
-    if (openImageFile) {
-      openImageFile(selectedFile);
-    }
-  }
-
-  projectDialog.Display();
-  if (projectDialog.HasSelected()) {
-    const fs::path selectedFile = projectDialog.GetSelected();
-    projectDialog.ClearSelected();
-    if (openProjectFile) {
-      openProjectFile(selectedFile);
-    }
-  }
 }
 
 ImFont* loadFont(

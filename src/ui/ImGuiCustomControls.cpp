@@ -1,10 +1,5 @@
 #include "ui/ImGuiCustomControls.h"
-#include "common/Filesystem.h"
-
-// File browser for ImGui:
-// We use the version in src/ui/imgui, since there are modifications to our local version
-// (compared the version on Github) that allow it to work on macOS.
-#include "ui/imgui/imgui-filebrowser/imfilebrowser.h"
+#include "ui/NativeFileDialogs.h"
 
 #include <imgui/imgui_internal.h>
 
@@ -185,24 +180,14 @@ bool paletteButton(
 std::optional<std::string> renderFileButtonDialogAndWindow(
   const char* buttonText,
   const char* dialogTitle,
-  const std::vector<std::string> dialogFilters)
+  const std::vector<native_dialog::Filter>& dialogFilters)
 {
-  static ImGui::FileBrowser saveDialog(
-    ImGuiFileBrowserFlags_EnterNewFilename | ImGuiFileBrowserFlags_CloseOnEsc | ImGuiFileBrowserFlags_CreateNewDir);
-
-  saveDialog.SetTitle(dialogTitle);
-  saveDialog.SetTypeFilters(dialogFilters);
+  (void)dialogTitle;
 
   if (ImGui::Button(buttonText)) {
-    saveDialog.Open();
-  }
-
-  saveDialog.Display();
-
-  if (saveDialog.HasSelected()) {
-    const fs::path selectedFile = saveDialog.GetSelected();
-    saveDialog.ClearSelected();
-    return selectedFile.string();
+    if (const auto selectedFile = native_dialog::saveFile(dialogFilters)) {
+      return selectedFile->string();
+    }
   }
 
   return std::nullopt;

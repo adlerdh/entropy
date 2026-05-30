@@ -2,6 +2,7 @@
 #include "ui/GuiData.h"
 #include "ui/Helpers.h"
 #include "ui/ImGuiCustomControls.h"
+#include "ui/NativeFileDialogs.h"
 #include "ui/Widgets.h"
 #include "ui/Widgets.tpp"
 
@@ -1663,7 +1664,7 @@ void renderImageHeader(
       // Save manual tx to file:
       static const char* buttonText("Save manual transformation...");
       static const char* dialogTitle("Select Manual Transformation");
-      static const std::vector<std::string> dialogFilters{};
+      static const auto dialogFilters = native_dialog::transformFilters();
 
       const auto selectedManualTxFile = ImGui::renderFileButtonDialogAndWindow(buttonText, dialogTitle, dialogFilters);
 
@@ -1971,7 +1972,7 @@ void renderSegmentationHeader(
 
   // Save segmentation:
   static const char* dialogTitle("Select Segmentation Image");
-  static const std::vector<std::string> dialogFilters{};
+  static const auto dialogFilters = native_dialog::segmentationFilters();
 
   ImGui::SameLine();
   const auto selectedFile = ImGui::renderFileButtonDialogAndWindow(SaveSegString.c_str(), dialogTitle, dialogFilters);
@@ -2091,7 +2092,7 @@ void renderLandmarkGroupHeader(
   static const char* newLmGroupButtonText("Create new group of landmarks");
   static const char* saveLmsButtonText("Save landmarks...");
   static const char* saveLmsDialogTitle("Save Landmark Group");
-  static const std::vector<std::string> saveLmsDialogFilters{};
+  static const auto saveLmsDialogFilters = native_dialog::landmarkFilters();
 
   Image* image = appData.image(imageUid);
   if (!image) {
@@ -2385,7 +2386,7 @@ void renderAnnotationsHeader(
   static const std::string fillAnnotButtonText = std::string(ICON_FK_PAINT_BRUSH) + " Fill segmentation";
 
   static const char* saveAnnotDialogTitle("Save Annotations to JSON");
-  static const std::vector<std::string> saveAnnotDialogFilters{};
+  static const auto saveAnnotDialogFilters = native_dialog::annotationFilters();
 
   Image* image = appData.image(imageUid);
   if (!image) {

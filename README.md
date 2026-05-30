@@ -26,7 +26,7 @@ Note on generators:
 The steps below intentionally reconfigure the same build directory: first to run the superbuild, then to build Entropy after dependencies are available.
 
 ### CMake presets
-The recommended developer build uses the checked-in CMake presets. These presets use the Ninja generator, build shared libraries, default to `RelWithDebInfo`, and use `ccache` automatically when it is available. Install Ninja before using these presets. On Debian/Ubuntu:
+The recommended developer build uses the checked-in CMake presets, but presets are optional. The manual single-config and multi-config commands below use the same two-stage superbuild flow and may be used instead. The presets use the Ninja generator, build shared libraries, default to `RelWithDebInfo`, and use `ccache` automatically when it is available. Install Ninja before using these presets. On Debian/Ubuntu:
 
 ```sh
 sudo apt-get install ninja-build ccache
@@ -59,6 +59,8 @@ cmake --build --preset release-app --parallel
 ```
 
 ### Single-config generators (e.g. Ninja, Unix Makefiles)
+These commands are the non-preset equivalent of the build flow above. Use them when you need a custom build directory, generator, build type, or shared/static library setting.
+
 Configure and build the superbuild:
 ```sh
 cmake -S . -B ${BUILD_DIR} \
@@ -100,17 +102,23 @@ cmake -S . -B ${BUILD_DIR} \
 cmake --build ${BUILD_DIR} --config ${BUILD_TYPE} --parallel ${PARALLEL}
 ```
 
-### Operating systems
-Entropy builds and runs on the following versions of Linux, Windows, and macOS:
-* Ubuntu 22.04, 24.04 (with gcc 13.3.0+)
-* Windows 10, 11 (with MSVC++ 17.3.4+)
-* macOS 14.6.1, 15.3.1, 15.6.1, 26.0.1 Apple arm64 architecture (with clang 15.0.0+)
-* ~~macOS Intel x86_64 architecture~~ (not supported)
+### Supported platforms
+Entropy is developed and tested on the following platforms:
+
+- Ubuntu 22.04 and 24.04 with GCC 13.3.0 or newer
+- Windows 10 and 11 with Visual Studio 2022 17.3.4 or newer
+- macOS 14.6.1, 15.3.1, 15.6.1, and 26.0.1 on Apple arm64 with Apple Clang 15.0.0 or newer
+
+Other Linux distributions may work if they provide a C++23 compiler, CMake 3.24 or newer, and the development libraries listed below. macOS Intel x86_64 is not supported.
 
 ### Development libraries for Debian Linux
-You may need to install additional development libraries for Mesa 3D Graphics, Wayland, Xorg, Xrandr, Xinerama, Xcursor, xkbcommon, and xi on Linux. On Debian, this can be done using
+Linux development builds require system development packages for OpenGL/windowing support and native file dialogs. On Debian/Ubuntu, install:
 
-`sudo apt-get install xorg-dev libgl1-mesa-dev libxcursor-dev libxkbcommon-dev libxinerama-dev libxi-dev libxrandr-dev libwayland-dev`
+```sh
+sudo apt-get install xorg-dev libgl1-mesa-dev libxcursor-dev libxkbcommon-dev libxinerama-dev libxi-dev libxrandr-dev libwayland-dev libdbus-1-dev
+```
+
+`libdbus-1-dev` is required by [Native File Dialog Extended](https://github.com/btzy/nativefiledialog-extended) when Entropy uses the xdg-desktop-portal backend on Linux. This is a build-time package, whereas Linux runtime packages should depend on `libdbus-1-3` and a working `xdg-desktop-portal` backend. On macOS and Windows, Native File Dialog Extended uses platform APIs, so no additional NFDe-specific development package is required.
 
 ### Third-party dependencies and resources
 Entropy uses external projects through the CMake superbuild and also carries some vendored source and resource files in this repository. Versions, source URLs, and license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
@@ -120,9 +128,26 @@ The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](ht
 Original attributions and licenses have been preserved and committed for all external sources and resources.
 
 ## Formatting
-Install clang-format 18 or newer and pre-commit. This repository uses pre-commit to format staged C and C++ files before each commit. Enable it in a checkout with:
+This repository uses pre-commit to format staged C++ and shader files before each commit. Install clang-format 18 or newer and pre-commit, then enable the hook in a checkout.
+
+On Debian/Ubuntu:
 
 ```sh
+sudo apt-get install clang-format pre-commit
+pre-commit install
+```
+
+On macOS with Homebrew:
+
+```sh
+brew install clang-format pre-commit
+pre-commit install
+```
+
+On Windows, install clang-format 18 or newer with Visual Studio, LLVM, or another package manager. Then install pre-commit with pip and enable the hook:
+
+```sh
+python -m pip install pre-commit
 pre-commit install
 ```
 

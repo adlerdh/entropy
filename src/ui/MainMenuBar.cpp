@@ -1,27 +1,8 @@
 #include "ui/MainMenuBar.h"
 
-#include "ui/imgui/imgui-filebrowser/imfilebrowser.h"
+#include "ui/NativeFileDialogs.h"
 
 #include <imgui/imgui.h>
-
-namespace
-{
-ImGui::FileBrowser& imageOpenDialog()
-{
-  static ImGui::FileBrowser dialog(ImGuiFileBrowserFlags_CloseOnEsc);
-  dialog.SetTitle("Open Image");
-  dialog.SetTypeFilters({".nii", ".nii.gz", ".nrrd", ".nhdr", ".mha", ".mhd", ".dcm", ".img", ".hdr"});
-  return dialog;
-}
-
-ImGui::FileBrowser& projectOpenDialog()
-{
-  static ImGui::FileBrowser dialog(ImGuiFileBrowserFlags_CloseOnEsc);
-  dialog.SetTitle("Open Project");
-  dialog.SetTypeFilters({".json"});
-  return dialog;
-}
-} // namespace
 
 void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 {
@@ -35,11 +16,19 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("Open Image...", nullptr, false, callbacks.canOpenProject)) {
-        imageOpenDialog().Open();
+        if (const auto selectedFile = native_dialog::openFile(native_dialog::imageFilters())) {
+          if (callbacks.openImageFile) {
+            callbacks.openImageFile(*selectedFile);
+          }
+        }
       }
 
       if (ImGui::MenuItem("Open Project...", nullptr, false, callbacks.canOpenProject)) {
-        projectOpenDialog().Open();
+        if (const auto selectedFile = native_dialog::openFile(native_dialog::projectFilters())) {
+          if (callbacks.openProjectFile) {
+            callbacks.openProjectFile(*selectedFile);
+          }
+        }
       }
 
       ImGui::Separator();
@@ -72,25 +61,5 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
     }
 
     ImGui::EndMainMenuBar();
-  }
-
-  auto& imageDialog = imageOpenDialog();
-  imageDialog.Display();
-  if (imageDialog.HasSelected()) {
-    const fs::path selectedFile = imageDialog.GetSelected();
-    imageDialog.ClearSelected();
-    if (callbacks.openImageFile) {
-      callbacks.openImageFile(selectedFile);
-    }
-  }
-
-  auto& projectDialog = projectOpenDialog();
-  projectDialog.Display();
-  if (projectDialog.HasSelected()) {
-    const fs::path selectedFile = projectDialog.GetSelected();
-    projectDialog.ClearSelected();
-    if (callbacks.openProjectFile) {
-      callbacks.openProjectFile(selectedFile);
-    }
   }
 }

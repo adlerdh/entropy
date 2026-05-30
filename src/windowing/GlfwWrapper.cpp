@@ -110,6 +110,27 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 
   m_window = glfwCreateWindow(width, height, "Entropy", nullptr, nullptr);
 
+#ifndef __APPLE__
+  if (!m_window) {
+    spdlog::info(
+      "Failed to create requested OpenGL {}.{} Core context with multisampling; retrying without multisampling",
+      glMajorVersion,
+      glMinorVersion);
+    glfwWindowHint(GLFW_SAMPLES, 0);
+    m_window = glfwCreateWindow(width, height, "Entropy", nullptr, nullptr);
+  }
+
+  if (!m_window) {
+    spdlog::warn(
+      "Failed to create requested OpenGL {}.{} Core context; retrying without a core profile hint",
+      glMajorVersion,
+      glMinorVersion);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 0);
+    m_window = glfwCreateWindow(width, height, "Entropy", nullptr, nullptr);
+  }
+#endif
+
   if (!m_window) {
     glfwTerminate();
     throw_debug("Failed to create GLFW window and context")
