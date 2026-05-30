@@ -19,6 +19,10 @@ set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION
 
 project(Entropy VERSION ${VERSION_FULL} LANGUAGES C CXX)
 
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 option(Entropy_USE_CCACHE "Use ccache as the compiler launcher when available" ON)
 
 if(Entropy_USE_CCACHE)
@@ -110,7 +114,6 @@ set(nlohmann_json_VERSION "3.11.3")
 set(spdlog_VERSION "1.15.1")
 set(stduuid_VERSION "1.2.3")
 set(tinyfsm_VERSION "1.15.1")
-set(tl_expected_VERSION "1.3.1")
 
 # External library directories:
 set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
@@ -129,7 +132,6 @@ set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}
 set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
 set(stduuid_PREFIX "${EXTERNAL_DIR}/stduuid-${stduuid_VERSION}")
 set(tinyfsm_PREFIX "${EXTERNAL_DIR}/tinyfsm-${tinyfsm_VERSION}")
-set(tl_expected_PREFIX "${EXTERNAL_DIR}/tl_expected-${tl_expected_VERSION}")
 
 option(Entropy_SUPERBUILD "Run the SuperBuild" ON)
 
@@ -223,36 +225,25 @@ set(tinyfsm_INCLUDE_DIR "${tinyfsm_PREFIX}/src/include"
   CACHE PATH "TinyFSM include directory")
 
 
-# tl::expected (fallback for std::expected on libstdc++ versions that don't ship it)
+# std::expected: C++23 vocabulary type for operations that return either a value or an error.
 include(CheckCXXSourceCompiles)
 
-set(tl_expected_INCLUDE_DIR "${tl_expected_PREFIX}/install/include"
-  CACHE PATH "tl::expected include directory")
-
+unset(ENTROPY_HAVE_STD_EXPECTED CACHE)
 check_cxx_source_compiles([=[
   #include <expected>
   #ifndef __cpp_lib_expected
   #error "std::expected not available"
   #endif
-  #if __cpp_lib_expected < 202211L
-  #error "std::expected missing monadic ops"
-  #endif
   int main() {
     std::expected<int,int> e(1);
-    auto r = e.and_then([](int v) -> std::expected<int,int> { return v + 1; });
-    return *r;
+    return *e;
   }
-]=] ENTROPY_HAVE_STD_EXPECTED_MONADIC)
+]=] ENTROPY_HAVE_STD_EXPECTED)
 
-if(ENTROPY_HAVE_STD_EXPECTED_MONADIC)
-  message(STATUS "Using std::expected (with monadic ops)")
-  set(ENTROPY_USE_TL_EXPECTED OFF)
+if(ENTROPY_HAVE_STD_EXPECTED)
+  message(STATUS "Using std::expected")
 else()
-  message(STATUS "std::expected monadic ops not available; using tl::expected from ${tl_expected_INCLUDE_DIR}")
-  if(NOT IS_DIRECTORY "${tl_expected_INCLUDE_DIR}")
-    message(FATAL_ERROR "tl::expected headers not found: ${tl_expected_INCLUDE_DIR} (did SuperBuild install tl_expected?)")
-  endif()
-  set(ENTROPY_USE_TL_EXPECTED ON)
+  message(FATAL_ERROR "std::expected is required. Use a C++23 standard library that provides <expected>.")
 endif()
 
 
@@ -667,7 +658,6 @@ target_include_directories(${entropy_EXE} PRIVATE
   "${implot_SRC_DIR}"
   ${ITK_INCLUDE_DIRS}
   "${tinyfsm_INCLUDE_DIR}"
-  $<$<BOOL:${ENTROPY_USE_TL_EXPECTED}>:${tl_expected_INCLUDE_DIR}>
 )
 
 # Let IDEs index imported package include roots as project code; keep warning-prone vendored headers as system includes below.
@@ -678,10 +668,6 @@ target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   ${gridcut_INCLUDE_DIRS}
   "${nanovg_SRC_DIR}"
 )
-
-if(ENTROPY_USE_TL_EXPECTED)
-  target_compile_definitions(${entropy_EXE} PRIVATE ENTROPY_USE_TL_EXPECTED=1)
-endif()
 
 target_compile_options(${entropy_EXE} PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:

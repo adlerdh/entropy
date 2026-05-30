@@ -585,32 +585,3 @@ ExternalProject_Add(tinyfsm
   BUILD_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM build step"
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping TinyFSM install step"
 )
-
-
-message(STATUS "Adding external library tl::expected in ${tl_expected_PREFIX}")
-
-ExternalProject_Add(tl_expected
-  URL "https://github.com/TartanLlama/expected/archive/refs/tags/v${tl_expected_VERSION}.tar.gz"
-  URL_HASH SHA256=9a04f4f472fbb5c30bf60402f1ca626c4a76987f867978d0b8a35d7ab3fb8fe7
-  DOWNLOAD_NAME "tl_expected-v${tl_expected_VERSION}.tar.gz"
-  DOWNLOAD_EXTRACT_TIMESTAMP false
-
-  PREFIX "${tl_expected_PREFIX}"
-  TMP_DIR "${tl_expected_PREFIX}/tmp"
-  STAMP_DIR "${tl_expected_PREFIX}/stamp"
-  DOWNLOAD_DIR "${tl_expected_PREFIX}/download"
-  SOURCE_DIR "${tl_expected_PREFIX}/src"
-  BINARY_DIR "${tl_expected_PREFIX}/build"
-  INSTALL_DIR "${tl_expected_PREFIX}/install"
-
-  CMAKE_ARGS
-    ${_ext_cmake_build_type_args}
-    ${_ext_compiler_launcher_args}
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DEXPECTED_BUILD_TESTS:BOOL=OFF
-
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
-  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
-
-  CMAKE_GENERATOR ${gen}
-)

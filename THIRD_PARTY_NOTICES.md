@@ -23,7 +23,6 @@ License information is taken from the upstream license files for the pinned sour
 | spdlog | v1.15.1 | https://github.com/gabime/spdlog/archive/refs/tags/v1.15.1.tar.gz | MIT |
 | stduuid | v1.2.3 | https://github.com/mariusbancila/stduuid/archive/refs/tags/v1.2.3.tar.gz | MIT |
 | TinyFSM | v1.15.1 | https://github.com/digint/tinyfsm/commit/01908cab0397fcdadb0a14e9a3187c308e2708ca | MIT |
-| tl::expected | v1.3.1 | https://github.com/TartanLlama/expected/archive/refs/tags/v1.3.1.tar.gz | CC0-1.0 |
 
 ### Vendored sources and libraries
 The following external sources and libraries have been committed directly to the Entropy repository.
