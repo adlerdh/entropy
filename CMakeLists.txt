@@ -384,7 +384,7 @@ BuildStamp()
 add_subdirectory("${entropy_SRC_DIR}/image")
 
 #--------------------------------------------------------------------------------
-# Define Entropy executable target
+# Entropy executable
 #--------------------------------------------------------------------------------
 set(entropy_SOURCES
   "${entropy_SRC_DIR}/main.cpp"

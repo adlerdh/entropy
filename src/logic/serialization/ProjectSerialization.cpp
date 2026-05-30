@@ -170,39 +170,58 @@ namespace imageio
 namespace serialize
 {
 
-/*
-void to_json( json& j, const ImageSettings& settings )
+void to_json(json& j, const serialize::ImageSettings& settings)
 {
-    j = json {
-    { "level", settings.m_level },
-    { "window", settings.m_window },
-    { "slope", settings.m_slope },
-    { "intercept", settings.m_intercept },
-    { "thresholdLow", settings.m_thresholdLow },
-    { "thresholdHigh", settings.m_thresholdHigh },
-    { "opacity", settings.m_opacity }
-            //        { "interpolationMode", settings.m_interpolationMode },
-            //        { "colorMapName", settings.m_colorMapName }
-    };
+  j = json{
+    {"displayName", settings.m_displayName},
+    {"level", settings.m_level},
+    {"window", settings.m_window},
+    {"thresholdLow", settings.m_thresholdLow},
+    {"thresholdHigh", settings.m_thresholdHigh},
+    {"opacity", settings.m_opacity}};
 }
 
-void from_json( const json& j, ImageSettings& settings )
+void from_json(const json& j, serialize::ImageSettings& settings)
 {
-    j.at( "level" ).get_to( settings.m_level );
-    j.at( "window" ).get_to( settings.m_window );
-    j.at( "slope" ).get_to( settings.m_slope );
-    j.at( "intercept" ).get_to( settings.m_intercept );
-    j.at( "thresholdLow" ).get_to( settings.m_thresholdLow );
-    j.at( "thresholdHigh" ).get_to( settings.m_thresholdHigh );
-    j.at( "opacity" ).get_to( settings.m_opacity );
-//    j.at( "interpolationMode" ).get_to( settings.m_interpolationMode );
-//    j.at( "colorMapName" ).get_to( settings.m_colorMapName );
+  if (j.count("displayName")) {
+    j.at("displayName").get_to(settings.m_displayName);
+  }
+  if (j.count("level")) {
+    j.at("level").get_to(settings.m_level);
+  }
+  if (j.count("window")) {
+    j.at("window").get_to(settings.m_window);
+  }
+  if (j.count("thresholdLow")) {
+    j.at("thresholdLow").get_to(settings.m_thresholdLow);
+  }
+  if (j.count("thresholdHigh")) {
+    j.at("thresholdHigh").get_to(settings.m_thresholdHigh);
+  }
+  if (j.count("opacity")) {
+    j.at("opacity").get_to(settings.m_opacity);
+  }
 }
-*/
+
+void to_json(json& j, const serialize::SegSettings& settings)
+{
+  j = json{{"opacity", settings.m_opacity}};
+}
+
+void from_json(const json& j, serialize::SegSettings& settings)
+{
+  if (j.count("opacity")) {
+    j.at("opacity").get_to(settings.m_opacity);
+  }
+}
 
 void to_json(json& j, const serialize::Segmentation& seg)
 {
   j = json{{"path", seg.m_segFileName.string()}};
+
+  if (seg.m_settings) {
+    j["settings"] = *seg.m_settings;
+  }
 }
 
 void from_json(const json& j, serialize::Segmentation& seg)
@@ -210,6 +229,10 @@ void from_json(const json& j, serialize::Segmentation& seg)
   std::string p;
   j.at("path").get_to(p);
   seg.m_segFileName = p;
+
+  if (j.count("settings")) {
+    seg.m_settings = j.at("settings").get<serialize::SegSettings>();
+  }
 }
 
 void to_json(json& j, const serialize::LandmarkGroup& landmarks)
@@ -253,6 +276,10 @@ void to_json(json& j, const serialize::Image& image)
   if (!image.m_landmarkGroups.empty()) {
     j["landmarks"] = image.m_landmarkGroups;
   }
+
+  if (image.m_settings) {
+    j["settings"] = *image.m_settings;
+  }
 }
 
 void from_json(const json& j, serialize::Image& image)
@@ -279,6 +306,10 @@ void from_json(const json& j, serialize::Image& image)
 
   if (j.count("landmarks")) {
     j.at("landmarks").get_to(image.m_landmarkGroups);
+  }
+
+  if (j.count("settings")) {
+    image.m_settings = j.at("settings").get<serialize::ImageSettings>();
   }
 }
 
@@ -359,23 +390,55 @@ bool open(EntropyProject& project, const fs::path& fileName)
     image.m_imageFileName = fs::canonical(image.m_imageFileName);
 
     if (image.m_affineTxFileName) {
-      image.m_affineTxFileName = fs::canonical(*image.m_affineTxFileName);
+      if (image.m_affineTxFileName->empty()) {
+        spdlog::warn("Ignoring empty affine transform path for image {}", image.m_imageFileName);
+        image.m_affineTxFileName = std::nullopt;
+      }
+      else {
+        image.m_affineTxFileName = fs::canonical(*image.m_affineTxFileName);
+      }
     }
 
     if (image.m_deformationFileName) {
-      image.m_deformationFileName = fs::canonical(*image.m_deformationFileName);
+      if (image.m_deformationFileName->empty()) {
+        spdlog::warn("Ignoring empty deformation path for image {}", image.m_imageFileName);
+        image.m_deformationFileName = std::nullopt;
+      }
+      else {
+        image.m_deformationFileName = fs::canonical(*image.m_deformationFileName);
+      }
     }
 
     if (image.m_annotationsFileName) {
-      image.m_annotationsFileName = fs::canonical(*image.m_annotationsFileName);
+      if (image.m_annotationsFileName->empty()) {
+        spdlog::warn("Ignoring empty annotations path for image {}", image.m_imageFileName);
+        image.m_annotationsFileName = std::nullopt;
+      }
+      else {
+        image.m_annotationsFileName = fs::canonical(*image.m_annotationsFileName);
+      }
     }
 
-    for (Segmentation& seg : image.m_segmentations) {
-      seg.m_segFileName = fs::canonical(seg.m_segFileName);
+    for (auto segIt = image.m_segmentations.begin(); segIt != image.m_segmentations.end();) {
+      if (segIt->m_segFileName.empty()) {
+        spdlog::warn("Ignoring empty segmentation path for image {}", image.m_imageFileName);
+        segIt = image.m_segmentations.erase(segIt);
+      }
+      else {
+        segIt->m_segFileName = fs::canonical(segIt->m_segFileName);
+        ++segIt;
+      }
     }
 
-    for (LandmarkGroup& lm : image.m_landmarkGroups) {
-      lm.m_csvFileName = fs::canonical(lm.m_csvFileName).string();
+    for (auto lmIt = image.m_landmarkGroups.begin(); lmIt != image.m_landmarkGroups.end();) {
+      if (lmIt->m_csvFileName.empty()) {
+        spdlog::warn("Ignoring empty landmark path for image {}", image.m_imageFileName);
+        lmIt = image.m_landmarkGroups.erase(lmIt);
+      }
+      else {
+        lmIt->m_csvFileName = fs::canonical(lmIt->m_csvFileName).string();
+        ++lmIt;
+      }
     }
 
     fs::current_path(saveCurrentPath); // restore current path
@@ -489,7 +552,7 @@ bool save(const EntropyProject& project, const fs::path& fileName)
     const json j = projectRelative;
 
     std::ofstream outFile(fileName);
-    outFile << j;
+    outFile << j.dump(2) << '\n';
 
     spdlog::debug("Saved JSON for project (with relative image paths):\n{}", j.dump(2));
     spdlog::info("Saved project to file {}", fileName);

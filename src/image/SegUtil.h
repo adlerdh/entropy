@@ -1,5 +1,4 @@
-#ifndef SEG_UTILITY_H
-#define SEG_UTILITY_H
+#pragma once
 
 #include "common/Types.h"
 
@@ -58,5 +57,3 @@ void fillSegmentationWithPolygon(
     const glm::uvec3& offset,
     const glm::uvec3& size,
     const int64_t* data)>& updateSegTexture);
-
-#endif // SEG_UTILITY_H

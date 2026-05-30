@@ -50,6 +50,7 @@ AppData::AppData()
   , m_renderData()
   , m_windowData(m_state.crosshairsState())
   , m_project()
+  , m_projectFileName(std::nullopt)
   , m_images()
   , m_imageUidsOrdered()
   , m_segs()
@@ -100,11 +101,17 @@ void AppData::setProject(serialize::EntropyProject project)
   m_project = std::move(project);
 }
 
+void AppData::setProjectFileName(std::optional<fs::path> fileName)
+{
+  m_projectFileName = std::move(fileName);
+}
+
 void AppData::clearProjectData()
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
   m_project = {};
+  m_projectFileName = std::nullopt;
 
   m_images.clear();
   m_imageUidsOrdered.clear();
@@ -147,6 +154,11 @@ const serialize::EntropyProject& AppData::project() const
 serialize::EntropyProject& AppData::project()
 {
   return m_project;
+}
+
+const std::optional<fs::path>& AppData::projectFileName() const
+{
+  return m_projectFileName;
 }
 
 void AppData::loadLinearRampImageColorMaps()

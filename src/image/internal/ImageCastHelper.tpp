@@ -1,5 +1,4 @@
-#ifndef IMAGE_CAST_HELPER_TPP
-#define IMAGE_CAST_HELPER_TPP
+#pragma once
 
 #include "common/Exception.hpp"
 #include "common/Types.h"
@@ -99,5 +98,3 @@ std::vector<DstCompType> createBuffer(const void* buffer, std::size_t numElement
 
   return std::vector<DstCompType>{};
 }
-
-#endif // IMAGE_CAST_HELPER_TPP

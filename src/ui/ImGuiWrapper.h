@@ -35,6 +35,8 @@ public:
     std::function<void(void)> readjustViewport,
     std::function<void(const fs::path& fileName)> openImageFile,
     std::function<void(const fs::path& fileName)> openProjectFile,
+    std::function<void()> saveProject,
+    std::function<void(const fs::path& fileName)> saveProjectAs,
     std::function<void()> closeProject,
     std::function<void(const uuids::uuid& viewUid)> recenterView,
     AllViewsRecenterType recenterCurrentViews,
@@ -81,6 +83,8 @@ private:
   std::function<void(void)> m_readjustViewport = nullptr;
   std::function<void(const fs::path& fileName)> m_openImageFile = nullptr;
   std::function<void(const fs::path& fileName)> m_openProjectFile = nullptr;
+  std::function<void()> m_saveProject = nullptr;
+  std::function<void(const fs::path& fileName)> m_saveProjectAs = nullptr;
   std::function<void()> m_closeProject = nullptr;
   std::function<void(const uuids::uuid& viewUid)> m_recenterView = nullptr;
   AllViewsRecenterType m_recenterAllViews = nullptr;

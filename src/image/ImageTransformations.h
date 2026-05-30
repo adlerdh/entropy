@@ -1,5 +1,4 @@
-#ifndef IMAGE_TX_H
-#define IMAGE_TX_H
+#pragma once
 
 #include "common/Filesystem.h"
 #include "image/ImageHeaderOverrides.h"
@@ -211,5 +210,3 @@ struct fmt::formatter<ImageTransformations> : ostream_formatter
 {
 };
 #endif
-
-#endif // IMAGE_TX_H

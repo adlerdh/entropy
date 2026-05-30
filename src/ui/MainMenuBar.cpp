@@ -33,6 +33,45 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 
       ImGui::Separator();
 
+      if (ImGui::MenuItem("Save Project", nullptr, false, callbacks.canSaveProject)) {
+        const auto projectFileName = callbacks.projectFileName ? callbacks.projectFileName() : std::nullopt;
+
+        if (projectFileName) {
+          if (callbacks.saveProject) {
+            callbacks.saveProject();
+          }
+        }
+        else if (callbacks.saveProjectAs) {
+          const fs::path defaultPath =
+            callbacks.defaultProjectSaveDirectory ? callbacks.defaultProjectSaveDirectory() : fs::path{};
+          const std::string defaultName =
+            callbacks.defaultProjectSaveName ? callbacks.defaultProjectSaveName() : std::string{};
+          if (
+            const auto selectedFile =
+              native_dialog::saveFile(native_dialog::projectFilters(), defaultPath, defaultName))
+          {
+            callbacks.saveProjectAs(*selectedFile);
+          }
+        }
+      }
+
+      if (ImGui::MenuItem("Save Project As...", nullptr, false, callbacks.canSaveProject)) {
+        if (callbacks.saveProjectAs) {
+          const fs::path defaultPath =
+            callbacks.defaultProjectSaveDirectory ? callbacks.defaultProjectSaveDirectory() : fs::path{};
+          const std::string defaultName =
+            callbacks.defaultProjectSaveName ? callbacks.defaultProjectSaveName() : std::string{};
+          if (
+            const auto selectedFile =
+              native_dialog::saveFile(native_dialog::projectFilters(), defaultPath, defaultName))
+          {
+            callbacks.saveProjectAs(*selectedFile);
+          }
+        }
+      }
+
+      ImGui::Separator();
+
       if (ImGui::MenuItem("Close Project", nullptr, false, callbacks.canCloseProject)) {
         if (callbacks.closeProject) {
           callbacks.closeProject();

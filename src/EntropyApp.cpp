@@ -26,6 +26,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -57,6 +58,53 @@ bool promptForChar(const char* prompt, char& readch)
   }
 
   return false;
+}
+
+serialize::ImageSettings makeImageSettingsSnapshot(const Image& image)
+{
+  const auto thresholds = image.settings().thresholds();
+
+  serialize::ImageSettings settings;
+  settings.m_displayName = image.settings().displayName();
+  settings.m_level = image.settings().windowCenter();
+  settings.m_window = image.settings().windowWidth();
+  settings.m_thresholdLow = thresholds.first;
+  settings.m_thresholdHigh = thresholds.second;
+  settings.m_opacity = image.settings().opacity();
+  return settings;
+}
+
+serialize::SegSettings makeSegSettingsSnapshot(const Image& seg)
+{
+  serialize::SegSettings settings;
+  settings.m_opacity = seg.settings().opacity();
+  return settings;
+}
+
+void applyImageSettingsSnapshot(Image& image, const serialize::ImageSettings& settings)
+{
+  if (!settings.m_displayName.empty()) {
+    image.settings().setDisplayName(settings.m_displayName);
+  }
+
+  image.settings().setWindowCenter(settings.m_level);
+  image.settings().setWindowWidth(settings.m_window);
+  image.settings().setThresholdLow(settings.m_thresholdLow);
+  image.settings().setThresholdHigh(settings.m_thresholdHigh);
+  image.settings().setOpacity(settings.m_opacity);
+}
+
+void applySegSettingsSnapshot(Image& seg, const serialize::SegSettings& settings)
+{
+  seg.settings().setOpacity(settings.m_opacity);
+}
+
+fs::path projectSavePath(fs::path fileName)
+{
+  if (fileName.extension().empty()) {
+    fileName += ".json";
+  }
+  return fileName;
 }
 } // namespace
 
@@ -610,6 +658,10 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
 
   spdlog::info("Loaded image from {} as {}", serializedImage.m_imageFileName, *imageUid);
 
+  if (serializedImage.m_settings) {
+    applyImageSettingsSnapshot(*image, *serializedImage.m_settings);
+  }
+
   // Disable the initial affine and manual transformations for the reference image:
   image->transformations().set_enable_worldDef_T_affine(isReferenceImage ? false : true);
   image->transformations().set_enable_affine_T_subject(isReferenceImage ? false : true);
@@ -932,6 +984,19 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
       continue;
     }
 
+    if (segInfo.isNewSeg) {
+      const auto serializedSegIt = std::find_if(
+        serializedImage.m_segmentations.begin(),
+        serializedImage.m_segmentations.end(),
+        [seg](const serialize::Segmentation& serializedSeg) {
+          return serializedSeg.m_segFileName == seg->header().fileName();
+        });
+
+      if (serializedImage.m_segmentations.end() != serializedSegIt && serializedSegIt->m_settings) {
+        applySegSettingsSnapshot(*seg, *serializedSegIt->m_settings);
+      }
+    }
+
     // Assign the image's affine_T_subject transformation to its segmentation:
     seg->transformations().set_affine_T_subject(image->transformations().get_affine_T_subject());
   }
@@ -947,12 +1012,156 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
     m_data.assignActiveSegUidToImage(*imageUid, firstSegUid);
   }
 
-  /// @todo Load from project settings
   for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i) {
     image->settings().setColorMapIndex(i, defaultImageColorMapIndex);
   }
 
   return true;
+}
+
+serialize::EntropyProject EntropyApp::createProjectSnapshot() const
+{
+  serialize::EntropyProject project;
+  const auto imageUids = m_data.imageUidsOrdered();
+
+  if (imageUids.empty()) {
+    return project;
+  }
+
+  const uuids::uuid referenceImageUid = m_data.refImageUid().value_or(imageUids.front());
+  project.m_referenceImage = createImageSnapshot(referenceImageUid);
+
+  for (const auto& imageUid : imageUids) {
+    if (imageUid == referenceImageUid) {
+      continue;
+    }
+
+    project.m_additionalImages.emplace_back(createImageSnapshot(imageUid));
+  }
+
+  return project;
+}
+
+serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) const
+{
+  serialize::Image serializedImage;
+  const Image* image = m_data.image(imageUid);
+
+  if (!image) {
+    spdlog::warn("Cannot serialize missing image {}", imageUid);
+    return serializedImage;
+  }
+
+  serializedImage.m_imageFileName = image->header().fileName();
+  serializedImage.m_affineTxFileName = image->transformations().get_affine_T_subject_fileName();
+  serializedImage.m_settings = makeImageSettingsSnapshot(*image);
+
+  const auto defUids = m_data.imageToDefUids(imageUid);
+  if (!defUids.empty()) {
+    const Image* def = m_data.def(defUids.front());
+    if (def && def->header().existsOnDisk() && !def->header().fileName().empty()) {
+      serializedImage.m_deformationFileName = def->header().fileName();
+    }
+
+    if (defUids.size() > 1) {
+      spdlog::warn(
+        "Image {} has {} deformation fields, but project files currently save only the first one",
+        imageUid,
+        defUids.size());
+    }
+  }
+
+  for (const auto& segUid : m_data.imageToSegUids(imageUid)) {
+    const Image* seg = m_data.seg(segUid);
+    if (!seg) {
+      spdlog::warn("Cannot serialize missing segmentation {} for image {}", segUid, imageUid);
+      continue;
+    }
+
+    if (!seg->header().existsOnDisk() || seg->header().fileName().empty()) {
+      spdlog::warn("Skipping unsaved segmentation {} for image {}; it has no file-backed path", segUid, imageUid);
+      continue;
+    }
+
+    serialize::Segmentation serializedSeg;
+    serializedSeg.m_segFileName = seg->header().fileName();
+    serializedSeg.m_settings = makeSegSettingsSnapshot(*seg);
+    serializedImage.m_segmentations.emplace_back(std::move(serializedSeg));
+  }
+
+  for (const auto& lmUid : m_data.imageToLandmarkGroupUids(imageUid)) {
+    const LandmarkGroup* lmGroup = m_data.landmarkGroup(lmUid);
+    if (!lmGroup) {
+      spdlog::warn("Cannot serialize missing landmark group {} for image {}", lmUid, imageUid);
+      continue;
+    }
+
+    if (lmGroup->getFileName().empty()) {
+      spdlog::warn("Skipping unsaved landmark group {} for image {}; it has no file name", lmUid, imageUid);
+      continue;
+    }
+
+    serialize::LandmarkGroup serializedLandmarks;
+    serializedLandmarks.m_csvFileName = lmGroup->getFileName().string();
+    serializedLandmarks.m_inVoxelSpace = lmGroup->getInVoxelSpace();
+    serializedImage.m_landmarkGroups.emplace_back(std::move(serializedLandmarks));
+  }
+
+  for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
+    const Annotation* annotation = m_data.annotation(annotationUid);
+    if (!annotation) {
+      spdlog::warn("Cannot serialize missing annotation {} for image {}", annotationUid, imageUid);
+      continue;
+    }
+
+    if (annotation->getFileName().empty()) {
+      spdlog::warn("Skipping unsaved annotation {} for image {}; it has no file name", annotationUid, imageUid);
+      continue;
+    }
+
+    if (serializedImage.m_annotationsFileName && *serializedImage.m_annotationsFileName != annotation->getFileName()) {
+      spdlog::warn(
+        "Image {} has annotations from multiple files; project files currently save only {}",
+        imageUid,
+        *serializedImage.m_annotationsFileName);
+      continue;
+    }
+
+    serializedImage.m_annotationsFileName = annotation->getFileName();
+  }
+
+  return serializedImage;
+}
+
+void EntropyApp::saveProject()
+{
+  if (!m_data.projectFileName()) {
+    spdlog::warn("Cannot save project because it has not been saved to a file yet");
+    return;
+  }
+
+  saveProjectAs(*m_data.projectFileName());
+}
+
+void EntropyApp::saveProjectAs(const fs::path& fileName)
+{
+  const fs::path normalizedFileName = projectSavePath(fileName);
+  serialize::EntropyProject project = createProjectSnapshot();
+
+  if (project.m_referenceImage.m_imageFileName.empty()) {
+    spdlog::error("Cannot save project without a reference image");
+    return;
+  }
+
+  if (!serialize::save(project, normalizedFileName)) {
+    spdlog::error("Could not save project file {}", normalizedFileName);
+    return;
+  }
+
+  m_data.setProject(project);
+  m_data.setProjectFileName(normalizedFileName);
+  m_glfw.setWindowTitleStatus(normalizedFileName.filename().string());
+  m_glfw.postEmptyEvent();
 }
 
 void EntropyApp::loadImageFile(const fs::path& fileName)
@@ -978,7 +1187,7 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
   }
 
   closeProject();
-  loadProject(std::move(project));
+  loadProject(std::move(project), fileName);
 }
 
 void EntropyApp::closeProject()
@@ -1010,10 +1219,11 @@ void EntropyApp::closeProject()
 
 void EntropyApp::loadImagesFromParams(const InputParams& params)
 {
-  loadProject(serialize::createProjectFromInputParams(params));
+  const std::optional<fs::path> projectFileName = params.imageFiles.empty() ? params.projectFile : std::nullopt;
+  loadProject(serialize::createProjectFromInputParams(params), projectFileName);
 }
 
-void EntropyApp::loadProject(serialize::EntropyProject project)
+void EntropyApp::loadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName)
 {
   spdlog::debug("Begin loading images from parameters");
 
@@ -1107,6 +1317,7 @@ void EntropyApp::loadProject(serialize::EntropyProject project)
   m_glfw.setWindowTitleStatus("Loading project...");
   m_data.state().setProjectLoadState(ProjectLoadState::Loading);
   m_data.setProject(std::move(project));
+  m_data.setProjectFileName(std::move(projectFileName));
   m_futureLoadProject = std::async(std::launch::async, projectLoader, m_data.project(), onProjectLoadingDone);
   spdlog::debug("Done loading images from parameters");
 }
@@ -1125,6 +1336,8 @@ void EntropyApp::setCallbacks()
     [this]() { resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y); },
     [this](const fs::path& fileName) { loadImageFile(fileName); },
     [this](const fs::path& fileName) { loadProjectFile(fileName); },
+    [this]() { saveProject(); },
+    [this](const fs::path& fileName) { saveProjectAs(fileName); },
     [this]() { closeProject(); },
 
     [this](const uuids::uuid& viewUid) { m_callbackHandler.recenterView(m_data.state().recenteringMode(), viewUid); },

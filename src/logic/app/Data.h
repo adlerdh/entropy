@@ -65,9 +65,11 @@ public:
 
   /// @todo Put into AppState
   void setProject(serialize::EntropyProject project);
+  void setProjectFileName(std::optional<fs::path> fileName);
   void clearProjectData();
   const serialize::EntropyProject& project() const;
   serialize::EntropyProject& project();
+  const std::optional<fs::path>& projectFileName() const;
 
   /**
    * @brief Add an image
@@ -397,7 +399,8 @@ private:
   RenderData m_renderData; //!< Data for rendering
   WindowData m_windowData; //!< Data for windowing
 
-  serialize::EntropyProject m_project; //!< Project that is used for serialization
+  serialize::EntropyProject m_project;       //!< Project that is used for serialization
+  std::optional<fs::path> m_projectFileName; //!< File name of the currently loaded/saved project
 
   std::unordered_map<uuid, Image> m_images; //!< Images
   std::vector<uuid> m_imageUidsOrdered;     //!< Image UIDs in order

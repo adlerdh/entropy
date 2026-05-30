@@ -49,8 +49,10 @@ struct SegSettings
 /// @brief Serialized data for a segmentation image
 struct Segmentation
 {
-  fs::path m_segFileName;            //!< Segmentation image file
-  serialize::SegSettings m_settings; //!< Segmentation settings
+  fs::path m_segFileName; //!< Segmentation image file
+
+  /// Optional segmentation settings
+  std::optional<serialize::SegSettings> m_settings = std::nullopt;
 };
 
 /// @brief Serialized data for a group of image landmarks
@@ -83,7 +85,8 @@ struct Image
   /// Landmark groups (each image can have multiple landmark groups)
   std::vector<serialize::LandmarkGroup> m_landmarkGroups;
 
-  serialize::ImageSettings m_settings; //!< Image settings
+  /// Optional image settings
+  std::optional<serialize::ImageSettings> m_settings = std::nullopt;
 };
 
 /// @brief Serialized data for an Entropy project

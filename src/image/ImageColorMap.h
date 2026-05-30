@@ -1,5 +1,4 @@
-#ifndef IMAGE_COLORMAP_H
-#define IMAGE_COLORMAP_H
+#pragma once
 
 #include <glm/fwd.hpp>
 
@@ -171,5 +170,3 @@ private:
 
   //    ForcedInterpolationMode m_forcedInterpolationMode;
 };
-
-#endif // IMAGE_COLORMAP_H

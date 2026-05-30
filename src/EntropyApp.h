@@ -51,6 +51,8 @@ public:
   void loadImagesFromParams(const InputParams&);
   void loadImageFile(const fs::path& fileName);
   void loadProjectFile(const fs::path& fileName);
+  void saveProject();
+  void saveProjectAs(const fs::path& fileName);
   void closeProject();
 
   /**
@@ -113,7 +115,9 @@ private:
 
   /// Function called when images have been loaded from disk
   void onImagesReady();
-  void loadProject(serialize::EntropyProject project);
+  void loadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName = std::nullopt);
+  serialize::EntropyProject createProjectSnapshot() const;
+  serialize::Image createImageSnapshot(const uuids::uuid& imageUid) const;
 
   /// Load an image from disk.
   /// @return Uid and flag if loaded.

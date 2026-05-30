@@ -1,5 +1,4 @@
-#ifndef ISOSURFACE_H
-#define ISOSURFACE_H
+#pragma once
 
 // #include "logic/records/MeshRecord.h"
 
@@ -55,5 +54,3 @@ public:
     return this->material.specular * glm::vec3{1.0f};
   }
 };
-
-#endif // ISOSURFACE_H

@@ -181,6 +181,8 @@ void ImGuiWrapper::setCallbacks(
   std::function<void(void)> readjustViewport,
   std::function<void(const fs::path& fileName)> openImageFile,
   std::function<void(const fs::path& fileName)> openProjectFile,
+  std::function<void()> saveProject,
+  std::function<void(const fs::path& fileName)> saveProjectAs,
   std::function<void()> closeProject,
   std::function<void(const uuids::uuid& viewUid)> recenterView,
   AllViewsRecenterType recenterCurrentViews,
@@ -216,6 +218,8 @@ void ImGuiWrapper::setCallbacks(
   m_readjustViewport = readjustViewport;
   m_openImageFile = openImageFile;
   m_openProjectFile = openProjectFile;
+  m_saveProject = saveProject;
+  m_saveProjectAs = saveProjectAs;
   m_closeProject = closeProject;
   m_recenterView = recenterView;
   m_recenterAllViews = recenterCurrentViews;
@@ -786,8 +790,30 @@ void ImGuiWrapper::render()
       MainMenuBarCallbacks{
         .openImageFile = m_openImageFile,
         .openProjectFile = m_openProjectFile,
+        .saveProject = m_saveProject,
+        .saveProjectAs = m_saveProjectAs,
+        .projectFileName = [this]() { return m_appData.projectFileName(); },
+        .defaultProjectSaveDirectory =
+          [this]() {
+            if (m_appData.projectFileName()) {
+              return m_appData.projectFileName()->parent_path();
+            }
+            const auto refImageUid = m_appData.refImageUid();
+            const Image* refImage = refImageUid ? m_appData.image(*refImageUid) : nullptr;
+            return refImage ? refImage->header().fileName().parent_path() : fs::path{};
+          },
+        .defaultProjectSaveName =
+          [this]() {
+            if (m_appData.projectFileName()) {
+              return m_appData.projectFileName()->filename().string();
+            }
+            const auto refImageUid = m_appData.refImageUid();
+            const Image* refImage = refImageUid ? m_appData.image(*refImageUid) : nullptr;
+            return refImage ? (refImage->header().fileName().stem().string() + ".json") : std::string{"project.json"};
+          },
         .closeProject = m_closeProject,
         .canOpenProject = ProjectLoadState::Loading != projectLoadState,
+        .canSaveProject = ProjectLoadState::Loaded == projectLoadState,
         .canCloseProject = ProjectLoadState::Empty != projectLoadState});
 
     renderEmptyWorkspace(projectLoadState, m_openImageFile, m_openProjectFile);
