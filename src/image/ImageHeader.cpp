@@ -1,6 +1,5 @@
 #include "image/ImageHeader.h"
 #include "image/ImageUtility.h"
-#include "image/ImageUtilityItk.h"
 
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
@@ -23,14 +22,14 @@ ImageHeader::ImageHeader(const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioI
   , m_numPixels(ioInfoOnDisk.m_sizeInfo.m_imageSizeInPixels)
   , m_fileImageSizeInBytes(ioInfoOnDisk.m_sizeInfo.m_imageSizeInBytes)
   , m_memoryImageSizeInBytes(ioInfoInMemory.m_sizeInfo.m_imageSizeInBytes)
-  , m_pixelType(fromItkPixelType(ioInfoOnDisk.m_pixelInfo.m_pixelType))
+  , m_pixelType(ioInfoOnDisk.m_pixelInfo.m_pixelType)
   , m_pixelTypeAsString(ioInfoOnDisk.m_pixelInfo.m_pixelTypeString)
 
-  , m_fileComponentType(fromItkComponentType(ioInfoOnDisk.m_componentInfo.m_componentType))
+  , m_fileComponentType(ioInfoOnDisk.m_componentInfo.m_componentType)
   , m_fileComponentTypeAsString(ioInfoOnDisk.m_componentInfo.m_componentTypeString)
   , m_fileComponentSizeInBytes(ioInfoOnDisk.m_componentInfo.m_componentSizeInBytes)
 
-  , m_memoryComponentType(fromItkComponentType(ioInfoInMemory.m_componentInfo.m_componentType))
+  , m_memoryComponentType(ioInfoInMemory.m_componentInfo.m_componentType)
   , m_memoryComponentTypeAsString(ioInfoInMemory.m_componentInfo.m_componentTypeString)
   , m_memoryComponentSizeInBytes(ioInfoInMemory.m_componentInfo.m_componentSizeInBytes)
 {

@@ -5,7 +5,7 @@
 #include "common/Filesystem.h"
 #include "image/Image.h"
 
-#include "TDigest.h"
+#include "image/TDigest.h"
 
 #include <itkBinaryThresholdImageFilter.h>
 #include <itkCastImageFilter.h>
@@ -33,6 +33,7 @@
 #include <span>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <type_traits>
 #include <vector>
 
@@ -946,19 +947,42 @@ Image createImageFromItkImage(const typename itk::Image<T, 3>::Pointer itkImage,
   const auto itkDir = itkImage->GetDirection();
 
   ImageIoInfo info;
-  info.m_componentInfo.m_componentType = itk::IOComponentEnum::UCHAR;
-  info.m_componentInfo.m_componentTypeString = "unsigned_char";
-  info.m_componentInfo.m_componentSizeInBytes = 1;
+  if constexpr (std::is_same_v<T, int8_t>) {
+    info.m_componentInfo.m_componentType = ComponentType::Int8;
+  }
+  else if constexpr (std::is_same_v<T, uint8_t>) {
+    info.m_componentInfo.m_componentType = ComponentType::UInt8;
+  }
+  else if constexpr (std::is_same_v<T, int16_t>) {
+    info.m_componentInfo.m_componentType = ComponentType::Int16;
+  }
+  else if constexpr (std::is_same_v<T, uint16_t>) {
+    info.m_componentInfo.m_componentType = ComponentType::UInt16;
+  }
+  else if constexpr (std::is_same_v<T, int32_t>) {
+    info.m_componentInfo.m_componentType = ComponentType::Int32;
+  }
+  else if constexpr (std::is_same_v<T, uint32_t>) {
+    info.m_componentInfo.m_componentType = ComponentType::UInt32;
+  }
+  else if constexpr (std::is_same_v<T, float>) {
+    info.m_componentInfo.m_componentType = ComponentType::Float32;
+  }
+  else {
+    info.m_componentInfo.m_componentType = ComponentType::Undefined;
+  }
+  info.m_componentInfo.m_componentTypeString = componentTypeString(info.m_componentInfo.m_componentType);
+  info.m_componentInfo.m_componentSizeInBytes = sizeof(T);
 
-  info.m_pixelInfo.m_pixelType = itk::IOPixelEnum::SCALAR;
+  info.m_pixelInfo.m_pixelType = PixelType::Scalar;
   info.m_pixelInfo.m_pixelTypeString = "scalar";
   info.m_pixelInfo.m_numComponents = 1;
-  info.m_pixelInfo.m_pixelStrideInBytes = 1;
+  info.m_pixelInfo.m_pixelStrideInBytes = sizeof(T);
 
   const std::size_t N = itkSize[0] * itkSize[1] * itkSize[2];
   info.m_sizeInfo.m_imageSizeInComponents = N;
   info.m_sizeInfo.m_imageSizeInPixels = N;
-  info.m_sizeInfo.m_imageSizeInBytes = N;
+  info.m_sizeInfo.m_imageSizeInBytes = N * sizeof(T);
 
   info.m_spaceInfo.m_numDimensions = 3;
   info.m_spaceInfo.m_dimensions = {itkSize[0], itkSize[1], itkSize[2]};

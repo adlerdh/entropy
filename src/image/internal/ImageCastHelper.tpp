@@ -2,8 +2,8 @@
 #define IMAGE_CAST_HELPER_TPP
 
 #include "common/Exception.hpp"
+#include "common/Types.h"
 
-#include <itkCommonEnums.h>
 #include <spdlog/spdlog.h>
 
 #include <limits>
@@ -47,54 +47,51 @@ std::vector<DstCompType> createBuffer_dispatch(const void* buffer, std::size_t n
  * @return
  */
 template<typename DstCompType>
-std::vector<DstCompType>
-createBuffer(const void* buffer, std::size_t numElements, const itk::IOComponentEnum& srcComponentType)
+std::vector<DstCompType> createBuffer(const void* buffer, std::size_t numElements, ComponentType srcComponentType)
 {
-  using CType = itk::IOComponentEnum;
-
   switch (srcComponentType) {
-    case CType::UCHAR: {
+    case ComponentType::UInt8: {
       return createBuffer_dispatch<uint8_t, DstCompType>(buffer, numElements);
     }
-    case CType::CHAR: {
+    case ComponentType::Int8: {
       return createBuffer_dispatch<int8_t, DstCompType>(buffer, numElements);
     }
-    case CType::USHORT: {
+    case ComponentType::UInt16: {
       return createBuffer_dispatch<uint16_t, DstCompType>(buffer, numElements);
     }
-    case CType::SHORT: {
+    case ComponentType::Int16: {
       return createBuffer_dispatch<int16_t, DstCompType>(buffer, numElements);
     }
-    case CType::UINT: {
+    case ComponentType::UInt32: {
       return createBuffer_dispatch<uint32_t, DstCompType>(buffer, numElements);
     }
-    case CType::INT: {
+    case ComponentType::Int32: {
       return createBuffer_dispatch<int32_t, DstCompType>(buffer, numElements);
     }
-    case CType::ULONG: {
+    case ComponentType::ULong: {
       return createBuffer_dispatch<unsigned long, DstCompType>(buffer, numElements);
     }
-    case CType::LONG: {
+    case ComponentType::Long: {
       return createBuffer_dispatch<long, DstCompType>(buffer, numElements);
     }
-    case CType::ULONGLONG: {
+    case ComponentType::ULongLong: {
       return createBuffer_dispatch<unsigned long long, DstCompType>(buffer, numElements);
     }
-    case CType::LONGLONG: {
+    case ComponentType::LongLong: {
       return createBuffer_dispatch<long long, DstCompType>(buffer, numElements);
     }
-    case CType::FLOAT: {
+    case ComponentType::Float32: {
       return createBuffer_dispatch<float, DstCompType>(buffer, numElements);
     }
-    case CType::DOUBLE: {
+    case ComponentType::Float64: {
       return createBuffer_dispatch<double, DstCompType>(buffer, numElements);
     }
-    case CType::LDOUBLE: {
+    case ComponentType::LongDouble: {
       return createBuffer_dispatch<long double, DstCompType>(buffer, numElements);
     }
 
     default:
-    case CType::UNKNOWNCOMPONENTTYPE: {
+    case ComponentType::Undefined: {
       spdlog::error("Unknown component type when creating buffer");
       throw_debug("Unknown component type when creating buffer")
     }

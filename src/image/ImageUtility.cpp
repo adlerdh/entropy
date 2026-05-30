@@ -1,6 +1,6 @@
 #include "image/ImageUtility.h"
-#include "image/ImageUtilityItk.h"
-#include "image/ImageUtility.tpp"
+#include "image/internal/ImageUtilityItk.h"
+#include "image/internal/ImageUtility.tpp"
 
 #include "common/MathFuncs.h"
 #include "common/Filesystem.h"

@@ -429,15 +429,15 @@ private:
   bool loadImageBuffer(
     const void* buffer,
     std::size_t numElements,
-    const itk::IOComponentEnum& srcComponentType,
-    const itk::IOComponentEnum& dstComponentType);
+    ComponentType srcComponentType,
+    ComponentType dstComponentType);
 
   /// Load a buffer as a segmentation component
   bool loadSegBuffer(
     const void* buffer,
     std::size_t numElements,
-    const itk::IOComponentEnum& srcComponentType,
-    const itk::IOComponentEnum& dstComponentType);
+    ComponentType srcComponentType,
+    ComponentType dstComponentType);
 
   /// For a given image component and 3D pixel indices, return a pair consisting of:
   /// 1) component buffer to index

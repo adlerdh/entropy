@@ -184,12 +184,6 @@ message(STATUS "Using GLM in ${glm_DIR}")
 set(iconfont_INCLUDE_DIR "${iconfont_PREFIX}/src"
   CACHE PATH "IconFontCppHeaders include directory")
 
-# Insight Toolkit (ITK)
-find_package(ITK ${itk_VERSION} REQUIRED HINTS "${itk_PREFIX}/build")
-
-message(STATUS "Found ITK in ${ITK_DIR}")
-include("${ITK_USE_FILE}")
-
 # NanoVG: A small antialiased vector graphics rendering library for OpenGL
 set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
 add_library(nanovg STATIC "${nanovg_SRC_DIR}/nanovg.c")
@@ -606,7 +600,6 @@ target_sources(${entropy_EXE} PRIVATE
 )
 
 target_link_libraries(${entropy_EXE} PRIVATE
-  ${ITK_LIBRARIES}
   CLI11::CLI11
   Entropy::Image
   ghcFilesystem::ghc_filesystem
@@ -635,7 +628,6 @@ target_include_directories(${entropy_EXE} PRIVATE
   "${imgui_SRC_DIR}"
   "${imgui_SRC_DIR}/imgui" # due to ImPlot
   "${implot_SRC_DIR}"
-  ${ITK_INCLUDE_DIRS}
   "${tinyfsm_INCLUDE_DIR}"
 )
 

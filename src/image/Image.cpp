@@ -1,8 +1,8 @@
 #include "image/Image.h"
-#include "image/ImageCastHelper.tpp"
+#include "image/internal/ImageCastHelper.tpp"
 #include "image/ImageUtility.h"
-#include "image/ImageUtilityItk.h"
-#include "image/ImageUtility.tpp"
+#include "image/internal/ImageUtilityItk.h"
+#include "image/internal/ImageUtility.tpp"
 
 // clang-format off
 #include <spdlog/spdlog.h>
@@ -29,7 +29,7 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
   }
 
   /// @todo Handle 4D images
-  if (!m_ioInfoOnDisk.set(imageIo)) {
+  if (!setImageIoInfoFromItk(m_ioInfoOnDisk, imageIo)) {
     spdlog::error("Error setting image IO information for image from file {}", fileName);
     throw_debug("Error setting image IO information")
   }
@@ -38,17 +38,13 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
   // image)
   m_ioInfoInMemory = m_ioInfoOnDisk;
 
-  const bool isComponentFloatingPoint =
-    m_ioInfoOnDisk.m_componentInfo.m_componentType == itk::IOComponentEnum::FLOAT ||
-    m_ioInfoOnDisk.m_componentInfo.m_componentType == itk::IOComponentEnum::DOUBLE ||
-    m_ioInfoOnDisk.m_componentInfo.m_componentType == itk::IOComponentEnum::LDOUBLE;
+  const bool componentIsFloatingPoint = isComponentFloatingPoint(m_ioInfoOnDisk.m_componentInfo.m_componentType);
 
-  // Source and destination component ITK types: Floating point images are loaded with 32-bit float
+  // Source and destination component types: Floating point images are loaded with 32-bit float
   // components and integer images are loaded with 64-bit signed integer components.
-  const itk::IOComponentEnum srcItkCompType =
-    isComponentFloatingPoint ? itk::IOComponentEnum::FLOAT : itk::IOComponentEnum::LONGLONG;
+  const ComponentType srcCompType = componentIsFloatingPoint ? ComponentType::Float32 : ComponentType::LongLong;
 
-  const itk::IOComponentEnum dstItkCompType = m_ioInfoInMemory.m_componentInfo.m_componentType;
+  const ComponentType dstCompType = m_ioInfoInMemory.m_componentInfo.m_componentType;
 
   const std::size_t numPixels = m_ioInfoOnDisk.m_sizeInfo.m_imageSizeInPixels;
   const uint32_t numCompsOnDisk = m_ioInfoOnDisk.m_pixelInfo.m_numComponents;
@@ -99,21 +95,21 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
 
   switch (m_imageRep) {
     case ImageRepresentation::Image: {
-      loadBufferFn = [this, &srcItkCompType, &dstItkCompType](const void* buffer, std::size_t numElements) {
-        return loadImageBuffer(buffer, numElements, srcItkCompType, dstItkCompType);
+      loadBufferFn = [this, &srcCompType, &dstCompType](const void* buffer, std::size_t numElements) {
+        return loadImageBuffer(buffer, numElements, srcCompType, dstCompType);
       };
       break;
     }
     case ImageRepresentation::Segmentation: {
-      loadBufferFn = [this, &srcItkCompType, &dstItkCompType](const void* buffer, std::size_t numElements) {
-        return loadSegBuffer(buffer, numElements, srcItkCompType, dstItkCompType);
+      loadBufferFn = [this, &srcCompType, &dstCompType](const void* buffer, std::size_t numElements) {
+        return loadSegBuffer(buffer, numElements, srcCompType, dstCompType);
       };
       break;
     }
   }
 
   bool loaded = false;
-  if (isComponentFloatingPoint) {
+  if (componentIsFloatingPoint) {
     // Read image with floating point components from disk to an ITK image with 32-bit float point
     // pixel components
     loaded =
@@ -189,62 +185,62 @@ Image::Image(
 
   // The image does not exist on disk, but we need to fill this out anyway:
   m_ioInfoOnDisk.m_fileInfo.m_fileName = m_header.fileName();
-  m_ioInfoOnDisk.m_componentInfo.m_componentType = toItkComponentType(m_header.memoryComponentType());
+  m_ioInfoOnDisk.m_componentInfo.m_componentType = m_header.memoryComponentType();
   m_ioInfoOnDisk.m_componentInfo.m_componentTypeString = m_header.memoryComponentTypeAsString();
   m_ioInfoInMemory = m_ioInfoOnDisk;
 
-  // Source and destination component ITK types
-  using CType = itk::IOComponentEnum;
-  const CType srcItkCompType = m_ioInfoInMemory.m_componentInfo.m_componentType;
-  CType dstItkCompType = itk::IOComponentEnum::UNKNOWNCOMPONENTTYPE;
+  // Source and destination component types
+  using CType = ComponentType;
+  const CType srcCompType = m_ioInfoInMemory.m_componentInfo.m_componentType;
+  CType dstCompType = ComponentType::Undefined;
 
-  switch (srcItkCompType) {
-    case CType::UCHAR: {
-      dstItkCompType = CType::UCHAR;
+  switch (srcCompType) {
+    case CType::UInt8: {
+      dstCompType = CType::UInt8;
       break;
     }
-    case CType::CHAR: {
-      dstItkCompType = CType::CHAR;
+    case CType::Int8: {
+      dstCompType = CType::Int8;
       break;
     }
-    case CType::USHORT: {
-      dstItkCompType = CType::USHORT;
+    case CType::UInt16: {
+      dstCompType = CType::UInt16;
       break;
     }
-    case CType::SHORT: {
-      dstItkCompType = CType::SHORT;
+    case CType::Int16: {
+      dstCompType = CType::Int16;
       break;
     }
-    case CType::UINT: {
-      dstItkCompType = CType::UINT;
+    case CType::UInt32: {
+      dstCompType = CType::UInt32;
       break;
     }
-    case CType::INT: {
-      dstItkCompType = CType::INT;
+    case CType::Int32: {
+      dstCompType = CType::Int32;
       break;
     }
-    case CType::FLOAT: {
-      dstItkCompType = CType::FLOAT;
-      break;
-    }
-
-    case CType::ULONG:
-    case CType::ULONGLONG: {
-      dstItkCompType = CType::UINT;
-      break;
-    }
-    case CType::LONG:
-    case CType::LONGLONG: {
-      dstItkCompType = CType::INT;
-      break;
-    }
-    case CType::DOUBLE:
-    case CType::LDOUBLE: {
-      dstItkCompType = CType::FLOAT;
+    case CType::Float32: {
+      dstCompType = CType::Float32;
       break;
     }
 
-    case CType::UNKNOWNCOMPONENTTYPE: {
+    case CType::ULong:
+    case CType::ULongLong: {
+      dstCompType = CType::UInt32;
+      break;
+    }
+    case CType::Long:
+    case CType::LongLong: {
+      dstCompType = CType::Int32;
+      break;
+    }
+    case CType::Float64:
+    case CType::LongDouble: {
+      dstCompType = CType::Float32;
+      break;
+    }
+
+    case CType::Undefined: {
       spdlog::error("Unknown component type in image from file {}", m_ioInfoOnDisk.m_fileInfo.m_fileName);
       throw_debug("Unknown component type in image")
     }
@@ -296,13 +292,13 @@ Image::Image(
         for (std::size_t c = 0; c < m_header.numComponentsPerPixel(); ++c) {
           switch (m_imageRep) {
             case ImageRepresentation::Segmentation: {
-              if (!loadSegBuffer(imageDataComponents[c], numPixels, srcItkCompType, dstItkCompType)) {
+              if (!loadSegBuffer(imageDataComponents[c], numPixels, srcCompType, dstCompType)) {
                 throw_debug("Error loading segmentation image buffer")
               }
               break;
             }
             case ImageRepresentation::Image: {
-              if (!loadImageBuffer(imageDataComponents[c], numPixels, srcItkCompType, dstItkCompType)) {
+              if (!loadImageBuffer(imageDataComponents[c], numPixels, srcCompType, dstCompType)) {
                 throw_debug("Error loading image buffer")
               }
               break;
@@ -317,13 +313,13 @@ Image::Image(
 
         switch (m_imageRep) {
           case ImageRepresentation::Segmentation: {
-            if (!loadSegBuffer(imageDataComponents[0], N, srcItkCompType, dstItkCompType)) {
+            if (!loadSegBuffer(imageDataComponents[0], N, srcCompType, dstCompType)) {
               throw_debug("Error loading segmentation image buffer")
             }
             break;
           }
           case ImageRepresentation::Image: {
-            if (!loadImageBuffer(imageDataComponents[0], N, srcItkCompType, dstItkCompType)) {
+            if (!loadImageBuffer(imageDataComponents[0], N, srcCompType, dstCompType)) {
               throw_debug("Error loading image buffer")
             }
             break;
@@ -335,12 +331,12 @@ Image::Image(
   else // scalar image
   {
     if (ImageRepresentation::Segmentation == m_imageRep) {
-      if (!loadSegBuffer(imageDataComponents[0], numPixels, srcItkCompType, dstItkCompType)) {
+      if (!loadSegBuffer(imageDataComponents[0], numPixels, srcCompType, dstCompType)) {
         throw_debug("Error loading segmentation image buffer")
       }
     }
     else {
-      if (!loadImageBuffer(imageDataComponents[0], numPixels, srcItkCompType, dstItkCompType)) {
+      if (!loadImageBuffer(imageDataComponents[0], numPixels, srcCompType, dstCompType)) {
         throw_debug("Error loading image buffer")
       }
     }
@@ -624,83 +620,82 @@ bool Image::generateSortedBuffers()
 bool Image::loadImageBuffer(
   const void* buffer,
   std::size_t numElements,
-  const itk::IOComponentEnum& srcComponentType,
-  const itk::IOComponentEnum& dstComponentType)
+  ComponentType srcComponentType,
+  ComponentType dstComponentType)
 {
-  using CType = itk::ImageIOBase::IOComponentType;
+  using CType = ComponentType;
 
   bool didCast = false;
   bool warnSizeConversion = false;
 
   switch (dstComponentType) {
-    case CType::UCHAR: {
+    case CType::UInt8: {
       m_data_uint8.emplace_back(createBuffer<uint8_t>(buffer, numElements, srcComponentType));
       break;
     }
-    case CType::CHAR: {
+    case CType::Int8: {
       m_data_int8.emplace_back(createBuffer<int8_t>(buffer, numElements, srcComponentType));
       break;
     }
-    case CType::USHORT: {
+    case CType::UInt16: {
       m_data_uint16.emplace_back(createBuffer<uint16_t>(buffer, numElements, srcComponentType));
       break;
     }
-    case CType::SHORT: {
+    case CType::Int16: {
       m_data_int16.emplace_back(createBuffer<int16_t>(buffer, numElements, srcComponentType));
       break;
     }
-    case CType::UINT: {
+    case CType::UInt32: {
       m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
       break;
     }
-    case CType::INT: {
+    case CType::Int32: {
       m_data_int32.emplace_back(createBuffer<int32_t>(buffer, numElements, srcComponentType));
       break;
     }
-    case CType::FLOAT: {
+    case CType::Float32: {
       m_data_float32.emplace_back(createBuffer<float>(buffer, numElements, srcComponentType));
       break;
     }
 
-    case CType::ULONG:
-    case CType::ULONGLONG: {
+    case CType::ULong:
+    case CType::ULongLong: {
       m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UINT;
+      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
       m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
       didCast = true;
       warnSizeConversion = true;
       break;
     }
 
-    case CType::LONG:
-    case CType::LONGLONG: {
+    case CType::Long:
+    case CType::LongLong: {
       m_data_int32.emplace_back(createBuffer<int32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::INT;
+      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::Int32;
       m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
       didCast = true;
       warnSizeConversion = true;
       break;
     }
 
-    case CType::DOUBLE:
-    case CType::LDOUBLE: {
+    case CType::Float64:
+    case CType::LongDouble: {
       m_data_float32.emplace_back(createBuffer<float>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::FLOAT;
+      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::Float32;
       m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
       didCast = true;
       warnSizeConversion = true;
       break;
     }
 
-    case CType::UNKNOWNCOMPONENTTYPE: {
+    case CType::Undefined: {
       spdlog::error("Unknown component type in image from file {}", m_ioInfoOnDisk.m_fileInfo.m_fileName);
       return false;
     }
   }
 
   if (didCast) {
-    const std::string newTypeString =
-      itk::ImageIOBase::GetComponentTypeAsString(m_ioInfoInMemory.m_componentInfo.m_componentType);
+    const std::string newTypeString = componentTypeString(m_ioInfoInMemory.m_componentInfo.m_componentType);
 
     m_ioInfoInMemory.m_componentInfo.m_componentTypeString = newTypeString;
 
@@ -727,10 +722,10 @@ bool Image::loadImageBuffer(
 bool Image::loadSegBuffer(
   const void* buffer,
   std::size_t numElements,
-  const itk::IOComponentEnum& srcComponentType,
-  const itk::IOComponentEnum& dstComponentType)
+  ComponentType srcComponentType,
+  ComponentType dstComponentType)
 {
-  using CType = itk::ImageIOBase::IOComponentType;
+  using CType = ComponentType;
 
   bool didCast = false;
   bool warnFloatConversion = false;
@@ -739,39 +734,39 @@ bool Image::loadSegBuffer(
 
   switch (dstComponentType) {
     // No casting is needed for the cases of unsigned integers with 8, 16, or 32 bytes:
-    case CType::UCHAR: {
+    case CType::UInt8: {
       m_data_uint8.emplace_back(createBuffer<uint8_t>(buffer, numElements, srcComponentType));
       break;
     }
-    case CType::USHORT: {
+    case CType::UInt16: {
       m_data_uint16.emplace_back(createBuffer<uint16_t>(buffer, numElements, srcComponentType));
       break;
     }
-    case CType::UINT: {
+    case CType::UInt32: {
       m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
       break;
     }
 
     // Signed 8-, 16-, and 32-bit integers are cast to unsigned 8-, 16-, and 32-bit integers:
-    case CType::CHAR: {
+    case CType::Int8: {
       m_data_uint8.emplace_back(createBuffer<uint8_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UCHAR;
+      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt8;
       m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 1;
       didCast = true;
       warnSignConversion = true;
       break;
     }
-    case CType::SHORT: {
+    case CType::Int16: {
       m_data_uint16.emplace_back(createBuffer<uint16_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::USHORT;
+      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt16;
       m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 2;
       didCast = true;
       warnSignConversion = true;
       break;
     }
-    case CType::INT: {
+    case CType::Int32: {
       m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UINT;
+      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
       m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
       didCast = true;
       warnSignConversion = true;
@@ -779,10 +774,10 @@ bool Image::loadSegBuffer(
     }
 
     // Unsigned long (64-bit) and long long (128-bit) integers are cast to unsigned 32-bit integers:
-    case CType::ULONG:
-    case CType::ULONGLONG: {
+    case CType::ULong:
+    case CType::ULongLong: {
       m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UINT;
+      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
       m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
       didCast = true;
       warnSizeConversion = true;
@@ -790,10 +785,10 @@ bool Image::loadSegBuffer(
     }
 
     // Signed long (64-bit) and long long (128-bit) integers are cast to unsigned 32-bit integers:
-    case CType::LONG:
-    case CType::LONGLONG: {
+    case CType::Long:
+    case CType::LongLong: {
       m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UINT;
+      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
       m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
       didCast = true;
       warnSizeConversion = true;
@@ -802,11 +797,11 @@ bool Image::loadSegBuffer(
     }
 
     // Floating-points are cast to unsigned 32-bit integers:
-    case CType::FLOAT:
-    case CType::DOUBLE:
-    case CType::LDOUBLE: {
+    case CType::Float32:
+    case CType::Float64:
+    case CType::LongDouble: {
       m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UINT;
+      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
       m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
       didCast = true;
       warnFloatConversion = true;
@@ -814,15 +809,14 @@ bool Image::loadSegBuffer(
       break;
     }
 
-    case CType::UNKNOWNCOMPONENTTYPE: {
+    case CType::Undefined: {
       spdlog::error("Unknown component type in image from file {}", m_ioInfoOnDisk.m_fileInfo.m_fileName);
       return false;
     }
   }
 
   if (didCast) {
-    const std::string newTypeString =
-      itk::ImageIOBase::GetComponentTypeAsString(m_ioInfoInMemory.m_componentInfo.m_componentType);
+    const std::string newTypeString = componentTypeString(m_ioInfoInMemory.m_componentInfo.m_componentType);
 
     m_ioInfoInMemory.m_componentInfo.m_componentTypeString = newTypeString;
     m_ioInfoInMemory.m_sizeInfo.m_imageSizeInBytes =

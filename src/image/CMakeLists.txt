@@ -1,9 +1,15 @@
+# Insight Toolkit (ITK) is an implementation detail of EntropyImage
+find_package(ITK ${itk_VERSION} REQUIRED HINTS "${itk_PREFIX}/build")
+message(STATUS "Found ITK in ${ITK_DIR}")
+include("${ITK_USE_FILE}")
+
 add_library(EntropyImage)
 add_library(Entropy::Image ALIAS EntropyImage)
 
 target_sources(EntropyImage PRIVATE
   Image.cpp
   ImageColorMap.cpp
+  ImageDerivedData.cpp
   ImageHeader.cpp
   ImageIoInfo.cpp
   ImageSettings.cpp

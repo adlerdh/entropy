@@ -5,9 +5,6 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_precision.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include <vnl/vnl_matrix_fixed.h>
 
 #include <array>
 #include <map>
@@ -202,21 +199,6 @@ int pnpoly(const std::vector<glm::vec2>& poly, const glm::vec2& p);
  * @return Interpolated table value at x
  */
 float interpolate(float x, const std::map<float, float>& table);
-
-namespace convert
-{
-
-/**
- * @brief Convert a 3x3 GLM matrix to a 3x3 VNL matrix
- */
-template<class T>
-vnl_matrix_fixed<T, 3, 3> toVnlMatrixFixed(const glm::tmat3x3<T, glm::highp>& glmMatrix)
-{
-  const vnl_matrix_fixed<T, 3, 3> vnlMatrixTransposed(glm::value_ptr(glmMatrix));
-  return vnlMatrixTransposed.transpose();
-}
-
-} // namespace convert
 
 } // namespace math
 

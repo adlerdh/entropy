@@ -3,11 +3,12 @@
 #include "mesh/vtkdetails/MeshGeneration.hpp"
 
 #include "common/MathFuncs.h"
+#include "common/VnlMath.h"
 #include "common/UuidUtility.h"
 
 #include "image/Image.h"
 #include "image/ImageHeader.h"
-#include "image/ImageUtility.tpp"
+#include "image/internal/ImageUtility.tpp"
 
 #include "rendering/utility/CreateGLObjects.h"
 
