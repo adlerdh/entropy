@@ -76,6 +76,9 @@ struct Image
   /// Optional deformable transformation image file name
   std::optional<fs::path> m_deformationFileName = std::nullopt;
 
+  /// Optional manual transformation matrix from affine-registered subject space to world space
+  std::optional<glm::mat4> m_worldDefTx = std::nullopt;
+
   /// Optional annotations JSON file name
   std::optional<fs::path> m_annotationsFileName = std::nullopt;
 

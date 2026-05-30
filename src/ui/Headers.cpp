@@ -389,6 +389,7 @@ void renderImageHeader(
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToBack,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToFront,
   const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
+  const std::function<void(const uuids::uuid& imageUid)>& requestSetReferenceImage,
   const AllViewsRecenterType& recenterAllViews)
 {
   const ImGuiColorEditFlags colorNoAlphaEditFlags = ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar |
@@ -583,6 +584,15 @@ void renderImageHeader(
 
       ImGui::SameLine();
       ImGui::Text("Transformation is unlocked");
+    }
+  }
+
+  if (!isRef) {
+    if (ImGui::Button("Set as Reference Image")) {
+      requestSetReferenceImage(imageUid);
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Make this image the project reference image");
     }
   }
 

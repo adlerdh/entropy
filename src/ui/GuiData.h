@@ -4,6 +4,7 @@
 #include <imgui/imgui.h>
 #include <uuid.h>
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -33,6 +34,10 @@ struct GuiData
   /// Flag to show dialog confirming closing of the application window.
   /// This is set the false until the user requests to close the window.
   bool m_showConfirmCloseAppPopup = false;
+
+  /// Flag to show dialog confirming reference image reassignment.
+  bool m_showConfirmSetReferenceImagePopup = false;
+  std::optional<uuids::uuid> m_pendingReferenceImageUid = std::nullopt;
 
   /// Map of imageUid to boolean of whether its image color map window is shown.
   /// (The color map window is shown as a popup from the Image Properties window)

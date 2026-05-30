@@ -18,6 +18,8 @@
 /**
  * @brief Data for the window
  */
+class AppData;
+
 class WindowData
 {
   using uuid = uuids::uuid;
@@ -31,6 +33,9 @@ public:
 
   /// Call this when image order changes in order to update rendered and metric images
   void updateImageOrdering(uuid_range_t orderedImageUids);
+
+  /// Append an image to views that render the full image stack by default.
+  void appendImageToDefaultRenderedImages(const AppData& appData, const uuid& imageUid);
 
   /// Initialize all view to the given center and FOV, defined in World space
   void recenterAllViews(

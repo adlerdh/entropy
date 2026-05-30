@@ -7,6 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
@@ -144,6 +145,23 @@ const glm::vec3& ImageTransformations::get_worldDef_T_affine_scale() const
 const glm::mat4& ImageTransformations::get_worldDef_T_affine() const
 {
   return (m_enable_worldDef_T_affine) ? m_worldDef_T_affine : sk_ident;
+}
+
+void ImageTransformations::set_worldDef_T_affine(glm::mat4 worldDef_T_affine)
+{
+  if (m_is_worldDef_T_affine_locked) return;
+
+  glm::vec3 skew;
+  glm::vec4 perspective;
+  glm::decompose(
+    worldDef_T_affine,
+    m_worldDef_T_affine_scale,
+    m_worldDef_T_affine_rotation,
+    m_worldDef_T_affine_translation,
+    skew,
+    perspective);
+
+  updateTransformations();
 }
 
 void ImageTransformations::reset_worldDef_T_affine()

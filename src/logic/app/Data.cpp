@@ -1064,12 +1064,19 @@ std::optional<uuid> AppData::refImageUid() const
 
 bool AppData::setRefImageUid(const uuid& uid)
 {
-  if (image(uid)) {
-    m_refImageUid = uid;
-    return true;
+  if (!image(uid)) {
+    return false;
   }
 
-  return false;
+  m_refImageUid = uid;
+
+  auto it = std::find(m_imageUidsOrdered.begin(), m_imageUidsOrdered.end(), uid);
+  if (m_imageUidsOrdered.end() != it && m_imageUidsOrdered.begin() != it) {
+    m_imageUidsOrdered.erase(it);
+    m_imageUidsOrdered.insert(m_imageUidsOrdered.begin(), uid);
+  }
+
+  return true;
 }
 
 std::optional<uuid> AppData::activeImageUid() const

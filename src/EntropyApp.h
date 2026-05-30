@@ -50,9 +50,11 @@ public:
   /// Asynchronously load images and notify render loop when done
   void loadImagesFromParams(const InputParams&);
   void loadImageFile(const fs::path& fileName);
+  void addImageFile(const fs::path& fileName);
   void loadProjectFile(const fs::path& fileName);
   void saveProject();
   void saveProjectAs(const fs::path& fileName);
+  bool setReferenceImage(const uuids::uuid& imageUid);
   void closeProject();
 
   /**
@@ -136,6 +138,12 @@ private:
   /// Atomic boolean set to true iff images could not be loaded.
   /// If true, this flag will cause the render loop to exit.
   std::atomic<bool> m_imageLoadFailed;
+
+  /// True when onImagesReady is handling a live Add Image operation instead of initial load.
+  bool m_preserveLayoutsOnImagesReady = false;
+
+  /// Image added by the current live Add Image operation, if any.
+  std::optional<uuids::uuid> m_pendingAddedImageUid = std::nullopt;
 
   GlfwWrapper m_glfw;                //!< GLFW wrapper
   AppData m_data;                    //!< Application data

@@ -180,6 +180,7 @@ void ImGuiWrapper::setCallbacks(
   std::function<void(void)> postEmptyGlfwEvent,
   std::function<void(void)> readjustViewport,
   std::function<void(const fs::path& fileName)> openImageFile,
+  std::function<void(const fs::path& fileName)> addImageFile,
   std::function<void(const fs::path& fileName)> openProjectFile,
   std::function<void()> saveProject,
   std::function<void(const fs::path& fileName)> saveProjectAs,
@@ -212,11 +213,13 @@ void ImGuiWrapper::setCallbacks(
   std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
     executePoissonSeg,
   std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
+  std::function<bool(const uuids::uuid& imageUid)> setReferenceImage,
   std::function<void()> paintActiveSegmentationWithActivePolygon)
 {
   m_postEmptyGlfwEvent = postEmptyGlfwEvent;
   m_readjustViewport = readjustViewport;
   m_openImageFile = openImageFile;
+  m_addImageFile = addImageFile;
   m_openProjectFile = openProjectFile;
   m_saveProject = saveProject;
   m_saveProjectAs = saveProjectAs;
@@ -246,6 +249,7 @@ void ImGuiWrapper::setCallbacks(
   m_executeGraphCutsSeg = executeGraphCutsSeg;
   m_executePoissonSeg = executePoissonSeg;
   m_setLockManualImageTransformation = setLockManualImageTransformation;
+  m_setReferenceImage = setReferenceImage;
   m_paintActiveSegmentationWithActivePolygon = paintActiveSegmentationWithActivePolygon;
 }
 
@@ -776,6 +780,7 @@ void ImGuiWrapper::render()
 
   if (m_appData.guiData().m_renderUiWindows) {
     renderConfirmCloseAppPopup(m_appData);
+    renderConfirmSetReferenceImagePopup(m_appData, m_setReferenceImage);
 
     if (m_appData.guiData().m_showImGuiDemoWindow) {
       ImGui::ShowDemoWindow(&m_appData.guiData().m_showImGuiDemoWindow);
@@ -789,6 +794,7 @@ void ImGuiWrapper::render()
       m_appData.guiData(),
       MainMenuBarCallbacks{
         .openImageFile = m_openImageFile,
+        .addImageFile = m_addImageFile,
         .openProjectFile = m_openProjectFile,
         .saveProject = m_saveProject,
         .saveProjectAs = m_saveProjectAs,
@@ -813,6 +819,7 @@ void ImGuiWrapper::render()
           },
         .closeProject = m_closeProject,
         .canOpenProject = ProjectLoadState::Loading != projectLoadState,
+        .canAddImage = ProjectLoadState::Loaded == projectLoadState,
         .canSaveProject = ProjectLoadState::Loaded == projectLoadState,
         .canCloseProject = ProjectLoadState::Empty != projectLoadState});
 
@@ -874,6 +881,10 @@ void ImGuiWrapper::render()
         m_updateImageInterpolationMode,
         m_updateImageColorMapInterpolationMode,
         m_setLockManualImageTransformation,
+        [this](const uuids::uuid& imageUid) {
+          m_appData.guiData().m_pendingReferenceImageUid = imageUid;
+          m_appData.guiData().m_showConfirmSetReferenceImagePopup = true;
+        },
         m_recenterAllViews);
     }
 

@@ -1,6 +1,7 @@
 #include "ui/Popups.h"
 #include "ui/Helpers.h"
 #include "logic/app/Data.h"
+#include "image/Image.h"
 
 #include "BuildStamp.h"
 
@@ -181,4 +182,58 @@ void renderConfirmCloseAppPopup(AppData& appData)
 
   // Disable the closing flag
   appData.guiData().m_showConfirmCloseAppPopup = false;
+}
+
+void renderConfirmSetReferenceImagePopup(
+  AppData& appData,
+  const std::function<bool(const uuids::uuid& imageUid)>& setReferenceImage)
+{
+  constexpr const char* popupTitle = "Set Reference Image?";
+
+  if (appData.guiData().m_showConfirmSetReferenceImagePopup && !ImGui::IsPopupOpen(popupTitle)) {
+    ImGui::OpenPopup(popupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
+  }
+
+  const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+  ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+  if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
+    const auto pendingUid = appData.guiData().m_pendingReferenceImageUid;
+    const Image* pendingImage = pendingUid ? appData.image(*pendingUid) : nullptr;
+    const std::string displayName = pendingImage ? pendingImage->settings().displayName() : std::string{"this image"};
+
+    ImGui::Text("Make '%s' the reference image?", displayName.c_str());
+    ImGui::Spacing();
+    ImGui::TextWrapped("Changing the reference image changes the project coordinate frame.");
+    ImGui::TextWrapped(
+      "Entropy will update the other image transforms to preserve the current registration, but the selected image "
+      "will become the fixed world-space reference.");
+    ImGui::Spacing();
+    ImGui::BulletText("The selected image's manual transform will be reset and locked.");
+    ImGui::BulletText(
+      "Any affine transform file assigned to the selected image will no longer be used as an affine transform for that "
+      "image.");
+    ImGui::BulletText(
+      "Unsaved manual-registration changes should be saved after this operation if you want them in the project file.");
+    ImGui::Separator();
+
+    if (ImGui::Button("Yes", ImVec2(80, 0))) {
+      if (pendingUid && setReferenceImage) {
+        setReferenceImage(*pendingUid);
+      }
+      appData.guiData().m_pendingReferenceImageUid = std::nullopt;
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::SetItemDefaultFocus();
+
+    ImGui::SameLine();
+    if (ImGui::Button("No", ImVec2(80, 0))) {
+      appData.guiData().m_pendingReferenceImageUid = std::nullopt;
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+
+  appData.guiData().m_showConfirmSetReferenceImagePopup = false;
 }

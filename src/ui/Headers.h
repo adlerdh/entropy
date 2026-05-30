@@ -50,6 +50,7 @@ void renderImageHeader(
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToBack,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToFront,
   const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
+  const std::function<void(const uuids::uuid& imageUid)>& requestSetReferenceImage,
   const AllViewsRecenterType& recenterAllViews);
 
 void renderSegmentationHeader(

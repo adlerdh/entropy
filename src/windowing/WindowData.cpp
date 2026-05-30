@@ -4,6 +4,7 @@
 #include "common/UuidUtility.h"
 
 #include "logic/camera/CameraHelpers.h"
+#include "logic/app/Data.h"
 #include "logic/camera/CameraTypes.h"
 
 #include "windowing/ViewTypes.h"
@@ -452,6 +453,12 @@ Layout createGridLayout(
     }
   }
 
+  if (isLightbox && imageUidForLightbox) {
+    const std::list<uuid> lightboxImageUids{*imageUidForLightbox};
+    layout.setRenderedImages(lightboxImageUids, false);
+    layout.setMetricImages(lightboxImageUids);
+  }
+
   return layout;
 }
 } // namespace
@@ -652,6 +659,37 @@ void WindowData::updateImageOrdering(uuid_range_t orderedImageUids)
     for (auto& [viewUid, view] : layout.views()) {
       if (view) {
         view->updateImageOrdering(orderedImageUids);
+      }
+    }
+  }
+}
+
+void WindowData::appendImageToDefaultRenderedImages(const AppData& appData, const uuid& imageUid)
+{
+  const auto appendToFrame = [&appData, &imageUid](ControlFrame& frame) {
+    if (!frame.defaultRenderAllImages()) {
+      return;
+    }
+
+    frame.setImageRendered(appData, imageUid, true);
+
+    if (frame.metricImages().size() < 2) {
+      if (const auto imageIndex = appData.imageIndex(imageUid)) {
+        frame.setImageUsedForMetric(appData, *imageIndex, true);
+      }
+    }
+  };
+
+  for (auto& layout : m_layouts) {
+    if (layout.isLightbox()) {
+      continue;
+    }
+
+    appendToFrame(layout);
+
+    for (auto& [viewUid, view] : layout.views()) {
+      if (view) {
+        appendToFrame(*view);
       }
     }
   }

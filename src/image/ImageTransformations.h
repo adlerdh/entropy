@@ -104,6 +104,9 @@ public:
 
   const glm::mat4& get_worldDef_T_affine() const;
 
+  /// Set the manual transformation matrix directly.
+  void set_worldDef_T_affine(glm::mat4 worldDef_T_affine);
+
   /// Set worldDef_T_affine to identity
   void reset_worldDef_T_affine();
 

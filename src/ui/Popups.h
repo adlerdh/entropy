@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <uuid.h>
 
 class AppData;
 
@@ -18,3 +19,7 @@ void renderAddLayoutModalPopup(
 void renderAboutDialogModalPopup(bool open);
 
 void renderConfirmCloseAppPopup(AppData& appData);
+
+void renderConfirmSetReferenceImagePopup(
+  AppData& appData,
+  const std::function<bool(const uuids::uuid& imageUid)>& setReferenceImage);

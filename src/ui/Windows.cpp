@@ -791,6 +791,7 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
   const std::function<bool(const uuid& imageUid, bool locked)>& setLockManualImageTransformation,
+  const std::function<void(const uuid& imageUid)>& requestSetReferenceImage,
   const AllViewsRecenterType& recenterAllViews)
 {
   static const std::string sk_showOpacityMixer = std::string(ICON_FK_SLIDERS) + " Show opacity mixer";
@@ -836,6 +837,7 @@ void renderImagePropertiesWindow(
           moveImageToBack,
           moveImageToFront,
           setLockManualImageTransformation,
+          requestSetReferenceImage,
           recenterAllViews);
       }
     }

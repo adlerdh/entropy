@@ -27,6 +27,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -105,6 +106,22 @@ fs::path projectSavePath(fs::path fileName)
     fileName += ".json";
   }
   return fileName;
+}
+
+bool isApproximatelyIdentity(const glm::mat4& matrix)
+{
+  constexpr float epsilon = 1.0e-5f;
+  const glm::mat4 identity{1.0f};
+
+  for (int c = 0; c < 4; ++c) {
+    for (int r = 0; r < 4; ++r) {
+      if (std::abs(matrix[c][r] - identity[c][r]) > epsilon) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 } // namespace
 
@@ -192,6 +209,11 @@ void EntropyApp::onImagesReady()
   constexpr bool resetObliqueOrientation = true;
   constexpr bool resetZoom = true;
 
+  const bool preserveLayouts = m_preserveLayoutsOnImagesReady;
+  const std::optional<uuids::uuid> pendingAddedImageUid = m_pendingAddedImageUid;
+  m_preserveLayoutsOnImagesReady = false;
+  m_pendingAddedImageUid = std::nullopt;
+
   spdlog::debug("Images are loaded.");
 
   const Image* refImg = m_data.refImage();
@@ -202,8 +224,18 @@ void EntropyApp::onImagesReady()
     throw_debug("The reference image is null")
   }
 
-  m_data.windowData().resetDefaultLayouts();
-  m_data.windowData().setCurrentLayoutIndex(1);
+  if (!preserveLayouts) {
+    m_data.windowData().resetDefaultLayouts();
+    m_data.windowData().setCurrentLayoutIndex(1);
+  }
+
+  auto& renderData = m_data.renderData();
+  renderData.m_imageTextures.clear();
+  renderData.m_distanceMapTextures.clear();
+  renderData.m_segTextures.clear();
+  renderData.m_labelBufferTextures.clear();
+  renderData.m_colormapTextures.clear();
+  renderData.m_uniforms.clear();
 
   m_rendering.initTextures();
   m_rendering.updateImageUniforms(m_data.imageUidsOrdered());
@@ -222,60 +254,71 @@ void EntropyApp::onImagesReady()
 
   spdlog::debug("Begin setting up window state");
 
-  // Prepare view layouts:
-  if (1 < m_data.numImages()) {
-    // Add a new layout with one row and a different image in each column:
-    static constexpr bool sk_offsetViews = false;
-    static constexpr bool sk_isLightbox = false;
-
-    if (const auto& refUid = m_data.refImageUid()) {
-      m_data.windowData()
-        .addGridLayout(ViewType::Axial, m_data.numImages(), 1, sk_offsetViews, sk_isLightbox, 0, *refUid);
-    }
-  }
-
-  // Add axial, coronal, sagittal layout, with one row for each image:
-  m_data.windowData().addAxCorSagLayout(m_data.numImages());
-
-  // Create axial, coronal, sagittal lightbox layouts for all images:
-  std::size_t imageIndex = 0;
-
-  for (const auto& imageUid : m_data.imageUidsOrdered()) {
+  const auto addLightboxLayoutsForImage = [this](const uuids::uuid& imageUid) {
     const Image* image = m_data.image(imageUid);
-    if (!image) {
-      continue;
+    const auto imageIndex = m_data.imageIndex(imageUid);
+    if (!image || !imageIndex) {
+      return;
     }
 
     m_data.windowData().addLightboxLayoutForImage(
       ViewType::Axial,
       data::computeNumImageSlicesAlongWorldDirection(*image, Directions::get(Directions::Anatomy::Inferior)),
-      imageIndex,
+      *imageIndex,
       imageUid);
 
     m_data.windowData().addLightboxLayoutForImage(
       ViewType::Coronal,
       data::computeNumImageSlicesAlongWorldDirection(*image, Directions::get(Directions::Anatomy::Anterior)),
-      imageIndex,
+      *imageIndex,
       imageUid);
 
     m_data.windowData().addLightboxLayoutForImage(
       ViewType::Sagittal,
       data::computeNumImageSlicesAlongWorldDirection(*image, Directions::get(Directions::Anatomy::Right)),
-      imageIndex,
+      *imageIndex,
       imageUid);
+  };
 
-    ++imageIndex;
+  if (preserveLayouts) {
+    if (pendingAddedImageUid) {
+      m_data.windowData().appendImageToDefaultRenderedImages(m_data, *pendingAddedImageUid);
+      addLightboxLayoutsForImage(*pendingAddedImageUid);
+    }
+
+    m_data.windowData().updateImageOrdering(m_data.imageUidsOrdered());
   }
+  else {
+    // Prepare view layouts:
+    if (1 < m_data.numImages()) {
+      // Add a new layout with one row and a different image in each column:
+      static constexpr bool sk_offsetViews = false;
+      static constexpr bool sk_isLightbox = false;
 
-  m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data.imageUidsOrdered());
+      if (const auto& refUid = m_data.refImageUid()) {
+        m_data.windowData()
+          .addGridLayout(ViewType::Axial, m_data.numImages(), 1, sk_offsetViews, sk_isLightbox, 0, *refUid);
+      }
+    }
 
-  m_callbackHandler.recenterViews(
-    m_data.state().recenteringMode(),
-    recenterCrosshairs,
-    realignCrosshairs,
-    doNotRecenterOnCurrentCrosshairsPos,
-    resetObliqueOrientation,
-    resetZoom);
+    // Add axial, coronal, sagittal layout, with one row for each image:
+    m_data.windowData().addAxCorSagLayout(m_data.numImages());
+
+    // Create axial, coronal, sagittal lightbox layouts for all images:
+    for (const auto& imageUid : m_data.imageUidsOrdered()) {
+      addLightboxLayoutsForImage(imageUid);
+    }
+
+    m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data.imageUidsOrdered());
+
+    m_callbackHandler.recenterViews(
+      m_data.state().recenteringMode(),
+      recenterCrosshairs,
+      realignCrosshairs,
+      doNotRecenterOnCurrentCrosshairsPos,
+      resetObliqueOrientation,
+      resetZoom);
+  }
 
   m_callbackHandler.setMouseMode(MouseMode::Pointer);
 
@@ -701,6 +744,20 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
     image->transformations().set_affine_T_subject_fileName(std::nullopt);
   }
 
+  if (serializedImage.m_worldDefTx) {
+    if (isReferenceImage) {
+      spdlog::warn(
+        "A manual transformation was provided for the reference image. It will be ignored, since the reference "
+        "image defines World space.");
+    }
+    else {
+      image->transformations().set_worldDef_T_affine_locked(false);
+      image->transformations().set_enable_worldDef_T_affine(true);
+      image->transformations().set_worldDef_T_affine(*serializedImage.m_worldDefTx);
+      image->transformations().set_worldDef_T_affine_locked(true);
+    }
+  }
+
   //    if ( serializedImage.m_deformationFileName && isReferenceImage )
   //    {
   //        spdlog::warn( "A deformable transformation file ({}) was provided for the reference
@@ -1054,6 +1111,12 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
 
   serializedImage.m_imageFileName = image->header().fileName();
   serializedImage.m_affineTxFileName = image->transformations().get_affine_T_subject_fileName();
+  if (
+    image->transformations().get_enable_worldDef_T_affine() &&
+    !isApproximatelyIdentity(image->transformations().get_worldDef_T_affine()))
+  {
+    serializedImage.m_worldDefTx = image->transformations().get_worldDef_T_affine();
+  }
   serializedImage.m_settings = makeImageSettingsSnapshot(*image);
 
   const auto defUids = m_data.imageToDefUids(imageUid);
@@ -1173,6 +1236,123 @@ void EntropyApp::loadImageFile(const fs::path& fileName)
   loadProject(std::move(project));
 }
 
+void EntropyApp::addImageFile(const fs::path& fileName)
+{
+  if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
+    loadImageFile(fileName);
+    return;
+  }
+
+  serialize::Image serializedImage;
+  serializedImage.m_imageFileName = fileName;
+
+  m_glfw.setWindowTitleStatus("Adding image...");
+  m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
+  m_data.state().setProjectLoadState(ProjectLoadState::Loading);
+  m_data.state().setAnimating(true);
+
+  const std::size_t previousNumImages = m_data.numImages();
+  const bool loaded = loadSerializedImage(serializedImage, false);
+
+  if (!loaded || m_data.numImages() <= previousNumImages) {
+    spdlog::error("Could not add image from {}", fileName);
+    m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
+    m_data.state().setAnimating(false);
+    m_glfw.setWindowTitleStatus(m_data.getAllImageDisplayNames());
+    m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+    m_glfw.postEmptyEvent();
+    return;
+  }
+
+  const std::optional<uuids::uuid> addedImageUid = m_data.imageUid(m_data.numImages() - 1);
+  if (addedImageUid) {
+    m_data.setActiveImageUid(*addedImageUid);
+  }
+
+  m_data.setRainbowColorsForAllImages();
+  m_data.setRainbowColorsForAllLandmarkGroups();
+  m_data.setProject(createProjectSnapshot());
+
+  m_preserveLayoutsOnImagesReady = true;
+  m_pendingAddedImageUid = addedImageUid;
+  m_imagesReady = true;
+  m_imageLoadFailed = false;
+  m_glfw.postEmptyEvent();
+}
+
+bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)
+{
+  Image* newReferenceImage = m_data.image(imageUid);
+  if (!newReferenceImage) {
+    spdlog::error("Cannot set invalid image {} as reference image", imageUid);
+    return false;
+  }
+
+  if (m_data.refImageUid() && *m_data.refImageUid() == imageUid) {
+    return true;
+  }
+
+  const glm::mat4 oldWorld_T_newReferenceSubject = newReferenceImage->transformations().worldDef_T_subject();
+  const glm::mat4 newWorld_T_oldWorld = glm::inverse(oldWorld_T_newReferenceSubject);
+
+  for (const auto& currentImageUid : m_data.imageUidsOrdered()) {
+    Image* image = m_data.image(currentImageUid);
+    if (!image) {
+      continue;
+    }
+
+    auto& tx = image->transformations();
+    tx.set_worldDef_T_affine_locked(false);
+
+    if (currentImageUid == imageUid) {
+      tx.set_enable_affine_T_subject(false);
+      tx.set_enable_worldDef_T_affine(false);
+      tx.set_affine_T_subject_fileName(std::nullopt);
+      tx.reset_worldDef_T_affine();
+      tx.set_worldDef_T_affine_locked(true);
+    }
+    else {
+      const glm::mat4 newWorld_T_subject = newWorld_T_oldWorld * tx.worldDef_T_subject();
+      const glm::mat4 manual_T_affine = newWorld_T_subject * glm::inverse(tx.get_affine_T_subject());
+      tx.set_enable_worldDef_T_affine(true);
+      tx.set_worldDef_T_affine(manual_T_affine);
+      tx.set_worldDef_T_affine_locked(true);
+    }
+
+    for (const auto& segUid : m_data.imageToSegUids(currentImageUid)) {
+      Image* seg = m_data.seg(segUid);
+      if (!seg) {
+        continue;
+      }
+
+      auto& segTx = seg->transformations();
+      segTx.set_worldDef_T_affine_locked(false);
+      segTx.set_enable_affine_T_subject(tx.get_enable_affine_T_subject());
+      segTx.set_affine_T_subject(tx.get_affine_T_subject());
+      segTx.set_enable_worldDef_T_affine(tx.get_enable_worldDef_T_affine());
+      segTx.set_worldDef_T_affine(tx.get_worldDef_T_affine());
+      segTx.set_worldDef_T_affine_locked(tx.is_worldDef_T_affine_locked());
+    }
+  }
+
+  if (!m_data.setRefImageUid(imageUid)) {
+    spdlog::error("Unable to set {} as reference image", imageUid);
+    return false;
+  }
+
+  m_data.windowData().updateImageOrdering(m_data.imageUidsOrdered());
+  m_data.setActiveImageUid(imageUid);
+  m_data.setRainbowColorsForAllImages();
+  m_data.setRainbowColorsForAllLandmarkGroups();
+  m_data.setProject(createProjectSnapshot());
+  m_rendering.updateImageUniforms(m_data.imageUidsOrdered());
+  m_callbackHandler.recenterViews(m_data.state().recenteringMode(), true, true, false, true, true);
+  m_glfw.postEmptyEvent();
+
+  spdlog::info("Set {} as the reference image", imageUid);
+  return true;
+}
+
 void EntropyApp::loadProjectFile(const fs::path& fileName)
 {
   serialize::EntropyProject project;
@@ -1202,6 +1382,8 @@ void EntropyApp::closeProject()
   m_imageLoadCancelled = false;
   m_imagesReady = false;
   m_imageLoadFailed = false;
+  m_preserveLayoutsOnImagesReady = false;
+  m_pendingAddedImageUid = std::nullopt;
 
   auto& renderData = m_data.renderData();
   renderData.m_imageTextures.clear();
@@ -1225,6 +1407,9 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
 
 void EntropyApp::loadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName)
 {
+  m_preserveLayoutsOnImagesReady = false;
+  m_pendingAddedImageUid = std::nullopt;
+
   spdlog::debug("Begin loading images from parameters");
 
   // The image loader function is called from a new thread
@@ -1335,6 +1520,7 @@ void EntropyApp::setCallbacks()
     [this]() { m_glfw.postEmptyEvent(); },
     [this]() { resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y); },
     [this](const fs::path& fileName) { loadImageFile(fileName); },
+    [this](const fs::path& fileName) { addImageFile(fileName); },
     [this](const fs::path& fileName) { loadProjectFile(fileName); },
     [this]() { saveProject(); },
     [this](const fs::path& fileName) { saveProjectAs(fileName); },
@@ -1541,6 +1727,8 @@ void EntropyApp::setCallbacks()
     [this](const uuids::uuid& imageUid, bool locked) -> bool {
       return m_callbackHandler.setLockManualImageTransformation(imageUid, locked);
     },
+
+    [this](const uuids::uuid& imageUid) -> bool { return setReferenceImage(imageUid); },
 
     [this]() { return m_callbackHandler.paintActiveSegmentationWithAnnotation(); });
 }

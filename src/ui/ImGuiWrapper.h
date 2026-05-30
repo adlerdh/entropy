@@ -34,6 +34,7 @@ public:
     std::function<void(void)> postEmptyGlfwEvent,
     std::function<void(void)> readjustViewport,
     std::function<void(const fs::path& fileName)> openImageFile,
+    std::function<void(const fs::path& fileName)> addImageFile,
     std::function<void(const fs::path& fileName)> openProjectFile,
     std::function<void()> saveProject,
     std::function<void(const fs::path& fileName)> saveProjectAs,
@@ -66,6 +67,7 @@ public:
     std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)>
       executePoissonSeg,
     std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
+    std::function<bool(const uuids::uuid& imageUid)> setReferenceImage,
     std::function<void()> paintActiveSegmentationWithActivePolygon);
 
   void render();
@@ -82,6 +84,7 @@ private:
   std::function<void(void)> m_postEmptyGlfwEvent = nullptr;
   std::function<void(void)> m_readjustViewport = nullptr;
   std::function<void(const fs::path& fileName)> m_openImageFile = nullptr;
+  std::function<void(const fs::path& fileName)> m_addImageFile = nullptr;
   std::function<void(const fs::path& fileName)> m_openProjectFile = nullptr;
   std::function<void()> m_saveProject = nullptr;
   std::function<void(const fs::path& fileName)> m_saveProjectAs = nullptr;
@@ -115,6 +118,7 @@ private:
   std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
     m_executePoissonSeg = nullptr;
   std::function<bool(const uuids::uuid& imageUid, bool locked)> m_setLockManualImageTransformation = nullptr;
+  std::function<bool(const uuids::uuid& imageUid)> m_setReferenceImage = nullptr;
   std::function<void()> m_paintActiveSegmentationWithActivePolygon = nullptr;
 
   /// Scaling for the UI elements and fonts

@@ -153,6 +153,34 @@ void logStdErrno()
 }
 #endif
 
+json matrixToJson(const glm::mat4& matrix)
+{
+  json j = json::array();
+
+  for (int r = 0; r < 4; ++r) {
+    json row = json::array();
+    for (int c = 0; c < 4; ++c) {
+      row.push_back(matrix[c][r]);
+    }
+    j.push_back(std::move(row));
+  }
+
+  return j;
+}
+
+glm::mat4 matrixFromJson(const json& j)
+{
+  glm::mat4 matrix{1.0f};
+
+  for (int r = 0; r < 4; ++r) {
+    for (int c = 0; c < 4; ++c) {
+      matrix[c][r] = j.at(r).at(c).get<float>();
+    }
+  }
+
+  return matrix;
+}
+
 } // namespace
 
 namespace imageio
@@ -265,6 +293,10 @@ void to_json(json& j, const serialize::Image& image)
     j["deformation"] = image.m_deformationFileName->string();
   }
 
+  if (image.m_worldDefTx) {
+    j["manualTransformation"] = matrixToJson(*image.m_worldDefTx);
+  }
+
   if (image.m_annotationsFileName) {
     j["annotations"] = image.m_annotationsFileName->string();
   }
@@ -294,6 +326,10 @@ void from_json(const json& j, serialize::Image& image)
 
   if (j.count("deformation")) {
     image.m_deformationFileName = j.at("deformation").get<std::string>();
+  }
+
+  if (j.count("manualTransformation")) {
+    image.m_worldDefTx = matrixFromJson(j.at("manualTransformation"));
   }
 
   if (j.count("annotations")) {
