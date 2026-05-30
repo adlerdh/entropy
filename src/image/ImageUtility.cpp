@@ -1,4 +1,5 @@
 #include "image/ImageUtility.h"
+#include "image/ImageUtilityItk.h"
 #include "image/ImageUtility.tpp"
 
 #include "common/MathFuncs.h"

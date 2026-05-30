@@ -1,8 +1,6 @@
 #ifndef IMAGE_COLORMAP_H
 #define IMAGE_COLORMAP_H
 
-#include "rendering/utility/gl/GLTextureTypes.h"
-
 #include <glm/fwd.hpp>
 
 #include <optional>
@@ -145,8 +143,6 @@ public:
   //    InterpolationMode finalInterpolationMode() const;
 
   /// Get the sized internal texture format for the color map
-  static tex::SizedInternalFormat textureFormat_RGBA_F32();
-
   /// Load color map from CSV as non-premultiplied RGBA
   static std::optional<ImageColorMap> loadImageColorMap(std::istringstream& csv);
 

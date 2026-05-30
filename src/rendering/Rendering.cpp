@@ -5,7 +5,7 @@
 #include "common/Types.h"
 
 #include "image/ImageColorMap.h"
-#include "image/SurfaceUtility.h"
+#include "logic/SurfaceUtility.h"
 
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"

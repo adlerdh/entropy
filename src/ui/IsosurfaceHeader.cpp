@@ -1,7 +1,7 @@
 #include "ui/IsosurfaceHeader.h"
 #include "ui/Helpers.h"
 
-#include "image/SurfaceUtility.h"
+#include "logic/SurfaceUtility.h"
 #include "logic/app/Data.h"
 
 #include <IconsForkAwesome.h>

@@ -7,10 +7,6 @@
 
 #include <glm/vec3.hpp>
 
-#include <itkCommonEnums.h>
-#include <itkImage.h>
-#include <itkImageIOBase.h>
-
 #include <string>
 #include <utility>
 
@@ -18,16 +14,6 @@
  * @brief Get file name from a path with or without extension
  */
 std::string getFileName(const std::string& filePath, bool withExtension = false);
-
-PixelType fromItkPixelType(const itk::IOPixelEnum& pixelType);
-
-ComponentType fromItkComponentType(const itk::IOComponentEnum& componentType);
-
-itk::IOComponentEnum toItkComponentType(const ComponentType& componentType);
-
-std::pair<itk::CommonEnums::IOComponent, std::string> sniffComponentType(const char* fileName);
-
-typename itk::ImageIOBase::Pointer createStandardImageIo(const char* fileName);
 
 /**
  * @brief Get the range of values that can be held in components of a given type.

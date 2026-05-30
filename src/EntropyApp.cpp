@@ -7,7 +7,6 @@
 #include "common/MathFuncs.h"
 
 #include "image/ImageUtility.h"
-#include "image/ImageUtility.tpp"
 
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/LandmarkGroup.h"

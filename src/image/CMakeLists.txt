@@ -1,0 +1,57 @@
+add_library(EntropyImage)
+add_library(Entropy::Image ALIAS EntropyImage)
+
+target_sources(EntropyImage PRIVATE
+  Image.cpp
+  ImageColorMap.cpp
+  ImageHeader.cpp
+  ImageIoInfo.cpp
+  ImageSettings.cpp
+  ImageTransformations.cpp
+  ImageUtility.cpp
+  SegUtil.cpp
+)
+
+target_include_directories(EntropyImage
+  PUBLIC
+    "${entropy_SRC_DIR}"
+  PRIVATE
+    ${ITK_INCLUDE_DIRS}
+)
+
+target_link_libraries(EntropyImage
+  PUBLIC
+    ghcFilesystem::ghc_filesystem
+    glm::glm
+    spdlog::spdlog
+    stduuid
+  PRIVATE
+    ${ITK_LIBRARIES}
+)
+
+target_compile_options(EntropyImage PRIVATE
+  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
+    -Werror
+    -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
+    -Wno-error=array-bounds
+    -Wno-error=empty-body
+    -Wno-error=float-conversion
+    -Wno-error=maybe-uninitialized
+    -Wno-error=stringop-overflow
+    -ftrapv
+  >
+  $<$<CXX_COMPILER_ID:AppleClang>:
+    -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
+    -Wno-error=array-bounds
+    -Wshadow -ftrapv
+  >
+  $<$<CXX_COMPILER_ID:MSVC>:
+    /W4
+  >
+)
+
+set_target_properties(EntropyImage PROPERTIES
+  CXX_STANDARD 23
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+)

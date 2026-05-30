@@ -830,7 +830,7 @@ std::unique_ptr<GLTexture> createImageColorMapTexture(const ImageColorMap* color
 
   texture->setData(
     0, // level 0
-    ImageColorMap::textureFormat_RGBA_F32(),
+    tex::SizedInternalFormat::RGBA32F,
     tex::BufferPixelFormat::RGBA,
     tex::BufferPixelDataType::Float32,
     colorMap->data_RGBA_F32());

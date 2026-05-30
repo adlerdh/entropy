@@ -1,4 +1,4 @@
-#include "image/SurfaceUtility.h"
+#include "logic/SurfaceUtility.h"
 
 #include <glm/glm.hpp>
 #include <uuid.h>

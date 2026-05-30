@@ -198,12 +198,6 @@ void ImageColorMap::reverse()
   std::reverse(std::begin(m_colors_RGBA_F32), std::end(m_colors_RGBA_F32));
 }
 
-tex::SizedInternalFormat ImageColorMap::textureFormat_RGBA_F32()
-{
-  static const tex::SizedInternalFormat sk_format = tex::SizedInternalFormat::RGBA32F;
-  return sk_format;
-}
-
 std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream& csv)
 {
   /// @todo Throws are not needed here. Just return flag that colormap could not be loaded.

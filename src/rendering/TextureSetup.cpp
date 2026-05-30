@@ -418,7 +418,7 @@ std::unordered_map<uuids::uuid, GLTexture> createImageColorMapTextures(const App
 
     T.setData(
       0,
-      ImageColorMap::textureFormat_RGBA_F32(),
+      tex::SizedInternalFormat::RGBA32F,
       tex::BufferPixelFormat::RGBA,
       tex::BufferPixelDataType::Float32,
       map->data_RGBA_F32());

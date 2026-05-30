@@ -1,5 +1,6 @@
 #include "image/ImageHeader.h"
 #include "image/ImageUtility.h"
+#include "image/ImageUtilityItk.h"
 
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"

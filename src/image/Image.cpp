@@ -1,6 +1,7 @@
 #include "image/Image.h"
 #include "image/ImageCastHelper.tpp"
 #include "image/ImageUtility.h"
+#include "image/ImageUtilityItk.h"
 #include "image/ImageUtility.tpp"
 
 // clang-format off

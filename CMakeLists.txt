@@ -387,6 +387,8 @@ set(gridcut_INCLUDE_DIRS
 include(BuildStamp)
 BuildStamp()
 
+add_subdirectory("${entropy_SRC_DIR}/image")
+
 #--------------------------------------------------------------------------------
 # Define Entropy executable target
 #--------------------------------------------------------------------------------
@@ -405,15 +407,7 @@ set(entropy_SOURCES
   "${entropy_SRC_DIR}/common/UuidUtility.cpp"
   "${entropy_SRC_DIR}/common/Viewport.cpp"
 
-  "${entropy_SRC_DIR}/image/Image.cpp"
-  "${entropy_SRC_DIR}/image/ImageColorMap.cpp"
-  "${entropy_SRC_DIR}/image/ImageHeader.cpp"
-  "${entropy_SRC_DIR}/image/ImageIoInfo.cpp"
-  "${entropy_SRC_DIR}/image/ImageSettings.cpp"
-  "${entropy_SRC_DIR}/image/ImageTransformations.cpp"
-  "${entropy_SRC_DIR}/image/ImageUtility.cpp"
-  "${entropy_SRC_DIR}/image/SegUtil.cpp"
-  "${entropy_SRC_DIR}/image/SurfaceUtility.cpp"
+  "${entropy_SRC_DIR}/logic/SurfaceUtility.cpp"
 
   "${entropy_SRC_DIR}/logic/app/CallbackHandler.cpp"
   "${entropy_SRC_DIR}/logic/app/Data.cpp"
@@ -614,6 +608,7 @@ target_sources(${entropy_EXE} PRIVATE
 target_link_libraries(${entropy_EXE} PRIVATE
   ${ITK_LIBRARIES}
   CLI11::CLI11
+  Entropy::Image
   ghcFilesystem::ghc_filesystem
   glfw
   glad
