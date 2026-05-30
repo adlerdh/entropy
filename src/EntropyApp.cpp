@@ -1353,6 +1353,57 @@ bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)
   return true;
 }
 
+bool EntropyApp::removeImage(const uuids::uuid& imageUid)
+{
+  if (!m_data.image(imageUid)) {
+    spdlog::error("Cannot remove invalid image {}", imageUid);
+    return false;
+  }
+
+  if (m_data.refImageUid() && *m_data.refImageUid() == imageUid) {
+    spdlog::error("Cannot remove the reference image {}", imageUid);
+    return false;
+  }
+
+  const auto segUids = m_data.imageToSegUids(imageUid);
+  const auto defUids = m_data.imageToDefUids(imageUid);
+
+  if (!m_data.removeImage(imageUid)) {
+    spdlog::error("Unable to remove image {}", imageUid);
+    return false;
+  }
+
+  auto& renderData = m_data.renderData();
+  renderData.m_imageTextures.erase(imageUid);
+  renderData.m_distanceMapTextures.erase(imageUid);
+  renderData.m_uniforms.erase(imageUid);
+
+  for (const auto& segUid : segUids) {
+    if (!m_data.seg(segUid)) {
+      renderData.m_segTextures.erase(segUid);
+    }
+  }
+
+  for (const auto& defUid : defUids) {
+    if (!m_data.def(defUid)) {
+      renderData.m_imageTextures.erase(defUid);
+      renderData.m_distanceMapTextures.erase(defUid);
+      renderData.m_uniforms.erase(defUid);
+    }
+  }
+
+  m_data.windowData().removeImageFromLayouts(imageUid, m_data.imageUidsOrdered());
+  m_data.setRainbowColorsForAllImages();
+  m_data.setRainbowColorsForAllLandmarkGroups();
+  m_data.setProject(createProjectSnapshot());
+  m_rendering.updateImageUniforms(m_data.imageUidsOrdered());
+  m_glfw.setWindowTitleStatus(m_data.getAllImageDisplayNames());
+  m_glfw.postEmptyEvent();
+
+  spdlog::info("Removed image {}", imageUid);
+  return true;
+}
+
 void EntropyApp::loadProjectFile(const fs::path& fileName)
 {
   serialize::EntropyProject project;
@@ -1729,6 +1780,8 @@ void EntropyApp::setCallbacks()
     },
 
     [this](const uuids::uuid& imageUid) -> bool { return setReferenceImage(imageUid); },
+
+    [this](const uuids::uuid& imageUid) -> bool { return removeImage(imageUid); },
 
     [this]() { return m_callbackHandler.paintActiveSegmentationWithAnnotation(); });
 }

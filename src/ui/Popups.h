@@ -23,3 +23,7 @@ void renderConfirmCloseAppPopup(AppData& appData);
 void renderConfirmSetReferenceImagePopup(
   AppData& appData,
   const std::function<bool(const uuids::uuid& imageUid)>& setReferenceImage);
+
+void renderConfirmRemoveImagePopup(
+  AppData& appData,
+  const std::function<bool(const uuids::uuid& imageUid)>& removeImage);

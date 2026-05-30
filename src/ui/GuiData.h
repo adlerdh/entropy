@@ -39,6 +39,10 @@ struct GuiData
   bool m_showConfirmSetReferenceImagePopup = false;
   std::optional<uuids::uuid> m_pendingReferenceImageUid = std::nullopt;
 
+  /// Flag to show dialog confirming image removal.
+  bool m_showConfirmRemoveImagePopup = false;
+  std::optional<uuids::uuid> m_pendingRemoveImageUid = std::nullopt;
+
   /// Map of imageUid to boolean of whether its image color map window is shown.
   /// (The color map window is shown as a popup from the Image Properties window)
   std::unordered_map<uuids::uuid, bool> m_showImageColormapWindow;

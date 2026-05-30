@@ -34,6 +34,9 @@ public:
   /// Call this when image order changes in order to update rendered and metric images
   void updateImageOrdering(uuid_range_t orderedImageUids);
 
+  /// Remove image-specific layouts and image references from all remaining layouts.
+  void removeImageFromLayouts(const uuid& imageUid, uuid_range_t orderedImageUids);
+
   /// Append an image to views that render the full image stack by default.
   void appendImageToDefaultRenderedImages(const AppData& appData, const uuid& imageUid);
 

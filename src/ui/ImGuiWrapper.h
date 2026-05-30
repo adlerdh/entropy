@@ -68,6 +68,7 @@ public:
       executePoissonSeg,
     std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
     std::function<bool(const uuids::uuid& imageUid)> setReferenceImage,
+    std::function<bool(const uuids::uuid& imageUid)> removeImage,
     std::function<void()> paintActiveSegmentationWithActivePolygon);
 
   void render();
@@ -119,6 +120,7 @@ private:
     m_executePoissonSeg = nullptr;
   std::function<bool(const uuids::uuid& imageUid, bool locked)> m_setLockManualImageTransformation = nullptr;
   std::function<bool(const uuids::uuid& imageUid)> m_setReferenceImage = nullptr;
+  std::function<bool(const uuids::uuid& imageUid)> m_removeImage = nullptr;
   std::function<void()> m_paintActiveSegmentationWithActivePolygon = nullptr;
 
   /// Scaling for the UI elements and fonts

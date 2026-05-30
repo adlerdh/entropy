@@ -642,10 +642,109 @@ std::optional<uuid> AppData::addIsosurface(const uuid& imageUid, ComponentIndexT
   return uid;
 }
 
-// bool AppData::removeImage( const uuid& /*imageUid*/ )
-//{
-//     return false;
-// }
+bool AppData::removeImage(const uuid& imageUid)
+{
+  if (!image(imageUid)) {
+    return false;
+  }
+
+  if (m_refImageUid && *m_refImageUid == imageUid) {
+    return false;
+  }
+
+  auto imageOrderIt = std::find(std::begin(m_imageUidsOrdered), std::end(m_imageUidsOrdered), imageUid);
+  if (std::end(m_imageUidsOrdered) == imageOrderIt) {
+    return false;
+  }
+
+  const auto imageSegs = imageToSegUids(imageUid);
+  const auto imageDefs = imageToDefUids(imageUid);
+  const auto imageLandmarkGroups = imageToLandmarkGroupUids(imageUid);
+  const auto imageAnnotations = annotationsForImage(imageUid);
+
+  m_images.erase(imageUid);
+  m_imageUidsOrdered.erase(imageOrderIt);
+
+  m_imageToSegs.erase(imageUid);
+  m_imageToActiveSeg.erase(imageUid);
+  m_imageToDefs.erase(imageUid);
+  m_imageToActiveDef.erase(imageUid);
+  m_imageToLandmarkGroups.erase(imageUid);
+  m_imageToActiveLandmarkGroup.erase(imageUid);
+  m_imageToAnnotations.erase(imageUid);
+  m_imageToActiveAnnotation.erase(imageUid);
+  m_imageToComponentData.erase(imageUid);
+  m_imagesBeingSegmented.erase(imageUid);
+
+  if (m_activeImageUid && *m_activeImageUid == imageUid) {
+    m_activeImageUid =
+      m_refImageUid ? m_refImageUid
+                    : (!m_imageUidsOrdered.empty() ? std::optional<uuid>{m_imageUidsOrdered.front()} : std::nullopt);
+  }
+
+  for (const auto& segUid : imageSegs) {
+    bool stillUsed = false;
+    for (const auto& [otherImageUid, segUids] : m_imageToSegs) {
+      if (otherImageUid == imageUid) {
+        continue;
+      }
+
+      if (std::find(std::begin(segUids), std::end(segUids), segUid) != std::end(segUids)) {
+        stillUsed = true;
+        break;
+      }
+    }
+
+    if (!stillUsed) {
+      removeSeg(segUid);
+    }
+  }
+
+  for (const auto& defUid : imageDefs) {
+    bool stillUsed = false;
+    for (const auto& [otherImageUid, defUids] : m_imageToDefs) {
+      if (otherImageUid == imageUid) {
+        continue;
+      }
+
+      if (std::find(std::begin(defUids), std::end(defUids), defUid) != std::end(defUids)) {
+        stillUsed = true;
+        break;
+      }
+    }
+
+    if (!stillUsed) {
+      removeDef(defUid);
+    }
+  }
+
+  for (const auto& annotUid : imageAnnotations) {
+    removeAnnotation(annotUid);
+  }
+
+  for (const auto& lmGroupUid : imageLandmarkGroups) {
+    bool stillUsed = false;
+    for (const auto& [otherImageUid, lmGroupUids] : m_imageToLandmarkGroups) {
+      if (otherImageUid == imageUid) {
+        continue;
+      }
+
+      if (std::find(std::begin(lmGroupUids), std::end(lmGroupUids), lmGroupUid) != std::end(lmGroupUids)) {
+        stillUsed = true;
+        break;
+      }
+    }
+
+    if (!stillUsed) {
+      m_landmarkGroups.erase(lmGroupUid);
+      m_landmarkGroupUidsOrdered.erase(
+        std::remove(std::begin(m_landmarkGroupUidsOrdered), std::end(m_landmarkGroupUidsOrdered), lmGroupUid),
+        std::end(m_landmarkGroupUidsOrdered));
+    }
+  }
+
+  return true;
+}
 
 bool AppData::removeSeg(const uuid& segUid)
 {
@@ -751,7 +850,7 @@ bool AppData::removeAnnotation(const uuid& annotUid)
   }
 
   // Remove it as the active annotation
-  for (auto it = std::begin(m_imageToActiveAnnotation); it != std::end(m_imageToActiveDef);) {
+  for (auto it = std::begin(m_imageToActiveAnnotation); it != std::end(m_imageToActiveAnnotation);) {
     if (annotUid == it->second) {
       it = m_imageToActiveAnnotation.erase(it);
     }

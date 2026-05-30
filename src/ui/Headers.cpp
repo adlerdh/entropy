@@ -390,6 +390,7 @@ void renderImageHeader(
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToFront,
   const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const std::function<void(const uuids::uuid& imageUid)>& requestSetReferenceImage,
+  const std::function<void(const uuids::uuid& imageUid)>& requestRemoveImage,
   const AllViewsRecenterType& recenterAllViews)
 {
   const ImGuiColorEditFlags colorNoAlphaEditFlags = ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar |
@@ -593,6 +594,14 @@ void renderImageHeader(
     }
     if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Make this image the project reference image");
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Remove Image")) {
+      requestRemoveImage(imageUid);
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Remove this image from the project");
     }
   }
 

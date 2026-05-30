@@ -664,6 +664,20 @@ void WindowData::updateImageOrdering(uuid_range_t orderedImageUids)
   }
 }
 
+void WindowData::removeImageFromLayouts(const uuid& imageUid, uuid_range_t orderedImageUids)
+{
+  for (std::size_t i = m_layouts.size(); i > 0; --i) {
+    const std::size_t layoutIndex = i - 1;
+    const auto& layout = m_layouts.at(layoutIndex);
+
+    if (layout.isLightbox() && layout.renderedImages().size() == 1 && layout.renderedImages().front() == imageUid) {
+      removeLayout(layoutIndex);
+    }
+  }
+
+  updateImageOrdering(orderedImageUids);
+}
+
 void WindowData::appendImageToDefaultRenderedImages(const AppData& appData, const uuid& imageUid)
 {
   const auto appendToFrame = [&appData, &imageUid](ControlFrame& frame) {

@@ -55,6 +55,7 @@ public:
   void saveProject();
   void saveProjectAs(const fs::path& fileName);
   bool setReferenceImage(const uuids::uuid& imageUid);
+  bool removeImage(const uuids::uuid& imageUid);
   void closeProject();
 
   /**

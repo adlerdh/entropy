@@ -214,6 +214,7 @@ void ImGuiWrapper::setCallbacks(
     executePoissonSeg,
   std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
   std::function<bool(const uuids::uuid& imageUid)> setReferenceImage,
+  std::function<bool(const uuids::uuid& imageUid)> removeImage,
   std::function<void()> paintActiveSegmentationWithActivePolygon)
 {
   m_postEmptyGlfwEvent = postEmptyGlfwEvent;
@@ -250,6 +251,7 @@ void ImGuiWrapper::setCallbacks(
   m_executePoissonSeg = executePoissonSeg;
   m_setLockManualImageTransformation = setLockManualImageTransformation;
   m_setReferenceImage = setReferenceImage;
+  m_removeImage = removeImage;
   m_paintActiveSegmentationWithActivePolygon = paintActiveSegmentationWithActivePolygon;
 }
 
@@ -781,6 +783,7 @@ void ImGuiWrapper::render()
   if (m_appData.guiData().m_renderUiWindows) {
     renderConfirmCloseAppPopup(m_appData);
     renderConfirmSetReferenceImagePopup(m_appData, m_setReferenceImage);
+    renderConfirmRemoveImagePopup(m_appData, m_removeImage);
 
     if (m_appData.guiData().m_showImGuiDemoWindow) {
       ImGui::ShowDemoWindow(&m_appData.guiData().m_showImGuiDemoWindow);
@@ -884,6 +887,10 @@ void ImGuiWrapper::render()
         [this](const uuids::uuid& imageUid) {
           m_appData.guiData().m_pendingReferenceImageUid = imageUid;
           m_appData.guiData().m_showConfirmSetReferenceImagePopup = true;
+        },
+        [this](const uuids::uuid& imageUid) {
+          m_appData.guiData().m_pendingRemoveImageUid = imageUid;
+          m_appData.guiData().m_showConfirmRemoveImagePopup = true;
         },
         m_recenterAllViews);
     }

@@ -144,7 +144,7 @@ public:
    */
   std::optional<uuid> addIsosurface(const uuid& imageUid, ComponentIndexType component, Isosurface isosurface);
 
-  //    bool removeImage( const uuid& imageUid );
+  bool removeImage(const uuid& imageUid);
   bool removeSeg(const uuid& segUid);
   bool removeDef(const uuid& defUid);
   bool removeAnnotation(const uuid& defUid);

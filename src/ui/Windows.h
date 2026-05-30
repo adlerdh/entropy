@@ -102,6 +102,7 @@ void renderImagePropertiesWindow(
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
   const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const std::function<void(const uuids::uuid& imageUid)>& requestSetReferenceImage,
+  const std::function<void(const uuids::uuid& imageUid)>& requestRemoveImage,
   const AllViewsRecenterType& recenterAllViews);
 
 void renderSegmentationPropertiesWindow(

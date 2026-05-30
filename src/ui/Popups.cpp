@@ -237,3 +237,53 @@ void renderConfirmSetReferenceImagePopup(
 
   appData.guiData().m_showConfirmSetReferenceImagePopup = false;
 }
+
+void renderConfirmRemoveImagePopup(
+  AppData& appData,
+  const std::function<bool(const uuids::uuid& imageUid)>& removeImage)
+{
+  constexpr const char* popupTitle = "Remove Image?";
+
+  if (appData.guiData().m_showConfirmRemoveImagePopup && !ImGui::IsPopupOpen(popupTitle)) {
+    ImGui::OpenPopup(popupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
+  }
+
+  const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+  ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+  if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
+    const auto pendingUid = appData.guiData().m_pendingRemoveImageUid;
+    const Image* pendingImage = pendingUid ? appData.image(*pendingUid) : nullptr;
+    const std::string displayName = pendingImage ? pendingImage->settings().displayName() : std::string{"this image"};
+
+    ImGui::Text("Remove '%s' from the project?", displayName.c_str());
+    ImGui::Spacing();
+    ImGui::TextWrapped("This removes the image from the current project and updates the saved project description.");
+    ImGui::Spacing();
+    ImGui::BulletText(
+      "Segmentations, deformation fields, landmarks, and annotations used only by this image will be removed from the "
+      "project.");
+    ImGui::BulletText("Files on disk will not be deleted.");
+    ImGui::BulletText("Save the project after this operation if you want the removal preserved in the project file.");
+    ImGui::Separator();
+
+    if (ImGui::Button("Yes", ImVec2(80, 0))) {
+      if (pendingUid && removeImage) {
+        removeImage(*pendingUid);
+      }
+      appData.guiData().m_pendingRemoveImageUid = std::nullopt;
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::SetItemDefaultFocus();
+
+    ImGui::SameLine();
+    if (ImGui::Button("No", ImVec2(80, 0))) {
+      appData.guiData().m_pendingRemoveImageUid = std::nullopt;
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+
+  appData.guiData().m_showConfirmRemoveImagePopup = false;
+}
