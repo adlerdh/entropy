@@ -13,8 +13,6 @@
 #include "logic/records/SlideRecord.h"
 #include "logic/serialization/ProjectSerialization.h"
 
-#include <boost/range/any_range.hpp>
-
 #include <map>
 #include <memory>
 #include <optional>
@@ -33,8 +31,7 @@ class DataManager
 public:
   /// Range of weak pointers to Records
   template<class Record>
-  using weak_record_range_t =
-    boost::any_range<std::weak_ptr<Record>, boost::forward_traversal_tag, std::weak_ptr<Record>&, std::ptrdiff_t>;
+  using weak_record_range_t = std::vector<std::weak_ptr<Record> >;
 
   DataManager();
 

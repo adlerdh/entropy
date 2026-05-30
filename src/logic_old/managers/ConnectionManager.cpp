@@ -44,12 +44,11 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm/copy.hpp>
 #include <boost/signals2.hpp>
 
 #include <iostream>
 #include <optional>
+#include <ranges>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -795,7 +794,9 @@ void ConnectionManager::Impl::createInteractionConnections()
        gui::ViewType::Stack_StackSide2 == viewType || gui::ViewType::Reg_ActiveSlide == viewType);
 
     std::list<UID> slideUids;
-    boost::copy(slideTxs | boost::adaptors::map_keys, std::back_inserter(slideUids));
+    for (const auto& slideUid : slideTxs | std::views::keys) {
+      slideUids.push_back(slideUid);
+    }
 
     auto activeSlideRecord = m_dataManager.activeSlideRecord().lock();
     if (!activeSlideRecord || !activeSlideRecord->cpuData()) {

@@ -4,8 +4,7 @@
 
 #include "common/HZeeException.hpp"
 
-#include <boost/range.hpp>
-#include <boost/range/adaptor/map.hpp>
+#include <ranges>
 
 /// @todo Put this in gui code
 #include <QSplitter>
@@ -116,7 +115,11 @@ uid_range_t LayoutManager::getViewUids() const
     throw_debug("Null implementation");
   }
 
-  return (m_impl->m_viewTypes | boost::adaptors::map_keys);
+  uid_range_t viewUids;
+  for (const auto& viewUid : m_impl->m_viewTypes | std::views::keys) {
+    viewUids.push_back(viewUid);
+  }
+  return viewUids;
 }
 
 std::optional<gui::ViewType> LayoutManager::getViewType(const UID& viewUid) const

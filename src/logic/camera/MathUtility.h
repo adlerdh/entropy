@@ -17,7 +17,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-#include <boost/range/any_range.hpp>
+#include <ranges>
 
 #include <array>
 #include <cmath>
@@ -49,9 +49,6 @@ using gmat3 = glm::mat<3, 3, T, glm::highp>;
 
 template<typename T>
 using gmat4 = glm::mat<4, 4, T, glm::highp>;
-
-template<class U>
-using range = boost::any_range<U, boost::forward_traversal_tag, U&, std::ptrdiff_t>;
 
 /**
  * @brief Build an orthonormal basis from a single vector. Use this to create a camera basis with a
@@ -240,8 +237,8 @@ gvec4<T> makePlane(const gvec3<T>& normal, const gvec3<T>& point)
 /**
  * @brief Compute the axis-aligned bounding box of a range of points.
  */
-template<typename T>
-AABB<T> computeAABBox(range<gvec3<T> > points)
+template<typename T, std::ranges::forward_range PointRange>
+AABB<T> computeAABBox(const PointRange& points)
 {
   AABB<T> minMaxCorners =
     std::make_pair(gvec3<T>(std::numeric_limits<T>::max()), gvec3<T>(std::numeric_limits<T>::lowest()));

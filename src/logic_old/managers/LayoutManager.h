@@ -8,8 +8,6 @@
 #include "gui/layout/ViewType.h"
 #include "gui/layout/ViewTypeRange.h"
 
-#include <boost/range/any_range.hpp>
-
 #include <list>
 #include <memory>
 #include <optional>

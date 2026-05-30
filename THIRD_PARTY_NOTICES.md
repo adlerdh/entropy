@@ -9,7 +9,6 @@ License information is taken from the upstream license files for the pinned sour
 | Dependency | Version | Source | License |
 | --- | --- | --- | --- |
 | argparse | v3.2 | https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip | MIT |
-| Boost | 1.87.0 | https://github.com/boostorg/boost/releases/download/boost-1.87.0/boost-1.87.0-b2-nodocs.tar.xz | Boost Software License 1.0 |
 | CMakeRC | 2.0.1 | https://github.com/vector-of-bool/cmrc/archive/refs/tags/2.0.1.tar.gz | MIT |
 | ghc::filesystem | v1.5.14 | https://github.com/gulrak/filesystem/archive/refs/tags/v1.5.14.tar.gz | MIT |
 | GLFW | 3.4 | https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip | zlib/libpng |

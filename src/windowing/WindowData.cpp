@@ -17,9 +17,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-#include <boost/range.hpp>
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/map.hpp>
+#include <ranges>
 
 #undef min
 #undef max
@@ -27,6 +25,16 @@
 namespace
 {
 using uuid = uuids::uuid;
+
+template<std::ranges::input_range Range>
+uuid_range_t toUuidVector(Range&& range)
+{
+  uuid_range_t values;
+  for (const auto& value : range) {
+    values.push_back(value);
+  }
+  return values;
+}
 
 Layout createFourUpLayout(
   const CrosshairsState& crosshairs,
@@ -704,11 +712,10 @@ void WindowData::recenterView(
 
 uuid_range_t WindowData::currentViewUids() const
 {
-  static const std::vector<uuid> empty;
   if (m_currentLayout >= m_layouts.size()) {
-    return empty;
+    return {};
   }
-  return (m_layouts.at(m_currentLayout).views() | boost::adaptors::map_keys);
+  return toUuidVector(m_layouts.at(m_currentLayout).views() | std::views::keys);
 }
 
 const View* WindowData::getCurrentView(const uuid& uid) const
@@ -969,14 +976,13 @@ void WindowData::setViewAlignmentMode(ViewAlignmentMode mode)
 
 uuid_range_t WindowData::cameraSyncGroupViewUids(CameraSyncMode mode, const uuid& syncGroupUid) const
 {
-  static const std::vector<uuid> empty;
   if (m_currentLayout >= m_layouts.size()) {
-    return empty;
+    return {};
   }
 
   const auto& currentLayout = m_layouts.at(m_currentLayout);
   if (const auto* group = currentLayout.getCameraSyncGroup(mode, syncGroupUid)) {
-    return *group;
+    return uuid_range_t{group->begin(), group->end()};
   }
   return {};
 }
@@ -1054,7 +1060,7 @@ std::vector<uuid> WindowData::findCurrentViewsWithNormal(const glm::vec3& worldN
 uuid WindowData::findLargestCurrentView() const
 {
   const auto viewUids = currentViewUids();
-  if (boost::empty(viewUids)) {
+  if (viewUids.empty()) {
     spdlog::error("The current layout has no views");
     throw_debug("The current layout has no views")
   }

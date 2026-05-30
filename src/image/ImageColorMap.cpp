@@ -6,10 +6,47 @@
 
 #include <spdlog/spdlog.h>
 
-#include <boost/tokenizer.hpp>
-
 #include <algorithm>
+#include <cctype>
 #include <set>
+#include <utility>
+
+namespace
+{
+
+std::vector<std::string> splitCsvFields(const std::string& line)
+{
+  std::vector<std::string> fields;
+  std::string field;
+  bool inQuotes = false;
+
+  for (std::size_t i = 0; i < line.size(); ++i) {
+    const char c = line[i];
+
+    if (static_cast<char>(92) == c && i + 1 < line.size()) {
+      field.push_back(line[++i]);
+      continue;
+    }
+
+    if ('"' == c) {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (',' == c && !inQuotes) {
+      fields.push_back(std::move(field));
+      field.clear();
+      continue;
+    }
+
+    field.push_back(c);
+  }
+
+  fields.push_back(std::move(field));
+  return fields;
+}
+
+} // namespace
 
 ImageColorMap::ImageColorMap(
   const std::string& name,
@@ -174,7 +211,7 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
   auto predicate = [](const auto& c) -> bool {
     static const std::set<char> allowedChars{' ', '-', '_', '(', ')'};
     const auto e = std::end(allowedChars);
-    return !(std::isalnum(c) || e != allowedChars.find(c));
+    return !(std::isalnum(static_cast<unsigned char>(c)) || e != allowedChars.find(c));
   };
 
   // Read names and description from first three lines
@@ -218,9 +255,7 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
   size_t count = 0;
 
   while (getline(csv, line)) {
-    boost::tokenizer<boost::escaped_list_separator<char> > tok(line);
-    std::vector<std::string> c;
-    c.assign(tok.begin(), tok.end());
+    const std::vector<std::string> c = splitCsvFields(line);
 
     if (3 == c.size()) {
       // Assume alpha component is 1:

@@ -7,16 +7,14 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-#include <boost/range/any_range.hpp>
-
 #include <array>
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 template<class Record>
-using weak_record_range_t =
-  boost::any_range<std::weak_ptr<Record>, boost::forward_traversal_tag, std::weak_ptr<Record>&, std::ptrdiff_t>;
+using weak_record_range_t = std::vector<std::weak_ptr<Record> >;
 
 namespace slideio
 {

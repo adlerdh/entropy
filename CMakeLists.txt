@@ -96,7 +96,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 # External library versions:
 set(argparse_VERSION "3.2")
-set(boost_VERSION "1.87.0")
 set(cmakerc_VERSION "2.0.1")
 set(ghc_filesystem_VERSION "1.5.14")
 set(glfw_VERSION "3.4")
@@ -116,7 +115,6 @@ set(tl_expected_VERSION "1.3.1")
 # External library directories:
 set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
 set(argparse_PREFIX "${EXTERNAL_DIR}/argparse-${argparse_VERSION}")
-set(boost_PREFIX "${EXTERNAL_DIR}/boost-${boost_VERSION}")
 set(cmakerc_PREFIX "${EXTERNAL_DIR}/cmakerc-${cmakerc_VERSION}")
 set(ghc_filesystem_PREFIX "${EXTERNAL_DIR}/ghc_filesystem-${ghc_filesystem_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
@@ -156,15 +154,6 @@ find_package(argparse ${argparse_VERSION} REQUIRED
 message(STATUS "Using argparse in ${argparse_DIR}")
 set(argparse_INCLUDE_DIR "${argparse_PREFIX}/install/include"
   CACHE PATH "argparse include directory")
-
-# Boost C++ Libraries
-set(Boost_INCLUDE_DIR "${boost_PREFIX}/src" CACHE PATH "Boost include directory")
-
-if(IS_DIRECTORY "${Boost_INCLUDE_DIR}")
-  message(STATUS "Using Boost headers in ${Boost_INCLUDE_DIR}")
-else()
-  message(FATAL_ERROR "Boost headers not found: Please set Boost_INCLUDE_DIR")
-endif()
 
 # CMakeRC: Standalone CMake-based C++ resource compiler
 include("${cmakerc_PREFIX}/src/CMakeRC.cmake")
@@ -686,7 +675,6 @@ set_target_properties(${entropy_EXE} PROPERTIES NO_SYSTEM_FROM_IMPORTED ON)
 
 target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   "${argparse_INCLUDE_DIR}"
-  "${Boost_INCLUDE_DIR}"
   ${gridcut_INCLUDE_DIRS}
   "${nanovg_SRC_DIR}"
 )

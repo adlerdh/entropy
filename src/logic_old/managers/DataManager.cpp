@@ -4,8 +4,7 @@
 
 #include <glm/glm.hpp>
 
-#include <boost/range.hpp>
-#include <boost/range/adaptor/map.hpp>
+#include <ranges>
 #include <boost/signals2.hpp>
 
 #include <algorithm>
@@ -25,9 +24,22 @@ template<class Record>
 DataManager::weak_record_range_t<Record> transformSharedToWeakRecords(
   const std::unordered_map<UID, std::shared_ptr<Record> >& hashMap)
 {
-  return boost::adaptors::transform(
-    hashMap | boost::adaptors::map_values,
-    [](std::shared_ptr<Record> rec) -> std::weak_ptr<Record> { return rec; });
+  DataManager::weak_record_range_t<Record> records;
+  records.reserve(hashMap.size());
+  for (const auto& record : hashMap | std::views::values) {
+    records.push_back(record);
+  }
+  return records;
+}
+
+template<typename Map>
+uid_range_t mapKeysToUidRange(const Map& values)
+{
+  uid_range_t keys;
+  for (const auto& key : values | std::views::keys) {
+    keys.push_back(key);
+  }
+  return keys;
 }
 
 /**
@@ -1659,7 +1671,7 @@ uid_range_t DataManager::isoMeshUids() const
   if (!m_impl) {
     throw_debug("Null impl")
   }
-  return m_impl->m_isoMeshRecords | boost::adaptors::map_keys;
+  return mapKeysToUidRange(m_impl->m_isoMeshRecords);
 }
 
 uid_range_t DataManager::labelMeshUids() const
@@ -1667,7 +1679,7 @@ uid_range_t DataManager::labelMeshUids() const
   if (!m_impl) {
     throw_debug("Null impl")
   }
-  return m_impl->m_labelMeshRecords | boost::adaptors::map_keys;
+  return mapKeysToUidRange(m_impl->m_labelMeshRecords);
 }
 
 uid_range_t DataManager::orderedImageColorMapUids() const
@@ -1683,7 +1695,7 @@ uid_range_t DataManager::labelTableUids() const
   if (!m_impl) {
     throw_debug("Null impl")
   }
-  return m_impl->m_labelsRecords | boost::adaptors::map_keys;
+  return mapKeysToUidRange(m_impl->m_labelsRecords);
 }
 
 uid_range_t DataManager::isoMeshUids_of_image(const UID& imageUid) const

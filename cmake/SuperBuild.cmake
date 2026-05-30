@@ -77,43 +77,6 @@ ExternalProject_Add(argparse
 )
 
 
-message(STATUS "Adding external library Boost in ${boost_PREFIX}")
-
-set(boost_bootstrap_CMD)
-set(boost_b2_CMD)
-
-if(WIN32)
-  set(boost_bootstrap_CMD bootstrap.bat)
-  set(boost_b2_CMD b2.exe)
-elseif(UNIX OR APPLE)
-  set(boost_bootstrap_CMD ./bootstrap.sh)
-  set(boost_b2_CMD ./b2)
-endif()
-
-ExternalProject_Add(Boost
-  URL "https://github.com/boostorg/boost/releases/download/boost-${boost_VERSION}/boost-${boost_VERSION}-b2-nodocs.tar.xz"
-  URL_HASH SHA256=3abd7a51118a5dd74673b25e0a3f0a4ab1752d8d618f4b8cea84a603aeecc680
-  DOWNLOAD_EXTRACT_TIMESTAMP false
-
-  # Uncomment to instead clone Git repositories:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/boostorg/boost.git"
-  # GIT_TAG "c89e6267665516192015a9e40955e154466f4f68" # tag: ${boost_VERSION}
-  # GIT_SUBMODULES_RECURSE true
-  # GIT_PROGRESS true
-
-  PREFIX "${boost_PREFIX}"
-  TMP_DIR "${boost_PREFIX}/tmp"
-  STAMP_DIR "${boost_PREFIX}/stamp"
-  DOWNLOAD_DIR "${boost_PREFIX}/download"
-  SOURCE_DIR "${boost_PREFIX}/src"
-
-  CONFIGURE_COMMAND ${boost_bootstrap_CMD}
-  BUILD_IN_SOURCE true
-  BUILD_COMMAND ${boost_b2_CMD} headers
-  INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping Boost install step"
-)
-
-
 message(STATUS "Adding external library CMakeRC in ${cmakerc_PREFIX}")
 
 set(PATCH_FILE "${cmakerc_PREFIX}/patch_cmakerc.cmake")

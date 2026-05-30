@@ -1,6 +1,5 @@
 #pragma once
 
-#include <boost/range/any_range.hpp>
 #include <uuid.h>
 
 uuids::uuid generateRandomUuid();

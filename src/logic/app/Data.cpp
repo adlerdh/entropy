@@ -13,8 +13,6 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-#include <boost/range/adaptor/map.hpp>
-
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -1559,7 +1557,7 @@ bool AppData::isImageBeingSegmented(const uuid& imageUid) const
 
 uuid_range_t AppData::imagesBeingSegmented() const
 {
-  return m_imagesBeingSegmented;
+  return uuid_range_t{m_imagesBeingSegmented.begin(), m_imagesBeingSegmented.end()};
 }
 
 std::optional<uuid> AppData::imageUid(std::size_t index) const
