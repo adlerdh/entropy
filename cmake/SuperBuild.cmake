@@ -41,34 +41,35 @@ set(_ext_cxx_std_args
   -DCMAKE_CXX_EXTENSIONS=OFF
 )
 
-message(STATUS "Adding external library argparse in ${argparse_PREFIX}")
+message(STATUS "Adding external library CLI11 in ${cli11_PREFIX}")
 
-ExternalProject_Add(argparse
-  URL "https://github.com/p-ranav/argparse/archive/refs/tags/v${argparse_VERSION}.zip"
-  URL_HASH SHA256=14c1a0e975d6877dfeaf52a1e79e54f70169a847e29c7e13aa7fe68a3d0ecbf1
-  DOWNLOAD_NAME "argparse-v${argparse_VERSION}.zip"
+ExternalProject_Add(cli11
+  URL "https://github.com/CLIUtils/CLI11/archive/refs/tags/v${cli11_VERSION}.tar.gz"
+  URL_HASH SHA256=c6ea6b2e5608b3ea8617999bd5f47420c71b2ebdb8dc4767c1034d1da5785711
+  DOWNLOAD_NAME "cli11-v${cli11_VERSION}.tar.gz"
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repository:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/p-ranav/argparse.git"
-  # GIT_TAG "3eda91b2e1ce7d569f84ba295507c4cd8fd96910" # tag: v${argparse_VERSION}
+  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/CLIUtils/CLI11.git"
+  # GIT_TAG "v${cli11_VERSION}"
   # GIT_PROGRESS true
 
-  PREFIX "${argparse_PREFIX}"
-  TMP_DIR "${argparse_PREFIX}/tmp"
-  STAMP_DIR "${argparse_PREFIX}/stamp"
-  DOWNLOAD_DIR "${argparse_PREFIX}/download"
-  SOURCE_DIR "${argparse_PREFIX}/src"
-  BINARY_DIR "${argparse_PREFIX}/build"
-  INSTALL_DIR "${argparse_PREFIX}/install"
+  PREFIX "${cli11_PREFIX}"
+  TMP_DIR "${cli11_PREFIX}/tmp"
+  STAMP_DIR "${cli11_PREFIX}/stamp"
+  DOWNLOAD_DIR "${cli11_PREFIX}/download"
+  SOURCE_DIR "${cli11_PREFIX}/src"
+  BINARY_DIR "${cli11_PREFIX}/build"
+  INSTALL_DIR "${cli11_PREFIX}/install"
 
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DARGPARSE_BUILD_SAMPLES:BOOL=OFF
-    -DARGPARSE_BUILD_TESTS:BOOL=OFF
-    -DARGPARSE_INSTALL:BOOL=ON
+    -DCLI11_BUILD_DOCS:BOOL=OFF
+    -DCLI11_BUILD_EXAMPLES:BOOL=OFF
+    -DCLI11_BUILD_TESTS:BOOL=OFF
+    -DCLI11_INSTALL:BOOL=ON
 
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install

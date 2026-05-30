@@ -8,7 +8,7 @@ License information is taken from the upstream license files for the pinned sour
 
 | Dependency | Version | Source | License |
 | --- | --- | --- | --- |
-| argparse | v3.2 | https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip | MIT |
+| CLI11 | v2.6.2 | https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.6.2.tar.gz | BSD-3-Clause |
 | CMakeRC | 2.0.1 | https://github.com/vector-of-bool/cmrc/archive/refs/tags/2.0.1.tar.gz | MIT |
 | ghc::filesystem | v1.5.14 | https://github.com/gulrak/filesystem/archive/refs/tags/v1.5.14.tar.gz | MIT |
 | GLFW | 3.4 | https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip | zlib/libpng |

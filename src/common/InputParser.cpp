@@ -1,10 +1,9 @@
 #include "common/InputParser.h"
-#include "common/Filesystem.h"
 #include "BuildStamp.h"
 
 #undef max
 
-#include <argparse/argparse.hpp>
+#include <CLI/CLI.hpp>
 
 // clang-format off
 #include <spdlog/spdlog.h>
@@ -13,10 +12,11 @@
 
 #include <algorithm> // std::equal
 #include <cctype>    // std::tolower
+#include <cstdlib>   // std::exit
 #include <iostream>
 #include <optional>
-#include <regex>
 #include <sstream>
+#include <string>
 
 namespace
 {
@@ -37,27 +37,8 @@ bool iequals(const std::string& str1, const std::string& str2)
 }
 
 /**
- * @brief Split string based on a delimiter character
- * @param[in] stringToSplit String to split
- * @param[in] delimiter Delimieter character
- * @return Vector of strings after split
- */
-std::vector<std::string> splitStringByDelimiter(const std::string& stringToSplit, char delimiter)
-{
-  std::vector<std::string> splits;
-  std::string split;
-  std::istringstream ss(stringToSplit);
-
-  while (std::getline(ss, split, delimiter)) {
-    splits.push_back(split);
-  }
-
-  return splits;
-}
-
-/**
  * @brief Validate the input parameters
- * @param[in,out] params Inut parameters
+ * @param[in,out] params Input parameters
  * @return True iff parameters are valid
  */
 bool validateParams(InputParams& params)
@@ -72,123 +53,8 @@ bool validateParams(InputParams& params)
   return true;
 }
 
-/**
- * @brief Parse a string containing a comma-separated pair of image and segmentation paths,
- * such as "imagePath.nii.gz,segPath.nii.gz". There is to be no space after the separating comma.
- *
- * @param[in] imgSegPairString String of comma-separated image and segmentation paths
- * @return Parsed image and segmentation paths
- */
-ImageSegPair parseImageSegPair(const std::string& imgSegPairString)
+void assignConsoleLogLevel(const std::string& logLevel, InputParams& params)
 {
-  auto splitStrings = splitStringByDelimiter(imgSegPairString, ',');
-
-  // Removing leading and trailing white space
-  for (auto& s : splitStrings) {
-    s = std::regex_replace(s, std::regex("^ +| +$|( ) +"), "$1");
-  }
-
-  ImageSegPair ret{.image = splitStrings[0], .seg = std::nullopt};
-
-  if (splitStrings.size() > 1 && !splitStrings[1].empty()) {
-    ret.seg = splitStrings[1]; // set segmentation, if present
-  }
-
-  return ret;
-}
-
-} // namespace
-
-bool parseCommandLine(const int argc, char* argv[], InputParams& params)
-{
-  params.set = false;
-
-  std::ostringstream desc;
-  desc << APP_DESCRIPTION;
-
-  argparse::ArgumentParser program(APP_NAME, VERSION_FULL);
-  program.add_description(desc.str());
-
-  program.add_argument("-l", "--log-level")
-    .default_value(std::string("info"))
-    .help("console log level: {trace, debug, info, warn, err, critical, off}");
-
-  program.add_argument("-p", "--project").help("JSON project file");
-
-  program.add_argument("images")
-    .remaining() // so that a list of images can be provided
-    .action(parseImageSegPair)
-    .help(
-      "list of paths to images and optional segmentations: "
-      "a corresponding image and segmentation pair is separated by a comma; "
-      "images are separated by a space (e.g. img0[,seg0] img1 img2[,seg2] ...)");
-
-  /// @note Remember to place all optional arguments BEFORE the remaining argument.
-  /// If the optional argument is placed after the remaining arguments, it too will be deemed
-  /// remaining
-
-  try {
-    program.parse_args(argc, argv);
-  }
-  catch (const std::exception& e) {
-    spdlog::critical("Exception parsing arguments: {}", e.what());
-    std::cout << program;
-    return false;
-  }
-
-  // Get the inputs:
-  std::string logLevel;
-
-  try {
-    const auto imageFiles = program.present<std::vector<ImageSegPair>>("images");
-    const auto projectFile = program.present<std::string>("-p");
-
-    if (imageFiles && projectFile) {
-      spdlog::critical(
-        "Arguments for images and a project file were both provided. "
-        "Please specify either image arguments or a project file, but not both.");
-      std::cout << program;
-      return false;
-    }
-
-    if (imageFiles) {
-      params.imageFiles = *imageFiles;
-    }
-    else if (projectFile) {
-      params.projectFile = *projectFile;
-    }
-
-    logLevel = program.get<std::string>("-l");
-  }
-  catch (const std::exception& e) {
-    spdlog::critical("Exception getting arguments: {}", e.what());
-    std::cout << program;
-    return false;
-  }
-
-  // Print out inputs after parsing:
-  if (!params.imageFiles.empty()) {
-    spdlog::info("{} image(s) provided:", params.imageFiles.size());
-
-    for (size_t i = 0; i < params.imageFiles.size(); ++i) {
-      if (0 == i) {
-        spdlog::info("\tImage[{}] (reference): {}", i, params.imageFiles[i].image);
-      }
-      else {
-        spdlog::info("\tImage[{}]: {}", i, params.imageFiles[i].image);
-      }
-
-      spdlog::info("\tSegmentation for image[{}]: {}", i, params.imageFiles[i].seg.value_or("<none>"));
-    }
-  }
-  else if (params.projectFile) {
-    spdlog::info("Project file provided: {}", *params.projectFile);
-  }
-  else {
-    spdlog::info("No image arguments or project file was provided");
-  }
-
-  // Set the console log level:
   using enum spdlog::level::level_enum;
 
   if (iequals(logLevel, "trace")) {
@@ -216,12 +82,112 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
     spdlog::warn("Invalid console log level: {}. Defaulting to info level.", logLevel);
     params.consoleLogLevel = info;
   }
+}
+
+void logInputs(const InputParams& params)
+{
+  if (!params.imageFiles.empty()) {
+    spdlog::info("{} image(s) provided:", params.imageFiles.size());
+
+    for (size_t i = 0; i < params.imageFiles.size(); ++i) {
+      if (0 == i) {
+        spdlog::info("\tImage[{}] (reference): {}", i, params.imageFiles[i].image);
+      }
+      else {
+        spdlog::info("\tImage[{}]: {}", i, params.imageFiles[i].image);
+      }
+
+      spdlog::info("\tSegmentation for image[{}]: {}", i, params.imageFiles[i].seg.value_or("<none>"));
+    }
+  }
+  else if (params.projectFile) {
+    spdlog::info("Project file provided: {}", *params.projectFile);
+  }
+  else {
+    spdlog::info("No image arguments or project file was provided");
+  }
+}
+
+} // namespace
+
+bool parseCommandLine(const int argc, char* argv[], InputParams& params)
+{
+  params.set = false;
+  params.imageFiles.clear();
+  params.projectFile = std::nullopt;
+
+  std::ostringstream desc;
+  desc << APP_DESCRIPTION;
+
+  CLI::App program{desc.str(), APP_NAME};
+  program.set_version_flag("--version", VERSION_FULL);
+
+  std::string logLevel = "info";
+  program.add_option("-l,--log-level", logLevel, "console log level: {trace, debug, info, warn, err, critical, off}")
+    ->default_val(logLevel);
+
+  std::string projectFile;
+  auto* projectOption = program.add_option("-p,--project", projectFile, "JSON project file");
+
+  auto* imageOption =
+    program
+      .add_option_function<std::string>(
+        "--image",
+        [&params](const std::string& imageFile) { params.imageFiles.push_back({imageFile, std::nullopt}); },
+        "image path; repeat for multiple images")
+      ->trigger_on_parse();
+
+  auto* segOption = program
+                      .add_option_function<std::string>(
+                        "--seg",
+                        [&params](const std::string& segFile) {
+                          if (params.imageFiles.empty()) {
+                            throw CLI::ValidationError("--seg must follow an --image option");
+                          }
+
+                          auto& lastImage = params.imageFiles.back();
+                          if (lastImage.seg) {
+                            throw CLI::ValidationError("Only one --seg may be provided for each --image");
+                          }
+
+                          lastImage.seg = segFile;
+                        },
+                        "segmentation path for the preceding --image")
+                      ->trigger_on_parse();
+
+  projectOption->excludes(imageOption)->excludes(segOption);
+  imageOption->excludes(projectOption);
+  segOption->excludes(projectOption);
+
+  try {
+    program.parse(argc, argv);
+  }
+  catch (const CLI::CallForHelp&) {
+    std::cout << program.help();
+    std::exit(EXIT_SUCCESS);
+  }
+  catch (const CLI::CallForVersion&) {
+    std::cout << VERSION_FULL << '\n';
+    std::exit(EXIT_SUCCESS);
+  }
+  catch (const CLI::ParseError& e) {
+    spdlog::critical("Exception parsing arguments: {}", e.what());
+    std::cout << program.help();
+    return false;
+  }
+
+  if (!projectFile.empty()) {
+    params.projectFile = projectFile;
+  }
+
+  assignConsoleLogLevel(logLevel, params);
+  logInputs(params);
 
   // Final validation of parameters:
   if (validateParams(params)) {
     return true;
   }
 
-  std::cout << program;
+  std::cout << program.help();
   return false;
 }

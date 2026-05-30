@@ -13,7 +13,7 @@ set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 9)
-set(VERSION_FEATURE 0)
+set(VERSION_FEATURE 1)
 set(VERSION_PATCH 0)
 set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION_PATCH}")
 
@@ -99,7 +99,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 
 # External library versions:
-set(argparse_VERSION "3.2")
+set(cli11_VERSION "2.6.2")
 set(cmakerc_VERSION "2.0.1")
 set(ghc_filesystem_VERSION "1.5.14")
 set(glfw_VERSION "3.4")
@@ -117,7 +117,7 @@ set(tinyfsm_VERSION "1.15.1")
 
 # External library directories:
 set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
-set(argparse_PREFIX "${EXTERNAL_DIR}/argparse-${argparse_VERSION}")
+set(cli11_PREFIX "${EXTERNAL_DIR}/cli11-${cli11_VERSION}")
 set(cmakerc_PREFIX "${EXTERNAL_DIR}/cmakerc-${cmakerc_VERSION}")
 set(ghc_filesystem_PREFIX "${EXTERNAL_DIR}/ghc_filesystem-${ghc_filesystem_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
@@ -149,13 +149,11 @@ if(Entropy_SUPERBUILD)
 endif()
 
 
-# argparse: Header-only library for argument parsing using modern C++
-find_package(argparse ${argparse_VERSION} REQUIRED
-  HINTS "${argparse_PREFIX}/install")
+# CLI11: Header-only command line parser
+find_package(CLI11 ${cli11_VERSION} REQUIRED
+  HINTS "${cli11_PREFIX}/install")
 
-message(STATUS "Using argparse in ${argparse_DIR}")
-set(argparse_INCLUDE_DIR "${argparse_PREFIX}/install/include"
-  CACHE PATH "argparse include directory")
+message(STATUS "Using CLI11 in ${CLI11_DIR}")
 
 # CMakeRC: Standalone CMake-based C++ resource compiler
 include("${cmakerc_PREFIX}/src/CMakeRC.cmake")
@@ -589,17 +587,6 @@ set(entropy_FONTS
   "${entropy_RES_DIR}/fonts/Supreme/Supreme-Light.ttf"
 )
 
-# if(UNIX AND NOT APPLE)
-#   find_package(OpenGL REQUIRED)
-#   add_definitions(${OPENGL_DEFINITIONS})
-#   find_package(X11 REQUIRED)
-#
-#   # Note: order is important for setting the libs
-#   # use pkg-config --libs $(pkg-config --print-requires --print-requires-private glfw3) in a terminal to confirm
-#   # set(LIBS ${GLFW3_LIBRARY} X11 Xrandr Xinerama Xi Xxf86vm Xcursor GL dl pthread ${ASSIMP_LIBRARY} freetype)
-#   # set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -ldl")
-# endif()
-
 if(APPLE)
   include_directories(/System/Library/Frameworks)
 
@@ -609,18 +596,14 @@ if(APPLE)
   find_library(CoreVideo_LIBRARY CoreVideo)
 
   mark_as_advanced(COCOA_LIBRARY OpenGL_LIBRARY)
-
-  # set(APPLE_LIBS ${COCOA_LIBRARY} ${IOKit_LIBRARY} ${OpenGL_LIBRARY} ${CoreVideo_LIBRARY})
-  # set(APPLE_LIBS ${APPLE_LIBS} ${GLFW3_LIBRARY} ${ASSIMP_LIBRARY})
-  # set(LIBS ${LIBS} ${APPLE_LIBS})
 endif()
 
 set(entropy_EXE Entropy)
 
 # Using CMakeRC, embed the resources into static libraries
 cmrc_add_resource_library(${entropy_EXE}-colormaps ALIAS ${entropy_EXE}::colormaps ${entropy_COLORMAPS} NAMESPACE colormaps)
-cmrc_add_resource_library(${entropy_EXE}-fonts    ALIAS ${entropy_EXE}::fonts    ${entropy_FONTS}    NAMESPACE fonts)
-cmrc_add_resource_library(${entropy_EXE}-shaders  ALIAS ${entropy_EXE}::shaders  ${entropy_SHADERS}  NAMESPACE shaders)
+cmrc_add_resource_library(${entropy_EXE}-fonts ALIAS ${entropy_EXE}::fonts ${entropy_FONTS} NAMESPACE fonts)
+cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${entropy_SHADERS} NAMESPACE shaders)
 
 add_executable(${entropy_EXE})
 
@@ -630,6 +613,7 @@ target_sources(${entropy_EXE} PRIVATE
 
 target_link_libraries(${entropy_EXE} PRIVATE
   ${ITK_LIBRARIES}
+  CLI11::CLI11
   ghcFilesystem::ghc_filesystem
   glfw
   glad
@@ -664,7 +648,6 @@ target_include_directories(${entropy_EXE} PRIVATE
 set_target_properties(${entropy_EXE} PROPERTIES NO_SYSTEM_FROM_IMPORTED ON)
 
 target_include_directories(${entropy_EXE} SYSTEM PRIVATE
-  "${argparse_INCLUDE_DIR}"
   ${gridcut_INCLUDE_DIRS}
   "${nanovg_SRC_DIR}"
 )

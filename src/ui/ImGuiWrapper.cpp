@@ -48,19 +48,32 @@ void renderEmptyWorkspace(
   }
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  const ImVec2 panelSize{360.0f, 150.0f};
+  const ImVec2 panelSize{420.0f, 98.0f};
   ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2{0.5f, 0.5f});
   ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
 
   constexpr ImGuiWindowFlags flags =
     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
 
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{16.0f, 12.0f});
   if (ImGui::Begin("EmptyWorkspace", nullptr, flags)) {
-    ImGui::TextUnformatted(
-      ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No project loaded");
-    ImGui::Spacing();
+    constexpr float buttonWidth = 160.0f;
+    const float textHeight = ImGui::GetTextLineHeight();
+    const float buttonHeight = ImGui::GetFrameHeight();
+    const float blockHeight = textHeight + ImGui::GetStyle().ItemSpacing.y + buttonHeight;
+    const float contentHeight = ImGui::GetContentRegionAvail().y;
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::max(0.0f, (contentHeight - blockHeight) * 0.5f));
 
-    if (ImGui::Button("Open Image...", ImVec2{160.0f, 0.0f})) {
+    const char* text = ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No project loaded.";
+    ImGui::SetCursorPosX(
+      std::max(ImGui::GetCursorPosX(), (ImGui::GetWindowSize().x - ImGui::CalcTextSize(text).x) * 0.5f));
+    ImGui::TextUnformatted(text);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().ItemSpacing.y);
+
+    const float buttonsWidth = 2.0f * buttonWidth + ImGui::GetStyle().ItemSpacing.x;
+    ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), (ImGui::GetWindowSize().x - buttonsWidth) * 0.5f));
+
+    if (ImGui::Button("Open Image...", ImVec2{buttonWidth, 0.0f})) {
       if (const auto selectedFile = native_dialog::openFile(native_dialog::imageFilters())) {
         if (openImageFile) {
           openImageFile(*selectedFile);
@@ -70,7 +83,7 @@ void renderEmptyWorkspace(
 
     ImGui::SameLine();
 
-    if (ImGui::Button("Open Project...", ImVec2{160.0f, 0.0f})) {
+    if (ImGui::Button("Open Project...", ImVec2{buttonWidth, 0.0f})) {
       if (const auto selectedFile = native_dialog::openFile(native_dialog::projectFilters())) {
         if (openProjectFile) {
           openProjectFile(*selectedFile);
@@ -79,6 +92,7 @@ void renderEmptyWorkspace(
     }
   }
   ImGui::End();
+  ImGui::PopStyleVar();
 }
 
 ImFont* loadFont(
