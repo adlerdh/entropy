@@ -161,6 +161,7 @@ void from_json(const json& j, Annotation& annot)
   newAnnot.setSmoothed(smoothed);
   newAnnot.setSmoothingFactor(smoothingFactor);
   newAnnot.polygon().setOuterBoundary(polygon.getBoundaryVertices(OUTER_BOUNDARY));
+  newAnnot.markClean();
 
   annot = newAnnot;
 }

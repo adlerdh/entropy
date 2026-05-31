@@ -146,6 +146,43 @@ void renderAboutDialogModalPopup(bool open)
   }
 }
 
+void renderConfirmCloseAppPopup(AppData& appData, const std::function<void(void)>& quitAppWithoutPrompt)
+{
+  constexpr const char* popupTitle = "Quit Entropy?";
+  auto& guiData = appData.guiData();
+
+  if (guiData.m_showConfirmCloseAppPopup && !ImGui::IsPopupOpen(popupTitle)) {
+    ImGui::OpenPopup(popupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
+  }
+
+  const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+  ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+  if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::Text("Do you want to quit Entropy?");
+    ImGui::Separator();
+
+    if (ImGui::Button("Quit", ImVec2(100, 0))) {
+      guiData.m_showConfirmCloseAppPopup = false;
+      ImGui::CloseCurrentPopup();
+      if (quitAppWithoutPrompt) {
+        quitAppWithoutPrompt();
+      }
+    }
+    ImGui::SetItemDefaultFocus();
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+      guiData.m_showConfirmCloseAppPopup = false;
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+
+  guiData.m_showConfirmCloseAppPopup = false;
+}
+
 void renderUnsavedProjectPopup(
   AppData& appData,
   const std::function<bool(void)>& saveProject,

@@ -14,6 +14,7 @@
 #include "logic/serialization/ProjectSerialization.h"
 #include "logic/states/FsmList.hpp"
 #include "logic/DistanceMap.h"
+#include "ui/NativeFileDialogs.h"
 
 // #include "logic/ipc/IPCMessage.h"
 
@@ -1316,10 +1317,28 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
   return serializedImage;
 }
 
+bool EntropyApp::hasUnsavedAnnotations() const
+{
+  for (const auto& imageUid : m_data.imageUidsOrdered()) {
+    for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
+      const Annotation* annotation = m_data.annotation(annotationUid);
+      if (annotation && (annotation->isDirty() || annotation->getFileName().empty())) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 bool EntropyApp::projectHasUnsavedChanges() const
 {
   if (ProjectLoadState::Loaded != m_data.state().projectLoadState() || 0 == m_data.numImages()) {
     return false;
+  }
+
+  if (hasUnsavedAnnotations()) {
+    return true;
   }
 
   if (!m_data.projectFileName()) {
@@ -1333,6 +1352,84 @@ bool EntropyApp::projectHasUnsavedChanges() const
   return !projectsEqual(createProjectSnapshot(), *m_savedProjectSnapshot);
 }
 
+bool EntropyApp::saveAnnotationsForImage(const uuids::uuid& imageUid, const fs::path& fileName)
+{
+  nlohmann::json annotationsJson;
+
+  for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
+    const Annotation* annotation = m_data.annotation(annotationUid);
+    if (annotation) {
+      serialize::appendAnnotationToJson(*annotation, annotationsJson);
+    }
+  }
+
+  if (!serialize::saveToJsonFile(annotationsJson, fileName)) {
+    spdlog::error("Could not save annotations for image {} to {}", imageUid, fileName);
+    return false;
+  }
+
+  for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
+    Annotation* annotation = m_data.annotation(annotationUid);
+    if (annotation) {
+      annotation->setFileName(fileName);
+      annotation->markClean();
+    }
+  }
+
+  spdlog::info("Saved annotations for image {} to JSON file {}", imageUid, fileName);
+  return true;
+}
+
+bool EntropyApp::saveDirtyAnnotationsWithDialogs()
+{
+  for (const auto& imageUid : m_data.imageUidsOrdered()) {
+    bool needsSave = false;
+    std::optional<fs::path> existingFileName = std::nullopt;
+
+    for (const auto& annotationUid : m_data.annotationsForImage(imageUid)) {
+      const Annotation* annotation = m_data.annotation(annotationUid);
+      if (!annotation) {
+        continue;
+      }
+
+      if (!annotation->getFileName().empty() && !existingFileName) {
+        existingFileName = annotation->getFileName();
+      }
+
+      if (annotation->isDirty() || annotation->getFileName().empty()) {
+        needsSave = true;
+      }
+    }
+
+    if (!needsSave) {
+      continue;
+    }
+
+    fs::path annotationFileName;
+    if (existingFileName) {
+      annotationFileName = *existingFileName;
+    }
+    else {
+      const Image* image = m_data.image(imageUid);
+      const fs::path defaultDirectory = image ? image->header().fileName().parent_path() : fs::path{};
+      const std::string defaultName =
+        image ? (image->header().fileName().stem().string() + "_annotations.json") : std::string{"annotations.json"};
+      const auto selectedFile =
+        native_dialog::saveFile(native_dialog::annotationFilters(), defaultDirectory, defaultName);
+      if (!selectedFile) {
+        return false;
+      }
+      annotationFileName = *selectedFile;
+    }
+
+    if (!saveAnnotationsForImage(imageUid, annotationFileName)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 void EntropyApp::markProjectSavedSnapshot()
 {
   m_savedProjectSnapshot = createProjectSnapshot();
@@ -1341,6 +1438,10 @@ void EntropyApp::markProjectSavedSnapshot()
 
 bool EntropyApp::saveProject()
 {
+  if (!saveDirtyAnnotationsWithDialogs()) {
+    return false;
+  }
+
   if (!m_data.projectFileName()) {
     spdlog::warn("Cannot save project because it has not been saved to a file yet");
     return false;
@@ -1351,6 +1452,10 @@ bool EntropyApp::saveProject()
 
 bool EntropyApp::saveProjectAs(const fs::path& fileName)
 {
+  if (!saveDirtyAnnotationsWithDialogs()) {
+    return false;
+  }
+
   const fs::path normalizedFileName = projectSavePath(fileName);
   serialize::EntropyProject project = createProjectSnapshot();
 
@@ -1759,7 +1864,8 @@ void EntropyApp::requestQuitApp()
     return;
   }
 
-  quitAppWithoutPrompt();
+  m_data.guiData().m_showConfirmCloseAppPopup = true;
+  m_glfw.postEmptyEvent();
 }
 
 void EntropyApp::quitAppWithoutPrompt()
@@ -1790,6 +1896,7 @@ void EntropyApp::closeProject()
   m_savedProjectSnapshot = std::nullopt;
   m_data.guiData().m_pendingLargeImageLoadPrompt = std::nullopt;
   m_data.guiData().m_showUnsavedProjectPopup = false;
+  m_data.guiData().m_showConfirmCloseAppPopup = false;
   m_data.guiData().m_showLargeImageLoadPrompt = false;
 
   auto& renderData = m_data.renderData();

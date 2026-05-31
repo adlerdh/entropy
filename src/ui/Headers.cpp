@@ -2880,7 +2880,12 @@ void renderAnnotationsHeader(
 
       if (serialize::saveToJsonFile(j, *selectedFile)) {
         spdlog::info("Saved annotations for image {} to JSON file {}", imageUid, *selectedFile);
-        activeAnnot->setFileName(*selectedFile);
+        for (const auto& annotUid : appData.annotationsForImage(imageUid)) {
+          if (Annotation* annot = appData.annotation(annotUid)) {
+            annot->setFileName(*selectedFile);
+            annot->markClean();
+          }
+        }
       }
       else {
         spdlog::error("Error saving annotation to SVG file {}", *selectedFile);

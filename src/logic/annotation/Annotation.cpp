@@ -31,6 +31,7 @@ Annotation::Annotation(std::string name, const glm::vec4& color, const glm::vec4
   , m_visible(true)
   , m_filled(false)
   , m_vertexVisibility(true)
+  , m_dirty(false)
   ,
 
   m_opacity(sk_defaultOpacity)
@@ -54,6 +55,7 @@ Annotation::Annotation() : Annotation("", sk_defaultColor, sk_defaultSubjectPlan
 void Annotation::setDisplayName(std::string displayName)
 {
   m_displayName = std::move(displayName);
+  markDirty();
 }
 
 const std::string& Annotation::getDisplayName() const
@@ -69,6 +71,21 @@ void Annotation::setFileName(fs::path fileName)
 const fs::path& Annotation::getFileName() const
 {
   return m_fileName;
+}
+
+void Annotation::markDirty()
+{
+  m_dirty = true;
+}
+
+void Annotation::markClean()
+{
+  m_dirty = false;
+}
+
+bool Annotation::isDirty() const
+{
+  return m_dirty;
 }
 
 bool Annotation::setSubjectPlane(const glm::vec4& subjectPlaneEquation)
@@ -91,6 +108,7 @@ bool Annotation::setSubjectPlane(const glm::vec4& subjectPlaneEquation)
   m_subjectPlaneAxes.first = glm::normalize(m_subjectPlaneAxes.first);
   m_subjectPlaneAxes.second = glm::normalize(m_subjectPlaneAxes.second);
 
+  markDirty();
   return true;
 }
 
@@ -127,11 +145,16 @@ const std::vector<std::tuple<glm::vec2, glm::vec2, glm::vec2> >& Annotation::get
 void Annotation::addPlanePointToBoundary(size_t boundary, const glm::vec2& planePoint)
 {
   m_polygon.addVertexToBoundary(boundary, planePoint);
+  markDirty();
 }
 
 bool Annotation::insertPlanePointIntoBoundary(size_t boundary, size_t vertexIndex, const glm::vec2& vertex)
 {
-  return m_polygon.insertVertexIntoBoundary(boundary, vertexIndex, vertex);
+  const bool inserted = m_polygon.insertVertexIntoBoundary(boundary, vertexIndex, vertex);
+  if (inserted) {
+    markDirty();
+  }
+  return inserted;
 }
 
 std::optional<glm::vec2> Annotation::addSubjectPointToBoundary(size_t boundary, const glm::vec3& subjectPoint)
@@ -242,6 +265,7 @@ bool Annotation::isHighlighted() const
 void Annotation::setClosed(bool closed)
 {
   m_polygon.setClosed(closed);
+  markDirty();
 }
 
 bool Annotation::isClosed() const
@@ -252,6 +276,7 @@ bool Annotation::isClosed() const
 void Annotation::setVisible(bool visibility)
 {
   m_visible = visibility;
+  markDirty();
 }
 
 bool Annotation::isVisible() const
@@ -262,6 +287,7 @@ bool Annotation::isVisible() const
 void Annotation::setVertexVisibility(bool visibility)
 {
   m_vertexVisibility = visibility;
+  markDirty();
 }
 
 bool Annotation::getVertexVisibility() const
@@ -272,6 +298,7 @@ bool Annotation::getVertexVisibility() const
 void Annotation::setSmoothed(bool smoothed)
 {
   m_polygon.setSmoothed(smoothed);
+  markDirty();
 }
 
 bool Annotation::isSmoothed() const
@@ -282,6 +309,7 @@ bool Annotation::isSmoothed() const
 void Annotation::setSmoothingFactor(float factor)
 {
   m_polygon.setSmoothingFactor(factor);
+  markDirty();
 }
 
 float Annotation::getSmoothingFactor() const
@@ -293,6 +321,7 @@ void Annotation::setOpacity(float opacity)
 {
   if (0.0f <= opacity && opacity <= 1.0f) {
     m_opacity = opacity;
+    markDirty();
   }
 }
 
@@ -304,6 +333,7 @@ float Annotation::getOpacity() const
 void Annotation::setVertexColor(glm::vec4 color)
 {
   m_vertexColor = std::move(color);
+  markDirty();
 }
 
 const glm::vec4& Annotation::getVertexColor() const
@@ -314,6 +344,7 @@ const glm::vec4& Annotation::getVertexColor() const
 void Annotation::setLineColor(glm::vec4 color)
 {
   m_lineColor = std::move(color);
+  markDirty();
 }
 
 const glm::vec4& Annotation::getLineColor() const
@@ -325,6 +356,7 @@ void Annotation::setLineThickness(float thickness)
 {
   if (thickness >= 0.0f) {
     m_lineThickness = thickness;
+    markDirty();
   }
 }
 
@@ -336,6 +368,7 @@ float Annotation::getLineThickness() const
 void Annotation::setFilled(bool filled)
 {
   m_filled = filled;
+  markDirty();
 }
 
 bool Annotation::isFilled() const
@@ -346,6 +379,7 @@ bool Annotation::isFilled() const
 void Annotation::setFillColor(glm::vec4 color)
 {
   m_fillColor = std::move(color);
+  markDirty();
 }
 
 const glm::vec4& Annotation::getFillColor() const

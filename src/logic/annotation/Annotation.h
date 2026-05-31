@@ -43,6 +43,11 @@ public:
   void setFileName(fs::path fileName);
   const fs::path& getFileName() const;
 
+  /// @brief Track whether serialized annotation content has unsaved edits
+  void markDirty();
+  void markClean();
+  bool isDirty() const;
+
   /// @brief Get the annotation's polygon as a const/non-const reference
   AnnotPolygon<float, 2>& polygon();
   const AnnotPolygon<float, 2>& polygon() const;
@@ -187,6 +192,7 @@ private:
   bool m_visible;          //!< Is the annotation visible?
   bool m_filled;           //!< Is the annotation filled?
   bool m_vertexVisibility; //!< Are the annotation boundary vertices visible?
+  bool m_dirty;            //!< Does serialized annotation content have unsaved edits?
 
   /// Overall annotation opacity in [0.0, 1.0] range.
   /// The annotation fill and line colors opacities are modulated by this value.

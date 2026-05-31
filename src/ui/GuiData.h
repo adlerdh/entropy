@@ -47,6 +47,9 @@ struct GuiData
   bool m_showUnsavedProjectPopup = false;
   UnsavedProjectAction m_pendingUnsavedProjectAction = UnsavedProjectAction::CloseProject;
 
+  /// This is set to false until the user requests to quit with no unsaved project changes.
+  bool m_showConfirmCloseAppPopup = false;
+
   /// Flag to show dialog confirming reference image reassignment.
   bool m_showConfirmSetReferenceImagePopup = false;
   std::optional<uuids::uuid> m_pendingReferenceImageUid = std::nullopt;

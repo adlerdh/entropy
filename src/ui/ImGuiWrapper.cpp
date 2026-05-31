@@ -836,15 +836,17 @@ void ImGuiWrapper::render()
     return refImage ? (refImage->header().fileName().stem().string() + ".json") : std::string{"project.json"};
   };
 
+  renderConfirmCloseAppPopup(m_appData, m_quitAppWithoutPrompt);
+  renderUnsavedProjectPopup(
+    m_appData,
+    m_saveProject,
+    m_saveProjectAs,
+    m_closeProjectWithoutPrompt,
+    m_quitAppWithoutPrompt,
+    defaultProjectSaveDirectory,
+    defaultProjectSaveName);
+
   if (m_appData.guiData().m_renderUiWindows) {
-    renderUnsavedProjectPopup(
-      m_appData,
-      m_saveProject,
-      m_saveProjectAs,
-      m_closeProjectWithoutPrompt,
-      m_quitAppWithoutPrompt,
-      defaultProjectSaveDirectory,
-      defaultProjectSaveName);
     renderConfirmSetReferenceImagePopup(m_appData, m_setReferenceImage);
     renderConfirmRemoveImagePopup(m_appData, m_removeImage);
     renderLargeImageLoadPromptPopup(m_appData, m_largeImageLoadDecision);

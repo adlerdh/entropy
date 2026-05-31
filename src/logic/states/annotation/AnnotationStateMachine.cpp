@@ -401,6 +401,7 @@ void AnnotationStateMachine::undoLastVertexOfGrowingPolygon()
     if (numVertices >= 2) {
       // There are at least two vertices, so remove the last one
       growingAnnot->polygon().removeVertexFromBoundary(OUTER_BOUNDARY, numVertices - 1);
+      growingAnnot->markDirty();
 
       // Highlight the last vertex
       const size_t newSelectedVertex = numVertices - 2;
@@ -576,6 +577,7 @@ void AnnotationStateMachine::removeSelectedVertex()
   if (numVertices >= 2) {
     // There are at least two vertices, so remove the last one
     if (annot->polygon().removeVertexFromBoundary(OUTER_BOUNDARY, *ms_selectedVertex)) {
+      annot->markDirty();
       const size_t newNumVertices = numVertices - 1;
 
       size_t nextVertexToSelect = 0ul;
@@ -722,6 +724,7 @@ void AnnotationStateMachine::moveSelectedVertex(const ViewHit& prevHit, const Vi
     if (const auto planePoint2d = otherAnnot->polygon().getBoundaryVertex(OUTER_BOUNDARY, hitVertex.second)) {
       // Move to the existing point
       annot->polygon().setBoundaryVertex(OUTER_BOUNDARY, *ms_selectedVertex, *planePoint2d);
+      annot->markDirty();
       return;
     }
   }
@@ -730,7 +733,10 @@ void AnnotationStateMachine::moveSelectedVertex(const ViewHit& prevHit, const Vi
   // to the subject image plane:
   const glm::vec2 annotPlanePoint = annot->projectSubjectPointToAnnotationPlane(subjectPlanePoint);
 
-  if (!annot->polygon().setBoundaryVertex(OUTER_BOUNDARY, *ms_selectedVertex, annotPlanePoint)) {
+  if (annot->polygon().setBoundaryVertex(OUTER_BOUNDARY, *ms_selectedVertex, annotPlanePoint)) {
+    annot->markDirty();
+  }
+  else {
     spdlog::error(
       "Unable to move point {} of annotation {}",
       glm::to_string(currHit.worldPos_offsetApplied),
@@ -828,6 +834,7 @@ void AnnotationStateMachine::moveSelectedPolygon(const ViewHit& prevHit, const V
       spdlog::error("Unable to move annotation {}", *annotUid);
     }
   }
+  annot->markDirty();
 }
 
 void AnnotationStateMachine::removeGrowingPolygon()
@@ -1054,7 +1061,10 @@ void AnnotationStateMachine::flipSelectedAnnotation(const FlipDirection& flipDir
     flippedVertices.emplace_back(annotPlaneVertexFlipped);
   }
 
-  if (!annot->polygon().setBoundaryVertices(OUTER_BOUNDARY, flippedVertices)) {
+  if (annot->polygon().setBoundaryVertices(OUTER_BOUNDARY, flippedVertices)) {
+    annot->markDirty();
+  }
+  else {
     spdlog::error("Unable to flip annotation {}", *annotUid);
   }
 }

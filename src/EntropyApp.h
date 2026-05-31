@@ -136,6 +136,9 @@ private:
   serialize::EntropyProject createProjectSnapshot() const;
   serialize::Image createImageSnapshot(const uuids::uuid& imageUid) const;
   bool projectHasUnsavedChanges() const;
+  bool hasUnsavedAnnotations() const;
+  bool saveDirtyAnnotationsWithDialogs();
+  bool saveAnnotationsForImage(const uuids::uuid& imageUid, const fs::path& fileName);
   void markProjectSavedSnapshot();
 
   /// Load an image from disk.

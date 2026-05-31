@@ -21,6 +21,8 @@ void renderAddLayoutModalPopup(
 
 void renderAboutDialogModalPopup(bool open);
 
+void renderConfirmCloseAppPopup(AppData& appData, const std::function<void(void)>& quitAppWithoutPrompt);
+
 void renderUnsavedProjectPopup(
   AppData& appData,
   const std::function<bool(void)>& saveProject,
