@@ -36,9 +36,9 @@ if(Entropy_USE_CCACHE)
   endif()
 endif()
 
-set(entropy_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-set(entropy_APP_DIR "${entropy_SRC_DIR}/entropy")
-set(entropy_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources")
+set(entropy_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+set(entropy_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app")
+set(entropy_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/res")
 set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 
 # CMake will generate a file compile_commands.json under the build directory.
@@ -383,8 +383,8 @@ set(gridcut_INCLUDE_DIRS
 include(BuildStamp)
 BuildStamp()
 
-add_subdirectory("${entropy_SRC_DIR}/common")
-add_subdirectory("${entropy_SRC_DIR}/image")
+add_subdirectory("${entropy_LIB_DIR}/common")
+add_subdirectory("${entropy_LIB_DIR}/image")
 
 #--------------------------------------------------------------------------------
 # Entropy executable

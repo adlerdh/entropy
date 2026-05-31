@@ -28,11 +28,11 @@ The steps below intentionally reconfigure the same build directory: first to run
 ### Source layout
 The source tree is split into two reusable libraries and the Entropy application:
 
-- `src/common`: `Entropy::Common`, shared types, math, filesystem aliases, and other app-independent utilities.
-- `src/image`: `Entropy::Image`, image data structures, image I/O helpers, transforms, color maps, and image-only tests.
-- `src/entropy`: the Entropy executable, including application logic, annotation logic, segmentation workflows, rendering, UI, windowing, mesh, and slide code.
+- `lib/common`: `Entropy::Common`, shared types, math, filesystem aliases, and other app-independent utilities.
+- `lib/image`: `Entropy::Image`, image data structures, image I/O helpers, transforms, color maps, and image-only tests.
+- `app`: the Entropy executable, including application logic, annotation logic, segmentation workflows, rendering, UI, windowing, mesh, and slide code.
 
-`Entropy::Common` exports `src/common` as a public include directory. `Entropy::Image` exports `src/image` and links `Entropy::Common`, so clients should link the CMake targets instead of adding those include directories manually.
+`Entropy::Common` and `Entropy::Image` export `lib` as their public include root, so clients include headers as `common/AABB.h`, `common/Types.h`, `image/Image.h`, and so on. Clients should link the CMake targets instead of adding include directories manually.
 
 ### CMake presets
 The recommended developer build uses the checked-in CMake presets, but presets are optional. The manual single-config and multi-config commands below use the same two-stage superbuild flow and may be used instead. The presets build shared libraries, default to `RelWithDebInfo`, and use `ccache` automatically when it is available.
@@ -251,7 +251,7 @@ With this input format, each image may have only one segmentation. Direct image 
 
 > Note: The project file format is subject to change!
 
-Logs are output to the console and to files saved in the `logs` folder. Log level can be set using the `-l` argument. See help (`-h`) for more details.
+Logs are output to the console and to files saved in the `log` folder. Log level can be set using the `-l` argument. See help (`-h`) for more details.
 
 ## Keyboard shortcuts
 
