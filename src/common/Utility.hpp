@@ -1,5 +1,4 @@
-#ifndef UTILITY_H
-#define UTILITY_H
+#pragma once
 
 #include <array>
 #include <memory>
@@ -35,5 +34,3 @@ std::weak_ptr<T> static_pointer_cast(std::weak_ptr<U> const& r)
 }
 
 } // namespace utility
-
-#endif // UTILITY_H

@@ -1,5 +1,4 @@
-#ifndef COMMON_PUBLIC_TYPES_H
-#define COMMON_PUBLIC_TYPES_H
+#pragma once
 
 #include <functional>
 
@@ -32,5 +31,3 @@ using SetterType = std::function<void(T)>;
 /// Function for querying an object by based on an ID
 template<class ValueType, class IdType>
 using QuerierType = std::function<ValueType(const IdType&)>;
-
-#endif // COMMON_PUBLIC_TYPES_H

@@ -1,5 +1,4 @@
-#ifndef OBJECT_COUNTER_H
-#define OBJECT_COUNTER_H
+#pragma once
 
 #include <cstddef>
 
@@ -49,5 +48,3 @@ template<class T>
 std::size_t ObjectCounter<T>::m_numCreated = 0;
 template<class T>
 std::size_t ObjectCounter<T>::m_numAlive = 0;
-
-#endif // OBJECT_COUNTER_H

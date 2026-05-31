@@ -1,5 +1,4 @@
-#ifndef PARCELLATION_LABEL_TABLE_H
-#define PARCELLATION_LABEL_TABLE_H
+#pragma once
 
 #include "rendering/utility/gl/GLTextureTypes.h"
 
@@ -136,5 +135,3 @@ private:
   /// Upper bound on the number of labels that this table can hold
   std::size_t m_maxLabelCount;
 };
-
-#endif // PARCELLATION_LABEL_TABLE_H

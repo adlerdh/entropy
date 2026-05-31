@@ -1,7 +1,7 @@
 #ifndef CREATE_GL_OBJECTS_H
 #define CREATE_GL_OBJECTS_H
 
-#include "common/ParcellationLabelTable.h"
+#include "logic/app/ParcellationLabelTable.h"
 #include "image/ImageColorMap.h"
 
 #include "logic/records/MeshRecord.h"

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/Types.h"
-#include "image/ImageIoInfo.h"
+#include "Types.h"
+#include "../ImageIoInfo.h"
 
 #include <itkCommonEnums.h>
 #include <itkImageBase.h>

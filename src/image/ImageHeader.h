@@ -1,10 +1,9 @@
-#ifndef IMAGE_HEADER_H
-#define IMAGE_HEADER_H
+#pragma once
 
-#include "common/Types.h"
-#include "common/Filesystem.h"
-#include "image/ImageHeaderOverrides.h"
-#include "image/ImageIoInfo.h"
+#include "Types.h"
+#include "Filesystem.h"
+#include "ImageHeaderOverrides.h"
+#include "ImageIoInfo.h"
 
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
@@ -168,5 +167,3 @@ struct fmt::formatter<ImageHeader> : ostream_formatter
 {
 };
 #endif
-
-#endif // IMAGE_HEADER_H

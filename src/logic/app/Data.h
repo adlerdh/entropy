@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/Expected.h"
-#include "common/ParcellationLabelTable.h"
+#include "logic/app/ParcellationLabelTable.h"
 #include "common/UuidRange.h"
 
 #include "image/Image.h"

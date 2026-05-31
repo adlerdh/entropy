@@ -7,9 +7,8 @@
   },
   "configurePresets": [
     {
-      "name": "ninja-base",
+      "name": "base",
       "hidden": true,
-      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build-${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
@@ -20,9 +19,9 @@
     },
     {
       "name": "default",
-      "displayName": "Default Ninja app configure",
-      "description": "Configure Entropy with Ninja after the matching superbuild stage has populated dependencies.",
-      "inherits": "ninja-base",
+      "displayName": "Default app configure",
+      "description": "Configure Entropy after the matching superbuild stage has populated dependencies.",
+      "inherits": "base",
       "binaryDir": "${sourceDir}/build-default",
       "cacheVariables": {
         "Entropy_SUPERBUILD": false
@@ -30,9 +29,9 @@
     },
     {
       "name": "superbuild",
-      "displayName": "Default Ninja superbuild configure",
-      "description": "Configure the dependency superbuild with Ninja.",
-      "inherits": "ninja-base",
+      "displayName": "Default superbuild configure",
+      "description": "Configure the dependency superbuild.",
+      "inherits": "base",
       "binaryDir": "${sourceDir}/build-default",
       "cacheVariables": {
         "Entropy_SUPERBUILD": true
@@ -40,13 +39,13 @@
     },
     {
       "name": "app",
-      "displayName": "Default Ninja app configure",
-      "description": "Configure the Entropy app with Ninja after running the superbuild preset.",
+      "displayName": "Default app configure",
+      "description": "Configure the Entropy app after running the superbuild preset.",
       "inherits": "default"
     },
     {
       "name": "debug-superbuild",
-      "displayName": "Debug Ninja superbuild configure",
+      "displayName": "Debug superbuild configure",
       "inherits": "superbuild",
       "binaryDir": "${sourceDir}/build-debug",
       "cacheVariables": {
@@ -55,7 +54,7 @@
     },
     {
       "name": "debug-app",
-      "displayName": "Debug Ninja app configure",
+      "displayName": "Debug app configure",
       "inherits": "app",
       "binaryDir": "${sourceDir}/build-debug",
       "cacheVariables": {
@@ -64,7 +63,7 @@
     },
     {
       "name": "release-superbuild",
-      "displayName": "Release Ninja superbuild configure",
+      "displayName": "Release superbuild configure",
       "inherits": "superbuild",
       "binaryDir": "${sourceDir}/build-release",
       "cacheVariables": {
@@ -73,7 +72,7 @@
     },
     {
       "name": "release-app",
-      "displayName": "Release Ninja app configure",
+      "displayName": "Release app configure",
       "inherits": "app",
       "binaryDir": "${sourceDir}/build-release",
       "cacheVariables": {

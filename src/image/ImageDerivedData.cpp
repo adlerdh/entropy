@@ -1,5 +1,5 @@
-#include "image/ImageDerivedData.h"
-#include "image/internal/ImageUtility.tpp"
+#include "ImageDerivedData.h"
+#include "internal/ImageUtility.tpp"
 
 #include <spdlog/spdlog.h>
 

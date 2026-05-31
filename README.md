@@ -26,11 +26,9 @@ Note on generators:
 The steps below intentionally reconfigure the same build directory: first to run the superbuild, then to build Entropy after dependencies are available.
 
 ### CMake presets
-The recommended developer build uses the checked-in CMake presets, but presets are optional. The manual single-config and multi-config commands below use the same two-stage superbuild flow and may be used instead. The presets use the Ninja generator, build shared libraries, default to `RelWithDebInfo`, and use `ccache` automatically when it is available. Install Ninja before using these presets. On Debian/Ubuntu:
+The recommended developer build uses the checked-in CMake presets, but presets are optional. The manual single-config and multi-config commands below use the same two-stage superbuild flow and may be used instead. The presets build shared libraries, default to `RelWithDebInfo`, and use `ccache` automatically when it is available.
 
-```sh
-sudo apt-get install ninja-build ccache
-```
+The presets do not force a CMake generator. If you do not pass `-G`, CMake uses its platform default generator, such as Unix Makefiles on macOS and Linux. To use Ninja explicitly, install it and add `-G Ninja` to the configure commands, or set the `CMAKE_GENERATOR` environment variable before configuring.
 
 Configure and build dependencies first, then reconfigure the same build directory for the Entropy application:
 
@@ -43,6 +41,8 @@ cmake --build --preset app --parallel
 ```
 
 The default preset build directory is `build-default`. The `--parallel` option without an explicit job count lets the native build tool choose the parallelism. If the machine becomes memory constrained, pass a smaller number, for example `--parallel 16`.
+
+If you previously configured `build-default` with a different generator, remove that build directory or choose a new one before reconfiguring; CMake build directories cannot switch generators in place.
 
 Additional presets are available for debug and release builds:
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "image/Image.h"
+#include "Image.h"
 
 #include <cstdint>
 #include <vector>

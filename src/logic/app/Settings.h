@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/ParcellationLabelTable.h"
+#include "logic/app/ParcellationLabelTable.h"
 #include "common/SegmentationTypes.h"
 #include "common/Types.h"
 

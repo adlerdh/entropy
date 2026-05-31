@@ -1,6 +1,6 @@
 #include "logic/app/CallbackHandler.h"
 
-#include "common/DataHelper.h"
+#include "logic/app/DataHelper.h"
 #include "common/MathFuncs.h"
 #include "common/SegmentationTypes.h"
 #include "common/Types.h"
@@ -11,6 +11,7 @@
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
 
+#include "logic/segmentation/AnnotationSegmentation.h"
 #include "logic/segmentation/GraphCuts.h"
 #include "logic/segmentation/Poisson.h"
 #include "logic/segmentation/SegHelpers.h"

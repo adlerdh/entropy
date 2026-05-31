@@ -1,5 +1,5 @@
-#include "common/CoordinateFrame.h"
-#include "common/Exception.hpp"
+#include "CoordinateFrame.h"
+#include "Exception.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>

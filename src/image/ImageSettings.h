@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/HistogramSettings.h"
-#include "common/Types.h"
+#include "HistogramSettings.h"
+#include "Types.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>

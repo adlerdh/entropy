@@ -1,6 +1,6 @@
 #include "windowing/View.h"
 
-#include "common/DataHelper.h"
+#include "logic/app/DataHelper.h"
 #include "common/UuidUtility.h"
 
 #include "image/Image.h"

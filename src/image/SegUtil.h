@@ -1,13 +1,19 @@
 #pragma once
 
-#include "common/Types.h"
+#include "Types.h"
 
 #include <glm/fwd.hpp>
+#include <glm/vec3.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
 #include <uuid.h>
 #include <functional>
+#include <unordered_set>
 
-class Annotation;
 class Image;
+
+using SegmentationVoxelSet = std::unordered_set<glm::ivec3>;
 
 /**
  * @brief paintSegmentation
@@ -44,13 +50,16 @@ void paintSegmentation(
     const glm::uvec3& size,
     const int64_t* data)>& updateSegTexture);
 
-void fillSegmentationWithPolygon(
-  Image& seg,
-  const Annotation* annot,
+void updateSegmentationVoxels(
+  const SegmentationVoxelSet& voxelsToChange,
+  const glm::ivec3& minVoxel,
+  const glm::ivec3& maxVoxel,
 
   int64_t labelToPaint,
   int64_t labelToReplace,
   bool brushReplacesBgWithFg,
+
+  Image& seg,
 
   const std::function<void(
     const ComponentType& memoryComponentType,

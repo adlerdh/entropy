@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/MathFuncs.h"
+#include "MathFuncs.h"
 
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>

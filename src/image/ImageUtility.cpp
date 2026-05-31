@@ -1,9 +1,9 @@
-#include "image/ImageUtility.h"
-#include "image/internal/ImageUtilityItk.h"
-#include "image/internal/ImageUtility.tpp"
+#include "ImageUtility.h"
+#include "internal/ImageUtilityItk.h"
+#include "internal/ImageUtility.tpp"
 
-#include "common/MathFuncs.h"
-#include "common/Filesystem.h"
+#include "MathFuncs.h"
+#include "Filesystem.h"
 
 #include <glm/gtc/epsilon.hpp>
 #include <itkImageIOFactory.h>

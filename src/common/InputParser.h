@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/InputParams.h"
+#include "InputParams.h"
 
 /**
  * @brief Parse the command line arguments

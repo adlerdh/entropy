@@ -1,16 +1,10 @@
 add_executable(EntropyImageTests
   ImageColorMapTests.cpp
-  "${entropy_SRC_DIR}/image/ImageColorMap.cpp"
-)
-
-target_include_directories(EntropyImageTests PRIVATE
-  "${entropy_SRC_DIR}"
 )
 
 target_link_libraries(EntropyImageTests PRIVATE
   Catch2::Catch2WithMain
-  glm::glm
-  spdlog::spdlog
+  Entropy::Image
   entropy_warnings
 )
 

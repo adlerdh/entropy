@@ -1,5 +1,4 @@
-#ifndef VIEWPORT_H
-#define VIEWPORT_H
+#pragma once
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -126,5 +125,3 @@ private:
   /// Number of display device pixels per logical pixel
   glm::vec2 m_devicePixelRatio;
 };
-
-#endif // VIEWPORT_H

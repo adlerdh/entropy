@@ -1,8 +1,8 @@
-#include "image/Image.h"
-#include "image/internal/ImageCastHelper.tpp"
-#include "image/ImageUtility.h"
-#include "image/internal/ImageUtilityItk.h"
-#include "image/internal/ImageUtility.tpp"
+#include "Image.h"
+#include "internal/ImageCastHelper.tpp"
+#include "ImageUtility.h"
+#include "internal/ImageUtilityItk.h"
+#include "internal/ImageUtility.tpp"
 
 // clang-format off
 #include <spdlog/spdlog.h>

@@ -1,7 +1,7 @@
 #include "EntropyApp.h"
 #include "BuildStamp.h"
 
-#include "common/DataHelper.h"
+#include "logic/app/DataHelper.h"
 #include "common/DirectionMaps.h"
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"

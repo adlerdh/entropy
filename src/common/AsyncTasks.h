@@ -1,5 +1,4 @@
-#ifndef ASYNC_TASKS_H
-#define ASYNC_TASKS_H
+#pragma once
 
 #include <uuid.h>
 
@@ -26,5 +25,3 @@ struct AsyncTaskDetails
   std::optional<uuids::uuid> objectUid = std::nullopt;   //!< UID of the object created by the task
   bool success = false;                                  //!< Flag indicating task success (true) or failure (false)
 };
-
-#endif // ASYNC_TASKS_H

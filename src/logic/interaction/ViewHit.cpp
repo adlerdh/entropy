@@ -1,6 +1,6 @@
 #include "logic/interaction/ViewHit.h"
 
-#include "common/DataHelper.h"
+#include "logic/app/DataHelper.h"
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
 

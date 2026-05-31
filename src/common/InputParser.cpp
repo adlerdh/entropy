@@ -1,4 +1,4 @@
-#include "common/InputParser.h"
+#include "InputParser.h"
 #include "BuildStamp.h"
 
 #undef max

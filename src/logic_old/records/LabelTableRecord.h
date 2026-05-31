@@ -1,7 +1,7 @@
 #ifndef LABEL_TABLE_RECORD_H
 #define LABEL_TABLE_RECORD_H
 
-#include "common/ParcellationLabelTable.h"
+#include "logic/app/ParcellationLabelTable.h"
 #include "logic_old/RenderableRecord.h"
 #include "rendering/utility/gl/GLBufferTexture.h"
 

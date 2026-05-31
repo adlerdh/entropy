@@ -1,8 +1,8 @@
-#include "image/ImageSettings.h"
-#include "image/ImageUtility.h"
+#include "ImageSettings.h"
+#include "ImageUtility.h"
 
-#include "common/Exception.hpp"
-#include "common/Types.h"
+#include "Exception.hpp"
+#include "Types.h"
 
 #include <spdlog/spdlog.h>
 

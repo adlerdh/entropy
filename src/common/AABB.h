@@ -1,5 +1,4 @@
-#ifndef AABB_H
-#define AABB_H
+#pragma once
 
 #include <glm/vec3.hpp>
 
@@ -18,5 +17,3 @@ using AABB = std::pair<gvec3<T>, gvec3<T> >;
 /// corners
 template<uint32_t N, typename T>
 using AABB_N = std::pair<glm::vec<N, T>, glm::vec<N, T> >;
-
-#endif // AABB_H

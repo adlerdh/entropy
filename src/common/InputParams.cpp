@@ -1,4 +1,4 @@
-#include "common/InputParams.h"
+#include "InputParams.h"
 
 std::ostream& operator<<(std::ostream& os, const InputParams& p)
 {

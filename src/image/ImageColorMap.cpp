@@ -1,5 +1,5 @@
-#include "image/ImageColorMap.h"
-#include "common/Exception.hpp"
+#include "ImageColorMap.h"
+#include "Exception.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

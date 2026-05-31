@@ -1,6 +1,6 @@
 #include "rendering/VectorDrawing.h"
 
-#include "common/DataHelper.h"
+#include "logic/app/DataHelper.h"
 #include "common/DirectionMaps.h"
 #include "common/Viewport.h"
 

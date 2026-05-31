@@ -1,5 +1,4 @@
-#ifndef SEGMENTATION_TYPES_H
-#define SEGMENTATION_TYPES_H
+#pragma once
 
 #include <cstdint>
 #include <map>
@@ -40,5 +39,3 @@ struct LabelIndexMaps
   /// Map from label index to segmentation label
   std::map<std::size_t, LabelType> indexToLabel;
 };
-
-#endif // SEGMENTATION_TYPES_H

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/Types.h"
-#include "image/Image.h"
+#include "Types.h"
+#include "Image.h"
 
 #include "TDigest.h"
 

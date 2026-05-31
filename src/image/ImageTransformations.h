@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/Filesystem.h"
-#include "image/ImageHeaderOverrides.h"
+#include "Filesystem.h"
+#include "ImageHeaderOverrides.h"
 
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat4x4.hpp>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/Filesystem.h"
-#include "common/Types.h"
+#include "Filesystem.h"
+#include "Types.h"
 
 #include <string>
 #include <unordered_map>

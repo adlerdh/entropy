@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/Exception.hpp"
-#include "common/Types.h"
+#include "Exception.hpp"
+#include "Types.h"
 
 #include <spdlog/spdlog.h>
 

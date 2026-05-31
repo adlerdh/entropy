@@ -1,4 +1,4 @@
-#include "common/ParcellationLabelTable.h"
+#include "logic/app/ParcellationLabelTable.h"
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
 

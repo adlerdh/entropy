@@ -8,7 +8,7 @@
 
 // data::roundPointToNearestImageVoxelCenter
 // data::getAnnotationSubjectPlaneName
-#include "common/DataHelper.h"
+#include "logic/app/DataHelper.h"
 
 #include "image/Image.h"
 #include "image/ImageColorMap.h"

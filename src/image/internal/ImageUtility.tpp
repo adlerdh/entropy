@@ -1,11 +1,11 @@
 #pragma once
 
-#include "common/Exception.hpp"
-#include "common/Types.h"
-#include "common/Filesystem.h"
-#include "image/Image.h"
+#include "Exception.hpp"
+#include "Types.h"
+#include "Filesystem.h"
+#include "../Image.h"
 
-#include "image/TDigest.h"
+#include "../TDigest.h"
 
 #include <itkBinaryThresholdImageFilter.h>
 #include <itkCastImageFilter.h>

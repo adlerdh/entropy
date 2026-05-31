@@ -392,6 +392,7 @@ set(gridcut_INCLUDE_DIRS
 include(BuildStamp)
 BuildStamp()
 
+add_subdirectory("${entropy_SRC_DIR}/common")
 add_subdirectory("${entropy_SRC_DIR}/image")
 
 #--------------------------------------------------------------------------------
@@ -401,22 +402,13 @@ set(entropy_SOURCES
   "${entropy_SRC_DIR}/main.cpp"
   "${entropy_SRC_DIR}/EntropyApp.cpp"
 
-  "${entropy_SRC_DIR}/common/CoordinateFrame.cpp"
-  "${entropy_SRC_DIR}/common/DataHelper.cpp"
-  "${entropy_SRC_DIR}/common/DirectionMaps.cpp"
-  "${entropy_SRC_DIR}/common/InputParams.cpp"
-  "${entropy_SRC_DIR}/common/InputParser.cpp"
-  "${entropy_SRC_DIR}/common/MathFuncs.cpp"
-  "${entropy_SRC_DIR}/common/ParcellationLabelTable.cpp"
-  "${entropy_SRC_DIR}/common/Types.cpp"
-  "${entropy_SRC_DIR}/common/UuidUtility.cpp"
-  "${entropy_SRC_DIR}/common/Viewport.cpp"
-
   "${entropy_SRC_DIR}/logic/SurfaceUtility.cpp"
 
   "${entropy_SRC_DIR}/logic/app/CallbackHandler.cpp"
   "${entropy_SRC_DIR}/logic/app/Data.cpp"
+  "${entropy_SRC_DIR}/logic/app/DataHelper.cpp"
   "${entropy_SRC_DIR}/logic/app/Logging.cpp"
+  "${entropy_SRC_DIR}/logic/app/ParcellationLabelTable.cpp"
   "${entropy_SRC_DIR}/logic/app/Settings.cpp"
   "${entropy_SRC_DIR}/logic/app/State.cpp"
 
@@ -436,6 +428,7 @@ set(entropy_SOURCES
   "${entropy_SRC_DIR}/logic/interaction/ViewHit.cpp"
   "${entropy_SRC_DIR}/logic/interaction/events/ButtonState.cpp"
 
+  "${entropy_SRC_DIR}/logic/segmentation/AnnotationSegmentation.cpp"
   "${entropy_SRC_DIR}/logic/segmentation/GraphCuts.cpp"
   "${entropy_SRC_DIR}/logic/segmentation/Poisson.cpp"
   "${entropy_SRC_DIR}/logic/segmentation/SegHelpers.cpp"
@@ -612,6 +605,7 @@ target_sources(${entropy_EXE} PRIVATE
 
 target_link_libraries(${entropy_EXE} PRIVATE
   CLI11::CLI11
+  Entropy::Common
   Entropy::Image
   ghcFilesystem::ghc_filesystem
   glfw
@@ -677,7 +671,3 @@ set_target_properties(${entropy_EXE} PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
-
-if(BUILD_TESTING)
-  add_subdirectory("${entropy_SRC_DIR}/common/test")
-endif()

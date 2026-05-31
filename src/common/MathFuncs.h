@@ -1,12 +1,12 @@
-#ifndef MATH_FUNCS_H
-#define MATH_FUNCS_H
+#pragma once
 
-#include "common/CoordinateFrame.h"
+#include "CoordinateFrame.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_precision.hpp>
 
 #include <array>
+#include <cmath>
 #include <map>
 #include <optional>
 #include <string>
@@ -94,6 +94,18 @@ std::array<glm::vec3, 8> computeImageSubjectBoundingBoxCorners(
   const glm::vec3& origin);
 
 std::pair<glm::vec3, glm::vec3> computeMinMaxCornersOfAABBox(const std::array<glm::vec3, 8>& subjectCorners);
+
+template<typename T, glm::qualifier Q>
+bool testAABBoxPlaneIntersection(
+  const glm::vec<3, T, Q>& boxCenter,
+  const glm::vec<3, T, Q>& boxMaxCorner,
+  const glm::vec<4, T, Q>& plane)
+{
+  const glm::vec<3, T, Q> extent = boxMaxCorner - boxCenter;
+  const T radius = glm::dot(extent, glm::abs(glm::vec<3, T, Q>{plane}));
+  const T dist = glm::dot(plane, glm::vec<4, T, Q>{boxCenter, 1});
+  return (std::abs(dist) <= radius);
+}
 
 /**
  * @brief Compute the corners of an axis-aligned bounding box with given min/max corners
@@ -201,5 +213,3 @@ int pnpoly(const std::vector<glm::vec2>& poly, const glm::vec2& p);
 float interpolate(float x, const std::map<float, float>& table);
 
 } // namespace math
-
-#endif // MATH_FUNCS_H

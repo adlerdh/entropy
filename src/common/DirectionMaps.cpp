@@ -1,4 +1,4 @@
-#include "common/DirectionMaps.h"
+#include "DirectionMaps.h"
 
 #include <glm/glm.hpp>
 

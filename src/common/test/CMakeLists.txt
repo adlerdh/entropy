@@ -1,17 +1,10 @@
 add_executable(EntropyCommonTests
   MathFuncsTests.cpp
-  "${entropy_SRC_DIR}/common/CoordinateFrame.cpp"
-  "${entropy_SRC_DIR}/common/MathFuncs.cpp"
-)
-
-target_include_directories(EntropyCommonTests PRIVATE
-  "${entropy_SRC_DIR}"
 )
 
 target_link_libraries(EntropyCommonTests PRIVATE
   Catch2::Catch2WithMain
-  glm::glm
-  spdlog::spdlog
+  Entropy::Common
   entropy_warnings
 )
 

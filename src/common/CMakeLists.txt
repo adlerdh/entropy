@@ -1,39 +1,36 @@
-# Insight Toolkit (ITK) is an implementation detail of EntropyImage
-find_package(ITK ${itk_VERSION} REQUIRED HINTS "${itk_PREFIX}/build")
-message(STATUS "Found ITK in ${ITK_DIR}")
-include("${ITK_USE_FILE}")
+add_library(EntropyCommon)
+add_library(Entropy::Common ALIAS EntropyCommon)
 
-add_library(EntropyImage)
-add_library(Entropy::Image ALIAS EntropyImage)
-
-target_sources(EntropyImage PRIVATE
-  Image.cpp
-  ImageColorMap.cpp
-  ImageDerivedData.cpp
-  ImageHeader.cpp
-  ImageIoInfo.cpp
-  ImageSettings.cpp
-  ImageTransformations.cpp
-  ImageUtility.cpp
-  SegUtil.cpp
+target_sources(EntropyCommon PRIVATE
+  CoordinateFrame.cpp
+  DirectionMaps.cpp
+  InputParams.cpp
+  InputParser.cpp
+  MathFuncs.cpp
+  Types.cpp
+  UuidUtility.cpp
+  Viewport.cpp
 )
 
-target_include_directories(EntropyImage
+target_include_directories(EntropyCommon
   PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
   PRIVATE
-    ${ITK_INCLUDE_DIRS}
+    "${CMAKE_BINARY_DIR}" # for BuildStamp.h
+    "${iconfont_INCLUDE_DIR}"
 )
 
-target_link_libraries(EntropyImage
+target_link_libraries(EntropyCommon
   PUBLIC
-    Entropy::Common
     ghcFilesystem::ghc_filesystem
+    glm::glm
+    spdlog::spdlog
+    stduuid
   PRIVATE
-    ${ITK_LIBRARIES}
+    CLI11::CLI11
 )
 
-target_compile_options(EntropyImage PRIVATE
+target_compile_options(EntropyCommon PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
     -Werror
     -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
@@ -54,7 +51,7 @@ target_compile_options(EntropyImage PRIVATE
   >
 )
 
-set_target_properties(EntropyImage PROPERTIES
+set_target_properties(EntropyCommon PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF

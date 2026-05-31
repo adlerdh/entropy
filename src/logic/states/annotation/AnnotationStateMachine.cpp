@@ -1,7 +1,7 @@
 #include "logic/states/annotation/AnnotationStateMachine.h"
 #include "logic/states/annotation/AnnotationStates.h"
 
-#include "common/DataHelper.h"
+#include "logic/app/DataHelper.h"
 #include "common/MathFuncs.h"
 
 #include "logic/app/Data.h"

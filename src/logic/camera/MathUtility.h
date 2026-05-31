@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/AABB.h"
+#include "common/MathFuncs.h"
 #include "common/Types.h"
 
 #include <glm/glm.hpp>
@@ -296,20 +297,6 @@ template<typename T>
 AABB<T> computeBoundingAABBox(const AABB<T> box1, const AABB<T> box2)
 {
   return {glm::min(box1.first, box2.first), glm::max(box1.second, box2.second)};
-}
-
-template<typename T>
-bool testAABBoxPlaneIntersection(const gvec3<T>& boxCenter, const gvec3<T>& boxMaxCorner, const gvec4<T>& plane)
-{
-  const gvec3<T> extent = boxMaxCorner - boxCenter;
-
-  const T radius = glm::dot(extent, glm::abs(gvec3<T>{plane}));
-
-  // Distance of AABB center from plane
-  const T dist = glm::dot(plane, gvec4<T>{boxCenter, 1});
-
-  // Intersection occurs when distance is in [-radius, +radius]
-  return (std::abs(dist) <= radius);
 }
 
 // Return true if intersection, false if not

@@ -2,7 +2,7 @@
 #include "rendering/utility/UnderlyingEnumType.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 
-#include "common/DataHelper.h"
+#include "logic/app/DataHelper.h"
 #include "image/Image.h"
 
 #include "logic/camera/CameraHelpers.h"

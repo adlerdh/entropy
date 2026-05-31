@@ -1,8 +1,8 @@
-#include "image/ImageHeader.h"
-#include "image/ImageUtility.h"
+#include "ImageHeader.h"
+#include "ImageUtility.h"
 
-#include "common/Exception.hpp"
-#include "common/MathFuncs.h"
+#include "Exception.hpp"
+#include "MathFuncs.h"
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL

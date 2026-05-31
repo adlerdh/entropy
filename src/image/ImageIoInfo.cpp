@@ -1,7 +1,7 @@
-#include "image/ImageIoInfo.h"
-#include "image/internal/ImageUtilityItk.h"
+#include "ImageIoInfo.h"
+#include "internal/ImageUtilityItk.h"
 
-#include "common/Exception.hpp"
+#include "Exception.hpp"
 
 #include <spdlog/spdlog.h>
 

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "common/Types.h"
-#include "common/Filesystem.h"
+#include "Types.h"
+#include "Filesystem.h"
 
-#include "image/ImageHeader.h"
-#include "image/ImageHeaderOverrides.h"
-#include "image/ImageIoInfo.h"
-#include "image/ImageSettings.h"
-#include "image/ImageTransformations.h"
+#include "ImageHeader.h"
+#include "ImageHeaderOverrides.h"
+#include "ImageIoInfo.h"
+#include "ImageSettings.h"
+#include "ImageTransformations.h"
 
 #include "TDigest.h"
 
