@@ -146,6 +146,80 @@ void eraseSerializedImageAt(serialize::EntropyProject& project, std::size_t inde
   }
 }
 
+bool imageSettingsEqual(
+  const std::optional<serialize::ImageSettings>& a,
+  const std::optional<serialize::ImageSettings>& b)
+{
+  if (a.has_value() != b.has_value()) {
+    return false;
+  }
+  if (!a) {
+    return true;
+  }
+
+  return a->m_displayName == b->m_displayName && a->m_level == b->m_level && a->m_window == b->m_window &&
+         a->m_thresholdLow == b->m_thresholdLow && a->m_thresholdHigh == b->m_thresholdHigh &&
+         a->m_opacity == b->m_opacity;
+}
+
+bool segSettingsEqual(const std::optional<serialize::SegSettings>& a, const std::optional<serialize::SegSettings>& b)
+{
+  if (a.has_value() != b.has_value()) {
+    return false;
+  }
+  return !a || a->m_opacity == b->m_opacity;
+}
+
+bool matricesEqual(const std::optional<glm::mat4>& a, const std::optional<glm::mat4>& b)
+{
+  if (a.has_value() != b.has_value()) {
+    return false;
+  }
+  if (!a) {
+    return true;
+  }
+
+  for (glm::length_t c = 0; c < 4; ++c) {
+    for (glm::length_t r = 0; r < 4; ++r) {
+      if ((*a)[c][r] != (*b)[c][r]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool segmentationsEqual(const serialize::Segmentation& a, const serialize::Segmentation& b)
+{
+  return a.m_segFileName == b.m_segFileName && segSettingsEqual(a.m_settings, b.m_settings);
+}
+
+bool landmarkGroupsEqual(const serialize::LandmarkGroup& a, const serialize::LandmarkGroup& b)
+{
+  return a.m_csvFileName == b.m_csvFileName && a.m_inVoxelSpace == b.m_inVoxelSpace;
+}
+
+template<typename T, typename Equal>
+bool vectorsEqual(const std::vector<T>& a, const std::vector<T>& b, Equal equal)
+{
+  return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), equal);
+}
+
+bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
+{
+  return a.m_imageFileName == b.m_imageFileName && a.m_affineTxFileName == b.m_affineTxFileName &&
+         a.m_deformationFileName == b.m_deformationFileName && matricesEqual(a.m_worldDefTx, b.m_worldDefTx) &&
+         a.m_annotationsFileName == b.m_annotationsFileName && imageSettingsEqual(a.m_settings, b.m_settings) &&
+         vectorsEqual(a.m_segmentations, b.m_segmentations, segmentationsEqual) &&
+         vectorsEqual(a.m_landmarkGroups, b.m_landmarkGroups, landmarkGroupsEqual);
+}
+
+bool projectsEqual(const serialize::EntropyProject& a, const serialize::EntropyProject& b)
+{
+  return imagesEqual(a.m_referenceImage, b.m_referenceImage) &&
+         vectorsEqual(a.m_additionalImages, b.m_additionalImages, imagesEqual);
+}
+
 bool isApproximatelyIdentity(const glm::mat4& matrix)
 {
   constexpr float epsilon = 1.0e-5f;
@@ -370,6 +444,14 @@ void EntropyApp::onImagesReady()
   resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y);
 
   m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
+  if (!preserveLayouts) {
+    if (m_data.projectFileName()) {
+      markProjectSavedSnapshot();
+    }
+    else {
+      m_savedProjectSnapshot = std::nullopt;
+    }
+  }
 
   spdlog::debug("Done setting up window state");
 }
@@ -1234,35 +1316,60 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
   return serializedImage;
 }
 
-void EntropyApp::saveProject()
+bool EntropyApp::projectHasUnsavedChanges() const
+{
+  if (ProjectLoadState::Loaded != m_data.state().projectLoadState() || 0 == m_data.numImages()) {
+    return false;
+  }
+
+  if (!m_data.projectFileName()) {
+    return true;
+  }
+
+  if (!m_savedProjectSnapshot) {
+    return true;
+  }
+
+  return !projectsEqual(createProjectSnapshot(), *m_savedProjectSnapshot);
+}
+
+void EntropyApp::markProjectSavedSnapshot()
+{
+  m_savedProjectSnapshot = createProjectSnapshot();
+  m_data.setProject(*m_savedProjectSnapshot);
+}
+
+bool EntropyApp::saveProject()
 {
   if (!m_data.projectFileName()) {
     spdlog::warn("Cannot save project because it has not been saved to a file yet");
-    return;
+    return false;
   }
 
-  saveProjectAs(*m_data.projectFileName());
+  return saveProjectAs(*m_data.projectFileName());
 }
 
-void EntropyApp::saveProjectAs(const fs::path& fileName)
+bool EntropyApp::saveProjectAs(const fs::path& fileName)
 {
   const fs::path normalizedFileName = projectSavePath(fileName);
   serialize::EntropyProject project = createProjectSnapshot();
 
   if (project.m_referenceImage.m_imageFileName.empty()) {
     spdlog::error("Cannot save project without a reference image");
-    return;
+    return false;
   }
 
   if (!serialize::save(project, normalizedFileName)) {
     spdlog::error("Could not save project file {}", normalizedFileName);
-    return;
+    return false;
   }
 
   m_data.setProject(project);
+  m_savedProjectSnapshot = project;
   m_data.setProjectFileName(normalizedFileName);
   m_glfw.setWindowTitleStatus(normalizedFileName.filename().string());
   m_glfw.postEmptyEvent();
+  return true;
 }
 
 void EntropyApp::loadImageFile(const fs::path& fileName)
@@ -1631,6 +1738,36 @@ void EntropyApp::handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision de
   }
 }
 
+void EntropyApp::requestCloseProject()
+{
+  if (projectHasUnsavedChanges()) {
+    m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::CloseProject;
+    m_data.guiData().m_showUnsavedProjectPopup = true;
+    m_glfw.postEmptyEvent();
+    return;
+  }
+
+  closeProject();
+}
+
+void EntropyApp::requestQuitApp()
+{
+  if (projectHasUnsavedChanges()) {
+    m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::QuitApp;
+    m_data.guiData().m_showUnsavedProjectPopup = true;
+    m_glfw.postEmptyEvent();
+    return;
+  }
+
+  quitAppWithoutPrompt();
+}
+
+void EntropyApp::quitAppWithoutPrompt()
+{
+  m_data.state().setQuitApp(true);
+  m_glfw.postEmptyEvent();
+}
+
 void EntropyApp::closeProject()
 {
   m_imageLoadCancelled = true;
@@ -1650,7 +1787,9 @@ void EntropyApp::closeProject()
   m_pendingLargeProject = std::nullopt;
   m_pendingLargeProjectFileName = std::nullopt;
   m_pendingLargeProjectImageIndex = 0;
+  m_savedProjectSnapshot = std::nullopt;
   m_data.guiData().m_pendingLargeImageLoadPrompt = std::nullopt;
+  m_data.guiData().m_showUnsavedProjectPopup = false;
   m_data.guiData().m_showLargeImageLoadPrompt = false;
 
   auto& renderData = m_data.renderData();
@@ -1819,9 +1958,11 @@ void EntropyApp::setCallbacks()
     [this](const fs::path& fileName) { addImageFile(fileName); },
     [this](const fs::path& fileName) { loadProjectFile(fileName); },
     [this](GuiData::LargeImageLoadDecision decision) { handleLargeImageLoadDecision(decision); },
-    [this]() { saveProject(); },
-    [this](const fs::path& fileName) { saveProjectAs(fileName); },
+    [this]() { return saveProject(); },
+    [this](const fs::path& fileName) { return saveProjectAs(fileName); },
+    [this]() { requestCloseProject(); },
     [this]() { closeProject(); },
+    [this]() { quitAppWithoutPrompt(); },
 
     [this](const uuids::uuid& viewUid) { m_callbackHandler.recenterView(m_data.state().recenteringMode(), viewUid); },
 

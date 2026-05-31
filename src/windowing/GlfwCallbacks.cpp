@@ -65,10 +65,9 @@ void windowCloseCallback(GLFWwindow* window)
 
   spdlog::trace("User has requested to close the application");
 
-  // Setting this flag will show the popup on the next render iteration:
-  app->guiData().m_showConfirmCloseAppPopup = true;
+  app->requestQuitApp();
 
-  // Turn off the closing flag, so that the window does not close until the user confirms 'yes'
+  // Turn off the closing flag, so that the window does not close until the request has been handled.
   glfwSetWindowShouldClose(window, GLFW_FALSE);
 }
 

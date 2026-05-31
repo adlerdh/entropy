@@ -1,5 +1,6 @@
 #include "ui/Popups.h"
 #include "ui/Helpers.h"
+#include "ui/NativeFileDialogs.h"
 #include "logic/app/Data.h"
 #include "image/Image.h"
 
@@ -145,43 +146,82 @@ void renderAboutDialogModalPopup(bool open)
   }
 }
 
-void renderConfirmCloseAppPopup(AppData& appData)
+void renderUnsavedProjectPopup(
+  AppData& appData,
+  const std::function<bool(void)>& saveProject,
+  const std::function<bool(const fs::path& fileName)>& saveProjectAs,
+  const std::function<void(void)>& closeProjectWithoutPrompt,
+  const std::function<void(void)>& quitAppWithoutPrompt,
+  const std::function<fs::path(void)>& defaultProjectSaveDirectory,
+  const std::function<std::string(void)>& defaultProjectSaveName)
 {
-  if (appData.guiData().m_showConfirmCloseAppPopup && !ImGui::IsPopupOpen("Quit?")) {
-    ImGui::OpenPopup("Quit?", ImGuiWindowFlags_Modal | ImGuiWindowFlags_NoDecoration);
+  constexpr const char* popupTitle = "Unsaved Project";
+  auto& guiData = appData.guiData();
+
+  if (guiData.m_showUnsavedProjectPopup && !ImGui::IsPopupOpen(popupTitle)) {
+    ImGui::OpenPopup(popupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
   }
 
   const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
-
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-  ImGui::SetNextItemWidth(-1.0f);
-  if (ImGui::BeginPopupModal("Quit?", nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_NoDecoration)) {
-    ImGui::Text("Do you want to quit?");
+  if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
+    const bool isQuit = GuiData::UnsavedProjectAction::QuitApp == guiData.m_pendingUnsavedProjectAction;
+    ImGui::TextWrapped("The current project has unsaved changes.");
+    ImGui::TextWrapped("Save before %s?", isQuit ? "quitting" : "closing it");
     ImGui::Separator();
 
-    ImGui::SetNextItemWidth(-1.0f);
+    auto continueAction = [&]() {
+      if (isQuit) {
+        if (quitAppWithoutPrompt) {
+          quitAppWithoutPrompt();
+        }
+      }
+      else if (closeProjectWithoutPrompt) {
+        closeProjectWithoutPrompt();
+      }
+    };
 
-    if (ImGui::Button("Yes", ImVec2(80, 0))) {
-      appData.state().setQuitApp(true);
-      ImGui::CloseCurrentPopup();
+    if (ImGui::Button("Save", ImVec2(100, 0))) {
+      bool saved = false;
+      if (appData.projectFileName()) {
+        saved = saveProject ? saveProject() : false;
+      }
+      else if (saveProjectAs) {
+        const fs::path defaultPath = defaultProjectSaveDirectory ? defaultProjectSaveDirectory() : fs::path{};
+        const std::string defaultName = defaultProjectSaveName ? defaultProjectSaveName() : std::string{};
+        if (
+          const auto selectedFile = native_dialog::saveFile(native_dialog::projectFilters(), defaultPath, defaultName))
+        {
+          saved = saveProjectAs(*selectedFile);
+        }
+      }
+
+      if (saved) {
+        guiData.m_showUnsavedProjectPopup = false;
+        ImGui::CloseCurrentPopup();
+        continueAction();
+      }
     }
     ImGui::SetItemDefaultFocus();
 
     ImGui::SameLine();
+    if (ImGui::Button("Don't Save", ImVec2(100, 0))) {
+      guiData.m_showUnsavedProjectPopup = false;
+      ImGui::CloseCurrentPopup();
+      continueAction();
+    }
 
-    ImGui::SetNextItemWidth(-1.0f);
-
-    if (ImGui::Button("No", ImVec2(80, 0))) {
-      appData.state().setQuitApp(false);
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+      guiData.m_showUnsavedProjectPopup = false;
       ImGui::CloseCurrentPopup();
     }
 
     ImGui::EndPopup();
   }
 
-  // Disable the closing flag
-  appData.guiData().m_showConfirmCloseAppPopup = false;
+  guiData.m_showUnsavedProjectPopup = false;
 }
 
 void renderConfirmSetReferenceImagePopup(

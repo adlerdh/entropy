@@ -12,8 +12,8 @@ struct MainMenuBarCallbacks
   std::function<void(const fs::path& fileName)> openImageFile;
   std::function<void(const fs::path& fileName)> addImageFile;
   std::function<void(const fs::path& fileName)> openProjectFile;
-  std::function<void()> saveProject;
-  std::function<void(const fs::path& fileName)> saveProjectAs;
+  std::function<bool()> saveProject;
+  std::function<bool(const fs::path& fileName)> saveProjectAs;
   std::function<std::optional<fs::path>()> projectFileName;
   std::function<fs::path()> defaultProjectSaveDirectory;
   std::function<std::string()> defaultProjectSaveName;

@@ -37,8 +37,15 @@ struct GuiData
   bool m_showImPlotDemoWindow = false;     //!< Show ImPlot demo window
 
   /// Flag to show dialog confirming closing of the application window.
-  /// This is set the false until the user requests to close the window.
-  bool m_showConfirmCloseAppPopup = false;
+  enum class UnsavedProjectAction : std::uint8_t
+  {
+    CloseProject,
+    QuitApp
+  };
+
+  /// This is set to false until the user requests to close a dirty project or quit the app.
+  bool m_showUnsavedProjectPopup = false;
+  UnsavedProjectAction m_pendingUnsavedProjectAction = UnsavedProjectAction::CloseProject;
 
   /// Flag to show dialog confirming reference image reassignment.
   bool m_showConfirmSetReferenceImagePopup = false;

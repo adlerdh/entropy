@@ -214,9 +214,11 @@ void ImGuiWrapper::setCallbacks(
   std::function<void(const fs::path& fileName)> addImageFile,
   std::function<void(const fs::path& fileName)> openProjectFile,
   std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
-  std::function<void()> saveProject,
-  std::function<void(const fs::path& fileName)> saveProjectAs,
+  std::function<bool()> saveProject,
+  std::function<bool(const fs::path& fileName)> saveProjectAs,
   std::function<void()> closeProject,
+  std::function<void()> closeProjectWithoutPrompt,
+  std::function<void()> quitAppWithoutPrompt,
   std::function<void(const uuids::uuid& viewUid)> recenterView,
   AllViewsRecenterType recenterCurrentViews,
   std::function<bool(void)> getOverlayVisibility,
@@ -258,6 +260,8 @@ void ImGuiWrapper::setCallbacks(
   m_saveProject = saveProject;
   m_saveProjectAs = saveProjectAs;
   m_closeProject = closeProject;
+  m_closeProjectWithoutPrompt = closeProjectWithoutPrompt;
+  m_quitAppWithoutPrompt = quitAppWithoutPrompt;
   m_recenterView = recenterView;
   m_recenterAllViews = recenterCurrentViews;
   m_getOverlayVisibility = getOverlayVisibility;
@@ -814,8 +818,33 @@ void ImGuiWrapper::render()
   const bool hasLoadedProject =
     ProjectLoadState::Loaded == projectLoadState && 0 != m_appData.windowData().numLayouts();
 
+  auto defaultProjectSaveDirectory = [this]() {
+    if (m_appData.projectFileName()) {
+      return m_appData.projectFileName()->parent_path();
+    }
+    const auto refImageUid = m_appData.refImageUid();
+    const Image* refImage = refImageUid ? m_appData.image(*refImageUid) : nullptr;
+    return refImage ? refImage->header().fileName().parent_path() : fs::path{};
+  };
+
+  auto defaultProjectSaveName = [this]() {
+    if (m_appData.projectFileName()) {
+      return m_appData.projectFileName()->filename().string();
+    }
+    const auto refImageUid = m_appData.refImageUid();
+    const Image* refImage = refImageUid ? m_appData.image(*refImageUid) : nullptr;
+    return refImage ? (refImage->header().fileName().stem().string() + ".json") : std::string{"project.json"};
+  };
+
   if (m_appData.guiData().m_renderUiWindows) {
-    renderConfirmCloseAppPopup(m_appData);
+    renderUnsavedProjectPopup(
+      m_appData,
+      m_saveProject,
+      m_saveProjectAs,
+      m_closeProjectWithoutPrompt,
+      m_quitAppWithoutPrompt,
+      defaultProjectSaveDirectory,
+      defaultProjectSaveName);
     renderConfirmSetReferenceImagePopup(m_appData, m_setReferenceImage);
     renderConfirmRemoveImagePopup(m_appData, m_removeImage);
     renderLargeImageLoadPromptPopup(m_appData, m_largeImageLoadDecision);
@@ -837,24 +866,8 @@ void ImGuiWrapper::render()
         .saveProject = m_saveProject,
         .saveProjectAs = m_saveProjectAs,
         .projectFileName = [this]() { return m_appData.projectFileName(); },
-        .defaultProjectSaveDirectory =
-          [this]() {
-            if (m_appData.projectFileName()) {
-              return m_appData.projectFileName()->parent_path();
-            }
-            const auto refImageUid = m_appData.refImageUid();
-            const Image* refImage = refImageUid ? m_appData.image(*refImageUid) : nullptr;
-            return refImage ? refImage->header().fileName().parent_path() : fs::path{};
-          },
-        .defaultProjectSaveName =
-          [this]() {
-            if (m_appData.projectFileName()) {
-              return m_appData.projectFileName()->filename().string();
-            }
-            const auto refImageUid = m_appData.refImageUid();
-            const Image* refImage = refImageUid ? m_appData.image(*refImageUid) : nullptr;
-            return refImage ? (refImage->header().fileName().stem().string() + ".json") : std::string{"project.json"};
-          },
+        .defaultProjectSaveDirectory = defaultProjectSaveDirectory,
+        .defaultProjectSaveName = defaultProjectSaveName,
         .closeProject = m_closeProject,
         .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
         .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,

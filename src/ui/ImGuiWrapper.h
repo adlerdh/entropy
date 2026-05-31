@@ -38,9 +38,11 @@ public:
     std::function<void(const fs::path& fileName)> addImageFile,
     std::function<void(const fs::path& fileName)> openProjectFile,
     std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
-    std::function<void()> saveProject,
-    std::function<void(const fs::path& fileName)> saveProjectAs,
+    std::function<bool()> saveProject,
+    std::function<bool(const fs::path& fileName)> saveProjectAs,
     std::function<void()> closeProject,
+    std::function<void()> closeProjectWithoutPrompt,
+    std::function<void()> quitAppWithoutPrompt,
     std::function<void(const uuids::uuid& viewUid)> recenterView,
     AllViewsRecenterType recenterCurrentViews,
     std::function<bool(void)> getOverlayVisibility,
@@ -90,9 +92,11 @@ private:
   std::function<void(const fs::path& fileName)> m_addImageFile = nullptr;
   std::function<void(const fs::path& fileName)> m_openProjectFile = nullptr;
   std::function<void(GuiData::LargeImageLoadDecision decision)> m_largeImageLoadDecision = nullptr;
-  std::function<void()> m_saveProject = nullptr;
-  std::function<void(const fs::path& fileName)> m_saveProjectAs = nullptr;
+  std::function<bool()> m_saveProject = nullptr;
+  std::function<bool(const fs::path& fileName)> m_saveProjectAs = nullptr;
   std::function<void()> m_closeProject = nullptr;
+  std::function<void()> m_closeProjectWithoutPrompt = nullptr;
+  std::function<void()> m_quitAppWithoutPrompt = nullptr;
   std::function<void(const uuids::uuid& viewUid)> m_recenterView = nullptr;
   AllViewsRecenterType m_recenterAllViews = nullptr;
   std::function<bool(void)> m_getOverlayVisibility = nullptr;

@@ -55,10 +55,13 @@ public:
   void loadImageFile(const fs::path& fileName);
   void addImageFile(const fs::path& fileName);
   void loadProjectFile(const fs::path& fileName);
-  void saveProject();
-  void saveProjectAs(const fs::path& fileName);
+  bool saveProject();
+  bool saveProjectAs(const fs::path& fileName);
   bool setReferenceImage(const uuids::uuid& imageUid);
   bool removeImage(const uuids::uuid& imageUid);
+  void requestCloseProject();
+  void requestQuitApp();
+  void quitAppWithoutPrompt();
   void closeProject();
 
   /**
@@ -132,6 +135,8 @@ private:
   bool loadProject(const serialize::EntropyProject& project);
   serialize::EntropyProject createProjectSnapshot() const;
   serialize::Image createImageSnapshot(const uuids::uuid& imageUid) const;
+  bool projectHasUnsavedChanges() const;
+  void markProjectSavedSnapshot();
 
   /// Load an image from disk.
   /// @return Uid and flag if loaded.
@@ -169,6 +174,7 @@ private:
   std::optional<serialize::EntropyProject> m_pendingLargeProject = std::nullopt;
   std::optional<fs::path> m_pendingLargeProjectFileName = std::nullopt;
   std::size_t m_pendingLargeProjectImageIndex = 0;
+  std::optional<serialize::EntropyProject> m_savedProjectSnapshot = std::nullopt;
 
   GlfwWrapper m_glfw;                //!< GLFW wrapper
   AppData m_data;                    //!< Application data
