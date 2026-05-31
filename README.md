@@ -121,7 +121,7 @@ sudo apt-get install xorg-dev libgl1-mesa-dev libxcursor-dev libxkbcommon-dev li
 `libdbus-1-dev` is required by [Native File Dialog Extended](https://github.com/btzy/nativefiledialog-extended) when Entropy uses the xdg-desktop-portal backend on Linux. This is a build-time package, whereas Linux runtime packages should depend on `libdbus-1-3` and a working `xdg-desktop-portal` backend. On macOS and Windows, Native File Dialog Extended uses platform APIs, so no additional NFDe-specific development package is required.
 
 ### Third-party dependencies and resources
-Entropy uses external projects through the CMake superbuild and also carries some vendored source and resource files in this repository. Versions, source URLs, and license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Entropy uses external projects through the CMake superbuild and also carries some vendored source and resource files in this repository. Versions, source URLs, and license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The current superbuild pins include GLM 1.0.3, Dear ImGui 1.92.8, ImPlot 0.17, nlohmann::json 3.12.0, and spdlog 1.17.0.
 
 The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](https://alexharri.com/blog/ascii-rendering) and [Yusef28's Shadertoy work](https://www.shadertoy.com/user/Yusef28).
 

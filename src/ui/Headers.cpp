@@ -1188,7 +1188,7 @@ void renderImageHeader(
 
       // Colormap preview:
       const float contentWidth = ImGui::CalcItemWidth(); // ImGui::GetContentRegionAvail().x;
-      const float height = (ImGui::GetIO().Fonts->Fonts[0]->FontSize * ImGui::GetIO().FontGlobalScale);
+      const float height = (ImGui::GetFontSize());
 
       char label[128];
       snprintf(label, 128, "%s##cmap_%zu", cmap->name().c_str(), imageIndex);

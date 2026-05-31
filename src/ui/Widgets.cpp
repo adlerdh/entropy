@@ -244,12 +244,11 @@ void renderPaletteWindow(
   ImGui::Text("%s", infoText.c_str());
   ImGui::Spacing();
 
-  const auto& io = ImGui::GetIO();
   const auto& style = ImGui::GetStyle();
 
   // const float border = style.FramePadding.x;
   const float contentWidth = ImGui::GetContentRegionAvail().x;
-  const float height = (io.Fonts->Fonts[0]->FontSize * io.FontGlobalScale) - style.FramePadding.y;
+  const float height = ImGui::GetFontSize() - style.FramePadding.y;
   const ImVec2 buttonSize(sk_cmapWidth * contentWidth, height);
 
   ImGui::Columns(2, "Colormaps", false);

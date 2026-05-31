@@ -259,7 +259,7 @@ void renderIsosurfacesHeader(
 
   static const ImGuiSelectableFlags sk_selectableFlags =
     (IsosurfaceTableItemContentsType::SelectableSpanRow == sk_contentsType)
-      ? (ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)
+      ? (ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap)
       : ImGuiSelectableFlags_None;
 
   static constexpr int sk_freezeCols = 1;

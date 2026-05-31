@@ -238,13 +238,13 @@ message(STATUS "Adding external library GLM in ${glm_PREFIX}")
 
 ExternalProject_Add(glm
   URL "https://github.com/g-truc/glm/archive/refs/tags/${glm_VERSION}.tar.gz"
-  URL_HASH SHA256=9f3174561fd26904b23f0db5e560971cbf9b3cbda0b280f04d5c379d03bf234c
+  URL_HASH SHA256=6775e47231a446fd086d660ecc18bcd076531cfedd912fbd66e576b118607001
   DOWNLOAD_NAME "glm-${glm_VERSION}.tar.gz"
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repository:
   # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/g-truc/glm.git"
-  # GIT_TAG "0af55ccecd98d4e5a8d1fad7de25ba429d60e863" # tag: ${glm_VERSION}
+  # GIT_TAG "8d1fd52e5ab5590e2c81768ace50c72bae28f2ed" # tag: ${glm_VERSION}
   # GIT_PROGRESS true
 
   PREFIX "${glm_PREFIX}"
@@ -312,12 +312,12 @@ message(STATUS "Adding external library ImGui in ${imgui_PREFIX}")
 
 ExternalProject_Add(imgui
   URL "https://github.com/ocornut/imgui/archive/refs/tags/v${imgui_VERSION}.tar.gz"
-  URL_HASH SHA256=db3a2e02bfd6c269adf0968950573053d002f40bdfb9ef2e4a90bce804b0f286
+  URL_HASH SHA256=fecb33d33930e12ff53a34064e9d3a06c8f7c3e04408f14cd36c80e3faac863b
   DOWNLOAD_NAME "imgui-${imgui_VERSION}.tar.gz"
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/ocornut/imgui.git"
-  # GIT_TAG "dbb5eeaadffb6a3ba6a60de1290312e5802dba5a" # tag: v${imgui_VERSION}
+  # GIT_TAG "8936b58fe26e8c3da834b8f60b06511d537b4c63" # tag: v${imgui_VERSION}
   # GIT_PROGRESS true
 
   PREFIX "${imgui_PREFIX}"
@@ -337,12 +337,12 @@ message(STATUS "Adding external library ImPlot in ${implot_PREFIX}")
 
 ExternalProject_Add(implot
   URL "https://github.com/epezent/implot/archive/refs/tags/v${implot_VERSION}.tar.gz"
-  URL_HASH SHA256=961df327d8a756304d1b0a67316eebdb1111d13d559f0d3415114ec0eb30abd1
+  URL_HASH SHA256=0aa3ff4fb97e553608e6758e77980eedf01745628fe6c025e647f941ae674127
   DOWNLOAD_NAME "implot-${implot_VERSION}.tar.gz"
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/epezent/implot.git"
-  # GIT_TAG "18c72431f8265e2b0b5378a3a73d8a883b2175ff" # tag: v${implot_VERSION}
+  # GIT_TAG "4707b245fbcd69075b1a8a74fa8d2435561b3134" # tag: v${implot_VERSION}
   # GIT_PROGRESS true
 
   PREFIX "${implot_PREFIX}"
@@ -463,13 +463,13 @@ message(STATUS "Adding external library nlohmann_json in ${nlohmann_json_PREFIX}
 
 ExternalProject_Add(nlohmann_json
   URL "https://github.com/nlohmann/json/releases/download/v${nlohmann_json_VERSION}/json.tar.xz"
-  URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
+  URL_HASH SHA256=42f6e95cad6ec532fd372391373363b62a14af6d771056dbfc86160e6dfff7aa
   DOWNLOAD_NAME "nlohmann_json-v${nlohmann_json_VERSION}.tar.xz"
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repository:
   # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/nlohmann/json.git"
-  # GIT_TAG "9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03" # tag: v${nlohmann_json_VERSION}
+  # GIT_TAG "55f93686c01528224f448c19128836e7df245f72" # tag: v${nlohmann_json_VERSION}
   # GIT_PROGRESS true
 
   PREFIX "${nlohmann_json_PREFIX}"
@@ -511,13 +511,13 @@ message(STATUS "Adding external library spdlog in ${spdlog_PREFIX}")
 
 ExternalProject_Add(spdlog
   URL "https://github.com/gabime/spdlog/archive/refs/tags/v${spdlog_VERSION}.tar.gz"
-  URL_HASH SHA512=d6575b5cd53638345078a1c6a886293892359a07ee6de45e23d0c805bb33f59350f33060bce38824e09ce84525b575acdae7b94fc6e82191f5fd576f6c9252b2
+  URL_HASH SHA512=8df117055d19ff21c9c9951881c7bdf27cc0866ea3a4aa0614b2c3939cedceab94ac9abaa63dc4312b51562b27d708cb2f014c68c603fd1c1051d3ed5c1c3087
   DOWNLOAD_NAME "spdlog-v${spdlog_VERSION}.tar.gz"
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # Uncomment to instead clone Git repository:
   # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/gabime/spdlog.git"
-  # GIT_TAG "f355b3d58f7067eee1706ff3c801c2361011f3d5" # tag: v${spdlog_VERSION}
+  # GIT_TAG "79524ddd08a4ec981b7fea76afd08ee05f83755d" # tag: v${spdlog_VERSION}
   # GIT_PROGRESS true
 
   PREFIX "${spdlog_PREFIX}"

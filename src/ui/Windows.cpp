@@ -1104,7 +1104,7 @@ void renderSettingsWindow(
 
     // Colormap preview:
     const float contentWidth = ImGui::GetContentRegionAvail().x;
-    const float height = (ImGui::GetIO().Fonts->Fonts[0]->FontSize * ImGui::GetIO().FontGlobalScale);
+    const float height = (ImGui::GetFontSize());
 
     char label[128];
     const ImageColorMap* cmap = getImageColorMap(getColormapIndex());

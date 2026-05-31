@@ -12,15 +12,15 @@ License information is taken from the upstream license files for the pinned sour
 | CMakeRC | 2.0.1 | https://github.com/vector-of-bool/cmrc/archive/refs/tags/2.0.1.tar.gz | MIT |
 | ghc::filesystem | v1.5.14 | https://github.com/gulrak/filesystem/archive/refs/tags/v1.5.14.tar.gz | MIT |
 | GLFW | 3.4 | https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip | zlib/libpng |
-| GLM | 1.0.1 | https://github.com/g-truc/glm/archive/refs/tags/1.0.1.tar.gz | Happy Bunny License (Modified MIT) or MIT |
+| GLM | 1.0.3 | https://github.com/g-truc/glm/archive/refs/tags/1.0.3.tar.gz | Happy Bunny License (Modified MIT) or MIT |
 | IconFontCppHeaders | ef464d2 | https://github.com/juliettef/IconFontCppHeaders/commit/ef464d2fe5a568d30d7c88138e78d7fac7cfebc5 | zlib |
-| Dear ImGui | v1.91.8 | https://github.com/ocornut/imgui/archive/refs/tags/v1.91.8.tar.gz | MIT |
-| ImPlot | v0.16 | https://github.com/epezent/implot/archive/refs/tags/v0.16.tar.gz | MIT |
+| Dear ImGui | v1.92.8 | https://github.com/ocornut/imgui/archive/refs/tags/v1.92.8.tar.gz | MIT |
+| ImPlot | v0.17 | https://github.com/epezent/implot/archive/refs/tags/v0.17.tar.gz | MIT |
 | Insight Toolkit (ITK) | v5.4.3 | https://github.com/InsightSoftwareConsortium/ITK/releases/download/v5.4.3/InsightToolkit-5.4.3.tar.gz | Apache License 2.0 |
 | NanoVG | f93799c | https://github.com/memononen/nanovg/commit/f93799c078fa11ed61c078c65a53914c8782c00b | zlib |
 | Native File Dialog Extended | v1.3.0 | https://github.com/btzy/nativefiledialog-extended/archive/refs/tags/v1.3.0.tar.gz | zlib |
-| nlohmann::json | v3.11.3 | https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz | MIT |
-| spdlog | v1.15.1 | https://github.com/gabime/spdlog/archive/refs/tags/v1.15.1.tar.gz | MIT |
+| nlohmann::json | v3.12.0 | https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz | MIT |
+| spdlog | v1.17.0 | https://github.com/gabime/spdlog/archive/refs/tags/v1.17.0.tar.gz | MIT |
 | stduuid | v1.2.3 | https://github.com/mariusbancila/stduuid/archive/refs/tags/v1.2.3.tar.gz | MIT |
 | TinyFSM | v1.15.1 | https://github.com/digint/tinyfsm/commit/01908cab0397fcdadb0a14e9a3187c308e2708ca | MIT |
 
