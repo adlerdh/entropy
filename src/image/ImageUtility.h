@@ -7,6 +7,7 @@
 
 #include <glm/vec3.hpp>
 
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -14,6 +15,11 @@
  * @brief Get file name from a path with or without extension
  */
 std::string getFileName(const std::string& filePath, bool withExtension = false);
+
+std::optional<ImageHeader> readImageHeaderOnly(
+  const fs::path& fileName,
+  Image::ImageRepresentation imageRep,
+  Image::MultiComponentBufferType bufferType);
 
 /**
  * @brief Get the range of values that can be held in components of a given type.

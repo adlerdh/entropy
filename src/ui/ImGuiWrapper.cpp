@@ -213,6 +213,7 @@ void ImGuiWrapper::setCallbacks(
   std::function<void(const fs::path& fileName)> openImageFile,
   std::function<void(const fs::path& fileName)> addImageFile,
   std::function<void(const fs::path& fileName)> openProjectFile,
+  std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
   std::function<void()> saveProject,
   std::function<void(const fs::path& fileName)> saveProjectAs,
   std::function<void()> closeProject,
@@ -253,6 +254,7 @@ void ImGuiWrapper::setCallbacks(
   m_openImageFile = openImageFile;
   m_addImageFile = addImageFile;
   m_openProjectFile = openProjectFile;
+  m_largeImageLoadDecision = largeImageLoadDecision;
   m_saveProject = saveProject;
   m_saveProjectAs = saveProjectAs;
   m_closeProject = closeProject;
@@ -816,6 +818,7 @@ void ImGuiWrapper::render()
     renderConfirmCloseAppPopup(m_appData);
     renderConfirmSetReferenceImagePopup(m_appData, m_setReferenceImage);
     renderConfirmRemoveImagePopup(m_appData, m_removeImage);
+    renderLargeImageLoadPromptPopup(m_appData, m_largeImageLoadDecision);
 
     if (m_appData.guiData().m_showImGuiDemoWindow) {
       ImGui::ShowDemoWindow(&m_appData.guiData().m_showImGuiDemoWindow);

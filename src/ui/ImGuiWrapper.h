@@ -4,6 +4,7 @@
 #include "common/Filesystem.h"
 #include "common/PublicTypes.h"
 #include "common/SegmentationTypes.h"
+#include "ui/GuiData.h"
 
 #include <glm/fwd.hpp>
 #include <uuid.h>
@@ -36,6 +37,7 @@ public:
     std::function<void(const fs::path& fileName)> openImageFile,
     std::function<void(const fs::path& fileName)> addImageFile,
     std::function<void(const fs::path& fileName)> openProjectFile,
+    std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
     std::function<void()> saveProject,
     std::function<void(const fs::path& fileName)> saveProjectAs,
     std::function<void()> closeProject,
@@ -87,6 +89,7 @@ private:
   std::function<void(const fs::path& fileName)> m_openImageFile = nullptr;
   std::function<void(const fs::path& fileName)> m_addImageFile = nullptr;
   std::function<void(const fs::path& fileName)> m_openProjectFile = nullptr;
+  std::function<void(GuiData::LargeImageLoadDecision decision)> m_largeImageLoadDecision = nullptr;
   std::function<void()> m_saveProject = nullptr;
   std::function<void(const fs::path& fileName)> m_saveProjectAs = nullptr;
   std::function<void()> m_closeProject = nullptr;

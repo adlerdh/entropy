@@ -1747,6 +1747,11 @@ void renderImageHeader(
     ImGui::TreePop();
   }
 
+  if (!image->hasPixelData()) {
+    ImGui::TextUnformatted("Pixel data is not loaded yet.");
+    return;
+  }
+
   if (ImGui::TreeNode("Histogram")) {
     if (image->header().numPixels() > std::numeric_limits<int32_t>::max()) {
       spdlog::warn(

@@ -37,6 +37,11 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
       continue;
     }
 
+    if (!image->hasPixelData()) {
+      spdlog::debug("Skipping texture creation for header-only image {}", imageUid);
+      continue;
+    }
+
     const ComponentType compType = image->header().memoryComponentType();
     const uint32_t numComp = image->header().numComponentsPerPixel();
 
@@ -343,6 +348,11 @@ std::vector<uuids::uuid> createSegTextures(AppData& appData, uuid_range_t segUid
     const auto* seg = appData.seg(segUid);
     if (!seg) {
       spdlog::warn("Segmentation {} is invalid", segUid);
+      continue;
+    }
+
+    if (!seg->hasPixelData()) {
+      spdlog::debug("Skipping texture creation for header-only segmentation {}", segUid);
       continue;
     }
 

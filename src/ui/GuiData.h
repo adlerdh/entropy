@@ -1,5 +1,10 @@
 #pragma once
 
+#include "common/Filesystem.h"
+#include "image/ImageHeader.h"
+
+#include <cstdint>
+
 #include <glm/vec2.hpp>
 #include <imgui/imgui.h>
 #include <uuid.h>
@@ -42,6 +47,25 @@ struct GuiData
   /// Flag to show dialog confirming image removal.
   bool m_showConfirmRemoveImagePopup = false;
   std::optional<uuids::uuid> m_pendingRemoveImageUid = std::nullopt;
+
+  struct LargeImageLoadPrompt
+  {
+    fs::path fileName;
+    ImageHeader header;
+    bool allowCancelProject = false;
+    bool allowSkipImage = true;
+  };
+
+  enum class LargeImageLoadDecision : std::uint8_t
+  {
+    LoadOriginal,
+    SkipImage,
+    CancelProject
+  };
+
+  bool m_showLargeImageLoadPrompt = false;
+  bool m_bypassNextImageLoadPreflight = false;
+  std::optional<LargeImageLoadPrompt> m_pendingLargeImageLoadPrompt = std::nullopt;
 
   /// Map of imageUid to boolean of whether its image color map window is shown.
   /// (The color map window is shown as a popup from the Image Properties window)

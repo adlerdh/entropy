@@ -52,7 +52,118 @@ int sgn(T val)
   return (T(0) < val) - (val < T(0));
 }
 
+uint32_t componentSizeInBytes(ComponentType type)
+{
+  switch (type) {
+    case ComponentType::Int8:
+    case ComponentType::UInt8:
+      return 1;
+    case ComponentType::Int16:
+    case ComponentType::UInt16:
+      return 2;
+    case ComponentType::Int32:
+    case ComponentType::UInt32:
+    case ComponentType::Float32:
+      return 4;
+    case ComponentType::Float64:
+    case ComponentType::Long:
+    case ComponentType::ULong:
+    case ComponentType::LongLong:
+    case ComponentType::ULongLong:
+      return 8;
+    case ComponentType::LongDouble:
+      return sizeof(long double);
+    case ComponentType::Undefined:
+      return 0;
+  }
+  return 0;
+}
+
 } // namespace
+
+std::optional<ImageHeader> readImageHeaderOnly(
+  const fs::path& fileName,
+  Image::ImageRepresentation imageRep,
+  Image::MultiComponentBufferType bufferType)
+{
+  const itk::ImageIOBase::Pointer imageIo = createStandardImageIo(fileName.string().c_str());
+
+  if (!imageIo || imageIo.IsNull()) {
+    spdlog::error("Error creating itk::ImageIOBase for image from file {}", fileName);
+    return std::nullopt;
+  }
+
+  ImageIoInfo ioInfoOnDisk;
+  if (!setImageIoInfoFromItk(ioInfoOnDisk, imageIo)) {
+    spdlog::error("Error setting image IO information for image from file {}", fileName);
+    return std::nullopt;
+  }
+
+  ImageIoInfo ioInfoInMemory = ioInfoOnDisk;
+  const uint32_t numCompsOnDisk = ioInfoOnDisk.m_pixelInfo.m_numComponents;
+  uint32_t numCompsToLoad = numCompsOnDisk;
+
+  if (numCompsOnDisk > 1) {
+    if (Image::MultiComponentBufferType::InterleavedImage == bufferType) {
+      numCompsToLoad = std::min<uint32_t>(numCompsToLoad, 4u);
+    }
+
+    if (Image::ImageRepresentation::Segmentation == imageRep) {
+      numCompsToLoad = 1;
+    }
+  }
+
+  using CType = ComponentType;
+  CType memoryType = ioInfoInMemory.m_componentInfo.m_componentType;
+
+  if (Image::ImageRepresentation::Segmentation == imageRep) {
+    switch (memoryType) {
+      case CType::UInt8:
+      case CType::UInt16:
+      case CType::UInt32:
+        break;
+      case CType::Int8:
+        memoryType = CType::UInt8;
+        break;
+      case CType::Int16:
+        memoryType = CType::UInt16;
+        break;
+      default:
+        memoryType = CType::UInt32;
+        break;
+    }
+  }
+  else {
+    switch (memoryType) {
+      case CType::ULong:
+      case CType::ULongLong:
+        memoryType = CType::UInt32;
+        break;
+      case CType::Long:
+      case CType::LongLong:
+        memoryType = CType::Int32;
+        break;
+      case CType::Float64:
+      case CType::LongDouble:
+        memoryType = CType::Float32;
+        break;
+      default:
+        break;
+    }
+  }
+
+  ioInfoInMemory.m_componentInfo.m_componentType = memoryType;
+  ioInfoInMemory.m_componentInfo.m_componentTypeString = componentTypeString(memoryType);
+  ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = componentSizeInBytes(memoryType);
+  ioInfoInMemory.m_pixelInfo.m_numComponents = numCompsToLoad;
+  ioInfoInMemory.m_sizeInfo.m_imageSizeInComponents = ioInfoInMemory.m_sizeInfo.m_imageSizeInPixels * numCompsToLoad;
+  ioInfoInMemory.m_sizeInfo.m_imageSizeInBytes =
+    ioInfoInMemory.m_sizeInfo.m_imageSizeInComponents * ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
+
+  ImageHeader header(ioInfoOnDisk, ioInfoInMemory, Image::MultiComponentBufferType::InterleavedImage == bufferType);
+  header.setNumComponentsPerPixel(numCompsToLoad);
+  return header;
+}
 
 std::string getFileName(const std::string& filePath, bool withExtension)
 {

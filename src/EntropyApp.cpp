@@ -108,6 +108,44 @@ fs::path projectSavePath(fs::path fileName)
   return fileName;
 }
 
+constexpr uint64_t LargeImageWarningBytes = 2ull * 1024ull * 1024ull * 1024ull;
+
+bool shouldPromptForLargeImage(const ImageHeader& header)
+{
+  return header.memoryImageSizeInBytes() >= LargeImageWarningBytes;
+}
+
+std::size_t numSerializedImages(const serialize::EntropyProject& project)
+{
+  return 1 + project.m_additionalImages.size();
+}
+
+serialize::Image* serializedImageAt(serialize::EntropyProject& project, std::size_t index)
+{
+  if (0 == index) {
+    return &project.m_referenceImage;
+  }
+
+  const std::size_t additionalIndex = index - 1;
+  if (additionalIndex < project.m_additionalImages.size()) {
+    return &project.m_additionalImages[additionalIndex];
+  }
+
+  return nullptr;
+}
+
+void eraseSerializedImageAt(serialize::EntropyProject& project, std::size_t index)
+{
+  if (0 == index) {
+    return;
+  }
+
+  const std::size_t additionalIndex = index - 1;
+  if (additionalIndex < project.m_additionalImages.size()) {
+    project.m_additionalImages.erase(project.m_additionalImages.begin() + static_cast<std::ptrdiff_t>(additionalIndex));
+  }
+}
+
 bool isApproximatelyIdentity(const glm::mat4& matrix)
 {
   constexpr float epsilon = 1.0e-5f;
@@ -1232,25 +1270,42 @@ void EntropyApp::loadImageFile(const fs::path& fileName)
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = fileName;
 
-  closeProject();
-  m_data.setProject(std::move(project));
-  m_data.setProjectFileName(std::nullopt);
-
-  startAsyncImageLoad(
-    "Loading project...",
-    [this]() { return loadProject(m_data.project()); },
-    [this]() {
-      m_data.clearProjectData();
-      m_data.state().setProjectLoadState(ProjectLoadState::Failed);
-      m_data.state().setAnimating(false);
-      m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
-    });
+  m_pendingLargeImageLoadContext = LargeImageLoadContext::Project;
+  m_pendingLargeProject = std::move(project);
+  m_pendingLargeProjectFileName = std::nullopt;
+  m_pendingLargeProjectImageIndex = 0;
+  continueLargeImageProjectPreflight();
 }
 
 void EntropyApp::addImageFile(const fs::path& fileName)
 {
   if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
     loadImageFile(fileName);
+    return;
+  }
+
+  const auto header =
+    readImageHeaderOnly(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
+
+  if (!header) {
+    spdlog::error("Could not read image header from {}", fileName);
+    return;
+  }
+
+  const bool bypassPreflight = m_data.guiData().m_bypassNextImageLoadPreflight;
+  m_data.guiData().m_bypassNextImageLoadPreflight = false;
+
+  if (!bypassPreflight && shouldPromptForLargeImage(*header)) {
+    spdlog::warn(
+      "Image {} is large: estimated in-memory size is {:.2f} GiB",
+      fileName,
+      static_cast<double>(header->memoryImageSizeInBytes()) / (1024.0 * 1024.0 * 1024.0));
+
+    m_pendingLargeImageLoadContext = LargeImageLoadContext::AddImage;
+    m_pendingLargeAddImageFile = fileName;
+    m_data.guiData().m_pendingLargeImageLoadPrompt = GuiData::LargeImageLoadPrompt{fileName, *header, false, true};
+    m_data.guiData().m_showLargeImageLoadPrompt = true;
+    m_glfw.postEmptyEvent();
     return;
   }
 
@@ -1430,9 +1485,18 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
     return;
   }
 
+  m_pendingLargeImageLoadContext = LargeImageLoadContext::Project;
+  m_pendingLargeProject = std::move(project);
+  m_pendingLargeProjectFileName = fileName;
+  m_pendingLargeProjectImageIndex = 0;
+  continueLargeImageProjectPreflight();
+}
+
+void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName)
+{
   closeProject();
   m_data.setProject(std::move(project));
-  m_data.setProjectFileName(fileName);
+  m_data.setProjectFileName(std::move(projectFileName));
 
   startAsyncImageLoad(
     "Loading project...",
@@ -1443,6 +1507,128 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
       m_data.state().setAnimating(false);
       m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
     });
+}
+
+void EntropyApp::continueLargeImageProjectPreflight()
+{
+  if (!m_pendingLargeProject) {
+    return;
+  }
+
+  while (m_pendingLargeProjectImageIndex < numSerializedImages(*m_pendingLargeProject)) {
+    serialize::Image* image = serializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+    if (!image) {
+      m_pendingLargeProjectImageIndex++;
+      continue;
+    }
+
+    const auto header = readImageHeaderOnly(
+      image->m_imageFileName,
+      Image::ImageRepresentation::Image,
+      Image::MultiComponentBufferType::SeparateImages);
+
+    if (!header) {
+      if (0 == m_pendingLargeProjectImageIndex) {
+        spdlog::error("Could not read reference image header from {}; cancelling project load", image->m_imageFileName);
+        m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
+        m_pendingLargeProject = std::nullopt;
+        m_pendingLargeProjectFileName = std::nullopt;
+        m_pendingLargeProjectImageIndex = 0;
+        if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
+          m_data.state().setProjectLoadState(ProjectLoadState::Failed);
+        }
+        m_glfw.postEmptyEvent();
+        return;
+      }
+
+      spdlog::error("Could not read image header from {}; skipping it", image->m_imageFileName);
+      eraseSerializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+      continue;
+    }
+
+    if (shouldPromptForLargeImage(*header)) {
+      spdlog::warn(
+        "Image {} is large: estimated in-memory size is {:.2f} GiB",
+        image->m_imageFileName,
+        static_cast<double>(header->memoryImageSizeInBytes()) / (1024.0 * 1024.0 * 1024.0));
+
+      m_pendingLargeImageLoadContext = LargeImageLoadContext::Project;
+      m_data.guiData().m_pendingLargeImageLoadPrompt =
+        GuiData::LargeImageLoadPrompt{image->m_imageFileName, *header, true, 0 != m_pendingLargeProjectImageIndex};
+      m_data.guiData().m_showLargeImageLoadPrompt = true;
+      m_glfw.postEmptyEvent();
+      return;
+    }
+
+    m_pendingLargeProjectImageIndex++;
+  }
+
+  serialize::EntropyProject project = std::move(*m_pendingLargeProject);
+  std::optional<fs::path> projectFileName = std::move(m_pendingLargeProjectFileName);
+  m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
+  m_pendingLargeProject = std::nullopt;
+  m_pendingLargeProjectFileName = std::nullopt;
+  m_pendingLargeProjectImageIndex = 0;
+  beginLoadProject(std::move(project), std::move(projectFileName));
+}
+
+void EntropyApp::handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision decision)
+{
+  switch (m_pendingLargeImageLoadContext) {
+    case LargeImageLoadContext::AddImage: {
+      const std::optional<fs::path> fileName = m_pendingLargeAddImageFile;
+      m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
+      m_pendingLargeAddImageFile = std::nullopt;
+
+      if (GuiData::LargeImageLoadDecision::LoadOriginal == decision && fileName) {
+        m_data.guiData().m_bypassNextImageLoadPreflight = true;
+        addImageFile(*fileName);
+      }
+      break;
+    }
+    case LargeImageLoadContext::Project: {
+      if (!m_pendingLargeProject) {
+        m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
+        break;
+      }
+
+      if (GuiData::LargeImageLoadDecision::CancelProject == decision) {
+        spdlog::info("Cancelled project load during large-image preflight");
+        m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
+        m_pendingLargeProject = std::nullopt;
+        m_pendingLargeProjectFileName = std::nullopt;
+        m_pendingLargeProjectImageIndex = 0;
+        m_glfw.postEmptyEvent();
+        break;
+      }
+
+      if (GuiData::LargeImageLoadDecision::SkipImage == decision) {
+        if (0 == m_pendingLargeProjectImageIndex) {
+          spdlog::info("Cannot skip the reference image; cancelling project load");
+          m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
+          m_pendingLargeProject = std::nullopt;
+          m_pendingLargeProjectFileName = std::nullopt;
+          m_pendingLargeProjectImageIndex = 0;
+          m_glfw.postEmptyEvent();
+          break;
+        }
+
+        serialize::Image* image = serializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+        if (image) {
+          spdlog::info("Skipping large image {} during project load", image->m_imageFileName);
+        }
+        eraseSerializedImageAt(*m_pendingLargeProject, m_pendingLargeProjectImageIndex);
+      }
+      else {
+        m_pendingLargeProjectImageIndex++;
+      }
+
+      continueLargeImageProjectPreflight();
+      break;
+    }
+    case LargeImageLoadContext::None:
+      break;
+  }
 }
 
 void EntropyApp::closeProject()
@@ -1459,6 +1645,13 @@ void EntropyApp::closeProject()
   m_imageLoadFailed = false;
   m_preserveLayoutsOnImagesReady = false;
   m_pendingAddedImageUid = std::nullopt;
+  m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
+  m_pendingLargeAddImageFile = std::nullopt;
+  m_pendingLargeProject = std::nullopt;
+  m_pendingLargeProjectFileName = std::nullopt;
+  m_pendingLargeProjectImageIndex = 0;
+  m_data.guiData().m_pendingLargeImageLoadPrompt = std::nullopt;
+  m_data.guiData().m_showLargeImageLoadPrompt = false;
 
   auto& renderData = m_data.renderData();
   renderData.m_imageTextures.clear();
@@ -1625,6 +1818,7 @@ void EntropyApp::setCallbacks()
     [this](const fs::path& fileName) { loadImageFile(fileName); },
     [this](const fs::path& fileName) { addImageFile(fileName); },
     [this](const fs::path& fileName) { loadProjectFile(fileName); },
+    [this](GuiData::LargeImageLoadDecision decision) { handleLargeImageLoadDecision(decision); },
     [this]() { saveProject(); },
     [this](const fs::path& fileName) { saveProjectAs(fileName); },
     [this]() { closeProject(); },

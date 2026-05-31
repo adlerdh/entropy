@@ -168,6 +168,45 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
       break;
     }
   }
+
+  m_loadState = LoadState::LoadedPixels;
+}
+
+Image::Image(
+  const ImageHeader& header,
+  const std::string& displayName,
+  const ImageRepresentation& imageRep,
+  const MultiComponentBufferType& bufferType)
+  : m_imageRep(imageRep)
+  , m_bufferType(bufferType)
+  , m_header(header)
+  , m_headerOverrides(header.pixelDimensions(), header.spacing(), header.origin(), header.directions())
+  , m_tx(header.pixelDimensions(), header.spacing(), header.origin(), header.directions())
+  , m_loadState(LoadState::HeaderOnly)
+{
+  std::vector<ComponentStats> componentStats(m_header.numComponentsPerPixel());
+  for (auto& stats : componentStats) {
+    stats.onlineStats.count = m_header.numPixels();
+    stats.quantiles.fill(0.0L);
+  }
+
+  m_settings = ImageSettings(
+    displayName,
+    m_header.numPixels(),
+    m_header.numComponentsPerPixel(),
+    m_header.memoryComponentType(),
+    std::move(componentStats));
+
+  switch (m_imageRep) {
+    case ImageRepresentation::Image: {
+      m_settings.setInterpolationMode(InterpolationMode::Linear);
+      break;
+    }
+    case ImageRepresentation::Segmentation: {
+      m_settings.setInterpolationMode(InterpolationMode::NearestNeighbor);
+      break;
+    }
+  }
 }
 
 Image::Image(
@@ -376,6 +415,23 @@ Image::Image(
       break;
     }
   }
+
+  m_loadState = LoadState::LoadedPixels;
+}
+
+Image::LoadState Image::loadState() const
+{
+  return m_loadState;
+}
+
+void Image::setLoadState(LoadState state)
+{
+  m_loadState = state;
+}
+
+bool Image::hasPixelData() const
+{
+  return LoadState::LoadedPixels == m_loadState;
 }
 
 bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path>& newFileName)

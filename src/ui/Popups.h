@@ -1,5 +1,8 @@
 #pragma once
 
+#include "common/Filesystem.h"
+#include "ui/GuiData.h"
+
 #include <functional>
 #include <uuid.h>
 
@@ -27,3 +30,7 @@ void renderConfirmSetReferenceImagePopup(
 void renderConfirmRemoveImagePopup(
   AppData& appData,
   const std::function<bool(const uuids::uuid& imageUid)>& removeImage);
+
+void renderLargeImageLoadPromptPopup(
+  AppData& appData,
+  const std::function<void(GuiData::LargeImageLoadDecision decision)>& handleDecision);

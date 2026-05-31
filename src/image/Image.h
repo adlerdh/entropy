@@ -26,6 +26,14 @@
 class Image
 {
 public:
+  enum class LoadState
+  {
+    HeaderOnly,
+    LoadingPixels,
+    LoadedPixels,
+    Failed,
+    Skipped
+  };
   /// @brief What does the image represent?
   enum class ImageRepresentation
   {
@@ -48,6 +56,15 @@ public:
    * multiple buffers or as a single buffer with interleaved pixel components
    */
   Image(const fs::path& fileName, const ImageRepresentation& imageRep, const MultiComponentBufferType& bufferType);
+
+  /**
+   * @brief Construct a header-only image record without loading pixel data.
+   */
+  Image(
+    const ImageHeader& header,
+    const std::string& displayName,
+    const ImageRepresentation& imageRep,
+    const MultiComponentBufferType& bufferType);
 
   /**
    * @brief Construct Image from a header and raw data
@@ -81,6 +98,10 @@ public:
    * @return True iff the image was saved successfully
    */
   bool saveComponentToDisk(uint32_t component, const std::optional<fs::path>& newFileName);
+
+  LoadState loadState() const;
+  void setLoadState(LoadState state);
+  bool hasPixelData() const;
 
   bool generateSortedBuffers();
 
@@ -495,4 +516,5 @@ private:
   ImageHeaderOverrides m_headerOverrides;
   ImageTransformations m_tx;
   ImageSettings m_settings;
+  LoadState m_loadState = LoadState::LoadedPixels;
 };

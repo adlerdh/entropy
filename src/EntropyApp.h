@@ -16,6 +16,7 @@
 #include <uuid.h>
 
 #include <atomic>
+#include <cstdint>
 #include <functional>
 #include <future>
 #include <optional>
@@ -125,6 +126,9 @@ private:
     std::function<bool()> loadTask,
     std::function<void()> onLoadFailed,
     bool showLoadingOverlay = true);
+  void beginLoadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName);
+  void continueLargeImageProjectPreflight();
+  void handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision decision);
   bool loadProject(const serialize::EntropyProject& project);
   serialize::EntropyProject createProjectSnapshot() const;
   serialize::Image createImageSnapshot(const uuids::uuid& imageUid) const;
@@ -152,6 +156,19 @@ private:
 
   /// Image added by the current live Add Image operation, if any.
   std::optional<uuids::uuid> m_pendingAddedImageUid = std::nullopt;
+
+  enum class LargeImageLoadContext : std::uint8_t
+  {
+    None,
+    AddImage,
+    Project
+  };
+
+  LargeImageLoadContext m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
+  std::optional<fs::path> m_pendingLargeAddImageFile = std::nullopt;
+  std::optional<serialize::EntropyProject> m_pendingLargeProject = std::nullopt;
+  std::optional<fs::path> m_pendingLargeProjectFileName = std::nullopt;
+  std::size_t m_pendingLargeProjectImageIndex = 0;
 
   GlfwWrapper m_glfw;                //!< GLFW wrapper
   AppData m_data;                    //!< Application data

@@ -77,6 +77,7 @@ public:
    * @return The image's newly generated unique identifier
    */
   uuid addImage(Image image);
+  bool replaceImage(const uuid& imageUid, Image image);
 
   /**
    * @brief Add a segmentation.

@@ -469,6 +469,21 @@ uuid AppData::addImage(Image image)
   return uid;
 }
 
+bool AppData::replaceImage(const uuid& imageUid, Image image)
+{
+  std::lock_guard<std::mutex> lock(m_componentDataMutex);
+
+  auto it = m_images.find(imageUid);
+  if (std::end(m_images) == it) {
+    return false;
+  }
+
+  const std::size_t numComps = image.header().numComponentsPerPixel();
+  it->second = std::move(image);
+  m_imageToComponentData[imageUid] = std::vector<ComponentData>(numComps);
+  return true;
+}
+
 std::optional<uuid> AppData::addSeg(Image seg)
 {
   if (!isComponentUnsignedInt(seg.header().memoryComponentType())) {
