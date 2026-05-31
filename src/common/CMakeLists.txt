@@ -22,7 +22,6 @@ target_include_directories(EntropyCommon
 
 target_link_libraries(EntropyCommon
   PUBLIC
-    ghcFilesystem::ghc_filesystem
     glm::glm
     spdlog::spdlog
     stduuid

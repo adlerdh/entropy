@@ -37,6 +37,7 @@ if(Entropy_USE_CCACHE)
 endif()
 
 set(entropy_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(entropy_APP_DIR "${entropy_SRC_DIR}/entropy")
 set(entropy_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 
@@ -102,7 +103,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(catch2_VERSION "3.8.1")
 set(cli11_VERSION "2.6.2")
 set(cmakerc_VERSION "2.0.1")
-set(ghc_filesystem_VERSION "1.5.14")
 set(glfw_VERSION "3.4")
 set(glm_VERSION "1.0.3")
 set(iconfont_VERSION "ef464d2")
@@ -121,7 +121,6 @@ set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
 set(catch2_PREFIX "${EXTERNAL_DIR}/catch2-${catch2_VERSION}")
 set(cli11_PREFIX "${EXTERNAL_DIR}/cli11-${cli11_VERSION}")
 set(cmakerc_PREFIX "${EXTERNAL_DIR}/cmakerc-${cmakerc_VERSION}")
-set(ghc_filesystem_PREFIX "${EXTERNAL_DIR}/ghc_filesystem-${ghc_filesystem_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
 set(iconfont_PREFIX "${EXTERNAL_DIR}/iconfont-${iconfont_VERSION}")
@@ -168,14 +167,6 @@ message(STATUS "Using CLI11 in ${CLI11_DIR}")
 
 # CMakeRC: Standalone CMake-based C++ resource compiler
 include("${cmakerc_PREFIX}/src/CMakeRC.cmake")
-
-# ghc::filesystem: Header-only, single-file std::filesystem compatible helper library,
-# based on the C++17 and C++20 specs, but implemented for C++11, C++14, C++17 or C++20
-# (Needed because std::filesystem is not fully implemented on macOS prior to 10.15)
-find_package(ghc_filesystem ${ghc_filesystem_VERSION} REQUIRED
-  HINTS "${ghc_filesystem_PREFIX}/install")
-
-message(STATUS "Using ghc::filesystem in ${ghc_filesystem_DIR}")
 
 # GLFW: Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development
 find_package(glfw3 ${glfw_VERSION} REQUIRED HINTS "${glfw_PREFIX}/install")
@@ -309,7 +300,7 @@ target_compile_definitions(imgui PRIVATE IMGUI_USER_CONFIG="ui/entropy_imgui_con
 
 target_include_directories(imgui PRIVATE
   "${imgui_SRC_DIR}/imgui"
-  "${entropy_SRC_DIR}" # needed for IMGUI_USER_CONFIG file
+  "${entropy_APP_DIR}" # needed for IMGUI_USER_CONFIG file
   "${glfw_INCLUDE_DIR}"
 )
 
@@ -354,7 +345,7 @@ add_library(implot STATIC ${IMPLOT_SOURCES})
 target_include_directories(implot PRIVATE
   "${implot_SRC_DIR}/implot"
   "${imgui_SRC_DIR}/imgui"
-  "${entropy_SRC_DIR}" # needed for IMGUI_USER_CONFIG file
+  "${entropy_APP_DIR}" # needed for IMGUI_USER_CONFIG file
 )
 
 # used in IMGUI_USER_CONFIG
@@ -399,164 +390,164 @@ add_subdirectory("${entropy_SRC_DIR}/image")
 # Entropy executable
 #--------------------------------------------------------------------------------
 set(entropy_SOURCES
-  "${entropy_SRC_DIR}/main.cpp"
-  "${entropy_SRC_DIR}/EntropyApp.cpp"
+  "${entropy_APP_DIR}/main.cpp"
+  "${entropy_APP_DIR}/EntropyApp.cpp"
 
-  "${entropy_SRC_DIR}/logic/SurfaceUtility.cpp"
+  "${entropy_APP_DIR}/logic/SurfaceUtility.cpp"
 
-  "${entropy_SRC_DIR}/logic/app/CallbackHandler.cpp"
-  "${entropy_SRC_DIR}/logic/app/Data.cpp"
-  "${entropy_SRC_DIR}/logic/app/DataHelper.cpp"
-  "${entropy_SRC_DIR}/logic/app/Logging.cpp"
-  "${entropy_SRC_DIR}/logic/app/ParcellationLabelTable.cpp"
-  "${entropy_SRC_DIR}/logic/app/Settings.cpp"
-  "${entropy_SRC_DIR}/logic/app/State.cpp"
+  "${entropy_APP_DIR}/logic/app/CallbackHandler.cpp"
+  "${entropy_APP_DIR}/logic/app/Data.cpp"
+  "${entropy_APP_DIR}/logic/app/DataHelper.cpp"
+  "${entropy_APP_DIR}/logic/app/Logging.cpp"
+  "${entropy_APP_DIR}/logic/app/ParcellationLabelTable.cpp"
+  "${entropy_APP_DIR}/logic/app/Settings.cpp"
+  "${entropy_APP_DIR}/logic/app/State.cpp"
 
-  "${entropy_SRC_DIR}/logic/annotation/Annotation.cpp"
-  "${entropy_SRC_DIR}/logic/annotation/BezierHelper.cpp"
-  "${entropy_SRC_DIR}/logic/annotation/LandmarkGroup.cpp"
-  "${entropy_SRC_DIR}/logic/annotation/SerializeAnnot.cpp"
+  "${entropy_APP_DIR}/logic/annotation/Annotation.cpp"
+  "${entropy_APP_DIR}/logic/annotation/BezierHelper.cpp"
+  "${entropy_APP_DIR}/logic/annotation/LandmarkGroup.cpp"
+  "${entropy_APP_DIR}/logic/annotation/SerializeAnnot.cpp"
 
-  "${entropy_SRC_DIR}/logic/camera/Camera.cpp"
-  "${entropy_SRC_DIR}/logic/camera/CameraHelpers.cpp"
-  "${entropy_SRC_DIR}/logic/camera/CameraTypes.cpp"
-  "${entropy_SRC_DIR}/logic/camera/MathUtility.cpp"
-  "${entropy_SRC_DIR}/logic/camera/OrthogonalProjection.cpp"
-  "${entropy_SRC_DIR}/logic/camera/PerspectiveProjection.cpp"
-  "${entropy_SRC_DIR}/logic/camera/Projection.cpp"
+  "${entropy_APP_DIR}/logic/camera/Camera.cpp"
+  "${entropy_APP_DIR}/logic/camera/CameraHelpers.cpp"
+  "${entropy_APP_DIR}/logic/camera/CameraTypes.cpp"
+  "${entropy_APP_DIR}/logic/camera/MathUtility.cpp"
+  "${entropy_APP_DIR}/logic/camera/OrthogonalProjection.cpp"
+  "${entropy_APP_DIR}/logic/camera/PerspectiveProjection.cpp"
+  "${entropy_APP_DIR}/logic/camera/Projection.cpp"
 
-  "${entropy_SRC_DIR}/logic/interaction/ViewHit.cpp"
-  "${entropy_SRC_DIR}/logic/interaction/events/ButtonState.cpp"
+  "${entropy_APP_DIR}/logic/interaction/ViewHit.cpp"
+  "${entropy_APP_DIR}/logic/interaction/events/ButtonState.cpp"
 
-  "${entropy_SRC_DIR}/logic/segmentation/AnnotationSegmentation.cpp"
-  "${entropy_SRC_DIR}/logic/segmentation/GraphCuts.cpp"
-  "${entropy_SRC_DIR}/logic/segmentation/Poisson.cpp"
-  "${entropy_SRC_DIR}/logic/segmentation/SegHelpers.cpp"
+  "${entropy_APP_DIR}/logic/segmentation/AnnotationSegmentation.cpp"
+  "${entropy_APP_DIR}/logic/segmentation/GraphCuts.cpp"
+  "${entropy_APP_DIR}/logic/segmentation/Poisson.cpp"
+  "${entropy_APP_DIR}/logic/segmentation/SegHelpers.cpp"
 
-  "${entropy_SRC_DIR}/logic/serialization/ProjectSerialization.cpp"
+  "${entropy_APP_DIR}/logic/serialization/ProjectSerialization.cpp"
 
-  "${entropy_SRC_DIR}/logic/states/annotation/AnnotationStateHelpers.cpp"
-  "${entropy_SRC_DIR}/logic/states/annotation/AnnotationStateMachine.cpp"
-  "${entropy_SRC_DIR}/logic/states/annotation/AnnotationStates.cpp"
+  "${entropy_APP_DIR}/logic/states/annotation/AnnotationStateHelpers.cpp"
+  "${entropy_APP_DIR}/logic/states/annotation/AnnotationStateMachine.cpp"
+  "${entropy_APP_DIR}/logic/states/annotation/AnnotationStates.cpp"
 
-  "${entropy_SRC_DIR}/logic/DistanceMap.cpp"
+  "${entropy_APP_DIR}/logic/DistanceMap.cpp"
 
   # We were testing IPC with ITK-SNAP. This functionality is not currently hooked up to Entropy.
-  # "${entropy_SRC_DIR}/logic/ipc/IPCHandler.cxx"
+  # "${entropy_APP_DIR}/logic/ipc/IPCHandler.cxx"
 
-  "${entropy_SRC_DIR}/rendering/ascii/AsciiAtlas.cpp"
-  "${entropy_SRC_DIR}/rendering/ascii/AsciiAtlasBaker.cpp"
-  "${entropy_SRC_DIR}/rendering/ascii/AsciiRenderer.cpp"
-  "${entropy_SRC_DIR}/rendering/ImageDrawing.cpp"
-  "${entropy_SRC_DIR}/rendering/Rendering.cpp"
-  "${entropy_SRC_DIR}/rendering/RenderData.cpp"
-  "${entropy_SRC_DIR}/rendering/TextureSetup.cpp"
-  "${entropy_SRC_DIR}/rendering/VectorDrawing.cpp"
+  "${entropy_APP_DIR}/rendering/ascii/AsciiAtlas.cpp"
+  "${entropy_APP_DIR}/rendering/ascii/AsciiAtlasBaker.cpp"
+  "${entropy_APP_DIR}/rendering/ascii/AsciiRenderer.cpp"
+  "${entropy_APP_DIR}/rendering/ImageDrawing.cpp"
+  "${entropy_APP_DIR}/rendering/Rendering.cpp"
+  "${entropy_APP_DIR}/rendering/RenderData.cpp"
+  "${entropy_APP_DIR}/rendering/TextureSetup.cpp"
+  "${entropy_APP_DIR}/rendering/VectorDrawing.cpp"
 
-  "${entropy_SRC_DIR}/rendering/common/ShaderType.cpp"
+  "${entropy_APP_DIR}/rendering/common/ShaderType.cpp"
 
-  "${entropy_SRC_DIR}/rendering/utility/containers/VertexAttributeInfo.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/containers/VertexIndicesInfo.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/containers/Uniforms.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/gl/GLBufferObject.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/gl/GLBufferTexture.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/gl/GLErrorChecker.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/gl/GLFrameBufferObject.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/gl/GLShader.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/gl/GLShaderProgram.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/gl/GLTexture.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/gl/GLVersionChecker.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp"
-  "${entropy_SRC_DIR}/rendering/utility/math/SliceIntersector.cpp"
+  "${entropy_APP_DIR}/rendering/utility/containers/VertexAttributeInfo.cpp"
+  "${entropy_APP_DIR}/rendering/utility/containers/VertexIndicesInfo.cpp"
+  "${entropy_APP_DIR}/rendering/utility/containers/Uniforms.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLBufferObject.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLBufferTexture.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLErrorChecker.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLFrameBufferObject.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLShader.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLShaderProgram.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLTexture.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLVersionChecker.cpp"
+  "${entropy_APP_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp"
+  "${entropy_APP_DIR}/rendering/utility/math/SliceIntersector.cpp"
 
-  "${entropy_SRC_DIR}/ui/GuiData.cpp"
-  "${entropy_SRC_DIR}/ui/Headers.cpp"
-  "${entropy_SRC_DIR}/ui/Helpers.cpp"
-  "${entropy_SRC_DIR}/ui/IsosurfaceHeader.cpp"
-  "${entropy_SRC_DIR}/ui/ImGuiCustomControls.cpp"
-  "${entropy_SRC_DIR}/ui/ImGuiWrapper.cpp"
-  "${entropy_SRC_DIR}/ui/MainMenuBar.cpp"
-  "${entropy_SRC_DIR}/ui/NativeFileDialogs.cpp"
-  "${entropy_SRC_DIR}/ui/Popups.cpp"
-  "${entropy_SRC_DIR}/ui/Style.cpp"
-  "${entropy_SRC_DIR}/ui/Toolbars.cpp"
-  "${entropy_SRC_DIR}/ui/Widgets.cpp"
-  "${entropy_SRC_DIR}/ui/Windows.cpp"
+  "${entropy_APP_DIR}/ui/GuiData.cpp"
+  "${entropy_APP_DIR}/ui/Headers.cpp"
+  "${entropy_APP_DIR}/ui/Helpers.cpp"
+  "${entropy_APP_DIR}/ui/IsosurfaceHeader.cpp"
+  "${entropy_APP_DIR}/ui/ImGuiCustomControls.cpp"
+  "${entropy_APP_DIR}/ui/ImGuiWrapper.cpp"
+  "${entropy_APP_DIR}/ui/MainMenuBar.cpp"
+  "${entropy_APP_DIR}/ui/NativeFileDialogs.cpp"
+  "${entropy_APP_DIR}/ui/Popups.cpp"
+  "${entropy_APP_DIR}/ui/Style.cpp"
+  "${entropy_APP_DIR}/ui/Toolbars.cpp"
+  "${entropy_APP_DIR}/ui/Widgets.cpp"
+  "${entropy_APP_DIR}/ui/Windows.cpp"
 
-  "${entropy_SRC_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp"
-  "${entropy_SRC_DIR}/ui/imgui/imgui-knobs/imgui-knobs.cpp"
+  "${entropy_APP_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp"
+  "${entropy_APP_DIR}/ui/imgui/imgui-knobs/imgui-knobs.cpp"
 
-  "${entropy_SRC_DIR}/windowing/ControlFrame.cpp"
-  "${entropy_SRC_DIR}/windowing/GlfwCallbacks.cpp"
-  "${entropy_SRC_DIR}/windowing/GlfwWrapper.cpp"
-  "${entropy_SRC_DIR}/windowing/Layout.cpp"
-  "${entropy_SRC_DIR}/windowing/View.cpp"
-  "${entropy_SRC_DIR}/windowing/ViewTypes.cpp"
-  "${entropy_SRC_DIR}/windowing/WindowData.cpp"
+  "${entropy_APP_DIR}/windowing/ControlFrame.cpp"
+  "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
+  "${entropy_APP_DIR}/windowing/GlfwWrapper.cpp"
+  "${entropy_APP_DIR}/windowing/Layout.cpp"
+  "${entropy_APP_DIR}/windowing/View.cpp"
+  "${entropy_APP_DIR}/windowing/ViewTypes.cpp"
+  "${entropy_APP_DIR}/windowing/WindowData.cpp"
 )
 
 set(entropy_SHADERS
-  # "${entropy_SRC_DIR}/rendering/shaders/Correlation.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/AsciiPost.vs"
-  "${entropy_SRC_DIR}/rendering/shaders/AsciiPost.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/AsciiCellMean.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/AsciiCellRegions.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/AsciiPostSpatial.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/Difference.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/Edge.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/Image.vs"
-  "${entropy_SRC_DIR}/rendering/shaders/ImageGrey.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/ImageColor.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/IsoContour.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/Metric.vs"
-  "${entropy_SRC_DIR}/rendering/shaders/Overlay.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/RaycastIso.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/RaycastIso.vs"
-  "${entropy_SRC_DIR}/rendering/shaders/Seg.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/Seg.vs"
-  "${entropy_SRC_DIR}/rendering/shaders/Simple.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/Simple.vs"
-  "${entropy_SRC_DIR}/rendering/shaders/Xray.fs"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/AsciiComposite.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/ColorHelpers.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/DoRender.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/ComputeEdge_FreiChen.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/ComputeEdge_Sobel.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/Helpers.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/IntensityProjection.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_NoOutline.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/SegValue_Linear.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/SegValue_Nearest.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/TextureLookup_Cubic.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/TextureLookup_Linear.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/TextureLookup_FloatingPoint_Linear.glsl"
-  "${entropy_SRC_DIR}/rendering/shaders/functions/UIntTextureLookup_Linear.glsl"
+  # "${entropy_APP_DIR}/rendering/shaders/Correlation.fs"
+  "${entropy_APP_DIR}/rendering/shaders/AsciiPost.vs"
+  "${entropy_APP_DIR}/rendering/shaders/AsciiPost.fs"
+  "${entropy_APP_DIR}/rendering/shaders/AsciiCellMean.fs"
+  "${entropy_APP_DIR}/rendering/shaders/AsciiCellRegions.fs"
+  "${entropy_APP_DIR}/rendering/shaders/AsciiPostSpatial.fs"
+  "${entropy_APP_DIR}/rendering/shaders/Difference.fs"
+  "${entropy_APP_DIR}/rendering/shaders/Edge.fs"
+  "${entropy_APP_DIR}/rendering/shaders/Image.vs"
+  "${entropy_APP_DIR}/rendering/shaders/ImageGrey.fs"
+  "${entropy_APP_DIR}/rendering/shaders/ImageColor.fs"
+  "${entropy_APP_DIR}/rendering/shaders/IsoContour.fs"
+  "${entropy_APP_DIR}/rendering/shaders/Metric.vs"
+  "${entropy_APP_DIR}/rendering/shaders/Overlay.fs"
+  "${entropy_APP_DIR}/rendering/shaders/RaycastIso.fs"
+  "${entropy_APP_DIR}/rendering/shaders/RaycastIso.vs"
+  "${entropy_APP_DIR}/rendering/shaders/Seg.fs"
+  "${entropy_APP_DIR}/rendering/shaders/Seg.vs"
+  "${entropy_APP_DIR}/rendering/shaders/Simple.fs"
+  "${entropy_APP_DIR}/rendering/shaders/Simple.vs"
+  "${entropy_APP_DIR}/rendering/shaders/Xray.fs"
+  "${entropy_APP_DIR}/rendering/shaders/functions/AsciiComposite.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/ColorHelpers.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/DoRender.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/ComputeEdge_FreiChen.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/ComputeEdge_Sobel.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/Helpers.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/IntensityProjection.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/SegInteriorAlpha_NoOutline.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/SegValue_Linear.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/SegValue_Nearest.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_Cubic.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_Linear.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_FloatingPoint_Linear.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/UIntTextureLookup_Linear.glsl"
 )
 
 set(entropy_SHADERS_OLD
-  "${entropy_SRC_DIR}/rendering_old/shaders/BasicMesh.vert"
-  "${entropy_SRC_DIR}/rendering_old/shaders/BasicMesh.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/BasicMeshPeel.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Debug.vert"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Debug.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/fbo_screen.vert"
-  "${entropy_SRC_DIR}/rendering_old/shaders/fbo_screen.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Flat.vert"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Flat.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/FlatPeel.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Mesh.vert"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Mesh.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/MeshPeel.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Polygonizer.vert"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Polygonizer.geom"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Simple.vert"
-  "${entropy_SRC_DIR}/rendering_old/shaders/Simple.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/ddp/blend.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/ddp/blend.vert"
-  "${entropy_SRC_DIR}/rendering_old/shaders/ddp/final.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/ddp/InitializeDepths.frag"
-  "${entropy_SRC_DIR}/rendering_old/shaders/ddp/init.vert"
+  "${entropy_APP_DIR}/rendering_old/shaders/BasicMesh.vert"
+  "${entropy_APP_DIR}/rendering_old/shaders/BasicMesh.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/BasicMeshPeel.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/Debug.vert"
+  "${entropy_APP_DIR}/rendering_old/shaders/Debug.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/fbo_screen.vert"
+  "${entropy_APP_DIR}/rendering_old/shaders/fbo_screen.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/Flat.vert"
+  "${entropy_APP_DIR}/rendering_old/shaders/Flat.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/FlatPeel.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/Mesh.vert"
+  "${entropy_APP_DIR}/rendering_old/shaders/Mesh.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/MeshPeel.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/Polygonizer.vert"
+  "${entropy_APP_DIR}/rendering_old/shaders/Polygonizer.geom"
+  "${entropy_APP_DIR}/rendering_old/shaders/Simple.vert"
+  "${entropy_APP_DIR}/rendering_old/shaders/Simple.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/ddp/blend.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/ddp/blend.vert"
+  "${entropy_APP_DIR}/rendering_old/shaders/ddp/final.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/ddp/InitializeDepths.frag"
+  "${entropy_APP_DIR}/rendering_old/shaders/ddp/init.vert"
 )
 
 file(GLOB entropy_COLORMAPS
@@ -595,7 +586,10 @@ set(entropy_EXE Entropy)
 # Using CMakeRC, embed the resources into static libraries
 cmrc_add_resource_library(${entropy_EXE}-colormaps ALIAS ${entropy_EXE}::colormaps ${entropy_COLORMAPS} NAMESPACE colormaps)
 cmrc_add_resource_library(${entropy_EXE}-fonts ALIAS ${entropy_EXE}::fonts ${entropy_FONTS} NAMESPACE fonts)
-cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${entropy_SHADERS} NAMESPACE shaders)
+cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${entropy_SHADERS} NAMESPACE shaders
+  WHENCE "${entropy_APP_DIR}"
+  PREFIX "src"
+)
 
 add_executable(${entropy_EXE})
 
@@ -607,7 +601,6 @@ target_link_libraries(${entropy_EXE} PRIVATE
   CLI11::CLI11
   Entropy::Common
   Entropy::Image
-  ghcFilesystem::ghc_filesystem
   glfw
   glad
   glm::glm
@@ -626,7 +619,7 @@ target_link_libraries(${entropy_EXE} PRIVATE
 
 target_include_directories(${entropy_EXE} PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}" # for BuildStamp.h
-  "${entropy_SRC_DIR}"
+  "${entropy_APP_DIR}"
   "${entropy_RES_DIR}"
   "${glad_INCLUDE_DIR}"
   "${iconfont_INCLUDE_DIR}"

@@ -28,7 +28,6 @@ target_include_directories(EntropyImage
 target_link_libraries(EntropyImage
   PUBLIC
     Entropy::Common
-    ghcFilesystem::ghc_filesystem
   PRIVATE
     ${ITK_LIBRARIES}
 )

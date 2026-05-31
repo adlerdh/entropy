@@ -159,43 +159,6 @@ ExternalProject_Add(cmakerc
 )
 
 
-message(STATUS "Adding external library ghc::filesystem in ${ghc_filesystem_PREFIX}")
-
-ExternalProject_Add(ghc_filesystem
-  URL "https://github.com/gulrak/filesystem/archive/refs/tags/v${ghc_filesystem_VERSION}.tar.gz"
-  URL_HASH SHA256=e783f672e49de7c5a237a0cea905ed51012da55c04fbacab397161976efc8472
-  DOWNLOAD_NAME "ghc_filesystem-v${ghc_filesystem_VERSION}.tar.gz"
-  DOWNLOAD_EXTRACT_TIMESTAMP false
-
-  # Uncomment to instead clone Git repository:
-  # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/gulrak/filesystem.git"
-  # GIT_TAG "8a2edd6d92ed820521d42c94d179462bf06b5ed3" # tag: v${ghc_filesystem_VERSION}
-  # GIT_PROGRESS true
-
-  PREFIX "${ghc_filesystem_PREFIX}"
-  TMP_DIR "${ghc_filesystem_PREFIX}/tmp"
-  STAMP_DIR "${ghc_filesystem_PREFIX}/stamp"
-  DOWNLOAD_DIR "${ghc_filesystem_PREFIX}/download"
-  SOURCE_DIR "${ghc_filesystem_PREFIX}/src"
-  BINARY_DIR "${ghc_filesystem_PREFIX}/build"
-  INSTALL_DIR "${ghc_filesystem_PREFIX}/install"
-
-  CMAKE_ARGS
-    ${_ext_cmake_build_type_args}
-    ${_ext_compiler_launcher_args}
-    -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DGHC_FILESYSTEM_BUILD_EXAMPLES:BOOL=OFF
-    -DGHC_FILESYSTEM_BUILD_STD_TESTING:BOOL=OFF
-    -DGHC_FILESYSTEM_BUILD_TESTING:BOOL=OFF
-    -DGHC_FILESYSTEM_WITH_INSTALL:BOOL=ON
-
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
-  INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
-
-  CMAKE_GENERATOR ${gen}
-)
-
-
 message(STATUS "Adding external library GLFW in ${glfw_PREFIX}")
 
 ExternalProject_Add(glfw

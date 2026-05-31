@@ -10,7 +10,6 @@ License information is taken from the upstream license files for the pinned sour
 | --- | --- | --- | --- |
 | CLI11 | v2.6.2 | https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.6.2.tar.gz | BSD-3-Clause |
 | CMakeRC | 2.0.1 | https://github.com/vector-of-bool/cmrc/archive/refs/tags/2.0.1.tar.gz | MIT |
-| ghc::filesystem | v1.5.14 | https://github.com/gulrak/filesystem/archive/refs/tags/v1.5.14.tar.gz | MIT |
 | GLFW | 3.4 | https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip | zlib/libpng |
 | GLM | 1.0.3 | https://github.com/g-truc/glm/archive/refs/tags/1.0.3.tar.gz | Happy Bunny License (Modified MIT) or MIT |
 | IconFontCppHeaders | ef464d2 | https://github.com/juliettef/IconFontCppHeaders/commit/ef464d2fe5a568d30d7c88138e78d7fac7cfebc5 | zlib |
@@ -55,4 +54,3 @@ The following external resources have been committed directly to the Entropy rep
 | Peter Kovesi Library of Perceptually Uniform Colour Maps | 2014-2018 copy | https://peterkovesi.com/projects/colourmaps | Creative Commons Attribution 4.0 |
 | Matplotlib viridis, plasma, inferno, and magma colour maps | Version not recorded | https://bids.github.io/colormap/ | CC0-1.0 |
 | Cividis colour map | Version not recorded | https://www.ncl.ucar.edu/Document/Graphics/ColorTables/cividis.shtml | BSD-3-Clause |
-

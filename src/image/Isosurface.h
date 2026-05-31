@@ -1,7 +1,5 @@
 #pragma once
 
-// #include "logic/records/MeshRecord.h"
-
 #include <glm/vec3.hpp>
 
 #include <string>

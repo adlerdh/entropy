@@ -25,10 +25,21 @@ Note on generators:
 
 The steps below intentionally reconfigure the same build directory: first to run the superbuild, then to build Entropy after dependencies are available.
 
+### Source layout
+The source tree is split into two reusable libraries and the Entropy application:
+
+- `src/common`: `Entropy::Common`, shared types, math, filesystem aliases, and other app-independent utilities.
+- `src/image`: `Entropy::Image`, image data structures, image I/O helpers, transforms, color maps, and image-only tests.
+- `src/entropy`: the Entropy executable, including application logic, annotation logic, segmentation workflows, rendering, UI, windowing, mesh, and slide code.
+
+`Entropy::Common` exports `src/common` as a public include directory. `Entropy::Image` exports `src/image` and links `Entropy::Common`, so clients should link the CMake targets instead of adding those include directories manually.
+
 ### CMake presets
 The recommended developer build uses the checked-in CMake presets, but presets are optional. The manual single-config and multi-config commands below use the same two-stage superbuild flow and may be used instead. The presets build shared libraries, default to `RelWithDebInfo`, and use `ccache` automatically when it is available.
 
 The presets do not force a CMake generator. If you do not pass `-G`, CMake uses its platform default generator, such as Unix Makefiles on macOS and Linux. To use Ninja explicitly, install it and add `-G Ninja` to the configure commands, or set the `CMAKE_GENERATOR` environment variable before configuring.
+
+When `Entropy_USE_CCACHE` is enabled, which is the preset default, CMake uses `ccache` as the compiler launcher if the executable is found. Missing `ccache` is not a configuration error.
 
 Configure and build dependencies first, then reconfigure the same build directory for the Entropy application:
 
@@ -111,6 +122,8 @@ Entropy is developed and tested on the following platforms:
 
 Other Linux distributions may work if they provide a C++23 compiler, CMake 3.24 or newer, and the development libraries listed below. macOS Intel x86_64 is not supported.
 
+Entropy uses the C++ standard library implementation of `std::filesystem`. The old `ghc::filesystem` compatibility dependency is no longer required for supported macOS versions.
+
 ### Development libraries for Debian Linux
 Linux development builds require system development packages for OpenGL/windowing support and native file dialogs. On Debian/Ubuntu, install:
 
@@ -141,6 +154,16 @@ On macOS with Homebrew:
 
 ```sh
 brew install clang-format pre-commit
+pre-commit install
+```
+
+On macOS with MacPorts:
+
+```sh
+sudo port selfupdate
+sudo port upgrade outdated
+sudo port install clang-19 py312-pre-commit ccache ninja
+sudo port select --set clang mp-clang-19
 pre-commit install
 ```
 
