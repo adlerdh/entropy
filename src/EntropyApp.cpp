@@ -1233,7 +1233,18 @@ void EntropyApp::loadImageFile(const fs::path& fileName)
   project.m_referenceImage.m_imageFileName = fileName;
 
   closeProject();
-  loadProject(std::move(project));
+  m_data.setProject(std::move(project));
+  m_data.setProjectFileName(std::nullopt);
+
+  startAsyncImageLoad(
+    "Loading project...",
+    [this]() { return loadProject(m_data.project()); },
+    [this]() {
+      m_data.clearProjectData();
+      m_data.state().setProjectLoadState(ProjectLoadState::Failed);
+      m_data.state().setAnimating(false);
+      m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+    });
 }
 
 void EntropyApp::addImageFile(const fs::path& fileName)
@@ -1243,41 +1254,43 @@ void EntropyApp::addImageFile(const fs::path& fileName)
     return;
   }
 
-  serialize::Image serializedImage;
-  serializedImage.m_imageFileName = fileName;
-
-  m_glfw.setWindowTitleStatus("Adding image...");
-  m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
-  m_data.state().setProjectLoadState(ProjectLoadState::Loading);
-  m_data.state().setAnimating(true);
-
-  const std::size_t previousNumImages = m_data.numImages();
-  const bool loaded = loadSerializedImage(serializedImage, false);
-
-  if (!loaded || m_data.numImages() <= previousNumImages) {
-    spdlog::error("Could not add image from {}", fileName);
-    m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
-    m_data.state().setAnimating(false);
-    m_glfw.setWindowTitleStatus(m_data.getAllImageDisplayNames());
-    m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
-    m_glfw.postEmptyEvent();
-    return;
-  }
-
-  const std::optional<uuids::uuid> addedImageUid = m_data.imageUid(m_data.numImages() - 1);
-  if (addedImageUid) {
-    m_data.setActiveImageUid(*addedImageUid);
-  }
-
-  m_data.setRainbowColorsForAllImages();
-  m_data.setRainbowColorsForAllLandmarkGroups();
-  m_data.setProject(createProjectSnapshot());
-
   m_preserveLayoutsOnImagesReady = true;
-  m_pendingAddedImageUid = addedImageUid;
-  m_imagesReady = true;
-  m_imageLoadFailed = false;
-  m_glfw.postEmptyEvent();
+  m_pendingAddedImageUid = std::nullopt;
+
+  startAsyncImageLoad(
+    "Adding image...",
+    [this, fileName]() {
+      serialize::Image serializedImage;
+      serializedImage.m_imageFileName = fileName;
+
+      const std::size_t previousNumImages = m_data.numImages();
+      const bool loaded = loadSerializedImage(serializedImage, false);
+
+      if (!loaded || m_data.numImages() <= previousNumImages) {
+        spdlog::error("Could not add image from {}", fileName);
+        return false;
+      }
+
+      const std::optional<uuids::uuid> addedImageUid = m_data.imageUid(m_data.numImages() - 1);
+      if (addedImageUid) {
+        m_data.setActiveImageUid(*addedImageUid);
+      }
+
+      m_data.setRainbowColorsForAllImages();
+      m_data.setRainbowColorsForAllLandmarkGroups();
+      m_data.setProject(createProjectSnapshot());
+      m_pendingAddedImageUid = addedImageUid;
+      return true;
+    },
+    [this]() {
+      m_preserveLayoutsOnImagesReady = false;
+      m_pendingAddedImageUid = std::nullopt;
+      m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
+      m_data.state().setAnimating(false);
+      m_glfw.setWindowTitleStatus(m_data.getAllImageDisplayNames());
+      m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+    },
+    false);
 }
 
 bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)
@@ -1418,7 +1431,18 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
   }
 
   closeProject();
-  loadProject(std::move(project), fileName);
+  m_data.setProject(std::move(project));
+  m_data.setProjectFileName(fileName);
+
+  startAsyncImageLoad(
+    "Loading project...",
+    [this]() { return loadProject(m_data.project()); },
+    [this]() {
+      m_data.clearProjectData();
+      m_data.state().setProjectLoadState(ProjectLoadState::Failed);
+      m_data.state().setAnimating(false);
+      m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+    });
 }
 
 void EntropyApp::closeProject()
@@ -1453,109 +1477,137 @@ void EntropyApp::closeProject()
 void EntropyApp::loadImagesFromParams(const InputParams& params)
 {
   const std::optional<fs::path> projectFileName = params.imageFiles.empty() ? params.projectFile : std::nullopt;
-  loadProject(serialize::createProjectFromInputParams(params), projectFileName);
+  m_data.setProject(serialize::createProjectFromInputParams(params));
+  m_data.setProjectFileName(projectFileName);
+
+  startAsyncImageLoad(
+    "Loading project...",
+    [this]() { return loadProject(m_data.project()); },
+    [this]() {
+      m_data.clearProjectData();
+      m_data.state().setProjectLoadState(ProjectLoadState::Failed);
+      m_data.state().setAnimating(false);
+      m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+    });
 }
 
-void EntropyApp::loadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName)
+void EntropyApp::startAsyncImageLoad(
+  std::string windowTitleStatus,
+  std::function<bool()> loadTask,
+  std::function<void()> onLoadFailed,
+  bool showLoadingOverlay)
 {
-  m_preserveLayoutsOnImagesReady = false;
-  m_pendingAddedImageUid = std::nullopt;
+  if (m_futureLoadProject.valid()) {
+    m_futureLoadProject.wait();
+    m_futureLoadProject = {};
+  }
 
-  spdlog::debug("Begin loading images from parameters");
+  m_imageLoadCancelled = false;
+  m_imagesReady = false;
+  m_imageLoadFailed = false;
 
-  // The image loader function is called from a new thread
-  auto projectLoader = [this](
-                         const serialize::EntropyProject& projectToLoad,
-                         const std::function<void(bool projectLoadedSuccessfully)>& onProjectLoadingDone) {
-    static constexpr size_t defaultReferenceImageIndex = 0;
-    static constexpr size_t defaultActiveImageIndex = 1;
-
-    // Set event processing mode to poll, so that we have continuous animation while loading
-    m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
+  m_glfw.setWindowTitleStatus(windowTitleStatus);
+  m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
+  if (showLoadingOverlay) {
     m_data.state().setProjectLoadState(ProjectLoadState::Loading);
-    m_data.state().setAnimating(true);
+  }
+  m_data.state().setAnimating(true);
+  m_glfw.postEmptyEvent();
 
-    spdlog::debug("Begin loading images in new thread");
-
-    if (m_imageLoadCancelled) {
-      onProjectLoadingDone(false);
-      return;
-    }
-
-    if (!loadSerializedImage(projectToLoad.m_referenceImage, true)) {
-      spdlog::critical("Could not load reference image from {}", projectToLoad.m_referenceImage.m_imageFileName);
-      onProjectLoadingDone(false);
-      return;
-    }
-
-    if (m_imageLoadCancelled) {
-      onProjectLoadingDone(false);
-      return;
-    }
-
-    for (const auto& additionalImage : projectToLoad.m_additionalImages) {
-      if (!loadSerializedImage(additionalImage, false)) {
-        spdlog::error("Could not load additional image from {}; skipping it", additionalImage.m_imageFileName);
-      }
-
-      if (m_imageLoadCancelled) {
-        onProjectLoadingDone(false);
-        return;
-      }
-    }
-
-    const auto refImageUid = m_data.imageUid(defaultReferenceImageIndex);
-
-    if (refImageUid && m_data.setRefImageUid(*refImageUid)) {
-      spdlog::info("Set {} as the reference image", *refImageUid);
-    }
-    else {
-      spdlog::critical("Unable to set reference image");
-      onProjectLoadingDone(false);
-      return;
-    }
-
-    const auto desiredActiveImageUid =
-      (defaultActiveImageIndex < m_data.numImages()) ? m_data.imageUid(defaultActiveImageIndex) : *refImageUid;
-
-    if (desiredActiveImageUid && m_data.setActiveImageUid(*desiredActiveImageUid)) {
-      spdlog::info("Set {} as the active image", *desiredActiveImageUid);
-    }
-    else {
-      spdlog::error("Unable to set {} as the active image", *desiredActiveImageUid);
-    }
-
-    // Assign nice rainbow colors:
-    m_data.setRainbowColorsForAllImages();
-    m_data.setRainbowColorsForAllLandmarkGroups();
-
-    onProjectLoadingDone(true);
-  };
-
-  auto onProjectLoadingDone = [this](bool projectLoadedSuccessfully) {
+  auto onProjectLoadingDone = [this, onLoadFailed = std::move(onLoadFailed)](bool projectLoadedSuccessfully) {
     if (projectLoadedSuccessfully) {
       m_imagesReady = true;
       m_imageLoadFailed = false;
-      m_glfw.postEmptyEvent(); // Post an empty event to notify render thread
+      m_glfw.postEmptyEvent();
       spdlog::debug("Done loading images");
     }
     else {
       spdlog::critical("Failed to load images");
-      m_data.clearProjectData();
-      m_data.state().setProjectLoadState(ProjectLoadState::Failed);
-      m_data.state().setAnimating(false);
+      if (onLoadFailed) {
+        onLoadFailed();
+      }
       m_imagesReady = false;
       m_imageLoadFailed = false;
       m_glfw.postEmptyEvent();
     }
   };
 
-  m_glfw.setWindowTitleStatus("Loading project...");
-  m_data.state().setProjectLoadState(ProjectLoadState::Loading);
-  m_data.setProject(std::move(project));
-  m_data.setProjectFileName(std::move(projectFileName));
-  m_futureLoadProject = std::async(std::launch::async, projectLoader, m_data.project(), onProjectLoadingDone);
-  spdlog::debug("Done loading images from parameters");
+  m_futureLoadProject = std::async(
+    std::launch::async,
+    [loadTask = std::move(loadTask), onProjectLoadingDone = std::move(onProjectLoadingDone)]() mutable {
+      bool loaded = false;
+      try {
+        if (loadTask) {
+          loaded = loadTask();
+        }
+      }
+      catch (const std::exception& e) {
+        spdlog::error("Exception while loading images: {}", e.what());
+      }
+      catch (...) {
+        spdlog::error("Unknown exception while loading images");
+      }
+
+      onProjectLoadingDone(loaded);
+    });
+}
+
+bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
+{
+  static constexpr size_t defaultReferenceImageIndex = 0;
+  static constexpr size_t defaultActiveImageIndex = 1;
+
+  m_preserveLayoutsOnImagesReady = false;
+  m_pendingAddedImageUid = std::nullopt;
+
+  spdlog::debug("Begin loading images in new thread");
+
+  if (m_imageLoadCancelled) {
+    return false;
+  }
+
+  if (!loadSerializedImage(projectToLoad.m_referenceImage, true)) {
+    spdlog::critical("Could not load reference image from {}", projectToLoad.m_referenceImage.m_imageFileName);
+    return false;
+  }
+
+  if (m_imageLoadCancelled) {
+    return false;
+  }
+
+  for (const auto& additionalImage : projectToLoad.m_additionalImages) {
+    if (!loadSerializedImage(additionalImage, false)) {
+      spdlog::error("Could not load additional image from {}; skipping it", additionalImage.m_imageFileName);
+    }
+
+    if (m_imageLoadCancelled) {
+      return false;
+    }
+  }
+
+  const auto refImageUid = m_data.imageUid(defaultReferenceImageIndex);
+
+  if (refImageUid && m_data.setRefImageUid(*refImageUid)) {
+    spdlog::info("Set {} as the reference image", *refImageUid);
+  }
+  else {
+    spdlog::critical("Unable to set reference image");
+    return false;
+  }
+
+  const auto desiredActiveImageUid =
+    (defaultActiveImageIndex < m_data.numImages()) ? m_data.imageUid(defaultActiveImageIndex) : *refImageUid;
+
+  if (desiredActiveImageUid && m_data.setActiveImageUid(*desiredActiveImageUid)) {
+    spdlog::info("Set {} as the active image", *desiredActiveImageUid);
+  }
+  else {
+    spdlog::error("Unable to set {} as the active image", *desiredActiveImageUid);
+  }
+
+  m_data.setRainbowColorsForAllImages();
+  m_data.setRainbowColorsForAllLandmarkGroups();
+  return true;
 }
 
 void EntropyApp::setCallbacks()

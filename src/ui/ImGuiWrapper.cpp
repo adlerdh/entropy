@@ -38,6 +38,37 @@ namespace
 static const glm::quat sk_identityRotation{1.0f, 0.0f, 0.0f, 0.0f};
 static const glm::vec3 sk_zeroVec{0.0f, 0.0f, 0.0f};
 
+void renderLoadingStatusBar()
+{
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  const float height = ImGui::GetFrameHeight() + 10.0f;
+  const ImVec2 pos{viewport->WorkPos.x, viewport->WorkPos.y + viewport->WorkSize.y - height};
+  const ImVec2 size{viewport->WorkSize.x, height};
+
+  ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+  ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+
+  constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                                     ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
+                                     ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing;
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{12.0f, 5.0f});
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyleColorVec4(ImGuiCol_MenuBarBg));
+
+  if (ImGui::Begin("LoadingStatusBar", nullptr, flags)) {
+    const int dotCount = static_cast<int>(ImGui::GetTime() * 3.0) % 4;
+    std::string text = "Loading image";
+    text.append(static_cast<std::size_t>(dotCount), '.');
+    ImGui::TextUnformatted(text.c_str());
+  }
+
+  ImGui::End();
+  ImGui::PopStyleColor();
+  ImGui::PopStyleVar(3);
+}
+
 void renderEmptyWorkspace(
   ProjectLoadState projectLoadState,
   const std::function<void(const fs::path& fileName)>& openImageFile,
@@ -777,6 +808,7 @@ void ImGuiWrapper::render()
   ImGui::NewFrame();
 
   const ProjectLoadState projectLoadState = m_appData.state().projectLoadState();
+  const bool backgroundTaskRunning = m_appData.state().animating();
   const bool hasLoadedProject =
     ProjectLoadState::Loaded == projectLoadState && 0 != m_appData.windowData().numLayouts();
 
@@ -821,12 +853,16 @@ void ImGuiWrapper::render()
             return refImage ? (refImage->header().fileName().stem().string() + ".json") : std::string{"project.json"};
           },
         .closeProject = m_closeProject,
-        .canOpenProject = ProjectLoadState::Loading != projectLoadState,
-        .canAddImage = ProjectLoadState::Loaded == projectLoadState,
-        .canSaveProject = ProjectLoadState::Loaded == projectLoadState,
-        .canCloseProject = ProjectLoadState::Empty != projectLoadState});
+        .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
+        .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
+        .canSaveProject = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
+        .canCloseProject = ProjectLoadState::Empty != projectLoadState && !backgroundTaskRunning});
 
     renderEmptyWorkspace(projectLoadState, m_openImageFile, m_openProjectFile);
+
+    if (ProjectLoadState::Loaded == projectLoadState && backgroundTaskRunning) {
+      renderLoadingStatusBar();
+    }
 
     if (!hasLoadedProject) {
       ImGui::Render();

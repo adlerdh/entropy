@@ -16,8 +16,10 @@
 #include <uuid.h>
 
 #include <atomic>
+#include <functional>
 #include <future>
 #include <optional>
+#include <string>
 
 /**
  * @brief This class basically runs the show. Its responsibilities are
@@ -118,7 +120,12 @@ private:
 
   /// Function called when images have been loaded from disk
   void onImagesReady();
-  void loadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName = std::nullopt);
+  void startAsyncImageLoad(
+    std::string windowTitleStatus,
+    std::function<bool()> loadTask,
+    std::function<void()> onLoadFailed,
+    bool showLoadingOverlay = true);
+  bool loadProject(const serialize::EntropyProject& project);
   serialize::EntropyProject createProjectSnapshot() const;
   serialize::Image createImageSnapshot(const uuids::uuid& imageUid) const;
 
