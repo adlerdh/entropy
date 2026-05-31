@@ -128,7 +128,7 @@ saveFile(const std::vector<Filter>& filters, const fs::path& defaultPath, const 
 
 std::vector<Filter> imageFilters()
 {
-  return {{"Medical images", "nii,nii.gz,nrrd,nhdr,mha,mhd,dcm,img,hdr"}};
+  return {{"Medical images", "nii,nii.gz,gz,nrrd,nhdr,mha,mhd,dcm,img,hdr"}};
 }
 
 std::vector<Filter> projectFilters()
