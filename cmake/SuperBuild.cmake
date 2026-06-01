@@ -228,11 +228,7 @@ ExternalProject_Add(glm
     -DGLM_BUILD_LIBRARY:BOOL=OFF
     -DGLM_BUILD_TESTS:BOOL=OFF
     -DGLM_DISABLE_AUTO_DETECTION:BOOL=OFF
-    -DGLM_ENABLE_CXX_11:BOOL=OFF
-    -DGLM_ENABLE_CXX_14:BOOL=OFF
-    -DGLM_ENABLE_CXX_17:BOOL=OFF
     -DGLM_ENABLE_CXX_20:BOOL=ON
-    -DGLM_ENABLE_CXX_98:BOOL=OFF
     -DGLM_ENABLE_FAST_MATH:BOOL=ON
     -DGLM_ENABLE_LANG_EXTENSIONS:BOOL=OFF
     -DGLM_ENABLE_SIMD_AVX:BOOL=OFF
@@ -412,10 +408,6 @@ ExternalProject_Add(nativefiledialog
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
     -DNFD_BUILD_TESTS:BOOL=OFF
     -DNFD_INSTALL:BOOL=ON
-    -DNFD_PORTAL:BOOL=${_nfd_portal}
-    -DNFD_APPEND_EXTENSION:BOOL=ON
-    -DNFD_USE_ALLOWEDCONTENTTYPES_IF_AVAILABLE:BOOL=OFF
-    -DNFD_USE_ALLOWEDCONTENTTYPES:BOOL=OFF
 
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
@@ -449,20 +441,17 @@ ExternalProject_Add(nlohmann_json
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBUILD_TESTING:BOOL=OFF
     -DJSON_BuildTests:BOOL=OFF
     -DJSON_CI:BOOL=OFF
     -DJSON_Diagnostic_Positions:BOOL=OFF
     -DJSON_Diagnostics:BOOL=OFF
     -DJSON_DisableEnumSerialization:BOOL=OFF
-    -DJSON_FastTests:BOOL=OFF
     -DJSON_GlobalUDLs:BOOL=ON
     -DJSON_ImplicitConversions:BOOL=ON
     -DJSON_Install:BOOL=ON
     -DJSON_LegacyDiscardedValueComparison:BOOL=OFF
     -DJSON_MultipleHeaders:BOOL=ON
     -DJSON_SystemInclude:BOOL=OFF
-    -DJSON_Valgrind:BOOL=OFF
 
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
