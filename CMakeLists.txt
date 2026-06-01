@@ -499,6 +499,11 @@ set(entropy_SOURCES
 )
 
 if(MSVC)
+  # GridCut is vendored external code; template instantiation warnings surface while compiling this adapter.
+  set_source_files_properties(
+    "${entropy_APP_DIR}/logic/segmentation/GraphCuts.cpp"
+    PROPERTIES COMPILE_OPTIONS "/wd4244"
+  )
   set_source_files_properties(
     "${entropy_APP_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp"
     PROPERTIES COMPILE_OPTIONS "/wd4305"

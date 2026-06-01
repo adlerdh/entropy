@@ -227,7 +227,7 @@ std::vector<std::size_t> ParcellationLabelTable::addLabels(std::size_t count)
   const std::size_t seed = sk_seed + last;
 
   const std::vector<glm::vec3> hsvSamples =
-    math::generateRandomHsvSamples(count, sk_hueMinMax, sk_satMinMax, sk_valMinMax, seed);
+    math::generateRandomHsvSamples(count, sk_hueMinMax, sk_satMinMax, sk_valMinMax, static_cast<uint32_t>(seed));
 
   std::vector<glm::vec3> rgbValues;
 
