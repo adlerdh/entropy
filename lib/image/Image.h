@@ -207,14 +207,18 @@ public:
 
     // Get values of all 8 neighboring pixels. If a pixel outside the image is requested,
     // then its sampling location was outside the image and its returned value is std::none
-    const auto c000 = value<double>(comp, f.x + 0, f.y + 0, f.z + 0);
-    const auto c001 = value<double>(comp, f.x + 0, f.y + 0, f.z + 1);
-    const auto c010 = value<double>(comp, f.x + 0, f.y + 1, f.z + 0);
-    const auto c011 = value<double>(comp, f.x + 0, f.y + 1, f.z + 1);
-    const auto c100 = value<double>(comp, f.x + 1, f.y + 0, f.z + 0);
-    const auto c101 = value<double>(comp, f.x + 1, f.y + 0, f.z + 1);
-    const auto c110 = value<double>(comp, f.x + 1, f.y + 1, f.z + 0);
-    const auto c111 = value<double>(comp, f.x + 1, f.y + 1, f.z + 1);
+    const int fx = static_cast<int>(f.x);
+    const int fy = static_cast<int>(f.y);
+    const int fz = static_cast<int>(f.z);
+
+    const auto c000 = value<double>(comp, fx + 0, fy + 0, fz + 0);
+    const auto c001 = value<double>(comp, fx + 0, fy + 0, fz + 1);
+    const auto c010 = value<double>(comp, fx + 0, fy + 1, fz + 0);
+    const auto c011 = value<double>(comp, fx + 0, fy + 1, fz + 1);
+    const auto c100 = value<double>(comp, fx + 1, fy + 0, fz + 0);
+    const auto c101 = value<double>(comp, fx + 1, fy + 0, fz + 1);
+    const auto c110 = value<double>(comp, fx + 1, fy + 1, fz + 0);
+    const auto c111 = value<double>(comp, fx + 1, fy + 1, fz + 1);
 
     const glm::dvec3 diff = coordClamped - glm::floor(coordClamped);
 
@@ -363,43 +367,43 @@ public:
     switch (m_header.memoryComponentType()) {
       case ComponentType::Int8: {
         for (auto& C : m_data_int8) {
-          std::fill(std::begin(C), std::end(C), v);
+          std::fill(std::begin(C), std::end(C), static_cast<int8_t>(v));
         }
         return;
       }
       case ComponentType::UInt8: {
         for (auto& C : m_data_uint8) {
-          std::fill(std::begin(C), std::end(C), v);
+          std::fill(std::begin(C), std::end(C), static_cast<uint8_t>(v));
         }
         return;
       }
       case ComponentType::Int16: {
         for (auto& C : m_data_int16) {
-          std::fill(std::begin(C), std::end(C), v);
+          std::fill(std::begin(C), std::end(C), static_cast<int16_t>(v));
         }
         return;
       }
       case ComponentType::UInt16: {
         for (auto& C : m_data_uint16) {
-          std::fill(std::begin(C), std::end(C), v);
+          std::fill(std::begin(C), std::end(C), static_cast<uint16_t>(v));
         }
         return;
       }
       case ComponentType::Int32: {
         for (auto& C : m_data_int32) {
-          std::fill(std::begin(C), std::end(C), v);
+          std::fill(std::begin(C), std::end(C), static_cast<int32_t>(v));
         }
         return;
       }
       case ComponentType::UInt32: {
         for (auto& C : m_data_uint32) {
-          std::fill(std::begin(C), std::end(C), v);
+          std::fill(std::begin(C), std::end(C), static_cast<uint32_t>(v));
         }
         return;
       }
       case ComponentType::Float32: {
         for (auto& C : m_data_float32) {
-          std::fill(std::begin(C), std::end(C), v);
+          std::fill(std::begin(C), std::end(C), static_cast<float>(v));
         }
         return;
       }

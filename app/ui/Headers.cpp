@@ -896,8 +896,8 @@ void renderImageHeader(
       constexpr float windowPercentileMin = 0.0f;
       constexpr float windowPercentileMax = 100.0f;
 
-      const float windowPercentileLowCurrent = 100.0f * qLow.lowerQuantile;
-      const float windowPercentileHighCurrent = 100.0f * qHigh.upperQuantile;
+      const float windowPercentileLowCurrent = 100.0f * static_cast<float>(qLow.lowerQuantile);
+      const float windowPercentileHighCurrent = 100.0f * static_cast<float>(qHigh.upperQuantile);
 
       float windowPercentileLowAttempted = windowPercentileLowCurrent;
       float windowPercentileHighAttempted = windowPercentileHighCurrent;
@@ -988,14 +988,14 @@ void renderImageHeader(
       ImGui::Text("Windowing:");
 
       if (mySliderS64("Width", &windowWidth, windowWidthMin, windowWidthMax)) {
-        imgSettings.setWindowWidth(windowWidth);
+        imgSettings.setWindowWidth(static_cast<double>(windowWidth));
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Window width");
 
       if (mySliderS64("Level", &windowCenter, windowCenterMin, windowCenterMax)) {
-        imgSettings.setWindowCenter(windowCenter);
+        imgSettings.setWindowCenter(static_cast<double>(windowCenter));
         updateImageUniforms();
       }
       ImGui::SameLine();
@@ -1025,8 +1025,8 @@ void renderImageHeader(
       constexpr float windowPercentileMin = 0.0f;
       constexpr float windowPercentileMax = 100.0f;
 
-      const float windowPercentileLowCurrent = 100.0f * qLow.lowerQuantile;
-      const float windowPercentileHighCurrent = 100.0f * qHigh.upperQuantile;
+      const float windowPercentileLowCurrent = 100.0f * static_cast<float>(qLow.lowerQuantile);
+      const float windowPercentileHighCurrent = 100.0f * static_cast<float>(qHigh.upperQuantile);
 
       float windowPercentileLowAttempted = windowPercentileLowCurrent;
       float windowPercentileHighAttempted = windowPercentileHighCurrent;
@@ -1206,7 +1206,7 @@ void renderImageHeader(
         cmap->data_RGBA_asVector(),
         imgSettings.isColorMapInverted(),
         doQuantize,
-        imgSettings.colorMapQuantizationLevels(),
+        static_cast<int>(imgSettings.colorMapQuantizationLevels()),
         hsvMods,
         ImVec2(contentWidth, height));
 
@@ -1337,7 +1337,7 @@ void renderImageHeader(
       };
 
       auto getImageColorMapLevels = [&imgSettings]() {
-        return imgSettings.colorMapQuantizationLevels();
+        return static_cast<int>(imgSettings.colorMapQuantizationLevels());
       };
 
       renderPaletteWindow(

@@ -3,6 +3,8 @@
 
 #include "common/Exception.hpp"
 
+#include <cstdint>
+
 namespace
 {
 
@@ -71,7 +73,7 @@ void GLVertexArrayObject::setAttributeBuffer(
     underlyingType(type),
     underlyingType(normalize),
     stride,
-    reinterpret_cast<const GLvoid*>(offset));
+    reinterpret_cast<const GLvoid*>(static_cast<std::uintptr_t>(offset)));
 
   CHECK_GL_ERROR(m_errorChecker)
 }
@@ -94,7 +96,12 @@ void GLVertexArrayObject::setAttributeIntegerBuffer(
   GLsizei stride,
   GLint offset)
 {
-  glVertexAttribIPointer(index, size, underlyingType(type), stride, reinterpret_cast<const GLvoid*>(offset));
+  glVertexAttribIPointer(
+    index,
+    size,
+    underlyingType(type),
+    stride,
+    reinterpret_cast<const GLvoid*>(static_cast<std::uintptr_t>(offset)));
 
   CHECK_GL_ERROR(m_errorChecker)
 }

@@ -140,46 +140,6 @@ The ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](ht
 
 Original attributions and licenses have been preserved and committed for all external sources and resources.
 
-## Formatting
-This repository uses pre-commit to format staged C++ and shader files before each commit. Install clang-format 18 or newer and pre-commit, then enable the hook in a checkout.
-
-On Debian/Ubuntu:
-
-```sh
-sudo apt-get install clang-format pre-commit
-pre-commit install
-```
-
-On macOS with Homebrew:
-
-```sh
-brew install clang-format pre-commit
-pre-commit install
-```
-
-On macOS with MacPorts:
-
-```sh
-sudo port selfupdate
-sudo port upgrade outdated
-sudo port install clang-19 py312-pre-commit ccache ninja
-sudo port select --set clang mp-clang-19
-pre-commit install
-```
-
-On Windows, install clang-format 18 or newer with Visual Studio, LLVM, or another package manager. Then install pre-commit with pip and enable the hook:
-
-```sh
-python -m pip install pre-commit
-pre-commit install
-```
-
-To format all source files manually, run:
-
-```sh
-pre-commit run clang-format --all-files
-```
-
 ## Running
 Entropy is run from the terminal. Images can be specified directly as command line arguments or from a JSON project file.
 - On Linux or macOS: `./${BUILD_DIR}/bin/Entropy`

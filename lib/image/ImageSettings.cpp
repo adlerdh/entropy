@@ -6,6 +6,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <limits>
 
 #undef min
@@ -767,17 +768,17 @@ bool ImageSettings::colorMapContinuous() const
 
 void ImageSettings::setColorMapHueModFactor(uint32_t i, double hueMod)
 {
-  m_componentSettings[i].m_hsvModFactors[0] = hueMod;
+  m_componentSettings[i].m_hsvModFactors[0] = static_cast<float>(hueMod);
 }
 
 void ImageSettings::setColorMapSatModFactor(uint32_t i, double satMod)
 {
-  m_componentSettings[i].m_hsvModFactors[1] = satMod;
+  m_componentSettings[i].m_hsvModFactors[1] = static_cast<float>(satMod);
 }
 
 void ImageSettings::setColorMapValModFactor(uint32_t i, double valMod)
 {
-  m_componentSettings[i].m_hsvModFactors[2] = valMod;
+  m_componentSettings[i].m_hsvModFactors[2] = static_cast<float>(valMod);
 }
 
 void ImageSettings::setColorMapHueModFactor(double hueMod)
@@ -1026,29 +1027,35 @@ void ImageSettings::updateWithNewComponentStatistics(
     ComponentSettings& setting = m_componentSettings[i];
 
     // Min/max window width/center and threshold ranges are based on min/max component values:
-    setting.m_minMaxImageRange = std::make_pair(stats.onlineStats.min, stats.onlineStats.max);
-    setting.m_minMaxThresholdRange = std::make_pair(stats.onlineStats.min, stats.onlineStats.max);
+    setting.m_minMaxImageRange =
+      std::make_pair(static_cast<double>(stats.onlineStats.min), static_cast<double>(stats.onlineStats.max));
+    setting.m_minMaxThresholdRange =
+      std::make_pair(static_cast<double>(stats.onlineStats.min), static_cast<double>(stats.onlineStats.max));
 
-    setting.m_minMaxWindowCenterRange = std::make_pair(stats.onlineStats.min, stats.onlineStats.max);
-    setting.m_minMaxWindowWidthRange = std::make_pair(0.0, stats.onlineStats.max - stats.onlineStats.min);
+    setting.m_minMaxWindowCenterRange =
+      std::make_pair(static_cast<double>(stats.onlineStats.min), static_cast<double>(stats.onlineStats.max));
+    setting.m_minMaxWindowWidthRange =
+      std::make_pair(0.0, static_cast<double>(stats.onlineStats.max - stats.onlineStats.min));
 
     // Default thresholds are min/max values:
-    setting.m_thresholds = std::make_pair(stats.onlineStats.min, stats.onlineStats.max);
+    setting.m_thresholds =
+      std::make_pair(static_cast<double>(stats.onlineStats.min), static_cast<double>(stats.onlineStats.max));
 
     // Default window limits are the low and high quantiles:
-    const double winLow = stats.quantiles[qLow];
-    const double winHigh = stats.quantiles[qHigh];
+    const double winLow = static_cast<double>(stats.quantiles[qLow]);
+    const double winHigh = static_cast<double>(stats.quantiles[qHigh]);
 
     setting.m_windowCenter = 0.5 * (winLow + winHigh);
     setting.m_windowWidth = winHigh - winLow;
 
-    setting.m_foregroundThresholds = std::make_pair(stats.quantiles[qLow], stats.quantiles[qMax]);
+    setting.m_foregroundThresholds =
+      std::make_pair(static_cast<double>(stats.quantiles[qLow]), static_cast<double>(stats.quantiles[qMax]));
 
     // Default thresholds for foreground mask that is used for the raycasting distance map:
     // Use the [50%, 100%] intensity range to define foreground
     // (until we have an algorithm to compute a foreground mask)
-    setting.m_foregroundThresholds.first = stats.quantiles[50];
-    setting.m_foregroundThresholds.second = stats.quantiles[qMax];
+    setting.m_foregroundThresholds.first = static_cast<double>(stats.quantiles[50]);
+    setting.m_foregroundThresholds.second = static_cast<double>(stats.quantiles[qMax]);
 
     // Update histogram settings
     setting.m_histogramSettings.m_numBinsMethod = NumBinsComputationMethod::FreedmanDiaconis;
@@ -1057,8 +1064,8 @@ void ImageSettings::updateWithNewComponentStatistics(
     setting.m_histogramSettings.m_isHorizontal = false;
     setting.m_histogramSettings.m_isLogScale = false;
     setting.m_histogramSettings.m_useCustomIntensityRange = false;
-    setting.m_histogramSettings.m_intensityRange[0] = stats.onlineStats.min;
-    setting.m_histogramSettings.m_intensityRange[1] = stats.onlineStats.max;
+    setting.m_histogramSettings.m_intensityRange[0] = static_cast<double>(stats.onlineStats.min);
+    setting.m_histogramSettings.m_intensityRange[1] = static_cast<double>(stats.onlineStats.max);
 
     if (0 == m_numPixels) {
       spdlog::warn(
@@ -1080,10 +1087,11 @@ void ImageSettings::updateWithNewComponentStatistics(
           computeNumHistogramBins(setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]);
       }
 
-      setting.m_histogramSettings.m_numBins = numBins.value_or(1);
+      setting.m_histogramSettings.m_numBins = static_cast<int>(
+        std::min<std::size_t>(numBins.value_or(1), static_cast<std::size_t>(std::numeric_limits<int>::max())));
 
       setting.m_histogramSettings.m_binWidth =
-        (m_componentStats[i].onlineStats.max - m_componentStats[i].onlineStats.min) /
+        static_cast<double>(m_componentStats[i].onlineStats.max - m_componentStats[i].onlineStats.min) /
         setting.m_histogramSettings.m_numBins;
     }
 

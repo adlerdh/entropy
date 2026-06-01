@@ -51,7 +51,7 @@ void renderActiveImageSelectionCombo(
       const auto displayAndFileName = getImageDisplayAndFileName(i);
       const bool isSelected = (i == activeIndex);
 
-      ImGui::PushID(i); // needed in case two images have the same display name
+      ImGui::PushID(static_cast<int>(i)); // needed in case two images have the same display name
       if (ImGui::Selectable(displayAndFileName.first.c_str(), isSelected)) {
         setActiveImageIndex(i);
       }

@@ -46,6 +46,7 @@
 #define NANOVG_GL3_IMPLEMENTATION
 #include <nanovg_gl.h>
 
+#include <algorithm>
 #include <chrono>
 #include <functional>
 #include <list>
@@ -673,7 +674,8 @@ void Rendering::updateSegTextureWithInt64Data(
 
   switch (compType) {
     case ComponentType::UInt8: {
-      const std::vector<uint8_t> castData(data, data + N);
+      std::vector<uint8_t> castData(N);
+      std::transform(data, data + N, castData.begin(), [](int64_t value) { return static_cast<uint8_t>(value); });
       return updateSegTexture(
         segUid,
         compType,
@@ -682,7 +684,8 @@ void Rendering::updateSegTextureWithInt64Data(
         static_cast<const void*>(castData.data()));
     }
     case ComponentType::UInt16: {
-      const std::vector<uint16_t> castData(data, data + N);
+      std::vector<uint16_t> castData(N);
+      std::transform(data, data + N, castData.begin(), [](int64_t value) { return static_cast<uint16_t>(value); });
       return updateSegTexture(
         segUid,
         compType,
@@ -691,7 +694,8 @@ void Rendering::updateSegTextureWithInt64Data(
         static_cast<const void*>(castData.data()));
     }
     case ComponentType::UInt32: {
-      const std::vector<uint32_t> castData(data, data + N);
+      std::vector<uint32_t> castData(N);
+      std::transform(data, data + N, castData.begin(), [](int64_t value) { return static_cast<uint32_t>(value); });
       return updateSegTexture(
         segUid,
         compType,
@@ -1002,7 +1006,8 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
 
   const auto& imgSettings = img->settings();
 
-  uniforms.cmapQuantLevels = imgSettings.colorMapContinuous() ? 0 : imgSettings.colorMapQuantizationLevels();
+  uniforms.cmapQuantLevels =
+    imgSettings.colorMapContinuous() ? 0 : static_cast<int>(imgSettings.colorMapQuantizationLevels());
   uniforms.hsvModFactors = imgSettings.colorMapHsvModFactors();
 
   if (const auto cmapUid = m_appData.imageColorMapUid(imgSettings.colorMapIndex())) {
@@ -1120,9 +1125,9 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
     static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange().first)),
     static_cast<float>(imgSettings.mapNativeIntensityToTexture(imgSettings.minMaxImageRange().second))};
 
-  uniforms.imgOpacity = (static_cast<float>(imgSettings.globalVisibility() && imgSettings.visibility()) ? 1.0 : 0.0) *
-                        imgSettings.opacity() *
-                        ((imgSettings.numComponents() > 0) ? imgSettings.globalOpacity() : 1.0f);
+  uniforms.imgOpacity = static_cast<float>(
+    ((imgSettings.globalVisibility() && imgSettings.visibility()) ? 1.0 : 0.0) * imgSettings.opacity() *
+    ((imgSettings.numComponents() > 0) ? imgSettings.globalOpacity() : 1.0));
 
   // Edges
   uniforms.showEdges = imgSettings.showEdges();

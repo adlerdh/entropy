@@ -8,6 +8,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <cstring>
 #include <exception>
 #include <fstream>
 #include <sstream>
@@ -129,8 +130,13 @@ size_t strerrorlen_s(int errnum)
     return len_errmsgs_s[errnum - ESNULLP] - 1;
   }
   else {
+#if defined(_MSC_VER)
+    char buf[256]{};
+    return (0 == strerror_s(buf, sizeof(buf), errnum)) ? strlen(buf) : 0;
+#else
     const char* buf = strerror(errnum);
     return buf ? strlen(buf) : 0;
+#endif
   }
 }
 

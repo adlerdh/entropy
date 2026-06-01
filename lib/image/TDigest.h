@@ -18,6 +18,11 @@
 #ifndef TDIGEST2_TDIGEST_H_
 #define TDIGEST2_TDIGEST_H_
 
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4244 4267)
+#endif
+
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
@@ -784,5 +789,9 @@ private:
 };
 
 } // namespace tdigest
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 
 #endif // TDIGEST2_TDIGEST_H_

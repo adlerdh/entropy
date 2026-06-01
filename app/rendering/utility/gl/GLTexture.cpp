@@ -398,8 +398,10 @@ void GLTexture::bind(std::optional<uint32_t> textureUnit)
 
   glBindTexture(m_targetEnum, m_id);
 
-  if (rebind && textureUnit) {
-    glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + prevUnit));
+  if constexpr (rebind) {
+    if (textureUnit) {
+      glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + prevUnit));
+    }
   }
 }
 

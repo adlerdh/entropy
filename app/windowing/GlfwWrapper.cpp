@@ -468,7 +468,10 @@ GLFWmonitor* GlfwWrapper::currentMonitor() const
   GLFWmonitor* currentMonitor = glfwGetPrimaryMonitor();
   int largestOverlap = 0;
 
-  int winPosX, winPosY, winWidth, winHeight;
+  int winPosX = 0;
+  int winPosY = 0;
+  int winWidth = 0;
+  int winHeight = 0;
 
   if (m_platform != GLFW_PLATFORM_WAYLAND && m_platform != GLFW_PLATFORM_NULL) {
     glfwGetWindowPos(m_window, &winPosX, &winPosY);

@@ -367,8 +367,8 @@ bool CallbackHandler::executeGraphCutsSegmentation(
 
   const VoxelDistances voxelDists = computeVoxelDistances(image->header().spacing(), true);
 
-  const double imLow = image->settings().componentStatistics(imComp).quantiles[1];
-  const double imHigh = image->settings().componentStatistics(imComp).quantiles[99];
+  const double imLow = static_cast<double>(image->settings().componentStatistics(imComp).quantiles[1]);
+  const double imHigh = static_cast<double>(image->settings().componentStatistics(imComp).quantiles[99]);
 
   auto weight = [this, &imLow, &imHigh](double diff) -> double {
     const double amplitude = m_appData.settings().graphCutsWeightsAmplitude();
@@ -539,8 +539,8 @@ bool CallbackHandler::executePoissonSegmentation(
   // labels in the seed segmentation, including label zero. Component 0 of the
   // image holds the potential for all labels. Component i >= 1 of the image holds the
   // potential of label index i.
-  const uint32_t numLabels = labelMaps.labelToIndex.size() - 1;
-  const uint32_t numComps = labelMaps.labelToIndex.size();
+  const uint32_t numLabels = static_cast<uint32_t>(labelMaps.labelToIndex.size() - 1);
+  const uint32_t numComps = static_cast<uint32_t>(labelMaps.labelToIndex.size());
 
   // Create potential image with float components
   const auto potImageUid =

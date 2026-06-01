@@ -53,8 +53,12 @@ ParcellationLabelTable::ParcellationLabelTable(std::size_t labelCount, std::size
     rgbValues.push_back(glm::rgbColor(glm::vec3{s, 1.0f, 1.0f}));
   }
 
-  const std::vector<glm::vec3> hsvSamples =
-    math::generateRandomHsvSamples(labelCountAdjusted - 12, sk_hueMinMax, sk_satMinMax, sk_valMinMax, sk_seed);
+  const std::vector<glm::vec3> hsvSamples = math::generateRandomHsvSamples(
+    labelCountAdjusted - 12,
+    sk_hueMinMax,
+    sk_satMinMax,
+    sk_valMinMax,
+    static_cast<uint32_t>(sk_seed));
 
   std::transform(
     std::begin(hsvSamples),

@@ -98,6 +98,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
+function(entropy_copy_runtime_dlls target)
+  if(WIN32)
+    add_custom_command(TARGET ${target} POST_BUILD
+      COMMAND ${CMAKE_COMMAND}
+        -D "ENTROPY_RUNTIME_DLLS=$<JOIN:$<TARGET_RUNTIME_DLLS:${target}>,,>"
+        -D "ENTROPY_RUNTIME_OUTPUT_DIR=$<TARGET_FILE_DIR:${target}>"
+        -P "${CMAKE_SOURCE_DIR}/cmake/CopyRuntimeDlls.cmake"
+    )
+  endif()
+endfunction()
+
 
 # External library versions:
 set(catch2_VERSION "3.8.1")
@@ -222,7 +233,6 @@ set(tinyfsm_INCLUDE_DIR "${tinyfsm_PREFIX}/src/include"
 # std::expected: C++23 vocabulary type for operations that return either a value or an error.
 include(CheckCXXSourceCompiles)
 
-unset(ENTROPY_HAVE_STD_EXPECTED CACHE)
 check_cxx_source_compiles([=[
   #include <expected>
   #ifndef __cpp_lib_expected
@@ -320,6 +330,7 @@ target_compile_options(imgui PRIVATE
   >
   $<$<CXX_COMPILER_ID:MSVC>:
     /W4
+    /wd4390
   >
 )
 
@@ -361,6 +372,7 @@ target_compile_options(implot PRIVATE
   >
   $<$<CXX_COMPILER_ID:MSVC>:
     /W4
+    /wd5054
   >
 )
 
@@ -485,6 +497,17 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/ViewTypes.cpp"
   "${entropy_APP_DIR}/windowing/WindowData.cpp"
 )
+
+if(MSVC)
+  set_source_files_properties(
+    "${entropy_APP_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp"
+    PROPERTIES COMPILE_OPTIONS "/wd4305"
+  )
+  set_source_files_properties(
+    "${entropy_APP_DIR}/ui/imgui/imgui-knobs/imgui-knobs.cpp"
+    PROPERTIES COMPILE_OPTIONS "/wd4244"
+  )
+endif()
 
 set(entropy_SHADERS
   # "${entropy_APP_DIR}/rendering/shaders/Correlation.fs"
@@ -623,9 +646,6 @@ target_include_directories(${entropy_EXE} PRIVATE
   "${entropy_RES_DIR}"
   "${glad_INCLUDE_DIR}"
   "${iconfont_INCLUDE_DIR}"
-  "${imgui_SRC_DIR}"
-  "${imgui_SRC_DIR}/imgui" # due to ImPlot
-  "${implot_SRC_DIR}"
   "${tinyfsm_INCLUDE_DIR}"
 )
 
@@ -634,8 +654,13 @@ set_target_properties(${entropy_EXE} PROPERTIES NO_SYSTEM_FROM_IMPORTED ON)
 
 target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   ${gridcut_INCLUDE_DIRS}
+  "${imgui_SRC_DIR}"
+  "${imgui_SRC_DIR}/imgui" # due to ImPlot
+  "${implot_SRC_DIR}"
   "${nanovg_SRC_DIR}"
 )
+
+entropy_copy_runtime_dlls(${entropy_EXE})
 
 target_compile_options(${entropy_EXE} PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:

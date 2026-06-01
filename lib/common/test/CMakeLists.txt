@@ -14,4 +14,6 @@ set_target_properties(EntropyCommonTests PROPERTIES
   CXX_EXTENSIONS OFF
 )
 
+entropy_copy_runtime_dlls(EntropyCommonTests)
+
 catch_discover_tests(EntropyCommonTests)

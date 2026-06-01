@@ -432,7 +432,7 @@ void drawAnatomicalLabels(
                                             miewportMaxCorner - inwardFontShift) +
                                           vertFontShift;
 
-    const std::size_t idx = static_cast<size_t>(label.labelIndex);
+    const int idx = static_cast<int>(label.labelIndex);
 
     // Draw the text shadow:
     nvgFontBlur(nvg, 2.0f);

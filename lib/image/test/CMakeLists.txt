@@ -14,4 +14,6 @@ set_target_properties(EntropyImageTests PROPERTIES
   CXX_EXTENSIONS OFF
 )
 
+entropy_copy_runtime_dlls(EntropyImageTests)
+
 catch_discover_tests(EntropyImageTests)

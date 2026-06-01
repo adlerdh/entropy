@@ -36,7 +36,8 @@ bool graphCutsBinarySegmentation(
   // -total flow
   using T = float;
 
-  static constexpr bool multithread = false;
+  bool multithread = false;
+  const T terminalCapacityT = static_cast<T>(terminalCapacity);
 
   spdlog::trace("Start creating grid");
   auto start = high_resolution_clock::now();
@@ -102,8 +103,8 @@ bool graphCutsBinarySegmentation(
           const LabelType seed = getSeedValue(x, y, z);
           const std::size_t index = getIndex(x, y, z);
 
-          cap_source[index] = (seed > 0 && seed != fgSeedValue) ? terminalCapacity : 0.0;
-          cap_sink[index] = (seed == fgSeedValue) ? terminalCapacity : 0.0;
+          cap_source[index] = (seed > 0 && seed != fgSeedValue) ? terminalCapacityT : T{0};
+          cap_sink[index] = (seed == fgSeedValue) ? terminalCapacityT : T{0};
 
           cap_lee[index] = computeNeighCap(x, y, z, -1, 0, 0, voxelDistances.distX);
           cap_gee[index] = computeNeighCap(x, y, z, 1, 0, 0, voxelDistances.distX);
@@ -152,8 +153,8 @@ bool graphCutsBinarySegmentation(
 
           grid->set_terminal_cap(
             grid->node_id(x, y, z),
-            (seed > 0 && seed != fgSeedValue) ? terminalCapacity : 0.0,
-            (seed == fgSeedValue) ? terminalCapacity : 0.0);
+            (seed > 0 && seed != fgSeedValue) ? terminalCapacityT : T{0},
+            (seed == fgSeedValue) ? terminalCapacityT : T{0});
 
           // 6 face neighbors:
           if (XH) {
@@ -254,10 +255,12 @@ bool graphCutsMultiLabelSegmentation(
   // -data and smoothness costs
   // -resulting energy
   using T = float;
+  const T terminalCapacityT = static_cast<T>(terminalCapacity);
 
   static constexpr bool sk_ignoreBackgroundLabel = true;
   const LabelIndexMaps labelMaps = createLabelIndexMaps(dims, getSeedValue, sk_ignoreBackgroundLabel);
   const std::size_t numLabels = labelMaps.labelToIndex.size();
+  const int numLabelsInt = static_cast<int>(numLabels);
 
   spdlog::debug("Start creating expansion");
 
@@ -275,7 +278,7 @@ bool graphCutsMultiLabelSegmentation(
         for (std::size_t labelIndex = 0; labelIndex < numLabels; ++labelIndex) {
           const LabelType label = labelMaps.indexToLabel.at(labelIndex);
 
-          dataCosts[getIndex(x, y, z) * numLabels + labelIndex] = (seedLabel == label) ? 0.0f : terminalCapacity;
+          dataCosts[getIndex(x, y, z) * numLabels + labelIndex] = (seedLabel == label) ? T{0} : terminalCapacityT;
         }
       }
     }
@@ -370,9 +373,9 @@ getImageWeight(x, y, z,  0,  0,  1) / voxelDistances.distZ   : 0;
   const int zDiff = dims.x * dims.y;
 
   auto smoothFn =
-    [&getImageWeight1D, &voxelDistances, &yDiff, &zDiff](int index1, int index2, int label1, int label2) -> double {
+    [&getImageWeight1D, &voxelDistances, &yDiff, &zDiff](int index1, int index2, int label1, int label2) -> T {
     if (label1 == label2) {
-      return 0.0;
+      return T{0};
     }
 
     const int diff = std::abs(index1 - index2);
@@ -400,7 +403,7 @@ getImageWeight(x, y, z,  0,  0,  1) / voxelDistances.distZ   : 0;
       dist = voxelDistances.distXYZ;
     }
 
-    return getImageWeight1D(index1, index2) / dist;
+    return static_cast<T>(getImageWeight1D(index1, index2) / dist);
   };
 
   std::unique_ptr<AlphaExpansion_3D_Base_Wrapper<LabelType, T, T> > expansion = nullptr;
@@ -414,7 +417,7 @@ getImageWeight(x, y, z,  0,  0,  1) / voxelDistances.distZ   : 0;
         dims.x,
         dims.y,
         dims.z,
-        numLabels,
+        numLabelsInt,
         dataCosts.data(),
         smoothFn,
         NUM_THREADS,
@@ -426,7 +429,7 @@ getImageWeight(x, y, z,  0,  0,  1) / voxelDistances.distZ   : 0;
         dims.x,
         dims.y,
         dims.z,
-        numLabels,
+        numLabelsInt,
         dataCosts.data(),
         smoothFn);
       break;

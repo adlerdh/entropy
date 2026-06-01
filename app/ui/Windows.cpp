@@ -1702,11 +1702,11 @@ void renderSettingsWindow(
         helpMarker("Manually limit the rendering frame rate");
 
         if (renderData.m_manualFramerateLimiter) {
-          constexpr double hzSpeed = 1.0e-1;
+          constexpr float hzSpeed = 1.0e-1f;
           constexpr double hzMin = 1.0;
           constexpr double hzMax = 240.0;
 
-          constexpr double secSpeed = 1.0e-4;
+          constexpr float secSpeed = 1.0e-4f;
           constexpr double secMin = 1.0 / hzMax;
           constexpr double secMax = 1.0 / hzMin;
 
@@ -2419,7 +2419,7 @@ void renderInspectionWindowWithTable(
                 "##imageValuesNN",
                 ImGuiDataType_Double,
                 imageValuesNN.data(),
-                imageValuesNN.size(),
+                static_cast<int>(imageValuesNN.size()),
                 nullptr,
                 nullptr,
                 appData.guiData().m_imageValuePrecisionFormat.c_str(),
@@ -2458,7 +2458,7 @@ void renderInspectionWindowWithTable(
                 "##imageValuesNN",
                 ImGuiDataType_S64,
                 imageValuesNNInt.data(),
-                imageValuesNNInt.size(),
+                static_cast<int>(imageValuesNNInt.size()),
                 nullptr,
                 nullptr,
                 "%ld",
@@ -2502,7 +2502,7 @@ void renderInspectionWindowWithTable(
                 "##imageValuesLinear",
                 ImGuiDataType_Double,
                 imageValuesLinear.data(),
-                imageValuesLinear.size(),
+                static_cast<int>(imageValuesLinear.size()),
                 nullptr,
                 nullptr,
                 appData.guiData().m_imageValuePrecisionFormat.c_str(),

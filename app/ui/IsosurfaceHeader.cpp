@@ -154,7 +154,7 @@ std::optional<uuids::uuid> addNewSurface(
 
   Isosurface surface;
   surface.name = "Surface " + std::to_string(index);
-  surface.value = stats.quantiles[sk_defaultIsovalueQuantile];
+  surface.value = static_cast<double>(stats.quantiles[sk_defaultIsovalueQuantile]);
   surface.color = glm::vec3{0.5f, 0.75f, 1.0f};
   surface.opacity = 1.0f;
   surface.meshInSync = false;
@@ -631,8 +631,10 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Edit the name of the surface");
 
-      const double valueMin = image->settings().componentStatistics(componentToAdjust).onlineStats.min;
-      const double valueMax = image->settings().componentStatistics(componentToAdjust).onlineStats.max;
+      const double valueMin =
+        static_cast<double>(image->settings().componentStatistics(componentToAdjust).onlineStats.min);
+      const double valueMax =
+        static_cast<double>(image->settings().componentStatistics(componentToAdjust).onlineStats.max);
 
       if (mySliderF64(
             "Isovalue",
@@ -675,7 +677,7 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Fill opacity in 2D views");
 
-      int edgeStrength = surface->edgeStrength;
+      int edgeStrength = static_cast<int>(surface->edgeStrength);
       if (mySliderS32("Edges", &edgeStrength, 0, 5)) {
         surface->edgeStrength = static_cast<float>(edgeStrength);
       }
@@ -740,7 +742,7 @@ void renderIsosurfacesHeader(
           float width = static_cast<float>(imgSettings.isoContourLineWidthIn2D());
           // if (ImGui::DragFloat("Iso-line width", &width, 0.001f, 0.001f, 10.000f, "%0.3f \%",
           // ImGuiSliderFlags_AlwaysClamp)) {
-          if (mySliderF32("Isocontour width", &width, 1.0f, 10.0f, "%0.1f \%")) {
+          if (mySliderF32("Isocontour width", &width, 1.0f, 10.0f, "%0.1f %%")) {
             imgSettings.setIsosurfaceWidthIn2d(static_cast<double>(width));
           }
           ImGui::SameLine();
@@ -757,8 +759,10 @@ void renderIsosurfacesHeader(
 
         if (imgSettings.useDistanceMapForRaycasting()) {
           bool distMapChanged = false;
-          const double valueMin = image->settings().componentStatistics(componentToAdjust).onlineStats.min;
-          const double valueMax = image->settings().componentStatistics(componentToAdjust).onlineStats.max;
+          const double valueMin =
+            static_cast<double>(image->settings().componentStatistics(componentToAdjust).onlineStats.min);
+          const double valueMax =
+            static_cast<double>(image->settings().componentStatistics(componentToAdjust).onlineStats.max);
 
           double threshLow = imgSettings.foregroundThresholds(componentToAdjust).first;
           double threshHigh = imgSettings.foregroundThresholds(componentToAdjust).second;

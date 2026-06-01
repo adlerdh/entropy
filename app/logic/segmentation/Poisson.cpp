@@ -119,7 +119,7 @@ void computeResultSeg(const std::vector<const float*> potentials, uint8_t* resul
           }
         }
 
-        resultSeg[n] = std::min(maxComp + 1u, 255u);
+        resultSeg[n] = static_cast<uint8_t>(std::min(maxComp + 1u, 255u));
       }
     }
   }

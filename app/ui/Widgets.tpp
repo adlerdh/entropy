@@ -40,11 +40,11 @@ void drawImageHistogram(const T* data, int dataSize, ImageSettings& settings, co
 
   const double intensityAxisMin = (histoSettings.m_useCustomIntensityRange)
                                     ? histoSettings.m_intensityRange[0]
-                                    : settings.componentStatistics().onlineStats.min;
+                                    : static_cast<double>(settings.componentStatistics().onlineStats.min);
 
   const double intensityAxisMax = (histoSettings.m_useCustomIntensityRange)
                                     ? histoSettings.m_intensityRange[1]
-                                    : settings.componentStatistics().onlineStats.max;
+                                    : static_cast<double>(settings.componentStatistics().onlineStats.max);
 
   const double intensityAxisRange = intensityAxisMax - intensityAxisMin;
 
@@ -92,11 +92,19 @@ void drawImageHistogram(const T* data, int dataSize, ImageSettings& settings, co
 
   ImGui::DragInt("Bin count", &(histoSettings.m_numBins), 1, 1, dataSize);
 
-  float binWidth = intensityAxisRange / static_cast<float>(histoSettings.m_numBins);
+  float binWidth = static_cast<float>(intensityAxisRange) / static_cast<float>(histoSettings.m_numBins);
 
-  const float binWidthSpeed = isIntegerType(settings.componentType()) ? 1.0f : (intensityAxisRange / 1000.0f);
+  const float binWidthSpeed =
+    isIntegerType(settings.componentType()) ? 1.0f : (static_cast<float>(intensityAxisRange) / 1000.0f);
 
-  if (ImGui::DragFloat("Bin width", &binWidth, binWidthSpeed, 0.0f, intensityAxisRange, imagePrecisionFormat.c_str())) {
+  if (ImGui::DragFloat(
+        "Bin width",
+        &binWidth,
+        binWidthSpeed,
+        0.0f,
+        static_cast<float>(intensityAxisRange),
+        imagePrecisionFormat.c_str()))
+  {
     if (binWidth > 0.0) {
       histoSettings.m_numBins = static_cast<int>(std::ceil(intensityAxisRange / binWidth));
     }
@@ -119,8 +127,8 @@ void drawImageHistogram(const T* data, int dataSize, ImageSettings& settings, co
       const std::string minValuesFormatString = std::string("Min: ") + imagePrecisionFormat;
       const std::string maxValuesFormatString = std::string("Max: ") + imagePrecisionFormat;
 
-      float rangeLow = histoSettings.m_intensityRange[0];
-      float rangeHigh = histoSettings.m_intensityRange[1];
+      float rangeLow = static_cast<float>(histoSettings.m_intensityRange[0]);
+      float rangeHigh = static_cast<float>(histoSettings.m_intensityRange[1]);
       const float floatSpeed = (rangeHigh - rangeLow) / 1000.0f;
 
       if (ImGui::DragFloatRange2(

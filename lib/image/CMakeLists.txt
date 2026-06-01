@@ -6,6 +6,10 @@ include("${ITK_USE_FILE}")
 add_library(EntropyImage)
 add_library(Entropy::Image ALIAS EntropyImage)
 
+if(WIN32 AND BUILD_SHARED_LIBS)
+  set_target_properties(EntropyImage PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 target_sources(EntropyImage PRIVATE
   Image.cpp
   ImageColorMap.cpp
