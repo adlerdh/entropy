@@ -23,6 +23,16 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
         }
       }
 
+      if (ImGui::MenuItem("Open Project...", nullptr, false, callbacks.canOpenProject)) {
+        if (const auto selectedFile = native_dialog::openFile(native_dialog::projectFilters())) {
+          if (callbacks.openProjectFile) {
+            callbacks.openProjectFile(*selectedFile);
+          }
+        }
+      }
+
+      ImGui::Separator();
+
       if (ImGui::MenuItem("Add Image...", nullptr, false, callbacks.canAddImage)) {
         if (const auto selectedFile = native_dialog::openFile(native_dialog::imageFilters())) {
           if (callbacks.addImageFile) {
@@ -31,10 +41,10 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
         }
       }
 
-      if (ImGui::MenuItem("Open Project...", nullptr, false, callbacks.canOpenProject)) {
-        if (const auto selectedFile = native_dialog::openFile(native_dialog::projectFilters())) {
-          if (callbacks.openProjectFile) {
-            callbacks.openProjectFile(*selectedFile);
+      if (ImGui::MenuItem("Add Segmentation...", nullptr, false, callbacks.canAddSegmentation)) {
+        if (const auto selectedFile = native_dialog::openFile(native_dialog::segmentationFilters())) {
+          if (callbacks.addSegmentationFile) {
+            callbacks.addSegmentationFile(*selectedFile);
           }
         }
       }

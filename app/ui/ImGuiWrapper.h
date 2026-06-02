@@ -36,6 +36,8 @@ public:
     std::function<void(void)> readjustViewport,
     std::function<void(const fs::path& fileName)> openImageFile,
     std::function<void(const fs::path& fileName)> addImageFile,
+    std::function<void(const fs::path& fileName)> addSegmentationFile,
+    std::function<void(const uuids::uuid& imageUid, const fs::path& fileName)> addSegmentationFileToImage,
     std::function<void(const fs::path& fileName)> openProjectFile,
     std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
     std::function<bool()> saveProject,
@@ -90,6 +92,8 @@ private:
   std::function<void(void)> m_readjustViewport = nullptr;
   std::function<void(const fs::path& fileName)> m_openImageFile = nullptr;
   std::function<void(const fs::path& fileName)> m_addImageFile = nullptr;
+  std::function<void(const fs::path& fileName)> m_addSegmentationFile = nullptr;
+  std::function<void(const uuids::uuid& imageUid, const fs::path& fileName)> m_addSegmentationFileToImage = nullptr;
   std::function<void(const fs::path& fileName)> m_openProjectFile = nullptr;
   std::function<void(GuiData::LargeImageLoadDecision decision)> m_largeImageLoadDecision = nullptr;
   std::function<bool()> m_saveProject = nullptr;

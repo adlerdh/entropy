@@ -377,30 +377,30 @@ serialize::EntropyProject createProjectFromInputParams(const InputParams& params
 {
   serialize::EntropyProject project;
 
+  auto addSegmentations = [](serialize::Image& image, const std::vector<fs::path>& segFiles) {
+    for (const fs::path& segFile : segFiles) {
+      serialize::Segmentation seg;
+      seg.m_segFileName = segFile;
+      image.m_segmentations.emplace_back(std::move(seg));
+    }
+  };
+
   if (!params.imageFiles.empty()) {
     // If images were provided as command-line arguments, use them.
 
     // Add the reference image, which is at index 0:
     project.m_referenceImage.m_imageFileName = params.imageFiles[0].image;
 
-    // Add the reference segmentation, if provided:
-    if (params.imageFiles[0].seg) {
-      serialize::Segmentation seg;
-      seg.m_segFileName = *(params.imageFiles[0].seg);
-      project.m_referenceImage.m_segmentations.emplace_back(std::move(seg));
-    }
+    // Add the reference segmentations, if provided:
+    addSegmentations(project.m_referenceImage, params.imageFiles[0].segmentations);
 
     // Add the additional images, which begin at index 1:
     for (std::size_t i = 1; i < params.imageFiles.size(); ++i) {
       serialize::Image image;
       image.m_imageFileName = params.imageFiles[i].image;
 
-      // Add the additional image segmentation:
-      if (params.imageFiles[i].seg) {
-        serialize::Segmentation seg;
-        seg.m_segFileName = *(params.imageFiles[i].seg);
-        image.m_segmentations.emplace_back(std::move(seg));
-      }
+      // Add the additional image segmentations:
+      addSegmentations(image, params.imageFiles[i].segmentations);
 
       project.m_additionalImages.emplace_back(std::move(image));
     }

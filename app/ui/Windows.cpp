@@ -859,6 +859,7 @@ void renderSegmentationPropertiesWindow(
   const std::function<void(const uuid& imageUid, size_t labelIndex)>& moveCrosshairsToSegLabelCentroid,
   const std::function<std::optional<uuid>(const uuid& matchingImageUid, const std::string& segDisplayName)>&
     createBlankSeg,
+  const std::function<void(const uuid& imageUid, const fs::path& fileName)>& addSegmentationFile,
   const std::function<bool(const uuid& segUid)>& clearSeg,
   const std::function<bool(const uuid& segUid)>& removeSeg,
   const AllViewsRecenterType& recenterAllViews)
@@ -890,6 +891,7 @@ void renderSegmentationPropertiesWindow(
             moveCrosshairsToSegLabelCentroid(imageUid, labelIndex);
           },
           createBlankSeg,
+          addSegmentationFile,
           clearSeg,
           removeSeg,
           recenterAllViews);

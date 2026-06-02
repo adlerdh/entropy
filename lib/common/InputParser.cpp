@@ -97,7 +97,14 @@ void logInputs(const InputParams& params)
         spdlog::info("\tImage[{}]: {}", i, params.imageFiles[i].image);
       }
 
-      spdlog::info("\tSegmentation for image[{}]: {}", i, params.imageFiles[i].seg.value_or("<none>"));
+      if (params.imageFiles[i].segmentations.empty()) {
+        spdlog::info("\tSegmentations for image[{}]: <none>", i);
+      }
+      else {
+        for (size_t j = 0; j < params.imageFiles[i].segmentations.size(); ++j) {
+          spdlog::info("\tSegmentation[{}][{}]: {}", i, j, params.imageFiles[i].segmentations[j]);
+        }
+      }
     }
   }
   else if (params.projectFile) {
@@ -129,30 +136,28 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
   std::string projectFile;
   auto* projectOption = program.add_option("-p,--project", projectFile, "JSON project file");
 
-  auto* imageOption =
-    program
-      .add_option_function<std::string>(
-        "--image",
-        [&params](const std::string& imageFile) { params.imageFiles.push_back({imageFile, std::nullopt}); },
-        "image path; repeat for multiple images")
-      ->trigger_on_parse();
+  auto* imageOption = program
+                        .add_option_function<std::string>(
+                          "--image",
+                          [&params](const std::string& imageFile) { params.imageFiles.push_back({imageFile, {}}); },
+                          "image path; repeat for multiple images")
+                        ->trigger_on_parse();
 
   auto* segOption = program
-                      .add_option_function<std::string>(
+                      .add_option_function<std::vector<std::string> >(
                         "--seg",
-                        [&params](const std::string& segFile) {
+                        [&params](const std::vector<std::string>& segFiles) {
                           if (params.imageFiles.empty()) {
                             throw CLI::ValidationError("--seg must follow an --image option");
                           }
 
                           auto& lastImage = params.imageFiles.back();
-                          if (lastImage.seg) {
-                            throw CLI::ValidationError("Only one --seg may be provided for each --image");
+                          for (const std::string& segFile : segFiles) {
+                            lastImage.segmentations.emplace_back(segFile);
                           }
-
-                          lastImage.seg = segFile;
                         },
-                        "segmentation path for the preceding --image")
+                        "segmentation path for the preceding --image; repeat for multiple segmentations")
+                      ->expected(1, -1)
                       ->trigger_on_parse();
 
   projectOption->excludes(imageOption)->excludes(segOption);

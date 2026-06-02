@@ -54,6 +54,8 @@ public:
   void loadImagesFromParams(const InputParams&);
   void loadImageFile(const fs::path& fileName);
   void addImageFile(const fs::path& fileName);
+  void addSegmentationFile(const fs::path& fileName);
+  void addSegmentationFileToImage(const fs::path& fileName, const uuids::uuid& imageUid);
   void loadProjectFile(const fs::path& fileName);
   bool saveProject();
   bool saveProjectAs(const fs::path& fileName);

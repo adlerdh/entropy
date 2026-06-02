@@ -212,6 +212,8 @@ void ImGuiWrapper::setCallbacks(
   std::function<void(void)> readjustViewport,
   std::function<void(const fs::path& fileName)> openImageFile,
   std::function<void(const fs::path& fileName)> addImageFile,
+  std::function<void(const fs::path& fileName)> addSegmentationFile,
+  std::function<void(const uuids::uuid& imageUid, const fs::path& fileName)> addSegmentationFileToImage,
   std::function<void(const fs::path& fileName)> openProjectFile,
   std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
   std::function<bool()> saveProject,
@@ -255,6 +257,8 @@ void ImGuiWrapper::setCallbacks(
   m_readjustViewport = readjustViewport;
   m_openImageFile = openImageFile;
   m_addImageFile = addImageFile;
+  m_addSegmentationFile = addSegmentationFile;
+  m_addSegmentationFileToImage = addSegmentationFileToImage;
   m_openProjectFile = openProjectFile;
   m_largeImageLoadDecision = largeImageLoadDecision;
   m_saveProject = saveProject;
@@ -864,6 +868,7 @@ void ImGuiWrapper::render()
       MainMenuBarCallbacks{
         .openImageFile = m_openImageFile,
         .addImageFile = m_addImageFile,
+        .addSegmentationFile = m_addSegmentationFile,
         .openProjectFile = m_openProjectFile,
         .saveProject = m_saveProject,
         .saveProjectAs = m_saveProjectAs,
@@ -873,6 +878,8 @@ void ImGuiWrapper::render()
         .closeProject = m_closeProject,
         .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
         .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
+        .canAddSegmentation =
+          ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning && m_appData.activeImageUid(),
         .canSaveProject = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
         .canCloseProject = ProjectLoadState::Empty != projectLoadState && !backgroundTaskRunning});
 
@@ -957,6 +964,7 @@ void ImGuiWrapper::render()
         m_updateLabelColorTableTexture,
         m_moveCrosshairsToSegLabelCentroid,
         m_createBlankSeg,
+        m_addSegmentationFileToImage,
         m_clearSeg,
         m_removeSeg,
         m_recenterAllViews);

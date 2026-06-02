@@ -245,53 +245,80 @@ std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
     return std::nullopt;
   }
 
-  spdlog::debug("Created blank segmentation {} ('{}') for image {}", matchImageUid, displayName, matchImageUid);
+  spdlog::debug("Created blank segmentation {} ('{}') for image {}", *segUid, displayName, matchImageUid);
 
-  Image* seg = m_appData.seg(*segUid);
+  return assignSegToImageWithColorTableAndTextures(matchImageUid, *segUid, true, true);
+}
+
+std::optional<uuid> CallbackHandler::assignSegToImageWithColorTableAndTextures(
+  const uuid& matchImageUid,
+  const uuid& segUid,
+  bool createLabelColorTable,
+  bool removeSegOnFailure)
+{
+  const Image* matchImage = m_appData.image(matchImageUid);
+  if (!matchImage) {
+    spdlog::error("Cannot assign segmentation {} to invalid image {}", segUid, matchImageUid);
+    return std::nullopt;
+  }
+
+  const std::vector<uuid> assignedSegUids = m_appData.imageToSegUids(matchImageUid);
+  const bool alreadyAssigned =
+    std::find(std::begin(assignedSegUids), std::end(assignedSegUids), segUid) != std::end(assignedSegUids);
+
+  Image* seg = m_appData.seg(segUid);
   if (!seg) {
-    spdlog::error("Null segmentation created {}", *segUid);
-    m_appData.removeSeg(*segUid);
+    spdlog::error("Null segmentation {}", segUid);
     return std::nullopt;
   }
 
-  const auto tableUid = data::createLabelColorTableForSegmentation(m_appData, *segUid);
-  bool createdTableTexture = false;
+  if (createLabelColorTable) {
+    const auto tableUid = data::createLabelColorTableForSegmentation(m_appData, segUid);
+    bool createdTableTexture = false;
 
-  if (tableUid) {
-    spdlog::trace("Creating texture for label color table {}", *tableUid);
-    createdTableTexture = m_rendering.createLabelColorTableTexture(*tableUid);
+    if (tableUid) {
+      spdlog::trace("Creating texture for label color table {}", *tableUid);
+      createdTableTexture = m_rendering.createLabelColorTableTexture(*tableUid);
+    }
+
+    if (!tableUid || !createdTableTexture) {
+      constexpr size_t k_defaultTableIndex = 0;
+
+      spdlog::error(
+        "Unable to create label color table for segmentation {}. Defaulting to table index {}.",
+        segUid,
+        k_defaultTableIndex);
+      seg->settings().setLabelTableIndex(k_defaultTableIndex);
+    }
   }
 
-  if (!tableUid || !createdTableTexture) {
-    constexpr size_t k_defaultTableIndex = 0;
-
-    spdlog::error(
-      "Unable to create label color table for segmentation {}. Defaulting to table index {}.",
-      *segUid,
-      k_defaultTableIndex);
-    seg->settings().setLabelTableIndex(k_defaultTableIndex);
-  }
-
-  if (m_appData.assignSegUidToImage(matchImageUid, *segUid)) {
-    spdlog::info("Assigned segmentation {} to image {}", *segUid, matchImageUid);
-  }
-  else {
-    spdlog::error("Unable to assign segmentation {} to image {}", *segUid, matchImageUid);
-    m_appData.removeSeg(*segUid);
-    return std::nullopt;
+  if (!alreadyAssigned) {
+    if (m_appData.assignSegUidToImage(matchImageUid, segUid)) {
+      spdlog::info("Assigned segmentation {} to image {}", segUid, matchImageUid);
+    }
+    else {
+      spdlog::error("Unable to assign segmentation {} to image {}", segUid, matchImageUid);
+      if (removeSegOnFailure) {
+        m_appData.removeSeg(segUid);
+      }
+      return std::nullopt;
+    }
   }
 
   // Make it the active segmentation
-  m_appData.assignActiveSegUidToImage(matchImageUid, *segUid);
+  m_appData.assignActiveSegUidToImage(matchImageUid, segUid);
 
-  spdlog::trace("Creating texture for segmentation {}", *segUid);
+  spdlog::trace("Creating texture for segmentation {}", segUid);
 
-  const std::vector<uuid> createdSegTexUids = createSegTextures(m_appData, std::vector<uuid>{*segUid});
-
-  if (createdSegTexUids.empty()) {
-    spdlog::error("Unable to create texture for segmentation {}", *segUid);
-    m_appData.removeSeg(*segUid);
-    return std::nullopt;
+  if (m_appData.renderData().m_segTextures.count(segUid) == 0) {
+    const std::vector<uuid> createdSegTexUids = createSegTextures(m_appData, std::vector<uuid>{segUid});
+    if (createdSegTexUids.empty()) {
+      spdlog::error("Unable to create texture for segmentation {}", segUid);
+      if (removeSegOnFailure) {
+        m_appData.removeSeg(segUid);
+      }
+      return std::nullopt;
+    }
   }
 
   // Assign the image's affine_T_subject transformation to its segmentation:
@@ -303,7 +330,7 @@ std::optional<uuid> CallbackHandler::createBlankSegWithColorTableAndTextures(
   // Update uniforms for all images
   m_rendering.updateImageUniforms(m_appData.imageUidsOrdered());
 
-  return *segUid;
+  return segUid;
 }
 
 bool CallbackHandler::executeGraphCutsSegmentation(

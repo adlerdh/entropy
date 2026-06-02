@@ -1560,6 +1560,55 @@ void EntropyApp::addImageFile(const fs::path& fileName)
     false);
 }
 
+void EntropyApp::addSegmentationFile(const fs::path& fileName)
+{
+  const auto activeImageUid = m_data.activeImageUid();
+  if (!activeImageUid) {
+    spdlog::error("Cannot add segmentation {} because there is no active image", fileName);
+    return;
+  }
+
+  addSegmentationFileToImage(fileName, *activeImageUid);
+}
+
+void EntropyApp::addSegmentationFileToImage(const fs::path& fileName, const uuids::uuid& imageUid)
+{
+  if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
+    spdlog::error("Cannot add segmentation {} to image {} because no project is loaded", fileName, imageUid);
+    return;
+  }
+
+  if (!m_data.image(imageUid)) {
+    spdlog::error("Cannot add segmentation {} to invalid image {}", fileName, imageUid);
+    return;
+  }
+
+  std::optional<uuids::uuid> segUid;
+  bool isNewSeg = false;
+
+  try {
+    spdlog::debug("Attempting to add segmentation image from {} to image {}", fileName, imageUid);
+    std::tie(segUid, isNewSeg) = loadSegmentation(fileName, imageUid);
+  }
+  catch (const std::exception& e) {
+    spdlog::error("Exception adding segmentation from {} to image {}: {}", fileName, imageUid, e.what());
+    return;
+  }
+
+  if (!segUid) {
+    spdlog::error("Could not add segmentation from {}", fileName);
+    return;
+  }
+
+  if (!m_callbackHandler.assignSegToImageWithColorTableAndTextures(imageUid, *segUid, isNewSeg, isNewSeg)) {
+    spdlog::error("Could not assign segmentation {} from {} to image {}", *segUid, fileName, imageUid);
+    return;
+  }
+
+  m_data.setProject(createProjectSnapshot());
+  spdlog::info("Added segmentation {} from {} to image {}", *segUid, fileName, imageUid);
+}
+
 bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)
 {
   Image* newReferenceImage = m_data.image(imageUid);
@@ -2063,6 +2112,8 @@ void EntropyApp::setCallbacks()
     [this]() { resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y); },
     [this](const fs::path& fileName) { loadImageFile(fileName); },
     [this](const fs::path& fileName) { addImageFile(fileName); },
+    [this](const fs::path& fileName) { addSegmentationFile(fileName); },
+    [this](const uuids::uuid& imageUid, const fs::path& fileName) { addSegmentationFileToImage(fileName, imageUid); },
     [this](const fs::path& fileName) { loadProjectFile(fileName); },
     [this](GuiData::LargeImageLoadDecision decision) { handleLargeImageLoadDecision(decision); },
     [this]() { return saveProject(); },

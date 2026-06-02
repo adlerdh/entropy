@@ -11,6 +11,7 @@ struct MainMenuBarCallbacks
 {
   std::function<void(const fs::path& fileName)> openImageFile;
   std::function<void(const fs::path& fileName)> addImageFile;
+  std::function<void(const fs::path& fileName)> addSegmentationFile;
   std::function<void(const fs::path& fileName)> openProjectFile;
   std::function<bool()> saveProject;
   std::function<bool(const fs::path& fileName)> saveProjectAs;
@@ -20,6 +21,7 @@ struct MainMenuBarCallbacks
   std::function<void()> closeProject;
   bool canOpenProject = true;
   bool canAddImage = false;
+  bool canAddSegmentation = false;
   bool canSaveProject = false;
   bool canCloseProject = false;
 };

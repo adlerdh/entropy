@@ -6,12 +6,13 @@
 
 #include <optional>
 #include <ostream>
+#include <vector>
 
-/// Path to an image and, optionally, its corresponding segmentation
+/// Path to an image and its corresponding segmentations
 struct ImageSegPair
 {
   fs::path image;
-  std::optional<fs::path> seg;
+  std::vector<fs::path> segmentations;
 };
 
 /**

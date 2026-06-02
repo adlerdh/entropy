@@ -5,9 +5,10 @@ std::ostream& operator<<(std::ostream& os, const InputParams& p)
   for (size_t i = 0; i < p.imageFiles.size(); ++i) {
     os << "Image[" << i << "]: " << p.imageFiles[i].image;
 
-    if (p.imageFiles[i].seg) {
-      os << "\nSegmentation[" << i << "]: " << *p.imageFiles[i].seg;
+    for (size_t j = 0; j < p.imageFiles[i].segmentations.size(); ++j) {
+      os << "\nSegmentation[" << i << "][" << j << "]: " << p.imageFiles[i].segmentations[j];
     }
+
     os << "\n";
   }
 

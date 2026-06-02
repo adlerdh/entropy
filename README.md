@@ -145,15 +145,15 @@ Entropy is run from the terminal. Images can be specified directly as command li
 - On Linux or macOS: `./${BUILD_DIR}/bin/Entropy`
 - On Windows: `.\${BUILD_DIR}\bin\Entropy.exe`
 
-1. Images can be provided directly with repeatable `--image` options. If an image has an accompanying segmentation, place `--seg` immediately after that image; the segmentation is attached to the preceding image. e.g.:
+1. Images can be provided directly with repeatable `--image` options. If an image has one or more accompanying segmentations, place `--seg` immediately after that image; the segmentations are attached to the preceding image in the order provided. `--seg` may be repeated, or it may be followed by multiple segmentation file names. e.g.:
 
 ```sh
-Entropy --image reference_image.nii.gz --seg reference_seg.nii.gz \
+Entropy --image reference_image.nii.gz --seg reference_seg1.nii.gz reference_seg2.nii.gz \
         --image additional_image1.nii.gz \
-        --image additional_image2.nii.gz --seg additional_image2_seg.nii.gz
+        --image additional_image2.nii.gz --seg additional_image2_seg1.nii.gz --seg additional_image2_seg2.nii.gz
 ```
 
-With this input format, each image may have only one segmentation. Direct image inputs and `--project` are mutually exclusive.
+Direct image inputs and `--project` are mutually exclusive.
 
 2. Images can be specified in a JSON project file that is loaded using the `-p` argument. A sample project file:
 ```json

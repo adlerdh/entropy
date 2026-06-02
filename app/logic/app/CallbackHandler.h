@@ -50,6 +50,13 @@ public:
     const uuid& matchImageUid,
     const std::string& displayName);
 
+  /// Assign an existing segmentation to an image and create any rendering resources it needs
+  std::optional<uuid> assignSegToImageWithColorTableAndTextures(
+    const uuid& matchImageUid,
+    const uuid& segUid,
+    bool createLabelColorTable,
+    bool removeSegOnFailure);
+
   bool executeGraphCutsSegmentation(const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType);
 
   bool executePoissonSegmentation(const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType);
