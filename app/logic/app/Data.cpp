@@ -1,5 +1,6 @@
 #include "logic/app/Data.h"
 
+#include <spdlog/fmt/std.h>
 #include "common/UuidUtility.h"
 #include "logic/camera/CameraHelpers.h"
 
@@ -19,6 +20,8 @@
 #include <sstream>
 
 CMRC_DECLARE(colormaps);
+
+namespace fs = std::filesystem;
 
 namespace
 {

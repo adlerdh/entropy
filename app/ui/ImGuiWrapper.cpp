@@ -1,5 +1,7 @@
 ﻿#include "ui/ImGuiWrapper.h"
 
+#include <spdlog/fmt/std.h>
+
 #include "ui/Helpers.h"
 #include "ui/MainMenuBar.h"
 #include "ui/NativeFileDialogs.h"
@@ -32,6 +34,8 @@
 #include <spdlog/spdlog.h>
 
 CMRC_DECLARE(fonts);
+
+namespace fs = std::filesystem;
 
 namespace
 {

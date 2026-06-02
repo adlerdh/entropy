@@ -7,6 +7,7 @@
 #include "ui/imgui/imGuIZMO.quat/imGuIZMOquat.h"
 
 #include "common/DirectionMaps.h"
+#include <spdlog/fmt/std.h>
 
 #include "image/Image.h"
 
@@ -31,6 +32,8 @@
 
 #include <inttypes.h>
 #include <string>
+
+namespace fs = std::filesystem;
 
 namespace
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/Filesystem.h"
+#include <filesystem>
 #include "image/ImageHeader.h"
 
 #include <cstdint>
@@ -60,7 +60,7 @@ struct GuiData
 
   struct LargeImageLoadPrompt
   {
-    fs::path fileName;
+    std::filesystem::path fileName;
     ImageHeader header;
     bool allowCancelProject = false;
     bool allowSkipImage = true;

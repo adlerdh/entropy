@@ -1,5 +1,9 @@
 #include "logic/annotation/LandmarkGroup.h"
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
 namespace
 {
 

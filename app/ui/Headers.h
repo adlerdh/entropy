@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/Filesystem.h"
+#include <filesystem>
 #include "common/PublicTypes.h"
 
 #include <functional>
@@ -67,7 +67,7 @@ void renderSegmentationHeader(
   const std::function<void(size_t labelIndex)>& moveCrosshairsToSegLabelCentroid,
   const std::function<
     std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>& createBlankSeg,
-  const std::function<void(const uuids::uuid& imageUid, const fs::path& fileName)>& addSegmentationFile,
+  const std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)>& addSegmentationFile,
   const std::function<bool(const uuids::uuid& segUid)>& clearSeg,
   const std::function<bool(const uuids::uuid& segUid)>& removeSeg,
   const AllViewsRecenterType& recenterAllViews);

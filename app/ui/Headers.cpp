@@ -6,6 +6,8 @@
 #include "ui/Widgets.h"
 #include "ui/Widgets.tpp"
 
+#include <spdlog/fmt/std.h>
+
 // data::roundPointToNearestImageVoxelCenter
 // data::getAnnotationSubjectPlaneName
 #include "logic/app/DataHelper.h"
@@ -42,6 +44,8 @@
 
 #undef min
 #undef max
+
+namespace fs = std::filesystem;
 
 namespace
 {

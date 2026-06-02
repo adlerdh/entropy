@@ -1,7 +1,7 @@
 #ifndef ANNOTATION_H
 #define ANNOTATION_H
 
-#include "common/Filesystem.h"
+#include <filesystem>
 #include "logic/annotation/AnnotPolygon.tpp"
 
 #include <glm/vec2.hpp>
@@ -40,8 +40,8 @@ public:
   const std::string& getDisplayName() const;
 
   /// @brief Set/get the annotation file name
-  void setFileName(fs::path fileName);
-  const fs::path& getFileName() const;
+  void setFileName(std::filesystem::path fileName);
+  const std::filesystem::path& getFileName() const;
 
   /// @brief Track whether serialized annotation content has unsaved edits
   void markDirty();
@@ -176,8 +176,8 @@ public:
   glm::vec3 unprojectFromAnnotationPlaneToSubjectPoint(const glm::vec2& planePoint2d) const;
 
 private:
-  std::string m_displayName; //!< Annotation display name
-  fs::path m_fileName;       //!< Annotation file name
+  std::string m_displayName;        //!< Annotation display name
+  std::filesystem::path m_fileName; //!< Annotation file name
 
   /// Annotation polygon, which can include holes
   AnnotPolygon<float, 2> m_polygon;

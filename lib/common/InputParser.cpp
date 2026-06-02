@@ -1,4 +1,5 @@
 #include "common/InputParser.h"
+#include <spdlog/fmt/std.h>
 #include "BuildStamp.h"
 
 #undef max

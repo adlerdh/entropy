@@ -1,4 +1,5 @@
 #include "image/Image.h"
+#include <spdlog/fmt/std.h>
 #include "internal/ImageCastHelper.tpp"
 #include "image/ImageUtility.h"
 #include "internal/ImageUtilityItk.h"
@@ -11,6 +12,8 @@
 
 #include <algorithm>
 #include <array>
+
+namespace fs = std::filesystem;
 
 namespace
 {

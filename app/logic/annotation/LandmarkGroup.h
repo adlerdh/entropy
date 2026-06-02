@@ -1,7 +1,7 @@
 #ifndef LANDMARK_GROUP_H
 #define LANDMARK_GROUP_H
 
-#include "common/Filesystem.h"
+#include <filesystem>
 #include "logic/annotation/PointRecord.h"
 
 #include <glm/vec3.hpp>
@@ -25,8 +25,8 @@ public:
   ~LandmarkGroup() = default;
 
   /// Set/get the file name of the file from which landmarks were loaded
-  void setFileName(const fs::path& fileName);
-  const fs::path& getFileName() const;
+  void setFileName(const std::filesystem::path& fileName);
+  const std::filesystem::path& getFileName() const;
 
   /// Set/get the group name
   void setName(std::string name);
@@ -98,7 +98,7 @@ public:
 
 private:
   /// Name of the CSV file with the landmarks
-  fs::path m_fileName;
+  std::filesystem::path m_fileName;
 
   /// Name of landmark group
   std::string m_name;

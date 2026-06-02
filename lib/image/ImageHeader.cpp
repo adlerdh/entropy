@@ -3,6 +3,7 @@
 
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
+#include <spdlog/fmt/std.h>
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -10,6 +11,8 @@
 
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
+
+namespace fs = std::filesystem;
 
 ImageHeader::ImageHeader(const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioInfoInMemory, bool interleavedComponents)
   : m_ioInfoOnDisk(ioInfoOnDisk)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/Filesystem.h"
+#include <filesystem>
 
 #include <spdlog/spdlog.h>
 
@@ -11,8 +11,8 @@
 /// Path to an image and its corresponding segmentations
 struct ImageSegPair
 {
-  fs::path image;
-  std::vector<fs::path> segmentations;
+  std::filesystem::path image;
+  std::vector<std::filesystem::path> segmentations;
 };
 
 /**
@@ -25,7 +25,7 @@ struct InputParams
 
   /// An optional path to a project file that specifies images, segmentations,
   /// landmarks, and annotations in JSON format
-  std::optional<fs::path> projectFile;
+  std::optional<std::filesystem::path> projectFile;
 
   /// Console logging level
   spdlog::level::level_enum consoleLogLevel;

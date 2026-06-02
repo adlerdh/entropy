@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/Types.h"
-#include "common/Filesystem.h"
+#include <filesystem>
 #include "image/ImageHeaderOverrides.h"
 #include "image/ImageIoInfo.h"
 
@@ -39,8 +39,8 @@ public:
   bool existsOnDisk() const;
   void setExistsOnDisk(bool);
 
-  const fs::path& fileName() const; //!< File name
-  void setFileName(fs::path fileName);
+  const std::filesystem::path& fileName() const; //!< File name
+  void setFileName(std::filesystem::path fileName);
 
   uint32_t numComponentsPerPixel() const; //!< Number of components per pixel
   uint64_t numPixels() const;             //!< Number of pixels in the image
@@ -106,8 +106,8 @@ private:
   /// Are the pixel components interleaved? This flag is always false for 1-component images
   bool m_interleavedComponents = false;
 
-  bool m_existsOnDisk = true; //!< Flag that the image exists on disk
-  fs::path m_fileName;        //!< File name
+  bool m_existsOnDisk = true;       //!< Flag that the image exists on disk
+  std::filesystem::path m_fileName; //!< File name
 
   uint32_t m_numComponentsPerPixel; //!< Number of components per pixel
   uint64_t m_numPixels;             //!< Number of pixels in the image

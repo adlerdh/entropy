@@ -7,6 +7,7 @@
 
 #include <glm/vec3.hpp>
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <utility>
@@ -17,7 +18,7 @@
 std::string getFileName(const std::string& filePath, bool withExtension = false);
 
 std::optional<ImageHeader> readImageHeaderOnly(
-  const fs::path& fileName,
+  const std::filesystem::path& fileName,
   Image::ImageRepresentation imageRep,
   Image::MultiComponentBufferType bufferType);
 

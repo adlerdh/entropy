@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/Filesystem.h"
+#include <filesystem>
 #include "common/Types.h"
 
 #include <string>
@@ -13,7 +13,7 @@ class FileInfo
 public:
   bool validate() const;
 
-  fs::path m_fileName;
+  std::filesystem::path m_fileName;
 
   std::string m_byteOrderString{"OrderNotApplicable"};
   bool m_useCompression{false};

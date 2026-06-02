@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/InputParams.h"
-#include "common/Filesystem.h"
+#include <filesystem>
 
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
@@ -52,13 +52,13 @@ public:
 
   /// Asynchronously load images and notify render loop when done
   void loadImagesFromParams(const InputParams&);
-  void loadImageFile(const fs::path& fileName);
-  void addImageFile(const fs::path& fileName);
-  void addSegmentationFile(const fs::path& fileName);
-  void addSegmentationFileToImage(const fs::path& fileName, const uuids::uuid& imageUid);
-  void loadProjectFile(const fs::path& fileName);
+  void loadImageFile(const std::filesystem::path& fileName);
+  void addImageFile(const std::filesystem::path& fileName);
+  void addSegmentationFile(const std::filesystem::path& fileName);
+  void addSegmentationFileToImage(const std::filesystem::path& fileName, const uuids::uuid& imageUid);
+  void loadProjectFile(const std::filesystem::path& fileName);
   bool saveProject();
-  bool saveProjectAs(const fs::path& fileName);
+  bool saveProjectAs(const std::filesystem::path& fileName);
   bool setReferenceImage(const uuids::uuid& imageUid);
   bool removeImage(const uuids::uuid& imageUid);
   void requestCloseProject();
@@ -79,7 +79,7 @@ public:
   /// @return Uid and flag if loaded.
   /// False indcates that it was already loaded and that we are returning an existing image.
   std::pair<std::optional<uuids::uuid>, bool> loadSegmentation(
-    const fs::path& fileName,
+    const std::filesystem::path& fileName,
     const std::optional<uuids::uuid>& imageUid = std::nullopt);
 
   /**
@@ -89,7 +89,7 @@ public:
    *
    * @todo If its header does not match the given image, then it is not loaded
    */
-  std::pair<std::optional<uuids::uuid>, bool> loadDeformationField(const fs::path& fileName);
+  std::pair<std::optional<uuids::uuid>, bool> loadDeformationField(const std::filesystem::path& fileName);
 
   CallbackHandler& callbackHandler();
 
@@ -131,7 +131,7 @@ private:
     std::function<bool()> loadTask,
     std::function<void()> onLoadFailed,
     bool showLoadingOverlay = true);
-  void beginLoadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName);
+  void beginLoadProject(serialize::EntropyProject project, std::optional<std::filesystem::path> projectFileName);
   void continueLargeImageProjectPreflight();
   void handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision decision);
   bool loadProject(const serialize::EntropyProject& project);
@@ -140,13 +140,15 @@ private:
   bool projectHasUnsavedChanges() const;
   bool hasUnsavedAnnotations() const;
   bool saveDirtyAnnotationsWithDialogs();
-  bool saveAnnotationsForImage(const uuids::uuid& imageUid, const fs::path& fileName);
+  bool saveAnnotationsForImage(const uuids::uuid& imageUid, const std::filesystem::path& fileName);
   void markProjectSavedSnapshot();
 
   /// Load an image from disk.
   /// @return Uid and flag if loaded.
   /// False indcates that it was already loaded and that we are returning an existing image.
-  std::pair<std::optional<uuids::uuid>, bool> loadImage(const fs::path& fileName, bool ignoreIfAlreadyLoaded);
+  std::pair<std::optional<uuids::uuid>, bool> loadImage(
+    const std::filesystem::path& fileName,
+    bool ignoreIfAlreadyLoaded);
 
   std::future<void> m_futureLoadProject;
 
@@ -175,9 +177,9 @@ private:
   };
 
   LargeImageLoadContext m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
-  std::optional<fs::path> m_pendingLargeAddImageFile = std::nullopt;
+  std::optional<std::filesystem::path> m_pendingLargeAddImageFile = std::nullopt;
   std::optional<serialize::EntropyProject> m_pendingLargeProject = std::nullopt;
-  std::optional<fs::path> m_pendingLargeProjectFileName = std::nullopt;
+  std::optional<std::filesystem::path> m_pendingLargeProjectFileName = std::nullopt;
   std::size_t m_pendingLargeProjectImageIndex = 0;
   std::optional<serialize::EntropyProject> m_savedProjectSnapshot = std::nullopt;
 

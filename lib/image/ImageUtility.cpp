@@ -3,7 +3,7 @@
 #include "internal/ImageUtility.tpp"
 
 #include "common/MathFuncs.h"
-#include "common/Filesystem.h"
+#include <spdlog/fmt/std.h>
 
 #include <glm/gtc/epsilon.hpp>
 #include <itkImageIOFactory.h>
@@ -12,6 +12,8 @@
 #include <cmath>
 #include <limits>
 #include <vector>
+
+namespace fs = std::filesystem;
 
 namespace
 {

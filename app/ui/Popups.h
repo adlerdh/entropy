@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/Filesystem.h"
+#include <filesystem>
 #include "ui/GuiData.h"
 
 #include <functional>
@@ -26,10 +26,10 @@ void renderConfirmCloseAppPopup(AppData& appData, const std::function<void(void)
 void renderUnsavedProjectPopup(
   AppData& appData,
   const std::function<bool(void)>& saveProject,
-  const std::function<bool(const fs::path& fileName)>& saveProjectAs,
+  const std::function<bool(const std::filesystem::path& fileName)>& saveProjectAs,
   const std::function<void(void)>& closeProjectWithoutPrompt,
   const std::function<void(void)>& quitAppWithoutPrompt,
-  const std::function<fs::path(void)>& defaultProjectSaveDirectory,
+  const std::function<std::filesystem::path(void)>& defaultProjectSaveDirectory,
   const std::function<std::string(void)>& defaultProjectSaveName);
 
 void renderConfirmSetReferenceImagePopup(

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/Filesystem.h"
+#include <filesystem>
 
 #include <optional>
 #include <string>
@@ -14,10 +14,12 @@ struct Filter
   std::string extensions;
 };
 
-std::optional<fs::path> openFile(const std::vector<Filter>& filters = {}, const fs::path& defaultPath = {});
-std::optional<fs::path> saveFile(
+std::optional<std::filesystem::path> openFile(
   const std::vector<Filter>& filters = {},
-  const fs::path& defaultPath = {},
+  const std::filesystem::path& defaultPath = {});
+std::optional<std::filesystem::path> saveFile(
+  const std::vector<Filter>& filters = {},
+  const std::filesystem::path& defaultPath = {},
   const std::string& defaultName = {});
 
 std::vector<Filter> imageFilters();

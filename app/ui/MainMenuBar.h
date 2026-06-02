@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ui/GuiData.h"
-#include "common/Filesystem.h"
+#include <filesystem>
 
 #include <functional>
 #include <optional>
@@ -9,14 +9,14 @@
 
 struct MainMenuBarCallbacks
 {
-  std::function<void(const fs::path& fileName)> openImageFile;
-  std::function<void(const fs::path& fileName)> addImageFile;
-  std::function<void(const fs::path& fileName)> addSegmentationFile;
-  std::function<void(const fs::path& fileName)> openProjectFile;
+  std::function<void(const std::filesystem::path& fileName)> openImageFile;
+  std::function<void(const std::filesystem::path& fileName)> addImageFile;
+  std::function<void(const std::filesystem::path& fileName)> addSegmentationFile;
+  std::function<void(const std::filesystem::path& fileName)> openProjectFile;
   std::function<bool()> saveProject;
-  std::function<bool(const fs::path& fileName)> saveProjectAs;
-  std::function<std::optional<fs::path>()> projectFileName;
-  std::function<fs::path()> defaultProjectSaveDirectory;
+  std::function<bool(const std::filesystem::path& fileName)> saveProjectAs;
+  std::function<std::optional<std::filesystem::path>()> projectFileName;
+  std::function<std::filesystem::path()> defaultProjectSaveDirectory;
   std::function<std::string()> defaultProjectSaveName;
   std::function<void()> closeProject;
   bool canOpenProject = true;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/Filesystem.h"
+#include <filesystem>
 #include "image/ImageHeaderOverrides.h"
 
 #include <glm/gtc/quaternion.hpp>
@@ -115,8 +115,8 @@ public:
   const glm::mat4& get_affine_T_subject() const;
 
   /// Set the name of the file with the affine_T_subject matrix
-  void set_affine_T_subject_fileName(const std::optional<fs::path>& fileName);
-  const std::optional<fs::path>& get_affine_T_subject_fileName() const;
+  void set_affine_T_subject_fileName(const std::optional<std::filesystem::path>& fileName);
+  const std::optional<std::filesystem::path>& get_affine_T_subject_fileName() const;
 
   void set_enable_worldDef_T_affine(bool enable);
   bool get_enable_worldDef_T_affine() const;
@@ -190,7 +190,7 @@ private:
   glm::mat4 m_affine_T_subject;   //!< Affine matrix loaded from disk, mapping Subject to AffineA space
   bool m_enable_affine_T_subject; //!< Is the affine_T_subject transformation used?
 
-  std::optional<fs::path> m_affine_T_subject_fileName; //!< affine_T_subject matrix file name (if used)
+  std::optional<std::filesystem::path> m_affine_T_subject_fileName; //!< affine_T_subject matrix file name (if used)
 
   glm::mat4 m_worldDef_T_subject;           //!< Subject to Deformed World space
   glm::mat4 m_subject_T_worldDef;           //!< Deformed World to Subject space (inverse of above)

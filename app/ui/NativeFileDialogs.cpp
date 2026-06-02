@@ -1,8 +1,12 @@
 #include "ui/NativeFileDialogs.h"
 
+#include <spdlog/fmt/std.h>
+
 #include <nfd.hpp>
 
 #include <spdlog/spdlog.h>
+
+namespace fs = std::filesystem;
 
 namespace
 {

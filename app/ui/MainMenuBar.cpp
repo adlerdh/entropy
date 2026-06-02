@@ -1,8 +1,11 @@
 #include "ui/MainMenuBar.h"
 
+#include <spdlog/fmt/std.h>
 #include "ui/NativeFileDialogs.h"
 
 #include <imgui/imgui.h>
+
+namespace fs = std::filesystem;
 
 void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 {

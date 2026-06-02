@@ -5,6 +5,7 @@
 #include "common/DirectionMaps.h"
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
+#include <spdlog/fmt/std.h>
 
 #include "image/ImageUtility.h"
 
@@ -38,6 +39,8 @@
 // Without undefining min and max, there are some errors compiling in Visual Studio
 #undef min
 #undef max
+
+namespace fs = std::filesystem;
 
 namespace
 {

@@ -2,6 +2,8 @@
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/JsonSerializers.h"
 
+#include <spdlog/fmt/std.h>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
@@ -23,6 +25,8 @@
 #endif
 
 using json = nlohmann::json;
+
+namespace fs = std::filesystem;
 
 namespace
 {

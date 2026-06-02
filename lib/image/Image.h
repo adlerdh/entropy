@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/Types.h"
-#include "common/Filesystem.h"
+#include <filesystem>
 
 #include "image/ImageHeader.h"
 #include "image/ImageHeaderOverrides.h"
@@ -55,7 +55,10 @@ public:
    * @param[in] bufferType Indicates whether multi-component images are loaded as
    * multiple buffers or as a single buffer with interleaved pixel components
    */
-  Image(const fs::path& fileName, const ImageRepresentation& imageRep, const MultiComponentBufferType& bufferType);
+  Image(
+    const std::filesystem::path& fileName,
+    const ImageRepresentation& imageRep,
+    const MultiComponentBufferType& bufferType);
 
   /**
    * @brief Construct a header-only image record without loading pixel data.
@@ -97,7 +100,7 @@ public:
    * @param[in] newFileName Optional new file name at which to save the image
    * @return True iff the image was saved successfully
    */
-  bool saveComponentToDisk(uint32_t component, const std::optional<fs::path>& newFileName);
+  bool saveComponentToDisk(uint32_t component, const std::optional<std::filesystem::path>& newFileName);
 
   LoadState loadState() const;
   void setLoadState(LoadState state);

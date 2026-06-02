@@ -2,11 +2,14 @@
 #include "logic/camera/MathUtility.h"
 
 #include "common/Exception.hpp"
+#include <spdlog/fmt/std.h>
 
 #include <glm/glm.hpp>
 
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
+
+namespace fs = std::filesystem;
 
 namespace
 {

@@ -2,7 +2,7 @@
 
 #include "common/Exception.hpp"
 #include "common/Types.h"
-#include "common/Filesystem.h"
+#include <filesystem>
 #include "../Image.h"
 
 #include "../TDigest.h"
@@ -23,6 +23,7 @@
 #include <itkVectorImage.h>
 
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/std.h>
 
 #include <algorithm>
 #include <array>
@@ -895,7 +896,7 @@ typename itk::ImageBase<NDim>::Pointer readImage(const std::string& fileName)
 }
 
 template<class T, uint32_t NDim, bool PixelIsVector>
-bool writeImage(typename itk::Image<T, NDim>::Pointer image, const fs::path& fileName)
+bool writeImage(typename itk::Image<T, NDim>::Pointer image, const std::filesystem::path& fileName)
 {
   using ImageType = typename std::conditional<PixelIsVector, itk::VectorImage<T, NDim>, itk::Image<T, NDim>>::type;
   using WriterType = itk::ImageFileWriter<ImageType>;
@@ -1023,7 +1024,7 @@ Image createImageFromItkImage(const typename itk::Image<T, 3>::Pointer itkImage,
 
   return image;
 #else
-  const fs::path filename = fs::temp_directory_path() / "temp.nii.gz";
+  const std::filesystem::path filename = std::filesystem::temp_directory_path() / "temp.nii.gz";
 
   writeImage<T, 3, false>(itkImage, filename);
   spdlog::debug("Wrote temporary image file {}", filename);
@@ -1262,7 +1263,7 @@ vtkSmartPointer<vtkImageData> convertItkImageToVtkImageData(
 
 template<typename ReadComponentType>
 bool loadImage(
-  const fs::path& fileName,
+  const std::filesystem::path& fileName,
   std::size_t numPixels,
   uint32_t numComps,
   uint32_t numCompsToLoad,
