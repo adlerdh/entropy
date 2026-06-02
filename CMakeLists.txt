@@ -19,6 +19,10 @@ set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION
 
 project(Entropy VERSION ${VERSION_FULL} LANGUAGES C CXX)
 
+if(APPLE)
+  enable_language(OBJCXX)
+endif()
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -31,6 +35,9 @@ if(Entropy_USE_CCACHE)
     message(STATUS "Using ccache compiler launcher: ${CCACHE_PROGRAM}")
     set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE FILEPATH "C compiler launcher" FORCE)
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE FILEPATH "CXX compiler launcher" FORCE)
+    if(APPLE)
+      set(CMAKE_OBJCXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE FILEPATH "OBJCXX compiler launcher" FORCE)
+    endif()
   else()
     message(STATUS "ccache was requested but was not found")
   endif()
@@ -498,6 +505,12 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/WindowData.cpp"
 )
 
+if(APPLE)
+  list(APPEND entropy_SOURCES
+    "${entropy_APP_DIR}/ui/MacNativeMainMenu.mm"
+  )
+endif()
+
 if(MSVC)
   # GridCut is vendored external code; template instantiation warnings surface while compiling this adapter.
   set_source_files_properties(
@@ -644,6 +657,12 @@ target_link_libraries(${entropy_EXE} PRIVATE
   ${entropy_EXE}::shaders
   entropy_warnings
 )
+
+if(APPLE)
+  target_link_libraries(${entropy_EXE} PRIVATE
+    ${COCOA_LIBRARY}
+  )
+endif()
 
 target_include_directories(${entropy_EXE} PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}" # for BuildStamp.h

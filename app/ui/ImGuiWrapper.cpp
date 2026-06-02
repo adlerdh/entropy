@@ -4,6 +4,9 @@
 
 #include "ui/Helpers.h"
 #include "ui/MainMenuBar.h"
+#ifdef __APPLE__
+#include "ui/MacNativeMainMenu.h"
+#endif
 #include "ui/NativeFileDialogs.h"
 #include "ui/Popups.h"
 #include "ui/Style.h"
@@ -867,25 +870,29 @@ void ImGuiWrapper::render()
       ImPlot::ShowDemoWindow(&m_appData.guiData().m_showImPlotDemoWindow);
     }
 
-    renderMainMenuBar(
-      m_appData.guiData(),
-      MainMenuBarCallbacks{
-        .openImageFile = m_openImageFile,
-        .addImageFile = m_addImageFile,
-        .addSegmentationFile = m_addSegmentationFile,
-        .openProjectFile = m_openProjectFile,
-        .saveProject = m_saveProject,
-        .saveProjectAs = m_saveProjectAs,
-        .projectFileName = [this]() { return m_appData.projectFileName(); },
-        .defaultProjectSaveDirectory = defaultProjectSaveDirectory,
-        .defaultProjectSaveName = defaultProjectSaveName,
-        .closeProject = m_closeProject,
-        .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
-        .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
-        .canAddSegmentation =
-          ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning && m_appData.activeImageUid(),
-        .canSaveProject = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
-        .canCloseProject = ProjectLoadState::Empty != projectLoadState && !backgroundTaskRunning});
+    const MainMenuBarCallbacks mainMenuCallbacks{
+      .openImageFile = m_openImageFile,
+      .addImageFile = m_addImageFile,
+      .addSegmentationFile = m_addSegmentationFile,
+      .openProjectFile = m_openProjectFile,
+      .saveProject = m_saveProject,
+      .saveProjectAs = m_saveProjectAs,
+      .projectFileName = [this]() { return m_appData.projectFileName(); },
+      .defaultProjectSaveDirectory = defaultProjectSaveDirectory,
+      .defaultProjectSaveName = defaultProjectSaveName,
+      .closeProject = m_closeProject,
+      .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
+      .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
+      .canAddSegmentation =
+        ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning && m_appData.activeImageUid(),
+      .canSaveProject = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
+      .canCloseProject = ProjectLoadState::Empty != projectLoadState && !backgroundTaskRunning};
+
+#ifdef __APPLE__
+    updateMacOSNativeMainMenu(mainMenuCallbacks);
+#else
+    renderMainMenuBar(m_appData.guiData(), mainMenuCallbacks);
+#endif
 
     renderEmptyWorkspace(projectLoadState, m_openImageFile, m_openProjectFile);
 

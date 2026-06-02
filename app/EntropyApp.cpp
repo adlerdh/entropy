@@ -292,7 +292,11 @@ void EntropyApp::init()
   }
 
   m_data.guiData().m_renderUiWindows = true;
+#ifdef __APPLE__
+  m_data.guiData().m_showMainMenuBar = false;
+#else
   m_data.guiData().m_showMainMenuBar = true;
+#endif
 
   m_rendering.init();
   m_glfw.init(); // Trigger initial windowing callbacks

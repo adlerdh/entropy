@@ -58,3 +58,24 @@ SpacesInAngles: Never
 SpacesInContainerLiterals: false
 TabWidth: 2
 UseTab: Never
+---
+Language: ObjC
+BasedOnStyle: Google
+
+AlignAfterOpenBracket: AlwaysBreak
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: WithoutElse
+BinPackArguments: false
+BinPackParameters: false
+ColumnLimit: 120
+ContinuationIndentWidth: 2
+IndentWidth: 2
+ObjCBlockIndentWidth: 2
+PointerAlignment: Left
+SortIncludes: false
+SpaceBeforeParens: ControlStatements
+TabWidth: 2
+UseTab: Never

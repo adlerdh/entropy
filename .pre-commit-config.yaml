@@ -5,5 +5,5 @@ repos:
         name: clang-format
         entry: clang-format -i
         language: system
-        files: ^(app|lib)/.*\.(c|cc|cpp|cxx|h|hh|hpp|hxx|tpp|txx|inc|fs|vs|gs|frag|vert|geom|glsl)$
+        files: ^(app|lib)/.*\.(c|cc|cpp|cxx|h|hh|hpp|hxx|tpp|txx|inc|mm|fs|vs|gs|frag|vert|geom|glsl)$
         exclude: ^(external|build[^/]*)/

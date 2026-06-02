@@ -1,11 +1,12 @@
 #pragma once
 
-#include "ui/GuiData.h"
 #include <filesystem>
 
 #include <functional>
 #include <optional>
 #include <string>
+
+struct GuiData;
 
 struct MainMenuBarCallbacks
 {
@@ -25,5 +26,16 @@ struct MainMenuBarCallbacks
   bool canSaveProject = false;
   bool canCloseProject = false;
 };
+
+namespace main_menu
+{
+void openImage(const MainMenuBarCallbacks& callbacks);
+void openProject(const MainMenuBarCallbacks& callbacks);
+void addImage(const MainMenuBarCallbacks& callbacks);
+void addSegmentation(const MainMenuBarCallbacks& callbacks);
+void saveProject(const MainMenuBarCallbacks& callbacks);
+void saveProjectAs(const MainMenuBarCallbacks& callbacks);
+void closeProject(const MainMenuBarCallbacks& callbacks);
+} // namespace main_menu
 
 void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks);
