@@ -28,7 +28,7 @@
 #include <imgui/misc/cpp/imgui_stdlib.h>
 #include <implot/implot.h>
 
-#include <ui/imgui/imgui-knobs/imgui-knobs.h>
+#include <imgui-knobs.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>

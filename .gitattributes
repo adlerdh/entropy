@@ -1,3 +1,2 @@
 external/** linguist-vendored
 resources/** linguist-vendored
-src/ui/imgui/** linguist-vendored

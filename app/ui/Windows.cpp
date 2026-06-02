@@ -4,7 +4,7 @@
 #include "ui/ImGuiCustomControls.h"
 #include "ui/IsosurfaceHeader.h"
 #include "ui/Widgets.h"
-#include "ui/imgui/imGuIZMO.quat/imGuIZMOquat.h"
+#include <imGuIZMOquat.h>
 
 #include "common/DirectionMaps.h"
 #include <spdlog/fmt/std.h>

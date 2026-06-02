@@ -486,8 +486,8 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/ui/Widgets.cpp"
   "${entropy_APP_DIR}/ui/Windows.cpp"
 
-  "${entropy_APP_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp"
-  "${entropy_APP_DIR}/ui/imgui/imgui-knobs/imgui-knobs.cpp"
+  "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
+  "${entropy_EXT_DIR}/imgui-knobs/imgui-knobs.cpp"
 
   "${entropy_APP_DIR}/windowing/ControlFrame.cpp"
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
@@ -505,11 +505,11 @@ if(MSVC)
     PROPERTIES COMPILE_OPTIONS "/wd4244"
   )
   set_source_files_properties(
-    "${entropy_APP_DIR}/ui/imgui/imGuIZMO.quat/imGuIZMOquat.cpp"
+    "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
     PROPERTIES COMPILE_OPTIONS "/wd4305"
   )
   set_source_files_properties(
-    "${entropy_APP_DIR}/ui/imgui/imgui-knobs/imgui-knobs.cpp"
+    "${entropy_EXT_DIR}/imgui-knobs/imgui-knobs.cpp"
     PROPERTIES COMPILE_OPTIONS "/wd4244"
   )
 endif()
@@ -661,6 +661,8 @@ target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   ${gridcut_INCLUDE_DIRS}
   "${imgui_SRC_DIR}"
   "${imgui_SRC_DIR}/imgui" # due to ImPlot
+  "${entropy_EXT_DIR}/imGuIZMO.quat"
+  "${entropy_EXT_DIR}/imgui-knobs"
   "${implot_SRC_DIR}"
   "${nanovg_SRC_DIR}"
 )
