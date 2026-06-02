@@ -1,9 +1,5 @@
-add_library(EntropyCommon)
+add_library(EntropyCommon STATIC)
 add_library(Entropy::Common ALIAS EntropyCommon)
-
-if(WIN32 AND BUILD_SHARED_LIBS)
-  set_target_properties(EntropyCommon PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
 
 target_sources(EntropyCommon PRIVATE
   CoordinateFrame.cpp

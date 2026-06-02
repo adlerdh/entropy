@@ -3,12 +3,8 @@ find_package(ITK ${itk_VERSION} REQUIRED HINTS "${itk_PREFIX}/build")
 message(STATUS "Found ITK in ${ITK_DIR}")
 include("${ITK_USE_FILE}")
 
-add_library(EntropyImage)
+add_library(EntropyImage STATIC)
 add_library(Entropy::Image ALIAS EntropyImage)
-
-if(WIN32 AND BUILD_SHARED_LIBS)
-  set_target_properties(EntropyImage PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
 
 target_sources(EntropyImage PRIVATE
   Image.cpp
