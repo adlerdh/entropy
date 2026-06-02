@@ -12,6 +12,9 @@
 #include "ui/Style.h"
 #include "ui/Toolbars.h"
 #include "ui/Windows.h"
+#ifdef _WIN32
+#include "ui/WinNativeMainMenu.h"
+#endif
 
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
@@ -165,7 +168,7 @@ ImFont* loadFont(
 } // namespace
 
 ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler& callbackHandler)
-  : m_appData(appData), m_callbackHandler(callbackHandler), m_contentScale(1.0f)
+  : m_appData(appData), m_callbackHandler(callbackHandler), m_window(window), m_contentScale(1.0f)
 {
   IMGUI_CHECKVERSION();
 
@@ -890,6 +893,8 @@ void ImGuiWrapper::render()
 
 #ifdef __APPLE__
     updateMacOSNativeMainMenu(mainMenuCallbacks);
+#elif defined(_WIN32)
+    updateWindowsNativeMainMenu(m_window, mainMenuCallbacks);
 #else
     renderMainMenuBar(m_appData.guiData(), mainMenuCallbacks);
 #endif

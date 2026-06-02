@@ -511,6 +511,12 @@ if(APPLE)
   )
 endif()
 
+if(WIN32)
+  list(APPEND entropy_SOURCES
+    "${entropy_APP_DIR}/ui/WinNativeMainMenu.cpp"
+  )
+endif()
+
 if(MSVC)
   # GridCut is vendored external code; template instantiation warnings surface while compiling this adapter.
   set_source_files_properties(
@@ -661,6 +667,12 @@ target_link_libraries(${entropy_EXE} PRIVATE
 if(APPLE)
   target_link_libraries(${entropy_EXE} PRIVATE
     ${COCOA_LIBRARY}
+  )
+endif()
+
+if(WIN32)
+  target_link_libraries(${entropy_EXE} PRIVATE
+    user32
   )
 endif()
 

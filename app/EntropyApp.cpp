@@ -292,7 +292,7 @@ void EntropyApp::init()
   }
 
   m_data.guiData().m_renderUiWindows = true;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
   m_data.guiData().m_showMainMenuBar = false;
 #else
   m_data.guiData().m_showMainMenuBar = true;

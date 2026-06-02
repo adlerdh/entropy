@@ -86,6 +86,7 @@ private:
 
   AppData& m_appData;
   CallbackHandler& m_callbackHandler;
+  GLFWwindow* m_window;
 
   // Callbacks:
   std::function<void(void)> m_postEmptyGlfwEvent = nullptr;
