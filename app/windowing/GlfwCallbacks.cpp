@@ -94,10 +94,7 @@ void windowSizeCallback(GLFWwindow* window, int windowWidth, int windowHeight)
   spdlog::debug("*** windowSizeCallback: {}x{} ", windowWidth, windowHeight);
 
   app->resize(windowWidth, windowHeight);
-  app->render();
-
-  // The app sometimes crashes on macOS without this call
-  glfwSwapBuffers(window);
+  app->glfw().postEmptyEvent();
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int fbWidth, int fbHeight)
@@ -111,9 +108,7 @@ void framebufferSizeCallback(GLFWwindow* window, int fbWidth, int fbHeight)
   spdlog::debug("*** framebufferSizeCallback: {}x{} ", fbWidth, fbHeight);
 
   app->windowData().setFramebufferSize(fbWidth, fbHeight);
-  app->render();
-
-  glfwSwapBuffers(window);
+  app->glfw().postEmptyEvent();
 }
 
 void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindowCursorPosY)

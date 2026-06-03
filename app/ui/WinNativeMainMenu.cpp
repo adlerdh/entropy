@@ -1,155 +1,267 @@
 #include "ui/WinNativeMainMenu.h"
 
-#include <cstdint>
+#include <memory>
+#include <unordered_map>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 #include <windows.h>
+#include <commctrl.h>
 
 namespace
 {
-constexpr UINT_PTR sk_openImageCommand = 1001;
-constexpr UINT_PTR sk_openProjectCommand = 1002;
-constexpr UINT_PTR sk_addImageCommand = 1003;
-constexpr UINT_PTR sk_addSegmentationCommand = 1004;
-constexpr UINT_PTR sk_saveProjectCommand = 1005;
-constexpr UINT_PTR sk_saveProjectAsCommand = 1006;
-constexpr UINT_PTR sk_closeProjectCommand = 1007;
+constexpr UINT sk_openImageCommand = 1001;
+constexpr UINT sk_openProjectCommand = 1002;
+constexpr UINT sk_addImageCommand = 1003;
+constexpr UINT sk_addSegmentationCommand = 1004;
+constexpr UINT sk_saveProjectCommand = 1005;
+constexpr UINT sk_saveProjectAsCommand = 1006;
+constexpr UINT sk_closeProjectCommand = 1007;
 
-MainMenuBarCallbacks g_callbacks;
-HWND g_window = nullptr;
-HMENU g_mainMenu = nullptr;
-WNDPROC g_previousWindowProc = nullptr;
-bool g_installed = false;
+constexpr UINT_PTR sk_menuSubclassId = 1;
 
-void enableMenuCommand(UINT_PTR command, bool enabled)
+struct MenuState
 {
-  if (!g_mainMenu) {
-    return;
-  }
+  HMENU mainMenu = nullptr;
+  MainMenuBarCallbacks callbacks;
+};
 
-  EnableMenuItem(g_mainMenu, static_cast<UINT>(command), MF_BYCOMMAND | (enabled ? MF_ENABLED : MF_GRAYED));
+std::unordered_map<HWND, std::unique_ptr<MenuState>> g_menuStates;
+
+HWND hwndFromGlfw(GLFWwindow* window)
+{
+  return window ? glfwGetWin32Window(window) : nullptr;
 }
 
-void updateEnabledState()
-{
-  enableMenuCommand(sk_openImageCommand, g_callbacks.canOpenProject && g_callbacks.openImageFile);
-  enableMenuCommand(sk_openProjectCommand, g_callbacks.canOpenProject && g_callbacks.openProjectFile);
-  enableMenuCommand(sk_addImageCommand, g_callbacks.canAddImage && g_callbacks.addImageFile);
-  enableMenuCommand(sk_addSegmentationCommand, g_callbacks.canAddSegmentation && g_callbacks.addSegmentationFile);
-  enableMenuCommand(sk_saveProjectCommand, g_callbacks.canSaveProject && g_callbacks.saveProject);
-  enableMenuCommand(sk_saveProjectAsCommand, g_callbacks.canSaveProject && g_callbacks.saveProjectAs);
-  enableMenuCommand(sk_closeProjectCommand, g_callbacks.canCloseProject && g_callbacks.closeProject);
-}
-
-void handleMenuCommand(UINT_PTR command)
+bool isMenuCommand(UINT command)
 {
   switch (command) {
     case sk_openImageCommand:
-      main_menu::openImage(g_callbacks);
+    case sk_openProjectCommand:
+    case sk_addImageCommand:
+    case sk_addSegmentationCommand:
+    case sk_saveProjectCommand:
+    case sk_saveProjectAsCommand:
+    case sk_closeProjectCommand:
+      return true;
+    default:
+      return false;
+  }
+}
+
+void enableMenuCommand(const MenuState& state, UINT command, bool enabled)
+{
+  if (!state.mainMenu) {
+    return;
+  }
+
+  EnableMenuItem(state.mainMenu, command, MF_BYCOMMAND | (enabled ? MF_ENABLED : MF_GRAYED));
+}
+
+void updateEnabledState(const MenuState& state)
+{
+  const auto& callbacks = state.callbacks;
+
+  enableMenuCommand(state, sk_openImageCommand, callbacks.canOpenProject && callbacks.openImageFile);
+  enableMenuCommand(state, sk_openProjectCommand, callbacks.canOpenProject && callbacks.openProjectFile);
+  enableMenuCommand(state, sk_addImageCommand, callbacks.canAddImage && callbacks.addImageFile);
+  enableMenuCommand(state, sk_addSegmentationCommand, callbacks.canAddSegmentation && callbacks.addSegmentationFile);
+  enableMenuCommand(state, sk_saveProjectCommand, callbacks.canSaveProject && callbacks.saveProject);
+  enableMenuCommand(state, sk_saveProjectAsCommand, callbacks.canSaveProject && callbacks.saveProjectAs);
+  enableMenuCommand(state, sk_closeProjectCommand, callbacks.canCloseProject && callbacks.closeProject);
+}
+
+void handleMenuCommand(const MenuState& state, UINT command)
+{
+  const auto& callbacks = state.callbacks;
+
+  switch (command) {
+    case sk_openImageCommand:
+      main_menu::openImage(callbacks);
       break;
     case sk_openProjectCommand:
-      main_menu::openProject(g_callbacks);
+      main_menu::openProject(callbacks);
       break;
     case sk_addImageCommand:
-      main_menu::addImage(g_callbacks);
+      main_menu::addImage(callbacks);
       break;
     case sk_addSegmentationCommand:
-      main_menu::addSegmentation(g_callbacks);
+      main_menu::addSegmentation(callbacks);
       break;
     case sk_saveProjectCommand:
-      main_menu::saveProject(g_callbacks);
+      main_menu::saveProject(callbacks);
       break;
     case sk_saveProjectAsCommand:
-      main_menu::saveProjectAs(g_callbacks);
+      main_menu::saveProjectAs(callbacks);
       break;
     case sk_closeProjectCommand:
-      main_menu::closeProject(g_callbacks);
+      main_menu::closeProject(callbacks);
       break;
     default:
       break;
   }
 }
 
-LRESULT CALLBACK entropyWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK
+entropyMenuSubclassProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam, UINT_PTR subclassId, DWORD_PTR refData)
 {
-  if (WM_COMMAND == message) {
-    const UINT_PTR command = LOWORD(wParam);
+  auto* state = reinterpret_cast<MenuState*>(refData);
 
-    switch (command) {
-      case sk_openImageCommand:
-      case sk_openProjectCommand:
-      case sk_addImageCommand:
-      case sk_addSegmentationCommand:
-      case sk_saveProjectCommand:
-      case sk_saveProjectAsCommand:
-      case sk_closeProjectCommand:
-        handleMenuCommand(command);
-        return 0;
-      default:
-        break;
+  if (state && WM_COMMAND == message) {
+    const UINT command = LOWORD(wParam);
+    const bool fromMenu = (0 == HIWORD(wParam) && 0 == lParam);
+
+    if (fromMenu && isMenuCommand(command)) {
+      handleMenuCommand(*state, command);
+      return 0;
     }
   }
-  else if (WM_INITMENUPOPUP == message) {
-    updateEnabledState();
+  else if (state && (WM_INITMENU == message || WM_INITMENUPOPUP == message)) {
+    updateEnabledState(*state);
+  }
+  else if (WM_NCDESTROY == message) {
+    RemoveWindowSubclass(window, entropyMenuSubclassProc, subclassId);
+    g_menuStates.erase(window);
   }
 
-  return CallWindowProc(g_previousWindowProc, window, message, wParam, lParam);
+  return DefSubclassProc(window, message, wParam, lParam);
 }
 
-void appendMenuItem(HMENU menu, UINT_PTR command, const wchar_t* text)
+bool insertMenuItem(HMENU menu, UINT position, UINT command, const wchar_t* text)
 {
-  AppendMenuW(menu, MF_STRING, command, text);
+  MENUITEMINFOW item{};
+  item.cbSize = sizeof(item);
+  item.fMask = MIIM_FTYPE | MIIM_ID | MIIM_STRING;
+  item.fType = MFT_STRING;
+  item.wID = command;
+  item.dwTypeData = const_cast<wchar_t*>(text);
+  return InsertMenuItemW(menu, position, TRUE, &item);
 }
 
-void installWindowsNativeMainMenu(GLFWwindow* window)
+bool insertSeparator(HMENU menu, UINT position)
 {
-  if (g_installed || !window) {
-    return;
+  MENUITEMINFOW item{};
+  item.cbSize = sizeof(item);
+  item.fMask = MIIM_FTYPE;
+  item.fType = MFT_SEPARATOR;
+  return InsertMenuItemW(menu, position, TRUE, &item);
+}
+
+bool insertSubmenu(HMENU menu, UINT position, HMENU submenu, const wchar_t* text)
+{
+  MENUITEMINFOW item{};
+  item.cbSize = sizeof(item);
+  item.fMask = MIIM_FTYPE | MIIM_SUBMENU | MIIM_STRING;
+  item.fType = MFT_STRING;
+  item.hSubMenu = submenu;
+  item.dwTypeData = const_cast<wchar_t*>(text);
+  return InsertMenuItemW(menu, position, TRUE, &item);
+}
+
+bool populateFileMenu(HMENU fileMenu)
+{
+  UINT position = 0;
+  return insertMenuItem(fileMenu, position++, sk_openImageCommand, L"&Open Image...") &&
+         insertMenuItem(fileMenu, position++, sk_openProjectCommand, L"Open &Project...") &&
+         insertSeparator(fileMenu, position++) &&
+         insertMenuItem(fileMenu, position++, sk_addImageCommand, L"&Add Image...") &&
+         insertMenuItem(fileMenu, position++, sk_addSegmentationCommand, L"Add &Segmentation...") &&
+         insertSeparator(fileMenu, position++) &&
+         insertMenuItem(fileMenu, position++, sk_saveProjectCommand, L"&Save Project") &&
+         insertMenuItem(fileMenu, position++, sk_saveProjectAsCommand, L"Save Project &As...") &&
+         insertSeparator(fileMenu, position++) &&
+         insertMenuItem(fileMenu, position++, sk_closeProjectCommand, L"&Close Project");
+}
+
+bool installWindowsNativeMainMenu(HWND window, const MainMenuBarCallbacks& callbacks)
+{
+  if (!window || g_menuStates.contains(window)) {
+    return false;
   }
 
-  g_window = glfwGetWin32Window(window);
-  if (!g_window) {
-    return;
-  }
+  auto state = std::make_unique<MenuState>();
+  state->callbacks = callbacks;
 
-  g_mainMenu = CreateMenu();
+  state->mainMenu = CreateMenu();
   HMENU fileMenu = CreatePopupMenu();
-  if (!g_mainMenu || !fileMenu) {
-    return;
+  if (!state->mainMenu || !fileMenu) {
+    if (fileMenu) {
+      DestroyMenu(fileMenu);
+    }
+    if (state->mainMenu) {
+      DestroyMenu(state->mainMenu);
+    }
+    return false;
   }
 
-  appendMenuItem(fileMenu, sk_openImageCommand, L"Open Image...");
-  appendMenuItem(fileMenu, sk_openProjectCommand, L"Open Project...");
-  AppendMenuW(fileMenu, MF_SEPARATOR, 0, nullptr);
-  appendMenuItem(fileMenu, sk_addImageCommand, L"Add Image...");
-  appendMenuItem(fileMenu, sk_addSegmentationCommand, L"Add Segmentation...");
-  AppendMenuW(fileMenu, MF_SEPARATOR, 0, nullptr);
-  appendMenuItem(fileMenu, sk_saveProjectCommand, L"Save Project");
-  appendMenuItem(fileMenu, sk_saveProjectAsCommand, L"Save Project As...");
-  AppendMenuW(fileMenu, MF_SEPARATOR, 0, nullptr);
-  appendMenuItem(fileMenu, sk_closeProjectCommand, L"Close Project");
-
-  AppendMenuW(g_mainMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(fileMenu), L"File");
-  SetMenu(g_window, g_mainMenu);
-  DrawMenuBar(g_window);
-
-  SetLastError(0);
-  const LONG_PTR previousWindowProc =
-    SetWindowLongPtrW(g_window, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(entropyWindowProc));
-  if (0 == previousWindowProc && 0 != GetLastError()) {
-    return;
+  if (!populateFileMenu(fileMenu)) {
+    DestroyMenu(fileMenu);
+    DestroyMenu(state->mainMenu);
+    return false;
   }
 
-  g_previousWindowProc = reinterpret_cast<WNDPROC>(previousWindowProc);
-  g_installed = true;
+  if (!insertSubmenu(state->mainMenu, 0, fileMenu, L"&File")) {
+    DestroyMenu(fileMenu);
+    DestroyMenu(state->mainMenu);
+    return false;
+  }
+
+  if (!SetWindowSubclass(window, entropyMenuSubclassProc, sk_menuSubclassId, reinterpret_cast<DWORD_PTR>(state.get())))
+  {
+    DestroyMenu(state->mainMenu);
+    return false;
+  }
+
+  if (!SetMenu(window, state->mainMenu)) {
+    RemoveWindowSubclass(window, entropyMenuSubclassProc, sk_menuSubclassId);
+    DestroyMenu(state->mainMenu);
+    return false;
+  }
+
+  updateEnabledState(*state);
+  DrawMenuBar(window);
+
+  g_menuStates.emplace(window, std::move(state));
+  return true;
 }
 } // namespace
 
 void updateWindowsNativeMainMenu(GLFWwindow* window, const MainMenuBarCallbacks& callbacks)
 {
-  g_callbacks = callbacks;
-  installWindowsNativeMainMenu(window);
-  updateEnabledState();
+  const HWND hwnd = hwndFromGlfw(window);
+  if (!hwnd) {
+    return;
+  }
+
+  auto stateIt = g_menuStates.find(hwnd);
+  if (std::end(g_menuStates) == stateIt) {
+    installWindowsNativeMainMenu(hwnd, callbacks);
+    return;
+  }
+
+  stateIt->second->callbacks = callbacks;
+  updateEnabledState(*stateIt->second);
+}
+
+void uninstallWindowsNativeMainMenu(GLFWwindow* window)
+{
+  const HWND hwnd = hwndFromGlfw(window);
+  if (!hwnd) {
+    return;
+  }
+
+  auto stateIt = g_menuStates.find(hwnd);
+  if (std::end(g_menuStates) == stateIt) {
+    return;
+  }
+
+  HMENU menu = stateIt->second->mainMenu;
+  RemoveWindowSubclass(hwnd, entropyMenuSubclassProc, sk_menuSubclassId);
+  SetMenu(hwnd, nullptr);
+  if (menu) {
+    DestroyMenu(menu);
+  }
+  DrawMenuBar(hwnd);
+  g_menuStates.erase(stateIt);
 }

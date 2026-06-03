@@ -3,6 +3,9 @@
 #include "EntropyApp.h"
 #include "common/Exception.hpp"
 #include "windowing/GlfwCallbacks.h"
+#ifdef _WIN32
+#include "ui/WinNativeMainMenu.h"
+#endif
 
 #include <spdlog/spdlog.h>
 
@@ -246,6 +249,10 @@ GlfwWrapper::~GlfwWrapper()
       glfwDestroyCursor(cursor.second);
     }
   }
+
+#ifdef _WIN32
+  uninstallWindowsNativeMainMenu(m_window);
+#endif
 
   glfwDestroyWindow(m_window);
   glfwTerminate();

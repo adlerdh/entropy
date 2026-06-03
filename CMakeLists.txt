@@ -672,6 +672,7 @@ endif()
 
 if(WIN32)
   target_link_libraries(${entropy_EXE} PRIVATE
+    comctl32
     user32
   )
 endif()
