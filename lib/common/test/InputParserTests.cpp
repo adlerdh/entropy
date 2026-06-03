@@ -4,6 +4,21 @@
 
 #include <array>
 
+TEST_CASE("macOS LaunchServices process serial number argument is ignored", "[common][input]")
+{
+  char app[] = "Entropy";
+  char psn[] = "-psn_0_1327411";
+
+  std::array<char*, 2> argv{app, psn};
+
+  InputParams params;
+  REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+
+  CHECK_FALSE(params.set);
+  CHECK(params.imageFiles.empty());
+  CHECK_FALSE(params.projectFile);
+}
+
 TEST_CASE("repeated segmentation options are associated with the preceding image in argument order", "[common][input]")
 {
   char app[] = "Entropy";

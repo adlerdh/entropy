@@ -13,6 +13,7 @@
 #include <future>
 #include <mutex>
 #include <queue>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -87,6 +88,10 @@ private:
   AppData& m_appData;
   CallbackHandler& m_callbackHandler;
   GLFWwindow* m_window;
+  std::filesystem::path m_iniFilePath;
+  std::filesystem::path m_logFilePath;
+  std::string m_iniFileName;
+  std::string m_logFileName;
 
   // Callbacks:
   std::function<void(void)> m_postEmptyGlfwEvent = nullptr;

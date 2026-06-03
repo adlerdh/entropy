@@ -18,6 +18,8 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <vector>
 
 namespace
 {
@@ -116,6 +118,25 @@ void logInputs(const InputParams& params)
   }
 }
 
+std::vector<char*> filterPlatformArguments(const int argc, char* argv[])
+{
+  std::vector<char*> filteredArgs;
+  filteredArgs.reserve(static_cast<size_t>(argc));
+
+  for (int i = 0; i < argc; ++i) {
+#ifdef __APPLE__
+    const std::string_view arg{argv[i]};
+    if (arg.starts_with("-psn_")) {
+      continue;
+    }
+#endif
+
+    filteredArgs.push_back(argv[i]);
+  }
+
+  return filteredArgs;
+}
+
 } // namespace
 
 bool parseCommandLine(const int argc, char* argv[], InputParams& params)
@@ -166,7 +187,8 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
   segOption->excludes(projectOption);
 
   try {
-    program.parse(argc, argv);
+    auto filteredArgs = filterPlatformArguments(argc, argv);
+    program.parse(static_cast<int>(filteredArgs.size()), filteredArgs.data());
   }
   catch (const CLI::CallForHelp&) {
     std::cout << program.help();

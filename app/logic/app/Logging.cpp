@@ -1,13 +1,17 @@
 #include "logic/app/Logging.h"
 #include "common/Exception.hpp"
+#include "logic/app/AppPaths.h"
 
+#include <filesystem>
 #include <sstream>
 
 void Logging::setup()
 {
-  static const std::string sk_logFileName("log/entropy.txt");
-
   try {
+    const std::filesystem::path logDir = app_paths::logDirectory();
+    std::filesystem::create_directories(logDir);
+    const std::filesystem::path logFileName = logDir / "entropy.txt";
+
     // Create multi-threaded sinks for console and daily file logging.
     // Assign default sink logging levels.
 
@@ -17,7 +21,7 @@ void Logging::setup()
 
     // The daily file sink uses shows more info: logger name and time zone.
     // Note: debug logging needs SPDLOG_XXX macro
-    m_daily_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(sk_logFileName, 23, 59);
+    m_daily_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(logFileName.string(), 23, 59);
     m_daily_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e %z] [%n] [tid %t] [%l] [%s:%#] %v");
     m_daily_sink->set_level(spdlog::level::debug); // default to debug level
 

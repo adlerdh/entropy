@@ -324,6 +324,28 @@ endif()
 
 message(STATUS "Adding external library ITK in ${itk_PREFIX}")
 
+set(_itk_module_args
+  -DITK_BUILD_DEFAULT_MODULES:BOOL=OFF
+  -DITKGroup_Bridge:BOOL=OFF
+  -DITKGroup_Compatibility:BOOL=OFF
+  -DITKGroup_Core:BOOL=OFF
+  -DITKGroup_Filtering:BOOL=OFF
+  -DITKGroup_IO:BOOL=OFF
+  -DITKGroup_Nonunit:BOOL=OFF
+  -DITKGroup_Numerics:BOOL=OFF
+  -DITKGroup_Registration:BOOL=OFF
+  -DITKGroup_Remote:BOOL=OFF
+  -DITKGroup_Segmentation:BOOL=OFF
+  -DITKGroup_ThirdParty:BOOL=OFF
+  -DITKGroup_Video:BOOL=OFF
+)
+foreach(_itk_module IN LISTS entropy_ITK_DISABLED_COMPONENTS)
+  list(APPEND _itk_module_args -DModule_${_itk_module}:BOOL=OFF)
+endforeach()
+foreach(_itk_module IN LISTS entropy_ITK_COMPONENTS)
+  list(APPEND _itk_module_args -DModule_${_itk_module}:BOOL=ON)
+endforeach()
+
 ExternalProject_Add(ITK
   URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${itk_VERSION}/InsightToolkit-${itk_VERSION}.tar.gz"
   URL_HASH SHA512=39e9003cc76a08f486c28e47df4b66944d1ba1e7917ad986ace84422acf2abc6956956929bebb08f37b04a9905f251eb941443a3d873c40852130aa1c189cf4b
@@ -351,7 +373,7 @@ ExternalProject_Add(ITK
     -DBUILD_STATIC_LIBS:BOOL=${BUILD_STATIC_LIBS}
     -DBUILD_EXAMPLES:BOOL=OFF
     -DBUILD_TESTING:BOOL=OFF
-    -DModule_ITKIOGDCM:BOOL=OFF
+    ${_itk_module_args}
 
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ITK install step"

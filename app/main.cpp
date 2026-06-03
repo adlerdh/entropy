@@ -1,5 +1,6 @@
 #include "EntropyApp.h"
 #include "common/InputParser.h"
+#include "logic/app/AppPaths.h"
 #include "logic/app/Logging.h"
 
 #include <spdlog/fmt/ostr.h>
@@ -7,6 +8,8 @@
 
 int main(int argc, char* argv[])
 {
+  app_paths::configureFromCommandLine(argc, argv);
+
   auto logFailure = []() {
     spdlog::debug("------------------- End session (failure) -------------------");
   };

@@ -1,0 +1,20 @@
+set(entropy_ITK_COMPONENTS
+  ITKCommon
+  ITKIOImageBase
+  ITKIONIFTI
+  ITKIONRRD
+  ITKIOMeta
+  ITKIOGDCM
+  ITKImageFilterBase
+  ITKImageIntensity
+  ITKImageStatistics
+  ITKThresholding
+  ITKDistanceMap
+  ITKImageGrid
+  ITKImageFunction
+  ITKStatistics
+)
+
+set(entropy_ITK_DISABLED_COMPONENTS
+  ITKVTK
+)

@@ -6,9 +6,9 @@ endif()
 
 set(APP_NAME "Entropy")
 set(APP_DESCRIPTION "Visualize, compare, segment, and annotate 3D medical images")
-set(ORG_NAME_1 "Penn Image Computing and Science Lab (PICSL)")
+set(ORG_NAME_1 "Penn Image Computing and Science Lab (PICSL) and Daniel H. Adler")
 set(ORG_NAME_2 "Department of Radiology, University of Pennsylvania")
-set(COPYRIGHT_LINE "Copyright Daniel H. Adler and PICSL")
+set(COPYRIGHT_LINE "Copyright the Penn Image Computing and Science Lab (PICSL), University of Pennsylvania, and Daniel H. Adler.")
 set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)
@@ -133,6 +133,8 @@ set(nlohmann_json_VERSION "3.12.0")
 set(spdlog_VERSION "1.17.0")
 set(stduuid_VERSION "1.2.3")
 set(tinyfsm_VERSION "1.15.1")
+
+include(EntropyItkComponents)
 
 # External library directories:
 set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
@@ -507,7 +509,19 @@ set(entropy_SOURCES
 
 if(APPLE)
   list(APPEND entropy_SOURCES
+    "${entropy_APP_DIR}/logic/app/AppPathsMac.mm"
+    "${entropy_RES_DIR}/icons/Entropy.icns"
     "${entropy_APP_DIR}/ui/MacNativeMainMenu.mm"
+  )
+
+  set_source_files_properties("${entropy_RES_DIR}/icons/Entropy.icns" PROPERTIES
+    MACOSX_PACKAGE_LOCATION "Resources"
+  )
+endif()
+
+if(NOT APPLE)
+  list(APPEND entropy_SOURCES
+    "${entropy_APP_DIR}/logic/app/AppPaths.cpp"
   )
 endif()
 
@@ -638,7 +652,11 @@ cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders $
   PREFIX "src"
 )
 
-add_executable(${entropy_EXE})
+if(APPLE)
+  add_executable(${entropy_EXE} MACOSX_BUNDLE)
+else()
+  add_executable(${entropy_EXE})
+endif()
 
 target_sources(${entropy_EXE} PRIVATE
   ${entropy_SOURCES}
@@ -728,3 +746,5 @@ set_target_properties(${entropy_EXE} PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
+
+include(EntropyPackaging)

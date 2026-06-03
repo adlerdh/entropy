@@ -1,7 +1,9 @@
 # ENTROPY
 *A cross-platform tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images.*
 
-Copyright Daniel H. Adler and the Penn Image Computing and Science Lab, Department of Radiology, University of Pennsylvania. All rights reserved.
+Entropy is developed by Daniel H. Adler with support from the Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania.
+
+Copyright the Penn Image Computing and Science Lab (PICSL), University of Pennsylvania, and Daniel H. Adler. All rights reserved.
 
 ## Building
 Entropy requires C++23 and build generation uses CMake 3.24.0 or later. The “superbuild” pattern is used in order to retrieve and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ITK](https://github.com/InsightSoftwareConsortium/ITKSphinxExamples/tree/master/Superbuild), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), and [Slicer](https://github.com/Slicer/Slicer). Here are sample build instructions.
@@ -25,22 +27,7 @@ Note on generators:
 
 The steps below intentionally reconfigure the same build directory: first to run the superbuild, then to build Entropy after dependencies are available.
 
-### Source layout
-The source tree is split into two reusable libraries and the Entropy application:
-
-- `lib/common`: `Entropy::Common`, shared types, math, filesystem aliases, and other app-independent utilities.
-- `lib/image`: `Entropy::Image`, image data structures, image I/O helpers, transforms, color maps, and image-only tests.
-- `app`: the Entropy executable, including application logic, annotation logic, segmentation workflows, rendering, UI, windowing, mesh, and slide code.
-
-`Entropy::Common` and `Entropy::Image` export `lib` as their public include root, so clients include headers as `common/AABB.h`, `common/Types.h`, `image/Image.h`, and so on. Clients should link the CMake targets instead of adding include directories manually.
-
 ### CMake presets
-The recommended developer build uses the checked-in CMake presets, but presets are optional. The manual single-config and multi-config commands below use the same two-stage superbuild flow and may be used instead. The presets build shared libraries, default to `RelWithDebInfo`, and use `ccache` automatically when it is available.
-
-The presets do not force a CMake generator. If you do not pass `-G`, CMake uses its platform default generator, such as Unix Makefiles on macOS and Linux. To use Ninja explicitly, install it and add `-G Ninja` to the configure commands, or set the `CMAKE_GENERATOR` environment variable before configuring.
-
-When `Entropy_USE_CCACHE` is enabled, which is the preset default, CMake uses `ccache` as the compiler launcher if the executable is found. Missing `ccache` is not a configuration error.
-
 Configure and build dependencies first, then reconfigure the same build directory for the Entropy application:
 
 ```sh
@@ -51,9 +38,47 @@ cmake --preset app
 cmake --build --preset app --parallel
 ```
 
-The default preset build directory is `build-default`. The `--parallel` option without an explicit job count lets the native build tool choose the parallelism. If the machine becomes memory constrained, pass a smaller number, for example `--parallel 16`.
+The default preset build directory is `build-default`.
 
-If you previously configured `build-default` with a different generator, remove that build directory or choose a new one before reconfiguring; CMake build directories cannot switch generators in place.
+### macOS packaging
+On macOS, the Entropy target is built as an `.app` bundle with an `Info.plist` and app icon. Build the app first:
+
+```sh
+cmake --preset superbuild
+cmake --build --preset superbuild --parallel
+cmake --preset app
+cmake --build --preset app --parallel
+```
+
+The build-tree app is useful for development:
+
+```sh
+open build-default/bin/Entropy.app
+```
+
+For local installation testing, use CMake's install step after the application build has completed. The install step copies required third-party dynamic libraries into `Entropy.app/Contents/Frameworks` and rewrites their install names so the app does not depend on the build tree:
+
+```sh
+cmake --install build-default --prefix build-default/install
+open build-default/install/Entropy.app
+```
+
+For a distributable package, run CPack from the repository root after the app build has completed. CPack creates a drag-and-drop DMG named like `Entropy-0.9.1.0-macOS.dmg`:
+
+```sh
+cpack -G DragNDrop --config build-default/CPackConfig.cmake
+```
+
+The install and CPack steps ad-hoc sign the copied app by default so local Finder launches work after `fixup_bundle` rewrites library paths. For a real release, configure the app build with a Developer ID Application identity:
+
+```sh
+cmake --preset app -Dentropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+cpack -G DragNDrop --config build-default/CPackConfig.cmake
+```
+
+To test the DMG manually, open it, drag `Entropy.app` to `/Applications`, and launch it from Finder or Launchpad. Finder-launched macOS builds write logs under `~/Library/Logs/Entropy` and UI state under `~/Library/Application Support/Entropy`; terminal launches keep the development defaults described in the Running section.
+
+Generated DMG files and CPack scratch directories are ignored by Git. Public release builds still need Developer ID signing and notarization before distributing outside local development machines.
 
 Additional presets are available for debug and release builds:
 
@@ -142,7 +167,8 @@ Original attributions and licenses have been preserved and committed for all ext
 
 ## Running
 Entropy is run from the terminal. Images can be specified directly as command line arguments or from a JSON project file.
-- On Linux or macOS: `./${BUILD_DIR}/bin/Entropy`
+- On Linux: `./${BUILD_DIR}/bin/Entropy`
+- On macOS: `open ${BUILD_DIR}/bin/Entropy.app`, or run `${BUILD_DIR}/bin/Entropy.app/Contents/MacOS/Entropy` from a terminal.
 - On Windows: `.\${BUILD_DIR}\bin\Entropy.exe`
 
 1. Images can be provided directly with repeatable `--image` options. If an image has one or more accompanying segmentations, place `--seg` immediately after that image; the segmentations are attached to the preceding image in the order provided. `--seg` may be repeated, or it may be followed by multiple segmentation file names. e.g.:

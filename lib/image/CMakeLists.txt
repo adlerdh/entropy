@@ -1,5 +1,7 @@
 # Insight Toolkit (ITK) is an implementation detail of EntropyImage
-find_package(ITK ${itk_VERSION} REQUIRED HINTS "${itk_PREFIX}/build")
+find_package(ITK ${itk_VERSION} REQUIRED
+  COMPONENTS ${entropy_ITK_COMPONENTS}
+  HINTS "${itk_PREFIX}/build")
 message(STATUS "Found ITK in ${ITK_DIR}")
 include("${ITK_USE_FILE}")
 

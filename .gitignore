@@ -5,6 +5,8 @@
 build*/**
 out/**
 log*/**
+_CPack_Packages/**
+*.dmg
 src/**/*.autosave
 CMakeFiles/**
 CMakeCache.txt

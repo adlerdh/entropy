@@ -16,6 +16,7 @@
 #include "ui/WinNativeMainMenu.h"
 #endif
 
+#include "logic/app/AppPaths.h"
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
@@ -179,8 +180,16 @@ ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler
   spdlog::debug("Created ImPlot context");
 
   ImGuiIO& io = ImGui::GetIO();
-  io.IniFilename = "entropy_ui.ini";
-  io.LogFilename = "log/entropy_ui.log";
+
+  m_iniFilePath = app_paths::userDataDirectory() / "entropy_ui.ini";
+  m_logFilePath = app_paths::logDirectory() / "entropy_ui.log";
+  std::filesystem::create_directories(m_iniFilePath.parent_path());
+  std::filesystem::create_directories(m_logFilePath.parent_path());
+
+  m_iniFileName = m_iniFilePath.string();
+  m_logFileName = m_logFilePath.string();
+  io.IniFilename = m_iniFileName.c_str();
+  io.LogFilename = m_logFileName.c_str();
 
   io.ConfigDragClickToInputText = true;
   //    io.MouseDrawCursor = true;
