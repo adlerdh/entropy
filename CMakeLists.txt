@@ -179,6 +179,23 @@ if(BUILD_TESTING)
   include(Catch)
 endif()
 
+if(APPLE)
+  set(entropy_MACOSX_BUNDLE_IDENTIFIER "io.github.adlerdh.entropy" CACHE STRING "macOS bundle identifier")
+
+  if(CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  else()
+    set(entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "13.0")
+  endif()
+
+  set(entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "${entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
+    CACHE STRING "Minimum macOS version recorded in Info.plist")
+  set(entropy_MACOSX_BUNDLE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}"
+    CACHE STRING "macOS build version recorded in CFBundleVersion")
+  set(entropy_MACOS_CODESIGN_IDENTITY "-" CACHE STRING
+    "macOS code signing identity used by build/install/CPack; '-' creates an ad-hoc signature, and an empty value skips signing")
+endif()
+
 # CLI11: Header-only command line parser
 find_package(CLI11 ${cli11_VERSION} REQUIRED
   HINTS "${cli11_PREFIX}/install")
@@ -509,27 +526,11 @@ set(entropy_SOURCES
 
 if(APPLE)
   set(entropy_MACOS_APP_ICON "${entropy_RES_DIR}/icons/macOS/Entropy.icon")
-  set(entropy_MACOS_APP_ICON_FILES
-    "${entropy_MACOS_APP_ICON}/icon.json"
-    "${entropy_MACOS_APP_ICON}/Assets/Entropy_icon.png"
-  )
+  set(entropy_MACOS_APP_ICON_NAME "Entropy")
 
   list(APPEND entropy_SOURCES
     "${entropy_APP_DIR}/logic/app/AppPathsMac.mm"
     "${entropy_APP_DIR}/ui/MacNativeMainMenu.mm"
-    ${entropy_MACOS_APP_ICON_FILES}
-  )
-
-  set_source_files_properties(
-    "${entropy_MACOS_APP_ICON}/icon.json"
-    PROPERTIES
-      MACOSX_PACKAGE_LOCATION "Resources/Entropy.icon"
-  )
-
-  set_source_files_properties(
-    "${entropy_MACOS_APP_ICON}/Assets/Entropy_icon.png"
-    PROPERTIES
-      MACOSX_PACKAGE_LOCATION "Resources/Entropy.icon/Assets"
   )
 endif()
 
@@ -680,6 +681,9 @@ if(APPLE)
       "${CMAKE_COMMAND}"
       -D "entropy_BUNDLE_DIR=$<TARGET_BUNDLE_DIR:${entropy_EXE}>"
       -D "entropy_SOURCE_ICON=${entropy_MACOS_APP_ICON}"
+      -D "entropy_ICON_NAME=${entropy_MACOS_APP_ICON_NAME}"
+      -D "entropy_MINIMUM_SYSTEM_VERSION=${entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
+      -D "entropy_CODESIGN_IDENTITY=${entropy_MACOS_CODESIGN_IDENTITY}"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RefreshMacOSIcon.cmake"
     VERBATIM
   )

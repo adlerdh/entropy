@@ -1,18 +1,4 @@
 if(APPLE)
-  set(entropy_MACOSX_BUNDLE_IDENTIFIER "io.github.adlerdh.entropy" CACHE STRING "macOS bundle identifier")
-
-  if(CMAKE_OSX_DEPLOYMENT_TARGET)
-    set(entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "${CMAKE_OSX_DEPLOYMENT_TARGET}")
-  else()
-    set(entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "13.0")
-  endif()
-
-  set(entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "${entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
-    CACHE STRING "Minimum macOS version recorded in Info.plist")
-  set(entropy_MACOSX_BUNDLE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}"
-    CACHE STRING "macOS build version recorded in CFBundleVersion")
-  set(entropy_MACOS_CODESIGN_IDENTITY "-" CACHE STRING
-    "macOS code signing identity used by install/CPack; '-' creates an ad-hoc signature, and an empty value skips signing")
   option(Entropy_STRIP_PACKAGED_APP "Strip local symbols from the installed macOS app bundle before signing" ON)
 
   set_target_properties(${entropy_EXE} PROPERTIES
@@ -21,7 +7,7 @@ if(APPLE)
     MACOSX_BUNDLE_BUNDLE_NAME "${APP_NAME}"
     MACOSX_BUNDLE_COPYRIGHT "${COPYRIGHT_LINE}"
     MACOSX_BUNDLE_GUI_IDENTIFIER "${entropy_MACOSX_BUNDLE_IDENTIFIER}"
-    MACOSX_BUNDLE_ICON_FILE "Entropy.icon"
+    MACOSX_BUNDLE_ICON_FILE "Entropy.icns"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}"
     MACOSX_BUNDLE_BUNDLE_VERSION "${entropy_MACOSX_BUNDLE_VERSION}"
   )
