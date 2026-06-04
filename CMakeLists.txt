@@ -508,14 +508,28 @@ set(entropy_SOURCES
 )
 
 if(APPLE)
-  list(APPEND entropy_SOURCES
-    "${entropy_APP_DIR}/logic/app/AppPathsMac.mm"
-    "${entropy_RES_DIR}/icons/Entropy.icns"
-    "${entropy_APP_DIR}/ui/MacNativeMainMenu.mm"
+  set(entropy_MACOS_APP_ICON "${entropy_RES_DIR}/icons/macOS/Entropy.icon")
+  set(entropy_MACOS_APP_ICON_FILES
+    "${entropy_MACOS_APP_ICON}/icon.json"
+    "${entropy_MACOS_APP_ICON}/Assets/Entropy_icon.png"
   )
 
-  set_source_files_properties("${entropy_RES_DIR}/icons/Entropy.icns" PROPERTIES
-    MACOSX_PACKAGE_LOCATION "Resources"
+  list(APPEND entropy_SOURCES
+    "${entropy_APP_DIR}/logic/app/AppPathsMac.mm"
+    "${entropy_APP_DIR}/ui/MacNativeMainMenu.mm"
+    ${entropy_MACOS_APP_ICON_FILES}
+  )
+
+  set_source_files_properties(
+    "${entropy_MACOS_APP_ICON}/icon.json"
+    PROPERTIES
+      MACOSX_PACKAGE_LOCATION "Resources/Entropy.icon"
+  )
+
+  set_source_files_properties(
+    "${entropy_MACOS_APP_ICON}/Assets/Entropy_icon.png"
+    PROPERTIES
+      MACOSX_PACKAGE_LOCATION "Resources/Entropy.icon/Assets"
   )
 endif()
 
@@ -656,6 +670,19 @@ if(APPLE)
   add_executable(${entropy_EXE} MACOSX_BUNDLE)
 else()
   add_executable(${entropy_EXE})
+endif()
+
+if(APPLE)
+  add_custom_command(
+    TARGET ${entropy_EXE}
+    POST_BUILD
+    COMMAND
+      "${CMAKE_COMMAND}"
+      -D "entropy_BUNDLE_DIR=$<TARGET_BUNDLE_DIR:${entropy_EXE}>"
+      -D "entropy_SOURCE_ICON=${entropy_MACOS_APP_ICON}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RefreshMacOSIcon.cmake"
+    VERBATIM
+  )
 endif()
 
 target_sources(${entropy_EXE} PRIVATE

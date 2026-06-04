@@ -246,7 +246,7 @@ void renderUnsavedProjectPopup(
     ImGui::SetItemDefaultFocus();
 
     ImGui::SameLine();
-    if (ImGui::Button("Don't Save", ImVec2(100, 0))) {
+    if (ImGui::Button("Discard", ImVec2(100, 0))) {
       guiData.m_showUnsavedProjectPopup = false;
       ImGui::CloseCurrentPopup();
       continueAction();
