@@ -7,6 +7,7 @@
 #include "logic/app/Data.h"
 #include "logic/app/Settings.h"
 #include "logic/app/State.h"
+#include "logic/ipc/SnapCursorSync.h"
 
 #include "rendering/Rendering.h"
 #include "ui/ImGuiWrapper.h"
@@ -187,5 +188,6 @@ private:
   AppData m_data;                    //!< Application data
   Rendering m_rendering;             //!< Render logic
   CallbackHandler m_callbackHandler; //!< UI callback handlers
+  SnapCursorSync m_snapCursorSync;   //!< Cursor synchronization with ITK-SNAP IPC
   ImGuiWrapper m_imgui;              //!< ImGui wrapper
 };

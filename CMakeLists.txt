@@ -130,6 +130,7 @@ set(itk_VERSION "5.4.3")
 set(nanovg_VERSION "f93799c")
 set(nativefiledialog_VERSION "1.3.0")
 set(nlohmann_json_VERSION "3.12.0")
+set(qtbase_VERSION "6.8.1")
 set(spdlog_VERSION "1.17.0")
 set(stduuid_VERSION "1.2.3")
 set(tinyfsm_VERSION "1.15.1")
@@ -150,6 +151,7 @@ set(itk_PREFIX "${EXTERNAL_DIR}/itk-${itk_VERSION}")
 set(nanovg_PREFIX "${EXTERNAL_DIR}/nanovg-${nanovg_VERSION}")
 set(nativefiledialog_PREFIX "${EXTERNAL_DIR}/nativefiledialog-${nativefiledialog_VERSION}")
 set(nlohmann_json_PREFIX "${EXTERNAL_DIR}/nlohmann_json-${nlohmann_json_VERSION}")
+set(qtbase_PREFIX "${EXTERNAL_DIR}/qtbase-${qtbase_VERSION}")
 set(spdlog_PREFIX "${EXTERNAL_DIR}/spdlog-${spdlog_VERSION}")
 set(stduuid_PREFIX "${EXTERNAL_DIR}/stduuid-${stduuid_VERSION}")
 set(tinyfsm_PREFIX "${EXTERNAL_DIR}/tinyfsm-${tinyfsm_VERSION}")
@@ -239,6 +241,13 @@ find_package(nlohmann_json ${nlohmann_json_VERSION} REQUIRED
   HINTS "${nlohmann_json_PREFIX}/install")
 
 message(STATUS "Using nlohmann_json in ${nlohmann_json_DIR}")
+
+# Qt Core is used for QSharedMemory compatibility with ITK-SNAP IPC.
+find_package(Qt6 ${qtbase_VERSION} REQUIRED COMPONENTS Core
+  HINTS "${qtbase_PREFIX}/install/lib/cmake"
+  NO_DEFAULT_PATH)
+
+message(STATUS "Using Qt6Core in ${Qt6Core_DIR}")
 
 # spdlog: Fast C++ logging library
 find_package(spdlog ${spdlog_VERSION} REQUIRED HINTS "${spdlog_PREFIX}/install")
@@ -469,9 +478,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/states/annotation/AnnotationStates.cpp"
 
   "${entropy_APP_DIR}/logic/DistanceMap.cpp"
-
-  # We were testing IPC with ITK-SNAP. This functionality is not currently hooked up to Entropy.
-  # "${entropy_APP_DIR}/logic/ipc/IPCHandler.cxx"
+  "${entropy_APP_DIR}/logic/ipc/SnapCursorSync.cpp"
 
   "${entropy_APP_DIR}/rendering/ascii/AsciiAtlas.cpp"
   "${entropy_APP_DIR}/rendering/ascii/AsciiAtlasBaker.cpp"
@@ -685,6 +692,10 @@ if(APPLE)
       -D "entropy_MINIMUM_SYSTEM_VERSION=${entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
       -D "entropy_CODESIGN_IDENTITY=${entropy_MACOS_CODESIGN_IDENTITY}"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RefreshMacOSIcon.cmake"
+    COMMAND
+      "${CMAKE_COMMAND}" -E copy_if_different
+      "$<TARGET_FILE:${entropy_EXE}>"
+      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${entropy_EXE}"
     VERBATIM
   )
 endif()
@@ -705,6 +716,7 @@ target_link_libraries(${entropy_EXE} PRIVATE
   nanovg
   nfd::nfd
   nlohmann_json::nlohmann_json
+  Qt6::Core
   spdlog::spdlog
   stduuid
   ${entropy_EXE}::colormaps

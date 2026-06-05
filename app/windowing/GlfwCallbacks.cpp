@@ -93,7 +93,12 @@ void windowSizeCallback(GLFWwindow* window, int windowWidth, int windowHeight)
 
   spdlog::debug("*** windowSizeCallback: {}x{} ", windowWidth, windowHeight);
 
+  int fbWidth = 0;
+  int fbHeight = 0;
+  glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+  app->windowData().setFramebufferSize(fbWidth, fbHeight);
   app->resize(windowWidth, windowHeight);
+  app->glfw().renderAndSwapOnce();
   app->glfw().postEmptyEvent();
 }
 
@@ -107,7 +112,12 @@ void framebufferSizeCallback(GLFWwindow* window, int fbWidth, int fbHeight)
 
   spdlog::debug("*** framebufferSizeCallback: {}x{} ", fbWidth, fbHeight);
 
+  int windowWidth = 0;
+  int windowHeight = 0;
+  glfwGetWindowSize(window, &windowWidth, &windowHeight);
   app->windowData().setFramebufferSize(fbWidth, fbHeight);
+  app->resize(windowWidth, windowHeight);
+  app->glfw().renderAndSwapOnce();
   app->glfw().postEmptyEvent();
 }
 

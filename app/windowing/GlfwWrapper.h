@@ -60,7 +60,8 @@ public:
   void setCallbacks(
     std::function<void(std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime)> framerateLimiter,
     std::function<void()> renderScene,
-    std::function<void()> renderGui);
+    std::function<void()> renderGui,
+    std::function<void()> processBackground);
 
   /// @brief Set the event processing mode for the render loop
   void setEventProcessingMode(EventProcessingMode mode);
@@ -96,6 +97,11 @@ public:
   void renderOnce();
 
   /**
+   * @brief Render one frame and swap buffers, if render callbacks are initialized.
+   */
+  void renderAndSwapOnce();
+
+  /**
    * @brief Post an empty event from the current thread to the GLFW event queue,
    * causing glfwWaitEvents() to return.
    * @note This may be called from any thread.
@@ -113,6 +119,9 @@ public:
   void toggleFullScreenMode(bool forceWindowMode = false);
 
 private:
+  // Synchronize Entropy's cached window and framebuffer sizes with GLFW.
+  void syncWindowAndFramebufferSizes();
+
   // Process user interaction input between render calls.
   void processInput();
 
@@ -122,6 +131,9 @@ private:
 
   /// Platform that was selected during initialization
   int m_platform;
+
+  // Application owning this wrapper. GLFW also stores this as the window user pointer.
+  EntropyApp* m_app = nullptr;
 
   // GLFW window that is owned by this class:
   GLFWwindow* m_window;
@@ -139,6 +151,7 @@ private:
   std::function<void(std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime)> m_framerateLimiter = nullptr;
   std::function<void()> m_renderScene = nullptr;
   std::function<void()> m_renderGui = nullptr;
+  std::function<void()> m_processBackground = nullptr;
 
   // Backups of window position and size, which are restored when changing from full-screen to
   // windowed mode

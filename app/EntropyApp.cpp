@@ -247,8 +247,9 @@ EntropyApp::EntropyApp()
   , m_imageLoadFailed(false)
   , m_glfw(this, GL_VERSION_MAJOR, GL_VERSION_MINOR) // GLFW creates the OpenGL contex
   , m_data()
-  , m_rendering(m_data)                                 // Requires OpenGL context
-  , m_callbackHandler(m_data, m_glfw, m_rendering)      // Requires OpenGL context
+  , m_rendering(m_data)                            // Requires OpenGL context
+  , m_callbackHandler(m_data, m_glfw, m_rendering) // Requires OpenGL context
+  , m_snapCursorSync(m_data)
   , m_imgui(m_glfw.window(), m_data, m_callbackHandler) // Requires OpenGL context
 // m_IPCHandler()
 {
@@ -2112,7 +2113,17 @@ void EntropyApp::setCallbacks()
       m_rendering.framerateLimiter(lastFrameTime);
     },
     [this]() { m_rendering.render(); },
-    [this]() { m_imgui.render(); });
+    [this]() { m_imgui.render(); },
+    [this]() {
+      m_snapCursorSync.update();
+      if (m_data.settings().cursorSyncEnabled() && !m_data.state().animating()) {
+        m_glfw.setEventProcessingMode(EventProcessingMode::WaitTimeout);
+        m_glfw.setWaitTimeout(1.0 / 30.0);
+      }
+      else if (!m_data.state().animating()) {
+        m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+      }
+    });
 
   m_imgui.setCallbacks(
     [this]() { m_glfw.postEmptyEvent(); },

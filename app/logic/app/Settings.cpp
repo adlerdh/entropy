@@ -28,6 +28,69 @@ void AppSettings::setSynchronizeZooms(bool sync)
   m_synchronizeZoom = sync;
 }
 
+bool AppSettings::cursorSyncEnabled() const
+{
+  return m_cursorSyncEnabled;
+}
+void AppSettings::setCursorSyncEnabled(bool set)
+{
+  m_cursorSyncEnabled = set;
+}
+
+bool AppSettings::sendCursorSync() const
+{
+  return m_sendCursorSync;
+}
+void AppSettings::setSendCursorSync(bool set)
+{
+  m_sendCursorSync = set;
+}
+
+bool AppSettings::receiveCursorSync() const
+{
+  return m_receiveCursorSync;
+}
+void AppSettings::setReceiveCursorSync(bool set)
+{
+  m_receiveCursorSync = set;
+}
+
+bool AppSettings::sendZoomSync() const
+{
+  return m_sendZoomSync;
+}
+void AppSettings::setSendZoomSync(bool set)
+{
+  m_sendZoomSync = set;
+}
+
+bool AppSettings::receiveZoomSync() const
+{
+  return m_receiveZoomSync;
+}
+void AppSettings::setReceiveZoomSync(bool set)
+{
+  m_receiveZoomSync = set;
+}
+
+bool AppSettings::sendPanSync() const
+{
+  return m_sendPanSync;
+}
+void AppSettings::setSendPanSync(bool set)
+{
+  m_sendPanSync = set;
+}
+
+bool AppSettings::receivePanSync() const
+{
+  return m_receivePanSync;
+}
+void AppSettings::setReceivePanSync(bool set)
+{
+  m_receivePanSync = set;
+}
+
 bool AppSettings::overlays() const
 {
   return m_overlays;

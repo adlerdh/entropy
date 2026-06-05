@@ -1424,6 +1424,84 @@ void renderSettingsWindow(
         ImGui::EndTabItem();
       }
 
+      if (ImGui::BeginTabItem("Synchronize")) {
+        bool syncEnabled = appData.settings().cursorSyncEnabled();
+        if (ImGui::Checkbox("Synchronize with ITK-SNAP", &syncEnabled)) {
+          appData.settings().setCursorSyncEnabled(syncEnabled);
+        }
+        ImGui::SameLine();
+        helpMarker("Synchronize with ITK-SNAP through shared memory");
+
+        if (syncEnabled) {
+          ImGui::Spacing();
+          if (ImGui::BeginTable("##snapSyncOptions", 4, ImGuiTableFlags_SizingFixedFit)) {
+            auto renderSyncRow = [](
+                                   const char* label,
+                                   const char* sendId,
+                                   const char* receiveId,
+                                   bool sendValue,
+                                   bool receiveValue,
+                                   const std::function<void(bool)>& setSend,
+                                   const std::function<void(bool)>& setReceive,
+                                   const char* tooltip) {
+              ImGui::TableNextRow();
+
+              ImGui::TableSetColumnIndex(0);
+              ImGui::TextUnformatted(label);
+
+              ImGui::TableSetColumnIndex(1);
+              if (ImGui::Checkbox(sendId, &sendValue)) {
+                setSend(sendValue);
+              }
+
+              ImGui::TableSetColumnIndex(2);
+              if (ImGui::Checkbox(receiveId, &receiveValue)) {
+                setReceive(receiveValue);
+              }
+
+              ImGui::TableSetColumnIndex(3);
+              helpMarker(tooltip);
+            };
+
+            renderSyncRow(
+              "Cursor:",
+              "Send##cursorSync",
+              "Receive##cursorSync",
+              appData.settings().sendCursorSync(),
+              appData.settings().receiveCursorSync(),
+              [&appData](bool value) { appData.settings().setSendCursorSync(value); },
+              [&appData](bool value) { appData.settings().setReceiveCursorSync(value); },
+              "Send Entropy crosshairs movement to ITK-SNAP and receive ITK-SNAP cursor movement in Entropy. "
+              "ITK-SNAP cursor messages use NIFTI/RAS coordinates; Entropy converts between internal LPS and "
+              "ITK-SNAP RAS at the IPC boundary.");
+
+            renderSyncRow(
+              "Zoom:",
+              "Send##zoomSync",
+              "Receive##zoomSync",
+              appData.settings().sendZoomSync(),
+              appData.settings().receiveZoomSync(),
+              [&appData](bool value) { appData.settings().setSendZoomSync(value); },
+              [&appData](bool value) { appData.settings().setReceiveZoomSync(value); },
+              "Send Entropy view zoom to ITK-SNAP and receive ITK-SNAP view zoom in Entropy.");
+
+            renderSyncRow(
+              "Pan:",
+              "Send##panSync",
+              "Receive##panSync",
+              appData.settings().sendPanSync(),
+              appData.settings().receivePanSync(),
+              [&appData](bool value) { appData.settings().setSendPanSync(value); },
+              [&appData](bool value) { appData.settings().setReceivePanSync(value); },
+              "Send Entropy view pan to ITK-SNAP and receive ITK-SNAP view pan in Entropy.");
+
+            ImGui::EndTable();
+          }
+        }
+
+        ImGui::EndTabItem();
+      }
+
       if (ImGui::BeginTabItem("Segmentation")) {
         // Modulate opacity of segmentation with opacity of image:
         ImGui::Checkbox("Modulate segmentation with image opacity", &renderData.m_modulateSegOpacityWithImageOpacity);

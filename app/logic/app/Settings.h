@@ -8,9 +8,6 @@
 
 /**
  * @brief Holds all application settings
- *
- * @note the IPC handler for communication of crosshairs coordinates with ITK-SNAP
- * is not hooked up yet. It wasn't working properly across all platforms.
  */
 class AppSettings
 {
@@ -20,6 +17,27 @@ public:
 
   bool synchronizeZooms() const;
   void setSynchronizeZooms(bool);
+
+  bool cursorSyncEnabled() const;
+  void setCursorSyncEnabled(bool);
+
+  bool sendCursorSync() const;
+  void setSendCursorSync(bool);
+
+  bool receiveCursorSync() const;
+  void setReceiveCursorSync(bool);
+
+  bool sendZoomSync() const;
+  void setSendZoomSync(bool);
+
+  bool receiveZoomSync() const;
+  void setReceiveZoomSync(bool);
+
+  bool sendPanSync() const;
+  void setSendPanSync(bool);
+
+  bool receivePanSync() const;
+  void setReceivePanSync(bool);
 
   bool overlays() const;
   void setOverlays(bool);
@@ -75,6 +93,14 @@ public:
 private:
   bool m_synchronizeZoom = true; //!< Synchronize zoom between views
   bool m_overlays = true;        //!< Render UI and vector overlays
+
+  bool m_cursorSyncEnabled = false;
+  bool m_sendCursorSync = true;
+  bool m_receiveCursorSync = true;
+  bool m_sendZoomSync = true;
+  bool m_receiveZoomSync = true;
+  bool m_sendPanSync = true;
+  bool m_receivePanSync = true;
 
   /// Crosshairs move to the position of every new point added to an annotation
   bool m_crosshairsMoveWhileAnnotating = false;

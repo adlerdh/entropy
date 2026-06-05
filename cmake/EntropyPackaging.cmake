@@ -21,6 +21,7 @@ if(APPLE)
     "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
     "${glfw_PREFIX}/install/lib"
     "${nativefiledialog_PREFIX}/install/lib"
+    "${qtbase_PREFIX}/install/lib"
     "${spdlog_PREFIX}/install/lib"
     "${itk_PREFIX}/build/lib"
   )
@@ -66,6 +67,8 @@ if(APPLE)
 
       file(GLOB_RECURSE entropy_BUNDLE_DYLIBS
         \"\${entropy_INSTALLED_BUNDLE}/Contents/Frameworks/*.dylib\")
+      file(GLOB entropy_BUNDLE_FRAMEWORKS
+        \"\${entropy_INSTALLED_BUNDLE}/Contents/Frameworks/*.framework\")
 
       foreach(entropy_BUNDLE_DYLIB IN LISTS entropy_BUNDLE_DYLIBS)
         execute_process(
@@ -74,6 +77,16 @@ if(APPLE)
         )
         if(NOT entropy_CODESIGN_RESULT EQUAL 0)
           message(FATAL_ERROR \"Failed to sign \${entropy_BUNDLE_DYLIB}\")
+        endif()
+      endforeach()
+
+      foreach(entropy_BUNDLE_FRAMEWORK IN LISTS entropy_BUNDLE_FRAMEWORKS)
+        execute_process(
+          COMMAND \"\${entropy_CODESIGN_EXECUTABLE}\" --force --sign \"\${entropy_CODESIGN_IDENTITY}\" \"\${entropy_BUNDLE_FRAMEWORK}\"
+          RESULT_VARIABLE entropy_CODESIGN_RESULT
+        )
+        if(NOT entropy_CODESIGN_RESULT EQUAL 0)
+          message(FATAL_ERROR \"Failed to sign \${entropy_BUNDLE_FRAMEWORK}\")
         endif()
       endforeach()
 

@@ -3,6 +3,8 @@
 #include "logic/app/AppPaths.h"
 #include "logic/app/Logging.h"
 
+#include <QCoreApplication>
+
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
@@ -44,6 +46,7 @@ int main(int argc, char* argv[])
 
     spdlog::debug("Parsed command line parameters:\n{}", params);
 
+    QCoreApplication qtCore(argc, argv);
     EntropyApp app;
     app.init();
 

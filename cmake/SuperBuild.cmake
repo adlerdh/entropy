@@ -482,6 +482,45 @@ ExternalProject_Add(nlohmann_json
 )
 
 
+message(STATUS "Adding external library QtBase in ${qtbase_PREFIX}")
+
+ExternalProject_Add(qtbase
+  URL "https://download.qt.io/archive/qt/6.8/6.8.1/submodules/qtbase-everywhere-src-${qtbase_VERSION}.tar.xz"
+  URL_HASH SHA256=40b14562ef3bd779bc0e0418ea2ae08fa28235f8ea6e8c0cb3bce1d6ad58dcaf
+  DOWNLOAD_NAME "qtbase-everywhere-src-${qtbase_VERSION}.tar.xz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
+
+  PREFIX "${qtbase_PREFIX}"
+  TMP_DIR "${qtbase_PREFIX}/tmp"
+  STAMP_DIR "${qtbase_PREFIX}/stamp"
+  DOWNLOAD_DIR "${qtbase_PREFIX}/download"
+  SOURCE_DIR "${qtbase_PREFIX}/src"
+  BINARY_DIR "${qtbase_PREFIX}/build"
+  INSTALL_DIR "${qtbase_PREFIX}/install"
+
+  CONFIGURE_COMMAND
+    <SOURCE_DIR>/configure
+      -prefix <INSTALL_DIR>
+      -opensource
+      -confirm-license
+      -release
+      -shared
+      -no-gui
+      -no-widgets
+      -no-opengl
+      -nomake examples
+      -nomake tests
+      -no-dbus
+      -no-openssl
+      -no-icu
+
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --parallel ${SUPERBUILD_PARALLEL}
+  INSTALL_COMMAND
+    ${CMAKE_COMMAND} --install <BINARY_DIR>
+    COMMAND ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/include
+)
+
+
 
 message(STATUS "Adding external library spdlog in ${spdlog_PREFIX}")
 

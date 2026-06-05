@@ -14,7 +14,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion)
+GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion) : m_app(app)
 {
   if (!app) {
     spdlog::critical("The application is null on GLFW creation");
@@ -262,11 +262,13 @@ GlfwWrapper::~GlfwWrapper()
 void GlfwWrapper::setCallbacks(
   std::function<void(std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime)> framerateLimiter,
   std::function<void()> renderScene,
-  std::function<void()> renderGui)
+  std::function<void()> renderGui,
+  std::function<void()> processBackground)
 {
   m_framerateLimiter = std::move(framerateLimiter);
   m_renderScene = std::move(renderScene);
   m_renderGui = std::move(renderGui);
+  m_processBackground = std::move(processBackground);
 }
 
 void GlfwWrapper::setEventProcessingMode(EventProcessingMode mode)
@@ -345,6 +347,10 @@ void GlfwWrapper::renderLoop(
       m_framerateLimiter(lastFrameTime);
     }
 
+    if (m_processBackground) {
+      m_processBackground();
+    }
+
     processInput();
     renderOnce();
 
@@ -375,8 +381,19 @@ void GlfwWrapper::renderLoop(
 
 void GlfwWrapper::renderOnce()
 {
+  syncWindowAndFramebufferSizes();
   m_renderScene();
   m_renderGui();
+}
+
+void GlfwWrapper::renderAndSwapOnce()
+{
+  if (!m_renderScene || !m_renderGui) {
+    return;
+  }
+
+  renderOnce();
+  glfwSwapBuffers(m_window);
 }
 
 void GlfwWrapper::postEmptyEvent()
@@ -393,6 +410,23 @@ void GlfwWrapper::processInput()
   //    {
   //        glfwSetWindowShouldClose( m_window, true );
   //    }
+}
+
+void GlfwWrapper::syncWindowAndFramebufferSizes()
+{
+  if (!m_app || !m_window) {
+    return;
+  }
+
+  int windowWidth = 0;
+  int windowHeight = 0;
+  int fbWidth = 0;
+  int fbHeight = 0;
+  glfwGetWindowSize(m_window, &windowWidth, &windowHeight);
+  glfwGetFramebufferSize(m_window, &fbWidth, &fbHeight);
+
+  m_app->windowData().setFramebufferSize(fbWidth, fbHeight);
+  m_app->resize(windowWidth, windowHeight);
 }
 
 const GLFWwindow* GlfwWrapper::window() const

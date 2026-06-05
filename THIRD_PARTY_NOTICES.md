@@ -19,9 +19,12 @@ License information is taken from the upstream license files for the pinned sour
 | [NanoVG](https://github.com/memononen/nanovg) | f93799c | https://github.com/memononen/nanovg/commit/f93799c078fa11ed61c078c65a53914c8782c00b | zlib |
 | [Native File Dialog Extended](https://github.com/btzy/nativefiledialog-extended) | v1.3.0 | https://github.com/btzy/nativefiledialog-extended/archive/refs/tags/v1.3.0.tar.gz | zlib |
 | [nlohmann::json](https://github.com/nlohmann/json) | v3.12.0 | https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz | MIT |
+| [Qt Base / Qt Core](https://www.qt.io/product/qt6) | 6.8.1 | https://download.qt.io/archive/qt/6.8/6.8.1/submodules/qtbase-everywhere-src-6.8.1.tar.xz | LGPL-3.0-only |
 | [spdlog](https://github.com/gabime/spdlog) | v1.17.0 | https://github.com/gabime/spdlog/archive/refs/tags/v1.17.0.tar.gz | MIT |
 | [stduuid](https://github.com/mariusbancila/stduuid) | v1.2.3 | https://github.com/mariusbancila/stduuid/archive/refs/tags/v1.2.3.tar.gz | MIT |
 | [TinyFSM](https://github.com/digint/tinyfsm) | v1.15.1 | https://github.com/digint/tinyfsm/commit/01908cab0397fcdadb0a14e9a3187c308e2708ca | MIT |
+
+Qt Base is available upstream under multiple license options. Entropy uses the open-source LGPL-3.0-only option for Qt Core and configures Qt as a shared-library build so QtCore is dynamically linked.
 
 ### Vendored sources and libraries
 The following external sources and libraries have been committed directly to the Entropy repository.
