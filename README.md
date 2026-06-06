@@ -63,17 +63,17 @@ cmake --install build-release --prefix build-release/install
 open build-release/install/Entropy.app
 ```
 
-For a distributable package, run CPack from the repository root after the app build has completed. CPack creates a drag-and-drop DMG named like `Entropy-0.9.1.0-macOS.dmg`:
+For a distributable package, build the Release package preset after the app build has completed. CPack creates a drag-and-drop DMG named like `Entropy-x.y.z.w-macOS.dmg`:
 
 ```sh
-cpack -G DragNDrop --config build-release/CPackConfig.cmake
+cmake --build --preset release-package --parallel
 ```
 
 The install and CPack steps ad-hoc sign the copied app by default so local Finder launches work after `fixup_bundle` rewrites library paths. For a real release, configure the app build with a Developer ID Application identity:
 
 ```sh
 cmake --preset release-app -Dentropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
-cpack -G DragNDrop --config build-release/CPackConfig.cmake
+cmake --build --preset release-package --parallel
 ```
 
 To test the DMG manually, open it, drag `Entropy.app` to `/Applications`, and launch it from Finder or Launchpad. Finder-launched macOS builds write logs under `~/Library/Logs/Entropy` and UI state under `~/Library/Application Support/Entropy`; terminal launches keep the development defaults described in the Running section.
@@ -103,16 +103,16 @@ cmake --install build-release --prefix build-release/linux-package-install
 build-release/linux-package-install/bin/Entropy
 ```
 
-For a distributable package, run CPack from the repository root after the app build has completed. CPack creates a Debian package named like `Entropy-0.9.1.0-Linux-x86_64.deb`:
+For a distributable package, build the Release package preset after the app build has completed. CPack creates a Debian package named like `Entropy-x.y.z.w-Linux-x86_64.deb`:
 
 ```sh
-cpack -G DEB --config build-release/CPackConfig.cmake
+cmake --build --preset release-package --parallel
 ```
 
 To test the package manually, install it with apt and launch the installed app:
 
 ```sh
-sudo apt install ./Entropy-0.9.1.0-Linux-x86_64.deb
+sudo apt install ./Entropy-x.y.z.w-Linux-x86_64.deb
 Entropy
 ```
 
