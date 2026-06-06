@@ -32,6 +32,10 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
 
+#include <algorithm>
+#include <limits>
+#include <vector>
+
 namespace
 {
 using uuid = uuids::uuid;
@@ -830,6 +834,7 @@ void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
   if (!activeSeg) {
     return;
   }
+  const glm::vec3 activeBrushSpacing = activeSeg->header().spacing();
 
   // Gather all synchronized segmentations
   std::unordered_set<uuid> segUids;
@@ -901,7 +906,196 @@ void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
       brushSize,
       roundedPixelPos,
       voxelViewPlane,
+      activeBrushSpacing,
       updateSegTexture);
+  }
+}
+
+void CallbackHandler::clearBrushPreview()
+{
+  m_lastBrushPreviewHit.reset();
+  m_lastBrushPreviewSwapFgAndBg = false;
+  m_lastBrushPreviewPainting = false;
+  m_lastBrushPreviewRevision = m_appData.settings().brushPreviewRevision();
+  m_brushPreviewData.clear();
+  m_rendering.clearBrushPreviewTextures();
+}
+
+void CallbackHandler::refreshBrushPreviewIfNeeded()
+{
+  const AppSettings& settings = m_appData.settings();
+  if (!m_lastBrushPreviewHit) {
+    return;
+  }
+
+  if (MouseMode::Segment != m_appData.state().mouseMode() || BrushPreviewMode::Disabled == settings.brushPreviewMode())
+  {
+    clearBrushPreview();
+    return;
+  }
+
+  if (settings.brushPreviewRevision() != m_lastBrushPreviewRevision) {
+    updateBrushPreview(*m_lastBrushPreviewHit, m_lastBrushPreviewSwapFgAndBg, m_lastBrushPreviewPainting);
+  }
+}
+
+void CallbackHandler::updateBrushPreview(const ViewHit& hit, bool swapFgAndBg, bool paintingPreview)
+{
+  const glm::ivec3 voxelZero{0, 0, 0};
+  const AppSettings& settings = m_appData.settings();
+
+  m_rendering.hideBrushPreviewTextures();
+
+  if (!hit.view) {
+    return;
+  }
+
+  const auto activeImageUid = m_appData.activeImageUid();
+  if (!activeImageUid) {
+    return;
+  }
+
+  if (0 == std::count(std::begin(hit.view->visibleImages()), std::end(hit.view->visibleImages()), *activeImageUid)) {
+    return;
+  }
+
+  const auto activeSegUid = m_appData.imageToActiveSegUid(*activeImageUid);
+  if (!activeSegUid) {
+    return;
+  }
+  const Image* activeSeg = m_appData.seg(*activeSegUid);
+  if (!activeSeg) {
+    return;
+  }
+  const glm::vec3 activeBrushSpacing = activeSeg->header().spacing();
+
+  m_lastBrushPreviewHit = hit;
+  m_lastBrushPreviewSwapFgAndBg = swapFgAndBg;
+  m_lastBrushPreviewPainting = paintingPreview;
+  m_lastBrushPreviewRevision = settings.brushPreviewRevision();
+
+  std::vector<std::pair<uuid, uuid>> imageSegUids;
+  imageSegUids.emplace_back(*activeImageUid, *activeSegUid);
+
+  for (const auto& imageUid : m_appData.imagesBeingSegmented()) {
+    if (imageUid == *activeImageUid) {
+      continue;
+    }
+
+    if (const auto segUid = m_appData.imageToActiveSegUid(imageUid)) {
+      imageSegUids.emplace_back(imageUid, *segUid);
+    }
+  }
+
+  const LabelType labelToPaint = static_cast<LabelType>(
+    swapFgAndBg ? m_appData.settings().backgroundLabel() : m_appData.settings().foregroundLabel());
+
+  const LabelType labelToReplace = static_cast<LabelType>(
+    swapFgAndBg ? m_appData.settings().foregroundLabel() : m_appData.settings().backgroundLabel());
+
+  const int brushSize = static_cast<int>(settings.brushSizeInVoxels());
+  const bool onlyChangedVoxels = !paintingPreview && (BrushPreviewVoxels::Changed == settings.brushPreviewVoxels());
+
+  for (const auto& [imageUid, segUid] : imageSegUids) {
+    const Image* img = m_appData.image(imageUid);
+    Image* seg = m_appData.seg(segUid);
+    if (!img || !seg) {
+      continue;
+    }
+
+    const glm::ivec3 dims{seg->header().pixelDimensions()};
+    const glm::mat4& pixel_T_worldDef = seg->transformations().pixel_T_worldDef();
+    const glm::vec4 pixelPos = pixel_T_worldDef * hit.worldPos_offsetApplied;
+    const glm::vec3 pixelPos3 = pixelPos / pixelPos.w;
+    const glm::ivec3 roundedPixelPos{glm::round(pixelPos3)};
+
+    if (glm::any(glm::lessThan(roundedPixelPos, voxelZero)) || glm::any(glm::greaterThanEqual(roundedPixelPos, dims))) {
+      continue;
+    }
+
+    const glm::vec3 voxelViewPlaneNormal =
+      glm::normalize(glm::inverseTranspose(glm::mat3(pixel_T_worldDef)) * (-hit.worldFrontAxis));
+    const glm::vec4 voxelViewPlane = math::makePlane(voxelViewPlaneNormal, pixelPos3);
+
+    auto footprint = computeSegmentationBrushFootprint(
+      *seg,
+      settings.useRoundBrush(),
+      settings.use3dBrush(),
+      settings.useIsotropicBrush(),
+      brushSize,
+      roundedPixelPos,
+      voxelViewPlane,
+      activeBrushSpacing);
+
+    if (footprint.voxels.empty()) {
+      continue;
+    }
+
+    if (onlyChangedVoxels) {
+      SegmentationVoxelSet changedVoxels;
+      glm::ivec3 minVoxel{std::numeric_limits<int>::max()};
+      glm::ivec3 maxVoxel{std::numeric_limits<int>::lowest()};
+
+      for (const auto& p : footprint.voxels) {
+        const int64_t currentLabel = seg->value<int64_t>(0, p.x, p.y, p.z).value_or(0);
+        const bool wouldChange = settings.replaceBackgroundWithForeground()
+                                   ? (labelToReplace == currentLabel && labelToPaint != currentLabel)
+                                   : (labelToPaint != currentLabel);
+        if (!wouldChange) {
+          continue;
+        }
+
+        changedVoxels.insert(p);
+        minVoxel = glm::min(minVoxel, p);
+        maxVoxel = glm::max(maxVoxel, p);
+      }
+
+      footprint.voxels = std::move(changedVoxels);
+      footprint.minVoxel = minVoxel;
+      footprint.maxVoxel = maxVoxel;
+    }
+
+    if (footprint.voxels.empty()) {
+      continue;
+    }
+
+    const glm::uvec3 previewSize{footprint.maxVoxel - footprint.minVoxel + glm::ivec3{1}};
+    const size_t N =
+      static_cast<size_t>(previewSize.x) * static_cast<size_t>(previewSize.y) * static_cast<size_t>(previewSize.z);
+    m_brushPreviewData.assign(N, 0);
+
+    for (const auto& p : footprint.voxels) {
+      const glm::ivec3 q = p - footprint.minVoxel;
+      const size_t index = static_cast<size_t>(q.x) +
+                           static_cast<size_t>(previewSize.x) *
+                             (static_cast<size_t>(q.y) + static_cast<size_t>(previewSize.y) * static_cast<size_t>(q.z));
+      m_brushPreviewData[index] = 1;
+    }
+
+    glm::vec4 previewColor{1.0f};
+    if (const auto tableUid = m_appData.labelTableUid(seg->settings().labelTableIndex())) {
+      if (const ParcellationLabelTable* table = m_appData.labelTable(*tableUid)) {
+        const auto labelIndex = static_cast<std::size_t>(labelToPaint);
+        if (labelIndex < table->numLabels()) {
+          const glm::u8vec3 color = table->getColor(labelIndex);
+          previewColor = glm::vec4{glm::vec3{color} / 255.0f, 1.0f};
+        }
+      }
+    }
+
+    const glm::mat4 localVoxel_T_world = glm::translate(-glm::vec3{footprint.minVoxel}) *
+                                         seg->transformations().pixel_T_subject() *
+                                         img->transformations().subject_T_worldDef();
+
+    m_rendering.updateBrushPreviewTexture(
+      imageUid,
+      segUid,
+      seg->header().memoryComponentType(),
+      previewSize,
+      localVoxel_T_world,
+      previewColor,
+      !paintingPreview,
+      m_brushPreviewData.data());
   }
 }
 

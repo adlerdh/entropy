@@ -7,8 +7,10 @@
 #include <glm/fwd.hpp>
 #include <uuid.h>
 
+#include <cstdint>
 #include <optional>
 #include <set>
+#include <vector>
 
 class AppData;
 class GlfwWrapper;
@@ -82,6 +84,10 @@ public:
    * @param leftButton
    */
   void doSegment(const ViewHit& hit, bool swapFgAndBg);
+
+  void updateBrushPreview(const ViewHit& hit, bool swapFgAndBg, bool paintingPreview);
+  void refreshBrushPreviewIfNeeded();
+  void clearBrushPreview();
 
   /**
    * @brief Paint the active segmentation of the active image with the
@@ -299,6 +305,11 @@ private:
   AppData& m_appData;
   GlfwWrapper& m_glfw;
   Rendering& m_rendering;
+  std::optional<ViewHit> m_lastBrushPreviewHit;
+  bool m_lastBrushPreviewSwapFgAndBg = false;
+  bool m_lastBrushPreviewPainting = false;
+  uint64_t m_lastBrushPreviewRevision = 0;
+  std::vector<int64_t> m_brushPreviewData;
 
   /**
    * @brief This function is intended to run prior to cursor callbacks that require an active view.

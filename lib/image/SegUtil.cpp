@@ -294,6 +294,53 @@ void updateSegmentationVoxels(
   updateSegTexture(seg.header().memoryComponentType(), dataOffset, dataSize, voxelValues.data());
 }
 
+SegmentationBrushFootprint computeSegmentationBrushFootprint(
+  const Image& seg,
+  bool brushIsRound,
+  bool brushIs3d,
+  bool brushIsIsotropic,
+  int brushSizeInVoxels,
+  const glm::ivec3& roundedPixelPos,
+  const glm::vec4& voxelViewPlane,
+  std::optional<glm::vec3> referenceSpacing)
+{
+  std::array<float, 3> mmToVoxelSpacings{1.0f, 1.0f, 1.0f};
+  std::array<int, 3> mmToVoxelCoeffs{1, 1, 1};
+
+  if (brushIsIsotropic) {
+    static constexpr bool sk_isotropicAlongMaxSpacingAxis = false;
+    const glm::vec3 brushSpacing = referenceSpacing.value_or(seg.header().spacing());
+    const float spacing = (sk_isotropicAlongMaxSpacingAxis) ? glm::compMax(brushSpacing) : glm::compMin(brushSpacing);
+
+    for (uint32_t i = 0; i < 3; ++i) {
+      mmToVoxelSpacings[i] = spacing / seg.header().spacing()[static_cast<int>(i)];
+      mmToVoxelCoeffs[i] = std::max(static_cast<int>(std::ceil(mmToVoxelSpacings[i])), 1);
+    }
+  }
+
+  SegmentationBrushFootprint footprint;
+  if (brushIs3d) {
+    std::tie(footprint.voxels, footprint.minVoxel, footprint.maxVoxel) = paintBrush3d(
+      seg.header().pixelDimensions(),
+      roundedPixelPos,
+      mmToVoxelSpacings,
+      mmToVoxelCoeffs,
+      brushSizeInVoxels,
+      brushIsRound);
+  }
+  else {
+    std::tie(footprint.voxels, footprint.minVoxel, footprint.maxVoxel) = paintBrush2d(
+      voxelViewPlane,
+      seg.header().pixelDimensions(),
+      roundedPixelPos,
+      mmToVoxelSpacings,
+      brushSizeInVoxels,
+      brushIsRound);
+  }
+
+  return footprint;
+}
+
 void paintSegmentation(
   Image& seg,
 
@@ -307,6 +354,7 @@ void paintSegmentation(
 
   const glm::ivec3& roundedPixelPos,
   const glm::vec4& voxelViewPlane,
+  std::optional<glm::vec3> referenceSpacing,
 
   const std::function<void(
     const ComponentType& memoryComponentType,
@@ -314,59 +362,23 @@ void paintSegmentation(
     const glm::uvec3& size,
     const int64_t* data)>& updateSegTexture)
 {
-  // Set the brush radius (not including the central voxel): Radius = (brush width - 1) / 2
-  // A single voxel brush has radius zero, a width 3 voxel brush has radius 1,
-  // a width 5 voxel brush has radius 2, etc.
-
-  // Coefficients that convert mm to voxel spacing:
-  std::array<float, 3> mmToVoxelSpacings{1.0f, 1.0f, 1.0f};
-
-  // Integer versions of the mm to voxel coefficients:
-  std::array<int, 3> mmToVoxelCoeffs{1, 1, 1};
-
-  if (brushIsIsotropic) {
-    // Compute factors that account for anisotropic spacing:
-    static constexpr bool sk_isotropicAlongMaxSpacingAxis = false;
-
-    const float spacing =
-      (sk_isotropicAlongMaxSpacingAxis) ? glm::compMax(seg.header().spacing()) : glm::compMin(seg.header().spacing());
-
-    for (uint32_t i = 0; i < 3; ++i) {
-      mmToVoxelSpacings[i] = spacing / seg.header().spacing()[static_cast<int>(i)];
-      mmToVoxelCoeffs[i] = std::max(static_cast<int>(std::ceil(mmToVoxelSpacings[i])), 1);
-    }
-  }
-
-  // Set of unique voxels to change:
-  std::unordered_set<glm::ivec3> voxelsToChange;
-
-  // Min/max corners of the set of voxels to change
-  glm::ivec3 maxVoxel{std::numeric_limits<int>::lowest()};
-  glm::ivec3 minVoxel{std::numeric_limits<int>::max()};
-
-  if (brushIs3d) {
-    std::tie(voxelsToChange, minVoxel, maxVoxel) = paintBrush3d(
-      seg.header().pixelDimensions(),
-      roundedPixelPos,
-      mmToVoxelSpacings,
-      mmToVoxelCoeffs,
-      brushSizeInVoxels,
-      brushIsRound);
-  }
-  else {
-    std::tie(voxelsToChange, minVoxel, maxVoxel) = paintBrush2d(
-      voxelViewPlane,
-      seg.header().pixelDimensions(),
-      roundedPixelPos,
-      mmToVoxelSpacings,
-      brushSizeInVoxels,
-      brushIsRound);
+  const auto footprint = computeSegmentationBrushFootprint(
+    seg,
+    brushIsRound,
+    brushIs3d,
+    brushIsIsotropic,
+    brushSizeInVoxels,
+    roundedPixelPos,
+    voxelViewPlane,
+    referenceSpacing);
+  if (footprint.voxels.empty()) {
+    return;
   }
 
   updateSegmentationVoxels(
-    voxelsToChange,
-    minVoxel,
-    maxVoxel,
+    footprint.voxels,
+    footprint.minVoxel,
+    footprint.maxVoxel,
     labelToPaint,
     labelToReplace,
     brushReplacesBgWithFg,

@@ -1225,6 +1225,8 @@ void ImGuiWrapper::render()
     }
   }
 
+  m_callbackHandler.refreshBrushPreviewIfNeeded();
+
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

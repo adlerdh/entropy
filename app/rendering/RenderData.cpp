@@ -111,6 +111,7 @@ RenderData::RenderData()
   , m_imageTextures()
   , m_distanceMapTextures()
   , m_segTextures()
+  , m_brushPreviews()
   , m_labelBufferTextures()
   , m_colormapTextures()
 

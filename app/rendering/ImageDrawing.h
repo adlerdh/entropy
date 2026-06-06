@@ -48,6 +48,20 @@ void drawSegQuad(
   float segInteriorOpacity,
   float segInterpCutoff);
 
+void drawSegPreviewQuad(
+  GLShaderProgram& program,
+  const RenderData::Quad& quad,
+  const glm::mat4& texture_T_world,
+  const glm::mat4& voxel_T_world,
+  const glm::uvec3& textureSize,
+  const View& view,
+  const Viewport& windowViewport,
+  const glm::vec3& worldCrosshairs,
+  float flashlightRadius,
+  bool flashlightOverlays,
+  const SegmentationOutlineStyle& segOutlineStyle,
+  float segInteriorOpacity);
+
 void drawRaycastQuad(
   GLShaderProgram& program,
   RenderData::Quad& quad,

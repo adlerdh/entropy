@@ -9,11 +9,29 @@
 
 #include <uuid.h>
 #include <functional>
+#include <optional>
 #include <unordered_set>
 
 class Image;
 
 using SegmentationVoxelSet = std::unordered_set<glm::ivec3>;
+
+struct SegmentationBrushFootprint
+{
+  SegmentationVoxelSet voxels;
+  glm::ivec3 minVoxel{0};
+  glm::ivec3 maxVoxel{0};
+};
+
+SegmentationBrushFootprint computeSegmentationBrushFootprint(
+  const Image& seg,
+  bool brushIsRound,
+  bool brushIs3d,
+  bool brushIsIsotropic,
+  int brushSizeInVoxels,
+  const glm::ivec3& roundedPixelPos,
+  const glm::vec4& voxelViewPlane,
+  std::optional<glm::vec3> referenceSpacing = std::nullopt);
 
 /**
  * @brief paintSegmentation
@@ -43,6 +61,7 @@ void paintSegmentation(
 
   const glm::ivec3& roundedPixelPos,
   const glm::vec4& voxelViewPlane,
+  std::optional<glm::vec3> referenceSpacing,
 
   const std::function<void(
     const ComponentType& memoryComponentType,

@@ -2,6 +2,7 @@
 
 #include "common/Exception.hpp"
 #include "common/Expected.h"
+#include "common/MathFuncs.h"
 #include "common/Types.h"
 
 #include "image/ImageColorMap.h"
@@ -43,6 +44,8 @@
 #include <glad/glad.h>
 
 #include <nanovg.h>
+
+#include <limits>
 #define NANOVG_GL3_IMPLEMENTATION
 #include <nanovg_gl.h>
 
@@ -77,6 +80,61 @@ const glm::vec2 sk_zeroVec2{0.0f, 0.0f};
 const glm::vec3 sk_zeroVec3{0.0f, 0.0f, 0.0f};
 const glm::vec4 sk_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
 const glm::ivec2 sk_zeroIVec2{0, 0};
+
+uint32_t growBrushPreviewCapacity(uint32_t current, uint32_t required)
+{
+  if (current >= required) {
+    return current;
+  }
+
+  if (0 == current) {
+    return required;
+  }
+
+  const uint64_t grown = static_cast<uint64_t>(current) + std::max<uint64_t>(1, current / 2);
+  return static_cast<uint32_t>(
+    std::min<uint64_t>(std::max<uint64_t>(grown, required), std::numeric_limits<uint32_t>::max()));
+}
+
+glm::uvec3 growBrushPreviewCapacity(const glm::uvec3& current, const glm::uvec3& required)
+{
+  return glm::uvec3{
+    growBrushPreviewCapacity(current.x, required.x),
+    growBrushPreviewCapacity(current.y, required.y),
+    growBrushPreviewCapacity(current.z, required.z)};
+}
+
+template<typename ValueType>
+const void* prepareBrushPreviewUploadData(
+  std::vector<ValueType>& uploadData,
+  const int64_t* data,
+  const glm::uvec3& sizeInVoxels,
+  const glm::uvec3& textureCapacity)
+{
+  const size_t numCapacityVoxels = static_cast<size_t>(textureCapacity.x) * static_cast<size_t>(textureCapacity.y) *
+                                   static_cast<size_t>(textureCapacity.z);
+
+  uploadData.resize(numCapacityVoxels);
+  std::fill(uploadData.begin(), uploadData.end(), ValueType{0});
+
+  for (uint32_t z = 0; z < sizeInVoxels.z; ++z) {
+    for (uint32_t y = 0; y < sizeInVoxels.y; ++y) {
+      for (uint32_t x = 0; x < sizeInVoxels.x; ++x) {
+        const size_t srcIndex =
+          static_cast<size_t>(x) +
+          static_cast<size_t>(sizeInVoxels.x) *
+            (static_cast<size_t>(y) + static_cast<size_t>(sizeInVoxels.y) * static_cast<size_t>(z));
+        const size_t dstIndex =
+          static_cast<size_t>(x) +
+          static_cast<size_t>(textureCapacity.x) *
+            (static_cast<size_t>(y) + static_cast<size_t>(textureCapacity.y) * static_cast<size_t>(z));
+        uploadData[dstIndex] = static_cast<ValueType>(data[srcIndex]);
+      }
+    }
+  }
+
+  return uploadData.data();
+}
 
 /// @note OpenGL should have a at least a minimum of 16 texture units
 
@@ -706,6 +764,106 @@ void Rendering::updateSegTextureWithInt64Data(
     default: {
       return;
     }
+  }
+}
+
+void Rendering::updateBrushPreviewTexture(
+  const uuid& imageUid,
+  const uuid& segUid,
+  const ComponentType& compType,
+  const glm::uvec3& sizeInVoxels,
+  const glm::mat4& voxel_T_world,
+  const glm::vec4& color,
+  bool allowFill,
+  const int64_t* data)
+{
+  if (!data || glm::any(glm::lessThanEqual(sizeInVoxels, glm::uvec3{0}))) {
+    return;
+  }
+
+  auto& preview = m_appData.renderData().m_brushPreviews[imageUid];
+  const bool fitsInCapacity = glm::all(glm::lessThanEqual(sizeInVoxels, preview.textureCapacity));
+  if (!preview.texture || !fitsInCapacity) {
+    preview.textureCapacity = growBrushPreviewCapacity(preview.textureCapacity, sizeInVoxels);
+  }
+
+  const glm::uvec3 uploadSize = preview.textureCapacity;
+  const bool needsNewTexture =
+    !preview.texture || preview.texture->size() != uploadSize || preview.componentType != compType;
+  preview.visible = true;
+  preview.segUid = segUid;
+  preview.imageUid = imageUid;
+  preview.componentType = compType;
+  preview.size = sizeInVoxels;
+  preview.voxel_T_world = voxel_T_world;
+  preview.texture_T_world =
+    glm::mat4{math::computeImagePixelToTextureTransformation(glm::u64vec3{uploadSize})} * voxel_T_world;
+  preview.color = color;
+  preview.allowFill = allowFill;
+
+  GLTexture::PixelStoreSettings pixelStoreSettings;
+  pixelStoreSettings.m_alignment = 1;
+
+  auto uploadPreviewData =
+    [&preview, &pixelStoreSettings, &uploadSize, &compType, needsNewTexture](const void* uploadData) {
+      if (needsNewTexture) {
+        preview.texture
+          .emplace(tex::Target::Texture3D, GLTexture::MultisampleSettings(), pixelStoreSettings, pixelStoreSettings);
+
+        GLTexture& texture = *preview.texture;
+        texture.generate();
+        texture.setMinificationFilter(tex::MinificationFilter::Nearest);
+        texture.setMagnificationFilter(tex::MagnificationFilter::Nearest);
+        texture.setBorderColor(glm::vec4{0.0f});
+        texture.setWrapMode(tex::WrapMode::ClampToBorder);
+        texture.setAutoGenerateMipmaps(false);
+        texture.setSize(uploadSize);
+        texture.setData(
+          0,
+          GLTexture::getSizedInternalRedFormat(compType),
+          GLTexture::getBufferPixelRedFormat(compType),
+          GLTexture::getBufferPixelDataType(compType),
+          uploadData);
+      }
+      else {
+        preview.texture->setSubData(
+          0,
+          glm::uvec3{0},
+          uploadSize,
+          GLTexture::getBufferPixelRedFormat(compType),
+          GLTexture::getBufferPixelDataType(compType),
+          uploadData);
+      }
+    };
+
+  switch (compType) {
+    case ComponentType::UInt8: {
+      uploadPreviewData(prepareBrushPreviewUploadData(preview.dataU8, data, sizeInVoxels, uploadSize));
+      break;
+    }
+    case ComponentType::UInt16: {
+      uploadPreviewData(prepareBrushPreviewUploadData(preview.dataU16, data, sizeInVoxels, uploadSize));
+      break;
+    }
+    case ComponentType::UInt32: {
+      uploadPreviewData(prepareBrushPreviewUploadData(preview.dataU32, data, sizeInVoxels, uploadSize));
+      break;
+    }
+    default: {
+      return;
+    }
+  }
+}
+
+void Rendering::clearBrushPreviewTextures()
+{
+  m_appData.renderData().m_brushPreviews.clear();
+}
+
+void Rendering::hideBrushPreviewTextures()
+{
+  for (auto& entry : m_appData.renderData().m_brushPreviews) {
+    entry.second.visible = false;
   }
 }
 
@@ -1850,6 +2008,8 @@ void Rendering::renderAllImagesForView(
             P.setUniform("u_tex_T_world", U.segTexture_T_world);
             P.setUniform("u_voxel_T_world", U.segVoxel_T_world);
             P.setUniform("u_segOpacity", U.segOpacity * (R.m_modulateSegOpacityWithImageOpacity ? U.imgOpacity : 1.0f));
+            P.setUniform("u_useSegColorOverride", false);
+            P.setUniform("u_segColorOverride", sk_zeroVec4);
             P.setUniform("u_quadrants", R.m_quadrants);
             P.setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
             P.setUniform("u_renderMode", displayModeUniform);
@@ -1872,6 +2032,8 @@ void Rendering::renderAllImagesForView(
           unbindBufferTextures(boundBufferTextures);
           unbindTextures(boundTextures);
         }
+
+        renderBrushPreview(view, worldOffsetXhairs, imgSegPair);
 
         // Render the annotation and landmark overlays:
         renderOneImage_overlays(view, miewportViewBounds, worldOffsetXhairs, CurrentImages{imgSegPair});
@@ -2115,6 +2277,67 @@ void Rendering::renderAllImagesForView(
       return;
     }
   }
+}
+
+void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffsetXhairs, const ImgSegPair& imgSegPair)
+{
+  const auto& imageUid = imgSegPair.first;
+  const auto& segUid = imgSegPair.second;
+  if (!imageUid || !segUid) {
+    return;
+  }
+
+  auto& R = m_appData.renderData();
+  const auto previewIt = R.m_brushPreviews.find(*imageUid);
+  if (previewIt == R.m_brushPreviews.end()) {
+    return;
+  }
+
+  RenderData::BrushPreview& preview = previewIt->second;
+  if (!preview.visible || preview.imageUid != *imageUid || preview.segUid != *segUid || !preview.texture) {
+    return;
+  }
+
+  GLShaderProgram& P = *m_shaderPrograms.at(ShaderProgramType::SegmentationNearest);
+  preview.texture->bind(msk_segTexSampler.index);
+  const auto boundBufferTextures = bindSegBufferTextures(imgSegPair);
+
+  P.use();
+  {
+    P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
+    P.setSamplerUniform("u_segLabelCmapTex", msk_segLabelTableTexSampler.index);
+
+    P.setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+    P.setUniform("u_segOpacity", 1.0f);
+    P.setUniform("u_useSegColorOverride", true);
+    P.setUniform("u_segColorOverride", preview.color);
+    P.setUniform("u_quadrants", R.m_quadrants);
+    P.setUniform("u_showFix", false);
+    P.setUniform("u_renderMode", static_cast<int>(ViewRenderMode::Image));
+
+    const float fillOpacity =
+      (preview.allowFill && BrushPreviewStyle::OutlineAndFill == m_appData.settings().brushPreviewStyle())
+        ? m_appData.settings().brushPreviewFillOpacity()
+        : 0.0f;
+
+    drawSegPreviewQuad(
+      P,
+      R.m_quad,
+      preview.texture_T_world,
+      preview.voxel_T_world,
+      preview.textureCapacity,
+      view,
+      m_appData.windowData().viewport(),
+      worldOffsetXhairs,
+      R.m_flashlightRadius,
+      R.m_flashlightOverlays,
+      m_appData.settings().brushPreviewOutlineStyle(),
+      fillOpacity);
+  }
+  P.stopUse();
+
+  unbindBufferTextures(boundBufferTextures);
+  preview.texture->unbind();
 }
 
 void Rendering::renderAllLandmarksForView(
@@ -2494,6 +2717,8 @@ void Rendering::createShaderPrograms()
   Uniforms fsSegAdjustmentUniforms;
   fsSegAdjustmentUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
   fsSegAdjustmentUniforms.insertUniform("u_segFillOpacity", UniformType::Float, 1.0f);
+  fsSegAdjustmentUniforms.insertUniform("u_useSegColorOverride", UniformType::Bool, false);
+  fsSegAdjustmentUniforms.insertUniform("u_segColorOverride", UniformType::Vec4, sk_zeroVec4);
   fsSegAdjustmentUniforms.insertUniform(
     "u_texSamplingDirsForSegOutline",
     UniformType::Vec3Vector,

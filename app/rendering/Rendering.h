@@ -85,6 +85,19 @@ public:
     const glm::uvec3& sizeInVoxels,
     const int64_t* data);
 
+  void updateBrushPreviewTexture(
+    const uuids::uuid& imageUid,
+    const uuids::uuid& segUid,
+    const ComponentType& compType,
+    const glm::uvec3& sizeInVoxels,
+    const glm::mat4& voxel_T_world,
+    const glm::vec4& color,
+    bool allowFill,
+    const int64_t* data);
+
+  void clearBrushPreviewTextures();
+  void hideBrushPreviewTextures();
+
   void updateImageTexture(
     const uuids::uuid& imageUid,
     uint32_t comp,
@@ -147,6 +160,8 @@ private:
     const FrameBounds& miewportViewBounds,
     const glm::vec3& worldOffsetXhairs,
     const CurrentImages& I);
+
+  void renderBrushPreview(const View& view, const glm::vec3& worldOffsetXhairs, const ImgSegPair& imgSegPair);
 
   void volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I);
 

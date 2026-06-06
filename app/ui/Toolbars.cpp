@@ -1061,6 +1061,12 @@ void renderSegToolbar(
         bool useIso = appData.settings().useIsotropicBrush();
         bool useRound = appData.settings().useRoundBrush();
         bool xhairsMove = appData.settings().crosshairsMoveWithBrush();
+        BrushPreviewMode previewMode = appData.settings().brushPreviewMode();
+        BrushPreviewVoxels previewVoxels = appData.settings().brushPreviewVoxels();
+        BrushPreviewStyle previewStyle = appData.settings().brushPreviewStyle();
+        float previewFillOpacityPercent = 100.0f * appData.settings().brushPreviewFillOpacity();
+        bool previewWhilePainting = appData.settings().brushPreviewWhilePainting();
+        SegmentationOutlineStyle previewOutlineStyle = appData.settings().brushPreviewOutlineStyle();
 
         ImGui::Text("Brush options:");
         ImGui::Separator();
@@ -1156,6 +1162,91 @@ void renderSegToolbar(
         }
         ImGui::SameLine();
         helpMarker("Crosshairs movement is linked with brush movement");
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Text("Brush preview:");
+
+        if (ImGui::RadioButton("Hover##brushPreview", BrushPreviewMode::Hover == previewMode)) {
+          previewMode = BrushPreviewMode::Hover;
+          appData.settings().setBrushPreviewMode(previewMode);
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Off##brushPreview", BrushPreviewMode::Disabled == previewMode)) {
+          previewMode = BrushPreviewMode::Disabled;
+          appData.settings().setBrushPreviewMode(previewMode);
+        }
+        ImGui::SameLine();
+        helpMarker("Show the voxels that the brush would affect");
+
+        if (BrushPreviewMode::Disabled != previewMode) {
+          if (ImGui::RadioButton("Changed voxels##brushPreviewVoxels", BrushPreviewVoxels::Changed == previewVoxels)) {
+            previewVoxels = BrushPreviewVoxels::Changed;
+            appData.settings().setBrushPreviewVoxels(previewVoxels);
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton("All voxels##brushPreviewVoxels", BrushPreviewVoxels::All == previewVoxels)) {
+            previewVoxels = BrushPreviewVoxels::All;
+            appData.settings().setBrushPreviewVoxels(previewVoxels);
+          }
+          ImGui::SameLine();
+          helpMarker("Choose whether the preview ignores voxels whose labels would not change");
+
+          if (ImGui::RadioButton("Outline##brushPreviewStyle", BrushPreviewStyle::Outline == previewStyle)) {
+            previewStyle = BrushPreviewStyle::Outline;
+            appData.settings().setBrushPreviewStyle(previewStyle);
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton(
+                "Outline + fill##brushPreviewStyle",
+                BrushPreviewStyle::OutlineAndFill == previewStyle))
+          {
+            previewStyle = BrushPreviewStyle::OutlineAndFill;
+            appData.settings().setBrushPreviewStyle(previewStyle);
+          }
+          ImGui::SameLine();
+          helpMarker("Render the preview as an outline or an outline with faint fill");
+
+          if (BrushPreviewStyle::OutlineAndFill == previewStyle) {
+            ImGui::PushItemWidth(150);
+            if (ImGui::SliderFloat(
+                  "Fill opacity##brushPreviewFillOpacity",
+                  &previewFillOpacityPercent,
+                  0.0f,
+                  100.0f,
+                  "%.0f%%"))
+            {
+              appData.settings().setBrushPreviewFillOpacity(previewFillOpacityPercent / 100.0f);
+            }
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            helpMarker("Set the opacity of the brush preview fill");
+          }
+
+          if (ImGui::Checkbox("Show while painting##brushPreviewWhilePainting", &previewWhilePainting)) {
+            appData.settings().setBrushPreviewWhilePainting(previewWhilePainting);
+          }
+          ImGui::SameLine();
+          helpMarker("Keep showing the brush outline while the mouse button is down and painting");
+
+          if (ImGui::RadioButton(
+                "Pixel outline##brushPreviewOutlineStyle",
+                SegmentationOutlineStyle::ViewPixel == previewOutlineStyle))
+          {
+            previewOutlineStyle = SegmentationOutlineStyle::ViewPixel;
+            appData.settings().setBrushPreviewOutlineStyle(previewOutlineStyle);
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton(
+                "Voxel outline##brushPreviewOutlineStyle",
+                SegmentationOutlineStyle::ImageVoxel == previewOutlineStyle))
+          {
+            previewOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
+            appData.settings().setBrushPreviewOutlineStyle(previewOutlineStyle);
+          }
+          ImGui::SameLine();
+          helpMarker("Choose whether preview outlines are measured in screen pixels or image voxels");
+        }
 
         ImGui::Spacing();
         ImGui::Spacing();

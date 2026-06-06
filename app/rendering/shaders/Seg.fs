@@ -23,6 +23,8 @@ uniform samplerBuffer u_segLabelCmapTex; // seg label color map (non-premultipli
 // Segmentation adjustment uniforms:
 uniform float u_segOpacity;     // overall seg opacity
 uniform float u_segFillOpacity; // opacity of the seg interior
+uniform bool u_useSegColorOverride;
+uniform vec4 u_segColorOverride; // non-premultiplied RGBA
 
 uniform vec3 u_texSamplingDirsForSegOutline[2]; // sampling dirs (horiz/vert) for outlining in texture space
 uniform vec3 u_texSamplingDirsForSmoothSeg[2];  // sampling dirs (linear lookup only)
@@ -88,8 +90,9 @@ void main()
   float interpOpacity = 1.0;
   uint seg = getSegValue(vec3(0, 0, 0), interpOpacity);
   float mask = float(isInsideTexture(fs_in.v_texCoord));
-  float alpha = u_segOpacity * interpOpacity * getSegInteriorAlpha(seg) * mask;
+  float overrideMask = u_useSegColorOverride ? float(seg != uint(0)) : 1.0;
+  float alpha = u_segOpacity * interpOpacity * getSegInteriorAlpha(seg) * mask * overrideMask;
 
   // Output color (premult. RGBA)
-  o_color = alpha * getLabelColor(int(seg));
+  o_color = alpha * (u_useSegColorOverride ? u_segColorOverride : getLabelColor(int(seg)));
 }

@@ -184,6 +184,24 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   }
 
   CallbackHandler& H = app->callbackHandler();
+  const bool brushUsesBackgroundLabel = s_mouseButtonState.right || shiftDown;
+
+  if (MouseMode::Segment == app->appData().state().mouseMode()) {
+    const BrushPreviewMode previewMode = app->appData().settings().brushPreviewMode();
+    const bool mouseIsPainting = s_mouseButtonState.left || s_mouseButtonState.right;
+    const bool shouldPreview = (BrushPreviewMode::Hover == previewMode) &&
+                               (app->appData().settings().brushPreviewWhilePainting() || !mouseIsPainting);
+
+    if (shouldPreview && currHit_invalidOutsideView) {
+      H.updateBrushPreview(*currHit_invalidOutsideView, brushUsesBackgroundLabel, mouseIsPainting);
+    }
+    else {
+      H.clearBrushPreview();
+    }
+  }
+  else {
+    H.clearBrushPreview();
+  }
 
   if (ViewType::ThreeD == startView->viewType()) {
     switch (app->appData().state().mouseMode()) {
@@ -290,7 +308,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
           H.doCrosshairsMove(*currHit_invalidOutsideView);
         }
 
-        const bool swapFgAndBg = (s_mouseButtonState.right);
+        const bool swapFgAndBg = brushUsesBackgroundLabel;
         H.doSegment(*currHit_invalidOutsideView, swapFgAndBg);
       }
 

@@ -4,10 +4,22 @@
 
 #include <algorithm>
 
+void AppSettings::bumpBrushPreviewRevision()
+{
+  ++m_brushPreviewRevision;
+}
+
 void AppSettings::adjustActiveSegmentationLabels(const ParcellationLabelTable& activeLabelTable)
 {
+  const auto oldForegroundLabel = m_foregroundLabel;
+  const auto oldBackgroundLabel = m_backgroundLabel;
+
   m_foregroundLabel = std::min(m_foregroundLabel, activeLabelTable.numLabels() - 1);
   m_backgroundLabel = std::min(m_backgroundLabel, activeLabelTable.numLabels() - 1);
+
+  if (oldForegroundLabel != m_foregroundLabel || oldBackgroundLabel != m_backgroundLabel) {
+    bumpBrushPreviewRevision();
+  }
 }
 
 void AppSettings::swapForegroundAndBackgroundLabels(const ParcellationLabelTable& activeLabelTable)
@@ -102,14 +114,36 @@ void AppSettings::setOverlays(bool set)
 
 void AppSettings::setForegroundLabel(std::size_t label, const ParcellationLabelTable& activeLabelTable)
 {
+  const auto oldForegroundLabel = m_foregroundLabel;
+  const auto oldBackgroundLabel = m_backgroundLabel;
+  const auto oldBrushPreviewRevision = m_brushPreviewRevision;
+
   m_foregroundLabel = label;
   adjustActiveSegmentationLabels(activeLabelTable);
+
+  if (
+    oldBrushPreviewRevision == m_brushPreviewRevision &&
+    (oldForegroundLabel != m_foregroundLabel || oldBackgroundLabel != m_backgroundLabel))
+  {
+    bumpBrushPreviewRevision();
+  }
 }
 
 void AppSettings::setBackgroundLabel(std::size_t label, const ParcellationLabelTable& activeLabelTable)
 {
+  const auto oldForegroundLabel = m_foregroundLabel;
+  const auto oldBackgroundLabel = m_backgroundLabel;
+  const auto oldBrushPreviewRevision = m_brushPreviewRevision;
+
   m_backgroundLabel = label;
   adjustActiveSegmentationLabels(activeLabelTable);
+
+  if (
+    oldBrushPreviewRevision == m_brushPreviewRevision &&
+    (oldForegroundLabel != m_foregroundLabel || oldBackgroundLabel != m_backgroundLabel))
+  {
+    bumpBrushPreviewRevision();
+  }
 }
 
 std::size_t AppSettings::foregroundLabel() const
@@ -127,7 +161,12 @@ bool AppSettings::replaceBackgroundWithForeground() const
 }
 void AppSettings::setReplaceBackgroundWithForeground(bool set)
 {
+  if (m_replaceBackgroundWithForeground == set) {
+    return;
+  }
+
   m_replaceBackgroundWithForeground = set;
+  bumpBrushPreviewRevision();
 }
 
 bool AppSettings::use3dBrush() const
@@ -136,7 +175,12 @@ bool AppSettings::use3dBrush() const
 }
 void AppSettings::setUse3dBrush(bool set)
 {
+  if (m_use3dBrush == set) {
+    return;
+  }
+
   m_use3dBrush = set;
+  bumpBrushPreviewRevision();
 }
 
 bool AppSettings::useIsotropicBrush() const
@@ -145,7 +189,12 @@ bool AppSettings::useIsotropicBrush() const
 }
 void AppSettings::setUseIsotropicBrush(bool set)
 {
+  if (m_useIsotropicBrush == set) {
+    return;
+  }
+
   m_useIsotropicBrush = set;
+  bumpBrushPreviewRevision();
 }
 
 bool AppSettings::useVoxelBrushSize() const
@@ -154,7 +203,12 @@ bool AppSettings::useVoxelBrushSize() const
 }
 void AppSettings::setUseVoxelBrushSize(bool set)
 {
+  if (m_useVoxelBrushSize == set) {
+    return;
+  }
+
   m_useVoxelBrushSize = set;
+  bumpBrushPreviewRevision();
 }
 
 bool AppSettings::useRoundBrush() const
@@ -163,7 +217,12 @@ bool AppSettings::useRoundBrush() const
 }
 void AppSettings::setUseRoundBrush(bool set)
 {
+  if (m_useRoundBrush == set) {
+    return;
+  }
+
   m_useRoundBrush = set;
+  bumpBrushPreviewRevision();
 }
 
 bool AppSettings::crosshairsMoveWithBrush() const
@@ -173,6 +232,102 @@ bool AppSettings::crosshairsMoveWithBrush() const
 void AppSettings::setCrosshairsMoveWithBrush(bool set)
 {
   m_crosshairsMoveWithBrush = set;
+}
+
+BrushPreviewMode AppSettings::brushPreviewMode() const
+{
+  return m_brushPreviewMode;
+}
+
+void AppSettings::setBrushPreviewMode(BrushPreviewMode mode)
+{
+  if (m_brushPreviewMode == mode) {
+    return;
+  }
+
+  m_brushPreviewMode = mode;
+  bumpBrushPreviewRevision();
+}
+
+BrushPreviewVoxels AppSettings::brushPreviewVoxels() const
+{
+  return m_brushPreviewVoxels;
+}
+
+void AppSettings::setBrushPreviewVoxels(BrushPreviewVoxels voxels)
+{
+  if (m_brushPreviewVoxels == voxels) {
+    return;
+  }
+
+  m_brushPreviewVoxels = voxels;
+  bumpBrushPreviewRevision();
+}
+
+BrushPreviewStyle AppSettings::brushPreviewStyle() const
+{
+  return m_brushPreviewStyle;
+}
+
+void AppSettings::setBrushPreviewStyle(BrushPreviewStyle style)
+{
+  if (m_brushPreviewStyle == style) {
+    return;
+  }
+
+  m_brushPreviewStyle = style;
+  bumpBrushPreviewRevision();
+}
+
+float AppSettings::brushPreviewFillOpacity() const
+{
+  return m_brushPreviewFillOpacity;
+}
+
+void AppSettings::setBrushPreviewFillOpacity(float opacity)
+{
+  const float clampedOpacity = std::clamp(opacity, 0.0f, 1.0f);
+  if (m_brushPreviewFillOpacity == clampedOpacity) {
+    return;
+  }
+
+  m_brushPreviewFillOpacity = clampedOpacity;
+  bumpBrushPreviewRevision();
+}
+
+bool AppSettings::brushPreviewWhilePainting() const
+{
+  return m_brushPreviewWhilePainting;
+}
+
+void AppSettings::setBrushPreviewWhilePainting(bool show)
+{
+  if (m_brushPreviewWhilePainting == show) {
+    return;
+  }
+
+  m_brushPreviewWhilePainting = show;
+  bumpBrushPreviewRevision();
+}
+
+SegmentationOutlineStyle AppSettings::brushPreviewOutlineStyle() const
+{
+  return m_brushPreviewOutlineStyle;
+}
+
+void AppSettings::setBrushPreviewOutlineStyle(SegmentationOutlineStyle style)
+{
+  if (m_brushPreviewOutlineStyle == style) {
+    return;
+  }
+
+  m_brushPreviewOutlineStyle = style;
+  bumpBrushPreviewRevision();
+}
+
+uint64_t AppSettings::brushPreviewRevision() const
+{
+  return m_brushPreviewRevision;
 }
 
 uint32_t AppSettings::brushSizeInVoxels() const
@@ -185,7 +340,13 @@ void AppSettings::setBrushSizeInVoxels(uint32_t size)
   static constexpr uint32_t sk_minBrushVox = 1;
   static constexpr uint32_t sk_maxBrushVox = 511;
 
-  m_brushSizeInVoxels = std::min(std::max(size, sk_minBrushVox), sk_maxBrushVox);
+  const uint32_t clampedSize = std::min(std::max(size, sk_minBrushVox), sk_maxBrushVox);
+  if (m_brushSizeInVoxels == clampedSize) {
+    return;
+  }
+
+  m_brushSizeInVoxels = clampedSize;
+  bumpBrushPreviewRevision();
 }
 
 float AppSettings::brushSizeInMm() const
@@ -194,7 +355,12 @@ float AppSettings::brushSizeInMm() const
 }
 void AppSettings::setBrushSizeInMm(float size)
 {
+  if (m_brushSizeInMm == size) {
+    return;
+  }
+
   m_brushSizeInMm = size;
+  bumpBrushPreviewRevision();
 }
 
 double AppSettings::graphCutsWeightsAmplitude() const

@@ -6,6 +6,8 @@
 
 #include <glm/vec3.hpp>
 
+#include <cstdint>
+
 /**
  * @brief Holds all application settings
  */
@@ -69,6 +71,26 @@ public:
   bool crosshairsMoveWithBrush() const;
   void setCrosshairsMoveWithBrush(bool set);
 
+  BrushPreviewMode brushPreviewMode() const;
+  void setBrushPreviewMode(BrushPreviewMode mode);
+
+  BrushPreviewVoxels brushPreviewVoxels() const;
+  void setBrushPreviewVoxels(BrushPreviewVoxels voxels);
+
+  BrushPreviewStyle brushPreviewStyle() const;
+  void setBrushPreviewStyle(BrushPreviewStyle style);
+
+  float brushPreviewFillOpacity() const;
+  void setBrushPreviewFillOpacity(float opacity);
+
+  bool brushPreviewWhilePainting() const;
+  void setBrushPreviewWhilePainting(bool show);
+
+  SegmentationOutlineStyle brushPreviewOutlineStyle() const;
+  void setBrushPreviewOutlineStyle(SegmentationOutlineStyle style);
+
+  uint64_t brushPreviewRevision() const;
+
   uint32_t brushSizeInVoxels() const;
   void setBrushSizeInVoxels(uint32_t size);
 
@@ -91,6 +113,8 @@ public:
   void setLockAnatomicalCoordinateAxesWithReferenceImage(bool lock);
 
 private:
+  void bumpBrushPreviewRevision();
+
   bool m_synchronizeZoom = true; //!< Synchronize zoom between views
   bool m_overlays = true;        //!< Render UI and vector overlays
 
@@ -120,8 +144,15 @@ private:
   bool m_useVoxelBrushSize = true;                //!< Measure brush size in voxel units
   bool m_useRoundBrush = true;                    //!< Brush is round (true) or rectangular (false)
   bool m_crosshairsMoveWithBrush = false;         //!< Crosshairs move with the brush
-  uint32_t m_brushSizeInVoxels = 1u;              //!< Brush size (diameter) in voxels
-  float m_brushSizeInMm = 1.0f;                   //!< Brush size (diameter) in millimeters
+  BrushPreviewMode m_brushPreviewMode = BrushPreviewMode::Hover;
+  BrushPreviewVoxels m_brushPreviewVoxels = BrushPreviewVoxels::Changed;
+  BrushPreviewStyle m_brushPreviewStyle = BrushPreviewStyle::OutlineAndFill;
+  float m_brushPreviewFillOpacity = 0.2f;
+  bool m_brushPreviewWhilePainting = true;
+  SegmentationOutlineStyle m_brushPreviewOutlineStyle = SegmentationOutlineStyle::ViewPixel;
+  uint64_t m_brushPreviewRevision = 0;
+  uint32_t m_brushSizeInVoxels = 1u; //!< Brush size (diameter) in voxels
+  float m_brushSizeInMm = 1.0f;      //!< Brush size (diameter) in millimeters
   /* End segmentation drawing variables */
 
   /* Begin Graph Cuts weights variables */

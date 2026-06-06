@@ -288,7 +288,7 @@ Logs are output to the console and to files saved in the `log` folder. Log level
 | `l` | Image adjustment | - left button: adjust image window left/right and level up/down<br>- right button: adjust image opacity |
 | `t` | Image translation | - left button: translate image in plane<br>- right button: translate image in/out of plane |
 | `r` | Image rotation | - left button: rotate image in plane<br>- right button: rotate image in/out of plane |
-| `b` | Image segmentation (brush) | - left button: paint foreground label<br>- right button: paint background label |
+| `b` | Image segmentation (brush) | - left button: paint foreground label<br>- right button or shift: paint background label |
 
 ### View properties
 | Key | Action |
@@ -319,3 +319,4 @@ Logs are output to the console and to files saved in the `log` folder. Log level
 | --- | --- |
 | `<`, `>` | Cycle foreground label<br>- shift: cycle background label |
 | `-`, `+` | Decrease/increase brush size |
+| `shift` | Use background label while painting or previewing with the brush |

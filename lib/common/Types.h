@@ -344,6 +344,24 @@ enum class SegmentationOutlineStyle
   Disabled    //!< Disabled outlining
 };
 
+enum class BrushPreviewMode
+{
+  Hover,
+  Disabled
+};
+
+enum class BrushPreviewVoxels
+{
+  Changed,
+  All
+};
+
+enum class BrushPreviewStyle
+{
+  Outline,
+  OutlineAndFill
+};
+
 /**
  * @brief Information needed for positioning a single anatomical label and the crosshair
  * that corresponds to this label.

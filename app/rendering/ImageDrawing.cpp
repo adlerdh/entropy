@@ -386,6 +386,84 @@ void drawSegQuad(
   quad.m_vao.release();
 }
 
+void drawSegPreviewQuad(
+  GLShaderProgram& program,
+  const RenderData::Quad& quad,
+  const glm::mat4& texture_T_world,
+  const glm::mat4& voxel_T_world,
+  const glm::uvec3& textureSize,
+  const View& view,
+  const Viewport& windowViewport,
+  const glm::vec3& worldCrosshairs,
+  float flashlightRadius,
+  bool flashlightOverlays,
+  const SegmentationOutlineStyle& segOutlineStyle,
+  float segInteriorOpacity)
+{
+  std::vector<glm::vec3> texSamplingDirsForSegOutline{glm::vec3{0.0f}, glm::vec3{0.0f}};
+
+  const glm::mat4 world_T_voxel = glm::inverse(voxel_T_world);
+  const auto posInfo = math::computeAnatomicalLabelsForView(view.camera().camera_T_world(), world_T_voxel);
+  const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
+  const glm::mat4 voxel_T_viewClip = voxel_T_world * world_T_viewClip;
+  const glm::mat4 texture_T_viewClip = texture_T_world * world_T_viewClip;
+
+  const glm::vec3 invTextureSize{
+    1.0f / static_cast<float>(textureSize.x),
+    1.0f / static_cast<float>(textureSize.y),
+    1.0f / static_cast<float>(textureSize.z)};
+
+  switch (segOutlineStyle) {
+    case SegmentationOutlineStyle::ImageVoxel: {
+      for (int i = 0; i < 2; ++i) {
+        texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForImageVoxelOffset(
+          voxel_T_viewClip,
+          windowViewport,
+          view.viewClip_T_windowClip(),
+          invTextureSize,
+          posInfo[i].viewClipDir);
+      }
+      break;
+    }
+    case SegmentationOutlineStyle::ViewPixel: {
+      for (int i = 0; i < 2; ++i) {
+        texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForViewPixelOffset(
+          texture_T_viewClip,
+          windowViewport,
+          view.viewClip_T_windowClip(),
+          posInfo[i].viewClipDir);
+      }
+      break;
+    }
+    case SegmentationOutlineStyle::Disabled: {
+      break;
+    }
+  }
+
+  const glm::vec4 clipXhairs = helper::clip_T_world(view.camera()) * glm::vec4{worldCrosshairs, 1.0f};
+  program.setUniform("u_clipCrosshairs", glm::vec2{clipXhairs / clipXhairs.w});
+
+  program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
+  program.setUniform("u_world_T_clip", world_T_viewClip);
+  program.setUniform("u_clipDepth", view.clipPlaneDepth());
+  program.setUniform("u_tex_T_world", texture_T_world);
+
+  program.setUniform("u_aspectRatio", view.camera().aspectRatio());
+  program.setUniform("u_flashlightRadius", flashlightRadius);
+  program.setUniform("u_flashlightMovingOnFixed", flashlightOverlays);
+
+  program.setUniform("u_texSamplingDirsForSegOutline", texSamplingDirsForSegOutline);
+  program.setUniform(
+    "u_segFillOpacity",
+    (SegmentationOutlineStyle::Disabled == segOutlineStyle) ? 1.0f : segInteriorOpacity);
+
+  quad.m_vao.bind();
+  {
+    quad.m_vao.drawElements(quad.m_vaoParams);
+  }
+  quad.m_vao.release();
+}
+
 void drawRaycastQuad(
   GLShaderProgram& program,
   RenderData::Quad& quad,

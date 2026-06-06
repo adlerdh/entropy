@@ -18,6 +18,7 @@
 #include <uuid.h>
 
 #include <map>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -116,6 +117,24 @@ struct RenderData
     GLVertexArrayObject::IndexedDrawParams m_vaoParams;
   };
 
+  struct BrushPreview
+  {
+    bool visible = false;
+    uuids::uuid segUid;
+    uuids::uuid imageUid;
+    ComponentType componentType = ComponentType::UInt8;
+    glm::uvec3 size{1};
+    glm::uvec3 textureCapacity{0};
+    glm::mat4 texture_T_world{1.0f};
+    glm::mat4 voxel_T_world{1.0f};
+    glm::vec4 color{1.0f};
+    bool allowFill = true;
+    std::vector<uint8_t> dataU8;
+    std::vector<uint16_t> dataU16;
+    std::vector<uint32_t> dataU32;
+    std::optional<GLTexture> texture;
+  };
+
   RenderData();
 
   /**
@@ -134,6 +153,8 @@ struct RenderData
   std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > m_distanceMapTextures;
 
   std::unordered_map<uuids::uuid, GLTexture> m_segTextures;
+
+  std::unordered_map<uuids::uuid, BrushPreview> m_brushPreviews;
 
   std::unordered_map<uuids::uuid, GLBufferTexture> m_labelBufferTextures;
   std::unordered_map<uuids::uuid, GLTexture> m_colormapTextures;
