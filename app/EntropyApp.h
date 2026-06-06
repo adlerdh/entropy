@@ -145,6 +145,8 @@ private:
   bool saveDirtyAnnotationsWithDialogs();
   bool saveAnnotationsForImage(const uuids::uuid& imageUid, const std::filesystem::path& fileName);
   void markProjectSavedSnapshot();
+  std::string windowTitleStatus() const;
+  void updateWindowTitleStatus();
 
   /// Load an image from disk.
   /// @return Uid and flag if loaded.

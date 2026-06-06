@@ -162,6 +162,9 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
   auto* projectOption = program.add_option("-p,--project", projectFile, "JSON project file");
   std::string layoutsFile;
   program.add_option("--layouts", layoutsFile, "standalone JSON layout file");
+  std::vector<std::string> positionalImageFiles;
+  auto* positionalImageOption =
+    program.add_option("images", positionalImageFiles, "image paths; first image is reference")->expected(0, -1);
 
   auto* imageOption = program
                         .add_option_function<std::string>(
@@ -187,9 +190,10 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
                       ->expected(1, -1)
                       ->trigger_on_parse();
 
-  projectOption->excludes(imageOption)->excludes(segOption);
-  imageOption->excludes(projectOption);
-  segOption->excludes(projectOption);
+  projectOption->excludes(imageOption)->excludes(segOption)->excludes(positionalImageOption);
+  imageOption->excludes(projectOption)->excludes(positionalImageOption);
+  segOption->excludes(projectOption)->excludes(positionalImageOption);
+  positionalImageOption->excludes(projectOption)->excludes(imageOption)->excludes(segOption);
 
   try {
     auto filteredArgs = filterPlatformArguments(argc, argv);
@@ -214,6 +218,9 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
   }
   if (!layoutsFile.empty()) {
     params.layoutsFile = layoutsFile;
+  }
+  for (const std::string& imageFile : positionalImageFiles) {
+    params.imageFiles.push_back({imageFile, {}});
   }
 
   assignConsoleLogLevel(logLevel, params);

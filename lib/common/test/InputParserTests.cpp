@@ -87,6 +87,71 @@ TEST_CASE("a new image option terminates a multi-value segmentation option", "[c
   CHECK(params.imageFiles[1].segmentations.empty());
 }
 
+TEST_CASE("positional image paths are accepted as an unambiguous shorthand", "[common][input]")
+{
+  char app[] = "Entropy";
+  char image0[] = "image-a.nii.gz";
+  char image1[] = "image-b.nii.gz";
+
+  std::array<char*, 3> argv{app, image0, image1};
+
+  InputParams params;
+  REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+
+  REQUIRE(params.imageFiles.size() == 2);
+  CHECK(params.imageFiles[0].image == "image-a.nii.gz");
+  CHECK(params.imageFiles[0].segmentations.empty());
+  CHECK(params.imageFiles[1].image == "image-b.nii.gz");
+  CHECK(params.imageFiles[1].segmentations.empty());
+  CHECK_FALSE(params.projectFile);
+}
+
+TEST_CASE("standalone layout file can be used with positional image paths", "[common][input]")
+{
+  char app[] = "Entropy";
+  char layoutsOpt[] = "--layouts";
+  char layouts[] = "custom-layouts.json";
+  char image0[] = "image-a.nii.gz";
+  char image1[] = "image-b.nii.gz";
+
+  std::array<char*, 5> argv{app, layoutsOpt, layouts, image0, image1};
+
+  InputParams params;
+  REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+
+  REQUIRE(params.layoutsFile);
+  CHECK(*params.layoutsFile == "custom-layouts.json");
+  REQUIRE(params.imageFiles.size() == 2);
+  CHECK(params.imageFiles[0].image == "image-a.nii.gz");
+  CHECK(params.imageFiles[1].image == "image-b.nii.gz");
+}
+
+TEST_CASE("positional image paths cannot be mixed with explicit image options", "[common][input]")
+{
+  char app[] = "Entropy";
+  char positionalImage[] = "image-a.nii.gz";
+  char imageOpt[] = "--image";
+  char explicitImage[] = "image-b.nii.gz";
+
+  std::array<char*, 4> argv{app, positionalImage, imageOpt, explicitImage};
+
+  InputParams params;
+  CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+}
+
+TEST_CASE("positional image paths cannot be mixed with segmentation options", "[common][input]")
+{
+  char app[] = "Entropy";
+  char positionalImage[] = "image.nii.gz";
+  char segOpt[] = "--seg";
+  char seg[] = "seg.nii.gz";
+
+  std::array<char*, 4> argv{app, positionalImage, segOpt, seg};
+
+  InputParams params;
+  CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+}
+
 TEST_CASE("standalone layout file can override project layouts", "[common][input]")
 {
   char app[] = "Entropy";

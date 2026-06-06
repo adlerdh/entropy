@@ -401,7 +401,7 @@ void EntropyApp::onImagesReady()
 
   // Stop animation rendering (which plays during loading) and render only on events:
   m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
-  m_glfw.setWindowTitleStatus(m_data.getAllImageDisplayNames());
+  updateWindowTitleStatus();
 
   m_data.state().setAnimating(false);
   m_data.settings().setOverlays(true);
@@ -1449,6 +1449,26 @@ void EntropyApp::markProjectSavedSnapshot()
   m_data.setProject(*m_savedProjectSnapshot);
 }
 
+std::string EntropyApp::windowTitleStatus() const
+{
+  const std::string imageDisplayNames = m_data.getAllImageDisplayNames();
+  if (!m_data.projectFileName()) {
+    return imageDisplayNames;
+  }
+
+  const std::string projectDisplayName = m_data.projectFileName()->filename().string();
+  if (imageDisplayNames.empty()) {
+    return projectDisplayName;
+  }
+
+  return projectDisplayName + ": " + imageDisplayNames;
+}
+
+void EntropyApp::updateWindowTitleStatus()
+{
+  m_glfw.setWindowTitleStatus(windowTitleStatus());
+}
+
 bool EntropyApp::saveProject()
 {
   if (!saveDirtyAnnotationsWithDialogs()) {
@@ -1485,7 +1505,7 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
   m_data.setProject(project);
   m_savedProjectSnapshot = project;
   m_data.setProjectFileName(normalizedFileName);
-  m_glfw.setWindowTitleStatus(normalizedFileName.filename().string());
+  updateWindowTitleStatus();
   m_glfw.postEmptyEvent();
   return true;
 }
@@ -1612,7 +1632,7 @@ void EntropyApp::addImageFile(const fs::path& fileName)
       m_pendingAddedImageUid = std::nullopt;
       m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
       m_data.state().setAnimating(false);
-      m_glfw.setWindowTitleStatus(m_data.getAllImageDisplayNames());
+      updateWindowTitleStatus();
       m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
     },
     false);
@@ -1785,7 +1805,7 @@ bool EntropyApp::removeImage(const uuids::uuid& imageUid)
   m_data.setRainbowColorsForAllLandmarkGroups();
   m_data.setProject(createProjectSnapshot());
   m_rendering.updateImageUniforms(m_data.imageUidsOrdered());
-  m_glfw.setWindowTitleStatus(m_data.getAllImageDisplayNames());
+  updateWindowTitleStatus();
   m_glfw.postEmptyEvent();
 
   spdlog::info("Removed image {}", imageUid);
