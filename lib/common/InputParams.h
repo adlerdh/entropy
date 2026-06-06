@@ -27,6 +27,9 @@ struct InputParams
   /// landmarks, and annotations in JSON format
   std::optional<std::filesystem::path> projectFile;
 
+  /// Optional standalone layout JSON file that overrides generated/project layouts
+  std::optional<std::filesystem::path> layoutsFile;
+
   /// Console logging level
   spdlog::level::level_enum consoleLogLevel;
 

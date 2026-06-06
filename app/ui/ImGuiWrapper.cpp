@@ -40,6 +40,8 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <unordered_map>
+
 CMRC_DECLARE(fonts);
 
 namespace fs = std::filesystem;
@@ -48,6 +50,23 @@ namespace
 {
 static const glm::quat sk_identityRotation{1.0f, 0.0f, 0.0f, 0.0f};
 static const glm::vec3 sk_zeroVec{0.0f, 0.0f, 0.0f};
+
+std::string layoutImageDisplayName(const AppData& appData, const Layout& layout)
+{
+  if (layout.renderedImages().empty()) {
+    return {};
+  }
+
+  const uuids::uuid& imageUid = layout.renderedImages().front();
+  const Image* image = appData.image(imageUid);
+  if (!image) {
+    return {};
+  }
+
+  const auto imageIndex = appData.imageIndex(imageUid);
+  const std::string ordinal = imageIndex ? (std::to_string(*imageIndex + 1) + ". ") : std::string{};
+  return ordinal + image->settings().displayName();
+}
 
 void renderLoadingStatusBar()
 {
@@ -238,6 +257,8 @@ void ImGuiWrapper::setCallbacks(
   std::function<bool()> saveProject,
   std::function<bool(const fs::path& fileName)> saveProjectAs,
   std::function<void()> closeProject,
+  std::function<void(const fs::path& fileName)> loadLayoutsFile,
+  std::function<bool(const fs::path& fileName)> saveLayoutsFile,
   std::function<void()> closeProjectWithoutPrompt,
   std::function<void()> quitAppWithoutPrompt,
   std::function<void(const uuids::uuid& viewUid)> recenterView,
@@ -281,6 +302,8 @@ void ImGuiWrapper::setCallbacks(
   m_saveProject = saveProject;
   m_saveProjectAs = saveProjectAs;
   m_closeProject = closeProject;
+  m_loadLayoutsFile = loadLayoutsFile;
+  m_saveLayoutsFile = saveLayoutsFile;
   m_closeProjectWithoutPrompt = closeProjectWithoutPrompt;
   m_quitAppWithoutPrompt = quitAppWithoutPrompt;
   m_recenterView = recenterView;
@@ -774,6 +797,42 @@ void ImGuiWrapper::render()
     return refImage ? (refImage->header().fileName().stem().string() + ".json") : std::string{"project.json"};
   };
 
+  auto defaultLayoutsSaveDirectory = defaultProjectSaveDirectory;
+  auto defaultLayoutsSaveName = [this]() {
+    if (m_appData.projectFileName()) {
+      return m_appData.projectFileName()->stem().string() + "-layouts.json";
+    }
+    const auto refImageUid = m_appData.refImageUid();
+    const Image* refImage = refImageUid ? m_appData.image(*refImageUid) : nullptr;
+    return refImage ? (refImage->header().fileName().stem().string() + "-layouts.json") : std::string{"layouts.json"};
+  };
+
+  auto layoutNames = [this]() {
+    const auto& layouts = m_appData.windowData().layouts();
+    std::vector<std::string> baseNames;
+    baseNames.reserve(layouts.size());
+
+    std::unordered_map<std::string, std::size_t> baseNameCounts;
+    for (std::size_t index = 0; index < layouts.size(); ++index) {
+      baseNames.emplace_back(m_appData.windowData().layoutDisplayName(index));
+      ++baseNameCounts[baseNames.back()];
+    }
+
+    std::vector<std::string> names;
+    names.reserve(layouts.size());
+    for (std::size_t index = 0; index < layouts.size(); ++index) {
+      std::string displayName = baseNames.at(index);
+      if (baseNameCounts.at(displayName) > 1) {
+        const std::string imageName = layoutImageDisplayName(m_appData, layouts.at(index));
+        if (!imageName.empty()) {
+          displayName += " - " + imageName;
+        }
+      }
+      names.emplace_back(std::to_string(index + 1) + ". " + displayName);
+    }
+    return names;
+  };
+
   renderConfirmCloseAppPopup(m_appData, m_quitAppWithoutPrompt);
   renderUnsavedProjectPopup(
     m_appData,
@@ -808,13 +867,34 @@ void ImGuiWrapper::render()
       .defaultProjectSaveDirectory = defaultProjectSaveDirectory,
       .defaultProjectSaveName = defaultProjectSaveName,
       .closeProject = m_closeProject,
+      .loadLayoutsFile = m_loadLayoutsFile,
+      .saveLayoutsFile = m_saveLayoutsFile,
+      .defaultLayoutsSaveDirectory = defaultLayoutsSaveDirectory,
+      .defaultLayoutsSaveName = defaultLayoutsSaveName,
+      .layoutNames = layoutNames,
+      .currentLayoutIndex = [this]() { return m_appData.windowData().currentLayoutIndex(); },
+      .setCurrentLayoutIndex =
+        [this](std::size_t index) {
+          m_appData.windowData().setCurrentLayoutIndex(index);
+          if (m_postEmptyGlfwEvent) {
+            m_postEmptyGlfwEvent();
+          }
+        },
+      .cycleLayouts =
+        [this](int step) {
+          m_appData.windowData().cycleCurrentLayout(step);
+          if (m_postEmptyGlfwEvent) {
+            m_postEmptyGlfwEvent();
+          }
+        },
       .showAbout = [this]() { m_appData.guiData().m_showAboutDialog = true; },
       .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
       .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
       .canAddSegmentation =
         ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning && m_appData.activeImageUid(),
       .canSaveProject = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
-      .canCloseProject = ProjectLoadState::Empty != projectLoadState && !backgroundTaskRunning};
+      .canCloseProject = ProjectLoadState::Empty != projectLoadState && !backgroundTaskRunning,
+      .canUseLayouts = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning};
 
 #ifdef __APPLE__
     updateMacOSNativeMainMenu(mainMenuCallbacks);

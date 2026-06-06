@@ -86,3 +86,22 @@ TEST_CASE("a new image option terminates a multi-value segmentation option", "[c
   CHECK(params.imageFiles[1].image == "image-b.nii.gz");
   CHECK(params.imageFiles[1].segmentations.empty());
 }
+
+TEST_CASE("standalone layout file can override project layouts", "[common][input]")
+{
+  char app[] = "Entropy";
+  char projectOpt[] = "--project";
+  char project[] = "project.json";
+  char layoutsOpt[] = "--layouts";
+  char layouts[] = "custom-layouts.json";
+
+  std::array<char*, 5> argv{app, projectOpt, project, layoutsOpt, layouts};
+
+  InputParams params;
+  REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+
+  REQUIRE(params.projectFile);
+  CHECK(*params.projectFile == "project.json");
+  REQUIRE(params.layoutsFile);
+  CHECK(*params.layoutsFile == "custom-layouts.json");
+}

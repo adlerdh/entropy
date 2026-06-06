@@ -528,6 +528,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
   "${entropy_APP_DIR}/windowing/GlfwWrapper.cpp"
   "${entropy_APP_DIR}/windowing/Layout.cpp"
+  "${entropy_APP_DIR}/windowing/LayoutFileSerialization.cpp"
   "${entropy_APP_DIR}/windowing/LayoutSerialization.cpp"
   "${entropy_APP_DIR}/windowing/LayoutSpecJson.cpp"
   "${entropy_APP_DIR}/windowing/View.cpp"

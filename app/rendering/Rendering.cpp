@@ -2589,6 +2589,13 @@ void Rendering::renderVectorOverlays()
           R.m_scaleBarTargetFraction,
           R.m_scaleBarMarginPx);
       }
+
+      if (
+        R.m_showLightboxOffsetLabels && windowData.currentLayout().isLightbox() &&
+        ViewRenderMode::VolumeRender != view->renderMode())
+      {
+        drawLightboxOffsetLabel(m_nvg, miewportViewBounds, m_appData, *view, R.m_lightboxOffsetLabelColor);
+      }
     }
 
     ViewOutlineMode outlineMode = ViewOutlineMode::None;

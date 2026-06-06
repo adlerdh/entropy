@@ -14,6 +14,7 @@ NSMenuItem* g_addSegmentationItem = nil;
 NSMenuItem* g_saveProjectItem = nil;
 NSMenuItem* g_saveProjectAsItem = nil;
 NSMenuItem* g_closeProjectItem = nil;
+NSMenu* g_layoutsMenu = nil;
 bool g_installed = false;
 }  // namespace
 
@@ -25,6 +26,11 @@ bool g_installed = false;
 - (void)saveProject:(id)sender;
 - (void)saveProjectAs:(id)sender;
 - (void)closeProject:(id)sender;
+- (void)loadLayouts:(id)sender;
+- (void)saveLayouts:(id)sender;
+- (void)previousLayout:(id)sender;
+- (void)nextLayout:(id)sender;
+- (void)selectLayout:(id)sender;
 - (void)showAbout:(id)sender;
 - (BOOL)validateMenuItem:(NSMenuItem*)menuItem;
 @end
@@ -65,6 +71,37 @@ bool g_installed = false;
   main_menu::closeProject(g_callbacks);
 }
 
+- (void)loadLayouts:(id)sender {
+  (void)sender;
+  main_menu::loadLayouts(g_callbacks);
+}
+
+- (void)saveLayouts:(id)sender {
+  (void)sender;
+  main_menu::saveLayouts(g_callbacks);
+}
+
+- (void)previousLayout:(id)sender {
+  (void)sender;
+  if (g_callbacks.cycleLayouts) {
+    g_callbacks.cycleLayouts(-1);
+  }
+}
+
+- (void)nextLayout:(id)sender {
+  (void)sender;
+  if (g_callbacks.cycleLayouts) {
+    g_callbacks.cycleLayouts(1);
+  }
+}
+
+- (void)selectLayout:(id)sender {
+  NSMenuItem* item = (NSMenuItem*)sender;
+  if (g_callbacks.setCurrentLayoutIndex) {
+    g_callbacks.setCurrentLayoutIndex(static_cast<std::size_t>([item tag]));
+  }
+}
+
 - (void)showAbout:(id)sender {
   (void)sender;
   if (g_callbacks.showAbout) {
@@ -101,6 +138,12 @@ bool g_installed = false;
 
   if (action == @selector(closeProject:)) {
     return g_callbacks.canCloseProject && g_callbacks.closeProject;
+  }
+
+  if (
+    action == @selector(loadLayouts:) || action == @selector(saveLayouts:) || action == @selector(previousLayout:) ||
+    action == @selector(nextLayout:) || action == @selector(selectLayout:)) {
+    return g_callbacks.canUseLayouts;
   }
 
   return YES;
@@ -177,12 +220,41 @@ void installMacOSNativeMainMenu() {
   [fileMenuItem setSubmenu:fileMenu];
   [mainMenu addItem:fileMenuItem];
 
+  NSMenuItem* layoutsMenuItem = [[NSMenuItem alloc] initWithTitle:@"Layouts" action:nil keyEquivalent:@""];
+  g_layoutsMenu = [[NSMenu alloc] initWithTitle:@"Layouts"];
+  [layoutsMenuItem setSubmenu:g_layoutsMenu];
+  [mainMenu addItem:layoutsMenuItem];
+
   [NSApp setMainMenu:mainMenu];
   g_installed = true;
+}
+
+void rebuildLayoutsMenu() {
+  if (!g_layoutsMenu) {
+    return;
+  }
+
+  [g_layoutsMenu removeAllItems];
+  addTargetedMenuItem(g_layoutsMenu, @"Load...", @selector(loadLayouts:), @"");
+  addTargetedMenuItem(g_layoutsMenu, @"Save...", @selector(saveLayouts:), @"");
+  [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
+  addTargetedMenuItem(g_layoutsMenu, @"Previous", @selector(previousLayout:), @"[", 0);
+  addTargetedMenuItem(g_layoutsMenu, @"Next", @selector(nextLayout:), @"]", 0);
+  [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
+
+  const auto names = g_callbacks.layoutNames ? g_callbacks.layoutNames() : std::vector<std::string>{};
+  const std::size_t currentIndex = g_callbacks.currentLayoutIndex ? g_callbacks.currentLayoutIndex() : 0;
+  for (std::size_t i = 0; i < names.size(); ++i) {
+    NSString* title = [NSString stringWithUTF8String:names.at(i).c_str()];
+    NSMenuItem* item = addTargetedMenuItem(g_layoutsMenu, title, @selector(selectLayout:), @"", 0);
+    [item setTag:static_cast<NSInteger>(i)];
+    [item setState:(i == currentIndex) ? NSControlStateValueOn : NSControlStateValueOff];
+  }
 }
 }  // namespace
 
 void updateMacOSNativeMainMenu(const MainMenuBarCallbacks& callbacks) {
   g_callbacks = callbacks;
   installMacOSNativeMainMenu();
+  rebuildLayoutsMenu();
 }

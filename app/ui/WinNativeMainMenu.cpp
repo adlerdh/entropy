@@ -1,6 +1,7 @@
 #include "ui/WinNativeMainMenu.h"
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -18,12 +19,18 @@ constexpr UINT sk_addSegmentationCommand = 1004;
 constexpr UINT sk_saveProjectCommand = 1005;
 constexpr UINT sk_saveProjectAsCommand = 1006;
 constexpr UINT sk_closeProjectCommand = 1007;
+constexpr UINT sk_loadLayoutsCommand = 1101;
+constexpr UINT sk_saveLayoutsCommand = 1102;
+constexpr UINT sk_previousLayoutCommand = 1103;
+constexpr UINT sk_nextLayoutCommand = 1104;
+constexpr UINT sk_selectLayoutCommandBase = 1200;
 
 constexpr UINT_PTR sk_menuSubclassId = 1;
 
 struct MenuState
 {
   HMENU mainMenu = nullptr;
+  HMENU layoutsMenu = nullptr;
   MainMenuBarCallbacks callbacks;
 };
 
@@ -36,6 +43,10 @@ HWND hwndFromGlfw(GLFWwindow* window)
 
 bool isMenuCommand(UINT command)
 {
+  if (command >= sk_selectLayoutCommandBase) {
+    return true;
+  }
+
   switch (command) {
     case sk_openImageCommand:
     case sk_openProjectCommand:
@@ -44,10 +55,30 @@ bool isMenuCommand(UINT command)
     case sk_saveProjectCommand:
     case sk_saveProjectAsCommand:
     case sk_closeProjectCommand:
+    case sk_loadLayoutsCommand:
+    case sk_saveLayoutsCommand:
+    case sk_previousLayoutCommand:
+    case sk_nextLayoutCommand:
       return true;
     default:
       return false;
   }
+}
+
+std::wstring widenUtf8(const std::string& value)
+{
+  if (value.empty()) {
+    return {};
+  }
+
+  const int size = MultiByteToWideChar(CP_UTF8, 0, value.c_str(), -1, nullptr, 0);
+  if (size <= 0) {
+    return {};
+  }
+
+  std::wstring result(static_cast<std::size_t>(size - 1), L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, value.c_str(), -1, result.data(), size);
+  return result;
 }
 
 void enableMenuCommand(const MenuState& state, UINT command, bool enabled)
@@ -70,11 +101,30 @@ void updateEnabledState(const MenuState& state)
   enableMenuCommand(state, sk_saveProjectCommand, callbacks.canSaveProject && callbacks.saveProject);
   enableMenuCommand(state, sk_saveProjectAsCommand, callbacks.canSaveProject && callbacks.saveProjectAs);
   enableMenuCommand(state, sk_closeProjectCommand, callbacks.canCloseProject && callbacks.closeProject);
+  enableMenuCommand(state, sk_loadLayoutsCommand, callbacks.canUseLayouts && callbacks.loadLayoutsFile);
+  enableMenuCommand(state, sk_saveLayoutsCommand, callbacks.canUseLayouts && callbacks.saveLayoutsFile);
+  enableMenuCommand(state, sk_previousLayoutCommand, callbacks.canUseLayouts && callbacks.cycleLayouts);
+  enableMenuCommand(state, sk_nextLayoutCommand, callbacks.canUseLayouts && callbacks.cycleLayouts);
+
+  const auto layoutNames = callbacks.layoutNames ? callbacks.layoutNames() : std::vector<std::string>{};
+  for (std::size_t i = 0; i < layoutNames.size(); ++i) {
+    enableMenuCommand(
+      state,
+      sk_selectLayoutCommandBase + static_cast<UINT>(i),
+      callbacks.canUseLayouts && callbacks.setCurrentLayoutIndex);
+  }
 }
 
 void handleMenuCommand(const MenuState& state, UINT command)
 {
   const auto& callbacks = state.callbacks;
+
+  if (command >= sk_selectLayoutCommandBase) {
+    if (callbacks.setCurrentLayoutIndex) {
+      callbacks.setCurrentLayoutIndex(command - sk_selectLayoutCommandBase);
+    }
+    return;
+  }
 
   switch (command) {
     case sk_openImageCommand:
@@ -97,6 +147,22 @@ void handleMenuCommand(const MenuState& state, UINT command)
       break;
     case sk_closeProjectCommand:
       main_menu::closeProject(callbacks);
+      break;
+    case sk_loadLayoutsCommand:
+      main_menu::loadLayouts(callbacks);
+      break;
+    case sk_saveLayoutsCommand:
+      main_menu::saveLayouts(callbacks);
+      break;
+    case sk_previousLayoutCommand:
+      if (callbacks.cycleLayouts) {
+        callbacks.cycleLayouts(-1);
+      }
+      break;
+    case sk_nextLayoutCommand:
+      if (callbacks.cycleLayouts) {
+        callbacks.cycleLayouts(1);
+      }
       break;
     default:
       break;
@@ -174,6 +240,48 @@ bool populateFileMenu(HMENU fileMenu)
          insertMenuItem(fileMenu, position++, sk_closeProjectCommand, L"&Close Project");
 }
 
+bool clearMenu(HMENU menu)
+{
+  while (GetMenuItemCount(menu) > 0) {
+    if (!DeleteMenu(menu, 0, MF_BYPOSITION)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callbacks)
+{
+  if (!clearMenu(layoutsMenu)) {
+    return false;
+  }
+
+  UINT position = 0;
+  if (
+    !insertMenuItem(layoutsMenu, position++, sk_loadLayoutsCommand, L"&Load...") ||
+    !insertMenuItem(layoutsMenu, position++, sk_saveLayoutsCommand, L"&Save...") ||
+    !insertSeparator(layoutsMenu, position++) ||
+    !insertMenuItem(layoutsMenu, position++, sk_previousLayoutCommand, L"&Previous\t[") ||
+    !insertMenuItem(layoutsMenu, position++, sk_nextLayoutCommand, L"&Next\t]") ||
+    !insertSeparator(layoutsMenu, position++))
+  {
+    return false;
+  }
+
+  const auto layoutNames = callbacks.layoutNames ? callbacks.layoutNames() : std::vector<std::string>{};
+  const std::size_t currentIndex = callbacks.currentLayoutIndex ? callbacks.currentLayoutIndex() : 0;
+  for (std::size_t i = 0; i < layoutNames.size(); ++i) {
+    const std::wstring title = widenUtf8(layoutNames.at(i));
+    const UINT command = sk_selectLayoutCommandBase + static_cast<UINT>(i);
+    if (!insertMenuItem(layoutsMenu, position++, command, title.c_str())) {
+      return false;
+    }
+    CheckMenuItem(layoutsMenu, command, MF_BYCOMMAND | (i == currentIndex ? MF_CHECKED : MF_UNCHECKED));
+  }
+
+  return true;
+}
+
 bool installWindowsNativeMainMenu(HWND window, const MainMenuBarCallbacks& callbacks)
 {
   if (!window || g_menuStates.contains(window)) {
@@ -185,9 +293,13 @@ bool installWindowsNativeMainMenu(HWND window, const MainMenuBarCallbacks& callb
 
   state->mainMenu = CreateMenu();
   HMENU fileMenu = CreatePopupMenu();
-  if (!state->mainMenu || !fileMenu) {
+  state->layoutsMenu = CreatePopupMenu();
+  if (!state->mainMenu || !fileMenu || !state->layoutsMenu) {
     if (fileMenu) {
       DestroyMenu(fileMenu);
+    }
+    if (state->layoutsMenu) {
+      DestroyMenu(state->layoutsMenu);
     }
     if (state->mainMenu) {
       DestroyMenu(state->mainMenu);
@@ -197,12 +309,23 @@ bool installWindowsNativeMainMenu(HWND window, const MainMenuBarCallbacks& callb
 
   if (!populateFileMenu(fileMenu)) {
     DestroyMenu(fileMenu);
+    DestroyMenu(state->layoutsMenu);
     DestroyMenu(state->mainMenu);
     return false;
   }
 
   if (!insertSubmenu(state->mainMenu, 0, fileMenu, L"&File")) {
     DestroyMenu(fileMenu);
+    DestroyMenu(state->layoutsMenu);
+    DestroyMenu(state->mainMenu);
+    return false;
+  }
+
+  if (
+    !populateLayoutsMenu(state->layoutsMenu, callbacks) ||
+    !insertSubmenu(state->mainMenu, 1, state->layoutsMenu, L"&Layouts"))
+  {
+    DestroyMenu(state->layoutsMenu);
     DestroyMenu(state->mainMenu);
     return false;
   }
@@ -241,6 +364,7 @@ void updateWindowsNativeMainMenu(GLFWwindow* window, const MainMenuBarCallbacks&
   }
 
   stateIt->second->callbacks = callbacks;
+  populateLayoutsMenu(stateIt->second->layoutsMenu, callbacks);
   updateEnabledState(*stateIt->second);
 }
 

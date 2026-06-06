@@ -140,6 +140,11 @@ std::vector<Filter> projectFilters()
   return {{"Entropy projects", "json"}};
 }
 
+std::vector<Filter> layoutFilters()
+{
+  return {{"Entropy layouts", "json"}};
+}
+
 std::vector<Filter> transformFilters()
 {
   return {{"Transform files", "txt,mat,tfm"}};

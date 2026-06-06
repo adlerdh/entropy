@@ -1460,6 +1460,38 @@ const std::vector<Layout>& WindowData::layouts() const
   return m_layouts;
 }
 
+std::string WindowData::layoutDisplayName(std::size_t index) const
+{
+  if (index >= m_layouts.size()) {
+    return "Layout";
+  }
+
+  const Layout& layout = m_layouts.at(index);
+  switch (layout.kind()) {
+    case LayoutKind::FourUp:
+      return "Four up";
+    case LayoutKind::Tri:
+      return "Tri";
+    case LayoutKind::SingleAxial:
+      return "Single axial";
+    case LayoutKind::MultiImageAxialGrid:
+      return "Multi-image axial grid";
+    case LayoutKind::AxCorSagByImage:
+      return "Axial/coronal/sagittal by image";
+    case LayoutKind::AxialLightbox:
+      return "Axial lightbox";
+    case LayoutKind::CoronalLightbox:
+      return "Coronal lightbox";
+    case LayoutKind::SagittalLightbox:
+      return "Sagittal lightbox";
+    case LayoutKind::Custom:
+      return layout.isLightbox() ? "Custom lightbox" : "Custom";
+    case LayoutKind::NumElements:
+      break;
+  }
+  return "Layout";
+}
+
 std::size_t WindowData::currentLayoutIndex() const
 {
   return m_currentLayout;

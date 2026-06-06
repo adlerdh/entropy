@@ -60,6 +60,8 @@ public:
   void loadProjectFile(const std::filesystem::path& fileName);
   bool saveProject();
   bool saveProjectAs(const std::filesystem::path& fileName);
+  void loadLayoutsFile(const std::filesystem::path& fileName);
+  bool saveLayoutsFile(const std::filesystem::path& fileName);
   bool setReferenceImage(const uuids::uuid& imageUid);
   bool removeImage(const uuids::uuid& imageUid);
   void requestCloseProject();
@@ -169,6 +171,7 @@ private:
 
   /// Image added by the current live Add Image operation, if any.
   std::optional<uuids::uuid> m_pendingAddedImageUid = std::nullopt;
+  std::optional<std::filesystem::path> m_pendingLayoutsFile = std::nullopt;
 
   enum class LargeImageLoadContext : std::uint8_t
   {

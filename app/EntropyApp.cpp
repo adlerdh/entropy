@@ -16,6 +16,7 @@
 #include "logic/states/FsmList.hpp"
 #include "logic/DistanceMap.h"
 #include "ui/NativeFileDialogs.h"
+#include "windowing/LayoutFileSerialization.h"
 
 // #include "logic/ipc/IPCMessage.h"
 
@@ -365,8 +366,10 @@ void EntropyApp::onImagesReady()
 
   const bool preserveLayouts = m_preserveLayoutsOnImagesReady;
   const std::optional<uuids::uuid> pendingAddedImageUid = m_pendingAddedImageUid;
+  const std::optional<fs::path> pendingLayoutsFile = m_pendingLayoutsFile;
   m_preserveLayoutsOnImagesReady = false;
   m_pendingAddedImageUid = std::nullopt;
+  m_pendingLayoutsFile = std::nullopt;
 
   spdlog::debug("Images are loaded.");
 
@@ -425,6 +428,10 @@ void EntropyApp::onImagesReady()
         m_data.project().m_layouts,
         m_data.imageUidsOrdered(),
         m_data.project().m_currentLayoutIndex);
+    }
+
+    if (pendingLayoutsFile) {
+      loadLayoutsFile(*pendingLayoutsFile);
     }
 
     m_callbackHandler.recenterViews(
@@ -1483,6 +1490,53 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
   return true;
 }
 
+void EntropyApp::loadLayoutsFile(const fs::path& fileName)
+{
+  if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
+    m_pendingLayoutsFile = fileName;
+    return;
+  }
+
+  layout::LayoutFile layoutFile;
+  if (!layout::open(layoutFile, fileName)) {
+    return;
+  }
+
+  if (layoutFile.m_layouts.empty()) {
+    spdlog::warn("Layout file {} contains no layouts", fileName);
+    return;
+  }
+
+  if (!m_data.windowData()
+         .applyProjectLayoutSnapshots(layoutFile.m_layouts, m_data.imageUidsOrdered(), layoutFile.m_currentLayoutIndex))
+  {
+    spdlog::error("Could not apply layout file {}", fileName);
+    return;
+  }
+
+  m_data.setProject(createProjectSnapshot());
+  m_glfw.postEmptyEvent();
+  spdlog::info("Loaded layouts from {}", fileName);
+}
+
+bool EntropyApp::saveLayoutsFile(const fs::path& fileName)
+{
+  if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
+    spdlog::warn("Cannot save layouts because no project is loaded");
+    return false;
+  }
+
+  layout::LayoutFile layoutFile{
+    .m_currentLayoutIndex = m_data.windowData().currentLayoutIndex(),
+    .m_layouts = m_data.windowData().createProjectLayoutSnapshots(m_data.imageUidsOrdered())};
+
+  const bool saved = layout::save(layoutFile, fileName);
+  if (saved) {
+    spdlog::info("Saved layouts to {}", fileName);
+  }
+  return saved;
+}
+
 void EntropyApp::loadImageFile(const fs::path& fileName)
 {
   serialize::EntropyProject project;
@@ -1944,6 +1998,7 @@ void EntropyApp::closeProject()
   m_imageLoadFailed = false;
   m_preserveLayoutsOnImagesReady = false;
   m_pendingAddedImageUid = std::nullopt;
+  m_pendingLayoutsFile = std::nullopt;
   m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
   m_pendingLargeAddImageFile = std::nullopt;
   m_pendingLargeProject = std::nullopt;
@@ -1972,6 +2027,7 @@ void EntropyApp::closeProject()
 void EntropyApp::loadImagesFromParams(const InputParams& params)
 {
   const std::optional<fs::path> projectFileName = params.imageFiles.empty() ? params.projectFile : std::nullopt;
+  m_pendingLayoutsFile = params.layoutsFile;
   m_data.setProject(serialize::createProjectFromInputParams(params));
   m_data.setProjectFileName(projectFileName);
 
@@ -2136,6 +2192,8 @@ void EntropyApp::setCallbacks()
     [this]() { return saveProject(); },
     [this](const fs::path& fileName) { return saveProjectAs(fileName); },
     [this]() { requestCloseProject(); },
+    [this](const fs::path& fileName) { loadLayoutsFile(fileName); },
+    [this](const fs::path& fileName) { return saveLayoutsFile(fileName); },
     [this]() { closeProject(); },
     [this]() { quitAppWithoutPrompt(); },
 

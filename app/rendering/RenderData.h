@@ -244,6 +244,9 @@ struct RenderData
   float m_scaleBarTargetFraction;
   float m_scaleBarMarginPx;
 
+  bool m_showLightboxOffsetLabels;
+  glm::vec4 m_lightboxOffsetLabelColor;
+
   bool m_renderFrontFaces; // Flag to render back faces in 3D raycasting
   bool m_renderBackFaces;  // Flag to render back faces in 3D raycasting
 

@@ -24,6 +24,7 @@ std::optional<std::filesystem::path> saveFile(
 
 std::vector<Filter> imageFilters();
 std::vector<Filter> projectFilters();
+std::vector<Filter> layoutFilters();
 std::vector<Filter> transformFilters();
 std::vector<Filter> segmentationFilters();
 std::vector<Filter> landmarkFilters();

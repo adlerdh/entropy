@@ -92,4 +92,11 @@ void drawCrosshairs(
   const glm::vec4& color,
   const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo);
 
+void drawLightboxOffsetLabel(
+  NVGcontext* nvg,
+  const FrameBounds& miewportViewBounds,
+  AppData& appData,
+  const View& view,
+  const glm::vec4& color);
+
 #endif // VECTOR_DRAWING_H

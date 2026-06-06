@@ -100,6 +100,32 @@ void closeProject(const MainMenuBarCallbacks& callbacks)
     callbacks.closeProject();
   }
 }
+
+void loadLayouts(const MainMenuBarCallbacks& callbacks)
+{
+  if (!callbacks.canUseLayouts || !callbacks.loadLayoutsFile) {
+    return;
+  }
+
+  if (const auto selectedFile = native_dialog::openFile(native_dialog::layoutFilters())) {
+    callbacks.loadLayoutsFile(*selectedFile);
+  }
+}
+
+void saveLayouts(const MainMenuBarCallbacks& callbacks)
+{
+  if (!callbacks.canUseLayouts || !callbacks.saveLayoutsFile) {
+    return;
+  }
+
+  const fs::path defaultPath =
+    callbacks.defaultLayoutsSaveDirectory ? callbacks.defaultLayoutsSaveDirectory() : fs::path{};
+  const std::string defaultName =
+    callbacks.defaultLayoutsSaveName ? callbacks.defaultLayoutsSaveName() : "layouts.json";
+  if (const auto selectedFile = native_dialog::saveFile(native_dialog::layoutFilters(), defaultPath, defaultName)) {
+    callbacks.saveLayoutsFile(*selectedFile);
+  }
+}
 } // namespace main_menu
 
 void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
@@ -159,6 +185,38 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
     if (ImGui::BeginMenu("Modes")) {
       if (ImGui::MenuItem("Item")) {
       }
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Layouts")) {
+      if (ImGui::MenuItem("Load...", nullptr, false, callbacks.canUseLayouts)) {
+        main_menu::loadLayouts(callbacks);
+      }
+      if (ImGui::MenuItem("Save...", nullptr, false, callbacks.canUseLayouts)) {
+        main_menu::saveLayouts(callbacks);
+      }
+
+      ImGui::Separator();
+      if (ImGui::MenuItem("Previous", "[", false, callbacks.canUseLayouts && callbacks.cycleLayouts)) {
+        callbacks.cycleLayouts(-1);
+      }
+      if (ImGui::MenuItem("Next", "]", false, callbacks.canUseLayouts && callbacks.cycleLayouts)) {
+        callbacks.cycleLayouts(1);
+      }
+
+      ImGui::Separator();
+      if (ImGui::BeginMenu("Current Layout", callbacks.canUseLayouts)) {
+        const auto names = callbacks.layoutNames ? callbacks.layoutNames() : std::vector<std::string>{};
+        const std::size_t currentIndex = callbacks.currentLayoutIndex ? callbacks.currentLayoutIndex() : 0;
+        for (std::size_t i = 0; i < names.size(); ++i) {
+          const bool selected = i == currentIndex;
+          if (ImGui::MenuItem(names.at(i).c_str(), nullptr, selected, callbacks.setCurrentLayoutIndex != nullptr)) {
+            callbacks.setCurrentLayoutIndex(i);
+          }
+        }
+        ImGui::EndMenu();
+      }
+
       ImGui::EndMenu();
     }
 

@@ -29,6 +29,11 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <cmath>
+#include <iomanip>
+#include <limits>
+#include <sstream>
+
 namespace
 {
 
@@ -45,6 +50,66 @@ static const NVGcolor s_red(nvgRGBA(255, 0, 0, 255));
 static const std::string ROBOTO_LIGHT("robotoLight");
 
 static constexpr float sk_outlineStrokeWidth = 2.0f;
+std::string trimTrailingDecimalZeros(std::string value)
+{
+  const auto decimalPos = value.find('.');
+  if (std::string::npos == decimalPos) {
+    return value;
+  }
+
+  while (!value.empty() && value.back() == '0') {
+    value.pop_back();
+  }
+  if (!value.empty() && value.back() == '.') {
+    value.pop_back();
+  }
+  return value;
+}
+
+std::string formatPhysicalDistanceMm(double lengthMm)
+{
+  const double absLengthMm = std::abs(lengthMm);
+  double value = lengthMm;
+  const char* unit = "mm";
+
+  if (absLengthMm >= 1.0e6) {
+    value = lengthMm / 1.0e6;
+    unit = "km";
+  }
+  else if (absLengthMm >= 1000.0) {
+    value = lengthMm / 1000.0;
+    unit = "m";
+  }
+  else if (absLengthMm >= 10.0) {
+    value = lengthMm / 10.0;
+    unit = "cm";
+  }
+  else if (absLengthMm >= 1.0) {
+    value = lengthMm;
+    unit = "mm";
+  }
+  else if (absLengthMm >= 1.0e-3) {
+    value = lengthMm * 1000.0;
+    unit = "µm";
+  }
+  else {
+    value = lengthMm * 1.0e6;
+    unit = "nm";
+  }
+
+  const double roundedValue = std::round(value);
+  const double integerTolerance = 64.0 * std::numeric_limits<float>::epsilon() * std::max(1.0, std::abs(value));
+
+  std::ostringstream out;
+  out << std::showpos;
+  if (std::abs(value - roundedValue) <= integerTolerance) {
+    out << static_cast<int>(roundedValue);
+  }
+  else {
+    out << std::setprecision(6) << value;
+  }
+  return trimTrailingDecimalZeros(out.str()) + " " + unit;
+}
 
 } // namespace
 
@@ -1014,6 +1079,53 @@ void drawCrosshairs(
       }
     }
   }
+
+  nvgResetScissor(nvg);
+}
+
+void drawLightboxOffsetLabel(
+  NVGcontext* nvg,
+  const FrameBounds& viewportViewBounds,
+  AppData& appData,
+  const View& view,
+  const glm::vec4& color)
+{
+  const float offsetMm = data::computeViewOffsetDistance(
+    appData,
+    view.offsetSetting(),
+    helper::worldDirection(view.camera(), Directions::View::Front));
+  if (glm::epsilonEqual(offsetMm, 0.0f, glm::epsilon<float>())) {
+    return;
+  }
+
+  static constexpr float sk_shadowBlur = 2.0f;
+  static constexpr float sk_padding = 5.0f;
+
+  const glm::vec2 viewportMinCorner(viewportViewBounds.bounds.xoffset, viewportViewBounds.bounds.yoffset);
+  const glm::vec2 viewportSize(viewportViewBounds.bounds.width, viewportViewBounds.bounds.height);
+  const float fontSizePixels = glm::clamp(0.065f * std::min(viewportSize.x, viewportSize.y), 9.0f, 14.0f);
+  const std::string label = formatPhysicalDistanceMm(offsetMm);
+
+  nvgScissor(
+    nvg,
+    viewportViewBounds.viewport[0],
+    viewportViewBounds.viewport[1],
+    viewportViewBounds.viewport[2],
+    viewportViewBounds.viewport[3]);
+
+  nvgFontSize(nvg, fontSizePixels);
+  nvgFontFace(nvg, ROBOTO_LIGHT.c_str());
+  nvgTextAlign(nvg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+
+  const glm::vec2 labelPos = viewportMinCorner + glm::vec2{sk_padding, sk_padding};
+
+  nvgFontBlur(nvg, sk_shadowBlur);
+  nvgFillColor(nvg, nvgRGBAf(0.0f, 0.0f, 0.0f, color.a));
+  nvgText(nvg, labelPos.x, labelPos.y, label.c_str(), nullptr);
+
+  nvgFontBlur(nvg, 0.0f);
+  nvgFillColor(nvg, nvgRGBAf(color.r, color.g, color.b, color.a));
+  nvgText(nvg, labelPos.x, labelPos.y, label.c_str(), nullptr);
 
   nvgResetScissor(nvg);
 }

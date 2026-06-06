@@ -150,6 +150,8 @@ RenderData::RenderData()
   , m_scaleBarTicks(ScaleBarTicks::Automatic)
   , m_scaleBarTargetFraction(0.2f)
   , m_scaleBarMarginPx(12.0f)
+  , m_showLightboxOffsetLabels(false)
+  , m_lightboxOffsetLabelColor(0.75f, 0.75f, 0.75f, 0.8f)
 
   , m_renderFrontFaces(true)
   , m_renderBackFaces(true)

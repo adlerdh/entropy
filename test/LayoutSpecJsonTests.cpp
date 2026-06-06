@@ -120,6 +120,21 @@ TEST_CASE("layout specs round-trip through JSON", "[layout][serialization]")
   requireSame(restored, original);
 }
 
+TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization]")
+{
+  const layout::LayoutSpec original = makePopulatedLayoutSpec();
+
+  const nlohmann::json json = original;
+
+  CHECK(json.at("kind") == "AxCorSagByImage");
+  CHECK(json.at("viewType") == "Coronal");
+  CHECK(json.at("renderMode") == "Quadrants");
+  CHECK(json.at("intensityProjectionMode") == "Minimum");
+  CHECK(json.at("views").at(0).at("viewType") == "Axial");
+  CHECK(json.at("views").at(0).at("offset").at("mode") == "RelativeToImageScrolls");
+  CHECK(json.at("views").at(1).at("offset").at("mode") == "None");
+}
+
 TEST_CASE("layout spec JSON preserves view order", "[layout][serialization]")
 {
   const layout::LayoutSpec original = makePopulatedLayoutSpec();

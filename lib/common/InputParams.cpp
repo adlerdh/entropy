@@ -15,6 +15,9 @@ std::ostream& operator<<(std::ostream& os, const InputParams& p)
   if (p.projectFile) {
     os << "\nProject file: " << *p.projectFile;
   }
+  if (p.layoutsFile) {
+    os << "\nLayouts file: " << *p.layoutsFile;
+  }
 
   os << "\nConsole log level: " << p.consoleLogLevel;
 

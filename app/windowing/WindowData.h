@@ -14,6 +14,7 @@
 
 #include <optional>
 #include <set>
+#include <string>
 #include <vector>
 
 /**
@@ -89,6 +90,7 @@ public:
   std::size_t numLayouts() const;
 
   const std::vector<Layout>& layouts() const;
+  std::string layoutDisplayName(std::size_t index) const;
 
   /// Current layout index
   std::size_t currentLayoutIndex() const;

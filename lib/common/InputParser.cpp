@@ -116,6 +116,10 @@ void logInputs(const InputParams& params)
   else {
     spdlog::info("No image arguments or project file was provided");
   }
+
+  if (params.layoutsFile) {
+    spdlog::info("Layouts file provided: {}", *params.layoutsFile);
+  }
 }
 
 std::vector<char*> filterPlatformArguments(const int argc, char* argv[])
@@ -142,6 +146,7 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
   params.set = false;
   params.imageFiles.clear();
   params.projectFile = std::nullopt;
+  params.layoutsFile = std::nullopt;
 
   std::ostringstream desc;
   desc << APP_DESCRIPTION;
@@ -155,6 +160,8 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
 
   std::string projectFile;
   auto* projectOption = program.add_option("-p,--project", projectFile, "JSON project file");
+  std::string layoutsFile;
+  program.add_option("--layouts", layoutsFile, "standalone JSON layout file");
 
   auto* imageOption = program
                         .add_option_function<std::string>(
@@ -204,6 +211,9 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
 
   if (!projectFile.empty()) {
     params.projectFile = projectFile;
+  }
+  if (!layoutsFile.empty()) {
+    params.layoutsFile = layoutsFile;
   }
 
   assignConsoleLogLevel(logLevel, params);

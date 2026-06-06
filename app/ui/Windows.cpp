@@ -1628,6 +1628,25 @@ void renderSettingsWindow(
           ImGui::TreePop();
         }
 
+        if (ImGui::TreeNode("Lightbox")) {
+          bool showOffsetLabels = renderData.m_showLightboxOffsetLabels;
+          if (ImGui::Checkbox("Show slice offset labels", &showOffsetLabels)) {
+            renderData.m_showLightboxOffsetLabels = showOffsetLabels;
+          }
+          ImGui::SameLine();
+          helpMarker("Show each lightbox tile's physical offset from the crosshairs slice");
+
+          if (showOffsetLabels) {
+            ImGui::ColorEdit4(
+              "Offset label color",
+              glm::value_ptr(renderData.m_lightboxOffsetLabelColor),
+              sk_colorAlphaEditFlags);
+          }
+
+          ImGui::Spacing();
+          ImGui::TreePop();
+        }
+
         ImGui::EndTabItem();
       }
 

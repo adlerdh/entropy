@@ -275,6 +275,8 @@ Direct image inputs and `--project` are mutually exclusive.
 
 > Note: The project file format is subject to change!
 
+3. Layouts can be loaded from a standalone JSON file with `--layouts`. This overrides the default/project layouts after the project or image inputs are loaded. Layout files can also be loaded and saved from the `Layouts` menu.
+
 Logs are output to the console and to files saved in the `log` folder. Log level can be set using the `-l` argument. See help (`-h`) for more details.
 
 ## Keyboard shortcuts
