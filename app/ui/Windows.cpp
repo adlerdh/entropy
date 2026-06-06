@@ -30,7 +30,11 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <inttypes.h>
+#include <optional>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -1416,6 +1420,209 @@ void renderSettingsWindow(
           }
           ImGui::SameLine();
           helpMarker("Anatomical left is on view left; anatomical right is on view right");
+
+          ImGui::Spacing();
+          ImGui::TreePop();
+        }
+
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+
+        if (ImGui::TreeNode("Scale Bars")) {
+          bool showScaleBars = renderData.m_showScaleBars;
+          if (ImGui::Checkbox("Show scale bars", &showScaleBars)) {
+            renderData.m_showScaleBars = showScaleBars;
+          }
+          ImGui::SameLine();
+          helpMarker("Show physical scale bars on anatomical views");
+
+          if (showScaleBars) {
+            ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_scaleBarColor), sk_colorAlphaEditFlags);
+
+            auto scaleBarPositionName = [](ScaleBarPosition position) {
+              switch (position) {
+                case ScaleBarPosition::BottomRight:
+                  return "Right bottom";
+                case ScaleBarPosition::BottomLeft:
+                  return "Left bottom";
+                case ScaleBarPosition::TopRight:
+                  return "Right top";
+                case ScaleBarPosition::TopLeft:
+                  return "Left top";
+                case ScaleBarPosition::Bottom:
+                  return "Bottom";
+                case ScaleBarPosition::Top:
+                  return "Top";
+                case ScaleBarPosition::Left:
+                  return "Left";
+                case ScaleBarPosition::Right:
+                  return "Right";
+              }
+              return "Right bottom";
+            };
+
+            auto forcedScaleBarOrientation = [](ScaleBarPosition position) -> std::optional<ScaleBarOrientation> {
+              switch (position) {
+                case ScaleBarPosition::Bottom:
+                case ScaleBarPosition::Top:
+                  return ScaleBarOrientation::Horizontal;
+                case ScaleBarPosition::Left:
+                case ScaleBarPosition::Right:
+                  return ScaleBarOrientation::Vertical;
+                case ScaleBarPosition::BottomRight:
+                case ScaleBarPosition::BottomLeft:
+                case ScaleBarPosition::TopRight:
+                case ScaleBarPosition::TopLeft:
+                  return std::nullopt;
+              }
+              return std::nullopt;
+            };
+
+            auto setScaleBarPosition = [&](ScaleBarPosition position) {
+              renderData.m_scaleBarPosition = position;
+              if (const auto forcedOrientation = forcedScaleBarOrientation(position)) {
+                renderData.m_scaleBarOrientation = *forcedOrientation;
+              }
+            };
+
+            const std::array<ScaleBarPosition, 8> scaleBarPositions{
+              ScaleBarPosition::BottomRight,
+              ScaleBarPosition::Right,
+              ScaleBarPosition::TopRight,
+              ScaleBarPosition::Top,
+              ScaleBarPosition::TopLeft,
+              ScaleBarPosition::Left,
+              ScaleBarPosition::BottomLeft,
+              ScaleBarPosition::Bottom};
+
+            ImGui::Spacing();
+            if (ImGui::BeginCombo("Position", scaleBarPositionName(renderData.m_scaleBarPosition))) {
+              for (const auto position : scaleBarPositions) {
+                const bool selected = position == renderData.m_scaleBarPosition;
+                if (ImGui::Selectable(scaleBarPositionName(position), selected)) {
+                  setScaleBarPosition(position);
+                }
+                if (selected) {
+                  ImGui::SetItemDefaultFocus();
+                }
+              }
+              ImGui::EndCombo();
+            }
+
+            struct ScaleBarPositionButton
+            {
+              ScaleBarPosition position;
+              const char* label;
+            };
+            const std::array<ScaleBarPositionButton, 8> scaleBarPositionButtons{
+              ScaleBarPositionButton{ScaleBarPosition::TopLeft, "LT"},
+              ScaleBarPositionButton{ScaleBarPosition::Top, "T"},
+              ScaleBarPositionButton{ScaleBarPosition::TopRight, "RT"},
+              ScaleBarPositionButton{ScaleBarPosition::Left, "L"},
+              ScaleBarPositionButton{ScaleBarPosition::Right, "R"},
+              ScaleBarPositionButton{ScaleBarPosition::BottomLeft, "LB"},
+              ScaleBarPositionButton{ScaleBarPosition::Bottom, "B"},
+              ScaleBarPositionButton{ScaleBarPosition::BottomRight, "RB"}};
+
+            auto drawScaleBarPositionButton = [&](const ScaleBarPositionButton& button) {
+              static constexpr ImVec2 sk_buttonSize{32.0f, 24.0f};
+              const bool selected = button.position == renderData.m_scaleBarPosition;
+              if (selected) {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+              }
+              if (ImGui::Button(button.label, sk_buttonSize)) {
+                setScaleBarPosition(button.position);
+              }
+              if (selected) {
+                ImGui::PopStyleColor();
+              }
+              if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("%s", scaleBarPositionName(button.position));
+              }
+            };
+
+            for (int i = 0; i < 3; ++i) {
+              drawScaleBarPositionButton(scaleBarPositionButtons[static_cast<std::size_t>(i)]);
+              if (i < 2) {
+                ImGui::SameLine();
+              }
+            }
+            drawScaleBarPositionButton(scaleBarPositionButtons[3]);
+            ImGui::SameLine();
+            ImGui::BeginDisabled();
+            ImGui::Button("##scaleBarPositionCenter", ImVec2{32.0f, 24.0f});
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            drawScaleBarPositionButton(scaleBarPositionButtons[4]);
+            for (int i = 5; i < 8; ++i) {
+              drawScaleBarPositionButton(scaleBarPositionButtons[static_cast<std::size_t>(i)]);
+              if (i < 7) {
+                ImGui::SameLine();
+              }
+            }
+
+            if (const auto forcedOrientation = forcedScaleBarOrientation(renderData.m_scaleBarPosition)) {
+              renderData.m_scaleBarOrientation = *forcedOrientation;
+            }
+            else {
+              ImGui::Spacing();
+              ImGui::Text("Orientation:");
+              if (ImGui::RadioButton(
+                    "Horizontal##scaleBarOrientation",
+                    ScaleBarOrientation::Horizontal == renderData.m_scaleBarOrientation))
+              {
+                renderData.m_scaleBarOrientation = ScaleBarOrientation::Horizontal;
+              }
+              ImGui::SameLine();
+              if (ImGui::RadioButton(
+                    "Vertical##scaleBarOrientation",
+                    ScaleBarOrientation::Vertical == renderData.m_scaleBarOrientation))
+              {
+                renderData.m_scaleBarOrientation = ScaleBarOrientation::Vertical;
+              }
+              ImGui::SameLine();
+              helpMarker("Draw scale bars horizontally or vertically");
+            }
+
+            ImGui::Spacing();
+            int targetLengthPercent = 5 * static_cast<int>(std::round(20.0f * renderData.m_scaleBarTargetFraction));
+            targetLengthPercent = std::clamp(targetLengthPercent, 5, 100);
+            ImGui::PushItemWidth(180);
+            if (ImGui::SliderInt("Target length", &targetLengthPercent, 5, 100, "%d%%", ImGuiSliderFlags_AlwaysClamp)) {
+              targetLengthPercent = 5 * static_cast<int>(std::round(static_cast<float>(targetLengthPercent) / 5.0f));
+              renderData.m_scaleBarTargetFraction =
+                static_cast<float>(std::clamp(targetLengthPercent, 5, 100)) / 100.0f;
+            }
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            helpMarker(
+              "Approximate fraction of the view occupied by the scale bar before rounding to a clean physical length");
+
+            int scaleBarMarginPx = static_cast<int>(std::round(renderData.m_scaleBarMarginPx));
+            scaleBarMarginPx = std::clamp(scaleBarMarginPx, 12, 96);
+            ImGui::PushItemWidth(180);
+            if (ImGui::SliderInt("Margin", &scaleBarMarginPx, 12, 96, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
+              renderData.m_scaleBarMarginPx = static_cast<float>(std::clamp(scaleBarMarginPx, 12, 96));
+            }
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            helpMarker("Offset scale bars away from view edges and corners");
+
+            ImGui::Spacing();
+            ImGui::Text("Ticks:");
+            if (ImGui::RadioButton("Endpoints##scaleBarTicks", ScaleBarTicks::Endpoints == renderData.m_scaleBarTicks))
+            {
+              renderData.m_scaleBarTicks = ScaleBarTicks::Endpoints;
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton(
+                  "Automatic extra ticks##scaleBarTicks",
+                  ScaleBarTicks::Automatic == renderData.m_scaleBarTicks))
+            {
+              renderData.m_scaleBarTicks = ScaleBarTicks::Automatic;
+            }
+            ImGui::SameLine();
+            helpMarker("Add evenly spaced extra ticks when the scale bar is long enough for readable subdivisions");
+          }
 
           ImGui::Spacing();
           ImGui::TreePop();

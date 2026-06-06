@@ -15,6 +15,7 @@
 #include "logic/states/FsmList.hpp"
 
 #include "rendering/ImageDrawing.h"
+#include "rendering/ScaleBarDrawing.h"
 #include "rendering/TextureSetup.h"
 #include "rendering/VectorDrawing.h"
 #include "rendering/utility/containers/Uniforms.h"
@@ -2573,6 +2574,20 @@ void Rendering::renderVectorOverlays()
           R.m_anatomicalLabelColor,
           R.m_anatomicalLabelType,
           labelPosInfo_forLabels);
+      }
+
+      if (R.m_showScaleBars && ViewRenderMode::VolumeRender != view->renderMode()) {
+        drawScaleBar(
+          m_nvg,
+          miewportViewBounds,
+          windowVP,
+          *view,
+          R.m_scaleBarColor,
+          R.m_scaleBarPosition,
+          R.m_scaleBarOrientation,
+          R.m_scaleBarTicks,
+          R.m_scaleBarTargetFraction,
+          R.m_scaleBarMarginPx);
       }
     }
 

@@ -362,6 +362,30 @@ enum class BrushPreviewStyle
   OutlineAndFill
 };
 
+enum class ScaleBarPosition
+{
+  BottomRight,
+  BottomLeft,
+  TopRight,
+  TopLeft,
+  Bottom,
+  Top,
+  Left,
+  Right
+};
+
+enum class ScaleBarOrientation
+{
+  Horizontal,
+  Vertical
+};
+
+enum class ScaleBarTicks
+{
+  Endpoints,
+  Automatic
+};
+
 /**
  * @brief Information needed for positioning a single anatomical label and the crosshair
  * that corresponds to this label.

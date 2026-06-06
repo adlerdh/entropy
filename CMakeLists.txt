@@ -492,6 +492,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/ImageDrawing.cpp"
   "${entropy_APP_DIR}/rendering/Rendering.cpp"
   "${entropy_APP_DIR}/rendering/RenderData.cpp"
+  "${entropy_APP_DIR}/rendering/ScaleBarDrawing.cpp"
   "${entropy_APP_DIR}/rendering/TextureSetup.cpp"
   "${entropy_APP_DIR}/rendering/VectorDrawing.cpp"
 

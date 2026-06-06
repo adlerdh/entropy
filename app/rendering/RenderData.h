@@ -236,6 +236,14 @@ struct RenderData
 
   AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human;
 
+  bool m_showScaleBars;
+  glm::vec4 m_scaleBarColor; // Scale bar color (non-premultiplied by alpha)
+  ScaleBarPosition m_scaleBarPosition;
+  ScaleBarOrientation m_scaleBarOrientation;
+  ScaleBarTicks m_scaleBarTicks;
+  float m_scaleBarTargetFraction;
+  float m_scaleBarMarginPx;
+
   bool m_renderFrontFaces; // Flag to render back faces in 3D raycasting
   bool m_renderBackFaces;  // Flag to render back faces in 3D raycasting
 

@@ -915,6 +915,14 @@ void ImGuiWrapper::render()
     }
 
     if (!hasLoadedProject) {
+      if (
+        m_postEmptyGlfwEvent &&
+        (ImGui::IsAnyItemActive() || ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
+         ImGui::IsMouseReleased(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right) ||
+         ImGui::IsMouseReleased(ImGuiMouseButton_Right)))
+      {
+        m_postEmptyGlfwEvent();
+      }
       ImGui::Render();
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
       return;
@@ -1226,6 +1234,15 @@ void ImGuiWrapper::render()
   }
 
   m_callbackHandler.refreshBrushPreviewIfNeeded();
+
+  if (
+    m_postEmptyGlfwEvent &&
+    (ImGui::IsAnyItemActive() || ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
+     ImGui::IsMouseReleased(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right) ||
+     ImGui::IsMouseReleased(ImGuiMouseButton_Right)))
+  {
+    m_postEmptyGlfwEvent();
+  }
 
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
