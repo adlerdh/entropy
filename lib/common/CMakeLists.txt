@@ -4,6 +4,7 @@ add_library(Entropy::Common ALIAS EntropyCommon)
 target_sources(EntropyCommon PRIVATE
   CoordinateFrame.cpp
   DirectionMaps.cpp
+  "${entropy_EXT_DIR}/wrfranklin/pnpoly.cpp"
   InputParams.cpp
   InputParser.cpp
   MathFuncs.cpp
@@ -17,6 +18,7 @@ target_include_directories(EntropyCommon
     "${CMAKE_CURRENT_SOURCE_DIR}/.."
   PRIVATE
     "${CMAKE_BINARY_DIR}" # for BuildStamp.h
+    "${entropy_EXT_DIR}"
     "${iconfont_INCLUDE_DIR}"
 )
 

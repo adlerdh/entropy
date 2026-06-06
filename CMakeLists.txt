@@ -517,7 +517,9 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/ui/Windows.cpp"
 
   "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
+  "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
   "${entropy_EXT_DIR}/imgui-knobs/imgui-knobs.cpp"
+  "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
 
   "${entropy_APP_DIR}/windowing/ControlFrame.cpp"
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
@@ -742,6 +744,7 @@ set_target_properties(${entropy_EXE} PROPERTIES NO_SYSTEM_FROM_IMPORTED ON)
 target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   "${imgui_SRC_DIR}"
   "${imgui_SRC_DIR}/imgui" # due to ImPlot
+  "${entropy_EXT_DIR}"
   "${entropy_EXT_DIR}/imGuIZMO.quat"
   "${entropy_EXT_DIR}/imgui-knobs"
   "${implot_SRC_DIR}"
