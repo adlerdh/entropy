@@ -121,6 +121,9 @@ public:
   /// Add a layout with one row per image and columns for axial, coronal, and sagittal views
   void addAxCorSagLayout(std::size_t numImages);
 
+  /// Rebuild Entropy-managed layouts that depend on the current image set.
+  void reconcileImageDependentLayouts(const AppData& appData);
+
   std::vector<layout::LayoutSpec> createProjectLayoutSnapshots(uuid_range_t orderedImageUids) const;
   bool applyProjectLayoutSnapshots(
     const std::vector<layout::LayoutSpec>& layouts,

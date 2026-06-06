@@ -18,6 +18,20 @@ enum class CameraSyncMode
   Zoom
 };
 
+enum class LayoutKind
+{
+  Custom = 0,
+  FourUp = 1,
+  Tri = 2,
+  SingleAxial = 3,
+  MultiImageAxialGrid = 4,
+  AxCorSagByImage = 5,
+  AxialLightbox = 6,
+  CoronalLightbox = 7,
+  SagittalLightbox = 8,
+  NumElements
+};
+
 /// @brief Represents a set of views rendered together in the window at one time
 class Layout : public ControlFrame
 {
@@ -45,6 +59,8 @@ public:
 
   const uuid& uid() const;
   bool isLightbox() const;
+  LayoutKind kind() const;
+  void setKind(LayoutKind kind);
 
   /**
    * @brief Add view
@@ -75,6 +91,7 @@ private:
   /// If true, then this layout has UI controls that affect all of its views,
   /// rather than each view having its own UI controls
   bool m_isLightbox;
+  LayoutKind m_kind = LayoutKind::Custom;
 
   /// Views of the layout, keyed by their UID
   std::unordered_map<uuid, std::unique_ptr<View>> m_views;

@@ -44,6 +44,7 @@ struct ViewSpec
 
 struct LayoutSpec
 {
+  int m_kind = 0;
   bool m_isLightbox = false;
   int m_viewType = 0;
   int m_renderMode = 0;

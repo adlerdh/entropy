@@ -140,6 +140,7 @@ void from_json(const nlohmann::json& j, ViewSpec& view)
 void to_json(nlohmann::json& j, const LayoutSpec& layout)
 {
   j = nlohmann::json{
+    {"kind", layout.m_kind},
     {"isLightbox", layout.m_isLightbox},
     {"viewType", layout.m_viewType},
     {"renderMode", layout.m_renderMode},
@@ -152,6 +153,9 @@ void to_json(nlohmann::json& j, const LayoutSpec& layout)
 
 void from_json(const nlohmann::json& j, LayoutSpec& layout)
 {
+  if (j.count("kind")) {
+    j.at("kind").get_to(layout.m_kind);
+  }
   if (j.count("isLightbox")) {
     j.at("isLightbox").get_to(layout.m_isLightbox);
   }

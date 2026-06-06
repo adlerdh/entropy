@@ -408,61 +408,16 @@ void EntropyApp::onImagesReady()
 
   spdlog::debug("Begin setting up window state");
 
-  const auto addLightboxLayoutsForImage = [this](const uuids::uuid& imageUid) {
-    const Image* image = m_data.image(imageUid);
-    const auto imageIndex = m_data.imageIndex(imageUid);
-    if (!image || !imageIndex) {
-      return;
-    }
-
-    m_data.windowData().addLightboxLayoutForImage(
-      ViewType::Axial,
-      data::computeNumImageSlicesAlongWorldDirection(*image, Directions::get(Directions::Anatomy::Inferior)),
-      *imageIndex,
-      imageUid);
-
-    m_data.windowData().addLightboxLayoutForImage(
-      ViewType::Coronal,
-      data::computeNumImageSlicesAlongWorldDirection(*image, Directions::get(Directions::Anatomy::Anterior)),
-      *imageIndex,
-      imageUid);
-
-    m_data.windowData().addLightboxLayoutForImage(
-      ViewType::Sagittal,
-      data::computeNumImageSlicesAlongWorldDirection(*image, Directions::get(Directions::Anatomy::Right)),
-      *imageIndex,
-      imageUid);
-  };
-
   if (preserveLayouts) {
     if (pendingAddedImageUid) {
       m_data.windowData().appendImageToDefaultRenderedImages(m_data, *pendingAddedImageUid);
-      addLightboxLayoutsForImage(*pendingAddedImageUid);
     }
 
     m_data.windowData().updateImageOrdering(m_data.imageUidsOrdered());
+    m_data.windowData().reconcileImageDependentLayouts(m_data);
   }
   else {
-    // Prepare view layouts:
-    if (1 < m_data.numImages()) {
-      // Add a new layout with one row and a different image in each column:
-      static constexpr bool sk_offsetViews = false;
-      static constexpr bool sk_isLightbox = false;
-
-      if (const auto& refUid = m_data.refImageUid()) {
-        m_data.windowData()
-          .addGridLayout(ViewType::Axial, m_data.numImages(), 1, sk_offsetViews, sk_isLightbox, 0, *refUid);
-      }
-    }
-
-    // Add axial, coronal, sagittal layout, with one row for each image:
-    m_data.windowData().addAxCorSagLayout(m_data.numImages());
-
-    // Create axial, coronal, sagittal lightbox layouts for all images:
-    for (const auto& imageUid : m_data.imageUidsOrdered()) {
-      addLightboxLayoutsForImage(imageUid);
-    }
-
+    m_data.windowData().reconcileImageDependentLayouts(m_data);
     m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data.imageUidsOrdered());
 
     if (!m_data.project().m_layouts.empty()) {
@@ -1773,6 +1728,7 @@ bool EntropyApp::removeImage(const uuids::uuid& imageUid)
   }
 
   m_data.windowData().removeImageFromLayouts(imageUid, m_data.imageUidsOrdered());
+  m_data.windowData().reconcileImageDependentLayouts(m_data);
   m_data.setRainbowColorsForAllImages();
   m_data.setRainbowColorsForAllLandmarkGroups();
   m_data.setProject(createProjectSnapshot());

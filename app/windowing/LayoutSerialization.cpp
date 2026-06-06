@@ -139,6 +139,7 @@ namespace layout
 LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids)
 {
   LayoutSpec layoutSpec;
+  layoutSpec.m_kind = static_cast<int>(layout.kind());
   layoutSpec.m_isLightbox = layout.isLightbox();
   layoutSpec.m_viewType = static_cast<int>(layout.viewType());
   layoutSpec.m_renderMode = static_cast<int>(layout.renderMode());
@@ -215,6 +216,7 @@ Layout instantiateLayoutSpec(
   const ViewConvention& viewConvention)
 {
   Layout layout(spec.m_isLightbox);
+  layout.setKind(enumFromInt(spec.m_kind, LayoutKind::Custom));
   layout.setViewType(enumFromInt(spec.m_viewType, ViewType::Axial));
   layout.setRenderMode(enumFromInt(spec.m_renderMode, ViewRenderMode::Image));
   layout.setIntensityProjectionMode(enumFromInt(spec.m_intensityProjectionMode, IntensityProjectionMode::None));

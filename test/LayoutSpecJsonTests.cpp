@@ -9,6 +9,7 @@ namespace
 layout::LayoutSpec makePopulatedLayoutSpec()
 {
   layout::LayoutSpec spec;
+  spec.m_kind = 5;
   spec.m_isLightbox = true;
   spec.m_viewType = 1;
   spec.m_renderMode = 2;
@@ -93,6 +94,7 @@ void requireSame(const layout::ViewSpec& actual, const layout::ViewSpec& expecte
 
 void requireSame(const layout::LayoutSpec& actual, const layout::LayoutSpec& expected)
 {
+  REQUIRE(actual.m_kind == expected.m_kind);
   REQUIRE(actual.m_isLightbox == expected.m_isLightbox);
   REQUIRE(actual.m_viewType == expected.m_viewType);
   REQUIRE(actual.m_renderMode == expected.m_renderMode);
@@ -174,6 +176,7 @@ TEST_CASE("missing optional layout spec fields keep defaults", "[layout][seriali
   const layout::LayoutSpec restored = json.get<layout::LayoutSpec>();
 
   REQUIRE(restored.m_isLightbox == false);
+  REQUIRE(restored.m_kind == 0);
   REQUIRE(restored.m_renderMode == 0);
   REQUIRE(restored.m_defaultRenderAllImages == false);
   REQUIRE(restored.m_views.size() == 1);

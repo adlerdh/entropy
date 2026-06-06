@@ -5,6 +5,8 @@
 
 #include "logic/camera/CameraHelpers.h"
 #include "logic/app/Data.h"
+#include "logic/app/DataHelper.h"
+#include "logic/camera/MathUtility.h"
 #include "logic/camera/CameraTypes.h"
 
 #include "windowing/LayoutSerialization.h"
@@ -19,12 +21,163 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <array>
+#include <iterator>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+
 #undef min
 #undef max
 
 namespace
 {
 using uuid = uuids::uuid;
+
+struct ViewCameraSnapshot
+{
+  LayoutKind m_layoutKind = LayoutKind::Custom;
+  std::optional<uuid> m_layoutImageUid = std::nullopt;
+  std::optional<uuid> m_viewImageUid = std::nullopt;
+  ViewType m_viewType = ViewType::Axial;
+  std::size_t m_viewIndex = 0;
+  Camera m_camera;
+  bool m_used = false;
+};
+
+struct CameraRestoreSummary
+{
+  std::size_t m_restored = 0;
+  std::size_t m_unmatched = 0;
+};
+
+struct CameraSnapshotKey
+{
+  LayoutKind m_layoutKind = LayoutKind::Custom;
+  ViewType m_viewType = ViewType::Axial;
+  bool m_isLightbox = false;
+  std::optional<uuid> m_imageUid = std::nullopt;
+  std::size_t m_viewIndex = 0;
+
+  bool operator==(const CameraSnapshotKey& other) const
+  {
+    return m_layoutKind == other.m_layoutKind && m_viewType == other.m_viewType && m_isLightbox == other.m_isLightbox &&
+           m_imageUid == other.m_imageUid && m_viewIndex == other.m_viewIndex;
+  }
+};
+
+struct CameraSnapshotKeyHash
+{
+  std::size_t operator()(const CameraSnapshotKey& key) const
+  {
+    std::size_t seed = 0;
+    hashCombine(seed, static_cast<int>(key.m_layoutKind));
+    hashCombine(seed, static_cast<int>(key.m_viewType));
+    hashCombine(seed, key.m_isLightbox);
+    hashCombine(seed, key.m_imageUid.has_value());
+    if (key.m_imageUid) {
+      hashCombine(seed, *key.m_imageUid);
+    }
+    hashCombine(seed, key.m_viewIndex);
+    return seed;
+  }
+
+private:
+  template<typename T>
+  static void hashCombine(std::size_t& seed, const T& value)
+  {
+    seed ^= std::hash<T>{}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  }
+};
+
+using CameraSnapshotIndex = std::unordered_map<CameraSnapshotKey, std::size_t, CameraSnapshotKeyHash>;
+
+bool isLightboxLayoutKind(LayoutKind kind)
+{
+  switch (kind) {
+    case LayoutKind::AxialLightbox:
+    case LayoutKind::CoronalLightbox:
+    case LayoutKind::SagittalLightbox:
+      return true;
+    case LayoutKind::Custom:
+    case LayoutKind::FourUp:
+    case LayoutKind::Tri:
+    case LayoutKind::SingleAxial:
+    case LayoutKind::MultiImageAxialGrid:
+    case LayoutKind::AxCorSagByImage:
+    case LayoutKind::NumElements:
+      return false;
+  }
+  return false;
+}
+
+std::optional<uuid> firstImageUid(const std::list<uuid>& imageUids)
+{
+  if (imageUids.empty()) {
+    return std::nullopt;
+  }
+  return imageUids.front();
+}
+
+void copyCameraState(const Camera& source, Camera& target)
+{
+  target.set_start_T_world(source.start_T_world());
+  target.set_camera_T_anatomy(source.camera_T_anatomy());
+  target.setDefaultFov(source.projection()->defaultFov());
+  target.setNearDistance(source.nearDistance());
+  target.setFarDistance(source.farDistance());
+  target.setZoom(source.getZoom());
+}
+
+std::optional<uuid> layoutImageUid(const Layout& layout)
+{
+  return layout.isLightbox() ? firstImageUid(layout.renderedImages()) : std::nullopt;
+}
+
+std::optional<uuid> viewImageUid(const View& view)
+{
+  return firstImageUid(view.renderedImages());
+}
+
+CameraSnapshotKey cameraSnapshotKey(
+  LayoutKind layoutKind,
+  bool isLightbox,
+  const std::optional<uuid>& layoutImageUid,
+  const std::optional<uuid>& viewImageUid,
+  ViewType viewType,
+  std::size_t viewIndex)
+{
+  return CameraSnapshotKey{
+    .m_layoutKind = layoutKind,
+    .m_viewType = viewType,
+    .m_isLightbox = isLightbox,
+    .m_imageUid = isLightbox ? layoutImageUid : viewImageUid,
+    .m_viewIndex = isLightbox ? viewIndex : 0};
+}
+
+CameraSnapshotKey cameraSnapshotKey(const Layout& layout, const View& view, std::size_t viewIndex)
+{
+  return cameraSnapshotKey(
+    layout.kind(),
+    layout.isLightbox(),
+    layoutImageUid(layout),
+    viewImageUid(view),
+    view.viewType(),
+    viewIndex);
+}
+
+CameraSnapshotKey cameraSnapshotKey(const ViewCameraSnapshot& snapshot)
+{
+  const bool isLightbox = isLightboxLayoutKind(snapshot.m_layoutKind);
+  return cameraSnapshotKey(
+    snapshot.m_layoutKind,
+    isLightbox,
+    snapshot.m_layoutImageUid,
+    snapshot.m_viewImageUid,
+    snapshot.m_viewType,
+    snapshot.m_viewIndex);
+}
 
 Layout createFourUpLayout(
   const CrosshairsState& crosshairs,
@@ -38,6 +191,7 @@ Layout createFourUpLayout(
   const auto noZoomSyncGroup = std::nullopt;
 
   Layout layout(false);
+  layout.setKind(LayoutKind::FourUp);
 
   auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
   auto* zoomGroup = layout.getCameraSyncGroup(CameraSyncMode::Zoom, zoomSyncGroupUid);
@@ -145,6 +299,7 @@ Layout createTriLayout(
   const auto noZoomSyncGroup = std::nullopt;
 
   Layout layout(false);
+  layout.setKind(LayoutKind::Tri);
 
   auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
   auto* zoomGroup = layout.getCameraSyncGroup(CameraSyncMode::Zoom, zoomSyncGroupUid);
@@ -227,6 +382,7 @@ Layout createTriTopBottomLayout(
   const UiControls uiControls(true);
 
   Layout layout(false);
+  layout.setKind(LayoutKind::AxCorSagByImage);
 
   auto axiRotationSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Rotation);
   auto* axiRotGroup = layout.getCameraSyncGroup(CameraSyncMode::Rotation, axiRotationSyncGroupUid);
@@ -360,6 +516,9 @@ Layout createGridLayout(
   static const IntensityProjectionMode s_ipMode = IntensityProjectionMode::None;
 
   Layout layout(isLightbox);
+  if (!isLightbox && ViewType::Axial == viewType && 1 == height && width > 1) {
+    layout.setKind(LayoutKind::MultiImageAxialGrid);
+  }
 
   if (isLightbox) {
     layout.setViewType(viewType);
@@ -450,6 +609,320 @@ Layout createGridLayout(
 
   return layout;
 }
+
+LayoutKind lightboxKindForViewType(const ViewType& viewType)
+{
+  switch (viewType) {
+    case ViewType::Axial:
+      return LayoutKind::AxialLightbox;
+    case ViewType::Coronal:
+      return LayoutKind::CoronalLightbox;
+    case ViewType::Sagittal:
+      return LayoutKind::SagittalLightbox;
+    case ViewType::Oblique:
+    case ViewType::ThreeD:
+    case ViewType::NumElements:
+      return LayoutKind::Custom;
+  }
+  return LayoutKind::Custom;
+}
+
+bool isImageDependentManagedLayout(LayoutKind kind)
+{
+  switch (kind) {
+    case LayoutKind::MultiImageAxialGrid:
+    case LayoutKind::AxCorSagByImage:
+    case LayoutKind::AxialLightbox:
+    case LayoutKind::CoronalLightbox:
+    case LayoutKind::SagittalLightbox:
+      return true;
+    case LayoutKind::Custom:
+    case LayoutKind::FourUp:
+    case LayoutKind::Tri:
+    case LayoutKind::SingleAxial:
+    case LayoutKind::NumElements:
+      return false;
+  }
+  return false;
+}
+
+bool isFixedManagedLayout(LayoutKind kind)
+{
+  switch (kind) {
+    case LayoutKind::FourUp:
+    case LayoutKind::Tri:
+    case LayoutKind::SingleAxial:
+      return true;
+    case LayoutKind::Custom:
+    case LayoutKind::MultiImageAxialGrid:
+    case LayoutKind::AxCorSagByImage:
+    case LayoutKind::AxialLightbox:
+    case LayoutKind::CoronalLightbox:
+    case LayoutKind::SagittalLightbox:
+    case LayoutKind::NumElements:
+      return false;
+  }
+  return false;
+}
+
+std::size_t imageDependentLayoutInsertIndex(const std::vector<Layout>& layouts)
+{
+  std::size_t index = 0;
+  while (index < layouts.size() && isFixedManagedLayout(layouts.at(index).kind())) {
+    ++index;
+  }
+  return index;
+}
+
+std::optional<Layout> createLightboxLayoutForImage(
+  const AppData& appData,
+  const CrosshairsState& crosshairs,
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention,
+  const ViewType& viewType,
+  const uuid& imageUid)
+{
+  const Image* image = appData.image(imageUid);
+  const auto imageIndex = appData.imageIndex(imageUid);
+  if (!image || !imageIndex) {
+    return std::nullopt;
+  }
+
+  glm::vec3 worldDirection{0.0f};
+  switch (viewType) {
+    case ViewType::Axial:
+      worldDirection = Directions::get(Directions::Anatomy::Inferior);
+      break;
+    case ViewType::Coronal:
+      worldDirection = Directions::get(Directions::Anatomy::Anterior);
+      break;
+    case ViewType::Sagittal:
+      worldDirection = Directions::get(Directions::Anatomy::Right);
+      break;
+    case ViewType::Oblique:
+    case ViewType::ThreeD:
+    case ViewType::NumElements:
+      return std::nullopt;
+  }
+
+  const std::size_t numSlices = data::computeNumImageSlicesAlongWorldDirection(*image, worldDirection);
+  if (0 == numSlices) {
+    spdlog::warn(
+      "Skipping {} lightbox layout for image {} because it has no slices",
+      to_string(viewType, false),
+      imageUid);
+    return std::nullopt;
+  }
+
+  const int w = static_cast<int>(std::sqrt(numSlices + 1));
+  const auto div = std::div(static_cast<int>(numSlices), w);
+  const int h = div.quot + (div.rem > 0 ? 1 : 0);
+
+  Layout layout = createGridLayout(
+    viewType,
+    static_cast<std::size_t>(w),
+    static_cast<std::size_t>(h),
+    true,
+    true,
+    crosshairs,
+    viewAlignment,
+    viewConvention,
+    *imageIndex,
+    imageUid);
+  layout.setKind(lightboxKindForViewType(viewType));
+  return std::optional<Layout>{std::move(layout)};
+}
+
+std::vector<ViewCameraSnapshot> createManagedLayoutCameraSnapshots(const std::vector<Layout>& layouts)
+{
+  std::vector<ViewCameraSnapshot> snapshots;
+
+  for (const auto& layout : layouts) {
+    if (!isImageDependentManagedLayout(layout.kind())) {
+      continue;
+    }
+
+    const std::optional<uuid> imageUid = layoutImageUid(layout);
+    std::size_t viewIndex = 0;
+    for (const View* view : layout.orderedViews()) {
+      snapshots.push_back(ViewCameraSnapshot{
+        .m_layoutKind = layout.kind(),
+        .m_layoutImageUid = imageUid,
+        .m_viewImageUid = viewImageUid(*view),
+        .m_viewType = view->viewType(),
+        .m_viewIndex = viewIndex,
+        .m_camera = view->camera(),
+        .m_used = false});
+      ++viewIndex;
+    }
+  }
+
+  return snapshots;
+}
+
+CameraSnapshotIndex createCameraSnapshotIndex(const std::vector<ViewCameraSnapshot>& snapshots)
+{
+  CameraSnapshotIndex index;
+  index.reserve(snapshots.size());
+  for (std::size_t i = 0; i < snapshots.size(); ++i) {
+    index.emplace(cameraSnapshotKey(snapshots.at(i)), i);
+  }
+  return index;
+}
+
+View* viewInLayout(Layout& layout, const uuid& viewUid)
+{
+  const auto& views = layout.views();
+  const auto viewIt = views.find(viewUid);
+  if (viewIt == views.end() || !viewIt->second) {
+    return nullptr;
+  }
+  return viewIt->second.get();
+}
+
+std::optional<std::size_t> orderedViewIndex(const Layout& layout, const uuid& viewUid)
+{
+  const auto& orderedViewUids = layout.orderedViewUids();
+  for (std::size_t i = 0; i < orderedViewUids.size(); ++i) {
+    if (orderedViewUids.at(i) == viewUid) {
+      return i;
+    }
+  }
+  return std::nullopt;
+}
+
+bool viewHadRestoredCamera(
+  const View& view,
+  const Layout& layout,
+  const std::vector<ViewCameraSnapshot>& snapshots,
+  const CameraSnapshotIndex& snapshotIndex,
+  std::size_t viewIndex)
+{
+  const auto snapshotIt = snapshotIndex.find(cameraSnapshotKey(layout, view, viewIndex));
+  return snapshotIt != snapshotIndex.end() && snapshots.at(snapshotIt->second).m_used;
+}
+
+View* restoredSyncedView(
+  Layout& layout,
+  const View& view,
+  const std::vector<ViewCameraSnapshot>& snapshots,
+  const CameraSnapshotIndex& snapshotIndex,
+  CameraSyncMode syncMode,
+  const std::optional<uuid>& syncGroupUid)
+{
+  if (!syncGroupUid) {
+    return nullptr;
+  }
+
+  const auto* group = layout.getCameraSyncGroup(syncMode, *syncGroupUid);
+  if (!group) {
+    return nullptr;
+  }
+
+  for (const auto& syncedViewUid : *group) {
+    if (syncedViewUid == view.uid()) {
+      continue;
+    }
+
+    View* candidate = viewInLayout(layout, syncedViewUid);
+    if (!candidate || candidate->viewType() != view.viewType()) {
+      continue;
+    }
+
+    const std::optional<std::size_t> candidateIndex = orderedViewIndex(layout, candidate->uid());
+    if (!candidateIndex) {
+      continue;
+    }
+
+    if (viewHadRestoredCamera(*candidate, layout, snapshots, snapshotIndex, *candidateIndex)) {
+      return candidate;
+    }
+  }
+
+  return nullptr;
+}
+
+bool initializeFromSyncedRestoredCamera(
+  Layout& layout,
+  View& view,
+  const std::vector<ViewCameraSnapshot>& snapshots,
+  const CameraSnapshotIndex& snapshotIndex)
+{
+  const std::array candidates{
+    std::pair{CameraSyncMode::Zoom, view.cameraZoomSyncGroupUid()},
+    std::pair{CameraSyncMode::Translation, view.cameraTranslationSyncGroupUid()},
+    std::pair{CameraSyncMode::Rotation, view.cameraRotationSyncGroupUid()}};
+
+  for (const auto& [syncMode, syncGroupUid] : candidates) {
+    if (View* source = restoredSyncedView(layout, view, snapshots, snapshotIndex, syncMode, syncGroupUid)) {
+      copyCameraState(source->camera(), view.camera());
+      return true;
+    }
+  }
+
+  return false;
+}
+
+CameraRestoreSummary restoreManagedLayoutCameraSnapshots(
+  std::vector<Layout>& layouts,
+  std::vector<ViewCameraSnapshot>& snapshots,
+  const CameraSnapshotIndex& snapshotIndex)
+{
+  CameraRestoreSummary summary;
+
+  for (auto& layout : layouts) {
+    if (!isImageDependentManagedLayout(layout.kind())) {
+      continue;
+    }
+
+    std::size_t viewIndex = 0;
+    for (View* view : layout.orderedViews()) {
+      auto snapshotIt = snapshotIndex.find(cameraSnapshotKey(layout, *view, viewIndex));
+
+      if (snapshotIt != snapshotIndex.end()) {
+        ViewCameraSnapshot& snapshot = snapshots.at(snapshotIt->second);
+        copyCameraState(snapshot.m_camera, view->camera());
+        snapshot.m_used = true;
+        ++summary.m_restored;
+      }
+      else {
+        ++summary.m_unmatched;
+      }
+
+      ++viewIndex;
+    }
+  }
+
+  return summary;
+}
+
+void initializeUnmatchedManagedLayoutCameras(
+  WindowData& windowData,
+  std::vector<Layout>& layouts,
+  const std::vector<ViewCameraSnapshot>& snapshots,
+  const CameraSnapshotIndex& snapshotIndex,
+  const glm::vec3& worldCenter,
+  const glm::vec3& worldFov)
+{
+  for (auto& layout : layouts) {
+    if (!isImageDependentManagedLayout(layout.kind())) {
+      continue;
+    }
+
+    std::size_t viewIndex = 0;
+    for (View* view : layout.orderedViews()) {
+      const auto snapshotIt = snapshotIndex.find(cameraSnapshotKey(layout, *view, viewIndex));
+
+      if (snapshotIt == snapshotIndex.end()) {
+        if (layout.isLightbox() || !initializeFromSyncedRestoredCamera(layout, *view, snapshots, snapshotIndex)) {
+          windowData.recenterView(*view, worldCenter, worldFov, false, true);
+        }
+      }
+
+      ++viewIndex;
+    }
+  }
+}
 } // namespace
 
 WindowData::WindowData(const CrosshairsState& crosshairs)
@@ -486,6 +959,7 @@ void WindowData::setupViews()
     m_viewConvention,
     refImage,
     std::nullopt));
+  m_layouts.back().setKind(LayoutKind::SingleAxial);
 
   updateAllViews();
 }
@@ -543,11 +1017,94 @@ void WindowData::addLightboxLayoutForImage(
     k_isLightbox,
     imageIndex,
     imageUid);
+  m_layouts.back().setKind(lightboxKindForViewType(viewType));
 }
 
 void WindowData::addAxCorSagLayout(std::size_t numImages)
 {
   m_layouts.emplace_back(createTriTopBottomLayout(numImages, m_crosshairs, m_viewAlignment, m_viewConvention));
+  updateAllViews();
+}
+
+void WindowData::reconcileImageDependentLayouts(const AppData& appData)
+{
+  const uuid currentLayoutUid = (m_currentLayout < m_layouts.size()) ? m_layouts.at(m_currentLayout).uid() : uuid{};
+  std::vector<ViewCameraSnapshot> cameraSnapshots = createManagedLayoutCameraSnapshots(m_layouts);
+
+  m_layouts.erase(
+    std::remove_if(
+      m_layouts.begin(),
+      m_layouts.end(),
+      [](const Layout& layout) { return isImageDependentManagedLayout(layout.kind()); }),
+    m_layouts.end());
+
+  std::vector<Layout> generatedLayouts;
+  generatedLayouts.reserve(1 + 1 + 3 * appData.numImages());
+
+  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  if (orderedImageUids.size() > 1) {
+    if (const auto& refUid = appData.refImageUid()) {
+      generatedLayouts.emplace_back(createGridLayout(
+        ViewType::Axial,
+        orderedImageUids.size(),
+        1,
+        false,
+        false,
+        m_crosshairs,
+        m_viewAlignment,
+        m_viewConvention,
+        0,
+        *refUid));
+    }
+  }
+
+  generatedLayouts.emplace_back(
+    createTriTopBottomLayout(orderedImageUids.size(), m_crosshairs, m_viewAlignment, m_viewConvention));
+
+  for (const auto& imageUid : orderedImageUids) {
+    for (const ViewType viewType : {ViewType::Axial, ViewType::Coronal, ViewType::Sagittal}) {
+      if (
+        auto layout =
+          createLightboxLayoutForImage(appData, m_crosshairs, m_viewAlignment, m_viewConvention, viewType, imageUid))
+      {
+        generatedLayouts.emplace_back(std::move(*layout));
+      }
+    }
+  }
+
+  for (auto& layout : generatedLayouts) {
+    setDefaultRenderedImagesForLayout(layout, orderedImageUids);
+  }
+  const CameraSnapshotIndex cameraSnapshotIndex = createCameraSnapshotIndex(cameraSnapshots);
+  const CameraRestoreSummary restoreSummary =
+    restoreManagedLayoutCameraSnapshots(generatedLayouts, cameraSnapshots, cameraSnapshotIndex);
+  if (!cameraSnapshots.empty() && restoreSummary.m_unmatched > 0) {
+    constexpr float viewAABBoxScaleFactor = 1.10f;
+    const auto worldBox = data::computeWorldAABBoxEnclosingImages(appData, ImageSelection::AllLoadedImages);
+    initializeUnmatchedManagedLayoutCameras(
+      *this,
+      generatedLayouts,
+      cameraSnapshots,
+      cameraSnapshotIndex,
+      m_crosshairs.worldCrosshairs.worldOrigin(),
+      viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox));
+  }
+
+  const std::size_t insertIndex = imageDependentLayoutInsertIndex(m_layouts);
+  m_layouts.insert(
+    m_layouts.begin() + static_cast<std::ptrdiff_t>(insertIndex),
+    std::make_move_iterator(generatedLayouts.begin()),
+    std::make_move_iterator(generatedLayouts.end()));
+
+  auto currentLayoutIt = std::find_if(m_layouts.begin(), m_layouts.end(), [&currentLayoutUid](const Layout& layout) {
+    return layout.uid() == currentLayoutUid;
+  });
+  m_currentLayout = (currentLayoutIt != m_layouts.end())
+                      ? static_cast<std::size_t>(std::distance(m_layouts.begin(), currentLayoutIt))
+                      : std::min(m_currentLayout, m_layouts.empty() ? std::size_t{0} : m_layouts.size() - 1);
+  if (m_activeViewUid && !getCurrentView(*m_activeViewUid)) {
+    m_activeViewUid = std::nullopt;
+  }
   updateAllViews();
 }
 
