@@ -463,10 +463,7 @@ void ImGuiWrapper::setContentScale(float scale)
 void ImGuiWrapper::initializeFonts()
 {
   static const std::string cousineFontPath("res/fonts/Cousine/Cousine-Regular.ttf");
-  static const std::string helveticaFontPath("res/fonts/HelveticaNeue/HelveticaNeue-Light.ttf");
   static const std::string spaceGroteskFontPath("res/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf");
-  static const std::string sfMonoFontPath("res/fonts/SFMono/SFMono-Regular.ttf");
-  static const std::string sfProFontPath("res/fonts/SFPro/sf-pro-text-regular.ttf");
   static const std::string forkAwesomeFontPath = std::string("res/fonts/ForkAwesome/") + FONT_ICON_FILE_NAME_FK;
 
   spdlog::debug("Begin loading fonts");
@@ -481,16 +478,6 @@ void ImGuiWrapper::initializeFonts()
     "Cousine Regular",
     cousineFontSize);
 
-  ImFontConfig helveticaFontConfig;
-  const float helveticaFontSize = 16.0f;
-
-  myImFormatString(
-    helveticaFontConfig.Name,
-    IM_ARRAYSIZE(helveticaFontConfig.Name),
-    "%s, %.0fpx",
-    "Helvetica Neue Light",
-    helveticaFontSize);
-
   ImFontConfig spaceGroteskFontConfig;
   const float spaceGroteskFontSize = 16.0f;
 
@@ -500,26 +487,6 @@ void ImGuiWrapper::initializeFonts()
     "%s, %.0fpx",
     "Space Grotesk Light",
     spaceGroteskFontSize);
-
-  ImFontConfig sfMonoFontConfig;
-  const float sfMonoFontSize = 14.0f;
-
-  myImFormatString(
-    sfMonoFontConfig.Name,
-    IM_ARRAYSIZE(sfMonoFontConfig.Name),
-    "%s, %.0fpx",
-    "SF Mono Regular",
-    sfMonoFontSize);
-
-  ImFontConfig sfProFontConfig;
-  const float sfProFontSize = 16.0f;
-
-  myImFormatString(
-    sfProFontConfig.Name,
-    IM_ARRAYSIZE(sfProFontConfig.Name),
-    "%s, %.0fpx",
-    "SF Pro Regular",
-    sfProFontSize);
 
   // Merge in icons from Fork Awesome:
   ImFontConfig forkAwesomeFontConfig;
@@ -559,31 +526,9 @@ void ImGuiWrapper::initializeFonts()
     m_contentScale * forkAwesomeFontSize,
     forkAwesomeIconGlyphRange);
 
-  ImFont* helveticaFontPtr =
-    loadFont(helveticaFontPath, helveticaFontConfig, m_contentScale * helveticaFontSize, nullptr);
-  ImFont* fork2Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange);
-
   ImFont* spaceFontPtr =
     loadFont(spaceGroteskFontPath, spaceGroteskFontConfig, m_contentScale * spaceGroteskFontSize, nullptr);
-  ImFont* fork3Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange);
-
-  ImFont* sfMonoFontPtr = loadFont(sfMonoFontPath, sfMonoFontConfig, m_contentScale * sfMonoFontSize, nullptr);
-  ImFont* fork4Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange);
-
-  ImFont* sfProFontPtr = loadFont(sfProFontPath, sfProFontConfig, m_contentScale * sfProFontSize, nullptr);
-  ImFont* fork5Ptr = loadFont(
+  ImFont* fork2Ptr = loadFont(
     forkAwesomeFontPath,
     forkAwesomeFontConfig,
     m_contentScale * forkAwesomeFontSize,
@@ -598,37 +543,10 @@ void ImGuiWrapper::initializeFonts()
     spdlog::error("Unable to load font {}", forkAwesomeFontPath);
   }
 
-  if (helveticaFontPtr && fork2Ptr) {
-    m_appData.guiData().m_fonts[helveticaFontPath] = helveticaFontPtr;
-    m_appData.guiData().m_fonts[helveticaFontPath + forkAwesomeFontPath] = fork2Ptr;
-    spdlog::debug("Loaded font {}", helveticaFontPath);
-  }
-  else {
-    spdlog::error("Unable to load font {}", forkAwesomeFontPath);
-  }
-
-  if (spaceFontPtr && fork3Ptr) {
+  if (spaceFontPtr && fork2Ptr) {
     m_appData.guiData().m_fonts[spaceGroteskFontPath] = spaceFontPtr;
-    m_appData.guiData().m_fonts[spaceGroteskFontPath + forkAwesomeFontPath] = fork3Ptr;
+    m_appData.guiData().m_fonts[spaceGroteskFontPath + forkAwesomeFontPath] = fork2Ptr;
     spdlog::debug("Loaded font {}", spaceGroteskFontPath);
-  }
-  else {
-    spdlog::error("Unable to load font {}", forkAwesomeFontPath);
-  }
-
-  if (sfMonoFontPtr && fork4Ptr) {
-    m_appData.guiData().m_fonts[sfMonoFontPath] = sfMonoFontPtr;
-    m_appData.guiData().m_fonts[sfMonoFontPath + forkAwesomeFontPath] = fork4Ptr;
-    spdlog::debug("Loaded font {}", sfMonoFontPath);
-  }
-  else {
-    spdlog::error("Unable to load font {}", forkAwesomeFontPath);
-  }
-
-  if (sfProFontPtr && fork5Ptr) {
-    m_appData.guiData().m_fonts[sfProFontPath] = sfProFontPtr;
-    m_appData.guiData().m_fonts[sfProFontPath + forkAwesomeFontPath] = fork5Ptr;
-    spdlog::debug("Loaded font {}", sfProFontPath);
   }
   else {
     spdlog::error("Unable to load font {}", forkAwesomeFontPath);

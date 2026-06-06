@@ -634,13 +634,10 @@ file(GLOB entropy_COLORMAPS
 set(entropy_FONTS
   "${entropy_RES_DIR}/fonts/Cousine/Cousine-Regular.ttf"
   "${entropy_RES_DIR}/fonts/ForkAwesome/forkawesome-webfont.ttf"
-  "${entropy_RES_DIR}/fonts/HelveticaNeue/HelveticaNeue-Light.ttf"
   "${entropy_RES_DIR}/fonts/Inter/Inter-Light.ttf"
   "${entropy_RES_DIR}/fonts/Roboto/Roboto-Light.ttf"
   "${entropy_RES_DIR}/fonts/Roboto/Roboto-Regular.ttf"
   "${entropy_RES_DIR}/fonts/Satoshi/Satoshi-Light.ttf"
-  "${entropy_RES_DIR}/fonts/SFMono/SFMono-Regular.ttf"
-  "${entropy_RES_DIR}/fonts/SFPro/sf-pro-text-regular.ttf"
   "${entropy_RES_DIR}/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf"
   "${entropy_RES_DIR}/fonts/Supreme/Supreme-Light.ttf"
 )

@@ -45,11 +45,8 @@ The following external resources have been committed directly to the Entropy rep
 | --- | --- | --- | --- |
 | Cousine font | None | https://fonts.google.com/specimen/Cousine | Apache License 2.0 |
 | Fork Awesome font | None | https://forkaweso.me/Fork-Awesome/ | SIL Open Font License 1.1 for font files; MIT and CC-BY-3.0 also apply to other upstream project files |
-| Helvetica Neue fonts | None | Source URL not recorded in repository | License not recorded in repository; verify redistribution rights before packaging |
 | [Inter font](https://github.com/rsms/inter) | None | https://github.com/rsms/inter | SIL Open Font License 1.1 |
 | Roboto fonts | None | https://fonts.google.com/specimen/Roboto | Apache License 2.0 |
-| SF Mono fonts | None | https://developer.apple.com/fonts/ | Apple San Francisco Font License; restricted to uses permitted by Apple |
-| SF Pro fonts | None | https://developer.apple.com/fonts/ | Apple San Francisco Font License; restricted to uses permitted by Apple |
 | Satoshi font | None | https://www.fontshare.com/fonts/satoshi | Fontshare Free Font License |
 | [Space Grotesk font](https://github.com/floriankarsten/space-grotesk) | None | https://github.com/floriankarsten/space-grotesk | SIL Open Font License 1.1 |
 | Supreme font | None | https://www.fontshare.com/fonts/supreme | Fontshare Free Font License |
