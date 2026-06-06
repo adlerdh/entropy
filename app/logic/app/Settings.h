@@ -97,15 +97,6 @@ public:
   float brushSizeInMm() const;
   void setBrushSizeInMm(float size);
 
-  double graphCutsWeightsAmplitude() const;
-  void setGraphCutsWeightsAmplitude(double amplitude);
-
-  double graphCutsWeightsSigma() const;
-  void setGraphCutsWeightsSigma(double sigma);
-
-  GraphNeighborhoodType graphCutsNeighborhood() const;
-  void setGraphCutsNeighborhood(const GraphNeighborhoodType&);
-
   bool crosshairsMoveWhileAnnotating() const;
   void setCrosshairsMoveWhileAnnotating(bool set);
 
@@ -154,15 +145,4 @@ private:
   uint32_t m_brushSizeInVoxels = 1u; //!< Brush size (diameter) in voxels
   float m_brushSizeInMm = 1.0f;      //!< Brush size (diameter) in millimeters
   /* End segmentation drawing variables */
-
-  /* Begin Graph Cuts weights variables */
-  /// Multiplier in front of exponential
-  double m_graphCutsWeightsAmplitude = 1.0;
-
-  /// Standard deviation in exponential, assuming image normalized as [1%, 99%] -> [0, 1]
-  double m_graphCutsWeightsSigma = 0.01;
-
-  /// Neighboorhood used for constructing graph
-  GraphNeighborhoodType m_graphCutsNeighborhood = GraphNeighborhoodType::Neighbors6;
-  /* End Graph Cuts weights variables */
 };

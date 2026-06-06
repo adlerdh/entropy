@@ -28,7 +28,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(Entropy_USE_CCACHE "Use ccache as the compiler launcher when available" ON)
-option(Entropy_ENABLE_GRIDCUT "Build GridCut-based graph cuts segmentation support" OFF)
 
 if(Entropy_USE_CCACHE)
   find_program(CCACHE_PROGRAM ccache)
@@ -424,17 +423,6 @@ set_target_properties(implot PROPERTIES
   CXX_EXTENSIONS OFF
 )
 
-#--------------------------------------------------------------------------------
-# GridCut (NOT included as Git submodule):
-# Header-only C++ library of fast max-flow/min-cut solvers optimized for grid graphs
-#--------------------------------------------------------------------------------
-if(Entropy_ENABLE_GRIDCUT)
-  set(gridcut_INCLUDE_DIRS
-    "${entropy_EXT_DIR}/gridcut/include"
-    "${entropy_EXT_DIR}/gridcut/examples/include"
-  )
-endif()
-
 # Generate build stamp header after GLAD_GL_VERSION_MAJOR and GLAD_GL_VERSION_MINOR are defined
 include(BuildStamp)
 BuildStamp()
@@ -562,20 +550,7 @@ if(WIN32)
   )
 endif()
 
-if(Entropy_ENABLE_GRIDCUT)
-  list(APPEND entropy_SOURCES
-    "${entropy_APP_DIR}/logic/segmentation/GraphCuts.cpp"
-  )
-endif()
-
 if(MSVC)
-  if(Entropy_ENABLE_GRIDCUT)
-    # GridCut is vendored external code; template instantiation warnings surface while compiling this adapter.
-    set_source_files_properties(
-      "${entropy_APP_DIR}/logic/segmentation/GraphCuts.cpp"
-      PROPERTIES COMPILE_OPTIONS "/wd4244"
-    )
-  endif()
   set_source_files_properties(
     "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
     PROPERTIES COMPILE_OPTIONS "/wd4305"
@@ -721,10 +696,6 @@ target_sources(${entropy_EXE} PRIVATE
   ${entropy_SOURCES}
 )
 
-target_compile_definitions(${entropy_EXE} PRIVATE
-  ENTROPY_ENABLE_GRIDCUT=$<BOOL:${Entropy_ENABLE_GRIDCUT}>
-)
-
 target_link_libraries(${entropy_EXE} PRIVATE
   CLI11::CLI11
   Entropy::Common
@@ -779,12 +750,6 @@ target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   "${implot_SRC_DIR}"
   "${nanovg_SRC_DIR}"
 )
-
-if(Entropy_ENABLE_GRIDCUT)
-  target_include_directories(${entropy_EXE} SYSTEM PRIVATE
-    ${gridcut_INCLUDE_DIRS}
-  )
-endif()
 
 entropy_copy_runtime_dlls(${entropy_EXE})
 

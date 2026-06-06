@@ -59,8 +59,6 @@ public:
     bool createLabelColorTable,
     bool removeSegOnFailure);
 
-  bool executeGraphCutsSegmentation(const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType);
-
   bool executePoissonSegmentation(const uuid& imageUid, const uuid& seedSegUid, const SeedSegmentationType& segType);
 
   /**

@@ -70,8 +70,6 @@ public:
     std::function<bool(const uuids::uuid& segUid)> clearSeg,
     std::function<bool(const uuids::uuid& segUid)> removeSeg,
     std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)>
-      executeGraphCutsSeg,
-    std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)>
       executePoissonSeg,
     std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
     std::function<bool(const uuids::uuid& imageUid)> setReferenceImage,
@@ -132,8 +130,6 @@ private:
     m_createBlankSeg = nullptr;
   std::function<bool(const uuids::uuid& segUid)> m_clearSeg = nullptr;
   std::function<bool(const uuids::uuid& segUid)> m_removeSeg = nullptr;
-  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
-    m_executeGraphCutsSeg = nullptr;
   std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
     m_executePoissonSeg = nullptr;
   std::function<bool(const uuids::uuid& imageUid, bool locked)> m_setLockManualImageTransformation = nullptr;

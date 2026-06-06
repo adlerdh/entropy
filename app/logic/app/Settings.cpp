@@ -363,33 +363,6 @@ void AppSettings::setBrushSizeInMm(float size)
   bumpBrushPreviewRevision();
 }
 
-double AppSettings::graphCutsWeightsAmplitude() const
-{
-  return m_graphCutsWeightsAmplitude;
-}
-void AppSettings::setGraphCutsWeightsAmplitude(double amplitude)
-{
-  m_graphCutsWeightsAmplitude = amplitude;
-}
-
-double AppSettings::graphCutsWeightsSigma() const
-{
-  return m_graphCutsWeightsSigma;
-}
-void AppSettings::setGraphCutsWeightsSigma(double sigma)
-{
-  m_graphCutsWeightsSigma = sigma;
-}
-
-GraphNeighborhoodType AppSettings::graphCutsNeighborhood() const
-{
-  return m_graphCutsNeighborhood;
-}
-void AppSettings::setGraphCutsNeighborhood(const GraphNeighborhoodType& hood)
-{
-  m_graphCutsNeighborhood = hood;
-}
-
 bool AppSettings::crosshairsMoveWhileAnnotating() const
 {
   return m_crosshairsMoveWhileAnnotating;

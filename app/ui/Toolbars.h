@@ -34,9 +34,6 @@ void renderSegToolbar(
   const std::function<bool(size_t imageIndex)>& getImageHasActiveSeg,
   const std::function<void(size_t imageIndex, bool set)>& setImageHasActiveSeg,
   const std::function<void(void)>& readjustViewport,
-  const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
-  const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
-    executeGraphCutsSeg,
   const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
     executePoissonSeg);
 

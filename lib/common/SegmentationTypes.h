@@ -25,12 +25,6 @@ enum class SeedSegmentationType
   MultiLabel
 };
 
-enum class GraphNeighborhoodType
-{
-  Neighbors6, // 6 face neighbors
-  Neighbors26 // 26 face, edge, and vertex neighbors
-};
-
 struct LabelIndexMaps
 {
   /// Map from segmentation label to label index

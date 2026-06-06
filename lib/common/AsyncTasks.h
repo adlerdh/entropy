@@ -10,7 +10,6 @@
  */
 enum class AsyncTasks
 {
-  GraphCutsSegmentation,
   IsosurfaceMeshGeneration
 };
 

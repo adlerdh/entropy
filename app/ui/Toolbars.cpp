@@ -666,9 +666,6 @@ void renderSegToolbar(
   const std::function<bool(size_t imageIndex)>& getImageHasActiveSeg,
   const std::function<void(size_t imageIndex, bool set)>& setImageHasActiveSeg,
   const std::function<void(void)>& readjustViewport,
-  const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
-  const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
-    executeGraphCutsSeg,
   const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
     executePoissonSeg)
 {
@@ -681,10 +678,6 @@ void renderSegToolbar(
 
   GuiData& guiData = appData.guiData();
 
-#if !ENTROPY_ENABLE_GRIDCUT
-  static_cast<void>(executeGraphCutsSeg);
-  static_cast<void>(updateImageUniforms);
-#endif
   static_cast<void>(executePoissonSeg);
 
   const auto buttonSize = scaledToolbarButtonSize(appData.windowData().getContentScaleRatios());
@@ -1257,49 +1250,6 @@ void renderSegToolbar(
         ImGui::Spacing();
         ImGui::Spacing();
 
-#if ENTROPY_ENABLE_GRIDCUT
-        ImGui::Text("Graph Cuts edge weights:");
-
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        double amplitude = appData.settings().graphCutsWeightsAmplitude();
-        double sigma = appData.settings().graphCutsWeightsSigma();
-
-        if (ImGui::InputScalar("Amplitude", ImGuiDataType_Double, &amplitude, nullptr, nullptr, "%.3f")) {
-          appData.settings().setGraphCutsWeightsAmplitude(amplitude);
-        }
-        ImGui::SameLine();
-        helpMarker("Amplitude");
-
-        //                if ( ImGui::InputScalar( "Sigma", ImGuiDataType_Double, &sigma ) )
-        //                {
-        //                    appData.settings().setGraphCutsWeightsSigma( sigma );
-        //                }
-        if (mySliderF64("Std. dev.", &sigma, 0.0, 0.05, "%.3f")) {
-          appData.settings().setGraphCutsWeightsSigma(sigma);
-        }
-        ImGui::SameLine();
-        helpMarker("Sigma");
-
-        GraphNeighborhoodType hoodType = appData.settings().graphCutsNeighborhood();
-
-        ImGui::Text("Neighborhood type: ");
-        ImGui::SameLine();
-        if (ImGui::RadioButton("6", GraphNeighborhoodType::Neighbors6 == hoodType)) {
-          hoodType = GraphNeighborhoodType::Neighbors6;
-          appData.settings().setGraphCutsNeighborhood(hoodType);
-        }
-
-        ImGui::SameLine();
-        if (ImGui::RadioButton("26", GraphNeighborhoodType::Neighbors26 == hoodType)) {
-          hoodType = GraphNeighborhoodType::Neighbors26;
-          appData.settings().setGraphCutsNeighborhood(hoodType);
-        }
-        ImGui::SameLine();
-        helpMarker("Set 3D neighborhood type for graph construction");
-#endif
-
         ImGui::EndPopup();
       }
 
@@ -1354,42 +1304,6 @@ void renderSegToolbar(
       if (isHoriz) {
         ImGui::SameLine();
       }
-
-#if ENTROPY_ENABLE_GRIDCUT
-      if (ImGui::Button(ICON_FK_CUBE, buttonSize)) {
-        const auto imageUid = appData.activeImageUid();
-        const auto seedSegUid = appData.imageToActiveSegUid(*imageUid);
-
-        if (imageUid && seedSegUid) {
-          executeGraphCutsSeg(*imageUid, *seedSegUid, SeedSegmentationType::Binary);
-          updateImageUniforms(*imageUid);
-        }
-      }
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", "Execute binary Graph Cuts segmentation");
-      }
-
-      if (isHoriz) {
-        ImGui::SameLine();
-      }
-
-      if (ImGui::Button(ICON_FK_CUBES, buttonSize)) {
-        const auto imageUid = appData.activeImageUid();
-        const auto seedSegUid = appData.imageToActiveSegUid(*imageUid);
-
-        if (imageUid && seedSegUid) {
-          executeGraphCutsSeg(*imageUid, *seedSegUid, SeedSegmentationType::MultiLabel);
-          updateImageUniforms(*imageUid);
-        }
-      }
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", "Execute multi-label Graph Cuts segmentation");
-      }
-
-      if (isHoriz) {
-        ImGui::SameLine();
-      }
-#endif
     }
 
     /// @todo Should save off default values (prior to toolbar's change) and push them here:

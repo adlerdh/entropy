@@ -264,8 +264,6 @@ void ImGuiWrapper::setCallbacks(
   std::function<bool(const uuids::uuid& segUid)> clearSeg,
   std::function<bool(const uuids::uuid& segUid)> removeSeg,
   std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
-    executeGraphCutsSeg,
-  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
     executePoissonSeg,
   std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
   std::function<bool(const uuids::uuid& imageUid)> setReferenceImage,
@@ -307,7 +305,6 @@ void ImGuiWrapper::setCallbacks(
   m_createBlankSeg = createBlankSeg;
   m_clearSeg = clearSeg;
   m_removeSeg = removeSeg;
-  m_executeGraphCutsSeg = executeGraphCutsSeg;
   m_executePoissonSeg = executePoissonSeg;
   m_setLockManualImageTransformation = setLockManualImageTransformation;
   m_setReferenceImage = setReferenceImage;
@@ -1043,8 +1040,6 @@ void ImGuiWrapper::render()
       getImageHasActiveSeg,
       setImageHasActiveSeg,
       m_readjustViewport,
-      m_updateImageUniforms,
-      m_executeGraphCutsSeg,
       m_executePoissonSeg);
 
     annotationToolbar(m_paintActiveSegmentationWithActivePolygon);
