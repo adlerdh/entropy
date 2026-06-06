@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=@APP_NAME@
+Comment=@APP_DESCRIPTION@
+Exec=@entropy_LINUX_DESKTOP_EXEC@ %F
+Icon=@entropy_LINUX_APP_ID@
+Terminal=false
+Categories=Science;MedicalSoftware;ImageProcessing;DataVisualization;
+StartupWMClass=@entropy_LINUX_APP_ID@
+StartupNotify=true

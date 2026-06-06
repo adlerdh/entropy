@@ -41,44 +41,82 @@ cmake --build --preset app --parallel
 The default preset build directory is `build-default`.
 
 ### macOS packaging
-On macOS, the Entropy target is built as an `.app` bundle with an `Info.plist` and app icon. Build the app first:
+On macOS, the Entropy target is built as an `.app` bundle with an `Info.plist` and app icon. For packaged releases, build the Release app first:
 
 ```sh
-cmake --preset superbuild
-cmake --build --preset superbuild --parallel
-cmake --preset app
-cmake --build --preset app --parallel
+cmake --preset release-superbuild
+cmake --build --preset release-superbuild --parallel
+cmake --preset release-app
+cmake --build --preset release-app --parallel
 ```
 
 The build-tree app is useful for development:
 
 ```sh
-open build-default/bin/Entropy.app
+open build-release/bin/Entropy.app
 ```
 
 For local installation testing, use CMake's install step after the application build has completed. The install step copies required third-party dynamic libraries into `Entropy.app/Contents/Frameworks` and rewrites their install names so the app does not depend on the build tree:
 
 ```sh
-cmake --install build-default --prefix build-default/install
-open build-default/install/Entropy.app
+cmake --install build-release --prefix build-release/install
+open build-release/install/Entropy.app
 ```
 
 For a distributable package, run CPack from the repository root after the app build has completed. CPack creates a drag-and-drop DMG named like `Entropy-0.9.1.0-macOS.dmg`:
 
 ```sh
-cpack -G DragNDrop --config build-default/CPackConfig.cmake
+cpack -G DragNDrop --config build-release/CPackConfig.cmake
 ```
 
 The install and CPack steps ad-hoc sign the copied app by default so local Finder launches work after `fixup_bundle` rewrites library paths. For a real release, configure the app build with a Developer ID Application identity:
 
 ```sh
-cmake --preset app -Dentropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
-cpack -G DragNDrop --config build-default/CPackConfig.cmake
+cmake --preset release-app -Dentropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+cpack -G DragNDrop --config build-release/CPackConfig.cmake
 ```
 
 To test the DMG manually, open it, drag `Entropy.app` to `/Applications`, and launch it from Finder or Launchpad. Finder-launched macOS builds write logs under `~/Library/Logs/Entropy` and UI state under `~/Library/Application Support/Entropy`; terminal launches keep the development defaults described in the Running section.
 
 Generated DMG files and CPack scratch directories are ignored by Git. Public release builds still need Developer ID signing and notarization before distributing outside local development machines.
+
+### Linux packaging
+On Linux, build the Release app first for packaging:
+
+```sh
+cmake --preset release-superbuild
+cmake --build --preset release-superbuild --parallel
+cmake --preset release-app
+cmake --build --preset release-app --parallel
+```
+
+The build-tree app is useful for development:
+
+```sh
+build-release/bin/Entropy
+```
+
+For local installation testing, use CMake's install step after the application build has completed. The install step copies the Entropy executable to `bin`, copies required bundled shared libraries to `lib/entropy`, installs the desktop launcher and icon, and verifies that bundled private libraries do not contain build-tree RPATH/RUNPATH entries:
+
+```sh
+cmake --install build-release --prefix build-release/linux-package-install
+build-release/linux-package-install/bin/Entropy
+```
+
+For a distributable package, run CPack from the repository root after the app build has completed. CPack creates a Debian package named like `Entropy-0.9.1.0-Linux-x86_64.deb`:
+
+```sh
+cpack -G DEB --config build-release/CPackConfig.cmake
+```
+
+To test the package manually, install it with apt and launch the installed app:
+
+```sh
+sudo apt install ./Entropy-0.9.1.0-Linux-x86_64.deb
+Entropy
+```
+
+The Linux package keeps Entropy's third-party CMake-built dependencies private under `/usr/lib/entropy` and lets `dpkg-shlibdeps` record system package dependencies for non-bundled system libraries. Non-Debug CPack packages are stripped to remove symbol tables from the staged binaries. The package also recommends `xdg-desktop-portal` and a common portal backend for native file dialogs.
 
 Additional presets are available for debug and release builds:
 

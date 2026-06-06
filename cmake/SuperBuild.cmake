@@ -35,6 +35,16 @@ foreach(_launcher_var IN ITEMS CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUN
   endif()
 endforeach()
 
+set(_ext_shared_runtime_args)
+if(UNIX AND NOT APPLE AND BUILD_SHARED_LIBS)
+  list(APPEND _ext_shared_runtime_args
+    -DCMAKE_BUILD_RPATH:STRING=\$ORIGIN
+    -DCMAKE_INSTALL_RPATH:STRING=\$ORIGIN
+    -DCMAKE_INSTALL_RPATH_USE_LINK_PATH:BOOL=OFF
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH:BOOL=ON
+  )
+endif()
+
 set(_ext_cxx_std_args
   -DCMAKE_CXX_STANDARD=23
   -DCMAKE_CXX_STANDARD_REQUIRED=ON
@@ -60,6 +70,7 @@ ExternalProject_Add(catch2
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_TESTING:BOOL=OFF
@@ -104,6 +115,7 @@ ExternalProject_Add(cli11
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DCLI11_BUILD_DOCS:BOOL=OFF
     -DCLI11_BUILD_EXAMPLES:BOOL=OFF
@@ -152,6 +164,7 @@ ExternalProject_Add(cmakerc
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     -DBUILD_TESTS:BOOL=OFF
 
   CMAKE_GENERATOR ${gen}
@@ -182,6 +195,7 @@ ExternalProject_Add(glfw
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
@@ -221,6 +235,7 @@ ExternalProject_Add(glm
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
@@ -366,6 +381,7 @@ ExternalProject_Add(ITK
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     -DCMAKE_EXE_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DCMAKE_SHARED_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DCMAKE_MODULE_LINKER_FLAGS=${ICONV_LINK_FLAG}
@@ -426,8 +442,10 @@ ExternalProject_Add(nativefiledialog
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DNFD_PORTAL:BOOL=${_nfd_portal}
     -DNFD_BUILD_TESTS:BOOL=OFF
     -DNFD_INSTALL:BOOL=ON
 
@@ -462,6 +480,7 @@ ExternalProject_Add(nlohmann_json
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DJSON_BuildTests:BOOL=OFF
     -DJSON_CI:BOOL=OFF
@@ -546,6 +565,7 @@ ExternalProject_Add(spdlog
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DSPDLOG_BUILD_ALL:BOOL=OFF
@@ -609,6 +629,7 @@ ExternalProject_Add(stduuid
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DUUID_BUILD_TESTS:BOOL=OFF
     -DUUID_ENABLE_INSTALL:BOOL=ON

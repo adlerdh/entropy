@@ -7,6 +7,7 @@ out/**
 log*/**
 _CPack_Packages/**
 *.dmg
+*.deb
 src/**/*.autosave
 CMakeFiles/**
 CMakeCache.txt

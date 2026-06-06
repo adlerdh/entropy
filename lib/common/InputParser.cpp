@@ -124,12 +124,10 @@ std::vector<char*> filterPlatformArguments(const int argc, char* argv[])
   filteredArgs.reserve(static_cast<size_t>(argc));
 
   for (int i = 0; i < argc; ++i) {
-#ifdef __APPLE__
     const std::string_view arg{argv[i]};
     if (arg.starts_with("-psn_")) {
       continue;
     }
-#endif
 
     filteredArgs.push_back(argv[i]);
   }

@@ -3,6 +3,9 @@
 #include "EntropyApp.h"
 #include "common/Exception.hpp"
 #include "windowing/GlfwCallbacks.h"
+#if defined(__linux__)
+#include "windowing/EntropyIcon.h"
+#endif
 #ifdef _WIN32
 #include "ui/WinNativeMainMenu.h"
 #endif
@@ -72,6 +75,12 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   // monitor it is placed on. This includes the initial placement when the window is created
   glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 
+#if defined(__linux__)
+  glfwWindowHintString(GLFW_X11_CLASS_NAME, "io.github.adlerdh.entropy");
+  glfwWindowHintString(GLFW_X11_INSTANCE_NAME, "io.github.adlerdh.entropy");
+  glfwWindowHintString(GLFW_WAYLAND_APP_ID, "io.github.adlerdh.entropy");
+#endif
+
 #ifdef __APPLE__
   // Window's context is an OpenGL forward-compatible, i.e. one where all functionality deprecated
   // in the requested version of OpenGL is removed (required on macOS)
@@ -140,6 +149,14 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   }
 
   spdlog::debug("Created GLFW window and context");
+
+#if defined(__linux__)
+  GLFWimage entropyWindowIcon{
+    entropy::windowing::kEntropyIconWidth,
+    entropy::windowing::kEntropyIconHeight,
+    const_cast<unsigned char*>(entropy::windowing::kEntropyIconRgba.data())};
+  glfwSetWindowIcon(m_window, 1, &entropyWindowIcon);
+#endif
 
   // Embed pointer to application data in GLFW window
   glfwSetWindowUserPointer(m_window, reinterpret_cast<void*>(app));

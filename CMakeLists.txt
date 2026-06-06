@@ -405,6 +405,12 @@ target_compile_options(implot PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
     -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow -ftrapv
   >
+  $<$<CXX_COMPILER_ID:GNU>:
+    -Wno-format-truncation -Wno-deprecated-enum-enum-conversion
+  >
+  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
+    -Wno-deprecated-enum-enum-conversion
+  >
   $<$<CXX_COMPILER_ID:MSVC>:
     /W4
     /wd5054
