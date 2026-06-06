@@ -12,10 +12,13 @@
 #include "logic/camera/MathUtility.h"
 
 #include "logic/segmentation/AnnotationSegmentation.h"
-#include "logic/segmentation/GraphCuts.h"
 #include "logic/segmentation/Poisson.h"
 #include "logic/segmentation/SegHelpers.h"
 #include "logic/segmentation/SegHelpers.tpp"
+
+#if ENTROPY_ENABLE_GRIDCUT
+#include "logic/segmentation/GraphCuts.h"
+#endif
 
 #include "rendering/Rendering.h"
 #include "rendering/TextureSetup.h"
@@ -342,6 +345,13 @@ bool CallbackHandler::executeGraphCutsSegmentation(
   const uuid& seedSegUid,
   const SeedSegmentationType& segType)
 {
+#if !ENTROPY_ENABLE_GRIDCUT
+  static_cast<void>(imageUid);
+  static_cast<void>(seedSegUid);
+  static_cast<void>(segType);
+  spdlog::warn("Graph Cuts segmentation is disabled in this build");
+  return false;
+#else
   // Inputs to algorithm:
   const Image* image = m_appData.image(imageUid);
   const Image* seedSeg = m_appData.seg(seedSegUid);
@@ -486,6 +496,7 @@ bool CallbackHandler::executeGraphCutsSegmentation(
 
   spdlog::debug("Done updating segmentation texture");
   return true;
+#endif
 }
 
 bool CallbackHandler::executePoissonSegmentation(

@@ -681,6 +681,12 @@ void renderSegToolbar(
 
   GuiData& guiData = appData.guiData();
 
+#if !ENTROPY_ENABLE_GRIDCUT
+  static_cast<void>(executeGraphCutsSeg);
+  static_cast<void>(updateImageUniforms);
+#endif
+  static_cast<void>(executePoissonSeg);
+
   const auto buttonSize = scaledToolbarButtonSize(appData.windowData().getContentScaleRatios());
   const auto padSize = scaledPad(appData.windowData().getContentScaleRatios());
 
@@ -1251,6 +1257,7 @@ void renderSegToolbar(
         ImGui::Spacing();
         ImGui::Spacing();
 
+#if ENTROPY_ENABLE_GRIDCUT
         ImGui::Text("Graph Cuts edge weights:");
 
         ImGui::Separator();
@@ -1291,6 +1298,7 @@ void renderSegToolbar(
         }
         ImGui::SameLine();
         helpMarker("Set 3D neighborhood type for graph construction");
+#endif
 
         ImGui::EndPopup();
       }
@@ -1347,6 +1355,7 @@ void renderSegToolbar(
         ImGui::SameLine();
       }
 
+#if ENTROPY_ENABLE_GRIDCUT
       if (ImGui::Button(ICON_FK_CUBE, buttonSize)) {
         const auto imageUid = appData.activeImageUid();
         const auto seedSegUid = appData.imageToActiveSegUid(*imageUid);
@@ -1380,18 +1389,7 @@ void renderSegToolbar(
       if (isHoriz) {
         ImGui::SameLine();
       }
-
-      if (ImGui::Button(ICON_FK_PLUG, buttonSize)) {
-        if (const auto imageUid = appData.activeImageUid()) {
-          if (const auto seedSegUid = appData.imageToActiveSegUid(*imageUid)) {
-            executePoissonSeg(*imageUid, *seedSegUid, SeedSegmentationType::Binary);
-            updateImageUniforms(*imageUid);
-          }
-        }
-      }
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", "Execute multi-label Poisson segmentation");
-      }
+#endif
     }
 
     /// @todo Should save off default values (prior to toolbar's change) and push them here:
