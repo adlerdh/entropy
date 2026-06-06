@@ -204,6 +204,37 @@ bool landmarkGroupsEqual(const serialize::LandmarkGroup& a, const serialize::Lan
 }
 
 template<typename T, typename Equal>
+bool vectorsEqual(const std::vector<T>& a, const std::vector<T>& b, Equal equal);
+
+bool imageSelectionsEqual(const layout::ImageSelectionSpec& a, const layout::ImageSelectionSpec& b)
+{
+  return a.m_renderedImageIndices == b.m_renderedImageIndices && a.m_metricImageIndices == b.m_metricImageIndices;
+}
+
+bool viewLayoutsEqual(const layout::ViewSpec& a, const layout::ViewSpec& b)
+{
+  return a.m_left == b.m_left && a.m_bottom == b.m_bottom && a.m_width == b.m_width && a.m_height == b.m_height &&
+         a.m_viewType == b.m_viewType && a.m_renderMode == b.m_renderMode &&
+         a.m_intensityProjectionMode == b.m_intensityProjectionMode && a.m_offsetMode == b.m_offsetMode &&
+         a.m_absoluteOffset == b.m_absoluteOffset && a.m_relativeOffsetSteps == b.m_relativeOffsetSteps &&
+         a.m_offsetImageIndex == b.m_offsetImageIndex && a.m_rotationSyncGroup == b.m_rotationSyncGroup &&
+         a.m_translationSyncGroup == b.m_translationSyncGroup && a.m_zoomSyncGroup == b.m_zoomSyncGroup &&
+         a.m_preferredDefaultRenderedImages == b.m_preferredDefaultRenderedImages &&
+         a.m_defaultRenderAllImages == b.m_defaultRenderAllImages &&
+         imageSelectionsEqual(a.m_imageSelection, b.m_imageSelection);
+}
+
+bool projectLayoutsEqual(const layout::LayoutSpec& a, const layout::LayoutSpec& b)
+{
+  return a.m_isLightbox == b.m_isLightbox && a.m_viewType == b.m_viewType && a.m_renderMode == b.m_renderMode &&
+         a.m_intensityProjectionMode == b.m_intensityProjectionMode &&
+         a.m_preferredDefaultRenderedImages == b.m_preferredDefaultRenderedImages &&
+         a.m_defaultRenderAllImages == b.m_defaultRenderAllImages &&
+         imageSelectionsEqual(a.m_imageSelection, b.m_imageSelection) &&
+         vectorsEqual(a.m_views, b.m_views, viewLayoutsEqual);
+}
+
+template<typename T, typename Equal>
 bool vectorsEqual(const std::vector<T>& a, const std::vector<T>& b, Equal equal)
 {
   return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), equal);
@@ -221,7 +252,9 @@ bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
 bool projectsEqual(const serialize::EntropyProject& a, const serialize::EntropyProject& b)
 {
   return imagesEqual(a.m_referenceImage, b.m_referenceImage) &&
-         vectorsEqual(a.m_additionalImages, b.m_additionalImages, imagesEqual);
+         vectorsEqual(a.m_additionalImages, b.m_additionalImages, imagesEqual) &&
+         vectorsEqual(a.m_layouts, b.m_layouts, projectLayoutsEqual) &&
+         a.m_currentLayoutIndex == b.m_currentLayoutIndex;
 }
 
 bool isApproximatelyIdentity(const glm::mat4& matrix)
@@ -431,6 +464,13 @@ void EntropyApp::onImagesReady()
     }
 
     m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data.imageUidsOrdered());
+
+    if (!m_data.project().m_layouts.empty()) {
+      m_data.windowData().applyProjectLayoutSnapshots(
+        m_data.project().m_layouts,
+        m_data.imageUidsOrdered(),
+        m_data.project().m_currentLayoutIndex);
+    }
 
     m_callbackHandler.recenterViews(
       m_data.state().recenteringMode(),
@@ -1224,6 +1264,9 @@ serialize::EntropyProject EntropyApp::createProjectSnapshot() const
 
     project.m_additionalImages.emplace_back(createImageSnapshot(imageUid));
   }
+
+  project.m_layouts = m_data.windowData().createProjectLayoutSnapshots(imageUids);
+  project.m_currentLayoutIndex = m_data.windowData().currentLayoutIndex();
 
   return project;
 }

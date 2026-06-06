@@ -7,7 +7,9 @@
 
 #include <list>
 #include <memory>
+#include <optional>
 #include <unordered_map>
+#include <vector>
 
 enum class CameraSyncMode
 {
@@ -44,14 +46,15 @@ public:
   const uuid& uid() const;
   bool isLightbox() const;
 
-  void recenter();
-
   /**
    * @brief Add view
    * @return UID of the view in the layout
    */
   bool addView(std::unique_ptr<View> view);
   const std::unordered_map<uuid, std::unique_ptr<View>>& views() const;
+  const std::vector<uuid>& orderedViewUids() const;
+  std::vector<View*> orderedViews();
+  std::vector<const View*> orderedViews() const;
 
   // Generates a new UUID and adds an empty camera synchronization group.
   // Returns the UUID of the newly added group.
@@ -61,6 +64,8 @@ public:
   // found
   const std::list<uuid>* getCameraSyncGroup(CameraSyncMode mode, const uuid& groupUid) const;
   std::list<uuid>* getCameraSyncGroup(CameraSyncMode mode, const uuid& groupUid);
+  std::optional<uuid> cameraSyncGroupUidContainingView(CameraSyncMode mode, const uuid& viewUid) const;
+  void addViewToCameraSyncGroup(CameraSyncMode mode, const std::optional<uuid>& groupUid, const uuid& viewUid);
 
 private:
   void updateAllViewsInLayout();
@@ -73,6 +78,9 @@ private:
 
   /// Views of the layout, keyed by their UID
   std::unordered_map<uuid, std::unique_ptr<View>> m_views;
+
+  /// Stable display/order list for rendering, UI, hit testing, and serialization.
+  std::vector<uuid> m_orderedViewUids;
 
   /// For each synchronization mode type, a map of synchronization group UID to the list of view
   /// UIDs in the group

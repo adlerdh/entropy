@@ -27,6 +27,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <array>
 #include <unordered_map>
 
@@ -81,6 +82,12 @@ ViewRenderMode reconcileRenderModeForViewType(const ViewType& newViewType, const
   }
 
   return currentRenderMode;
+}
+
+bool isRenderModeCompatibleWithViewType(const ViewType& viewType, const ViewRenderMode& renderMode)
+{
+  const auto& modes = (ViewType::ThreeD == viewType) ? All3dViewRenderModes : All2dViewRenderModes;
+  return std::find(modes.begin(), modes.end(), renderMode) != modes.end();
 }
 
 glm::quat get_world_T_startFrame(CameraStartFrameType startFrameType, const glm::mat3& world_T_frame)
@@ -319,6 +326,16 @@ void View::setViewType(const ViewType& newViewType)
 
   m_camera.set_anatomy_T_start_provider([this]() { return m_anatomy_T_start; });
   m_viewType = newViewType;
+}
+
+void View::setRenderMode(const ViewRenderMode& renderMode)
+{
+  if (isRenderModeCompatibleWithViewType(m_viewType, renderMode)) {
+    ControlFrame::setRenderMode(renderMode);
+    return;
+  }
+
+  ControlFrame::setRenderMode(reconcileRenderModeForViewType(m_viewType, renderMode));
 }
 
 std::optional<uuid> View::cameraRotationSyncGroupUid() const

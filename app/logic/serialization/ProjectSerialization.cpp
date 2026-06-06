@@ -1,6 +1,7 @@
 #include "logic/serialization/ProjectSerialization.h"
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/JsonSerializers.h"
+#include "windowing/LayoutSpecJson.h"
 
 #include <safeclib/strerrorlen_s.h>
 
@@ -298,6 +299,12 @@ void to_json(json& j, const EntropyProject& project)
   if (!project.m_additionalImages.empty()) {
     j["additional"] = project.m_additionalImages;
   }
+  if (!project.m_layouts.empty()) {
+    j["layouts"] = project.m_layouts;
+  }
+  if (project.m_currentLayoutIndex) {
+    j["currentLayoutIndex"] = *project.m_currentLayoutIndex;
+  }
 }
 
 void from_json(const json& j, EntropyProject& project)
@@ -306,6 +313,12 @@ void from_json(const json& j, EntropyProject& project)
 
   if (j.count("additional")) {
     j.at("additional").get_to(project.m_additionalImages);
+  }
+  if (j.count("layouts")) {
+    j.at("layouts").get_to(project.m_layouts);
+  }
+  if (j.count("currentLayoutIndex")) {
+    project.m_currentLayoutIndex = j.at("currentLayoutIndex").get<std::size_t>();
   }
 }
 
@@ -554,7 +567,7 @@ bool openAffineTxFile(glm::dmat4& matrix, const fs::path& fileName)
       throw std::system_error(errno, std::system_category(), "Failed to open input file " + fileName.string());
     }
 
-    std::vector<std::vector<double> > rows;
+    std::vector<std::vector<double>> rows;
     std::string temp;
 
     while (std::getline(inFile, temp)) {
@@ -653,7 +666,7 @@ bool saveAffineTxFile(const glm::dmat4& matrix, const fs::path& fileName)
   }
 }
 
-bool openLandmarkGroupCsvFile(std::map<std::size_t, PointRecord<glm::vec3> >& landmarks, const fs::path& csvFileName)
+bool openLandmarkGroupCsvFile(std::map<std::size_t, PointRecord<glm::vec3>>& landmarks, const fs::path& csvFileName)
 {
   std::ifstream inFile;
   inFile.exceptions(inFile.exceptions() | std::ifstream::badbit);
@@ -827,7 +840,7 @@ bool openLandmarkGroupCsvFile(std::map<std::size_t, PointRecord<glm::vec3> >& la
 }
 
 bool saveLandmarkGroupCsvFile(
-  const std::map<std::size_t, PointRecord<glm::vec3> >& landmarks,
+  const std::map<std::size_t, PointRecord<glm::vec3>>& landmarks,
   const fs::path& csvFileName)
 {
   std::ofstream outFile;
@@ -895,7 +908,7 @@ bool openAnnotationsFromJsonFile(std::vector<Annotation>& annots, const fs::path
     json j;
     inFile >> j;
 
-    annots = j.get<std::vector<Annotation> >();
+    annots = j.get<std::vector<Annotation>>();
     spdlog::debug("Parsed {} annotation(s) from JSON:\n{}", annots.size(), j.dump(2));
     return true;
   }

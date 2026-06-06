@@ -241,6 +241,8 @@ bool ControlFrame::defaultRenderAllImages() const
 void ControlFrame::setWindowClipViewport(glm::vec4 winClipViewport)
 {
   m_winClipViewport = std::move(winClipViewport);
+  m_windowClip_T_viewClip = helper::compute_windowClip_T_viewClip(m_winClipViewport);
+  m_viewClip_T_windowClip = glm::inverse(m_windowClip_T_viewClip);
 }
 
 const glm::vec4& ControlFrame::windowClipViewport() const

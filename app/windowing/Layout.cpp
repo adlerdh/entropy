@@ -33,6 +33,7 @@ Layout::Layout(Layout&& other) noexcept
   m_uid(std::move(other.m_uid))
   , m_isLightbox(other.m_isLightbox)
   , m_views(std::move(other.m_views))
+  , m_orderedViewUids(std::move(other.m_orderedViewUids))
   , m_cameraSyncGroups(std::move(other.m_cameraSyncGroups))
 {
 }
@@ -44,6 +45,7 @@ Layout& Layout::operator=(Layout&& other) noexcept
     m_uid = std::move(other.m_uid);
     m_isLightbox = other.m_isLightbox;
     m_views = std::move(other.m_views);
+    m_orderedViewUids = std::move(other.m_orderedViewUids);
     m_cameraSyncGroups = std::move(other.m_cameraSyncGroups);
   }
   return *this;
@@ -105,6 +107,7 @@ void Layout::updateAllViewsInLayout()
       view->setMetricImages(m_metricImageUids);
       view->setViewType(m_viewType);
       view->setRenderMode(m_renderMode);
+      view->setIntensityProjectionMode(m_intensityProjectionMode);
     }
   }
 }
@@ -124,12 +127,48 @@ bool Layout::addView(std::unique_ptr<View> view)
   if (!view) {
     throw std::invalid_argument("Cannot add null view");
   }
-  return m_views.emplace(view->uid(), std::move(view)).second;
+  const uuid viewUid = view->uid();
+  const bool inserted = m_views.emplace(viewUid, std::move(view)).second;
+  if (inserted) {
+    m_orderedViewUids.push_back(viewUid);
+  }
+  return inserted;
 }
 
 const std::unordered_map<uuid, std::unique_ptr<View>>& Layout::views() const
 {
   return m_views;
+}
+
+const std::vector<uuid>& Layout::orderedViewUids() const
+{
+  return m_orderedViewUids;
+}
+
+std::vector<View*> Layout::orderedViews()
+{
+  std::vector<View*> views;
+  views.reserve(m_orderedViewUids.size());
+  for (const auto& viewUid : m_orderedViewUids) {
+    auto it = m_views.find(viewUid);
+    if (it != m_views.end() && it->second) {
+      views.push_back(it->second.get());
+    }
+  }
+  return views;
+}
+
+std::vector<const View*> Layout::orderedViews() const
+{
+  std::vector<const View*> views;
+  views.reserve(m_orderedViewUids.size());
+  for (const auto& viewUid : m_orderedViewUids) {
+    auto it = m_views.find(viewUid);
+    if (it != m_views.end() && it->second) {
+      views.push_back(it->second.get());
+    }
+  }
+  return views;
 }
 
 uuid Layout::addCameraSyncGroup(CameraSyncMode mode)
@@ -151,4 +190,25 @@ std::list<uuid>* Layout::getCameraSyncGroup(CameraSyncMode mode, const uuid& gro
 {
   auto it = m_cameraSyncGroups.at(mode).find(groupUid);
   return it != m_cameraSyncGroups.at(mode).end() ? &it->second : nullptr;
+}
+
+std::optional<uuid> Layout::cameraSyncGroupUidContainingView(CameraSyncMode mode, const uuid& viewUid) const
+{
+  for (const auto& [groupUid, viewUids] : m_cameraSyncGroups.at(mode)) {
+    if (std::find(viewUids.begin(), viewUids.end(), viewUid) != viewUids.end()) {
+      return groupUid;
+    }
+  }
+  return std::nullopt;
+}
+
+void Layout::addViewToCameraSyncGroup(CameraSyncMode mode, const std::optional<uuid>& groupUid, const uuid& viewUid)
+{
+  if (!groupUid) {
+    return;
+  }
+
+  if (auto* group = getCameraSyncGroup(mode, *groupUid)) {
+    group->push_back(viewUid);
+  }
 }

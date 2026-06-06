@@ -56,6 +56,7 @@ public:
   const uuid& uid() const;
 
   void setViewType(const ViewType& newViewType) override;
+  void setRenderMode(const ViewRenderMode& renderMode) override;
 
   const Camera& camera() const;
   Camera& camera();

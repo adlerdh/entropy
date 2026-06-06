@@ -528,6 +528,8 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
   "${entropy_APP_DIR}/windowing/GlfwWrapper.cpp"
   "${entropy_APP_DIR}/windowing/Layout.cpp"
+  "${entropy_APP_DIR}/windowing/LayoutSerialization.cpp"
+  "${entropy_APP_DIR}/windowing/LayoutSpecJson.cpp"
   "${entropy_APP_DIR}/windowing/View.cpp"
   "${entropy_APP_DIR}/windowing/ViewTypes.cpp"
   "${entropy_APP_DIR}/windowing/WindowData.cpp"
@@ -848,5 +850,9 @@ set_target_properties(${entropy_EXE} PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 include(EntropyPackaging)

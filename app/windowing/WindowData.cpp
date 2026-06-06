@@ -7,6 +7,7 @@
 #include "logic/app/Data.h"
 #include "logic/camera/CameraTypes.h"
 
+#include "windowing/LayoutSerialization.h"
 #include "windowing/ViewTypes.h"
 
 #include <glm/glm.hpp>
@@ -18,24 +19,12 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-#include <ranges>
-
 #undef min
 #undef max
 
 namespace
 {
 using uuid = uuids::uuid;
-
-template<std::ranges::input_range Range>
-uuid_range_t toUuidVector(Range&& range)
-{
-  uuid_range_t values;
-  for (const auto& value : range) {
-    values.push_back(value);
-  }
-  return values;
-}
 
 Layout createFourUpLayout(
   const CrosshairsState& crosshairs,
@@ -534,6 +523,14 @@ void WindowData::addLightboxLayoutForImage(
   static constexpr bool k_offsetViews = true;
   static constexpr bool k_isLightbox = true;
 
+  if (0 == numSlices) {
+    spdlog::warn(
+      "Skipping {} lightbox layout for image {} because it has no slices",
+      to_string(viewType, false),
+      imageUid);
+    return;
+  }
+
   const int w = static_cast<int>(std::sqrt(numSlices + 1));
   const auto div = std::div(static_cast<int>(numSlices), w);
   const int h = div.quot + (div.rem > 0 ? 1 : 0);
@@ -554,6 +551,34 @@ void WindowData::addAxCorSagLayout(std::size_t numImages)
   updateAllViews();
 }
 
+std::vector<layout::LayoutSpec> WindowData::createProjectLayoutSnapshots(uuid_range_t orderedImageUids) const
+{
+  return layout::createLayoutSpecs(m_layouts, orderedImageUids);
+}
+
+bool WindowData::applyProjectLayoutSnapshots(
+  const std::vector<layout::LayoutSpec>& layouts,
+  uuid_range_t orderedImageUids,
+  std::optional<std::size_t> currentLayoutIndex)
+{
+  if (layouts.empty()) {
+    return false;
+  }
+
+  std::vector<Layout> restoredLayouts =
+    layout::instantiateLayoutSpecs(layouts, orderedImageUids, m_crosshairs, m_viewAlignment, m_viewConvention);
+
+  if (restoredLayouts.empty()) {
+    return false;
+  }
+
+  m_layouts = std::move(restoredLayouts);
+  m_currentLayout = (currentLayoutIndex && *currentLayoutIndex < m_layouts.size()) ? *currentLayoutIndex : 0;
+  m_activeViewUid = std::nullopt;
+  updateAllViews();
+  return true;
+}
+
 void WindowData::removeLayout(std::size_t index)
 {
   if (index >= m_layouts.size()) {
@@ -563,6 +588,9 @@ void WindowData::removeLayout(std::size_t index)
   m_layouts.erase(std::begin(m_layouts) + static_cast<long>(index));
   if (m_currentLayout >= m_layouts.size()) {
     m_currentLayout = 0;
+  }
+  if (m_activeViewUid && !getCurrentView(*m_activeViewUid)) {
+    m_activeViewUid = std::nullopt;
   }
 }
 
@@ -605,11 +633,9 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t 
     return;
   }
 
-  for (auto& [viewUid, view] : layout.views()) {
-    if (view) {
-      view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
-      view->setMetricImages(metricImages);
-    }
+  for (View* view : layout.orderedViews()) {
+    view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
+    view->setMetricImages(metricImages);
   }
 }
 
@@ -639,11 +665,9 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImage
       continue;
     }
 
-    for (auto& [viewUid, view] : layout.views()) {
-      if (view) {
-        view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
-        view->setMetricImages(metricImages);
-      }
+    for (View* view : layout.orderedViews()) {
+      view->setRenderedImages(renderedImages, s_filterAgainstDefaults);
+      view->setMetricImages(metricImages);
     }
   }
 }
@@ -767,7 +791,8 @@ uuid_range_t WindowData::currentViewUids() const
   if (m_currentLayout >= m_layouts.size()) {
     return {};
   }
-  return toUuidVector(m_layouts.at(m_currentLayout).views() | std::views::keys);
+  const auto& orderedViewUids = m_layouts.at(m_currentLayout).orderedViewUids();
+  return uuid_range_t{orderedViewUids.begin(), orderedViewUids.end()};
 }
 
 const View* WindowData::getCurrentView(const uuid& uid) const
@@ -838,18 +863,20 @@ std::optional<uuid> WindowData::currentViewUidAtCursor(const glm::vec2& windowPo
     return std::nullopt;
   }
 
-  for (const auto& view : m_layouts.at(m_currentLayout).views()) {
-    if (!view.second) {
+  const auto& layout = m_layouts.at(m_currentLayout);
+  for (const auto& viewUid : layout.orderedViewUids()) {
+    const auto viewIt = layout.views().find(viewUid);
+    if (viewIt == layout.views().end() || !viewIt->second) {
       continue;
     }
 
-    const glm::vec4& winClipVp = view.second->windowClipViewport();
+    const glm::vec4& winClipVp = viewIt->second->windowClipViewport();
 
     if (
       (winClipVp[0] <= winClipPos.x) && (winClipPos.x < winClipVp[0] + winClipVp[2]) &&
       (winClipVp[1] <= winClipPos.y) && (winClipPos.y < winClipVp[1] + winClipVp[3]))
     {
-      return view.first;
+      return viewUid;
     }
   }
 
@@ -905,6 +932,9 @@ void WindowData::setCurrentLayoutIndex(std::size_t index)
     return;
   }
   m_currentLayout = index;
+  if (m_activeViewUid && !getCurrentView(*m_activeViewUid)) {
+    m_activeViewUid = std::nullopt;
+  }
 }
 
 void WindowData::cycleCurrentLayout(int step)
@@ -1078,11 +1108,7 @@ void WindowData::applyViewRenderModeAndProjectionToAllCurrentViews(const uuid& r
       continue;
     }
 
-    if (ViewType::ThreeD != view->viewType()) {
-      // Don't allow changing render mode of 3D views
-      view->setRenderMode(renderMode);
-    }
-
+    view->setRenderMode(renderMode);
     view->setIntensityProjectionMode(ipMode);
   }
 }

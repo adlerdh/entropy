@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/InputParams.h"
+#include "windowing/LayoutSpec.h"
 #include <filesystem>
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/PointRecord.h"
@@ -19,8 +20,6 @@ namespace serialize
 {
 
 /// @todo Create enum for all image color maps
-/// @todo Serialize rest of app data, like custom layouts
-
 /// @brief Serialized data for image settings
 struct ImageSettings
 {
@@ -97,6 +96,8 @@ struct EntropyProject
 {
   serialize::Image m_referenceImage;
   std::vector<serialize::Image> m_additionalImages;
+  std::vector<layout::LayoutSpec> m_layouts;
+  std::optional<std::size_t> m_currentLayoutIndex = std::nullopt;
 };
 
 /// @todo Put these in a separate header file
