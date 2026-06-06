@@ -25,6 +25,7 @@ bool g_installed = false;
 - (void)saveProject:(id)sender;
 - (void)saveProjectAs:(id)sender;
 - (void)closeProject:(id)sender;
+- (void)showAbout:(id)sender;
 - (BOOL)validateMenuItem:(NSMenuItem*)menuItem;
 @end
 
@@ -62,6 +63,13 @@ bool g_installed = false;
 - (void)closeProject:(id)sender {
   (void)sender;
   main_menu::closeProject(g_callbacks);
+}
+
+- (void)showAbout:(id)sender {
+  (void)sender;
+  if (g_callbacks.showAbout) {
+    g_callbacks.showAbout();
+  }
 }
 
 - (BOOL)validateMenuItem:(NSMenuItem*)menuItem {
@@ -133,7 +141,7 @@ void installMacOSNativeMainMenu() {
 
   NSMenuItem* appMenuItem = [[NSMenuItem alloc] initWithTitle:@"" action:nil keyEquivalent:@""];
   NSMenu* appMenu = [[NSMenu alloc] initWithTitle:@"Entropy"];
-  addAppMenuItem(appMenu, @"About Entropy", @selector(orderFrontStandardAboutPanel:), @"");
+  addTargetedMenuItem(appMenu, @"About Entropy", @selector(showAbout:), @"");
   [appMenu addItem:[NSMenuItem separatorItem]];
   addAppMenuItem(appMenu, @"Hide Entropy", @selector(hide:), @"h");
   NSMenuItem* hideOthersItem = addAppMenuItem(appMenu, @"Hide Others", @selector(hideOtherApplications:), @"h");

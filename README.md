@@ -3,7 +3,7 @@
 
 Entropy is developed by Daniel H. Adler with support from the Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania.
 
-Copyright the Penn Image Computing and Science Lab (PICSL), University of Pennsylvania, and Daniel H. Adler. All rights reserved.
+Copyright 2021-2026 Penn Image Computing and Science Lab (PICSL), University of Pennsylvania, and Daniel H. Adler. All rights reserved.
 
 ## Building
 Entropy requires C++23 and build generation uses CMake 3.24.0 or later. The “superbuild” pattern is used in order to retrieve and build external dependencies prior to building the Entropy application. The superbuild pattern is also used in [OpenChemistry](https://github.com/OpenChemistry/openchemistry), [ITK](https://github.com/InsightSoftwareConsortium/ITKSphinxExamples/tree/master/Superbuild), [ParaView](https://gitlab.kitware.com/paraview/common-superbuild/), [SimpleITK](https://github.com/SimpleITK/SimpleITK/tree/master/SuperBuild), and [Slicer](https://github.com/Slicer/Slicer). Here are sample build instructions.

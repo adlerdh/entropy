@@ -8,12 +8,12 @@ set(APP_NAME "Entropy")
 set(APP_DESCRIPTION "Visualize, compare, segment, and annotate 3D medical images")
 set(ORG_NAME_1 "Penn Image Computing and Science Lab (PICSL) and Daniel H. Adler")
 set(ORG_NAME_2 "Department of Radiology, University of Pennsylvania")
-set(COPYRIGHT_LINE "Copyright the Penn Image Computing and Science Lab (PICSL), University of Pennsylvania, and Daniel H. Adler.")
+set(COPYRIGHT_LINE "Copyright 2021-2026 Penn Image Computing and Science Lab (PICSL), University of Pennsylvania, and Daniel H. Adler.")
 set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 9)
-set(VERSION_FEATURE 1)
+set(VERSION_FEATURE 2)
 set(VERSION_PATCH 0)
 set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION_PATCH}")
 
@@ -55,6 +55,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 set(SUPERBUILD_PARALLEL "" CACHE STRING "Parallel level for ExternalProject builds; empty uses the native build tool default")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+include(GNUInstallDirs)
 
 get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
@@ -502,6 +503,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp"
   "${entropy_APP_DIR}/rendering/utility/math/SliceIntersector.cpp"
 
+  "${entropy_APP_DIR}/ui/AboutEntropyIcon.cpp"
   "${entropy_APP_DIR}/ui/GuiData.cpp"
   "${entropy_APP_DIR}/ui/Headers.cpp"
   "${entropy_APP_DIR}/ui/Helpers.cpp"
@@ -512,6 +514,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/ui/NativeFileDialogs.cpp"
   "${entropy_APP_DIR}/ui/Popups.cpp"
   "${entropy_APP_DIR}/ui/Style.cpp"
+  "${entropy_APP_DIR}/ui/ThirdPartyLicenses.cpp"
   "${entropy_APP_DIR}/ui/Toolbars.cpp"
   "${entropy_APP_DIR}/ui/Widgets.cpp"
   "${entropy_APP_DIR}/ui/Windows.cpp"
@@ -529,6 +532,10 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/ViewTypes.cpp"
   "${entropy_APP_DIR}/windowing/WindowData.cpp"
 )
+
+set(entropy_ABOUT_ICON_SOURCE
+  "${entropy_RES_DIR}/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png")
+set(entropy_ABOUT_ICON_FILE_NAME "AboutEntropyIcon.png")
 
 if(APPLE)
   set(entropy_MACOS_APP_ICON "${entropy_RES_DIR}/icons/macOS/Entropy.icon")
@@ -644,6 +651,49 @@ set(entropy_FONTS
   "${entropy_RES_DIR}/fonts/Supreme/Supreme-Light.ttf"
 )
 
+set(entropy_LICENSE_RESOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_licenses")
+file(MAKE_DIRECTORY "${entropy_LICENSE_RESOURCE_DIR}/licenses")
+
+set(entropy_LICENSES)
+macro(entropy_add_license_resource resource_name source_path)
+  configure_file("${source_path}" "${entropy_LICENSE_RESOURCE_DIR}/licenses/${resource_name}" COPYONLY)
+  list(APPEND entropy_LICENSES "${entropy_LICENSE_RESOURCE_DIR}/licenses/${resource_name}")
+endmacro()
+
+entropy_add_license_resource("CLI11.txt" "${cli11_PREFIX}/src/LICENSE")
+entropy_add_license_resource("CMakeRC.txt" "${cmakerc_PREFIX}/src/LICENSE.txt")
+entropy_add_license_resource("GLFW.txt" "${glfw_PREFIX}/src/LICENSE.md")
+entropy_add_license_resource("GLM.txt" "${glm_PREFIX}/src/copying.txt")
+entropy_add_license_resource("IconFontCppHeaders.txt" "${entropy_RES_DIR}/licenses/IconFontCppHeaders-Zlib.txt")
+entropy_add_license_resource("DearImGui.txt" "${imgui_PREFIX}/src/imgui/LICENSE.txt")
+entropy_add_license_resource("ImPlot.txt" "${implot_PREFIX}/src/implot/LICENSE")
+entropy_add_license_resource("Apache-2.0.txt" "${itk_PREFIX}/src/LICENSE")
+entropy_add_license_resource("ITK-NOTICE.txt" "${itk_PREFIX}/src/NOTICE")
+entropy_add_license_resource("NanoVG.txt" "${nanovg_PREFIX}/src/LICENSE.txt")
+entropy_add_license_resource("NativeFileDialogExtended.txt" "${nativefiledialog_PREFIX}/src/LICENSE")
+entropy_add_license_resource("nlohmann-json.txt" "${nlohmann_json_PREFIX}/src/LICENSE.MIT")
+entropy_add_license_resource("Qt-LGPL-3.0-only.txt" "${qtbase_PREFIX}/src/LICENSES/LGPL-3.0-only.txt")
+entropy_add_license_resource("CC0-1.0.txt" "${qtbase_PREFIX}/src/LICENSES/CC0-1.0.txt")
+entropy_add_license_resource("spdlog.txt" "${spdlog_PREFIX}/src/LICENSE")
+entropy_add_license_resource("stduuid.txt" "${stduuid_PREFIX}/src/LICENSE")
+entropy_add_license_resource("TinyFSM.txt" "${tinyfsm_PREFIX}/src/COPYING")
+entropy_add_license_resource("GLAD.txt" "${entropy_EXT_DIR}/glad/LICENSE.txt")
+entropy_add_license_resource("imGuIZMO.quat.txt" "${entropy_EXT_DIR}/imGuIZMO.quat/license.txt")
+entropy_add_license_resource("imgui-knobs.txt" "${entropy_EXT_DIR}/imgui-knobs/LICENSE")
+entropy_add_license_resource("PNPOLY.txt" "${entropy_EXT_DIR}/wrfranklin/LICENSE.txt")
+entropy_add_license_resource("SafeCLib.txt" "${entropy_EXT_DIR}/safeclib/LICENSE.txt")
+entropy_add_license_resource("CubicBSplineInterpolation.txt" "${entropy_APP_DIR}/rendering/shaders/functions/TricubicReadme.txt")
+entropy_add_license_resource("Cousine.txt" "${entropy_RES_DIR}/fonts/Cousine/LICENSE.txt")
+entropy_add_license_resource("ForkAwesome.txt" "${entropy_RES_DIR}/fonts/ForkAwesome/LICENSES.txt")
+entropy_add_license_resource("Inter.txt" "${entropy_RES_DIR}/fonts/Inter/LICENSE.txt")
+entropy_add_license_resource("Roboto.txt" "${entropy_RES_DIR}/fonts/Roboto/LICENSE.txt")
+entropy_add_license_resource("Satoshi.txt" "${entropy_RES_DIR}/fonts/Satoshi/FFL.txt")
+entropy_add_license_resource("SpaceGrotesk.txt" "${entropy_RES_DIR}/fonts/SpaceGrotesk/OFL.txt")
+entropy_add_license_resource("Supreme.txt" "${entropy_RES_DIR}/fonts/Supreme/FFL.txt")
+entropy_add_license_resource("PeterKovesiColourMaps.txt" "${entropy_RES_DIR}/colormaps/peter_kovesi/LICENSE.txt")
+entropy_add_license_resource("MatplotlibColourMaps.txt" "${entropy_RES_DIR}/colormaps/matplotlib/LICENSE.txt")
+entropy_add_license_resource("Cividis.txt" "${entropy_RES_DIR}/colormaps/ncl/LICENSE.txt")
+
 if(APPLE)
   include_directories(/System/Library/Frameworks)
 
@@ -660,6 +710,9 @@ set(entropy_EXE Entropy)
 # Using CMakeRC, embed the resources into static libraries
 cmrc_add_resource_library(${entropy_EXE}-colormaps ALIAS ${entropy_EXE}::colormaps ${entropy_COLORMAPS} NAMESPACE colormaps)
 cmrc_add_resource_library(${entropy_EXE}-fonts ALIAS ${entropy_EXE}::fonts ${entropy_FONTS} NAMESPACE fonts)
+cmrc_add_resource_library(${entropy_EXE}-licenses ALIAS ${entropy_EXE}::licenses ${entropy_LICENSES} NAMESPACE licenses
+  WHENCE "${entropy_LICENSE_RESOURCE_DIR}"
+)
 cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${entropy_SHADERS} NAMESPACE shaders
   WHENCE "${entropy_APP_DIR}"
   PREFIX "src"
@@ -687,12 +740,26 @@ if(APPLE)
       "${CMAKE_COMMAND}" -E copy_if_different
       "$<TARGET_FILE:${entropy_EXE}>"
       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${entropy_EXE}"
+    COMMAND
+      "${CMAKE_COMMAND}" -E copy_if_different
+      "${entropy_ABOUT_ICON_SOURCE}"
+      "$<TARGET_BUNDLE_DIR:${entropy_EXE}>/Contents/Resources/${entropy_ABOUT_ICON_FILE_NAME}"
+    COMMAND
+      "${CMAKE_COMMAND}" -E copy_if_different
+      "${entropy_ABOUT_ICON_SOURCE}"
+      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${entropy_ABOUT_ICON_FILE_NAME}"
     VERBATIM
   )
 endif()
 
 target_sources(${entropy_EXE} PRIVATE
   ${entropy_SOURCES}
+)
+
+target_compile_definitions(${entropy_EXE} PRIVATE
+  ENTROPY_ABOUT_ICON_FILE_NAME="${entropy_ABOUT_ICON_FILE_NAME}"
+  ENTROPY_ABOUT_ICON_SOURCE_FILE="${entropy_ABOUT_ICON_SOURCE}"
+  ENTROPY_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/entropy"
 )
 
 target_link_libraries(${entropy_EXE} PRIVATE
@@ -712,6 +779,7 @@ target_link_libraries(${entropy_EXE} PRIVATE
   stduuid
   ${entropy_EXE}::colormaps
   ${entropy_EXE}::fonts
+  ${entropy_EXE}::licenses
   ${entropy_EXE}::shaders
   entropy_warnings
 )

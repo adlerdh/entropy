@@ -20,6 +20,7 @@ struct MainMenuBarCallbacks
   std::function<std::filesystem::path()> defaultProjectSaveDirectory;
   std::function<std::string()> defaultProjectSaveName;
   std::function<void()> closeProject;
+  std::function<void()> showAbout;
   bool canOpenProject = true;
   bool canAddImage = false;
   bool canAddSegmentation = false;

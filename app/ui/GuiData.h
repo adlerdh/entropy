@@ -35,6 +35,7 @@ struct GuiData
   bool m_showOpacityBlenderWindow = false; //!< Show opacity blender window
   bool m_showImGuiDemoWindow = false;      //!< Show ImGui demo window
   bool m_showImPlotDemoWindow = false;     //!< Show ImPlot demo window
+  bool m_showAboutDialog = false;          //!< Show About Entropy dialog
 
   /// Flag to show dialog confirming closing of the application window.
   enum class UnsavedProjectAction : std::uint8_t

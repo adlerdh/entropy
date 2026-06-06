@@ -17,6 +17,15 @@ bool usesPlatformUserDirectories()
   return false;
 }
 
+std::filesystem::path resourceDirectory()
+{
+#ifdef ENTROPY_RESOURCE_DIR
+  return ENTROPY_RESOURCE_DIR;
+#else
+  return ".";
+#endif
+}
+
 std::filesystem::path logDirectory()
 {
   return "log";

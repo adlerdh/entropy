@@ -808,6 +808,7 @@ void ImGuiWrapper::render()
       .defaultProjectSaveDirectory = defaultProjectSaveDirectory,
       .defaultProjectSaveName = defaultProjectSaveName,
       .closeProject = m_closeProject,
+      .showAbout = [this]() { m_appData.guiData().m_showAboutDialog = true; },
       .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
       .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
       .canAddSegmentation =

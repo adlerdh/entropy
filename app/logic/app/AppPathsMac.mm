@@ -72,6 +72,12 @@ bool usesPlatformUserDirectories() {
          (g_hasLaunchServicesProcessSerialNumber || hasLaunchServicesWorkingDirectory());
 }
 
+std::filesystem::path resourceDirectory() {
+  NSURL* resourceURL = [[NSBundle mainBundle] resourceURL];
+  const fs::path resourcePath = pathFromURL(resourceURL);
+  return resourcePath.empty() ? fs::path{"."} : resourcePath;
+}
+
 std::filesystem::path logDirectory() {
   if (usesPlatformUserDirectories()) {
     if (const fs::path libraryDir = userDirectory(NSLibraryDirectory); !libraryDir.empty()) {

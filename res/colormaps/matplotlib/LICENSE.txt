@@ -1,0 +1,7 @@
+Matplotlib viridis, plasma, inferno, and magma color maps
+Source: https://bids.github.io/colormap/
+
+Authors: Stéfan van der Walt and Nathaniel Smith; viridis also includes work by Eric Firing.
+
+The color map data is released under the CC0 "no rights reserved" public domain dedication.
+See https://creativecommons.org/publicdomain/zero/1.0/

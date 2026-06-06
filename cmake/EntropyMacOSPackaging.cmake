@@ -16,6 +16,11 @@ install(TARGETS ${entropy_EXE}
     RUNTIME DESTINATION bin
 )
 
+install(FILES "${entropy_ABOUT_ICON_SOURCE}"
+    DESTINATION "${entropy_EXE}.app/Contents/Resources"
+    RENAME "${entropy_ABOUT_ICON_FILE_NAME}"
+)
+
 set(entropy_BUNDLE_LIBRARY_DIRS
     "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
     "${glfw_PREFIX}/install/lib"

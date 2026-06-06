@@ -99,7 +99,6 @@ void renderModeToolbar(
   static bool* toolbarWindowOpen = nullptr;
 
   bool openAddLayoutPopup = false;
-  bool openAboutDialogPopup = false;
 
   const ImVec4* colors = ImGui::GetStyle().Colors;
   ImVec4 activeColor = colors[ImGuiCol_ButtonActive];
@@ -591,7 +590,7 @@ void renderModeToolbar(
       ImGui::PushID(id);
       {
         if (ImGui::Button(ICON_FK_INFO, buttonSize)) {
-          openAboutDialogPopup = true;
+          guiData.m_showAboutDialog = true;
         }
 
         if (ImGui::IsItemHovered()) {
@@ -654,7 +653,8 @@ void renderModeToolbar(
         resetZoom);
     });
 
-  renderAboutDialogModalPopup(openAboutDialogPopup);
+  renderAboutDialogModalPopup(guiData.m_showAboutDialog);
+  guiData.m_showAboutDialog = false;
 }
 
 void renderSegToolbar(

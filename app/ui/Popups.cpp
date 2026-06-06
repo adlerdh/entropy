@@ -1,7 +1,10 @@
 #include "ui/Popups.h"
+#include "ui/AboutEntropyIcon.h"
 #include "ui/Helpers.h"
 #include "ui/NativeFileDialogs.h"
+#include "ui/ThirdPartyLicenses.h"
 #include <spdlog/fmt/std.h>
+#include "logic/app/AppPaths.h"
 #include "logic/app/Data.h"
 #include "image/Image.h"
 
@@ -9,7 +12,53 @@
 
 #include <imgui/imgui.h>
 
+#include <algorithm>
+
 namespace fs = std::filesystem;
+
+namespace
+{
+
+std::string displayPath(fs::path path)
+{
+  if (path.empty()) {
+    return "<none>";
+  }
+
+  std::error_code error;
+  if (path.is_relative()) {
+    const fs::path absolutePath = fs::absolute(path, error);
+    if (!error) {
+      path = absolutePath;
+    }
+  }
+
+  error.clear();
+  const fs::path canonicalPath = fs::weakly_canonical(path, error);
+  if (!error) {
+    return canonicalPath.string();
+  }
+
+  return path.lexically_normal().string();
+}
+
+std::string currentDirectory()
+{
+  std::error_code error;
+  const fs::path path = fs::current_path(error);
+  return error ? std::string{"<unavailable>"} : displayPath(path);
+}
+
+std::string runtimeInfo()
+{
+  return std::string("-current working directory: ") + currentDirectory() + "\n" +
+         "-resource directory: " + displayPath(app_paths::resourceDirectory()) + "\n" +
+         "-user data directory: " + displayPath(app_paths::userDataDirectory()) + "\n" +
+         "-log directory: " + displayPath(app_paths::logDirectory()) + "\n" +
+         "-uses platform user directories: " + (app_paths::usesPlatformUserDirectories() ? "yes" : "no");
+}
+
+} // namespace
 
 void renderAddLayoutModalPopup(
   AppData& appData,
@@ -93,9 +142,9 @@ void renderAddLayoutModalPopup(
 
 void renderAboutDialogModalPopup(bool open)
 {
-  static const std::string sk_gitInfo =
-    std::string("Git:\n") + std::string("-branch: ") + GIT_BRANCH + "\n" + std::string("-commit: ") + GIT_COMMIT_SHA1 +
-    "\n" + std::string("-timestamp: ") + GIT_COMMIT_TIMESTAMP + "\n\n" +
+  static const std::string sk_buildInfo =
+    std::string("Git version control:\n") + std::string("-branch: ") + GIT_BRANCH + "\n" + std::string("-commit: ") +
+    GIT_COMMIT_SHA1 + "\n" + std::string("-timestamp: ") + GIT_COMMIT_TIMESTAMP + "\n\n" +
 
     std::string("Build:\n") + std::string("-timestamp: ") + BUILD_TIMESTAMP + " (UTC)\n" + std::string("-type: ") +
     CMAKE_BUILD_TYPE + " (shared libs: " + CMAKE_BUILD_SHARED_LIBS + ")\n" + std::string("-compiler: ") + COMPILER_ID +
@@ -105,40 +154,81 @@ void renderAboutDialogModalPopup(bool open)
     std::string("Host:\n") + std::string("-OS: ") + HOST_OS_NAME + " (" + HOST_OS_RELEASE + ", " + HOST_OS_VERSION +
     ")\n" + std::string("-system: ") + HOST_SYSTEM_NAME + " (" + HOST_SYSTEM_VERSION + ")\n" +
     std::string("-processor: ") + HOST_SYSTEM_PROCESSOR + " (" + HOST_PROCESSOR_NAME + ")\n" +
-    std::string("-platform: ") + HOST_OS_PLATFORM;
+    std::string("-platform: ") + HOST_OS_PLATFORM + "\n\n";
 
   if (open && !ImGui::IsPopupOpen("About Entropy")) {
-    ImGui::OpenPopup("About Entropy", ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::OpenPopup("About Entropy");
   }
 
   const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
 
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-  ImGui::SetNextWindowSize(ImVec2(600.0f, 0));
+  ImGui::SetNextWindowSize(ImVec2(680.0f, 640.0f), ImGuiCond_Appearing);
+  ImGui::SetNextWindowSizeConstraints(ImVec2(520.0f, 360.0f), ImVec2(FLT_MAX, FLT_MAX));
 
-  if (ImGui::BeginPopupModal("About Entropy", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+  if (ImGui::BeginPopupModal("About Entropy")) {
+    constexpr float iconSize = 72.0f;
+    ImGui::Image(about_entropy_icon::textureId(), ImVec2(iconSize, iconSize));
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x);
     ImGui::Text("%s (version %s)", APP_NAME, VERSION_FULL);
-    ImGui::Text("--> %s", APP_DESCRIPTION);
+    ImGui::TextWrapped("--> %s", APP_DESCRIPTION);
+    ImGui::TextLinkOpenURL("https://github.com/adlerdh/entropy", "https://github.com/adlerdh/entropy");
 
     ImGui::Spacing();
-    ImGui::Text("%s,", ORG_NAME_1);
-    ImGui::Text("%s", ORG_NAME_2);
+    ImGui::TextWrapped("%s,", ORG_NAME_1);
+    ImGui::TextWrapped("%s", ORG_NAME_2);
 
     ImGui::Spacing();
-    ImGui::Text("%s", COPYRIGHT_LINE);
-    ImGui::Text("%s", LICENSE_LINE);
+    ImGui::TextWrapped("Copyright 2021-2026 Penn Image Computing and Science Lab (PICSL),");
+    ImGui::TextWrapped("University of Pennsylvania, and Daniel H. Adler.");
+    ImGui::Spacing();
+    ImGui::TextWrapped("%s", LICENSE_LINE);
+    ImGui::PopTextWrapPos();
+    ImGui::EndGroup();
 
     ImGui::Spacing();
     ImGui::Spacing();
-    ImGui::Text("Build information:");
 
-    ImGui::InputTextMultiline(
-      "##gitInfo",
-      const_cast<char*>(sk_gitInfo.c_str()),
-      sk_gitInfo.length(),
-      ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 18),
-      ImGuiInputTextFlags_ReadOnly);
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float closeButtonHeight = ImGui::GetFrameHeight();
+    const float tabRegionHeight = std::max(
+      ImGui::GetTextLineHeight() * 8.0f,
+      ImGui::GetContentRegionAvail().y - closeButtonHeight - style.ItemSpacing.y);
+
+    ImGui::BeginChild("##aboutTabRegion", ImVec2(-FLT_MIN, tabRegionHeight), false);
+    if (ImGui::BeginTabBar("##aboutTabs")) {
+      if (ImGui::BeginTabItem("Build information")) {
+        ImGui::InputTextMultiline(
+          "##buildInfo",
+          const_cast<char*>(sk_buildInfo.c_str()),
+          sk_buildInfo.length(),
+          ImVec2(-FLT_MIN, -FLT_MIN),
+          ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndTabItem();
+      }
+
+      if (ImGui::BeginTabItem("Runtime paths")) {
+        const std::string pathsInfo = runtimeInfo();
+        ImGui::InputTextMultiline(
+          "##runtimePaths",
+          const_cast<char*>(pathsInfo.c_str()),
+          pathsInfo.length(),
+          ImVec2(-FLT_MIN, -FLT_MIN),
+          ImGuiInputTextFlags_ReadOnly);
+        ImGui::EndTabItem();
+      }
+
+      if (ImGui::BeginTabItem("External licenses")) {
+        renderThirdPartyLicenses();
+        ImGui::EndTabItem();
+      }
+
+      ImGui::EndTabBar();
+    }
+    ImGui::EndChild();
 
     if (ImGui::Button("Close", ImVec2(80, 0))) {
       ImGui::CloseCurrentPopup();

@@ -31,6 +31,11 @@ install(FILES "${entropy_LINUX_DESKTOP_FILE}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
 )
 
+install(FILES "${entropy_ABOUT_ICON_SOURCE}"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy"
+    RENAME "${entropy_ABOUT_ICON_FILE_NAME}"
+)
+
 foreach(entropy_LINUX_ICON_SIZE IN ITEMS 16 32 48 64 128 256 512)
     install(FILES "${entropy_RES_DIR}/icons/Linux/hicolor/${entropy_LINUX_ICON_SIZE}x${entropy_LINUX_ICON_SIZE}/apps/${entropy_LINUX_APP_ID}.png"
       DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/${entropy_LINUX_ICON_SIZE}x${entropy_LINUX_ICON_SIZE}/apps"
