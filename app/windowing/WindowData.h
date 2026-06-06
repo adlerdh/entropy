@@ -7,6 +7,7 @@
 #include "logic/app/CrosshairsState.h"
 
 #include "windowing/Layout.h"
+#include "windowing/LayoutPreset.h"
 #include "windowing/LayoutSpec.h"
 #include "windowing/View.h"
 
@@ -130,6 +131,11 @@ public:
   bool applyProjectLayoutSnapshots(
     const std::vector<layout::LayoutSpec>& layouts,
     uuid_range_t orderedImageUids,
+    std::optional<std::size_t> currentLayoutIndex);
+  std::vector<layout::LayoutPreset> createLayoutPresets(uuid_range_t orderedImageUids) const;
+  bool applyLayoutPresets(
+    const AppData& appData,
+    const std::vector<layout::LayoutPreset>& presets,
     std::optional<std::size_t> currentLayoutIndex);
 
   /// Remove a layout

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "windowing/LayoutSpec.h"
+#include "windowing/LayoutPreset.h"
 
 #include <filesystem>
 #include <optional>
@@ -12,7 +12,7 @@ namespace layout
 struct LayoutFile
 {
   std::optional<std::size_t> m_currentLayoutIndex = std::nullopt;
-  std::vector<LayoutSpec> m_layouts;
+  std::vector<LayoutPreset> m_layouts;
 };
 
 bool open(LayoutFile& file, const std::filesystem::path& fileName);

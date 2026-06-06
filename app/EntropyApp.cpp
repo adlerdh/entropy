@@ -1507,9 +1507,7 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
     return;
   }
 
-  if (!m_data.windowData()
-         .applyProjectLayoutSnapshots(layoutFile.m_layouts, m_data.imageUidsOrdered(), layoutFile.m_currentLayoutIndex))
-  {
+  if (!m_data.windowData().applyLayoutPresets(m_data, layoutFile.m_layouts, layoutFile.m_currentLayoutIndex)) {
     spdlog::error("Could not apply layout file {}", fileName);
     return;
   }
@@ -1528,7 +1526,7 @@ bool EntropyApp::saveLayoutsFile(const fs::path& fileName)
 
   layout::LayoutFile layoutFile{
     .m_currentLayoutIndex = m_data.windowData().currentLayoutIndex(),
-    .m_layouts = m_data.windowData().createProjectLayoutSnapshots(m_data.imageUidsOrdered())};
+    .m_layouts = m_data.windowData().createLayoutPresets(m_data.imageUidsOrdered())};
 
   const bool saved = layout::save(layoutFile, fileName);
   if (saved) {

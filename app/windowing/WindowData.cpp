@@ -627,6 +627,253 @@ LayoutKind lightboxKindForViewType(const ViewType& viewType)
   return LayoutKind::Custom;
 }
 
+std::string layoutPresetViewName(ViewType viewType)
+{
+  switch (viewType) {
+    case ViewType::Axial:
+      return "axial";
+    case ViewType::Coronal:
+      return "coronal";
+    case ViewType::Sagittal:
+      return "sagittal";
+    case ViewType::Oblique:
+      return "oblique";
+    case ViewType::ThreeD:
+      return "ThreeD";
+    case ViewType::NumElements:
+      break;
+  }
+  return "axial";
+}
+
+std::optional<ViewType> layoutPresetViewType(const std::string& name)
+{
+  if (name.empty() || "Axial" == name || "axial" == name) {
+    return ViewType::Axial;
+  }
+  if ("Coronal" == name || "coronal" == name) {
+    return ViewType::Coronal;
+  }
+  if ("Sagittal" == name || "sagittal" == name) {
+    return ViewType::Sagittal;
+  }
+  if ("Oblique" == name || "oblique" == name) {
+    return ViewType::Oblique;
+  }
+  if ("ThreeD" == name || "3D" == name || "threeD" == name || "three-d" == name) {
+    return ViewType::ThreeD;
+  }
+  return std::nullopt;
+}
+
+ViewType firstViewType(const Layout& layout, ViewType fallback)
+{
+  const std::vector<const View*> views = layout.orderedViews();
+  return views.empty() ? fallback : views.front()->viewType();
+}
+
+std::optional<std::size_t> imageIndexInOrder(uuid_range_t orderedImageUids, const std::optional<uuid>& imageUid)
+{
+  if (!imageUid) {
+    return std::nullopt;
+  }
+
+  const auto imageIt = std::find(orderedImageUids.begin(), orderedImageUids.end(), *imageUid);
+  if (imageIt == orderedImageUids.end()) {
+    return std::nullopt;
+  }
+  return static_cast<std::size_t>(std::distance(orderedImageUids.begin(), imageIt));
+}
+
+std::vector<std::size_t> imageIndicesInOrder(uuid_range_t orderedImageUids, const std::list<uuid>& imageUids)
+{
+  std::vector<std::size_t> imageIndices;
+  imageIndices.reserve(imageUids.size());
+
+  for (const auto& imageUid : imageUids) {
+    if (auto imageIndex = imageIndexInOrder(orderedImageUids, imageUid)) {
+      imageIndices.push_back(*imageIndex);
+    }
+  }
+
+  return imageIndices;
+}
+
+std::vector<std::size_t> presetImageIndicesOrDefault(const layout::LayoutPreset& preset)
+{
+  return preset.m_imageIndices.empty() ? std::vector<std::size_t>{0} : preset.m_imageIndices;
+}
+
+std::optional<uuid> presetImageUid(const AppData& appData, const layout::LayoutPreset& preset)
+{
+  const auto imageIndices = presetImageIndicesOrDefault(preset);
+  return appData.imageUid(imageIndices.front());
+}
+
+void applyViewImageIndices(Layout& layout, const std::vector<std::size_t>& imageIndices)
+{
+  const std::vector<View*> views = layout.orderedViews();
+  for (std::size_t i = 0; i < views.size(); ++i) {
+    if (!views.at(i)) {
+      continue;
+    }
+
+    const std::size_t imageIndex = imageIndices.at(std::min(i, imageIndices.size() - 1));
+    views.at(i)->setPreferredDefaultRenderedImages({imageIndex});
+    views.at(i)->setDefaultRenderAllImages(false);
+  }
+}
+
+void applyRowImageIndices(Layout& layout, const std::vector<std::size_t>& imageIndices, std::size_t viewsPerRow)
+{
+  const std::vector<View*> views = layout.orderedViews();
+  for (std::size_t i = 0; i < views.size(); ++i) {
+    if (!views.at(i)) {
+      continue;
+    }
+
+    const std::size_t row = i / viewsPerRow;
+    const std::size_t imageIndex = imageIndices.at(std::min(row, imageIndices.size() - 1));
+    views.at(i)->setPreferredDefaultRenderedImages({imageIndex});
+    views.at(i)->setDefaultRenderAllImages(false);
+  }
+}
+
+std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uuid_range_t orderedImageUids)
+{
+  switch (layout.kind()) {
+    case LayoutKind::FourUp:
+      return layout::LayoutPreset{.m_type = "fourUp"};
+    case LayoutKind::Tri:
+      return layout::LayoutPreset{.m_type = "tri"};
+    case LayoutKind::SingleAxial:
+      return layout::LayoutPreset{
+        .m_type = "single",
+        .m_view = layoutPresetViewName(firstViewType(layout, ViewType::Axial)),
+        .m_imageIndices = imageIndicesInOrder(
+          orderedImageUids,
+          layout.orderedViews().empty() ? std::list<uuid>{} : layout.orderedViews().front()->renderedImages())};
+    case LayoutKind::MultiImageAxialGrid:
+      return layout::LayoutPreset{
+        .m_type = "multiImageGrid",
+        .m_view = layoutPresetViewName(firstViewType(layout, ViewType::Axial)),
+        .m_images = "all"};
+    case LayoutKind::AxCorSagByImage:
+      return layout::LayoutPreset{.m_type = "orthogonalByImage", .m_images = "all"};
+    case LayoutKind::AxialLightbox:
+    case LayoutKind::CoronalLightbox:
+    case LayoutKind::SagittalLightbox:
+      return layout::LayoutPreset{
+        .m_type = "lightbox",
+        .m_view = layoutPresetViewName(firstViewType(layout, layout.viewType())),
+        .m_imageIndices = {imageIndexInOrder(orderedImageUids, layoutImageUid(layout)).value_or(0)}};
+    case LayoutKind::Custom:
+    case LayoutKind::NumElements:
+      break;
+  }
+  return std::nullopt;
+}
+
+std::optional<Layout> createLightboxLayoutForImage(
+  const AppData& appData,
+  const CrosshairsState& crosshairs,
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention,
+  const ViewType& viewType,
+  const uuid& imageUid);
+
+std::optional<Layout> instantiateLayoutPreset(
+  const AppData& appData,
+  const layout::LayoutPreset& preset,
+  const CrosshairsState& crosshairs,
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention)
+{
+  const auto viewType = layoutPresetViewType(preset.m_view);
+  if (!viewType) {
+    spdlog::warn("Skipping layout preset with unsupported view '{}'", preset.m_view);
+    return std::nullopt;
+  }
+
+  if ("fourUp" == preset.m_type) {
+    return createFourUpLayout(crosshairs, viewAlignment, viewConvention);
+  }
+  if ("tri" == preset.m_type) {
+    return createTriLayout(crosshairs, viewAlignment, viewConvention);
+  }
+  if ("single" == preset.m_type) {
+    const auto imageIndices = presetImageIndicesOrDefault(preset);
+    Layout layout = createGridLayout(
+      *viewType,
+      1,
+      1,
+      false,
+      false,
+      crosshairs,
+      viewAlignment,
+      viewConvention,
+      imageIndices.front(),
+      appData.imageUid(imageIndices.front()));
+    applyViewImageIndices(layout, imageIndices);
+    layout.setKind(ViewType::Axial == *viewType ? LayoutKind::SingleAxial : LayoutKind::Custom);
+    return std::optional<Layout>{std::move(layout)};
+  }
+  if ("multiImageGrid" == preset.m_type) {
+    const auto imageIndices =
+      ("all" == preset.m_images) ? std::vector<std::size_t>{} : presetImageIndicesOrDefault(preset);
+    const std::size_t width = imageIndices.empty() ? appData.numImages() : imageIndices.size();
+    if (0 == width) {
+      return std::nullopt;
+    }
+    Layout layout = createGridLayout(
+      *viewType,
+      width,
+      1,
+      false,
+      false,
+      crosshairs,
+      viewAlignment,
+      viewConvention,
+      0,
+      appData.refImageUid());
+    if (!imageIndices.empty()) {
+      applyViewImageIndices(layout, imageIndices);
+    }
+    layout.setKind(ViewType::Axial == *viewType ? LayoutKind::MultiImageAxialGrid : LayoutKind::Custom);
+    return std::optional<Layout>{std::move(layout)};
+  }
+  if ("orthogonalByImage" == preset.m_type) {
+    const auto imageIndices =
+      ("all" == preset.m_images) ? std::vector<std::size_t>{} : presetImageIndicesOrDefault(preset);
+    const std::size_t numRows = imageIndices.empty() ? appData.numImages() : imageIndices.size();
+    if (0 == numRows) {
+      return std::nullopt;
+    }
+    Layout layout = createTriTopBottomLayout(numRows, crosshairs, viewAlignment, viewConvention);
+    if (!imageIndices.empty()) {
+      applyRowImageIndices(layout, imageIndices, 3);
+    }
+    return std::optional<Layout>{std::move(layout)};
+  }
+  if ("lightbox" == preset.m_type) {
+    if (preset.m_imageIndices.size() > 1) {
+      spdlog::warn("Skipping lightbox layout preset because lightboxes support exactly one image");
+      return std::nullopt;
+    }
+    const auto imageUid = presetImageUid(appData, preset);
+    if (!imageUid) {
+      spdlog::warn(
+        "Skipping lightbox layout preset for missing image index {}",
+        presetImageIndicesOrDefault(preset).front());
+      return std::nullopt;
+    }
+    return createLightboxLayoutForImage(appData, crosshairs, viewAlignment, viewConvention, *viewType, *imageUid);
+  }
+
+  spdlog::warn("Skipping layout preset with unsupported type '{}'", preset.m_type);
+  return std::nullopt;
+}
+
 bool isImageDependentManagedLayout(LayoutKind kind)
 {
   switch (kind) {
@@ -1127,6 +1374,59 @@ bool WindowData::applyProjectLayoutSnapshots(
 
   if (restoredLayouts.empty()) {
     return false;
+  }
+
+  m_layouts = std::move(restoredLayouts);
+  m_currentLayout = (currentLayoutIndex && *currentLayoutIndex < m_layouts.size()) ? *currentLayoutIndex : 0;
+  m_activeViewUid = std::nullopt;
+  updateAllViews();
+  return true;
+}
+
+std::vector<layout::LayoutPreset> WindowData::createLayoutPresets(uuid_range_t orderedImageUids) const
+{
+  std::vector<layout::LayoutPreset> presets;
+  presets.reserve(m_layouts.size());
+
+  for (const auto& layout : m_layouts) {
+    if (auto preset = createLayoutPreset(layout, orderedImageUids)) {
+      presets.push_back(std::move(*preset));
+    }
+    else {
+      spdlog::warn(
+        "Skipping layout of kind {} because it cannot be represented as a compact layout preset",
+        static_cast<int>(layout.kind()));
+    }
+  }
+
+  return presets;
+}
+
+bool WindowData::applyLayoutPresets(
+  const AppData& appData,
+  const std::vector<layout::LayoutPreset>& presets,
+  std::optional<std::size_t> currentLayoutIndex)
+{
+  if (presets.empty()) {
+    return false;
+  }
+
+  std::vector<Layout> restoredLayouts;
+  restoredLayouts.reserve(presets.size());
+
+  for (const auto& preset : presets) {
+    if (auto layout = instantiateLayoutPreset(appData, preset, m_crosshairs, m_viewAlignment, m_viewConvention)) {
+      restoredLayouts.push_back(std::move(*layout));
+    }
+  }
+
+  if (restoredLayouts.empty()) {
+    return false;
+  }
+
+  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  for (auto& layout : restoredLayouts) {
+    setDefaultRenderedImagesForLayout(layout, orderedImageUids);
   }
 
   m_layouts = std::move(restoredLayouts);

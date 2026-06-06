@@ -1,14 +1,17 @@
 add_executable(EntropyLayoutTests
-  LayoutSpecJsonTests.cpp
+  "${entropy_APP_DIR}/windowing/test/LayoutFileSerializationTests.cpp"
+  "${entropy_APP_DIR}/windowing/test/LayoutSpecJsonTests.cpp"
 )
 
 target_sources(EntropyLayoutTests PRIVATE
+  "${entropy_APP_DIR}/windowing/LayoutFileSerialization.cpp"
   "${entropy_APP_DIR}/windowing/LayoutSpecJson.cpp"
 )
 
 target_link_libraries(EntropyLayoutTests PRIVATE
   Catch2::Catch2WithMain
   nlohmann_json::nlohmann_json
+  spdlog::spdlog
   entropy_warnings
 )
 
