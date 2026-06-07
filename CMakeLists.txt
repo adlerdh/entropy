@@ -712,9 +712,12 @@ if(APPLE)
       -D "entropy_CODESIGN_IDENTITY=${Entropy_MACOS_CODESIGN_IDENTITY}"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RefreshMacOSIcon.cmake"
     COMMAND
+      "${CMAKE_COMMAND}" -E rm -f
+      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${APP_NAME}"
+    COMMAND
       "${CMAKE_COMMAND}" -E copy_if_different
       "$<TARGET_FILE:entropy>"
-      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${APP_NAME}"
+      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/entropy"
     COMMAND
       "${CMAKE_COMMAND}" -E copy_if_different
       "${entropy_ABOUT_ICON_SOURCE}"
