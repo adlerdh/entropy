@@ -44,7 +44,7 @@
       "inherits": "default"
     },
     {
-      "name": "debug-superbuild",
+      "name": "superbuild-debug",
       "displayName": "Debug superbuild configure",
       "inherits": "superbuild",
       "binaryDir": "${sourceDir}/build-debug",
@@ -53,7 +53,7 @@
       }
     },
     {
-      "name": "debug-app",
+      "name": "app-debug",
       "displayName": "Debug app configure",
       "inherits": "app",
       "binaryDir": "${sourceDir}/build-debug",
@@ -62,7 +62,7 @@
       }
     },
     {
-      "name": "release-superbuild",
+      "name": "superbuild-release",
       "displayName": "Release superbuild configure",
       "inherits": "superbuild",
       "binaryDir": "${sourceDir}/build-release",
@@ -71,7 +71,7 @@
       }
     },
     {
-      "name": "release-app",
+      "name": "app-release",
       "displayName": "Release app configure",
       "inherits": "app",
       "binaryDir": "${sourceDir}/build-release",
@@ -97,29 +97,29 @@
       "configurePreset": "default"
     },
     {
-      "name": "debug-superbuild",
+      "name": "superbuild-debug",
       "displayName": "Build Debug dependencies",
-      "configurePreset": "debug-superbuild"
+      "configurePreset": "superbuild-debug"
     },
     {
-      "name": "debug-app",
+      "name": "app-debug",
       "displayName": "Build Debug app",
-      "configurePreset": "debug-app"
+      "configurePreset": "app-debug"
     },
     {
-      "name": "release-superbuild",
+      "name": "superbuild-release",
       "displayName": "Build Release dependencies",
-      "configurePreset": "release-superbuild"
+      "configurePreset": "superbuild-release"
     },
     {
-      "name": "release-app",
+      "name": "app-release",
       "displayName": "Build Release app",
-      "configurePreset": "release-app"
+      "configurePreset": "app-release"
     },
     {
-      "name": "release-package",
+      "name": "package-release",
       "displayName": "Build Release package",
-      "configurePreset": "release-app",
+      "configurePreset": "app-release",
       "targets": [
         "package"
       ]

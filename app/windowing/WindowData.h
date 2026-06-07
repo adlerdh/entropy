@@ -112,7 +112,8 @@ public:
     bool offsetViews,
     bool isLightbox,
     std::size_t imageIndexForLightbox,
-    const uuid& imageUidForLightbox);
+    const uuid& imageUidForLightbox,
+    std::optional<float> lightboxOffsetDistance = std::nullopt);
 
   /// Add a lightbox grid layout with enough views to hold a given number of slices
   void addLightboxLayoutForImage(

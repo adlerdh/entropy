@@ -186,7 +186,7 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, "D");
   ImGui::Separator();
   actionMenuItem(callbacks, "Scale Bars", MainMenuAction::ToggleScaleBars);
-  actionMenuItem(callbacks, "Cycle Overlays", MainMenuAction::ToggleOverlays, "O");
+  actionMenuItem(callbacks, "Show Overlays", MainMenuAction::ToggleOverlays, "O");
   actionMenuItem(callbacks, "Full Screen", MainMenuAction::ToggleFullScreen, "F4");
   ImGui::Separator();
   if (ImGui::BeginMenu("Synchronize with ITK-SNAP", actionEnabled(callbacks, MainMenuAction::ToggleSync))) {
@@ -230,10 +230,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Move to Front", MainMenuAction::MoveActiveImageToFront);
   ImGui::Separator();
   actionMenuItem(callbacks, "Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
-  actionMenuItem(
-    callbacks,
-    "Reset Manual Transformation to Identity",
-    MainMenuAction::ResetActiveImageManualTransformation);
+  actionMenuItem(callbacks, "Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
   actionMenuItem(callbacks, "Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
   actionMenuItem(
     callbacks,

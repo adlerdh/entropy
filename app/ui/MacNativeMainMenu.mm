@@ -247,10 +247,7 @@ void addImageMenu(NSMenu* mainMenu) {
   addActionMenuItem(menu, @"Move to Front", MainMenuAction::MoveActiveImageToFront);
   [menu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(menu, @"Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
-  addActionMenuItem(
-    menu,
-    @"Reset Manual Transformation to Identity",
-    MainMenuAction::ResetActiveImageManualTransformation);
+  addActionMenuItem(menu, @"Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
   addActionMenuItem(menu, @"Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
   addActionMenuItem(
     menu,
@@ -336,7 +333,7 @@ void addViewsMenu(NSMenu* mainMenu) {
   addActionMenuItem(menu, @"Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, @"d");
   [menu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(menu, @"Scale Bars", MainMenuAction::ToggleScaleBars);
-  addActionMenuItem(menu, @"Cycle Overlays", MainMenuAction::ToggleOverlays, @"o");
+  addActionMenuItem(menu, @"Show Overlays", MainMenuAction::ToggleOverlays, @"o");
   addActionMenuItem(menu, @"Full Screen", MainMenuAction::ToggleFullScreen);
   [menu addItem:[NSMenuItem separatorItem]];
   NSMenuItem* syncItem = [[NSMenuItem alloc] initWithTitle:@"Synchronize with ITK-SNAP" action:nil keyEquivalent:@""];

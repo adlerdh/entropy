@@ -56,3 +56,7 @@ The following external resources have been committed directly to the Entropy rep
 | Peter Kovesi Library of Perceptually Uniform Color Maps | 2014-2018 copy | https://peterkovesi.com/projects/colourmaps | Creative Commons Attribution 4.0 |
 | Matplotlib viridis, plasma, inferno, and magma color maps | None | https://bids.github.io/colormap/ | CC0-1.0 |
 | Cividis color map | None | https://www.ncl.ucar.edu/Document/Graphics/ColorTables/cividis.shtml | BSD-3-Clause |
+
+### Other attributions
+
+Entropy's ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](https://alexharri.com/blog/ascii-rendering) and [Yusef28's Shadertoy work](https://www.shadertoy.com/user/Yusef28).

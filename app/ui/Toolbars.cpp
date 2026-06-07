@@ -1,7 +1,6 @@
 #include "ui/Toolbars.h"
 #include "ui/GuiData.h"
 #include "ui/Helpers.h"
-#include "ui/Popups.h"
 #include "ui/Widgets.h"
 
 #include "logic/app/Data.h"
@@ -97,8 +96,6 @@ void renderModeToolbar(
 
   // Always keep the toolbar open by setting this to null
   static bool* toolbarWindowOpen = nullptr;
-
-  bool openAddLayoutPopup = false;
 
   const ImVec4* colors = ImGui::GetStyle().Colors;
   ImVec4 activeColor = colors[ImGuiCol_ButtonActive];
@@ -305,14 +302,15 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showLandmarksWindow ? activeColor : inactiveColor));
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showAnnotationsWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_MAP_MARKER, buttonSize)) {
-            guiData.m_showLandmarksWindow = !guiData.m_showLandmarksWindow;
+          if (ImGui::Button(ICON_FK_OBJECT_UNGROUP, buttonSize)) // ICON_FK_STAR_O
+          {
+            guiData.m_showAnnotationsWindow = !guiData.m_showAnnotationsWindow;
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show landmark properties");
+            ImGui::SetTooltip("%s", "Show annotation properties");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -327,15 +325,14 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showAnnotationsWindow ? activeColor : inactiveColor));
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showLandmarksWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_OBJECT_UNGROUP, buttonSize)) // ICON_FK_STAR_O
-          {
-            guiData.m_showAnnotationsWindow = !guiData.m_showAnnotationsWindow;
+          if (ImGui::Button(ICON_FK_MAP_MARKER, buttonSize)) {
+            guiData.m_showLandmarksWindow = !guiData.m_showLandmarksWindow;
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show annotation properties");
+            ImGui::SetTooltip("%s", "Show landmark properties");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -534,72 +531,6 @@ void renderModeToolbar(
         ++id;
       }
       ImGui::PopID();
-
-      if (isHoriz) {
-        ImGui::SameLine();
-      }
-
-      ImGui::PushID(id);
-      {
-        if (ImGui::Button(ICON_FK_TH, buttonSize)) {
-          openAddLayoutPopup = true;
-        }
-
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", "Add new layout");
-        }
-
-        ++id;
-      }
-      ImGui::PopID();
-
-      if (isHoriz) {
-        ImGui::SameLine();
-      }
-
-      ImGui::PushID(id);
-      {
-        if (ImGui::Button(ICON_FK_WINDOW_CLOSE_O, buttonSize)) {
-          auto& wd = appData.windowData();
-          if (wd.numLayouts() >= 2) {
-            // Only delete a layout if there are at least two, so that one is left.
-            const size_t layoutToDelete = wd.currentLayoutIndex();
-            wd.cycleCurrentLayout(-1);
-            wd.removeLayout(layoutToDelete);
-          }
-        }
-
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", "Remove current layout");
-        }
-
-        ++id;
-      }
-      ImGui::PopID();
-
-      if (isHoriz) {
-        ImGui::SameLine();
-      }
-
-      ImGui::Dummy(buttonSpace);
-
-      if (isHoriz) {
-        ImGui::SameLine();
-      }
-
-      ImGui::PushID(id);
-      {
-        if (ImGui::Button(ICON_FK_INFO, buttonSize)) {
-          guiData.m_showAboutDialog = true;
-        }
-
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", "About Entropy");
-        }
-
-        ++id;
-      }
-      ImGui::PopID();
     }
     ImGui::PopStyleColor(1); // ImGuiCol_Button
 
@@ -631,30 +562,6 @@ void renderModeToolbar(
   ImGui::PopStyleVar(6);
 
   ImGui::PopID();
-
-  // Shift does a "hard" reset of the crosshairs, oblique orientations, and zoom
-  const bool hardReset = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
-  const bool recenterCrosshairs = hardReset;
-  const bool realignCrosshairs = hardReset;
-  const bool resetObliqueOrientation = hardReset;
-  static constexpr bool recenterOnCurrentCrosshairsPosition = true;
-
-  const bool resetZoom = hardReset ? true : recenterOnCurrentCrosshairsPosition;
-
-  renderAddLayoutModalPopup(
-    appData,
-    openAddLayoutPopup,
-    [&recenterAllViews, &recenterCrosshairs, &realignCrosshairs, &resetObliqueOrientation, &resetZoom]() {
-      recenterAllViews(
-        recenterCrosshairs,
-        realignCrosshairs,
-        recenterOnCurrentCrosshairsPosition,
-        resetObliqueOrientation,
-        resetZoom);
-    });
-
-  renderAboutDialogModalPopup(guiData.m_showAboutDialog);
-  guiData.m_showAboutDialog = false;
 }
 
 void renderSegToolbar(

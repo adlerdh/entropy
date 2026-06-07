@@ -5,10 +5,10 @@
 build*/**
 out/**
 log*/**
-_CPack_Packages/**
-*.dmg
-*.deb
-src/**/*.autosave
+/_CPack_Packages/
+/*.dmg
+/*.deb
+**/*.autosave
 CMakeFiles/**
 CMakeCache.txt
 CMakeLists.txt.user*

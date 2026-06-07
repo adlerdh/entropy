@@ -338,7 +338,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
            menu,
            position++,
            MainMenuAction::ResetActiveImageManualTransformation,
-           L"&Reset Manual Transformation to Identity") &&
+           L"&Reset Manual Transformation") &&
          insertActionMenuItem(
            menu,
            position++,
@@ -477,7 +477,7 @@ bool populateViewsMenu(HMENU menu)
            L"Increase Segmentation Opacity\tD") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleScaleBars, L"Scale &Bars") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::ToggleOverlays, L"&Cycle Overlays\tO") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ToggleOverlays, L"&Show Overlays\tO") &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleFullScreen, L"&Full Screen\tF4") &&
          insertSeparator(menu, position++) && insertSubmenu(menu, position++, syncMenu, L"Synchronize with &ITK-SNAP");
 }

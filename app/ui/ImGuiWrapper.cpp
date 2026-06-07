@@ -1755,6 +1755,9 @@ void ImGuiWrapper::render()
     });
     m_appData.guiData().m_showAddLayoutPopup = false;
 
+    renderAboutDialogModalPopup(m_appData.guiData().m_showAboutDialog);
+    m_appData.guiData().m_showAboutDialog = false;
+
     renderSegToolbar(
       m_appData,
       m_appData.numImages(),

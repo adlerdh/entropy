@@ -510,7 +510,8 @@ Layout createGridLayout(
   const ViewAlignmentMode& viewAlignment,
   const ViewConvention& viewConvention,
   const std::optional<size_t>& imageIndexForLightbox,
-  const std::optional<uuid>& imageUidForLightbox)
+  const std::optional<uuid>& imageUidForLightbox,
+  std::optional<float> lightboxOffsetDistance)
 {
   static const ViewRenderMode s_shaderType = ViewRenderMode::Image;
   static const IntensityProjectionMode s_ipMode = IntensityProjectionMode::None;
@@ -546,7 +547,10 @@ Layout createGridLayout(
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetImage = imageUidForLightbox;
 
-  if (imageIndexForLightbox) {
+  if (lightboxOffsetDistance) {
+    offsetSetting.m_offsetMode = ViewOffsetMode::Absolute;
+  }
+  else if (imageIndexForLightbox) {
     if (0 == *imageIndexForLightbox) {
       offsetSetting.m_offsetMode = ViewOffsetMode::RelativeToRefImageScrolls;
     }
@@ -569,7 +573,10 @@ Layout createGridLayout(
 
       const int counter = static_cast<int>(width * j + i);
 
-      offsetSetting.m_relativeOffsetSteps = (offsetViews) ? (counter - static_cast<int>(width * height) / 2) : 0;
+      const int offsetStep = (offsetViews) ? (counter - static_cast<int>(width * height) / 2) : 0;
+      offsetSetting.m_relativeOffsetSteps = offsetStep;
+      offsetSetting.m_absoluteOffset =
+        lightboxOffsetDistance ? static_cast<float>(offsetStep) * *lightboxOffsetDistance : 0.0f;
 
       auto view = std::make_unique<View>(
         glm::vec4{l, b, w, h},
@@ -743,13 +750,14 @@ std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uui
 {
   switch (layout.kind()) {
     case LayoutKind::FourUp:
-      return layout::LayoutPreset{.m_type = "fourUp"};
+      return layout::LayoutPreset{.m_type = "fourUp", .m_view = {}, .m_images = {}, .m_imageIndices = {}};
     case LayoutKind::Tri:
-      return layout::LayoutPreset{.m_type = "tri"};
+      return layout::LayoutPreset{.m_type = "tri", .m_view = {}, .m_images = {}, .m_imageIndices = {}};
     case LayoutKind::SingleAxial:
       return layout::LayoutPreset{
         .m_type = "single",
         .m_view = layoutPresetViewName(firstViewType(layout, ViewType::Axial)),
+        .m_images = {},
         .m_imageIndices = imageIndicesInOrder(
           orderedImageUids,
           layout.orderedViews().empty() ? std::list<uuid>{} : layout.orderedViews().front()->renderedImages())};
@@ -757,15 +765,17 @@ std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uui
       return layout::LayoutPreset{
         .m_type = "multiImageGrid",
         .m_view = layoutPresetViewName(firstViewType(layout, ViewType::Axial)),
-        .m_images = "all"};
+        .m_images = "all",
+        .m_imageIndices = {}};
     case LayoutKind::AxCorSagByImage:
-      return layout::LayoutPreset{.m_type = "orthogonalByImage", .m_images = "all"};
+      return layout::LayoutPreset{.m_type = "orthogonalByImage", .m_view = {}, .m_images = "all", .m_imageIndices = {}};
     case LayoutKind::AxialLightbox:
     case LayoutKind::CoronalLightbox:
     case LayoutKind::SagittalLightbox:
       return layout::LayoutPreset{
         .m_type = "lightbox",
         .m_view = layoutPresetViewName(firstViewType(layout, layout.viewType())),
+        .m_images = {},
         .m_imageIndices = {imageIndexInOrder(orderedImageUids, layoutImageUid(layout)).value_or(0)}};
     case LayoutKind::Custom:
     case LayoutKind::NumElements:
@@ -813,7 +823,8 @@ std::optional<Layout> instantiateLayoutPreset(
       viewAlignment,
       viewConvention,
       imageIndices.front(),
-      appData.imageUid(imageIndices.front()));
+      appData.imageUid(imageIndices.front()),
+      std::nullopt);
     applyViewImageIndices(layout, imageIndices);
     layout.setKind(ViewType::Axial == *viewType ? LayoutKind::SingleAxial : LayoutKind::Custom);
     return std::optional<Layout>{std::move(layout)};
@@ -835,7 +846,8 @@ std::optional<Layout> instantiateLayoutPreset(
       viewAlignment,
       viewConvention,
       0,
-      appData.refImageUid());
+      appData.refImageUid(),
+      std::nullopt);
     if (!imageIndices.empty()) {
       applyViewImageIndices(layout, imageIndices);
     }
@@ -975,7 +987,8 @@ std::optional<Layout> createLightboxLayoutForImage(
     viewAlignment,
     viewConvention,
     *imageIndex,
-    imageUid);
+    imageUid,
+    std::nullopt);
   layout.setKind(lightboxKindForViewType(viewType));
   return std::optional<Layout>{std::move(layout)};
 }
@@ -1205,6 +1218,7 @@ void WindowData::setupViews()
     m_viewAlignment,
     m_viewConvention,
     refImage,
+    std::nullopt,
     std::nullopt));
   m_layouts.back().setKind(LayoutKind::SingleAxial);
 
@@ -1218,7 +1232,8 @@ void WindowData::addGridLayout(
   bool offsetViews,
   bool isLightbox,
   std::size_t imageIndexForLightbox,
-  const uuid& imageUidForLightbox)
+  const uuid& imageUidForLightbox,
+  std::optional<float> lightboxOffsetDistance)
 {
   m_layouts.emplace_back(createGridLayout(
     viewType,
@@ -1230,7 +1245,8 @@ void WindowData::addGridLayout(
     m_viewAlignment,
     m_viewConvention,
     imageIndexForLightbox,
-    imageUidForLightbox));
+    imageUidForLightbox,
+    lightboxOffsetDistance));
 
   updateAllViews();
 }
@@ -1301,7 +1317,8 @@ void WindowData::reconcileImageDependentLayouts(const AppData& appData)
         m_viewAlignment,
         m_viewConvention,
         0,
-        *refUid));
+        *refUid,
+        std::nullopt));
     }
   }
 
