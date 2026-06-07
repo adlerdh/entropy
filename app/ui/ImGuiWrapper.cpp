@@ -613,13 +613,17 @@ void ImGuiWrapper::render()
 
   /// @todo remove this
   auto getActiveImageIndex = [this]() -> std::size_t {
+    if (0 == m_appData.numImages()) {
+      return 0;
+    }
+
     if (const auto imageUid = m_appData.activeImageUid()) {
       if (const auto index = m_appData.imageIndex(*imageUid)) {
         return *index;
       }
     }
 
-    spdlog::warn("No valid active image");
+    spdlog::warn("No valid active image for {} loaded images", m_appData.numImages());
     return 0;
   };
 
@@ -696,9 +700,9 @@ void ImGuiWrapper::render()
 
   auto getImageIsActive = [this](std::size_t imageIndex) -> bool {
     if (const auto imageUid = m_appData.imageUid(imageIndex)) {
-      const auto activeImageUid = m_appData.activeImageUid();
-
-      return (*imageUid == *activeImageUid);
+      if (const auto activeImageUid = m_appData.activeImageUid()) {
+        return (*imageUid == *activeImageUid);
+      }
     }
     return false;
   };
