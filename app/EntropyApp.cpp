@@ -2213,6 +2213,7 @@ void EntropyApp::setCallbacks()
     [this](const fs::path& fileName) { loadLayoutsFile(fileName); },
     [this](const fs::path& fileName) { return saveLayoutsFile(fileName); },
     [this]() { closeProject(); },
+    [this]() { requestQuitApp(); },
     [this]() { quitAppWithoutPrompt(); },
 
     [this](const uuids::uuid& viewUid) { m_callbackHandler.recenterView(m_data.state().recenteringMode(), viewUid); },

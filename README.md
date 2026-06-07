@@ -1,4 +1,4 @@
-# ENTROPY
+# ENTROPY MEDICAL IMAGE VIEWER
 *A cross-platform tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images.*
 
 Entropy is developed by Daniel H. Adler with support from the Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania.
@@ -23,7 +23,7 @@ Entropy can load images directly from command line arguments or from a JSON proj
 1. Images can be provided directly with repeatable `--image` options. If an image has one or more accompanying segmentations, place `--seg` immediately after that image; the segmentations are attached to the preceding image in the order provided. `--seg` may be repeated, or it may be followed by multiple segmentation file names. e.g.:
 
 ```sh
-Entropy --image reference_image.nii.gz --seg reference_seg1.nii.gz reference_seg2.nii.gz \
+entropy --image reference_image.nii.gz --seg reference_seg1.nii.gz reference_seg2.nii.gz \
         --image additional_image1.nii.gz \
         --image additional_image2.nii.gz --seg additional_image2_seg1.nii.gz --seg additional_image2_seg2.nii.gz
 ```
@@ -91,6 +91,17 @@ Direct image inputs and `--project` are mutually exclusive.
 Logs are output to the console and to files saved in the `log` folder. Log level can be set using the `-l` argument. See help (`-h`) for more details.
 
 ## Keyboard shortcuts
+
+On macOS, use Command instead of CTRL for application menu shortcuts.
+
+### File actions
+| Key | Action |
+| --- | --- |
+| `CTRL + O` | Open image |
+| `CTRL + SHIFT + O` | Open project |
+| `CTRL + S` | Save project |
+| `CTRL + SHIFT + S` | Save project as |
+| `CTRL + Q` | Quit Entropy |
 
 ### Modes
 | Key | Mode | Controls |

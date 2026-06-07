@@ -194,7 +194,7 @@ entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> create
   const Uniforms& vsUniforms,
   const Uniforms& fsUniforms)
 {
-  static const std::string shaderPath("src/rendering/shaders/");
+  static const std::string shaderPath("app/rendering/shaders/");
 
   spdlog::debug("Creating shader program '{}'", programName);
 
@@ -2622,7 +2622,7 @@ void Rendering::renderVectorOverlays()
 
 void Rendering::createShaderPrograms()
 {
-  static const std::string shaderPath("src/rendering/shaders/");
+  static const std::string shaderPath("app/rendering/shaders/");
   const std::string helpersRep = loadFile(shaderPath + "functions/Helpers.glsl");
   const std::string colorHelpersRep = loadFile(shaderPath + "functions/ColorHelpers.glsl");
   const std::string doRenderRep = loadFile(shaderPath + "functions/DoRender.glsl");
@@ -3001,8 +3001,8 @@ void Rendering::createShaderPrograms()
 
 bool Rendering::createRaycastIsoProgram(GLShaderProgram& program)
 {
-  static const std::string vsFileName{"src/rendering/shaders/RaycastIso.vs"};
-  static const std::string fsFileName{"src/rendering/shaders/RaycastIso.fs"};
+  static const std::string vsFileName{"app/rendering/shaders/RaycastIso.vs"};
+  static const std::string fsFileName{"app/rendering/shaders/RaycastIso.fs"};
 
   auto filesystem = cmrc::shaders::get_filesystem();
   std::string vsSource;

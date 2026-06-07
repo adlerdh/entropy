@@ -1,8 +1,8 @@
-# Third-Party Notices
+# Third-Party Notices for Entropy
 
 This document lists third-party dependencies, vendored sources, and vendored resources used by Entropy. It is an attribution and license inventory, not legal advice. For redistribution, verify the upstream license text and any project-specific packaging requirements.
 
-### Superbuild dependencies
+## Superbuild dependencies
 The following dependencies are added as external projects during CMake superbuild generation.
 License information is taken from the upstream license files for the pinned source versions.
 
@@ -26,7 +26,7 @@ License information is taken from the upstream license files for the pinned sour
 
 Qt Base is available upstream under multiple license options. Entropy uses the open-source LGPL-3.0-only option for Qt Core and configures Qt as a shared-library build so QtCore is dynamically linked.
 
-### Vendored sources and libraries
+## Vendored sources and libraries
 The following external sources and libraries have been committed directly to the Entropy repository.
 Some entries have local modifications; for those entries, the table records the upstream project and the version information available in this repository.
 
@@ -41,7 +41,7 @@ Some entries have local modifications; for those entries, the table records the 
 | [T-Digest for C++](https://github.com/derrickburns/tdigest) | None | https://github.com/derrickburns/tdigest | Apache License 2.0 |
 | [CUDA Cubic B-Spline Interpolation](http://www.dannyruijters.nl/cubicinterpolation/) | None | http://www.dannyruijters.nl/cubicinterpolation/ | BSD-3-Clause-style license |
 
-### Vendored resources
+## Vendored resources
 The following external resources have been committed directly to the Entropy repository.
 
 | Project | Version | Source | License |
@@ -57,6 +57,6 @@ The following external resources have been committed directly to the Entropy rep
 | Matplotlib viridis, plasma, inferno, and magma color maps | None | https://bids.github.io/colormap/ | CC0-1.0 |
 | Cividis color map | None | https://www.ncl.ucar.edu/Document/Graphics/ColorTables/cividis.shtml | BSD-3-Clause |
 
-### Other attributions
+## Other attributions
 
 Entropy's ASCII shader rendering is inspired by [Alex Harri's ASCII rendering work](https://alexharri.com/blog/ascii-rendering) and [Yusef28's Shadertoy work](https://www.shadertoy.com/user/Yusef28).

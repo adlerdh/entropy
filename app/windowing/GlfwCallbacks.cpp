@@ -669,7 +669,7 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
   switch (key) {
     case GLFW_KEY_Q: {
       if (s_modifierState.control) {
-        glfwSetWindowShouldClose(window, true);
+        app->requestQuitApp();
       }
       break;
     }

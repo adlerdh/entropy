@@ -1,7 +1,7 @@
 #pragma once
 
-#define GL_VERSION_MAJOR @GLAD_GL_VERSION_MAJOR@
-#define GL_VERSION_MINOR @GLAD_GL_VERSION_MINOR@
+#define GL_VERSION_MAJOR @entropy_GLAD_GL_VERSION_MAJOR@
+#define GL_VERSION_MINOR @entropy_GLAD_GL_VERSION_MINOR@
 
 namespace
 {

@@ -71,8 +71,6 @@ enum class MainMenuAction
   CreateLandmarkGroup,
   SaveLandmarkGroup,
   AddLandmark,
-  MoveCrosshairsToLandmark,
-  RemoveLandmark,
   AddLayout,
   RemoveLayout,
   ToggleImagesWindow,
@@ -102,6 +100,7 @@ struct MainMenuBarCallbacks
   std::function<std::filesystem::path()> defaultProjectSaveDirectory;
   std::function<std::string()> defaultProjectSaveName;
   std::function<void()> closeProject;
+  std::function<void()> quitApp;
   std::function<void(const std::filesystem::path& fileName)> loadLayoutsFile;
   std::function<bool(const std::filesystem::path& fileName)> saveLayoutsFile;
   std::function<std::filesystem::path()> defaultLayoutsSaveDirectory;
@@ -134,6 +133,7 @@ void addSegmentation(const MainMenuBarCallbacks& callbacks);
 void saveProject(const MainMenuBarCallbacks& callbacks);
 void saveProjectAs(const MainMenuBarCallbacks& callbacks);
 void closeProject(const MainMenuBarCallbacks& callbacks);
+void quitApp(const MainMenuBarCallbacks& callbacks);
 void loadLayouts(const MainMenuBarCallbacks& callbacks);
 void saveLayouts(const MainMenuBarCallbacks& callbacks);
 bool actionEnabled(const MainMenuBarCallbacks& callbacks, MainMenuAction action);

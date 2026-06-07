@@ -1,4 +1,4 @@
-# Packaging Entropy
+# Packaging the Entropy Medical Image Viewer
 
 This guide gives the release packaging commands for Entropy. For general build setup, supported platforms, and CMake option details, see [BUILDING.md](BUILDING.md).
 
@@ -55,7 +55,7 @@ cpack -G DEB --config build-release/CPackConfig.cmake
 The DEB installs:
 
 ```text
-/usr/bin/Entropy
+/usr/bin/entropy
 /usr/lib/entropy/*.so*
 /usr/share/applications/io.github.adlerdh.entropy.desktop
 /usr/share/entropy/AboutEntropyIcon.png
@@ -99,8 +99,8 @@ Install locally and launch:
 
 ```sh
 sudo apt install ./build-release/packages/Entropy-x.y.z.w-Linux-x86_64.deb
-Entropy --help
-Entropy
+entropy --help
+entropy
 ```
 
 If you are testing a rebuilt package with the same version number as the package already installed, force apt to replace the installed files:
@@ -115,9 +115,9 @@ For a staged install check without installing system-wide:
 
 ```sh
 cmake --install build-release --prefix build-release/linux-package-install
-readelf -d build-release/linux-package-install/bin/Entropy
-ldd build-release/linux-package-install/bin/Entropy
-build-release/linux-package-install/bin/Entropy --help
+readelf -d build-release/linux-package-install/bin/entropy
+ldd build-release/linux-package-install/bin/entropy
+build-release/linux-package-install/bin/entropy --help
 ```
 
 ## macOS DMG Package
@@ -144,10 +144,10 @@ Entropy.app/Contents/Frameworks
 
 CMake's bundle fixup rewrites library paths so the app does not depend on the build tree.
 
-By default, `entropy_MACOS_CODESIGN_IDENTITY` is `-`, which creates an ad-hoc signature. This is useful for local testing after bundle fixup. For a public release, configure the release app with a Developer ID Application identity:
+By default, `Entropy_MACOS_CODESIGN_IDENTITY` is `-`, which creates an ad-hoc signature. This is useful for local testing after bundle fixup. For a public release, configure the release app with a Developer ID Application identity:
 
 ```sh
-cmake --preset app-release -Dentropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+cmake --preset app-release -DEntropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
 cmake --build --preset package-release --parallel
 ```
 

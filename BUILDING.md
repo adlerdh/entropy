@@ -1,4 +1,4 @@
-# Building Entropy
+# Building Entropy Medical Image Viewer
 
 This guide explains how to build Entropy from source. Entropy uses CMake and a two-stage superbuild: first CMake downloads and builds pinned third-party dependencies, then the same build directory is reconfigured to build the Entropy application against those dependencies.
 
@@ -50,9 +50,9 @@ The same build directory is configured twice. First `Entropy_SUPERBUILD=ON` buil
 Run the result with:
 
 ```sh
-build-default/bin/Entropy # Linux
+build-default/bin/entropy # Linux
 open build-default/bin/Entropy.app # macOS
-.\build-default\bin\Entropy.exe # Windows
+.\build-default\bin\entropy.exe # Windows
 ```
 
 ## Build Presets
@@ -148,23 +148,25 @@ pre-commit run --all-files
 
 These are the project-level CMake cache options and important build variables you are likely to use. Pass them at configure time with `-DNAME=value`, or place local overrides in `CMakeUserPresets.json`.
 
+Entropy-specific user-facing cache options use the `Entropy_` prefix. Lowercase `entropy_` names are internal CMake variables used by the build scripts.
+
 | Option | Type | Default | Applies to | What it does |
 | --- | --- | --- | --- | --- |
 | `Entropy_SUPERBUILD` | Boolean | `ON` | All platforms | Selects the superbuild stage. `ON` configures external dependencies and returns before configuring the app. `OFF` configures Entropy itself and expects dependencies to already exist in the matching build directory. |
 | `CMAKE_BUILD_TYPE` | String | `RelWithDebInfo` for single-config generators | Single-config generators such as Ninja and Unix Makefiles | Selects `Debug`, `Release`, `RelWithDebInfo`, or `MinSizeRel`. Multi-config generators ignore this and use `--config` at build time. |
-| `SUPERBUILD_CONFIG` | String | `Release` for multi-config superbuilds | Multi-config generators such as Visual Studio, Xcode, and Ninja Multi-Config | Selects the dependency build configuration used by ExternalProject builds when the generator supports multiple configurations. |
+| `Entropy_SUPERBUILD_CONFIG` | String | `Release` for multi-config superbuilds | Multi-config generators such as Visual Studio, Xcode, and Ninja Multi-Config | Selects the dependency build configuration used by ExternalProject builds when the generator supports multiple configurations. |
 | `BUILD_SHARED_LIBS` | Boolean | `OFF` in raw CMake; `ON` in the provided presets | All platforms | Chooses shared or static builds for dependencies that honor the standard CMake option. Current package presets use shared libraries so private runtime libraries can be bundled. |
 | `Entropy_USE_CCACHE` | Boolean | `ON` | All platforms | Uses `ccache` as the compiler launcher when it is installed. If `ccache` is not found, CMake continues without it. |
-| `SUPERBUILD_PARALLEL` | String | Empty | Superbuild | Sets the parallel level passed to ExternalProject builds. Empty means the native build tool chooses its own default. |
+| `Entropy_SUPERBUILD_PARALLEL` | String | Empty | Superbuild | Sets the parallel level passed to ExternalProject builds. Empty means the native build tool chooses its own default. |
 | `BUILD_TESTING` | Boolean | `ON` when CTest is enabled | App stage | Enables test targets through CTest/Catch2. Disable with `-DBUILD_TESTING=OFF` if you need a smaller local build graph. |
-| `GLAD_GL_VERSION` | String | `3.3` | App stage | Selects the vendored GLAD OpenGL Core loader. Valid values are `3.3`, `4.1`, and `4.6`; Entropy defaults to `3.3` for broad hardware and platform compatibility. |
-| `GLAD_GL_DEBUG` | Boolean | `false` | App stage | Uses the debug GLAD loader variant for the selected OpenGL version. Useful when debugging OpenGL calls. |
+| `Entropy_GLAD_GL_VERSION` | String | `3.3` | App stage | Selects the vendored GLAD OpenGL Core loader. Valid values are `3.3`, `4.1`, and `4.6`; Entropy defaults to `3.3` for broad hardware and platform compatibility. |
+| `Entropy_GLAD_GL_DEBUG` | Boolean | `false` | App stage | Uses the debug GLAD loader variant for the selected OpenGL version. Useful when debugging OpenGL calls. |
 | `Entropy_PACKAGE_OUTPUT_DIR` | Path | `${CMAKE_BINARY_DIR}/packages` | Packaging | Directory where CPack writes generated artifacts and `_CPack_Packages` scratch files. See [PACKAGING.md](PACKAGING.md). |
 | `Entropy_STRIP_PACKAGED_APP` | Boolean | `ON` | macOS packaging | Strips local symbols from the installed `.app` bundle before signing. |
-| `entropy_MACOS_CODESIGN_IDENTITY` | String | `-` | macOS app/package stage | Code-signing identity for installed and packaged macOS apps. `-` creates an ad-hoc signature. An empty value skips signing. Use a Developer ID Application identity for public distribution. |
-| `entropy_MACOSX_BUNDLE_IDENTIFIER` | String | `io.github.adlerdh.entropy` | macOS app/package stage | Bundle identifier written to the macOS app `Info.plist`. |
-| `entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION` | String | `CMAKE_OSX_DEPLOYMENT_TARGET` if set, otherwise `13.0` | macOS app/package stage | Minimum macOS version recorded in `Info.plist`. |
-| `entropy_MACOSX_BUNDLE_VERSION` | String | Project version | macOS app/package stage | Build version recorded in `CFBundleVersion`. |
+| `Entropy_MACOS_CODESIGN_IDENTITY` | String | `-` | macOS app/package stage | Code-signing identity for installed and packaged macOS apps. `-` creates an ad-hoc signature. An empty value skips signing. Use a Developer ID Application identity for public distribution. |
+| `Entropy_MACOSX_BUNDLE_IDENTIFIER` | String | `io.github.adlerdh.entropy` | macOS app/package stage | Bundle identifier written to the macOS app `Info.plist`. |
+| `Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION` | String | `CMAKE_OSX_DEPLOYMENT_TARGET` if set, otherwise `13.0` | macOS app/package stage | Minimum macOS version recorded in `Info.plist`. |
+| `Entropy_MACOSX_BUNDLE_VERSION` | String | Project version | macOS app/package stage | Build version recorded in `CFBundleVersion`. |
 
 Standard CMake variables such as `CMAKE_INSTALL_PREFIX`, `CMAKE_OSX_DEPLOYMENT_TARGET`, `CMAKE_PREFIX_PATH`, and generator selection also work normally.
 
@@ -186,7 +188,7 @@ cmake -S . -B "${BUILD_DIR}" \
   -DEntropy_SUPERBUILD=ON \
   -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
   -DBUILD_SHARED_LIBS="${SHARED_LIBS}" \
-  -DSUPERBUILD_PARALLEL="${PARALLEL}"
+  -DEntropy_SUPERBUILD_PARALLEL="${PARALLEL}"
 
 cmake --build "${BUILD_DIR}" --parallel "${PARALLEL}"
 
@@ -211,8 +213,8 @@ PARALLEL=$(python3 -c "import os; print(os.cpu_count() or 1)")
 cmake -S . -B "${BUILD_DIR}" \
   -DEntropy_SUPERBUILD=ON \
   -DBUILD_SHARED_LIBS="${SHARED_LIBS}" \
-  -DSUPERBUILD_CONFIG="${BUILD_TYPE}" \
-  -DSUPERBUILD_PARALLEL="${PARALLEL}"
+  -DEntropy_SUPERBUILD_CONFIG="${BUILD_TYPE}" \
+  -DEntropy_SUPERBUILD_PARALLEL="${PARALLEL}"
 
 cmake --build "${BUILD_DIR}" --config "${BUILD_TYPE}" --parallel "${PARALLEL}"
 
@@ -225,6 +227,6 @@ cmake --build "${BUILD_DIR}" --config "${BUILD_TYPE}" --parallel "${PARALLEL}"
 
 ## Third-Party Dependencies and Resources
 
-Entropy uses external projects through the CMake superbuild and carries some vendored source and resource files in this repository. Versions, source URLs, and license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The current superbuild pins include GLM 1.0.3, Dear ImGui 1.92.8, ImPlot 0.17, nlohmann::json 3.12.0, and spdlog 1.17.0.
+Entropy uses external projects through the CMake superbuild and carries some vendored source and resource files in this repository. Versions, source URLs, and license notes are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Original attributions and licenses have been preserved and committed for all external sources and resources.

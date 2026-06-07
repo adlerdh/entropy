@@ -43,8 +43,8 @@ if(Entropy_USE_CCACHE)
   endif()
 endif()
 
-set(entropy_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 set(entropy_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app")
+set(entropy_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 set(entropy_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/res")
 set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 
@@ -52,7 +52,7 @@ set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 # VSCode is able to parse the file and find the include path based on its content.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(SUPERBUILD_PARALLEL "" CACHE STRING "Parallel level for ExternalProject builds; empty uses the native build tool default")
+set(Entropy_SUPERBUILD_PARALLEL "" CACHE STRING "Parallel level for ExternalProject builds; empty uses the native build tool default")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(GNUInstallDirs)
@@ -164,9 +164,9 @@ include(CTest)
 if(Entropy_SUPERBUILD)
   get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
   if(_isMultiConfig)
-    if(NOT DEFINED SUPERBUILD_CONFIG)
-      set(SUPERBUILD_CONFIG "Release" CACHE STRING "Build config for multi-config generators")
-      set_property(CACHE SUPERBUILD_CONFIG PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+    if(NOT DEFINED Entropy_SUPERBUILD_CONFIG)
+      set(Entropy_SUPERBUILD_CONFIG "Release" CACHE STRING "Build config for multi-config generators")
+      set_property(CACHE Entropy_SUPERBUILD_CONFIG PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
     endif()
   endif()
 
@@ -176,14 +176,13 @@ endif()
 
 
 if(BUILD_TESTING)
-  find_package(Catch2 ${catch2_VERSION} REQUIRED
-    HINTS "${catch2_PREFIX}/install")
+  find_package(Catch2 ${catch2_VERSION} REQUIRED HINTS "${catch2_PREFIX}/install")
   message(STATUS "Using Catch2 in ${Catch2_DIR}")
   include(Catch)
 endif()
 
 if(APPLE)
-  set(entropy_MACOSX_BUNDLE_IDENTIFIER "io.github.adlerdh.entropy" CACHE STRING "macOS bundle identifier")
+  set(Entropy_MACOSX_BUNDLE_IDENTIFIER "io.github.adlerdh.entropy" CACHE STRING "macOS bundle identifier")
 
   if(CMAKE_OSX_DEPLOYMENT_TARGET)
     set(entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "${CMAKE_OSX_DEPLOYMENT_TARGET}")
@@ -191,11 +190,11 @@ if(APPLE)
     set(entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "13.0")
   endif()
 
-  set(entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "${entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
+  set(Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION "${entropy_DEFAULT_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
     CACHE STRING "Minimum macOS version recorded in Info.plist")
-  set(entropy_MACOSX_BUNDLE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}"
+  set(Entropy_MACOSX_BUNDLE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}"
     CACHE STRING "macOS build version recorded in CFBundleVersion")
-  set(entropy_MACOS_CODESIGN_IDENTITY "-" CACHE STRING
+  set(Entropy_MACOS_CODESIGN_IDENTITY "-" CACHE STRING
     "macOS code signing identity used by build/install/CPack; '-' creates an ad-hoc signature, and an empty value skips signing")
 endif()
 
@@ -300,19 +299,19 @@ endif()
 # python3 -m glad --profile core --out-path glad --api gl=3.3 --generator c --spec gl
 # (It can also be generated from the webservice at https://glad.dav1d.de/)
 
-set(GLAD_GL_VERSION "3.3" CACHE STRING "OpenGL Core profile version loaded by GLAD")
-set(GL_VERSION_VALUES "3.3;4.1;4.6")
-set(GLAD_GL_DEBUG false CACHE BOOL "Use OpenGL debugging in GLAD")
+set(Entropy_GLAD_GL_VERSION "3.3" CACHE STRING "OpenGL Core profile version loaded by GLAD")
+set(entropy_GLAD_GL_VERSION_VALUES "3.3;4.1;4.6")
+set(Entropy_GLAD_GL_DEBUG false CACHE BOOL "Use OpenGL debugging in GLAD")
 
-set_property(CACHE GLAD_GL_VERSION PROPERTY STRINGS ${GL_VERSION_VALUES})
+set_property(CACHE Entropy_GLAD_GL_VERSION PROPERTY STRINGS ${entropy_GLAD_GL_VERSION_VALUES})
 
-string(REPLACE "." ";" GL_VERSION_LIST ${GLAD_GL_VERSION})
-list(GET GL_VERSION_LIST 0 GLAD_GL_VERSION_MAJOR)
-list(GET GL_VERSION_LIST 1 GLAD_GL_VERSION_MINOR)
+string(REPLACE "." ";" entropy_GLAD_GL_VERSION_LIST ${Entropy_GLAD_GL_VERSION})
+list(GET entropy_GLAD_GL_VERSION_LIST 0 entropy_GLAD_GL_VERSION_MAJOR)
+list(GET entropy_GLAD_GL_VERSION_LIST 1 entropy_GLAD_GL_VERSION_MINOR)
 
-set(glad_BASE glad_gl_${GLAD_GL_VERSION}_core)
+set(glad_BASE glad_gl_${Entropy_GLAD_GL_VERSION}_core)
 
-if(GLAD_GL_DEBUG)
+if(Entropy_GLAD_GL_DEBUG)
   set(glad_BASE ${glad_BASE}_debug)
 endif()
 
@@ -389,6 +388,8 @@ list(APPEND IMPLOT_SOURCES
 
 add_library(implot STATIC ${IMPLOT_SOURCES})
 
+target_compile_definitions(implot PRIVATE IMGUI_USER_CONFIG="ui/entropy_imgui_config.h")
+
 target_include_directories(implot PRIVATE
   "${implot_SRC_DIR}/implot"
   "${imgui_SRC_DIR}/imgui"
@@ -424,7 +425,7 @@ set_target_properties(implot PROPERTIES
   CXX_EXTENSIONS OFF
 )
 
-# Generate build stamp header after GLAD_GL_VERSION_MAJOR and GLAD_GL_VERSION_MINOR are defined
+# Generate build stamp header after entropy_GLAD_GL_VERSION_MAJOR and entropy_GLAD_GL_VERSION_MINOR are defined
 include(BuildStamp)
 BuildStamp()
 
@@ -437,8 +438,6 @@ add_subdirectory("${entropy_LIB_DIR}/image")
 set(entropy_SOURCES
   "${entropy_APP_DIR}/main.cpp"
   "${entropy_APP_DIR}/EntropyApp.cpp"
-
-  "${entropy_APP_DIR}/logic/SurfaceUtility.cpp"
 
   "${entropy_APP_DIR}/logic/app/CallbackHandler.cpp"
   "${entropy_APP_DIR}/logic/app/Data.cpp"
@@ -475,6 +474,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/states/annotation/AnnotationStates.cpp"
 
   "${entropy_APP_DIR}/logic/DistanceMap.cpp"
+  "${entropy_APP_DIR}/logic/SurfaceUtility.cpp"
   "${entropy_APP_DIR}/logic/ipc/SnapCursorSync.cpp"
 
   "${entropy_APP_DIR}/rendering/ascii/AsciiAtlas.cpp"
@@ -519,11 +519,6 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/ui/Widgets.cpp"
   "${entropy_APP_DIR}/ui/Windows.cpp"
 
-  "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
-  "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
-  "${entropy_EXT_DIR}/imgui-knobs/imgui-knobs.cpp"
-  "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
-
   "${entropy_APP_DIR}/windowing/ControlFrame.cpp"
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
   "${entropy_APP_DIR}/windowing/GlfwWrapper.cpp"
@@ -534,6 +529,11 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/View.cpp"
   "${entropy_APP_DIR}/windowing/ViewTypes.cpp"
   "${entropy_APP_DIR}/windowing/WindowData.cpp"
+
+  "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
+  "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
+  "${entropy_EXT_DIR}/imgui-knobs/imgui-knobs.cpp"
+  "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
 )
 
 set(entropy_ABOUT_ICON_SOURCE
@@ -574,7 +574,6 @@ if(MSVC)
 endif()
 
 set(entropy_SHADERS
-  # "${entropy_APP_DIR}/rendering/shaders/Correlation.fs"
   "${entropy_APP_DIR}/rendering/shaders/AsciiPost.vs"
   "${entropy_APP_DIR}/rendering/shaders/AsciiPost.fs"
   "${entropy_APP_DIR}/rendering/shaders/AsciiCellMean.fs"
@@ -610,31 +609,6 @@ set(entropy_SHADERS
   "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_Linear.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_FloatingPoint_Linear.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/UIntTextureLookup_Linear.glsl"
-)
-
-set(entropy_SHADERS_OLD
-  "${entropy_APP_DIR}/rendering_old/shaders/BasicMesh.vert"
-  "${entropy_APP_DIR}/rendering_old/shaders/BasicMesh.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/BasicMeshPeel.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/Debug.vert"
-  "${entropy_APP_DIR}/rendering_old/shaders/Debug.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/fbo_screen.vert"
-  "${entropy_APP_DIR}/rendering_old/shaders/fbo_screen.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/Flat.vert"
-  "${entropy_APP_DIR}/rendering_old/shaders/Flat.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/FlatPeel.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/Mesh.vert"
-  "${entropy_APP_DIR}/rendering_old/shaders/Mesh.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/MeshPeel.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/Polygonizer.vert"
-  "${entropy_APP_DIR}/rendering_old/shaders/Polygonizer.geom"
-  "${entropy_APP_DIR}/rendering_old/shaders/Simple.vert"
-  "${entropy_APP_DIR}/rendering_old/shaders/Simple.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/ddp/blend.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/ddp/blend.vert"
-  "${entropy_APP_DIR}/rendering_old/shaders/ddp/final.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/ddp/InitializeDepths.frag"
-  "${entropy_APP_DIR}/rendering_old/shaders/ddp/init.vert"
 )
 
 file(GLOB entropy_COLORMAPS
@@ -708,45 +682,43 @@ if(APPLE)
   mark_as_advanced(COCOA_LIBRARY OpenGL_LIBRARY)
 endif()
 
-set(entropy_EXE Entropy)
-
 # Using CMakeRC, embed the resources into static libraries
-cmrc_add_resource_library(${entropy_EXE}-colormaps ALIAS ${entropy_EXE}::colormaps ${entropy_COLORMAPS} NAMESPACE colormaps)
-cmrc_add_resource_library(${entropy_EXE}-fonts ALIAS ${entropy_EXE}::fonts ${entropy_FONTS} NAMESPACE fonts)
-cmrc_add_resource_library(${entropy_EXE}-licenses ALIAS ${entropy_EXE}::licenses ${entropy_LICENSES} NAMESPACE licenses
+cmrc_add_resource_library(entropy-colormaps ALIAS entropy::colormaps ${entropy_COLORMAPS} NAMESPACE colormaps)
+cmrc_add_resource_library(entropy-fonts ALIAS entropy::fonts ${entropy_FONTS} NAMESPACE fonts)
+cmrc_add_resource_library(entropy-licenses ALIAS entropy::licenses ${entropy_LICENSES} NAMESPACE licenses
   WHENCE "${entropy_LICENSE_RESOURCE_DIR}"
 )
-cmrc_add_resource_library(${entropy_EXE}-shaders ALIAS ${entropy_EXE}::shaders ${entropy_SHADERS} NAMESPACE shaders
+cmrc_add_resource_library(entropy-shaders ALIAS entropy::shaders ${entropy_SHADERS} NAMESPACE shaders
   WHENCE "${entropy_APP_DIR}"
-  PREFIX "src"
+  PREFIX "app"
 )
 
 if(APPLE)
-  add_executable(${entropy_EXE} MACOSX_BUNDLE)
+  add_executable(entropy MACOSX_BUNDLE)
 else()
-  add_executable(${entropy_EXE})
+  add_executable(entropy)
 endif()
 
 if(APPLE)
   add_custom_command(
-    TARGET ${entropy_EXE}
+    TARGET entropy
     POST_BUILD
     COMMAND
       "${CMAKE_COMMAND}"
-      -D "entropy_BUNDLE_DIR=$<TARGET_BUNDLE_DIR:${entropy_EXE}>"
+      -D "entropy_BUNDLE_DIR=$<TARGET_BUNDLE_DIR:entropy>"
       -D "entropy_SOURCE_ICON=${entropy_MACOS_APP_ICON}"
       -D "entropy_ICON_NAME=${entropy_MACOS_APP_ICON_NAME}"
-      -D "entropy_MINIMUM_SYSTEM_VERSION=${entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
-      -D "entropy_CODESIGN_IDENTITY=${entropy_MACOS_CODESIGN_IDENTITY}"
+      -D "entropy_MINIMUM_SYSTEM_VERSION=${Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
+      -D "entropy_CODESIGN_IDENTITY=${Entropy_MACOS_CODESIGN_IDENTITY}"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RefreshMacOSIcon.cmake"
     COMMAND
       "${CMAKE_COMMAND}" -E copy_if_different
-      "$<TARGET_FILE:${entropy_EXE}>"
-      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${entropy_EXE}"
+      "$<TARGET_FILE:entropy>"
+      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${APP_NAME}"
     COMMAND
       "${CMAKE_COMMAND}" -E copy_if_different
       "${entropy_ABOUT_ICON_SOURCE}"
-      "$<TARGET_BUNDLE_DIR:${entropy_EXE}>/Contents/Resources/${entropy_ABOUT_ICON_FILE_NAME}"
+      "$<TARGET_BUNDLE_DIR:entropy>/Contents/Resources/${entropy_ABOUT_ICON_FILE_NAME}"
     COMMAND
       "${CMAKE_COMMAND}" -E copy_if_different
       "${entropy_ABOUT_ICON_SOURCE}"
@@ -755,17 +727,17 @@ if(APPLE)
   )
 endif()
 
-target_sources(${entropy_EXE} PRIVATE
+target_sources(entropy PRIVATE
   ${entropy_SOURCES}
 )
 
-target_compile_definitions(${entropy_EXE} PRIVATE
+target_compile_definitions(entropy PRIVATE
   ENTROPY_ABOUT_ICON_FILE_NAME="${entropy_ABOUT_ICON_FILE_NAME}"
   ENTROPY_ABOUT_ICON_SOURCE_FILE="${entropy_ABOUT_ICON_SOURCE}"
   ENTROPY_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/entropy"
 )
 
-target_link_libraries(${entropy_EXE} PRIVATE
+target_link_libraries(entropy PRIVATE
   CLI11::CLI11
   Entropy::Common
   Entropy::Image
@@ -780,27 +752,27 @@ target_link_libraries(${entropy_EXE} PRIVATE
   Qt6::Core
   spdlog::spdlog
   stduuid
-  ${entropy_EXE}::colormaps
-  ${entropy_EXE}::fonts
-  ${entropy_EXE}::licenses
-  ${entropy_EXE}::shaders
+  entropy::colormaps
+  entropy::fonts
+  entropy::licenses
+  entropy::shaders
   entropy_warnings
 )
 
 if(APPLE)
-  target_link_libraries(${entropy_EXE} PRIVATE
+  target_link_libraries(entropy PRIVATE
     ${COCOA_LIBRARY}
   )
 endif()
 
 if(WIN32)
-  target_link_libraries(${entropy_EXE} PRIVATE
+  target_link_libraries(entropy PRIVATE
     comctl32
     user32
   )
 endif()
 
-target_include_directories(${entropy_EXE} PRIVATE
+target_include_directories(entropy PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}" # for BuildStamp.h
   "${entropy_APP_DIR}"
   "${entropy_RES_DIR}"
@@ -810,9 +782,9 @@ target_include_directories(${entropy_EXE} PRIVATE
 )
 
 # Let IDEs index imported package include roots as project code; keep warning-prone vendored headers as system includes below.
-set_target_properties(${entropy_EXE} PROPERTIES NO_SYSTEM_FROM_IMPORTED ON)
+set_target_properties(entropy PROPERTIES NO_SYSTEM_FROM_IMPORTED ON)
 
-target_include_directories(${entropy_EXE} SYSTEM PRIVATE
+target_include_directories(entropy SYSTEM PRIVATE
   "${imgui_SRC_DIR}"
   "${imgui_SRC_DIR}/imgui" # due to ImPlot
   "${entropy_EXT_DIR}"
@@ -822,9 +794,9 @@ target_include_directories(${entropy_EXE} SYSTEM PRIVATE
   "${nanovg_SRC_DIR}"
 )
 
-entropy_copy_runtime_dlls(${entropy_EXE})
+entropy_copy_runtime_dlls(entropy)
 
-target_compile_options(${entropy_EXE} PRIVATE
+target_compile_options(entropy PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
     -Werror
     -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
@@ -846,7 +818,7 @@ target_compile_options(${entropy_EXE} PRIVATE
   >
 )
 
-set_target_properties(${entropy_EXE} PROPERTIES
+set_target_properties(entropy PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF

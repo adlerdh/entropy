@@ -13,11 +13,11 @@ set(GIT_PROTOCOL "https")
 get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 if(_isMultiConfig)
-  if(NOT DEFINED SUPERBUILD_CONFIG)
-    set(SUPERBUILD_CONFIG "Release" CACHE STRING "Build config for multi-config generators")
-    set_property(CACHE SUPERBUILD_CONFIG PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+  if(NOT DEFINED Entropy_SUPERBUILD_CONFIG)
+    set(Entropy_SUPERBUILD_CONFIG "Release" CACHE STRING "Build config for multi-config generators")
+    set_property(CACHE Entropy_SUPERBUILD_CONFIG PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
   endif()
-  set(_cfg_arg "--config" "${SUPERBUILD_CONFIG}")
+  set(_cfg_arg "--config" "${Entropy_SUPERBUILD_CONFIG}")
 else()
   set(_cfg_arg "")
 endif()
@@ -84,7 +84,7 @@ ExternalProject_Add(catch2
     -DCATCH_INSTALL_DOCS:BOOL=OFF
     -DCATCH_INSTALL_EXTRAS:BOOL=ON
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
@@ -122,7 +122,7 @@ ExternalProject_Add(cli11
     -DCLI11_BUILD_TESTS:BOOL=OFF
     -DCLI11_INSTALL:BOOL=ON
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
@@ -204,7 +204,7 @@ ExternalProject_Add(glfw
     -DGLFW_BUILD_TESTS:BOOL=OFF
     -DGLFW_INSTALL:BOOL=ON
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
@@ -256,7 +256,7 @@ ExternalProject_Add(glm
     -DGLM_ENABLE_SIMD_SSSE3:BOOL=OFF
     -DGLM_FORCE_PURE:BOOL=OFF
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
@@ -391,7 +391,7 @@ ExternalProject_Add(ITK
     -DBUILD_TESTING:BOOL=OFF
     ${_itk_module_args}
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping ITK install step"
 
   CMAKE_GENERATOR ${gen}
@@ -449,7 +449,7 @@ ExternalProject_Add(nativefiledialog
     -DNFD_BUILD_TESTS:BOOL=OFF
     -DNFD_INSTALL:BOOL=ON
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
@@ -494,7 +494,7 @@ ExternalProject_Add(nlohmann_json
     -DJSON_MultipleHeaders:BOOL=ON
     -DJSON_SystemInclude:BOOL=OFF
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
@@ -533,7 +533,7 @@ ExternalProject_Add(qtbase
       -no-openssl
       -no-icu
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND
     ${CMAKE_COMMAND} --install <BINARY_DIR>
     COMMAND ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/include
@@ -598,7 +598,7 @@ ExternalProject_Add(spdlog
     -DSPDLOG_WCHAR_FILENAMES:BOOL=OFF
     -DSPDLOG_WCHAR_SUPPORT:BOOL=OFF
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}
@@ -637,7 +637,7 @@ ExternalProject_Add(stduuid
     -DUUID_TIME_GENERATOR:BOOL=OFF
     -DUUID_USING_CXX20_SPAN:BOOL=OFF
 
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${SUPERBUILD_PARALLEL}
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
 
   CMAKE_GENERATOR ${gen}

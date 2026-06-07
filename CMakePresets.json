@@ -14,7 +14,7 @@
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "BUILD_SHARED_LIBS": true,
         "Entropy_USE_CCACHE": true,
-        "SUPERBUILD_PARALLEL": ""
+        "Entropy_SUPERBUILD_PARALLEL": ""
       }
     },
     {

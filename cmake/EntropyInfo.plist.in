@@ -33,7 +33,7 @@
   <key>CSResourcesFileMapped</key>
   <true/>
   <key>LSMinimumSystemVersion</key>
-  <string>@entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION@</string>
+  <string>@Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION@</string>
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSPrincipalClass</key>

@@ -63,7 +63,7 @@ file(REMOVE "${entropy_PARTIAL_INFO_PLIST}")
 if(entropy_CODESIGN_IDENTITY)
   find_program(entropy_CODESIGN_EXECUTABLE codesign)
   if(NOT entropy_CODESIGN_EXECUTABLE)
-    message(FATAL_ERROR "codesign was not found; set entropy_MACOS_CODESIGN_IDENTITY to an empty value to skip signing")
+    message(FATAL_ERROR "codesign was not found; set Entropy_MACOS_CODESIGN_IDENTITY to an empty value to skip signing")
   endif()
 
   execute_process(

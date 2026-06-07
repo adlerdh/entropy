@@ -267,6 +267,7 @@ void ImGuiWrapper::setCallbacks(
   std::function<void(const fs::path& fileName)> loadLayoutsFile,
   std::function<bool(const fs::path& fileName)> saveLayoutsFile,
   std::function<void()> closeProjectWithoutPrompt,
+  std::function<void()> requestQuitApp,
   std::function<void()> quitAppWithoutPrompt,
   std::function<void(const uuids::uuid& viewUid)> recenterView,
   AllViewsRecenterType recenterCurrentViews,
@@ -312,6 +313,7 @@ void ImGuiWrapper::setCallbacks(
   m_loadLayoutsFile = loadLayoutsFile;
   m_saveLayoutsFile = saveLayoutsFile;
   m_closeProjectWithoutPrompt = closeProjectWithoutPrompt;
+  m_requestQuitApp = requestQuitApp;
   m_quitAppWithoutPrompt = quitAppWithoutPrompt;
   m_recenterView = recenterView;
   m_recenterAllViews = recenterCurrentViews;
@@ -972,7 +974,7 @@ void ImGuiWrapper::render()
         m_appData.renderData().m_showLightboxOffsetLabels = !m_appData.renderData().m_showLightboxOffsetLabels;
         break;
       case MainMenuAction::ToggleOverlays:
-        if (m_setOverlayVisibility && m_getOverlayVisibility) m_setOverlayVisibility(!m_getOverlayVisibility());
+        m_callbackHandler.cycleOverlayAndUiVisibility();
         break;
       case MainMenuAction::ToggleFullScreen:
         m_callbackHandler.toggleFullScreenMode();
@@ -1207,9 +1209,6 @@ void ImGuiWrapper::render()
       case MainMenuAction::AddLandmark:
         addLandmarkAtCrosshairs();
         break;
-      case MainMenuAction::MoveCrosshairsToLandmark:
-      case MainMenuAction::RemoveLandmark:
-        break;
     }
     if (m_postEmptyGlfwEvent) {
       m_postEmptyGlfwEvent();
@@ -1321,9 +1320,6 @@ void ImGuiWrapper::render()
           return canUseProjectActions && activeLandmarkGroupUid().has_value();
         case MainMenuAction::RemoveLayout:
           return canUseProjectActions && m_appData.windowData().numLayouts() >= 2;
-        case MainMenuAction::MoveCrosshairsToLandmark:
-        case MainMenuAction::RemoveLandmark:
-          return false;
         case MainMenuAction::AddLandmark:
           return canUseProjectActions && activeLandmarkGroupUid().has_value();
       }
@@ -1571,6 +1567,7 @@ void ImGuiWrapper::render()
       .defaultProjectSaveDirectory = defaultProjectSaveDirectory,
       .defaultProjectSaveName = defaultProjectSaveName,
       .closeProject = m_closeProject,
+      .quitApp = m_requestQuitApp,
       .loadLayoutsFile = m_loadLayoutsFile,
       .saveLayoutsFile = m_saveLayoutsFile,
       .defaultLayoutsSaveDirectory = defaultLayoutsSaveDirectory,

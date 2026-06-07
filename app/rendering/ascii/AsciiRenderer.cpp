@@ -77,7 +77,7 @@ entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> buildA
   const Uniforms& vsUniforms,
   const Uniforms& fsUniforms)
 {
-  static const std::string shaderPath("src/rendering/shaders/");
+  static const std::string shaderPath("app/rendering/shaders/");
 
   spdlog::debug("Creating ASCII shader program '{}'", programName);
 
@@ -157,7 +157,7 @@ void AsciiRenderer::registerShaderPrograms(
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& programs)
 {
   // Load shared composite functions (rgb2hsv, hsv2rgb, sampleGlyphCoverage, asciiComposite)
-  static const std::string shaderPath("src/rendering/shaders/");
+  static const std::string shaderPath("app/rendering/shaders/");
   std::string compositeFunctions;
   try {
     const auto fs = cmrc::shaders::get_filesystem();

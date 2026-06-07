@@ -3,7 +3,7 @@ include(GNUInstallDirs)
 set(entropy_LINUX_APP_ID "io.github.adlerdh.entropy")
 set(entropy_LINUX_PRIVATE_LIB_DIR "${CMAKE_INSTALL_LIBDIR}/entropy")
 set(entropy_LINUX_PRIVATE_LIB_FULL_DIR "${CMAKE_INSTALL_FULL_LIBDIR}/entropy")
-set(entropy_LINUX_DESKTOP_EXEC "${entropy_EXE}")
+set(entropy_LINUX_DESKTOP_EXEC "entropy")
 set(entropy_LINUX_DESKTOP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${entropy_LINUX_APP_ID}.desktop")
 set(entropy_LINUX_PRIVATE_LIBRARY_RPATHS
     "${glfw_PREFIX}/install/lib"
@@ -19,11 +19,11 @@ configure_file(
     @ONLY
 )
 
-set_target_properties(${entropy_EXE} PROPERTIES
+set_target_properties(entropy PROPERTIES
     INSTALL_RPATH "$ORIGIN/../${entropy_LINUX_PRIVATE_LIB_DIR}"
 )
 
-install(TARGETS ${entropy_EXE}
+install(TARGETS entropy
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 )
 

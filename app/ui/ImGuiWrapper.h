@@ -47,6 +47,7 @@ public:
     std::function<void(const std::filesystem::path& fileName)> loadLayoutsFile,
     std::function<bool(const std::filesystem::path& fileName)> saveLayoutsFile,
     std::function<void()> closeProjectWithoutPrompt,
+    std::function<void()> requestQuitApp,
     std::function<void()> quitAppWithoutPrompt,
     std::function<void(const uuids::uuid& viewUid)> recenterView,
     AllViewsRecenterType recenterCurrentViews,
@@ -109,6 +110,7 @@ private:
   std::function<void(const std::filesystem::path& fileName)> m_loadLayoutsFile = nullptr;
   std::function<bool(const std::filesystem::path& fileName)> m_saveLayoutsFile = nullptr;
   std::function<void()> m_closeProjectWithoutPrompt = nullptr;
+  std::function<void()> m_requestQuitApp = nullptr;
   std::function<void()> m_quitAppWithoutPrompt = nullptr;
   std::function<void(const uuids::uuid& viewUid)> m_recenterView = nullptr;
   AllViewsRecenterType m_recenterAllViews = nullptr;

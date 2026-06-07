@@ -101,6 +101,13 @@ void closeProject(const MainMenuBarCallbacks& callbacks)
   }
 }
 
+void quitApp(const MainMenuBarCallbacks& callbacks)
+{
+  if (callbacks.quitApp) {
+    callbacks.quitApp();
+  }
+}
+
 void loadLayouts(const MainMenuBarCallbacks& callbacks)
 {
   if (!callbacks.canUseLayouts || !callbacks.loadLayoutsFile) {
@@ -181,12 +188,12 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Show Image", MainMenuAction::ToggleImageVisibility, "W");
   actionMenuItem(callbacks, "Show Segmentation", MainMenuAction::ToggleSegmentationVisibility, "S");
   actionMenuItem(callbacks, "Show Image Edges", MainMenuAction::ToggleImageEdges, "E");
-  actionMenuItem(callbacks, "Toggle Segmentation Outline", MainMenuAction::ToggleSegmentationOutline, "Space");
+  actionMenuItem(callbacks, "Show Segmentation Outline", MainMenuAction::ToggleSegmentationOutline, "Space");
   actionMenuItem(callbacks, "Decrease Segmentation Opacity", MainMenuAction::DecreaseSegmentationOpacity, "A");
   actionMenuItem(callbacks, "Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, "D");
   ImGui::Separator();
-  actionMenuItem(callbacks, "Scale Bars", MainMenuAction::ToggleScaleBars);
-  actionMenuItem(callbacks, "Show Overlays", MainMenuAction::ToggleOverlays, "O");
+  actionMenuItem(callbacks, "Show Scale Bars", MainMenuAction::ToggleScaleBars);
+  actionMenuItem(callbacks, "Cycle Overlays", MainMenuAction::ToggleOverlays, "O");
   actionMenuItem(callbacks, "Full Screen", MainMenuAction::ToggleFullScreen, "F4");
   ImGui::Separator();
   if (ImGui::BeginMenu("Synchronize with ITK-SNAP", actionEnabled(callbacks, MainMenuAction::ToggleSync))) {
@@ -199,16 +206,14 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
     actionMenuItem(callbacks, "Pan: Send", MainMenuAction::ToggleSyncSendPan);
     actionMenuItem(callbacks, "Pan: Receive", MainMenuAction::ToggleSyncReceivePan);
     ImGui::Separator();
-    if (ImGui::MenuItem("Settings...", nullptr, false, true)) {
-      performAction(callbacks, MainMenuAction::ShowSynchronizeSettingsWindow);
-    }
+    actionMenuItem(callbacks, "Settings...", MainMenuAction::ShowSynchronizeSettingsWindow);
     ImGui::EndMenu();
   }
 }
 
 void renderImageMenu(const MainMenuBarCallbacks& callbacks)
 {
-  actionMenuItem(callbacks, "Show Image Window", MainMenuAction::ToggleImagesWindow);
+  actionMenuItem(callbacks, "Show Images Panel", MainMenuAction::ToggleImagesWindow);
   ImGui::Separator();
   if (ImGui::BeginMenu("Active Image", callbacks.canAddImage)) {
     const auto names = callbacks.imageNames ? callbacks.imageNames() : std::vector<std::string>{};
@@ -222,12 +227,12 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   }
   ImGui::Separator();
   actionMenuItem(callbacks, "Set as Reference", MainMenuAction::SetActiveImageAsReference);
-  actionMenuItem(callbacks, "Remove Image", MainMenuAction::RemoveActiveImage);
+  actionMenuItem(callbacks, "Remove Active Image", MainMenuAction::RemoveActiveImage);
   ImGui::Separator();
-  actionMenuItem(callbacks, "Move Backward", MainMenuAction::MoveActiveImageBackward);
-  actionMenuItem(callbacks, "Move Forward", MainMenuAction::MoveActiveImageForward);
-  actionMenuItem(callbacks, "Move to Back", MainMenuAction::MoveActiveImageToBack);
-  actionMenuItem(callbacks, "Move to Front", MainMenuAction::MoveActiveImageToFront);
+  actionMenuItem(callbacks, "Move Image Backward", MainMenuAction::MoveActiveImageBackward);
+  actionMenuItem(callbacks, "Move Image Forward", MainMenuAction::MoveActiveImageForward);
+  actionMenuItem(callbacks, "Move Image to Back", MainMenuAction::MoveActiveImageToBack);
+  actionMenuItem(callbacks, "Move Image to Front", MainMenuAction::MoveActiveImageToFront);
   ImGui::Separator();
   actionMenuItem(callbacks, "Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
   actionMenuItem(callbacks, "Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
@@ -240,7 +245,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
 
 void renderSegmentationMenu(const MainMenuBarCallbacks& callbacks)
 {
-  actionMenuItem(callbacks, "Show Segmentation Window", MainMenuAction::ToggleSegmentationsWindow);
+  actionMenuItem(callbacks, "Show Segmentations Panel", MainMenuAction::ToggleSegmentationsWindow);
   ImGui::Separator();
   if (ImGui::MenuItem("Add Segmentation...", nullptr, false, callbacks.canAddSegmentation)) {
     addSegmentation(callbacks);
@@ -257,16 +262,11 @@ void renderSegmentationMenu(const MainMenuBarCallbacks& callbacks)
   ImGui::Separator();
   actionMenuItem(callbacks, "Decrease Brush Size", MainMenuAction::DecreaseBrushSize, "-");
   actionMenuItem(callbacks, "Increase Brush Size", MainMenuAction::IncreaseBrushSize, "+");
-  ImGui::Separator();
-  actionMenuItem(
-    callbacks,
-    "Paint Segmentation from Active Annotation",
-    MainMenuAction::PaintSegmentationFromAnnotation);
 }
 
 void renderAnnotationMenu(const MainMenuBarCallbacks& callbacks)
 {
-  actionMenuItem(callbacks, "Show Annotations Window", MainMenuAction::ToggleAnnotationsWindow);
+  actionMenuItem(callbacks, "Show Annotations Panel", MainMenuAction::ToggleAnnotationsWindow);
   ImGui::Separator();
   actionMenuItem(callbacks, "Save All Annotations...", MainMenuAction::SaveAnnotations);
   actionMenuItem(callbacks, "Remove Active Annotation", MainMenuAction::RemoveAnnotation);
@@ -284,18 +284,49 @@ void renderAnnotationMenu(const MainMenuBarCallbacks& callbacks)
 
 void renderLandmarkMenu(const MainMenuBarCallbacks& callbacks)
 {
-  actionMenuItem(callbacks, "Show Landmarks Window", MainMenuAction::ToggleLandmarksWindow);
+  actionMenuItem(callbacks, "Show Landmarks Panel", MainMenuAction::ToggleLandmarksWindow);
   ImGui::Separator();
   actionMenuItem(callbacks, "Create Landmark Group", MainMenuAction::CreateLandmarkGroup);
   actionMenuItem(callbacks, "Save Active Landmark Group...", MainMenuAction::SaveLandmarkGroup);
   actionMenuItem(callbacks, "Add Landmark at Crosshairs", MainMenuAction::AddLandmark);
-  actionMenuItem(callbacks, "Move Crosshairs to Selected Landmark", MainMenuAction::MoveCrosshairsToLandmark);
-  actionMenuItem(callbacks, "Remove Selected Landmark", MainMenuAction::RemoveLandmark);
+}
+
+void handleFileShortcuts(const MainMenuBarCallbacks& callbacks)
+{
+  const ImGuiIO& io = ImGui::GetIO();
+#ifdef __APPLE__
+  const bool commandModifier = io.KeySuper;
+#else
+  const bool commandModifier = io.KeyCtrl;
+#endif
+
+  if (!commandModifier || io.KeyAlt || io.WantTextInput) {
+    return;
+  }
+
+  if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
+    if (io.KeyShift) {
+      openProject(callbacks);
+    }
+    else {
+      openImage(callbacks);
+    }
+  }
+  else if (ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+    if (io.KeyShift) {
+      saveProjectAs(callbacks);
+    }
+    else {
+      saveProject(callbacks);
+    }
+  }
 }
 } // namespace main_menu
 
 void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 {
+  main_menu::handleFileShortcuts(callbacks);
+
   if (!uiData.m_showMainMenuBar) {
     return;
   }
@@ -305,11 +336,11 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
     uiData.m_mainMenuBarDims = glm::vec2{winSize.x, winSize.y};
 
     if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("Open Image...", nullptr, false, callbacks.canOpenProject)) {
+      if (ImGui::MenuItem("Open Image...", "Ctrl+O", false, callbacks.canOpenProject)) {
         main_menu::openImage(callbacks);
       }
 
-      if (ImGui::MenuItem("Open Project...", nullptr, false, callbacks.canOpenProject)) {
+      if (ImGui::MenuItem("Open Project...", "Ctrl+Shift+O", false, callbacks.canOpenProject)) {
         main_menu::openProject(callbacks);
       }
 
@@ -325,11 +356,11 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 
       ImGui::Separator();
 
-      if (ImGui::MenuItem("Save Project", nullptr, false, callbacks.canSaveProject)) {
+      if (ImGui::MenuItem("Save Project", "Ctrl+S", false, callbacks.canSaveProject)) {
         main_menu::saveProject(callbacks);
       }
 
-      if (ImGui::MenuItem("Save Project As...", nullptr, false, callbacks.canSaveProject)) {
+      if (ImGui::MenuItem("Save Project As...", "Ctrl+Shift+S", false, callbacks.canSaveProject)) {
         main_menu::saveProjectAs(callbacks);
       }
 
@@ -337,6 +368,12 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 
       if (ImGui::MenuItem("Close Project", nullptr, false, callbacks.canCloseProject)) {
         main_menu::closeProject(callbacks);
+      }
+
+      ImGui::Separator();
+
+      if (ImGui::MenuItem("Quit", "Ctrl+Q", false, callbacks.quitApp != nullptr)) {
+        main_menu::quitApp(callbacks);
       }
 
       ImGui::EndMenu();
