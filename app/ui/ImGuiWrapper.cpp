@@ -2,6 +2,8 @@
 
 #include <spdlog/fmt/std.h>
 
+#include "common/MathFuncs.h"
+
 #include "ui/Helpers.h"
 #include "ui/MainMenuBar.h"
 #ifdef __APPLE__
@@ -19,7 +21,10 @@
 #include "logic/app/AppPaths.h"
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
+#include "logic/annotation/PointRecord.h"
+#include "logic/annotation/SerializeAnnot.h"
 #include "logic/camera/CameraHelpers.h"
+#include "logic/serialization/ProjectSerialization.h"
 #include "logic/states/annotation/AnnotationStateHelpers.h"
 #include "logic/states/annotation/AnnotationStateMachine.h"
 
@@ -36,6 +41,8 @@
 #include <cmrc/cmrc.hpp>
 
 #include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/color_space.hpp>
 
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
@@ -726,6 +733,703 @@ void ImGuiWrapper::render()
     return false;
   };
 
+  auto activeImageUid = [this]() -> std::optional<uuids::uuid> {
+    return m_appData.activeImageUid();
+  };
+
+  auto activeSegUid = [activeImageUid, this]() -> std::optional<uuids::uuid> {
+    const auto imageUid = activeImageUid();
+    return imageUid ? m_appData.imageToActiveSegUid(*imageUid) : std::nullopt;
+  };
+
+  auto activeAnnotation = [activeImageUid,
+                           this]() -> std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>> {
+    const auto imageUid = activeImageUid();
+    if (!imageUid) {
+      return {std::nullopt, std::nullopt};
+    }
+    return {*imageUid, m_appData.imageToActiveAnnotationUid(*imageUid)};
+  };
+
+  auto activeLandmarkGroupUid = [activeImageUid, this]() -> std::optional<uuids::uuid> {
+    const auto imageUid = activeImageUid();
+    return imageUid ? m_appData.imageToActiveLandmarkGroupUid(*imageUid) : std::nullopt;
+  };
+
+  auto createActiveSegmentation = [activeImageUid, getActiveImageIndex, this]() {
+    const auto imageUid = activeImageUid();
+    const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+    if (!imageUid || !image || !m_createBlankSeg) {
+      return;
+    }
+
+    const std::size_t numSegsForImage = m_appData.imageToSegUids(*imageUid).size();
+    const std::string displayName = "Untitled segmentation " + std::to_string(numSegsForImage + 1) + " for image '" +
+                                    image->settings().displayName() + "'";
+    if (m_createBlankSeg(*imageUid, displayName) && m_updateImageUniforms) {
+      m_updateImageUniforms(*imageUid);
+    }
+    static_cast<void>(getActiveImageIndex);
+  };
+
+  auto saveActiveSegmentation = [activeSegUid, this]() {
+    const auto segUid = activeSegUid();
+    Image* seg = segUid ? m_appData.seg(*segUid) : nullptr;
+    if (!seg) {
+      return;
+    }
+
+    if (const auto selectedFile = native_dialog::saveFile(native_dialog::segmentationFilters())) {
+      static constexpr uint32_t compToSave = 0;
+      if (seg->saveComponentToDisk(compToSave, *selectedFile)) {
+        spdlog::info("Saved segmentation image to file {}", *selectedFile);
+        seg->header().setFileName(*selectedFile);
+      }
+      else {
+        spdlog::error("Error saving segmentation image to file {}", *selectedFile);
+      }
+    }
+  };
+
+  auto projectHasAnnotations = [this]() {
+    for (const auto& imageUid : m_appData.imageUidsOrdered()) {
+      if (!m_appData.annotationsForImage(imageUid).empty()) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  auto saveAllAnnotations = [projectHasAnnotations, this]() {
+    if (!projectHasAnnotations()) {
+      return;
+    }
+
+    if (const auto selectedFile = native_dialog::saveFile(native_dialog::annotationFilters())) {
+      nlohmann::json annotationsJson;
+      std::size_t numSavedAnnotations = 0;
+      for (const auto& imageUid : m_appData.imageUidsOrdered()) {
+        for (const auto& annotUid : m_appData.annotationsForImage(imageUid)) {
+          if (const Annotation* annot = m_appData.annotation(annotUid)) {
+            serialize::appendAnnotationToJson(*annot, annotationsJson);
+            ++numSavedAnnotations;
+          }
+        }
+      }
+
+      if (serialize::saveToJsonFile(annotationsJson, *selectedFile)) {
+        spdlog::info("Saved {} annotations to JSON file {}", numSavedAnnotations, *selectedFile);
+        for (const auto& imageUid : m_appData.imageUidsOrdered()) {
+          for (const auto& annotUid : m_appData.annotationsForImage(imageUid)) {
+            if (Annotation* annot = m_appData.annotation(annotUid)) {
+              annot->setFileName(*selectedFile);
+              annot->markClean();
+            }
+          }
+        }
+      }
+      else {
+        spdlog::error("Error saving annotations to JSON file {}", *selectedFile);
+      }
+    }
+  };
+
+  auto createActiveLandmarkGroup = [activeImageUid, this]() {
+    const auto imageUid = activeImageUid();
+    const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+    if (!imageUid || !image) {
+      return;
+    }
+
+    LandmarkGroup newGroup;
+    newGroup.setName("Landmarks for " + image->settings().displayName());
+    const auto landmarkGroupUid = m_appData.addLandmarkGroup(std::move(newGroup));
+    m_appData.assignLandmarkGroupUidToImage(*imageUid, landmarkGroupUid);
+    m_appData.setRainbowColorsForAllLandmarkGroups();
+    m_appData.assignActiveLandmarkGroupUidToImage(*imageUid, landmarkGroupUid);
+  };
+
+  auto saveActiveLandmarkGroup = [activeLandmarkGroupUid, this]() {
+    const auto landmarkGroupUid = activeLandmarkGroupUid();
+    LandmarkGroup* landmarkGroup = landmarkGroupUid ? m_appData.landmarkGroup(*landmarkGroupUid) : nullptr;
+    if (!landmarkGroup) {
+      return;
+    }
+
+    if (const auto selectedFile = native_dialog::saveFile(native_dialog::landmarkFilters())) {
+      if (serialize::saveLandmarkGroupCsvFile(landmarkGroup->getPoints(), *selectedFile)) {
+        spdlog::info("Saved landmarks to CSV file {}", *selectedFile);
+        landmarkGroup->setFileName(*selectedFile);
+      }
+      else {
+        spdlog::error("Error saving landmarks to CSV file {}", *selectedFile);
+      }
+    }
+  };
+
+  auto addLandmarkAtCrosshairs = [activeImageUid, activeLandmarkGroupUid, this]() {
+    const auto imageUid = activeImageUid();
+    const auto landmarkGroupUid = activeLandmarkGroupUid();
+    const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+    LandmarkGroup* landmarkGroup = landmarkGroupUid ? m_appData.landmarkGroup(*landmarkGroupUid) : nullptr;
+    if (!image || !landmarkGroup) {
+      return;
+    }
+
+    const glm::mat4 landmark_T_world = landmarkGroup->getInVoxelSpace() ? image->transformations().pixel_T_worldDef()
+                                                                        : image->transformations().subject_T_worldDef();
+    const glm::vec4 landmarkPosition =
+      landmark_T_world * glm::vec4{m_appData.state().worldCrosshairs().worldOrigin(), 1.0f};
+
+    PointRecord<glm::vec3> point{glm::vec3{landmarkPosition / landmarkPosition.w}};
+    const size_t newIndex = landmarkGroup->getPoints().empty() ? 0u : landmarkGroup->maxIndex() + 1;
+    const auto colors = math::generateRandomHsvSamples(
+      1,
+      std::make_pair(0.0f, 360.0f),
+      std::make_pair(0.3f, 1.0f),
+      std::make_pair(0.3f, 1.0f),
+      static_cast<uint32_t>(newIndex));
+    if (!colors.empty()) {
+      point.setColor(glm::rgbColor(colors.front()));
+    }
+
+    landmarkGroup->addPoint(newIndex, point);
+  };
+
+  auto performMenuAction = [activeImageUid,
+                            activeSegUid,
+                            activeAnnotation,
+                            createActiveSegmentation,
+                            saveActiveSegmentation,
+                            saveAllAnnotations,
+                            createActiveLandmarkGroup,
+                            saveActiveLandmarkGroup,
+                            addLandmarkAtCrosshairs,
+                            moveImageBackward,
+                            moveImageForward,
+                            moveImageToBack,
+                            moveImageToFront,
+                            this](MainMenuAction action) {
+    switch (action) {
+      case MainMenuAction::SetModePointer:
+        m_callbackHandler.setMouseMode(MouseMode::Pointer);
+        break;
+      case MainMenuAction::SetModeWindowLevel:
+        m_callbackHandler.setMouseMode(MouseMode::WindowLevel);
+        break;
+      case MainMenuAction::SetModeZoom:
+        m_callbackHandler.setMouseMode(MouseMode::CameraZoom);
+        break;
+      case MainMenuAction::SetModePan:
+        m_callbackHandler.setMouseMode(MouseMode::CameraTranslate);
+        break;
+      case MainMenuAction::SetModeRotateView:
+        m_callbackHandler.setMouseMode(MouseMode::CameraRotate);
+        break;
+      case MainMenuAction::SetModeRotateCrosshairs:
+        m_callbackHandler.setMouseMode(MouseMode::CrosshairsRotate);
+        break;
+      case MainMenuAction::SetModeSegment:
+        m_callbackHandler.setMouseMode(MouseMode::Segment);
+        break;
+      case MainMenuAction::SetModeAnnotate:
+        m_callbackHandler.setMouseMode(MouseMode::Annotate);
+        break;
+      case MainMenuAction::SetModeTranslateImage:
+        m_callbackHandler.setMouseMode(MouseMode::ImageTranslate);
+        break;
+      case MainMenuAction::SetModeRotateImage:
+        m_callbackHandler.setMouseMode(MouseMode::ImageRotate);
+        break;
+      case MainMenuAction::Recenter:
+        if (m_recenterAllViews) m_recenterAllViews(false, false, true, false, true);
+        break;
+      case MainMenuAction::ResetView:
+        if (m_recenterAllViews) m_recenterAllViews(true, true, true, true, true);
+        break;
+      case MainMenuAction::ToggleImageVisibility:
+        m_callbackHandler.toggleImageVisibility();
+        break;
+      case MainMenuAction::ToggleSegmentationVisibility:
+        m_callbackHandler.toggleSegVisibility();
+        break;
+      case MainMenuAction::ToggleImageEdges:
+        m_callbackHandler.toggleImageEdges();
+        break;
+      case MainMenuAction::ToggleSegmentationOutline:
+        m_callbackHandler.toggleSegGlobalOutline();
+        break;
+      case MainMenuAction::DecreaseSegmentationOpacity:
+        m_callbackHandler.changeSegOpacity(-0.05, false);
+        break;
+      case MainMenuAction::IncreaseSegmentationOpacity:
+        m_callbackHandler.changeSegOpacity(0.05, false);
+        break;
+      case MainMenuAction::ToggleScaleBars:
+        m_appData.renderData().m_showScaleBars = !m_appData.renderData().m_showScaleBars;
+        break;
+      case MainMenuAction::ToggleLightboxOffsets:
+        m_appData.renderData().m_showLightboxOffsetLabels = !m_appData.renderData().m_showLightboxOffsetLabels;
+        break;
+      case MainMenuAction::ToggleOverlays:
+        if (m_setOverlayVisibility && m_getOverlayVisibility) m_setOverlayVisibility(!m_getOverlayVisibility());
+        break;
+      case MainMenuAction::ToggleFullScreen:
+        m_callbackHandler.toggleFullScreenMode();
+        break;
+      case MainMenuAction::ToggleSync:
+        m_appData.settings().setCursorSyncEnabled(!m_appData.settings().cursorSyncEnabled());
+        break;
+      case MainMenuAction::ToggleSyncSendCursor:
+        m_appData.settings().setSendCursorSync(!m_appData.settings().sendCursorSync());
+        break;
+      case MainMenuAction::ToggleSyncReceiveCursor:
+        m_appData.settings().setReceiveCursorSync(!m_appData.settings().receiveCursorSync());
+        break;
+      case MainMenuAction::ToggleSyncSendZoom:
+        m_appData.settings().setSendZoomSync(!m_appData.settings().sendZoomSync());
+        break;
+      case MainMenuAction::ToggleSyncReceiveZoom:
+        m_appData.settings().setReceiveZoomSync(!m_appData.settings().receiveZoomSync());
+        break;
+      case MainMenuAction::ToggleSyncSendPan:
+        m_appData.settings().setSendPanSync(!m_appData.settings().sendPanSync());
+        break;
+      case MainMenuAction::ToggleSyncReceivePan:
+        m_appData.settings().setReceivePanSync(!m_appData.settings().receivePanSync());
+        break;
+      case MainMenuAction::SetActiveImageAsReference:
+        if (const auto imageUid = activeImageUid()) {
+          m_appData.guiData().m_pendingReferenceImageUid = *imageUid;
+          m_appData.guiData().m_showConfirmSetReferenceImagePopup = true;
+        }
+        break;
+      case MainMenuAction::RemoveActiveImage:
+        if (const auto imageUid = activeImageUid()) {
+          m_appData.guiData().m_pendingRemoveImageUid = *imageUid;
+          m_appData.guiData().m_showConfirmRemoveImagePopup = true;
+        }
+        break;
+      case MainMenuAction::MoveActiveImageBackward:
+        if (const auto imageUid = activeImageUid()) moveImageBackward(*imageUid);
+        break;
+      case MainMenuAction::MoveActiveImageForward:
+        if (const auto imageUid = activeImageUid()) moveImageForward(*imageUid);
+        break;
+      case MainMenuAction::MoveActiveImageToBack:
+        if (const auto imageUid = activeImageUid()) moveImageToBack(*imageUid);
+        break;
+      case MainMenuAction::MoveActiveImageToFront:
+        if (const auto imageUid = activeImageUid()) moveImageToFront(*imageUid);
+        break;
+      case MainMenuAction::ToggleActiveImageTransformationLock:
+        if (const auto imageUid = activeImageUid()) {
+          const Image* image = m_appData.image(*imageUid);
+          if (image && m_setLockManualImageTransformation) {
+            m_setLockManualImageTransformation(*imageUid, !image->transformations().is_worldDef_T_affine_locked());
+          }
+        }
+        break;
+      case MainMenuAction::ResetActiveImageManualTransformation:
+        if (const auto imageUid = activeImageUid()) {
+          Image* image = m_appData.image(*imageUid);
+          if (image) {
+            image->transformations().reset_worldDef_T_affine();
+            if (m_updateImageUniforms) {
+              m_updateImageUniforms(*imageUid);
+            }
+          }
+        }
+        break;
+      case MainMenuAction::SaveActiveImageManualTransformation:
+        if (const auto imageUid = activeImageUid()) {
+          const Image* image = m_appData.image(*imageUid);
+          const auto selectedFile = image ? native_dialog::saveFile(native_dialog::transformFilters()) : std::nullopt;
+          if (selectedFile) {
+            const glm::dmat4 worldDef_T_affine{image->transformations().get_worldDef_T_affine()};
+            if (serialize::saveAffineTxFile(worldDef_T_affine, *selectedFile)) {
+              spdlog::info("Saved manual transformation matrix to file {}", *selectedFile);
+            }
+            else {
+              spdlog::error("Error saving manual transformation matrix to file {}", *selectedFile);
+            }
+          }
+        }
+        break;
+      case MainMenuAction::SaveActiveImageInitialAndManualTransformation:
+        if (const auto imageUid = activeImageUid()) {
+          const Image* image = m_appData.image(*imageUid);
+          const auto selectedFile = image ? native_dialog::saveFile(native_dialog::transformFilters()) : std::nullopt;
+          if (selectedFile) {
+            const auto& tx = image->transformations();
+            const glm::dmat4 affine_T_subject{tx.get_affine_T_subject()};
+            const glm::dmat4 worldDef_T_affine{tx.get_worldDef_T_affine()};
+            if (serialize::saveAffineTxFile(worldDef_T_affine * affine_T_subject, *selectedFile)) {
+              spdlog::info(
+                "Saved concatenated initial and manual affine transformation matrix to file {}",
+                *selectedFile);
+            }
+            else {
+              spdlog::error(
+                "Error saving concatenated initial and manual affine transformation matrix to file {}",
+                *selectedFile);
+            }
+          }
+        }
+        break;
+      case MainMenuAction::ShowOpacityMixer:
+        m_appData.guiData().m_showOpacityBlenderWindow = !m_appData.guiData().m_showOpacityBlenderWindow;
+        break;
+      case MainMenuAction::CreateSegmentation:
+        createActiveSegmentation();
+        break;
+      case MainMenuAction::SaveSegmentation:
+        saveActiveSegmentation();
+        break;
+      case MainMenuAction::ClearSegmentation:
+        if (const auto segUid = activeSegUid(); segUid && m_clearSeg) m_clearSeg(*segUid);
+        break;
+      case MainMenuAction::RemoveSegmentation:
+        if (const auto segUid = activeSegUid(); segUid && m_removeSeg && m_removeSeg(*segUid)) {
+          if (const auto imageUid = activeImageUid(); imageUid && m_updateImageUniforms)
+            m_updateImageUniforms(*imageUid);
+        }
+        break;
+      case MainMenuAction::PreviousForegroundLabel:
+        m_callbackHandler.cycleForegroundSegLabel(-1);
+        break;
+      case MainMenuAction::NextForegroundLabel:
+        m_callbackHandler.cycleForegroundSegLabel(1);
+        break;
+      case MainMenuAction::PreviousBackgroundLabel:
+        m_callbackHandler.cycleBackgroundSegLabel(-1);
+        break;
+      case MainMenuAction::NextBackgroundLabel:
+        m_callbackHandler.cycleBackgroundSegLabel(1);
+        break;
+      case MainMenuAction::DecreaseBrushSize:
+        m_callbackHandler.cycleBrushSize(-1);
+        break;
+      case MainMenuAction::IncreaseBrushSize:
+        m_callbackHandler.cycleBrushSize(1);
+        break;
+      case MainMenuAction::PaintSegmentationFromAnnotation:
+        if (m_paintActiveSegmentationWithActivePolygon) m_paintActiveSegmentationWithActivePolygon();
+        break;
+      case MainMenuAction::SaveAnnotations:
+        saveAllAnnotations();
+        break;
+      case MainMenuAction::RemoveAnnotation:
+        if (const auto [imageUid, annotUid] = activeAnnotation(); imageUid && annotUid) {
+          m_appData.removeAnnotation(*annotUid);
+          ASM::synchronizeAnnotationHighlights();
+        }
+        break;
+      case MainMenuAction::MoveAnnotationBackward:
+        if (const auto [imageUid, annotUid] = activeAnnotation(); imageUid && annotUid) {
+          m_appData.moveAnnotationBackwards(*imageUid, *annotUid);
+        }
+        break;
+      case MainMenuAction::MoveAnnotationForward:
+        if (const auto [imageUid, annotUid] = activeAnnotation(); imageUid && annotUid) {
+          m_appData.moveAnnotationForwards(*imageUid, *annotUid);
+        }
+        break;
+      case MainMenuAction::MoveAnnotationToBack:
+        if (const auto [imageUid, annotUid] = activeAnnotation(); imageUid && annotUid) {
+          m_appData.moveAnnotationToBack(*imageUid, *annotUid);
+        }
+        break;
+      case MainMenuAction::MoveAnnotationToFront:
+        if (const auto [imageUid, annotUid] = activeAnnotation(); imageUid && annotUid) {
+          m_appData.moveAnnotationToFront(*imageUid, *annotUid);
+        }
+        break;
+      case MainMenuAction::CreateLandmarkGroup:
+        createActiveLandmarkGroup();
+        break;
+      case MainMenuAction::SaveLandmarkGroup:
+        saveActiveLandmarkGroup();
+        break;
+      case MainMenuAction::AddLayout:
+        m_appData.guiData().m_showAddLayoutPopup = true;
+        break;
+      case MainMenuAction::RemoveLayout: {
+        auto& windowData = m_appData.windowData();
+        if (windowData.numLayouts() >= 2) {
+          const std::size_t layoutToDelete = windowData.currentLayoutIndex();
+          windowData.cycleCurrentLayout(-1);
+          windowData.removeLayout(layoutToDelete);
+        }
+        break;
+      }
+      case MainMenuAction::ToggleImagesWindow:
+        m_appData.guiData().m_showImagePropertiesWindow = !m_appData.guiData().m_showImagePropertiesWindow;
+        break;
+      case MainMenuAction::ToggleSegmentationsWindow:
+        m_appData.guiData().m_showSegmentationsWindow = !m_appData.guiData().m_showSegmentationsWindow;
+        break;
+      case MainMenuAction::ToggleLandmarksWindow:
+        m_appData.guiData().m_showLandmarksWindow = !m_appData.guiData().m_showLandmarksWindow;
+        break;
+      case MainMenuAction::ToggleAnnotationsWindow:
+        m_appData.guiData().m_showAnnotationsWindow = !m_appData.guiData().m_showAnnotationsWindow;
+        break;
+      case MainMenuAction::ToggleIsosurfacesWindow:
+        m_appData.guiData().m_showIsosurfacesWindow = !m_appData.guiData().m_showIsosurfacesWindow;
+        break;
+      case MainMenuAction::ToggleSettingsWindow:
+        m_appData.guiData().m_showSettingsWindow = !m_appData.guiData().m_showSettingsWindow;
+        break;
+      case MainMenuAction::ShowSettingsWindow:
+        m_appData.guiData().m_showSettingsWindow = true;
+        break;
+      case MainMenuAction::ShowSynchronizeSettingsWindow:
+        m_appData.guiData().m_showSettingsWindow = true;
+        m_appData.guiData().m_requestedSettingsTab = GuiData::SettingsTab::Synchronize;
+        break;
+      case MainMenuAction::ToggleInspectorWindow:
+        m_appData.guiData().m_showInspectionWindow = !m_appData.guiData().m_showInspectionWindow;
+        break;
+      case MainMenuAction::ToggleOpacityMixerWindow:
+        m_appData.guiData().m_showOpacityBlenderWindow = !m_appData.guiData().m_showOpacityBlenderWindow;
+        break;
+      case MainMenuAction::ToggleImGuiDemoWindow:
+        m_appData.guiData().m_showImGuiDemoWindow = !m_appData.guiData().m_showImGuiDemoWindow;
+        break;
+      case MainMenuAction::ToggleImPlotDemoWindow:
+        m_appData.guiData().m_showImPlotDemoWindow = !m_appData.guiData().m_showImPlotDemoWindow;
+        break;
+      case MainMenuAction::ToggleToolbar:
+        m_appData.guiData().m_showModeToolbar = !m_appData.guiData().m_showModeToolbar;
+        if (m_readjustViewport) m_readjustViewport();
+        break;
+      case MainMenuAction::AddLandmark:
+        addLandmarkAtCrosshairs();
+        break;
+      case MainMenuAction::MoveCrosshairsToLandmark:
+      case MainMenuAction::RemoveLandmark:
+        break;
+    }
+    if (m_postEmptyGlfwEvent) {
+      m_postEmptyGlfwEvent();
+    }
+  };
+
+  auto isMenuActionEnabled =
+    [activeImageUid, activeSegUid, activeAnnotation, activeLandmarkGroupUid, projectHasAnnotations, this](
+      MainMenuAction action) {
+      const bool loaded = ProjectLoadState::Loaded == m_appData.state().projectLoadState();
+      const bool backgroundTaskRunning = m_appData.state().animating();
+      const bool canUseProjectActions = loaded && !backgroundTaskRunning;
+      const bool hasActiveImage = activeImageUid().has_value();
+      const bool hasActiveSeg = activeSegUid().has_value();
+      const auto [annotImageUid, annotUid] = activeAnnotation();
+      const bool hasActiveAnnotation = annotImageUid.has_value() && annotUid.has_value();
+      switch (action) {
+        case MainMenuAction::SetModePointer:
+        case MainMenuAction::SetModeWindowLevel:
+        case MainMenuAction::SetModeZoom:
+        case MainMenuAction::SetModePan:
+        case MainMenuAction::SetModeRotateView:
+        case MainMenuAction::SetModeRotateCrosshairs:
+        case MainMenuAction::SetModeSegment:
+        case MainMenuAction::SetModeAnnotate:
+        case MainMenuAction::SetModeTranslateImage:
+        case MainMenuAction::SetModeRotateImage:
+        case MainMenuAction::Recenter:
+        case MainMenuAction::ResetView:
+        case MainMenuAction::ToggleImageVisibility:
+        case MainMenuAction::ToggleImageEdges:
+        case MainMenuAction::ToggleScaleBars:
+        case MainMenuAction::ToggleLightboxOffsets:
+        case MainMenuAction::ToggleOverlays:
+        case MainMenuAction::ToggleSync:
+        case MainMenuAction::ToggleSyncSendCursor:
+        case MainMenuAction::ToggleSyncReceiveCursor:
+        case MainMenuAction::ToggleSyncSendZoom:
+        case MainMenuAction::ToggleSyncReceiveZoom:
+        case MainMenuAction::ToggleSyncSendPan:
+        case MainMenuAction::ToggleSyncReceivePan:
+        case MainMenuAction::ShowOpacityMixer:
+        case MainMenuAction::CreateSegmentation:
+        case MainMenuAction::CreateLandmarkGroup:
+        case MainMenuAction::AddLayout:
+          return canUseProjectActions && hasActiveImage;
+        case MainMenuAction::PreviousForegroundLabel:
+        case MainMenuAction::NextForegroundLabel:
+        case MainMenuAction::PreviousBackgroundLabel:
+        case MainMenuAction::NextBackgroundLabel:
+        case MainMenuAction::DecreaseBrushSize:
+        case MainMenuAction::IncreaseBrushSize:
+          return canUseProjectActions && hasActiveSeg;
+        case MainMenuAction::ToggleFullScreen:
+        case MainMenuAction::ToggleImagesWindow:
+        case MainMenuAction::ToggleSegmentationsWindow:
+        case MainMenuAction::ToggleLandmarksWindow:
+        case MainMenuAction::ToggleAnnotationsWindow:
+        case MainMenuAction::ToggleIsosurfacesWindow:
+        case MainMenuAction::ToggleSettingsWindow:
+        case MainMenuAction::ShowSettingsWindow:
+        case MainMenuAction::ShowSynchronizeSettingsWindow:
+        case MainMenuAction::ToggleInspectorWindow:
+        case MainMenuAction::ToggleOpacityMixerWindow:
+        case MainMenuAction::ToggleImGuiDemoWindow:
+        case MainMenuAction::ToggleImPlotDemoWindow:
+        case MainMenuAction::ToggleToolbar:
+          return !backgroundTaskRunning;
+        case MainMenuAction::ToggleSegmentationVisibility:
+        case MainMenuAction::ToggleSegmentationOutline:
+        case MainMenuAction::DecreaseSegmentationOpacity:
+        case MainMenuAction::IncreaseSegmentationOpacity:
+        case MainMenuAction::SaveSegmentation:
+        case MainMenuAction::ClearSegmentation:
+          return canUseProjectActions && hasActiveSeg;
+        case MainMenuAction::RemoveSegmentation:
+          if (!canUseProjectActions || !hasActiveSeg || !hasActiveImage) return false;
+          return m_appData.imageToSegUids(*activeImageUid()).size() > 1;
+        case MainMenuAction::SetActiveImageAsReference:
+        case MainMenuAction::RemoveActiveImage:
+        case MainMenuAction::MoveActiveImageBackward:
+        case MainMenuAction::MoveActiveImageForward:
+        case MainMenuAction::MoveActiveImageToBack:
+        case MainMenuAction::MoveActiveImageToFront:
+          return canUseProjectActions && hasActiveImage;
+        case MainMenuAction::ToggleActiveImageTransformationLock:
+          if (!canUseProjectActions || !hasActiveImage || !m_setLockManualImageTransformation) return false;
+          return activeImageUid() != m_appData.refImageUid();
+        case MainMenuAction::ResetActiveImageManualTransformation:
+        case MainMenuAction::SaveActiveImageManualTransformation:
+          return canUseProjectActions && hasActiveImage && activeImageUid() != m_appData.refImageUid();
+        case MainMenuAction::SaveActiveImageInitialAndManualTransformation:
+          if (!canUseProjectActions || !hasActiveImage || activeImageUid() == m_appData.refImageUid()) return false;
+          if (const Image* image = m_appData.image(*activeImageUid())) {
+            return image->transformations().get_enable_affine_T_subject();
+          }
+          return false;
+        case MainMenuAction::PaintSegmentationFromAnnotation:
+          return canUseProjectActions && hasActiveSeg && hasActiveAnnotation;
+        case MainMenuAction::SaveAnnotations:
+          return canUseProjectActions && projectHasAnnotations();
+        case MainMenuAction::RemoveAnnotation:
+        case MainMenuAction::MoveAnnotationBackward:
+        case MainMenuAction::MoveAnnotationForward:
+        case MainMenuAction::MoveAnnotationToBack:
+        case MainMenuAction::MoveAnnotationToFront:
+          return canUseProjectActions && hasActiveAnnotation;
+        case MainMenuAction::SaveLandmarkGroup:
+          return canUseProjectActions && activeLandmarkGroupUid().has_value();
+        case MainMenuAction::RemoveLayout:
+          return canUseProjectActions && m_appData.windowData().numLayouts() >= 2;
+        case MainMenuAction::MoveCrosshairsToLandmark:
+        case MainMenuAction::RemoveLandmark:
+          return false;
+        case MainMenuAction::AddLandmark:
+          return canUseProjectActions && activeLandmarkGroupUid().has_value();
+      }
+      return false;
+    };
+
+  auto isMenuActionChecked = [this](MainMenuAction action) {
+    switch (action) {
+      case MainMenuAction::SetModePointer:
+        return MouseMode::Pointer == m_appData.state().mouseMode();
+      case MainMenuAction::SetModeWindowLevel:
+        return MouseMode::WindowLevel == m_appData.state().mouseMode();
+      case MainMenuAction::SetModeZoom:
+        return MouseMode::CameraZoom == m_appData.state().mouseMode();
+      case MainMenuAction::SetModePan:
+        return MouseMode::CameraTranslate == m_appData.state().mouseMode();
+      case MainMenuAction::SetModeRotateView:
+        return MouseMode::CameraRotate == m_appData.state().mouseMode();
+      case MainMenuAction::SetModeRotateCrosshairs:
+        return MouseMode::CrosshairsRotate == m_appData.state().mouseMode();
+      case MainMenuAction::SetModeSegment:
+        return MouseMode::Segment == m_appData.state().mouseMode();
+      case MainMenuAction::SetModeAnnotate:
+        return MouseMode::Annotate == m_appData.state().mouseMode();
+      case MainMenuAction::SetModeTranslateImage:
+        return MouseMode::ImageTranslate == m_appData.state().mouseMode();
+      case MainMenuAction::SetModeRotateImage:
+        return MouseMode::ImageRotate == m_appData.state().mouseMode();
+      case MainMenuAction::ToggleImageVisibility: {
+        const auto imageUid = m_appData.activeImageUid();
+        const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+        if (!image) {
+          return false;
+        }
+        const bool isMulticomponentImage =
+          (image->header().numComponentsPerPixel() > 1 &&
+           Image::MultiComponentBufferType::SeparateImages == image->bufferType());
+        return isMulticomponentImage ? image->settings().globalVisibility() : image->settings().visibility();
+      }
+      case MainMenuAction::ToggleSegmentationVisibility: {
+        const auto imageUid = m_appData.activeImageUid();
+        const auto segUid = imageUid ? m_appData.imageToActiveSegUid(*imageUid) : std::nullopt;
+        const Image* seg = segUid ? m_appData.seg(*segUid) : nullptr;
+        return seg ? seg->settings().visibility() : false;
+      }
+      case MainMenuAction::ToggleImageEdges: {
+        const auto imageUid = m_appData.activeImageUid();
+        const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+        return image ? image->settings().showEdges() : false;
+      }
+      case MainMenuAction::ToggleSegmentationOutline:
+        return SegmentationOutlineStyle::Disabled != m_appData.renderData().m_segOutlineStyle;
+      case MainMenuAction::ToggleActiveImageTransformationLock: {
+        const auto imageUid = m_appData.activeImageUid();
+        const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+        return image ? image->transformations().is_worldDef_T_affine_locked() : false;
+      }
+      case MainMenuAction::ToggleScaleBars:
+        return m_appData.renderData().m_showScaleBars;
+      case MainMenuAction::ToggleLightboxOffsets:
+        return m_appData.renderData().m_showLightboxOffsetLabels;
+      case MainMenuAction::ToggleOverlays:
+        return m_getOverlayVisibility ? m_getOverlayVisibility() : false;
+      case MainMenuAction::ToggleSync:
+        return m_appData.settings().cursorSyncEnabled();
+      case MainMenuAction::ToggleSyncSendCursor:
+        return m_appData.settings().sendCursorSync();
+      case MainMenuAction::ToggleSyncReceiveCursor:
+        return m_appData.settings().receiveCursorSync();
+      case MainMenuAction::ToggleSyncSendZoom:
+        return m_appData.settings().sendZoomSync();
+      case MainMenuAction::ToggleSyncReceiveZoom:
+        return m_appData.settings().receiveZoomSync();
+      case MainMenuAction::ToggleSyncSendPan:
+        return m_appData.settings().sendPanSync();
+      case MainMenuAction::ToggleSyncReceivePan:
+        return m_appData.settings().receivePanSync();
+      case MainMenuAction::ToggleToolbar:
+        return m_appData.guiData().m_showModeToolbar;
+      case MainMenuAction::ToggleImagesWindow:
+        return m_appData.guiData().m_showImagePropertiesWindow;
+      case MainMenuAction::ToggleSegmentationsWindow:
+        return m_appData.guiData().m_showSegmentationsWindow;
+      case MainMenuAction::ToggleLandmarksWindow:
+        return m_appData.guiData().m_showLandmarksWindow;
+      case MainMenuAction::ToggleAnnotationsWindow:
+        return m_appData.guiData().m_showAnnotationsWindow;
+      case MainMenuAction::ToggleIsosurfacesWindow:
+        return m_appData.guiData().m_showIsosurfacesWindow;
+      case MainMenuAction::ToggleSettingsWindow:
+        return m_appData.guiData().m_showSettingsWindow;
+      case MainMenuAction::ToggleInspectorWindow:
+        return m_appData.guiData().m_showInspectionWindow;
+      case MainMenuAction::ToggleOpacityMixerWindow:
+        return m_appData.guiData().m_showOpacityBlenderWindow;
+      case MainMenuAction::ShowOpacityMixer:
+        return m_appData.guiData().m_showOpacityBlenderWindow;
+      case MainMenuAction::ToggleImGuiDemoWindow:
+        return m_appData.guiData().m_showImGuiDemoWindow;
+      case MainMenuAction::ToggleImPlotDemoWindow:
+        return m_appData.guiData().m_showImPlotDemoWindow;
+      default:
+        return false;
+    }
+  };
+
   auto applyImageSelectionAndRenderModesToAllViews = [this](const uuids::uuid& viewUid) {
     m_appData.windowData().applyImageSelectionToAllCurrentViews(viewUid);
     m_appData.windowData().applyViewRenderModeAndProjectionToAllCurrentViews(viewUid);
@@ -887,6 +1591,20 @@ void ImGuiWrapper::render()
             m_postEmptyGlfwEvent();
           }
         },
+      .imageNames =
+        [this]() {
+          std::vector<std::string> names;
+          names.reserve(m_appData.numImages());
+          for (std::size_t i = 0; i < m_appData.numImages(); ++i) {
+            names.emplace_back(std::to_string(i + 1) + ". " + getImageDisplayAndFileNames(i).first);
+          }
+          return names;
+        },
+      .activeImageIndex = getActiveImageIndex,
+      .setActiveImageIndex = setActiveImageIndex,
+      .performAction = performMenuAction,
+      .isActionEnabled = isMenuActionEnabled,
+      .isActionChecked = isMenuActionChecked,
       .showAbout = [this]() { m_appData.guiData().m_showAboutDialog = true; },
       .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
       .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
@@ -1029,6 +1747,13 @@ void ImGuiWrapper::render()
       std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
       getActiveImageIndex,
       setActiveImageIndex);
+
+    renderAddLayoutModalPopup(m_appData, m_appData.guiData().m_showAddLayoutPopup, [this]() {
+      if (m_recenterAllViews) {
+        m_recenterAllViews(false, false, true, false, true);
+      }
+    });
+    m_appData.guiData().m_showAddLayoutPopup = false;
 
     renderSegToolbar(
       m_appData,

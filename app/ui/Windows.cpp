@@ -1142,6 +1142,7 @@ void renderSettingsWindow(
     RenderData& renderData = appData.renderData();
 
     if (ImGui::BeginTabBar("##SettingsTabs", tab_bar_flags)) {
+      const auto requestedTab = appData.guiData().m_requestedSettingsTab;
       if (ImGui::BeginTabItem("Views")) {
         // Show image-view intersection border
         ImGui::Checkbox(
@@ -1650,7 +1651,9 @@ void renderSettingsWindow(
         ImGui::EndTabItem();
       }
 
-      if (ImGui::BeginTabItem("Synchronize")) {
+      const ImGuiTabItemFlags syncTabFlags =
+        (requestedTab == GuiData::SettingsTab::Synchronize) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
+      if (ImGui::BeginTabItem("Synchronize with ITK-SNAP", nullptr, syncTabFlags)) {
         bool syncEnabled = appData.settings().cursorSyncEnabled();
         if (ImGui::Checkbox("Synchronize with ITK-SNAP", &syncEnabled)) {
           appData.settings().setCursorSyncEnabled(syncEnabled);
@@ -2216,6 +2219,7 @@ void renderSettingsWindow(
       }
 
       ImGui::EndTabBar();
+      appData.guiData().m_requestedSettingsTab = std::nullopt;
     }
   }
 

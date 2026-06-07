@@ -18,6 +18,11 @@
  */
 struct GuiData
 {
+  enum class SettingsTab : std::uint8_t
+  {
+    Synchronize
+  };
+
   /// Global setting to turn on/off rendering of the UI windows
   bool m_renderUiWindows = false;
 
@@ -25,17 +30,19 @@ struct GuiData
   bool m_renderUiOverlays = false;
 
   // Flags to show specific UI windows
-  bool m_showImagePropertiesWindow = true; //!< Show image properties window
-  bool m_showSegmentationsWindow = false;  //!< Show segmentations window
-  bool m_showLandmarksWindow = false;      //!< Show landmarks window
-  bool m_showAnnotationsWindow = false;    //!< Show annotations window
-  bool m_showIsosurfacesWindow = false;    //!< Show isosurfaces window
-  bool m_showSettingsWindow = false;       //!< Show settings window
-  bool m_showInspectionWindow = true;      //!< Show cursor inspection window
-  bool m_showOpacityBlenderWindow = false; //!< Show opacity blender window
-  bool m_showImGuiDemoWindow = false;      //!< Show ImGui demo window
-  bool m_showImPlotDemoWindow = false;     //!< Show ImPlot demo window
-  bool m_showAboutDialog = false;          //!< Show About Entropy dialog
+  bool m_showImagePropertiesWindow = true;                          //!< Show image properties window
+  bool m_showSegmentationsWindow = false;                           //!< Show segmentations window
+  bool m_showLandmarksWindow = false;                               //!< Show landmarks window
+  bool m_showAnnotationsWindow = false;                             //!< Show annotations window
+  bool m_showIsosurfacesWindow = false;                             //!< Show isosurfaces window
+  bool m_showSettingsWindow = false;                                //!< Show settings window
+  std::optional<SettingsTab> m_requestedSettingsTab = std::nullopt; //!< One-shot requested Settings tab
+  bool m_showInspectionWindow = true;                               //!< Show cursor inspection window
+  bool m_showOpacityBlenderWindow = false;                          //!< Show opacity blender window
+  bool m_showImGuiDemoWindow = false;                               //!< Show ImGui demo window
+  bool m_showImPlotDemoWindow = false;                              //!< Show ImPlot demo window
+  bool m_showAboutDialog = false;                                   //!< Show About Entropy dialog
+  bool m_showAddLayoutPopup = false;                                //!< Show the Add Layout popup
 
   /// Flag to show dialog confirming closing of the application window.
   enum class UnsavedProjectAction : std::uint8_t

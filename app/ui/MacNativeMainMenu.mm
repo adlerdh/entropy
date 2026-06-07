@@ -14,6 +14,7 @@ NSMenuItem* g_addSegmentationItem = nil;
 NSMenuItem* g_saveProjectItem = nil;
 NSMenuItem* g_saveProjectAsItem = nil;
 NSMenuItem* g_closeProjectItem = nil;
+NSMenu* g_activeImagesMenu = nil;
 NSMenu* g_layoutsMenu = nil;
 bool g_installed = false;
 }  // namespace
@@ -31,6 +32,8 @@ bool g_installed = false;
 - (void)previousLayout:(id)sender;
 - (void)nextLayout:(id)sender;
 - (void)selectLayout:(id)sender;
+- (void)selectActiveImage:(id)sender;
+- (void)performMenuAction:(id)sender;
 - (void)showAbout:(id)sender;
 - (BOOL)validateMenuItem:(NSMenuItem*)menuItem;
 @end
@@ -102,6 +105,18 @@ bool g_installed = false;
   }
 }
 
+- (void)selectActiveImage:(id)sender {
+  NSMenuItem* item = (NSMenuItem*)sender;
+  if (g_callbacks.setActiveImageIndex) {
+    g_callbacks.setActiveImageIndex(static_cast<std::size_t>([item tag]));
+  }
+}
+
+- (void)performMenuAction:(id)sender {
+  NSMenuItem* item = (NSMenuItem*)sender;
+  main_menu::performAction(g_callbacks, static_cast<MainMenuAction>([item tag]));
+}
+
 - (void)showAbout:(id)sender {
   (void)sender;
   if (g_callbacks.showAbout) {
@@ -146,6 +161,17 @@ bool g_installed = false;
     return g_callbacks.canUseLayouts;
   }
 
+  if (action == @selector(selectActiveImage:)) {
+    return g_callbacks.canAddImage && g_callbacks.setActiveImageIndex;
+  }
+
+  if (action == @selector(performMenuAction:)) {
+    const auto menuAction = static_cast<MainMenuAction>([menuItem tag]);
+    [menuItem
+      setState:main_menu::actionChecked(g_callbacks, menuAction) ? NSControlStateValueOn : NSControlStateValueOff];
+    return main_menu::actionEnabled(g_callbacks, menuAction);
+  }
+
   return YES;
 }
 @end
@@ -170,6 +196,194 @@ NSMenuItem* addAppMenuItem(NSMenu* menu, NSString* title, SEL action, NSString* 
   NSMenuItem* item = [menu addItemWithTitle:title action:action keyEquivalent:keyEquivalent];
   [item setTarget:NSApp];
   return item;
+}
+
+NSMenuItem* addActionMenuItem(
+  NSMenu* menu,
+  NSString* title,
+  MainMenuAction action,
+  NSString* keyEquivalent = @"",
+  NSEventModifierFlags modifierMask = 0) {
+  NSMenuItem* item = addTargetedMenuItem(menu, title, @selector(performMenuAction:), keyEquivalent, modifierMask);
+  [item setTag:static_cast<NSInteger>(action)];
+  return item;
+}
+
+void addModeMenu(NSMenu* mainMenu) {
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Mode" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Mode"];
+  addActionMenuItem(menu, @"Pointer", MainMenuAction::SetModePointer);
+  addActionMenuItem(menu, @"Window / Level", MainMenuAction::SetModeWindowLevel);
+  addActionMenuItem(menu, @"Zoom", MainMenuAction::SetModeZoom);
+  addActionMenuItem(menu, @"Pan / Dolly", MainMenuAction::SetModePan);
+  addActionMenuItem(menu, @"Rotate View", MainMenuAction::SetModeRotateView);
+  addActionMenuItem(menu, @"Rotate Crosshairs", MainMenuAction::SetModeRotateCrosshairs);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Brush", MainMenuAction::SetModeSegment);
+  addActionMenuItem(menu, @"Annotate", MainMenuAction::SetModeAnnotate);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Translate Image", MainMenuAction::SetModeTranslateImage);
+  addActionMenuItem(menu, @"Rotate Image", MainMenuAction::SetModeRotateImage);
+  [menuItem setSubmenu:menu];
+  [mainMenu addItem:menuItem];
+}
+
+void addImageMenu(NSMenu* mainMenu) {
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Image" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Image"];
+  addActionMenuItem(menu, @"Show Image Window", MainMenuAction::ToggleImagesWindow);
+  [menu addItem:[NSMenuItem separatorItem]];
+  NSMenuItem* activeImageItem = [[NSMenuItem alloc] initWithTitle:@"Active Image" action:nil keyEquivalent:@""];
+  g_activeImagesMenu = [[NSMenu alloc] initWithTitle:@"Active Image"];
+  [activeImageItem setSubmenu:g_activeImagesMenu];
+  [menu addItem:activeImageItem];
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Set as Reference", MainMenuAction::SetActiveImageAsReference);
+  addActionMenuItem(menu, @"Remove Image", MainMenuAction::RemoveActiveImage);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Move Backward", MainMenuAction::MoveActiveImageBackward);
+  addActionMenuItem(menu, @"Move Forward", MainMenuAction::MoveActiveImageForward);
+  addActionMenuItem(menu, @"Move to Back", MainMenuAction::MoveActiveImageToBack);
+  addActionMenuItem(menu, @"Move to Front", MainMenuAction::MoveActiveImageToFront);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
+  addActionMenuItem(
+    menu,
+    @"Reset Manual Transformation to Identity",
+    MainMenuAction::ResetActiveImageManualTransformation);
+  addActionMenuItem(menu, @"Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
+  addActionMenuItem(
+    menu,
+    @"Save Initial + Manual Transformation...",
+    MainMenuAction::SaveActiveImageInitialAndManualTransformation);
+  [menuItem setSubmenu:menu];
+  [mainMenu addItem:menuItem];
+}
+
+void addSegmentationMenu(NSMenu* mainMenu) {
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Segmentation" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Segmentation"];
+  addActionMenuItem(menu, @"Show Segmentation Window", MainMenuAction::ToggleSegmentationsWindow);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addTargetedMenuItem(menu, @"Add Segmentation...", @selector(addSegmentation:), @"");
+  addActionMenuItem(menu, @"Create Blank Segmentation", MainMenuAction::CreateSegmentation);
+  addActionMenuItem(menu, @"Save Active Segmentation...", MainMenuAction::SaveSegmentation);
+  addActionMenuItem(menu, @"Clear Active Segmentation", MainMenuAction::ClearSegmentation);
+  addActionMenuItem(menu, @"Remove Active Segmentation", MainMenuAction::RemoveSegmentation);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Previous Foreground Label", MainMenuAction::PreviousForegroundLabel, @",");
+  addActionMenuItem(menu, @"Next Foreground Label", MainMenuAction::NextForegroundLabel, @".");
+  addActionMenuItem(menu, @"Previous Background Label", MainMenuAction::PreviousBackgroundLabel, @"<");
+  addActionMenuItem(menu, @"Next Background Label", MainMenuAction::NextBackgroundLabel, @">");
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Decrease Brush Size", MainMenuAction::DecreaseBrushSize, @"-");
+  addActionMenuItem(menu, @"Increase Brush Size", MainMenuAction::IncreaseBrushSize, @"+");
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(
+    menu,
+    @"Paint Segmentation from Active Annotation",
+    MainMenuAction::PaintSegmentationFromAnnotation);
+  [menuItem setSubmenu:menu];
+  [mainMenu addItem:menuItem];
+}
+
+void addAnnotationMenu(NSMenu* mainMenu) {
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Annotation" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Annotation"];
+  addActionMenuItem(menu, @"Show Annotations Window", MainMenuAction::ToggleAnnotationsWindow);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Save All Annotations...", MainMenuAction::SaveAnnotations);
+  addActionMenuItem(menu, @"Remove Active Annotation", MainMenuAction::RemoveAnnotation);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Move Backward", MainMenuAction::MoveAnnotationBackward);
+  addActionMenuItem(menu, @"Move Forward", MainMenuAction::MoveAnnotationForward);
+  addActionMenuItem(menu, @"Move to Back", MainMenuAction::MoveAnnotationToBack);
+  addActionMenuItem(menu, @"Move to Front", MainMenuAction::MoveAnnotationToFront);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(
+    menu,
+    @"Paint Segmentation from Active Annotation",
+    MainMenuAction::PaintSegmentationFromAnnotation);
+  [menuItem setSubmenu:menu];
+  [mainMenu addItem:menuItem];
+}
+
+void addLandmarkMenu(NSMenu* mainMenu) {
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Landmarks" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Landmarks"];
+  addActionMenuItem(menu, @"Show Landmarks Window", MainMenuAction::ToggleLandmarksWindow);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Create Landmark Group", MainMenuAction::CreateLandmarkGroup);
+  addActionMenuItem(menu, @"Save Active Landmark Group...", MainMenuAction::SaveLandmarkGroup);
+  addActionMenuItem(menu, @"Add Landmark at Crosshairs", MainMenuAction::AddLandmark);
+  addActionMenuItem(menu, @"Move Crosshairs to Selected Landmark", MainMenuAction::MoveCrosshairsToLandmark);
+  addActionMenuItem(menu, @"Remove Selected Landmark", MainMenuAction::RemoveLandmark);
+  [menuItem setSubmenu:menu];
+  [mainMenu addItem:menuItem];
+}
+
+void addViewsMenu(NSMenu* mainMenu) {
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"View" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"View"];
+  addActionMenuItem(menu, @"Recenter", MainMenuAction::Recenter, @"c");
+  addActionMenuItem(menu, @"Reset Views and Crosshairs", MainMenuAction::ResetView, @"c", NSEventModifierFlagShift);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Show Image", MainMenuAction::ToggleImageVisibility, @"w");
+  addActionMenuItem(menu, @"Show Segmentation", MainMenuAction::ToggleSegmentationVisibility, @"s");
+  addActionMenuItem(menu, @"Show Image Edges", MainMenuAction::ToggleImageEdges, @"e");
+  addActionMenuItem(menu, @"Toggle Segmentation Outline", MainMenuAction::ToggleSegmentationOutline, @" ");
+  addActionMenuItem(menu, @"Decrease Segmentation Opacity", MainMenuAction::DecreaseSegmentationOpacity, @"a");
+  addActionMenuItem(menu, @"Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, @"d");
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Scale Bars", MainMenuAction::ToggleScaleBars);
+  addActionMenuItem(menu, @"Cycle Overlays", MainMenuAction::ToggleOverlays, @"o");
+  addActionMenuItem(menu, @"Full Screen", MainMenuAction::ToggleFullScreen);
+  [menu addItem:[NSMenuItem separatorItem]];
+  NSMenuItem* syncItem = [[NSMenuItem alloc] initWithTitle:@"Synchronize with ITK-SNAP" action:nil keyEquivalent:@""];
+  NSMenu* syncMenu = [[NSMenu alloc] initWithTitle:@"Synchronize with ITK-SNAP"];
+  addActionMenuItem(syncMenu, @"Enable Synchronization", MainMenuAction::ToggleSync);
+  [syncMenu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(syncMenu, @"Cursor: Send", MainMenuAction::ToggleSyncSendCursor);
+  addActionMenuItem(syncMenu, @"Cursor: Receive", MainMenuAction::ToggleSyncReceiveCursor);
+  addActionMenuItem(syncMenu, @"Zoom: Send", MainMenuAction::ToggleSyncSendZoom);
+  addActionMenuItem(syncMenu, @"Zoom: Receive", MainMenuAction::ToggleSyncReceiveZoom);
+  addActionMenuItem(syncMenu, @"Pan: Send", MainMenuAction::ToggleSyncSendPan);
+  addActionMenuItem(syncMenu, @"Pan: Receive", MainMenuAction::ToggleSyncReceivePan);
+  [syncMenu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(syncMenu, @"Settings...", MainMenuAction::ShowSynchronizeSettingsWindow);
+  [syncItem setSubmenu:syncMenu];
+  [menu addItem:syncItem];
+  [menuItem setSubmenu:menu];
+  [mainMenu addItem:menuItem];
+}
+
+void addWindowsMenu(NSMenu* mainMenu) {
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Window" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Window"];
+  addActionMenuItem(menu, @"Images", MainMenuAction::ToggleImagesWindow);
+  addActionMenuItem(menu, @"Segmentations", MainMenuAction::ToggleSegmentationsWindow);
+  addActionMenuItem(menu, @"Annotations", MainMenuAction::ToggleAnnotationsWindow);
+  addActionMenuItem(menu, @"Landmarks", MainMenuAction::ToggleLandmarksWindow);
+  addActionMenuItem(menu, @"Isosurfaces", MainMenuAction::ToggleIsosurfacesWindow);
+  addActionMenuItem(menu, @"Settings", MainMenuAction::ToggleSettingsWindow);
+  addActionMenuItem(menu, @"Inspector", MainMenuAction::ToggleInspectorWindow);
+  addActionMenuItem(menu, @"Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Toolbar", MainMenuAction::ToggleToolbar);
+#ifndef NDEBUG
+  addActionMenuItem(menu, @"ImGui Demo", MainMenuAction::ToggleImGuiDemoWindow);
+  addActionMenuItem(menu, @"ImPlot Demo", MainMenuAction::ToggleImPlotDemoWindow);
+#endif
+  [menuItem setSubmenu:menu];
+  [mainMenu addItem:menuItem];
+}
+
+void addHelpMenu(NSMenu* mainMenu) {
+  NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Help" action:nil keyEquivalent:@""];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Help"];
+  addTargetedMenuItem(menu, @"About Entropy", @selector(showAbout:), @"");
+  [menuItem setSubmenu:menu];
+  [mainMenu addItem:menuItem];
 }
 
 void installMacOSNativeMainMenu() {
@@ -220,10 +434,20 @@ void installMacOSNativeMainMenu() {
   [fileMenuItem setSubmenu:fileMenu];
   [mainMenu addItem:fileMenuItem];
 
-  NSMenuItem* layoutsMenuItem = [[NSMenuItem alloc] initWithTitle:@"Layouts" action:nil keyEquivalent:@""];
-  g_layoutsMenu = [[NSMenu alloc] initWithTitle:@"Layouts"];
+  addModeMenu(mainMenu);
+  addImageMenu(mainMenu);
+  addSegmentationMenu(mainMenu);
+  addAnnotationMenu(mainMenu);
+  addLandmarkMenu(mainMenu);
+
+  NSMenuItem* layoutsMenuItem = [[NSMenuItem alloc] initWithTitle:@"Layout" action:nil keyEquivalent:@""];
+  g_layoutsMenu = [[NSMenu alloc] initWithTitle:@"Layout"];
   [layoutsMenuItem setSubmenu:g_layoutsMenu];
   [mainMenu addItem:layoutsMenuItem];
+
+  addViewsMenu(mainMenu);
+  addWindowsMenu(mainMenu);
+  addHelpMenu(mainMenu);
 
   [NSApp setMainMenu:mainMenu];
   g_installed = true;
@@ -241,6 +465,9 @@ void rebuildLayoutsMenu() {
   addTargetedMenuItem(g_layoutsMenu, @"Previous", @selector(previousLayout:), @"[", 0);
   addTargetedMenuItem(g_layoutsMenu, @"Next", @selector(nextLayout:), @"]", 0);
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(g_layoutsMenu, @"Add Layout", MainMenuAction::AddLayout);
+  addActionMenuItem(g_layoutsMenu, @"Remove Current Layout", MainMenuAction::RemoveLayout);
+  [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
 
   const auto names = g_callbacks.layoutNames ? g_callbacks.layoutNames() : std::vector<std::string>{};
   const std::size_t currentIndex = g_callbacks.currentLayoutIndex ? g_callbacks.currentLayoutIndex() : 0;
@@ -251,10 +478,27 @@ void rebuildLayoutsMenu() {
     [item setState:(i == currentIndex) ? NSControlStateValueOn : NSControlStateValueOff];
   }
 }
+
+void rebuildActiveImagesMenu() {
+  if (!g_activeImagesMenu) {
+    return;
+  }
+
+  [g_activeImagesMenu removeAllItems];
+  const auto names = g_callbacks.imageNames ? g_callbacks.imageNames() : std::vector<std::string>{};
+  const std::size_t activeIndex = g_callbacks.activeImageIndex ? g_callbacks.activeImageIndex() : 0;
+  for (std::size_t i = 0; i < names.size(); ++i) {
+    NSString* title = [NSString stringWithUTF8String:names.at(i).c_str()];
+    NSMenuItem* item = addTargetedMenuItem(g_activeImagesMenu, title, @selector(selectActiveImage:), @"", 0);
+    [item setTag:static_cast<NSInteger>(i)];
+    [item setState:(i == activeIndex) ? NSControlStateValueOn : NSControlStateValueOff];
+  }
+}
 }  // namespace
 
 void updateMacOSNativeMainMenu(const MainMenuBarCallbacks& callbacks) {
   g_callbacks = callbacks;
   installMacOSNativeMainMenu();
   rebuildLayoutsMenu();
+  rebuildActiveImagesMenu();
 }

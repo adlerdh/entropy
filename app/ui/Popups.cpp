@@ -19,6 +19,8 @@ namespace fs = std::filesystem;
 namespace
 {
 
+constexpr const char* sk_addLayoutPopupId = "Add Layout###AddLayoutModal";
+
 std::string displayPath(fs::path path)
 {
   if (path.empty()) {
@@ -71,15 +73,16 @@ void renderAddLayoutModalPopup(
   static int height = 3;
   static bool isLightbox = false;
 
-  if (openAddLayoutPopup && !ImGui::IsPopupOpen("Add Layout")) {
-    ImGui::OpenPopup("Add Layout", ImGuiWindowFlags_AlwaysAutoResize);
+  if (openAddLayoutPopup && !ImGui::IsPopupOpen(sk_addLayoutPopupId)) {
+    ImGui::OpenPopup(sk_addLayoutPopupId);
   }
 
-  const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+  if (openAddLayoutPopup || ImGui::IsPopupOpen(sk_addLayoutPopupId)) {
+    const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+  }
 
-  ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-  if (ImGui::BeginPopupModal("Add Layout", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+  if (ImGui::BeginPopupModal(sk_addLayoutPopupId, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::Text("Please set the number of views in the new layout:");
 
     if (ImGui::InputInt("Horizontal", &width)) {
@@ -98,8 +101,6 @@ void renderAddLayoutModalPopup(
     ImGui::SameLine();
     helpMarker("Should all views in the layout share a common view type?");
     ImGui::Separator();
-
-    ImGui::SetNextItemWidth(-1.0f);
 
     if (ImGui::Button("OK", ImVec2(80, 0))) {
       addLayout = true;
