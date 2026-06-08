@@ -557,7 +557,16 @@ if(NOT APPLE)
 endif()
 
 if(WIN32)
+  set(entropy_WINDOWS_APP_ICON "${entropy_RES_DIR}/icons/Windows/Entropy.ico")
+  set(entropy_WINDOWS_VERSION_RC "${CMAKE_CURRENT_BINARY_DIR}/EntropyWindowsVersion.rc")
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EntropyWindowsVersion.rc.in"
+    "${entropy_WINDOWS_VERSION_RC}"
+    @ONLY
+  )
+
   list(APPEND entropy_SOURCES
+    "${entropy_WINDOWS_VERSION_RC}"
     "${entropy_APP_DIR}/ui/WinNativeMainMenu.cpp"
   )
 endif()
@@ -771,6 +780,7 @@ endif()
 if(WIN32)
   target_link_libraries(entropy PRIVATE
     comctl32
+    shell32
     user32
   )
 endif()

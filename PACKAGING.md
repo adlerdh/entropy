@@ -16,7 +16,7 @@ cmake --preset app-release -DEntropy_PACKAGE_OUTPUT_DIR=/tmp/entropy-packages
 
 ## Release Flow
 
-Use this sequence for normal release packages on Linux and macOS:
+Use this sequence for normal release packages on Linux, macOS, and Windows:
 
 ```sh
 cmake --preset superbuild-release
@@ -189,3 +189,100 @@ Terminal launches keep the development defaults used by the command-line app.
 The Linux package bundles private shared libraries from GLFW, Native File Dialog Extended, QtBase, spdlog, and ITK so the installed app does not depend on build-tree paths or distro-provided versions of those libraries.
 
 Release packages should be built from `build-release`, not `build-default`. A `RelWithDebInfo` dependency tree can include debug information in copied private libraries and produce much larger packages. The release superbuild avoids that by building dependencies with `CMAKE_BUILD_TYPE=Release`.
+
+## Windows MSI Package
+
+On Windows, CPack creates an MSI package named like:
+
+```text
+build-release/packages/Entropy-x.y.z.w-Windows-AMD64.msi
+```
+
+The Windows package uses CPack's WiX generator. With CMake 3.28, use WiX Toolset v3 (`candle.exe` and `light.exe`).
+
+### Windows Packaging Environment
+
+Required tools:
+
+```text
+CMake 3.28 or newer
+Visual Studio 2022 C++ build tools
+PowerShell
+WiX Toolset v3.14.1
+```
+
+Build the release dependency tree and app first:
+
+```powershell
+cmake --preset superbuild-release
+cmake --build --preset superbuild-release --parallel
+
+cmake --preset app-release
+cmake --build --preset app-release --parallel
+```
+
+CPack needs WiX v3 tools. Use one of these setup options.
+
+Option 1: install WiX globally with winget. This may require administrator privileges and may also require the Windows `.NET Framework 3.5` feature:
+
+```powershell
+winget install --id WiXToolset.WiXToolset --version 3.14.1.8722 `
+  --accept-package-agreements `
+  --accept-source-agreements
+```
+
+After installation, open a new PowerShell session and verify:
+
+```powershell
+Get-Command candle.exe
+Get-Command light.exe
+```
+
+Option 2: keep WiX local to the build tree. This does not require installing WiX globally. CMake will automatically use `build-release\tools\wix\tools` when that directory contains `candle.exe` and `light.exe`:
+
+```powershell
+New-Item -ItemType Directory -Force build-release\tools | Out-Null
+curl.exe -L --retry 3 --retry-delay 2 --fail `
+  -o build-release\tools\wix.3.14.1.nupkg `
+  https://www.nuget.org/api/v2/package/wix/3.14.1
+Copy-Item build-release\tools\wix.3.14.1.nupkg build-release\tools\wix.3.14.1.zip -Force
+Expand-Archive build-release\tools\wix.3.14.1.zip build-release\tools\wix -Force
+cmake --preset app-release
+```
+
+Verify the local WiX tools:
+
+```powershell
+Get-Command build-release\tools\wix\tools\candle.exe
+Get-Command build-release\tools\wix\tools\light.exe
+```
+
+### Create A Windows Package
+
+After WiX is available and the app stage has been configured, run CPack directly:
+
+```powershell
+cpack -C Release --config build-release\CPackConfig.cmake
+```
+
+The Windows installer includes `entropy.exe`, required private runtime DLLs, the Visual C++ runtime DLLs, the app icon metadata, Start Menu and desktop shortcuts, and `share\entropy\AboutEntropyIcon.png`.
+
+Windows logs and UI state are written under:
+
+```text
+%LOCALAPPDATA%\Entropy
+%LOCALAPPDATA%\Entropy\Logs
+```
+
+### Test A Windows Package
+
+Test a staged install without installing the MSI system-wide:
+
+```powershell
+cmake --install build-release --config Release --prefix build-release\windows-package-install
+build-release\windows-package-install\entropy.exe --help
+```
+
+Then install the MSI on a clean Windows system, launch Entropy from the Start Menu shortcut, verify open/save dialogs, and uninstall it from Apps > Installed apps or Programs and Features.
+
+The current MSI is unsigned. For public distribution, sign the MSI with a trusted code-signing certificate after CPack creates it. MSIX is a good future path when package identity, signing, and update requirements are ready, but MSI is the current CPack-native installer path for this project.
