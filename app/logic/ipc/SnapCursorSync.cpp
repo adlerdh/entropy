@@ -40,6 +40,11 @@ constexpr double sk_cursorEpsilonMm = 1.0e-4;
 constexpr double sk_zoomEpsilon = 1.0e-4;
 constexpr float sk_panEpsilonMm = 1.0e-3f;
 constexpr int sk_maxInstances = 16;
+#if defined(_WIN32)
+using SnapIpcLong = std::int32_t;
+#else
+using SnapIpcLong = long;
+#endif
 using SnapIpcPid = std::int64_t;
 using SnapIpcMessageId = std::int64_t;
 
@@ -186,13 +191,26 @@ bool isProcessRunning(const SnapIpcPid pid)
   return pid > 0 && 0 == kill(static_cast<pid_t>(pid), 0);
 #endif
 }
+
+SnapIpcLong toSnapIpcLong(const SnapIpcPid value)
+{
+  if (
+    value < static_cast<SnapIpcPid>(std::numeric_limits<SnapIpcLong>::min()) ||
+    value > static_cast<SnapIpcPid>(std::numeric_limits<SnapIpcLong>::max()))
+  {
+    spdlog::warn("SNAP IPC value {} exceeds the wire integer range", value);
+    return -1;
+  }
+
+  return static_cast<SnapIpcLong>(value);
+}
 } // namespace
 
 struct SnapIpcHeader
 {
   std::int16_t version = 0;
-  SnapIpcPid senderPid = -1;
-  SnapIpcMessageId messageId = 0;
+  SnapIpcLong senderPid = -1;
+  SnapIpcLong messageId = 0;
 };
 
 struct SnapIpcCameraState
@@ -217,9 +235,9 @@ struct SnapIpcMessage
 
 struct SnapIpcDirectoryEntry
 {
-  SnapIpcPid pid = 0;
+  SnapIpcLong pid = 0;
   char title[256] = {};
-  SnapIpcMessageId pendingDropId = 0;
+  SnapIpcLong pendingDropId = 0;
   char pendingDrop[2048] = {};
 };
 
@@ -228,7 +246,13 @@ struct SnapIpcDirectory
   SnapIpcDirectoryEntry entries[sk_maxInstances] = {};
 };
 
+#if defined(_WIN32)
+static_assert(sizeof(SnapIpcHeader) == 12);
+static_assert(sizeof(SnapIpcDirectoryEntry) == 2312);
+#else
 static_assert(sizeof(SnapIpcHeader) == 24);
+static_assert(sizeof(SnapIpcDirectoryEntry) == 2320);
+#endif
 static_assert(sizeof(SnapIpcCameraState) == 112);
 static_assert(sizeof(SnapIpcMessage) == 184);
 
@@ -637,8 +661,8 @@ bool SnapCursorSync::broadcastCursor(const glm::dvec3& cursorLps)
   message->cursor[1] = cursor.y;
   message->cursor[2] = cursor.z;
   header->version = m_writeProtocolVersion;
-  header->senderPid = static_cast<long>(m_processId);
-  header->messageId = static_cast<long>(++m_nextMessageId);
+  header->senderPid = toSnapIpcLong(m_processId);
+  header->messageId = toSnapIpcLong(++m_nextMessageId);
   m_lastBroadcastCursorLps = cursorLps;
   const glm::dvec4 pixelH =
     glm::dmat4{m_appData.refImage()->transformations().pixel_T_subject()} * glm::dvec4{cursorLps, 1.0};
@@ -695,8 +719,8 @@ bool SnapCursorSync::broadcastViewState(const SnapViewSyncState& state)
   fillOutgoingViewState(*message, state);
 
   header->version = m_writeProtocolVersion;
-  header->senderPid = static_cast<long>(m_processId);
-  header->messageId = static_cast<long>(++m_nextMessageId);
+  header->senderPid = toSnapIpcLong(m_processId);
+  header->messageId = toSnapIpcLong(++m_nextMessageId);
   m_lastBroadcastViewState = state;
 
   spdlog::trace(
@@ -844,7 +868,7 @@ void SnapCursorSync::claimDirectorySlot()
   {
     int target = -1;
     for (int i = 0; i < sk_maxInstances; ++i) {
-      const long pid = directory->entries[i].pid;
+      const SnapIpcPid pid = directory->entries[i].pid;
       if (0 == pid || pid == m_processId || !isProcessRunning(pid)) {
         target = i;
         break;
@@ -853,7 +877,7 @@ void SnapCursorSync::claimDirectorySlot()
 
     if (target >= 0) {
       auto& entry = directory->entries[target];
-      entry.pid = static_cast<long>(m_processId);
+      entry.pid = toSnapIpcLong(m_processId);
       std::strncpy(entry.title, "Entropy", sizeof(entry.title) - 1);
       entry.title[sizeof(entry.title) - 1] = '\0';
       entry.pendingDropId = 0;
