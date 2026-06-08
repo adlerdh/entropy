@@ -715,6 +715,12 @@ if(APPLE)
     COMMAND
       "${CMAKE_COMMAND}"
       -D "entropy_BUNDLE_DIR=$<TARGET_BUNDLE_DIR:entropy>"
+      -D "entropy_BUNDLE_EXECUTABLE_NAME=${APP_NAME}"
+      -D "entropy_CLI_EXECUTABLE_NAME=entropy"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/NormalizeMacOSBundleExecutable.cmake"
+    COMMAND
+      "${CMAKE_COMMAND}"
+      -D "entropy_BUNDLE_DIR=$<TARGET_BUNDLE_DIR:entropy>"
       -D "entropy_SOURCE_ICON=${entropy_MACOS_APP_ICON}"
       -D "entropy_ICON_NAME=${entropy_MACOS_APP_ICON_NAME}"
       -D "entropy_MINIMUM_SYSTEM_VERSION=${Entropy_MACOSX_BUNDLE_MINIMUM_SYSTEM_VERSION}"
@@ -725,7 +731,7 @@ if(APPLE)
       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${APP_NAME}"
     COMMAND
       "${CMAKE_COMMAND}" -E copy_if_different
-      "$<TARGET_FILE:entropy>"
+      "$<TARGET_BUNDLE_DIR:entropy>/Contents/MacOS/entropy"
       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/entropy"
     COMMAND
       "${CMAKE_COMMAND}" -E copy_if_different

@@ -43,7 +43,7 @@ install(CODE "
       find_program(entropy_STRIP_EXECUTABLE strip)
       if(entropy_STRIP_EXECUTABLE)
         file(GLOB entropy_BUNDLE_STRIP_ITEMS
-          \"\${entropy_INSTALLED_BUNDLE}/Contents/MacOS/${APP_NAME}\"
+          \"\${entropy_INSTALLED_BUNDLE}/Contents/MacOS/entropy\"
           \"\${entropy_INSTALLED_BUNDLE}/Contents/Frameworks/*.dylib\")
 
         foreach(entropy_BUNDLE_STRIP_ITEM IN LISTS entropy_BUNDLE_STRIP_ITEMS)
@@ -105,7 +105,7 @@ install(CODE "
     endif()
 ")
 
-set(CPACK_GENERATOR "DragNDrop")
+set(CPACK_GENERATOR "DragNDrop;ZIP")
 set(CPACK_PACKAGE_NAME "${APP_NAME}")
 set(CPACK_PACKAGE_VENDOR "${ORG_NAME_1}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${APP_DESCRIPTION}")
