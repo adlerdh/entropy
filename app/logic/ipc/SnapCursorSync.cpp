@@ -19,7 +19,17 @@
 #include <csignal>
 #include <cmath>
 #include <cstring>
+#include <limits>
 #include <optional>
+
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#else
+#include <sys/types.h>
+#endif
 
 namespace
 {
@@ -30,6 +40,8 @@ constexpr double sk_cursorEpsilonMm = 1.0e-4;
 constexpr double sk_zoomEpsilon = 1.0e-4;
 constexpr float sk_panEpsilonMm = 1.0e-3f;
 constexpr int sk_maxInstances = 16;
+using SnapIpcPid = std::int64_t;
+using SnapIpcMessageId = std::int64_t;
 
 glm::dvec3 rasFromLps(const glm::dvec3& lps)
 {
@@ -154,17 +166,33 @@ std::optional<glm::dvec3> subjectLpsFromVoxel(const Image& image, const glm::ive
   return glm::dvec3{subjectH / subjectH.w};
 }
 
-bool isProcessRunning(const long pid)
+bool isProcessRunning(const SnapIpcPid pid)
 {
+#if defined(_WIN32)
+  if (pid <= 0 || pid > static_cast<SnapIpcPid>(std::numeric_limits<DWORD>::max())) {
+    return false;
+  }
+
+  const HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(pid));
+  if (nullptr == process) {
+    return false;
+  }
+
+  DWORD exitCode = 0;
+  const bool running = GetExitCodeProcess(process, &exitCode) && STILL_ACTIVE == exitCode;
+  CloseHandle(process);
+  return running;
+#else
   return pid > 0 && 0 == kill(static_cast<pid_t>(pid), 0);
+#endif
 }
 } // namespace
 
 struct SnapIpcHeader
 {
   std::int16_t version = 0;
-  long senderPid = -1;
-  long messageId = 0;
+  SnapIpcPid senderPid = -1;
+  SnapIpcMessageId messageId = 0;
 };
 
 struct SnapIpcCameraState
@@ -189,9 +217,9 @@ struct SnapIpcMessage
 
 struct SnapIpcDirectoryEntry
 {
-  long pid = 0;
+  SnapIpcPid pid = 0;
   char title[256] = {};
-  long pendingDropId = 0;
+  SnapIpcMessageId pendingDropId = 0;
   char pendingDrop[2048] = {};
 };
 

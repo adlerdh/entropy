@@ -503,6 +503,31 @@ ExternalProject_Add(nlohmann_json
 
 message(STATUS "Adding external library QtBase in ${qtbase_PREFIX}")
 
+if(_isMultiConfig)
+  set(_qt_build_config "${Entropy_SUPERBUILD_CONFIG}")
+else()
+  set(_qt_build_config "${CMAKE_BUILD_TYPE}")
+endif()
+
+if(NOT _qt_build_config)
+  set(_qt_build_config "RelWithDebInfo")
+endif()
+
+set(_qt_config_args -release)
+if(_qt_build_config STREQUAL "Debug")
+  set(_qt_config_args -debug)
+elseif(_qt_build_config STREQUAL "RelWithDebInfo")
+  set(_qt_config_args -release -force-debug-info)
+elseif(_qt_build_config STREQUAL "MinSizeRel")
+  set(_qt_config_args -release -optimize-size)
+endif()
+
+if(WIN32)
+  set(_qt_configure_command cmd /c call <SOURCE_DIR>/configure.bat)
+else()
+  set(_qt_configure_command <SOURCE_DIR>/configure)
+endif()
+
 ExternalProject_Add(qtbase
   URL "https://download.qt.io/archive/qt/6.8/6.8.1/submodules/qtbase-everywhere-src-${qtbase_VERSION}.tar.xz"
   URL_HASH SHA256=40b14562ef3bd779bc0e0418ea2ae08fa28235f8ea6e8c0cb3bce1d6ad58dcaf
@@ -518,11 +543,11 @@ ExternalProject_Add(qtbase
   INSTALL_DIR "${qtbase_PREFIX}/install"
 
   CONFIGURE_COMMAND
-    <SOURCE_DIR>/configure
+    ${_qt_configure_command}
       -prefix <INSTALL_DIR>
       -opensource
       -confirm-license
-      -release
+      ${_qt_config_args}
       -shared
       -no-gui
       -no-widgets

@@ -34,7 +34,8 @@
       "inherits": "base",
       "binaryDir": "${sourceDir}/build-default",
       "cacheVariables": {
-        "Entropy_SUPERBUILD": true
+        "Entropy_SUPERBUILD": true,
+        "Entropy_SUPERBUILD_CONFIG": "RelWithDebInfo"
       }
     },
     {
@@ -49,7 +50,8 @@
       "inherits": "superbuild",
       "binaryDir": "${sourceDir}/build-debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "Entropy_SUPERBUILD_CONFIG": "Debug"
       }
     },
     {
@@ -67,7 +69,8 @@
       "inherits": "superbuild",
       "binaryDir": "${sourceDir}/build-release",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "Entropy_SUPERBUILD_CONFIG": "Release"
       }
     },
     {
@@ -84,42 +87,50 @@
     {
       "name": "superbuild",
       "displayName": "Build default dependencies",
-      "configurePreset": "superbuild"
+      "configurePreset": "superbuild",
+      "configuration": "RelWithDebInfo"
     },
     {
       "name": "app",
       "displayName": "Build default app",
-      "configurePreset": "app"
+      "configurePreset": "app",
+      "configuration": "RelWithDebInfo"
     },
     {
       "name": "default",
       "displayName": "Build default app",
-      "configurePreset": "default"
+      "configurePreset": "default",
+      "configuration": "RelWithDebInfo"
     },
     {
       "name": "superbuild-debug",
       "displayName": "Build Debug dependencies",
-      "configurePreset": "superbuild-debug"
+      "configurePreset": "superbuild-debug",
+      "configuration": "Debug"
     },
     {
       "name": "app-debug",
       "displayName": "Build Debug app",
-      "configurePreset": "app-debug"
+      "configurePreset": "app-debug",
+      "configuration": "Debug"
     },
     {
       "name": "superbuild-release",
       "displayName": "Build Release dependencies",
-      "configurePreset": "superbuild-release"
+      "configurePreset": "superbuild-release",
+      "configuration": "Release"
     },
     {
       "name": "app-release",
       "displayName": "Build Release app",
-      "configurePreset": "app-release"
+      "configurePreset": "app-release",
+      "configuration": "Release"
     },
     {
       "name": "package-release",
       "displayName": "Build Release package",
       "configurePreset": "app-release",
+      "configuration": "Release",
       "targets": [
         "package"
       ]

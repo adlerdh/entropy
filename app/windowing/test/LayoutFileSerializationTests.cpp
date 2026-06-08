@@ -30,14 +30,16 @@ TEST_CASE("Layout files save compact layout presets", "[layout]")
 
   REQUIRE(layout::save(file, fileName));
 
-  std::ifstream in(fileName);
-  REQUIRE(in);
-  const std::string json((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-  REQUIRE(json.find("\"bounds\"") == std::string::npos);
-  REQUIRE(json.find("\"views\"") == std::string::npos);
-  REQUIRE(json.find("\"type\": \"lightbox\"") != std::string::npos);
-  REQUIRE(json.find("\"image\":") == std::string::npos);
-  REQUIRE(json.find("\"images\": [0, 1, 2, 3]") != std::string::npos);
+  {
+    std::ifstream in(fileName);
+    REQUIRE(in);
+    const std::string json((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    REQUIRE(json.find("\"bounds\"") == std::string::npos);
+    REQUIRE(json.find("\"views\"") == std::string::npos);
+    REQUIRE(json.find("\"type\": \"lightbox\"") != std::string::npos);
+    REQUIRE(json.find("\"image\":") == std::string::npos);
+    REQUIRE(json.find("\"images\": [0, 1, 2, 3]") != std::string::npos);
+  }
 
   std::filesystem::remove(fileName);
 }
