@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28.0 FATAL_ERROR)
 
 if(POLICY CMP0175)
   cmake_policy(SET CMP0175 OLD)
@@ -778,6 +778,10 @@ if(APPLE)
 endif()
 
 if(WIN32)
+  set_target_properties(entropy PROPERTIES
+    WIN32_EXECUTABLE "$<$<NOT:$<CONFIG:Debug>>:TRUE>"
+  )
+
   target_link_libraries(entropy PRIVATE
     comctl32
     shell32
