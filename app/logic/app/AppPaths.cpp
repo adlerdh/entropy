@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <filesystem>
+#include <string>
 #include <vector>
 
 #ifdef _WIN32
@@ -10,6 +11,10 @@
 #endif
 #include <Windows.h>
 #include <ShlObj_core.h>
+#endif
+
+#if defined(__linux__)
+#include <unistd.h>
 #endif
 
 namespace
@@ -66,6 +71,26 @@ fs::path executableDirectory()
 }
 #endif
 
+#if defined(__linux__)
+fs::path executableDirectory()
+{
+  std::vector<char> buffer(1024);
+
+  while (true) {
+    const ssize_t length = readlink("/proc/self/exe", buffer.data(), buffer.size());
+    if (length < 0) {
+      return {};
+    }
+
+    if (static_cast<std::size_t>(length) < buffer.size()) {
+      return fs::path{std::string{buffer.data(), static_cast<std::size_t>(length)}}.parent_path();
+    }
+
+    buffer.resize(buffer.size() * 2);
+  }
+}
+#endif
+
 } // namespace
 
 namespace app_paths
@@ -92,6 +117,12 @@ std::filesystem::path resourceDirectory()
 #ifdef _WIN32
   if (const fs::path exeDir = executableDirectory(); !exeDir.empty()) {
     return exeDir / "share" / "entropy";
+  }
+#endif
+
+#if defined(__linux__)
+  if (const fs::path exeDir = executableDirectory(); !exeDir.empty()) {
+    return (exeDir / ".." / "share" / "entropy").lexically_normal();
   }
 #endif
 

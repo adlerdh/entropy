@@ -92,6 +92,13 @@ if(NOT _isMultiConfig)
 endif()
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+set(entropy_STATIC_BUNDLED_DEPENDENCIES_DEFAULT OFF)
+if(UNIX AND NOT APPLE)
+  set(entropy_STATIC_BUNDLED_DEPENDENCIES_DEFAULT ON)
+endif()
+option(Entropy_STATIC_BUNDLED_DEPENDENCIES
+  "Build bundled third-party dependencies as static libraries where practical; Qt and system libraries stay dynamic"
+  ${entropy_STATIC_BUNDLED_DEPENDENCIES_DEFAULT})
 
 if(BUILD_SHARED_LIBS)
   set(BUILD_STATIC_LIBS OFF)
@@ -101,6 +108,7 @@ endif()
 
 message(STATUS "BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}")
 message(STATUS "BUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}")
+message(STATUS "Entropy_STATIC_BUNDLED_DEPENDENCIES=${Entropy_STATIC_BUNDLED_DEPENDENCIES}")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
@@ -231,7 +239,7 @@ add_library(nanovg STATIC "${nanovg_SRC_DIR}/nanovg.c")
 target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
 
 # Native File Dialog Extended
-find_package(nfd ${nativefiledialog_VERSION} REQUIRED
+find_package(nfd REQUIRED
   HINTS "${nativefiledialog_PREFIX}/install")
 
 message(STATUS "Using Native File Dialog Extended in ${nfd_DIR}")

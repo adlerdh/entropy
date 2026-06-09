@@ -35,8 +35,15 @@ foreach(_launcher_var IN ITEMS CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUN
   endif()
 endforeach()
 
+set(_entropy_bundled_dependency_shared_libs ${BUILD_SHARED_LIBS})
+set(_entropy_bundled_dependency_static_libs ${BUILD_STATIC_LIBS})
+if(Entropy_STATIC_BUNDLED_DEPENDENCIES)
+  set(_entropy_bundled_dependency_shared_libs OFF)
+  set(_entropy_bundled_dependency_static_libs ON)
+endif()
+
 set(_ext_shared_runtime_args)
-if(UNIX AND NOT APPLE AND BUILD_SHARED_LIBS)
+if(UNIX AND NOT APPLE AND _entropy_bundled_dependency_shared_libs)
   list(APPEND _ext_shared_runtime_args
     -DCMAKE_BUILD_RPATH:STRING=\$ORIGIN
     -DCMAKE_INSTALL_RPATH:STRING=\$ORIGIN
@@ -198,7 +205,7 @@ ExternalProject_Add(glfw
     ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DBUILD_SHARED_LIBS:BOOL=${_entropy_bundled_dependency_shared_libs}
     -DGLFW_BUILD_DOCS:BOOL=OFF
     -DGLFW_BUILD_EXAMPLES:BOOL=OFF
     -DGLFW_BUILD_TESTS:BOOL=OFF
@@ -238,7 +245,7 @@ ExternalProject_Add(glm
     ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DBUILD_SHARED_LIBS:BOOL=${_entropy_bundled_dependency_shared_libs}
     -DGLM_BUILD_INSTALL:BOOL=ON
     -DGLM_BUILD_LIBRARY:BOOL=OFF
     -DGLM_BUILD_TESTS:BOOL=OFF
@@ -385,8 +392,8 @@ ExternalProject_Add(ITK
     -DCMAKE_EXE_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DCMAKE_SHARED_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DCMAKE_MODULE_LINKER_FLAGS=${ICONV_LINK_FLAG}
-    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
-    -DBUILD_STATIC_LIBS:BOOL=${BUILD_STATIC_LIBS}
+    -DBUILD_SHARED_LIBS:BOOL=${_entropy_bundled_dependency_shared_libs}
+    -DBUILD_STATIC_LIBS:BOOL=${_entropy_bundled_dependency_static_libs}
     -DBUILD_EXAMPLES:BOOL=OFF
     -DBUILD_TESTING:BOOL=OFF
     ${_itk_module_args}
@@ -444,7 +451,7 @@ ExternalProject_Add(nativefiledialog
     ${_ext_compiler_launcher_args}
     ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBUILD_SHARED_LIBS:BOOL=${BUILD_SHARED_LIBS}
+    -DBUILD_SHARED_LIBS:BOOL=${_entropy_bundled_dependency_shared_libs}
     -DNFD_PORTAL:BOOL=${_nfd_portal}
     -DNFD_BUILD_TESTS:BOOL=OFF
     -DNFD_INSTALL:BOOL=ON
@@ -597,8 +604,8 @@ ExternalProject_Add(spdlog
     -DSPDLOG_BUILD_BENCH:BOOL=OFF
     -DSPDLOG_BUILD_EXAMPLE:BOOL=OFF
     -DSPDLOG_BUILD_EXAMPLE_HO:BOOL=OFF
-    -DSPDLOG_BUILD_PIC:BOOL=${BUILD_SHARED_LIBS}
-    -DSPDLOG_BUILD_SHARED:BOOL=${BUILD_SHARED_LIBS}
+    -DSPDLOG_BUILD_PIC:BOOL=${_entropy_bundled_dependency_shared_libs}
+    -DSPDLOG_BUILD_SHARED:BOOL=${_entropy_bundled_dependency_shared_libs}
     -DSPDLOG_BUILD_TESTS:BOOL=OFF
     -DSPDLOG_BUILD_TESTS_HO:BOOL=OFF
     -DSPDLOG_BUILD_WARNINGS:BOOL=OFF

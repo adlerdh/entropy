@@ -31,33 +31,35 @@ If the release app is already configured and built, you can run CPack directly:
 cpack --config build-release/CPackConfig.cmake
 ```
 
-## Linux DEB Package
-On Linux, CPack creates a Debian package named like:
+## Linux Packages
+On Linux, CPack creates both a Debian package and a portable tarball named like:
 ```text
 build-release/packages/Entropy-x.y.z.w-Linux-x86_64.deb
+build-release/packages/Entropy-x.y.z.w-Linux-x86_64-portable.tar.gz
 ```
 
-To force the DEB generator when running CPack directly:
+To force a single generator when running CPack directly:
 ```sh
 cpack -G DEB --config build-release/CPackConfig.cmake
+cpack -G TGZ --config build-release/CPackConfig.cmake
 ```
 
 ### Linux Package Layout
-The DEB installs:
+The DEB installs the runtime payload under `/usr`, while the portable tarball contains the same payload under a top-level archive directory:
 ```text
-/usr/bin/entropy
-/usr/lib/entropy/*.so*
-/usr/share/applications/io.github.adlerdh.entropy.desktop
-/usr/share/entropy/AboutEntropyIcon.png
-/usr/share/icons/hicolor/<size>x<size>/apps/io.github.adlerdh.entropy.png
+bin/entropy
+lib/entropy/libQt6Core.so*
+share/applications/io.github.adlerdh.entropy.desktop
+share/entropy/AboutEntropyIcon.png
+share/icons/hicolor/<size>x<size>/apps/io.github.adlerdh.entropy.png
 ```
 
-Entropy's private CMake-built shared libraries are bundled under `/usr/lib/entropy`. The installed executable uses this RPATH:
+ITK, GLFW, Native File Dialog Extended, spdlog, and small helper libraries are linked statically into the executable by default on Linux. Qt Core remains dynamic and is bundled under `lib/entropy`. The installed executable uses this RPATH:
 ```text
 $ORIGIN/../lib/entropy
 ```
 
-The install step checks bundled private libraries and fails if any copied library still contains the build directory in its RPATH or RUNPATH.
+The app resolves `share/entropy` relative to the executable first, so both `/usr/bin/entropy` from the DEB and `bin/entropy` from the portable tarball can find packaged resources. The install step checks bundled private libraries and fails if any copied library still contains the build directory in its RPATH or RUNPATH.
 
 ### Linux Runtime Dependencies
 The DEB uses `dpkg-shlibdeps` to detect non-bundled system library dependencies. It also recommends `xdg-desktop-portal` plus a common portal backend:
@@ -155,7 +157,7 @@ and UI state under:
 Terminal launches keep the development defaults used by the command-line app.
 
 ## Package Size Notes
-The Linux package bundles private shared libraries from GLFW, Native File Dialog Extended, QtBase, spdlog, and ITK so the installed app does not depend on build-tree paths or distro-provided versions of those libraries.
+Linux release packages default to `Entropy_STATIC_BUNDLED_DEPENDENCIES=ON`, which links ITK, GLFW, Native File Dialog Extended, spdlog, and small helper libraries statically into the executable. Qt Core stays dynamic and is bundled privately under `lib/entropy` so the app does not depend on a distro-provided Qt version.
 
 Release packages should be built from `build-release`, not `build-default`. A `RelWithDebInfo` dependency tree can include debug information in copied private libraries and produce much larger packages. The release superbuild avoids that by building dependencies with `CMAKE_BUILD_TYPE=Release`.
 

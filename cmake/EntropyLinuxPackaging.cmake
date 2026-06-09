@@ -5,13 +5,15 @@ set(entropy_LINUX_PRIVATE_LIB_DIR "${CMAKE_INSTALL_LIBDIR}/entropy")
 set(entropy_LINUX_PRIVATE_LIB_FULL_DIR "${CMAKE_INSTALL_FULL_LIBDIR}/entropy")
 set(entropy_LINUX_DESKTOP_EXEC "entropy")
 set(entropy_LINUX_DESKTOP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${entropy_LINUX_APP_ID}.desktop")
-set(entropy_LINUX_PRIVATE_LIBRARY_RPATHS
-    "${glfw_PREFIX}/install/lib"
-    "${nativefiledialog_PREFIX}/install/lib"
-    "${qtbase_PREFIX}/install/lib"
-    "${spdlog_PREFIX}/install/lib"
-    "${itk_PREFIX}/build/lib"
-)
+set(entropy_LINUX_PRIVATE_LIBRARY_RPATHS)
+if(NOT Entropy_STATIC_BUNDLED_DEPENDENCIES)
+    list(APPEND entropy_LINUX_PRIVATE_LIBRARY_RPATHS
+        "${glfw_PREFIX}/install/lib"
+        "${nativefiledialog_PREFIX}/install/lib"
+        "${spdlog_PREFIX}/install/lib"
+        "${itk_PREFIX}/build/lib"
+    )
+endif()
 
 configure_file(
     "${CMAKE_CURRENT_LIST_DIR}/Entropy.desktop.in"
@@ -41,6 +43,14 @@ foreach(entropy_LINUX_ICON_SIZE IN ITEMS 16 32 48 64 128 256 512)
       DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/${entropy_LINUX_ICON_SIZE}x${entropy_LINUX_ICON_SIZE}/apps"
     )
 endforeach()
+
+install(DIRECTORY "${qtbase_PREFIX}/install/lib/"
+    DESTINATION "${entropy_LINUX_PRIVATE_LIB_DIR}"
+    FILES_MATCHING
+      PATTERN "libQt6Core.so*"
+      PATTERN "cmake" EXCLUDE
+      PATTERN "pkgconfig" EXCLUDE
+)
 
 foreach(entropy_LINUX_LIBRARY_DIR IN LISTS entropy_LINUX_PRIVATE_LIBRARY_RPATHS)
     if(EXISTS "${entropy_LINUX_LIBRARY_DIR}")
@@ -91,13 +101,22 @@ string(CONCAT entropy_LINUX_PRIVATE_LIBRARY_VERIFY_CODE
 )
 install(CODE "${entropy_LINUX_PRIVATE_LIBRARY_VERIFY_CODE}")
 
-set(CPACK_GENERATOR "DEB")
+set(CPACK_GENERATOR "DEB;TGZ")
 set(CPACK_PACKAGE_NAME "${APP_NAME}")
 set(CPACK_PACKAGE_VENDOR "${ORG_NAME_1}")
 set(CPACK_PACKAGE_CONTACT "Daniel H. Adler")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${APP_DESCRIPTION}")
 set(CPACK_PACKAGE_VERSION "${VERSION_FULL}")
 set(CPACK_PACKAGE_FILE_NAME "${APP_NAME}-${VERSION_FULL}-Linux-${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_ARCHIVE_FILE_NAME "${APP_NAME}-${VERSION_FULL}-Linux-${CMAKE_SYSTEM_PROCESSOR}-portable")
+set(CPACK_ARCHIVE_COMPONENT_INSTALL OFF)
+set(entropy_LINUX_CPACK_OPTIONS "${CMAKE_CURRENT_BINARY_DIR}/EntropyLinuxCPackOptions.cmake")
+configure_file(
+    "${CMAKE_CURRENT_LIST_DIR}/EntropyLinuxCPackOptions.cmake.in"
+    "${entropy_LINUX_CPACK_OPTIONS}"
+    @ONLY
+)
+set(CPACK_PROJECT_CONFIG_FILE "${entropy_LINUX_CPACK_OPTIONS}")
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CPACK_STRIP_FILES TRUE)
 endif()
