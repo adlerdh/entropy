@@ -86,6 +86,51 @@ std::optional<fs::path> handleDialogResult(NFD::UniquePath& outPath, nfdresult_t
   NFD::ClearError();
   return std::nullopt;
 }
+
+std::vector<fs::path> handleMultiDialogResult(NFD::UniquePathSet& outPaths, nfdresult_t result)
+{
+  std::vector<fs::path> selectedPaths;
+
+  if (NFD_CANCEL == result) {
+    return selectedPaths;
+  }
+
+  if (NFD_OKAY != result) {
+    spdlog::error("Native file dialog error: {}", NFD::GetError());
+    NFD::ClearError();
+    return selectedPaths;
+  }
+
+  nfdpathsetsize_t count = 0;
+  if (NFD_OKAY != NFD::PathSet::Count(outPaths.get(), count)) {
+    spdlog::error("Native file dialog error: {}", NFD::GetError());
+    NFD::ClearError();
+    return selectedPaths;
+  }
+
+  selectedPaths.reserve(count);
+  for (nfdpathsetsize_t i = 0; i < count; ++i) {
+    nfdchar_t* rawPath = nullptr;
+    if (NFD_OKAY != NFD::PathSet::GetPath(outPaths.get(), i, rawPath) || !rawPath) {
+      spdlog::error("Native file dialog error: {}", NFD::GetError());
+      NFD::ClearError();
+      selectedPaths.clear();
+      return selectedPaths;
+    }
+
+    NFD::UniquePathSetPath path(rawPath);
+    selectedPaths.emplace_back(path.get());
+  }
+
+  if (!selectedPaths.empty()) {
+    const fs::path selectedDirectory = selectedPaths.front().parent_path();
+    if (!selectedDirectory.empty()) {
+      lastUsedDirectory() = selectedDirectory;
+    }
+  }
+
+  return selectedPaths;
+}
 } // namespace
 
 namespace native_dialog
@@ -107,6 +152,25 @@ std::optional<fs::path> openFile(const std::vector<Filter>& filters, const fs::p
     defaultPathString.empty() ? nullptr : defaultPathString.c_str());
 
   return handleDialogResult(outPath, result);
+}
+
+std::vector<fs::path> openFiles(const std::vector<Filter>& filters, const fs::path& defaultPath)
+{
+  if (!ensureNfdInitialized()) {
+    return {};
+  }
+
+  const auto nfdFilters = toNfdFilters(filters);
+  const std::string defaultPathString = dialogDefaultPathString(defaultPath);
+  NFD::UniquePathSet outPaths;
+
+  const nfdresult_t result = NFD::OpenDialogMultiple(
+    outPaths,
+    nfdFilters.empty() ? nullptr : nfdFilters.data(),
+    static_cast<nfdfiltersize_t>(nfdFilters.size()),
+    defaultPathString.empty() ? nullptr : defaultPathString.c_str());
+
+  return handleMultiDialogResult(outPaths, result);
 }
 
 std::optional<fs::path>

@@ -110,9 +110,9 @@ void updateEnabledState(const MenuState& state)
 {
   const auto& callbacks = state.callbacks;
 
-  enableMenuCommand(state, sk_openImageCommand, callbacks.canOpenProject && callbacks.openImageFile);
+  enableMenuCommand(state, sk_openImageCommand, callbacks.canOpenProject && callbacks.openImageFiles);
   enableMenuCommand(state, sk_openProjectCommand, callbacks.canOpenProject && callbacks.openProjectFile);
-  enableMenuCommand(state, sk_addImageCommand, callbacks.canAddImage && callbacks.addImageFile);
+  enableMenuCommand(state, sk_addImageCommand, callbacks.canAddImage && callbacks.addImageFiles);
   enableMenuCommand(state, sk_addSegmentationCommand, callbacks.canAddSegmentation && callbacks.addSegmentationFile);
   enableMenuCommand(state, sk_saveProjectCommand, callbacks.canSaveProject && callbacks.saveProject);
   enableMenuCommand(state, sk_saveProjectAsCommand, callbacks.canSaveProject && callbacks.saveProjectAs);
@@ -292,11 +292,10 @@ bool insertSubmenu(HMENU menu, UINT position, HMENU submenu, const wchar_t* text
 bool populateFileMenu(HMENU fileMenu)
 {
   UINT position = 0;
-  return insertMenuItem(fileMenu, position++, sk_openImageCommand, L"&Open Image...\tCtrl+O") &&
+  return insertMenuItem(fileMenu, position++, sk_openImageCommand, L"&Open Image(s)...\tCtrl+O") &&
          insertMenuItem(fileMenu, position++, sk_openProjectCommand, L"Open &Project...\tCtrl+Shift+O") &&
          insertSeparator(fileMenu, position++) &&
-         insertMenuItem(fileMenu, position++, sk_addImageCommand, L"&Add Image...") &&
-         insertMenuItem(fileMenu, position++, sk_addSegmentationCommand, L"Add &Segmentation...") &&
+         insertMenuItem(fileMenu, position++, sk_addImageCommand, L"&Add Image(s)...") &&
          insertSeparator(fileMenu, position++) &&
          insertMenuItem(fileMenu, position++, sk_saveProjectCommand, L"&Save Project\tCtrl+S") &&
          insertMenuItem(fileMenu, position++, sk_saveProjectAsCommand, L"Save Project &As...\tCtrl+Shift+S") &&
@@ -328,9 +327,13 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
   UINT position = 0;
   return insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"Show &Images Panel") &&
          insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
-         insertSeparator(menu, position++) &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetActiveImageAsReference, L"Set as &Reference") &&
+         insertMenuItem(menu, position++, sk_addImageCommand, L"&Add Image(s)...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::RemoveActiveImage, L"&Remove Active Image") &&
+         insertActionMenuItem(
+           menu,
+           position++,
+           MainMenuAction::SetActiveImageAsReference,
+           L"Set Image as &Reference") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageBackward, L"Move Image &Backward") &&
          insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageForward, L"Move Image &Forward") &&
@@ -399,16 +402,16 @@ bool populateAnnotationsMenu(HMENU menu)
          insertActionMenuItem(menu, position++, MainMenuAction::SaveAnnotations, L"&Save All Annotations...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::RemoveAnnotation, L"&Remove Active Annotation") &&
          insertSeparator(menu, position++) &&
-         insertActionMenuItem(menu, position++, MainMenuAction::MoveAnnotationBackward, L"Move &Backward") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::MoveAnnotationForward, L"Move &Forward") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::MoveAnnotationToBack, L"Move to Bac&k") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::MoveAnnotationToFront, L"Move to Fron&t") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::MoveAnnotationBackward, L"Move Annotation &Backward") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::MoveAnnotationForward, L"Move Annotation &Forward") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::MoveAnnotationToBack, L"Move Annotation to Bac&k") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::MoveAnnotationToFront, L"Move Annotation to Fron&t") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(
            menu,
            position++,
            MainMenuAction::PaintSegmentationFromAnnotation,
-           L"&Paint Segmentation from Active Annotation");
+           L"&Paint Segmentation from Annotation");
 }
 
 bool populateLandmarksMenu(HMENU menu)
@@ -522,8 +525,8 @@ bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callback
 
   UINT position = 0;
   if (
-    !insertMenuItem(layoutsMenu, position++, sk_loadLayoutsCommand, L"&Load...") ||
-    !insertMenuItem(layoutsMenu, position++, sk_saveLayoutsCommand, L"&Save...") ||
+    !insertMenuItem(layoutsMenu, position++, sk_loadLayoutsCommand, L"&Load Layout...") ||
+    !insertMenuItem(layoutsMenu, position++, sk_saveLayoutsCommand, L"&Save Layout...") ||
     !insertSeparator(layoutsMenu, position++) ||
     !insertMenuItem(layoutsMenu, position++, sk_previousLayoutCommand, L"&Previous\t[") ||
     !insertMenuItem(layoutsMenu, position++, sk_nextLayoutCommand, L"&Next\t]") ||
@@ -533,7 +536,7 @@ bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callback
   }
 
   if (
-    !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::AddLayout, L"&Add Layout") ||
+    !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::AddLayout, L"&Add Layout...") ||
     !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::RemoveLayout, L"&Remove Current Layout") ||
     !insertSeparator(layoutsMenu, position++))
   {

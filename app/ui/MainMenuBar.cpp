@@ -16,10 +16,9 @@ void openImage(const MainMenuBarCallbacks& callbacks)
     return;
   }
 
-  if (const auto selectedFile = native_dialog::openFile(native_dialog::imageFilters())) {
-    if (callbacks.openImageFile) {
-      callbacks.openImageFile(*selectedFile);
-    }
+  const auto selectedFiles = native_dialog::openFiles(native_dialog::imageFilters());
+  if (!selectedFiles.empty() && callbacks.openImageFiles) {
+    callbacks.openImageFiles(selectedFiles);
   }
 }
 
@@ -42,10 +41,9 @@ void addImage(const MainMenuBarCallbacks& callbacks)
     return;
   }
 
-  if (const auto selectedFile = native_dialog::openFile(native_dialog::imageFilters())) {
-    if (callbacks.addImageFile) {
-      callbacks.addImageFile(*selectedFile);
-    }
+  const auto selectedFiles = native_dialog::openFiles(native_dialog::imageFilters());
+  if (!selectedFiles.empty() && callbacks.addImageFiles) {
+    callbacks.addImageFiles(selectedFiles);
   }
 }
 
@@ -225,9 +223,11 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     }
     ImGui::EndMenu();
   }
-  ImGui::Separator();
-  actionMenuItem(callbacks, "Set as Reference", MainMenuAction::SetActiveImageAsReference);
+  if (ImGui::MenuItem("Add Image(s)...", nullptr, false, callbacks.canAddImage)) {
+    addImage(callbacks);
+  }
   actionMenuItem(callbacks, "Remove Active Image", MainMenuAction::RemoveActiveImage);
+  actionMenuItem(callbacks, "Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
   ImGui::Separator();
   actionMenuItem(callbacks, "Move Image Backward", MainMenuAction::MoveActiveImageBackward);
   actionMenuItem(callbacks, "Move Image Forward", MainMenuAction::MoveActiveImageForward);
@@ -271,15 +271,12 @@ void renderAnnotationMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Save All Annotations...", MainMenuAction::SaveAnnotations);
   actionMenuItem(callbacks, "Remove Active Annotation", MainMenuAction::RemoveAnnotation);
   ImGui::Separator();
-  actionMenuItem(callbacks, "Move Backward", MainMenuAction::MoveAnnotationBackward);
-  actionMenuItem(callbacks, "Move Forward", MainMenuAction::MoveAnnotationForward);
-  actionMenuItem(callbacks, "Move to Back", MainMenuAction::MoveAnnotationToBack);
-  actionMenuItem(callbacks, "Move to Front", MainMenuAction::MoveAnnotationToFront);
+  actionMenuItem(callbacks, "Move Annotation Backward", MainMenuAction::MoveAnnotationBackward);
+  actionMenuItem(callbacks, "Move Annotation Forward", MainMenuAction::MoveAnnotationForward);
+  actionMenuItem(callbacks, "Move Annotation to Back", MainMenuAction::MoveAnnotationToBack);
+  actionMenuItem(callbacks, "Move Annotation to Front", MainMenuAction::MoveAnnotationToFront);
   ImGui::Separator();
-  actionMenuItem(
-    callbacks,
-    "Paint Segmentation from Active Annotation",
-    MainMenuAction::PaintSegmentationFromAnnotation);
+  actionMenuItem(callbacks, "Paint Segmentation from Annotation", MainMenuAction::PaintSegmentationFromAnnotation);
 }
 
 void renderLandmarkMenu(const MainMenuBarCallbacks& callbacks)
@@ -336,7 +333,7 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
     uiData.m_mainMenuBarDims = glm::vec2{winSize.x, winSize.y};
 
     if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("Open Image...", "Ctrl+O", false, callbacks.canOpenProject)) {
+      if (ImGui::MenuItem("Open Image(s)...", "Ctrl+O", false, callbacks.canOpenProject)) {
         main_menu::openImage(callbacks);
       }
 
@@ -346,12 +343,8 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 
       ImGui::Separator();
 
-      if (ImGui::MenuItem("Add Image...", nullptr, false, callbacks.canAddImage)) {
+      if (ImGui::MenuItem("Add Image(s)...", nullptr, false, callbacks.canAddImage)) {
         main_menu::addImage(callbacks);
-      }
-
-      if (ImGui::MenuItem("Add Segmentation...", nullptr, false, callbacks.canAddSegmentation)) {
-        main_menu::addSegmentation(callbacks);
       }
 
       ImGui::Separator();
@@ -405,10 +398,10 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
     }
 
     if (ImGui::BeginMenu("Layout")) {
-      if (ImGui::MenuItem("Load...", nullptr, false, callbacks.canUseLayouts)) {
+      if (ImGui::MenuItem("Load Layout...", nullptr, false, callbacks.canUseLayouts)) {
         main_menu::loadLayouts(callbacks);
       }
-      if (ImGui::MenuItem("Save...", nullptr, false, callbacks.canUseLayouts)) {
+      if (ImGui::MenuItem("Save Layout...", nullptr, false, callbacks.canUseLayouts)) {
         main_menu::saveLayouts(callbacks);
       }
 
@@ -434,7 +427,7 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       }
 
       ImGui::Separator();
-      main_menu::actionMenuItem(callbacks, "Add Layout", MainMenuAction::AddLayout);
+      main_menu::actionMenuItem(callbacks, "Add Layout...", MainMenuAction::AddLayout);
       main_menu::actionMenuItem(callbacks, "Remove Current Layout", MainMenuAction::RemoveLayout);
 
       ImGui::EndMenu();

@@ -10,7 +10,6 @@ EntropyMacMenuTarget* g_target = nil;
 NSMenuItem* g_openImageItem = nil;
 NSMenuItem* g_openProjectItem = nil;
 NSMenuItem* g_addImageItem = nil;
-NSMenuItem* g_addSegmentationItem = nil;
 NSMenuItem* g_saveProjectItem = nil;
 NSMenuItem* g_saveProjectAsItem = nil;
 NSMenuItem* g_closeProjectItem = nil;
@@ -134,7 +133,7 @@ bool g_installed = false;
   const SEL action = [menuItem action];
 
   if (action == @selector(openImage:)) {
-    return g_callbacks.canOpenProject && g_callbacks.openImageFile;
+    return g_callbacks.canOpenProject && g_callbacks.openImageFiles;
   }
 
   if (action == @selector(openProject:)) {
@@ -142,7 +141,7 @@ bool g_installed = false;
   }
 
   if (action == @selector(addImage:)) {
-    return g_callbacks.canAddImage && g_callbacks.addImageFile;
+    return g_callbacks.canAddImage && g_callbacks.addImageFiles;
   }
 
   if (action == @selector(addSegmentation:)) {
@@ -243,9 +242,9 @@ void addImageMenu(NSMenu* mainMenu) {
   g_activeImagesMenu = [[NSMenu alloc] initWithTitle:@"Active Image"];
   [activeImageItem setSubmenu:g_activeImagesMenu];
   [menu addItem:activeImageItem];
-  [menu addItem:[NSMenuItem separatorItem]];
-  addActionMenuItem(menu, @"Set as Reference", MainMenuAction::SetActiveImageAsReference);
+  addTargetedMenuItem(menu, @"Add Image(s)...", @selector(addImage:), @"");
   addActionMenuItem(menu, @"Remove Active Image", MainMenuAction::RemoveActiveImage);
+  addActionMenuItem(menu, @"Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
   [menu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(menu, @"Move Image Backward", MainMenuAction::MoveActiveImageBackward);
   addActionMenuItem(menu, @"Move Image Forward", MainMenuAction::MoveActiveImageForward);
@@ -293,15 +292,12 @@ void addAnnotationMenu(NSMenu* mainMenu) {
   addActionMenuItem(menu, @"Save All Annotations...", MainMenuAction::SaveAnnotations);
   addActionMenuItem(menu, @"Remove Active Annotation", MainMenuAction::RemoveAnnotation);
   [menu addItem:[NSMenuItem separatorItem]];
-  addActionMenuItem(menu, @"Move Backward", MainMenuAction::MoveAnnotationBackward);
-  addActionMenuItem(menu, @"Move Forward", MainMenuAction::MoveAnnotationForward);
-  addActionMenuItem(menu, @"Move to Back", MainMenuAction::MoveAnnotationToBack);
-  addActionMenuItem(menu, @"Move to Front", MainMenuAction::MoveAnnotationToFront);
+  addActionMenuItem(menu, @"Move Annotation Backward", MainMenuAction::MoveAnnotationBackward);
+  addActionMenuItem(menu, @"Move Annotation Forward", MainMenuAction::MoveAnnotationForward);
+  addActionMenuItem(menu, @"Move Annotation to Back", MainMenuAction::MoveAnnotationToBack);
+  addActionMenuItem(menu, @"Move Annotation to Front", MainMenuAction::MoveAnnotationToFront);
   [menu addItem:[NSMenuItem separatorItem]];
-  addActionMenuItem(
-    menu,
-    @"Paint Segmentation from Active Annotation",
-    MainMenuAction::PaintSegmentationFromAnnotation);
+  addActionMenuItem(menu, @"Paint Segmentation from Annotation", MainMenuAction::PaintSegmentationFromAnnotation);
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }
@@ -407,7 +403,7 @@ void installMacOSNativeMainMenu() {
 
   NSMenuItem* fileMenuItem = [[NSMenuItem alloc] initWithTitle:@"File" action:nil keyEquivalent:@""];
   NSMenu* fileMenu = [[NSMenu alloc] initWithTitle:@"File"];
-  g_openImageItem = addTargetedMenuItem(fileMenu, @"Open Image...", @selector(openImage:), @"o");
+  g_openImageItem = addTargetedMenuItem(fileMenu, @"Open Image(s)...", @selector(openImage:), @"o");
   g_openProjectItem = addTargetedMenuItem(
     fileMenu,
     @"Open Project...",
@@ -415,8 +411,7 @@ void installMacOSNativeMainMenu() {
     @"o",
     NSEventModifierFlagCommand | NSEventModifierFlagShift);
   [fileMenu addItem:[NSMenuItem separatorItem]];
-  g_addImageItem = addTargetedMenuItem(fileMenu, @"Add Image...", @selector(addImage:), @"");
-  g_addSegmentationItem = addTargetedMenuItem(fileMenu, @"Add Segmentation...", @selector(addSegmentation:), @"");
+  g_addImageItem = addTargetedMenuItem(fileMenu, @"Add Image(s)...", @selector(addImage:), @"");
   [fileMenu addItem:[NSMenuItem separatorItem]];
   g_saveProjectItem = addTargetedMenuItem(fileMenu, @"Save Project", @selector(saveProject:), @"s");
   g_saveProjectAsItem = addTargetedMenuItem(
@@ -455,13 +450,13 @@ void rebuildLayoutsMenu() {
   }
 
   [g_layoutsMenu removeAllItems];
-  addTargetedMenuItem(g_layoutsMenu, @"Load...", @selector(loadLayouts:), @"");
-  addTargetedMenuItem(g_layoutsMenu, @"Save...", @selector(saveLayouts:), @"");
+  addTargetedMenuItem(g_layoutsMenu, @"Load Layout...", @selector(loadLayouts:), @"");
+  addTargetedMenuItem(g_layoutsMenu, @"Save Layout...", @selector(saveLayouts:), @"");
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
   addTargetedMenuItem(g_layoutsMenu, @"Previous", @selector(previousLayout:), @"[", 0);
   addTargetedMenuItem(g_layoutsMenu, @"Next", @selector(nextLayout:), @"]", 0);
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
-  addActionMenuItem(g_layoutsMenu, @"Add Layout", MainMenuAction::AddLayout);
+  addActionMenuItem(g_layoutsMenu, @"Add Layout...", MainMenuAction::AddLayout);
   addActionMenuItem(g_layoutsMenu, @"Remove Current Layout", MainMenuAction::RemoveLayout);
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
 

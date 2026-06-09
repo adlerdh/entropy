@@ -16,7 +16,9 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include <filesystem>
 #include <optional>
+#include <vector>
 
 namespace
 {
@@ -933,15 +935,14 @@ void dropCallback(GLFWwindow* window, int count, const char** paths)
     return;
   }
 
+  std::vector<std::filesystem::path> droppedFiles;
+  droppedFiles.reserve(static_cast<std::size_t>(count));
   for (int i = 0; i < count; ++i) {
     if (paths[i]) {
       spdlog::info("Dropped file {}: {}", i, paths[i]);
-
-      serialize::Image serializedImage;
-      serializedImage.m_imageFileName = paths[i];
-
-      const bool isReference = false;
-      app->loadSerializedImage(serializedImage, isReference);
+      droppedFiles.emplace_back(paths[i]);
     }
   }
+
+  app->handleDroppedFiles(droppedFiles);
 }

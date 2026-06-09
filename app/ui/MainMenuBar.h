@@ -90,8 +90,8 @@ enum class MainMenuAction
 
 struct MainMenuBarCallbacks
 {
-  std::function<void(const std::filesystem::path& fileName)> openImageFile;
-  std::function<void(const std::filesystem::path& fileName)> addImageFile;
+  std::function<void(const std::vector<std::filesystem::path>& fileNames)> openImageFiles;
+  std::function<void(const std::vector<std::filesystem::path>& fileNames)> addImageFiles;
   std::function<void(const std::filesystem::path& fileName)> addSegmentationFile;
   std::function<void(const std::filesystem::path& fileName)> openProjectFile;
   std::function<bool()> saveProject;

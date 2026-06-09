@@ -22,6 +22,7 @@
 #include <future>
 #include <optional>
 #include <string>
+#include <vector>
 
 /**
  * @brief This class basically runs the show. Its responsibilities are
@@ -54,7 +55,10 @@ public:
   /// Asynchronously load images and notify render loop when done
   void loadImagesFromParams(const InputParams&);
   void loadImageFile(const std::filesystem::path& fileName);
+  void loadImageFiles(const std::vector<std::filesystem::path>& fileNames);
   void addImageFile(const std::filesystem::path& fileName);
+  void addImageFiles(const std::vector<std::filesystem::path>& fileNames);
+  void handleDroppedFiles(const std::vector<std::filesystem::path>& fileNames);
   void addSegmentationFile(const std::filesystem::path& fileName);
   void addSegmentationFileToImage(const std::filesystem::path& fileName, const uuids::uuid& imageUid);
   void loadProjectFile(const std::filesystem::path& fileName);
@@ -171,8 +175,8 @@ private:
   /// True when onImagesReady is handling a live Add Image operation instead of initial load.
   bool m_preserveLayoutsOnImagesReady = false;
 
-  /// Image added by the current live Add Image operation, if any.
-  std::optional<uuids::uuid> m_pendingAddedImageUid = std::nullopt;
+  /// Images added by the current live Add Image operation, if any.
+  std::vector<uuids::uuid> m_pendingAddedImageUids;
   std::optional<std::filesystem::path> m_pendingLayoutsFile = std::nullopt;
 
   enum class LargeImageLoadContext : std::uint8_t

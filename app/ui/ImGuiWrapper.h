@@ -35,8 +35,8 @@ public:
   void setCallbacks(
     std::function<void(void)> postEmptyGlfwEvent,
     std::function<void(void)> readjustViewport,
-    std::function<void(const std::filesystem::path& fileName)> openImageFile,
-    std::function<void(const std::filesystem::path& fileName)> addImageFile,
+    std::function<void(const std::vector<std::filesystem::path>& fileNames)> openImageFiles,
+    std::function<void(const std::vector<std::filesystem::path>& fileNames)> addImageFiles,
     std::function<void(const std::filesystem::path& fileName)> addSegmentationFile,
     std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> addSegmentationFileToImage,
     std::function<void(const std::filesystem::path& fileName)> openProjectFile,
@@ -97,8 +97,8 @@ private:
   // Callbacks:
   std::function<void(void)> m_postEmptyGlfwEvent = nullptr;
   std::function<void(void)> m_readjustViewport = nullptr;
-  std::function<void(const std::filesystem::path& fileName)> m_openImageFile = nullptr;
-  std::function<void(const std::filesystem::path& fileName)> m_addImageFile = nullptr;
+  std::function<void(const std::vector<std::filesystem::path>& fileNames)> m_openImageFiles = nullptr;
+  std::function<void(const std::vector<std::filesystem::path>& fileNames)> m_addImageFiles = nullptr;
   std::function<void(const std::filesystem::path& fileName)> m_addSegmentationFile = nullptr;
   std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> m_addSegmentationFileToImage =
     nullptr;

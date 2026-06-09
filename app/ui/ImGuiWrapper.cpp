@@ -108,7 +108,7 @@ void renderLoadingStatusBar()
 
 void renderEmptyWorkspace(
   ProjectLoadState projectLoadState,
-  const std::function<void(const fs::path& fileName)>& openImageFile,
+  const std::function<void(const std::vector<fs::path>& fileNames)>& openImageFiles,
   const std::function<void(const fs::path& fileName)>& openProjectFile)
 {
   if (ProjectLoadState::Empty != projectLoadState && ProjectLoadState::Failed != projectLoadState) {
@@ -141,11 +141,10 @@ void renderEmptyWorkspace(
     const float buttonsWidth = 2.0f * buttonWidth + ImGui::GetStyle().ItemSpacing.x;
     ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), (ImGui::GetWindowSize().x - buttonsWidth) * 0.5f));
 
-    if (ImGui::Button("Open Image...", ImVec2{buttonWidth, 0.0f})) {
-      if (const auto selectedFile = native_dialog::openFile(native_dialog::imageFilters())) {
-        if (openImageFile) {
-          openImageFile(*selectedFile);
-        }
+    if (ImGui::Button("Open Image(s)...", ImVec2{buttonWidth, 0.0f})) {
+      const auto selectedFiles = native_dialog::openFiles(native_dialog::imageFilters());
+      if (!selectedFiles.empty() && openImageFiles) {
+        openImageFiles(selectedFiles);
       }
     }
 
@@ -255,8 +254,8 @@ ImGuiWrapper::~ImGuiWrapper()
 void ImGuiWrapper::setCallbacks(
   std::function<void(void)> postEmptyGlfwEvent,
   std::function<void(void)> readjustViewport,
-  std::function<void(const fs::path& fileName)> openImageFile,
-  std::function<void(const fs::path& fileName)> addImageFile,
+  std::function<void(const std::vector<fs::path>& fileNames)> openImageFiles,
+  std::function<void(const std::vector<fs::path>& fileNames)> addImageFiles,
   std::function<void(const fs::path& fileName)> addSegmentationFile,
   std::function<void(const uuids::uuid& imageUid, const fs::path& fileName)> addSegmentationFileToImage,
   std::function<void(const fs::path& fileName)> openProjectFile,
@@ -301,8 +300,8 @@ void ImGuiWrapper::setCallbacks(
 {
   m_postEmptyGlfwEvent = postEmptyGlfwEvent;
   m_readjustViewport = readjustViewport;
-  m_openImageFile = openImageFile;
-  m_addImageFile = addImageFile;
+  m_openImageFiles = openImageFiles;
+  m_addImageFiles = addImageFiles;
   m_addSegmentationFile = addSegmentationFile;
   m_addSegmentationFileToImage = addSegmentationFileToImage;
   m_openProjectFile = openProjectFile;
@@ -1561,8 +1560,8 @@ void ImGuiWrapper::render()
     }
 
     const MainMenuBarCallbacks mainMenuCallbacks{
-      .openImageFile = m_openImageFile,
-      .addImageFile = m_addImageFile,
+      .openImageFiles = m_openImageFiles,
+      .addImageFiles = m_addImageFiles,
       .addSegmentationFile = m_addSegmentationFile,
       .openProjectFile = m_openProjectFile,
       .saveProject = m_saveProject,
@@ -1623,7 +1622,7 @@ void ImGuiWrapper::render()
     renderMainMenuBar(m_appData.guiData(), mainMenuCallbacks);
 #endif
 
-    renderEmptyWorkspace(projectLoadState, m_openImageFile, m_openProjectFile);
+    renderEmptyWorkspace(projectLoadState, m_openImageFiles, m_openProjectFile);
 
     if (ProjectLoadState::Loaded == projectLoadState && backgroundTaskRunning) {
       renderLoadingStatusBar();

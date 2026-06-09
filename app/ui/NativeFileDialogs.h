@@ -17,6 +17,9 @@ struct Filter
 std::optional<std::filesystem::path> openFile(
   const std::vector<Filter>& filters = {},
   const std::filesystem::path& defaultPath = {});
+std::vector<std::filesystem::path> openFiles(
+  const std::vector<Filter>& filters = {},
+  const std::filesystem::path& defaultPath = {});
 std::optional<std::filesystem::path> saveFile(
   const std::vector<Filter>& filters = {},
   const std::filesystem::path& defaultPath = {},

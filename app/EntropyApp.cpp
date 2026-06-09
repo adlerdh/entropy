@@ -30,6 +30,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <functional>
@@ -64,6 +65,46 @@ bool promptForChar(const char* prompt, char& readch)
   }
 
   return false;
+}
+
+std::vector<fs::path> nonEmptyPaths(const std::vector<fs::path>& fileNames)
+{
+  std::vector<fs::path> paths;
+  paths.reserve(fileNames.size());
+
+  for (const auto& fileName : fileNames) {
+    if (!fileName.empty()) {
+      paths.push_back(fileName);
+    }
+  }
+
+  return paths;
+}
+
+serialize::EntropyProject createProjectFromImageFiles(const std::vector<fs::path>& fileNames)
+{
+  serialize::EntropyProject project;
+  if (fileNames.empty()) {
+    return project;
+  }
+
+  project.m_referenceImage.m_imageFileName = fileNames.front();
+  for (std::size_t i = 1; i < fileNames.size(); ++i) {
+    serialize::Image image;
+    image.m_imageFileName = fileNames[i];
+    project.m_additionalImages.emplace_back(std::move(image));
+  }
+
+  return project;
+}
+
+bool isJsonProjectFile(const fs::path& fileName)
+{
+  std::string extension = fileName.extension().string();
+  std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char ch) {
+    return static_cast<char>(std::tolower(ch));
+  });
+  return extension == ".json";
 }
 
 serialize::ImageSettings makeImageSettingsSnapshot(const Image& image)
@@ -365,10 +406,10 @@ void EntropyApp::onImagesReady()
   constexpr bool resetZoom = true;
 
   const bool preserveLayouts = m_preserveLayoutsOnImagesReady;
-  const std::optional<uuids::uuid> pendingAddedImageUid = m_pendingAddedImageUid;
+  const std::vector<uuids::uuid> pendingAddedImageUids = m_pendingAddedImageUids;
   const std::optional<fs::path> pendingLayoutsFile = m_pendingLayoutsFile;
   m_preserveLayoutsOnImagesReady = false;
-  m_pendingAddedImageUid = std::nullopt;
+  m_pendingAddedImageUids.clear();
   m_pendingLayoutsFile = std::nullopt;
 
   spdlog::debug("Images are loaded.");
@@ -412,8 +453,8 @@ void EntropyApp::onImagesReady()
   spdlog::debug("Begin setting up window state");
 
   if (preserveLayouts) {
-    if (pendingAddedImageUid) {
-      m_data.windowData().appendImageToDefaultRenderedImages(m_data, *pendingAddedImageUid);
+    for (const auto& pendingAddedImageUid : pendingAddedImageUids) {
+      m_data.windowData().appendImageToDefaultRenderedImages(m_data, pendingAddedImageUid);
     }
 
     m_data.windowData().updateImageOrdering(m_data.imageUidsOrdered());
@@ -1557,8 +1598,22 @@ bool EntropyApp::saveLayoutsFile(const fs::path& fileName)
 
 void EntropyApp::loadImageFile(const fs::path& fileName)
 {
-  serialize::EntropyProject project;
-  project.m_referenceImage.m_imageFileName = fileName;
+  loadImageFiles({fileName});
+}
+
+void EntropyApp::loadImageFiles(const std::vector<fs::path>& fileNames)
+{
+  const std::vector<fs::path> imageFiles = nonEmptyPaths(fileNames);
+  if (imageFiles.empty()) {
+    return;
+  }
+
+  if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
+    addImageFiles(imageFiles);
+    return;
+  }
+
+  serialize::EntropyProject project = createProjectFromImageFiles(imageFiles);
 
   m_pendingLargeImageLoadContext = LargeImageLoadContext::Project;
   m_pendingLargeProject = std::move(project);
@@ -1569,73 +1624,132 @@ void EntropyApp::loadImageFile(const fs::path& fileName)
 
 void EntropyApp::addImageFile(const fs::path& fileName)
 {
-  if (ProjectLoadState::Loaded != m_data.state().projectLoadState()) {
-    loadImageFile(fileName);
+  addImageFiles({fileName});
+}
+
+void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
+{
+  const std::vector<fs::path> imageFiles = nonEmptyPaths(fileNames);
+  if (imageFiles.empty()) {
     return;
   }
 
-  const auto header =
-    readImageHeaderOnly(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
-
-  if (!header) {
-    spdlog::error("Could not read image header from {}", fileName);
+  if (ProjectLoadState::Loaded != m_data.state().projectLoadState() || !m_data.refImageUid()) {
+    loadImageFiles(imageFiles);
     return;
   }
 
   const bool bypassPreflight = m_data.guiData().m_bypassNextImageLoadPreflight;
   m_data.guiData().m_bypassNextImageLoadPreflight = false;
 
-  if (!bypassPreflight && shouldPromptForLargeImage(*header)) {
-    spdlog::warn(
-      "Image {} is large: estimated in-memory size is {:.2f} GiB",
-      fileName,
-      static_cast<double>(header->memoryImageSizeInBytes()) / (1024.0 * 1024.0 * 1024.0));
+  if (imageFiles.size() == 1 && !bypassPreflight) {
+    const auto header = readImageHeaderOnly(
+      imageFiles.front(),
+      Image::ImageRepresentation::Image,
+      Image::MultiComponentBufferType::SeparateImages);
 
-    m_pendingLargeImageLoadContext = LargeImageLoadContext::AddImage;
-    m_pendingLargeAddImageFile = fileName;
-    m_data.guiData().m_pendingLargeImageLoadPrompt = GuiData::LargeImageLoadPrompt{fileName, *header, false, true};
-    m_data.guiData().m_showLargeImageLoadPrompt = true;
-    m_glfw.postEmptyEvent();
-    return;
+    if (!header) {
+      spdlog::error("Could not read image header from {}", imageFiles.front());
+      return;
+    }
+
+    if (shouldPromptForLargeImage(*header)) {
+      spdlog::warn(
+        "Image {} is large: estimated in-memory size is {:.2f} GiB",
+        imageFiles.front(),
+        static_cast<double>(header->memoryImageSizeInBytes()) / (1024.0 * 1024.0 * 1024.0));
+
+      m_pendingLargeImageLoadContext = LargeImageLoadContext::AddImage;
+      m_pendingLargeAddImageFile = imageFiles.front();
+      m_data.guiData().m_pendingLargeImageLoadPrompt =
+        GuiData::LargeImageLoadPrompt{imageFiles.front(), *header, false, true};
+      m_data.guiData().m_showLargeImageLoadPrompt = true;
+      m_glfw.postEmptyEvent();
+      return;
+    }
   }
 
   m_preserveLayoutsOnImagesReady = true;
-  m_pendingAddedImageUid = std::nullopt;
+  m_pendingAddedImageUids.clear();
 
   startAsyncImageLoad(
-    "Adding image...",
-    [this, fileName]() {
-      serialize::Image serializedImage;
-      serializedImage.m_imageFileName = fileName;
-
+    imageFiles.size() == 1 ? "Adding image..." : "Adding images...",
+    [this, imageFiles]() {
       const std::size_t previousNumImages = m_data.numImages();
-      const bool loaded = loadSerializedImage(serializedImage, false);
+      std::vector<uuids::uuid> addedImageUids;
+      addedImageUids.reserve(imageFiles.size());
 
-      if (!loaded || m_data.numImages() <= previousNumImages) {
-        spdlog::error("Could not add image from {}", fileName);
+      for (const auto& fileName : imageFiles) {
+        if (m_imageLoadCancelled) {
+          return false;
+        }
+
+        serialize::Image serializedImage;
+        serializedImage.m_imageFileName = fileName;
+
+        const std::size_t numImagesBeforeLoad = m_data.numImages();
+        const bool loaded = loadSerializedImage(serializedImage, false);
+
+        if (!loaded || m_data.numImages() <= numImagesBeforeLoad) {
+          spdlog::error("Could not add image from {}", fileName);
+          continue;
+        }
+
+        if (const auto addedImageUid = m_data.imageUid(m_data.numImages() - 1)) {
+          addedImageUids.push_back(*addedImageUid);
+        }
+      }
+
+      if (addedImageUids.empty() || m_data.numImages() <= previousNumImages) {
         return false;
       }
 
-      const std::optional<uuids::uuid> addedImageUid = m_data.imageUid(m_data.numImages() - 1);
-      if (addedImageUid) {
-        m_data.setActiveImageUid(*addedImageUid);
-      }
-
+      m_data.setActiveImageUid(addedImageUids.back());
       m_data.setRainbowColorsForAllImages();
       m_data.setRainbowColorsForAllLandmarkGroups();
       m_data.setProject(createProjectSnapshot());
-      m_pendingAddedImageUid = addedImageUid;
+      m_pendingAddedImageUids = std::move(addedImageUids);
       return true;
     },
     [this]() {
       m_preserveLayoutsOnImagesReady = false;
-      m_pendingAddedImageUid = std::nullopt;
+      m_pendingAddedImageUids.clear();
       m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
       m_data.state().setAnimating(false);
       updateWindowTitleStatus();
       m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
     },
     false);
+}
+
+void EntropyApp::handleDroppedFiles(const std::vector<fs::path>& fileNames)
+{
+  const std::vector<fs::path> droppedFiles = nonEmptyPaths(fileNames);
+  if (droppedFiles.empty()) {
+    return;
+  }
+
+  if (ProjectLoadState::Loading == m_data.state().projectLoadState()) {
+    spdlog::warn("Ignoring dropped files because a project is already loading");
+    return;
+  }
+
+  if (droppedFiles.size() == 1 && isJsonProjectFile(droppedFiles.front())) {
+    loadProjectFile(droppedFiles.front());
+    return;
+  }
+
+  std::vector<fs::path> imageFiles;
+  imageFiles.reserve(droppedFiles.size());
+  for (const auto& fileName : droppedFiles) {
+    if (isJsonProjectFile(fileName)) {
+      spdlog::warn("Ignoring project file {} in mixed drag-and-drop operation", fileName);
+      continue;
+    }
+    imageFiles.push_back(fileName);
+  }
+
+  addImageFiles(imageFiles);
 }
 
 void EntropyApp::addSegmentationFile(const fs::path& fileName)
@@ -2015,7 +2129,7 @@ void EntropyApp::closeProject()
   m_imagesReady = false;
   m_imageLoadFailed = false;
   m_preserveLayoutsOnImagesReady = false;
-  m_pendingAddedImageUid = std::nullopt;
+  m_pendingAddedImageUids.clear();
   m_pendingLayoutsFile = std::nullopt;
   m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
   m_pendingLargeAddImageFile = std::nullopt;
@@ -2127,7 +2241,7 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
   static constexpr size_t defaultActiveImageIndex = 1;
 
   m_preserveLayoutsOnImagesReady = false;
-  m_pendingAddedImageUid = std::nullopt;
+  m_pendingAddedImageUids.clear();
 
   spdlog::debug("Begin loading images in new thread");
 
@@ -2201,8 +2315,8 @@ void EntropyApp::setCallbacks()
   m_imgui.setCallbacks(
     [this]() { m_glfw.postEmptyEvent(); },
     [this]() { resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y); },
-    [this](const fs::path& fileName) { loadImageFile(fileName); },
-    [this](const fs::path& fileName) { addImageFile(fileName); },
+    [this](const std::vector<fs::path>& fileNames) { loadImageFiles(fileNames); },
+    [this](const std::vector<fs::path>& fileNames) { addImageFiles(fileNames); },
     [this](const fs::path& fileName) { addSegmentationFile(fileName); },
     [this](const uuids::uuid& imageUid, const fs::path& fileName) { addSegmentationFileToImage(fileName, imageUid); },
     [this](const fs::path& fileName) { loadProjectFile(fileName); },
