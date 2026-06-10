@@ -512,9 +512,11 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/utility/math/SliceIntersector.cpp"
 
   "${entropy_APP_DIR}/ui/AboutEntropyIcon.cpp"
+  "${entropy_APP_DIR}/ui/DicomMetadataTable.cpp"
   "${entropy_APP_DIR}/ui/GuiData.cpp"
   "${entropy_APP_DIR}/ui/Headers.cpp"
   "${entropy_APP_DIR}/ui/Helpers.cpp"
+  "${entropy_APP_DIR}/ui/ImageExport.cpp"
   "${entropy_APP_DIR}/ui/IsosurfaceHeader.cpp"
   "${entropy_APP_DIR}/ui/ImGuiCustomControls.cpp"
   "${entropy_APP_DIR}/ui/ImGuiWrapper.cpp"

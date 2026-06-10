@@ -1,8 +1,10 @@
 #pragma once
 
 #include <filesystem>
+#include "image/DicomSeries.h"
 #include "image/ImageHeader.h"
 
+#include <array>
 #include <cstdint>
 
 #include <glm/vec2.hpp>
@@ -12,6 +14,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 /**
  * @brief Data for the user interface
@@ -84,6 +87,45 @@ struct GuiData
   bool m_showLargeImageLoadPrompt = false;
   bool m_bypassNextImageLoadPreflight = false;
   std::optional<LargeImageLoadPrompt> m_pendingLargeImageLoadPrompt = std::nullopt;
+
+  struct DicomSeriesSelectionPrompt
+  {
+    std::vector<dicom::SeriesInfo> series;
+    std::vector<bool> selected;
+    std::vector<std::string> warnings;
+    int referenceSeriesIndex = 0;
+    bool addToExistingProject = false;
+    bool allowReferenceSelection = true;
+    std::optional<std::size_t> metadataSeriesIndex = std::nullopt;
+    std::optional<std::size_t> previewSeriesIndex = std::nullopt;
+    std::vector<std::vector<dicom::SlicePreview>> previewCache;
+    std::vector<std::string> previewErrors;
+    int previewSliceCount = 10;
+    std::array<bool, 16> seriesColumnVisible{
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true};
+  };
+
+  bool m_showDicomFolderPathPopup = false;
+  std::string m_dicomFolderPathText;
+  bool m_dicomSeriesScanInProgress = false;
+  std::filesystem::path m_pendingDicomScanRoot;
+  bool m_showDicomSeriesSelectionPopup = false;
+  std::optional<DicomSeriesSelectionPrompt> m_pendingDicomSeriesSelectionPrompt = std::nullopt;
 
   /// Map of imageUid to boolean of whether its image color map window is shown.
   /// (The color map window is shown as a popup from the Image Properties window)

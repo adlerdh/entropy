@@ -47,6 +47,23 @@ void addImage(const MainMenuBarCallbacks& callbacks)
   }
 }
 
+void openDicomSeries(const MainMenuBarCallbacks& callbacks)
+{
+  if (!callbacks.canOpenProject) {
+    return;
+  }
+
+  const auto selectedFolders = native_dialog::pickFolders();
+  if (!selectedFolders.empty() && callbacks.openDicomFolders) {
+    callbacks.openDicomFolders(selectedFolders);
+    return;
+  }
+
+  if (callbacks.requestDicomFolderPathDialog) {
+    callbacks.requestDicomFolderPathDialog();
+  }
+}
+
 void addSegmentation(const MainMenuBarCallbacks& callbacks)
 {
   if (!callbacks.canAddSegmentation) {
@@ -226,6 +243,10 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   if (ImGui::MenuItem("Add Image(s)...", nullptr, false, callbacks.canAddImage)) {
     addImage(callbacks);
   }
+  if (ImGui::MenuItem("Add DICOM Series...", nullptr, false, callbacks.canAddImage)) {
+    openDicomSeries(callbacks);
+  }
+  actionMenuItem(callbacks, "Export DICOM Series as Image...", MainMenuAction::ExportActiveImage);
   actionMenuItem(callbacks, "Remove Active Image", MainMenuAction::RemoveActiveImage);
   actionMenuItem(callbacks, "Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
   ImGui::Separator();
@@ -335,6 +356,10 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("Open Image(s)...", "Ctrl+O", false, callbacks.canOpenProject)) {
         main_menu::openImage(callbacks);
+      }
+
+      if (ImGui::MenuItem("Open DICOM Series...", nullptr, false, callbacks.canOpenProject)) {
+        main_menu::openDicomSeries(callbacks);
       }
 
       if (ImGui::MenuItem("Open Project...", "Ctrl+Shift+O", false, callbacks.canOpenProject)) {

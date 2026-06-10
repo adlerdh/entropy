@@ -1,6 +1,8 @@
 #include "ui/Headers.h"
 #include "ui/GuiData.h"
+#include "ui/DicomMetadataTable.h"
 #include "ui/Helpers.h"
+#include "ui/ImageExport.h"
 #include "ui/ImGuiCustomControls.h"
 #include "ui/NativeFileDialogs.h"
 #include "ui/Widgets.h"
@@ -13,6 +15,7 @@
 #include "logic/app/DataHelper.h"
 
 #include "image/Image.h"
+#include "image/DicomSeries.h"
 #include "image/ImageColorMap.h"
 #include "image/ImageHeader.h"
 #include "image/ImageSettings.h"
@@ -40,7 +43,12 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cctype>
+#include <cstdint>
+#include <optional>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #undef min
 #undef max
@@ -81,6 +89,103 @@ std::pair<ImVec4, ImVec4> computeHeaderBgAndTextColors(const glm::vec3& color)
   return {headerColor, headerTextColor};
 }
 
+std::string lowerCaseCopy(std::string text)
+{
+  std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+  return text;
+}
+
+std::string dicomCacheKey(const uuids::uuid& imageUid, const serialize::DicomSource& source)
+{
+  return uuids::to_string(imageUid) + "|" + source.m_studyInstanceUid + "|" + source.m_seriesInstanceUid;
+}
+
+struct HeaderDicomMetadataCache
+{
+  serialize::DicomSource source;
+  std::string displayName;
+  std::vector<dicom::MetadataEntry> entries;
+  std::size_t numSlices = 0;
+  std::string error;
+};
+
+HeaderDicomMetadataCache loadHeaderDicomMetadata(const serialize::DicomSource& source)
+{
+  HeaderDicomMetadataCache cache;
+  cache.source = source;
+  cache.numSlices = source.m_files.size();
+
+  std::vector<fs::path> inputs;
+  if (!source.m_rootPath.empty()) {
+    inputs.push_back(source.m_rootPath);
+  }
+  else {
+    inputs.insert(inputs.end(), source.m_files.begin(), source.m_files.end());
+  }
+
+  if (inputs.empty()) {
+    cache.error = "No DICOM source paths are available.";
+    return cache;
+  }
+
+  const dicom::DiscoverResult result = dicom::discoverSeries(inputs);
+  const auto seriesIt =
+    std::find_if(result.series.begin(), result.series.end(), [&source](const dicom::SeriesInfo& series) {
+      if (!source.m_seriesInstanceUid.empty() && series.seriesInstanceUid != source.m_seriesInstanceUid) {
+        return false;
+      }
+      if (!source.m_studyInstanceUid.empty() && series.metadata.studyInstanceUid != source.m_studyInstanceUid) {
+        return false;
+      }
+      return true;
+    });
+
+  if (seriesIt == result.series.end()) {
+    cache.error = "The DICOM series metadata could not be rediscovered from the saved source paths.";
+    return cache;
+  }
+
+  cache.displayName = seriesIt->displayName;
+  cache.entries = seriesIt->metadataSummary;
+  cache.numSlices = seriesIt->files.size();
+  return cache;
+}
+
+void renderImageDicomMetadata(const AppData& appData, const uuids::uuid& imageUid)
+{
+  const serialize::DicomSource* dicomSource = image_export::dicomSourceForImage(appData, imageUid);
+  if (!dicomSource) {
+    return;
+  }
+
+  if (!ImGui::TreeNode("DICOM Metadata")) {
+    return;
+  }
+
+  static std::unordered_map<std::string, HeaderDicomMetadataCache> metadataCache;
+  const std::string cacheKey = dicomCacheKey(imageUid, *dicomSource);
+  auto cacheIt = metadataCache.find(cacheKey);
+  if (cacheIt == metadataCache.end()) {
+    cacheIt = metadataCache.emplace(cacheKey, loadHeaderDicomMetadata(*dicomSource)).first;
+  }
+
+  const HeaderDicomMetadataCache& metadata = cacheIt->second;
+  if (!metadata.displayName.empty()) {
+    ImGui::TextWrapped("%s", metadata.displayName.c_str());
+  }
+  if (!metadata.error.empty()) {
+    ImGui::TextWrapped("%s", metadata.error.c_str());
+  }
+  else {
+    ImGui::Text("Slices: %zu", metadata.numSlices);
+    const ImVec2 tableSize(ImGui::GetContentRegionAvail().x, 360.0f);
+    renderDicomMetadataTable("ImageHeaderDicomMetadataTable", metadata.entries, tableSize);
+  }
+  ImGui::TreePop();
+}
+
 } // namespace
 
 void renderImageHeaderInformation(
@@ -102,6 +207,30 @@ void renderImageHeaderInformation(
   ImGui::InputText("File name", &fileName, ImGuiInputTextFlags_ReadOnly);
   ImGui::SameLine();
   helpMarker("Image file name");
+
+  if (const serialize::DicomSource* dicomSource = image_export::dicomSourceForImage(appData, imageUid)) {
+    ImGui::Spacing();
+    ImGui::Text("DICOM series source:");
+
+    std::string dicomFolder = dicomSource->m_rootPath.string();
+    ImGui::InputText("DICOM folder", &dicomFolder, ImGuiInputTextFlags_ReadOnly);
+
+    std::string seriesUid = dicomSource->m_seriesInstanceUid;
+    ImGui::InputText("Series UID", &seriesUid, ImGuiInputTextFlags_ReadOnly);
+
+    std::string studyUid = dicomSource->m_studyInstanceUid;
+    ImGui::InputText("Study UID", &studyUid, ImGuiInputTextFlags_ReadOnly);
+
+    std::uint64_t sliceCount = static_cast<std::uint64_t>(dicomSource->m_files.size());
+    ImGui::InputScalar(
+      "Slices",
+      ImGuiDataType_U64,
+      &sliceCount,
+      nullptr,
+      nullptr,
+      nullptr,
+      ImGuiInputTextFlags_ReadOnly);
+  }
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -341,7 +470,7 @@ void renderImageHeaderInformation(
   helpMarker("Number of components per pixel");
 
   // Component type:
-  std::string componentType = imgHeader.fileComponentTypeAsString();
+  std::string componentType = lowerCaseCopy(componentTypeString(imgHeader.fileComponentType()));
   ImGui::InputText("Component type", &componentType, ImGuiInputTextFlags_ReadOnly);
   ImGui::SameLine();
   helpMarker("Image component type");
@@ -606,6 +735,22 @@ void renderImageHeader(
     }
     if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Remove this image from the project");
+    }
+  }
+
+  if (image_export::imageHasDicomSource(appData, imageUid)) {
+    const bool canExportImage = image->hasPixelData();
+    if (!canExportImage) {
+      ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Export DICOM Series as Image...")) {
+      image_export::exportDicomImage(appData, imageUid);
+    }
+    if (!canExportImage) {
+      ImGui::EndDisabled();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("Export this DICOM series as a 3D medical image");
     }
   }
 
@@ -1750,6 +1895,8 @@ void renderImageHeader(
     renderImageHeaderInformation(appData, imageUid, *image, updateImageUniforms, recenterAllViews);
     ImGui::TreePop();
   }
+
+  renderImageDicomMetadata(appData, imageUid);
 
   if (!image->hasPixelData()) {
     ImGui::TextUnformatted("Pixel data is not loaded yet.");

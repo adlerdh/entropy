@@ -3,6 +3,7 @@
 #include "common/AsyncTasks.h"
 #include <filesystem>
 #include "common/PublicTypes.h"
+#include "image/DicomSeries.h"
 #include "common/SegmentationTypes.h"
 #include "ui/GuiData.h"
 
@@ -37,10 +38,15 @@ public:
     std::function<void(void)> readjustViewport,
     std::function<void(const std::vector<std::filesystem::path>& fileNames)> openImageFiles,
     std::function<void(const std::vector<std::filesystem::path>& fileNames)> addImageFiles,
+    std::function<void(const std::vector<std::filesystem::path>& folderNames)> openDicomFolders,
     std::function<void(const std::filesystem::path& fileName)> addSegmentationFile,
     std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> addSegmentationFileToImage,
     std::function<void(const std::filesystem::path& fileName)> openProjectFile,
     std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
+    std::function<void(
+      const std::vector<dicom::SeriesInfo>& series,
+      std::optional<std::size_t> referenceSeriesIndex,
+      bool addToExistingProject)> loadDicomSeries,
     std::function<bool()> saveProject,
     std::function<bool(const std::filesystem::path& fileName)> saveProjectAs,
     std::function<void()> closeProject,
@@ -99,11 +105,17 @@ private:
   std::function<void(void)> m_readjustViewport = nullptr;
   std::function<void(const std::vector<std::filesystem::path>& fileNames)> m_openImageFiles = nullptr;
   std::function<void(const std::vector<std::filesystem::path>& fileNames)> m_addImageFiles = nullptr;
+  std::function<void(const std::vector<std::filesystem::path>& folderNames)> m_openDicomFolders = nullptr;
   std::function<void(const std::filesystem::path& fileName)> m_addSegmentationFile = nullptr;
   std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> m_addSegmentationFileToImage =
     nullptr;
   std::function<void(const std::filesystem::path& fileName)> m_openProjectFile = nullptr;
   std::function<void(GuiData::LargeImageLoadDecision decision)> m_largeImageLoadDecision = nullptr;
+  std::function<void(
+    const std::vector<dicom::SeriesInfo>& series,
+    std::optional<std::size_t> referenceSeriesIndex,
+    bool addToExistingProject)>
+    m_loadDicomSeries = nullptr;
   std::function<bool()> m_saveProject = nullptr;
   std::function<bool(const std::filesystem::path& fileName)> m_saveProjectAs = nullptr;
   std::function<void()> m_closeProject = nullptr;

@@ -9,6 +9,7 @@ add_library(EntropyImage STATIC)
 add_library(Entropy::Image ALIAS EntropyImage)
 
 target_sources(EntropyImage PRIVATE
+  DicomSeries.cpp
   Image.cpp
   ImageColorMap.cpp
   ImageDerivedData.cpp

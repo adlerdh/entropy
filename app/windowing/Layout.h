@@ -29,6 +29,10 @@ enum class LayoutKind
   AxialLightbox = 6,
   CoronalLightbox = 7,
   SagittalLightbox = 8,
+  SingleCoronal = 9,
+  SingleSagittal = 10,
+  MultiImageCoronalGrid = 11,
+  MultiImageSagittalGrid = 12,
   NumElements
 };
 

@@ -358,7 +358,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       if (s_mouseButtonState.left) {
         H.doWindowLevel(*s_startHit, *s_prevHit, *currHit_withOverride, fineAdjustment);
       }
-      else if (s_mouseButtonState.right) {
+      else if (s_mouseButtonState.right && shiftDown) {
         H.doOpacity(*s_prevHit, *currHit_withOverride);
       }
       break;

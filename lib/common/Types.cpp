@@ -92,27 +92,27 @@ std::string typeString(const InterpolationMode& mode)
 std::string componentTypeString(const ComponentType& compType)
 {
   static const std::unordered_map<ComponentType, std::string> s_compTypeToStringMap{
-    {ComponentType::Int8, "Signed 8-bit char (int8)"},
-    {ComponentType::UInt8, "Unsigned 8-bit char (uint8)"},
+    {ComponentType::Int8, "signed 8-bit char (int8)"},
+    {ComponentType::UInt8, "unsigned 8-bit char (uint8)"},
 
-    {ComponentType::Int16, "Signed 16-bit short int (int16)"},
-    {ComponentType::UInt16, "Unsigned 16-bit short int (uint16)"},
+    {ComponentType::Int16, "signed 16-bit short int (int16)"},
+    {ComponentType::UInt16, "unsigned 16-bit short int (uint16)"},
 
-    {ComponentType::Int32, "Signed 32-bit int (int32)"},
-    {ComponentType::UInt32, "Unsigned 32-bit int (uint32)"},
+    {ComponentType::Int32, "signed 32-bit int (int32)"},
+    {ComponentType::UInt32, "unsigned 32-bit int (uint32)"},
 
-    {ComponentType::Long, "Signed long int"},
-    {ComponentType::ULong, "Unsigned long int"},
+    {ComponentType::Long, "signed long int"},
+    {ComponentType::ULong, "unsigned long int"},
 
-    {ComponentType::LongLong, "Signed long long int"},
-    {ComponentType::ULongLong, "Unsigned long long int"},
+    {ComponentType::LongLong, "signed long long int"},
+    {ComponentType::ULongLong, "unsigned long long int"},
 
-    {ComponentType::Float32, "Single 32-bit float (float)"},
-    {ComponentType::Float64, "Double 64-bit float (double)"},
+    {ComponentType::Float32, "single 32-bit float (float)"},
+    {ComponentType::Float64, "double 64-bit float (double)"},
 
-    {ComponentType::LongDouble, "Long double"},
+    {ComponentType::LongDouble, "long double"},
 
-    {ComponentType::Undefined, "Undefined"}};
+    {ComponentType::Undefined, "undefined"}};
 
   return s_compTypeToStringMap.at(compType);
 }
@@ -123,7 +123,7 @@ std::string typeString(const MouseMode& mouseMode)
     {MouseMode::Pointer,
      "Pointer (V)\nLeft button: move crosshairs\n+Ctrl: rotate crosshairs\nMiddle button: "
      "pan\nRight button: zoom"},
-    {MouseMode::WindowLevel, "Window/level and opacity (L)\nLeft button: window/level\nRight button: opacity"},
+    {MouseMode::WindowLevel, "Window/level and opacity (L)\nLeft button: window/level\nShift + right button: opacity"},
     {MouseMode::CameraTranslate,
      "Pan/dolly view (X)\nLeft button: pan in plane\nRight button: dolly in/out of plane (3D "
      "views "

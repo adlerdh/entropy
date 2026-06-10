@@ -19,8 +19,10 @@
 namespace serialize
 {
 
-/// @todo Create enum for all image color maps
-/// @brief Serialized data for image settings
+/**
+ * @todo Create enum for all image color maps
+ * @brief Serialized data for image settings
+ */
 struct ImageSettings
 {
   std::string m_displayName;
@@ -33,65 +35,117 @@ struct ImageSettings
 
   double m_opacity = 1.0f; //!< Opacity [0, 1]
 
-  /// @todo Add isosurfaces
+  /**
+   * @todo Add isosurfaces
+   */
 };
 
-/// @brief Serialized data for image segmentation settings
+/**
+ * @brief Serialized data for image segmentation settings
+ */
 struct SegSettings
 {
   double m_opacity = 1.0f;
 
-  /// @todo Add rest of the segmentation options, e.g.
-  /// visibility, color label table, etc.
+  /**
+   * @todo Add rest of the segmentation options, e.g.
+   * visibility, color label table, etc.
+   */
 };
 
-/// @brief Serialized data for a segmentation image
+/**
+ * @brief Serialized data for a segmentation image
+ */
 struct Segmentation
 {
   std::filesystem::path m_segFileName; //!< Segmentation image file
 
-  /// Optional segmentation settings
+  /**
+   * Optional segmentation settings
+   */
   std::optional<serialize::SegSettings> m_settings = std::nullopt;
 };
 
-/// @brief Serialized data for a group of image landmarks
+/**
+ * @brief Serialized data for a group of image landmarks
+ */
 struct LandmarkGroup
 {
   std::string m_csvFileName; //!< CSV file holding the landmarks
 
-  /// Flag indicating whether landmarks are defined in image voxel space (true)
-  /// or in physical/subject space (false)
+  /**
+   * Flag indicating whether landmarks are defined in image voxel space (true)
+   * or in physical/subject space (false)
+   */
   bool m_inVoxelSpace = false;
 };
 
-/// @brief Serialized data for an image in Entropy
+/**
+ * @brief Serialized DICOM-series source metadata for an image.
+ *
+ * `m_imageFileName` remains in `serialize::Image` as a fallback path. This structure records
+ * the full source series identity so project reloads do not depend on treating one slice as a
+ * normal standalone image.
+ */
+struct DicomSource
+{
+  std::filesystem::path m_rootPath;           //!< Root folder used to discover the series.
+  std::string m_studyInstanceUid;             //!< Study Instance UID used to disambiguate the series.
+  std::string m_seriesInstanceUid;            //!< Series Instance UID to reload.
+  std::vector<std::filesystem::path> m_files; //!< Slice files in series order.
+};
+
+/**
+ * @brief Serialized data for an image in Entropy
+ */
 struct Image
 {
   std::filesystem::path m_imageFileName; //!< Image file name
 
-  /// Optional 4x4 affine transformation text file name
+  /**
+   * Optional DICOM source. When present, this describes a full series instead of a single image file.
+   */
+  std::optional<serialize::DicomSource> m_dicomSource = std::nullopt;
+
+  /**
+   * Optional 4x4 affine transformation text file name
+   */
   std::optional<std::filesystem::path> m_affineTxFileName = std::nullopt;
 
-  /// Optional deformable transformation image file name
+  /**
+   * Optional deformable transformation image file name
+   */
   std::optional<std::filesystem::path> m_deformationFileName = std::nullopt;
 
-  /// Optional manual transformation matrix from affine-registered subject space to world space
+  /**
+   * Optional manual transformation matrix from affine-registered subject space to world space
+   */
   std::optional<glm::mat4> m_worldDefTx = std::nullopt;
 
-  /// Optional annotations JSON file name
+  /**
+   * Optional annotations JSON file name
+   */
   std::optional<std::filesystem::path> m_annotationsFileName = std::nullopt;
 
-  /// Segmentation image file names (each image can have multiple segmentations)
+  /**
+   * Segmentation image file names (each image can have multiple segmentations)
+   */
   std::vector<serialize::Segmentation> m_segmentations;
 
-  /// Landmark groups (each image can have multiple landmark groups)
+  /**
+   * Landmark groups (each image can have multiple landmark groups)
+   */
   std::vector<serialize::LandmarkGroup> m_landmarkGroups;
 
-  /// Optional image settings
+  /**
+   * Optional image settings
+   */
   std::optional<serialize::ImageSettings> m_settings = std::nullopt;
 };
 
-/// @brief Serialized data for an Entropy project
+/**
+ * @brief Serialized data for an Entropy project
+ */
 struct EntropyProject
 {
   serialize::Image m_referenceImage;
@@ -100,7 +154,9 @@ struct EntropyProject
   std::optional<std::size_t> m_currentLayoutIndex = std::nullopt;
 };
 
-/// @todo Put these in a separate header file
+/**
+ * @todo Put these in a separate header file
+ */
 
 /**
  * @brief Create a project to be loaded from input parameters.
@@ -117,7 +173,9 @@ serialize::EntropyProject createProjectFromInputParams(const InputParams& params
  */
 bool open(EntropyProject& project, const std::filesystem::path& fileName);
 
-/// Save a project to a file
+/**
+ * Save a project to a file
+ */
 bool save(const EntropyProject& project, const std::filesystem::path& fileName);
 
 bool openAffineTxFile(glm::dmat4& matrix, const std::filesystem::path& fileName);

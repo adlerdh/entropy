@@ -15,6 +15,7 @@ namespace
 constexpr UINT sk_openImageCommand = 1001;
 constexpr UINT sk_openProjectCommand = 1002;
 constexpr UINT sk_addImageCommand = 1003;
+constexpr UINT sk_openDicomSeriesCommand = 1008;
 constexpr UINT sk_addSegmentationCommand = 1004;
 constexpr UINT sk_saveProjectCommand = 1005;
 constexpr UINT sk_saveProjectAsCommand = 1006;
@@ -65,6 +66,7 @@ bool isMenuCommand(UINT command)
     case sk_openImageCommand:
     case sk_openProjectCommand:
     case sk_addImageCommand:
+    case sk_openDicomSeriesCommand:
     case sk_addSegmentationCommand:
     case sk_saveProjectCommand:
     case sk_saveProjectAsCommand:
@@ -112,6 +114,7 @@ void updateEnabledState(const MenuState& state)
 
   enableMenuCommand(state, sk_openImageCommand, callbacks.canOpenProject && callbacks.openImageFiles);
   enableMenuCommand(state, sk_openProjectCommand, callbacks.canOpenProject && callbacks.openProjectFile);
+  enableMenuCommand(state, sk_openDicomSeriesCommand, callbacks.canOpenProject && callbacks.openDicomFolders);
   enableMenuCommand(state, sk_addImageCommand, callbacks.canAddImage && callbacks.addImageFiles);
   enableMenuCommand(state, sk_addSegmentationCommand, callbacks.canAddSegmentation && callbacks.addSegmentationFile);
   enableMenuCommand(state, sk_saveProjectCommand, callbacks.canSaveProject && callbacks.saveProject);
@@ -178,6 +181,9 @@ void handleMenuCommand(const MenuState& state, UINT command)
       break;
     case sk_openProjectCommand:
       main_menu::openProject(callbacks);
+      break;
+    case sk_openDicomSeriesCommand:
+      main_menu::openDicomSeries(callbacks);
       break;
     case sk_addImageCommand:
       main_menu::addImage(callbacks);
@@ -293,6 +299,7 @@ bool populateFileMenu(HMENU fileMenu)
 {
   UINT position = 0;
   return insertMenuItem(fileMenu, position++, sk_openImageCommand, L"&Open Image(s)...\tCtrl+O") &&
+         insertMenuItem(fileMenu, position++, sk_openDicomSeriesCommand, L"Open &DICOM Series...") &&
          insertMenuItem(fileMenu, position++, sk_openProjectCommand, L"Open &Project...\tCtrl+Shift+O") &&
          insertSeparator(fileMenu, position++) &&
          insertMenuItem(fileMenu, position++, sk_addImageCommand, L"&Add Image(s)...") &&
@@ -328,6 +335,12 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
   return insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"Show &Images Panel") &&
          insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
          insertMenuItem(menu, position++, sk_addImageCommand, L"&Add Image(s)...") &&
+         insertMenuItem(menu, position++, sk_openDicomSeriesCommand, L"Add &DICOM Series...") &&
+         insertActionMenuItem(
+           menu,
+           position++,
+           MainMenuAction::ExportActiveImage,
+           L"&Export DICOM Series as Image...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::RemoveActiveImage, L"&Remove Active Image") &&
          insertActionMenuItem(
            menu,

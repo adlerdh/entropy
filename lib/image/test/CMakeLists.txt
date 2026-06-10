@@ -1,4 +1,5 @@
 add_executable(EntropyImageTests
+  DicomSeriesTests.cpp
   ImageColorMapTests.cpp
 )
 

@@ -5,6 +5,7 @@
 #include "common/MathFuncs.h"
 
 #include "ui/Helpers.h"
+#include "ui/ImageExport.h"
 #include "ui/MainMenuBar.h"
 #ifdef __APPLE__
 #include "ui/MacNativeMainMenu.h"
@@ -109,6 +110,8 @@ void renderLoadingStatusBar()
 void renderEmptyWorkspace(
   ProjectLoadState projectLoadState,
   const std::function<void(const std::vector<fs::path>& fileNames)>& openImageFiles,
+  const std::function<void(const std::vector<fs::path>& folderNames)>& openDicomFolders,
+  const std::function<void()>& requestDicomFolderPathDialog,
   const std::function<void(const fs::path& fileName)>& openProjectFile)
 {
   if (ProjectLoadState::Empty != projectLoadState && ProjectLoadState::Failed != projectLoadState) {
@@ -116,7 +119,7 @@ void renderEmptyWorkspace(
   }
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  const ImVec2 panelSize{420.0f, 98.0f};
+  const ImVec2 panelSize{600.0f, 98.0f};
   ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2{0.5f, 0.5f});
   ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
 
@@ -138,13 +141,25 @@ void renderEmptyWorkspace(
     ImGui::TextUnformatted(text);
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().ItemSpacing.y);
 
-    const float buttonsWidth = 2.0f * buttonWidth + ImGui::GetStyle().ItemSpacing.x;
+    const float buttonsWidth = 3.0f * buttonWidth + 2.0f * ImGui::GetStyle().ItemSpacing.x;
     ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), (ImGui::GetWindowSize().x - buttonsWidth) * 0.5f));
 
     if (ImGui::Button("Open Image(s)...", ImVec2{buttonWidth, 0.0f})) {
       const auto selectedFiles = native_dialog::openFiles(native_dialog::imageFilters());
       if (!selectedFiles.empty() && openImageFiles) {
         openImageFiles(selectedFiles);
+      }
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Open DICOM Series...", ImVec2{buttonWidth, 0.0f})) {
+      const auto selectedFolders = native_dialog::pickFolders();
+      if (!selectedFolders.empty() && openDicomFolders) {
+        openDicomFolders(selectedFolders);
+      }
+      else if (requestDicomFolderPathDialog) {
+        requestDicomFolderPathDialog();
       }
     }
 
@@ -256,10 +271,15 @@ void ImGuiWrapper::setCallbacks(
   std::function<void(void)> readjustViewport,
   std::function<void(const std::vector<fs::path>& fileNames)> openImageFiles,
   std::function<void(const std::vector<fs::path>& fileNames)> addImageFiles,
+  std::function<void(const std::vector<fs::path>& folderNames)> openDicomFolders,
   std::function<void(const fs::path& fileName)> addSegmentationFile,
   std::function<void(const uuids::uuid& imageUid, const fs::path& fileName)> addSegmentationFileToImage,
   std::function<void(const fs::path& fileName)> openProjectFile,
   std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
+  std::function<void(
+    const std::vector<dicom::SeriesInfo>& series,
+    std::optional<std::size_t> referenceSeriesIndex,
+    bool addToExistingProject)> loadDicomSeries,
   std::function<bool()> saveProject,
   std::function<bool(const fs::path& fileName)> saveProjectAs,
   std::function<void()> closeProject,
@@ -302,10 +322,12 @@ void ImGuiWrapper::setCallbacks(
   m_readjustViewport = readjustViewport;
   m_openImageFiles = openImageFiles;
   m_addImageFiles = addImageFiles;
+  m_openDicomFolders = openDicomFolders;
   m_addSegmentationFile = addSegmentationFile;
   m_addSegmentationFileToImage = addSegmentationFileToImage;
   m_openProjectFile = openProjectFile;
   m_largeImageLoadDecision = largeImageLoadDecision;
+  m_loadDicomSeries = loadDicomSeries;
   m_saveProject = saveProject;
   m_saveProjectAs = saveProjectAs;
   m_closeProject = closeProject;
@@ -1009,6 +1031,11 @@ void ImGuiWrapper::render()
           m_appData.guiData().m_showConfirmSetReferenceImagePopup = true;
         }
         break;
+      case MainMenuAction::ExportActiveImage:
+        if (const auto imageUid = activeImageUid()) {
+          image_export::exportDicomImage(m_appData, *imageUid);
+        }
+        break;
       case MainMenuAction::RemoveActiveImage:
         if (const auto imageUid = activeImageUid()) {
           m_appData.guiData().m_pendingRemoveImageUid = *imageUid;
@@ -1290,6 +1317,9 @@ void ImGuiWrapper::render()
         case MainMenuAction::RemoveSegmentation:
           if (!canUseProjectActions || !hasActiveSeg || !hasActiveImage) return false;
           return m_appData.imageToSegUids(*activeImageUid()).size() > 1;
+        case MainMenuAction::ExportActiveImage:
+          if (!canUseProjectActions || !hasActiveImage) return false;
+          return image_export::imageHasDicomSource(m_appData, *activeImageUid());
         case MainMenuAction::SetActiveImageAsReference:
         case MainMenuAction::RemoveActiveImage:
         case MainMenuAction::MoveActiveImageBackward:
@@ -1550,6 +1580,8 @@ void ImGuiWrapper::render()
     renderConfirmSetReferenceImagePopup(m_appData, m_setReferenceImage);
     renderConfirmRemoveImagePopup(m_appData, m_removeImage);
     renderLargeImageLoadPromptPopup(m_appData, m_largeImageLoadDecision);
+    renderDicomFolderPathPopup(m_appData, m_openDicomFolders);
+    renderDicomSeriesSelectionPopup(m_appData, m_loadDicomSeries);
 
     if (m_appData.guiData().m_showImGuiDemoWindow) {
       ImGui::ShowDemoWindow(&m_appData.guiData().m_showImGuiDemoWindow);
@@ -1562,6 +1594,8 @@ void ImGuiWrapper::render()
     const MainMenuBarCallbacks mainMenuCallbacks{
       .openImageFiles = m_openImageFiles,
       .addImageFiles = m_addImageFiles,
+      .openDicomFolders = m_openDicomFolders,
+      .requestDicomFolderPathDialog = [this]() { m_appData.guiData().m_showDicomFolderPathPopup = true; },
       .addSegmentationFile = m_addSegmentationFile,
       .openProjectFile = m_openProjectFile,
       .saveProject = m_saveProject,
@@ -1622,7 +1656,12 @@ void ImGuiWrapper::render()
     renderMainMenuBar(m_appData.guiData(), mainMenuCallbacks);
 #endif
 
-    renderEmptyWorkspace(projectLoadState, m_openImageFiles, m_openProjectFile);
+    renderEmptyWorkspace(
+      projectLoadState,
+      m_openImageFiles,
+      m_openDicomFolders,
+      [this]() { m_appData.guiData().m_showDicomFolderPathPopup = true; },
+      m_openProjectFile);
 
     if (ProjectLoadState::Loaded == projectLoadState && backgroundTaskRunning) {
       renderLoadingStatusBar();

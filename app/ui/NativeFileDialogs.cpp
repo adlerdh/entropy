@@ -173,6 +173,35 @@ std::vector<fs::path> openFiles(const std::vector<Filter>& filters, const fs::pa
   return handleMultiDialogResult(outPaths, result);
 }
 
+std::optional<fs::path> pickFolder(const fs::path& defaultPath)
+{
+  if (!ensureNfdInitialized()) {
+    return std::nullopt;
+  }
+
+  const std::string defaultPathString = dialogDefaultPathString(defaultPath);
+  NFD::UniquePath outPath;
+
+  const nfdresult_t result = NFD::PickFolder(outPath, defaultPathString.empty() ? nullptr : defaultPathString.c_str());
+
+  return handleDialogResult(outPath, result);
+}
+
+std::vector<fs::path> pickFolders(const fs::path& defaultPath)
+{
+  if (!ensureNfdInitialized()) {
+    return {};
+  }
+
+  const std::string defaultPathString = dialogDefaultPathString(defaultPath);
+  NFD::UniquePathSet outPaths;
+
+  const nfdresult_t result =
+    NFD::PickFolderMultiple(outPaths, defaultPathString.empty() ? nullptr : defaultPathString.c_str());
+
+  return handleMultiDialogResult(outPaths, result);
+}
+
 std::optional<fs::path>
 saveFile(const std::vector<Filter>& filters, const fs::path& defaultPath, const std::string& defaultName)
 {
@@ -197,6 +226,11 @@ saveFile(const std::vector<Filter>& filters, const fs::path& defaultPath, const 
 std::vector<Filter> imageFilters()
 {
   return {{"Medical images", "nii,nii.gz,gz,nrrd,nhdr,mha,mhd,dcm,img,hdr"}};
+}
+
+std::vector<Filter> medicalImageExportFilters()
+{
+  return {{"Medical images", "nii,nii.gz,nrrd,nhdr,mha,mhd,img,hdr"}};
 }
 
 std::vector<Filter> projectFilters()

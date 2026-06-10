@@ -43,3 +43,24 @@ void renderConfirmRemoveImagePopup(
 void renderLargeImageLoadPromptPopup(
   AppData& appData,
   const std::function<void(GuiData::LargeImageLoadDecision decision)>& handleDecision);
+
+/**
+ * @brief Render fallback DICOM folder-entry UI when native folder picking is unavailable.
+ * @param appData Application data holding popup state and path text.
+ * @param openDicomFolders Callback invoked with folders to scan.
+ */
+void renderDicomFolderPathPopup(
+  AppData& appData,
+  const std::function<void(const std::vector<std::filesystem::path>& folderNames)>& openDicomFolders);
+
+/**
+ * @brief Render DICOM scan progress, series selection, and metadata inspection popups.
+ * @param appData Application data holding DICOM selection state.
+ * @param loadSelectedSeries Callback invoked with selected series and reference choice.
+ */
+void renderDicomSeriesSelectionPopup(
+  AppData& appData,
+  const std::function<void(
+    const std::vector<dicom::SeriesInfo>& series,
+    std::optional<std::size_t> referenceSeriesIndex,
+    bool addToExistingProject)>& loadSelectedSeries);

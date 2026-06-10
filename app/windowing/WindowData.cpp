@@ -104,7 +104,11 @@ bool isLightboxLayoutKind(LayoutKind kind)
     case LayoutKind::FourUp:
     case LayoutKind::Tri:
     case LayoutKind::SingleAxial:
+    case LayoutKind::SingleCoronal:
+    case LayoutKind::SingleSagittal:
     case LayoutKind::MultiImageAxialGrid:
+    case LayoutKind::MultiImageCoronalGrid:
+    case LayoutKind::MultiImageSagittalGrid:
     case LayoutKind::AxCorSagByImage:
     case LayoutKind::NumElements:
       return false;
@@ -517,8 +521,16 @@ Layout createGridLayout(
   static const IntensityProjectionMode s_ipMode = IntensityProjectionMode::None;
 
   Layout layout(isLightbox);
-  if (!isLightbox && ViewType::Axial == viewType && 1 == height && width > 1) {
-    layout.setKind(LayoutKind::MultiImageAxialGrid);
+  if (!isLightbox && 1 == height && width > 1) {
+    if (ViewType::Axial == viewType) {
+      layout.setKind(LayoutKind::MultiImageAxialGrid);
+    }
+    else if (ViewType::Coronal == viewType) {
+      layout.setKind(LayoutKind::MultiImageCoronalGrid);
+    }
+    else if (ViewType::Sagittal == viewType) {
+      layout.setKind(LayoutKind::MultiImageSagittalGrid);
+    }
   }
 
   if (isLightbox) {
@@ -754,17 +766,21 @@ std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uui
     case LayoutKind::Tri:
       return layout::LayoutPreset{.m_type = "tri", .m_view = {}, .m_images = {}, .m_imageIndices = {}};
     case LayoutKind::SingleAxial:
+    case LayoutKind::SingleCoronal:
+    case LayoutKind::SingleSagittal:
       return layout::LayoutPreset{
         .m_type = "single",
-        .m_view = layoutPresetViewName(firstViewType(layout, ViewType::Axial)),
+        .m_view = layoutPresetViewName(firstViewType(layout, layout.viewType())),
         .m_images = {},
         .m_imageIndices = imageIndicesInOrder(
           orderedImageUids,
           layout.orderedViews().empty() ? std::list<uuid>{} : layout.orderedViews().front()->renderedImages())};
     case LayoutKind::MultiImageAxialGrid:
+    case LayoutKind::MultiImageCoronalGrid:
+    case LayoutKind::MultiImageSagittalGrid:
       return layout::LayoutPreset{
         .m_type = "multiImageGrid",
-        .m_view = layoutPresetViewName(firstViewType(layout, ViewType::Axial)),
+        .m_view = layoutPresetViewName(firstViewType(layout, layout.viewType())),
         .m_images = "all",
         .m_imageIndices = {}};
     case LayoutKind::AxCorSagByImage:
@@ -826,7 +842,18 @@ std::optional<Layout> instantiateLayoutPreset(
       appData.imageUid(imageIndices.front()),
       std::nullopt);
     applyViewImageIndices(layout, imageIndices);
-    layout.setKind(ViewType::Axial == *viewType ? LayoutKind::SingleAxial : LayoutKind::Custom);
+    if (ViewType::Axial == *viewType) {
+      layout.setKind(LayoutKind::SingleAxial);
+    }
+    else if (ViewType::Coronal == *viewType) {
+      layout.setKind(LayoutKind::SingleCoronal);
+    }
+    else if (ViewType::Sagittal == *viewType) {
+      layout.setKind(LayoutKind::SingleSagittal);
+    }
+    else {
+      layout.setKind(LayoutKind::Custom);
+    }
     return std::optional<Layout>{std::move(layout)};
   }
   if ("multiImageGrid" == preset.m_type) {
@@ -851,7 +878,18 @@ std::optional<Layout> instantiateLayoutPreset(
     if (!imageIndices.empty()) {
       applyViewImageIndices(layout, imageIndices);
     }
-    layout.setKind(ViewType::Axial == *viewType ? LayoutKind::MultiImageAxialGrid : LayoutKind::Custom);
+    if (ViewType::Axial == *viewType) {
+      layout.setKind(LayoutKind::MultiImageAxialGrid);
+    }
+    else if (ViewType::Coronal == *viewType) {
+      layout.setKind(LayoutKind::MultiImageCoronalGrid);
+    }
+    else if (ViewType::Sagittal == *viewType) {
+      layout.setKind(LayoutKind::MultiImageSagittalGrid);
+    }
+    else {
+      layout.setKind(LayoutKind::Custom);
+    }
     return std::optional<Layout>{std::move(layout)};
   }
   if ("orthogonalByImage" == preset.m_type) {
@@ -889,7 +927,11 @@ std::optional<Layout> instantiateLayoutPreset(
 bool isImageDependentManagedLayout(LayoutKind kind)
 {
   switch (kind) {
+    case LayoutKind::SingleCoronal:
+    case LayoutKind::SingleSagittal:
     case LayoutKind::MultiImageAxialGrid:
+    case LayoutKind::MultiImageCoronalGrid:
+    case LayoutKind::MultiImageSagittalGrid:
     case LayoutKind::AxCorSagByImage:
     case LayoutKind::AxialLightbox:
     case LayoutKind::CoronalLightbox:
@@ -913,7 +955,11 @@ bool isFixedManagedLayout(LayoutKind kind)
     case LayoutKind::SingleAxial:
       return true;
     case LayoutKind::Custom:
+    case LayoutKind::SingleCoronal:
+    case LayoutKind::SingleSagittal:
     case LayoutKind::MultiImageAxialGrid:
+    case LayoutKind::MultiImageCoronalGrid:
+    case LayoutKind::MultiImageSagittalGrid:
     case LayoutKind::AxCorSagByImage:
     case LayoutKind::AxialLightbox:
     case LayoutKind::CoronalLightbox:
@@ -1289,6 +1335,32 @@ void WindowData::addAxCorSagLayout(std::size_t numImages)
   updateAllViews();
 }
 
+struct LoadedSlicePlaneSummary
+{
+  bool hasCoronal = false;
+  bool hasSagittal = false;
+};
+
+LoadedSlicePlaneSummary loadedSlicePlaneSummary(const AppData& appData)
+{
+  LoadedSlicePlaneSummary summary;
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
+    const Image* image = appData.image(imageUid);
+    if (!image) {
+      continue;
+    }
+
+    const glm::vec3 normal = glm::abs(glm::normalize(image->header().directions()[2]));
+    if (normal.y >= normal.x && normal.y >= normal.z) {
+      summary.hasCoronal = true;
+    }
+    else if (normal.x >= normal.y && normal.x >= normal.z) {
+      summary.hasSagittal = true;
+    }
+  }
+  return summary;
+}
+
 void WindowData::reconcileImageDependentLayouts(const AppData& appData)
 {
   const uuid currentLayoutUid = (m_currentLayout < m_layouts.size()) ? m_layouts.at(m_currentLayout).uid() : uuid{};
@@ -1302,9 +1374,40 @@ void WindowData::reconcileImageDependentLayouts(const AppData& appData)
     m_layouts.end());
 
   std::vector<Layout> generatedLayouts;
-  generatedLayouts.reserve(1 + 1 + 3 * appData.numImages());
+  generatedLayouts.reserve(5 + 3 * appData.numImages());
 
   const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
+  const LoadedSlicePlaneSummary slicePlanes = loadedSlicePlaneSummary(appData);
+  if (slicePlanes.hasCoronal) {
+    generatedLayouts.emplace_back(createGridLayout(
+      ViewType::Coronal,
+      1,
+      1,
+      false,
+      false,
+      m_crosshairs,
+      m_viewAlignment,
+      m_viewConvention,
+      0,
+      std::nullopt,
+      std::nullopt));
+    generatedLayouts.back().setKind(LayoutKind::SingleCoronal);
+  }
+  if (slicePlanes.hasSagittal) {
+    generatedLayouts.emplace_back(createGridLayout(
+      ViewType::Sagittal,
+      1,
+      1,
+      false,
+      false,
+      m_crosshairs,
+      m_viewAlignment,
+      m_viewConvention,
+      0,
+      std::nullopt,
+      std::nullopt));
+    generatedLayouts.back().setKind(LayoutKind::SingleSagittal);
+  }
   if (orderedImageUids.size() > 1) {
     if (const auto& refUid = appData.refImageUid()) {
       generatedLayouts.emplace_back(createGridLayout(
@@ -1319,6 +1422,34 @@ void WindowData::reconcileImageDependentLayouts(const AppData& appData)
         0,
         *refUid,
         std::nullopt));
+      if (slicePlanes.hasCoronal) {
+        generatedLayouts.emplace_back(createGridLayout(
+          ViewType::Coronal,
+          orderedImageUids.size(),
+          1,
+          false,
+          false,
+          m_crosshairs,
+          m_viewAlignment,
+          m_viewConvention,
+          0,
+          *refUid,
+          std::nullopt));
+      }
+      if (slicePlanes.hasSagittal) {
+        generatedLayouts.emplace_back(createGridLayout(
+          ViewType::Sagittal,
+          orderedImageUids.size(),
+          1,
+          false,
+          false,
+          m_crosshairs,
+          m_viewAlignment,
+          m_viewConvention,
+          0,
+          *refUid,
+          std::nullopt));
+      }
     }
   }
 
@@ -1791,8 +1922,16 @@ std::string WindowData::layoutDisplayName(std::size_t index) const
       return "Tri";
     case LayoutKind::SingleAxial:
       return "Single axial";
+    case LayoutKind::SingleCoronal:
+      return "Single coronal";
+    case LayoutKind::SingleSagittal:
+      return "Single sagittal";
     case LayoutKind::MultiImageAxialGrid:
       return "Multi-image axial grid";
+    case LayoutKind::MultiImageCoronalGrid:
+      return "Multi-image coronal grid";
+    case LayoutKind::MultiImageSagittalGrid:
+      return "Multi-image sagittal grid";
     case LayoutKind::AxCorSagByImage:
       return "Axial/coronal/sagittal by image";
     case LayoutKind::AxialLightbox:

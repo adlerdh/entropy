@@ -106,10 +106,10 @@ On macOS, use Command instead of CTRL for application menu shortcuts.
 ### Modes
 | Key | Mode | Controls |
 | --- | --- | --- |
-| `v` | Crosshairs | - left button: move crosshairs<br>- CTRL + left button: rotate crosshairs<br>- middle button: pan image<br>- right button: zoom image |
+| `v` | Crosshairs | - left button: move crosshairs<br>- ctrl + left button: rotate crosshairs<br>- middle button: pan image<br>- right button: zoom image |
 | `z` | Zoom | - left button: zoom to crosshairs<br>- right button: zoom to cursor pointer |
 | `x` | Pan/dolly | - left button: pan image in plane<br>- right button: dolly in/out of plane (3D views only) |
-| `l` | Image adjustment | - left button: adjust image window left/right and level up/down<br>- right button: adjust image opacity |
+| `l` | Image adjustment | - left button: adjust image window left/right and level up/down<br>- shift + right button: adjust image opacity |
 | `t` | Image translation | - left button: translate image in plane<br>- right button: translate image in/out of plane |
 | `r` | Image rotation | - left button: rotate image in plane<br>- right button: rotate image in/out of plane |
 | `b` | Image segmentation (brush) | - left button: paint foreground label<br>- right button or shift: paint background label |

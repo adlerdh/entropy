@@ -9,6 +9,7 @@ MainMenuBarCallbacks g_callbacks;
 EntropyMacMenuTarget* g_target = nil;
 NSMenuItem* g_openImageItem = nil;
 NSMenuItem* g_openProjectItem = nil;
+NSMenuItem* g_openDicomSeriesItem = nil;
 NSMenuItem* g_addImageItem = nil;
 NSMenuItem* g_saveProjectItem = nil;
 NSMenuItem* g_saveProjectAsItem = nil;
@@ -21,6 +22,7 @@ bool g_installed = false;
 @interface EntropyMacMenuTarget : NSObject
 - (void)openImage:(id)sender;
 - (void)openProject:(id)sender;
+- (void)openDicomSeries:(id)sender;
 - (void)addImage:(id)sender;
 - (void)addSegmentation:(id)sender;
 - (void)saveProject:(id)sender;
@@ -47,6 +49,11 @@ bool g_installed = false;
 - (void)openProject:(id)sender {
   (void)sender;
   main_menu::openProject(g_callbacks);
+}
+
+- (void)openDicomSeries:(id)sender {
+  (void)sender;
+  main_menu::openDicomSeries(g_callbacks);
 }
 
 - (void)addImage:(id)sender {
@@ -138,6 +145,10 @@ bool g_installed = false;
 
   if (action == @selector(openProject:)) {
     return g_callbacks.canOpenProject && g_callbacks.openProjectFile;
+  }
+
+  if (action == @selector(openDicomSeries:)) {
+    return g_callbacks.canOpenProject && g_callbacks.openDicomFolders;
   }
 
   if (action == @selector(addImage:)) {
@@ -243,6 +254,8 @@ void addImageMenu(NSMenu* mainMenu) {
   [activeImageItem setSubmenu:g_activeImagesMenu];
   [menu addItem:activeImageItem];
   addTargetedMenuItem(menu, @"Add Image(s)...", @selector(addImage:), @"");
+  addTargetedMenuItem(menu, @"Add DICOM Series...", @selector(openDicomSeries:), @"");
+  addActionMenuItem(menu, @"Export DICOM Series as Image...", MainMenuAction::ExportActiveImage);
   addActionMenuItem(menu, @"Remove Active Image", MainMenuAction::RemoveActiveImage);
   addActionMenuItem(menu, @"Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
   [menu addItem:[NSMenuItem separatorItem]];
@@ -404,6 +417,7 @@ void installMacOSNativeMainMenu() {
   NSMenuItem* fileMenuItem = [[NSMenuItem alloc] initWithTitle:@"File" action:nil keyEquivalent:@""];
   NSMenu* fileMenu = [[NSMenu alloc] initWithTitle:@"File"];
   g_openImageItem = addTargetedMenuItem(fileMenu, @"Open Image(s)...", @selector(openImage:), @"o");
+  g_openDicomSeriesItem = addTargetedMenuItem(fileMenu, @"Open DICOM Series...", @selector(openDicomSeries:), @"");
   g_openProjectItem = addTargetedMenuItem(
     fileMenu,
     @"Open Project...",

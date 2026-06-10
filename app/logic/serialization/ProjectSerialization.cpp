@@ -224,9 +224,56 @@ void from_json(const json& j, serialize::LandmarkGroup& landmarks)
   }
 }
 
+void to_json(json& j, const serialize::DicomSource& source)
+{
+  j = json{{"seriesInstanceUid", source.m_seriesInstanceUid}};
+
+  if (!source.m_rootPath.empty()) {
+    j["root"] = source.m_rootPath.string();
+  }
+
+  if (!source.m_studyInstanceUid.empty()) {
+    j["studyInstanceUid"] = source.m_studyInstanceUid;
+  }
+
+  if (!source.m_files.empty()) {
+    std::vector<std::string> files;
+    files.reserve(source.m_files.size());
+    for (const auto& file : source.m_files) {
+      files.push_back(file.string());
+    }
+    j["files"] = files;
+  }
+}
+
+void from_json(const json& j, serialize::DicomSource& source)
+{
+  if (j.count("root")) {
+    source.m_rootPath = j.at("root").get<std::string>();
+  }
+  if (j.count("studyInstanceUid")) {
+    source.m_studyInstanceUid = j.at("studyInstanceUid").get<std::string>();
+  }
+  if (j.count("seriesInstanceUid")) {
+    source.m_seriesInstanceUid = j.at("seriesInstanceUid").get<std::string>();
+  }
+  if (j.count("files")) {
+    const auto files = j.at("files").get<std::vector<std::string>>();
+    source.m_files.clear();
+    source.m_files.reserve(files.size());
+    for (const auto& file : files) {
+      source.m_files.emplace_back(file);
+    }
+  }
+}
+
 void to_json(json& j, const serialize::Image& image)
 {
   j = json{{"image", image.m_imageFileName.string()}};
+
+  if (image.m_dicomSource) {
+    j["dicomSource"] = *image.m_dicomSource;
+  }
 
   if (image.m_affineTxFileName) {
     j["affine"] = image.m_affineTxFileName->string();
@@ -262,6 +309,10 @@ void from_json(const json& j, serialize::Image& image)
   std::string p;
   j.at("image").get_to(p);
   image.m_imageFileName = p;
+
+  if (j.count("dicomSource")) {
+    image.m_dicomSource = j.at("dicomSource").get<serialize::DicomSource>();
+  }
 
   if (j.count("affine")) {
     image.m_affineTxFileName = j.at("affine").get<std::string>();
@@ -379,6 +430,15 @@ bool open(EntropyProject& project, const fs::path& fileName)
     fs::current_path(projectBasePath);                   // set current path to project path
 
     image.m_imageFileName = fs::canonical(image.m_imageFileName);
+
+    if (image.m_dicomSource) {
+      if (!image.m_dicomSource->m_rootPath.empty()) {
+        image.m_dicomSource->m_rootPath = fs::canonical(image.m_dicomSource->m_rootPath);
+      }
+      for (auto& file : image.m_dicomSource->m_files) {
+        file = fs::canonical(file);
+      }
+    }
 
     if (image.m_affineTxFileName) {
       if (image.m_affineTxFileName->empty()) {
@@ -501,6 +561,15 @@ bool save(const EntropyProject& project, const fs::path& fileName)
   // Make all paths in the image relative to the base path:
   auto makeRelative = [](serialize::Image& image, const fs::path& projectBasePath) {
     image.m_imageFileName = fs::relative(image.m_imageFileName, projectBasePath);
+
+    if (image.m_dicomSource) {
+      if (!image.m_dicomSource->m_rootPath.empty()) {
+        image.m_dicomSource->m_rootPath = fs::relative(image.m_dicomSource->m_rootPath, projectBasePath);
+      }
+      for (auto& file : image.m_dicomSource->m_files) {
+        file = fs::relative(file, projectBasePath);
+      }
+    }
 
     if (image.m_affineTxFileName) {
       image.m_affineTxFileName = fs::relative(*image.m_affineTxFileName, projectBasePath);

@@ -59,7 +59,11 @@ const std::vector<std::pair<int, const char*>>& layoutKindNames()
     {5, "AxCorSagByImage"},
     {6, "AxialLightbox"},
     {7, "CoronalLightbox"},
-    {8, "SagittalLightbox"}};
+    {8, "SagittalLightbox"},
+    {9, "SingleCoronal"},
+    {10, "SingleSagittal"},
+    {11, "MultiImageCoronalGrid"},
+    {12, "MultiImageSagittalGrid"}};
   return names;
 }
 

@@ -41,6 +41,7 @@ enum class MainMenuAction
   ToggleSyncSendPan,
   ToggleSyncReceivePan,
   SetActiveImageAsReference,
+  ExportActiveImage,
   RemoveActiveImage,
   MoveActiveImageBackward,
   MoveActiveImageForward,
@@ -92,6 +93,8 @@ struct MainMenuBarCallbacks
 {
   std::function<void(const std::vector<std::filesystem::path>& fileNames)> openImageFiles;
   std::function<void(const std::vector<std::filesystem::path>& fileNames)> addImageFiles;
+  std::function<void(const std::vector<std::filesystem::path>& folderNames)> openDicomFolders;
+  std::function<void()> requestDicomFolderPathDialog;
   std::function<void(const std::filesystem::path& fileName)> addSegmentationFile;
   std::function<void(const std::filesystem::path& fileName)> openProjectFile;
   std::function<bool()> saveProject;
@@ -129,6 +132,7 @@ namespace main_menu
 void openImage(const MainMenuBarCallbacks& callbacks);
 void openProject(const MainMenuBarCallbacks& callbacks);
 void addImage(const MainMenuBarCallbacks& callbacks);
+void openDicomSeries(const MainMenuBarCallbacks& callbacks);
 void addSegmentation(const MainMenuBarCallbacks& callbacks);
 void saveProject(const MainMenuBarCallbacks& callbacks);
 void saveProjectAs(const MainMenuBarCallbacks& callbacks);

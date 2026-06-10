@@ -8,6 +8,7 @@
 #include <spdlog/fmt/std.h>
 
 #include "image/ImageUtility.h"
+#include "image/DicomSeries.h"
 
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/LandmarkGroup.h"
@@ -32,6 +33,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <chrono>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -105,6 +107,79 @@ bool isJsonProjectFile(const fs::path& fileName)
     return static_cast<char>(std::tolower(ch));
   });
   return extension == ".json";
+}
+
+bool isDicomInputPath(const fs::path& path)
+{
+  if (path.empty()) {
+    return false;
+  }
+
+  std::error_code ec;
+  if (fs::is_directory(path, ec)) {
+    return true;
+  }
+
+  return dicom::canReadDicomHeader(path);
+}
+
+bool containsDicomInputPath(const std::vector<fs::path>& paths)
+{
+  return std::any_of(paths.begin(), paths.end(), [](const fs::path& path) { return isDicomInputPath(path); });
+}
+
+serialize::DicomSource makeDicomSourceSnapshot(const dicom::SeriesInfo& series)
+{
+  serialize::DicomSource source;
+  source.m_rootPath = series.rootPath;
+  source.m_studyInstanceUid = series.metadata.studyInstanceUid;
+  source.m_seriesInstanceUid = series.seriesInstanceUid;
+  source.m_files = series.files;
+  return source;
+}
+
+void logLoadedImageDetails(const Image& image, const fs::path& sourceFileName)
+{
+  spdlog::info("Read image from file {}", sourceFileName);
+
+  std::ostringstream ss;
+  image.metaData(ss);
+
+  spdlog::trace("Meta data:\n{}", ss.str());
+  spdlog::info("Header:\n{}", image.header());
+  spdlog::info("Transformation:\n{}", image.transformations());
+  spdlog::info("Settings:\n{}", image.settings());
+}
+
+std::optional<dicom::SeriesInfo> resolveDicomSource(const serialize::DicomSource& source)
+{
+  std::vector<fs::path> inputs;
+  if (!source.m_rootPath.empty()) {
+    inputs.push_back(source.m_rootPath);
+  }
+  else {
+    inputs.insert(inputs.end(), source.m_files.begin(), source.m_files.end());
+  }
+
+  if (inputs.empty()) {
+    return std::nullopt;
+  }
+
+  dicom::DiscoverResult result = dicom::discoverSeries(inputs);
+  for (const auto& series : result.series) {
+    if (!series.loadable()) {
+      continue;
+    }
+    if (!source.m_seriesInstanceUid.empty() && series.seriesInstanceUid != source.m_seriesInstanceUid) {
+      continue;
+    }
+    if (!source.m_studyInstanceUid.empty() && series.metadata.studyInstanceUid != source.m_studyInstanceUid) {
+      continue;
+    }
+    return series;
+  }
+
+  return std::nullopt;
 }
 
 serialize::ImageSettings makeImageSettingsSnapshot(const Image& image)
@@ -282,11 +357,24 @@ bool vectorsEqual(const std::vector<T>& a, const std::vector<T>& b, Equal equal)
   return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), equal);
 }
 
+bool dicomSourcesEqual(const std::optional<serialize::DicomSource>& a, const std::optional<serialize::DicomSource>& b)
+{
+  if (a.has_value() != b.has_value()) {
+    return false;
+  }
+  if (!a) {
+    return true;
+  }
+  return a->m_rootPath == b->m_rootPath && a->m_studyInstanceUid == b->m_studyInstanceUid &&
+         a->m_seriesInstanceUid == b->m_seriesInstanceUid && a->m_files == b->m_files;
+}
+
 bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
 {
-  return a.m_imageFileName == b.m_imageFileName && a.m_affineTxFileName == b.m_affineTxFileName &&
-         a.m_deformationFileName == b.m_deformationFileName && matricesEqual(a.m_worldDefTx, b.m_worldDefTx) &&
-         a.m_annotationsFileName == b.m_annotationsFileName && imageSettingsEqual(a.m_settings, b.m_settings) &&
+  return a.m_imageFileName == b.m_imageFileName && dicomSourcesEqual(a.m_dicomSource, b.m_dicomSource) &&
+         a.m_affineTxFileName == b.m_affineTxFileName && a.m_deformationFileName == b.m_deformationFileName &&
+         matricesEqual(a.m_worldDefTx, b.m_worldDefTx) && a.m_annotationsFileName == b.m_annotationsFileName &&
+         imageSettingsEqual(a.m_settings, b.m_settings) &&
          vectorsEqual(a.m_segmentations, b.m_segmentations, segmentationsEqual) &&
          vectorsEqual(a.m_landmarkGroups, b.m_landmarkGroups, landmarkGroupsEqual);
 }
@@ -343,6 +431,9 @@ EntropyApp::~EntropyApp()
 {
   if (m_futureLoadProject.valid()) {
     m_futureLoadProject.wait();
+  }
+  if (m_futureDiscoverDicom.valid()) {
+    m_futureDiscoverDicom.wait();
   }
 
   //    if ( m_IPCHandler.IsAttached() )
@@ -526,6 +617,7 @@ void EntropyApp::resize(int windowWidth, int windowHeight)
 
 void EntropyApp::render()
 {
+  pollDicomSeriesScan();
   m_glfw.renderOnce();
 }
 
@@ -633,19 +725,65 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadImage(const fs::path
     }
   }
 
-  Image image(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
+  std::optional<Image> dicomImage;
+  if (dicom::canReadDicomHeader(fileName)) {
+    dicom::DiscoverResult result = dicom::discoverSeries({fileName});
+    std::error_code ec;
+    const fs::path canonicalFileName = fs::weakly_canonical(fileName, ec);
+    const fs::path comparableFileName = ec ? fileName : canonicalFileName;
 
-  spdlog::info("Read image from file {}", fileName);
+    const dicom::SeriesInfo* matchingSeries = nullptr;
+    for (const auto& series : result.series) {
+      if (!series.loadable()) {
+        continue;
+      }
+      const auto fileIt = std::find_if(series.files.begin(), series.files.end(), [&](const fs::path& seriesFile) {
+        std::error_code seriesEc;
+        const fs::path canonicalSeriesFile = fs::weakly_canonical(seriesFile, seriesEc);
+        return (seriesEc ? seriesFile : canonicalSeriesFile) == comparableFileName;
+      });
+      if (fileIt != series.files.end()) {
+        matchingSeries = &series;
+        break;
+      }
+      if (!matchingSeries) {
+        matchingSeries = &series;
+      }
+    }
 
-  std::ostringstream ss;
-  image.metaData(ss);
+    if (matchingSeries) {
+      spdlog::info(
+        "Image file {} is a DICOM slice; loading containing series {}",
+        fileName,
+        matchingSeries->seriesInstanceUid);
+      dicomImage = dicom::loadSeriesImage(*matchingSeries);
+    }
+  }
 
-  spdlog::trace("Meta data:\n{}", ss.str());
-  spdlog::info("Header:\n{}", image.header());
-  spdlog::info("Transformation:\n{}", image.transformations());
-  spdlog::info("Settings:\n{}", image.settings());
+  Image image = dicomImage
+                  ? std::move(*dicomImage)
+                  : Image(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
+
+  logLoadedImageDetails(image, fileName);
 
   return {m_data.addImage(std::move(image)), true};
+}
+
+std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDicomSeriesImage(const dicom::SeriesInfo& series)
+{
+  if (series.files.empty()) {
+    spdlog::error("Could not load DICOM series {} because it has no files", series.seriesInstanceUid);
+    return {std::nullopt, false};
+  }
+
+  std::optional<Image> image = dicom::loadSeriesImage(series);
+  if (!image) {
+    spdlog::error("Could not load DICOM series {}", series.seriesInstanceUid);
+    return {std::nullopt, false};
+  }
+
+  logLoadedImageDetails(*image, series.files.front());
+  return {m_data.addImage(std::move(*image)), true};
 }
 
 std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
@@ -830,7 +968,10 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
   return noDefLoaded;
 }
 
-bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bool isReferenceImage)
+bool EntropyApp::loadSerializedImage(
+  const serialize::Image& serializedImage,
+  bool isReferenceImage,
+  const dicom::SeriesInfo* resolvedDicomSeries)
 {
   constexpr size_t defaultImageColorMapIndex = 0;
 
@@ -838,26 +979,62 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
   // (i.e. load duplicate images again anyway):
   constexpr bool ignoreImageIfAlreadyLoaded = false;
 
+  serialize::Image imageToLoad = serializedImage;
+  std::optional<dicom::SeriesInfo> ownedResolvedDicomSeries;
+  std::optional<serialize::DicomSource> resolvedDicomSource = serializedImage.m_dicomSource;
+
+  if (resolvedDicomSeries) {
+    if (resolvedDicomSeries->files.empty()) {
+      spdlog::error(
+        "Could not resolve DICOM source for series {} because it has no files",
+        resolvedDicomSeries->seriesInstanceUid);
+      return false;
+    }
+    imageToLoad.m_imageFileName = resolvedDicomSeries->files.front();
+    resolvedDicomSource = makeDicomSourceSnapshot(*resolvedDicomSeries);
+  }
+  else if (serializedImage.m_dicomSource) {
+    ownedResolvedDicomSeries = resolveDicomSource(*serializedImage.m_dicomSource);
+    if (!ownedResolvedDicomSeries) {
+      spdlog::error("Could not resolve DICOM source for series {}", serializedImage.m_dicomSource->m_seriesInstanceUid);
+      return false;
+    }
+    if (ownedResolvedDicomSeries->files.empty()) {
+      spdlog::error(
+        "Could not resolve DICOM source for series {} because it has no files",
+        serializedImage.m_dicomSource->m_seriesInstanceUid);
+      return false;
+    }
+    imageToLoad.m_imageFileName = ownedResolvedDicomSeries->files.front();
+    resolvedDicomSource = makeDicomSourceSnapshot(*ownedResolvedDicomSeries);
+    resolvedDicomSeries = &*ownedResolvedDicomSeries;
+  }
+
   // Load image:
   std::optional<uuids::uuid> imageUid;
   bool isNewImage = false;
 
   try {
-    spdlog::debug("Attempting to load image from {}", serializedImage.m_imageFileName);
-    std::tie(imageUid, isNewImage) = loadImage(serializedImage.m_imageFileName, ignoreImageIfAlreadyLoaded);
+    spdlog::debug("Attempting to load image from {}", imageToLoad.m_imageFileName);
+    if (resolvedDicomSeries) {
+      std::tie(imageUid, isNewImage) = loadDicomSeriesImage(*resolvedDicomSeries);
+    }
+    else {
+      std::tie(imageUid, isNewImage) = loadImage(imageToLoad.m_imageFileName, ignoreImageIfAlreadyLoaded);
+    }
   }
   catch (const std::exception& e) {
-    spdlog::error("Exception loading image from {}: {}", serializedImage.m_imageFileName, e.what());
+    spdlog::error("Exception loading image from {}: {}", imageToLoad.m_imageFileName, e.what());
     return false;
   }
 
   if (!imageUid) {
-    spdlog::error("Unable to load image from {}", serializedImage.m_imageFileName);
+    spdlog::error("Unable to load image from {}", imageToLoad.m_imageFileName);
     return false;
   }
 
   if (!isNewImage) {
-    spdlog::info("Image from {} already exists in this project as {}", serializedImage.m_imageFileName, *imageUid);
+    spdlog::info("Image from {} already exists in this project as {}", imageToLoad.m_imageFileName, *imageUid);
 
     if (ignoreImageIfAlreadyLoaded) {
       // Because this setting is true, cancel loading the rest of the data for this image:
@@ -871,7 +1048,11 @@ bool EntropyApp::loadSerializedImage(const serialize::Image& serializedImage, bo
     return false;
   }
 
-  spdlog::info("Loaded image from {} as {}", serializedImage.m_imageFileName, *imageUid);
+  spdlog::info("Loaded image from {} as {}", imageToLoad.m_imageFileName, *imageUid);
+
+  if (resolvedDicomSource) {
+    m_dicomSourcesByImageUid[*imageUid] = *resolvedDicomSource;
+  }
 
   if (serializedImage.m_settings) {
     applyImageSettingsSnapshot(*image, *serializedImage.m_settings);
@@ -1285,6 +1466,9 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
   }
 
   serializedImage.m_imageFileName = image->header().fileName();
+  if (const auto sourceIt = m_dicomSourcesByImageUid.find(imageUid); sourceIt != m_dicomSourcesByImageUid.end()) {
+    serializedImage.m_dicomSource = sourceIt->second;
+  }
   serializedImage.m_affineTxFileName = image->transformations().get_affine_T_subject_fileName();
   if (
     image->transformations().get_enable_worldDef_T_affine() &&
@@ -1317,7 +1501,7 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
     }
 
     if (!seg->header().existsOnDisk() || seg->header().fileName().empty()) {
-      spdlog::warn("Skipping unsaved segmentation {} for image {}; it has no file-backed path", segUid, imageUid);
+      spdlog::debug("Skipping unsaved segmentation {} for image {}; it has no file-backed path", segUid, imageUid);
       continue;
     }
 
@@ -1608,6 +1792,13 @@ void EntropyApp::loadImageFiles(const std::vector<fs::path>& fileNames)
     return;
   }
 
+  if (containsDicomInputPath(imageFiles)) {
+    const bool addToExistingProject =
+      ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid();
+    beginDicomSeriesScan(imageFiles, addToExistingProject);
+    return;
+  }
+
   if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
     addImageFiles(imageFiles);
     return;
@@ -1631,6 +1822,13 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
 {
   const std::vector<fs::path> imageFiles = nonEmptyPaths(fileNames);
   if (imageFiles.empty()) {
+    return;
+  }
+
+  if (containsDicomInputPath(imageFiles)) {
+    const bool addToExistingProject =
+      ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid();
+    beginDicomSeriesScan(imageFiles, addToExistingProject);
     return;
   }
 
@@ -1750,6 +1948,206 @@ void EntropyApp::handleDroppedFiles(const std::vector<fs::path>& fileNames)
   }
 
   addImageFiles(imageFiles);
+}
+
+void EntropyApp::openDicomSeriesFolders(const std::vector<fs::path>& folderNames)
+{
+  const std::vector<fs::path> dicomFolders = nonEmptyPaths(folderNames);
+  if (dicomFolders.empty()) {
+    return;
+  }
+
+  const bool addToExistingProject =
+    ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid();
+  beginDicomSeriesScan(dicomFolders, addToExistingProject);
+}
+
+void EntropyApp::beginDicomSeriesScan(const std::vector<fs::path>& inputPaths, bool addToExistingProject)
+{
+  const std::vector<fs::path> scanInputs = nonEmptyPaths(inputPaths);
+  if (scanInputs.empty()) {
+    return;
+  }
+
+  if (ProjectLoadState::Loading == m_data.state().projectLoadState() || m_data.state().animating()) {
+    spdlog::warn("Ignoring DICOM request because another load task is running");
+    return;
+  }
+
+  if (m_futureDiscoverDicom.valid()) {
+    m_futureDiscoverDicom.wait();
+    m_futureDiscoverDicom = {};
+  }
+
+  m_pendingDicomScanAddToExistingProject = addToExistingProject;
+  auto& guiData = m_data.guiData();
+  guiData.m_dicomSeriesScanInProgress = true;
+  guiData.m_pendingDicomScanRoot = scanInputs.front();
+  guiData.m_pendingDicomSeriesSelectionPrompt = std::nullopt;
+  guiData.m_showDicomSeriesSelectionPopup = false;
+  m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
+  m_glfw.postEmptyEvent();
+
+  m_futureDiscoverDicom = std::async(std::launch::async, [scanInputs]() {
+    return dicom::discoverSeries(
+      scanInputs,
+      dicom::DiscoverOptions{.recursive = true, .includePrivateMetadata = false});
+  });
+}
+
+void EntropyApp::pollDicomSeriesScan()
+{
+  if (!m_futureDiscoverDicom.valid()) {
+    return;
+  }
+
+  using namespace std::chrono_literals;
+  if (m_futureDiscoverDicom.wait_for(0ms) != std::future_status::ready) {
+    m_glfw.postEmptyEvent();
+    return;
+  }
+
+  dicom::DiscoverResult result;
+  try {
+    result = m_futureDiscoverDicom.get();
+  }
+  catch (const std::exception& e) {
+    spdlog::error("Exception while scanning DICOM series: {}", e.what());
+    result.warnings.push_back(std::string{"Exception while scanning DICOM series: "} + e.what());
+  }
+  catch (...) {
+    spdlog::error("Unknown exception while scanning DICOM series");
+    result.warnings.push_back("Unknown exception while scanning DICOM series");
+  }
+  m_futureDiscoverDicom = {};
+
+  auto& guiData = m_data.guiData();
+  guiData.m_dicomSeriesScanInProgress = false;
+  guiData.m_pendingDicomScanRoot = fs::path{};
+
+  if (result.series.empty()) {
+    for (const auto& warning : result.warnings) {
+      spdlog::warn("DICOM scan warning: {}", warning);
+    }
+    spdlog::error("No DICOM image series found");
+    m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+    m_glfw.postEmptyEvent();
+    return;
+  }
+
+  GuiData::DicomSeriesSelectionPrompt prompt;
+  prompt.series = std::move(result.series);
+  prompt.warnings = std::move(result.warnings);
+  prompt.selected.resize(prompt.series.size(), false);
+  prompt.previewCache.resize(prompt.series.size());
+  prompt.previewErrors.resize(prompt.series.size());
+  prompt.addToExistingProject = m_pendingDicomScanAddToExistingProject;
+  prompt.allowReferenceSelection = !m_data.refImageUid();
+
+  for (std::size_t i = 0; i < prompt.series.size(); ++i) {
+    prompt.selected.at(i) = prompt.series.at(i).loadable();
+    if (prompt.selected.at(i)) {
+      prompt.referenceSeriesIndex = static_cast<int>(i);
+      prompt.previewSeriesIndex = i;
+      break;
+    }
+  }
+
+  guiData.m_pendingDicomSeriesSelectionPrompt = std::move(prompt);
+  guiData.m_showDicomSeriesSelectionPopup = true;
+  m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+  m_glfw.postEmptyEvent();
+}
+
+void EntropyApp::loadDicomSeries(
+  const std::vector<dicom::SeriesInfo>& series,
+  std::optional<std::size_t> referenceSeriesIndex,
+  bool addToExistingProject)
+{
+  if (series.empty()) {
+    return;
+  }
+
+  std::vector<dicom::SeriesInfo> seriesToLoad = series;
+  if (
+    !addToExistingProject && referenceSeriesIndex && *referenceSeriesIndex < seriesToLoad.size() &&
+    *referenceSeriesIndex != 0)
+  {
+    std::rotate(
+      seriesToLoad.begin(),
+      seriesToLoad.begin() + static_cast<std::ptrdiff_t>(*referenceSeriesIndex),
+      seriesToLoad.begin() + static_cast<std::ptrdiff_t>(*referenceSeriesIndex + 1));
+  }
+
+  if (!addToExistingProject) {
+    closeProject();
+    m_data.setProjectFileName(std::nullopt);
+  }
+
+  m_preserveLayoutsOnImagesReady = addToExistingProject;
+  m_pendingAddedImageUids.clear();
+
+  startAsyncImageLoad(
+    "Loading DICOM series...",
+    [this, seriesToLoad, addToExistingProject]() {
+      const std::size_t previousNumImages = m_data.numImages();
+      std::vector<uuids::uuid> addedImageUids;
+      addedImageUids.reserve(seriesToLoad.size());
+
+      for (const auto& seriesInfo : seriesToLoad) {
+        if (m_imageLoadCancelled) {
+          return false;
+        }
+
+        if (seriesInfo.files.empty()) {
+          spdlog::error("Could not load DICOM series {} because it has no files", seriesInfo.seriesInstanceUid);
+          continue;
+        }
+
+        serialize::Image serializedImage;
+        serializedImage.m_imageFileName = seriesInfo.files.front();
+        serializedImage.m_dicomSource = makeDicomSourceSnapshot(seriesInfo);
+
+        const std::size_t numImagesBeforeLoad = m_data.numImages();
+        const bool isReferenceImage = !addToExistingProject && addedImageUids.empty();
+        const bool loaded = loadSerializedImage(serializedImage, isReferenceImage, &seriesInfo);
+        if (!loaded || m_data.numImages() <= numImagesBeforeLoad) {
+          spdlog::error("Could not load DICOM series {}", seriesInfo.seriesInstanceUid);
+          continue;
+        }
+
+        if (const auto imageUid = m_data.imageUid(m_data.numImages() - 1)) {
+          addedImageUids.push_back(*imageUid);
+          spdlog::info("Loaded DICOM series {} as {}", seriesInfo.seriesInstanceUid, *imageUid);
+        }
+      }
+
+      if (addedImageUids.empty() || m_data.numImages() <= previousNumImages) {
+        return false;
+      }
+
+      if (addToExistingProject) {
+        m_data.setActiveImageUid(addedImageUids.back());
+        m_pendingAddedImageUids = addedImageUids;
+      }
+
+      m_data.setRainbowColorsForAllImages();
+      m_data.setRainbowColorsForAllLandmarkGroups();
+      m_data.setProject(createProjectSnapshot());
+      return true;
+    },
+    [this, addToExistingProject]() {
+      if (!addToExistingProject) {
+        m_data.clearProjectData();
+        m_data.state().setProjectLoadState(ProjectLoadState::Failed);
+      }
+      m_preserveLayoutsOnImagesReady = false;
+      m_pendingAddedImageUids.clear();
+      m_data.state().setAnimating(false);
+      updateWindowTitleStatus();
+      m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+    },
+    !addToExistingProject);
 }
 
 void EntropyApp::addSegmentationFile(const fs::path& fileName)
@@ -1893,6 +2291,8 @@ bool EntropyApp::removeImage(const uuids::uuid& imageUid)
     spdlog::error("Unable to remove image {}", imageUid);
     return false;
   }
+
+  m_dicomSourcesByImageUid.erase(imageUid);
 
   auto& renderData = m_data.renderData();
   renderData.m_imageTextures.erase(imageUid);
@@ -2124,6 +2524,10 @@ void EntropyApp::closeProject()
     m_futureLoadProject.wait();
     m_futureLoadProject = {};
   }
+  if (m_futureDiscoverDicom.valid()) {
+    m_futureDiscoverDicom.wait();
+    m_futureDiscoverDicom = {};
+  }
 
   m_imageLoadCancelled = false;
   m_imagesReady = false;
@@ -2138,6 +2542,10 @@ void EntropyApp::closeProject()
   m_pendingLargeProjectImageIndex = 0;
   m_savedProjectSnapshot = std::nullopt;
   m_data.guiData().m_pendingLargeImageLoadPrompt = std::nullopt;
+  m_data.guiData().m_dicomSeriesScanInProgress = false;
+  m_data.guiData().m_pendingDicomScanRoot = fs::path{};
+  m_data.guiData().m_pendingDicomSeriesSelectionPrompt = std::nullopt;
+  m_data.guiData().m_showDicomSeriesSelectionPopup = false;
   m_data.guiData().m_showUnsavedProjectPopup = false;
   m_data.guiData().m_showConfirmCloseAppPopup = false;
   m_data.guiData().m_showLargeImageLoadPrompt = false;
@@ -2183,6 +2591,10 @@ void EntropyApp::startAsyncImageLoad(
   if (m_futureLoadProject.valid()) {
     m_futureLoadProject.wait();
     m_futureLoadProject = {};
+  }
+  if (m_futureDiscoverDicom.valid()) {
+    m_futureDiscoverDicom.wait();
+    m_futureDiscoverDicom = {};
   }
 
   m_imageLoadCancelled = false;
@@ -2302,6 +2714,7 @@ void EntropyApp::setCallbacks()
     [this]() { m_rendering.render(); },
     [this]() { m_imgui.render(); },
     [this]() {
+      pollDicomSeriesScan();
       m_snapCursorSync.update();
       if (m_data.settings().cursorSyncEnabled() && !m_data.state().animating()) {
         m_glfw.setEventProcessingMode(EventProcessingMode::WaitTimeout);
@@ -2317,10 +2730,15 @@ void EntropyApp::setCallbacks()
     [this]() { resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y); },
     [this](const std::vector<fs::path>& fileNames) { loadImageFiles(fileNames); },
     [this](const std::vector<fs::path>& fileNames) { addImageFiles(fileNames); },
+    [this](const std::vector<fs::path>& folderNames) { openDicomSeriesFolders(folderNames); },
     [this](const fs::path& fileName) { addSegmentationFile(fileName); },
     [this](const uuids::uuid& imageUid, const fs::path& fileName) { addSegmentationFileToImage(fileName, imageUid); },
     [this](const fs::path& fileName) { loadProjectFile(fileName); },
     [this](GuiData::LargeImageLoadDecision decision) { handleLargeImageLoadDecision(decision); },
+    [this](
+      const std::vector<dicom::SeriesInfo>& series,
+      std::optional<std::size_t> referenceSeriesIndex,
+      bool addToExistingProject) { loadDicomSeries(series, referenceSeriesIndex, addToExistingProject); },
     [this]() { return saveProject(); },
     [this](const fs::path& fileName) { return saveProjectAs(fileName); },
     [this]() { requestCloseProject(); },

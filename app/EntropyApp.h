@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/InputParams.h"
+#include "image/DicomSeries.h"
 #include <filesystem>
 
 #include "logic/app/CallbackHandler.h"
@@ -22,6 +23,7 @@
 #include <future>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 /**
@@ -37,28 +39,39 @@ public:
   EntropyApp();
   ~EntropyApp();
 
-  /// Initialize rendering functions, OpenGL context, and windowing (GLFW)
+  /**
+   * Initialize rendering functions, OpenGL context, and windowing (GLFW)
+   */
   void init();
 
-  /// Run the render loop
+  /**
+   * Run the render loop
+   */
   void run();
 
-  /// Resize the window, with width and height specified in artificial units that do not
-  /// necessarily correspond to real screen pixels, as is the case when DPI scaling is activated.
-  /// @param[in] windowWidth Window width (device-agnostic units)
-  /// @param[in] windowHeight Window height (device-agnostic units)
+  /**
+   * Resize the window, with width and height specified in artificial units that do not
+   * necessarily correspond to real screen pixels, as is the case when DPI scaling is activated.
+   * @param[in] windowWidth Window width (device-agnostic units)
+   * @param[in] windowHeight Window height (device-agnostic units)
+   */
   void resize(int windowWidth, int windowHeight);
 
-  /// Render one frame
+  /**
+   * Render one frame
+   */
   void render();
 
-  /// Asynchronously load images and notify render loop when done
+  /**
+   * Asynchronously load images and notify render loop when done
+   */
   void loadImagesFromParams(const InputParams&);
   void loadImageFile(const std::filesystem::path& fileName);
   void loadImageFiles(const std::vector<std::filesystem::path>& fileNames);
   void addImageFile(const std::filesystem::path& fileName);
   void addImageFiles(const std::vector<std::filesystem::path>& fileNames);
   void handleDroppedFiles(const std::vector<std::filesystem::path>& fileNames);
+  void openDicomSeriesFolders(const std::vector<std::filesystem::path>& folderNames);
   void addSegmentationFile(const std::filesystem::path& fileName);
   void addSegmentationFileToImage(const std::filesystem::path& fileName, const uuids::uuid& imageUid);
   void loadProjectFile(const std::filesystem::path& fileName);
@@ -77,14 +90,21 @@ public:
    * @brief Load a serialized image from disk
    * @param image Serialized image structure
    * @param isReferenceImage Flag indicating whether this is the reference image
+   * @param resolvedDicomSeries Already-discovered DICOM series to load, or nullptr to resolve from
+   * serialized metadata.
    * @return True iff the image was successfully loaded
    */
-  bool loadSerializedImage(const serialize::Image& image, bool isReferenceImage);
+  bool loadSerializedImage(
+    const serialize::Image& image,
+    bool isReferenceImage,
+    const dicom::SeriesInfo* resolvedDicomSeries = nullptr);
 
-  /// Load a segmentation from disk. If its header does not match the given image, then it is not
-  /// loaded
-  /// @return Uid and flag if loaded.
-  /// False indcates that it was already loaded and that we are returning an existing image.
+  /**
+   * Load a segmentation from disk. If its header does not match the given image, then it is not
+   * loaded
+   * @return Uid and flag if loaded.
+   * False indcates that it was already loaded and that we are returning an existing image.
+   */
   std::pair<std::optional<uuids::uuid>, bool> loadSegmentation(
     const std::filesystem::path& fileName,
     const std::optional<uuids::uuid>& imageUid = std::nullopt);
@@ -131,7 +151,35 @@ private:
 
   void setCallbacks();
 
-  /// Function called when images have been loaded from disk
+  /**
+   * @brief Complete an async DICOM discovery task and open the series-selection UI.
+   * @throws Does not intentionally throw; discovery exceptions are converted to warnings.
+   */
+  void pollDicomSeriesScan();
+
+  /**
+   * @brief Start asynchronous DICOM discovery for folders or slice files.
+   * @param inputPaths Folders or DICOM files to scan recursively.
+   * @param addToExistingProject True when selected series should be added to the loaded project.
+   * @throws Does not intentionally throw.
+   */
+  void beginDicomSeriesScan(const std::vector<std::filesystem::path>& inputPaths, bool addToExistingProject);
+
+  /**
+   * @brief Load selected DICOM series through the normal image setup path.
+   * @param series Series selected in the DICOM selection dialog.
+   * @param referenceSeriesIndex Selected-series index to promote to reference, when allowed.
+   * @param addToExistingProject True to append images instead of replacing the current project.
+   * @throws Does not intentionally throw; load failures are logged and reported through app state.
+   */
+  void loadDicomSeries(
+    const std::vector<dicom::SeriesInfo>& series,
+    std::optional<std::size_t> referenceSeriesIndex,
+    bool addToExistingProject);
+
+  /**
+   * Function called when images have been loaded from disk
+   */
   void onImagesReady();
   void startAsyncImageLoad(
     std::string windowTitleStatus,
@@ -152,30 +200,57 @@ private:
   std::string windowTitleStatus() const;
   void updateWindowTitleStatus();
 
-  /// Load an image from disk.
-  /// @return Uid and flag if loaded.
-  /// False indcates that it was already loaded and that we are returning an existing image.
+  /**
+   * Load an image from disk.
+   * @return Uid and flag if loaded.
+   * False indcates that it was already loaded and that we are returning an existing image.
+   */
   std::pair<std::optional<uuids::uuid>, bool> loadImage(
     const std::filesystem::path& fileName,
     bool ignoreIfAlreadyLoaded);
 
-  std::future<void> m_futureLoadProject;
+  /**
+   * @brief Load an already-discovered DICOM series without rescanning its source folder.
+   * @param series DICOM series to load.
+   * @return UID and flag if loaded.
+   * @throws Propagates image-loading exceptions from the image library.
+   */
+  std::pair<std::optional<uuids::uuid>, bool> loadDicomSeriesImage(const dicom::SeriesInfo& series);
 
-  /// Atomic boolean that is set to true iff image loading is cancelled
+  std::future<void> m_futureLoadProject;
+  std::future<dicom::DiscoverResult> m_futureDiscoverDicom;
+  bool m_pendingDicomScanAddToExistingProject = false;
+
+  /**
+   * DICOM source metadata keyed by loaded image UID for project serialization.
+   */
+  std::unordered_map<uuids::uuid, serialize::DicomSource> m_dicomSourcesByImageUid;
+
+  /**
+   * Atomic boolean that is set to true iff image loading is cancelled
+   */
   std::atomic<bool> m_imageLoadCancelled;
 
-  /// Atomic boolean set to true when all project images are loaded from disk and
-  /// ready to be loaded into textures
+  /**
+   * Atomic boolean set to true when all project images are loaded from disk and
+   * ready to be loaded into textures
+   */
   std::atomic<bool> m_imagesReady;
 
-  /// Atomic boolean set to true iff images could not be loaded.
-  /// If true, this flag will cause the render loop to exit.
+  /**
+   * Atomic boolean set to true iff images could not be loaded.
+   * If true, this flag will cause the render loop to exit.
+   */
   std::atomic<bool> m_imageLoadFailed;
 
-  /// True when onImagesReady is handling a live Add Image operation instead of initial load.
+  /**
+   * True when onImagesReady is handling a live Add Image operation instead of initial load.
+   */
   bool m_preserveLayoutsOnImagesReady = false;
 
-  /// Images added by the current live Add Image operation, if any.
+  /**
+   * Images added by the current live Add Image operation, if any.
+   */
   std::vector<uuids::uuid> m_pendingAddedImageUids;
   std::optional<std::filesystem::path> m_pendingLayoutsFile = std::nullopt;
 
