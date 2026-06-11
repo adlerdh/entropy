@@ -13,10 +13,6 @@ set(GIT_PROTOCOL "https")
 get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 if(_isMultiConfig)
-  if(NOT DEFINED Entropy_SUPERBUILD_CONFIG)
-    set(Entropy_SUPERBUILD_CONFIG "Release" CACHE STRING "Build config for multi-config generators")
-    set_property(CACHE Entropy_SUPERBUILD_CONFIG PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
-  endif()
   set(_cfg_arg "--config" "${Entropy_SUPERBUILD_CONFIG}")
 else()
   set(_cfg_arg "")
@@ -273,13 +269,15 @@ ExternalProject_Add(glm
 message(STATUS "Adding external library IconFontCppHeaders in ${iconfont_PREFIX}")
 
 ExternalProject_Add(iconfont
-  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/juliettef/IconFontCppHeaders.git"
-  GIT_TAG "ef464d2fe5a568d30d7c88138e78d7fac7cfebc5" # branch: master
-  GIT_PROGRESS true
+  URL "https://github.com/juliettef/IconFontCppHeaders/archive/${iconfont_VERSION}.tar.gz"
+  URL_HASH SHA256=aae5fd355521f62a0257064f40bab5676aee93c9fa9dd7fd53375d3594933b3f
+  DOWNLOAD_NAME "iconfont-${iconfont_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
 
   PREFIX "${iconfont_PREFIX}"
   TMP_DIR "${iconfont_PREFIX}/tmp"
   STAMP_DIR "${iconfont_PREFIX}/stamp"
+  DOWNLOAD_DIR "${iconfont_PREFIX}/download"
   SOURCE_DIR "${iconfont_PREFIX}/src"
   BINARY_DIR "${iconfont_PREFIX}/build"
 
@@ -408,13 +406,15 @@ ExternalProject_Add(ITK
 message(STATUS "Adding external library NanoVG in ${nanovg_PREFIX}")
 
 ExternalProject_Add(NanoVG
-  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/memononen/nanovg.git"
-  GIT_TAG "f93799c078fa11ed61c078c65a53914c8782c00b" # branch: master
-  GIT_PROGRESS true
+  URL "https://github.com/memononen/nanovg/archive/${nanovg_VERSION}.tar.gz"
+  URL_HASH SHA256=655fe16920f1d2ec0895adf3a0eed1d3d0403cc4e2de247f3600d136f206a520
+  DOWNLOAD_NAME "nanovg-${nanovg_VERSION}.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
 
   PREFIX "${nanovg_PREFIX}"
   TMP_DIR "${nanovg_PREFIX}/tmp"
   STAMP_DIR "${nanovg_PREFIX}/stamp"
+  DOWNLOAD_DIR "${nanovg_PREFIX}/download"
   SOURCE_DIR "${nanovg_PREFIX}/src"
   BINARY_DIR "${nanovg_PREFIX}/build"
 
@@ -679,13 +679,15 @@ ExternalProject_Add(stduuid
 message(STATUS "Adding external library TinyFSM in ${tinyfsm_PREFIX}")
 
 ExternalProject_Add(tinyfsm
-  GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/digint/tinyfsm.git"
-  GIT_TAG "01908cab0397fcdadb0a14e9a3187c308e2708ca" # tag: v${tinyfsm_VERSION}
-  GIT_PROGRESS true
+  URL "https://github.com/digint/tinyfsm/archive/01908cab0397fcdadb0a14e9a3187c308e2708ca.tar.gz"
+  URL_HASH SHA256=116b2acb168d5a439d73b767d321c3cd7dec54458ac8d9846d7d7c3524dbd472
+  DOWNLOAD_NAME "tinyfsm-01908cab0397fcdadb0a14e9a3187c308e2708ca.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP false
 
   PREFIX "${tinyfsm_PREFIX}"
   TMP_DIR "${tinyfsm_PREFIX}/tmp"
   STAMP_DIR "${tinyfsm_PREFIX}/stamp"
+  DOWNLOAD_DIR "${tinyfsm_PREFIX}/download"
   SOURCE_DIR "${tinyfsm_PREFIX}/src"
   BINARY_DIR "${tinyfsm_PREFIX}/build"
 

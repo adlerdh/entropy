@@ -12,17 +12,17 @@ License information is taken from the upstream license files for the pinned sour
 | [CMakeRC](https://github.com/vector-of-bool/cmrc) | 2.0.1 | https://github.com/vector-of-bool/cmrc/archive/refs/tags/2.0.1.tar.gz | MIT |
 | [GLFW](https://github.com/glfw/glfw) | 3.4 | https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip | zlib/libpng |
 | [GLM](https://github.com/g-truc/glm) | 1.0.3 | https://github.com/g-truc/glm/archive/refs/tags/1.0.3.tar.gz | Happy Bunny License (Modified MIT) or MIT |
-| [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) | ef464d2 | https://github.com/juliettef/IconFontCppHeaders/commit/ef464d2fe5a568d30d7c88138e78d7fac7cfebc5 | zlib |
+| [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) | 210b5a3 | https://github.com/juliettef/IconFontCppHeaders/archive/210b5a399a64270674560d633638952d1e8d804d.tar.gz | zlib |
 | [Dear ImGui](https://github.com/ocornut/imgui) | v1.92.8 | https://github.com/ocornut/imgui/archive/refs/tags/v1.92.8.tar.gz | MIT |
 | [ImPlot](https://github.com/epezent/implot) | v0.17 | https://github.com/epezent/implot/archive/refs/tags/v0.17.tar.gz | MIT |
 | [Insight Toolkit (ITK)](https://github.com/InsightSoftwareConsortium/ITK) | v5.4.3 | https://github.com/InsightSoftwareConsortium/ITK/releases/download/v5.4.3/InsightToolkit-5.4.3.tar.gz | Apache License 2.0 |
-| [NanoVG](https://github.com/memononen/nanovg) | f93799c | https://github.com/memononen/nanovg/commit/f93799c078fa11ed61c078c65a53914c8782c00b | zlib |
+| [NanoVG](https://github.com/memononen/nanovg) | ce3bf74 | https://github.com/memononen/nanovg/archive/ce3bf745eb2d2dbc14a50bf2446783f691ac4353.tar.gz | zlib |
 | [Native File Dialog Extended](https://github.com/btzy/nativefiledialog-extended) | v1.3.0 | https://github.com/btzy/nativefiledialog-extended/archive/refs/tags/v1.3.0.tar.gz | zlib |
 | [nlohmann::json](https://github.com/nlohmann/json) | v3.12.0 | https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz | MIT |
 | [Qt Base / Qt Core](https://www.qt.io/product/qt6) | 6.8.1 | https://download.qt.io/archive/qt/6.8/6.8.1/submodules/qtbase-everywhere-src-6.8.1.tar.xz | LGPL-3.0-only |
 | [spdlog](https://github.com/gabime/spdlog) | v1.17.0 | https://github.com/gabime/spdlog/archive/refs/tags/v1.17.0.tar.gz | MIT |
 | [stduuid](https://github.com/mariusbancila/stduuid) | v1.2.3 | https://github.com/mariusbancila/stduuid/archive/refs/tags/v1.2.3.tar.gz | MIT |
-| [TinyFSM](https://github.com/digint/tinyfsm) | v1.15.1 | https://github.com/digint/tinyfsm/commit/01908cab0397fcdadb0a14e9a3187c308e2708ca | MIT |
+| [TinyFSM](https://github.com/digint/tinyfsm) | v1.15.1 | https://github.com/digint/tinyfsm/archive/01908cab0397fcdadb0a14e9a3187c308e2708ca.tar.gz | MIT |
 
 Qt Base is available upstream under multiple license options. Entropy uses the open-source LGPL-3.0-only option for Qt Core and configures Qt as a shared-library build so QtCore is dynamically linked.
 

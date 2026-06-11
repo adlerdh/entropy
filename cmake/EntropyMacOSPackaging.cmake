@@ -24,12 +24,16 @@ install(FILES "${entropy_ABOUT_ICON_SOURCE}"
 
 set(entropy_BUNDLE_LIBRARY_DIRS
     "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
-    "${glfw_PREFIX}/install/lib"
-    "${nativefiledialog_PREFIX}/install/lib"
     "${qtbase_PREFIX}/install/lib"
-    "${spdlog_PREFIX}/install/lib"
-    "${itk_PREFIX}/build/lib"
 )
+if(NOT Entropy_STATIC_BUNDLED_DEPENDENCIES)
+    list(APPEND entropy_BUNDLE_LIBRARY_DIRS
+        "${glfw_PREFIX}/install/lib"
+        "${nativefiledialog_PREFIX}/install/lib"
+        "${spdlog_PREFIX}/install/lib"
+        "${itk_PREFIX}/build/lib"
+    )
+endif()
 
 install(CODE "
     include(BundleUtilities)

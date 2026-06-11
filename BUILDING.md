@@ -10,7 +10,7 @@ Core requirements:
 
 - CMake 3.24 or newer.
 - A C++23 compiler and the matching native build tool for your generator, such as Make, Ninja, Visual Studio, or Xcode.
-- Git and network access for the superbuild. Most dependencies are downloaded as pinned archives, but a few are fetched from Git repositories, and the app build records Git metadata in the build stamp.
+- Git and network access for the superbuild. Dependencies are downloaded as pinned archives with hash checks, and the app build records Git metadata in the build stamp.
 - Disk space for the superbuild. A completed release build tree is roughly 2-3 GB on Linux, but allow at least 8-10 GB free for a clean build because source archives, extracted sources, intermediate build trees, and install trees coexist during the build.
 
 Entropy is developed and tested on:
