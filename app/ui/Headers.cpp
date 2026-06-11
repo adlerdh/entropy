@@ -64,7 +64,9 @@ const ImVec4 blackText(0, 0, 0, 1);
 ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
 {
   static const ImVec2 smallToolbarButtonSize(24, 24);
-  return ImVec2{contentScale.x * smallToolbarButtonSize.x, contentScale.y * smallToolbarButtonSize.y};
+  (void)contentScale;
+  const float scale = ImGui::GetFontSize() / 16.0f;
+  return ImVec2{scale * smallToolbarButtonSize.x, scale * smallToolbarButtonSize.y};
 }
 
 const char* referenceAndActiveImageMessage = "This is the reference and active image";

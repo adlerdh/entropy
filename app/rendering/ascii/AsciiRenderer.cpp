@@ -397,12 +397,11 @@ void AsciiRenderer::ensureAsciiCellFbo(glm::ivec2 viewSizeDevPx, glm::vec2 cellS
 void AsciiRenderer::render(
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
   DrawViewFn drawImages,
+  DrawViewFn drawImageBorders,
   DrawViewFn drawLandmarks,
   DrawViewFn drawAnnotations)
 {
   const auto& R = m_appData.renderData();
-  const bool renderLandmarksOnTop = R.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
-  const bool renderAnnotationsOnTop = R.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
 
   const Viewport& windowVP = m_appData.windowData().viewport();
   const glm::vec4 deviceVP = windowVP.getDeviceAsVec4();
@@ -830,12 +829,9 @@ void AsciiRenderer::render(
   // Overlays on top of ASCII composite
   for (const auto& vd : viewDataList) {
     if (ViewRenderMode::VolumeRender != vd.view->renderMode()) {
-      if (renderLandmarksOnTop) {
-        drawLandmarks(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
-      }
-      if (renderAnnotationsOnTop) {
-        drawAnnotations(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
-      }
+      drawImageBorders(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
+      drawLandmarks(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
+      drawAnnotations(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
     }
   }
 }

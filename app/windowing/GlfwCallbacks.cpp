@@ -53,8 +53,9 @@ void windowContentScaleCallback(GLFWwindow* window, float contentScaleX, float c
 
   spdlog::debug("*** windowContentScaleCallback: {}x{} ", contentScaleX, contentScaleY);
 
-  app->windowData().setContentScaleRatios(glm::vec2{1.0f, 1.0f});
+  app->windowData().setContentScaleRatios(glm::vec2{contentScaleX, contentScaleY});
   app->imgui().setContentScale(app->windowData().getContentScaleRatio());
+  app->glfw().postEmptyEvent();
 }
 
 void windowCloseCallback(GLFWwindow* window)

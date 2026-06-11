@@ -521,6 +521,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/ui/Style.cpp"
   "${entropy_APP_DIR}/ui/ThirdPartyLicenses.cpp"
   "${entropy_APP_DIR}/ui/Toolbars.cpp"
+  "${entropy_APP_DIR}/ui/UiScaleManager.cpp"
   "${entropy_APP_DIR}/ui/Widgets.cpp"
   "${entropy_APP_DIR}/ui/Windows.cpp"
 
@@ -634,10 +635,13 @@ file(GLOB entropy_COLORMAPS
 set(entropy_FONTS
   "${entropy_RES_DIR}/fonts/Cousine/Cousine-Regular.ttf"
   "${entropy_RES_DIR}/fonts/ForkAwesome/forkawesome-webfont.ttf"
-  "${entropy_RES_DIR}/fonts/Inter/Inter-Light.ttf"
+  "${entropy_RES_DIR}/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+  "${entropy_RES_DIR}/fonts/Inter/Inter-Regular.ttf"
+  "${entropy_RES_DIR}/fonts/NotoSans/NotoSans-Regular.ttf"
   "${entropy_RES_DIR}/fonts/Roboto/Roboto-Light.ttf"
   "${entropy_RES_DIR}/fonts/Roboto/Roboto-Regular.ttf"
   "${entropy_RES_DIR}/fonts/Satoshi/Satoshi-Light.ttf"
+  "${entropy_RES_DIR}/fonts/SourceSans3/SourceSans3-Regular.ttf"
   "${entropy_RES_DIR}/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf"
   "${entropy_RES_DIR}/fonts/Supreme/Supreme-Light.ttf"
 )
@@ -676,9 +680,12 @@ entropy_add_license_resource("SafeCLib.txt" "${entropy_EXT_DIR}/safeclib/LICENSE
 entropy_add_license_resource("CubicBSplineInterpolation.txt" "${entropy_APP_DIR}/rendering/shaders/functions/TricubicReadme.txt")
 entropy_add_license_resource("Cousine.txt" "${entropy_RES_DIR}/fonts/Cousine/LICENSE.txt")
 entropy_add_license_resource("ForkAwesome.txt" "${entropy_RES_DIR}/fonts/ForkAwesome/LICENSES.txt")
+entropy_add_license_resource("IBMPlexSans.txt" "${entropy_RES_DIR}/fonts/IBMPlexSans/LICENSE.txt")
 entropy_add_license_resource("Inter.txt" "${entropy_RES_DIR}/fonts/Inter/LICENSE.txt")
+entropy_add_license_resource("NotoSans.txt" "${entropy_RES_DIR}/fonts/NotoSans/LICENSE.txt")
 entropy_add_license_resource("Roboto.txt" "${entropy_RES_DIR}/fonts/Roboto/LICENSE.txt")
 entropy_add_license_resource("Satoshi.txt" "${entropy_RES_DIR}/fonts/Satoshi/FFL.txt")
+entropy_add_license_resource("SourceSans3.txt" "${entropy_RES_DIR}/fonts/SourceSans3/LICENSE.txt")
 entropy_add_license_resource("SpaceGrotesk.txt" "${entropy_RES_DIR}/fonts/SpaceGrotesk/OFL.txt")
 entropy_add_license_resource("Supreme.txt" "${entropy_RES_DIR}/fonts/Supreme/FFL.txt")
 entropy_add_license_resource("PeterKovesiColourMaps.txt" "${entropy_RES_DIR}/colormaps/peter_kovesi/LICENSE.txt")

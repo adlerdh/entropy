@@ -137,6 +137,8 @@ void renderSettingsWindow(
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(size_t cmapIndex)>& getImageColorMap,
   const std::function<void(void)>& updateMetricUniforms,
+  const std::function<void(std::optional<float> scale)>& setUiScaleOverride,
+  const std::function<void()>& requestFontReload,
   const AllViewsRecenterType& recenterAllViews);
 
 void renderInspectionWindow(

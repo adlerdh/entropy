@@ -7,6 +7,24 @@
 #include <glm/vec3.hpp>
 
 #include <cstdint>
+#include <optional>
+
+/**
+ * @brief Font families that can be used for the main ImGui interface.
+ *
+ * Some families are intentionally hidden from the Settings UI while they are
+ * being evaluated, but they remain available to the implementation.
+ */
+enum class UiFontFamily : std::uint8_t
+{
+  SpaceGrotesk,
+  Inter,
+  NotoSans,
+  Roboto,
+  SourceSans3,
+  IBMPlexSans,
+  Cousine
+};
 
 /**
  * @brief Holds all application settings
@@ -43,6 +61,31 @@ public:
 
   bool overlays() const;
   void setOverlays(bool);
+
+  /**
+   * @brief Return the user-selected ImGui UI scale override.
+   *
+   * A value of \c std::nullopt means platform auto scaling is active.
+   */
+  std::optional<float> uiScaleOverride() const;
+
+  /**
+   * @brief Set the user-selected ImGui UI scale override.
+   *
+   * A value of \c std::nullopt means that Entropy should use the platform auto
+   * scale. Explicit values are clamped to the supported UI scaling range.
+   */
+  void setUiScaleOverride(std::optional<float> scale);
+
+  /**
+   * @brief Return the font family used for the main ImGui interface.
+   */
+  UiFontFamily uiFontFamily() const;
+
+  /**
+   * @brief Set the font family used for the main ImGui interface.
+   */
+  void setUiFontFamily(UiFontFamily family);
 
   std::size_t foregroundLabel() const;
   std::size_t backgroundLabel() const;
@@ -108,6 +151,8 @@ private:
 
   bool m_synchronizeZoom = true; //!< Synchronize zoom between views
   bool m_overlays = true;        //!< Render UI and vector overlays
+  std::optional<float> m_uiScaleOverride = std::nullopt;
+  UiFontFamily m_uiFontFamily = UiFontFamily::Inter;
 
   bool m_cursorSyncEnabled = false;
   bool m_sendCursorSync = true;

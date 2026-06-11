@@ -51,7 +51,9 @@ const ImVec4 blackText(0, 0, 0, 1);
 ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
 {
   static const ImVec2 sk_toolbarButtonSize(32, 32);
-  return ImVec2{contentScale.x * sk_toolbarButtonSize.x, contentScale.y * sk_toolbarButtonSize.y};
+  (void)contentScale;
+  const float scale = ImGui::GetFontSize() / 16.0f;
+  return ImVec2{scale * sk_toolbarButtonSize.x, scale * sk_toolbarButtonSize.y};
 }
 
 } // namespace
@@ -987,6 +989,8 @@ void renderSettingsWindow(
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
   const std::function<void(void)>& updateMetricUniforms,
+  const std::function<void(std::optional<float> scale)>& setUiScaleOverride,
+  const std::function<void()>& requestFontReload,
   const AllViewsRecenterType& recenterAllViews)
 {
   static constexpr bool sk_recenterCrosshairs = true;
@@ -1646,6 +1650,90 @@ void renderSettingsWindow(
 
           ImGui::Spacing();
           ImGui::TreePop();
+        }
+
+        ImGui::EndTabItem();
+      }
+
+      if (ImGui::BeginTabItem("Interface")) {
+        struct UiScaleChoice
+        {
+          const char* label;
+          std::optional<float> scale;
+        };
+
+        static const std::array<UiScaleChoice, 7> sk_uiScaleChoices{
+          UiScaleChoice{"Auto", std::nullopt},
+          UiScaleChoice{"75%", 0.75f},
+          UiScaleChoice{"100%", 1.0f},
+          UiScaleChoice{"125%", 1.25f},
+          UiScaleChoice{"150%", 1.5f},
+          UiScaleChoice{"200%", 2.0f},
+          UiScaleChoice{"300%", 3.0f}};
+
+        const auto currentScale = appData.settings().uiScaleOverride();
+        auto currentChoice = std::find_if(
+          sk_uiScaleChoices.begin(),
+          sk_uiScaleChoices.end(),
+          [&currentScale](const UiScaleChoice& choice) { return choice.scale == currentScale; });
+        if (currentChoice == sk_uiScaleChoices.end()) {
+          currentChoice = sk_uiScaleChoices.begin();
+        }
+
+        if (ImGui::BeginCombo("UI scale", currentChoice->label)) {
+          for (const UiScaleChoice& choice : sk_uiScaleChoices) {
+            const bool selected = choice.scale == currentScale;
+            if (ImGui::Selectable(choice.label, selected)) {
+              appData.settings().setUiScaleOverride(choice.scale);
+              if (setUiScaleOverride) {
+                setUiScaleOverride(appData.settings().uiScaleOverride());
+              }
+            }
+            if (selected) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
+        ImGui::SameLine();
+        helpMarker(
+          "Auto uses the platform UI scale. On macOS this is 100% so Retina backing scale keeps rendering sharp "
+          "without enlarging the interface.");
+
+        struct UiFontChoice
+        {
+          const char* label;
+          UiFontFamily family;
+        };
+
+        static const std::array<UiFontChoice, 3> sk_uiFontChoices{
+          UiFontChoice{"Inter", UiFontFamily::Inter},
+          UiFontChoice{"Roboto", UiFontFamily::Roboto},
+          UiFontChoice{"Cousine", UiFontFamily::Cousine}};
+
+        const UiFontFamily currentFamily = appData.settings().uiFontFamily();
+        auto currentFontChoice =
+          std::find_if(sk_uiFontChoices.begin(), sk_uiFontChoices.end(), [currentFamily](const UiFontChoice& choice) {
+            return choice.family == currentFamily;
+          });
+        if (currentFontChoice == sk_uiFontChoices.end()) {
+          currentFontChoice = sk_uiFontChoices.begin();
+        }
+
+        if (ImGui::BeginCombo("UI font", currentFontChoice->label)) {
+          for (const UiFontChoice& choice : sk_uiFontChoices) {
+            const bool selected = choice.family == currentFamily;
+            if (ImGui::Selectable(choice.label, selected)) {
+              appData.settings().setUiFontFamily(choice.family);
+              if (requestFontReload) {
+                requestFontReload();
+              }
+            }
+            if (selected) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
         }
 
         ImGui::EndTabItem();

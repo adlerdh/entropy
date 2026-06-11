@@ -64,9 +64,12 @@ static const LicenseDocument sk_cubicDocs[] = {
   {"License and citation request", "licenses/CubicBSplineInterpolation.txt"}};
 static const LicenseDocument sk_cousineDocs[] = {{"License", "licenses/Cousine.txt"}};
 static const LicenseDocument sk_forkAwesomeDocs[] = {{"Licenses", "licenses/ForkAwesome.txt"}};
+static const LicenseDocument sk_ibmPlexSansDocs[] = {{"License", "licenses/IBMPlexSans.txt"}};
 static const LicenseDocument sk_interDocs[] = {{"License", "licenses/Inter.txt"}};
+static const LicenseDocument sk_notoSansDocs[] = {{"License", "licenses/NotoSans.txt"}};
 static const LicenseDocument sk_robotoDocs[] = {{"License", "licenses/Roboto.txt"}};
 static const LicenseDocument sk_satoshiDocs[] = {{"License", "licenses/Satoshi.txt"}};
+static const LicenseDocument sk_sourceSans3Docs[] = {{"License", "licenses/SourceSans3.txt"}};
 static const LicenseDocument sk_spaceGroteskDocs[] = {{"License", "licenses/SpaceGrotesk.txt"}};
 static const LicenseDocument sk_supremeDocs[] = {{"License", "licenses/Supreme.txt"}};
 static const LicenseDocument sk_peterKovesiDocs[] = {{"License", "licenses/PeterKovesiColourMaps.txt"}};
@@ -123,6 +126,13 @@ static const LicenseEntry sk_entries[] = {
    "",
    sk_iconFontDocs,
    count(sk_iconFontDocs)},
+  {"IBM Plex Sans font",
+   "None",
+   "https://github.com/IBM/plex",
+   "SIL Open Font License 1.1",
+   "",
+   sk_ibmPlexSansDocs,
+   count(sk_ibmPlexSansDocs)},
   {"imGuIZMO.quat",
    "v3.0",
    "https://github.com/BrutPitt/imGuIZMO.quat",
@@ -167,6 +177,13 @@ static const LicenseEntry sk_entries[] = {
    "",
    sk_nfdDocs,
    count(sk_nfdDocs)},
+  {"Noto Sans font",
+   "None",
+   "https://github.com/notofonts/noto-fonts",
+   "SIL Open Font License 1.1",
+   "",
+   sk_notoSansDocs,
+   count(sk_notoSansDocs)},
   {"nlohmann::json", "v3.12.0", "https://github.com/nlohmann/json", "MIT", "", sk_jsonDocs, count(sk_jsonDocs)},
   {"Peter Kovesi color maps",
    "2014-2018 copy",
@@ -211,6 +228,13 @@ static const LicenseEntry sk_entries[] = {
    "",
    sk_satoshiDocs,
    count(sk_satoshiDocs)},
+  {"Source Sans 3 font",
+   "None",
+   "https://github.com/adobe-fonts/source-sans",
+   "SIL Open Font License 1.1",
+   "",
+   sk_sourceSans3Docs,
+   count(sk_sourceSans3Docs)},
   {"Space Grotesk font",
    "None",
    "https://github.com/floriankarsten/space-grotesk",

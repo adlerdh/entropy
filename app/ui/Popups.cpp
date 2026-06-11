@@ -61,11 +61,11 @@ std::string currentDirectory()
 
 std::string runtimeInfo()
 {
-  return std::string("-current working directory: ") + currentDirectory() + "\n" +
-         "-resource directory: " + displayPath(app_paths::resourceDirectory()) + "\n" +
-         "-user data directory: " + displayPath(app_paths::userDataDirectory()) + "\n" +
-         "-log directory: " + displayPath(app_paths::logDirectory()) + "\n" +
-         "-uses platform user directories: " + (app_paths::usesPlatformUserDirectories() ? "yes" : "no");
+  return std::string("-Current working directory: ") + currentDirectory() + "\n" +
+         "-Resource directory: " + displayPath(app_paths::resourceDirectory()) + "\n" +
+         "-User data directory: " + displayPath(app_paths::userDataDirectory()) + "\n" +
+         "-Log directory: " + displayPath(app_paths::logDirectory()) + "\n" +
+         "-Uses platform user directories: " + (app_paths::usesPlatformUserDirectories() ? "yes" : "no");
 }
 
 constexpr std::array<ViewType, 3> sk_lightboxViewTypes{ViewType::Axial, ViewType::Coronal, ViewType::Sagittal};

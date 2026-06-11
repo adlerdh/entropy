@@ -6,6 +6,7 @@
 #include "image/DicomSeries.h"
 #include "common/SegmentationTypes.h"
 #include "ui/GuiData.h"
+#include "ui/UiScaleManager.h"
 
 #include <glm/fwd.hpp>
 #include <uuid.h>
@@ -13,6 +14,7 @@
 #include <functional>
 #include <future>
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <string>
 #include <unordered_map>
@@ -31,7 +33,26 @@ public:
   ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler& callbackHandler);
   ~ImGuiWrapper();
 
+  /**
+   * @brief Apply a new platform content scale reported by the windowing layer.
+   *
+   * This is the monitor/window content scale from GLFW. The scale manager maps
+   * it to the UI scale that should be used on the current platform.
+   */
   void setContentScale(float scale);
+
+  /**
+   * @brief Queue a user-selected ImGui UI scale override.
+   *
+   * Font atlas changes are deferred until the next render frame so that they
+   * happen before ImGui::NewFrame().
+   */
+  void setUserScaleOverride(std::optional<float> scale);
+
+  /**
+   * @brief Queue a reload of the ImGui font atlas using the active UI font.
+   */
+  void requestFontReload();
 
   void setCallbacks(
     std::function<void(void)> postEmptyGlfwEvent,
@@ -88,7 +109,13 @@ public:
   void render();
 
 private:
-  void initializeFonts();
+  /**
+   * @brief Load the active ImGui UI font and icon font into the font atlas.
+   *
+   * The font sizes are base logical sizes. DPI scaling is applied separately
+   * through ImGuiStyle::FontScaleDpi by UiScaleManager.
+   */
+  void initializeFonts(float scale);
 
   void annotationToolbar(const std::function<void()> paintActiveAnnotation);
 
@@ -155,8 +182,9 @@ private:
   std::function<bool(const uuids::uuid& imageUid)> m_removeImage = nullptr;
   std::function<void()> m_paintActiveSegmentationWithActivePolygon = nullptr;
 
-  /// Scaling for the UI elements and fonts
-  float m_contentScale;
+  UiScaleManager m_uiScaleManager;
+  std::optional<std::optional<float> > m_pendingUserScaleOverride;
+  bool m_pendingFontReload = false;
 
   /// Futures created by running tasks asynchronously from the UI.
   /// These are created during the lifetime of the application.

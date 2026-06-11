@@ -206,10 +206,42 @@ ImFont* loadFont(
     glyphRange);
 }
 
+struct UiFontSpec
+{
+  const char* name;
+  const char* path;
+  float size;
+};
+
+/**
+ * @brief Return the embedded font resource and base size for an ImGui UI font family.
+ */
+UiFontSpec uiFontSpec(UiFontFamily family)
+{
+  switch (family) {
+    case UiFontFamily::SpaceGrotesk:
+      return {"Space Grotesk Light", "res/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf", 16.0f};
+    case UiFontFamily::Inter:
+      return {"Inter Regular", "res/fonts/Inter/Inter-Regular.ttf", 16.0f};
+    case UiFontFamily::NotoSans:
+      return {"Noto Sans Regular", "res/fonts/NotoSans/NotoSans-Regular.ttf", 16.0f};
+    case UiFontFamily::Roboto:
+      return {"Roboto Regular", "res/fonts/Roboto/Roboto-Regular.ttf", 16.0f};
+    case UiFontFamily::SourceSans3:
+      return {"Source Sans 3 Regular", "res/fonts/SourceSans3/SourceSans3-Regular.ttf", 16.0f};
+    case UiFontFamily::IBMPlexSans:
+      return {"IBM Plex Sans Regular", "res/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", 16.0f};
+    case UiFontFamily::Cousine:
+      return {"Cousine Regular", "res/fonts/Cousine/Cousine-Regular.ttf", 14.0f};
+  }
+
+  return {"Space Grotesk Light", "res/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf", 16.0f};
+}
+
 } // namespace
 
 ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler& callbackHandler)
-  : m_appData(appData), m_callbackHandler(callbackHandler), m_window(window), m_contentScale(1.0f)
+  : m_appData(appData), m_callbackHandler(callbackHandler), m_window(window)
 {
   IMGUI_CHECKVERSION();
 
@@ -245,12 +277,12 @@ ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler
 
   applyCustomDarkStyle();
 
-  ImGuiStyle& style = ImGui::GetStyle();
-  style.ScaleAllSizes(m_contentScale);
+  m_uiScaleManager.captureBaseStyle(ImGui::GetStyle());
+  m_uiScaleManager.setFontReloadCallback([this](float scale) { initializeFonts(scale); });
 
   spdlog::debug("Done setup of ImGui platform and renderer bindings");
 
-  initializeFonts();
+  m_uiScaleManager.setUserScaleOverride(appData.settings().uiScaleOverride());
   setContentScale(appData.windowData().getContentScaleRatio());
 }
 
@@ -485,8 +517,8 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
 
 /*
 Q: How should I handle DPI in my application?
-The short answer is: obtain the desired DPI scale, load your fonts resized with that scale (always
-round down fonts size to the nearest integer), and scale your Style structure accordingly using
+For ImGui 1.92, Entropy keeps fonts at their base size and applies the chosen DPI scale through
+ImGuiStyle::FontScaleDpi. Style dimensions are reset to the captured base style and scaled with
 style.ScaleAllSizes().
 
 Your application may want to detect DPI change and reload the fonts and reset style between frames.
@@ -498,48 +530,35 @@ e.g. instead of seeing a hardcoded height of 500 for a given item/window, you ma
 */
 void ImGuiWrapper::setContentScale(float scale)
 {
-  if (m_contentScale == scale) {
-    return;
-  }
-
-  spdlog::info("Setting content scale to {}", scale);
-
-  m_contentScale = scale;
-
-  ImGuiStyle& style = ImGui::GetStyle();
-  style.ScaleAllSizes(m_contentScale);
-
-  // For correct scaling, prefer to reload font + rebuild ImFontAtlas
-  initializeFonts();
+  m_uiScaleManager.applyContentScale(scale);
 }
 
-void ImGuiWrapper::initializeFonts()
+void ImGuiWrapper::setUserScaleOverride(std::optional<float> scale)
 {
-  static const std::string cousineFontPath("res/fonts/Cousine/Cousine-Regular.ttf");
-  static const std::string spaceGroteskFontPath("res/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf");
+  m_pendingUserScaleOverride = scale;
+  if (m_postEmptyGlfwEvent) {
+    m_postEmptyGlfwEvent();
+  }
+}
+
+void ImGuiWrapper::requestFontReload()
+{
+  m_pendingFontReload = true;
+  if (m_postEmptyGlfwEvent) {
+    m_postEmptyGlfwEvent();
+  }
+}
+
+void ImGuiWrapper::initializeFonts(float scale)
+{
   static const std::string forkAwesomeFontPath = std::string("res/fonts/ForkAwesome/") + FONT_ICON_FILE_NAME_FK;
+  const UiFontSpec uiFont = uiFontSpec(m_appData.settings().uiFontFamily());
 
-  spdlog::debug("Begin loading fonts");
+  spdlog::debug("Begin loading fonts for UI scale {}", scale);
 
-  ImFontConfig cousineFontConfig;
-  const float cousineFontSize = 14.0f;
+  ImFontConfig uiFontConfig;
 
-  myImFormatString(
-    cousineFontConfig.Name,
-    IM_ARRAYSIZE(cousineFontConfig.Name),
-    "%s, %.0fpx",
-    "Cousine Regular",
-    cousineFontSize);
-
-  ImFontConfig spaceGroteskFontConfig;
-  const float spaceGroteskFontSize = 16.0f;
-
-  myImFormatString(
-    spaceGroteskFontConfig.Name,
-    IM_ARRAYSIZE(spaceGroteskFontConfig.Name),
-    "%s, %.0fpx",
-    "Space Grotesk Light",
-    spaceGroteskFontSize);
+  myImFormatString(uiFontConfig.Name, IM_ARRAYSIZE(uiFontConfig.Name), "%s, %.0fpx", uiFont.name, uiFont.size);
 
   // Merge in icons from Fork Awesome:
   ImFontConfig forkAwesomeFontConfig;
@@ -558,10 +577,6 @@ void ImGuiWrapper::initializeFonts()
   /// @see For details about Fork Awesome fonts: https://forkaweso.me/Fork-Awesome/icons/
   static const ImWchar forkAwesomeIconGlyphRange[] = {ICON_MIN_FK, ICON_MAX_FK, 0};
 
-  // Clear all
-  // ImGui::GetIO().Fonts->Clear();
-  // m_appData.guiData().m_fonts.clear();
-
   // Load fonts: If no fonts are loaded, dear imgui will use the default font.
   // You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
   // AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the
@@ -572,37 +587,20 @@ void ImGuiWrapper::initializeFonts()
   // call.
   /// @todo use Freetype Rasterizer and Small Font Sizes
 
-  ImFont* cousineFontPtr = loadFont(cousineFontPath, cousineFontConfig, m_contentScale * cousineFontSize, nullptr);
-  ImFont* fork1Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange);
+  m_appData.guiData().m_fonts.clear();
 
-  ImFont* spaceFontPtr =
-    loadFont(spaceGroteskFontPath, spaceGroteskFontConfig, m_contentScale * spaceGroteskFontSize, nullptr);
-  ImFont* fork2Ptr = loadFont(
-    forkAwesomeFontPath,
-    forkAwesomeFontConfig,
-    m_contentScale * forkAwesomeFontSize,
-    forkAwesomeIconGlyphRange);
+  ImFont* uiFontPtr = loadFont(uiFont.path, uiFontConfig, uiFont.size, nullptr);
+  ImFont* fork1Ptr =
+    loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, forkAwesomeFontSize, forkAwesomeIconGlyphRange);
 
-  if (cousineFontPtr && fork1Ptr) {
-    m_appData.guiData().m_fonts[cousineFontPath] = cousineFontPtr;
-    m_appData.guiData().m_fonts[cousineFontPath + forkAwesomeFontPath] = fork1Ptr;
-    spdlog::debug("Loaded font {}", cousineFontPath);
+  if (uiFontPtr && fork1Ptr) {
+    m_appData.guiData().m_fonts[uiFont.path] = uiFontPtr;
+    m_appData.guiData().m_fonts[std::string(uiFont.path) + forkAwesomeFontPath] = fork1Ptr;
+    ImGui::GetIO().FontDefault = uiFontPtr;
+    spdlog::debug("Loaded font {}", uiFont.path);
   }
   else {
-    spdlog::error("Unable to load font {}", forkAwesomeFontPath);
-  }
-
-  if (spaceFontPtr && fork2Ptr) {
-    m_appData.guiData().m_fonts[spaceGroteskFontPath] = spaceFontPtr;
-    m_appData.guiData().m_fonts[spaceGroteskFontPath + forkAwesomeFontPath] = fork2Ptr;
-    spdlog::debug("Loaded font {}", spaceGroteskFontPath);
-  }
-  else {
-    spdlog::error("Unable to load font {}", forkAwesomeFontPath);
+    spdlog::error("Unable to load font {} or {}", uiFont.path, forkAwesomeFontPath);
   }
 
   spdlog::debug("Done loading fonts");
@@ -626,6 +624,15 @@ void ImGuiWrapper::render()
   using namespace std::placeholders;
 
   generateIsosurfaceMeshGpuRecords();
+
+  if (m_pendingUserScaleOverride) {
+    m_uiScaleManager.setUserScaleOverride(*m_pendingUserScaleOverride);
+    m_pendingUserScaleOverride.reset();
+  }
+  if (m_pendingFontReload) {
+    m_uiScaleManager.rebuildFontsForCurrentScale();
+    m_pendingFontReload = false;
+  }
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
@@ -1694,6 +1701,8 @@ void ImGuiWrapper::render()
         getNumImageColorMaps,
         getImageColorMap,
         m_updateMetricUniforms,
+        [this](std::optional<float> scale) { setUserScaleOverride(scale); },
+        [this]() { requestFontReload(); },
         m_recenterAllViews);
     }
 

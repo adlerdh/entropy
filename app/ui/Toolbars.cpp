@@ -56,13 +56,17 @@ void renderPlacementContextMenu(int& corner, bool& /*isHoriz*/)
 ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
 {
   static const ImVec2 sk_toolbarButtonSize(32, 32);
-  return ImVec2{contentScale.x * sk_toolbarButtonSize.x, contentScale.y * sk_toolbarButtonSize.y};
+  (void)contentScale;
+  const float scale = ImGui::GetFontSize() / 16.0f;
+  return ImVec2{scale * sk_toolbarButtonSize.x, scale * sk_toolbarButtonSize.y};
 }
 
 ImVec2 scaledPad(const glm::vec2& contentScale)
 {
   static constexpr float sk_pad = 8.0f;
-  return ImVec2{contentScale.x * sk_pad, contentScale.y * sk_pad};
+  (void)contentScale;
+  const float scale = ImGui::GetFontSize() / 16.0f;
+  return ImVec2{scale * sk_pad, scale * sk_pad};
 }
 
 } // namespace

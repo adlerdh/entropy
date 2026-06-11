@@ -53,12 +53,14 @@ public:
    *
    * @param shaderPrograms  Shared shader program map (owned by Rendering).
    * @param drawImages      Callback that renders image data for one view.
-   * @param drawLandmarks   Callback that renders landmarks for one view.
-   * @param drawAnnotations Callback that renders annotations for one view.
+   * @param drawImageBorders Callback that renders image borders for one view.
+   * @param drawLandmarks    Callback that renders landmarks for one view.
+   * @param drawAnnotations  Callback that renders annotations for one view.
    */
   void render(
     std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
     DrawViewFn drawImages,
+    DrawViewFn drawImageBorders,
     DrawViewFn drawLandmarks,
     DrawViewFn drawAnnotations);
 

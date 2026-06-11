@@ -1664,30 +1664,33 @@ void Rendering::renderOneImage_overlays(
   const View& view,
   const FrameBounds& miewportViewBounds,
   const glm::vec3& worldOffsetXhairs,
-  const CurrentImages& I)
+  const CurrentImages& I,
+  bool renderLandmarkAndAnnotationOverlays,
+  bool renderImageBorders)
 {
   auto& renderData = m_appData.renderData();
 
-  if (!renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
+  if (renderLandmarkAndAnnotationOverlays && !renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
     drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, I);
     setupOpenGLState();
   }
 
-  if (!renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes) {
+  if (renderLandmarkAndAnnotationOverlays && !renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes) {
     drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, I);
     setupOpenGLState();
   }
 
-  drawImageViewIntersections(
-    m_nvg,
-    miewportViewBounds,
-    worldOffsetXhairs,
-    m_appData,
-    view,
-    I,
-    renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
-
-  setupOpenGLState();
+  if (renderImageBorders) {
+    drawImageViewIntersections(
+      m_nvg,
+      miewportViewBounds,
+      worldOffsetXhairs,
+      m_appData,
+      view,
+      I,
+      renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
+    setupOpenGLState();
+  }
 }
 
 void Rendering::volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I)
@@ -1704,7 +1707,9 @@ void Rendering::volumeRenderOneImage(const View& view, GLShaderProgram& program,
 void Rendering::renderAllImagesForView(
   const View& view,
   const FrameBounds& miewportViewBounds,
-  const glm::vec3& worldOffsetXhairs)
+  const glm::vec3& worldOffsetXhairs,
+  bool renderLandmarkAndAnnotationOverlays,
+  bool renderImageBorders)
 {
   static const RenderData::ImageUniforms sk_defaultImageUniforms;
   const RenderData& R = m_appData.renderData();
@@ -2037,7 +2042,13 @@ void Rendering::renderAllImagesForView(
         renderBrushPreview(view, worldOffsetXhairs, imgSegPair);
 
         // Render the annotation and landmark overlays:
-        renderOneImage_overlays(view, miewportViewBounds, worldOffsetXhairs, CurrentImages{imgSegPair});
+        renderOneImage_overlays(
+          view,
+          miewportViewBounds,
+          worldOffsetXhairs,
+          CurrentImages{imgSegPair},
+          renderLandmarkAndAnnotationOverlays,
+          renderImageBorders);
 
         isFixedImage = false;
       }
@@ -2280,6 +2291,50 @@ void Rendering::renderAllImagesForView(
   }
 }
 
+void Rendering::renderAllImageBordersForView(
+  const View& view,
+  const FrameBounds& miewportViewBounds,
+  const glm::vec3& worldOffsetXhairs)
+{
+  if (!m_nvg) {
+    return;
+  }
+
+  switch (getShaderGroup(view.renderMode())) {
+    case ShaderGroup::Image: {
+      const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
+      for (const auto& imgSegPair : I) {
+        drawImageViewIntersections(
+          m_nvg,
+          miewportViewBounds,
+          worldOffsetXhairs,
+          m_appData,
+          view,
+          CurrentImages{imgSegPair},
+          m_appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
+        setupOpenGLState();
+      }
+      break;
+    }
+    case ShaderGroup::Metric: {
+      drawImageViewIntersections(
+        m_nvg,
+        miewportViewBounds,
+        worldOffsetXhairs,
+        m_appData,
+        view,
+        getImageAndSegUidsForMetricShaders(view.metricImages()),
+        m_appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
+      setupOpenGLState();
+      break;
+    }
+    case ShaderGroup::Volume:
+    case ShaderGroup::None:
+    case ShaderGroup::NumElements:
+      break;
+  }
+}
+
 void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffsetXhairs, const ImgSegPair& imgSegPair)
 {
   const auto& imageUid = imgSegPair.first;
@@ -2404,6 +2459,7 @@ void Rendering::renderAllAnnotationsForView(
         drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, CurrentImages{imgSegPair});
         setupOpenGLState();
       }
+      break;
     }
     case ViewRenderMode::Disabled: {
       return;
@@ -2431,7 +2487,10 @@ void Rendering::renderImageData()
   if (m_asciiRenderer.enabled()) {
     m_asciiRenderer.render(
       m_shaderPrograms,
-      [this](const View& v, const FrameBounds& b, const glm::vec3& o) { renderAllImagesForView(v, b, o); },
+      [this](const View& v, const FrameBounds& b, const glm::vec3& o) {
+        renderAllImagesForView(v, b, o, false, false);
+      },
+      [this](const View& v, const FrameBounds& b, const glm::vec3& o) { renderAllImageBordersForView(v, b, o); },
       [this](const View& v, const FrameBounds& b, const glm::vec3& o) { renderAllLandmarksForView(v, b, o); },
       [this](const View& v, const FrameBounds& b, const glm::vec3& o) { renderAllAnnotationsForView(v, b, o); });
     return;

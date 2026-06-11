@@ -112,6 +112,30 @@ void AppSettings::setOverlays(bool set)
   m_overlays = set;
 }
 
+std::optional<float> AppSettings::uiScaleOverride() const
+{
+  return m_uiScaleOverride;
+}
+
+void AppSettings::setUiScaleOverride(std::optional<float> scale)
+{
+  if (scale) {
+    scale = std::clamp(*scale, 0.5f, 4.0f);
+  }
+
+  m_uiScaleOverride = scale;
+}
+
+UiFontFamily AppSettings::uiFontFamily() const
+{
+  return m_uiFontFamily;
+}
+
+void AppSettings::setUiFontFamily(UiFontFamily family)
+{
+  m_uiFontFamily = family;
+}
+
 void AppSettings::setForegroundLabel(std::size_t label, const ParcellationLabelTable& activeLabelTable)
 {
   const auto oldForegroundLabel = m_foregroundLabel;

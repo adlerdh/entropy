@@ -135,8 +135,16 @@ private:
   void renderImageData();
 
   /// Render all images/landmarks/annotations for a view
-  void
-  renderAllImagesForView(const View& view, const FrameBounds& miewportViewBounds, const glm::vec3& worldOffsetXhairs);
+  void renderAllImagesForView(
+    const View& view,
+    const FrameBounds& miewportViewBounds,
+    const glm::vec3& worldOffsetXhairs,
+    bool renderLandmarkAndAnnotationOverlays = true,
+    bool renderImageBorders = true);
+  void renderAllImageBordersForView(
+    const View& view,
+    const FrameBounds& miewportViewBounds,
+    const glm::vec3& worldOffsetXhairs);
   void renderAllLandmarksForView(
     const View& view,
     const FrameBounds& miewportViewBounds,
@@ -159,7 +167,9 @@ private:
     const View& view,
     const FrameBounds& miewportViewBounds,
     const glm::vec3& worldOffsetXhairs,
-    const CurrentImages& I);
+    const CurrentImages& I,
+    bool renderLandmarkAndAnnotationOverlays,
+    bool renderImageBorders);
 
   void renderBrushPreview(const View& view, const glm::vec3& worldOffsetXhairs, const ImgSegPair& imgSegPair);
 
