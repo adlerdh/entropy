@@ -302,18 +302,20 @@ void renderSourceUrl(const LicenseEntry& entry)
   }
 }
 
-} // namespace
-
-void renderThirdPartyLicenses()
+bool isBundledResource(const LicenseEntry& entry)
 {
-  ImGui::TextWrapped(
-    "Entropy uses the following external tools, libraries, source snippets, fonts, and color maps. "
-    "Each section includes the attribution and license material required for redistribution.");
-  ImGui::Spacing();
+  const std::string name(entry.name);
+  return name.find("font") != std::string::npos || name.find("color map") != std::string::npos ||
+         name.find("color maps") != std::string::npos;
+}
 
-  ImGui::BeginChild("##externalLicenses", ImVec2(-FLT_MIN, -FLT_MIN), true);
-
+void renderLicenseEntries(bool resources)
+{
   for (const auto& entry : sk_entries) {
+    if (isBundledResource(entry) != resources) {
+      continue;
+    }
+
     ImGui::PushID(entry.name);
     if (ImGui::CollapsingHeader(entry.name)) {
       ImGui::Text("Version: %s", entry.version);
@@ -333,6 +335,32 @@ void renderThirdPartyLicenses()
       }
     }
     ImGui::PopID();
+  }
+}
+
+} // namespace
+
+void renderThirdPartyLicenses()
+{
+  ImGui::TextWrapped(
+    "Entropy uses the following external libraries, source snippets, fonts, and color maps. Each section includes the "
+    "attribution and license material required for redistribution.");
+  ImGui::Spacing();
+
+  ImGui::BeginChild("##externalLicenses", ImVec2(-FLT_MIN, -FLT_MIN), true);
+
+  if (ImGui::BeginTabBar("##licenseGroups")) {
+    if (ImGui::BeginTabItem("Libraries")) {
+      renderLicenseEntries(false);
+      ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem("Resources")) {
+      renderLicenseEntries(true);
+      ImGui::EndTabItem();
+    }
+
+    ImGui::EndTabBar();
   }
 
   ImGui::EndChild();

@@ -21,6 +21,14 @@ public:
   void captureBaseStyle(const ImGuiStyle& style);
 
   /**
+   *  Update the unscaled base style and reapply the current UI scale.
+   *
+   * This is used for color-preset changes so future DPI changes do not restore
+   * stale colors from the previous base style.
+   */
+  void updateBaseStyle(const std::function<void(ImGuiStyle& style)>& update);
+
+  /**
    * @brief Set the callback used to repopulate the ImGui font atlas.
    */
   void setFontReloadCallback(FontReloadCallback callback);

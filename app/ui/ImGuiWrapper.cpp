@@ -291,7 +291,9 @@ ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  applyCustomDarkStyle();
+  applyUiStylePreset(appData.settings().uiColorPreset());
+  ::applyUiDensityPreset(appData.settings().uiDensityPreset());
+  ::applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
 
   m_uiScaleManager.captureBaseStyle(ImGui::GetStyle());
   m_uiScaleManager.setFontReloadCallback([this](float scale) { initializeFonts(scale); });
@@ -563,6 +565,32 @@ void ImGuiWrapper::requestFontReload()
   if (m_postEmptyGlfwEvent) {
     m_postEmptyGlfwEvent();
   }
+}
+
+void ImGuiWrapper::applyUiColorPreset(UiColorPreset preset)
+{
+  m_appData.settings().setUiColorPreset(preset);
+  const UiDensityPreset densityPreset = m_appData.settings().uiDensityPreset();
+  const float windowBgOpacity = m_appData.settings().uiWindowBgOpacity();
+  m_uiScaleManager.updateBaseStyle([preset, densityPreset, windowBgOpacity](ImGuiStyle& style) {
+    applyUiStylePreset(preset, &style);
+    ::applyUiDensityPreset(densityPreset, &style);
+    ::applyUiWindowBgOpacity(windowBgOpacity, &style);
+  });
+}
+
+void ImGuiWrapper::applyUiDensityPreset(UiDensityPreset preset)
+{
+  m_appData.settings().setUiDensityPreset(preset);
+  m_uiScaleManager.updateBaseStyle([preset](ImGuiStyle& style) { ::applyUiDensityPreset(preset, &style); });
+}
+
+void ImGuiWrapper::applyUiWindowBgOpacity(float opacity)
+{
+  m_appData.settings().setUiWindowBgOpacity(opacity);
+  const float clampedOpacity = m_appData.settings().uiWindowBgOpacity();
+  m_uiScaleManager.updateBaseStyle(
+    [clampedOpacity](ImGuiStyle& style) { ::applyUiWindowBgOpacity(clampedOpacity, &style); });
 }
 
 void ImGuiWrapper::initializeFonts(float scale)
@@ -1690,6 +1718,9 @@ void ImGuiWrapper::render()
     }
 
     if (!hasLoadedProject) {
+      renderAboutDialogModalPopup(m_appData.guiData().m_showAboutDialog);
+      m_appData.guiData().m_showAboutDialog = false;
+
       if (
         m_postEmptyGlfwEvent &&
         (ImGui::IsAnyItemActive() || ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
@@ -1718,6 +1749,9 @@ void ImGuiWrapper::render()
         m_updateMetricUniforms,
         [this](std::optional<float> scale) { setUserScaleOverride(scale); },
         [this]() { requestFontReload(); },
+        [this](UiColorPreset preset) { applyUiColorPreset(preset); },
+        [this](UiDensityPreset preset) { applyUiDensityPreset(preset); },
+        [this](float opacity) { applyUiWindowBgOpacity(opacity); },
         m_recenterAllViews);
     }
 

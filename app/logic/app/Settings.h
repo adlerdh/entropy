@@ -27,6 +27,32 @@ enum class UiFontFamily : std::uint8_t
 };
 
 /**
+ *  Color presets for the main ImGui interface.
+ */
+enum class UiColorPreset : std::uint8_t
+{
+  EntropyDark,
+  ImGuiDark,
+  ImGuiClassic,
+  ImGuiLight,
+  SlateBlue,
+  Graphite,
+  DeepTeal,
+  Midnight,
+  SoftLight
+};
+
+/**
+ *  Density and shape presets for the main ImGui interface.
+ */
+enum class UiDensityPreset : std::uint8_t
+{
+  Compact,
+  Default,
+  Comfortable
+};
+
+/**
  * @brief Holds all application settings
  */
 class AppSettings
@@ -86,6 +112,36 @@ public:
    * @brief Set the font family used for the main ImGui interface.
    */
   void setUiFontFamily(UiFontFamily family);
+
+  /**
+   *  Return the color preset used for the main ImGui interface.
+   */
+  UiColorPreset uiColorPreset() const;
+
+  /**
+   *  Set the color preset used for the main ImGui interface.
+   */
+  void setUiColorPreset(UiColorPreset preset);
+
+  /**
+   *  Return the density and shape preset used for the main ImGui interface.
+   */
+  UiDensityPreset uiDensityPreset() const;
+
+  /**
+   *  Set the density and shape preset used for the main ImGui interface.
+   */
+  void setUiDensityPreset(UiDensityPreset preset);
+
+  /**
+   *  Return the opacity of regular ImGui window backgrounds.
+   */
+  float uiWindowBgOpacity() const;
+
+  /**
+   *  Set the opacity of regular ImGui window backgrounds.
+   */
+  void setUiWindowBgOpacity(float opacity);
 
   std::size_t foregroundLabel() const;
   std::size_t backgroundLabel() const;
@@ -153,6 +209,9 @@ private:
   bool m_overlays = true;        //!< Render UI and vector overlays
   std::optional<float> m_uiScaleOverride = std::nullopt;
   UiFontFamily m_uiFontFamily = UiFontFamily::Inter;
+  UiColorPreset m_uiColorPreset = UiColorPreset::EntropyDark;
+  UiDensityPreset m_uiDensityPreset = UiDensityPreset::Default;
+  float m_uiWindowBgOpacity = 0.94f;
 
   bool m_cursorSyncEnabled = false;
   bool m_sendCursorSync = true;

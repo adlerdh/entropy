@@ -21,6 +21,20 @@ void UiScaleManager::captureBaseStyle(const ImGuiStyle& style)
   m_baseStyle = style;
 }
 
+void UiScaleManager::updateBaseStyle(const std::function<void(ImGuiStyle& style)>& update)
+{
+  if (update) {
+    update(m_baseStyle);
+  }
+
+  ImGuiStyle& style = ImGui::GetStyle();
+  style = m_baseStyle;
+
+  const float scale = effectiveScale();
+  style.ScaleAllSizes(scale);
+  style.FontScaleDpi = scale;
+}
+
 void UiScaleManager::setFontReloadCallback(FontReloadCallback callback)
 {
   m_fontReloadCallback = std::move(callback);

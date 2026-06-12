@@ -19,6 +19,7 @@
 #include <cctype>
 #include <cstdint>
 #include <cstring>
+#include <initializer_list>
 #include <limits>
 #include <sstream>
 
@@ -69,13 +70,26 @@ std::string currentDirectory()
   return error ? std::string{"<unavailable>"} : displayPath(path);
 }
 
-std::string runtimeInfo()
+void renderRuntimePathField(const char* label, const std::string& value, float inputWidth)
 {
-  return std::string("-Current working directory: ") + currentDirectory() + "\n" +
-         "-Resource directory: " + displayPath(app_paths::resourceDirectory()) + "\n" +
-         "-User data directory: " + displayPath(app_paths::userDataDirectory()) + "\n" +
-         "-Log directory: " + displayPath(app_paths::logDirectory()) + "\n" +
-         "-Uses platform user directories: " + (app_paths::usesPlatformUserDirectories() ? "yes" : "no");
+  ImGui::PushID(label);
+  ImGui::SetNextItemWidth(inputWidth);
+  ImGui::InputText("##value", const_cast<char*>(value.c_str()), value.size() + 1, ImGuiInputTextFlags_ReadOnly);
+  ImGui::SameLine();
+  ImGui::TextUnformatted(label);
+  ImGui::PopID();
+}
+
+float runtimePathInputWidth(const std::initializer_list<const char*> labels)
+{
+  float labelWidth = 0.0f;
+  for (const char* label : labels) {
+    labelWidth = std::max(labelWidth, ImGui::CalcTextSize(label).x);
+  }
+
+  return std::max(
+    ImGui::GetFontSize() * 12.0f,
+    ImGui::GetContentRegionAvail().x - labelWidth - ImGui::GetStyle().ItemSpacing.x);
 }
 
 constexpr std::array<ViewType, 3> sk_lightboxViewTypes{ViewType::Axial, ViewType::Coronal, ViewType::Sagittal};
@@ -310,13 +324,20 @@ void renderAboutDialogModalPopup(bool open)
       }
 
       if (ImGui::BeginTabItem("Runtime paths")) {
-        const std::string pathsInfo = runtimeInfo();
-        ImGui::InputTextMultiline(
-          "##runtimePaths",
-          const_cast<char*>(pathsInfo.c_str()),
-          pathsInfo.length(),
-          ImVec2(-FLT_MIN, -FLT_MIN),
-          ImGuiInputTextFlags_ReadOnly);
+        const float inputWidth = runtimePathInputWidth(
+          {"Current working directory",
+           "Resource directory",
+           "User data directory",
+           "Log directory",
+           "Uses platform user directories"});
+        renderRuntimePathField("Current working directory", currentDirectory(), inputWidth);
+        renderRuntimePathField("Resource directory", displayPath(app_paths::resourceDirectory()), inputWidth);
+        renderRuntimePathField("User data directory", displayPath(app_paths::userDataDirectory()), inputWidth);
+        renderRuntimePathField("Log directory", displayPath(app_paths::logDirectory()), inputWidth);
+        renderRuntimePathField(
+          "Uses platform user directories",
+          app_paths::usesPlatformUserDirectories() ? "yes" : "no",
+          inputWidth);
         ImGui::EndTabItem();
       }
 

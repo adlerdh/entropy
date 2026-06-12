@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "common/PublicTypes.h"
 #include "image/DicomSeries.h"
+#include "logic/app/Settings.h"
 #include "common/SegmentationTypes.h"
 #include "ui/GuiData.h"
 #include "ui/UiScaleManager.h"
@@ -53,6 +54,21 @@ public:
    * @brief Queue a reload of the ImGui font atlas using the active UI font.
    */
   void requestFontReload();
+
+  /**
+   *  Apply a UI color preset and keep it as the scale baseline.
+   */
+  void applyUiColorPreset(UiColorPreset preset);
+
+  /**
+   *  Apply a UI density preset and keep it as the scale baseline.
+   */
+  void applyUiDensityPreset(UiDensityPreset preset);
+
+  /**
+   *  Apply regular window background opacity and keep it as the scale baseline.
+   */
+  void applyUiWindowBgOpacity(float opacity);
 
   void setCallbacks(
     std::function<void(void)> postEmptyGlfwEvent,

@@ -2,6 +2,7 @@
 #include "ui/Headers.h"
 #include "ui/Helpers.h"
 #include "ui/ImGuiCustomControls.h"
+#include "ui/Style.h"
 #include "ui/IsosurfaceHeader.h"
 #include "ui/Widgets.h"
 #include <imGuIZMOquat.h>
@@ -991,6 +992,9 @@ void renderSettingsWindow(
   const std::function<void(void)>& updateMetricUniforms,
   const std::function<void(std::optional<float> scale)>& setUiScaleOverride,
   const std::function<void()>& requestFontReload,
+  const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
+  const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
+  const std::function<void(float opacity)>& applyUiWindowBgOpacity,
   const AllViewsRecenterType& recenterAllViews)
 {
   static constexpr bool sk_recenterCrosshairs = true;
@@ -1739,6 +1743,64 @@ void renderSettingsWindow(
             }
           }
           ImGui::EndCombo();
+        }
+
+        static constexpr std::array<UiColorPreset, 9> sk_uiColorPresets{
+          UiColorPreset::EntropyDark,
+          UiColorPreset::ImGuiDark,
+          UiColorPreset::ImGuiClassic,
+          UiColorPreset::ImGuiLight,
+          UiColorPreset::SlateBlue,
+          UiColorPreset::Graphite,
+          UiColorPreset::DeepTeal,
+          UiColorPreset::Midnight,
+          UiColorPreset::SoftLight};
+
+        const UiColorPreset currentColorPreset = appData.settings().uiColorPreset();
+        if (ImGui::BeginCombo("UI colors", uiColorPresetName(currentColorPreset))) {
+          for (const UiColorPreset preset : sk_uiColorPresets) {
+            const bool selected = preset == currentColorPreset;
+            if (ImGui::Selectable(uiColorPresetName(preset), selected)) {
+              appData.settings().setUiColorPreset(preset);
+              if (applyUiColorPreset) {
+                applyUiColorPreset(preset);
+              }
+            }
+            if (selected) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
+
+        static constexpr std::array<UiDensityPreset, 3> sk_uiDensityPresets{
+          UiDensityPreset::Compact,
+          UiDensityPreset::Default,
+          UiDensityPreset::Comfortable};
+
+        const UiDensityPreset currentDensityPreset = appData.settings().uiDensityPreset();
+        if (ImGui::BeginCombo("UI density", uiDensityPresetName(currentDensityPreset))) {
+          for (const UiDensityPreset preset : sk_uiDensityPresets) {
+            const bool selected = preset == currentDensityPreset;
+            if (ImGui::Selectable(uiDensityPresetName(preset), selected)) {
+              appData.settings().setUiDensityPreset(preset);
+              if (applyUiDensityPreset) {
+                applyUiDensityPreset(preset);
+              }
+            }
+            if (selected) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
+
+        float windowBgOpacity = appData.settings().uiWindowBgOpacity();
+        if (ImGui::SliderFloat("Window background opacity", &windowBgOpacity, 0.2f, 1.0f, "%.2f")) {
+          appData.settings().setUiWindowBgOpacity(windowBgOpacity);
+          if (applyUiWindowBgOpacity) {
+            applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
+          }
         }
 
         ImGui::EndTabItem();

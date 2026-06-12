@@ -6,6 +6,7 @@
 #include "common/PublicTypes.h"
 #include "common/Types.h"
 
+#include "logic/app/Settings.h"
 #include "logic/camera/CameraTypes.h"
 #include "windowing/ViewTypes.h"
 
@@ -139,6 +140,9 @@ void renderSettingsWindow(
   const std::function<void(void)>& updateMetricUniforms,
   const std::function<void(std::optional<float> scale)>& setUiScaleOverride,
   const std::function<void()>& requestFontReload,
+  const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
+  const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
+  const std::function<void(float opacity)>& applyUiWindowBgOpacity,
   const AllViewsRecenterType& recenterAllViews);
 
 void renderInspectionWindow(

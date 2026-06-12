@@ -36,12 +36,14 @@ catch_discover_tests(EntropyLayoutTests)
 
 add_executable(EntropyUiTests
   "${entropy_APP_DIR}/rendering/test/ScaleBarGeometryTests.cpp"
+  "${entropy_APP_DIR}/ui/test/StyleTests.cpp"
   "${entropy_APP_DIR}/ui/test/UiScaleManagerTests.cpp"
   "${entropy_APP_DIR}/windowing/test/LinuxUiScaleTests.cpp"
 )
 
 target_sources(EntropyUiTests PRIVATE
   "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"
+  "${entropy_APP_DIR}/ui/Style.cpp"
   "${entropy_APP_DIR}/ui/UiScaleManager.cpp"
   "${entropy_APP_DIR}/windowing/LinuxUiScale.cpp"
 )
@@ -56,6 +58,7 @@ target_link_libraries(EntropyUiTests PRIVATE
 
 target_include_directories(EntropyUiTests PRIVATE
   "${entropy_APP_DIR}"
+  "${entropy_EXT_DIR}/glad/glad_gl_3.3_core/include"
   "${imgui_SRC_DIR}"
   "${imgui_SRC_DIR}/imgui"
 )

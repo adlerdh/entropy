@@ -136,6 +136,36 @@ void AppSettings::setUiFontFamily(UiFontFamily family)
   m_uiFontFamily = family;
 }
 
+UiColorPreset AppSettings::uiColorPreset() const
+{
+  return m_uiColorPreset;
+}
+
+void AppSettings::setUiColorPreset(UiColorPreset preset)
+{
+  m_uiColorPreset = preset;
+}
+
+UiDensityPreset AppSettings::uiDensityPreset() const
+{
+  return m_uiDensityPreset;
+}
+
+void AppSettings::setUiDensityPreset(UiDensityPreset preset)
+{
+  m_uiDensityPreset = preset;
+}
+
+float AppSettings::uiWindowBgOpacity() const
+{
+  return m_uiWindowBgOpacity;
+}
+
+void AppSettings::setUiWindowBgOpacity(float opacity)
+{
+  m_uiWindowBgOpacity = std::clamp(opacity, 0.2f, 1.0f);
+}
+
 void AppSettings::setForegroundLabel(std::size_t label, const ParcellationLabelTable& activeLabelTable)
 {
   const auto oldForegroundLabel = m_foregroundLabel;
