@@ -70,6 +70,7 @@
       "binaryDir": "${sourceDir}/build-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS": true,
         "Entropy_SUPERBUILD_CONFIG": "Release"
       }
     },
@@ -79,7 +80,8 @@
       "inherits": "app",
       "binaryDir": "${sourceDir}/build-release",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS": true
       }
     }
   ],

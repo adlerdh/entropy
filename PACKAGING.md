@@ -234,6 +234,8 @@ To create only the portable ZIP archive, WiX is not required:
 cpack -G ZIP -C Release --config build-release\CPackConfig.cmake
 ```
 
+The Windows release presets set `Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS=ON`, so GLFW, Native File Dialog Extended, spdlog, and the in-tree imgui library are linked statically into `entropy.exe`. ITK, Qt, and the Visual C++ runtime keep the normal Windows dynamic linkage and are bundled as required private runtime DLLs.
+
 The Windows MSI includes `entropy.exe`, required private runtime DLLs, the Visual C++ runtime DLLs, the app icon metadata, Start Menu and desktop shortcuts, and `share\entropy\AboutEntropyIcon.png`.
 
 The portable ZIP contains the same runtime payload without installer metadata or shortcuts. Extract it to a writable folder and run `entropy.exe` from that folder.

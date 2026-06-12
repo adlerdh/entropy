@@ -38,6 +38,22 @@ if(Entropy_STATIC_BUNDLED_DEPENDENCIES)
   set(_entropy_bundled_dependency_static_libs ON)
 endif()
 
+set(_entropy_glfw_shared_libs ${_entropy_bundled_dependency_shared_libs})
+set(_entropy_glfw_library_type "")
+set(_entropy_itk_shared_libs ${_entropy_bundled_dependency_shared_libs})
+set(_entropy_itk_static_libs ${_entropy_bundled_dependency_static_libs})
+set(_entropy_nativefiledialog_shared_libs ${_entropy_bundled_dependency_shared_libs})
+set(_entropy_spdlog_shared_libs ${_entropy_bundled_dependency_shared_libs})
+set(_entropy_spdlog_pic ${_entropy_bundled_dependency_shared_libs})
+
+if(WIN32 AND Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS)
+  set(_entropy_glfw_shared_libs OFF)
+  set(_entropy_glfw_library_type STATIC)
+  set(_entropy_nativefiledialog_shared_libs OFF)
+  set(_entropy_spdlog_shared_libs OFF)
+  set(_entropy_spdlog_pic OFF)
+endif()
+
 set(_ext_shared_runtime_args)
 if(UNIX AND NOT APPLE AND _entropy_bundled_dependency_shared_libs)
   list(APPEND _ext_shared_runtime_args
@@ -201,7 +217,8 @@ ExternalProject_Add(glfw
     ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBUILD_SHARED_LIBS:BOOL=${_entropy_bundled_dependency_shared_libs}
+    -DBUILD_SHARED_LIBS:BOOL=${_entropy_glfw_shared_libs}
+    -DGLFW_LIBRARY_TYPE:STRING=${_entropy_glfw_library_type}
     -DGLFW_BUILD_DOCS:BOOL=OFF
     -DGLFW_BUILD_EXAMPLES:BOOL=OFF
     -DGLFW_BUILD_TESTS:BOOL=OFF
@@ -390,8 +407,8 @@ ExternalProject_Add(ITK
     -DCMAKE_EXE_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DCMAKE_SHARED_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DCMAKE_MODULE_LINKER_FLAGS=${ICONV_LINK_FLAG}
-    -DBUILD_SHARED_LIBS:BOOL=${_entropy_bundled_dependency_shared_libs}
-    -DBUILD_STATIC_LIBS:BOOL=${_entropy_bundled_dependency_static_libs}
+    -DBUILD_SHARED_LIBS:BOOL=${_entropy_itk_shared_libs}
+    -DBUILD_STATIC_LIBS:BOOL=${_entropy_itk_static_libs}
     -DBUILD_EXAMPLES:BOOL=OFF
     -DBUILD_TESTING:BOOL=OFF
     ${_itk_module_args}
@@ -451,7 +468,7 @@ ExternalProject_Add(nativefiledialog
     ${_ext_compiler_launcher_args}
     ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBUILD_SHARED_LIBS:BOOL=${_entropy_bundled_dependency_shared_libs}
+    -DBUILD_SHARED_LIBS:BOOL=${_entropy_nativefiledialog_shared_libs}
     -DNFD_PORTAL:BOOL=${_nfd_portal}
     -DNFD_BUILD_TESTS:BOOL=OFF
     -DNFD_INSTALL:BOOL=ON
@@ -600,12 +617,13 @@ ExternalProject_Add(spdlog
     ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+    -DBUILD_SHARED_LIBS:BOOL=${_entropy_spdlog_shared_libs}
     -DSPDLOG_BUILD_ALL:BOOL=OFF
     -DSPDLOG_BUILD_BENCH:BOOL=OFF
     -DSPDLOG_BUILD_EXAMPLE:BOOL=OFF
     -DSPDLOG_BUILD_EXAMPLE_HO:BOOL=OFF
-    -DSPDLOG_BUILD_PIC:BOOL=${_entropy_bundled_dependency_shared_libs}
-    -DSPDLOG_BUILD_SHARED:BOOL=${_entropy_bundled_dependency_shared_libs}
+    -DSPDLOG_BUILD_PIC:BOOL=${_entropy_spdlog_pic}
+    -DSPDLOG_BUILD_SHARED:BOOL=${_entropy_spdlog_shared_libs}
     -DSPDLOG_BUILD_TESTS:BOOL=OFF
     -DSPDLOG_BUILD_TESTS_HO:BOOL=OFF
     -DSPDLOG_BUILD_WARNINGS:BOOL=OFF
