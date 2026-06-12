@@ -268,6 +268,21 @@ void renderAboutDialogModalPopup(bool open)
     std::string("-processor: ") + HOST_SYSTEM_PROCESSOR + " (" + HOST_PROCESSOR_NAME + ")\n" +
     std::string("-platform: ") + HOST_OS_PLATFORM + "\n\n";
 
+  ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2(1.0f, 1.0f), ImGuiCond_Always);
+  constexpr ImGuiWindowFlags hostFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                                         ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+                                         ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground;
+  if (!ImGui::Begin("##AboutDialogPopupHost", nullptr, hostFlags)) {
+    ImGui::End();
+    return;
+  }
+
+  if (!open && !ImGui::IsPopupOpen("About Entropy")) {
+    ImGui::End();
+    return;
+  }
+
   if (open && !ImGui::IsPopupOpen("About Entropy")) {
     ImGui::OpenPopup("About Entropy");
   }
@@ -357,6 +372,8 @@ void renderAboutDialogModalPopup(bool open)
 
     ImGui::EndPopup();
   }
+
+  ImGui::End();
 }
 
 void renderConfirmCloseAppPopup(AppData& appData, const std::function<void(void)>& quitAppWithoutPrompt)

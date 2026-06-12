@@ -5,8 +5,6 @@
 #include <functional>
 #include <optional>
 
-class ImFont;
-
 class UiScaleManager
 {
 public:
