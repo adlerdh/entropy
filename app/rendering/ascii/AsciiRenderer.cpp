@@ -402,6 +402,8 @@ void AsciiRenderer::render(
   DrawViewFn drawAnnotations)
 {
   const auto& R = m_appData.renderData();
+  const bool renderLandmarksOnTop = R.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
+  const bool renderAnnotationsOnTop = R.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
 
   const Viewport& windowVP = m_appData.windowData().viewport();
   const glm::vec4 deviceVP = windowVP.getDeviceAsVec4();
@@ -830,8 +832,12 @@ void AsciiRenderer::render(
   for (const auto& vd : viewDataList) {
     if (ViewRenderMode::VolumeRender != vd.view->renderMode()) {
       drawImageBorders(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
-      drawLandmarks(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
-      drawAnnotations(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
+      if (renderLandmarksOnTop) {
+        drawLandmarks(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
+      }
+      if (renderAnnotationsOnTop) {
+        drawAnnotations(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
+      }
     }
   }
 }

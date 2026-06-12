@@ -1662,13 +1662,18 @@ void renderSettingsWindow(
           std::optional<float> scale;
         };
 
-        static const std::array<UiScaleChoice, 7> sk_uiScaleChoices{
+        static const std::array<UiScaleChoice, 12> sk_uiScaleChoices{
           UiScaleChoice{"Auto", std::nullopt},
+          UiScaleChoice{"50%", 0.5f},
           UiScaleChoice{"75%", 0.75f},
           UiScaleChoice{"100%", 1.0f},
           UiScaleChoice{"125%", 1.25f},
           UiScaleChoice{"150%", 1.5f},
+          UiScaleChoice{"175%", 1.75f},
           UiScaleChoice{"200%", 2.0f},
+          UiScaleChoice{"225%", 2.25f},
+          UiScaleChoice{"250%", 2.5f},
+          UiScaleChoice{"275%", 2.75f},
           UiScaleChoice{"300%", 3.0f}};
 
         const auto currentScale = appData.settings().uiScaleOverride();
@@ -1741,7 +1746,7 @@ void renderSettingsWindow(
 
       const ImGuiTabItemFlags syncTabFlags =
         (requestedTab == GuiData::SettingsTab::Synchronize) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
-      if (ImGui::BeginTabItem("Synchronize with ITK-SNAP", nullptr, syncTabFlags)) {
+      if (ImGui::BeginTabItem("Synchronize", nullptr, syncTabFlags)) {
         bool syncEnabled = appData.settings().cursorSyncEnabled();
         if (ImGui::Checkbox("Synchronize with ITK-SNAP", &syncEnabled)) {
           appData.settings().setCursorSyncEnabled(syncEnabled);

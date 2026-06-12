@@ -84,7 +84,7 @@ std::string typeString(const InterpolationMode& mode)
   static const std::unordered_map<InterpolationMode, std::string> s_modeToString{
     {InterpolationMode::NearestNeighbor, "Nearest"},
     {InterpolationMode::Linear, "Linear"},
-    {InterpolationMode::CubicBsplineConvolution, "Cubic B-spline conv."}};
+    {InterpolationMode::CubicBsplineConvolution, "Cubic B-Spline Convolution"}};
 
   return s_modeToString.at(mode);
 }

@@ -671,7 +671,7 @@ void renderImageHeader(
 
   ImGui::SameLine();
 
-  const bool isRef = (0 == imageIndex);
+  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
 
   if (isRef && isActiveImage) {
     ImGui::Text("%s", referenceAndActiveImageMessage);
@@ -2033,7 +2033,7 @@ void renderSegmentationHeader(
     ImGui::PopStyleColor(1); // ImGuiCol_Button
   }
 
-  const bool isRef = (0 == imageIndex);
+  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
 
   ImGui::SameLine();
 
@@ -2840,14 +2840,14 @@ void renderAnnotationsHeader(
     ImGui::Checkbox("Do not ask again", &doNotAskAagain);
     ImGui::PopStyleVar();
 
-    if (ImGui::Button("Yes", ImVec2(80, 0))) {
+    if (ImGui::Button("Yes")) {
       removeAnnot = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::SetItemDefaultFocus();
 
     ImGui::SameLine();
-    if (ImGui::Button("No", ImVec2(80, 0))) {
+    if (ImGui::Button("No")) {
       removeAnnot = false;
       ImGui::CloseCurrentPopup();
     }

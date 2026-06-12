@@ -487,6 +487,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/Rendering.cpp"
   "${entropy_APP_DIR}/rendering/RenderData.cpp"
   "${entropy_APP_DIR}/rendering/ScaleBarDrawing.cpp"
+  "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"
   "${entropy_APP_DIR}/rendering/TextureSetup.cpp"
   "${entropy_APP_DIR}/rendering/VectorDrawing.cpp"
 
@@ -528,6 +529,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/ControlFrame.cpp"
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
   "${entropy_APP_DIR}/windowing/GlfwWrapper.cpp"
+  "${entropy_APP_DIR}/windowing/LinuxUiScale.cpp"
   "${entropy_APP_DIR}/windowing/Layout.cpp"
   "${entropy_APP_DIR}/windowing/LayoutFileSerialization.cpp"
   "${entropy_APP_DIR}/windowing/LayoutSerialization.cpp"

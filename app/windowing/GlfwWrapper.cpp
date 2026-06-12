@@ -3,6 +3,7 @@
 #include "EntropyApp.h"
 #include "common/Exception.hpp"
 #include "windowing/GlfwCallbacks.h"
+#include "windowing/LinuxUiScale.h"
 #if defined(__linux__)
 #include "windowing/EntropyIcon.h"
 #endif
@@ -12,10 +13,117 @@
 
 #include <spdlog/spdlog.h>
 
+#include <glm/vec2.hpp>
+
+#include <algorithm>
+#include <cmath>
+#include <optional>
+#include <string>
+
 #include <glad/glad.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+
+namespace
+{
+constexpr double kContentScalePollIntervalSeconds = 5.0;
+constexpr float kScaleEpsilon = 0.001f;
+
+/**
+ * @brief Compare scale values while ignoring tiny backend reporting noise.
+ */
+bool nearlyEqual(float a, float b)
+{
+  return std::abs(a - b) < kScaleEpsilon;
+}
+
+/**
+ * @brief Return GLFW content scale for the window.
+ */
+glm::vec2 glfwWindowContentScale(GLFWwindow* window)
+{
+  float xscale = 1.0f;
+  float yscale = 1.0f;
+  glfwGetWindowContentScale(window, &xscale, &yscale);
+  return {xscale, yscale};
+}
+
+/**
+ * @brief Return GLFW content scale for a monitor, or 1x if there is no monitor.
+ */
+glm::vec2 monitorContentScale(GLFWmonitor* monitor)
+{
+  if (!monitor) {
+    return {1.0f, 1.0f};
+  }
+
+  float xscale = 1.0f;
+  float yscale = 1.0f;
+  glfwGetMonitorContentScale(monitor, &xscale, &yscale);
+  return {xscale, yscale};
+}
+
+/**
+ * @brief Return framebuffer-to-window scale when both GLFW sizes are valid.
+ */
+std::optional<glm::vec2> framebufferContentScale(GLFWwindow* window)
+{
+  int windowWidth = 0;
+  int windowHeight = 0;
+  int fbWidth = 0;
+  int fbHeight = 0;
+  glfwGetWindowSize(window, &windowWidth, &windowHeight);
+  glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+
+  if (windowWidth <= 0 || windowHeight <= 0 || fbWidth <= 0 || fbHeight <= 0) {
+    return std::nullopt;
+  }
+
+  return glm::vec2{
+    static_cast<float>(fbWidth) / static_cast<float>(windowWidth),
+    static_cast<float>(fbHeight) / static_cast<float>(windowHeight)};
+}
+
+/**
+ * @brief Resolve all polled platform scale sources into one Auto UI scale.
+ */
+glm::vec2 resolvePolledContentScale(
+  const glm::vec2& windowScale,
+  const glm::vec2& monitorScale,
+  const std::optional<glm::vec2>& framebufferScale,
+  std::optional<float> desktopScale)
+{
+  glm::vec2 scale = windowScale;
+
+  if (framebufferScale) {
+#if defined(__linux__)
+    scale.x = nearlyEqual(framebufferScale->x, monitorScale.x)
+                ? framebufferScale->x
+                : std::max({scale.x, framebufferScale->x, monitorScale.x});
+    scale.y = nearlyEqual(framebufferScale->y, monitorScale.y)
+                ? framebufferScale->y
+                : std::max({scale.y, framebufferScale->y, monitorScale.y});
+#else
+    scale.x = std::max({scale.x, framebufferScale->x, monitorScale.x});
+    scale.y = std::max({scale.y, framebufferScale->y, monitorScale.y});
+#endif
+  }
+#if defined(__linux__)
+  else {
+    scale = monitorScale;
+  }
+
+  if (desktopScale) {
+    scale = glm::vec2{*desktopScale, *desktopScale};
+  }
+#else
+  (void)desktopScale;
+#endif
+
+  return scale;
+}
+} // namespace
 
 GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion) : m_app(app)
 {
@@ -379,7 +487,7 @@ void GlfwWrapper::renderLoop(
         break;
       }
       case EventProcessingMode::Wait: {
-        glfwWaitEvents();
+        glfwWaitEventsTimeout(1.0);
         break;
       }
       case EventProcessingMode::WaitTimeout: {
@@ -399,6 +507,7 @@ void GlfwWrapper::renderLoop(
 void GlfwWrapper::renderOnce()
 {
   syncWindowAndFramebufferSizes();
+  syncContentScale();
   m_renderScene();
   m_renderGui();
 }
@@ -444,6 +553,48 @@ void GlfwWrapper::syncWindowAndFramebufferSizes()
 
   m_app->windowData().setFramebufferSize(fbWidth, fbHeight);
   m_app->resize(windowWidth, windowHeight);
+}
+
+void GlfwWrapper::syncContentScale()
+{
+  if (!m_app || !m_window) {
+    return;
+  }
+
+  // Native GLFW scale callbacks still apply immediately. This low-frequency fallback
+  // catches Linux desktop scale changes that do not refresh GLFW window metadata.
+  const double now = glfwGetTime();
+  if (m_lastContentScalePollSeconds >= 0.0 && now - m_lastContentScalePollSeconds < kContentScalePollIntervalSeconds) {
+    return;
+  }
+  m_lastContentScalePollSeconds = now;
+
+  std::optional<float> desktopScale;
+#if defined(__linux__)
+  // GNOME Display Settings can update monitors.xml even when GLFW scale values stay stale.
+  desktopScale = entropy::windowing::linux_ui_scale::primaryMonitorScale();
+#endif
+
+  const glm::vec2 scale = resolvePolledContentScale(
+    glfwWindowContentScale(m_window),
+    monitorContentScale(currentMonitor()),
+    framebufferContentScale(m_window),
+    desktopScale);
+
+  const glm::vec2 currentScale = m_app->windowData().getContentScaleRatios();
+  if (nearlyEqual(currentScale.x, scale.x) && nearlyEqual(currentScale.y, scale.y)) {
+    return;
+  }
+
+  spdlog::debug(
+    "Polled platform content scale change: {}x{} -> {}x{}",
+    currentScale.x,
+    currentScale.y,
+    scale.x,
+    scale.y);
+
+  m_app->windowData().setContentScaleRatios(scale);
+  m_app->imgui().setContentScale(m_app->windowData().getContentScaleRatio());
 }
 
 const GLFWwindow* GlfwWrapper::window() const

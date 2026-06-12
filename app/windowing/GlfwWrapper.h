@@ -122,12 +122,24 @@ private:
   // Synchronize Entropy's cached window and framebuffer sizes with GLFW.
   void syncWindowAndFramebufferSizes();
 
+  /**
+   * @brief Refresh Entropy's cached platform UI scale when callbacks are stale.
+   *
+   * GLFW content-scale callbacks are still the primary immediate path. This
+   * throttled fallback handles Linux desktop scale changes that update GNOME
+   * display configuration without updating GLFW's window scale metadata.
+   */
+  void syncContentScale();
+
   // Process user interaction input between render calls.
   void processInput();
 
   // Returns the "current monitor" of the window. This is evaluated
   // as the monitor with the largest overlap with the window.
   GLFWmonitor* currentMonitor() const;
+
+  /// Last time the low-frequency content-scale fallback queried system scale sources.
+  double m_lastContentScalePollSeconds = -1.0;
 
   /// Platform that was selected during initialization
   int m_platform;

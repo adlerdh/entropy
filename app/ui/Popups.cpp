@@ -29,6 +29,16 @@ namespace
 
 constexpr const char* sk_addLayoutPopupId = "Add Layout###AddLayoutModal";
 
+float scaledPixel(float value)
+{
+  return value * (ImGui::GetFontSize() / 16.0f);
+}
+
+ImVec2 scaledSize(float x, float y)
+{
+  return ImVec2(scaledPixel(x), scaledPixel(y));
+}
+
 std::string displayPath(fs::path path)
 {
   if (path.empty()) {
@@ -185,14 +195,14 @@ void renderAddLayoutModalPopup(
 
     ImGui::Separator();
 
-    if (ImGui::Button("OK", ImVec2(80, 0))) {
+    if (ImGui::Button("OK")) {
       addLayout = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::SetItemDefaultFocus();
 
     ImGui::SameLine();
-    if (ImGui::Button("Cancel", ImVec2(80, 0))) {
+    if (ImGui::Button("Cancel")) {
       addLayout = false;
       ImGui::CloseCurrentPopup();
     }
@@ -252,8 +262,8 @@ void renderAboutDialogModalPopup(bool open)
 
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-  ImGui::SetNextWindowSize(ImVec2(680.0f, 640.0f), ImGuiCond_Appearing);
-  ImGui::SetNextWindowSizeConstraints(ImVec2(520.0f, 360.0f), ImVec2(FLT_MAX, FLT_MAX));
+  ImGui::SetNextWindowSize(scaledSize(680.0f, 640.0f), ImGuiCond_Appearing);
+  ImGui::SetNextWindowSizeConstraints(scaledSize(520.0f, 360.0f), ImVec2(FLT_MAX, FLT_MAX));
 
   bool aboutDialogOpen = true;
   if (ImGui::BeginPopupModal("About Entropy", &aboutDialogOpen)) {
@@ -319,7 +329,7 @@ void renderAboutDialogModalPopup(bool open)
     }
     ImGui::EndChild();
 
-    if (ImGui::Button("Close", ImVec2(80, 0))) {
+    if (ImGui::Button("Close")) {
       ImGui::CloseCurrentPopup();
     }
     ImGui::SetItemDefaultFocus();
@@ -344,7 +354,7 @@ void renderConfirmCloseAppPopup(AppData& appData, const std::function<void(void)
     ImGui::Text("Do you want to quit Entropy?");
     ImGui::Separator();
 
-    if (ImGui::Button("Quit", ImVec2(100, 0))) {
+    if (ImGui::Button("Quit")) {
       guiData.m_showConfirmCloseAppPopup = false;
       ImGui::CloseCurrentPopup();
       if (quitAppWithoutPrompt) {
@@ -354,7 +364,7 @@ void renderConfirmCloseAppPopup(AppData& appData, const std::function<void(void)
     ImGui::SetItemDefaultFocus();
 
     ImGui::SameLine();
-    if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+    if (ImGui::Button("Cancel")) {
       guiData.m_showConfirmCloseAppPopup = false;
       ImGui::CloseCurrentPopup();
     }
@@ -401,7 +411,7 @@ void renderUnsavedProjectPopup(
       }
     };
 
-    if (ImGui::Button("Save", ImVec2(100, 0))) {
+    if (ImGui::Button("Save")) {
       bool saved = false;
       if (appData.projectFileName()) {
         saved = saveProject ? saveProject() : false;
@@ -425,14 +435,14 @@ void renderUnsavedProjectPopup(
     ImGui::SetItemDefaultFocus();
 
     ImGui::SameLine();
-    if (ImGui::Button("Discard", ImVec2(100, 0))) {
+    if (ImGui::Button("Discard")) {
       guiData.m_showUnsavedProjectPopup = false;
       ImGui::CloseCurrentPopup();
       continueAction();
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+    if (ImGui::Button("Cancel")) {
       guiData.m_showUnsavedProjectPopup = false;
       ImGui::CloseCurrentPopup();
     }
@@ -476,7 +486,7 @@ void renderConfirmSetReferenceImagePopup(
       "Unsaved manual-registration changes should be saved after this operation if you want them in the project file.");
     ImGui::Separator();
 
-    if (ImGui::Button("Yes", ImVec2(80, 0))) {
+    if (ImGui::Button("Yes")) {
       if (pendingUid && setReferenceImage) {
         setReferenceImage(*pendingUid);
       }
@@ -486,7 +496,7 @@ void renderConfirmSetReferenceImagePopup(
     ImGui::SetItemDefaultFocus();
 
     ImGui::SameLine();
-    if (ImGui::Button("No", ImVec2(80, 0))) {
+    if (ImGui::Button("No")) {
       appData.guiData().m_pendingReferenceImageUid = std::nullopt;
       ImGui::CloseCurrentPopup();
     }
@@ -526,7 +536,7 @@ void renderConfirmRemoveImagePopup(
     ImGui::BulletText("Save the project after this operation if you want the removal preserved in the project file.");
     ImGui::Separator();
 
-    if (ImGui::Button("Yes", ImVec2(80, 0))) {
+    if (ImGui::Button("Yes")) {
       if (pendingUid && removeImage) {
         removeImage(*pendingUid);
       }
@@ -536,7 +546,7 @@ void renderConfirmRemoveImagePopup(
     ImGui::SetItemDefaultFocus();
 
     ImGui::SameLine();
-    if (ImGui::Button("No", ImVec2(80, 0))) {
+    if (ImGui::Button("No")) {
       appData.guiData().m_pendingRemoveImageUid = std::nullopt;
       ImGui::CloseCurrentPopup();
     }
@@ -585,7 +595,7 @@ void renderLargeImageLoadPromptPopup(
     ImGui::Text("Estimated memory payload: %.2f GiB", memoryGiB);
     ImGui::Separator();
 
-    if (ImGui::Button("Load Original", ImVec2(130, 0))) {
+    if (ImGui::Button("Load Original")) {
       guiData.m_pendingLargeImageLoadPrompt = std::nullopt;
       guiData.m_showLargeImageLoadPrompt = false;
       ImGui::CloseCurrentPopup();
@@ -597,15 +607,15 @@ void renderLargeImageLoadPromptPopup(
 
     ImGui::SameLine();
     ImGui::BeginDisabled();
-    ImGui::Button("Downsample", ImVec2(120, 0));
+    ImGui::Button("Downsample");
     ImGui::SameLine();
-    ImGui::Button("Cast Smaller", ImVec2(120, 0));
+    ImGui::Button("Cast Smaller");
     ImGui::EndDisabled();
 
     if (!prompt.allowSkipImage) {
       ImGui::BeginDisabled();
     }
-    if (ImGui::Button("Skip Image", ImVec2(130, 0))) {
+    if (ImGui::Button("Skip Image")) {
       guiData.m_pendingLargeImageLoadPrompt = std::nullopt;
       guiData.m_showLargeImageLoadPrompt = false;
       ImGui::CloseCurrentPopup();
@@ -619,7 +629,7 @@ void renderLargeImageLoadPromptPopup(
 
     if (prompt.allowCancelProject) {
       ImGui::SameLine();
-      if (ImGui::Button("Cancel Project", ImVec2(130, 0))) {
+      if (ImGui::Button("Cancel Project")) {
         guiData.m_pendingLargeImageLoadPrompt = std::nullopt;
         guiData.m_showLargeImageLoadPrompt = false;
         ImGui::CloseCurrentPopup();
@@ -815,12 +825,12 @@ void renderDicomFolderPathPopup(
 
   const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-  ImGui::SetNextWindowSize(ImVec2(760.0f, 0.0f), ImGuiCond_Appearing);
+  ImGui::SetNextWindowSize(ImVec2(scaledPixel(760.0f), 0.0f), ImGuiCond_Appearing);
 
   if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::TextWrapped("Enter one or more DICOM folders. Put each folder on its own line.");
     ImGui::Spacing();
-    ImGui::InputTextMultiline("##dicomFolders", &guiData.m_dicomFolderPathText, ImVec2(720.0f, 120.0f));
+    ImGui::InputTextMultiline("##dicomFolders", &guiData.m_dicomFolderPathText, scaledSize(720.0f, 120.0f));
 
     auto setFolderText = [&guiData](const std::vector<std::filesystem::path>& folders) {
       if (folders.empty()) {
@@ -835,12 +845,12 @@ void renderDicomFolderPathPopup(
       }
     };
 
-    if (ImGui::Button("Browse Folders...", ImVec2(140, 0))) {
+    if (ImGui::Button("Browse Folders...")) {
       setFolderText(native_dialog::pickFolders());
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("Browse DICOM Files...", ImVec2(170, 0))) {
+    if (ImGui::Button("Browse DICOM Files...")) {
       const auto selectedFiles = native_dialog::openFiles(native_dialog::imageFilters());
       std::vector<std::filesystem::path> folders;
       for (const auto& file : selectedFiles) {
@@ -854,7 +864,7 @@ void renderDicomFolderPathPopup(
 
     ImGui::Separator();
 
-    if (ImGui::Button("Scan", ImVec2(100, 0))) {
+    if (ImGui::Button("Scan")) {
       std::vector<std::filesystem::path> folderNames;
       std::istringstream stream(guiData.m_dicomFolderPathText);
       std::string line;
@@ -872,7 +882,7 @@ void renderDicomFolderPathPopup(
       }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+    if (ImGui::Button("Cancel")) {
       guiData.m_showDicomFolderPathPopup = false;
       ImGui::CloseCurrentPopup();
     }
@@ -898,8 +908,8 @@ void renderDicomSeriesSelectionPopup(
   }
 
   const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
-  ImGui::SetNextWindowSize(ImVec2(760.0f, 130.0f), ImGuiCond_Appearing);
-  ImGui::SetNextWindowSizeConstraints(ImVec2(640.0f, 120.0f), ImVec2(FLT_MAX, FLT_MAX));
+  ImGui::SetNextWindowSize(scaledSize(760.0f, 130.0f), ImGuiCond_Appearing);
+  ImGui::SetNextWindowSizeConstraints(scaledSize(640.0f, 120.0f), ImVec2(FLT_MAX, FLT_MAX));
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   if (ImGui::BeginPopupModal("Scanning DICOM Series", nullptr, ImGuiWindowFlags_Modal)) {
     if (!guiData.m_dicomSeriesScanInProgress) {
@@ -908,7 +918,8 @@ void renderDicomSeriesSelectionPopup(
     else {
       ImGui::Text("Scanning DICOM series...");
       if (!guiData.m_pendingDicomScanRoot.empty()) {
-        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + std::max(620.0f, ImGui::GetContentRegionAvail().x));
+        ImGui::PushTextWrapPos(
+          ImGui::GetCursorPosX() + std::max(scaledPixel(620.0f), ImGui::GetContentRegionAvail().x));
         ImGui::TextWrapped("%s", guiData.m_pendingDicomScanRoot.string().c_str());
         ImGui::PopTextWrapPos();
       }
@@ -989,7 +1000,7 @@ void renderDicomSeriesSelectionPopup(
       true,
       false};
 
-    if (ImGui::Button("Columns...", ImVec2(100, 0))) {
+    if (ImGui::Button("Columns...")) {
       ImGui::OpenPopup("DICOM Series Columns");
     }
     if (ImGui::BeginPopup("DICOM Series Columns")) {
@@ -1169,7 +1180,7 @@ void renderDicomSeriesSelectionPopup(
 
         renderDicomMetadataTable("DicomMetadataTable", series.metadataSummary, metadataTableSize);
 
-        if (ImGui::Button("Close", ImVec2(100, 0))) {
+        if (ImGui::Button("Close")) {
           prompt.metadataSeriesIndex = std::nullopt;
           ImGui::CloseCurrentPopup();
         }
@@ -1189,13 +1200,13 @@ void renderDicomSeriesSelectionPopup(
       }
     }
 
-    if (ImGui::Button("Select All Loadable", ImVec2(150, 0))) {
+    if (ImGui::Button("Select All Loadable")) {
       for (std::size_t i = 0; i < prompt.series.size() && i < prompt.selected.size(); ++i) {
         prompt.selected.at(i) = prompt.series.at(i).loadable();
       }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Clear Selection", ImVec2(130, 0))) {
+    if (ImGui::Button("Clear Selection")) {
       std::fill(prompt.selected.begin(), prompt.selected.end(), false);
     }
 
@@ -1207,7 +1218,7 @@ void renderDicomSeriesSelectionPopup(
     if (!canLoad) {
       ImGui::BeginDisabled();
     }
-    if (ImGui::Button("Load", ImVec2(100, 0))) {
+    if (ImGui::Button("Load")) {
       std::vector<dicom::SeriesInfo> selectedSeries;
       selectedSeries.reserve(selectedCount);
       std::optional<std::size_t> referenceIndex;
@@ -1233,7 +1244,7 @@ void renderDicomSeriesSelectionPopup(
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+    if (ImGui::Button("Cancel")) {
       guiData.m_pendingDicomSeriesSelectionPrompt = std::nullopt;
       guiData.m_showDicomSeriesSelectionPopup = false;
       ImGui::CloseCurrentPopup();

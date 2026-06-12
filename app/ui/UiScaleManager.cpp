@@ -6,6 +6,16 @@
 #include <cmath>
 #include <utility>
 
+namespace
+{
+constexpr float kScaleEpsilon = 0.001f;
+
+bool nearlyEqual(float a, float b)
+{
+  return std::abs(a - b) < kScaleEpsilon;
+}
+} // namespace
+
 void UiScaleManager::captureBaseStyle(const ImGuiStyle& style)
 {
   m_baseStyle = style;
@@ -52,7 +62,7 @@ bool UiScaleManager::applyContentScale(float scale)
   scale = sanitizeScale(scale);
 
   const float previousEffectiveScale = effectiveScale();
-  if (m_contentScale == scale) {
+  if (nearlyEqual(m_contentScale, scale)) {
     return false;
   }
 
@@ -64,7 +74,7 @@ bool UiScaleManager::applyEffectiveScale(float previousScale)
 {
   const float newEffectiveScale = effectiveScale();
 
-  if (m_hasAppliedScale && std::abs(previousScale - newEffectiveScale) < 0.001f) {
+  if (m_hasAppliedScale && nearlyEqual(previousScale, newEffectiveScale)) {
     return false;
   }
 
@@ -83,13 +93,13 @@ bool UiScaleManager::applyEffectiveScale(float previousScale)
 void UiScaleManager::rebuildFonts(float scale)
 {
   ImGuiIO& io = ImGui::GetIO();
+  // FontDefault may point into the atlas we are about to clear during a scale change.
+  io.FontDefault = nullptr;
   io.Fonts->Clear();
 
   if (m_fontReloadCallback) {
     m_fontReloadCallback(scale);
   }
-
-  io.Fonts->Build();
 }
 
 void UiScaleManager::rebuildFontsForCurrentScale()

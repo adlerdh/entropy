@@ -33,3 +33,39 @@ set_target_properties(EntropyLayoutTests PROPERTIES
 entropy_copy_runtime_dlls(EntropyLayoutTests)
 
 catch_discover_tests(EntropyLayoutTests)
+
+add_executable(EntropyUiTests
+  "${entropy_APP_DIR}/rendering/test/ScaleBarGeometryTests.cpp"
+  "${entropy_APP_DIR}/ui/test/UiScaleManagerTests.cpp"
+  "${entropy_APP_DIR}/windowing/test/LinuxUiScaleTests.cpp"
+)
+
+target_sources(EntropyUiTests PRIVATE
+  "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"
+  "${entropy_APP_DIR}/ui/UiScaleManager.cpp"
+  "${entropy_APP_DIR}/windowing/LinuxUiScale.cpp"
+)
+
+target_link_libraries(EntropyUiTests PRIVATE
+  Catch2::Catch2WithMain
+  Entropy::Common
+  imgui
+  spdlog::spdlog
+  entropy_warnings
+)
+
+target_include_directories(EntropyUiTests PRIVATE
+  "${entropy_APP_DIR}"
+  "${imgui_SRC_DIR}"
+  "${imgui_SRC_DIR}/imgui"
+)
+
+set_target_properties(EntropyUiTests PROPERTIES
+  CXX_STANDARD 23
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+)
+
+entropy_copy_runtime_dlls(EntropyUiTests)
+
+catch_discover_tests(EntropyUiTests)

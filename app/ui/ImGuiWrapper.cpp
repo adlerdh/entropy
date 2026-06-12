@@ -48,6 +48,9 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <array>
+#include <memory>
 #include <unordered_map>
 
 CMRC_DECLARE(fonts);
@@ -58,6 +61,16 @@ namespace
 {
 static const glm::quat sk_identityRotation{1.0f, 0.0f, 0.0f, 0.0f};
 static const glm::vec3 sk_zeroVec{0.0f, 0.0f, 0.0f};
+
+float scaledPixel(float value)
+{
+  return value * (ImGui::GetFontSize() / 16.0f);
+}
+
+float buttonWidthForLabel(const char* label)
+{
+  return ImGui::CalcTextSize(label, nullptr, true).x + 2.0f * ImGui::GetStyle().FramePadding.x;
+}
 
 std::string layoutImageDisplayName(const AppData& appData, const Layout& layout)
 {
@@ -79,7 +92,7 @@ std::string layoutImageDisplayName(const AppData& appData, const Layout& layout)
 void renderLoadingStatusBar()
 {
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  const float height = ImGui::GetFrameHeight() + 10.0f;
+  const float height = ImGui::GetFrameHeight() + scaledPixel(10.0f);
   const ImVec2 pos{viewport->WorkPos.x, viewport->WorkPos.y + viewport->WorkSize.y - height};
   const ImVec2 size{viewport->WorkSize.x, height};
 
@@ -92,7 +105,7 @@ void renderLoadingStatusBar()
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{12.0f, 5.0f});
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{scaledPixel(12.0f), scaledPixel(5.0f)});
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyleColorVec4(ImGuiCol_MenuBarBg));
 
   if (ImGui::Begin("LoadingStatusBar", nullptr, flags)) {
@@ -119,30 +132,34 @@ void renderEmptyWorkspace(
   }
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  const ImVec2 panelSize{600.0f, 98.0f};
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const ImVec2 windowPadding{scaledPixel(16.0f), scaledPixel(12.0f)};
+  const char* text = ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No project loaded.";
+  constexpr std::array<const char*, 3> buttonLabels{"Open Image(s)...", "Open DICOM Series...", "Open Project..."};
+
+  float buttonWidth = 0.0f;
+  for (const char* label : buttonLabels) {
+    buttonWidth = std::max(buttonWidth, buttonWidthForLabel(label));
+  }
+
+  const float buttonsWidth = 3.0f * buttonWidth + 2.0f * style.ItemSpacing.x;
+  const float contentWidth = std::max(ImGui::CalcTextSize(text).x, buttonsWidth);
+  const float contentHeight = ImGui::GetTextLineHeight() + style.ItemSpacing.y + ImGui::GetFrameHeight();
+  const ImVec2 panelSize{contentWidth + 2.0f * windowPadding.x, contentHeight + 2.0f * windowPadding.y};
+
   ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2{0.5f, 0.5f});
   ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
 
   constexpr ImGuiWindowFlags flags =
     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
 
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{16.0f, 12.0f});
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding);
   if (ImGui::Begin("EmptyWorkspace", nullptr, flags)) {
-    constexpr float buttonWidth = 160.0f;
-    const float textHeight = ImGui::GetTextLineHeight();
-    const float buttonHeight = ImGui::GetFrameHeight();
-    const float blockHeight = textHeight + ImGui::GetStyle().ItemSpacing.y + buttonHeight;
-    const float contentHeight = ImGui::GetContentRegionAvail().y;
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::max(0.0f, (contentHeight - blockHeight) * 0.5f));
-
-    const char* text = ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No project loaded.";
-    ImGui::SetCursorPosX(
-      std::max(ImGui::GetCursorPosX(), (ImGui::GetWindowSize().x - ImGui::CalcTextSize(text).x) * 0.5f));
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.0f, (contentWidth - ImGui::CalcTextSize(text).x) * 0.5f));
     ImGui::TextUnformatted(text);
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().ItemSpacing.y);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + style.ItemSpacing.y);
 
-    const float buttonsWidth = 3.0f * buttonWidth + 2.0f * ImGui::GetStyle().ItemSpacing.x;
-    ImGui::SetCursorPosX(std::max(ImGui::GetCursorPosX(), (ImGui::GetWindowSize().x - buttonsWidth) * 0.5f));
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.0f, (contentWidth - buttonsWidth) * 0.5f));
 
     if (ImGui::Button("Open Image(s)...", ImVec2{buttonWidth, 0.0f})) {
       const auto selectedFiles = native_dialog::openFiles(native_dialog::imageFilters());
@@ -184,26 +201,25 @@ ImFont* loadFont(
   const ImWchar* glyphRange = nullptr)
 {
   auto filesystem = cmrc::fonts::get_filesystem();
-
   cmrc::file fontFile = filesystem.open(fontPath);
 
-  // ImGui will take ownership of the font (and be responsible for deleting it), so make a copy:
-  char* fontData = new char[fontFile.size()];
+  auto fontData = std::make_unique<char[]>(fontFile.size());
+  std::copy(fontFile.cbegin(), fontFile.cend(), fontData.get());
 
-  for (std::size_t i = 0; i < fontFile.size(); ++i) {
-    fontData[i] = fontFile.cbegin()[i];
+  ImFontConfig config = fontConfig;
+  config.FontDataOwnedByAtlas = true;
+
+  ImFont* font = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
+    static_cast<void*>(fontData.get()),
+    static_cast<int32_t>(fontFile.size()),
+    fontSize,
+    &config,
+    glyphRange);
+  if (font) {
+    fontData.release();
   }
 
-  // Note: Transfer ownership of 'ttf_data' to ImFontAtlas!
-  // Will be deleted after destruction of the atlas.
-  // Set font_cfg->FontDataOwnedByAtlas=false to keep ownership of data and it won't be freed.
-
-  return ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
-    static_cast<void*>(fontData),
-    static_cast<int32_t>(fontFile.size()),
-    static_cast<float>(fontSize),
-    &fontConfig,
-    glyphRange);
+  return font;
 }
 
 struct UiFontSpec
@@ -582,9 +598,8 @@ void ImGuiWrapper::initializeFonts(float scale)
   // AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the
   // font among multiple. If the file cannot be loaded, the function will return NULL.
   // Please handle those errors in your application (e.g. use an assertion, or display an error and
-  // quit). The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture
-  // when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will
-  // call.
+  // quit). With ImGui 1.92 dynamic textures, glyphs are baked and uploaded by the backend
+  // as needed during the frame/render path.
   /// @todo use Freetype Rasterizer and Small Font Sizes
 
   m_appData.guiData().m_fonts.clear();

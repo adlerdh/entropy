@@ -2221,6 +2221,7 @@ bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)
     }
 
     auto& tx = image->transformations();
+    const bool wasManualTransformLocked = tx.is_worldDef_T_affine_locked();
     tx.set_worldDef_T_affine_locked(false);
 
     if (currentImageUid == imageUid) {
@@ -2235,7 +2236,7 @@ bool EntropyApp::setReferenceImage(const uuids::uuid& imageUid)
       const glm::mat4 manual_T_affine = newWorld_T_subject * glm::inverse(tx.get_affine_T_subject());
       tx.set_enable_worldDef_T_affine(true);
       tx.set_worldDef_T_affine(manual_T_affine);
-      tx.set_worldDef_T_affine_locked(true);
+      tx.set_worldDef_T_affine_locked(wasManualTransformLocked);
     }
 
     for (const auto& segUid : m_data.imageToSegUids(currentImageUid)) {
