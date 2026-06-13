@@ -1,11 +1,12 @@
 #pragma once
 
-#include <filesystem>
 #include "common/PublicTypes.h"
 
-#include <functional>
 #include <glm/fwd.hpp>
 #include <uuid.h>
+
+#include <filesystem>
+#include <functional>
 
 class AppData;
 struct GuiData;

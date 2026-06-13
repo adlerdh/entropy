@@ -4,7 +4,6 @@
 #include "ui/Helpers.h"
 #include "ui/NativeFileDialogs.h"
 #include "ui/ThirdPartyLicenses.h"
-#include <spdlog/fmt/std.h>
 #include "logic/app/AppPaths.h"
 #include "logic/app/Data.h"
 #include "image/Image.h"
@@ -13,6 +12,8 @@
 
 #include <imgui/imgui.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
+
+#include <spdlog/fmt/std.h>
 
 #include <algorithm>
 #include <array>

@@ -40,6 +40,7 @@ add_executable(EntropyUiTests
   "${entropy_APP_DIR}/ui/test/SettingsModelTests.cpp"
   "${entropy_APP_DIR}/ui/test/StyleTests.cpp"
   "${entropy_APP_DIR}/ui/test/UiScaleManagerTests.cpp"
+  "${entropy_APP_DIR}/ui/test/ViewOverlayModelTests.cpp"
   "${entropy_APP_DIR}/windowing/test/LinuxUiScaleTests.cpp"
 )
 
@@ -49,6 +50,7 @@ target_sources(EntropyUiTests PRIVATE
   "${entropy_APP_DIR}/ui/settings/SettingsModel.cpp"
   "${entropy_APP_DIR}/ui/UiScaleManager.cpp"
   "${entropy_APP_DIR}/ui/windows/OpacityMixerModel.cpp"
+  "${entropy_APP_DIR}/ui/windows/ViewOverlayModel.cpp"
   "${entropy_APP_DIR}/windowing/LinuxUiScale.cpp"
 )
 

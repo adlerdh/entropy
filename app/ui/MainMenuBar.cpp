@@ -1,10 +1,11 @@
 #include "ui/MainMenuBar.h"
 
-#include <spdlog/fmt/std.h>
 #include "ui/GuiData.h"
 #include "ui/NativeFileDialogs.h"
 
 #include <imgui/imgui.h>
+
+#include <spdlog/fmt/std.h>
 
 namespace fs = std::filesystem;
 

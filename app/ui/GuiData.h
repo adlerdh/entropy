@@ -1,16 +1,15 @@
 #pragma once
 
-#include <filesystem>
 #include "image/DicomSeries.h"
 #include "image/ImageHeader.h"
-
-#include <array>
-#include <cstdint>
 
 #include <glm/vec2.hpp>
 #include <imgui/imgui.h>
 #include <uuid.h>
 
+#include <array>
+#include <cstdint>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -90,17 +89,31 @@ struct GuiData
 
   struct DicomSeriesSelectionPrompt
   {
-    std::vector<dicom::SeriesInfo> series;
-    std::vector<bool> selected;
-    std::vector<std::string> warnings;
+    std::vector<dicom::SeriesInfo> series; //!< Discovered DICOM series offered to the user for loading.
+    std::vector<bool> selected;            //!< Per-series load selection state, parallel to series.
+    std::vector<std::string> warnings;     //!< Per-series warning text, parallel to series.
+
+    /// Index into series for the image that should become reference when reference selection is allowed.
     int referenceSeriesIndex = 0;
-    bool addToExistingProject = false;
-    bool allowReferenceSelection = true;
+
+    bool addToExistingProject = false;   //!< True when selected series should be appended to the current project.
+    bool allowReferenceSelection = true; //!< False when appending images or otherwise preserving the current reference.
+
+    /// Series whose full DICOM metadata modal is currently open.
     std::optional<std::size_t> metadataSeriesIndex = std::nullopt;
+
+    /// Series whose middle-slice previews are currently shown in the preview panel.
     std::optional<std::size_t> previewSeriesIndex = std::nullopt;
+
+    /// Cached slice previews, indexed by series, to avoid reloading preview images every frame.
     std::vector<std::vector<dicom::SlicePreview>> previewCache;
+
+    /// Per-series preview loading errors, parallel to series.
     std::vector<std::string> previewErrors;
-    int previewSliceCount = 10;
+
+    int previewSliceCount = 10; //!< Number of representative slices requested for each series preview.
+
+    /// Visibility state for the DICOM series table columns, ordered to match kSeriesColumnNames in Popups.cpp.
     std::array<bool, 16> seriesColumnVisible{
       true,
       true,
@@ -122,9 +135,17 @@ struct GuiData
 
   bool m_showDicomFolderPathPopup = false;
   std::string m_dicomFolderPathText;
+
+  /// True while the background DICOM discovery task is scanning folders/files.
   bool m_dicomSeriesScanInProgress = false;
+
+  /// Root path displayed while a DICOM discovery task is pending.
   std::filesystem::path m_pendingDicomScanRoot;
+
+  /// Opens the modal that lets the user choose which discovered DICOM series to load.
   bool m_showDicomSeriesSelectionPopup = false;
+
+  /// Pending DICOM series selection dialog state, cleared when the dialog is accepted or canceled.
   std::optional<DicomSeriesSelectionPrompt> m_pendingDicomSeriesSelectionPrompt = std::nullopt;
 
   /// Map of imageUid to boolean of whether its image color map window is shown.

@@ -1,7 +1,5 @@
 ﻿#include "ui/ImGuiWrapper.h"
 
-#include <spdlog/fmt/std.h>
-
 #include "common/MathFuncs.h"
 
 #include "ui/Helpers.h"
@@ -47,6 +45,7 @@
 #include <glm/gtx/color_space.hpp>
 
 #include <spdlog/fmt/ostr.h>
+#include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -1894,41 +1893,37 @@ void ImGuiWrapper::render()
       m_appData.windowData().viewport().getAsVec4(),
       wholeWindowHeight);
 
-    renderViewSettingsComboWindow(
+    const ViewOverlayWindowContext overlayContext{
       currentLayout.uid(),
       mindowFrameBounds,
       currentLayout.uiControls(),
-      true,
       false,
-
       m_appData.state().worldCrosshairs(),
-      m_appData.windowData().getContentScaleRatios(),
+      m_appData.windowData().getContentScaleRatios()};
 
+    const ViewOverlayImageCallbacks imageCallbacks{
       m_appData.numImages(),
       [this, &currentLayout](std::size_t index) { return currentLayout.isImageRendered(m_appData, index); },
       [this, &currentLayout](std::size_t index, bool visible) {
         currentLayout.setImageRendered(m_appData, index, visible);
       },
-
       [this, &currentLayout](std::size_t index) { return currentLayout.isImageUsedForMetric(m_appData, index); },
       [this, &currentLayout](std::size_t index, bool visible) {
         currentLayout.setImageUsedForMetric(m_appData, index, visible);
       },
       std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
-
       getImageIsVisibleSetting,
-      getImageIsActive,
+      getImageIsActive};
 
+    const ViewOverlayModeCallbacks modeCallbacks{
       currentLayout.viewType(),
       currentLayout.renderMode(),
       currentLayout.intensityProjectionMode(),
-
       [&currentLayout](const ViewType& viewType) { return currentLayout.setViewType(viewType); },
       [&currentLayout](const ViewRenderMode& renderMode) { return currentLayout.setRenderMode(renderMode); },
       [&currentLayout](const IntensityProjectionMode& ipMode) {
         return currentLayout.setIntensityProjectionMode(ipMode);
       },
-
       [this]() {
         m_recenterAllViews(
           sk_recenterCrosshairs,
@@ -1937,35 +1932,36 @@ void ImGuiWrapper::render()
           sk_resetObliqueOrientation,
           sk_resetZoom);
       },
-      nullptr,
+      nullptr};
 
+    const ViewOverlayProjectionCallbacks projectionCallbacks{
       [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },
       [this](float thickness) { m_appData.renderData().m_intensityProjectionSlabThickness = thickness; },
       [this]() { return m_appData.renderData().m_doMaxExtentIntensityProjection; },
       [this](bool set) { m_appData.renderData().m_doMaxExtentIntensityProjection = set; },
-
       [this]() { return m_appData.renderData().m_xrayIntensityWindow; },
       [this](float window) { m_appData.renderData().m_xrayIntensityWindow = window; },
       [this]() { return m_appData.renderData().m_xrayIntensityLevel; },
       [this](float level) { m_appData.renderData().m_xrayIntensityLevel = level; },
       [this]() { return m_appData.renderData().m_xrayEnergyKeV; },
-      [this](float energy) { m_appData.renderData().setXrayEnergy(energy); });
+      [this](float energy) {
+        m_appData.renderData().setXrayEnergy(energy);
+      }};
+
+    renderViewSettingsComboWindow(overlayContext, imageCallbacks, modeCallbacks, projectionCallbacks);
 
     renderViewOrientationToolWindow(
-      currentLayout.uid(),
-      mindowFrameBounds,
-      currentLayout.uiControls(),
-      true,
-      currentLayout.viewType(),
-      [&getViewCameraRotation, &currentLayout]() { return getViewCameraRotation(currentLayout.uid()); },
-      [&setViewCameraRotation, &currentLayout](const glm::quat& q) {
-        return setViewCameraRotation(currentLayout.uid(), q);
-      },
-      [&setViewCameraDirection, &currentLayout](const glm::vec3& dir) {
-        return setViewCameraDirection(currentLayout.uid(), dir);
-      },
-      [&getViewNormal, &currentLayout]() { return getViewNormal(currentLayout.uid()); },
-      getObliqueViewDirections);
+      overlayContext,
+      {currentLayout.viewType(),
+       [&getViewCameraRotation, &currentLayout]() { return getViewCameraRotation(currentLayout.uid()); },
+       [&setViewCameraRotation, &currentLayout](const glm::quat& q) {
+         return setViewCameraRotation(currentLayout.uid(), q);
+       },
+       [&setViewCameraDirection, &currentLayout](const glm::vec3& dir) {
+         return setViewCameraDirection(currentLayout.uid(), dir);
+       },
+       [&getViewNormal, &currentLayout]() { return getViewNormal(currentLayout.uid()); },
+       getObliqueViewDirections});
   }
   else if (m_appData.guiData().m_renderUiOverlays && !currentLayout.isLightbox()) {
     // Per-view UI controls:
@@ -1995,61 +1991,58 @@ void ImGuiWrapper::render()
         m_appData.windowData().viewport().getAsVec4(),
         wholeWindowHeight);
 
-      renderViewSettingsComboWindow(
+      const ViewOverlayWindowContext overlayContext{
         viewUid,
         mindowFrameBounds,
         view->uiControls(),
-        false,
         true,
-
         m_appData.state().worldCrosshairs(),
-        m_appData.windowData().getContentScaleRatios(),
+        m_appData.windowData().getContentScaleRatios()};
 
+      const ViewOverlayImageCallbacks imageCallbacks{
         m_appData.numImages(),
         [this, view](std::size_t index) { return view->isImageRendered(m_appData, index); },
         [this, view](std::size_t index, bool visible) { view->setImageRendered(m_appData, index, visible); },
-
         [this, view](std::size_t index) { return view->isImageUsedForMetric(m_appData, index); },
         [this, view](std::size_t index, bool visible) { view->setImageUsedForMetric(m_appData, index, visible); },
-
         std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
         getImageIsVisibleSetting,
-        getImageIsActive,
+        getImageIsActive};
 
+      const ViewOverlayModeCallbacks modeCallbacks{
         view->viewType(),
         view->renderMode(),
         view->intensityProjectionMode(),
-
         setViewType,
         setRenderMode,
         setIntensityProjectionMode,
-
         recenter,
-        applyImageSelectionAndRenderModesToAllViews,
+        applyImageSelectionAndRenderModesToAllViews};
 
+      const ViewOverlayProjectionCallbacks projectionCallbacks{
         [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },
         [this](float thickness) { m_appData.renderData().m_intensityProjectionSlabThickness = thickness; },
         [this]() { return m_appData.renderData().m_doMaxExtentIntensityProjection; },
         [this](bool set) { m_appData.renderData().m_doMaxExtentIntensityProjection = set; },
-
         [this]() { return m_appData.renderData().m_xrayIntensityWindow; },
         [this](float window) { m_appData.renderData().m_xrayIntensityWindow = window; },
         [this]() { return m_appData.renderData().m_xrayIntensityLevel; },
         [this](float level) { m_appData.renderData().m_xrayIntensityLevel = level; },
         [this]() { return m_appData.renderData().m_xrayEnergyKeV; },
-        [this](float energy) { m_appData.renderData().setXrayEnergy(energy); });
+        [this](float energy) {
+          m_appData.renderData().setXrayEnergy(energy);
+        }};
+
+      renderViewSettingsComboWindow(overlayContext, imageCallbacks, modeCallbacks, projectionCallbacks);
 
       renderViewOrientationToolWindow(
-        viewUid,
-        mindowFrameBounds,
-        view->uiControls(),
-        false,
-        view->viewType(),
-        [&getViewCameraRotation, &viewUid]() { return getViewCameraRotation(viewUid); },
-        [&setViewCameraRotation, &viewUid](const glm::quat& q) { return setViewCameraRotation(viewUid, q); },
-        [&setViewCameraDirection, &viewUid](const glm::vec3& dir) { return setViewCameraDirection(viewUid, dir); },
-        [&getViewNormal, &viewUid]() { return getViewNormal(viewUid); },
-        getObliqueViewDirections);
+        overlayContext,
+        {view->viewType(),
+         [&getViewCameraRotation, &viewUid]() { return getViewCameraRotation(viewUid); },
+         [&setViewCameraRotation, &viewUid](const glm::quat& q) { return setViewCameraRotation(viewUid, q); },
+         [&setViewCameraDirection, &viewUid](const glm::vec3& dir) { return setViewCameraDirection(viewUid, dir); },
+         [&getViewNormal, &viewUid]() { return getViewNormal(viewUid); },
+         getObliqueViewDirections});
     }
   }
 

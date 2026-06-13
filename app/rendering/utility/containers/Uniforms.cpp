@@ -112,7 +112,7 @@ GLint Uniforms::queryAndSetLocation(const std::string& name, std::function<GLint
   const GLint loc = locationGetter(name);
 
   if (-1 == loc) {
-    spdlog::warn("Unrecognized uniform '{}': its location will not be set", name);
+    spdlog::info("Unrecognized uniform '{}': its location will not be set", name);
     return loc;
   }
   else {

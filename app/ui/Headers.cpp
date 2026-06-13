@@ -8,8 +8,6 @@
 #include "ui/Widgets.h"
 #include "ui/Widgets.tpp"
 
-#include <spdlog/fmt/std.h>
-
 // data::roundPointToNearestImageVoxelCenter
 // data::getAnnotationSubjectPlaneName
 #include "logic/app/DataHelper.h"
@@ -40,6 +38,7 @@
 #include <glm/gtx/color_space.hpp>
 
 #include <spdlog/fmt/ostr.h>
+#include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
