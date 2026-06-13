@@ -119,7 +119,7 @@ float Viewport::deviceAspectRatio() const
 
 void Viewport::setDevicePixelRatio(glm::vec2 ratio)
 {
-  spdlog::trace("Setting device pixel scale ratio to {}x{}", ratio.x, ratio.y);
+  SPDLOG_TRACE("Setting device pixel scale ratio to {}x{}", ratio.x, ratio.y);
   m_devicePixelRatio = std::move(ratio);
 }
 

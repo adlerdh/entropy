@@ -457,7 +457,7 @@ std::unordered_map<uuids::uuid, GLTexture> createImageColorMapTextures(const App
       }
     }
 
-    spdlog::trace("Generated texture for image color map {}", *cmapUid);
+    SPDLOG_TRACE("Generated texture for image color map {}", *cmapUid);
   }
 
   spdlog::debug("Done creating {} image color map textures", textures.size());

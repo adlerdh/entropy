@@ -158,7 +158,9 @@ void sor(
   const int xDelta = 1;
 
   for (uint32_t iter = 0; iter < maxits; ++iter) {
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     float absResid = 0.0f;
+#endif
 
     // Split updates into even and odd stencil passes:
     ksw = 0;
@@ -228,7 +230,9 @@ void sor(
 
             resid += total * pot;
             potential[n] -= omega * resid / total;
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
             absResid += std::fabs(resid);
+#endif
           }
 
           isw = 1 - isw;
@@ -243,9 +247,11 @@ void sor(
         (0 == iter && 0 == pass) ? 1.0f / (1.0f - 0.5f * rjac * rjac) : 1.0f / (1.0f - 0.25f * rjac * rjac * omega);
     }
 
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     if (0 == iter % 100) {
-      spdlog::trace("Iteration {}, residual = {}", iter, absResid);
+      SPDLOG_TRACE("Iteration {}, residual = {}", iter, absResid);
     }
+#endif
   }
 }
 

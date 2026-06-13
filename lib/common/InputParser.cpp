@@ -1,4 +1,5 @@
 #include "common/InputParser.h"
+#include "common/LoggingDefaults.h"
 #include <spdlog/fmt/std.h>
 #include "BuildStamp.h"
 
@@ -62,6 +63,11 @@ void assignConsoleLogLevel(const std::string& logLevel, InputParams& params)
 
   if (iequals(logLevel, "trace")) {
     params.consoleLogLevel = trace;
+#if SPDLOG_ACTIVE_LEVEL > SPDLOG_LEVEL_TRACE
+    spdlog::warn(
+      "Trace logging was requested, but this Entropy binary was compiled with trace logging disabled. "
+      "Reconfigure with -DEntropy_ENABLE_TRACE_LOGGING=ON to include trace log calls.");
+#endif
   }
   else if (iequals(logLevel, "debug")) {
     params.consoleLogLevel = debug;
@@ -154,7 +160,7 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
   CLI::App program{desc.str(), APP_NAME};
   program.set_version_flag("--version", VERSION_FULL);
 
-  std::string logLevel = "info";
+  std::string logLevel = entropy::logging::defaultLogLevelName();
   program.add_option("-l,--log-level", logLevel, "console log level: {trace, debug, info, warn, err, critical, off}")
     ->default_val(logLevel);
 

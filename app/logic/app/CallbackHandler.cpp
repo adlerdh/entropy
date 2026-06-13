@@ -280,7 +280,7 @@ std::optional<uuid> CallbackHandler::assignSegToImageWithColorTableAndTextures(
     bool createdTableTexture = false;
 
     if (tableUid) {
-      spdlog::trace("Creating texture for label color table {}", *tableUid);
+      SPDLOG_TRACE("Creating texture for label color table {}", *tableUid);
       createdTableTexture = m_rendering.createLabelColorTableTexture(*tableUid);
     }
 
@@ -311,7 +311,7 @@ std::optional<uuid> CallbackHandler::assignSegToImageWithColorTableAndTextures(
   // Make it the active segmentation
   m_appData.assignActiveSegUidToImage(matchImageUid, segUid);
 
-  spdlog::trace("Creating texture for segmentation {}", segUid);
+  SPDLOG_TRACE("Creating texture for segmentation {}", segUid);
 
   if (m_appData.renderData().m_segTextures.count(segUid) == 0) {
     const std::vector<uuid> createdSegTexUids = createSegTextures(m_appData, std::vector<uuid>{segUid});
@@ -404,7 +404,7 @@ bool CallbackHandler::executePoissonSegmentation(
                                                : std::string("Multi-label Poisson segmentation ")) +
     std::to_string(numSegsForImage + 1) + " for image '" + image->settings().displayName() + "'";
 
-  //    spdlog::trace( "resultSegDisplayName = {}", resultSegDisplayName );
+  //    SPDLOG_TRACE( "resultSegDisplayName = {}", resultSegDisplayName );
 
   const auto resultSegUid = createBlankSegWithColorTableAndTextures(imageUid, resultSegDisplayName);
   if (!resultSegUid) {

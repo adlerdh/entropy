@@ -279,7 +279,7 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
     return std::nullopt;
   }
 
-  spdlog::trace("Loaded image color map \"{}\" (\"{}\") with {} colors", briefName, technicalName, colors.size());
+  SPDLOG_TRACE("Loaded image color map \"{}\" (\"{}\") with {} colors", briefName, technicalName, colors.size());
 
   return ImageColorMap(briefName, technicalName, description, InterpolationMode::Linear, std::move(colors));
 }

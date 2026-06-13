@@ -759,7 +759,7 @@ bool openLandmarkGroupCsvFile(std::map<std::size_t, PointRecord<glm::vec3>>& lan
     std::getline(inFile, line);
     ++lineNum;
 
-    // spdlog::trace( "\n\nReading line: {}\n\n\n", line );
+    // SPDLOG_TRACE( "\n\nReading line: {}\n\n\n", line );
 
     std::istringstream ssHeader(line);
 
@@ -785,7 +785,7 @@ bool openLandmarkGroupCsvFile(std::map<std::size_t, PointRecord<glm::vec3>>& lan
 
     // Read all lines containing landmark data
     while (std::getline(inFile, line)) {
-      // spdlog::trace( "Reading line: {}", line );
+      // SPDLOG_TRACE( "Reading line: {}", line );
 
       std::stringstream ssLm(line);
 
@@ -797,7 +797,7 @@ bool openLandmarkGroupCsvFile(std::map<std::size_t, PointRecord<glm::vec3>>& lan
       std::string val;
 
       while (std::getline(ssLm, val, ',')) {
-        // spdlog::trace( "\tval: {}", val );
+        // SPDLOG_TRACE( "\tval: {}", val );
 
         switch (col) {
           case 0: {

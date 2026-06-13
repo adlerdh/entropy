@@ -142,10 +142,12 @@ void logLoadedImageDetails(const Image& image, const fs::path& sourceFileName)
 {
   spdlog::info("Read image from file {}", sourceFileName);
 
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   std::ostringstream ss;
   image.metaData(ss);
 
-  spdlog::trace("Meta data:\n{}", ss.str());
+  SPDLOG_TRACE("Meta data:\n{}", ss.str());
+#endif
   spdlog::info("Header:\n{}", image.header());
   spdlog::info("Transformation:\n{}", image.transformations());
   spdlog::info("Settings:\n{}", image.settings());
@@ -819,10 +821,12 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
 
   spdlog::info("Read segmentation image from file {}", fileName);
 
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   std::ostringstream ss;
   seg.metaData(ss);
 
-  spdlog::trace("Meta data:\n{}", ss.str());
+  SPDLOG_TRACE("Meta data:\n{}", ss.str());
+#endif
   spdlog::info("Header:\n{}", seg.header());
   spdlog::info("Transformation:\n{}", seg.transformations());
 
@@ -951,10 +955,12 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
 
   spdlog::info("Read deformation field image from file {}", fileName);
 
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   std::ostringstream ss;
   def.metaData(ss);
 
-  spdlog::trace("Meta data:\n{}", ss.str());
+  SPDLOG_TRACE("Meta data:\n{}", ss.str());
+#endif
   spdlog::info("Header:\n{}", def.header());
   spdlog::info("Transformation:\n{}", def.transformations());
   spdlog::info("Settings:\n{}", def.settings());
@@ -1256,9 +1262,11 @@ bool EntropyApp::loadSerializedImage(
         spdlog::info("Landmarks are defined in physical Subject space");
       }
 
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
       for (const auto& p : landmarks) {
-        spdlog::trace("Landmark {} ('{}') : {}", p.first, p.second.getName(), glm::to_string(p.second.getPosition()));
+        SPDLOG_TRACE("Landmark {} ('{}') : {}", p.first, p.second.getName(), glm::to_string(p.second.getPosition()));
       }
+#endif
 
       const auto lmGroupUid = m_data.addLandmarkGroup(lmGroup);
       const bool linked = m_data.assignLandmarkGroupUidToImage(*imageUid, lmGroupUid);

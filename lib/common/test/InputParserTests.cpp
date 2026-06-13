@@ -1,4 +1,5 @@
 #include "common/InputParser.h"
+#include "common/LoggingDefaults.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -17,6 +18,18 @@ TEST_CASE("macOS LaunchServices process serial number argument is ignored", "[co
   CHECK_FALSE(params.set);
   CHECK(params.imageFiles.empty());
   CHECK_FALSE(params.projectFile);
+}
+
+TEST_CASE("console log level defaults to the build configuration level", "[common][input]")
+{
+  char app[] = "Entropy";
+
+  std::array<char*, 1> argv{app};
+
+  InputParams params;
+  REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+
+  CHECK(params.consoleLogLevel == entropy::logging::defaultLogLevel());
 }
 
 TEST_CASE("repeated segmentation options are associated with the preceding image in argument order", "[common][input]")

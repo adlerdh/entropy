@@ -24,6 +24,7 @@ target_include_directories(EntropyCommon
 
 target_link_libraries(EntropyCommon
   PUBLIC
+    entropy_logging_level
     glm::glm
     spdlog::spdlog
     stduuid

@@ -1072,7 +1072,7 @@ void Rendering::updateImageColorMapInterpolation(std::size_t cmapIndex)
 
 void Rendering::updateLabelColorTableTexture(std::size_t tableIndex)
 {
-  spdlog::trace("Begin updating texture for 1D label color map at index {}", tableIndex);
+  SPDLOG_TRACE("Begin updating texture for 1D label color map at index {}", tableIndex);
 
   if (tableIndex >= m_appData.numLabelTables()) {
     spdlog::error("Label color table at index {} does not exist", tableIndex);
@@ -1098,7 +1098,7 @@ void Rendering::updateLabelColorTableTexture(std::size_t tableIndex)
   }
 
   it->second.write(0, table->numColorBytes_RGBA_U8(), table->colorData_RGBA_nonpremult_U8());
-  spdlog::trace("Done updating buffer texture for label color table {}", *tableUid);
+  SPDLOG_TRACE("Done updating buffer texture for label color table {}", *tableUid);
 }
 
 void Rendering::framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime)

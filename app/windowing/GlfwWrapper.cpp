@@ -497,7 +497,7 @@ void GlfwWrapper::renderLoop(
     }
 
     if (logFramerate) {
-      spdlog::trace("Frame rate: {}", ImGui::GetIO().Framerate);
+      SPDLOG_TRACE("Frame rate: {}", ImGui::GetIO().Framerate);
     }
   }
 

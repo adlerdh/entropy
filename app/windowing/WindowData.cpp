@@ -2013,7 +2013,7 @@ void WindowData::setContentScaleRatios(const glm::vec2& scale)
     return;
   }
 
-  spdlog::trace("Setting content scale ratio to {}x{}", scale.x, scale.y);
+  SPDLOG_TRACE("Setting content scale ratio to {}x{}", scale.x, scale.y);
   m_contentScaleRatio = scale;
   updateAllViews();
 }

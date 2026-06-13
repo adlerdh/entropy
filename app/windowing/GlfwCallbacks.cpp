@@ -66,7 +66,7 @@ void windowCloseCallback(GLFWwindow* window)
     return;
   }
 
-  spdlog::trace("User has requested to close the application");
+  SPDLOG_TRACE("User has requested to close the application");
 
   app->requestQuitApp();
 

@@ -219,7 +219,7 @@ void DepthPeelRenderer::initialize()
   glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
   glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
 
-  spdlog::trace("Draw FBO ID = {}; Read FBO ID = {}", drawFboId, readFboId);
+  SPDLOG_TRACE("Draw FBO ID = {}; Read FBO ID = {}", drawFboId, readFboId);
 
   m_impl->m_defaultFboId = static_cast<GLuint>(drawFboId);
 }

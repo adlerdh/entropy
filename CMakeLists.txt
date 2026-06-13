@@ -30,6 +30,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(Entropy_USE_CCACHE "Use ccache as the compiler launcher when available" ON)
+option(Entropy_ENABLE_TRACE_LOGGING "Compile trace-level logging calls into Entropy" OFF)
 
 if(Entropy_USE_CCACHE)
   find_program(CCACHE_PROGRAM ccache)
@@ -76,8 +77,17 @@ target_compile_options(entropy_warnings INTERFACE
   >
 )
 
+add_library(entropy_logging_level INTERFACE)
+target_compile_definitions(entropy_logging_level INTERFACE
+  $<$<OR:$<CONFIG:Debug>,$<BOOL:${Entropy_ENABLE_TRACE_LOGGING}>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
+  $<$<NOT:$<OR:$<CONFIG:Debug>,$<BOOL:${Entropy_ENABLE_TRACE_LOGGING}>>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
+  $<$<CONFIG:Debug>:ENTROPY_DEFAULT_LOG_LEVEL=SPDLOG_LEVEL_DEBUG>
+  $<$<NOT:$<CONFIG:Debug>>:ENTROPY_DEFAULT_LOG_LEVEL=SPDLOG_LEVEL_INFO>
+)
+
 message(STATUS "CMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "Entropy_ENABLE_TRACE_LOGGING=${Entropy_ENABLE_TRACE_LOGGING}")
 
 # Prevent compilation in-source
 if(CMAKE_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
