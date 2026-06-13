@@ -1,6 +1,6 @@
 #include "ui/windows/LandmarkPropertiesWindow.h"
 
-#include "ui/Headers.h"
+#include "ui/headers/Headers.h"
 
 #include "logic/app/Data.h"
 

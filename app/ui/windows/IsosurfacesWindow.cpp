@@ -1,6 +1,6 @@
 #include "ui/windows/IsosurfacesWindow.h"
 
-#include "ui/IsosurfaceHeader.h"
+#include "ui/headers/IsosurfaceHeader.h"
 
 #include "logic/app/Data.h"
 

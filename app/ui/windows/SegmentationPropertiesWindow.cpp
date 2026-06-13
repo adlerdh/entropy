@@ -1,6 +1,6 @@
 #include "ui/windows/SegmentationPropertiesWindow.h"
 
-#include "ui/Headers.h"
+#include "ui/headers/Headers.h"
 
 #include "image/Image.h"
 

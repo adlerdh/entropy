@@ -8,7 +8,7 @@
 #include "windowing/EntropyIcon.h"
 #endif
 #ifdef _WIN32
-#include "ui/WinNativeMainMenu.h"
+#include "ui/menus/WinNativeMainMenu.h"
 #endif
 
 #include <spdlog/spdlog.h>

@@ -511,24 +511,41 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp"
   "${entropy_APP_DIR}/rendering/utility/math/SliceIntersector.cpp"
 
-  "${entropy_APP_DIR}/ui/AboutEntropyIcon.cpp"
+  "${entropy_APP_DIR}/ui/AboutIcon.cpp"
   "${entropy_APP_DIR}/ui/DicomMetadataTable.cpp"
   "${entropy_APP_DIR}/ui/GuiData.cpp"
-  "${entropy_APP_DIR}/ui/Headers.cpp"
+  "${entropy_APP_DIR}/ui/headers/AnnotationHeader.cpp"
+  "${entropy_APP_DIR}/ui/headers/ImageHeader.cpp"
+  "${entropy_APP_DIR}/ui/headers/ImageHeaderInformation.cpp"
+  "${entropy_APP_DIR}/ui/headers/LandmarkHeader.cpp"
+  "${entropy_APP_DIR}/ui/headers/SegmentationHeader.cpp"
   "${entropy_APP_DIR}/ui/Helpers.cpp"
   "${entropy_APP_DIR}/ui/ImageExport.cpp"
-  "${entropy_APP_DIR}/ui/IsosurfaceHeader.cpp"
+  "${entropy_APP_DIR}/ui/headers/IsosurfaceHeader.cpp"
   "${entropy_APP_DIR}/ui/ImGuiCustomControls.cpp"
   "${entropy_APP_DIR}/ui/ImGuiWrapper.cpp"
-  "${entropy_APP_DIR}/ui/MainMenuBar.cpp"
+  "${entropy_APP_DIR}/ui/menus/MainMenuBar.cpp"
   "${entropy_APP_DIR}/ui/NativeFileDialogs.cpp"
-  "${entropy_APP_DIR}/ui/Popups.cpp"
+  "${entropy_APP_DIR}/ui/popups/AboutPopup.cpp"
+  "${entropy_APP_DIR}/ui/popups/AddLayoutPopup.cpp"
+  "${entropy_APP_DIR}/ui/popups/ConfirmClosePopup.cpp"
+  "${entropy_APP_DIR}/ui/popups/ConfirmRemoveImagePopup.cpp"
+  "${entropy_APP_DIR}/ui/popups/ConfirmSetReferenceImagePopup.cpp"
+  "${entropy_APP_DIR}/ui/popups/DicomFolderPathPopup.cpp"
+  "${entropy_APP_DIR}/ui/popups/DicomSeriesSelectionPopup.cpp"
+  "${entropy_APP_DIR}/ui/popups/LargeImageLoadPromptPopup.cpp"
+  "${entropy_APP_DIR}/ui/popups/UnsavedProjectPopup.cpp"
   "${entropy_APP_DIR}/ui/Style.cpp"
   "${entropy_APP_DIR}/ui/settings/SettingsModel.cpp"
   "${entropy_APP_DIR}/ui/ThirdPartyLicenses.cpp"
-  "${entropy_APP_DIR}/ui/Toolbars.cpp"
+  "${entropy_APP_DIR}/ui/toolbars/AnnotationToolbar.cpp"
+  "${entropy_APP_DIR}/ui/toolbars/ModeToolbar.cpp"
+  "${entropy_APP_DIR}/ui/toolbars/SegmentationToolbar.cpp"
   "${entropy_APP_DIR}/ui/UiScaleManager.cpp"
-  "${entropy_APP_DIR}/ui/Widgets.cpp"
+  "${entropy_APP_DIR}/ui/widgets/ActiveImageSelection.cpp"
+  "${entropy_APP_DIR}/ui/widgets/LandmarkWidget.cpp"
+  "${entropy_APP_DIR}/ui/widgets/PaletteWidget.cpp"
+  "${entropy_APP_DIR}/ui/widgets/SegmentationLabelsWidget.cpp"
   "${entropy_APP_DIR}/ui/windows/AnnotationWindow.cpp"
   "${entropy_APP_DIR}/ui/windows/ImagePropertiesWindow.cpp"
   "${entropy_APP_DIR}/ui/windows/InspectionTableWindow.cpp"
@@ -570,7 +587,7 @@ if(APPLE)
 
   list(APPEND entropy_SOURCES
     "${entropy_APP_DIR}/logic/app/AppPathsMac.mm"
-    "${entropy_APP_DIR}/ui/MacNativeMainMenu.mm"
+    "${entropy_APP_DIR}/ui/menus/MacNativeMainMenu.mm"
   )
 endif()
 
@@ -591,7 +608,7 @@ if(WIN32)
 
   list(APPEND entropy_SOURCES
     "${entropy_WINDOWS_VERSION_RC}"
-    "${entropy_APP_DIR}/ui/WinNativeMainMenu.cpp"
+    "${entropy_APP_DIR}/ui/menus/WinNativeMainMenu.cpp"
   )
 endif()
 

@@ -1,17 +1,18 @@
 #pragma once
 
 #include "common/AsyncTasks.h"
-#include <filesystem>
 #include "common/PublicTypes.h"
+#include "common/SegmentationTypes.h"
 #include "image/DicomSeries.h"
 #include "logic/app/Settings.h"
-#include "common/SegmentationTypes.h"
 #include "ui/GuiData.h"
 #include "ui/UiScaleManager.h"
 
 #include <glm/fwd.hpp>
 #include <uuid.h>
 
+#include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <future>
 #include <mutex>
@@ -24,6 +25,198 @@
 class AppData;
 class CallbackHandler;
 struct GLFWwindow;
+
+/**
+ * @brief Platform/window callbacks required by the ImGui layer.
+ */
+struct ImGuiPlatformCallbacks
+{
+  /** @brief Wake the GLFW event loop after UI work schedules a redraw. */
+  std::function<void()> postEmptyGlfwEvent;
+
+  /** @brief Resize and re-layout the viewport after UI state changes. */
+  std::function<void()> readjustViewport;
+};
+
+/**
+ * @brief Project and file callbacks owned by the application layer.
+ */
+struct ImGuiProjectCallbacks
+{
+  /** @brief Open image files as a new project. */
+  std::function<void(const std::vector<std::filesystem::path>& fileNames)> openImageFiles;
+
+  /** @brief Add image files to the current project. */
+  std::function<void(const std::vector<std::filesystem::path>& fileNames)> addImageFiles;
+
+  /** @brief Open DICOM folders and scan them for series. */
+  std::function<void(const std::vector<std::filesystem::path>& folderNames)> openDicomFolders;
+
+  /** @brief Add a segmentation file to the active image. */
+  std::function<void(const std::filesystem::path& fileName)> addSegmentationFile;
+
+  /** @brief Add a segmentation file to a specific image. */
+  std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> addSegmentationFileToImage;
+
+  /** @brief Open a project file. */
+  std::function<void(const std::filesystem::path& fileName)> openProjectFile;
+
+  /** @brief Resolve a pending large-image load prompt. */
+  std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision;
+
+  /** @brief Load selected DICOM series into a new or existing project. */
+  std::function<void(
+    const std::vector<dicom::SeriesInfo>& series,
+    std::optional<std::size_t> referenceSeriesIndex,
+    bool addToExistingProject)>
+    loadDicomSeries;
+
+  /** @brief Save the current project. */
+  std::function<bool()> saveProject;
+
+  /** @brief Save the current project to a selected path. */
+  std::function<bool(const std::filesystem::path& fileName)> saveProjectAs;
+
+  /** @brief Prompt to close the current project. */
+  std::function<void()> closeProject;
+
+  /** @brief Load a layout definition file. */
+  std::function<void(const std::filesystem::path& fileName)> loadLayoutsFile;
+
+  /** @brief Save layouts to a selected path. */
+  std::function<bool(const std::filesystem::path& fileName)> saveLayoutsFile;
+
+  /** @brief Close the current project without prompting. */
+  std::function<void()> closeProjectWithoutPrompt;
+
+  /** @brief Prompt to quit the application. */
+  std::function<void()> requestQuitApp;
+
+  /** @brief Quit the application without prompting. */
+  std::function<void()> quitAppWithoutPrompt;
+};
+
+/**
+ * @brief View, overlay, and rendering callbacks invoked from UI controls.
+ */
+struct ImGuiViewCallbacks
+{
+  /** @brief Recenter a specific view. */
+  std::function<void(const uuids::uuid& viewUid)> recenterView;
+
+  /** @brief Recenter the current layout's views with selectable reset behavior. */
+  AllViewsRecenterType recenterCurrentViews;
+
+  /** @brief Query whether view overlays are visible. */
+  std::function<bool()> getOverlayVisibility;
+
+  /** @brief Set whether view overlays are visible. */
+  std::function<void(bool)> setOverlayVisibility;
+
+  /** @brief Update uniforms for all image renderers. */
+  std::function<void()> updateAllImageUniforms;
+
+  /** @brief Update uniforms for one image renderer. */
+  std::function<void(const uuids::uuid& imageUid)> updateImageUniforms;
+
+  /** @brief Update interpolation state for one image renderer. */
+  std::function<void(const uuids::uuid& imageUid)> updateImageInterpolationMode;
+
+  /** @brief Update interpolation state for one image colormap texture. */
+  std::function<void(std::size_t cmapIndex)> updateImageColorMapInterpolationMode;
+
+  /** @brief Update one segmentation label color table texture. */
+  std::function<void(std::size_t tableIndex)> updateLabelColorTableTexture;
+
+  /** @brief Move crosshairs to the centroid of a segmentation label. */
+  std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)> moveCrosshairsToSegLabelCentroid;
+
+  /** @brief Update metric shader uniforms after measurement settings change. */
+  std::function<void()> updateMetricUniforms;
+};
+
+/**
+ * @brief Crosshairs and voxel inspection callbacks used by status/UI widgets.
+ */
+struct ImGuiInspectionCallbacks
+{
+  /** @brief Get the current deformed world-space crosshairs position. */
+  std::function<glm::vec3()> getWorldDeformedPos;
+
+  /** @brief Get crosshairs position in image subject coordinates. */
+  std::function<std::optional<glm::vec3>(std::size_t imageIndex)> getSubjectPos;
+
+  /** @brief Get crosshairs position in image voxel coordinates. */
+  std::function<std::optional<glm::ivec3>(std::size_t imageIndex)> getVoxelPos;
+
+  /** @brief Set crosshairs from image subject coordinates. */
+  std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos;
+
+  /** @brief Set crosshairs from image voxel coordinates. */
+  std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos;
+
+  /** @brief Get nearest-neighbor image values at the crosshairs. */
+  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesNN;
+
+  /** @brief Get linearly interpolated image values at the crosshairs. */
+  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesLinear;
+
+  /** @brief Get the active segmentation label at the crosshairs. */
+  std::function<std::optional<int64_t>(std::size_t imageIndex)> getSegLabel;
+};
+
+/**
+ * @brief Segmentation and image-management callbacks invoked from UI controls.
+ */
+struct ImGuiEditingCallbacks
+{
+  /** @brief Create a blank segmentation for an image. */
+  std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>
+    createBlankSeg;
+
+  /** @brief Clear all voxels in a segmentation. */
+  std::function<bool(const uuids::uuid& segUid)> clearSeg;
+
+  /** @brief Remove a segmentation. */
+  std::function<bool(const uuids::uuid& segUid)> removeSeg;
+
+  /** @brief Execute seed-based Poisson segmentation. */
+  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)>
+    executePoissonSeg;
+
+  /** @brief Lock or unlock an image's manual transformation. */
+  std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation;
+
+  /** @brief Make an image the project reference image. */
+  std::function<bool(const uuids::uuid& imageUid)> setReferenceImage;
+
+  /** @brief Remove an image from the project. */
+  std::function<bool(const uuids::uuid& imageUid)> removeImage;
+
+  /** @brief Paint the active segmentation from the active annotation. */
+  std::function<void()> paintActiveSegmentationWithActivePolygon;
+};
+
+/**
+ * @brief Complete set of application callbacks required by ImGuiWrapper.
+ */
+struct ImGuiWrapperCallbacks
+{
+  /** @brief Platform/window callbacks. */
+  ImGuiPlatformCallbacks platform;
+
+  /** @brief Project and file callbacks. */
+  ImGuiProjectCallbacks project;
+
+  /** @brief View and rendering callbacks. */
+  ImGuiViewCallbacks view;
+
+  /** @brief Crosshairs and voxel inspection callbacks. */
+  ImGuiInspectionCallbacks inspection;
+
+  /** @brief Segmentation and image-editing callbacks. */
+  ImGuiEditingCallbacks editing;
+};
 
 /**
  * @brief A simple wrapper for ImGui
@@ -70,57 +263,13 @@ public:
    */
   void applyUiWindowBgOpacity(float opacity);
 
-  void setCallbacks(
-    std::function<void(void)> postEmptyGlfwEvent,
-    std::function<void(void)> readjustViewport,
-    std::function<void(const std::vector<std::filesystem::path>& fileNames)> openImageFiles,
-    std::function<void(const std::vector<std::filesystem::path>& fileNames)> addImageFiles,
-    std::function<void(const std::vector<std::filesystem::path>& folderNames)> openDicomFolders,
-    std::function<void(const std::filesystem::path& fileName)> addSegmentationFile,
-    std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> addSegmentationFileToImage,
-    std::function<void(const std::filesystem::path& fileName)> openProjectFile,
-    std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
-    std::function<void(
-      const std::vector<dicom::SeriesInfo>& series,
-      std::optional<std::size_t> referenceSeriesIndex,
-      bool addToExistingProject)> loadDicomSeries,
-    std::function<bool()> saveProject,
-    std::function<bool(const std::filesystem::path& fileName)> saveProjectAs,
-    std::function<void()> closeProject,
-    std::function<void(const std::filesystem::path& fileName)> loadLayoutsFile,
-    std::function<bool(const std::filesystem::path& fileName)> saveLayoutsFile,
-    std::function<void()> closeProjectWithoutPrompt,
-    std::function<void()> requestQuitApp,
-    std::function<void()> quitAppWithoutPrompt,
-    std::function<void(const uuids::uuid& viewUid)> recenterView,
-    AllViewsRecenterType recenterCurrentViews,
-    std::function<bool(void)> getOverlayVisibility,
-    std::function<void(bool)> setOverlayVisibility,
-    std::function<void(void)> updateAllImageUniforms,
-    std::function<void(const uuids::uuid& imageUid)> updateImageUniforms,
-    std::function<void(const uuids::uuid& imageUid)> updateImageInterpolationMode,
-    std::function<void(std::size_t cmapUid)> updateImageColorMapInterpolationMode,
-    std::function<void(std::size_t tableIndex)> updateLabelColorTableTexture,
-    std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)> moveCrosshairsToSegLabelCentroid,
-    std::function<void()> updateMetricUniforms,
-    std::function<glm::vec3()> getWorldDeformedPos,
-    std::function<std::optional<glm::vec3>(std::size_t imageIndex)> getSubjectPos,
-    std::function<std::optional<glm::ivec3>(std::size_t imageIndex)> getVoxelPos,
-    std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
-    std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos,
-    std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesNN,
-    std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesLinear,
-    std::function<std::optional<int64_t>(std::size_t imageIndex)> getSegLabel,
-    std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>
-      createBlankSeg,
-    std::function<bool(const uuids::uuid& segUid)> clearSeg,
-    std::function<bool(const uuids::uuid& segUid)> removeSeg,
-    std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType& segType)>
-      executePoissonSeg,
-    std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
-    std::function<bool(const uuids::uuid& imageUid)> setReferenceImage,
-    std::function<bool(const uuids::uuid& imageUid)> removeImage,
-    std::function<void()> paintActiveSegmentationWithActivePolygon);
+  /**
+   * @brief Install application callbacks used by the ImGui layer.
+   *
+   * @param callbacks Grouped callback object. Grouping keeps the API readable
+   * and avoids errors from wiring a long positional parameter list.
+   */
+  void setCallbacks(ImGuiWrapperCallbacks callbacks);
 
   void render();
 

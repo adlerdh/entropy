@@ -1,7 +1,7 @@
 #include "ui/windows/ImagePropertiesWindow.h"
 
-#include "ui/Headers.h"
-#include "ui/Widgets.h"
+#include "ui/headers/Headers.h"
+#include "ui/widgets/Widgets.h"
 
 #include "image/Image.h"
 

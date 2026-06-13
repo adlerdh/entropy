@@ -2635,7 +2635,9 @@ void Rendering::renderVectorOverlays()
           labelPosInfo_forLabels);
       }
 
-      if (R.m_showScaleBars && ViewRenderMode::VolumeRender != view->renderMode()) {
+      const bool allowScaleBarsInCurrentLayout =
+        !windowData.currentLayout().isLightbox() || R.m_showScaleBarsInLightboxViews;
+      if (R.m_showScaleBars && allowScaleBarsInCurrentLayout && ViewRenderMode::VolumeRender != view->renderMode()) {
         drawScaleBar(
           m_nvg,
           miewportViewBounds,

@@ -39,6 +39,7 @@ add_executable(EntropyUiTests
   "${entropy_APP_DIR}/ui/test/OpacityMixerModelTests.cpp"
   "${entropy_APP_DIR}/ui/test/SettingsModelTests.cpp"
   "${entropy_APP_DIR}/ui/test/StyleTests.cpp"
+  "${entropy_APP_DIR}/ui/test/UiHeaderIncludeTests.cpp"
   "${entropy_APP_DIR}/ui/test/UiScaleManagerTests.cpp"
   "${entropy_APP_DIR}/ui/test/ViewOverlayModelTests.cpp"
   "${entropy_APP_DIR}/windowing/test/LinuxUiScaleTests.cpp"
@@ -67,6 +68,7 @@ target_include_directories(EntropyUiTests PRIVATE
   "${entropy_EXT_DIR}/glad/glad_gl_3.3_core/include"
   "${imgui_SRC_DIR}"
   "${imgui_SRC_DIR}/imgui"
+  "${implot_SRC_DIR}"
 )
 
 set_target_properties(EntropyUiTests PROPERTIES

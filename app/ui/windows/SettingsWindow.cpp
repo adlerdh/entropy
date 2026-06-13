@@ -3,7 +3,7 @@
 #include "ui/Helpers.h"
 #include "ui/ImGuiCustomControls.h"
 #include "ui/Style.h"
-#include "ui/Widgets.h"
+#include "ui/widgets/Widgets.h"
 #include "ui/settings/SettingsModel.h"
 
 #include "logic/app/Data.h"
@@ -459,6 +459,13 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     helpMarker("Show physical scale bars on anatomical views");
 
     if (showScaleBars) {
+      bool showScaleBarsInLightboxViews = renderData.m_showScaleBarsInLightboxViews;
+      if (ImGui::Checkbox("Show in lightbox views", &showScaleBarsInLightboxViews)) {
+        renderData.m_showScaleBarsInLightboxViews = showScaleBarsInLightboxViews;
+      }
+      ImGui::SameLine();
+      helpMarker("Show scale bars in each tile of lightbox layouts");
+
       ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_scaleBarColor), sk_colorAlphaEditFlags);
 
       auto setScaleBarPosition = [&](ScaleBarPosition position) {

@@ -4,18 +4,18 @@
 
 #include "ui/Helpers.h"
 #include "ui/ImageExport.h"
-#include "ui/MainMenuBar.h"
+#include "ui/menus/MainMenuBar.h"
 #ifdef __APPLE__
-#include "ui/MacNativeMainMenu.h"
+#include "ui/menus/MacNativeMainMenu.h"
 #endif
 #include "ui/NativeFileDialogs.h"
-#include "ui/Popups.h"
+#include "ui/popups/Popups.h"
 #include "ui/Style.h"
-#include "ui/Toolbars.h"
-#include "ui/Windows.h"
+#include "ui/toolbars/Toolbars.h"
+#include "ui/windows/Windows.h"
 #include "ui/windows/OpacityMixerWindow.h"
 #ifdef _WIN32
-#include "ui/WinNativeMainMenu.h"
+#include "ui/menus/WinNativeMainMenu.h"
 #endif
 
 #include "logic/app/AppPaths.h"
@@ -316,103 +316,57 @@ ImGuiWrapper::~ImGuiWrapper()
   spdlog::debug("Destroyed ImGui context");
 }
 
-void ImGuiWrapper::setCallbacks(
-  std::function<void(void)> postEmptyGlfwEvent,
-  std::function<void(void)> readjustViewport,
-  std::function<void(const std::vector<fs::path>& fileNames)> openImageFiles,
-  std::function<void(const std::vector<fs::path>& fileNames)> addImageFiles,
-  std::function<void(const std::vector<fs::path>& folderNames)> openDicomFolders,
-  std::function<void(const fs::path& fileName)> addSegmentationFile,
-  std::function<void(const uuids::uuid& imageUid, const fs::path& fileName)> addSegmentationFileToImage,
-  std::function<void(const fs::path& fileName)> openProjectFile,
-  std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision,
-  std::function<void(
-    const std::vector<dicom::SeriesInfo>& series,
-    std::optional<std::size_t> referenceSeriesIndex,
-    bool addToExistingProject)> loadDicomSeries,
-  std::function<bool()> saveProject,
-  std::function<bool(const fs::path& fileName)> saveProjectAs,
-  std::function<void()> closeProject,
-  std::function<void(const fs::path& fileName)> loadLayoutsFile,
-  std::function<bool(const fs::path& fileName)> saveLayoutsFile,
-  std::function<void()> closeProjectWithoutPrompt,
-  std::function<void()> requestQuitApp,
-  std::function<void()> quitAppWithoutPrompt,
-  std::function<void(const uuids::uuid& viewUid)> recenterView,
-  AllViewsRecenterType recenterCurrentViews,
-  std::function<bool(void)> getOverlayVisibility,
-  std::function<void(bool)> setOverlayVisibility,
-  std::function<void(void)> updateAllImageUniforms,
-  std::function<void(const uuids::uuid& imageUid)> updateImageUniforms,
-  std::function<void(const uuids::uuid& imageUid)> updateImageInterpolationMode,
-  std::function<void(std::size_t cmapIndex)> updateImageColorMapInterpolationMode,
-  std::function<void(std::size_t tableIndex)> updateLabelColorTableTexture,
-  std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)> moveCrosshairsToSegLabelCentroid,
-  std::function<void()> updateMetricUniforms,
-  std::function<glm::vec3()> getWorldDeformedPos,
-  std::function<std::optional<glm::vec3>(std::size_t imageIndex)> getSubjectPos,
-  std::function<std::optional<glm::ivec3>(std::size_t imageIndex)> getVoxelPos,
-  std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
-  std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos,
-  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesNN,
-  std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)> getImageValuesLinear,
-  std::function<std::optional<int64_t>(std::size_t imageIndex)> getSegLabel,
-  std::function<std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>
-    createBlankSeg,
-  std::function<bool(const uuids::uuid& segUid)> clearSeg,
-  std::function<bool(const uuids::uuid& segUid)> removeSeg,
-  std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>
-    executePoissonSeg,
-  std::function<bool(const uuids::uuid& imageUid, bool locked)> setLockManualImageTransformation,
-  std::function<bool(const uuids::uuid& imageUid)> setReferenceImage,
-  std::function<bool(const uuids::uuid& imageUid)> removeImage,
-  std::function<void()> paintActiveSegmentationWithActivePolygon)
+void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
 {
-  m_postEmptyGlfwEvent = postEmptyGlfwEvent;
-  m_readjustViewport = readjustViewport;
-  m_openImageFiles = openImageFiles;
-  m_addImageFiles = addImageFiles;
-  m_openDicomFolders = openDicomFolders;
-  m_addSegmentationFile = addSegmentationFile;
-  m_addSegmentationFileToImage = addSegmentationFileToImage;
-  m_openProjectFile = openProjectFile;
-  m_largeImageLoadDecision = largeImageLoadDecision;
-  m_loadDicomSeries = loadDicomSeries;
-  m_saveProject = saveProject;
-  m_saveProjectAs = saveProjectAs;
-  m_closeProject = closeProject;
-  m_loadLayoutsFile = loadLayoutsFile;
-  m_saveLayoutsFile = saveLayoutsFile;
-  m_closeProjectWithoutPrompt = closeProjectWithoutPrompt;
-  m_requestQuitApp = requestQuitApp;
-  m_quitAppWithoutPrompt = quitAppWithoutPrompt;
-  m_recenterView = recenterView;
-  m_recenterAllViews = recenterCurrentViews;
-  m_getOverlayVisibility = getOverlayVisibility;
-  m_setOverlayVisibility = setOverlayVisibility;
-  m_updateAllImageUniforms = updateAllImageUniforms;
-  m_updateImageUniforms = updateImageUniforms;
-  m_updateImageInterpolationMode = updateImageInterpolationMode;
-  m_updateImageColorMapInterpolationMode = updateImageColorMapInterpolationMode;
-  m_updateLabelColorTableTexture = updateLabelColorTableTexture;
-  m_moveCrosshairsToSegLabelCentroid = moveCrosshairsToSegLabelCentroid;
-  m_updateMetricUniforms = updateMetricUniforms;
-  m_getWorldDeformedPos = getWorldDeformedPos;
-  m_getSubjectPos = getSubjectPos;
-  m_getVoxelPos = getVoxelPos;
-  m_setSubjectPos = setSubjectPos;
-  m_setVoxelPos = setVoxelPos;
-  m_getImageValuesNN = getImageValuesNN;
-  m_getImageValuesLinear = getImageValuesLinear;
-  m_getSegLabel = getSegLabel;
-  m_createBlankSeg = createBlankSeg;
-  m_clearSeg = clearSeg;
-  m_removeSeg = removeSeg;
-  m_executePoissonSeg = executePoissonSeg;
-  m_setLockManualImageTransformation = setLockManualImageTransformation;
-  m_setReferenceImage = setReferenceImage;
-  m_removeImage = removeImage;
-  m_paintActiveSegmentationWithActivePolygon = paintActiveSegmentationWithActivePolygon;
+  m_postEmptyGlfwEvent = std::move(callbacks.platform.postEmptyGlfwEvent);
+  m_readjustViewport = std::move(callbacks.platform.readjustViewport);
+
+  m_openImageFiles = std::move(callbacks.project.openImageFiles);
+  m_addImageFiles = std::move(callbacks.project.addImageFiles);
+  m_openDicomFolders = std::move(callbacks.project.openDicomFolders);
+  m_addSegmentationFile = std::move(callbacks.project.addSegmentationFile);
+  m_addSegmentationFileToImage = std::move(callbacks.project.addSegmentationFileToImage);
+  m_openProjectFile = std::move(callbacks.project.openProjectFile);
+  m_largeImageLoadDecision = std::move(callbacks.project.largeImageLoadDecision);
+  m_loadDicomSeries = std::move(callbacks.project.loadDicomSeries);
+  m_saveProject = std::move(callbacks.project.saveProject);
+  m_saveProjectAs = std::move(callbacks.project.saveProjectAs);
+  m_closeProject = std::move(callbacks.project.closeProject);
+  m_loadLayoutsFile = std::move(callbacks.project.loadLayoutsFile);
+  m_saveLayoutsFile = std::move(callbacks.project.saveLayoutsFile);
+  m_closeProjectWithoutPrompt = std::move(callbacks.project.closeProjectWithoutPrompt);
+  m_requestQuitApp = std::move(callbacks.project.requestQuitApp);
+  m_quitAppWithoutPrompt = std::move(callbacks.project.quitAppWithoutPrompt);
+
+  m_recenterView = std::move(callbacks.view.recenterView);
+  m_recenterAllViews = std::move(callbacks.view.recenterCurrentViews);
+  m_getOverlayVisibility = std::move(callbacks.view.getOverlayVisibility);
+  m_setOverlayVisibility = std::move(callbacks.view.setOverlayVisibility);
+  m_updateAllImageUniforms = std::move(callbacks.view.updateAllImageUniforms);
+  m_updateImageUniforms = std::move(callbacks.view.updateImageUniforms);
+  m_updateImageInterpolationMode = std::move(callbacks.view.updateImageInterpolationMode);
+  m_updateImageColorMapInterpolationMode = std::move(callbacks.view.updateImageColorMapInterpolationMode);
+  m_updateLabelColorTableTexture = std::move(callbacks.view.updateLabelColorTableTexture);
+  m_moveCrosshairsToSegLabelCentroid = std::move(callbacks.view.moveCrosshairsToSegLabelCentroid);
+  m_updateMetricUniforms = std::move(callbacks.view.updateMetricUniforms);
+
+  m_getWorldDeformedPos = std::move(callbacks.inspection.getWorldDeformedPos);
+  m_getSubjectPos = std::move(callbacks.inspection.getSubjectPos);
+  m_getVoxelPos = std::move(callbacks.inspection.getVoxelPos);
+  m_setSubjectPos = std::move(callbacks.inspection.setSubjectPos);
+  m_setVoxelPos = std::move(callbacks.inspection.setVoxelPos);
+  m_getImageValuesNN = std::move(callbacks.inspection.getImageValuesNN);
+  m_getImageValuesLinear = std::move(callbacks.inspection.getImageValuesLinear);
+  m_getSegLabel = std::move(callbacks.inspection.getSegLabel);
+
+  m_createBlankSeg = std::move(callbacks.editing.createBlankSeg);
+  m_clearSeg = std::move(callbacks.editing.clearSeg);
+  m_removeSeg = std::move(callbacks.editing.removeSeg);
+  m_executePoissonSeg = std::move(callbacks.editing.executePoissonSeg);
+  m_setLockManualImageTransformation = std::move(callbacks.editing.setLockManualImageTransformation);
+  m_setReferenceImage = std::move(callbacks.editing.setReferenceImage);
+  m_removeImage = std::move(callbacks.editing.removeImage);
+  m_paintActiveSegmentationWithActivePolygon = std::move(callbacks.editing.paintActiveSegmentationWithActivePolygon);
 }
 
 void ImGuiWrapper::storeFuture(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)

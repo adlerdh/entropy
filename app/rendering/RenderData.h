@@ -237,6 +237,7 @@ struct RenderData
   AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human;
 
   bool m_showScaleBars;
+  bool m_showScaleBarsInLightboxViews;
   glm::vec4 m_scaleBarColor; // Scale bar color (non-premultiplied by alpha)
   ScaleBarPosition m_scaleBarPosition;
   ScaleBarOrientation m_scaleBarOrientation;
