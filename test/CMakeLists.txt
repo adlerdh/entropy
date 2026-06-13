@@ -36,24 +36,24 @@ catch_discover_tests(EntropyLayoutTests)
 
 add_executable(EntropyUiTests
   "${entropy_APP_DIR}/rendering/test/ScaleBarGeometryTests.cpp"
-  "${entropy_APP_DIR}/ui/test/NativeMessageDialogModelTests.cpp"
-  "${entropy_APP_DIR}/ui/test/OpacityMixerModelTests.cpp"
-  "${entropy_APP_DIR}/ui/test/SettingsModelTests.cpp"
-  "${entropy_APP_DIR}/ui/test/StyleTests.cpp"
-  "${entropy_APP_DIR}/ui/test/UiHeaderIncludeTests.cpp"
-  "${entropy_APP_DIR}/ui/test/UiScaleManagerTests.cpp"
-  "${entropy_APP_DIR}/ui/test/ViewOverlayModelTests.cpp"
+  "${entropy_UI_DIR}/test/NativeMessageDialogModelTests.cpp"
+  "${entropy_UI_DIR}/test/OpacityMixerModelTests.cpp"
+  "${entropy_UI_DIR}/test/SettingsModelTests.cpp"
+  "${entropy_UI_DIR}/test/StyleTests.cpp"
+  "${entropy_UI_DIR}/test/UiHeaderIncludeTests.cpp"
+  "${entropy_UI_DIR}/test/UiScaleManagerTests.cpp"
+  "${entropy_UI_DIR}/test/ViewOverlayModelTests.cpp"
   "${entropy_APP_DIR}/windowing/test/LinuxUiScaleTests.cpp"
 )
 
 target_sources(EntropyUiTests PRIVATE
   "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"
-  "${entropy_APP_DIR}/ui/dialogs/NativeMessageDialogModel.cpp"
-  "${entropy_APP_DIR}/ui/Style.cpp"
-  "${entropy_APP_DIR}/ui/settings/SettingsModel.cpp"
-  "${entropy_APP_DIR}/ui/UiScaleManager.cpp"
-  "${entropy_APP_DIR}/ui/windows/OpacityMixerModel.cpp"
-  "${entropy_APP_DIR}/ui/windows/ViewOverlayModel.cpp"
+  "${entropy_UI_DIR}/dialogs/NativeMessageDialogModel.cpp"
+  "${entropy_UI_DIR}/Style.cpp"
+  "${entropy_UI_DIR}/settings/SettingsModel.cpp"
+  "${entropy_UI_DIR}/UiScaleManager.cpp"
+  "${entropy_UI_DIR}/windows/OpacityMixerModel.cpp"
+  "${entropy_UI_DIR}/windows/ViewOverlayModel.cpp"
   "${entropy_APP_DIR}/windowing/LinuxUiScale.cpp"
 )
 
@@ -67,6 +67,7 @@ target_link_libraries(EntropyUiTests PRIVATE
 
 target_include_directories(EntropyUiTests PRIVATE
   "${entropy_APP_DIR}"
+  "${entropy_LIB_DIR}"
   "${entropy_EXT_DIR}/glad/glad_gl_3.3_core/include"
   "${imgui_SRC_DIR}"
   "${imgui_SRC_DIR}/imgui"

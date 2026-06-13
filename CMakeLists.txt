@@ -47,6 +47,7 @@ endif()
 
 set(entropy_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app")
 set(entropy_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+set(entropy_UI_DIR "${entropy_LIB_DIR}/ui")
 set(entropy_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/res")
 set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 
@@ -354,7 +355,7 @@ target_compile_definitions(imgui PRIVATE IMGUI_USER_CONFIG="ui/entropy_imgui_con
 
 target_include_directories(imgui PRIVATE
   "${imgui_SRC_DIR}/imgui"
-  "${entropy_APP_DIR}" # needed for IMGUI_USER_CONFIG file
+  "${entropy_LIB_DIR}" # needed for IMGUI_USER_CONFIG file
   "${glfw_INCLUDE_DIR}"
 )
 
@@ -402,7 +403,7 @@ target_compile_definitions(implot PRIVATE IMGUI_USER_CONFIG="ui/entropy_imgui_co
 target_include_directories(implot PRIVATE
   "${implot_SRC_DIR}/implot"
   "${imgui_SRC_DIR}/imgui"
-  "${entropy_APP_DIR}" # needed for IMGUI_USER_CONFIG file
+  "${entropy_LIB_DIR}" # needed for IMGUI_USER_CONFIG file
 )
 
 # used in IMGUI_USER_CONFIG
@@ -513,55 +514,6 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/utility/gl/GLVertexArrayObject.cpp"
   "${entropy_APP_DIR}/rendering/utility/math/SliceIntersector.cpp"
 
-  "${entropy_APP_DIR}/ui/AboutIcon.cpp"
-  "${entropy_APP_DIR}/ui/DicomMetadataTable.cpp"
-  "${entropy_APP_DIR}/ui/dialogs/NativeMessageDialogModel.cpp"
-  "${entropy_APP_DIR}/ui/GuiData.cpp"
-  "${entropy_APP_DIR}/ui/headers/AnnotationHeader.cpp"
-  "${entropy_APP_DIR}/ui/headers/ImageHeader.cpp"
-  "${entropy_APP_DIR}/ui/headers/ImageHeaderInformation.cpp"
-  "${entropy_APP_DIR}/ui/headers/LandmarkHeader.cpp"
-  "${entropy_APP_DIR}/ui/headers/SegmentationHeader.cpp"
-  "${entropy_APP_DIR}/ui/Helpers.cpp"
-  "${entropy_APP_DIR}/ui/ImageExport.cpp"
-  "${entropy_APP_DIR}/ui/headers/IsosurfaceHeader.cpp"
-  "${entropy_APP_DIR}/ui/ImGuiCustomControls.cpp"
-  "${entropy_APP_DIR}/ui/ImGuiWrapper.cpp"
-  "${entropy_APP_DIR}/ui/menus/MainMenuBar.cpp"
-  "${entropy_APP_DIR}/ui/NativeFileDialogs.cpp"
-  "${entropy_APP_DIR}/ui/popups/AboutPopup.cpp"
-  "${entropy_APP_DIR}/ui/popups/AddLayoutPopup.cpp"
-  "${entropy_APP_DIR}/ui/popups/ConfirmClosePopup.cpp"
-  "${entropy_APP_DIR}/ui/popups/ConfirmRemoveImagePopup.cpp"
-  "${entropy_APP_DIR}/ui/popups/ConfirmSetReferenceImagePopup.cpp"
-  "${entropy_APP_DIR}/ui/popups/DicomFolderPathPopup.cpp"
-  "${entropy_APP_DIR}/ui/popups/DicomSeriesSelectionPopup.cpp"
-  "${entropy_APP_DIR}/ui/popups/LargeImageLoadPromptPopup.cpp"
-  "${entropy_APP_DIR}/ui/popups/UnsavedProjectPopup.cpp"
-  "${entropy_APP_DIR}/ui/Style.cpp"
-  "${entropy_APP_DIR}/ui/settings/SettingsModel.cpp"
-  "${entropy_APP_DIR}/ui/ThirdPartyLicenses.cpp"
-  "${entropy_APP_DIR}/ui/toolbars/AnnotationToolbar.cpp"
-  "${entropy_APP_DIR}/ui/toolbars/ModeToolbar.cpp"
-  "${entropy_APP_DIR}/ui/toolbars/SegmentationToolbar.cpp"
-  "${entropy_APP_DIR}/ui/UiScaleManager.cpp"
-  "${entropy_APP_DIR}/ui/widgets/ActiveImageSelection.cpp"
-  "${entropy_APP_DIR}/ui/widgets/LandmarkWidget.cpp"
-  "${entropy_APP_DIR}/ui/widgets/PaletteWidget.cpp"
-  "${entropy_APP_DIR}/ui/widgets/SegmentationLabelsWidget.cpp"
-  "${entropy_APP_DIR}/ui/windows/AnnotationWindow.cpp"
-  "${entropy_APP_DIR}/ui/windows/ImagePropertiesWindow.cpp"
-  "${entropy_APP_DIR}/ui/windows/InspectionTableWindow.cpp"
-  "${entropy_APP_DIR}/ui/windows/InspectionWindow.cpp"
-  "${entropy_APP_DIR}/ui/windows/IsosurfacesWindow.cpp"
-  "${entropy_APP_DIR}/ui/windows/LandmarkPropertiesWindow.cpp"
-  "${entropy_APP_DIR}/ui/windows/OpacityMixerModel.cpp"
-  "${entropy_APP_DIR}/ui/windows/OpacityMixerWindow.cpp"
-  "${entropy_APP_DIR}/ui/windows/SegmentationPropertiesWindow.cpp"
-  "${entropy_APP_DIR}/ui/windows/SettingsWindow.cpp"
-  "${entropy_APP_DIR}/ui/windows/ViewOverlayModel.cpp"
-  "${entropy_APP_DIR}/ui/windows/ViewOverlayWindows.cpp"
-
   "${entropy_APP_DIR}/windowing/ControlFrame.cpp"
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
   "${entropy_APP_DIR}/windowing/GlfwWrapper.cpp"
@@ -574,9 +526,6 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/ViewTypes.cpp"
   "${entropy_APP_DIR}/windowing/WindowData.cpp"
 
-  "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
-  "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
-  "${entropy_EXT_DIR}/imgui-knobs/imgui-knobs.cpp"
   "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
 )
 
@@ -590,8 +539,6 @@ if(APPLE)
 
   list(APPEND entropy_SOURCES
     "${entropy_APP_DIR}/logic/app/AppPathsMac.mm"
-    "${entropy_APP_DIR}/ui/dialogs/NativeMessageDialogsMac.mm"
-    "${entropy_APP_DIR}/ui/menus/MacNativeMainMenu.mm"
   )
 endif()
 
@@ -612,14 +559,6 @@ if(WIN32)
 
   list(APPEND entropy_SOURCES
     "${entropy_WINDOWS_VERSION_RC}"
-    "${entropy_APP_DIR}/ui/dialogs/NativeMessageDialogsWin.cpp"
-    "${entropy_APP_DIR}/ui/menus/WinNativeMainMenu.cpp"
-  )
-endif()
-
-if(NOT APPLE AND NOT WIN32)
-  list(APPEND entropy_SOURCES
-    "${entropy_APP_DIR}/ui/dialogs/NativeMessageDialogs.cpp"
   )
 endif()
 
@@ -760,6 +699,8 @@ cmrc_add_resource_library(entropy-shaders ALIAS entropy::shaders ${entropy_SHADE
   PREFIX "app"
 )
 
+add_subdirectory("${entropy_LIB_DIR}/ui")
+
 if(APPLE)
   add_executable(entropy MACOSX_BUNDLE)
 else()
@@ -817,6 +758,7 @@ target_link_libraries(entropy PRIVATE
   CLI11::CLI11
   Entropy::Common
   Entropy::Image
+  Entropy::UI
   glfw
   glad
   glm::glm
@@ -856,6 +798,7 @@ endif()
 target_include_directories(entropy PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}" # for BuildStamp.h
   "${entropy_APP_DIR}"
+  "${entropy_LIB_DIR}"
   "${entropy_RES_DIR}"
   "${glad_INCLUDE_DIR}"
   "${iconfont_INCLUDE_DIR}"
