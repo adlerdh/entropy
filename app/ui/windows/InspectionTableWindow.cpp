@@ -10,9 +10,11 @@
 #include <glm/gtx/color_space.hpp>
 #include <glm/gtx/component_wise.hpp>
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
 #include <algorithm>
+#include <array>
 #include <cinttypes>
 #include <optional>
 #include <string>
@@ -25,6 +27,34 @@ using uuid = uuids::uuid;
 
 const ImVec4 whiteText(1, 1, 1, 1);
 const ImVec4 blackText(0, 0, 0, 1);
+
+enum class InspectorColumn : int
+{
+  Image = 0,
+  Value,
+  InterpolatedValue,
+  Label,
+  Region,
+  Voxel,
+  Subject,
+  Count
+};
+
+constexpr std::size_t sk_inspectorColumnCount = static_cast<std::size_t>(InspectorColumn::Count);
+
+constexpr std::array<const char*, sk_inspectorColumnCount>
+  sk_inspectorColumnNames{"Image", "Value", "Value (interp.)", "Label", "Region", "Voxel", "Subject LPS (mm)"};
+
+constexpr std::array<float, sk_inspectorColumnCount>
+  sk_inspectorColumnDefaultWidths{150.0f, 75.0f, 75.0f, 50.0f, 100.0f, 125.0f, 225.0f};
+
+constexpr std::array<bool, sk_inspectorColumnCount>
+  sk_inspectorColumnCanHide{false, true, true, true, true, true, true};
+
+constexpr int columnIndex(InspectorColumn column)
+{
+  return static_cast<int>(column);
+}
 } // namespace
 
 void renderInspectionWindowWithTable(
@@ -64,6 +94,7 @@ void renderInspectionWindowWithTable(
     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
 
   static bool s_showTitleBar = false;
+  static bool s_autoSizeColumnsRequested = false;
 
   // For which images to show coordinates?
   static std::unordered_map<uuid, bool> s_showSubject;
@@ -77,8 +108,33 @@ void renderInspectionWindowWithTable(
     s_firstRun = false;
   }
 
-  auto contextMenu = [&appData, &getImageDisplayAndFileName]() {
-    if (ImGui::BeginMenu("Show...")) {
+  auto renderColumnVisibilityMenu = [&appData]() {
+    if (ImGui::BeginMenu("Columns")) {
+      if (ImGui::MenuItem("Auto-size columns")) {
+        s_autoSizeColumnsRequested = true;
+      }
+      ImGui::Separator();
+
+      for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+        bool visible = appData.guiData().m_inspectionColumnVisible.at(column);
+        if (!sk_inspectorColumnCanHide.at(column)) {
+          ImGui::BeginDisabled();
+        }
+        if (
+          ImGui::MenuItem(sk_inspectorColumnNames.at(column), nullptr, visible) && sk_inspectorColumnCanHide.at(column))
+        {
+          appData.guiData().m_inspectionColumnVisible.at(column) = !visible;
+        }
+        if (!sk_inspectorColumnCanHide.at(column)) {
+          ImGui::EndDisabled();
+        }
+      }
+      ImGui::EndMenu();
+    }
+  };
+
+  auto contextMenu = [&appData, &getImageDisplayAndFileName, &renderColumnVisibilityMenu]() {
+    if (ImGui::BeginMenu("Images...")) {
       for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
         const auto imageUid = appData.imageUid(imageIndex);
         if (!imageUid) continue;
@@ -103,6 +159,8 @@ void renderInspectionWindowWithTable(
       ImGui::EndMenu();
     }
 
+    renderColumnVisibilityMenu();
+
     if (ImGui::BeginMenu("Window")) {
       if (ImGui::BeginMenu("Position")) {
         if (ImGui::MenuItem("Custom", nullptr, corner == -1)) corner = -1;
@@ -124,8 +182,6 @@ void renderInspectionWindowWithTable(
 
       ImGui::EndMenu();
     }
-
-    //        ImGui::EndPopup();
   };
 
   auto showSelectionButton = []() {
@@ -182,22 +238,53 @@ void renderInspectionWindowWithTable(
     }
     ImGui::PopStyleColor(1); // ImGuiCol_MenuBarBg
 
-    if (ImGui::BeginTable("Image Information", 7, sk_tableFlags)) {
+    if (ImGui::BeginTable("Image Information", static_cast<int>(sk_inspectorColumnCount), sk_tableFlags)) {
       ImGui::TableSetupScrollFreeze(1, 1);
 
       // The default widths are approximate
-      ImGui::TableSetupColumn("Image", ImGuiTableColumnFlags_WidthFixed, 150.0f);
-
-      ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed, 75.0f);
       ImGui::TableSetupColumn(
-        "Value (interp.)",
-        ImGuiTableColumnFlags_DefaultHide | ImGuiTableColumnFlags_WidthFixed,
-        75.0f);
-      ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-      ImGui::TableSetupColumn("Region", ImGuiTableColumnFlags_DefaultHide | ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Image)),
+        ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed,
+        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Image)));
 
-      ImGui::TableSetupColumn("Voxel", ImGuiTableColumnFlags_WidthFixed, 125.0f);
-      ImGui::TableSetupColumn("Subject (mm)", ImGuiTableColumnFlags_WidthFixed, 225.0f);
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Value)),
+        ImGuiTableColumnFlags_WidthFixed,
+        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Value)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::InterpolatedValue)),
+        ImGuiTableColumnFlags_WidthFixed,
+        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::InterpolatedValue)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Label)),
+        ImGuiTableColumnFlags_WidthFixed,
+        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Label)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Region)),
+        ImGuiTableColumnFlags_WidthFixed,
+        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Region)));
+
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Voxel)),
+        ImGuiTableColumnFlags_WidthFixed,
+        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Voxel)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Subject)),
+        ImGuiTableColumnFlags_WidthFixed,
+        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Subject)));
+
+      for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+        ImGui::TableSetColumnEnabled(
+          static_cast<int>(column),
+          appData.guiData().m_inspectionColumnVisible.at(column) || !sk_inspectorColumnCanHide.at(column));
+      }
+
+      if (s_autoSizeColumnsRequested) {
+        for (std::size_t column = 0; column < sk_inspectorColumnDefaultWidths.size(); ++column) {
+          ImGui::TableSetColumnWidth(static_cast<int>(column), sk_inspectorColumnDefaultWidths.at(column));
+        }
+        s_autoSizeColumnsRequested = false;
+      }
 
       ImGui::TableHeadersRow();
 
@@ -494,7 +581,7 @@ void renderInspectionWindowWithTable(
         }
 
         if (subjectPos) {
-          ImGui::TableNextColumn(); // "Physical"
+          ImGui::TableNextColumn(); // "Subject LPS"
 
           // Step size is the  minimum voxel spacing
           const float stepSize = glm::compMin(image->header().spacing());
@@ -516,11 +603,11 @@ void renderInspectionWindowWithTable(
           ImGui::PopItemWidth();
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Physical subject-space coordinate (x: R->L, y: A->P, z: I->S)");
+            ImGui::SetTooltip("Subject-space LPS coordinates in millimeters (x: R->L, y: A->P, z: I->S)");
           }
         }
         else {
-          ImGui::TableNextColumn(); // "Physical"
+          ImGui::TableNextColumn(); // "Subject LPS"
           ImGui::Text("<N/A>");
         }
 
@@ -533,6 +620,7 @@ void renderInspectionWindowWithTable(
     if (ImGui::BeginPopupContextWindow()) {
       // Show context menu on right-button click:
       contextMenu();
+      ImGui::EndPopup();
     }
     else if (ImGui::BeginPopup("selectionPopup")) {
       // Show context menu if the user has clicked the popup button:

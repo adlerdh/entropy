@@ -674,6 +674,9 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       if (s_modifierState.control) {
         app->requestQuitApp();
       }
+      else {
+        H.changeImageOpacity(-0.05);
+      }
       break;
     }
 
@@ -734,7 +737,12 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       break;
     }
     case GLFW_KEY_E: {
-      H.toggleImageEdges();
+      if (s_modifierState.shift) {
+        H.toggleImageEdges();
+      }
+      else {
+        H.changeImageOpacity(0.05);
+      }
       break;
     }
     case GLFW_KEY_O: {

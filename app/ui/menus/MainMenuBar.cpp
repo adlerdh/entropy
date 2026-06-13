@@ -203,8 +203,11 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
   ImGui::Separator();
   actionMenuItem(callbacks, "Show Image", MainMenuAction::ToggleImageVisibility, "W");
   actionMenuItem(callbacks, "Show Segmentation", MainMenuAction::ToggleSegmentationVisibility, "S");
-  actionMenuItem(callbacks, "Show Image Edges", MainMenuAction::ToggleImageEdges, "E");
+  actionMenuItem(callbacks, "Show Image Edges", MainMenuAction::ToggleImageEdges, "Shift+E");
   actionMenuItem(callbacks, "Show Segmentation Outline", MainMenuAction::ToggleSegmentationOutline, "Space");
+  ImGui::Separator();
+  actionMenuItem(callbacks, "Decrease Active Image Opacity", MainMenuAction::DecreaseActiveImageOpacity, "Q");
+  actionMenuItem(callbacks, "Increase Active Image Opacity", MainMenuAction::IncreaseActiveImageOpacity, "E");
   actionMenuItem(callbacks, "Decrease Segmentation Opacity", MainMenuAction::DecreaseSegmentationOpacity, "A");
   actionMenuItem(callbacks, "Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, "D");
   ImGui::Separator();
@@ -432,6 +435,10 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       }
 
       ImGui::Separator();
+      main_menu::actionMenuItem(callbacks, "Add Layout...", MainMenuAction::AddLayout);
+      main_menu::actionMenuItem(callbacks, "Remove Current Layout", MainMenuAction::RemoveLayout);
+
+      ImGui::Separator();
       if (ImGui::MenuItem("Previous", "[", false, callbacks.canUseLayouts && callbacks.cycleLayouts)) {
         callbacks.cycleLayouts(-1);
       }
@@ -451,10 +458,6 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
         }
         ImGui::EndMenu();
       }
-
-      ImGui::Separator();
-      main_menu::actionMenuItem(callbacks, "Add Layout...", MainMenuAction::AddLayout);
-      main_menu::actionMenuItem(callbacks, "Remove Current Layout", MainMenuAction::RemoveLayout);
 
       ImGui::EndMenu();
     }

@@ -266,6 +266,7 @@ public:
   void toggleImageVisibility();
   void toggleImageEdges();
 
+  void changeImageOpacity(double delta);
   void changeSegOpacity(double delta, bool interior);
   void toggleSegVisibility();
   void toggleSegGlobalOutline();

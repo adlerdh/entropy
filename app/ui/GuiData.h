@@ -214,6 +214,21 @@ struct GuiData
   /// Number of digits after the decimal point for percentiles.
   uint32_t m_percentilePrecision = 2;
 
+  /**
+   * @brief Visibility state for the Voxel Inspector table columns.
+   *
+   * The initializer is ordered to match the inspector table column declarations in InspectionTableWindow.cpp.
+   * Interpolated values and region names start hidden, matching the previous table defaults.
+   */
+  std::array<bool, 7> m_inspectionColumnVisible{
+    true,  //!< Image column.
+    true,  //!< Nearest-neighbor image value column.
+    false, //!< Linearly interpolated image value column.
+    true,  //!< Active segmentation label column.
+    false, //!< Active segmentation region name column.
+    true,  //!< Voxel index column.
+    true}; //!< Physical subject coordinate column.
+
   /// ImGui font pointers keyed by UI font name. ImGui owns the pointed-to font data.
   std::unordered_map<std::string, ImFont*> m_fonts;
 

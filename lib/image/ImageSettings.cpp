@@ -1062,7 +1062,7 @@ void ImageSettings::updateWithNewComponentStatistics(
     setting.m_histogramSettings.m_isCumulative = false;
     setting.m_histogramSettings.m_isDensity = false;
     setting.m_histogramSettings.m_isHorizontal = false;
-    setting.m_histogramSettings.m_isLogScale = false;
+    setting.m_histogramSettings.m_isLogScale = true;
     setting.m_histogramSettings.m_useCustomIntensityRange = false;
     setting.m_histogramSettings.m_intensityRange[0] = static_cast<double>(stats.onlineStats.min);
     setting.m_histogramSettings.m_intensityRange[1] = static_cast<double>(stats.onlineStats.max);

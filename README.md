@@ -120,8 +120,10 @@ On macOS, use Command instead of CTRL for application menu shortcuts.
 | Key | Action |
 | --- | --- |
 | `w` | Toggle image visibility |
-| `e` | Toggle image edges |
 | `s` | Toggle segmentation visibility |
+| `q` | Decrease active image opacity |
+| `e` | Increase active image opacity |
+| `shift+e` | Toggle image edges |
 | `a` | Decrease segmentation opacity |
 | `d` | Increase segmentation opacity |
 | `space` | Toggle segmentation outline |

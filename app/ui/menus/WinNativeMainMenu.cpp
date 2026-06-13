@@ -471,12 +471,23 @@ bool populateViewsMenu(HMENU menu)
            position++,
            MainMenuAction::ToggleSegmentationVisibility,
            L"Show &Segmentation\tS") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::ToggleImageEdges, L"Show Image &Edges\tE") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ToggleImageEdges, L"Show Image &Edges\tShift+E") &&
          insertActionMenuItem(
            menu,
            position++,
            MainMenuAction::ToggleSegmentationOutline,
            L"Toggle Segmentation &Outline\tSpace") &&
+         insertSeparator(menu, position++) &&
+         insertActionMenuItem(
+           menu,
+           position++,
+           MainMenuAction::DecreaseActiveImageOpacity,
+           L"Decrease Active Image Opacity\tQ") &&
+         insertActionMenuItem(
+           menu,
+           position++,
+           MainMenuAction::IncreaseActiveImageOpacity,
+           L"Increase Active Image Opacity\tE") &&
          insertActionMenuItem(
            menu,
            position++,
@@ -541,16 +552,11 @@ bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callback
     !insertMenuItem(layoutsMenu, position++, sk_loadLayoutsCommand, L"&Load Layout...") ||
     !insertMenuItem(layoutsMenu, position++, sk_saveLayoutsCommand, L"&Save Layout...") ||
     !insertSeparator(layoutsMenu, position++) ||
-    !insertMenuItem(layoutsMenu, position++, sk_previousLayoutCommand, L"&Previous\t[") ||
-    !insertMenuItem(layoutsMenu, position++, sk_nextLayoutCommand, L"&Next\t]") ||
-    !insertSeparator(layoutsMenu, position++))
-  {
-    return false;
-  }
-
-  if (
     !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::AddLayout, L"&Add Layout...") ||
     !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::RemoveLayout, L"&Remove Current Layout") ||
+    !insertSeparator(layoutsMenu, position++) ||
+    !insertMenuItem(layoutsMenu, position++, sk_previousLayoutCommand, L"&Previous\t[") ||
+    !insertMenuItem(layoutsMenu, position++, sk_nextLayoutCommand, L"&Next\t]") ||
     !insertSeparator(layoutsMenu, position++))
   {
     return false;

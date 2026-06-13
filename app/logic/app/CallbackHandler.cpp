@@ -1857,6 +1857,23 @@ void CallbackHandler::toggleImageEdges()
   m_rendering.updateImageUniforms(*imageUid);
 }
 
+void CallbackHandler::changeImageOpacity(double delta)
+{
+  const auto imageUid = m_appData.activeImageUid();
+  if (!imageUid) {
+    return;
+  }
+
+  Image* image = m_appData.image(*imageUid);
+  if (!image) {
+    return;
+  }
+
+  const double opacity = image->settings().opacity();
+  image->settings().setOpacity(std::clamp(opacity + delta, 0.0, 1.0));
+  m_rendering.updateImageUniforms(*imageUid);
+}
+
 void CallbackHandler::changeSegOpacity(double delta, bool interior)
 {
   if (interior) {

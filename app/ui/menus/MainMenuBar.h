@@ -27,6 +27,8 @@ enum class MainMenuAction
   ToggleSegmentationVisibility,
   ToggleImageEdges,
   ToggleSegmentationOutline,
+  DecreaseActiveImageOpacity,
+  IncreaseActiveImageOpacity,
   DecreaseSegmentationOpacity,
   IncreaseSegmentationOpacity,
   ToggleScaleBars,

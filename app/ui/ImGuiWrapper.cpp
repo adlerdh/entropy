@@ -990,6 +990,12 @@ void ImGuiWrapper::render()
       case MainMenuAction::ToggleSegmentationOutline:
         m_callbackHandler.toggleSegGlobalOutline();
         break;
+      case MainMenuAction::DecreaseActiveImageOpacity:
+        m_callbackHandler.changeImageOpacity(-0.05);
+        break;
+      case MainMenuAction::IncreaseActiveImageOpacity:
+        m_callbackHandler.changeImageOpacity(0.05);
+        break;
       case MainMenuAction::DecreaseSegmentationOpacity:
         m_callbackHandler.changeSegOpacity(-0.05, false);
         break;
@@ -1274,6 +1280,8 @@ void ImGuiWrapper::render()
         case MainMenuAction::ResetView:
         case MainMenuAction::ToggleImageVisibility:
         case MainMenuAction::ToggleImageEdges:
+        case MainMenuAction::DecreaseActiveImageOpacity:
+        case MainMenuAction::IncreaseActiveImageOpacity:
         case MainMenuAction::ToggleScaleBars:
         case MainMenuAction::ToggleLightboxOffsets:
         case MainMenuAction::ToggleOverlays:
@@ -1418,8 +1426,6 @@ void ImGuiWrapper::render()
         return m_appData.renderData().m_showScaleBars;
       case MainMenuAction::ToggleLightboxOffsets:
         return m_appData.renderData().m_showLightboxOffsetLabels;
-      case MainMenuAction::ToggleOverlays:
-        return m_getOverlayVisibility ? m_getOverlayVisibility() : false;
       case MainMenuAction::ToggleSync:
         return m_appData.settings().cursorSyncEnabled();
       case MainMenuAction::ToggleSyncSendCursor:

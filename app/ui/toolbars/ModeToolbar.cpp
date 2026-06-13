@@ -216,7 +216,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show image properties");
+            ImGui::SetTooltip("%s", "Show Image Panel");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -239,7 +239,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show segmentation properties");
+            ImGui::SetTooltip("%s", "Show Segmentation Panel");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -262,7 +262,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show annotation properties");
+            ImGui::SetTooltip("%s", "Show Annotation Panel");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -284,7 +284,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show landmark properties");
+            ImGui::SetTooltip("%s", "Show Landmark Panel");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -306,7 +306,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show isosurface properties");
+            ImGui::SetTooltip("%s", "Show Isosurfaces Panel");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -373,7 +373,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show cursor inspector");
+            ImGui::SetTooltip("%s", "Show Inspector Panel");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
