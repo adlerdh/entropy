@@ -1,5 +1,6 @@
 add_executable(EntropyCommonTests
   InputParserTests.cpp
+  LoggingSettingsTests.cpp
   MathFuncsTests.cpp
 )
 

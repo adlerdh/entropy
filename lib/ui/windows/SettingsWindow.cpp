@@ -6,6 +6,8 @@
 #include "ui/widgets/Widgets.h"
 #include "ui/settings/SettingsModel.h"
 
+#include "common/LoggingSettings.h"
+#include "logic/app/AppPaths.h"
 #include "logic/app/Data.h"
 
 #include <glm/glm.hpp>
@@ -15,8 +17,10 @@
 #include <algorithm>
 #include <array>
 #include <cstdio>
+#include <filesystem>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace ui_settings = entropy::ui::settings;
 
@@ -40,6 +44,71 @@ static constexpr ImGuiColorEditFlags sk_colorAlphaEditFlags =
   ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB |
   ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf |
   ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;
+
+/**
+ * @brief Return an absolute, canonical display path when possible.
+ * @param[in] path Path to normalize for display.
+ * @return Weakly canonical absolute path, or an absolute fallback if canonicalization fails.
+ */
+std::filesystem::path canonicalDisplayPath(const std::filesystem::path& path)
+{
+  std::error_code ec;
+  std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(path, ec);
+  if (!ec) {
+    return canonicalPath;
+  }
+
+  std::filesystem::path absolutePath = std::filesystem::absolute(path, ec);
+  return ec ? path : absolutePath;
+}
+
+/**
+ * @brief Render a copyable, read-only path field.
+ * @param[in] label Field label.
+ * @param[in] path Path text shown in the field.
+ */
+void renderReadOnlyPathField(const char* label, const std::filesystem::path& path)
+{
+  std::string text = canonicalDisplayPath(path).string();
+  std::vector<char> buffer(text.begin(), text.end());
+  buffer.push_back('\0');
+
+  ImGui::PushItemWidth(480.0f);
+  ImGui::InputText(label, buffer.data(), buffer.size(), ImGuiInputTextFlags_ReadOnly);
+  ImGui::PopItemWidth();
+}
+
+/**
+ * @brief Render diagnostic settings that affect runtime logging.
+ */
+void renderDiagnosticsSettings()
+{
+  const auto currentLogLevel = entropy::logging::defaultLoggerSinkLevel();
+  const auto currentLogLevelLabel = entropy::logging::logLevelLabel(currentLogLevel);
+
+  if (ImGui::BeginCombo("Log verbosity", currentLogLevelLabel.data())) {
+    for (const entropy::logging::LogLevelChoice& choice : entropy::logging::allLogLevelChoices()) {
+      if (!entropy::logging::isLogLevelChoiceAvailable(choice)) {
+        continue;
+      }
+
+      const bool selected = choice.level == currentLogLevel;
+      if (ImGui::Selectable(choice.label.data(), selected)) {
+        entropy::logging::setDefaultLoggerSinkLevel(choice.level);
+      }
+      if (selected) {
+        ImGui::SetItemDefaultFocus();
+      }
+    }
+    ImGui::EndCombo();
+  }
+  ImGui::SameLine();
+  helpMarker("Set console and application log file verbosity immediately");
+
+  ImGui::Spacing();
+  renderReadOnlyPathField("Application log", app_paths::logDirectory() / "entropy.txt");
+  renderReadOnlyPathField("ImGui log", app_paths::logDirectory() / "entropy_ui.log");
+}
 
 void renderMetricSettingsPanel(
   RenderData::MetricParams& metricParams,
@@ -716,6 +785,13 @@ void renderInterfaceTab(
     if (applyUiWindowBgOpacity) {
       applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
     }
+  }
+
+  ImGui::Spacing();
+  if (ImGui::TreeNode("Diagnostics")) {
+    renderDiagnosticsSettings();
+    ImGui::Spacing();
+    ImGui::TreePop();
   }
 }
 

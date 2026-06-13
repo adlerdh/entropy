@@ -1,0 +1,41 @@
+#include "common/LoggingSettings.h"
+
+#include <catch2/catch_test_macros.hpp>
+
+#include <algorithm>
+
+TEST_CASE("log level choices are ordered from critical through trace", "[common][logging]")
+{
+  const auto choices = entropy::logging::allLogLevelChoices();
+
+  REQUIRE(choices.size() == 6);
+  CHECK(choices[0].level == spdlog::level::critical);
+  CHECK(choices[1].level == spdlog::level::err);
+  CHECK(choices[2].level == spdlog::level::warn);
+  CHECK(choices[3].level == spdlog::level::info);
+  CHECK(choices[4].level == spdlog::level::debug);
+  CHECK(choices[5].level == spdlog::level::trace);
+}
+
+TEST_CASE("trace log level availability matches compile-time trace support", "[common][logging]")
+{
+  const auto choices = entropy::logging::allLogLevelChoices();
+  const auto traceChoice = std::find_if(choices.begin(), choices.end(), [](const auto& choice) {
+    return choice.level == spdlog::level::trace;
+  });
+
+  REQUIRE(traceChoice != choices.end());
+  CHECK(entropy::logging::isLogLevelChoiceAvailable(*traceChoice) == entropy::logging::traceLoggingAvailable());
+}
+
+TEST_CASE("unavailable trace level is represented as debug in selectable UI state", "[common][logging]")
+{
+  const auto selectableTrace = entropy::logging::selectableLogLevel(spdlog::level::trace);
+
+  if (entropy::logging::traceLoggingAvailable()) {
+    CHECK(selectableTrace == spdlog::level::trace);
+  }
+  else {
+    CHECK(selectableTrace == spdlog::level::debug);
+  }
+}

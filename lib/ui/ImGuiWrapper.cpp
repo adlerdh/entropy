@@ -133,7 +133,8 @@ void renderEmptyWorkspace(
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
   const ImGuiStyle& style = ImGui::GetStyle();
-  const ImVec2 windowPadding{scaledPixel(16.0f), scaledPixel(12.0f)};
+  const float panelMargin = scaledPixel(16.0f);
+  const ImVec2 windowPadding{panelMargin, scaledPixel(20.0f)};
   const char* text = ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No project loaded.";
   constexpr std::array<const char*, 3> buttonLabels{"Open Image(s)...", "Open DICOM Series...", "Open Project..."};
 
@@ -1677,6 +1678,20 @@ void ImGuiWrapper::render()
       renderLoadingStatusBar();
     }
 
+    if (m_appData.guiData().m_showSettingsWindow) {
+      renderSettingsWindow(
+        m_appData,
+        getNumImageColorMaps,
+        getImageColorMap,
+        m_updateMetricUniforms,
+        [this](std::optional<float> scale) { setUserScaleOverride(scale); },
+        [this]() { requestFontReload(); },
+        [this](UiColorPreset preset) { applyUiColorPreset(preset); },
+        [this](UiDensityPreset preset) { applyUiDensityPreset(preset); },
+        [this](float opacity) { applyUiWindowBgOpacity(opacity); },
+        m_recenterAllViews);
+    }
+
     if (!hasLoadedProject) {
       renderAboutDialogModalPopup(m_appData.guiData().m_showAboutDialog);
       m_appData.guiData().m_showAboutDialog = false;
@@ -1699,20 +1714,6 @@ void ImGuiWrapper::render()
         m_appData,
         std::bind(&ImGuiWrapper::storeFuture, this, _1, _2),
         std::bind(&ImGuiWrapper::addTaskToIsosurfaceGpuMeshGenerationQueue, this, _1));
-    }
-
-    if (m_appData.guiData().m_showSettingsWindow) {
-      renderSettingsWindow(
-        m_appData,
-        getNumImageColorMaps,
-        getImageColorMap,
-        m_updateMetricUniforms,
-        [this](std::optional<float> scale) { setUserScaleOverride(scale); },
-        [this]() { requestFontReload(); },
-        [this](UiColorPreset preset) { applyUiColorPreset(preset); },
-        [this](UiDensityPreset preset) { applyUiDensityPreset(preset); },
-        [this](float opacity) { applyUiWindowBgOpacity(opacity); },
-        m_recenterAllViews);
     }
 
     using namespace std::placeholders;
