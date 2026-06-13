@@ -5,6 +5,7 @@
 #include "ui/Helpers.h"
 #include "ui/NativeFileDialogs.h"
 #include "ui/ThirdPartyLicenses.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include "image/Image.h"
 
@@ -34,6 +35,18 @@ void renderConfirmCloseAppPopup(AppData& appData, const std::function<void(void)
 {
   constexpr const char* popupTitle = "Quit Entropy?";
   auto& guiData = appData.guiData();
+
+  if (guiData.m_showConfirmCloseAppPopup) {
+    const auto result =
+      native_dialog::showMessageDialog({popupTitle, "Do you want to quit Entropy?", "", "Quit", "Cancel", ""});
+    if (result) {
+      guiData.m_showConfirmCloseAppPopup = false;
+      if (native_dialog::MessageDialogResult::FirstButton == *result && quitAppWithoutPrompt) {
+        quitAppWithoutPrompt();
+      }
+      return;
+    }
+  }
 
   if (guiData.m_showConfirmCloseAppPopup && !ImGui::IsPopupOpen(popupTitle)) {
     ImGui::OpenPopup(popupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);

@@ -5,6 +5,7 @@
 #include "ui/Helpers.h"
 #include "ui/NativeFileDialogs.h"
 #include "ui/ThirdPartyLicenses.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include "image/Image.h"
 
@@ -36,6 +37,35 @@ void renderConfirmSetReferenceImagePopup(
 {
   constexpr const char* popupTitle = "Set Reference Image?";
 
+  const auto pendingUid = appData.guiData().m_pendingReferenceImageUid;
+  const Image* pendingImage = pendingUid ? appData.image(*pendingUid) : nullptr;
+  const std::string displayName = pendingImage ? pendingImage->settings().displayName() : std::string{"this image"};
+
+  if (appData.guiData().m_showConfirmSetReferenceImagePopup) {
+    const auto result = native_dialog::showMessageDialog(
+      {popupTitle,
+       "Make '" + displayName + "' the reference image?",
+       "Changing the reference image changes the project coordinate frame.\n\n"
+       "Entropy will update the other image transforms to preserve the current registration, but the selected image "
+       "will become the fixed world-space reference.\n\n"
+       "The selected image's manual transform will be reset and locked.\n\n"
+       "Any affine transform file assigned to the selected image will no longer be used as an affine transform for "
+       "that "
+       "image.\n\n"
+       "Unsaved manual-registration changes should be saved after this operation if you want them in the project file.",
+       "Set Reference",
+       "Cancel",
+       ""});
+    if (result) {
+      if (native_dialog::MessageDialogResult::FirstButton == *result && pendingUid && setReferenceImage) {
+        setReferenceImage(*pendingUid);
+      }
+      appData.guiData().m_pendingReferenceImageUid = std::nullopt;
+      appData.guiData().m_showConfirmSetReferenceImagePopup = false;
+      return;
+    }
+  }
+
   if (appData.guiData().m_showConfirmSetReferenceImagePopup && !ImGui::IsPopupOpen(popupTitle)) {
     ImGui::OpenPopup(popupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
   }
@@ -44,10 +74,6 @@ void renderConfirmSetReferenceImagePopup(
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
   if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
-    const auto pendingUid = appData.guiData().m_pendingReferenceImageUid;
-    const Image* pendingImage = pendingUid ? appData.image(*pendingUid) : nullptr;
-    const std::string displayName = pendingImage ? pendingImage->settings().displayName() : std::string{"this image"};
-
     ImGui::Text("Make '%s' the reference image?", displayName.c_str());
     ImGui::Spacing();
     ImGui::TextWrapped("Changing the reference image changes the project coordinate frame.");

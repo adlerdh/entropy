@@ -515,6 +515,7 @@ set(entropy_SOURCES
 
   "${entropy_APP_DIR}/ui/AboutIcon.cpp"
   "${entropy_APP_DIR}/ui/DicomMetadataTable.cpp"
+  "${entropy_APP_DIR}/ui/dialogs/NativeMessageDialogModel.cpp"
   "${entropy_APP_DIR}/ui/GuiData.cpp"
   "${entropy_APP_DIR}/ui/headers/AnnotationHeader.cpp"
   "${entropy_APP_DIR}/ui/headers/ImageHeader.cpp"
@@ -589,6 +590,7 @@ if(APPLE)
 
   list(APPEND entropy_SOURCES
     "${entropy_APP_DIR}/logic/app/AppPathsMac.mm"
+    "${entropy_APP_DIR}/ui/dialogs/NativeMessageDialogsMac.mm"
     "${entropy_APP_DIR}/ui/menus/MacNativeMainMenu.mm"
   )
 endif()
@@ -610,7 +612,14 @@ if(WIN32)
 
   list(APPEND entropy_SOURCES
     "${entropy_WINDOWS_VERSION_RC}"
+    "${entropy_APP_DIR}/ui/dialogs/NativeMessageDialogsWin.cpp"
     "${entropy_APP_DIR}/ui/menus/WinNativeMainMenu.cpp"
+  )
+endif()
+
+if(NOT APPLE AND NOT WIN32)
+  list(APPEND entropy_SOURCES
+    "${entropy_APP_DIR}/ui/dialogs/NativeMessageDialogs.cpp"
   )
 endif()
 

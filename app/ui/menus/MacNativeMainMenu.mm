@@ -402,13 +402,17 @@ void addViewsMenu(NSMenu* mainMenu) {
 void addWindowsMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Window" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Window"];
-  addActionMenuItem(menu, @"Images", MainMenuAction::ToggleImagesWindow);
-  addActionMenuItem(menu, @"Segmentations", MainMenuAction::ToggleSegmentationsWindow);
-  addActionMenuItem(menu, @"Annotations", MainMenuAction::ToggleAnnotationsWindow);
-  addActionMenuItem(menu, @"Landmarks", MainMenuAction::ToggleLandmarksWindow);
-  addActionMenuItem(menu, @"Isosurfaces", MainMenuAction::ToggleIsosurfacesWindow);
-  addActionMenuItem(menu, @"Inspector", MainMenuAction::ToggleInspectorWindow);
-  addActionMenuItem(menu, @"Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
+  addSymbolActionMenuItem(menu, @"Images Panel", MainMenuAction::ToggleImagesWindow, @"photo.stack");
+  addSymbolActionMenuItem(
+    menu,
+    @"Segmentations Panel",
+    MainMenuAction::ToggleSegmentationsWindow,
+    @"square.3.layers.3d");
+  addSymbolActionMenuItem(menu, @"Annotations Panel", MainMenuAction::ToggleAnnotationsWindow, @"pencil.and.outline");
+  addSymbolActionMenuItem(menu, @"Landmarks Panel", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
+  addSymbolActionMenuItem(menu, @"Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow, @"cube.transparent");
+  addSymbolActionMenuItem(menu, @"Inspector", MainMenuAction::ToggleInspectorWindow, @"info.circle");
+  addSymbolActionMenuItem(menu, @"Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow, @"slider.horizontal.3");
   addSymbolActionMenuItem(menu, @"Settings", MainMenuAction::ToggleSettingsWindow, @"gearshape");
   [menu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(menu, @"Toolbar", MainMenuAction::ToggleToolbar);

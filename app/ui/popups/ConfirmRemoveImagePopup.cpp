@@ -5,6 +5,7 @@
 #include "ui/Helpers.h"
 #include "ui/NativeFileDialogs.h"
 #include "ui/ThirdPartyLicenses.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 
 #include "image/Image.h"
 
@@ -36,6 +37,32 @@ void renderConfirmRemoveImagePopup(
 {
   constexpr const char* popupTitle = "Remove Image?";
 
+  const auto pendingUid = appData.guiData().m_pendingRemoveImageUid;
+  const Image* pendingImage = pendingUid ? appData.image(*pendingUid) : nullptr;
+  const std::string displayName = pendingImage ? pendingImage->settings().displayName() : std::string{"this image"};
+
+  if (appData.guiData().m_showConfirmRemoveImagePopup) {
+    const auto result = native_dialog::showMessageDialog(
+      {popupTitle,
+       "Remove '" + displayName + "' from the project?",
+       "This removes the image from the current project and updates the saved project description.\n\n"
+       "Segmentations, deformation fields, landmarks, and annotations used only by this image will be removed from the "
+       "project.\n\n"
+       "Files on disk will not be deleted.\n\n"
+       "Save the project after this operation if you want the removal preserved in the project file.",
+       "Remove",
+       "Cancel",
+       ""});
+    if (result) {
+      if (native_dialog::MessageDialogResult::FirstButton == *result && pendingUid && removeImage) {
+        removeImage(*pendingUid);
+      }
+      appData.guiData().m_pendingRemoveImageUid = std::nullopt;
+      appData.guiData().m_showConfirmRemoveImagePopup = false;
+      return;
+    }
+  }
+
   if (appData.guiData().m_showConfirmRemoveImagePopup && !ImGui::IsPopupOpen(popupTitle)) {
     ImGui::OpenPopup(popupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
   }
@@ -44,10 +71,6 @@ void renderConfirmRemoveImagePopup(
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
   if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
-    const auto pendingUid = appData.guiData().m_pendingRemoveImageUid;
-    const Image* pendingImage = pendingUid ? appData.image(*pendingUid) : nullptr;
-    const std::string displayName = pendingImage ? pendingImage->settings().displayName() : std::string{"this image"};
-
     ImGui::Text("Remove '%s' from the project?", displayName.c_str());
     ImGui::Spacing();
     ImGui::TextWrapped("This removes the image from the current project and updates the saved project description.");
