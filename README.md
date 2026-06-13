@@ -1,9 +1,11 @@
 # ENTROPY MEDICAL IMAGE VIEWER
 *A cross-platform tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images.*
 
-Entropy is developed by Daniel H. Adler with support from the Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania.
+Entropy is developed by the Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania, and Miramonte Software, LLC. Entropy is published by Miramonte Software, LLC.
 
-Copyright 2021-2026 Penn Image Computing and Science Lab (PICSL), University of Pennsylvania, and Daniel H. Adler. All rights reserved.
+Primary author and maintainer: Daniel H. Adler
+
+Copyright 2021-2026 Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania, and Miramonte Software, LLC. All rights reserved.
 
 ## Documentation
 

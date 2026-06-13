@@ -699,7 +699,8 @@ WindowData& EntropyApp::windowData()
 void EntropyApp::logPreamble()
 {
   spdlog::info("{} (version {})", APP_NAME, VERSION_FULL);
-  spdlog::info("{}\n", ORG_NAME_1, ORG_NAME_2);
+  spdlog::info("Developers: {}; {}", PICSL_NAME, MIRAMONTE_NAME);
+  spdlog::info("Publisher: {}\n", PUBLISHER_NAME);
 
   spdlog::debug("Git branch: {}", GIT_BRANCH);
   spdlog::debug("Git commit hash: {}", GIT_COMMIT_SHA1);

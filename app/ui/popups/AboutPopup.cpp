@@ -89,12 +89,13 @@ void renderAboutDialogModalPopup(bool open)
     ImGui::TextLinkOpenURL("https://github.com/adlerdh/entropy", "https://github.com/adlerdh/entropy");
 
     ImGui::Spacing();
-    ImGui::TextWrapped("%s,", ORG_NAME_1);
-    ImGui::TextWrapped("%s", ORG_NAME_2);
+    ImGui::TextWrapped("Developers: %s; %s", PICSL_NAME, MIRAMONTE_NAME);
+    ImGui::TextWrapped("Publisher: %s", PUBLISHER_NAME);
 
     ImGui::Spacing();
-    ImGui::TextWrapped("Copyright 2021-2026 Penn Image Computing and Science Lab (PICSL),");
-    ImGui::TextWrapped("University of Pennsylvania, and Daniel H. Adler.");
+    ImGui::TextWrapped("%s", AUTHOR_CREDIT_LINE);
+    ImGui::TextWrapped("%s", COPYRIGHT_LINE);
+
     ImGui::Spacing();
     ImGui::TextWrapped("%s", LICENSE_LINE);
     ImGui::PopTextWrapPos();

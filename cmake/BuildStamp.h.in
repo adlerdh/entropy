@@ -8,8 +8,10 @@ namespace
 const char APP_NAME[] = "@APP_NAME@";
 const char APP_DESCRIPTION[] = "@APP_DESCRIPTION@";
 const char VERSION_FULL[] = "@VERSION_FULL@";
-const char ORG_NAME_1[] = "@ORG_NAME_1@";
-const char ORG_NAME_2[] = "@ORG_NAME_2@";
+const char PICSL_NAME[] = "@PICSL_NAME@";
+const char MIRAMONTE_NAME[] = "@MIRAMONTE_NAME@";
+const char PUBLISHER_NAME[] = "@PUBLISHER_NAME@";
+const char AUTHOR_CREDIT_LINE[] = "@AUTHOR_CREDIT_LINE@";
 const char COPYRIGHT_LINE[] = "@COPYRIGHT_LINE@";
 const char LICENSE_LINE[] = "@LICENSE_LINE@";
 
