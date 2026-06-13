@@ -5,6 +5,7 @@
 #include "ui/Style.h"
 #include "ui/IsosurfaceHeader.h"
 #include "ui/Widgets.h"
+#include "ui/settings/SettingsModel.h"
 #include <imGuIZMOquat.h>
 
 #include "common/DirectionMaps.h"
@@ -39,6 +40,7 @@
 #include <string>
 
 namespace fs = std::filesystem;
+namespace ui_settings = entropy::ui::settings;
 
 namespace
 {
@@ -1447,67 +1449,17 @@ void renderSettingsWindow(
           if (showScaleBars) {
             ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_scaleBarColor), sk_colorAlphaEditFlags);
 
-            auto scaleBarPositionName = [](ScaleBarPosition position) {
-              switch (position) {
-                case ScaleBarPosition::BottomRight:
-                  return "Right bottom";
-                case ScaleBarPosition::BottomLeft:
-                  return "Left bottom";
-                case ScaleBarPosition::TopRight:
-                  return "Right top";
-                case ScaleBarPosition::TopLeft:
-                  return "Left top";
-                case ScaleBarPosition::Bottom:
-                  return "Bottom";
-                case ScaleBarPosition::Top:
-                  return "Top";
-                case ScaleBarPosition::Left:
-                  return "Left";
-                case ScaleBarPosition::Right:
-                  return "Right";
-              }
-              return "Right bottom";
-            };
-
-            auto forcedScaleBarOrientation = [](ScaleBarPosition position) -> std::optional<ScaleBarOrientation> {
-              switch (position) {
-                case ScaleBarPosition::Bottom:
-                case ScaleBarPosition::Top:
-                  return ScaleBarOrientation::Horizontal;
-                case ScaleBarPosition::Left:
-                case ScaleBarPosition::Right:
-                  return ScaleBarOrientation::Vertical;
-                case ScaleBarPosition::BottomRight:
-                case ScaleBarPosition::BottomLeft:
-                case ScaleBarPosition::TopRight:
-                case ScaleBarPosition::TopLeft:
-                  return std::nullopt;
-              }
-              return std::nullopt;
-            };
-
             auto setScaleBarPosition = [&](ScaleBarPosition position) {
               renderData.m_scaleBarPosition = position;
-              if (const auto forcedOrientation = forcedScaleBarOrientation(position)) {
-                renderData.m_scaleBarOrientation = *forcedOrientation;
-              }
+              renderData.m_scaleBarOrientation =
+                ui_settings::normalizedScaleBarOrientation(position, renderData.m_scaleBarOrientation);
             };
 
-            const std::array<ScaleBarPosition, 8> scaleBarPositions{
-              ScaleBarPosition::BottomRight,
-              ScaleBarPosition::Right,
-              ScaleBarPosition::TopRight,
-              ScaleBarPosition::Top,
-              ScaleBarPosition::TopLeft,
-              ScaleBarPosition::Left,
-              ScaleBarPosition::BottomLeft,
-              ScaleBarPosition::Bottom};
-
             ImGui::Spacing();
-            if (ImGui::BeginCombo("Position", scaleBarPositionName(renderData.m_scaleBarPosition))) {
-              for (const auto position : scaleBarPositions) {
+            if (ImGui::BeginCombo("Position", ui_settings::scaleBarPositionName(renderData.m_scaleBarPosition))) {
+              for (const auto position : ui_settings::orderedScaleBarPositions()) {
                 const bool selected = position == renderData.m_scaleBarPosition;
-                if (ImGui::Selectable(scaleBarPositionName(position), selected)) {
+                if (ImGui::Selectable(ui_settings::scaleBarPositionName(position), selected)) {
                   setScaleBarPosition(position);
                 }
                 if (selected) {
@@ -1517,22 +1469,7 @@ void renderSettingsWindow(
               ImGui::EndCombo();
             }
 
-            struct ScaleBarPositionButton
-            {
-              ScaleBarPosition position;
-              const char* label;
-            };
-            const std::array<ScaleBarPositionButton, 8> scaleBarPositionButtons{
-              ScaleBarPositionButton{ScaleBarPosition::TopLeft, "LT"},
-              ScaleBarPositionButton{ScaleBarPosition::Top, "T"},
-              ScaleBarPositionButton{ScaleBarPosition::TopRight, "RT"},
-              ScaleBarPositionButton{ScaleBarPosition::Left, "L"},
-              ScaleBarPositionButton{ScaleBarPosition::Right, "R"},
-              ScaleBarPositionButton{ScaleBarPosition::BottomLeft, "LB"},
-              ScaleBarPositionButton{ScaleBarPosition::Bottom, "B"},
-              ScaleBarPositionButton{ScaleBarPosition::BottomRight, "RB"}};
-
-            auto drawScaleBarPositionButton = [&](const ScaleBarPositionButton& button) {
+            auto drawScaleBarPositionButton = [&](const ui_settings::ScaleBarPositionButton& button) {
               static constexpr ImVec2 sk_buttonSize{32.0f, 24.0f};
               const bool selected = button.position == renderData.m_scaleBarPosition;
               if (selected) {
@@ -1545,10 +1482,11 @@ void renderSettingsWindow(
                 ImGui::PopStyleColor();
               }
               if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("%s", scaleBarPositionName(button.position));
+                ImGui::SetTooltip("%s", ui_settings::scaleBarPositionName(button.position));
               }
             };
 
+            const auto& scaleBarPositionButtons = ui_settings::scaleBarPositionButtons();
             for (int i = 0; i < 3; ++i) {
               drawScaleBarPositionButton(scaleBarPositionButtons[static_cast<std::size_t>(i)]);
               if (i < 2) {
@@ -1569,10 +1507,11 @@ void renderSettingsWindow(
               }
             }
 
-            if (const auto forcedOrientation = forcedScaleBarOrientation(renderData.m_scaleBarPosition)) {
-              renderData.m_scaleBarOrientation = *forcedOrientation;
-            }
-            else {
+            renderData.m_scaleBarOrientation = ui_settings::normalizedScaleBarOrientation(
+              renderData.m_scaleBarPosition,
+              renderData.m_scaleBarOrientation);
+
+            if (ui_settings::canChooseScaleBarOrientation(renderData.m_scaleBarPosition)) {
               ImGui::Spacing();
               ImGui::Text("Orientation:");
               if (ImGui::RadioButton(
@@ -1593,24 +1532,20 @@ void renderSettingsWindow(
             }
 
             ImGui::Spacing();
-            int targetLengthPercent = 5 * static_cast<int>(std::round(20.0f * renderData.m_scaleBarTargetFraction));
-            targetLengthPercent = std::clamp(targetLengthPercent, 5, 100);
+            int targetLengthPercent = ui_settings::targetLengthPercentFromFraction(renderData.m_scaleBarTargetFraction);
             ImGui::PushItemWidth(180);
             if (ImGui::SliderInt("Target length", &targetLengthPercent, 5, 100, "%d%%", ImGuiSliderFlags_AlwaysClamp)) {
-              targetLengthPercent = 5 * static_cast<int>(std::round(static_cast<float>(targetLengthPercent) / 5.0f));
-              renderData.m_scaleBarTargetFraction =
-                static_cast<float>(std::clamp(targetLengthPercent, 5, 100)) / 100.0f;
+              renderData.m_scaleBarTargetFraction = ui_settings::targetLengthFractionFromPercent(targetLengthPercent);
             }
             ImGui::PopItemWidth();
             ImGui::SameLine();
             helpMarker(
               "Approximate fraction of the view occupied by the scale bar before rounding to a clean physical length");
 
-            int scaleBarMarginPx = static_cast<int>(std::round(renderData.m_scaleBarMarginPx));
-            scaleBarMarginPx = std::clamp(scaleBarMarginPx, 12, 96);
+            int scaleBarMarginPx = ui_settings::marginPixelsFromFloat(renderData.m_scaleBarMarginPx);
             ImGui::PushItemWidth(180);
             if (ImGui::SliderInt("Margin", &scaleBarMarginPx, 12, 96, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
-              renderData.m_scaleBarMarginPx = static_cast<float>(std::clamp(scaleBarMarginPx, 12, 96));
+              renderData.m_scaleBarMarginPx = ui_settings::marginFloatFromPixels(scaleBarMarginPx);
             }
             ImGui::PopItemWidth();
             ImGui::SameLine();
@@ -1660,37 +1595,18 @@ void renderSettingsWindow(
       }
 
       if (ImGui::BeginTabItem("Interface")) {
-        struct UiScaleChoice
-        {
-          const char* label;
-          std::optional<float> scale;
-        };
-
-        static const std::array<UiScaleChoice, 12> sk_uiScaleChoices{
-          UiScaleChoice{"Auto", std::nullopt},
-          UiScaleChoice{"50%", 0.5f},
-          UiScaleChoice{"75%", 0.75f},
-          UiScaleChoice{"100%", 1.0f},
-          UiScaleChoice{"125%", 1.25f},
-          UiScaleChoice{"150%", 1.5f},
-          UiScaleChoice{"175%", 1.75f},
-          UiScaleChoice{"200%", 2.0f},
-          UiScaleChoice{"225%", 2.25f},
-          UiScaleChoice{"250%", 2.5f},
-          UiScaleChoice{"275%", 2.75f},
-          UiScaleChoice{"300%", 3.0f}};
-
         const auto currentScale = appData.settings().uiScaleOverride();
+        const auto& uiScaleChoices = ui_settings::uiScaleChoices();
         auto currentChoice = std::find_if(
-          sk_uiScaleChoices.begin(),
-          sk_uiScaleChoices.end(),
-          [&currentScale](const UiScaleChoice& choice) { return choice.scale == currentScale; });
-        if (currentChoice == sk_uiScaleChoices.end()) {
-          currentChoice = sk_uiScaleChoices.begin();
+          uiScaleChoices.begin(),
+          uiScaleChoices.end(),
+          [&currentScale](const ui_settings::ScaleChoice& choice) { return choice.scale == currentScale; });
+        if (currentChoice == uiScaleChoices.end()) {
+          currentChoice = uiScaleChoices.begin();
         }
 
         if (ImGui::BeginCombo("UI scale", currentChoice->label)) {
-          for (const UiScaleChoice& choice : sk_uiScaleChoices) {
+          for (const ui_settings::ScaleChoice& choice : uiScaleChoices) {
             const bool selected = choice.scale == currentScale;
             if (ImGui::Selectable(choice.label, selected)) {
               appData.settings().setUiScaleOverride(choice.scale);
@@ -1709,28 +1625,18 @@ void renderSettingsWindow(
           "Auto uses the platform UI scale. On macOS this is 100% so Retina backing scale keeps rendering sharp "
           "without enlarging the interface.");
 
-        struct UiFontChoice
-        {
-          const char* label;
-          UiFontFamily family;
-        };
-
-        static const std::array<UiFontChoice, 3> sk_uiFontChoices{
-          UiFontChoice{"Inter", UiFontFamily::Inter},
-          UiFontChoice{"Roboto", UiFontFamily::Roboto},
-          UiFontChoice{"Cousine", UiFontFamily::Cousine}};
-
         const UiFontFamily currentFamily = appData.settings().uiFontFamily();
-        auto currentFontChoice =
-          std::find_if(sk_uiFontChoices.begin(), sk_uiFontChoices.end(), [currentFamily](const UiFontChoice& choice) {
-            return choice.family == currentFamily;
-          });
-        if (currentFontChoice == sk_uiFontChoices.end()) {
-          currentFontChoice = sk_uiFontChoices.begin();
+        const auto& uiFontChoices = ui_settings::visibleFontChoices();
+        auto currentFontChoice = std::find_if(
+          uiFontChoices.begin(),
+          uiFontChoices.end(),
+          [currentFamily](const ui_settings::FontChoice& choice) { return choice.family == currentFamily; });
+        if (currentFontChoice == uiFontChoices.end()) {
+          currentFontChoice = uiFontChoices.begin();
         }
 
         if (ImGui::BeginCombo("UI font", currentFontChoice->label)) {
-          for (const UiFontChoice& choice : sk_uiFontChoices) {
+          for (const ui_settings::FontChoice& choice : uiFontChoices) {
             const bool selected = choice.family == currentFamily;
             if (ImGui::Selectable(choice.label, selected)) {
               appData.settings().setUiFontFamily(choice.family);
@@ -1745,20 +1651,9 @@ void renderSettingsWindow(
           ImGui::EndCombo();
         }
 
-        static constexpr std::array<UiColorPreset, 9> sk_uiColorPresets{
-          UiColorPreset::EntropyDark,
-          UiColorPreset::ImGuiDark,
-          UiColorPreset::ImGuiClassic,
-          UiColorPreset::ImGuiLight,
-          UiColorPreset::SlateBlue,
-          UiColorPreset::Graphite,
-          UiColorPreset::DeepTeal,
-          UiColorPreset::Midnight,
-          UiColorPreset::SoftLight};
-
         const UiColorPreset currentColorPreset = appData.settings().uiColorPreset();
         if (ImGui::BeginCombo("UI colors", uiColorPresetName(currentColorPreset))) {
-          for (const UiColorPreset preset : sk_uiColorPresets) {
+          for (const UiColorPreset preset : ui_settings::uiColorPresets()) {
             const bool selected = preset == currentColorPreset;
             if (ImGui::Selectable(uiColorPresetName(preset), selected)) {
               appData.settings().setUiColorPreset(preset);
@@ -1773,14 +1668,9 @@ void renderSettingsWindow(
           ImGui::EndCombo();
         }
 
-        static constexpr std::array<UiDensityPreset, 3> sk_uiDensityPresets{
-          UiDensityPreset::Compact,
-          UiDensityPreset::Default,
-          UiDensityPreset::Comfortable};
-
         const UiDensityPreset currentDensityPreset = appData.settings().uiDensityPreset();
         if (ImGui::BeginCombo("UI density", uiDensityPresetName(currentDensityPreset))) {
-          for (const UiDensityPreset preset : sk_uiDensityPresets) {
+          for (const UiDensityPreset preset : ui_settings::uiDensityPresets()) {
             const bool selected = preset == currentDensityPreset;
             if (ImGui::Selectable(uiDensityPresetName(preset), selected)) {
               appData.settings().setUiDensityPreset(preset);
@@ -2294,8 +2184,6 @@ void renderSettingsWindow(
       }
 
       if (ImGui::BeginTabItem("Precision")) {
-        static constexpr uint32_t sk_minPrecision = 0;
-        static constexpr uint32_t sk_maxPrecision = 9;
         static constexpr uint32_t sk_stepPrecision = 1;
 
         ImGui::PushID("precision"); /*** PushID precision ***/
@@ -2315,11 +2203,9 @@ void renderSettingsWindow(
               &sk_stepPrecision,
               "%d"))
         {
-          appData.guiData().m_imageValuePrecision =
-            std::min(std::max(valuePrecision, sk_minPrecision), sk_maxPrecision);
-
+          appData.guiData().m_imageValuePrecision = ui_settings::clampPrecision(valuePrecision);
           appData.guiData().m_imageValuePrecisionFormat =
-            std::string("%0.") + std::to_string(appData.guiData().m_imageValuePrecision) + std::string("f");
+            ui_settings::precisionFormat(appData.guiData().m_imageValuePrecision);
         }
         ImGui::SameLine();
         helpMarker("Floating-point precision of image values (e.g. in Inspector window)");
@@ -2332,7 +2218,7 @@ void renderSettingsWindow(
               &sk_stepPrecision,
               "%d"))
         {
-          appData.guiData().m_coordsPrecision = std::min(std::max(coordPrecision, sk_minPrecision), sk_maxPrecision);
+          appData.guiData().m_coordsPrecision = ui_settings::clampPrecision(coordPrecision);
           appData.guiData().setCoordsPrecisionFormat();
         }
         ImGui::SameLine();
@@ -2346,7 +2232,7 @@ void renderSettingsWindow(
               &sk_stepPrecision,
               "%d"))
         {
-          appData.guiData().m_txPrecision = std::min(std::max(txPrecision, sk_minPrecision), sk_maxPrecision);
+          appData.guiData().m_txPrecision = ui_settings::clampPrecision(txPrecision);
           appData.guiData().setTxPrecisionFormat();
         }
         ImGui::SameLine();
@@ -2360,11 +2246,9 @@ void renderSettingsWindow(
               &sk_stepPrecision,
               "%d"))
         {
-          appData.guiData().m_percentilePrecision =
-            std::min(std::max(percentilePrecision, sk_minPrecision), sk_maxPrecision);
-
+          appData.guiData().m_percentilePrecision = ui_settings::clampPrecision(percentilePrecision);
           appData.guiData().m_percentilePrecisionFormat =
-            std::string("%0.") + std::to_string(appData.guiData().m_percentilePrecision) + std::string("f");
+            ui_settings::precisionFormat(appData.guiData().m_percentilePrecision);
         }
         ImGui::SameLine();
         helpMarker("Floating-point precision of percentiles (e.g. in histogram)");
@@ -3170,141 +3054,4 @@ void renderInspectionWindowWithTable(
   // ImGuiStyleVar_WindowPadding
   // ImGuiStyleVar_WindowRounding
   ImGui::PopStyleVar(7);
-}
-
-void renderOpacityBlenderWindow(AppData& appData, const std::function<void(const uuid& imageUid)>& updateImageUniforms)
-{
-  /// @todo Use the "Drag and drop to copy/swap items" ImGui demo in order to allow reordering image
-  /// layers by dragging the opacity sliders
-
-  RenderData& renderData = appData.renderData();
-
-  static const char* windowName = "Image Opacity Mixer";
-
-  if (!appData.guiData().m_showOpacityBlenderWindow) return;
-
-  const bool showWindow = ImGui::Begin(
-    windowName,
-    &(appData.guiData().m_showOpacityBlenderWindow),
-    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
-
-  if (!showWindow) {
-    ImGui::End();
-    return;
-  }
-
-  int imageIndex = 0;
-
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
-    Image* image = appData.image(imageUid);
-    if (!image) {
-      continue;
-    }
-
-    ImageSettings& imgSettings = image->settings();
-    const ImageHeader& imgHeader = image->header();
-
-    const glm::vec3 borderColorHsv = glm::hsvColor(imgSettings.borderColor());
-
-    const float hue = borderColorHsv[0];
-    const float sat = borderColorHsv[1];
-    const float val = borderColorHsv[2];
-
-    const glm::vec3 frameBgColor = glm::rgbColor(glm::vec3{hue, 0.5f * sat, 0.5f * val});
-    const glm::vec3 frameBgActiveColor = glm::rgbColor(glm::vec3{hue, 0.7f * sat, 0.5f * val});
-    const glm::vec3 frameBgHoveredColor = glm::rgbColor(glm::vec3{hue, 0.6f * sat, 0.5f * val});
-    const glm::vec3 sliderGrabColor = glm::rgbColor(glm::vec3{hue, sat, val});
-
-    ImGui::PushID(imageIndex);
-
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(frameBgColor.r, frameBgColor.g, frameBgColor.b, 1.0f));
-    ImGui::PushStyleColor(
-      ImGuiCol_FrameBgActive,
-      ImVec4(frameBgActiveColor.r, frameBgActiveColor.g, frameBgActiveColor.b, 1.0f));
-    ImGui::PushStyleColor(
-      ImGuiCol_FrameBgHovered,
-      ImVec4(frameBgHoveredColor.r, frameBgHoveredColor.g, frameBgHoveredColor.b, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(sliderGrabColor.r, sliderGrabColor.g, sliderGrabColor.b, 1.0f));
-
-    const std::string name = imgSettings.displayName() + "##" + std::to_string(imageIndex);
-
-    if (imgSettings.displayImageAsColor()) {
-      double opacity = imgSettings.globalOpacity();
-      if (mySliderF64(name.c_str(), &opacity, 0.0, 1.0) && !renderData.m_opacityMixMode) {
-        imgSettings.setGlobalOpacity(opacity);
-        updateImageUniforms(imageUid);
-      }
-    }
-    else {
-      double opacity = imgSettings.opacity();
-      if (mySliderF64(name.c_str(), &opacity, 0.0, 1.0) && !renderData.m_opacityMixMode) {
-        imgSettings.setOpacity(opacity);
-        updateImageUniforms(imageUid);
-      }
-    }
-
-    if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("%s", imgHeader.fileName().c_str());
-    }
-
-    // ImGuiCol_FrameBg
-    // ImGuiCol_FrameBgActive
-    // ImGuiCol_FrameBgHovered
-    // ImGuiCol_SliderGrab
-    ImGui::PopStyleColor(4);
-    ImGui::PopID();
-  }
-
-  static double mix = 0.0;
-
-  if (appData.numImages() > 1) {
-    ImGui::Checkbox("Comparison blender", &(renderData.m_opacityMixMode));
-    ImGui::SameLine();
-    helpMarker("Use a single slider to blend across all adjacent image layers");
-  }
-  else {
-    renderData.m_opacityMixMode = false;
-  }
-
-  if (renderData.m_opacityMixMode) {
-    mySliderF64("Blend", &mix, 0.0, static_cast<double>(appData.numImages() - 1));
-
-    const double imgIndex = mix;
-
-    const double frac = imgIndex - std::floor(imgIndex);
-
-    size_t imgIndexLo = static_cast<size_t>(std::floor(imgIndex));
-    size_t imgIndexHi = static_cast<size_t>(std::ceil(imgIndex));
-
-    for (std::size_t i = 0; i < appData.numImages(); ++i) {
-      const auto imgUid = appData.imageUid(i);
-      if (!imgUid) continue;
-
-      Image* img = appData.image(*imgUid);
-      if (!img) continue;
-
-      double op = 0.0;
-
-      if (i < imgIndexLo || imgIndexHi < i) {
-        op = 0.0;
-      }
-      else if (imgIndexLo == i) {
-        op = 1.0 - frac;
-      }
-      else if (imgIndexHi == i) {
-        op = frac;
-      }
-
-      if (img->settings().displayImageAsColor()) {
-        img->settings().setGlobalOpacity(op);
-      }
-      else {
-        img->settings().setOpacity(op);
-      }
-
-      updateImageUniforms(*imgUid);
-    }
-  }
-
-  ImGui::End();
 }

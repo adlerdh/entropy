@@ -36,6 +36,8 @@ catch_discover_tests(EntropyLayoutTests)
 
 add_executable(EntropyUiTests
   "${entropy_APP_DIR}/rendering/test/ScaleBarGeometryTests.cpp"
+  "${entropy_APP_DIR}/ui/test/OpacityMixerModelTests.cpp"
+  "${entropy_APP_DIR}/ui/test/SettingsModelTests.cpp"
   "${entropy_APP_DIR}/ui/test/StyleTests.cpp"
   "${entropy_APP_DIR}/ui/test/UiScaleManagerTests.cpp"
   "${entropy_APP_DIR}/windowing/test/LinuxUiScaleTests.cpp"
@@ -44,7 +46,9 @@ add_executable(EntropyUiTests
 target_sources(EntropyUiTests PRIVATE
   "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"
   "${entropy_APP_DIR}/ui/Style.cpp"
+  "${entropy_APP_DIR}/ui/settings/SettingsModel.cpp"
   "${entropy_APP_DIR}/ui/UiScaleManager.cpp"
+  "${entropy_APP_DIR}/ui/windows/OpacityMixerModel.cpp"
   "${entropy_APP_DIR}/windowing/LinuxUiScale.cpp"
 )
 

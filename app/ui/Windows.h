@@ -168,7 +168,3 @@ void renderInspectionWindowWithTable(
   const std::function<std::vector<double>(size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesLinear,
   const std::function<std::optional<int64_t>(size_t imageIndex)>& getSegLabel,
   const std::function<ParcellationLabelTable*(size_t tableIndex)>& getLabelTable);
-
-void renderOpacityBlenderWindow(
-  AppData& appData,
-  const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms);

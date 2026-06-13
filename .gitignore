@@ -6,6 +6,7 @@ build*/**
 out/**
 log*/**
 /_CPack_Packages/
+/Testing/
 /*.dmg
 /*.deb
 **/*.autosave

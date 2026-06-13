@@ -5,6 +5,18 @@
 
 namespace
 {
+float expectedAutoScale(float contentScale)
+{
+#if defined(__APPLE__)
+  // macOS Retina content scale controls framebuffer sharpness, not logical UI size.
+  (void)contentScale;
+  return 1.0f;
+#else
+  // Windows and Linux use OS content scale as the automatic logical UI scale.
+  return contentScale;
+#endif
+}
+
 struct ImGuiContextScope
 {
   ImGuiContextScope()
@@ -30,7 +42,7 @@ TEST_CASE("UI scale manager applies auto content scale", "[ui][scale]")
 
   REQUIRE(manager.applyContentScale(2.0f));
   REQUIRE(manager.contentScale() == Catch::Approx(2.0f));
-  REQUIRE(manager.effectiveScale() == Catch::Approx(2.0f));
+  REQUIRE(manager.effectiveScale() == Catch::Approx(expectedAutoScale(2.0f)));
   REQUIRE(reloadCount == 1);
 }
 
@@ -67,6 +79,6 @@ TEST_CASE("UI scale manager keeps manual override independent from content scale
   REQUIRE(reloadCount == 1);
 
   manager.setUserScaleOverride(std::nullopt);
-  REQUIRE(manager.effectiveScale() == Catch::Approx(2.0f));
+  REQUIRE(manager.effectiveScale() == Catch::Approx(expectedAutoScale(2.0f)));
   REQUIRE(reloadCount == 2);
 }

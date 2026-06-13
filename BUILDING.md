@@ -109,7 +109,7 @@ Run the release build from `build-release/bin`. For package commands, see [PACKA
 The app build also builds the test binaries. Run tests against the build tree you just built:
 
 ```sh
-ctest --test-dir build-default --output-on-failure
+ctest --test-dir build-default --parallel --output-on-failure
 ```
 
 For release or debug builds, replace `build-default` with `build-release` or `build-debug`.

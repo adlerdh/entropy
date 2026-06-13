@@ -15,6 +15,7 @@
 #include "ui/Style.h"
 #include "ui/Toolbars.h"
 #include "ui/Windows.h"
+#include "ui/windows/OpacityMixerWindow.h"
 #ifdef _WIN32
 #include "ui/WinNativeMainMenu.h"
 #endif
