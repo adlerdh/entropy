@@ -112,7 +112,7 @@ void applyCustomDarkStyle(ImGuiStyle* dst)
   colors[ImGuiCol_FrameBgHovered] = ImVec4(0.40f, 0.40f, 0.40f, 0.40f);
   colors[ImGuiCol_FrameBgActive] = ImVec4(0.20f, 0.41f, 0.68f, 1.00f);
   colors[ImGuiCol_TitleBg] = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
-  colors[ImGuiCol_TitleBgActive] = ImVec4(0.29f, 0.29f, 0.29f, 1.00f);
+  colors[ImGuiCol_TitleBgActive] = ImVec4(0.22f, 0.25f, 0.30f, 1.00f);
   colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
   colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
   colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
@@ -127,9 +127,9 @@ void applyCustomDarkStyle(ImGuiStyle* dst)
   colors[ImGuiCol_ButtonHovered] = ImVec4(0.46f, 0.47f, 0.48f, 1.00f);
   // colors[ImGuiCol_ButtonActive]         = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
   colors[ImGuiCol_ButtonActive] = ImVec4(0.20f, 0.41f, 0.68f, 1.00f);
-  colors[ImGuiCol_Header] = ImVec4(0.70f, 0.70f, 0.70f, 0.31f);
-  colors[ImGuiCol_HeaderHovered] = ImVec4(0.70f, 0.70f, 0.70f, 0.80f);
-  colors[ImGuiCol_HeaderActive] = ImVec4(0.20f, 0.41f, 0.68f, 1.00f);
+  colors[ImGuiCol_HeaderActive] = ImVec4(0.22f, 0.29f, 0.38f, 1.00f);
+  colors[ImGuiCol_Header] = colors[ImGuiCol_HeaderActive];
+  colors[ImGuiCol_HeaderHovered] = colors[ImGuiCol_HeaderActive];
   colors[ImGuiCol_Separator] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
   colors[ImGuiCol_SeparatorHovered] = ImVec4(0.72f, 0.72f, 0.72f, 0.78f);
   colors[ImGuiCol_SeparatorActive] = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);

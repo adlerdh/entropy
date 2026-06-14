@@ -2,6 +2,8 @@
 #include "BuildStamp.h"
 
 #include "logic/app/DataHelper.h"
+#include "logic/app/AppPaths.h"
+#include "logic/app/UserPreferences.h"
 #include "common/DirectionMaps.h"
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
@@ -466,6 +468,19 @@ void EntropyApp::init()
 #else
   m_data.guiData().m_showMainMenuBar = true;
 #endif
+
+  {
+    std::string preferencesError;
+    const fs::path settingsFile = app_paths::userSettingsFile();
+    if (!user_preferences::load(m_data.settings(), m_data.renderData(), settingsFile, &preferencesError)) {
+      spdlog::warn("Using built-in settings after failing to load {}: {}", settingsFile, preferencesError);
+    }
+    m_imgui.setUserScaleOverride(m_data.settings().uiScaleOverride());
+    m_imgui.requestFontReload();
+    m_imgui.applyUiColorPreset(m_data.settings().uiColorPreset());
+    m_imgui.applyUiDensityPreset(m_data.settings().uiDensityPreset());
+    m_imgui.applyUiWindowBgOpacity(m_data.settings().uiWindowBgOpacity());
+  }
 
   m_rendering.init();
   m_glfw.init(); // Trigger initial windowing callbacks

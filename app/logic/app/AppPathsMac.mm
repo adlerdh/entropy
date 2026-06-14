@@ -98,4 +98,8 @@ std::filesystem::path userDataDirectory() {
   return ".";
 }
 
+std::filesystem::path userSettingsFile() {
+  return userDataDirectory() / "settings.json";
+}
+
 }  // namespace app_paths

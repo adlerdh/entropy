@@ -2,7 +2,9 @@
 
 #include "ui/Helpers.h"
 #include "ui/ImGuiCustomControls.h"
+#include "ui/NativeFileDialogs.h"
 #include "ui/Style.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 #include "ui/widgets/Widgets.h"
 #include "ui/settings/SettingsModel.h"
 
@@ -244,7 +246,7 @@ void renderMetricSettingsPanel(
 }
 
 /**
- * @brief Render the Views settings tab contents.
+ * @brief Render the Views settings page contents.
  */
 void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRecenterType& recenterAllViews)
 {
@@ -282,9 +284,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
   // Crosshairs
-  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-
-  if (ImGui::TreeNode("Crosshairs")) {
+  if (ImGui::CollapsingHeader("Crosshairs", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_crosshairsColor), sk_colorAlphaEditFlags);
 
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -310,15 +310,10 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     }
     ImGui::SameLine();
     helpMarker("Do not snap crosshairs to image voxels");
-
-    ImGui::Spacing();
-    ImGui::TreePop();
   }
 
   // View centering:
-  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-
-  if (ImGui::TreeNode("View Recentering")) {
+  if (ImGui::CollapsingHeader("View recentering", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::Text("Center views and crosshairs on:");
 
     ImGui::SameLine();
@@ -421,27 +416,17 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     }
     ImGui::SameLine();
     helpMarker("Recenter views and crosshairs on all loaded images");
-
-    ImGui::Spacing();
-    ImGui::TreePop();
   }
 
   // View backgrounds:
-  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-
-  if (ImGui::TreeNode("View Backgrounds")) {
+  if (ImGui::CollapsingHeader("Background color", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::ColorEdit3("2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), sk_colorEditFlags);
 
     ImGui::ColorEdit4("3D background color", glm::value_ptr(renderData.m_3dBackgroundColor), sk_colorAlphaEditFlags);
-
-    ImGui::Spacing();
-    ImGui::TreePop();
   }
 
   // Anatomical labels:
-  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-
-  if (ImGui::TreeNode("Anatomical Labels")) {
+  if (ImGui::CollapsingHeader("Anatomical labels", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::ColorEdit4("Text color", glm::value_ptr(renderData.m_anatomicalLabelColor), sk_colorAlphaEditFlags);
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
@@ -512,14 +497,9 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     }
     ImGui::SameLine();
     helpMarker("Anatomical left is on view left; anatomical right is on view right");
-
-    ImGui::Spacing();
-    ImGui::TreePop();
   }
 
-  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-
-  if (ImGui::TreeNode("Scale Bars")) {
+  if (ImGui::CollapsingHeader("Scale bars", ImGuiTreeNodeFlags_DefaultOpen)) {
     bool showScaleBars = renderData.m_showScaleBars;
     if (ImGui::Checkbox("Show scale bars", &showScaleBars)) {
       renderData.m_showScaleBars = showScaleBars;
@@ -653,12 +633,9 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       ImGui::SameLine();
       helpMarker("Add evenly spaced extra ticks when the scale bar is long enough for readable subdivisions");
     }
-
-    ImGui::Spacing();
-    ImGui::TreePop();
   }
 
-  if (ImGui::TreeNode("Lightbox")) {
+  if (ImGui::CollapsingHeader("Lightbox views", ImGuiTreeNodeFlags_DefaultOpen)) {
     bool showOffsetLabels = renderData.m_showLightboxOffsetLabels;
     if (ImGui::Checkbox("Show slice offset labels", &showOffsetLabels)) {
       renderData.m_showLightboxOffsetLabels = showOffsetLabels;
@@ -672,14 +649,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
         glm::value_ptr(renderData.m_lightboxOffsetLabelColor),
         sk_colorAlphaEditFlags);
     }
-
-    ImGui::Spacing();
-    ImGui::TreePop();
   }
 }
 
 /**
- * @brief Render the Interface settings tab contents.
+ * @brief Render the Interface settings page contents.
  */
 void renderInterfaceTab(
   AppData& appData,
@@ -746,7 +720,7 @@ void renderInterfaceTab(
   }
 
   const UiColorPreset currentColorPreset = appData.settings().uiColorPreset();
-  if (ImGui::BeginCombo("UI colors", uiColorPresetName(currentColorPreset))) {
+  if (ImGui::BeginCombo("UI color scheme", uiColorPresetName(currentColorPreset))) {
     for (const UiColorPreset preset : ui_settings::uiColorPresets()) {
       const bool selected = preset == currentColorPreset;
       if (ImGui::Selectable(uiColorPresetName(preset), selected)) {
@@ -786,17 +760,47 @@ void renderInterfaceTab(
       applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
     }
   }
+}
 
-  ImGui::Spacing();
-  if (ImGui::TreeNode("Diagnostics")) {
+/**
+ * @brief Render the System settings page contents.
+ */
+void renderSystemTab(AppData& appData)
+{
+  if (ImGui::CollapsingHeader("Diagnostics", ImGuiTreeNodeFlags_DefaultOpen)) {
     renderDiagnosticsSettings();
     ImGui::Spacing();
-    ImGui::TreePop();
+  }
+
+  if (ImGui::CollapsingHeader("Developer tools")) {
+    ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
+    ImGui::Checkbox("Show ImPlot demo window", &(appData.guiData().m_showImPlotDemoWindow));
   }
 }
 
 /**
- * @brief Render the Synchronize settings tab contents.
+ * @brief Render intensity projection default settings.
+ */
+void renderIntensityProjectionDefaults(RenderData& renderData);
+
+/**
+ * @brief Render the image settings page contents.
+ */
+void renderImagesTab(AppData& appData)
+{
+  if (ImGui::CollapsingHeader("Image display defaults", ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::Checkbox(
+      "Floating-point linear image interpolation",
+      &appData.renderData().m_imageGrayFloatingPointInterpolation);
+    ImGui::SameLine();
+    helpMarker("Use floating-point instead of 8-bit fixed-point linear interpolation for grayscale images");
+  }
+
+  renderIntensityProjectionDefaults(appData.renderData());
+}
+
+/**
+ * @brief Render the Synchronization settings page contents.
  */
 void renderSynchronizeTab(AppData& appData)
 {
@@ -876,60 +880,177 @@ void renderSynchronizeTab(AppData& appData)
 }
 
 /**
- * @brief Render the Segmentation settings tab contents.
+ * @brief Render the Segmentation settings page contents.
  */
-void renderSegmentationTab(RenderData& renderData)
+void renderSegmentationTab(AppData& appData, RenderData& renderData)
 {
-  // Modulate opacity of segmentation with opacity of image:
-  ImGui::Checkbox("Modulate segmentation with image opacity", &renderData.m_modulateSegOpacityWithImageOpacity);
-  ImGui::SameLine();
-  helpMarker("Modulate opacity of segmentation with opacity of image");
+  if (ImGui::CollapsingHeader("Display", ImGuiTreeNodeFlags_DefaultOpen)) {
+    // Modulate opacity of segmentation with opacity of image:
+    ImGui::Checkbox("Modulate segmentation with image opacity", &renderData.m_modulateSegOpacityWithImageOpacity);
+    ImGui::SameLine();
+    helpMarker("Modulate opacity of segmentation with opacity of image");
 
-  ImGui::Dummy(ImVec2(0.0f, 1.0f));
+    ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
-  ImGui::Text("Boundary outline:");
-  if (ImGui::RadioButton("Outline view pixels", SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle)) {
-    renderData.m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
-  }
-  ImGui::SameLine();
-  helpMarker("Outline the outer view pixels of the image segmentation regions");
+    ImGui::Text("Boundary outline:");
+    if (ImGui::RadioButton("Outline view pixels", SegmentationOutlineStyle::ViewPixel == renderData.m_segOutlineStyle))
+    {
+      renderData.m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
+    }
+    ImGui::SameLine();
+    helpMarker("Outline the outer view pixels of the image segmentation regions");
 
-  if (ImGui::RadioButton("Outline image voxels", SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle))
-  {
-    renderData.m_segOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
-  }
-  ImGui::SameLine();
-  helpMarker("Outline the outer voxels of the image segmentation regions");
+    if (ImGui::RadioButton(
+          "Outline image voxels",
+          SegmentationOutlineStyle::ImageVoxel == renderData.m_segOutlineStyle))
+    {
+      renderData.m_segOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
+    }
+    ImGui::SameLine();
+    helpMarker("Outline the outer voxels of the image segmentation regions");
 
-  if (ImGui::RadioButton("Disable (no outline)", SegmentationOutlineStyle::Disabled == renderData.m_segOutlineStyle)) {
-    renderData.m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
-  }
-  ImGui::SameLine();
-  helpMarker("Disable segmentation outlining");
+    if (ImGui::RadioButton("Disable (no outline)", SegmentationOutlineStyle::Disabled == renderData.m_segOutlineStyle))
+    {
+      renderData.m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
+    }
+    ImGui::SameLine();
+    helpMarker("Disable segmentation outlining");
 
-  if (SegmentationOutlineStyle::Disabled != renderData.m_segOutlineStyle) {
+    if (SegmentationOutlineStyle::Disabled != renderData.m_segOutlineStyle) {
+      ImGui::Spacing();
+      ImGui::Dummy(ImVec2(0.0f, 1.0f));
+
+      // Modulate opacity of interior of segmentation:
+      mySliderF32("Interior opacity", &(renderData.m_segInteriorOpacity), 0.0f, 1.0f);
+      ImGui::SameLine();
+      helpMarker("Modulate opacity of interior of segmentation");
+    }
+
     ImGui::Spacing();
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
-    // Modulate opacity of interior of segmentation:
-    mySliderF32("Interior opacity", &(renderData.m_segInteriorOpacity), 0.0f, 1.0f);
+    float interpCutoff = renderData.m_segInterpCutoff;
+    if (mySliderF32("Erosion factor", &interpCutoff, 0.5f, 1.0f)) {
+      renderData.m_segInterpCutoff = interpCutoff;
+    }
     ImGui::SameLine();
-    helpMarker("Modulate opacity of interior of segmentation");
+    helpMarker("Cutoff used to erode segmentation boundaries in linear or cubic interpolation mode");
   }
 
-  ImGui::Spacing();
-  ImGui::Dummy(ImVec2(0.0f, 1.0f));
+  if (ImGui::CollapsingHeader("Brush")) {
+    AppSettings& settings = appData.settings();
 
-  float interpCutoff = renderData.m_segInterpCutoff;
-  if (mySliderF32("Erosion factor", &interpCutoff, 0.5f, 1.0f)) {
-    renderData.m_segInterpCutoff = interpCutoff;
+    bool useRound = settings.useRoundBrush();
+    if (ImGui::RadioButton("Round", useRound)) {
+      settings.setUseRoundBrush(true);
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Square", !useRound)) {
+      settings.setUseRoundBrush(false);
+    }
+    ImGui::SameLine();
+    helpMarker("Default segmentation brush shape");
+
+    bool use3d = settings.use3dBrush();
+    if (ImGui::RadioButton("2D", !use3d)) {
+      settings.setUse3dBrush(false);
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("3D", use3d)) {
+      settings.setUse3dBrush(true);
+    }
+    ImGui::SameLine();
+    helpMarker("Default segmentation brush dimensionality");
+
+    bool useIso = settings.useIsotropicBrush();
+    if (ImGui::Checkbox("Isotropic brush", &useIso)) {
+      settings.setUseIsotropicBrush(useIso);
+    }
+
+    bool replaceBgWithFg = settings.replaceBackgroundWithForeground();
+    if (ImGui::Checkbox("Replace background with foreground", &replaceBgWithFg)) {
+      settings.setReplaceBackgroundWithForeground(replaceBgWithFg);
+    }
+
+    bool xhairsMove = settings.crosshairsMoveWithBrush();
+    if (ImGui::Checkbox("Crosshairs move with brush", &xhairsMove)) {
+      settings.setCrosshairsMoveWithBrush(xhairsMove);
+    }
   }
-  ImGui::SameLine();
-  helpMarker("Cutoff used to erode segmentation boundaries in linear or cubic interpolation mode");
+
+  if (ImGui::CollapsingHeader("Brush preview")) {
+    AppSettings& settings = appData.settings();
+    BrushPreviewMode previewMode = settings.brushPreviewMode();
+
+    if (ImGui::RadioButton("Hover##brushPreview", BrushPreviewMode::Hover == previewMode)) {
+      settings.setBrushPreviewMode(BrushPreviewMode::Hover);
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Off##brushPreview", BrushPreviewMode::Disabled == previewMode)) {
+      settings.setBrushPreviewMode(BrushPreviewMode::Disabled);
+    }
+    ImGui::SameLine();
+    helpMarker("Show the voxels that the brush would affect");
+
+    if (BrushPreviewMode::Disabled != settings.brushPreviewMode()) {
+      BrushPreviewVoxels previewVoxels = settings.brushPreviewVoxels();
+      if (ImGui::RadioButton("Changed voxels##brushPreviewVoxels", BrushPreviewVoxels::Changed == previewVoxels)) {
+        settings.setBrushPreviewVoxels(BrushPreviewVoxels::Changed);
+      }
+      ImGui::SameLine();
+      if (ImGui::RadioButton("All voxels##brushPreviewVoxels", BrushPreviewVoxels::All == previewVoxels)) {
+        settings.setBrushPreviewVoxels(BrushPreviewVoxels::All);
+      }
+
+      BrushPreviewStyle previewStyle = settings.brushPreviewStyle();
+      if (ImGui::RadioButton("Outline##brushPreviewStyle", BrushPreviewStyle::Outline == previewStyle)) {
+        settings.setBrushPreviewStyle(BrushPreviewStyle::Outline);
+      }
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Outline + fill##brushPreviewStyle", BrushPreviewStyle::OutlineAndFill == previewStyle)) {
+        settings.setBrushPreviewStyle(BrushPreviewStyle::OutlineAndFill);
+      }
+
+      if (BrushPreviewStyle::OutlineAndFill == settings.brushPreviewStyle()) {
+        float previewFillOpacityPercent = 100.0f * settings.brushPreviewFillOpacity();
+        ImGui::PushItemWidth(150);
+        if (ImGui::SliderFloat(
+              "Fill opacity##brushPreviewFillOpacity",
+              &previewFillOpacityPercent,
+              0.0f,
+              100.0f,
+              "%.0f%%"))
+        {
+          settings.setBrushPreviewFillOpacity(previewFillOpacityPercent / 100.0f);
+        }
+        ImGui::PopItemWidth();
+      }
+
+      bool previewWhilePainting = settings.brushPreviewWhilePainting();
+      if (ImGui::Checkbox("Show while painting##brushPreviewWhilePainting", &previewWhilePainting)) {
+        settings.setBrushPreviewWhilePainting(previewWhilePainting);
+      }
+
+      SegmentationOutlineStyle previewOutlineStyle = settings.brushPreviewOutlineStyle();
+      if (ImGui::RadioButton(
+            "Pixel outline##brushPreviewOutlineStyle",
+            SegmentationOutlineStyle::ViewPixel == previewOutlineStyle))
+      {
+        settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ViewPixel);
+      }
+      ImGui::SameLine();
+      if (ImGui::RadioButton(
+            "Voxel outline##brushPreviewOutlineStyle",
+            SegmentationOutlineStyle::ImageVoxel == previewOutlineStyle))
+      {
+        settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ImageVoxel);
+      }
+    }
+  }
 }
 
 /**
- * @brief Render the Metrics settings tab contents.
+ * @brief Render the Metrics settings section contents.
  */
 void renderMetricsTab(
   AppData& appData,
@@ -940,35 +1061,29 @@ void renderMetricsTab(
 {
   ImGui::PushID("metrics"); /*** PushID metrics ***/
 
-  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-  if (ImGui::TreeNode("Difference")) {
-    ImGui::PushID("diff");
-    {
-      // Difference type:
-      if (ImGui::RadioButton("Absolute", false == renderData.m_useSquare)) {
-        renderData.m_useSquare = false;
-      }
-
-      ImGui::SameLine();
-      if (ImGui::RadioButton("Squared difference", true == renderData.m_useSquare)) {
-        renderData.m_useSquare = true;
-      }
-      ImGui::SameLine();
-      helpMarker("Compute absolute or squared difference");
-
-      renderMetricSettingsPanel(
-        renderData.m_squaredDifferenceParams,
-        appData.guiData().m_showDifferenceColormapWindow,
-        "sqdiff",
-        updateMetricUniforms,
-        getNumImageColorMaps,
-        getImageColorMap);
+  ImGui::PushID("diff");
+  {
+    // Difference type:
+    if (ImGui::RadioButton("Absolute", false == renderData.m_useSquare)) {
+      renderData.m_useSquare = false;
     }
-    ImGui::PopID(); // "diff"
 
-    ImGui::Separator();
-    ImGui::TreePop();
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Squared difference", true == renderData.m_useSquare)) {
+      renderData.m_useSquare = true;
+    }
+    ImGui::SameLine();
+    helpMarker("Compute absolute or squared difference");
+
+    renderMetricSettingsPanel(
+      renderData.m_squaredDifferenceParams,
+      appData.guiData().m_showDifferenceColormapWindow,
+      "sqdiff",
+      updateMetricUniforms,
+      getNumImageColorMaps,
+      getImageColorMap);
   }
+  ImGui::PopID(); // "diff"
 
   /*
   ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
@@ -991,7 +1106,7 @@ void renderMetricsTab(
 }
 
 /**
- * @brief Render the Comparison modes settings tab contents.
+ * @brief Render the Comparison modes settings section contents.
  */
 void renderComparisonModesTab(RenderData& renderData)
 {
@@ -1086,7 +1201,71 @@ void renderComparisonModesTab(RenderData& renderData)
 }
 
 /**
- * @brief Render the Raycasting settings tab contents.
+ * @brief Render intensity projection default settings.
+ */
+void renderIntensityProjectionDefaults(RenderData& renderData)
+{
+  if (!ImGui::CollapsingHeader("Intensity projection defaults", ImGuiTreeNodeFlags_DefaultOpen)) {
+    return;
+  }
+
+  ImGui::TextWrapped(
+    "These values are used when intensity projection is enabled from a view overlay. Per-view projection modes are "
+    "still selected from the view overlay.");
+
+  ImGui::Spacing();
+
+  bool doMaxExtent = renderData.m_doMaxExtentIntensityProjection;
+  if (ImGui::Checkbox("Use maximum image extent", &doMaxExtent)) {
+    renderData.m_doMaxExtentIntensityProjection = doMaxExtent;
+  }
+  ImGui::SameLine();
+  helpMarker("Compute maximum, minimum, mean, and x-ray projections over the full image extent");
+
+  if (!renderData.m_doMaxExtentIntensityProjection) {
+    float thickness = renderData.m_intensityProjectionSlabThickness;
+    ImGui::PushItemWidth(180.0f);
+    if (ImGui::InputFloat("Slab thickness (mm)", &thickness, 0.1f, 1.0f, "%0.2f")) {
+      if (thickness >= 0.0f) {
+        renderData.m_intensityProjectionSlabThickness = thickness;
+      }
+    }
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    helpMarker("Default slab thickness for maximum, minimum, mean, and x-ray projections");
+  }
+
+  ImGui::Spacing();
+  ImGui::Text("X-ray projection:");
+
+  float energy = renderData.m_xrayEnergyKeV;
+  ImGui::PushItemWidth(180.0f);
+  if (ImGui::DragFloat(
+        "Energy",
+        &energy,
+        10.0f,
+        1.0f,
+        20.0e3f,
+        "%0.3f KeV",
+        ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic))
+  {
+    renderData.setXrayEnergy(energy / 1000.0f);
+  }
+
+  float window = renderData.m_xrayIntensityWindow;
+  if (mySliderF32("Width", &window, 1.0e-3f, 1.0f, "%0.3f")) {
+    renderData.m_xrayIntensityWindow = window;
+  }
+
+  float level = renderData.m_xrayIntensityLevel;
+  if (mySliderF32("Level", &level, 0.0f, 1.0f, "%0.3f")) {
+    renderData.m_xrayIntensityLevel = level;
+  }
+  ImGui::PopItemWidth();
+}
+
+/**
+ * @brief Render the Raycasting settings section contents.
  */
 void renderRaycastingTab(RenderData& renderData)
 {
@@ -1163,13 +1342,18 @@ void renderRaycastingTab(RenderData& renderData)
 }
 
 /**
- * @brief Render the Rendering settings tab contents.
+ * @brief Render the Rendering settings page contents.
  */
-void renderRenderingTab(AppData& appData, RenderData& renderData)
+void renderRenderingTab(RenderData& renderData)
 {
   ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
   ImGui::SameLine();
   helpMarker("Manually limit the rendering frame rate");
+
+  RenderData& rd = renderData;
+  ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
+  ImGui::SameLine();
+  helpMarker("Render grayscale images as ASCII art");
 
   if (renderData.m_manualFramerateLimiter) {
     constexpr float hzSpeed = 1.0e-1f;
@@ -1209,28 +1393,13 @@ void renderRenderingTab(AppData& appData, RenderData& renderData)
     }
   }
 
-  ImGui::Spacing();
-  ImGui::Dummy(ImVec2(0.0f, 1.0f));
-
-  ImGui::Checkbox(
-    "Floating-point linear image interpolation",
-    &appData.renderData().m_imageGrayFloatingPointInterpolation);
-  ImGui::SameLine();
-  helpMarker(
-    "Use floating-point (instead of 8-bit fixed-point) linear image interpolation for the "
-    "images");
-
-  ImGui::Separator();
+  if (ImGui::CollapsingHeader("Raycasting")) {
+    renderRaycastingTab(renderData);
+  }
 
   // ASCII rendering controls
-  if (ImGui::CollapsingHeader("ASCII Shading")) {
-    RenderData& rd = appData.renderData();
-
+  if (ImGui::CollapsingHeader("ASCII shading")) {
     ImGui::PushID("ascii");
-
-    ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
-    ImGui::SameLine();
-    helpMarker("Render grayscale images as ASCII art");
 
     if (rd.m_asciiEnabled) {
       static const char* charsetNames[] = {" .,:-=+*#%@  (short)", "Paul Bourke 70-char", "01 (binary)"};
@@ -1260,14 +1429,65 @@ void renderRenderingTab(AppData& appData, RenderData& renderData)
 
     ImGui::PopID(); /*** PopID ascii ***/
   }
-
-  ImGui::Separator();
-  ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
-  ImGui::Checkbox("Show ImPlot demo window", &(appData.guiData().m_showImPlotDemoWindow));
 }
 
 /**
- * @brief Render the Annotations settings tab contents.
+ * @brief Confirm and then restore built-in application settings.
+ * @param persistenceCallbacks File-backed user settings callbacks.
+ */
+void requestRestoreDefaults(const SettingsPersistenceCallbacks& persistenceCallbacks)
+{
+  const auto result = native_dialog::showMessageDialog(
+    {"Restore default settings?",
+     "Restore all application settings to their built-in defaults?",
+     "This changes the current session immediately. Use Save to write the restored settings to disk.",
+     "Restore Defaults",
+     "Cancel",
+     ""});
+
+  if (result && native_dialog::MessageDialogResult::FirstButton == *result) {
+    if (persistenceCallbacks.restoreDefaults) {
+      persistenceCallbacks.restoreDefaults();
+    }
+    return;
+  }
+
+  if (!result) {
+    ImGui::OpenPopup("Restore default settings?");
+  }
+}
+
+/**
+ * @brief Render the ImGui fallback confirmation popup for restoring defaults.
+ * @param persistenceCallbacks File-backed user settings callbacks.
+ */
+void renderRestoreDefaultsPopup(const SettingsPersistenceCallbacks& persistenceCallbacks)
+{
+  if (ImGui::BeginPopupModal("Restore default settings?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::TextWrapped("Restore all application settings to their built-in defaults?");
+    ImGui::Spacing();
+    ImGui::TextWrapped(
+      "This changes the current session immediately. Use Save to write the restored settings to disk.");
+    ImGui::Spacing();
+
+    if (ImGui::Button("Restore Defaults")) {
+      if (persistenceCallbacks.restoreDefaults) {
+        persistenceCallbacks.restoreDefaults();
+      }
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+}
+
+/**
+ * @brief Render the Annotations settings page contents.
  */
 void renderAnnotationsTab(RenderData& renderData)
 {
@@ -1298,7 +1518,7 @@ void renderAnnotationsTab(RenderData& renderData)
 }
 
 /**
- * @brief Render the Precision settings tab contents.
+ * @brief Render the Precision settings section contents.
  */
 void renderPrecisionTab(AppData& appData)
 {
@@ -1351,7 +1571,7 @@ void renderPrecisionTab(AppData& appData)
   helpMarker("Floating-point precision of image transformation parameters");
 
   if (ImGui::InputScalar(
-        "Pecentiles",
+        "Percentiles",
         ImGuiDataType_U32,
         &percentilePrecision,
         &sk_stepPrecision,
@@ -1370,8 +1590,38 @@ void renderPrecisionTab(AppData& appData)
 
 } // namespace
 
-void renderSettingsWindow(
+/**
+ * @brief Render the side navigation and update the selected settings page.
+ * @param[in,out] selectedPage Currently selected settings page.
+ */
+static void renderSettingsNavigation(GuiData::SettingsTab& selectedPage)
+{
+  for (const ui_settings::SettingsPageChoice& choice : ui_settings::settingsPageChoices()) {
+    if (ImGui::Selectable(choice.label, selectedPage == choice.page)) {
+      selectedPage = choice.page;
+    }
+  }
+}
+
+/**
+ * @brief Render the selected settings page.
+ * @param page Settings page to render.
+ * @param appData Application data containing mutable settings.
+ * @param renderData Rendering settings.
+ * @param getNumImageColorMaps Callback returning the number of color maps.
+ * @param getImageColorMap Callback returning a color map by index.
+ * @param updateMetricUniforms Callback that refreshes metric rendering uniforms.
+ * @param setUiScaleOverride Callback that applies or clears a manual UI scale override.
+ * @param requestFontReload Callback that rebuilds ImGui/NanoVG font resources.
+ * @param applyUiColorPreset Callback that applies a color preset immediately.
+ * @param applyUiDensityPreset Callback that applies a density preset immediately.
+ * @param applyUiWindowBgOpacity Callback that applies window background opacity immediately.
+ * @param recenterAllViews Callback used by settings that reposition views.
+ */
+static void renderSettingsPage(
+  GuiData::SettingsTab page,
   AppData& appData,
+  RenderData& renderData,
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
   const std::function<void(void)>& updateMetricUniforms,
@@ -1382,74 +1632,161 @@ void renderSettingsWindow(
   const std::function<void(float opacity)>& applyUiWindowBgOpacity,
   const AllViewsRecenterType& recenterAllViews)
 {
-  if (ImGui::Begin("Settings", &(appData.guiData().m_showSettingsWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
-    static const ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+  ImGui::TextUnformatted(ui_settings::settingsPageLabel(page));
+  ImGui::Separator();
+  ImGui::Spacing();
 
+  switch (page) {
+    case GuiData::SettingsTab::Interface:
+      renderInterfaceTab(
+        appData,
+        setUiScaleOverride,
+        requestFontReload,
+        applyUiColorPreset,
+        applyUiDensityPreset,
+        applyUiWindowBgOpacity);
+      if (ImGui::CollapsingHeader("Precision")) {
+        renderPrecisionTab(appData);
+      }
+      break;
+    case GuiData::SettingsTab::Views:
+      renderViewsTab(appData, renderData, recenterAllViews);
+      break;
+    case GuiData::SettingsTab::Images:
+      renderImagesTab(appData);
+      break;
+    case GuiData::SettingsTab::Segmentation:
+      renderSegmentationTab(appData, renderData);
+      break;
+    case GuiData::SettingsTab::Comparison:
+      renderMetricsTab(appData, renderData, updateMetricUniforms, getNumImageColorMaps, getImageColorMap);
+      renderComparisonModesTab(renderData);
+      break;
+    case GuiData::SettingsTab::Rendering:
+      renderRenderingTab(renderData);
+      break;
+    case GuiData::SettingsTab::Annotations:
+      renderAnnotationsTab(renderData);
+      break;
+    case GuiData::SettingsTab::System:
+      renderSystemTab(appData);
+      break;
+    case GuiData::SettingsTab::Synchronization:
+      renderSynchronizeTab(appData);
+      break;
+  }
+}
+
+void renderSettingsWindow(
+  AppData& appData,
+  const std::function<size_t(void)>& getNumImageColorMaps,
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
+  const std::function<void(void)>& updateMetricUniforms,
+  const std::function<void(std::optional<float> scale)>& setUiScaleOverride,
+  const std::function<void()>& requestFontReload,
+  const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
+  const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
+  const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const SettingsPersistenceCallbacks& persistenceCallbacks,
+  const AllViewsRecenterType& recenterAllViews)
+{
+  static GuiData::SettingsTab s_selectedPage = GuiData::SettingsTab::Views;
+
+  if (appData.guiData().m_requestedSettingsTab) {
+    s_selectedPage = *appData.guiData().m_requestedSettingsTab;
+    appData.guiData().m_requestedSettingsTab = std::nullopt;
+  }
+
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  const ImVec2 maxSize =
+    (viewport != nullptr) ? ImVec2{viewport->WorkSize.x * 0.8f, viewport->WorkSize.y * 0.8f} : ImVec2{960.0f, 720.0f};
+  ImGui::SetNextWindowSizeConstraints(ImVec2{560.0f, 420.0f}, maxSize);
+  ImGui::SetNextWindowSize(ImVec2{760.0f, 560.0f}, ImGuiCond_FirstUseEver);
+
+  if (ImGui::Begin("Settings", &(appData.guiData().m_showSettingsWindow))) {
     RenderData& renderData = appData.renderData();
 
-    if (ImGui::BeginTabBar("##SettingsTabs", tab_bar_flags)) {
-      const auto requestedTab = appData.guiData().m_requestedSettingsTab;
-      if (ImGui::BeginTabItem("Views")) {
-        renderViewsTab(appData, renderData, recenterAllViews);
-        ImGui::EndTabItem();
-      }
+    const ImGuiStyle& style = ImGui::GetStyle();
+    static constexpr float sk_navigationWidth = 156.0f;
+    const float footerHeight =
+      (2.0f * ImGui::GetFrameHeightWithSpacing()) + style.ItemSpacing.y + style.WindowPadding.y;
 
-      if (ImGui::BeginTabItem("Interface")) {
-        renderInterfaceTab(
+    if (ImGui::BeginChild("##SettingsBody", ImVec2{0.0f, -footerHeight}, ImGuiChildFlags_None)) {
+      if (ImGui::BeginChild("##SettingsNavigation", ImVec2{sk_navigationWidth, 0.0f}, ImGuiChildFlags_Borders)) {
+        renderSettingsNavigation(s_selectedPage);
+      }
+      ImGui::EndChild();
+
+      ImGui::SameLine();
+
+      if (ImGui::BeginChild("##SettingsPage", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_Borders)) {
+        renderSettingsPage(
+          s_selectedPage,
           appData,
+          renderData,
+          getNumImageColorMaps,
+          getImageColorMap,
+          updateMetricUniforms,
           setUiScaleOverride,
           requestFontReload,
           applyUiColorPreset,
           applyUiDensityPreset,
-          applyUiWindowBgOpacity);
-        ImGui::EndTabItem();
+          applyUiWindowBgOpacity,
+          recenterAllViews);
       }
-
-      const ImGuiTabItemFlags syncTabFlags =
-        (requestedTab == GuiData::SettingsTab::Synchronize) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
-      if (ImGui::BeginTabItem("Synchronize", nullptr, syncTabFlags)) {
-        renderSynchronizeTab(appData);
-        ImGui::EndTabItem();
-      }
-
-      if (ImGui::BeginTabItem("Segmentation")) {
-        renderSegmentationTab(renderData);
-        ImGui::EndTabItem();
-      }
-
-      if (ImGui::BeginTabItem("Metrics")) {
-        renderMetricsTab(appData, renderData, updateMetricUniforms, getNumImageColorMaps, getImageColorMap);
-        ImGui::EndTabItem();
-      }
-
-      if (ImGui::BeginTabItem("Comparison modes")) {
-        renderComparisonModesTab(renderData);
-        ImGui::EndTabItem();
-      }
-
-      if (ImGui::BeginTabItem("Raycasting")) {
-        renderRaycastingTab(renderData);
-        ImGui::EndTabItem();
-      }
-
-      if (ImGui::BeginTabItem("Rendering")) {
-        renderRenderingTab(appData, renderData);
-        ImGui::EndTabItem();
-      }
-
-      if (ImGui::BeginTabItem("Annotations")) {
-        renderAnnotationsTab(renderData);
-        ImGui::EndTabItem();
-      }
-
-      if (ImGui::BeginTabItem("Precision")) {
-        renderPrecisionTab(appData);
-        ImGui::EndTabItem();
-      }
-
-      ImGui::EndTabBar();
-      appData.guiData().m_requestedSettingsTab = std::nullopt;
+      ImGui::EndChild();
     }
+    ImGui::EndChild();
+
+    if (ImGui::BeginChild("##SettingsFooter", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar)) {
+      ImGui::Separator();
+      renderReadOnlyPathField("Settings file", persistenceCallbacks.settingsFile);
+
+      if (const std::string statusText =
+            persistenceCallbacks.statusText ? persistenceCallbacks.statusText() : std::string{};
+          !statusText.empty())
+      {
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", statusText.c_str());
+      }
+
+      const float buttonY = std::max(
+        ImGui::GetCursorPosY(),
+        ImGui::GetWindowHeight() - style.WindowPadding.y - style.ItemSpacing.y - ImGui::GetFrameHeight());
+      ImGui::SetCursorPosY(buttonY);
+      if (ImGui::Button("Close")) {
+        appData.guiData().m_showSettingsWindow = false;
+      }
+
+      ImGui::SameLine();
+      if (ImGui::Button("Restore Defaults")) {
+        requestRestoreDefaults(persistenceCallbacks);
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Save")) {
+        if (persistenceCallbacks.saveSettings) {
+          persistenceCallbacks.saveSettings();
+        }
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Save As...")) {
+        const std::filesystem::path defaultDirectory = persistenceCallbacks.settingsFile.parent_path();
+        const std::string defaultName = persistenceCallbacks.settingsFile.filename().empty()
+                                          ? std::string{"entropy-settings.json"}
+                                          : persistenceCallbacks.settingsFile.filename().string();
+        if (
+          const auto selectedFile =
+            native_dialog::saveFile({native_dialog::Filter{"Entropy settings", "json"}}, defaultDirectory, defaultName))
+        {
+          if (persistenceCallbacks.saveSettingsAs) {
+            persistenceCallbacks.saveSettingsAs(*selectedFile);
+          }
+        }
+      }
+    }
+    ImGui::EndChild();
+
+    renderRestoreDefaultsPopup(persistenceCallbacks);
   }
 
   ImGui::End();

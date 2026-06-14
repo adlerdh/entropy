@@ -196,4 +196,31 @@ const std::array<UiDensityPreset, 3>& uiDensityPresets()
   return sk_presets;
 }
 
+const std::array<SettingsPageChoice, 9>& settingsPageChoices()
+{
+  static constexpr std::array<SettingsPageChoice, 9> sk_choices{
+    SettingsPageChoice{GuiData::SettingsTab::Views, "Views"},
+    SettingsPageChoice{GuiData::SettingsTab::Interface, "Interface"},
+    SettingsPageChoice{GuiData::SettingsTab::Images, "Images"},
+    SettingsPageChoice{GuiData::SettingsTab::Segmentation, "Segmentation"},
+    SettingsPageChoice{GuiData::SettingsTab::Comparison, "Comparison"},
+    SettingsPageChoice{GuiData::SettingsTab::Rendering, "Rendering"},
+    SettingsPageChoice{GuiData::SettingsTab::Annotations, "Annotations"},
+    SettingsPageChoice{GuiData::SettingsTab::Synchronization, "Synchronization"},
+    SettingsPageChoice{GuiData::SettingsTab::System, "System"}};
+
+  return sk_choices;
+}
+
+const char* settingsPageLabel(GuiData::SettingsTab page)
+{
+  for (const SettingsPageChoice& choice : settingsPageChoices()) {
+    if (choice.page == page) {
+      return choice.label;
+    }
+  }
+
+  return "Views";
+}
+
 } // namespace entropy::ui::settings

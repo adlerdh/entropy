@@ -466,6 +466,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/app/ParcellationLabelTable.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/State.cpp"
+  "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"
 
   "${entropy_APP_DIR}/logic/annotation/Annotation.cpp"
   "${entropy_APP_DIR}/logic/annotation/BezierHelper.cpp"

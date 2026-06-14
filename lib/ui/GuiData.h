@@ -21,11 +21,19 @@
 struct GuiData
 {
   /**
-   * @brief Settings tabs that can be requested programmatically.
+   * @brief Settings pages that can be requested programmatically.
    */
   enum class SettingsTab : std::uint8_t
   {
-    Synchronize //!< Synchronization settings tab.
+    Views,           //!< View, overlay, crosshair, lightbox, and scale bar settings page.
+    Interface,       //!< Interface appearance and behavior settings page.
+    Images,          //!< Global image display default settings page.
+    Segmentation,    //!< Segmentation display and brush settings page.
+    Comparison,      //!< Image comparison and metric settings page.
+    Rendering,       //!< Rendering, projection, raycasting, and ASCII settings page.
+    Annotations,     //!< Annotation and landmark display settings page.
+    Synchronization, //!< ITK-SNAP synchronization settings page.
+    System           //!< System, runtime, and diagnostics settings page.
   };
 
   /// Global setting to turn on/off rendering of the UI windows.
@@ -40,7 +48,7 @@ struct GuiData
   bool m_showAnnotationsWindow = false;                             //!< Show the annotations window.
   bool m_showIsosurfacesWindow = false;                             //!< Show the isosurfaces window.
   bool m_showSettingsWindow = false;                                //!< Show the settings window.
-  std::optional<SettingsTab> m_requestedSettingsTab = std::nullopt; //!< One-shot requested settings tab.
+  std::optional<SettingsTab> m_requestedSettingsTab = std::nullopt; //!< One-shot requested settings page.
   bool m_showInspectionWindow = true;                               //!< Show the cursor inspection window.
   bool m_showOpacityBlenderWindow = false;                          //!< Show the opacity mixer window.
   bool m_showImGuiDemoWindow = false;                               //!< Show the ImGui demo window.

@@ -2,6 +2,7 @@
 
 #include "common/Types.h"
 #include "logic/app/Settings.h"
+#include "ui/GuiData.h"
 
 #include <array>
 #include <cstdint>
@@ -27,6 +28,12 @@ struct ScaleBarPositionButton
 {
   ScaleBarPosition position; //!< Scale bar position selected by this button.
   const char* label;         //!< Compact button label for the visual 3x3 position selector.
+};
+
+struct SettingsPageChoice
+{
+  GuiData::SettingsTab page; //!< Settings page selected by this navigation choice.
+  const char* label;         //!< User-visible page label.
 };
 
 /**
@@ -117,5 +124,15 @@ const std::array<UiColorPreset, 9>& uiColorPresets();
 
 /** @brief Return UI density presets in the order shown in Settings. */
 const std::array<UiDensityPreset, 3>& uiDensityPresets();
+
+/** @brief Return settings pages in the order shown in the side navigation. */
+const std::array<SettingsPageChoice, 9>& settingsPageChoices();
+
+/**
+ * @brief Return the user-visible label for a settings page.
+ * @param page Settings page.
+ * @return Stable label shown in the Settings side navigation.
+ */
+const char* settingsPageLabel(GuiData::SettingsTab page);
 
 } // namespace entropy::ui::settings

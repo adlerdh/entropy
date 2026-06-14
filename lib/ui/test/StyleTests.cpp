@@ -64,6 +64,15 @@ TEST_CASE("UI density presets update spacing and rounding", "[ui][style]")
   CHECK(standard.ScrollbarSize < comfortable.ScrollbarSize);
 }
 
+TEST_CASE("Entropy Dark uses active header color for selected headers", "[ui][style]")
+{
+  ImGuiStyle style;
+  applyUiStylePreset(UiColorPreset::EntropyDark, &style);
+
+  CHECK(sameColor(style.Colors[ImGuiCol_Header], style.Colors[ImGuiCol_HeaderActive]));
+  CHECK(sameColor(style.Colors[ImGuiCol_HeaderHovered], style.Colors[ImGuiCol_HeaderActive]));
+}
+
 TEST_CASE("UI window background opacity updates only window alpha", "[ui][style]")
 {
   ImGuiStyle style;

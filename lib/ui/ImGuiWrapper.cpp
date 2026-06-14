@@ -21,6 +21,7 @@
 #include "logic/app/AppPaths.h"
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
+#include "logic/app/UserPreferences.h"
 #include "logic/annotation/PointRecord.h"
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/camera/CameraHelpers.h"
@@ -1229,7 +1230,7 @@ void ImGuiWrapper::render()
         break;
       case MainMenuAction::ShowSynchronizeSettingsWindow:
         m_appData.guiData().m_showSettingsWindow = true;
-        m_appData.guiData().m_requestedSettingsTab = GuiData::SettingsTab::Synchronize;
+        m_appData.guiData().m_requestedSettingsTab = GuiData::SettingsTab::Synchronization;
         break;
       case MainMenuAction::ToggleInspectorWindow:
         m_appData.guiData().m_showInspectionWindow = !m_appData.guiData().m_showInspectionWindow;
@@ -1679,6 +1680,51 @@ void ImGuiWrapper::render()
     }
 
     if (m_appData.guiData().m_showSettingsWindow) {
+      static std::string s_settingsPersistenceStatus;
+      const auto applyActivePreferences = [this]() {
+        setUserScaleOverride(m_appData.settings().uiScaleOverride());
+        requestFontReload();
+        applyUiColorPreset(m_appData.settings().uiColorPreset());
+        applyUiDensityPreset(m_appData.settings().uiDensityPreset());
+        applyUiWindowBgOpacity(m_appData.settings().uiWindowBgOpacity());
+        if (m_updateMetricUniforms) {
+          m_updateMetricUniforms();
+        }
+      };
+      const std::filesystem::path settingsFile = app_paths::userSettingsFile();
+      const SettingsPersistenceCallbacks settingsPersistenceCallbacks{
+        .settingsFile = settingsFile,
+        .saveSettings =
+          [this, settingsFile]() {
+            std::string error;
+            if (user_preferences::save(m_appData.settings(), m_appData.renderData(), settingsFile, &error)) {
+              s_settingsPersistenceStatus = "Saved";
+              return true;
+            }
+            s_settingsPersistenceStatus = "Save failed: " + error;
+            return false;
+          },
+        .saveSettingsAs =
+          [this](const std::filesystem::path& fileName) {
+            std::string error;
+            if (user_preferences::save(m_appData.settings(), m_appData.renderData(), fileName, &error)) {
+              s_settingsPersistenceStatus = "Saved " + fileName.filename().string();
+              return true;
+            }
+            s_settingsPersistenceStatus = "Save failed: " + error;
+            return false;
+          },
+        .restoreDefaults =
+          [this, applyActivePreferences]() {
+            user_preferences::applyDefaults(m_appData.settings(), m_appData.renderData());
+            applyActivePreferences();
+            s_settingsPersistenceStatus = "Defaults restored";
+          },
+        .statusText =
+          []() {
+            return s_settingsPersistenceStatus;
+          }};
+
       renderSettingsWindow(
         m_appData,
         getNumImageColorMaps,
@@ -1689,6 +1735,7 @@ void ImGuiWrapper::render()
         [this](UiColorPreset preset) { applyUiColorPreset(preset); },
         [this](UiDensityPreset preset) { applyUiDensityPreset(preset); },
         [this](float opacity) { applyUiWindowBgOpacity(opacity); },
+        settingsPersistenceCallbacks,
         m_recenterAllViews);
     }
 

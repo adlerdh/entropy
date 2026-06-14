@@ -4,11 +4,25 @@
 #include "logic/app/Settings.h"
 
 #include <cstddef>
+#include <filesystem>
 #include <functional>
 #include <optional>
+#include <string>
 
 class AppData;
 class ImageColorMap;
+
+/**
+ * @brief File-backed user settings actions exposed to the Settings window.
+ */
+struct SettingsPersistenceCallbacks
+{
+  std::filesystem::path settingsFile; //!< Platform default JSON settings file shown to the user.
+  std::function<bool()> saveSettings; //!< Save current app preferences to the settings file.
+  std::function<bool(const std::filesystem::path& fileName)> saveSettingsAs; //!< Save preferences to a selected file.
+  std::function<void()> restoreDefaults;   //!< Restore built-in app preference defaults.
+  std::function<std::string()> statusText; //!< Return the latest persistence status message.
+};
 
 /**
  * @brief Render the application settings window.
@@ -21,6 +35,7 @@ class ImageColorMap;
  * @param applyUiColorPreset Callback that applies a color preset immediately.
  * @param applyUiDensityPreset Callback that applies a density preset immediately.
  * @param applyUiWindowBgOpacity Callback that applies window background opacity immediately.
+ * @param persistenceCallbacks File-backed user settings callbacks.
  * @param recenterAllViews Callback used by settings that reposition views.
  */
 void renderSettingsWindow(
@@ -33,4 +48,5 @@ void renderSettingsWindow(
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
   const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
   const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews);

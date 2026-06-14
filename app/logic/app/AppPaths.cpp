@@ -72,6 +72,19 @@ fs::path executableDirectory()
 #endif
 
 #if defined(__linux__)
+fs::path linuxUserDataRoot()
+{
+  if (const char* xdgConfigHome = std::getenv("XDG_CONFIG_HOME"); xdgConfigHome != nullptr && *xdgConfigHome != '\0') {
+    return fs::path{xdgConfigHome} / "entropy";
+  }
+
+  if (const char* home = std::getenv("HOME"); home != nullptr && *home != '\0') {
+    return fs::path{home} / ".config" / "entropy";
+  }
+
+  return "entropy";
+}
+
 fs::path executableDirectory()
 {
   std::vector<char> buffer(1024);
@@ -146,9 +159,16 @@ std::filesystem::path userDataDirectory()
 {
 #ifdef _WIN32
   return windowsUserDataRoot();
+#elif defined(__linux__)
+  return linuxUserDataRoot();
 #else
   return ".";
 #endif
+}
+
+std::filesystem::path userSettingsFile()
+{
+  return userDataDirectory() / "settings.json";
 }
 
 } // namespace app_paths
