@@ -19,6 +19,9 @@ target_link_libraries(EntropyLayoutTests PRIVATE
   entropy_warnings
 )
 
+entropy_enable_coverage_for_target(EntropyLayoutTests)
+entropy_register_coverage_test_target(EntropyLayoutTests)
+
 target_include_directories(EntropyLayoutTests PRIVATE
   "${entropy_APP_DIR}"
   "${entropy_EXT_DIR}"
@@ -50,6 +53,9 @@ target_link_libraries(EntropySyncTests PRIVATE
   nlohmann_json::nlohmann_json
   entropy_warnings
 )
+
+entropy_enable_coverage_for_target(EntropySyncTests)
+entropy_register_coverage_test_target(EntropySyncTests)
 
 target_include_directories(EntropySyncTests PRIVATE
   "${entropy_APP_DIR}"
@@ -95,6 +101,9 @@ target_link_libraries(EntropyUiTests PRIVATE
   spdlog::spdlog
   entropy_warnings
 )
+
+entropy_enable_coverage_for_target(EntropyUiTests)
+entropy_register_coverage_test_target(EntropyUiTests)
 
 target_include_directories(EntropyUiTests PRIVATE
   "${entropy_APP_DIR}"

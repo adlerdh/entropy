@@ -10,6 +10,9 @@ target_link_libraries(EntropyCommonTests PRIVATE
   entropy_warnings
 )
 
+entropy_enable_coverage_for_target(EntropyCommonTests)
+entropy_register_coverage_test_target(EntropyCommonTests)
+
 set_target_properties(EntropyCommonTests PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON

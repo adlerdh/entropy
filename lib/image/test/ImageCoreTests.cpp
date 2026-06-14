@@ -1,6 +1,8 @@
 #include "image/Image.h"
 #include "image/Isosurface.h"
 #include "image/ImageUtility.h"
+#include "image/internal/ImageCastHelper.tpp"
+#include "image/internal/ImageUtilityItk.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -10,7 +12,9 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
 namespace
@@ -38,6 +42,24 @@ makeStats(long double minValue, long double q25, long double median, long double
   return stats;
 }
 
+uint32_t componentSizeInBytes(ComponentType componentType)
+{
+  switch (componentType) {
+    case ComponentType::Int8:
+    case ComponentType::UInt8:
+      return 1;
+    case ComponentType::Int16:
+    case ComponentType::UInt16:
+      return 2;
+    case ComponentType::Int32:
+    case ComponentType::UInt32:
+    case ComponentType::Float32:
+      return 4;
+    default:
+      return 0;
+  }
+}
+
 ImageIoInfo makeIoInfo(ComponentType componentType, uint32_t numComponents, glm::uvec3 dims)
 {
   ImageIoInfo info;
@@ -45,11 +67,7 @@ ImageIoInfo makeIoInfo(ComponentType componentType, uint32_t numComponents, glm:
   info.m_fileInfo.m_fileTypeString = "Nrrd";
   info.m_componentInfo.m_componentType = componentType;
   info.m_componentInfo.m_componentTypeString = componentTypeString(componentType);
-  info.m_componentInfo.m_componentSizeInBytes =
-    static_cast<uint32_t>(componentRange(componentType).second == 255.0 ? 1 : 4);
-  if (componentType == ComponentType::Int16 || componentType == ComponentType::UInt16) {
-    info.m_componentInfo.m_componentSizeInBytes = 2;
-  }
+  info.m_componentInfo.m_componentSizeInBytes = componentSizeInBytes(componentType);
 
   info.m_pixelInfo.m_pixelType = numComponents == 1 ? PixelType::Scalar : PixelType::Vector;
   info.m_pixelInfo.m_pixelTypeString = numComponents == 1 ? "scalar" : "vector";
@@ -91,6 +109,182 @@ fs::path testDirectory()
   return dir;
 }
 
+template<typename T>
+ComponentType componentTypeFor();
+
+template<>
+ComponentType componentTypeFor<int8_t>()
+{
+  return ComponentType::Int8;
+}
+
+template<>
+ComponentType componentTypeFor<uint8_t>()
+{
+  return ComponentType::UInt8;
+}
+
+template<>
+ComponentType componentTypeFor<int16_t>()
+{
+  return ComponentType::Int16;
+}
+
+template<>
+ComponentType componentTypeFor<uint16_t>()
+{
+  return ComponentType::UInt16;
+}
+
+template<>
+ComponentType componentTypeFor<int32_t>()
+{
+  return ComponentType::Int32;
+}
+
+template<>
+ComponentType componentTypeFor<uint32_t>()
+{
+  return ComponentType::UInt32;
+}
+
+template<>
+ComponentType componentTypeFor<float>()
+{
+  return ComponentType::Float32;
+}
+
+template<typename T>
+ComponentType sourceComponentTypeFor();
+
+template<>
+ComponentType sourceComponentTypeFor<uint8_t>()
+{
+  return ComponentType::UInt8;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<int8_t>()
+{
+  return ComponentType::Int8;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<uint16_t>()
+{
+  return ComponentType::UInt16;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<int16_t>()
+{
+  return ComponentType::Int16;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<uint32_t>()
+{
+  return ComponentType::UInt32;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<int32_t>()
+{
+  return ComponentType::Int32;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<unsigned long>()
+{
+  return ComponentType::ULong;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<long>()
+{
+  return ComponentType::Long;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<unsigned long long>()
+{
+  return ComponentType::ULongLong;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<long long>()
+{
+  return ComponentType::LongLong;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<double>()
+{
+  return ComponentType::Float64;
+}
+
+template<>
+ComponentType sourceComponentTypeFor<long double>()
+{
+  return ComponentType::LongDouble;
+}
+
+template<typename T>
+Image makeSeparateRawImage(std::vector<T>& values)
+{
+  const glm::uvec3 dims{static_cast<uint32_t>(values.size()), 1, 1};
+  ImageIoInfo ioInfo = makeIoInfo(componentTypeFor<T>(), 1, dims);
+  ImageHeader header(ioInfo, ioInfo, false);
+  std::vector<const void*> buffers{values.data()};
+  return Image(
+    header,
+    "raw-quantiles",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+}
+
+template<typename T>
+void checkExactQuantilesForType()
+{
+  std::vector<T> values{static_cast<T>(4), static_cast<T>(2), static_cast<T>(2), static_cast<T>(8), static_cast<T>(10)};
+  Image image = makeSeparateRawImage(values);
+
+  REQUIRE(image.generateSortedBuffers());
+  image.settings().setUsingExactQuantiles(true);
+
+  CHECK(image.quantileToValue(0, 0.0) == Catch::Approx(2.0));
+  CHECK(image.quantileToValue(0, 0.5) == Catch::Approx(4.0));
+  CHECK(image.quantileToValue(0, 1.0) == Catch::Approx(10.0));
+
+  const QuantileOfValue duplicate = image.valueToQuantile(0, int64_t{2});
+  CHECK(duplicate.foundValue);
+  CHECK(duplicate.lowerIndex == 0);
+  CHECK(duplicate.upperIndex == 2);
+  CHECK(duplicate.lowerValue == Catch::Approx(2.0));
+  CHECK(duplicate.upperValue == Catch::Approx(4.0));
+  CHECK(duplicate.lowerQuantile == Catch::Approx(0.0));
+  CHECK(duplicate.upperQuantile == Catch::Approx(0.4));
+
+  const QuantileOfValue middle = image.valueToQuantile(0, 8.0);
+  CHECK(middle.foundValue);
+  CHECK(middle.lowerValue == Catch::Approx(8.0));
+  CHECK(middle.upperValue == Catch::Approx(10.0));
+
+  const QuantileOfValue tooLow = image.valueToQuantile(0, int64_t{0});
+  CHECK_FALSE(tooLow.foundValue);
+  CHECK(tooLow.lowerIndex == 0);
+
+  const QuantileOfValue tooHigh = image.valueToQuantile(0, 100.0);
+  CHECK_FALSE(tooHigh.foundValue);
+  CHECK(tooHigh.lowerIndex == values.size() - 1);
+  CHECK(tooHigh.upperIndex == values.size() - 1);
+
+  CHECK_THROWS_AS(image.quantileToValue(1, 0.5), std::exception);
+  CHECK_THROWS_AS(image.valueToQuantile(1, int64_t{2}), std::exception);
+  CHECK_THROWS_AS(image.valueToQuantile(1, 2.0), std::exception);
+}
+
 } // namespace
 
 TEST_CASE("Component ranges describe supported texture component types", "[image][utility]")
@@ -100,6 +294,117 @@ TEST_CASE("Component ranges describe supported texture component types", "[image
   CHECK(componentRange(ComponentType::Int16).first == static_cast<double>(std::numeric_limits<int16_t>::lowest()));
   CHECK(componentRange(ComponentType::UInt16).second == static_cast<double>(std::numeric_limits<uint16_t>::max()));
   CHECK(componentRange(ComponentType::Undefined) == std::pair<double, double>{0.0, 0.0});
+}
+
+TEST_CASE("ITK enum mapping covers all supported pixel and component types", "[image][utility][itk]")
+{
+  CHECK(fromItkPixelType(itk::IOPixelEnum::UNKNOWNPIXELTYPE) == PixelType::Undefined);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::SCALAR) == PixelType::Scalar);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::RGB) == PixelType::RGB);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::RGBA) == PixelType::RGBA);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::OFFSET) == PixelType::Offset);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::VECTOR) == PixelType::Vector);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::POINT) == PixelType::Point);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::COVARIANTVECTOR) == PixelType::CovariantVector);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::SYMMETRICSECONDRANKTENSOR) == PixelType::SymmetricSecondRankTensor);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::DIFFUSIONTENSOR3D) == PixelType::DiffusionTensor3D);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::COMPLEX) == PixelType::Complex);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::FIXEDARRAY) == PixelType::FixedArray);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::ARRAY) == PixelType::Array);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::MATRIX) == PixelType::Matrix);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::VARIABLELENGTHVECTOR) == PixelType::VariableLengthVector);
+  CHECK(fromItkPixelType(itk::IOPixelEnum::VARIABLESIZEMATRIX) == PixelType::VariableSizeMatrix);
+
+  CHECK(fromItkComponentType(itk::IOComponentEnum::UCHAR) == ComponentType::UInt8);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::CHAR) == ComponentType::Int8);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::USHORT) == ComponentType::UInt16);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::SHORT) == ComponentType::Int16);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::UINT) == ComponentType::UInt32);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::INT) == ComponentType::Int32);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::FLOAT) == ComponentType::Float32);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::LONG) == ComponentType::Long);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::ULONG) == ComponentType::ULong);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::LONGLONG) == ComponentType::LongLong);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::ULONGLONG) == ComponentType::ULongLong);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::DOUBLE) == ComponentType::Float64);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::LDOUBLE) == ComponentType::LongDouble);
+  CHECK(fromItkComponentType(itk::IOComponentEnum::UNKNOWNCOMPONENTTYPE) == ComponentType::Undefined);
+
+  CHECK(toItkComponentType(ComponentType::Int8) == itk::IOComponentEnum::CHAR);
+  CHECK(toItkComponentType(ComponentType::UInt8) == itk::IOComponentEnum::UCHAR);
+  CHECK(toItkComponentType(ComponentType::Int16) == itk::IOComponentEnum::SHORT);
+  CHECK(toItkComponentType(ComponentType::UInt16) == itk::IOComponentEnum::USHORT);
+  CHECK(toItkComponentType(ComponentType::Int32) == itk::IOComponentEnum::INT);
+  CHECK(toItkComponentType(ComponentType::UInt32) == itk::IOComponentEnum::UINT);
+  CHECK(toItkComponentType(ComponentType::Float32) == itk::IOComponentEnum::FLOAT);
+  CHECK(toItkComponentType(ComponentType::Float64) == itk::IOComponentEnum::DOUBLE);
+  CHECK(toItkComponentType(ComponentType::Long) == itk::IOComponentEnum::LONG);
+  CHECK(toItkComponentType(ComponentType::ULong) == itk::IOComponentEnum::ULONG);
+  CHECK(toItkComponentType(ComponentType::LongLong) == itk::IOComponentEnum::LONGLONG);
+  CHECK(toItkComponentType(ComponentType::ULongLong) == itk::IOComponentEnum::ULONG);
+  CHECK(toItkComponentType(ComponentType::LongDouble) == itk::IOComponentEnum::LDOUBLE);
+  CHECK(toItkComponentType(ComponentType::Undefined) == itk::IOComponentEnum::UNKNOWNCOMPONENTTYPE);
+}
+
+TEST_CASE("Raw component buffers convert and clamp every supported source type", "[image][buffer][cast]")
+{
+  auto checkSmallSignedIntegerSource = []<typename T>() {
+    const std::vector<T> source{static_cast<T>(1), static_cast<T>(2), static_cast<T>(3)};
+    const auto converted = createBuffer<T>(source.data(), source.size(), sourceComponentTypeFor<T>());
+    REQUIRE(converted.size() == source.size());
+    CHECK(converted == source);
+  };
+
+  auto checkSmallUnsignedIntegerSource = []<typename T>() {
+    const std::vector<T> source{static_cast<T>(1), static_cast<T>(2), static_cast<T>(3)};
+    const auto converted = createBuffer<T>(source.data(), source.size(), sourceComponentTypeFor<T>());
+    REQUIRE(converted.size() == source.size());
+    CHECK(converted == source);
+  };
+
+  checkSmallUnsignedIntegerSource.operator()<uint8_t>();
+  checkSmallSignedIntegerSource.operator()<int8_t>();
+  checkSmallUnsignedIntegerSource.operator()<uint16_t>();
+  checkSmallSignedIntegerSource.operator()<int16_t>();
+  checkSmallUnsignedIntegerSource.operator()<uint32_t>();
+  checkSmallSignedIntegerSource.operator()<int32_t>();
+  checkSmallUnsignedIntegerSource.operator()<unsigned long>();
+  checkSmallSignedIntegerSource.operator()<long>();
+  checkSmallUnsignedIntegerSource.operator()<unsigned long long>();
+  checkSmallSignedIntegerSource.operator()<long long>();
+
+  const std::vector<float> float32Source{1.25f, 2.5f, 3.75f};
+  const auto float32Converted = createBuffer<float>(float32Source.data(), float32Source.size(), ComponentType::Float32);
+  CHECK(float32Converted == float32Source);
+
+  const std::vector<double> float64Source{1.25, 2.5, 3.75};
+  const auto float64Converted = createBuffer<float>(float64Source.data(), float64Source.size(), ComponentType::Float64);
+  REQUIRE(float64Converted.size() == float64Source.size());
+  CHECK(float64Converted[0] == Catch::Approx(1.25f));
+  CHECK(float64Converted[2] == Catch::Approx(3.75f));
+
+  const std::vector<long double> longDoubleSource{
+    static_cast<long double>(-1.5),
+    static_cast<long double>(0.5),
+    static_cast<long double>(2.5)};
+  const auto longDoubleConverted =
+    createBuffer<float>(longDoubleSource.data(), longDoubleSource.size(), ComponentType::LongDouble);
+  REQUIRE(longDoubleConverted.size() == longDoubleSource.size());
+  CHECK(longDoubleConverted[0] == Catch::Approx(-1.5f));
+  CHECK(longDoubleConverted[2] == Catch::Approx(2.5f));
+
+  const std::vector<int16_t> signedSource{-200, 0, 200};
+  const auto clampedToInt8 = createBuffer<int8_t>(signedSource.data(), signedSource.size(), ComponentType::Int16);
+  REQUIRE(clampedToInt8.size() == signedSource.size());
+  CHECK(clampedToInt8[0] == std::numeric_limits<int8_t>::lowest());
+  CHECK(clampedToInt8[1] == 0);
+  CHECK(clampedToInt8[2] == std::numeric_limits<int8_t>::max());
+
+  const auto nullConverted = createBuffer<uint16_t>(nullptr, 3, ComponentType::UInt16);
+  CHECK(nullConverted == std::vector<uint16_t>{0, 0, 0});
+  CHECK_THROWS_AS(
+    createBuffer<uint8_t>(signedSource.data(), signedSource.size(), ComponentType::Undefined),
+    std::exception);
 }
 
 TEST_CASE("Image IO metadata validation rejects incomplete metadata", "[image][io-info]")
@@ -283,6 +588,69 @@ TEST_CASE("Raw interleaved images truncate to the first four components per pixe
   CHECK(image.generateSortedBuffers());
   CHECK(image.quantileToValue(0, 1.0) == Catch::Approx(20.0));
   CHECK(image.quantileToValue(3, 1.0) == Catch::Approx(23.0));
+}
+
+TEST_CASE("Exact image quantiles work for every in-memory component type", "[image][quantiles]")
+{
+  checkExactQuantilesForType<int8_t>();
+  checkExactQuantilesForType<uint8_t>();
+  checkExactQuantilesForType<int16_t>();
+  checkExactQuantilesForType<uint16_t>();
+  checkExactQuantilesForType<int32_t>();
+  checkExactQuantilesForType<uint32_t>();
+  checkExactQuantilesForType<float>();
+}
+
+TEST_CASE("Approximate image quantiles use T-digest data before exact buffers are enabled", "[image][quantiles]")
+{
+  std::vector<uint16_t> values{0, 10, 20, 30, 40, 50};
+  Image image = makeSeparateRawImage(values);
+
+  REQUIRE_FALSE(image.settings().usingExactQuantiles());
+
+  CHECK(image.quantileToValue(0, 0.0) == Catch::Approx(0.0));
+  CHECK(image.quantileToValue(0, 1.0) == Catch::Approx(50.0));
+
+  const QuantileOfValue q = image.valueToQuantile(0, int64_t{30});
+  CHECK(q.foundValue);
+  CHECK(q.lowerValue == Catch::Approx(30.0));
+  CHECK(q.upperValue == Catch::Approx(30.0));
+  CHECK(q.lowerQuantile == Catch::Approx(q.upperQuantile));
+  CHECK(q.lowerQuantile > 0.0);
+  CHECK(q.lowerQuantile < 1.0);
+
+  const QuantileOfValue qDouble = image.valueToQuantile(0, 30.0);
+  CHECK(qDouble.foundValue);
+  CHECK(qDouble.lowerValue == Catch::Approx(30.0));
+
+  CHECK_THROWS_AS(image.quantileToValue(1, 0.5), std::exception);
+  CHECK_THROWS_AS(image.valueToQuantile(1, int64_t{30}), std::exception);
+  CHECK_THROWS_AS(image.valueToQuantile(1, 30.0), std::exception);
+}
+
+TEST_CASE("Exact quantiles split interleaved component buffers before sorting", "[image][quantiles][interleaved]")
+{
+  const glm::uvec3 dims{3, 1, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Int16, 3, dims);
+  ImageHeader header(ioInfo, ioInfo, true);
+
+  const std::vector<int16_t> interleavedValues{30, 1, 300, 10, 3, 100, 20, 2, 200};
+  std::vector<const void*> buffers{interleavedValues.data()};
+
+  Image image(
+    header,
+    "raw-interleaved-quantiles",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::InterleavedImage,
+    buffers);
+
+  REQUIRE(image.generateSortedBuffers());
+  image.settings().setUsingExactQuantiles(true);
+
+  CHECK(image.quantileToValue(0, 0.0) == Catch::Approx(10.0));
+  CHECK(image.quantileToValue(0, 1.0) == Catch::Approx(30.0));
+  CHECK(image.quantileToValue(1, 0.5) == Catch::Approx(2.0));
+  CHECK(image.quantileToValue(2, 1.0) == Catch::Approx(300.0));
 }
 
 TEST_CASE("Interleaved image components save as scalar images", "[image][save][interleaved]")

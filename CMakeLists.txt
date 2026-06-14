@@ -62,6 +62,7 @@ set_property(CACHE Entropy_SUPERBUILD_CONFIG PROPERTY STRINGS "Debug" "Release" 
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(GNUInstallDirs)
+include(Coverage)
 
 get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
@@ -88,6 +89,8 @@ target_compile_definitions(entropy_logging_level INTERFACE
 message(STATUS "CMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}")
 message(STATUS "Entropy_ENABLE_TRACE_LOGGING=${Entropy_ENABLE_TRACE_LOGGING}")
+
+entropy_configure_coverage()
 
 # Prevent compilation in-source
 if(CMAKE_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
@@ -163,7 +166,7 @@ set(spdlog_VERSION "1.17.0")
 set(stduuid_VERSION "1.2.3")
 set(tinyfsm_VERSION "1.15.1")
 
-include(EntropyItkComponents)
+include(ItkComponents)
 
 # External library directories:
 set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
@@ -791,6 +794,8 @@ target_link_libraries(entropy PRIVATE
   entropy_warnings
 )
 
+entropy_enable_coverage_for_target(entropy)
+
 if(APPLE)
   target_link_libraries(entropy PRIVATE
     ${COCOA_LIBRARY}
@@ -867,4 +872,6 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-include(EntropyPackaging)
+entropy_add_coverage_targets()
+
+include(Packaging)

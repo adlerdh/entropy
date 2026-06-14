@@ -53,6 +53,8 @@ target_compile_options(EntropyCommon PRIVATE
   >
 )
 
+entropy_enable_coverage_for_target(EntropyCommon)
+
 set_target_properties(EntropyCommon PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON

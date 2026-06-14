@@ -177,3 +177,120 @@ TEST_CASE("ImageSettings maps native component values to texture values", "[imag
   CHECK(floatSettings.mapNativeIntensityToTexture(0.25) == Catch::Approx(0.25));
   CHECK(floatSettings.slope_native_T_texture() == Catch::Approx(1.0f));
 }
+
+TEST_CASE("ImageSettings active-component overloads and global display flags round-trip", "[image][settings]")
+{
+  ImageSettings settings = makeSettings();
+  settings.setActiveComponent(1);
+
+  settings.setDisplayName("renamed");
+  CHECK(settings.displayName() == "renamed");
+  CHECK(settings.componentType() == ComponentType::UInt16);
+  CHECK(settings.numComponents() == 2);
+
+  settings.setBorderColor(glm::vec3{0.25f, 0.5f, 0.75f});
+  CHECK(settings.borderColor() == glm::vec3{0.25f, 0.5f, 0.75f});
+  settings.setLockedToReference(false);
+  CHECK_FALSE(settings.isLockedToReference());
+  settings.setDisplayImageAsColor(true);
+  CHECK(settings.displayImageAsColor());
+  settings.setIgnoreAlpha(true);
+  CHECK(settings.ignoreAlpha());
+  settings.setColorInterpolationMode(InterpolationMode::NearestNeighbor);
+  CHECK(settings.colorInterpolationMode() == InterpolationMode::NearestNeighbor);
+
+  settings.setUseDistanceMapForRaycasting(false);
+  CHECK_FALSE(settings.useDistanceMapForRaycasting());
+  settings.setIsosurfacesVisible(false);
+  CHECK_FALSE(settings.isosurfacesVisible());
+  settings.setApplyImageColormapToIsosurfaces(true);
+  CHECK(settings.applyImageColormapToIsosurfaces());
+  settings.setShowIsoscontoursIn2D(false);
+  CHECK_FALSE(settings.showIsocontoursIn2D());
+  settings.setIsosurfaceWidthIn2d(3.5);
+  CHECK(settings.isoContourLineWidthIn2D() == Catch::Approx(3.5));
+  settings.setIsosurfaceOpacityModulator(0.4f);
+  CHECK(settings.isosurfaceOpacityModulator() == Catch::Approx(0.4f));
+
+  settings.setGlobalVisibility(false);
+  CHECK_FALSE(settings.globalVisibility());
+  settings.setGlobalOpacity(0.375);
+  CHECK(settings.globalOpacity() == Catch::Approx(0.375));
+  settings.setUsingExactQuantiles(true);
+  CHECK(settings.usingExactQuantiles());
+
+  settings.setWindowWidth(8.0);
+  CHECK(settings.windowWidth() == Catch::Approx(8.0));
+  settings.setWindowCenter(3.0);
+  CHECK(settings.windowCenter() == Catch::Approx(3.0));
+  settings.setWindowValueLow(-1.0, true);
+  CHECK(settings.windowValuesLowHigh().first == Catch::Approx(-1.0));
+  settings.setWindowValueHigh(4.0, true);
+  CHECK(settings.windowValuesLowHigh().second == Catch::Approx(4.0));
+
+  settings.setWindowQuantileLow(0.2, true);
+  settings.setWindowQuantileHigh(0.8, true);
+  CHECK(settings.windowQuantilesLowHigh() == std::pair<double, double>{0.0, 0.0});
+
+  settings.setThresholdLow(-5.0);
+  settings.setThresholdHigh(6.0);
+  CHECK(settings.thresholds() == std::pair<double, double>{-5.0, 6.0});
+  CHECK(settings.thresholdsActive());
+  CHECK(settings.minMaxImageRange() == std::pair<double, double>{-20.0, 20.0});
+  CHECK(settings.minMaxWindowWidthRange() == std::pair<double, double>{0.0, 40.0});
+  CHECK(settings.minMaxWindowCenterRange() == std::pair<double, double>{-20.0, 20.0});
+  CHECK(settings.minMaxWindowRange() == std::pair<double, double>{-40.0, 40.0});
+  CHECK(settings.minMaxThresholdRange() == std::pair<double, double>{-20.0, 20.0});
+  CHECK(settings.thresholdRange() == std::pair<double, double>{-20.0, 20.0});
+
+  settings.setForegroundThresholdLow(-2.0);
+  settings.setForegroundThresholdHigh(12.0);
+  CHECK(settings.foregroundThresholds() == std::pair<double, double>{-2.0, 12.0});
+
+  settings.setShowEdges(true);
+  settings.setThresholdEdges(true);
+  settings.setUseFreiChen(true);
+  settings.setEdgeMagnitude(0.55);
+  settings.setWindowedEdges(true);
+  settings.setOverlayEdges(true);
+  settings.setColormapEdges(true);
+  settings.setEdgeColor(glm::vec3{0.9f, 0.8f, 0.7f});
+  settings.setEdgeOpacity(0.35);
+  CHECK(settings.showEdges());
+  CHECK(settings.thresholdEdges());
+  CHECK(settings.useFreiChen());
+  CHECK(settings.edgeMagnitude() == Catch::Approx(0.55));
+  CHECK(settings.windowedEdges());
+  CHECK(settings.overlayEdges());
+  CHECK(settings.colormapEdges());
+  CHECK(settings.edgeColor() == glm::vec3{0.9f, 0.8f, 0.7f});
+  CHECK(settings.edgeOpacity() == Catch::Approx(0.35));
+
+  settings.setColorMapIndex(7);
+  settings.setColorMapInverted(true);
+  settings.setColorMapQuantizationLevels(32);
+  settings.setColorMapContinuous(false);
+  settings.setColorMapHueModFactor(0.25);
+  settings.setColorMapSatModFactor(0.5);
+  settings.setColorMapValModFactor(0.75);
+  settings.setLabelTableIndex(4);
+  settings.setInterpolationMode(InterpolationMode::NearestNeighbor);
+  CHECK(settings.colorMapIndex() == 7);
+  CHECK(settings.isColorMapInverted());
+  CHECK(settings.colorMapQuantizationLevels() == 32);
+  CHECK_FALSE(settings.colorMapContinuous());
+  CHECK(settings.colorMapHsvModFactors() == glm::vec3{0.25f, 0.5f, 0.75f});
+  CHECK(settings.labelTableIndex() == 4);
+  CHECK(settings.interpolationMode() == InterpolationMode::NearestNeighbor);
+
+  CHECK(settings.slopeIntercept_normalized_T_native().first > 0.0);
+  CHECK(settings.slopeIntercept_normalized_T_texture().first > 0.0);
+  CHECK(settings.slopeInterceptVec2_normalized_T_texture().x > 0.0);
+  CHECK(settings.largestSlopeInterceptTextureVec2().x > 0.0);
+  CHECK(settings.componentStatistics().onlineStats.min == Catch::Approx(-20.0));
+  CHECK(settings.histogramSettings().m_intensityRange[0] == Catch::Approx(-20.0));
+
+  auto& histogram = settings.histogramSettings();
+  histogram.m_isCumulative = true;
+  CHECK(settings.histogramSettings().m_isCumulative);
+}

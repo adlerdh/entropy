@@ -1,9 +1,9 @@
 if(UNIX AND NOT APPLE)
-  include(EntropyLinuxPackaging)
+  include(LinuxPackaging)
 elseif(APPLE)
-  include(EntropyMacOSPackaging)
+  include(MacOSPackaging)
 elseif(WIN32)
-  include(EntropyWindowsPackaging)
+  include(WindowsPackaging)
 endif()
 
 set(Entropy_PACKAGE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/packages" CACHE PATH "Directory for generated CPack package artifacts")

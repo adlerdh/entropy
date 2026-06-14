@@ -1,11 +1,13 @@
 #include "image/Image.h"
 #include "image/ImageUtility.h"
+#include "image/internal/ImageUtilityItk.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <itkImage.h>
 #include <itkImageFileWriter.h>
+#include <itkMetaDataObject.h>
 #include <itkRGBPixel.h>
 #include <itkVectorImage.h>
 
@@ -16,6 +18,7 @@
 #include <limits>
 #include <string>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 namespace
@@ -182,6 +185,60 @@ fs::path writeRgbImage(const fs::path& dir)
   return fileName;
 }
 
+fs::path writeScalarImageWithMetadata(const fs::path& dir)
+{
+  using ImageType = itk::Image<int16_t, 3>;
+  using WriterType = itk::ImageFileWriter<ImageType>;
+
+  ImageType::IndexType start;
+  ImageType::SizeType size;
+  ImageType::PointType origin;
+  ImageType::SpacingType spacing;
+  start.Fill(0);
+  size[0] = 2;
+  size[1] = 2;
+  size[2] = 1;
+  origin[0] = -2.0;
+  origin[1] = 4.0;
+  origin[2] = 8.0;
+  spacing[0] = 0.5;
+  spacing[1] = 1.5;
+  spacing[2] = 2.5;
+
+  ImageType::DirectionType direction;
+  direction.SetIdentity();
+  direction(0, 0) = 0.0;
+  direction(0, 1) = -1.0;
+  direction(1, 0) = 1.0;
+  direction(1, 1) = 0.0;
+
+  ImageType::RegionType region;
+  region.SetIndex(start);
+  region.SetSize(size);
+
+  ImageType::Pointer image = ImageType::New();
+  image->SetRegions(region);
+  image->SetOrigin(origin);
+  image->SetSpacing(spacing);
+  image->SetDirection(direction);
+  image->Allocate();
+
+  const std::array<int16_t, 4> values{1, 2, 3, 4};
+  std::copy(values.begin(), values.end(), image->GetBufferPointer());
+
+  itk::EncapsulateMetaData<std::string>(image->GetMetaDataDictionary(), "entropy_string", "hello\001 world");
+  itk::EncapsulateMetaData<int>(image->GetMetaDataDictionary(), "entropy_int", 17);
+  itk::EncapsulateMetaData<double>(image->GetMetaDataDictionary(), "entropy_double", 2.5);
+
+  const fs::path fileName = dir / "metadata.nrrd";
+  WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(fileName.string());
+  writer->SetInput(image);
+  writer->UseCompressionOff();
+  writer->Update();
+  return fileName;
+}
+
 template<typename T>
 std::vector<T> arithmeticValues(std::size_t count)
 {
@@ -269,6 +326,104 @@ TEST_CASE("Scalar images round-trip through disk for supported component types",
   checkScalarImageRoundTrip<int32_t>(dir, "scalar-int32", ComponentType::Int32, ComponentType::Int32);
   checkScalarImageRoundTrip<uint32_t>(dir, "scalar-uint32", ComponentType::UInt32, ComponentType::UInt32);
   checkScalarImageRoundTrip<float>(dir, "scalar-float32", ComponentType::Float32, ComponentType::Float32);
+}
+
+TEST_CASE("ITK ImageIO metadata extraction populates Entropy IO info", "[image][io-info][itk]")
+{
+  const fs::path dir = testDirectory();
+  const fs::path fileName = writeScalarImageWithMetadata(dir);
+
+  auto imageIo = createStandardImageIo(fileName.string().c_str());
+  REQUIRE(imageIo);
+
+  ImageIoInfo info;
+  REQUIRE(setImageIoInfoFromItk(info, imageIo));
+  CHECK(info.validate());
+  CHECK(info.m_fileInfo.m_fileName == fileName);
+  CHECK_FALSE(info.m_fileInfo.m_fileTypeString.empty());
+  CHECK_FALSE(info.m_fileInfo.m_supportedReadExtensions.empty());
+  CHECK_FALSE(info.m_fileInfo.m_supportedWriteExtensions.empty());
+  CHECK(info.m_componentInfo.m_componentType == ComponentType::Int16);
+  CHECK(info.m_componentInfo.m_componentSizeInBytes == sizeof(int16_t));
+  CHECK(info.m_pixelInfo.m_pixelType == PixelType::Scalar);
+  CHECK(info.m_pixelInfo.m_numComponents == 1);
+  CHECK(info.m_pixelInfo.m_pixelStrideInBytes == sizeof(int16_t));
+  CHECK(info.m_sizeInfo.m_imageSizeInPixels == 4);
+  CHECK(info.m_sizeInfo.m_imageSizeInComponents == 4);
+  CHECK(info.m_sizeInfo.m_imageSizeInBytes == 4 * sizeof(int16_t));
+  CHECK(info.m_spaceInfo.m_numDimensions == 3);
+  CHECK(info.m_spaceInfo.m_dimensions == std::vector<std::size_t>{2, 2, 1});
+  CHECK(info.m_spaceInfo.m_origin.at(0) == Catch::Approx(-2.0));
+  CHECK(info.m_spaceInfo.m_spacing.at(2) == Catch::Approx(2.5));
+  CHECK(info.m_spaceInfo.m_directions.at(0).at(1) == Catch::Approx(1.0));
+  CHECK(info.m_spaceInfo.m_directions.at(1).at(0) == Catch::Approx(-1.0));
+
+  REQUIRE(info.m_metaData.contains("entropy_string"));
+  CHECK(std::get<std::string>(info.m_metaData.at("entropy_string")) == "hello world");
+  REQUIRE(info.m_metaData.contains("entropy_int"));
+  REQUIRE(info.m_metaData.contains("entropy_double"));
+}
+
+TEST_CASE("ITK ImageIO helpers handle null inputs and image-base geometry", "[image][io-info][itk]")
+{
+  CHECK_FALSE(createStandardImageIo("/definitely/not/a/real/file.nrrd"));
+
+  ImageIoInfo info;
+  itk::ImageIOBase::Pointer nullImageIo;
+  CHECK_FALSE(setImageIoInfoFromItk(info, nullImageIo));
+
+  SizeInfo sizeInfo;
+  itk::ImageBase<3>::Pointer nullImageBase;
+  CHECK_FALSE(setSizeInfoFromItkImageBase(sizeInfo, nullImageBase, sizeof(float)));
+
+  SpaceInfo spaceInfo;
+  CHECK_FALSE(setSpaceInfoFromItkImageBase(spaceInfo, nullImageBase));
+
+  using ImageType = itk::Image<float, 3>;
+  ImageType::Pointer image = ImageType::New();
+
+  ImageType::IndexType start;
+  ImageType::SizeType size;
+  start.Fill(0);
+  size[0] = 3;
+  size[1] = 2;
+  size[2] = 1;
+  ImageType::RegionType region;
+  region.SetIndex(start);
+  region.SetSize(size);
+  image->SetRegions(region);
+  image->SetNumberOfComponentsPerPixel(1);
+
+  ImageType::PointType origin;
+  origin[0] = 1.0;
+  origin[1] = 2.0;
+  origin[2] = 3.0;
+  ImageType::SpacingType spacing;
+  spacing[0] = 0.75;
+  spacing[1] = 1.25;
+  spacing[2] = 1.75;
+  ImageType::DirectionType direction;
+  direction.SetIdentity();
+  direction(0, 0) = 0.0;
+  direction(0, 1) = 1.0;
+  direction(1, 0) = -1.0;
+  direction(1, 1) = 0.0;
+  image->SetOrigin(origin);
+  image->SetSpacing(spacing);
+  image->SetDirection(direction);
+
+  REQUIRE(setSizeInfoFromItkImageBase(sizeInfo, image.GetPointer(), sizeof(float)));
+  CHECK(sizeInfo.m_imageSizeInPixels == 6);
+  CHECK(sizeInfo.m_imageSizeInComponents == 6);
+  CHECK(sizeInfo.m_imageSizeInBytes == 6 * sizeof(float));
+
+  REQUIRE(setSpaceInfoFromItkImageBase(spaceInfo, image.GetPointer()));
+  CHECK(spaceInfo.validate());
+  CHECK(spaceInfo.m_dimensions == std::vector<std::size_t>{3, 2, 1});
+  CHECK(spaceInfo.m_origin.at(2) == Catch::Approx(3.0));
+  CHECK(spaceInfo.m_spacing.at(1) == Catch::Approx(1.25));
+  CHECK(spaceInfo.m_directions.at(0).at(1) == Catch::Approx(-1.0));
+  CHECK(spaceInfo.m_directions.at(1).at(0) == Catch::Approx(1.0));
 }
 
 TEST_CASE("Scalar double images load as float32 in memory", "[image][loading][io][cast]")

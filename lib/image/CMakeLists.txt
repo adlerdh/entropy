@@ -58,6 +58,8 @@ target_compile_options(EntropyImage PRIVATE
   >
 )
 
+entropy_enable_coverage_for_target(EntropyImage)
+
 set_target_properties(EntropyImage PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON

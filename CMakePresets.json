@@ -64,6 +64,26 @@
       }
     },
     {
+      "name": "superbuild-coverage",
+      "displayName": "Coverage superbuild configure",
+      "inherits": "superbuild",
+      "binaryDir": "${sourceDir}/build-coverage",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "Entropy_SUPERBUILD_CONFIG": "Debug"
+      }
+    },
+    {
+      "name": "app-coverage",
+      "displayName": "Coverage app configure",
+      "inherits": "app",
+      "binaryDir": "${sourceDir}/build-coverage",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "Entropy_ENABLE_COVERAGE": true
+      }
+    },
+    {
       "name": "superbuild-release",
       "displayName": "Release superbuild configure",
       "inherits": "superbuild",
@@ -115,6 +135,36 @@
       "displayName": "Build Debug app",
       "configurePreset": "app-debug",
       "configuration": "Debug"
+    },
+    {
+      "name": "superbuild-coverage",
+      "displayName": "Build coverage dependencies",
+      "configurePreset": "superbuild-coverage",
+      "configuration": "Debug"
+    },
+    {
+      "name": "app-coverage",
+      "displayName": "Build coverage app",
+      "configurePreset": "app-coverage",
+      "configuration": "Debug"
+    },
+    {
+      "name": "coverage",
+      "displayName": "Run unit tests with coverage",
+      "configurePreset": "app-coverage",
+      "configuration": "Debug",
+      "targets": [
+        "coverage"
+      ]
+    },
+    {
+      "name": "coverage-html",
+      "displayName": "Run unit tests with HTML coverage",
+      "configurePreset": "app-coverage",
+      "configuration": "Debug",
+      "targets": [
+        "coverage-html"
+      ]
     },
     {
       "name": "superbuild-release",

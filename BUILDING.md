@@ -68,6 +68,10 @@ Most presets have the same name for configure and build steps: configure with `c
 | `default` | `build-default` | `RelWithDebInfo` | App | `cmake --preset default`<br>`cmake --build --preset default --parallel` | Alias-style app preset for the default development build. |
 | `superbuild-debug` | `build-debug` | `Debug` | Dependencies | `cmake --preset superbuild-debug`<br>`cmake --build --preset superbuild-debug --parallel` | Debug dependency superbuild. |
 | `app-debug` | `build-debug` | `Debug` | App | `cmake --preset app-debug`<br>`cmake --build --preset app-debug --parallel` | Debug Entropy app and tests after `superbuild-debug`. |
+| `superbuild-coverage` | `build-coverage` | `Debug` | Dependencies | `cmake --preset superbuild-coverage`<br>`cmake --build --preset superbuild-coverage --parallel` | Debug dependency superbuild for code coverage builds. |
+| `app-coverage` | `build-coverage` | `Debug` | App | `cmake --preset app-coverage`<br>`cmake --build --preset app-coverage --parallel` | Entropy app and tests built with coverage instrumentation after `superbuild-coverage`. |
+| `coverage` | `build-coverage` | `Debug` | Tests/report | `cmake --preset app-coverage`<br>`cmake --build --preset coverage --parallel` | Builds instrumented unit-test binaries, runs CTest, and prints a coverage summary. |
+| `coverage-html` | `build-coverage` | `Debug` | Tests/report | `cmake --preset app-coverage`<br>`cmake --build --preset coverage-html --parallel` | Builds instrumented unit-test binaries, runs CTest, and writes an HTML coverage report. |
 | `superbuild-release` | `build-release` | `Release` | Dependencies | `cmake --preset superbuild-release`<br>`cmake --build --preset superbuild-release --parallel` | Release dependency superbuild. Use this before release builds and packaging. |
 | `app-release` | `build-release` | `Release` | App | `cmake --preset app-release`<br>`cmake --build --preset app-release --parallel` | Release Entropy app and tests after `superbuild-release`. Use this before packaging. |
 | `package-release` | `build-release` | `Release` | Package | `cmake --preset app-release`<br>`cmake --build --preset package-release --parallel` | Builds the release app if needed and runs CPack. See [PACKAGING.md](PACKAGING.md). |
@@ -113,6 +117,50 @@ ctest --test-dir build-default --parallel --output-on-failure
 ```
 
 For release or debug builds, replace `build-default` with `build-release` or `build-debug`.
+
+### Code Coverage
+
+Coverage builds are opt-in and should use their own build directory. The provided coverage presets use `build-coverage`, `Debug`, `BUILD_TESTING=ON`, and `Entropy_ENABLE_COVERAGE=ON`.
+
+```sh
+cmake --preset superbuild-coverage
+cmake --build --preset superbuild-coverage --parallel
+
+cmake --preset app-coverage
+cmake --build --preset coverage --parallel
+```
+
+The `coverage` target builds the instrumented unit-test binaries, runs the full CTest suite, and prints a terminal coverage summary. The report excludes external dependencies, generated build files, and test source files from the coverage totals.
+
+To generate an HTML report instead:
+
+```sh
+cmake --build --preset coverage-html --parallel
+```
+
+The HTML output is written under:
+
+```text
+build-coverage/coverage/html/index.html
+```
+
+Coverage backend selection is automatic by default:
+
+| Compiler | Default backend | Required tools |
+| --- | --- | --- |
+| Clang or AppleClang | LLVM source-based coverage | `llvm-cov` and `llvm-profdata`; on macOS, Xcode's tools are discovered through `xcrun` when needed. |
+| GCC | gcov-compatible coverage | `gcovr`, or both `lcov` and `genhtml`. |
+| MSVC | OpenCppCoverage | `OpenCppCoverage` on `PATH`. |
+
+You can override the backend at configure time:
+
+```sh
+cmake --preset app-coverage -DEntropy_COVERAGE_MODE=LLVM
+cmake --preset app-coverage -DEntropy_COVERAGE_MODE=GCOV
+cmake --preset app-coverage -DEntropy_COVERAGE_MODE=OPENCPPCOVERAGE
+```
+
+If you need to include or exclude different files in local reports, override `Entropy_COVERAGE_EXCLUDE_REGEX` when configuring the app stage. The default excludes external dependencies, test files, build-tree files, system headers, and Xcode SDK/toolchain paths.
 
 ## Pre-Commit Checks
 
@@ -161,6 +209,9 @@ Entropy-specific user-facing cache options use the `Entropy_` prefix. Lowercase 
 | `Entropy_USE_CCACHE` | Boolean | `ON` | All platforms | Uses `ccache` as the compiler launcher when it is installed. If `ccache` is not found, CMake continues without it. |
 | `Entropy_SUPERBUILD_PARALLEL` | String | Empty | Superbuild | Sets the parallel level passed to ExternalProject builds. Empty means the native build tool chooses its own default. |
 | `BUILD_TESTING` | Boolean | `ON` when CTest is enabled | App stage | Enables test targets through CTest/Catch2. Disable with `-DBUILD_TESTING=OFF` if you need a smaller local build graph. |
+| `Entropy_ENABLE_COVERAGE` | Boolean | `OFF` | App stage | Builds Entropy targets and unit-test executables with coverage instrumentation and adds `coverage`, `coverage-html`, and `coverage-clean` targets. |
+| `Entropy_COVERAGE_MODE` | String | `AUTO` | App stage with coverage enabled | Selects the coverage backend. Valid values are `AUTO`, `LLVM`, `GCOV`, and `OPENCPPCOVERAGE`. |
+| `Entropy_COVERAGE_EXCLUDE_REGEX` | String | Project-defined regex | App stage with coverage enabled | Regular expression passed to the coverage reporter to exclude external dependencies, test sources, build-tree files, and system/toolchain paths. |
 | `Entropy_GLAD_GL_VERSION` | String | `3.3` | App stage | Selects the vendored GLAD OpenGL Core loader. Valid values are `3.3`, `4.1`, and `4.6`; Entropy defaults to `3.3` for broad hardware and platform compatibility. |
 | `Entropy_GLAD_GL_DEBUG` | Boolean | `false` | App stage | Uses the debug GLAD loader variant for the selected OpenGL version. Useful when debugging OpenGL calls. |
 | `Entropy_PACKAGE_OUTPUT_DIR` | Path | `${CMAKE_BINARY_DIR}/packages` | Packaging | Directory where CPack writes generated artifacts and `_CPack_Packages` scratch files. See [PACKAGING.md](PACKAGING.md). |

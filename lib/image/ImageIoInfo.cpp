@@ -111,7 +111,6 @@ MetaDataMap getMetaDataMap(const ::itk::ImageIOBase::Pointer imageIo)
           sout << value[i];
         }
       }
-      sout << std::ends;
 
       metaDataMap[key] = sout.str();
     }
@@ -239,6 +238,9 @@ bool setPixelInfoFromItk(PixelInfo& info, const itk::ImageIOBase::Pointer imageI
   info.m_pixelTypeString = itk::ImageIOBase::GetPixelTypeAsString(pixelType);
   info.m_numComponents = static_cast<uint32_t>(imageIo->GetNumberOfComponents());
   info.m_pixelStrideInBytes = static_cast<uint32_t>(imageIo->GetPixelStride());
+  if (info.m_pixelStrideInBytes == 0u) {
+    info.m_pixelStrideInBytes = info.m_numComponents * static_cast<uint32_t>(imageIo->GetComponentSize());
+  }
   return true;
 }
 
@@ -270,7 +272,7 @@ bool setSpaceInfoFromItk(SpaceInfo& info, const itk::ImageIOBase::Pointer imageI
   info.m_dimensions.resize(info.m_numDimensions);
   info.m_origin.resize(info.m_numDimensions);
   info.m_spacing.resize(info.m_numDimensions);
-  info.m_directions.resize(info.m_numDimensions);
+  info.m_directions.assign(info.m_numDimensions, std::vector<double>(info.m_numDimensions));
 
   for (uint32_t i = 0; i < info.m_numDimensions; ++i) {
     info.m_dimensions[i] = static_cast<uint64_t>(imageIo->GetDimensions(i));
@@ -364,7 +366,7 @@ bool setSpaceInfoFromItkImageBase(SpaceInfo& info, const typename itk::ImageBase
   info.m_dimensions.resize(info.m_numDimensions);
   info.m_origin.resize(info.m_numDimensions);
   info.m_spacing.resize(info.m_numDimensions);
-  info.m_directions.resize(info.m_numDimensions);
+  info.m_directions.assign(info.m_numDimensions, std::vector<double>(info.m_numDimensions));
 
   const auto region = imageBase->GetLargestPossibleRegion();
   const auto size = region.GetSize();

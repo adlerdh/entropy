@@ -15,6 +15,9 @@ target_link_libraries(EntropyImageTests PRIVATE
   entropy_warnings
 )
 
+entropy_enable_coverage_for_target(EntropyImageTests)
+entropy_register_coverage_test_target(EntropyImageTests)
+
 target_include_directories(EntropyImageTests PRIVATE
   ${ITK_INCLUDE_DIRS}
 )

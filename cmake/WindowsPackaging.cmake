@@ -49,9 +49,9 @@ set(CPACK_PACKAGE_VERSION "${VERSION_FULL}")
 set(CPACK_PACKAGE_FILE_NAME "${APP_NAME}-${VERSION_FULL}-Windows-${CMAKE_SYSTEM_PROCESSOR}")
 set(CPACK_ARCHIVE_FILE_NAME "${APP_NAME}-${VERSION_FULL}-Windows-${CMAKE_SYSTEM_PROCESSOR}-portable")
 set(CPACK_ARCHIVE_COMPONENT_INSTALL OFF)
-set(entropy_WINDOWS_CPACK_OPTIONS "${CMAKE_CURRENT_BINARY_DIR}/EntropyWindowsCPackOptions.cmake")
+set(entropy_WINDOWS_CPACK_OPTIONS "${CMAKE_CURRENT_BINARY_DIR}/WindowsCPackOptions.cmake")
 configure_file(
-    "${CMAKE_CURRENT_LIST_DIR}/EntropyWindowsCPackOptions.cmake.in"
+    "${CMAKE_CURRENT_LIST_DIR}/WindowsCPackOptions.cmake.in"
     "${entropy_WINDOWS_CPACK_OPTIONS}"
     @ONLY
 )

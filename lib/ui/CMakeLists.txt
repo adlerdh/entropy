@@ -144,3 +144,5 @@ set_target_properties(EntropyUI PROPERTIES
   CXX_EXTENSIONS OFF
   NO_SYSTEM_FROM_IMPORTED ON
 )
+
+entropy_enable_coverage_for_target(EntropyUI)
