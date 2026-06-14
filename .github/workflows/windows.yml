@@ -1,0 +1,272 @@
+name: Windows CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  schedule:
+    # Weekly full Windows validation. Run manually when release confidence is needed sooner.
+    - cron: "23 8 * * 0"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CMAKE_GENERATOR: "Visual Studio 17 2022"
+  CMAKE_GENERATOR_PLATFORM: x64
+  CMAKE_BUILD_PARALLEL_LEVEL: 2
+  CTEST_PARALLEL_LEVEL: 2
+  SUPERBUILD_CACHE_VERSION: v1
+
+jobs:
+  format:
+    name: Format Check
+    runs-on: windows-2022
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install pre-commit
+        run: python -m pip install pre-commit
+
+      - name: Validate formatting tools
+        run: clang-format --version
+
+      - name: Run pre-commit checks
+        run: pre-commit run --all-files --show-diff-on-failure
+
+      - name: Require clean formatting result
+        run: git diff --exit-code
+
+  debug:
+    name: Debug Build And Tests
+    runs-on: windows-2022
+    needs: format
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate runner tools
+        run: |
+          cmake --version
+          git --version
+          vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+
+      - name: Restore Debug SuperBuild cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-debug/catch2-*
+            build-debug/cli11-*
+            build-debug/cmakerc-*
+            build-debug/glfw-*
+            build-debug/glm-*
+            build-debug/iconfont-*
+            build-debug/imgui-*
+            build-debug/implot-*
+            build-debug/itk-*
+            build-debug/nanovg-*
+            build-debug/nativefiledialog-*
+            build-debug/nlohmann_json-*
+            build-debug/qtbase-*
+            build-debug/spdlog-*
+            build-debug/stduuid-*
+            build-debug/tinyfsm-*
+          key: windows-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            windows-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Debug SuperBuild
+        run: cmake --preset superbuild-debug
+
+      - name: Build Debug SuperBuild
+        run: cmake --build --preset superbuild-debug --parallel
+
+      - name: Configure Debug app
+        run: cmake --preset app-debug
+
+      - name: Build Debug app
+        run: cmake --build --preset app-debug --parallel
+
+      - name: Run Debug tests
+        run: ctest --test-dir build-debug -C Debug --parallel --output-on-failure
+
+  coverage:
+    name: Coverage Report
+    runs-on: windows-2022
+    needs: format
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install coverage and docs tools
+        run: |
+          winget install --id OpenCppCoverage.OpenCppCoverage -e --accept-package-agreements --accept-source-agreements --disable-interactivity
+          choco install doxygen.install -y --no-progress
+          $openCppCoveragePath = "C:\Program Files\OpenCppCoverage"
+          $env:Path = "$openCppCoveragePath;$env:Path"
+          $openCppCoveragePath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Get-Command OpenCppCoverage -ErrorAction Stop
+          doxygen --version
+
+      - name: Restore Coverage SuperBuild cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-coverage/catch2-*
+            build-coverage/cli11-*
+            build-coverage/cmakerc-*
+            build-coverage/glfw-*
+            build-coverage/glm-*
+            build-coverage/iconfont-*
+            build-coverage/imgui-*
+            build-coverage/implot-*
+            build-coverage/itk-*
+            build-coverage/nanovg-*
+            build-coverage/nativefiledialog-*
+            build-coverage/nlohmann_json-*
+            build-coverage/qtbase-*
+            build-coverage/spdlog-*
+            build-coverage/stduuid-*
+            build-coverage/tinyfsm-*
+          key: windows-msvc2022-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            windows-msvc2022-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Coverage SuperBuild
+        run: cmake --preset superbuild-coverage
+
+      - name: Build Coverage SuperBuild
+        run: cmake --build --preset superbuild-coverage --parallel
+
+      - name: Configure Coverage app
+        run: cmake --preset app-coverage
+
+      - name: Build Coverage app
+        run: cmake --build --preset app-coverage --parallel
+
+      - name: Generate XML coverage
+        run: cmake --build --preset coverage --parallel
+
+      - name: Summarize XML coverage
+        run: |
+          New-Item -ItemType Directory -Force coverage-artifacts | Out-Null
+          Copy-Item build-coverage\coverage\opencppcoverage.xml coverage-artifacts\opencppcoverage.xml -Force
+          [xml]$coverage = Get-Content coverage-artifacts\opencppcoverage.xml
+          $lineRate = [double]$coverage.coverage.'line-rate'
+          $linesCovered = [int]$coverage.coverage.'lines-covered'
+          $linesValid = [int]$coverage.coverage.'lines-valid'
+          $percent = [math]::Round($lineRate * 100, 2)
+          "### Windows coverage" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "Line coverage: $percent% ($linesCovered / $linesValid)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - name: Generate HTML coverage
+        run: cmake --build --preset coverage-html --parallel
+
+      - name: Upload coverage XML
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-coverage-xml
+          path: coverage-artifacts/opencppcoverage.xml
+          if-no-files-found: error
+
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-coverage-html
+          path: build-coverage/coverage/html/
+          if-no-files-found: error
+
+  release:
+    name: Release Build Tests And Packages
+    runs-on: windows-2022
+    needs: format
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate runner tools
+        run: |
+          cmake --version
+          git --version
+          vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          Get-Command candle.exe -ErrorAction Stop
+          Get-Command light.exe -ErrorAction Stop
+
+      - name: Restore Release SuperBuild cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-release/catch2-*
+            build-release/cli11-*
+            build-release/cmakerc-*
+            build-release/glfw-*
+            build-release/glm-*
+            build-release/iconfont-*
+            build-release/imgui-*
+            build-release/implot-*
+            build-release/itk-*
+            build-release/nanovg-*
+            build-release/nativefiledialog-*
+            build-release/nlohmann_json-*
+            build-release/qtbase-*
+            build-release/spdlog-*
+            build-release/stduuid-*
+            build-release/tinyfsm-*
+          key: windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Release SuperBuild
+        run: cmake --preset superbuild-release
+
+      - name: Build Release SuperBuild
+        run: cmake --build --preset superbuild-release --parallel
+
+      - name: Configure Release app
+        run: cmake --preset app-release
+
+      - name: Build Release app
+        run: cmake --build --preset app-release --parallel
+
+      - name: Run Release tests
+        run: ctest --test-dir build-release -C Release --parallel --output-on-failure
+
+      - name: Build MSI and portable ZIP
+        run: cmake --build --preset package-release --parallel
+
+      - name: Smoke-test staged install
+        run: |
+          cmake --install build-release --config Release --prefix build-release\windows-package-install
+          & .\build-release\windows-package-install\entropy.exe --help
+
+      - name: Upload Windows packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages
+          path: |
+            build-release/packages/*.msi
+            build-release/packages/*portable.zip
+          if-no-files-found: error

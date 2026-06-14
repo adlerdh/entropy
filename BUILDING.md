@@ -214,6 +214,59 @@ pre-commit run --all-files
 
 `clang-format` must be available on `PATH` because the hook uses the system formatter.
 
+## GitHub Actions Windows CI
+
+The Windows GitHub Actions workflow is defined in `.github/workflows/windows.yml` and uses the `windows-2022` hosted runner so the Visual Studio, CMake, and WiX toolchain is predictable. This is preferred over `windows-latest` because GitHub can retarget `windows-latest` to a newer Windows and Visual Studio image. The workflow installs `pre-commit` for formatting checks, OpenCppCoverage for Windows coverage reports, and Doxygen for documentation-tool availability.
+
+As of GitHub's `windows-2022` image version `20260607.193.1`, the hosted runner includes:
+
+- Windows Server 2022, OS build `10.0.20348.5139`
+- Visual Studio Enterprise 2022 `17.14.37314.3`
+- CMake `3.31.6`
+- Ninja `1.13.2`
+- WiX Toolset `3.14.1.8722`
+- Git `2.54.0.windows.1`
+- Python `3.12.10`
+- Chocolatey `2.7.2`
+- VSWhere `3.1.7`
+
+GitHub refreshes runner images over time, so treat those versions as the current baseline rather than a permanent contract. The workflow includes tool-version logging steps to make image changes visible in CI logs.
+
+The trigger policy keeps routine CI useful without spending Windows runner minutes on every expensive release task:
+
+- Pull requests and pushes to `main` run formatting checks plus the Debug SuperBuild, Debug app build, and Debug unit tests.
+- A weekly scheduled run and manual `workflow_dispatch` run execute the heavier coverage and release packaging jobs.
+- Tags named `v*` run the heavier coverage and release packaging jobs for release validation.
+
+The full Windows validation includes:
+
+- `pre-commit run --all-files --show-diff-on-failure`
+- `cmake --preset superbuild-debug`
+- `cmake --build --preset superbuild-debug --parallel`
+- `cmake --preset app-debug`
+- `cmake --build --preset app-debug --parallel`
+- `ctest --test-dir build-debug -C Debug --parallel --output-on-failure`
+- `cmake --preset superbuild-coverage`
+- `cmake --build --preset superbuild-coverage --parallel`
+- `cmake --preset app-coverage`
+- `cmake --build --preset app-coverage --parallel`
+- `cmake --build --preset coverage --parallel`
+- `cmake --build --preset coverage-html --parallel`
+- `cmake --preset superbuild-release`
+- `cmake --build --preset superbuild-release --parallel`
+- `cmake --preset app-release`
+- `cmake --build --preset app-release --parallel`
+- `ctest --test-dir build-release -C Release --parallel --output-on-failure`
+- `cmake --build --preset package-release --parallel`
+
+The workflow uploads these artifacts:
+
+- `windows-coverage-xml`: `coverage-artifacts/opencppcoverage.xml`
+- `windows-coverage-html`: the generated HTML coverage report from `build-coverage/coverage/html/`
+- `windows-packages`: the MSI and portable ZIP from `build-release/packages/`
+
+The Debug, Coverage, and Release SuperBuild dependency trees are cached separately with `actions/cache`. Cache keys include `CMakePresets.json`, `CMakeLists.txt`, and `cmake/*.cmake`, so changes to dependency versions, build options, coverage scripts, or packaging scripts invalidate the cache. The cache is best-effort: a cache hit avoids rebuilding unchanged third-party dependencies, but CI still re-runs CMake configure/build/test steps and remains correct after a cache miss.
+
 ## Build Options
 
 These are the project-level CMake cache options and important build variables you are likely to use. Pass them at configure time with `-DNAME=value`, or place local overrides in `CMakeUserPresets.json`.
