@@ -18,7 +18,9 @@ TEST_CASE("user settings file is stored under the platform user data directory",
 #elif defined(_WIN32)
   CHECK(app_paths::usesPlatformUserDirectories());
   CHECK(settingsFile.string().find("Entropy") != std::string::npos);
-  CHECK(settingsFile.is_absolute() || settingsFile.parent_path() == std::filesystem::path{"Entropy"});
+  const bool hasExpectedWindowsPath =
+    settingsFile.is_absolute() || settingsFile.parent_path() == std::filesystem::path{"Entropy"};
+  CHECK(hasExpectedWindowsPath);
 #elif defined(__linux__)
   CHECK_FALSE(app_paths::usesPlatformUserDirectories());
   CHECK(settingsFile.string().find("entropy") != std::string::npos);

@@ -130,7 +130,13 @@ cmake --preset app-coverage
 cmake --build --preset coverage --parallel
 ```
 
-The `coverage` target builds the instrumented unit-test binaries, runs the full CTest suite, and prints a terminal coverage summary. The report excludes external dependencies, generated build files, and test source files from the coverage totals.
+The `coverage` target builds the instrumented unit-test binaries, runs the full CTest suite, and prints a terminal coverage summary. It also writes a machine-readable coverage report under:
+
+```text
+build-coverage/coverage/opencppcoverage.xml # MSVC/OpenCppCoverage
+```
+
+The report excludes external dependencies, generated build files, and test source files from the coverage totals.
 
 To generate an HTML report instead:
 
@@ -144,6 +150,8 @@ The HTML output is written under:
 build-coverage/coverage/html/index.html
 ```
 
+Both coverage targets recreate `build-coverage/coverage`, so running `coverage-html` after `coverage` replaces the XML report with the HTML report, and running `coverage` after `coverage-html` replaces the HTML report with the XML report.
+
 Coverage backend selection is automatic by default:
 
 | Compiler | Default backend | Required tools |
@@ -151,6 +159,20 @@ Coverage backend selection is automatic by default:
 | Clang or AppleClang | LLVM source-based coverage | `llvm-cov` and `llvm-profdata`; on macOS, Xcode's tools are discovered through `xcrun` when needed. |
 | GCC | gcov-compatible coverage | `gcovr`, or both `lcov` and `genhtml`. |
 | MSVC | OpenCppCoverage | `OpenCppCoverage` on `PATH`. |
+
+On Windows with MSVC, install OpenCppCoverage with `winget`:
+
+```powershell
+winget install --id OpenCppCoverage.OpenCppCoverage --accept-package-agreements --accept-source-agreements
+```
+
+Open a new terminal after installation, or prepend the install directory to the current PowerShell session:
+
+```powershell
+$env:Path = 'C:\Program Files\OpenCppCoverage;' + $env:Path
+```
+
+OpenCppCoverage is the default Windows coverage backend for this project because it is a scriptable, open-source CLI tool for native C++ on Windows and works with the CMake/CTest coverage targets. Visual Studio's built-in coverage tooling also supports native C++ coverage, but it is tied to Visual Studio/vstest workflows and is less convenient for these cross-platform CMake presets.
 
 You can override the backend at configure time:
 

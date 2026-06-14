@@ -34,6 +34,13 @@ install(RUNTIME_DEPENDENCY_SET entropy_WINDOWS_RUNTIME_DEPENDENCIES
     COMPONENT Runtime
 )
 
+install(DIRECTORY "${itk_PREFIX}/build/bin/$<CONFIG>/"
+    DESTINATION "${entropy_WINDOWS_INSTALL_BINDIR}"
+    COMPONENT Runtime
+    FILES_MATCHING
+      PATTERN "*.dll"
+)
+
 install(FILES "${entropy_ABOUT_ICON_SOURCE}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy"
     RENAME "${entropy_ABOUT_ICON_FILE_NAME}"

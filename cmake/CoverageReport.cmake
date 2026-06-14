@@ -175,12 +175,29 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
     set(_entropy_export "cobertura:${_entropy_export}")
   endif()
 
+  file(TO_NATIVE_PATH "${ENTROPY_SOURCE_DIR}/app" _entropy_opencppcoverage_app_source)
+  file(TO_NATIVE_PATH "${ENTROPY_SOURCE_DIR}/lib" _entropy_opencppcoverage_lib_source)
+  file(TO_NATIVE_PATH "${ENTROPY_SOURCE_DIR}/external" _entropy_opencppcoverage_external_source)
+  file(TO_NATIVE_PATH "${_entropy_export}" _entropy_opencppcoverage_export)
+
+  if(NOT DEFINED ENTROPY_COVERAGE_OBJECTS OR ENTROPY_COVERAGE_OBJECTS STREQUAL "")
+    message(FATAL_ERROR "ENTROPY_COVERAGE_OBJECTS is required for OpenCppCoverage coverage")
+  endif()
+  string(REPLACE "|" ";" _entropy_coverage_objects "${ENTROPY_COVERAGE_OBJECTS}")
+  set(_entropy_opencppcoverage_module_args)
+  foreach(_entropy_object IN LISTS _entropy_coverage_objects)
+    file(TO_NATIVE_PATH "${_entropy_object}" _entropy_opencppcoverage_module)
+    list(APPEND _entropy_opencppcoverage_module_args "--modules" "${_entropy_opencppcoverage_module}")
+  endforeach()
+
   execute_process(
     COMMAND "${ENTROPY_OPENCPPCOVERAGE}"
-      "--sources" "${ENTROPY_SOURCE_DIR}/app"
-      "--sources" "${ENTROPY_SOURCE_DIR}/lib"
-      "--excluded_sources" "${ENTROPY_SOURCE_DIR}/external"
-      "--export_type" "${_entropy_export}"
+      "--cover_children"
+      ${_entropy_opencppcoverage_module_args}
+      "--sources" "${_entropy_opencppcoverage_app_source}"
+      "--sources" "${_entropy_opencppcoverage_lib_source}"
+      "--excluded_sources" "${_entropy_opencppcoverage_external_source}"
+      "--export_type" "${_entropy_opencppcoverage_export}"
       "--"
       ${_entropy_ctest_command}
     WORKING_DIRECTORY "${ENTROPY_BINARY_DIR}"
