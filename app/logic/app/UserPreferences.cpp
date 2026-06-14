@@ -1,8 +1,6 @@
 #include "logic/app/UserPreferences.h"
 
 #include "common/LoggingSettings.h"
-#include "rendering/RenderData.h"
-
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -117,7 +115,11 @@ void setVec2FromJson(glm::vec2& value, const json& object, const char* key)
     return;
   }
 
-  value = glm::vec2{it->at(0).get<float>(), it->at(1).get<float>()};
+  try {
+    value = glm::vec2{it->at(0).get<float>(), it->at(1).get<float>()};
+  }
+  catch (const json::exception&) {
+  }
 }
 
 void setVec3FromJson(glm::vec3& value, const json& object, const char* key)
@@ -127,7 +129,11 @@ void setVec3FromJson(glm::vec3& value, const json& object, const char* key)
     return;
   }
 
-  value = glm::vec3{it->at(0).get<float>(), it->at(1).get<float>(), it->at(2).get<float>()};
+  try {
+    value = glm::vec3{it->at(0).get<float>(), it->at(1).get<float>(), it->at(2).get<float>()};
+  }
+  catch (const json::exception&) {
+  }
 }
 
 void setVec4FromJson(glm::vec4& value, const json& object, const char* key)
@@ -137,7 +143,11 @@ void setVec4FromJson(glm::vec4& value, const json& object, const char* key)
     return;
   }
 
-  value = glm::vec4{it->at(0).get<float>(), it->at(1).get<float>(), it->at(2).get<float>(), it->at(3).get<float>()};
+  try {
+    value = glm::vec4{it->at(0).get<float>(), it->at(1).get<float>(), it->at(2).get<float>(), it->at(3).get<float>()};
+  }
+  catch (const json::exception&) {
+  }
 }
 
 constexpr std::array sk_uiFontNames{
@@ -212,31 +222,31 @@ constexpr std::array sk_brushPreviewStyleNames{
   EnumName{BrushPreviewStyle::OutlineAndFill, "outlineAndFill"}};
 
 constexpr std::array sk_raycastSegMaskingNames{
-  EnumName{RenderData::SegMaskingForRaycasting::Disabled, "disabled"},
-  EnumName{RenderData::SegMaskingForRaycasting::SegMasksIn, "maskIn"},
-  EnumName{RenderData::SegMaskingForRaycasting::SegMasksOut, "maskOut"}};
+  EnumName{user_preferences::RenderPreferences::SegMaskingForRaycasting::Disabled, "disabled"},
+  EnumName{user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksIn, "maskIn"},
+  EnumName{user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut, "maskOut"}};
 
-json metricParamsToJson(const RenderData::MetricParams& params)
+json metricParamsToJson(const user_preferences::RenderPreferences::MetricParams& params)
 {
   return {
-    {"windowSlopeIntercept", vec2ToJson(params.m_slopeIntercept)},
-    {"colormapIndex", params.m_colorMapIndex},
-    {"invertColormap", params.m_invertCmap},
-    {"continuousColormap", params.m_cmapContinuous},
-    {"colormapLevels", params.m_cmapQuantizationLevels}};
+    {"windowSlopeIntercept", vec2ToJson(params.slopeIntercept)},
+    {"colormapIndex", params.colorMapIndex},
+    {"invertColormap", params.invertColormap},
+    {"continuousColormap", params.continuousColormap},
+    {"colormapLevels", params.colormapLevels}};
 }
 
-void applyMetricParamsFromJson(RenderData::MetricParams& params, const json& object)
+void applyMetricParamsFromJson(user_preferences::RenderPreferences::MetricParams& params, const json& object)
 {
-  setVec2FromJson(params.m_slopeIntercept, object, "windowSlopeIntercept");
-  setFromJson(params.m_colorMapIndex, object, "colormapIndex");
-  setFromJson(params.m_invertCmap, object, "invertColormap");
-  setFromJson(params.m_cmapContinuous, object, "continuousColormap");
-  setFromJson(params.m_cmapQuantizationLevels, object, "colormapLevels");
-  params.m_cmapQuantizationLevels = std::max(params.m_cmapQuantizationLevels, 2);
+  setVec2FromJson(params.slopeIntercept, object, "windowSlopeIntercept");
+  setFromJson(params.colorMapIndex, object, "colormapIndex");
+  setFromJson(params.invertColormap, object, "invertColormap");
+  setFromJson(params.continuousColormap, object, "continuousColormap");
+  setFromJson(params.colormapLevels, object, "colormapLevels");
+  params.colormapLevels = std::max(params.colormapLevels, 2);
 }
 
-json toJson(const AppSettings& settings, const RenderData& renderData)
+json toJson(const AppSettings& settings, const user_preferences::RenderPreferences& renderPreferences)
 {
   json uiScale = "auto";
   if (settings.uiScaleOverride()) {
@@ -253,43 +263,45 @@ json toJson(const AppSettings& settings, const RenderData& renderData)
       {"density", enumToName(settings.uiDensityPreset(), sk_uiDensityPresetNames)},
       {"windowBackgroundOpacity", settings.uiWindowBgOpacity()}}},
     {"views",
-     {{"showImageBorders", renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections},
+     {{"showImageBorders", renderPreferences.showImageBorders},
+      {"showOverlays", settings.overlays()},
       {"lockAnatomicalDirectionsToReferenceImage", settings.lockAnatomicalCoordinateAxesWithReferenceImage()},
       {"crosshairs",
-       {{"color", vec4ToJson(renderData.m_crosshairsColor)},
-        {"snapping", enumToName(renderData.m_snapCrosshairs, sk_crosshairsSnappingNames)}}},
+       {{"color", vec4ToJson(renderPreferences.crosshairsColor)},
+        {"snapping", enumToName(renderPreferences.crosshairsSnapping, sk_crosshairsSnappingNames)}}},
       {"synchronizeViewZooms", settings.synchronizeZooms()},
       {"backgrounds",
-       {{"2d", vec3ToJson(renderData.m_2dBackgroundColor)}, {"3d", vec4ToJson(renderData.m_3dBackgroundColor)}}},
+       {{"2d", vec3ToJson(renderPreferences.background2dColor)},
+        {"3d", vec4ToJson(renderPreferences.background3dColor)}}},
       {"anatomicalLabels",
-       {{"color", vec4ToJson(renderData.m_anatomicalLabelColor)},
-        {"type", enumToName(renderData.m_anatomicalLabelType, sk_anatomicalLabelNames)}}},
+       {{"color", vec4ToJson(renderPreferences.anatomicalLabelColor)},
+        {"type", enumToName(renderPreferences.anatomicalLabelType, sk_anatomicalLabelNames)}}},
       {"scaleBars",
-       {{"show", renderData.m_showScaleBars},
-        {"showInLightboxViews", renderData.m_showScaleBarsInLightboxViews},
-        {"color", vec4ToJson(renderData.m_scaleBarColor)},
-        {"position", enumToName(renderData.m_scaleBarPosition, sk_scaleBarPositionNames)},
-        {"orientation", enumToName(renderData.m_scaleBarOrientation, sk_scaleBarOrientationNames)},
-        {"targetLengthFraction", renderData.m_scaleBarTargetFraction},
-        {"marginPixels", renderData.m_scaleBarMarginPx},
-        {"ticks", enumToName(renderData.m_scaleBarTicks, sk_scaleBarTicksNames)}}},
+       {{"show", renderPreferences.showScaleBars},
+        {"showInLightboxViews", renderPreferences.showScaleBarsInLightboxViews},
+        {"color", vec4ToJson(renderPreferences.scaleBarColor)},
+        {"position", enumToName(renderPreferences.scaleBarPosition, sk_scaleBarPositionNames)},
+        {"orientation", enumToName(renderPreferences.scaleBarOrientation, sk_scaleBarOrientationNames)},
+        {"targetLengthFraction", renderPreferences.scaleBarTargetFraction},
+        {"marginPixels", renderPreferences.scaleBarMarginPx},
+        {"ticks", enumToName(renderPreferences.scaleBarTicks, sk_scaleBarTicksNames)}}},
       {"lightbox",
-       {{"showOffsetLabels", renderData.m_showLightboxOffsetLabels},
-        {"offsetLabelColor", vec4ToJson(renderData.m_lightboxOffsetLabelColor)}}}}},
+       {{"showOffsetLabels", renderPreferences.showLightboxOffsetLabels},
+        {"offsetLabelColor", vec4ToJson(renderPreferences.lightboxOffsetLabelColor)}}}}},
     {"images",
-     {{"floatingPointLinearInterpolation", renderData.m_imageGrayFloatingPointInterpolation},
+     {{"floatingPointLinearInterpolation", renderPreferences.floatingPointLinearInterpolation},
       {"intensityProjectionDefaults",
-       {{"useMaximumImageExtent", renderData.m_doMaxExtentIntensityProjection},
-        {"slabThicknessMm", renderData.m_intensityProjectionSlabThickness},
-        {"xrayEnergyKeV", renderData.m_xrayEnergyKeV},
-        {"xrayWindow", renderData.m_xrayIntensityWindow},
-        {"xrayLevel", renderData.m_xrayIntensityLevel}}}}},
+       {{"useMaximumImageExtent", renderPreferences.useMaximumIntensityProjectionExtent},
+        {"slabThicknessMm", renderPreferences.intensityProjectionSlabThicknessMm},
+        {"xrayEnergyKeV", renderPreferences.xrayEnergyKeV},
+        {"xrayWindow", renderPreferences.xrayWindow},
+        {"xrayLevel", renderPreferences.xrayLevel}}}}},
     {"segmentation",
      {{"display",
-       {{"modulateWithImageOpacity", renderData.m_modulateSegOpacityWithImageOpacity},
-        {"outlineStyle", enumToName(renderData.m_segOutlineStyle, sk_segmentationOutlineNames)},
-        {"interiorOpacity", renderData.m_segInteriorOpacity},
-        {"erosionFactor", renderData.m_segInterpCutoff}}},
+       {{"modulateWithImageOpacity", renderPreferences.modulateSegmentationOpacityWithImageOpacity},
+        {"outlineStyle", enumToName(renderPreferences.segmentationOutlineStyle, sk_segmentationOutlineNames)},
+        {"interiorOpacity", renderPreferences.segmentationInteriorOpacity},
+        {"erosionFactor", renderPreferences.segmentationErosionFactor}}},
       {"brush",
        {{"replaceBackgroundWithForeground", settings.replaceBackgroundWithForeground()},
         {"use3d", settings.use3dBrush()},
@@ -308,37 +320,40 @@ json toJson(const AppSettings& settings, const RenderData& renderData)
         {"outlineStyle", enumToName(settings.brushPreviewOutlineStyle(), sk_segmentationOutlineNames)}}}}},
     {"comparison",
      {{"difference",
-       {{"squared", renderData.m_useSquare}, {"metric", metricParamsToJson(renderData.m_squaredDifferenceParams)}}},
-      {"overlay", {{"magentaCyan", renderData.m_overlayMagentaCyan}}},
+       {{"squared", renderPreferences.squaredDifference},
+        {"metric", metricParamsToJson(renderPreferences.squaredDifferenceMetric)}}},
+      {"overlay", {{"magentaCyan", renderPreferences.overlayMagentaCyan}}},
       {"quadrants",
-       {{"x", static_cast<bool>(renderData.m_quadrants.x)}, {"y", static_cast<bool>(renderData.m_quadrants.y)}}},
-      {"checkerboard", {{"squares", renderData.m_numCheckerboardSquares}}},
+       {{"x", static_cast<bool>(renderPreferences.quadrants.x)},
+        {"y", static_cast<bool>(renderPreferences.quadrants.y)}}},
+      {"checkerboard", {{"squares", renderPreferences.checkerboardSquares}}},
       {"flashlight",
-       {{"radiusFraction", renderData.m_flashlightRadius}, {"overlayMovingImage", renderData.m_flashlightOverlays}}}}},
+       {{"radiusFraction", renderPreferences.flashlightRadiusFraction},
+        {"overlayMovingImage", renderPreferences.flashlightOverlayMovingImage}}}}},
     {"rendering",
      {{"frameRate",
-       {{"limit", renderData.m_manualFramerateLimiter},
-        {"targetFrameTimeSeconds", renderData.m_targetFrameTimeSeconds}}},
+       {{"limit", renderPreferences.limitFrameRate},
+        {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}},
       {"raycasting",
-       {{"samplingFactor", renderData.m_raycastSamplingFactor},
-        {"transparentBackgroundWhenNoHit", renderData.m_3dTransparentIfNoHit},
-        {"renderFrontFaces", renderData.m_renderFrontFaces},
-        {"renderBackFaces", renderData.m_renderBackFaces},
-        {"segmentationMasking", enumToName(renderData.m_segMasking, sk_raycastSegMaskingNames)}}},
+       {{"samplingFactor", renderPreferences.raycastSamplingFactor},
+        {"transparentBackgroundWhenNoHit", renderPreferences.transparentBackgroundWhenNoHit},
+        {"renderFrontFaces", renderPreferences.renderFrontFaces},
+        {"renderBackFaces", renderPreferences.renderBackFaces},
+        {"segmentationMasking", enumToName(renderPreferences.segmentationMasking, sk_raycastSegMaskingNames)}}},
       {"asciiShading",
-       {{"enabled", renderData.m_asciiEnabled},
-        {"cellSizePx", vec2ToJson(renderData.m_asciiCellSizePx)},
-        {"charsetIndex", renderData.m_asciiCharsetIndex},
-        {"foregroundColor", vec3ToJson(renderData.m_asciiFgColor)},
-        {"backgroundColor", vec3ToJson(renderData.m_asciiBgColor)},
-        {"backgroundAlpha", renderData.m_asciiBgAlpha},
-        {"useColormapAsForeground", renderData.m_asciiUseColormap},
-        {"spatialMatching", renderData.m_asciiSpatialMode},
-        {"spatialExponent", renderData.m_asciiSpatialExponent}}}}},
+       {{"enabled", renderPreferences.asciiEnabled},
+        {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
+        {"charsetIndex", renderPreferences.asciiCharsetIndex},
+        {"foregroundColor", vec3ToJson(renderPreferences.asciiForegroundColor)},
+        {"backgroundColor", vec3ToJson(renderPreferences.asciiBackgroundColor)},
+        {"backgroundAlpha", renderPreferences.asciiBackgroundAlpha},
+        {"useColormapAsForeground", renderPreferences.asciiUseColormapAsForeground},
+        {"spatialMatching", renderPreferences.asciiSpatialMatching},
+        {"spatialExponent", renderPreferences.asciiSpatialExponent}}}}},
     {"annotations",
-     {{"annotationsOnTop", renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes},
-      {"landmarksOnTop", renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes},
-      {"hideAnnotationVertices", renderData.m_globalAnnotationParams.hidePolygonVertices},
+     {{"annotationsOnTop", renderPreferences.annotationsOnTop},
+      {"landmarksOnTop", renderPreferences.landmarksOnTop},
+      {"hideAnnotationVertices", renderPreferences.hideAnnotationVertices},
       {"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
     {"synchronization",
      {{"itkSnap",
@@ -355,7 +370,7 @@ json toJson(const AppSettings& settings, const RenderData& renderData)
        {{"logVerbosity", std::string{entropy::logging::logLevelLabel(entropy::logging::defaultLoggerSinkLevel())}}}}}}};
 }
 
-void applyJson(AppSettings& settings, RenderData& renderData, const json& root)
+void applyJson(AppSettings& settings, user_preferences::RenderPreferences& renderPreferences, const json& root)
 {
   if (const auto interface = root.find("interface"); interface != root.end() && interface->is_object()) {
     if (const auto scale = interface->find("uiScale"); scale != interface->end()) {
@@ -384,10 +399,10 @@ void applyJson(AppSettings& settings, RenderData& renderData, const json& root)
   }
 
   if (const auto views = root.find("views"); views != root.end() && views->is_object()) {
-    setFromJson(
-      renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections,
-      *views,
-      "showImageBorders");
+    setFromJson(renderPreferences.showImageBorders, *views, "showImageBorders");
+    if (const auto overlays = views->find("showOverlays"); overlays != views->end() && overlays->is_boolean()) {
+      settings.setOverlays(overlays->get<bool>());
+    }
     if (const auto lock = views->find("lockAnatomicalDirectionsToReferenceImage");
         lock != views->end() && lock->is_boolean())
     {
@@ -395,8 +410,8 @@ void applyJson(AppSettings& settings, RenderData& renderData, const json& root)
     }
 
     if (const auto crosshairs = views->find("crosshairs"); crosshairs != views->end() && crosshairs->is_object()) {
-      setVec4FromJson(renderData.m_crosshairsColor, *crosshairs, "color");
-      setEnumFromJson(renderData.m_snapCrosshairs, *crosshairs, "snapping", sk_crosshairsSnappingNames);
+      setVec4FromJson(renderPreferences.crosshairsColor, *crosshairs, "color");
+      setEnumFromJson(renderPreferences.crosshairsSnapping, *crosshairs, "snapping", sk_crosshairsSnappingNames);
     }
     if (const auto syncZooms = views->find("synchronizeViewZooms");
         syncZooms != views->end() && syncZooms->is_boolean())
@@ -404,50 +419,59 @@ void applyJson(AppSettings& settings, RenderData& renderData, const json& root)
       settings.setSynchronizeZooms(syncZooms->get<bool>());
     }
     if (const auto backgrounds = views->find("backgrounds"); backgrounds != views->end() && backgrounds->is_object()) {
-      setVec3FromJson(renderData.m_2dBackgroundColor, *backgrounds, "2d");
-      setVec4FromJson(renderData.m_3dBackgroundColor, *backgrounds, "3d");
+      setVec3FromJson(renderPreferences.background2dColor, *backgrounds, "2d");
+      setVec4FromJson(renderPreferences.background3dColor, *backgrounds, "3d");
     }
     if (const auto labels = views->find("anatomicalLabels"); labels != views->end() && labels->is_object()) {
-      setVec4FromJson(renderData.m_anatomicalLabelColor, *labels, "color");
-      setEnumFromJson(renderData.m_anatomicalLabelType, *labels, "type", sk_anatomicalLabelNames);
+      setVec4FromJson(renderPreferences.anatomicalLabelColor, *labels, "color");
+      setEnumFromJson(renderPreferences.anatomicalLabelType, *labels, "type", sk_anatomicalLabelNames);
     }
     if (const auto scaleBars = views->find("scaleBars"); scaleBars != views->end() && scaleBars->is_object()) {
-      setFromJson(renderData.m_showScaleBars, *scaleBars, "show");
-      setFromJson(renderData.m_showScaleBarsInLightboxViews, *scaleBars, "showInLightboxViews");
-      setVec4FromJson(renderData.m_scaleBarColor, *scaleBars, "color");
-      setEnumFromJson(renderData.m_scaleBarPosition, *scaleBars, "position", sk_scaleBarPositionNames);
-      setEnumFromJson(renderData.m_scaleBarOrientation, *scaleBars, "orientation", sk_scaleBarOrientationNames);
-      setFloatFromJson(renderData.m_scaleBarTargetFraction, *scaleBars, "targetLengthFraction", 0.05f, 1.0f);
-      setFloatFromJson(renderData.m_scaleBarMarginPx, *scaleBars, "marginPixels", 12.0f, 96.0f);
-      setEnumFromJson(renderData.m_scaleBarTicks, *scaleBars, "ticks", sk_scaleBarTicksNames);
+      setFromJson(renderPreferences.showScaleBars, *scaleBars, "show");
+      setFromJson(renderPreferences.showScaleBarsInLightboxViews, *scaleBars, "showInLightboxViews");
+      setVec4FromJson(renderPreferences.scaleBarColor, *scaleBars, "color");
+      setEnumFromJson(renderPreferences.scaleBarPosition, *scaleBars, "position", sk_scaleBarPositionNames);
+      setEnumFromJson(renderPreferences.scaleBarOrientation, *scaleBars, "orientation", sk_scaleBarOrientationNames);
+      setFloatFromJson(renderPreferences.scaleBarTargetFraction, *scaleBars, "targetLengthFraction", 0.05f, 1.0f);
+      setFloatFromJson(renderPreferences.scaleBarMarginPx, *scaleBars, "marginPixels", 12.0f, 96.0f);
+      setEnumFromJson(renderPreferences.scaleBarTicks, *scaleBars, "ticks", sk_scaleBarTicksNames);
     }
     if (const auto lightbox = views->find("lightbox"); lightbox != views->end() && lightbox->is_object()) {
-      setFromJson(renderData.m_showLightboxOffsetLabels, *lightbox, "showOffsetLabels");
-      setVec4FromJson(renderData.m_lightboxOffsetLabelColor, *lightbox, "offsetLabelColor");
+      setFromJson(renderPreferences.showLightboxOffsetLabels, *lightbox, "showOffsetLabels");
+      setVec4FromJson(renderPreferences.lightboxOffsetLabelColor, *lightbox, "offsetLabelColor");
     }
   }
 
   if (const auto images = root.find("images"); images != root.end() && images->is_object()) {
-    setFromJson(renderData.m_imageGrayFloatingPointInterpolation, *images, "floatingPointLinearInterpolation");
+    setFromJson(renderPreferences.floatingPointLinearInterpolation, *images, "floatingPointLinearInterpolation");
     if (const auto projection = images->find("intensityProjectionDefaults");
         projection != images->end() && projection->is_object())
     {
-      setFromJson(renderData.m_doMaxExtentIntensityProjection, *projection, "useMaximumImageExtent");
-      setFloatFromJson(renderData.m_intensityProjectionSlabThickness, *projection, "slabThicknessMm", 0.0f, 1.0e6f);
+      setFromJson(renderPreferences.useMaximumIntensityProjectionExtent, *projection, "useMaximumImageExtent");
+      setFloatFromJson(
+        renderPreferences.intensityProjectionSlabThicknessMm,
+        *projection,
+        "slabThicknessMm",
+        0.0f,
+        1.0e6f);
       if (const auto energy = projection->find("xrayEnergyKeV"); energy != projection->end() && energy->is_number()) {
-        renderData.setXrayEnergy(energy->get<float>());
+        renderPreferences.xrayEnergyKeV = energy->get<float>();
       }
-      setFloatFromJson(renderData.m_xrayIntensityWindow, *projection, "xrayWindow", 1.0e-3f, 1.0f);
-      setFloatFromJson(renderData.m_xrayIntensityLevel, *projection, "xrayLevel", 0.0f, 1.0f);
+      setFloatFromJson(renderPreferences.xrayWindow, *projection, "xrayWindow", 1.0e-3f, 1.0f);
+      setFloatFromJson(renderPreferences.xrayLevel, *projection, "xrayLevel", 0.0f, 1.0f);
     }
   }
 
   if (const auto segmentation = root.find("segmentation"); segmentation != root.end() && segmentation->is_object()) {
     if (const auto display = segmentation->find("display"); display != segmentation->end() && display->is_object()) {
-      setFromJson(renderData.m_modulateSegOpacityWithImageOpacity, *display, "modulateWithImageOpacity");
-      setEnumFromJson(renderData.m_segOutlineStyle, *display, "outlineStyle", sk_segmentationOutlineNames);
-      setFloatFromJson(renderData.m_segInteriorOpacity, *display, "interiorOpacity", 0.0f, 1.0f);
-      setFloatFromJson(renderData.m_segInterpCutoff, *display, "erosionFactor", 0.5f, 1.0f);
+      setFromJson(renderPreferences.modulateSegmentationOpacityWithImageOpacity, *display, "modulateWithImageOpacity");
+      setEnumFromJson(
+        renderPreferences.segmentationOutlineStyle,
+        *display,
+        "outlineStyle",
+        sk_segmentationOutlineNames);
+      setFloatFromJson(renderPreferences.segmentationInteriorOpacity, *display, "interiorOpacity", 0.0f, 1.0f);
+      setFloatFromJson(renderPreferences.segmentationErosionFactor, *display, "erosionFactor", 0.5f, 1.0f);
     }
     if (const auto brush = segmentation->find("brush"); brush != segmentation->end() && brush->is_object()) {
       if (const auto value = brush->find("replaceBackgroundWithForeground");
@@ -509,67 +533,75 @@ void applyJson(AppSettings& settings, RenderData& renderData, const json& root)
     if (const auto difference = comparison->find("difference");
         difference != comparison->end() && difference->is_object())
     {
-      setFromJson(renderData.m_useSquare, *difference, "squared");
+      setFromJson(renderPreferences.squaredDifference, *difference, "squared");
       if (const auto metric = difference->find("metric"); metric != difference->end() && metric->is_object()) {
-        applyMetricParamsFromJson(renderData.m_squaredDifferenceParams, *metric);
+        applyMetricParamsFromJson(renderPreferences.squaredDifferenceMetric, *metric);
       }
     }
     if (const auto overlay = comparison->find("overlay"); overlay != comparison->end() && overlay->is_object()) {
-      setFromJson(renderData.m_overlayMagentaCyan, *overlay, "magentaCyan");
+      setFromJson(renderPreferences.overlayMagentaCyan, *overlay, "magentaCyan");
     }
     if (const auto quadrants = comparison->find("quadrants"); quadrants != comparison->end() && quadrants->is_object())
     {
-      bool x = static_cast<bool>(renderData.m_quadrants.x);
-      bool y = static_cast<bool>(renderData.m_quadrants.y);
+      bool x = static_cast<bool>(renderPreferences.quadrants.x);
+      bool y = static_cast<bool>(renderPreferences.quadrants.y);
       setFromJson(x, *quadrants, "x");
       setFromJson(y, *quadrants, "y");
-      renderData.m_quadrants = glm::ivec2{x, y};
+      renderPreferences.quadrants = glm::ivec2{x, y};
     }
     if (const auto checker = comparison->find("checkerboard"); checker != comparison->end() && checker->is_object()) {
-      setFromJson(renderData.m_numCheckerboardSquares, *checker, "squares");
-      renderData.m_numCheckerboardSquares = std::clamp(renderData.m_numCheckerboardSquares, 2, 2048);
+      setFromJson(renderPreferences.checkerboardSquares, *checker, "squares");
+      renderPreferences.checkerboardSquares = std::clamp(renderPreferences.checkerboardSquares, 2, 2048);
     }
     if (const auto flashlight = comparison->find("flashlight");
         flashlight != comparison->end() && flashlight->is_object())
     {
-      setFloatFromJson(renderData.m_flashlightRadius, *flashlight, "radiusFraction", 0.01f, 1.0f);
-      setFromJson(renderData.m_flashlightOverlays, *flashlight, "overlayMovingImage");
+      setFloatFromJson(renderPreferences.flashlightRadiusFraction, *flashlight, "radiusFraction", 0.01f, 1.0f);
+      setFromJson(renderPreferences.flashlightOverlayMovingImage, *flashlight, "overlayMovingImage");
     }
   }
 
   if (const auto rendering = root.find("rendering"); rendering != root.end() && rendering->is_object()) {
     if (const auto frameRate = rendering->find("frameRate"); frameRate != rendering->end() && frameRate->is_object()) {
-      setFromJson(renderData.m_manualFramerateLimiter, *frameRate, "limit");
-      setDoubleFromJson(renderData.m_targetFrameTimeSeconds, *frameRate, "targetFrameTimeSeconds", 1.0 / 240.0, 1.0);
+      setFromJson(renderPreferences.limitFrameRate, *frameRate, "limit");
+      setDoubleFromJson(
+        renderPreferences.targetFrameTimeSeconds,
+        *frameRate,
+        "targetFrameTimeSeconds",
+        1.0 / 240.0,
+        1.0);
     }
     if (const auto raycasting = rendering->find("raycasting");
         raycasting != rendering->end() && raycasting->is_object())
     {
-      setFloatFromJson(renderData.m_raycastSamplingFactor, *raycasting, "samplingFactor", 0.1f, 5.0f);
-      setFromJson(renderData.m_3dTransparentIfNoHit, *raycasting, "transparentBackgroundWhenNoHit");
-      setFromJson(renderData.m_renderFrontFaces, *raycasting, "renderFrontFaces");
-      setFromJson(renderData.m_renderBackFaces, *raycasting, "renderBackFaces");
-      setEnumFromJson(renderData.m_segMasking, *raycasting, "segmentationMasking", sk_raycastSegMaskingNames);
+      setFloatFromJson(renderPreferences.raycastSamplingFactor, *raycasting, "samplingFactor", 0.1f, 5.0f);
+      setFromJson(renderPreferences.transparentBackgroundWhenNoHit, *raycasting, "transparentBackgroundWhenNoHit");
+      setFromJson(renderPreferences.renderFrontFaces, *raycasting, "renderFrontFaces");
+      setFromJson(renderPreferences.renderBackFaces, *raycasting, "renderBackFaces");
+      setEnumFromJson(
+        renderPreferences.segmentationMasking,
+        *raycasting,
+        "segmentationMasking",
+        sk_raycastSegMaskingNames);
     }
     if (const auto ascii = rendering->find("asciiShading"); ascii != rendering->end() && ascii->is_object()) {
-      setFromJson(renderData.m_asciiEnabled, *ascii, "enabled");
-      setVec2FromJson(renderData.m_asciiCellSizePx, *ascii, "cellSizePx");
-      setFromJson(renderData.m_asciiCharsetIndex, *ascii, "charsetIndex");
-      renderData.m_asciiCharsetIndex = std::clamp(renderData.m_asciiCharsetIndex, 0, 2);
-      setVec3FromJson(renderData.m_asciiFgColor, *ascii, "foregroundColor");
-      setVec3FromJson(renderData.m_asciiBgColor, *ascii, "backgroundColor");
-      setFloatFromJson(renderData.m_asciiBgAlpha, *ascii, "backgroundAlpha", 0.0f, 1.0f);
-      setFromJson(renderData.m_asciiUseColormap, *ascii, "useColormapAsForeground");
-      setFromJson(renderData.m_asciiSpatialMode, *ascii, "spatialMatching");
-      setFloatFromJson(renderData.m_asciiSpatialExponent, *ascii, "spatialExponent", 0.25f, 4.0f);
-      renderData.m_asciiAtlasNeedsRebuild = true;
+      setFromJson(renderPreferences.asciiEnabled, *ascii, "enabled");
+      setVec2FromJson(renderPreferences.asciiCellSizePx, *ascii, "cellSizePx");
+      setFromJson(renderPreferences.asciiCharsetIndex, *ascii, "charsetIndex");
+      renderPreferences.asciiCharsetIndex = std::clamp(renderPreferences.asciiCharsetIndex, 0, 2);
+      setVec3FromJson(renderPreferences.asciiForegroundColor, *ascii, "foregroundColor");
+      setVec3FromJson(renderPreferences.asciiBackgroundColor, *ascii, "backgroundColor");
+      setFloatFromJson(renderPreferences.asciiBackgroundAlpha, *ascii, "backgroundAlpha", 0.0f, 1.0f);
+      setFromJson(renderPreferences.asciiUseColormapAsForeground, *ascii, "useColormapAsForeground");
+      setFromJson(renderPreferences.asciiSpatialMatching, *ascii, "spatialMatching");
+      setFloatFromJson(renderPreferences.asciiSpatialExponent, *ascii, "spatialExponent", 0.25f, 4.0f);
     }
   }
 
   if (const auto annotations = root.find("annotations"); annotations != root.end() && annotations->is_object()) {
-    setFromJson(renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes, *annotations, "annotationsOnTop");
-    setFromJson(renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes, *annotations, "landmarksOnTop");
-    setFromJson(renderData.m_globalAnnotationParams.hidePolygonVertices, *annotations, "hideAnnotationVertices");
+    setFromJson(renderPreferences.annotationsOnTop, *annotations, "annotationsOnTop");
+    setFromJson(renderPreferences.landmarksOnTop, *annotations, "landmarksOnTop");
+    setFromJson(renderPreferences.hideAnnotationVertices, *annotations, "hideAnnotationVertices");
     if (const auto value = annotations->find("crosshairsMoveWhileAnnotating");
         value != annotations->end() && value->is_boolean())
     {
@@ -635,79 +667,30 @@ void applyJson(AppSettings& settings, RenderData& renderData, const json& root)
   }
 }
 
-void applyRenderDefaults(RenderData& renderData)
-{
-  renderData.m_snapCrosshairs = CrosshairsSnapping::Disabled;
-  renderData.m_modulateSegOpacityWithImageOpacity = true;
-  renderData.m_imageGrayFloatingPointInterpolation = false;
-  renderData.m_intensityProjectionSlabThickness = 10.0f;
-  renderData.m_doMaxExtentIntensityProjection = false;
-  renderData.m_xrayIntensityWindow = 1.0f;
-  renderData.m_xrayIntensityLevel = 0.5f;
-  renderData.setXrayEnergy(80.0f);
-  renderData.m_2dBackgroundColor = glm::vec3{0.1f, 0.1f, 0.1f};
-  renderData.m_3dBackgroundColor = glm::vec4{0.0f, 0.0f, 0.0f, 0.5f};
-  renderData.m_3dTransparentIfNoHit = true;
-  renderData.m_crosshairsColor = glm::vec4{0.05f, 0.6f, 1.0f, 1.0f};
-  renderData.m_anatomicalLabelColor = glm::vec4{0.695f, 0.870f, 0.090f, 1.0f};
-  renderData.m_anatomicalLabelType = AnatomicalLabelType::Human;
-  renderData.m_showScaleBars = true;
-  renderData.m_showScaleBarsInLightboxViews = false;
-  renderData.m_scaleBarColor = glm::vec4{0.380392f, 0.858824f, 0.250980f, 1.0f};
-  renderData.m_scaleBarPosition = ScaleBarPosition::BottomRight;
-  renderData.m_scaleBarOrientation = ScaleBarOrientation::Horizontal;
-  renderData.m_scaleBarTicks = ScaleBarTicks::Automatic;
-  renderData.m_scaleBarTargetFraction = 0.2f;
-  renderData.m_scaleBarMarginPx = 12.0f;
-  renderData.m_showLightboxOffsetLabels = false;
-  renderData.m_lightboxOffsetLabelColor = glm::vec4{0.75f, 0.75f, 0.75f, 0.8f};
-  renderData.m_renderFrontFaces = true;
-  renderData.m_renderBackFaces = true;
-  renderData.m_raycastSamplingFactor = 0.5f;
-  renderData.m_segMasking = RenderData::SegMaskingForRaycasting::Disabled;
-  renderData.m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
-  renderData.m_segInteriorOpacity = 0.2f;
-  renderData.m_segInterpCutoff = 0.5f;
-  renderData.m_squaredDifferenceParams = {};
-  renderData.m_numCheckerboardSquares = 10;
-  renderData.m_overlayMagentaCyan = true;
-  renderData.m_quadrants = glm::ivec2{true, true};
-  renderData.m_useSquare = true;
-  renderData.m_flashlightRadius = 0.15f;
-  renderData.m_flashlightOverlays = true;
-  renderData.m_manualFramerateLimiter = false;
-  renderData.m_targetFrameTimeSeconds = 1.0 / 60.0;
-  renderData.m_asciiEnabled = false;
-  renderData.m_asciiCellSizePx = glm::vec2{8.0f, 16.0f};
-  renderData.m_asciiCharsetIndex = 0;
-  renderData.m_asciiFgColor = glm::vec3{1.0f, 1.0f, 1.0f};
-  renderData.m_asciiBgColor = glm::vec3{0.0f, 0.0f, 0.0f};
-  renderData.m_asciiBgAlpha = 1.0f;
-  renderData.m_asciiUseColormap = false;
-  renderData.m_asciiSpatialMode = false;
-  renderData.m_asciiSpatialExponent = 1.0f;
-  renderData.m_asciiAtlasNeedsRebuild = true;
-  renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes = false;
-  renderData.m_globalAnnotationParams.hidePolygonVertices = false;
-  renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes = false;
-  renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections = true;
-}
-
 } // namespace
 
 namespace user_preferences
 {
 
-std::string toJsonString(const AppSettings& settings, const RenderData& renderData)
+RenderPreferences defaultRenderPreferences()
 {
-  return toJson(settings, renderData).dump(2);
+  return {};
 }
 
-bool applyJsonString(AppSettings& settings, RenderData& renderData, const std::string& text, std::string* error)
+std::string toJsonString(const AppSettings& settings, const RenderPreferences& renderPreferences)
+{
+  return toJson(settings, renderPreferences).dump(2);
+}
+
+bool applyJsonString(
+  AppSettings& settings,
+  RenderPreferences& renderPreferences,
+  const std::string& text,
+  std::string* error)
 {
   try {
     const json root = json::parse(text);
-    applyJson(settings, renderData, root);
+    applyJson(settings, renderPreferences, root);
     return true;
   }
   catch (const std::exception& e) {
@@ -720,7 +703,7 @@ bool applyJsonString(AppSettings& settings, RenderData& renderData, const std::s
 
 bool save(
   const AppSettings& settings,
-  const RenderData& renderData,
+  const RenderPreferences& renderPreferences,
   const std::filesystem::path& fileName,
   std::string* error)
 {
@@ -730,7 +713,7 @@ bool save(
     }
     std::ofstream out(fileName, std::ios::out | std::ios::trunc);
     out.exceptions(std::ios::badbit | std::ios::failbit);
-    out << toJsonString(settings, renderData) << '\n';
+    out << toJsonString(settings, renderPreferences) << '\n';
     spdlog::info("Saved user settings to {}", fileName);
     return true;
   }
@@ -743,7 +726,11 @@ bool save(
   }
 }
 
-bool load(AppSettings& settings, RenderData& renderData, const std::filesystem::path& fileName, std::string* error)
+bool load(
+  AppSettings& settings,
+  RenderPreferences& renderPreferences,
+  const std::filesystem::path& fileName,
+  std::string* error)
 {
   std::error_code ec;
   if (!std::filesystem::exists(fileName, ec)) {
@@ -755,7 +742,7 @@ bool load(AppSettings& settings, RenderData& renderData, const std::filesystem::
     in.exceptions(std::ios::badbit | std::ios::failbit);
     std::ostringstream buffer;
     buffer << in.rdbuf();
-    if (!applyJsonString(settings, renderData, buffer.str(), error)) {
+    if (!applyJsonString(settings, renderPreferences, buffer.str(), error)) {
       return false;
     }
     spdlog::info("Loaded user settings from {}", fileName);
@@ -768,13 +755,6 @@ bool load(AppSettings& settings, RenderData& renderData, const std::filesystem::
     spdlog::error("Failed to load user settings from {}: {}", fileName, e.what());
     return false;
   }
-}
-
-void applyDefaults(AppSettings& settings, RenderData& renderData)
-{
-  settings = AppSettings{};
-  applyRenderDefaults(renderData);
-  entropy::logging::setDefaultLoggerSinkLevel(entropy::logging::defaultLogLevel());
 }
 
 } // namespace user_preferences

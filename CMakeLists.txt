@@ -470,6 +470,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/State.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"
+  "${entropy_APP_DIR}/logic/app/UserPreferencesRenderData.cpp"
 
   "${entropy_APP_DIR}/logic/annotation/Annotation.cpp"
   "${entropy_APP_DIR}/logic/annotation/BezierHelper.cpp"
@@ -869,6 +870,7 @@ set_target_properties(entropy PROPERTIES
 )
 
 if(BUILD_TESTING)
+  add_subdirectory(app/logic/app/test)
   add_subdirectory(app/logic/serialization/test)
   add_subdirectory(app/logic/sync/test)
   add_subdirectory(app/rendering/test)

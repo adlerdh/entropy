@@ -35,12 +35,6 @@ fs::path userDirectory(NSSearchPathDirectory directory) {
   return pathFromURL(url);
 }
 
-bool hasLaunchServicesWorkingDirectory() {
-  std::error_code error;
-  const fs::path cwd = fs::current_path(error);
-  return error || cwd == fs::path{"/"};
-}
-
 }  // namespace
 
 namespace app_paths {
@@ -68,8 +62,7 @@ bool isRunningFromMacOSAppBundle() {
 }
 
 bool usesPlatformUserDirectories() {
-  return isRunningFromMacOSAppBundle() &&
-         (g_hasLaunchServicesProcessSerialNumber || hasLaunchServicesWorkingDirectory());
+  return true;
 }
 
 std::filesystem::path resourceDirectory() {
@@ -89,13 +82,11 @@ std::filesystem::path logDirectory() {
 }
 
 std::filesystem::path userDataDirectory() {
-  if (usesPlatformUserDirectories()) {
-    if (const fs::path appSupportDir = userDirectory(NSApplicationSupportDirectory); !appSupportDir.empty()) {
-      return appSupportDir / [appName() fileSystemRepresentation];
-    }
+  if (const fs::path appSupportDir = userDirectory(NSApplicationSupportDirectory); !appSupportDir.empty()) {
+    return appSupportDir / [appName() fileSystemRepresentation];
   }
 
-  return ".";
+  return fs::path{"Library"} / "Application Support" / [appName() fileSystemRepresentation];
 }
 
 std::filesystem::path userSettingsFile() {

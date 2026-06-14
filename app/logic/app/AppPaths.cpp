@@ -37,15 +37,15 @@ fs::path knownFolderPath(const KNOWNFOLDERID& folderId)
 
 fs::path windowsUserDataRoot()
 {
-  if (const fs::path localAppData = knownFolderPath(FOLDERID_LocalAppData); !localAppData.empty()) {
-    return localAppData / "Entropy";
+  if (const fs::path roamingAppData = knownFolderPath(FOLDERID_RoamingAppData); !roamingAppData.empty()) {
+    return roamingAppData / "Entropy";
   }
 
-  char* localAppData = nullptr;
-  std::size_t localAppDataLength = 0;
-  if (_dupenv_s(&localAppData, &localAppDataLength, "LOCALAPPDATA") == 0 && localAppData != nullptr) {
-    fs::path result{localAppData};
-    std::free(localAppData);
+  char* appData = nullptr;
+  std::size_t appDataLength = 0;
+  if (_dupenv_s(&appData, &appDataLength, "APPDATA") == 0 && appData != nullptr) {
+    fs::path result{appData};
+    std::free(appData);
     return result / "Entropy";
   }
 

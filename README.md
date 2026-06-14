@@ -92,6 +92,13 @@ Direct image inputs and `--project` are mutually exclusive.
 
 Logs are output to the console and to files saved in the `log` folder. Log level can be set using the `-l` argument. See help (`-h`) for more details.
 
+### Settings persistence
+Entropy persists application settings between sessions in the standard user configuration location for each platform:
+
+- macOS: `~/Library/Application Support/Entropy/settings.json`
+- Linux: `$XDG_CONFIG_HOME/entropy/settings.json`, or `~/.config/entropy/settings.json`
+- Windows: `%APPDATA%\Entropy\settings.json`
+
 ## Keyboard shortcuts
 
 On macOS, use Command instead of CTRL for application menu shortcuts.
