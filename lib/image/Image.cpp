@@ -1,5 +1,4 @@
 #include "image/Image.h"
-#include <spdlog/fmt/std.h>
 #include "internal/ImageCastHelper.tpp"
 #include "image/ImageUtility.h"
 #include "internal/ImageUtilityItk.h"
@@ -7,11 +6,15 @@
 
 // clang-format off
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/std.h>
 #include <spdlog/fmt/ostr.h>
 // clang-format on
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
+#include <cstring>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -19,6 +22,60 @@ namespace
 {
 // Maximum number of components to load for images with interleaved buffer components
 constexpr uint32_t MAX_INTERLEAVED_COMPS = 4;
+
+std::size_t componentSizeInBytes(ComponentType componentType)
+{
+  switch (componentType) {
+    case ComponentType::Int8:
+    case ComponentType::UInt8:
+      return 1;
+    case ComponentType::Int16:
+    case ComponentType::UInt16:
+      return 2;
+    case ComponentType::Int32:
+    case ComponentType::UInt32:
+    case ComponentType::Float32:
+      return 4;
+    case ComponentType::Long:
+    case ComponentType::ULong:
+    case ComponentType::LongLong:
+    case ComponentType::ULongLong:
+    case ComponentType::Float64:
+      return 8;
+    case ComponentType::LongDouble:
+      return sizeof(long double);
+    case ComponentType::Undefined:
+      return 0;
+  }
+
+  return 0;
+}
+
+std::vector<std::byte> compactInterleavedComponents(
+  const void* buffer,
+  std::size_t numPixels,
+  uint32_t sourceComponents,
+  uint32_t componentsToKeep,
+  ComponentType componentType)
+{
+  const std::size_t componentBytes = componentSizeInBytes(componentType);
+  std::vector<std::byte> compacted(numPixels * componentsToKeep * componentBytes);
+
+  if (!buffer || componentBytes == 0 || componentsToKeep >= sourceComponents) {
+    return compacted;
+  }
+
+  const auto* src = static_cast<const std::byte*>(buffer);
+  for (std::size_t i = 0; i < numPixels; ++i) {
+    for (uint32_t c = 0; c < componentsToKeep; ++c) {
+      const std::size_t srcOffset = (i * sourceComponents + c) * componentBytes;
+      const std::size_t dstOffset = (i * componentsToKeep + c) * componentBytes;
+      std::memcpy(compacted.data() + dstOffset, src + srcOffset, componentBytes);
+    }
+  }
+
+  return compacted;
+}
 } // namespace
 
 Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, const MultiComponentBufferType& bufferType)
@@ -351,17 +408,24 @@ Image::Image(
       }
       case MultiComponentBufferType::InterleavedImage: {
         // Load a single buffer with interleaved components:
-        const std::size_t N = numPixels * numComps;
+        const std::size_t N = numPixels * numCompsToLoad;
+        const void* buffer = imageDataComponents[0];
+        std::vector<std::byte> compactedBuffer;
+
+        if (numCompsToLoad < numComps) {
+          compactedBuffer = compactInterleavedComponents(buffer, numPixels, numComps, numCompsToLoad, srcCompType);
+          buffer = compactedBuffer.data();
+        }
 
         switch (m_imageRep) {
           case ImageRepresentation::Segmentation: {
-            if (!loadSegBuffer(imageDataComponents[0], N, srcCompType, dstCompType)) {
+            if (!loadSegBuffer(buffer, N, srcCompType, dstCompType)) {
               throw_debug("Error loading segmentation image buffer")
             }
             break;
           }
           case ImageRepresentation::Image: {
-            if (!loadImageBuffer(imageDataComponents[0], N, srcCompType, dstCompType)) {
+            if (!loadImageBuffer(buffer, N, srcCompType, dstCompType)) {
               throw_debug("Error loading image buffer")
             }
             break;
@@ -437,484 +501,6 @@ bool Image::hasPixelData() const
   return LoadState::LoadedPixels == m_loadState;
 }
 
-bool Image::saveComponentToDisk(uint32_t component, const std::optional<fs::path>& newFileName)
-{
-  constexpr uint32_t DIM = 3;
-  constexpr bool isVectorImage = false;
-  const fs::path fileName = (newFileName) ? *newFileName : m_header.fileName();
-
-  if (component >= m_header.numComponentsPerPixel()) {
-    spdlog::error(
-      "Invalid image component {} to save to disk; the image has {} components",
-      component,
-      m_header.numComponentsPerPixel());
-    return false;
-  }
-
-  std::array<uint32_t, DIM> dims;
-  std::array<double, DIM> origin;
-  std::array<double, DIM> spacing;
-  std::array<std::array<double, DIM>, DIM> directions;
-
-  for (uint32_t i = 0; i < DIM; ++i) {
-    const int ii = static_cast<int>(i);
-    dims[i] = m_header.pixelDimensions()[ii];
-    origin[i] = static_cast<double>(m_header.origin()[ii]);
-    spacing[i] = static_cast<double>(m_header.spacing()[ii]);
-    directions[i] = {
-      static_cast<double>(m_header.directions()[ii].x),
-      static_cast<double>(m_header.directions()[ii].y),
-      static_cast<double>(m_header.directions()[ii].z)};
-  }
-
-  switch (m_header.memoryComponentType()) {
-    case ComponentType::Int8: {
-      auto image = makeScalarImage(dims, origin, spacing, directions, m_data_int8[component].data());
-      return writeImage<int8_t, DIM, isVectorImage>(image, fileName);
-    }
-    case ComponentType::UInt8: {
-      auto image = makeScalarImage(dims, origin, spacing, directions, m_data_uint8[component].data());
-      return writeImage<uint8_t, DIM, isVectorImage>(image, fileName);
-    }
-    case ComponentType::Int16: {
-      auto image = makeScalarImage(dims, origin, spacing, directions, m_data_int16[component].data());
-      return writeImage<int16_t, DIM, isVectorImage>(image, fileName);
-    }
-    case ComponentType::UInt16: {
-      auto image = makeScalarImage(dims, origin, spacing, directions, m_data_uint16[component].data());
-      return writeImage<uint16_t, DIM, isVectorImage>(image, fileName);
-    }
-    case ComponentType::Int32: {
-      auto image = makeScalarImage(dims, origin, spacing, directions, m_data_int32[component].data());
-      return writeImage<int32_t, DIM, isVectorImage>(image, fileName);
-    }
-    case ComponentType::UInt32: {
-      auto image = makeScalarImage(dims, origin, spacing, directions, m_data_uint32[component].data());
-      return writeImage<uint32_t, DIM, isVectorImage>(image, fileName);
-    }
-    case ComponentType::Float32: {
-      auto image = makeScalarImage(dims, origin, spacing, directions, m_data_float32[component].data());
-      return writeImage<float, DIM, isVectorImage>(image, fileName);
-    }
-    default: {
-      return false;
-    }
-  }
-}
-
-bool Image::generateSortedBuffers()
-{
-  switch (m_header.memoryComponentType()) {
-    case ComponentType::Int8: {
-      m_dataSorted_int8.clear();
-      break;
-    }
-    case ComponentType::UInt8: {
-      m_dataSorted_uint8.clear();
-      break;
-    }
-    case ComponentType::Int16: {
-      m_dataSorted_int16.clear();
-      break;
-    }
-    case ComponentType::UInt16: {
-      m_dataSorted_uint16.clear();
-      break;
-    }
-    case ComponentType::Int32: {
-      m_dataSorted_int32.clear();
-      break;
-    }
-    case ComponentType::UInt32: {
-      m_dataSorted_uint32.clear();
-      break;
-    }
-    case ComponentType::Float32: {
-      m_dataSorted_float32.clear();
-      break;
-    }
-    default: {
-      return false;
-    }
-  }
-
-  switch (m_bufferType) {
-    case MultiComponentBufferType::SeparateImages: {
-      for (std::size_t c = 0; c < m_header.numComponentsPerPixel(); ++c) {
-        switch (m_header.memoryComponentType()) {
-          case ComponentType::Int8: {
-            const auto& src = m_data_int8[c];
-            auto& dst = m_dataSorted_int8;
-            dst.emplace_back(src);
-            std::sort(dst.back().begin(), dst.back().end());
-            break;
-          }
-          case ComponentType::UInt8: {
-            const auto& src = m_data_uint8[c];
-            auto& dst = m_dataSorted_uint8;
-            dst.emplace_back(src);
-            std::sort(dst.back().begin(), dst.back().end());
-            break;
-          }
-          case ComponentType::Int16: {
-            const auto& src = m_data_int16[c];
-            auto& dst = m_dataSorted_int16;
-            dst.emplace_back(src);
-            std::sort(dst.back().begin(), dst.back().end());
-            break;
-          }
-          case ComponentType::UInt16: {
-            const auto& src = m_data_uint16[c];
-            auto& dst = m_dataSorted_uint16;
-            dst.emplace_back(src);
-            std::sort(dst.back().begin(), dst.back().end());
-            break;
-          }
-          case ComponentType::Int32: {
-            const auto& src = m_data_int32[c];
-            auto& dst = m_dataSorted_int32;
-            dst.emplace_back(src);
-            std::sort(dst.back().begin(), dst.back().end());
-            break;
-          }
-          case ComponentType::UInt32: {
-            const auto& src = m_data_uint32[c];
-            auto& dst = m_dataSorted_uint32;
-            dst.emplace_back(src);
-            std::sort(dst.back().begin(), dst.back().end());
-            break;
-          }
-          case ComponentType::Float32: {
-            const auto& src = m_data_float32[c];
-            auto& dst = m_dataSorted_float32;
-            dst.emplace_back(src);
-            std::sort(dst.back().begin(), dst.back().end());
-            break;
-          }
-          default:
-            return false;
-        }
-      }
-      return true;
-    }
-    case MultiComponentBufferType::InterleavedImage: {
-      const std::size_t N = m_header.numPixels();
-      for (std::size_t c = 0; c < m_header.numComponentsPerPixel(); ++c) {
-        switch (m_header.memoryComponentType()) {
-          case ComponentType::Int8: {
-            auto& dst = m_dataSorted_int8[c];
-            dst.resize(N);
-            for (std::size_t i = 0; i < N; ++i) {
-              dst[i] = m_data_int8[0][(c + 1ul) * i];
-            }
-            std::sort(std::begin(dst), std::end(dst));
-            break;
-          }
-          case ComponentType::UInt8: {
-            auto& dst = m_dataSorted_uint8[c];
-            dst.resize(N);
-            for (std::size_t i = 0; i < N; ++i) {
-              dst[i] = m_data_uint8[0][(c + 1ul) * i];
-            }
-            std::sort(std::begin(dst), std::end(dst));
-            break;
-          }
-          case ComponentType::Int16: {
-            auto& dst = m_dataSorted_int16[c];
-            dst.resize(N);
-            for (std::size_t i = 0; i < N; ++i) {
-              dst[i] = m_data_int16[0][(c + 1ul) * i];
-            }
-            std::sort(std::begin(dst), std::end(dst));
-            break;
-          }
-          case ComponentType::UInt16: {
-            auto& dst = m_dataSorted_uint16[c];
-            dst.resize(N);
-            for (std::size_t i = 0; i < N; ++i) {
-              dst[i] = m_data_uint16[0][(c + 1ul) * i];
-            }
-            std::sort(std::begin(dst), std::end(dst));
-            break;
-          }
-          case ComponentType::Int32: {
-            auto& dst = m_dataSorted_int32[c];
-            dst.resize(N);
-            for (std::size_t i = 0; i < N; ++i) {
-              dst[i] = m_data_int32[0][(c + 1ul) * i];
-            }
-            std::sort(std::begin(dst), std::end(dst));
-            break;
-          }
-          case ComponentType::UInt32: {
-            auto& dst = m_dataSorted_uint32[c];
-            dst.resize(N);
-            for (std::size_t i = 0; i < N; ++i) {
-              dst[i] = m_data_uint32[0][(c + 1ul) * i];
-            }
-            std::sort(std::begin(dst), std::end(dst));
-            break;
-          }
-          case ComponentType::Float32: {
-            auto& dst = m_dataSorted_float32[c];
-            dst.resize(N);
-            for (std::size_t i = 0; i < N; ++i) {
-              dst[i] = m_data_float32[0][(c + 1ul) * i];
-            }
-            std::sort(std::begin(dst), std::end(dst));
-            break;
-          }
-          default: {
-            return false;
-          }
-        }
-      }
-      return true;
-    }
-  }
-
-  return false;
-}
-
-bool Image::loadImageBuffer(
-  const void* buffer,
-  std::size_t numElements,
-  ComponentType srcComponentType,
-  ComponentType dstComponentType)
-{
-  using CType = ComponentType;
-
-  bool didCast = false;
-  bool warnSizeConversion = false;
-
-  switch (dstComponentType) {
-    case CType::UInt8: {
-      m_data_uint8.emplace_back(createBuffer<uint8_t>(buffer, numElements, srcComponentType));
-      break;
-    }
-    case CType::Int8: {
-      m_data_int8.emplace_back(createBuffer<int8_t>(buffer, numElements, srcComponentType));
-      break;
-    }
-    case CType::UInt16: {
-      m_data_uint16.emplace_back(createBuffer<uint16_t>(buffer, numElements, srcComponentType));
-      break;
-    }
-    case CType::Int16: {
-      m_data_int16.emplace_back(createBuffer<int16_t>(buffer, numElements, srcComponentType));
-      break;
-    }
-    case CType::UInt32: {
-      m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      break;
-    }
-    case CType::Int32: {
-      m_data_int32.emplace_back(createBuffer<int32_t>(buffer, numElements, srcComponentType));
-      break;
-    }
-    case CType::Float32: {
-      m_data_float32.emplace_back(createBuffer<float>(buffer, numElements, srcComponentType));
-      break;
-    }
-
-    case CType::ULong:
-    case CType::ULongLong: {
-      m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
-      m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
-      didCast = true;
-      warnSizeConversion = true;
-      break;
-    }
-
-    case CType::Long:
-    case CType::LongLong: {
-      m_data_int32.emplace_back(createBuffer<int32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::Int32;
-      m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
-      didCast = true;
-      warnSizeConversion = true;
-      break;
-    }
-
-    case CType::Float64:
-    case CType::LongDouble: {
-      m_data_float32.emplace_back(createBuffer<float>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::Float32;
-      m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
-      didCast = true;
-      warnSizeConversion = true;
-      break;
-    }
-
-    case CType::Undefined: {
-      spdlog::error("Unknown component type in image from file {}", m_ioInfoOnDisk.m_fileInfo.m_fileName);
-      return false;
-    }
-  }
-
-  if (didCast) {
-    const std::string newTypeString = componentTypeString(m_ioInfoInMemory.m_componentInfo.m_componentType);
-
-    m_ioInfoInMemory.m_componentInfo.m_componentTypeString = newTypeString;
-
-    m_ioInfoInMemory.m_sizeInfo.m_imageSizeInBytes =
-      numElements * m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
-
-    spdlog::info(
-      "Casted image pixel component from type {} to {}",
-      m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
-      newTypeString);
-
-    if (warnSizeConversion) {
-      spdlog::warn(
-        "Size conversion: Possible loss of information when casting image pixel "
-        "component from type {} to {}",
-        m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
-        newTypeString);
-    }
-  }
-
-  return true;
-}
-
-bool Image::loadSegBuffer(
-  const void* buffer,
-  std::size_t numElements,
-  ComponentType srcComponentType,
-  ComponentType dstComponentType)
-{
-  using CType = ComponentType;
-
-  bool didCast = false;
-  bool warnFloatConversion = false;
-  bool warnSizeConversion = false;
-  bool warnSignConversion = false;
-
-  switch (dstComponentType) {
-    // No casting is needed for the cases of unsigned integers with 8, 16, or 32 bytes:
-    case CType::UInt8: {
-      m_data_uint8.emplace_back(createBuffer<uint8_t>(buffer, numElements, srcComponentType));
-      break;
-    }
-    case CType::UInt16: {
-      m_data_uint16.emplace_back(createBuffer<uint16_t>(buffer, numElements, srcComponentType));
-      break;
-    }
-    case CType::UInt32: {
-      m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      break;
-    }
-
-    // Signed 8-, 16-, and 32-bit integers are cast to unsigned 8-, 16-, and 32-bit integers:
-    case CType::Int8: {
-      m_data_uint8.emplace_back(createBuffer<uint8_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt8;
-      m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 1;
-      didCast = true;
-      warnSignConversion = true;
-      break;
-    }
-    case CType::Int16: {
-      m_data_uint16.emplace_back(createBuffer<uint16_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt16;
-      m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 2;
-      didCast = true;
-      warnSignConversion = true;
-      break;
-    }
-    case CType::Int32: {
-      m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
-      m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
-      didCast = true;
-      warnSignConversion = true;
-      break;
-    }
-
-    // Unsigned long (64-bit) and long long (128-bit) integers are cast to unsigned 32-bit integers:
-    case CType::ULong:
-    case CType::ULongLong: {
-      m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
-      m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
-      didCast = true;
-      warnSizeConversion = true;
-      break;
-    }
-
-    // Signed long (64-bit) and long long (128-bit) integers are cast to unsigned 32-bit integers:
-    case CType::Long:
-    case CType::LongLong: {
-      m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
-      m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
-      didCast = true;
-      warnSizeConversion = true;
-      warnSignConversion = true;
-      break;
-    }
-
-    // Floating-points are cast to unsigned 32-bit integers:
-    case CType::Float32:
-    case CType::Float64:
-    case CType::LongDouble: {
-      m_data_uint32.emplace_back(createBuffer<uint32_t>(buffer, numElements, srcComponentType));
-      m_ioInfoInMemory.m_componentInfo.m_componentType = CType::UInt32;
-      m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = 4;
-      didCast = true;
-      warnFloatConversion = true;
-      warnSignConversion = true;
-      break;
-    }
-
-    case CType::Undefined: {
-      spdlog::error("Unknown component type in image from file {}", m_ioInfoOnDisk.m_fileInfo.m_fileName);
-      return false;
-    }
-  }
-
-  if (didCast) {
-    const std::string newTypeString = componentTypeString(m_ioInfoInMemory.m_componentInfo.m_componentType);
-
-    m_ioInfoInMemory.m_componentInfo.m_componentTypeString = newTypeString;
-    m_ioInfoInMemory.m_sizeInfo.m_imageSizeInBytes =
-      numElements * m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
-
-    spdlog::info(
-      "Casted segmentation {} pixel component from type {} to {}",
-      m_ioInfoOnDisk.m_fileInfo.m_fileName,
-      m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
-      newTypeString);
-
-    if (warnFloatConversion) {
-      spdlog::warn(
-        "Floating point to integer conversion: Possible loss of precision and information when "
-        "casting segmentation pixel component from type {} to {}",
-        m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
-        newTypeString);
-    }
-
-    if (warnSizeConversion) {
-      spdlog::warn(
-        "Size conversion: Possible loss of information when casting segmentation pixel component "
-        "from type {} to {}",
-        m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
-        newTypeString);
-    }
-
-    if (warnSignConversion) {
-      spdlog::warn(
-        "Signed to unsigned integer conversion: Possible loss of information when casting "
-        "segmentation pixel component from type {} to {}",
-        m_ioInfoOnDisk.m_componentInfo.m_componentTypeString,
-        newTypeString);
-    }
-  }
-
-  return true;
-}
-
 const Image::ImageRepresentation& Image::imageRep() const
 {
   return m_imageRep;
@@ -953,277 +539,6 @@ const ImageSettings& Image::settings() const
 ImageSettings& Image::settings()
 {
   return m_settings;
-}
-
-const void* Image::bufferAsVoid(uint32_t comp) const
-{
-  auto F = [this](uint32_t i) -> const void* {
-    switch (m_header.memoryComponentType()) {
-      case ComponentType::Int8:
-        return static_cast<const void*>(m_data_int8.at(i).data());
-      case ComponentType::UInt8:
-        return static_cast<const void*>(m_data_uint8.at(i).data());
-      case ComponentType::Int16:
-        return static_cast<const void*>(m_data_int16.at(i).data());
-      case ComponentType::UInt16:
-        return static_cast<const void*>(m_data_uint16.at(i).data());
-      case ComponentType::Int32:
-        return static_cast<const void*>(m_data_int32.at(i).data());
-      case ComponentType::UInt32:
-        return static_cast<const void*>(m_data_uint32.at(i).data());
-      case ComponentType::Float32:
-        return static_cast<const void*>(m_data_float32.at(i).data());
-      default:
-        return static_cast<const void*>(nullptr);
-    }
-  };
-
-  switch (m_bufferType) {
-    case MultiComponentBufferType::SeparateImages: {
-      if (m_header.numComponentsPerPixel() <= comp) {
-        return nullptr;
-      }
-      return F(comp);
-    }
-    case MultiComponentBufferType::InterleavedImage: {
-      if (1 <= comp) {
-        return nullptr;
-      }
-      return F(0);
-    }
-  }
-
-  return nullptr;
-}
-
-void* Image::bufferAsVoid(uint32_t comp)
-{
-  return const_cast<void*>(const_cast<const Image*>(this)->bufferAsVoid(comp));
-}
-
-const void* Image::bufferSortedAsVoid(uint32_t comp) const
-{
-  if (m_header.numComponentsPerPixel() <= comp) {
-    spdlog::error(
-      "Invalid image component {} when retrieving sorted buffer for image with {} components",
-      comp,
-      m_header.numComponentsPerPixel());
-    return nullptr;
-  }
-
-  switch (m_header.memoryComponentType()) {
-    case ComponentType::Int8:
-      return static_cast<const void*>(m_dataSorted_int8.at(comp).data());
-    case ComponentType::UInt8:
-      return static_cast<const void*>(m_dataSorted_uint8.at(comp).data());
-    case ComponentType::Int16:
-      return static_cast<const void*>(m_dataSorted_int16.at(comp).data());
-    case ComponentType::UInt16:
-      return static_cast<const void*>(m_dataSorted_uint16.at(comp).data());
-    case ComponentType::Int32:
-      return static_cast<const void*>(m_dataSorted_int32.at(comp).data());
-    case ComponentType::UInt32:
-      return static_cast<const void*>(m_dataSorted_uint32.at(comp).data());
-    case ComponentType::Float32:
-      return static_cast<const void*>(m_dataSorted_float32.at(comp).data());
-    default:
-      return static_cast<const void*>(nullptr);
-  }
-}
-
-void* Image::bufferSortedAsVoid(uint32_t comp)
-{
-  return const_cast<void*>(const_cast<const Image*>(this)->bufferSortedAsVoid(comp));
-}
-
-std::optional<std::pair<std::size_t, std::size_t>>
-Image::getComponentAndOffsetForBuffer(uint32_t comp, int i, int j, int k) const
-{
-  const glm::u64vec3 dims = m_header.pixelDimensions();
-
-  const std::size_t index =
-    dims.x * dims.y * static_cast<std::size_t>(k) + dims.x * static_cast<std::size_t>(j) + static_cast<std::size_t>(i);
-
-  return getComponentAndOffsetForBuffer(comp, index);
-}
-
-std::optional<std::pair<std::size_t, std::size_t>> Image::getComponentAndOffsetForBuffer(
-  uint32_t comp,
-  std::size_t index) const
-{
-  if (comp > m_header.numComponentsPerPixel()) {
-    spdlog::error("Invalid image component {} (image has {})", comp, m_header.numComponentsPerPixel());
-    return std::nullopt;
-  }
-
-  switch (m_bufferType) {
-    case MultiComponentBufferType::SeparateImages: {
-      return std::make_pair(comp, index);
-    }
-    case MultiComponentBufferType::InterleavedImage: {
-      // There is just one buffer (0) that holds all components
-      return std::make_pair(0, static_cast<std::size_t>(comp + 1) * index);
-    }
-  }
-
-  return std::nullopt;
-}
-
-QuantileOfValue Image::valueToQuantile(uint32_t comp, int64_t value) const
-{
-  if (comp > m_header.numComponentsPerPixel()) {
-    spdlog::error(
-      "Invalid image component {} (image has {}) when converting value {} to quantile",
-      comp,
-      m_header.numComponentsPerPixel(),
-      value);
-    throw_debug("Invalid image component")
-  }
-
-  if (m_settings.usingExactQuantiles()) {
-    switch (m_header.memoryComponentType()) {
-      case ComponentType::Int8: {
-        return convertValueToQuantile<int8_t>(std::span{m_dataSorted_int8[comp]}, static_cast<int8_t>(value));
-      }
-      case ComponentType::UInt8: {
-        return convertValueToQuantile<uint8_t>(std::span{m_dataSorted_uint8[comp]}, static_cast<uint8_t>(value));
-      }
-      case ComponentType::Int16: {
-        return convertValueToQuantile<int16_t>(std::span{m_dataSorted_int16[comp]}, static_cast<int16_t>(value));
-      }
-      case ComponentType::UInt16: {
-        return convertValueToQuantile<uint16_t>(std::span{m_dataSorted_uint16[comp]}, static_cast<uint16_t>(value));
-      }
-      case ComponentType::Int32: {
-        return convertValueToQuantile<int32_t>(std::span{m_dataSorted_int32[comp]}, static_cast<int32_t>(value));
-      }
-      case ComponentType::UInt32: {
-        return convertValueToQuantile<uint32_t>(std::span{m_dataSorted_uint32[comp]}, static_cast<uint32_t>(value));
-      }
-      case ComponentType::Float32: {
-        return convertValueToQuantile<float>(std::span{m_dataSorted_float32[comp]}, static_cast<float>(value));
-      }
-      default: {
-        spdlog::error("Invalid memory component type '{}'", m_header.memoryComponentTypeAsString());
-        throw_debug("Invalid memory component type")
-      }
-    }
-  }
-  else {
-    const double q = m_tdigests.at(comp).cdf(static_cast<double>(value));
-
-    /// @todo only lowerQuantile and upperQuantile are used by callers
-    QuantileOfValue qov;
-    qov.lowerQuantile = q;
-    qov.upperQuantile = q;
-    qov.lowerIndex = 0;
-    qov.upperIndex = 0;
-    qov.lowerValue = value;
-    qov.upperValue = value;
-    qov.foundValue = true;
-    return qov;
-  }
-}
-
-QuantileOfValue Image::valueToQuantile(uint32_t comp, double value) const
-{
-  if (comp > m_header.numComponentsPerPixel()) {
-    spdlog::error(
-      "Invalid image component {} (image has {}) when converting value {} to quantile",
-      comp,
-      m_header.numComponentsPerPixel(),
-      value);
-    throw_debug("Invalid image component")
-  }
-
-  if (m_settings.usingExactQuantiles()) {
-    switch (m_header.memoryComponentType()) {
-      case ComponentType::Int8: {
-        return convertValueToQuantile(std::span{m_dataSorted_int8[comp]}, static_cast<int8_t>(value));
-      }
-      case ComponentType::UInt8: {
-        return convertValueToQuantile(std::span{m_dataSorted_uint8[comp]}, static_cast<uint8_t>(value));
-      }
-      case ComponentType::Int16: {
-        return convertValueToQuantile(std::span{m_dataSorted_int16[comp]}, static_cast<int16_t>(value));
-      }
-      case ComponentType::UInt16: {
-        return convertValueToQuantile(std::span{m_dataSorted_uint16[comp]}, static_cast<uint16_t>(value));
-      }
-      case ComponentType::Int32: {
-        return convertValueToQuantile(std::span{m_dataSorted_int32[comp]}, static_cast<int32_t>(value));
-      }
-      case ComponentType::UInt32: {
-        return convertValueToQuantile(std::span{m_dataSorted_uint32[comp]}, static_cast<uint32_t>(value));
-      }
-      case ComponentType::Float32: {
-        return convertValueToQuantile(std::span{m_dataSorted_float32[comp]}, static_cast<float>(value));
-      }
-      default: {
-        spdlog::error("Invalid memory component type '{}'", m_header.memoryComponentTypeAsString());
-        throw_debug("Invalid memory component type")
-      }
-    }
-  }
-  else {
-    const double q = m_tdigests.at(comp).cdf(value);
-
-    /// @todo only lowerQuantile and upperQuantile are used by callers
-    QuantileOfValue qov;
-    qov.lowerQuantile = q;
-    qov.upperQuantile = q;
-    qov.lowerIndex = 0;
-    qov.upperIndex = 0;
-    qov.lowerValue = value;
-    qov.upperValue = value;
-    qov.foundValue = true;
-    return qov;
-  }
-}
-
-double Image::quantileToValue(uint32_t comp, double quantile) const
-{
-  if (comp > m_header.numComponentsPerPixel()) {
-    spdlog::error(
-      "Invalid image component {} (image has {}) when converting quantile {} to value",
-      comp,
-      m_header.numComponentsPerPixel(),
-      quantile);
-    throw_debug("Invalid image component")
-  }
-
-  if (m_settings.usingExactQuantiles()) {
-    switch (m_header.memoryComponentType()) {
-      case ComponentType::Int8: {
-        return static_cast<double>(convertQuantileToValue(std::span{m_dataSorted_int8[comp]}, quantile));
-      }
-      case ComponentType::UInt8: {
-        return static_cast<double>(convertQuantileToValue(std::span{m_dataSorted_uint8[comp]}, quantile));
-      }
-      case ComponentType::Int16: {
-        return static_cast<double>(convertQuantileToValue(std::span{m_dataSorted_int16[comp]}, quantile));
-      }
-      case ComponentType::UInt16: {
-        return static_cast<double>(convertQuantileToValue(std::span{m_dataSorted_uint16[comp]}, quantile));
-      }
-      case ComponentType::Int32: {
-        return static_cast<double>(convertQuantileToValue(std::span{m_dataSorted_int32[comp]}, quantile));
-      }
-      case ComponentType::UInt32: {
-        return static_cast<double>(convertQuantileToValue(std::span{m_dataSorted_uint32[comp]}, quantile));
-      }
-      case ComponentType::Float32: {
-        return static_cast<double>(convertQuantileToValue(std::span{m_dataSorted_float32[comp]}, quantile));
-      }
-      default: {
-        spdlog::error("Invalid memory component type '{}'", m_header.memoryComponentTypeAsString());
-        throw_debug("Invalid memory component type")
-      }
-    }
-  }
-  else {
-    return m_tdigests.at(comp).quantile(quantile);
-  }
 }
 
 void Image::setUseIdentityPixelSpacings(bool identitySpacings)

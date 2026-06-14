@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 
 TEST_CASE("DICOM metadata filtering excludes PHI tags", "[image][dicom]")
 {
@@ -123,6 +125,40 @@ TEST_CASE("DICOM middle-slice preview returns empty for series without files", "
 
   dicom::SlicePreview preview;
   CHECK(preview.empty());
+}
+
+TEST_CASE("DICOM discovery reports missing and non-DICOM inputs without throwing", "[image][dicom][discovery]")
+{
+  const auto missing = dicom::discoverSeries({std::filesystem::temp_directory_path() / "entropy-missing-dicom-folder"});
+  CHECK(missing.series.empty());
+  REQUIRE_FALSE(missing.warnings.empty());
+
+  const auto textFile = std::filesystem::temp_directory_path() / "entropy-not-dicom.txt";
+  {
+    std::ofstream out(textFile);
+    out << "not a dicom file\n";
+  }
+
+  CHECK_FALSE(dicom::canReadDicomHeader(textFile));
+  const auto result = dicom::discoverSeries({textFile});
+  CHECK(result.series.empty());
+}
+
+TEST_CASE("DICOM loading rejects synthetic non-loadable and vector series records", "[image][dicom][loading]")
+{
+  dicom::SeriesInfo empty;
+  CHECK_FALSE(dicom::loadSeriesImage(empty).has_value());
+
+  dicom::SeriesInfo vectorSeries;
+  vectorSeries.seriesInstanceUid = "1.2.3";
+  vectorSeries.files.emplace_back("slice.dcm");
+  vectorSeries.geometry.dimensions = {2, 2, 1};
+  vectorSeries.geometry.spacing = {1.0f, 1.0f, 1.0f};
+  CHECK_FALSE(dicom::loadSeriesImage(
+                vectorSeries,
+                Image::ImageRepresentation::Image,
+                Image::MultiComponentBufferType::InterleavedImage)
+                .has_value());
 }
 
 TEST_CASE("DICOM discovery preview and load work on an external fixture", "[image][dicom][integration]")

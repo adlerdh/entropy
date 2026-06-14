@@ -81,6 +81,25 @@ uint32_t componentSizeInBytes(ComponentType type)
   return 0;
 }
 
+template<typename T>
+std::vector<T> copyImageComponentValues(const Image& image, uint32_t component)
+{
+  const std::size_t numPixels = image.header().numPixels();
+  std::vector<T> values;
+  values.reserve(numPixels);
+
+  for (std::size_t i = 0; i < numPixels; ++i) {
+    const auto value = image.value<T>(component, i);
+    if (!value) {
+      spdlog::error("Unable to read image component {} value at index {}", component, i);
+      throw_debug("Unable to read image component value")
+    }
+    values.push_back(*value);
+  }
+
+  return values;
+}
+
 } // namespace
 
 std::optional<ImageHeader> readImageHeaderOnly(
@@ -481,36 +500,71 @@ std::vector<OnlineStats> computeImageStatisticsOnUnsortedValues(const Image& ima
 
     switch (image.header().memoryComponentType()) {
       case ComponentType::Int8: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<int8_t>(image, i);
+          componentStats.emplace_back(computeStatsOnUnsortedBuffers<int8_t>(std::span(values)));
+          break;
+        }
         componentStats.emplace_back(
           computeStatsOnUnsortedBuffers<int8_t>(std::span(static_cast<const int8_t*>(buffer), N)));
         break;
       }
       case ComponentType::UInt8: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<uint8_t>(image, i);
+          componentStats.emplace_back(computeStatsOnUnsortedBuffers<uint8_t>(std::span(values)));
+          break;
+        }
         componentStats.emplace_back(
           computeStatsOnUnsortedBuffers<uint8_t>(std::span(static_cast<const uint8_t*>(buffer), N)));
         break;
       }
       case ComponentType::Int16: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<int16_t>(image, i);
+          componentStats.emplace_back(computeStatsOnUnsortedBuffers<int16_t>(std::span(values)));
+          break;
+        }
         componentStats.emplace_back(
           computeStatsOnUnsortedBuffers<int16_t>(std::span(static_cast<const int16_t*>(buffer), N)));
         break;
       }
       case ComponentType::UInt16: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<uint16_t>(image, i);
+          componentStats.emplace_back(computeStatsOnUnsortedBuffers<uint16_t>(std::span(values)));
+          break;
+        }
         componentStats.emplace_back(
           computeStatsOnUnsortedBuffers<uint16_t>(std::span(static_cast<const uint16_t*>(buffer), N)));
         break;
       }
       case ComponentType::Int32: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<int32_t>(image, i);
+          componentStats.emplace_back(computeStatsOnUnsortedBuffers<int32_t>(std::span(values)));
+          break;
+        }
         componentStats.emplace_back(
           computeStatsOnUnsortedBuffers<int32_t>(std::span(static_cast<const int32_t*>(buffer), N)));
         break;
       }
       case ComponentType::UInt32: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<uint32_t>(image, i);
+          componentStats.emplace_back(computeStatsOnUnsortedBuffers<uint32_t>(std::span(values)));
+          break;
+        }
         componentStats.emplace_back(
           computeStatsOnUnsortedBuffers<uint32_t>(std::span(static_cast<const uint32_t*>(buffer), N)));
         break;
       }
       case ComponentType::Float32: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<float>(image, i);
+          componentStats.emplace_back(computeStatsOnUnsortedBuffers<float>(std::span(values)));
+          break;
+        }
         componentStats.emplace_back(
           computeStatsOnUnsortedBuffers<float>(std::span(static_cast<const float*>(buffer), N)));
         break;
@@ -539,30 +593,65 @@ std::vector<tdigest::TDigest> computeTDigests(const Image& image)
 
     switch (image.header().memoryComponentType()) {
       case ComponentType::Int8: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<int8_t>(image, i);
+          digests.emplace_back(buildTDigest<int8_t>(std::span(values), numTh));
+          break;
+        }
         digests.emplace_back(buildTDigest<int8_t>(std::span(static_cast<const int8_t*>(buffer), N), numTh));
         break;
       }
       case ComponentType::UInt8: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<uint8_t>(image, i);
+          digests.emplace_back(buildTDigest<uint8_t>(std::span(values), numTh));
+          break;
+        }
         digests.emplace_back(buildTDigest<uint8_t>(std::span(static_cast<const uint8_t*>(buffer), N), numTh));
         break;
       }
       case ComponentType::Int16: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<int16_t>(image, i);
+          digests.emplace_back(buildTDigest<int16_t>(std::span(values), numTh));
+          break;
+        }
         digests.emplace_back(buildTDigest<int16_t>(std::span(static_cast<const int16_t*>(buffer), N), numTh));
         break;
       }
       case ComponentType::UInt16: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<uint16_t>(image, i);
+          digests.emplace_back(buildTDigest<uint16_t>(std::span(values), numTh));
+          break;
+        }
         digests.emplace_back(buildTDigest<uint16_t>(std::span(static_cast<const uint16_t*>(buffer), N), numTh));
         break;
       }
       case ComponentType::Int32: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<int32_t>(image, i);
+          digests.emplace_back(buildTDigest<int32_t>(std::span(values), numTh));
+          break;
+        }
         digests.emplace_back(buildTDigest<int32_t>(std::span(static_cast<const int32_t*>(buffer), N), numTh));
         break;
       }
       case ComponentType::UInt32: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<uint32_t>(image, i);
+          digests.emplace_back(buildTDigest<uint32_t>(std::span(values), numTh));
+          break;
+        }
         digests.emplace_back(buildTDigest<uint32_t>(std::span(static_cast<const uint32_t*>(buffer), N), numTh));
         break;
       }
       case ComponentType::Float32: {
+        if (!buffer || image.bufferType() == Image::MultiComponentBufferType::InterleavedImage) {
+          const auto values = copyImageComponentValues<float>(image, i);
+          digests.emplace_back(buildTDigest<float>(std::span(values), numTh));
+          break;
+        }
         digests.emplace_back(buildTDigest<float>(std::span(static_cast<const float*>(buffer), N), numTh));
         break;
       }

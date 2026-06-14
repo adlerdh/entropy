@@ -8,23 +8,23 @@
 #include <vector>
 
 /**
- * @brief Class for an image color map. Each color is stored as an RGBA float tuple.
+ * @brief CPU-side image color map definition used to map scalar image values to RGBA colors.
+ *
+ * ImageColorMap owns a non-empty table of RGBA colors represented as 32-bit floating point values.
+ * RGB constructor inputs are promoted to opaque RGBA colors. RGBA inputs are stored exactly as
+ * supplied; color values are not alpha-premultiplied by this class.
  */
 class ImageColorMap
 {
 public:
+  /**
+   * @brief Interpolation mode requested when sampling between adjacent color entries.
+   */
   enum class InterpolationMode
   {
-    Nearest,
-    Linear
+    Nearest, //!< Use nearest-neighbor sampling.
+    Linear   //!< Use linear interpolation between adjacent colors.
   };
-
-  //    enum class ForcedInterpolationMode
-  //    {
-  //        Nearest, //!< Only nearest-neighbor interpolation
-  //        Linear, //!< Only linear interpolation
-  //        None //!< Disable interpolation forcing
-  //    };
 
   /**
    * @brief Construct color map from a vector of RGB 32-bit float tuples.
@@ -33,8 +33,10 @@ public:
    * @param name Short name of color map
    * @param technicalName Technically descriptive name of color map
    * @param description More lengthy description of color map
+   * @param interpMode Interpolation mode used when sampling this color map.
    * @param colors Vector of colors, represented as RGB tuples with components
    * in range [0.0, 1.0]. The color's alpha value is assumed to be 1.0.
+   * @throws Debug exception if \p colors is empty.
    */
   ImageColorMap(
     const std::string& name,
@@ -44,12 +46,14 @@ public:
     std::vector<glm::vec3> colors);
 
   /**
-   * @brief Construct color map from a vector of premultiplied RGBA 32-bit float tuples.
+   * @brief Construct color map from a vector of RGBA 32-bit float tuples.
    * @param name Short name of color map
    * @param technicalName Technically descriptive name for color map
    * @param description More lengthy description of color map
-   * @param colors Vector of colors, represented as premultiplied RGBA tuples
+   * @param interpMode Interpolation mode used when sampling this color map.
+   * @param colors Vector of colors, represented as RGBA tuples
    * with components in range [0.0, 1.0]
+   * @throws Debug exception if \p colors is empty.
    */
   ImageColorMap(
     const std::string& name,
@@ -66,86 +70,90 @@ public:
 
   ~ImageColorMap() = default;
 
-  /**
-   * @brief Set color map that it to be displayed as a preview of the actual color map
-   * @param preview Vector of premultiplied RGBA colors with components in range [0.0, 1.0]
-   */
+  /// @brief Set the compact preview map shown in UI controls for this color map.
+  /// @param preview Vector of RGBA preview colors with components in range [0.0, 1.0].
   void setPreviewMap(std::vector<glm::vec4> preview);
 
-  /// Return whether there exists a preview map. By default, none exists until
-  /// \c setPreviewMap is called.
+  /// @brief Return whether a non-empty preview map has been assigned.
   bool hasPreviewMap() const;
 
-  /// Get the number of colors in the preview map
+  /// @brief Get the number of colors in the preview map.
   std::size_t numPreviewMapColors() const;
 
-  /**
-   * @brief Get a pointer to the raw preview color buffer
-   * @return Const pointer to first element of buffer
-   */
+  /// @brief Get a pointer to the first float of the contiguous preview RGBA buffer.
+  /// @pre hasPreviewMap() must be true.
+  /// @return Pointer to 4 * numPreviewMapColors() floats.
   const float* getPreviewMap() const;
 
-  /// Get short name of color map
+  /// @brief Get the short user-facing name of the color map.
   const std::string& name() const;
 
-  /// Get technical name of color map
+  /// @brief Get the stable technical name of the color map.
   const std::string& technicalName() const;
 
-  /// Get description of color map
+  /// @brief Get the descriptive text associated with the color map.
   const std::string& description() const;
 
-  /// Get number of colors in the color map
+  /// @brief Get the number of entries in the color table.
   std::size_t numColors() const;
 
-  /// Get the color at a given index of the color map
+  /// @brief Get the RGBA color at a color-table index.
+  /// @throws Debug exception if \p index is outside [0, numColors()).
   glm::vec4 color_RGBA_F32(std::size_t index) const;
 
-  /// Get the total number of bytes occupied by the color map
+  /// @brief Get the total byte count of the contiguous RGBA float color buffer.
   std::size_t numBytes_RGBA_F32() const;
 
-  /// Get a constant raw pointer to the color map RGBA 32-bit floating point data buffer.
-  /// The buffer is guaranteed to have length 4 * numColors()
+  /// @brief Get a pointer to the first float of the contiguous RGBA color buffer.
+  /// @return Pointer to 4 * numColors() floats.
   const float* data_RGBA_F32() const;
 
-  /// Get the vector holding the data
+  /// @brief Get read-only access to the owned RGBA color table.
   const std::vector<glm::vec4>& data_RGBA_asVector() const;
 
-  /// Set a color
+  /// @brief Replace a color-table entry.
+  /// @return True when \p i is valid and the color was updated; false otherwise.
   bool setColorRGBA(std::size_t i, const glm::vec4& rgba);
 
-  /// Slope and intercept used to map texels to range [0.0, 1.0]:
+  /// @brief Get slope/intercept coefficients for normalized color-map coordinate mapping.
+  /// @param inverted When true, returns coefficients that invert the normalized coordinate.
   glm::vec2 slopeIntercept(bool inverted = false) const;
 
-  /// Set/get whether the map has a transparent border.
-  /// To be used with constant color maps.
+  /// @brief Set whether sampling beyond the map border should be treated as transparent.
   void setTransparentBorder(bool set);
+
+  /// @brief Return whether transparent-border sampling is enabled.
   bool transparentBorder() const;
 
-  /**
-   * @brief Cyclically rotate the color map by a fractional amount of its total length
-   * @param fraction Fractional amount (in [0.0, 1.0]) by which to rotate the map
-   */
+  /// @brief Cyclically rotate the color table by a fractional amount of its length.
+  /// @param fraction Fractional rotation amount. Values outside [0, 1) are wrapped.
   void cyclicRotate(float fraction);
 
-  /// Reverse the color map
+  /// @brief Reverse the order of entries in the color table.
   void reverse();
 
-  /// @brief Set/get interpolation mode
+  /// @brief Set the interpolation mode used for sampling this color map.
   void setInterpolationMode(const InterpolationMode& mode);
+
+  /// @brief Get the interpolation mode used for sampling this color map.
   InterpolationMode interpolationMode() const;
 
-  //    /// @brief Set/get forced interpolation mode
-  //    void setForcedInterpolationMode( const ForcedInterpolationMode& mode );
-  //    ForcedInterpolationMode forcedInterpolationMode() const;
-
-  //    /// @brief Get final interpolation mode
-  //    InterpolationMode finalInterpolationMode() const;
-
-  /// Get the sized internal texture format for the color map
-  /// Load color map from CSV as non-premultiplied RGBA
+  /// @brief Load a color map from CSV text.
+  ///
+  /// The first three lines are the brief name, technical name, and description. Each remaining line
+  /// must contain either RGB or RGBA floating point components. RGB rows are promoted to alpha 1.
+  /// Header text is sanitized to alphanumeric characters plus spaces, '-', '_', '(' and ')'.
+  ///
+  /// @return A color map on success, or std::nullopt when metadata or color rows are invalid.
   static std::optional<ImageColorMap> loadImageColorMap(std::istringstream& csv);
 
-  /// Create a linear colormap that interpolates between given start and end colors
+  /// @brief Create a linear color map between two endpoint colors.
+  /// @param startColor First color-table entry.
+  /// @param endColor Last color-table entry.
+  /// @param numSteps Requested number of color-table entries. Values less than 2 are promoted to 2.
+  /// @param briefName Short user-facing name.
+  /// @param description Descriptive text.
+  /// @param technicalName Stable technical name.
   static ImageColorMap createLinearImageColorMap(
     const glm::vec4& startColor,
     const glm::vec4& endColor,
@@ -159,14 +167,11 @@ private:
   std::string m_technicalName; //!< Technical name of the color map
   std::string m_description;   //!< Description of the color map
 
-  /// Table of premultiplied alpha colors represented using
-  /// 32-bit floating point values per RGBA component.
-  /// Components are only meaningful if in range [0.0, 1.0]
+  /// Table of RGBA colors represented using 32-bit floating point values per component.
+  /// Components are only meaningful if in range [0.0, 1.0].
   std::vector<glm::vec4> m_colors_RGBA_F32;
 
-  std::vector<glm::vec4> m_preview;      //!< Preview color map
-  InterpolationMode m_interpolationMode; //!< Interpolation mode
-  bool m_transparentBorder;              //!< Transparent border
-
-  //    ForcedInterpolationMode m_forcedInterpolationMode;
+  std::vector<glm::vec4> m_preview;      //!< Optional preview color map.
+  InterpolationMode m_interpolationMode; //!< Interpolation mode.
+  bool m_transparentBorder;              //!< Whether border sampling should be transparent.
 };

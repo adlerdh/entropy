@@ -13,13 +13,24 @@
 #include <string>
 
 /**
- * @brief Image header with data set upon creation or loading of image.
+ * @brief Logical image metadata derived from IO metadata and user header overrides.
+ *
+ * ImageHeader normalizes 1D/2D/3D IO metadata into Entropy's 3D image model, tracks file and
+ * in-memory component representations, computes pixel and subject-space bounding boxes, and applies
+ * optional spacing/origin/direction overrides.
  */
 class ImageHeader
 {
 public:
+  /// @brief Construct an empty header. Intended for containers before real IO metadata is known.
   explicit ImageHeader() = default;
 
+  /**
+   * @brief Construct a header from on-disk and in-memory IO metadata.
+   * @param ioInfoOnDisk Metadata for the source file representation.
+   * @param ioInfoInMemory Metadata for the loaded memory representation.
+   * @param interleavedComponents Whether multi-component values are stored interleaved in memory.
+   */
   ImageHeader(const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioInfoInMemory, bool interleavedComponents);
 
   ImageHeader(const ImageHeader&) = default;
@@ -30,41 +41,64 @@ public:
 
   ~ImageHeader() = default;
 
-  /// Set overrides to the original image header
+  /// @brief Apply overrides to the original header geometry and recompute derived geometry.
   void setHeaderOverrides(const ImageHeaderOverrides& overrides);
+  /// @brief Get the current header override state.
   const ImageHeaderOverrides& getHeaderOverrides() const;
 
+  /// @brief Change component type/count metadata and recompute pixel type and sizes.
   void adjustComponents(const ComponentType& componentType, uint32_t numComponents);
 
+  /// @brief Return whether the source image exists on disk.
   bool existsOnDisk() const;
+  /// @brief Set whether the source image exists on disk.
   void setExistsOnDisk(bool);
 
-  const std::filesystem::path& fileName() const; //!< File name
+  /// @brief Get the source file name.
+  const std::filesystem::path& fileName() const;
+  /// @brief Set the source file name.
   void setFileName(std::filesystem::path fileName);
 
-  uint32_t numComponentsPerPixel() const; //!< Number of components per pixel
-  uint64_t numPixels() const;             //!< Number of pixels in the image
+  /// @brief Get number of components per pixel in memory.
+  uint32_t numComponentsPerPixel() const;
+  /// @brief Get total number of pixels.
+  uint64_t numPixels() const;
 
+  /// @brief Set number of components per pixel and recompute pixel type and byte sizes.
   void setNumComponentsPerPixel(uint32_t numComponents);
 
-  uint64_t fileImageSizeInBytes() const;   //!< Image size in bytes (in file)
-  uint64_t memoryImageSizeInBytes() const; //!< Image size in bytes (in memory)
+  /// @brief Get image byte size in the source file representation.
+  uint64_t fileImageSizeInBytes() const;
+  /// @brief Get image byte size in the loaded memory representation.
+  uint64_t memoryImageSizeInBytes() const;
 
-  PixelType pixelType() const; //!< Pixel type
+  /// @brief Get logical pixel type.
+  PixelType pixelType() const;
+  /// @brief Get logical pixel type as a readable string.
   std::string pixelTypeAsString() const;
 
-  ComponentType fileComponentType() const; //!< Pixel component type
+  /// @brief Get source file component type.
+  ComponentType fileComponentType() const;
+  /// @brief Get source file component type as a readable string.
   std::string fileComponentTypeAsString() const;
-  uint32_t fileComponentSizeInBytes() const; //!< Size of component in bytes
+  /// @brief Get source file component size in bytes.
+  uint32_t fileComponentSizeInBytes() const;
 
-  ComponentType memoryComponentType() const; //!< Pixel component type in memory
+  /// @brief Get loaded memory component type.
+  ComponentType memoryComponentType() const;
+  /// @brief Get loaded memory component type as a readable string.
   std::string memoryComponentTypeAsString() const;
-  uint32_t memoryComponentSizeInBytes() const; //!< Size of component in bytes in memory
+  /// @brief Get loaded memory component size in bytes.
+  uint32_t memoryComponentSizeInBytes() const;
 
-  const glm::uvec3& pixelDimensions() const; //!< Pixel dimensions (i.e. pixel matrix size)
-  const glm::vec3& origin() const;           //!< Origin in physical Subject space
-  const glm::vec3& spacing() const;          //!< Pixel spacing in physical Subject space
-  const glm::mat3& directions() const;       //!< Axis directions in physical Subject space, column-major
+  /// @brief Get image dimensions in Entropy's 3D pixel model.
+  const glm::uvec3& pixelDimensions() const;
+  /// @brief Get origin in physical subject space after overrides.
+  const glm::vec3& origin() const;
+  /// @brief Get pixel spacing in physical subject space after overrides.
+  const glm::vec3& spacing() const;
+  /// @brief Get axis directions in physical subject space after overrides, stored column-major.
+  const glm::mat3& directions() const;
 
   /// All corners of the image's AXIS-ALIGNED bounding box in Voxel space
   const std::array<glm::vec3, 8>& pixelBBoxCorners() const;

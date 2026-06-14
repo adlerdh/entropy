@@ -1,12 +1,22 @@
 add_executable(EntropyImageTests
   DicomSeriesTests.cpp
   ImageColorMapTests.cpp
+  ImageCoreTests.cpp
+  ImageHeaderTransformTests.cpp
+  ImageSettingsTests.cpp
+  ImageLoadingTests.cpp
+  SegmentationDerivedDataTests.cpp
 )
 
 target_link_libraries(EntropyImageTests PRIVATE
   Catch2::Catch2WithMain
   Entropy::Image
+  ${ITK_LIBRARIES}
   entropy_warnings
+)
+
+target_include_directories(EntropyImageTests PRIVATE
+  ${ITK_INCLUDE_DIRS}
 )
 
 set_target_properties(EntropyImageTests PROPERTIES

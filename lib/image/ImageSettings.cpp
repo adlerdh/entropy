@@ -1163,17 +1163,11 @@ void ImageSettings::updateInternals()
     S.m_intercept_native = 0.5 - windowCenter(i) / windowWidth(i);
 
     /**
-     * @note In OpenGL, UNSIGNED normalized floats are computed as
-     * float = int / MAX, where MAX = 2^B - 1 = 255
+     * @note Unsigned normalized values are computed as float = int / MAX,
+     * where MAX = 2^B - 1 = 255 for an 8-bit value.
      *
-     * SIGNED normalized floats are computed as either
-     * float = max(int / MAX, -1) where MAX = 2^(B-1) - 1 = 127
-     * (this is the method used most commonly in OpenGL 4.2 and above)
-     *
-     * or alternatively as (depending on implementation)
-     * float = (2*int + 1) / (2^B - 1) = (2*int + 1) / 255
-     *
-     * @see https://www.khronos.org/opengl/wiki/Normalized_Integer
+     * Signed normalized values are computed as float = max(int / MAX, -1),
+     * where MAX = 2^(B - 1) - 1 = 127 for an 8-bit value.
      */
 
     double M = 0.0;
@@ -1247,7 +1241,7 @@ void ImageSettings::updateInternals()
 
 double ImageSettings::mapNativeIntensityToTexture(double nativeImageValue) const
 {
-  /// @note An alternate mapping for signed integers is sometimes used in OpenGL < 4.2:
+  /// @note Some normalized signed-integer representations use this alternate mapping:
   /// return (2.0 * nativeImageValue + 1.0) / (2^B - 1)
   /// This mapping does not allow for a signed integer to exactly express the value zero.
 

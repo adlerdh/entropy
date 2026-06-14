@@ -5,7 +5,7 @@
 #include <string>
 
 /**
- * @brief Material properites for the Blinn-Phong reflection model
+ * @brief Material coefficients for the Blinn-Phong reflection model.
  */
 struct SurfaceMaterial
 {
@@ -15,13 +15,16 @@ struct SurfaceMaterial
   float shininess = 8.0f; //!< Specular reflection coefficient
 };
 
+/**
+ * @brief Mesh display quality options for generated isosurfaces.
+ */
 struct SurfaceQuality
 {
   bool smoothNormals = true; //!< Do linear interpolation of normal vectors for lighting
 };
 
 /**
- * @brief Isosurface properties
+ * @brief User-editable isosurface display and mesh synchronization state.
  */
 class Isosurface
 {
@@ -39,14 +42,19 @@ public:
   // MeshRecord mesh;         //!< Mesh record of the isosurface
   bool meshInSync = false; //!< Is the mesh in sync with the isosurface value?
 
+  /// @brief Get the ambient RGB contribution derived from material and surface color.
   glm::vec3 ambientColor() const
   {
     return this->material.ambient * this->color;
   }
+
+  /// @brief Get the diffuse RGB contribution derived from material and surface color.
   glm::vec3 diffuseColor() const
   {
     return this->material.diffuse * this->color;
   }
+
+  /// @brief Get the specular RGB contribution; specular highlights are white.
   glm::vec3 specularColor() const
   {
     return this->material.specular * glm::vec3{1.0f};

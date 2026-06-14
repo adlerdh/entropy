@@ -1,19 +1,19 @@
 #pragma once
 
 #include "common/Types.h"
-#include <filesystem>
 
 #include "image/ImageHeader.h"
 #include "image/ImageHeaderOverrides.h"
 #include "image/ImageIoInfo.h"
 #include "image/ImageSettings.h"
 #include "image/ImageTransformations.h"
-
-#include "image/TDigest.h"
+#include "image/ImageTypes.h"
+#include "image/external/TDigest.h"
 
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <filesystem>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -21,32 +21,24 @@
 #include <vector>
 
 /**
- * @brief Encapsulates a 1D, 2D, or 3D medical image with one or more components per pixel
+ * @brief Owns image metadata, pixel buffers, derived statistics, and per-image display state.
+ *
+ * Image supports 1D, 2D, and 3D scalar or multi-component medical images. Pixel buffers may be
+ * stored as one buffer per component or as one interleaved buffer, depending on the selected
+ * MultiComponentBufferType. The ImageHeader describes the logical image geometry and component
+ * type, while ImageIoInfo records how the data was represented on disk and in memory.
  */
 class Image
 {
 public:
-  enum class LoadState
-  {
-    HeaderOnly,
-    LoadingPixels,
-    LoadedPixels,
-    Failed,
-    Skipped
-  };
-  /// @brief What does the image represent?
-  enum class ImageRepresentation
-  {
-    Image,       //!< A scalar or vector image
-    Segmentation //!< A segmentation
-  };
+  /// @brief Backwards-compatible alias for the top-level image load-state enum.
+  using LoadState = ImageLoadState;
 
-  /// @brief How should Image hold data for multi-component images?
-  enum class MultiComponentBufferType
-  {
-    SeparateImages,  //!< Each component is a separate image
-    InterleavedImage //!< Interleave all components in a single image
-  };
+  /// @brief Backwards-compatible alias for the top-level image/segmentation representation enum.
+  using ImageRepresentation = ::ImageRepresentation;
+
+  /// @brief Backwards-compatible alias for the top-level multi-component buffer layout enum.
+  using MultiComponentBufferType = ::MultiComponentBufferType;
 
   /**
    * @brief Construct Image from a file on disk
@@ -102,13 +94,23 @@ public:
    */
   bool saveComponentToDisk(uint32_t component, const std::optional<std::filesystem::path>& newFileName);
 
+  /// @brief Get whether this object contains loaded pixels, only a header, or failed to load.
   LoadState loadState() const;
+
+  /// @brief Update the load-state flag without changing pixel buffers or metadata.
   void setLoadState(LoadState state);
+
+  /// @brief Return true when this image owns pixel buffers that can be sampled or saved.
   bool hasPixelData() const;
 
+  /// @brief Build sorted per-component buffers used by quantile and histogram queries.
+  /// @return True when sorted buffers were generated for the image's memory component type.
   bool generateSortedBuffers();
 
+  /// @brief Return whether this object is interpreted as an intensity image or segmentation.
   const ImageRepresentation& imageRep() const;
+
+  /// @brief Return the selected in-memory layout for multi-component pixel data.
   const MultiComponentBufferType& bufferType() const;
 
   /** @brief Get a const void pointer to the raw buffer data of an image component.
@@ -135,7 +137,11 @@ public:
   /// @brief Get a non-const void pointer to the sorted buffer data of an image component.
   void* bufferSortedAsVoid(uint32_t component);
 
-  /// @brief Get the value of the buffer at image 1D index
+  /// @brief Get a component value at a linear pixel index.
+  /// @tparam T Requested return type. The stored component value is cast to this type.
+  /// @param component Logical component index.
+  /// @param index Linear pixel index in x-fastest order.
+  /// @return The converted value, or std::nullopt for an invalid index/component/type.
   template<typename T>
   std::optional<T> value(uint32_t component, std::size_t index) const
   {
@@ -171,7 +177,9 @@ public:
     }
   }
 
-  /// @brief Get the value of the buffer at image 3D index (i, j, k)
+  /// @brief Get a component value at a 3D pixel index.
+  /// @tparam T Requested return type. The stored component value is cast to this type.
+  /// @return The converted value, or std::nullopt when the index is outside the image.
   template<typename T>
   std::optional<T> value(uint32_t component, int i, int j, int k) const
   {
@@ -190,8 +198,13 @@ public:
     return value<T>(component, index);
   }
 
-  /// @brief Get the linearly interpolated value of the buffer at continuous image 3D index (i, j,
-  /// k)
+  /// @brief Linearly sample a component at continuous 3D image coordinates.
+  ///
+  /// Coordinates are valid in the half-voxel-extended range [-0.5, N - 0.5]. Valid coordinates are
+  /// clamped to edge samples before interpolation so edge and corner samples remain well defined.
+  ///
+  /// @tparam T Requested return type.
+  /// @return The interpolated value, or std::nullopt when the coordinate/component cannot be read.
   template<typename T>
   std::optional<T> valueLinear(uint32_t comp, double i, double j, double k) const
   {
@@ -307,7 +320,9 @@ public:
     return c;
   }
 
-  /// @brief Set the value of the buffer at image index (i, j, k)
+  /// @brief Set a component value at a 3D pixel index.
+  /// @tparam T Input value type. The value is cast to the image memory component type.
+  /// @return True when the coordinate/component/type is valid and the value was written.
   template<typename T>
   bool setValue(uint32_t component, int i, int j, int k, T value)
   {
@@ -364,6 +379,8 @@ public:
     return false;
   }
 
+  /// @brief Fill all component buffers with one value.
+  /// @tparam T Input value type. The value is cast to the image memory component type.
   template<typename T>
   void setAllValues(T v)
   {
@@ -415,67 +432,90 @@ public:
     }
   }
 
+  /// @brief Convert an integer component value to its quantile in the image distribution.
   QuantileOfValue valueToQuantile(uint32_t component, int64_t value) const;
+
+  /// @brief Convert a floating point component value to its quantile in the image distribution.
   QuantileOfValue valueToQuantile(uint32_t component, double value) const;
 
+  /// @brief Convert a quantile in [0, 1] to the corresponding component value.
   double quantileToValue(uint32_t comp, double quantile) const;
 
+  /// @brief Override header spacing with unit spacing when computing effective geometry.
   void setUseIdentityPixelSpacings(bool identitySpacings);
+
+  /// @brief Return whether effective geometry uses unit pixel spacing.
   bool getUseIdentityPixelSpacings() const;
 
+  /// @brief Override header origin with zero origin when computing effective geometry.
   void setUseZeroPixelOrigin(bool zeroOrigin);
+
+  /// @brief Return whether effective geometry uses zero pixel origin.
   bool getUseZeroPixelOrigin() const;
 
+  /// @brief Override header directions with identity directions when computing effective geometry.
   void setUseIdentityPixelDirections(bool identityDirections);
+
+  /// @brief Return whether effective geometry uses identity pixel directions.
   bool getUseIdentityPixelDirections() const;
 
+  /// @brief Snap effective pixel directions to the closest orthogonal basis.
   void setSnapToClosestOrthogonalPixelDirections(bool snap);
+
+  /// @brief Return whether effective pixel directions are snapped to an orthogonal basis.
   bool getSnapToClosestOrthogonalPixelDirections() const;
 
+  /// @brief Replace all header override flags in one operation.
   void setHeaderOverrides(const ImageHeaderOverrides& overrides);
+
+  /// @brief Get the current header override flags.
   const ImageHeaderOverrides& getHeaderOverrides() const;
 
-  /// @brief Get the image header
+  /// @brief Get read-only access to the image header.
   const ImageHeader& header() const;
+
+  /// @brief Get mutable access to the image header.
   ImageHeader& header();
 
-  /// @brief Get the image transformations
+  /// @brief Get read-only access to affine and display transformations associated with the image.
   const ImageTransformations& transformations() const;
+
+  /// @brief Get mutable access to affine and display transformations associated with the image.
   ImageTransformations& transformations();
 
-  /// @brief Get the image settings
+  /// @brief Get read-only access to display and interaction settings associated with the image.
   const ImageSettings& settings() const;
+
+  /// @brief Get mutable access to display and interaction settings associated with the image.
   ImageSettings& settings();
 
-  /// @brief Get the image meta data
+  /// @brief Write human-readable image metadata to an output stream.
+  /// @return The same output stream for chaining.
   std::ostream& metaData(std::ostream& os) const;
 
+  /// @brief Recompute per-component statistics and quantile summaries from current buffers.
   void updateComponentStats();
 
 private:
-  /// Load a buffer as an image component
+  /// @brief Load and optionally cast a buffer as an intensity-image component.
   bool loadImageBuffer(
     const void* buffer,
     std::size_t numElements,
     ComponentType srcComponentType,
     ComponentType dstComponentType);
 
-  /// Load a buffer as a segmentation component
+  /// @brief Load and optionally cast a buffer as a segmentation component.
   bool loadSegBuffer(
     const void* buffer,
     std::size_t numElements,
     ComponentType srcComponentType,
     ComponentType dstComponentType);
 
-  /// For a given image component and 3D pixel indices, return a pair consisting of:
-  /// 1) component buffer to index
-  /// 2) offset into that buffer
+  /// @brief Map a logical component and 3D pixel index to an owned buffer index and element offset.
   std::optional<std::pair<std::size_t, std::size_t>> getComponentAndOffsetForBuffer(uint32_t comp, int i, int j, int k)
     const;
 
-  /// For a given image component and 1D pixel index, return a pair consisting of:
-  /// 1) component buffer to index
-  /// 2) offset into that buffer
+  /// @brief Map a logical component and linear pixel index to an owned buffer index and element offset.
   std::optional<std::pair<std::size_t, std::size_t>> getComponentAndOffsetForBuffer(uint32_t comp, std::size_t index)
     const;
 
@@ -483,10 +523,9 @@ private:
    * @remark If the image has a multi-component pixels and m_bufferType ==
    * MultiComponentBufferType::SeparateImages, then its components are separated and stored in a
    * vector of images. This is so that the buffer to each image component can be retrieved
-   * independently of the others, as required when setting an OpenGL texture. If the components were
-   * not separated, then the original buffer would be accessed as a 1-D array with interleaved
-   * components: buffer[c + numComponents * (x + xSize * (y + ySize * z))]; where c is the desired
-   * component.
+   * independently of the others. If the components were not separated, then the original buffer
+   * would be accessed as a 1-D array with interleaved components:
+   * buffer[c + numComponents * (x + xSize * (y + ySize * z))]; where c is the desired component.
    *
    * @remark if m_bufferType == MultiComponentBufferType::InterleavedImage then only the 0th
    * component is used to hold all components

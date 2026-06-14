@@ -9,10 +9,12 @@
 #include <vector>
 
 /**
- * @brief createBuffer_dispatch
- * @param buffer
- * @param numElements
- * @return
+ * @brief Copy and clamp a raw typed buffer into a destination component vector.
+ * @tparam SrcCompType Source component type in \p buffer.
+ * @tparam DstCompType Destination component type.
+ * @param[in] buffer Raw source buffer with \p numElements entries.
+ * @param[in] numElements Number of components to copy.
+ * @return Destination vector with values clamped to the destination type range.
  */
 template<typename SrcCompType, typename DstCompType>
 std::vector<DstCompType> createBuffer_dispatch(const void* buffer, std::size_t numElements)
@@ -39,11 +41,12 @@ std::vector<DstCompType> createBuffer_dispatch(const void* buffer, std::size_t n
 }
 
 /**
- * @brief createBuffer
- * @param buffer
- * @param numElements
- * @param srcComponentType Type of components in \c buffer
- * @return
+ * @brief Copy a raw buffer of runtime component type into a typed destination vector.
+ * @tparam DstCompType Destination component type.
+ * @param[in] buffer Raw source buffer with \p numElements entries.
+ * @param[in] numElements Number of components to copy.
+ * @param[in] srcComponentType Runtime component type of \p buffer.
+ * @return Destination vector with values converted to \p DstCompType.
  */
 template<typename DstCompType>
 std::vector<DstCompType> createBuffer(const void* buffer, std::size_t numElements, ComponentType srcComponentType)

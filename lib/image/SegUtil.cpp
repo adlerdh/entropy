@@ -227,16 +227,12 @@ void updateSegmentationVoxels(
 
   Image& seg,
 
-  const std::function<void(
-    const ComponentType& memoryComponentType,
-    const glm::uvec3& offset,
-    const glm::uvec3& size,
-    const int64_t* data)>& updateSegTexture)
+  const SegmentationVoxelUpdateCallback& notifyVoxelsChanged)
 {
   static constexpr std::size_t sk_comp = 0;
   static const glm::ivec3 sk_voxelOne{1, 1, 1};
 
-  // Create a rectangular block of contiguous voxel value data that will be set in the texture:
+  // Create a rectangular block of contiguous voxel value data for changed-region consumers:
   std::vector<glm::ivec3> voxelPositions;
   std::vector<int64_t> voxelValues;
 
@@ -291,7 +287,7 @@ void updateSegmentationVoxels(
     seg.setValue(sk_comp, voxelPositions[i].x, voxelPositions[i].y, voxelPositions[i].z, voxelValues[i]);
   }
 
-  updateSegTexture(seg.header().memoryComponentType(), dataOffset, dataSize, voxelValues.data());
+  notifyVoxelsChanged(seg.header().memoryComponentType(), dataOffset, dataSize, voxelValues.data());
 }
 
 SegmentationBrushFootprint computeSegmentationBrushFootprint(
@@ -356,11 +352,7 @@ void paintSegmentation(
   const glm::vec4& voxelViewPlane,
   std::optional<glm::vec3> referenceSpacing,
 
-  const std::function<void(
-    const ComponentType& memoryComponentType,
-    const glm::uvec3& offset,
-    const glm::uvec3& size,
-    const int64_t* data)>& updateSegTexture)
+  const SegmentationVoxelUpdateCallback& notifyVoxelsChanged)
 {
   const auto footprint = computeSegmentationBrushFootprint(
     seg,
@@ -383,5 +375,5 @@ void paintSegmentation(
     labelToReplace,
     brushReplacesBgWithFg,
     seg,
-    updateSegTexture);
+    notifyVoxelsChanged);
 }

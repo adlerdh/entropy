@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
+#include <exception>
 #include <set>
 #include <utility>
 
@@ -60,7 +62,6 @@ ImageColorMap::ImageColorMap(
   , m_preview(0)
   , m_interpolationMode(interpMode)
   , m_transparentBorder(false)
-//    m_forcedInterpolationMode( forcedInterpMode )
 {
   if (colors.empty()) {
     throw_debug("Empty color map")
@@ -84,7 +85,6 @@ ImageColorMap::ImageColorMap(
   , m_preview(0)
   , m_interpolationMode(interpMode)
   , m_transparentBorder(false)
-//    m_forcedInterpolationMode( forcedInterpMode )
 {
   if (m_colors_RGBA_F32.empty()) {
     throw_debug("Empty color map")
@@ -187,10 +187,16 @@ bool ImageColorMap::transparentBorder() const
 
 void ImageColorMap::cyclicRotate(float fraction)
 {
-  const float f = (fraction < 0.0f) ? 1.0f - fraction : fraction;
-  const int middle = static_cast<int>(f * static_cast<float>(m_colors_RGBA_F32.size()));
+  float f = std::fmod(fraction, 1.0f);
+  if (f < 0.0f) {
+    f += 1.0f;
+  }
 
-  std::rotate(std::begin(m_colors_RGBA_F32), std::begin(m_colors_RGBA_F32) + middle, std::end(m_colors_RGBA_F32));
+  const auto middle = static_cast<std::size_t>(f * static_cast<float>(m_colors_RGBA_F32.size()));
+  std::rotate(
+    std::begin(m_colors_RGBA_F32),
+    std::begin(m_colors_RGBA_F32) + static_cast<std::ptrdiff_t>(middle),
+    std::end(m_colors_RGBA_F32));
 }
 
 void ImageColorMap::reverse()
@@ -249,25 +255,31 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
   size_t count = 0;
 
   while (getline(csv, line)) {
-    const std::vector<std::string> c = splitCsvFields(line);
+    try {
+      const std::vector<std::string> c = splitCsvFields(line);
 
-    if (3 == c.size()) {
-      // Assume alpha component is 1:
-      const float r = std::stof(c[0], nullptr);
-      const float g = std::stof(c[1], nullptr);
-      const float b = std::stof(c[2], nullptr);
-      colors.push_back(glm::vec4{r, g, b, 1.0f});
+      if (3 == c.size()) {
+        // Assume alpha component is 1:
+        const float r = std::stof(c[0], nullptr);
+        const float g = std::stof(c[1], nullptr);
+        const float b = std::stof(c[2], nullptr);
+        colors.push_back(glm::vec4{r, g, b, 1.0f});
+      }
+      else if (4 == c.size()) {
+        // Do NOT pre-multiply by the alpha component:
+        const float r = std::stof(c[0], nullptr);
+        const float g = std::stof(c[1], nullptr);
+        const float b = std::stof(c[2], nullptr);
+        const float a = std::stof(c[3], nullptr);
+        colors.push_back(glm::vec4{r, g, b, a});
+      }
+      else {
+        spdlog::error("Invalid color map \"{}\": Color {} has {} components", briefName, count, c.size());
+        return std::nullopt;
+      }
     }
-    else if (4 == c.size()) {
-      // Do NOT pre-multiply by the alpha component:
-      const float r = std::stof(c[0], nullptr);
-      const float g = std::stof(c[1], nullptr);
-      const float b = std::stof(c[2], nullptr);
-      const float a = std::stof(c[3], nullptr);
-      colors.push_back(glm::vec4{r, g, b, a});
-    }
-    else {
-      spdlog::error("Invalid color map \"{}\": Color {} has {} components", briefName, count, c.size());
+    catch (const std::exception& e) {
+      spdlog::error("Invalid color map \"{}\": Could not parse color {}: {}", briefName, count, e.what());
       return std::nullopt;
     }
 
@@ -328,34 +340,3 @@ ImageColorMap::InterpolationMode ImageColorMap::interpolationMode() const
 {
   return m_interpolationMode;
 }
-
-// void ImageColorMap::setForcedInterpolationMode( const ImageColorMap::ForcedInterpolationMode&
-// mode )
-//{
-//     m_forcedInterpolationMode = mode;
-// }
-
-// ImageColorMap::ForcedInterpolationMode ImageColorMap::forcedInterpolationMode() const
-//{
-//     return m_forcedInterpolationMode;
-// }
-
-// ImageColorMap::InterpolationMode ImageColorMap::finalInterpolationMode() const
-//{
-//     switch ( m_forcedInterpolationMode )
-//     {
-//     case ForcedInterpolationMode::Nearest:
-//     {
-//         return InterpolationMode::Nearest;
-//     }
-//     case ForcedInterpolationMode::Linear:
-//     {
-//         return InterpolationMode::Linear;
-//     }
-//     default:
-//     case ForcedInterpolationMode::None:
-//     {
-//         return m_interpolationMode;
-//     }
-//     }
-// }

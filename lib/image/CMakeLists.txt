@@ -10,10 +10,12 @@ add_library(Entropy::Image ALIAS EntropyImage)
 
 target_sources(EntropyImage PRIVATE
   DicomSeries.cpp
+  ImageComponentBuffers.cpp
   Image.cpp
   ImageColorMap.cpp
   ImageDerivedData.cpp
   ImageHeader.cpp
+  ImageQuantiles.cpp
   ImageIoInfo.cpp
   ImageSettings.cpp
   ImageTransformations.cpp

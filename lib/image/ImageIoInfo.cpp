@@ -9,6 +9,7 @@
 #include <itkMetaDataDictionary.h>
 #include <itkMetaDataObject.h>
 
+#include <algorithm>
 #include <sstream>
 
 namespace
@@ -284,27 +285,37 @@ bool setSpaceInfoFromItk(SpaceInfo& info, const itk::ImageIOBase::Pointer imageI
 
 bool FileInfo::validate() const
 {
-  return true;
+  return !m_fileName.empty();
 }
 
 bool ComponentInfo::validate() const
 {
-  return true;
+  return ComponentType::Undefined != m_componentType && 0u < m_componentSizeInBytes;
 }
 
 bool PixelInfo::validate() const
 {
-  return true;
+  return PixelType::Undefined != m_pixelType && 0u < m_numComponents && 0u < m_pixelStrideInBytes;
 }
 
 bool SizeInfo::validate() const
 {
-  return true;
+  return 0u < m_imageSizeInPixels && 0u < m_imageSizeInComponents && 0u < m_imageSizeInBytes;
 }
 
 bool SpaceInfo::validate() const
 {
-  return true;
+  const bool topLevelValid = 0u < m_numDimensions && m_numDimensions <= 3u && m_dimensions.size() == m_numDimensions &&
+                             m_origin.size() == m_numDimensions && m_spacing.size() == m_numDimensions &&
+                             m_directions.size() == m_numDimensions;
+
+  if (!topLevelValid) {
+    return false;
+  }
+
+  return std::all_of(m_directions.begin(), m_directions.end(), [this](const auto& row) {
+    return row.size() == m_numDimensions;
+  });
 }
 
 bool ImageIoInfo::validate() const

@@ -50,13 +50,14 @@
 class ImageTransformations
 {
 public:
-  /// @brief Type of mnaul subject transformation (spaceB_T_spaceA):
+  /// @brief Type of manual subject transformation.
   enum class ManualTransformationType
   {
     Rigid,     //!< translation (3 DOF) + rotation (3 DOF)
     Similarity //!< translation (3 DOF) + rotation (3 DOF) + scale (3 DOF)
   };
 
+  /// @brief Construct identity/default transformations.
   ImageTransformations() = default;
 
   /**
@@ -81,47 +82,66 @@ public:
 
   ~ImageTransformations() = default;
 
-  /// Set overrides to the original image header
+  /// @brief Apply image-header geometry overrides and update dependent transforms.
   void setHeaderOverrides(const ImageHeaderOverrides& overrides);
+  /// @brief Get the current image-header geometry overrides.
   const ImageHeaderOverrides& getHeaderOverrides() const;
 
+  /// @brief Return whether manual worldDef_T_affine edits are locked.
   bool is_worldDef_T_affine_locked() const;
+  /// @brief Set whether manual worldDef_T_affine edits are locked.
   void set_worldDef_T_affine_locked(bool locked);
 
+  /// @brief Return whether transformations have changed since the dirty flag was cleared.
   bool isDirty() const;
+  /// @brief Set the dirty flag used by callers to detect transform changes.
   void setDirty(bool set);
 
+  /// @brief Get reciprocal pixel dimensions used for texture-to-pixel transforms.
   glm::vec3 invPixelDimensions() const;
 
+  /// @brief Set manual translation from affine subject space to deformed world space.
   void set_worldDef_T_affine_translation(glm::vec3 get_worldDef_T_affine_translation);
+  /// @brief Get manual translation from affine subject space to deformed world space.
   const glm::vec3& get_worldDef_T_affine_translation() const;
 
+  /// @brief Set manual rotation from affine subject space to deformed world space.
   void set_worldDef_T_affine_rotation(glm::quat world_T_subject_rotation);
+  /// @brief Get manual rotation from affine subject space to deformed world space.
   const glm::quat& get_worldDef_T_affine_rotation() const;
 
+  /// @brief Set manual scale from affine subject space to deformed world space.
   void set_worldDef_T_affine_scale(glm::vec3 world_T_subject_scale);
+  /// @brief Get manual scale from affine subject space to deformed world space.
   const glm::vec3& get_worldDef_T_affine_scale() const;
 
+  /// @brief Get enabled manual transform, or identity when disabled.
   const glm::mat4& get_worldDef_T_affine() const;
 
-  /// Set the manual transformation matrix directly.
+  /// @brief Set the manual transformation matrix directly.
   void set_worldDef_T_affine(glm::mat4 worldDef_T_affine);
 
-  /// Set worldDef_T_affine to identity
+  /// @brief Reset the manual transformation matrix and parameters to identity.
   void reset_worldDef_T_affine();
 
-  /// Set the affine matrix from subject to 1st Affine Registered space
+  /// @brief Set the affine-registration matrix from native subject to affine subject space.
   void set_affine_T_subject(glm::mat4 affine_T_subject);
+  /// @brief Get enabled affine-registration matrix, or identity when disabled.
   const glm::mat4& get_affine_T_subject() const;
 
-  /// Set the name of the file with the affine_T_subject matrix
+  /// @brief Set the path of the file that supplied affine_T_subject.
   void set_affine_T_subject_fileName(const std::optional<std::filesystem::path>& fileName);
+  /// @brief Get the path of the file that supplied affine_T_subject, if any.
   const std::optional<std::filesystem::path>& get_affine_T_subject_fileName() const;
 
+  /// @brief Enable or disable the manual worldDef_T_affine transform.
   void set_enable_worldDef_T_affine(bool enable);
+  /// @brief Return whether the manual worldDef_T_affine transform is enabled.
   bool get_enable_worldDef_T_affine() const;
 
+  /// @brief Enable or disable the loaded affine_T_subject transform.
   void set_enable_affine_T_subject(bool enable);
+  /// @brief Return whether the loaded affine_T_subject transform is enabled.
   bool get_enable_affine_T_subject() const;
 
   const glm::mat4& worldDef_T_subject() const; //!< Get tx from image Subject to Deformed World space
