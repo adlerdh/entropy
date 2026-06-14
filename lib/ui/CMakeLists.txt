@@ -146,3 +146,7 @@ set_target_properties(EntropyUI PROPERTIES
 )
 
 entropy_enable_coverage_for_target(EntropyUI)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

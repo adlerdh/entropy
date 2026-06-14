@@ -869,7 +869,10 @@ set_target_properties(entropy PROPERTIES
 )
 
 if(BUILD_TESTING)
-  add_subdirectory(test)
+  add_subdirectory(app/logic/serialization/test)
+  add_subdirectory(app/logic/sync/test)
+  add_subdirectory(app/rendering/test)
+  add_subdirectory(app/windowing/test)
 endif()
 
 entropy_add_coverage_targets()

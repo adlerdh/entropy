@@ -25,6 +25,23 @@ TEST_CASE("scale bar edge positions force valid orientations", "[ui][settings]")
   CHECK(
     settings::normalizedScaleBarOrientation(ScaleBarPosition::TopLeft, ScaleBarOrientation::Vertical) ==
     ScaleBarOrientation::Vertical);
+
+  CHECK_FALSE(settings::canChooseScaleBarOrientation(ScaleBarPosition::Top));
+  CHECK_FALSE(settings::canChooseScaleBarOrientation(ScaleBarPosition::Left));
+  CHECK(settings::canChooseScaleBarOrientation(ScaleBarPosition::TopLeft));
+  CHECK(settings::canChooseScaleBarOrientation(ScaleBarPosition::BottomRight));
+}
+
+TEST_CASE("scale bar position names cover every settings position", "[ui][settings]")
+{
+  CHECK(settings::scaleBarPositionName(ScaleBarPosition::BottomRight) == std::string("Right bottom"));
+  CHECK(settings::scaleBarPositionName(ScaleBarPosition::BottomLeft) == std::string("Left bottom"));
+  CHECK(settings::scaleBarPositionName(ScaleBarPosition::TopRight) == std::string("Right top"));
+  CHECK(settings::scaleBarPositionName(ScaleBarPosition::TopLeft) == std::string("Left top"));
+  CHECK(settings::scaleBarPositionName(ScaleBarPosition::Bottom) == std::string("Bottom"));
+  CHECK(settings::scaleBarPositionName(ScaleBarPosition::Top) == std::string("Top"));
+  CHECK(settings::scaleBarPositionName(ScaleBarPosition::Left) == std::string("Left"));
+  CHECK(settings::scaleBarPositionName(ScaleBarPosition::Right) == std::string("Right"));
 }
 
 TEST_CASE("scale bar Settings choices stay in the intended order", "[ui][settings]")
@@ -86,6 +103,45 @@ TEST_CASE("visible font choices expose only production Settings fonts", "[ui][se
   CHECK(fonts[2].family == UiFontFamily::Cousine);
 }
 
+TEST_CASE("UI scale choices expose auto and supported manual scales", "[ui][settings]")
+{
+  const auto& scales = settings::uiScaleChoices();
+  REQUIRE(scales.size() == 12);
+
+  CHECK(scales[0].label == std::string("Auto"));
+  CHECK_FALSE(scales[0].scale.has_value());
+  CHECK(scales[1].label == std::string("50%"));
+  REQUIRE(scales[1].scale.has_value());
+  CHECK(*scales[1].scale == 0.5f);
+  CHECK(scales[3].label == std::string("100%"));
+  REQUIRE(scales[3].scale.has_value());
+  CHECK(*scales[3].scale == 1.0f);
+  CHECK(scales.back().label == std::string("300%"));
+  REQUIRE(scales.back().scale.has_value());
+  CHECK(*scales.back().scale == 3.0f);
+}
+
+TEST_CASE("UI color and density presets stay in settings order", "[ui][settings]")
+{
+  const auto& colors = settings::uiColorPresets();
+  REQUIRE(colors.size() == 9);
+  CHECK(colors[0] == UiColorPreset::EntropyDark);
+  CHECK(colors[1] == UiColorPreset::ImGuiDark);
+  CHECK(colors[2] == UiColorPreset::ImGuiClassic);
+  CHECK(colors[3] == UiColorPreset::ImGuiLight);
+  CHECK(colors[4] == UiColorPreset::SlateBlue);
+  CHECK(colors[5] == UiColorPreset::Graphite);
+  CHECK(colors[6] == UiColorPreset::DeepTeal);
+  CHECK(colors[7] == UiColorPreset::Midnight);
+  CHECK(colors[8] == UiColorPreset::SoftLight);
+
+  const auto& densities = settings::uiDensityPresets();
+  REQUIRE(densities.size() == 3);
+  CHECK(densities[0] == UiDensityPreset::Compact);
+  CHECK(densities[1] == UiDensityPreset::Default);
+  CHECK(densities[2] == UiDensityPreset::Comfortable);
+}
+
 TEST_CASE("settings pages stay in the intended navigation order", "[ui][settings]")
 {
   const auto& pages = settings::settingsPageChoices();
@@ -105,4 +161,5 @@ TEST_CASE("settings pages stay in the intended navigation order", "[ui][settings
   CHECK(pages[8].label == std::string("System"));
 
   CHECK(settings::settingsPageLabel(GuiData::SettingsTab::Rendering) == std::string("Rendering"));
+  CHECK(settings::settingsPageLabel(GuiData::SettingsTab::Synchronization) == std::string("Synchronization"));
 }
