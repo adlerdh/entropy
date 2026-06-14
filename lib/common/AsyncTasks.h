@@ -6,13 +6,16 @@
 #include <string>
 
 /**
- * Enumeration of asynchronous tasks
+ * @brief Enumeration of asynchronous task categories emitted by background workers.
  */
 enum class AsyncTasks
 {
-  IsosurfaceMeshGeneration
+  IsosurfaceMeshGeneration //!< Build an isosurface mesh from image or segmentation data.
 };
 
+/**
+ * @brief Metadata and completion status for a single asynchronous task.
+ */
 struct AsyncTaskDetails
 {
   AsyncTasks task;         //!< Type of task

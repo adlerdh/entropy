@@ -1,7 +1,12 @@
 add_executable(EntropyCommonTests
+  CoordinateFrameTests.cpp
+  DirectionMapsTests.cpp
   InputParserTests.cpp
   LoggingSettingsTests.cpp
   MathFuncsTests.cpp
+  TypesTests.cpp
+  UuidUtilityTests.cpp
+  ViewportTests.cpp
 )
 
 target_link_libraries(EntropyCommonTests PRIVATE

@@ -5,7 +5,7 @@
 #include <glm/vec4.hpp>
 
 /**
- * @brief Viewport class that follows the OpenGL convension:
+ * @brief Viewport rectangle that follows the OpenGL convention.
  * - Viewport dimensions are measured in device-independent pixel units.
  * - Pixel coordinate (0, 0) is the bottom-left corner of the viewport.
  * - The left-to-right and bottom-to-top directions are both positive.
@@ -31,15 +31,17 @@
 class Viewport
 {
 public:
-  /// Construct 1x1 viewport with bottom-left at (0, 0)
+  /// Construct a 1x1 viewport with bottom-left at (0, 0).
   Viewport();
 
-  /// Construct viewport with given bottom-left coordiates and dimensions
+  /// Construct a viewport with the given bottom-left coordinates and dimensions.
   /// @param left Left coordinate in device-independent pixel units
   /// @param bottom Bottom coordinate in device-independent pixel units
   /// @param width Width in device-independent pixel units
   /// @param height Height coordinate in device-independent pixel units
   Viewport(float left, float bottom, float width, float height);
+
+  /// Construct a viewport from {left, bottom, width, height}.
   Viewport(glm::vec4 viewportAsVec4);
 
   Viewport(const Viewport&) = default;
@@ -77,14 +79,13 @@ public:
   /// Get the viewport area in device-independent pixel units
   float area() const;
 
-  /// Set the viewport from a vec4 in device-independent pixel units: { left, bottom, width, height
-  /// }
+  /// Set the viewport from {left, bottom, width, height} in device-independent pixels.
   void setAsVec4(const glm::vec4& viewport);
 
-  /// Get the viewport as a vec4 in device-independent pixel units: {left, bottom, width, height }
+  /// Get the viewport as {left, bottom, width, height} in device-independent pixels.
   glm::vec4 getAsVec4() const;
 
-  /// Get the viewport as a vec4 in device pixel units: {left, bottom, width, height }
+  /// Get the viewport as {left, bottom, width, height} in device pixels.
   glm::vec4 getDeviceAsVec4() const;
 
   /// Get the left coordinate in device pixel units

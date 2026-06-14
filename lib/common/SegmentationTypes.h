@@ -3,28 +3,38 @@
 #include <cstdint>
 #include <map>
 
+/// Integer type used to identify segmentation labels.
 using LabelType = int64_t;
 
-// Distances between voxel neighbors
+/**
+ * @brief Physical distances between voxel-neighbor offsets.
+ *
+ * The axis distances represent face neighbors, the two-axis distances represent
+ * edge neighbors, and @c distXYZ represents corner neighbors.
+ */
 struct VoxelDistances
 {
-  float distX;
-  float distY;
-  float distZ;
+  float distX; //!< Distance to +/-X neighbors.
+  float distY; //!< Distance to +/-Y neighbors.
+  float distZ; //!< Distance to +/-Z neighbors.
 
-  float distXY;
-  float distXZ;
-  float distYZ;
+  float distXY; //!< Distance to diagonal neighbors in the XY plane.
+  float distXZ; //!< Distance to diagonal neighbors in the XZ plane.
+  float distYZ; //!< Distance to diagonal neighbors in the YZ plane.
 
-  float distXYZ;
+  float distXYZ; //!< Distance to diagonal neighbors offset along X, Y, and Z.
 };
 
+/// Seed segmentation interpretation.
 enum class SeedSegmentationType
 {
-  Binary,
-  MultiLabel
+  Binary,    //!< Seeds are interpreted as foreground/background labels.
+  MultiLabel //!< Seeds preserve multiple label identities.
 };
 
+/**
+ * @brief Bidirectional mapping between segmentation labels and dense indices.
+ */
 struct LabelIndexMaps
 {
   /// Map from segmentation label to label index

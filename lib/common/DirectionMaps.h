@@ -5,9 +5,17 @@
 #include <map>
 #include <string>
 
+/**
+ * @brief Lookup table for canonical Cartesian, view, and anatomical directions.
+ *
+ * The class stores Entropy's conventional unit vectors and short labels for
+ * coordinate directions. Human anatomical directions follow LPS-positive
+ * coordinates: left, posterior, and superior are positive X, Y, and Z.
+ */
 class Directions
 {
 public:
+  /// Cartesian basis directions and commonly used diagonal directions.
   enum class Cartesian
   {
     PosX, //!< (1, 0, 0)
@@ -22,7 +30,7 @@ public:
     XYZ   //!< (1, 1, 1)
   };
 
-  /// Directions relative to the viewer looking at the screen
+  /// Directions relative to the viewer looking at the screen.
   enum class View
   {
     Left,
@@ -33,7 +41,7 @@ public:
     Back   //!< out of screen (towards viewer)
   };
 
-  /// Directions relative to human subject
+  /// Directions relative to a human subject in LPS-positive coordinates.
   enum class Anatomy
   {
     Right,
@@ -44,7 +52,7 @@ public:
     Superior
   };
 
-  /// Directions relative to rodent animal subject
+  /// Directions relative to a rodent subject.
   enum class Animal
   {
     Right,
@@ -55,13 +63,25 @@ public:
     Ventral
   };
 
+  /// Return the normalized Cartesian direction vector.
   static glm::vec3 get(const Cartesian& dir);
+
+  /// Return the normalized view direction vector.
   static glm::vec3 get(const View& dir);
+
+  /// Return the normalized human anatomical direction vector.
   static glm::vec3 get(const Anatomy& dir);
+
+  /// Return the normalized rodent anatomical direction vector.
   static glm::vec3 get(const Animal& dir);
 
+  /// Return the short Cartesian label, such as "+x" or "xy".
   static const std::string& abbrev(const Cartesian& dir);
+
+  /// Return the short human anatomical label, such as "L" or "S".
   static const std::string& abbrev(const Anatomy& dir);
+
+  /// Return the short rodent anatomical label, such as "Ros" or "Ven".
   static const std::string& abbrev(const Animal& dir);
 
 private:

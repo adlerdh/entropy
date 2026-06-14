@@ -3,7 +3,11 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <spdlog/spdlog.h>
+
 #include <array>
+#include <string>
+#include <vector>
 
 TEST_CASE("macOS LaunchServices process serial number argument is ignored", "[common][input]")
 {
@@ -30,6 +34,32 @@ TEST_CASE("console log level defaults to the build configuration level", "[commo
   REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
 
   CHECK(params.consoleLogLevel == entropy::logging::defaultLogLevel());
+}
+
+TEST_CASE("console log level option accepts all documented spellings", "[common][input]")
+{
+  const std::vector<std::pair<std::string, spdlog::level::level_enum> > cases{
+    {"trace", spdlog::level::trace},
+    {"debug", spdlog::level::debug},
+    {"info", spdlog::level::info},
+    {"warn", spdlog::level::warn},
+    {"warning", spdlog::level::warn},
+    {"err", spdlog::level::err},
+    {"error", spdlog::level::err},
+    {"critical", spdlog::level::critical},
+    {"off", spdlog::level::off},
+    {"invalid", spdlog::level::info}};
+
+  for (const auto& [levelName, expectedLevel] : cases) {
+    std::string app = "Entropy";
+    std::string logOpt = "--log-level";
+    std::string level = levelName;
+    std::array<char*, 3> argv{app.data(), logOpt.data(), level.data()};
+
+    InputParams params;
+    REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+    CHECK(params.consoleLogLevel == expectedLevel);
+  }
 }
 
 TEST_CASE("repeated segmentation options are associated with the preceding image in argument order", "[common][input]")

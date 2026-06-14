@@ -27,7 +27,7 @@ struct HistogramSettings
   double m_binWidth{1.0}; //!< Bin width
 
   bool m_isCumulative{false}; //!< Whether the histogram is cumulative (\c ImPlotHistogramFlags_Cumulative)
-  bool m_isDensity{false};    //!< Whehter the histogram shows probability densities (true) or counts
+  bool m_isDensity{false};    //!< Whether the histogram shows probability densities (true) or counts
                               //!< (false) (\c ImPlotHistogramFlags_Density)
   bool m_isHorizontal{false}; //!< Whether the histogram is horizontal, i.e. bins go left to right
                               //!< (\c ImPlotHistogramFlags_Horizontal)

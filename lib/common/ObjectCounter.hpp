@@ -3,7 +3,7 @@
 #include <cstddef>
 
 /**
- * @brief Template class for couynting the number of objects of type T created and
+ * @brief Template class for counting the number of objects of type T created and
  * currently allocated (a.k.a. the number of objects that are "alive").
  */
 template<class T>
@@ -22,11 +22,13 @@ public:
     ++m_numAlive;
   }
 
+  /// Return the number of objects of type @c T ever constructed.
   std::size_t numCreated() const noexcept
   {
     return m_numCreated;
   }
 
+  /// Return the number of objects of type @c T currently alive.
   std::size_t numAlive() const noexcept
   {
     return m_numAlive;

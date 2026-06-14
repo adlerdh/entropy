@@ -313,16 +313,8 @@ std::pair<float, float> hits(glm::vec3 e1, glm::vec3 d, glm::vec3 uMinCorner, gl
   glm::vec3 u = glm::min(a, b);
   glm::vec3 v = glm::max(a, b);
 
-  //    std::cout << "a = " << glm::to_string(a) << std::endl;
-  //    std::cout << "b = " << glm::to_string(b) << std::endl;
-  //    std::cout << "u = " << glm::to_string(u) << std::endl;
-  //    std::cout << "v = " << glm::to_string(v) << std::endl;
-
   float i = std::max(std::max(-t, u.x), std::max(u.y, u.z));
   float j = std::min(std::min(t, v.x), std::min(v.y, v.z));
-
-  //    std::cout << "i = " << i << std::endl;
-  //    std::cout << "j = " << j << std::endl;
 
   return std::make_pair(i, j);
 }

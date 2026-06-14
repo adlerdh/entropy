@@ -10,7 +10,10 @@
 #include <string>
 
 /**
- * @brief Image pixel component types
+ * @brief Numeric storage type for one image pixel component.
+ *
+ * Entropy directly supports the OpenGL texture-compatible subset. Unsupported
+ * input component types are converted before rendering.
  */
 enum class ComponentType
 {
@@ -35,19 +38,32 @@ enum class ComponentType
   Undefined
 };
 
+/// Return true when the component type is one of the floating-point types.
 bool isComponentFloatingPoint(const ComponentType&);
+
+/// Return true when the component type is an unsigned integer type.
 bool isComponentUnsignedInt(const ComponentType&);
+
+/// Return true when the component type can be used to store segmentation labels.
 bool isValidSegmentationComponentType(const ComponentType&);
 
+/// Return a user-facing description of the component type.
 std::string componentTypeString(const ComponentType&);
 
+/// Return true when the component type is not floating point.
 bool isIntegerType(const ComponentType&);
+
+/// Return true when the component type is a signed integer type.
 bool isSignedIntegerType(const ComponentType&);
+
+/// Return true when the component type is an unsigned integer type.
 bool isUnsignedIntegerType(const ComponentType&);
+
+/// Return true when the component type is a floating-point type.
 bool isFloatingType(const ComponentType&);
 
 /**
- * @brief Image pixel types
+ * @brief Logical image pixel layout.
  */
 enum class PixelType
 {
@@ -69,7 +85,7 @@ enum class PixelType
   Undefined
 };
 
-/// Computable by sequential updates in a single linear scan
+/// Statistics computable by sequential updates in a single linear scan.
 struct OnlineStats
 {
   long double min = 0.0;
@@ -92,6 +108,9 @@ struct ComponentStats
   std::array<long double, 101> quantiles;
 };
 
+/**
+ * @brief Quantile bracketing information for an image intensity value.
+ */
 struct QuantileOfValue
 {
   double lowerQuantile = 0.0;
@@ -239,7 +258,7 @@ enum class ImageSelection
   /// The moving image in a view that is currently rendering a metric.
   MovingImageInView,
 
-  /// The fixed and moving images in a view thatis currently rendering a metric.
+  /// The fixed and moving images in a view that is currently rendering a metric.
   FixedAndMovingImagesInView,
 
   /// All images loaded in the application.
@@ -346,22 +365,25 @@ enum class SegmentationOutlineStyle
 
 enum class BrushPreviewMode
 {
-  Hover,
-  Disabled
+  Hover,   //!< Show the brush preview under the cursor.
+  Disabled //!< Do not show the brush preview.
 };
 
+/// Which voxels should be included in the brush preview overlay.
 enum class BrushPreviewVoxels
 {
-  Changed,
-  All
+  Changed, //!< Show only voxels whose labels would change.
+  All      //!< Show all voxels touched by the brush.
 };
 
+/// Brush preview rendering style.
 enum class BrushPreviewStyle
 {
-  Outline,
-  OutlineAndFill
+  Outline,       //!< Draw only the brush outline.
+  OutlineAndFill //!< Draw the outline and fill the preview voxels.
 };
 
+/// Location of the rendered scale bar inside the view.
 enum class ScaleBarPosition
 {
   BottomRight,
@@ -374,16 +396,18 @@ enum class ScaleBarPosition
   Right
 };
 
+/// Orientation of the rendered scale bar.
 enum class ScaleBarOrientation
 {
-  Horizontal,
-  Vertical
+  Horizontal, //!< Draw the scale bar left-to-right.
+  Vertical    //!< Draw the scale bar bottom-to-top.
 };
 
+/// Tick mark strategy for the rendered scale bar.
 enum class ScaleBarTicks
 {
-  Endpoints,
-  Automatic
+  Endpoints, //!< Draw ticks at the endpoints only.
+  Automatic  //!< Let the renderer choose suitable tick positions.
 };
 
 /**
