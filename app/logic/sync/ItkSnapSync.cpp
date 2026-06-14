@@ -1,9 +1,10 @@
-#include "logic/ipc/SnapCursorSync.h"
+#include "logic/sync/ItkSnapSync.h"
 
 #include "image/Image.h"
 #include "logic/app/Data.h"
 #include "logic/app/Settings.h"
 #include "logic/camera/CameraHelpers.h"
+#include "logic/sync/ItkSnapSyncProtocol.h"
 #include "windowing/View.h"
 #include "windowing/WindowData.h"
 
@@ -31,32 +32,13 @@
 #include <sys/types.h>
 #endif
 
+using namespace entropy::sync::itk_snap_protocol;
+
 namespace
 {
-constexpr const char* sk_snapSharedMemoryKey = "5A636Q488E.itksnap";
-constexpr std::int16_t sk_snapProtocolVersionCurrent = 0x1006;
-constexpr std::int16_t sk_snapProtocolVersionLegacy = 0x1005;
 constexpr double sk_cursorEpsilonMm = 1.0e-4;
 constexpr double sk_zoomEpsilon = 1.0e-4;
 constexpr float sk_panEpsilonMm = 1.0e-3f;
-constexpr int sk_maxInstances = 16;
-#if defined(_WIN32)
-using SnapIpcLong = std::int32_t;
-#else
-using SnapIpcLong = long;
-#endif
-using SnapIpcPid = std::int64_t;
-using SnapIpcMessageId = std::int64_t;
-
-glm::dvec3 rasFromLps(const glm::dvec3& lps)
-{
-  return {-lps.x, -lps.y, lps.z};
-}
-
-glm::dvec3 lpsFromRas(const glm::dvec3& ras)
-{
-  return {-ras.x, -ras.y, ras.z};
-}
 
 bool nearlyEqual(const glm::dvec3& a, const glm::dvec3& b)
 {
@@ -92,11 +74,6 @@ std::optional<double> pixelsPerMm(const WindowData& windowData, const View& view
   return 2.0 / (static_cast<double>(mmPerPixel.x) + static_cast<double>(mmPerPixel.y));
 }
 
-bool isSupportedProtocolVersion(const std::int16_t version)
-{
-  return sk_snapProtocolVersionCurrent == version || sk_snapProtocolVersionLegacy == version;
-}
-
 bool isInsideImageBounds(const glm::ivec3& voxel, const glm::uvec3& dims)
 {
   return glm::all(glm::greaterThanEqual(voxel, glm::ivec3{0})) && glm::all(glm::lessThan(voxel, glm::ivec3{dims}));
@@ -113,7 +90,8 @@ std::optional<glm::ivec3> roundedVoxelFromWorld(const Image& image, const glm::v
   const glm::ivec3 rounded = glm::ivec3{glm::round(pixel)};
   if (!isInsideImageBounds(rounded, image.header().pixelDimensions())) {
     SPDLOG_TRACE(
-      "Skipping SNAP cursor broadcast outside reference image: pixel=({}, {}, {}) rounded=({}, {}, {}) dims=({}, {}, "
+      "Skipping ITK-SNAP cursor broadcast outside reference image: pixel=({}, {}, {}) rounded=({}, {}, {}) dims=({}, "
+      "{}, "
       "{})",
       pixel.x,
       pixel.y,
@@ -141,7 +119,7 @@ std::optional<glm::ivec3> roundedVoxelFromSubjectLps(const Image& image, const g
   const glm::ivec3 rounded = glm::ivec3{glm::round(pixel)};
   if (!isInsideImageBounds(rounded, image.header().pixelDimensions())) {
     SPDLOG_TRACE(
-      "Ignoring SNAP cursor outside reference image: lps=({}, {}, {}) pixel=({}, {}, {}) rounded=({}, {}, {}) "
+      "Ignoring ITK-SNAP cursor outside reference image: lps=({}, {}, {}) pixel=({}, {}, {}) rounded=({}, {}, {}) "
       "dims=({}, {}, {})",
       subjectLps.x,
       subjectLps.y,
@@ -171,10 +149,10 @@ std::optional<glm::dvec3> subjectLpsFromVoxel(const Image& image, const glm::ive
   return glm::dvec3{subjectH / subjectH.w};
 }
 
-bool isProcessRunning(const SnapIpcPid pid)
+bool isProcessRunning(const ItkSnapIpcPid pid)
 {
 #if defined(_WIN32)
-  if (pid <= 0 || pid > static_cast<SnapIpcPid>(std::numeric_limits<DWORD>::max())) {
+  if (pid <= 0 || pid > static_cast<ItkSnapIpcPid>(std::numeric_limits<DWORD>::max())) {
     return false;
   }
 
@@ -192,71 +170,31 @@ bool isProcessRunning(const SnapIpcPid pid)
 #endif
 }
 
-SnapIpcLong toSnapIpcLong(const SnapIpcPid value)
+ItkSnapIpcLong toItkSnapIpcLong(const ItkSnapIpcPid value)
 {
   if (
-    value < static_cast<SnapIpcPid>(std::numeric_limits<SnapIpcLong>::min()) ||
-    value > static_cast<SnapIpcPid>(std::numeric_limits<SnapIpcLong>::max()))
+    value < static_cast<ItkSnapIpcPid>(std::numeric_limits<ItkSnapIpcLong>::min()) ||
+    value > static_cast<ItkSnapIpcPid>(std::numeric_limits<ItkSnapIpcLong>::max()))
   {
-    spdlog::warn("SNAP IPC value {} exceeds the wire integer range", value);
+    spdlog::warn("ITK-SNAP IPC value {} exceeds the wire integer range", value);
     return -1;
   }
 
-  return static_cast<SnapIpcLong>(value);
+  return static_cast<ItkSnapIpcLong>(value);
 }
 } // namespace
 
-struct SnapIpcHeader
-{
-  std::int16_t version = 0;
-  SnapIpcLong senderPid = -1;
-  SnapIpcLong messageId = 0;
-};
-
-struct SnapIpcCameraState
-{
-  double position[3] = {0.0, 0.0, 0.0};
-  double focalPoint[3] = {0.0, 0.0, 0.0};
-  double viewUp[3] = {0.0, 0.0, 0.0};
-  double clippingRange[2] = {0.0, 0.0};
-  double viewAngle = 0.0;
-  double parallelScale = 0.0;
-  int parallelProjection = 0;
-  int padding = 0;
-};
-
-struct SnapIpcMessage
-{
-  double cursor[3] = {0.0, 0.0, 0.0};
-  double zoomLevel[3] = {0.0, 0.0, 0.0};
-  float viewPositionRelative[3][2] = {{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}};
-  SnapIpcCameraState camera;
-};
-
-struct SnapIpcDirectoryEntry
-{
-  SnapIpcLong pid = 0;
-  char title[256] = {};
-  SnapIpcLong pendingDropId = 0;
-  char pendingDrop[2048] = {};
-};
-
-struct SnapIpcDirectory
-{
-  SnapIpcDirectoryEntry entries[sk_maxInstances] = {};
-};
-
 #if defined(_WIN32)
-static_assert(sizeof(SnapIpcHeader) == 12);
-static_assert(sizeof(SnapIpcDirectoryEntry) == 2312);
+static_assert(sizeof(ItkSnapIpcHeader) == 12);
+static_assert(sizeof(ItkSnapIpcDirectoryEntry) == 2312);
 #else
-static_assert(sizeof(SnapIpcHeader) == 24);
-static_assert(sizeof(SnapIpcDirectoryEntry) == 2320);
+static_assert(sizeof(ItkSnapIpcHeader) == 24);
+static_assert(sizeof(ItkSnapIpcDirectoryEntry) == 2320);
 #endif
-static_assert(sizeof(SnapIpcCameraState) == 112);
-static_assert(sizeof(SnapIpcMessage) == 184);
+static_assert(sizeof(ItkSnapIpcCameraState) == 112);
+static_assert(sizeof(ItkSnapIpcMessage) == 184);
 
-SnapCursorSync::SnapCursorSync(AppData& appData)
+ItkSnapSync::ItkSnapSync(AppData& appData)
   : m_appData(appData)
   , m_sharedMemory(std::make_unique<QSharedMemory>())
   , m_processId(static_cast<std::int64_t>(QCoreApplication::applicationPid()))
@@ -264,12 +202,12 @@ SnapCursorSync::SnapCursorSync(AppData& appData)
 {
 }
 
-SnapCursorSync::~SnapCursorSync()
+ItkSnapSync::~ItkSnapSync()
 {
   detach();
 }
 
-void SnapCursorSync::update()
+void ItkSnapSync::update()
 {
   const AppSettings& settings = m_appData.settings();
   logOptionChanges();
@@ -284,12 +222,13 @@ void SnapCursorSync::update()
   }
 
   if (settings.receiveCursorSync() || settings.receiveZoomSync() || settings.receivePanSync()) {
-    SnapIpcMessage incoming;
+    ItkSnapIpcMessage incoming;
     std::int64_t senderPid = -1;
     std::int64_t messageId = -1;
     if (readMessage(incoming, senderPid, messageId, true)) {
       SPDLOG_TRACE(
-        "Received SNAP IPC message: senderPid={} messageId={} wireCursor=({}, {}, {}) zoom=({}, {}, {}) pan=({}, {}; "
+        "Received ITK-SNAP IPC message: senderPid={} messageId={} wireCursor=({}, {}, {}) zoom=({}, {}, {}) pan=({}, "
+        "{}; "
         "{}, {}; {}, {})",
         senderPid,
         messageId,
@@ -333,7 +272,7 @@ void SnapCursorSync::update()
   }
 }
 
-void SnapCursorSync::logOptionChanges()
+void ItkSnapSync::logOptionChanges()
 {
   const AppSettings& settings = m_appData.settings();
   const std::array<bool, 7> options{
@@ -347,7 +286,7 @@ void SnapCursorSync::logOptionChanges()
 
   if (!m_lastLoggedOptions || *m_lastLoggedOptions != options) {
     SPDLOG_TRACE(
-      "SNAP sync options: enabled={} sendCursor={} receiveCursor={} sendZoom={} receiveZoom={} sendPan={} "
+      "ITK-SNAP sync options: enabled={} sendCursor={} receiveCursor={} sendZoom={} receiveZoom={} sendPan={} "
       "receivePan={}",
       options[0],
       options[1],
@@ -360,12 +299,12 @@ void SnapCursorSync::logOptionChanges()
   }
 }
 
-std::optional<SnapViewSyncState> SnapCursorSync::currentViewSyncState() const
+std::optional<ItkSnapViewSyncState> ItkSnapSync::currentViewSyncState() const
 {
   const glm::vec3 cursorWorld = m_appData.state().worldCrosshairs().worldOrigin();
   const WindowData& windowData = m_appData.windowData();
 
-  SnapViewSyncState state;
+  ItkSnapViewSyncState state;
   bool any = false;
 
   const auto addView = [&](const View& view) {
@@ -399,10 +338,10 @@ std::optional<SnapViewSyncState> SnapCursorSync::currentViewSyncState() const
     }
   }
 
-  return any ? std::optional<SnapViewSyncState>{state} : std::nullopt;
+  return any ? std::optional<ItkSnapViewSyncState>{state} : std::nullopt;
 }
 
-bool SnapCursorSync::viewStateChanged(const SnapViewSyncState& state) const
+bool ItkSnapSync::viewStateChanged(const ItkSnapViewSyncState& state) const
 {
   if (!m_lastBroadcastViewState) {
     return true;
@@ -436,7 +375,7 @@ bool SnapCursorSync::viewStateChanged(const SnapViewSyncState& state) const
   return false;
 }
 
-bool SnapCursorSync::ensureAttached()
+bool ItkSnapSync::ensureAttached()
 {
   if (m_sharedMemory->isAttached()) {
     if (!m_claimedDirectorySlot) {
@@ -448,14 +387,15 @@ bool SnapCursorSync::ensureAttached()
   m_sharedMemory->setKey(QString::fromUtf8(sk_snapSharedMemoryKey));
   if (!m_sharedMemory->attach()) {
     SPDLOG_TRACE(
-      "SNAP IPC attach failed, trying create: key={} nativeKey={} error={}",
+      "ITK-SNAP IPC attach failed, trying create: key={} nativeKey={} error={}",
       m_sharedMemory->key().toStdString(),
       m_sharedMemory->nativeKey().toStdString(),
       m_sharedMemory->errorString().toStdString());
-    const int sharedSize = static_cast<int>(sizeof(SnapIpcHeader) + sizeof(SnapIpcMessage) + sizeof(SnapIpcDirectory));
+    const int sharedSize =
+      static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory));
     if (!m_sharedMemory->create(sharedSize)) {
       spdlog::warn(
-        "Unable to attach/create SNAP IPC shared memory: key={} nativeKey={} error={}",
+        "Unable to attach/create ITK-SNAP IPC shared memory: key={} nativeKey={} error={}",
         m_sharedMemory->key().toStdString(),
         m_sharedMemory->nativeKey().toStdString(),
         m_sharedMemory->errorString().toStdString());
@@ -463,19 +403,20 @@ bool SnapCursorSync::ensureAttached()
     }
 
     if (m_sharedMemory->lock()) {
-      auto* header = static_cast<SnapIpcHeader*>(m_sharedMemory->data());
-      auto* message = reinterpret_cast<SnapIpcMessage*>(header + 1);
-      auto* directory = reinterpret_cast<SnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(SnapIpcMessage));
-      *header = SnapIpcHeader{};
+      auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
+      auto* message = reinterpret_cast<ItkSnapIpcMessage*>(header + 1);
+      auto* directory =
+        reinterpret_cast<ItkSnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(ItkSnapIpcMessage));
+      *header = ItkSnapIpcHeader{};
       header->version = m_writeProtocolVersion;
-      *message = SnapIpcMessage{};
-      *directory = SnapIpcDirectory{};
+      *message = ItkSnapIpcMessage{};
+      *directory = ItkSnapIpcDirectory{};
       m_sharedMemory->unlock();
     }
   }
 
   if (m_sharedMemory->isAttached() && m_sharedMemory->lock()) {
-    const auto* header = static_cast<const SnapIpcHeader*>(m_sharedMemory->constData());
+    const auto* header = static_cast<const ItkSnapIpcHeader*>(m_sharedMemory->constData());
     if (header && isSupportedProtocolVersion(header->version)) {
       m_writeProtocolVersion = header->version;
     }
@@ -484,7 +425,7 @@ bool SnapCursorSync::ensureAttached()
 
   claimDirectorySlot();
   SPDLOG_TRACE(
-    "Attached SNAP IPC shared memory: size={} pid={} key={} nativeKey={} writeProtocol=0x{:x}",
+    "Attached ITK-SNAP IPC shared memory: size={} pid={} key={} nativeKey={} writeProtocol=0x{:x}",
     m_sharedMemory->size(),
     static_cast<long>(m_processId),
     m_sharedMemory->key().toStdString(),
@@ -493,12 +434,12 @@ bool SnapCursorSync::ensureAttached()
   return true;
 }
 
-void SnapCursorSync::detach()
+void ItkSnapSync::detach()
 {
   if (m_crosshairsSnappingBeforeCursorSend) {
     m_appData.renderData().m_snapCrosshairs = *m_crosshairsSnappingBeforeCursorSend;
     SPDLOG_TRACE(
-      "Restored crosshairs snapping after SNAP cursor send disabled: mode={}",
+      "Restored crosshairs snapping after ITK-SNAP cursor send disabled: mode={}",
       static_cast<int>(*m_crosshairsSnappingBeforeCursorSend));
     m_crosshairsSnappingBeforeCursorSend = std::nullopt;
   }
@@ -506,7 +447,7 @@ void SnapCursorSync::detach()
   if (m_sharedMemory && m_sharedMemory->isAttached()) {
     releaseDirectorySlot();
     if (m_sharedMemory->lock()) {
-      auto* header = static_cast<SnapIpcHeader*>(m_sharedMemory->data());
+      auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
       if (header && isSupportedProtocolVersion(header->version) && header->senderPid == m_processId) {
         header->senderPid = -1;
       }
@@ -518,7 +459,7 @@ void SnapCursorSync::detach()
   m_claimedDirectorySlot = false;
 }
 
-void SnapCursorSync::updateCrosshairsSnappingForCursorSend()
+void ItkSnapSync::updateCrosshairsSnappingForCursorSend()
 {
   const AppSettings& settings = m_appData.settings();
   const bool forceReferenceVoxelSnapping = settings.cursorSyncEnabled() && settings.sendCursorSync();
@@ -530,7 +471,7 @@ void SnapCursorSync::updateCrosshairsSnappingForCursorSend()
         m_crosshairsSnappingBeforeCursorSend = snapMode;
       }
       snapMode = CrosshairsSnapping::ReferenceImage;
-      SPDLOG_TRACE("Forced crosshairs snapping to reference image voxels for SNAP cursor send");
+      SPDLOG_TRACE("Forced crosshairs snapping to reference image voxels for ITK-SNAP cursor send");
     }
     return;
   }
@@ -538,13 +479,13 @@ void SnapCursorSync::updateCrosshairsSnappingForCursorSend()
   if (m_crosshairsSnappingBeforeCursorSend) {
     snapMode = *m_crosshairsSnappingBeforeCursorSend;
     SPDLOG_TRACE(
-      "Restored crosshairs snapping after SNAP cursor send disabled: mode={}",
+      "Restored crosshairs snapping after ITK-SNAP cursor send disabled: mode={}",
       static_cast<int>(*m_crosshairsSnappingBeforeCursorSend));
     m_crosshairsSnappingBeforeCursorSend = std::nullopt;
   }
 }
 
-std::optional<glm::dvec3> SnapCursorSync::currentReferenceLps() const
+std::optional<glm::dvec3> ItkSnapSync::currentReferenceLps() const
 {
   const Image* refImage = m_appData.refImage();
   if (!refImage) {
@@ -560,8 +501,8 @@ std::optional<glm::dvec3> SnapCursorSync::currentReferenceLps() const
   return subjectLpsFromVoxel(*refImage, *voxel);
 }
 
-bool SnapCursorSync::readMessage(
-  SnapIpcMessage& message,
+bool ItkSnapSync::readMessage(
+  ItkSnapIpcMessage& message,
   std::int64_t& senderPid,
   std::int64_t& messageId,
   bool onlyIfNew)
@@ -571,7 +512,7 @@ bool SnapCursorSync::readMessage(
   }
 
   bool success = false;
-  const auto* header = static_cast<const SnapIpcHeader*>(m_sharedMemory->constData());
+  const auto* header = static_cast<const ItkSnapIpcHeader*>(m_sharedMemory->constData());
   if (header) {
     const bool changed = m_lastObservedSenderPid != header->senderPid || m_lastObservedMessageId != header->messageId;
     m_lastObservedSenderPid = header->senderPid;
@@ -580,7 +521,7 @@ bool SnapCursorSync::readMessage(
     if (!isSupportedProtocolVersion(header->version)) {
       if (changed) {
         SPDLOG_TRACE(
-          "Ignoring SNAP IPC header with protocol version 0x{:x}: senderPid={} messageId={}",
+          "Ignoring ITK-SNAP IPC header with protocol version 0x{:x}: senderPid={} messageId={}",
           static_cast<unsigned int>(header->version),
           header->senderPid,
           header->messageId);
@@ -588,22 +529,25 @@ bool SnapCursorSync::readMessage(
     }
     else if (header->senderPid == m_processId) {
       if (changed) {
-        SPDLOG_TRACE("Ignoring own SNAP IPC header: senderPid={} messageId={}", header->senderPid, header->messageId);
+        SPDLOG_TRACE(
+          "Ignoring own ITK-SNAP IPC header: senderPid={} messageId={}",
+          header->senderPid,
+          header->messageId);
       }
     }
     else if (header->senderPid == -1) {
       if (changed) {
-        SPDLOG_TRACE("SNAP IPC header has no active sender: messageId={}", header->messageId);
+        SPDLOG_TRACE("ITK-SNAP IPC header has no active sender: messageId={}", header->messageId);
       }
     }
     else {
       if (m_writeProtocolVersion != header->version) {
         m_writeProtocolVersion = header->version;
-        SPDLOG_TRACE("Using SNAP IPC protocol version 0x{:x}", static_cast<unsigned int>(m_writeProtocolVersion));
+        SPDLOG_TRACE("Using ITK-SNAP IPC protocol version 0x{:x}", static_cast<unsigned int>(m_writeProtocolVersion));
       }
       const bool alreadySeen = m_lastSenderPid == header->senderPid && m_lastReceivedMessageId == header->messageId;
       if (!onlyIfNew || !alreadySeen) {
-        const auto* source = reinterpret_cast<const SnapIpcMessage*>(header + 1);
+        const auto* source = reinterpret_cast<const ItkSnapIpcMessage*>(header + 1);
         message = *source;
         senderPid = header->senderPid;
         messageId = header->messageId;
@@ -612,7 +556,7 @@ bool SnapCursorSync::readMessage(
       }
       else if (changed) {
         SPDLOG_TRACE(
-          "SNAP IPC header already received: senderPid={} messageId={}",
+          "ITK-SNAP IPC header already received: senderPid={} messageId={}",
           header->senderPid,
           header->messageId);
       }
@@ -623,7 +567,7 @@ bool SnapCursorSync::readMessage(
   return success;
 }
 
-void SnapCursorSync::fillOutgoingViewState(SnapIpcMessage& message, const SnapViewSyncState& state) const
+void ItkSnapSync::fillOutgoingViewState(ItkSnapIpcMessage& message, const ItkSnapViewSyncState& state) const
 {
   const AppSettings& settings = m_appData.settings();
   for (int i = 0; i < 3; ++i) {
@@ -638,14 +582,14 @@ void SnapCursorSync::fillOutgoingViewState(SnapIpcMessage& message, const SnapVi
   }
 }
 
-bool SnapCursorSync::broadcastCursor(const glm::dvec3& cursorLps)
+bool ItkSnapSync::broadcastCursor(const glm::dvec3& cursorLps)
 {
   if (!m_sharedMemory->isAttached() || !m_sharedMemory->lock()) {
     return false;
   }
 
-  auto* header = static_cast<SnapIpcHeader*>(m_sharedMemory->data());
-  auto* message = reinterpret_cast<SnapIpcMessage*>(header + 1);
+  auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
+  auto* message = reinterpret_cast<ItkSnapIpcMessage*>(header + 1);
 
   const glm::dvec3 cursor = rasFromLps(cursorLps);
 
@@ -654,15 +598,15 @@ bool SnapCursorSync::broadcastCursor(const glm::dvec3& cursorLps)
     m_lastBroadcastViewState = *viewState;
   }
   else {
-    fillOutgoingViewState(*message, SnapViewSyncState{});
+    fillOutgoingViewState(*message, ItkSnapViewSyncState{});
   }
 
   message->cursor[0] = cursor.x;
   message->cursor[1] = cursor.y;
   message->cursor[2] = cursor.z;
   header->version = m_writeProtocolVersion;
-  header->senderPid = toSnapIpcLong(m_processId);
-  header->messageId = toSnapIpcLong(++m_nextMessageId);
+  header->senderPid = toItkSnapIpcLong(m_processId);
+  header->messageId = toItkSnapIpcLong(++m_nextMessageId);
   m_lastBroadcastCursorLps = cursorLps;
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
@@ -671,7 +615,8 @@ bool SnapCursorSync::broadcastCursor(const glm::dvec3& cursorLps)
   const glm::dvec3 pixel = 0.0 == pixelH.w ? glm::dvec3{0.0} : glm::dvec3{pixelH / pixelH.w};
 
   SPDLOG_TRACE(
-    "Broadcast SNAP cursor: voxel=({}, {}, {}) lps=({}, {}, {}) wire=({}, {}, {}) zoom=({}, {}, {}) pan=({}, {}; {}, "
+    "Broadcast ITK-SNAP cursor: voxel=({}, {}, {}) lps=({}, {}, {}) wire=({}, {}, {}) zoom=({}, {}, {}) pan=({}, {}; "
+    "{}, "
     "{}; {}, {}) messageId={}",
     std::lround(pixel.x),
     std::lround(pixel.y),
@@ -698,14 +643,14 @@ bool SnapCursorSync::broadcastCursor(const glm::dvec3& cursorLps)
   return true;
 }
 
-bool SnapCursorSync::broadcastViewState(const SnapViewSyncState& state)
+bool ItkSnapSync::broadcastViewState(const ItkSnapViewSyncState& state)
 {
   if (!m_sharedMemory->isAttached() || !m_sharedMemory->lock()) {
     return false;
   }
 
-  auto* header = static_cast<SnapIpcHeader*>(m_sharedMemory->data());
-  auto* message = reinterpret_cast<SnapIpcMessage*>(header + 1);
+  auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
+  auto* message = reinterpret_cast<ItkSnapIpcMessage*>(header + 1);
 
   std::optional<glm::dvec3> cursorLps;
   if (m_appData.settings().sendCursorSync()) {
@@ -722,12 +667,12 @@ bool SnapCursorSync::broadcastViewState(const SnapViewSyncState& state)
   fillOutgoingViewState(*message, state);
 
   header->version = m_writeProtocolVersion;
-  header->senderPid = toSnapIpcLong(m_processId);
-  header->messageId = toSnapIpcLong(++m_nextMessageId);
+  header->senderPid = toItkSnapIpcLong(m_processId);
+  header->messageId = toItkSnapIpcLong(++m_nextMessageId);
   m_lastBroadcastViewState = state;
 
   SPDLOG_TRACE(
-    "Broadcast SNAP view state: cursorUpdated={} zoom=({}, {}, {}) pan=({}, {}; {}, {}; {}, {}) messageId={}",
+    "Broadcast ITK-SNAP view state: cursorUpdated={} zoom=({}, {}, {}) pan=({}, {}; {}, {}; {}, {}) messageId={}",
     cursorLps.has_value(),
     message->zoomLevel[0],
     message->zoomLevel[1],
@@ -744,7 +689,7 @@ bool SnapCursorSync::broadcastViewState(const SnapViewSyncState& state)
   return true;
 }
 
-bool SnapCursorSync::applyIncomingCursor(const SnapIpcMessage& message)
+bool ItkSnapSync::applyIncomingCursor(const ItkSnapIpcMessage& message)
 {
   const Image* refImage = m_appData.refImage();
   if (!refImage) {
@@ -778,7 +723,7 @@ bool SnapCursorSync::applyIncomingCursor(const SnapIpcMessage& message)
   m_appData.state().setWorldCrosshairsPos(glm::vec3{worldPos / worldPos.w});
   m_lastBroadcastCursorLps = *voxelSubjectLps;
   SPDLOG_TRACE(
-    "Applied SNAP cursor: wire=({}, {}, {}) lps=({}, {}, {}) voxel=({}, {}, {})",
+    "Applied ITK-SNAP cursor: wire=({}, {}, {}) lps=({}, {}, {}) voxel=({}, {}, {})",
     wireCursor.x,
     wireCursor.y,
     wireCursor.z,
@@ -791,7 +736,7 @@ bool SnapCursorSync::applyIncomingCursor(const SnapIpcMessage& message)
   return true;
 }
 
-void SnapCursorSync::applyIncomingViewState(const SnapIpcMessage& message)
+void ItkSnapSync::applyIncomingViewState(const ItkSnapIpcMessage& message)
 {
   const AppSettings& settings = m_appData.settings();
   WindowData& windowData = m_appData.windowData();
@@ -818,7 +763,7 @@ void SnapCursorSync::applyIncomingViewState(const SnapIpcMessage& message)
         const double zoomFactor = targetPixelsPerMm / *currentPixelsPerMm;
         view->camera().setZoom(static_cast<float>(zoomFactor * view->camera().getZoom()));
         SPDLOG_TRACE(
-          "Applied SNAP zoom: view={} dir={} targetPixelsPerMm={} previousPixelsPerMm={} cameraZoom={}",
+          "Applied ITK-SNAP zoom: view={} dir={} targetPixelsPerMm={} previousPixelsPerMm={} cameraZoom={}",
           to_string(view->viewType(), false),
           *dir,
           targetPixelsPerMm,
@@ -842,7 +787,8 @@ void SnapCursorSync::applyIncomingViewState(const SnapIpcMessage& message)
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
         const glm::vec3 cursorCameraAfter = helper::camera_T_world(view->camera(), cursorWorld);
         SPDLOG_TRACE(
-          "Applied SNAP pan: view={} dir={} targetOffset=({}, {}) previousCursorCamera=({}, {}) newCursorCamera=({}, "
+          "Applied ITK-SNAP pan: view={} dir={} targetOffset=({}, {}) previousCursorCamera=({}, {}) "
+          "newCursorCamera=({}, "
           "{})",
           to_string(view->viewType(), false),
           *dir,
@@ -858,23 +804,24 @@ void SnapCursorSync::applyIncomingViewState(const SnapIpcMessage& message)
   }
 }
 
-void SnapCursorSync::claimDirectorySlot()
+void ItkSnapSync::claimDirectorySlot()
 {
   if (m_claimedDirectorySlot || !m_sharedMemory->isAttached() || !m_sharedMemory->lock()) {
     return;
   }
 
-  auto* header = static_cast<SnapIpcHeader*>(m_sharedMemory->data());
-  auto* message = reinterpret_cast<SnapIpcMessage*>(header + 1);
-  auto* directory = reinterpret_cast<SnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(SnapIpcMessage));
+  auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
+  auto* message = reinterpret_cast<ItkSnapIpcMessage*>(header + 1);
+  auto* directory =
+    reinterpret_cast<ItkSnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(ItkSnapIpcMessage));
 
   if (
     header && m_sharedMemory->size() >=
-                static_cast<int>(sizeof(SnapIpcHeader) + sizeof(SnapIpcMessage) + sizeof(SnapIpcDirectory)))
+                static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory)))
   {
     int target = -1;
     for (int i = 0; i < sk_maxInstances; ++i) {
-      const SnapIpcPid pid = directory->entries[i].pid;
+      const ItkSnapIpcPid pid = directory->entries[i].pid;
       if (0 == pid || pid == m_processId || !isProcessRunning(pid)) {
         target = i;
         break;
@@ -883,32 +830,33 @@ void SnapCursorSync::claimDirectorySlot()
 
     if (target >= 0) {
       auto& entry = directory->entries[target];
-      entry.pid = toSnapIpcLong(m_processId);
+      entry.pid = toItkSnapIpcLong(m_processId);
       std::strncpy(entry.title, "Entropy", sizeof(entry.title) - 1);
       entry.title[sizeof(entry.title) - 1] = '\0';
       entry.pendingDropId = 0;
       entry.pendingDrop[0] = '\0';
       m_claimedDirectorySlot = true;
-      SPDLOG_TRACE("Claimed SNAP IPC directory slot {}", target);
+      SPDLOG_TRACE("Claimed ITK-SNAP IPC directory slot {}", target);
     }
   }
 
   m_sharedMemory->unlock();
 }
 
-void SnapCursorSync::releaseDirectorySlot()
+void ItkSnapSync::releaseDirectorySlot()
 {
   if (!m_claimedDirectorySlot || !m_sharedMemory->isAttached() || !m_sharedMemory->lock()) {
     return;
   }
 
-  auto* header = static_cast<SnapIpcHeader*>(m_sharedMemory->data());
-  auto* message = reinterpret_cast<SnapIpcMessage*>(header + 1);
-  auto* directory = reinterpret_cast<SnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(SnapIpcMessage));
+  auto* header = static_cast<ItkSnapIpcHeader*>(m_sharedMemory->data());
+  auto* message = reinterpret_cast<ItkSnapIpcMessage*>(header + 1);
+  auto* directory =
+    reinterpret_cast<ItkSnapIpcDirectory*>(reinterpret_cast<char*>(message) + sizeof(ItkSnapIpcMessage));
 
   if (
     header && m_sharedMemory->size() >=
-                static_cast<int>(sizeof(SnapIpcHeader) + sizeof(SnapIpcMessage) + sizeof(SnapIpcDirectory)))
+                static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory)))
   {
     for (int i = 0; i < sk_maxInstances; ++i) {
       auto& entry = directory->entries[i];

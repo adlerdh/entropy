@@ -341,13 +341,15 @@ json toJson(const AppSettings& settings, const RenderData& renderData)
       {"hideAnnotationVertices", renderData.m_globalAnnotationParams.hidePolygonVertices},
       {"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
     {"synchronization",
-     {{"enabled", settings.cursorSyncEnabled()},
-      {"sendCursor", settings.sendCursorSync()},
-      {"receiveCursor", settings.receiveCursorSync()},
-      {"sendZoom", settings.sendZoomSync()},
-      {"receiveZoom", settings.receiveZoomSync()},
-      {"sendPan", settings.sendPanSync()},
-      {"receivePan", settings.receivePanSync()}}},
+     {{"itkSnap",
+       {{"enabled", settings.cursorSyncEnabled()},
+        {"sendCursor", settings.sendCursorSync()},
+        {"receiveCursor", settings.receiveCursorSync()},
+        {"sendZoom", settings.sendZoomSync()},
+        {"receiveZoom", settings.receiveZoomSync()},
+        {"sendPan", settings.sendPanSync()},
+        {"receivePan", settings.receivePanSync()}}},
+      {"entropyInstances", {{"enabled", settings.entropyInstanceSyncEnabled()}}}}},
     {"system",
      {{"diagnostics",
        {{"logVerbosity", std::string{entropy::logging::logLevelLabel(entropy::logging::defaultLoggerSinkLevel())}}}}}}};
@@ -576,26 +578,44 @@ void applyJson(AppSettings& settings, RenderData& renderData, const json& root)
   }
 
   if (const auto sync = root.find("synchronization"); sync != root.end() && sync->is_object()) {
-    if (const auto value = sync->find("enabled"); value != sync->end() && value->is_boolean()) {
-      settings.setCursorSyncEnabled(value->get<bool>());
+    const auto applyItkSnapSync = [&settings](const json& object) {
+      if (const auto value = object.find("enabled"); value != object.end() && value->is_boolean()) {
+        settings.setCursorSyncEnabled(value->get<bool>());
+      }
+      if (const auto value = object.find("sendCursor"); value != object.end() && value->is_boolean()) {
+        settings.setSendCursorSync(value->get<bool>());
+      }
+      if (const auto value = object.find("receiveCursor"); value != object.end() && value->is_boolean()) {
+        settings.setReceiveCursorSync(value->get<bool>());
+      }
+      if (const auto value = object.find("sendZoom"); value != object.end() && value->is_boolean()) {
+        settings.setSendZoomSync(value->get<bool>());
+      }
+      if (const auto value = object.find("receiveZoom"); value != object.end() && value->is_boolean()) {
+        settings.setReceiveZoomSync(value->get<bool>());
+      }
+      if (const auto value = object.find("sendPan"); value != object.end() && value->is_boolean()) {
+        settings.setSendPanSync(value->get<bool>());
+      }
+      if (const auto value = object.find("receivePan"); value != object.end() && value->is_boolean()) {
+        settings.setReceivePanSync(value->get<bool>());
+      }
+    };
+
+    // Backward-compatible reader for settings files written before ITK-SNAP and
+    // Entropy-instance synchronization had separate sections.
+    applyItkSnapSync(*sync);
+    if (const auto itkSnap = sync->find("itkSnap"); itkSnap != sync->end() && itkSnap->is_object()) {
+      applyItkSnapSync(*itkSnap);
     }
-    if (const auto value = sync->find("sendCursor"); value != sync->end() && value->is_boolean()) {
-      settings.setSendCursorSync(value->get<bool>());
-    }
-    if (const auto value = sync->find("receiveCursor"); value != sync->end() && value->is_boolean()) {
-      settings.setReceiveCursorSync(value->get<bool>());
-    }
-    if (const auto value = sync->find("sendZoom"); value != sync->end() && value->is_boolean()) {
-      settings.setSendZoomSync(value->get<bool>());
-    }
-    if (const auto value = sync->find("receiveZoom"); value != sync->end() && value->is_boolean()) {
-      settings.setReceiveZoomSync(value->get<bool>());
-    }
-    if (const auto value = sync->find("sendPan"); value != sync->end() && value->is_boolean()) {
-      settings.setSendPanSync(value->get<bool>());
-    }
-    if (const auto value = sync->find("receivePan"); value != sync->end() && value->is_boolean()) {
-      settings.setReceivePanSync(value->get<bool>());
+
+    if (const auto entropyInstances = sync->find("entropyInstances");
+        entropyInstances != sync->end() && entropyInstances->is_object())
+    {
+      if (const auto value = entropyInstances->find("enabled"); value != entropyInstances->end() && value->is_boolean())
+      {
+        settings.setEntropyInstanceSyncEnabled(value->get<bool>());
+      }
     }
   }
 

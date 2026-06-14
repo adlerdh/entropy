@@ -25,6 +25,7 @@ void renderOpacityBlenderWindow(
     return;
   }
 
+  setNextWindowSizeConstraintsToMainViewport();
   const bool showWindow = ImGui::Begin(
     windowName,
     &(appData.guiData().m_showOpacityBlenderWindow),

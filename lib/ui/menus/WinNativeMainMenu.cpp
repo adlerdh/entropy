@@ -16,6 +16,7 @@ constexpr UINT sk_openImageCommand = 1001;
 constexpr UINT sk_openProjectCommand = 1002;
 constexpr UINT sk_addImageCommand = 1003;
 constexpr UINT sk_openDicomSeriesCommand = 1008;
+constexpr UINT sk_addDicomSeriesCommand = 1009;
 constexpr UINT sk_addSegmentationCommand = 1004;
 constexpr UINT sk_saveProjectCommand = 1005;
 constexpr UINT sk_saveProjectAsCommand = 1006;
@@ -67,6 +68,7 @@ bool isMenuCommand(UINT command)
     case sk_openProjectCommand:
     case sk_addImageCommand:
     case sk_openDicomSeriesCommand:
+    case sk_addDicomSeriesCommand:
     case sk_addSegmentationCommand:
     case sk_saveProjectCommand:
     case sk_saveProjectAsCommand:
@@ -116,6 +118,7 @@ void updateEnabledState(const MenuState& state)
   enableMenuCommand(state, sk_openProjectCommand, callbacks.canOpenProject && callbacks.openProjectFile);
   enableMenuCommand(state, sk_openDicomSeriesCommand, callbacks.canOpenProject && callbacks.openDicomFolders);
   enableMenuCommand(state, sk_addImageCommand, callbacks.canAddImage && callbacks.addImageFiles);
+  enableMenuCommand(state, sk_addDicomSeriesCommand, callbacks.canAddImage && callbacks.openDicomFolders);
   enableMenuCommand(state, sk_addSegmentationCommand, callbacks.canAddSegmentation && callbacks.addSegmentationFile);
   enableMenuCommand(state, sk_saveProjectCommand, callbacks.canSaveProject && callbacks.saveProject);
   enableMenuCommand(state, sk_saveProjectAsCommand, callbacks.canSaveProject && callbacks.saveProjectAs);
@@ -184,6 +187,9 @@ void handleMenuCommand(const MenuState& state, UINT command)
       break;
     case sk_openDicomSeriesCommand:
       main_menu::openDicomSeries(callbacks);
+      break;
+    case sk_addDicomSeriesCommand:
+      main_menu::addDicomSeries(callbacks);
       break;
     case sk_addImageCommand:
       main_menu::addImage(callbacks);
@@ -335,7 +341,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
   return insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"Show &Images Panel") &&
          insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
          insertMenuItem(menu, position++, sk_addImageCommand, L"&Add Image(s)...") &&
-         insertMenuItem(menu, position++, sk_openDicomSeriesCommand, L"Add &DICOM Series...") &&
+         insertMenuItem(menu, position++, sk_addDicomSeriesCommand, L"Add &DICOM Series...") &&
          insertActionMenuItem(
            menu,
            position++,
@@ -462,7 +468,7 @@ bool populateViewsMenu(HMENU menu)
   }
 
   UINT position = 0;
-  return insertActionMenuItem(menu, position++, MainMenuAction::Recenter, L"&Recenter\tC") &&
+  return insertActionMenuItem(menu, position++, MainMenuAction::Recenter, L"&Recenter Views\tC") &&
          insertActionMenuItem(menu, position++, MainMenuAction::ResetView, L"Reset Views and &Crosshairs\tShift+C") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleImageVisibility, L"Show &Image\tW") &&
@@ -501,8 +507,15 @@ bool populateViewsMenu(HMENU menu)
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleScaleBars, L"Show Scale &Bars") &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleOverlays, L"&Cycle Overlays\tO") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::ToggleFullScreen, L"&Full Screen\tF4") &&
-         insertSeparator(menu, position++) && insertSubmenu(menu, position++, syncMenu, L"Synchronize with &ITK-SNAP");
+         insertSeparator(menu, position++) &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ToggleFullScreen, L"&Enter Full Screen\tF4") &&
+         insertSeparator(menu, position++) &&
+         insertActionMenuItem(
+           menu,
+           position++,
+           MainMenuAction::ToggleEntropyInstanceSync,
+           L"Synchronize Entropy Instances") &&
+         insertSubmenu(menu, position++, syncMenu, L"Synchronize with &ITK-SNAP");
 }
 
 bool populateWindowsMenu(HMENU menu)
@@ -555,8 +568,8 @@ bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callback
     !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::AddLayout, L"&Add Layout...") ||
     !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::RemoveLayout, L"&Remove Current Layout") ||
     !insertSeparator(layoutsMenu, position++) ||
-    !insertMenuItem(layoutsMenu, position++, sk_previousLayoutCommand, L"&Previous\t[") ||
-    !insertMenuItem(layoutsMenu, position++, sk_nextLayoutCommand, L"&Next\t]") ||
+    !insertMenuItem(layoutsMenu, position++, sk_previousLayoutCommand, L"&Previous Layout\t[") ||
+    !insertMenuItem(layoutsMenu, position++, sk_nextLayoutCommand, L"&Next Layout\t]") ||
     !insertSeparator(layoutsMenu, position++))
   {
     return false;

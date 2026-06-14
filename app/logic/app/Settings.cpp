@@ -103,6 +103,15 @@ void AppSettings::setReceivePanSync(bool set)
   m_receivePanSync = set;
 }
 
+bool AppSettings::entropyInstanceSyncEnabled() const
+{
+  return m_entropyInstanceSyncEnabled;
+}
+void AppSettings::setEntropyInstanceSyncEnabled(bool set)
+{
+  m_entropyInstanceSyncEnabled = set;
+}
+
 bool AppSettings::overlays() const
 {
   return m_overlays;

@@ -1,5 +1,6 @@
 #include "ui/windows/InspectionWindow.h"
 
+#include "ui/Helpers.h"
 #include "logic/app/Data.h"
 
 #include "image/Image.h"
@@ -230,6 +231,7 @@ void renderInspectionWindowWithTable(
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_windowPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, sk_windowRounding);
 
+  setNextWindowSizeConstraintsToMainViewport();
   if (ImGui::Begin("Voxel Inspector##InspectionWindow", &(appData.guiData().m_showInspectionWindow), windowFlags)) {
     ImGui::PushStyleColor(ImGuiCol_MenuBarBg, menuBarBgColor);
     if (ImGui::BeginMenuBar()) {

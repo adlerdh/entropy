@@ -1,5 +1,4 @@
 #include "logic/app/State.h"
-// #include "logic/ipc/IPCMessage.h"
 #include "logic/states/FsmList.hpp"
 
 void AppState::setWorldRotationCenter(const std::optional<glm::vec3>& worldRotationCenter)

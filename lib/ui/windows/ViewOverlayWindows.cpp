@@ -119,6 +119,7 @@ void renderViewSettingsComboWindow(
 
     // Windows still need a unique ID set in title (with ##ID) despite having pushed an ID on the
     // stack
+    setNextWindowSizeConstraintsToMainViewport();
     if (ImGui::Begin(uidString.c_str(), &windowOpen, windowFlags)) {
       // Popup window with images to be rendered and their visibility:
       if (uiControls.m_hasImageComboBox) {
@@ -537,6 +538,7 @@ void renderViewOrientationToolWindow(
 
   ImGui::PushID(uidString.c_str()); /*** ID = uidString ***/
 
+  setNextWindowSizeConstraintsToMainViewport();
   if (ImGui::Begin(uidString.c_str(), &windowOpen, windowFlags)) {
     const glm::quat oldQuat = getViewCameraRotation();
     glm::quat newQuat = oldQuat;

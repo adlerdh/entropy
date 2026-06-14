@@ -1,5 +1,6 @@
 #include "ui/windows/IsosurfacesWindow.h"
 
+#include "ui/Helpers.h"
 #include "ui/headers/IsosurfaceHeader.h"
 
 #include "logic/app/Data.h"
@@ -18,6 +19,7 @@ void renderIsosurfacesWindow(
   std::function<void(const uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
   std::function<void(const uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
+  setNextWindowSizeConstraintsToMainViewport();
   if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
     std::size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();

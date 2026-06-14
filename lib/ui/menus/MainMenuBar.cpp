@@ -3,6 +3,7 @@
 #include "ui/GuiData.h"
 #include "ui/NativeFileDialogs.h"
 
+#include <IconsForkAwesome.h>
 #include <imgui/imgui.h>
 
 #include <spdlog/fmt/std.h>
@@ -51,6 +52,23 @@ void addImage(const MainMenuBarCallbacks& callbacks)
 void openDicomSeries(const MainMenuBarCallbacks& callbacks)
 {
   if (!callbacks.canOpenProject) {
+    return;
+  }
+
+  const auto selectedFolders = native_dialog::pickFolders();
+  if (!selectedFolders.empty() && callbacks.openDicomFolders) {
+    callbacks.openDicomFolders(selectedFolders);
+    return;
+  }
+
+  if (callbacks.requestDicomFolderPathDialog) {
+    callbacks.requestDicomFolderPathDialog();
+  }
+}
+
+void addDicomSeries(const MainMenuBarCallbacks& callbacks)
+{
+  if (!callbacks.canAddImage) {
     return;
   }
 
@@ -198,7 +216,10 @@ void renderModeMenu(const MainMenuBarCallbacks& callbacks)
 
 void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
 {
-  actionMenuItem(callbacks, "Recenter", MainMenuAction::Recenter, "C");
+  static const std::string sk_entropySyncLabel = std::string(ICON_FK_EXCHANGE) + " Synchronize Entropy Instances";
+  static const std::string sk_snapSyncLabel = std::string(ICON_FK_EXCHANGE) + " Synchronize with ITK-SNAP";
+
+  actionMenuItem(callbacks, "Recenter Views", MainMenuAction::Recenter, "C");
   actionMenuItem(callbacks, "Reset Views and Crosshairs", MainMenuAction::ResetView, "Shift+C");
   ImGui::Separator();
   actionMenuItem(callbacks, "Show Image", MainMenuAction::ToggleImageVisibility, "W");
@@ -213,9 +234,11 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
   ImGui::Separator();
   actionMenuItem(callbacks, "Show Scale Bars", MainMenuAction::ToggleScaleBars);
   actionMenuItem(callbacks, "Cycle Overlays", MainMenuAction::ToggleOverlays, "O");
-  actionMenuItem(callbacks, "Full Screen", MainMenuAction::ToggleFullScreen, "F4");
   ImGui::Separator();
-  if (ImGui::BeginMenu("Synchronize with ITK-SNAP", actionEnabled(callbacks, MainMenuAction::ToggleSync))) {
+  actionMenuItem(callbacks, "Enter Full Screen", MainMenuAction::ToggleFullScreen, "F4");
+  ImGui::Separator();
+  actionMenuItem(callbacks, sk_entropySyncLabel.c_str(), MainMenuAction::ToggleEntropyInstanceSync);
+  if (ImGui::BeginMenu(sk_snapSyncLabel.c_str(), actionEnabled(callbacks, MainMenuAction::ToggleSync))) {
     actionMenuItem(callbacks, "Enable Synchronization", MainMenuAction::ToggleSync);
     ImGui::Separator();
     actionMenuItem(callbacks, "Cursor: Send", MainMenuAction::ToggleSyncSendCursor);
@@ -248,7 +271,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     addImage(callbacks);
   }
   if (ImGui::MenuItem("Add DICOM Series...", nullptr, false, callbacks.canAddImage)) {
-    openDicomSeries(callbacks);
+    addDicomSeries(callbacks);
   }
   actionMenuItem(callbacks, "Export DICOM Series as Image...", MainMenuAction::ExportActiveImage);
   actionMenuItem(callbacks, "Remove Active Image", MainMenuAction::RemoveActiveImage);
@@ -439,10 +462,10 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       main_menu::actionMenuItem(callbacks, "Remove Current Layout", MainMenuAction::RemoveLayout);
 
       ImGui::Separator();
-      if (ImGui::MenuItem("Previous", "[", false, callbacks.canUseLayouts && callbacks.cycleLayouts)) {
+      if (ImGui::MenuItem("Previous Layout", "[", false, callbacks.canUseLayouts && callbacks.cycleLayouts)) {
         callbacks.cycleLayouts(-1);
       }
-      if (ImGui::MenuItem("Next", "]", false, callbacks.canUseLayouts && callbacks.cycleLayouts)) {
+      if (ImGui::MenuItem("Next Layout", "]", false, callbacks.canUseLayouts && callbacks.cycleLayouts)) {
         callbacks.cycleLayouts(1);
       }
 

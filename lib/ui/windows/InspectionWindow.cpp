@@ -1,5 +1,6 @@
 #include "ui/windows/InspectionWindow.h"
 
+#include "ui/Helpers.h"
 #include "logic/app/Data.h"
 
 #include "image/Image.h"
@@ -146,6 +147,7 @@ void renderInspectionWindow(
 
   ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
 
+  setNextWindowSizeConstraintsToMainViewport();
   if (ImGui::Begin("##InspectionWindow", &(appData.guiData().m_showInspectionWindow), windowFlags)) {
     //        if ( ImGui::IsMousePosValid() && ImGui::IsAnyMouseDown() )
     //        {

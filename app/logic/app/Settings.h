@@ -85,6 +85,9 @@ public:
   bool receivePanSync() const;
   void setReceivePanSync(bool);
 
+  bool entropyInstanceSyncEnabled() const;
+  void setEntropyInstanceSyncEnabled(bool);
+
   bool overlays() const;
   void setOverlays(bool);
 
@@ -220,6 +223,7 @@ private:
   bool m_receiveZoomSync = true;
   bool m_sendPanSync = true;
   bool m_receivePanSync = true;
+  bool m_entropyInstanceSyncEnabled = false;
 
   /// Crosshairs move to the position of every new point added to an annotation
   bool m_crosshairsMoveWhileAnnotating = false;

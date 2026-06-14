@@ -44,6 +44,7 @@ void renderDicomFolderPathPopup(
   const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   ImGui::SetNextWindowSize(ImVec2(scaledPixel(760.0f), 0.0f), ImGuiCond_Appearing);
+  setNextWindowSizeConstraintsToMainViewport();
 
   if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::TextWrapped("Enter one or more DICOM folders. Put each folder on its own line.");

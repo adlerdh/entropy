@@ -804,78 +804,129 @@ void renderImagesTab(AppData& appData)
  */
 void renderSynchronizeTab(AppData& appData)
 {
-  bool syncEnabled = appData.settings().cursorSyncEnabled();
-  if (ImGui::Checkbox("Synchronize with ITK-SNAP", &syncEnabled)) {
-    appData.settings().setCursorSyncEnabled(syncEnabled);
+  auto renderSyncRow = [](
+                         const char* label,
+                         const char* sendId,
+                         const char* receiveId,
+                         bool sendValue,
+                         bool receiveValue,
+                         const std::function<void(bool)>& setSend,
+                         const std::function<void(bool)>& setReceive,
+                         const char* tooltip) {
+    ImGui::TableNextRow();
+
+    ImGui::TableSetColumnIndex(0);
+    ImGui::TextUnformatted(label);
+
+    ImGui::TableSetColumnIndex(1);
+    if (ImGui::Checkbox(sendId, &sendValue)) {
+      setSend(sendValue);
+    }
+
+    ImGui::TableSetColumnIndex(2);
+    if (ImGui::Checkbox(receiveId, &receiveValue)) {
+      setReceive(receiveValue);
+    }
+
+    ImGui::TableSetColumnIndex(3);
+    helpMarker(tooltip);
+  };
+
+  auto renderSyncOptions = [&renderSyncRow](
+                             const char* tableId,
+                             const char* cursorSendId,
+                             const char* cursorReceiveId,
+                             const char* zoomSendId,
+                             const char* zoomReceiveId,
+                             const char* panSendId,
+                             const char* panReceiveId,
+                             bool sendCursor,
+                             bool receiveCursor,
+                             bool sendZoom,
+                             bool receiveZoom,
+                             bool sendPan,
+                             bool receivePan,
+                             const std::function<void(bool)>& setSendCursor,
+                             const std::function<void(bool)>& setReceiveCursor,
+                             const std::function<void(bool)>& setSendZoom,
+                             const std::function<void(bool)>& setReceiveZoom,
+                             const std::function<void(bool)>& setSendPan,
+                             const std::function<void(bool)>& setReceivePan,
+                             const char* cursorTooltip,
+                             const char* zoomTooltip,
+                             const char* panTooltip) {
+    ImGui::Spacing();
+    if (ImGui::BeginTable(tableId, 4, ImGuiTableFlags_SizingFixedFit)) {
+      renderSyncRow(
+        "Cursor:",
+        cursorSendId,
+        cursorReceiveId,
+        sendCursor,
+        receiveCursor,
+        setSendCursor,
+        setReceiveCursor,
+        cursorTooltip);
+
+      renderSyncRow(
+        "Zoom:",
+        zoomSendId,
+        zoomReceiveId,
+        sendZoom,
+        receiveZoom,
+        setSendZoom,
+        setReceiveZoom,
+        zoomTooltip);
+
+      renderSyncRow("Pan:", panSendId, panReceiveId, sendPan, receivePan, setSendPan, setReceivePan, panTooltip);
+
+      ImGui::EndTable();
+    }
+  };
+
+  bool entropySyncEnabled = appData.settings().entropyInstanceSyncEnabled();
+  if (ImGui::Checkbox("Synchronize crosshairs position between Entropy instances", &entropySyncEnabled)) {
+    appData.settings().setEntropyInstanceSyncEnabled(entropySyncEnabled);
+  }
+  ImGui::SameLine();
+  helpMarker(
+    "Synchronize cursor position between running Entropy instances that have the same project or same ordered image "
+    "list loaded");
+
+  ImGui::Spacing();
+
+  bool snapSyncEnabled = appData.settings().cursorSyncEnabled();
+  if (ImGui::Checkbox("Synchronize with ITK-SNAP", &snapSyncEnabled)) {
+    appData.settings().setCursorSyncEnabled(snapSyncEnabled);
   }
   ImGui::SameLine();
   helpMarker("Synchronize with ITK-SNAP through shared memory");
 
-  if (syncEnabled) {
-    ImGui::Spacing();
-    if (ImGui::BeginTable("##snapSyncOptions", 4, ImGuiTableFlags_SizingFixedFit)) {
-      auto renderSyncRow = [](
-                             const char* label,
-                             const char* sendId,
-                             const char* receiveId,
-                             bool sendValue,
-                             bool receiveValue,
-                             const std::function<void(bool)>& setSend,
-                             const std::function<void(bool)>& setReceive,
-                             const char* tooltip) {
-        ImGui::TableNextRow();
-
-        ImGui::TableSetColumnIndex(0);
-        ImGui::TextUnformatted(label);
-
-        ImGui::TableSetColumnIndex(1);
-        if (ImGui::Checkbox(sendId, &sendValue)) {
-          setSend(sendValue);
-        }
-
-        ImGui::TableSetColumnIndex(2);
-        if (ImGui::Checkbox(receiveId, &receiveValue)) {
-          setReceive(receiveValue);
-        }
-
-        ImGui::TableSetColumnIndex(3);
-        helpMarker(tooltip);
-      };
-
-      renderSyncRow(
-        "Cursor:",
-        "Send##cursorSync",
-        "Receive##cursorSync",
-        appData.settings().sendCursorSync(),
-        appData.settings().receiveCursorSync(),
-        [&appData](bool value) { appData.settings().setSendCursorSync(value); },
-        [&appData](bool value) { appData.settings().setReceiveCursorSync(value); },
-        "Send Entropy crosshairs movement to ITK-SNAP and receive ITK-SNAP cursor movement in Entropy. "
-        "ITK-SNAP cursor messages use NIFTI/RAS coordinates; Entropy converts between internal LPS and "
-        "ITK-SNAP RAS at the IPC boundary.");
-
-      renderSyncRow(
-        "Zoom:",
-        "Send##zoomSync",
-        "Receive##zoomSync",
-        appData.settings().sendZoomSync(),
-        appData.settings().receiveZoomSync(),
-        [&appData](bool value) { appData.settings().setSendZoomSync(value); },
-        [&appData](bool value) { appData.settings().setReceiveZoomSync(value); },
-        "Send Entropy view zoom to ITK-SNAP and receive ITK-SNAP view zoom in Entropy.");
-
-      renderSyncRow(
-        "Pan:",
-        "Send##panSync",
-        "Receive##panSync",
-        appData.settings().sendPanSync(),
-        appData.settings().receivePanSync(),
-        [&appData](bool value) { appData.settings().setSendPanSync(value); },
-        [&appData](bool value) { appData.settings().setReceivePanSync(value); },
-        "Send Entropy view pan to ITK-SNAP and receive ITK-SNAP view pan in Entropy.");
-
-      ImGui::EndTable();
-    }
+  if (snapSyncEnabled) {
+    renderSyncOptions(
+      "##snapSyncOptions",
+      "Send##cursorSync",
+      "Receive##cursorSync",
+      "Send##zoomSync",
+      "Receive##zoomSync",
+      "Send##panSync",
+      "Receive##panSync",
+      appData.settings().sendCursorSync(),
+      appData.settings().receiveCursorSync(),
+      appData.settings().sendZoomSync(),
+      appData.settings().receiveZoomSync(),
+      appData.settings().sendPanSync(),
+      appData.settings().receivePanSync(),
+      [&appData](bool value) { appData.settings().setSendCursorSync(value); },
+      [&appData](bool value) { appData.settings().setReceiveCursorSync(value); },
+      [&appData](bool value) { appData.settings().setSendZoomSync(value); },
+      [&appData](bool value) { appData.settings().setReceiveZoomSync(value); },
+      [&appData](bool value) { appData.settings().setSendPanSync(value); },
+      [&appData](bool value) { appData.settings().setReceivePanSync(value); },
+      "Send Entropy crosshairs movement to ITK-SNAP and receive ITK-SNAP cursor movement in Entropy. "
+      "ITK-SNAP cursor messages use NIFTI/RAS coordinates; Entropy converts between internal LPS and "
+      "ITK-SNAP RAS at the IPC boundary.",
+      "Send Entropy view zoom to ITK-SNAP and receive ITK-SNAP view zoom in Entropy.",
+      "Send Entropy view pan to ITK-SNAP and receive ITK-SNAP view pan in Entropy.");
   }
 }
 
@@ -1697,10 +1748,7 @@ void renderSettingsWindow(
     appData.guiData().m_requestedSettingsTab = std::nullopt;
   }
 
-  const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  const ImVec2 maxSize =
-    (viewport != nullptr) ? ImVec2{viewport->WorkSize.x * 0.8f, viewport->WorkSize.y * 0.8f} : ImVec2{960.0f, 720.0f};
-  ImGui::SetNextWindowSizeConstraints(ImVec2{560.0f, 420.0f}, maxSize);
+  setNextWindowSizeConstraintsToMainViewport(560.0f, 420.0f);
   ImGui::SetNextWindowSize(ImVec2{760.0f, 560.0f}, ImGuiCond_FirstUseEver);
 
   if (ImGui::Begin("Settings", &(appData.guiData().m_showSettingsWindow))) {

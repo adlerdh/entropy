@@ -75,7 +75,8 @@ void renderAboutDialogModalPopup(bool open)
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
   ImGui::SetNextWindowSize(scaledSize(680.0f, 640.0f), ImGuiCond_Appearing);
-  ImGui::SetNextWindowSizeConstraints(scaledSize(520.0f, 360.0f), ImVec2(FLT_MAX, FLT_MAX));
+  const ImVec2 minAboutSize = scaledSize(520.0f, 360.0f);
+  setNextWindowSizeConstraintsToMainViewport(minAboutSize.x, minAboutSize.y);
 
   bool aboutDialogOpen = true;
   if (ImGui::BeginPopupModal("About Entropy", &aboutDialogOpen)) {

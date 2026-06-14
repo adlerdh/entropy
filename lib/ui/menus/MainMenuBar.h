@@ -35,6 +35,7 @@ enum class MainMenuAction
   ToggleLightboxOffsets,
   ToggleOverlays,
   ToggleFullScreen,
+  ToggleEntropyInstanceSync,
   ToggleSync,
   ToggleSyncSendCursor,
   ToggleSyncReceiveCursor,
@@ -135,6 +136,7 @@ void openImage(const MainMenuBarCallbacks& callbacks);
 void openProject(const MainMenuBarCallbacks& callbacks);
 void addImage(const MainMenuBarCallbacks& callbacks);
 void openDicomSeries(const MainMenuBarCallbacks& callbacks);
+void addDicomSeries(const MainMenuBarCallbacks& callbacks);
 void addSegmentation(const MainMenuBarCallbacks& callbacks);
 void saveProject(const MainMenuBarCallbacks& callbacks);
 void saveProjectAs(const MainMenuBarCallbacks& callbacks);

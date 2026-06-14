@@ -24,6 +24,7 @@ bool g_installed = false;
 - (void)openProject:(id)sender;
 - (void)openDicomSeries:(id)sender;
 - (void)addImage:(id)sender;
+- (void)addDicomSeries:(id)sender;
 - (void)addSegmentation:(id)sender;
 - (void)saveProject:(id)sender;
 - (void)saveProjectAs:(id)sender;
@@ -59,6 +60,11 @@ bool g_installed = false;
 - (void)addImage:(id)sender {
   (void)sender;
   main_menu::addImage(g_callbacks);
+}
+
+- (void)addDicomSeries:(id)sender {
+  (void)sender;
+  main_menu::addDicomSeries(g_callbacks);
 }
 
 - (void)addSegmentation:(id)sender {
@@ -153,6 +159,10 @@ bool g_installed = false;
 
   if (action == @selector(addImage:)) {
     return g_callbacks.canAddImage && g_callbacks.addImageFiles;
+  }
+
+  if (action == @selector(addDicomSeries:)) {
+    return g_callbacks.canAddImage && g_callbacks.openDicomFolders;
   }
 
   if (action == @selector(addSegmentation:)) {
@@ -288,7 +298,7 @@ void addImageMenu(NSMenu* mainMenu) {
   [activeImageItem setSubmenu:g_activeImagesMenu];
   [menu addItem:activeImageItem];
   addTargetedMenuItem(menu, @"Add Image(s)...", @selector(addImage:), @"");
-  addTargetedMenuItem(menu, @"Add DICOM Series...", @selector(openDicomSeries:), @"");
+  addTargetedMenuItem(menu, @"Add DICOM Series...", @selector(addDicomSeries:), @"");
   addActionMenuItem(menu, @"Export DICOM Series as Image...", MainMenuAction::ExportActiveImage);
   addActionMenuItem(menu, @"Remove Active Image", MainMenuAction::RemoveActiveImage);
   addActionMenuItem(menu, @"Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
@@ -364,7 +374,7 @@ void addLandmarkMenu(NSMenu* mainMenu) {
 void addViewsMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"View" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"View"];
-  addActionMenuItem(menu, @"Recenter", MainMenuAction::Recenter, @"c");
+  addActionMenuItem(menu, @"Recenter Views", MainMenuAction::Recenter, @"c");
   addActionMenuItem(menu, @"Reset Views and Crosshairs", MainMenuAction::ResetView, @"c", NSEventModifierFlagShift);
   [menu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(menu, @"Show Image", MainMenuAction::ToggleImageVisibility, @"w");
@@ -380,8 +390,14 @@ void addViewsMenu(NSMenu* mainMenu) {
   addActionMenuItem(menu, @"Show Scale Bars", MainMenuAction::ToggleScaleBars);
   addActionMenuItem(menu, @"Cycle Overlays", MainMenuAction::ToggleOverlays, @"o");
   [menu addItem:[NSMenuItem separatorItem]];
+  addSymbolActionMenuItem(
+    menu,
+    @"Synchronize Entropy Instances",
+    MainMenuAction::ToggleEntropyInstanceSync,
+    @"arrow.triangle.2.circlepath");
   NSMenuItem* syncItem = [[NSMenuItem alloc] initWithTitle:@"Synchronize with ITK-SNAP" action:nil keyEquivalent:@""];
   [syncItem setIndentationLevel:0];
+  setMenuItemSymbol(syncItem, @"arrow.triangle.2.circlepath");
   NSMenu* syncMenu = [[NSMenu alloc] initWithTitle:@"Synchronize with ITK-SNAP"];
   addActionMenuItem(syncMenu, @"Enable Synchronization", MainMenuAction::ToggleSync);
   [syncMenu addItem:[NSMenuItem separatorItem]];
@@ -395,6 +411,7 @@ void addViewsMenu(NSMenu* mainMenu) {
   addActionMenuItem(syncMenu, @"Settings...", MainMenuAction::ShowSynchronizeSettingsWindow);
   [syncItem setSubmenu:syncMenu];
   [menu addItem:syncItem];
+  [menu addItem:[NSMenuItem separatorItem]];
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }
@@ -524,8 +541,8 @@ void rebuildLayoutsMenu() {
   addActionMenuItem(g_layoutsMenu, @"Add Layout...", MainMenuAction::AddLayout);
   addActionMenuItem(g_layoutsMenu, @"Remove Current Layout", MainMenuAction::RemoveLayout);
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
-  addTargetedMenuItem(g_layoutsMenu, @"Previous", @selector(previousLayout:), @"[", 0);
-  addTargetedMenuItem(g_layoutsMenu, @"Next", @selector(nextLayout:), @"]", 0);
+  addTargetedMenuItem(g_layoutsMenu, @"Previous Layout", @selector(previousLayout:), @"[", 0);
+  addTargetedMenuItem(g_layoutsMenu, @"Next Layout", @selector(nextLayout:), @"]", 0);
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
 
   const auto names = g_callbacks.layoutNames ? g_callbacks.layoutNames() : std::vector<std::string>{};

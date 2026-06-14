@@ -44,6 +44,7 @@ void renderPaletteWindow(
   if (!showPaletteWindow || !*showPaletteWindow) return;
 
   ImGui::SetNextWindowSize(ImVec2(600, 500), ImGuiCond_FirstUseEver);
+  setNextWindowSizeConstraintsToMainViewport();
 
   ImGui::PushID(name); /*** PushID name ***/
 

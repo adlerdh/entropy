@@ -8,7 +8,8 @@
 #include "logic/app/Data.h"
 #include "logic/app/Settings.h"
 #include "logic/app/State.h"
-#include "logic/ipc/SnapCursorSync.h"
+#include "logic/sync/EntropyInstanceSync.h"
+#include "logic/sync/ItkSnapSync.h"
 
 #include "rendering/Rendering.h"
 #include "ui/ImGuiWrapper.h"
@@ -268,10 +269,11 @@ private:
   std::size_t m_pendingLargeProjectImageIndex = 0;
   std::optional<serialize::EntropyProject> m_savedProjectSnapshot = std::nullopt;
 
-  GlfwWrapper m_glfw;                //!< GLFW wrapper
-  AppData m_data;                    //!< Application data
-  Rendering m_rendering;             //!< Render logic
-  CallbackHandler m_callbackHandler; //!< UI callback handlers
-  SnapCursorSync m_snapCursorSync;   //!< Cursor synchronization with ITK-SNAP IPC
-  ImGuiWrapper m_imgui;              //!< ImGui wrapper
+  GlfwWrapper m_glfw;                                       //!< GLFW wrapper
+  AppData m_data;                                           //!< Application data
+  Rendering m_rendering;                                    //!< Render logic
+  CallbackHandler m_callbackHandler;                        //!< UI callback handlers
+  ItkSnapSync m_itkSnapSync;                                //!< Cursor, zoom, and pan synchronization with ITK-SNAP
+  entropy::sync::EntropyInstanceSync m_entropyInstanceSync; //!< Synchronization with running Entropy instances
+  ImGuiWrapper m_imgui;                                     //!< ImGui wrapper
 };

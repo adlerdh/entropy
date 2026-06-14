@@ -1,5 +1,6 @@
 #include "ui/windows/AnnotationWindow.h"
 
+#include "ui/Helpers.h"
 #include "ui/headers/Headers.h"
 
 #include "logic/app/Data.h"
@@ -18,6 +19,7 @@ void renderAnnotationWindow(
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
   const AllViewsRecenterType& recenterAllViews)
 {
+  setNextWindowSizeConstraintsToMainViewport();
   if (ImGui::Begin("Annotations", &(appData.guiData().m_showAnnotationsWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();

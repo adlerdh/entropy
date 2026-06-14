@@ -197,7 +197,8 @@ void renderDicomSeriesSelectionPopup(
 
   const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
   ImGui::SetNextWindowSize(scaledSize(760.0f, 130.0f), ImGuiCond_Appearing);
-  ImGui::SetNextWindowSizeConstraints(scaledSize(640.0f, 120.0f), ImVec2(FLT_MAX, FLT_MAX));
+  const ImVec2 minScanningSize = scaledSize(640.0f, 120.0f);
+  setNextWindowSizeConstraintsToMainViewport(minScanningSize.x, minScanningSize.y);
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   if (ImGui::BeginPopupModal("Scanning DICOM Series", nullptr, ImGuiWindowFlags_Modal)) {
     if (!guiData.m_dicomSeriesScanInProgress) {
@@ -220,7 +221,7 @@ void renderDicomSeriesSelectionPopup(
   }
 
   ImGui::SetNextWindowSize(ImVec2(1480.0f, 680.0f), ImGuiCond_Appearing);
-  ImGui::SetNextWindowSizeConstraints(ImVec2(980.0f, 520.0f), ImVec2(FLT_MAX, FLT_MAX));
+  setNextWindowSizeConstraintsToMainViewport(980.0f, 520.0f);
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   bool dicomSeriesDialogOpen = true;
   if (ImGui::BeginPopupModal(popupTitle, &dicomSeriesDialogOpen, ImGuiWindowFlags_Modal)) {
@@ -441,7 +442,7 @@ void renderDicomSeriesSelectionPopup(
     }
 
     ImGui::SetNextWindowSize(ImVec2(1100.0f, 620.0f), ImGuiCond_Appearing);
-    ImGui::SetNextWindowSizeConstraints(ImVec2(760.0f, 420.0f), ImVec2(FLT_MAX, FLT_MAX));
+    setNextWindowSizeConstraintsToMainViewport(760.0f, 420.0f);
     bool dicomMetadataDialogOpen = true;
     if (ImGui::BeginPopupModal("DICOM Metadata", &dicomMetadataDialogOpen, ImGuiWindowFlags_Modal)) {
       if (!dicomMetadataDialogOpen) {

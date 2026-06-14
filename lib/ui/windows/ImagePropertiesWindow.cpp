@@ -1,5 +1,6 @@
 #include "ui/windows/ImagePropertiesWindow.h"
 
+#include "ui/Helpers.h"
 #include "ui/headers/Headers.h"
 #include "ui/widgets/Widgets.h"
 
@@ -40,6 +41,7 @@ void renderImagePropertiesWindow(
 {
   static const std::string sk_showOpacityMixer = std::string(ICON_FK_SLIDERS) + " Show opacity mixer";
 
+  setNextWindowSizeConstraintsToMainViewport();
   if (ImGui::Begin("Images##Images", &(appData.guiData().m_showImagePropertiesWindow)))
   // ImGuiWindowFlags_AlwaysAutoResize ) )
   /// @todo Do auto resize only on initial loading

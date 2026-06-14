@@ -4,6 +4,7 @@
 
 #include <imgui/imgui.h>
 
+#include <algorithm>
 #include <stdio.h>
 
 void helpMarker(const char* tooltip, bool sameLine)
@@ -21,6 +22,30 @@ void helpMarker(const char* tooltip, bool sameLine)
     ImGui::PopTextWrapPos();
     ImGui::EndTooltip();
   }
+}
+
+ImVec2 constrainedWindowMaxSize(float viewportFraction, float fallbackWidth, float fallbackHeight)
+{
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  if (viewport == nullptr) {
+    return ImVec2{fallbackWidth, fallbackHeight};
+  }
+
+  return ImVec2{viewport->WorkSize.x * viewportFraction, viewport->WorkSize.y * viewportFraction};
+}
+
+void setNextWindowSizeConstraintsToMainViewport(
+  float minWidth,
+  float minHeight,
+  float viewportFraction,
+  float fallbackMaxWidth,
+  float fallbackMaxHeight)
+{
+  const ImVec2 minSize{minWidth, minHeight};
+  ImVec2 maxSize = constrainedWindowMaxSize(viewportFraction, fallbackMaxWidth, fallbackMaxHeight);
+  maxSize.x = std::max(maxSize.x, minSize.x);
+  maxSize.y = std::max(maxSize.y, minSize.y);
+  ImGui::SetNextWindowSizeConstraints(minSize, maxSize);
 }
 
 bool mySliderS32(const char* label, int32_t* value, int32_t min, int32_t max, const char* format)

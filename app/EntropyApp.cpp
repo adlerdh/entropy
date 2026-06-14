@@ -21,8 +21,6 @@
 #include "ui/NativeFileDialogs.h"
 #include "windowing/LayoutFileSerialization.h"
 
-// #include "logic/ipc/IPCMessage.h"
-
 #include <glm/glm.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -416,7 +414,8 @@ EntropyApp::EntropyApp()
   , m_data()
   , m_rendering(m_data)                            // Requires OpenGL context
   , m_callbackHandler(m_data, m_glfw, m_rendering) // Requires OpenGL context
-  , m_snapCursorSync(m_data)
+  , m_itkSnapSync(m_data)
+  , m_entropyInstanceSync(m_data)
   , m_imgui(m_glfw.window(), m_data, m_callbackHandler) // Requires OpenGL context
 // m_IPCHandler()
 {
@@ -2740,8 +2739,10 @@ void EntropyApp::setCallbacks()
     [this]() { m_imgui.render(); },
     [this]() {
       pollDicomSeriesScan();
-      m_snapCursorSync.update();
-      if (m_data.settings().cursorSyncEnabled() && !m_data.state().animating()) {
+      m_itkSnapSync.update();
+      m_entropyInstanceSync.update();
+      const bool syncEnabled = m_data.settings().cursorSyncEnabled() || m_data.settings().entropyInstanceSyncEnabled();
+      if (syncEnabled && !m_data.state().animating()) {
         m_glfw.setEventProcessingMode(EventProcessingMode::WaitTimeout);
         m_glfw.setWaitTimeout(1.0 / 30.0);
       }

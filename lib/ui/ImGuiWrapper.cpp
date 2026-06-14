@@ -1016,6 +1016,9 @@ void ImGuiWrapper::render()
       case MainMenuAction::ToggleFullScreen:
         m_callbackHandler.toggleFullScreenMode();
         break;
+      case MainMenuAction::ToggleEntropyInstanceSync:
+        m_appData.settings().setEntropyInstanceSyncEnabled(!m_appData.settings().entropyInstanceSyncEnabled());
+        break;
       case MainMenuAction::ToggleSync:
         m_appData.settings().setCursorSyncEnabled(!m_appData.settings().cursorSyncEnabled());
         break;
@@ -1287,6 +1290,7 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleScaleBars:
         case MainMenuAction::ToggleLightboxOffsets:
         case MainMenuAction::ToggleOverlays:
+        case MainMenuAction::ToggleEntropyInstanceSync:
         case MainMenuAction::ToggleSync:
         case MainMenuAction::ToggleSyncSendCursor:
         case MainMenuAction::ToggleSyncReceiveCursor:
@@ -1428,6 +1432,8 @@ void ImGuiWrapper::render()
         return m_appData.renderData().m_showScaleBars;
       case MainMenuAction::ToggleLightboxOffsets:
         return m_appData.renderData().m_showLightboxOffsetLabels;
+      case MainMenuAction::ToggleEntropyInstanceSync:
+        return m_appData.settings().entropyInstanceSyncEnabled();
       case MainMenuAction::ToggleSync:
         return m_appData.settings().cursorSyncEnabled();
       case MainMenuAction::ToggleSyncSendCursor:

@@ -343,32 +343,9 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
-        bool syncEnabled = appData.settings().cursorSyncEnabled();
-        ImGui::PushStyleColor(ImGuiCol_Button, (syncEnabled ? activeColor : inactiveColor));
-        {
-          if (ImGui::Button(ICON_FK_EXCHANGE, buttonSize)) {
-            appData.settings().setCursorSyncEnabled(!syncEnabled);
-          }
-
-          if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Synchronize with ITK-SNAP");
-          }
-        }
-        ImGui::PopStyleColor(1); // ImGuiCol_Button
-
-        ++id;
-      }
-      ImGui::PopID();
-
-      if (isHoriz) {
-        ImGui::SameLine();
-      }
-
-      ImGui::PushID(id);
-      {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showInspectionWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_EYEDROPPER, buttonSize)) {
+          if (ImGui::Button(ICON_FK_INFO_CIRCLE, buttonSize)) {
             guiData.m_showInspectionWindow = !guiData.m_showInspectionWindow;
           }
 
@@ -480,6 +457,29 @@ void renderModeToolbar(
           }
         }
         //                ImGui::PopStyleColor( 1 ); // ImGuiCol_Button
+        ++id;
+      }
+      ImGui::PopID();
+
+      if (isHoriz) {
+        ImGui::SameLine();
+      }
+
+      ImGui::PushID(id);
+      {
+        bool syncEnabled = appData.settings().entropyInstanceSyncEnabled();
+        ImGui::PushStyleColor(ImGuiCol_Button, (syncEnabled ? activeColor : inactiveColor));
+        {
+          if (ImGui::Button(ICON_FK_EXCHANGE, buttonSize)) {
+            appData.settings().setEntropyInstanceSyncEnabled(!syncEnabled);
+          }
+
+          if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", "Synchronize crosshairs position between Entropy instances");
+          }
+        }
+        ImGui::PopStyleColor(1); // ImGuiCol_Button
+
         ++id;
       }
       ImGui::PopID();

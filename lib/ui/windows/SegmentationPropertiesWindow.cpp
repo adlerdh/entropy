@@ -1,5 +1,6 @@
 #include "ui/windows/SegmentationPropertiesWindow.h"
 
+#include "ui/Helpers.h"
 #include "ui/headers/Headers.h"
 
 #include "image/Image.h"
@@ -36,6 +37,7 @@ void renderSegmentationPropertiesWindow(
 
   ImGuiWindowFlags flags = firstRun ? ImGuiWindowFlags_AlwaysAutoResize : ImGuiWindowFlags_None;
 
+  setNextWindowSizeConstraintsToMainViewport();
   if (ImGui::Begin("Segmentations##Segmentations", &(appData.guiData().m_showSegmentationsWindow), flags)) {
     firstRun = false;
 

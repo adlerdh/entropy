@@ -6,7 +6,6 @@
 #include "logic/app/CrosshairsState.h"
 #include "logic/annotation/Annotation.h"
 #include "logic/interaction/events/ButtonState.h"
-// #include "logic/ipc/IPCHandler.h"
 
 #include <glm/vec3.hpp>
 #include <uuid.h>

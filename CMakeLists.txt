@@ -496,7 +496,10 @@ set(entropy_SOURCES
 
   "${entropy_APP_DIR}/logic/DistanceMap.cpp"
   "${entropy_APP_DIR}/logic/SurfaceUtility.cpp"
-  "${entropy_APP_DIR}/logic/ipc/SnapCursorSync.cpp"
+  "${entropy_APP_DIR}/logic/sync/EntropyInstanceSync.cpp"
+  "${entropy_APP_DIR}/logic/sync/EntropyInstanceSyncProtocol.cpp"
+  "${entropy_APP_DIR}/logic/sync/ItkSnapSyncProtocol.cpp"
+  "${entropy_APP_DIR}/logic/sync/ItkSnapSync.cpp"
 
   "${entropy_APP_DIR}/rendering/ascii/AsciiAtlas.cpp"
   "${entropy_APP_DIR}/rendering/ascii/AsciiAtlasBaker.cpp"
@@ -803,6 +806,7 @@ if(WIN32)
     comctl32
     shell32
     user32
+    ws2_32
   )
 endif()
 

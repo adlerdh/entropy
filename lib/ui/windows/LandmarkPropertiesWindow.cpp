@@ -1,5 +1,6 @@
 #include "ui/windows/LandmarkPropertiesWindow.h"
 
+#include "ui/Helpers.h"
 #include "ui/headers/Headers.h"
 
 #include "logic/app/Data.h"
@@ -15,6 +16,7 @@ void renderLandmarkPropertiesWindow(
   AppData& appData,
   const AllViewsRecenterType& recenterAllViewsOnCurrentCrosshairsPosition)
 {
+  setNextWindowSizeConstraintsToMainViewport();
   if (ImGui::Begin("Landmarks", &(appData.guiData().m_showLandmarksWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
