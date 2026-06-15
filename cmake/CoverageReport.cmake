@@ -175,9 +175,52 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
     set(_entropy_export "cobertura:${_entropy_export}")
   endif()
 
-  file(TO_NATIVE_PATH "${ENTROPY_SOURCE_DIR}/app" _entropy_opencppcoverage_app_source)
-  file(TO_NATIVE_PATH "${ENTROPY_SOURCE_DIR}/lib" _entropy_opencppcoverage_lib_source)
-  file(TO_NATIVE_PATH "${ENTROPY_SOURCE_DIR}/external" _entropy_opencppcoverage_external_source)
+  function(_entropy_append_opencppcoverage_path out_var path)
+    file(TO_CMAKE_PATH "${path}" _entropy_coverage_path)
+    file(TO_NATIVE_PATH "${_entropy_coverage_path}" _entropy_coverage_native_path)
+    list(APPEND ${out_var} "${_entropy_coverage_native_path}")
+
+    if(DEFINED ENV{GITHUB_WORKSPACE} AND NOT "$ENV{GITHUB_WORKSPACE}" STREQUAL "")
+      file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" _entropy_github_workspace)
+      file(TO_CMAKE_PATH "${ENTROPY_SOURCE_DIR}" _entropy_source_dir_cmake)
+      foreach(_entropy_base IN ITEMS "${ENTROPY_SOURCE_DIR}" "${ENTROPY_BINARY_DIR}")
+        file(TO_CMAKE_PATH "${_entropy_base}" _entropy_base_cmake)
+        cmake_path(IS_PREFIX _entropy_base_cmake "${_entropy_coverage_path}" NORMALIZE _entropy_is_prefix)
+        if(_entropy_is_prefix)
+          file(RELATIVE_PATH _entropy_relative_path "${_entropy_base_cmake}" "${_entropy_coverage_path}")
+          if(_entropy_base_cmake STREQUAL _entropy_source_dir_cmake)
+            set(_entropy_workspace_path "${_entropy_github_workspace}/${_entropy_relative_path}")
+          else()
+            get_filename_component(_entropy_binary_name "${ENTROPY_BINARY_DIR}" NAME)
+            set(_entropy_workspace_path "${_entropy_github_workspace}/${_entropy_binary_name}/${_entropy_relative_path}")
+          endif()
+          file(TO_NATIVE_PATH "${_entropy_workspace_path}" _entropy_workspace_native_path)
+          if(NOT _entropy_workspace_native_path IN_LIST ${out_var})
+            list(APPEND ${out_var} "${_entropy_workspace_native_path}")
+          endif()
+        endif()
+      endforeach()
+    endif()
+
+    set(${out_var} "${${out_var}}" PARENT_SCOPE)
+  endfunction()
+
+  set(_entropy_opencppcoverage_source_args)
+  set(_entropy_opencppcoverage_app_sources)
+  set(_entropy_opencppcoverage_lib_sources)
+  _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_app_sources "${ENTROPY_SOURCE_DIR}/app")
+  _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_lib_sources "${ENTROPY_SOURCE_DIR}/lib")
+  foreach(_entropy_source IN LISTS _entropy_opencppcoverage_app_sources _entropy_opencppcoverage_lib_sources)
+    list(APPEND _entropy_opencppcoverage_source_args "--sources" "${_entropy_source}")
+  endforeach()
+
+  set(_entropy_opencppcoverage_excluded_source_args)
+  set(_entropy_opencppcoverage_external_sources)
+  _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_external_sources "${ENTROPY_SOURCE_DIR}/external")
+  foreach(_entropy_source IN LISTS _entropy_opencppcoverage_external_sources)
+    list(APPEND _entropy_opencppcoverage_excluded_source_args "--excluded_sources" "${_entropy_source}")
+  endforeach()
+
   file(TO_NATIVE_PATH "${_entropy_export}" _entropy_opencppcoverage_export)
 
   if(NOT DEFINED ENTROPY_COVERAGE_OBJECTS OR ENTROPY_COVERAGE_OBJECTS STREQUAL "")
@@ -186,17 +229,19 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
   string(REPLACE "|" ";" _entropy_coverage_objects "${ENTROPY_COVERAGE_OBJECTS}")
   set(_entropy_opencppcoverage_module_args)
   foreach(_entropy_object IN LISTS _entropy_coverage_objects)
-    file(TO_NATIVE_PATH "${_entropy_object}" _entropy_opencppcoverage_module)
-    list(APPEND _entropy_opencppcoverage_module_args "--modules" "${_entropy_opencppcoverage_module}")
+    set(_entropy_opencppcoverage_modules)
+    _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_modules "${_entropy_object}")
+    foreach(_entropy_opencppcoverage_module IN LISTS _entropy_opencppcoverage_modules)
+      list(APPEND _entropy_opencppcoverage_module_args "--modules" "${_entropy_opencppcoverage_module}")
+    endforeach()
   endforeach()
 
   execute_process(
     COMMAND "${ENTROPY_OPENCPPCOVERAGE}"
       "--cover_children"
       ${_entropy_opencppcoverage_module_args}
-      "--sources" "${_entropy_opencppcoverage_app_source}"
-      "--sources" "${_entropy_opencppcoverage_lib_source}"
-      "--excluded_sources" "${_entropy_opencppcoverage_external_source}"
+      ${_entropy_opencppcoverage_source_args}
+      ${_entropy_opencppcoverage_excluded_source_args}
       "--export_type" "${_entropy_opencppcoverage_export}"
       "--"
       ${_entropy_ctest_command}

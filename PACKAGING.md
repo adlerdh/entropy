@@ -31,6 +31,46 @@ If the release app is already configured and built, you can run CPack directly:
 cpack --config build-release/CPackConfig.cmake
 ```
 
+## GitHub Tag Releases
+
+Public GitHub Releases are created by `.github/workflows/release.yml`. The release workflow runs only when a tag matching `v*.*.*.*` is pushed. It verifies that the tag exactly matches the version in `CMakeLists.txt`, then builds the Windows release package, runs release tests, smoke-tests a staged install, creates a GitHub Release, and uploads the MSI and portable ZIP as release assets.
+
+Before creating a release tag, update these values in `CMakeLists.txt`:
+
+```cmake
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 9)
+set(VERSION_FEATURE 5)
+set(VERSION_PATCH 0)
+```
+
+After the version bump has been reviewed and merged, create a signed tag if you have GPG signing configured:
+
+```sh
+git switch main
+git pull --ff-only
+git tag -s v0.9.5.0 -m "Entropy 0.9.5.0"
+git push origin v0.9.5.0
+```
+
+If signed tags are not configured, use an annotated tag:
+
+```sh
+git tag -a v0.9.5.0 -m "Entropy 0.9.5.0"
+git push origin v0.9.5.0
+```
+
+The tag name must match `VERSION_FULL` exactly. For example, `VERSION_MAJOR=0`, `VERSION_MINOR=9`, `VERSION_FEATURE=5`, and `VERSION_PATCH=0` require the tag `v0.9.5.0`. If the tag and CMake version disagree, the release workflow fails before building packages.
+
+The generated GitHub Release assets are named like:
+
+```text
+Entropy-0.9.5.0-Windows-AMD64.msi
+Entropy-0.9.5.0-Windows-AMD64-portable.zip
+```
+
+The same files are also uploaded as workflow artifacts for debugging. The GitHub Release assets are the public download files; avoid storing large binaries directly in GitHub Pages. If a project website needs download links, point the website to the GitHub Release or its latest-release page.
+
 ## Linux Packages
 On Linux, CPack creates both a Debian package and a portable tarball named like:
 ```text

@@ -238,7 +238,7 @@ The trigger policy keeps routine CI useful without spending Windows runner minut
 
 - Pull requests and pushes to `main` run formatting checks plus the Debug SuperBuild, Debug app build, and Debug unit tests.
 - A weekly scheduled run and manual `workflow_dispatch` run execute the heavier coverage and release packaging jobs.
-- Tags named `v*` run the heavier coverage and release packaging jobs for release validation.
+- Release tags are handled by the separate release workflow described in [PACKAGING.md](PACKAGING.md#github-tag-releases).
 
 The full Windows validation includes:
 
@@ -268,6 +268,8 @@ The workflow uploads these artifacts:
 - `windows-packages`: the MSI and portable ZIP from `build-release/packages/`
 
 The Debug, Coverage, and Release SuperBuild dependency trees are cached separately with `actions/cache`. Cache keys include `CMakePresets.json`, `CMakeLists.txt`, and `cmake/*.cmake`, so changes to dependency versions, build options, coverage scripts, or packaging scripts invalidate the cache. The cache is best-effort: a cache hit avoids rebuilding unchanged third-party dependencies, but CI still re-runs CMake configure/build/test steps and remains correct after a cache miss.
+
+The coverage job uses its own `build-coverage` tree. On Windows, OpenCppCoverage does not require compiler instrumentation, but the project still enables coverage through a separate CMake preset so the `coverage` and `coverage-html` targets are available and use Debug-style symbols. This duplicates the app/test build work from the Debug job on a separate runner; dependency caching keeps the SuperBuild cost lower after the first successful cache save.
 
 ## Build Options
 

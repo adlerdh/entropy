@@ -7,8 +7,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
   schedule:
     # Weekly full Windows validation. Run manually when release confidence is needed sooner.
     - cron: "23 8 * * 0"
@@ -98,22 +96,22 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            build-debug/catch2-*
-            build-debug/cli11-*
-            build-debug/cmakerc-*
-            build-debug/glfw-*
-            build-debug/glm-*
-            build-debug/iconfont-*
-            build-debug/imgui-*
-            build-debug/implot-*
-            build-debug/itk-*
-            build-debug/nanovg-*
-            build-debug/nativefiledialog-*
-            build-debug/nlohmann_json-*
-            build-debug/qtbase-*
-            build-debug/spdlog-*
-            build-debug/stduuid-*
-            build-debug/tinyfsm-*
+            build-debug/external/catch2-*
+            build-debug/external/cli11-*
+            build-debug/external/cmakerc-*
+            build-debug/external/glfw-*
+            build-debug/external/glm-*
+            build-debug/external/iconfont-*
+            build-debug/external/imgui-*
+            build-debug/external/implot-*
+            build-debug/external/itk-*
+            build-debug/external/nanovg-*
+            build-debug/external/nativefiledialog-*
+            build-debug/external/nlohmann_json-*
+            build-debug/external/qtbase-*
+            build-debug/external/spdlog-*
+            build-debug/external/stduuid-*
+            build-debug/external/tinyfsm-*
           key: windows-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             windows-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
@@ -142,7 +140,7 @@ jobs:
     name: Coverage Report
     runs-on: windows-2022
     needs: format
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Check out source
@@ -177,22 +175,22 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            build-coverage/catch2-*
-            build-coverage/cli11-*
-            build-coverage/cmakerc-*
-            build-coverage/glfw-*
-            build-coverage/glm-*
-            build-coverage/iconfont-*
-            build-coverage/imgui-*
-            build-coverage/implot-*
-            build-coverage/itk-*
-            build-coverage/nanovg-*
-            build-coverage/nativefiledialog-*
-            build-coverage/nlohmann_json-*
-            build-coverage/qtbase-*
-            build-coverage/spdlog-*
-            build-coverage/stduuid-*
-            build-coverage/tinyfsm-*
+            build-coverage/external/catch2-*
+            build-coverage/external/cli11-*
+            build-coverage/external/cmakerc-*
+            build-coverage/external/glfw-*
+            build-coverage/external/glm-*
+            build-coverage/external/iconfont-*
+            build-coverage/external/imgui-*
+            build-coverage/external/implot-*
+            build-coverage/external/itk-*
+            build-coverage/external/nanovg-*
+            build-coverage/external/nativefiledialog-*
+            build-coverage/external/nlohmann_json-*
+            build-coverage/external/qtbase-*
+            build-coverage/external/spdlog-*
+            build-coverage/external/stduuid-*
+            build-coverage/external/tinyfsm-*
           key: windows-msvc2022-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             windows-msvc2022-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
@@ -226,6 +224,9 @@ jobs:
           $lineRate = [double]$coverage.coverage.'line-rate'
           $linesCovered = [int]$coverage.coverage.'lines-covered'
           $linesValid = [int]$coverage.coverage.'lines-valid'
+          if ($linesValid -le 0) {
+            throw "OpenCppCoverage produced an empty Cobertura report. Check module/source path selection."
+          }
           $percent = [math]::Round($lineRate * 100, 2)
           "### Windows coverage" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
           "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
@@ -253,7 +254,7 @@ jobs:
     name: Release Build Tests And Packages
     runs-on: windows-2022
     needs: format
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Check out source
@@ -275,22 +276,22 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            build-release/catch2-*
-            build-release/cli11-*
-            build-release/cmakerc-*
-            build-release/glfw-*
-            build-release/glm-*
-            build-release/iconfont-*
-            build-release/imgui-*
-            build-release/implot-*
-            build-release/itk-*
-            build-release/nanovg-*
-            build-release/nativefiledialog-*
-            build-release/nlohmann_json-*
-            build-release/qtbase-*
-            build-release/spdlog-*
-            build-release/stduuid-*
-            build-release/tinyfsm-*
+            build-release/external/catch2-*
+            build-release/external/cli11-*
+            build-release/external/cmakerc-*
+            build-release/external/glfw-*
+            build-release/external/glm-*
+            build-release/external/iconfont-*
+            build-release/external/imgui-*
+            build-release/external/implot-*
+            build-release/external/itk-*
+            build-release/external/nanovg-*
+            build-release/external/nativefiledialog-*
+            build-release/external/nlohmann_json-*
+            build-release/external/qtbase-*
+            build-release/external/spdlog-*
+            build-release/external/stduuid-*
+            build-release/external/tinyfsm-*
           key: windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
             windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-

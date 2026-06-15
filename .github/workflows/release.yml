@@ -1,0 +1,172 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CMAKE_GENERATOR: "Visual Studio 17 2022"
+  CMAKE_GENERATOR_PLATFORM: x64
+  CMAKE_BUILD_PARALLEL_LEVEL: 2
+  CTEST_PARALLEL_LEVEL: 2
+  SUPERBUILD_CACHE_VERSION: v1
+
+jobs:
+  windows:
+    name: Windows Release
+    runs-on: windows-2022
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Map short workspace path
+        run: 'subst S: "$env:GITHUB_WORKSPACE"'
+
+      - name: Verify release tag matches project version
+        working-directory: 'S:\'
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -notmatch '^v\d+\.\d+\.\d+\.\d+$') {
+            throw "Release tags must be named like v0.9.5.0, got '$tag'"
+          }
+
+          $cmake = Get-Content CMakeLists.txt -Raw
+          $major = [regex]::Match($cmake, 'set\(VERSION_MAJOR\s+([0-9]+)\)').Groups[1].Value
+          $minor = [regex]::Match($cmake, 'set\(VERSION_MINOR\s+([0-9]+)\)').Groups[1].Value
+          $feature = [regex]::Match($cmake, 'set\(VERSION_FEATURE\s+([0-9]+)\)').Groups[1].Value
+          $patch = [regex]::Match($cmake, 'set\(VERSION_PATCH\s+([0-9]+)\)').Groups[1].Value
+          if (-not $major -or -not $minor -or -not $feature -or -not $patch) {
+            throw "Unable to parse VERSION_* values from CMakeLists.txt"
+          }
+
+          $version = "$major.$minor.$feature.$patch"
+          if ($tag -ne "v$version") {
+            throw "Release tag '$tag' does not match CMakeLists.txt VERSION_FULL '$version'"
+          }
+
+          "ENTROPY_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "### Entropy release" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "Tag: $tag" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "Version: $version" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - name: Validate runner tools
+        working-directory: 'S:\'
+        run: |
+          cmake --version
+          git --version
+          gh --version
+          vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          Get-Command candle.exe -ErrorAction Stop
+          Get-Command light.exe -ErrorAction Stop
+
+      - name: Restore Release SuperBuild cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-release/external/catch2-*
+            build-release/external/cli11-*
+            build-release/external/cmakerc-*
+            build-release/external/glfw-*
+            build-release/external/glm-*
+            build-release/external/iconfont-*
+            build-release/external/imgui-*
+            build-release/external/implot-*
+            build-release/external/itk-*
+            build-release/external/nanovg-*
+            build-release/external/nativefiledialog-*
+            build-release/external/nlohmann_json-*
+            build-release/external/qtbase-*
+            build-release/external/spdlog-*
+            build-release/external/stduuid-*
+            build-release/external/tinyfsm-*
+          key: windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Release SuperBuild
+        working-directory: 'S:\'
+        run: cmake --preset superbuild-release
+
+      - name: Build Release SuperBuild
+        working-directory: 'S:\'
+        run: cmake --build --preset superbuild-release --parallel
+
+      - name: Configure Release app
+        working-directory: 'S:\'
+        run: cmake --preset app-release
+
+      - name: Build Release app
+        working-directory: 'S:\'
+        run: cmake --build --preset app-release --parallel
+
+      - name: Run Release tests
+        working-directory: 'S:\'
+        run: ctest --test-dir build-release -C Release --parallel --output-on-failure
+
+      - name: Build MSI and portable ZIP
+        working-directory: 'S:\'
+        run: cmake --build --preset package-release --parallel
+
+      - name: Smoke-test staged install
+        working-directory: 'S:\'
+        run: |
+          cmake --install build-release --config Release --prefix build-release\windows-package-install
+          & .\build-release\windows-package-install\entropy.exe --help
+
+      - name: Locate release assets
+        working-directory: 'S:\'
+        run: |
+          $packageDir = "build-release\packages"
+          $msi = Get-ChildItem $packageDir -Filter "Entropy-$env:ENTROPY_VERSION-Windows-*.msi" -File | Select-Object -First 1
+          $zip = Get-ChildItem $packageDir -Filter "Entropy-$env:ENTROPY_VERSION-Windows-*-portable.zip" -File | Select-Object -First 1
+
+          if (-not $msi) {
+            throw "MSI package was not found in $packageDir"
+          }
+          if (-not $zip) {
+            throw "Portable ZIP package was not found in $packageDir"
+          }
+
+          "ENTROPY_RELEASE_MSI=$($msi.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ENTROPY_RELEASE_ZIP=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "MSI: $($msi.Name)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "Portable ZIP: $($zip.Name)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - name: Upload Windows packages as workflow artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: entropy-${{ env.ENTROPY_VERSION }}-windows
+          path: |
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Windows-*.msi
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Windows-*-portable.zip
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        working-directory: 'S:\'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "GitHub Release '$tag' already exists. Delete it or create a new tag before rerunning."
+          }
+
+          gh release create $tag `
+            "$env:ENTROPY_RELEASE_MSI" `
+            "$env:ENTROPY_RELEASE_ZIP" `
+            --verify-tag `
+            --generate-notes `
+            --title "Entropy $env:ENTROPY_VERSION"
