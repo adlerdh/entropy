@@ -216,7 +216,7 @@ pre-commit run --all-files
 
 ## GitHub Actions Windows CI
 
-The Windows GitHub Actions workflow is defined in `.github/workflows/windows.yml` and uses the `windows-2022` hosted runner so the Visual Studio, CMake, and WiX toolchain is predictable. This is preferred over `windows-latest` because GitHub can retarget `windows-latest` to a newer Windows and Visual Studio image. The workflow installs `pre-commit`, uses the Visual Studio-bundled `clang-format` for formatting checks, installs OpenCppCoverage for Windows coverage reports, and installs Doxygen for documentation-tool availability.
+The Windows GitHub Actions workflow is defined in `.github/workflows/windows.yml` and uses the `windows-2022` hosted runner so the Visual Studio, CMake, and WiX toolchain is predictable. This is preferred over `windows-latest` because GitHub can retarget `windows-latest` to a newer Windows and Visual Studio image. The workflow installs `pre-commit`, uses the Visual Studio-bundled `clang-format` for formatting checks, and installs OpenCppCoverage from the official GitHub release for Windows coverage reports.
 
 As of GitHub's `windows-2022` image version `20260607.193.1`, the hosted runner includes:
 

@@ -151,16 +151,27 @@ jobs:
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
 
-      - name: Install coverage and docs tools
+      - name: Install coverage tools
         working-directory: 'S:\'
         run: |
-          winget install --id OpenCppCoverage.OpenCppCoverage -e --accept-package-agreements --accept-source-agreements --disable-interactivity
-          choco install doxygen.install -y --no-progress
+          $release = Invoke-RestMethod `
+            -Uri "https://api.github.com/repos/OpenCppCoverage/OpenCppCoverage/releases/tags/release-0.9.9.0" `
+            -Headers @{ "User-Agent" = "entropy-ci" }
+          $asset = $release.assets |
+            Where-Object { $_.name -match "x64" -and $_.name -match "\.exe$" } |
+            Select-Object -First 1
+          if (-not $asset) {
+            throw "OpenCppCoverage x64 installer asset was not found"
+          }
+          $installer = Join-Path $env:RUNNER_TEMP "OpenCppCoverageSetup.exe"
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $installer
+          Start-Process -FilePath $installer `
+            -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" `
+            -Wait
           $openCppCoveragePath = "C:\Program Files\OpenCppCoverage"
           $env:Path = "$openCppCoveragePath;$env:Path"
           $openCppCoveragePath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           Get-Command OpenCppCoverage -ErrorAction Stop
-          doxygen --version
 
       - name: Restore Coverage SuperBuild cache
         uses: actions/cache@v5
