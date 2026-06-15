@@ -460,11 +460,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
 
     ImGui::Text("View orientation convention:");
 
-    static constexpr bool sk_orientChangeRecenterCrosshairs = false;
-    static constexpr bool sk_orientChangeRealignCrosshairs = false;
-    static constexpr bool sk_orientChangeRecenterOnXhairs = true;
-    static constexpr bool sk_orientChangeResetObliqueOrientation = false;
-    static constexpr bool sk_orientChangeResetZoom = false;
+    static constexpr bool kOrientChangeRecenterCrosshairs = false;
+    static constexpr bool kOrientChangeRealignCrosshairs = false;
+    static constexpr bool kOrientChangeRecenterOnXhairs = true;
+    static constexpr bool kOrientChangeResetObliqueOrientation = false;
+    static constexpr bool kOrientChangeResetZoom = false;
 
     if (ImGui::RadioButton(
           "Radiological",
@@ -473,11 +473,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       appData.windowData().setViewOrientationConvention(ViewConvention::Radiological);
 
       recenterAllViews(
-        sk_orientChangeRecenterCrosshairs,
-        sk_orientChangeRealignCrosshairs,
-        sk_orientChangeRecenterOnXhairs,
-        sk_orientChangeResetObliqueOrientation,
-        sk_orientChangeResetZoom);
+        kOrientChangeRecenterCrosshairs,
+        kOrientChangeRealignCrosshairs,
+        kOrientChangeRecenterOnXhairs,
+        kOrientChangeResetObliqueOrientation,
+        kOrientChangeResetZoom);
     }
     ImGui::SameLine();
     helpMarker("Anatomical left is on view right; anatomical right is on view left");
@@ -489,11 +489,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       appData.windowData().setViewOrientationConvention(ViewConvention::Neurological);
 
       recenterAllViews(
-        sk_orientChangeRecenterCrosshairs,
-        sk_orientChangeRealignCrosshairs,
-        sk_orientChangeRecenterOnXhairs,
-        sk_orientChangeResetObliqueOrientation,
-        sk_orientChangeResetZoom);
+        kOrientChangeRecenterCrosshairs,
+        kOrientChangeRealignCrosshairs,
+        kOrientChangeRecenterOnXhairs,
+        kOrientChangeResetObliqueOrientation,
+        kOrientChangeResetZoom);
     }
     ImGui::SameLine();
     helpMarker("Anatomical left is on view left; anatomical right is on view right");

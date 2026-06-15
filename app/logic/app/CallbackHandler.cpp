@@ -511,7 +511,7 @@ bool CallbackHandler::executePoissonSegmentation(
   std::vector<const float*> potBuffers(numLabels);
 
   // Loop over all label indices:
-  for (uint8_t i = 1; i <= numLabels; ++i) {
+  for (uint32_t i = 1; i <= numLabels; ++i) {
     // ith component of potential initialized by label i:
     potBuffer = static_cast<float*>(potImage->bufferAsVoid(i));
     potBuffers[i - 1] = potBuffer;
