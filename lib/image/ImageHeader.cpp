@@ -270,8 +270,7 @@ void ImageHeader::adjustComponents(const ComponentType& componentType, uint32_t 
   m_fileComponentType = componentType;
   m_fileComponentTypeAsString = compString;
   m_fileComponentSizeInBytes = sizeInBytes;
-  m_fileImageSizeInBytes =
-    static_cast<uint64_t>(m_fileComponentSizeInBytes) * m_numComponentsPerPixel * m_numPixels;
+  m_fileImageSizeInBytes = static_cast<uint64_t>(m_fileComponentSizeInBytes) * m_numComponentsPerPixel * m_numPixels;
 
   m_memoryComponentType = m_fileComponentType;
   m_memoryComponentTypeAsString = m_fileComponentTypeAsString;
@@ -314,8 +313,7 @@ void ImageHeader::setNumComponentsPerPixel(uint32_t numComponents)
   }
 
   m_numComponentsPerPixel = numComponents;
-  m_fileImageSizeInBytes =
-    static_cast<uint64_t>(m_fileComponentSizeInBytes) * m_numComponentsPerPixel * m_numPixels;
+  m_fileImageSizeInBytes = static_cast<uint64_t>(m_fileComponentSizeInBytes) * m_numComponentsPerPixel * m_numPixels;
   m_memoryImageSizeInBytes =
     static_cast<uint64_t>(m_memoryComponentSizeInBytes) * m_numComponentsPerPixel * m_numPixels;
 
