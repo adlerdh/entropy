@@ -216,7 +216,7 @@ pre-commit run --all-files
 
 ## GitHub Actions Windows CI
 
-The Windows GitHub Actions workflow is defined in `.github/workflows/windows.yml` and uses the `windows-2022` hosted runner so the Visual Studio, CMake, and WiX toolchain is predictable. This is preferred over `windows-latest` because GitHub can retarget `windows-latest` to a newer Windows and Visual Studio image. The workflow installs `pre-commit` plus LLVM `19.1.5` for pinned `clang-format` checks, OpenCppCoverage for Windows coverage reports, and Doxygen for documentation-tool availability.
+The Windows GitHub Actions workflow is defined in `.github/workflows/windows.yml` and uses the `windows-2022` hosted runner so the Visual Studio, CMake, and WiX toolchain is predictable. This is preferred over `windows-latest` because GitHub can retarget `windows-latest` to a newer Windows and Visual Studio image. The workflow installs `pre-commit`, uses the Visual Studio-bundled `clang-format` for formatting checks, installs OpenCppCoverage for Windows coverage reports, and installs Doxygen for documentation-tool availability.
 
 As of GitHub's `windows-2022` image version `20260607.193.1`, the hosted runner includes:
 
@@ -230,7 +230,7 @@ As of GitHub's `windows-2022` image version `20260607.193.1`, the hosted runner 
 - Chocolatey `2.7.2`
 - VSWhere `3.1.7`
 
-GitHub refreshes runner images over time, so treat those versions as the current baseline rather than a permanent contract. The workflow includes tool-version logging steps to make image changes visible in CI logs. Formatting intentionally uses the workflow-installed LLVM `19.1.5` `clang-format` instead of the runner image's default formatter, because clang-format output can change between LLVM releases.
+GitHub refreshes runner images over time, so treat those versions as the current baseline rather than a permanent contract. The workflow includes tool-version logging steps to make image changes visible in CI logs. Formatting intentionally puts Visual Studio's bundled LLVM tools ahead of the runner image's default LLVM tools, because clang-format output can change between LLVM releases.
 
 Each Windows CI job maps the checkout to `S:\` with `subst` and runs build commands from that drive. This keeps CMake's source and build paths short enough for ITK's Windows path-length checks on GitHub-hosted runners.
 

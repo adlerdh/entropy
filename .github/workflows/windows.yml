@@ -49,11 +49,17 @@ jobs:
         working-directory: 'S:\'
         run: python -m pip install pre-commit
 
-      - name: Install pinned clang-format
+      - name: Use Visual Studio clang-format
         working-directory: 'S:\'
         run: |
-          choco install llvm --version=19.1.5 -y --no-progress --allow-downgrade
-          $llvmPath = "C:\Program Files\LLVM\bin"
+          $vsPath = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Llvm.Clang -property installationPath
+          if (-not $vsPath) {
+            throw "Visual Studio LLVM tools were not found"
+          }
+          $llvmPath = Join-Path $vsPath "VC\Tools\Llvm\x64\bin"
+          if (-not (Test-Path (Join-Path $llvmPath "clang-format.exe"))) {
+            throw "clang-format.exe was not found in $llvmPath"
+          }
           $env:Path = "$llvmPath;$env:Path"
           $llvmPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
