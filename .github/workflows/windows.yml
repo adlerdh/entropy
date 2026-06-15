@@ -35,13 +35,13 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
@@ -82,7 +82,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
@@ -95,7 +95,7 @@ jobs:
           vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 
       - name: Restore Debug SuperBuild cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             build-debug/catch2-*
@@ -146,7 +146,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
@@ -163,7 +163,7 @@ jobs:
           doxygen --version
 
       - name: Restore Coverage SuperBuild cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             build-coverage/catch2-*
@@ -225,14 +225,14 @@ jobs:
         run: cmake --build --preset coverage-html --parallel
 
       - name: Upload coverage XML
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-coverage-xml
           path: coverage-artifacts/opencppcoverage.xml
           if-no-files-found: error
 
       - name: Upload coverage HTML
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-coverage-html
           path: build-coverage/coverage/html/
@@ -246,7 +246,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
@@ -261,7 +261,7 @@ jobs:
           Get-Command light.exe -ErrorAction Stop
 
       - name: Restore Release SuperBuild cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             build-release/catch2-*
@@ -315,7 +315,7 @@ jobs:
           & .\build-release\windows-package-install\entropy.exe --help
 
       - name: Upload Windows packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-packages
           path: |
