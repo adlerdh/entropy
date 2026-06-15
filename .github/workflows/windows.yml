@@ -37,15 +37,20 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Map short workspace path
+        run: 'subst S: "$env:GITHUB_WORKSPACE"'
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
       - name: Install pre-commit
+        working-directory: 'S:\'
         run: python -m pip install pre-commit
 
       - name: Install pinned clang-format
+        working-directory: 'S:\'
         run: |
           choco install llvm --version=19.1.5 -y --no-progress --allow-downgrade
           $llvmPath = "C:\Program Files\LLVM\bin"
@@ -53,12 +58,15 @@ jobs:
           $llvmPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Validate formatting tools
+        working-directory: 'S:\'
         run: clang-format --version
 
       - name: Run pre-commit checks
+        working-directory: 'S:\'
         run: pre-commit run --all-files --show-diff-on-failure
 
       - name: Require clean formatting result
+        working-directory: 'S:\'
         run: git diff --exit-code
 
   debug:
@@ -70,7 +78,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Map short workspace path
+        run: 'subst S: "$env:GITHUB_WORKSPACE"'
+
       - name: Validate runner tools
+        working-directory: 'S:\'
         run: |
           cmake --version
           git --version
@@ -101,18 +113,23 @@ jobs:
             windows-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Debug SuperBuild
+        working-directory: 'S:\'
         run: cmake --preset superbuild-debug
 
       - name: Build Debug SuperBuild
+        working-directory: 'S:\'
         run: cmake --build --preset superbuild-debug --parallel
 
       - name: Configure Debug app
+        working-directory: 'S:\'
         run: cmake --preset app-debug
 
       - name: Build Debug app
+        working-directory: 'S:\'
         run: cmake --build --preset app-debug --parallel
 
       - name: Run Debug tests
+        working-directory: 'S:\'
         run: ctest --test-dir build-debug -C Debug --parallel --output-on-failure
 
   coverage:
@@ -125,7 +142,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Map short workspace path
+        run: 'subst S: "$env:GITHUB_WORKSPACE"'
+
       - name: Install coverage and docs tools
+        working-directory: 'S:\'
         run: |
           winget install --id OpenCppCoverage.OpenCppCoverage -e --accept-package-agreements --accept-source-agreements --disable-interactivity
           choco install doxygen.install -y --no-progress
@@ -160,21 +181,27 @@ jobs:
             windows-msvc2022-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Coverage SuperBuild
+        working-directory: 'S:\'
         run: cmake --preset superbuild-coverage
 
       - name: Build Coverage SuperBuild
+        working-directory: 'S:\'
         run: cmake --build --preset superbuild-coverage --parallel
 
       - name: Configure Coverage app
+        working-directory: 'S:\'
         run: cmake --preset app-coverage
 
       - name: Build Coverage app
+        working-directory: 'S:\'
         run: cmake --build --preset app-coverage --parallel
 
       - name: Generate XML coverage
+        working-directory: 'S:\'
         run: cmake --build --preset coverage --parallel
 
       - name: Summarize XML coverage
+        working-directory: 'S:\'
         run: |
           New-Item -ItemType Directory -Force coverage-artifacts | Out-Null
           Copy-Item build-coverage\coverage\opencppcoverage.xml coverage-artifacts\opencppcoverage.xml -Force
@@ -188,6 +215,7 @@ jobs:
           "Line coverage: $percent% ($linesCovered / $linesValid)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
       - name: Generate HTML coverage
+        working-directory: 'S:\'
         run: cmake --build --preset coverage-html --parallel
 
       - name: Upload coverage XML
@@ -214,7 +242,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Map short workspace path
+        run: 'subst S: "$env:GITHUB_WORKSPACE"'
+
       - name: Validate runner tools
+        working-directory: 'S:\'
         run: |
           cmake --version
           git --version
@@ -247,24 +279,31 @@ jobs:
             windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Release SuperBuild
+        working-directory: 'S:\'
         run: cmake --preset superbuild-release
 
       - name: Build Release SuperBuild
+        working-directory: 'S:\'
         run: cmake --build --preset superbuild-release --parallel
 
       - name: Configure Release app
+        working-directory: 'S:\'
         run: cmake --preset app-release
 
       - name: Build Release app
+        working-directory: 'S:\'
         run: cmake --build --preset app-release --parallel
 
       - name: Run Release tests
+        working-directory: 'S:\'
         run: ctest --test-dir build-release -C Release --parallel --output-on-failure
 
       - name: Build MSI and portable ZIP
+        working-directory: 'S:\'
         run: cmake --build --preset package-release --parallel
 
       - name: Smoke-test staged install
+        working-directory: 'S:\'
         run: |
           cmake --install build-release --config Release --prefix build-release\windows-package-install
           & .\build-release\windows-package-install\entropy.exe --help

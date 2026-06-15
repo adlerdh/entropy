@@ -232,6 +232,8 @@ As of GitHub's `windows-2022` image version `20260607.193.1`, the hosted runner 
 
 GitHub refreshes runner images over time, so treat those versions as the current baseline rather than a permanent contract. The workflow includes tool-version logging steps to make image changes visible in CI logs. Formatting intentionally uses the workflow-installed LLVM `19.1.5` `clang-format` instead of the runner image's default formatter, because clang-format output can change between LLVM releases.
 
+Each Windows CI job maps the checkout to `S:\` with `subst` and runs build commands from that drive. This keeps CMake's source and build paths short enough for ITK's Windows path-length checks on GitHub-hosted runners.
+
 The trigger policy keeps routine CI useful without spending Windows runner minutes on every expensive release task:
 
 - Pull requests and pushes to `main` run formatting checks plus the Debug SuperBuild, Debug app build, and Debug unit tests.
