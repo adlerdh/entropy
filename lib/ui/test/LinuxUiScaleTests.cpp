@@ -1,4 +1,4 @@
-#include "windowing/LinuxUiScale.h"
+#include "ui/LinuxUiScale.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -6,9 +6,9 @@
 #include <filesystem>
 #include <fstream>
 
-namespace linux_ui_scale = entropy::windowing::linux_ui_scale;
+namespace linux_ui_scale = entropy::ui::linux_ui_scale;
 
-TEST_CASE("GNOME monitor scale parser returns primary logical monitor scale", "[ui][scale][windowing]")
+TEST_CASE("GNOME monitor scale parser returns primary logical monitor scale", "[ui][scale]")
 {
   constexpr const char* xml = R"(<monitors version="2">
   <configuration>
@@ -33,7 +33,7 @@ TEST_CASE("GNOME monitor scale parser returns primary logical monitor scale", "[
   REQUIRE(*scale == Catch::Approx(2.0f));
 }
 
-TEST_CASE("GNOME monitor scale parser falls back to first valid logical monitor", "[ui][scale][windowing]")
+TEST_CASE("GNOME monitor scale parser falls back to first valid logical monitor", "[ui][scale]")
 {
   constexpr const char* xml = R"(<monitors version="2">
   <configuration>
@@ -47,7 +47,7 @@ TEST_CASE("GNOME monitor scale parser falls back to first valid logical monitor"
   REQUIRE(*scale == Catch::Approx(1.25f));
 }
 
-TEST_CASE("GNOME monitor scale parser rejects invalid scales", "[ui][scale][windowing]")
+TEST_CASE("GNOME monitor scale parser rejects invalid scales", "[ui][scale]")
 {
   REQUIRE_FALSE(linux_ui_scale::scaleFromMonitorsXml("<monitors />"));
   REQUIRE_FALSE(linux_ui_scale::scaleFromMonitorsXml("<logicalmonitor><scale>0</scale></logicalmonitor>"));
@@ -56,7 +56,7 @@ TEST_CASE("GNOME monitor scale parser rejects invalid scales", "[ui][scale][wind
   REQUIRE_FALSE(linux_ui_scale::scaleFromMonitorsXml("<logicalmonitor><scale>2x</scale></logicalmonitor>"));
 }
 
-TEST_CASE("GNOME monitor scale parser reads monitors XML files", "[ui][scale][windowing]")
+TEST_CASE("GNOME monitor scale parser reads monitors XML files", "[ui][scale]")
 {
   const std::filesystem::path path =
     std::filesystem::temp_directory_path() / "entropy-linux-ui-scale-test-monitors.xml";

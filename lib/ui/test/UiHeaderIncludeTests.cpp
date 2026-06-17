@@ -1,3 +1,4 @@
+#include "ui/LinuxUiScale.h"
 #include "ui/headers/Headers.h"
 #include "ui/popups/Popups.h"
 #include "ui/toolbars/Toolbars.h"

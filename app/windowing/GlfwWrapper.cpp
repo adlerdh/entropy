@@ -2,8 +2,8 @@
 
 #include "EntropyApp.h"
 #include "common/Exception.hpp"
+#include "ui/LinuxUiScale.h"
 #include "windowing/GlfwCallbacks.h"
-#include "windowing/LinuxUiScale.h"
 #if defined(__linux__)
 #include "windowing/EntropyIcon.h"
 #endif
@@ -572,7 +572,7 @@ void GlfwWrapper::syncContentScale()
   std::optional<float> desktopScale;
 #if defined(__linux__)
   // GNOME Display Settings can update monitors.xml even when GLFW scale values stay stale.
-  desktopScale = entropy::windowing::linux_ui_scale::primaryMonitorScale();
+  desktopScale = entropy::ui::linux_ui_scale::primaryMonitorScale();
 #endif
 
   const glm::vec2 scale = resolvePolledContentScale(

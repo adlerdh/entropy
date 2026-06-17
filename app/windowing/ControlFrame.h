@@ -3,6 +3,8 @@
 #include "common/UuidRange.h"
 
 #include "ui/UiControls.h"
+#include "viewer_types/FrameImageSelection.h"
+#include "viewer_types/FrameViewport.h"
 #include "viewer_types/ViewModes.h"
 #include "viewer_types/ViewTypes.h"
 
@@ -81,15 +83,8 @@ public:
   const UiControls& uiControls() const;
 
 protected:
-  glm::vec4 m_winClipViewport;       //!< Bounds in enclosing-window clip coordinates.
-  glm::mat4 m_windowClip_T_viewClip; //!< View clip to enclosing-window clip transform.
-  glm::mat4 m_viewClip_T_windowClip; //!< Enclosing-window clip to view clip transform.
-
-  std::list<uuids::uuid> m_renderedImageUids; //!< Rendered images, bottom layer first.
-  std::list<uuids::uuid> m_metricImageUids;   //!< Images used by metric/comparison modes.
-
-  std::set<std::size_t> m_preferredDefaultRenderedImages; //!< Default rendered image indices.
-  bool m_defaultRenderAllImages;                          //!< Ignore preferred indices and render all images.
+  viewer_types::FrameViewport m_viewport;             //!< Viewport and clip-space transforms.
+  viewer_types::FrameImageSelection m_imageSelection; //!< Rendered and metric image selections.
 
   ViewType m_viewType;                               //!< View type
   ViewRenderMode m_renderMode;                       //!< Render mode

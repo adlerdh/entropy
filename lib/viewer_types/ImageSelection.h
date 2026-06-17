@@ -9,16 +9,16 @@
 #include <optional>
 #include <set>
 
-namespace windowing
+namespace viewer_types::image_selection
 {
 
 /**
- * @brief Return the rendered image list after applying default-rendering preferences.
+ * @brief Apply default rendered-image preferences to an ordered image list.
  *
  * @param imageUids Image UIDs in application order.
- * @param defaultRenderAllImages If true, return all image UIDs.
- * @param preferredDefaultRenderedImages Zero-based image positions to keep.
- * @return Ordered rendered-image UIDs.
+ * @param defaultRenderAllImages If true, every image is kept.
+ * @param preferredDefaultRenderedImages Zero-based image positions to keep when render-all is false.
+ * @return Ordered image UIDs selected for default rendering.
  */
 std::list<uuids::uuid> filteredDefaultRenderedImages(
   const std::list<uuids::uuid>& imageUids,
@@ -26,11 +26,11 @@ std::list<uuids::uuid> filteredDefaultRenderedImages(
   const std::set<std::size_t>& preferredDefaultRenderedImages);
 
 /**
- * @brief Reorder an existing selected-image list to match `orderedImageUids`.
+ * @brief Reorder a selection to match the current image order.
  *
- * @param selectedImageUids Current selection.
+ * @param selectedImageUids Current selected image UIDs.
  * @param orderedImageUids Image UIDs in application order.
- * @param maxCount Optional maximum output size.
+ * @param maxCount Optional maximum number of selected UIDs to keep.
  * @return Selected UIDs that still exist, in application order.
  */
 std::list<uuids::uuid> reorderSelectedImages(
@@ -38,4 +38,4 @@ std::list<uuids::uuid> reorderSelectedImages(
   uuid_range_t orderedImageUids,
   std::optional<std::size_t> maxCount = std::nullopt);
 
-} // namespace windowing
+} // namespace viewer_types::image_selection

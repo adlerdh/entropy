@@ -1,4 +1,4 @@
-#include "windowing/LinuxUiScale.h"
+#include "ui/LinuxUiScale.h"
 
 #include <cctype>
 #include <cmath>
@@ -7,7 +7,7 @@
 #include <iterator>
 #include <string>
 
-namespace entropy::windowing::linux_ui_scale
+namespace entropy::ui::linux_ui_scale
 {
 namespace
 {
@@ -134,4 +134,4 @@ std::optional<float> primaryMonitorScale()
 {
   return scaleFromMonitorsXmlFile(defaultMonitorsXmlPath());
 }
-} // namespace entropy::windowing::linux_ui_scale
+} // namespace entropy::ui::linux_ui_scale

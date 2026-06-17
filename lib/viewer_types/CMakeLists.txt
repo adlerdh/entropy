@@ -2,6 +2,10 @@ add_library(EntropyViewerTypes STATIC)
 add_library(Entropy::ViewerTypes ALIAS EntropyViewerTypes)
 
 target_sources(EntropyViewerTypes PRIVATE
+  CameraSyncGroups.cpp
+  FrameImageSelection.cpp
+  FrameViewport.cpp
+  ImageSelection.cpp
   ViewModes.cpp
   ViewTypes.cpp
 )
@@ -13,6 +17,7 @@ target_include_directories(EntropyViewerTypes
 
 target_link_libraries(EntropyViewerTypes
   PUBLIC
+    Entropy::Common
     entropy_logging_level
   PRIVATE
     entropy_warnings

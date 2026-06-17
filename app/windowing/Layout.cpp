@@ -20,11 +20,11 @@ Layout::Layout(bool isLightbox)
   , m_uid(generateRandomUuid())
   , m_isLightbox(isLightbox)
   , m_views()
-  , m_cameraSyncGroups{{CameraSyncMode::Rotation, {}}, {CameraSyncMode::Translation, {}}, {CameraSyncMode::Zoom, {}}}
+  , m_cameraSyncGroups()
 {
   // Render the first image by default (and do not render all images):
-  m_preferredDefaultRenderedImages = {0};
-  m_defaultRenderAllImages = false;
+  setPreferredDefaultRenderedImages({0});
+  setDefaultRenderAllImages(false);
 }
 
 Layout::Layout(Layout&& other) noexcept
@@ -105,8 +105,8 @@ void Layout::updateAllViewsInLayout()
 {
   for (auto& [viewUid, view] : m_views) {
     if (view) {
-      view->setRenderedImages(m_renderedImageUids, false);
-      view->setMetricImages(m_metricImageUids);
+      view->setRenderedImages(renderedImages(), false);
+      view->setMetricImages(metricImages());
       view->setViewType(m_viewType);
       view->setRenderMode(m_renderMode);
       view->setIntensityProjectionMode(m_intensityProjectionMode);
@@ -185,42 +185,25 @@ std::vector<const View*> Layout::orderedViews() const
 
 uuid Layout::addCameraSyncGroup(CameraSyncMode mode)
 {
-  uuid newUid = generateRandomUuid();
-  while (!m_cameraSyncGroups.at(mode).try_emplace(newUid).second) {
-    newUid = generateRandomUuid();
-  }
-  return newUid;
+  return m_cameraSyncGroups.addGroup(mode);
 }
 
 const std::list<uuid>* Layout::getCameraSyncGroup(CameraSyncMode mode, const uuid& groupUid) const
 {
-  auto it = m_cameraSyncGroups.at(mode).find(groupUid);
-  return it != m_cameraSyncGroups.at(mode).end() ? &it->second : nullptr;
+  return m_cameraSyncGroups.group(mode, groupUid);
 }
 
 std::list<uuid>* Layout::getCameraSyncGroup(CameraSyncMode mode, const uuid& groupUid)
 {
-  auto it = m_cameraSyncGroups.at(mode).find(groupUid);
-  return it != m_cameraSyncGroups.at(mode).end() ? &it->second : nullptr;
+  return m_cameraSyncGroups.group(mode, groupUid);
 }
 
 std::optional<uuid> Layout::cameraSyncGroupUidContainingView(CameraSyncMode mode, const uuid& viewUid) const
 {
-  for (const auto& [groupUid, viewUids] : m_cameraSyncGroups.at(mode)) {
-    if (std::find(viewUids.begin(), viewUids.end(), viewUid) != viewUids.end()) {
-      return groupUid;
-    }
-  }
-  return std::nullopt;
+  return m_cameraSyncGroups.groupUidContainingView(mode, viewUid);
 }
 
 void Layout::addViewToCameraSyncGroup(CameraSyncMode mode, const std::optional<uuid>& groupUid, const uuid& viewUid)
 {
-  if (!groupUid) {
-    return;
-  }
-
-  if (auto* group = getCameraSyncGroup(mode, *groupUid)) {
-    group->push_back(viewUid);
-  }
+  m_cameraSyncGroups.addViewToGroup(mode, groupUid, viewUid);
 }

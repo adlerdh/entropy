@@ -1,4 +1,8 @@
 add_executable(EntropyViewerTypesTests
+  CameraSyncGroupsTests.cpp
+  FrameImageSelectionTests.cpp
+  FrameViewportTests.cpp
+  ImageSelectionTests.cpp
   LayoutTypesTests.cpp
   ViewModesTests.cpp
   ViewTypesTests.cpp

@@ -1,14 +1,7 @@
 add_executable(EntropyWindowingTests
-  ImageSelectionTests.cpp
   LayoutFileSerializationTests.cpp
   LayoutSpecJsonTests.cpp
-  LinuxUiScaleTests.cpp
   WindowingHeaderIncludeTests.cpp
-)
-
-target_sources(EntropyWindowingTests PRIVATE
-  "${entropy_APP_DIR}/windowing/ImageSelection.cpp"
-  "${entropy_APP_DIR}/windowing/LinuxUiScale.cpp"
 )
 
 target_link_libraries(EntropyWindowingTests PRIVATE

@@ -1005,18 +1005,6 @@ glm::vec2 worldPixelSize(const Viewport& windowVP, const Camera& camera, const g
   return glm::vec2{glm::length(worldX - worldO), glm::length(worldY - worldO)};
 }
 
-glm::mat4 compute_windowClip_T_viewClip(const glm::vec4& windowClipViewport)
-{
-  const glm::vec3 T{
-    windowClipViewport[0] + 0.5f * windowClipViewport[2],
-    windowClipViewport[1] + 0.5f * windowClipViewport[3],
-    0.0f};
-
-  const glm::vec3 S{0.5f * windowClipViewport[2], 0.5f * windowClipViewport[3], 1.0f};
-
-  return glm::translate(T) * glm::scale(S);
-}
-
 glm::quat computeCameraRotationRelativeToWorld(const Camera& camera)
 {
   const glm::vec3 cameraX = cameraDirectionOfWorld(camera, Directions::Cartesian::PosX);

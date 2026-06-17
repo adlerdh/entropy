@@ -1,8 +1,8 @@
-#include "windowing/ImageSelection.h"
+#include "viewer_types/ImageSelection.h"
 
 #include <algorithm>
 
-namespace windowing
+namespace viewer_types::image_selection
 {
 
 std::list<uuids::uuid> filteredDefaultRenderedImages(
@@ -47,4 +47,4 @@ std::list<uuids::uuid> reorderSelectedImages(
   return reorderedImageUids;
 }
 
-} // namespace windowing
+} // namespace viewer_types::image_selection

@@ -363,15 +363,6 @@ glm::vec3 world_T_miewport(
 
 glm::vec2 worldPixelSize(const Viewport& windowVP, const Camera& camera, const glm::mat4& viewClip_T_windowClip);
 
-/**
- * @brief Compute the matrix transformation between view Clip space and Clip space of the
- * view's enclosing window.
- * @note This matrix does not transform the z coordinate.
- * @param clipVP The view's viewport, defined in Clip coordinates of its enclosing Window
- * @return Transformation
- */
-glm::mat4 compute_windowClip_T_viewClip(const glm::vec4& winClipVP);
-
 glm::quat computeCameraRotationRelativeToWorld(const Camera& camera);
 
 /**

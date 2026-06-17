@@ -13,6 +13,7 @@ set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/headers/IsosurfaceHeader.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiCustomControls.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiWrapper.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/LinuxUiScale.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/menus/MainMenuBar.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/NativeFileDialogs.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/popups/AboutPopup.cpp"

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "viewer_types/CameraSyncGroups.h"
 #include "viewer_types/LayoutTypes.h"
 #include "windowing/ControlFrame.h"
 #include "windowing/View.h"
@@ -123,6 +124,5 @@ private:
   std::unordered_map<uuid, std::unique_ptr<View>> m_views; //!< Views keyed by UID.
   std::vector<uuid> m_orderedViewUids;                     //!< View UIDs in display order.
 
-  using SyncGroupToViews = std::unordered_map<uuid, std::list<uuid>>;
-  std::unordered_map<CameraSyncMode, SyncGroupToViews> m_cameraSyncGroups; //!< Camera sync groups by mode.
+  viewer_types::CameraSyncGroups m_cameraSyncGroups; //!< Camera sync groups by mode.
 };

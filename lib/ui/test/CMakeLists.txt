@@ -1,4 +1,5 @@
 add_executable(EntropyUiTests
+  LinuxUiScaleTests.cpp
   NativeMessageDialogModelTests.cpp
   OpacityMixerModelTests.cpp
   SettingsModelTests.cpp
@@ -11,6 +12,7 @@ add_executable(EntropyUiTests
 
 target_sources(EntropyUiTests PRIVATE
   "${entropy_UI_DIR}/dialogs/NativeMessageDialogModel.cpp"
+  "${entropy_UI_DIR}/LinuxUiScale.cpp"
   "${entropy_UI_DIR}/Style.cpp"
   "${entropy_UI_DIR}/settings/SettingsModel.cpp"
   "${entropy_UI_DIR}/UiScaleManager.cpp"

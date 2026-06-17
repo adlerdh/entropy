@@ -536,8 +536,6 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/ControlFrame.cpp"
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
   "${entropy_APP_DIR}/windowing/GlfwWrapper.cpp"
-  "${entropy_APP_DIR}/windowing/ImageSelection.cpp"
-  "${entropy_APP_DIR}/windowing/LinuxUiScale.cpp"
   "${entropy_APP_DIR}/windowing/Layout.cpp"
   "${entropy_APP_DIR}/windowing/LayoutSerialization.cpp"
   "${entropy_APP_DIR}/windowing/View.cpp"
