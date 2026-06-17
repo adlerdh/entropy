@@ -1,7 +1,7 @@
 #include "layout/LayoutSpecJson.h"
 
-#include "viewer_types/ViewModes.h"
-#include "viewer_types/ViewTypes.h"
+#include "viewer/ViewModes.h"
+#include "viewer/ViewTypes.h"
 
 #include <nlohmann/json.hpp>
 

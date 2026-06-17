@@ -1,6 +1,4 @@
 add_executable(EntropyWindowingTests
-  LayoutFileSerializationTests.cpp
-  LayoutSpecJsonTests.cpp
   WindowingHeaderIncludeTests.cpp
 )
 
@@ -8,7 +6,7 @@ target_link_libraries(EntropyWindowingTests PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
   Entropy::Layout
-  Entropy::ViewerTypes
+  Entropy::Viewer
   nlohmann_json::nlohmann_json
   spdlog::spdlog
   entropy_warnings

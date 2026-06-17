@@ -3,10 +3,10 @@
 #include "common/UuidRange.h"
 
 #include "ui/UiControls.h"
-#include "viewer_types/FrameImageSelection.h"
-#include "viewer_types/FrameViewport.h"
-#include "viewer_types/ViewModes.h"
-#include "viewer_types/ViewTypes.h"
+#include "viewer/FrameImageSelection.h"
+#include "viewer/FrameViewport.h"
+#include "viewer/ViewModes.h"
+#include "viewer/ViewTypes.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -83,8 +83,8 @@ public:
   const UiControls& uiControls() const;
 
 protected:
-  viewer_types::FrameViewport m_viewport;             //!< Viewport and clip-space transforms.
-  viewer_types::FrameImageSelection m_imageSelection; //!< Rendered and metric image selections.
+  viewer::FrameViewport m_viewport;             //!< Viewport and clip-space transforms.
+  viewer::FrameImageSelection m_imageSelection; //!< Rendered and metric image selections.
 
   ViewType m_viewType;                               //!< View type
   ViewRenderMode m_renderMode;                       //!< Render mode

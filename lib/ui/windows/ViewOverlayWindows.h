@@ -3,8 +3,8 @@
 #include "common/CoordinateFrame.h"
 #include "common/Types.h"
 #include "ui/UiControls.h"
-#include "viewer_types/ViewModes.h"
-#include "viewer_types/ViewTypes.h"
+#include "viewer/ViewModes.h"
+#include "viewer/ViewTypes.h"
 
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec2.hpp>

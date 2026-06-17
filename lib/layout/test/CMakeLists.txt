@@ -1,7 +1,11 @@
 add_executable(EntropyLayoutTests
+  ImageIndexMappingTests.cpp
+  LayoutKindInfoTests.cpp
+  LayoutPresetInfoTests.cpp
   LayoutHeaderIncludeTests.cpp
   LayoutFileSerializationTests.cpp
   LayoutSpecJsonTests.cpp
+  SyncGroupIndexMapTests.cpp
 )
 
 target_link_libraries(EntropyLayoutTests PRIVATE

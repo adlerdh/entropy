@@ -1,6 +1,6 @@
 #pragma once
 
-#include "viewer_types/ViewModes.h"
+#include "viewer/ViewModes.h"
 
 #include <cstddef>
 #include <string>

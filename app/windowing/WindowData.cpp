@@ -8,8 +8,11 @@
 #include "logic/app/DataHelper.h"
 #include "logic/camera/MathUtility.h"
 
-#include "viewer_types/ViewModes.h"
-#include "viewer_types/ViewTypes.h"
+#include "layout/LayoutKindInfo.h"
+#include "layout/LayoutPresetInfo.h"
+#include "viewer/FrameHitGeometry.h"
+#include "viewer/ViewModes.h"
+#include "viewer/ViewTypes.h"
 #include "windowing/LayoutSerialization.h"
 
 #include <glm/glm.hpp>
@@ -93,29 +96,6 @@ private:
 
 using CameraSnapshotIndex = std::unordered_map<CameraSnapshotKey, std::size_t, CameraSnapshotKeyHash>;
 
-bool isLightboxLayoutKind(LayoutKind kind)
-{
-  switch (kind) {
-    case LayoutKind::AxialLightbox:
-    case LayoutKind::CoronalLightbox:
-    case LayoutKind::SagittalLightbox:
-      return true;
-    case LayoutKind::Custom:
-    case LayoutKind::FourUp:
-    case LayoutKind::Tri:
-    case LayoutKind::SingleAxial:
-    case LayoutKind::SingleCoronal:
-    case LayoutKind::SingleSagittal:
-    case LayoutKind::MultiImageAxialGrid:
-    case LayoutKind::MultiImageCoronalGrid:
-    case LayoutKind::MultiImageSagittalGrid:
-    case LayoutKind::AxCorSagByImage:
-    case LayoutKind::NumElements:
-      return false;
-  }
-  return false;
-}
-
 std::optional<uuid> firstImageUid(const std::list<uuid>& imageUids)
 {
   if (imageUids.empty()) {
@@ -173,7 +153,7 @@ CameraSnapshotKey cameraSnapshotKey(const Layout& layout, const View& view, std:
 
 CameraSnapshotKey cameraSnapshotKey(const ViewCameraSnapshot& snapshot)
 {
-  const bool isLightbox = isLightboxLayoutKind(snapshot.m_layoutKind);
+  const bool isLightbox = layout::isLightboxLayoutKind(snapshot.m_layoutKind);
   return cameraSnapshotKey(
     snapshot.m_layoutKind,
     isLightbox,
@@ -629,62 +609,6 @@ Layout createGridLayout(
   return layout;
 }
 
-LayoutKind lightboxKindForViewType(const ViewType& viewType)
-{
-  switch (viewType) {
-    case ViewType::Axial:
-      return LayoutKind::AxialLightbox;
-    case ViewType::Coronal:
-      return LayoutKind::CoronalLightbox;
-    case ViewType::Sagittal:
-      return LayoutKind::SagittalLightbox;
-    case ViewType::Oblique:
-    case ViewType::ThreeD:
-    case ViewType::NumElements:
-      return LayoutKind::Custom;
-  }
-  return LayoutKind::Custom;
-}
-
-std::string layoutPresetViewName(ViewType viewType)
-{
-  switch (viewType) {
-    case ViewType::Axial:
-      return "axial";
-    case ViewType::Coronal:
-      return "coronal";
-    case ViewType::Sagittal:
-      return "sagittal";
-    case ViewType::Oblique:
-      return "oblique";
-    case ViewType::ThreeD:
-      return "ThreeD";
-    case ViewType::NumElements:
-      break;
-  }
-  return "axial";
-}
-
-std::optional<ViewType> layoutPresetViewType(const std::string& name)
-{
-  if (name.empty() || "Axial" == name || "axial" == name) {
-    return ViewType::Axial;
-  }
-  if ("Coronal" == name || "coronal" == name) {
-    return ViewType::Coronal;
-  }
-  if ("Sagittal" == name || "sagittal" == name) {
-    return ViewType::Sagittal;
-  }
-  if ("Oblique" == name || "oblique" == name) {
-    return ViewType::Oblique;
-  }
-  if ("ThreeD" == name || "3D" == name || "threeD" == name || "three-d" == name) {
-    return ViewType::ThreeD;
-  }
-  return std::nullopt;
-}
-
 ViewType firstViewType(const Layout& layout, ViewType fallback)
 {
   const std::vector<const View*> views = layout.orderedViews();
@@ -718,14 +642,9 @@ std::vector<std::size_t> imageIndicesInOrder(uuid_range_t orderedImageUids, cons
   return imageIndices;
 }
 
-std::vector<std::size_t> presetImageIndicesOrDefault(const layout::LayoutPreset& preset)
-{
-  return preset.m_imageIndices.empty() ? std::vector<std::size_t>{0} : preset.m_imageIndices;
-}
-
 std::optional<uuid> presetImageUid(const AppData& appData, const layout::LayoutPreset& preset)
 {
-  const auto imageIndices = presetImageIndicesOrDefault(preset);
+  const auto imageIndices = layout::presetImageIndicesOrDefault(preset);
   return appData.imageUid(imageIndices.front());
 }
 
@@ -770,7 +689,7 @@ std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uui
     case LayoutKind::SingleSagittal:
       return layout::LayoutPreset{
         .m_type = "single",
-        .m_view = layoutPresetViewName(firstViewType(layout, layout.viewType())),
+        .m_view = std::string{layout::layoutPresetViewName(firstViewType(layout, layout.viewType()))},
         .m_images = {},
         .m_imageIndices = imageIndicesInOrder(
           orderedImageUids,
@@ -780,7 +699,7 @@ std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uui
     case LayoutKind::MultiImageSagittalGrid:
       return layout::LayoutPreset{
         .m_type = "multiImageGrid",
-        .m_view = layoutPresetViewName(firstViewType(layout, layout.viewType())),
+        .m_view = std::string{layout::layoutPresetViewName(firstViewType(layout, layout.viewType()))},
         .m_images = "all",
         .m_imageIndices = {}};
     case LayoutKind::AxCorSagByImage:
@@ -790,7 +709,7 @@ std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uui
     case LayoutKind::SagittalLightbox:
       return layout::LayoutPreset{
         .m_type = "lightbox",
-        .m_view = layoutPresetViewName(firstViewType(layout, layout.viewType())),
+        .m_view = std::string{layout::layoutPresetViewName(firstViewType(layout, layout.viewType()))},
         .m_images = {},
         .m_imageIndices = {imageIndexInOrder(orderedImageUids, layoutImageUid(layout)).value_or(0)}};
     case LayoutKind::Custom:
@@ -815,7 +734,7 @@ std::optional<Layout> instantiateLayoutPreset(
   const ViewAlignmentMode& viewAlignment,
   const ViewConvention& viewConvention)
 {
-  const auto viewType = layoutPresetViewType(preset.m_view);
+  const auto viewType = layout::layoutPresetViewType(preset.m_view);
   if (!viewType) {
     spdlog::warn("Skipping layout preset with unsupported view '{}'", preset.m_view);
     return std::nullopt;
@@ -828,7 +747,7 @@ std::optional<Layout> instantiateLayoutPreset(
     return createTriLayout(crosshairs, viewAlignment, viewConvention);
   }
   if ("single" == preset.m_type) {
-    const auto imageIndices = presetImageIndicesOrDefault(preset);
+    const auto imageIndices = layout::presetImageIndicesOrDefault(preset);
     Layout layout = createGridLayout(
       *viewType,
       1,
@@ -858,7 +777,7 @@ std::optional<Layout> instantiateLayoutPreset(
   }
   if ("multiImageGrid" == preset.m_type) {
     const auto imageIndices =
-      ("all" == preset.m_images) ? std::vector<std::size_t>{} : presetImageIndicesOrDefault(preset);
+      ("all" == preset.m_images) ? std::vector<std::size_t>{} : layout::presetImageIndicesOrDefault(preset);
     const std::size_t width = imageIndices.empty() ? appData.numImages() : imageIndices.size();
     if (0 == width) {
       return std::nullopt;
@@ -894,7 +813,7 @@ std::optional<Layout> instantiateLayoutPreset(
   }
   if ("orthogonalByImage" == preset.m_type) {
     const auto imageIndices =
-      ("all" == preset.m_images) ? std::vector<std::size_t>{} : presetImageIndicesOrDefault(preset);
+      ("all" == preset.m_images) ? std::vector<std::size_t>{} : layout::presetImageIndicesOrDefault(preset);
     const std::size_t numRows = imageIndices.empty() ? appData.numImages() : imageIndices.size();
     if (0 == numRows) {
       return std::nullopt;
@@ -914,7 +833,7 @@ std::optional<Layout> instantiateLayoutPreset(
     if (!imageUid) {
       spdlog::warn(
         "Skipping lightbox layout preset for missing image index {}",
-        presetImageIndicesOrDefault(preset).front());
+        layout::presetImageIndicesOrDefault(preset).front());
       return std::nullopt;
     }
     return createLightboxLayoutForImage(appData, crosshairs, viewAlignment, viewConvention, *viewType, *imageUid);
@@ -924,56 +843,10 @@ std::optional<Layout> instantiateLayoutPreset(
   return std::nullopt;
 }
 
-bool isImageDependentManagedLayout(LayoutKind kind)
-{
-  switch (kind) {
-    case LayoutKind::SingleCoronal:
-    case LayoutKind::SingleSagittal:
-    case LayoutKind::MultiImageAxialGrid:
-    case LayoutKind::MultiImageCoronalGrid:
-    case LayoutKind::MultiImageSagittalGrid:
-    case LayoutKind::AxCorSagByImage:
-    case LayoutKind::AxialLightbox:
-    case LayoutKind::CoronalLightbox:
-    case LayoutKind::SagittalLightbox:
-      return true;
-    case LayoutKind::Custom:
-    case LayoutKind::FourUp:
-    case LayoutKind::Tri:
-    case LayoutKind::SingleAxial:
-    case LayoutKind::NumElements:
-      return false;
-  }
-  return false;
-}
-
-bool isFixedManagedLayout(LayoutKind kind)
-{
-  switch (kind) {
-    case LayoutKind::FourUp:
-    case LayoutKind::Tri:
-    case LayoutKind::SingleAxial:
-      return true;
-    case LayoutKind::Custom:
-    case LayoutKind::SingleCoronal:
-    case LayoutKind::SingleSagittal:
-    case LayoutKind::MultiImageAxialGrid:
-    case LayoutKind::MultiImageCoronalGrid:
-    case LayoutKind::MultiImageSagittalGrid:
-    case LayoutKind::AxCorSagByImage:
-    case LayoutKind::AxialLightbox:
-    case LayoutKind::CoronalLightbox:
-    case LayoutKind::SagittalLightbox:
-    case LayoutKind::NumElements:
-      return false;
-  }
-  return false;
-}
-
 std::size_t imageDependentLayoutInsertIndex(const std::vector<Layout>& layouts)
 {
   std::size_t index = 0;
-  while (index < layouts.size() && isFixedManagedLayout(layouts.at(index).kind())) {
+  while (index < layouts.size() && layout::isFixedManagedLayoutKind(layouts.at(index).kind())) {
     ++index;
   }
   return index;
@@ -1035,7 +908,7 @@ std::optional<Layout> createLightboxLayoutForImage(
     *imageIndex,
     imageUid,
     std::nullopt);
-  layout.setKind(lightboxKindForViewType(viewType));
+  layout.setKind(layout::lightboxLayoutKindForViewType(viewType));
   return std::optional<Layout>{std::move(layout)};
 }
 
@@ -1044,7 +917,7 @@ std::vector<ViewCameraSnapshot> createManagedLayoutCameraSnapshots(const std::ve
   std::vector<ViewCameraSnapshot> snapshots;
 
   for (const auto& layout : layouts) {
-    if (!isImageDependentManagedLayout(layout.kind())) {
+    if (!layout::isImageDependentManagedLayoutKind(layout.kind())) {
       continue;
     }
 
@@ -1177,7 +1050,7 @@ CameraRestoreSummary restoreManagedLayoutCameraSnapshots(
   CameraRestoreSummary summary;
 
   for (auto& layout : layouts) {
-    if (!isImageDependentManagedLayout(layout.kind())) {
+    if (!layout::isImageDependentManagedLayoutKind(layout.kind())) {
       continue;
     }
 
@@ -1211,7 +1084,7 @@ void initializeUnmatchedManagedLayoutCameras(
   const glm::vec3& worldFov)
 {
   for (auto& layout : layouts) {
-    if (!isImageDependentManagedLayout(layout.kind())) {
+    if (!layout::isImageDependentManagedLayoutKind(layout.kind())) {
       continue;
     }
 
@@ -1326,7 +1199,7 @@ void WindowData::addLightboxLayoutForImage(
     k_isLightbox,
     imageIndex,
     imageUid);
-  m_layouts.back().setKind(lightboxKindForViewType(viewType));
+  m_layouts.back().setKind(layout::lightboxLayoutKindForViewType(viewType));
 }
 
 void WindowData::addAxCorSagLayout(std::size_t numImages)
@@ -1370,7 +1243,7 @@ void WindowData::reconcileImageDependentLayouts(const AppData& appData)
     std::remove_if(
       m_layouts.begin(),
       m_layouts.end(),
-      [](const Layout& layout) { return isImageDependentManagedLayout(layout.kind()); }),
+      [](const Layout& layout) { return layout::isImageDependentManagedLayoutKind(layout.kind()); }),
     m_layouts.end());
 
   std::vector<Layout> generatedLayouts;
@@ -1862,30 +1735,24 @@ std::optional<uuid> WindowData::currentViewUidAtCursor(const glm::vec2& windowPo
     return std::nullopt;
   }
 
-  const glm::vec2 winClipPos = helper::windowNdc_T_window(m_viewport, windowPos);
-
   if (m_currentLayout >= m_layouts.size()) {
     return std::nullopt;
   }
 
   const auto& layout = m_layouts.at(m_currentLayout);
+  std::vector<viewer::FrameHitTarget> frames;
+  frames.reserve(layout.orderedViewUids().size());
+
   for (const auto& viewUid : layout.orderedViewUids()) {
     const auto viewIt = layout.views().find(viewUid);
     if (viewIt == layout.views().end() || !viewIt->second) {
       continue;
     }
 
-    const glm::vec4& winClipVp = viewIt->second->windowClipViewport();
-
-    if (
-      (winClipVp[0] <= winClipPos.x) && (winClipPos.x < winClipVp[0] + winClipVp[2]) &&
-      (winClipVp[1] <= winClipPos.y) && (winClipPos.y < winClipVp[1] + winClipVp[3]))
-    {
-      return viewUid;
-    }
+    frames.push_back({.m_uid = viewUid, .m_windowClipViewport = viewIt->second->windowClipViewport()});
   }
 
-  return std::nullopt;
+  return viewer::findFrameAtWindowPosition(m_viewport, windowPos, frames);
 }
 
 std::optional<uuid> WindowData::activeViewUid() const
@@ -1915,37 +1782,7 @@ std::string WindowData::layoutDisplayName(std::size_t index) const
   }
 
   const Layout& layout = m_layouts.at(index);
-  switch (layout.kind()) {
-    case LayoutKind::FourUp:
-      return "Four up";
-    case LayoutKind::Tri:
-      return "Tri";
-    case LayoutKind::SingleAxial:
-      return "Single axial";
-    case LayoutKind::SingleCoronal:
-      return "Single coronal";
-    case LayoutKind::SingleSagittal:
-      return "Single sagittal";
-    case LayoutKind::MultiImageAxialGrid:
-      return "Multi-image axial grid";
-    case LayoutKind::MultiImageCoronalGrid:
-      return "Multi-image coronal grid";
-    case LayoutKind::MultiImageSagittalGrid:
-      return "Multi-image sagittal grid";
-    case LayoutKind::AxCorSagByImage:
-      return "Axial/coronal/sagittal by image";
-    case LayoutKind::AxialLightbox:
-      return "Axial lightbox";
-    case LayoutKind::CoronalLightbox:
-      return "Coronal lightbox";
-    case LayoutKind::SagittalLightbox:
-      return "Sagittal lightbox";
-    case LayoutKind::Custom:
-      return layout.isLightbox() ? "Custom lightbox" : "Custom";
-    case LayoutKind::NumElements:
-      break;
-  }
-  return "Layout";
+  return std::string{layout::layoutDisplayName(layout.kind(), layout.isLightbox())};
 }
 
 std::size_t WindowData::currentLayoutIndex() const
@@ -2196,22 +2033,24 @@ uuid WindowData::findLargestCurrentView() const
     throw_debug("The current layout has no views")
   }
 
-  float largestArea = largestView->windowClipViewport()[2] * largestView->windowClipViewport()[3];
+  std::vector<viewer::FrameHitTarget> frames;
+  frames.reserve(viewUids.size());
+  frames.push_back({.m_uid = largestViewUid, .m_windowClipViewport = largestView->windowClipViewport()});
 
-  for (auto& viewUid : currentViewUids()) {
+  for (auto& viewUid : viewUids) {
+    if (viewUid == largestViewUid) {
+      continue;
+    }
+
     const View* view = getCurrentView(viewUid);
     if (!view) {
       continue;
     }
 
-    const float area = view->windowClipViewport()[2] * view->windowClipViewport()[3];
-    if (area > largestArea) {
-      largestArea = area;
-      largestViewUid = viewUid;
-    }
+    frames.push_back({.m_uid = viewUid, .m_windowClipViewport = view->windowClipViewport()});
   }
 
-  return largestViewUid;
+  return viewer::findLargestFrameByArea(frames).value();
 }
 
 void WindowData::recomputeCameraAspectRatios()

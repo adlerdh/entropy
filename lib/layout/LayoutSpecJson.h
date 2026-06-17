@@ -13,6 +13,7 @@ namespace layout
  * @param selection Image selection to serialize.
  */
 void to_json(nlohmann::json& j, const ImageSelectionSpec& selection);
+
 /**
  * @brief Deserialize an image selection specification from JSON.
  * @param j Input JSON value.
@@ -27,6 +28,7 @@ void from_json(const nlohmann::json& j, ImageSelectionSpec& selection);
  * @param view View specification to serialize.
  */
 void to_json(nlohmann::json& j, const ViewSpec& view);
+
 /**
  * @brief Deserialize one view specification from JSON.
  * @param j Input JSON value.
@@ -41,6 +43,7 @@ void from_json(const nlohmann::json& j, ViewSpec& view);
  * @param layout Layout specification to serialize.
  */
 void to_json(nlohmann::json& j, const LayoutSpec& layout);
+
 /**
  * @brief Deserialize a complete layout specification from JSON.
  * @param j Input JSON value.

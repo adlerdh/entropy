@@ -453,7 +453,7 @@ BuildStamp()
 
 add_subdirectory("${entropy_LIB_DIR}/common")
 add_subdirectory("${entropy_LIB_DIR}/image")
-add_subdirectory("${entropy_LIB_DIR}/viewer_types")
+add_subdirectory("${entropy_LIB_DIR}/viewer")
 add_subdirectory("${entropy_LIB_DIR}/layout")
 
 #--------------------------------------------------------------------------------
@@ -775,7 +775,7 @@ target_link_libraries(entropy PRIVATE
   Entropy::Image
   Entropy::Layout
   Entropy::UI
-  Entropy::ViewerTypes
+  Entropy::Viewer
   glfw
   glad
   glm::glm
@@ -875,6 +875,8 @@ set_target_properties(entropy PROPERTIES
 
 if(BUILD_TESTING)
   add_subdirectory(app/logic/app/test)
+  add_subdirectory(app/logic/camera/test)
+  add_subdirectory(app/logic/interaction/test)
   add_subdirectory(app/logic/serialization/test)
   add_subdirectory(app/logic/sync/test)
   add_subdirectory(app/rendering/test)

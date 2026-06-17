@@ -1,11 +1,11 @@
 #include "windowing/LayoutSerialization.h"
 
+#include "layout/ImageIndexMapping.h"
+#include "layout/SyncGroupIndexMap.h"
 #include "logic/app/CrosshairsState.h"
 #include "windowing/View.h"
 
-#include <algorithm>
 #include <spdlog/spdlog.h>
-#include <unordered_map>
 
 namespace
 {
@@ -32,93 +32,29 @@ ViewOffsetMode viewOffsetModeFromInt(int value)
   return ViewOffsetMode::None;
 }
 
-std::optional<std::size_t> imageIndexForUid(uuid_range_t orderedImageUids, const std::optional<uuid>& imageUid)
-{
-  if (!imageUid) {
-    return std::nullopt;
-  }
-
-  auto it = std::find(orderedImageUids.begin(), orderedImageUids.end(), *imageUid);
-  if (it == orderedImageUids.end()) {
-    return std::nullopt;
-  }
-  return static_cast<std::size_t>(std::distance(orderedImageUids.begin(), it));
-}
-
-std::vector<std::size_t> imageIndicesForUids(uuid_range_t orderedImageUids, const std::list<uuid>& imageUids)
-{
-  std::vector<std::size_t> indices;
-  for (const auto& imageUid : imageUids) {
-    auto it = std::find(orderedImageUids.begin(), orderedImageUids.end(), imageUid);
-    if (it != orderedImageUids.end()) {
-      indices.push_back(static_cast<std::size_t>(std::distance(orderedImageUids.begin(), it)));
-    }
-  }
-  return indices;
-}
-
-std::list<uuid> imageUidsForIndices(uuid_range_t orderedImageUids, const std::vector<std::size_t>& imageIndices)
-{
-  std::list<uuid> imageUids;
-  for (const std::size_t imageIndex : imageIndices) {
-    if (imageIndex < orderedImageUids.size()) {
-      imageUids.push_back(orderedImageUids.at(imageIndex));
-    }
-  }
-  return imageUids;
-}
-
-std::optional<uuid> imageUidForIndex(uuid_range_t orderedImageUids, const std::optional<std::size_t>& imageIndex)
-{
-  if (!imageIndex || *imageIndex >= orderedImageUids.size()) {
-    return std::nullopt;
-  }
-  return orderedImageUids.at(*imageIndex);
-}
-
-std::optional<std::size_t> syncGroupIndex(
-  std::unordered_map<uuid, std::size_t>& syncGroupIndices,
-  const std::optional<uuid>& syncGroupUid)
-{
-  if (!syncGroupUid) {
-    return std::nullopt;
-  }
-
-  auto it = syncGroupIndices.find(*syncGroupUid);
-  if (it != syncGroupIndices.end()) {
-    return it->second;
-  }
-
-  const std::size_t index = syncGroupIndices.size();
-  syncGroupIndices.emplace(*syncGroupUid, index);
-  return index;
-}
-
 std::optional<uuid> syncGroupUidForIndex(
   Layout& layout,
   CameraSyncMode mode,
-  std::unordered_map<std::size_t, uuid>& syncGroupUids,
+  layout::SyncGroupIndexMap& syncGroups,
   const std::optional<std::size_t>& syncGroupIndex)
 {
   if (!syncGroupIndex) {
     return std::nullopt;
   }
 
-  auto it = syncGroupUids.find(*syncGroupIndex);
-  if (it != syncGroupUids.end()) {
-    return it->second;
+  if (const auto existingGroupUid = syncGroups.groupUidForIndex(syncGroupIndex)) {
+    return existingGroupUid;
   }
 
   const uuid syncGroupUid = layout.addCameraSyncGroup(mode);
-  syncGroupUids.emplace(*syncGroupIndex, syncGroupUid);
-  return syncGroupUid;
+  return syncGroups.bindGroupIndex(*syncGroupIndex, syncGroupUid);
 }
 
 layout::ImageSelectionSpec createImageSelectionSpec(uuid_range_t orderedImageUids, const ControlFrame& frame)
 {
   layout::ImageSelectionSpec selection;
-  selection.m_renderedImageIndices = imageIndicesForUids(orderedImageUids, frame.renderedImages());
-  selection.m_metricImageIndices = imageIndicesForUids(orderedImageUids, frame.metricImages());
+  selection.m_renderedImageIndices = layout::imageIndicesForUids(orderedImageUids, frame.renderedImages());
+  selection.m_metricImageIndices = layout::imageIndicesForUids(orderedImageUids, frame.metricImages());
   return selection;
 }
 
@@ -127,8 +63,8 @@ void applyImageSelectionSpec(
   uuid_range_t orderedImageUids,
   const layout::ImageSelectionSpec& selection)
 {
-  frame.setRenderedImages(imageUidsForIndices(orderedImageUids, selection.m_renderedImageIndices), false);
-  frame.setMetricImages(imageUidsForIndices(orderedImageUids, selection.m_metricImageIndices));
+  frame.setRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_renderedImageIndices), false);
+  frame.setMetricImages(layout::imageUidsForIndices(orderedImageUids, selection.m_metricImageIndices));
 }
 
 } // namespace
@@ -148,9 +84,9 @@ LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids)
   layoutSpec.m_defaultRenderAllImages = layout.defaultRenderAllImages();
   layoutSpec.m_imageSelection = createImageSelectionSpec(orderedImageUids, layout);
 
-  std::unordered_map<uuid, std::size_t> rotationGroups;
-  std::unordered_map<uuid, std::size_t> translationGroups;
-  std::unordered_map<uuid, std::size_t> zoomGroups;
+  SyncGroupIndexMap rotationGroups;
+  SyncGroupIndexMap translationGroups;
+  SyncGroupIndexMap zoomGroups;
 
   for (const auto& viewUid : layout.orderedViewUids()) {
     const auto viewIt = layout.views().find(viewUid);
@@ -176,15 +112,15 @@ LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids)
     viewSpec.m_relativeOffsetSteps = offset.m_relativeOffsetSteps;
     viewSpec.m_offsetImageIndex = imageIndexForUid(orderedImageUids, offset.m_offsetImage);
 
-    viewSpec.m_rotationSyncGroup = syncGroupIndex(rotationGroups, view.cameraRotationSyncGroupUid());
-    viewSpec.m_translationSyncGroup = syncGroupIndex(translationGroups, view.cameraTranslationSyncGroupUid());
-    viewSpec.m_zoomSyncGroup = syncGroupIndex(zoomGroups, view.cameraZoomSyncGroupUid());
+    viewSpec.m_rotationSyncGroup = rotationGroups.indexForGroupUid(view.cameraRotationSyncGroupUid());
+    viewSpec.m_translationSyncGroup = translationGroups.indexForGroupUid(view.cameraTranslationSyncGroupUid());
+    viewSpec.m_zoomSyncGroup = zoomGroups.indexForGroupUid(view.cameraZoomSyncGroupUid());
     viewSpec.m_rotationSyncMembershipGroup =
-      syncGroupIndex(rotationGroups, layout.cameraSyncGroupUidContainingView(CameraSyncMode::Rotation, viewUid));
+      rotationGroups.indexForGroupUid(layout.cameraSyncGroupUidContainingView(CameraSyncMode::Rotation, viewUid));
     viewSpec.m_translationSyncMembershipGroup =
-      syncGroupIndex(translationGroups, layout.cameraSyncGroupUidContainingView(CameraSyncMode::Translation, viewUid));
+      translationGroups.indexForGroupUid(layout.cameraSyncGroupUidContainingView(CameraSyncMode::Translation, viewUid));
     viewSpec.m_zoomSyncMembershipGroup =
-      syncGroupIndex(zoomGroups, layout.cameraSyncGroupUidContainingView(CameraSyncMode::Zoom, viewUid));
+      zoomGroups.indexForGroupUid(layout.cameraSyncGroupUidContainingView(CameraSyncMode::Zoom, viewUid));
 
     viewSpec.m_preferredDefaultRenderedImages = view.preferredDefaultRenderedImages();
     viewSpec.m_defaultRenderAllImages = view.defaultRenderAllImages();
@@ -223,9 +159,9 @@ Layout instantiateLayoutSpec(
   layout.setPreferredDefaultRenderedImages(spec.m_preferredDefaultRenderedImages);
   layout.setDefaultRenderAllImages(spec.m_defaultRenderAllImages);
 
-  std::unordered_map<std::size_t, uuid> rotationGroups;
-  std::unordered_map<std::size_t, uuid> translationGroups;
-  std::unordered_map<std::size_t, uuid> zoomGroups;
+  SyncGroupIndexMap rotationGroups;
+  SyncGroupIndexMap translationGroups;
+  SyncGroupIndexMap zoomGroups;
 
   for (const auto& viewSpec : spec.m_views) {
     ViewOffsetSetting offsetSetting;

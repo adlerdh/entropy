@@ -23,6 +23,7 @@ struct LayoutFile
  * @return true on success; false on parse or I/O error.
  */
 bool open(LayoutFile& file, const std::filesystem::path& fileName);
+
 /**
  * @brief Save a standalone layout file.
  * @param file Layout file to save.
