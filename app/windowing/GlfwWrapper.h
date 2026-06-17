@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <string>
 #include <unordered_map>
 
 class EntropyApp;
@@ -13,77 +14,53 @@ struct GLFWcursor;
 struct GLFWmonitor;
 struct GLFWwindow;
 
-/**
- * @brief Describes the event processing mode in the GLFW render loop
- */
+/** @brief GLFW event wait mode used by the render loop. */
 enum class EventProcessingMode
 {
-  /// Process only those events that are already in the event queue and then returns immediately.
-  /// Processing events will cause the window and input callbacks associated with those events to
-  /// be called.
-  Poll,
-
-  /// Puts the calling thread to sleep until at least one event is available in the event queue.
-  /// Once one or more events are available, events in the queue are processed and the function
-  /// then returns immediately (just like Poll). Processing events will cause the window and input
-  /// callbacks associated with those events to be called.
-  Wait,
-
-  /// Puts the calling thread to sleep until at least one event is available in the event queue,
-  /// or until the specified timeout is reached. If one or more events are available, it behaves
-  /// exactly like Poll, i.e. the events in the queue are processed and the function then returns
-  /// immediately. Processing events will cause the window and input callbacks associated with
-  /// those events to be called.
-  WaitTimeout
+  Poll,       //!< Process queued events and return.
+  Wait,       //!< Wait until an event arrives.
+  WaitTimeout //!< Wait until an event arrives or the timeout expires.
 };
 
-/**
- * @brief A simple wrapper for GLFW windowing. This class owns the GLFW window.
- */
+/** @brief Owns the GLFW window, cursors, callbacks, and render loop. */
 class GlfwWrapper
 {
 public:
   /**
-   * @brief Construct the GLFW wrapper
-   * @param app Pointer to the app that will be embedded in the GLFW window
-   * @param glMajorVersion
-   * @param glMinorVersion
+   * @brief Construct the GLFW wrapper.
+   * @param app Application stored as the GLFW window user pointer.
+   * @param glMajorVersion Requested OpenGL major version.
+   * @param glMinorVersion Requested OpenGL minor version.
    */
   GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion);
   ~GlfwWrapper();
 
-  /**
-   * @brief setCallbacks
-   * @param renderScene
-   * @param renderGui
-   */
+  /** @brief Install callbacks invoked by render calls. */
   void setCallbacks(
     std::function<void(std::chrono::time_point<std::chrono::steady_clock>& lastFrameTime)> framerateLimiter,
     std::function<void()> renderScene,
     std::function<void()> renderGui,
     std::function<void()> processBackground);
 
-  /// @brief Set the event processing mode for the render loop
+  /** @brief Set the event processing mode for the render loop. */
   void setEventProcessingMode(EventProcessingMode mode);
 
-  /// @brief Set the wait timeout in seconds. This timeout only applies when the event processing
-  /// mode is set to EventProcessingMode::WaitTimeout.
+  /** @brief Set the wait timeout used by `EventProcessingMode::WaitTimeout`. */
   void setWaitTimeout(double waitTimoutSeconds);
 
   /**
-   * @brief init
+   * @brief Initialize the GLFW window.
    * @note Requires rendering to be initialized, since it kicks off a frame render in the
    * framebufferSizeCallback
    */
   void init();
 
   /**
-   * @brief Execute the render loop
-   *
-   * @param[in,out] imagesReady True iff images have been loaded into memory.
-   * Set to false after onImagesReady is called.
-   * @param[in] checkAppQuit Function to check if the application should quit
-   * @param[in] onImagesReady Function to call when images are ready
+   * @brief Execute the render loop.
+   * @param imagesReady Set when images are ready; cleared after `onImagesReady`.
+   * @param imageLoadFailed Set when background image loading failed.
+   * @param checkAppQuit Returns true when the application should quit.
+   * @param onImagesReady Called once when `imagesReady` is set.
    */
   void renderLoop(
     std::atomic<bool>& imagesReady,
@@ -91,14 +68,10 @@ public:
     const std::function<bool(void)>& checkAppQuit,
     const std::function<void(void)>& onImagesReady);
 
-  /**
-   * @brief Render one frame
-   */
+  /** @brief Render one frame without forcing a buffer swap. */
   void renderOnce();
 
-  /**
-   * @brief Render one frame and swap buffers, if render callbacks are initialized.
-   */
+  /** @brief Render one frame and swap buffers, if render callbacks are initialized. */
   void renderAndSwapOnce();
 
   /**
@@ -111,7 +84,7 @@ public:
   const GLFWwindow* window() const;
   GLFWwindow* window();
 
-  /// @brief Get the cursor for a mouse mode
+  /** @brief Get the cursor for a mouse mode. */
   GLFWcursor* cursor(MouseMode mode);
 
   void setWindowTitleStatus(const std::string& status);
@@ -138,11 +111,8 @@ private:
   // as the monitor with the largest overlap with the window.
   GLFWmonitor* currentMonitor() const;
 
-  /// Last time the low-frequency content-scale fallback queried system scale sources.
-  double m_lastContentScalePollSeconds = -1.0;
-
-  /// Platform that was selected during initialization
-  int m_platform;
+  double m_lastContentScalePollSeconds = -1.0; //!< Last fallback content-scale poll time.
+  int m_platform;                              //!< GLFW platform selected during initialization.
 
   // Application owning this wrapper. GLFW also stores this as the window user pointer.
   EntropyApp* m_app = nullptr;

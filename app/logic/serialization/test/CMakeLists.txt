@@ -4,13 +4,13 @@ add_executable(EntropySerializationTests
 
 target_sources(EntropySerializationTests PRIVATE
   "${entropy_APP_DIR}/logic/serialization/ProjectSerialization.cpp"
-  "${entropy_APP_DIR}/windowing/LayoutSpecJson.cpp"
   "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
 )
 
 target_link_libraries(EntropySerializationTests PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
+  Entropy::Layout
   nlohmann_json::nlohmann_json
   spdlog::spdlog
   entropy_warnings

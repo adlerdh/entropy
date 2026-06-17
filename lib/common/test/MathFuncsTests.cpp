@@ -1,4 +1,6 @@
 #include "common/MathFuncs.h"
+#include "common/Geometry.h"
+#include "common/IntersectionTypes.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -111,6 +113,42 @@ TEST_CASE("AABB plane intersection detects intersecting and separated planes", "
 {
   CHECK(math::testAABBoxPlaneIntersection(glm::vec3{0.0f}, glm::vec3{1.0f}, glm::vec4{1.0f, 0.0f, 0.0f, 0.0f}));
   CHECK_FALSE(math::testAABBoxPlaneIntersection(glm::vec3{0.0f}, glm::vec3{1.0f}, glm::vec4{1.0f, 0.0f, 0.0f, -2.0f}));
+}
+
+TEST_CASE("common geometry creates planes and intersects vectors", "[common][geometry]")
+{
+  const glm::vec4 plane = math::makePlane(glm::vec3{0.0f, 0.0f, 1.0f}, glm::vec3{1.0f, 2.0f, 3.0f});
+  CHECK(plane == glm::vec4{0.0f, 0.0f, 1.0f, -3.0f});
+
+  float distance = 0.0f;
+  REQUIRE(math::vectorPlaneIntersection(glm::vec3{0.0f, 0.0f, 10.0f}, glm::vec3{0.0f, 0.0f, -1.0f}, plane, distance));
+  CHECK(distance == Catch::Approx(7.0f));
+
+  REQUIRE(
+    math::lineSegmentPlaneIntersection(glm::vec3{0.0f, 0.0f, 4.0f}, glm::vec3{0.0f, 0.0f, 2.0f}, plane, distance));
+  CHECK(distance == Catch::Approx(0.5f));
+}
+
+TEST_CASE("common geometry computes AABB plane intersection polygons", "[common][geometry]")
+{
+  const auto corners = math::makeAABBoxCorners<float>({glm::vec3{-1.0f}, glm::vec3{1.0f}});
+  const glm::vec4 plane = math::makePlane(glm::vec3{0.0f, 0.0f, 1.0f}, glm::vec3{0.0f});
+
+  const auto intersections = math::computeAABBoxPlaneIntersections<float>(corners, plane);
+
+  REQUIRE(intersections);
+  REQUIRE(intersections->size() == intersection::k_numIntersectionVertices);
+  for (const auto& point : *intersections) {
+    CHECK(point.z == Catch::Approx(0.0f));
+    CHECK(point.x >= -1.0f);
+    CHECK(point.x <= 1.0f);
+    CHECK(point.y >= -1.0f);
+    CHECK(point.y <= 1.0f);
+  }
+
+  CHECK_FALSE(math::computeAABBoxPlaneIntersections<float>(
+    corners,
+    math::makePlane(glm::vec3{0.0f, 0.0f, 1.0f}, glm::vec3{0.0f, 0.0f, 3.0f})));
 }
 
 TEST_CASE("direction matrix helpers produce anatomical orientation codes", "[common][math]")

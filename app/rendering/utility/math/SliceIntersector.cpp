@@ -1,5 +1,5 @@
 #include "rendering/utility/math/SliceIntersector.h"
-#include "logic/camera/MathUtility.h"
+#include "common/Geometry.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>

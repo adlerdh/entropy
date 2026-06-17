@@ -2,9 +2,9 @@
 
 #include "common/UuidRange.h"
 
-#include "logic/camera/CameraTypes.h"
 #include "ui/UiControls.h"
-#include "windowing/ViewTypes.h"
+#include "viewer_types/ViewModes.h"
+#include "viewer_types/ViewTypes.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -15,6 +15,7 @@
 
 class AppData;
 
+/** @brief Shared view/layout controls: viewport, image selection, render mode, and UI flags. */
 class ControlFrame
 {
 public:
@@ -27,10 +28,16 @@ public:
 
   virtual ~ControlFrame() = default;
 
+  /** @brief Set viewport bounds in enclosing-window clip coordinates. */
   void setWindowClipViewport(glm::vec4 winClipViewport);
+
+  /** @brief Viewport bounds in enclosing-window clip coordinates. */
   const glm::vec4& windowClipViewport() const;
 
+  /** @brief Transform from this frame's clip coordinates to enclosing-window clip coordinates. */
   const glm::mat4& windowClip_T_viewClip() const;
+
+  /** @brief Transform from enclosing-window clip coordinates to this frame's clip coordinates. */
   const glm::mat4& viewClip_T_windowClip() const;
 
   ViewType viewType() const;
@@ -59,7 +66,7 @@ public:
   const std::list<uuids::uuid>& metricImages() const;
   virtual void setMetricImages(const std::list<uuids::uuid>& imageUids);
 
-  /// This one accounts for both rendered and metric images.
+  /** @brief Images visible through either render or metric selection. */
   const std::list<uuids::uuid>& visibleImages() const;
 
   void setPreferredDefaultRenderedImages(std::set<std::size_t> imageIndices);
@@ -68,39 +75,21 @@ public:
   void setDefaultRenderAllImages(bool renderAll);
   bool defaultRenderAllImages() const;
 
-  /// Call this when image order changes in order to update rendered and metric images:
+  /** @brief Reorder rendered and metric image selections after the image order changes. */
   virtual void updateImageOrdering(uuid_range_t orderedImageUids);
 
   const UiControls& uiControls() const;
 
 protected:
-  /// Viewport of the view defined in Clip space of the enclosing window,
-  /// which spans from bottom left [-1, -1] to top right [1, 1].
-  /// A full-window view has viewport (left = -1, bottom = -1, width = 2, height = 2)
-  glm::vec4 m_winClipViewport;
+  glm::vec4 m_winClipViewport;       //!< Bounds in enclosing-window clip coordinates.
+  glm::mat4 m_windowClip_T_viewClip; //!< View clip to enclosing-window clip transform.
+  glm::mat4 m_viewClip_T_windowClip; //!< Enclosing-window clip to view clip transform.
 
-  /// Transformation from view Clip space to Clip space of its enclosing window
-  glm::mat4 m_windowClip_T_viewClip;
+  std::list<uuids::uuid> m_renderedImageUids; //!< Rendered images, bottom layer first.
+  std::list<uuids::uuid> m_metricImageUids;   //!< Images used by metric/comparison modes.
 
-  /// Transformation from the Clip space of the view's enclosing window to Clip space of the view
-  glm::mat4 m_viewClip_T_windowClip;
-
-  /// Uids of images rendered in this frame. They are listed in the order in which they are
-  /// rendered, with image 0 at the bottom.
-  std::list<uuids::uuid> m_renderedImageUids;
-
-  /// Uids of images used for metric calculation in this frame. The first image is the
-  /// fixed image; the second image is the moving image. As of now, all metrics use two
-  /// images, but we could potentially include metrics that use more than two images.
-  std::list<uuids::uuid> m_metricImageUids;
-
-  /// What images does this view prefer to render by default?
-  std::set<std::size_t> m_preferredDefaultRenderedImages;
-
-  /// Flag to render all images in this vew by default.
-  /// When true, the set \c m_preferredDefaultRenderedImages is ignored and all images
-  /// are rendered; when false, \c m_preferredDefaultRenderedImages is used.
-  bool m_defaultRenderAllImages;
+  std::set<std::size_t> m_preferredDefaultRenderedImages; //!< Default rendered image indices.
+  bool m_defaultRenderAllImages;                          //!< Ignore preferred indices and render all images.
 
   ViewType m_viewType;                               //!< View type
   ViewRenderMode m_renderMode;                       //!< Render mode

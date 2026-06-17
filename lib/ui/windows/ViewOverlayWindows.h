@@ -2,9 +2,9 @@
 
 #include "common/CoordinateFrame.h"
 #include "common/Types.h"
-#include "logic/camera/CameraTypes.h"
 #include "ui/UiControls.h"
-#include "windowing/ViewTypes.h"
+#include "viewer_types/ViewModes.h"
+#include "viewer_types/ViewTypes.h"
 
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec2.hpp>

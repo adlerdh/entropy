@@ -19,7 +19,7 @@
 #include "logic/states/FsmList.hpp"
 #include "logic/DistanceMap.h"
 #include "ui/NativeFileDialogs.h"
-#include "windowing/LayoutFileSerialization.h"
+#include "layout/LayoutFileSerialization.h"
 
 #include <glm/glm.hpp>
 
@@ -715,8 +715,7 @@ WindowData& EntropyApp::windowData()
 void EntropyApp::logPreamble()
 {
   spdlog::info("{} (version {})", APP_NAME, VERSION_FULL);
-  spdlog::info("Developers: {}; {}", PICSL_NAME, MIRAMONTE_NAME);
-  spdlog::info("Publisher: {}\n", PUBLISHER_NAME);
+  spdlog::info("{}", COPYRIGHT_LINE);
 
   spdlog::debug("Git branch: {}", GIT_BRANCH);
   spdlog::debug("Git commit hash: {}", GIT_COMMIT_SHA1);
@@ -861,9 +860,9 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
   const auto& imgTx = matchImg->transformations();
   const auto& segTx = seg.transformations();
 
-  /// @todo Is there a better way to handle non-matching matrices?
-  /// Perhaps there should be a setting in the project file that allows us to override
-  /// the segmentation's subject_T_texture matrix with the matrix of the image
+  // TODO: Is there a better way to handle non-matching matrices?
+  // Perhaps there should be a setting in the project file that allows us to override
+  // the segmentation's subject_T_texture matrix with the matrix of the image
 
   if (!math::areMatricesEqual(imgTx.subject_T_texture(), segTx.subject_T_texture())) {
     spdlog::warn(
@@ -979,7 +978,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
   spdlog::info("Transformation:\n{}", def.transformations());
   spdlog::info("Settings:\n{}", def.settings());
 
-  /// @todo Do check of deformation field header against the reference image header?
+  // TODO: Do check of deformation field header against the reference image header?
 
   if (const auto defUid = m_data.addDef(std::move(def))) {
     spdlog::info("Loaded deformation field image from file {} as {}", fileName, *defUid);
@@ -1182,7 +1181,7 @@ bool EntropyApp::loadSerializedImage(
 
       deformation->settings().setDisplayName(deformation->settings().displayName() + " (deformation)");
 
-      /// @todo Load this from project settings
+      // TODO: Load this from project settings.
       for (uint32_t i = 0; i < deformation->header().numComponentsPerPixel(); ++i) {
         deformation->settings().setColorMapIndex(i, 25);
       }
@@ -1199,12 +1198,12 @@ bool EntropyApp::loadSerializedImage(
       break;
     } while (1);
 
-    /// @todo Deformation field images are special:
-    /// 1) no segmentation is created
-    /// 2) no affine transformation can be applied: it copies the affine tx of its image
-    /// 3) need warning when header tx doesn't match that of reference
-    /// 4) even if all components are loaded as RGB texure, we should be able to view each component
-    /// separately in a shader that takes in as a uniform the active component
+    // TODO: Deformation field images are special:
+    // 1) no segmentation is created
+    // 2) no affine transformation can be applied: it copies the affine tx of its image
+    // 3) need warning when header tx doesn't match that of reference
+    // 4) even if all components are loaded as RGB texure, we should be able to view each component
+    // separately in a shader that takes in as a uniform the active component
   }
 
   // Set annotations from file:
@@ -1384,7 +1383,7 @@ bool EntropyApp::loadSerializedImage(
     }
   }
 
-  /// @todo Put all this into the loadSeg function?
+  // TODO: Put all this into the loadSeg function?
   for (const SegInfo& segInfo : allSegInfos) {
     Image* seg = m_data.seg(*segInfo.uid);
 
@@ -2900,8 +2899,8 @@ void EntropyApp::setCallbacks()
       return;
     }
 
-    /// @todo Put this in CallbackHandler as separate function, because it is used frequently
-    /// @todo All logic related to rounding crosshairs positions should be in one place!
+    // TODO: Put this in CallbackHandler as separate function, because it is used frequently.
+    // TODO: All logic related to rounding crosshairs positions should be in one place.
 
     const glm::vec4 worldPos = image->transformations().worldDef_T_pixel() * glm::vec4{voxelPos, 1.0f};
     const glm::vec3 worldPosRounded =
@@ -3063,8 +3062,8 @@ void EntropyApp::setCallbacks()
 //    IPCMessage message;
 //    m_IPCHandler.Read( static_cast<void*>( &message ) );
 
-////    spdlog::info( "cursor = {}, {}, {}", message.cursor[0], message.cursor[1], message.cursor[2]
-///);
+//    spdlog::info( "cursor = {}, {}, {}", message.cursor[0], message.cursor[1], message.cursor[2]
+//);
 
 //    // Convert LPS to RAS
 //    message.cursor[0] = -refSubjectPos[0];

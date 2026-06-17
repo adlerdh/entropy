@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logic/camera/CameraTypes.h"
+#include "viewer_types/ViewModes.h"
 
 #include <cstddef>
 #include <string>

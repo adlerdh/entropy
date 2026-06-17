@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/InputParams.h"
-#include "windowing/LayoutSpec.h"
+#include "layout/LayoutSpec.h"
 #include <filesystem>
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/PointRecord.h"

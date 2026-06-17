@@ -1,7 +1,7 @@
-#include "windowing/LayoutSpecJson.h"
+#include "layout/LayoutSpecJson.h"
 
-#include "logic/camera/CameraTypes.h"
-#include "windowing/ViewTypes.h"
+#include "viewer_types/ViewModes.h"
+#include "viewer_types/ViewTypes.h"
 
 #include <nlohmann/json.hpp>
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/AABB.h"
+#include "common/Geometry.h"
 #include "common/MathFuncs.h"
 #include "common/Types.h"
 
@@ -35,21 +36,9 @@
 class Camera;
 class Viewport;
 
-/// @note These math functions mostly come from HistoloZee.
+// Note: These math functions mostly come from HistoloZee.
 namespace math
 {
-
-template<typename T>
-using gvec3 = glm::vec<3, T, glm::highp>;
-
-template<typename T>
-using gvec4 = glm::vec<4, T, glm::highp>;
-
-template<typename T>
-using gmat3 = glm::mat<3, 3, T, glm::highp>;
-
-template<typename T>
-using gmat4 = glm::mat<4, 4, T, glm::highp>;
 
 /**
  * @brief Build an orthonormal basis from a single vector. Use this to create a camera basis with a
@@ -112,9 +101,9 @@ gmat4<T> fromToRotation(const gvec3<T>& fromVec, const gvec3<T>& toVec)
   T f = (e < T(0.0)) ? -e : e;
 
   if (f > T(1.0) - glm::epsilon<T>()) {
-    /// "from" and "to"-vector almost parallel
+    // "from" and "to"-vector almost parallel.
 
-    /// vector most nearly orthogonal to "from"
+    // Vector most nearly orthogonal to "from".
     gvec3<T> x = glm::abs(fromVec);
 
     if (x[0] < x[1]) {
@@ -154,7 +143,7 @@ gmat4<T> fromToRotation(const gvec3<T>& fromVec, const gvec3<T>& toVec)
     }
   }
   else {
-    /// the most common case, unless "from" == "to", or "from" == -"to"
+    // The most common case, unless "from" == "to", or "from" == -"to".
 
     T h = T(1.0) / (T(1.0) + e);
 
@@ -178,12 +167,6 @@ gmat4<T> fromToRotation(const gvec3<T>& fromVec, const gvec3<T>& toVec)
   }
 
   return R;
-}
-
-template<typename T>
-int sgn(const T& val)
-{
-  return (T(0) < val) - (val < T(0));
 }
 
 template<typename T>
@@ -223,297 +206,6 @@ bool isRotationIdentity(const glm::qua<T>& q)
   // so we take the absolute value of the dot product with identity
   const T dot = glm::abs(glm::dot(q, identity));
   return glm::abs(T(1) - dot) < glm::epsilon<T>();
-}
-
-/**
- * @brief Create plane (A, B, C, D) in form Ax + By + Cz + D = 0
- * with given normal vector (A, B, C) and passing through a given point.
- */
-template<typename T>
-gvec4<T> makePlane(const gvec3<T>& normal, const gvec3<T>& point)
-{
-  return gvec4<T>{normal, -glm::dot(normal, point)};
-}
-
-/**
- * @brief Compute the axis-aligned bounding box of a range of points.
- */
-template<typename T, std::ranges::forward_range PointRange>
-AABB<T> computeAABBox(const PointRange& points)
-{
-  AABB<T> minMaxCorners =
-    std::make_pair(gvec3<T>(std::numeric_limits<T>::max()), gvec3<T>(std::numeric_limits<T>::lowest()));
-
-  for (const auto& point : points) {
-    minMaxCorners.first = glm::min(minMaxCorners.first, point);
-    minMaxCorners.second = glm::max(minMaxCorners.second, point);
-  }
-
-  return minMaxCorners;
-}
-
-/**
- * @brief Compute the eight corners of an axis-aligned bounding box.
- */
-template<typename T>
-std::array<gvec3<T>, 8> makeAABBoxCorners(const AABB<T>& box)
-{
-  const gvec3<T> diag = box.second - box.first;
-
-  return {
-    box.first,
-    box.first + gvec3<T>{diag.x, 0, 0},
-    box.first + gvec3<T>{0, diag.y, 0},
-    box.first + gvec3<T>{0, 0, diag.z},
-    box.first + gvec3<T>{diag.x, diag.y, 0},
-    box.first + gvec3<T>{diag.x, 0, diag.z},
-    box.first + diag,
-    box.second};
-}
-
-template<typename T>
-gvec3<T> computeAABBoxCenter(const AABB<T>& box)
-{
-  return static_cast<T>(0.5) * (box.first + box.second);
-}
-
-template<typename T>
-gvec3<T> computeAABBoxSize(const AABB<T>& box)
-{
-  return glm::abs(box.second - box.first);
-}
-
-template<typename T>
-bool isInside(const AABB<T>& box, const gvec3<T>& point)
-{
-  return (glm::all(glm::lessThanEqual(box.first, point)) && glm::all(glm::lessThanEqual(point, box.second)));
-}
-
-/**
- * @brief Compute the axis-aligned bounding box (AABB) that bounds
- * two other AABBs.
- */
-template<typename T>
-AABB<T> computeBoundingAABBox(const AABB<T> box1, const AABB<T> box2)
-{
-  return {glm::min(box1.first, box2.first), glm::max(box1.second, box2.second)};
-}
-
-// Return true if intersection, false if not
-template<typename T>
-bool computeSortedAABBoxCorners(
-  const std::array<gvec3<T>, 8>& corners,
-  const gvec4<T>& plane,
-  std::array<gvec3<T>, 8>& sortedCorners)
-{
-  static const std::unordered_map<int, int> sk_nearFarCornerMap =
-    {{0, 7}, {1, 6}, {2, 5}, {3, 4}, {4, 3}, {5, 2}, {6, 1}, {7, 0}};
-
-  T minDistance = std::numeric_limits<T>::max();
-  T maxDistance = std::numeric_limits<T>::lowest();
-
-  int nearCornerIndex = 0;
-
-  for (int i = 0; i < 8; ++i) {
-    T distance = glm::dot(gvec4<T>{corners[i], 1}, plane);
-
-    if (distance < minDistance) {
-      minDistance = distance;
-      nearCornerIndex = i;
-    }
-
-    if (distance > maxDistance) {
-      maxDistance = distance;
-    }
-  }
-
-  if (sgn(minDistance) == sgn(maxDistance)) {
-    //        std::cerr << "There is no intersection!" << std::endl;
-    return false;
-  }
-
-  const int farthestCornerIndex = sk_nearFarCornerMap.at(nearCornerIndex);
-
-  const gvec3<T> closestCorner = corners[nearCornerIndex];
-  const gvec3<T> farthestCorner = corners[farthestCornerIndex];
-  const gvec3<T> cornerDelta = farthestCorner - closestCorner;
-
-  /// @see AABB corners sorted according to the paper
-  /// Rezk Salama & Kolb, "A Vertex Program for Efficient Box-Plane Intersection", VMV 2005.
-  sortedCorners[0] = closestCorner;
-  sortedCorners[1] = closestCorner + gvec3<T>{cornerDelta.x, 0, 0};
-  sortedCorners[2] = closestCorner + gvec3<T>{0, cornerDelta.y, 0};
-  sortedCorners[3] = closestCorner + gvec3<T>{0, 0, cornerDelta.z};
-  sortedCorners[4] = sortedCorners[1] + gvec3<T>{0, 0, cornerDelta.z};
-  sortedCorners[5] = sortedCorners[2] + gvec3<T>{cornerDelta.x, 0, 0};
-  sortedCorners[6] = sortedCorners[3] + gvec3<T>{0, cornerDelta.y, 0};
-  sortedCorners[7] = farthestCorner;
-
-  return true;
-}
-
-template<typename T>
-bool lineSegmentPlaneIntersection(
-  const gvec3<T>& lineStartPoint,
-  const gvec3<T>& lineEndPoint,
-  const gvec4<T>& plane,
-  T& intersectionDistance)
-{
-  static const T sk_eps = glm::epsilon<T>();
-
-  const T denom = glm::dot(plane, gvec4<T>{lineEndPoint - lineStartPoint, 0});
-
-  if (std::abs(denom) > sk_eps) {
-    intersectionDistance = -glm::dot(plane, gvec4<T>{lineStartPoint, 1}) / denom;
-
-    if (T(0) <= intersectionDistance && intersectionDistance <= T(1)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-template<typename T>
-bool vectorPlaneIntersection(
-  const gvec3<T>& lineStartPoint,
-  const gvec3<T>& lineDirection,
-  const gvec4<T>& plane,
-  T& intersectionDistance)
-{
-  static const T sk_eps = glm::epsilon<T>();
-
-  const T denom = glm::dot(plane, gvec4<T>{lineDirection, 0});
-
-  if (std::abs(denom) > sk_eps) {
-    intersectionDistance = -glm::dot(plane, gvec4<T>{lineStartPoint, 1}) / denom;
-    return true;
-  }
-
-  return false;
-}
-
-// Last intersection is average
-template<typename T>
-std::optional<std::array<gvec3<T>, 7> > computeSliceIntersections(
-  const std::array<gvec3<T>, 8>& sortedCorners,
-  const gvec4<T>& plane)
-{
-  std::array<gvec3<T>, 7> intersections;
-
-  // Average of the intersection points
-  gvec3<T> intersectionAverage(0, 0, 0);
-
-  int count = 0;
-
-  T t = 0.0;
-
-  if (lineSegmentPlaneIntersection(sortedCorners[0], sortedCorners[1], plane, t)) {
-    intersections[0] = sortedCorners[0] + t * (sortedCorners[1] - sortedCorners[0]);
-  }
-  else if (lineSegmentPlaneIntersection(sortedCorners[1], sortedCorners[4], plane, t)) {
-    intersections[0] = sortedCorners[1] + t * (sortedCorners[4] - sortedCorners[1]);
-  }
-  else if (lineSegmentPlaneIntersection(sortedCorners[4], sortedCorners[7], plane, t)) {
-    intersections[0] = sortedCorners[4] + t * (sortedCorners[7] - sortedCorners[4]);
-  }
-  else {
-    return std::nullopt;
-  }
-
-  if (lineSegmentPlaneIntersection(sortedCorners[0], sortedCorners[2], plane, t)) {
-    intersections[2] = sortedCorners[0] + t * (sortedCorners[2] - sortedCorners[0]);
-  }
-  else if (lineSegmentPlaneIntersection(sortedCorners[2], sortedCorners[5], plane, t)) {
-    intersections[2] = sortedCorners[2] + t * (sortedCorners[5] - sortedCorners[2]);
-  }
-  else if (lineSegmentPlaneIntersection(sortedCorners[5], sortedCorners[7], plane, t)) {
-    intersections[2] = sortedCorners[5] + t * (sortedCorners[7] - sortedCorners[5]);
-  }
-  else {
-    return std::nullopt;
-  }
-
-  if (lineSegmentPlaneIntersection(sortedCorners[0], sortedCorners[3], plane, t)) {
-    intersections[4] = sortedCorners[0] + t * (sortedCorners[3] - sortedCorners[0]);
-  }
-  else if (lineSegmentPlaneIntersection(sortedCorners[3], sortedCorners[6], plane, t)) {
-    intersections[4] = sortedCorners[3] + t * (sortedCorners[6] - sortedCorners[3]);
-  }
-  else if (lineSegmentPlaneIntersection(sortedCorners[6], sortedCorners[7], plane, t)) {
-    intersections[4] = sortedCorners[6] + t * (sortedCorners[7] - sortedCorners[6]);
-  }
-  else {
-    return std::nullopt;
-  }
-
-  intersectionAverage += intersections[0];
-  intersectionAverage += intersections[2];
-  intersectionAverage += intersections[4];
-
-  count = 3;
-
-  /// @internal As in Rezk Salama & Kolb, duplicate the intersections
-  /// to ensure a total count of 6
-  if (lineSegmentPlaneIntersection(sortedCorners[1], sortedCorners[5], plane, t)) {
-    intersections[1] = sortedCorners[1] + t * (sortedCorners[5] - sortedCorners[1]);
-    intersectionAverage += intersections[1];
-    ++count;
-  }
-  else {
-    intersections[1] = intersections[0];
-  }
-
-  if (lineSegmentPlaneIntersection(sortedCorners[2], sortedCorners[6], plane, t)) {
-    intersections[3] = sortedCorners[2] + t * (sortedCorners[6] - sortedCorners[2]);
-    intersectionAverage += intersections[3];
-    ++count;
-  }
-  else {
-    intersections[3] = intersections[2];
-  }
-
-  if (lineSegmentPlaneIntersection(sortedCorners[3], sortedCorners[4], plane, t)) {
-    intersections[5] = sortedCorners[3] + t * (sortedCorners[4] - sortedCorners[3]);
-    intersectionAverage += intersections[5];
-    ++count;
-  }
-  else {
-    intersections[5] = intersections[4];
-  }
-
-  intersectionAverage = intersectionAverage / static_cast<T>(count);
-  intersections[6] = intersectionAverage;
-
-  return intersections;
-}
-
-template<typename T>
-std::optional<std::array<gvec3<T>, 7> > computeAABBoxPlaneIntersections(
-  const std::array<gvec3<T>, 8>& boxCorners,
-  const gvec4<T>& plane)
-{
-  gvec3<T> boxCenter(0, 0, 0);
-  gvec3<T> boxMaxCorner(std::numeric_limits<T>::lowest());
-
-  for (const auto& corner : boxCorners) {
-    boxCenter += corner;
-    boxMaxCorner = glm::max(boxMaxCorner, corner);
-  }
-
-  boxCenter /= static_cast<T>(8.0);
-
-  if (!testAABBoxPlaneIntersection(boxCenter, boxMaxCorner, plane)) {
-    return std::nullopt;
-  }
-
-  std::array<gvec3<T>, 8> sortedCorners;
-
-  if (!computeSortedAABBoxCorners(boxCorners, plane, sortedCorners)) {
-    return std::nullopt;
-  }
-
-  return computeSliceIntersections(sortedCorners, plane);
 }
 
 template<size_t N>

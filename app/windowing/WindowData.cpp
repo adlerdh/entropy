@@ -7,10 +7,10 @@
 #include "logic/app/Data.h"
 #include "logic/app/DataHelper.h"
 #include "logic/camera/MathUtility.h"
-#include "logic/camera/CameraTypes.h"
 
+#include "viewer_types/ViewModes.h"
+#include "viewer_types/ViewTypes.h"
 #include "windowing/LayoutSerialization.h"
-#include "windowing/ViewTypes.h"
 
 #include <glm/glm.hpp>
 

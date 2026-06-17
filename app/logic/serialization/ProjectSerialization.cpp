@@ -1,7 +1,7 @@
 #include "logic/serialization/ProjectSerialization.h"
 #include "logic/annotation/SerializeAnnot.h"
 #include "logic/serialization/JsonSerializers.h"
-#include "windowing/LayoutSpecJson.h"
+#include "layout/LayoutSpecJson.h"
 
 #include <safeclib/strerrorlen_s.h>
 
@@ -34,8 +34,7 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// @brief Convert all project image file names to be relative to the project base path and
-/// canonical
+// Convert all project image file names to be relative to the project base path and canonical.
 // void makePathsRelative( json& project, const fs::path& basePath )
 //{
 //     auto makeRelative = [&basePath] ( json& image )
@@ -129,7 +128,7 @@ glm::mat4 matrixFromJson(const json& j)
 namespace imageio
 {
 
-/// Define serialization of InterpolationMode to JSON as strings
+// Define serialization of InterpolationMode to JSON as strings.
 // NLOHMANN_JSON_SERIALIZE_ENUM(
 //         ImageSettings::InterpolationMode, {
 //             { ImageSettings::InterpolationMode::Linear, "Linear" },

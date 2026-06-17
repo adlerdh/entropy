@@ -2,6 +2,7 @@
 
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
+#include "windowing/ImageSelection.h"
 
 #include <glm/glm.hpp>
 
@@ -93,16 +94,9 @@ const std::list<uuids::uuid>& ControlFrame::renderedImages() const
 
 void ControlFrame::setRenderedImages(const std::list<uuids::uuid>& imageUids, bool filterByDefaults)
 {
-  if (filterByDefaults && !m_defaultRenderAllImages) {
-    m_renderedImageUids.clear();
-    std::size_t index = 0;
-
-    for (const auto& imageUid : imageUids) {
-      if (m_preferredDefaultRenderedImages.count(index) > 0) {
-        m_renderedImageUids.push_back(imageUid);
-      }
-      ++index;
-    }
+  if (filterByDefaults) {
+    m_renderedImageUids =
+      windowing::filteredDefaultRenderedImages(imageUids, m_defaultRenderAllImages, m_preferredDefaultRenderedImages);
   }
   else {
     m_renderedImageUids = imageUids;
@@ -196,26 +190,8 @@ const std::list<uuids::uuid>& ControlFrame::visibleImages() const
 
 void ControlFrame::updateImageOrdering(uuid_range_t orderedImageUids)
 {
-  std::list<uuids::uuid> newRenderedImageUids;
-  std::list<uuids::uuid> newMetricImageUids;
-
-  // Loop through the images in new order:
-  for (const auto& imageUid : orderedImageUids) {
-    auto it1 = std::find(std::begin(m_renderedImageUids), std::end(m_renderedImageUids), imageUid);
-    if (std::end(m_renderedImageUids) != it1) {
-      // This image is rendered, so place in new order:
-      newRenderedImageUids.push_back(imageUid);
-    }
-
-    auto it2 = std::find(std::begin(m_metricImageUids), std::end(m_metricImageUids), imageUid);
-    if (std::end(m_metricImageUids) != it2 && newMetricImageUids.size() < 2) {
-      // This image is in metric computation, so place in new order:
-      newMetricImageUids.push_back(imageUid);
-    }
-  }
-
-  m_renderedImageUids = newRenderedImageUids;
-  m_metricImageUids = newMetricImageUids;
+  m_renderedImageUids = windowing::reorderSelectedImages(m_renderedImageUids, orderedImageUids);
+  m_metricImageUids = windowing::reorderSelectedImages(m_metricImageUids, orderedImageUids, 2);
 }
 
 void ControlFrame::setPreferredDefaultRenderedImages(std::set<std::size_t> imageIndices)

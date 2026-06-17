@@ -90,10 +90,6 @@ void renderAboutDialogModalPopup(bool open)
     ImGui::TextLinkOpenURL("https://github.com/adlerdh/entropy", "https://github.com/adlerdh/entropy");
 
     ImGui::Spacing();
-    ImGui::TextWrapped("Developers: %s; %s", PICSL_NAME, MIRAMONTE_NAME);
-    ImGui::TextWrapped("Publisher: %s", PUBLISHER_NAME);
-
-    ImGui::Spacing();
     ImGui::TextWrapped("%s", AUTHOR_CREDIT_LINE);
     ImGui::TextWrapped("%s", COPYRIGHT_LINE);
 

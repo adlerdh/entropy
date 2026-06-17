@@ -6,9 +6,9 @@
 
 #include "logic/app/CrosshairsState.h"
 
+#include "layout/LayoutPreset.h"
+#include "layout/LayoutSpec.h"
 #include "windowing/Layout.h"
-#include "windowing/LayoutPreset.h"
-#include "windowing/LayoutSpec.h"
 #include "windowing/View.h"
 
 #include <uuid.h>
@@ -18,9 +18,6 @@
 #include <string>
 #include <vector>
 
-/**
- * @brief Data for the window
- */
 class AppData;
 
 class WindowData
@@ -34,16 +31,16 @@ public:
   void setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImageUids);
   void setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t orderedImageUids);
 
-  /// Call this when image order changes in order to update rendered and metric images
+  /** @brief Reorder rendered and metric image selections after image order changes. */
   void updateImageOrdering(uuid_range_t orderedImageUids);
 
-  /// Remove image-specific layouts and image references from all remaining layouts.
+  /** @brief Remove image-specific layouts and references to one image. */
   void removeImageFromLayouts(const uuid& imageUid, uuid_range_t orderedImageUids);
 
-  /// Append an image to views that render the full image stack by default.
+  /** @brief Add an image to views that render all images by default. */
   void appendImageToDefaultRenderedImages(const AppData& appData, const uuid& imageUid);
 
-  /// Initialize all view to the given center and FOV, defined in World space
+  /** @brief Recenter all views in world coordinates. */
   void recenterAllViews(
     const glm::vec3& worldCenter,
     const glm::vec3& worldFov,
@@ -51,8 +48,7 @@ public:
     bool resetObliqueOrientation,
     const std::set<uuid>& excludedViews = {});
 
-  /// Recenter a view to the given center position, without changing its FOV.
-  /// (FOV is passed in only to adjust camera pullback distance.)
+  /** @brief Recenter one view without changing its FOV. */
   void recenterView(
     const uuid& viewUid,
     const glm::vec3& worldCenter,
@@ -67,33 +63,25 @@ public:
     bool resetZoom,
     bool resetObliqueOrientation);
 
-  /// Get all current view UIDs
   uuid_range_t currentViewUids() const;
 
-  /// In which view is the window position?
   std::optional<uuid> currentViewUidAtCursor(const glm::vec2& windowPos) const;
 
-  /// Get const/non-const pointer to a current view
   const View* getCurrentView(const uuid&) const;
   View* getCurrentView(const uuid&);
 
-  /// Get const/non-const pointer to a view
   const View* getView(const uuid& viewUid) const;
   View* getView(const uuid& viewUid);
 
-  /// Get UID of active view
   std::optional<uuid> activeViewUid() const;
 
-  /// Set UID of the active view
   void setActiveViewUid(const std::optional<uuid>& viewUid);
 
-  /// Number of layouts
   std::size_t numLayouts() const;
 
   const std::vector<Layout>& layouts() const;
   std::string layoutDisplayName(std::size_t index) const;
 
-  /// Current layout index
   std::size_t currentLayoutIndex() const;
 
   void setCurrentLayoutIndex(std::size_t index);
@@ -104,7 +92,7 @@ public:
   const Layout& currentLayout() const;
   Layout& currentLayout();
 
-  /// Add a grid layout
+  /** @brief Add a grid layout. */
   void addGridLayout(
     const ViewType& viewType,
     std::size_t width,
@@ -115,17 +103,17 @@ public:
     const uuid& imageUidForLightbox,
     std::optional<float> lightboxOffsetDistance = std::nullopt);
 
-  /// Add a lightbox grid layout with enough views to hold a given number of slices
+  /** @brief Add a lightbox layout for one image. */
   void addLightboxLayoutForImage(
     const ViewType& viewType,
     std::size_t numSlices,
     std::size_t imageIndex,
     const uuid& imageUid);
 
-  /// Add a layout with one row per image and columns for axial, coronal, and sagittal views
+  /** @brief Add axial/coronal/sagittal views grouped by image. */
   void addAxCorSagLayout(std::size_t numImages);
 
-  /// Rebuild Entropy-managed layouts that depend on the current image set.
+  /** @brief Rebuild layouts that depend on the loaded image set. */
   void reconcileImageDependentLayouts(const AppData& appData);
 
   std::vector<layout::LayoutSpec> createProjectLayoutSnapshots(uuid_range_t orderedImageUids) const;
@@ -139,71 +127,53 @@ public:
     const std::vector<layout::LayoutPreset>& presets,
     std::optional<std::size_t> currentLayoutIndex);
 
-  /// Remove a layout
   void removeLayout(std::size_t index);
   void clearLayouts();
   void resetDefaultLayouts();
 
-  /// Get the window viewport
   const Viewport& viewport() const;
 
-  /// Set the window viewport (in device-independent pixel units)
+  /** @brief Set the window viewport in device-independent pixels. */
   void setViewport(float left, float bottom, float width, float height);
 
-  /**
-   * @brief Set/get the window content scale ratio
-   *
-   * @see GLFW
-   * The content scale is the ratio between the current DPI and the platform's default DPI.
-   * This is especially important for text and any UI elements. If the pixel dimensions of your UI
-   * scaled by this look appropriate on your machine then it should appear at a reasonable size on
-   * other machines regardless of their DPI and scaling settings. This relies on the system DPI and
-   * scaling settings being somewhat correct.
-   *
-   * On systems where each monitors can have its own content scale, the window content scale will
-   * depend on which monitor the system considers the window to be on.
-   */
+  /** @brief Set/get the GLFW content scale ratio. */
   void setContentScaleRatios(const glm::vec2& ratio);
   const glm::vec2& getContentScaleRatios() const;
   float getContentScaleRatio() const;
 
-  /// Set/get the window position in screen space. This does not move the window.
+  /** @brief Cache the window position in screen coordinates. */
   void setWindowPos(int posX, int posY);
   const glm::ivec2& getWindowPos() const;
 
-  /// Set/get the whole window size, which is specified in artificial units that do not
-  /// necessarily correspond to real screen pixels, as is the case when DPI scaling is activated.
+  /** @brief Set/get the logical window size. */
   void setWindowSize(int width, int height);
   const glm::ivec2& getWindowSize() const;
 
-  /// Set/get the framebuffer size in pixel units.
+  /** @brief Set/get the framebuffer size in pixels. */
   void setFramebufferSize(int width, int height);
   const glm::ivec2& getFramebufferSize() const;
 
-  /// Compute the ratio of framebuffer pixels to window size
   glm::vec2 computeFramebufferToWindowRatio() const;
 
-  /// Set/get the view orientation convention
   void setViewOrientationConvention(const ViewConvention& convention);
   ViewConvention getViewOrientationConvention() const;
 
   ViewAlignmentMode viewAlignmentMode() const;
   void setViewAlignmentMode(ViewAlignmentMode mode);
 
-  /// Get view UIDs in a camera synchronization group
+  /** @brief View UIDs in a camera synchronization group. */
   uuid_range_t cameraSyncGroupViewUids(CameraSyncMode mode, const uuid& syncGroupUid) const;
 
-  /// Apply a given view's image selection to all views of the current layout
+  /** @brief Apply one view's image selection to all views in the current layout. */
   void applyImageSelectionToAllCurrentViews(const uuid& referenceViewUid);
 
-  /// Apply a given view's render and intensity projection modes to all views of the current layout
+  /** @brief Apply one view's render/projection modes to the current layout. */
   void applyViewRenderModeAndProjectionToAllCurrentViews(const uuid& referenceViewUid);
 
-  /// Find all views in the current layout with normal vector either parallel to or anti-parallel to
-  /// the given normal direction
+  /** @brief Find current-layout views with a matching or opposite normal. */
   std::vector<uuid> findCurrentViewsWithNormal(const glm::vec3& worldNormal) const;
 
-  /// Find the largest view (in terms of area) in the current layout.
+  /** @brief Find the largest view in the current layout. */
   uuid findLargestCurrentView() const;
 
 private:
@@ -234,7 +204,9 @@ private:
 
   glm::vec2 m_contentScaleRatio;
 
-  /// @todo Map from uuid to layout
+  /**
+   * @todo Map from uuid to layout
+   */
   std::vector<Layout> m_layouts; // All view layouts
   std::size_t m_currentLayout;   // Index of the layout currently on display
 
@@ -245,6 +217,5 @@ private:
   // Default view orientation convention used for all views
   ViewConvention m_viewConvention = ViewConvention::Radiological;
 
-  /// View alignment mode
-  ViewAlignmentMode m_viewAlignment = ViewAlignmentMode::Crosshairs;
+  ViewAlignmentMode m_viewAlignment = ViewAlignmentMode::Crosshairs; //!< View alignment mode.
 };

@@ -6,11 +6,10 @@ endif()
 
 set(APP_NAME "Entropy")
 set(APP_DESCRIPTION "Visualize, compare, segment, and annotate 3D medical images")
-set(PICSL_NAME "Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania")
-set(MIRAMONTE_NAME "Miramonte Software, LLC")
-set(PUBLISHER_NAME "${MIRAMONTE_NAME}")
-set(AUTHOR_CREDIT_LINE "Primary author and maintainer: Daniel H. Adler")
-set(COPYRIGHT_LINE "Copyright 2021-2026 ${PICSL_NAME}, and ${MIRAMONTE_NAME}.")
+set(PICSL_NAME "Penn Image Computing and Science Lab (PICSL) of the University of Pennsylvania")
+set(PUBLISHER_NAME "${PICSL_NAME}")
+set(AUTHOR_CREDIT_LINE "Primary author and maintainer: Daniel H. Adler, Ph.D.")
+set(COPYRIGHT_LINE "Copyright 2021-2026 ${PICSL_NAME} and Daniel H. Adler")
 set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)
@@ -454,6 +453,8 @@ BuildStamp()
 
 add_subdirectory("${entropy_LIB_DIR}/common")
 add_subdirectory("${entropy_LIB_DIR}/image")
+add_subdirectory("${entropy_LIB_DIR}/viewer_types")
+add_subdirectory("${entropy_LIB_DIR}/layout")
 
 #--------------------------------------------------------------------------------
 # Entropy executable
@@ -535,13 +536,11 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/windowing/ControlFrame.cpp"
   "${entropy_APP_DIR}/windowing/GlfwCallbacks.cpp"
   "${entropy_APP_DIR}/windowing/GlfwWrapper.cpp"
+  "${entropy_APP_DIR}/windowing/ImageSelection.cpp"
   "${entropy_APP_DIR}/windowing/LinuxUiScale.cpp"
   "${entropy_APP_DIR}/windowing/Layout.cpp"
-  "${entropy_APP_DIR}/windowing/LayoutFileSerialization.cpp"
   "${entropy_APP_DIR}/windowing/LayoutSerialization.cpp"
-  "${entropy_APP_DIR}/windowing/LayoutSpecJson.cpp"
   "${entropy_APP_DIR}/windowing/View.cpp"
-  "${entropy_APP_DIR}/windowing/ViewTypes.cpp"
   "${entropy_APP_DIR}/windowing/WindowData.cpp"
 
   "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
@@ -776,7 +775,9 @@ target_link_libraries(entropy PRIVATE
   CLI11::CLI11
   Entropy::Common
   Entropy::Image
+  Entropy::Layout
   Entropy::UI
+  Entropy::ViewerTypes
   glfw
   glad
   glm::glm

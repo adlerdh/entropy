@@ -187,7 +187,8 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2021-2026 Penn Image Computing and Science Lab (PICSL), Department of Radiology, University of Pennsylvania, and Miramonte Software, LLC.
+   Copyright 2021-2026 Penn Image Computing and Science Lab (PICSL) of the
+   University of Pennsylvania and Daniel H. Adler.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
