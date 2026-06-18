@@ -1,9 +1,11 @@
 add_executable(EntropyAppSettingsTests
   AppPathsTests.cpp
+  ImageSelectionPolicyTests.cpp
   UserPreferencesTests.cpp
 )
 
 target_sources(EntropyAppSettingsTests PRIVATE
+  "${entropy_APP_DIR}/logic/app/ImageSelectionPolicy.cpp"
   "${entropy_APP_DIR}/logic/app/ParcellationLabelTable.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"

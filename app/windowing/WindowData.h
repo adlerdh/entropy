@@ -28,8 +28,8 @@ public:
   WindowData(const CrosshairsState& crosshairs);
   ~WindowData() = default;
 
-  void setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImageUids);
-  void setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t orderedImageUids);
+  void setDefaultRenderedImagesForAllLayouts(const AppData& appData);
+  void setDefaultRenderedImagesForLayout(Layout& layout, const AppData& appData);
 
   /** @brief Reorder rendered and metric image selections after image order changes. */
   void updateImageOrdering(uuid_range_t orderedImageUids);
@@ -130,6 +130,9 @@ public:
   void removeLayout(std::size_t index);
   void clearLayouts();
   void resetDefaultLayouts();
+
+  /** @brief Replace all layouts with one three-view overview layout. */
+  void resetToThreeUpLayout();
 
   const Viewport& viewport() const;
 

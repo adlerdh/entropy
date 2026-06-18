@@ -6,6 +6,7 @@
 #include "logic/camera/CameraHelpers.h"
 #include "logic/app/Data.h"
 #include "logic/app/DataHelper.h"
+#include "logic/app/ImageSelectionPolicy.h"
 #include "logic/camera/MathUtility.h"
 
 #include "layout/LayoutKindInfo.h"
@@ -1251,36 +1252,33 @@ void WindowData::reconcileImageDependentLayouts(const AppData& appData)
 
   const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
   const LoadedSlicePlaneSummary slicePlanes = loadedSlicePlaneSummary(appData);
-  if (slicePlanes.hasCoronal) {
-    generatedLayouts.emplace_back(createGridLayout(
-      ViewType::Coronal,
-      1,
-      1,
-      false,
-      false,
-      m_crosshairs,
-      m_viewAlignment,
-      m_viewConvention,
-      0,
-      std::nullopt,
-      std::nullopt));
-    generatedLayouts.back().setKind(LayoutKind::SingleCoronal);
-  }
-  if (slicePlanes.hasSagittal) {
-    generatedLayouts.emplace_back(createGridLayout(
-      ViewType::Sagittal,
-      1,
-      1,
-      false,
-      false,
-      m_crosshairs,
-      m_viewAlignment,
-      m_viewConvention,
-      0,
-      std::nullopt,
-      std::nullopt));
-    generatedLayouts.back().setKind(LayoutKind::SingleSagittal);
-  }
+  generatedLayouts.emplace_back(createGridLayout(
+    ViewType::Coronal,
+    1,
+    1,
+    false,
+    false,
+    m_crosshairs,
+    m_viewAlignment,
+    m_viewConvention,
+    0,
+    std::nullopt,
+    std::nullopt));
+  generatedLayouts.back().setKind(LayoutKind::SingleCoronal);
+
+  generatedLayouts.emplace_back(createGridLayout(
+    ViewType::Sagittal,
+    1,
+    1,
+    false,
+    false,
+    m_crosshairs,
+    m_viewAlignment,
+    m_viewConvention,
+    0,
+    std::nullopt,
+    std::nullopt));
+  generatedLayouts.back().setKind(LayoutKind::SingleSagittal);
   if (orderedImageUids.size() > 1) {
     if (const auto& refUid = appData.refImageUid()) {
       generatedLayouts.emplace_back(createGridLayout(
@@ -1341,7 +1339,7 @@ void WindowData::reconcileImageDependentLayouts(const AppData& appData)
   }
 
   for (auto& layout : generatedLayouts) {
-    setDefaultRenderedImagesForLayout(layout, orderedImageUids);
+    setDefaultRenderedImagesForLayout(layout, appData);
   }
   const CameraSnapshotIndex cameraSnapshotIndex = createCameraSnapshotIndex(cameraSnapshots);
   const CameraRestoreSummary restoreSummary =
@@ -1429,7 +1427,9 @@ bool WindowData::applyLayoutPresets(
   std::optional<std::size_t> currentLayoutIndex)
 {
   if (presets.empty()) {
-    return false;
+    resetToThreeUpLayout();
+    setDefaultRenderedImagesForLayout(currentLayout(), appData);
+    return true;
   }
 
   std::vector<Layout> restoredLayouts;
@@ -1447,7 +1447,7 @@ bool WindowData::applyLayoutPresets(
 
   const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
   for (auto& layout : restoredLayouts) {
-    setDefaultRenderedImagesForLayout(layout, orderedImageUids);
+    setDefaultRenderedImagesForLayout(layout, appData);
   }
 
   m_layouts = std::move(restoredLayouts);
@@ -1459,7 +1459,7 @@ bool WindowData::applyLayoutPresets(
 
 void WindowData::removeLayout(std::size_t index)
 {
-  if (index >= m_layouts.size()) {
+  if (index >= m_layouts.size() || m_layouts.size() <= 1) {
     return;
   }
 
@@ -1486,24 +1486,30 @@ void WindowData::resetDefaultLayouts()
   setCurrentLayoutIndex(0);
 }
 
-void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t orderedImageUids)
+void WindowData::resetToThreeUpLayout()
+{
+  clearLayouts();
+  m_layouts.emplace_back(createTriLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
+  setCurrentLayoutIndex(0);
+  setWindowSize(m_windowSize.x, m_windowSize.y);
+  setFramebufferSize(m_framebufferSize.x, m_framebufferSize.y);
+}
+
+void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, const AppData& appData)
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
   std::list<uuid> renderedImages;
-  std::list<uuid> metricImages;
-
-  std::size_t count = 0;
+  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
 
   for (const auto& uid : orderedImageUids) {
     renderedImages.push_back(uid);
-
-    if (count < 2) {
-      // By default, compute the metric using the first two images:
-      metricImages.push_back(uid);
-      ++count;
-    }
   }
+
+  const std::list<uuid> metricImages = app::image_selection_policy::defaultMetricImageUids(
+    orderedImageUids,
+    appData.refImageUid(),
+    appData.activeImageUid());
 
   if (layout.isLightbox()) {
     layout.setRenderedImages(renderedImages, s_filterAgainstDefaults);
@@ -1517,24 +1523,21 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, uuid_range_t 
   }
 }
 
-void WindowData::setDefaultRenderedImagesForAllLayouts(uuid_range_t orderedImageUids)
+void WindowData::setDefaultRenderedImagesForAllLayouts(const AppData& appData)
 {
   static constexpr bool s_filterAgainstDefaults = true;
 
   std::list<uuid> renderedImages;
-  std::list<uuid> metricImages;
-
-  std::size_t count = 0;
+  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
 
   for (const auto& uid : orderedImageUids) {
     renderedImages.push_back(uid);
-
-    if (count < 2) {
-      // By default, compute the metric using the first two images:
-      metricImages.push_back(uid);
-      ++count;
-    }
   }
+
+  const std::list<uuid> metricImages = app::image_selection_policy::defaultMetricImageUids(
+    orderedImageUids,
+    appData.refImageUid(),
+    appData.activeImageUid());
 
   for (auto& layout : m_layouts) {
     if (layout.isLightbox()) {

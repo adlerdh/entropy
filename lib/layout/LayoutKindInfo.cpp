@@ -93,15 +93,15 @@ std::string_view layoutDisplayName(LayoutKind kind, bool isLightbox)
 {
   switch (kind) {
     case LayoutKind::FourUp:
-      return "Four up";
+      return "Four-up";
     case LayoutKind::Tri:
-      return "Tri";
+      return "Three-up";
     case LayoutKind::SingleAxial:
-      return "Single axial";
+      return "1-up axial";
     case LayoutKind::SingleCoronal:
-      return "Single coronal";
+      return "1-up coronal";
     case LayoutKind::SingleSagittal:
-      return "Single sagittal";
+      return "1-up sagittal";
     case LayoutKind::MultiImageAxialGrid:
       return "Multi-image axial grid";
     case LayoutKind::MultiImageCoronalGrid:

@@ -3,6 +3,7 @@
 
 #include "logic/app/DataHelper.h"
 #include "logic/app/AppPaths.h"
+#include "logic/app/ImageSelectionPolicy.h"
 #include "logic/app/UserPreferences.h"
 #include "common/DirectionMaps.h"
 #include "common/Exception.hpp"
@@ -569,7 +570,7 @@ void EntropyApp::onImagesReady()
   }
   else {
     m_data.windowData().reconcileImageDependentLayouts(m_data);
-    m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data.imageUidsOrdered());
+    m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data);
 
     if (!m_data.project().m_layouts.empty()) {
       m_data.windowData().applyProjectLayoutSnapshots(
@@ -1770,8 +1771,7 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
   }
 
   if (layoutFile.m_layouts.empty()) {
-    spdlog::warn("Layout file {} contains no layouts", fileName);
-    return;
+    spdlog::warn("Layout file {} contains no layouts; using a Three-up layout", fileName);
   }
 
   if (!m_data.windowData().applyLayoutPresets(m_data, layoutFile.m_layouts, layoutFile.m_currentLayoutIndex)) {
@@ -2151,6 +2151,14 @@ void EntropyApp::loadDicomSeries(
       if (addToExistingProject) {
         m_data.setActiveImageUid(addedImageUids.back());
         m_pendingAddedImageUids = addedImageUids;
+      }
+      else if (
+        const auto activeImageIndex =
+          app::image_selection_policy::defaultActiveImageIndexForInitialLoad(m_data.numImages()))
+      {
+        if (const auto activeImageUid = m_data.imageUid(*activeImageIndex)) {
+          m_data.setActiveImageUid(*activeImageUid);
+        }
       }
 
       m_data.setRainbowColorsForAllImages();
@@ -2673,7 +2681,6 @@ void EntropyApp::startAsyncImageLoad(
 bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
 {
   static constexpr size_t defaultReferenceImageIndex = 0;
-  static constexpr size_t defaultActiveImageIndex = 1;
 
   m_preserveLayoutsOnImagesReady = false;
   m_pendingAddedImageUids.clear();
@@ -2713,8 +2720,9 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
     return false;
   }
 
-  const auto desiredActiveImageUid =
-    (defaultActiveImageIndex < m_data.numImages()) ? m_data.imageUid(defaultActiveImageIndex) : *refImageUid;
+  const auto desiredActiveImageIndex =
+    app::image_selection_policy::defaultActiveImageIndexForInitialLoad(m_data.numImages());
+  const auto desiredActiveImageUid = desiredActiveImageIndex ? m_data.imageUid(*desiredActiveImageIndex) : refImageUid;
 
   if (desiredActiveImageUid && m_data.setActiveImageUid(*desiredActiveImageUid)) {
     spdlog::info("Set {} as the active image", *desiredActiveImageUid);

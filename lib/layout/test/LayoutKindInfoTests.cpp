@@ -4,11 +4,11 @@
 
 TEST_CASE("layout kind display names cover built-in layouts", "[layout][layout_kind]")
 {
-  CHECK(layout::layoutDisplayName(LayoutKind::FourUp, false) == "Four up");
-  CHECK(layout::layoutDisplayName(LayoutKind::Tri, false) == "Tri");
-  CHECK(layout::layoutDisplayName(LayoutKind::SingleAxial, false) == "Single axial");
-  CHECK(layout::layoutDisplayName(LayoutKind::SingleCoronal, false) == "Single coronal");
-  CHECK(layout::layoutDisplayName(LayoutKind::SingleSagittal, false) == "Single sagittal");
+  CHECK(layout::layoutDisplayName(LayoutKind::FourUp, false) == "Four-up");
+  CHECK(layout::layoutDisplayName(LayoutKind::Tri, false) == "Three-up");
+  CHECK(layout::layoutDisplayName(LayoutKind::SingleAxial, false) == "1-up axial");
+  CHECK(layout::layoutDisplayName(LayoutKind::SingleCoronal, false) == "1-up coronal");
+  CHECK(layout::layoutDisplayName(LayoutKind::SingleSagittal, false) == "1-up sagittal");
   CHECK(layout::layoutDisplayName(LayoutKind::MultiImageAxialGrid, false) == "Multi-image axial grid");
   CHECK(layout::layoutDisplayName(LayoutKind::MultiImageCoronalGrid, false) == "Multi-image coronal grid");
   CHECK(layout::layoutDisplayName(LayoutKind::MultiImageSagittalGrid, false) == "Multi-image sagittal grid");

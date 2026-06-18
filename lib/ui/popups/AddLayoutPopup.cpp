@@ -187,7 +187,7 @@ void renderAddLayoutModalPopup(
         offsetDistance);
 
       wd.setCurrentLayoutIndex(wd.numLayouts() - 1);
-      wd.setDefaultRenderedImagesForLayout(wd.currentLayout(), appData.imageUidsOrdered());
+      wd.setDefaultRenderedImagesForLayout(wd.currentLayout(), appData);
 
       recenterViews();
     }
