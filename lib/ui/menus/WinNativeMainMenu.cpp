@@ -331,7 +331,8 @@ bool populateModesMenu(HMENU menu)
          insertActionMenuItem(menu, position++, MainMenuAction::SetModeAnnotate, L"&Annotate") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::SetModeTranslateImage, L"&Translate Image") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModeRotateImage, L"R&otate Image");
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeRotateImage, L"R&otate Image") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeScaleImage, L"&Scale Image");
 }
 
 bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)

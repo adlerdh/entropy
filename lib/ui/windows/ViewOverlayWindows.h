@@ -40,6 +40,8 @@ struct ViewOverlayImageCallbacks
 
   std::function<bool(std::size_t index)> isImageRendered;                //!< Is image visible in this view.
   std::function<void(std::size_t index, bool visible)> setImageRendered; //!< Set image visibility in this view.
+  std::function<void(const uuids::uuid& viewUid)>
+    applyImageVisibilityToAllViews; //!< Copy this view's image visibility to all views.
 
   std::function<bool(std::size_t index)> isImageUsedForMetric; //!< Is image used in comparison/metric mode.
   std::function<void(std::size_t index, bool visible)> setImageUsedForMetric; //!< Set metric image participation.

@@ -284,6 +284,11 @@ void addModeMenu(NSMenu* mainMenu) {
     MainMenuAction::SetModeTranslateImage,
     @"arrow.up.and.down.and.arrow.left.and.right");
   addSymbolActionMenuItem(menu, @"Rotate Image", MainMenuAction::SetModeRotateImage, @"rotate.right");
+  addSymbolActionMenuItem(
+    menu,
+    @"Scale Image",
+    MainMenuAction::SetModeScaleImage,
+    @"arrow.up.right.and.arrow.down.left");
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }

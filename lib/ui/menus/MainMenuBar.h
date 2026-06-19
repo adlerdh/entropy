@@ -21,6 +21,7 @@ enum class MainMenuAction
   SetModeAnnotate,
   SetModeTranslateImage,
   SetModeRotateImage,
+  SetModeScaleImage,
   Recenter,
   ResetView,
   ToggleImageVisibility,

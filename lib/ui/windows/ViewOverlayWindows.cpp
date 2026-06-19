@@ -30,6 +30,15 @@ ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
   return ImVec2{scale * sk_toolbarButtonSize.x, scale * sk_toolbarButtonSize.y};
 }
 
+bool iconButtonWithTooltip(const char* icon, const char* tooltip)
+{
+  const bool clicked = ImGui::Button(icon);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("%s", tooltip);
+  }
+  return clicked;
+}
+
 } // namespace
 
 void renderViewSettingsComboWindow(
@@ -49,6 +58,7 @@ void renderViewSettingsComboWindow(
   const std::size_t numImages = images.numImages;
   const auto& isImageRendered = images.isImageRendered;
   const auto& setImageRendered = images.setImageRendered;
+  const auto& applyImageVisibilityToAllViews = images.applyImageVisibilityToAllViews;
   const auto& isImageUsedForMetric = images.isImageUsedForMetric;
   const auto& setImageUsedForMetric = images.setImageUsedForMetric;
   const auto& getImageDisplayAndFileName = images.getImageDisplayAndFileName;
@@ -160,6 +170,25 @@ void renderViewSettingsComboWindow(
               }
 
               ImGui::PopID(); /*** ID = i ***/
+            }
+
+            ImGui::Separator();
+            if (iconButtonWithTooltip(ICON_FK_EYE, "Show all images in this view")) {
+              for (std::size_t i = 0; i < numImages; ++i) {
+                setImageRendered(i, true);
+              }
+            }
+            ImGui::SameLine();
+            if (iconButtonWithTooltip(ICON_FK_EYE_SLASH, "Hide all images in this view")) {
+              for (std::size_t i = 0; i < numImages; ++i) {
+                setImageRendered(i, false);
+              }
+            }
+            if (applyImageVisibilityToAllViews) {
+              ImGui::SameLine();
+              if (iconButtonWithTooltip(ICON_FK_RSS, "Apply this image visibility to all views in the layout")) {
+                applyImageVisibilityToAllViews(viewOrLayoutUid);
+              }
             }
 
             ImGui::PopID(); /*** ID = visibleimages ***/

@@ -174,13 +174,13 @@ enum class MouseMode
   CrosshairsRotate, //!< Crosshairs rotation
   ImageTranslate,   //!< Translate the active image in 2D and 3D
   ImageRotate,      //!< Rotate the active image in 2D and 3D
-  ImageScale        //!< Scale the active image in 2D
+  ImageScale        //!< Scale the active image in the active view plane
 };
 
 /**
  * @brief Array of all available mouse modes in the Toolbar
  */
-inline std::array<MouseMode, 10> const AllMouseModes{
+inline std::array<MouseMode, 11> const AllMouseModes{
   MouseMode::Pointer,
   MouseMode::WindowLevel,
   MouseMode::CameraZoom,
@@ -190,7 +190,8 @@ inline std::array<MouseMode, 10> const AllMouseModes{
   MouseMode::Segment,
   MouseMode::Annotate,
   MouseMode::ImageTranslate,
-  MouseMode::ImageRotate};
+  MouseMode::ImageRotate,
+  MouseMode::ImageScale};
 
 /// Get the mouse mode as a string
 std::string typeString(const MouseMode& mouseMode);

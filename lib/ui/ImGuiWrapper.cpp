@@ -1634,6 +1634,9 @@ void ImGuiWrapper::render()
       case MainMenuAction::SetModeRotateImage:
         m_callbackHandler.setMouseMode(MouseMode::ImageRotate);
         break;
+      case MainMenuAction::SetModeScaleImage:
+        m_callbackHandler.setMouseMode(MouseMode::ImageScale);
+        break;
       case MainMenuAction::Recenter:
         if (m_recenterAllViews) m_recenterAllViews(false, false, true, false, true);
         break;
@@ -1953,6 +1956,7 @@ void ImGuiWrapper::render()
         case MainMenuAction::SetModeAnnotate:
         case MainMenuAction::SetModeTranslateImage:
         case MainMenuAction::SetModeRotateImage:
+        case MainMenuAction::SetModeScaleImage:
         case MainMenuAction::Recenter:
         case MainMenuAction::ResetView:
         case MainMenuAction::ToggleImageVisibility:
@@ -2075,6 +2079,8 @@ void ImGuiWrapper::render()
         return MouseMode::ImageTranslate == m_appData.state().mouseMode();
       case MainMenuAction::SetModeRotateImage:
         return MouseMode::ImageRotate == m_appData.state().mouseMode();
+      case MainMenuAction::SetModeScaleImage:
+        return MouseMode::ImageScale == m_appData.state().mouseMode();
       case MainMenuAction::ToggleImageVisibility: {
         const auto imageUid = m_appData.activeImageUid();
         const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
@@ -2160,6 +2166,10 @@ void ImGuiWrapper::render()
   auto applyImageSelectionAndRenderModesToAllViews = [this](const uuids::uuid& viewUid) {
     m_appData.windowData().applyImageSelectionToAllCurrentViews(viewUid);
     m_appData.windowData().applyViewRenderModeAndProjectionToAllCurrentViews(viewUid);
+  };
+
+  auto applyImageSelectionToAllViews = [this](const uuids::uuid& viewUid) {
+    m_appData.windowData().applyImageSelectionToAllCurrentViews(viewUid);
   };
 
   auto getViewCameraRotation = [this](const uuids::uuid& viewUid) -> glm::quat {
@@ -2639,6 +2649,7 @@ void ImGuiWrapper::render()
       [this, &currentLayout](std::size_t index, bool visible) {
         currentLayout.setImageRendered(m_appData, index, visible);
       },
+      nullptr,
       [this, &currentLayout](std::size_t index) { return currentLayout.isImageUsedForMetric(m_appData, index); },
       [this, &currentLayout](std::size_t index, bool visible) {
         currentLayout.setImageUsedForMetric(m_appData, index, visible);
@@ -2739,6 +2750,7 @@ void ImGuiWrapper::render()
         m_appData.numImages(),
         [this, view](std::size_t index) { return view->isImageRendered(m_appData, index); },
         [this, view](std::size_t index, bool visible) { view->setImageRendered(m_appData, index, visible); },
+        applyImageSelectionToAllViews,
         [this, view](std::size_t index) { return view->isImageUsedForMetric(m_appData, index); },
         [this, view](std::size_t index, bool visible) { view->setImageUsedForMetric(m_appData, index, visible); },
         std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),

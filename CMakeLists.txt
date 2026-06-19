@@ -466,6 +466,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/app/CallbackHandler.cpp"
   "${entropy_APP_DIR}/logic/app/Data.cpp"
   "${entropy_APP_DIR}/logic/app/DataHelper.cpp"
+  "${entropy_APP_DIR}/logic/app/ImageScaleInteraction.cpp"
   "${entropy_APP_DIR}/logic/app/ImageSelectionPolicy.cpp"
   "${entropy_APP_DIR}/logic/app/Logging.cpp"
   "${entropy_APP_DIR}/logic/app/ParcellationLabelTable.cpp"

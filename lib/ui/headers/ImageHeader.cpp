@@ -316,19 +316,6 @@ void renderImageHeader(
     ImGui::Text("%s", nonActiveImageMessage);
   }
 
-  if (ImGui::Button(ICON_FK_HAND_O_UP, buttonSize)) {
-    glm::vec3 worldPos{imgTx.worldDef_T_subject() * glm::vec4{imgHeader.subjectBBoxCenter(), 1.0f}};
-
-    worldPos = data::snapWorldPointToImageVoxels(appData, worldPos);
-    appData.state().setWorldCrosshairsPos(worldPos);
-  }
-
-  if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Move crosshairs to the center of the image");
-  }
-
-  ImGui::SameLine();
-
   const bool forceLocked = isRef;
   const bool isLocked = (forceLocked || image->transformations().is_worldDef_T_affine_locked());
 
@@ -350,6 +337,19 @@ void renderImageHeader(
     else {
       ImGui::SetTooltip("Manual image transformation is unlocked.\nClick to lock and prevent movement.");
     }
+  }
+
+  ImGui::SameLine();
+
+  if (ImGui::Button(ICON_FK_HAND_O_UP, buttonSize)) {
+    glm::vec3 worldPos{imgTx.worldDef_T_subject() * glm::vec4{imgHeader.subjectBBoxCenter(), 1.0f}};
+
+    worldPos = data::snapWorldPointToImageVoxels(appData, worldPos);
+    appData.state().setWorldCrosshairsPos(worldPos);
+  }
+
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Move crosshairs to the center of the image");
   }
 
   ImGui::SameLine();

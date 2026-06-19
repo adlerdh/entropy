@@ -212,6 +212,7 @@ void renderModeMenu(const MainMenuBarCallbacks& callbacks)
   ImGui::Separator();
   actionMenuItem(callbacks, "Translate Image", MainMenuAction::SetModeTranslateImage, "T");
   actionMenuItem(callbacks, "Rotate Image", MainMenuAction::SetModeRotateImage, "R");
+  actionMenuItem(callbacks, "Scale Image", MainMenuAction::SetModeScaleImage, "Y");
 }
 
 void renderViewsMenu(const MainMenuBarCallbacks& callbacks)

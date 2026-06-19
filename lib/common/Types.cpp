@@ -139,7 +139,7 @@ std::string typeString(const MouseMode& mouseMode)
      "Translate image (T)\nLeft button: translate in plane\nRight button: translate out of "
      "plane"},
     {MouseMode::ImageRotate, "Rotate image (R)\nLeft button: rotate in plane\nRight button: rotate out of plane"},
-    {MouseMode::ImageScale, "Scale image (Y)"}};
+    {MouseMode::ImageScale, "Scale image (Y)\nLeft button: scale in plane about crosshairs\n+Shift: isotropic scale"}};
 
   return s_typeToStringMap.at(mouseMode);
 }

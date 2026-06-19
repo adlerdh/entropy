@@ -701,8 +701,10 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       H.setMouseMode(MouseMode::ImageTranslate);
       break;
     }
-
-      // case GLFW_KEY_Y: H.setMouseMode( MouseMode::ImageScale ); break;
+    case GLFW_KEY_Y: {
+      H.setMouseMode(MouseMode::ImageScale);
+      break;
+    }
 
     case GLFW_KEY_Z: {
       H.setMouseMode(MouseMode::CameraZoom);

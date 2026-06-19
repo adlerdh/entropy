@@ -1,6 +1,7 @@
 #include "logic/app/CallbackHandler.h"
 
 #include "logic/app/DataHelper.h"
+#include "logic/app/ImageScaleInteraction.h"
 #include "common/MathFuncs.h"
 #include "common/SegmentationTypes.h"
 #include "common/Types.h"
@@ -1690,10 +1691,6 @@ void CallbackHandler::doImageScale(
   const ViewHit& currHit,
   bool constrainIsotropic)
 {
-  const glm::vec3 zero(0.0f, 0.0f, 0.0f);
-  const glm::vec3 k_minScale(0.1f);
-  const glm::vec3 k_maxScale(10.0f);
-
   View* viewToUse = startHit.view;
   if (!viewToUse) {
     return;
@@ -1714,71 +1711,31 @@ void CallbackHandler::doImageScale(
     return;
   }
 
-  /// @todo Forbid transformation if the view does NOT show the active image [1]
-
   auto& imgTx = activeImage->transformations();
+  const auto scaleUpdate = entropy::app::computeImageScaleUpdate(
+    imgTx.get_worldDef_T_affine(),
+    imgTx.get_worldDef_T_affine_scale(),
+    m_appData.state().worldRotationCenter(),
+    glm::vec3{prevHit.worldPos},
+    glm::vec3{currHit.worldPos},
+    helper::worldDirection(viewToUse->camera(), Directions::View::Right),
+    helper::worldDirection(viewToUse->camera(), Directions::View::Up),
+    helper::worldDirection(viewToUse->camera(), Directions::View::Front),
+    constrainIsotropic);
 
-  // Center of scale is the subject center:
-  //    const auto p = m_appData.worldRotationCenter();
-  //    const glm::vec3 worldScaleCenter = ( p ? *p : m_appData.worldCrosshairs().worldOrigin() );
-  //    glm::vec4 subjectScaleCenter = tx.subject_T_world() * glm::vec4{ worldScaleCenter, 1.0f };
-
-  glm::vec4 lastSubjectPos = imgTx.subject_T_worldDef() * prevHit.worldPos;
-  glm::vec4 currSubjectPos = imgTx.subject_T_worldDef() * currHit.worldPos;
-  glm::vec4 subjectScaleCenter = imgTx.subject_T_texture() * glm::vec4{0.5, 0.5f, 0.5f, 1.0f};
-
-  lastSubjectPos /= lastSubjectPos.w;
-  currSubjectPos /= currSubjectPos.w;
-  subjectScaleCenter /= subjectScaleCenter.w;
-
-  const glm::vec3 numer = glm::vec3{currSubjectPos} - glm::vec3{subjectScaleCenter};
-  const glm::vec3 denom = glm::vec3{lastSubjectPos} - glm::vec3{subjectScaleCenter};
-
-  if (glm::any(glm::epsilonEqual(denom, zero, glm::epsilon<float>()))) {
+  if (!scaleUpdate) {
     return;
   }
 
-  glm::vec3 scaleDelta = numer / denom;
-
-  //    glm::vec3 test = glm::abs( scaleDelta - glm::vec3{ 1.0f } );
-
-  //    if ( test.x >= test.y && test.x >= test.z )
-  //    {
-  //        scaleDelta = glm::vec3{ scaleDelta.x, 1.0f, 1.0f };
-  //    }
-  //    else if ( test.y >= test.x && test.y >= test.z )
-  //    {
-  //        scaleDelta = glm::vec3{ 1.0f, scaleDelta.y, 1.0f };
-  //    }
-  //    else if ( test.z >= test.x && test.z >= test.y )
-  //    {
-  //        scaleDelta = glm::vec3{ 1.0f, 1.0f, scaleDelta.z };
-  //    }
-
-  if (constrainIsotropic) {
-    float minScale = glm::compMin(scaleDelta);
-    float maxScale = glm::compMax(scaleDelta);
-
-    if (maxScale > 1.0f) {
-      scaleDelta = glm::vec3(maxScale);
-    }
-    else {
-      scaleDelta = glm::vec3(minScale);
-    }
-  }
-
-  // To prevent flipping and making the slide too small:
-  if (glm::any(glm::lessThan(scaleDelta, k_minScale)) || glm::any(glm::greaterThan(scaleDelta, k_maxScale))) {
-    return;
-  }
-
-  imgTx.set_worldDef_T_affine_scale(scaleDelta * imgTx.get_worldDef_T_affine_scale());
+  imgTx.set_worldDef_T_affine_scale(scaleUpdate->m_scale);
+  imgTx.set_worldDef_T_affine_translation(scaleUpdate->m_translation);
 
   // Apply same transformation to the segmentations:
   for (const auto segUid : m_appData.imageToSegUids(*activeImageUid)) {
     if (auto* seg = m_appData.seg(segUid)) {
       auto& segTx = seg->transformations();
-      segTx.set_worldDef_T_affine_scale(scaleDelta * segTx.get_worldDef_T_affine_scale());
+      segTx.set_worldDef_T_affine_scale(scaleUpdate->m_scale);
+      segTx.set_worldDef_T_affine_translation(scaleUpdate->m_translation);
     }
   }
 

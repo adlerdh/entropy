@@ -92,7 +92,7 @@ TEST_CASE("interpolation mode strings cover all advertised modes", "[common][typ
 
 TEST_CASE("mouse modes expose strings and toolbar icons", "[common][types]")
 {
-  REQUIRE(AllMouseModes.size() == 10);
+  REQUIRE(AllMouseModes.size() == 11);
 
   for (const MouseMode mode : k_allMouseModes) {
     CHECK_FALSE(typeString(mode).empty());

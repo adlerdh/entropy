@@ -39,17 +39,28 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuid& imageUid)>& requestRemoveImage,
   const AllViewsRecenterType& recenterAllViews)
 {
-  static const std::string sk_showOpacityMixer = std::string(ICON_FK_SLIDERS) + " Show opacity mixer";
+  static const std::string kShowOpacityMixerButton = std::string(ICON_FK_SLIDERS) + "##showOpacityMixer";
 
   setNextWindowSizeConstraintsToMainViewport(340.0f, 280.0f);
   ImGui::SetNextWindowSize(ImVec2{460.0f, 620.0f}, ImGuiCond_FirstUseEver);
   setNextDockablePanelWindowClass();
   if (ImGui::Begin("Images##Images", &(appData.guiData().m_showImagePropertiesWindow))) {
-    renderActiveImageSelectionCombo(numImages, getImageDisplayAndFileName, getActiveImageIndex, setActiveImageIndex);
-
-    if (ImGui::Button(sk_showOpacityMixer.c_str())) {
-      appData.guiData().m_showOpacityBlenderWindow = true;
+    const bool showOpacityMixer = appData.guiData().m_showOpacityBlenderWindow;
+    if (showOpacityMixer) {
+      ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
     }
+    if (ImGui::Button(kShowOpacityMixerButton.c_str())) {
+      appData.guiData().m_showOpacityBlenderWindow = !appData.guiData().m_showOpacityBlenderWindow;
+    }
+    if (showOpacityMixer) {
+      ImGui::PopStyleColor();
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("%s", "Show opacity mixer");
+    }
+
+    ImGui::SameLine();
+    renderActiveImageSelectionCombo(numImages, getImageDisplayAndFileName, getActiveImageIndex, setActiveImageIndex);
 
     ImGui::Separator();
 
