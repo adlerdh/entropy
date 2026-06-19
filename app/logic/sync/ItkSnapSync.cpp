@@ -8,7 +8,6 @@
 #include "windowing/View.h"
 #include "windowing/WindowData.h"
 
-#include <QCoreApplication>
 #include <QSharedMemory>
 #include <QString>
 
@@ -32,6 +31,7 @@
 #include <Windows.h>
 #else
 #include <sys/types.h>
+#include <unistd.h>
 #endif
 
 using namespace entropy::sync::itk_snap_protocol;
@@ -41,6 +41,15 @@ namespace
 constexpr double sk_cursorEpsilonMm = 1.0e-4;
 constexpr double sk_zoomEpsilon = 1.0e-4;
 constexpr float sk_panEpsilonMm = 1.0e-3f;
+
+std::int64_t currentProcessId()
+{
+#if defined(_WIN32)
+  return static_cast<std::int64_t>(GetCurrentProcessId());
+#else
+  return static_cast<std::int64_t>(getpid());
+#endif
+}
 
 bool nearlyEqual(const glm::dvec3& a, const glm::dvec3& b)
 {
@@ -199,7 +208,7 @@ static_assert(sizeof(ItkSnapIpcMessage) == 184);
 ItkSnapSync::ItkSnapSync(AppData& appData)
   : m_appData(appData)
   , m_sharedMemory(std::make_unique<QSharedMemory>())
-  , m_processId(static_cast<std::int64_t>(QCoreApplication::applicationPid()))
+  , m_processId(currentProcessId())
   , m_writeProtocolVersion(sk_snapProtocolVersionCurrent)
 {
 }
@@ -246,13 +255,24 @@ void ItkSnapSync::update()
         incoming.viewPositionRelative[1][1],
         incoming.viewPositionRelative[2][0],
         incoming.viewPositionRelative[2][1]);
+      bool cursorApplied = false;
       if (settings.receiveCursorSync()) {
-        applyIncomingCursor(incoming);
+        cursorApplied = applyIncomingCursor(incoming);
       }
       if (settings.receiveZoomSync() || settings.receivePanSync()) {
-        applyIncomingViewState(incoming);
+        applyIncomingViewState(incoming, !cursorApplied);
+      }
+      if (cursorApplied) {
+        m_lastBroadcastViewState = currentViewSyncState();
       }
       m_lastReceivedMessageId = messageId;
+      if (settings.sendCursorSync()) {
+        m_lastBroadcastCursorLps = currentReferenceLps();
+      }
+      if (settings.sendZoomSync() || settings.sendPanSync()) {
+        m_lastBroadcastViewState = currentViewSyncState();
+      }
+      return;
     }
   }
 
@@ -738,7 +758,7 @@ bool ItkSnapSync::applyIncomingCursor(const ItkSnapIpcMessage& message)
   return true;
 }
 
-void ItkSnapSync::applyIncomingViewState(const ItkSnapIpcMessage& message)
+void ItkSnapSync::applyIncomingViewState(const ItkSnapIpcMessage& message, bool applyPan)
 {
   const AppSettings& settings = m_appData.settings();
   WindowData& windowData = m_appData.windowData();
@@ -774,7 +794,7 @@ void ItkSnapSync::applyIncomingViewState(const ItkSnapIpcMessage& message)
       }
     }
 
-    if (settings.receivePanSync()) {
+    if (settings.receivePanSync() && applyPan) {
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
       const glm::vec3 cursorCameraBefore = helper::camera_T_world(view->camera(), cursorWorld);
 #endif

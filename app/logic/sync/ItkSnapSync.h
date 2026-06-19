@@ -100,8 +100,12 @@ private:
   /** @brief Apply an incoming ITK-SNAP cursor message to Entropy crosshairs. */
   bool applyIncomingCursor(const ItkSnapIpcMessage& message);
 
-  /** @brief Apply incoming ITK-SNAP zoom and pan fields to compatible Entropy views. */
-  void applyIncomingViewState(const ItkSnapIpcMessage& message);
+  /**
+   * @brief Apply incoming ITK-SNAP zoom and pan fields to compatible Entropy views.
+   * @param message Incoming IPC payload.
+   * @param applyPan Whether cursor-relative pan fields should be applied.
+   */
+  void applyIncomingViewState(const ItkSnapIpcMessage& message, bool applyPan);
 
   /** @brief Claim or refresh this process's directory slot in the shared-memory block. */
   void claimDirectorySlot();
