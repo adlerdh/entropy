@@ -11,7 +11,29 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
 
+#include <algorithm>
 #include <string>
+
+namespace
+{
+ImVec2 opacityMixerContentSize(const AppData& appData, const RenderData& renderData)
+{
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const float titleHeight = ImGui::GetFrameHeight();
+  const float rowHeight = ImGui::GetFrameHeightWithSpacing();
+
+  std::size_t rows = std::max<std::size_t>(appData.numImages(), 1);
+  if (appData.numImages() > 1) {
+    ++rows; // Comparison blender checkbox row.
+  }
+  if (renderData.m_opacityMixMode) {
+    ++rows; // Blend slider row.
+  }
+
+  const float height = titleHeight + (2.0f * style.WindowPadding.y) + (static_cast<float>(rows) * rowHeight);
+  return ImVec2{360.0f, height};
+}
+} // namespace
 
 void renderOpacityBlenderWindow(
   AppData& appData,
@@ -25,8 +47,9 @@ void renderOpacityBlenderWindow(
     return;
   }
 
-  setNextWindowSizeConstraintsToMainViewport(280.0f, 180.0f);
-  ImGui::SetNextWindowSize(ImVec2{360.0f, 260.0f}, ImGuiCond_FirstUseEver);
+  const ImVec2 contentSize = opacityMixerContentSize(appData, renderData);
+  setNextWindowSizeConstraintsToMainViewport(280.0f, contentSize.y);
+  ImGui::SetNextWindowSize(contentSize, ImGuiCond_Appearing);
   setNextDockablePanelWindowClass();
   const bool showWindow =
     ImGui::Begin(windowName, &(appData.guiData().m_showOpacityBlenderWindow), ImGuiWindowFlags_NoCollapse);

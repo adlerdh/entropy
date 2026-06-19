@@ -277,19 +277,7 @@ void renderImageHeader(
   ImGui::SameLine();
   helpMarker("Set the image display name and border color");
 
-  if (ImGui::Button(ICON_FK_HAND_O_UP, buttonSize)) {
-    glm::vec3 worldPos{imgTx.worldDef_T_subject() * glm::vec4{imgHeader.subjectBBoxCenter(), 1.0f}};
-
-    worldPos = data::snapWorldPointToImageVoxels(appData, worldPos);
-    appData.state().setWorldCrosshairsPos(worldPos);
-  }
-
-  if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Move crosshairs to the center of the image");
-  }
-
-  ImGui::SameLine();
-  ImGui::Text("Go to image center");
+  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
 
   if (!isActiveImage) {
     if (ImGui::Button(ICON_FK_TOGGLE_OFF)) {
@@ -315,8 +303,6 @@ void renderImageHeader(
 
   ImGui::SameLine();
 
-  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
-
   if (isRef && isActiveImage) {
     ImGui::Text("%s", referenceAndActiveImageMessage);
   }
@@ -330,58 +316,71 @@ void renderImageHeader(
     ImGui::Text("%s", nonActiveImageMessage);
   }
 
-  if (isActiveImage) {
-    // We force the reference image transformation to always be locked. The reference image
-    // cannot be transformed, since it defines the reference space.
-    const bool forceLocked = isRef;
-    const bool isLocked = (forceLocked || image->transformations().is_worldDef_T_affine_locked());
+  if (ImGui::Button(ICON_FK_HAND_O_UP, buttonSize)) {
+    glm::vec3 worldPos{imgTx.worldDef_T_subject() * glm::vec4{imgHeader.subjectBBoxCenter(), 1.0f}};
 
-    ImGui::PushStyleColor(ImGuiCol_Button, (isLocked ? inactiveColor : activeColor));
-    if (ImGui::Button((isLocked ? ICON_FK_LOCK : ICON_FK_UNLOCK), buttonSize)) {
-      if (!forceLocked) {
-        setLockManualImageTransformation(imageUid, !isLocked);
-      }
+    worldPos = data::snapWorldPointToImageVoxels(appData, worldPos);
+    appData.state().setWorldCrosshairsPos(worldPos);
+  }
+
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Move crosshairs to the center of the image");
+  }
+
+  ImGui::SameLine();
+
+  const bool forceLocked = isRef;
+  const bool isLocked = (forceLocked || image->transformations().is_worldDef_T_affine_locked());
+
+  ImGui::PushStyleColor(ImGuiCol_Button, (isLocked ? inactiveColor : activeColor));
+  if (ImGui::Button((isLocked ? ICON_FK_LOCK : ICON_FK_UNLOCK), buttonSize)) {
+    if (!forceLocked) {
+      setLockManualImageTransformation(imageUid, !isLocked);
     }
-    ImGui::PopStyleColor(1); // ImGuiCol_Button
+  }
+  ImGui::PopStyleColor(1); // ImGuiCol_Button
 
-    if (image->transformations().is_worldDef_T_affine_locked()) {
-      if (ImGui::IsItemHovered()) {
-        if (forceLocked) {
-          ImGui::SetTooltip("Manual image transformation is always locked for the reference image.");
-        }
-        else {
-          ImGui::SetTooltip("Manual image transformation is locked.\nClick to unlock and allow movement.");
-        }
-      }
-
-      ImGui::SameLine();
-      ImGui::Text("Transformation is locked");
+  if (ImGui::IsItemHovered()) {
+    if (forceLocked) {
+      ImGui::SetTooltip("Manual image transformation is always locked for the reference image.");
+    }
+    else if (isLocked) {
+      ImGui::SetTooltip("Manual image transformation is locked.\nClick to unlock and allow movement.");
     }
     else {
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Manual image transformation is unlocked.\nClick to lock and prevent movement.");
-      }
-
-      ImGui::SameLine();
-      ImGui::Text("Transformation is unlocked");
+      ImGui::SetTooltip("Manual image transformation is unlocked.\nClick to lock and prevent movement.");
     }
   }
 
-  if (!isRef) {
-    if (ImGui::Button("Set as Reference Image")) {
-      requestSetReferenceImage(imageUid);
-    }
-    if (ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Make this image the project reference image");
-    }
+  ImGui::SameLine();
 
-    ImGui::SameLine();
-    if (ImGui::Button("Remove Image")) {
-      requestRemoveImage(imageUid);
-    }
-    if (ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Remove this image from the project");
-    }
+  if (isRef) {
+    ImGui::BeginDisabled();
+  }
+  if (ImGui::Button(ICON_FK_BULLSEYE, buttonSize)) {
+    requestSetReferenceImage(imageUid);
+  }
+  if (isRef) {
+    ImGui::EndDisabled();
+  }
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+    ImGui::SetTooltip(
+      isRef ? "This image is the project reference image" : "Make this image the project reference image");
+  }
+
+  ImGui::SameLine();
+
+  if (isRef) {
+    ImGui::BeginDisabled();
+  }
+  if (ImGui::Button(ICON_FK_TIMES, buttonSize)) {
+    requestRemoveImage(imageUid);
+  }
+  if (isRef) {
+    ImGui::EndDisabled();
+  }
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+    ImGui::SetTooltip(isRef ? "The reference image cannot be removed" : "Remove this image from the project");
   }
 
   if (image_export::imageHasDicomSource(appData, imageUid)) {
@@ -405,15 +404,7 @@ void renderImageHeader(
     const bool showDecreaseIndex = true | (1 < imageIndex);
     const bool showIncreaseIndex = true | (imageIndex < numImages - 1);
 
-    if (showDecreaseIndex || showIncreaseIndex) {
-      ImGui::AlignTextToFramePadding();
-      ImGui::TextUnformatted("Image order:");
-    }
-
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-
     if (showDecreaseIndex) {
-      ImGui::SameLine();
       if (ImGui::Button(ICON_FK_FAST_BACKWARD)) {
         moveImageToBack(imageUid);
       }
@@ -447,9 +438,6 @@ void renderImageHeader(
         ImGui::SetTooltip("Move image to frontmost layer");
       }
     }
-
-    /*** ImGuiStyleVar_ItemSpacing ***/
-    ImGui::PopStyleVar(1);
   }
 
   ImGui::Spacing();
