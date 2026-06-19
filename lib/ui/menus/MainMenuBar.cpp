@@ -233,6 +233,7 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, "D");
   ImGui::Separator();
   actionMenuItem(callbacks, "Show Scale Bars", MainMenuAction::ToggleScaleBars);
+  actionMenuItem(callbacks, "ASCII Rendering", MainMenuAction::ToggleAsciiRendering);
   actionMenuItem(callbacks, "Cycle Overlays", MainMenuAction::ToggleOverlays, "O");
   ImGui::Separator();
   actionMenuItem(callbacks, "Enter Full Screen", MainMenuAction::ToggleFullScreen, "F4");
@@ -501,6 +502,8 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       main_menu::actionMenuItem(callbacks, "Settings", MainMenuAction::ToggleSettingsWindow);
       main_menu::actionMenuItem(callbacks, "Inspector", MainMenuAction::ToggleInspectorWindow);
       main_menu::actionMenuItem(callbacks, "Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
+      ImGui::Separator();
+      main_menu::actionMenuItem(callbacks, "Reset Panel Layout", MainMenuAction::ResetPanelLayout);
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Toolbar", MainMenuAction::ToggleToolbar);
 #ifndef NDEBUG

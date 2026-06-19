@@ -73,6 +73,40 @@ TEST_CASE("dock offsets include menu and visible layout tabs", "[ui][gui]")
   }
 }
 
+TEST_CASE("toolbar margins reserve only the occupied viewport edges", "[ui][gui]")
+{
+  GuiData guiData;
+  guiData.m_showMainMenuBar = true;
+  guiData.m_mainMenuBarDims.y = 22.0f;
+  guiData.m_showLayoutTabs = true;
+  guiData.m_layoutTabBarHeight = 42.0f;
+  guiData.m_layoutTabPlacement = GuiData::LayoutTabPlacement::Top;
+
+  guiData.m_showModeToolbar = true;
+  guiData.m_isModeToolbarHorizontal = false;
+  guiData.m_modeToolbarCorner = 1;
+  guiData.m_modeToolbarDockDims = glm::vec2{48.0f, 320.0f};
+
+  guiData.m_showSegToolbar = true;
+  guiData.m_isSegToolbarHorizontal = true;
+  guiData.m_segToolbarCorner = 2;
+  guiData.m_segToolbarDockDims = glm::vec2{280.0f, 36.0f};
+
+  const GuiData::Margins toolbarMargins = guiData.computeToolbarMargins();
+
+  CHECK(toolbarMargins.left == 0.0f);
+  CHECK(toolbarMargins.right == 48.0f);
+  CHECK(toolbarMargins.top == 0.0f);
+  CHECK(toolbarMargins.bottom == 36.0f);
+
+  const GuiData::Margins fullMargins = guiData.computeMargins();
+
+  CHECK(fullMargins.left == 0.0f);
+  CHECK(fullMargins.right == 48.0f);
+  CHECK(fullMargins.top == 22.0f + 42.0f);
+  CHECK(fullMargins.bottom == 36.0f);
+}
+
 TEST_CASE("precision format helpers use their own precision fields", "[ui][gui]")
 {
   GuiData guiData;

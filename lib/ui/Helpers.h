@@ -22,6 +22,14 @@ void setNextWindowSizeConstraintsToMainViewport(
   float fallbackMaxWidth = 960.0f,
   float fallbackMaxHeight = 720.0f);
 
+/**
+ * @brief Apply the shared ImGui window class used by dockable side panels.
+ *
+ * @details The class keeps docked panel title tabs visible and removes the
+ * extra dock-node close/menu controls that would duplicate the panel controls.
+ */
+void setNextDockablePanelWindowClass();
+
 bool mySliderS32(const char* label, int32_t* value, int32_t min = 0, int32_t max = 100, const char* format = "%d");
 
 bool mySliderS64(const char* label, int64_t* value, int64_t min = 0, int64_t max = 100, const char* format = "%d");

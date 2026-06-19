@@ -717,6 +717,21 @@ void applyRowImageIndices(Layout& layout, const std::vector<std::size_t>& imageI
   }
 }
 
+void configureOneUpDefaultImageSelection(Layout& layout)
+{
+  layout.setPreferredDefaultRenderedImages({});
+  layout.setDefaultRenderAllImages(true);
+
+  for (View* view : layout.orderedViews()) {
+    if (!view) {
+      continue;
+    }
+
+    view->setPreferredDefaultRenderedImages({});
+    view->setDefaultRenderAllImages(true);
+  }
+}
+
 std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uuid_range_t orderedImageUids)
 {
   switch (layout.kind()) {
@@ -1236,6 +1251,7 @@ void WindowData::setupViews()
     refImage,
     std::nullopt));
   m_layouts.back().setKind(LayoutKind::OneUp);
+  configureOneUpDefaultImageSelection(m_layouts.back());
 
   m_layouts.emplace_back(createThreeUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
   m_layouts.emplace_back(createFourUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
@@ -1592,6 +1608,10 @@ void WindowData::setDefaultRenderedImagesForLayout(Layout& layout, const AppData
     appData.refImageUid(),
     appData.activeImageUid());
 
+  if (isOneUpLayoutKind(layout.kind())) {
+    configureOneUpDefaultImageSelection(layout);
+  }
+
   if (layout.isLightbox()) {
     layout.setRenderedImages(renderedImages, s_filterAgainstDefaults);
     layout.setMetricImages(metricImages);
@@ -1621,6 +1641,10 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(const AppData& appData)
     appData.activeImageUid());
 
   for (auto& layout : m_layouts) {
+    if (isOneUpLayoutKind(layout.kind())) {
+      configureOneUpDefaultImageSelection(layout);
+    }
+
     if (layout.isLightbox()) {
       layout.setRenderedImages(renderedImages, s_filterAgainstDefaults);
       layout.setMetricImages(metricImages);

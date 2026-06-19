@@ -388,6 +388,7 @@ void addViewsMenu(NSMenu* mainMenu) {
   addActionMenuItem(menu, @"Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, @"d");
   [menu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(menu, @"Show Scale Bars", MainMenuAction::ToggleScaleBars);
+  addActionMenuItem(menu, @"ASCII Rendering", MainMenuAction::ToggleAsciiRendering);
   addActionMenuItem(menu, @"Cycle Overlays", MainMenuAction::ToggleOverlays, @"o");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(
@@ -431,6 +432,8 @@ void addWindowsMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Inspector", MainMenuAction::ToggleInspectorWindow, @"info.circle");
   addSymbolActionMenuItem(menu, @"Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow, @"slider.horizontal.3");
   addSymbolActionMenuItem(menu, @"Settings", MainMenuAction::ToggleSettingsWindow, @"gearshape");
+  [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Reset Panel Layout", MainMenuAction::ResetPanelLayout);
   [menu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(menu, @"Toolbar", MainMenuAction::ToggleToolbar);
 #ifndef NDEBUG

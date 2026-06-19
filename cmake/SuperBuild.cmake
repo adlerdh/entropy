@@ -308,12 +308,12 @@ message(STATUS "Adding external library ImGui in ${imgui_PREFIX}")
 
 ExternalProject_Add(imgui
   URL "https://github.com/ocornut/imgui/archive/refs/tags/v${imgui_VERSION}.tar.gz"
-  URL_HASH SHA256=fecb33d33930e12ff53a34064e9d3a06c8f7c3e04408f14cd36c80e3faac863b
+  URL_HASH SHA256=ca0653454ed371b7a87e9b0bc29a5d15c9be7f7c0fbe778042fc48c71df1d3d8
   DOWNLOAD_NAME "imgui-${imgui_VERSION}.tar.gz"
   DOWNLOAD_EXTRACT_TIMESTAMP false
 
   # GIT_REPOSITORY "${GIT_PROTOCOL}://github.com/ocornut/imgui.git"
-  # GIT_TAG "8936b58fe26e8c3da834b8f60b06511d537b4c63" # tag: v${imgui_VERSION}
+  # GIT_TAG "v${imgui_VERSION}"
   # GIT_PROGRESS true
 
   PREFIX "${imgui_PREFIX}"

@@ -16,8 +16,10 @@ void renderLandmarkPropertiesWindow(
   AppData& appData,
   const AllViewsRecenterType& recenterAllViewsOnCurrentCrosshairsPosition)
 {
-  setNextWindowSizeConstraintsToMainViewport();
-  if (ImGui::Begin("Landmarks", &(appData.guiData().m_showLandmarksWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
+  setNextWindowSizeConstraintsToMainViewport(280.0f, 240.0f);
+  ImGui::SetNextWindowSize(ImVec2{360.0f, 480.0f}, ImGuiCond_FirstUseEver);
+  setNextDockablePanelWindowClass();
+  if (ImGui::Begin("Landmarks", &(appData.guiData().m_showLandmarksWindow))) {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 

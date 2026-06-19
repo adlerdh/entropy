@@ -13,7 +13,7 @@ License information is taken from the upstream license files for the pinned sour
 | [GLFW](https://github.com/glfw/glfw) | 3.4 | https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip | zlib/libpng |
 | [GLM](https://github.com/g-truc/glm) | 1.0.3 | https://github.com/g-truc/glm/archive/refs/tags/1.0.3.tar.gz | Happy Bunny License (Modified MIT) or MIT |
 | [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders) | 210b5a3 | https://github.com/juliettef/IconFontCppHeaders/archive/210b5a399a64270674560d633638952d1e8d804d.tar.gz | zlib |
-| [Dear ImGui](https://github.com/ocornut/imgui) | v1.92.8 | https://github.com/ocornut/imgui/archive/refs/tags/v1.92.8.tar.gz | MIT |
+| [Dear ImGui](https://github.com/ocornut/imgui) | v1.92.8-docking | https://github.com/ocornut/imgui/archive/refs/tags/v1.92.8-docking.tar.gz | MIT |
 | [ImPlot](https://github.com/epezent/implot) | v0.17 | https://github.com/epezent/implot/archive/refs/tags/v0.17.tar.gz | MIT |
 | [Insight Toolkit (ITK)](https://github.com/InsightSoftwareConsortium/ITK) | v5.4.3 | https://github.com/InsightSoftwareConsortium/ITK/releases/download/v5.4.3/InsightToolkit-5.4.3.tar.gz | Apache License 2.0 |
 | [NanoVG](https://github.com/memononen/nanovg) | ce3bf74 | https://github.com/memononen/nanovg/archive/ce3bf745eb2d2dbc14a50bf2446783f691ac4353.tar.gz | zlib |

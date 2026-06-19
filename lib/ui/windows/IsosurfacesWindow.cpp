@@ -19,8 +19,10 @@ void renderIsosurfacesWindow(
   std::function<void(const uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
   std::function<void(const uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
-  setNextWindowSizeConstraintsToMainViewport();
-  if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
+  setNextWindowSizeConstraintsToMainViewport(300.0f, 240.0f);
+  ImGui::SetNextWindowSize(ImVec2{380.0f, 480.0f}, ImGuiCond_FirstUseEver);
+  setNextDockablePanelWindowClass();
+  if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow))) {
     std::size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 

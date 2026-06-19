@@ -68,15 +68,21 @@ void renderModeToolbar(
   if (corner != -1) {
     //        windowFlags |= ImGuiWindowFlags_NoMove;
 
-    ImVec2 windowPos(
-      (corner & 1) ? io.DisplaySize.x - padSize.x : padSize.x,
-      (corner & 2) ? io.DisplaySize.y - padSize.y : padSize.y);
-
-    if (0 == corner || 1 == corner) {
-      windowPos.y += guiData.topDockOffset();
+    ImVec2 windowPos;
+    if (guiData.m_renderViewport) {
+      windowPos = toolbarWindowPositionForViewport(*guiData.m_renderViewport, io.DisplaySize.y, corner, padSize);
     }
-    else if (2 == corner || 3 == corner) {
-      windowPos.y -= guiData.bottomDockOffset();
+    else {
+      windowPos = ImVec2(
+        (corner & 1) ? io.DisplaySize.x - padSize.x : padSize.x,
+        (corner & 2) ? io.DisplaySize.y - padSize.y : padSize.y);
+
+      if (0 == corner || 1 == corner) {
+        windowPos.y += guiData.topDockOffset();
+      }
+      else if (2 == corner || 3 == corner) {
+        windowPos.y -= guiData.bottomDockOffset();
+      }
     }
 
     const ImVec2 windowPosPivot((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);

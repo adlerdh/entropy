@@ -30,13 +30,9 @@ void GuiData::setTxPrecisionFormat()
   m_txPrecisionFormat = precisionFormat(m_txPrecision);
 }
 
-GuiData::Margins GuiData::computeMargins() const
+GuiData::Margins GuiData::computeToolbarMargins() const
 {
   Margins margins;
-
-  if (m_showMainMenuBar) {
-    margins.top += m_mainMenuBarDims.y;
-  }
 
   // Corners: -1 custom, 0 top-left, 1 top-right, 2 bottom-left, 3 bottom-right
 
@@ -76,6 +72,17 @@ GuiData::Margins GuiData::computeMargins() const
         margins.right = std::max(margins.right, m_segToolbarDockDims.x);
       }
     }
+  }
+
+  return margins;
+}
+
+GuiData::Margins GuiData::computeMargins() const
+{
+  Margins margins = computeToolbarMargins();
+
+  if (m_showMainMenuBar) {
+    margins.top += m_mainMenuBarDims.y;
   }
 
   if (m_showLayoutTabs) {

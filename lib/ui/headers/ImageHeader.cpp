@@ -293,7 +293,10 @@ void renderImageHeader(
 
   if (!isActiveImage) {
     if (ImGui::Button(ICON_FK_TOGGLE_OFF)) {
-      if (appData.setActiveImageUid(imageUid)) return;
+      if (appData.setActiveImageUid(imageUid)) {
+        ImGui::PopID(); // imageUid
+        return;
+      }
     }
 
     if (ImGui::IsItemHovered()) {
@@ -1543,6 +1546,7 @@ void renderImageHeader(
 
   if (!image->hasPixelData()) {
     ImGui::TextUnformatted("Pixel data is not loaded yet.");
+    ImGui::PopID(); // imageUid
     return;
   }
 

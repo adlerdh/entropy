@@ -1782,7 +1782,7 @@ void renderSettingsWindow(
   setNextWindowSizeConstraintsToMainViewport(560.0f, 420.0f);
   ImGui::SetNextWindowSize(ImVec2{760.0f, 560.0f}, ImGuiCond_FirstUseEver);
 
-  if (ImGui::Begin("Settings", &(appData.guiData().m_showSettingsWindow))) {
+  if (ImGui::Begin("Settings", &(appData.guiData().m_showSettingsWindow), ImGuiWindowFlags_NoDocking)) {
     RenderData& renderData = appData.renderData();
 
     const ImGuiStyle& style = ImGui::GetStyle();

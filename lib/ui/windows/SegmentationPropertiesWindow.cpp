@@ -33,14 +33,10 @@ void renderSegmentationPropertiesWindow(
   const std::function<bool(const uuid& segUid)>& removeSeg,
   const AllViewsRecenterType& recenterAllViews)
 {
-  static bool firstRun = false;
-
-  ImGuiWindowFlags flags = firstRun ? ImGuiWindowFlags_AlwaysAutoResize : ImGuiWindowFlags_None;
-
-  setNextWindowSizeConstraintsToMainViewport();
-  if (ImGui::Begin("Segmentations##Segmentations", &(appData.guiData().m_showSegmentationsWindow), flags)) {
-    firstRun = false;
-
+  setNextWindowSizeConstraintsToMainViewport(320.0f, 260.0f);
+  ImGui::SetNextWindowSize(ImVec2{420.0f, 560.0f}, ImGuiCond_FirstUseEver);
+  setNextDockablePanelWindowClass();
+  if (ImGui::Begin("Segmentations##Segmentations", &(appData.guiData().m_showSegmentationsWindow))) {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 

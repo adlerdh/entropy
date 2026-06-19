@@ -57,7 +57,8 @@ void renderAboutDialogModalPopup(bool open)
   ImGui::SetNextWindowSize(ImVec2(1.0f, 1.0f), ImGuiCond_Always);
   constexpr ImGuiWindowFlags hostFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
                                          ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
-                                         ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground;
+                                         ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground |
+                                         ImGuiWindowFlags_NoDocking;
   if (!ImGui::Begin("##AboutDialogPopupHost", nullptr, hostFlags)) {
     ImGui::End();
     return;

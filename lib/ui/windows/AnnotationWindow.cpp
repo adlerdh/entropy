@@ -19,8 +19,10 @@ void renderAnnotationWindow(
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
   const AllViewsRecenterType& recenterAllViews)
 {
-  setNextWindowSizeConstraintsToMainViewport();
-  if (ImGui::Begin("Annotations", &(appData.guiData().m_showAnnotationsWindow), ImGuiWindowFlags_AlwaysAutoResize)) {
+  setNextWindowSizeConstraintsToMainViewport(280.0f, 240.0f);
+  ImGui::SetNextWindowSize(ImVec2{360.0f, 480.0f}, ImGuiCond_FirstUseEver);
+  setNextDockablePanelWindowClass();
+  if (ImGui::Begin("Annotations", &(appData.guiData().m_showAnnotationsWindow))) {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
 

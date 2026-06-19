@@ -105,7 +105,8 @@ void renderViewSettingsComboWindow(
 
     static const ImGuiWindowFlags sk_defaultWindowFlags =
       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus;
+      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
+      ImGuiWindowFlags_NoDocking;
 
     ImGuiWindowFlags windowFlags = sk_defaultWindowFlags;
 
@@ -513,7 +514,8 @@ void renderViewOrientationToolWindow(
 
   static const ImGuiWindowFlags sk_defaultWindowFlags =
     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus;
+    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
+    ImGuiWindowFlags_NoDocking;
 
   static constexpr float sk_gizmoSize = 96.0f;
   static constexpr int sk_gizmoMode = (imguiGizmo::mode3Axes | imguiGizmo::cubeAtOrigin);

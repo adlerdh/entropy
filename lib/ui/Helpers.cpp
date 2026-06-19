@@ -3,6 +3,7 @@
 #include <IconsForkAwesome.h>
 
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 
 #include <algorithm>
 #include <stdio.h>
@@ -46,6 +47,13 @@ void setNextWindowSizeConstraintsToMainViewport(
   maxSize.x = std::max(maxSize.x, minSize.x);
   maxSize.y = std::max(maxSize.y, minSize.y);
   ImGui::SetNextWindowSizeConstraints(minSize, maxSize);
+}
+
+void setNextDockablePanelWindowClass()
+{
+  ImGuiWindowClass windowClass;
+  windowClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton;
+  ImGui::SetNextWindowClass(&windowClass);
 }
 
 bool mySliderS32(const char* label, int32_t* value, int32_t min, int32_t max, const char* format)

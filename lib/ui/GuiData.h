@@ -4,6 +4,7 @@
 #include "image/ImageHeader.h"
 
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 #include <imgui/imgui.h>
 #include <uuid.h>
 
@@ -237,10 +238,11 @@ struct GuiData
    * The initializer is ordered to match the inspector table column declarations in InspectionTableWindow.cpp.
    * Interpolated values and region names start hidden, matching the previous table defaults.
    */
-  std::array<bool, 7> m_inspectionColumnVisible{
+  std::array<bool, 8> m_inspectionColumnVisible{
     true,  //!< Image column.
     true,  //!< Nearest-neighbor image value column.
     false, //!< Linearly interpolated image value column.
+    false, //!< Nearest-neighbor active component percentile column.
     true,  //!< Active segmentation label column.
     false, //!< Active segmentation region name column.
     true,  //!< Voxel index column.
@@ -311,10 +313,11 @@ struct GuiData
    */
   glm::vec2 m_segToolbarDockDims{0.0f, 0.0f};
 
-  bool m_showLayoutTabs = true;                                         //!< Show the layout tab strip.
-  LayoutTabPlacement m_layoutTabPlacement = LayoutTabPlacement::Top;    //!< Layout tab strip edge.
-  float m_layoutTabBarHeight = 0.0f;                                    //!< Current reserved layout tab strip height.
-  bool m_showConfirmRemoveLayoutPopup = false;                          //!< Confirm deletion of a layout tab.
+  bool m_showLayoutTabs = true;                                      //!< Show the layout tab strip.
+  LayoutTabPlacement m_layoutTabPlacement = LayoutTabPlacement::Top; //!< Layout tab strip edge.
+  float m_layoutTabBarHeight = 0.0f;                                 //!< Current reserved layout tab strip height.
+  std::optional<glm::vec4> m_renderViewport = std::nullopt;          //!< Image rendering bounds in window coordinates.
+  bool m_showConfirmRemoveLayoutPopup = false;                       //!< Confirm deletion of a layout tab.
   std::optional<std::size_t> m_pendingRemoveLayoutIndex = std::nullopt; //!< Layout waiting for deletion.
 
   /**
@@ -332,6 +335,9 @@ struct GuiData
 
   /** @brief Compute UI margins based on visible menu, toolbars, and layout tabs. */
   Margins computeMargins() const;
+
+  /** @brief Compute only margins reserved by visible toolbars. */
+  Margins computeToolbarMargins() const;
 
   /** @brief Offset docked UI from top chrome such as the menu bar and layout tabs. */
   float topDockOffset() const;

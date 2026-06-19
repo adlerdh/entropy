@@ -33,6 +33,7 @@ enum class MainMenuAction
   IncreaseSegmentationOpacity,
   ToggleScaleBars,
   ToggleLightboxOffsets,
+  ToggleAsciiRendering,
   ToggleOverlays,
   ToggleFullScreen,
   ToggleEntropyInstanceSync,
@@ -88,6 +89,7 @@ enum class MainMenuAction
   ShowSynchronizeSettingsWindow,
   ToggleInspectorWindow,
   ToggleOpacityMixerWindow,
+  ResetPanelLayout,
   ToggleImGuiDemoWindow,
   ToggleImPlotDemoWindow,
   ToggleToolbar

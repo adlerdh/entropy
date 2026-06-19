@@ -714,12 +714,22 @@ void EntropyApp::resize(int windowWidth, int windowHeight)
   // app->resize( windowWidth, windowHeight );
   windowData().setWindowSize(windowWidth, windowHeight);
 
-  // Set viewport to account for margins
+  if (const std::optional<glm::vec4>& renderViewport = guiData().m_renderViewport) {
+    const GuiData::Margins toolbarMargins = guiData().computeToolbarMargins();
+    windowData().setViewport(
+      renderViewport->x + toolbarMargins.left,
+      renderViewport->y + toolbarMargins.bottom,
+      std::max(1.0f, renderViewport->z - (toolbarMargins.left + toolbarMargins.right)),
+      std::max(1.0f, renderViewport->w - (toolbarMargins.bottom + toolbarMargins.top)));
+    return;
+  }
+
+  // Set viewport to account for margins.
   windowData().setViewport(
     margins.left,
     margins.bottom,
-    static_cast<float>(windowWidth) - (margins.left + margins.right),
-    static_cast<float>(windowHeight) - (margins.bottom + margins.top));
+    std::max(1.0f, static_cast<float>(windowWidth) - (margins.left + margins.right)),
+    std::max(1.0f, static_cast<float>(windowHeight) - (margins.bottom + margins.top)));
 }
 
 void EntropyApp::render()

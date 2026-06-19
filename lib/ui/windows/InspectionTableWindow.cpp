@@ -34,6 +34,7 @@ enum class InspectorColumn : int
   Image = 0,
   Value,
   InterpolatedValue,
+  Percentile,
   Label,
   Region,
   Voxel,
@@ -43,18 +44,41 @@ enum class InspectorColumn : int
 
 constexpr std::size_t sk_inspectorColumnCount = static_cast<std::size_t>(InspectorColumn::Count);
 
-constexpr std::array<const char*, sk_inspectorColumnCount>
-  sk_inspectorColumnNames{"Image", "Value", "Value (interp.)", "Label", "Region", "Voxel", "Subject LPS (mm)"};
+constexpr std::array<const char*, sk_inspectorColumnCount> sk_inspectorColumnNames{
+  "Image",
+  "Value",
+  "Value (interp.)",
+  "Percentile",
+  "Label",
+  "Region",
+  "Voxel",
+  "Subject LPS (mm)"};
 
 constexpr std::array<float, sk_inspectorColumnCount>
-  sk_inspectorColumnDefaultWidths{150.0f, 75.0f, 75.0f, 50.0f, 100.0f, 125.0f, 225.0f};
+  sk_inspectorColumnDefaultWidths{150.0f, 75.0f, 75.0f, 85.0f, 50.0f, 100.0f, 125.0f, 225.0f};
 
 constexpr std::array<bool, sk_inspectorColumnCount>
-  sk_inspectorColumnCanHide{false, true, true, true, true, true, true};
+  sk_inspectorColumnCanHide{false, true, true, true, true, true, true, true};
 
 constexpr int columnIndex(InspectorColumn column)
 {
   return static_cast<int>(column);
+}
+
+std::optional<double> activeComponentPercentile(const Image& image, const std::vector<double>& imageValuesNN)
+{
+  const uint32_t activeComponent = image.settings().activeComponent();
+  if (activeComponent >= imageValuesNN.size()) {
+    return std::nullopt;
+  }
+
+  const double value = imageValuesNN.at(activeComponent);
+  const QuantileOfValue quantile = isComponentFloatingPoint(image.header().memoryComponentType())
+                                     ? image.valueToQuantile(activeComponent, value)
+                                     : image.valueToQuantile(activeComponent, static_cast<int64_t>(value));
+
+  const double percentile = 50.0 * (quantile.lowerQuantile + quantile.upperQuantile);
+  return std::clamp(percentile, 0.0, 100.0);
 }
 } // namespace
 
@@ -73,7 +97,7 @@ void renderInspectionWindowWithTable(
   static bool s_firstRun = true; // Is this the first run?
 
   static constexpr float sk_pad = 10.0f;
-  static int corner = 2;
+  static int corner = -1;
 
   //    bool selectionButtonShown = false;
 
@@ -90,9 +114,7 @@ void renderInspectionWindowWithTable(
     ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders |
     ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY;
 
-  static const ImGuiWindowFlags sk_windowFlags =
-    ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing |
-    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav;
+  static const ImGuiWindowFlags sk_windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoFocusOnAppearing;
 
   static bool s_showTitleBar = false;
   static bool s_autoSizeColumnsRequested = false;
@@ -109,80 +131,100 @@ void renderInspectionWindowWithTable(
     s_firstRun = false;
   }
 
-  auto renderColumnVisibilityMenu = [&appData]() {
-    if (ImGui::BeginMenu("Columns")) {
-      if (ImGui::MenuItem("Auto-size columns")) {
-        s_autoSizeColumnsRequested = true;
-      }
-      ImGui::Separator();
+  auto renderColumnVisibilityItems = [&appData]() {
+    if (ImGui::MenuItem("Auto-size columns")) {
+      s_autoSizeColumnsRequested = true;
+    }
+    ImGui::Separator();
 
-      for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
-        bool visible = appData.guiData().m_inspectionColumnVisible.at(column);
-        if (!sk_inspectorColumnCanHide.at(column)) {
-          ImGui::BeginDisabled();
-        }
-        if (
-          ImGui::MenuItem(sk_inspectorColumnNames.at(column), nullptr, visible) && sk_inspectorColumnCanHide.at(column))
-        {
-          appData.guiData().m_inspectionColumnVisible.at(column) = !visible;
-        }
-        if (!sk_inspectorColumnCanHide.at(column)) {
-          ImGui::EndDisabled();
-        }
+    for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+      bool visible = appData.guiData().m_inspectionColumnVisible.at(column);
+      if (!sk_inspectorColumnCanHide.at(column)) {
+        ImGui::BeginDisabled();
       }
+      if (ImGui::MenuItem(sk_inspectorColumnNames.at(column), nullptr, visible) && sk_inspectorColumnCanHide.at(column))
+      {
+        appData.guiData().m_inspectionColumnVisible.at(column) = !visible;
+      }
+      if (!sk_inspectorColumnCanHide.at(column)) {
+        ImGui::EndDisabled();
+      }
+    }
+  };
+
+  auto renderColumnVisibilityMenu = [&renderColumnVisibilityItems]() {
+    if (ImGui::BeginMenu("Columns")) {
+      renderColumnVisibilityItems();
       ImGui::EndMenu();
     }
   };
 
-  auto contextMenu = [&appData, &getImageDisplayAndFileName, &renderColumnVisibilityMenu]() {
+  auto renderImagesItems = [&appData, &getImageDisplayAndFileName]() {
+    for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
+      const auto imageUid = appData.imageUid(imageIndex);
+      if (!imageUid) continue;
+
+      auto it = s_showSubject.find(*imageUid);
+      if (std::end(s_showSubject) == it) {
+        s_showSubject.insert({*imageUid, true});
+      }
+
+      bool& visible = s_showSubject[*imageUid];
+      const auto names = getImageDisplayAndFileName(imageIndex);
+
+      if (ImGui::MenuItem(names.first.c_str(), nullptr, visible)) {
+        visible = !visible;
+      }
+
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("%s", names.second.c_str());
+      }
+    }
+  };
+
+  auto renderImagesMenu = [&renderImagesItems]() {
     if (ImGui::BeginMenu("Images...")) {
-      for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
-        const auto imageUid = appData.imageUid(imageIndex);
-        if (!imageUid) continue;
+      renderImagesItems();
+      ImGui::EndMenu();
+    }
+  };
 
-        auto it = s_showSubject.find(*imageUid);
-        if (std::end(s_showSubject) == it) {
-          s_showSubject.insert({*imageUid, true});
-        }
-
-        bool& visible = s_showSubject[*imageUid];
-        const auto names = getImageDisplayAndFileName(imageIndex);
-
-        if (ImGui::MenuItem(names.first.c_str(), nullptr, visible)) {
-          visible = !visible;
-        }
-
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", names.second.c_str());
-        }
-      }
-
+  auto renderWindowItems = [&appData]() {
+    if (ImGui::BeginMenu("Position")) {
+      if (ImGui::MenuItem("Custom", nullptr, corner == -1)) corner = -1;
+      if (ImGui::MenuItem("Top-left", nullptr, corner == 0)) corner = 0;
+      if (ImGui::MenuItem("Top-right", nullptr, corner == 1)) corner = 1;
+      if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2)) corner = 2;
+      if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3)) corner = 3;
       ImGui::EndMenu();
     }
 
-    renderColumnVisibilityMenu();
+    if (ImGui::MenuItem("Show title bar", nullptr, s_showTitleBar)) {
+      s_showTitleBar = !s_showTitleBar;
+    }
 
+    ImGui::Separator();
+    if (appData.guiData().m_showInspectionWindow && ImGui::MenuItem("Close")) {
+      appData.guiData().m_showInspectionWindow = false;
+    }
+  };
+
+  auto renderWindowMenu = [&renderWindowItems]() {
     if (ImGui::BeginMenu("Window")) {
-      if (ImGui::BeginMenu("Position")) {
-        if (ImGui::MenuItem("Custom", nullptr, corner == -1)) corner = -1;
-        if (ImGui::MenuItem("Top-left", nullptr, corner == 0)) corner = 0;
-        if (ImGui::MenuItem("Top-right", nullptr, corner == 1)) corner = 1;
-        if (ImGui::MenuItem("Bottom-left", nullptr, corner == 2)) corner = 2;
-        if (ImGui::MenuItem("Bottom-right", nullptr, corner == 3)) corner = 3;
-        ImGui::EndMenu();
-      }
-
-      if (ImGui::MenuItem("Show title bar", nullptr, s_showTitleBar)) {
-        s_showTitleBar = !s_showTitleBar;
-      }
-
-      ImGui::Separator();
-      if (appData.guiData().m_showInspectionWindow && ImGui::MenuItem("Close")) {
-        appData.guiData().m_showInspectionWindow = false;
-      }
-
+      renderWindowItems();
       ImGui::EndMenu();
     }
+  };
+
+  auto contextMenu = [&renderImagesMenu, &renderColumnVisibilityMenu, &renderWindowMenu]() {
+    renderImagesMenu();
+    renderColumnVisibilityMenu();
+    renderWindowMenu();
+  };
+
+  auto dockedMenu = [&renderImagesMenu, &renderColumnVisibilityMenu]() {
+    renderImagesMenu();
+    renderColumnVisibilityMenu();
   };
 
   auto showSelectionButton = []() {
@@ -197,6 +239,7 @@ void renderInspectionWindowWithTable(
     }
   };
 
+  const bool useOverlayPresentation = corner != -1;
   ImGuiWindowFlags windowFlags = sk_windowFlags;
 
   if (corner != -1) {
@@ -213,7 +256,7 @@ void renderInspectionWindowWithTable(
     ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, windowPosPivot);
   }
 
-  if (!s_showTitleBar) {
+  if (corner != -1 && !s_showTitleBar) {
     windowFlags |= ImGuiWindowFlags_NoDecoration;
   }
 
@@ -221,24 +264,39 @@ void renderInspectionWindowWithTable(
   ImVec4 menuBarBgColor = colors[ImGuiCol_MenuBarBg];
   menuBarBgColor.w /= 2.0f;
 
-  ImGui::SetNextWindowBgAlpha(0.0f); // Transparent background
+  if (useOverlayPresentation) {
+    ImGui::SetNextWindowBgAlpha(0.0f);
+  }
 
   ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, sk_cellPadding);
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, sk_framePadding);
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImGui::GetStyle().FramePadding);
   ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, sk_itemInnerSpacing);
   ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_windowPadding);
+  ImGui::PushStyleVar(
+    ImGuiStyleVar_WindowPadding,
+    useOverlayPresentation ? sk_windowPadding : ImGui::GetStyle().WindowPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, sk_windowRounding);
 
-  setNextWindowSizeConstraintsToMainViewport();
+  setNextWindowSizeConstraintsToMainViewport(480.0f, 120.0f);
+  ImGui::SetNextWindowSize(ImVec2{720.0f, 180.0f}, ImGuiCond_FirstUseEver);
+  setNextDockablePanelWindowClass();
   if (ImGui::Begin("Voxel Inspector##InspectionWindow", &(appData.guiData().m_showInspectionWindow), windowFlags)) {
-    ImGui::PushStyleColor(ImGuiCol_MenuBarBg, menuBarBgColor);
+    if (useOverlayPresentation) {
+      ImGui::PushStyleColor(ImGuiCol_MenuBarBg, menuBarBgColor);
+    }
     if (ImGui::BeginMenuBar()) {
-      contextMenu();
+      if (useOverlayPresentation) {
+        contextMenu();
+      }
+      else {
+        dockedMenu();
+      }
       ImGui::EndMenuBar();
     }
-    ImGui::PopStyleColor(1); // ImGuiCol_MenuBarBg
+    if (useOverlayPresentation) {
+      ImGui::PopStyleColor(1); // ImGuiCol_MenuBarBg
+    }
 
     if (ImGui::BeginTable("Image Information", static_cast<int>(sk_inspectorColumnCount), sk_tableFlags)) {
       ImGui::TableSetupScrollFreeze(1, 1);
@@ -257,6 +315,10 @@ void renderInspectionWindowWithTable(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::InterpolatedValue)),
         ImGuiTableColumnFlags_WidthFixed,
         sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::InterpolatedValue)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Percentile)),
+        ImGuiTableColumnFlags_WidthFixed,
+        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Percentile)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Label)),
         ImGuiTableColumnFlags_WidthFixed,
@@ -501,6 +563,29 @@ void renderInspectionWindowWithTable(
                         }
                     }
                     */
+        }
+        else {
+          ImGui::Text("<N/A>");
+        }
+
+        ImGui::TableNextColumn(); // "Percentile"
+
+        if (const std::optional<double> percentile = activeComponentPercentile(*image, imageValuesNN)) {
+          double a = *percentile;
+          ImGui::PushItemWidth(-1);
+          ImGui::InputScalar(
+            "##imagePercentile",
+            ImGuiDataType_Double,
+            &a,
+            nullptr,
+            nullptr,
+            appData.guiData().m_percentilePrecisionFormat.c_str(),
+            ImGuiInputTextFlags_ReadOnly);
+          ImGui::PopItemWidth();
+
+          if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Active component: %d", image->settings().activeComponent());
+          }
         }
         else {
           ImGui::Text("<N/A>");

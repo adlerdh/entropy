@@ -25,11 +25,11 @@ void renderOpacityBlenderWindow(
     return;
   }
 
-  setNextWindowSizeConstraintsToMainViewport();
-  const bool showWindow = ImGui::Begin(
-    windowName,
-    &(appData.guiData().m_showOpacityBlenderWindow),
-    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+  setNextWindowSizeConstraintsToMainViewport(280.0f, 180.0f);
+  ImGui::SetNextWindowSize(ImVec2{360.0f, 260.0f}, ImGuiCond_FirstUseEver);
+  setNextDockablePanelWindowClass();
+  const bool showWindow =
+    ImGui::Begin(windowName, &(appData.guiData().m_showOpacityBlenderWindow), ImGuiWindowFlags_NoCollapse);
 
   if (!showWindow) {
     ImGui::End();

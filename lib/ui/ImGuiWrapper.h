@@ -350,6 +350,7 @@ private:
   UiScaleManager m_uiScaleManager;
   std::optional<std::optional<float> > m_pendingUserScaleOverride;
   bool m_pendingFontReload = false;
+  bool m_applyDefaultPanelLayout = false;
 
   /// Futures created by running tasks asynchronously from the UI.
   /// These are created during the lifetime of the application.

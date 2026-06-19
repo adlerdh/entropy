@@ -505,6 +505,7 @@ bool populateViewsMenu(HMENU menu)
            L"Increase Segmentation Opacity\tD") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleScaleBars, L"Show Scale &Bars") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ToggleAsciiRendering, L"&ASCII Rendering") &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleOverlays, L"&Cycle Overlays\tO") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleFullScreen, L"&Enter Full Screen\tF4") &&
@@ -528,6 +529,8 @@ bool populateWindowsMenu(HMENU menu)
             insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Se&ttings") &&
             insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Ins&pector") &&
             insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
+            insertSeparator(menu, position++) &&
+            insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&
             insertSeparator(menu, position++) &&
             insertActionMenuItem(menu, position++, MainMenuAction::ToggleToolbar, L"T&oolbar");
 #ifndef NDEBUG

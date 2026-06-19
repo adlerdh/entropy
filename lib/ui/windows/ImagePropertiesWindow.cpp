@@ -41,12 +41,10 @@ void renderImagePropertiesWindow(
 {
   static const std::string sk_showOpacityMixer = std::string(ICON_FK_SLIDERS) + " Show opacity mixer";
 
-  setNextWindowSizeConstraintsToMainViewport();
-  if (ImGui::Begin("Images##Images", &(appData.guiData().m_showImagePropertiesWindow)))
-  // ImGuiWindowFlags_AlwaysAutoResize ) )
-  /// @todo Do auto resize only on initial loading
-  /// look at constrained resize demo in imgui
-  {
+  setNextWindowSizeConstraintsToMainViewport(340.0f, 280.0f);
+  ImGui::SetNextWindowSize(ImVec2{460.0f, 620.0f}, ImGuiCond_FirstUseEver);
+  setNextDockablePanelWindowClass();
+  if (ImGui::Begin("Images##Images", &(appData.guiData().m_showImagePropertiesWindow))) {
     renderActiveImageSelectionCombo(numImages, getImageDisplayAndFileName, getActiveImageIndex, setActiveImageIndex);
 
     if (ImGui::Button(sk_showOpacityMixer.c_str())) {

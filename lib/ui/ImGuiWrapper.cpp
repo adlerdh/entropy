@@ -54,6 +54,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <fstream>
 #include <memory>
 #include <numeric>
 #include <unordered_map>
@@ -102,6 +103,230 @@ bool updateLayoutTabBarHeight(GuiData& guiData)
 
   guiData.m_layoutTabBarHeight = height;
   return true;
+}
+
+bool savedDockspaceLayoutExists(const std::filesystem::path& iniFilePath)
+{
+  std::ifstream stream{iniFilePath};
+  if (!stream) {
+    return false;
+  }
+
+  std::string line;
+  while (std::getline(stream, line)) {
+    if (
+      line.find("EntropyMainDockspace") != std::string::npos || line.find("EntropyDockspaceHost") != std::string::npos)
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+struct DockspaceGeometry
+{
+  ImVec2 pos;
+  ImVec2 size;
+};
+
+DockspaceGeometry mainDockspaceGeometry(const GuiData& guiData)
+{
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  DockspaceGeometry geometry{viewport->WorkPos, viewport->WorkSize};
+
+  if (guiData.m_showLayoutTabs) {
+    if (GuiData::LayoutTabPlacement::Top == guiData.m_layoutTabPlacement) {
+      geometry.pos.y += guiData.m_layoutTabBarHeight;
+      geometry.size.y = std::max(1.0f, geometry.size.y - guiData.m_layoutTabBarHeight);
+    }
+    else {
+      geometry.size.y = std::max(1.0f, geometry.size.y - guiData.m_layoutTabBarHeight);
+    }
+  }
+
+  return geometry;
+}
+
+ImGuiID renderMainDockspace(const GuiData& guiData)
+{
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  if (!viewport) {
+    return 0;
+  }
+
+  const DockspaceGeometry geometry = mainDockspaceGeometry(guiData);
+
+  ImGui::SetNextWindowPos(geometry.pos, ImGuiCond_Always);
+  ImGui::SetNextWindowSize(geometry.size, ImGuiCond_Always);
+  ImGui::SetNextWindowViewport(viewport->ID);
+
+  constexpr ImGuiWindowFlags hostWindowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+                                               ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                                               ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                               ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground;
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.0f, 0.0f});
+  ImGui::Begin("EntropyDockspaceHost", nullptr, hostWindowFlags);
+  ImGui::PopStyleVar(3);
+
+  const ImGuiID dockspaceId = ImGui::GetID("EntropyMainDockspace");
+  ImGui::DockSpace(
+    dockspaceId,
+    ImVec2{0.0f, 0.0f},
+    ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode);
+
+  ImGui::End();
+  return dockspaceId;
+}
+
+bool keepDockTabsVisible(ImGuiDockNode* node)
+{
+  if (!node) {
+    return false;
+  }
+
+  bool changed = false;
+  const ImGuiDockNodeFlags visibleTabFlags =
+    node->LocalFlags &
+    ~(ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_HiddenTabBar | ImGuiDockNodeFlags_NoTabBar);
+  if (visibleTabFlags != node->LocalFlags) {
+    node->SetLocalFlags(visibleTabFlags);
+    changed = true;
+  }
+
+  changed = keepDockTabsVisible(node->ChildNodes[0]) || changed;
+  changed = keepDockTabsVisible(node->ChildNodes[1]) || changed;
+  return changed;
+}
+
+bool keepDockTabsVisible(ImGuiID dockspaceId)
+{
+  return keepDockTabsVisible(ImGui::DockBuilderGetNode(dockspaceId));
+}
+
+std::optional<glm::vec4> centralDockspaceRenderViewport(ImGuiID dockspaceId, int windowHeight)
+{
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  const ImGuiDockNode* centralNode = ImGui::DockBuilderGetCentralNode(dockspaceId);
+  if (!viewport || !centralNode || centralNode->Size.x <= 1.0f || centralNode->Size.y <= 1.0f) {
+    return std::nullopt;
+  }
+
+  const float left = centralNode->Pos.x - viewport->Pos.x;
+  const float top = centralNode->Pos.y - viewport->Pos.y;
+  const float width = centralNode->Size.x;
+  const float height = centralNode->Size.y;
+  const float bottom = static_cast<float>(windowHeight) - (top + height);
+
+  return glm::vec4{std::max(0.0f, left), std::max(0.0f, bottom), std::max(1.0f, width), std::max(1.0f, height)};
+}
+
+bool nearlyEqualViewport(const glm::vec4& a, const glm::vec4& b)
+{
+  constexpr float k_viewportTolerance = 0.5f;
+  return std::abs(a.x - b.x) < k_viewportTolerance && std::abs(a.y - b.y) < k_viewportTolerance &&
+         std::abs(a.z - b.z) < k_viewportTolerance && std::abs(a.w - b.w) < k_viewportTolerance;
+}
+
+bool updateRenderViewportFromDockspace(AppData& appData, ImGuiID dockspaceId)
+{
+  std::optional<glm::vec4>& renderViewport = appData.guiData().m_renderViewport;
+  const std::optional<glm::vec4> nextViewport =
+    centralDockspaceRenderViewport(dockspaceId, appData.windowData().getWindowSize().y);
+
+  if (!nextViewport) {
+    const bool changed = renderViewport.has_value();
+    renderViewport = std::nullopt;
+    return changed;
+  }
+
+  if (renderViewport && nearlyEqualViewport(*renderViewport, *nextViewport)) {
+    return false;
+  }
+
+  renderViewport = nextViewport;
+  return true;
+}
+
+float clampedDockSplitFraction(float availableSize, float targetFraction, float minSize, float maxSize)
+{
+  if (availableSize <= 1.0f) {
+    return targetFraction;
+  }
+
+  const float largestUsefulSize = std::min(maxSize, availableSize * 0.45f);
+  const float smallestUsefulSize = std::min(minSize, largestUsefulSize);
+  const float targetSize = std::clamp(availableSize * targetFraction, smallestUsefulSize, largestUsefulSize);
+  return targetSize / availableSize;
+}
+
+struct DefaultDockLayoutFractions
+{
+  float leftPanel = 0.20f;
+  float rightPanel = 0.20f;
+  float inspector = 0.08f;
+  float leftSegmentation = 0.25f;
+};
+
+DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSize)
+{
+  const float aspectRatio = dockspaceSize.y > 1.0f ? dockspaceSize.x / dockspaceSize.y : 1.0f;
+  const bool wideWorkspace = aspectRatio >= 2.10f;
+  const bool narrowWorkspace = aspectRatio <= 1.35f;
+
+  const float sideTargetFraction = wideWorkspace ? 0.23f : (narrowWorkspace ? 0.18f : 0.20f);
+  const float sideMinSize = narrowWorkspace ? 220.0f : 280.0f;
+  const float sideMaxSize = wideWorkspace ? 640.0f : 520.0f;
+
+  return DefaultDockLayoutFractions{
+    .leftPanel = clampedDockSplitFraction(dockspaceSize.x, sideTargetFraction, sideMinSize, sideMaxSize),
+    .rightPanel = clampedDockSplitFraction(dockspaceSize.x, sideTargetFraction, sideMinSize, sideMaxSize),
+    .inspector = clampedDockSplitFraction(dockspaceSize.y, 0.08f, 120.0f, 190.0f),
+    .leftSegmentation = clampedDockSplitFraction(dockspaceSize.y, 0.25f, 120.0f, 240.0f)};
+}
+
+void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const GuiData& guiData)
+{
+  if (0 == dockspaceId) {
+    return;
+  }
+
+  const DockspaceGeometry geometry = mainDockspaceGeometry(guiData);
+
+  ImGui::DockBuilderRemoveNode(dockspaceId);
+  ImGui::DockBuilderAddNode(
+    dockspaceId,
+    ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode);
+  ImGui::DockBuilderSetNodePos(dockspaceId, geometry.pos);
+  ImGui::DockBuilderSetNodeSize(dockspaceId, geometry.size);
+
+  ImGuiID centerNode = dockspaceId;
+  ImGuiID leftNode = 0;
+  ImGuiID leftBottomNode = 0;
+  ImGuiID rightNode = 0;
+  ImGuiID bottomNode = 0;
+
+  const DefaultDockLayoutFractions fractions = defaultDockLayoutFractions(geometry.size);
+
+  ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Left, fractions.leftPanel, &leftNode, &centerNode);
+  ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Right, fractions.rightPanel, &rightNode, &centerNode);
+  ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Down, fractions.inspector, &bottomNode, &centerNode);
+  ImGui::DockBuilderSplitNode(leftNode, ImGuiDir_Down, fractions.leftSegmentation, &leftBottomNode, &leftNode);
+
+  ImGui::DockBuilderDockWindow("Images##Images", leftNode);
+  ImGui::DockBuilderDockWindow("Segmentations##Segmentations", leftBottomNode);
+
+  ImGui::DockBuilderDockWindow("Annotations", rightNode);
+  ImGui::DockBuilderDockWindow("Landmarks", rightNode);
+  ImGui::DockBuilderDockWindow("Isosurfaces", rightNode);
+  ImGui::DockBuilderDockWindow("Image Opacity Mixer", rightNode);
+
+  ImGui::DockBuilderDockWindow("Voxel Inspector##InspectionWindow", bottomNode);
+
+  ImGui::DockBuilderFinish(dockspaceId);
 }
 
 float buttonWidthForLabel(const char* label)
@@ -415,7 +640,7 @@ void renderLayoutTabs(AppData& appData)
   constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
                                            ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoNav |
-                                           ImGuiWindowFlags_NoFocusOnAppearing;
+                                           ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoDocking;
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -510,7 +735,8 @@ void renderLoadingStatusBar()
 
   constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                                      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
-                                     ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing;
+                                     ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing |
+                                     ImGuiWindowFlags_NoDocking;
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -560,8 +786,8 @@ void renderEmptyWorkspace(
   ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2{0.5f, 0.5f});
   ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
 
-  constexpr ImGuiWindowFlags flags =
-    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
+  constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                                     ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking;
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding);
   if (ImGui::Begin("EmptyWorkspace", nullptr, flags)) {
@@ -686,15 +912,16 @@ ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler
 
   m_iniFileName = m_iniFilePath.string();
   m_logFileName = m_logFilePath.string();
+  m_applyDefaultPanelLayout = !savedDockspaceLayoutExists(m_iniFilePath);
   io.IniFilename = m_iniFileName.c_str();
   io.LogFilename = m_logFileName.c_str();
 
   io.ConfigDragClickToInputText = true;
   //    io.MouseDrawCursor = true;
-
   /// @todo Add window option for unsaved document (a little dot) when project changes
 
-  io.ConfigFlags = io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange;
+  io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   // Setup ImGui platform/renderer bindings:
   static const char* glsl_version = "#version 150";
@@ -1419,6 +1646,9 @@ void ImGuiWrapper::render()
       case MainMenuAction::ToggleScaleBars:
         m_appData.renderData().m_showScaleBars = !m_appData.renderData().m_showScaleBars;
         break;
+      case MainMenuAction::ToggleAsciiRendering:
+        m_appData.renderData().m_asciiEnabled = !m_appData.renderData().m_asciiEnabled;
+        break;
       case MainMenuAction::ToggleLightboxOffsets:
         m_appData.renderData().m_showLightboxOffsetLabels = !m_appData.renderData().m_showLightboxOffsetLabels;
         break;
@@ -1658,6 +1888,10 @@ void ImGuiWrapper::render()
       case MainMenuAction::ToggleOpacityMixerWindow:
         m_appData.guiData().m_showOpacityBlenderWindow = !m_appData.guiData().m_showOpacityBlenderWindow;
         break;
+      case MainMenuAction::ResetPanelLayout:
+        ImGui::ClearIniSettings();
+        m_applyDefaultPanelLayout = true;
+        break;
       case MainMenuAction::ToggleImGuiDemoWindow:
         m_appData.guiData().m_showImGuiDemoWindow = !m_appData.guiData().m_showImGuiDemoWindow;
         break;
@@ -1705,6 +1939,7 @@ void ImGuiWrapper::render()
         case MainMenuAction::DecreaseActiveImageOpacity:
         case MainMenuAction::IncreaseActiveImageOpacity:
         case MainMenuAction::ToggleScaleBars:
+        case MainMenuAction::ToggleAsciiRendering:
         case MainMenuAction::ToggleLightboxOffsets:
         case MainMenuAction::ToggleOverlays:
         case MainMenuAction::ToggleEntropyInstanceSync:
@@ -1740,6 +1975,7 @@ void ImGuiWrapper::render()
         case MainMenuAction::ShowSynchronizeSettingsWindow:
         case MainMenuAction::ToggleInspectorWindow:
         case MainMenuAction::ToggleOpacityMixerWindow:
+        case MainMenuAction::ResetPanelLayout:
         case MainMenuAction::ToggleImGuiDemoWindow:
         case MainMenuAction::ToggleImPlotDemoWindow:
         case MainMenuAction::ToggleToolbar:
@@ -1849,6 +2085,8 @@ void ImGuiWrapper::render()
       }
       case MainMenuAction::ToggleScaleBars:
         return m_appData.renderData().m_showScaleBars;
+      case MainMenuAction::ToggleAsciiRendering:
+        return m_appData.renderData().m_asciiEnabled;
       case MainMenuAction::ToggleLightboxOffsets:
         return m_appData.renderData().m_showLightboxOffsetLabels;
       case MainMenuAction::ToggleLayoutTabs:
@@ -1950,6 +2188,32 @@ void ImGuiWrapper::render()
   const bool backgroundTaskRunning = m_appData.state().animating();
   const bool hasLoadedProject =
     ProjectLoadState::Loaded == projectLoadState && 0 != m_appData.windowData().numLayouts();
+
+  if (hasLoadedProject) {
+    const ImGuiID dockspaceId = renderMainDockspace(m_appData.guiData());
+    if (m_applyDefaultPanelLayout) {
+      applyDefaultPanelDockLayout(dockspaceId, m_appData.guiData());
+      ImGui::SaveIniSettingsToDisk(m_iniFileName.c_str());
+      m_applyDefaultPanelLayout = false;
+    }
+    if (keepDockTabsVisible(dockspaceId)) {
+      ImGui::SaveIniSettingsToDisk(m_iniFileName.c_str());
+    }
+    if (updateRenderViewportFromDockspace(m_appData, dockspaceId)) {
+      if (m_readjustViewport) {
+        m_readjustViewport();
+      }
+      if (m_postEmptyGlfwEvent) {
+        m_postEmptyGlfwEvent();
+      }
+    }
+  }
+  else if (m_appData.guiData().m_renderViewport) {
+    m_appData.guiData().m_renderViewport = std::nullopt;
+    if (m_readjustViewport) {
+      m_readjustViewport();
+    }
+  }
 
   auto defaultProjectSaveDirectory = [this]() {
     if (m_appData.projectFileName()) {
