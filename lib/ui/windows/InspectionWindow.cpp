@@ -1,6 +1,7 @@
 #include "ui/windows/InspectionWindow.h"
 
 #include "ui/Helpers.h"
+#include "ui/headers/HeaderCommon.h"
 #include "logic/app/Data.h"
 
 #include "image/Image.h"
@@ -196,13 +197,15 @@ void renderInspectionWindow(
       firstImageShown = false;
 
       const auto names = getImageDisplayAndFileName(imageIndex);
+      const bool isRef = appData.refImageUid() && *appData.refImageUid() == *imageUid;
+      const bool isActiveImage = appData.activeImageUid() && *appData.activeImageUid() == *imageUid;
+      const std::string displayName = entropy::ui::headers::imageDisplayNameWithShortReferenceRole(
+        names.first,
+        isRef,
+        isActiveImage,
+        appData.numImages());
 
-      if (sk_refIndex == imageIndex) {
-        ImGui::TextColored(blueColor, "%s (ref.):", names.first.c_str());
-      }
-      else {
-        ImGui::TextColored(blueColor, "%s:", names.first.c_str());
-      }
+      ImGui::TextColored(blueColor, "%s:", displayName.c_str());
 
       if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", names.second.c_str());

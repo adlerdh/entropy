@@ -6,6 +6,7 @@
 #include <imgui/imgui.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <utility>
 
@@ -27,6 +28,58 @@ inline const char* referenceAndActiveImageMessage = "This is the reference and a
 inline const char* referenceImageMessage = "This is the reference image";
 inline const char* activeImageMessage = "This is the active image";
 inline const char* nonActiveImageMessage = "This is not the active image";
+
+inline std::string imageRoleSuffix(bool isReferenceImage, bool isActiveImage, std::size_t numImages)
+{
+  if (numImages <= 1) {
+    return {};
+  }
+  if (isReferenceImage && isActiveImage) {
+    return " (reference + active)";
+  }
+  if (isReferenceImage) {
+    return " (reference)";
+  }
+  if (isActiveImage) {
+    return " (active)";
+  }
+  return {};
+}
+
+inline std::string imageRoleSuffixShortReference(bool isReferenceImage, bool isActiveImage, std::size_t numImages)
+{
+  if (numImages <= 1) {
+    return {};
+  }
+  if (isReferenceImage && isActiveImage) {
+    return "(ref. + active)";
+  }
+  if (isReferenceImage) {
+    return "(ref.)";
+  }
+  if (isActiveImage) {
+    return "(active)";
+  }
+  return {};
+}
+
+inline std::string imageDisplayNameWithRole(
+  const std::string& displayName,
+  bool isReferenceImage,
+  bool isActiveImage,
+  std::size_t numImages)
+{
+  return displayName + imageRoleSuffix(isReferenceImage, isActiveImage, numImages);
+}
+
+inline std::string imageDisplayNameWithShortReferenceRole(
+  const std::string& displayName,
+  bool isReferenceImage,
+  bool isActiveImage,
+  std::size_t numImages)
+{
+  return displayName + imageRoleSuffixShortReference(isReferenceImage, isActiveImage, numImages);
+}
 
 inline const ImGuiColorEditFlags colorEditFlags = ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar |
                                                   ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV |

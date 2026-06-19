@@ -1,5 +1,6 @@
 #include "ui/headers/IsosurfaceHeader.h"
 #include "ui/Helpers.h"
+#include "ui/headers/HeaderCommon.h"
 
 #include "logic/SurfaceUtility.h"
 #include "logic/app/Data.h"
@@ -318,8 +319,14 @@ void renderIsosurfacesHeader(
 
   // Header is ID'ed only by the image index.
   // ### allows the header name to change without changing its ID.
-  const std::string headerName =
-    std::to_string(imageIndex) + ") " + image->settings().displayName() + "###" + std::to_string(imageIndex);
+  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
+  const std::string headerName = std::to_string(imageIndex) + ") " +
+                                 entropy::ui::headers::imageDisplayNameWithRole(
+                                   image->settings().displayName(),
+                                   isRef,
+                                   isActiveImage,
+                                   appData.numImages()) +
+                                 "###" + std::to_string(imageIndex);
 
   const auto headerColors = computeHeaderBgAndTextColors(image->settings().borderColor());
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);

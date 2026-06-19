@@ -1,6 +1,7 @@
 #include "ui/windows/InspectionWindow.h"
 
 #include "ui/Helpers.h"
+#include "ui/headers/HeaderCommon.h"
 #include "logic/app/Data.h"
 
 #include "image/Image.h"
@@ -107,7 +108,6 @@ void renderInspectionWindowWithTable(
   static const ImVec2 sk_cellPadding(0.0f, 0.0f);
   static const float sk_windowRounding(0.0f);
 
-  static const ImVec4 buttonColor(0.0f, 0.0f, 0.0f, 0.0f);
   //    static const ImVec4 blueColor( 0.0f, 0.5f, 1.0f, 1.0f );
 
   static const ImGuiTableFlags sk_tableFlags =
@@ -225,18 +225,6 @@ void renderInspectionWindowWithTable(
   auto dockedMenu = [&renderImagesMenu, &renderColumnVisibilityMenu]() {
     renderImagesMenu();
     renderColumnVisibilityMenu();
-  };
-
-  auto showSelectionButton = []() {
-    ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
-    if (ImGui::Button("...")) {
-      ImGui::OpenPopup("selectionPopup");
-    }
-    ImGui::PopStyleColor(1);
-
-    if (ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Select image(s) to inspect");
-    }
   };
 
   const bool useOverlayPresentation = corner != -1;
@@ -390,24 +378,37 @@ void renderInspectionWindowWithTable(
         const ImVec4 inputTextBgColor(darkerBorderColorRgb.r, darkerBorderColorRgb.g, darkerBorderColorRgb.b, 1.0f);
         const ImVec4 inputTextFgColor = (glm::luminosity(darkerBorderColorRgb) < 0.75f) ? whiteText : blackText;
 
+        const bool isRef = appData.refImageUid() && *appData.refImageUid() == *imageUid;
+        const bool isActiveImage = appData.activeImageUid() && *appData.activeImageUid() == *imageUid;
+        const std::string roleSuffix =
+          entropy::ui::headers::imageRoleSuffixShortReference(isRef, isActiveImage, appData.numImages());
+        const float suffixWidth =
+          roleSuffix.empty() ? 0.0f : ImGui::CalcTextSize(roleSuffix.c_str()).x + ImGui::GetStyle().ItemSpacing.x;
+        const float nameWidth = std::max(1.0f, ImGui::GetContentRegionAvail().x - suffixWidth);
+
         ImGui::PushStyleColor(ImGuiCol_FrameBg, inputTextBgColor);
         ImGui::PushStyleColor(ImGuiCol_Text, inputTextFgColor);
-        ImGui::PushItemWidth(-1);
+        ImGui::PushItemWidth(nameWidth);
+        bool nameHovered = false;
         {
           std::string displayName = image->settings().displayName();
           if (ImGui::InputText("##displayName", &displayName)) {
             image->settings().setDisplayName(displayName);
           }
+          nameHovered = ImGui::IsItemHovered();
         }
         ImGui::PopItemWidth();
         ImGui::PopStyleColor(2); // ImGuiCol_FrameBg, ImGuiCol_Text
 
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", image->header().fileName().c_str());
+        if (!roleSuffix.empty()) {
+          ImGui::SameLine();
+          ImGui::TextUnformatted(roleSuffix.c_str());
+          nameHovered = nameHovered || ImGui::IsItemHovered();
         }
 
-        ImGui::SameLine();
-        showSelectionButton();
+        if (nameHovered) {
+          ImGui::SetTooltip("%s", image->header().fileName().c_str());
+        }
 
         ImGui::TableNextColumn(); // "Value (NN)"
 

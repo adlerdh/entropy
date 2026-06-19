@@ -93,8 +93,11 @@ void renderLandmarkGroupHeader(
 
   // Header is ID'ed only by the image index.
   // ### allows the header name to change without changing its ID.
+  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
   const std::string headerName =
-    std::to_string(imageIndex) + ") " + image->settings().displayName() + "###" + std::to_string(imageIndex);
+    std::to_string(imageIndex) + ") " +
+    imageDisplayNameWithRole(image->settings().displayName(), isRef, isActiveImage, appData.numImages()) + "###" +
+    std::to_string(imageIndex);
 
   const auto imgSettings = image->settings();
 

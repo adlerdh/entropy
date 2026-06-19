@@ -55,6 +55,19 @@ using namespace entropy::ui::headers;
 
 namespace
 {
+bool visibilityCheckboxBeforeSlider(const char* id, bool* visible, const char* tooltip)
+{
+  const float originalSliderWidth = ImGui::CalcItemWidth();
+  const bool changed = ImGui::Checkbox(id, visible);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("%s", tooltip);
+  }
+  const float checkboxSlotWidth = ImGui::GetItemRectSize().x + ImGui::GetStyle().ItemSpacing.x;
+  ImGui::SameLine();
+  ImGui::PushItemWidth(std::max(1.0f, originalSliderWidth - checkboxSlotWidth));
+  return changed;
+}
+
 std::string dicomCacheKey(const uuids::uuid& imageUid, const serialize::DicomSource& source)
 {
   return uuids::to_string(imageUid) + "|" + source.m_studyInstanceUid + "|" + source.m_seriesInstanceUid;
@@ -239,8 +252,11 @@ void renderImageHeader(
   /// @todo Provide a function shortenedDisplayName that takes an argument indicating
   /// the max number N of characters. It removes the last characters of the name, such that the
   /// total length is N.
+  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
   const std::string headerName =
-    std::to_string(imageIndex) + ") " + imgSettings.displayName() + "###" + std::to_string(imageIndex);
+    std::to_string(imageIndex) + ") " +
+    imageDisplayNameWithRole(imgSettings.displayName(), isRef, isActiveImage, appData.numImages()) + "###" +
+    std::to_string(imageIndex);
 
   const auto headerColors = computeHeaderBgAndTextColors(imgSettings.borderColor());
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
@@ -276,8 +292,6 @@ void renderImageHeader(
   }
   ImGui::SameLine();
   helpMarker("Set the image display name and border color");
-
-  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
 
   if (!isActiveImage) {
     if (ImGui::Button(ICON_FK_TOGGLE_OFF)) {
@@ -479,42 +493,45 @@ void renderImageHeader(
         }
       }
 
-      // Global visibility (all components) checkbox:
+      // Global image opacity slider:
       bool globalVisibility = imgSettings.globalVisibility();
-
-      if (ImGui::Checkbox("Image visible", &globalVisibility)) {
+      if (visibilityCheckboxBeforeSlider(
+            "##globalImageVisible",
+            &globalVisibility,
+            "Show/hide all image components on all views (W)"))
+      {
         imgSettings.setGlobalVisibility(globalVisibility);
         updateImageUniforms();
       }
-      ImGui::SameLine();
-      helpMarker("Show/hide all image components on all views (W)");
-
-      if (activeSeg) {
-        bool segVisible = activeSeg->settings().visibility();
-
-        if (ImGui::Checkbox("Segmentation visible", &segVisible)) {
-          activeSeg->settings().setVisibility(segVisible);
-          updateAllImageUniforms();
-        }
-        ImGui::SameLine();
-        helpMarker("Show/hide the segmentation on all views (S)");
-      }
-
-      // Global image opacity slider:
       double globalImageOpacity = imgSettings.globalOpacity();
+      ImGui::BeginDisabled(!globalVisibility);
       if (mySliderF64("Image opacity", &globalImageOpacity, 0.0, 1.0)) {
         imgSettings.setGlobalOpacity(globalImageOpacity);
         updateImageUniforms();
       }
+      ImGui::EndDisabled();
+      ImGui::PopItemWidth();
       ImGui::SameLine();
       helpMarker("Image layer opacity");
 
       if (activeSeg) {
+        bool segVisible = activeSeg->settings().visibility();
+        if (visibilityCheckboxBeforeSlider(
+              "##segmentationVisibleGlobal",
+              &segVisible,
+              "Show/hide the segmentation on all views (S)"))
+        {
+          activeSeg->settings().setVisibility(segVisible);
+          updateAllImageUniforms();
+        }
         double segOpacity = activeSeg->settings().opacity();
+        ImGui::BeginDisabled(!segVisible);
         if (mySliderF64("Seg. opacity", &segOpacity, 0.0, 1.0)) {
           activeSeg->settings().setOpacity(segOpacity);
           updateAllImageUniforms();
         }
+        ImGui::EndDisabled();
+        ImGui::PopItemWidth();
         ImGui::SameLine();
         helpMarker("Segmentation layer opacity");
       }
@@ -555,56 +572,50 @@ void renderImageHeader(
       ImGui::Dummy(ImVec2(0.0f, 1.0f));
     }
 
-    // Visibility checkbox:
-    bool visible = imgSettings.visibility();
-
-    static const std::string compVisibleText("Component visible");
-    static const std::string imageVisibleText("Image visible");
     static const std::string compOpacityText("Component opacity");
     static const std::string imageOpacityText("Image opacity");
-
-    const char* visibleCheckText =
-      (image->header().numComponentsPerPixel() > 1) ? compVisibleText.c_str() : imageVisibleText.c_str();
 
     const char* opacitySliderText =
       (image->header().numComponentsPerPixel() > 1) ? compOpacityText.c_str() : imageOpacityText.c_str();
 
-    if (ImGui::Checkbox(visibleCheckText, &visible)) {
-      imgSettings.setVisibility(visible);
-      updateImageUniforms();
-    }
-    ImGui::SameLine();
-    helpMarker("Show/hide the image on all views");
-
-    if (activeSeg && !showComponentSelection) {
-      bool segVisible = activeSeg->settings().visibility();
-
-      if (ImGui::Checkbox("Segmentation visible", &segVisible)) {
-        activeSeg->settings().setVisibility(segVisible);
-        updateAllImageUniforms();
-      }
-      ImGui::SameLine();
-      helpMarker("Show/hide the segmentation on all views (S)");
-    }
-
     // if (visible)
     {
       // Image opacity slider:
+      bool visible = imgSettings.visibility();
+      if (visibilityCheckboxBeforeSlider("##imageVisible", &visible, "Show/hide the image on all views")) {
+        imgSettings.setVisibility(visible);
+        updateImageUniforms();
+      }
       double imageOpacity = imgSettings.opacity();
+      ImGui::BeginDisabled(!visible);
       if (mySliderF64(opacitySliderText, &imageOpacity, 0.0, 1.0)) {
         imgSettings.setOpacity(imageOpacity);
         updateImageUniforms();
       }
+      ImGui::EndDisabled();
+      ImGui::PopItemWidth();
       ImGui::SameLine();
       helpMarker("Image layer opacity");
 
       // Segmentation opacity slider:
       if (activeSeg && !showComponentSelection) {
+        bool segVisible = activeSeg->settings().visibility();
+        if (visibilityCheckboxBeforeSlider(
+              "##segmentationVisible",
+              &segVisible,
+              "Show/hide the segmentation on all views (S)"))
+        {
+          activeSeg->settings().setVisibility(segVisible);
+          updateAllImageUniforms();
+        }
         double segOpacity = activeSeg->settings().opacity();
+        ImGui::BeginDisabled(!segVisible);
         if (mySliderF64("Seg. opacity", &segOpacity, 0.0, 1.0)) {
           activeSeg->settings().setOpacity(segOpacity);
           updateAllImageUniforms();
         }
+        ImGui::EndDisabled();
+        ImGui::PopItemWidth();
         ImGui::SameLine();
         helpMarker("Segmentation layer opacity");
       }

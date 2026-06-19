@@ -53,6 +53,22 @@
 namespace fs = std::filesystem;
 using namespace entropy::ui::headers;
 
+namespace
+{
+bool visibilityCheckboxBeforeSlider(const char* id, bool* visible, const char* tooltip)
+{
+  const float originalSliderWidth = ImGui::CalcItemWidth();
+  const bool changed = ImGui::Checkbox(id, visible);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("%s", tooltip);
+  }
+  const float checkboxSlotWidth = ImGui::GetItemRectSize().x + ImGui::GetStyle().ItemSpacing.x;
+  ImGui::SameLine();
+  ImGui::PushItemWidth(std::max(1.0f, originalSliderWidth - checkboxSlotWidth));
+  return changed;
+}
+} // namespace
+
 void renderSegmentationHeader(
   AppData& appData,
   const uuids::uuid& imageUid,
@@ -94,8 +110,11 @@ void renderSegmentationHeader(
 
   // Header is ID'ed only by the image index.
   // ### allows the header name to change without changing its ID.
+  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
   const std::string headerName =
-    std::to_string(imageIndex) + ") " + imgSettings.displayName() + "###" + std::to_string(imageIndex);
+    std::to_string(imageIndex) + ") " +
+    imageDisplayNameWithRole(imgSettings.displayName(), isRef, isActiveImage, appData.numImages()) + "###" +
+    std::to_string(imageIndex);
 
   const auto headerColors = computeHeaderBgAndTextColors(imgSettings.borderColor());
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
@@ -126,8 +145,6 @@ void renderSegmentationHeader(
     ImGui::Button(ICON_FK_TOGGLE_ON);
     ImGui::PopStyleColor(1); // ImGuiCol_Button
   }
-
-  const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
 
   ImGui::SameLine();
 
@@ -169,10 +186,8 @@ void renderSegmentationHeader(
   ImGui::Separator();
   ImGui::Spacing();
 
-  ImGui::Text("Active segmentation:");
-
   //    ImGui::PushItemWidth(-1);
-  if (ImGui::BeginCombo("Name", activeSeg->settings().displayName().c_str())) {
+  if (ImGui::BeginCombo("Active seg.##Name", activeSeg->settings().displayName().c_str())) {
     size_t segIndex = 0;
     for (const auto& segUid : segUids) {
       ImGui::PushID(static_cast<int>(segIndex++));
@@ -302,27 +317,27 @@ void renderSegmentationHeader(
   ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 
   if (ImGui::TreeNode("View Properties")) {
-    // Visibility:
-    bool segVisible = segSettings.visibility();
-    if (ImGui::Checkbox("Visible", &segVisible)) {
-      segSettings.setVisibility(segVisible);
-      updateImageUniforms();
-    }
-    ImGui::SameLine();
-    helpMarker("Show/hide the segmentation on all views (S)");
-
-    //        if (segVisible)
     {
-      // Opacity (only shown if segmentation is visible):
+      bool segVisible = segSettings.visibility();
+      if (visibilityCheckboxBeforeSlider(
+            "##segmentationVisible",
+            &segVisible,
+            "Show/hide the segmentation on all views (S)"))
+      {
+        segSettings.setVisibility(segVisible);
+        updateImageUniforms();
+      }
       double segOpacity = segSettings.opacity();
+      ImGui::BeginDisabled(!segVisible);
       if (mySliderF64("Opacity", &segOpacity, 0.0, 1.0)) {
         segSettings.setOpacity(segOpacity);
         updateImageUniforms();
       }
+      ImGui::EndDisabled();
+      ImGui::PopItemWidth();
       ImGui::SameLine();
       helpMarker("Segmentation layer opacity");
     }
-    ImGui::Spacing();
 
     if (ImGui::BeginCombo("Sampling", typeString(segSettings.interpolationMode()).c_str())) {
       for (const auto& mode : {InterpolationMode::NearestNeighbor, InterpolationMode::Linear}) {
