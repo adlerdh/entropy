@@ -2,6 +2,7 @@
 
 #include "common/SegmentationTypes.h"
 #include "common/Types.h"
+#include "logic/app/ImageScaleInteraction.h"
 #include "logic/interaction/ViewHit.h"
 
 #include <glm/fwd.hpp>
@@ -207,9 +208,13 @@ public:
    * @param windowLastPos
    * @param windowCurrPos
    * @param windowStartPos
-   * @param constrainIsotropic
+   * @param constraint Scale constraint applied to the drag.
    */
-  void doImageScale(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit, bool constrainIsotropic);
+  void doImageScale(
+    const ViewHit& startHit,
+    const ViewHit& prevHit,
+    const ViewHit& currHit,
+    entropy::app::ImageScaleConstraint constraint);
 
   /**
    * @brief scrollViewSlice

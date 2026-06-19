@@ -1689,7 +1689,7 @@ void CallbackHandler::doImageScale(
   const ViewHit& startHit,
   const ViewHit& prevHit,
   const ViewHit& currHit,
-  bool constrainIsotropic)
+  entropy::app::ImageScaleConstraint constraint)
 {
   View* viewToUse = startHit.view;
   if (!viewToUse) {
@@ -1721,7 +1721,7 @@ void CallbackHandler::doImageScale(
     helper::worldDirection(viewToUse->camera(), Directions::View::Right),
     helper::worldDirection(viewToUse->camera(), Directions::View::Up),
     helper::worldDirection(viewToUse->camera(), Directions::View::Front),
-    constrainIsotropic);
+    constraint);
 
   if (!scaleUpdate) {
     return;

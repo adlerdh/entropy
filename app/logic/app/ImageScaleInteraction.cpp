@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cmath>
+#include <span>
 
 namespace entropy::app
 {
@@ -60,6 +61,28 @@ int axisMostAlignedWith(const glm::mat4& transform, const glm::vec3& worldAxis)
   return bestAxis;
 }
 
+int axisMostAlignedWith(const glm::mat4& transform, std::span<const int> axes, const glm::vec3& worldAxis)
+{
+  int bestAxis = axes.front();
+  float bestAlignment = -1.0f;
+
+  for (const int axis : axes) {
+    const glm::vec3 column = linearColumn(transform, axis);
+    const float length = glm::length(column);
+    if (length <= kEpsilon) {
+      continue;
+    }
+
+    const float alignment = std::abs(glm::dot(glm::normalize(column), glm::normalize(worldAxis)));
+    if (alignment > bestAlignment) {
+      bestAlignment = alignment;
+      bestAxis = axis;
+    }
+  }
+
+  return bestAxis;
+}
+
 bool validScale(const glm::vec3& scale)
 {
   return glm::all(glm::greaterThanEqual(scale, glm::vec3{kMinScale})) &&
@@ -67,6 +90,60 @@ bool validScale(const glm::vec3& scale)
 }
 
 } // namespace
+
+float imageScaleViewClipDistance(const glm::vec2& pointerViewClip, const glm::vec2& centerViewClip)
+{
+  return glm::length(pointerViewClip - centerViewClip);
+}
+
+bool imageScaleStartsInDeadZone(const glm::vec2& startViewClip, const glm::vec2& centerViewClip, float radiusViewClip)
+{
+  return radiusViewClip > 0.0f && imageScaleViewClipDistance(startViewClip, centerViewClip) < radiusViewClip;
+}
+
+bool imageScaleDragShouldWaitForDeadZone(
+  const glm::vec2& startViewClip,
+  const glm::vec2& currentViewClip,
+  const glm::vec2& centerViewClip,
+  float radiusViewClip)
+{
+  return imageScaleStartsInDeadZone(startViewClip, centerViewClip, radiusViewClip) &&
+         imageScaleViewClipDistance(currentViewClip, centerViewClip) < radiusViewClip;
+}
+
+std::optional<ImageScaleConstraint> imageScaleViewAxisConstraintFromDrag(
+  const glm::vec2& dragDeltaViewClip,
+  float minDominanceRatio)
+{
+  if (minDominanceRatio < 1.0f) {
+    minDominanceRatio = 1.0f;
+  }
+
+  const float x = std::abs(dragDeltaViewClip.x);
+  const float y = std::abs(dragDeltaViewClip.y);
+
+  if (x <= kEpsilon && y <= kEpsilon) {
+    return std::nullopt;
+  }
+
+  if (y <= kEpsilon) {
+    return ImageScaleConstraint::ViewHorizontal;
+  }
+
+  if (x <= kEpsilon) {
+    return ImageScaleConstraint::ViewVertical;
+  }
+
+  if (x >= y * minDominanceRatio) {
+    return ImageScaleConstraint::ViewHorizontal;
+  }
+
+  if (y >= x * minDominanceRatio) {
+    return ImageScaleConstraint::ViewVertical;
+  }
+
+  return std::nullopt;
+}
 
 std::optional<ImageScaleUpdate> computeImageScaleUpdate(
   const glm::mat4& worldDef_T_affine,
@@ -77,7 +154,7 @@ std::optional<ImageScaleUpdate> computeImageScaleUpdate(
   const glm::vec3& viewRight,
   const glm::vec3& viewUp,
   const glm::vec3& viewFront,
-  bool constrainIsotropic)
+  ImageScaleConstraint constraint)
 {
   if (!validScale(currentScale)) {
     return std::nullopt;
@@ -90,7 +167,7 @@ std::optional<ImageScaleUpdate> computeImageScaleUpdate(
 
   glm::vec3 scaleDelta{1.0f};
 
-  if (constrainIsotropic) {
+  if (ImageScaleConstraint::Isotropic == constraint) {
     const glm::vec2 previousPlane{
       glm::dot(previousWorldPointer - fixedWorldCenter, glm::normalize(viewRight)),
       glm::dot(previousWorldPointer - fixedWorldCenter, glm::normalize(viewUp))};
@@ -113,24 +190,44 @@ std::optional<ImageScaleUpdate> computeImageScaleUpdate(
 
     const glm::vec3 target = currentWorldPointer - fixedWorldCenter;
     const glm::vec3 lockedContribution = linearColumn(worldDef_T_affine, lockedAxis) * affineVector[lockedAxis];
-    const glm::vec3 rhsWorld = target - lockedContribution;
 
-    const glm::vec3 col0 = linearColumn(worldDef_T_affine, freeAxes[0]) * affineVector[freeAxes[0]];
-    const glm::vec3 col1 = linearColumn(worldDef_T_affine, freeAxes[1]) * affineVector[freeAxes[1]];
+    if (ImageScaleConstraint::ViewHorizontal == constraint || ImageScaleConstraint::ViewVertical == constraint) {
+      const glm::vec3 constraintAxis =
+        (ImageScaleConstraint::ViewHorizontal == constraint) ? glm::normalize(viewRight) : glm::normalize(viewUp);
+      const int scaledAxis =
+        axisMostAlignedWith(worldDef_T_affine, std::span<const int>{freeAxes.data(), freeAxes.size()}, constraintAxis);
+      const int unchangedAxis = (freeAxes[0] == scaledAxis) ? freeAxes[1] : freeAxes[0];
 
-    const auto solved = solve2x2(
-      glm::dot(viewRight, col0),
-      glm::dot(viewRight, col1),
-      glm::dot(viewUp, col0),
-      glm::dot(viewUp, col1),
-      glm::vec2{glm::dot(viewRight, rhsWorld), glm::dot(viewUp, rhsWorld)});
+      const glm::vec3 fixedContribution =
+        lockedContribution + (linearColumn(worldDef_T_affine, unchangedAxis) * affineVector[unchangedAxis]);
+      const glm::vec3 scaledContribution = linearColumn(worldDef_T_affine, scaledAxis) * affineVector[scaledAxis];
+      const float denominator = glm::dot(constraintAxis, scaledContribution);
+      if (std::abs(denominator) <= kEpsilon) {
+        return std::nullopt;
+      }
 
-    if (!solved) {
-      return std::nullopt;
+      scaleDelta[scaledAxis] = glm::dot(constraintAxis, target - fixedContribution) / denominator;
     }
+    else {
+      const glm::vec3 rhsWorld = target - lockedContribution;
 
-    scaleDelta[freeAxes[0]] = solved->x;
-    scaleDelta[freeAxes[1]] = solved->y;
+      const glm::vec3 col0 = linearColumn(worldDef_T_affine, freeAxes[0]) * affineVector[freeAxes[0]];
+      const glm::vec3 col1 = linearColumn(worldDef_T_affine, freeAxes[1]) * affineVector[freeAxes[1]];
+
+      const auto solved = solve2x2(
+        glm::dot(viewRight, col0),
+        glm::dot(viewRight, col1),
+        glm::dot(viewUp, col0),
+        glm::dot(viewUp, col1),
+        glm::vec2{glm::dot(viewRight, rhsWorld), glm::dot(viewUp, rhsWorld)});
+
+      if (!solved) {
+        return std::nullopt;
+      }
+
+      scaleDelta[freeAxes[0]] = solved->x;
+      scaleDelta[freeAxes[1]] = solved->y;
+    }
   }
 
   const glm::vec3 newScale = currentScale * scaleDelta;

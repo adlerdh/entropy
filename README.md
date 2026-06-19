@@ -119,6 +119,7 @@ On macOS, use Command instead of CTRL for application menu shortcuts.
 | `l` | Image adjustment | - left button: adjust image window left/right and level up/down<br>- shift + right button: adjust image opacity |
 | `t` | Image translation | - left button: translate image in plane<br>- right button: translate image in/out of plane |
 | `r` | Image rotation | - left button: rotate image in plane<br>- right button: rotate image in/out of plane |
+| `y` | Image scaling | - left button: scale image in plane about crosshairs<br>- shift + left button: isotropic scale<br>- alt/option + left button: constrain to view-horizontal or view-vertical scale |
 | `b` | Image segmentation (brush) | - left button: paint foreground label<br>- right button or shift: paint background label |
 
 ### View properties

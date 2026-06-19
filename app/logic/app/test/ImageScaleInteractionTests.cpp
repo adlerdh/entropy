@@ -9,6 +9,7 @@
 
 namespace
 {
+using entropy::app::ImageScaleConstraint;
 
 glm::vec3 transformPoint(const glm::mat4& transform, const glm::vec3& point)
 {
@@ -40,7 +41,7 @@ TEST_CASE("image scale update keeps the scale center fixed", "[app][image-scale]
     glm::vec3{1.0f, 0.0f, 0.0f},
     glm::vec3{0.0f, 1.0f, 0.0f},
     glm::vec3{0.0f, 0.0f, 1.0f},
-    false);
+    ImageScaleConstraint::Free);
 
   REQUIRE(update);
 
@@ -62,7 +63,7 @@ TEST_CASE("image scale update can constrain scaling isotropically", "[app][image
     glm::vec3{1.0f, 0.0f, 0.0f},
     glm::vec3{0.0f, 1.0f, 0.0f},
     glm::vec3{0.0f, 0.0f, 1.0f},
-    true);
+    ImageScaleConstraint::Isotropic);
 
   REQUIRE(update);
   checkVec3(update->m_scale, glm::vec3{2.0f});
@@ -97,7 +98,7 @@ TEST_CASE("image scale update follows the pointer for an already transformed ima
     glm::vec3{1.0f, 0.0f, 0.0f},
     glm::vec3{0.0f, 1.0f, 0.0f},
     glm::vec3{0.0f, 0.0f, 1.0f},
-    false);
+    ImageScaleConstraint::Free);
 
   REQUIRE(update);
   checkVec3(update->m_scale, initialScale * expectedScaleDelta);
@@ -120,7 +121,94 @@ TEST_CASE("image scale update rejects drags that cannot define a stable scale", 
     glm::vec3{1.0f, 0.0f, 0.0f},
     glm::vec3{0.0f, 1.0f, 0.0f},
     glm::vec3{0.0f, 0.0f, 1.0f},
-    true);
+    ImageScaleConstraint::Isotropic);
 
   CHECK_FALSE(update);
+}
+
+TEST_CASE("image scale dead-zone detects near-center drag starts", "[app][image-scale]")
+{
+  constexpr float radius = 0.06f;
+  const glm::vec2 center{0.0f, 0.0f};
+
+  CHECK(entropy::app::imageScaleStartsInDeadZone(glm::vec2{0.01f, 0.02f}, center, radius));
+  CHECK_FALSE(entropy::app::imageScaleStartsInDeadZone(glm::vec2{0.07f, 0.0f}, center, radius));
+  CHECK_FALSE(entropy::app::imageScaleStartsInDeadZone(glm::vec2{0.0f, 0.0f}, center, 0.0f));
+}
+
+TEST_CASE("image scale dead-zone waits until the pointer leaves the near-center region", "[app][image-scale]")
+{
+  constexpr float radius = 0.06f;
+  const glm::vec2 center{0.0f, 0.0f};
+  const glm::vec2 startInside{0.01f, 0.0f};
+
+  CHECK(entropy::app::imageScaleDragShouldWaitForDeadZone(startInside, glm::vec2{0.02f, 0.0f}, center, radius));
+  CHECK_FALSE(entropy::app::imageScaleDragShouldWaitForDeadZone(startInside, glm::vec2{0.07f, 0.0f}, center, radius));
+  CHECK_FALSE(
+    entropy::app::imageScaleDragShouldWaitForDeadZone(glm::vec2{0.07f, 0.0f}, glm::vec2{0.01f, 0.0f}, center, radius));
+}
+
+TEST_CASE("image scale view-axis constraint requires a clearly dominant drag axis", "[app][image-scale]")
+{
+  constexpr float dominanceRatio = 1.5f;
+
+  CHECK_FALSE(entropy::app::imageScaleViewAxisConstraintFromDrag(glm::vec2{0.0f, 0.0f}, dominanceRatio));
+  CHECK_FALSE(entropy::app::imageScaleViewAxisConstraintFromDrag(glm::vec2{1.2f, 1.0f}, dominanceRatio));
+
+  CHECK(
+    entropy::app::imageScaleViewAxisConstraintFromDrag(glm::vec2{1.5f, 1.0f}, dominanceRatio) ==
+    ImageScaleConstraint::ViewHorizontal);
+  CHECK(
+    entropy::app::imageScaleViewAxisConstraintFromDrag(glm::vec2{1.0f, -1.5f}, dominanceRatio) ==
+    ImageScaleConstraint::ViewVertical);
+  CHECK(
+    entropy::app::imageScaleViewAxisConstraintFromDrag(glm::vec2{-1.0f, 0.0f}, dominanceRatio) ==
+    ImageScaleConstraint::ViewHorizontal);
+  CHECK(
+    entropy::app::imageScaleViewAxisConstraintFromDrag(glm::vec2{0.0f, -1.0f}, dominanceRatio) ==
+    ImageScaleConstraint::ViewVertical);
+}
+
+TEST_CASE("image scale update can constrain scaling horizontally in the view", "[app][image-scale]")
+{
+  const auto update = entropy::app::computeImageScaleUpdate(
+    glm::mat4{1.0f},
+    glm::vec3{1.0f},
+    glm::vec3{5.0f, 5.0f, 0.0f},
+    glm::vec3{7.0f, 8.0f, 0.0f},
+    glm::vec3{9.0f, 12.0f, 0.0f},
+    glm::vec3{1.0f, 0.0f, 0.0f},
+    glm::vec3{0.0f, 1.0f, 0.0f},
+    glm::vec3{0.0f, 0.0f, 1.0f},
+    ImageScaleConstraint::ViewHorizontal);
+
+  REQUIRE(update);
+  checkVec3(update->m_scale, glm::vec3{2.0f, 1.0f, 1.0f});
+
+  const glm::mat4 scaledTransform =
+    glm::translate(glm::mat4{1.0f}, update->m_translation) * glm::scale(glm::mat4{1.0f}, update->m_scale);
+  checkVec3(transformPoint(scaledTransform, glm::vec3{5.0f, 5.0f, 0.0f}), glm::vec3{5.0f, 5.0f, 0.0f});
+  CHECK(transformPoint(scaledTransform, glm::vec3{7.0f, 8.0f, 0.0f}).x == Catch::Approx(9.0f));
+}
+
+TEST_CASE("image scale update can constrain scaling vertically in the view", "[app][image-scale]")
+{
+  const auto update = entropy::app::computeImageScaleUpdate(
+    glm::mat4{1.0f},
+    glm::vec3{1.0f},
+    glm::vec3{5.0f, 5.0f, 0.0f},
+    glm::vec3{7.0f, 8.0f, 0.0f},
+    glm::vec3{9.0f, 11.0f, 0.0f},
+    glm::vec3{1.0f, 0.0f, 0.0f},
+    glm::vec3{0.0f, 1.0f, 0.0f},
+    glm::vec3{0.0f, 0.0f, 1.0f},
+    ImageScaleConstraint::ViewVertical);
+
+  REQUIRE(update);
+  checkVec3(update->m_scale, glm::vec3{1.0f, 2.0f, 1.0f});
+
+  const glm::mat4 scaledTransform =
+    glm::translate(glm::mat4{1.0f}, update->m_translation) * glm::scale(glm::mat4{1.0f}, update->m_scale);
+  checkVec3(transformPoint(scaledTransform, glm::vec3{5.0f, 5.0f, 0.0f}), glm::vec3{5.0f, 5.0f, 0.0f});
+  CHECK(transformPoint(scaledTransform, glm::vec3{7.0f, 8.0f, 0.0f}).y == Catch::Approx(11.0f));
 }

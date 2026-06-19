@@ -16,12 +16,14 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <array>
 #include <csignal>
 #include <cmath>
 #include <cstring>
 #include <limits>
 #include <optional>
+#include <string_view>
 
 #if defined(_WIN32)
 #ifndef NOMINMAX
@@ -831,8 +833,9 @@ void ItkSnapSync::claimDirectorySlot()
     if (target >= 0) {
       auto& entry = directory->entries[target];
       entry.pid = toItkSnapIpcLong(m_processId);
-      std::strncpy(entry.title, "Entropy", sizeof(entry.title) - 1);
-      entry.title[sizeof(entry.title) - 1] = '\0';
+      constexpr std::string_view title = "Entropy";
+      std::fill(std::begin(entry.title), std::end(entry.title), '\0');
+      std::copy_n(title.data(), std::min(title.size(), sizeof(entry.title) - 1), entry.title);
       entry.pendingDropId = 0;
       entry.pendingDrop[0] = '\0';
       m_claimedDirectorySlot = true;

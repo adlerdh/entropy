@@ -228,7 +228,7 @@ void renderImageHeader(
   auto activeSegUid = appData.imageToActiveSegUid(imageUid);
   Image* activeSeg = (activeSegUid) ? appData.seg(*activeSegUid) : nullptr;
 
-  const uint32_t activeComp = imgSettings.activeComponent();
+  uint32_t activeComp = imgSettings.activeComponent();
 
   auto getCurrentImageColormapIndex = [&imgSettings]() {
     return imgSettings.colorMapIndex();
@@ -458,19 +458,15 @@ void renderImageHeader(
   ImGui::Separator();
   ImGui::Spacing();
 
-  // Open View Properties on first appearance
-  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-  if (ImGui::TreeNode("View Properties")) {
-    // Component selection combo selection list. The component selection is shown only for
-    // multi-component images, where each component is stored as a separate image.
-    const bool showComponentSelection =
-      (imgHeader.numComponentsPerPixel() > 1 && Image::MultiComponentBufferType::SeparateImages == image->bufferType());
+  const bool showComponentControls =
+    (imgHeader.numComponentsPerPixel() > 1 && Image::MultiComponentBufferType::SeparateImages == image->bufferType());
 
-    if (showComponentSelection) {
+  if (showComponentControls) {
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::TreeNode("Image Components")) {
       if (3 == imgHeader.numComponentsPerPixel() || 4 == imgHeader.numComponentsPerPixel()) {
         ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
-        // Display 3- or 4-component images as RGB(A) color:
         bool displayAsColor = imgSettings.displayImageAsColor();
 
         if (ImGui::Checkbox("Render with color", &displayAsColor)) {
@@ -493,6 +489,61 @@ void renderImageHeader(
         }
       }
 
+      uint32_t componentInput = activeComp;
+      constexpr uint32_t componentStep = 1;
+      const uint32_t componentMax = imgHeader.numComponentsPerPixel() - 1;
+      const std::string componentFormat = "%u of " + std::to_string(componentMax);
+      if (ImGui::InputScalar(
+            "Component",
+            ImGuiDataType_U32,
+            &componentInput,
+            &componentStep,
+            nullptr,
+            componentFormat.c_str()))
+      {
+        const uint32_t clampedComponent = std::min(componentInput, componentMax);
+        if (clampedComponent != activeComp) {
+          imgSettings.setActiveComponent(clampedComponent);
+          activeComp = imgSettings.activeComponent();
+          updateImageUniforms();
+        }
+      }
+
+      ImGui::SameLine();
+      helpMarker("Select the image component to display and adjust");
+
+      bool visible = imgSettings.visibility();
+      if (visibilityCheckboxBeforeSlider(
+            "##componentVisible",
+            &visible,
+            "Show/hide the selected image component on all views"))
+      {
+        imgSettings.setVisibility(visible);
+        updateImageUniforms();
+      }
+      double imageOpacity = imgSettings.opacity();
+      ImGui::BeginDisabled(!visible);
+      if (mySliderF64("Component opacity", &imageOpacity, 0.0, 1.0)) {
+        imgSettings.setOpacity(imageOpacity);
+        updateImageUniforms();
+      }
+      ImGui::EndDisabled();
+      ImGui::PopItemWidth();
+      ImGui::SameLine();
+      helpMarker("Selected image component opacity");
+
+      ImGui::TreePop();
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+  }
+
+  // Open View Properties on first appearance
+  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+  if (ImGui::TreeNode("View Properties")) {
+    if (showComponentControls) {
       // Global image opacity slider:
       bool globalVisibility = imgSettings.globalVisibility();
       if (visibilityCheckboxBeforeSlider(
@@ -536,50 +587,12 @@ void renderImageHeader(
         helpMarker("Segmentation layer opacity");
       }
 
-      ImGui::Spacing();
-      ImGui::Separator();
-      ImGui::Spacing();
-
-      static const std::vector<std::string> rgbaLetters{" (red)", " (green)", " (blue)", " (alpha)"};
-
-      const std::string previewValue = (imgSettings.displayImageAsColor())
-                                         ? std::to_string(activeComp) + rgbaLetters[activeComp]
-                                         : std::to_string(activeComp);
-
-      if (ImGui::BeginCombo("Image component", previewValue.c_str())) {
-        for (uint32_t comp = 0; comp < imgHeader.numComponentsPerPixel(); ++comp) {
-          const std::string selectableValue =
-            (imgSettings.displayImageAsColor()) ? std::to_string(comp) + rgbaLetters[comp] : std::to_string(comp);
-
-          const bool isSelected = (activeComp == comp);
-
-          if (ImGui::Selectable(selectableValue.c_str(), isSelected)) {
-            imgSettings.setActiveComponent(comp);
-            updateImageUniforms();
-          }
-
-          if (isSelected) {
-            ImGui::SetItemDefaultFocus();
-          }
-        }
-
-        ImGui::EndCombo();
-      }
-
-      ImGui::SameLine();
-      helpMarker("Select the image component to display and adjust");
-
       ImGui::Dummy(ImVec2(0.0f, 1.0f));
     }
 
-    static const std::string compOpacityText("Component opacity");
     static const std::string imageOpacityText("Image opacity");
 
-    const char* opacitySliderText =
-      (image->header().numComponentsPerPixel() > 1) ? compOpacityText.c_str() : imageOpacityText.c_str();
-
-    // if (visible)
-    {
+    if (!showComponentControls) {
       // Image opacity slider:
       bool visible = imgSettings.visibility();
       if (visibilityCheckboxBeforeSlider("##imageVisible", &visible, "Show/hide the image on all views")) {
@@ -588,7 +601,7 @@ void renderImageHeader(
       }
       double imageOpacity = imgSettings.opacity();
       ImGui::BeginDisabled(!visible);
-      if (mySliderF64(opacitySliderText, &imageOpacity, 0.0, 1.0)) {
+      if (mySliderF64(imageOpacityText.c_str(), &imageOpacity, 0.0, 1.0)) {
         imgSettings.setOpacity(imageOpacity);
         updateImageUniforms();
       }
@@ -598,7 +611,7 @@ void renderImageHeader(
       helpMarker("Image layer opacity");
 
       // Segmentation opacity slider:
-      if (activeSeg && !showComponentSelection) {
+      if (activeSeg) {
         bool segVisible = activeSeg->settings().visibility();
         if (visibilityCheckboxBeforeSlider(
               "##segmentationVisible",

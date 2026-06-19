@@ -3,6 +3,7 @@
 #include "EntropyApp.h"
 #include "common/Types.h"
 
+#include "logic/app/ImageScaleInteraction.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/interaction/ViewHit.h"
 #include "logic/interaction/events/ButtonState.h"
@@ -16,6 +17,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include <cmath>
 #include <filesystem>
 #include <optional>
 #include <vector>
@@ -30,6 +32,12 @@ static std::optional<ViewHit> s_prevHit;
 
 // The start cursor position in Window space: where the cursor was clicked prior to dragging
 static std::optional<ViewHit> s_startHit;
+
+static std::optional<ViewHit> s_imageScaleEffectivePrevHit;
+static std::optional<entropy::app::ImageScaleConstraint> s_imageScaleViewAxisConstraint;
+
+constexpr float kImageScaleDeadZoneRadiusViewClip = 0.06f;
+constexpr float kImageScaleAxisConstraintDominanceRatio = 1.5f;
 
 // Should zooms be synchronized for all views?
 bool syncZoomsForAllViews(const ModifierState& modState)
@@ -506,8 +514,54 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       }
 
       if (s_mouseButtonState.left) {
-        const bool constrainIsotropic = s_modifierState.shift;
-        H.doImageScale(*s_startHit, *s_prevHit, *currHit_withOverride, constrainIsotropic);
+        auto constraint = entropy::app::ImageScaleConstraint::Free;
+        if (s_modifierState.shift) {
+          constraint = entropy::app::ImageScaleConstraint::Isotropic;
+        }
+        else if (s_modifierState.alt) {
+          if (!s_imageScaleViewAxisConstraint) {
+            s_imageScaleViewAxisConstraint = entropy::app::imageScaleViewAxisConstraintFromDrag(
+              currHit_withOverride->viewClipPos - s_startHit->viewClipPos,
+              kImageScaleAxisConstraintDominanceRatio);
+          }
+
+          if (s_imageScaleViewAxisConstraint) {
+            constraint = *s_imageScaleViewAxisConstraint;
+          }
+        }
+        else {
+          s_imageScaleViewAxisConstraint = std::nullopt;
+        }
+
+        glm::vec4 centerViewClip = helper::clip_T_world(currHit_withOverride->view->camera()) *
+                                   glm::vec4{app->appData().state().worldRotationCenter(), 1.0f};
+        if (std::abs(centerViewClip.w) > 0.0f) {
+          centerViewClip /= centerViewClip.w;
+          if (entropy::app::imageScaleDragShouldWaitForDeadZone(
+                s_startHit->viewClipPos,
+                currHit_withOverride->viewClipPos,
+                glm::vec2{centerViewClip},
+                kImageScaleDeadZoneRadiusViewClip))
+          {
+            break;
+          }
+
+          if (
+            !s_imageScaleEffectivePrevHit && entropy::app::imageScaleStartsInDeadZone(
+                                               s_startHit->viewClipPos,
+                                               glm::vec2{centerViewClip},
+                                               kImageScaleDeadZoneRadiusViewClip))
+          {
+            s_imageScaleEffectivePrevHit = currHit_withOverride;
+            break;
+          }
+        }
+
+        const ViewHit& scalePrevHit = s_imageScaleEffectivePrevHit.value_or(*s_prevHit);
+        H.doImageScale(*s_startHit, scalePrevHit, *currHit_withOverride, constraint);
+        if (s_imageScaleEffectivePrevHit) {
+          s_imageScaleEffectivePrevHit = currHit_withOverride;
+        }
       }
       break;
     }
@@ -536,6 +590,8 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   // Reset start and previous hits
   s_startHit = std::nullopt;
   s_prevHit = std::nullopt;
+  s_imageScaleEffectivePrevHit = std::nullopt;
+  s_imageScaleViewAxisConstraint = std::nullopt;
 
   double mindowCursorPosX, mindowCursorPosY;
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
