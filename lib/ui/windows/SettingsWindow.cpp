@@ -22,6 +22,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace ui_settings = entropy::ui::settings;
@@ -64,18 +65,40 @@ std::filesystem::path canonicalDisplayPath(const std::filesystem::path& path)
   return ec ? path : absolutePath;
 }
 
+float visibleLabelWidth(const char* label)
+{
+  const std::string_view text{label};
+  const std::size_t idSeparator = text.find("##");
+  const std::string_view visibleText = std::string_view::npos == idSeparator ? text : text.substr(0, idSeparator);
+  return ImGui::CalcTextSize(visibleText.data(), visibleText.data() + visibleText.size()).x;
+}
+
+float fillWidthForLabeledControl(const char* label)
+{
+  const float labelWidth = visibleLabelWidth(label);
+  const float spacing = labelWidth > 0.0f ? ImGui::GetStyle().ItemSpacing.x : 0.0f;
+  return std::max(1.0f, ImGui::GetContentRegionAvail().x - labelWidth - spacing);
+}
+
+float fillWidthForLabelColumn(float labelWidth)
+{
+  const float spacing = labelWidth > 0.0f ? ImGui::GetStyle().ItemSpacing.x : 0.0f;
+  return std::max(1.0f, ImGui::GetContentRegionAvail().x - labelWidth - spacing);
+}
+
 /**
  * @brief Render a copyable, read-only path field.
  * @param[in] label Field label.
  * @param[in] path Path text shown in the field.
+ * @param[in] itemWidth Width of the text field, or a negative value to fill the row after its own label.
  */
-void renderReadOnlyPathField(const char* label, const std::filesystem::path& path)
+void renderReadOnlyPathField(const char* label, const std::filesystem::path& path, float itemWidth = -1.0f)
 {
   std::string text = canonicalDisplayPath(path).string();
   std::vector<char> buffer(text.begin(), text.end());
   buffer.push_back('\0');
 
-  ImGui::PushItemWidth(480.0f);
+  ImGui::PushItemWidth(itemWidth >= 0.0f ? itemWidth : fillWidthForLabeledControl(label));
   ImGui::InputText(label, buffer.data(), buffer.size(), ImGuiInputTextFlags_ReadOnly);
   ImGui::PopItemWidth();
 }
@@ -107,9 +130,10 @@ void renderDiagnosticsSettings()
   ImGui::SameLine();
   helpMarker("Set console and application log file verbosity immediately");
 
-  ImGui::Spacing();
-  renderReadOnlyPathField("Application log", app_paths::logDirectory() / "entropy.txt");
-  renderReadOnlyPathField("ImGui log", app_paths::logDirectory() / "entropy_ui.log");
+  const float logFieldLabelWidth = std::max(visibleLabelWidth("Application log"), visibleLabelWidth("ImGui log"));
+  const float logFieldWidth = fillWidthForLabelColumn(logFieldLabelWidth);
+  renderReadOnlyPathField("Application log", app_paths::logDirectory() / "entropy.txt", logFieldWidth);
+  renderReadOnlyPathField("ImGui log", app_paths::logDirectory() / "entropy_ui.log", logFieldWidth);
 }
 
 GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement)
@@ -287,7 +311,8 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   helpMarker("Lock anatomical directions and crosshairs to reference image orientation");
 
   ImGui::Spacing();
-  ImGui::Dummy(ImVec2(0.0f, 1.0f));
+  ImGui::Separator();
+  ImGui::Spacing();
 
   // Crosshairs
   if (ImGui::CollapsingHeader("Crosshairs", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -933,8 +958,6 @@ void renderSynchronizeTab(AppData& appData)
     "Synchronize cursor position between running Entropy instances that have the same project or same ordered image "
     "list loaded");
 
-  ImGui::Spacing();
-
   bool snapSyncEnabled = appData.settings().cursorSyncEnabled();
   if (ImGui::Checkbox("Synchronize with ITK-SNAP", &snapSyncEnabled)) {
     appData.settings().setCursorSyncEnabled(snapSyncEnabled);
@@ -1105,7 +1128,7 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
 
       if (BrushPreviewStyle::OutlineAndFill == settings.brushPreviewStyle()) {
         float previewFillOpacityPercent = 100.0f * settings.brushPreviewFillOpacity();
-        ImGui::PushItemWidth(150);
+        ImGui::PushItemWidth(fillWidthForLabeledControl("Fill opacity##brushPreviewFillOpacity"));
         if (ImGui::SliderFloat(
               "Fill opacity##brushPreviewFillOpacity",
               &previewFillOpacityPercent,
@@ -1316,7 +1339,7 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
 
   if (!renderData.m_doMaxExtentIntensityProjection) {
     float thickness = renderData.m_intensityProjectionSlabThickness;
-    ImGui::PushItemWidth(180.0f);
+    ImGui::PushItemWidth(fillWidthForLabeledControl("Slab thickness (mm)"));
     if (ImGui::InputFloat("Slab thickness (mm)", &thickness, 0.1f, 1.0f, "%0.2f")) {
       if (thickness >= 0.0f) {
         renderData.m_intensityProjectionSlabThickness = thickness;
@@ -1331,7 +1354,7 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
   ImGui::Text("X-ray projection:");
 
   float energy = renderData.m_xrayEnergyKeV;
-  ImGui::PushItemWidth(180.0f);
+  ImGui::PushItemWidth(fillWidthForLabeledControl("Energy"));
   if (ImGui::DragFloat(
         "Energy",
         &energy,
@@ -1345,11 +1368,13 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
   }
 
   float window = renderData.m_xrayIntensityWindow;
+  ImGui::SetNextItemWidth(fillWidthForLabeledControl("Width"));
   if (mySliderF32("Width", &window, 1.0e-3f, 1.0f, "%0.3f")) {
     renderData.m_xrayIntensityWindow = window;
   }
 
   float level = renderData.m_xrayIntensityLevel;
+  ImGui::SetNextItemWidth(fillWidthForLabeledControl("Level"));
   if (mySliderF32("Level", &level, 0.0f, 1.0f, "%0.3f")) {
     renderData.m_xrayIntensityLevel = level;
   }
@@ -1438,14 +1463,11 @@ void renderRaycastingTab(RenderData& renderData)
  */
 void renderRenderingTab(RenderData& renderData)
 {
+  RenderData& rd = renderData;
+
   ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
   ImGui::SameLine();
   helpMarker("Manually limit the rendering frame rate");
-
-  RenderData& rd = renderData;
-  ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
-  ImGui::SameLine();
-  helpMarker("Render grayscale images as ASCII art");
 
   if (renderData.m_manualFramerateLimiter) {
     constexpr float hzSpeed = 1.0e-1f;
@@ -1485,12 +1507,20 @@ void renderRenderingTab(RenderData& renderData)
     }
   }
 
+  ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
+  ImGui::SameLine();
+  helpMarker("Render grayscale images as ASCII art");
+
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
+
   if (ImGui::CollapsingHeader("Raycasting")) {
     renderRaycastingTab(renderData);
   }
 
   // ASCII rendering controls
-  if (ImGui::CollapsingHeader("ASCII shading")) {
+  if (rd.m_asciiEnabled && ImGui::CollapsingHeader("ASCII shading")) {
     ImGui::PushID("ascii");
 
     if (rd.m_asciiEnabled) {

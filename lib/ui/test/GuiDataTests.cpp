@@ -7,6 +7,7 @@ TEST_CASE("layout tabs reserve a fixed viewport edge", "[ui][gui]")
   GuiData guiData;
   guiData.m_showLayoutTabs = true;
   guiData.m_layoutTabBarHeight = 42.0f;
+  guiData.m_layoutTabInnerGap = 2.0f;
 
   SECTION("top")
   {
@@ -14,7 +15,7 @@ TEST_CASE("layout tabs reserve a fixed viewport edge", "[ui][gui]")
 
     const GuiData::Margins margins = guiData.computeMargins();
 
-    CHECK(margins.top == 42.0f);
+    CHECK(margins.top == 44.0f);
     CHECK(margins.bottom == 0.0f);
   }
 
@@ -25,7 +26,7 @@ TEST_CASE("layout tabs reserve a fixed viewport edge", "[ui][gui]")
     const GuiData::Margins margins = guiData.computeMargins();
 
     CHECK(margins.top == 0.0f);
-    CHECK(margins.bottom == 42.0f);
+    CHECK(margins.bottom == 44.0f);
   }
 }
 
@@ -47,12 +48,13 @@ TEST_CASE("dock offsets include menu and visible layout tabs", "[ui][gui]")
   guiData.m_mainMenuBarDims.y = 22.0f;
   guiData.m_showLayoutTabs = true;
   guiData.m_layoutTabBarHeight = 42.0f;
+  guiData.m_layoutTabInnerGap = 2.0f;
 
   SECTION("top tabs add to the top dock offset")
   {
     guiData.m_layoutTabPlacement = GuiData::LayoutTabPlacement::Top;
 
-    CHECK(guiData.topDockOffset() == 22.0f + 42.0f);
+    CHECK(guiData.topDockOffset() == 22.0f + 44.0f);
     CHECK(guiData.bottomDockOffset() == 0.0f);
   }
 
@@ -61,7 +63,7 @@ TEST_CASE("dock offsets include menu and visible layout tabs", "[ui][gui]")
     guiData.m_layoutTabPlacement = GuiData::LayoutTabPlacement::Bottom;
 
     CHECK(guiData.topDockOffset() == 22.0f);
-    CHECK(guiData.bottomDockOffset() == 42.0f);
+    CHECK(guiData.bottomDockOffset() == 44.0f);
   }
 
   SECTION("hidden tabs do not affect dock offsets")
@@ -80,6 +82,7 @@ TEST_CASE("toolbar margins reserve only the occupied viewport edges", "[ui][gui]
   guiData.m_mainMenuBarDims.y = 22.0f;
   guiData.m_showLayoutTabs = true;
   guiData.m_layoutTabBarHeight = 42.0f;
+  guiData.m_layoutTabInnerGap = 2.0f;
   guiData.m_layoutTabPlacement = GuiData::LayoutTabPlacement::Top;
 
   guiData.m_showModeToolbar = true;
@@ -103,7 +106,7 @@ TEST_CASE("toolbar margins reserve only the occupied viewport edges", "[ui][gui]
 
   CHECK(fullMargins.left == 0.0f);
   CHECK(fullMargins.right == 48.0f);
-  CHECK(fullMargins.top == 22.0f + 42.0f);
+  CHECK(fullMargins.top == 22.0f + 44.0f);
   CHECK(fullMargins.bottom == 36.0f);
 }
 

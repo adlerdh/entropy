@@ -72,6 +72,7 @@ static const glm::vec3 k_zeroVec{0.0f, 0.0f, 0.0f};
 constexpr float k_layoutTabWindowPaddingX = 6.0f;
 constexpr float k_layoutTabWindowPaddingY = 4.0f;
 constexpr float k_layoutTabFrameRounding = 3.0f;
+constexpr float k_layoutTabDockspaceGap = 2.0f;
 
 float scaledPixel(float value)
 {
@@ -82,26 +83,33 @@ struct LayoutTabMetrics
 {
   ImVec2 windowPadding;
   float frameRounding = 0.0f;
-  float height = 0.0f;
+  float windowHeight = 0.0f;
+  float innerGap = 0.0f;
 };
 
 LayoutTabMetrics layoutTabMetrics()
 {
   const ImVec2 windowPadding{scaledPixel(k_layoutTabWindowPaddingX), scaledPixel(k_layoutTabWindowPaddingY)};
+  const float windowHeight = ImGui::GetFrameHeight() + (2.0f * windowPadding.y);
   return LayoutTabMetrics{
     .windowPadding = windowPadding,
     .frameRounding = scaledPixel(k_layoutTabFrameRounding),
-    .height = ImGui::GetFrameHeight() + (2.0f * windowPadding.y)};
+    .windowHeight = windowHeight,
+    .innerGap = scaledPixel(k_layoutTabDockspaceGap)};
 }
 
 bool updateLayoutTabBarHeight(GuiData& guiData)
 {
-  const float height = layoutTabMetrics().height;
-  if (std::abs(guiData.m_layoutTabBarHeight - height) < 0.5f) {
+  const LayoutTabMetrics metrics = layoutTabMetrics();
+  if (
+    std::abs(guiData.m_layoutTabBarHeight - metrics.windowHeight) < 0.5f &&
+    std::abs(guiData.m_layoutTabInnerGap - metrics.innerGap) < 0.5f)
+  {
     return false;
   }
 
-  guiData.m_layoutTabBarHeight = height;
+  guiData.m_layoutTabBarHeight = metrics.windowHeight;
+  guiData.m_layoutTabInnerGap = metrics.innerGap;
   return true;
 }
 
@@ -136,12 +144,13 @@ DockspaceGeometry mainDockspaceGeometry(const GuiData& guiData)
   DockspaceGeometry geometry{viewport->WorkPos, viewport->WorkSize};
 
   if (guiData.m_showLayoutTabs) {
+    const float layoutTabReservedHeight = guiData.m_layoutTabBarHeight + guiData.m_layoutTabInnerGap;
     if (GuiData::LayoutTabPlacement::Top == guiData.m_layoutTabPlacement) {
-      geometry.pos.y += guiData.m_layoutTabBarHeight;
-      geometry.size.y = std::max(1.0f, geometry.size.y - guiData.m_layoutTabBarHeight);
+      geometry.pos.y += layoutTabReservedHeight;
+      geometry.size.y = std::max(1.0f, geometry.size.y - layoutTabReservedHeight);
     }
     else {
-      geometry.size.y = std::max(1.0f, geometry.size.y - guiData.m_layoutTabBarHeight);
+      geometry.size.y = std::max(1.0f, geometry.size.y - layoutTabReservedHeight);
     }
   }
 
@@ -630,12 +639,13 @@ void renderLayoutTabs(AppData& appData)
   const GuiData::Margins baseMargins = marginsWithoutLayoutTabs(guiData);
   const bool placeAtTop = GuiData::LayoutTabPlacement::Top == guiData.m_layoutTabPlacement;
   const LayoutTabMetrics metrics = layoutTabMetrics();
-  guiData.m_layoutTabBarHeight = metrics.height;
-  const float height = metrics.height;
-  const float y = placeAtTop ? baseMargins.top : (static_cast<float>(windowSize.y) - baseMargins.bottom - height);
+  guiData.m_layoutTabBarHeight = metrics.windowHeight;
+  guiData.m_layoutTabInnerGap = metrics.innerGap;
+  const float y =
+    placeAtTop ? baseMargins.top : (static_cast<float>(windowSize.y) - baseMargins.bottom - metrics.windowHeight);
 
   ImGui::SetNextWindowPos(ImVec2{0.0f, y}, ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2{static_cast<float>(windowSize.x), height}, ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2{static_cast<float>(windowSize.x), metrics.windowHeight}, ImGuiCond_Always);
 
   constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |

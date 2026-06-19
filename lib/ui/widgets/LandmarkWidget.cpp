@@ -21,6 +21,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <cfloat>
 #include <string>
 
 void renderLandmarkChildWindow(
@@ -48,8 +49,11 @@ void renderLandmarkChildWindow(
 
   std::map<size_t, PointRecord<glm::vec3> >& points = activeLmGroup->getPoints();
 
-  const bool childVisible =
-    ImGui::BeginChild("", ImVec2(375, 300), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar);
+  const bool childVisible = ImGui::BeginChild(
+    "##landmarkList",
+    ImVec2{0.0f, 0.0f},
+    true,
+    ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar);
 
   if (!childVisible) {
     ImGui::EndChild();
@@ -191,7 +195,7 @@ void renderLandmarkChildWindow(
     ImGui::SameLine();
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(1.0f, 4.0f));
-    ImGui::PushItemWidth(200.0f);
+    ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::InputFloat3("##pointPos", glm::value_ptr(pointPos), coordFormat, 0)) {
       point.setPosition(pointPos);
     }

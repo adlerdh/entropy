@@ -315,7 +315,8 @@ struct GuiData
 
   bool m_showLayoutTabs = true;                                      //!< Show the layout tab strip.
   LayoutTabPlacement m_layoutTabPlacement = LayoutTabPlacement::Top; //!< Layout tab strip edge.
-  float m_layoutTabBarHeight = 0.0f;                                 //!< Current reserved layout tab strip height.
+  float m_layoutTabBarHeight = 0.0f;                                 //!< Current visible layout tab strip height.
+  float m_layoutTabInnerGap = 0.0f;                                  //!< Gap between layout tabs and the dockspace.
   std::optional<glm::vec4> m_renderViewport = std::nullopt;          //!< Image rendering bounds in window coordinates.
   bool m_showConfirmRemoveLayoutPopup = false;                       //!< Confirm deletion of a layout tab.
   std::optional<std::size_t> m_pendingRemoveLayoutIndex = std::nullopt; //!< Layout waiting for deletion.

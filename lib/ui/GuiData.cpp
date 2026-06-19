@@ -86,11 +86,12 @@ GuiData::Margins GuiData::computeMargins() const
   }
 
   if (m_showLayoutTabs) {
+    const float layoutTabReservedHeight = m_layoutTabBarHeight + m_layoutTabInnerGap;
     if (LayoutTabPlacement::Top == m_layoutTabPlacement) {
-      margins.top += m_layoutTabBarHeight;
+      margins.top += layoutTabReservedHeight;
     }
     else {
-      margins.bottom += m_layoutTabBarHeight;
+      margins.bottom += layoutTabReservedHeight;
     }
   }
 
@@ -104,12 +105,14 @@ float GuiData::topDockOffset() const
     offset += m_mainMenuBarDims.y;
   }
   if (m_showLayoutTabs && LayoutTabPlacement::Top == m_layoutTabPlacement) {
-    offset += m_layoutTabBarHeight;
+    offset += m_layoutTabBarHeight + m_layoutTabInnerGap;
   }
   return offset;
 }
 
 float GuiData::bottomDockOffset() const
 {
-  return (m_showLayoutTabs && LayoutTabPlacement::Bottom == m_layoutTabPlacement) ? m_layoutTabBarHeight : 0.0f;
+  return (m_showLayoutTabs && LayoutTabPlacement::Bottom == m_layoutTabPlacement)
+           ? (m_layoutTabBarHeight + m_layoutTabInnerGap)
+           : 0.0f;
 }
