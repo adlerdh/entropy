@@ -70,9 +70,8 @@ namespace
 static const glm::quat k_identityRotation{1.0f, 0.0f, 0.0f, 0.0f};
 static const glm::vec3 k_zeroVec{0.0f, 0.0f, 0.0f};
 constexpr float k_layoutTabWindowPaddingX = 6.0f;
-constexpr float k_layoutTabWindowPaddingY = 4.0f;
+constexpr float k_layoutTabWindowPaddingY = 0.0f;
 constexpr float k_layoutTabFrameRounding = 3.0f;
-constexpr float k_layoutTabDockspaceGap = 2.0f;
 
 float scaledPixel(float value)
 {
@@ -91,11 +90,12 @@ LayoutTabMetrics layoutTabMetrics()
 {
   const ImVec2 windowPadding{scaledPixel(k_layoutTabWindowPaddingX), scaledPixel(k_layoutTabWindowPaddingY)};
   const float windowHeight = ImGui::GetFrameHeight() + (2.0f * windowPadding.y);
+  const float dockspaceClearance = std::max(1.0f, ImGui::GetStyle().TabBarBorderSize);
   return LayoutTabMetrics{
     .windowPadding = windowPadding,
     .frameRounding = scaledPixel(k_layoutTabFrameRounding),
     .windowHeight = windowHeight,
-    .innerGap = scaledPixel(k_layoutTabDockspaceGap)};
+    .innerGap = dockspaceClearance};
 }
 
 bool updateLayoutTabBarHeight(GuiData& guiData)
@@ -141,18 +141,20 @@ struct DockspaceGeometry
 DockspaceGeometry mainDockspaceGeometry(const GuiData& guiData)
 {
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  DockspaceGeometry geometry{viewport->WorkPos, viewport->WorkSize};
+  DockspaceGeometry geometry{viewport->Pos, viewport->Size};
 
-  if (guiData.m_showLayoutTabs) {
-    const float layoutTabReservedHeight = guiData.m_layoutTabBarHeight + guiData.m_layoutTabInnerGap;
-    if (GuiData::LayoutTabPlacement::Top == guiData.m_layoutTabPlacement) {
-      geometry.pos.y += layoutTabReservedHeight;
-      geometry.size.y = std::max(1.0f, geometry.size.y - layoutTabReservedHeight);
-    }
-    else {
-      geometry.size.y = std::max(1.0f, geometry.size.y - layoutTabReservedHeight);
-    }
-  }
+  const GuiData::Margins toolbarMargins = guiData.computeToolbarMargins();
+  const GuiData::Margins chromeMargins = guiData.computeMargins();
+
+  const float left = chromeMargins.left - toolbarMargins.left;
+  const float right = chromeMargins.right - toolbarMargins.right;
+  const float top = chromeMargins.top - toolbarMargins.top;
+  const float bottom = chromeMargins.bottom - toolbarMargins.bottom;
+
+  geometry.pos.x += left;
+  geometry.pos.y += top;
+  geometry.size.x = std::max(1.0f, geometry.size.x - (left + right));
+  geometry.size.y = std::max(1.0f, geometry.size.y - (top + bottom));
 
   return geometry;
 }
@@ -635,17 +637,25 @@ void renderLayoutTabs(AppData& appData)
 
   static std::optional<uuids::uuid> lastSyncedSelectedLayoutUid;
 
-  const glm::ivec2& windowSize = windowData.getWindowSize();
-  const GuiData::Margins baseMargins = marginsWithoutLayoutTabs(guiData);
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  if (!viewport) {
+    return;
+  }
+
   const bool placeAtTop = GuiData::LayoutTabPlacement::Top == guiData.m_layoutTabPlacement;
   const LayoutTabMetrics metrics = layoutTabMetrics();
   guiData.m_layoutTabBarHeight = metrics.windowHeight;
   guiData.m_layoutTabInnerGap = metrics.innerGap;
+  const GuiData::Margins toolbarMargins = guiData.computeToolbarMargins();
+  const GuiData::Margins chromeMargins = marginsWithoutLayoutTabs(guiData);
+  const float top = chromeMargins.top - toolbarMargins.top;
+  const float bottom = chromeMargins.bottom - toolbarMargins.bottom;
   const float y =
-    placeAtTop ? baseMargins.top : (static_cast<float>(windowSize.y) - baseMargins.bottom - metrics.windowHeight);
+    placeAtTop ? viewport->Pos.y + top : viewport->Pos.y + viewport->Size.y - bottom - metrics.windowHeight;
 
-  ImGui::SetNextWindowPos(ImVec2{0.0f, y}, ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2{static_cast<float>(windowSize.x), metrics.windowHeight}, ImGuiCond_Always);
+  ImGui::SetNextWindowPos(ImVec2{viewport->Pos.x, y}, ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2{viewport->Size.x, metrics.windowHeight}, ImGuiCond_Always);
+  ImGui::SetNextWindowViewport(viewport->ID);
 
   constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
@@ -656,6 +666,7 @@ void renderLayoutTabs(AppData& appData)
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, metrics.windowPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, metrics.frameRounding);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2{0.0f, 0.0f});
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyleColorVec4(ImGuiCol_MenuBarBg));
 
   if (ImGui::Begin("LayoutTabs", nullptr, windowFlags)) {
@@ -730,7 +741,7 @@ void renderLayoutTabs(AppData& appData)
 
   ImGui::End();
   ImGui::PopStyleColor(1);
-  ImGui::PopStyleVar(4);
+  ImGui::PopStyleVar(5);
 }
 
 void renderLoadingStatusBar()

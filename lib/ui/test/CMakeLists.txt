@@ -5,6 +5,7 @@ add_executable(EntropyUiTests
   OpacityMixerModelTests.cpp
   SettingsModelTests.cpp
   StyleTests.cpp
+  ActiveImageSelectionModelTests.cpp
   UiControlsTests.cpp
   UiHeaderIncludeTests.cpp
   UiScaleManagerTests.cpp
@@ -18,6 +19,7 @@ target_sources(EntropyUiTests PRIVATE
   "${entropy_UI_DIR}/Style.cpp"
   "${entropy_UI_DIR}/settings/SettingsModel.cpp"
   "${entropy_UI_DIR}/UiScaleManager.cpp"
+  "${entropy_UI_DIR}/widgets/ActiveImageSelectionModel.cpp"
   "${entropy_UI_DIR}/windows/OpacityMixerModel.cpp"
   "${entropy_UI_DIR}/windows/ViewOverlayModel.cpp"
 )

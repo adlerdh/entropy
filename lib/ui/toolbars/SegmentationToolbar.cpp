@@ -535,7 +535,7 @@ void renderSegToolbar(
         ImGui::Separator();
         ImGui::Text("Brush preview:");
 
-        if (ImGui::RadioButton("Hover##brushPreview", BrushPreviewMode::Hover == previewMode)) {
+        if (ImGui::RadioButton("Visible on hover##brushPreview", BrushPreviewMode::Hover == previewMode)) {
           previewMode = BrushPreviewMode::Hover;
           appData.settings().setBrushPreviewMode(previewMode);
         }
@@ -548,12 +548,15 @@ void renderSegToolbar(
         helpMarker("Show the voxels that the brush would affect");
 
         if (BrushPreviewMode::Disabled != previewMode) {
-          if (ImGui::RadioButton("Changed voxels##brushPreviewVoxels", BrushPreviewVoxels::Changed == previewVoxels)) {
+          if (ImGui::RadioButton(
+                "Preview changed voxels##brushPreviewVoxels",
+                BrushPreviewVoxels::Changed == previewVoxels))
+          {
             previewVoxels = BrushPreviewVoxels::Changed;
             appData.settings().setBrushPreviewVoxels(previewVoxels);
           }
           ImGui::SameLine();
-          if (ImGui::RadioButton("All voxels##brushPreviewVoxels", BrushPreviewVoxels::All == previewVoxels)) {
+          if (ImGui::RadioButton("All voxels in brush##brushPreviewVoxels", BrushPreviewVoxels::All == previewVoxels)) {
             previewVoxels = BrushPreviewVoxels::All;
             appData.settings().setBrushPreviewVoxels(previewVoxels);
           }
@@ -566,7 +569,7 @@ void renderSegToolbar(
           }
           ImGui::SameLine();
           if (ImGui::RadioButton(
-                "Outline + fill##brushPreviewStyle",
+                "Outline and fill##brushPreviewStyle",
                 BrushPreviewStyle::OutlineAndFill == previewStyle))
           {
             previewStyle = BrushPreviewStyle::OutlineAndFill;
@@ -591,7 +594,7 @@ void renderSegToolbar(
             helpMarker("Set the opacity of the brush preview fill");
           }
 
-          if (ImGui::Checkbox("Show while painting##brushPreviewWhilePainting", &previewWhilePainting)) {
+          if (ImGui::Checkbox("Show preview while painting##brushPreviewWhilePainting", &previewWhilePainting)) {
             appData.settings().setBrushPreviewWhilePainting(previewWhilePainting);
           }
           ImGui::SameLine();

@@ -33,6 +33,7 @@ set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/toolbars/SegmentationToolbar.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/UiScaleManager.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/widgets/ActiveImageSelection.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/widgets/ActiveImageSelectionModel.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/widgets/LandmarkWidget.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/widgets/PaletteWidget.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/widgets/SegmentationLabelsWidget.cpp"

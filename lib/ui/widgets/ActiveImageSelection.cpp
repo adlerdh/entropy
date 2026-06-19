@@ -1,4 +1,5 @@
 #include "ui/widgets/Widgets.h"
+#include "ui/widgets/ActiveImageSelectionModel.h"
 #include "ui/Helpers.h"
 #include "ui/ImGuiCustomControls.h"
 
@@ -32,9 +33,14 @@ void renderActiveImageSelectionCombo(
 {
   const std::size_t activeIndex = getActiveImageIndex();
 
-  if (activeIndex >= numImages) {
-    spdlog::error("Invalid active image index");
-    return;
+  switch (entropy::ui::active_image_selection::selectionState(numImages, activeIndex)) {
+    case entropy::ui::active_image_selection::SelectionState::Empty:
+      return;
+    case entropy::ui::active_image_selection::SelectionState::Invalid:
+      spdlog::error("Invalid active image index");
+      return;
+    case entropy::ui::active_image_selection::SelectionState::Valid:
+      break;
   }
 
   const std::string nameString = (showText) ? "Active image###imageSelectionCombo" : "###imageSelectionCombo";

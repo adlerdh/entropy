@@ -406,7 +406,8 @@ void renderImageHeader(
     const bool showIncreaseIndex = true | (imageIndex < numImages - 1);
 
     if (showDecreaseIndex || showIncreaseIndex) {
-      ImGui::Text("Image order: ");
+      ImGui::AlignTextToFramePadding();
+      ImGui::TextUnformatted("Image order:");
     }
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));

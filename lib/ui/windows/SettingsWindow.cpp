@@ -73,11 +73,11 @@ float visibleLabelWidth(const char* label)
   return ImGui::CalcTextSize(visibleText.data(), visibleText.data() + visibleText.size()).x;
 }
 
-float fillWidthForLabeledControl(const char* label)
+float fillWidthForLabeledControl(const char* label, float extraTrailingWidth = 0.0f)
 {
   const float labelWidth = visibleLabelWidth(label);
   const float spacing = labelWidth > 0.0f ? ImGui::GetStyle().ItemSpacing.x : 0.0f;
-  return std::max(1.0f, ImGui::GetContentRegionAvail().x - labelWidth - spacing);
+  return std::max(1.0f, ImGui::GetContentRegionAvail().x - labelWidth - spacing - extraTrailingWidth);
 }
 
 float fillWidthForLabelColumn(float labelWidth)
@@ -1052,7 +1052,7 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
     helpMarker("Cutoff used to erode segmentation boundaries in linear or cubic interpolation mode");
   }
 
-  if (ImGui::CollapsingHeader("Brush")) {
+  if (ImGui::CollapsingHeader("Brush", ImGuiTreeNodeFlags_DefaultOpen)) {
     AppSettings& settings = appData.settings();
 
     bool useRound = settings.useRoundBrush();
@@ -1093,7 +1093,7 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
     }
   }
 
-  if (ImGui::CollapsingHeader("Brush preview")) {
+  if (ImGui::CollapsingHeader("Brush preview", ImGuiTreeNodeFlags_DefaultOpen)) {
     AppSettings& settings = appData.settings();
     BrushPreviewMode previewMode = settings.brushPreviewMode();
 
@@ -1115,6 +1115,21 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
       ImGui::SameLine();
       if (ImGui::RadioButton("All voxels##brushPreviewVoxels", BrushPreviewVoxels::All == previewVoxels)) {
         settings.setBrushPreviewVoxels(BrushPreviewVoxels::All);
+      }
+
+      SegmentationOutlineStyle previewOutlineStyle = settings.brushPreviewOutlineStyle();
+      if (ImGui::RadioButton(
+            "Pixel outline##brushPreviewOutlineStyle",
+            SegmentationOutlineStyle::ViewPixel == previewOutlineStyle))
+      {
+        settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ViewPixel);
+      }
+      ImGui::SameLine();
+      if (ImGui::RadioButton(
+            "Voxel outline##brushPreviewOutlineStyle",
+            SegmentationOutlineStyle::ImageVoxel == previewOutlineStyle))
+      {
+        settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ImageVoxel);
       }
 
       BrushPreviewStyle previewStyle = settings.brushPreviewStyle();
@@ -1144,21 +1159,6 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
       bool previewWhilePainting = settings.brushPreviewWhilePainting();
       if (ImGui::Checkbox("Show while painting##brushPreviewWhilePainting", &previewWhilePainting)) {
         settings.setBrushPreviewWhilePainting(previewWhilePainting);
-      }
-
-      SegmentationOutlineStyle previewOutlineStyle = settings.brushPreviewOutlineStyle();
-      if (ImGui::RadioButton(
-            "Pixel outline##brushPreviewOutlineStyle",
-            SegmentationOutlineStyle::ViewPixel == previewOutlineStyle))
-      {
-        settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ViewPixel);
-      }
-      ImGui::SameLine();
-      if (ImGui::RadioButton(
-            "Voxel outline##brushPreviewOutlineStyle",
-            SegmentationOutlineStyle::ImageVoxel == previewOutlineStyle))
-      {
-        settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ImageVoxel);
       }
     }
   }
@@ -1339,7 +1339,8 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
 
   if (!renderData.m_doMaxExtentIntensityProjection) {
     float thickness = renderData.m_intensityProjectionSlabThickness;
-    ImGui::PushItemWidth(fillWidthForLabeledControl("Slab thickness (mm)"));
+    const float trailingLabelReserve = 2.0f * ImGui::GetStyle().FramePadding.x;
+    ImGui::PushItemWidth(fillWidthForLabeledControl("Slab thickness (mm)", trailingLabelReserve));
     if (ImGui::InputFloat("Slab thickness (mm)", &thickness, 0.1f, 1.0f, "%0.2f")) {
       if (thickness >= 0.0f) {
         renderData.m_intensityProjectionSlabThickness = thickness;
@@ -1353,8 +1354,10 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
   ImGui::Spacing();
   ImGui::Text("X-ray projection:");
 
+  const float trailingLabelReserve = 2.0f * ImGui::GetStyle().FramePadding.x;
+
   float energy = renderData.m_xrayEnergyKeV;
-  ImGui::PushItemWidth(fillWidthForLabeledControl("Energy"));
+  ImGui::PushItemWidth(fillWidthForLabeledControl("Energy", trailingLabelReserve));
   if (ImGui::DragFloat(
         "Energy",
         &energy,
@@ -1368,13 +1371,13 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
   }
 
   float window = renderData.m_xrayIntensityWindow;
-  ImGui::SetNextItemWidth(fillWidthForLabeledControl("Width"));
+  ImGui::SetNextItemWidth(fillWidthForLabeledControl("Width", trailingLabelReserve));
   if (mySliderF32("Width", &window, 1.0e-3f, 1.0f, "%0.3f")) {
     renderData.m_xrayIntensityWindow = window;
   }
 
   float level = renderData.m_xrayIntensityLevel;
-  ImGui::SetNextItemWidth(fillWidthForLabeledControl("Level"));
+  ImGui::SetNextItemWidth(fillWidthForLabeledControl("Level", trailingLabelReserve));
   if (mySliderF32("Level", &level, 0.0f, 1.0f, "%0.3f")) {
     renderData.m_xrayIntensityLevel = level;
   }
@@ -1712,6 +1715,17 @@ static void renderSettingsNavigation(GuiData::SettingsTab& selectedPage)
   }
 }
 
+float settingsNavigationAutoWidth()
+{
+  float width = 0.0f;
+  for (const ui_settings::SettingsPageChoice& choice : ui_settings::settingsPageChoices()) {
+    width = std::max(width, ImGui::CalcTextSize(choice.label).x);
+  }
+
+  const ImGuiStyle& style = ImGui::GetStyle();
+  return width + (2.0f * style.FramePadding.x) + (2.0f * style.WindowPadding.x);
+}
+
 /**
  * @brief Render the selected settings page.
  * @param page Settings page to render.
@@ -1821,30 +1835,41 @@ void renderSettingsWindow(
       (2.0f * ImGui::GetFrameHeightWithSpacing()) + style.ItemSpacing.y + style.WindowPadding.y;
 
     if (ImGui::BeginChild("##SettingsBody", ImVec2{0.0f, -footerHeight}, ImGuiChildFlags_None)) {
-      if (ImGui::BeginChild("##SettingsNavigation", ImVec2{k_navigationWidth, 0.0f}, ImGuiChildFlags_Borders)) {
-        renderSettingsNavigation(s_selectedPage);
-      }
-      ImGui::EndChild();
+      const float navigationWidth = std::max(k_navigationWidth, settingsNavigationAutoWidth());
+      constexpr ImGuiTableFlags tableFlags =
+        ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings;
+      if (ImGui::BeginTable("##SettingsLayout", 2, tableFlags, ImVec2{0.0f, 0.0f})) {
+        ImGui::TableSetupColumn("##SettingsNavigationColumn", ImGuiTableColumnFlags_WidthFixed, navigationWidth);
+        ImGui::TableSetupColumn("##SettingsPageColumn", ImGuiTableColumnFlags_WidthStretch);
 
-      ImGui::SameLine();
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        if (ImGui::BeginChild("##SettingsNavigation", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_Borders)) {
+          renderSettingsNavigation(s_selectedPage);
+        }
+        ImGui::EndChild();
 
-      if (ImGui::BeginChild("##SettingsPage", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_Borders)) {
-        renderSettingsPage(
-          s_selectedPage,
-          appData,
-          renderData,
-          getNumImageColorMaps,
-          getImageColorMap,
-          updateMetricUniforms,
-          setUiScaleOverride,
-          requestFontReload,
-          applyUiColorPreset,
-          applyUiDensityPreset,
-          applyUiWindowBgOpacity,
-          readjustViewport,
-          recenterAllViews);
+        ImGui::TableSetColumnIndex(1);
+        if (ImGui::BeginChild("##SettingsPage", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_Borders)) {
+          renderSettingsPage(
+            s_selectedPage,
+            appData,
+            renderData,
+            getNumImageColorMaps,
+            getImageColorMap,
+            updateMetricUniforms,
+            setUiScaleOverride,
+            requestFontReload,
+            applyUiColorPreset,
+            applyUiDensityPreset,
+            applyUiWindowBgOpacity,
+            readjustViewport,
+            recenterAllViews);
+        }
+        ImGui::EndChild();
+
+        ImGui::EndTable();
       }
-      ImGui::EndChild();
     }
     ImGui::EndChild();
 

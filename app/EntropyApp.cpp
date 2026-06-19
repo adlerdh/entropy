@@ -716,11 +716,17 @@ void EntropyApp::resize(int windowWidth, int windowHeight)
 
   if (const std::optional<glm::vec4>& renderViewport = guiData().m_renderViewport) {
     const GuiData::Margins toolbarMargins = guiData().computeToolbarMargins();
-    windowData().setViewport(
-      renderViewport->x + toolbarMargins.left,
-      renderViewport->y + toolbarMargins.bottom,
-      std::max(1.0f, renderViewport->z - (toolbarMargins.left + toolbarMargins.right)),
-      std::max(1.0f, renderViewport->w - (toolbarMargins.bottom + toolbarMargins.top)));
+    const float minLeft = margins.left;
+    const float minBottom = margins.bottom;
+    const float maxRight = std::max(minLeft + 1.0f, static_cast<float>(windowWidth) - margins.right);
+    const float maxTop = std::max(minBottom + 1.0f, static_cast<float>(windowHeight) - margins.top);
+
+    const float left = std::clamp(renderViewport->x + toolbarMargins.left, minLeft, maxRight - 1.0f);
+    const float bottom = std::clamp(renderViewport->y + toolbarMargins.bottom, minBottom, maxTop - 1.0f);
+    const float right = std::clamp(renderViewport->x + renderViewport->z - toolbarMargins.right, left + 1.0f, maxRight);
+    const float top = std::clamp(renderViewport->y + renderViewport->w - toolbarMargins.top, bottom + 1.0f, maxTop);
+
+    windowData().setViewport(left, bottom, std::max(1.0f, right - left), std::max(1.0f, top - bottom));
     return;
   }
 

@@ -560,8 +560,9 @@ void AsciiRenderer::render(
     View* view;
     glm::vec3 worldXhairsOffset;
     FrameBounds miewportViewBounds;
-    GLint sx, sy;
-    GLsizei sw, sh;
+    GLint sceneX, sceneY;
+    GLint windowX, windowY;
+    GLsizei width, height;
   };
 
   std::vector<ViewData> viewDataList;
@@ -577,27 +578,26 @@ void AsciiRenderer::render(
       helper::computeMiewportFrameBounds(view->windowClipViewport(), m_appData.windowData().viewport().getAsVec4());
 
     const glm::vec4 clip = view->windowClipViewport();
-    const GLint sx = static_cast<GLint>((clip[0] * 0.5f + 0.5f) * deviceVP[2]);
-    const GLint sy = static_cast<GLint>((clip[1] * 0.5f + 0.5f) * deviceVP[3]);
+    const GLint sceneX = static_cast<GLint>((clip[0] * 0.5f + 0.5f) * deviceVP[2]);
+    const GLint sceneY = static_cast<GLint>((clip[1] * 0.5f + 0.5f) * deviceVP[3]);
+    const GLint windowX = static_cast<GLint>(deviceVP[0]) + sceneX;
+    const GLint windowY = static_cast<GLint>(deviceVP[1]) + sceneY;
     const GLsizei sw = static_cast<GLsizei>(clip[2] * 0.5f * deviceVP[2]);
     const GLsizei sh = static_cast<GLsizei>(clip[3] * 0.5f * deviceVP[3]);
 
-    viewDataList.push_back(ViewData{view.get(), worldXhairsOffset, miewportViewBounds, sx, sy, sw, sh});
+    viewDataList.push_back(
+      ViewData{view.get(), worldXhairsOffset, miewportViewBounds, sceneX, sceneY, windowX, windowY, sw, sh});
   }
 
   // PASS 1: Render all views into scene FBO
   m_sceneFbo.bind(fbo::TargetType::Draw);
-  glViewport(
-    static_cast<GLint>(deviceVP[0]),
-    static_cast<GLint>(deviceVP[1]),
-    static_cast<GLsizei>(deviceVP[2]),
-    static_cast<GLsizei>(deviceVP[3]));
+  glViewport(0, 0, static_cast<GLsizei>(deviceVP[2]), static_cast<GLsizei>(deviceVP[3]));
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
   for (const auto& vd : viewDataList) {
     glEnable(GL_SCISSOR_TEST);
-    glScissor(vd.sx, vd.sy, vd.sw, vd.sh);
+    glScissor(vd.sceneX, vd.sceneY, vd.width, vd.height);
     drawImages(*vd.view, vd.miewportViewBounds, vd.worldXhairsOffset);
     glDisable(GL_SCISSOR_TEST);
   }
@@ -747,7 +747,7 @@ void AsciiRenderer::render(
 
     for (const auto& vd : viewDataList) {
       glEnable(GL_SCISSOR_TEST);
-      glScissor(vd.sx, vd.sy, vd.sw, vd.sh);
+      glScissor(vd.windowX, vd.windowY, vd.width, vd.height);
       m_asciiPostVao.bind();
       glDrawArrays(GL_TRIANGLES, 0, 3);
       m_asciiPostVao.release();
@@ -806,7 +806,7 @@ void AsciiRenderer::render(
 
     for (const auto& vd : viewDataList) {
       glEnable(GL_SCISSOR_TEST);
-      glScissor(vd.sx, vd.sy, vd.sw, vd.sh);
+      glScissor(vd.windowX, vd.windowY, vd.width, vd.height);
       m_asciiPostVao.bind();
       glDrawArrays(GL_TRIANGLES, 0, 3);
       m_asciiPostVao.release();

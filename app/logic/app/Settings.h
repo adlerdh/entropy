@@ -243,7 +243,7 @@ private:
   UiFontFamily m_uiFontFamily = UiFontFamily::Inter;
   UiColorPreset m_uiColorPreset = UiColorPreset::EntropyDark;
   UiDensityPreset m_uiDensityPreset = UiDensityPreset::Default;
-  float m_uiWindowBgOpacity = 0.94f;
+  float m_uiWindowBgOpacity = 0.95f;
   bool m_showLayoutTabs = true;
   UiLayoutTabPlacement m_layoutTabPlacement = UiLayoutTabPlacement::Top;
 
