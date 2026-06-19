@@ -16,6 +16,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class AppData;
@@ -86,6 +87,8 @@ public:
 
   void setCurrentLayoutIndex(std::size_t index);
   void cycleCurrentLayout(int step);
+  /** @brief Move a layout while keeping the same selected layout active. */
+  void moveLayout(std::size_t fromIndex, std::size_t toIndex);
 
   const Layout* layout(std::size_t index) const;
 
@@ -101,7 +104,7 @@ public:
     bool isLightbox,
     std::size_t imageIndexForLightbox,
     const uuid& imageUidForLightbox,
-    std::optional<float> lightboxOffsetDistance = std::nullopt);
+    std::optional<float> absoluteOffsetStep = std::nullopt);
 
   /** @brief Add a lightbox layout for one image. */
   void addLightboxLayoutForImage(
@@ -113,8 +116,23 @@ public:
   /** @brief Add axial/coronal/sagittal views grouped by image. */
   void addAxCorSagLayout(std::size_t numImages);
 
-  /** @brief Rebuild layouts that depend on the loaded image set. */
-  void reconcileImageDependentLayouts(const AppData& appData);
+  /**
+   * @brief Change the current layout's view type.
+   * @param appData Application data used when a managed lightbox must be rebuilt.
+   * @param viewType New view type.
+   *
+   * Managed lightboxes are rebuilt so their tile count and relative offsets match the new orientation.
+   */
+  void setCurrentLayoutViewType(const AppData& appData, const ViewType& viewType);
+
+  /**
+   * @brief Rebuild layouts that depend on the loaded image set.
+   * @param appData Application image and selection state.
+   * @param dicomNativeViewTypesByImage Native DICOM slice orientation by image UID.
+   */
+  void reconcileImageDependentLayouts(
+    const AppData& appData,
+    const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage = {});
 
   std::vector<layout::LayoutSpec> createProjectLayoutSnapshots(uuid_range_t orderedImageUids) const;
   bool applyProjectLayoutSnapshots(

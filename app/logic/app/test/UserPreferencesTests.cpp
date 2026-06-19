@@ -35,6 +35,8 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setUiColorPreset(UiColorPreset::SoftLight);
   settings.setUiDensityPreset(UiDensityPreset::Comfortable);
   settings.setUiWindowBgOpacity(0.42f);
+  settings.setShowLayoutTabs(false);
+  settings.setLayoutTabPlacement(UiLayoutTabPlacement::Bottom);
   settings.setReplaceBackgroundWithForeground(true);
   settings.setUse3dBrush(true);
   settings.setUseIsotropicBrush(false);
@@ -133,6 +135,8 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actual.uiColorPreset() == expected.uiColorPreset());
   CHECK(actual.uiDensityPreset() == expected.uiDensityPreset());
   CHECK(actual.uiWindowBgOpacity() == Catch::Approx(expected.uiWindowBgOpacity()));
+  CHECK(actual.showLayoutTabs() == expected.showLayoutTabs());
+  CHECK(actual.layoutTabPlacement() == expected.layoutTabPlacement());
   CHECK(actual.replaceBackgroundWithForeground() == expected.replaceBackgroundWithForeground());
   CHECK(actual.use3dBrush() == expected.use3dBrush());
   CHECK(actual.useIsotropicBrush() == expected.useIsotropicBrush());
@@ -300,7 +304,9 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
     "interface": {
       "uiScale": 99,
       "font": "notAFont",
-      "windowBackgroundOpacity": 0.01
+      "windowBackgroundOpacity": 0.01,
+      "showLayoutTabs": "bad",
+      "layoutTabsPosition": "side"
     },
     "views": {
       "crosshairs": {
@@ -376,9 +382,12 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("interface").at("uiScale") == "auto");
   CHECK(root.at("interface").at("font") == "inter");
   CHECK(root.at("interface").at("colorScheme") == "entropyDark");
+  CHECK(root.at("interface").at("showLayoutTabs") == true);
+  CHECK(root.at("interface").at("layoutTabsPosition") == "top");
   CHECK(root.at("views").at("showOverlays") == true);
   CHECK(root.at("views").at("crosshairs").at("snapping") == "disabled");
   CHECK(root.at("views").at("scaleBars").at("show") == true);
+  CHECK(root.at("views").at("lightbox").at("showOffsetLabels") == true);
   CHECK(root.at("segmentation").at("brushPreview").at("mode") == "hover");
   CHECK(root.at("synchronization").at("itkSnap").at("enabled") == false);
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);

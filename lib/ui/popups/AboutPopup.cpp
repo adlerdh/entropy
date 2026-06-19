@@ -33,6 +33,8 @@ using namespace entropy::ui::popups;
 namespace
 {
 
+constexpr const char* k_apacheLicenseUrl = "https://www.apache.org/licenses/LICENSE-2.0";
+
 } // namespace
 
 void renderAboutDialogModalPopup(bool open)
@@ -94,7 +96,7 @@ void renderAboutDialogModalPopup(bool open)
     ImGui::TextWrapped("%s", COPYRIGHT_LINE);
 
     ImGui::Spacing();
-    ImGui::TextWrapped("%s", LICENSE_LINE);
+    ImGui::TextLinkOpenURL(LICENSE_LINE, k_apacheLicenseUrl);
     ImGui::PopTextWrapPos();
     ImGui::EndGroup();
 

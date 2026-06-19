@@ -77,6 +77,7 @@ enum class MainMenuAction
   AddLandmark,
   AddLayout,
   RemoveLayout,
+  ToggleLayoutTabs,
   ToggleImagesWindow,
   ToggleSegmentationsWindow,
   ToggleLandmarksWindow,

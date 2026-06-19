@@ -43,6 +43,24 @@ void renderUnsavedProjectPopup(
   constexpr const char* popupTitle = "Unsaved Project";
   auto& guiData = appData.guiData();
   const bool isQuit = GuiData::UnsavedProjectAction::QuitApp == guiData.m_pendingUnsavedProjectAction;
+  const char* actionText = "closing it";
+  switch (guiData.m_pendingUnsavedProjectAction) {
+    case GuiData::UnsavedProjectAction::CloseProject:
+      actionText = "closing it";
+      break;
+    case GuiData::UnsavedProjectAction::OpenImages:
+      actionText = "opening another image";
+      break;
+    case GuiData::UnsavedProjectAction::OpenDicomSeries:
+      actionText = "opening another DICOM series";
+      break;
+    case GuiData::UnsavedProjectAction::OpenProject:
+      actionText = "opening another project";
+      break;
+    case GuiData::UnsavedProjectAction::QuitApp:
+      actionText = "quitting";
+      break;
+  }
 
   auto continueAction = [&]() {
     if (isQuit) {
@@ -76,7 +94,7 @@ void renderUnsavedProjectPopup(
     const auto result = native_dialog::showMessageDialog(
       {popupTitle,
        "The current project has unsaved changes.",
-       std::string{"Save before "} + (isQuit ? "quitting?" : "closing it?"),
+       std::string{"Save before "} + actionText + "?",
        "Save",
        "Discard",
        "Cancel"});
@@ -107,7 +125,7 @@ void renderUnsavedProjectPopup(
 
   if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::TextWrapped("The current project has unsaved changes.");
-    ImGui::TextWrapped("Save before %s?", isQuit ? "quitting" : "closing it");
+    ImGui::TextWrapped("Save before %s?", actionText);
     ImGui::Separator();
 
     if (ImGui::Button("Save")) {

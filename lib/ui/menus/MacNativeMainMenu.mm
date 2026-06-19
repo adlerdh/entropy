@@ -535,11 +535,12 @@ void rebuildLayoutsMenu() {
   }
 
   [g_layoutsMenu removeAllItems];
-  addTargetedMenuItem(g_layoutsMenu, @"Load Layout...", @selector(loadLayouts:), @"");
-  addTargetedMenuItem(g_layoutsMenu, @"Save Layout...", @selector(saveLayouts:), @"");
+  addTargetedMenuItem(g_layoutsMenu, @"Load Layouts...", @selector(loadLayouts:), @"");
+  addTargetedMenuItem(g_layoutsMenu, @"Save Layouts...", @selector(saveLayouts:), @"");
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
   addActionMenuItem(g_layoutsMenu, @"Add Layout...", MainMenuAction::AddLayout);
   addActionMenuItem(g_layoutsMenu, @"Remove Current Layout", MainMenuAction::RemoveLayout);
+  addActionMenuItem(g_layoutsMenu, @"Show Layout Tabs", MainMenuAction::ToggleLayoutTabs);
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
   addTargetedMenuItem(g_layoutsMenu, @"Previous Layout", @selector(previousLayout:), @"[", 0);
   addTargetedMenuItem(g_layoutsMenu, @"Next Layout", @selector(nextLayout:), @"]", 0);

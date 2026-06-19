@@ -108,6 +108,51 @@ TEST_CASE("Entropy Dark uses active header color for selected headers", "[ui][st
   CHECK(sameColor(style.Colors[ImGuiCol_HeaderHovered], style.Colors[ImGuiCol_HeaderActive]));
 }
 
+TEST_CASE("UI color presets use active header color for active title bars", "[ui][style]")
+{
+  static constexpr std::array<UiColorPreset, 9> presets{
+    UiColorPreset::EntropyDark,
+    UiColorPreset::ImGuiDark,
+    UiColorPreset::ImGuiClassic,
+    UiColorPreset::ImGuiLight,
+    UiColorPreset::SlateBlue,
+    UiColorPreset::Graphite,
+    UiColorPreset::DeepTeal,
+    UiColorPreset::Midnight,
+    UiColorPreset::SoftLight};
+
+  for (const UiColorPreset preset : presets) {
+    ImGuiStyle style;
+    applyUiStylePreset(preset, &style);
+
+    CAPTURE(uiColorPresetName(preset));
+    CHECK(sameColor(style.Colors[ImGuiCol_TitleBgActive], style.Colors[ImGuiCol_HeaderActive]));
+  }
+}
+
+TEST_CASE("UI color presets use active header color for selected tabs", "[ui][style]")
+{
+  static constexpr std::array<UiColorPreset, 9> presets{
+    UiColorPreset::EntropyDark,
+    UiColorPreset::ImGuiDark,
+    UiColorPreset::ImGuiClassic,
+    UiColorPreset::ImGuiLight,
+    UiColorPreset::SlateBlue,
+    UiColorPreset::Graphite,
+    UiColorPreset::DeepTeal,
+    UiColorPreset::Midnight,
+    UiColorPreset::SoftLight};
+
+  for (const UiColorPreset preset : presets) {
+    ImGuiStyle style;
+    applyUiStylePreset(preset, &style);
+
+    CAPTURE(uiColorPresetName(preset));
+    CHECK(sameColor(style.Colors[ImGuiCol_TabSelected], style.Colors[ImGuiCol_HeaderActive]));
+    CHECK(sameColor(style.Colors[ImGuiCol_TabDimmedSelected], style.Colors[ImGuiCol_HeaderActive]));
+  }
+}
+
 TEST_CASE("UI window background opacity updates only window alpha", "[ui][style]")
 {
   ImGuiStyle style;

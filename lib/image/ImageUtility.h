@@ -50,6 +50,14 @@ std::pair<double, double> componentRange(const ComponentType& componentType);
  */
 std::pair<glm::vec3, glm::vec3> computeWorldMinMaxCornersOfImage(const Image& image);
 
+/**
+ * @brief Count image slices along a world-space view direction.
+ * @param image Image geometry to inspect.
+ * @param worldDir View normal in world coordinates.
+ * @return Number of slice steps needed to cover the image extent along the direction.
+ */
+std::size_t computeNumImageSlicesAlongWorldDirection(const Image& image, const glm::vec3& worldDir);
+
 /// @brief Compute exact component statistics from sorted image values.
 std::vector<ComponentStats> computeImageStatisticsOnSortedValues(const Image& image);
 /// @brief Compute online component statistics without sorting image values.

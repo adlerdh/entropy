@@ -12,27 +12,27 @@
 
 namespace
 {
-constexpr UINT sk_openImageCommand = 1001;
-constexpr UINT sk_openProjectCommand = 1002;
-constexpr UINT sk_addImageCommand = 1003;
-constexpr UINT sk_openDicomSeriesCommand = 1008;
-constexpr UINT sk_addDicomSeriesCommand = 1009;
-constexpr UINT sk_addSegmentationCommand = 1004;
-constexpr UINT sk_saveProjectCommand = 1005;
-constexpr UINT sk_saveProjectAsCommand = 1006;
-constexpr UINT sk_closeProjectCommand = 1007;
-constexpr UINT sk_loadLayoutsCommand = 1101;
-constexpr UINT sk_saveLayoutsCommand = 1102;
-constexpr UINT sk_previousLayoutCommand = 1103;
-constexpr UINT sk_nextLayoutCommand = 1104;
-constexpr UINT sk_showAboutCommand = 1105;
-constexpr UINT sk_quitCommand = 1106;
-constexpr UINT sk_selectLayoutCommandBase = 1200;
-constexpr UINT sk_selectActiveImageCommandBase = 1400;
-constexpr UINT sk_actionCommandBase = 2000;
-constexpr UINT sk_actionCommandEnd = 2300;
+constexpr UINT k_openImageCommand = 1001;
+constexpr UINT k_openProjectCommand = 1002;
+constexpr UINT k_addImageCommand = 1003;
+constexpr UINT k_openDicomSeriesCommand = 1008;
+constexpr UINT k_addDicomSeriesCommand = 1009;
+constexpr UINT k_addSegmentationCommand = 1004;
+constexpr UINT k_saveProjectCommand = 1005;
+constexpr UINT k_saveProjectAsCommand = 1006;
+constexpr UINT k_closeProjectCommand = 1007;
+constexpr UINT k_loadLayoutsCommand = 1101;
+constexpr UINT k_saveLayoutsCommand = 1102;
+constexpr UINT k_previousLayoutCommand = 1103;
+constexpr UINT k_nextLayoutCommand = 1104;
+constexpr UINT k_showAboutCommand = 1105;
+constexpr UINT k_quitCommand = 1106;
+constexpr UINT k_selectLayoutCommandBase = 1200;
+constexpr UINT k_selectActiveImageCommandBase = 1400;
+constexpr UINT k_actionCommandBase = 2000;
+constexpr UINT k_actionCommandEnd = 2300;
 
-constexpr UINT_PTR sk_menuSubclassId = 1;
+constexpr UINT_PTR k_menuSubclassId = 1;
 
 struct MenuState
 {
@@ -51,34 +51,34 @@ HWND hwndFromGlfw(GLFWwindow* window)
 
 bool isMenuCommand(UINT command)
 {
-  if (command >= sk_actionCommandBase && command < sk_actionCommandEnd) {
+  if (command >= k_actionCommandBase && command < k_actionCommandEnd) {
     return true;
   }
 
-  if (command >= sk_selectLayoutCommandBase && command < sk_selectActiveImageCommandBase) {
+  if (command >= k_selectLayoutCommandBase && command < k_selectActiveImageCommandBase) {
     return true;
   }
 
-  if (command >= sk_selectActiveImageCommandBase && command < sk_actionCommandBase) {
+  if (command >= k_selectActiveImageCommandBase && command < k_actionCommandBase) {
     return true;
   }
 
   switch (command) {
-    case sk_openImageCommand:
-    case sk_openProjectCommand:
-    case sk_addImageCommand:
-    case sk_openDicomSeriesCommand:
-    case sk_addDicomSeriesCommand:
-    case sk_addSegmentationCommand:
-    case sk_saveProjectCommand:
-    case sk_saveProjectAsCommand:
-    case sk_closeProjectCommand:
-    case sk_loadLayoutsCommand:
-    case sk_saveLayoutsCommand:
-    case sk_previousLayoutCommand:
-    case sk_nextLayoutCommand:
-    case sk_showAboutCommand:
-    case sk_quitCommand:
+    case k_openImageCommand:
+    case k_openProjectCommand:
+    case k_addImageCommand:
+    case k_openDicomSeriesCommand:
+    case k_addDicomSeriesCommand:
+    case k_addSegmentationCommand:
+    case k_saveProjectCommand:
+    case k_saveProjectAsCommand:
+    case k_closeProjectCommand:
+    case k_loadLayoutsCommand:
+    case k_saveLayoutsCommand:
+    case k_previousLayoutCommand:
+    case k_nextLayoutCommand:
+    case k_showAboutCommand:
+    case k_quitCommand:
       return true;
     default:
       return false;
@@ -114,39 +114,39 @@ void updateEnabledState(const MenuState& state)
 {
   const auto& callbacks = state.callbacks;
 
-  enableMenuCommand(state, sk_openImageCommand, callbacks.canOpenProject && callbacks.openImageFiles);
-  enableMenuCommand(state, sk_openProjectCommand, callbacks.canOpenProject && callbacks.openProjectFile);
-  enableMenuCommand(state, sk_openDicomSeriesCommand, callbacks.canOpenProject && callbacks.openDicomFolders);
-  enableMenuCommand(state, sk_addImageCommand, callbacks.canAddImage && callbacks.addImageFiles);
-  enableMenuCommand(state, sk_addDicomSeriesCommand, callbacks.canAddImage && callbacks.openDicomFolders);
-  enableMenuCommand(state, sk_addSegmentationCommand, callbacks.canAddSegmentation && callbacks.addSegmentationFile);
-  enableMenuCommand(state, sk_saveProjectCommand, callbacks.canSaveProject && callbacks.saveProject);
-  enableMenuCommand(state, sk_saveProjectAsCommand, callbacks.canSaveProject && callbacks.saveProjectAs);
-  enableMenuCommand(state, sk_closeProjectCommand, callbacks.canCloseProject && callbacks.closeProject);
-  enableMenuCommand(state, sk_loadLayoutsCommand, callbacks.canUseLayouts && callbacks.loadLayoutsFile);
-  enableMenuCommand(state, sk_saveLayoutsCommand, callbacks.canUseLayouts && callbacks.saveLayoutsFile);
-  enableMenuCommand(state, sk_previousLayoutCommand, callbacks.canUseLayouts && callbacks.cycleLayouts);
-  enableMenuCommand(state, sk_nextLayoutCommand, callbacks.canUseLayouts && callbacks.cycleLayouts);
-  enableMenuCommand(state, sk_quitCommand, callbacks.quitApp != nullptr);
+  enableMenuCommand(state, k_openImageCommand, callbacks.canOpenProject && callbacks.openImageFiles);
+  enableMenuCommand(state, k_openProjectCommand, callbacks.canOpenProject && callbacks.openProjectFile);
+  enableMenuCommand(state, k_openDicomSeriesCommand, callbacks.canOpenProject && callbacks.openDicomFolders);
+  enableMenuCommand(state, k_addImageCommand, callbacks.canAddImage && callbacks.addImageFiles);
+  enableMenuCommand(state, k_addDicomSeriesCommand, callbacks.canAddImage && callbacks.openDicomFolders);
+  enableMenuCommand(state, k_addSegmentationCommand, callbacks.canAddSegmentation && callbacks.addSegmentationFile);
+  enableMenuCommand(state, k_saveProjectCommand, callbacks.canSaveProject && callbacks.saveProject);
+  enableMenuCommand(state, k_saveProjectAsCommand, callbacks.canSaveProject && callbacks.saveProjectAs);
+  enableMenuCommand(state, k_closeProjectCommand, callbacks.canCloseProject && callbacks.closeProject);
+  enableMenuCommand(state, k_loadLayoutsCommand, callbacks.canUseLayouts && callbacks.loadLayoutsFile);
+  enableMenuCommand(state, k_saveLayoutsCommand, callbacks.canUseLayouts && callbacks.saveLayoutsFile);
+  enableMenuCommand(state, k_previousLayoutCommand, callbacks.canUseLayouts && callbacks.cycleLayouts);
+  enableMenuCommand(state, k_nextLayoutCommand, callbacks.canUseLayouts && callbacks.cycleLayouts);
+  enableMenuCommand(state, k_quitCommand, callbacks.quitApp != nullptr);
 
   const auto layoutNames = callbacks.layoutNames ? callbacks.layoutNames() : std::vector<std::string>{};
   for (std::size_t i = 0; i < layoutNames.size(); ++i) {
     enableMenuCommand(
       state,
-      sk_selectLayoutCommandBase + static_cast<UINT>(i),
+      k_selectLayoutCommandBase + static_cast<UINT>(i),
       callbacks.canUseLayouts && callbacks.setCurrentLayoutIndex);
   }
 
   const auto imageNames = callbacks.imageNames ? callbacks.imageNames() : std::vector<std::string>{};
   const std::size_t activeImageIndex = callbacks.activeImageIndex ? callbacks.activeImageIndex() : 0;
   for (std::size_t i = 0; i < imageNames.size(); ++i) {
-    const UINT command = sk_selectActiveImageCommandBase + static_cast<UINT>(i);
+    const UINT command = k_selectActiveImageCommandBase + static_cast<UINT>(i);
     enableMenuCommand(state, command, callbacks.canAddImage && callbacks.setActiveImageIndex);
     CheckMenuItem(state.mainMenu, command, MF_BYCOMMAND | (i == activeImageIndex ? MF_CHECKED : MF_UNCHECKED));
   }
 
-  for (UINT command = sk_actionCommandBase; command < sk_actionCommandEnd; ++command) {
-    const auto action = static_cast<MainMenuAction>(command - sk_actionCommandBase);
+  for (UINT command = k_actionCommandBase; command < k_actionCommandEnd; ++command) {
+    const auto action = static_cast<MainMenuAction>(command - k_actionCommandBase);
     enableMenuCommand(state, command, main_menu::actionEnabled(callbacks, action));
     CheckMenuItem(
       state.mainMenu,
@@ -159,75 +159,75 @@ void handleMenuCommand(const MenuState& state, UINT command)
 {
   const auto& callbacks = state.callbacks;
 
-  if (command >= sk_actionCommandBase && command < sk_actionCommandEnd) {
-    main_menu::performAction(callbacks, static_cast<MainMenuAction>(command - sk_actionCommandBase));
+  if (command >= k_actionCommandBase && command < k_actionCommandEnd) {
+    main_menu::performAction(callbacks, static_cast<MainMenuAction>(command - k_actionCommandBase));
     return;
   }
 
-  if (command >= sk_selectActiveImageCommandBase && command < sk_actionCommandBase) {
+  if (command >= k_selectActiveImageCommandBase && command < k_actionCommandBase) {
     if (callbacks.setActiveImageIndex) {
-      callbacks.setActiveImageIndex(command - sk_selectActiveImageCommandBase);
+      callbacks.setActiveImageIndex(command - k_selectActiveImageCommandBase);
     }
     return;
   }
 
-  if (command >= sk_selectLayoutCommandBase && command < sk_selectActiveImageCommandBase) {
+  if (command >= k_selectLayoutCommandBase && command < k_selectActiveImageCommandBase) {
     if (callbacks.setCurrentLayoutIndex) {
-      callbacks.setCurrentLayoutIndex(command - sk_selectLayoutCommandBase);
+      callbacks.setCurrentLayoutIndex(command - k_selectLayoutCommandBase);
     }
     return;
   }
 
   switch (command) {
-    case sk_openImageCommand:
+    case k_openImageCommand:
       main_menu::openImage(callbacks);
       break;
-    case sk_openProjectCommand:
+    case k_openProjectCommand:
       main_menu::openProject(callbacks);
       break;
-    case sk_openDicomSeriesCommand:
+    case k_openDicomSeriesCommand:
       main_menu::openDicomSeries(callbacks);
       break;
-    case sk_addDicomSeriesCommand:
+    case k_addDicomSeriesCommand:
       main_menu::addDicomSeries(callbacks);
       break;
-    case sk_addImageCommand:
+    case k_addImageCommand:
       main_menu::addImage(callbacks);
       break;
-    case sk_addSegmentationCommand:
+    case k_addSegmentationCommand:
       main_menu::addSegmentation(callbacks);
       break;
-    case sk_saveProjectCommand:
+    case k_saveProjectCommand:
       main_menu::saveProject(callbacks);
       break;
-    case sk_saveProjectAsCommand:
+    case k_saveProjectAsCommand:
       main_menu::saveProjectAs(callbacks);
       break;
-    case sk_closeProjectCommand:
+    case k_closeProjectCommand:
       main_menu::closeProject(callbacks);
       break;
-    case sk_loadLayoutsCommand:
+    case k_loadLayoutsCommand:
       main_menu::loadLayouts(callbacks);
       break;
-    case sk_saveLayoutsCommand:
+    case k_saveLayoutsCommand:
       main_menu::saveLayouts(callbacks);
       break;
-    case sk_previousLayoutCommand:
+    case k_previousLayoutCommand:
       if (callbacks.cycleLayouts) {
         callbacks.cycleLayouts(-1);
       }
       break;
-    case sk_nextLayoutCommand:
+    case k_nextLayoutCommand:
       if (callbacks.cycleLayouts) {
         callbacks.cycleLayouts(1);
       }
       break;
-    case sk_showAboutCommand:
+    case k_showAboutCommand:
       if (callbacks.showAbout) {
         callbacks.showAbout();
       }
       break;
-    case sk_quitCommand:
+    case k_quitCommand:
       main_menu::quitApp(callbacks);
       break;
     default:
@@ -273,7 +273,7 @@ bool insertMenuItem(HMENU menu, UINT position, UINT command, const wchar_t* text
 
 UINT actionCommand(MainMenuAction action)
 {
-  return sk_actionCommandBase + static_cast<UINT>(action);
+  return k_actionCommandBase + static_cast<UINT>(action);
 }
 
 bool insertActionMenuItem(HMENU menu, UINT position, MainMenuAction action, const wchar_t* text)
@@ -304,18 +304,17 @@ bool insertSubmenu(HMENU menu, UINT position, HMENU submenu, const wchar_t* text
 bool populateFileMenu(HMENU fileMenu)
 {
   UINT position = 0;
-  return insertMenuItem(fileMenu, position++, sk_openImageCommand, L"&Open Image(s)...\tCtrl+O") &&
-         insertMenuItem(fileMenu, position++, sk_openDicomSeriesCommand, L"Open &DICOM Series...") &&
-         insertMenuItem(fileMenu, position++, sk_openProjectCommand, L"Open &Project...\tCtrl+Shift+O") &&
+  return insertMenuItem(fileMenu, position++, k_openImageCommand, L"&Open Image(s)...\tCtrl+O") &&
+         insertMenuItem(fileMenu, position++, k_openDicomSeriesCommand, L"Open &DICOM Series...") &&
+         insertMenuItem(fileMenu, position++, k_openProjectCommand, L"Open &Project...\tCtrl+Shift+O") &&
          insertSeparator(fileMenu, position++) &&
-         insertMenuItem(fileMenu, position++, sk_addImageCommand, L"&Add Image(s)...") &&
+         insertMenuItem(fileMenu, position++, k_addImageCommand, L"&Add Image(s)...") &&
          insertSeparator(fileMenu, position++) &&
-         insertMenuItem(fileMenu, position++, sk_saveProjectCommand, L"&Save Project\tCtrl+S") &&
-         insertMenuItem(fileMenu, position++, sk_saveProjectAsCommand, L"Save Project &As...\tCtrl+Shift+S") &&
+         insertMenuItem(fileMenu, position++, k_saveProjectCommand, L"&Save Project\tCtrl+S") &&
+         insertMenuItem(fileMenu, position++, k_saveProjectAsCommand, L"Save Project &As...\tCtrl+Shift+S") &&
          insertSeparator(fileMenu, position++) &&
-         insertMenuItem(fileMenu, position++, sk_closeProjectCommand, L"&Close Project") &&
-         insertSeparator(fileMenu, position++) &&
-         insertMenuItem(fileMenu, position++, sk_quitCommand, L"&Quit\tCtrl+Q");
+         insertMenuItem(fileMenu, position++, k_closeProjectCommand, L"&Close Project") &&
+         insertSeparator(fileMenu, position++) && insertMenuItem(fileMenu, position++, k_quitCommand, L"&Quit\tCtrl+Q");
 }
 
 bool populateModesMenu(HMENU menu)
@@ -340,8 +339,8 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
   UINT position = 0;
   return insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"Show &Images Panel") &&
          insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
-         insertMenuItem(menu, position++, sk_addImageCommand, L"&Add Image(s)...") &&
-         insertMenuItem(menu, position++, sk_addDicomSeriesCommand, L"Add &DICOM Series...") &&
+         insertMenuItem(menu, position++, k_addImageCommand, L"&Add Image(s)...") &&
+         insertMenuItem(menu, position++, k_addDicomSeriesCommand, L"Add &DICOM Series...") &&
          insertActionMenuItem(
            menu,
            position++,
@@ -390,7 +389,7 @@ bool populateSegmentationMenu(HMENU menu)
            MainMenuAction::ToggleSegmentationsWindow,
            L"Show Se&gmentations Panel") &&
          insertSeparator(menu, position++) &&
-         insertMenuItem(menu, position++, sk_addSegmentationCommand, L"&Add Segmentation...") &&
+         insertMenuItem(menu, position++, k_addSegmentationCommand, L"&Add Segmentation...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::CreateSegmentation, L"&Create Blank Segmentation") &&
          insertActionMenuItem(menu, position++, MainMenuAction::SaveSegmentation, L"&Save Active Segmentation...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::ClearSegmentation, L"C&lear Active Segmentation") &&
@@ -541,7 +540,7 @@ bool populateWindowsMenu(HMENU menu)
 bool populateHelpMenu(HMENU menu)
 {
   UINT position = 0;
-  return insertMenuItem(menu, position++, sk_showAboutCommand, L"&About Entropy");
+  return insertMenuItem(menu, position++, k_showAboutCommand, L"&About Entropy");
 }
 
 bool clearMenu(HMENU menu)
@@ -562,14 +561,15 @@ bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callback
 
   UINT position = 0;
   if (
-    !insertMenuItem(layoutsMenu, position++, sk_loadLayoutsCommand, L"&Load Layout...") ||
-    !insertMenuItem(layoutsMenu, position++, sk_saveLayoutsCommand, L"&Save Layout...") ||
+    !insertMenuItem(layoutsMenu, position++, k_loadLayoutsCommand, L"&Load Layouts...") ||
+    !insertMenuItem(layoutsMenu, position++, k_saveLayoutsCommand, L"&Save Layouts...") ||
     !insertSeparator(layoutsMenu, position++) ||
     !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::AddLayout, L"&Add Layout...") ||
     !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::RemoveLayout, L"&Remove Current Layout") ||
+    !insertActionMenuItem(layoutsMenu, position++, MainMenuAction::ToggleLayoutTabs, L"Show Layout &Tabs") ||
     !insertSeparator(layoutsMenu, position++) ||
-    !insertMenuItem(layoutsMenu, position++, sk_previousLayoutCommand, L"&Previous Layout\t[") ||
-    !insertMenuItem(layoutsMenu, position++, sk_nextLayoutCommand, L"&Next Layout\t]") ||
+    !insertMenuItem(layoutsMenu, position++, k_previousLayoutCommand, L"&Previous Layout\t[") ||
+    !insertMenuItem(layoutsMenu, position++, k_nextLayoutCommand, L"&Next Layout\t]") ||
     !insertSeparator(layoutsMenu, position++))
   {
     return false;
@@ -579,7 +579,7 @@ bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callback
   const std::size_t currentIndex = callbacks.currentLayoutIndex ? callbacks.currentLayoutIndex() : 0;
   for (std::size_t i = 0; i < layoutNames.size(); ++i) {
     const std::wstring title = widenUtf8(layoutNames.at(i));
-    const UINT command = sk_selectLayoutCommandBase + static_cast<UINT>(i);
+    const UINT command = k_selectLayoutCommandBase + static_cast<UINT>(i);
     if (!insertMenuItem(layoutsMenu, position++, command, title.c_str())) {
       return false;
     }
@@ -600,7 +600,7 @@ bool populateActiveImagesMenu(HMENU activeImagesMenu, const MainMenuBarCallbacks
   const std::size_t activeIndex = callbacks.activeImageIndex ? callbacks.activeImageIndex() : 0;
   for (std::size_t i = 0; i < imageNames.size(); ++i) {
     const std::wstring title = widenUtf8(imageNames.at(i));
-    const UINT command = sk_selectActiveImageCommandBase + static_cast<UINT>(i);
+    const UINT command = k_selectActiveImageCommandBase + static_cast<UINT>(i);
     if (!insertMenuItem(activeImagesMenu, position++, command, title.c_str())) {
       return false;
     }
@@ -667,14 +667,13 @@ bool installWindowsNativeMainMenu(HWND window, const MainMenuBarCallbacks& callb
     return false;
   }
 
-  if (!SetWindowSubclass(window, entropyMenuSubclassProc, sk_menuSubclassId, reinterpret_cast<DWORD_PTR>(state.get())))
-  {
+  if (!SetWindowSubclass(window, entropyMenuSubclassProc, k_menuSubclassId, reinterpret_cast<DWORD_PTR>(state.get()))) {
     DestroyMenu(state->mainMenu);
     return false;
   }
 
   if (!SetMenu(window, state->mainMenu)) {
-    RemoveWindowSubclass(window, entropyMenuSubclassProc, sk_menuSubclassId);
+    RemoveWindowSubclass(window, entropyMenuSubclassProc, k_menuSubclassId);
     DestroyMenu(state->mainMenu);
     return false;
   }
@@ -719,7 +718,7 @@ void uninstallWindowsNativeMainMenu(GLFWwindow* window)
   }
 
   HMENU menu = stateIt->second->mainMenu;
-  RemoveWindowSubclass(hwnd, entropyMenuSubclassProc, sk_menuSubclassId);
+  RemoveWindowSubclass(hwnd, entropyMenuSubclassProc, k_menuSubclassId);
   SetMenu(hwnd, nullptr);
   if (menu) {
     DestroyMenu(menu);

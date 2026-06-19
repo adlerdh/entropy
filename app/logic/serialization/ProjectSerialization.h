@@ -11,6 +11,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <string>
@@ -144,6 +145,28 @@ struct Image
 };
 
 /**
+ * @brief Serialized layout tab bar edge.
+ */
+enum class ProjectLayoutTabPlacement : std::uint8_t
+{
+  Top,
+  Bottom
+};
+
+/**
+ * @brief Interface settings saved with a project.
+ */
+struct ProjectInterfaceSettings
+{
+  bool m_showLayoutTabs = true;                                                    //!< Show the layout tab bar.
+  ProjectLayoutTabPlacement m_layoutTabPlacement = ProjectLayoutTabPlacement::Top; //!< Layout tab bar edge.
+  std::uint32_t m_imageValuePrecision = 3; //!< Decimal places for displayed image values.
+  std::uint32_t m_coordsPrecision = 3;     //!< Decimal places for displayed coordinates.
+  std::uint32_t m_txPrecision = 3;         //!< Decimal places for displayed transform values.
+  std::uint32_t m_percentilePrecision = 2; //!< Decimal places for displayed percentiles.
+};
+
+/**
  * @brief Serialized data for an Entropy project
  */
 struct EntropyProject
@@ -152,7 +175,36 @@ struct EntropyProject
   std::vector<serialize::Image> m_additionalImages;
   std::vector<layout::LayoutSpec> m_layouts;
   std::optional<std::size_t> m_currentLayoutIndex = std::nullopt;
+  ProjectInterfaceSettings m_interface;
 };
+
+/**
+ * @brief Serialize project interface settings to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectInterfaceSettings& settings);
+
+/**
+ * @brief Deserialize project interface settings from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectInterfaceSettings& settings);
+
+/**
+ * @brief Serialize an Entropy project to JSON.
+ * @param j Destination JSON object.
+ * @param project Project to serialize.
+ */
+void to_json(nlohmann::json& j, const EntropyProject& project);
+
+/**
+ * @brief Deserialize an Entropy project from JSON.
+ * @param j Source JSON object.
+ * @param project Project to update.
+ */
+void from_json(const nlohmann::json& j, EntropyProject& project);
 
 /**
  * @todo Put these in a separate header file

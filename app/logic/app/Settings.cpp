@@ -175,6 +175,26 @@ void AppSettings::setUiWindowBgOpacity(float opacity)
   m_uiWindowBgOpacity = std::clamp(opacity, 0.2f, 1.0f);
 }
 
+bool AppSettings::showLayoutTabs() const
+{
+  return m_showLayoutTabs;
+}
+
+void AppSettings::setShowLayoutTabs(bool show)
+{
+  m_showLayoutTabs = show;
+}
+
+UiLayoutTabPlacement AppSettings::layoutTabPlacement() const
+{
+  return m_layoutTabPlacement;
+}
+
+void AppSettings::setLayoutTabPlacement(UiLayoutTabPlacement placement)
+{
+  m_layoutTabPlacement = placement;
+}
+
 void AppSettings::setForegroundLabel(std::size_t label, const ParcellationLabelTable& activeLabelTable)
 {
   const auto oldForegroundLabel = m_foregroundLabel;

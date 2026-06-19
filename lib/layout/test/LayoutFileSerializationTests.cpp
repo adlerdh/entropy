@@ -25,7 +25,9 @@ TEST_CASE("Layout files save compact layout presets", "[layout]")
     .m_currentLayoutIndex = 2,
     .m_layouts = {
       {.m_type = "fourUp"},
-      {.m_type = "multiImageGrid", .m_view = "axial", .m_images = "all"},
+      {.m_type = "threeUp"},
+      {.m_type = "oneUp", .m_view = "axial", .m_imageIndices = {0}},
+      {.m_type = "grid", .m_view = "axial", .m_images = "all"},
       {.m_type = "lightbox", .m_view = "coronal", .m_imageIndices = {0, 1, 2, 3}}}};
 
   REQUIRE(layout::save(file, fileName));
@@ -36,6 +38,9 @@ TEST_CASE("Layout files save compact layout presets", "[layout]")
     const std::string json((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     REQUIRE(json.find("\"bounds\"") == std::string::npos);
     REQUIRE(json.find("\"views\"") == std::string::npos);
+    REQUIRE(json.find("\"type\": \"threeUp\"") != std::string::npos);
+    REQUIRE(json.find("\"type\": \"oneUp\"") != std::string::npos);
+    REQUIRE(json.find("\"type\": \"grid\"") != std::string::npos);
     REQUIRE(json.find("\"type\": \"lightbox\"") != std::string::npos);
     REQUIRE(json.find("\"image\":") == std::string::npos);
     REQUIRE(json.find("\"images\": [0, 1, 2, 3]") != std::string::npos);
@@ -56,7 +61,8 @@ TEST_CASE("Layout files load compact layout presets", "[layout]")
   "currentLayout": 1,
   "layouts": [
     {"type": "fourUp"},
-    {"type": "single", "view": "axial", "images": [0]},
+    {"type": "oneUp", "view": "axial", "images": [0]},
+    {"type": "grid", "view": "coronal", "images": "all"},
     {"type": "lightbox", "view": "sagittal", "images": [2]}
   ]
 })";
@@ -65,36 +71,17 @@ TEST_CASE("Layout files load compact layout presets", "[layout]")
   layout::LayoutFile file;
   REQUIRE(layout::open(file, fileName));
   REQUIRE(file.m_currentLayoutIndex == 1);
-  REQUIRE(file.m_layouts.size() == 3);
+  REQUIRE(file.m_layouts.size() == 4);
   REQUIRE(file.m_layouts.at(0).m_type == "fourUp");
-  REQUIRE(file.m_layouts.at(1).m_type == "single");
+  REQUIRE(file.m_layouts.at(1).m_type == "oneUp");
   REQUIRE(file.m_layouts.at(1).m_view == "axial");
   REQUIRE(file.m_layouts.at(1).m_imageIndices == std::vector<std::size_t>{0});
-  REQUIRE(file.m_layouts.at(2).m_type == "lightbox");
-  REQUIRE(file.m_layouts.at(2).m_view == "sagittal");
-  REQUIRE(file.m_layouts.at(2).m_imageIndices == std::vector<std::size_t>{2});
-
-  std::filesystem::remove(fileName);
-}
-
-TEST_CASE("Layout files still load legacy singular image fields", "[layout]")
-{
-  const auto fileName = tempLayoutFile("entropy-layout-presets-legacy-image.json");
-  {
-    std::ofstream out(fileName);
-    REQUIRE(out);
-    out << R"([
-  {"type": "single", "view": "axial", "image": 0},
-  {"type": "lightbox", "view": "coronal", "image": "reference"}
-])";
-  }
-
-  layout::LayoutFile file;
-  REQUIRE(layout::open(file, fileName));
-  REQUIRE(!file.m_currentLayoutIndex);
-  REQUIRE(file.m_layouts.size() == 2);
-  REQUIRE(file.m_layouts.at(0).m_imageIndices == std::vector<std::size_t>{0});
-  REQUIRE(file.m_layouts.at(1).m_imageIndices == std::vector<std::size_t>{0});
+  REQUIRE(file.m_layouts.at(2).m_type == "grid");
+  REQUIRE(file.m_layouts.at(2).m_view == "coronal");
+  REQUIRE(file.m_layouts.at(2).m_images == "all");
+  REQUIRE(file.m_layouts.at(3).m_type == "lightbox");
+  REQUIRE(file.m_layouts.at(3).m_view == "sagittal");
+  REQUIRE(file.m_layouts.at(3).m_imageIndices == std::vector<std::size_t>{2});
 
   std::filesystem::remove(fileName);
 }

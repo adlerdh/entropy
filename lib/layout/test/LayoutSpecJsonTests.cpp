@@ -10,6 +10,7 @@ layout::LayoutSpec makePopulatedLayoutSpec()
 {
   layout::LayoutSpec spec;
   spec.m_kind = 5;
+  spec.m_displayName = "Custom review";
   spec.m_isLightbox = true;
   spec.m_viewType = 1;
   spec.m_renderMode = 2;
@@ -95,6 +96,7 @@ void requireSame(const layout::ViewSpec& actual, const layout::ViewSpec& expecte
 void requireSame(const layout::LayoutSpec& actual, const layout::LayoutSpec& expected)
 {
   REQUIRE(actual.m_kind == expected.m_kind);
+  REQUIRE(actual.m_displayName == expected.m_displayName);
   REQUIRE(actual.m_isLightbox == expected.m_isLightbox);
   REQUIRE(actual.m_viewType == expected.m_viewType);
   REQUIRE(actual.m_renderMode == expected.m_renderMode);
@@ -127,6 +129,7 @@ TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization
   const nlohmann::json json = original;
 
   CHECK(json.at("kind") == "AxCorSagByImage");
+  CHECK(json.at("displayName") == "Custom review");
   CHECK(json.at("viewType") == "Coronal");
   CHECK(json.at("renderMode") == "Quadrants");
   CHECK(json.at("intensityProjectionMode") == "Minimum");
@@ -164,7 +167,7 @@ TEST_CASE("layout spec JSON preserves receiver-only sync membership", "[layout][
   REQUIRE(restored.m_views.at(1).m_zoomSyncMembershipGroup == 2);
 }
 
-TEST_CASE("legacy layout spec JSON without sync membership remains readable", "[layout][serialization]")
+TEST_CASE("layout spec JSON without sync membership keeps membership defaults", "[layout][serialization]")
 {
   const nlohmann::json json = {
     {"views",

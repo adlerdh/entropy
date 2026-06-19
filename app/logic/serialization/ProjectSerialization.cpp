@@ -13,11 +13,16 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <cstring>
 #include <exception>
 #include <fstream>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // #if defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION >= 1000)
@@ -33,6 +38,50 @@ namespace fs = std::filesystem;
 
 namespace
 {
+
+template<typename Enum>
+struct EnumName
+{
+  Enum value;
+  std::string_view name;
+};
+
+template<typename Enum, std::size_t N>
+const char* enumToName(Enum value, const std::array<EnumName<Enum>, N>& names)
+{
+  const auto it =
+    std::find_if(names.begin(), names.end(), [value](const EnumName<Enum>& entry) { return entry.value == value; });
+  return it != names.end() ? it->name.data() : names.front().name.data();
+}
+
+template<typename Enum, std::size_t N>
+std::optional<Enum> enumFromName(std::string_view name, const std::array<EnumName<Enum>, N>& names)
+{
+  const auto it =
+    std::find_if(names.begin(), names.end(), [name](const EnumName<Enum>& entry) { return entry.name == name; });
+  if (it == names.end()) {
+    return std::nullopt;
+  }
+  return it->value;
+}
+
+constexpr std::array k_layoutTabPlacementNames{
+  EnumName{serialize::ProjectLayoutTabPlacement::Top, "top"},
+  EnumName{serialize::ProjectLayoutTabPlacement::Bottom, "bottom"}};
+
+std::optional<std::uint32_t> unsignedIntFromJson(const json& value)
+{
+  if (value.is_number_unsigned()) {
+    return value.get<std::uint32_t>();
+  }
+  if (value.is_number_integer()) {
+    const auto parsed = value.get<std::int64_t>();
+    if (parsed >= 0) {
+      return static_cast<std::uint32_t>(parsed);
+    }
+  }
+  return std::nullopt;
+}
 
 // Convert all project image file names to be relative to the project base path and canonical.
 // void makePathsRelative( json& project, const fs::path& basePath )
@@ -342,6 +391,50 @@ void from_json(const json& j, serialize::Image& image)
   }
 }
 
+void to_json(json& j, const ProjectInterfaceSettings& settings)
+{
+  j = json{
+    {"showLayoutTabs", settings.m_showLayoutTabs},
+    {"layoutTabsPosition", enumToName(settings.m_layoutTabPlacement, k_layoutTabPlacementNames)},
+    {"imageValuePrecision", settings.m_imageValuePrecision},
+    {"coordinatesPrecision", settings.m_coordsPrecision},
+    {"transformPrecision", settings.m_txPrecision},
+    {"percentilePrecision", settings.m_percentilePrecision}};
+}
+
+void from_json(const json& j, ProjectInterfaceSettings& settings)
+{
+  if (const auto showTabs = j.find("showLayoutTabs"); showTabs != j.end() && showTabs->is_boolean()) {
+    settings.m_showLayoutTabs = showTabs->get<bool>();
+  }
+  if (
+    const auto parsed =
+      enumFromName<ProjectLayoutTabPlacement>(j.value("layoutTabsPosition", ""), k_layoutTabPlacementNames))
+  {
+    settings.m_layoutTabPlacement = *parsed;
+  }
+  if (const auto precision = j.find("imageValuePrecision"); precision != j.end()) {
+    if (const auto parsed = unsignedIntFromJson(*precision)) {
+      settings.m_imageValuePrecision = *parsed;
+    }
+  }
+  if (const auto precision = j.find("coordinatesPrecision"); precision != j.end()) {
+    if (const auto parsed = unsignedIntFromJson(*precision)) {
+      settings.m_coordsPrecision = *parsed;
+    }
+  }
+  if (const auto precision = j.find("transformPrecision"); precision != j.end()) {
+    if (const auto parsed = unsignedIntFromJson(*precision)) {
+      settings.m_txPrecision = *parsed;
+    }
+  }
+  if (const auto precision = j.find("percentilePrecision"); precision != j.end()) {
+    if (const auto parsed = unsignedIntFromJson(*precision)) {
+      settings.m_percentilePrecision = *parsed;
+    }
+  }
+}
+
 void to_json(json& j, const EntropyProject& project)
 {
   j = json{{"reference", project.m_referenceImage}};
@@ -355,6 +448,7 @@ void to_json(json& j, const EntropyProject& project)
   if (project.m_currentLayoutIndex) {
     j["currentLayoutIndex"] = *project.m_currentLayoutIndex;
   }
+  j["interface"] = project.m_interface;
 }
 
 void from_json(const json& j, EntropyProject& project)
@@ -369,6 +463,9 @@ void from_json(const json& j, EntropyProject& project)
   }
   if (j.count("currentLayoutIndex")) {
     project.m_currentLayoutIndex = j.at("currentLayoutIndex").get<std::size_t>();
+  }
+  if (const auto interface = j.find("interface"); interface != j.end() && interface->is_object()) {
+    interface->get_to(project.m_interface);
   }
 }
 

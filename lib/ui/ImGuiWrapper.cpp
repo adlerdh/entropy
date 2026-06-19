@@ -4,6 +4,7 @@
 
 #include "ui/Helpers.h"
 #include "ui/ImageExport.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 #include "ui/menus/MainMenuBar.h"
 #ifdef __APPLE__
 #include "ui/menus/MacNativeMainMenu.h"
@@ -32,6 +33,7 @@
 #include <IconsForkAwesome.h>
 
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 
 // GLFW and OpenGL 3 bindings for ImGui:
 #include <imgui/backends/imgui_impl_glfw.h>
@@ -51,8 +53,12 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <memory>
+#include <numeric>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 CMRC_DECLARE(fonts);
 
@@ -60,17 +66,131 @@ namespace fs = std::filesystem;
 
 namespace
 {
-static const glm::quat sk_identityRotation{1.0f, 0.0f, 0.0f, 0.0f};
-static const glm::vec3 sk_zeroVec{0.0f, 0.0f, 0.0f};
+static const glm::quat k_identityRotation{1.0f, 0.0f, 0.0f, 0.0f};
+static const glm::vec3 k_zeroVec{0.0f, 0.0f, 0.0f};
+constexpr float k_layoutTabWindowPaddingX = 6.0f;
+constexpr float k_layoutTabWindowPaddingY = 4.0f;
+constexpr float k_layoutTabFrameRounding = 3.0f;
 
 float scaledPixel(float value)
 {
   return value * (ImGui::GetFontSize() / 16.0f);
 }
 
+struct LayoutTabMetrics
+{
+  ImVec2 windowPadding;
+  float frameRounding = 0.0f;
+  float height = 0.0f;
+};
+
+LayoutTabMetrics layoutTabMetrics()
+{
+  const ImVec2 windowPadding{scaledPixel(k_layoutTabWindowPaddingX), scaledPixel(k_layoutTabWindowPaddingY)};
+  return LayoutTabMetrics{
+    .windowPadding = windowPadding,
+    .frameRounding = scaledPixel(k_layoutTabFrameRounding),
+    .height = ImGui::GetFrameHeight() + (2.0f * windowPadding.y)};
+}
+
+bool updateLayoutTabBarHeight(GuiData& guiData)
+{
+  const float height = layoutTabMetrics().height;
+  if (std::abs(guiData.m_layoutTabBarHeight - height) < 0.5f) {
+    return false;
+  }
+
+  guiData.m_layoutTabBarHeight = height;
+  return true;
+}
+
 float buttonWidthForLabel(const char* label)
 {
   return ImGui::CalcTextSize(label, nullptr, true).x + 2.0f * ImGui::GetStyle().FramePadding.x;
+}
+
+std::unordered_map<ImGuiID, std::size_t> layoutIndicesByTabId(const std::vector<std::string>& labels)
+{
+  std::unordered_map<ImGuiID, std::size_t> indices;
+  indices.reserve(labels.size());
+  for (std::size_t index = 0; index < labels.size(); ++index) {
+    indices.emplace(ImGui::GetID(labels.at(index).c_str()), index);
+  }
+  return indices;
+}
+
+std::vector<std::size_t> layoutOrderFromTabBar(const std::vector<std::string>& labels, const ImGuiTabBar& tabBar)
+{
+  const auto indicesByTabId = layoutIndicesByTabId(labels);
+  std::vector<std::size_t> order;
+  order.reserve(labels.size());
+  for (int tabIndex = 0; tabIndex < tabBar.Tabs.Size; ++tabIndex) {
+    const auto indexIt = indicesByTabId.find(tabBar.Tabs[tabIndex].ID);
+    if (indexIt == indicesByTabId.end()) {
+      continue;
+    }
+    order.emplace_back(indexIt->second);
+  }
+  return order;
+}
+
+std::optional<std::size_t> selectedLayoutIndexFromTabBar(
+  const std::vector<std::string>& labels,
+  const ImGuiTabBar& tabBar)
+{
+  const auto indicesByTabId = layoutIndicesByTabId(labels);
+  const auto selectedIt = indicesByTabId.find(tabBar.SelectedTabId);
+  if (selectedIt == indicesByTabId.end()) {
+    return std::nullopt;
+  }
+  return selectedIt->second;
+}
+
+bool applyLayoutOrder(WindowData& windowData, const std::vector<std::size_t>& sourceOrder)
+{
+  if (sourceOrder.size() != windowData.numLayouts()) {
+    return false;
+  }
+
+  std::vector<std::size_t> currentOrder(windowData.numLayouts());
+  std::iota(currentOrder.begin(), currentOrder.end(), std::size_t{0});
+  if (sourceOrder == currentOrder) {
+    return false;
+  }
+
+  for (std::size_t destinationIndex = 0; destinationIndex < sourceOrder.size(); ++destinationIndex) {
+    if (currentOrder.at(destinationIndex) == sourceOrder.at(destinationIndex)) {
+      continue;
+    }
+
+    auto sourceIt = std::find(
+      currentOrder.begin() + static_cast<std::ptrdiff_t>(destinationIndex),
+      currentOrder.end(),
+      sourceOrder.at(destinationIndex));
+    if (sourceIt == currentOrder.end()) {
+      return false;
+    }
+
+    const std::size_t sourceIndex = static_cast<std::size_t>(std::distance(currentOrder.begin(), sourceIt));
+    windowData.moveLayout(sourceIndex, destinationIndex);
+
+    const std::size_t movedValue = *sourceIt;
+    currentOrder.erase(sourceIt);
+    currentOrder.insert(currentOrder.begin() + static_cast<std::ptrdiff_t>(destinationIndex), movedValue);
+  }
+
+  return true;
+}
+
+std::string truncateTabImageName(std::string name)
+{
+  constexpr std::size_t k_maxTabImageNameLength = 12;
+  if (name.size() <= k_maxTabImageNameLength) {
+    return name;
+  }
+  name.resize(k_maxTabImageNameLength);
+  name += "...";
+  return name;
 }
 
 std::string layoutImageDisplayName(const AppData& appData, const Layout& layout)
@@ -85,9 +205,297 @@ std::string layoutImageDisplayName(const AppData& appData, const Layout& layout)
     return {};
   }
 
-  const auto imageIndex = appData.imageIndex(imageUid);
-  const std::string ordinal = imageIndex ? (std::to_string(*imageIndex + 1) + ". ") : std::string{};
-  return ordinal + image->settings().displayName();
+  return image->settings().displayName();
+}
+
+std::string layoutImageTabName(const AppData& appData, const Layout& layout)
+{
+  if (layout.renderedImages().empty()) {
+    return {};
+  }
+
+  const Image* image = appData.image(layout.renderedImages().front());
+  return image ? truncateTabImageName(image->settings().displayName()) : std::string{};
+}
+
+GuiData::Margins marginsWithoutLayoutTabs(const GuiData& guiData)
+{
+  GuiData marginsData = guiData;
+  marginsData.m_showLayoutTabs = false;
+  return marginsData.computeMargins();
+}
+
+GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement)
+{
+  return UiLayoutTabPlacement::Bottom == placement ? GuiData::LayoutTabPlacement::Bottom
+                                                   : GuiData::LayoutTabPlacement::Top;
+}
+
+void syncLayoutTabGuiDataFromSettings(AppData& appData)
+{
+  appData.guiData().m_showLayoutTabs = appData.settings().showLayoutTabs();
+  appData.guiData().m_layoutTabPlacement = guiLayoutTabPlacement(appData.settings().layoutTabPlacement());
+}
+
+std::string layoutTabBaseLabel(const Layout& layout, const std::string& displayName)
+{
+  switch (layout.kind()) {
+    case LayoutKind::FourUp:
+      return "4-Up";
+    case LayoutKind::ThreeUp:
+      return "3-Up";
+    case LayoutKind::OneUp:
+      return "1-Up";
+    case LayoutKind::MultiImageGrid:
+    case LayoutKind::AxCorSagByImage:
+      return displayName;
+    case LayoutKind::Lightbox:
+      return "Lightbox";
+    case LayoutKind::Custom:
+      return displayName;
+    case LayoutKind::NumElements:
+      return displayName;
+  }
+  return displayName;
+}
+
+std::vector<std::string> layoutTabLabels(const AppData& appData)
+{
+  const WindowData& windowData = appData.windowData();
+  std::vector<std::string> baseNames;
+  baseNames.reserve(windowData.numLayouts());
+
+  std::unordered_map<std::string, std::size_t> baseNameCounts;
+  for (std::size_t index = 0; index < windowData.numLayouts(); ++index) {
+    baseNames.emplace_back(layoutTabBaseLabel(windowData.layouts().at(index), windowData.layoutDisplayName(index)));
+    ++baseNameCounts[baseNames.back()];
+  }
+
+  std::vector<std::string> labels;
+  labels.reserve(windowData.numLayouts());
+  std::unordered_map<std::string, std::size_t> seenBaseNameCounts;
+  for (std::size_t index = 0; index < windowData.numLayouts(); ++index) {
+    const Layout& layout = windowData.layouts().at(index);
+    std::string label = baseNames.at(index);
+    if (baseNameCounts.at(label) > 1) {
+      if (LayoutKind::Lightbox == layout.kind()) {
+        const std::string imageName = layoutImageTabName(appData, layout);
+        if (!imageName.empty()) {
+          label += " - " + imageName;
+        }
+      }
+      if (label == baseNames.at(index)) {
+        const std::size_t duplicateIndex = ++seenBaseNameCounts[label];
+        label += " " + std::to_string(duplicateIndex);
+      }
+    }
+    label += "##layout_tab_" + uuids::to_string(windowData.layouts().at(index).uid());
+    labels.emplace_back(std::move(label));
+  }
+  return labels;
+}
+
+void requestLayoutRemoval(AppData& appData, std::size_t index)
+{
+  WindowData& windowData = appData.windowData();
+  if (index >= windowData.numLayouts() || windowData.numLayouts() <= 1) {
+    return;
+  }
+
+  appData.guiData().m_pendingRemoveLayoutIndex = index;
+  appData.guiData().m_showConfirmRemoveLayoutPopup = true;
+}
+
+void removeLayout(AppData& appData, std::size_t index)
+{
+  WindowData& windowData = appData.windowData();
+  if (index >= windowData.numLayouts() || windowData.numLayouts() <= 1) {
+    return;
+  }
+
+  if (index == windowData.currentLayoutIndex()) {
+    windowData.setCurrentLayoutIndex(index > 0 ? index - 1 : 1);
+  }
+  windowData.removeLayout(index);
+}
+
+void renderConfirmRemoveLayoutPopup(AppData& appData)
+{
+  constexpr const char* popupTitle = "Remove Layout?";
+  GuiData& guiData = appData.guiData();
+
+  const std::optional<std::size_t> pendingIndex = guiData.m_pendingRemoveLayoutIndex;
+  const bool validIndex = pendingIndex && *pendingIndex < appData.windowData().numLayouts();
+  const std::string layoutName =
+    validIndex ? appData.windowData().layoutDisplayName(*pendingIndex) : std::string{"this layout"};
+  const bool canRemove = validIndex && appData.windowData().numLayouts() > 1;
+
+  if (guiData.m_showConfirmRemoveLayoutPopup && !ImGui::IsPopupOpen(popupTitle)) {
+    const auto result = native_dialog::showMessageDialog(
+      {popupTitle,
+       "Remove '" + layoutName + "'?",
+       canRemove ? "This removes the layout from the current project. Image data and files are not deleted."
+                 : "At least one layout must remain.",
+       "Remove",
+       "Cancel",
+       ""});
+    if (result) {
+      if (native_dialog::MessageDialogResult::FirstButton == *result && canRemove) {
+        removeLayout(appData, *pendingIndex);
+      }
+      guiData.m_pendingRemoveLayoutIndex = std::nullopt;
+      guiData.m_showConfirmRemoveLayoutPopup = false;
+      return;
+    }
+  }
+
+  if (guiData.m_showConfirmRemoveLayoutPopup && !ImGui::IsPopupOpen(popupTitle)) {
+    ImGui::OpenPopup(popupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
+  }
+
+  const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+  ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2{0.5f, 0.5f});
+
+  if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::Text("Remove '%s'?", layoutName.c_str());
+    ImGui::Spacing();
+    ImGui::TextWrapped("This removes the layout from the current project. Image data and files are not deleted.");
+    ImGui::Separator();
+
+    if (!canRemove) {
+      ImGui::TextUnformatted("At least one layout must remain.");
+      ImGui::Spacing();
+    }
+
+    if (ImGui::Button("Remove") && canRemove) {
+      removeLayout(appData, *pendingIndex);
+      guiData.m_pendingRemoveLayoutIndex = std::nullopt;
+      guiData.m_showConfirmRemoveLayoutPopup = false;
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::SetItemDefaultFocus();
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+      guiData.m_pendingRemoveLayoutIndex = std::nullopt;
+      guiData.m_showConfirmRemoveLayoutPopup = false;
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+
+  if (!ImGui::IsPopupOpen(popupTitle)) {
+    guiData.m_showConfirmRemoveLayoutPopup = false;
+    guiData.m_pendingRemoveLayoutIndex = std::nullopt;
+  }
+}
+
+void renderLayoutTabs(AppData& appData)
+{
+  GuiData& guiData = appData.guiData();
+  WindowData& windowData = appData.windowData();
+  if (!guiData.m_showLayoutTabs || 0 == windowData.numLayouts()) {
+    return;
+  }
+
+  static std::optional<uuids::uuid> lastSyncedSelectedLayoutUid;
+
+  const glm::ivec2& windowSize = windowData.getWindowSize();
+  const GuiData::Margins baseMargins = marginsWithoutLayoutTabs(guiData);
+  const bool placeAtTop = GuiData::LayoutTabPlacement::Top == guiData.m_layoutTabPlacement;
+  const LayoutTabMetrics metrics = layoutTabMetrics();
+  guiData.m_layoutTabBarHeight = metrics.height;
+  const float height = metrics.height;
+  const float y = placeAtTop ? baseMargins.top : (static_cast<float>(windowSize.y) - baseMargins.bottom - height);
+
+  ImGui::SetNextWindowPos(ImVec2{0.0f, y}, ImGuiCond_Always);
+  ImGui::SetNextWindowSize(ImVec2{static_cast<float>(windowSize.x), height}, ImGuiCond_Always);
+
+  constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                                           ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
+                                           ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoNav |
+                                           ImGuiWindowFlags_NoFocusOnAppearing;
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, metrics.windowPadding);
+  ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, metrics.frameRounding);
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyleColorVec4(ImGuiCol_MenuBarBg));
+
+  if (ImGui::Begin("LayoutTabs", nullptr, windowFlags)) {
+    const std::vector<std::string> labels = layoutTabLabels(appData);
+    const std::size_t currentLayoutIndex = windowData.currentLayoutIndex();
+    const uuids::uuid currentLayoutUid = windowData.layouts().at(currentLayoutIndex).uid();
+    const bool forceCurrentTabSelected =
+      !lastSyncedSelectedLayoutUid || currentLayoutUid != *lastSyncedSelectedLayoutUid;
+
+    std::optional<std::size_t> requestedLayoutIndex;
+
+    const ImGuiTabBarFlags tabBarFlags = ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_TabListPopupButton |
+                                         ImGuiTabBarFlags_DrawSelectedOverline | ImGuiTabBarFlags_FittingPolicyScroll |
+                                         ImGuiTabBarFlags_NoCloseWithMiddleMouseButton;
+    if (ImGui::BeginTabBar("##LayoutTabStrip", tabBarFlags)) {
+      std::optional<std::size_t> pendingRemoveLayoutIndex;
+      for (std::size_t index = 0; index < labels.size(); ++index) {
+        const bool selected = currentLayoutIndex == index;
+        ImGuiTabItemFlags tabFlags = ImGuiTabItemFlags_NoAssumedClosure;
+        if (selected && forceCurrentTabSelected) {
+          tabFlags |= ImGuiTabItemFlags_SetSelected;
+        }
+
+        bool tabOpen = true;
+        bool* tabOpenPtr = windowData.numLayouts() > 1 ? &tabOpen : nullptr;
+        const bool tabSelected = ImGui::BeginTabItem(labels.at(index).c_str(), tabOpenPtr, tabFlags);
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+          requestedLayoutIndex = index;
+        }
+        if (!tabOpen) {
+          pendingRemoveLayoutIndex = index;
+        }
+        if (tabSelected) {
+          ImGui::EndTabItem();
+        }
+      }
+
+      if (ImGui::TabItemButton("+##AddLayoutTab", ImGuiTabItemFlags_Trailing | ImGuiTabItemFlags_NoTooltip)) {
+        guiData.m_showAddLayoutPopup = true;
+      }
+
+      const bool layoutOrderChanged =
+        !pendingRemoveLayoutIndex && ImGui::GetCurrentTabBar() &&
+        applyLayoutOrder(windowData, layoutOrderFromTabBar(labels, *ImGui::GetCurrentTabBar()));
+      if (!layoutOrderChanged && !pendingRemoveLayoutIndex && !forceCurrentTabSelected) {
+        if (const ImGuiTabBar* tabBar = ImGui::GetCurrentTabBar()) {
+          const auto selectedLayoutIndex = selectedLayoutIndexFromTabBar(labels, *tabBar);
+          if (
+            selectedLayoutIndex && *selectedLayoutIndex < windowData.numLayouts() &&
+            *selectedLayoutIndex != windowData.currentLayoutIndex())
+          {
+            requestedLayoutIndex = *selectedLayoutIndex;
+          }
+        }
+      }
+
+      ImGui::EndTabBar();
+
+      if (pendingRemoveLayoutIndex) {
+        requestLayoutRemoval(appData, *pendingRemoveLayoutIndex);
+      }
+      if (layoutOrderChanged) {
+        requestedLayoutIndex = std::nullopt;
+      }
+    }
+
+    if (requestedLayoutIndex && *requestedLayoutIndex < windowData.numLayouts()) {
+      windowData.setCurrentLayoutIndex(*requestedLayoutIndex);
+    }
+    lastSyncedSelectedLayoutUid = windowData.layouts().at(windowData.currentLayoutIndex()).uid();
+  }
+
+  ImGui::End();
+  ImGui::PopStyleColor(1);
+  ImGui::PopStyleVar(4);
 }
 
 void renderLoadingStatusBar()
@@ -635,6 +1043,10 @@ void ImGuiWrapper::render()
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
+
+  if (updateLayoutTabBarHeight(m_appData.guiData()) && m_readjustViewport) {
+    m_readjustViewport();
+  }
 
   /// @todo Move these functions elsewhere
 
@@ -1204,12 +1616,17 @@ void ImGuiWrapper::render()
       case MainMenuAction::RemoveLayout: {
         auto& windowData = m_appData.windowData();
         if (windowData.numLayouts() >= 2) {
-          const std::size_t layoutToDelete = windowData.currentLayoutIndex();
-          windowData.cycleCurrentLayout(-1);
-          windowData.removeLayout(layoutToDelete);
+          requestLayoutRemoval(m_appData, windowData.currentLayoutIndex());
         }
         break;
       }
+      case MainMenuAction::ToggleLayoutTabs:
+        m_appData.settings().setShowLayoutTabs(!m_appData.settings().showLayoutTabs());
+        syncLayoutTabGuiDataFromSettings(m_appData);
+        if (m_readjustViewport) {
+          m_readjustViewport();
+        }
+        break;
       case MainMenuAction::ToggleImagesWindow:
         m_appData.guiData().m_showImagePropertiesWindow = !m_appData.guiData().m_showImagePropertiesWindow;
         break;
@@ -1303,6 +1720,8 @@ void ImGuiWrapper::render()
         case MainMenuAction::CreateLandmarkGroup:
         case MainMenuAction::AddLayout:
           return canUseProjectActions && hasActiveImage;
+        case MainMenuAction::ToggleLayoutTabs:
+          return canUseProjectActions;
         case MainMenuAction::PreviousForegroundLabel:
         case MainMenuAction::NextForegroundLabel:
         case MainMenuAction::PreviousBackgroundLabel:
@@ -1432,6 +1851,8 @@ void ImGuiWrapper::render()
         return m_appData.renderData().m_showScaleBars;
       case MainMenuAction::ToggleLightboxOffsets:
         return m_appData.renderData().m_showLightboxOffsetLabels;
+      case MainMenuAction::ToggleLayoutTabs:
+        return m_appData.settings().showLayoutTabs();
       case MainMenuAction::ToggleEntropyInstanceSync:
         return m_appData.settings().entropyInstanceSyncEnabled();
       case MainMenuAction::ToggleSync:
@@ -1484,7 +1905,7 @@ void ImGuiWrapper::render()
 
   auto getViewCameraRotation = [this](const uuids::uuid& viewUid) -> glm::quat {
     const View* view = m_appData.windowData().getCurrentView(viewUid);
-    if (!view) return sk_identityRotation;
+    if (!view) return k_identityRotation;
 
     return helper::computeCameraRotationRelativeToWorld(view->camera());
   };
@@ -1499,7 +1920,7 @@ void ImGuiWrapper::render()
 
   auto getViewNormal = [this](const uuids::uuid& viewUid) {
     View* view = m_appData.windowData().getCurrentView(viewUid);
-    if (!view) return sk_zeroVec;
+    if (!view) return k_zeroVec;
     return helper::worldDirection(view->camera(), Directions::View::Back);
   };
 
@@ -1571,13 +1992,16 @@ void ImGuiWrapper::render()
 
     std::vector<std::string> names;
     names.reserve(layouts.size());
+    std::unordered_map<std::string, std::size_t> seenBaseNameCounts;
     for (std::size_t index = 0; index < layouts.size(); ++index) {
       std::string displayName = baseNames.at(index);
-      if (baseNameCounts.at(displayName) > 1) {
-        const std::string imageName = layoutImageDisplayName(m_appData, layouts.at(index));
-        if (!imageName.empty()) {
-          displayName += " - " + imageName;
-        }
+      const bool managedLightbox = LayoutKind::Lightbox == layouts.at(index).kind();
+      const std::string imageName = managedLightbox ? layoutImageDisplayName(m_appData, layouts.at(index)) : "";
+      if (managedLightbox && !imageName.empty()) {
+        displayName += " - " + imageName;
+      }
+      else if (baseNameCounts.at(displayName) > 1) {
+        displayName += " " + std::to_string(++seenBaseNameCounts[displayName]);
       }
       names.emplace_back(std::to_string(index + 1) + ". " + displayName);
     }
@@ -1685,6 +2109,10 @@ void ImGuiWrapper::render()
       renderLoadingStatusBar();
     }
 
+    if (hasLoadedProject) {
+      renderLayoutTabs(m_appData);
+    }
+
     if (m_appData.guiData().m_showSettingsWindow) {
       static std::string s_settingsPersistenceStatus;
       const auto applyActivePreferences = [this]() {
@@ -1724,6 +2152,7 @@ void ImGuiWrapper::render()
           [this, applyActivePreferences]() {
             user_preferences::applyDefaults(m_appData.settings(), m_appData.renderData());
             applyActivePreferences();
+            syncLayoutTabGuiDataFromSettings(m_appData);
             s_settingsPersistenceStatus = "Defaults restored";
           },
         .statusText =
@@ -1741,6 +2170,7 @@ void ImGuiWrapper::render()
         [this](UiColorPreset preset) { applyUiColorPreset(preset); },
         [this](UiDensityPreset preset) { applyUiDensityPreset(preset); },
         [this](float opacity) { applyUiWindowBgOpacity(opacity); },
+        m_readjustViewport,
         settingsPersistenceCallbacks,
         m_recenterAllViews);
     }
@@ -1866,6 +2296,8 @@ void ImGuiWrapper::render()
     });
     m_appData.guiData().m_showAddLayoutPopup = false;
 
+    renderConfirmRemoveLayoutPopup(m_appData);
+
     renderAboutDialogModalPopup(m_appData.guiData().m_showAboutDialog);
     m_appData.guiData().m_showAboutDialog = false;
 
@@ -1896,22 +2328,23 @@ void ImGuiWrapper::render()
   if (m_appData.guiData().m_renderUiOverlays && currentLayout.isLightbox()) {
     // Per-layout UI controls:
 
-    static constexpr bool sk_recenterCrosshairs = false;
-    static constexpr bool sk_realignCrosshairs = false;
-    static constexpr bool sk_doNotRecenterOnCurrentCrosshairsPosition = false;
-    static constexpr bool sk_resetObliqueOrientation = false;
-    static constexpr bool sk_resetZoom = true;
+    static constexpr bool k_recenterCrosshairs = false;
+    static constexpr bool k_realignCrosshairs = false;
+    static constexpr bool k_doNotRecenterOnCurrentCrosshairsPosition = false;
+    static constexpr bool k_resetObliqueOrientation = false;
+    static constexpr bool k_resetZoom = true;
 
-    const auto mindowFrameBounds = helper::computeMindowFrameBounds(
+    const auto viewFrameBounds = helper::computeMindowFrameBounds(
       currentLayout.windowClipViewport(),
       m_appData.windowData().viewport().getAsVec4(),
       wholeWindowHeight);
 
     const ViewOverlayWindowContext overlayContext{
       currentLayout.uid(),
-      mindowFrameBounds,
+      viewFrameBounds,
       currentLayout.uiControls(),
       false,
+      LayoutKind::Lightbox != currentLayout.kind(),
       m_appData.state().worldCrosshairs(),
       m_appData.windowData().getContentScaleRatios()};
 
@@ -1933,20 +2366,23 @@ void ImGuiWrapper::render()
       currentLayout.viewType(),
       currentLayout.renderMode(),
       currentLayout.intensityProjectionMode(),
-      [&currentLayout](const ViewType& viewType) { return currentLayout.setViewType(viewType); },
+      [this](const ViewType& viewType) { m_appData.windowData().setCurrentLayoutViewType(m_appData, viewType); },
       [&currentLayout](const ViewRenderMode& renderMode) { return currentLayout.setRenderMode(renderMode); },
       [&currentLayout](const IntensityProjectionMode& ipMode) {
         return currentLayout.setIntensityProjectionMode(ipMode);
       },
       [this]() {
         m_recenterAllViews(
-          sk_recenterCrosshairs,
-          sk_realignCrosshairs,
-          sk_doNotRecenterOnCurrentCrosshairsPosition,
-          sk_resetObliqueOrientation,
-          sk_resetZoom);
+          k_recenterCrosshairs,
+          k_realignCrosshairs,
+          k_doNotRecenterOnCurrentCrosshairsPosition,
+          k_resetObliqueOrientation,
+          k_resetZoom);
       },
-      nullptr};
+      nullptr,
+      LayoutKind::Lightbox == currentLayout.kind()
+        ? std::vector<ViewType>{ViewType::Axial, ViewType::Coronal, ViewType::Sagittal}
+        : std::vector<ViewType>{}};
 
     const ViewOverlayProjectionCallbacks projectionCallbacks{
       [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },
@@ -2000,15 +2436,16 @@ void ImGuiWrapper::render()
         m_recenterView(viewUid);
       };
 
-      const auto mindowFrameBounds = helper::computeMindowFrameBounds(
+      const auto viewFrameBounds = helper::computeMindowFrameBounds(
         view->windowClipViewport(),
         m_appData.windowData().viewport().getAsVec4(),
         wholeWindowHeight);
 
       const ViewOverlayWindowContext overlayContext{
         viewUid,
-        mindowFrameBounds,
+        viewFrameBounds,
         view->uiControls(),
+        true,
         true,
         m_appData.state().worldCrosshairs(),
         m_appData.windowData().getContentScaleRatios()};

@@ -1,3 +1,4 @@
+#include "image/Image.h"
 #include "image/ImageHeader.h"
 #include "image/ImageTransformations.h"
 #include "image/ImageUtility.h"
@@ -5,6 +6,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <cstdint>
@@ -148,6 +150,42 @@ TEST_CASE("ImageHeader component adjustment and overrides update derived metadat
   checkVec3(header.spacing(), glm::vec3(1.0f));
   checkVec3(header.origin(), glm::vec3(0.0f));
   CHECK(header.directions() == glm::mat3(1.0f));
+}
+
+TEST_CASE("slice counts follow the selected world direction", "[image][utility]")
+{
+  const ImageIoInfo info = makeIoInfo(ComponentType::UInt16, 1, glm::uvec3(3, 5, 7));
+  const ImageHeader header(info, info, false);
+  Image image(
+    header,
+    "slice-count-test",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages);
+
+  CHECK(computeNumImageSlicesAlongWorldDirection(image, glm::vec3{1.0f, 0.0f, 0.0f}) == 3);
+  CHECK(computeNumImageSlicesAlongWorldDirection(image, glm::vec3{0.0f, 1.0f, 0.0f}) == 5);
+  CHECK(computeNumImageSlicesAlongWorldDirection(image, glm::vec3{0.0f, 0.0f, 1.0f}) == 7);
+  CHECK(computeNumImageSlicesAlongWorldDirection(image, glm::vec3{0.0f, 0.0f, -1.0f}) == 7);
+  CHECK(computeNumImageSlicesAlongWorldDirection(image, glm::vec3{0.0f}) == 0);
+}
+
+TEST_CASE("slice counts use transformed world-space image bounds", "[image][utility]")
+{
+  const ImageIoInfo info = makeIoInfo(ComponentType::UInt16, 1, glm::uvec3(3, 5, 7));
+  const ImageHeader header(info, info, false);
+  Image image(
+    header,
+    "slice-count-transform-test",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages);
+
+  image.transformations().set_worldDef_T_affine_locked(false);
+  image.transformations().set_worldDef_T_affine(
+    glm::rotate(glm::mat4{1.0f}, glm::half_pi<float>(), glm::vec3{0.0f, 0.0f, 1.0f}));
+
+  CHECK(computeNumImageSlicesAlongWorldDirection(image, glm::vec3{0.0f, 1.0f, 0.0f}) == 3);
+  CHECK(computeNumImageSlicesAlongWorldDirection(image, glm::vec3{-1.0f, 0.0f, 0.0f}) == 5);
+  CHECK(computeNumImageSlicesAlongWorldDirection(image, glm::vec3{0.0f, 0.0f, 1.0f}) == 7);
 }
 
 TEST_CASE(

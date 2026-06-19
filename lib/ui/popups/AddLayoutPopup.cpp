@@ -6,8 +6,6 @@
 #include "ui/NativeFileDialogs.h"
 #include "ui/ThirdPartyLicenses.h"
 
-#include "image/Image.h"
-
 #include "logic/app/AppPaths.h"
 #include "logic/app/Data.h"
 
@@ -24,8 +22,9 @@
 #include <cstdint>
 #include <cstring>
 #include <initializer_list>
-#include <limits>
+#include <optional>
 #include <sstream>
+#include <string>
 
 namespace fs = std::filesystem;
 using namespace entropy::ui::popups;
@@ -50,28 +49,6 @@ const char* lightboxViewTypeName(ViewType viewType)
   }
 }
 
-float defaultLightboxOffsetDistance(const AppData& appData, ViewType viewType)
-{
-  const Image* image = appData.refImage();
-  if (!image) {
-    image = appData.activeImage();
-  }
-  if (!image) {
-    return 1.0f;
-  }
-
-  const glm::vec3& spacing = image->header().spacing();
-  switch (viewType) {
-    case ViewType::Sagittal:
-      return spacing.x;
-    case ViewType::Coronal:
-      return spacing.y;
-    case ViewType::Axial:
-    default:
-      return spacing.z;
-  }
-}
-
 } // namespace
 
 void renderAddLayoutModalPopup(
@@ -81,16 +58,14 @@ void renderAddLayoutModalPopup(
 {
   bool addLayout = false;
 
-  static int width = 3;
-  static int height = 3;
+  static int columns = 3;
+  static int rows = 3;
   static bool isLightbox = false;
   static ViewType lightboxViewType = ViewType::Axial;
-  static float lightboxOffsetDistance = 1.0f;
-  static ViewType lastLightboxViewType = ViewType::NumElements;
+  static float lightboxSliceSpacingMm = 1.0f;
+  static std::string customLayoutName = "Custom";
 
   if (openAddLayoutPopup && !ImGui::IsPopupOpen(sk_addLayoutPopupId)) {
-    lightboxOffsetDistance = defaultLightboxOffsetDistance(appData, lightboxViewType);
-    lastLightboxViewType = lightboxViewType;
     ImGui::OpenPopup(sk_addLayoutPopupId);
   }
 
@@ -103,15 +78,15 @@ void renderAddLayoutModalPopup(
   if (ImGui::BeginPopupModal(sk_addLayoutPopupId, &addLayoutDialogOpen, ImGuiWindowFlags_AlwaysAutoResize)) {
     ImGui::Text("Please set the number of views in the new layout:");
 
-    if (ImGui::InputInt("Horizontal", &width)) {
-      width = std::max(width, 1);
+    if (ImGui::InputInt("Rows", &rows)) {
+      rows = std::max(rows, 1);
     }
 
-    if (ImGui::InputInt("Vertical", &height)) {
-      height = std::max(height, 1);
+    if (ImGui::InputInt("Columns", &columns)) {
+      columns = std::max(columns, 1);
     }
 
-    if (width >= 5 && height >= 5) {
+    if (columns >= 5 && rows >= 5) {
       isLightbox = true;
     }
 
@@ -125,8 +100,6 @@ void renderAddLayoutModalPopup(
           const bool selected = candidate == lightboxViewType;
           if (ImGui::Selectable(lightboxViewTypeName(candidate), selected)) {
             lightboxViewType = candidate;
-            lightboxOffsetDistance = defaultLightboxOffsetDistance(appData, lightboxViewType);
-            lastLightboxViewType = lightboxViewType;
           }
           if (selected) {
             ImGui::SetItemDefaultFocus();
@@ -137,16 +110,16 @@ void renderAddLayoutModalPopup(
       ImGui::SameLine();
       helpMarker("Choose the anatomical plane used for every lightbox tile.");
 
-      if (lastLightboxViewType != lightboxViewType) {
-        lightboxOffsetDistance = defaultLightboxOffsetDistance(appData, lightboxViewType);
-        lastLightboxViewType = lightboxViewType;
-      }
-
-      if (ImGui::InputFloat("Offset distance (mm)", &lightboxOffsetDistance, 0.1f, 1.0f, "%.3f")) {
-        lightboxOffsetDistance = std::max(lightboxOffsetDistance, std::numeric_limits<float>::epsilon());
+      if (ImGui::InputFloat("Slice spacing (mm)", &lightboxSliceSpacingMm, 0.1f, 1.0f, "%.3f")) {
+        lightboxSliceSpacingMm = std::max(lightboxSliceSpacingMm, 0.0f);
       }
       ImGui::SameLine();
-      helpMarker("Distance between adjacent lightbox tiles along the selected view normal.");
+      helpMarker(
+        "Distance between adjacent custom lightbox tiles. Custom lightboxes use this fixed spacing instead of image "
+        "slice spacing.");
+    }
+    else if (!(1 == rows && columns > 1)) {
+      ImGui::InputText("Name", &customLayoutName);
     }
 
     ImGui::Separator();
@@ -171,22 +144,23 @@ void renderAddLayoutModalPopup(
       // Apply offsets to views if using lightbox mode
       const bool offsetViews = (isLightbox);
       const ViewType viewType = isLightbox ? lightboxViewType : ViewType::Axial;
-      const std::optional<float> offsetDistance =
-        isLightbox ? std::optional<float>{lightboxOffsetDistance} : std::nullopt;
 
       auto& wd = appData.windowData();
 
       wd.addGridLayout(
         viewType,
-        static_cast<std::size_t>(width),
-        static_cast<std::size_t>(height),
+        static_cast<std::size_t>(columns),
+        static_cast<std::size_t>(rows),
         offsetViews,
         isLightbox,
         0,
         *refUid,
-        offsetDistance);
+        isLightbox ? std::optional<float>{lightboxSliceSpacingMm} : std::nullopt);
 
       wd.setCurrentLayoutIndex(wd.numLayouts() - 1);
+      if (!isLightbox && LayoutKind::Custom == wd.currentLayout().kind()) {
+        wd.currentLayout().setDisplayName(customLayoutName);
+      }
       wd.setDefaultRenderedImagesForLayout(wd.currentLayout(), appData);
 
       recenterViews();

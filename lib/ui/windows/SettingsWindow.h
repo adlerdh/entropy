@@ -35,6 +35,7 @@ struct SettingsPersistenceCallbacks
  * @param applyUiColorPreset Callback that applies a color preset immediately.
  * @param applyUiDensityPreset Callback that applies a density preset immediately.
  * @param applyUiWindowBgOpacity Callback that applies window background opacity immediately.
+ * @param readjustViewport Callback that reapplies viewport margins after placement changes.
  * @param persistenceCallbacks File-backed user settings callbacks.
  * @param recenterAllViews Callback used by settings that reposition views.
  */
@@ -48,5 +49,6 @@ void renderSettingsWindow(
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
   const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
   const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const std::function<void()>& readjustViewport,
   const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews);

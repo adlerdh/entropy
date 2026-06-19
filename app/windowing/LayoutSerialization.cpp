@@ -67,6 +67,48 @@ void applyImageSelectionSpec(
   frame.setMetricImages(layout::imageUidsForIndices(orderedImageUids, selection.m_metricImageIndices));
 }
 
+std::optional<std::size_t> firstRenderedImageIndex(const layout::ImageSelectionSpec& selection)
+{
+  if (selection.m_renderedImageIndices.empty()) {
+    return std::nullopt;
+  }
+  return selection.m_renderedImageIndices.front();
+}
+
+std::optional<std::size_t> lightboxOffsetImageIndex(
+  const layout::LayoutSpec& layoutSpec,
+  const layout::ViewSpec& viewSpec)
+{
+  if (viewSpec.m_offsetImageIndex) {
+    return viewSpec.m_offsetImageIndex;
+  }
+  if (const auto viewImageIndex = firstRenderedImageIndex(viewSpec.m_imageSelection)) {
+    return viewImageIndex;
+  }
+  if (const auto layoutImageIndex = firstRenderedImageIndex(layoutSpec.m_imageSelection)) {
+    return layoutImageIndex;
+  }
+  return std::nullopt;
+}
+
+ViewOffsetMode lightboxOffsetModeForImageIndex(const std::optional<std::size_t>& imageIndex)
+{
+  return (imageIndex && 0 == *imageIndex) ? ViewOffsetMode::RelativeToRefImageScrolls
+                                          : ViewOffsetMode::RelativeToImageScrolls;
+}
+
+void normalizeLightboxOffsetSpec(layout::ViewSpec& viewSpec, const layout::LayoutSpec& layoutSpec)
+{
+  if (!layoutSpec.m_isLightbox) {
+    return;
+  }
+
+  const std::optional<std::size_t> imageIndex = lightboxOffsetImageIndex(layoutSpec, viewSpec);
+  viewSpec.m_offsetMode = static_cast<int>(lightboxOffsetModeForImageIndex(imageIndex));
+  viewSpec.m_offsetImageIndex = imageIndex;
+  viewSpec.m_absoluteOffset = 0.0f;
+}
+
 } // namespace
 
 namespace layout
@@ -76,6 +118,9 @@ LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids)
 {
   LayoutSpec layoutSpec;
   layoutSpec.m_kind = static_cast<int>(layout.kind());
+  if (LayoutKind::Custom == layout.kind() && !layout.isLightbox()) {
+    layoutSpec.m_displayName = layout.displayName();
+  }
   layoutSpec.m_isLightbox = layout.isLightbox();
   layoutSpec.m_viewType = static_cast<int>(layout.viewType());
   layoutSpec.m_renderMode = static_cast<int>(layout.renderMode());
@@ -111,6 +156,7 @@ LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids)
     viewSpec.m_absoluteOffset = offset.m_absoluteOffset;
     viewSpec.m_relativeOffsetSteps = offset.m_relativeOffsetSteps;
     viewSpec.m_offsetImageIndex = imageIndexForUid(orderedImageUids, offset.m_offsetImage);
+    normalizeLightboxOffsetSpec(viewSpec, layoutSpec);
 
     viewSpec.m_rotationSyncGroup = rotationGroups.indexForGroupUid(view.cameraRotationSyncGroupUid());
     viewSpec.m_translationSyncGroup = translationGroups.indexForGroupUid(view.cameraTranslationSyncGroupUid());
@@ -153,6 +199,9 @@ Layout instantiateLayoutSpec(
 {
   Layout layout(spec.m_isLightbox);
   layout.setKind(enumFromInt(spec.m_kind, LayoutKind::Custom));
+  if (!spec.m_displayName.empty()) {
+    layout.setDisplayName(spec.m_displayName);
+  }
   layout.setViewType(enumFromInt(spec.m_viewType, ViewType::Axial));
   layout.setRenderMode(enumFromInt(spec.m_renderMode, ViewRenderMode::Image));
   layout.setIntensityProjectionMode(enumFromInt(spec.m_intensityProjectionMode, IntensityProjectionMode::None));
@@ -164,40 +213,53 @@ Layout instantiateLayoutSpec(
   SyncGroupIndexMap zoomGroups;
 
   for (const auto& viewSpec : spec.m_views) {
+    auto normalizedViewSpec = viewSpec;
+    normalizeLightboxOffsetSpec(normalizedViewSpec, spec);
+
     ViewOffsetSetting offsetSetting;
-    offsetSetting.m_offsetMode = viewOffsetModeFromInt(viewSpec.m_offsetMode);
-    offsetSetting.m_absoluteOffset = viewSpec.m_absoluteOffset;
-    offsetSetting.m_relativeOffsetSteps = viewSpec.m_relativeOffsetSteps;
-    offsetSetting.m_offsetImage = imageUidForIndex(orderedImageUids, viewSpec.m_offsetImageIndex);
+    offsetSetting.m_offsetMode = viewOffsetModeFromInt(normalizedViewSpec.m_offsetMode);
+    offsetSetting.m_absoluteOffset = normalizedViewSpec.m_absoluteOffset;
+    offsetSetting.m_relativeOffsetSteps = normalizedViewSpec.m_relativeOffsetSteps;
+    offsetSetting.m_offsetImage = imageUidForIndex(orderedImageUids, normalizedViewSpec.m_offsetImageIndex);
 
     const auto rotationGroupUid =
-      syncGroupUidForIndex(layout, CameraSyncMode::Rotation, rotationGroups, viewSpec.m_rotationSyncGroup);
-    const auto translationGroupUid =
-      syncGroupUidForIndex(layout, CameraSyncMode::Translation, translationGroups, viewSpec.m_translationSyncGroup);
-    const auto zoomGroupUid = syncGroupUidForIndex(layout, CameraSyncMode::Zoom, zoomGroups, viewSpec.m_zoomSyncGroup);
+      syncGroupUidForIndex(layout, CameraSyncMode::Rotation, rotationGroups, normalizedViewSpec.m_rotationSyncGroup);
+    const auto translationGroupUid = syncGroupUidForIndex(
+      layout,
+      CameraSyncMode::Translation,
+      translationGroups,
+      normalizedViewSpec.m_translationSyncGroup);
+    const auto zoomGroupUid =
+      syncGroupUidForIndex(layout, CameraSyncMode::Zoom, zoomGroups, normalizedViewSpec.m_zoomSyncGroup);
     const auto rotationMembershipGroupUid = syncGroupUidForIndex(
       layout,
       CameraSyncMode::Rotation,
       rotationGroups,
-      viewSpec.m_rotationSyncMembershipGroup ? viewSpec.m_rotationSyncMembershipGroup : viewSpec.m_rotationSyncGroup);
+      normalizedViewSpec.m_rotationSyncMembershipGroup ? normalizedViewSpec.m_rotationSyncMembershipGroup
+                                                       : normalizedViewSpec.m_rotationSyncGroup);
     const auto translationMembershipGroupUid = syncGroupUidForIndex(
       layout,
       CameraSyncMode::Translation,
       translationGroups,
-      viewSpec.m_translationSyncMembershipGroup ? viewSpec.m_translationSyncMembershipGroup
-                                                : viewSpec.m_translationSyncGroup);
+      normalizedViewSpec.m_translationSyncMembershipGroup ? normalizedViewSpec.m_translationSyncMembershipGroup
+                                                          : normalizedViewSpec.m_translationSyncGroup);
     const auto zoomMembershipGroupUid = syncGroupUidForIndex(
       layout,
       CameraSyncMode::Zoom,
       zoomGroups,
-      viewSpec.m_zoomSyncMembershipGroup ? viewSpec.m_zoomSyncMembershipGroup : viewSpec.m_zoomSyncGroup);
+      normalizedViewSpec.m_zoomSyncMembershipGroup ? normalizedViewSpec.m_zoomSyncMembershipGroup
+                                                   : normalizedViewSpec.m_zoomSyncGroup);
 
     auto view = std::make_unique<View>(
-      glm::vec4{viewSpec.m_left, viewSpec.m_bottom, viewSpec.m_width, viewSpec.m_height},
+      glm::vec4{
+        normalizedViewSpec.m_left,
+        normalizedViewSpec.m_bottom,
+        normalizedViewSpec.m_width,
+        normalizedViewSpec.m_height},
       offsetSetting,
-      enumFromInt(viewSpec.m_viewType, ViewType::Axial),
-      enumFromInt(viewSpec.m_renderMode, ViewRenderMode::Image),
-      enumFromInt(viewSpec.m_intensityProjectionMode, IntensityProjectionMode::None),
+      enumFromInt(normalizedViewSpec.m_viewType, ViewType::Axial),
+      enumFromInt(normalizedViewSpec.m_renderMode, ViewRenderMode::Image),
+      enumFromInt(normalizedViewSpec.m_intensityProjectionMode, IntensityProjectionMode::None),
       UiControls(!spec.m_isLightbox),
       viewConvention,
       crosshairs,
@@ -206,9 +268,9 @@ Layout instantiateLayoutSpec(
       translationGroupUid,
       zoomGroupUid);
 
-    view->setPreferredDefaultRenderedImages(viewSpec.m_preferredDefaultRenderedImages);
-    view->setDefaultRenderAllImages(viewSpec.m_defaultRenderAllImages);
-    applyImageSelectionSpec(*view, orderedImageUids, viewSpec.m_imageSelection);
+    view->setPreferredDefaultRenderedImages(normalizedViewSpec.m_preferredDefaultRenderedImages);
+    view->setDefaultRenderAllImages(normalizedViewSpec.m_defaultRenderAllImages);
+    applyImageSelectionSpec(*view, orderedImageUids, normalizedViewSpec.m_imageSelection);
 
     const uuid viewUid = view->uid();
     layout.addView(std::move(view));

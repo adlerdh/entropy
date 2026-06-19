@@ -23,9 +23,10 @@
 struct ViewOverlayWindowContext
 {
   uuids::uuid viewOrLayoutUid;       //!< View or layout identifier used for ImGui IDs and bulk actions.
-  FrameBounds mindowFrameBounds;     //!< Pixel bounds of the view's mindow frame.
+  FrameBounds viewFrameBounds;       //!< Pixel bounds of the rendered view frame.
   UiControls uiControls;             //!< Flags describing which overlay controls the view supports.
   bool showApplyToAllButton = false; //!< Whether to show the apply-to-all-views button.
+  bool allowImageSelection = true;   //!< Whether the image-selection popup is editable.
   CoordinateFrame worldCrosshairs;   //!< Current world crosshairs frame.
   glm::vec2 contentScales{1.0f};     //!< Platform content scale ratios.
 };
@@ -64,6 +65,7 @@ struct ViewOverlayModeCallbacks
   std::function<void()> recenter; //!< Recenter after mode/type changes when needed.
 
   std::function<void(const uuids::uuid& viewUid)> applyImageSelectionAndShaderToAllViews; //!< Apply to all views.
+  std::vector<ViewType> selectableViewTypes; //!< Empty means all supported view types are selectable.
 };
 
 /**

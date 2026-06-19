@@ -26,6 +26,6 @@ TEST_CASE("layout public headers are self-contained")
   CHECK_FALSE(layout::imageUidForIndex({}, std::nullopt));
   CHECK(layout::layoutDisplayName(LayoutKind::Custom, false) == "Custom");
   CHECK(layout::layoutPresetViewName(ViewType::Axial) == "axial");
-  CHECK(layout::lightboxLayoutKindForViewType(ViewType::Axial) == LayoutKind::AxialLightbox);
+  CHECK(layout::lightboxLayoutKindForViewType(ViewType::Axial) == LayoutKind::Lightbox);
   CHECK_FALSE(syncGroups.groupUidForIndex(std::nullopt));
 }

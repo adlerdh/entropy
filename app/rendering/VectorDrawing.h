@@ -97,6 +97,7 @@ void drawLightboxOffsetLabel(
   const FrameBounds& miewportViewBounds,
   AppData& appData,
   const View& view,
+  double unitReferenceLengthMm,
   const glm::vec4& color);
 
 #endif // VECTOR_DRAWING_H

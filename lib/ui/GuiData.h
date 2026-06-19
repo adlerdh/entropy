@@ -36,6 +36,12 @@ struct GuiData
     System           //!< System, runtime, and diagnostics settings page.
   };
 
+  enum class LayoutTabPlacement : std::uint8_t
+  {
+    Top,   //!< Place layout tabs above the rendered views.
+    Bottom //!< Place layout tabs below the rendered views.
+  };
+
   /// Global setting to turn on/off rendering of the UI windows.
   bool m_renderUiWindows = false;
 
@@ -61,8 +67,11 @@ struct GuiData
    */
   enum class UnsavedProjectAction : std::uint8_t
   {
-    CloseProject, //!< Close only the active project.
-    QuitApp       //!< Quit the application.
+    CloseProject,    //!< Close only the active project.
+    OpenImages,      //!< Replace the current project with image files.
+    OpenDicomSeries, //!< Replace the current project with DICOM series.
+    OpenProject,     //!< Replace the current project with another project file.
+    QuitApp          //!< Quit the application.
   };
 
   /// This is set to false until the user requests to close a dirty project or quit the app.
@@ -302,6 +311,12 @@ struct GuiData
    */
   glm::vec2 m_segToolbarDockDims{0.0f, 0.0f};
 
+  bool m_showLayoutTabs = true;                                         //!< Show the layout tab strip.
+  LayoutTabPlacement m_layoutTabPlacement = LayoutTabPlacement::Top;    //!< Layout tab strip edge.
+  float m_layoutTabBarHeight = 0.0f;                                    //!< Current reserved layout tab strip height.
+  bool m_showConfirmRemoveLayoutPopup = false;                          //!< Confirm deletion of a layout tab.
+  std::optional<std::size_t> m_pendingRemoveLayoutIndex = std::nullopt; //!< Layout waiting for deletion.
+
   /**
    * @brief Reserved screen margins occupied by visible UI chrome.
    *
@@ -315,6 +330,12 @@ struct GuiData
     float top = 0.0f;    //!< Reserved margin on the top edge of the application window.
   };
 
-  /// Compute UI margins based on visibility of the menu, toolbars, and status bar.
+  /** @brief Compute UI margins based on visible menu, toolbars, and layout tabs. */
   Margins computeMargins() const;
+
+  /** @brief Offset docked UI from top chrome such as the menu bar and layout tabs. */
+  float topDockOffset() const;
+
+  /** @brief Offset docked UI from bottom chrome such as bottom layout tabs. */
+  float bottomDockOffset() const;
 };

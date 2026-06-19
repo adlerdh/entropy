@@ -84,6 +84,68 @@ std::vector<fs::path> nonEmptyPaths(const std::vector<fs::path>& fileNames)
   return paths;
 }
 
+GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement)
+{
+  return UiLayoutTabPlacement::Bottom == placement ? GuiData::LayoutTabPlacement::Bottom
+                                                   : GuiData::LayoutTabPlacement::Top;
+}
+
+serialize::ProjectLayoutTabPlacement projectLayoutTabPlacement(UiLayoutTabPlacement placement)
+{
+  return UiLayoutTabPlacement::Bottom == placement ? serialize::ProjectLayoutTabPlacement::Bottom
+                                                   : serialize::ProjectLayoutTabPlacement::Top;
+}
+
+UiLayoutTabPlacement uiLayoutTabPlacement(serialize::ProjectLayoutTabPlacement placement)
+{
+  return serialize::ProjectLayoutTabPlacement::Bottom == placement ? UiLayoutTabPlacement::Bottom
+                                                                   : UiLayoutTabPlacement::Top;
+}
+
+void syncLayoutTabGuiDataFromSettings(AppData& appData)
+{
+  appData.guiData().m_showLayoutTabs = appData.settings().showLayoutTabs();
+  appData.guiData().m_layoutTabPlacement = guiLayoutTabPlacement(appData.settings().layoutTabPlacement());
+}
+
+std::uint32_t clampProjectPrecision(std::uint32_t precision)
+{
+  constexpr std::uint32_t kMaxPrecision = 9;
+  return std::min(precision, kMaxPrecision);
+}
+
+std::string projectPrecisionFormat(std::uint32_t precision)
+{
+  return std::string{"%0."} + std::to_string(clampProjectPrecision(precision)) + "f";
+}
+
+serialize::ProjectInterfaceSettings projectInterfaceSettings(const AppData& appData)
+{
+  return serialize::ProjectInterfaceSettings{
+    .m_showLayoutTabs = appData.settings().showLayoutTabs(),
+    .m_layoutTabPlacement = projectLayoutTabPlacement(appData.settings().layoutTabPlacement()),
+    .m_imageValuePrecision = appData.guiData().m_imageValuePrecision,
+    .m_coordsPrecision = appData.guiData().m_coordsPrecision,
+    .m_txPrecision = appData.guiData().m_txPrecision,
+    .m_percentilePrecision = appData.guiData().m_percentilePrecision};
+}
+
+void applyProjectInterfaceSettings(AppData& appData, const serialize::ProjectInterfaceSettings& settings)
+{
+  appData.settings().setShowLayoutTabs(settings.m_showLayoutTabs);
+  appData.settings().setLayoutTabPlacement(uiLayoutTabPlacement(settings.m_layoutTabPlacement));
+  syncLayoutTabGuiDataFromSettings(appData);
+
+  appData.guiData().m_imageValuePrecision = clampProjectPrecision(settings.m_imageValuePrecision);
+  appData.guiData().m_imageValuePrecisionFormat = projectPrecisionFormat(settings.m_imageValuePrecision);
+  appData.guiData().m_coordsPrecision = clampProjectPrecision(settings.m_coordsPrecision);
+  appData.guiData().setCoordsPrecisionFormat();
+  appData.guiData().m_txPrecision = clampProjectPrecision(settings.m_txPrecision);
+  appData.guiData().setTxPrecisionFormat();
+  appData.guiData().m_percentilePrecision = clampProjectPrecision(settings.m_percentilePrecision);
+  appData.guiData().m_percentilePrecisionFormat = projectPrecisionFormat(settings.m_percentilePrecision);
+}
+
 serialize::EntropyProject createProjectFromImageFiles(const std::vector<fs::path>& fileNames)
 {
   serialize::EntropyProject project;
@@ -127,6 +189,23 @@ bool isDicomInputPath(const fs::path& path)
 bool containsDicomInputPath(const std::vector<fs::path>& paths)
 {
   return std::any_of(paths.begin(), paths.end(), [](const fs::path& path) { return isDicomInputPath(path); });
+}
+
+ViewType nativeSliceViewType(const Image& image)
+{
+  const glm::vec3 sliceDirection = image.header().directions()[2];
+  if (glm::length(sliceDirection) <= 0.0f) {
+    return ViewType::Axial;
+  }
+
+  const glm::vec3 normal = glm::abs(glm::normalize(sliceDirection));
+  if (normal.x >= normal.y && normal.x >= normal.z) {
+    return ViewType::Sagittal;
+  }
+  if (normal.y >= normal.x && normal.y >= normal.z) {
+    return ViewType::Coronal;
+  }
+  return ViewType::Axial;
 }
 
 serialize::DicomSource makeDicomSourceSnapshot(const dicom::SeriesInfo& series)
@@ -382,12 +461,22 @@ bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
          vectorsEqual(a.m_landmarkGroups, b.m_landmarkGroups, landmarkGroupsEqual);
 }
 
+bool projectInterfaceSettingsEqual(
+  const serialize::ProjectInterfaceSettings& a,
+  const serialize::ProjectInterfaceSettings& b)
+{
+  return a.m_showLayoutTabs == b.m_showLayoutTabs && a.m_layoutTabPlacement == b.m_layoutTabPlacement &&
+         a.m_imageValuePrecision == b.m_imageValuePrecision && a.m_coordsPrecision == b.m_coordsPrecision &&
+         a.m_txPrecision == b.m_txPrecision && a.m_percentilePrecision == b.m_percentilePrecision;
+}
+
 bool projectsEqual(const serialize::EntropyProject& a, const serialize::EntropyProject& b)
 {
   return imagesEqual(a.m_referenceImage, b.m_referenceImage) &&
          vectorsEqual(a.m_additionalImages, b.m_additionalImages, imagesEqual) &&
          vectorsEqual(a.m_layouts, b.m_layouts, projectLayoutsEqual) &&
-         a.m_currentLayoutIndex == b.m_currentLayoutIndex;
+         a.m_currentLayoutIndex == b.m_currentLayoutIndex &&
+         projectInterfaceSettingsEqual(a.m_interface, b.m_interface);
 }
 
 bool isApproximatelyIdentity(const glm::mat4& matrix)
@@ -480,6 +569,7 @@ void EntropyApp::init()
     m_imgui.applyUiColorPreset(m_data.settings().uiColorPreset());
     m_imgui.applyUiDensityPreset(m_data.settings().uiDensityPreset());
     m_imgui.applyUiWindowBgOpacity(m_data.settings().uiWindowBgOpacity());
+    syncLayoutTabGuiDataFromSettings(m_data);
   }
 
   m_rendering.init();
@@ -566,10 +656,10 @@ void EntropyApp::onImagesReady()
     }
 
     m_data.windowData().updateImageOrdering(m_data.imageUidsOrdered());
-    m_data.windowData().reconcileImageDependentLayouts(m_data);
+    m_data.windowData().reconcileImageDependentLayouts(m_data, dicomNativeViewTypesByImage());
   }
   else {
-    m_data.windowData().reconcileImageDependentLayouts(m_data);
+    m_data.windowData().reconcileImageDependentLayouts(m_data, dicomNativeViewTypesByImage());
     m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data);
 
     if (!m_data.project().m_layouts.empty()) {
@@ -801,6 +891,24 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDicomSeriesImage(con
 
   logLoadedImageDetails(*image, series.files.front());
   return {m_data.addImage(std::move(*image)), true};
+}
+
+std::unordered_map<uuids::uuid, ViewType> EntropyApp::dicomNativeViewTypesByImage() const
+{
+  std::unordered_map<uuids::uuid, ViewType> viewTypesByImage;
+  viewTypesByImage.reserve(m_dicomSourcesByImageUid.size());
+
+  for (const auto& [imageUid, source] : m_dicomSourcesByImageUid) {
+    (void)source;
+    const Image* image = m_data.image(imageUid);
+    if (!image) {
+      continue;
+    }
+
+    viewTypesByImage.emplace(imageUid, nativeSliceViewType(*image));
+  }
+
+  return viewTypesByImage;
 }
 
 std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
@@ -1474,6 +1582,7 @@ serialize::EntropyProject EntropyApp::createProjectSnapshot() const
 
   project.m_layouts = m_data.windowData().createProjectLayoutSnapshots(imageUids);
   project.m_currentLayoutIndex = m_data.windowData().currentLayoutIndex();
+  project.m_interface = projectInterfaceSettings(m_data);
 
   return project;
 }
@@ -1815,15 +1924,32 @@ void EntropyApp::loadImageFiles(const std::vector<fs::path>& fileNames)
   }
 
   if (containsDicomInputPath(imageFiles)) {
-    const bool addToExistingProject =
-      ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid();
-    beginDicomSeriesScan(imageFiles, addToExistingProject);
+    openDicomSeriesFolders(imageFiles);
+    return;
+  }
+
+  m_pendingProjectReplacementPaths = imageFiles;
+  if (requestProjectReplacement(GuiData::UnsavedProjectAction::OpenImages)) {
+    return;
+  }
+  clearPendingProjectReplacement();
+  performLoadImageFiles(imageFiles);
+}
+
+void EntropyApp::performLoadImageFiles(const std::vector<fs::path>& fileNames)
+{
+  const std::vector<fs::path> imageFiles = nonEmptyPaths(fileNames);
+  if (imageFiles.empty()) {
+    return;
+  }
+
+  if (containsDicomInputPath(imageFiles)) {
+    performOpenDicomSeriesFolders(imageFiles);
     return;
   }
 
   if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
-    addImageFiles(imageFiles);
-    return;
+    closeProject();
   }
 
   serialize::EntropyProject project = createProjectFromImageFiles(imageFiles);
@@ -1855,7 +1981,7 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
   }
 
   if (ProjectLoadState::Loaded != m_data.state().projectLoadState() || !m_data.refImageUid()) {
-    loadImageFiles(imageFiles);
+    performLoadImageFiles(imageFiles);
     return;
   }
 
@@ -1979,9 +2105,26 @@ void EntropyApp::openDicomSeriesFolders(const std::vector<fs::path>& folderNames
     return;
   }
 
-  const bool addToExistingProject =
-    ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid();
-  beginDicomSeriesScan(dicomFolders, addToExistingProject);
+  m_pendingProjectReplacementPaths = dicomFolders;
+  if (requestProjectReplacement(GuiData::UnsavedProjectAction::OpenDicomSeries)) {
+    return;
+  }
+  clearPendingProjectReplacement();
+  performOpenDicomSeriesFolders(dicomFolders);
+}
+
+void EntropyApp::performOpenDicomSeriesFolders(const std::vector<fs::path>& folderNames)
+{
+  const std::vector<fs::path> dicomFolders = nonEmptyPaths(folderNames);
+  if (dicomFolders.empty()) {
+    return;
+  }
+
+  if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
+    closeProject();
+  }
+
+  beginDicomSeriesScan(dicomFolders, false);
 }
 
 void EntropyApp::beginDicomSeriesScan(const std::vector<fs::path>& inputPaths, bool addToExistingProject)
@@ -2345,7 +2488,7 @@ bool EntropyApp::removeImage(const uuids::uuid& imageUid)
   }
 
   m_data.windowData().removeImageFromLayouts(imageUid, m_data.imageUidsOrdered());
-  m_data.windowData().reconcileImageDependentLayouts(m_data);
+  m_data.windowData().reconcileImageDependentLayouts(m_data, dicomNativeViewTypesByImage());
   m_data.setRainbowColorsForAllImages();
   m_data.setRainbowColorsForAllLandmarkGroups();
   m_data.setProject(createProjectSnapshot());
@@ -2359,6 +2502,20 @@ bool EntropyApp::removeImage(const uuids::uuid& imageUid)
 
 void EntropyApp::loadProjectFile(const fs::path& fileName)
 {
+  if (fileName.empty()) {
+    return;
+  }
+
+  m_pendingProjectReplacementPaths = {fileName};
+  if (requestProjectReplacement(GuiData::UnsavedProjectAction::OpenProject)) {
+    return;
+  }
+  clearPendingProjectReplacement();
+  performLoadProjectFile(fileName);
+}
+
+void EntropyApp::performLoadProjectFile(const fs::path& fileName)
+{
   serialize::EntropyProject project;
 
   if (!serialize::open(project, fileName)) {
@@ -2370,6 +2527,10 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
     return;
   }
 
+  if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
+    closeProject();
+  }
+
   m_pendingLargeImageLoadContext = LargeImageLoadContext::Project;
   m_pendingLargeProject = std::move(project);
   m_pendingLargeProjectFileName = fileName;
@@ -2377,11 +2538,29 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
   continueLargeImageProjectPreflight();
 }
 
+bool EntropyApp::requestProjectReplacement(GuiData::UnsavedProjectAction action)
+{
+  if (!projectHasUnsavedChanges()) {
+    return false;
+  }
+
+  m_data.guiData().m_pendingUnsavedProjectAction = action;
+  m_data.guiData().m_showUnsavedProjectPopup = true;
+  m_glfw.postEmptyEvent();
+  return true;
+}
+
+void EntropyApp::clearPendingProjectReplacement()
+{
+  m_pendingProjectReplacementPaths.clear();
+}
+
 void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName)
 {
   closeProject();
   m_data.setProject(std::move(project));
   m_data.setProjectFileName(std::move(projectFileName));
+  applyProjectInterfaceSettings(m_data, m_data.project().m_interface);
 
   startAsyncImageLoad(
     "Loading project...",
@@ -2547,6 +2726,35 @@ void EntropyApp::quitAppWithoutPrompt()
   m_glfw.postEmptyEvent();
 }
 
+void EntropyApp::continueAfterUnsavedProjectPrompt()
+{
+  const GuiData::UnsavedProjectAction action = m_data.guiData().m_pendingUnsavedProjectAction;
+  const std::vector<fs::path> pendingPaths = m_pendingProjectReplacementPaths;
+  clearPendingProjectReplacement();
+
+  switch (action) {
+    case GuiData::UnsavedProjectAction::CloseProject:
+      closeProject();
+      return;
+    case GuiData::UnsavedProjectAction::OpenImages:
+      closeProject();
+      performLoadImageFiles(pendingPaths);
+      return;
+    case GuiData::UnsavedProjectAction::OpenDicomSeries:
+      closeProject();
+      performOpenDicomSeriesFolders(pendingPaths);
+      return;
+    case GuiData::UnsavedProjectAction::OpenProject:
+      if (!pendingPaths.empty()) {
+        performLoadProjectFile(pendingPaths.front());
+      }
+      return;
+    case GuiData::UnsavedProjectAction::QuitApp:
+      quitAppWithoutPrompt();
+      return;
+  }
+}
+
 void EntropyApp::closeProject()
 {
   m_imageLoadCancelled = true;
@@ -2572,6 +2780,7 @@ void EntropyApp::closeProject()
   m_pendingLargeProjectFileName = std::nullopt;
   m_pendingLargeProjectImageIndex = 0;
   m_savedProjectSnapshot = std::nullopt;
+  clearPendingProjectReplacement();
   m_data.guiData().m_pendingLargeImageLoadPrompt = std::nullopt;
   m_data.guiData().m_dicomSeriesScanInProgress = false;
   m_data.guiData().m_pendingDicomScanRoot = fs::path{};
@@ -2810,7 +3019,7 @@ void EntropyApp::setCallbacks()
     return saveLayoutsFile(fileName);
   };
   imguiCallbacks.project.closeProjectWithoutPrompt = [this]() {
-    closeProject();
+    continueAfterUnsavedProjectPrompt();
   };
   imguiCallbacks.project.requestQuitApp = [this]() {
     requestQuitApp();

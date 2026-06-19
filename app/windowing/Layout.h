@@ -10,6 +10,7 @@
 #include <list>
 #include <memory>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -25,6 +26,11 @@ public:
   Layout(Layout&&) noexcept;
   Layout& operator=(Layout&& other) noexcept;
   ~Layout() = default;
+
+  /** @brief Replace this layout's contents without changing its UID.
+   * @param other Replacement layout data.
+   */
+  void replaceContentsPreservingUid(Layout&& other) noexcept;
 
   void setImageRendered(const AppData& appData, std::size_t index, bool visible) override;
   void setRenderedImages(const std::list<uuid>& imageUids, bool filterByDefaults) override;
@@ -42,6 +48,8 @@ public:
   bool isLightbox() const;
   LayoutKind kind() const;
   void setKind(LayoutKind kind);
+  const std::string& displayName() const;
+  void setDisplayName(std::string displayName);
 
   /**
    * @brief Add a view and append its UID to the stable display order.
@@ -120,6 +128,7 @@ private:
 
   bool m_isLightbox;                      //!< Layout-level controls affect all views.
   LayoutKind m_kind = LayoutKind::Custom; //!< Layout kind used for display and serialization.
+  std::string m_displayName = "Custom";   //!< User name for custom non-lightbox layouts.
 
   std::unordered_map<uuid, std::unique_ptr<View>> m_views; //!< Views keyed by UID.
   std::vector<uuid> m_orderedViewUids;                     //!< View UIDs in display order.

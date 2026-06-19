@@ -53,17 +53,11 @@ const std::vector<std::pair<int, const char*>>& layoutKindNames()
   static const std::vector<std::pair<int, const char*>> names{
     {0, "Custom"},
     {1, "FourUp"},
-    {2, "Tri"},
-    {3, "SingleAxial"},
-    {4, "MultiImageAxialGrid"},
+    {2, "ThreeUp"},
+    {3, "OneUp"},
+    {4, "MultiImageGrid"},
     {5, "AxCorSagByImage"},
-    {6, "AxialLightbox"},
-    {7, "CoronalLightbox"},
-    {8, "SagittalLightbox"},
-    {9, "SingleCoronal"},
-    {10, "SingleSagittal"},
-    {11, "MultiImageCoronalGrid"},
-    {12, "MultiImageSagittalGrid"}};
+    {6, "Lightbox"}};
   return names;
 }
 
@@ -257,12 +251,19 @@ void to_json(nlohmann::json& j, const LayoutSpec& layout)
     {"defaultRenderAllImages", layout.m_defaultRenderAllImages},
     {"imageSelection", layout.m_imageSelection},
     {"views", layout.m_views}};
+
+  if (!layout.m_displayName.empty()) {
+    j["displayName"] = layout.m_displayName;
+  }
 }
 
 void from_json(const nlohmann::json& j, LayoutSpec& layout)
 {
   if (j.count("kind")) {
     layout.m_kind = enumValueFromJson(j.at("kind"), layoutKindNames());
+  }
+  if (j.count("displayName")) {
+    j.at("displayName").get_to(layout.m_displayName);
   }
   if (j.count("isLightbox")) {
     j.at("isLightbox").get_to(layout.m_isLightbox);

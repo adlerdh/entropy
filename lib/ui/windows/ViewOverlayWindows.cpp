@@ -39,9 +39,10 @@ void renderViewSettingsComboWindow(
   const ViewOverlayProjectionCallbacks& projection)
 {
   const uuid& viewOrLayoutUid = context.viewOrLayoutUid;
-  const FrameBounds& mindowFrameBounds = context.mindowFrameBounds;
+  const FrameBounds& viewFrameBounds = context.viewFrameBounds;
   const UiControls& uiControls = context.uiControls;
   const bool showApplyToAllButton = context.showApplyToAllButton;
+  const bool allowImageSelection = context.allowImageSelection;
   const CoordinateFrame& worldCrosshairs = context.worldCrosshairs;
   const glm::vec2& contentScales = context.contentScales;
 
@@ -96,11 +97,11 @@ void renderViewSettingsComboWindow(
 
     label = view_overlay::usesDisabledVisibilityIcon(renderMode) ? ICON_FK_EYE_SLASH : ICON_FK_EYE;
 
-    const ImVec2 mindowTopLeftPos(
-      mindowFrameBounds.bounds.xoffset + sk_framePad.x,
-      mindowFrameBounds.bounds.yoffset + sk_framePad.y);
+    const ImVec2 viewTopLeftPos(
+      viewFrameBounds.bounds.xoffset + sk_framePad.x,
+      viewFrameBounds.bounds.yoffset + sk_framePad.y);
 
-    ImGui::SetNextWindowPos(mindowTopLeftPos, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(viewTopLeftPos, ImGuiCond_Always);
 
     static const ImGuiWindowFlags sk_defaultWindowFlags =
       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
@@ -122,7 +123,7 @@ void renderViewSettingsComboWindow(
     setNextWindowSizeConstraintsToMainViewport();
     if (ImGui::Begin(uidString.c_str(), &windowOpen, windowFlags)) {
       // Popup window with images to be rendered and their visibility:
-      if (uiControls.m_hasImageComboBox) {
+      if (uiControls.m_hasImageComboBox && allowImageSelection) {
         if (view_overlay::usesVisibleImageSelection(renderMode)) {
           // Image visibility:
           if (ImGui::Button(label)) {
@@ -406,7 +407,7 @@ void renderViewSettingsComboWindow(
 
         if (clickedViewTypeCombo) {
           if (state::annot::isInStateWhereViewTypeCanChange(viewOrLayoutUid)) {
-            for (const auto& vt : AllViewTypes) {
+            auto renderViewTypeChoice = [&](const ViewType& vt) {
               const bool isSelected = (vt == viewType);
               if (ImGui::Selectable(to_string(vt, !xhairsRotated).c_str(), isSelected)) {
                 setViewType(vt);
@@ -415,6 +416,17 @@ void renderViewSettingsComboWindow(
 
               if (isSelected) {
                 ImGui::SetItemDefaultFocus();
+              }
+            };
+
+            if (modes.selectableViewTypes.empty()) {
+              for (const auto& vt : AllViewTypes) {
+                renderViewTypeChoice(vt);
+              }
+            }
+            else {
+              for (const auto& vt : modes.selectableViewTypes) {
+                renderViewTypeChoice(vt);
               }
             }
 
@@ -486,7 +498,7 @@ void renderViewOrientationToolWindow(
   const ViewOrientationOverlayCallbacks& callbacks)
 {
   const uuid& viewOrLayoutUid = context.viewOrLayoutUid;
-  const FrameBounds& mindowFrameBounds = context.mindowFrameBounds;
+  const FrameBounds& viewFrameBounds = context.viewFrameBounds;
   const ViewType& viewType = callbacks.viewType;
   const auto& getViewCameraRotation = callbacks.getViewCameraRotation;
   const auto& setViewCameraRotation = callbacks.setViewCameraRotation;
@@ -527,13 +539,13 @@ void renderViewOrientationToolWindow(
   windowFlags |= ImGuiWindowFlags_NoBackground;
   //    }
 
-  const ImVec2 mindowBottomLeftPos(
-    mindowFrameBounds.bounds.xoffset + sk_framePad.x,
-    mindowFrameBounds.bounds.yoffset + mindowFrameBounds.bounds.height - sk_framePad.y);
+  const ImVec2 viewBottomLeftPos(
+    viewFrameBounds.bounds.xoffset + sk_framePad.x,
+    viewFrameBounds.bounds.yoffset + viewFrameBounds.bounds.height - sk_framePad.y);
 
   const ImVec2 windowPosPivot((sk_corner & 1) ? 1.0f : 0.0f, (sk_corner & 2) ? 1.0f : 0.0f);
 
-  ImGui::SetNextWindowPos(mindowBottomLeftPos, ImGuiCond_Always, windowPosPivot);
+  ImGui::SetNextWindowPos(viewBottomLeftPos, ImGuiCond_Always, windowPosPivot);
   ImGui::SetNextWindowBgAlpha(0.3f);
 
   ImGui::PushID(uidString.c_str()); /*** ID = uidString ***/

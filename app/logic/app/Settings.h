@@ -53,6 +53,15 @@ enum class UiDensityPreset : std::uint8_t
 };
 
 /**
+ * @brief Placement options for the layout tab strip.
+ */
+enum class UiLayoutTabPlacement : std::uint8_t
+{
+  Top,
+  Bottom
+};
+
+/**
  * @brief Holds all application settings
  */
 class AppSettings
@@ -146,6 +155,26 @@ public:
    */
   void setUiWindowBgOpacity(float opacity);
 
+  /**
+   * @brief Return whether the layout tab strip is shown.
+   */
+  bool showLayoutTabs() const;
+
+  /**
+   * @brief Set whether the layout tab strip is shown.
+   */
+  void setShowLayoutTabs(bool show);
+
+  /**
+   * @brief Return where the layout tab strip is placed.
+   */
+  UiLayoutTabPlacement layoutTabPlacement() const;
+
+  /**
+   * @brief Set where the layout tab strip is placed.
+   */
+  void setLayoutTabPlacement(UiLayoutTabPlacement placement);
+
   std::size_t foregroundLabel() const;
   std::size_t backgroundLabel() const;
 
@@ -215,6 +244,8 @@ private:
   UiColorPreset m_uiColorPreset = UiColorPreset::EntropyDark;
   UiDensityPreset m_uiDensityPreset = UiDensityPreset::Default;
   float m_uiWindowBgOpacity = 0.94f;
+  bool m_showLayoutTabs = true;
+  UiLayoutTabPlacement m_layoutTabPlacement = UiLayoutTabPlacement::Top;
 
   bool m_cursorSyncEnabled = false;
   bool m_sendCursorSync = true;

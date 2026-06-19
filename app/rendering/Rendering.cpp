@@ -6,6 +6,7 @@
 #include "common/Types.h"
 
 #include "image/ImageColorMap.h"
+#include "logic/app/DataHelper.h"
 #include "logic/SurfaceUtility.h"
 
 #include "logic/app/Data.h"
@@ -46,6 +47,7 @@
 
 #include <nanovg.h>
 
+#include <cmath>
 #include <limits>
 #define NANOVG_GL3_IMPLEMENTATION
 #include <nanovg_gl.h>
@@ -78,6 +80,27 @@ const glm::vec3 WHITE{1.0f};
 const glm::mat4 sk_identMat3{1.0f};
 const glm::mat4 sk_identMat4{1.0f};
 const glm::vec2 sk_zeroVec2{0.0f, 0.0f};
+
+float lightboxOffsetUnitReferenceMm(const AppData& appData, const WindowData& windowData)
+{
+  float minNonzeroOffsetMm = std::numeric_limits<float>::max();
+  for (const auto& [viewUid, view] : windowData.currentLayout().views()) {
+    (void)viewUid;
+    if (!view) {
+      continue;
+    }
+
+    const float offsetMm = data::computeViewOffsetDistance(
+      appData,
+      view->offsetSetting(),
+      helper::worldDirection(view->camera(), Directions::View::Front));
+    const float absOffsetMm = std::abs(offsetMm);
+    if (absOffsetMm > std::numeric_limits<float>::epsilon()) {
+      minNonzeroOffsetMm = std::min(minNonzeroOffsetMm, absOffsetMm);
+    }
+  }
+  return minNonzeroOffsetMm == std::numeric_limits<float>::max() ? 0.0f : minNonzeroOffsetMm;
+}
 const glm::vec3 sk_zeroVec3{0.0f, 0.0f, 0.0f};
 const glm::vec4 sk_zeroVec4{0.0f, 0.0f, 0.0f, 0.0f};
 const glm::ivec2 sk_zeroIVec2{0, 0};
@@ -2585,6 +2608,10 @@ void Rendering::renderVectorOverlays()
       ? m_appData.state().worldCrosshairs().world_T_frame()
       : world_T_refSubject;
 
+  const float lightboxOffsetUnitReference = (R.m_showLightboxOffsetLabels && windowData.currentLayout().isLightbox())
+                                              ? lightboxOffsetUnitReferenceMm(m_appData, windowData)
+                                              : 0.0f;
+
   for (const auto& viewUid : windowData.currentViewUids()) {
     const View* view = windowData.getCurrentView(viewUid);
     if (!view) {
@@ -2655,7 +2682,13 @@ void Rendering::renderVectorOverlays()
         R.m_showLightboxOffsetLabels && windowData.currentLayout().isLightbox() &&
         ViewRenderMode::VolumeRender != view->renderMode())
       {
-        drawLightboxOffsetLabel(m_nvg, miewportViewBounds, m_appData, *view, R.m_lightboxOffsetLabelColor);
+        drawLightboxOffsetLabel(
+          m_nvg,
+          miewportViewBounds,
+          m_appData,
+          *view,
+          lightboxOffsetUnitReference,
+          R.m_lightboxOffsetLabelColor);
       }
     }
 

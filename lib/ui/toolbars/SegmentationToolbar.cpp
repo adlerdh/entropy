@@ -104,7 +104,7 @@ void renderSegToolbar(
 
   ImGuiIO& io = ImGui::GetIO();
 
-  //    ImGuiWindowFlags windowFlags = sk_toolbarWindowFlags;
+  //    ImGuiWindowFlags windowFlags = k_toolbarWindowFlags;
 
   if (corner != -1) {
     //        windowFlags |= ImGuiWindowFlags_NoMove;
@@ -113,10 +113,11 @@ void renderSegToolbar(
       (corner & 1) ? io.DisplaySize.x - padSize.x : padSize.x,
       (corner & 2) ? io.DisplaySize.y - padSize.y : padSize.y);
 
-    if (guiData.m_showMainMenuBar) {
-      if (0 == corner || 1 == corner) {
-        windowPos.y += guiData.m_mainMenuBarDims.y;
-      }
+    if (0 == corner || 1 == corner) {
+      windowPos.y += guiData.topDockOffset();
+    }
+    else if (2 == corner || 3 == corner) {
+      windowPos.y -= guiData.bottomDockOffset();
     }
 
     const ImVec2 windowPosPivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
@@ -135,7 +136,7 @@ void renderSegToolbar(
 
   const char* title = ((isHoriz /*| isCollapsed*/) ? "Segmentation###SegToolbarWindow" : "###SegToolbarWindow");
 
-  if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags)) {
+  if (ImGui::Begin(title, toolbarWindowOpen, k_toolbarWindowFlags)) {
     int id = 0;
 
     const size_t fgLabel = appData.settings().foregroundLabel();
@@ -160,7 +161,7 @@ void renderSegToolbar(
     }
 
     ImGui::PushStyleColor(ImGuiCol_Button, fgImGuiColor);
-    ImGui::PushStyleColor(ImGuiCol_Text, (useDarkTextForFgColor ? sk_darkTextColor : sk_lightTextColor));
+    ImGui::PushStyleColor(ImGuiCol_Text, (useDarkTextForFgColor ? k_darkTextColor : k_lightTextColor));
     {
       if (ImGui::Button(fgButtonLabel.c_str(), buttonSize)) {
         ImGui::OpenPopup("foregroundLabelPopup");
@@ -176,7 +177,7 @@ void renderSegToolbar(
     }
 
     ImGui::PushStyleColor(ImGuiCol_Button, bgImGuiColor);
-    ImGui::PushStyleColor(ImGuiCol_Text, (useDarkTextForBgColor ? sk_darkTextColor : sk_lightTextColor));
+    ImGui::PushStyleColor(ImGuiCol_Text, (useDarkTextForBgColor ? k_darkTextColor : k_lightTextColor));
     {
       if (ImGui::Button(bgButtonLabel.c_str(), buttonSize)) {
         ImGui::OpenPopup("backgroundLabelPopup");
@@ -375,8 +376,8 @@ void renderSegToolbar(
         const std::string brushSizeString = std::to_string(brushSizeVox);
         ImGui::Button(brushSizeString.c_str(), buttonSize);
 
-        //        static constexpr uint32_t sk_step = 1;
-        //        static constexpr uint32_t sk_stepBig = 2;
+        //        static constexpr uint32_t k_step = 1;
+        //        static constexpr uint32_t k_stepBig = 2;
         //        ImGui::Text( "%d", brushSizeVox );
         //        if ( ImGui::InputScalar( "##brushSizeInput", ImGuiDataType_U32,
         //                                 &brushSizeVox, nullptr, nullptr, "%d" ) )

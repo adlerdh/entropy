@@ -6,19 +6,13 @@ namespace layout
 bool isLightboxLayoutKind(LayoutKind kind)
 {
   switch (kind) {
-    case LayoutKind::AxialLightbox:
-    case LayoutKind::CoronalLightbox:
-    case LayoutKind::SagittalLightbox:
+    case LayoutKind::Lightbox:
       return true;
     case LayoutKind::Custom:
     case LayoutKind::FourUp:
-    case LayoutKind::Tri:
-    case LayoutKind::SingleAxial:
-    case LayoutKind::SingleCoronal:
-    case LayoutKind::SingleSagittal:
-    case LayoutKind::MultiImageAxialGrid:
-    case LayoutKind::MultiImageCoronalGrid:
-    case LayoutKind::MultiImageSagittalGrid:
+    case LayoutKind::ThreeUp:
+    case LayoutKind::OneUp:
+    case LayoutKind::MultiImageGrid:
     case LayoutKind::AxCorSagByImage:
     case LayoutKind::NumElements:
       return false;
@@ -29,20 +23,14 @@ bool isLightboxLayoutKind(LayoutKind kind)
 bool isImageDependentManagedLayoutKind(LayoutKind kind)
 {
   switch (kind) {
-    case LayoutKind::SingleCoronal:
-    case LayoutKind::SingleSagittal:
-    case LayoutKind::MultiImageAxialGrid:
-    case LayoutKind::MultiImageCoronalGrid:
-    case LayoutKind::MultiImageSagittalGrid:
+    case LayoutKind::OneUp:
+    case LayoutKind::MultiImageGrid:
     case LayoutKind::AxCorSagByImage:
-    case LayoutKind::AxialLightbox:
-    case LayoutKind::CoronalLightbox:
-    case LayoutKind::SagittalLightbox:
+    case LayoutKind::Lightbox:
       return true;
     case LayoutKind::Custom:
     case LayoutKind::FourUp:
-    case LayoutKind::Tri:
-    case LayoutKind::SingleAxial:
+    case LayoutKind::ThreeUp:
     case LayoutKind::NumElements:
       return false;
   }
@@ -53,19 +41,13 @@ bool isFixedManagedLayoutKind(LayoutKind kind)
 {
   switch (kind) {
     case LayoutKind::FourUp:
-    case LayoutKind::Tri:
-    case LayoutKind::SingleAxial:
+    case LayoutKind::ThreeUp:
       return true;
     case LayoutKind::Custom:
-    case LayoutKind::SingleCoronal:
-    case LayoutKind::SingleSagittal:
-    case LayoutKind::MultiImageAxialGrid:
-    case LayoutKind::MultiImageCoronalGrid:
-    case LayoutKind::MultiImageSagittalGrid:
+    case LayoutKind::OneUp:
+    case LayoutKind::MultiImageGrid:
     case LayoutKind::AxCorSagByImage:
-    case LayoutKind::AxialLightbox:
-    case LayoutKind::CoronalLightbox:
-    case LayoutKind::SagittalLightbox:
+    case LayoutKind::Lightbox:
     case LayoutKind::NumElements:
       return false;
   }
@@ -76,11 +58,9 @@ LayoutKind lightboxLayoutKindForViewType(ViewType viewType)
 {
   switch (viewType) {
     case ViewType::Axial:
-      return LayoutKind::AxialLightbox;
     case ViewType::Coronal:
-      return LayoutKind::CoronalLightbox;
     case ViewType::Sagittal:
-      return LayoutKind::SagittalLightbox;
+      return LayoutKind::Lightbox;
     case ViewType::Oblique:
     case ViewType::ThreeD:
     case ViewType::NumElements:
@@ -93,31 +73,18 @@ std::string_view layoutDisplayName(LayoutKind kind, bool isLightbox)
 {
   switch (kind) {
     case LayoutKind::FourUp:
-      return "Four-up";
-    case LayoutKind::Tri:
-      return "Three-up";
-    case LayoutKind::SingleAxial:
-      return "1-up axial";
-    case LayoutKind::SingleCoronal:
-      return "1-up coronal";
-    case LayoutKind::SingleSagittal:
-      return "1-up sagittal";
-    case LayoutKind::MultiImageAxialGrid:
-      return "Multi-image axial grid";
-    case LayoutKind::MultiImageCoronalGrid:
-      return "Multi-image coronal grid";
-    case LayoutKind::MultiImageSagittalGrid:
-      return "Multi-image sagittal grid";
+      return "4-Up";
+    case LayoutKind::ThreeUp:
+      return "3-Up";
+    case LayoutKind::OneUp:
+      return "1-Up";
+    case LayoutKind::MultiImageGrid:
     case LayoutKind::AxCorSagByImage:
-      return "Axial/coronal/sagittal by image";
-    case LayoutKind::AxialLightbox:
-      return "Axial lightbox";
-    case LayoutKind::CoronalLightbox:
-      return "Coronal lightbox";
-    case LayoutKind::SagittalLightbox:
-      return "Sagittal lightbox";
+      return "Grid";
+    case LayoutKind::Lightbox:
+      return "Lightbox";
     case LayoutKind::Custom:
-      return isLightbox ? "Custom lightbox" : "Custom";
+      return isLightbox ? "Lightbox" : "Custom";
     case LayoutKind::NumElements:
       break;
   }

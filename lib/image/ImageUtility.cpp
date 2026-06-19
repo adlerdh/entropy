@@ -434,6 +434,43 @@ std::pair<glm::vec3, glm::vec3> computeWorldMinMaxCornersOfImage(const Image& im
   return math::computeMinMaxCornersOfAABBox(worldCorners);
 }
 
+std::size_t computeNumImageSlicesAlongWorldDirection(const Image& image, const glm::vec3& worldDir)
+{
+  if (glm::dot(worldDir, worldDir) <= glm::epsilon<float>()) {
+    return 0;
+  }
+
+  const glm::vec3 normalizedWorldDir = glm::normalize(worldDir);
+  const glm::mat3 pixel_T_world = glm::mat3{image.transformations().pixel_T_worldDef()};
+
+  glm::vec3 pixelDir = glm::abs(glm::normalize(glm::vec3{pixel_T_world * normalizedWorldDir}));
+  const float pixelDirSum = pixelDir.x + pixelDir.y + pixelDir.z;
+  if (pixelDirSum <= glm::epsilon<float>()) {
+    return 0;
+  }
+  pixelDir /= pixelDirSum;
+
+  const float spacing = glm::dot(image.header().spacing(), pixelDir);
+  if (spacing <= 0.0f) {
+    return 0;
+  }
+
+  const auto& world_T_subject = image.transformations().worldDef_T_subject();
+  const auto& subjectCorners = image.header().subjectBBoxCorners();
+
+  float minDistance = std::numeric_limits<float>::max();
+  float maxDistance = std::numeric_limits<float>::lowest();
+  for (const glm::vec3& subjectCorner : subjectCorners) {
+    const glm::vec4 worldCornerH = world_T_subject * glm::vec4{subjectCorner, 1.0f};
+    const glm::vec3 worldCorner = glm::vec3{worldCornerH} / worldCornerH.w;
+    const float distance = glm::dot(worldCorner, normalizedWorldDir);
+    minDistance = std::min(minDistance, distance);
+    maxDistance = std::max(maxDistance, distance);
+  }
+
+  return static_cast<std::size_t>(std::ceil((maxDistance - minDistance) / spacing));
+}
+
 std::vector<ComponentStats> computeImageStatisticsOnSortedValues(const Image& image)
 {
   std::vector<ComponentStats> componentStats;
@@ -738,7 +775,7 @@ computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numP
     }
     case NumBinsComputationMethod::Scott: {
       if (glm::epsilonEqual(static_cast<double>(stats.onlineStats.stdev), 0.0, glm::epsilon<double>())) {
-        spdlog::warn("Image component has zero standard deviation");
+        spdlog::debug("Image component has zero standard deviation");
         return std::nullopt;
       }
 
@@ -748,7 +785,7 @@ computeNumHistogramBins(const NumBinsComputationMethod& method, std::size_t numP
     case NumBinsComputationMethod::FreedmanDiaconis: {
       const double IQR = (stats.quantiles[75] - stats.quantiles[25]);
       if (glm::epsilonEqual(IQR, 0.0, glm::epsilon<double>())) {
-        spdlog::warn("Image component has zero interquartile range");
+        spdlog::debug("Image component has zero interquartile range");
         return std::nullopt;
       }
 

@@ -50,6 +50,12 @@ static const NVGcolor s_red(nvgRGBA(255, 0, 0, 255));
 static const std::string ROBOTO_LIGHT("robotoLight");
 
 static constexpr float sk_outlineStrokeWidth = 2.0f;
+struct DistanceUnit
+{
+  double scale = 1.0;
+  const char* label = "mm";
+};
+
 std::string trimTrailingDecimalZeros(std::string value)
 {
   const auto decimalPos = value.find('.');
@@ -66,35 +72,40 @@ std::string trimTrailingDecimalZeros(std::string value)
   return value;
 }
 
-std::string formatPhysicalDistanceMm(double lengthMm)
+DistanceUnit distanceUnitForMagnitudeMm(double lengthMm)
 {
   const double absLengthMm = std::abs(lengthMm);
-  double value = lengthMm;
-  const char* unit = "mm";
 
+  if (absLengthMm <= std::numeric_limits<float>::epsilon()) {
+    return {1.0, "mm"};
+  }
   if (absLengthMm >= 1.0e6) {
-    value = lengthMm / 1.0e6;
-    unit = "km";
+    return {1.0 / 1.0e6, "km"};
   }
-  else if (absLengthMm >= 1000.0) {
-    value = lengthMm / 1000.0;
-    unit = "m";
+  if (absLengthMm >= 1000.0) {
+    return {1.0 / 1000.0, "m"};
   }
-  else if (absLengthMm >= 10.0) {
-    value = lengthMm / 10.0;
-    unit = "cm";
+  if (absLengthMm >= 10.0) {
+    return {1.0 / 10.0, "cm"};
   }
-  else if (absLengthMm >= 1.0) {
-    value = lengthMm;
-    unit = "mm";
+  if (absLengthMm >= 1.0) {
+    return {1.0, "mm"};
   }
-  else if (absLengthMm >= 1.0e-3) {
-    value = lengthMm * 1000.0;
-    unit = "µm";
+  if (absLengthMm >= 1.0e-3) {
+    return {1000.0, "µm"};
   }
-  else {
-    value = lengthMm * 1.0e6;
-    unit = "nm";
+  return {1.0e6, "nm"};
+}
+
+std::string formatPhysicalDistanceMm(double lengthMm, double unitReferenceLengthMm)
+{
+  const double absLengthMm = std::abs(lengthMm);
+  const DistanceUnit unit =
+    distanceUnitForMagnitudeMm(absLengthMm <= std::numeric_limits<float>::epsilon() ? unitReferenceLengthMm : lengthMm);
+  const double value = lengthMm * unit.scale;
+
+  if (std::abs(value) <= std::numeric_limits<float>::epsilon()) {
+    return std::string("0 ") + unit.label;
   }
 
   const double roundedValue = std::round(value);
@@ -108,7 +119,7 @@ std::string formatPhysicalDistanceMm(double lengthMm)
   else {
     out << std::setprecision(6) << value;
   }
-  return trimTrailingDecimalZeros(out.str()) + " " + unit;
+  return trimTrailingDecimalZeros(out.str()) + " " + unit.label;
 }
 
 } // namespace
@@ -1088,15 +1099,13 @@ void drawLightboxOffsetLabel(
   const FrameBounds& viewportViewBounds,
   AppData& appData,
   const View& view,
+  double unitReferenceLengthMm,
   const glm::vec4& color)
 {
   const float offsetMm = data::computeViewOffsetDistance(
     appData,
     view.offsetSetting(),
     helper::worldDirection(view.camera(), Directions::View::Front));
-  if (glm::epsilonEqual(offsetMm, 0.0f, glm::epsilon<float>())) {
-    return;
-  }
 
   static constexpr float sk_shadowBlur = 2.0f;
   static constexpr float sk_padding = 5.0f;
@@ -1104,7 +1113,7 @@ void drawLightboxOffsetLabel(
   const glm::vec2 viewportMinCorner(viewportViewBounds.bounds.xoffset, viewportViewBounds.bounds.yoffset);
   const glm::vec2 viewportSize(viewportViewBounds.bounds.width, viewportViewBounds.bounds.height);
   const float fontSizePixels = glm::clamp(0.065f * std::min(viewportSize.x, viewportSize.y), 9.0f, 14.0f);
-  const std::string label = formatPhysicalDistanceMm(offsetMm);
+  const std::string label = formatPhysicalDistanceMm(offsetMm, unitReferenceLengthMm);
 
   nvgScissor(
     nvg,

@@ -571,4 +571,8 @@ void applyUiStylePreset(UiColorPreset preset, ImGuiStyle* dst)
       applySoftLightPalette(style);
       break;
   }
+
+  style.Colors[ImGuiCol_TitleBgActive] = style.Colors[ImGuiCol_HeaderActive];
+  style.Colors[ImGuiCol_TabSelected] = style.Colors[ImGuiCol_HeaderActive];
+  style.Colors[ImGuiCol_TabDimmedSelected] = style.Colors[ImGuiCol_HeaderActive];
 }

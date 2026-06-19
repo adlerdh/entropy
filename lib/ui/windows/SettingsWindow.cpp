@@ -29,20 +29,20 @@ namespace ui_settings = entropy::ui::settings;
 namespace
 {
 
-static constexpr bool sk_recenterCrosshairs = true;
-static constexpr bool sk_realignCrosshairs = true;
-static constexpr bool sk_doNotRecenterOnCurrentCrosshairsPosition = false;
-static constexpr bool sk_doNotResetObliqueOrientation = false;
-static constexpr bool sk_resetZoom = true;
+static constexpr bool k_recenterCrosshairs = true;
+static constexpr bool k_realignCrosshairs = true;
+static constexpr bool k_doNotRecenterOnCurrentCrosshairsPosition = false;
+static constexpr bool k_doNotResetObliqueOrientation = false;
+static constexpr bool k_resetZoom = true;
 
-static constexpr float sk_windowMin = 0.0f;
-static constexpr float sk_windowMax = 1.0f;
+static constexpr float k_windowMin = 0.0f;
+static constexpr float k_windowMax = 1.0f;
 
-static constexpr ImGuiColorEditFlags sk_colorEditFlags =
+static constexpr ImGuiColorEditFlags k_colorEditFlags =
   ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB |
   ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;
 
-static constexpr ImGuiColorEditFlags sk_colorAlphaEditFlags =
+static constexpr ImGuiColorEditFlags k_colorAlphaEditFlags =
   ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB |
   ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf |
   ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;
@@ -112,6 +112,12 @@ void renderDiagnosticsSettings()
   renderReadOnlyPathField("ImGui log", app_paths::logDirectory() / "entropy_ui.log");
 }
 
+GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement)
+{
+  return UiLayoutTabPlacement::Bottom == placement ? GuiData::LayoutTabPlacement::Bottom
+                                                   : GuiData::LayoutTabPlacement::Top;
+}
+
 void renderMetricSettingsPanel(
   RenderData::MetricParams& metricParams,
   bool& showColormapWindow,
@@ -135,8 +141,8 @@ void renderMetricSettingsPanel(
         &windowLow,
         &windowHigh,
         0.01f,
-        sk_windowMin,
-        sk_windowMax,
+        k_windowMin,
+        k_windowMax,
         "Min: %.2f",
         "Max: %.2f",
         ImGuiSliderFlags_AlwaysClamp))
@@ -285,7 +291,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
 
   // Crosshairs
   if (ImGui::CollapsingHeader("Crosshairs", ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_crosshairsColor), sk_colorAlphaEditFlags);
+    ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_crosshairsColor), k_colorAlphaEditFlags);
 
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
@@ -323,11 +329,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       appData.state().setRecenteringMode(ImageSelection::ReferenceImage);
 
       recenterAllViews(
-        sk_recenterCrosshairs,
-        sk_realignCrosshairs,
-        sk_doNotRecenterOnCurrentCrosshairsPosition,
-        sk_doNotResetObliqueOrientation,
-        sk_resetZoom);
+        k_recenterCrosshairs,
+        k_realignCrosshairs,
+        k_doNotRecenterOnCurrentCrosshairsPosition,
+        k_doNotResetObliqueOrientation,
+        k_resetZoom);
     }
     ImGui::SameLine();
     helpMarker("Recenter views and crosshairs on the reference image");
@@ -336,11 +342,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       appData.state().setRecenteringMode(ImageSelection::ActiveImage);
 
       recenterAllViews(
-        sk_recenterCrosshairs,
-        sk_realignCrosshairs,
-        sk_doNotRecenterOnCurrentCrosshairsPosition,
-        sk_doNotResetObliqueOrientation,
-        sk_resetZoom);
+        k_recenterCrosshairs,
+        k_realignCrosshairs,
+        k_doNotRecenterOnCurrentCrosshairsPosition,
+        k_doNotResetObliqueOrientation,
+        k_resetZoom);
     }
     ImGui::SameLine();
     helpMarker("Recenter views and crosshairs on the active image");
@@ -352,11 +358,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       appData.state().setRecenteringMode(ImageSelection::ReferenceAndActiveImages);
 
       recenterAllViews(
-        sk_recenterCrosshairs,
-        sk_realignCrosshairs,
-        sk_doNotRecenterOnCurrentCrosshairsPosition,
-        sk_doNotResetObliqueOrientation,
-        sk_resetZoom);
+        k_recenterCrosshairs,
+        k_realignCrosshairs,
+        k_doNotRecenterOnCurrentCrosshairsPosition,
+        k_doNotResetObliqueOrientation,
+        k_resetZoom);
     }
     ImGui::SameLine();
     helpMarker("Recenter views and crosshairs on the reference and active images");
@@ -367,8 +373,8 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
        ImageSelection::VisibleImagesInView == appData.state().recenteringMode() ) )
               {
                   appData.state().setRecenteringMode( ImageSelection::VisibleImagesInView );
-                  recenterAllViews( sk_recenterCrosshairs,
-       sk_doNotRecenterOnCurrentCrosshairsPosition );
+                  recenterAllViews( k_recenterCrosshairs,
+       k_doNotRecenterOnCurrentCrosshairsPosition );
               }
               ImGui::SameLine(); helpMarker( "Recenter views and crosshairs on the visible
        images in each view" );
@@ -377,8 +383,8 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
        appData.state().recenteringMode() ) )
               {
                   appData.state().setRecenteringMode( ImageSelection::FixedImageInView );
-                  recenterAllViews( sk_recenterCrosshairs,
-       sk_doNotRecenterOnCurrentCrosshairsPosition );
+                  recenterAllViews( k_recenterCrosshairs,
+       k_doNotRecenterOnCurrentCrosshairsPosition );
               }
               ImGui::SameLine(); helpMarker( "Recenter views on the fixed image in each view"
        );
@@ -387,8 +393,8 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
        appData.state().recenteringMode() ) )
               {
                   appData.state().setRecenteringMode( ImageSelection::MovingImageInView );
-                  recenterAllViews( sk_recenterCrosshairs,
-       sk_doNotRecenterOnCurrentCrosshairsPosition );
+                  recenterAllViews( k_recenterCrosshairs,
+       k_doNotRecenterOnCurrentCrosshairsPosition );
               }
               ImGui::SameLine(); helpMarker( "Recenter views on the moving image in each view"
        );
@@ -397,8 +403,8 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
        ImageSelection::FixedAndMovingImagesInView == appData.state().recenteringMode() ) )
               {
                   appData.state().setRecenteringMode(
-       ImageSelection::FixedAndMovingImagesInView ); recenterAllViews( sk_recenterCrosshairs,
-       sk_doNotRecenterOnCurrentCrosshairsPosition );
+       ImageSelection::FixedAndMovingImagesInView ); recenterAllViews( k_recenterCrosshairs,
+       k_doNotRecenterOnCurrentCrosshairsPosition );
               }
               ImGui::SameLine(); helpMarker( "Recenter views on the fixed and moving images in
        each view" );
@@ -408,11 +414,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       appData.state().setRecenteringMode(ImageSelection::AllLoadedImages);
 
       recenterAllViews(
-        sk_recenterCrosshairs,
-        sk_realignCrosshairs,
-        sk_doNotRecenterOnCurrentCrosshairsPosition,
-        sk_doNotResetObliqueOrientation,
-        sk_resetZoom);
+        k_recenterCrosshairs,
+        k_realignCrosshairs,
+        k_doNotRecenterOnCurrentCrosshairsPosition,
+        k_doNotResetObliqueOrientation,
+        k_resetZoom);
     }
     ImGui::SameLine();
     helpMarker("Recenter views and crosshairs on all loaded images");
@@ -420,14 +426,14 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
 
   // View backgrounds:
   if (ImGui::CollapsingHeader("Background color", ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::ColorEdit3("2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), sk_colorEditFlags);
+    ImGui::ColorEdit3("2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
 
-    ImGui::ColorEdit4("3D background color", glm::value_ptr(renderData.m_3dBackgroundColor), sk_colorAlphaEditFlags);
+    ImGui::ColorEdit4("3D background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
   }
 
   // Anatomical labels:
   if (ImGui::CollapsingHeader("Anatomical labels", ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::ColorEdit4("Text color", glm::value_ptr(renderData.m_anatomicalLabelColor), sk_colorAlphaEditFlags);
+    ImGui::ColorEdit4("Text color", glm::value_ptr(renderData.m_anatomicalLabelColor), k_colorAlphaEditFlags);
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
     ImGui::Text("Anatomical directions:");
@@ -515,7 +521,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       ImGui::SameLine();
       helpMarker("Show scale bars in each tile of lightbox layouts");
 
-      ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_scaleBarColor), sk_colorAlphaEditFlags);
+      ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_scaleBarColor), k_colorAlphaEditFlags);
 
       auto setScaleBarPosition = [&](ScaleBarPosition position) {
         renderData.m_scaleBarPosition = position;
@@ -538,12 +544,12 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       }
 
       auto drawScaleBarPositionButton = [&](const ui_settings::ScaleBarPositionButton& button) {
-        static constexpr ImVec2 sk_buttonSize{32.0f, 24.0f};
+        static constexpr ImVec2 k_buttonSize{32.0f, 24.0f};
         const bool selected = button.position == renderData.m_scaleBarPosition;
         if (selected) {
           ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
         }
-        if (ImGui::Button(button.label, sk_buttonSize)) {
+        if (ImGui::Button(button.label, k_buttonSize)) {
           setScaleBarPosition(button.position);
         }
         if (selected) {
@@ -647,7 +653,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       ImGui::ColorEdit4(
         "Offset label color",
         glm::value_ptr(renderData.m_lightboxOffsetLabelColor),
-        sk_colorAlphaEditFlags);
+        k_colorAlphaEditFlags);
     }
   }
 }
@@ -661,103 +667,138 @@ void renderInterfaceTab(
   const std::function<void()>& requestFontReload,
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
   const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
-  const std::function<void(float opacity)>& applyUiWindowBgOpacity)
+  const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const std::function<void()>& readjustViewport)
 {
-  const auto currentScale = appData.settings().uiScaleOverride();
-  const auto& uiScaleChoices = ui_settings::uiScaleChoices();
-  auto currentChoice =
-    std::find_if(uiScaleChoices.begin(), uiScaleChoices.end(), [&currentScale](const ui_settings::ScaleChoice& choice) {
-      return choice.scale == currentScale;
-    });
-  if (currentChoice == uiScaleChoices.end()) {
-    currentChoice = uiScaleChoices.begin();
+  bool showLayoutTabs = appData.settings().showLayoutTabs();
+  if (ImGui::Checkbox("Show layout tab bar", &showLayoutTabs)) {
+    appData.settings().setShowLayoutTabs(showLayoutTabs);
+    appData.guiData().m_showLayoutTabs = showLayoutTabs;
+    if (readjustViewport) {
+      readjustViewport();
+    }
   }
 
-  if (ImGui::BeginCombo("UI scale", currentChoice->label)) {
-    for (const ui_settings::ScaleChoice& choice : uiScaleChoices) {
-      const bool selected = choice.scale == currentScale;
-      if (ImGui::Selectable(choice.label, selected)) {
-        appData.settings().setUiScaleOverride(choice.scale);
-        if (setUiScaleOverride) {
-          setUiScaleOverride(appData.settings().uiScaleOverride());
-        }
-      }
-      if (selected) {
-        ImGui::SetItemDefaultFocus();
+  if (showLayoutTabs) {
+    const bool layoutTabsTop = UiLayoutTabPlacement::Top == appData.settings().layoutTabPlacement();
+    ImGui::Text("Position:");
+    if (ImGui::RadioButton("Top##layoutTabBarPosition", layoutTabsTop)) {
+      appData.settings().setLayoutTabPlacement(UiLayoutTabPlacement::Top);
+      appData.guiData().m_layoutTabPlacement = guiLayoutTabPlacement(appData.settings().layoutTabPlacement());
+      if (readjustViewport) {
+        readjustViewport();
       }
     }
-    ImGui::EndCombo();
-  }
-  ImGui::SameLine();
-  helpMarker(
-    "Auto uses the platform UI scale. On macOS this is 100% so Retina backing scale keeps rendering sharp "
-    "without enlarging the interface.");
-
-  const UiFontFamily currentFamily = appData.settings().uiFontFamily();
-  const auto& uiFontChoices = ui_settings::visibleFontChoices();
-  auto currentFontChoice =
-    std::find_if(uiFontChoices.begin(), uiFontChoices.end(), [currentFamily](const ui_settings::FontChoice& choice) {
-      return choice.family == currentFamily;
-    });
-  if (currentFontChoice == uiFontChoices.end()) {
-    currentFontChoice = uiFontChoices.begin();
-  }
-
-  if (ImGui::BeginCombo("UI font", currentFontChoice->label)) {
-    for (const ui_settings::FontChoice& choice : uiFontChoices) {
-      const bool selected = choice.family == currentFamily;
-      if (ImGui::Selectable(choice.label, selected)) {
-        appData.settings().setUiFontFamily(choice.family);
-        if (requestFontReload) {
-          requestFontReload();
-        }
-      }
-      if (selected) {
-        ImGui::SetItemDefaultFocus();
+    if (ImGui::RadioButton("Bottom##layoutTabBarPosition", !layoutTabsTop)) {
+      appData.settings().setLayoutTabPlacement(UiLayoutTabPlacement::Bottom);
+      appData.guiData().m_layoutTabPlacement = guiLayoutTabPlacement(appData.settings().layoutTabPlacement());
+      if (readjustViewport) {
+        readjustViewport();
       }
     }
-    ImGui::EndCombo();
   }
 
-  const UiColorPreset currentColorPreset = appData.settings().uiColorPreset();
-  if (ImGui::BeginCombo("UI color scheme", uiColorPresetName(currentColorPreset))) {
-    for (const UiColorPreset preset : ui_settings::uiColorPresets()) {
-      const bool selected = preset == currentColorPreset;
-      if (ImGui::Selectable(uiColorPresetName(preset), selected)) {
-        appData.settings().setUiColorPreset(preset);
-        if (applyUiColorPreset) {
-          applyUiColorPreset(preset);
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
+
+  if (ImGui::CollapsingHeader("Look and feel", ImGuiTreeNodeFlags_DefaultOpen)) {
+    const auto currentScale = appData.settings().uiScaleOverride();
+    const auto& uiScaleChoices = ui_settings::uiScaleChoices();
+    auto currentChoice = std::find_if(
+      uiScaleChoices.begin(),
+      uiScaleChoices.end(),
+      [&currentScale](const ui_settings::ScaleChoice& choice) { return choice.scale == currentScale; });
+    if (currentChoice == uiScaleChoices.end()) {
+      currentChoice = uiScaleChoices.begin();
+    }
+
+    if (ImGui::BeginCombo("UI scale", currentChoice->label)) {
+      for (const ui_settings::ScaleChoice& choice : uiScaleChoices) {
+        const bool selected = choice.scale == currentScale;
+        if (ImGui::Selectable(choice.label, selected)) {
+          appData.settings().setUiScaleOverride(choice.scale);
+          if (setUiScaleOverride) {
+            setUiScaleOverride(appData.settings().uiScaleOverride());
+          }
+        }
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
         }
       }
-      if (selected) {
-        ImGui::SetItemDefaultFocus();
-      }
+      ImGui::EndCombo();
     }
-    ImGui::EndCombo();
-  }
+    ImGui::SameLine();
+    helpMarker(
+      "Auto uses the platform UI scale. On macOS this is 100% so Retina backing scale keeps rendering sharp "
+      "without enlarging the interface.");
 
-  const UiDensityPreset currentDensityPreset = appData.settings().uiDensityPreset();
-  if (ImGui::BeginCombo("UI density", uiDensityPresetName(currentDensityPreset))) {
-    for (const UiDensityPreset preset : ui_settings::uiDensityPresets()) {
-      const bool selected = preset == currentDensityPreset;
-      if (ImGui::Selectable(uiDensityPresetName(preset), selected)) {
-        appData.settings().setUiDensityPreset(preset);
-        if (applyUiDensityPreset) {
-          applyUiDensityPreset(preset);
+    const UiFontFamily currentFamily = appData.settings().uiFontFamily();
+    const auto& uiFontChoices = ui_settings::visibleFontChoices();
+    auto currentFontChoice =
+      std::find_if(uiFontChoices.begin(), uiFontChoices.end(), [currentFamily](const ui_settings::FontChoice& choice) {
+        return choice.family == currentFamily;
+      });
+    if (currentFontChoice == uiFontChoices.end()) {
+      currentFontChoice = uiFontChoices.begin();
+    }
+
+    if (ImGui::BeginCombo("UI font", currentFontChoice->label)) {
+      for (const ui_settings::FontChoice& choice : uiFontChoices) {
+        const bool selected = choice.family == currentFamily;
+        if (ImGui::Selectable(choice.label, selected)) {
+          appData.settings().setUiFontFamily(choice.family);
+          if (requestFontReload) {
+            requestFontReload();
+          }
+        }
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
         }
       }
-      if (selected) {
-        ImGui::SetItemDefaultFocus();
-      }
+      ImGui::EndCombo();
     }
-    ImGui::EndCombo();
-  }
 
-  float windowBgOpacity = appData.settings().uiWindowBgOpacity();
-  if (ImGui::SliderFloat("Window background opacity", &windowBgOpacity, 0.2f, 1.0f, "%.2f")) {
-    appData.settings().setUiWindowBgOpacity(windowBgOpacity);
-    if (applyUiWindowBgOpacity) {
-      applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
+    const UiColorPreset currentColorPreset = appData.settings().uiColorPreset();
+    if (ImGui::BeginCombo("UI color scheme", uiColorPresetName(currentColorPreset))) {
+      for (const UiColorPreset preset : ui_settings::uiColorPresets()) {
+        const bool selected = preset == currentColorPreset;
+        if (ImGui::Selectable(uiColorPresetName(preset), selected)) {
+          appData.settings().setUiColorPreset(preset);
+          if (applyUiColorPreset) {
+            applyUiColorPreset(preset);
+          }
+        }
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+
+    const UiDensityPreset currentDensityPreset = appData.settings().uiDensityPreset();
+    if (ImGui::BeginCombo("UI density", uiDensityPresetName(currentDensityPreset))) {
+      for (const UiDensityPreset preset : ui_settings::uiDensityPresets()) {
+        const bool selected = preset == currentDensityPreset;
+        if (ImGui::Selectable(uiDensityPresetName(preset), selected)) {
+          appData.settings().setUiDensityPreset(preset);
+          if (applyUiDensityPreset) {
+            applyUiDensityPreset(preset);
+          }
+        }
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+
+    float windowBgOpacity = appData.settings().uiWindowBgOpacity();
+    if (ImGui::SliderFloat("Window background opacity", &windowBgOpacity, 0.2f, 1.0f, "%.2f")) {
+      appData.settings().setUiWindowBgOpacity(windowBgOpacity);
+      if (applyUiWindowBgOpacity) {
+        applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
+      }
     }
   }
 }
@@ -1325,9 +1366,9 @@ void renderRaycastingTab(RenderData& renderData)
   /// @todo if these are added to the uniforms, then we'll have update uniforms when they
   /// change
 
-  static constexpr float sk_factorStep = 0.1f;
-  static constexpr float sk_minFactor = 0.1f;
-  static constexpr float sk_maxFactor = 5.0f;
+  static constexpr float k_factorStep = 0.1f;
+  static constexpr float k_minFactor = 0.1f;
+  static constexpr float k_maxFactor = 5.0f;
 
   ImGui::Text("Raycasting sampling rate:");
   ImGui::SameLine();
@@ -1336,9 +1377,9 @@ void renderRaycastingTab(RenderData& renderData)
   if (ImGui::DragFloat(
         "##SamplingRate",
         &(renderData.m_raycastSamplingFactor),
-        sk_factorStep,
-        sk_minFactor,
-        sk_maxFactor,
+        k_factorStep,
+        k_minFactor,
+        k_maxFactor,
         "%0.1f",
         ImGuiSliderFlags_AlwaysClamp))
   {
@@ -1573,7 +1614,7 @@ void renderAnnotationsTab(RenderData& renderData)
  */
 void renderPrecisionTab(AppData& appData)
 {
-  static constexpr uint32_t sk_stepPrecision = 1;
+  static constexpr uint32_t k_stepPrecision = 1;
 
   ImGui::PushID("precision"); /*** PushID precision ***/
 
@@ -1584,13 +1625,7 @@ void renderPrecisionTab(AppData& appData)
 
   ImGui::Text("Floating-point precision in user interface:");
 
-  if (ImGui::InputScalar(
-        "Image values",
-        ImGuiDataType_U32,
-        &valuePrecision,
-        &sk_stepPrecision,
-        &sk_stepPrecision,
-        "%d"))
+  if (ImGui::InputScalar("Image values", ImGuiDataType_U32, &valuePrecision, &k_stepPrecision, &k_stepPrecision, "%d"))
   {
     appData.guiData().m_imageValuePrecision = ui_settings::clampPrecision(valuePrecision);
     appData.guiData().m_imageValuePrecisionFormat =
@@ -1599,21 +1634,14 @@ void renderPrecisionTab(AppData& appData)
   ImGui::SameLine();
   helpMarker("Floating-point precision of image values (e.g. in Inspector window)");
 
-  if (ImGui::InputScalar("Coordinates", ImGuiDataType_U32, &coordPrecision, &sk_stepPrecision, &sk_stepPrecision, "%d"))
-  {
+  if (ImGui::InputScalar("Coordinates", ImGuiDataType_U32, &coordPrecision, &k_stepPrecision, &k_stepPrecision, "%d")) {
     appData.guiData().m_coordsPrecision = ui_settings::clampPrecision(coordPrecision);
     appData.guiData().setCoordsPrecisionFormat();
   }
   ImGui::SameLine();
   helpMarker("Floating-point precision of image spatial coordinates (e.g. in Inspector window)");
 
-  if (ImGui::InputScalar(
-        "Transformations",
-        ImGuiDataType_U32,
-        &txPrecision,
-        &sk_stepPrecision,
-        &sk_stepPrecision,
-        "%d"))
+  if (ImGui::InputScalar("Transformations", ImGuiDataType_U32, &txPrecision, &k_stepPrecision, &k_stepPrecision, "%d"))
   {
     appData.guiData().m_txPrecision = ui_settings::clampPrecision(txPrecision);
     appData.guiData().setTxPrecisionFormat();
@@ -1625,8 +1653,8 @@ void renderPrecisionTab(AppData& appData)
         "Percentiles",
         ImGuiDataType_U32,
         &percentilePrecision,
-        &sk_stepPrecision,
-        &sk_stepPrecision,
+        &k_stepPrecision,
+        &k_stepPrecision,
         "%d"))
   {
     appData.guiData().m_percentilePrecision = ui_settings::clampPrecision(percentilePrecision);
@@ -1681,6 +1709,7 @@ static void renderSettingsPage(
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
   const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
   const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const std::function<void()>& readjustViewport,
   const AllViewsRecenterType& recenterAllViews)
 {
   ImGui::TextUnformatted(ui_settings::settingsPageLabel(page));
@@ -1695,8 +1724,9 @@ static void renderSettingsPage(
         requestFontReload,
         applyUiColorPreset,
         applyUiDensityPreset,
-        applyUiWindowBgOpacity);
-      if (ImGui::CollapsingHeader("Precision")) {
+        applyUiWindowBgOpacity,
+        readjustViewport);
+      if (ImGui::CollapsingHeader("Precision", ImGuiTreeNodeFlags_DefaultOpen)) {
         renderPrecisionTab(appData);
       }
       break;
@@ -1738,6 +1768,7 @@ void renderSettingsWindow(
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
   const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
   const std::function<void(float opacity)>& applyUiWindowBgOpacity,
+  const std::function<void()>& readjustViewport,
   const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews)
 {
@@ -1755,12 +1786,12 @@ void renderSettingsWindow(
     RenderData& renderData = appData.renderData();
 
     const ImGuiStyle& style = ImGui::GetStyle();
-    static constexpr float sk_navigationWidth = 156.0f;
+    static constexpr float k_navigationWidth = 156.0f;
     const float footerHeight =
       (2.0f * ImGui::GetFrameHeightWithSpacing()) + style.ItemSpacing.y + style.WindowPadding.y;
 
     if (ImGui::BeginChild("##SettingsBody", ImVec2{0.0f, -footerHeight}, ImGuiChildFlags_None)) {
-      if (ImGui::BeginChild("##SettingsNavigation", ImVec2{sk_navigationWidth, 0.0f}, ImGuiChildFlags_Borders)) {
+      if (ImGui::BeginChild("##SettingsNavigation", ImVec2{k_navigationWidth, 0.0f}, ImGuiChildFlags_Borders)) {
         renderSettingsNavigation(s_selectedPage);
       }
       ImGui::EndChild();
@@ -1780,6 +1811,7 @@ void renderSettingsWindow(
           applyUiColorPreset,
           applyUiDensityPreset,
           applyUiWindowBgOpacity,
+          readjustViewport,
           recenterAllViews);
       }
       ImGui::EndChild();
@@ -1798,9 +1830,7 @@ void renderSettingsWindow(
         ImGui::TextDisabled("%s", statusText.c_str());
       }
 
-      const float buttonY = std::max(
-        ImGui::GetCursorPosY(),
-        ImGui::GetWindowHeight() - style.WindowPadding.y - style.ItemSpacing.y - ImGui::GetFrameHeight());
+      const float buttonY = std::max(ImGui::GetCursorPosY(), ImGui::GetContentRegionMax().y - ImGui::GetFrameHeight());
       ImGui::SetCursorPosY(buttonY);
       if (ImGui::Button("Close")) {
         appData.guiData().m_showSettingsWindow = false;

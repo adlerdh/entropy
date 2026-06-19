@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
 
 namespace layout
 {
@@ -15,21 +14,6 @@ namespace
 {
 constexpr int k_layoutFileVersion = 1;
 constexpr const char* k_layoutFileFormat = "EntropyLayouts";
-
-std::optional<std::size_t> imageIndexFromJson(const nlohmann::json& json)
-{
-  if (json.is_null()) {
-    return std::nullopt;
-  }
-  if (json.is_string()) {
-    const std::string value = json.get<std::string>();
-    if ("reference" == value) {
-      return 0;
-    }
-    throw std::runtime_error("unsupported image selector: " + value);
-  }
-  return json.get<std::size_t>();
-}
 
 std::string indentString(int indent)
 {
@@ -128,11 +112,6 @@ void from_json(const nlohmann::json& json, LayoutPreset& preset)
     }
     else {
       preset.m_imageIndices = images.get<std::vector<std::size_t>>();
-    }
-  }
-  else if (json.contains("image")) {
-    if (const auto imageIndex = imageIndexFromJson(json.at("image"))) {
-      preset.m_imageIndices = {*imageIndex};
     }
   }
 }

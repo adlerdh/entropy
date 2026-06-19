@@ -80,3 +80,34 @@ TEST_CASE("Project serialization preserves DICOM source metadata", "[project][di
   CHECK(source.m_files.at(0) == fs::canonical(slice1));
   CHECK(source.m_files.at(1) == fs::canonical(slice2));
 }
+
+TEST_CASE("Project serialization preserves interface settings", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_interface.m_showLayoutTabs = false;
+  project.m_interface.m_layoutTabPlacement = serialize::ProjectLayoutTabPlacement::Bottom;
+  project.m_interface.m_imageValuePrecision = 4;
+  project.m_interface.m_coordsPrecision = 5;
+  project.m_interface.m_txPrecision = 6;
+  project.m_interface.m_percentilePrecision = 7;
+
+  const json root = project;
+
+  REQUIRE(root.contains("interface"));
+  CHECK(root.at("interface").at("showLayoutTabs") == false);
+  CHECK(root.at("interface").at("layoutTabsPosition") == "bottom");
+  CHECK(root.at("interface").at("imageValuePrecision") == 4);
+  CHECK(root.at("interface").at("coordinatesPrecision") == 5);
+  CHECK(root.at("interface").at("transformPrecision") == 6);
+  CHECK(root.at("interface").at("percentilePrecision") == 7);
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+
+  CHECK(parsed.m_interface.m_showLayoutTabs == false);
+  CHECK(parsed.m_interface.m_layoutTabPlacement == serialize::ProjectLayoutTabPlacement::Bottom);
+  CHECK(parsed.m_interface.m_imageValuePrecision == 4);
+  CHECK(parsed.m_interface.m_coordsPrecision == 5);
+  CHECK(parsed.m_interface.m_txPrecision == 6);
+  CHECK(parsed.m_interface.m_percentilePrecision == 7);
+}

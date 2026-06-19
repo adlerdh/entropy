@@ -27,8 +27,10 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <iterator>
 #include <optional>
+#include <sstream>
 #include <unordered_map>
 #include <utility>
 
@@ -272,7 +274,7 @@ Layout createFourUpLayout(
   return layout;
 }
 
-Layout createTriLayout(
+Layout createThreeUpLayout(
   const CrosshairsState& crosshairs,
   const ViewAlignmentMode& viewAlignment,
   const ViewConvention& viewConvention)
@@ -284,7 +286,7 @@ Layout createTriLayout(
   const auto noZoomSyncGroup = std::nullopt;
 
   Layout layout(false);
-  layout.setKind(LayoutKind::Tri);
+  layout.setKind(LayoutKind::ThreeUp);
 
   auto zoomSyncGroupUid = layout.addCameraSyncGroup(CameraSyncMode::Zoom);
   auto* zoomGroup = layout.getCameraSyncGroup(CameraSyncMode::Zoom, zoomSyncGroupUid);
@@ -358,7 +360,7 @@ Layout createTriLayout(
   return layout;
 }
 
-Layout createTriTopBottomLayout(
+Layout createOrthogonalByImageLayout(
   std::size_t numRows,
   const CrosshairsState& crosshairs,
   const ViewAlignmentMode& viewAlignment,
@@ -496,21 +498,15 @@ Layout createGridLayout(
   const ViewConvention& viewConvention,
   const std::optional<size_t>& imageIndexForLightbox,
   const std::optional<uuid>& imageUidForLightbox,
-  std::optional<float> lightboxOffsetDistance)
+  std::optional<float> absoluteOffsetStep = std::nullopt)
 {
   static const ViewRenderMode s_shaderType = ViewRenderMode::Image;
   static const IntensityProjectionMode s_ipMode = IntensityProjectionMode::None;
 
   Layout layout(isLightbox);
   if (!isLightbox && 1 == height && width > 1) {
-    if (ViewType::Axial == viewType) {
-      layout.setKind(LayoutKind::MultiImageAxialGrid);
-    }
-    else if (ViewType::Coronal == viewType) {
-      layout.setKind(LayoutKind::MultiImageCoronalGrid);
-    }
-    else if (ViewType::Sagittal == viewType) {
-      layout.setKind(LayoutKind::MultiImageSagittalGrid);
+    if (ViewType::Axial == viewType || ViewType::Coronal == viewType || ViewType::Sagittal == viewType) {
+      layout.setKind(LayoutKind::MultiImageGrid);
     }
   }
 
@@ -540,7 +536,7 @@ Layout createGridLayout(
   ViewOffsetSetting offsetSetting;
   offsetSetting.m_offsetImage = imageUidForLightbox;
 
-  if (lightboxOffsetDistance) {
+  if (absoluteOffsetStep) {
     offsetSetting.m_offsetMode = ViewOffsetMode::Absolute;
   }
   else if (imageIndexForLightbox) {
@@ -567,9 +563,8 @@ Layout createGridLayout(
       const int counter = static_cast<int>(width * j + i);
 
       const int offsetStep = (offsetViews) ? (counter - static_cast<int>(width * height) / 2) : 0;
-      offsetSetting.m_relativeOffsetSteps = offsetStep;
-      offsetSetting.m_absoluteOffset =
-        lightboxOffsetDistance ? static_cast<float>(offsetStep) * *lightboxOffsetDistance : 0.0f;
+      offsetSetting.m_relativeOffsetSteps = absoluteOffsetStep ? 0 : offsetStep;
+      offsetSetting.m_absoluteOffset = absoluteOffsetStep ? static_cast<float>(offsetStep) * *absoluteOffsetStep : 0.0f;
 
       auto view = std::make_unique<View>(
         glm::vec4{l, b, w, h},
@@ -614,6 +609,50 @@ ViewType firstViewType(const Layout& layout, ViewType fallback)
 {
   const std::vector<const View*> views = layout.orderedViews();
   return views.empty() ? fallback : views.front()->viewType();
+}
+
+bool containsApprox(const std::vector<float>& values, float value)
+{
+  return std::any_of(values.begin(), values.end(), [value](float existing) {
+    return std::fabs(existing - value) < 1.0e-4f;
+  });
+}
+
+std::optional<std::pair<std::size_t, std::size_t>> gridDimensions(const Layout& layout)
+{
+  std::vector<float> leftEdges;
+  std::vector<float> bottomEdges;
+
+  for (const View* view : layout.orderedViews()) {
+    if (!view) {
+      continue;
+    }
+
+    const glm::vec4& viewport = view->windowClipViewport();
+    if (!containsApprox(leftEdges, viewport.x)) {
+      leftEdges.push_back(viewport.x);
+    }
+    if (!containsApprox(bottomEdges, viewport.y)) {
+      bottomEdges.push_back(viewport.y);
+    }
+  }
+
+  if (leftEdges.empty() || bottomEdges.empty()) {
+    return std::nullopt;
+  }
+  return std::pair{leftEdges.size(), bottomEdges.size()};
+}
+
+std::string tiledLayoutDisplayName(const Layout& layout, const char* fallbackName)
+{
+  const auto dims = gridDimensions(layout);
+  if (!dims) {
+    return fallbackName;
+  }
+
+  std::ostringstream stream;
+  stream << fallbackName << " " << dims->second << "x" << dims->first;
+  return stream.str();
 }
 
 std::optional<std::size_t> imageIndexInOrder(uuid_range_t orderedImageUids, const std::optional<uuid>& imageUid)
@@ -683,31 +722,25 @@ std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uui
   switch (layout.kind()) {
     case LayoutKind::FourUp:
       return layout::LayoutPreset{.m_type = "fourUp", .m_view = {}, .m_images = {}, .m_imageIndices = {}};
-    case LayoutKind::Tri:
-      return layout::LayoutPreset{.m_type = "tri", .m_view = {}, .m_images = {}, .m_imageIndices = {}};
-    case LayoutKind::SingleAxial:
-    case LayoutKind::SingleCoronal:
-    case LayoutKind::SingleSagittal:
+    case LayoutKind::ThreeUp:
+      return layout::LayoutPreset{.m_type = "threeUp", .m_view = {}, .m_images = {}, .m_imageIndices = {}};
+    case LayoutKind::OneUp:
       return layout::LayoutPreset{
-        .m_type = "single",
+        .m_type = "oneUp",
         .m_view = std::string{layout::layoutPresetViewName(firstViewType(layout, layout.viewType()))},
         .m_images = {},
         .m_imageIndices = imageIndicesInOrder(
           orderedImageUids,
           layout.orderedViews().empty() ? std::list<uuid>{} : layout.orderedViews().front()->renderedImages())};
-    case LayoutKind::MultiImageAxialGrid:
-    case LayoutKind::MultiImageCoronalGrid:
-    case LayoutKind::MultiImageSagittalGrid:
+    case LayoutKind::MultiImageGrid:
       return layout::LayoutPreset{
-        .m_type = "multiImageGrid",
+        .m_type = "grid",
         .m_view = std::string{layout::layoutPresetViewName(firstViewType(layout, layout.viewType()))},
         .m_images = "all",
         .m_imageIndices = {}};
     case LayoutKind::AxCorSagByImage:
       return layout::LayoutPreset{.m_type = "orthogonalByImage", .m_view = {}, .m_images = "all", .m_imageIndices = {}};
-    case LayoutKind::AxialLightbox:
-    case LayoutKind::CoronalLightbox:
-    case LayoutKind::SagittalLightbox:
+    case LayoutKind::Lightbox:
       return layout::LayoutPreset{
         .m_type = "lightbox",
         .m_view = std::string{layout::layoutPresetViewName(firstViewType(layout, layout.viewType()))},
@@ -744,10 +777,10 @@ std::optional<Layout> instantiateLayoutPreset(
   if ("fourUp" == preset.m_type) {
     return createFourUpLayout(crosshairs, viewAlignment, viewConvention);
   }
-  if ("tri" == preset.m_type) {
-    return createTriLayout(crosshairs, viewAlignment, viewConvention);
+  if ("threeUp" == preset.m_type) {
+    return createThreeUpLayout(crosshairs, viewAlignment, viewConvention);
   }
-  if ("single" == preset.m_type) {
+  if ("oneUp" == preset.m_type) {
     const auto imageIndices = layout::presetImageIndicesOrDefault(preset);
     Layout layout = createGridLayout(
       *viewType,
@@ -759,24 +792,17 @@ std::optional<Layout> instantiateLayoutPreset(
       viewAlignment,
       viewConvention,
       imageIndices.front(),
-      appData.imageUid(imageIndices.front()),
-      std::nullopt);
+      appData.imageUid(imageIndices.front()));
     applyViewImageIndices(layout, imageIndices);
-    if (ViewType::Axial == *viewType) {
-      layout.setKind(LayoutKind::SingleAxial);
-    }
-    else if (ViewType::Coronal == *viewType) {
-      layout.setKind(LayoutKind::SingleCoronal);
-    }
-    else if (ViewType::Sagittal == *viewType) {
-      layout.setKind(LayoutKind::SingleSagittal);
+    if (ViewType::Axial == *viewType || ViewType::Coronal == *viewType || ViewType::Sagittal == *viewType) {
+      layout.setKind(LayoutKind::OneUp);
     }
     else {
       layout.setKind(LayoutKind::Custom);
     }
     return std::optional<Layout>{std::move(layout)};
   }
-  if ("multiImageGrid" == preset.m_type) {
+  if ("grid" == preset.m_type) {
     const auto imageIndices =
       ("all" == preset.m_images) ? std::vector<std::size_t>{} : layout::presetImageIndicesOrDefault(preset);
     const std::size_t width = imageIndices.empty() ? appData.numImages() : imageIndices.size();
@@ -793,19 +819,12 @@ std::optional<Layout> instantiateLayoutPreset(
       viewAlignment,
       viewConvention,
       0,
-      appData.refImageUid(),
-      std::nullopt);
+      appData.refImageUid());
     if (!imageIndices.empty()) {
       applyViewImageIndices(layout, imageIndices);
     }
-    if (ViewType::Axial == *viewType) {
-      layout.setKind(LayoutKind::MultiImageAxialGrid);
-    }
-    else if (ViewType::Coronal == *viewType) {
-      layout.setKind(LayoutKind::MultiImageCoronalGrid);
-    }
-    else if (ViewType::Sagittal == *viewType) {
-      layout.setKind(LayoutKind::MultiImageSagittalGrid);
+    if (ViewType::Axial == *viewType || ViewType::Coronal == *viewType || ViewType::Sagittal == *viewType) {
+      layout.setKind(LayoutKind::MultiImageGrid);
     }
     else {
       layout.setKind(LayoutKind::Custom);
@@ -819,7 +838,7 @@ std::optional<Layout> instantiateLayoutPreset(
     if (0 == numRows) {
       return std::nullopt;
     }
-    Layout layout = createTriTopBottomLayout(numRows, crosshairs, viewAlignment, viewConvention);
+    Layout layout = createOrthogonalByImageLayout(numRows, crosshairs, viewAlignment, viewConvention);
     if (!imageIndices.empty()) {
       applyRowImageIndices(layout, imageIndices, 3);
     }
@@ -844,13 +863,94 @@ std::optional<Layout> instantiateLayoutPreset(
   return std::nullopt;
 }
 
-std::size_t imageDependentLayoutInsertIndex(const std::vector<Layout>& layouts)
+std::size_t fixedManagedLayoutPrefixLength(const std::vector<Layout>& layouts)
 {
   std::size_t index = 0;
   while (index < layouts.size() && layout::isFixedManagedLayoutKind(layouts.at(index).kind())) {
     ++index;
   }
   return index;
+}
+
+bool isOneUpLayoutKind(LayoutKind kind)
+{
+  switch (kind) {
+    case LayoutKind::OneUp:
+      return true;
+    case LayoutKind::Custom:
+    case LayoutKind::FourUp:
+    case LayoutKind::ThreeUp:
+    case LayoutKind::MultiImageGrid:
+    case LayoutKind::AxCorSagByImage:
+    case LayoutKind::Lightbox:
+    case LayoutKind::NumElements:
+      return false;
+  }
+  return false;
+}
+
+LayoutKind oneUpLayoutKindForViewType(ViewType viewType)
+{
+  switch (viewType) {
+    case ViewType::Axial:
+    case ViewType::Coronal:
+    case ViewType::Sagittal:
+      return LayoutKind::OneUp;
+    case ViewType::Oblique:
+    case ViewType::ThreeD:
+    case ViewType::NumElements:
+      return LayoutKind::Custom;
+  }
+  return LayoutKind::Custom;
+}
+
+LayoutKind gridLayoutKindForViewType(ViewType viewType)
+{
+  switch (viewType) {
+    case ViewType::Axial:
+    case ViewType::Coronal:
+    case ViewType::Sagittal:
+      return LayoutKind::MultiImageGrid;
+    case ViewType::Oblique:
+    case ViewType::ThreeD:
+    case ViewType::NumElements:
+      return LayoutKind::Custom;
+  }
+  return LayoutKind::Custom;
+}
+
+std::vector<ViewType> managedSliceViewTypes(
+  std::size_t numImages,
+  const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage)
+{
+  if (dicomNativeViewTypesByImage.empty()) {
+    return {ViewType::Axial};
+  }
+
+  std::vector<ViewType> viewTypes;
+  viewTypes.reserve(3);
+  if (dicomNativeViewTypesByImage.size() < numImages) {
+    viewTypes.push_back(ViewType::Axial);
+  }
+
+  for (const ViewType viewType : {ViewType::Axial, ViewType::Coronal, ViewType::Sagittal}) {
+    const bool hasViewType =
+      std::any_of(dicomNativeViewTypesByImage.begin(), dicomNativeViewTypesByImage.end(), [viewType](const auto& item) {
+        return item.second == viewType;
+      });
+    if (hasViewType && std::find(viewTypes.begin(), viewTypes.end(), viewType) == viewTypes.end()) {
+      viewTypes.push_back(viewType);
+    }
+  }
+  return viewTypes.empty() ? std::vector<ViewType>{ViewType::Axial} : viewTypes;
+}
+
+ViewType managedLightboxViewTypeForImage(
+  const uuid& imageUid,
+  const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage)
+{
+  const auto viewTypeIt = dicomNativeViewTypesByImage.find(imageUid);
+  return (viewTypeIt == dicomNativeViewTypesByImage.end()) ? ViewType::Axial : viewTypeIt->second;
 }
 
 std::optional<Layout> createLightboxLayoutForImage(
@@ -907,8 +1007,7 @@ std::optional<Layout> createLightboxLayoutForImage(
     viewAlignment,
     viewConvention,
     *imageIndex,
-    imageUid,
-    std::nullopt);
+    imageUid);
   layout.setKind(layout::lightboxLayoutKindForViewType(viewType));
   return std::optional<Layout>{std::move(layout)};
 }
@@ -1123,9 +1222,6 @@ WindowData::WindowData(const CrosshairsState& crosshairs)
 
 void WindowData::setupViews()
 {
-  m_layouts.emplace_back(createFourUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
-  m_layouts.emplace_back(createTriLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
-
   static constexpr std::size_t refImage = 0;
 
   m_layouts.emplace_back(createGridLayout(
@@ -1138,9 +1234,11 @@ void WindowData::setupViews()
     m_viewAlignment,
     m_viewConvention,
     refImage,
-    std::nullopt,
     std::nullopt));
-  m_layouts.back().setKind(LayoutKind::SingleAxial);
+  m_layouts.back().setKind(LayoutKind::OneUp);
+
+  m_layouts.emplace_back(createThreeUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
+  m_layouts.emplace_back(createFourUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
 
   updateAllViews();
 }
@@ -1153,7 +1251,7 @@ void WindowData::addGridLayout(
   bool isLightbox,
   std::size_t imageIndexForLightbox,
   const uuid& imageUidForLightbox,
-  std::optional<float> lightboxOffsetDistance)
+  std::optional<float> absoluteOffsetStep)
 {
   m_layouts.emplace_back(createGridLayout(
     viewType,
@@ -1166,7 +1264,7 @@ void WindowData::addGridLayout(
     m_viewConvention,
     imageIndexForLightbox,
     imageUidForLightbox,
-    lightboxOffsetDistance));
+    absoluteOffsetStep));
 
   updateAllViews();
 }
@@ -1205,37 +1303,46 @@ void WindowData::addLightboxLayoutForImage(
 
 void WindowData::addAxCorSagLayout(std::size_t numImages)
 {
-  m_layouts.emplace_back(createTriTopBottomLayout(numImages, m_crosshairs, m_viewAlignment, m_viewConvention));
+  m_layouts.emplace_back(createOrthogonalByImageLayout(numImages, m_crosshairs, m_viewAlignment, m_viewConvention));
   updateAllViews();
 }
 
-struct LoadedSlicePlaneSummary
+void WindowData::setCurrentLayoutViewType(const AppData& appData, const ViewType& viewType)
 {
-  bool hasCoronal = false;
-  bool hasSagittal = false;
-};
-
-LoadedSlicePlaneSummary loadedSlicePlaneSummary(const AppData& appData)
-{
-  LoadedSlicePlaneSummary summary;
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
-    const Image* image = appData.image(imageUid);
-    if (!image) {
-      continue;
-    }
-
-    const glm::vec3 normal = glm::abs(glm::normalize(image->header().directions()[2]));
-    if (normal.y >= normal.x && normal.y >= normal.z) {
-      summary.hasCoronal = true;
-    }
-    else if (normal.x >= normal.y && normal.x >= normal.z) {
-      summary.hasSagittal = true;
-    }
+  if (m_currentLayout >= m_layouts.size()) {
+    return;
   }
-  return summary;
+
+  Layout& layout = m_layouts.at(m_currentLayout);
+  if (!layout.isLightbox() || LayoutKind::Lightbox != layout.kind()) {
+    layout.setViewType(viewType);
+    return;
+  }
+
+  const std::optional<uuid> imageUid = layoutImageUid(layout);
+  if (!imageUid) {
+    spdlog::warn("Cannot rebuild managed lightbox layout because it has no source image");
+    return;
+  }
+
+  auto rebuiltLayout =
+    createLightboxLayoutForImage(appData, m_crosshairs, m_viewAlignment, m_viewConvention, viewType, *imageUid);
+  if (!rebuiltLayout) {
+    spdlog::warn("Cannot rebuild managed lightbox layout for unsupported view type {}", to_string(viewType, false));
+    return;
+  }
+
+  setDefaultRenderedImagesForLayout(*rebuiltLayout, appData);
+  m_layouts.at(m_currentLayout).replaceContentsPreservingUid(std::move(*rebuiltLayout));
+  if (m_activeViewUid && !getCurrentView(*m_activeViewUid)) {
+    m_activeViewUid = std::nullopt;
+  }
+  updateAllViews();
 }
 
-void WindowData::reconcileImageDependentLayouts(const AppData& appData)
+void WindowData::reconcileImageDependentLayouts(
+  const AppData& appData,
+  const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage)
 {
   const uuid currentLayoutUid = (m_currentLayout < m_layouts.size()) ? m_layouts.at(m_currentLayout).uid() : uuid{};
   std::vector<ViewCameraSnapshot> cameraSnapshots = createManagedLayoutCameraSnapshots(m_layouts);
@@ -1251,51 +1358,20 @@ void WindowData::reconcileImageDependentLayouts(const AppData& appData)
   generatedLayouts.reserve(5 + 3 * appData.numImages());
 
   const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
-  const LoadedSlicePlaneSummary slicePlanes = loadedSlicePlaneSummary(appData);
-  generatedLayouts.emplace_back(createGridLayout(
-    ViewType::Coronal,
-    1,
-    1,
-    false,
-    false,
-    m_crosshairs,
-    m_viewAlignment,
-    m_viewConvention,
-    0,
-    std::nullopt,
-    std::nullopt));
-  generatedLayouts.back().setKind(LayoutKind::SingleCoronal);
+  const std::vector<ViewType> managedViewTypes =
+    managedSliceViewTypes(appData.numImages(), dicomNativeViewTypesByImage);
 
-  generatedLayouts.emplace_back(createGridLayout(
-    ViewType::Sagittal,
-    1,
-    1,
-    false,
-    false,
-    m_crosshairs,
-    m_viewAlignment,
-    m_viewConvention,
-    0,
-    std::nullopt,
-    std::nullopt));
-  generatedLayouts.back().setKind(LayoutKind::SingleSagittal);
+  for (const ViewType viewType : managedViewTypes) {
+    generatedLayouts.emplace_back(
+      createGridLayout(viewType, 1, 1, false, false, m_crosshairs, m_viewAlignment, m_viewConvention, 0, std::nullopt));
+    generatedLayouts.back().setKind(oneUpLayoutKindForViewType(viewType));
+  }
+
   if (orderedImageUids.size() > 1) {
     if (const auto& refUid = appData.refImageUid()) {
-      generatedLayouts.emplace_back(createGridLayout(
-        ViewType::Axial,
-        orderedImageUids.size(),
-        1,
-        false,
-        false,
-        m_crosshairs,
-        m_viewAlignment,
-        m_viewConvention,
-        0,
-        *refUid,
-        std::nullopt));
-      if (slicePlanes.hasCoronal) {
+      for (const ViewType viewType : managedViewTypes) {
         generatedLayouts.emplace_back(createGridLayout(
-          ViewType::Coronal,
+          viewType,
           orderedImageUids.size(),
           1,
           false,
@@ -1304,37 +1380,22 @@ void WindowData::reconcileImageDependentLayouts(const AppData& appData)
           m_viewAlignment,
           m_viewConvention,
           0,
-          *refUid,
-          std::nullopt));
-      }
-      if (slicePlanes.hasSagittal) {
-        generatedLayouts.emplace_back(createGridLayout(
-          ViewType::Sagittal,
-          orderedImageUids.size(),
-          1,
-          false,
-          false,
-          m_crosshairs,
-          m_viewAlignment,
-          m_viewConvention,
-          0,
-          *refUid,
-          std::nullopt));
+          *refUid));
+        generatedLayouts.back().setKind(gridLayoutKindForViewType(viewType));
       }
     }
   }
 
   generatedLayouts.emplace_back(
-    createTriTopBottomLayout(orderedImageUids.size(), m_crosshairs, m_viewAlignment, m_viewConvention));
+    createOrthogonalByImageLayout(orderedImageUids.size(), m_crosshairs, m_viewAlignment, m_viewConvention));
 
   for (const auto& imageUid : orderedImageUids) {
-    for (const ViewType viewType : {ViewType::Axial, ViewType::Coronal, ViewType::Sagittal}) {
-      if (
-        auto layout =
-          createLightboxLayoutForImage(appData, m_crosshairs, m_viewAlignment, m_viewConvention, viewType, imageUid))
-      {
-        generatedLayouts.emplace_back(std::move(*layout));
-      }
+    const ViewType viewType = managedLightboxViewTypeForImage(imageUid, dicomNativeViewTypesByImage);
+    if (
+      auto layout =
+        createLightboxLayoutForImage(appData, m_crosshairs, m_viewAlignment, m_viewConvention, viewType, imageUid))
+    {
+      generatedLayouts.emplace_back(std::move(*layout));
     }
   }
 
@@ -1356,11 +1417,32 @@ void WindowData::reconcileImageDependentLayouts(const AppData& appData)
       viewAABBoxScaleFactor * math::computeAABBoxSize(worldBox));
   }
 
-  const std::size_t insertIndex = imageDependentLayoutInsertIndex(m_layouts);
-  m_layouts.insert(
-    m_layouts.begin() + static_cast<std::ptrdiff_t>(insertIndex),
-    std::make_move_iterator(generatedLayouts.begin()),
-    std::make_move_iterator(generatedLayouts.end()));
+  const std::size_t fixedPrefixLength = fixedManagedLayoutPrefixLength(m_layouts);
+  std::vector<Layout> orderedLayouts;
+  orderedLayouts.reserve(m_layouts.size() + generatedLayouts.size());
+
+  for (auto& layout : generatedLayouts) {
+    if (isOneUpLayoutKind(layout.kind())) {
+      orderedLayouts.emplace_back(std::move(layout));
+    }
+  }
+
+  orderedLayouts.insert(
+    orderedLayouts.end(),
+    std::make_move_iterator(m_layouts.begin()),
+    std::make_move_iterator(m_layouts.begin() + static_cast<std::ptrdiff_t>(fixedPrefixLength)));
+
+  for (auto& layout : generatedLayouts) {
+    if (!isOneUpLayoutKind(layout.kind())) {
+      orderedLayouts.emplace_back(std::move(layout));
+    }
+  }
+
+  orderedLayouts.insert(
+    orderedLayouts.end(),
+    std::make_move_iterator(m_layouts.begin() + static_cast<std::ptrdiff_t>(fixedPrefixLength)),
+    std::make_move_iterator(m_layouts.end()));
+  m_layouts = std::move(orderedLayouts);
 
   auto currentLayoutIt = std::find_if(m_layouts.begin(), m_layouts.end(), [&currentLayoutUid](const Layout& layout) {
     return layout.uid() == currentLayoutUid;
@@ -1445,7 +1527,6 @@ bool WindowData::applyLayoutPresets(
     return false;
   }
 
-  const uuid_range_t orderedImageUids = appData.imageUidsOrdered();
   for (auto& layout : restoredLayouts) {
     setDefaultRenderedImagesForLayout(layout, appData);
   }
@@ -1489,7 +1570,7 @@ void WindowData::resetDefaultLayouts()
 void WindowData::resetToThreeUpLayout()
 {
   clearLayouts();
-  m_layouts.emplace_back(createTriLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
+  m_layouts.emplace_back(createThreeUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
   setCurrentLayoutIndex(0);
   setWindowSize(m_windowSize.x, m_windowSize.y);
   setFramebufferSize(m_framebufferSize.x, m_framebufferSize.y);
@@ -1785,6 +1866,15 @@ std::string WindowData::layoutDisplayName(std::size_t index) const
   }
 
   const Layout& layout = m_layouts.at(index);
+  if (LayoutKind::MultiImageGrid == layout.kind() || LayoutKind::AxCorSagByImage == layout.kind()) {
+    return tiledLayoutDisplayName(layout, "Grid");
+  }
+  if (LayoutKind::Custom == layout.kind() && layout.isLightbox()) {
+    return tiledLayoutDisplayName(layout, "Lightbox");
+  }
+  if (LayoutKind::Custom == layout.kind()) {
+    return layout.displayName();
+  }
   return std::string{layout::layoutDisplayName(layout.kind(), layout.isLightbox())};
 }
 
@@ -1831,6 +1921,28 @@ void WindowData::cycleCurrentLayout(int step)
   const int i = static_cast<int>(currentLayoutIndex());
   const int N = static_cast<int>(numLayouts());
   setCurrentLayoutIndex(static_cast<size_t>((N + i + step) % N));
+}
+
+void WindowData::moveLayout(std::size_t fromIndex, std::size_t toIndex)
+{
+  if (fromIndex >= m_layouts.size() || toIndex >= m_layouts.size() || fromIndex == toIndex) {
+    return;
+  }
+
+  const uuid currentLayoutUid = m_layouts.at(m_currentLayout).uid();
+  Layout layout = std::move(m_layouts.at(fromIndex));
+  m_layouts.erase(m_layouts.begin() + static_cast<std::ptrdiff_t>(fromIndex));
+  m_layouts.insert(m_layouts.begin() + static_cast<std::ptrdiff_t>(toIndex), std::move(layout));
+
+  auto currentLayoutIt = std::find_if(m_layouts.begin(), m_layouts.end(), [&currentLayoutUid](const Layout& candidate) {
+    return candidate.uid() == currentLayoutUid;
+  });
+  m_currentLayout = currentLayoutIt == m_layouts.end()
+                      ? 0
+                      : static_cast<std::size_t>(std::distance(m_layouts.begin(), currentLayoutIt));
+  if (m_activeViewUid && !getCurrentView(*m_activeViewUid)) {
+    m_activeViewUid = std::nullopt;
+  }
 }
 
 const Viewport& WindowData::viewport() const

@@ -553,16 +553,7 @@ glm::vec3 snapWorldPointToImageVoxels(
 
 std::size_t computeNumImageSlicesAlongWorldDirection(const Image& image, const glm::vec3& worldDir)
 {
-  const glm::mat3 pixel_T_world = glm::mat3{image.transformations().pixel_T_worldDef()};
-  const glm::vec3 imgSpacing = image.header().spacing();
-  const glm::vec3 worldBboxSize = image.header().subjectBBoxSize();
-
-  glm::vec3 pixelDir = glm::abs(glm::normalize(glm::vec3{pixel_T_world * worldDir}));
-  pixelDir /= (pixelDir.x + pixelDir.y + pixelDir.z);
-
-  const float spacing = glm::dot(imgSpacing, pixelDir);
-  const std::size_t numSlices = static_cast<std::size_t>(std::ceil(worldBboxSize.z / spacing));
-  return numSlices;
+  return ::computeNumImageSlicesAlongWorldDirection(image, worldDir);
 }
 
 } // namespace data

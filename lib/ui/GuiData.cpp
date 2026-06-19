@@ -1,13 +1,33 @@
 #include "ui/GuiData.h"
 
+#include <algorithm>
+
+namespace
+{
+
+std::uint32_t clampPrecision(std::uint32_t precision)
+{
+  constexpr std::uint32_t kMaxPrecision = 9;
+  return std::min(precision, kMaxPrecision);
+}
+
+std::string precisionFormat(std::uint32_t precision)
+{
+  return std::string("%0.") + std::to_string(clampPrecision(precision)) + "f";
+}
+
+} // namespace
+
 void GuiData::setCoordsPrecisionFormat()
 {
-  m_coordsPrecisionFormat = std::string("%0.") + std::to_string(m_coordsPrecision) + "f";
+  m_coordsPrecision = clampPrecision(m_coordsPrecision);
+  m_coordsPrecisionFormat = precisionFormat(m_coordsPrecision);
 }
 
 void GuiData::setTxPrecisionFormat()
 {
-  m_txPrecisionFormat = std::string("%0.") + std::to_string(m_coordsPrecision) + "f";
+  m_txPrecision = clampPrecision(m_txPrecision);
+  m_txPrecisionFormat = precisionFormat(m_txPrecision);
 }
 
 GuiData::Margins GuiData::computeMargins() const
@@ -58,5 +78,31 @@ GuiData::Margins GuiData::computeMargins() const
     }
   }
 
+  if (m_showLayoutTabs) {
+    if (LayoutTabPlacement::Top == m_layoutTabPlacement) {
+      margins.top += m_layoutTabBarHeight;
+    }
+    else {
+      margins.bottom += m_layoutTabBarHeight;
+    }
+  }
+
   return margins;
+}
+
+float GuiData::topDockOffset() const
+{
+  float offset = 0.0f;
+  if (m_showMainMenuBar) {
+    offset += m_mainMenuBarDims.y;
+  }
+  if (m_showLayoutTabs && LayoutTabPlacement::Top == m_layoutTabPlacement) {
+    offset += m_layoutTabBarHeight;
+  }
+  return offset;
+}
+
+float GuiData::bottomDockOffset() const
+{
+  return (m_showLayoutTabs && LayoutTabPlacement::Bottom == m_layoutTabPlacement) ? m_layoutTabBarHeight : 0.0f;
 }

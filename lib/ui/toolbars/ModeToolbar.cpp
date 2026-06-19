@@ -58,7 +58,7 @@ void renderModeToolbar(
   inactiveColor.w = 0.7f;
 
   ImGuiIO& io = ImGui::GetIO();
-  //    ImGuiWindowFlags windowFlags = sk_toolbarWindowFlags;
+  //    ImGuiWindowFlags windowFlags = k_toolbarWindowFlags;
 
   const bool isHoriz = guiData.m_isModeToolbarHorizontal;
   const int corner = guiData.m_modeToolbarCorner;
@@ -72,10 +72,11 @@ void renderModeToolbar(
       (corner & 1) ? io.DisplaySize.x - padSize.x : padSize.x,
       (corner & 2) ? io.DisplaySize.y - padSize.y : padSize.y);
 
-    if (guiData.m_showMainMenuBar) {
-      if (0 == corner || 1 == corner) {
-        windowPos.y += guiData.m_mainMenuBarDims.y;
-      }
+    if (0 == corner || 1 == corner) {
+      windowPos.y += guiData.topDockOffset();
+    }
+    else if (2 == corner || 3 == corner) {
+      windowPos.y -= guiData.bottomDockOffset();
     }
 
     const ImVec2 windowPosPivot((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
@@ -101,7 +102,7 @@ void renderModeToolbar(
 
   ImGui::PushID("toolbar");
 
-  if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags)) {
+  if (ImGui::Begin(title, toolbarWindowOpen, k_toolbarWindowFlags)) {
     //        isCollapsed = false;
 
     if (s_lastShowState != guiData.m_showModeToolbar) {

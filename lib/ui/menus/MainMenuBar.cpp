@@ -216,8 +216,8 @@ void renderModeMenu(const MainMenuBarCallbacks& callbacks)
 
 void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
 {
-  static const std::string sk_entropySyncLabel = std::string(ICON_FK_EXCHANGE) + " Synchronize Entropy Instances";
-  static const std::string sk_snapSyncLabel = std::string(ICON_FK_EXCHANGE) + " Synchronize with ITK-SNAP";
+  static const std::string k_entropySyncLabel = std::string(ICON_FK_EXCHANGE) + " Synchronize Entropy Instances";
+  static const std::string k_snapSyncLabel = std::string(ICON_FK_EXCHANGE) + " Synchronize with ITK-SNAP";
 
   actionMenuItem(callbacks, "Recenter Views", MainMenuAction::Recenter, "C");
   actionMenuItem(callbacks, "Reset Views and Crosshairs", MainMenuAction::ResetView, "Shift+C");
@@ -237,8 +237,8 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
   ImGui::Separator();
   actionMenuItem(callbacks, "Enter Full Screen", MainMenuAction::ToggleFullScreen, "F4");
   ImGui::Separator();
-  actionMenuItem(callbacks, sk_entropySyncLabel.c_str(), MainMenuAction::ToggleEntropyInstanceSync);
-  if (ImGui::BeginMenu(sk_snapSyncLabel.c_str(), actionEnabled(callbacks, MainMenuAction::ToggleSync))) {
+  actionMenuItem(callbacks, k_entropySyncLabel.c_str(), MainMenuAction::ToggleEntropyInstanceSync);
+  if (ImGui::BeginMenu(k_snapSyncLabel.c_str(), actionEnabled(callbacks, MainMenuAction::ToggleSync))) {
     actionMenuItem(callbacks, "Enable Synchronization", MainMenuAction::ToggleSync);
     ImGui::Separator();
     actionMenuItem(callbacks, "Cursor: Send", MainMenuAction::ToggleSyncSendCursor);
@@ -450,16 +450,17 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
     }
 
     if (ImGui::BeginMenu("Layout")) {
-      if (ImGui::MenuItem("Load Layout...", nullptr, false, callbacks.canUseLayouts)) {
+      if (ImGui::MenuItem("Load Layouts...", nullptr, false, callbacks.canUseLayouts)) {
         main_menu::loadLayouts(callbacks);
       }
-      if (ImGui::MenuItem("Save Layout...", nullptr, false, callbacks.canUseLayouts)) {
+      if (ImGui::MenuItem("Save Layouts...", nullptr, false, callbacks.canUseLayouts)) {
         main_menu::saveLayouts(callbacks);
       }
 
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Add Layout...", MainMenuAction::AddLayout);
       main_menu::actionMenuItem(callbacks, "Remove Current Layout", MainMenuAction::RemoveLayout);
+      main_menu::actionMenuItem(callbacks, "Show Layout Tabs", MainMenuAction::ToggleLayoutTabs);
 
       ImGui::Separator();
       if (ImGui::MenuItem("Previous Layout", "[", false, callbacks.canUseLayouts && callbacks.cycleLayouts)) {

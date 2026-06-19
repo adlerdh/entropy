@@ -175,6 +175,10 @@ constexpr std::array sk_uiDensityPresetNames{
   EnumName{UiDensityPreset::Default, "default"},
   EnumName{UiDensityPreset::Comfortable, "comfortable"}};
 
+constexpr std::array sk_layoutTabPlacementNames{
+  EnumName{UiLayoutTabPlacement::Top, "top"},
+  EnumName{UiLayoutTabPlacement::Bottom, "bottom"}};
+
 constexpr std::array sk_crosshairsSnappingNames{
   EnumName{CrosshairsSnapping::Disabled, "disabled"},
   EnumName{CrosshairsSnapping::ReferenceImage, "referenceImage"},
@@ -261,7 +265,9 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
       {"font", enumToName(settings.uiFontFamily(), sk_uiFontNames)},
       {"colorScheme", enumToName(settings.uiColorPreset(), sk_uiColorPresetNames)},
       {"density", enumToName(settings.uiDensityPreset(), sk_uiDensityPresetNames)},
-      {"windowBackgroundOpacity", settings.uiWindowBgOpacity()}}},
+      {"windowBackgroundOpacity", settings.uiWindowBgOpacity()},
+      {"showLayoutTabs", settings.showLayoutTabs()},
+      {"layoutTabsPosition", enumToName(settings.layoutTabPlacement(), sk_layoutTabPlacementNames)}}},
     {"views",
      {{"showImageBorders", renderPreferences.showImageBorders},
       {"showOverlays", settings.overlays()},
@@ -395,6 +401,16 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
         opacity != interface->end() && opacity->is_number())
     {
       settings.setUiWindowBgOpacity(opacity->get<float>());
+    }
+    if (const auto showTabs = interface->find("showLayoutTabs"); showTabs != interface->end() && showTabs->is_boolean())
+    {
+      settings.setShowLayoutTabs(showTabs->get<bool>());
+    }
+    if (
+      const auto parsed =
+        enumFromName<UiLayoutTabPlacement>(interface->value("layoutTabsPosition", ""), sk_layoutTabPlacementNames))
+    {
+      settings.setLayoutTabPlacement(*parsed);
     }
   }
 

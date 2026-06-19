@@ -44,7 +44,7 @@ void renderAnnotationToolbar(
 
   ImGui::PushID("annotToolbar");
 
-  //    ImGuiWindowFlags windowFlags = sk_toolbarWindowFlags;
+  //    ImGuiWindowFlags windowFlags = k_toolbarWindowFlags;
 
   if (corner != -1) {
     //        windowFlags |= ImGuiWindowFlags_NoMove;
@@ -73,7 +73,7 @@ void renderAnnotationToolbar(
 
   const char* title = ((isHoriz /*| isCollapsed*/) ? "Annotation###AnnotToolbarWindow" : "###AnnotToolbarWindow");
 
-  if (ImGui::Begin(title, toolbarWindowOpen, sk_toolbarWindowFlags)) {
+  if (ImGui::Begin(title, toolbarWindowOpen, k_toolbarWindowFlags)) {
     int id = 0;
 
     ImGui::PushStyleColor(ImGuiCol_Button, inactiveColor); // PUSH color

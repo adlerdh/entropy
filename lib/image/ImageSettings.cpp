@@ -1079,8 +1079,8 @@ void ImageSettings::updateWithNewComponentStatistics(
         computeNumHistogramBins(setting.m_histogramSettings.m_numBinsMethod, m_numPixels, m_componentStats[i]);
 
       if (!numBins) {
-        spdlog::warn("Could not compute number of histogram for component {} of image {}", i, m_displayName);
-        spdlog::info("Falling back to Sturge's method for computing number of histogram bins");
+        spdlog::debug("Could not compute histogram bin count for component {} of image {}", i, m_displayName);
+        spdlog::debug("Falling back to Sturge's method for computing histogram bin count");
 
         setting.m_histogramSettings.m_numBinsMethod = NumBinsComputationMethod::Sturges;
         numBins =

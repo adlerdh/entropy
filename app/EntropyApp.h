@@ -13,6 +13,7 @@
 
 #include "rendering/Rendering.h"
 #include "ui/ImGuiWrapper.h"
+#include "viewer/ViewTypes.h"
 
 #include "windowing/GlfwWrapper.h"
 
@@ -86,6 +87,7 @@ public:
   void requestQuitApp();
   void quitAppWithoutPrompt();
   void closeProject();
+  void continueAfterUnsavedProjectPrompt();
 
   /**
    * @brief Load a serialized image from disk
@@ -188,6 +190,33 @@ private:
     std::function<void()> onLoadFailed,
     bool showLoadingOverlay = true);
   void beginLoadProject(serialize::EntropyProject project, std::optional<std::filesystem::path> projectFileName);
+  /**
+   * @brief Load image files after any unsaved-project prompt has been resolved.
+   * @param fileNames Image paths to load into a new project.
+   */
+  void performLoadImageFiles(const std::vector<std::filesystem::path>& fileNames);
+
+  /**
+   * @brief Open DICOM inputs after any unsaved-project prompt has been resolved.
+   * @param folderNames DICOM folders or files to scan.
+   */
+  void performOpenDicomSeriesFolders(const std::vector<std::filesystem::path>& folderNames);
+
+  /**
+   * @brief Load a project file after any unsaved-project prompt has been resolved.
+   * @param fileName Project file to load.
+   */
+  void performLoadProjectFile(const std::filesystem::path& fileName);
+
+  /**
+   * @brief Ask before replacing a dirty project.
+   * @param action Pending action to continue if the user saves or discards changes.
+   * @return True when user confirmation is required.
+   */
+  bool requestProjectReplacement(GuiData::UnsavedProjectAction action);
+
+  /** @brief Clear pending paths captured for a deferred project replacement. */
+  void clearPendingProjectReplacement();
   void continueLargeImageProjectPreflight();
   void handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision decision);
   bool loadProject(const serialize::EntropyProject& project);
@@ -217,6 +246,12 @@ private:
    * @throws Propagates image-loading exceptions from the image library.
    */
   std::pair<std::optional<uuids::uuid>, bool> loadDicomSeriesImage(const dicom::SeriesInfo& series);
+
+  /**
+   * @brief Native slice view type for each loaded image that came from a DICOM series.
+   * @return Map from image UID to the nearest axial, coronal, or sagittal slice orientation.
+   */
+  std::unordered_map<uuids::uuid, ViewType> dicomNativeViewTypesByImage() const;
 
   std::future<void> m_futureLoadProject;
   std::future<dicom::DiscoverResult> m_futureDiscoverDicom;
@@ -268,6 +303,7 @@ private:
   std::optional<std::filesystem::path> m_pendingLargeProjectFileName = std::nullopt;
   std::size_t m_pendingLargeProjectImageIndex = 0;
   std::optional<serialize::EntropyProject> m_savedProjectSnapshot = std::nullopt;
+  std::vector<std::filesystem::path> m_pendingProjectReplacementPaths;
 
   GlfwWrapper m_glfw;                                       //!< GLFW wrapper
   AppData m_data;                                           //!< Application data

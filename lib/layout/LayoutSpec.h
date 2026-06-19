@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <optional>
 #include <set>
+#include <string>
 #include <vector>
 
 namespace layout
@@ -61,6 +62,7 @@ struct ViewSpec
 struct LayoutSpec
 {
   int m_kind = 0;                                         //!< Serialized `LayoutKind` value.
+  std::string m_displayName;                              //!< User name for custom layouts.
   bool m_isLightbox = false;                              //!< Whether this layout behaves as a lightbox.
   int m_viewType = 0;                                     //!< Default serialized `ViewType` value.
   int m_renderMode = 0;                                   //!< Default serialized `ViewRenderMode` value.

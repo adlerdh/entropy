@@ -2,6 +2,8 @@
 #include "common/UuidUtility.h"
 #include "logic/app/Data.h"
 
+#include <utility>
+
 namespace
 {
 using uuid = uuids::uuid;
@@ -33,6 +35,7 @@ Layout::Layout(Layout&& other) noexcept
   m_uid(std::move(other.m_uid))
   , m_isLightbox(other.m_isLightbox)
   , m_kind(other.m_kind)
+  , m_displayName(std::move(other.m_displayName))
   , m_views(std::move(other.m_views))
   , m_orderedViewUids(std::move(other.m_orderedViewUids))
   , m_cameraSyncGroups(std::move(other.m_cameraSyncGroups))
@@ -46,11 +49,19 @@ Layout& Layout::operator=(Layout&& other) noexcept
     m_uid = std::move(other.m_uid);
     m_isLightbox = other.m_isLightbox;
     m_kind = other.m_kind;
+    m_displayName = std::move(other.m_displayName);
     m_views = std::move(other.m_views);
     m_orderedViewUids = std::move(other.m_orderedViewUids);
     m_cameraSyncGroups = std::move(other.m_cameraSyncGroups);
   }
   return *this;
+}
+
+void Layout::replaceContentsPreservingUid(Layout&& other) noexcept
+{
+  const uuid uid = m_uid;
+  *this = std::move(other);
+  m_uid = uid;
 }
 
 void Layout::setImageRendered(const AppData& appData, std::size_t index, bool visible)
@@ -132,6 +143,16 @@ LayoutKind Layout::kind() const
 void Layout::setKind(LayoutKind kind)
 {
   m_kind = kind;
+}
+
+const std::string& Layout::displayName() const
+{
+  return m_displayName;
+}
+
+void Layout::setDisplayName(std::string displayName)
+{
+  m_displayName = displayName.empty() ? std::string{"Custom"} : std::move(displayName);
 }
 
 bool Layout::addView(std::unique_ptr<View> view)

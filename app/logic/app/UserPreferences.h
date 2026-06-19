@@ -58,7 +58,7 @@ struct RenderPreferences
   float scaleBarTargetFraction = 0.2f;
   float scaleBarMarginPx = 12.0f;
 
-  bool showLightboxOffsetLabels = false;
+  bool showLightboxOffsetLabels = true;
   glm::vec4 lightboxOffsetLabelColor{0.75f, 0.75f, 0.75f, 0.8f};
 
   bool floatingPointLinearInterpolation = false;
