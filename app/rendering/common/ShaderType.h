@@ -22,6 +22,8 @@ enum class ShaderProgramType
   DifferenceCubic,
   LocalNccLinear,
   LocalNccCubic,
+  LocalLinearResidualLinear,
+  LocalLinearResidualCubic,
   OverlapLinear,
   OverlapCubic,
   AsciiPost,

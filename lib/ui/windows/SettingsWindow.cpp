@@ -33,6 +33,9 @@ namespace
 static constexpr bool k_recenterCrosshairs = true;
 static constexpr bool k_realignCrosshairs = true;
 static constexpr bool k_doNotRecenterOnCurrentCrosshairsPosition = false;
+
+void requestResetInterfaceSettings(const SettingsPersistenceCallbacks& persistenceCallbacks);
+void renderResetInterfaceSettingsPopup(const SettingsPersistenceCallbacks& persistenceCallbacks);
 static constexpr bool k_doNotResetObliqueOrientation = false;
 static constexpr bool k_resetZoom = true;
 
@@ -302,9 +305,15 @@ bool renderLocalNccSettings(
   const std::function<std::size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap)
 {
-  if (!ImGui::CollapsingHeader("Local Normalized Cross-Correlation Metric", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (!ImGui::CollapsingHeader("Local normalized cross-correlation metric", ImGuiTreeNodeFlags_DefaultOpen)) {
     return false;
   }
+
+  ImGui::TextWrapped(
+    "Local NCC compares the pattern of intensities inside a small patch, so it can show agreement even when image "
+    "intensities differ by scale or offset. Higher correlation means better local agreement; dissimilarity converts "
+    "poor agreement into brighter mismatch values.");
+  ImGui::Spacing();
 
   const RenderData::LocalNccPresentation presentation = renderData.m_localNccPresentation;
   if (ImGui::RadioButton("Dissimilarity", RenderData::LocalNccPresentation::Dissimilarity == presentation)) {
@@ -403,6 +412,104 @@ bool renderLocalNccSettings(
   ImGui::SameLine();
   if (ImGui::RadioButton("Invalid gray", RenderData::LocalNccInvalidStyle::Gray == invalidStyle)) {
     renderData.m_localNccInvalidStyle = RenderData::LocalNccInvalidStyle::Gray;
+  }
+  ImGui::SameLine();
+  helpMarker("How low-variance or insufficient-overlap patches are drawn.");
+
+  return true;
+}
+
+bool renderLocalLinearResidualSettings(
+  AppData& appData,
+  RenderData& renderData,
+  const std::function<void(void)>& updateMetricUniforms,
+  const std::function<std::size_t(void)>& getNumImageColorMaps,
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap)
+{
+  if (!ImGui::CollapsingHeader("Local linear residual metric", ImGuiTreeNodeFlags_DefaultOpen)) {
+    return false;
+  }
+
+  ImGui::TextWrapped(
+    "This metric fits moving = a * fixed + b inside each local patch and displays the remaining residual error. Low "
+    "values mean the images match after local gain and bias correction; the fitted a and b coefficients are used "
+    "internally and are not displayed by this residual map.");
+  ImGui::Spacing();
+
+  renderMetricSettingsPanel(
+    renderData.m_localLinearResidualParams,
+    appData.guiData().m_showLocalLinearResidualColormapWindow,
+    "localLinearResidual",
+    updateMetricUniforms,
+    getNumImageColorMaps,
+    getImageColorMap);
+
+  ImGui::Spacing();
+
+  const float controlLabelWidth = std::max(
+    {visibleLabelWidth("Patch size"),
+     visibleLabelWidth("Sample spacing"),
+     visibleLabelWidth("Minimum valid fraction"),
+     visibleLabelWidth("Variance epsilon")});
+  const float controlWidth = fillWidthForLabelColumn(controlLabelWidth);
+
+  constexpr std::array<std::pair<int, const char*>, 5> k_patchSizes{
+    {{1, "3 x 3"}, {2, "5 x 5"}, {3, "7 x 7"}, {4, "9 x 9"}, {5, "11 x 11"}}};
+  int patchIndex = 2;
+  for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
+    if (renderData.m_localLinearResidualPatchRadius == k_patchSizes[i].first) {
+      patchIndex = static_cast<int>(i);
+      break;
+    }
+  }
+  ImGui::SetNextItemWidth(controlWidth);
+  if (ImGui::BeginCombo("Patch size", k_patchSizes[static_cast<std::size_t>(patchIndex)].second)) {
+    for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
+      const bool selected = static_cast<int>(i) == patchIndex;
+      if (ImGui::Selectable(k_patchSizes[i].second, selected)) {
+        renderData.m_localLinearResidualPatchRadius = k_patchSizes[i].first;
+      }
+      if (selected) {
+        ImGui::SetItemDefaultFocus();
+      }
+    }
+    ImGui::EndCombo();
+  }
+  ImGui::SameLine();
+  helpMarker("Number of view-plane samples used to fit the local linear intensity model.");
+
+  float sampleSpacing = renderData.m_localLinearResidualSampleSpacing;
+  ImGui::SetNextItemWidth(controlWidth);
+  if (mySliderF32("Sample spacing", &sampleSpacing, 0.5f, 4.0f, "%.2f x")) {
+    renderData.m_localLinearResidualSampleSpacing = sampleSpacing;
+  }
+  ImGui::SameLine();
+  helpMarker("Patch sample spacing in reference-image voxel steps along the view-plane axes.");
+
+  float minValidFraction = renderData.m_localLinearResidualMinValidFraction;
+  ImGui::SetNextItemWidth(controlWidth);
+  if (mySliderF32("Minimum valid fraction", &minValidFraction, 0.1f, 1.0f, "%.2f")) {
+    renderData.m_localLinearResidualMinValidFraction = minValidFraction;
+  }
+  ImGui::SameLine();
+  helpMarker("Minimum fraction of patch samples that must lie inside both images.");
+
+  float varianceEpsilon = renderData.m_localLinearResidualVarianceEpsilon;
+  ImGui::PushItemWidth(controlWidth);
+  if (ImGui::InputFloat("Variance epsilon", &varianceEpsilon, 0.0f, 0.0f, "%.1e")) {
+    renderData.m_localLinearResidualVarianceEpsilon = std::max(varianceEpsilon, 0.0f);
+  }
+  ImGui::PopItemWidth();
+  ImGui::SameLine();
+  helpMarker("Patches with lower reference-image variance cannot produce a stable local gain.");
+
+  const RenderData::LocalNccInvalidStyle invalidStyle = renderData.m_localLinearResidualInvalidStyle;
+  if (ImGui::RadioButton("Invalid transparent", RenderData::LocalNccInvalidStyle::Transparent == invalidStyle)) {
+    renderData.m_localLinearResidualInvalidStyle = RenderData::LocalNccInvalidStyle::Transparent;
+  }
+  ImGui::SameLine();
+  if (ImGui::RadioButton("Invalid gray", RenderData::LocalNccInvalidStyle::Gray == invalidStyle)) {
+    renderData.m_localLinearResidualInvalidStyle = RenderData::LocalNccInvalidStyle::Gray;
   }
   ImGui::SameLine();
   helpMarker("How low-variance or insufficient-overlap patches are drawn.");
@@ -838,7 +945,8 @@ void renderInterfaceTab(
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
   const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
   const std::function<void(float opacity)>& applyUiWindowBgOpacity,
-  const std::function<void()>& readjustViewport)
+  const std::function<void()>& readjustViewport,
+  const SettingsPersistenceCallbacks& persistenceCallbacks)
 {
   bool showLayoutTabs = appData.settings().showLayoutTabs();
   if (ImGui::Checkbox("Show layout tab bar", &showLayoutTabs)) {
@@ -971,6 +1079,13 @@ void renderInterfaceTab(
         applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
       }
     }
+
+    ImGui::Spacing();
+    if (ImGui::Button("Reset interface settings")) {
+      requestResetInterfaceSettings(persistenceCallbacks);
+    }
+    ImGui::SameLine();
+    helpMarker("Reset saved window positions, docking layout, table columns, and similar interface state.");
   }
   finishSettingsSection(lookAndFeelOpen);
 }
@@ -1325,8 +1440,14 @@ void renderMetricsTab(
   ImGui::PushID("metrics"); /*** PushID metrics ***/
 
   ImGui::PushID("diff");
-  const bool differenceOpen = ImGui::CollapsingHeader("Difference Metric", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool differenceOpen = ImGui::CollapsingHeader("Difference metrics", ImGuiTreeNodeFlags_DefaultOpen);
   if (differenceOpen) {
+    ImGui::TextWrapped(
+      "Difference compares the displayed intensity values directly at each location. Low values mean the images have "
+      "similar intensities; high values mean they differ, so this metric works best when both images use comparable "
+      "intensity scales.");
+    ImGui::Spacing();
+
     // Difference type:
     if (ImGui::RadioButton("Absolute", false == renderData.m_useSquare)) {
       renderData.m_useSquare = false;
@@ -1358,13 +1479,15 @@ void renderMetricsTab(
 
   finishSettingsSection(localNccOpen);
 
-  ImGui::BeginDisabled();
-  const bool localLinearResidualOpen =
-    ImGui::CollapsingHeader("Local Linear Residual Metric", ImGuiTreeNodeFlags_DefaultOpen);
-  if (localLinearResidualOpen) {
-    ImGui::TextWrapped("Placeholder for a future comparison metric that fits a local linear intensity model.");
-  }
-  ImGui::EndDisabled();
+  ImGui::PushID("localLinearResidual");
+  const bool localLinearResidualOpen = renderLocalLinearResidualSettings(
+    appData,
+    renderData,
+    updateMetricUniforms,
+    getNumImageColorMaps,
+    getImageColorMap);
+  ImGui::PopID();
+
   finishSettingsSection(localLinearResidualOpen);
 
   ImGui::PopID(); /*** PopID metrics ***/
@@ -1377,7 +1500,7 @@ void renderComparisonModesTab(RenderData& renderData)
 {
   ImGui::PushID("comparison"); /*** PushID metrics ***/
 
-  if (!ImGui::CollapsingHeader("Comparison Modes", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (!ImGui::CollapsingHeader("Comparison modes", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PopID(); /*** PopID comparison ***/
     return;
   }
@@ -1768,6 +1891,61 @@ void renderRestoreDefaultsPopup(const SettingsPersistenceCallbacks& persistenceC
 }
 
 /**
+ * @brief Confirm and then reset ImGui interface state.
+ * @param persistenceCallbacks File-backed user settings callbacks.
+ */
+void requestResetInterfaceSettings(const SettingsPersistenceCallbacks& persistenceCallbacks)
+{
+  const auto result = native_dialog::showMessageDialog(
+    {"Reset interface settings?",
+     "Reset saved interface layout and panel settings?",
+     "This clears saved window positions, docking layout, table columns, and similar ImGui interface state.",
+     "Reset Interface",
+     "Cancel",
+     ""});
+
+  if (result && native_dialog::MessageDialogResult::FirstButton == *result) {
+    if (persistenceCallbacks.resetInterfaceSettings) {
+      persistenceCallbacks.resetInterfaceSettings();
+    }
+    return;
+  }
+
+  if (!result) {
+    ImGui::OpenPopup("Reset interface settings?");
+  }
+}
+
+/**
+ * @brief Render the ImGui fallback confirmation popup for resetting interface state.
+ * @param persistenceCallbacks File-backed user settings callbacks.
+ */
+void renderResetInterfaceSettingsPopup(const SettingsPersistenceCallbacks& persistenceCallbacks)
+{
+  if (ImGui::BeginPopupModal("Reset interface settings?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::TextWrapped("Reset saved interface layout and panel settings?");
+    ImGui::Spacing();
+    ImGui::TextWrapped(
+      "This clears saved window positions, docking layout, table columns, and similar ImGui interface state.");
+    ImGui::Spacing();
+
+    if (ImGui::Button("Reset Interface")) {
+      if (persistenceCallbacks.resetInterfaceSettings) {
+        persistenceCallbacks.resetInterfaceSettings();
+      }
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+}
+
+/**
  * @brief Render the Annotations settings page contents.
  */
 void renderAnnotationsTab(RenderData& renderData)
@@ -1910,6 +2088,7 @@ static void renderSettingsPage(
   const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
   const std::function<void(float opacity)>& applyUiWindowBgOpacity,
   const std::function<void()>& readjustViewport,
+  const SettingsPersistenceCallbacks& persistenceCallbacks,
   const AllViewsRecenterType& recenterAllViews)
 {
   ImGui::TextUnformatted(ui_settings::settingsPageLabel(page));
@@ -1925,7 +2104,8 @@ static void renderSettingsPage(
         applyUiColorPreset,
         applyUiDensityPreset,
         applyUiWindowBgOpacity,
-        readjustViewport);
+        readjustViewport,
+        persistenceCallbacks);
       if (ImGui::CollapsingHeader("Precision", ImGuiTreeNodeFlags_DefaultOpen)) {
         renderPrecisionTab(appData);
       }
@@ -1940,8 +2120,8 @@ static void renderSettingsPage(
       renderSegmentationTab(appData, renderData);
       break;
     case GuiData::SettingsTab::Comparison:
-      renderMetricsTab(appData, renderData, updateMetricUniforms, getNumImageColorMaps, getImageColorMap);
       renderComparisonModesTab(renderData);
+      renderMetricsTab(appData, renderData, updateMetricUniforms, getNumImageColorMaps, getImageColorMap);
       break;
     case GuiData::SettingsTab::Rendering:
       renderRenderingTab(renderData);
@@ -2020,6 +2200,7 @@ void renderSettingsWindow(
             applyUiDensityPreset,
             applyUiWindowBgOpacity,
             readjustViewport,
+            persistenceCallbacks,
             recenterAllViews);
         }
         ImGui::EndChild();
@@ -2076,6 +2257,7 @@ void renderSettingsWindow(
     ImGui::EndChild();
 
     renderRestoreDefaultsPopup(persistenceCallbacks);
+    renderResetInterfaceSettingsPopup(persistenceCallbacks);
   }
 
   ImGui::End();

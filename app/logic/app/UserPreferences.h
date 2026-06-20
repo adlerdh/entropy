@@ -88,6 +88,7 @@ struct RenderPreferences
   bool squaredDifference = true;
   MetricParams squaredDifferenceMetric;
   MetricParams localNccMetric;
+  MetricParams localLinearResidualMetric;
   int localNccPatchRadius = 3;
   float localNccSampleSpacing = 1.0f;
   float localNccMinValidFraction = 0.75f;
@@ -95,6 +96,11 @@ struct RenderPreferences
   bool localNccIgnoreNegativeCorrelation = true;
   LocalNccPresentation localNccPresentation = LocalNccPresentation::Dissimilarity;
   LocalNccInvalidStyle localNccInvalidStyle = LocalNccInvalidStyle::Transparent;
+  int localLinearResidualPatchRadius = 3;
+  float localLinearResidualSampleSpacing = 1.0f;
+  float localLinearResidualMinValidFraction = 0.75f;
+  float localLinearResidualVarianceEpsilon = 1.0e-5f;
+  LocalNccInvalidStyle localLinearResidualInvalidStyle = LocalNccInvalidStyle::Transparent;
   bool overlayMagentaCyan = true;
   glm::ivec2 quadrants{true, true};
   int checkerboardSquares = 10;

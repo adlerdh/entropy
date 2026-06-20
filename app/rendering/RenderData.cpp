@@ -165,6 +165,7 @@ RenderData::RenderData()
 
   , m_squaredDifferenceParams()
   , m_localNccParams()
+  , m_localLinearResidualParams()
   , m_jointHistogramParams()
 
   , m_edgeMagnitudeSmoothing(1.0f, 1.0f)

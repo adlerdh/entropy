@@ -198,9 +198,10 @@ struct GuiData
   /// Map from image UID to whether its image color map popup is shown from the Image Properties window.
   std::unordered_map<uuids::uuid, bool> m_showImageColormapWindow;
 
-  bool m_showDifferenceColormapWindow = false;     //!< Show the difference metric color map popup.
-  bool m_showLocalNccColormapWindow = false;       //!< Show the local NCC metric color map popup.
-  bool m_showJointHistogramColormapWindow = false; //!< Show the joint histogram metric color map popup.
+  bool m_showDifferenceColormapWindow = false;          //!< Show the difference metric color map popup.
+  bool m_showLocalNccColormapWindow = false;            //!< Show the local NCC metric color map popup.
+  bool m_showLocalLinearResidualColormapWindow = false; //!< Show the local linear residual metric color map popup.
+  bool m_showJointHistogramColormapWindow = false;      //!< Show the joint histogram metric color map popup.
 
   /// Update m_coordsPrecisionFormat from m_coordsPrecision.
   void setCoordsPrecisionFormat();

@@ -17,6 +17,8 @@ std::string typeString(const ViewRenderMode& mode)
       return "Difference";
     case ViewRenderMode::LocalNcc:
       return "Local NCC";
+    case ViewRenderMode::LocalLinearResidual:
+      return "Local Linear Residual";
     case ViewRenderMode::JointHistogram:
       return "Joint Histogram";
     case ViewRenderMode::VolumeRender:
@@ -67,6 +69,8 @@ std::string descriptionString(const ViewRenderMode& mode)
       return "Difference metric";
     case ViewRenderMode::LocalNcc:
       return "Local normalized cross-correlation metric";
+    case ViewRenderMode::LocalLinearResidual:
+      return "Local linear residual metric";
     case ViewRenderMode::JointHistogram:
       return "Joint histogram metric";
     case ViewRenderMode::VolumeRender:

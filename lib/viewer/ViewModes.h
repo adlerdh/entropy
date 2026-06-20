@@ -11,16 +11,17 @@
  */
 enum class ViewRenderMode
 {
-  Image,          //!< Images rendered in 2D using color maps.
-  Checkerboard,   //!< Image pair rendered in 2D using checkerboard pattern.
-  Quadrants,      //!< Image pair rendered in 2D, with each image occupying opposing view quadrants.
-  Flashlight,     //!< Image pair rendered in 2D, with moving image appearing under the crosshairs.
-  Overlay,        //!< Image pair rendered in 2D with overlap highlighted.
-  Difference,     //!< Absolute or squared difference of the image pair rendered in 2D.
-  JointHistogram, //!< Joint intensity histogram of the image pair.
-  VolumeRender,   //!< Volume rendering of one image using raycasting.
-  Disabled,       //!< Disabled (no rendering).
-  LocalNcc,       //!< Local normalized cross-correlation metric for the image pair.
+  Image,               //!< Images rendered in 2D using color maps.
+  Checkerboard,        //!< Image pair rendered in 2D using checkerboard pattern.
+  Quadrants,           //!< Image pair rendered in 2D, with each image occupying opposing view quadrants.
+  Flashlight,          //!< Image pair rendered in 2D, with moving image appearing under the crosshairs.
+  Overlay,             //!< Image pair rendered in 2D with overlap highlighted.
+  Difference,          //!< Absolute or squared difference of the image pair rendered in 2D.
+  JointHistogram,      //!< Joint intensity histogram of the image pair.
+  VolumeRender,        //!< Volume rendering of one image using raycasting.
+  Disabled,            //!< Disabled (no rendering).
+  LocalNcc,            //!< Local normalized cross-correlation metric for the image pair.
+  LocalLinearResidual, //!< Residual after fitting a local linear intensity model.
   NumElements
 };
 
@@ -48,6 +49,7 @@ inline std::vector<ViewRenderMode> const All2dViewRenderModes = {
   ViewRenderMode::Overlay,
   ViewRenderMode::Difference,
   ViewRenderMode::LocalNcc,
+  ViewRenderMode::LocalLinearResidual,
   ViewRenderMode::JointHistogram,
   ViewRenderMode::Disabled};
 

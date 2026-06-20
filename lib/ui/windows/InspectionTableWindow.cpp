@@ -53,10 +53,16 @@ constexpr std::array<const char*, sk_inspectorColumnCount> sk_inspectorColumnNam
   "Label",
   "Region",
   "Voxel",
-  "Subject LPS (mm)"};
+  "Subject (mm)"};
 
 constexpr std::array<float, sk_inspectorColumnCount>
-  sk_inspectorColumnDefaultWidths{150.0f, 75.0f, 75.0f, 85.0f, 50.0f, 100.0f, 125.0f, 225.0f};
+  k_inspectorColumnMinWidths{120.0f, 64.0f, 72.0f, 78.0f, 48.0f, 72.0f, 96.0f, 148.0f};
+
+constexpr std::array<float, sk_inspectorColumnCount>
+  k_inspectorColumnDefaultWidths{150.0f, 82.0f, 122.0f, 100.0f, 62.0f, 140.0f, 125.0f, 210.0f};
+
+constexpr std::array<float, sk_inspectorColumnCount>
+  k_inspectorColumnMaxWidths{280.0f, 110.0f, 130.0f, 115.0f, 72.0f, 180.0f, 150.0f, 230.0f};
 
 constexpr std::array<bool, sk_inspectorColumnCount>
   sk_inspectorColumnCanHide{false, true, true, true, true, true, true, true};
@@ -80,6 +86,43 @@ std::optional<double> activeComponentPercentile(const Image& image, const std::v
 
   const double percentile = 50.0 * (quantile.lowerQuantile + quantile.upperQuantile);
   return std::clamp(percentile, 0.0, 100.0);
+}
+
+float inspectionColumnWidthForText(const char* text)
+{
+  const ImGuiStyle& style = ImGui::GetStyle();
+  return ImGui::CalcTextSize(text).x + 2.0f * (style.CellPadding.x + style.FramePadding.x);
+}
+
+float clampInspectionColumnWidth(InspectorColumn column, float width)
+{
+  const std::size_t index = static_cast<std::size_t>(column);
+  return std::clamp(width, k_inspectorColumnMinWidths.at(index), k_inspectorColumnMaxWidths.at(index));
+}
+
+const char* inspectionColumnTooltip(InspectorColumn column)
+{
+  switch (column) {
+    case InspectorColumn::Value:
+      return "Nearest image voxel value";
+    case InspectorColumn::InterpolatedValue:
+      return "Linearly interpolated image voxel value";
+    case InspectorColumn::Percentile:
+      return "Image voxel value percentile";
+    case InspectorColumn::Label:
+      return "Segmentation label value";
+    case InspectorColumn::Region:
+      return "Segmentation label region name";
+    case InspectorColumn::Voxel:
+      return "Voxel index (i: column, j: row, k: slice)";
+    case InspectorColumn::Subject:
+      return "Subject-space LPS coordinates in millimeters (x: R->L, y: A->P, z: I->S)";
+    case InspectorColumn::Image:
+    case InspectorColumn::Count:
+      break;
+  }
+
+  return nullptr;
 }
 } // namespace
 
@@ -118,6 +161,7 @@ void renderInspectionWindowWithTable(
 
   static bool s_showTitleBar = false;
   static bool s_autoSizeColumnsRequested = false;
+  static std::array<bool, sk_inspectorColumnCount> s_autoSizeColumnRequested{};
 
   // For which images to show coordinates?
   static std::unordered_map<uuid, bool> s_showSubject;
@@ -144,7 +188,11 @@ void renderInspectionWindowWithTable(
       }
       if (ImGui::MenuItem(sk_inspectorColumnNames.at(column), nullptr, visible) && sk_inspectorColumnCanHide.at(column))
       {
-        appData.guiData().m_inspectionColumnVisible.at(column) = !visible;
+        const bool newVisible = !visible;
+        appData.guiData().m_inspectionColumnVisible.at(column) = newVisible;
+        if (newVisible) {
+          s_autoSizeColumnRequested.at(column) = true;
+        }
       }
       if (!sk_inspectorColumnCanHide.at(column)) {
         ImGui::EndDisabled();
@@ -227,6 +275,65 @@ void renderInspectionWindowWithTable(
     renderColumnVisibilityMenu();
   };
 
+  auto columnWidths = [&]() {
+    std::array<float, sk_inspectorColumnCount> widths{};
+    for (std::size_t column = 0; column < widths.size(); ++column) {
+      widths[column] = std::max(
+        k_inspectorColumnDefaultWidths.at(column),
+        inspectionColumnWidthForText(sk_inspectorColumnNames.at(column)));
+    }
+
+    auto expandWidth = [&widths](InspectorColumn column, const char* text) {
+      const std::size_t index = static_cast<std::size_t>(column);
+      widths[index] = std::max(widths[index], inspectionColumnWidthForText(text));
+    };
+
+    expandWidth(InspectorColumn::Value, "-0000.000");
+    expandWidth(InspectorColumn::InterpolatedValue, "-0000.000");
+    expandWidth(InspectorColumn::Percentile, "100.00");
+    expandWidth(InspectorColumn::Label, "00000");
+    expandWidth(InspectorColumn::Voxel, "0000, 0000, 0000");
+    expandWidth(InspectorColumn::Subject, "-000.000, -000.000, -000.000");
+
+    for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
+      const auto imageUid = appData.imageUid(imageIndex);
+      if (!imageUid) continue;
+
+      auto it = s_showSubject.find(*imageUid);
+      if (std::end(s_showSubject) != it && !it->second) continue;
+
+      const auto names = getImageDisplayAndFileName(imageIndex);
+      expandWidth(InspectorColumn::Image, names.first.c_str());
+
+      const Image* image = appData.image(*imageUid);
+      if (!image) continue;
+
+      if (image->header().numComponentsPerPixel() > 1) {
+        expandWidth(InspectorColumn::Value, "-0000.000, -0000.000, -0000.000");
+        expandWidth(InspectorColumn::InterpolatedValue, "-0000.000, -0000.000, -0000.000");
+      }
+
+      if (const auto segLabel = getSegLabel(imageIndex)) {
+        const auto labelText = std::to_string(*segLabel);
+        expandWidth(InspectorColumn::Label, labelText.c_str());
+
+        const auto segUid = appData.imageToActiveSegUid(*imageUid);
+        const Image* seg = segUid ? appData.seg(*segUid) : nullptr;
+        ParcellationLabelTable* table = seg ? getLabelTable(seg->settings().labelTableIndex()) : nullptr;
+        if (table) {
+          const std::string labelName = table->getName(static_cast<uint64_t>(*segLabel));
+          expandWidth(InspectorColumn::Region, labelName.c_str());
+        }
+      }
+    }
+
+    for (std::size_t column = 0; column < widths.size(); ++column) {
+      widths[column] = clampInspectionColumnWidth(static_cast<InspectorColumn>(column), widths[column]);
+    }
+
+    return widths;
+  };
+
   const bool useOverlayPresentation = corner != -1;
   ImGuiWindowFlags windowFlags = sk_windowFlags;
 
@@ -255,6 +362,8 @@ void renderInspectionWindowWithTable(
   if (useOverlayPresentation) {
     ImGui::SetNextWindowBgAlpha(0.0f);
   }
+
+  const std::array<float, sk_inspectorColumnCount> inspectorColumnWidths = columnWidths();
 
   ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, sk_cellPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImGui::GetStyle().FramePadding);
@@ -289,41 +398,40 @@ void renderInspectionWindowWithTable(
     if (ImGui::BeginTable("Image Information", static_cast<int>(sk_inspectorColumnCount), sk_tableFlags)) {
       ImGui::TableSetupScrollFreeze(1, 1);
 
-      // The default widths are approximate
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Image)),
         ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed,
-        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Image)));
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Image)));
 
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Value)),
         ImGuiTableColumnFlags_WidthFixed,
-        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Value)));
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Value)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::InterpolatedValue)),
         ImGuiTableColumnFlags_WidthFixed,
-        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::InterpolatedValue)));
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::InterpolatedValue)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Percentile)),
         ImGuiTableColumnFlags_WidthFixed,
-        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Percentile)));
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Percentile)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Label)),
         ImGuiTableColumnFlags_WidthFixed,
-        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Label)));
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Label)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Region)),
         ImGuiTableColumnFlags_WidthFixed,
-        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Region)));
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Region)));
 
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Voxel)),
         ImGuiTableColumnFlags_WidthFixed,
-        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Voxel)));
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Voxel)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Subject)),
         ImGuiTableColumnFlags_WidthFixed,
-        sk_inspectorColumnDefaultWidths.at(columnIndex(InspectorColumn::Subject)));
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Subject)));
 
       for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
         ImGui::TableSetColumnEnabled(
@@ -331,14 +439,35 @@ void renderInspectionWindowWithTable(
           appData.guiData().m_inspectionColumnVisible.at(column) || !sk_inspectorColumnCanHide.at(column));
       }
 
+      ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
       if (s_autoSizeColumnsRequested) {
-        for (std::size_t column = 0; column < sk_inspectorColumnDefaultWidths.size(); ++column) {
-          ImGui::TableSetColumnWidth(static_cast<int>(column), sk_inspectorColumnDefaultWidths.at(column));
+        for (std::size_t column = 0; column < inspectorColumnWidths.size(); ++column) {
+          if (0 != (ImGui::TableGetColumnFlags(static_cast<int>(column)) & ImGuiTableColumnFlags_IsEnabled)) {
+            ImGui::TableSetColumnWidth(static_cast<int>(column), inspectorColumnWidths.at(column));
+          }
         }
+        s_autoSizeColumnRequested.fill(false);
         s_autoSizeColumnsRequested = false;
       }
+      else {
+        for (std::size_t column = 0; column < s_autoSizeColumnRequested.size(); ++column) {
+          if (!s_autoSizeColumnRequested.at(column)) continue;
+          if (0 == (ImGui::TableGetColumnFlags(static_cast<int>(column)) & ImGuiTableColumnFlags_IsEnabled)) continue;
 
-      ImGui::TableHeadersRow();
+          ImGui::TableSetColumnWidth(static_cast<int>(column), inspectorColumnWidths.at(column));
+          s_autoSizeColumnRequested.at(column) = false;
+        }
+      }
+
+      for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+        ImGui::TableSetColumnIndex(static_cast<int>(column));
+        ImGui::TableHeader(sk_inspectorColumnNames.at(column));
+
+        const char* tooltip = inspectionColumnTooltip(static_cast<InspectorColumn>(column));
+        if (tooltip && ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", tooltip);
+        }
+      }
 
       for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
         const auto imageUid = appData.imageUid(imageIndex);
@@ -658,10 +787,6 @@ void renderInspectionWindowWithTable(
             }
           }
           ImGui::PopItemWidth();
-
-          if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Voxel index (i: column, j: row, k: slice)");
-          }
         }
         else {
           ImGui::TableNextColumn(); // "Voxel"
@@ -689,10 +814,6 @@ void renderInspectionWindowWithTable(
             setSubjectPos(imageIndex, a);
           }
           ImGui::PopItemWidth();
-
-          if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Subject-space LPS coordinates in millimeters (x: R->L, y: A->P, z: I->S)");
-          }
         }
         else {
           ImGui::TableNextColumn(); // "Subject LPS"

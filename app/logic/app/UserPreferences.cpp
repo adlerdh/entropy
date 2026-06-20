@@ -355,6 +355,13 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
         {"minimumValidFraction", renderPreferences.localNccMinValidFraction},
         {"varianceEpsilon", renderPreferences.localNccVarianceEpsilon},
         {"invalidStyle", enumToName(renderPreferences.localNccInvalidStyle, sk_localNccInvalidStyleNames)}}},
+      {"localLinearResidual",
+       {{"metric", metricParamsToJson(renderPreferences.localLinearResidualMetric)},
+        {"patchRadius", renderPreferences.localLinearResidualPatchRadius},
+        {"sampleSpacing", renderPreferences.localLinearResidualSampleSpacing},
+        {"minimumValidFraction", renderPreferences.localLinearResidualMinValidFraction},
+        {"varianceEpsilon", renderPreferences.localLinearResidualVarianceEpsilon},
+        {"invalidStyle", enumToName(renderPreferences.localLinearResidualInvalidStyle, sk_localNccInvalidStyleNames)}}},
       {"overlay", {{"magentaCyan", renderPreferences.overlayMagentaCyan}}},
       {"quadrants",
        {{"x", static_cast<bool>(renderPreferences.quadrants.x)},
@@ -607,6 +614,41 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
       setFloatFromJson(renderPreferences.localNccMinValidFraction, *localNcc, "minimumValidFraction", 0.1f, 1.0f);
       setNonnegativeFloatFromJson(renderPreferences.localNccVarianceEpsilon, *localNcc, "varianceEpsilon");
       renderPreferences.localNccPatchRadius = std::clamp(renderPreferences.localNccPatchRadius, 1, 5);
+    }
+    if (const auto localLinearResidual = comparison->find("localLinearResidual");
+        localLinearResidual != comparison->end() && localLinearResidual->is_object())
+    {
+      if (const auto metric = localLinearResidual->find("metric");
+          metric != localLinearResidual->end() && metric->is_object())
+      {
+        applyMetricParamsFromJson(renderPreferences.localLinearResidualMetric, *metric);
+      }
+      if (
+        const auto parsed = enumFromName<user_preferences::RenderPreferences::LocalNccInvalidStyle>(
+          localLinearResidual->value("invalidStyle", ""),
+          sk_localNccInvalidStyleNames))
+      {
+        renderPreferences.localLinearResidualInvalidStyle = *parsed;
+      }
+      setFromJson(renderPreferences.localLinearResidualPatchRadius, *localLinearResidual, "patchRadius");
+      setFloatFromJson(
+        renderPreferences.localLinearResidualSampleSpacing,
+        *localLinearResidual,
+        "sampleSpacing",
+        0.5f,
+        4.0f);
+      setFloatFromJson(
+        renderPreferences.localLinearResidualMinValidFraction,
+        *localLinearResidual,
+        "minimumValidFraction",
+        0.1f,
+        1.0f);
+      setNonnegativeFloatFromJson(
+        renderPreferences.localLinearResidualVarianceEpsilon,
+        *localLinearResidual,
+        "varianceEpsilon");
+      renderPreferences.localLinearResidualPatchRadius =
+        std::clamp(renderPreferences.localLinearResidualPatchRadius, 1, 5);
     }
     if (const auto overlay = comparison->find("overlay"); overlay != comparison->end() && overlay->is_object()) {
       setFromJson(renderPreferences.overlayMagentaCyan, *overlay, "magentaCyan");

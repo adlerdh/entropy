@@ -1385,6 +1385,7 @@ void Rendering::updateMetricUniforms()
 
   update(m_appData.renderData().m_squaredDifferenceParams, "Difference");
   update(m_appData.renderData().m_localNccParams, "Local NCC");
+  update(m_appData.renderData().m_localLinearResidualParams, "Local Linear Residual");
   update(m_appData.renderData().m_jointHistogramParams, "Joint Histogram");
 }
 
@@ -1606,6 +1607,11 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindMetricImageTextures(
     case ViewRenderMode::LocalNcc: {
       usesMetricColormap = true;
       metricCmapIndex = R.m_localNccParams.m_colorMapIndex;
+      break;
+    }
+    case ViewRenderMode::LocalLinearResidual: {
+      usesMetricColormap = true;
+      metricCmapIndex = R.m_localLinearResidualParams.m_colorMapIndex;
       break;
     }
     case ViewRenderMode::JointHistogram: {
@@ -2202,6 +2208,34 @@ void Rendering::renderAllImagesForView(
           P.setUniform("u_ignoreNegativeCorrelation", R.m_localNccIgnoreNegativeCorrelation);
           P.setUniform("u_presentation", static_cast<int>(R.m_localNccPresentation));
           P.setUniform("u_invalidStyle", static_cast<int>(R.m_localNccInvalidStyle));
+
+          renderOneImage(view, worldOffsetXhairs, P, I, false);
+        }
+        P.stopUse();
+      }
+      else if (ViewRenderMode::LocalLinearResidual == view.renderMode()) {
+        GLShaderProgram& P = useTricubic ? *m_shaderPrograms.at(ShaderProgramType::LocalLinearResidualCubic)
+                                         : *m_shaderPrograms.at(ShaderProgramType::LocalLinearResidualLinear);
+
+        const auto& params = R.m_localLinearResidualParams;
+
+        P.use();
+        {
+          P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
+          P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
+
+          P.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
+          P.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
+          P.setUniform(
+            "u_imgSlopeIntercept",
+            std::vector<glm::vec2>{U[0].largestSlopeIntercept, U[1].largestSlopeIntercept});
+          P.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
+          P.setUniform("u_metricSlopeIntercept", params.m_slopeIntercept);
+          P.setUniform("u_patchRadius", R.m_localLinearResidualPatchRadius);
+          P.setUniform("u_sampleSpacing", R.m_localLinearResidualSampleSpacing);
+          P.setUniform("u_minValidFraction", R.m_localLinearResidualMinValidFraction);
+          P.setUniform("u_varianceEpsilon", R.m_localLinearResidualVarianceEpsilon);
+          P.setUniform("u_invalidStyle", static_cast<int>(R.m_localLinearResidualInvalidStyle));
 
           renderOneImage(view, worldOffsetXhairs, P, I, false);
         }
@@ -2953,6 +2987,24 @@ void Rendering::createShaderPrograms()
   fsLocalNccUniforms.insertUniform("u_presentation", UniformType::Int, 0);
   fsLocalNccUniforms.insertUniform("u_invalidStyle", UniformType::Int, 0);
 
+  Uniforms fsLocalLinearResidualUniforms;
+  fsLocalLinearResidualUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
+  fsLocalLinearResidualUniforms.insertUniform("u_metricCmapTex", UniformType::Sampler, msk_metricCmapTexSampler);
+  fsLocalLinearResidualUniforms.insertUniform(
+    "u_imgSlopeIntercept",
+    UniformType::Vec2Vector,
+    Vec2Vector{sk_zeroVec2, sk_zeroVec2});
+  fsLocalLinearResidualUniforms.insertUniform("u_metricCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsLocalLinearResidualUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
+  fsLocalLinearResidualUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
+  fsLocalLinearResidualUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3);
+  fsLocalLinearResidualUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3);
+  fsLocalLinearResidualUniforms.insertUniform("u_patchRadius", UniformType::Int, 3);
+  fsLocalLinearResidualUniforms.insertUniform("u_sampleSpacing", UniformType::Float, 1.0f);
+  fsLocalLinearResidualUniforms.insertUniform("u_minValidFraction", UniformType::Float, 0.75f);
+  fsLocalLinearResidualUniforms.insertUniform("u_varianceEpsilon", UniformType::Float, 1.0e-5f);
+  fsLocalLinearResidualUniforms.insertUniform("u_invalidStyle", UniformType::Int, 0);
+
   Uniforms fsOverlayUniforms;
   fsOverlayUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
   fsOverlayUniforms.insertUniform("u_imgSlopeIntercept", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
@@ -2961,7 +3013,7 @@ void Rendering::createShaderPrograms()
   fsOverlayUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
   fsOverlayUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
 
-  constexpr std::array<ShaderProgramType, 20> allShaders = {
+  constexpr std::array<ShaderProgramType, 22> allShaders = {
     ShaderProgramType::ImageGrayLinear,
     ShaderProgramType::ImageGrayLinearFloating,
     ShaderProgramType::ImageGrayCubic,
@@ -2980,6 +3032,8 @@ void Rendering::createShaderPrograms()
     ShaderProgramType::DifferenceCubic,
     ShaderProgramType::LocalNccLinear,
     ShaderProgramType::LocalNccCubic,
+    ShaderProgramType::LocalLinearResidualLinear,
+    ShaderProgramType::LocalLinearResidualCubic,
     ShaderProgramType::OverlapLinear,
     ShaderProgramType::OverlapCubic};
 
@@ -3146,6 +3200,18 @@ void Rendering::createShaderPrograms()
       {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep}},
       vsMetricUniforms,
       fsLocalNccUniforms}},
+    {ShaderProgramType::LocalLinearResidualLinear,
+     {"Metric.vs",
+      "LocalLinearResidual.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep}},
+      vsMetricUniforms,
+      fsLocalLinearResidualUniforms}},
+    {ShaderProgramType::LocalLinearResidualCubic,
+     {"Metric.vs",
+      "LocalLinearResidual.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep}},
+      vsMetricUniforms,
+      fsLocalLinearResidualUniforms}},
     {ShaderProgramType::OverlapLinear,
      {"Metric.vs",
       "Overlay.fs",

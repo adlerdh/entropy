@@ -103,6 +103,16 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.localNccIgnoreNegativeCorrelation = false;
   preferences.localNccPresentation = user_preferences::RenderPreferences::LocalNccPresentation::Correlation;
   preferences.localNccInvalidStyle = user_preferences::RenderPreferences::LocalNccInvalidStyle::Gray;
+  preferences.localLinearResidualMetric.colorMapIndex = 7;
+  preferences.localLinearResidualMetric.slopeIntercept = {3.0f, -0.5f};
+  preferences.localLinearResidualMetric.invertColormap = true;
+  preferences.localLinearResidualMetric.continuousColormap = false;
+  preferences.localLinearResidualMetric.colormapLevels = 13;
+  preferences.localLinearResidualPatchRadius = 4;
+  preferences.localLinearResidualSampleSpacing = 3.5f;
+  preferences.localLinearResidualMinValidFraction = 0.5f;
+  preferences.localLinearResidualVarianceEpsilon = 0.0035f;
+  preferences.localLinearResidualInvalidStyle = user_preferences::RenderPreferences::LocalNccInvalidStyle::Gray;
   preferences.overlayMagentaCyan = false;
   preferences.quadrants = {false, true};
   preferences.checkerboardSquares = 31;
@@ -218,6 +228,16 @@ void requireRenderPreferencesEqual(
   CHECK(actual.localNccIgnoreNegativeCorrelation == expected.localNccIgnoreNegativeCorrelation);
   CHECK(actual.localNccPresentation == expected.localNccPresentation);
   CHECK(actual.localNccInvalidStyle == expected.localNccInvalidStyle);
+  CHECK(actual.localLinearResidualMetric.colorMapIndex == expected.localLinearResidualMetric.colorMapIndex);
+  CHECK(actual.localLinearResidualMetric.slopeIntercept == expected.localLinearResidualMetric.slopeIntercept);
+  CHECK(actual.localLinearResidualMetric.invertColormap == expected.localLinearResidualMetric.invertColormap);
+  CHECK(actual.localLinearResidualMetric.continuousColormap == expected.localLinearResidualMetric.continuousColormap);
+  CHECK(actual.localLinearResidualMetric.colormapLevels == expected.localLinearResidualMetric.colormapLevels);
+  CHECK(actual.localLinearResidualPatchRadius == expected.localLinearResidualPatchRadius);
+  CHECK(actual.localLinearResidualSampleSpacing == Catch::Approx(expected.localLinearResidualSampleSpacing));
+  CHECK(actual.localLinearResidualMinValidFraction == Catch::Approx(expected.localLinearResidualMinValidFraction));
+  CHECK(actual.localLinearResidualVarianceEpsilon == Catch::Approx(expected.localLinearResidualVarianceEpsilon));
+  CHECK(actual.localLinearResidualInvalidStyle == expected.localLinearResidualInvalidStyle);
   CHECK(actual.overlayMagentaCyan == expected.overlayMagentaCyan);
   CHECK(actual.quadrants == expected.quadrants);
   CHECK(actual.checkerboardSquares == expected.checkerboardSquares);
@@ -359,6 +379,13 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
         "presentation": "bad",
         "invalidStyle": "bad"
       },
+      "localLinearResidual": {
+        "patchRadius": 99,
+        "sampleSpacing": 0,
+        "minimumValidFraction": 4,
+        "varianceEpsilon": 3.5,
+        "invalidStyle": "bad"
+      },
       "checkerboard": {
         "squares": 1
       }
@@ -400,6 +427,13 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
   CHECK(renderPreferences.localNccVarianceEpsilon == Catch::Approx(2.5f));
   CHECK(renderPreferences.localNccPresentation == user_preferences::RenderPreferences{}.localNccPresentation);
   CHECK(renderPreferences.localNccInvalidStyle == user_preferences::RenderPreferences{}.localNccInvalidStyle);
+  CHECK(renderPreferences.localLinearResidualPatchRadius == 5);
+  CHECK(renderPreferences.localLinearResidualSampleSpacing == Catch::Approx(0.5f));
+  CHECK(renderPreferences.localLinearResidualMinValidFraction == Catch::Approx(1.0f));
+  CHECK(renderPreferences.localLinearResidualVarianceEpsilon == Catch::Approx(3.5f));
+  CHECK(
+    renderPreferences.localLinearResidualInvalidStyle ==
+    user_preferences::RenderPreferences{}.localLinearResidualInvalidStyle);
   CHECK(renderPreferences.checkerboardSquares == 2);
   CHECK(renderPreferences.targetFrameTimeSeconds == Catch::Approx(1.0));
   CHECK(renderPreferences.raycastSamplingFactor == Catch::Approx(0.1f));

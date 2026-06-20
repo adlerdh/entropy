@@ -39,6 +39,10 @@ std::string to_string(ShaderProgramType type)
       return "Local NCC - Linear";
     case ShaderProgramType::LocalNccCubic:
       return "Local NCC - Cubic";
+    case ShaderProgramType::LocalLinearResidualLinear:
+      return "Local Linear Residual - Linear";
+    case ShaderProgramType::LocalLinearResidualCubic:
+      return "Local Linear Residual - Cubic";
     case ShaderProgramType::OverlapLinear:
       return "Overlap - Linear";
     case ShaderProgramType::OverlapCubic:

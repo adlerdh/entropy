@@ -2450,6 +2450,19 @@ void ImGuiWrapper::render()
             syncLayoutTabGuiDataFromSettings(m_appData);
             s_settingsPersistenceStatus = "Defaults restored";
           },
+        .resetInterfaceSettings =
+          [this]() {
+            ImGui::ClearIniSettings();
+            ImGui::SaveIniSettingsToDisk(m_iniFileName.c_str());
+            m_applyDefaultPanelLayout = true;
+            if (m_readjustViewport) {
+              m_readjustViewport();
+            }
+            if (m_postEmptyGlfwEvent) {
+              m_postEmptyGlfwEvent();
+            }
+            s_settingsPersistenceStatus = "Interface reset";
+          },
         .statusText =
           []() {
             return s_settingsPersistenceStatus;

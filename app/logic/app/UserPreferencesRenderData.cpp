@@ -89,6 +89,18 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.localNccIgnoreNegativeCorrelation = renderData.m_localNccIgnoreNegativeCorrelation;
   preferences.localNccPresentation = localNccPresentationFromRenderData(renderData.m_localNccPresentation);
   preferences.localNccInvalidStyle = localNccInvalidStyleFromRenderData(renderData.m_localNccInvalidStyle);
+  preferences.localLinearResidualMetric.colorMapIndex = renderData.m_localLinearResidualParams.m_colorMapIndex;
+  preferences.localLinearResidualMetric.slopeIntercept = renderData.m_localLinearResidualParams.m_slopeIntercept;
+  preferences.localLinearResidualMetric.invertColormap = renderData.m_localLinearResidualParams.m_invertCmap;
+  preferences.localLinearResidualMetric.continuousColormap = renderData.m_localLinearResidualParams.m_cmapContinuous;
+  preferences.localLinearResidualMetric.colormapLevels =
+    renderData.m_localLinearResidualParams.m_cmapQuantizationLevels;
+  preferences.localLinearResidualPatchRadius = renderData.m_localLinearResidualPatchRadius;
+  preferences.localLinearResidualSampleSpacing = renderData.m_localLinearResidualSampleSpacing;
+  preferences.localLinearResidualMinValidFraction = renderData.m_localLinearResidualMinValidFraction;
+  preferences.localLinearResidualVarianceEpsilon = renderData.m_localLinearResidualVarianceEpsilon;
+  preferences.localLinearResidualInvalidStyle =
+    localNccInvalidStyleFromRenderData(renderData.m_localLinearResidualInvalidStyle);
   preferences.overlayMagentaCyan = renderData.m_overlayMagentaCyan;
   preferences.quadrants = renderData.m_quadrants;
   preferences.checkerboardSquares = renderData.m_numCheckerboardSquares;
@@ -164,6 +176,18 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_localNccIgnoreNegativeCorrelation = preferences.localNccIgnoreNegativeCorrelation;
   renderData.m_localNccPresentation = localNccPresentationToRenderData(preferences.localNccPresentation);
   renderData.m_localNccInvalidStyle = localNccInvalidStyleToRenderData(preferences.localNccInvalidStyle);
+  renderData.m_localLinearResidualParams.m_colorMapIndex = preferences.localLinearResidualMetric.colorMapIndex;
+  renderData.m_localLinearResidualParams.m_slopeIntercept = preferences.localLinearResidualMetric.slopeIntercept;
+  renderData.m_localLinearResidualParams.m_invertCmap = preferences.localLinearResidualMetric.invertColormap;
+  renderData.m_localLinearResidualParams.m_cmapContinuous = preferences.localLinearResidualMetric.continuousColormap;
+  renderData.m_localLinearResidualParams.m_cmapQuantizationLevels =
+    preferences.localLinearResidualMetric.colormapLevels;
+  renderData.m_localLinearResidualPatchRadius = preferences.localLinearResidualPatchRadius;
+  renderData.m_localLinearResidualSampleSpacing = preferences.localLinearResidualSampleSpacing;
+  renderData.m_localLinearResidualMinValidFraction = preferences.localLinearResidualMinValidFraction;
+  renderData.m_localLinearResidualVarianceEpsilon = preferences.localLinearResidualVarianceEpsilon;
+  renderData.m_localLinearResidualInvalidStyle =
+    localNccInvalidStyleToRenderData(preferences.localLinearResidualInvalidStyle);
   renderData.m_overlayMagentaCyan = preferences.overlayMagentaCyan;
   renderData.m_quadrants = preferences.quadrants;
   renderData.m_numCheckerboardSquares = preferences.checkerboardSquares;

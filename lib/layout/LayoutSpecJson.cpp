@@ -84,7 +84,8 @@ const std::vector<std::pair<ViewRenderMode, const char*>>& renderModeNames()
     {ViewRenderMode::JointHistogram, "JointHistogram"},
     {ViewRenderMode::VolumeRender, "VolumeRender"},
     {ViewRenderMode::Disabled, "Disabled"},
-    {ViewRenderMode::LocalNcc, "LocalNcc"}};
+    {ViewRenderMode::LocalNcc, "LocalNcc"},
+    {ViewRenderMode::LocalLinearResidual, "LocalLinearResidual"}};
   return names;
 }
 

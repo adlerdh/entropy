@@ -323,6 +323,7 @@ struct RenderData
 
   MetricParams m_squaredDifferenceParams;
   MetricParams m_localNccParams;
+  MetricParams m_localLinearResidualParams;
   MetricParams m_jointHistogramParams;
 
   int m_localNccPatchRadius = 3;                   //!< Radius of the view-plane NCC patch in samples.
@@ -332,6 +333,13 @@ struct RenderData
   bool m_localNccIgnoreNegativeCorrelation = true; //!< Treat negative NCC as maximum mismatch.
   LocalNccPresentation m_localNccPresentation = LocalNccPresentation::Dissimilarity; //!< Display transform.
   LocalNccInvalidStyle m_localNccInvalidStyle = LocalNccInvalidStyle::Transparent;   //!< Invalid patch display.
+
+  int m_localLinearResidualPatchRadius = 3;             //!< Radius of the view-plane patch in samples.
+  float m_localLinearResidualSampleSpacing = 1.0f;      //!< Sample spacing in reference-image voxel steps.
+  float m_localLinearResidualMinValidFraction = 0.75f;  //!< Required overlap fraction for paired patch samples.
+  float m_localLinearResidualVarianceEpsilon = 1.0e-5f; //!< Minimum reference variance before a patch is invalid.
+  LocalNccInvalidStyle m_localLinearResidualInvalidStyle =
+    LocalNccInvalidStyle::Transparent; //!< Invalid patch display.
 
   /// Edge detection magnitude and smoothing
   glm::vec2 m_edgeMagnitudeSmoothing;

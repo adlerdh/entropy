@@ -26,7 +26,12 @@
 namespace
 {
 
-void warnLocalNccMissingComparisonImage(std::string_view message)
+bool isLocalPatchMetric(ViewRenderMode renderMode)
+{
+  return ViewRenderMode::LocalNcc == renderMode || ViewRenderMode::LocalLinearResidual == renderMode;
+}
+
+void warnLocalPatchMetricMissingImage(std::string_view message)
 {
   static constexpr std::size_t k_maxNumWarnings = 10;
   static std::size_t warnCount = 0;
@@ -37,7 +42,7 @@ void warnLocalNccMissingComparisonImage(std::string_view message)
   }
   else if (k_maxNumWarnings == warnCount) {
     ++warnCount;
-    spdlog::warn("Halting warnings about local NCC metric views without a comparison image.");
+    spdlog::warn("Halting warnings about local patch metric views without enough images.");
   }
 }
 
@@ -162,12 +167,20 @@ void drawImageQuad(
   bool showEdges)
 {
   if (I.empty()) {
+    if (isLocalPatchMetric(renderMode)) {
+      warnLocalPatchMetricMissingImage("No images provided when rendering local patch metric");
+      return;
+    }
     spdlog::error("No images provided when rendering plane");
     return;
   }
 
   const Image* image0 = getImage(I[0].first);
   if (!image0) {
+    if (isLocalPatchMetric(renderMode)) {
+      warnLocalPatchMetricMissingImage("Null reference image when rendering local patch metric");
+      return;
+    }
     spdlog::error("Null image when rendering textured quad");
     return;
   }
@@ -260,15 +273,15 @@ void drawImageQuad(
     program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
     program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
   }
-  else if (ViewRenderMode::LocalNcc == renderMode) {
+  else if (isLocalPatchMetric(renderMode)) {
     if (I.size() < 2) {
-      warnLocalNccMissingComparisonImage("Not enough images provided when rendering plane with local NCC metric");
+      warnLocalPatchMetricMissingImage("Not enough images provided when rendering local patch metric");
       return;
     }
 
     const Image* img1 = getImage(I[1].first);
     if (!img1) {
-      warnLocalNccMissingComparisonImage("Null comparison image when rendering plane with local NCC metric");
+      warnLocalPatchMetricMissingImage("Null comparison image when rendering local patch metric");
       return;
     }
 
