@@ -86,6 +86,17 @@ float fillWidthForLabelColumn(float labelWidth)
   return std::max(1.0f, ImGui::GetContentRegionAvail().x - labelWidth - spacing);
 }
 
+void finishSettingsSection(bool sectionOpen)
+{
+  if (!sectionOpen) {
+    return;
+  }
+
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
+}
+
 /**
  * @brief Render a copyable, read-only path field.
  * @param[in] label Field label.
@@ -148,7 +159,8 @@ void renderMetricSettingsPanel(
   const char* name,
   const std::function<void(void)>& updateMetricUniforms,
   const std::function<std::size_t(void)>& getNumImageColorMaps,
-  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap)
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
+  bool showWindowAsSignedCorrelation = false)
 {
   // Metric windowing range slider:
   const float slope = metricParams.m_slopeIntercept[0];
@@ -160,17 +172,23 @@ void renderMetricSettingsPanel(
   float windowLow = std::max(windowCenter - 0.5f * windowWidth, 0.0f);
   float windowHigh = std::min(windowCenter + 0.5f * windowWidth, 1.0f);
 
+  float displayWindowLow = showWindowAsSignedCorrelation ? 2.0f * windowLow - 1.0f : windowLow;
+  float displayWindowHigh = showWindowAsSignedCorrelation ? 2.0f * windowHigh - 1.0f : windowHigh;
+
   if (ImGui::DragFloatRange2(
         "Window",
-        &windowLow,
-        &windowHigh,
-        0.01f,
-        k_windowMin,
-        k_windowMax,
-        "Min: %.2f",
-        "Max: %.2f",
+        &displayWindowLow,
+        &displayWindowHigh,
+        showWindowAsSignedCorrelation ? 0.02f : 0.01f,
+        showWindowAsSignedCorrelation ? -1.0f : k_windowMin,
+        showWindowAsSignedCorrelation ? 1.0f : k_windowMax,
+        showWindowAsSignedCorrelation ? "Min NCC: %.2f" : "Min: %.2f",
+        showWindowAsSignedCorrelation ? "Max NCC: %.2f" : "Max: %.2f",
         ImGuiSliderFlags_AlwaysClamp))
   {
+    windowLow = showWindowAsSignedCorrelation ? 0.5f * (displayWindowLow + 1.0f) : displayWindowLow;
+    windowHigh = showWindowAsSignedCorrelation ? 0.5f * (displayWindowHigh + 1.0f) : displayWindowHigh;
+
     if ((windowHigh - windowLow) < 0.01f) {
       if (windowLow >= 0.99f) {
         windowLow = windowHigh - 0.01f;
@@ -190,7 +208,9 @@ void renderMetricSettingsPanel(
     updateMetricUniforms();
   }
   ImGui::SameLine();
-  helpMarker("Minimum and maximum of the metric window range");
+  helpMarker(
+    showWindowAsSignedCorrelation ? "Minimum and maximum NCC values. Internally these are mapped to the colormap range."
+                                  : "Minimum and maximum of the metric window range");
 
   /*
   // Metric masking:
@@ -275,6 +295,121 @@ void renderMetricSettingsPanel(
   }
 }
 
+bool renderLocalNccSettings(
+  AppData& appData,
+  RenderData& renderData,
+  const std::function<void(void)>& updateMetricUniforms,
+  const std::function<std::size_t(void)>& getNumImageColorMaps,
+  const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap)
+{
+  if (!ImGui::CollapsingHeader("Local Normalized Cross-Correlation Metric", ImGuiTreeNodeFlags_DefaultOpen)) {
+    return false;
+  }
+
+  const RenderData::LocalNccPresentation presentation = renderData.m_localNccPresentation;
+  if (ImGui::RadioButton("Dissimilarity", RenderData::LocalNccPresentation::Dissimilarity == presentation)) {
+    renderData.m_localNccPresentation = RenderData::LocalNccPresentation::Dissimilarity;
+  }
+  ImGui::SameLine();
+  if (ImGui::RadioButton("Correlation", RenderData::LocalNccPresentation::Correlation == presentation)) {
+    renderData.m_localNccPresentation = RenderData::LocalNccPresentation::Correlation;
+  }
+  ImGui::SameLine();
+  helpMarker("Dissimilarity highlights disagreement; correlation shows local NCC directly.");
+
+  const bool showWindowAsSignedCorrelation =
+    RenderData::LocalNccPresentation::Correlation == renderData.m_localNccPresentation;
+  renderMetricSettingsPanel(
+    renderData.m_localNccParams,
+    appData.guiData().m_showLocalNccColormapWindow,
+    "localncc",
+    updateMetricUniforms,
+    getNumImageColorMaps,
+    getImageColorMap,
+    showWindowAsSignedCorrelation);
+
+  ImGui::Spacing();
+
+  const float localNccControlLabelWidth = std::max(
+    {visibleLabelWidth("Patch size"),
+     visibleLabelWidth("Sample spacing"),
+     visibleLabelWidth("Minimum valid fraction"),
+     visibleLabelWidth("Variance epsilon")});
+  const float localNccControlWidth = fillWidthForLabelColumn(localNccControlLabelWidth);
+
+  if (RenderData::LocalNccPresentation::Dissimilarity == renderData.m_localNccPresentation) {
+    bool ignoreNegativeCorrelation = renderData.m_localNccIgnoreNegativeCorrelation;
+    if (ImGui::Checkbox("Treat negative correlation as mismatch", &ignoreNegativeCorrelation)) {
+      renderData.m_localNccIgnoreNegativeCorrelation = ignoreNegativeCorrelation;
+    }
+    ImGui::SameLine();
+    helpMarker("Negative NCC values are treated as complete mismatch.");
+  }
+
+  constexpr std::array<std::pair<int, const char*>, 5> k_patchSizes{
+    {{1, "3 x 3"}, {2, "5 x 5"}, {3, "7 x 7"}, {4, "9 x 9"}, {5, "11 x 11"}}};
+  int patchIndex = 2;
+  for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
+    if (renderData.m_localNccPatchRadius == k_patchSizes[i].first) {
+      patchIndex = static_cast<int>(i);
+      break;
+    }
+  }
+  ImGui::SetNextItemWidth(localNccControlWidth);
+  if (ImGui::BeginCombo("Patch size", k_patchSizes[static_cast<std::size_t>(patchIndex)].second)) {
+    for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
+      const bool selected = static_cast<int>(i) == patchIndex;
+      if (ImGui::Selectable(k_patchSizes[i].second, selected)) {
+        renderData.m_localNccPatchRadius = k_patchSizes[i].first;
+      }
+      if (selected) {
+        ImGui::SetItemDefaultFocus();
+      }
+    }
+    ImGui::EndCombo();
+  }
+  ImGui::SameLine();
+  helpMarker("Number of view-plane samples used in each local NCC patch.");
+
+  float sampleSpacing = renderData.m_localNccSampleSpacing;
+  ImGui::SetNextItemWidth(localNccControlWidth);
+  if (mySliderF32("Sample spacing", &sampleSpacing, 0.5f, 4.0f, "%.2f x")) {
+    renderData.m_localNccSampleSpacing = sampleSpacing;
+  }
+  ImGui::SameLine();
+  helpMarker("Patch sample spacing in reference-image voxel steps along the view-plane axes.");
+
+  float minValidFraction = renderData.m_localNccMinValidFraction;
+  ImGui::SetNextItemWidth(localNccControlWidth);
+  if (mySliderF32("Minimum valid fraction", &minValidFraction, 0.1f, 1.0f, "%.2f")) {
+    renderData.m_localNccMinValidFraction = minValidFraction;
+  }
+  ImGui::SameLine();
+  helpMarker("Minimum fraction of patch samples that must lie inside both images.");
+
+  float varianceEpsilon = renderData.m_localNccVarianceEpsilon;
+  ImGui::PushItemWidth(localNccControlWidth);
+  if (ImGui::InputFloat("Variance epsilon", &varianceEpsilon, 0.0f, 0.0f, "%.1e")) {
+    renderData.m_localNccVarianceEpsilon = std::max(varianceEpsilon, 0.0f);
+  }
+  ImGui::PopItemWidth();
+  ImGui::SameLine();
+  helpMarker("Patches with lower local variance in either image are treated as invalid.");
+
+  const RenderData::LocalNccInvalidStyle invalidStyle = renderData.m_localNccInvalidStyle;
+  if (ImGui::RadioButton("Invalid transparent", RenderData::LocalNccInvalidStyle::Transparent == invalidStyle)) {
+    renderData.m_localNccInvalidStyle = RenderData::LocalNccInvalidStyle::Transparent;
+  }
+  ImGui::SameLine();
+  if (ImGui::RadioButton("Invalid gray", RenderData::LocalNccInvalidStyle::Gray == invalidStyle)) {
+    renderData.m_localNccInvalidStyle = RenderData::LocalNccInvalidStyle::Gray;
+  }
+  ImGui::SameLine();
+  helpMarker("How low-variance or insufficient-overlap patches are drawn.");
+
+  return true;
+}
+
 /**
  * @brief Render the Views settings page contents.
  */
@@ -315,7 +450,8 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   ImGui::Spacing();
 
   // Crosshairs
-  if (ImGui::CollapsingHeader("Crosshairs", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool crosshairsOpen = ImGui::CollapsingHeader("Crosshairs", ImGuiTreeNodeFlags_DefaultOpen);
+  if (crosshairsOpen) {
     ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_crosshairsColor), k_colorAlphaEditFlags);
 
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -342,9 +478,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     ImGui::SameLine();
     helpMarker("Do not snap crosshairs to image voxels");
   }
+  finishSettingsSection(crosshairsOpen);
 
   // View centering:
-  if (ImGui::CollapsingHeader("View recentering", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool viewRecenteringOpen = ImGui::CollapsingHeader("View recentering", ImGuiTreeNodeFlags_DefaultOpen);
+  if (viewRecenteringOpen) {
     ImGui::Text("Center views and crosshairs on:");
 
     ImGui::SameLine();
@@ -448,16 +586,20 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     ImGui::SameLine();
     helpMarker("Recenter views and crosshairs on all loaded images");
   }
+  finishSettingsSection(viewRecenteringOpen);
 
   // View backgrounds:
-  if (ImGui::CollapsingHeader("Background color", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool backgroundColorOpen = ImGui::CollapsingHeader("Background color", ImGuiTreeNodeFlags_DefaultOpen);
+  if (backgroundColorOpen) {
     ImGui::ColorEdit3("2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
 
     ImGui::ColorEdit4("3D background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
   }
+  finishSettingsSection(backgroundColorOpen);
 
   // Anatomical labels:
-  if (ImGui::CollapsingHeader("Anatomical labels", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool anatomicalLabelsOpen = ImGui::CollapsingHeader("Anatomical labels", ImGuiTreeNodeFlags_DefaultOpen);
+  if (anatomicalLabelsOpen) {
     ImGui::ColorEdit4("Text color", glm::value_ptr(renderData.m_anatomicalLabelColor), k_colorAlphaEditFlags);
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
@@ -529,8 +671,10 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     ImGui::SameLine();
     helpMarker("Anatomical left is on view left; anatomical right is on view right");
   }
+  finishSettingsSection(anatomicalLabelsOpen);
 
-  if (ImGui::CollapsingHeader("Scale bars", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool scaleBarsOpen = ImGui::CollapsingHeader("Scale bars", ImGuiTreeNodeFlags_DefaultOpen);
+  if (scaleBarsOpen) {
     bool showScaleBars = renderData.m_showScaleBars;
     if (ImGui::Checkbox("Show scale bars", &showScaleBars)) {
       renderData.m_showScaleBars = showScaleBars;
@@ -665,6 +809,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       helpMarker("Add evenly spaced extra ticks when the scale bar is long enough for readable subdivisions");
     }
   }
+  finishSettingsSection(scaleBarsOpen);
 
   if (ImGui::CollapsingHeader("Lightbox views", ImGuiTreeNodeFlags_DefaultOpen)) {
     bool showOffsetLabels = renderData.m_showLightboxOffsetLabels;
@@ -727,7 +872,8 @@ void renderInterfaceTab(
   ImGui::Separator();
   ImGui::Spacing();
 
-  if (ImGui::CollapsingHeader("Look and feel", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool lookAndFeelOpen = ImGui::CollapsingHeader("Look and feel", ImGuiTreeNodeFlags_DefaultOpen);
+  if (lookAndFeelOpen) {
     const auto currentScale = appData.settings().uiScaleOverride();
     const auto& uiScaleChoices = ui_settings::uiScaleChoices();
     auto currentChoice = std::find_if(
@@ -826,6 +972,7 @@ void renderInterfaceTab(
       }
     }
   }
+  finishSettingsSection(lookAndFeelOpen);
 }
 
 /**
@@ -833,12 +980,14 @@ void renderInterfaceTab(
  */
 void renderSystemTab(AppData& appData)
 {
-  if (ImGui::CollapsingHeader("Diagnostics", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool diagnosticsOpen = ImGui::CollapsingHeader("Diagnostics", ImGuiTreeNodeFlags_DefaultOpen);
+  if (diagnosticsOpen) {
     renderDiagnosticsSettings();
     ImGui::Spacing();
   }
+  finishSettingsSection(diagnosticsOpen);
 
-  if (ImGui::CollapsingHeader("Developer tools")) {
+  if (ImGui::CollapsingHeader("Developer tools", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
     ImGui::Checkbox("Show ImPlot demo window", &(appData.guiData().m_showImPlotDemoWindow));
   }
@@ -854,13 +1003,16 @@ void renderIntensityProjectionDefaults(RenderData& renderData);
  */
 void renderImagesTab(AppData& appData)
 {
-  if (ImGui::CollapsingHeader("Image display defaults", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool imageDisplayDefaultsOpen =
+    ImGui::CollapsingHeader("Image display defaults", ImGuiTreeNodeFlags_DefaultOpen);
+  if (imageDisplayDefaultsOpen) {
     ImGui::Checkbox(
       "Floating-point linear image interpolation",
       &appData.renderData().m_imageGrayFloatingPointInterpolation);
     ImGui::SameLine();
     helpMarker("Use floating-point instead of 8-bit fixed-point linear interpolation for grayscale images");
   }
+  finishSettingsSection(imageDisplayDefaultsOpen);
 
   renderIntensityProjectionDefaults(appData.renderData());
 }
@@ -999,7 +1151,8 @@ void renderSynchronizeTab(AppData& appData)
  */
 void renderSegmentationTab(AppData& appData, RenderData& renderData)
 {
-  if (ImGui::CollapsingHeader("Display", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool displayOpen = ImGui::CollapsingHeader("Display", ImGuiTreeNodeFlags_DefaultOpen);
+  if (displayOpen) {
     // Modulate opacity of segmentation with opacity of image:
     ImGui::Checkbox("Modulate segmentation with image opacity", &renderData.m_modulateSegOpacityWithImageOpacity);
     ImGui::SameLine();
@@ -1051,8 +1204,10 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
     ImGui::SameLine();
     helpMarker("Cutoff used to erode segmentation boundaries in linear or cubic interpolation mode");
   }
+  finishSettingsSection(displayOpen);
 
-  if (ImGui::CollapsingHeader("Brush", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool brushOpen = ImGui::CollapsingHeader("Brush", ImGuiTreeNodeFlags_DefaultOpen);
+  if (brushOpen) {
     AppSettings& settings = appData.settings();
 
     bool useRound = settings.useRoundBrush();
@@ -1092,6 +1247,7 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
       settings.setCrosshairsMoveWithBrush(xhairsMove);
     }
   }
+  finishSettingsSection(brushOpen);
 
   if (ImGui::CollapsingHeader("Brush preview", ImGuiTreeNodeFlags_DefaultOpen)) {
     AppSettings& settings = appData.settings();
@@ -1169,7 +1325,8 @@ void renderMetricsTab(
   ImGui::PushID("metrics"); /*** PushID metrics ***/
 
   ImGui::PushID("diff");
-  {
+  const bool differenceOpen = ImGui::CollapsingHeader("Difference Metric", ImGuiTreeNodeFlags_DefaultOpen);
+  if (differenceOpen) {
     // Difference type:
     if (ImGui::RadioButton("Absolute", false == renderData.m_useSquare)) {
       renderData.m_useSquare = false;
@@ -1192,22 +1349,23 @@ void renderMetricsTab(
   }
   ImGui::PopID(); // "diff"
 
-  /*
-  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-  if (ImGui::TreeNode("Cross-correlation"))
-  {
-    ImGui::PushID("crosscorr");
-    {
-      renderMetricSettingsPanel(
-        renderData.m_crossCorrelationParams,
-        appData.guiData().m_showCorrelationColormapWindow,
-        "crosscorr"
-      );
-    }
-    ImGui::PopID(); // "crosscorr"
-    ImGui::TreePop();
+  finishSettingsSection(differenceOpen);
+
+  ImGui::PushID("localncc");
+  const bool localNccOpen =
+    renderLocalNccSettings(appData, renderData, updateMetricUniforms, getNumImageColorMaps, getImageColorMap);
+  ImGui::PopID();
+
+  finishSettingsSection(localNccOpen);
+
+  ImGui::BeginDisabled();
+  const bool localLinearResidualOpen =
+    ImGui::CollapsingHeader("Local Linear Residual Metric", ImGuiTreeNodeFlags_DefaultOpen);
+  if (localLinearResidualOpen) {
+    ImGui::TextWrapped("Placeholder for a future comparison metric that fits a local linear intensity model.");
   }
-  */
+  ImGui::EndDisabled();
+  finishSettingsSection(localLinearResidualOpen);
 
   ImGui::PopID(); /*** PopID metrics ***/
 }
@@ -1218,6 +1376,11 @@ void renderMetricsTab(
 void renderComparisonModesTab(RenderData& renderData)
 {
   ImGui::PushID("comparison"); /*** PushID metrics ***/
+
+  if (!ImGui::CollapsingHeader("Comparison Modes", ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::PopID(); /*** PopID comparison ***/
+    return;
+  }
 
   //                if ( ImGui::TreeNode( "Comparison comparison" ) )
   //                {
@@ -1234,7 +1397,6 @@ void renderComparisonModesTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Color style for 'overlay' views");
   ImGui::Spacing();
-  ImGui::Separator();
 
   // Quadrants style:
   ImGui::Text("Quadrants:");
@@ -1258,7 +1420,6 @@ void renderComparisonModesTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Comparison directions in 'quadrant' views");
   ImGui::Spacing();
-  ImGui::Separator();
 
   // Checkerboard squares
   ImGui::Text("Checkerboard:");
@@ -1272,7 +1433,6 @@ void renderComparisonModesTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Number of squares in Checkerboard mode");
   ImGui::Spacing();
-  ImGui::Separator();
 
   // Flashlight
   ImGui::Text("Flashlight:");
@@ -1510,12 +1670,16 @@ void renderRenderingTab(RenderData& renderData)
   ImGui::Separator();
   ImGui::Spacing();
 
-  if (ImGui::CollapsingHeader("Raycasting")) {
+  const bool raycastingOpen = ImGui::CollapsingHeader("Raycasting", ImGuiTreeNodeFlags_DefaultOpen);
+  if (raycastingOpen) {
     renderRaycastingTab(renderData);
+  }
+  if (rd.m_asciiEnabled) {
+    finishSettingsSection(raycastingOpen);
   }
 
   // ASCII rendering controls
-  if (rd.m_asciiEnabled && ImGui::CollapsingHeader("ASCII shading")) {
+  if (rd.m_asciiEnabled && ImGui::CollapsingHeader("ASCII shading", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PushID("ascii");
 
     if (rd.m_asciiEnabled) {

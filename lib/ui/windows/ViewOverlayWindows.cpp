@@ -159,7 +159,7 @@ void renderViewSettingsComboWindow(
               bool rendered = isImageRendered(i);
               const bool oldRendered = rendered;
 
-              ImGui::MenuItem(displayName.c_str(), "", &rendered);
+              ImGui::Checkbox(displayName.c_str(), &rendered);
 
               if (oldRendered != rendered) {
                 setImageRendered(i, rendered);
@@ -223,7 +223,7 @@ void renderViewSettingsComboWindow(
               bool rendered = isImageUsedForMetric(i);
               const bool oldRendered = rendered;
 
-              ImGui::MenuItem(displayName.c_str(), "", &rendered);
+              ImGui::Checkbox(displayName.c_str(), &rendered);
 
               if (oldRendered != rendered) {
                 setImageUsedForMetric(i, rendered);
@@ -338,6 +338,10 @@ void renderViewSettingsComboWindow(
             }
             ImGui::SameLine();
             helpMarker("Compute intensity projection over the full image extent");
+
+            if (IntensityProjectionMode::Xray != intensityProjMode) {
+              ImGui::Dummy(ImVec2(0.0f, ImGui::GetStyle().FramePadding.y));
+            }
           }
 
           if (IntensityProjectionMode::Xray == intensityProjMode) {
@@ -388,6 +392,8 @@ void renderViewSettingsComboWindow(
             }
             ImGui::SameLine();
             helpMarker("Window level (center)");
+
+            ImGui::Dummy(ImVec2(0.0f, ImGui::GetStyle().FramePadding.y));
           }
 
           ImGui::EndCombo();

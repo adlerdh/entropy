@@ -9,6 +9,38 @@
 namespace
 {
 
+user_preferences::RenderPreferences::LocalNccPresentation localNccPresentationFromRenderData(
+  RenderData::LocalNccPresentation presentation)
+{
+  return RenderData::LocalNccPresentation::Correlation == presentation
+           ? user_preferences::RenderPreferences::LocalNccPresentation::Correlation
+           : user_preferences::RenderPreferences::LocalNccPresentation::Dissimilarity;
+}
+
+RenderData::LocalNccPresentation localNccPresentationToRenderData(
+  user_preferences::RenderPreferences::LocalNccPresentation presentation)
+{
+  return user_preferences::RenderPreferences::LocalNccPresentation::Correlation == presentation
+           ? RenderData::LocalNccPresentation::Correlation
+           : RenderData::LocalNccPresentation::Dissimilarity;
+}
+
+user_preferences::RenderPreferences::LocalNccInvalidStyle localNccInvalidStyleFromRenderData(
+  RenderData::LocalNccInvalidStyle style)
+{
+  return RenderData::LocalNccInvalidStyle::Gray == style
+           ? user_preferences::RenderPreferences::LocalNccInvalidStyle::Gray
+           : user_preferences::RenderPreferences::LocalNccInvalidStyle::Transparent;
+}
+
+RenderData::LocalNccInvalidStyle localNccInvalidStyleToRenderData(
+  user_preferences::RenderPreferences::LocalNccInvalidStyle style)
+{
+  return user_preferences::RenderPreferences::LocalNccInvalidStyle::Gray == style
+           ? RenderData::LocalNccInvalidStyle::Gray
+           : RenderData::LocalNccInvalidStyle::Transparent;
+}
+
 user_preferences::RenderPreferences renderPreferencesFromRenderData(const RenderData& renderData)
 {
   user_preferences::RenderPreferences preferences;
@@ -45,6 +77,18 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.squaredDifferenceMetric.invertColormap = renderData.m_squaredDifferenceParams.m_invertCmap;
   preferences.squaredDifferenceMetric.continuousColormap = renderData.m_squaredDifferenceParams.m_cmapContinuous;
   preferences.squaredDifferenceMetric.colormapLevels = renderData.m_squaredDifferenceParams.m_cmapQuantizationLevels;
+  preferences.localNccMetric.colorMapIndex = renderData.m_localNccParams.m_colorMapIndex;
+  preferences.localNccMetric.slopeIntercept = renderData.m_localNccParams.m_slopeIntercept;
+  preferences.localNccMetric.invertColormap = renderData.m_localNccParams.m_invertCmap;
+  preferences.localNccMetric.continuousColormap = renderData.m_localNccParams.m_cmapContinuous;
+  preferences.localNccMetric.colormapLevels = renderData.m_localNccParams.m_cmapQuantizationLevels;
+  preferences.localNccPatchRadius = renderData.m_localNccPatchRadius;
+  preferences.localNccSampleSpacing = renderData.m_localNccSampleSpacing;
+  preferences.localNccMinValidFraction = renderData.m_localNccMinValidFraction;
+  preferences.localNccVarianceEpsilon = renderData.m_localNccVarianceEpsilon;
+  preferences.localNccIgnoreNegativeCorrelation = renderData.m_localNccIgnoreNegativeCorrelation;
+  preferences.localNccPresentation = localNccPresentationFromRenderData(renderData.m_localNccPresentation);
+  preferences.localNccInvalidStyle = localNccInvalidStyleFromRenderData(renderData.m_localNccInvalidStyle);
   preferences.overlayMagentaCyan = renderData.m_overlayMagentaCyan;
   preferences.quadrants = renderData.m_quadrants;
   preferences.checkerboardSquares = renderData.m_numCheckerboardSquares;
@@ -108,6 +152,18 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_squaredDifferenceParams.m_invertCmap = preferences.squaredDifferenceMetric.invertColormap;
   renderData.m_squaredDifferenceParams.m_cmapContinuous = preferences.squaredDifferenceMetric.continuousColormap;
   renderData.m_squaredDifferenceParams.m_cmapQuantizationLevels = preferences.squaredDifferenceMetric.colormapLevels;
+  renderData.m_localNccParams.m_colorMapIndex = preferences.localNccMetric.colorMapIndex;
+  renderData.m_localNccParams.m_slopeIntercept = preferences.localNccMetric.slopeIntercept;
+  renderData.m_localNccParams.m_invertCmap = preferences.localNccMetric.invertColormap;
+  renderData.m_localNccParams.m_cmapContinuous = preferences.localNccMetric.continuousColormap;
+  renderData.m_localNccParams.m_cmapQuantizationLevels = preferences.localNccMetric.colormapLevels;
+  renderData.m_localNccPatchRadius = preferences.localNccPatchRadius;
+  renderData.m_localNccSampleSpacing = preferences.localNccSampleSpacing;
+  renderData.m_localNccMinValidFraction = preferences.localNccMinValidFraction;
+  renderData.m_localNccVarianceEpsilon = preferences.localNccVarianceEpsilon;
+  renderData.m_localNccIgnoreNegativeCorrelation = preferences.localNccIgnoreNegativeCorrelation;
+  renderData.m_localNccPresentation = localNccPresentationToRenderData(preferences.localNccPresentation);
+  renderData.m_localNccInvalidStyle = localNccInvalidStyleToRenderData(preferences.localNccInvalidStyle);
   renderData.m_overlayMagentaCyan = preferences.overlayMagentaCyan;
   renderData.m_quadrants = preferences.quadrants;
   renderData.m_numCheckerboardSquares = preferences.checkerboardSquares;

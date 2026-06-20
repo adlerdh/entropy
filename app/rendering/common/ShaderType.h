@@ -20,6 +20,8 @@ enum class ShaderProgramType
   IsoContourCubicFixed,
   DifferenceLinear,
   DifferenceCubic,
+  LocalNccLinear,
+  LocalNccCubic,
   OverlapLinear,
   OverlapCubic,
   AsciiPost,

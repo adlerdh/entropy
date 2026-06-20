@@ -199,7 +199,7 @@ struct GuiData
   std::unordered_map<uuids::uuid, bool> m_showImageColormapWindow;
 
   bool m_showDifferenceColormapWindow = false;     //!< Show the difference metric color map popup.
-  bool m_showCorrelationColormapWindow = false;    //!< Show the correlation metric color map popup.
+  bool m_showLocalNccColormapWindow = false;       //!< Show the local NCC metric color map popup.
   bool m_showJointHistogramColormapWindow = false; //!< Show the joint histogram metric color map popup.
 
   /// Update m_coordsPrecisionFormat from m_coordsPrecision.

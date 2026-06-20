@@ -91,6 +91,18 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.squaredDifferenceMetric.invertColormap = true;
   preferences.squaredDifferenceMetric.continuousColormap = false;
   preferences.squaredDifferenceMetric.colormapLevels = 11;
+  preferences.localNccMetric.colorMapIndex = 8;
+  preferences.localNccMetric.slopeIntercept = {1.5f, -0.25f};
+  preferences.localNccMetric.invertColormap = true;
+  preferences.localNccMetric.continuousColormap = false;
+  preferences.localNccMetric.colormapLevels = 12;
+  preferences.localNccPatchRadius = 5;
+  preferences.localNccSampleSpacing = 2.5f;
+  preferences.localNccMinValidFraction = 0.6f;
+  preferences.localNccVarianceEpsilon = 0.0025f;
+  preferences.localNccIgnoreNegativeCorrelation = false;
+  preferences.localNccPresentation = user_preferences::RenderPreferences::LocalNccPresentation::Correlation;
+  preferences.localNccInvalidStyle = user_preferences::RenderPreferences::LocalNccInvalidStyle::Gray;
   preferences.overlayMagentaCyan = false;
   preferences.quadrants = {false, true};
   preferences.checkerboardSquares = 31;
@@ -194,6 +206,18 @@ void requireRenderPreferencesEqual(
   CHECK(actual.squaredDifferenceMetric.invertColormap == expected.squaredDifferenceMetric.invertColormap);
   CHECK(actual.squaredDifferenceMetric.continuousColormap == expected.squaredDifferenceMetric.continuousColormap);
   CHECK(actual.squaredDifferenceMetric.colormapLevels == expected.squaredDifferenceMetric.colormapLevels);
+  CHECK(actual.localNccMetric.colorMapIndex == expected.localNccMetric.colorMapIndex);
+  CHECK(actual.localNccMetric.slopeIntercept == expected.localNccMetric.slopeIntercept);
+  CHECK(actual.localNccMetric.invertColormap == expected.localNccMetric.invertColormap);
+  CHECK(actual.localNccMetric.continuousColormap == expected.localNccMetric.continuousColormap);
+  CHECK(actual.localNccMetric.colormapLevels == expected.localNccMetric.colormapLevels);
+  CHECK(actual.localNccPatchRadius == expected.localNccPatchRadius);
+  CHECK(actual.localNccSampleSpacing == Catch::Approx(expected.localNccSampleSpacing));
+  CHECK(actual.localNccMinValidFraction == Catch::Approx(expected.localNccMinValidFraction));
+  CHECK(actual.localNccVarianceEpsilon == Catch::Approx(expected.localNccVarianceEpsilon));
+  CHECK(actual.localNccIgnoreNegativeCorrelation == expected.localNccIgnoreNegativeCorrelation);
+  CHECK(actual.localNccPresentation == expected.localNccPresentation);
+  CHECK(actual.localNccInvalidStyle == expected.localNccInvalidStyle);
   CHECK(actual.overlayMagentaCyan == expected.overlayMagentaCyan);
   CHECK(actual.quadrants == expected.quadrants);
   CHECK(actual.checkerboardSquares == expected.checkerboardSquares);
@@ -327,6 +351,14 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
       }
     },
     "comparison": {
+      "localNormalizedCrossCorrelation": {
+        "patchRadius": 99,
+        "sampleSpacing": 0,
+        "minimumValidFraction": 4,
+        "varianceEpsilon": 2.5,
+        "presentation": "bad",
+        "invalidStyle": "bad"
+      },
       "checkerboard": {
         "squares": 1
       }
@@ -362,6 +394,12 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
   CHECK(renderPreferences.scaleBarMarginPx == Catch::Approx(12.0f));
   CHECK(settings.brushSizeInVoxels() == 511);
   CHECK(settings.brushPreviewFillOpacity() == Catch::Approx(0.0f));
+  CHECK(renderPreferences.localNccPatchRadius == 5);
+  CHECK(renderPreferences.localNccSampleSpacing == Catch::Approx(0.5f));
+  CHECK(renderPreferences.localNccMinValidFraction == Catch::Approx(1.0f));
+  CHECK(renderPreferences.localNccVarianceEpsilon == Catch::Approx(2.5f));
+  CHECK(renderPreferences.localNccPresentation == user_preferences::RenderPreferences{}.localNccPresentation);
+  CHECK(renderPreferences.localNccInvalidStyle == user_preferences::RenderPreferences{}.localNccInvalidStyle);
   CHECK(renderPreferences.checkerboardSquares == 2);
   CHECK(renderPreferences.targetFrameTimeSeconds == Catch::Approx(1.0));
   CHECK(renderPreferences.raycastSamplingFactor == Catch::Approx(0.1f));
@@ -388,6 +426,8 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("views").at("crosshairs").at("snapping") == "disabled");
   CHECK(root.at("views").at("scaleBars").at("show") == true);
   CHECK(root.at("views").at("lightbox").at("showOffsetLabels") == true);
+  CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("presentation") == "dissimilarity");
+  CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("patchRadius") == 3);
   CHECK(root.at("segmentation").at("brushPreview").at("mode") == "hover");
   CHECK(root.at("synchronization").at("itkSnap").at("enabled") == false);
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);

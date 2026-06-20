@@ -35,6 +35,10 @@ std::string to_string(ShaderProgramType type)
       return "Difference - Linear";
     case ShaderProgramType::DifferenceCubic:
       return "Difference - Cubic";
+    case ShaderProgramType::LocalNccLinear:
+      return "Local NCC - Linear";
+    case ShaderProgramType::LocalNccCubic:
+      return "Local NCC - Cubic";
     case ShaderProgramType::OverlapLinear:
       return "Overlap - Linear";
     case ShaderProgramType::OverlapCubic:

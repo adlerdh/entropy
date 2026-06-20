@@ -14,6 +14,7 @@ TEST_CASE("2D render mode choices stay in stable UI order", "[viewer][modes]")
     ViewRenderMode::Flashlight,
     ViewRenderMode::Overlay,
     ViewRenderMode::Difference,
+    ViewRenderMode::LocalNcc,
     ViewRenderMode::JointHistogram,
     ViewRenderMode::Disabled};
 
@@ -40,7 +41,8 @@ TEST_CASE("view render mode enum ordinals remain stable for serialized layout sp
   CHECK(static_cast<int>(ViewRenderMode::JointHistogram) == 6);
   CHECK(static_cast<int>(ViewRenderMode::VolumeRender) == 7);
   CHECK(static_cast<int>(ViewRenderMode::Disabled) == 8);
-  CHECK(static_cast<int>(ViewRenderMode::NumElements) == 9);
+  CHECK(static_cast<int>(ViewRenderMode::LocalNcc) == 9);
+  CHECK(static_cast<int>(ViewRenderMode::NumElements) == 10);
 }
 
 TEST_CASE("intensity projection modes stay in stable UI order", "[viewer][modes]")

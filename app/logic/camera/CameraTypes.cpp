@@ -24,7 +24,7 @@ ShaderGroup getShaderGroup(const ViewRenderMode& renderMode)
 
     case ViewRenderMode::Overlay:
     case ViewRenderMode::Difference:
-    // case ViewRenderMode::CrossCorrelation:
+    case ViewRenderMode::LocalNcc:
     case ViewRenderMode::JointHistogram: {
       return ShaderGroup::Metric;
     }

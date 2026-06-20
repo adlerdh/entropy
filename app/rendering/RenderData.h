@@ -27,6 +27,18 @@
  */
 struct RenderData
 {
+  enum class LocalNccPresentation
+  {
+    Dissimilarity, //!< Show poor local agreement as high values.
+    Correlation    //!< Show local NCC values mapped from [-1, 1] to [0, 1].
+  };
+
+  enum class LocalNccInvalidStyle
+  {
+    Transparent, //!< Hide patches that cannot produce a stable NCC value.
+    Gray         //!< Draw unstable NCC patches as neutral gray.
+  };
+
   /**
    * @brief Uniforms for a single image component
    */
@@ -310,8 +322,16 @@ struct RenderData
   };
 
   MetricParams m_squaredDifferenceParams;
-  MetricParams m_crossCorrelationParams;
+  MetricParams m_localNccParams;
   MetricParams m_jointHistogramParams;
+
+  int m_localNccPatchRadius = 3;                   //!< Radius of the view-plane NCC patch in samples.
+  float m_localNccSampleSpacing = 1.0f;            //!< Sample spacing in reference-image voxel steps.
+  float m_localNccMinValidFraction = 0.75f;        //!< Required overlap fraction for paired patch samples.
+  float m_localNccVarianceEpsilon = 1.0e-5f;       //!< Minimum local variance before a patch is invalid.
+  bool m_localNccIgnoreNegativeCorrelation = true; //!< Treat negative NCC as maximum mismatch.
+  LocalNccPresentation m_localNccPresentation = LocalNccPresentation::Dissimilarity; //!< Display transform.
+  LocalNccInvalidStyle m_localNccInvalidStyle = LocalNccInvalidStyle::Transparent;   //!< Invalid patch display.
 
   /// Edge detection magnitude and smoothing
   glm::vec2 m_edgeMagnitudeSmoothing;

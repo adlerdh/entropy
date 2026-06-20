@@ -164,7 +164,7 @@ RenderData::RenderData()
   , m_segInterpCutoff(0.5f)
 
   , m_squaredDifferenceParams()
-  , m_crossCorrelationParams()
+  , m_localNccParams()
   , m_jointHistogramParams()
 
   , m_edgeMagnitudeSmoothing(1.0f, 1.0f)

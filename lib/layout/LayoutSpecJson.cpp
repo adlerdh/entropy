@@ -83,7 +83,8 @@ const std::vector<std::pair<ViewRenderMode, const char*>>& renderModeNames()
     {ViewRenderMode::Difference, "Difference"},
     {ViewRenderMode::JointHistogram, "JointHistogram"},
     {ViewRenderMode::VolumeRender, "VolumeRender"},
-    {ViewRenderMode::Disabled, "Disabled"}};
+    {ViewRenderMode::Disabled, "Disabled"},
+    {ViewRenderMode::LocalNcc, "LocalNcc"}};
   return names;
 }
 

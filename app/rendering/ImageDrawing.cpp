@@ -21,8 +21,25 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <string_view>
+
 namespace
 {
+
+void warnLocalNccMissingComparisonImage(std::string_view message)
+{
+  static constexpr std::size_t k_maxNumWarnings = 10;
+  static std::size_t warnCount = 0;
+
+  if (warnCount < k_maxNumWarnings) {
+    ++warnCount;
+    spdlog::warn("{}", message);
+  }
+  else if (k_maxNumWarnings == warnCount) {
+    ++warnCount;
+    spdlog::warn("Halting warnings about local NCC metric views without a comparison image.");
+  }
+}
 
 /**
  * @brief Compute Texture-space direction to sample direction along a camera view axis
@@ -243,48 +260,39 @@ void drawImageQuad(
     program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
     program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
   }
-  /*
-  else if (ViewRenderMode::CrossCorrelation == renderMode)
-  {
-    static const glm::vec4 sk_clipO{0.0f, 0.0f, -1.0f, 1.0};
-    static const glm::vec4 sk_clipX{1.0f, 0.0f, -1.0f, 1.0};
-    static const glm::vec4 sk_clipY{0.0f, 1.0f, -1.0f, 1.0};
-
-    if (2 != I.size())
-    {
-      spdlog::error("Not enough images provided when rendering plane with cross-correlation
-  metric"); return;
-    }
-
-    const Image* img0 = getImage(I[0].first);
-    const Image* img1 = getImage(I[1].first);
-
-    if (!img0 || !img1)
-    {
-      spdlog::error("Null image when rendering plane with edges");
+  else if (ViewRenderMode::LocalNcc == renderMode) {
+    if (I.size() < 2) {
+      warnLocalNccMissingComparisonImage("Not enough images provided when rendering plane with local NCC metric");
       return;
     }
 
-    const glm::mat4 img0Pixel_T_clip = img0->transformations().pixel_T_worldDef() *
-  world_T_viewClip;
+    const Image* img1 = getImage(I[1].first);
+    if (!img1) {
+      warnLocalNccMissingComparisonImage("Null comparison image when rendering plane with local NCC metric");
+      return;
+    }
 
-    const glm::vec4 ppO = img0Pixel_T_clip * sk_clipO;
-    const glm::vec4 ppX = img0Pixel_T_clip * sk_clipX;
-    const glm::vec4 ppY = img0Pixel_T_clip * sk_clipY;
+    const auto posInfo = math::computeAnatomicalLabelsForView(
+      view.camera().camera_T_world(),
+      image0->transformations().worldDef_T_subject());
 
-    const glm::vec3 pixelDirX = glm::normalize(ppX / ppX.w - ppO / ppO.w);
-    const glm::vec3 pixelDirY = glm::normalize(ppY / ppY.w - ppO / ppO.w);
-
-    const glm::vec3 img0_invDims = img0->transformations().invPixelDimensions();
-
-    const glm::vec3 tex0SamplingDirX = glm::dot(glm::abs(pixelDirX), img0_invDims) * pixelDirX;
-    const glm::vec3 tex0SamplingDirY = glm::dot(glm::abs(pixelDirY), img0_invDims) * pixelDirY;
+    const glm::mat4 voxel_T_viewClip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
+    const glm::vec3 tex0SamplingDirX = computeTextureSamplingDirectionForImageVoxelOffset(
+      voxel_T_viewClip,
+      windowViewport,
+      view.viewClip_T_windowClip(),
+      image0->transformations().invPixelDimensions(),
+      posInfo[0].viewClipDir);
+    const glm::vec3 tex0SamplingDirY = computeTextureSamplingDirectionForImageVoxelOffset(
+      voxel_T_viewClip,
+      windowViewport,
+      view.viewClip_T_windowClip(),
+      image0->transformations().invPixelDimensions(),
+      posInfo[1].viewClipDir);
 
     program.setUniform("u_tex0SamplingDirX", tex0SamplingDirX);
     program.setUniform("u_tex0SamplingDirY", tex0SamplingDirY);
   }
-  */
-
   quad.m_vao.bind();
   {
     quad.m_vao.drawElements(quad.m_vaoParams);

@@ -20,6 +20,7 @@ enum class ViewRenderMode
   JointHistogram, //!< Joint intensity histogram of the image pair.
   VolumeRender,   //!< Volume rendering of one image using raycasting.
   Disabled,       //!< Disabled (no rendering).
+  LocalNcc,       //!< Local normalized cross-correlation metric for the image pair.
   NumElements
 };
 
@@ -46,6 +47,7 @@ inline std::vector<ViewRenderMode> const All2dViewRenderModes = {
   ViewRenderMode::Flashlight,
   ViewRenderMode::Overlay,
   ViewRenderMode::Difference,
+  ViewRenderMode::LocalNcc,
   ViewRenderMode::JointHistogram,
   ViewRenderMode::Disabled};
 

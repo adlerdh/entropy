@@ -41,6 +41,18 @@ struct RenderPreferences
     int colormapLevels = 8;
   };
 
+  enum class LocalNccPresentation
+  {
+    Dissimilarity,
+    Correlation
+  };
+
+  enum class LocalNccInvalidStyle
+  {
+    Transparent,
+    Gray
+  };
+
   bool showImageBorders = true;
   CrosshairsSnapping crosshairsSnapping = CrosshairsSnapping::Disabled;
   glm::vec4 crosshairsColor{0.05f, 0.6f, 1.0f, 1.0f};
@@ -75,6 +87,14 @@ struct RenderPreferences
 
   bool squaredDifference = true;
   MetricParams squaredDifferenceMetric;
+  MetricParams localNccMetric;
+  int localNccPatchRadius = 3;
+  float localNccSampleSpacing = 1.0f;
+  float localNccMinValidFraction = 0.75f;
+  float localNccVarianceEpsilon = 1.0e-5f;
+  bool localNccIgnoreNegativeCorrelation = true;
+  LocalNccPresentation localNccPresentation = LocalNccPresentation::Dissimilarity;
+  LocalNccInvalidStyle localNccInvalidStyle = LocalNccInvalidStyle::Transparent;
   bool overlayMagentaCyan = true;
   glm::ivec2 quadrants{true, true};
   int checkerboardSquares = 10;

@@ -1,0 +1,124 @@
+#version 330 core
+
+#define NCC_DISSIMILARITY 0
+#define NCC_CORRELATION 1
+#define INVALID_TRANSPARENT 0
+#define INVALID_GRAY 1
+
+in VS_OUT
+{
+  vec3 v_texCoord[2];
+}
+fs_in;
+
+layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
+
+uniform sampler3D u_imgTex[2];     // images (scalar, red channel only)
+uniform sampler1D u_metricCmapTex; // metric color map (non-premultiplied RGBA)
+
+uniform mat4 img1Tex_T_img0Tex; // transform from image 0 to image 1 Texture space
+
+uniform vec2 u_imgSlopeIntercept[2];     // map texture to normalized intensity [0, 1]
+uniform vec2 u_metricCmapSlopeIntercept; // slope and intercept for the metric colormap
+uniform vec2 u_metricSlopeIntercept;     // slope and intercept for the final metric
+
+uniform vec3 u_tex0SamplingDirX;
+uniform vec3 u_tex0SamplingDirY;
+uniform int u_patchRadius;
+uniform float u_sampleSpacing;
+uniform float u_minValidFraction;
+uniform float u_varianceEpsilon;
+uniform bool u_ignoreNegativeCorrelation;
+uniform int u_presentation; // NCC_DISSIMILARITY or NCC_CORRELATION
+uniform int u_invalidStyle; // INVALID_TRANSPARENT or INVALID_GRAY
+
+$$HELPER_FUNCTIONS$$
+
+/// float textureLookup(sampler3D texture, vec3 texCoords);
+$$TEXTURE_LOOKUP_FUNCTION$$
+
+bool pairedSample(vec2 patchOffset, out float value0, out float value1)
+{
+  vec3 tex0 = fs_in.v_texCoord[0] + patchOffset.x * u_tex0SamplingDirX + patchOffset.y * u_tex0SamplingDirY;
+  vec3 tex1 = vec3(img1Tex_T_img0Tex * vec4(tex0, 1.0));
+
+  if (!isInsideTexture(tex0) || !isInsideTexture(tex1)) {
+    return false;
+  }
+
+  value0 = clamp(u_imgSlopeIntercept[0][0] * textureLookup(u_imgTex[0], tex0) + u_imgSlopeIntercept[0][1], 0.0, 1.0);
+  value1 = clamp(u_imgSlopeIntercept[1][0] * textureLookup(u_imgTex[1], tex1) + u_imgSlopeIntercept[1][1], 0.0, 1.0);
+  return true;
+}
+
+float metricValue(float ncc)
+{
+  float dissimilarity = u_ignoreNegativeCorrelation ? 1.0 - clamp(ncc, 0.0, 1.0) : 0.5 * (1.0 - ncc);
+  float correlation = 0.5 * (ncc + 1.0);
+  return (NCC_CORRELATION == u_presentation) ? correlation : dissimilarity;
+}
+
+void main()
+{
+  float center0 = 0.0;
+  float center1 = 0.0;
+  if (!pairedSample(vec2(0.0), center0, center1)) {
+    discard;
+  }
+
+  float sum0 = 0.0;
+  float sum1 = 0.0;
+  float count = 0.0;
+
+  for (int y = -u_patchRadius; y <= u_patchRadius; ++y) {
+    for (int x = -u_patchRadius; x <= u_patchRadius; ++x) {
+      float value0 = 0.0;
+      float value1 = 0.0;
+      if (pairedSample(u_sampleSpacing * vec2(float(x), float(y)), value0, value1)) {
+        sum0 += value0;
+        sum1 += value1;
+        count += 1.0;
+      }
+    }
+  }
+
+  float sideLength = float(2 * u_patchRadius + 1);
+  float requiredCount = ceil(clamp(u_minValidFraction, 0.0, 1.0) * sideLength * sideLength);
+  bool valid = count >= max(requiredCount, 1.0);
+
+  float mean0 = sum0 / max(count, 1.0);
+  float mean1 = sum1 / max(count, 1.0);
+  float numerator = 0.0;
+  float denom0 = 0.0;
+  float denom1 = 0.0;
+
+  for (int y = -u_patchRadius; y <= u_patchRadius; ++y) {
+    for (int x = -u_patchRadius; x <= u_patchRadius; ++x) {
+      float value0 = 0.0;
+      float value1 = 0.0;
+      if (pairedSample(u_sampleSpacing * vec2(float(x), float(y)), value0, value1)) {
+        float centered0 = value0 - mean0;
+        float centered1 = value1 - mean1;
+        numerator += centered0 * centered1;
+        denom0 += centered0 * centered0;
+        denom1 += centered1 * centered1;
+      }
+    }
+  }
+
+  valid = valid && denom0 > u_varianceEpsilon && denom1 > u_varianceEpsilon;
+  if (!valid) {
+    if (INVALID_TRANSPARENT == u_invalidStyle) {
+      discard;
+    }
+    o_color = vec4(0.35, 0.35, 0.35, 1.0);
+    return;
+  }
+
+  float ncc = clamp(numerator / sqrt(denom0 * denom1), -1.0, 1.0);
+  float metric = metricValue(ncc);
+  metric = clamp(u_metricSlopeIntercept[0] * metric + u_metricSlopeIntercept[1], 0.0, 1.0);
+  float cmapValue = u_metricCmapSlopeIntercept[0] * metric + u_metricCmapSlopeIntercept[1];
+
+  o_color = texture(u_metricCmapTex, cmapValue);
+}

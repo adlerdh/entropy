@@ -11,6 +11,7 @@ TEST_CASE("view overlay chooses image or metric selection by render mode", "[ui]
 
   CHECK(view_overlay::usesMetricImageSelection(ViewRenderMode::Overlay));
   CHECK(view_overlay::usesMetricImageSelection(ViewRenderMode::Difference));
+  CHECK(view_overlay::usesMetricImageSelection(ViewRenderMode::LocalNcc));
   CHECK(view_overlay::usesMetricImageSelection(ViewRenderMode::JointHistogram));
 
   CHECK_FALSE(view_overlay::usesMetricImageSelection(ViewRenderMode::Image));

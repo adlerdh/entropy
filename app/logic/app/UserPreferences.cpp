@@ -83,6 +83,16 @@ void setFloatFromJson(float& value, const json& object, const char* key, float m
   value = std::clamp(it->get<float>(), minValue, maxValue);
 }
 
+void setNonnegativeFloatFromJson(float& value, const json& object, const char* key)
+{
+  const auto it = object.find(key);
+  if (it == object.end() || !it->is_number()) {
+    return;
+  }
+
+  value = std::max(it->get<float>(), 0.0f);
+}
+
 void setDoubleFromJson(double& value, const json& object, const char* key, double minValue, double maxValue)
 {
   const auto it = object.find(key);
@@ -230,6 +240,14 @@ constexpr std::array sk_raycastSegMaskingNames{
   EnumName{user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksIn, "maskIn"},
   EnumName{user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut, "maskOut"}};
 
+constexpr std::array sk_localNccPresentationNames{
+  EnumName{user_preferences::RenderPreferences::LocalNccPresentation::Dissimilarity, "dissimilarity"},
+  EnumName{user_preferences::RenderPreferences::LocalNccPresentation::Correlation, "correlation"}};
+
+constexpr std::array sk_localNccInvalidStyleNames{
+  EnumName{user_preferences::RenderPreferences::LocalNccInvalidStyle::Transparent, "transparent"},
+  EnumName{user_preferences::RenderPreferences::LocalNccInvalidStyle::Gray, "gray"}};
+
 json metricParamsToJson(const user_preferences::RenderPreferences::MetricParams& params)
 {
   return {
@@ -328,6 +346,15 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
      {{"difference",
        {{"squared", renderPreferences.squaredDifference},
         {"metric", metricParamsToJson(renderPreferences.squaredDifferenceMetric)}}},
+      {"localNormalizedCrossCorrelation",
+       {{"metric", metricParamsToJson(renderPreferences.localNccMetric)},
+        {"presentation", enumToName(renderPreferences.localNccPresentation, sk_localNccPresentationNames)},
+        {"negativeCorrelationAsMismatch", renderPreferences.localNccIgnoreNegativeCorrelation},
+        {"patchRadius", renderPreferences.localNccPatchRadius},
+        {"sampleSpacing", renderPreferences.localNccSampleSpacing},
+        {"minimumValidFraction", renderPreferences.localNccMinValidFraction},
+        {"varianceEpsilon", renderPreferences.localNccVarianceEpsilon},
+        {"invalidStyle", enumToName(renderPreferences.localNccInvalidStyle, sk_localNccInvalidStyleNames)}}},
       {"overlay", {{"magentaCyan", renderPreferences.overlayMagentaCyan}}},
       {"quadrants",
        {{"x", static_cast<bool>(renderPreferences.quadrants.x)},
@@ -553,6 +580,33 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
       if (const auto metric = difference->find("metric"); metric != difference->end() && metric->is_object()) {
         applyMetricParamsFromJson(renderPreferences.squaredDifferenceMetric, *metric);
       }
+    }
+    if (const auto localNcc = comparison->find("localNormalizedCrossCorrelation");
+        localNcc != comparison->end() && localNcc->is_object())
+    {
+      if (const auto metric = localNcc->find("metric"); metric != localNcc->end() && metric->is_object()) {
+        applyMetricParamsFromJson(renderPreferences.localNccMetric, *metric);
+      }
+      if (
+        const auto parsed = enumFromName<user_preferences::RenderPreferences::LocalNccPresentation>(
+          localNcc->value("presentation", ""),
+          sk_localNccPresentationNames))
+      {
+        renderPreferences.localNccPresentation = *parsed;
+      }
+      if (
+        const auto parsed = enumFromName<user_preferences::RenderPreferences::LocalNccInvalidStyle>(
+          localNcc->value("invalidStyle", ""),
+          sk_localNccInvalidStyleNames))
+      {
+        renderPreferences.localNccInvalidStyle = *parsed;
+      }
+      setFromJson(renderPreferences.localNccIgnoreNegativeCorrelation, *localNcc, "negativeCorrelationAsMismatch");
+      setFromJson(renderPreferences.localNccPatchRadius, *localNcc, "patchRadius");
+      setFloatFromJson(renderPreferences.localNccSampleSpacing, *localNcc, "sampleSpacing", 0.5f, 4.0f);
+      setFloatFromJson(renderPreferences.localNccMinValidFraction, *localNcc, "minimumValidFraction", 0.1f, 1.0f);
+      setNonnegativeFloatFromJson(renderPreferences.localNccVarianceEpsilon, *localNcc, "varianceEpsilon");
+      renderPreferences.localNccPatchRadius = std::clamp(renderPreferences.localNccPatchRadius, 1, 5);
     }
     if (const auto overlay = comparison->find("overlay"); overlay != comparison->end() && overlay->is_object()) {
       setFromJson(renderPreferences.overlayMagentaCyan, *overlay, "magentaCyan");
