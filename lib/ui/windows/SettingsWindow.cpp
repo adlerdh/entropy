@@ -1143,17 +1143,9 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
 
       if (BrushPreviewStyle::OutlineAndFill == settings.brushPreviewStyle()) {
         float previewFillOpacityPercent = 100.0f * settings.brushPreviewFillOpacity();
-        ImGui::PushItemWidth(fillWidthForLabeledControl("Fill opacity##brushPreviewFillOpacity"));
-        if (ImGui::SliderFloat(
-              "Fill opacity##brushPreviewFillOpacity",
-              &previewFillOpacityPercent,
-              0.0f,
-              100.0f,
-              "%.0f%%"))
-        {
+        if (mySliderF32("Fill opacity##brushPreviewFillOpacity", &previewFillOpacityPercent, 0.0f, 100.0f, "%.0f%%")) {
           settings.setBrushPreviewFillOpacity(previewFillOpacityPercent / 100.0f);
         }
-        ImGui::PopItemWidth();
       }
 
       bool previewWhilePainting = settings.brushPreviewWhilePainting();

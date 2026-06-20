@@ -61,9 +61,19 @@ $$TEXTURE_LOOKUP_FUNCTION$$
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
 $$DO_RENDER_FUNCTION$$
 
+bool isEdgeNeighborhoodInsideTexture(vec3 texCoord)
+{
+  // Suppress the artificial image-domain contour by requiring the whole Sobel
+  // footprint to remain inside the texture.
+  vec3 d0 = u_texelDirs[0];
+  vec3 d1 = u_texelDirs[1];
+  return isInsideTexture(texCoord - d0 - d1) && isInsideTexture(texCoord + d0 - d1) &&
+         isInsideTexture(texCoord - d0 + d1) && isInsideTexture(texCoord + d0 + d1);
+}
+
 void main()
 {
-  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord)) {
+  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord) || !isEdgeNeighborhoodInsideTexture(fs_in.v_texCoord)) {
     discard;
   }
 

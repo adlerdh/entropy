@@ -21,6 +21,15 @@ namespace serialize
 {
 
 /**
+ * @brief Serialized edge-detection space for image edge rendering.
+ */
+enum class ProjectEdgeDetectionMethod : std::uint8_t
+{
+  Pixel,
+  Voxel
+};
+
+/**
  * @todo Create enum for all image color maps
  * @brief Serialized data for image settings
  */
@@ -35,6 +44,18 @@ struct ImageSettings
   double m_thresholdHigh = 0.0f; //!< Values above threshold not displayed
 
   double m_opacity = 1.0f; //!< Opacity [0, 1]
+
+  ProjectEdgeDetectionMethod m_edgeDetectionMethod = ProjectEdgeDetectionMethod::Voxel; //!< Edge sampling space.
+  bool m_showEdges = false;                                                             //!< Show edge rendering.
+  bool m_thresholdEdges = false;           //!< Show hard thresholded edges.
+  bool m_thinPixelEdges = true;            //!< Thin pixel-space edges with non-maximum suppression.
+  bool m_overlayEdges = false;             //!< Overlay edges on the image.
+  bool m_colormapEdges = false;            //!< Color edges with the image colormap.
+  double m_edgeMagnitude = 0.25;           //!< Voxel-space edge scale or threshold.
+  double m_pixelEdgeScale = 2.0;           //!< Pixel-space edge magnitude scale.
+  double m_pixelEdgeThreshold = 0.2;       //!< Pixel-space edge hard-edge threshold.
+  glm::vec3 m_edgeColor{1.0f, 0.0f, 1.0f}; //!< Solid edge RGB color.
+  double m_edgeOpacity = 1.0;              //!< Solid edge opacity.
 
   /**
    * @todo Add isosurfaces

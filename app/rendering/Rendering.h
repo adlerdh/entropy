@@ -3,6 +3,7 @@
 #include "common/Types.h"
 #include "common/UuidRange.h"
 #include "logic/camera/CameraTypes.h"
+#include "rendering/PixelEdgeRenderer.h"
 #include "rendering/ascii/AsciiRenderer.h"
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/common/ShaderType.h"
@@ -140,7 +141,8 @@ private:
     const FrameBounds& miewportViewBounds,
     const glm::vec3& worldOffsetXhairs,
     bool renderLandmarkAndAnnotationOverlays = true,
-    bool renderImageBorders = true);
+    bool renderImageBorders = true,
+    bool allowImagePostProcessing = true);
   void renderAllImageBordersForView(
     const View& view,
     const FrameBounds& miewportViewBounds,
@@ -203,6 +205,9 @@ private:
 
   // ASCII post-processing pipeline (atlas, FBOs, per-frame render)
   AsciiRenderer m_asciiRenderer;
+
+  // Pixel-space image-edge post-processing pipeline
+  PixelEdgeRenderer m_pixelEdgeRenderer;
 
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
 

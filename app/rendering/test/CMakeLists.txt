@@ -1,8 +1,10 @@
 add_executable(EntropyRenderingTests
+  PixelEdgeGeometryTests.cpp
   ScaleBarGeometryTests.cpp
 )
 
 target_sources(EntropyRenderingTests PRIVATE
+  "${entropy_APP_DIR}/rendering/PixelEdgeGeometry.cpp"
   "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"
 )
 

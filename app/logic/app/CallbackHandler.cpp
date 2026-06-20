@@ -1810,7 +1810,7 @@ void CallbackHandler::toggleImageEdges()
     return;
   }
 
-  image->settings().setShowEdges(!image->settings().showEdges());
+  image->settings().setShowAnyEdges(!image->settings().showAnyEdges());
   m_rendering.updateImageUniforms(*imageUid);
 }
 

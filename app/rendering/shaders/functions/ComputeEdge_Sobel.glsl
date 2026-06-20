@@ -1,5 +1,5 @@
 // Sobel edge detection convolution filters:
-// Scharr version (see https://en.wikipedia.org/wiki/Sobel_operator)
+// This uses the standard 3x3 Sobel weights, not the Scharr variant.
 const float A = 1.0;
 const float B = 2.0;
 

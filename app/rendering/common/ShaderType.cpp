@@ -47,6 +47,8 @@ std::string to_string(ShaderProgramType type)
       return "ASCII Cell Regions Downsample";
     case ShaderProgramType::AsciiPostSpatial:
       return "ASCII Post-Process Spatial";
+    case ShaderProgramType::PixelEdgePost:
+      return "Pixel Edge Post-Process";
     default:
       return "Unknown shader program type";
   }

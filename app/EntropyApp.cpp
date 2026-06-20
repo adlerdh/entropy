@@ -266,15 +266,34 @@ std::optional<dicom::SeriesInfo> resolveDicomSource(const serialize::DicomSource
 
 serialize::ImageSettings makeImageSettingsSnapshot(const Image& image)
 {
+  const ImageSettings& imageSettings = image.settings();
   const auto thresholds = image.settings().thresholds();
 
   serialize::ImageSettings settings;
-  settings.m_displayName = image.settings().displayName();
-  settings.m_level = image.settings().windowCenter();
-  settings.m_window = image.settings().windowWidth();
+  settings.m_displayName = imageSettings.displayName();
+  settings.m_level = imageSettings.windowCenter();
+  settings.m_window = imageSettings.windowWidth();
   settings.m_thresholdLow = thresholds.first;
   settings.m_thresholdHigh = thresholds.second;
-  settings.m_opacity = image.settings().opacity();
+  settings.m_opacity = imageSettings.opacity();
+  settings.m_edgeDetectionMethod = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
+                                     ? serialize::ProjectEdgeDetectionMethod::Pixel
+                                     : serialize::ProjectEdgeDetectionMethod::Voxel;
+  settings.m_showEdges = imageSettings.showAnyEdges();
+  settings.m_thresholdEdges = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
+                                ? imageSettings.thresholdPixelEdges()
+                                : imageSettings.thresholdEdges();
+  settings.m_thinPixelEdges = imageSettings.thinPixelEdges();
+  settings.m_overlayEdges = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
+                              ? imageSettings.overlayPixelEdges()
+                              : imageSettings.overlayEdges();
+  settings.m_colormapEdges =
+    EdgeDetectionMethod::Voxel == imageSettings.edgeDetectionMethod() && imageSettings.colormapEdges();
+  settings.m_edgeMagnitude = imageSettings.edgeMagnitude();
+  settings.m_pixelEdgeScale = imageSettings.pixelEdgeScale();
+  settings.m_pixelEdgeThreshold = imageSettings.pixelEdgeThreshold();
+  settings.m_edgeColor = imageSettings.edgeColor();
+  settings.m_edgeOpacity = imageSettings.edgeOpacity();
   return settings;
 }
 
@@ -287,15 +306,32 @@ serialize::SegSettings makeSegSettingsSnapshot(const Image& seg)
 
 void applyImageSettingsSnapshot(Image& image, const serialize::ImageSettings& settings)
 {
+  ImageSettings& imageSettings = image.settings();
   if (!settings.m_displayName.empty()) {
-    image.settings().setDisplayName(settings.m_displayName);
+    imageSettings.setDisplayName(settings.m_displayName);
   }
 
-  image.settings().setWindowCenter(settings.m_level);
-  image.settings().setWindowWidth(settings.m_window);
-  image.settings().setThresholdLow(settings.m_thresholdLow);
-  image.settings().setThresholdHigh(settings.m_thresholdHigh);
-  image.settings().setOpacity(settings.m_opacity);
+  imageSettings.setWindowCenter(settings.m_level);
+  imageSettings.setWindowWidth(settings.m_window);
+  imageSettings.setThresholdLow(settings.m_thresholdLow);
+  imageSettings.setThresholdHigh(settings.m_thresholdHigh);
+  imageSettings.setOpacity(settings.m_opacity);
+  imageSettings.setEdgeDetectionMethod(
+    serialize::ProjectEdgeDetectionMethod::Pixel == settings.m_edgeDetectionMethod ? EdgeDetectionMethod::Pixel
+                                                                                   : EdgeDetectionMethod::Voxel);
+  imageSettings.setShowAnyEdges(settings.m_showEdges);
+  imageSettings.setThresholdEdges(settings.m_thresholdEdges);
+  imageSettings.setThresholdPixelEdges(settings.m_thresholdEdges);
+  imageSettings.setThinPixelEdges(settings.m_thinPixelEdges);
+  imageSettings.setOverlayEdges(settings.m_overlayEdges);
+  imageSettings.setOverlayPixelEdges(settings.m_overlayEdges);
+  imageSettings.setColormapEdges(
+    serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod && settings.m_colormapEdges);
+  imageSettings.setEdgeMagnitude(settings.m_edgeMagnitude);
+  imageSettings.setPixelEdgeScale(settings.m_pixelEdgeScale);
+  imageSettings.setPixelEdgeThreshold(settings.m_pixelEdgeThreshold);
+  imageSettings.setEdgeColor(settings.m_edgeColor);
+  imageSettings.setEdgeOpacity(settings.m_edgeOpacity);
 }
 
 void applySegSettingsSnapshot(Image& seg, const serialize::SegSettings& settings)
@@ -362,7 +398,12 @@ bool imageSettingsEqual(
 
   return a->m_displayName == b->m_displayName && a->m_level == b->m_level && a->m_window == b->m_window &&
          a->m_thresholdLow == b->m_thresholdLow && a->m_thresholdHigh == b->m_thresholdHigh &&
-         a->m_opacity == b->m_opacity;
+         a->m_opacity == b->m_opacity && a->m_edgeDetectionMethod == b->m_edgeDetectionMethod &&
+         a->m_showEdges == b->m_showEdges && a->m_thresholdEdges == b->m_thresholdEdges &&
+         a->m_thinPixelEdges == b->m_thinPixelEdges && a->m_overlayEdges == b->m_overlayEdges &&
+         a->m_colormapEdges == b->m_colormapEdges && a->m_edgeMagnitude == b->m_edgeMagnitude &&
+         a->m_pixelEdgeScale == b->m_pixelEdgeScale && a->m_pixelEdgeThreshold == b->m_pixelEdgeThreshold &&
+         a->m_edgeColor == b->m_edgeColor && a->m_edgeOpacity == b->m_edgeOpacity;
 }
 
 bool segSettingsEqual(const std::optional<serialize::SegSettings>& a, const std::optional<serialize::SegSettings>& b)

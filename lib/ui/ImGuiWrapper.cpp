@@ -2101,7 +2101,7 @@ void ImGuiWrapper::render()
       case MainMenuAction::ToggleImageEdges: {
         const auto imageUid = m_appData.activeImageUid();
         const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
-        return image ? image->settings().showEdges() : false;
+        return image ? image->settings().showAnyEdges() : false;
       }
       case MainMenuAction::ToggleSegmentationOutline:
         return SegmentationOutlineStyle::Disabled != m_appData.renderData().m_segOutlineStyle;

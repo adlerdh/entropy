@@ -2,6 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <glm/vec3.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -110,4 +112,79 @@ TEST_CASE("Project serialization preserves interface settings", "[project][seria
   CHECK(parsed.m_interface.m_coordsPrecision == 5);
   CHECK(parsed.m_interface.m_txPrecision == 6);
   CHECK(parsed.m_interface.m_percentilePrecision == 7);
+}
+
+TEST_CASE("Project serialization preserves image edge settings", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_referenceImage.m_settings = serialize::ImageSettings{
+    .m_displayName = "Image",
+    .m_level = 42.0,
+    .m_window = 12.0,
+    .m_thresholdLow = 1.0,
+    .m_thresholdHigh = 11.0,
+    .m_opacity = 0.75,
+    .m_edgeDetectionMethod = serialize::ProjectEdgeDetectionMethod::Pixel,
+    .m_showEdges = true,
+    .m_thresholdEdges = false,
+    .m_thinPixelEdges = true,
+    .m_overlayEdges = false,
+    .m_colormapEdges = true,
+    .m_edgeMagnitude = 0.33,
+    .m_pixelEdgeScale = 2.5,
+    .m_pixelEdgeThreshold = 0.44,
+    .m_edgeColor = glm::vec3{0.1f, 0.2f, 0.3f},
+    .m_edgeOpacity = 0.6};
+
+  const json root = project;
+  const json& settings = root.at("reference").at("settings");
+
+  CHECK(settings.at("edgeDetectionMethod") == "pixel");
+  CHECK(settings.at("showEdges") == true);
+  CHECK(settings.at("hardEdges") == false);
+  CHECK(settings.at("thinPixelEdges") == true);
+  CHECK(settings.at("overlayEdges") == false);
+  CHECK_FALSE(settings.contains("colormapEdges"));
+  CHECK(settings.at("edgeMagnitude") == 0.33);
+  CHECK(settings.at("pixelEdgeScale") == 2.5);
+  CHECK(settings.at("pixelEdgeThreshold") == 0.44);
+  CHECK(settings.at("edgeColor") == json::array({0.1f, 0.2f, 0.3f}));
+  CHECK(settings.at("edgeOpacity") == 0.6);
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_settings.has_value());
+  const serialize::ImageSettings& parsedSettings = *parsed.m_referenceImage.m_settings;
+
+  CHECK(parsedSettings.m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::Pixel);
+  CHECK(parsedSettings.m_showEdges);
+  CHECK_FALSE(parsedSettings.m_thresholdEdges);
+  CHECK(parsedSettings.m_thinPixelEdges);
+  CHECK_FALSE(parsedSettings.m_overlayEdges);
+  CHECK_FALSE(parsedSettings.m_colormapEdges);
+  CHECK(parsedSettings.m_edgeMagnitude == 0.33);
+  CHECK(parsedSettings.m_pixelEdgeScale == 2.5);
+  CHECK(parsedSettings.m_pixelEdgeThreshold == 0.44);
+  CHECK(parsedSettings.m_edgeColor == glm::vec3{0.1f, 0.2f, 0.3f});
+  CHECK(parsedSettings.m_edgeOpacity == 0.6);
+}
+
+TEST_CASE("Project serialization preserves voxel edge colormap setting", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_referenceImage.m_settings = serialize::ImageSettings{};
+  project.m_referenceImage.m_settings->m_edgeDetectionMethod = serialize::ProjectEdgeDetectionMethod::Voxel;
+  project.m_referenceImage.m_settings->m_showEdges = true;
+  project.m_referenceImage.m_settings->m_colormapEdges = true;
+
+  const json root = project;
+  const json& settings = root.at("reference").at("settings");
+  CHECK(settings.at("edgeDetectionMethod") == "voxel");
+  CHECK(settings.at("colormapEdges") == true);
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_settings.has_value());
+  CHECK(parsed.m_referenceImage.m_settings->m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::Voxel);
+  CHECK(parsed.m_referenceImage.m_settings->m_colormapEdges);
 }

@@ -25,7 +25,8 @@ enum class ShaderProgramType
   AsciiPost,
   AsciiCellMean,
   AsciiCellRegions,
-  AsciiPostSpatial
+  AsciiPostSpatial,
+  PixelEdgePost
 };
 
 std::string to_string(ShaderProgramType type);

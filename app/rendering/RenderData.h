@@ -87,6 +87,13 @@ struct RenderData
     bool overlayEdges = false;
     bool colormapEdges = false;
     glm::vec4 edgeColor{0.0f}; // RGBA, premultiplied by alpha
+
+    bool showPixelEdges = false;
+    bool thresholdPixelEdges = false;
+    bool thinPixelEdges = true;
+    float pixelEdgeScale = 2.0f;
+    float pixelEdgeThreshold = 0.2f;
+    bool overlayPixelEdges = false;
   };
 
   struct Quad

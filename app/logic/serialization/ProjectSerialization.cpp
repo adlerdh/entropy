@@ -69,6 +69,10 @@ constexpr std::array k_layoutTabPlacementNames{
   EnumName{serialize::ProjectLayoutTabPlacement::Top, "top"},
   EnumName{serialize::ProjectLayoutTabPlacement::Bottom, "bottom"}};
 
+constexpr std::array k_edgeDetectionMethodNames{
+  EnumName{serialize::ProjectEdgeDetectionMethod::Pixel, "pixel"},
+  EnumName{serialize::ProjectEdgeDetectionMethod::Voxel, "voxel"}};
+
 std::optional<std::uint32_t> unsignedIntFromJson(const json& value)
 {
   if (value.is_number_unsigned()) {
@@ -197,7 +201,21 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"window", settings.m_window},
     {"thresholdLow", settings.m_thresholdLow},
     {"thresholdHigh", settings.m_thresholdHigh},
-    {"opacity", settings.m_opacity}};
+    {"opacity", settings.m_opacity},
+    {"edgeDetectionMethod", enumToName(settings.m_edgeDetectionMethod, k_edgeDetectionMethodNames)},
+    {"showEdges", settings.m_showEdges},
+    {"hardEdges", settings.m_thresholdEdges},
+    {"thinPixelEdges", settings.m_thinPixelEdges},
+    {"overlayEdges", settings.m_overlayEdges},
+    {"edgeMagnitude", settings.m_edgeMagnitude},
+    {"pixelEdgeScale", settings.m_pixelEdgeScale},
+    {"pixelEdgeThreshold", settings.m_pixelEdgeThreshold},
+    {"edgeColor", {settings.m_edgeColor.r, settings.m_edgeColor.g, settings.m_edgeColor.b}},
+    {"edgeOpacity", settings.m_edgeOpacity}};
+
+  if (serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod) {
+    j["colormapEdges"] = settings.m_colormapEdges;
+  }
 }
 
 void from_json(const json& j, serialize::ImageSettings& settings)
@@ -219,6 +237,43 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   }
   if (j.count("opacity")) {
     j.at("opacity").get_to(settings.m_opacity);
+  }
+  if (
+    const auto parsed = enumFromName<serialize::ProjectEdgeDetectionMethod>(
+      j.value("edgeDetectionMethod", ""),
+      k_edgeDetectionMethodNames))
+  {
+    settings.m_edgeDetectionMethod = *parsed;
+  }
+  if (j.count("showEdges")) {
+    j.at("showEdges").get_to(settings.m_showEdges);
+  }
+  if (j.count("hardEdges")) {
+    j.at("hardEdges").get_to(settings.m_thresholdEdges);
+  }
+  if (j.count("thinPixelEdges")) {
+    j.at("thinPixelEdges").get_to(settings.m_thinPixelEdges);
+  }
+  if (j.count("overlayEdges")) {
+    j.at("overlayEdges").get_to(settings.m_overlayEdges);
+  }
+  if (serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod && j.count("colormapEdges")) {
+    j.at("colormapEdges").get_to(settings.m_colormapEdges);
+  }
+  if (j.count("edgeMagnitude")) {
+    j.at("edgeMagnitude").get_to(settings.m_edgeMagnitude);
+  }
+  if (j.count("pixelEdgeScale")) {
+    j.at("pixelEdgeScale").get_to(settings.m_pixelEdgeScale);
+  }
+  if (j.count("pixelEdgeThreshold")) {
+    j.at("pixelEdgeThreshold").get_to(settings.m_pixelEdgeThreshold);
+  }
+  if (const auto color = j.find("edgeColor"); color != j.end() && color->is_array() && color->size() == 3) {
+    settings.m_edgeColor = glm::vec3{color->at(0).get<float>(), color->at(1).get<float>(), color->at(2).get<float>()};
+  }
+  if (j.count("edgeOpacity")) {
+    j.at("edgeOpacity").get_to(settings.m_edgeOpacity);
   }
 }
 

@@ -306,6 +306,7 @@ Rendering::Rendering(AppData& appData)
   : m_appData(appData)
   , m_nvg(nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES /*| NVG_DEBUG*/))
   , m_asciiRenderer(appData)
+  , m_pixelEdgeRenderer()
   , m_raycastIsoProgram("RaycastIsoSurfaceProgram")
   , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
@@ -550,6 +551,7 @@ void Rendering::init()
 {
   nvgReset(m_nvg);
   m_asciiRenderer.init();
+  m_pixelEdgeRenderer.init();
 }
 
 void Rendering::initTextures()
@@ -1318,6 +1320,12 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   uniforms.overlayEdges = imgSettings.overlayEdges();
   uniforms.colormapEdges = imgSettings.colormapEdges();
   uniforms.edgeColor = static_cast<float>(imgSettings.edgeOpacity()) * glm::vec4{imgSettings.edgeColor(), 1.0f};
+  uniforms.showPixelEdges = imgSettings.showPixelEdges();
+  uniforms.thresholdPixelEdges = imgSettings.thresholdPixelEdges();
+  uniforms.thinPixelEdges = imgSettings.thinPixelEdges();
+  uniforms.pixelEdgeScale = static_cast<float>(imgSettings.pixelEdgeScale());
+  uniforms.pixelEdgeThreshold = static_cast<float>(imgSettings.pixelEdgeThreshold());
+  uniforms.overlayPixelEdges = imgSettings.overlayPixelEdges();
 
   // The segmentation linked to this image:
   const auto& segUid = m_appData.imageToActiveSegUid(imageUid);
@@ -1732,10 +1740,17 @@ void Rendering::renderAllImagesForView(
   const FrameBounds& miewportViewBounds,
   const glm::vec3& worldOffsetXhairs,
   bool renderLandmarkAndAnnotationOverlays,
-  bool renderImageBorders)
+  bool renderImageBorders,
+  bool allowImagePostProcessing)
 {
   static const RenderData::ImageUniforms sk_defaultImageUniforms;
   const RenderData& R = m_appData.renderData();
+  const glm::vec4 deviceVP = m_appData.windowData().viewport().getDeviceAsVec4();
+  const glm::ivec4 defaultViewport{
+    static_cast<int>(deviceVP.x),
+    static_cast<int>(deviceVP.y),
+    static_cast<int>(deviceVP.z),
+    static_cast<int>(deviceVP.w)};
 
   switch (getShaderGroup(view.renderMode())) {
     case ShaderGroup::Image: {
@@ -1780,8 +1795,7 @@ void Rendering::renderAllImagesForView(
         const RenderData::ImageUniforms& U = R.m_uniforms.at(imgUid);
 
         if (!img->settings().displayImageAsColor()) {
-          // Render greyscale image
-          if (!U.showEdges || (U.showEdges && U.overlayEdges)) {
+          auto drawGrayImage = [&](bool disableIntensityProjectionForEdges) {
             GLShaderProgram* P = nullptr;
             switch (img->settings().interpolationMode()) {
               case InterpolationMode::NearestNeighbor: {
@@ -1841,14 +1855,49 @@ void Rendering::renderAllImagesForView(
               P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
               P->setUniform("u_renderMode", displayModeUniform);
 
-              renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
+              renderOneImage(
+                view,
+                worldOffsetXhairs,
+                *P,
+                CurrentImages{imgSegPair},
+                disableIntensityProjectionForEdges);
             }
             P->stopUse();
             unbindTextures(boundTextures);
+          };
+
+          const bool usePixelEdges = U.showPixelEdges && allowImagePostProcessing;
+
+          if (usePixelEdges) {
+            const PixelEdgeRenderer::ViewRect viewRect =
+              entropy::rendering::pixel_edge::computeViewRect(view.windowClipViewport(), deviceVP);
+
+            auto bindPixelEdgeColormap = [&]() {
+              auto& renderData = m_appData.renderData();
+              const auto cmapUid = img ? m_appData.imageColorMapUid(img->settings().colorMapIndex()) : std::nullopt;
+              if (cmapUid) {
+                renderData.m_colormapTextures.at(*cmapUid).bind(msk_imgCmapTexSampler.index);
+              }
+              else if (!renderData.m_colormapTextures.empty()) {
+                renderData.m_colormapTextures.begin()->second.bind(msk_imgCmapTexSampler.index);
+              }
+            };
+
+            m_pixelEdgeRenderer.render(
+              m_shaderPrograms,
+              defaultViewport,
+              viewRect,
+              U,
+              [&]() { drawGrayImage(false); },
+              bindPixelEdgeColormap);
+          }
+          // Render greyscale image
+          else if (U.showPixelEdges || !U.showEdges || (U.showEdges && U.overlayEdges)) {
+            drawGrayImage(U.showEdges);
           }
 
           // Render edges
-          if (U.showEdges) {
+          if (!U.showPixelEdges && U.showEdges) {
             GLShaderProgram* P = nullptr;
             switch (img->settings().interpolationMode()) {
               case InterpolationMode::NearestNeighbor:
@@ -2511,7 +2560,7 @@ void Rendering::renderImageData()
     m_asciiRenderer.render(
       m_shaderPrograms,
       [this](const View& v, const FrameBounds& b, const glm::vec3& o) {
-        renderAllImagesForView(v, b, o, false, false);
+        renderAllImagesForView(v, b, o, false, false, false);
       },
       [this](const View& v, const FrameBounds& b, const glm::vec3& o) { renderAllImageBordersForView(v, b, o); },
       [this](const View& v, const FrameBounds& b, const glm::vec3& o) { renderAllLandmarksForView(v, b, o); },
@@ -3091,6 +3140,7 @@ void Rendering::createShaderPrograms()
   }
 
   m_asciiRenderer.registerShaderPrograms(m_shaderPrograms);
+  m_pixelEdgeRenderer.registerShaderPrograms(m_shaderPrograms);
 }
 
 bool Rendering::createRaycastIsoProgram(GLShaderProgram& program)

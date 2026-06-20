@@ -1169,124 +1169,152 @@ void renderImageHeader(
     ImGui::Spacing();
     ImGui::Spacing();
 
-    // Show edges:
-    bool showEdges = imgSettings.showEdges();
+    bool showEdges = imgSettings.showAnyEdges();
     if (ImGui::Checkbox("Show edges", &showEdges)) {
-      imgSettings.setShowEdges(showEdges);
+      imgSettings.setShowAnyEdges(showEdges);
       updateImageUniforms();
     }
     ImGui::SameLine();
-    helpMarker("Show/hide the edges of the image (E)");
+    helpMarker("Show/hide image edges (E). Edge settings control whether edges are computed in voxel or pixel space.");
 
     ImGui::SetNextItemOpen(showEdges, ImGuiCond_Appearing);
-
     if (showEdges && ImGui::TreeNode("Edge settings")) {
-      // Recommend linear interpolation:
-      if (InterpolationMode::NearestNeighbor == imgSettings.interpolationMode()) {
+      EdgeDetectionMethod edgeMethod = imgSettings.edgeDetectionMethod();
+      int edgeMethodIndex = EdgeDetectionMethod::Voxel == edgeMethod ? 0 : 1;
+      if (ImGui::RadioButton("Voxel-space", edgeMethodIndex == 0)) {
+        edgeMethodIndex = 0;
+      }
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Pixel-space", edgeMethodIndex == 1)) {
+        edgeMethodIndex = 1;
+      }
+      const EdgeDetectionMethod selectedEdgeMethod =
+        edgeMethodIndex == 0 ? EdgeDetectionMethod::Voxel : EdgeDetectionMethod::Pixel;
+      if (selectedEdgeMethod != edgeMethod) {
+        imgSettings.setEdgeDetectionMethod(selectedEdgeMethod);
+        edgeMethod = selectedEdgeMethod;
+        updateImageUniforms();
+      }
+      ImGui::SameLine();
+      helpMarker(
+        "Voxel-space edges are computed from image samples. Pixel-space edges are computed after the image is sampled "
+        "into the view.");
+
+      const bool useVoxelEdges = EdgeDetectionMethod::Voxel == edgeMethod;
+      const bool usePixelEdges = EdgeDetectionMethod::Pixel == edgeMethod;
+
+      if (useVoxelEdges && InterpolationMode::NearestNeighbor == imgSettings.interpolationMode()) {
         ImGui::Text("Note: Linear or cubic interpolation are recommended when showing edges.");
-        //                    imgSettings.setInterpolationMode(InterpolationMode::Linear);
-        //                    updateImageInterpolationMode();
       }
 
-      // Threshold edges:
-      bool thresholdEdges = imgSettings.thresholdEdges();
-      if (ImGui::Checkbox("Hard edges", &thresholdEdges)) {
-        imgSettings.setThresholdEdges(thresholdEdges);
-        updateImageUniforms();
-      }
-      ImGui::SameLine();
-      helpMarker("Apply thresholding to edge gradient magnitude to get hard edges");
-
-      //                // Windowed edges:
-      //                bool windowedEdges = imgSettings.windowedEdges();
-      //                if (ImGui::Checkbox("Compute edges after windowing", &windowedEdges))
-      //                {
-      //                    imgSettings.setWindowedEdges(windowedEdges);
-      //                    updateImageUniforms();
-      //                }
-      //                ImGui::SameLine();
-      //                HelpMarker("Compute edges after applying windowing (width/level) to the
-      //                image");
-
-      // Use Sobel or Frei-Chen:
-      bool useFreiChen = imgSettings.useFreiChen();
-      if (ImGui::Checkbox("Frei-Chen filter", &useFreiChen)) {
-        imgSettings.setUseFreiChen(useFreiChen);
-        updateImageUniforms();
-      }
-      ImGui::SameLine();
-      helpMarker("Compute edges using Sobel or Frei-Chen convolution filters");
-
-      // Overlay edges:
-      bool overlayEdges = imgSettings.overlayEdges();
-      if (ImGui::Checkbox("Overlay edges on image", &overlayEdges)) {
-        if (imgSettings.colormapEdges()) {
-          // Do not allow edge overlay if edges are colormapped
-          overlayEdges = false;
+      bool hardEdges = useVoxelEdges ? imgSettings.thresholdEdges() : imgSettings.thresholdPixelEdges();
+      if (ImGui::Checkbox("Hard edges", &hardEdges)) {
+        if (useVoxelEdges) {
+          imgSettings.setThresholdEdges(hardEdges);
         }
-
-        imgSettings.setOverlayEdges(overlayEdges);
+        else {
+          imgSettings.setThresholdPixelEdges(hardEdges);
+        }
         updateImageUniforms();
       }
       ImGui::SameLine();
-      helpMarker("Overlay edges on top of the image");
+      helpMarker("Apply thresholding to edge magnitude.");
 
-      // Colormap the edges (always false if overlaying the edges or thresholding the edges):
-      if (overlayEdges || thresholdEdges) {
-        imgSettings.setColormapEdges(false);
-        updateImageUniforms();
+      if (usePixelEdges) {
+        bool thinPixelEdges = imgSettings.thinPixelEdges();
+        if (ImGui::Checkbox("Thin edges", &thinPixelEdges)) {
+          imgSettings.setThinPixelEdges(thinPixelEdges);
+          updateImageUniforms();
+        }
+        ImGui::SameLine();
+        helpMarker("Keep only local edge-magnitude maxima along the screen-space gradient direction.");
       }
 
-      bool colormapEdges = imgSettings.colormapEdges();
+      bool overlayEdges = useVoxelEdges ? imgSettings.overlayEdges() : imgSettings.overlayPixelEdges();
+      if (ImGui::Checkbox("Overlay edges on image", &overlayEdges)) {
+        if (useVoxelEdges) {
+          imgSettings.setOverlayEdges(overlayEdges);
+        }
+        else {
+          imgSettings.setOverlayPixelEdges(overlayEdges);
+        }
+        updateImageUniforms();
+      }
+      ImGui::SameLine();
+      helpMarker("Overlay edges on top of the image.");
 
-      if (!overlayEdges && !thresholdEdges) {
-        if (ImGui::Checkbox("Apply colormap to edges", &colormapEdges)) {
-          if (overlayEdges) {
-            colormapEdges = false;
+      if (useVoxelEdges) {
+        if (overlayEdges || hardEdges) {
+          if (imgSettings.colormapEdges()) {
+            imgSettings.setColormapEdges(false);
+            updateImageUniforms();
           }
-
+        }
+        bool colormapEdges = imgSettings.colormapEdges();
+        if (overlayEdges || hardEdges) {
+          ImGui::BeginDisabled();
+          ImGui::Checkbox("Apply colormap to edges", &colormapEdges);
+          ImGui::EndDisabled();
+        }
+        else if (ImGui::Checkbox("Apply colormap to edges", &colormapEdges)) {
           imgSettings.setColormapEdges(colormapEdges);
           updateImageUniforms();
         }
         ImGui::SameLine();
-        helpMarker("Apply the image colormap to image edges");
+        helpMarker("Apply the image colormap to voxel-space edge magnitudes.");
+      }
+      else if (imgSettings.colormapEdges()) {
+        imgSettings.setColormapEdges(false);
+        updateImageUniforms();
       }
 
-      if (!colormapEdges) {
-        glm::vec4 edgeColor{imgSettings.edgeColor(), imgSettings.edgeOpacity()};
+      if (usePixelEdges) {
+        double edgeScale = imgSettings.pixelEdgeScale();
+        if (mySliderF64("Scale", &edgeScale, 0.01, 10.00)) {
+          imgSettings.setPixelEdgeScale(edgeScale);
+          updateImageUniforms();
+        }
+        ImGui::SameLine();
+        helpMarker("Scale applied to screen-space edge magnitude.");
+      }
+      else if (!hardEdges) {
+        double edgeScale = 1.0 - imgSettings.edgeMagnitude();
+        if (mySliderF64("Scale", &edgeScale, 0.01, 1.00)) {
+          imgSettings.setEdgeMagnitude(1.0 - edgeScale);
+          updateImageUniforms();
+        }
+        ImGui::SameLine();
+        helpMarker("Scale applied to voxel-space edge magnitude.");
+      }
 
+      if (hardEdges) {
+        if (usePixelEdges) {
+          double edgeThreshold = imgSettings.pixelEdgeThreshold();
+          if (mySliderF64("Threshold", &edgeThreshold, 0.0, 1.0)) {
+            imgSettings.setPixelEdgeThreshold(edgeThreshold);
+            updateImageUniforms();
+          }
+        }
+        else {
+          double edgeThreshold = imgSettings.edgeMagnitude();
+          if (mySliderF64("Threshold", &edgeThreshold, 0.01, 1.00)) {
+            imgSettings.setEdgeMagnitude(edgeThreshold);
+            updateImageUniforms();
+          }
+        }
+        ImGui::SameLine();
+        helpMarker("Magnitude threshold above which hard edges are shown.");
+      }
+
+      if (!(useVoxelEdges && imgSettings.colormapEdges())) {
+        glm::vec4 edgeColor{imgSettings.edgeColor(), imgSettings.edgeOpacity()};
         if (ImGui::ColorEdit4("Edge color", glm::value_ptr(edgeColor), colorAlphaEditFlags)) {
           imgSettings.setEdgeColor(edgeColor);
           imgSettings.setEdgeOpacity(static_cast<double>(edgeColor.a));
           updateImageUniforms();
         }
         ImGui::SameLine();
-        helpMarker("Edge color and opacity");
-      }
-      else {
-        // Cannot overlay edges with colormapping enabled
-        imgSettings.setOverlayEdges(false);
-        updateImageUniforms();
-      }
-
-      // Edge magnitude (only shown if thresholding edges):
-      if (thresholdEdges) {
-        double edgeMag = imgSettings.edgeMagnitude();
-        if (mySliderF64("Magnitude", &edgeMag, 0.01, 1.00)) {
-          imgSettings.setEdgeMagnitude(edgeMag);
-          updateImageUniforms();
-        }
-        ImGui::SameLine();
-        helpMarker("Magnitude of threshold above which hard edges are shown");
-      }
-      else {
-        double edgeMag = 1.0 - imgSettings.edgeMagnitude();
-        if (mySliderF64("Scale", &edgeMag, 0.01, 1.00)) {
-          imgSettings.setEdgeMagnitude(1.0 - edgeMag);
-          updateImageUniforms();
-        }
-        ImGui::SameLine();
-        helpMarker("Scale applied to edge magnitude");
+        helpMarker("Edge color and opacity.");
       }
 
       ImGui::TreePop();
