@@ -50,12 +50,19 @@ if(NOT entropy_ACTOOL_RESULT EQUAL 0)
   message(FATAL_ERROR "actool failed for ${entropy_SOURCE_ICON}: ${entropy_ACTOOL_ERROR}${entropy_ACTOOL_OUTPUT}")
 endif()
 
-if(NOT EXISTS "${entropy_RESOURCE_DIR}/Assets.car")
-  message(FATAL_ERROR "actool did not generate ${entropy_RESOURCE_DIR}/Assets.car: ${entropy_ACTOOL_ERROR}${entropy_ACTOOL_OUTPUT}")
+if(NOT EXISTS "${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns")
+  get_filename_component(entropy_SOURCE_ICON_DIR "${entropy_SOURCE_ICON}" DIRECTORY)
+  set(entropy_FALLBACK_ICNS "${entropy_SOURCE_ICON_DIR}/${entropy_ICON_NAME}.icns")
+
+  if(NOT EXISTS "${entropy_FALLBACK_ICNS}")
+    message(FATAL_ERROR "actool did not generate ${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns and fallback icon ${entropy_FALLBACK_ICNS} is unavailable: ${entropy_ACTOOL_ERROR}${entropy_ACTOOL_OUTPUT}")
+  endif()
+
+  file(COPY_FILE "${entropy_FALLBACK_ICNS}" "${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns" ONLY_IF_DIFFERENT)
 endif()
 
-if(NOT EXISTS "${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns")
-  message(FATAL_ERROR "actool did not generate ${entropy_RESOURCE_DIR}/${entropy_ICON_NAME}.icns: ${entropy_ACTOOL_ERROR}${entropy_ACTOOL_OUTPUT}")
+if(NOT EXISTS "${entropy_RESOURCE_DIR}/Assets.car")
+  message(STATUS "actool did not generate ${entropy_RESOURCE_DIR}/Assets.car; using ${entropy_ICON_NAME}.icns only")
 endif()
 
 file(REMOVE "${entropy_PARTIAL_INFO_PLIST}")
