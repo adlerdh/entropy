@@ -29,6 +29,9 @@ struct EnumName
   std::string_view name;
 };
 
+template<typename Enum>
+EnumName(Enum, std::string_view) -> EnumName<Enum>;
+
 template<typename Enum, std::size_t N>
 const char* enumToName(Enum value, const std::array<EnumName<Enum>, N>& names)
 {
