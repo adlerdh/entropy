@@ -1,4 +1,5 @@
 add_executable(EntropyRenderingTests
+  LightboxOffsetLabelFormatTests.cpp
   LocalLinearResidualMetricTests.cpp
   LocalNccMetricTests.cpp
   PixelEdgeGeometryTests.cpp
@@ -7,6 +8,7 @@ add_executable(EntropyRenderingTests
 
 target_sources(EntropyRenderingTests PRIVATE
   "${entropy_APP_DIR}/rendering/LocalLinearResidualMetric.cpp"
+  "${entropy_APP_DIR}/rendering/LightboxOffsetLabelFormat.cpp"
   "${entropy_APP_DIR}/rendering/LocalNccMetric.cpp"
   "${entropy_APP_DIR}/rendering/PixelEdgeGeometry.cpp"
   "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"

@@ -1,5 +1,7 @@
 #include "rendering/VectorDrawing.h"
 
+#include "rendering/LightboxOffsetLabelFormat.h"
+
 #include "logic/app/DataHelper.h"
 #include "common/DirectionMaps.h"
 #include "common/Viewport.h"
@@ -30,9 +32,7 @@
 #include <spdlog/spdlog.h>
 
 #include <cmath>
-#include <iomanip>
 #include <limits>
-#include <sstream>
 
 namespace
 {
@@ -50,78 +50,6 @@ static const NVGcolor s_red(nvgRGBA(255, 0, 0, 255));
 static const std::string ROBOTO_LIGHT("robotoLight");
 
 static constexpr float sk_outlineStrokeWidth = 2.0f;
-struct DistanceUnit
-{
-  double scale = 1.0;
-  const char* label = "mm";
-};
-
-std::string trimTrailingDecimalZeros(std::string value)
-{
-  const auto decimalPos = value.find('.');
-  if (std::string::npos == decimalPos) {
-    return value;
-  }
-
-  while (!value.empty() && value.back() == '0') {
-    value.pop_back();
-  }
-  if (!value.empty() && value.back() == '.') {
-    value.pop_back();
-  }
-  return value;
-}
-
-DistanceUnit distanceUnitForMagnitudeMm(double lengthMm)
-{
-  const double absLengthMm = std::abs(lengthMm);
-
-  if (absLengthMm <= std::numeric_limits<float>::epsilon()) {
-    return {1.0, "mm"};
-  }
-  if (absLengthMm >= 1.0e6) {
-    return {1.0 / 1.0e6, "km"};
-  }
-  if (absLengthMm >= 1000.0) {
-    return {1.0 / 1000.0, "m"};
-  }
-  if (absLengthMm >= 10.0) {
-    return {1.0 / 10.0, "cm"};
-  }
-  if (absLengthMm >= 1.0) {
-    return {1.0, "mm"};
-  }
-  if (absLengthMm >= 1.0e-3) {
-    return {1000.0, "µm"};
-  }
-  return {1.0e6, "nm"};
-}
-
-std::string formatPhysicalDistanceMm(double lengthMm, double unitReferenceLengthMm)
-{
-  const double absLengthMm = std::abs(lengthMm);
-  const DistanceUnit unit =
-    distanceUnitForMagnitudeMm(absLengthMm <= std::numeric_limits<float>::epsilon() ? unitReferenceLengthMm : lengthMm);
-  const double value = lengthMm * unit.scale;
-
-  if (std::abs(value) <= std::numeric_limits<float>::epsilon()) {
-    return std::string("0 ") + unit.label;
-  }
-
-  const double roundedValue = std::round(value);
-  const double integerTolerance = 64.0 * std::numeric_limits<float>::epsilon() * std::max(1.0, std::abs(value));
-
-  std::ostringstream out;
-  out << std::showpos;
-  if (std::abs(value - roundedValue) <= integerTolerance) {
-    out << static_cast<int>(roundedValue);
-  }
-  else {
-    out << std::setprecision(6) << value;
-  }
-  return trimTrailingDecimalZeros(out.str()) + " " + unit.label;
-}
-
 } // namespace
 
 void startNvgFrame(NVGcontext* nvg, const Viewport& windowVP)
@@ -1113,7 +1041,7 @@ void drawLightboxOffsetLabel(
   const glm::vec2 viewportMinCorner(viewportViewBounds.bounds.xoffset, viewportViewBounds.bounds.yoffset);
   const glm::vec2 viewportSize(viewportViewBounds.bounds.width, viewportViewBounds.bounds.height);
   const float fontSizePixels = glm::clamp(0.065f * std::min(viewportSize.x, viewportSize.y), 9.0f, 14.0f);
-  const std::string label = formatPhysicalDistanceMm(offsetMm, unitReferenceLengthMm);
+  const std::string label = entropy::rendering::lightbox::formatOffsetDistanceMm(offsetMm, unitReferenceLengthMm);
 
   nvgScissor(
     nvg,

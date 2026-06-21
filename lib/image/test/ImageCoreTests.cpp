@@ -535,6 +535,24 @@ TEST_CASE("Histogram bin rules handle normal and degenerate statistics", "[image
   CHECK_FALSE(computeNumHistogramBins(NumBinsComputationMethod::FreedmanDiaconis, 8, degenerate).has_value());
 }
 
+TEST_CASE("Image display names strip known medical image extensions case-insensitively", "[image][utility]")
+{
+  CHECK(getFileName("/tmp/brain.nii.gz", false) == "brain");
+  CHECK(getFileName("/tmp/brain.NII.GZ", false) == "brain");
+  CHECK(getFileName("/tmp/brain.nii", false) == "brain");
+  CHECK(getFileName("/tmp/brain.NII", false) == "brain");
+  CHECK(getFileName("/tmp/atlas.mhd.gz", false) == "atlas");
+  CHECK(getFileName("/tmp/atlas.MHD.GZ", false) == "atlas");
+  CHECK(getFileName("/tmp/atlas.mhd", false) == "atlas");
+  CHECK(getFileName("/tmp/segmentation.nrrd", false) == "segmentation");
+  CHECK(getFileName("/tmp/analyze.hdr", false) == "analyze");
+  CHECK(getFileName("/tmp/analyze.img", false) == "analyze");
+
+  CHECK(getFileName("/tmp/report.txt", false) == "report.txt");
+  CHECK(getFileName("/tmp/archive.tar.gz", false) == "archive.tar.gz");
+  CHECK(getFileName("/tmp/brain.nii.gz", true) == "brain.nii.gz");
+}
+
 TEST_CASE("ImageSettings initializes component ranges, windows, and histogram settings from stats", "[image][settings]")
 {
   const ComponentStats stats = makeStats(0.0, 2.0, 4.0, 6.0, 8.0);

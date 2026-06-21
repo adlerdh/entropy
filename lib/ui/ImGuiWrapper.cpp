@@ -282,8 +282,8 @@ struct DefaultDockLayoutFractions
 {
   float leftPanel = 0.20f;
   float rightPanel = 0.20f;
-  float inspector = 0.08f;
-  float leftSegmentation = 0.25f;
+  float inspector = 0.10f;
+  float opacityMixer = 1.0f / 3.0f;
 };
 
 DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSize)
@@ -299,8 +299,8 @@ DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSiz
   return DefaultDockLayoutFractions{
     .leftPanel = clampedDockSplitFraction(dockspaceSize.x, sideTargetFraction, sideMinSize, sideMaxSize),
     .rightPanel = clampedDockSplitFraction(dockspaceSize.x, sideTargetFraction, sideMinSize, sideMaxSize),
-    .inspector = clampedDockSplitFraction(dockspaceSize.y, 0.08f, 120.0f, 190.0f),
-    .leftSegmentation = clampedDockSplitFraction(dockspaceSize.y, 0.25f, 120.0f, 240.0f)};
+    .inspector = clampedDockSplitFraction(dockspaceSize.y, 0.10f, 120.0f, 190.0f),
+    .opacityMixer = 1.0f / 3.0f};
 }
 
 void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const GuiData& guiData)
@@ -320,26 +320,30 @@ void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const GuiData& guiData)
 
   ImGuiID centerNode = dockspaceId;
   ImGuiID leftNode = 0;
-  ImGuiID leftBottomNode = 0;
   ImGuiID rightNode = 0;
+  ImGuiID rightMiddleNode = 0;
+  ImGuiID rightBottomNode = 0;
   ImGuiID bottomNode = 0;
+  ImGuiID bottomRightNode = 0;
 
   const DefaultDockLayoutFractions fractions = defaultDockLayoutFractions(geometry.size);
 
   ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Left, fractions.leftPanel, &leftNode, &centerNode);
   ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Right, fractions.rightPanel, &rightNode, &centerNode);
   ImGui::DockBuilderSplitNode(centerNode, ImGuiDir_Down, fractions.inspector, &bottomNode, &centerNode);
-  ImGui::DockBuilderSplitNode(leftNode, ImGuiDir_Down, fractions.leftSegmentation, &leftBottomNode, &leftNode);
+  ImGui::DockBuilderSplitNode(bottomNode, ImGuiDir_Right, fractions.opacityMixer, &bottomRightNode, &bottomNode);
+  ImGui::DockBuilderSplitNode(rightNode, ImGuiDir_Down, 1.0f / 3.0f, &rightBottomNode, &rightNode);
+  ImGui::DockBuilderSplitNode(rightNode, ImGuiDir_Down, 0.5f, &rightMiddleNode, &rightNode);
 
   ImGui::DockBuilderDockWindow("Images##Images", leftNode);
-  ImGui::DockBuilderDockWindow("Segmentations##Segmentations", leftBottomNode);
+  ImGui::DockBuilderDockWindow("Segmentations##Segmentations", leftNode);
 
   ImGui::DockBuilderDockWindow("Annotations", rightNode);
-  ImGui::DockBuilderDockWindow("Landmarks", rightNode);
-  ImGui::DockBuilderDockWindow("Isosurfaces", rightNode);
-  ImGui::DockBuilderDockWindow("Image Opacity Mixer", rightNode);
+  ImGui::DockBuilderDockWindow("Landmarks", rightMiddleNode);
+  ImGui::DockBuilderDockWindow("Isosurfaces", rightBottomNode);
 
   ImGui::DockBuilderDockWindow("Voxel Inspector##InspectionWindow", bottomNode);
+  ImGui::DockBuilderDockWindow("Image Opacity Mixer", bottomRightNode);
 
   ImGui::DockBuilderFinish(dockspaceId);
 }
@@ -2662,7 +2666,8 @@ void ImGuiWrapper::render()
         m_getImageValuesNN,
         m_getImageValuesLinear,
         m_getSegLabel,
-        getLabelTable);
+        getLabelTable,
+        m_updateImageUniforms);
     }
 
     if (m_appData.guiData().m_showImagePropertiesWindow) {

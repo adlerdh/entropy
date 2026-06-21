@@ -512,6 +512,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/ascii/AsciiAtlasBaker.cpp"
   "${entropy_APP_DIR}/rendering/ascii/AsciiRenderer.cpp"
   "${entropy_APP_DIR}/rendering/ImageDrawing.cpp"
+  "${entropy_APP_DIR}/rendering/LightboxOffsetLabelFormat.cpp"
   "${entropy_APP_DIR}/rendering/LocalLinearResidualMetric.cpp"
   "${entropy_APP_DIR}/rendering/LocalNccMetric.cpp"
   "${entropy_APP_DIR}/rendering/PixelEdgeGeometry.cpp"

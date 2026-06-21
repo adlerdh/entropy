@@ -166,8 +166,8 @@ void updateSegmentationUniformsForImage(
 float lightboxOffsetUnitReferenceMm(const AppData& appData, const WindowData& windowData)
 {
   float minNonzeroOffsetMm = std::numeric_limits<float>::max();
-  for (const auto& [viewUid, view] : windowData.currentLayout().views()) {
-    (void)viewUid;
+  for (const auto& viewUid : windowData.currentViewUids()) {
+    const View* view = windowData.getCurrentView(viewUid);
     if (!view) {
       continue;
     }

@@ -9,8 +9,12 @@
 #include <itkImageIOFactory.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <array>
+#include <cctype>
 #include <cmath>
 #include <limits>
+#include <string_view>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -18,35 +22,36 @@ namespace fs = std::filesystem;
 namespace
 {
 
-#if __APPLE__
-
-#include <set>
-
-std::vector<std::string> splitPath(const std::string& pathString, const std::set<char> delimiters)
+std::string toLowerAscii(std::string_view text)
 {
-  std::vector<std::string> result;
+  std::string lower{text};
+  std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char ch) {
+    return static_cast<char>(std::tolower(ch));
+  });
+  return lower;
+}
 
-  char const* pch = pathString.c_str();
-  char const* start = pch;
+bool endsWith(std::string_view text, std::string_view suffix)
+{
+  return text.size() >= suffix.size() && text.substr(text.size() - suffix.size()) == suffix;
+}
 
-  for (; *pch; ++pch) {
-    if (delimiters.find(*pch) != std::end(delimiters)) {
-      if (start != pch) {
-        std::string s(start, pch);
-        result.push_back(s);
-      }
-      else {
-        result.push_back("");
-      }
-      start = pch + 1;
+std::string stripMedicalImageExtension(std::string fileName)
+{
+  static constexpr std::array<std::string_view, 21> k_medicalImageExtensions{
+    ".nii.gz", ".mhd.gz", ".nhdr.gz", ".hdr.gz", ".img.gz", ".nrrd.gz", ".gipl.gz", ".mnc.gz", ".nii", ".mha", ".mhd",
+    ".nhdr",   ".hdr",    ".img",     ".nrrd",   ".gipl",   ".mnc",     ".mnc2",    ".vtk",    ".vti", ".hdf5"};
+
+  const std::string lowerFileName = toLowerAscii(fileName);
+  for (const std::string_view extension : k_medicalImageExtensions) {
+    if (endsWith(lowerFileName, extension)) {
+      fileName.resize(fileName.size() - extension.size());
+      break;
     }
   }
 
-  result.push_back(start);
-  return result;
+  return fileName;
 }
-
-#endif
 
 template<typename T>
 int sgn(T val)
@@ -188,39 +193,12 @@ std::optional<ImageHeader> readImageHeaderOnly(
 
 std::string getFileName(const std::string& filePath, bool withExtension)
 {
-  if (!withExtension) {
-#if __APPLE__
-    static const std::set<char> delims{'/'};
-    std::vector<std::string> pSplit = splitPath(filePath, delims);
-    return pSplit.back();
-#else
-    const fs::path p(filePath);
-
-    // Check if path has a stem (i.e. filename without extension)
-    if (p.has_stem()) {
-      // Remove one more stem (e.g. in case the file name is like *.nii.gz)
-      const auto stem1 = p.stem();
-      const auto stem2 = (stem1.has_stem()) ? stem1.stem() : stem1;
-
-      // Return the stem (file name without extension) from path
-      return stem2.string();
-    }
-    else {
-      return filePath;
-    }
-#endif
+  const std::string fileName = fs::path(filePath).filename().string();
+  if (withExtension) {
+    return fileName;
   }
-  else {
-#if __APPLE__
-    static const std::set<char> delims{'/'};
-    std::vector<std::string> pSplit = splitPath(filePath, delims);
-    return pSplit.back();
-#else
-    // Return the file name with extension from path
-    const fs::path p(filePath);
-    return p.filename().string();
-#endif
-  }
+
+  return stripMedicalImageExtension(fileName);
 }
 
 PixelType fromItkPixelType(const itk::IOPixelEnum& pixelType)

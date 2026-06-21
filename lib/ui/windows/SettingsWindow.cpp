@@ -118,6 +118,27 @@ void renderReadOnlyPathField(const char* label, const std::filesystem::path& pat
 }
 
 /**
+ * @brief Render the ImGui settings file controls.
+ * @param persistenceCallbacks File-backed user settings callbacks.
+ */
+void renderUiSettingsFileSection(const SettingsPersistenceCallbacks& persistenceCallbacks)
+{
+  ImGui::TextWrapped(
+    "This file stores UI state such as window positions, docking layout, panel sizes, table columns, and similar "
+    "interface settings.");
+  renderReadOnlyPathField(
+    "UI settings file",
+    app_paths::userDataDirectory() / "entropy_ui.ini",
+    ImGui::CalcItemWidth());
+
+  if (ImGui::Button("Reset UI Settings")) {
+    requestResetInterfaceSettings(persistenceCallbacks);
+  }
+  ImGui::SameLine();
+  helpMarker("Clear saved ImGui interface state and regenerate the default layout.");
+}
+
+/**
  * @brief Render diagnostic settings that affect runtime logging.
  */
 void renderDiagnosticsSettings()
@@ -144,8 +165,7 @@ void renderDiagnosticsSettings()
   ImGui::SameLine();
   helpMarker("Set console and application log file verbosity immediately");
 
-  const float logFieldLabelWidth = std::max(visibleLabelWidth("Application log"), visibleLabelWidth("ImGui log"));
-  const float logFieldWidth = fillWidthForLabelColumn(logFieldLabelWidth);
+  const float logFieldWidth = ImGui::CalcItemWidth();
   renderReadOnlyPathField("Application log", app_paths::logDirectory() / "entropy.txt", logFieldWidth);
   renderReadOnlyPathField("ImGui log", app_paths::logDirectory() / "entropy_ui.log", logFieldWidth);
 }
@@ -339,13 +359,6 @@ bool renderLocalNccSettings(
 
   ImGui::Spacing();
 
-  const float localNccControlLabelWidth = std::max(
-    {visibleLabelWidth("Patch size"),
-     visibleLabelWidth("Sample spacing"),
-     visibleLabelWidth("Minimum valid fraction"),
-     visibleLabelWidth("Variance epsilon")});
-  const float localNccControlWidth = fillWidthForLabelColumn(localNccControlLabelWidth);
-
   if (RenderData::LocalNccPresentation::Dissimilarity == renderData.m_localNccPresentation) {
     bool ignoreNegativeCorrelation = renderData.m_localNccIgnoreNegativeCorrelation;
     if (ImGui::Checkbox("Treat negative correlation as mismatch", &ignoreNegativeCorrelation)) {
@@ -364,7 +377,6 @@ bool renderLocalNccSettings(
       break;
     }
   }
-  ImGui::SetNextItemWidth(localNccControlWidth);
   if (ImGui::BeginCombo("Patch size", k_patchSizes[static_cast<std::size_t>(patchIndex)].second)) {
     for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
       const bool selected = static_cast<int>(i) == patchIndex;
@@ -381,7 +393,6 @@ bool renderLocalNccSettings(
   helpMarker("Number of view-plane samples used in each local NCC patch.");
 
   float sampleSpacing = renderData.m_localNccSampleSpacing;
-  ImGui::SetNextItemWidth(localNccControlWidth);
   if (mySliderF32("Sample spacing", &sampleSpacing, 0.5f, 4.0f, "%.2f x")) {
     renderData.m_localNccSampleSpacing = sampleSpacing;
   }
@@ -389,7 +400,6 @@ bool renderLocalNccSettings(
   helpMarker("Patch sample spacing in reference-image voxel steps along the view-plane axes.");
 
   float minValidFraction = renderData.m_localNccMinValidFraction;
-  ImGui::SetNextItemWidth(localNccControlWidth);
   if (mySliderF32("Minimum valid fraction", &minValidFraction, 0.1f, 1.0f, "%.2f")) {
     renderData.m_localNccMinValidFraction = minValidFraction;
   }
@@ -397,11 +407,9 @@ bool renderLocalNccSettings(
   helpMarker("Minimum fraction of patch samples that must lie inside both images.");
 
   float varianceEpsilon = renderData.m_localNccVarianceEpsilon;
-  ImGui::PushItemWidth(localNccControlWidth);
   if (ImGui::InputFloat("Variance epsilon", &varianceEpsilon, 0.0f, 0.0f, "%.1e")) {
     renderData.m_localNccVarianceEpsilon = std::max(varianceEpsilon, 0.0f);
   }
-  ImGui::PopItemWidth();
   ImGui::SameLine();
   helpMarker("Patches with lower local variance in either image are treated as invalid.");
 
@@ -446,13 +454,6 @@ bool renderLocalLinearResidualSettings(
 
   ImGui::Spacing();
 
-  const float controlLabelWidth = std::max(
-    {visibleLabelWidth("Patch size"),
-     visibleLabelWidth("Sample spacing"),
-     visibleLabelWidth("Minimum valid fraction"),
-     visibleLabelWidth("Variance epsilon")});
-  const float controlWidth = fillWidthForLabelColumn(controlLabelWidth);
-
   constexpr std::array<std::pair<int, const char*>, 5> k_patchSizes{
     {{1, "3 x 3"}, {2, "5 x 5"}, {3, "7 x 7"}, {4, "9 x 9"}, {5, "11 x 11"}}};
   int patchIndex = 2;
@@ -462,7 +463,6 @@ bool renderLocalLinearResidualSettings(
       break;
     }
   }
-  ImGui::SetNextItemWidth(controlWidth);
   if (ImGui::BeginCombo("Patch size", k_patchSizes[static_cast<std::size_t>(patchIndex)].second)) {
     for (std::size_t i = 0; i < k_patchSizes.size(); ++i) {
       const bool selected = static_cast<int>(i) == patchIndex;
@@ -479,7 +479,6 @@ bool renderLocalLinearResidualSettings(
   helpMarker("Number of view-plane samples used to fit the local linear intensity model.");
 
   float sampleSpacing = renderData.m_localLinearResidualSampleSpacing;
-  ImGui::SetNextItemWidth(controlWidth);
   if (mySliderF32("Sample spacing", &sampleSpacing, 0.5f, 4.0f, "%.2f x")) {
     renderData.m_localLinearResidualSampleSpacing = sampleSpacing;
   }
@@ -487,7 +486,6 @@ bool renderLocalLinearResidualSettings(
   helpMarker("Patch sample spacing in reference-image voxel steps along the view-plane axes.");
 
   float minValidFraction = renderData.m_localLinearResidualMinValidFraction;
-  ImGui::SetNextItemWidth(controlWidth);
   if (mySliderF32("Minimum valid fraction", &minValidFraction, 0.1f, 1.0f, "%.2f")) {
     renderData.m_localLinearResidualMinValidFraction = minValidFraction;
   }
@@ -495,11 +493,9 @@ bool renderLocalLinearResidualSettings(
   helpMarker("Minimum fraction of patch samples that must lie inside both images.");
 
   float varianceEpsilon = renderData.m_localLinearResidualVarianceEpsilon;
-  ImGui::PushItemWidth(controlWidth);
   if (ImGui::InputFloat("Variance epsilon", &varianceEpsilon, 0.0f, 0.0f, "%.1e")) {
     renderData.m_localLinearResidualVarianceEpsilon = std::max(varianceEpsilon, 0.0f);
   }
-  ImGui::PopItemWidth();
   ImGui::SameLine();
   helpMarker("Patches with lower reference-image variance cannot produce a stable local gain.");
 
@@ -559,7 +555,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   // Crosshairs
   const bool crosshairsOpen = ImGui::CollapsingHeader("Crosshairs", ImGuiTreeNodeFlags_DefaultOpen);
   if (crosshairsOpen) {
-    ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_crosshairsColor), k_colorAlphaEditFlags);
+    ImGui::ColorEdit4("Crosshairs line color", glm::value_ptr(renderData.m_crosshairsColor), k_colorAlphaEditFlags);
 
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
@@ -696,7 +692,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   finishSettingsSection(viewRecenteringOpen);
 
   // View backgrounds:
-  const bool backgroundColorOpen = ImGui::CollapsingHeader("Background Color", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool backgroundColorOpen = ImGui::CollapsingHeader("Background Colors", ImGuiTreeNodeFlags_DefaultOpen);
   if (backgroundColorOpen) {
     ImGui::ColorEdit3("2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
 
@@ -707,7 +703,48 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   // Anatomical labels:
   const bool anatomicalLabelsOpen = ImGui::CollapsingHeader("Anatomical Labels", ImGuiTreeNodeFlags_DefaultOpen);
   if (anatomicalLabelsOpen) {
-    ImGui::ColorEdit4("Text color", glm::value_ptr(renderData.m_anatomicalLabelColor), k_colorAlphaEditFlags);
+    ImGui::ColorEdit4(
+      "Annotation text color",
+      glm::value_ptr(renderData.m_anatomicalLabelColor),
+      k_colorAlphaEditFlags);
+    ImGui::Dummy(ImVec2(0.0f, 1.0f));
+
+    static constexpr bool kOrientChangeRecenterCrosshairs = false;
+    static constexpr bool kOrientChangeRealignCrosshairs = false;
+    static constexpr bool kOrientChangeRecenterOnXhairs = true;
+    static constexpr bool kOrientChangeResetObliqueOrientation = false;
+    static constexpr bool kOrientChangeResetZoom = false;
+
+    auto setViewConvention = [&](ViewConvention convention) {
+      appData.windowData().setViewOrientationConvention(convention);
+      recenterAllViews(
+        kOrientChangeRecenterCrosshairs,
+        kOrientChangeRealignCrosshairs,
+        kOrientChangeRecenterOnXhairs,
+        kOrientChangeResetObliqueOrientation,
+        kOrientChangeResetZoom);
+    };
+
+    ImGui::Text("View L/R orientation convention:");
+    if (ImGui::RadioButton(
+          "Radiological",
+          ViewConvention::Radiological == appData.windowData().getViewOrientationConvention()))
+    {
+      setViewConvention(ViewConvention::Radiological);
+    }
+    ImGui::SameLine();
+    helpMarker("Anatomical left is on view right; anatomical right is on view left");
+
+    ImGui::SameLine();
+    if (ImGui::RadioButton(
+          "Neurological",
+          ViewConvention::Neurological == appData.windowData().getViewOrientationConvention()))
+    {
+      setViewConvention(ViewConvention::Neurological);
+    }
+    ImGui::SameLine();
+    helpMarker("Anatomical left is on view left; anatomical right is on view right");
+
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
     ImGui::Text("Anatomical directions:");
@@ -718,65 +755,26 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     ImGui::SameLine();
     helpMarker("Left, Right, Posterior, Anterior, Superior, Inferior");
 
-    if (ImGui::RadioButton("Cartesian", AnatomicalLabelType::Cartesian == renderData.m_anatomicalLabelType)) {
-      renderData.m_anatomicalLabelType = AnatomicalLabelType::Cartesian;
-    }
     ImGui::SameLine();
-    helpMarker("+x, -x, +y, -y, +z, -z");
-
     if (ImGui::RadioButton("Rodent", AnatomicalLabelType::Rodent == renderData.m_anatomicalLabelType)) {
       renderData.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
     }
     ImGui::SameLine();
     helpMarker("Left, Right, Dorsal, Ventral, Caudal, Rostral");
 
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Cartesian", AnatomicalLabelType::Cartesian == renderData.m_anatomicalLabelType)) {
+      renderData.m_anatomicalLabelType = AnatomicalLabelType::Cartesian;
+    }
+    ImGui::SameLine();
+    helpMarker("+x, -x, +y, -y, +z, -z");
+
+    ImGui::SameLine();
     if (ImGui::RadioButton("Disabled", AnatomicalLabelType::Disabled == renderData.m_anatomicalLabelType)) {
       renderData.m_anatomicalLabelType = AnatomicalLabelType::Disabled;
     }
     ImGui::SameLine();
     helpMarker("Disable anatomical labels");
-
-    ImGui::Dummy(ImVec2(0.0f, 1.0f));
-
-    ImGui::Text("View orientation convention:");
-
-    static constexpr bool kOrientChangeRecenterCrosshairs = false;
-    static constexpr bool kOrientChangeRealignCrosshairs = false;
-    static constexpr bool kOrientChangeRecenterOnXhairs = true;
-    static constexpr bool kOrientChangeResetObliqueOrientation = false;
-    static constexpr bool kOrientChangeResetZoom = false;
-
-    if (ImGui::RadioButton(
-          "Radiological",
-          ViewConvention::Radiological == appData.windowData().getViewOrientationConvention()))
-    {
-      appData.windowData().setViewOrientationConvention(ViewConvention::Radiological);
-
-      recenterAllViews(
-        kOrientChangeRecenterCrosshairs,
-        kOrientChangeRealignCrosshairs,
-        kOrientChangeRecenterOnXhairs,
-        kOrientChangeResetObliqueOrientation,
-        kOrientChangeResetZoom);
-    }
-    ImGui::SameLine();
-    helpMarker("Anatomical left is on view right; anatomical right is on view left");
-
-    if (ImGui::RadioButton(
-          "Neurological",
-          ViewConvention::Neurological == appData.windowData().getViewOrientationConvention()))
-    {
-      appData.windowData().setViewOrientationConvention(ViewConvention::Neurological);
-
-      recenterAllViews(
-        kOrientChangeRecenterCrosshairs,
-        kOrientChangeRealignCrosshairs,
-        kOrientChangeRecenterOnXhairs,
-        kOrientChangeResetObliqueOrientation,
-        kOrientChangeResetZoom);
-    }
-    ImGui::SameLine();
-    helpMarker("Anatomical left is on view left; anatomical right is on view right");
   }
   finishSettingsSection(anatomicalLabelsOpen);
 
@@ -797,7 +795,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       ImGui::SameLine();
       helpMarker("Show scale bars in each tile of lightbox layouts");
 
-      ImGui::ColorEdit4("Color", glm::value_ptr(renderData.m_scaleBarColor), k_colorAlphaEditFlags);
+      ImGui::ColorEdit4("Scale bars color", glm::value_ptr(renderData.m_scaleBarColor), k_colorAlphaEditFlags);
 
       auto setScaleBarPosition = [&](ScaleBarPosition position) {
         renderData.m_scaleBarPosition = position;
@@ -902,15 +900,15 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
 
       ImGui::Spacing();
       ImGui::Text("Ticks:");
-      if (ImGui::RadioButton("Endpoints##scaleBarTicks", ScaleBarTicks::Endpoints == renderData.m_scaleBarTicks)) {
-        renderData.m_scaleBarTicks = ScaleBarTicks::Endpoints;
-      }
-      ImGui::SameLine();
       if (ImGui::RadioButton(
             "Automatic extra ticks##scaleBarTicks",
             ScaleBarTicks::Automatic == renderData.m_scaleBarTicks))
       {
         renderData.m_scaleBarTicks = ScaleBarTicks::Automatic;
+      }
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Endpoints only##scaleBarTicks", ScaleBarTicks::Endpoints == renderData.m_scaleBarTicks)) {
+        renderData.m_scaleBarTicks = ScaleBarTicks::Endpoints;
       }
       ImGui::SameLine();
       helpMarker("Add evenly spaced extra ticks when the scale bar is long enough for readable subdivisions");
@@ -967,6 +965,7 @@ void renderInterfaceTab(
         readjustViewport();
       }
     }
+    ImGui::SameLine();
     if (ImGui::RadioButton("Bottom##layoutTabBarPosition", !layoutTabsTop)) {
       appData.settings().setLayoutTabPlacement(UiLayoutTabPlacement::Bottom);
       appData.guiData().m_layoutTabPlacement = guiLayoutTabPlacement(appData.settings().layoutTabPlacement());
@@ -1079,13 +1078,6 @@ void renderInterfaceTab(
         applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
       }
     }
-
-    ImGui::Spacing();
-    if (ImGui::Button("Reset interface settings")) {
-      requestResetInterfaceSettings(persistenceCallbacks);
-    }
-    ImGui::SameLine();
-    helpMarker("Reset saved window positions, docking layout, table columns, and similar interface state.");
   }
   finishSettingsSection(lookAndFeelOpen);
 }
@@ -1225,39 +1217,46 @@ void renderSynchronizeTab(AppData& appData)
     "Synchronize cursor position between running Entropy instances that have the same project or same ordered image "
     "list loaded");
 
-  bool snapSyncEnabled = appData.settings().cursorSyncEnabled();
-  if (ImGui::Checkbox("Synchronize with ITK-SNAP", &snapSyncEnabled)) {
-    appData.settings().setCursorSyncEnabled(snapSyncEnabled);
-  }
-  ImGui::SameLine();
-  helpMarker("Synchronize with ITK-SNAP through shared memory");
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
 
-  if (snapSyncEnabled) {
-    renderSyncOptions(
-      "##snapSyncOptions",
-      "Send##cursorSync",
-      "Receive##cursorSync",
-      "Send##zoomSync",
-      "Receive##zoomSync",
-      "Send##panSync",
-      "Receive##panSync",
-      appData.settings().sendCursorSync(),
-      appData.settings().receiveCursorSync(),
-      appData.settings().sendZoomSync(),
-      appData.settings().receiveZoomSync(),
-      appData.settings().sendPanSync(),
-      appData.settings().receivePanSync(),
-      [&appData](bool value) { appData.settings().setSendCursorSync(value); },
-      [&appData](bool value) { appData.settings().setReceiveCursorSync(value); },
-      [&appData](bool value) { appData.settings().setSendZoomSync(value); },
-      [&appData](bool value) { appData.settings().setReceiveZoomSync(value); },
-      [&appData](bool value) { appData.settings().setSendPanSync(value); },
-      [&appData](bool value) { appData.settings().setReceivePanSync(value); },
-      "Send Entropy crosshairs movement to ITK-SNAP and receive ITK-SNAP cursor movement in Entropy. "
-      "ITK-SNAP cursor messages use NIFTI/RAS coordinates; Entropy converts between internal LPS and "
-      "ITK-SNAP RAS at the IPC boundary.",
-      "Send Entropy view zoom to ITK-SNAP and receive ITK-SNAP view zoom in Entropy.",
-      "Send Entropy view pan to ITK-SNAP and receive ITK-SNAP view pan in Entropy.");
+  const bool itkSnapOpen = ImGui::CollapsingHeader("ITK-SNAP", ImGuiTreeNodeFlags_DefaultOpen);
+  if (itkSnapOpen) {
+    bool snapSyncEnabled = appData.settings().cursorSyncEnabled();
+    if (ImGui::Checkbox("Synchronize with ITK-SNAP", &snapSyncEnabled)) {
+      appData.settings().setCursorSyncEnabled(snapSyncEnabled);
+    }
+    ImGui::SameLine();
+    helpMarker("Synchronize with ITK-SNAP through shared memory");
+
+    if (snapSyncEnabled) {
+      renderSyncOptions(
+        "##snapSyncOptions",
+        "Send##cursorSync",
+        "Receive##cursorSync",
+        "Send##zoomSync",
+        "Receive##zoomSync",
+        "Send##panSync",
+        "Receive##panSync",
+        appData.settings().sendCursorSync(),
+        appData.settings().receiveCursorSync(),
+        appData.settings().sendZoomSync(),
+        appData.settings().receiveZoomSync(),
+        appData.settings().sendPanSync(),
+        appData.settings().receivePanSync(),
+        [&appData](bool value) { appData.settings().setSendCursorSync(value); },
+        [&appData](bool value) { appData.settings().setReceiveCursorSync(value); },
+        [&appData](bool value) { appData.settings().setSendZoomSync(value); },
+        [&appData](bool value) { appData.settings().setReceiveZoomSync(value); },
+        [&appData](bool value) { appData.settings().setSendPanSync(value); },
+        [&appData](bool value) { appData.settings().setReceivePanSync(value); },
+        "Send Entropy crosshairs movement to ITK-SNAP and receive ITK-SNAP cursor movement in Entropy. "
+        "ITK-SNAP cursor messages use NIFTI/RAS coordinates; Entropy converts between internal LPS and "
+        "ITK-SNAP RAS at the IPC boundary.",
+        "Send Entropy view zoom to ITK-SNAP and receive ITK-SNAP view zoom in Entropy.",
+        "Send Entropy view pan to ITK-SNAP and receive ITK-SNAP view pan in Entropy.");
+    }
   }
 }
 
@@ -1496,13 +1495,13 @@ void renderMetricsTab(
 /**
  * @brief Render the Comparison modes settings section contents.
  */
-void renderComparisonModesTab(RenderData& renderData)
+bool renderComparisonModesTab(RenderData& renderData)
 {
   ImGui::PushID("comparison"); /*** PushID metrics ***/
 
   if (!ImGui::CollapsingHeader("Comparison Modes", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PopID(); /*** PopID comparison ***/
-    return;
+    return false;
   }
 
   //                if ( ImGui::TreeNode( "Comparison comparison" ) )
@@ -1588,6 +1587,7 @@ void renderComparisonModesTab(RenderData& renderData)
   //                }
 
   ImGui::PopID(); /*** PopID comparison ***/
+  return true;
 }
 
 /**
@@ -1612,11 +1612,12 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Compute maximum, minimum, mean, and x-ray projections over the full image extent");
 
+  const float projectionControlWidth = ImGui::CalcItemWidth();
+
   if (!renderData.m_doMaxExtentIntensityProjection) {
     float thickness = renderData.m_intensityProjectionSlabThickness;
-    const float trailingLabelReserve = 2.0f * ImGui::GetStyle().FramePadding.x;
-    ImGui::PushItemWidth(fillWidthForLabeledControl("Slab thickness (mm)", trailingLabelReserve));
-    if (ImGui::InputFloat("Slab thickness (mm)", &thickness, 0.1f, 1.0f, "%0.2f")) {
+    ImGui::PushItemWidth(projectionControlWidth);
+    if (ImGui::InputFloat("Slab thickness", &thickness, 0.1f, 1.0f, "%0.2f mm")) {
       if (thickness >= 0.0f) {
         renderData.m_intensityProjectionSlabThickness = thickness;
       }
@@ -1629,10 +1630,8 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
   ImGui::Spacing();
   ImGui::Text("X-ray projection:");
 
-  const float trailingLabelReserve = 2.0f * ImGui::GetStyle().FramePadding.x;
-
   float energy = renderData.m_xrayEnergyKeV;
-  ImGui::PushItemWidth(fillWidthForLabeledControl("Energy", trailingLabelReserve));
+  ImGui::PushItemWidth(projectionControlWidth);
   if (ImGui::DragFloat(
         "Energy",
         &energy,
@@ -1646,13 +1645,11 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
   }
 
   float window = renderData.m_xrayIntensityWindow;
-  ImGui::SetNextItemWidth(fillWidthForLabeledControl("Width", trailingLabelReserve));
   if (mySliderF32("Width", &window, 1.0e-3f, 1.0f, "%0.3f")) {
     renderData.m_xrayIntensityWindow = window;
   }
 
   float level = renderData.m_xrayIntensityLevel;
-  ImGui::SetNextItemWidth(fillWidthForLabeledControl("Level", trailingLabelReserve));
   if (mySliderF32("Level", &level, 0.0f, 1.0f, "%0.3f")) {
     renderData.m_xrayIntensityLevel = level;
   }
@@ -1897,10 +1894,10 @@ void renderRestoreDefaultsPopup(const SettingsPersistenceCallbacks& persistenceC
 void requestResetInterfaceSettings(const SettingsPersistenceCallbacks& persistenceCallbacks)
 {
   const auto result = native_dialog::showMessageDialog(
-    {"Reset interface settings?",
-     "Reset saved interface layout and panel settings?",
+    {"Reset UI settings?",
+     "Reset saved UI layout and panel settings?",
      "This clears saved window positions, docking layout, table columns, and similar ImGui interface state.",
-     "Reset Interface",
+     "Reset UI Settings",
      "Cancel",
      ""});
 
@@ -1912,7 +1909,7 @@ void requestResetInterfaceSettings(const SettingsPersistenceCallbacks& persisten
   }
 
   if (!result) {
-    ImGui::OpenPopup("Reset interface settings?");
+    ImGui::OpenPopup("Reset UI settings?");
   }
 }
 
@@ -1922,14 +1919,14 @@ void requestResetInterfaceSettings(const SettingsPersistenceCallbacks& persisten
  */
 void renderResetInterfaceSettingsPopup(const SettingsPersistenceCallbacks& persistenceCallbacks)
 {
-  if (ImGui::BeginPopupModal("Reset interface settings?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-    ImGui::TextWrapped("Reset saved interface layout and panel settings?");
+  if (ImGui::BeginPopupModal("Reset UI settings?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::TextWrapped("Reset saved UI layout and panel settings?");
     ImGui::Spacing();
     ImGui::TextWrapped(
       "This clears saved window positions, docking layout, table columns, and similar ImGui interface state.");
     ImGui::Spacing();
 
-    if (ImGui::Button("Reset Interface")) {
+    if (ImGui::Button("Reset UI Settings")) {
       if (persistenceCallbacks.resetInterfaceSettings) {
         persistenceCallbacks.resetInterfaceSettings();
       }
@@ -2109,6 +2106,10 @@ static void renderSettingsPage(
       if (ImGui::CollapsingHeader("Precision", ImGuiTreeNodeFlags_DefaultOpen)) {
         renderPrecisionTab(appData);
       }
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+      renderUiSettingsFileSection(persistenceCallbacks);
       break;
     case GuiData::SettingsTab::Views:
       renderViewsTab(appData, renderData, recenterAllViews);
@@ -2120,7 +2121,7 @@ static void renderSettingsPage(
       renderSegmentationTab(appData, renderData);
       break;
     case GuiData::SettingsTab::Comparison:
-      renderComparisonModesTab(renderData);
+      finishSettingsSection(renderComparisonModesTab(renderData));
       renderMetricsTab(appData, renderData, updateMetricUniforms, getNumImageColorMaps, getImageColorMap);
       break;
     case GuiData::SettingsTab::Rendering:

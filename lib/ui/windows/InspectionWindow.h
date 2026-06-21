@@ -2,6 +2,7 @@
 
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <uuid.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -51,6 +52,7 @@ void renderInspectionWindow(
  * @param getImageValuesLinear Callback returning linear-interpolated image values.
  * @param getSegLabel Callback returning the segmentation label at the crosshairs.
  * @param getLabelTable Callback returning a parcellation label table by index.
+ * @param updateImageUniforms Callback that refreshes rendering uniforms after image settings change.
  */
 void renderInspectionWindowWithTable(
   AppData& appData,
@@ -62,4 +64,5 @@ void renderInspectionWindowWithTable(
   const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesNN,
   const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesLinear,
   const std::function<std::optional<int64_t>(std::size_t imageIndex)>& getSegLabel,
-  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable);
+  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable,
+  const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms);

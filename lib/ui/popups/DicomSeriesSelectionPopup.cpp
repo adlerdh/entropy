@@ -25,7 +25,10 @@
 #include <cstring>
 #include <initializer_list>
 #include <limits>
+#include <numeric>
+#include <optional>
 #include <sstream>
+#include <string_view>
 
 namespace fs = std::filesystem;
 using namespace entropy::ui::popups;
@@ -64,6 +67,167 @@ std::string joinWarnings(const std::vector<std::string>& warnings)
     result += warning;
   }
   return result;
+}
+
+int compareStringsCaseInsensitive(std::string_view left, std::string_view right)
+{
+  const auto leftIt = left.begin();
+  const auto rightIt = right.begin();
+  const auto minSize = std::min(left.size(), right.size());
+  for (std::size_t i = 0; i < minSize; ++i) {
+    const char leftChar = static_cast<char>(std::tolower(static_cast<unsigned char>(leftIt[i])));
+    const char rightChar = static_cast<char>(std::tolower(static_cast<unsigned char>(rightIt[i])));
+    if (leftChar < rightChar) {
+      return -1;
+    }
+    if (rightChar < leftChar) {
+      return 1;
+    }
+  }
+  if (left.size() < right.size()) {
+    return -1;
+  }
+  if (right.size() < left.size()) {
+    return 1;
+  }
+  return 0;
+}
+
+template<typename T>
+int compareValues(const T& left, const T& right)
+{
+  if (left < right) {
+    return -1;
+  }
+  if (right < left) {
+    return 1;
+  }
+  return 0;
+}
+
+int compareVec3(const glm::vec3& left, const glm::vec3& right)
+{
+  if (int result = compareValues(left.x, right.x); result != 0) {
+    return result;
+  }
+  if (int result = compareValues(left.y, right.y); result != 0) {
+    return result;
+  }
+  return compareValues(left.z, right.z);
+}
+
+int compareUVec3(const glm::uvec3& left, const glm::uvec3& right)
+{
+  if (int result = compareValues(left.x, right.x); result != 0) {
+    return result;
+  }
+  if (int result = compareValues(left.y, right.y); result != 0) {
+    return result;
+  }
+  return compareValues(left.z, right.z);
+}
+
+std::optional<int> parseInt(std::string_view text)
+{
+  try {
+    std::size_t parsedChars = 0;
+    const int value = std::stoi(std::string{text}, &parsedChars);
+    return parsedChars == text.size() ? std::optional<int>{value} : std::nullopt;
+  }
+  catch (...) {
+    return std::nullopt;
+  }
+}
+
+int compareSeriesNumber(std::string_view left, std::string_view right)
+{
+  const std::optional<int> leftNumber = parseInt(left);
+  const std::optional<int> rightNumber = parseInt(right);
+  if (leftNumber && rightNumber) {
+    return compareValues(*leftNumber, *rightNumber);
+  }
+  if (leftNumber != rightNumber) {
+    return leftNumber ? -1 : 1;
+  }
+  return compareStringsCaseInsensitive(left, right);
+}
+
+int compareDicomSeriesRows(
+  const GuiData::DicomSeriesSelectionPrompt& prompt,
+  std::size_t leftIndex,
+  std::size_t rightIndex,
+  int columnIndex)
+{
+  const auto& left = prompt.series.at(leftIndex);
+  const auto& right = prompt.series.at(rightIndex);
+
+  switch (columnIndex) {
+    case 0:
+      return compareValues(
+        leftIndex < prompt.selected.size() && prompt.selected.at(leftIndex),
+        rightIndex < prompt.selected.size() && prompt.selected.at(rightIndex));
+    case 1:
+      return compareValues(
+        prompt.referenceSeriesIndex == static_cast<int>(leftIndex),
+        prompt.referenceSeriesIndex == static_cast<int>(rightIndex));
+    case 2:
+      return compareStringsCaseInsensitive(left.displayName, right.displayName);
+    case 3:
+      return compareStringsCaseInsensitive(left.metadata.modality, right.metadata.modality);
+    case 4:
+      return compareSeriesNumber(left.metadata.seriesNumber, right.metadata.seriesNumber);
+    case 5:
+      return compareValues(left.files.size(), right.files.size());
+    case 6:
+      return compareStringsCaseInsensitive(left.geometry.sliceOrientation, right.geometry.sliceOrientation);
+    case 7:
+      return compareUVec3(left.geometry.dimensions, right.geometry.dimensions);
+    case 8:
+      return compareVec3(left.geometry.spacing, right.geometry.spacing);
+    case 9:
+      return compareVec3(fieldOfViewMm(left.geometry), fieldOfViewMm(right.geometry));
+    case 10:
+      return compareVec3(left.geometry.origin, right.geometry.origin);
+    case 11:
+      return compareStringsCaseInsensitive(formatMat3(left.geometry.directions), formatMat3(right.geometry.directions));
+    case 12:
+      return compareStringsCaseInsensitive(left.seriesInstanceUid, right.seriesInstanceUid);
+    case 13:
+      return compareStringsCaseInsensitive(left.metadata.studyInstanceUid, right.metadata.studyInstanceUid);
+    case 15:
+      return compareStringsCaseInsensitive(joinWarnings(left.warnings), joinWarnings(right.warnings));
+    default:
+      return 0;
+  }
+}
+
+std::vector<std::size_t> sortedDicomSeriesRowIndices(
+  const GuiData::DicomSeriesSelectionPrompt& prompt,
+  const ImGuiTableSortSpecs* sortSpecs)
+{
+  std::vector<std::size_t> rowIndices(prompt.series.size());
+  std::iota(rowIndices.begin(), rowIndices.end(), std::size_t{0});
+
+  if (!sortSpecs || sortSpecs->SpecsCount == 0 || rowIndices.size() < 2) {
+    return rowIndices;
+  }
+
+  std::stable_sort(
+    rowIndices.begin(),
+    rowIndices.end(),
+    [prompt = &prompt, sortSpecs](std::size_t left, std::size_t right) {
+      for (int specIndex = 0; specIndex < sortSpecs->SpecsCount; ++specIndex) {
+        const ImGuiTableColumnSortSpecs& spec = sortSpecs->Specs[specIndex];
+        const int result = compareDicomSeriesRows(*prompt, left, right, spec.ColumnIndex);
+        if (result == 0) {
+          continue;
+        }
+        return spec.SortDirection == ImGuiSortDirection_Descending ? result > 0 : result < 0;
+      }
+      return left < right;
+    });
+
+  return rowIndices;
 }
 
 void renderSlicePreview(const dicom::SlicePreview& preview, float maxHeight, float maxWidth)
@@ -320,7 +484,7 @@ void renderDicomSeriesSelectionPopup(
           16,
           ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable |
             ImGuiTableFlags_Hideable | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollX |
-            ImGuiTableFlags_ScrollY,
+            ImGuiTableFlags_ScrollY | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti,
           ImVec2(0.0f, tableHeight)))
     {
       ImGui::TableSetupColumn("Load", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 52.0f);
@@ -349,8 +513,9 @@ void renderDicomSeriesSelectionPopup(
       }
 
       ImGui::TableHeadersRow();
+      const std::vector<std::size_t> rowIndices = sortedDicomSeriesRowIndices(prompt, ImGui::TableGetSortSpecs());
 
-      for (std::size_t i = 0; i < prompt.series.size(); ++i) {
+      for (const std::size_t i : rowIndices) {
         const auto& series = prompt.series.at(i);
         const bool loadable = series.loadable();
         ImGui::PushID(static_cast<int>(i));

@@ -6,6 +6,7 @@
 
 #include "image/Image.h"
 
+#include <IconsForkAwesome.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -130,6 +131,27 @@ bool hasMultiComponentImage(const AppData& appData)
   }
 
   return false;
+}
+
+bool usesGlobalImageVisibilityControl(const Image& image)
+{
+  return image.header().numComponentsPerPixel() > 1 &&
+         Image::MultiComponentBufferType::SeparateImages == image.bufferType();
+}
+
+bool imageVisibleInAllViews(const Image& image)
+{
+  return usesGlobalImageVisibilityControl(image) ? image.settings().globalVisibility() : image.settings().visibility();
+}
+
+void setImageVisibleInAllViews(Image& image, bool visible)
+{
+  if (usesGlobalImageVisibilityControl(image)) {
+    image.settings().setGlobalVisibility(visible);
+  }
+  else {
+    image.settings().setVisibility(visible);
+  }
 }
 
 bool isComponentProjectionColumn(InspectorColumn column)
@@ -263,7 +285,8 @@ void renderInspectionWindowWithTable(
   const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesNN,
   const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesLinear,
   const std::function<std::optional<int64_t>(std::size_t imageIndex)>& getSegLabel,
-  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable)
+  const std::function<ParcellationLabelTable*(std::size_t tableIndex)>& getLabelTable,
+  const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms)
 {
   static bool s_firstRun = true; // Is this the first run?
 
@@ -553,21 +576,26 @@ void renderInspectionWindowWithTable(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Percentile)),
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Percentile)));
+
+      const ImGuiTableColumnFlags componentProjectionColumnFlags =
+        ImGuiTableColumnFlags_WidthFixed |
+        (canShowComponentProjectionColumns ? ImGuiTableColumnFlags_None : ImGuiTableColumnFlags_Disabled);
+
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Minimum)),
-        ImGuiTableColumnFlags_WidthFixed,
+        componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Minimum)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Mean)),
-        ImGuiTableColumnFlags_WidthFixed,
+        componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Mean)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Maximum)),
-        ImGuiTableColumnFlags_WidthFixed,
+        componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Maximum)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Magnitude)),
-        ImGuiTableColumnFlags_WidthFixed,
+        componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Magnitude)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Label)),
@@ -588,13 +616,9 @@ void renderInspectionWindowWithTable(
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Subject)));
 
       for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
-        const auto inspectorColumn = static_cast<InspectorColumn>(column);
-        const bool componentProjectionColumnEnabled =
-          !isComponentProjectionColumn(inspectorColumn) || canShowComponentProjectionColumns;
         ImGui::TableSetColumnEnabled(
           static_cast<int>(column),
-          componentProjectionColumnEnabled &&
-            (appData.guiData().m_inspectionColumnVisible.at(column) || !sk_inspectorColumnCanHide.at(column)));
+          appData.guiData().m_inspectionColumnVisible.at(column) || !sk_inspectorColumnCanHide.at(column));
       }
 
       ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
@@ -671,6 +695,26 @@ void renderInspectionWindowWithTable(
           entropy::ui::headers::imageRoleSuffixShortReference(isRef, isActiveImage, appData.numImages());
         const float suffixWidth =
           roleSuffix.empty() ? 0.0f : ImGui::CalcTextSize(roleSuffix.c_str()).x + ImGui::GetStyle().ItemSpacing.x;
+
+        const bool imageVisible = imageVisibleInAllViews(*image);
+        const std::string visibilityButton =
+          std::string(imageVisible ? ICON_FK_EYE : ICON_FK_EYE_SLASH) + "##imageVisibility";
+        const ImVec2 visibilityButtonSize{ImGui::GetFrameHeight(), ImGui::GetFrameHeight()};
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.0f, 0.0f, 0.0f, 0.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive));
+        if (ImGui::Button(visibilityButton.c_str(), visibilityButtonSize)) {
+          setImageVisibleInAllViews(*image, !imageVisible);
+          if (updateImageUniforms) {
+            updateImageUniforms(*imageUid);
+          }
+        }
+        ImGui::PopStyleColor(3); // ImGuiCol_Button, ImGuiCol_ButtonHovered, ImGuiCol_ButtonActive
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", imageVisible ? "Hide image in all views" : "Show image in all views");
+        }
+
+        ImGui::SameLine();
         const float nameWidth = std::max(1.0f, ImGui::GetContentRegionAvail().x - suffixWidth);
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, inputTextBgColor);
@@ -1004,6 +1048,22 @@ void renderInspectionWindowWithTable(
         }
 
         ImGui::PopID(); /** PopID: imageIndex **/
+      }
+
+      for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+        if (!sk_inspectorColumnCanHide.at(column)) {
+          continue;
+        }
+
+        const bool columnEnabled =
+          0 != (ImGui::TableGetColumnFlags(static_cast<int>(column)) & ImGuiTableColumnFlags_IsEnabled);
+        bool& storedColumnVisible = appData.guiData().m_inspectionColumnVisible.at(column);
+        if (storedColumnVisible != columnEnabled) {
+          storedColumnVisible = columnEnabled;
+          if (columnEnabled) {
+            s_autoSizeColumnRequested.at(column) = true;
+          }
+        }
       }
 
       ImGui::EndTable();
