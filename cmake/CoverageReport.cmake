@@ -109,6 +109,8 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "GCOV")
       "--root" "${ENTROPY_SOURCE_DIR}"
       "--object-directory" "${ENTROPY_BINARY_DIR}"
       "--exclude" "${ENTROPY_COVERAGE_EXCLUDE_REGEX}"
+      "--gcov-executable" "${ENTROPY_GCOV_EXECUTABLE}"
+      "--gcov-ignore-parse-errors" "negative_hits.warn_once_per_file"
       "--print-summary")
     if(ENTROPY_COVERAGE_HTML)
       file(MAKE_DIRECTORY "${ENTROPY_COVERAGE_DIR}/html")
@@ -131,6 +133,7 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "GCOV")
     set(_entropy_filtered_info "${ENTROPY_COVERAGE_DIR}/entropy.info")
     execute_process(
       COMMAND "${ENTROPY_LCOV}" --capture --directory "${ENTROPY_BINARY_DIR}"
+        --gcov-tool "${ENTROPY_GCOV_EXECUTABLE}"
         --output-file "${_entropy_raw_info}"
       RESULT_VARIABLE _entropy_lcov_capture_result)
     if(NOT _entropy_lcov_capture_result EQUAL 0)

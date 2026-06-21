@@ -1,0 +1,212 @@
+name: Linux CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CC: gcc-13
+  CXX: g++-13
+  CMAKE_BUILD_PARALLEL_LEVEL: 2
+  CTEST_PARALLEL_LEVEL: 2
+  SUPERBUILD_CACHE_VERSION: v1
+
+jobs:
+  coverage:
+    name: Build, Test, And Coverage
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install build and coverage dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y software-properties-common
+          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            ccache \
+            gcc-13 \
+            g++-13 \
+            gcovr \
+            libdbus-1-dev \
+            libgl1-mesa-dev \
+            libwayland-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxkbcommon-dev \
+            libxrandr-dev \
+            xorg-dev
+
+      - name: Validate runner tools
+        run: |
+          lsb_release -a
+          cmake --version
+          "${CC}" --version
+          "${CXX}" --version
+          gcovr --version
+
+      - name: Restore Coverage SuperBuild cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-coverage/external/catch2-*
+            build-coverage/external/cli11-*
+            build-coverage/external/cmakerc-*
+            build-coverage/external/glfw-*
+            build-coverage/external/glm-*
+            build-coverage/external/iconfont-*
+            build-coverage/external/imgui-*
+            build-coverage/external/implot-*
+            build-coverage/external/itk-*
+            build-coverage/external/nanovg-*
+            build-coverage/external/nativefiledialog-*
+            build-coverage/external/nlohmann_json-*
+            build-coverage/external/qtbase-*
+            build-coverage/external/spdlog-*
+            build-coverage/external/stduuid-*
+            build-coverage/external/tinyfsm-*
+          key: linux-ubuntu2204-gcc13-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            linux-ubuntu2204-gcc13-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Coverage SuperBuild
+        run: cmake --preset superbuild-coverage
+
+      - name: Build Coverage SuperBuild
+        run: cmake --build --preset superbuild-coverage --parallel
+
+      - name: Configure Coverage app
+        run: cmake --preset app-coverage
+
+      - name: Build Coverage app
+        run: cmake --build --preset app-coverage --parallel
+
+      - name: Generate coverage summary
+        run: cmake --build --preset coverage --parallel
+
+      - name: Generate HTML coverage
+        run: cmake --build --preset coverage-html --parallel
+
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-coverage-html
+          path: build-coverage/coverage/html/
+          if-no-files-found: error
+
+  package:
+    name: Release Packages
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install build and packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y software-properties-common
+          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            ccache \
+            gcc-13 \
+            g++-13 \
+            dpkg-dev \
+            fakeroot \
+            file \
+            libdbus-1-dev \
+            libgl1-mesa-dev \
+            libwayland-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxkbcommon-dev \
+            libxrandr-dev \
+            xorg-dev
+
+      - name: Validate runner tools
+        run: |
+          lsb_release -a
+          cmake --version
+          cpack --version
+          "${CC}" --version
+          "${CXX}" --version
+          dpkg-deb --version
+
+      - name: Restore Release SuperBuild cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-release/external/catch2-*
+            build-release/external/cli11-*
+            build-release/external/cmakerc-*
+            build-release/external/glfw-*
+            build-release/external/glm-*
+            build-release/external/iconfont-*
+            build-release/external/imgui-*
+            build-release/external/implot-*
+            build-release/external/itk-*
+            build-release/external/nanovg-*
+            build-release/external/nativefiledialog-*
+            build-release/external/nlohmann_json-*
+            build-release/external/qtbase-*
+            build-release/external/spdlog-*
+            build-release/external/stduuid-*
+            build-release/external/tinyfsm-*
+          key: linux-ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            linux-ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Release SuperBuild
+        run: cmake --preset superbuild-release
+
+      - name: Build Release SuperBuild
+        run: cmake --build --preset superbuild-release --parallel
+
+      - name: Configure Release app
+        run: cmake --preset app-release
+
+      - name: Build Release app
+        run: cmake --build --preset app-release --parallel
+
+      - name: Run Release tests
+        run: ctest --test-dir build-release --parallel --output-on-failure
+
+      - name: Build DEB and portable TAR.GZ
+        run: cmake --build --preset package-release --parallel
+
+      - name: Inspect DEB package
+        run: |
+          dpkg-deb --info build-release/packages/Entropy-*-Linux-*.deb
+          dpkg-deb --contents build-release/packages/Entropy-*-Linux-*.deb
+
+      - name: Smoke-test staged install
+        run: |
+          cmake --install build-release --prefix build-release/linux-package-install
+          build-release/linux-package-install/bin/entropy --help
+
+      - name: Upload Linux packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-packages
+          path: |
+            build-release/packages/Entropy-*-Linux-*.deb
+            build-release/packages/Entropy-*-Linux-*-portable.tar.gz
+          if-no-files-found: error

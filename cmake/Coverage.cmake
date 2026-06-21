@@ -76,10 +76,21 @@ function(entropy_configure_coverage)
     find_program(ENTROPY_GCOVR gcovr)
     find_program(ENTROPY_LCOV lcov)
     find_program(ENTROPY_GENHTML genhtml)
+    set(_entropy_gcov_names gcov)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      string(REGEX MATCH "^[0-9]+" _entropy_gcc_major "${CMAKE_CXX_COMPILER_VERSION}")
+      if(_entropy_gcc_major)
+        list(PREPEND _entropy_gcov_names "gcov-${_entropy_gcc_major}")
+      endif()
+    endif()
+    find_program(ENTROPY_GCOV_EXECUTABLE NAMES ${_entropy_gcov_names})
 
     if(NOT ENTROPY_GCOVR AND (NOT ENTROPY_LCOV OR NOT ENTROPY_GENHTML))
       message(FATAL_ERROR
         "GCOV coverage requires gcovr or both lcov and genhtml.")
+    endif()
+    if(NOT ENTROPY_GCOV_EXECUTABLE)
+      message(FATAL_ERROR "GCOV coverage requires a gcov executable.")
     endif()
 
     target_compile_options(entropy_coverage_flags INTERFACE
@@ -87,6 +98,7 @@ function(entropy_configure_coverage)
     target_link_options(entropy_coverage_flags INTERFACE --coverage)
 
     set_property(GLOBAL PROPERTY ENTROPY_COVERAGE_GCOVR "${ENTROPY_GCOVR}")
+    set_property(GLOBAL PROPERTY ENTROPY_COVERAGE_GCOV_EXECUTABLE "${ENTROPY_GCOV_EXECUTABLE}")
     set_property(GLOBAL PROPERTY ENTROPY_COVERAGE_LCOV "${ENTROPY_LCOV}")
     set_property(GLOBAL PROPERTY ENTROPY_COVERAGE_GENHTML "${ENTROPY_GENHTML}")
   elseif(_entropy_coverage_mode STREQUAL "OPENCPPCOVERAGE")
@@ -153,6 +165,7 @@ function(entropy_add_coverage_targets)
   get_property(_entropy_llvm_cov GLOBAL PROPERTY ENTROPY_COVERAGE_LLVM_COV)
   get_property(_entropy_llvm_profdata GLOBAL PROPERTY ENTROPY_COVERAGE_LLVM_PROFDATA)
   get_property(_entropy_gcovr GLOBAL PROPERTY ENTROPY_COVERAGE_GCOVR)
+  get_property(_entropy_gcov_executable GLOBAL PROPERTY ENTROPY_COVERAGE_GCOV_EXECUTABLE)
   get_property(_entropy_lcov GLOBAL PROPERTY ENTROPY_COVERAGE_LCOV)
   get_property(_entropy_genhtml GLOBAL PROPERTY ENTROPY_COVERAGE_GENHTML)
   get_property(_entropy_opencppcoverage GLOBAL PROPERTY ENTROPY_COVERAGE_OPENCPPCOVERAGE)
@@ -176,6 +189,7 @@ function(entropy_add_coverage_targets)
       "-DENTROPY_LLVM_COV=${_entropy_llvm_cov}"
       "-DENTROPY_LLVM_PROFDATA=${_entropy_llvm_profdata}"
       "-DENTROPY_GCOVR=${_entropy_gcovr}"
+      "-DENTROPY_GCOV_EXECUTABLE=${_entropy_gcov_executable}"
       "-DENTROPY_LCOV=${_entropy_lcov}"
       "-DENTROPY_GENHTML=${_entropy_genhtml}"
       "-DENTROPY_OPENCPPCOVERAGE=${_entropy_opencppcoverage}"
@@ -200,6 +214,7 @@ function(entropy_add_coverage_targets)
       "-DENTROPY_LLVM_COV=${_entropy_llvm_cov}"
       "-DENTROPY_LLVM_PROFDATA=${_entropy_llvm_profdata}"
       "-DENTROPY_GCOVR=${_entropy_gcovr}"
+      "-DENTROPY_GCOV_EXECUTABLE=${_entropy_gcov_executable}"
       "-DENTROPY_LCOV=${_entropy_lcov}"
       "-DENTROPY_GENHTML=${_entropy_genhtml}"
       "-DENTROPY_OPENCPPCOVERAGE=${_entropy_opencppcoverage}"
