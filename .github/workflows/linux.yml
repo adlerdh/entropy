@@ -42,7 +42,6 @@ jobs:
             ccache \
             gcc-13 \
             g++-13 \
-            gcovr \
             libdbus-1-dev \
             libgl1-mesa-dev \
             libwayland-dev \
@@ -51,7 +50,10 @@ jobs:
             libxinerama-dev \
             libxkbcommon-dev \
             libxrandr-dev \
+            python3-pip \
             xorg-dev
+          python3 -m pip install --user 'gcovr==7.0'
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Validate runner tools
         run: |

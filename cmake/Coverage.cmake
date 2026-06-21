@@ -76,6 +76,19 @@ function(entropy_configure_coverage)
     find_program(ENTROPY_GCOVR gcovr)
     find_program(ENTROPY_LCOV lcov)
     find_program(ENTROPY_GENHTML genhtml)
+    if(ENTROPY_GCOVR)
+      execute_process(
+        COMMAND "${ENTROPY_GCOVR}" --version
+        OUTPUT_VARIABLE _entropy_gcovr_version_output
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+      string(REGEX MATCH "gcovr ([0-9]+)" _entropy_gcovr_version_match "${_entropy_gcovr_version_output}")
+      if(CMAKE_MATCH_1 AND CMAKE_MATCH_1 VERSION_LESS 7)
+        message(STATUS
+          "Ignoring gcovr ${CMAKE_MATCH_1}; Entropy coverage requires gcovr 7 or newer with GCC 13.")
+        set(ENTROPY_GCOVR "")
+      endif()
+    endif()
     set(_entropy_gcov_names gcov)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
       string(REGEX MATCH "^[0-9]+" _entropy_gcc_major "${CMAKE_CXX_COMPILER_VERSION}")
@@ -87,7 +100,7 @@ function(entropy_configure_coverage)
 
     if(NOT ENTROPY_GCOVR AND (NOT ENTROPY_LCOV OR NOT ENTROPY_GENHTML))
       message(FATAL_ERROR
-        "GCOV coverage requires gcovr or both lcov and genhtml.")
+        "GCOV coverage requires gcovr 7 or newer, or both lcov and genhtml.")
     endif()
     if(NOT ENTROPY_GCOV_EXECUTABLE)
       message(FATAL_ERROR "GCOV coverage requires a gcov executable.")
