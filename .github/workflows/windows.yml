@@ -43,27 +43,15 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install pre-commit
+      - name: Install formatting tools
         working-directory: 'S:\'
-        run: python -m pip install pre-commit
-
-      - name: Use Visual Studio clang-format
-        working-directory: 'S:\'
-        run: |
-          $vsPath = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Llvm.Clang -property installationPath
-          if (-not $vsPath) {
-            throw "Visual Studio LLVM tools were not found"
-          }
-          $llvmPath = Join-Path $vsPath "VC\Tools\Llvm\x64\bin"
-          if (-not (Test-Path (Join-Path $llvmPath "clang-format.exe"))) {
-            throw "clang-format.exe was not found in $llvmPath"
-          }
-          $env:Path = "$llvmPath;$env:Path"
-          $llvmPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        run: python -m pip install pre-commit clang-format==18.1.8
 
       - name: Validate formatting tools
         working-directory: 'S:\'
-        run: clang-format --version
+        run: |
+          clang-format --version
+          pre-commit --version
 
       - name: Run pre-commit checks
         working-directory: 'S:\'

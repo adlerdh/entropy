@@ -398,22 +398,6 @@ void renderImageHeader(
     ImGui::SetTooltip(isRef ? "The reference image cannot be removed" : "Remove this image from the project");
   }
 
-  if (image_export::imageHasDicomSource(appData, imageUid)) {
-    const bool canExportImage = image->hasPixelData();
-    if (!canExportImage) {
-      ImGui::BeginDisabled();
-    }
-    if (ImGui::Button("Export DICOM Series as Image...")) {
-      image_export::exportDicomImage(appData, imageUid);
-    }
-    if (!canExportImage) {
-      ImGui::EndDisabled();
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-      ImGui::SetTooltip("Export this DICOM series as a 3D medical image");
-    }
-  }
-
   if (0 < imageIndex) {
     // Rules for showing the buttons that change image order:
     const bool showDecreaseIndex = true | (1 < imageIndex);
@@ -452,6 +436,22 @@ void renderImageHeader(
       if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Move image to frontmost layer");
       }
+    }
+  }
+
+  if (image_export::imageHasDicomSource(appData, imageUid)) {
+    const bool canExportImage = image->hasPixelData();
+    if (!canExportImage) {
+      ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Export DICOM Series as Image...")) {
+      image_export::exportDicomImage(appData, imageUid);
+    }
+    if (!canExportImage) {
+      ImGui::EndDisabled();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("Export this DICOM series as a 3D medical image");
     }
   }
 
