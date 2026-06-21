@@ -328,6 +328,9 @@ jobs:
     runs-on: windows-2025
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    env:
+      CMAKE_GENERATOR: "Visual Studio 18 2026"
+      CMAKE_GENERATOR_PLATFORM: x64
 
     steps:
       - name: Check out source
@@ -342,7 +345,7 @@ jobs:
           systeminfo | Select-String -Pattern "OS Name", "OS Version", "System Type"
           cmake --version
           git --version
-          vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          vswhere -latest -products * -version "[18.0,19.0)" -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 
       - name: Restore Debug SuperBuild cache
         uses: actions/cache@v5
@@ -364,9 +367,9 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: windows-2025-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: windows-2025-msvc2026-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-2025-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            windows-2025-msvc2026-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Debug SuperBuild
         working-directory: 'S:\'

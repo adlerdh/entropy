@@ -111,6 +111,7 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "GCOV")
       "--exclude" "${ENTROPY_COVERAGE_EXCLUDE_REGEX}"
       "--gcov-executable" "${ENTROPY_GCOV_EXECUTABLE}"
       "--gcov-ignore-parse-errors" "negative_hits.warn_once_per_file"
+      "--gcov-ignore-errors" "no_working_dir_found"
       "--print-summary")
     if(ENTROPY_COVERAGE_HTML)
       file(MAKE_DIRECTORY "${ENTROPY_COVERAGE_DIR}/html")
