@@ -548,6 +548,21 @@ ExternalProject_Add(nlohmann_json
 
 message(STATUS "Adding external library QtBase in ${qtbase_PREFIX}")
 
+set(QTBASE_PATCH_FILE "${qtbase_PREFIX}/patch_qtbase.cmake")
+file(MAKE_DIRECTORY "${qtbase_PREFIX}")
+file(WRITE "${QTBASE_PATCH_FILE}" "
+set(qyieldcpu_file \"${qtbase_PREFIX}/src/src/corelib/thread/qyieldcpu.h\")
+file(READ \"\${qyieldcpu_file}\" contents)
+if(NOT contents MATCHES \"arm_acle.h\")
+  string(REPLACE
+    \"#include <QtCore/qtconfigmacros.h>\"
+    \"#include <QtCore/qtconfigmacros.h>\\n\\n#if defined(__APPLE__) && defined(__arm64__) && __has_include(<arm_acle.h>)\\n#  include <arm_acle.h>\\n#endif\"
+    contents
+    \"\${contents}\")
+  file(WRITE \"\${qyieldcpu_file}\" \"\${contents}\")
+endif()
+")
+
 if(_isMultiConfig)
   set(_qt_build_config "${Entropy_SUPERBUILD_CONFIG}")
 else()
@@ -591,6 +606,8 @@ ExternalProject_Add(qtbase
   SOURCE_DIR "${qtbase_PREFIX}/src"
   BINARY_DIR "${qtbase_PREFIX}/build"
   INSTALL_DIR "${qtbase_PREFIX}/install"
+
+  PATCH_COMMAND ${CMAKE_COMMAND} -P "${QTBASE_PATCH_FILE}"
 
   CONFIGURE_COMMAND
     "${CMAKE_COMMAND}" -E env ${_qt_configure_env}

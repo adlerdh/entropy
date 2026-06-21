@@ -24,6 +24,10 @@ env:
   CXX: g++-13
   CMAKE_BUILD_PARALLEL_LEVEL: 2
   CTEST_PARALLEL_LEVEL: 2
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_COMPILERCHECK: content
+  CCACHE_MAXSIZE: 2G
   SUPERBUILD_CACHE_VERSION: v1
 
 jobs:
@@ -92,6 +96,19 @@ jobs:
           "${CC}" --version
           "${CXX}" --version
 
+      - name: Restore Debug ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: linux-ubuntu2204-gcc13-debug-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            linux-ubuntu2204-gcc13-debug-ccache-v1-
+
+      - name: Reset Debug ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
       - name: Restore Debug SuperBuild cache
         uses: actions/cache@v5
         with:
@@ -130,6 +147,10 @@ jobs:
 
       - name: Run Debug tests
         run: ctest --test-dir build-debug --parallel --output-on-failure
+
+      - name: Show Debug ccache stats
+        if: always()
+        run: ccache --show-stats
 
   coverage:
     name: Coverage Report
@@ -171,6 +192,19 @@ jobs:
           "${CC}" --version
           "${CXX}" --version
           gcovr --version
+
+      - name: Restore Coverage ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: linux-ubuntu2204-gcc13-coverage-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            linux-ubuntu2204-gcc13-coverage-ccache-v1-
+
+      - name: Reset Coverage ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
 
       - name: Restore Coverage SuperBuild cache
         uses: actions/cache@v5
@@ -221,6 +255,10 @@ jobs:
           path: build-coverage/coverage/html/
           if-no-files-found: error
 
+      - name: Show Coverage ccache stats
+        if: always()
+        run: ccache --show-stats
+
   package:
     name: Release Packages
     runs-on: ubuntu-22.04
@@ -262,6 +300,19 @@ jobs:
           "${CC}" --version
           "${CXX}" --version
           dpkg-deb --version
+
+      - name: Restore Release ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: linux-ubuntu2204-gcc13-release-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            linux-ubuntu2204-gcc13-release-ccache-v1-
+
+      - name: Reset Release ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
 
       - name: Restore Release SuperBuild cache
         uses: actions/cache@v5
@@ -323,3 +374,7 @@ jobs:
             build-release/packages/Entropy-*-Linux-*.deb
             build-release/packages/Entropy-*-Linux-*-portable.tar.gz
           if-no-files-found: error
+
+      - name: Show Release ccache stats
+        if: always()
+        run: ccache --show-stats

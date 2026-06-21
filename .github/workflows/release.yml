@@ -174,6 +174,10 @@ jobs:
     env:
       CC: gcc-13
       CXX: g++-13
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 2G
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
 
     steps:
@@ -213,7 +217,21 @@ jobs:
           git --version
           "${CC}" --version
           "${CXX}" --version
+          ccache --version
           dpkg-deb --version
+
+      - name: Restore Release ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: linux-ubuntu2204-gcc13-release-publish-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            linux-ubuntu2204-gcc13-release-publish-ccache-v1-
+
+      - name: Reset Release ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
 
       - name: Restore Release SuperBuild cache
         uses: actions/cache@v5
@@ -296,6 +314,10 @@ jobs:
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Linux-*-portable.tar.gz
           if-no-files-found: error
 
+      - name: Show Release ccache stats
+        if: always()
+        run: ccache --show-stats
+
   macos:
     name: macOS Release
     runs-on: macos-14
@@ -303,6 +325,10 @@ jobs:
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
       SUPERBUILD_CACHE_VERSION: v2
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 2G
       ENTROPY_MACOS_ARCHITECTURES: arm64
       ENTROPY_MACOS_DEPLOYMENT_TARGET: "13.3"
       ENTROPY_MACOS_SUPERBUILD_PARALLEL: 2
@@ -326,6 +352,19 @@ jobs:
           ccache --version
           xcodebuild -version
           xcrun --show-sdk-version
+
+      - name: Restore Release ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: macos14-arm64-appleclang-release-publish-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            macos14-arm64-appleclang-release-publish-ccache-v1-
+
+      - name: Reset Release ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
 
       - name: Restore Release SuperBuild cache
         uses: actions/cache@v5
@@ -412,6 +451,10 @@ jobs:
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS.dmg
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS.zip
           if-no-files-found: error
+
+      - name: Show Release ccache stats
+        if: always()
+        run: ccache --show-stats
 
   publish:
     name: Publish GitHub Release

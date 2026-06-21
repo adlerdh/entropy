@@ -22,6 +22,10 @@ concurrency:
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 2
   CTEST_PARALLEL_LEVEL: 2
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_COMPILERCHECK: content
+  CCACHE_MAXSIZE: 2G
   SUPERBUILD_CACHE_VERSION: v2
   ENTROPY_MACOS_ARCHITECTURES: arm64
   ENTROPY_MACOS_DEPLOYMENT_TARGET: "13.3"
@@ -79,6 +83,19 @@ jobs:
           xcodebuild -version
           xcrun --show-sdk-version
 
+      - name: Restore Debug ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: macos14-arm64-appleclang-debug-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            macos14-arm64-appleclang-debug-ccache-v1-
+
+      - name: Reset Debug ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
       - name: Restore Debug SuperBuild cache
         uses: actions/cache@v5
         with:
@@ -125,6 +142,10 @@ jobs:
       - name: Run Debug tests
         run: ctest --test-dir build-debug --parallel --output-on-failure
 
+      - name: Show Debug ccache stats
+        if: always()
+        run: ccache --show-stats
+
   coverage:
     name: Coverage Report
     runs-on: macos-14
@@ -148,6 +169,19 @@ jobs:
           xcrun --show-sdk-version
           xcrun --find llvm-cov
           xcrun --find llvm-profdata
+
+      - name: Restore Coverage ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: macos14-arm64-appleclang-coverage-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            macos14-arm64-appleclang-coverage-ccache-v1-
+
+      - name: Reset Coverage ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
 
       - name: Restore Coverage SuperBuild cache
         uses: actions/cache@v5
@@ -205,6 +239,10 @@ jobs:
           path: build-coverage/coverage/html/
           if-no-files-found: error
 
+      - name: Show Coverage ccache stats
+        if: always()
+        run: ccache --show-stats
+
   package:
     name: Release Packages
     runs-on: macos-14
@@ -228,6 +266,19 @@ jobs:
           ccache --version
           xcodebuild -version
           xcrun --show-sdk-version
+
+      - name: Restore Release ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: macos14-arm64-appleclang-release-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            macos14-arm64-appleclang-release-ccache-v1-
+
+      - name: Reset Release ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
 
       - name: Restore Release SuperBuild cache
         uses: actions/cache@v5
@@ -295,6 +346,10 @@ jobs:
             build-release/packages/Entropy-*-macOS.zip
           if-no-files-found: error
 
+      - name: Show Release ccache stats
+        if: always()
+        run: ccache --show-stats
+
   macos-26-smoke:
     name: macOS 26 Smoke Build And Tests
     runs-on: macos-26
@@ -317,6 +372,19 @@ jobs:
           ccache --version
           xcodebuild -version
           xcrun --show-sdk-version
+
+      - name: Restore Debug ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: macos26-arm64-appleclang-debug-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            macos26-arm64-appleclang-debug-ccache-v1-
+
+      - name: Reset Debug ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
 
       - name: Restore Debug SuperBuild cache
         uses: actions/cache@v5
@@ -363,3 +431,7 @@ jobs:
 
       - name: Run Debug tests
         run: ctest --test-dir build-debug --parallel --output-on-failure
+
+      - name: Show Debug ccache stats
+        if: always()
+        run: ccache --show-stats
