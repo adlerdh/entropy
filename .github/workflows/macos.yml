@@ -1,4 +1,4 @@
-name: Windows CI
+name: macOS CI
 
 on:
   pull_request:
@@ -8,35 +8,32 @@ on:
     branches:
       - main
   schedule:
-    # Weekly full Windows validation. Run manually when release confidence is needed sooner.
-    - cron: "23 8 * * 0"
+    # Weekly full macOS validation. Run manually when release confidence is needed sooner.
+    - cron: "11 9 * * 0"
   workflow_dispatch: {}
 
 permissions:
   contents: read
 
 concurrency:
-  group: windows-ci-${{ github.ref }}
+  group: macos-ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  CMAKE_GENERATOR: "Visual Studio 17 2022"
-  CMAKE_GENERATOR_PLATFORM: x64
   CMAKE_BUILD_PARALLEL_LEVEL: 2
   CTEST_PARALLEL_LEVEL: 2
   SUPERBUILD_CACHE_VERSION: v1
+  ENTROPY_MACOS_ARCHITECTURES: arm64
+  ENTROPY_MACOS_DEPLOYMENT_TARGET: "13.0"
 
 jobs:
   format:
     name: Format Check
-    runs-on: windows-2022
+    runs-on: macos-14
 
     steps:
       - name: Check out source
         uses: actions/checkout@v6
-
-      - name: Map short workspace path
-        run: 'subst S: "$env:GITHUB_WORKSPACE"'
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -44,41 +41,42 @@ jobs:
           python-version: "3.x"
 
       - name: Install formatting tools
-        working-directory: 'S:\'
-        run: python -m pip install pre-commit clang-format==18.1.8
+        run: python -m pip install pre-commit 'clang-format==18.1.8'
 
       - name: Validate formatting tools
-        working-directory: 'S:\'
         run: |
+          sw_vers
+          test "$(uname -m)" = "arm64"
           clang-format --version
           pre-commit --version
 
       - name: Run pre-commit checks
-        working-directory: 'S:\'
         run: pre-commit run --all-files --show-diff-on-failure
 
       - name: Require clean formatting result
-        working-directory: 'S:\'
         run: git diff --exit-code
 
   debug:
     name: Debug Build And Tests
-    runs-on: windows-2022
+    runs-on: macos-14
     needs: format
 
     steps:
       - name: Check out source
         uses: actions/checkout@v6
 
-      - name: Map short workspace path
-        run: 'subst S: "$env:GITHUB_WORKSPACE"'
+      - name: Install build dependencies
+        run: brew install ccache
 
       - name: Validate runner tools
-        working-directory: 'S:\'
         run: |
+          sw_vers
+          test "$(uname -m)" = "arm64"
           cmake --version
           git --version
-          vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          ccache --version
+          xcodebuild -version
+          xcrun --show-sdk-version
 
       - name: Restore Debug SuperBuild cache
         uses: actions/cache@v5
@@ -100,33 +98,34 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: windows-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos14-arm64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos14-arm64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Debug SuperBuild
-        working-directory: 'S:\'
-        run: cmake --preset superbuild-debug
+        run: >
+          cmake --preset superbuild-debug
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Debug SuperBuild
-        working-directory: 'S:\'
         run: cmake --build --preset superbuild-debug --parallel
 
       - name: Configure Debug app
-        working-directory: 'S:\'
-        run: cmake --preset app-debug
+        run: >
+          cmake --preset app-debug
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Debug app
-        working-directory: 'S:\'
         run: cmake --build --preset app-debug --parallel
 
       - name: Run Debug tests
-        working-directory: 'S:\'
-        run: ctest --test-dir build-debug -C Debug --parallel --output-on-failure
+        run: ctest --test-dir build-debug --parallel --output-on-failure
 
   coverage:
     name: Coverage Report
-    runs-on: windows-2022
+    runs-on: macos-14
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
 
@@ -134,30 +133,19 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v6
 
-      - name: Map short workspace path
-        run: 'subst S: "$env:GITHUB_WORKSPACE"'
+      - name: Install build dependencies
+        run: brew install ccache
 
-      - name: Install coverage tools
-        working-directory: 'S:\'
+      - name: Validate runner tools
         run: |
-          $release = Invoke-RestMethod `
-            -Uri "https://api.github.com/repos/OpenCppCoverage/OpenCppCoverage/releases/tags/release-0.9.9.0" `
-            -Headers @{ "User-Agent" = "entropy-ci" }
-          $asset = $release.assets |
-            Where-Object { $_.name -match "x64" -and $_.name -match "\.exe$" } |
-            Select-Object -First 1
-          if (-not $asset) {
-            throw "OpenCppCoverage x64 installer asset was not found"
-          }
-          $installer = Join-Path $env:RUNNER_TEMP "OpenCppCoverageSetup.exe"
-          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $installer
-          Start-Process -FilePath $installer `
-            -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" `
-            -Wait
-          $openCppCoveragePath = "C:\Program Files\OpenCppCoverage"
-          $env:Path = "$openCppCoveragePath;$env:Path"
-          $openCppCoveragePath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          Get-Command OpenCppCoverage -ErrorAction Stop
+          sw_vers
+          test "$(uname -m)" = "arm64"
+          cmake --version
+          ccache --version
+          xcodebuild -version
+          xcrun --show-sdk-version
+          xcrun --find llvm-cov
+          xcrun --find llvm-profdata
 
       - name: Restore Coverage SuperBuild cache
         uses: actions/cache@v5
@@ -179,68 +167,44 @@ jobs:
             build-coverage/external/spdlog-*
             build-coverage/external/stduuid-*
             build-coverage/external/tinyfsm-*
-          key: windows-msvc2022-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos14-arm64-appleclang-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-msvc2022-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos14-arm64-appleclang-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Coverage SuperBuild
-        working-directory: 'S:\'
-        run: cmake --preset superbuild-coverage
+        run: >
+          cmake --preset superbuild-coverage
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Coverage SuperBuild
-        working-directory: 'S:\'
         run: cmake --build --preset superbuild-coverage --parallel
 
       - name: Configure Coverage app
-        working-directory: 'S:\'
-        run: cmake --preset app-coverage
+        run: >
+          cmake --preset app-coverage
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Coverage app
-        working-directory: 'S:\'
         run: cmake --build --preset app-coverage --parallel
 
-      - name: Generate XML coverage
-        working-directory: 'S:\'
+      - name: Generate coverage summary
         run: cmake --build --preset coverage --parallel
 
-      - name: Summarize XML coverage
-        working-directory: 'S:\'
-        run: |
-          New-Item -ItemType Directory -Force coverage-artifacts | Out-Null
-          Copy-Item build-coverage\coverage\opencppcoverage.xml coverage-artifacts\opencppcoverage.xml -Force
-          [xml]$coverage = Get-Content coverage-artifacts\opencppcoverage.xml
-          $lineRate = [double]$coverage.coverage.'line-rate'
-          $linesCovered = [int]$coverage.coverage.'lines-covered'
-          $linesValid = [int]$coverage.coverage.'lines-valid'
-          if ($linesValid -le 0) {
-            throw "OpenCppCoverage produced an empty Cobertura report. Check module/source path selection."
-          }
-          $percent = [math]::Round($lineRate * 100, 2)
-          "### Windows coverage" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-          "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-          "Line coverage: $percent% ($linesCovered / $linesValid)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-
       - name: Generate HTML coverage
-        working-directory: 'S:\'
         run: cmake --build --preset coverage-html --parallel
-
-      - name: Upload coverage XML
-        uses: actions/upload-artifact@v7
-        with:
-          name: windows-coverage-xml
-          path: coverage-artifacts/opencppcoverage.xml
-          if-no-files-found: error
 
       - name: Upload coverage HTML
         uses: actions/upload-artifact@v7
         with:
-          name: windows-coverage-html
+          name: macos-coverage-html
           path: build-coverage/coverage/html/
           if-no-files-found: error
 
-  release:
-    name: Release Build Tests And Packages
-    runs-on: windows-2022
+  package:
+    name: Release Packages
+    runs-on: macos-14
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
 
@@ -248,17 +212,19 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v6
 
-      - name: Map short workspace path
-        run: 'subst S: "$env:GITHUB_WORKSPACE"'
+      - name: Install build dependencies
+        run: brew install ccache
 
       - name: Validate runner tools
-        working-directory: 'S:\'
         run: |
+          sw_vers
+          test "$(uname -m)" = "arm64"
           cmake --version
+          cpack --version
           git --version
-          vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          Get-Command candle.exe -ErrorAction Stop
-          Get-Command light.exe -ErrorAction Stop
+          ccache --version
+          xcodebuild -version
+          xcrun --show-sdk-version
 
       - name: Restore Release SuperBuild cache
         uses: actions/cache@v5
@@ -280,52 +246,54 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos14-arm64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos14-arm64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Release SuperBuild
-        working-directory: 'S:\'
-        run: cmake --preset superbuild-release
+        run: >
+          cmake --preset superbuild-release
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Release SuperBuild
-        working-directory: 'S:\'
         run: cmake --build --preset superbuild-release --parallel
 
       - name: Configure Release app
-        working-directory: 'S:\'
-        run: cmake --preset app-release
+        run: >
+          cmake --preset app-release
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Release app
-        working-directory: 'S:\'
         run: cmake --build --preset app-release --parallel
 
       - name: Run Release tests
-        working-directory: 'S:\'
-        run: ctest --test-dir build-release -C Release --parallel --output-on-failure
+        run: ctest --test-dir build-release --parallel --output-on-failure
 
-      - name: Build MSI and portable ZIP
-        working-directory: 'S:\'
+      - name: Validate deployment target
+        run: otool -l build-release/bin/Entropy.app/Contents/MacOS/entropy | grep -A3 LC_BUILD_VERSION
+
+      - name: Build DMG and ZIP
         run: cmake --build --preset package-release --parallel
 
       - name: Smoke-test staged install
-        working-directory: 'S:\'
         run: |
-          cmake --install build-release --config Release --prefix build-release\windows-package-install
-          & .\build-release\windows-package-install\entropy.exe --help
+          cmake --install build-release --prefix build-release/macos-package-install
+          build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
-      - name: Upload Windows packages
+      - name: Upload macOS packages
         uses: actions/upload-artifact@v7
         with:
-          name: windows-packages
+          name: macos-packages
           path: |
-            build-release/packages/*.msi
-            build-release/packages/*portable.zip
+            build-release/packages/Entropy-*-macOS.dmg
+            build-release/packages/Entropy-*-macOS.zip
           if-no-files-found: error
 
-  windows-2025-smoke:
-    name: Windows Server 2025 Smoke Build And Tests
-    runs-on: windows-2025
+  macos-26-smoke:
+    name: macOS 26 Smoke Build And Tests
+    runs-on: macos-26
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
 
@@ -333,16 +301,18 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v6
 
-      - name: Map short workspace path
-        run: 'subst S: "$env:GITHUB_WORKSPACE"'
+      - name: Install build dependencies
+        run: brew install ccache
 
       - name: Validate runner tools
-        working-directory: 'S:\'
         run: |
-          systeminfo | Select-String -Pattern "OS Name", "OS Version", "System Type"
+          sw_vers
+          test "$(uname -m)" = "arm64"
           cmake --version
           git --version
-          vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          ccache --version
+          xcodebuild -version
+          xcrun --show-sdk-version
 
       - name: Restore Debug SuperBuild cache
         uses: actions/cache@v5
@@ -364,26 +334,27 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: windows-2025-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos26-arm64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-2025-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos26-arm64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Debug SuperBuild
-        working-directory: 'S:\'
-        run: cmake --preset superbuild-debug
+        run: >
+          cmake --preset superbuild-debug
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Debug SuperBuild
-        working-directory: 'S:\'
         run: cmake --build --preset superbuild-debug --parallel
 
       - name: Configure Debug app
-        working-directory: 'S:\'
-        run: cmake --preset app-debug
+        run: >
+          cmake --preset app-debug
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Debug app
-        working-directory: 'S:\'
         run: cmake --build --preset app-debug --parallel
 
       - name: Run Debug tests
-        working-directory: 'S:\'
-        run: ctest --test-dir build-debug -C Debug --parallel --output-on-failure
+        run: ctest --test-dir build-debug --parallel --output-on-failure
