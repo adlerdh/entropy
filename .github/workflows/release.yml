@@ -304,6 +304,7 @@ jobs:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
       ENTROPY_MACOS_ARCHITECTURES: arm64
       ENTROPY_MACOS_DEPLOYMENT_TARGET: "13.0"
+      ENTROPY_MACOS_SUPERBUILD_PARALLEL: 3
 
     steps:
       - name: Check out source
@@ -354,9 +355,10 @@ jobs:
           cmake --preset superbuild-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel
+        run: cmake --build --preset superbuild-release --parallel 1
 
       - name: Configure Release app
         run: >

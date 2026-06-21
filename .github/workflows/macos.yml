@@ -25,6 +25,7 @@ env:
   SUPERBUILD_CACHE_VERSION: v1
   ENTROPY_MACOS_ARCHITECTURES: arm64
   ENTROPY_MACOS_DEPLOYMENT_TARGET: "13.0"
+  ENTROPY_MACOS_SUPERBUILD_PARALLEL: 3
 
 jobs:
   format:
@@ -107,9 +108,10 @@ jobs:
           cmake --preset superbuild-debug
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Debug SuperBuild
-        run: cmake --build --preset superbuild-debug --parallel
+        run: cmake --build --preset superbuild-debug --parallel 1
 
       - name: Configure Debug app
         run: >
@@ -176,9 +178,10 @@ jobs:
           cmake --preset superbuild-coverage
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Coverage SuperBuild
-        run: cmake --build --preset superbuild-coverage --parallel
+        run: cmake --build --preset superbuild-coverage --parallel 1
 
       - name: Configure Coverage app
         run: >
@@ -255,9 +258,10 @@ jobs:
           cmake --preset superbuild-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel
+        run: cmake --build --preset superbuild-release --parallel 1
 
       - name: Configure Release app
         run: >
@@ -343,9 +347,10 @@ jobs:
           cmake --preset superbuild-debug
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Debug SuperBuild
-        run: cmake --build --preset superbuild-debug --parallel
+        run: cmake --build --preset superbuild-debug --parallel 1
 
       - name: Configure Debug app
         run: >
