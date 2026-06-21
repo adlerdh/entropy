@@ -31,6 +31,19 @@ foreach(_launcher_var IN ITEMS CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUN
   endif()
 endforeach()
 
+set(_ext_apple_platform_args)
+if(APPLE)
+  if(CMAKE_OSX_ARCHITECTURES)
+    list(APPEND _ext_apple_platform_args "-DCMAKE_OSX_ARCHITECTURES:STRING=${CMAKE_OSX_ARCHITECTURES}")
+  endif()
+  if(CMAKE_OSX_DEPLOYMENT_TARGET)
+    list(APPEND _ext_apple_platform_args "-DCMAKE_OSX_DEPLOYMENT_TARGET:STRING=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  endif()
+  if(CMAKE_OSX_SYSROOT)
+    list(APPEND _ext_apple_platform_args "-DCMAKE_OSX_SYSROOT:PATH=${CMAKE_OSX_SYSROOT}")
+  endif()
+endif()
+
 set(_entropy_bundled_dependency_shared_libs ${BUILD_SHARED_LIBS})
 set(_entropy_bundled_dependency_static_libs ${BUILD_STATIC_LIBS})
 if(Entropy_STATIC_BUNDLED_DEPENDENCIES)
@@ -89,6 +102,7 @@ ExternalProject_Add(catch2
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
@@ -134,6 +148,7 @@ ExternalProject_Add(cli11
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DCLI11_BUILD_DOCS:BOOL=OFF
@@ -183,6 +198,7 @@ ExternalProject_Add(cmakerc
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     -DBUILD_TESTS:BOOL=OFF
 
@@ -214,6 +230,7 @@ ExternalProject_Add(glfw
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
@@ -255,6 +272,7 @@ ExternalProject_Add(glm
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
@@ -403,6 +421,7 @@ ExternalProject_Add(ITK
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     -DCMAKE_EXE_LINKER_FLAGS=${ICONV_LINK_FLAG}
     -DCMAKE_SHARED_LINKER_FLAGS=${ICONV_LINK_FLAG}
@@ -466,6 +485,7 @@ ExternalProject_Add(nativefiledialog
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DBUILD_SHARED_LIBS:BOOL=${_entropy_nativefiledialog_shared_libs}
@@ -504,6 +524,7 @@ ExternalProject_Add(nlohmann_json
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DJSON_BuildTests:BOOL=OFF
@@ -552,6 +573,11 @@ else()
   set(_qt_configure_command <SOURCE_DIR>/configure)
 endif()
 
+set(_qt_configure_env)
+if(APPLE AND CMAKE_OSX_DEPLOYMENT_TARGET)
+  list(APPEND _qt_configure_env MACOSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET})
+endif()
+
 ExternalProject_Add(qtbase
   URL "https://download.qt.io/archive/qt/6.8/6.8.1/submodules/qtbase-everywhere-src-${qtbase_VERSION}.tar.xz"
   URL_HASH SHA256=40b14562ef3bd779bc0e0418ea2ae08fa28235f8ea6e8c0cb3bce1d6ad58dcaf
@@ -567,7 +593,8 @@ ExternalProject_Add(qtbase
   INSTALL_DIR "${qtbase_PREFIX}/install"
 
   CONFIGURE_COMMAND
-    ${_qt_configure_command}
+    "${CMAKE_COMMAND}" -E env ${_qt_configure_env}
+      ${_qt_configure_command}
       -prefix <INSTALL_DIR>
       -opensource
       -confirm-license
@@ -614,6 +641,7 @@ ExternalProject_Add(spdlog
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     ${_ext_cxx_std_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
@@ -679,6 +707,7 @@ ExternalProject_Add(stduuid
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}
     ${_ext_compiler_launcher_args}
+    ${_ext_apple_platform_args}
     ${_ext_shared_runtime_args}
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     -DUUID_BUILD_TESTS:BOOL=OFF

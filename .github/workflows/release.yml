@@ -302,9 +302,10 @@ jobs:
     needs: metadata
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
+      SUPERBUILD_CACHE_VERSION: v2
       ENTROPY_MACOS_ARCHITECTURES: arm64
-      ENTROPY_MACOS_DEPLOYMENT_TARGET: "13.0"
-      ENTROPY_MACOS_SUPERBUILD_PARALLEL: 3
+      ENTROPY_MACOS_DEPLOYMENT_TARGET: "13.3"
+      ENTROPY_MACOS_SUPERBUILD_PARALLEL: 2
 
     steps:
       - name: Check out source
