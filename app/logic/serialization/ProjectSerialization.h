@@ -30,6 +30,19 @@ enum class ProjectEdgeDetectionMethod : std::uint8_t
 };
 
 /**
+ * @brief Serialized multi-component image rendering mode.
+ */
+enum class ProjectComponentRenderMode : std::uint8_t
+{
+  SingleComponent,
+  Color,
+  Minimum,
+  Mean,
+  Maximum,
+  Magnitude
+};
+
+/**
  * @todo Create enum for all image color maps
  * @brief Serialized data for image settings
  */
@@ -44,6 +57,13 @@ struct ImageSettings
   double m_thresholdHigh = 0.0f; //!< Values above threshold not displayed
 
   double m_opacity = 1.0f; //!< Opacity [0, 1]
+
+  uint32_t m_activeComponent = 0; //!< Active image component.
+  ProjectComponentRenderMode m_componentRenderMode =
+    ProjectComponentRenderMode::SingleComponent; //!< Multi-component render mode.
+  bool m_ignoreAlpha = false;                    //!< Ignore alpha when rendering four-component images as RGBA.
+  std::vector<bool> m_componentVisibility;       //!< Per-component visibility, when present.
+  std::vector<double> m_componentOpacities;      //!< Per-component opacity, when present.
 
   ProjectEdgeDetectionMethod m_edgeDetectionMethod = ProjectEdgeDetectionMethod::Voxel; //!< Edge sampling space.
   bool m_showEdges = false;                                                             //!< Show edge rendering.

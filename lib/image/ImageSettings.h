@@ -18,6 +18,17 @@ enum class EdgeDetectionMethod
   Pixel
 };
 
+/// @brief Multi-component image rendering strategy.
+enum class ComponentRenderMode
+{
+  SingleComponent,
+  Color,
+  Minimum,
+  Mean,
+  Maximum,
+  Magnitude
+};
+
 /**
  * @brief Per-image display, visualization, and per-component intensity settings.
  *
@@ -84,6 +95,12 @@ public:
 
   /// @brief Return whether a 3- or 4-component image is interpreted as RGB/RGBA color.
   bool displayImageAsColor() const;
+
+  /// @brief Set the rendering strategy for a multi-component image.
+  void setComponentRenderMode(ComponentRenderMode mode);
+
+  /// @brief Get the rendering strategy for a multi-component image.
+  ComponentRenderMode componentRenderMode() const;
 
   /// @brief Set whether to ignore the alpha component of RGBA color images.
   void setIgnoreAlpha(bool ignore);
@@ -692,8 +709,7 @@ private:
   glm::vec3 m_borderColor{1.0f, 0.0f, 1.0f}; //!< Border color
   bool m_lockedToReference{true};            //!< Lock this image to the reference image
 
-  // The following settings only apply to images with 3 or 4 components:
-  bool m_displayAsColor{false};                                          //!< Display the image as RGB/RGBA color
+  ComponentRenderMode m_componentRenderMode{ComponentRenderMode::SingleComponent}; //!< Multi-component render mode
   bool m_ignoreAlpha{false};                                             //!< Ignore the alpha component of the image
   InterpolationMode m_colorInterpolationMode{InterpolationMode::Linear}; //!< Interpolation mode
 

@@ -1,9 +1,44 @@
 #pragma once
 
+#include "common/Expected.h"
 #include "image/Image.h"
 
 #include <cstdint>
+#include <optional>
+#include <string>
 #include <vector>
+
+/**
+ * @brief Scalar projections computed across all components of a multi-component image.
+ */
+enum class ComponentProjectionMode
+{
+  Minimum,
+  Mean,
+  Maximum,
+  Magnitude
+};
+
+/**
+ * @brief Return the scalar projection needed by a multi-component render mode.
+ * @param mode Multi-component render mode.
+ * @return Projection mode for scalar projections, or std::nullopt for modes rendered directly.
+ */
+std::optional<ComponentProjectionMode> componentProjectionFromRenderMode(ComponentRenderMode mode);
+
+/**
+ * @brief Get a short UI label for a component projection.
+ * @param mode Projection mode.
+ * @return Human-readable projection name.
+ */
+std::string componentProjectionModeName(ComponentProjectionMode mode);
+
+/**
+ * @brief Return whether a projection mode computes a scalar image from image components.
+ * @param mode Projection mode.
+ * @return True for modes that require a derived scalar projection image.
+ */
+bool isScalarComponentProjection(ComponentProjectionMode mode);
 
 /**
  * @brief Derived image produced for one source image component.
@@ -39,3 +74,13 @@ std::vector<ComponentImageResult> createNoiseEstimateImages(const Image& image, 
  * @return Distance-map images paired with their source component indices and boundary isovalues.
  */
 std::vector<DistanceMapImageResult> createDistanceMapImages(const Image& image, float downsamplingFactor);
+
+/**
+ * @brief Create a scalar image by projecting each pixel's component vector.
+ * @param image Source multi-component image.
+ * @param mode Projection to compute across components at each pixel.
+ * @return Derived Float32 scalar image, or an error explaining why it cannot be created.
+ */
+entropy_expected::expected<Image, std::string> createComponentProjectionImage(
+  const Image& image,
+  ComponentProjectionMode mode);

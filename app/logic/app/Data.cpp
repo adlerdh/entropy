@@ -44,6 +44,7 @@ bool swapElementsAt(Container& values, const std::size_t first, const std::size_
   *secondIt = value;
   return true;
 }
+
 } // namespace
 
 AppData::AppData()
@@ -56,6 +57,8 @@ AppData::AppData()
   , m_projectFileName(std::nullopt)
   , m_images()
   , m_imageUidsOrdered()
+  , m_componentProjectionImages()
+  , m_imageToComponentProjectionImages()
   , m_segs()
   , m_segUidsOrdered()
   , m_defs()
@@ -118,6 +121,8 @@ void AppData::clearProjectData()
 
   m_images.clear();
   m_imageUidsOrdered.clear();
+  m_componentProjectionImages.clear();
+  m_imageToComponentProjectionImages.clear();
   m_segs.clear();
   m_segUidsOrdered.clear();
   m_defs.clear();
@@ -484,6 +489,19 @@ bool AppData::replaceImage(const uuid& imageUid, Image image)
   const std::size_t numComps = image.header().numComponentsPerPixel();
   it->second = std::move(image);
   m_imageToComponentData[imageUid] = std::vector<ComponentData>(numComps);
+
+  if (const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUid);
+      projectionsIt != m_imageToComponentProjectionImages.end())
+  {
+    for (const auto& [mode, projectionUid] : projectionsIt->second) {
+      (void)mode;
+      m_componentProjectionImages.erase(projectionUid);
+      m_renderData.m_imageTextures.erase(projectionUid);
+      m_renderData.m_uniforms.erase(projectionUid);
+    }
+    m_imageToComponentProjectionImages.erase(projectionsIt);
+  }
+
   return true;
 }
 
@@ -682,6 +700,18 @@ bool AppData::removeImage(const uuid& imageUid)
 
   m_images.erase(imageUid);
   m_imageUidsOrdered.erase(imageOrderIt);
+
+  if (const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUid);
+      projectionsIt != m_imageToComponentProjectionImages.end())
+  {
+    for (const auto& [mode, projectionUid] : projectionsIt->second) {
+      (void)mode;
+      m_componentProjectionImages.erase(projectionUid);
+      m_renderData.m_imageTextures.erase(projectionUid);
+      m_renderData.m_uniforms.erase(projectionUid);
+    }
+    m_imageToComponentProjectionImages.erase(projectionsIt);
+  }
 
   m_imageToSegs.erase(imageUid);
   m_imageToActiveSeg.erase(imageUid);
@@ -915,12 +945,73 @@ const Image* AppData::image(const uuid& imageUid) const
   if (std::end(m_images) != it) {
     return &it->second;
   }
+
+  auto projectionIt = m_componentProjectionImages.find(imageUid);
+  if (std::end(m_componentProjectionImages) != projectionIt) {
+    return &projectionIt->second;
+  }
+
   return nullptr;
 }
 
 Image* AppData::image(const uuid& imageUid)
 {
   return const_cast<Image*>(const_cast<const AppData*>(this)->image(imageUid));
+}
+
+std::optional<uuid>
+AppData::setComponentProjectionImage(const uuid& imageUid, ComponentProjectionMode mode, Image image)
+{
+  std::lock_guard<std::mutex> lock(m_componentDataMutex);
+
+  if (m_images.find(imageUid) == m_images.end()) {
+    return std::nullopt;
+  }
+
+  auto& projections = m_imageToComponentProjectionImages[imageUid];
+  if (const auto projectionIt = projections.find(mode); projectionIt != projections.end()) {
+    m_componentProjectionImages.insert_or_assign(projectionIt->second, std::move(image));
+    return projectionIt->second;
+  }
+
+  const uuid projectionUid = generateRandomUuid();
+  projections.emplace(mode, projectionUid);
+  m_componentProjectionImages.emplace(projectionUid, std::move(image));
+  return projectionUid;
+}
+
+std::optional<uuid> AppData::componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMode mode) const
+{
+  const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUid);
+  if (m_imageToComponentProjectionImages.end() == projectionsIt) {
+    return std::nullopt;
+  }
+
+  const auto projectionIt = projectionsIt->second.find(mode);
+  if (projectionsIt->second.end() == projectionIt) {
+    return std::nullopt;
+  }
+
+  if (m_componentProjectionImages.end() == m_componentProjectionImages.find(projectionIt->second)) {
+    return std::nullopt;
+  }
+
+  return projectionIt->second;
+}
+
+uuid AppData::effectiveImageUidForRendering(const uuid& imageUid) const
+{
+  const auto imageIt = m_images.find(imageUid);
+  if (m_images.end() == imageIt) {
+    return imageUid;
+  }
+
+  const auto projectionMode = componentProjectionFromRenderMode(imageIt->second.settings().componentRenderMode());
+  if (!projectionMode) {
+    return imageUid;
+  }
+
+  return componentProjectionImageUid(imageUid, *projectionMode).value_or(imageUid);
 }
 
 /*
@@ -996,6 +1087,9 @@ const std::map<double, Image>& AppData::distanceMaps(const uuid& imageUid, Compo
     }
   }
   else {
+    if (m_componentProjectionImages.find(imageUid) != m_componentProjectionImages.end()) {
+      return EMPTY;
+    }
     spdlog::error("No component data for image {}. Cannot get distance map for it.", imageUid);
     return EMPTY;
   }
@@ -1017,12 +1111,15 @@ const std::map<uint32_t, Image>& AppData::noiseEstimates(const uuid& imageUid, C
       return compDataIt->second.at(component).m_noiseEstimates;
     }
     else {
-      spdlog::error("Invalid component {} for image {}. Cannot get distance map for it.", component, imageUid);
+      spdlog::error("Invalid component {} for image {}. Cannot get noise estimate for it.", component, imageUid);
       return EMPTY;
     }
   }
   else {
-    spdlog::error("No component data for image {}. Cannot get distance map for it.", imageUid);
+    if (m_componentProjectionImages.find(imageUid) != m_componentProjectionImages.end()) {
+      return EMPTY;
+    }
+    spdlog::error("No component data for image {}. Cannot get noise estimate for it.", imageUid);
     return EMPTY;
   }
 

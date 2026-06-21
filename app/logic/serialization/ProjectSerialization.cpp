@@ -73,6 +73,14 @@ constexpr std::array k_edgeDetectionMethodNames{
   EnumName{serialize::ProjectEdgeDetectionMethod::Pixel, "pixel"},
   EnumName{serialize::ProjectEdgeDetectionMethod::Voxel, "voxel"}};
 
+constexpr std::array k_componentRenderModeNames{
+  EnumName{serialize::ProjectComponentRenderMode::SingleComponent, "singleComponent"},
+  EnumName{serialize::ProjectComponentRenderMode::Color, "color"},
+  EnumName{serialize::ProjectComponentRenderMode::Minimum, "minimum"},
+  EnumName{serialize::ProjectComponentRenderMode::Mean, "mean"},
+  EnumName{serialize::ProjectComponentRenderMode::Maximum, "maximum"},
+  EnumName{serialize::ProjectComponentRenderMode::Magnitude, "magnitude"}};
+
 std::optional<std::uint32_t> unsignedIntFromJson(const json& value)
 {
   if (value.is_number_unsigned()) {
@@ -202,6 +210,9 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"thresholdLow", settings.m_thresholdLow},
     {"thresholdHigh", settings.m_thresholdHigh},
     {"opacity", settings.m_opacity},
+    {"activeComponent", settings.m_activeComponent},
+    {"componentRenderMode", enumToName(settings.m_componentRenderMode, k_componentRenderModeNames)},
+    {"ignoreAlpha", settings.m_ignoreAlpha},
     {"edgeDetectionMethod", enumToName(settings.m_edgeDetectionMethod, k_edgeDetectionMethodNames)},
     {"showEdges", settings.m_showEdges},
     {"hardEdges", settings.m_thresholdEdges},
@@ -212,6 +223,13 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"pixelEdgeThreshold", settings.m_pixelEdgeThreshold},
     {"edgeColor", {settings.m_edgeColor.r, settings.m_edgeColor.g, settings.m_edgeColor.b}},
     {"edgeOpacity", settings.m_edgeOpacity}};
+
+  if (!settings.m_componentVisibility.empty()) {
+    j["componentVisibility"] = settings.m_componentVisibility;
+  }
+  if (!settings.m_componentOpacities.empty()) {
+    j["componentOpacities"] = settings.m_componentOpacities;
+  }
 
   if (serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod) {
     j["colormapEdges"] = settings.m_colormapEdges;
@@ -237,6 +255,25 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   }
   if (j.count("opacity")) {
     j.at("opacity").get_to(settings.m_opacity);
+  }
+  if (const auto activeComponent = unsignedIntFromJson(j.value("activeComponent", json{}))) {
+    settings.m_activeComponent = *activeComponent;
+  }
+  if (
+    const auto parsed = enumFromName<serialize::ProjectComponentRenderMode>(
+      j.value("componentRenderMode", ""),
+      k_componentRenderModeNames))
+  {
+    settings.m_componentRenderMode = *parsed;
+  }
+  if (j.count("ignoreAlpha")) {
+    j.at("ignoreAlpha").get_to(settings.m_ignoreAlpha);
+  }
+  if (j.count("componentVisibility")) {
+    j.at("componentVisibility").get_to(settings.m_componentVisibility);
+  }
+  if (j.count("componentOpacities")) {
+    j.at("componentOpacities").get_to(settings.m_componentOpacities);
   }
   if (
     const auto parsed = enumFromName<serialize::ProjectEdgeDetectionMethod>(

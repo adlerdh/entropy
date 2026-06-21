@@ -37,8 +37,8 @@ ImageSettings::ImageSettings(
     throw_debug("Invalid number of components provided to construct settings for image")
   }
 
-  constexpr bool sk_setDefaultVisibilitySettings = true;
-  updateWithNewComponentStatistics(componentStats, sk_setDefaultVisibilitySettings);
+  constexpr bool k_setDefaultVisibilitySettings = true;
+  updateWithNewComponentStatistics(componentStats, k_setDefaultVisibilitySettings);
 }
 
 void ImageSettings::setDisplayName(std::string name)
@@ -78,12 +78,22 @@ bool ImageSettings::isLockedToReference() const
 
 void ImageSettings::setDisplayImageAsColor(bool doColor)
 {
-  m_displayAsColor = doColor;
+  setComponentRenderMode(doColor ? ComponentRenderMode::Color : ComponentRenderMode::SingleComponent);
 }
 
 bool ImageSettings::displayImageAsColor() const
 {
-  return m_displayAsColor;
+  return ComponentRenderMode::Color == m_componentRenderMode;
+}
+
+void ImageSettings::setComponentRenderMode(ComponentRenderMode mode)
+{
+  m_componentRenderMode = mode;
+}
+
+ComponentRenderMode ImageSettings::componentRenderMode() const
+{
+  return m_componentRenderMode;
 }
 
 void ImageSettings::setIgnoreAlpha(bool ignore)

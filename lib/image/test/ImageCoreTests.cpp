@@ -1,4 +1,5 @@
 #include "image/Image.h"
+#include "image/ImageDerivedData.h"
 #include "image/Isosurface.h"
 #include "image/ImageUtility.h"
 #include "image/internal/ImageCastHelper.tpp"
@@ -10,6 +11,7 @@
 #include <glm/glm.hpp>
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
@@ -97,6 +99,23 @@ Image makeRawImage()
   return Image(
     header,
     "raw",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+}
+
+Image makeThreeComponentImage()
+{
+  const glm::uvec3 dims{2, 2, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 3, dims);
+  ImageHeader header(ioInfo, ioInfo, false);
+  const std::vector<float> c0{1.0f, 2.0f, 3.0f, 4.0f};
+  const std::vector<float> c1{4.0f, 3.0f, 2.0f, 1.0f};
+  const std::vector<float> c2{2.0f, 6.0f, 10.0f, 14.0f};
+  std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
+  return Image(
+    header,
+    "three-component",
     Image::ImageRepresentation::Image,
     Image::MultiComponentBufferType::SeparateImages,
     buffers);
@@ -588,6 +607,115 @@ TEST_CASE("Raw interleaved images truncate to the first four components per pixe
   CHECK(image.generateSortedBuffers());
   CHECK(image.quantileToValue(0, 1.0) == Catch::Approx(20.0));
   CHECK(image.quantileToValue(3, 1.0) == Catch::Approx(23.0));
+}
+
+TEST_CASE("Component projections create scalar images from multi-component images", "[image][derived]")
+{
+  const Image image = makeThreeComponentImage();
+
+  const auto minimum = createComponentProjectionImage(image, ComponentProjectionMode::Minimum);
+  REQUIRE(minimum.has_value());
+  CHECK(minimum->header().memoryComponentType() == ComponentType::Float32);
+  CHECK(minimum->header().numComponentsPerPixel() == 1);
+  CHECK(minimum->value<double>(0, 0).value() == Catch::Approx(1.0));
+  CHECK(minimum->value<double>(0, 1).value() == Catch::Approx(2.0));
+  CHECK(minimum->value<double>(0, 2).value() == Catch::Approx(2.0));
+  CHECK(minimum->value<double>(0, 3).value() == Catch::Approx(1.0));
+
+  const auto mean = createComponentProjectionImage(image, ComponentProjectionMode::Mean);
+  REQUIRE(mean.has_value());
+  CHECK(mean->value<double>(0, 0).value() == Catch::Approx(7.0 / 3.0));
+  CHECK(mean->value<double>(0, 1).value() == Catch::Approx(11.0 / 3.0));
+  CHECK(mean->value<double>(0, 2).value() == Catch::Approx(5.0));
+  CHECK(mean->value<double>(0, 3).value() == Catch::Approx(19.0 / 3.0));
+
+  const auto maximum = createComponentProjectionImage(image, ComponentProjectionMode::Maximum);
+  REQUIRE(maximum.has_value());
+  CHECK(maximum->value<double>(0, 0).value() == Catch::Approx(4.0));
+  CHECK(maximum->value<double>(0, 1).value() == Catch::Approx(6.0));
+  CHECK(maximum->value<double>(0, 2).value() == Catch::Approx(10.0));
+  CHECK(maximum->value<double>(0, 3).value() == Catch::Approx(14.0));
+
+  const auto magnitude = createComponentProjectionImage(image, ComponentProjectionMode::Magnitude);
+  REQUIRE(magnitude.has_value());
+  CHECK(magnitude->value<double>(0, 0).value() == Catch::Approx(std::sqrt(21.0)));
+  CHECK(magnitude->value<double>(0, 1).value() == Catch::Approx(7.0));
+  CHECK(magnitude->value<double>(0, 2).value() == Catch::Approx(std::sqrt(113.0)));
+  CHECK(magnitude->value<double>(0, 3).value() == Catch::Approx(std::sqrt(213.0)));
+}
+
+TEST_CASE("Component render modes map to scalar projection modes", "[image][derived]")
+{
+  CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::SingleComponent).has_value());
+  CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::Color).has_value());
+  CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Minimum) == ComponentProjectionMode::Minimum);
+  CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Mean) == ComponentProjectionMode::Mean);
+  CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Maximum) == ComponentProjectionMode::Maximum);
+  CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Magnitude) == ComponentProjectionMode::Magnitude);
+}
+
+TEST_CASE("Component projections ignore non-finite component values", "[image][derived]")
+{
+  const glm::uvec3 dims{2, 1, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 3, dims);
+  ImageHeader header(ioInfo, ioInfo, false);
+
+  const float nan = std::numeric_limits<float>::quiet_NaN();
+  const std::vector<float> c0{nan, nan};
+  const std::vector<float> c1{3.0f, nan};
+  const std::vector<float> c2{4.0f, nan};
+  std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
+  const Image image(
+    header,
+    "non-finite-components",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+
+  const auto minimum = createComponentProjectionImage(image, ComponentProjectionMode::Minimum);
+  REQUIRE(minimum.has_value());
+  CHECK(minimum->value<double>(0, 0).value() == Catch::Approx(3.0));
+  CHECK(minimum->value<double>(0, 1).value() == Catch::Approx(0.0));
+
+  const auto mean = createComponentProjectionImage(image, ComponentProjectionMode::Mean);
+  REQUIRE(mean.has_value());
+  CHECK(mean->value<double>(0, 0).value() == Catch::Approx(3.5));
+  CHECK(mean->value<double>(0, 1).value() == Catch::Approx(0.0));
+
+  const auto maximum = createComponentProjectionImage(image, ComponentProjectionMode::Maximum);
+  REQUIRE(maximum.has_value());
+  CHECK(maximum->value<double>(0, 0).value() == Catch::Approx(4.0));
+  CHECK(maximum->value<double>(0, 1).value() == Catch::Approx(0.0));
+
+  const auto magnitude = createComponentProjectionImage(image, ComponentProjectionMode::Magnitude);
+  REQUIRE(magnitude.has_value());
+  CHECK(magnitude->value<double>(0, 0).value() == Catch::Approx(5.0));
+  CHECK(magnitude->value<double>(0, 1).value() == Catch::Approx(0.0));
+}
+
+TEST_CASE("Component projections read logical components from interleaved images", "[image][derived]")
+{
+  const glm::uvec3 dims{2, 1, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 3, dims);
+  ImageHeader header(ioInfo, ioInfo, true);
+  const std::vector<float> interleaved{1.0f, 4.0f, 2.0f, 2.0f, 3.0f, 6.0f};
+  std::vector<const void*> buffers{interleaved.data()};
+  const Image image(
+    header,
+    "interleaved-components",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::InterleavedImage,
+    buffers);
+
+  const auto mean = createComponentProjectionImage(image, ComponentProjectionMode::Mean);
+  REQUIRE(mean.has_value());
+  CHECK(mean->value<double>(0, 0).value() == Catch::Approx(7.0 / 3.0));
+  CHECK(mean->value<double>(0, 1).value() == Catch::Approx(11.0 / 3.0));
+
+  const auto magnitude = createComponentProjectionImage(image, ComponentProjectionMode::Magnitude);
+  REQUIRE(magnitude.has_value());
+  CHECK(magnitude->value<double>(0, 0).value() == Catch::Approx(std::sqrt(21.0)));
+  CHECK(magnitude->value<double>(0, 1).value() == Catch::Approx(7.0));
 }
 
 TEST_CASE("Exact image quantiles work for every in-memory component type", "[image][quantiles]")

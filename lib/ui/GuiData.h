@@ -239,11 +239,15 @@ struct GuiData
    * The initializer is ordered to match the inspector table column declarations in InspectionTableWindow.cpp.
    * Interpolated values and region names start hidden, matching the previous table defaults.
    */
-  std::array<bool, 8> m_inspectionColumnVisible{
+  std::array<bool, 12> m_inspectionColumnVisible{
     true,  //!< Image column.
     true,  //!< Nearest-neighbor image value column.
     false, //!< Linearly interpolated image value column.
     false, //!< Nearest-neighbor active component percentile column.
+    false, //!< Minimum component value column.
+    false, //!< Mean component value column.
+    false, //!< Maximum component value column.
+    false, //!< Magnitude of component values column.
     true,  //!< Active segmentation label column.
     false, //!< Active segmentation region name column.
     true,  //!< Voxel index column.

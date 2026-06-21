@@ -305,7 +305,7 @@ bool renderLocalNccSettings(
   const std::function<std::size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap)
 {
-  if (!ImGui::CollapsingHeader("Local normalized cross-correlation metric", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (!ImGui::CollapsingHeader("Local Normalized Cross-Correlation Metric", ImGuiTreeNodeFlags_DefaultOpen)) {
     return false;
   }
 
@@ -426,7 +426,7 @@ bool renderLocalLinearResidualSettings(
   const std::function<std::size_t(void)>& getNumImageColorMaps,
   const std::function<const ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap)
 {
-  if (!ImGui::CollapsingHeader("Local linear residual metric", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (!ImGui::CollapsingHeader("Local Linear Residual Metric", ImGuiTreeNodeFlags_DefaultOpen)) {
     return false;
   }
 
@@ -588,7 +588,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   finishSettingsSection(crosshairsOpen);
 
   // View centering:
-  const bool viewRecenteringOpen = ImGui::CollapsingHeader("View recentering", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool viewRecenteringOpen = ImGui::CollapsingHeader("View Recentering", ImGuiTreeNodeFlags_DefaultOpen);
   if (viewRecenteringOpen) {
     ImGui::Text("Center views and crosshairs on:");
 
@@ -696,7 +696,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   finishSettingsSection(viewRecenteringOpen);
 
   // View backgrounds:
-  const bool backgroundColorOpen = ImGui::CollapsingHeader("Background color", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool backgroundColorOpen = ImGui::CollapsingHeader("Background Color", ImGuiTreeNodeFlags_DefaultOpen);
   if (backgroundColorOpen) {
     ImGui::ColorEdit3("2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
 
@@ -705,7 +705,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   finishSettingsSection(backgroundColorOpen);
 
   // Anatomical labels:
-  const bool anatomicalLabelsOpen = ImGui::CollapsingHeader("Anatomical labels", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool anatomicalLabelsOpen = ImGui::CollapsingHeader("Anatomical Labels", ImGuiTreeNodeFlags_DefaultOpen);
   if (anatomicalLabelsOpen) {
     ImGui::ColorEdit4("Text color", glm::value_ptr(renderData.m_anatomicalLabelColor), k_colorAlphaEditFlags);
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -780,7 +780,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   }
   finishSettingsSection(anatomicalLabelsOpen);
 
-  const bool scaleBarsOpen = ImGui::CollapsingHeader("Scale bars", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool scaleBarsOpen = ImGui::CollapsingHeader("Scale Bars", ImGuiTreeNodeFlags_DefaultOpen);
   if (scaleBarsOpen) {
     bool showScaleBars = renderData.m_showScaleBars;
     if (ImGui::Checkbox("Show scale bars", &showScaleBars)) {
@@ -918,7 +918,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   }
   finishSettingsSection(scaleBarsOpen);
 
-  if (ImGui::CollapsingHeader("Lightbox views", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (ImGui::CollapsingHeader("Lightbox Views", ImGuiTreeNodeFlags_DefaultOpen)) {
     bool showOffsetLabels = renderData.m_showLightboxOffsetLabels;
     if (ImGui::Checkbox("Show slice offset labels", &showOffsetLabels)) {
       renderData.m_showLightboxOffsetLabels = showOffsetLabels;
@@ -980,7 +980,7 @@ void renderInterfaceTab(
   ImGui::Separator();
   ImGui::Spacing();
 
-  const bool lookAndFeelOpen = ImGui::CollapsingHeader("Look and feel", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool lookAndFeelOpen = ImGui::CollapsingHeader("Look and Feel", ImGuiTreeNodeFlags_DefaultOpen);
   if (lookAndFeelOpen) {
     const auto currentScale = appData.settings().uiScaleOverride();
     const auto& uiScaleChoices = ui_settings::uiScaleChoices();
@@ -1102,7 +1102,7 @@ void renderSystemTab(AppData& appData)
   }
   finishSettingsSection(diagnosticsOpen);
 
-  if (ImGui::CollapsingHeader("Developer tools", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (ImGui::CollapsingHeader("Developer Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
     ImGui::Checkbox("Show ImPlot demo window", &(appData.guiData().m_showImPlotDemoWindow));
   }
@@ -1119,7 +1119,7 @@ void renderIntensityProjectionDefaults(RenderData& renderData);
 void renderImagesTab(AppData& appData)
 {
   const bool imageDisplayDefaultsOpen =
-    ImGui::CollapsingHeader("Image display defaults", ImGuiTreeNodeFlags_DefaultOpen);
+    ImGui::CollapsingHeader("Image Display Defaults", ImGuiTreeNodeFlags_DefaultOpen);
   if (imageDisplayDefaultsOpen) {
     ImGui::Checkbox(
       "Floating-point linear image interpolation",
@@ -1364,7 +1364,7 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
   }
   finishSettingsSection(brushOpen);
 
-  if (ImGui::CollapsingHeader("Brush preview", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (ImGui::CollapsingHeader("Brush Preview", ImGuiTreeNodeFlags_DefaultOpen)) {
     AppSettings& settings = appData.settings();
     BrushPreviewMode previewMode = settings.brushPreviewMode();
 
@@ -1440,7 +1440,7 @@ void renderMetricsTab(
   ImGui::PushID("metrics"); /*** PushID metrics ***/
 
   ImGui::PushID("diff");
-  const bool differenceOpen = ImGui::CollapsingHeader("Difference metrics", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool differenceOpen = ImGui::CollapsingHeader("Difference Metrics", ImGuiTreeNodeFlags_DefaultOpen);
   if (differenceOpen) {
     ImGui::TextWrapped(
       "Difference compares the displayed intensity values directly at each location. Low values mean the images have "
@@ -1500,7 +1500,7 @@ void renderComparisonModesTab(RenderData& renderData)
 {
   ImGui::PushID("comparison"); /*** PushID metrics ***/
 
-  if (!ImGui::CollapsingHeader("Comparison modes", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (!ImGui::CollapsingHeader("Comparison Modes", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PopID(); /*** PopID comparison ***/
     return;
   }
@@ -1595,7 +1595,7 @@ void renderComparisonModesTab(RenderData& renderData)
  */
 void renderIntensityProjectionDefaults(RenderData& renderData)
 {
-  if (!ImGui::CollapsingHeader("Intensity projection defaults", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (!ImGui::CollapsingHeader("Intensity Projection Defaults", ImGuiTreeNodeFlags_DefaultOpen)) {
     return;
   }
 
@@ -1802,7 +1802,7 @@ void renderRenderingTab(RenderData& renderData)
   }
 
   // ASCII rendering controls
-  if (rd.m_asciiEnabled && ImGui::CollapsingHeader("ASCII shading", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (rd.m_asciiEnabled && ImGui::CollapsingHeader("ASCII Shading", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PushID("ascii");
 
     if (rd.m_asciiEnabled) {

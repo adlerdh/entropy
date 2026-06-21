@@ -86,6 +86,83 @@ const glm::mat4 sk_identMat3{1.0f};
 const glm::mat4 sk_identMat4{1.0f};
 const glm::vec2 sk_zeroVec2{0.0f, 0.0f};
 
+void copyScalarProjectionDisplaySettings(const ImageSettings& source, ImageSettings& projection)
+{
+  constexpr uint32_t k_projectionComponent = 0;
+  const uint32_t sourceComponent = source.activeComponent();
+
+  projection.setBorderColor(source.borderColor());
+  projection.setGlobalVisibility(source.globalVisibility());
+  projection.setGlobalOpacity(source.globalOpacity());
+  projection.setVisibility(k_projectionComponent, source.visibility(sourceComponent));
+  projection.setOpacity(k_projectionComponent, source.opacity(sourceComponent));
+
+  projection.setWindowCenter(k_projectionComponent, source.windowCenter(sourceComponent));
+  projection.setWindowWidth(k_projectionComponent, source.windowWidth(sourceComponent));
+  projection.setThresholdLow(k_projectionComponent, source.thresholds(sourceComponent).first);
+  projection.setThresholdHigh(k_projectionComponent, source.thresholds(sourceComponent).second);
+
+  projection.setColorMapIndex(k_projectionComponent, source.colorMapIndex(sourceComponent));
+  projection.setColorMapInverted(k_projectionComponent, source.isColorMapInverted(sourceComponent));
+  projection.setColorMapContinuous(k_projectionComponent, source.colorMapContinuous(sourceComponent));
+  projection.setColorMapQuantization(k_projectionComponent, source.colorMapQuantizationLevels(sourceComponent));
+  projection.setColormapHsvModfactors(k_projectionComponent, source.colorMapHsvModFactors(sourceComponent));
+
+  projection.setInterpolationMode(k_projectionComponent, source.interpolationMode(sourceComponent));
+
+  projection.setEdgeDetectionMethod(k_projectionComponent, source.edgeDetectionMethod(sourceComponent));
+  projection.setShowEdges(k_projectionComponent, source.showEdges(sourceComponent));
+  projection.setShowPixelEdges(k_projectionComponent, source.showPixelEdges(sourceComponent));
+  projection.setThresholdEdges(k_projectionComponent, source.thresholdEdges(sourceComponent));
+  projection.setThresholdPixelEdges(k_projectionComponent, source.thresholdPixelEdges(sourceComponent));
+  projection.setThinPixelEdges(k_projectionComponent, source.thinPixelEdges(sourceComponent));
+  projection.setUseFreiChen(k_projectionComponent, source.useFreiChen(sourceComponent));
+  projection.setEdgeMagnitude(k_projectionComponent, source.edgeMagnitude(sourceComponent));
+  projection.setPixelEdgeScale(k_projectionComponent, source.pixelEdgeScale(sourceComponent));
+  projection.setPixelEdgeThreshold(k_projectionComponent, source.pixelEdgeThreshold(sourceComponent));
+  projection.setWindowedEdges(k_projectionComponent, source.windowedEdges(sourceComponent));
+  projection.setOverlayEdges(k_projectionComponent, source.overlayEdges(sourceComponent));
+  projection.setOverlayPixelEdges(k_projectionComponent, source.overlayPixelEdges(sourceComponent));
+  projection.setColormapEdges(k_projectionComponent, source.colormapEdges(sourceComponent));
+  projection.setEdgeColor(k_projectionComponent, source.edgeColor(sourceComponent));
+  projection.setEdgeOpacity(k_projectionComponent, source.edgeOpacity(sourceComponent));
+}
+
+void updateSegmentationUniformsForImage(
+  const AppData& appData,
+  const uuid& segmentationOwnerImageUid,
+  const Image& image,
+  RenderData::ImageUniforms& uniforms)
+{
+  const ImageSettings& imageSettings = image.settings();
+  const auto& segUid = appData.imageToActiveSegUid(segmentationOwnerImageUid);
+  if (!segUid) {
+    uniforms.segOpacity = 0.0f;
+    return;
+  }
+
+  const Image* seg = appData.seg(*segUid);
+  if (!seg) {
+    spdlog::error("Segmentation {} is null on updating uniforms for image {}", *segUid, segmentationOwnerImageUid);
+    uniforms.segOpacity = 0.0f;
+    return;
+  }
+
+  uniforms.segTexture_T_world =
+    seg->transformations().texture_T_subject() * image.transformations().subject_T_worldDef();
+  uniforms.segVoxel_T_world = seg->transformations().pixel_T_subject() * image.transformations().subject_T_worldDef();
+
+  if (imageSettings.numComponents() > 1) {
+    uniforms.segOpacity = static_cast<float>(
+      ((seg->settings().visibility() && imageSettings.globalVisibility()) ? 1.0 : 0.0) * seg->settings().opacity());
+  }
+  else {
+    uniforms.segOpacity = static_cast<float>(
+      ((seg->settings().visibility() && imageSettings.visibility(0) && imageSettings.globalVisibility()) ? 1.0 : 0.0) *
+      seg->settings().opacity());
+  }
+}
+
 float lightboxOffsetUnitReferenceMm(const AppData& appData, const WindowData& windowData)
 {
   float minNonzeroOffsetMm = std::numeric_limits<float>::max();
@@ -948,9 +1025,10 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForMetricShaders(const std
       break; // Stop after NUM_METRIC_IMAGES images reached
     }
 
-    if (std::end(R.m_imageTextures) != R.m_imageTextures.find(imageUid)) {
+    const uuid renderImageUid = m_appData.effectiveImageUidForRendering(imageUid);
+    if (std::end(R.m_imageTextures) != R.m_imageTextures.find(renderImageUid)) {
       ImgSegPair imgSegPair;
-      imgSegPair.first = imageUid; // The texture for this image exists
+      imgSegPair.first = renderImageUid; // The texture for this image exists
 
       // Find the segmentation that belongs to this image
       if (const auto segUid = m_appData.imageToActiveSegUid(imageUid)) {
@@ -977,9 +1055,10 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForImageShaders(const std:
   CurrentImages I;
 
   for (const auto& imageUid : imageUids) {
-    if (std::end(R.m_imageTextures) != R.m_imageTextures.find(imageUid)) {
+    const uuid renderImageUid = m_appData.effectiveImageUidForRendering(imageUid);
+    if (std::end(R.m_imageTextures) != R.m_imageTextures.find(renderImageUid)) {
       std::pair<std::optional<uuid>, std::optional<uuid>> imgSegPair;
-      imgSegPair.first = imageUid; // The texture for this image exists
+      imgSegPair.first = renderImageUid; // The texture for this image exists
 
       // Find the segmentation that belongs to this image
       if (const auto segUid = m_appData.imageToActiveSegUid(imageUid)) {
@@ -997,16 +1076,30 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForImageShaders(const std:
 
 void Rendering::updateImageInterpolation(const uuid& imageUid)
 {
-  const auto* image = m_appData.image(imageUid);
+  const uuid effectiveImageUid = m_appData.effectiveImageUidForRendering(imageUid);
+  const auto* image = m_appData.image(effectiveImageUid);
+  const auto* sourceImage = m_appData.image(imageUid);
   if (!image) {
     spdlog::warn("Image {} is invalid", imageUid);
+    return;
+  }
+
+  if (effectiveImageUid != imageUid && sourceImage) {
+    Image* mutableEffectiveImage = m_appData.image(effectiveImageUid);
+    if (mutableEffectiveImage) {
+      copyScalarProjectionDisplaySettings(sourceImage->settings(), mutableEffectiveImage->settings());
+    }
+  }
+
+  if (m_appData.renderData().m_imageTextures.find(effectiveImageUid) == m_appData.renderData().m_imageTextures.end()) {
+    spdlog::debug("Image {} has no texture for interpolation update", effectiveImageUid);
     return;
   }
 
   if (!image->settings().displayImageAsColor()) {
     // Modify the active component
     const uint32_t activeComp = image->settings().activeComponent();
-    GLTexture& texture = m_appData.renderData().m_imageTextures.at(imageUid).at(activeComp);
+    GLTexture& texture = m_appData.renderData().m_imageTextures.at(effectiveImageUid).at(activeComp);
 
     tex::MinificationFilter minFilter;
     tex::MagnificationFilter maxFilter;
@@ -1027,12 +1120,12 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
 
     texture.setMinificationFilter(minFilter);
     texture.setMagnificationFilter(maxFilter);
-    spdlog::debug("Set image interpolation mode for image {}", imageUid);
+    spdlog::debug("Set image interpolation mode for image {}", effectiveImageUid);
   }
   else {
     // Modify all components for color images
     for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i) {
-      GLTexture& texture = m_appData.renderData().m_imageTextures.at(imageUid).at(i);
+      GLTexture& texture = m_appData.renderData().m_imageTextures.at(effectiveImageUid).at(i);
       tex::MinificationFilter minFilter;
       tex::MagnificationFilter maxFilter;
 
@@ -1176,6 +1269,18 @@ void Rendering::updateImageUniforms(uuid_range_t imageUids)
 
 void Rendering::updateImageUniforms(const uuid& imageUid)
 {
+  const uuid effectiveImageUid = m_appData.effectiveImageUidForRendering(imageUid);
+  if (effectiveImageUid != imageUid) {
+    Image* source = m_appData.image(imageUid);
+    Image* effective = m_appData.image(effectiveImageUid);
+    if (source && effective) {
+      copyScalarProjectionDisplaySettings(source->settings(), effective->settings());
+      updateImageUniforms(effectiveImageUid);
+      RenderData::ImageUniforms& effectiveUniforms = m_appData.renderData().m_uniforms[effectiveImageUid];
+      updateSegmentationUniformsForImage(m_appData, imageUid, *effective, effectiveUniforms);
+    }
+  }
+
   auto it = m_appData.renderData().m_uniforms.find(imageUid);
 
   if (std::end(m_appData.renderData().m_uniforms) == it) {
@@ -1332,36 +1437,7 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
   uniforms.pixelEdgeThreshold = static_cast<float>(imgSettings.pixelEdgeThreshold());
   uniforms.overlayPixelEdges = imgSettings.overlayPixelEdges();
 
-  // The segmentation linked to this image:
-  const auto& segUid = m_appData.imageToActiveSegUid(imageUid);
-  if (!segUid) {
-    // The image has no segmentation
-    uniforms.segOpacity = 0.0f;
-    return;
-  }
-
-  Image* seg = m_appData.seg(*segUid);
-  if (!seg) {
-    spdlog::error("Segmentation {} is null on updating uniforms for image {}", *segUid, imageUid);
-    return;
-  }
-
-  // The texture_T_world transformation of the segmentation uses the manual affine component
-  // (subject_T_worldDef) of the image.
-  uniforms.segTexture_T_world =
-    seg->transformations().texture_T_subject() * img->transformations().subject_T_worldDef();
-  uniforms.segVoxel_T_world = seg->transformations().pixel_T_subject() * img->transformations().subject_T_worldDef();
-
-  // Both the image and segmenation must have visibility true for the segmentation to be shown
-  if (imgSettings.numComponents() > 1) {
-    uniforms.segOpacity = static_cast<float>(
-      ((seg->settings().visibility() && imgSettings.globalVisibility()) ? 1.0 : 0.0) * seg->settings().opacity());
-  }
-  else {
-    uniforms.segOpacity = static_cast<float>(
-      ((seg->settings().visibility() && imgSettings.visibility(0) && imgSettings.globalVisibility()) ? 1.0 : 0.0) *
-      seg->settings().opacity());
-  }
+  updateSegmentationUniformsForImage(m_appData, imageUid, *img, uniforms);
 }
 
 void Rendering::updateMetricUniforms()
@@ -1449,7 +1525,8 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
 
   ///////////////////////////////// PUT THIS INTO SEPARATE BINDER THAT ONLY RUNS FOR VOLUME
   /// RENDERING
-  const bool useDistMap = S.useDistanceMapForRaycasting();
+  const auto distTextureIt = R.m_distanceMapTextures.find(*imgUid);
+  const bool useDistMap = S.useDistanceMapForRaycasting() && std::end(R.m_distanceMapTextures) != distTextureIt;
   bool foundMap = false;
 
   if (useDistMap) {
@@ -1468,15 +1545,12 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
       }
     }
 
-    auto it = R.m_distanceMapTextures.find(*imgUid);
-    if (std::end(R.m_distanceMapTextures) != it) {
-      auto it2 = it->second.find(S.activeComponent());
-      if (std::end(it->second) != it2) {
-        foundMap = true;
-        GLTexture& distTex = it2->second;
-        distTex.bind(msk_jumpTexSampler.index);
-        boundTextures.push_back(distTex);
-      }
+    auto it2 = distTextureIt->second.find(S.activeComponent());
+    if (std::end(distTextureIt->second) != it2) {
+      foundMap = true;
+      GLTexture& distTex = it2->second;
+      distTex.bind(msk_jumpTexSampler.index);
+      boundTextures.push_back(distTex);
     }
   }
 

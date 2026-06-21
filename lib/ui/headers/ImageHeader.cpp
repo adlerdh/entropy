@@ -178,6 +178,7 @@ void renderImageHeader(
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToBack,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToFront,
   const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
+  const std::function<void(const uuids::uuid& imageUid, ComponentProjectionMode mode)>& requestComponentProjectionImage,
   const std::function<void(const uuids::uuid& imageUid)>& requestSetReferenceImage,
   const std::function<void(const uuids::uuid& imageUid)>& requestRemoveImage,
   const AllViewsRecenterType& recenterAllViews)
@@ -463,74 +464,111 @@ void renderImageHeader(
 
   if (showComponentControls) {
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-    if (ImGui::TreeNode("Image Components")) {
-      if (3 == imgHeader.numComponentsPerPixel() || 4 == imgHeader.numComponentsPerPixel()) {
-        ImGui::Dummy(ImVec2(0.0f, 1.0f));
+    if (ImGui::TreeNode("Multi-Component Rendering")) {
+      auto setComponentMode = [&](ComponentRenderMode mode) {
+        if (imgSettings.componentRenderMode() == mode) {
+          return;
+        }
 
-        bool displayAsColor = imgSettings.displayImageAsColor();
+        imgSettings.setComponentRenderMode(mode);
+        if (const auto projectionMode = componentProjectionFromRenderMode(mode)) {
+          requestComponentProjectionImage(imageUid, *projectionMode);
+        }
+        updateImageUniforms();
+        updateImageInterpolationMode();
+      };
 
-        if (ImGui::Checkbox("Render with color", &displayAsColor)) {
-          imgSettings.setDisplayImageAsColor(displayAsColor);
+      auto radioComponentMode = [&](const char* label, ComponentRenderMode mode) {
+        bool selected = imgSettings.componentRenderMode() == mode;
+        if (ImGui::RadioButton(label, selected)) {
+          setComponentMode(mode);
+        }
+      };
+
+      const std::string renderAsLabel =
+        "Render " + std::to_string(imgHeader.numComponentsPerPixel()) + "-component image as:";
+      ImGui::TextUnformatted(renderAsLabel.c_str());
+      radioComponentMode("Single component", ComponentRenderMode::SingleComponent);
+
+      const bool canDisplayAsColor = (3 == imgHeader.numComponentsPerPixel() || 4 == imgHeader.numComponentsPerPixel());
+      if (canDisplayAsColor) {
+        ImGui::SameLine();
+        const bool hasAlphaComponent = 4 == imgHeader.numComponentsPerPixel();
+        radioComponentMode(hasAlphaComponent ? "RGBA color" : "RGB color", ComponentRenderMode::Color);
+      }
+
+      radioComponentMode("Minimum", ComponentRenderMode::Minimum);
+      ImGui::SameLine();
+      radioComponentMode("Mean", ComponentRenderMode::Mean);
+      ImGui::SameLine();
+      radioComponentMode("Maximum", ComponentRenderMode::Maximum);
+      ImGui::SameLine();
+      radioComponentMode("Magnitude", ComponentRenderMode::Magnitude);
+
+      if (imgSettings.displayImageAsColor() && 4 == imgHeader.numComponentsPerPixel()) {
+        bool ignoreAlpha = imgSettings.ignoreAlpha();
+
+        if (ImGui::Checkbox("Ignore alpha component", &ignoreAlpha)) {
+          imgSettings.setIgnoreAlpha(ignoreAlpha);
           updateImageUniforms();
-          updateImageInterpolationMode();
         }
         ImGui::SameLine();
-        helpMarker("Display multi-component image with color");
+        helpMarker("Ignore alpha component of RGBA image");
+      }
 
-        if (imgSettings.displayImageAsColor() && 4 == imgHeader.numComponentsPerPixel()) {
-          bool ignoreAlpha = imgSettings.ignoreAlpha();
-
-          if (ImGui::Checkbox("Ignore alpha component", &ignoreAlpha)) {
-            imgSettings.setIgnoreAlpha(ignoreAlpha);
+      const bool showPerComponentControls =
+        ComponentRenderMode::SingleComponent == imgSettings.componentRenderMode() || imgSettings.displayImageAsColor();
+      if (showPerComponentControls) {
+        uint32_t componentInput = activeComp;
+        constexpr uint32_t componentStep = 1;
+        const uint32_t componentMax = imgHeader.numComponentsPerPixel() - 1;
+        const std::string componentFormat = "%u of " + std::to_string(componentMax);
+        if (ImGui::InputScalar(
+              "Component",
+              ImGuiDataType_U32,
+              &componentInput,
+              &componentStep,
+              nullptr,
+              componentFormat.c_str()))
+        {
+          const uint32_t clampedComponent = std::min(componentInput, componentMax);
+          if (clampedComponent != activeComp) {
+            imgSettings.setActiveComponent(clampedComponent);
+            activeComp = imgSettings.activeComponent();
             updateImageUniforms();
           }
+        }
+
+        ImGui::SameLine();
+        helpMarker("Select the image component to display and adjust");
+
+        if (imgSettings.displayImageAsColor()) {
+          bool visible = imgSettings.visibility();
+          if (visibilityCheckboxBeforeSlider(
+                "##componentVisible",
+                &visible,
+                "Show/hide the selected image component on all views"))
+          {
+            imgSettings.setVisibility(visible);
+            updateImageUniforms();
+          }
+          double imageOpacity = imgSettings.opacity();
+          ImGui::BeginDisabled(!visible);
+          if (mySliderF64("Component opacity", &imageOpacity, 0.0, 1.0)) {
+            imgSettings.setOpacity(imageOpacity);
+            updateImageUniforms();
+          }
+          ImGui::EndDisabled();
+          ImGui::PopItemWidth();
           ImGui::SameLine();
-          helpMarker("Ignore alpha component of RGBA image");
+          helpMarker("Selected image component opacity");
         }
       }
-
-      uint32_t componentInput = activeComp;
-      constexpr uint32_t componentStep = 1;
-      const uint32_t componentMax = imgHeader.numComponentsPerPixel() - 1;
-      const std::string componentFormat = "%u of " + std::to_string(componentMax);
-      if (ImGui::InputScalar(
-            "Component",
-            ImGuiDataType_U32,
-            &componentInput,
-            &componentStep,
-            nullptr,
-            componentFormat.c_str()))
+      else if (const auto projectionMode = componentProjectionFromRenderMode(imgSettings.componentRenderMode());
+               projectionMode && !appData.componentProjectionImageUid(imageUid, *projectionMode))
       {
-        const uint32_t clampedComponent = std::min(componentInput, componentMax);
-        if (clampedComponent != activeComp) {
-          imgSettings.setActiveComponent(clampedComponent);
-          activeComp = imgSettings.activeComponent();
-          updateImageUniforms();
-        }
+        ImGui::TextDisabled("Computing %s projection...", componentProjectionModeName(*projectionMode).c_str());
       }
-
-      ImGui::SameLine();
-      helpMarker("Select the image component to display and adjust");
-
-      bool visible = imgSettings.visibility();
-      if (visibilityCheckboxBeforeSlider(
-            "##componentVisible",
-            &visible,
-            "Show/hide the selected image component on all views"))
-      {
-        imgSettings.setVisibility(visible);
-        updateImageUniforms();
-      }
-      double imageOpacity = imgSettings.opacity();
-      ImGui::BeginDisabled(!visible);
-      if (mySliderF64("Component opacity", &imageOpacity, 0.0, 1.0)) {
-        imgSettings.setOpacity(imageOpacity);
-        updateImageUniforms();
-      }
-      ImGui::EndDisabled();
-      ImGui::PopItemWidth();
-      ImGui::SameLine();
-      helpMarker("Selected image component opacity");
 
       ImGui::TreePop();
     }

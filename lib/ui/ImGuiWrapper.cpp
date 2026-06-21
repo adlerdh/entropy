@@ -30,6 +30,9 @@
 #include "logic/states/annotation/AnnotationStateHelpers.h"
 #include "logic/states/annotation/AnnotationStateMachine.h"
 
+#include "common/UuidUtility.h"
+#include "rendering/TextureSetup.h"
+
 #include <IconsForkAwesome.h>
 
 #include <imgui/imgui.h>
@@ -53,6 +56,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <memory>
@@ -911,6 +915,11 @@ UiFontSpec uiFontSpec(UiFontFamily family)
   return {"Space Grotesk Light", "res/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf", 16.0f};
 }
 
+std::string componentProjectionTaskKey(const uuids::uuid& imageUid, ComponentProjectionMode mode)
+{
+  return uuids::to_string(imageUid) + ":" + std::to_string(static_cast<int>(mode));
+}
+
 } // namespace
 
 ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler& callbackHandler)
@@ -1039,6 +1048,136 @@ void ImGuiWrapper::storeFuture(const uuids::uuid& taskUid, std::future<AsyncTask
   m_futures.emplace(taskUid, std::move(future));
 
   spdlog::debug("Storing future for UI task {}. Total number of UI task futures: {}", taskUid, m_futures.size());
+}
+
+void ImGuiWrapper::requestComponentProjectionImage(const uuids::uuid& imageUid, ComponentProjectionMode mode)
+{
+  if (m_appData.componentProjectionImageUid(imageUid, mode)) {
+    return;
+  }
+
+  const std::string taskKey = componentProjectionTaskKey(imageUid, mode);
+  {
+    std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
+    if (m_pendingComponentProjectionKeys.contains(taskKey)) {
+      return;
+    }
+    m_pendingComponentProjectionKeys.insert(taskKey);
+  }
+
+  const Image* image = m_appData.image(imageUid);
+  if (!image) {
+    spdlog::warn("Cannot compute component projection for invalid image {}", imageUid);
+    std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
+    m_pendingComponentProjectionKeys.erase(taskKey);
+    return;
+  }
+
+  const uuids::uuid taskUid = generateRandomUuid();
+  Image imageCopy = *image;
+  auto future = std::async(std::launch::async, [imageUid, mode, imageCopy = std::move(imageCopy)]() mutable {
+    return ComponentProjectionTaskResult{imageUid, mode, createComponentProjectionImage(imageCopy, mode)};
+  });
+
+  {
+    std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
+    m_componentProjectionFutures.emplace(taskUid, std::move(future));
+  }
+
+  spdlog::debug(
+    "Started {} component projection task {} for image {}",
+    componentProjectionModeName(mode),
+    taskUid,
+    imageUid);
+
+  if (m_postEmptyGlfwEvent) {
+    m_postEmptyGlfwEvent();
+  }
+}
+
+void ImGuiWrapper::requestMissingComponentProjectionImages()
+{
+  for (const auto& imageUid : m_appData.imageUidsOrdered()) {
+    const Image* image = m_appData.image(imageUid);
+    if (!image) {
+      continue;
+    }
+
+    if (image->header().numComponentsPerPixel() < 2) {
+      continue;
+    }
+
+    const auto mode = componentProjectionFromRenderMode(image->settings().componentRenderMode());
+    if (mode && !m_appData.componentProjectionImageUid(imageUid, *mode)) {
+      requestComponentProjectionImage(imageUid, *mode);
+    }
+  }
+}
+
+void ImGuiWrapper::processComponentProjectionFutures()
+{
+  using namespace std::chrono_literals;
+
+  std::vector<uuids::uuid> readyTasks;
+  {
+    std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
+    for (auto& [taskUid, future] : m_componentProjectionFutures) {
+      if (future.valid() && std::future_status::ready == future.wait_for(0ms)) {
+        readyTasks.push_back(taskUid);
+      }
+    }
+  }
+
+  for (const auto& taskUid : readyTasks) {
+    std::future<ComponentProjectionTaskResult> future;
+    {
+      std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
+      auto it = m_componentProjectionFutures.find(taskUid);
+      if (m_componentProjectionFutures.end() == it) {
+        continue;
+      }
+      future = std::move(it->second);
+      m_componentProjectionFutures.erase(it);
+    }
+
+    ComponentProjectionTaskResult result = future.get();
+    {
+      std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
+      m_pendingComponentProjectionKeys.erase(componentProjectionTaskKey(result.sourceImageUid, result.mode));
+    }
+
+    if (!result.image) {
+      spdlog::warn(
+        "Unable to compute {} component projection for image {}: {}",
+        componentProjectionModeName(result.mode),
+        result.sourceImageUid,
+        result.image.error());
+      continue;
+    }
+
+    const auto projectionUid =
+      m_appData.setComponentProjectionImage(result.sourceImageUid, result.mode, std::move(*result.image));
+    if (!projectionUid) {
+      spdlog::warn("Source image {} no longer exists for component projection", result.sourceImageUid);
+      continue;
+    }
+
+    m_appData.renderData().m_imageTextures.erase(*projectionUid);
+    createImageTextures(m_appData, std::vector<uuids::uuid>{*projectionUid});
+
+    if (m_updateImageUniforms) {
+      m_updateImageUniforms(*projectionUid);
+    }
+
+    spdlog::debug(
+      "Finished {} component projection for image {}",
+      componentProjectionModeName(result.mode),
+      result.sourceImageUid);
+  }
+
+  if (!readyTasks.empty() && m_postEmptyGlfwEvent) {
+    m_postEmptyGlfwEvent();
+  }
 }
 
 void ImGuiWrapper::addTaskToIsosurfaceGpuMeshGenerationQueue(const uuids::uuid& taskUid)
@@ -1279,6 +1418,7 @@ void ImGuiWrapper::render()
   using namespace std::placeholders;
 
   generateIsosurfaceMeshGpuRecords();
+  processComponentProjectionFutures();
 
   if (m_pendingUserScaleOverride) {
     m_uiScaleManager.setUserScaleOverride(*m_pendingUserScaleOverride);
@@ -2500,6 +2640,8 @@ void ImGuiWrapper::render()
       return;
     }
 
+    requestMissingComponentProjectionImages();
+
     if (m_appData.guiData().m_showIsosurfacesWindow) {
       renderIsosurfacesWindow(
         m_appData,
@@ -2541,6 +2683,9 @@ void ImGuiWrapper::render()
         m_updateImageInterpolationMode,
         m_updateImageColorMapInterpolationMode,
         m_setLockManualImageTransformation,
+        [this](const uuids::uuid& imageUid, ComponentProjectionMode mode) {
+          requestComponentProjectionImage(imageUid, mode);
+        },
         [this](const uuids::uuid& imageUid) {
           m_appData.guiData().m_pendingReferenceImageUid = imageUid;
           m_appData.guiData().m_showConfirmSetReferenceImagePopup = true;

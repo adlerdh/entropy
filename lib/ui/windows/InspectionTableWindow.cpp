@@ -18,6 +18,8 @@
 #include <algorithm>
 #include <array>
 #include <cinttypes>
+#include <cmath>
+#include <limits>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -36,6 +38,10 @@ enum class InspectorColumn : int
   Value,
   InterpolatedValue,
   Percentile,
+  Minimum,
+  Mean,
+  Maximum,
+  Magnitude,
   Label,
   Region,
   Voxel,
@@ -50,22 +56,48 @@ constexpr std::array<const char*, sk_inspectorColumnCount> sk_inspectorColumnNam
   "Value",
   "Value (interp.)",
   "Percentile",
+  "Minimum",
+  "Mean",
+  "Maximum",
+  "Magnitude",
   "Label",
   "Region",
   "Voxel",
   "Subject (mm)"};
 
 constexpr std::array<float, sk_inspectorColumnCount>
-  k_inspectorColumnMinWidths{120.0f, 64.0f, 72.0f, 78.0f, 48.0f, 72.0f, 96.0f, 148.0f};
+  k_inspectorColumnMinWidths{120.0f, 64.0f, 72.0f, 78.0f, 78.0f, 64.0f, 78.0f, 88.0f, 48.0f, 72.0f, 96.0f, 148.0f};
 
-constexpr std::array<float, sk_inspectorColumnCount>
-  k_inspectorColumnDefaultWidths{150.0f, 82.0f, 122.0f, 100.0f, 62.0f, 140.0f, 125.0f, 210.0f};
+constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnDefaultWidths{
+  150.0f,
+  82.0f,
+  122.0f,
+  100.0f,
+  96.0f,
+  82.0f,
+  96.0f,
+  108.0f,
+  62.0f,
+  140.0f,
+  125.0f,
+  210.0f};
 
-constexpr std::array<float, sk_inspectorColumnCount>
-  k_inspectorColumnMaxWidths{280.0f, 110.0f, 130.0f, 115.0f, 72.0f, 180.0f, 150.0f, 230.0f};
+constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnMaxWidths{
+  280.0f,
+  110.0f,
+  130.0f,
+  115.0f,
+  115.0f,
+  110.0f,
+  115.0f,
+  125.0f,
+  72.0f,
+  180.0f,
+  150.0f,
+  230.0f};
 
 constexpr std::array<bool, sk_inspectorColumnCount>
-  sk_inspectorColumnCanHide{false, true, true, true, true, true, true, true};
+  sk_inspectorColumnCanHide{false, true, true, true, true, true, true, true, true, true, true, true};
 
 constexpr int columnIndex(InspectorColumn column)
 {
@@ -86,6 +118,93 @@ std::optional<double> activeComponentPercentile(const Image& image, const std::v
 
   const double percentile = 50.0 * (quantile.lowerQuantile + quantile.upperQuantile);
   return std::clamp(percentile, 0.0, 100.0);
+}
+
+bool hasMultiComponentImage(const AppData& appData)
+{
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
+    const Image* image = appData.image(imageUid);
+    if (image && image->header().numComponentsPerPixel() > 1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool isComponentProjectionColumn(InspectorColumn column)
+{
+  switch (column) {
+    case InspectorColumn::Minimum:
+    case InspectorColumn::Mean:
+    case InspectorColumn::Maximum:
+    case InspectorColumn::Magnitude:
+      return true;
+    case InspectorColumn::Image:
+    case InspectorColumn::Value:
+    case InspectorColumn::InterpolatedValue:
+    case InspectorColumn::Percentile:
+    case InspectorColumn::Label:
+    case InspectorColumn::Region:
+    case InspectorColumn::Voxel:
+    case InspectorColumn::Subject:
+    case InspectorColumn::Count:
+      return false;
+  }
+
+  return false;
+}
+
+std::optional<double> componentProjectionValue(InspectorColumn column, const std::vector<double>& componentValues)
+{
+  if (componentValues.size() < 2 || !isComponentProjectionColumn(column)) {
+    return std::nullopt;
+  }
+
+  double minimum = std::numeric_limits<double>::max();
+  double maximum = std::numeric_limits<double>::lowest();
+  double sum = 0.0;
+  double sumSquares = 0.0;
+  std::size_t finiteCount = 0;
+
+  for (const double value : componentValues) {
+    if (!std::isfinite(value)) {
+      continue;
+    }
+
+    minimum = std::min(minimum, value);
+    maximum = std::max(maximum, value);
+    sum += value;
+    sumSquares += value * value;
+    ++finiteCount;
+  }
+
+  if (0 == finiteCount) {
+    return std::nullopt;
+  }
+
+  switch (column) {
+    case InspectorColumn::Minimum:
+      return minimum;
+    case InspectorColumn::Mean:
+      return sum / static_cast<double>(finiteCount);
+    case InspectorColumn::Maximum:
+      return maximum;
+    case InspectorColumn::Magnitude:
+      return std::sqrt(sumSquares);
+    case InspectorColumn::Image:
+    case InspectorColumn::Value:
+    case InspectorColumn::InterpolatedValue:
+    case InspectorColumn::Percentile:
+    case InspectorColumn::Label:
+    case InspectorColumn::Region:
+    case InspectorColumn::Voxel:
+    case InspectorColumn::Subject:
+    case InspectorColumn::Count:
+      break;
+  }
+
+  return std::nullopt;
 }
 
 float inspectionColumnWidthForText(const char* text)
@@ -109,6 +228,14 @@ const char* inspectionColumnTooltip(InspectorColumn column)
       return "Linearly interpolated image voxel value";
     case InspectorColumn::Percentile:
       return "Image voxel value percentile";
+    case InspectorColumn::Minimum:
+      return "Minimum component value at the nearest image voxel";
+    case InspectorColumn::Mean:
+      return "Mean component value at the nearest image voxel";
+    case InspectorColumn::Maximum:
+      return "Maximum component value at the nearest image voxel";
+    case InspectorColumn::Magnitude:
+      return "Magnitude of the component vector at the nearest image voxel";
     case InspectorColumn::Label:
       return "Segmentation label value";
     case InspectorColumn::Region:
@@ -162,6 +289,7 @@ void renderInspectionWindowWithTable(
   static bool s_showTitleBar = false;
   static bool s_autoSizeColumnsRequested = false;
   static std::array<bool, sk_inspectorColumnCount> s_autoSizeColumnRequested{};
+  const bool canShowComponentProjectionColumns = hasMultiComponentImage(appData);
 
   // For which images to show coordinates?
   static std::unordered_map<uuid, bool> s_showSubject;
@@ -175,13 +303,19 @@ void renderInspectionWindowWithTable(
     s_firstRun = false;
   }
 
-  auto renderColumnVisibilityItems = [&appData]() {
+  auto renderColumnVisibilityItems = [&appData, canShowComponentProjectionColumns]() {
     if (ImGui::MenuItem("Auto-size columns")) {
       s_autoSizeColumnsRequested = true;
     }
     ImGui::Separator();
 
     for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+      const auto inspectorColumn = static_cast<InspectorColumn>(column);
+      if (isComponentProjectionColumn(inspectorColumn) && !canShowComponentProjectionColumns) {
+        appData.guiData().m_inspectionColumnVisible.at(column) = false;
+        continue;
+      }
+
       bool visible = appData.guiData().m_inspectionColumnVisible.at(column);
       if (!sk_inspectorColumnCanHide.at(column)) {
         ImGui::BeginDisabled();
@@ -311,6 +445,10 @@ void renderInspectionWindowWithTable(
       if (image->header().numComponentsPerPixel() > 1) {
         expandWidth(InspectorColumn::Value, "-0000.000, -0000.000, -0000.000");
         expandWidth(InspectorColumn::InterpolatedValue, "-0000.000, -0000.000, -0000.000");
+        expandWidth(InspectorColumn::Minimum, "-0000.000");
+        expandWidth(InspectorColumn::Mean, "-0000.000");
+        expandWidth(InspectorColumn::Maximum, "-0000.000");
+        expandWidth(InspectorColumn::Magnitude, "-0000.000");
       }
 
       if (const auto segLabel = getSegLabel(imageIndex)) {
@@ -416,6 +554,22 @@ void renderInspectionWindowWithTable(
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Percentile)));
       ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Minimum)),
+        ImGuiTableColumnFlags_WidthFixed,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Minimum)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Mean)),
+        ImGuiTableColumnFlags_WidthFixed,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Mean)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Maximum)),
+        ImGuiTableColumnFlags_WidthFixed,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Maximum)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Magnitude)),
+        ImGuiTableColumnFlags_WidthFixed,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Magnitude)));
+      ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Label)),
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Label)));
@@ -434,9 +588,13 @@ void renderInspectionWindowWithTable(
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Subject)));
 
       for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+        const auto inspectorColumn = static_cast<InspectorColumn>(column);
+        const bool componentProjectionColumnEnabled =
+          !isComponentProjectionColumn(inspectorColumn) || canShowComponentProjectionColumns;
         ImGui::TableSetColumnEnabled(
           static_cast<int>(column),
-          appData.guiData().m_inspectionColumnVisible.at(column) || !sk_inspectorColumnCanHide.at(column));
+          componentProjectionColumnEnabled &&
+            (appData.guiData().m_inspectionColumnVisible.at(column) || !sk_inspectorColumnCanHide.at(column)));
       }
 
       ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
@@ -720,6 +878,31 @@ void renderInspectionWindowWithTable(
         else {
           ImGui::Text("<N/A>");
         }
+
+        auto renderComponentProjectionColumn = [&](InspectorColumn column, const char* itemId) {
+          ImGui::TableNextColumn();
+          if (const std::optional<double> value = componentProjectionValue(column, imageValuesNN)) {
+            double displayValue = *value;
+            ImGui::PushItemWidth(-1);
+            ImGui::InputScalar(
+              itemId,
+              ImGuiDataType_Double,
+              &displayValue,
+              nullptr,
+              nullptr,
+              appData.guiData().m_imageValuePrecisionFormat.c_str(),
+              ImGuiInputTextFlags_ReadOnly);
+            ImGui::PopItemWidth();
+          }
+          else {
+            ImGui::Text("<N/A>");
+          }
+        };
+
+        renderComponentProjectionColumn(InspectorColumn::Minimum, "##componentMinimum");
+        renderComponentProjectionColumn(InspectorColumn::Mean, "##componentMean");
+        renderComponentProjectionColumn(InspectorColumn::Maximum, "##componentMaximum");
+        renderComponentProjectionColumn(InspectorColumn::Magnitude, "##componentMagnitude");
 
         if (segLabel) {
           ImGui::TableNextColumn(); // "Label"

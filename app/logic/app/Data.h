@@ -6,6 +6,7 @@
 
 #include "image/Image.h"
 #include "image/ImageColorMap.h"
+#include "image/ImageDerivedData.h"
 #include "image/Isosurface.h"
 
 #include "logic/annotation/Annotation.h"
@@ -164,6 +165,30 @@ public:
 
   const Image* image(const uuid& imageUid) const;
   Image* image(const uuid& imageUid);
+
+  /**
+   * @brief Add or replace a cached scalar projection for a multi-component source image.
+   * @param imageUid Source image UID.
+   * @param mode Component projection represented by \p image.
+   * @param image Derived scalar image.
+   * @return UID of the cached projection, or std::nullopt when the source image is invalid.
+   */
+  std::optional<uuid> setComponentProjectionImage(const uuid& imageUid, ComponentProjectionMode mode, Image image);
+
+  /**
+   * @brief Get the UID of a cached scalar component projection.
+   * @param imageUid Source image UID.
+   * @param mode Component projection mode.
+   * @return Cached projection UID, or std::nullopt when the projection does not exist.
+   */
+  std::optional<uuid> componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMode mode) const;
+
+  /**
+   * @brief Get the renderable image UID for an image's current component mode.
+   * @param imageUid Source image UID selected by the view/layout.
+   * @return Source UID, or a cached projection UID when that projection should be rendered.
+   */
+  uuid effectiveImageUidForRendering(const uuid& imageUid) const;
 
   entropy_expected::expected<std::reference_wrapper<const Image>, std::string> getImage(const uuid& imageUid) const;
   entropy_expected::expected<std::reference_wrapper<Image>, std::string> getImage(const uuid& imageUid);
@@ -406,6 +431,9 @@ private:
 
   std::unordered_map<uuid, Image> m_images; //!< Images
   std::vector<uuid> m_imageUidsOrdered;     //!< Image UIDs in order
+
+  std::unordered_map<uuid, Image> m_componentProjectionImages; //!< Hidden scalar component projections
+  std::unordered_map<uuid, std::map<ComponentProjectionMode, uuid> > m_imageToComponentProjectionImages;
 
   std::unordered_map<uuid, Image> m_segs; //!< Segmentations, also stored as images
   std::vector<uuid> m_segUidsOrdered;     //!< Segmentation UIDs in order

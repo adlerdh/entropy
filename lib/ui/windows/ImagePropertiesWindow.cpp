@@ -35,6 +35,7 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
   const std::function<bool(const uuid& imageUid, bool locked)>& setLockManualImageTransformation,
+  const std::function<void(const uuid& imageUid, ComponentProjectionMode mode)>& requestComponentProjectionImage,
   const std::function<void(const uuid& imageUid)>& requestSetReferenceImage,
   const std::function<void(const uuid& imageUid)>& requestRemoveImage,
   const AllViewsRecenterType& recenterAllViews)
@@ -92,6 +93,7 @@ void renderImagePropertiesWindow(
           moveImageToBack,
           moveImageToFront,
           setLockManualImageTransformation,
+          requestComponentProjectionImage,
           requestSetReferenceImage,
           requestRemoveImage,
           recenterAllViews);

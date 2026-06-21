@@ -264,6 +264,64 @@ std::optional<dicom::SeriesInfo> resolveDicomSource(const serialize::DicomSource
   return std::nullopt;
 }
 
+serialize::ProjectComponentRenderMode toProjectComponentRenderMode(ComponentRenderMode mode)
+{
+  switch (mode) {
+    case ComponentRenderMode::SingleComponent:
+      return serialize::ProjectComponentRenderMode::SingleComponent;
+    case ComponentRenderMode::Color:
+      return serialize::ProjectComponentRenderMode::Color;
+    case ComponentRenderMode::Minimum:
+      return serialize::ProjectComponentRenderMode::Minimum;
+    case ComponentRenderMode::Mean:
+      return serialize::ProjectComponentRenderMode::Mean;
+    case ComponentRenderMode::Maximum:
+      return serialize::ProjectComponentRenderMode::Maximum;
+    case ComponentRenderMode::Magnitude:
+      return serialize::ProjectComponentRenderMode::Magnitude;
+  }
+
+  return serialize::ProjectComponentRenderMode::SingleComponent;
+}
+
+ComponentRenderMode fromProjectComponentRenderMode(serialize::ProjectComponentRenderMode mode)
+{
+  switch (mode) {
+    case serialize::ProjectComponentRenderMode::SingleComponent:
+      return ComponentRenderMode::SingleComponent;
+    case serialize::ProjectComponentRenderMode::Color:
+      return ComponentRenderMode::Color;
+    case serialize::ProjectComponentRenderMode::Minimum:
+      return ComponentRenderMode::Minimum;
+    case serialize::ProjectComponentRenderMode::Mean:
+      return ComponentRenderMode::Mean;
+    case serialize::ProjectComponentRenderMode::Maximum:
+      return ComponentRenderMode::Maximum;
+    case serialize::ProjectComponentRenderMode::Magnitude:
+      return ComponentRenderMode::Magnitude;
+  }
+
+  return ComponentRenderMode::SingleComponent;
+}
+
+bool componentModeIsValidForImage(ComponentRenderMode mode, const Image& image)
+{
+  const uint32_t numComponents = image.header().numComponentsPerPixel();
+  switch (mode) {
+    case ComponentRenderMode::SingleComponent:
+      return true;
+    case ComponentRenderMode::Color:
+      return 3 == numComponents || 4 == numComponents;
+    case ComponentRenderMode::Minimum:
+    case ComponentRenderMode::Mean:
+    case ComponentRenderMode::Maximum:
+    case ComponentRenderMode::Magnitude:
+      return numComponents >= 2;
+  }
+
+  return false;
+}
+
 serialize::ImageSettings makeImageSettingsSnapshot(const Image& image)
 {
   const ImageSettings& imageSettings = image.settings();
@@ -276,6 +334,15 @@ serialize::ImageSettings makeImageSettingsSnapshot(const Image& image)
   settings.m_thresholdLow = thresholds.first;
   settings.m_thresholdHigh = thresholds.second;
   settings.m_opacity = imageSettings.opacity();
+  settings.m_activeComponent = imageSettings.activeComponent();
+  settings.m_componentRenderMode = toProjectComponentRenderMode(imageSettings.componentRenderMode());
+  settings.m_ignoreAlpha = imageSettings.ignoreAlpha();
+  settings.m_componentVisibility.reserve(imageSettings.numComponents());
+  settings.m_componentOpacities.reserve(imageSettings.numComponents());
+  for (uint32_t component = 0; component < imageSettings.numComponents(); ++component) {
+    settings.m_componentVisibility.push_back(imageSettings.visibility(component));
+    settings.m_componentOpacities.push_back(imageSettings.opacity(component));
+  }
   settings.m_edgeDetectionMethod = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
                                      ? serialize::ProjectEdgeDetectionMethod::Pixel
                                      : serialize::ProjectEdgeDetectionMethod::Voxel;
@@ -311,11 +378,28 @@ void applyImageSettingsSnapshot(Image& image, const serialize::ImageSettings& se
     imageSettings.setDisplayName(settings.m_displayName);
   }
 
+  if (settings.m_activeComponent < imageSettings.numComponents()) {
+    imageSettings.setActiveComponent(settings.m_activeComponent);
+  }
   imageSettings.setWindowCenter(settings.m_level);
   imageSettings.setWindowWidth(settings.m_window);
   imageSettings.setThresholdLow(settings.m_thresholdLow);
   imageSettings.setThresholdHigh(settings.m_thresholdHigh);
   imageSettings.setOpacity(settings.m_opacity);
+  const ComponentRenderMode componentMode = fromProjectComponentRenderMode(settings.m_componentRenderMode);
+  imageSettings.setComponentRenderMode(
+    componentModeIsValidForImage(componentMode, image) ? componentMode : ComponentRenderMode::SingleComponent);
+  imageSettings.setIgnoreAlpha(settings.m_ignoreAlpha);
+  const std::size_t numVisibilityComponents =
+    std::min<std::size_t>(settings.m_componentVisibility.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numVisibilityComponents; ++component) {
+    imageSettings.setVisibility(static_cast<uint32_t>(component), settings.m_componentVisibility.at(component));
+  }
+  const std::size_t numOpacityComponents =
+    std::min<std::size_t>(settings.m_componentOpacities.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numOpacityComponents; ++component) {
+    imageSettings.setOpacity(static_cast<uint32_t>(component), settings.m_componentOpacities.at(component));
+  }
   imageSettings.setEdgeDetectionMethod(
     serialize::ProjectEdgeDetectionMethod::Pixel == settings.m_edgeDetectionMethod ? EdgeDetectionMethod::Pixel
                                                                                    : EdgeDetectionMethod::Voxel);
@@ -398,12 +482,15 @@ bool imageSettingsEqual(
 
   return a->m_displayName == b->m_displayName && a->m_level == b->m_level && a->m_window == b->m_window &&
          a->m_thresholdLow == b->m_thresholdLow && a->m_thresholdHigh == b->m_thresholdHigh &&
-         a->m_opacity == b->m_opacity && a->m_edgeDetectionMethod == b->m_edgeDetectionMethod &&
-         a->m_showEdges == b->m_showEdges && a->m_thresholdEdges == b->m_thresholdEdges &&
-         a->m_thinPixelEdges == b->m_thinPixelEdges && a->m_overlayEdges == b->m_overlayEdges &&
-         a->m_colormapEdges == b->m_colormapEdges && a->m_edgeMagnitude == b->m_edgeMagnitude &&
-         a->m_pixelEdgeScale == b->m_pixelEdgeScale && a->m_pixelEdgeThreshold == b->m_pixelEdgeThreshold &&
-         a->m_edgeColor == b->m_edgeColor && a->m_edgeOpacity == b->m_edgeOpacity;
+         a->m_opacity == b->m_opacity && a->m_activeComponent == b->m_activeComponent &&
+         a->m_componentRenderMode == b->m_componentRenderMode && a->m_ignoreAlpha == b->m_ignoreAlpha &&
+         a->m_componentVisibility == b->m_componentVisibility && a->m_componentOpacities == b->m_componentOpacities &&
+         a->m_edgeDetectionMethod == b->m_edgeDetectionMethod && a->m_showEdges == b->m_showEdges &&
+         a->m_thresholdEdges == b->m_thresholdEdges && a->m_thinPixelEdges == b->m_thinPixelEdges &&
+         a->m_overlayEdges == b->m_overlayEdges && a->m_colormapEdges == b->m_colormapEdges &&
+         a->m_edgeMagnitude == b->m_edgeMagnitude && a->m_pixelEdgeScale == b->m_pixelEdgeScale &&
+         a->m_pixelEdgeThreshold == b->m_pixelEdgeThreshold && a->m_edgeColor == b->m_edgeColor &&
+         a->m_edgeOpacity == b->m_edgeOpacity;
 }
 
 bool segSettingsEqual(const std::optional<serialize::SegSettings>& a, const std::optional<serialize::SegSettings>& b)

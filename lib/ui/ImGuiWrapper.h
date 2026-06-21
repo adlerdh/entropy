@@ -4,6 +4,7 @@
 #include "common/PublicTypes.h"
 #include "common/SegmentationTypes.h"
 #include "image/DicomSeries.h"
+#include "image/ImageDerivedData.h"
 #include "logic/app/Settings.h"
 #include "ui/GuiData.h"
 #include "ui/UiScaleManager.h"
@@ -20,6 +21,7 @@
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class AppData;
@@ -359,6 +361,21 @@ private:
 
   /// Mutex protecting \c m_futures
   std::mutex m_futuresMutex;
+
+  struct ComponentProjectionTaskResult
+  {
+    uuids::uuid sourceImageUid;
+    ComponentProjectionMode mode{ComponentProjectionMode::Mean};
+    entropy_expected::expected<Image, std::string> image;
+  };
+
+  std::unordered_map<uuids::uuid, std::future<ComponentProjectionTaskResult> > m_componentProjectionFutures;
+  std::unordered_set<std::string> m_pendingComponentProjectionKeys;
+  std::mutex m_componentProjectionFuturesMutex;
+
+  void requestComponentProjectionImage(const uuids::uuid& imageUid, ComponentProjectionMode mode);
+  void requestMissingComponentProjectionImages();
+  void processComponentProjectionFutures();
 
   /// Queue of UIDs referring to task UIDs of futures.
   /// These are completed isosurface mesh generation tasks that now need

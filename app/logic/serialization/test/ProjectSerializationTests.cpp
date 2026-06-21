@@ -125,6 +125,11 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_thresholdLow = 1.0,
     .m_thresholdHigh = 11.0,
     .m_opacity = 0.75,
+    .m_activeComponent = 2,
+    .m_componentRenderMode = serialize::ProjectComponentRenderMode::Magnitude,
+    .m_ignoreAlpha = true,
+    .m_componentVisibility = {true, false, true},
+    .m_componentOpacities = {1.0, 0.25, 0.5},
     .m_edgeDetectionMethod = serialize::ProjectEdgeDetectionMethod::Pixel,
     .m_showEdges = true,
     .m_thresholdEdges = false,
@@ -140,6 +145,11 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   const json root = project;
   const json& settings = root.at("reference").at("settings");
 
+  CHECK(settings.at("componentRenderMode") == "magnitude");
+  CHECK(settings.at("activeComponent") == 2);
+  CHECK(settings.at("ignoreAlpha") == true);
+  CHECK(settings.at("componentVisibility") == json::array({true, false, true}));
+  CHECK(settings.at("componentOpacities") == json::array({1.0, 0.25, 0.5}));
   CHECK(settings.at("edgeDetectionMethod") == "pixel");
   CHECK(settings.at("showEdges") == true);
   CHECK(settings.at("hardEdges") == false);
@@ -156,6 +166,11 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   REQUIRE(parsed.m_referenceImage.m_settings.has_value());
   const serialize::ImageSettings& parsedSettings = *parsed.m_referenceImage.m_settings;
 
+  CHECK(parsedSettings.m_componentRenderMode == serialize::ProjectComponentRenderMode::Magnitude);
+  CHECK(parsedSettings.m_activeComponent == 2);
+  CHECK(parsedSettings.m_ignoreAlpha);
+  CHECK(parsedSettings.m_componentVisibility == std::vector<bool>{true, false, true});
+  CHECK(parsedSettings.m_componentOpacities == std::vector<double>{1.0, 0.25, 0.5});
   CHECK(parsedSettings.m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::Pixel);
   CHECK(parsedSettings.m_showEdges);
   CHECK_FALSE(parsedSettings.m_thresholdEdges);

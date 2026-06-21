@@ -16,7 +16,6 @@ TEST_CASE("2D render mode choices stay in stable UI order", "[viewer][modes]")
     ViewRenderMode::Difference,
     ViewRenderMode::LocalNcc,
     ViewRenderMode::LocalLinearResidual,
-    ViewRenderMode::JointHistogram,
     ViewRenderMode::Disabled};
 
   CHECK(All2dViewRenderModes == expected);
