@@ -11,6 +11,8 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -54,6 +56,8 @@ struct GuiData
   bool m_showLandmarksWindow = false;                               //!< Show the landmarks window.
   bool m_showAnnotationsWindow = false;                             //!< Show the annotations window.
   bool m_showIsosurfacesWindow = false;                             //!< Show the isosurfaces window.
+  bool m_requestAddIsosurface = false;                              //!< Add one isosurface for the active image.
+  bool m_requestAddIsosurfaceRange = false;                         //!< Open the isosurface range dialog.
   bool m_showSettingsWindow = false;                                //!< Show the settings window.
   std::optional<SettingsTab> m_requestedSettingsTab = std::nullopt; //!< One-shot requested settings page.
   bool m_showInspectionWindow = true;                               //!< Show the cursor inspection window.
@@ -125,6 +129,30 @@ struct GuiData
 
   /// Pending large-image loading prompt state.
   std::optional<LargeImageLoadPrompt> m_pendingLargeImageLoadPrompt = std::nullopt;
+
+  struct LoadingStatusItem
+  {
+    enum class Kind : std::uint8_t
+    {
+      Image,
+      Segmentation
+    };
+
+    Kind kind = Kind::Image;             //!< Type of file being loaded.
+    std::filesystem::path fileName;      //!< Source file shown in the loading popup.
+    std::optional<std::uintmax_t> bytes; //!< Source file size, when known.
+    bool loaded = false;                 //!< True after the file has loaded successfully.
+  };
+
+  struct LoadingStatus
+  {
+    mutable std::mutex mutex;                //!< Guards title, visibility, and items.
+    bool visible = false;                    //!< Show the loading popup.
+    std::string title = "Loading images..."; //!< Popup title text.
+    std::vector<LoadingStatusItem> items;    //!< Files shown in load order.
+  };
+
+  std::shared_ptr<LoadingStatus> m_loadingStatus = std::make_shared<LoadingStatus>(); //!< Active image-load status.
 
   /**
    * @brief State for selecting one or more discovered DICOM series to load.

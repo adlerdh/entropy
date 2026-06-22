@@ -84,6 +84,11 @@ constexpr std::array k_componentRenderModeNames{
   EnumName{serialize::ProjectComponentRenderMode::Maximum, "maximum"},
   EnumName{serialize::ProjectComponentRenderMode::Magnitude, "magnitude"}};
 
+constexpr std::array k_interpolationModeNames{
+  EnumName{InterpolationMode::NearestNeighbor, "nearest"},
+  EnumName{InterpolationMode::Linear, "linear"},
+  EnumName{InterpolationMode::CubicBsplineConvolution, "cubicBSpline"}};
+
 std::optional<std::uint32_t> unsignedIntFromJson(const json& value)
 {
   if (value.is_number_unsigned()) {
@@ -174,6 +179,16 @@ json matrixToJson(const glm::mat4& matrix)
   return j;
 }
 
+json vec3ToJson(const glm::vec3& value)
+{
+  return json::array({value.x, value.y, value.z});
+}
+
+glm::vec3 vec3FromJson(const json& j)
+{
+  return glm::vec3{j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>()};
+}
+
 glm::mat4 matrixFromJson(const json& j)
 {
   glm::mat4 matrix{1.0f};
@@ -185,6 +200,51 @@ glm::mat4 matrixFromJson(const json& j)
   }
 
   return matrix;
+}
+
+std::vector<const char*> interpolationModesToJson(const std::vector<InterpolationMode>& modes)
+{
+  std::vector<const char*> names;
+  names.reserve(modes.size());
+  for (const InterpolationMode mode : modes) {
+    names.push_back(enumToName(mode, k_interpolationModeNames));
+  }
+  return names;
+}
+
+std::vector<InterpolationMode> interpolationModesFromJson(const json& j)
+{
+  std::vector<InterpolationMode> modes;
+  if (!j.is_array()) {
+    return modes;
+  }
+
+  modes.reserve(j.size());
+  for (const auto& value : j) {
+    if (!value.is_string()) {
+      continue;
+    }
+    if (const auto parsed = enumFromName<InterpolationMode>(value.get<std::string>(), k_interpolationModeNames)) {
+      modes.push_back(*parsed);
+    }
+  }
+  return modes;
+}
+
+std::vector<glm::vec3> vec3ArrayFromJson(const json& j)
+{
+  std::vector<glm::vec3> values;
+  if (!j.is_array()) {
+    return values;
+  }
+
+  values.reserve(j.size());
+  for (const auto& value : j) {
+    if (value.is_array() && value.size() == 3) {
+      values.push_back(vec3FromJson(value));
+    }
+  }
+  return values;
 }
 
 } // namespace
@@ -208,6 +268,9 @@ void to_json(json& j, const serialize::ImageSettings& settings)
 {
   j = json{
     {"displayName", settings.m_displayName},
+    {"globalVisibility", settings.m_globalVisibility},
+    {"globalOpacity", settings.m_globalOpacity},
+    {"borderColor", vec3ToJson(settings.m_borderColor)},
     {"level", settings.m_level},
     {"window", settings.m_window},
     {"thresholdLow", settings.m_thresholdLow},
@@ -216,6 +279,7 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"activeComponent", settings.m_activeComponent},
     {"componentRenderMode", enumToName(settings.m_componentRenderMode, k_componentRenderModeNames)},
     {"ignoreAlpha", settings.m_ignoreAlpha},
+    {"colorInterpolationMode", enumToName(settings.m_colorInterpolationMode, k_interpolationModeNames)},
     {"edgeDetectionMethod", enumToName(settings.m_edgeDetectionMethod, k_edgeDetectionMethodNames)},
     {"showEdges", settings.m_showEdges},
     {"hardEdges", settings.m_thresholdEdges},
@@ -225,13 +289,58 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"pixelEdgeScale", settings.m_pixelEdgeScale},
     {"pixelEdgeThreshold", settings.m_pixelEdgeThreshold},
     {"edgeColor", {settings.m_edgeColor.r, settings.m_edgeColor.g, settings.m_edgeColor.b}},
-    {"edgeOpacity", settings.m_edgeOpacity}};
+    {"edgeOpacity", settings.m_edgeOpacity},
+    {"useDistanceMapForRaycasting", settings.m_useDistanceMapForRaycasting},
+    {"isosurfacesVisible", settings.m_isosurfacesVisible},
+    {"applyImageColormapToIsosurfaces", settings.m_applyImageColormapToIsosurfaces},
+    {"showIsocontoursIn2D", settings.m_showIsocontoursIn2D},
+    {"isocontourLineWidthIn2D", settings.m_isocontourLineWidthIn2D},
+    {"isosurfaceOpacityModulator", settings.m_isosurfaceOpacityModulator}};
 
+  if (!settings.m_componentLevels.empty()) {
+    j["componentLevels"] = settings.m_componentLevels;
+  }
+  if (!settings.m_componentWindows.empty()) {
+    j["componentWindows"] = settings.m_componentWindows;
+  }
+  if (!settings.m_componentThresholdLows.empty()) {
+    j["componentThresholdLows"] = settings.m_componentThresholdLows;
+  }
+  if (!settings.m_componentThresholdHighs.empty()) {
+    j["componentThresholdHighs"] = settings.m_componentThresholdHighs;
+  }
   if (!settings.m_componentVisibility.empty()) {
     j["componentVisibility"] = settings.m_componentVisibility;
   }
   if (!settings.m_componentOpacities.empty()) {
     j["componentOpacities"] = settings.m_componentOpacities;
+  }
+  if (!settings.m_colorMapIndices.empty()) {
+    j["colorMapIndices"] = settings.m_colorMapIndices;
+  }
+  if (!settings.m_colorMapInverted.empty()) {
+    j["colorMapInverted"] = settings.m_colorMapInverted;
+  }
+  if (!settings.m_colorMapContinuous.empty()) {
+    j["colorMapContinuous"] = settings.m_colorMapContinuous;
+  }
+  if (!settings.m_colorMapLevels.empty()) {
+    j["colorMapLevels"] = settings.m_colorMapLevels;
+  }
+  if (!settings.m_colorMapHsvModifiers.empty()) {
+    j["colorMapHsvModifiers"] = json::array();
+    for (const glm::vec3& value : settings.m_colorMapHsvModifiers) {
+      j["colorMapHsvModifiers"].push_back(vec3ToJson(value));
+    }
+  }
+  if (!settings.m_interpolationModes.empty()) {
+    j["interpolationModes"] = interpolationModesToJson(settings.m_interpolationModes);
+  }
+  if (!settings.m_foregroundThresholdLows.empty()) {
+    j["foregroundThresholdLows"] = settings.m_foregroundThresholdLows;
+  }
+  if (!settings.m_foregroundThresholdHighs.empty()) {
+    j["foregroundThresholdHighs"] = settings.m_foregroundThresholdHighs;
   }
 
   if (serialize::ProjectEdgeDetectionMethod::Voxel == settings.m_edgeDetectionMethod) {
@@ -243,6 +352,15 @@ void from_json(const json& j, serialize::ImageSettings& settings)
 {
   if (j.count("displayName")) {
     j.at("displayName").get_to(settings.m_displayName);
+  }
+  if (j.count("globalVisibility")) {
+    j.at("globalVisibility").get_to(settings.m_globalVisibility);
+  }
+  if (j.count("globalOpacity")) {
+    j.at("globalOpacity").get_to(settings.m_globalOpacity);
+  }
+  if (const auto color = j.find("borderColor"); color != j.end() && color->is_array() && color->size() == 3) {
+    settings.m_borderColor = vec3FromJson(*color);
   }
   if (j.count("level")) {
     j.at("level").get_to(settings.m_level);
@@ -272,11 +390,53 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   if (j.count("ignoreAlpha")) {
     j.at("ignoreAlpha").get_to(settings.m_ignoreAlpha);
   }
+  if (
+    const auto parsed =
+      enumFromName<InterpolationMode>(j.value("colorInterpolationMode", ""), k_interpolationModeNames))
+  {
+    settings.m_colorInterpolationMode = *parsed;
+  }
+  if (j.count("componentLevels")) {
+    j.at("componentLevels").get_to(settings.m_componentLevels);
+  }
+  if (j.count("componentWindows")) {
+    j.at("componentWindows").get_to(settings.m_componentWindows);
+  }
+  if (j.count("componentThresholdLows")) {
+    j.at("componentThresholdLows").get_to(settings.m_componentThresholdLows);
+  }
+  if (j.count("componentThresholdHighs")) {
+    j.at("componentThresholdHighs").get_to(settings.m_componentThresholdHighs);
+  }
   if (j.count("componentVisibility")) {
     j.at("componentVisibility").get_to(settings.m_componentVisibility);
   }
   if (j.count("componentOpacities")) {
     j.at("componentOpacities").get_to(settings.m_componentOpacities);
+  }
+  if (j.count("colorMapIndices")) {
+    j.at("colorMapIndices").get_to(settings.m_colorMapIndices);
+  }
+  if (j.count("colorMapInverted")) {
+    j.at("colorMapInverted").get_to(settings.m_colorMapInverted);
+  }
+  if (j.count("colorMapContinuous")) {
+    j.at("colorMapContinuous").get_to(settings.m_colorMapContinuous);
+  }
+  if (j.count("colorMapLevels")) {
+    j.at("colorMapLevels").get_to(settings.m_colorMapLevels);
+  }
+  if (const auto modifiers = j.find("colorMapHsvModifiers"); modifiers != j.end()) {
+    settings.m_colorMapHsvModifiers = vec3ArrayFromJson(*modifiers);
+  }
+  if (const auto modes = j.find("interpolationModes"); modes != j.end()) {
+    settings.m_interpolationModes = interpolationModesFromJson(*modes);
+  }
+  if (j.count("foregroundThresholdLows")) {
+    j.at("foregroundThresholdLows").get_to(settings.m_foregroundThresholdLows);
+  }
+  if (j.count("foregroundThresholdHighs")) {
+    j.at("foregroundThresholdHighs").get_to(settings.m_foregroundThresholdHighs);
   }
   if (
     const auto parsed = enumFromName<serialize::ProjectEdgeDetectionMethod>(
@@ -315,17 +475,73 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   if (j.count("edgeOpacity")) {
     j.at("edgeOpacity").get_to(settings.m_edgeOpacity);
   }
+  if (j.count("useDistanceMapForRaycasting")) {
+    j.at("useDistanceMapForRaycasting").get_to(settings.m_useDistanceMapForRaycasting);
+  }
+  if (j.count("isosurfacesVisible")) {
+    j.at("isosurfacesVisible").get_to(settings.m_isosurfacesVisible);
+  }
+  if (j.count("applyImageColormapToIsosurfaces")) {
+    j.at("applyImageColormapToIsosurfaces").get_to(settings.m_applyImageColormapToIsosurfaces);
+  }
+  if (j.count("showIsocontoursIn2D")) {
+    j.at("showIsocontoursIn2D").get_to(settings.m_showIsocontoursIn2D);
+  }
+  if (j.count("isocontourLineWidthIn2D")) {
+    j.at("isocontourLineWidthIn2D").get_to(settings.m_isocontourLineWidthIn2D);
+  }
+  if (j.count("isosurfaceOpacityModulator")) {
+    j.at("isosurfaceOpacityModulator").get_to(settings.m_isosurfaceOpacityModulator);
+  }
 }
 
 void to_json(json& j, const serialize::SegSettings& settings)
 {
-  j = json{{"opacity", settings.m_opacity}};
+  j = json{
+    {"displayName", settings.m_displayName},
+    {"visibility", settings.m_visibility},
+    {"opacity", settings.m_opacity},
+    {"activeComponent", settings.m_activeComponent}};
+
+  if (!settings.m_componentVisibility.empty()) {
+    j["componentVisibility"] = settings.m_componentVisibility;
+  }
+  if (!settings.m_componentOpacities.empty()) {
+    j["componentOpacities"] = settings.m_componentOpacities;
+  }
+  if (!settings.m_labelTableIndices.empty()) {
+    j["labelTableIndices"] = settings.m_labelTableIndices;
+  }
+  if (!settings.m_interpolationModes.empty()) {
+    j["interpolationModes"] = interpolationModesToJson(settings.m_interpolationModes);
+  }
 }
 
 void from_json(const json& j, serialize::SegSettings& settings)
 {
+  if (j.count("displayName")) {
+    j.at("displayName").get_to(settings.m_displayName);
+  }
+  if (j.count("visibility")) {
+    j.at("visibility").get_to(settings.m_visibility);
+  }
   if (j.count("opacity")) {
     j.at("opacity").get_to(settings.m_opacity);
+  }
+  if (const auto activeComponent = unsignedIntFromJson(j.value("activeComponent", json{}))) {
+    settings.m_activeComponent = *activeComponent;
+  }
+  if (j.count("componentVisibility")) {
+    j.at("componentVisibility").get_to(settings.m_componentVisibility);
+  }
+  if (j.count("componentOpacities")) {
+    j.at("componentOpacities").get_to(settings.m_componentOpacities);
+  }
+  if (j.count("labelTableIndices")) {
+    j.at("labelTableIndices").get_to(settings.m_labelTableIndices);
+  }
+  if (const auto modes = j.find("interpolationModes"); modes != j.end()) {
+    settings.m_interpolationModes = interpolationModesFromJson(*modes);
   }
 }
 
@@ -537,7 +753,10 @@ void to_json(json& j, const EntropyProject& project)
   if (!project.m_additionalImages.empty()) {
     j["additional"] = project.m_additionalImages;
   }
-  if (!project.m_layouts.empty()) {
+  if (project.m_layoutsFileName) {
+    j["layoutsFile"] = project.m_layoutsFileName->string();
+  }
+  else if (!project.m_layouts.empty()) {
     j["layouts"] = project.m_layouts;
   }
   if (project.m_currentLayoutIndex) {
@@ -552,6 +771,9 @@ void from_json(const json& j, EntropyProject& project)
 
   if (j.count("additional")) {
     j.at("additional").get_to(project.m_additionalImages);
+  }
+  if (j.count("layoutsFile")) {
+    project.m_layoutsFileName = j.at("layoutsFile").get<std::string>();
   }
   if (j.count("layouts")) {
     j.at("layouts").get_to(project.m_layouts);
@@ -615,6 +837,29 @@ serialize::EntropyProject createProjectFromInputParams(const InputParams& params
 
 bool open(EntropyProject& project, const fs::path& fileName)
 {
+  auto makeOptionalPathCanonicalAbsolute =
+    [](std::optional<fs::path>& path, const fs::path& projectBasePath, const char* description) {
+      if (!path) {
+        return;
+      }
+
+      if (path->empty()) {
+        spdlog::warn("Ignoring empty {} path", description);
+        path = std::nullopt;
+        return;
+      }
+
+      fs::path absolutePath = path->is_absolute() ? *path : (projectBasePath / *path).lexically_normal();
+      std::error_code error;
+      if (fs::exists(absolutePath, error)) {
+        absolutePath = fs::canonical(absolutePath);
+      }
+      else {
+        spdlog::warn("Referenced {} {} does not exist", description, absolutePath);
+      }
+      *path = absolutePath;
+    };
+
   // Make all paths in the image absolute:
   auto makeCanonicalAbsolute = [](serialize::Image& image, const fs::path& projectBasePath) {
     const fs::path saveCurrentPath = fs::current_path(); // save current path
@@ -716,6 +961,7 @@ bool open(EntropyProject& project, const fs::path& fileName)
     spdlog::debug("Base path for the project file is {}", projectBasePath);
 
     applyToImagePaths(project, projectBasePath, makeCanonicalAbsolute);
+    makeOptionalPathCanonicalAbsolute(project.m_layoutsFileName, projectBasePath, "layouts file");
 
     const json jAbs = project;
     spdlog::debug("Parsed project JSON (with absolute paths):\n{}", jAbs.dump(2));
@@ -797,6 +1043,10 @@ bool save(const EntropyProject& project, const fs::path& fileName)
 
     projectBasePath = fs::canonical(projectBasePath);
     spdlog::debug("Base path for the project file is {}", projectBasePath);
+
+    if (projectRelative.m_layoutsFileName) {
+      projectRelative.m_layoutsFileName = fs::relative(*projectRelative.m_layoutsFileName, projectBasePath);
+    }
 
     // Make all image paths relative to the project file:
     applyToImagePaths(projectRelative, projectBasePath, makeRelative);

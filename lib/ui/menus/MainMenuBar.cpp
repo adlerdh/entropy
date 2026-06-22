@@ -291,6 +291,15 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     callbacks,
     "Save Initial + Manual Transformation...",
     MainMenuAction::SaveActiveImageInitialAndManualTransformation);
+  ImGui::Separator();
+  if (ImGui::BeginMenu("Isosurfaces", callbacks.canAddImage)) {
+    actionMenuItem(callbacks, "Show Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
+    ImGui::Separator();
+    actionMenuItem(callbacks, "Add...", MainMenuAction::AddIsosurface);
+    actionMenuItem(callbacks, "Add Range...", MainMenuAction::AddIsosurfaceRange);
+    actionMenuItem(callbacks, "Show Isosurfaces", MainMenuAction::ToggleActiveImageIsosurfaces);
+    ImGui::EndMenu();
+  }
 }
 
 void renderSegmentationMenu(const MainMenuBarCallbacks& callbacks)

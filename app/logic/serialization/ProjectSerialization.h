@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/InputParams.h"
+#include "common/Types.h"
 #include "layout/LayoutSpec.h"
 #include <filesystem>
 #include "logic/annotation/Annotation.h"
@@ -49,6 +50,9 @@ enum class ProjectComponentRenderMode : std::uint8_t
 struct ImageSettings
 {
   std::string m_displayName;
+  bool m_globalVisibility = true;            //!< Global image visibility.
+  double m_globalOpacity = 1.0;              //!< Global opacity multiplier.
+  glm::vec3 m_borderColor{1.0f, 0.0f, 1.0f}; //!< Image border RGB color.
 
   double m_level = 0.0f;  //! Window center value in image units
   double m_window = 1.0f; //! Window width in image units
@@ -62,8 +66,21 @@ struct ImageSettings
   ProjectComponentRenderMode m_componentRenderMode =
     ProjectComponentRenderMode::SingleComponent; //!< Multi-component render mode.
   bool m_ignoreAlpha = false;                    //!< Ignore alpha when rendering four-component images as RGBA.
-  std::vector<bool> m_componentVisibility;       //!< Per-component visibility, when present.
-  std::vector<double> m_componentOpacities;      //!< Per-component opacity, when present.
+  InterpolationMode m_colorInterpolationMode = InterpolationMode::Linear; //!< RGB/RGBA interpolation mode.
+  std::vector<double> m_componentLevels;                                  //!< Per-component window centers.
+  std::vector<double> m_componentWindows;                                 //!< Per-component window widths.
+  std::vector<double> m_componentThresholdLows;                           //!< Per-component low thresholds.
+  std::vector<double> m_componentThresholdHighs;                          //!< Per-component high thresholds.
+  std::vector<bool> m_componentVisibility;                                //!< Per-component visibility, when present.
+  std::vector<double> m_componentOpacities;                               //!< Per-component opacity, when present.
+  std::vector<std::size_t> m_colorMapIndices;                             //!< Per-component colormap index.
+  std::vector<bool> m_colorMapInverted;                                   //!< Per-component colormap inversion.
+  std::vector<bool> m_colorMapContinuous;                                 //!< Per-component colormap interpolation.
+  std::vector<std::size_t> m_colorMapLevels;                              //!< Per-component discrete colormap levels.
+  std::vector<glm::vec3> m_colorMapHsvModifiers;                          //!< Per-component HSV colormap modifiers.
+  std::vector<InterpolationMode> m_interpolationModes;                    //!< Per-component scalar interpolation modes.
+  std::vector<double> m_foregroundThresholdLows;  //!< Per-component distance-map foreground low thresholds.
+  std::vector<double> m_foregroundThresholdHighs; //!< Per-component distance-map foreground high thresholds.
 
   ProjectEdgeDetectionMethod m_edgeDetectionMethod = ProjectEdgeDetectionMethod::Voxel; //!< Edge sampling space.
   bool m_showEdges = false;                                                             //!< Show edge rendering.
@@ -77,9 +94,12 @@ struct ImageSettings
   glm::vec3 m_edgeColor{1.0f, 0.0f, 1.0f}; //!< Solid edge RGB color.
   double m_edgeOpacity = 1.0;              //!< Solid edge opacity.
 
-  /**
-   * @todo Add isosurfaces
-   */
+  bool m_useDistanceMapForRaycasting = true;      //!< Use distance maps for image raycasting.
+  bool m_isosurfacesVisible = true;               //!< Show image isosurfaces.
+  bool m_applyImageColormapToIsosurfaces = false; //!< Color isosurfaces with the image colormap.
+  bool m_showIsocontoursIn2D = true;              //!< Show 2D isocontours.
+  double m_isocontourLineWidthIn2D = 2.0;         //!< 2D isocontour line width.
+  float m_isosurfaceOpacityModulator = 1.0f;      //!< Isosurface opacity multiplier.
 };
 
 /**
@@ -87,12 +107,14 @@ struct ImageSettings
  */
 struct SegSettings
 {
+  std::string m_displayName;
+  bool m_visibility = true;
   double m_opacity = 1.0f;
-
-  /**
-   * @todo Add rest of the segmentation options, e.g.
-   * visibility, color label table, etc.
-   */
+  uint32_t m_activeComponent = 0;
+  std::vector<bool> m_componentVisibility;
+  std::vector<double> m_componentOpacities;
+  std::vector<std::size_t> m_labelTableIndices;
+  std::vector<InterpolationMode> m_interpolationModes;
 };
 
 /**
@@ -214,6 +236,7 @@ struct EntropyProject
 {
   serialize::Image m_referenceImage;
   std::vector<serialize::Image> m_additionalImages;
+  std::optional<std::filesystem::path> m_layoutsFileName = std::nullopt;
   std::vector<layout::LayoutSpec> m_layouts;
   std::optional<std::size_t> m_currentLayoutIndex = std::nullopt;
   ProjectInterfaceSettings m_interface;

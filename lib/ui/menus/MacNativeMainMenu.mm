@@ -320,6 +320,16 @@ void addImageMenu(NSMenu* mainMenu) {
     menu,
     @"Save Initial + Manual Transformation...",
     MainMenuAction::SaveActiveImageInitialAndManualTransformation);
+  [menu addItem:[NSMenuItem separatorItem]];
+  NSMenuItem* isosurfacesItem = [[NSMenuItem alloc] initWithTitle:@"Isosurfaces" action:nil keyEquivalent:@""];
+  NSMenu* isosurfacesMenu = [[NSMenu alloc] initWithTitle:@"Isosurfaces"];
+  addActionMenuItem(isosurfacesMenu, @"Show Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
+  [isosurfacesMenu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(isosurfacesMenu, @"Add...", MainMenuAction::AddIsosurface);
+  addActionMenuItem(isosurfacesMenu, @"Add Range...", MainMenuAction::AddIsosurfaceRange);
+  addActionMenuItem(isosurfacesMenu, @"Show Isosurfaces", MainMenuAction::ToggleActiveImageIsosurfaces);
+  [isosurfacesItem setSubmenu:isosurfacesMenu];
+  [menu addItem:isosurfacesItem];
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }

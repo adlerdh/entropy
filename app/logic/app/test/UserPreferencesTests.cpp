@@ -81,6 +81,8 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.xrayEnergyKeV = 120.0f;
   preferences.xrayWindow = 0.35f;
   preferences.xrayLevel = 0.65f;
+  preferences.isocontourFloatingPointInterpolation = true;
+  preferences.modulateIsocontourOpacityWithImageOpacity = false;
   preferences.modulateSegmentationOpacityWithImageOpacity = false;
   preferences.segmentationOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
   preferences.segmentationInteriorOpacity = 0.73f;
@@ -206,6 +208,8 @@ void requireRenderPreferencesEqual(
   CHECK(actual.xrayEnergyKeV == Catch::Approx(expected.xrayEnergyKeV));
   CHECK(actual.xrayWindow == Catch::Approx(expected.xrayWindow));
   CHECK(actual.xrayLevel == Catch::Approx(expected.xrayLevel));
+  CHECK(actual.isocontourFloatingPointInterpolation == expected.isocontourFloatingPointInterpolation);
+  CHECK(actual.modulateIsocontourOpacityWithImageOpacity == expected.modulateIsocontourOpacityWithImageOpacity);
   CHECK(actual.modulateSegmentationOpacityWithImageOpacity == expected.modulateSegmentationOpacityWithImageOpacity);
   CHECK(actual.segmentationOutlineStyle == expected.segmentationOutlineStyle);
   CHECK(actual.segmentationInteriorOpacity == Catch::Approx(expected.segmentationInteriorOpacity));
@@ -462,6 +466,8 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("views").at("lightbox").at("showOffsetLabels") == true);
   CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("presentation") == "dissimilarity");
   CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("patchRadius") == 3);
+  CHECK(root.at("rendering").at("isosurfaces").at("floatingPointInterpolation") == false);
+  CHECK(root.at("rendering").at("isosurfaces").at("modulateOpacityWithImage") == true);
   CHECK(root.at("segmentation").at("brushPreview").at("mode") == "hover");
   CHECK(root.at("synchronization").at("itkSnap").at("enabled") == false);
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);

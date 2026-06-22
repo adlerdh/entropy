@@ -1670,12 +1670,8 @@ void renderRaycastingTab(RenderData& renderData)
   static constexpr float k_minFactor = 0.1f;
   static constexpr float k_maxFactor = 5.0f;
 
-  ImGui::Text("Raycasting sampling rate:");
-  ImGui::SameLine();
-  helpMarker("Sampling rate as a fraction of the voxel size along the ray path");
-
   if (ImGui::DragFloat(
-        "##SamplingRate",
+        "Raycast sampling rate",
         &(renderData.m_raycastSamplingFactor),
         k_factorStep,
         k_minFactor,
@@ -1685,6 +1681,8 @@ void renderRaycastingTab(RenderData& renderData)
   {
     // Update uniforms if m_raycastSamplingFactor gets added to uniforms
   }
+  ImGui::SameLine();
+  helpMarker("Sampling rate as a fraction of the voxel size along the ray path");
 
   ImGui::Spacing();
   ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -1709,26 +1707,21 @@ void renderRaycastingTab(RenderData& renderData)
 
   ImGui::Text("Masking behavior:");
 
-  ImGui::SameLine();
-  helpMarker("Mask image based on segmentation value");
-
   if (ImGui::RadioButton("Disable", RenderData::SegMaskingForRaycasting::Disabled == renderData.m_segMasking)) {
     renderData.m_segMasking = RenderData::SegMaskingForRaycasting::Disabled;
   }
-  ImGui::SameLine();
-  helpMarker("Segmentation masking disabled");
 
+  ImGui::SameLine();
   if (ImGui::RadioButton("Mask in", RenderData::SegMaskingForRaycasting::SegMasksIn == renderData.m_segMasking)) {
     renderData.m_segMasking = RenderData::SegMaskingForRaycasting::SegMasksIn;
   }
-  ImGui::SameLine();
-  helpMarker("Segmentation masks image in");
 
+  ImGui::SameLine();
   if (ImGui::RadioButton("Mask out", RenderData::SegMaskingForRaycasting::SegMasksOut == renderData.m_segMasking)) {
     renderData.m_segMasking = RenderData::SegMaskingForRaycasting::SegMasksOut;
   }
   ImGui::SameLine();
-  helpMarker("Segmentation masks image out");
+  helpMarker("Mask image based on segmentation value");
 
   ImGui::PopID(); /*** PopID raycasting ***/
 }
@@ -1740,76 +1733,86 @@ void renderRenderingTab(RenderData& renderData)
 {
   RenderData& rd = renderData;
 
-  ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
-  ImGui::SameLine();
-  helpMarker("Manually limit the rendering frame rate");
+  const bool frameRateOpen = ImGui::CollapsingHeader("Frame Rate", ImGuiTreeNodeFlags_DefaultOpen);
+  if (frameRateOpen) {
+    ImGui::Checkbox("Limit frame rate", &(renderData.m_manualFramerateLimiter));
+    ImGui::SameLine();
+    helpMarker("Manually limit the rendering frame rate");
 
-  if (renderData.m_manualFramerateLimiter) {
-    constexpr float hzSpeed = 1.0e-1f;
-    constexpr double hzMin = 1.0;
-    constexpr double hzMax = 240.0;
+    if (renderData.m_manualFramerateLimiter) {
+      constexpr float hzSpeed = 1.0e-1f;
+      constexpr double hzMin = 1.0;
+      constexpr double hzMax = 240.0;
 
-    constexpr float secSpeed = 1.0e-4f;
-    constexpr double secMin = 1.0 / hzMax;
-    constexpr double secMax = 1.0 / hzMin;
+      constexpr float secSpeed = 1.0e-4f;
+      constexpr double secMin = 1.0 / hzMax;
+      constexpr double secMax = 1.0 / hzMin;
 
-    double hz = 1.0 / renderData.m_targetFrameTimeSeconds;
-    if (ImGui::DragScalar(
-          "Hz",
-          ImGuiDataType_Double,
-          &hz,
-          hzSpeed,
-          &hzMin,
-          &hzMax,
-          "%.1f",
-          ImGuiSliderFlags_ClampOnInput))
-    {
-      renderData.m_targetFrameTimeSeconds = 1.0 / hz;
-    }
+      double hz = 1.0 / renderData.m_targetFrameTimeSeconds;
+      if (ImGui::DragScalar(
+            "Frame rate",
+            ImGuiDataType_Double,
+            &hz,
+            hzSpeed,
+            &hzMin,
+            &hzMax,
+            "%.1f Hz",
+            ImGuiSliderFlags_ClampOnInput))
+      {
+        renderData.m_targetFrameTimeSeconds = 1.0 / hz;
+      }
 
-    double sec = renderData.m_targetFrameTimeSeconds;
-    if (ImGui::DragScalar(
-          "sec",
-          ImGuiDataType_Double,
-          &sec,
-          secSpeed,
-          &secMin,
-          &secMax,
-          "%.4f",
-          ImGuiSliderFlags_ClampOnInput))
-    {
-      renderData.m_targetFrameTimeSeconds = sec;
+      double sec = renderData.m_targetFrameTimeSeconds;
+      if (ImGui::DragScalar(
+            "Frame period",
+            ImGuiDataType_Double,
+            &sec,
+            secSpeed,
+            &secMin,
+            &secMax,
+            "%.4f sec",
+            ImGuiSliderFlags_ClampOnInput))
+      {
+        renderData.m_targetFrameTimeSeconds = sec;
+      }
     }
   }
-
-  ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
-  ImGui::SameLine();
-  helpMarker("Render grayscale images as ASCII art");
-
-  ImGui::Spacing();
-  ImGui::Separator();
-  ImGui::Spacing();
+  finishSettingsSection(frameRateOpen);
 
   const bool raycastingOpen = ImGui::CollapsingHeader("Raycasting", ImGuiTreeNodeFlags_DefaultOpen);
   if (raycastingOpen) {
     renderRaycastingTab(renderData);
   }
-  if (rd.m_asciiEnabled) {
-    finishSettingsSection(raycastingOpen);
-  }
+  finishSettingsSection(raycastingOpen);
 
-  // ASCII rendering controls
-  if (rd.m_asciiEnabled && ImGui::CollapsingHeader("ASCII Shading", ImGuiTreeNodeFlags_DefaultOpen)) {
+  const bool isosurfacesOpen = ImGui::CollapsingHeader("Isosurfaces", ImGuiTreeNodeFlags_DefaultOpen);
+  if (isosurfacesOpen) {
+    ImGui::Checkbox("Floating-point interpolation", &rd.m_isocontourFloatingPointInterpolation);
+    ImGui::SameLine();
+    helpMarker("Use floating-point instead of 8-bit fixed-point linear image interpolation for isocontours");
+
+    ImGui::Checkbox("Modulate opacity with image", &rd.m_modulateIsocontourOpacityWithImageOpacity);
+    ImGui::SameLine();
+    helpMarker("Modulate isocontour opacity with image opacity");
+  }
+  finishSettingsSection(isosurfacesOpen);
+
+  const bool asciiOpen = ImGui::CollapsingHeader("ASCII Shading", ImGuiTreeNodeFlags_DefaultOpen);
+  if (asciiOpen) {
     ImGui::PushID("ascii");
+
+    ImGui::Checkbox("Enable ASCII shading", &rd.m_asciiEnabled);
+    ImGui::SameLine();
+    helpMarker("Render grayscale images as ASCII art");
 
     if (rd.m_asciiEnabled) {
       static const char* charsetNames[] = {" .,:-=+*#%@  (short)", "Paul Bourke 70-char", "01 (binary)"};
-      if (ImGui::Combo("Charset", &rd.m_asciiCharsetIndex, charsetNames, IM_ARRAYSIZE(charsetNames))) {
+      if (ImGui::Combo("Character set", &rd.m_asciiCharsetIndex, charsetNames, IM_ARRAYSIZE(charsetNames))) {
         // Signal that the atlas needs to be rebuilt — caller checks this flag
         rd.m_asciiAtlasNeedsRebuild = true;
       }
 
-      ImGui::SliderFloat("Cell size (px)", &rd.m_asciiCellSizePx.y, 4.f, 64.f, "%.0f");
+      ImGui::SliderFloat("Cell size", &rd.m_asciiCellSizePx.y, 4.f, 64.f, "%.0f px");
 
       ImGui::Checkbox("Use colormap as foreground", &rd.m_asciiUseColormap);
       ImGui::SameLine();
@@ -1830,6 +1833,7 @@ void renderRenderingTab(RenderData& renderData)
 
     ImGui::PopID(); /*** PopID ascii ***/
   }
+  finishSettingsSection(asciiOpen);
 }
 
 /**

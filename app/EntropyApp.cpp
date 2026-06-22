@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <string>
 
@@ -82,6 +83,107 @@ std::vector<fs::path> nonEmptyPaths(const std::vector<fs::path>& fileNames)
   }
 
   return paths;
+}
+
+std::optional<std::uintmax_t> fileSizeBytes(const fs::path& fileName)
+{
+  std::error_code error;
+  const std::uintmax_t bytes = fs::file_size(fileName, error);
+  if (error) {
+    return std::nullopt;
+  }
+  return bytes;
+}
+
+std::optional<std::uintmax_t> totalFileSizeBytes(const std::vector<fs::path>& fileNames)
+{
+  std::uintmax_t total = 0;
+  bool anyKnownSize = false;
+  for (const auto& fileName : fileNames) {
+    if (const auto bytes = fileSizeBytes(fileName)) {
+      total += *bytes;
+      anyKnownSize = true;
+    }
+  }
+  return anyKnownSize ? std::optional<std::uintmax_t>{total} : std::nullopt;
+}
+
+GuiData::LoadingStatusItem imageLoadingItem(
+  const fs::path& fileName,
+  std::optional<std::uintmax_t> bytes = std::nullopt)
+{
+  return GuiData::LoadingStatusItem{
+    GuiData::LoadingStatusItem::Kind::Image,
+    fileName,
+    bytes ? bytes : fileSizeBytes(fileName),
+    false};
+}
+
+GuiData::LoadingStatusItem segmentationLoadingItem(const fs::path& fileName)
+{
+  return GuiData::LoadingStatusItem{
+    GuiData::LoadingStatusItem::Kind::Segmentation,
+    fileName,
+    fileSizeBytes(fileName),
+    false};
+}
+
+void appendSerializedImageLoadingItems(std::vector<GuiData::LoadingStatusItem>& items, const serialize::Image& image)
+{
+  items.push_back(imageLoadingItem(image.m_imageFileName));
+  for (const auto& seg : image.m_segmentations) {
+    items.push_back(segmentationLoadingItem(seg.m_segFileName));
+  }
+}
+
+std::vector<GuiData::LoadingStatusItem> loadingItemsForProject(const serialize::EntropyProject& project)
+{
+  std::vector<GuiData::LoadingStatusItem> items;
+  items.reserve(1 + project.m_additionalImages.size());
+  appendSerializedImageLoadingItems(items, project.m_referenceImage);
+  for (const auto& image : project.m_additionalImages) {
+    appendSerializedImageLoadingItems(items, image);
+  }
+  return items;
+}
+
+std::vector<GuiData::LoadingStatusItem> imageLoadingItems(const std::vector<fs::path>& fileNames)
+{
+  std::vector<GuiData::LoadingStatusItem> items;
+  items.reserve(fileNames.size());
+  for (const auto& fileName : fileNames) {
+    items.push_back(imageLoadingItem(fileName));
+  }
+  return items;
+}
+
+std::vector<GuiData::LoadingStatusItem> dicomSeriesLoadingItems(const std::vector<dicom::SeriesInfo>& series)
+{
+  std::vector<GuiData::LoadingStatusItem> items;
+  items.reserve(series.size());
+  for (const auto& seriesInfo : series) {
+    items.push_back(imageLoadingItem(
+      seriesInfo.files.empty() ? fs::path{seriesInfo.seriesInstanceUid} : seriesInfo.files.front(),
+      totalFileSizeBytes(seriesInfo.files)));
+  }
+  return items;
+}
+
+bool equivalentLoadingPath(const fs::path& a, const fs::path& b)
+{
+  if (a == b) {
+    return true;
+  }
+
+  std::error_code aError;
+  std::error_code bError;
+  const fs::path canonicalA = fs::weakly_canonical(a, aError);
+  const fs::path canonicalB = fs::weakly_canonical(b, bError);
+  if (!aError && !bError && canonicalA == canonicalB) {
+    return true;
+  }
+
+  return !a.filename().empty() && a.filename() == b.filename();
 }
 
 GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement)
@@ -329,6 +431,9 @@ serialize::ImageSettings makeImageSettingsSnapshot(const Image& image)
 
   serialize::ImageSettings settings;
   settings.m_displayName = imageSettings.displayName();
+  settings.m_globalVisibility = imageSettings.globalVisibility();
+  settings.m_globalOpacity = imageSettings.globalOpacity();
+  settings.m_borderColor = imageSettings.borderColor();
   settings.m_level = imageSettings.windowCenter();
   settings.m_window = imageSettings.windowWidth();
   settings.m_thresholdLow = thresholds.first;
@@ -337,11 +442,38 @@ serialize::ImageSettings makeImageSettingsSnapshot(const Image& image)
   settings.m_activeComponent = imageSettings.activeComponent();
   settings.m_componentRenderMode = toProjectComponentRenderMode(imageSettings.componentRenderMode());
   settings.m_ignoreAlpha = imageSettings.ignoreAlpha();
+  settings.m_colorInterpolationMode = imageSettings.colorInterpolationMode();
+  settings.m_componentLevels.reserve(imageSettings.numComponents());
+  settings.m_componentWindows.reserve(imageSettings.numComponents());
+  settings.m_componentThresholdLows.reserve(imageSettings.numComponents());
+  settings.m_componentThresholdHighs.reserve(imageSettings.numComponents());
   settings.m_componentVisibility.reserve(imageSettings.numComponents());
   settings.m_componentOpacities.reserve(imageSettings.numComponents());
+  settings.m_colorMapIndices.reserve(imageSettings.numComponents());
+  settings.m_colorMapInverted.reserve(imageSettings.numComponents());
+  settings.m_colorMapContinuous.reserve(imageSettings.numComponents());
+  settings.m_colorMapLevels.reserve(imageSettings.numComponents());
+  settings.m_colorMapHsvModifiers.reserve(imageSettings.numComponents());
+  settings.m_interpolationModes.reserve(imageSettings.numComponents());
+  settings.m_foregroundThresholdLows.reserve(imageSettings.numComponents());
+  settings.m_foregroundThresholdHighs.reserve(imageSettings.numComponents());
   for (uint32_t component = 0; component < imageSettings.numComponents(); ++component) {
+    const auto componentThresholds = imageSettings.thresholds(component);
+    const auto foregroundThresholds = imageSettings.foregroundThresholds(component);
+    settings.m_componentLevels.push_back(imageSettings.windowCenter(component));
+    settings.m_componentWindows.push_back(imageSettings.windowWidth(component));
+    settings.m_componentThresholdLows.push_back(componentThresholds.first);
+    settings.m_componentThresholdHighs.push_back(componentThresholds.second);
     settings.m_componentVisibility.push_back(imageSettings.visibility(component));
     settings.m_componentOpacities.push_back(imageSettings.opacity(component));
+    settings.m_colorMapIndices.push_back(imageSettings.colorMapIndex(component));
+    settings.m_colorMapInverted.push_back(imageSettings.isColorMapInverted(component));
+    settings.m_colorMapContinuous.push_back(imageSettings.colorMapContinuous(component));
+    settings.m_colorMapLevels.push_back(imageSettings.colorMapQuantizationLevels(component));
+    settings.m_colorMapHsvModifiers.push_back(imageSettings.colorMapHsvModFactors(component));
+    settings.m_interpolationModes.push_back(imageSettings.interpolationMode(component));
+    settings.m_foregroundThresholdLows.push_back(foregroundThresholds.first);
+    settings.m_foregroundThresholdHighs.push_back(foregroundThresholds.second);
   }
   settings.m_edgeDetectionMethod = EdgeDetectionMethod::Pixel == imageSettings.edgeDetectionMethod()
                                      ? serialize::ProjectEdgeDetectionMethod::Pixel
@@ -361,13 +493,33 @@ serialize::ImageSettings makeImageSettingsSnapshot(const Image& image)
   settings.m_pixelEdgeThreshold = imageSettings.pixelEdgeThreshold();
   settings.m_edgeColor = imageSettings.edgeColor();
   settings.m_edgeOpacity = imageSettings.edgeOpacity();
+  settings.m_useDistanceMapForRaycasting = imageSettings.useDistanceMapForRaycasting();
+  settings.m_isosurfacesVisible = imageSettings.isosurfacesVisible();
+  settings.m_applyImageColormapToIsosurfaces = imageSettings.applyImageColormapToIsosurfaces();
+  settings.m_showIsocontoursIn2D = imageSettings.showIsocontoursIn2D();
+  settings.m_isocontourLineWidthIn2D = imageSettings.isoContourLineWidthIn2D();
+  settings.m_isosurfaceOpacityModulator = imageSettings.isosurfaceOpacityModulator();
   return settings;
 }
 
 serialize::SegSettings makeSegSettingsSnapshot(const Image& seg)
 {
   serialize::SegSettings settings;
+  const ImageSettings& segSettings = seg.settings();
+  settings.m_displayName = segSettings.displayName();
+  settings.m_visibility = segSettings.visibility();
   settings.m_opacity = seg.settings().opacity();
+  settings.m_activeComponent = segSettings.activeComponent();
+  settings.m_componentVisibility.reserve(segSettings.numComponents());
+  settings.m_componentOpacities.reserve(segSettings.numComponents());
+  settings.m_labelTableIndices.reserve(segSettings.numComponents());
+  settings.m_interpolationModes.reserve(segSettings.numComponents());
+  for (uint32_t component = 0; component < segSettings.numComponents(); ++component) {
+    settings.m_componentVisibility.push_back(segSettings.visibility(component));
+    settings.m_componentOpacities.push_back(segSettings.opacity(component));
+    settings.m_labelTableIndices.push_back(segSettings.labelTableIndex(component));
+    settings.m_interpolationModes.push_back(segSettings.interpolationMode(component));
+  }
   return settings;
 }
 
@@ -378,6 +530,9 @@ void applyImageSettingsSnapshot(Image& image, const serialize::ImageSettings& se
     imageSettings.setDisplayName(settings.m_displayName);
   }
 
+  imageSettings.setGlobalVisibility(settings.m_globalVisibility);
+  imageSettings.setGlobalOpacity(settings.m_globalOpacity);
+  imageSettings.setBorderColor(settings.m_borderColor);
   if (settings.m_activeComponent < imageSettings.numComponents()) {
     imageSettings.setActiveComponent(settings.m_activeComponent);
   }
@@ -390,6 +545,27 @@ void applyImageSettingsSnapshot(Image& image, const serialize::ImageSettings& se
   imageSettings.setComponentRenderMode(
     componentModeIsValidForImage(componentMode, image) ? componentMode : ComponentRenderMode::SingleComponent);
   imageSettings.setIgnoreAlpha(settings.m_ignoreAlpha);
+  imageSettings.setColorInterpolationMode(settings.m_colorInterpolationMode);
+  const std::size_t numLevelComponents =
+    std::min<std::size_t>(settings.m_componentLevels.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numLevelComponents; ++component) {
+    imageSettings.setWindowCenter(static_cast<uint32_t>(component), settings.m_componentLevels.at(component));
+  }
+  const std::size_t numWindowComponents =
+    std::min<std::size_t>(settings.m_componentWindows.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numWindowComponents; ++component) {
+    imageSettings.setWindowWidth(static_cast<uint32_t>(component), settings.m_componentWindows.at(component));
+  }
+  const std::size_t numThresholdLowComponents =
+    std::min<std::size_t>(settings.m_componentThresholdLows.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numThresholdLowComponents; ++component) {
+    imageSettings.setThresholdLow(static_cast<uint32_t>(component), settings.m_componentThresholdLows.at(component));
+  }
+  const std::size_t numThresholdHighComponents =
+    std::min<std::size_t>(settings.m_componentThresholdHighs.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numThresholdHighComponents; ++component) {
+    imageSettings.setThresholdHigh(static_cast<uint32_t>(component), settings.m_componentThresholdHighs.at(component));
+  }
   const std::size_t numVisibilityComponents =
     std::min<std::size_t>(settings.m_componentVisibility.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numVisibilityComponents; ++component) {
@@ -399,6 +575,54 @@ void applyImageSettingsSnapshot(Image& image, const serialize::ImageSettings& se
     std::min<std::size_t>(settings.m_componentOpacities.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numOpacityComponents; ++component) {
     imageSettings.setOpacity(static_cast<uint32_t>(component), settings.m_componentOpacities.at(component));
+  }
+  const std::size_t numColorMapComponents =
+    std::min<std::size_t>(settings.m_colorMapIndices.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numColorMapComponents; ++component) {
+    imageSettings.setColorMapIndex(static_cast<uint32_t>(component), settings.m_colorMapIndices.at(component));
+  }
+  const std::size_t numColorMapInvertedComponents =
+    std::min<std::size_t>(settings.m_colorMapInverted.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numColorMapInvertedComponents; ++component) {
+    imageSettings.setColorMapInverted(static_cast<uint32_t>(component), settings.m_colorMapInverted.at(component));
+  }
+  const std::size_t numColorMapContinuousComponents =
+    std::min<std::size_t>(settings.m_colorMapContinuous.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numColorMapContinuousComponents; ++component) {
+    imageSettings.setColorMapContinuous(static_cast<uint32_t>(component), settings.m_colorMapContinuous.at(component));
+  }
+  const std::size_t numColorMapLevelComponents =
+    std::min<std::size_t>(settings.m_colorMapLevels.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numColorMapLevelComponents; ++component) {
+    imageSettings.setColorMapQuantization(
+      static_cast<uint32_t>(component),
+      static_cast<uint32_t>(settings.m_colorMapLevels.at(component)));
+  }
+  const std::size_t numColorMapHsvComponents =
+    std::min<std::size_t>(settings.m_colorMapHsvModifiers.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numColorMapHsvComponents; ++component) {
+    imageSettings.setColormapHsvModfactors(
+      static_cast<uint32_t>(component),
+      settings.m_colorMapHsvModifiers.at(component));
+  }
+  const std::size_t numInterpolationComponents =
+    std::min<std::size_t>(settings.m_interpolationModes.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numInterpolationComponents; ++component) {
+    imageSettings.setInterpolationMode(static_cast<uint32_t>(component), settings.m_interpolationModes.at(component));
+  }
+  const std::size_t numForegroundLowComponents =
+    std::min<std::size_t>(settings.m_foregroundThresholdLows.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numForegroundLowComponents; ++component) {
+    imageSettings.setForegroundThresholdLow(
+      static_cast<uint32_t>(component),
+      settings.m_foregroundThresholdLows.at(component));
+  }
+  const std::size_t numForegroundHighComponents =
+    std::min<std::size_t>(settings.m_foregroundThresholdHighs.size(), imageSettings.numComponents());
+  for (std::size_t component = 0; component < numForegroundHighComponents; ++component) {
+    imageSettings.setForegroundThresholdHigh(
+      static_cast<uint32_t>(component),
+      settings.m_foregroundThresholdHighs.at(component));
   }
   imageSettings.setEdgeDetectionMethod(
     serialize::ProjectEdgeDetectionMethod::Pixel == settings.m_edgeDetectionMethod ? EdgeDetectionMethod::Pixel
@@ -416,11 +640,45 @@ void applyImageSettingsSnapshot(Image& image, const serialize::ImageSettings& se
   imageSettings.setPixelEdgeThreshold(settings.m_pixelEdgeThreshold);
   imageSettings.setEdgeColor(settings.m_edgeColor);
   imageSettings.setEdgeOpacity(settings.m_edgeOpacity);
+  imageSettings.setUseDistanceMapForRaycasting(settings.m_useDistanceMapForRaycasting);
+  imageSettings.setIsosurfacesVisible(settings.m_isosurfacesVisible);
+  imageSettings.setApplyImageColormapToIsosurfaces(settings.m_applyImageColormapToIsosurfaces);
+  imageSettings.setShowIsoscontoursIn2D(settings.m_showIsocontoursIn2D);
+  imageSettings.setIsosurfaceWidthIn2d(settings.m_isocontourLineWidthIn2D);
+  imageSettings.setIsosurfaceOpacityModulator(settings.m_isosurfaceOpacityModulator);
 }
 
 void applySegSettingsSnapshot(Image& seg, const serialize::SegSettings& settings)
 {
-  seg.settings().setOpacity(settings.m_opacity);
+  ImageSettings& segSettings = seg.settings();
+  if (!settings.m_displayName.empty()) {
+    segSettings.setDisplayName(settings.m_displayName);
+  }
+  segSettings.setVisibility(settings.m_visibility);
+  segSettings.setOpacity(settings.m_opacity);
+  if (settings.m_activeComponent < segSettings.numComponents()) {
+    segSettings.setActiveComponent(settings.m_activeComponent);
+  }
+  const std::size_t numVisibilityComponents =
+    std::min<std::size_t>(settings.m_componentVisibility.size(), segSettings.numComponents());
+  for (std::size_t component = 0; component < numVisibilityComponents; ++component) {
+    segSettings.setVisibility(static_cast<uint32_t>(component), settings.m_componentVisibility.at(component));
+  }
+  const std::size_t numOpacityComponents =
+    std::min<std::size_t>(settings.m_componentOpacities.size(), segSettings.numComponents());
+  for (std::size_t component = 0; component < numOpacityComponents; ++component) {
+    segSettings.setOpacity(static_cast<uint32_t>(component), settings.m_componentOpacities.at(component));
+  }
+  const std::size_t numLabelTableComponents =
+    std::min<std::size_t>(settings.m_labelTableIndices.size(), segSettings.numComponents());
+  for (std::size_t component = 0; component < numLabelTableComponents; ++component) {
+    segSettings.setLabelTableIndex(static_cast<uint32_t>(component), settings.m_labelTableIndices.at(component));
+  }
+  const std::size_t numInterpolationComponents =
+    std::min<std::size_t>(settings.m_interpolationModes.size(), segSettings.numComponents());
+  for (std::size_t component = 0; component < numInterpolationComponents; ++component) {
+    segSettings.setInterpolationMode(static_cast<uint32_t>(component), settings.m_interpolationModes.at(component));
+  }
 }
 
 fs::path projectSavePath(fs::path fileName)
@@ -429,6 +687,22 @@ fs::path projectSavePath(fs::path fileName)
     fileName += ".json";
   }
   return fileName;
+}
+
+fs::path resolvePathAgainstBase(const fs::path& path, const fs::path& basePath)
+{
+  if (path.is_absolute()) {
+    return path;
+  }
+  return (basePath / path).lexically_normal();
+}
+
+bool saveCurrentLayoutsForProject(AppData& appData, const fs::path& layoutsFileName)
+{
+  layout::LayoutFile layoutFile{
+    .m_currentLayoutIndex = appData.windowData().currentLayoutIndex(),
+    .m_layouts = appData.windowData().createLayoutPresets(appData.imageUidsOrdered())};
+  return layout::save(layoutFile, layoutsFileName);
 }
 
 constexpr uint64_t LargeImageWarningBytes = 2ull * 1024ull * 1024ull * 1024ull;
@@ -480,17 +754,32 @@ bool imageSettingsEqual(
     return true;
   }
 
-  return a->m_displayName == b->m_displayName && a->m_level == b->m_level && a->m_window == b->m_window &&
-         a->m_thresholdLow == b->m_thresholdLow && a->m_thresholdHigh == b->m_thresholdHigh &&
-         a->m_opacity == b->m_opacity && a->m_activeComponent == b->m_activeComponent &&
-         a->m_componentRenderMode == b->m_componentRenderMode && a->m_ignoreAlpha == b->m_ignoreAlpha &&
+  return a->m_displayName == b->m_displayName && a->m_globalVisibility == b->m_globalVisibility &&
+         a->m_globalOpacity == b->m_globalOpacity && a->m_borderColor == b->m_borderColor && a->m_level == b->m_level &&
+         a->m_window == b->m_window && a->m_thresholdLow == b->m_thresholdLow &&
+         a->m_thresholdHigh == b->m_thresholdHigh && a->m_opacity == b->m_opacity &&
+         a->m_activeComponent == b->m_activeComponent && a->m_componentRenderMode == b->m_componentRenderMode &&
+         a->m_ignoreAlpha == b->m_ignoreAlpha && a->m_colorInterpolationMode == b->m_colorInterpolationMode &&
+         a->m_componentLevels == b->m_componentLevels && a->m_componentWindows == b->m_componentWindows &&
+         a->m_componentThresholdLows == b->m_componentThresholdLows &&
+         a->m_componentThresholdHighs == b->m_componentThresholdHighs &&
          a->m_componentVisibility == b->m_componentVisibility && a->m_componentOpacities == b->m_componentOpacities &&
+         a->m_colorMapIndices == b->m_colorMapIndices && a->m_colorMapInverted == b->m_colorMapInverted &&
+         a->m_colorMapContinuous == b->m_colorMapContinuous && a->m_colorMapLevels == b->m_colorMapLevels &&
+         a->m_colorMapHsvModifiers == b->m_colorMapHsvModifiers && a->m_interpolationModes == b->m_interpolationModes &&
+         a->m_foregroundThresholdLows == b->m_foregroundThresholdLows &&
+         a->m_foregroundThresholdHighs == b->m_foregroundThresholdHighs &&
          a->m_edgeDetectionMethod == b->m_edgeDetectionMethod && a->m_showEdges == b->m_showEdges &&
          a->m_thresholdEdges == b->m_thresholdEdges && a->m_thinPixelEdges == b->m_thinPixelEdges &&
          a->m_overlayEdges == b->m_overlayEdges && a->m_colormapEdges == b->m_colormapEdges &&
          a->m_edgeMagnitude == b->m_edgeMagnitude && a->m_pixelEdgeScale == b->m_pixelEdgeScale &&
          a->m_pixelEdgeThreshold == b->m_pixelEdgeThreshold && a->m_edgeColor == b->m_edgeColor &&
-         a->m_edgeOpacity == b->m_edgeOpacity;
+         a->m_edgeOpacity == b->m_edgeOpacity && a->m_useDistanceMapForRaycasting == b->m_useDistanceMapForRaycasting &&
+         a->m_isosurfacesVisible == b->m_isosurfacesVisible &&
+         a->m_applyImageColormapToIsosurfaces == b->m_applyImageColormapToIsosurfaces &&
+         a->m_showIsocontoursIn2D == b->m_showIsocontoursIn2D &&
+         a->m_isocontourLineWidthIn2D == b->m_isocontourLineWidthIn2D &&
+         a->m_isosurfaceOpacityModulator == b->m_isosurfaceOpacityModulator;
 }
 
 bool segSettingsEqual(const std::optional<serialize::SegSettings>& a, const std::optional<serialize::SegSettings>& b)
@@ -498,7 +787,11 @@ bool segSettingsEqual(const std::optional<serialize::SegSettings>& a, const std:
   if (a.has_value() != b.has_value()) {
     return false;
   }
-  return !a || a->m_opacity == b->m_opacity;
+  return !a ||
+         (a->m_displayName == b->m_displayName && a->m_visibility == b->m_visibility && a->m_opacity == b->m_opacity &&
+          a->m_activeComponent == b->m_activeComponent && a->m_componentVisibility == b->m_componentVisibility &&
+          a->m_componentOpacities == b->m_componentOpacities && a->m_labelTableIndices == b->m_labelTableIndices &&
+          a->m_interpolationModes == b->m_interpolationModes);
 }
 
 bool matricesEqual(const std::optional<glm::mat4>& a, const std::optional<glm::mat4>& b)
@@ -600,7 +893,7 @@ bool projectInterfaceSettingsEqual(
 
 bool projectsEqual(const serialize::EntropyProject& a, const serialize::EntropyProject& b)
 {
-  return imagesEqual(a.m_referenceImage, b.m_referenceImage) &&
+  return imagesEqual(a.m_referenceImage, b.m_referenceImage) && a.m_layoutsFileName == b.m_layoutsFileName &&
          vectorsEqual(a.m_additionalImages, b.m_additionalImages, imagesEqual) &&
          vectorsEqual(a.m_layouts, b.m_layouts, projectLayoutsEqual) &&
          a.m_currentLayoutIndex == b.m_currentLayoutIndex &&
@@ -790,7 +1083,27 @@ void EntropyApp::onImagesReady()
     m_data.windowData().reconcileImageDependentLayouts(m_data, dicomNativeViewTypesByImage());
     m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data);
 
-    if (!m_data.project().m_layouts.empty()) {
+    if (m_data.project().m_layoutsFileName) {
+      layout::LayoutFile layoutFile;
+      if (layout::open(layoutFile, *m_data.project().m_layoutsFileName)) {
+        if (layoutFile.m_layouts.empty()) {
+          spdlog::warn(
+            "Referenced layout file {} contains no layouts; using a Three-up layout",
+            *m_data.project().m_layoutsFileName);
+        }
+        if (!m_data.windowData().applyLayoutPresets(m_data, layoutFile.m_layouts, layoutFile.m_currentLayoutIndex)) {
+          spdlog::error("Could not apply referenced layout file {}", *m_data.project().m_layoutsFileName);
+        }
+      }
+      else if (!m_data.project().m_layouts.empty()) {
+        spdlog::warn("Falling back to inline project layouts after referenced layout file failed to load");
+        m_data.windowData().applyProjectLayoutSnapshots(
+          m_data.project().m_layouts,
+          m_data.imageUidsOrdered(),
+          m_data.project().m_currentLayoutIndex);
+      }
+    }
+    else if (!m_data.project().m_layouts.empty()) {
       m_data.windowData().applyProjectLayoutSnapshots(
         m_data.project().m_layouts,
         m_data.imageUidsOrdered(),
@@ -822,6 +1135,7 @@ void EntropyApp::onImagesReady()
   resize(m_data.windowData().getWindowSize().x, m_data.windowData().getWindowSize().y);
 
   m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
+  hideLoadingStatus();
   if (!preserveLayouts) {
     if (m_data.projectFileName()) {
       markProjectSavedSnapshot();
@@ -971,6 +1285,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadImage(const fs::path
 
       if (image->header().fileName() == fileName) {
         spdlog::info("Image {} has already been loaded as {}", fileName, imageUid);
+        markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Image, fileName);
         return {imageUid, false};
       }
     }
@@ -1017,7 +1332,9 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadImage(const fs::path
 
   logLoadedImageDetails(image, fileName);
 
-  return {m_data.addImage(std::move(image)), true};
+  auto loadedImage = std::make_pair(m_data.addImage(std::move(image)), true);
+  markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Image, fileName);
+  return loadedImage;
 }
 
 std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDicomSeriesImage(const dicom::SeriesInfo& series)
@@ -1034,7 +1351,9 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDicomSeriesImage(con
   }
 
   logLoadedImageDetails(*image, series.files.front());
-  return {m_data.addImage(std::move(*image)), true};
+  auto loadedImage = std::make_pair(m_data.addImage(std::move(*image)), true);
+  markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Image, series.files.front());
+  return loadedImage;
 }
 
 std::unordered_map<uuids::uuid, ViewType> EntropyApp::dicomNativeViewTypesByImage() const
@@ -1073,6 +1392,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
       spdlog::info("Segmentation from file {} has already been loaded as {}", fileName, segUid);
 
       if (!canLoadSameSegFileTwice) {
+        markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Segmentation, fileName);
         return {segUid, false};
       }
     }
@@ -1102,6 +1422,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
     // No valid image was provided to match with this segmentation.
     // Add just the segmentation without pairing it to an image.
     if (const auto segUid = m_data.addSeg(std::move(seg))) {
+      markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Segmentation, fileName);
       return {*segUid, true};
     }
     else {
@@ -1187,6 +1508,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
 
   if (const auto segUid = m_data.addSeg(std::move(seg))) {
     spdlog::info("Loaded segmentation from file {}", fileName);
+    markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Segmentation, fileName);
     return {*segUid, true};
   }
 
@@ -1697,8 +2019,10 @@ bool EntropyApp::loadSerializedImage(
     m_data.assignActiveSegUidToImage(*imageUid, firstSegUid);
   }
 
-  for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i) {
-    image->settings().setColorMapIndex(i, defaultImageColorMapIndex);
+  if (!serializedImage.m_settings || serializedImage.m_settings->m_colorMapIndices.empty()) {
+    for (uint32_t i = 0; i < image->header().numComponentsPerPixel(); ++i) {
+      image->settings().setColorMapIndex(i, defaultImageColorMapIndex);
+    }
   }
 
   return true;
@@ -1726,6 +2050,7 @@ serialize::EntropyProject EntropyApp::createProjectSnapshot() const
 
   project.m_layouts = m_data.windowData().createProjectLayoutSnapshots(imageUids);
   project.m_currentLayoutIndex = m_data.windowData().currentLayoutIndex();
+  project.m_layoutsFileName = m_data.project().m_layoutsFileName;
   project.m_interface = projectInterfaceSettings(m_data);
 
   return project;
@@ -1998,6 +2323,17 @@ bool EntropyApp::saveProjectAs(const fs::path& fileName)
     return false;
   }
 
+  if (project.m_layoutsFileName) {
+    const fs::path projectDirectory =
+      normalizedFileName.parent_path().empty() ? fs::current_path() : normalizedFileName.parent_path();
+    const fs::path layoutsFileName = resolvePathAgainstBase(*project.m_layoutsFileName, projectDirectory);
+    if (!saveCurrentLayoutsForProject(m_data, layoutsFileName)) {
+      spdlog::error("Could not save referenced layouts file {}", layoutsFileName);
+      return false;
+    }
+    project.m_layoutsFileName = layoutsFileName;
+  }
+
   if (!serialize::save(project, normalizedFileName)) {
     spdlog::error("Could not save project file {}", normalizedFileName);
     return false;
@@ -2032,7 +2368,15 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
     return;
   }
 
-  m_data.setProject(createProjectSnapshot());
+  std::error_code error;
+  fs::path layoutsFileName = fs::canonical(fileName, error);
+  if (error) {
+    layoutsFileName = fs::absolute(fileName);
+  }
+
+  serialize::EntropyProject project = createProjectSnapshot();
+  project.m_layoutsFileName = layoutsFileName;
+  m_data.setProject(std::move(project));
   m_glfw.postEmptyEvent();
   spdlog::info("Loaded layouts from {}", fileName);
 }
@@ -2044,12 +2388,11 @@ bool EntropyApp::saveLayoutsFile(const fs::path& fileName)
     return false;
   }
 
-  layout::LayoutFile layoutFile{
-    .m_currentLayoutIndex = m_data.windowData().currentLayoutIndex(),
-    .m_layouts = m_data.windowData().createLayoutPresets(m_data.imageUidsOrdered())};
-
-  const bool saved = layout::save(layoutFile, fileName);
+  const bool saved = saveCurrentLayoutsForProject(m_data, fileName);
   if (saved) {
+    serialize::EntropyProject project = createProjectSnapshot();
+    project.m_layoutsFileName = fs::absolute(fileName);
+    m_data.setProject(std::move(project));
     spdlog::info("Saved layouts to {}", fileName);
   }
   return saved;
@@ -2206,10 +2549,12 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
       m_pendingAddedImageUids.clear();
       m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
       m_data.state().setAnimating(false);
+      hideLoadingStatus();
       updateWindowTitleStatus();
       m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
     },
-    false);
+    false,
+    imageLoadingItems(imageFiles));
 }
 
 void EntropyApp::handleDroppedFiles(const std::vector<fs::path>& fileNames)
@@ -2461,10 +2806,12 @@ void EntropyApp::loadDicomSeries(
       m_preserveLayoutsOnImagesReady = false;
       m_pendingAddedImageUids.clear();
       m_data.state().setAnimating(false);
+      hideLoadingStatus();
       updateWindowTitleStatus();
       m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
     },
-    !addToExistingProject);
+    !addToExistingProject,
+    dicomSeriesLoadingItems(seriesToLoad));
 }
 
 void EntropyApp::addSegmentationFile(const fs::path& fileName)
@@ -2713,8 +3060,11 @@ void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::option
       m_data.clearProjectData();
       m_data.state().setProjectLoadState(ProjectLoadState::Failed);
       m_data.state().setAnimating(false);
+      hideLoadingStatus();
       m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
-    });
+    },
+    true,
+    loadingItemsForProject(m_data.project()));
 }
 
 void EntropyApp::continueLargeImageProjectPreflight()
@@ -2924,6 +3274,7 @@ void EntropyApp::closeProject()
   m_pendingLargeProjectFileName = std::nullopt;
   m_pendingLargeProjectImageIndex = 0;
   m_savedProjectSnapshot = std::nullopt;
+  hideLoadingStatus();
   clearPendingProjectReplacement();
   m_data.guiData().m_pendingLargeImageLoadPrompt = std::nullopt;
   m_data.guiData().m_dicomSeriesScanInProgress = false;
@@ -2963,14 +3314,55 @@ void EntropyApp::loadImagesFromParams(const InputParams& params)
       m_data.state().setProjectLoadState(ProjectLoadState::Failed);
       m_data.state().setAnimating(false);
       m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
-    });
+    },
+    true,
+    loadingItemsForProject(m_data.project()));
+}
+
+void EntropyApp::beginLoadingStatus(std::string title, std::vector<GuiData::LoadingStatusItem> items)
+{
+  if (!m_data.guiData().m_loadingStatus) {
+    m_data.guiData().m_loadingStatus = std::make_shared<GuiData::LoadingStatus>();
+  }
+
+  std::scoped_lock lock(m_data.guiData().m_loadingStatus->mutex);
+  m_data.guiData().m_loadingStatus->title = std::move(title);
+  m_data.guiData().m_loadingStatus->items = std::move(items);
+  m_data.guiData().m_loadingStatus->visible = !m_data.guiData().m_loadingStatus->items.empty();
+}
+
+void EntropyApp::markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind kind, const fs::path& fileName)
+{
+  if (!m_data.guiData().m_loadingStatus) {
+    return;
+  }
+
+  std::scoped_lock lock(m_data.guiData().m_loadingStatus->mutex);
+  for (auto& item : m_data.guiData().m_loadingStatus->items) {
+    if (!item.loaded && item.kind == kind && equivalentLoadingPath(item.fileName, fileName)) {
+      item.loaded = true;
+      break;
+    }
+  }
+}
+
+void EntropyApp::hideLoadingStatus()
+{
+  if (!m_data.guiData().m_loadingStatus) {
+    return;
+  }
+
+  std::scoped_lock lock(m_data.guiData().m_loadingStatus->mutex);
+  m_data.guiData().m_loadingStatus->visible = false;
+  m_data.guiData().m_loadingStatus->items.clear();
 }
 
 void EntropyApp::startAsyncImageLoad(
   std::string windowTitleStatus,
   std::function<bool()> loadTask,
   std::function<void()> onLoadFailed,
-  bool showLoadingOverlay)
+  bool showLoadingOverlay,
+  std::vector<GuiData::LoadingStatusItem> loadingItems)
 {
   if (m_futureLoadProject.valid()) {
     m_futureLoadProject.wait();
@@ -2984,6 +3376,7 @@ void EntropyApp::startAsyncImageLoad(
   m_imageLoadCancelled = false;
   m_imagesReady = false;
   m_imageLoadFailed = false;
+  beginLoadingStatus("Loading images", std::move(loadingItems));
 
   m_glfw.setWindowTitleStatus(windowTitleStatus);
   m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
@@ -3005,6 +3398,7 @@ void EntropyApp::startAsyncImageLoad(
       if (onLoadFailed) {
         onLoadFailed();
       }
+      hideLoadingStatus();
       m_imagesReady = false;
       m_imageLoadFailed = false;
       m_glfw.postEmptyEvent();

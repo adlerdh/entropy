@@ -114,12 +114,46 @@ TEST_CASE("Project serialization preserves interface settings", "[project][seria
   CHECK(parsed.m_interface.m_percentilePrecision == 7);
 }
 
+TEST_CASE("Project serialization supports an external layouts file reference", "[project][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path imageFile = root / "image.nii.gz";
+  const fs::path layoutsFile = root / "layouts.json";
+  const fs::path projectFile = root / "project.json";
+
+  touchFile(imageFile);
+  touchFile(layoutsFile);
+
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = imageFile;
+  project.m_layoutsFileName = layoutsFile;
+  project.m_layouts.push_back(layout::LayoutSpec{});
+
+  const json inlineJson = project;
+  CHECK(inlineJson.at("layoutsFile") == layoutsFile.string());
+  CHECK_FALSE(inlineJson.contains("layouts"));
+
+  REQUIRE(serialize::save(project, projectFile));
+
+  const json savedJson = json::parse(std::ifstream(projectFile));
+  CHECK(savedJson.at("layoutsFile") == "layouts.json");
+  CHECK_FALSE(savedJson.contains("layouts"));
+
+  serialize::EntropyProject loaded;
+  REQUIRE(serialize::open(loaded, projectFile));
+  REQUIRE(loaded.m_layoutsFileName);
+  CHECK(*loaded.m_layoutsFileName == fs::canonical(layoutsFile));
+}
+
 TEST_CASE("Project serialization preserves image edge settings", "[project][serialization]")
 {
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
   project.m_referenceImage.m_settings = serialize::ImageSettings{
     .m_displayName = "Image",
+    .m_globalVisibility = false,
+    .m_globalOpacity = 0.25,
+    .m_borderColor = glm::vec3{0.4f, 0.5f, 0.6f},
     .m_level = 42.0,
     .m_window = 12.0,
     .m_thresholdLow = 1.0,
@@ -128,8 +162,21 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_activeComponent = 2,
     .m_componentRenderMode = serialize::ProjectComponentRenderMode::Magnitude,
     .m_ignoreAlpha = true,
+    .m_colorInterpolationMode = InterpolationMode::NearestNeighbor,
+    .m_componentLevels = {10.0, 20.0, 30.0},
+    .m_componentWindows = {11.0, 22.0, 33.0},
+    .m_componentThresholdLows = {1.0, 2.0, 3.0},
+    .m_componentThresholdHighs = {9.0, 8.0, 7.0},
     .m_componentVisibility = {true, false, true},
     .m_componentOpacities = {1.0, 0.25, 0.5},
+    .m_colorMapIndices = {1, 2, 3},
+    .m_colorMapInverted = {false, true, false},
+    .m_colorMapContinuous = {true, false, true},
+    .m_colorMapLevels = {8, 9, 10},
+    .m_colorMapHsvModifiers = {glm::vec3{0.1f, 0.2f, 0.3f}, glm::vec3{0.4f, 0.5f, 0.6f}},
+    .m_interpolationModes = {InterpolationMode::Linear, InterpolationMode::NearestNeighbor},
+    .m_foregroundThresholdLows = {4.0, 5.0, 6.0},
+    .m_foregroundThresholdHighs = {40.0, 50.0, 60.0},
     .m_edgeDetectionMethod = serialize::ProjectEdgeDetectionMethod::Pixel,
     .m_showEdges = true,
     .m_thresholdEdges = false,
@@ -140,16 +187,35 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_pixelEdgeScale = 2.5,
     .m_pixelEdgeThreshold = 0.44,
     .m_edgeColor = glm::vec3{0.1f, 0.2f, 0.3f},
-    .m_edgeOpacity = 0.6};
+    .m_edgeOpacity = 0.6,
+    .m_useDistanceMapForRaycasting = false,
+    .m_isosurfacesVisible = false,
+    .m_applyImageColormapToIsosurfaces = true,
+    .m_showIsocontoursIn2D = false,
+    .m_isocontourLineWidthIn2D = 3.5,
+    .m_isosurfaceOpacityModulator = 0.45f};
 
   const json root = project;
   const json& settings = root.at("reference").at("settings");
 
+  CHECK(settings.at("globalVisibility") == false);
+  CHECK(settings.at("globalOpacity") == 0.25);
+  CHECK(settings.at("borderColor") == json::array({0.4f, 0.5f, 0.6f}));
   CHECK(settings.at("componentRenderMode") == "magnitude");
   CHECK(settings.at("activeComponent") == 2);
   CHECK(settings.at("ignoreAlpha") == true);
+  CHECK(settings.at("colorInterpolationMode") == "nearest");
+  CHECK(settings.at("componentLevels") == json::array({10.0, 20.0, 30.0}));
+  CHECK(settings.at("componentWindows") == json::array({11.0, 22.0, 33.0}));
   CHECK(settings.at("componentVisibility") == json::array({true, false, true}));
   CHECK(settings.at("componentOpacities") == json::array({1.0, 0.25, 0.5}));
+  CHECK(settings.at("colorMapIndices") == json::array({1, 2, 3}));
+  CHECK(settings.at("colorMapInverted") == json::array({false, true, false}));
+  CHECK(settings.at("colorMapContinuous") == json::array({true, false, true}));
+  CHECK(settings.at("colorMapLevels") == json::array({8, 9, 10}));
+  CHECK(settings.at("interpolationModes") == json::array({"linear", "nearest"}));
+  CHECK(settings.at("foregroundThresholdLows") == json::array({4.0, 5.0, 6.0}));
+  CHECK(settings.at("foregroundThresholdHighs") == json::array({40.0, 50.0, 60.0}));
   CHECK(settings.at("edgeDetectionMethod") == "pixel");
   CHECK(settings.at("showEdges") == true);
   CHECK(settings.at("hardEdges") == false);
@@ -161,16 +227,42 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(settings.at("pixelEdgeThreshold") == 0.44);
   CHECK(settings.at("edgeColor") == json::array({0.1f, 0.2f, 0.3f}));
   CHECK(settings.at("edgeOpacity") == 0.6);
+  CHECK(settings.at("useDistanceMapForRaycasting") == false);
+  CHECK(settings.at("isosurfacesVisible") == false);
+  CHECK(settings.at("applyImageColormapToIsosurfaces") == true);
+  CHECK(settings.at("showIsocontoursIn2D") == false);
+  CHECK(settings.at("isocontourLineWidthIn2D") == 3.5);
+  CHECK(settings.at("isosurfaceOpacityModulator") == 0.45f);
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
   REQUIRE(parsed.m_referenceImage.m_settings.has_value());
   const serialize::ImageSettings& parsedSettings = *parsed.m_referenceImage.m_settings;
 
+  CHECK_FALSE(parsedSettings.m_globalVisibility);
+  CHECK(parsedSettings.m_globalOpacity == 0.25);
+  CHECK(parsedSettings.m_borderColor == glm::vec3{0.4f, 0.5f, 0.6f});
   CHECK(parsedSettings.m_componentRenderMode == serialize::ProjectComponentRenderMode::Magnitude);
   CHECK(parsedSettings.m_activeComponent == 2);
   CHECK(parsedSettings.m_ignoreAlpha);
+  CHECK(parsedSettings.m_colorInterpolationMode == InterpolationMode::NearestNeighbor);
+  CHECK(parsedSettings.m_componentLevels == std::vector<double>{10.0, 20.0, 30.0});
+  CHECK(parsedSettings.m_componentWindows == std::vector<double>{11.0, 22.0, 33.0});
+  CHECK(parsedSettings.m_componentThresholdLows == std::vector<double>{1.0, 2.0, 3.0});
+  CHECK(parsedSettings.m_componentThresholdHighs == std::vector<double>{9.0, 8.0, 7.0});
   CHECK(parsedSettings.m_componentVisibility == std::vector<bool>{true, false, true});
   CHECK(parsedSettings.m_componentOpacities == std::vector<double>{1.0, 0.25, 0.5});
+  CHECK(parsedSettings.m_colorMapIndices == std::vector<std::size_t>{1, 2, 3});
+  CHECK(parsedSettings.m_colorMapInverted == std::vector<bool>{false, true, false});
+  CHECK(parsedSettings.m_colorMapContinuous == std::vector<bool>{true, false, true});
+  CHECK(parsedSettings.m_colorMapLevels == std::vector<std::size_t>{8, 9, 10});
+  REQUIRE(parsedSettings.m_colorMapHsvModifiers.size() == 2);
+  CHECK(parsedSettings.m_colorMapHsvModifiers.at(0) == glm::vec3{0.1f, 0.2f, 0.3f});
+  CHECK(parsedSettings.m_colorMapHsvModifiers.at(1) == glm::vec3{0.4f, 0.5f, 0.6f});
+  CHECK(
+    parsedSettings.m_interpolationModes ==
+    std::vector<InterpolationMode>{InterpolationMode::Linear, InterpolationMode::NearestNeighbor});
+  CHECK(parsedSettings.m_foregroundThresholdLows == std::vector<double>{4.0, 5.0, 6.0});
+  CHECK(parsedSettings.m_foregroundThresholdHighs == std::vector<double>{40.0, 50.0, 60.0});
   CHECK(parsedSettings.m_edgeDetectionMethod == serialize::ProjectEdgeDetectionMethod::Pixel);
   CHECK(parsedSettings.m_showEdges);
   CHECK_FALSE(parsedSettings.m_thresholdEdges);
@@ -182,6 +274,52 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_pixelEdgeThreshold == 0.44);
   CHECK(parsedSettings.m_edgeColor == glm::vec3{0.1f, 0.2f, 0.3f});
   CHECK(parsedSettings.m_edgeOpacity == 0.6);
+  CHECK_FALSE(parsedSettings.m_useDistanceMapForRaycasting);
+  CHECK_FALSE(parsedSettings.m_isosurfacesVisible);
+  CHECK(parsedSettings.m_applyImageColormapToIsosurfaces);
+  CHECK_FALSE(parsedSettings.m_showIsocontoursIn2D);
+  CHECK(parsedSettings.m_isocontourLineWidthIn2D == 3.5);
+  CHECK(parsedSettings.m_isosurfaceOpacityModulator == 0.45f);
+}
+
+TEST_CASE("Project serialization preserves segmentation settings", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_referenceImage.m_segmentations.push_back(serialize::Segmentation{
+    .m_segFileName = "seg.nii.gz",
+    .m_settings = serialize::SegSettings{
+      .m_displayName = "Seg",
+      .m_visibility = false,
+      .m_opacity = 0.35,
+      .m_activeComponent = 0,
+      .m_componentVisibility = {false},
+      .m_componentOpacities = {0.35},
+      .m_labelTableIndices = {3},
+      .m_interpolationModes = {InterpolationMode::NearestNeighbor}}});
+
+  const json root = project;
+  const json& settings = root.at("reference").at("segmentations").at(0).at("settings");
+
+  CHECK(settings.at("displayName") == "Seg");
+  CHECK(settings.at("visibility") == false);
+  CHECK(settings.at("opacity") == 0.35);
+  CHECK(settings.at("componentVisibility") == json::array({false}));
+  CHECK(settings.at("componentOpacities") == json::array({0.35}));
+  CHECK(settings.at("labelTableIndices") == json::array({3}));
+  CHECK(settings.at("interpolationModes") == json::array({"nearest"}));
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_segmentations.size() == 1);
+  REQUIRE(parsed.m_referenceImage.m_segmentations.front().m_settings.has_value());
+  const serialize::SegSettings& parsedSettings = *parsed.m_referenceImage.m_segmentations.front().m_settings;
+  CHECK(parsedSettings.m_displayName == "Seg");
+  CHECK_FALSE(parsedSettings.m_visibility);
+  CHECK(parsedSettings.m_opacity == 0.35);
+  CHECK(parsedSettings.m_componentVisibility == std::vector<bool>{false});
+  CHECK(parsedSettings.m_componentOpacities == std::vector<double>{0.35});
+  CHECK(parsedSettings.m_labelTableIndices == std::vector<std::size_t>{3});
+  CHECK(parsedSettings.m_interpolationModes == std::vector<InterpolationMode>{InterpolationMode::NearestNeighbor});
 }
 
 TEST_CASE("Project serialization preserves voxel edge colormap setting", "[project][serialization]")

@@ -752,36 +752,74 @@ void renderLayoutTabs(AppData& appData)
   ImGui::PopStyleVar(5);
 }
 
-void renderLoadingStatusBar()
+std::string loadingItemLabel(const GuiData::LoadingStatusItem& item)
 {
+  std::string label = item.fileName.filename().string();
+  if (label.empty()) {
+    label = item.fileName.string();
+  }
+
+  if (item.bytes) {
+    const double mib = static_cast<double>(*item.bytes) / (1024.0 * 1024.0);
+    const auto roundedMiB = static_cast<std::uintmax_t>(std::max(1.0, std::round(mib)));
+    label += " (" + std::to_string(roundedMiB) + " MiB)";
+  }
+
+  return label;
+}
+
+void renderLoadingStatusWindow(const GuiData& guiData)
+{
+  if (!guiData.m_loadingStatus) {
+    return;
+  }
+
+  std::string title;
+  std::vector<GuiData::LoadingStatusItem> items;
+  {
+    std::scoped_lock lock(guiData.m_loadingStatus->mutex);
+    if (!guiData.m_loadingStatus->visible) {
+      return;
+    }
+    title = guiData.m_loadingStatus->title;
+    items = guiData.m_loadingStatus->items;
+  }
+
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  const float height = ImGui::GetFrameHeight() + scaledPixel(10.0f);
-  const ImVec2 pos{viewport->WorkPos.x, viewport->WorkPos.y + viewport->WorkSize.y - height};
-  const ImVec2 size{viewport->WorkSize.x, height};
+  const float margin = scaledPixel(12.0f);
+  const ImVec2 pos{viewport->WorkPos.x + margin, viewport->WorkPos.y + viewport->WorkSize.y - margin};
 
-  ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
-  ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+  ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2{0.0f, 1.0f});
 
-  constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-                                     ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
+  constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
                                      ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing |
-                                     ImGuiWindowFlags_NoDocking;
+                                     ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize;
 
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{scaledPixel(12.0f), scaledPixel(5.0f)});
-  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyleColorVec4(ImGuiCol_MenuBarBg));
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{scaledPixel(12.0f), scaledPixel(10.0f)});
 
-  if (ImGui::Begin("LoadingStatusBar", nullptr, flags)) {
+  if (ImGui::Begin("LoadingStatus", nullptr, flags)) {
     const int dotCount = static_cast<int>(ImGui::GetTime() * 3.0) % 4;
-    std::string text = "Loading image";
+    std::string text = title.empty() ? "Loading images" : title;
     text.append(static_cast<std::size_t>(dotCount), '.');
     ImGui::TextUnformatted(text.c_str());
+
+    if (!items.empty()) {
+      ImGui::Separator();
+      for (const auto& item : items) {
+        if (item.loaded) {
+          ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_CheckMark), ICON_FK_CHECK);
+        }
+        else {
+          ImGui::TextDisabled("-");
+        }
+        ImGui::SameLine();
+        ImGui::TextUnformatted(loadingItemLabel(item).c_str());
+      }
+    }
   }
 
   ImGui::End();
-  ImGui::PopStyleColor();
-  ImGui::PopStyleVar(3);
+  ImGui::PopStyleVar();
 }
 
 void renderEmptyWorkspace(
@@ -1937,6 +1975,21 @@ void ImGuiWrapper::render()
       case MainMenuAction::ShowOpacityMixer:
         m_appData.guiData().m_showOpacityBlenderWindow = !m_appData.guiData().m_showOpacityBlenderWindow;
         break;
+      case MainMenuAction::AddIsosurface:
+        m_appData.guiData().m_showIsosurfacesWindow = true;
+        m_appData.guiData().m_requestAddIsosurface = true;
+        break;
+      case MainMenuAction::AddIsosurfaceRange:
+        m_appData.guiData().m_showIsosurfacesWindow = true;
+        m_appData.guiData().m_requestAddIsosurfaceRange = true;
+        break;
+      case MainMenuAction::ToggleActiveImageIsosurfaces:
+        if (const auto imageUid = activeImageUid()) {
+          if (Image* image = m_appData.image(*imageUid)) {
+            image->settings().setIsosurfacesVisible(!image->settings().isosurfacesVisible());
+          }
+        }
+        break;
       case MainMenuAction::CreateSegmentation:
         createActiveSegmentation();
         break;
@@ -2120,6 +2173,9 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleSyncSendPan:
         case MainMenuAction::ToggleSyncReceivePan:
         case MainMenuAction::ShowOpacityMixer:
+        case MainMenuAction::AddIsosurface:
+        case MainMenuAction::AddIsosurfaceRange:
+        case MainMenuAction::ToggleActiveImageIsosurfaces:
         case MainMenuAction::CreateSegmentation:
         case MainMenuAction::CreateLandmarkGroup:
         case MainMenuAction::AddLayout:
@@ -2298,6 +2354,11 @@ void ImGuiWrapper::render()
         return m_appData.guiData().m_showOpacityBlenderWindow;
       case MainMenuAction::ShowOpacityMixer:
         return m_appData.guiData().m_showOpacityBlenderWindow;
+      case MainMenuAction::ToggleActiveImageIsosurfaces: {
+        const auto imageUid = m_appData.activeImageUid();
+        const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+        return image ? image->settings().isosurfacesVisible() : false;
+      }
       case MainMenuAction::ToggleImGuiDemoWindow:
         return m_appData.guiData().m_showImGuiDemoWindow;
       case MainMenuAction::ToggleImPlotDemoWindow:
@@ -2544,8 +2605,8 @@ void ImGuiWrapper::render()
       [this]() { m_appData.guiData().m_showDicomFolderPathPopup = true; },
       m_openProjectFile);
 
-    if (ProjectLoadState::Loaded == projectLoadState && backgroundTaskRunning) {
-      renderLoadingStatusBar();
+    if (backgroundTaskRunning) {
+      renderLoadingStatusWindow(m_appData.guiData());
     }
 
     if (hasLoadedProject) {

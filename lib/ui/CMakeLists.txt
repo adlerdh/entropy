@@ -10,6 +10,7 @@ set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/headers/SegmentationHeader.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Helpers.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/ImageExport.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/IsosurfaceRangeModel.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/headers/IsosurfaceHeader.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiCustomControls.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiWrapper.cpp"

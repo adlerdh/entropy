@@ -383,6 +383,9 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
         {"renderFrontFaces", renderPreferences.renderFrontFaces},
         {"renderBackFaces", renderPreferences.renderBackFaces},
         {"segmentationMasking", enumToName(renderPreferences.segmentationMasking, sk_raycastSegMaskingNames)}}},
+      {"isosurfaces",
+       {{"floatingPointInterpolation", renderPreferences.isocontourFloatingPointInterpolation},
+        {"modulateOpacityWithImage", renderPreferences.modulateIsocontourOpacityWithImageOpacity}}},
       {"asciiShading",
        {{"enabled", renderPreferences.asciiEnabled},
         {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
@@ -698,6 +701,15 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
         *raycasting,
         "segmentationMasking",
         sk_raycastSegMaskingNames);
+    }
+    if (const auto isosurfaces = rendering->find("isosurfaces");
+        isosurfaces != rendering->end() && isosurfaces->is_object())
+    {
+      setFromJson(renderPreferences.isocontourFloatingPointInterpolation, *isosurfaces, "floatingPointInterpolation");
+      setFromJson(
+        renderPreferences.modulateIsocontourOpacityWithImageOpacity,
+        *isosurfaces,
+        "modulateOpacityWithImage");
     }
     if (const auto ascii = rendering->find("asciiShading"); ascii != rendering->end() && ascii->is_object()) {
       setFromJson(renderPreferences.asciiEnabled, *ascii, "enabled");

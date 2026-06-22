@@ -188,7 +188,11 @@ private:
     std::string windowTitleStatus,
     std::function<bool()> loadTask,
     std::function<void()> onLoadFailed,
-    bool showLoadingOverlay = true);
+    bool showLoadingOverlay = true,
+    std::vector<GuiData::LoadingStatusItem> loadingItems = {});
+  void beginLoadingStatus(std::string title, std::vector<GuiData::LoadingStatusItem> items);
+  void markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind kind, const std::filesystem::path& fileName);
+  void hideLoadingStatus();
   void beginLoadProject(serialize::EntropyProject project, std::optional<std::filesystem::path> projectFileName);
   /**
    * @brief Load image files after any unsaved-project prompt has been resolved.

@@ -67,6 +67,8 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.xrayEnergyKeV = renderData.m_xrayEnergyKeV;
   preferences.xrayWindow = renderData.m_xrayIntensityWindow;
   preferences.xrayLevel = renderData.m_xrayIntensityLevel;
+  preferences.isocontourFloatingPointInterpolation = renderData.m_isocontourFloatingPointInterpolation;
+  preferences.modulateIsocontourOpacityWithImageOpacity = renderData.m_modulateIsocontourOpacityWithImageOpacity;
   preferences.modulateSegmentationOpacityWithImageOpacity = renderData.m_modulateSegOpacityWithImageOpacity;
   preferences.segmentationOutlineStyle = renderData.m_segOutlineStyle;
   preferences.segmentationInteriorOpacity = renderData.m_segInteriorOpacity;
@@ -154,6 +156,8 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.setXrayEnergy(preferences.xrayEnergyKeV);
   renderData.m_xrayIntensityWindow = preferences.xrayWindow;
   renderData.m_xrayIntensityLevel = preferences.xrayLevel;
+  renderData.m_isocontourFloatingPointInterpolation = preferences.isocontourFloatingPointInterpolation;
+  renderData.m_modulateIsocontourOpacityWithImageOpacity = preferences.modulateIsocontourOpacityWithImageOpacity;
   renderData.m_modulateSegOpacityWithImageOpacity = preferences.modulateSegmentationOpacityWithImageOpacity;
   renderData.m_segOutlineStyle = preferences.segmentationOutlineStyle;
   renderData.m_segInteriorOpacity = preferences.segmentationInteriorOpacity;

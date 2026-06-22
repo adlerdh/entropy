@@ -80,6 +80,9 @@ struct RenderPreferences
   float xrayWindow = 1.0f;
   float xrayLevel = 0.5f;
 
+  bool isocontourFloatingPointInterpolation = false;
+  bool modulateIsocontourOpacityWithImageOpacity = true;
+
   bool modulateSegmentationOpacityWithImageOpacity = true;
   SegmentationOutlineStyle segmentationOutlineStyle = SegmentationOutlineStyle::Disabled;
   float segmentationInteriorOpacity = 0.2f;

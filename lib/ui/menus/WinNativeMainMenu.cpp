@@ -337,48 +337,76 @@ bool populateModesMenu(HMENU menu)
 
 bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
 {
+  HMENU isosurfacesMenu = CreatePopupMenu();
+  if (!isosurfacesMenu) {
+    return false;
+  }
+
+  UINT isosurfacesPosition = 0;
+  if (
+    !insertActionMenuItem(
+      isosurfacesMenu,
+      isosurfacesPosition++,
+      MainMenuAction::ToggleIsosurfacesWindow,
+      L"Show I&sosurfaces Panel") ||
+    !insertSeparator(isosurfacesMenu, isosurfacesPosition++) ||
+    !insertActionMenuItem(isosurfacesMenu, isosurfacesPosition++, MainMenuAction::AddIsosurface, L"&Add...") ||
+    !insertActionMenuItem(
+      isosurfacesMenu,
+      isosurfacesPosition++,
+      MainMenuAction::AddIsosurfaceRange,
+      L"Add &Range...") ||
+    !insertActionMenuItem(
+      isosurfacesMenu,
+      isosurfacesPosition++,
+      MainMenuAction::ToggleActiveImageIsosurfaces,
+      L"&Show Isosurfaces"))
+  {
+    DestroyMenu(isosurfacesMenu);
+    return false;
+  }
+
   UINT position = 0;
-  return insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"Show &Images Panel") &&
-         insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
-         insertMenuItem(menu, position++, k_addImageCommand, L"&Add Image(s)...") &&
-         insertMenuItem(menu, position++, k_addDicomSeriesCommand, L"Add &DICOM Series...") &&
-         insertActionMenuItem(
-           menu,
-           position++,
-           MainMenuAction::ExportActiveImage,
-           L"&Export DICOM Series as Image...") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::RemoveActiveImage, L"&Remove Active Image") &&
-         insertActionMenuItem(
-           menu,
-           position++,
-           MainMenuAction::SetActiveImageAsReference,
-           L"Set Image as &Reference") &&
-         insertSeparator(menu, position++) &&
-         insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageBackward, L"Move Image &Backward") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageForward, L"Move Image &Forward") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToBack, L"Move Image to Bac&k") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToFront, L"Move Image to Fron&t") &&
-         insertSeparator(menu, position++) &&
-         insertActionMenuItem(
-           menu,
-           position++,
-           MainMenuAction::ToggleActiveImageTransformationLock,
-           L"&Lock Transformation") &&
-         insertActionMenuItem(
-           menu,
-           position++,
-           MainMenuAction::ResetActiveImageManualTransformation,
-           L"&Reset Manual Transformation") &&
-         insertActionMenuItem(
-           menu,
-           position++,
-           MainMenuAction::SaveActiveImageManualTransformation,
-           L"Save &Manual Transformation...") &&
-         insertActionMenuItem(
-           menu,
-           position++,
-           MainMenuAction::SaveActiveImageInitialAndManualTransformation,
-           L"Save &Initial + Manual Transformation...");
+  const bool ok =
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"Show &Images Panel") &&
+    insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
+    insertMenuItem(menu, position++, k_addImageCommand, L"&Add Image(s)...") &&
+    insertMenuItem(menu, position++, k_addDicomSeriesCommand, L"Add &DICOM Series...") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ExportActiveImage, L"&Export DICOM Series as Image...") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::RemoveActiveImage, L"&Remove Active Image") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::SetActiveImageAsReference, L"Set Image as &Reference") &&
+    insertSeparator(menu, position++) &&
+    insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageBackward, L"Move Image &Backward") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageForward, L"Move Image &Forward") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToBack, L"Move Image to Bac&k") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToFront, L"Move Image to Fron&t") &&
+    insertSeparator(menu, position++) &&
+    insertActionMenuItem(
+      menu,
+      position++,
+      MainMenuAction::ToggleActiveImageTransformationLock,
+      L"&Lock Transformation") &&
+    insertActionMenuItem(
+      menu,
+      position++,
+      MainMenuAction::ResetActiveImageManualTransformation,
+      L"&Reset Manual Transformation") &&
+    insertActionMenuItem(
+      menu,
+      position++,
+      MainMenuAction::SaveActiveImageManualTransformation,
+      L"Save &Manual Transformation...") &&
+    insertActionMenuItem(
+      menu,
+      position++,
+      MainMenuAction::SaveActiveImageInitialAndManualTransformation,
+      L"Save &Initial + Manual Transformation...") &&
+    insertSeparator(menu, position++) && insertSubmenu(menu, position++, isosurfacesMenu, L"I&sosurfaces");
+
+  if (!ok) {
+    DestroyMenu(isosurfacesMenu);
+  }
+  return ok;
 }
 
 bool populateSegmentationMenu(HMENU menu)

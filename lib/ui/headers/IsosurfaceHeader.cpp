@@ -1,5 +1,6 @@
 #include "ui/headers/IsosurfaceHeader.h"
 #include "ui/Helpers.h"
+#include "ui/IsosurfaceRangeModel.h"
 #include "ui/headers/HeaderCommon.h"
 
 #include "logic/SurfaceUtility.h"
@@ -33,6 +34,24 @@ namespace
 
 static const ImVec4 sk_whiteText(1, 1, 1, 1);
 static const ImVec4 sk_blackText(0, 0, 0, 1);
+static constexpr const char* k_addSurfacesPopupName = "Add Isosurfaces";
+static constexpr glm::vec3 k_defaultIsosurfaceColor{63.0f / 255.0f, 127.0f / 255.0f, 255.0f / 255.0f};
+static constexpr glm::vec3 k_defaultIsosurfaceRangeEndColor{255.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f};
+
+struct AddSurfacesDialogState
+{
+  entropy::ui::IsosurfaceRangeParameters range;
+  bool colorRange = false;
+  glm::vec3 startColor{k_defaultIsosurfaceColor};
+  glm::vec3 endColor{k_defaultIsosurfaceRangeEndColor};
+};
+
+std::unordered_map<uuids::uuid, AddSurfacesDialogState> addSurfacesDialogStateByImage;
+
+glm::vec3 defaultIsosurfaceColor()
+{
+  return k_defaultIsosurfaceColor;
+}
 
 /**
  * @brief Compute the ImGui header background and text colors from an image border color.
@@ -50,6 +69,283 @@ std::pair<ImVec4, ImVec4> computeHeaderBgAndTextColors(const glm::vec3& color)
   const ImVec4 headerTextColor = (glm::luminosity(darkerBorderColorRgb) < 0.75f) ? sk_whiteText : sk_blackText;
 
   return {headerColor, headerTextColor};
+}
+
+/**
+ * @brief Add an isosurface with a specific isovalue for one image component.
+ *
+ * @param appData Application data store that owns images and isosurfaces.
+ * @param image Image receiving the new isosurface.
+ * @param imageUid UID of the image receiving the new isosurface.
+ * @param component Image component index receiving the new isosurface.
+ * @param index One-based display index used to build the default surface name.
+ * @param value Isovalue for the new surface.
+ * @param color Display color for the new surface.
+ * @param storeFuture Callback reserved for asynchronous mesh-generation task ownership.
+ * @param addTaskToIsosurfaceGpuMeshGenerationQueue Callback reserved for queueing GPU mesh generation.
+ * @return UID of the created isosurface, or std::nullopt when creation fails.
+ */
+std::optional<uuids::uuid> addSurfaceAtValue(
+  AppData& appData,
+  const Image* image,
+  const uuids::uuid& imageUid,
+  uint32_t component,
+  size_t index,
+  double value,
+  const glm::vec3& color,
+  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> /*storeFuture*/,
+  std::function<void(const uuids::uuid& taskUid)> /*addTaskToIsosurfaceGpuMeshGenerationQueue*/
+)
+{
+  if (!image) {
+    return std::nullopt;
+  }
+
+  Isosurface surface;
+  surface.name = entropy::ui::defaultIsosurfaceName(index);
+  surface.value = value;
+  surface.color = color;
+  surface.opacity = 1.0f;
+  surface.meshInSync = false;
+
+  if (const auto isosurfaceUid = appData.addIsosurface(imageUid, component, std::move(surface))) {
+    spdlog::debug(
+      "Added new isosurface {} for image {} (component {}) at isovalue {}",
+      *isosurfaceUid,
+      imageUid,
+      component,
+      value);
+
+#if 0
+    // Function to update the mesh record in AppData after the mesh is generated
+    auto meshCpuRecordUpdater =
+      [&appData,
+       &imageUid,
+       component](const uuids::uuid& _isosurfaceUid, std::unique_ptr<MeshCpuRecord> meshCpuRecord)
+      -> bool
+    {
+      if (appData.updateIsosurfaceMeshCpuRecord(
+            imageUid, component, _isosurfaceUid, std::move(meshCpuRecord)
+          ))
+      {
+        spdlog::debug(
+          "Updated isosurface {} for image {} (component {}) with new mesh record",
+          _isosurfaceUid,
+          imageUid,
+          component
+        );
+        return true;
+      }
+
+      spdlog::error(
+        "Error updating isosurface {} for image {} (component {}) with new mesh record",
+        _isosurfaceUid,
+        imageUid,
+        component
+      );
+
+      return false;
+    };
+
+    // Generate a new UID for the mesh generation task
+    uuids::uuid taskUid = generateRandomUuid();
+
+    // Need to store the future so that its destructor is not called.
+    // Calling the destructor will cause us to wait on the future.
+    // Note: Bind the task ID to addTaskToIsosurfaceGpuMeshGenerationQueue
+    storeFuture(
+      taskUid,
+      generateIsosurfaceMeshCpuRecord(
+        *image,
+        imageUid,
+        component,
+        value,
+        *isosurfaceUid,
+        meshCpuRecordUpdater,
+        std::bind(addTaskToIsosurfaceGpuMeshGenerationQueue, taskUid)
+      )
+    );
+#endif
+
+    return isosurfaceUid;
+  }
+
+  spdlog::error("Unable to add new isosurface for image {}", imageUid);
+  return std::nullopt;
+}
+
+/**
+ * @brief Open and render the batch isosurface creation dialog.
+ *
+ * @param appData Application data store that owns images and isosurfaces.
+ * @param image Image receiving the new isosurfaces.
+ * @param imageUid UID of the image receiving the new isosurfaces.
+ * @param component Image component index receiving the new isosurfaces.
+ * @param nextSurfaceIndex One-based display index for the first generated surface.
+ * @param selectedSurfaceUid Selection updated to the last generated surface.
+ * @param imageToSelectedSurfaceUid Per-image surface selection map.
+ * @param storeFuture Callback reserved for asynchronous mesh-generation task ownership.
+ * @param addTaskToIsosurfaceGpuMeshGenerationQueue Callback reserved for queueing GPU mesh generation.
+ * @return True when isosurfaces were added.
+ */
+bool renderAddSurfacesDialog(
+  AppData& appData,
+  const Image* image,
+  const uuids::uuid& imageUid,
+  uint32_t component,
+  size_t nextSurfaceIndex,
+  std::optional<uuids::uuid>& selectedSurfaceUid,
+  std::unordered_map<uuids::uuid, uuids::uuid>& imageToSelectedSurfaceUid,
+  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
+  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
+{
+  if (!image) {
+    return false;
+  }
+
+  if (ImGui::BeginPopupModal(k_addSurfacesPopupName, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    auto& state = addSurfacesDialogStateByImage[imageUid];
+    auto& params = state.range;
+    if (params.count == 0) {
+      params.count = 2;
+      entropy::ui::updateIsosurfaceRangeSpacing(params);
+    }
+
+    const auto& stats = image->settings().componentStatistics(component);
+    const double valueMin = static_cast<double>(stats.onlineStats.min);
+    const double valueMax = static_cast<double>(stats.onlineStats.max);
+
+    ImGui::TextUnformatted("Add isosurfaces over a scalar range.");
+    ImGui::Spacing();
+
+    ImGui::PushItemWidth(160.0f);
+
+    bool startChanged = false;
+    bool endChanged = false;
+    if (ImGui::InputDouble("Start", &params.start, 0.0, 0.0, appData.guiData().m_imageValuePrecisionFormat.c_str())) {
+      startChanged = true;
+    }
+
+    if (ImGui::InputDouble("End", &params.end, 0.0, 0.0, appData.guiData().m_imageValuePrecisionFormat.c_str())) {
+      endChanged = true;
+    }
+
+    if (startChanged || endChanged) {
+      params.start = std::clamp(params.start, valueMin, valueMax);
+      params.end = std::clamp(params.end, valueMin, valueMax);
+
+      if (startChanged && params.start > params.end) {
+        params.end = params.start;
+      }
+      else if (endChanged && params.end < params.start) {
+        params.start = params.end;
+      }
+
+      entropy::ui::updateIsosurfaceRangeSpacing(params);
+    }
+
+    if (ImGui::InputDouble("Spacing", &params.spacing, 0.0, 0.0, appData.guiData().m_imageValuePrecisionFormat.c_str()))
+    {
+      entropy::ui::updateIsosurfaceRangeCount(params);
+    }
+
+    static constexpr std::uint32_t k_countStep = 1;
+    static constexpr std::uint32_t k_countStepFast = 10;
+    if (ImGui::InputScalar("Count", ImGuiDataType_U32, &params.count, &k_countStep, &k_countStepFast)) {
+      entropy::ui::updateIsosurfaceRangeSpacing(params);
+    }
+
+    ImGui::PopItemWidth();
+
+    ImGui::Spacing();
+    ImGui::Checkbox("Color range", &state.colorRange);
+    if (state.colorRange) {
+      static const ImGuiColorEditFlags k_colorPickerFlags =
+        ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB |
+        ImGuiColorEditFlags_InputRGB;
+
+      if (ImGui::ColorEdit3("Start color", glm::value_ptr(state.startColor), k_colorPickerFlags)) {
+        state.startColor = glm::clamp(state.startColor, glm::vec3{0.0f}, glm::vec3{1.0f});
+      }
+
+      if (ImGui::ColorEdit3("End color", glm::value_ptr(state.endColor), k_colorPickerFlags)) {
+        state.endColor = glm::clamp(state.endColor, glm::vec3{0.0f}, glm::vec3{1.0f});
+      }
+    }
+
+    ImGui::Spacing();
+    const auto values = entropy::ui::isosurfaceRangeValues(params);
+    ImGui::Text("Will add %zu isosurface%s.", values.size(), values.size() == 1 ? "" : "s");
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    if (ImGui::Button("OK")) {
+      std::optional<uuids::uuid> lastAddedUid;
+      size_t surfaceIndex = nextSurfaceIndex;
+      for (std::size_t valueIndex = 0; valueIndex < values.size(); ++valueIndex) {
+        const double value = values[valueIndex];
+        const double t =
+          (values.size() <= 1) ? 0.0 : static_cast<double>(valueIndex) / static_cast<double>(values.size() - 1);
+        const glm::vec3 color = state.colorRange ? entropy::ui::interpolateHsvColor(state.startColor, state.endColor, t)
+                                                 : defaultIsosurfaceColor();
+
+        lastAddedUid = addSurfaceAtValue(
+          appData,
+          image,
+          imageUid,
+          component,
+          surfaceIndex,
+          value,
+          color,
+          storeFuture,
+          addTaskToIsosurfaceGpuMeshGenerationQueue);
+        ++surfaceIndex;
+      }
+
+      if (lastAddedUid) {
+        selectedSurfaceUid = *lastAddedUid;
+        imageToSelectedSurfaceUid[imageUid] = *lastAddedUid;
+      }
+
+      ImGui::CloseCurrentPopup();
+      ImGui::EndPopup();
+      return lastAddedUid.has_value();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) {
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+
+  return false;
+}
+
+/**
+ * @brief Initialize and open the batch isosurface creation dialog.
+ *
+ * @param imageUid UID of the image receiving the new isosurfaces.
+ * @param image Image receiving the new isosurfaces.
+ * @param component Image component index receiving the new isosurfaces.
+ */
+void openAddSurfacesDialog(const uuids::uuid& imageUid, const Image& image, uint32_t component)
+{
+  static constexpr std::uint32_t k_defaultRangeCount = 5;
+
+  const auto& stats = image.settings().componentStatistics(component);
+  auto& state = addSurfacesDialogStateByImage[imageUid];
+  auto& params = state.range;
+  params.start = static_cast<double>(stats.onlineStats.min);
+  params.end = static_cast<double>(stats.onlineStats.max);
+  params.count = k_defaultRangeCount;
+  entropy::ui::updateIsosurfaceRangeSpacing(params);
+  state.startColor = defaultIsosurfaceColor();
+  state.endColor = k_defaultIsosurfaceRangeEndColor;
+
+  ImGui::OpenPopup(k_addSurfacesPopupName);
 }
 
 static const ImGuiTableFlags sk_isosurfaceTableFlags =
@@ -160,90 +456,26 @@ std::optional<uuids::uuid> addNewSurface(
   const uuids::uuid& imageUid,
   uint32_t component,
   size_t index,
-  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> /*storeFuture*/,
-  std::function<void(const uuids::uuid& taskUid)> /*addTaskToIsosurfaceGpuMeshGenerationQueue*/
-)
+  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
+  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
-  static constexpr uint32_t sk_defaultIsovalueQuantile = 75;
+  static constexpr uint32_t k_defaultIsovalueQuantile = 75;
 
   if (!image) {
     return std::nullopt;
   }
 
   const auto& stats = image->settings().componentStatistics(component);
-
-  Isosurface surface;
-  surface.name = "Surface " + std::to_string(index);
-  surface.value = static_cast<double>(stats.quantiles[sk_defaultIsovalueQuantile]);
-  surface.color = glm::vec3{0.5f, 0.75f, 1.0f};
-  surface.opacity = 1.0f;
-  surface.meshInSync = false;
-
-  if (const auto isosurfaceUid = appData.addIsosurface(imageUid, component, std::move(surface))) {
-    spdlog::debug(
-      "Added new isosurface {} for image {} (component {}) at isovalue {}",
-      *isosurfaceUid,
-      imageUid,
-      component,
-      surface.value);
-
-#if 0
-    // Function to update the mesh record in AppData after the mesh is generated
-    auto meshCpuRecordUpdater =
-      [&appData,
-       &imageUid,
-       component](const uuids::uuid& _isosurfaceUid, std::unique_ptr<MeshCpuRecord> meshCpuRecord)
-      -> bool
-    {
-      if (appData.updateIsosurfaceMeshCpuRecord(
-            imageUid, component, _isosurfaceUid, std::move(meshCpuRecord)
-          ))
-      {
-        spdlog::debug(
-          "Updated isosurface {} for image {} (component {}) with new mesh record",
-          _isosurfaceUid,
-          imageUid,
-          component
-        );
-        return true;
-      }
-
-      spdlog::error(
-        "Error updating isosurface {} for image {} (component {}) with new mesh record",
-        _isosurfaceUid,
-        imageUid,
-        component
-      );
-
-      return false;
-    };
-
-    // Generate a new UID for the mesh generation task
-    uuids::uuid taskUid = generateRandomUuid();
-
-    // Need to store the future so that its destructor is not called.
-    // Calling the destructor will cause us to wait on the future.
-    // Note: Bind the task ID to addTaskToIsosurfaceGpuMeshGenerationQueue
-    storeFuture(
-      taskUid,
-      generateIsosurfaceMeshCpuRecord(
-        *image,
-        imageUid,
-        component,
-        surface.value,
-        *isosurfaceUid,
-        meshCpuRecordUpdater,
-        std::bind(addTaskToIsosurfaceGpuMeshGenerationQueue, taskUid)
-      )
-    );
-#endif
-
-    return isosurfaceUid;
-  }
-  else {
-    spdlog::error("Unable to add new isosurface for image {}", imageUid);
-    return std::nullopt;
-  }
+  return addSurfaceAtValue(
+    appData,
+    image,
+    imageUid,
+    component,
+    index,
+    static_cast<double>(stats.quantiles[k_defaultIsovalueQuantile]),
+    defaultIsosurfaceColor(),
+    storeFuture,
+    addTaskToIsosurfaceGpuMeshGenerationQueue);
 }
 
 } // namespace
@@ -265,8 +497,8 @@ void renderIsosurfacesHeader(
     ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf |
     ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;
 
-  static const std::string sk_addSurfaceButtonText = std::string(ICON_FK_FILE_O) + std::string(" Add surface");
-  static const std::string sk_addSurfacesButtonText = std::string(ICON_FK_FILE_TEXT_O) + std::string(" Add surfaces");
+  static const std::string sk_addSurfaceButtonText = std::string(ICON_FK_FILE_O) + std::string(" Add");
+  static const std::string sk_addSurfacesButtonText = std::string(ICON_FK_FILE_TEXT_O) + std::string(" Add range...");
   static const std::string sk_removeSurfaceButtonText = std::string(ICON_FK_TRASH_O) + std::string(" Remove");
   static const std::string sk_saveSurfacesButtonText = std::string(ICON_FK_FLOPPY_O) + std::string(" Save...");
 
@@ -332,6 +564,9 @@ void renderIsosurfacesHeader(
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
   ImGui::PushStyleColor(ImGuiCol_Text, headerColors.second);
 
+  if (isActiveImage && (appData.guiData().m_requestAddIsosurface || appData.guiData().m_requestAddIsosurfaceRange)) {
+    ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+  }
   const bool open = ImGui::CollapsingHeader(headerName.c_str(), headerFlags);
 
   ImGui::PopStyleColor(2); // ImGuiCol_Header, ImGuiCol_Text
@@ -375,14 +610,30 @@ void renderIsosurfacesHeader(
   }
 
   const auto isosurfaceUids = appData.isosurfaceUids(imageUid, componentToAdjust);
+  bool addSurface = false;
+  bool addSurfaces = false;
+  if (isActiveImage && appData.guiData().m_requestAddIsosurface) {
+    addSurface = true;
+    appData.guiData().m_requestAddIsosurface = false;
+  }
+  if (isActiveImage && appData.guiData().m_requestAddIsosurfaceRange) {
+    addSurfaces = true;
+    appData.guiData().m_requestAddIsosurfaceRange = false;
+  }
 
   if (isosurfaceUids.empty()) {
     ImGui::Text("This image has no isosurfaces.");
 
     ImGui::Spacing();
-    const bool addSurface = ImGui::Button(sk_addSurfaceButtonText.c_str());
+    addSurface = ImGui::Button(sk_addSurfaceButtonText.c_str()) || addSurface;
     if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Add new isosurface");
+    }
+
+    ImGui::SameLine();
+    addSurfaces = ImGui::Button(sk_addSurfacesButtonText.c_str()) || addSurfaces;
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Add multiple isosurfaces");
     }
 
     if (addSurface) {
@@ -399,6 +650,25 @@ void renderIsosurfacesHeader(
         selectedSurfaceUid = *uid;
         imageToSelectedSurfaceUid[imageUid] = *uid;
       }
+      ImGui::PopID(); // imageUid
+      return;
+    }
+
+    if (addSurfaces) {
+      openAddSurfacesDialog(imageUid, *image, componentToAdjust);
+    }
+
+    if (renderAddSurfacesDialog(
+          appData,
+          image,
+          imageUid,
+          componentToAdjust,
+          1,
+          selectedSurfaceUid,
+          imageToSelectedSurfaceUid,
+          storeFuture,
+          addTaskToIsosurfaceGpuMeshGenerationQueue))
+    {
       ImGui::PopID(); // imageUid
       return;
     }
@@ -572,9 +842,15 @@ void renderIsosurfacesHeader(
   }
 
   ImGui::Spacing();
-  const bool addSurface = ImGui::Button(sk_addSurfaceButtonText.c_str());
+  addSurface = ImGui::Button(sk_addSurfaceButtonText.c_str()) || addSurface;
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Add new isosurface");
+  }
+
+  ImGui::SameLine();
+  addSurfaces = ImGui::Button(sk_addSurfacesButtonText.c_str()) || addSurfaces;
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Add multiple isosurfaces");
   }
 
   if (addSurface) {
@@ -596,24 +872,25 @@ void renderIsosurfacesHeader(
     }
   }
 
-  // const bool addSurfaces = ImGui::Button(sk_addSurfacesButtonText.c_str());
-  // if (ImGui::IsItemHovered())
-  // {
-  //   ImGui::SetTooltip("Add new isosurfaces");
-  // }
+  if (addSurfaces) {
+    openAddSurfacesDialog(imageUid, *image, componentToAdjust);
+  }
 
-  // if (addSurfaces) {
-  //   if (const auto uids = addNewSurfaces(appData, image, imageUid, componentToAdjust,
-  //   tableItems.size() + 1,
-  //                                        storeFuture, addTaskToIsosurfaceGpuMeshGenerationQueue))
-  //                                        {
-  //     selectedSurfaceUid = uid;
-  //     imageToSelectedSurfaceUid[imageUid] = *uid;
-  //     ImGui::PopStyleColor();
-  //     ImGui::PopID(); // imageUid
-  //     return;
-  //   }
-  // }
+  if (renderAddSurfacesDialog(
+        appData,
+        image,
+        imageUid,
+        componentToAdjust,
+        tableItems.size() + 1,
+        selectedSurfaceUid,
+        imageToSelectedSurfaceUid,
+        storeFuture,
+        addTaskToIsosurfaceGpuMeshGenerationQueue))
+  {
+    ImGui::PopStyleColor();
+    ImGui::PopID(); // imageUid
+    return;
+  }
 
   if (selectedSurfaceUid) {
     ImGui::SameLine();
@@ -737,25 +1014,12 @@ void renderIsosurfacesHeader(
         ImGui::SameLine();
         helpMarker("Show isocontours in 2D image planes");
 
-        ImGui::Checkbox("Floating-point interpolation", &appData.renderData().m_isocontourFloatingPointInterpolation);
-        ImGui::SameLine();
-        helpMarker(
-          "Use floating-point (instead of 8-bit fixed-point) linear image interpolation for the "
-          "isocontours");
-
         bool applyColormap = imgSettings.applyImageColormapToIsosurfaces();
         if (ImGui::Checkbox("Color using image colormap", &applyColormap)) {
           imgSettings.setApplyImageColormapToIsosurfaces(applyColormap);
         }
         ImGui::SameLine();
         helpMarker("Color isosurfaces using the image colormap");
-
-        // Modulate opacity of isocontour with opacity of image:
-        ImGui::Checkbox(
-          "Modulate opacity with image",
-          &appData.renderData().m_modulateIsocontourOpacityWithImageOpacity);
-        ImGui::SameLine();
-        helpMarker("Modulate isocontour opacity with image opacity");
 
         float opacityMod = imgSettings.isosurfaceOpacityModulator();
         if (mySliderF32("Global opacity", &opacityMod, 0.0f, 1.0f, "%0.2f")) {
