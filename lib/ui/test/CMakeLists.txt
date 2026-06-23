@@ -1,5 +1,6 @@
 add_executable(EntropyUiTests
   GuiDataTests.cpp
+  HeaderCommonTests.cpp
   IsosurfaceRangeModelTests.cpp
   LinuxUiScaleTests.cpp
   NativeMessageDialogModelTests.cpp

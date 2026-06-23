@@ -32,7 +32,7 @@ inline const char* nonActiveImageMessage = "This is not the active image";
 inline std::string imageRoleSuffix(bool isReferenceImage, bool isActiveImage, std::size_t numImages)
 {
   if (numImages <= 1) {
-    return {};
+    return isActiveImage ? " (active)" : std::string{};
   }
   if (isReferenceImage && isActiveImage) {
     return " (reference + active)";
@@ -49,7 +49,7 @@ inline std::string imageRoleSuffix(bool isReferenceImage, bool isActiveImage, st
 inline std::string imageRoleSuffixShortReference(bool isReferenceImage, bool isActiveImage, std::size_t numImages)
 {
   if (numImages <= 1) {
-    return {};
+    return isActiveImage ? "(active)" : std::string{};
   }
   if (isReferenceImage && isActiveImage) {
     return "(ref. + active)";

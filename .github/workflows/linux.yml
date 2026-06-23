@@ -78,6 +78,7 @@ jobs:
           sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
+            ccache \
             gcc-13 \
             g++-13 \
             libdbus-1-dev \
@@ -95,6 +96,7 @@ jobs:
           lsb_release -a
           cmake --version
           git --version
+          ccache --version
           "${CC}" --version
           "${CXX}" --version
 

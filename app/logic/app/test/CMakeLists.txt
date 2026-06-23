@@ -6,6 +6,7 @@ add_executable(EntropyAppSettingsTests
   ProjectSnapshotComparisonTests.cpp
   ProjectSnapshotSettingsTests.cpp
   UserPreferencesTests.cpp
+  WindowTitleStatusTests.cpp
 )
 
 target_sources(EntropyAppSettingsTests PRIVATE
@@ -16,6 +17,7 @@ target_sources(EntropyAppSettingsTests PRIVATE
   "${entropy_APP_DIR}/logic/app/ProjectSnapshotComparison.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"
+  "${entropy_APP_DIR}/logic/app/WindowTitleStatus.cpp"
 )
 
 if(APPLE)

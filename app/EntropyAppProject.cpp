@@ -5,6 +5,7 @@
 #include "logic/app/LoadingStatusItems.h"
 #include "logic/app/ProjectSnapshotComparison.h"
 #include "logic/app/ProjectSnapshotSettings.h"
+#include "logic/app/WindowTitleStatus.h"
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/LandmarkGroup.h"
 #include "logic/serialization/ProjectSerialization.h"
@@ -341,17 +342,7 @@ void EntropyApp::markProjectSavedSnapshot()
 
 std::string EntropyApp::windowTitleStatus() const
 {
-  const std::string imageDisplayNames = m_data.getAllImageDisplayNames();
-  if (!m_data.projectFileName()) {
-    return imageDisplayNames;
-  }
-
-  const std::string projectDisplayName = m_data.projectFileName()->filename().string();
-  if (imageDisplayNames.empty()) {
-    return projectDisplayName;
-  }
-
-  return projectDisplayName + ": " + imageDisplayNames;
+  return window_title::status(m_data.projectFileName(), m_data.getAllImageDisplayNames(), projectHasUnsavedChanges());
 }
 
 void EntropyApp::updateWindowTitleStatus()
