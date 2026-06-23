@@ -54,7 +54,7 @@ set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 # CMake will generate a file compile_commands.json under the build directory.
 # VSCode is able to parse the file and find the include path based on its content.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+option(CMAKE_VERBOSE_MAKEFILE "Show full native build commands" OFF)
 set(Entropy_SUPERBUILD_PARALLEL "" CACHE STRING "Parallel level for ExternalProject builds; empty uses the native build tool default")
 set(Entropy_SUPERBUILD_CONFIG "Release" CACHE STRING "Build config for multi-config SuperBuild generators")
 set_property(CACHE Entropy_SUPERBUILD_CONFIG PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
@@ -462,6 +462,9 @@ add_subdirectory("${entropy_LIB_DIR}/layout")
 set(entropy_SOURCES
   "${entropy_APP_DIR}/main.cpp"
   "${entropy_APP_DIR}/EntropyApp.cpp"
+  "${entropy_APP_DIR}/EntropyAppCallbacks.cpp"
+  "${entropy_APP_DIR}/EntropyAppLifecycle.cpp"
+  "${entropy_APP_DIR}/EntropyAppProject.cpp"
 
   "${entropy_APP_DIR}/logic/app/CallbackHandler.cpp"
   "${entropy_APP_DIR}/logic/app/Data.cpp"
@@ -469,7 +472,10 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/app/ImageScaleInteraction.cpp"
   "${entropy_APP_DIR}/logic/app/ImageSelectionPolicy.cpp"
   "${entropy_APP_DIR}/logic/app/Logging.cpp"
+  "${entropy_APP_DIR}/logic/app/LoadingStatusItems.cpp"
   "${entropy_APP_DIR}/logic/app/ParcellationLabelTable.cpp"
+  "${entropy_APP_DIR}/logic/app/ProjectSnapshotComparison.cpp"
+  "${entropy_APP_DIR}/logic/app/ProjectSnapshotSettings.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/State.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"

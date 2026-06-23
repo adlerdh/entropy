@@ -2,13 +2,18 @@ add_executable(EntropyAppSettingsTests
   AppPathsTests.cpp
   ImageScaleInteractionTests.cpp
   ImageSelectionPolicyTests.cpp
+  LoadingStatusItemsTests.cpp
+  ProjectSnapshotComparisonTests.cpp
+  ProjectSnapshotSettingsTests.cpp
   UserPreferencesTests.cpp
 )
 
 target_sources(EntropyAppSettingsTests PRIVATE
   "${entropy_APP_DIR}/logic/app/ImageScaleInteraction.cpp"
   "${entropy_APP_DIR}/logic/app/ImageSelectionPolicy.cpp"
+  "${entropy_APP_DIR}/logic/app/LoadingStatusItems.cpp"
   "${entropy_APP_DIR}/logic/app/ParcellationLabelTable.cpp"
+  "${entropy_APP_DIR}/logic/app/ProjectSnapshotComparison.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"
 )
@@ -26,6 +31,8 @@ endif()
 target_link_libraries(EntropyAppSettingsTests PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
+  Entropy::Layout
+  Entropy::Viewer
   nlohmann_json::nlohmann_json
   spdlog::spdlog
   entropy_warnings
@@ -44,6 +51,8 @@ target_include_directories(EntropyAppSettingsTests PRIVATE
   "${entropy_APP_DIR}"
   "${entropy_EXT_DIR}"
   "${entropy_EXT_DIR}/glad/glad_gl_3.3_core/include"
+  "${imgui_SRC_DIR}"
+  "${imgui_SRC_DIR}/imgui"
 )
 
 set_target_properties(EntropyAppSettingsTests PROPERTIES

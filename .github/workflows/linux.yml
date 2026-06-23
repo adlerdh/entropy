@@ -78,7 +78,6 @@ jobs:
           sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
-            ccache \
             gcc-13 \
             g++-13 \
             libdbus-1-dev \
@@ -98,19 +97,6 @@ jobs:
           git --version
           "${CC}" --version
           "${CXX}" --version
-
-      - name: Restore Debug ccache
-        uses: actions/cache@v5
-        with:
-          path: .ccache
-          key: linux-ubuntu2204-gcc13-debug-ccache-v1-${{ github.run_id }}
-          restore-keys: |
-            linux-ubuntu2204-gcc13-debug-ccache-v1-
-
-      - name: Reset Debug ccache stats
-        run: |
-          ccache --max-size="${CCACHE_MAXSIZE}"
-          ccache --zero-stats
 
       - name: Restore Debug SuperBuild cache
         uses: actions/cache@v5
@@ -137,23 +123,19 @@ jobs:
             linux-ubuntu2204-gcc13-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Debug SuperBuild
-        run: cmake --preset superbuild-debug
+        run: cmake --preset superbuild-debug -D Entropy_USE_CCACHE=OFF
 
       - name: Build Debug SuperBuild
         run: cmake --build --preset superbuild-debug --parallel
 
       - name: Configure Debug app
-        run: cmake --preset app-debug
+        run: cmake --preset app-debug -D Entropy_USE_CCACHE=OFF
 
       - name: Build Debug app
         run: cmake --build --preset app-debug --parallel
 
       - name: Run Debug tests
         run: ctest --test-dir build-debug --parallel --output-on-failure
-
-      - name: Show Debug ccache stats
-        if: always()
-        run: ccache --show-stats
 
   coverage:
     name: Coverage Report
