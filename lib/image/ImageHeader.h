@@ -91,6 +91,9 @@ public:
   /// @brief Get loaded memory component size in bytes.
   uint32_t memoryComponentSizeInBytes() const;
 
+  /// @brief Get additional metadata read from the image IO backend.
+  const MetaDataMap& metaData() const;
+
   /// @brief Get image dimensions in Entropy's 3D pixel model.
   const glm::uvec3& pixelDimensions() const;
   /// @brief Get origin in physical subject space after overrides.

@@ -1149,7 +1149,7 @@ void ImGuiWrapper::requestMissingComponentProjectionImages()
       continue;
     }
 
-    const auto mode = componentProjectionFromRenderMode(image->settings().componentRenderMode());
+    const auto mode = componentProjectionForImage(*image);
     if (mode && !m_appData.componentProjectionImageUid(imageUid, *mode)) {
       requestComponentProjectionImage(imageUid, *mode);
     }

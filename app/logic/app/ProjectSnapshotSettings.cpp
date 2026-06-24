@@ -1,6 +1,7 @@
 #include "logic/app/ProjectSnapshotSettings.h"
 
 #include "image/Image.h"
+#include "image/ImageDerivedData.h"
 #include "logic/app/Data.h"
 
 #include <algorithm>
@@ -74,6 +75,10 @@ bool componentRenderModeIsValidForImage(ComponentRenderMode mode, const Image& i
     case ComponentRenderMode::Maximum:
     case ComponentRenderMode::Magnitude:
       return numComponents >= 2;
+    case ComponentRenderMode::ComplexPhase:
+    case ComponentRenderMode::ComplexReal:
+    case ComponentRenderMode::ComplexImaginary:
+      return isComplexValuedImage(image);
   }
 
   return false;
@@ -96,6 +101,8 @@ serialize::ImageSettings imageSettings(const Image& image)
   settings.m_opacity = imageSettings.opacity();
   settings.m_activeComponent = imageSettings.activeComponent();
   settings.m_componentRenderMode = toSerializedComponentRenderMode(imageSettings.componentRenderMode());
+  settings.m_complexPhaseUnit = toSerializedComplexPhaseUnit(imageSettings.complexPhaseUnit());
+  settings.m_complexPhaseRange = toSerializedComplexPhaseRange(imageSettings.complexPhaseRange());
   settings.m_ignoreAlpha = imageSettings.ignoreAlpha();
   settings.m_colorInterpolationMode = imageSettings.colorInterpolationMode();
   settings.m_componentLevels.reserve(imageSettings.numComponents());
@@ -199,6 +206,14 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   const ComponentRenderMode componentMode = fromSerializedComponentRenderMode(settings.m_componentRenderMode);
   imageSettings.setComponentRenderMode(
     componentRenderModeIsValidForImage(componentMode, image) ? componentMode : ComponentRenderMode::SingleComponent);
+  if (ComponentRenderMode::ComplexReal == imageSettings.componentRenderMode()) {
+    imageSettings.setActiveComponent(0);
+  }
+  else if (ComponentRenderMode::ComplexImaginary == imageSettings.componentRenderMode()) {
+    imageSettings.setActiveComponent(1);
+  }
+  imageSettings.setComplexPhaseUnit(fromSerializedComplexPhaseUnit(settings.m_complexPhaseUnit));
+  imageSettings.setComplexPhaseRange(fromSerializedComplexPhaseRange(settings.m_complexPhaseRange));
   imageSettings.setIgnoreAlpha(settings.m_ignoreAlpha);
   imageSettings.setColorInterpolationMode(settings.m_colorInterpolationMode);
   const std::size_t numLevelComponents =

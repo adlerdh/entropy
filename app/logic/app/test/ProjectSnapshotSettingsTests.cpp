@@ -33,4 +33,19 @@ TEST_CASE("Project snapshot component render modes round trip through serializat
   CHECK(
     project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
       ComponentRenderMode::Magnitude)) == ComponentRenderMode::Magnitude);
+  CHECK(
+    project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
+      ComponentRenderMode::ComplexPhase)) == ComponentRenderMode::ComplexPhase);
+  CHECK(
+    project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
+      ComponentRenderMode::ComplexReal)) == ComponentRenderMode::ComplexReal);
+  CHECK(
+    project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
+      ComponentRenderMode::ComplexImaginary)) == ComponentRenderMode::ComplexImaginary);
+  CHECK(
+    project_snapshot::fromSerializedComplexPhaseUnit(
+      project_snapshot::toSerializedComplexPhaseUnit(ComplexPhaseUnit::Degrees)) == ComplexPhaseUnit::Degrees);
+  CHECK(
+    project_snapshot::fromSerializedComplexPhaseRange(
+      project_snapshot::toSerializedComplexPhaseRange(ComplexPhaseRange::Unsigned)) == ComplexPhaseRange::Unsigned);
 }

@@ -86,7 +86,7 @@ const glm::mat4 sk_identMat3{1.0f};
 const glm::mat4 sk_identMat4{1.0f};
 const glm::vec2 sk_zeroVec2{0.0f, 0.0f};
 
-void copyScalarProjectionDisplaySettings(const ImageSettings& source, ImageSettings& projection)
+void syncScalarProjectionLayerSettings(const ImageSettings& source, ImageSettings& projection)
 {
   constexpr uint32_t k_projectionComponent = 0;
   const uint32_t sourceComponent = source.activeComponent();
@@ -96,36 +96,6 @@ void copyScalarProjectionDisplaySettings(const ImageSettings& source, ImageSetti
   projection.setGlobalOpacity(source.globalOpacity());
   projection.setVisibility(k_projectionComponent, source.visibility(sourceComponent));
   projection.setOpacity(k_projectionComponent, source.opacity(sourceComponent));
-
-  projection.setWindowCenter(k_projectionComponent, source.windowCenter(sourceComponent));
-  projection.setWindowWidth(k_projectionComponent, source.windowWidth(sourceComponent));
-  projection.setThresholdLow(k_projectionComponent, source.thresholds(sourceComponent).first);
-  projection.setThresholdHigh(k_projectionComponent, source.thresholds(sourceComponent).second);
-
-  projection.setColorMapIndex(k_projectionComponent, source.colorMapIndex(sourceComponent));
-  projection.setColorMapInverted(k_projectionComponent, source.isColorMapInverted(sourceComponent));
-  projection.setColorMapContinuous(k_projectionComponent, source.colorMapContinuous(sourceComponent));
-  projection.setColorMapQuantization(k_projectionComponent, source.colorMapQuantizationLevels(sourceComponent));
-  projection.setColormapHsvModfactors(k_projectionComponent, source.colorMapHsvModFactors(sourceComponent));
-
-  projection.setInterpolationMode(k_projectionComponent, source.interpolationMode(sourceComponent));
-
-  projection.setEdgeDetectionMethod(k_projectionComponent, source.edgeDetectionMethod(sourceComponent));
-  projection.setShowEdges(k_projectionComponent, source.showEdges(sourceComponent));
-  projection.setShowPixelEdges(k_projectionComponent, source.showPixelEdges(sourceComponent));
-  projection.setThresholdEdges(k_projectionComponent, source.thresholdEdges(sourceComponent));
-  projection.setThresholdPixelEdges(k_projectionComponent, source.thresholdPixelEdges(sourceComponent));
-  projection.setThinPixelEdges(k_projectionComponent, source.thinPixelEdges(sourceComponent));
-  projection.setUseFreiChen(k_projectionComponent, source.useFreiChen(sourceComponent));
-  projection.setEdgeMagnitude(k_projectionComponent, source.edgeMagnitude(sourceComponent));
-  projection.setPixelEdgeScale(k_projectionComponent, source.pixelEdgeScale(sourceComponent));
-  projection.setPixelEdgeThreshold(k_projectionComponent, source.pixelEdgeThreshold(sourceComponent));
-  projection.setWindowedEdges(k_projectionComponent, source.windowedEdges(sourceComponent));
-  projection.setOverlayEdges(k_projectionComponent, source.overlayEdges(sourceComponent));
-  projection.setOverlayPixelEdges(k_projectionComponent, source.overlayPixelEdges(sourceComponent));
-  projection.setColormapEdges(k_projectionComponent, source.colormapEdges(sourceComponent));
-  projection.setEdgeColor(k_projectionComponent, source.edgeColor(sourceComponent));
-  projection.setEdgeOpacity(k_projectionComponent, source.edgeOpacity(sourceComponent));
 }
 
 void updateSegmentationUniformsForImage(
@@ -1087,7 +1057,7 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
   if (effectiveImageUid != imageUid && sourceImage) {
     Image* mutableEffectiveImage = m_appData.image(effectiveImageUid);
     if (mutableEffectiveImage) {
-      copyScalarProjectionDisplaySettings(sourceImage->settings(), mutableEffectiveImage->settings());
+      syncScalarProjectionLayerSettings(sourceImage->settings(), mutableEffectiveImage->settings());
     }
   }
 
@@ -1274,7 +1244,7 @@ void Rendering::updateImageUniforms(const uuid& imageUid)
     Image* source = m_appData.image(imageUid);
     Image* effective = m_appData.image(effectiveImageUid);
     if (source && effective) {
-      copyScalarProjectionDisplaySettings(source->settings(), effective->settings());
+      syncScalarProjectionLayerSettings(source->settings(), effective->settings());
       updateImageUniforms(effectiveImageUid);
       RenderData::ImageUniforms& effectiveUniforms = m_appData.renderData().m_uniforms[effectiveImageUid];
       updateSegmentationUniformsForImage(m_appData, imageUid, *effective, effectiveUniforms);

@@ -96,6 +96,26 @@ ComponentRenderMode ImageSettings::componentRenderMode() const
   return m_componentRenderMode;
 }
 
+void ImageSettings::setComplexPhaseUnit(ComplexPhaseUnit unit)
+{
+  m_complexPhaseUnit = unit;
+}
+
+ComplexPhaseUnit ImageSettings::complexPhaseUnit() const
+{
+  return m_complexPhaseUnit;
+}
+
+void ImageSettings::setComplexPhaseRange(ComplexPhaseRange range)
+{
+  m_complexPhaseRange = range;
+}
+
+ComplexPhaseRange ImageSettings::complexPhaseRange() const
+{
+  return m_complexPhaseRange;
+}
+
 void ImageSettings::setIgnoreAlpha(bool ignore)
 {
   m_ignoreAlpha = ignore;

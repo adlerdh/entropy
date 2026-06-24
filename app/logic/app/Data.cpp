@@ -1006,7 +1006,7 @@ uuid AppData::effectiveImageUidForRendering(const uuid& imageUid) const
     return imageUid;
   }
 
-  const auto projectionMode = componentProjectionFromRenderMode(imageIt->second.settings().componentRenderMode());
+  const auto projectionMode = componentProjectionForImage(imageIt->second);
   if (!projectionMode) {
     return imageUid;
   }

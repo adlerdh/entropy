@@ -160,7 +160,9 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_thresholdHigh = 11.0,
     .m_opacity = 0.75,
     .m_activeComponent = 2,
-    .m_componentRenderMode = serialize::ProjectComponentRenderMode::Magnitude,
+    .m_componentRenderMode = serialize::ProjectComponentRenderMode::ComplexPhase,
+    .m_complexPhaseUnit = serialize::ProjectComplexPhaseUnit::Degrees,
+    .m_complexPhaseRange = serialize::ProjectComplexPhaseRange::Unsigned,
     .m_ignoreAlpha = true,
     .m_colorInterpolationMode = InterpolationMode::NearestNeighbor,
     .m_componentLevels = {10.0, 20.0, 30.0},
@@ -201,7 +203,9 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(settings.at("globalVisibility") == false);
   CHECK(settings.at("globalOpacity") == 0.25);
   CHECK(settings.at("borderColor") == json::array({0.4f, 0.5f, 0.6f}));
-  CHECK(settings.at("componentRenderMode") == "magnitude");
+  CHECK(settings.at("componentRenderMode") == "complexPhase");
+  CHECK(settings.at("complexPhaseUnit") == "degrees");
+  CHECK(settings.at("complexPhaseRange") == "unsigned");
   CHECK(settings.at("activeComponent") == 2);
   CHECK(settings.at("ignoreAlpha") == true);
   CHECK(settings.at("colorInterpolationMode") == "nearest");
@@ -241,7 +245,9 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(parsedSettings.m_globalVisibility);
   CHECK(parsedSettings.m_globalOpacity == 0.25);
   CHECK(parsedSettings.m_borderColor == glm::vec3{0.4f, 0.5f, 0.6f});
-  CHECK(parsedSettings.m_componentRenderMode == serialize::ProjectComponentRenderMode::Magnitude);
+  CHECK(parsedSettings.m_componentRenderMode == serialize::ProjectComponentRenderMode::ComplexPhase);
+  CHECK(parsedSettings.m_complexPhaseUnit == serialize::ProjectComplexPhaseUnit::Degrees);
+  CHECK(parsedSettings.m_complexPhaseRange == serialize::ProjectComplexPhaseRange::Unsigned);
   CHECK(parsedSettings.m_activeComponent == 2);
   CHECK(parsedSettings.m_ignoreAlpha);
   CHECK(parsedSettings.m_colorInterpolationMode == InterpolationMode::NearestNeighbor);

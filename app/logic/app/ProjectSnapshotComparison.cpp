@@ -23,6 +23,7 @@ bool imageSettingsEqual(
          a->m_window == b->m_window && a->m_thresholdLow == b->m_thresholdLow &&
          a->m_thresholdHigh == b->m_thresholdHigh && a->m_opacity == b->m_opacity &&
          a->m_activeComponent == b->m_activeComponent && a->m_componentRenderMode == b->m_componentRenderMode &&
+         a->m_complexPhaseUnit == b->m_complexPhaseUnit && a->m_complexPhaseRange == b->m_complexPhaseRange &&
          a->m_ignoreAlpha == b->m_ignoreAlpha && a->m_colorInterpolationMode == b->m_colorInterpolationMode &&
          a->m_componentLevels == b->m_componentLevels && a->m_componentWindows == b->m_componentWindows &&
          a->m_componentThresholdLows == b->m_componentThresholdLows &&

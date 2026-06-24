@@ -26,7 +26,24 @@ enum class ComponentRenderMode
   Minimum,
   Mean,
   Maximum,
-  Magnitude
+  Magnitude,
+  ComplexPhase,
+  ComplexReal,
+  ComplexImaginary
+};
+
+/// @brief Display units for complex-valued image phase.
+enum class ComplexPhaseUnit
+{
+  Radians,
+  Degrees
+};
+
+/// @brief Display range convention for complex-valued image phase.
+enum class ComplexPhaseRange
+{
+  Signed,
+  Unsigned
 };
 
 /**
@@ -101,6 +118,18 @@ public:
 
   /// @brief Get the rendering strategy for a multi-component image.
   ComponentRenderMode componentRenderMode() const;
+
+  /// @brief Set display units for complex-valued image phase.
+  void setComplexPhaseUnit(ComplexPhaseUnit unit);
+
+  /// @brief Get display units for complex-valued image phase.
+  ComplexPhaseUnit complexPhaseUnit() const;
+
+  /// @brief Set display range convention for complex-valued image phase.
+  void setComplexPhaseRange(ComplexPhaseRange range);
+
+  /// @brief Get display range convention for complex-valued image phase.
+  ComplexPhaseRange complexPhaseRange() const;
 
   /// @brief Set whether to ignore the alpha component of RGBA color images.
   void setIgnoreAlpha(bool ignore);
@@ -710,6 +739,8 @@ private:
   bool m_lockedToReference{true};            //!< Lock this image to the reference image
 
   ComponentRenderMode m_componentRenderMode{ComponentRenderMode::SingleComponent}; //!< Multi-component render mode
+  ComplexPhaseUnit m_complexPhaseUnit{ComplexPhaseUnit::Radians};        //!< Display units for complex phase values
+  ComplexPhaseRange m_complexPhaseRange{ComplexPhaseRange::Signed};      //!< Display range for complex phase values
   bool m_ignoreAlpha{false};                                             //!< Ignore the alpha component of the image
   InterpolationMode m_colorInterpolationMode{InterpolationMode::Linear}; //!< Interpolation mode
 

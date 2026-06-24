@@ -362,6 +362,10 @@ TEST_CASE("ITK ImageIO metadata extraction populates Entropy IO info", "[image][
   CHECK(std::get<std::string>(info.m_metaData.at("entropy_string")) == "hello world");
   REQUIRE(info.m_metaData.contains("entropy_int"));
   REQUIRE(info.m_metaData.contains("entropy_double"));
+
+  Image image(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::SeparateImages);
+  REQUIRE(image.header().metaData().contains("entropy_string"));
+  CHECK(std::get<std::string>(image.header().metaData().at("entropy_string")) == "hello world");
 }
 
 TEST_CASE("ITK ImageIO helpers handle null inputs and image-base geometry", "[image][io-info][itk]")

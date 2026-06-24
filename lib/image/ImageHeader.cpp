@@ -365,6 +365,11 @@ uint32_t ImageHeader::memoryComponentSizeInBytes() const
   return m_memoryComponentSizeInBytes;
 }
 
+const MetaDataMap& ImageHeader::metaData() const
+{
+  return m_ioInfoOnDisk.m_metaData;
+}
+
 const glm::uvec3& ImageHeader::pixelDimensions() const
 {
   return m_pixelDimensions;

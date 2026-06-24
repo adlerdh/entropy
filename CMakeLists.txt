@@ -477,6 +477,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/app/ProjectSnapshotComparison.cpp"
   "${entropy_APP_DIR}/logic/app/ProjectSnapshotSettings.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
+  "${entropy_APP_DIR}/logic/app/StackTrace.cpp"
   "${entropy_APP_DIR}/logic/app/State.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferencesRenderData.cpp"
@@ -898,6 +899,7 @@ if(BUILD_TESTING)
   add_subdirectory(app/logic/sync/test)
   add_subdirectory(app/rendering/test)
   add_subdirectory(app/windowing/test)
+  add_subdirectory(test/warp_field_generator)
 endif()
 
 entropy_add_coverage_targets()

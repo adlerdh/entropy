@@ -2,12 +2,18 @@
 #include "common/InputParser.h"
 #include "logic/app/AppPaths.h"
 #include "logic/app/Logging.h"
+#include "logic/app/StackTrace.h"
 
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <cstdlib>
+#include <exception>
+#include <iostream>
+
 int main(int argc, char* argv[])
 {
+  stack_trace::installCrashHandlers();
   app_paths::configureFromCommandLine(argc, argv);
 
   auto logFailure = []() {
@@ -29,7 +35,7 @@ int main(int argc, char* argv[])
   }
 
   try {
-    spdlog::debug("------------------- Being session -------------------");
+    spdlog::debug("------------------- Begin session -------------------");
     EntropyApp::logPreamble();
 
     InputParams params;
@@ -54,19 +60,16 @@ int main(int argc, char* argv[])
   }
   catch (const std::runtime_error& e) {
     spdlog::critical("Runtime error: {}", e.what());
-    /// @todo use https://en.cppreference.com/w/cpp/utility/basic_stacktrace
     logFailure();
     return EXIT_FAILURE;
   }
   catch (const std::exception& e) {
     spdlog::critical("Exception: {}", e.what());
-    /// @todo use https://en.cppreference.com/w/cpp/utility/basic_stacktrace
     logFailure();
     return EXIT_FAILURE;
   }
   catch (...) {
     spdlog::critical("Unknown exception");
-    /// @todo use https://en.cppreference.com/w/cpp/utility/basic_stacktrace
     logFailure();
     return EXIT_FAILURE;
   }

@@ -5,6 +5,7 @@ add_executable(EntropyAppSettingsTests
   LoadingStatusItemsTests.cpp
   ProjectSnapshotComparisonTests.cpp
   ProjectSnapshotSettingsTests.cpp
+  StackTraceTests.cpp
   UserPreferencesTests.cpp
   WindowTitleStatusTests.cpp
 )
@@ -16,6 +17,7 @@ target_sources(EntropyAppSettingsTests PRIVATE
   "${entropy_APP_DIR}/logic/app/ParcellationLabelTable.cpp"
   "${entropy_APP_DIR}/logic/app/ProjectSnapshotComparison.cpp"
   "${entropy_APP_DIR}/logic/app/Settings.cpp"
+  "${entropy_APP_DIR}/logic/app/StackTrace.cpp"
   "${entropy_APP_DIR}/logic/app/UserPreferences.cpp"
   "${entropy_APP_DIR}/logic/app/WindowTitleStatus.cpp"
 )

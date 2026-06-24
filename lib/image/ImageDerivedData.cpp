@@ -7,6 +7,7 @@
 #include <cmath>
 #include <format>
 #include <limits>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <utility>
@@ -22,12 +23,36 @@ std::optional<ComponentProjectionMode> componentProjectionFromRenderMode(Compone
       return ComponentProjectionMode::Maximum;
     case ComponentRenderMode::Magnitude:
       return ComponentProjectionMode::Magnitude;
+    case ComponentRenderMode::ComplexPhase:
+      return ComponentProjectionMode::ComplexPhaseSignedRadians;
     case ComponentRenderMode::SingleComponent:
     case ComponentRenderMode::Color:
+    case ComponentRenderMode::ComplexReal:
+    case ComponentRenderMode::ComplexImaginary:
       return std::nullopt;
   }
 
   return std::nullopt;
+}
+
+std::optional<ComponentProjectionMode> componentProjectionForImage(const Image& image)
+{
+  if (ComponentRenderMode::ComplexPhase == image.settings().componentRenderMode()) {
+    return complexPhaseProjectionMode(image.settings().complexPhaseRange(), image.settings().complexPhaseUnit());
+  }
+
+  return componentProjectionFromRenderMode(image.settings().componentRenderMode());
+}
+
+ComponentProjectionMode complexPhaseProjectionMode(ComplexPhaseRange range, ComplexPhaseUnit unit)
+{
+  if (ComplexPhaseUnit::Degrees == unit) {
+    return ComplexPhaseRange::Unsigned == range ? ComponentProjectionMode::ComplexPhaseUnsignedDegrees
+                                                : ComponentProjectionMode::ComplexPhaseSignedDegrees;
+  }
+
+  return ComplexPhaseRange::Unsigned == range ? ComponentProjectionMode::ComplexPhaseUnsignedRadians
+                                              : ComponentProjectionMode::ComplexPhaseSignedRadians;
 }
 
 std::string componentProjectionModeName(ComponentProjectionMode mode)
@@ -41,6 +66,14 @@ std::string componentProjectionModeName(ComponentProjectionMode mode)
       return "Maximum";
     case ComponentProjectionMode::Magnitude:
       return "Magnitude";
+    case ComponentProjectionMode::ComplexPhaseSignedRadians:
+      return "Phase [-pi, pi]";
+    case ComponentProjectionMode::ComplexPhaseUnsignedRadians:
+      return "Phase [0, 2pi]";
+    case ComponentProjectionMode::ComplexPhaseSignedDegrees:
+      return "Phase [-180, 180]";
+    case ComponentProjectionMode::ComplexPhaseUnsignedDegrees:
+      return "Phase [0, 360]";
   }
 
   return "Unknown";
@@ -53,10 +86,47 @@ bool isScalarComponentProjection(ComponentProjectionMode mode)
     case ComponentProjectionMode::Mean:
     case ComponentProjectionMode::Maximum:
     case ComponentProjectionMode::Magnitude:
+    case ComponentProjectionMode::ComplexPhaseSignedRadians:
+    case ComponentProjectionMode::ComplexPhaseUnsignedRadians:
+    case ComponentProjectionMode::ComplexPhaseSignedDegrees:
+    case ComponentProjectionMode::ComplexPhaseUnsignedDegrees:
       return true;
   }
 
   return false;
+}
+
+bool isComplexValuedImage(const Image& image)
+{
+  return PixelType::Complex == image.header().pixelType() && 2u == image.header().numComponentsPerPixel();
+}
+
+double complexPhaseValue(double real, double imaginary, ComplexPhaseRange range, ComplexPhaseUnit unit)
+{
+  constexpr double twoPi = 2.0 * std::numbers::pi;
+  double phase = std::atan2(imaginary, real);
+
+  if (ComplexPhaseRange::Unsigned == range && phase < 0.0) {
+    phase += twoPi;
+  }
+
+  if (ComplexPhaseUnit::Degrees == unit) {
+    phase *= 180.0 / std::numbers::pi;
+  }
+
+  return phase;
+}
+
+std::string complexComponentLabel(uint32_t component, uint32_t componentMax)
+{
+  std::string label = std::to_string(component) + " of " + std::to_string(componentMax);
+  if (0u == component) {
+    label += " (real)";
+  }
+  else if (1u == component) {
+    label += " (imaginary)";
+  }
+  return label;
 }
 
 std::vector<ComponentImageResult> createNoiseEstimateImages(const Image& image, uint32_t radius)
@@ -145,6 +215,14 @@ entropy_expected::expected<Image, std::string> createComponentProjectionImage(
     return entropy_expected::unexpected("Component projection requires loaded image pixel data");
   }
 
+  const bool isComplexPhaseProjection = ComponentProjectionMode::ComplexPhaseSignedRadians == mode ||
+                                        ComponentProjectionMode::ComplexPhaseUnsignedRadians == mode ||
+                                        ComponentProjectionMode::ComplexPhaseSignedDegrees == mode ||
+                                        ComponentProjectionMode::ComplexPhaseUnsignedDegrees == mode;
+  if (isComplexPhaseProjection && !isComplexValuedImage(image)) {
+    return entropy_expected::unexpected("Complex phase projection requires a two-component complex image");
+  }
+
   const std::size_t numPixels = image.header().numPixels();
   std::vector<float> values(numPixels, 0.0f);
   std::size_t nonFiniteValueCount = 0;
@@ -192,6 +270,30 @@ entropy_expected::expected<Image, std::string> createComponentProjectionImage(
       case ComponentProjectionMode::Magnitude:
         values[pixel] = static_cast<float>(std::sqrt(sumSquares));
         break;
+      case ComponentProjectionMode::ComplexPhaseSignedRadians:
+      case ComponentProjectionMode::ComplexPhaseUnsignedRadians:
+      case ComponentProjectionMode::ComplexPhaseSignedDegrees:
+      case ComponentProjectionMode::ComplexPhaseUnsignedDegrees: {
+        const auto real = image.value<double>(0, pixel);
+        const auto imaginary = image.value<double>(1, pixel);
+        if (!real || !imaginary) {
+          return entropy_expected::unexpected(std::format("Unable to read complex value at pixel {}", pixel));
+        }
+        if (!std::isfinite(*real) || !std::isfinite(*imaginary)) {
+          values[pixel] = 0.0f;
+          break;
+        }
+        const ComplexPhaseRange range = (ComponentProjectionMode::ComplexPhaseUnsignedRadians == mode ||
+                                         ComponentProjectionMode::ComplexPhaseUnsignedDegrees == mode)
+                                          ? ComplexPhaseRange::Unsigned
+                                          : ComplexPhaseRange::Signed;
+        const ComplexPhaseUnit unit = (ComponentProjectionMode::ComplexPhaseSignedDegrees == mode ||
+                                       ComponentProjectionMode::ComplexPhaseUnsignedDegrees == mode)
+                                        ? ComplexPhaseUnit::Degrees
+                                        : ComplexPhaseUnit::Radians;
+        values[pixel] = static_cast<float>(complexPhaseValue(*real, *imaginary, range, unit));
+        break;
+      }
     }
   }
 

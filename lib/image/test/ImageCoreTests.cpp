@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <functional>
 #include <limits>
+#include <numbers>
 #include <stdexcept>
 #include <vector>
 
@@ -666,10 +667,64 @@ TEST_CASE("Component render modes map to scalar projection modes", "[image][deri
 {
   CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::SingleComponent).has_value());
   CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::Color).has_value());
+  CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::ComplexReal).has_value());
+  CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::ComplexImaginary).has_value());
   CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Minimum) == ComponentProjectionMode::Minimum);
   CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Mean) == ComponentProjectionMode::Mean);
   CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Maximum) == ComponentProjectionMode::Maximum);
   CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Magnitude) == ComponentProjectionMode::Magnitude);
+  CHECK(
+    componentProjectionFromRenderMode(ComponentRenderMode::ComplexPhase) ==
+    ComponentProjectionMode::ComplexPhaseSignedRadians);
+}
+
+TEST_CASE("Complex phase helpers support signed and unsigned radians and degrees", "[image][derived][complex]")
+{
+  CHECK(
+    complexPhaseValue(0.0, 1.0, ComplexPhaseRange::Signed, ComplexPhaseUnit::Radians) ==
+    Catch::Approx(std::numbers::pi / 2.0));
+  CHECK(
+    complexPhaseValue(0.0, -1.0, ComplexPhaseRange::Unsigned, ComplexPhaseUnit::Radians) ==
+    Catch::Approx(3.0 * std::numbers::pi / 2.0));
+  CHECK(complexPhaseValue(-1.0, 0.0, ComplexPhaseRange::Signed, ComplexPhaseUnit::Degrees) == Catch::Approx(180.0));
+  CHECK(complexPhaseValue(0.0, -1.0, ComplexPhaseRange::Unsigned, ComplexPhaseUnit::Degrees) == Catch::Approx(270.0));
+  CHECK(complexComponentLabel(0, 1) == "0 of 1 (real)");
+  CHECK(complexComponentLabel(1, 1) == "1 of 1 (imaginary)");
+}
+
+TEST_CASE("Complex phase projection creates scalar images from complex components", "[image][derived][complex]")
+{
+  const glm::uvec3 dims{2, 2, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 2, dims);
+  ioInfo.m_pixelInfo.m_pixelType = PixelType::Complex;
+  ioInfo.m_pixelInfo.m_pixelTypeString = "complex";
+  ImageHeader header(ioInfo, ioInfo, false);
+
+  const std::vector<float> real{1.0f, 0.0f, 0.0f, -1.0f};
+  const std::vector<float> imaginary{0.0f, 1.0f, -1.0f, 0.0f};
+  std::vector<const void*> buffers{real.data(), imaginary.data()};
+  Image image(
+    header,
+    "complex",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+
+  CHECK(isComplexValuedImage(image));
+  CHECK(image.settings().componentRenderMode() == ComponentRenderMode::Magnitude);
+
+  image.settings().setComponentRenderMode(ComponentRenderMode::ComplexPhase);
+  image.settings().setComplexPhaseRange(ComplexPhaseRange::Unsigned);
+  image.settings().setComplexPhaseUnit(ComplexPhaseUnit::Degrees);
+  CHECK(componentProjectionForImage(image) == ComponentProjectionMode::ComplexPhaseUnsignedDegrees);
+
+  const auto phase = createComponentProjectionImage(image, *componentProjectionForImage(image));
+  REQUIRE(phase.has_value());
+  CHECK(phase->header().numComponentsPerPixel() == 1);
+  CHECK(phase->value<double>(0, 0).value() == Catch::Approx(0.0));
+  CHECK(phase->value<double>(0, 1).value() == Catch::Approx(90.0));
+  CHECK(phase->value<double>(0, 2).value() == Catch::Approx(270.0));
+  CHECK(phase->value<double>(0, 3).value() == Catch::Approx(180.0));
 }
 
 TEST_CASE("Component projections ignore non-finite component values", "[image][derived]")

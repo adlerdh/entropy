@@ -4,12 +4,35 @@
 
 #include <algorithm>
 #include <cstring>
+#include <functional>
 #include <string>
+
+namespace
+{
+float fittedColumnWidth(
+  const char* header,
+  const std::vector<dicom::MetadataEntry>& entries,
+  const std::function<const std::string&(const dicom::MetadataEntry&)>& value)
+{
+  float width = ImGui::CalcTextSize(header).x;
+  for (const auto& entry : entries) {
+    width = std::max(width, ImGui::CalcTextSize(value(entry).c_str()).x);
+  }
+
+  const float padding = 2.0f * (ImGui::GetStyle().CellPadding.x + ImGui::GetStyle().ItemSpacing.x);
+  return width + padding;
+}
+} // namespace
 
 void renderDicomMetadataTable(
   const char* tableId,
   const std::vector<dicom::MetadataEntry>& entries,
-  const ImVec2& tableSize)
+  const ImVec2& tableSize,
+  const char* tagColumnName,
+  const char* nameColumnName,
+  const char* valueColumnName,
+  float tagColumnWidth,
+  float nameColumnWidth)
 {
   if (ImGui::BeginTable(
         tableId,
@@ -18,9 +41,22 @@ void renderDicomMetadataTable(
           ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Sortable,
         tableSize))
   {
-    ImGui::TableSetupColumn("Tag", ImGuiTableColumnFlags_WidthFixed, 118.0f);
-    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 260.0f);
-    ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 640.0f);
+    if (tagColumnWidth <= 0.0f) {
+      tagColumnWidth =
+        fittedColumnWidth(tagColumnName, entries, [](const dicom::MetadataEntry& entry) -> const std::string& {
+          return entry.tag;
+        });
+    }
+    if (nameColumnWidth <= 0.0f) {
+      nameColumnWidth =
+        fittedColumnWidth(nameColumnName, entries, [](const dicom::MetadataEntry& entry) -> const std::string& {
+          return entry.name;
+        });
+    }
+
+    ImGui::TableSetupColumn(tagColumnName, ImGuiTableColumnFlags_WidthFixed, tagColumnWidth);
+    ImGui::TableSetupColumn(nameColumnName, ImGuiTableColumnFlags_WidthFixed, nameColumnWidth);
+    ImGui::TableSetupColumn(valueColumnName, ImGuiTableColumnFlags_WidthStretch, 640.0f);
     ImGui::TableHeadersRow();
 
     std::vector<const dicom::MetadataEntry*> rows;

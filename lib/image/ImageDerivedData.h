@@ -16,7 +16,11 @@ enum class ComponentProjectionMode
   Minimum,
   Mean,
   Maximum,
-  Magnitude
+  Magnitude,
+  ComplexPhaseSignedRadians,
+  ComplexPhaseUnsignedRadians,
+  ComplexPhaseSignedDegrees,
+  ComplexPhaseUnsignedDegrees
 };
 
 /**
@@ -25,6 +29,21 @@ enum class ComponentProjectionMode
  * @return Projection mode for scalar projections, or std::nullopt for modes rendered directly.
  */
 std::optional<ComponentProjectionMode> componentProjectionFromRenderMode(ComponentRenderMode mode);
+
+/**
+ * @brief Return the scalar projection needed by the image's current render settings.
+ * @param image Image whose settings select the render mode.
+ * @return Projection mode for scalar projections, or std::nullopt for modes rendered directly.
+ */
+std::optional<ComponentProjectionMode> componentProjectionForImage(const Image& image);
+
+/**
+ * @brief Return the scalar projection for a complex phase display convention.
+ * @param range Phase range convention.
+ * @param unit Phase display unit.
+ * @return Projection mode for the selected phase display convention.
+ */
+ComponentProjectionMode complexPhaseProjectionMode(ComplexPhaseRange range, ComplexPhaseUnit unit);
 
 /**
  * @brief Get a short UI label for a component projection.
@@ -39,6 +58,31 @@ std::string componentProjectionModeName(ComponentProjectionMode mode);
  * @return True for modes that require a derived scalar projection image.
  */
 bool isScalarComponentProjection(ComponentProjectionMode mode);
+
+/**
+ * @brief Return whether the image is a two-component complex-valued image.
+ * @param image Image to inspect.
+ * @return True when metadata identifies the image as complex and it has real/imaginary components.
+ */
+bool isComplexValuedImage(const Image& image);
+
+/**
+ * @brief Compute the phase angle of a complex value.
+ * @param real Real component.
+ * @param imaginary Imaginary component.
+ * @param range Phase range convention.
+ * @param unit Phase display unit.
+ * @return Phase in the requested range and unit.
+ */
+double complexPhaseValue(double real, double imaginary, ComplexPhaseRange range, ComplexPhaseUnit unit);
+
+/**
+ * @brief Label for a complex image component index.
+ * @param component Component index.
+ * @param componentMax Maximum valid component index.
+ * @return Human-readable label including real/imaginary semantics when known.
+ */
+std::string complexComponentLabel(uint32_t component, uint32_t componentMax);
 
 /**
  * @brief Derived image produced for one source image component.

@@ -43,8 +43,11 @@
 #include <cctype>
 #include <cstdint>
 #include <optional>
+#include <sstream>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 #undef min
@@ -157,6 +160,155 @@ void renderImageDicomMetadata(const AppData& appData, const uuids::uuid& imageUi
   ImGui::TreePop();
 }
 
+template<typename T>
+std::string metadataScalarToString(const T& value)
+{
+  if constexpr (std::is_same_v<T, bool>) {
+    return value ? "true" : "false";
+  }
+  else if constexpr (std::is_same_v<T, char> || std::is_same_v<T, signed char> || std::is_same_v<T, unsigned char>) {
+    return std::to_string(static_cast<int>(value));
+  }
+  else {
+    std::ostringstream out;
+    out << value;
+    return out.str();
+  }
+}
+
+template<typename T>
+std::string metadataVectorToString(const std::vector<T>& values)
+{
+  std::ostringstream out;
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    if (i > 0) {
+      out << ", ";
+    }
+    out << metadataScalarToString(values.at(i));
+  }
+  return out.str();
+}
+
+template<typename T>
+std::string metadataMatrixToString(const std::vector<std::vector<T>>& rows)
+{
+  std::ostringstream out;
+  for (std::size_t r = 0; r < rows.size(); ++r) {
+    if (r > 0) {
+      out << "; ";
+    }
+    out << '[' << metadataVectorToString(rows.at(r)) << ']';
+  }
+  return out.str();
+}
+
+std::string metadataValueToString(const MetaDataMap::mapped_type& value)
+{
+  return std::visit(
+    [](const auto& data) -> std::string {
+      using Value = std::decay_t<decltype(data)>;
+      if constexpr (
+        std::is_same_v<Value, std::vector<char>> || std::is_same_v<Value, std::vector<int>> ||
+        std::is_same_v<Value, std::vector<float>> || std::is_same_v<Value, std::vector<double>>)
+      {
+        return metadataVectorToString(data);
+      }
+      else if constexpr (
+        std::is_same_v<Value, std::vector<std::vector<float>>> ||
+        std::is_same_v<Value, std::vector<std::vector<double>>>)
+      {
+        return metadataMatrixToString(data);
+      }
+      else {
+        return metadataScalarToString(data);
+      }
+    },
+    value);
+}
+
+std::string metadataTypeName(const MetaDataMap::mapped_type& value)
+{
+  return std::visit(
+    [](const auto& data) -> std::string {
+      using Value = std::decay_t<decltype(data)>;
+      if constexpr (std::is_same_v<Value, bool>)
+        return "bool";
+      else if constexpr (std::is_same_v<Value, unsigned char>)
+        return "unsigned char";
+      else if constexpr (std::is_same_v<Value, char>)
+        return "char";
+      else if constexpr (std::is_same_v<Value, signed char>)
+        return "signed char";
+      else if constexpr (std::is_same_v<Value, unsigned short>)
+        return "unsigned short";
+      else if constexpr (std::is_same_v<Value, short>)
+        return "short";
+      else if constexpr (std::is_same_v<Value, unsigned int>)
+        return "unsigned int";
+      else if constexpr (std::is_same_v<Value, int>)
+        return "int";
+      else if constexpr (std::is_same_v<Value, unsigned long>)
+        return "unsigned long";
+      else if constexpr (std::is_same_v<Value, long>)
+        return "long";
+      else if constexpr (std::is_same_v<Value, unsigned long long>)
+        return "unsigned long long";
+      else if constexpr (std::is_same_v<Value, long long>)
+        return "long long";
+      else if constexpr (std::is_same_v<Value, float>)
+        return "float";
+      else if constexpr (std::is_same_v<Value, double>)
+        return "double";
+      else if constexpr (std::is_same_v<Value, std::string>)
+        return "string";
+      else if constexpr (std::is_same_v<Value, std::vector<char>>)
+        return "char[]";
+      else if constexpr (std::is_same_v<Value, std::vector<int>>)
+        return "int[]";
+      else if constexpr (std::is_same_v<Value, std::vector<float>>)
+        return "float[]";
+      else if constexpr (std::is_same_v<Value, std::vector<double>>)
+        return "double[]";
+      else if constexpr (std::is_same_v<Value, std::vector<std::vector<float>>>)
+        return "float[][]";
+      else if constexpr (std::is_same_v<Value, std::vector<std::vector<double>>>)
+        return "double[][]";
+      else
+        return "unknown";
+    },
+    value);
+}
+
+std::vector<dicom::MetadataEntry> imageMetadataEntries(const MetaDataMap& metadata)
+{
+  std::vector<dicom::MetadataEntry> entries;
+  entries.reserve(metadata.size());
+  for (const auto& [key, value] : metadata) {
+    entries.push_back(
+      dicom::MetadataEntry{.tag = key, .name = metadataTypeName(value), .value = metadataValueToString(value)});
+  }
+  return entries;
+}
+
+void renderImageFileMetadata(const ImageHeader& header)
+{
+  const MetaDataMap& metadata = header.metaData();
+  if (metadata.empty()) {
+    return;
+  }
+
+  ImGui::SetNextItemOpen(false, ImGuiCond_Appearing);
+  if (ImGui::TreeNode("Metadata")) {
+    const std::vector<dicom::MetadataEntry> entries = imageMetadataEntries(metadata);
+    const ImVec2 tableSize(
+      std::max(420.0f, ImGui::GetContentRegionAvail().x),
+      std::min(360.0f, std::max(180.0f, 32.0f + 24.0f * static_cast<float>(entries.size()))));
+    renderDicomMetadataTable("ImageHeaderFileMetadataTable", entries, tableSize, "Key", "Type", "Value", 0.0f, 0.0f);
+    ImGui::TreePop();
+    ImGui::Separator();
+  }
+}
+
 } // namespace
 
 void renderImageHeader(
@@ -230,13 +382,26 @@ void renderImageHeader(
   Image* activeSeg = (activeSegUid) ? appData.seg(*activeSegUid) : nullptr;
 
   uint32_t activeComp = imgSettings.activeComponent();
+  Image* displayImage = image;
+  ImageSettings* displaySettings = &imgSettings;
+  uint32_t displayComp = activeComp;
 
-  auto getCurrentImageColormapIndex = [&imgSettings]() {
-    return imgSettings.colorMapIndex();
+  if (const auto projectionMode = componentProjectionForImage(*image)) {
+    if (const auto projectionUid = appData.componentProjectionImageUid(imageUid, *projectionMode)) {
+      if (Image* projectionImage = appData.image(*projectionUid)) {
+        displayImage = projectionImage;
+        displaySettings = &projectionImage->settings();
+        displayComp = 0;
+      }
+    }
+  }
+
+  auto getCurrentImageColormapIndex = [&displaySettings]() {
+    return displaySettings->colorMapIndex();
   };
 
-  auto setCurrentImageColormapIndex = [&imgSettings](size_t cmapIndex) {
-    imgSettings.setColorMapIndex(cmapIndex);
+  auto setCurrentImageColormapIndex = [&displaySettings](size_t cmapIndex) {
+    displaySettings->setColorMapIndex(cmapIndex);
   };
 
   ImGuiTreeNodeFlags headerFlags = ImGuiTreeNodeFlags_CollapsingHeader;
@@ -464,14 +629,24 @@ void renderImageHeader(
 
   if (showComponentControls) {
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-    if (ImGui::TreeNode("Multi-Component Rendering")) {
+    const bool complexValuedImage = isComplexValuedImage(*image);
+    if (ImGui::TreeNode(complexValuedImage ? "Complex Image Settings" : "Multi-Component Rendering")) {
       auto setComponentMode = [&](ComponentRenderMode mode) {
         if (imgSettings.componentRenderMode() == mode) {
           return;
         }
 
         imgSettings.setComponentRenderMode(mode);
-        if (const auto projectionMode = componentProjectionFromRenderMode(mode)) {
+        if (ComponentRenderMode::ComplexReal == mode) {
+          imgSettings.setActiveComponent(0);
+          activeComp = imgSettings.activeComponent();
+        }
+        else if (ComponentRenderMode::ComplexImaginary == mode) {
+          imgSettings.setActiveComponent(1);
+          activeComp = imgSettings.activeComponent();
+        }
+
+        if (const auto projectionMode = componentProjectionForImage(*image)) {
           requestComponentProjectionImage(imageUid, *projectionMode);
         }
         updateImageUniforms();
@@ -485,27 +660,83 @@ void renderImageHeader(
         }
       };
 
-      const std::string renderAsLabel =
-        "Render " + std::to_string(imgHeader.numComponentsPerPixel()) + "-component image as:";
-      ImGui::TextUnformatted(renderAsLabel.c_str());
-      radioComponentMode("Single component", ComponentRenderMode::SingleComponent);
-
-      const bool canDisplayAsColor = (3 == imgHeader.numComponentsPerPixel() || 4 == imgHeader.numComponentsPerPixel());
-      if (canDisplayAsColor) {
+      if (complexValuedImage) {
+        ImGui::TextUnformatted("Render complex image as:");
+        radioComponentMode("Magnitude", ComponentRenderMode::Magnitude);
         ImGui::SameLine();
-        const bool hasAlphaComponent = 4 == imgHeader.numComponentsPerPixel();
-        radioComponentMode(hasAlphaComponent ? "RGBA color" : "RGB color", ComponentRenderMode::Color);
+        radioComponentMode("Phase", ComponentRenderMode::ComplexPhase);
+        ImGui::SameLine();
+        radioComponentMode("Real", ComponentRenderMode::ComplexReal);
+        ImGui::SameLine();
+        radioComponentMode("Imaginary", ComponentRenderMode::ComplexImaginary);
+
+        if (ComponentRenderMode::ComplexPhase == imgSettings.componentRenderMode()) {
+          ImGui::TextUnformatted("Phase units:");
+          bool radians = ComplexPhaseUnit::Radians == imgSettings.complexPhaseUnit();
+          if (ImGui::RadioButton("Radians", radians)) {
+            imgSettings.setComplexPhaseUnit(ComplexPhaseUnit::Radians);
+            if (const auto projectionMode = componentProjectionForImage(*image)) {
+              requestComponentProjectionImage(imageUid, *projectionMode);
+            }
+            updateImageUniforms();
+          }
+          ImGui::SameLine();
+          bool degrees = ComplexPhaseUnit::Degrees == imgSettings.complexPhaseUnit();
+          if (ImGui::RadioButton("Degrees", degrees)) {
+            imgSettings.setComplexPhaseUnit(ComplexPhaseUnit::Degrees);
+            if (const auto projectionMode = componentProjectionForImage(*image)) {
+              requestComponentProjectionImage(imageUid, *projectionMode);
+            }
+            updateImageUniforms();
+          }
+
+          ImGui::TextUnformatted("Phase range:");
+          const bool signedRange = ComplexPhaseRange::Signed == imgSettings.complexPhaseRange();
+          const char* signedLabel =
+            ComplexPhaseUnit::Degrees == imgSettings.complexPhaseUnit() ? "-180 to 180 deg" : "-pi to pi";
+          if (ImGui::RadioButton(signedLabel, signedRange)) {
+            imgSettings.setComplexPhaseRange(ComplexPhaseRange::Signed);
+            if (const auto projectionMode = componentProjectionForImage(*image)) {
+              requestComponentProjectionImage(imageUid, *projectionMode);
+            }
+            updateImageUniforms();
+          }
+          ImGui::SameLine();
+          const char* unsignedLabel =
+            ComplexPhaseUnit::Degrees == imgSettings.complexPhaseUnit() ? "0 to 360 deg" : "0 to 2pi";
+          if (ImGui::RadioButton(unsignedLabel, !signedRange)) {
+            imgSettings.setComplexPhaseRange(ComplexPhaseRange::Unsigned);
+            if (const auto projectionMode = componentProjectionForImage(*image)) {
+              requestComponentProjectionImage(imageUid, *projectionMode);
+            }
+            updateImageUniforms();
+          }
+        }
+      }
+      else {
+        const std::string renderAsLabel =
+          "Render " + std::to_string(imgHeader.numComponentsPerPixel()) + "-component image as:";
+        ImGui::TextUnformatted(renderAsLabel.c_str());
+        radioComponentMode("Single component", ComponentRenderMode::SingleComponent);
+
+        const bool canDisplayAsColor =
+          (3 == imgHeader.numComponentsPerPixel() || 4 == imgHeader.numComponentsPerPixel());
+        if (canDisplayAsColor) {
+          ImGui::SameLine();
+          const bool hasAlphaComponent = 4 == imgHeader.numComponentsPerPixel();
+          radioComponentMode(hasAlphaComponent ? "RGBA color" : "RGB color", ComponentRenderMode::Color);
+        }
+
+        radioComponentMode("Minimum", ComponentRenderMode::Minimum);
+        ImGui::SameLine();
+        radioComponentMode("Mean", ComponentRenderMode::Mean);
+        ImGui::SameLine();
+        radioComponentMode("Maximum", ComponentRenderMode::Maximum);
+        ImGui::SameLine();
+        radioComponentMode("Magnitude", ComponentRenderMode::Magnitude);
       }
 
-      radioComponentMode("Minimum", ComponentRenderMode::Minimum);
-      ImGui::SameLine();
-      radioComponentMode("Mean", ComponentRenderMode::Mean);
-      ImGui::SameLine();
-      radioComponentMode("Maximum", ComponentRenderMode::Maximum);
-      ImGui::SameLine();
-      radioComponentMode("Magnitude", ComponentRenderMode::Magnitude);
-
-      if (imgSettings.displayImageAsColor() && 4 == imgHeader.numComponentsPerPixel()) {
+      if (!complexValuedImage && imgSettings.displayImageAsColor() && 4 == imgHeader.numComponentsPerPixel()) {
         bool ignoreAlpha = imgSettings.ignoreAlpha();
 
         if (ImGui::Checkbox("Ignore alpha component", &ignoreAlpha)) {
@@ -519,23 +750,43 @@ void renderImageHeader(
       const bool showPerComponentControls =
         ComponentRenderMode::SingleComponent == imgSettings.componentRenderMode() || imgSettings.displayImageAsColor();
       if (showPerComponentControls) {
-        uint32_t componentInput = activeComp;
-        constexpr uint32_t componentStep = 1;
         const uint32_t componentMax = imgHeader.numComponentsPerPixel() - 1;
-        const std::string componentFormat = "%u of " + std::to_string(componentMax);
-        if (ImGui::InputScalar(
-              "Component",
-              ImGuiDataType_U32,
-              &componentInput,
-              &componentStep,
-              nullptr,
-              componentFormat.c_str()))
-        {
-          const uint32_t clampedComponent = std::min(componentInput, componentMax);
-          if (clampedComponent != activeComp) {
-            imgSettings.setActiveComponent(clampedComponent);
-            activeComp = imgSettings.activeComponent();
-            updateImageUniforms();
+        if (complexValuedImage) {
+          const std::string currentComponentLabel = complexComponentLabel(activeComp, componentMax);
+          if (ImGui::BeginCombo("Component", currentComponentLabel.c_str())) {
+            for (uint32_t component = 0; component <= componentMax; ++component) {
+              const std::string label = complexComponentLabel(component, componentMax);
+              const bool selected = component == activeComp;
+              if (ImGui::Selectable(label.c_str(), selected)) {
+                imgSettings.setActiveComponent(component);
+                activeComp = imgSettings.activeComponent();
+                updateImageUniforms();
+              }
+              if (selected) {
+                ImGui::SetItemDefaultFocus();
+              }
+            }
+            ImGui::EndCombo();
+          }
+        }
+        else {
+          uint32_t componentInput = activeComp;
+          constexpr uint32_t componentStep = 1;
+          const std::string componentFormat = "%u of " + std::to_string(componentMax);
+          if (ImGui::InputScalar(
+                "Component",
+                ImGuiDataType_U32,
+                &componentInput,
+                &componentStep,
+                nullptr,
+                componentFormat.c_str()))
+          {
+            const uint32_t clampedComponent = std::min(componentInput, componentMax);
+            if (clampedComponent != activeComp) {
+              imgSettings.setActiveComponent(clampedComponent);
+              activeComp = imgSettings.activeComponent();
+              updateImageUniforms();
+            }
           }
         }
 
@@ -564,7 +815,7 @@ void renderImageHeader(
           helpMarker("Selected image component opacity");
         }
       }
-      else if (const auto projectionMode = componentProjectionFromRenderMode(imgSettings.componentRenderMode());
+      else if (const auto projectionMode = componentProjectionForImage(*image);
                projectionMode && !appData.componentProjectionImageUid(imageUid, *projectionMode))
       {
         ImGui::TextDisabled("Computing %s projection...", componentProjectionModeName(*projectionMode).c_str());
@@ -674,45 +925,50 @@ void renderImageHeader(
       ImGui::Dummy(ImVec2(0.0f, 1.0f));
     }
 
+    ImageSettings& viewSettings = *displaySettings;
+    Image& viewImage = *displayImage;
+    const ImageHeader& viewHeader = viewImage.header();
+    const uint32_t viewComp = displayComp;
+
     const bool imageHasFloatComponents =
-      (ComponentType::Float32 == imgHeader.memoryComponentType() ||
-       ComponentType::Float64 == imgHeader.memoryComponentType());
+      (ComponentType::Float32 == viewHeader.memoryComponentType() ||
+       ComponentType::Float64 == viewHeader.memoryComponentType());
 
     if (imageHasFloatComponents) {
       // Threshold range:
-      const float threshMin = static_cast<float>(imgSettings.thresholdRange().first);
-      const float threshMax = static_cast<float>(imgSettings.thresholdRange().second);
+      const float threshMin = static_cast<float>(viewSettings.thresholdRange(viewComp).first);
+      const float threshMax = static_cast<float>(viewSettings.thresholdRange(viewComp).second);
 
       // Speed of range slider is based on the range
       const float speed = static_cast<float>(threshMax - threshMin) / 1000.0f;
 
       // Window/level sliders:
-      const float windowWidthMin = static_cast<float>(imgSettings.minMaxWindowWidthRange().first);
-      const float windowWidthMax = static_cast<float>(imgSettings.minMaxWindowWidthRange().second);
+      const float windowWidthMin = static_cast<float>(viewSettings.minMaxWindowWidthRange(viewComp).first);
+      const float windowWidthMax = static_cast<float>(viewSettings.minMaxWindowWidthRange(viewComp).second);
 
-      const float windowCenterMin = static_cast<float>(imgSettings.minMaxWindowCenterRange().first);
-      const float windowCenterMax = static_cast<float>(imgSettings.minMaxWindowCenterRange().second);
+      const float windowCenterMin = static_cast<float>(viewSettings.minMaxWindowCenterRange(viewComp).first);
+      const float windowCenterMax = static_cast<float>(viewSettings.minMaxWindowCenterRange(viewComp).second);
 
-      const float windowMin = static_cast<float>(imgSettings.minMaxWindowRange().first);
-      const float windowMax = static_cast<float>(imgSettings.minMaxWindowRange().second);
+      const float windowMin = static_cast<float>(viewSettings.minMaxWindowRange(viewComp).first);
+      const float windowMax = static_cast<float>(viewSettings.minMaxWindowRange(viewComp).second);
 
-      float windowLow = static_cast<float>(imgSettings.windowValuesLowHigh().first);
-      float windowHigh = static_cast<float>(imgSettings.windowValuesLowHigh().second);
+      float windowLow = static_cast<float>(viewSettings.windowValuesLowHigh(viewComp).first);
+      float windowHigh = static_cast<float>(viewSettings.windowValuesLowHigh(viewComp).second);
 
-      double windowWidth = imgSettings.windowWidth();
-      double windowCenter = imgSettings.windowCenter();
+      double windowWidth = viewSettings.windowWidth(viewComp);
+      double windowCenter = viewSettings.windowCenter(viewComp);
 
       ImGui::Text("Windowing:");
 
       if (mySliderF64("Width", &windowWidth, windowWidthMin, windowWidthMax, valuesFormat)) {
-        imgSettings.setWindowWidth(windowWidth);
+        viewSettings.setWindowWidth(viewComp, windowWidth);
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Window width");
 
       if (mySliderF64("Level", &windowCenter, windowCenterMin, windowCenterMax, valuesFormat)) {
-        imgSettings.setWindowCenter(windowCenter);
+        viewSettings.setWindowCenter(viewComp, windowCenter);
         updateImageUniforms();
       }
       ImGui::SameLine();
@@ -729,15 +985,15 @@ void renderImageHeader(
             maxValuesFormat,
             ImGuiSliderFlags_AlwaysClamp))
       {
-        imgSettings.setWindowValueLow(windowLow);
-        imgSettings.setWindowValueHigh(windowHigh);
+        viewSettings.setWindowValueLow(viewComp, windowLow);
+        viewSettings.setWindowValueHigh(viewComp, windowHigh);
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum values of the window range");
 
-      const QuantileOfValue qLow = image->valueToQuantile(activeComp, windowLow);
-      const QuantileOfValue qHigh = image->valueToQuantile(activeComp, windowHigh);
+      const QuantileOfValue qLow = viewImage.valueToQuantile(viewComp, windowLow);
+      const QuantileOfValue qHigh = viewImage.valueToQuantile(viewComp, windowHigh);
 
       constexpr float windowPercentileMin = 0.0f;
       constexpr float windowPercentileMax = 100.0f;
@@ -761,37 +1017,37 @@ void renderImageHeader(
       {
         if (windowPercentileLowCurrent != windowPercentileLowAttempted) {
           const double windowPercentileLowBumped = bumpQuantile(
-            *image,
-            activeComp,
+            viewImage,
+            viewComp,
             windowPercentileLowCurrent / 100.0,
             windowPercentileLowAttempted / 100.0,
             windowLow,
-            imgSettings.usingExactQuantiles());
+            viewSettings.usingExactQuantiles());
 
-          const double newWindowLow = image->quantileToValue(activeComp, windowPercentileLowBumped);
-          imgSettings.setWindowValueLow(newWindowLow);
+          const double newWindowLow = viewImage.quantileToValue(viewComp, windowPercentileLowBumped);
+          viewSettings.setWindowValueLow(viewComp, newWindowLow);
           updateImageUniforms();
         }
 
         if (windowPercentileHighCurrent != windowPercentileHighAttempted) {
           const double windowPercentileHighBumped = bumpQuantile(
-            *image,
-            activeComp,
+            viewImage,
+            viewComp,
             windowPercentileHighCurrent / 100.0,
             windowPercentileHighAttempted / 100.0,
             windowHigh,
-            imgSettings.usingExactQuantiles());
+            viewSettings.usingExactQuantiles());
 
-          const double newWindowHigh = image->quantileToValue(activeComp, windowPercentileHighBumped);
-          imgSettings.setWindowValueHigh(newWindowHigh);
+          const double newWindowHigh = viewImage.quantileToValue(viewComp, windowPercentileHighBumped);
+          viewSettings.setWindowValueHigh(viewComp, newWindowHigh);
           updateImageUniforms();
         }
       }
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum percentiles of the window range");
 
-      float threshLow = static_cast<float>(imgSettings.thresholds().first);
-      float threshHigh = static_cast<float>(imgSettings.thresholds().second);
+      float threshLow = static_cast<float>(viewSettings.thresholds(viewComp).first);
+      float threshHigh = static_cast<float>(viewSettings.thresholds(viewComp).second);
 
       if (ImGui::DragFloatRange2(
             "Thresholds",
@@ -804,8 +1060,8 @@ void renderImageHeader(
             maxValuesFormat,
             ImGuiSliderFlags_AlwaysClamp))
       {
-        imgSettings.setThresholdLow(static_cast<double>(threshLow));
-        imgSettings.setThresholdHigh(static_cast<double>(threshHigh));
+        viewSettings.setThresholdLow(viewComp, static_cast<double>(threshLow));
+        viewSettings.setThresholdHigh(viewComp, static_cast<double>(threshHigh));
         updateImageUniforms();
       }
       ImGui::SameLine();
@@ -816,32 +1072,36 @@ void renderImageHeader(
       constexpr float speed = 1.0f;
 
       // Window/level sliders:
-      const int32_t windowWidthMin = static_cast<int32_t>(std::floor(imgSettings.minMaxWindowWidthRange().first));
-      const int32_t windowWidthMax = static_cast<int32_t>(std::ceil(imgSettings.minMaxWindowWidthRange().second));
+      const int32_t windowWidthMin =
+        static_cast<int32_t>(std::floor(viewSettings.minMaxWindowWidthRange(viewComp).first));
+      const int32_t windowWidthMax =
+        static_cast<int32_t>(std::ceil(viewSettings.minMaxWindowWidthRange(viewComp).second));
 
-      const int32_t windowCenterMin = static_cast<int32_t>(std::floor(imgSettings.minMaxWindowCenterRange().first));
-      const int32_t windowCenterMax = static_cast<int32_t>(std::ceil(imgSettings.minMaxWindowCenterRange().second));
+      const int32_t windowCenterMin =
+        static_cast<int32_t>(std::floor(viewSettings.minMaxWindowCenterRange(viewComp).first));
+      const int32_t windowCenterMax =
+        static_cast<int32_t>(std::ceil(viewSettings.minMaxWindowCenterRange(viewComp).second));
 
-      const int32_t windowMin = static_cast<int32_t>(std::floor(imgSettings.minMaxWindowRange().first));
-      const int32_t windowMax = static_cast<int32_t>(std::ceil(imgSettings.minMaxWindowRange().second));
+      const int32_t windowMin = static_cast<int32_t>(std::floor(viewSettings.minMaxWindowRange(viewComp).first));
+      const int32_t windowMax = static_cast<int32_t>(std::ceil(viewSettings.minMaxWindowRange(viewComp).second));
 
-      int32_t windowLow = static_cast<int32_t>(imgSettings.windowValuesLowHigh().first);
-      int32_t windowHigh = static_cast<int32_t>(imgSettings.windowValuesLowHigh().second);
+      int32_t windowLow = static_cast<int32_t>(viewSettings.windowValuesLowHigh(viewComp).first);
+      int32_t windowHigh = static_cast<int32_t>(viewSettings.windowValuesLowHigh(viewComp).second);
 
-      int64_t windowWidth = static_cast<int64_t>(imgSettings.windowWidth());
-      int64_t windowCenter = static_cast<int64_t>(imgSettings.windowCenter());
+      int64_t windowWidth = static_cast<int64_t>(viewSettings.windowWidth(viewComp));
+      int64_t windowCenter = static_cast<int64_t>(viewSettings.windowCenter(viewComp));
 
       ImGui::Text("Windowing:");
 
       if (mySliderS64("Width", &windowWidth, windowWidthMin, windowWidthMax)) {
-        imgSettings.setWindowWidth(static_cast<double>(windowWidth));
+        viewSettings.setWindowWidth(viewComp, static_cast<double>(windowWidth));
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Window width");
 
       if (mySliderS64("Level", &windowCenter, windowCenterMin, windowCenterMax)) {
-        imgSettings.setWindowCenter(static_cast<double>(windowCenter));
+        viewSettings.setWindowCenter(viewComp, static_cast<double>(windowCenter));
         updateImageUniforms();
       }
       ImGui::SameLine();
@@ -858,15 +1118,15 @@ void renderImageHeader(
             "Max: %d",
             ImGuiSliderFlags_AlwaysClamp))
       {
-        imgSettings.setWindowValueLow(windowLow);
-        imgSettings.setWindowValueHigh(windowHigh);
+        viewSettings.setWindowValueLow(viewComp, windowLow);
+        viewSettings.setWindowValueHigh(viewComp, windowHigh);
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker("Set the minimum and maximum of the window range");
 
-      const QuantileOfValue qLow = image->valueToQuantile(activeComp, static_cast<int64_t>(windowLow));
-      const QuantileOfValue qHigh = image->valueToQuantile(activeComp, static_cast<int64_t>(windowHigh));
+      const QuantileOfValue qLow = viewImage.valueToQuantile(viewComp, static_cast<int64_t>(windowLow));
+      const QuantileOfValue qHigh = viewImage.valueToQuantile(viewComp, static_cast<int64_t>(windowHigh));
 
       constexpr float windowPercentileMin = 0.0f;
       constexpr float windowPercentileMax = 100.0f;
@@ -890,30 +1150,30 @@ void renderImageHeader(
       {
         if (windowPercentileLowCurrent != windowPercentileLowAttempted) {
           const double windowPercentileLowBumped = bumpQuantile(
-            *image,
-            activeComp,
+            viewImage,
+            viewComp,
             windowPercentileLowCurrent / 100.0,
             windowPercentileLowAttempted / 100.0,
             windowLow,
-            imgSettings.usingExactQuantiles());
+            viewSettings.usingExactQuantiles());
 
-          const double newWindowLow = image->quantileToValue(activeComp, windowPercentileLowBumped);
+          const double newWindowLow = viewImage.quantileToValue(viewComp, windowPercentileLowBumped);
 
-          imgSettings.setWindowValueLow(newWindowLow);
+          viewSettings.setWindowValueLow(viewComp, newWindowLow);
           updateImageUniforms();
         }
 
         if (windowPercentileHighCurrent != windowPercentileHighAttempted) {
           const double windowPercentileHighBumped = bumpQuantile(
-            *image,
-            activeComp,
+            viewImage,
+            viewComp,
             windowPercentileHighCurrent / 100.0,
             windowPercentileHighAttempted / 100.0,
             windowHigh,
-            imgSettings.usingExactQuantiles());
+            viewSettings.usingExactQuantiles());
 
-          const double newWindowHigh = image->quantileToValue(activeComp, windowPercentileHighBumped);
-          imgSettings.setWindowValueHigh(newWindowHigh);
+          const double newWindowHigh = viewImage.quantileToValue(viewComp, windowPercentileHighBumped);
+          viewSettings.setWindowValueHigh(viewComp, newWindowHigh);
           updateImageUniforms();
         }
       }
@@ -921,11 +1181,11 @@ void renderImageHeader(
       helpMarker("Set the minimum and maximum percentiles of the window range");
 
       // Threshold range:
-      const int32_t threshMin = static_cast<int32_t>(imgSettings.thresholdRange().first);
-      const int32_t threshMax = static_cast<int32_t>(imgSettings.thresholdRange().second);
+      const int32_t threshMin = static_cast<int32_t>(viewSettings.thresholdRange(viewComp).first);
+      const int32_t threshMax = static_cast<int32_t>(viewSettings.thresholdRange(viewComp).second);
 
-      int32_t threshLow = static_cast<int32_t>(imgSettings.thresholds().first);
-      int32_t threshHigh = static_cast<int32_t>(imgSettings.thresholds().second);
+      int32_t threshLow = static_cast<int32_t>(viewSettings.thresholds(viewComp).first);
+      int32_t threshHigh = static_cast<int32_t>(viewSettings.thresholds(viewComp).second);
 
       /// Speed of range slider is based on the image range
       if (ImGui::DragIntRange2(
@@ -939,8 +1199,8 @@ void renderImageHeader(
             "Max: %d",
             ImGuiSliderFlags_AlwaysClamp))
       {
-        imgSettings.setThresholdLow(static_cast<double>(threshLow));
-        imgSettings.setThresholdHigh(static_cast<double>(threshHigh));
+        viewSettings.setThresholdLow(viewComp, static_cast<double>(threshLow));
+        viewSettings.setThresholdHigh(viewComp, static_cast<double>(threshHigh));
         updateImageUniforms();
       }
       ImGui::SameLine();
@@ -996,14 +1256,14 @@ void renderImageHeader(
         ImGui::SameLine(); helpMarker("Set window based on percentiles of the image histogram");
 */
 
-    auto getImageInterpMode = [&imgSettings]() {
-      return (imgSettings.displayImageAsColor()) ? imgSettings.colorInterpolationMode()
-                                                 : imgSettings.interpolationMode();
+    auto getImageInterpMode = [&viewSettings]() {
+      return (viewSettings.displayImageAsColor()) ? viewSettings.colorInterpolationMode()
+                                                  : viewSettings.interpolationMode();
     };
 
-    auto setImageInterpMode = [&imgSettings](const InterpolationMode& mode) {
-      (imgSettings.displayImageAsColor()) ? imgSettings.setColorInterpolationMode(mode)
-                                          : imgSettings.setInterpolationMode(mode);
+    auto setImageInterpMode = [&viewSettings](const InterpolationMode& mode) {
+      (viewSettings.displayImageAsColor()) ? viewSettings.setColorInterpolationMode(mode)
+                                           : viewSettings.setInterpolationMode(mode);
     };
 
     if (ImGui::BeginCombo("Sampling", typeString(getImageInterpMode()).c_str())) {
@@ -1026,10 +1286,10 @@ void renderImageHeader(
 
     ImageColorMap* cmap = getImageColorMap(cmapIndex);
 
-    if (cmap && !imgSettings.displayImageAsColor()) {
+    if (cmap && !viewSettings.displayImageAsColor()) {
       bool* showImageColormapWindow = &(guiData.m_showImageColormapWindow[imageUid]);
 
-      glm::vec3 hsvMods = imgSettings.colorMapHsvModFactors();
+      glm::vec3 hsvMods = viewSettings.colorMapHsvModFactors();
       glm::ivec3 hsvModsInt = glm::ivec3{360.0f * hsvMods[0], 100.0f * hsvMods[1], 100.0f * hsvMods[2]};
 
       // Colormap preview:
@@ -1040,7 +1300,7 @@ void renderImageHeader(
       snprintf(label, 128, "%s##cmap_%zu", cmap->name().c_str(), imageIndex);
 
       const bool doQuantize =
-        (!imgSettings.colorMapContinuous() && (ImageColorMap::InterpolationMode::Linear == cmap->interpolationMode()));
+        (!viewSettings.colorMapContinuous() && (ImageColorMap::InterpolationMode::Linear == cmap->interpolationMode()));
 
       //            ImGui::Dummy(ImVec2(0.0f, 2.0f));
       ImGui::Spacing();
@@ -1050,9 +1310,9 @@ void renderImageHeader(
       *showImageColormapWindow |= ImGui::paletteButton(
         label,
         cmap->data_RGBA_asVector(),
-        imgSettings.isColorMapInverted(),
+        viewSettings.isColorMapInverted(),
         doQuantize,
-        static_cast<int>(imgSettings.colorMapQuantizationLevels()),
+        static_cast<int>(viewSettings.colorMapQuantizationLevels()),
         hsvMods,
         ImVec2(contentWidth, height));
 
@@ -1066,10 +1326,10 @@ void renderImageHeader(
         // Image colormap dialog:
         *showImageColormapWindow |= ImGui::Button("Select color map");
 
-        bool invertedCmap = imgSettings.isColorMapInverted();
+        bool invertedCmap = viewSettings.isColorMapInverted();
 
         if (ImGui::Checkbox("Inverted", &invertedCmap)) {
-          imgSettings.setColorMapInverted(invertedCmap);
+          viewSettings.setColorMapInverted(invertedCmap);
           updateImageUniforms();
         }
         ImGui::SameLine();
@@ -1080,19 +1340,19 @@ void renderImageHeader(
         //                const bool forcedDiscrete = (ImageColorMap::InterpolationMode::Nearest ==
         //                cmap->interpolationMode());
 
-        bool colorMapContinuous = imgSettings.colorMapContinuous();
+        bool colorMapContinuous = viewSettings.colorMapContinuous();
 
         ImGui::SameLine();
         if (ImGui::RadioButton("Continuous", colorMapContinuous /*&& ! forcedDiscrete*/)) {
           colorMapContinuous = true;
-          imgSettings.setColorMapContinuous(colorMapContinuous);
+          viewSettings.setColorMapContinuous(colorMapContinuous);
           updateImageUniforms();
         }
 
         ImGui::SameLine();
         if (ImGui::RadioButton("Discrete", !colorMapContinuous /*|| forcedDiscrete*/)) {
           colorMapContinuous = false;
-          imgSettings.setColorMapContinuous(colorMapContinuous);
+          viewSettings.setColorMapContinuous(colorMapContinuous);
           updateImageUniforms();
         }
 
@@ -1100,12 +1360,12 @@ void renderImageHeader(
         helpMarker("Render color map as either continuous or discrete");
 
         if (!colorMapContinuous) {
-          int numColorMapLevels = static_cast<int>(imgSettings.colorMapQuantizationLevels());
+          int numColorMapLevels = static_cast<int>(viewSettings.colorMapQuantizationLevels());
 
           ImGui::InputInt("Color levels", &numColorMapLevels);
           {
             numColorMapLevels = std::min(std::max(numColorMapLevels, 2), 256);
-            imgSettings.setColorMapQuantizationLevels(static_cast<uint32_t>(numColorMapLevels));
+            viewSettings.setColorMapQuantizationLevels(static_cast<uint32_t>(numColorMapLevels));
             updateImageUniforms();
           }
           ImGui::SameLine();
@@ -1165,30 +1425,30 @@ void renderImageHeader(
               hsv_formats,
               0))
         {
-          imgSettings.setColorMapHueModFactor(hsvModsInt[0] / 360.0f);
-          imgSettings.setColorMapSatModFactor(hsvModsInt[1] / 100.0f);
-          imgSettings.setColorMapValModFactor(hsvModsInt[2] / 100.0f);
+          viewSettings.setColorMapHueModFactor(hsvModsInt[0] / 360.0f);
+          viewSettings.setColorMapSatModFactor(hsvModsInt[1] / 100.0f);
+          viewSettings.setColorMapValModFactor(hsvModsInt[2] / 100.0f);
           updateImageUniforms();
         }
 
         ImGui::TreePop();
       }
 
-      auto getImageColorMapInverted = [&imgSettings]() {
-        return imgSettings.isColorMapInverted();
+      auto getImageColorMapInverted = [&viewSettings]() {
+        return viewSettings.isColorMapInverted();
       };
 
-      auto getImageColorMapContinuous = [&imgSettings]() {
-        return imgSettings.colorMapContinuous();
+      auto getImageColorMapContinuous = [&viewSettings]() {
+        return viewSettings.colorMapContinuous();
       };
 
-      auto getImageColorMapLevels = [&imgSettings]() {
-        return static_cast<int>(imgSettings.colorMapQuantizationLevels());
+      auto getImageColorMapLevels = [&viewSettings]() {
+        return static_cast<int>(viewSettings.colorMapQuantizationLevels());
       };
 
       renderPaletteWindow(
         std::string(
-          "Select colormap for image '" + imgSettings.displayName() + "' (component " + std::to_string(activeComp) +
+          "Select colormap for image '" + imgSettings.displayName() + "' (component " + std::to_string(displayComp) +
           ")")
           .c_str(),
         showImageColormapWindow,
@@ -1207,9 +1467,9 @@ void renderImageHeader(
     ImGui::Spacing();
     ImGui::Spacing();
 
-    bool showEdges = imgSettings.showAnyEdges();
+    bool showEdges = viewSettings.showAnyEdges();
     if (ImGui::Checkbox("Show edges", &showEdges)) {
-      imgSettings.setShowAnyEdges(showEdges);
+      viewSettings.setShowAnyEdges(showEdges);
       updateImageUniforms();
     }
     ImGui::SameLine();
@@ -1217,7 +1477,7 @@ void renderImageHeader(
 
     ImGui::SetNextItemOpen(showEdges, ImGuiCond_Appearing);
     if (showEdges && ImGui::TreeNode("Edge settings")) {
-      EdgeDetectionMethod edgeMethod = imgSettings.edgeDetectionMethod();
+      EdgeDetectionMethod edgeMethod = viewSettings.edgeDetectionMethod();
       int edgeMethodIndex = EdgeDetectionMethod::Voxel == edgeMethod ? 0 : 1;
       if (ImGui::RadioButton("Voxel-space", edgeMethodIndex == 0)) {
         edgeMethodIndex = 0;
@@ -1229,7 +1489,7 @@ void renderImageHeader(
       const EdgeDetectionMethod selectedEdgeMethod =
         edgeMethodIndex == 0 ? EdgeDetectionMethod::Voxel : EdgeDetectionMethod::Pixel;
       if (selectedEdgeMethod != edgeMethod) {
-        imgSettings.setEdgeDetectionMethod(selectedEdgeMethod);
+        viewSettings.setEdgeDetectionMethod(selectedEdgeMethod);
         edgeMethod = selectedEdgeMethod;
         updateImageUniforms();
       }
@@ -1241,17 +1501,17 @@ void renderImageHeader(
       const bool useVoxelEdges = EdgeDetectionMethod::Voxel == edgeMethod;
       const bool usePixelEdges = EdgeDetectionMethod::Pixel == edgeMethod;
 
-      if (useVoxelEdges && InterpolationMode::NearestNeighbor == imgSettings.interpolationMode()) {
+      if (useVoxelEdges && InterpolationMode::NearestNeighbor == viewSettings.interpolationMode()) {
         ImGui::Text("Note: Linear or cubic interpolation are recommended when showing edges.");
       }
 
-      bool hardEdges = useVoxelEdges ? imgSettings.thresholdEdges() : imgSettings.thresholdPixelEdges();
+      bool hardEdges = useVoxelEdges ? viewSettings.thresholdEdges() : viewSettings.thresholdPixelEdges();
       if (ImGui::Checkbox("Hard edges", &hardEdges)) {
         if (useVoxelEdges) {
-          imgSettings.setThresholdEdges(hardEdges);
+          viewSettings.setThresholdEdges(hardEdges);
         }
         else {
-          imgSettings.setThresholdPixelEdges(hardEdges);
+          viewSettings.setThresholdPixelEdges(hardEdges);
         }
         updateImageUniforms();
       }
@@ -1259,22 +1519,22 @@ void renderImageHeader(
       helpMarker("Apply thresholding to edge magnitude.");
 
       if (usePixelEdges) {
-        bool thinPixelEdges = imgSettings.thinPixelEdges();
+        bool thinPixelEdges = viewSettings.thinPixelEdges();
         if (ImGui::Checkbox("Thin edges", &thinPixelEdges)) {
-          imgSettings.setThinPixelEdges(thinPixelEdges);
+          viewSettings.setThinPixelEdges(thinPixelEdges);
           updateImageUniforms();
         }
         ImGui::SameLine();
         helpMarker("Keep only local edge-magnitude maxima along the screen-space gradient direction.");
       }
 
-      bool overlayEdges = useVoxelEdges ? imgSettings.overlayEdges() : imgSettings.overlayPixelEdges();
+      bool overlayEdges = useVoxelEdges ? viewSettings.overlayEdges() : viewSettings.overlayPixelEdges();
       if (ImGui::Checkbox("Overlay edges on image", &overlayEdges)) {
         if (useVoxelEdges) {
-          imgSettings.setOverlayEdges(overlayEdges);
+          viewSettings.setOverlayEdges(overlayEdges);
         }
         else {
-          imgSettings.setOverlayPixelEdges(overlayEdges);
+          viewSettings.setOverlayPixelEdges(overlayEdges);
         }
         updateImageUniforms();
       }
@@ -1283,42 +1543,42 @@ void renderImageHeader(
 
       if (useVoxelEdges) {
         if (overlayEdges || hardEdges) {
-          if (imgSettings.colormapEdges()) {
-            imgSettings.setColormapEdges(false);
+          if (viewSettings.colormapEdges()) {
+            viewSettings.setColormapEdges(false);
             updateImageUniforms();
           }
         }
-        bool colormapEdges = imgSettings.colormapEdges();
+        bool colormapEdges = viewSettings.colormapEdges();
         if (overlayEdges || hardEdges) {
           ImGui::BeginDisabled();
           ImGui::Checkbox("Apply colormap to edges", &colormapEdges);
           ImGui::EndDisabled();
         }
         else if (ImGui::Checkbox("Apply colormap to edges", &colormapEdges)) {
-          imgSettings.setColormapEdges(colormapEdges);
+          viewSettings.setColormapEdges(colormapEdges);
           updateImageUniforms();
         }
         ImGui::SameLine();
         helpMarker("Apply the image colormap to voxel-space edge magnitudes.");
       }
-      else if (imgSettings.colormapEdges()) {
-        imgSettings.setColormapEdges(false);
+      else if (viewSettings.colormapEdges()) {
+        viewSettings.setColormapEdges(false);
         updateImageUniforms();
       }
 
       if (usePixelEdges) {
-        double edgeScale = imgSettings.pixelEdgeScale();
+        double edgeScale = viewSettings.pixelEdgeScale();
         if (mySliderF64("Scale", &edgeScale, 0.01, 10.00)) {
-          imgSettings.setPixelEdgeScale(edgeScale);
+          viewSettings.setPixelEdgeScale(edgeScale);
           updateImageUniforms();
         }
         ImGui::SameLine();
         helpMarker("Scale applied to screen-space edge magnitude.");
       }
       else if (!hardEdges) {
-        double edgeScale = 1.0 - imgSettings.edgeMagnitude();
+        double edgeScale = 1.0 - viewSettings.edgeMagnitude();
         if (mySliderF64("Scale", &edgeScale, 0.01, 1.00)) {
-          imgSettings.setEdgeMagnitude(1.0 - edgeScale);
+          viewSettings.setEdgeMagnitude(1.0 - edgeScale);
           updateImageUniforms();
         }
         ImGui::SameLine();
@@ -1327,16 +1587,16 @@ void renderImageHeader(
 
       if (hardEdges) {
         if (usePixelEdges) {
-          double edgeThreshold = imgSettings.pixelEdgeThreshold();
+          double edgeThreshold = viewSettings.pixelEdgeThreshold();
           if (mySliderF64("Threshold", &edgeThreshold, 0.0, 1.0)) {
-            imgSettings.setPixelEdgeThreshold(edgeThreshold);
+            viewSettings.setPixelEdgeThreshold(edgeThreshold);
             updateImageUniforms();
           }
         }
         else {
-          double edgeThreshold = imgSettings.edgeMagnitude();
+          double edgeThreshold = viewSettings.edgeMagnitude();
           if (mySliderF64("Threshold", &edgeThreshold, 0.01, 1.00)) {
-            imgSettings.setEdgeMagnitude(edgeThreshold);
+            viewSettings.setEdgeMagnitude(edgeThreshold);
             updateImageUniforms();
           }
         }
@@ -1344,11 +1604,11 @@ void renderImageHeader(
         helpMarker("Magnitude threshold above which hard edges are shown.");
       }
 
-      if (!(useVoxelEdges && imgSettings.colormapEdges())) {
-        glm::vec4 edgeColor{imgSettings.edgeColor(), imgSettings.edgeOpacity()};
+      if (!(useVoxelEdges && viewSettings.colormapEdges())) {
+        glm::vec4 edgeColor{viewSettings.edgeColor(), viewSettings.edgeOpacity()};
         if (ImGui::ColorEdit4("Edge color", glm::value_ptr(edgeColor), colorAlphaEditFlags)) {
-          imgSettings.setEdgeColor(edgeColor);
-          imgSettings.setEdgeOpacity(static_cast<double>(edgeColor.a));
+          viewSettings.setEdgeColor(edgeColor);
+          viewSettings.setEdgeOpacity(static_cast<double>(edgeColor.a));
           updateImageUniforms();
         }
         ImGui::SameLine();
@@ -1364,6 +1624,16 @@ void renderImageHeader(
 
     ImGui::TreePop();
   }
+
+  if (ImGui::TreeNode("Image Header")) {
+    renderImageHeaderInformation(appData, imageUid, *image, updateImageUniforms, recenterAllViews);
+    ImGui::TreePop();
+    ImGui::Separator();
+  }
+
+  renderImageFileMetadata(image->header());
+
+  renderImageDicomMetadata(appData, imageUid);
 
   if (ImGui::TreeNode("Transformations")) {
     /// @note This code is commented out for now, since additional images are implicitly locked
@@ -1615,13 +1885,6 @@ void renderImageHeader(
 
     ImGui::TreePop();
   }
-
-  if (ImGui::TreeNode("Header Information")) {
-    renderImageHeaderInformation(appData, imageUid, *image, updateImageUniforms, recenterAllViews);
-    ImGui::TreePop();
-  }
-
-  renderImageDicomMetadata(appData, imageUid);
 
   if (!image->hasPixelData()) {
     ImGui::TextUnformatted("Pixel data is not loaded yet.");

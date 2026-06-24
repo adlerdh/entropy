@@ -40,7 +40,24 @@ enum class ProjectComponentRenderMode : std::uint8_t
   Minimum,
   Mean,
   Maximum,
-  Magnitude
+  Magnitude,
+  ComplexPhase,
+  ComplexReal,
+  ComplexImaginary
+};
+
+/// @brief Serialized complex phase display units.
+enum class ProjectComplexPhaseUnit : std::uint8_t
+{
+  Radians,
+  Degrees
+};
+
+/// @brief Serialized complex phase display range convention.
+enum class ProjectComplexPhaseRange : std::uint8_t
+{
+  Signed,
+  Unsigned
 };
 
 /**
@@ -64,8 +81,11 @@ struct ImageSettings
 
   uint32_t m_activeComponent = 0; //!< Active image component.
   ProjectComponentRenderMode m_componentRenderMode =
-    ProjectComponentRenderMode::SingleComponent; //!< Multi-component render mode.
-  bool m_ignoreAlpha = false;                    //!< Ignore alpha when rendering four-component images as RGBA.
+    ProjectComponentRenderMode::SingleComponent;                                 //!< Multi-component render mode.
+  ProjectComplexPhaseUnit m_complexPhaseUnit = ProjectComplexPhaseUnit::Radians; //!< Complex phase display units.
+  ProjectComplexPhaseRange m_complexPhaseRange =
+    ProjectComplexPhaseRange::Signed; //!< Complex phase display range convention.
+  bool m_ignoreAlpha = false;         //!< Ignore alpha when rendering four-component images as RGBA.
   InterpolationMode m_colorInterpolationMode = InterpolationMode::Linear; //!< RGB/RGBA interpolation mode.
   std::vector<double> m_componentLevels;                                  //!< Per-component window centers.
   std::vector<double> m_componentWindows;                                 //!< Per-component window widths.

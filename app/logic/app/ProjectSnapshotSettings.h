@@ -101,6 +101,12 @@ inline serialize::ProjectComponentRenderMode toSerializedComponentRenderMode(Com
       return serialize::ProjectComponentRenderMode::Maximum;
     case ComponentRenderMode::Magnitude:
       return serialize::ProjectComponentRenderMode::Magnitude;
+    case ComponentRenderMode::ComplexPhase:
+      return serialize::ProjectComponentRenderMode::ComplexPhase;
+    case ComponentRenderMode::ComplexReal:
+      return serialize::ProjectComponentRenderMode::ComplexReal;
+    case ComponentRenderMode::ComplexImaginary:
+      return serialize::ProjectComponentRenderMode::ComplexImaginary;
   }
 
   return serialize::ProjectComponentRenderMode::SingleComponent;
@@ -126,9 +132,63 @@ inline ComponentRenderMode fromSerializedComponentRenderMode(serialize::ProjectC
       return ComponentRenderMode::Maximum;
     case serialize::ProjectComponentRenderMode::Magnitude:
       return ComponentRenderMode::Magnitude;
+    case serialize::ProjectComponentRenderMode::ComplexPhase:
+      return ComponentRenderMode::ComplexPhase;
+    case serialize::ProjectComponentRenderMode::ComplexReal:
+      return ComponentRenderMode::ComplexReal;
+    case serialize::ProjectComponentRenderMode::ComplexImaginary:
+      return ComponentRenderMode::ComplexImaginary;
   }
 
   return ComponentRenderMode::SingleComponent;
+}
+
+inline serialize::ProjectComplexPhaseUnit toSerializedComplexPhaseUnit(ComplexPhaseUnit unit)
+{
+  switch (unit) {
+    case ComplexPhaseUnit::Radians:
+      return serialize::ProjectComplexPhaseUnit::Radians;
+    case ComplexPhaseUnit::Degrees:
+      return serialize::ProjectComplexPhaseUnit::Degrees;
+  }
+
+  return serialize::ProjectComplexPhaseUnit::Radians;
+}
+
+inline ComplexPhaseUnit fromSerializedComplexPhaseUnit(serialize::ProjectComplexPhaseUnit unit)
+{
+  switch (unit) {
+    case serialize::ProjectComplexPhaseUnit::Radians:
+      return ComplexPhaseUnit::Radians;
+    case serialize::ProjectComplexPhaseUnit::Degrees:
+      return ComplexPhaseUnit::Degrees;
+  }
+
+  return ComplexPhaseUnit::Radians;
+}
+
+inline serialize::ProjectComplexPhaseRange toSerializedComplexPhaseRange(ComplexPhaseRange range)
+{
+  switch (range) {
+    case ComplexPhaseRange::Signed:
+      return serialize::ProjectComplexPhaseRange::Signed;
+    case ComplexPhaseRange::Unsigned:
+      return serialize::ProjectComplexPhaseRange::Unsigned;
+  }
+
+  return serialize::ProjectComplexPhaseRange::Signed;
+}
+
+inline ComplexPhaseRange fromSerializedComplexPhaseRange(serialize::ProjectComplexPhaseRange range)
+{
+  switch (range) {
+    case serialize::ProjectComplexPhaseRange::Signed:
+      return ComplexPhaseRange::Signed;
+    case serialize::ProjectComplexPhaseRange::Unsigned:
+      return ComplexPhaseRange::Unsigned;
+  }
+
+  return ComplexPhaseRange::Signed;
 }
 
 /**

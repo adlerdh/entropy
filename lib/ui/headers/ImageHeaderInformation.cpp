@@ -16,6 +16,7 @@
 #include "image/DicomSeries.h"
 #include "image/Image.h"
 #include "image/ImageColorMap.h"
+#include "image/ImageDerivedData.h"
 #include "image/ImageHeader.h"
 #include "image/ImageSettings.h"
 #include "image/ImageTransformations.h"
@@ -85,29 +86,67 @@ void renderImageHeaderInformation(
   ImGui::SameLine();
   helpMarker("Image file name");
 
-  if (const serialize::DicomSource* dicomSource = image_export::dicomSourceForImage(appData, imageUid)) {
-    ImGui::Spacing();
-    ImGui::Text("DICOM series source:");
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
 
-    std::string dicomFolder = dicomSource->m_rootPath.string();
-    ImGui::InputText("DICOM folder", &dicomFolder, ImGuiInputTextFlags_ReadOnly);
+  // Pixel type:
+  std::string pixelType = imgHeader.pixelTypeAsString();
+  ImGui::InputText("Pixel type", &pixelType, ImGuiInputTextFlags_ReadOnly);
+  ImGui::SameLine();
+  helpMarker("Image pixel type");
 
-    std::string seriesUid = dicomSource->m_seriesInstanceUid;
-    ImGui::InputText("Series UID", &seriesUid, ImGuiInputTextFlags_ReadOnly);
+  // Number of components:
+  uint32_t numComponentsPerPixel = imgHeader.numComponentsPerPixel();
+  ImGui::InputScalar(
+    "Num. components",
+    ImGuiDataType_U32,
+    &numComponentsPerPixel,
+    nullptr,
+    nullptr,
+    nullptr,
+    ImGuiInputTextFlags_ReadOnly);
+  ImGui::SameLine();
+  helpMarker("Number of components per pixel");
 
-    std::string studyUid = dicomSource->m_studyInstanceUid;
-    ImGui::InputText("Study UID", &studyUid, ImGuiInputTextFlags_ReadOnly);
+  // Component type:
+  std::string componentType = lowerCaseCopy(componentTypeString(imgHeader.fileComponentType()));
+  ImGui::InputText("Component type", &componentType, ImGuiInputTextFlags_ReadOnly);
+  ImGui::SameLine();
+  helpMarker("Image component type");
 
-    std::uint64_t sliceCount = static_cast<std::uint64_t>(dicomSource->m_files.size());
-    ImGui::InputScalar(
-      "Slices",
-      ImGuiDataType_U64,
-      &sliceCount,
-      nullptr,
-      nullptr,
-      nullptr,
-      ImGuiInputTextFlags_ReadOnly);
+  if (isComplexValuedImage(image)) {
+    std::string componentRoles = "0: real, 1: imaginary";
+    ImGui::InputText("Component roles", &componentRoles, ImGuiInputTextFlags_ReadOnly);
+    ImGui::SameLine();
+    helpMarker("Complex image component interpretation");
   }
+
+  // Image size (bytes):
+  uint64_t fileSizeBytes = imgHeader.fileImageSizeInBytes();
+  ImGui::InputScalar(
+    "Size (bytes)",
+    ImGuiDataType_U64,
+    &fileSizeBytes,
+    nullptr,
+    nullptr,
+    nullptr,
+    ImGuiInputTextFlags_ReadOnly);
+  ImGui::SameLine();
+  helpMarker("Image size in bytes");
+
+  // Image size (MiB):
+  double fileSizeMiB = static_cast<double>(imgHeader.fileImageSizeInBytes()) / (1024.0 * 1024.0);
+  ImGui::InputScalar(
+    "Size (MiB)",
+    ImGuiDataType_Double,
+    &fileSizeMiB,
+    nullptr,
+    nullptr,
+    nullptr,
+    ImGuiInputTextFlags_ReadOnly);
+  ImGui::SameLine();
+  helpMarker("Image size in mebibytes (MiB)");
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -116,7 +155,7 @@ void renderImageHeaderInformation(
   // Dimensions:
   glm::uvec3 dimensions = imgHeader.pixelDimensions();
   ImGui::InputScalarN(
-    "Dimensions (vox)",
+    "Dimensions",
     ImGuiDataType_U32,
     glm::value_ptr(dimensions),
     3,
@@ -164,9 +203,9 @@ void renderImageHeaderInformation(
     "Direction vectors in physical Subject space of the X, Y, Z image voxel axes. "
     "Also known as the voxel direction cosines matrix.");
 
-  ImGui::InputFloat3("X", glm::value_ptr(directions[0]), coordFormat, ImGuiInputTextFlags_ReadOnly);
-  ImGui::InputFloat3("Y", glm::value_ptr(directions[1]), coordFormat, ImGuiInputTextFlags_ReadOnly);
-  ImGui::InputFloat3("Z", glm::value_ptr(directions[2]), coordFormat, ImGuiInputTextFlags_ReadOnly);
+  ImGui::InputFloat3("x", glm::value_ptr(directions[0]), coordFormat, ImGuiInputTextFlags_ReadOnly);
+  ImGui::InputFloat3("y", glm::value_ptr(directions[1]), coordFormat, ImGuiInputTextFlags_ReadOnly);
+  ImGui::InputFloat3("z", glm::value_ptr(directions[2]), coordFormat, ImGuiInputTextFlags_ReadOnly);
 
   // Closest orientation code:
   std::string orientation = imgHeader.spiralCode();
@@ -182,6 +221,33 @@ void renderImageHeaderInformation(
   ImGui::Spacing();
   ImGui::Separator();
   ImGui::Spacing();
+
+  if (const serialize::DicomSource* dicomSource = image_export::dicomSourceForImage(appData, imageUid)) {
+    ImGui::Text("DICOM series source:");
+
+    std::string dicomFolder = dicomSource->m_rootPath.string();
+    ImGui::InputText("DICOM folder", &dicomFolder, ImGuiInputTextFlags_ReadOnly);
+
+    std::string seriesUid = dicomSource->m_seriesInstanceUid;
+    ImGui::InputText("Series UID", &seriesUid, ImGuiInputTextFlags_ReadOnly);
+
+    std::string studyUid = dicomSource->m_studyInstanceUid;
+    ImGui::InputText("Study UID", &studyUid, ImGuiInputTextFlags_ReadOnly);
+
+    std::uint64_t sliceCount = static_cast<std::uint64_t>(dicomSource->m_files.size());
+    ImGui::InputScalar(
+      "Slices",
+      ImGuiDataType_U64,
+      &sliceCount,
+      nullptr,
+      nullptr,
+      nullptr,
+      ImGuiInputTextFlags_ReadOnly);
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+  }
 
   // Bounding box:
   ImGui::Text("Bounding box (in Subject space):");
@@ -324,58 +390,5 @@ void renderImageHeaderInformation(
     ImGui::Spacing();
   }
 
-  ImGui::Separator();
-  ImGui::Spacing();
-
-  // Pixel type:
-  std::string pixelType = imgHeader.pixelTypeAsString();
-  ImGui::InputText("Pixel type", &pixelType, ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Image pixel type");
-
-  // Number of components:
-  uint32_t numComponentsPerPixel = imgHeader.numComponentsPerPixel();
-  ImGui::InputScalar(
-    "Num. components",
-    ImGuiDataType_U32,
-    &numComponentsPerPixel,
-    nullptr,
-    nullptr,
-    nullptr,
-    ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Number of components per pixel");
-
-  // Component type:
-  std::string componentType = lowerCaseCopy(componentTypeString(imgHeader.fileComponentType()));
-  ImGui::InputText("Component type", &componentType, ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Image component type");
-
-  // Image size (bytes):
-  uint64_t fileSizeBytes = imgHeader.fileImageSizeInBytes();
-  ImGui::InputScalar(
-    "Size (bytes)",
-    ImGuiDataType_U64,
-    &fileSizeBytes,
-    nullptr,
-    nullptr,
-    nullptr,
-    ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Image size in bytes");
-
-  // Image size (MiB):
-  double fileSizeMiB = static_cast<double>(imgHeader.fileImageSizeInBytes()) / (1024.0 * 1024.0);
-  ImGui::InputScalar(
-    "Size (MiB)",
-    ImGuiDataType_Double,
-    &fileSizeMiB,
-    nullptr,
-    nullptr,
-    nullptr,
-    ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Image size in mebibytes (MiB)");
   ImGui::Spacing();
 }

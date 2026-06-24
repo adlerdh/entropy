@@ -76,6 +76,13 @@ std::vector<std::byte> compactInterleavedComponents(
 
   return compacted;
 }
+
+void setDefaultComplexRendering(ImageSettings& settings, const ImageHeader& header)
+{
+  if (PixelType::Complex == header.pixelType() && 2u == header.numComponentsPerPixel()) {
+    settings.setComponentRenderMode(ComponentRenderMode::Magnitude);
+  }
+}
 } // namespace
 
 Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, const MultiComponentBufferType& bufferType)
@@ -217,6 +224,7 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
     componentStats);
+  setDefaultComplexRendering(m_settings, m_header);
 
   switch (m_imageRep) {
     case ImageRepresentation::Image: {
@@ -256,6 +264,7 @@ Image::Image(
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
     std::move(componentStats));
+  setDefaultComplexRendering(m_settings, m_header);
 
   switch (m_imageRep) {
     case ImageRepresentation::Image: {
@@ -471,6 +480,7 @@ Image::Image(
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
     std::move(componentStats));
+  setDefaultComplexRendering(m_settings, m_header);
 
   switch (m_imageRep) {
     case ImageRepresentation::Image: {

@@ -82,7 +82,18 @@ constexpr std::array k_componentRenderModeNames{
   EnumName{serialize::ProjectComponentRenderMode::Minimum, "minimum"},
   EnumName{serialize::ProjectComponentRenderMode::Mean, "mean"},
   EnumName{serialize::ProjectComponentRenderMode::Maximum, "maximum"},
-  EnumName{serialize::ProjectComponentRenderMode::Magnitude, "magnitude"}};
+  EnumName{serialize::ProjectComponentRenderMode::Magnitude, "magnitude"},
+  EnumName{serialize::ProjectComponentRenderMode::ComplexPhase, "complexPhase"},
+  EnumName{serialize::ProjectComponentRenderMode::ComplexReal, "complexReal"},
+  EnumName{serialize::ProjectComponentRenderMode::ComplexImaginary, "complexImaginary"}};
+
+constexpr std::array k_complexPhaseUnitNames{
+  EnumName{serialize::ProjectComplexPhaseUnit::Radians, "radians"},
+  EnumName{serialize::ProjectComplexPhaseUnit::Degrees, "degrees"}};
+
+constexpr std::array k_complexPhaseRangeNames{
+  EnumName{serialize::ProjectComplexPhaseRange::Signed, "signed"},
+  EnumName{serialize::ProjectComplexPhaseRange::Unsigned, "unsigned"}};
 
 constexpr std::array k_interpolationModeNames{
   EnumName{InterpolationMode::NearestNeighbor, "nearest"},
@@ -278,6 +289,8 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"opacity", settings.m_opacity},
     {"activeComponent", settings.m_activeComponent},
     {"componentRenderMode", enumToName(settings.m_componentRenderMode, k_componentRenderModeNames)},
+    {"complexPhaseUnit", enumToName(settings.m_complexPhaseUnit, k_complexPhaseUnitNames)},
+    {"complexPhaseRange", enumToName(settings.m_complexPhaseRange, k_complexPhaseRangeNames)},
     {"ignoreAlpha", settings.m_ignoreAlpha},
     {"colorInterpolationMode", enumToName(settings.m_colorInterpolationMode, k_interpolationModeNames)},
     {"edgeDetectionMethod", enumToName(settings.m_edgeDetectionMethod, k_edgeDetectionMethodNames)},
@@ -386,6 +399,18 @@ void from_json(const json& j, serialize::ImageSettings& settings)
       k_componentRenderModeNames))
   {
     settings.m_componentRenderMode = *parsed;
+  }
+  if (
+    const auto parsed =
+      enumFromName<serialize::ProjectComplexPhaseUnit>(j.value("complexPhaseUnit", ""), k_complexPhaseUnitNames))
+  {
+    settings.m_complexPhaseUnit = *parsed;
+  }
+  if (
+    const auto parsed =
+      enumFromName<serialize::ProjectComplexPhaseRange>(j.value("complexPhaseRange", ""), k_complexPhaseRangeNames))
+  {
+    settings.m_complexPhaseRange = *parsed;
   }
   if (j.count("ignoreAlpha")) {
     j.at("ignoreAlpha").get_to(settings.m_ignoreAlpha);
