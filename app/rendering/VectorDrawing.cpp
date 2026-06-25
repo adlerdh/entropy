@@ -200,8 +200,7 @@ bool doRenderComparisonSample(
   }
 
   if (ViewRenderMode::Checkerboard == renderMode) {
-    const bool checkerShowsFixed =
-      std::fmod(std::floor(checkerCoord.x) + std::floor(checkerCoord.y), 2.0f) > 0.5f;
+    const bool checkerShowsFixed = std::fmod(std::floor(checkerCoord.x) + std::floor(checkerCoord.y), 2.0f) > 0.5f;
     return showFixedImage == checkerShowsFixed;
   }
 
@@ -1173,17 +1172,16 @@ void drawVectorFieldArrows(
     const auto drawSample = [&](const glm::vec2& samplePos, const glm::vec3& subjectPos, const glm::vec3& pixelPos) {
       const glm::vec2 viewClipPos = viewClip_T_miewport(windowVP, view, samplePos);
       const glm::vec2 checkerCoord = checkerCoordForViewClip(viewClipPos, numCheckers, aspectRatio);
-      if (
-        !doRenderComparisonSample(
-          view.renderMode(),
-          viewClipPos,
-          checkerCoord,
-          clipCrosshairs,
-          renderData.m_quadrants,
-          isFixedImage,
-          aspectRatio,
-          renderData.m_flashlightRadius,
-          renderData.m_flashlightOverlays))
+      if (!doRenderComparisonSample(
+            view.renderMode(),
+            viewClipPos,
+            checkerCoord,
+            clipCrosshairs,
+            renderData.m_quadrants,
+            isFixedImage,
+            aspectRatio,
+            renderData.m_flashlightRadius,
+            renderData.m_flashlightOverlays))
       {
         return;
       }
