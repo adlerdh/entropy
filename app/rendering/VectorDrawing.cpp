@@ -31,7 +31,10 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cmath>
+#include <functional>
+#include <list>
 #include <limits>
 
 namespace
@@ -50,6 +53,173 @@ static const NVGcolor s_red(nvgRGBA(255, 0, 0, 255));
 static const std::string ROBOTO_LIGHT("robotoLight");
 
 static constexpr float sk_outlineStrokeWidth = 2.0f;
+
+bool isFiniteVec2(const glm::vec2& value)
+{
+  return std::isfinite(value.x) && std::isfinite(value.y);
+}
+
+bool isInsideRect(const glm::vec2& value, const glm::vec2& min, const glm::vec2& size)
+{
+  return value.x >= min.x && value.y >= min.y && value.x < min.x + size.x && value.y < min.y + size.y;
+}
+
+void drawArrow(NVGcontext* nvg, const glm::vec2& start, const glm::vec2& end, const NVGcolor& color, float width)
+{
+  const glm::vec2 delta = end - start;
+  const float length = glm::length(delta);
+  if (length < 2.0f) {
+    return;
+  }
+
+  const glm::vec2 dir = delta / length;
+  const glm::vec2 normal{-dir.y, dir.x};
+  const float headLength = glm::clamp(0.32f * length, std::max(5.0f, 3.0f * width), std::max(10.0f, 5.0f * width));
+  const float headWidth = std::max(0.55f * headLength, 2.25f * width);
+  const glm::vec2 headBase = end - headLength * dir;
+  const glm::vec2 shaftEnd = end - std::max(0.5f * width, 1.0f) * dir;
+
+  nvgStrokeWidth(nvg, width);
+  nvgStrokeColor(nvg, color);
+  nvgFillColor(nvg, color);
+
+  nvgBeginPath(nvg);
+  nvgMoveTo(nvg, start.x, start.y);
+  nvgLineTo(nvg, shaftEnd.x, shaftEnd.y);
+  nvgStroke(nvg);
+
+  nvgBeginPath(nvg);
+  nvgMoveTo(nvg, end.x, end.y);
+  nvgLineTo(nvg, headBase.x + headWidth * normal.x, headBase.y + headWidth * normal.y);
+  nvgLineTo(nvg, headBase.x - headWidth * normal.x, headBase.y - headWidth * normal.y);
+  nvgClosePath(nvg);
+  nvgFill(nvg);
+}
+
+float screenDistance(const Viewport& windowVP, const View& view, const glm::vec3& worldA, const glm::vec3& worldB)
+{
+  const glm::vec2 a = helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldA);
+  const glm::vec2 b = helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldB);
+  if (!isFiniteVec2(a) || !isFiniteVec2(b)) {
+    return 0.0f;
+  }
+  return glm::length(b - a);
+}
+
+float screenPixelsPerMillimeter(const Viewport& windowVP, const View& view, const glm::vec3& worldCrosshairs)
+{
+  const glm::vec3 worldRight = helper::worldDirection(view.camera(), Directions::View::Right);
+  const glm::vec3 worldUp = helper::worldDirection(view.camera(), Directions::View::Up);
+  const float rightPx = screenDistance(windowVP, view, worldCrosshairs, worldCrosshairs + worldRight);
+  const float upPx = screenDistance(windowVP, view, worldCrosshairs, worldCrosshairs + worldUp);
+  const float meanPx = 0.5f * (rightPx + upPx);
+  return meanPx > 0.0f ? meanPx : 1.0f;
+}
+
+float screenPixelsPerVoxel(
+  const Viewport& windowVP,
+  const View& view,
+  const Image& image,
+  const glm::vec3& worldCrosshairs)
+{
+  const glm::mat4 subject_T_world = image.transformations().subject_T_worldDef();
+  const glm::mat4 pixel_T_subject = image.transformations().pixel_T_subject();
+  const glm::mat4 subject_T_pixel = image.transformations().subject_T_pixel();
+  const glm::mat4 world_T_subject = image.transformations().worldDef_T_subject();
+
+  const glm::vec3 subjectBase{subject_T_world * glm::vec4{worldCrosshairs, 1.0f}};
+  const glm::vec3 pixelBase{pixel_T_subject * glm::vec4{subjectBase, 1.0f}};
+  const glm::vec3 worldBase{world_T_subject * glm::vec4{subjectBase, 1.0f}};
+
+  std::array<float, 3> axisLengths{};
+  for (int axis = 0; axis < 3; ++axis) {
+    glm::vec3 pixelEnd = pixelBase;
+    pixelEnd[axis] += 1.0f;
+    const glm::vec3 subjectEnd{subject_T_pixel * glm::vec4{pixelEnd, 1.0f}};
+    const glm::vec3 worldEnd{world_T_subject * glm::vec4{subjectEnd, 1.0f}};
+    axisLengths[axis] = screenDistance(windowVP, view, worldBase, worldEnd);
+  }
+
+  std::sort(axisLengths.begin(), axisLengths.end(), std::greater<float>{});
+  const float meanInPlanePx = 0.5f * (axisLengths[0] + axisLengths[1]);
+  return meanInPlanePx > 0.0f ? meanInPlanePx : 1.0f;
+}
+
+float vectorArrowSpacingPixels(
+  const ImageSettings& settings,
+  const Viewport& windowVP,
+  const View& view,
+  const Image& image,
+  const glm::vec3& worldCrosshairs)
+{
+  switch (settings.vectorArrowOverlaySpacingMode()) {
+    case VectorArrowOverlaySpacingMode::Pixels:
+      return std::max(settings.vectorArrowOverlayDensity(), 0.1f);
+    case VectorArrowOverlaySpacingMode::Voxels:
+      return std::max(settings.vectorArrowOverlayVoxelSpacing(), 0.1f) *
+             screenPixelsPerVoxel(windowVP, view, image, worldCrosshairs);
+    case VectorArrowOverlaySpacingMode::Millimeters:
+      return std::max(settings.vectorArrowOverlayMillimeterSpacing(), 0.1f) *
+             screenPixelsPerMillimeter(windowVP, view, worldCrosshairs);
+  }
+
+  return std::max(settings.vectorArrowOverlayDensity(), 0.1f);
+}
+
+glm::vec2 viewClip_T_miewport(const Viewport& windowVP, const View& view, const glm::vec2& miewportPos)
+{
+  const glm::vec2 viewportPos = helper::viewport_T_miewport(windowVP.height(), miewportPos);
+  const glm::vec2 windowClipPos = helper::windowClip_T_viewport(windowVP, viewportPos);
+  glm::vec4 viewClipPos = view.viewClip_T_windowClip() * glm::vec4{windowClipPos, 0.0f, 1.0f};
+  viewClipPos /= viewClipPos.w;
+  return glm::vec2{viewClipPos};
+}
+
+glm::vec2 checkerCoordForViewClip(const glm::vec2& viewClipPos, float numCheckers, float aspectRatio)
+{
+  const glm::vec2 checkerBase = numCheckers * 0.5f * (viewClipPos + glm::vec2{1.0f});
+  return glm::mix(
+    glm::vec2{checkerBase.x, checkerBase.y / aspectRatio},
+    glm::vec2{checkerBase.x * aspectRatio, checkerBase.y},
+    aspectRatio <= 1.0f ? 1.0f : 0.0f);
+}
+
+bool doRenderComparisonSample(
+  ViewRenderMode renderMode,
+  const glm::vec2& viewClipPos,
+  const glm::vec2& checkerCoord,
+  const glm::vec2& clipCrosshairs,
+  const glm::ivec2& quadrants,
+  bool showFixedImage,
+  float aspectRatio,
+  float flashlightRadius,
+  bool flashlightMovingOnFixed)
+{
+  if (ViewRenderMode::Image == renderMode) {
+    return true;
+  }
+
+  if (ViewRenderMode::Checkerboard == renderMode) {
+    const bool checkerShowsFixed =
+      std::fmod(std::floor(checkerCoord.x) + std::floor(checkerCoord.y), 2.0f) > 0.5f;
+    return showFixedImage == checkerShowsFixed;
+  }
+
+  if (ViewRenderMode::Quadrants == renderMode) {
+    const glm::bvec2 quadrant{viewClipPos.x <= clipCrosshairs.x, viewClipPos.y > clipCrosshairs.y};
+    const bool quadrantShowsFixed =
+      ((!static_cast<bool>(quadrants.x) || quadrant.x) == (!static_cast<bool>(quadrants.y) || quadrant.y));
+    return showFixedImage == quadrantShowsFixed;
+  }
+
+  if (ViewRenderMode::Flashlight == renderMode) {
+    const glm::vec2 delta{aspectRatio * (viewClipPos.x - clipCrosshairs.x), viewClipPos.y - clipCrosshairs.y};
+    const float flashlightDistance = glm::length(delta);
+    return (showFixedImage == (flashlightDistance > flashlightRadius)) || (flashlightMovingOnFixed && showFixedImage);
+  }
+
+  return false;
+}
 } // namespace
 
 void startNvgFrame(NVGcontext* nvg, const Viewport& windowVP)
@@ -937,6 +1107,210 @@ void drawAnnotations(
   nvgResetScissor(nvg);
 
   endNvgFrame(nvg); /*** END FRAME ***/
+}
+
+void drawVectorFieldArrows(
+  NVGcontext* nvg,
+  const FrameBounds& miewportViewBounds,
+  const glm::vec3& worldCrosshairs,
+  AppData& appData,
+  const View& view,
+  const std::list<uuids::uuid>& imageUids)
+{
+  static constexpr float k_referenceArrowLengthPx = 18.0f;
+  static constexpr float k_maxArrowLengthViewportFraction = 0.22f;
+  static constexpr float k_maxArrowLengthPx = 240.0f;
+
+  const Viewport& windowVP = appData.windowData().viewport();
+  const glm::vec2 viewMin{miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset};
+  const glm::vec2 viewSize{miewportViewBounds.bounds.width, miewportViewBounds.bounds.height};
+  const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
+  const RenderData& renderData = appData.renderData();
+  const float aspectRatio = view.camera().aspectRatio();
+  const float numCheckers = static_cast<float>(renderData.m_numCheckerboardSquares);
+  const glm::vec4 clipCrosshairs4 = helper::clip_T_world(view.camera()) * glm::vec4{worldCrosshairs, 1.0f};
+  const glm::vec2 clipCrosshairs{clipCrosshairs4 / clipCrosshairs4.w};
+
+  nvgLineCap(nvg, NVG_ROUND);
+  nvgLineJoin(nvg, NVG_ROUND);
+  nvgScissor(
+    nvg,
+    miewportViewBounds.viewport[0],
+    miewportViewBounds.viewport[1],
+    miewportViewBounds.viewport[2],
+    miewportViewBounds.viewport[3]);
+
+  bool isFixedImage = true;
+  for (const auto& imageUid : imageUids) {
+    const Image* image = appData.image(imageUid);
+    if (!image || !image->settings().vectorArrowOverlayVisible()) {
+      isFixedImage = false;
+      continue;
+    }
+    if (image->header().numComponentsPerPixel() != 3u || !image->settings().globalVisibility()) {
+      isFixedImage = false;
+      continue;
+    }
+
+    const ImageSettings& settings = image->settings();
+    const float spacingPx =
+      std::clamp(vectorArrowSpacingPixels(settings, windowVP, view, *image, worldCrosshairs), 4.0f, 512.0f);
+    const float lineThickness = settings.vectorArrowOverlayLineThickness();
+    const float scaleFactor = settings.vectorArrowOverlayScaleFactor();
+    const bool scaleByMagnitude = settings.vectorArrowOverlayScaleByMagnitude();
+    const bool useDirectionColor = settings.vectorArrowOverlayUseDirectionColor();
+    const glm::vec3 fixedColor = settings.vectorArrowOverlayColor();
+
+    const glm::mat4 subject_T_world = image->transformations().subject_T_worldDef();
+    const glm::mat4 world_T_subject = image->transformations().worldDef_T_subject();
+    const glm::mat4 pixel_T_subject = image->transformations().pixel_T_subject();
+    const glm::mat4 subject_T_pixel = image->transformations().subject_T_pixel();
+    const float maxArrowLengthPx = std::clamp(
+      k_maxArrowLengthViewportFraction * std::min(viewSize.x, viewSize.y),
+      k_referenceArrowLengthPx,
+      k_maxArrowLengthPx);
+
+    const auto drawSample = [&](const glm::vec2& samplePos, const glm::vec3& subjectPos, const glm::vec3& pixelPos) {
+      const glm::vec2 viewClipPos = viewClip_T_miewport(windowVP, view, samplePos);
+      const glm::vec2 checkerCoord = checkerCoordForViewClip(viewClipPos, numCheckers, aspectRatio);
+      if (
+        !doRenderComparisonSample(
+          view.renderMode(),
+          viewClipPos,
+          checkerCoord,
+          clipCrosshairs,
+          renderData.m_quadrants,
+          isFixedImage,
+          aspectRatio,
+          renderData.m_flashlightRadius,
+          renderData.m_flashlightOverlays))
+      {
+        return;
+      }
+
+      const auto xValue = image->valueLinear<double>(0, pixelPos.x, pixelPos.y, pixelPos.z);
+      const auto yValue = image->valueLinear<double>(1, pixelPos.x, pixelPos.y, pixelPos.z);
+      const auto zValue = image->valueLinear<double>(2, pixelPos.x, pixelPos.y, pixelPos.z);
+      if (!xValue || !yValue || !zValue) {
+        return;
+      }
+
+      const glm::vec3 subjectVector{
+        static_cast<float>(*xValue),
+        static_cast<float>(*yValue),
+        static_cast<float>(*zValue)};
+      if (glm::length(subjectVector) <= std::numeric_limits<float>::epsilon()) {
+        return;
+      }
+
+      const glm::vec3 vectorForEndpoint =
+        scaleByMagnitude ? scaleFactor * subjectVector : scaleFactor * glm::normalize(subjectVector);
+      const glm::vec3 worldEnd{world_T_subject * glm::vec4{subjectPos + vectorForEndpoint, 1.0f}};
+      const glm::vec2 endPos =
+        helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldEnd);
+      if (!isFiniteVec2(endPos)) {
+        return;
+      }
+
+      glm::vec2 screenDelta = endPos - samplePos;
+      const float screenLength = glm::length(screenDelta);
+      if (screenLength <= 2.0f) {
+        return;
+      }
+
+      if (!scaleByMagnitude) {
+        screenDelta =
+          glm::normalize(screenDelta) * std::clamp(k_referenceArrowLengthPx * scaleFactor, 2.0f, maxArrowLengthPx);
+      }
+
+      const float finalScreenLength = glm::length(screenDelta);
+      if (finalScreenLength > maxArrowLengthPx) {
+        screenDelta *= maxArrowLengthPx / finalScreenLength;
+      }
+
+      const glm::vec3 arrowColor = useDirectionColor ? glm::abs(glm::normalize(subjectVector)) : fixedColor;
+      drawArrow(
+        nvg,
+        samplePos,
+        samplePos + screenDelta,
+        nvgRGBAf(arrowColor.r, arrowColor.g, arrowColor.b, 0.86f * settings.globalOpacity()),
+        lineThickness);
+    };
+
+    if (VectorArrowOverlaySpacingMode::Voxels == settings.vectorArrowOverlaySpacingMode()) {
+      const glm::uvec3 dims = image->header().pixelDimensions();
+      const glm::vec3 subjectCrosshairs{subject_T_world * glm::vec4{worldCrosshairs, 1.0f}};
+      const glm::vec3 subjectViewNormal = glm::normalize(glm::mat3(subject_T_world) * worldViewNormal);
+      const glm::vec3 pixelPlaneNormal = glm::transpose(glm::mat3(subject_T_pixel)) * subjectViewNormal;
+      const glm::vec3 pixelCrosshairs{pixel_T_subject * glm::vec4{subjectCrosshairs, 1.0f}};
+      const float planeDistance = glm::dot(pixelPlaneNormal, pixelCrosshairs);
+
+      int sliceAxis = 0;
+      if (std::abs(pixelPlaneNormal[1]) > std::abs(pixelPlaneNormal[sliceAxis])) {
+        sliceAxis = 1;
+      }
+      if (std::abs(pixelPlaneNormal[2]) > std::abs(pixelPlaneNormal[sliceAxis])) {
+        sliceAxis = 2;
+      }
+      if (std::abs(pixelPlaneNormal[sliceAxis]) <= std::numeric_limits<float>::epsilon()) {
+        continue;
+      }
+
+      const int axis0 = (sliceAxis + 1) % 3;
+      const int axis1 = (sliceAxis + 2) % 3;
+      const float requestedStep = std::max(settings.vectorArrowOverlayVoxelSpacing(), 0.1f);
+      const float minStepForScreenSpacing =
+        std::max(requestedStep, 4.0f / std::max(screenPixelsPerVoxel(windowVP, view, *image, worldCrosshairs), 0.1f));
+      const float voxelStep = std::min(minStepForScreenSpacing, 10.0f);
+
+      for (float b = 0.0f; b < static_cast<float>(dims[axis1]); b += voxelStep) {
+        for (float a = 0.0f; a < static_cast<float>(dims[axis0]); a += voxelStep) {
+          glm::vec3 pixelPos{0.0f};
+          pixelPos[axis0] = a;
+          pixelPos[axis1] = b;
+          pixelPos[sliceAxis] =
+            (planeDistance - pixelPlaneNormal[axis0] * a - pixelPlaneNormal[axis1] * b) / pixelPlaneNormal[sliceAxis];
+          if (
+            pixelPos.x < -0.5f || pixelPos.y < -0.5f || pixelPos.z < -0.5f ||
+            pixelPos.x > static_cast<float>(dims.x) - 0.5f || pixelPos.y > static_cast<float>(dims.y) - 0.5f ||
+            pixelPos.z > static_cast<float>(dims.z) - 0.5f)
+          {
+            continue;
+          }
+
+          const glm::vec3 subjectPos{subject_T_pixel * glm::vec4{pixelPos, 1.0f}};
+          const glm::vec3 worldPos{world_T_subject * glm::vec4{subjectPos, 1.0f}};
+          const glm::vec2 samplePos =
+            helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldPos);
+          if (!isFiniteVec2(samplePos) || !isInsideRect(samplePos, viewMin, viewSize)) {
+            continue;
+          }
+
+          drawSample(samplePos, subjectPos, pixelPos);
+        }
+      }
+    }
+    else {
+      const float startX = viewMin.x + 0.5f * spacingPx;
+      const float startY = viewMin.y + 0.5f * spacingPx;
+      for (float y = startY; y < viewMin.y + viewSize.y; y += spacingPx) {
+        for (float x = startX; x < viewMin.x + viewSize.x; x += spacingPx) {
+          const glm::vec2 samplePos{x, y};
+          const glm::vec3 worldNear =
+            helper::world_T_miewport(windowVP, view.camera(), view.viewClip_T_windowClip(), samplePos);
+          const float signedDistance = glm::dot(worldNear - worldCrosshairs, worldViewNormal);
+          const glm::vec3 worldOnSlice = worldNear - signedDistance * worldViewNormal;
+          const glm::vec3 subjectPos{subject_T_world * glm::vec4{worldOnSlice, 1.0f}};
+          const glm::vec3 pixelPos{pixel_T_subject * glm::vec4{subjectPos, 1.0f}};
+          drawSample(samplePos, subjectPos, pixelPos);
+        }
+      }
+    }
+
+    isFixedImage = false;
+  }
+
+  nvgResetScissor(nvg);
 }
 
 void drawCrosshairs(

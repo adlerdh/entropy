@@ -1,0 +1,12 @@
+{
+  "output": "04_expansion_sphere.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "size": [24, 24, 24],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-12.0, -12.0, -12.0],
+  "operations": [
+    {"type": "expansion", "center": [0.0, 0.0, 0.0], "radii": [8.0, 8.0, 8.0], "amplitude": 4.0}
+  ]
+}

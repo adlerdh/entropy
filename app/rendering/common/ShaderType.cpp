@@ -13,6 +13,14 @@ std::string to_string(ShaderProgramType type)
       return "Image - ColorLinearTextureLookup";
     case ShaderProgramType::ImageColorCubic:
       return "Image - ColorCubicTextureLookup";
+    case ShaderProgramType::VectorDirectionColorLinear:
+      return "Vector Direction Color - LinearTextureLookup";
+    case ShaderProgramType::VectorDirectionColorCubic:
+      return "Vector Direction Color - CubicTextureLookup";
+    case ShaderProgramType::VectorSignedNormalProjectionLinear:
+      return "Vector Signed Normal Projection - LinearTextureLookup";
+    case ShaderProgramType::VectorSignedNormalProjectionCubic:
+      return "Vector Signed Normal Projection - CubicTextureLookup";
     case ShaderProgramType::EdgeSobelLinear:
       return "Edge - Sobel - LinearTextureLookup";
     case ShaderProgramType::EdgeSobelCubic:

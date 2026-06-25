@@ -98,6 +98,22 @@ void syncScalarProjectionLayerSettings(const ImageSettings& source, ImageSetting
   projection.setOpacity(k_projectionComponent, source.opacity(sourceComponent));
 }
 
+float maxAbsVectorComponentValue(const ImageSettings& settings)
+{
+  float maxAbs = 1.0f;
+  for (uint32_t component = 0; component < std::min<uint32_t>(3u, settings.numComponents()); ++component) {
+    const auto [minValue, maxValue] = settings.minMaxImageRange(component);
+    maxAbs = std::max(maxAbs, static_cast<float>(std::max(std::abs(minValue), std::abs(maxValue))));
+  }
+  return maxAbs;
+}
+
+glm::vec3 viewBackNormal_subject(const Image& image, const View& view)
+{
+  const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
+  return glm::normalize(glm::mat3{image.transformations().subject_T_worldDef()} * worldViewNormal);
+}
+
 void updateSegmentationUniformsForImage(
   const AppData& appData,
   const uuid& segmentationOwnerImageUid,
@@ -1025,6 +1041,12 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForImageShaders(const std:
   CurrentImages I;
 
   for (const auto& imageUid : imageUids) {
+    if (const Image* image = m_appData.image(imageUid);
+        image && image->settings().vectorArrowOverlayVisible() && !image->settings().vectorArrowOverlayOnImage())
+    {
+      continue;
+    }
+
     const uuid renderImageUid = m_appData.effectiveImageUidForRendering(imageUid);
     if (std::end(R.m_imageTextures) != R.m_imageTextures.find(renderImageUid)) {
       std::pair<std::optional<uuid>, std::optional<uuid>> imgSegPair;
@@ -1066,7 +1088,11 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
     return;
   }
 
-  if (!image->settings().displayImageAsColor()) {
+  const bool renderAllComponents =
+    image->settings().displayImageAsColor() ||
+    ComponentRenderMode::VectorDirectionColor == image->settings().componentRenderMode() ||
+    ComponentRenderMode::VectorSignedNormalProjection == image->settings().componentRenderMode();
+  if (!renderAllComponents) {
     // Modify the active component
     const uint32_t activeComp = image->settings().activeComponent();
     GLTexture& texture = m_appData.renderData().m_imageTextures.at(effectiveImageUid).at(activeComp);
@@ -1847,7 +1873,56 @@ void Rendering::renderAllImagesForView(
 
         const RenderData::ImageUniforms& U = R.m_uniforms.at(imgUid);
 
-        if (!img->settings().displayImageAsColor()) {
+        if (
+          ComponentRenderMode::VectorDirectionColor == img->settings().componentRenderMode() ||
+          ComponentRenderMode::VectorSignedNormalProjection == img->settings().componentRenderMode())
+        {
+          GLShaderProgram* P = nullptr;
+          const bool signedNormalProjection =
+            ComponentRenderMode::VectorSignedNormalProjection == img->settings().componentRenderMode();
+
+          switch (img->settings().colorInterpolationMode()) {
+            case InterpolationMode::NearestNeighbor:
+            case InterpolationMode::Linear: {
+              P = m_shaderPrograms
+                    .at(
+                      signedNormalProjection ? ShaderProgramType::VectorSignedNormalProjectionLinear
+                                             : ShaderProgramType::VectorDirectionColorLinear)
+                    .get();
+              break;
+            }
+            case InterpolationMode::CubicBsplineConvolution: {
+              P = m_shaderPrograms
+                    .at(
+                      signedNormalProjection ? ShaderProgramType::VectorSignedNormalProjectionCubic
+                                             : ShaderProgramType::VectorDirectionColorCubic)
+                    .get();
+              break;
+            }
+          }
+
+          const auto boundTextures = bindColorImageTextures(imgSegPair);
+          P->use();
+          {
+            P->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
+            P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+            P->setUniform("u_tex_T_world", U.imgTexture_T_world);
+            P->setUniform("u_imgSlope_native_T_texture", U.slope_native_T_texture);
+            P->setUniform("u_imgOpacity", U.imgOpacity);
+            if (signedNormalProjection) {
+              P->setUniform("u_projectionScale", maxAbsVectorComponentValue(img->settings()));
+              P->setUniform("u_viewNormal_subject", viewBackNormal_subject(*img, view));
+            }
+            P->setUniform("u_quadrants", R.m_quadrants);
+            P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
+            P->setUniform("u_renderMode", displayModeUniform);
+
+            renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
+          }
+          P->stopUse();
+          unbindTextures(boundTextures);
+        }
+        else if (!img->settings().displayImageAsColor()) {
           auto drawGrayImage = [&](bool disableIntensityProjectionForEdges) {
             GLShaderProgram* P = nullptr;
             switch (img->settings().interpolationMode()) {
@@ -2111,7 +2186,7 @@ void Rendering::renderAllImagesForView(
             P->setUniform("u_imgOpacity", U.imgOpacityRgba);
             P->setUniform("u_quadrants", R.m_quadrants);
             P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
-            P->setUniform("renderMode", displayModeUniform);
+            P->setUniform("u_renderMode", displayModeUniform);
 
             renderOneImage(view, worldOffsetXhairs, *P, CurrentImages{imgSegPair}, U.showEdges);
           }
@@ -2758,6 +2833,10 @@ void Rendering::renderVectorOverlays()
     // Bounds of the view frame in Miewport space:
     const auto miewportViewBounds =
       helper::computeMiewportFrameBounds(view->windowClipViewport(), windowVP.getAsVec4());
+    const glm::vec3 worldViewFront = helper::worldDirection(view->camera(), Directions::View::Front);
+    const glm::vec3 worldXhairsOffset =
+      m_appData.state().worldCrosshairs().worldOrigin() +
+      data::computeViewOffsetDistance(m_appData, view->offsetSetting(), worldViewFront) * worldViewFront;
 
     // Do not render vector overlays when view is disabled
     if (m_showOverlays && ViewRenderMode::Disabled != view->renderMode()) {
@@ -2769,6 +2848,15 @@ void Rendering::renderVectorOverlays()
         world_T_refSubject,
         view->windowClip_T_viewClip(),
         m_appData.state().worldCrosshairs().worldOrigin());
+
+      if (
+        ViewRenderMode::Image == view->renderMode() || ViewRenderMode::Checkerboard == view->renderMode() ||
+        ViewRenderMode::Quadrants == view->renderMode() || ViewRenderMode::Flashlight == view->renderMode())
+      {
+        const std::list<uuid>& vectorOverlayImages =
+          ViewRenderMode::Image == view->renderMode() ? view->renderedImages() : view->metricImages();
+        drawVectorFieldArrows(m_nvg, miewportViewBounds, worldXhairsOffset, m_appData, *view, vectorOverlayImages);
+      }
 
       // Do not render crosshairs in volume rendering mode
       if (ViewRenderMode::VolumeRender != view->renderMode()) {
@@ -2941,6 +3029,20 @@ void Rendering::createShaderPrograms()
   fsImageColorUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
   fsImageColorUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
 
+  Uniforms fsVectorDirectionColorUniforms;
+  fsVectorDirectionColorUniforms.insertUniforms(fsRenderModeUniforms);
+  fsVectorDirectionColorUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgRgbaTexSamplers);
+  fsVectorDirectionColorUniforms.insertUniform("u_imgSlope_native_T_texture", UniformType::Float, 1.0f);
+  fsVectorDirectionColorUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+
+  Uniforms fsVectorSignedNormalProjectionUniforms;
+  fsVectorSignedNormalProjectionUniforms.insertUniforms(fsRenderModeUniforms);
+  fsVectorSignedNormalProjectionUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgRgbaTexSamplers);
+  fsVectorSignedNormalProjectionUniforms.insertUniform("u_imgSlope_native_T_texture", UniformType::Float, 1.0f);
+  fsVectorSignedNormalProjectionUniforms.insertUniform("u_projectionScale", UniformType::Float, 1.0f);
+  fsVectorSignedNormalProjectionUniforms.insertUniform("u_viewNormal_subject", UniformType::Vec3, sk_zeroVec3);
+  fsVectorSignedNormalProjectionUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+
   Uniforms fsEdgeUniforms;
   fsEdgeUniforms.insertUniforms(fsImageAdjustmentUniforms);
   fsEdgeUniforms.insertUniforms(fsRenderModeUniforms);
@@ -3057,12 +3159,16 @@ void Rendering::createShaderPrograms()
   fsOverlayUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
   fsOverlayUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
 
-  constexpr std::array<ShaderProgramType, 22> allShaders = {
+  constexpr std::array<ShaderProgramType, 26> allShaders = {
     ShaderProgramType::ImageGrayLinear,
     ShaderProgramType::ImageGrayLinearFloating,
     ShaderProgramType::ImageGrayCubic,
     ShaderProgramType::ImageColorLinear,
     ShaderProgramType::ImageColorCubic,
+    ShaderProgramType::VectorDirectionColorLinear,
+    ShaderProgramType::VectorDirectionColorCubic,
+    ShaderProgramType::VectorSignedNormalProjectionLinear,
+    ShaderProgramType::VectorSignedNormalProjectionCubic,
     ShaderProgramType::EdgeSobelLinear,
     ShaderProgramType::EdgeSobelCubic,
     ShaderProgramType::XrayLinear,
@@ -3138,6 +3244,38 @@ void Rendering::createShaderPrograms()
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
       vsImageUniforms,
       fsImageColorUniforms}},
+    {ShaderProgramType::VectorDirectionColorLinear,
+     {"Image.vs",
+      "VectorDirectionColor.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsVectorDirectionColorUniforms}},
+    {ShaderProgramType::VectorDirectionColorCubic,
+     {"Image.vs",
+      "VectorDirectionColor.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsVectorDirectionColorUniforms}},
+    {ShaderProgramType::VectorSignedNormalProjectionLinear,
+     {"Image.vs",
+      "VectorSignedNormalProjection.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsVectorSignedNormalProjectionUniforms}},
+    {ShaderProgramType::VectorSignedNormalProjectionCubic,
+     {"Image.vs",
+      "VectorSignedNormalProjection.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsVectorSignedNormalProjectionUniforms}},
     {ShaderProgramType::EdgeSobelLinear,
      {"Image.vs",
       "Edge.fs",

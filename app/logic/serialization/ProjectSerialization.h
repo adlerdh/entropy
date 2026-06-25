@@ -43,7 +43,12 @@ enum class ProjectComponentRenderMode : std::uint8_t
   Magnitude,
   ComplexPhase,
   ComplexReal,
-  ComplexImaginary
+  ComplexImaginary,
+  VectorDirectionColor,
+  VectorSignedNormalProjection,
+  VectorJacobianDeterminant,
+  VectorDivergence,
+  VectorCurlMagnitude
 };
 
 /// @brief Serialized complex phase display units.
@@ -58,6 +63,14 @@ enum class ProjectComplexPhaseRange : std::uint8_t
 {
   Signed,
   Unsigned
+};
+
+/// @brief Serialized vector arrow spacing units.
+enum class ProjectVectorArrowOverlaySpacingMode : std::uint8_t
+{
+  Pixels,
+  Voxels,
+  Millimeters
 };
 
 /**
@@ -84,8 +97,20 @@ struct ImageSettings
     ProjectComponentRenderMode::SingleComponent;                                 //!< Multi-component render mode.
   ProjectComplexPhaseUnit m_complexPhaseUnit = ProjectComplexPhaseUnit::Radians; //!< Complex phase display units.
   ProjectComplexPhaseRange m_complexPhaseRange =
-    ProjectComplexPhaseRange::Signed; //!< Complex phase display range convention.
-  bool m_ignoreAlpha = false;         //!< Ignore alpha when rendering four-component images as RGBA.
+    ProjectComplexPhaseRange::Signed;                  //!< Complex phase display range convention.
+  bool m_vectorArrowOverlayVisible = false;            //!< Show vector-field arrows over slices.
+  bool m_vectorArrowOverlayOnImage = true;             //!< Draw vector-field arrows over the rendered image.
+  float m_vectorArrowOverlayDensity = 32.0f;           //!< Vector arrow spacing value.
+  float m_vectorArrowOverlayVoxelSpacing = 1.0f;       //!< Vector arrow spacing in image voxels.
+  float m_vectorArrowOverlayMillimeterSpacing = 10.0f; //!< Vector arrow spacing in subject millimeters.
+  ProjectVectorArrowOverlaySpacingMode m_vectorArrowOverlaySpacingMode =
+    ProjectVectorArrowOverlaySpacingMode::Pixels;          //!< Vector arrow spacing units.
+  glm::vec3 m_vectorArrowOverlayColor{1.0f, 0.86f, 0.31f}; //!< Fixed vector arrow color.
+  bool m_vectorArrowOverlayUseDirectionColor = false;      //!< Color arrows by vector direction.
+  float m_vectorArrowOverlayLineThickness = 1.4f;          //!< Vector arrow line thickness in pixels.
+  bool m_vectorArrowOverlayScaleByMagnitude = true;        //!< Scale arrow length by vector magnitude.
+  float m_vectorArrowOverlayScaleFactor = 1.0f;            //!< Dimensionless vector arrow length multiplier.
+  bool m_ignoreAlpha = false; //!< Ignore alpha when rendering four-component images as RGBA.
   InterpolationMode m_colorInterpolationMode = InterpolationMode::Linear; //!< RGB/RGBA interpolation mode.
   std::vector<double> m_componentLevels;                                  //!< Per-component window centers.
   std::vector<double> m_componentWindows;                                 //!< Per-component window widths.

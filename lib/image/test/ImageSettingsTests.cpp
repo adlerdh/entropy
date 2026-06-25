@@ -93,6 +93,26 @@ TEST_CASE("ImageSettings clamps window values, centers, widths, thresholds, and 
   CHECK(settings.globalOpacity() == Catch::Approx(0.0));
   settings.setGlobalOpacity(4.0);
   CHECK(settings.globalOpacity() == Catch::Approx(1.0));
+
+  CHECK(settings.vectorArrowOverlayDensity() == Catch::Approx(32.0f));
+  settings.setVectorArrowOverlayDensity(0.0f);
+  CHECK(settings.vectorArrowOverlayDensity() > 0.0f);
+  CHECK(settings.vectorArrowOverlayDensity() == Catch::Approx(0.1f));
+  settings.setVectorArrowOverlayDensity(-10.0f);
+  CHECK(settings.vectorArrowOverlayDensity() == Catch::Approx(0.1f));
+
+  settings.setVectorArrowOverlayVoxelSpacing(0.0f);
+  CHECK(settings.vectorArrowOverlayVoxelSpacing() == Catch::Approx(0.1f));
+  settings.setVectorArrowOverlayVoxelSpacing(20.0f);
+  CHECK(settings.vectorArrowOverlayVoxelSpacing() == Catch::Approx(10.0f));
+  settings.setVectorArrowOverlayMillimeterSpacing(0.0f);
+  CHECK(settings.vectorArrowOverlayMillimeterSpacing() == Catch::Approx(0.1f));
+
+  settings.setVectorArrowOverlayLineThickness(12.0f);
+  CHECK(settings.vectorArrowOverlayLineThickness() == Catch::Approx(4.0f));
+
+  settings.setVectorArrowOverlayScaleFactor(20.0f);
+  CHECK(settings.vectorArrowOverlayScaleFactor() == Catch::Approx(10.0f));
 }
 
 TEST_CASE("ImageSettings routes component-specific setters through the active component", "[image][settings]")

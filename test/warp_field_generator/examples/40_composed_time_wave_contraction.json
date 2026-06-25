@@ -1,0 +1,15 @@
+{
+  "output": "40_composed_time_wave_contraction.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "composition_mode": "composed",
+  "size": [20, 20, 20],
+  "time_points": 8,
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-10.0, -10.0, -10.0],
+  "operations": [
+    {"type": "wave", "normal": [1.0, 0.0, 0.0], "direction": [0.0, 1.0, 0.0], "frequency": 0.08, "amplitude": 2.0, "time": {"mode": "ramp", "amplitude": 1.0}},
+    {"type": "contraction", "center": [0.0, 0.0, 0.0], "radii": [7.0, 7.0, 7.0], "amplitude": 3.0, "time": {"mode": "sine", "amplitude": 1.0, "frequency": 1.0}}
+  ]
+}

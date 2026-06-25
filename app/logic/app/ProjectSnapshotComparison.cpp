@@ -24,6 +24,17 @@ bool imageSettingsEqual(
          a->m_thresholdHigh == b->m_thresholdHigh && a->m_opacity == b->m_opacity &&
          a->m_activeComponent == b->m_activeComponent && a->m_componentRenderMode == b->m_componentRenderMode &&
          a->m_complexPhaseUnit == b->m_complexPhaseUnit && a->m_complexPhaseRange == b->m_complexPhaseRange &&
+         a->m_vectorArrowOverlayVisible == b->m_vectorArrowOverlayVisible &&
+         a->m_vectorArrowOverlayOnImage == b->m_vectorArrowOverlayOnImage &&
+         a->m_vectorArrowOverlayDensity == b->m_vectorArrowOverlayDensity &&
+         a->m_vectorArrowOverlayVoxelSpacing == b->m_vectorArrowOverlayVoxelSpacing &&
+         a->m_vectorArrowOverlayMillimeterSpacing == b->m_vectorArrowOverlayMillimeterSpacing &&
+         a->m_vectorArrowOverlaySpacingMode == b->m_vectorArrowOverlaySpacingMode &&
+         a->m_vectorArrowOverlayColor == b->m_vectorArrowOverlayColor &&
+         a->m_vectorArrowOverlayUseDirectionColor == b->m_vectorArrowOverlayUseDirectionColor &&
+         a->m_vectorArrowOverlayLineThickness == b->m_vectorArrowOverlayLineThickness &&
+         a->m_vectorArrowOverlayScaleByMagnitude == b->m_vectorArrowOverlayScaleByMagnitude &&
+         a->m_vectorArrowOverlayScaleFactor == b->m_vectorArrowOverlayScaleFactor &&
          a->m_ignoreAlpha == b->m_ignoreAlpha && a->m_colorInterpolationMode == b->m_colorInterpolationMode &&
          a->m_componentLevels == b->m_componentLevels && a->m_componentWindows == b->m_componentWindows &&
          a->m_componentThresholdLows == b->m_componentThresholdLows &&

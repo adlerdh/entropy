@@ -40,6 +40,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cstdint>
 #include <optional>
@@ -58,6 +59,20 @@ using namespace entropy::ui::headers;
 
 namespace
 {
+const char* vectorArrowOverlaySpacingModeName(VectorArrowOverlaySpacingMode mode)
+{
+  switch (mode) {
+    case VectorArrowOverlaySpacingMode::Pixels:
+      return "Pixels";
+    case VectorArrowOverlaySpacingMode::Voxels:
+      return "Voxels";
+    case VectorArrowOverlaySpacingMode::Millimeters:
+      return "Millimeters";
+  }
+
+  return "Pixels";
+}
+
 bool visibilityCheckboxBeforeSlider(const char* id, bool* visible, const char* tooltip)
 {
   const float originalSliderWidth = ImGui::CalcItemWidth();
@@ -69,6 +84,50 @@ bool visibilityCheckboxBeforeSlider(const char* id, bool* visible, const char* t
   ImGui::SameLine();
   ImGui::PushItemWidth(std::max(1.0f, originalSliderWidth - checkboxSlotWidth));
   return changed;
+}
+
+const char* componentRenderModeDescription(ComponentRenderMode mode, bool vectorFieldImage, bool hasAlphaComponent)
+{
+  switch (mode) {
+    case ComponentRenderMode::SingleComponent:
+      return vectorFieldImage ? "Renders one selected vector component as a scalar image."
+                              : "Renders one selected component as a scalar image.";
+    case ComponentRenderMode::Color:
+      if (vectorFieldImage) {
+        return "Renders vector components as RGB intensity channels after window/level adjustment.";
+      }
+      return hasAlphaComponent ? "Renders the first four components as RGBA color channels."
+                               : "Renders the first three components as RGB color channels.";
+    case ComponentRenderMode::Minimum:
+      return "Renders the minimum value across all components at each voxel.";
+    case ComponentRenderMode::Mean:
+      return "Renders the mean value across all components at each voxel.";
+    case ComponentRenderMode::Maximum:
+      return "Renders the maximum value across all components at each voxel.";
+    case ComponentRenderMode::Magnitude:
+      return vectorFieldImage ? "Renders vector magnitude as a scalar image."
+                              : "Renders component magnitude as the square root of summed squared components.";
+    case ComponentRenderMode::ComplexPhase:
+      return "Renders complex phase from the real and imaginary components.";
+    case ComponentRenderMode::ComplexReal:
+      return "Renders the real component as a scalar image.";
+    case ComponentRenderMode::ComplexImaginary:
+      return "Renders the imaginary component as a scalar image.";
+    case ComponentRenderMode::VectorDirectionColor:
+      return "Colors encode vector orientation in subject/LPS coordinates: red = x, green = y, blue = z; signs are "
+             "ignored.";
+    case ComponentRenderMode::VectorSignedNormalProjection:
+      return "Colors encode displacement projected onto the current view normal: red toward the viewer, blue into "
+             "the screen.";
+    case ComponentRenderMode::VectorJacobianDeterminant:
+      return "Renders local volume change of the deformation: values above 1 expand, values below 1 contract.";
+    case ComponentRenderMode::VectorDivergence:
+      return "Renders the local net outward or inward flow of the vector field.";
+    case ComponentRenderMode::VectorCurlMagnitude:
+      return "Renders the local rotational strength of the vector field.";
+  }
+
+  return "";
 }
 
 std::string dicomCacheKey(const uuids::uuid& imageUid, const serialize::DicomSource& source)
@@ -630,7 +689,11 @@ void renderImageHeader(
   if (showComponentControls) {
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
     const bool complexValuedImage = isComplexValuedImage(*image);
-    if (ImGui::TreeNode(complexValuedImage ? "Complex Image Settings" : "Multi-Component Rendering")) {
+    const bool vectorFieldImage = isVectorFieldImage(*image);
+    if (ImGui::TreeNode(
+          complexValuedImage ? "Complex Image Settings"
+                             : (vectorFieldImage ? "Vector Field Rendering" : "Multi-Component Rendering")))
+    {
       auto setComponentMode = [&](ComponentRenderMode mode) {
         if (imgSettings.componentRenderMode() == mode) {
           return;
@@ -660,7 +723,49 @@ void renderImageHeader(
         }
       };
 
-      if (complexValuedImage) {
+      if (vectorFieldImage) {
+        struct VectorModeOption
+        {
+          const char* label;
+          ComponentRenderMode mode;
+        };
+        constexpr std::array vectorModeOptions{
+          VectorModeOption{"Component", ComponentRenderMode::SingleComponent},
+          VectorModeOption{"Magnitude", ComponentRenderMode::Magnitude},
+          VectorModeOption{"Minimum", ComponentRenderMode::Minimum},
+          VectorModeOption{"Maximum", ComponentRenderMode::Maximum},
+          VectorModeOption{"Mean", ComponentRenderMode::Mean},
+          VectorModeOption{"RGB color", ComponentRenderMode::Color},
+          VectorModeOption{"Direction color", ComponentRenderMode::VectorDirectionColor},
+          VectorModeOption{"Signed normal projection color", ComponentRenderMode::VectorSignedNormalProjection},
+          VectorModeOption{"Jacobian determinant", ComponentRenderMode::VectorJacobianDeterminant},
+          VectorModeOption{"Divergence", ComponentRenderMode::VectorDivergence},
+          VectorModeOption{"Curl magnitude", ComponentRenderMode::VectorCurlMagnitude}};
+
+        const char* currentVectorModeLabel = vectorModeOptions[0].label;
+        for (const auto& option : vectorModeOptions) {
+          if (option.mode == imgSettings.componentRenderMode()) {
+            currentVectorModeLabel = option.label;
+            break;
+          }
+        }
+
+        if (ImGui::BeginCombo("Render", currentVectorModeLabel)) {
+          for (const auto& option : vectorModeOptions) {
+            const bool selected = option.mode == imgSettings.componentRenderMode();
+            if (ImGui::Selectable(option.label, selected)) {
+              setComponentMode(option.mode);
+            }
+            if (selected) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
+
+        ImGui::TextWrapped("%s", componentRenderModeDescription(imgSettings.componentRenderMode(), true, false));
+      }
+      else if (complexValuedImage) {
         ImGui::TextUnformatted("Render complex image as:");
         radioComponentMode("Magnitude", ComponentRenderMode::Magnitude);
         ImGui::SameLine();
@@ -669,6 +774,8 @@ void renderImageHeader(
         radioComponentMode("Real", ComponentRenderMode::ComplexReal);
         ImGui::SameLine();
         radioComponentMode("Imaginary", ComponentRenderMode::ComplexImaginary);
+
+        ImGui::TextWrapped("%s", componentRenderModeDescription(imgSettings.componentRenderMode(), false, false));
 
         if (ComponentRenderMode::ComplexPhase == imgSettings.componentRenderMode()) {
           ImGui::TextUnformatted("Phase units:");
@@ -729,14 +836,24 @@ void renderImageHeader(
 
         radioComponentMode("Minimum", ComponentRenderMode::Minimum);
         ImGui::SameLine();
-        radioComponentMode("Mean", ComponentRenderMode::Mean);
-        ImGui::SameLine();
         radioComponentMode("Maximum", ComponentRenderMode::Maximum);
         ImGui::SameLine();
+        radioComponentMode("Mean", ComponentRenderMode::Mean);
+        ImGui::SameLine();
         radioComponentMode("Magnitude", ComponentRenderMode::Magnitude);
+
+        ImGui::TextWrapped(
+          "%s",
+          componentRenderModeDescription(
+            imgSettings.componentRenderMode(),
+            false,
+            4 == imgHeader.numComponentsPerPixel()));
       }
 
-      if (!complexValuedImage && imgSettings.displayImageAsColor() && 4 == imgHeader.numComponentsPerPixel()) {
+      if (
+        !vectorFieldImage && !complexValuedImage && imgSettings.displayImageAsColor() &&
+        4 == imgHeader.numComponentsPerPixel())
+      {
         bool ignoreAlpha = imgSettings.ignoreAlpha();
 
         if (ImGui::Checkbox("Ignore alpha component", &ignoreAlpha)) {
@@ -751,7 +868,36 @@ void renderImageHeader(
         ComponentRenderMode::SingleComponent == imgSettings.componentRenderMode() || imgSettings.displayImageAsColor();
       if (showPerComponentControls) {
         const uint32_t componentMax = imgHeader.numComponentsPerPixel() - 1;
-        if (complexValuedImage) {
+        if (vectorFieldImage) {
+          ImGui::AlignTextToFramePadding();
+          ImGui::TextUnformatted("Component:");
+          ImGui::SameLine();
+
+          ImGui::BeginDisabled(0u == activeComp);
+          if (ImGui::ArrowButton("##previousVectorComponent", ImGuiDir_Left)) {
+            imgSettings.setActiveComponent(activeComp - 1u);
+            activeComp = imgSettings.activeComponent();
+            updateImageUniforms();
+          }
+          ImGui::EndDisabled();
+
+          ImGui::SameLine();
+          std::string currentComponentLabel = vectorFieldComponentLabel(activeComp, componentMax);
+          ImGui::PushItemWidth(
+            std::max(120.0f, ImGui::CalcTextSize("x (0 of 2)").x + 2.0f * ImGui::GetStyle().FramePadding.x));
+          ImGui::InputText("##vectorComponentLabel", &currentComponentLabel, ImGuiInputTextFlags_ReadOnly);
+          ImGui::PopItemWidth();
+
+          ImGui::SameLine();
+          ImGui::BeginDisabled(activeComp >= componentMax);
+          if (ImGui::ArrowButton("##nextVectorComponent", ImGuiDir_Right)) {
+            imgSettings.setActiveComponent(activeComp + 1u);
+            activeComp = imgSettings.activeComponent();
+            updateImageUniforms();
+          }
+          ImGui::EndDisabled();
+        }
+        else if (complexValuedImage) {
           const std::string currentComponentLabel = complexComponentLabel(activeComp, componentMax);
           if (ImGui::BeginCombo("Component", currentComponentLabel.c_str())) {
             for (uint32_t component = 0; component <= componentMax; ++component) {
@@ -819,6 +965,94 @@ void renderImageHeader(
                projectionMode && !appData.componentProjectionImageUid(imageUid, *projectionMode))
       {
         ImGui::TextDisabled("Computing %s projection...", componentProjectionModeName(*projectionMode).c_str());
+      }
+
+      if (vectorFieldImage) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        bool showArrowOverlay = imgSettings.vectorArrowOverlayVisible();
+        if (ImGui::Checkbox("Vector field arrows", &showArrowOverlay)) {
+          imgSettings.setVectorArrowOverlayVisible(showArrowOverlay);
+        }
+        ImGui::SameLine();
+        helpMarker("Draw sampled arrows over the current slice to show the vector field direction");
+
+        if (imgSettings.vectorArrowOverlayVisible()) {
+          bool overlayOnImage = imgSettings.vectorArrowOverlayOnImage();
+          if (ImGui::Checkbox("Overlay on image", &overlayOnImage)) {
+            imgSettings.setVectorArrowOverlayOnImage(overlayOnImage);
+          }
+
+          bool useDirectionColor = imgSettings.vectorArrowOverlayUseDirectionColor();
+          if (ImGui::Checkbox("Direction color", &useDirectionColor)) {
+            imgSettings.setVectorArrowOverlayUseDirectionColor(useDirectionColor);
+          }
+
+          if (!imgSettings.vectorArrowOverlayUseDirectionColor()) {
+            glm::vec3 arrowColor = imgSettings.vectorArrowOverlayColor();
+            if (ImGui::ColorEdit3("Fixed color", glm::value_ptr(arrowColor), colorNoAlphaEditFlags)) {
+              imgSettings.setVectorArrowOverlayColor(arrowColor);
+            }
+          }
+
+          bool scaleByMagnitude = imgSettings.vectorArrowOverlayScaleByMagnitude();
+          if (ImGui::Checkbox("Scale arrows by magnitude", &scaleByMagnitude)) {
+            imgSettings.setVectorArrowOverlayScaleByMagnitude(scaleByMagnitude);
+          }
+
+          float scaleFactor = imgSettings.vectorArrowOverlayScaleFactor();
+          if (ImGui::SliderFloat("Scale factor", &scaleFactor, 0.01f, 10.0f, "%.2f x", ImGuiSliderFlags_Logarithmic)) {
+            imgSettings.setVectorArrowOverlayScaleFactor(scaleFactor);
+          }
+          ImGui::SameLine();
+          helpMarker("Scale factor is dimensionless: 1.0 draws the physical displacement length as stored.");
+
+          const VectorArrowOverlaySpacingMode spacingMode = imgSettings.vectorArrowOverlaySpacingMode();
+          if (VectorArrowOverlaySpacingMode::Pixels == spacingMode) {
+            float spacing = imgSettings.vectorArrowOverlayDensity();
+            if (ImGui::SliderFloat("Arrow spacing", &spacing, 8.0f, 128.0f, "%.0f")) {
+              imgSettings.setVectorArrowOverlayDensity(spacing);
+            }
+          }
+          else if (VectorArrowOverlaySpacingMode::Voxels == spacingMode) {
+            float spacing = imgSettings.vectorArrowOverlayVoxelSpacing();
+            if (ImGui::SliderFloat("Arrow spacing", &spacing, 0.1f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+              imgSettings.setVectorArrowOverlayVoxelSpacing(spacing);
+            }
+          }
+          else {
+            float spacing = imgSettings.vectorArrowOverlayMillimeterSpacing();
+            if (ImGui::SliderFloat("Arrow spacing", &spacing, 0.1f, 100.0f, "%.2f")) {
+              imgSettings.setVectorArrowOverlayMillimeterSpacing(spacing);
+            }
+          }
+
+          VectorArrowOverlaySpacingMode selectedSpacingMode = spacingMode;
+          if (ImGui::BeginCombo("Spacing units", vectorArrowOverlaySpacingModeName(selectedSpacingMode))) {
+            constexpr std::array spacingModes{
+              VectorArrowOverlaySpacingMode::Pixels,
+              VectorArrowOverlaySpacingMode::Voxels,
+              VectorArrowOverlaySpacingMode::Millimeters};
+            for (const VectorArrowOverlaySpacingMode mode : spacingModes) {
+              const bool selected = mode == selectedSpacingMode;
+              if (ImGui::Selectable(vectorArrowOverlaySpacingModeName(mode), selected)) {
+                selectedSpacingMode = mode;
+                imgSettings.setVectorArrowOverlaySpacingMode(mode);
+              }
+              if (selected) {
+                ImGui::SetItemDefaultFocus();
+              }
+            }
+            ImGui::EndCombo();
+          }
+
+          float lineThickness = imgSettings.vectorArrowOverlayLineThickness();
+          if (ImGui::SliderFloat("Line thickness", &lineThickness, 0.25f, 4.0f, "%.2f px")) {
+            imgSettings.setVectorArrowOverlayLineThickness(lineThickness);
+          }
+        }
       }
 
       ImGui::TreePop();

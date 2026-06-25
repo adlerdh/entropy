@@ -79,6 +79,12 @@ bool componentRenderModeIsValidForImage(ComponentRenderMode mode, const Image& i
     case ComponentRenderMode::ComplexReal:
     case ComponentRenderMode::ComplexImaginary:
       return isComplexValuedImage(image);
+    case ComponentRenderMode::VectorDirectionColor:
+    case ComponentRenderMode::VectorSignedNormalProjection:
+    case ComponentRenderMode::VectorJacobianDeterminant:
+    case ComponentRenderMode::VectorDivergence:
+    case ComponentRenderMode::VectorCurlMagnitude:
+      return isVectorFieldCandidate(image);
   }
 
   return false;
@@ -103,6 +109,18 @@ serialize::ImageSettings imageSettings(const Image& image)
   settings.m_componentRenderMode = toSerializedComponentRenderMode(imageSettings.componentRenderMode());
   settings.m_complexPhaseUnit = toSerializedComplexPhaseUnit(imageSettings.complexPhaseUnit());
   settings.m_complexPhaseRange = toSerializedComplexPhaseRange(imageSettings.complexPhaseRange());
+  settings.m_vectorArrowOverlayVisible = imageSettings.vectorArrowOverlayVisible();
+  settings.m_vectorArrowOverlayOnImage = imageSettings.vectorArrowOverlayOnImage();
+  settings.m_vectorArrowOverlayDensity = imageSettings.vectorArrowOverlayDensity();
+  settings.m_vectorArrowOverlayVoxelSpacing = imageSettings.vectorArrowOverlayVoxelSpacing();
+  settings.m_vectorArrowOverlayMillimeterSpacing = imageSettings.vectorArrowOverlayMillimeterSpacing();
+  settings.m_vectorArrowOverlaySpacingMode =
+    toSerializedVectorArrowOverlaySpacingMode(imageSettings.vectorArrowOverlaySpacingMode());
+  settings.m_vectorArrowOverlayColor = imageSettings.vectorArrowOverlayColor();
+  settings.m_vectorArrowOverlayUseDirectionColor = imageSettings.vectorArrowOverlayUseDirectionColor();
+  settings.m_vectorArrowOverlayLineThickness = imageSettings.vectorArrowOverlayLineThickness();
+  settings.m_vectorArrowOverlayScaleByMagnitude = imageSettings.vectorArrowOverlayScaleByMagnitude();
+  settings.m_vectorArrowOverlayScaleFactor = imageSettings.vectorArrowOverlayScaleFactor();
   settings.m_ignoreAlpha = imageSettings.ignoreAlpha();
   settings.m_colorInterpolationMode = imageSettings.colorInterpolationMode();
   settings.m_componentLevels.reserve(imageSettings.numComponents());
@@ -214,6 +232,18 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   }
   imageSettings.setComplexPhaseUnit(fromSerializedComplexPhaseUnit(settings.m_complexPhaseUnit));
   imageSettings.setComplexPhaseRange(fromSerializedComplexPhaseRange(settings.m_complexPhaseRange));
+  imageSettings.setVectorArrowOverlayVisible(settings.m_vectorArrowOverlayVisible);
+  imageSettings.setVectorArrowOverlayOnImage(settings.m_vectorArrowOverlayOnImage);
+  imageSettings.setVectorArrowOverlayDensity(settings.m_vectorArrowOverlayDensity);
+  imageSettings.setVectorArrowOverlayVoxelSpacing(settings.m_vectorArrowOverlayVoxelSpacing);
+  imageSettings.setVectorArrowOverlayMillimeterSpacing(settings.m_vectorArrowOverlayMillimeterSpacing);
+  imageSettings.setVectorArrowOverlaySpacingMode(
+    fromSerializedVectorArrowOverlaySpacingMode(settings.m_vectorArrowOverlaySpacingMode));
+  imageSettings.setVectorArrowOverlayColor(settings.m_vectorArrowOverlayColor);
+  imageSettings.setVectorArrowOverlayUseDirectionColor(settings.m_vectorArrowOverlayUseDirectionColor);
+  imageSettings.setVectorArrowOverlayLineThickness(settings.m_vectorArrowOverlayLineThickness);
+  imageSettings.setVectorArrowOverlayScaleByMagnitude(settings.m_vectorArrowOverlayScaleByMagnitude);
+  imageSettings.setVectorArrowOverlayScaleFactor(settings.m_vectorArrowOverlayScaleFactor);
   imageSettings.setIgnoreAlpha(settings.m_ignoreAlpha);
   imageSettings.setColorInterpolationMode(settings.m_colorInterpolationMode);
   const std::size_t numLevelComponents =

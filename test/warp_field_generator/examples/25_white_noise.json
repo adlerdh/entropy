@@ -1,0 +1,12 @@
+{
+  "output": "25_white_noise.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "size": [24, 24, 24],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-12.0, -12.0, -12.0],
+  "operations": [
+    {"type": "white_noise", "seed": 7, "cell_size": 1.0, "amplitude": 1.0}
+  ]
+}

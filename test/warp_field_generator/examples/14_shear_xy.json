@@ -1,0 +1,12 @@
+{
+  "output": "14_shear_xy.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "size": [24, 24, 24],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-12.0, -12.0, -12.0],
+  "operations": [
+    {"type": "shear", "normal": [0.0, 1.0, 0.0], "direction": [1.0, 0.0, 0.0], "amplitude": 0.2}
+  ]
+}

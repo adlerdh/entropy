@@ -1,0 +1,12 @@
+{
+  "output": "35_1d_wave.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 1,
+  "vector_dimension": 1,
+  "size": [64],
+  "spacing": [1.0],
+  "origin": [-32.0],
+  "operations": [
+    {"type": "wave", "normal": [1.0, 0.0, 0.0], "direction": [1.0, 0.0, 0.0], "frequency": 0.06, "amplitude": 3.0}
+  ]
+}

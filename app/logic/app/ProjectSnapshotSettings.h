@@ -107,6 +107,16 @@ inline serialize::ProjectComponentRenderMode toSerializedComponentRenderMode(Com
       return serialize::ProjectComponentRenderMode::ComplexReal;
     case ComponentRenderMode::ComplexImaginary:
       return serialize::ProjectComponentRenderMode::ComplexImaginary;
+    case ComponentRenderMode::VectorDirectionColor:
+      return serialize::ProjectComponentRenderMode::VectorDirectionColor;
+    case ComponentRenderMode::VectorSignedNormalProjection:
+      return serialize::ProjectComponentRenderMode::VectorSignedNormalProjection;
+    case ComponentRenderMode::VectorJacobianDeterminant:
+      return serialize::ProjectComponentRenderMode::VectorJacobianDeterminant;
+    case ComponentRenderMode::VectorDivergence:
+      return serialize::ProjectComponentRenderMode::VectorDivergence;
+    case ComponentRenderMode::VectorCurlMagnitude:
+      return serialize::ProjectComponentRenderMode::VectorCurlMagnitude;
   }
 
   return serialize::ProjectComponentRenderMode::SingleComponent;
@@ -138,6 +148,16 @@ inline ComponentRenderMode fromSerializedComponentRenderMode(serialize::ProjectC
       return ComponentRenderMode::ComplexReal;
     case serialize::ProjectComponentRenderMode::ComplexImaginary:
       return ComponentRenderMode::ComplexImaginary;
+    case serialize::ProjectComponentRenderMode::VectorDirectionColor:
+      return ComponentRenderMode::VectorDirectionColor;
+    case serialize::ProjectComponentRenderMode::VectorSignedNormalProjection:
+      return ComponentRenderMode::VectorSignedNormalProjection;
+    case serialize::ProjectComponentRenderMode::VectorJacobianDeterminant:
+      return ComponentRenderMode::VectorJacobianDeterminant;
+    case serialize::ProjectComponentRenderMode::VectorDivergence:
+      return ComponentRenderMode::VectorDivergence;
+    case serialize::ProjectComponentRenderMode::VectorCurlMagnitude:
+      return ComponentRenderMode::VectorCurlMagnitude;
   }
 
   return ComponentRenderMode::SingleComponent;
@@ -189,6 +209,36 @@ inline ComplexPhaseRange fromSerializedComplexPhaseRange(serialize::ProjectCompl
   }
 
   return ComplexPhaseRange::Signed;
+}
+
+inline serialize::ProjectVectorArrowOverlaySpacingMode toSerializedVectorArrowOverlaySpacingMode(
+  VectorArrowOverlaySpacingMode mode)
+{
+  switch (mode) {
+    case VectorArrowOverlaySpacingMode::Pixels:
+      return serialize::ProjectVectorArrowOverlaySpacingMode::Pixels;
+    case VectorArrowOverlaySpacingMode::Voxels:
+      return serialize::ProjectVectorArrowOverlaySpacingMode::Voxels;
+    case VectorArrowOverlaySpacingMode::Millimeters:
+      return serialize::ProjectVectorArrowOverlaySpacingMode::Millimeters;
+  }
+
+  return serialize::ProjectVectorArrowOverlaySpacingMode::Pixels;
+}
+
+inline VectorArrowOverlaySpacingMode fromSerializedVectorArrowOverlaySpacingMode(
+  serialize::ProjectVectorArrowOverlaySpacingMode mode)
+{
+  switch (mode) {
+    case serialize::ProjectVectorArrowOverlaySpacingMode::Pixels:
+      return VectorArrowOverlaySpacingMode::Pixels;
+    case serialize::ProjectVectorArrowOverlaySpacingMode::Voxels:
+      return VectorArrowOverlaySpacingMode::Voxels;
+    case serialize::ProjectVectorArrowOverlaySpacingMode::Millimeters:
+      return VectorArrowOverlaySpacingMode::Millimeters;
+  }
+
+  return VectorArrowOverlaySpacingMode::Pixels;
 }
 
 /**

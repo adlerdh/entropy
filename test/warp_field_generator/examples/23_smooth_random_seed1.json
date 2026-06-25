@@ -1,0 +1,12 @@
+{
+  "output": "23_smooth_random_seed1.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "size": [24, 24, 24],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-12.0, -12.0, -12.0],
+  "operations": [
+    {"type": "smooth_random", "seed": 1, "cell_size": 6.0, "amplitude": 2.0}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "output": "21_control_point_grid.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "size": [24, 24, 24],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-12.0, -12.0, -12.0],
+  "operations": [
+    {"type": "control_point", "width": 8.0, "control_points": [
+      {"point": [-6.0, -6.0, 0.0], "displacement": [2.0, 0.0, 0.0]},
+      {"point": [6.0, -6.0, 0.0], "displacement": [0.0, 2.0, 0.0]},
+      {"point": [-6.0, 6.0, 0.0], "displacement": [0.0, -2.0, 0.0]},
+      {"point": [6.0, 6.0, 0.0], "displacement": [-2.0, 0.0, 0.0]}
+    ]}
+  ]
+}

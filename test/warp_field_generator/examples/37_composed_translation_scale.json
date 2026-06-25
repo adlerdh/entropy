@@ -1,0 +1,14 @@
+{
+  "output": "37_composed_translation_scale.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "composition_mode": "composed",
+  "size": [24, 24, 24],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-12.0, -12.0, -12.0],
+  "operations": [
+    {"type": "affine", "translation": [2.0, 0.0, 0.0]},
+    {"type": "affine", "matrix": [1.15, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0, 0.0, 1.05]}
+  ]
+}

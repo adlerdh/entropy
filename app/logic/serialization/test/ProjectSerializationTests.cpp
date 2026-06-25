@@ -163,6 +163,17 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_componentRenderMode = serialize::ProjectComponentRenderMode::ComplexPhase,
     .m_complexPhaseUnit = serialize::ProjectComplexPhaseUnit::Degrees,
     .m_complexPhaseRange = serialize::ProjectComplexPhaseRange::Unsigned,
+    .m_vectorArrowOverlayVisible = true,
+    .m_vectorArrowOverlayOnImage = false,
+    .m_vectorArrowOverlayDensity = 24.0f,
+    .m_vectorArrowOverlayVoxelSpacing = 2.5f,
+    .m_vectorArrowOverlayMillimeterSpacing = 12.5f,
+    .m_vectorArrowOverlaySpacingMode = serialize::ProjectVectorArrowOverlaySpacingMode::Millimeters,
+    .m_vectorArrowOverlayColor = glm::vec3{0.7f, 0.8f, 0.9f},
+    .m_vectorArrowOverlayUseDirectionColor = true,
+    .m_vectorArrowOverlayLineThickness = 2.5f,
+    .m_vectorArrowOverlayScaleByMagnitude = false,
+    .m_vectorArrowOverlayScaleFactor = 3.0f,
     .m_ignoreAlpha = true,
     .m_colorInterpolationMode = InterpolationMode::NearestNeighbor,
     .m_componentLevels = {10.0, 20.0, 30.0},
@@ -206,6 +217,17 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(settings.at("componentRenderMode") == "complexPhase");
   CHECK(settings.at("complexPhaseUnit") == "degrees");
   CHECK(settings.at("complexPhaseRange") == "unsigned");
+  CHECK(settings.at("vectorArrowOverlayVisible") == true);
+  CHECK(settings.at("vectorArrowOverlayOnImage") == false);
+  CHECK(settings.at("vectorArrowOverlayDensity") == 24.0f);
+  CHECK(settings.at("vectorArrowOverlayVoxelSpacing") == 2.5f);
+  CHECK(settings.at("vectorArrowOverlayMillimeterSpacing") == 12.5f);
+  CHECK(settings.at("vectorArrowOverlaySpacingMode") == "millimeters");
+  CHECK(settings.at("vectorArrowOverlayColor") == json::array({0.7f, 0.8f, 0.9f}));
+  CHECK(settings.at("vectorArrowOverlayUseDirectionColor") == true);
+  CHECK(settings.at("vectorArrowOverlayLineThickness") == 2.5f);
+  CHECK(settings.at("vectorArrowOverlayScaleByMagnitude") == false);
+  CHECK(settings.at("vectorArrowOverlayScaleFactor") == 3.0f);
   CHECK(settings.at("activeComponent") == 2);
   CHECK(settings.at("ignoreAlpha") == true);
   CHECK(settings.at("colorInterpolationMode") == "nearest");
@@ -248,6 +270,17 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_componentRenderMode == serialize::ProjectComponentRenderMode::ComplexPhase);
   CHECK(parsedSettings.m_complexPhaseUnit == serialize::ProjectComplexPhaseUnit::Degrees);
   CHECK(parsedSettings.m_complexPhaseRange == serialize::ProjectComplexPhaseRange::Unsigned);
+  CHECK(parsedSettings.m_vectorArrowOverlayVisible);
+  CHECK_FALSE(parsedSettings.m_vectorArrowOverlayOnImage);
+  CHECK(parsedSettings.m_vectorArrowOverlayDensity == 24.0f);
+  CHECK(parsedSettings.m_vectorArrowOverlayVoxelSpacing == 2.5f);
+  CHECK(parsedSettings.m_vectorArrowOverlayMillimeterSpacing == 12.5f);
+  CHECK(parsedSettings.m_vectorArrowOverlaySpacingMode == serialize::ProjectVectorArrowOverlaySpacingMode::Millimeters);
+  CHECK(parsedSettings.m_vectorArrowOverlayColor == glm::vec3{0.7f, 0.8f, 0.9f});
+  CHECK(parsedSettings.m_vectorArrowOverlayUseDirectionColor);
+  CHECK(parsedSettings.m_vectorArrowOverlayLineThickness == 2.5f);
+  CHECK_FALSE(parsedSettings.m_vectorArrowOverlayScaleByMagnitude);
+  CHECK(parsedSettings.m_vectorArrowOverlayScaleFactor == 3.0f);
   CHECK(parsedSettings.m_activeComponent == 2);
   CHECK(parsedSettings.m_ignoreAlpha);
   CHECK(parsedSettings.m_colorInterpolationMode == InterpolationMode::NearestNeighbor);

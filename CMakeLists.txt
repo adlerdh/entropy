@@ -616,6 +616,8 @@ set(entropy_SHADERS
   "${entropy_APP_DIR}/rendering/shaders/Image.vs"
   "${entropy_APP_DIR}/rendering/shaders/ImageGrey.fs"
   "${entropy_APP_DIR}/rendering/shaders/ImageColor.fs"
+  "${entropy_APP_DIR}/rendering/shaders/VectorDirectionColor.fs"
+  "${entropy_APP_DIR}/rendering/shaders/VectorSignedNormalProjection.fs"
   "${entropy_APP_DIR}/rendering/shaders/IsoContour.fs"
   "${entropy_APP_DIR}/rendering/shaders/Metric.vs"
   "${entropy_APP_DIR}/rendering/shaders/Overlay.fs"

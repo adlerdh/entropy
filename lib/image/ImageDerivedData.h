@@ -4,6 +4,7 @@
 #include "image/Image.h"
 
 #include <cstdint>
+#include <glm/vec3.hpp>
 #include <optional>
 #include <string>
 #include <vector>
@@ -20,7 +21,10 @@ enum class ComponentProjectionMode
   ComplexPhaseSignedRadians,
   ComplexPhaseUnsignedRadians,
   ComplexPhaseSignedDegrees,
-  ComplexPhaseUnsignedDegrees
+  ComplexPhaseUnsignedDegrees,
+  VectorJacobianDeterminant,
+  VectorDivergence,
+  VectorCurlMagnitude
 };
 
 /**
@@ -60,11 +64,35 @@ std::string componentProjectionModeName(ComponentProjectionMode mode);
 bool isScalarComponentProjection(ComponentProjectionMode mode);
 
 /**
+ * @brief Compute a vector-field derivative projection at one voxel.
+ * @param image Three-component vector-field image.
+ * @param mode Vector derivative projection to compute.
+ * @param voxel Voxel coordinate where the value is sampled.
+ * @return Projection value, or std::nullopt when the image, mode, or voxel is invalid.
+ */
+std::optional<double>
+vectorDerivativeProjectionValue(const Image& image, ComponentProjectionMode mode, const glm::uvec3& voxel);
+
+/**
  * @brief Return whether the image is a two-component complex-valued image.
  * @param image Image to inspect.
  * @return True when metadata identifies the image as complex and it has real/imaginary components.
  */
 bool isComplexValuedImage(const Image& image);
+
+/**
+ * @brief Return whether an image can reasonably be interpreted as a 3D vector field.
+ * @param image Image to inspect.
+ * @return True for loaded 3-component images.
+ */
+bool isVectorFieldCandidate(const Image& image);
+
+/**
+ * @brief Return whether an image is currently treated as a vector field.
+ * @param image Image to inspect.
+ * @return True when vector-field rendering controls are enabled for a candidate image.
+ */
+bool isVectorFieldImage(const Image& image);
 
 /**
  * @brief Compute the phase angle of a complex value.
@@ -83,6 +111,14 @@ double complexPhaseValue(double real, double imaginary, ComplexPhaseRange range,
  * @return Human-readable label including real/imaginary semantics when known.
  */
 std::string complexComponentLabel(uint32_t component, uint32_t componentMax);
+
+/**
+ * @brief Label for a vector-field component index.
+ * @param component Component index.
+ * @param componentMax Maximum valid component index.
+ * @return Human-readable label including x/y/z semantics when known.
+ */
+std::string vectorFieldComponentLabel(uint32_t component, uint32_t componentMax);
 
 /**
  * @brief Derived image produced for one source image component.

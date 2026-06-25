@@ -96,6 +96,116 @@ ComponentRenderMode ImageSettings::componentRenderMode() const
   return m_componentRenderMode;
 }
 
+void ImageSettings::setVectorArrowOverlayVisible(bool visible)
+{
+  m_vectorArrowOverlayVisible = visible;
+}
+
+bool ImageSettings::vectorArrowOverlayVisible() const
+{
+  return m_vectorArrowOverlayVisible;
+}
+
+void ImageSettings::setVectorArrowOverlayOnImage(bool overlayOnImage)
+{
+  m_vectorArrowOverlayOnImage = overlayOnImage;
+}
+
+bool ImageSettings::vectorArrowOverlayOnImage() const
+{
+  return m_vectorArrowOverlayOnImage;
+}
+
+void ImageSettings::setVectorArrowOverlayDensity(float densityPx)
+{
+  m_vectorArrowOverlayDensity = std::clamp(densityPx, 0.1f, 1000.0f);
+}
+
+float ImageSettings::vectorArrowOverlayDensity() const
+{
+  return m_vectorArrowOverlayDensity;
+}
+
+void ImageSettings::setVectorArrowOverlayVoxelSpacing(float spacingVoxels)
+{
+  m_vectorArrowOverlayVoxelSpacing = std::clamp(spacingVoxels, 0.1f, 10.0f);
+}
+
+float ImageSettings::vectorArrowOverlayVoxelSpacing() const
+{
+  return m_vectorArrowOverlayVoxelSpacing;
+}
+
+void ImageSettings::setVectorArrowOverlayMillimeterSpacing(float spacingMm)
+{
+  m_vectorArrowOverlayMillimeterSpacing = std::clamp(spacingMm, 0.1f, 1000.0f);
+}
+
+float ImageSettings::vectorArrowOverlayMillimeterSpacing() const
+{
+  return m_vectorArrowOverlayMillimeterSpacing;
+}
+
+void ImageSettings::setVectorArrowOverlaySpacingMode(VectorArrowOverlaySpacingMode mode)
+{
+  m_vectorArrowOverlaySpacingMode = mode;
+}
+
+VectorArrowOverlaySpacingMode ImageSettings::vectorArrowOverlaySpacingMode() const
+{
+  return m_vectorArrowOverlaySpacingMode;
+}
+
+void ImageSettings::setVectorArrowOverlayColor(glm::vec3 color)
+{
+  m_vectorArrowOverlayColor = glm::clamp(color, glm::vec3{0.0f}, glm::vec3{1.0f});
+}
+
+const glm::vec3& ImageSettings::vectorArrowOverlayColor() const
+{
+  return m_vectorArrowOverlayColor;
+}
+
+void ImageSettings::setVectorArrowOverlayUseDirectionColor(bool useDirectionColor)
+{
+  m_vectorArrowOverlayUseDirectionColor = useDirectionColor;
+}
+
+bool ImageSettings::vectorArrowOverlayUseDirectionColor() const
+{
+  return m_vectorArrowOverlayUseDirectionColor;
+}
+
+void ImageSettings::setVectorArrowOverlayLineThickness(float thicknessPx)
+{
+  m_vectorArrowOverlayLineThickness = std::clamp(thicknessPx, 0.25f, 4.0f);
+}
+
+float ImageSettings::vectorArrowOverlayLineThickness() const
+{
+  return m_vectorArrowOverlayLineThickness;
+}
+
+void ImageSettings::setVectorArrowOverlayScaleByMagnitude(bool scaleByMagnitude)
+{
+  m_vectorArrowOverlayScaleByMagnitude = scaleByMagnitude;
+}
+
+bool ImageSettings::vectorArrowOverlayScaleByMagnitude() const
+{
+  return m_vectorArrowOverlayScaleByMagnitude;
+}
+
+void ImageSettings::setVectorArrowOverlayScaleFactor(float scaleFactor)
+{
+  m_vectorArrowOverlayScaleFactor = std::clamp(scaleFactor, 0.01f, 10.0f);
+}
+
+float ImageSettings::vectorArrowOverlayScaleFactor() const
+{
+  return m_vectorArrowOverlayScaleFactor;
+}
+
 void ImageSettings::setComplexPhaseUnit(ComplexPhaseUnit unit)
 {
   m_complexPhaseUnit = unit;

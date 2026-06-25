@@ -122,6 +122,40 @@ Image makeThreeComponentImage()
     buffers);
 }
 
+Image makeLinearVectorField(const std::vector<std::vector<double>>& directions = {})
+{
+  const glm::uvec3 dims{3, 3, 3};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 3, dims);
+  ioInfo.m_spaceInfo.m_spacing = {2.0, 3.0, 4.0};
+  if (!directions.empty()) {
+    ioInfo.m_spaceInfo.m_directions = directions;
+  }
+  ImageHeader header(ioInfo, ioInfo, false);
+
+  std::vector<float> c0(header.numPixels(), 0.0f);
+  std::vector<float> c1(header.numPixels(), 0.0f);
+  std::vector<float> c2(header.numPixels(), 0.0f);
+  for (uint32_t z = 0; z < dims.z; ++z) {
+    for (uint32_t y = 0; y < dims.y; ++y) {
+      for (uint32_t x = 0; x < dims.x; ++x) {
+        const std::size_t index =
+          static_cast<std::size_t>(dims.x) * dims.y * z + static_cast<std::size_t>(dims.x) * y + x;
+        c0[index] = 0.5f * static_cast<float>(x);
+        c1[index] = (1.0f / 3.0f) * static_cast<float>(y);
+        c2[index] = 0.25f * static_cast<float>(z);
+      }
+    }
+  }
+
+  std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
+  return Image(
+    header,
+    "linear-vector-field",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+}
+
 fs::path testDirectory()
 {
   const fs::path dir = fs::temp_directory_path() / "entropy-image-core-tests";
@@ -789,6 +823,61 @@ TEST_CASE("Component projections read logical components from interleaved images
   REQUIRE(magnitude.has_value());
   CHECK(magnitude->value<double>(0, 0).value() == Catch::Approx(std::sqrt(21.0)));
   CHECK(magnitude->value<double>(0, 1).value() == Catch::Approx(7.0));
+}
+
+TEST_CASE("Vector field derivative projections use physical spacing", "[image][derived][vector]")
+{
+  Image image = makeLinearVectorField();
+
+  CHECK(isVectorFieldCandidate(image));
+  CHECK(isVectorFieldImage(image));
+  CHECK(vectorFieldComponentLabel(0, 2) == "x (0 of 2)");
+  CHECK(vectorFieldComponentLabel(1, 2) == "y (1 of 2)");
+  CHECK(vectorFieldComponentLabel(2, 2) == "z (2 of 2)");
+
+  const glm::uvec3 centerVoxel{1, 1, 1};
+  const auto jacobian = createComponentProjectionImage(image, ComponentProjectionMode::VectorJacobianDeterminant);
+  REQUIRE(jacobian.has_value());
+  const double expectedJacobian = (1.0 + 0.25) * (1.0 + 1.0 / 9.0) * (1.0 + 0.0625);
+  CHECK(jacobian->value<double>(0, 13).value() == Catch::Approx(expectedJacobian));
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorJacobianDeterminant, centerVoxel).value() ==
+    Catch::Approx(expectedJacobian));
+
+  const auto divergence = createComponentProjectionImage(image, ComponentProjectionMode::VectorDivergence);
+  REQUIRE(divergence.has_value());
+  CHECK(divergence->value<double>(0, 13).value() == Catch::Approx(0.25 + 1.0 / 9.0 + 0.0625));
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorDivergence, centerVoxel).value() ==
+    Catch::Approx(0.25 + 1.0 / 9.0 + 0.0625));
+
+  const auto curl = createComponentProjectionImage(image, ComponentProjectionMode::VectorCurlMagnitude);
+  REQUIRE(curl.has_value());
+  CHECK(curl->value<double>(0, 13).value() == Catch::Approx(0.0));
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorCurlMagnitude, centerVoxel).value() ==
+    Catch::Approx(0.0));
+  CHECK_FALSE(vectorDerivativeProjectionValue(image, ComponentProjectionMode::Magnitude, centerVoxel).has_value());
+  CHECK_FALSE(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorDivergence, glm::uvec3{3, 1, 1}).has_value());
+}
+
+TEST_CASE("Vector field derivative projections respect image directions", "[image][derived][vector]")
+{
+  Image image = makeLinearVectorField({{0.0, 1.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}});
+  const glm::uvec3 centerVoxel{1, 1, 1};
+
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorDivergence, centerVoxel).value() ==
+    Catch::Approx(0.0625));
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorCurlMagnitude, centerVoxel).value() ==
+    Catch::Approx(0.25 + 1.0 / 9.0));
+
+  const double expectedJacobian = (1.0 + 0.0625) * (1.0 + 0.25 / 9.0);
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorJacobianDeterminant, centerVoxel).value() ==
+    Catch::Approx(expectedJacobian));
 }
 
 TEST_CASE("Exact image quantiles work for every in-memory component type", "[image][quantiles]")

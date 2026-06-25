@@ -3,6 +3,11 @@
 
 #include <spdlog/spdlog.h>
 
+#include <glm/geometric.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/matrix.hpp>
+#include <glm/vec3.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -11,6 +16,91 @@
 #include <optional>
 #include <string>
 #include <utility>
+
+namespace
+{
+bool isVectorDerivativeProjection(ComponentProjectionMode mode)
+{
+  return ComponentProjectionMode::VectorJacobianDeterminant == mode ||
+         ComponentProjectionMode::VectorDivergence == mode || ComponentProjectionMode::VectorCurlMagnitude == mode;
+}
+
+std::size_t linearIndex(const glm::uvec3& dims, uint32_t x, uint32_t y, uint32_t z)
+{
+  return static_cast<std::size_t>(dims.x) * dims.y * z + static_cast<std::size_t>(dims.x) * y + x;
+}
+
+double vectorValueAt(const Image& image, uint32_t component, uint32_t x, uint32_t y, uint32_t z)
+{
+  return image.value<double>(component, static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)).value_or(0.0);
+}
+
+double derivativeAt(const Image& image, uint32_t vectorComponent, uint32_t axis, uint32_t x, uint32_t y, uint32_t z)
+{
+  const glm::uvec3 dims = image.header().pixelDimensions();
+  const glm::vec3 spacing = image.header().spacing();
+
+  auto sample = [&](uint32_t coordinate) {
+    uint32_t xx = x;
+    uint32_t yy = y;
+    uint32_t zz = z;
+    if (0u == axis) {
+      xx = coordinate;
+    }
+    else if (1u == axis) {
+      yy = coordinate;
+    }
+    else {
+      zz = coordinate;
+    }
+    return vectorValueAt(image, vectorComponent, xx, yy, zz);
+  };
+
+  const uint32_t n = dims[axis];
+  if (n <= 1u) {
+    return 0.0;
+  }
+
+  const uint32_t coordinate = 0u == axis ? x : (1u == axis ? y : z);
+  const double dx = std::max(static_cast<double>(spacing[axis]), std::numeric_limits<double>::epsilon());
+
+  if (0u == coordinate) {
+    return (sample(1u) - sample(0u)) / dx;
+  }
+  if (coordinate + 1u >= n) {
+    return (sample(n - 1u) - sample(n - 2u)) / dx;
+  }
+
+  return (sample(coordinate + 1u) - sample(coordinate - 1u)) / (2.0 * dx);
+}
+
+entropy_expected::expected<std::vector<float>, std::string> createVectorDerivativeValues(
+  const Image& image,
+  ComponentProjectionMode mode)
+{
+  if (!isVectorFieldCandidate(image)) {
+    return entropy_expected::unexpected("Vector derivative projection requires a three-component image");
+  }
+
+  const glm::uvec3 dims = image.header().pixelDimensions();
+  std::vector<float> values(image.header().numPixels(), 0.0f);
+
+  for (uint32_t z = 0; z < dims.z; ++z) {
+    for (uint32_t y = 0; y < dims.y; ++y) {
+      for (uint32_t x = 0; x < dims.x; ++x) {
+        const std::optional<double> value = vectorDerivativeProjectionValue(image, mode, glm::uvec3{x, y, z});
+        if (!value) {
+          return entropy_expected::unexpected("Unsupported vector derivative projection");
+        }
+
+        values[linearIndex(dims, x, y, z)] = static_cast<float>(std::isfinite(*value) ? *value : 0.0);
+      }
+    }
+  }
+
+  return values;
+}
+} // namespace
 
 std::optional<ComponentProjectionMode> componentProjectionFromRenderMode(ComponentRenderMode mode)
 {
@@ -25,6 +115,14 @@ std::optional<ComponentProjectionMode> componentProjectionFromRenderMode(Compone
       return ComponentProjectionMode::Magnitude;
     case ComponentRenderMode::ComplexPhase:
       return ComponentProjectionMode::ComplexPhaseSignedRadians;
+    case ComponentRenderMode::VectorJacobianDeterminant:
+      return ComponentProjectionMode::VectorJacobianDeterminant;
+    case ComponentRenderMode::VectorDivergence:
+      return ComponentProjectionMode::VectorDivergence;
+    case ComponentRenderMode::VectorCurlMagnitude:
+      return ComponentProjectionMode::VectorCurlMagnitude;
+    case ComponentRenderMode::VectorDirectionColor:
+    case ComponentRenderMode::VectorSignedNormalProjection:
     case ComponentRenderMode::SingleComponent:
     case ComponentRenderMode::Color:
     case ComponentRenderMode::ComplexReal:
@@ -74,6 +172,12 @@ std::string componentProjectionModeName(ComponentProjectionMode mode)
       return "Phase [-180, 180]";
     case ComponentProjectionMode::ComplexPhaseUnsignedDegrees:
       return "Phase [0, 360]";
+    case ComponentProjectionMode::VectorJacobianDeterminant:
+      return "Jacobian determinant";
+    case ComponentProjectionMode::VectorDivergence:
+      return "Divergence";
+    case ComponentProjectionMode::VectorCurlMagnitude:
+      return "Curl magnitude";
   }
 
   return "Unknown";
@@ -90,15 +194,66 @@ bool isScalarComponentProjection(ComponentProjectionMode mode)
     case ComponentProjectionMode::ComplexPhaseUnsignedRadians:
     case ComponentProjectionMode::ComplexPhaseSignedDegrees:
     case ComponentProjectionMode::ComplexPhaseUnsignedDegrees:
+    case ComponentProjectionMode::VectorJacobianDeterminant:
+    case ComponentProjectionMode::VectorDivergence:
+    case ComponentProjectionMode::VectorCurlMagnitude:
       return true;
   }
 
   return false;
 }
 
+std::optional<double>
+vectorDerivativeProjectionValue(const Image& image, ComponentProjectionMode mode, const glm::uvec3& voxel)
+{
+  if (!isVectorFieldCandidate(image) || !isVectorDerivativeProjection(mode)) {
+    return std::nullopt;
+  }
+
+  const glm::uvec3 dims = image.header().pixelDimensions();
+  if (voxel.x >= dims.x || voxel.y >= dims.y || voxel.z >= dims.z) {
+    return std::nullopt;
+  }
+
+  glm::dmat3 jacobian(0.0);
+  for (uint32_t component = 0; component < 3u; ++component) {
+    for (uint32_t axis = 0; axis < 3u; ++axis) {
+      jacobian[axis][component] = derivativeAt(image, component, axis, voxel.x, voxel.y, voxel.z);
+    }
+  }
+
+  jacobian = jacobian * glm::transpose(glm::dmat3{image.header().directions()});
+
+  if (ComponentProjectionMode::VectorJacobianDeterminant == mode) {
+    return glm::determinant(glm::dmat3(1.0) + jacobian);
+  }
+  if (ComponentProjectionMode::VectorDivergence == mode) {
+    return jacobian[0][0] + jacobian[1][1] + jacobian[2][2];
+  }
+  if (ComponentProjectionMode::VectorCurlMagnitude == mode) {
+    const glm::dvec3 curl{
+      jacobian[1][2] - jacobian[2][1],
+      jacobian[2][0] - jacobian[0][2],
+      jacobian[0][1] - jacobian[1][0]};
+    return glm::length(curl);
+  }
+
+  return std::nullopt;
+}
+
 bool isComplexValuedImage(const Image& image)
 {
   return PixelType::Complex == image.header().pixelType() && 2u == image.header().numComponentsPerPixel();
+}
+
+bool isVectorFieldCandidate(const Image& image)
+{
+  return 3u == image.header().numComponentsPerPixel();
+}
+
+bool isVectorFieldImage(const Image& image)
+{
+  return isVectorFieldCandidate(image);
 }
 
 double complexPhaseValue(double real, double imaginary, ComplexPhaseRange range, ComplexPhaseUnit unit)
@@ -125,6 +280,21 @@ std::string complexComponentLabel(uint32_t component, uint32_t componentMax)
   }
   else if (1u == component) {
     label += " (imaginary)";
+  }
+  return label;
+}
+
+std::string vectorFieldComponentLabel(uint32_t component, uint32_t componentMax)
+{
+  std::string label = std::to_string(component) + " of " + std::to_string(componentMax);
+  if (0u == component) {
+    label = "x (" + label + ")";
+  }
+  else if (1u == component) {
+    label = "y (" + label + ")";
+  }
+  else if (2u == component) {
+    label = "z (" + label + ")";
   }
   return label;
 }
@@ -225,9 +395,17 @@ entropy_expected::expected<Image, std::string> createComponentProjectionImage(
 
   const std::size_t numPixels = image.header().numPixels();
   std::vector<float> values(numPixels, 0.0f);
+  if (isVectorDerivativeProjection(mode)) {
+    auto derivativeValues = createVectorDerivativeValues(image, mode);
+    if (!derivativeValues) {
+      return entropy_expected::unexpected(derivativeValues.error());
+    }
+    values = std::move(*derivativeValues);
+  }
+
   std::size_t nonFiniteValueCount = 0;
 
-  for (std::size_t pixel = 0; pixel < numPixels; ++pixel) {
+  for (std::size_t pixel = 0; !isVectorDerivativeProjection(mode) && pixel < numPixels; ++pixel) {
     double minValue = std::numeric_limits<double>::max();
     double maxValue = std::numeric_limits<double>::lowest();
     double sum = 0.0;
@@ -294,6 +472,10 @@ entropy_expected::expected<Image, std::string> createComponentProjectionImage(
         values[pixel] = static_cast<float>(complexPhaseValue(*real, *imaginary, range, unit));
         break;
       }
+      case ComponentProjectionMode::VectorJacobianDeterminant:
+      case ComponentProjectionMode::VectorDivergence:
+      case ComponentProjectionMode::VectorCurlMagnitude:
+        break;
     }
   }
 

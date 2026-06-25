@@ -1,0 +1,12 @@
+{
+  "output": "34_2d_vortex_pair.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 2,
+  "vector_dimension": 2,
+  "size": [32, 32],
+  "spacing": [1.0, 1.0],
+  "origin": [-16.0, -16.0],
+  "operations": [
+    {"type": "vortex_pair", "center": [-6.0, 0.0, 0.0], "secondary_center": [6.0, 0.0, 0.0], "radii": [7.0, 7.0, 1.0], "amplitude": 3.0}
+  ]
+}

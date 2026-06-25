@@ -1,0 +1,12 @@
+{
+  "output": "33_2d_wave.nii.gz",
+  "component_type": "float",
+  "spatial_dimension": 2,
+  "vector_dimension": 2,
+  "size": [32, 32],
+  "spacing": [1.0, 1.0],
+  "origin": [-16.0, -16.0],
+  "operations": [
+    {"type": "wave", "normal": [1.0, 0.0, 0.0], "direction": [0.0, 1.0, 0.0], "frequency": 0.08, "amplitude": 4.0}
+  ]
+}

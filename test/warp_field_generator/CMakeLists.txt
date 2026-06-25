@@ -1,0 +1,65 @@
+find_package(ITK ${itk_VERSION} REQUIRED
+  COMPONENTS ${entropy_ITK_COMPONENTS}
+  HINTS "${itk_PREFIX}/build")
+include("${ITK_USE_FILE}")
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(WarpFieldGenerator_EXAMPLE_OUTPUT_DIR
+  "${CMAKE_BINARY_DIR}/warp-field-examples"
+  CACHE PATH "Output directory for generated warp field example images")
+
+add_library(WarpFieldGeneratorCore STATIC
+  WarpFieldGenerator.cpp
+)
+
+target_include_directories(WarpFieldGeneratorCore PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+target_link_libraries(WarpFieldGeneratorCore PUBLIC
+  glm::glm
+  nlohmann_json::nlohmann_json
+  ${ITK_LIBRARIES}
+  entropy_warnings
+)
+
+add_executable(WarpFieldGenerator
+  WarpFieldGeneratorMain.cpp
+)
+
+target_link_libraries(WarpFieldGenerator PRIVATE
+  CLI11::CLI11
+  WarpFieldGeneratorCore
+  entropy_warnings
+)
+
+entropy_copy_runtime_dlls(WarpFieldGenerator)
+
+add_custom_target(GenerateWarpFieldExamples
+  COMMAND
+    "${CMAKE_COMMAND}"
+      -D "WARP_FIELD_GENERATOR=$<TARGET_FILE:WarpFieldGenerator>"
+      -D "WARP_FIELD_EXAMPLE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/examples"
+      -D "WARP_FIELD_EXAMPLE_OUTPUT_DIR=${WarpFieldGenerator_EXAMPLE_OUTPUT_DIR}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/GenerateWarpFieldExamples.cmake"
+  DEPENDS WarpFieldGenerator
+  COMMENT "Generating synthetic warp field example images"
+  VERBATIM
+)
+
+add_executable(WarpFieldGeneratorTests
+  WarpFieldGeneratorTests.cpp
+)
+
+target_link_libraries(WarpFieldGeneratorTests PRIVATE
+  Catch2::Catch2WithMain
+  WarpFieldGeneratorCore
+  entropy_warnings
+)
+
+entropy_copy_runtime_dlls(WarpFieldGeneratorTests)
+
+catch_discover_tests(WarpFieldGeneratorTests)

@@ -83,6 +83,17 @@ void setDefaultComplexRendering(ImageSettings& settings, const ImageHeader& head
     settings.setComponentRenderMode(ComponentRenderMode::Magnitude);
   }
 }
+
+void setDefaultVectorFieldRendering(ImageSettings& settings, const ImageHeader& header)
+{
+  if (
+    (PixelType::Vector == header.pixelType() || PixelType::CovariantVector == header.pixelType() ||
+     PixelType::VariableLengthVector == header.pixelType()) &&
+    3u == header.numComponentsPerPixel() && ComponentType::Float32 == header.memoryComponentType())
+  {
+    settings.setComponentRenderMode(ComponentRenderMode::Magnitude);
+  }
+}
 } // namespace
 
 Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, const MultiComponentBufferType& bufferType)
@@ -225,6 +236,7 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
     m_header.memoryComponentType(),
     componentStats);
   setDefaultComplexRendering(m_settings, m_header);
+  setDefaultVectorFieldRendering(m_settings, m_header);
 
   switch (m_imageRep) {
     case ImageRepresentation::Image: {
@@ -265,6 +277,7 @@ Image::Image(
     m_header.memoryComponentType(),
     std::move(componentStats));
   setDefaultComplexRendering(m_settings, m_header);
+  setDefaultVectorFieldRendering(m_settings, m_header);
 
   switch (m_imageRep) {
     case ImageRepresentation::Image: {
@@ -481,6 +494,7 @@ Image::Image(
     m_header.memoryComponentType(),
     std::move(componentStats));
   setDefaultComplexRendering(m_settings, m_header);
+  setDefaultVectorFieldRendering(m_settings, m_header);
 
   switch (m_imageRep) {
     case ImageRepresentation::Image: {

@@ -47,6 +47,9 @@ enum class InspectorColumn : int
   Mean,
   Maximum,
   Magnitude,
+  JacobianDeterminant,
+  CurlMagnitude,
+  Divergence,
   Label,
   Region,
   Voxel,
@@ -68,6 +71,9 @@ constexpr std::array<const char*, sk_inspectorColumnCount> sk_inspectorColumnNam
   "Mean",
   "Maximum",
   "Magnitude",
+  "Jacobian Det.",
+  "Curl Mag.",
+  "Divergence",
   "Label",
   "Region",
   "Voxel",
@@ -85,6 +91,9 @@ constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnMinWidths{
   64.0f,
   78.0f,
   88.0f,
+  108.0f,
+  90.0f,
+  94.0f,
   48.0f,
   72.0f,
   96.0f,
@@ -102,6 +111,9 @@ constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnDefaultWid
   82.0f,
   96.0f,
   108.0f,
+  122.0f,
+  104.0f,
+  112.0f,
   62.0f,
   140.0f,
   125.0f,
@@ -119,13 +131,33 @@ constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnMaxWidths{
   110.0f,
   115.0f,
   125.0f,
+  140.0f,
+  120.0f,
+  130.0f,
   72.0f,
   180.0f,
   150.0f,
   230.0f};
 
-constexpr std::array<bool, sk_inspectorColumnCount>
-  sk_inspectorColumnCanHide{false, true, true, true, true, true, true, true, true, true, true, true, true, true, true};
+constexpr std::array<bool, sk_inspectorColumnCount> sk_inspectorColumnCanHide{
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true};
 
 constexpr int columnIndex(InspectorColumn column)
 {
@@ -172,6 +204,18 @@ bool hasComplexValuedImage(const AppData& appData)
   return false;
 }
 
+bool hasVectorFieldImage(const AppData& appData)
+{
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
+    const Image* image = appData.image(imageUid);
+    if (image && isVectorFieldImage(*image)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 bool usesGlobalImageVisibilityControl(const Image& image)
 {
   return image.header().numComponentsPerPixel() > 1 &&
@@ -208,6 +252,38 @@ bool isComponentProjectionColumn(InspectorColumn column)
     case InspectorColumn::Real:
     case InspectorColumn::Imaginary:
     case InspectorColumn::Phase:
+    case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::CurlMagnitude:
+    case InspectorColumn::Divergence:
+    case InspectorColumn::Label:
+    case InspectorColumn::Region:
+    case InspectorColumn::Voxel:
+    case InspectorColumn::Subject:
+    case InspectorColumn::Count:
+      return false;
+  }
+
+  return false;
+}
+
+bool isVectorDerivativeColumn(InspectorColumn column)
+{
+  switch (column) {
+    case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::CurlMagnitude:
+    case InspectorColumn::Divergence:
+      return true;
+    case InspectorColumn::Image:
+    case InspectorColumn::Value:
+    case InspectorColumn::InterpolatedValue:
+    case InspectorColumn::Percentile:
+    case InspectorColumn::Real:
+    case InspectorColumn::Imaginary:
+    case InspectorColumn::Phase:
+    case InspectorColumn::Minimum:
+    case InspectorColumn::Mean:
+    case InspectorColumn::Maximum:
+    case InspectorColumn::Magnitude:
     case InspectorColumn::Label:
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
@@ -234,6 +310,9 @@ bool isComplexColumn(InspectorColumn column)
     case InspectorColumn::Mean:
     case InspectorColumn::Maximum:
     case InspectorColumn::Magnitude:
+    case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::CurlMagnitude:
+    case InspectorColumn::Divergence:
     case InspectorColumn::Label:
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
@@ -270,6 +349,9 @@ std::optional<double> complexColumnValue(InspectorColumn column, const Image& im
     case InspectorColumn::Mean:
     case InspectorColumn::Maximum:
     case InspectorColumn::Magnitude:
+    case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::CurlMagnitude:
+    case InspectorColumn::Divergence:
     case InspectorColumn::Label:
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
@@ -325,6 +407,53 @@ std::optional<double> componentProjectionValue(InspectorColumn column, const std
     case InspectorColumn::Real:
     case InspectorColumn::Imaginary:
     case InspectorColumn::Phase:
+    case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::CurlMagnitude:
+    case InspectorColumn::Divergence:
+    case InspectorColumn::Label:
+    case InspectorColumn::Region:
+    case InspectorColumn::Voxel:
+    case InspectorColumn::Subject:
+    case InspectorColumn::Count:
+      break;
+  }
+
+  return std::nullopt;
+}
+
+std::optional<double>
+vectorDerivativeColumnValue(InspectorColumn column, const Image& image, const std::optional<glm::ivec3>& voxelPos)
+{
+  if (!voxelPos || !isVectorFieldImage(image) || !isVectorDerivativeColumn(column)) {
+    return std::nullopt;
+  }
+  if (voxelPos->x < 0 || voxelPos->y < 0 || voxelPos->z < 0) {
+    return std::nullopt;
+  }
+
+  const glm::uvec3 voxel{
+    static_cast<uint32_t>(voxelPos->x),
+    static_cast<uint32_t>(voxelPos->y),
+    static_cast<uint32_t>(voxelPos->z)};
+
+  switch (column) {
+    case InspectorColumn::JacobianDeterminant:
+      return vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorJacobianDeterminant, voxel);
+    case InspectorColumn::CurlMagnitude:
+      return vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorCurlMagnitude, voxel);
+    case InspectorColumn::Divergence:
+      return vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorDivergence, voxel);
+    case InspectorColumn::Image:
+    case InspectorColumn::Value:
+    case InspectorColumn::InterpolatedValue:
+    case InspectorColumn::Percentile:
+    case InspectorColumn::Real:
+    case InspectorColumn::Imaginary:
+    case InspectorColumn::Phase:
+    case InspectorColumn::Minimum:
+    case InspectorColumn::Mean:
+    case InspectorColumn::Maximum:
+    case InspectorColumn::Magnitude:
     case InspectorColumn::Label:
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
@@ -371,6 +500,12 @@ const char* inspectionColumnTooltip(InspectorColumn column)
       return "Maximum component value at the nearest image voxel";
     case InspectorColumn::Magnitude:
       return "Magnitude of the component vector at the nearest image voxel";
+    case InspectorColumn::JacobianDeterminant:
+      return "Jacobian determinant of the vector field at the nearest image voxel";
+    case InspectorColumn::CurlMagnitude:
+      return "Curl magnitude of the vector field at the nearest image voxel";
+    case InspectorColumn::Divergence:
+      return "Divergence of the vector field at the nearest image voxel";
     case InspectorColumn::Label:
       return "Segmentation label value";
     case InspectorColumn::Region:
@@ -427,6 +562,7 @@ void renderInspectionWindowWithTable(
   static std::array<bool, sk_inspectorColumnCount> s_autoSizeColumnRequested{};
   const bool canShowComponentProjectionColumns = hasMultiComponentImage(appData);
   const bool canShowComplexColumns = hasComplexValuedImage(appData);
+  const bool canShowVectorDerivativeColumns = hasVectorFieldImage(appData);
 
   // For which images to show coordinates?
   static std::unordered_map<uuid, bool> s_showSubject;
@@ -440,7 +576,10 @@ void renderInspectionWindowWithTable(
     s_firstRun = false;
   }
 
-  auto renderColumnVisibilityItems = [&appData, canShowComponentProjectionColumns, canShowComplexColumns]() {
+  auto renderColumnVisibilityItems = [&appData,
+                                      canShowComponentProjectionColumns,
+                                      canShowComplexColumns,
+                                      canShowVectorDerivativeColumns]() {
     if (ImGui::MenuItem("Auto-size columns")) {
       s_autoSizeColumnsRequested = true;
     }
@@ -453,6 +592,10 @@ void renderInspectionWindowWithTable(
         continue;
       }
       if (isComplexColumn(inspectorColumn) && !canShowComplexColumns) {
+        appData.guiData().m_inspectionColumnVisible.at(column) = false;
+        continue;
+      }
+      if (isVectorDerivativeColumn(inspectorColumn) && !canShowVectorDerivativeColumns) {
         appData.guiData().m_inspectionColumnVisible.at(column) = false;
         continue;
       }
@@ -591,6 +734,11 @@ void renderInspectionWindowWithTable(
         expandWidth(InspectorColumn::Maximum, "-0000.000");
         expandWidth(InspectorColumn::Magnitude, "-0000.000");
       }
+      if (isVectorFieldImage(*image)) {
+        expandWidth(InspectorColumn::JacobianDeterminant, "-0000.000");
+        expandWidth(InspectorColumn::CurlMagnitude, "-0000.000");
+        expandWidth(InspectorColumn::Divergence, "-0000.000");
+      }
       if (isComplexValuedImage(*image)) {
         expandWidth(InspectorColumn::Real, "-0000.000");
         expandWidth(InspectorColumn::Imaginary, "-0000.000");
@@ -706,6 +854,9 @@ void renderInspectionWindowWithTable(
       const ImGuiTableColumnFlags complexColumnFlags =
         ImGuiTableColumnFlags_WidthFixed |
         (canShowComplexColumns ? ImGuiTableColumnFlags_None : ImGuiTableColumnFlags_Disabled);
+      const ImGuiTableColumnFlags vectorDerivativeColumnFlags =
+        ImGuiTableColumnFlags_WidthFixed |
+        (canShowVectorDerivativeColumns ? ImGuiTableColumnFlags_None : ImGuiTableColumnFlags_Disabled);
 
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Real)),
@@ -736,6 +887,18 @@ void renderInspectionWindowWithTable(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Magnitude)),
         componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Magnitude)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::JacobianDeterminant)),
+        vectorDerivativeColumnFlags,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::JacobianDeterminant)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::CurlMagnitude)),
+        vectorDerivativeColumnFlags,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::CurlMagnitude)));
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Divergence)),
+        vectorDerivativeColumnFlags,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Divergence)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Label)),
         ImGuiTableColumnFlags_WidthFixed,
@@ -1110,6 +1273,30 @@ void renderInspectionWindowWithTable(
         renderComponentProjectionColumn(InspectorColumn::Mean, "##componentMean");
         renderComponentProjectionColumn(InspectorColumn::Maximum, "##componentMaximum");
         renderComponentProjectionColumn(InspectorColumn::Magnitude, "##componentMagnitude");
+
+        auto renderVectorDerivativeColumn = [&](InspectorColumn column, const char* itemId) {
+          ImGui::TableNextColumn();
+          if (const std::optional<double> value = vectorDerivativeColumnValue(column, *image, voxelPos)) {
+            double displayValue = *value;
+            ImGui::PushItemWidth(-1);
+            ImGui::InputScalar(
+              itemId,
+              ImGuiDataType_Double,
+              &displayValue,
+              nullptr,
+              nullptr,
+              appData.guiData().m_imageValuePrecisionFormat.c_str(),
+              ImGuiInputTextFlags_ReadOnly);
+            ImGui::PopItemWidth();
+          }
+          else {
+            ImGui::Text("<N/A>");
+          }
+        };
+
+        renderVectorDerivativeColumn(InspectorColumn::JacobianDeterminant, "##vectorJacobianDeterminant");
+        renderVectorDerivativeColumn(InspectorColumn::CurlMagnitude, "##vectorCurlMagnitude");
+        renderVectorDerivativeColumn(InspectorColumn::Divergence, "##vectorDivergence");
 
         if (segLabel) {
           ImGui::TableNextColumn(); // "Label"

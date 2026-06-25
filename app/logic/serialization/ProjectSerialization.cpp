@@ -85,7 +85,12 @@ constexpr std::array k_componentRenderModeNames{
   EnumName{serialize::ProjectComponentRenderMode::Magnitude, "magnitude"},
   EnumName{serialize::ProjectComponentRenderMode::ComplexPhase, "complexPhase"},
   EnumName{serialize::ProjectComponentRenderMode::ComplexReal, "complexReal"},
-  EnumName{serialize::ProjectComponentRenderMode::ComplexImaginary, "complexImaginary"}};
+  EnumName{serialize::ProjectComponentRenderMode::ComplexImaginary, "complexImaginary"},
+  EnumName{serialize::ProjectComponentRenderMode::VectorDirectionColor, "vectorDirectionColor"},
+  EnumName{serialize::ProjectComponentRenderMode::VectorSignedNormalProjection, "vectorSignedNormalProjection"},
+  EnumName{serialize::ProjectComponentRenderMode::VectorJacobianDeterminant, "vectorJacobianDeterminant"},
+  EnumName{serialize::ProjectComponentRenderMode::VectorDivergence, "vectorDivergence"},
+  EnumName{serialize::ProjectComponentRenderMode::VectorCurlMagnitude, "vectorCurlMagnitude"}};
 
 constexpr std::array k_complexPhaseUnitNames{
   EnumName{serialize::ProjectComplexPhaseUnit::Radians, "radians"},
@@ -94,6 +99,11 @@ constexpr std::array k_complexPhaseUnitNames{
 constexpr std::array k_complexPhaseRangeNames{
   EnumName{serialize::ProjectComplexPhaseRange::Signed, "signed"},
   EnumName{serialize::ProjectComplexPhaseRange::Unsigned, "unsigned"}};
+
+constexpr std::array k_vectorArrowOverlaySpacingModeNames{
+  EnumName{serialize::ProjectVectorArrowOverlaySpacingMode::Pixels, "pixels"},
+  EnumName{serialize::ProjectVectorArrowOverlaySpacingMode::Voxels, "voxels"},
+  EnumName{serialize::ProjectVectorArrowOverlaySpacingMode::Millimeters, "millimeters"}};
 
 constexpr std::array k_interpolationModeNames{
   EnumName{InterpolationMode::NearestNeighbor, "nearest"},
@@ -291,6 +301,18 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"componentRenderMode", enumToName(settings.m_componentRenderMode, k_componentRenderModeNames)},
     {"complexPhaseUnit", enumToName(settings.m_complexPhaseUnit, k_complexPhaseUnitNames)},
     {"complexPhaseRange", enumToName(settings.m_complexPhaseRange, k_complexPhaseRangeNames)},
+    {"vectorArrowOverlayVisible", settings.m_vectorArrowOverlayVisible},
+    {"vectorArrowOverlayOnImage", settings.m_vectorArrowOverlayOnImage},
+    {"vectorArrowOverlayDensity", settings.m_vectorArrowOverlayDensity},
+    {"vectorArrowOverlayVoxelSpacing", settings.m_vectorArrowOverlayVoxelSpacing},
+    {"vectorArrowOverlayMillimeterSpacing", settings.m_vectorArrowOverlayMillimeterSpacing},
+    {"vectorArrowOverlaySpacingMode",
+     enumToName(settings.m_vectorArrowOverlaySpacingMode, k_vectorArrowOverlaySpacingModeNames)},
+    {"vectorArrowOverlayColor", vec3ToJson(settings.m_vectorArrowOverlayColor)},
+    {"vectorArrowOverlayUseDirectionColor", settings.m_vectorArrowOverlayUseDirectionColor},
+    {"vectorArrowOverlayLineThickness", settings.m_vectorArrowOverlayLineThickness},
+    {"vectorArrowOverlayScaleByMagnitude", settings.m_vectorArrowOverlayScaleByMagnitude},
+    {"vectorArrowOverlayScaleFactor", settings.m_vectorArrowOverlayScaleFactor},
     {"ignoreAlpha", settings.m_ignoreAlpha},
     {"colorInterpolationMode", enumToName(settings.m_colorInterpolationMode, k_interpolationModeNames)},
     {"edgeDetectionMethod", enumToName(settings.m_edgeDetectionMethod, k_edgeDetectionMethodNames)},
@@ -411,6 +433,44 @@ void from_json(const json& j, serialize::ImageSettings& settings)
       enumFromName<serialize::ProjectComplexPhaseRange>(j.value("complexPhaseRange", ""), k_complexPhaseRangeNames))
   {
     settings.m_complexPhaseRange = *parsed;
+  }
+  if (j.count("vectorArrowOverlayVisible")) {
+    j.at("vectorArrowOverlayVisible").get_to(settings.m_vectorArrowOverlayVisible);
+  }
+  if (j.count("vectorArrowOverlayOnImage")) {
+    j.at("vectorArrowOverlayOnImage").get_to(settings.m_vectorArrowOverlayOnImage);
+  }
+  if (j.count("vectorArrowOverlayDensity")) {
+    j.at("vectorArrowOverlayDensity").get_to(settings.m_vectorArrowOverlayDensity);
+  }
+  if (j.count("vectorArrowOverlayVoxelSpacing")) {
+    j.at("vectorArrowOverlayVoxelSpacing").get_to(settings.m_vectorArrowOverlayVoxelSpacing);
+  }
+  if (j.count("vectorArrowOverlayMillimeterSpacing")) {
+    j.at("vectorArrowOverlayMillimeterSpacing").get_to(settings.m_vectorArrowOverlayMillimeterSpacing);
+  }
+  if (
+    const auto parsed = enumFromName<serialize::ProjectVectorArrowOverlaySpacingMode>(
+      j.value("vectorArrowOverlaySpacingMode", ""),
+      k_vectorArrowOverlaySpacingModeNames))
+  {
+    settings.m_vectorArrowOverlaySpacingMode = *parsed;
+  }
+  if (const auto color = j.find("vectorArrowOverlayColor"); color != j.end() && color->is_array() && color->size() == 3)
+  {
+    settings.m_vectorArrowOverlayColor = vec3FromJson(*color);
+  }
+  if (j.count("vectorArrowOverlayUseDirectionColor")) {
+    j.at("vectorArrowOverlayUseDirectionColor").get_to(settings.m_vectorArrowOverlayUseDirectionColor);
+  }
+  if (j.count("vectorArrowOverlayLineThickness")) {
+    j.at("vectorArrowOverlayLineThickness").get_to(settings.m_vectorArrowOverlayLineThickness);
+  }
+  if (j.count("vectorArrowOverlayScaleByMagnitude")) {
+    j.at("vectorArrowOverlayScaleByMagnitude").get_to(settings.m_vectorArrowOverlayScaleByMagnitude);
+  }
+  if (j.count("vectorArrowOverlayScaleFactor")) {
+    j.at("vectorArrowOverlayScaleFactor").get_to(settings.m_vectorArrowOverlayScaleFactor);
   }
   if (j.count("ignoreAlpha")) {
     j.at("ignoreAlpha").get_to(settings.m_ignoreAlpha);

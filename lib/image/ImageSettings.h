@@ -29,7 +29,12 @@ enum class ComponentRenderMode
   Magnitude,
   ComplexPhase,
   ComplexReal,
-  ComplexImaginary
+  ComplexImaginary,
+  VectorDirectionColor,
+  VectorSignedNormalProjection,
+  VectorJacobianDeterminant,
+  VectorDivergence,
+  VectorCurlMagnitude
 };
 
 /// @brief Display units for complex-valued image phase.
@@ -44,6 +49,14 @@ enum class ComplexPhaseRange
 {
   Signed,
   Unsigned
+};
+
+/// @brief Units used to space vector-field arrows on slice views.
+enum class VectorArrowOverlaySpacingMode
+{
+  Pixels,
+  Voxels,
+  Millimeters
 };
 
 /**
@@ -118,6 +131,72 @@ public:
 
   /// @brief Get the rendering strategy for a multi-component image.
   ComponentRenderMode componentRenderMode() const;
+
+  /// @brief Show vector-field arrows over the current image slice.
+  void setVectorArrowOverlayVisible(bool visible);
+
+  /// @brief Return whether vector-field arrows are shown over the image.
+  bool vectorArrowOverlayVisible() const;
+
+  /// @brief Set whether vector arrows are drawn over the rendered image.
+  void setVectorArrowOverlayOnImage(bool overlayOnImage);
+
+  /// @brief Return whether vector arrows are drawn over the rendered image.
+  bool vectorArrowOverlayOnImage() const;
+
+  /// @brief Set approximate spacing between vector arrows, in screen pixels.
+  void setVectorArrowOverlayDensity(float densityPx);
+
+  /// @brief Return approximate spacing between vector arrows, in screen pixels.
+  float vectorArrowOverlayDensity() const;
+
+  /// @brief Set approximate spacing between vector arrows, in image voxels.
+  void setVectorArrowOverlayVoxelSpacing(float spacingVoxels);
+
+  /// @brief Return approximate spacing between vector arrows, in image voxels.
+  float vectorArrowOverlayVoxelSpacing() const;
+
+  /// @brief Set approximate spacing between vector arrows, in subject millimeters.
+  void setVectorArrowOverlayMillimeterSpacing(float spacingMm);
+
+  /// @brief Return approximate spacing between vector arrows, in subject millimeters.
+  float vectorArrowOverlayMillimeterSpacing() const;
+
+  /// @brief Set units used by the vector arrow spacing value.
+  void setVectorArrowOverlaySpacingMode(VectorArrowOverlaySpacingMode mode);
+
+  /// @brief Return units used by the vector arrow spacing value.
+  VectorArrowOverlaySpacingMode vectorArrowOverlaySpacingMode() const;
+
+  /// @brief Set the fixed RGB color used for vector-field arrows.
+  void setVectorArrowOverlayColor(glm::vec3 color);
+
+  /// @brief Return the fixed RGB color used for vector-field arrows.
+  const glm::vec3& vectorArrowOverlayColor() const;
+
+  /// @brief Set whether arrows are colored by vector direction instead of fixed color.
+  void setVectorArrowOverlayUseDirectionColor(bool useDirectionColor);
+
+  /// @brief Return whether arrows are colored by vector direction.
+  bool vectorArrowOverlayUseDirectionColor() const;
+
+  /// @brief Set vector arrow line thickness in screen pixels.
+  void setVectorArrowOverlayLineThickness(float thicknessPx);
+
+  /// @brief Return vector arrow line thickness in screen pixels.
+  float vectorArrowOverlayLineThickness() const;
+
+  /// @brief Set whether arrow lengths are proportional to vector magnitude.
+  void setVectorArrowOverlayScaleByMagnitude(bool scaleByMagnitude);
+
+  /// @brief Return whether arrow lengths are proportional to vector magnitude.
+  bool vectorArrowOverlayScaleByMagnitude() const;
+
+  /// @brief Set dimensionless vector arrow scale multiplier.
+  void setVectorArrowOverlayScaleFactor(float scaleFactor);
+
+  /// @brief Return dimensionless vector arrow scale multiplier.
+  float vectorArrowOverlayScaleFactor() const;
 
   /// @brief Set display units for complex-valued image phase.
   void setComplexPhaseUnit(ComplexPhaseUnit unit);
@@ -739,8 +818,20 @@ private:
   bool m_lockedToReference{true};            //!< Lock this image to the reference image
 
   ComponentRenderMode m_componentRenderMode{ComponentRenderMode::SingleComponent}; //!< Multi-component render mode
-  ComplexPhaseUnit m_complexPhaseUnit{ComplexPhaseUnit::Radians};        //!< Display units for complex phase values
-  ComplexPhaseRange m_complexPhaseRange{ComplexPhaseRange::Signed};      //!< Display range for complex phase values
+  ComplexPhaseUnit m_complexPhaseUnit{ComplexPhaseUnit::Radians};   //!< Display units for complex phase values
+  ComplexPhaseRange m_complexPhaseRange{ComplexPhaseRange::Signed}; //!< Display range for complex phase values
+  bool m_vectorArrowOverlayVisible{false};                          //!< Show vector-field arrows on slices
+  bool m_vectorArrowOverlayOnImage{true};                           //!< Draw arrows over the rendered image
+  float m_vectorArrowOverlayDensity{32.0f};                         //!< Arrow spacing in screen pixels
+  float m_vectorArrowOverlayVoxelSpacing{1.0f};                     //!< Arrow spacing in image voxels
+  float m_vectorArrowOverlayMillimeterSpacing{10.0f};               //!< Arrow spacing in subject millimeters
+  VectorArrowOverlaySpacingMode m_vectorArrowOverlaySpacingMode{
+    VectorArrowOverlaySpacingMode::Pixels};                              //!< Spacing units
+  glm::vec3 m_vectorArrowOverlayColor{1.0f, 0.86f, 0.31f};               //!< Fixed vector arrow color
+  bool m_vectorArrowOverlayUseDirectionColor{false};                     //!< Color arrows by vector direction
+  float m_vectorArrowOverlayLineThickness{1.4f};                         //!< Arrow line thickness in screen pixels
+  bool m_vectorArrowOverlayScaleByMagnitude{true};                       //!< Scale arrow length by magnitude
+  float m_vectorArrowOverlayScaleFactor{1.0f};                           //!< Dimensionless arrow scale multiplier
   bool m_ignoreAlpha{false};                                             //!< Ignore the alpha component of the image
   InterpolationMode m_colorInterpolationMode{InterpolationMode::Linear}; //!< Interpolation mode
 

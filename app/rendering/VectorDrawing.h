@@ -9,6 +9,7 @@
 #include <uuid.h>
 
 #include <array>
+#include <list>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -84,6 +85,23 @@ void drawAnnotations(
   AppData& appData,
   const View& view,
   const ImageSegPairs& I);
+
+/**
+ * @brief Draw sampled vector-field arrows over the current image slice.
+ * @param nvg NanoVG drawing context.
+ * @param miewportViewBounds View bounds in NanoVG/miewport coordinates.
+ * @param worldCrosshairs Current view slice point in world coordinates.
+ * @param appData Application data containing images and window state.
+ * @param view View being rendered.
+ * @param imageUids Logical images visible in the view.
+ */
+void drawVectorFieldArrows(
+  NVGcontext* nvg,
+  const FrameBounds& miewportViewBounds,
+  const glm::vec3& worldCrosshairs,
+  AppData& appData,
+  const View& view,
+  const std::list<uuids::uuid>& imageUids);
 
 void drawCrosshairs(
   NVGcontext* nvg,
