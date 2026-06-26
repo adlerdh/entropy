@@ -21,6 +21,14 @@ std::string to_string(ShaderProgramType type)
       return "Vector Signed Normal Projection - LinearTextureLookup";
     case ShaderProgramType::VectorSignedNormalProjectionCubic:
       return "Vector Signed Normal Projection - CubicTextureLookup";
+    case ShaderProgramType::VectorPlanarProjectionColorLinear:
+      return "Vector Planar Projection Color - LinearTextureLookup";
+    case ShaderProgramType::VectorPlanarProjectionColorCubic:
+      return "Vector Planar Projection Color - CubicTextureLookup";
+    case ShaderProgramType::VectorWarpedGridLinear:
+      return "Vector Warped Grid - LinearTextureLookup";
+    case ShaderProgramType::VectorWarpedGridCubic:
+      return "Vector Warped Grid - CubicTextureLookup";
     case ShaderProgramType::EdgeSobelLinear:
       return "Edge - Sobel - LinearTextureLookup";
     case ShaderProgramType::EdgeSobelCubic:

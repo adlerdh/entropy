@@ -415,7 +415,7 @@ void EntropyApp::loadLayoutsFile(const fs::path& fileName)
   }
 
   if (layoutFile.m_layouts.empty()) {
-    spdlog::warn("Layout file {} contains no layouts; using a Three-up layout", fileName);
+    spdlog::warn("Layout file {} contains no layouts; using the default layout", fileName);
   }
 
   if (!m_data.windowData().applyLayoutPresets(m_data, layoutFile.m_layouts, layoutFile.m_currentLayoutIndex)) {

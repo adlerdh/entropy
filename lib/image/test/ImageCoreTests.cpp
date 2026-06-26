@@ -156,6 +156,37 @@ Image makeLinearVectorField(const std::vector<std::vector<double>>& directions =
     buffers);
 }
 
+Image makeQuadraticVectorField()
+{
+  const glm::uvec3 dims{3, 3, 3};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 3, dims);
+  ioInfo.m_spaceInfo.m_spacing = {2.0, 3.0, 4.0};
+  ImageHeader header(ioInfo, ioInfo, false);
+
+  std::vector<float> c0(header.numPixels(), 0.0f);
+  std::vector<float> c1(header.numPixels(), 0.0f);
+  std::vector<float> c2(header.numPixels(), 0.0f);
+  for (uint32_t z = 0; z < dims.z; ++z) {
+    for (uint32_t y = 0; y < dims.y; ++y) {
+      for (uint32_t x = 0; x < dims.x; ++x) {
+        const std::size_t index =
+          static_cast<std::size_t>(dims.x) * dims.y * z + static_cast<std::size_t>(dims.x) * y + x;
+        c0[index] = static_cast<float>(x * x);
+        c1[index] = static_cast<float>(y * y);
+        c2[index] = static_cast<float>(z * z);
+      }
+    }
+  }
+
+  std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
+  return Image(
+    header,
+    "quadratic-vector-field",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+}
+
 fs::path testDirectory()
 {
   const fs::path dir = fs::temp_directory_path() / "entropy-image-core-tests";
@@ -703,6 +734,9 @@ TEST_CASE("Component render modes map to scalar projection modes", "[image][deri
   CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::Color).has_value());
   CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::ComplexReal).has_value());
   CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::ComplexImaginary).has_value());
+  CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::VectorDirectionColor).has_value());
+  CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::VectorSignedNormalProjection).has_value());
+  CHECK_FALSE(componentProjectionFromRenderMode(ComponentRenderMode::VectorPlanarProjectionColor).has_value());
   CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Minimum) == ComponentProjectionMode::Minimum);
   CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Mean) == ComponentProjectionMode::Mean);
   CHECK(componentProjectionFromRenderMode(ComponentRenderMode::Maximum) == ComponentProjectionMode::Maximum);
@@ -710,6 +744,12 @@ TEST_CASE("Component render modes map to scalar projection modes", "[image][deri
   CHECK(
     componentProjectionFromRenderMode(ComponentRenderMode::ComplexPhase) ==
     ComponentProjectionMode::ComplexPhaseSignedRadians);
+  CHECK(
+    componentProjectionFromRenderMode(ComponentRenderMode::VectorGradientMagnitude) ==
+    ComponentProjectionMode::VectorGradientMagnitude);
+  CHECK(
+    componentProjectionFromRenderMode(ComponentRenderMode::VectorLaplacianMagnitude) ==
+    ComponentProjectionMode::VectorLaplacianMagnitude);
 }
 
 TEST_CASE("Complex phase helpers support signed and unsigned radians and degrees", "[image][derived][complex]")
@@ -831,9 +871,11 @@ TEST_CASE("Vector field derivative projections use physical spacing", "[image][d
 
   CHECK(isVectorFieldCandidate(image));
   CHECK(isVectorFieldImage(image));
-  CHECK(vectorFieldComponentLabel(0, 2) == "x (0 of 2)");
-  CHECK(vectorFieldComponentLabel(1, 2) == "y (1 of 2)");
-  CHECK(vectorFieldComponentLabel(2, 2) == "z (2 of 2)");
+  CHECK(image.settings().vectorWarpedGridVoxelSpacing() == Catch::Approx(4.0f));
+  CHECK(image.settings().vectorWarpedGridMillimeterSpacing() == Catch::Approx(8.0f));
+  CHECK(vectorFieldComponentLabel(0, 2) == "0 of 2 (x)");
+  CHECK(vectorFieldComponentLabel(1, 2) == "1 of 2 (y)");
+  CHECK(vectorFieldComponentLabel(2, 2) == "2 of 2 (z)");
 
   const glm::uvec3 centerVoxel{1, 1, 1};
   const auto jacobian = createComponentProjectionImage(image, ComponentProjectionMode::VectorJacobianDeterminant);
@@ -843,6 +885,23 @@ TEST_CASE("Vector field derivative projections use physical spacing", "[image][d
   CHECK(
     vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorJacobianDeterminant, centerVoxel).value() ==
     Catch::Approx(expectedJacobian));
+
+  image.settings().setComponentRenderMode(ComponentRenderMode::VectorJacobianDeterminant);
+  CHECK(componentProjectionForImage(image) == ComponentProjectionMode::VectorJacobianDeterminant);
+  image.settings().setVectorLogJacobianDeterminant(true);
+  CHECK(componentProjectionForImage(image) == ComponentProjectionMode::VectorLogJacobianDeterminant);
+  const auto logJacobian = createComponentProjectionImage(image, ComponentProjectionMode::VectorLogJacobianDeterminant);
+  REQUIRE(logJacobian.has_value());
+  CHECK(logJacobian->value<double>(0, 13).value() == Catch::Approx(std::log(expectedJacobian)));
+
+  const auto gradient = createComponentProjectionImage(image, ComponentProjectionMode::VectorGradientMagnitude);
+  REQUIRE(gradient.has_value());
+  CHECK(
+    gradient->value<double>(0, 13).value() ==
+    Catch::Approx(std::sqrt(0.25 * 0.25 + (1.0 / 9.0) * (1.0 / 9.0) + 0.0625 * 0.0625)));
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorGradientMagnitude, centerVoxel).value() ==
+    Catch::Approx(std::sqrt(0.25 * 0.25 + (1.0 / 9.0) * (1.0 / 9.0) + 0.0625 * 0.0625)));
 
   const auto divergence = createComponentProjectionImage(image, ComponentProjectionMode::VectorDivergence);
   REQUIRE(divergence.has_value());
@@ -856,6 +915,12 @@ TEST_CASE("Vector field derivative projections use physical spacing", "[image][d
   CHECK(curl->value<double>(0, 13).value() == Catch::Approx(0.0));
   CHECK(
     vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorCurlMagnitude, centerVoxel).value() ==
+    Catch::Approx(0.0));
+  const auto laplacian = createComponentProjectionImage(image, ComponentProjectionMode::VectorLaplacianMagnitude);
+  REQUIRE(laplacian.has_value());
+  CHECK(laplacian->value<double>(0, 13).value() == Catch::Approx(0.0));
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorLaplacianMagnitude, centerVoxel).value() ==
     Catch::Approx(0.0));
   CHECK_FALSE(vectorDerivativeProjectionValue(image, ComponentProjectionMode::Magnitude, centerVoxel).has_value());
   CHECK_FALSE(
@@ -878,6 +943,21 @@ TEST_CASE("Vector field derivative projections respect image directions", "[imag
   CHECK(
     vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorJacobianDeterminant, centerVoxel).value() ==
     Catch::Approx(expectedJacobian));
+}
+
+TEST_CASE("Vector field Laplacian magnitude handles nonlinear fields", "[image][derived][vector]")
+{
+  const Image image = makeQuadraticVectorField();
+  const glm::uvec3 centerVoxel{1, 1, 1};
+
+  const double expectedLaplacianMagnitude = std::sqrt(0.5 * 0.5 + (2.0 / 9.0) * (2.0 / 9.0) + 0.125 * 0.125);
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorLaplacianMagnitude, centerVoxel).value() ==
+    Catch::Approx(expectedLaplacianMagnitude));
+
+  const auto laplacian = createComponentProjectionImage(image, ComponentProjectionMode::VectorLaplacianMagnitude);
+  REQUIRE(laplacian.has_value());
+  CHECK(laplacian->value<double>(0, 13).value() == Catch::Approx(expectedLaplacianMagnitude));
 }
 
 TEST_CASE("Exact image quantiles work for every in-memory component type", "[image][quantiles]")

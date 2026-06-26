@@ -1,0 +1,13 @@
+{
+  "output": "vector_2comp_2d.nrrd",
+  "pixel_kind": "vector",
+  "component_type": "float",
+  "components": 2,
+  "size": [48, 48],
+  "spacing": [1.0, 1.0],
+  "origin": [-24.0, -24.0],
+  "pattern": "component_ramp",
+  "metadata": {
+    "entropy_example": "2-component 2D vector image"
+  }
+}

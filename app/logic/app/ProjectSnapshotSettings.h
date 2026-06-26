@@ -111,12 +111,18 @@ inline serialize::ProjectComponentRenderMode toSerializedComponentRenderMode(Com
       return serialize::ProjectComponentRenderMode::VectorDirectionColor;
     case ComponentRenderMode::VectorSignedNormalProjection:
       return serialize::ProjectComponentRenderMode::VectorSignedNormalProjection;
+    case ComponentRenderMode::VectorPlanarProjectionColor:
+      return serialize::ProjectComponentRenderMode::VectorPlanarProjectionColor;
     case ComponentRenderMode::VectorJacobianDeterminant:
       return serialize::ProjectComponentRenderMode::VectorJacobianDeterminant;
+    case ComponentRenderMode::VectorGradientMagnitude:
+      return serialize::ProjectComponentRenderMode::VectorGradientMagnitude;
     case ComponentRenderMode::VectorDivergence:
       return serialize::ProjectComponentRenderMode::VectorDivergence;
     case ComponentRenderMode::VectorCurlMagnitude:
       return serialize::ProjectComponentRenderMode::VectorCurlMagnitude;
+    case ComponentRenderMode::VectorLaplacianMagnitude:
+      return serialize::ProjectComponentRenderMode::VectorLaplacianMagnitude;
   }
 
   return serialize::ProjectComponentRenderMode::SingleComponent;
@@ -152,12 +158,18 @@ inline ComponentRenderMode fromSerializedComponentRenderMode(serialize::ProjectC
       return ComponentRenderMode::VectorDirectionColor;
     case serialize::ProjectComponentRenderMode::VectorSignedNormalProjection:
       return ComponentRenderMode::VectorSignedNormalProjection;
+    case serialize::ProjectComponentRenderMode::VectorPlanarProjectionColor:
+      return ComponentRenderMode::VectorPlanarProjectionColor;
     case serialize::ProjectComponentRenderMode::VectorJacobianDeterminant:
       return ComponentRenderMode::VectorJacobianDeterminant;
+    case serialize::ProjectComponentRenderMode::VectorGradientMagnitude:
+      return ComponentRenderMode::VectorGradientMagnitude;
     case serialize::ProjectComponentRenderMode::VectorDivergence:
       return ComponentRenderMode::VectorDivergence;
     case serialize::ProjectComponentRenderMode::VectorCurlMagnitude:
       return ComponentRenderMode::VectorCurlMagnitude;
+    case serialize::ProjectComponentRenderMode::VectorLaplacianMagnitude:
+      return ComponentRenderMode::VectorLaplacianMagnitude;
   }
 
   return ComponentRenderMode::SingleComponent;
@@ -239,6 +251,32 @@ inline VectorArrowOverlaySpacingMode fromSerializedVectorArrowOverlaySpacingMode
   }
 
   return VectorArrowOverlaySpacingMode::Pixels;
+}
+
+inline serialize::ProjectVectorWarpedGridConvention toSerializedVectorWarpedGridConvention(
+  VectorWarpedGridConvention convention)
+{
+  switch (convention) {
+    case VectorWarpedGridConvention::SamplingField:
+      return serialize::ProjectVectorWarpedGridConvention::SamplingField;
+    case VectorWarpedGridConvention::ApparentDeformation:
+      return serialize::ProjectVectorWarpedGridConvention::ApparentDeformation;
+  }
+
+  return serialize::ProjectVectorWarpedGridConvention::SamplingField;
+}
+
+inline VectorWarpedGridConvention fromSerializedVectorWarpedGridConvention(
+  serialize::ProjectVectorWarpedGridConvention convention)
+{
+  switch (convention) {
+    case serialize::ProjectVectorWarpedGridConvention::SamplingField:
+      return VectorWarpedGridConvention::SamplingField;
+    case serialize::ProjectVectorWarpedGridConvention::ApparentDeformation:
+      return VectorWarpedGridConvention::ApparentDeformation;
+  }
+
+  return VectorWarpedGridConvention::SamplingField;
 }
 
 /**

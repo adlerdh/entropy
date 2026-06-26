@@ -9,6 +9,7 @@
 #include "logic/app/ImageSelectionPolicy.h"
 #include "logic/camera/MathUtility.h"
 
+#include "image/ImageUtility.h"
 #include "layout/LayoutKindInfo.h"
 #include "layout/LayoutPresetInfo.h"
 #include "viewer/FrameHitGeometry.h"
@@ -732,6 +733,29 @@ void configureOneUpDefaultImageSelection(Layout& layout)
   }
 }
 
+Layout createOneUpLayout(
+  const CrosshairsState& crosshairs,
+  const ViewAlignmentMode& viewAlignment,
+  const ViewConvention& viewConvention)
+{
+  static constexpr std::size_t k_refImage = 0;
+
+  Layout layout = createGridLayout(
+    ViewType::Axial,
+    1,
+    1,
+    false,
+    false,
+    crosshairs,
+    viewAlignment,
+    viewConvention,
+    k_refImage,
+    std::nullopt);
+  layout.setKind(LayoutKind::OneUp);
+  configureOneUpDefaultImageSelection(layout);
+  return layout;
+}
+
 std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uuid_range_t orderedImageUids)
 {
   switch (layout.kind()) {
@@ -902,6 +926,44 @@ bool isOneUpLayoutKind(LayoutKind kind)
       return false;
   }
   return false;
+}
+
+bool shouldDefaultToOneUpLayout(const AppData& appData)
+{
+  if (0 == appData.numImages()) {
+    return false;
+  }
+
+  for (const uuid& imageUid : appData.imageUidsOrdered()) {
+    const Image* image = appData.image(imageUid);
+    if (!image || !isLinearOrPlanarImage(image->header())) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+std::optional<std::size_t> firstLayoutIndexWithKind(const std::vector<Layout>& layouts, LayoutKind kind)
+{
+  const auto layoutIt =
+    std::find_if(layouts.begin(), layouts.end(), [kind](const Layout& layout) { return layout.kind() == kind; });
+
+  if (layoutIt == layouts.end()) {
+    return std::nullopt;
+  }
+
+  return static_cast<std::size_t>(std::distance(layouts.begin(), layoutIt));
+}
+
+std::size_t defaultLayoutIndexForImages(const std::vector<Layout>& layouts, const AppData& appData)
+{
+  const LayoutKind preferredKind = shouldDefaultToOneUpLayout(appData) ? LayoutKind::OneUp : LayoutKind::ThreeUp;
+  if (const auto preferredIndex = firstLayoutIndexWithKind(layouts, preferredKind)) {
+    return *preferredIndex;
+  }
+
+  return layouts.empty() ? std::size_t{0} : 0;
 }
 
 LayoutKind oneUpLayoutKindForViewType(ViewType viewType)
@@ -1237,22 +1299,7 @@ WindowData::WindowData(const CrosshairsState& crosshairs)
 
 void WindowData::setupViews()
 {
-  static constexpr std::size_t refImage = 0;
-
-  m_layouts.emplace_back(createGridLayout(
-    ViewType::Axial,
-    1,
-    1,
-    false,
-    false,
-    m_crosshairs,
-    m_viewAlignment,
-    m_viewConvention,
-    refImage,
-    std::nullopt));
-  m_layouts.back().setKind(LayoutKind::OneUp);
-  configureOneUpDefaultImageSelection(m_layouts.back());
-
+  m_layouts.emplace_back(createOneUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
   m_layouts.emplace_back(createThreeUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
   m_layouts.emplace_back(createFourUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
 
@@ -1525,7 +1572,16 @@ bool WindowData::applyLayoutPresets(
   std::optional<std::size_t> currentLayoutIndex)
 {
   if (presets.empty()) {
-    resetToThreeUpLayout();
+    clearLayouts();
+    if (shouldDefaultToOneUpLayout(appData)) {
+      m_layouts.emplace_back(createOneUpLayout(m_crosshairs, m_viewAlignment, m_viewConvention));
+      setCurrentLayoutIndex(0);
+      setWindowSize(m_windowSize.x, m_windowSize.y);
+      setFramebufferSize(m_framebufferSize.x, m_framebufferSize.y);
+    }
+    else {
+      resetToThreeUpLayout();
+    }
     setDefaultRenderedImagesForLayout(currentLayout(), appData);
     return true;
   }
@@ -1581,6 +1637,11 @@ void WindowData::resetDefaultLayouts()
   clearLayouts();
   setupViews();
   setCurrentLayoutIndex(0);
+}
+
+void WindowData::setCurrentLayoutToDefaultForImages(const AppData& appData)
+{
+  setCurrentLayoutIndex(defaultLayoutIndexForImages(m_layouts, appData));
 }
 
 void WindowData::resetToThreeUpLayout()

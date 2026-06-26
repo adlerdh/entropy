@@ -93,6 +93,30 @@ TEST_CASE("ImageHeader expands 2D image metadata into Entropy's 3D model", "[ima
   CHECK(header.subjectBBoxSize().y > 0.0f);
 }
 
+TEST_CASE("Image dimensionality counts non-singleton pixel axes", "[image][header]")
+{
+  const ImageHeader oneDimensional(
+    makeIoInfo(ComponentType::UInt16, 1, glm::uvec3(8, 1, 1)),
+    makeIoInfo(ComponentType::UInt16, 1, glm::uvec3(8, 1, 1)),
+    false);
+  const ImageHeader twoDimensional(
+    makeIoInfo(ComponentType::UInt16, 1, glm::uvec3(8, 6, 1)),
+    makeIoInfo(ComponentType::UInt16, 1, glm::uvec3(8, 6, 1)),
+    false);
+  const ImageHeader threeDimensional(
+    makeIoInfo(ComponentType::UInt16, 1, glm::uvec3(8, 6, 4)),
+    makeIoInfo(ComponentType::UInt16, 1, glm::uvec3(8, 6, 4)),
+    false);
+
+  CHECK(countNonSingletonPixelDimensions(oneDimensional) == 1);
+  CHECK(countNonSingletonPixelDimensions(twoDimensional) == 2);
+  CHECK(countNonSingletonPixelDimensions(threeDimensional) == 3);
+
+  CHECK(isLinearOrPlanarImage(oneDimensional));
+  CHECK(isLinearOrPlanarImage(twoDimensional));
+  CHECK_FALSE(isLinearOrPlanarImage(threeDimensional));
+}
+
 TEST_CASE("ImageHeaderOverrides preserve original geometry and compute orthogonal directions", "[image][header]")
 {
   const ImageHeaderOverrides empty{};

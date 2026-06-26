@@ -412,6 +412,18 @@ std::pair<glm::vec3, glm::vec3> computeWorldMinMaxCornersOfImage(const Image& im
   return math::computeMinMaxCornersOfAABBox(worldCorners);
 }
 
+std::size_t countNonSingletonPixelDimensions(const ImageHeader& header)
+{
+  const glm::uvec3& dims = header.pixelDimensions();
+  return static_cast<std::size_t>(dims.x > 1u) + static_cast<std::size_t>(dims.y > 1u) +
+         static_cast<std::size_t>(dims.z > 1u);
+}
+
+bool isLinearOrPlanarImage(const ImageHeader& header)
+{
+  return countNonSingletonPixelDimensions(header) <= 2;
+}
+
 std::size_t computeNumImageSlicesAlongWorldDirection(const Image& image, const glm::vec3& worldDir)
 {
   if (glm::dot(worldDir, worldDir) <= glm::epsilon<float>()) {

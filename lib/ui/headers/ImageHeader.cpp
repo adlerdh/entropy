@@ -73,6 +73,25 @@ const char* vectorArrowOverlaySpacingModeName(VectorArrowOverlaySpacingMode mode
   return "Pixels";
 }
 
+const char* vectorWarpedGridConventionName(VectorWarpedGridConvention convention)
+{
+  switch (convention) {
+    case VectorWarpedGridConvention::SamplingField:
+      return "Sampling field";
+    case VectorWarpedGridConvention::ApparentDeformation:
+      return "Apparent deformation";
+  }
+
+  return "Sampling field";
+}
+
+void disabledWrappedText(const char* text)
+{
+  ImGui::PushTextWrapPos();
+  ImGui::TextDisabled("%s", text);
+  ImGui::PopTextWrapPos();
+}
+
 bool visibilityCheckboxBeforeSlider(const char* id, bool* visible, const char* tooltip)
 {
   const float originalSliderWidth = ImGui::CalcItemWidth();
@@ -86,45 +105,57 @@ bool visibilityCheckboxBeforeSlider(const char* id, bool* visible, const char* t
   return changed;
 }
 
-const char* componentRenderModeDescription(ComponentRenderMode mode, bool vectorFieldImage, bool hasAlphaComponent)
+const char* componentRenderModeDescription(
+  ComponentRenderMode mode,
+  bool vectorFieldImage,
+  bool complexValuedImage,
+  bool hasAlphaComponent,
+  bool logJacobian = false)
 {
   switch (mode) {
     case ComponentRenderMode::SingleComponent:
-      return vectorFieldImage ? "Renders one selected vector component as a scalar image."
-                              : "Renders one selected component as a scalar image.";
+      return vectorFieldImage ? "Selected vector component as a scalar image."
+                              : "Selected component as a scalar image.";
     case ComponentRenderMode::Color:
       if (vectorFieldImage) {
-        return "Renders vector components as RGB intensity channels after window/level adjustment.";
+        return "Vector components as RGB intensity channels after window/level adjustment.";
       }
-      return hasAlphaComponent ? "Renders the first four components as RGBA color channels."
-                               : "Renders the first three components as RGB color channels.";
+      return hasAlphaComponent ? "First four components as RGBA color channels."
+                               : "First three components as RGB color channels.";
     case ComponentRenderMode::Minimum:
-      return "Renders the minimum value across all components at each voxel.";
+      return "Minimum value across all components at each voxel.";
     case ComponentRenderMode::Mean:
-      return "Renders the mean value across all components at each voxel.";
+      return "Mean value across all components at each voxel.";
     case ComponentRenderMode::Maximum:
-      return "Renders the maximum value across all components at each voxel.";
+      return "Maximum value across all components at each voxel.";
     case ComponentRenderMode::Magnitude:
-      return vectorFieldImage ? "Renders vector magnitude as a scalar image."
-                              : "Renders component magnitude as the square root of summed squared components.";
+      if (complexValuedImage) {
+        return "Complex magnitude.";
+      }
+      return vectorFieldImage ? "Vector magnitude as a scalar image." : "Component vector length.";
     case ComponentRenderMode::ComplexPhase:
-      return "Renders complex phase from the real and imaginary components.";
+      return "Complex phase.";
     case ComponentRenderMode::ComplexReal:
-      return "Renders the real component as a scalar image.";
+      return "Real component as a scalar image.";
     case ComponentRenderMode::ComplexImaginary:
-      return "Renders the imaginary component as a scalar image.";
+      return "Imaginary component as a scalar image.";
     case ComponentRenderMode::VectorDirectionColor:
-      return "Colors encode vector orientation in subject/LPS coordinates: red = x, green = y, blue = z; signs are "
-             "ignored.";
+      return "Direction color in subject/LPS coordinates: red = x, green = y, blue = z; signs ignored.";
     case ComponentRenderMode::VectorSignedNormalProjection:
-      return "Colors encode displacement projected onto the current view normal: red toward the viewer, blue into "
-             "the screen.";
+      return "View-normal projection color: red toward viewer, blue into screen.";
+    case ComponentRenderMode::VectorPlanarProjectionColor:
+      return "View-plane projection color: red = view right, green = view up.";
     case ComponentRenderMode::VectorJacobianDeterminant:
-      return "Renders local volume change of the deformation: values above 1 expand, values below 1 contract.";
+      return logJacobian ? "Deformation volume change: values > 0 expand, values < 0 contract."
+                         : "Deformation volume change: values > 1 expand, values < 1 contract.";
+    case ComponentRenderMode::VectorGradientMagnitude:
+      return "Magnitude of local spatial changes in the vector field.";
     case ComponentRenderMode::VectorDivergence:
-      return "Renders the local net outward or inward flow of the vector field.";
+      return "Local net outward or inward flow of the vector field.";
     case ComponentRenderMode::VectorCurlMagnitude:
-      return "Renders the local rotational strength of the vector field.";
+      return "Local rotational strength of the vector field.";
+    case ComponentRenderMode::VectorLaplacianMagnitude:
+      return "Magnitude of the component-wise Laplacian.";
   }
 
   return "";
@@ -716,13 +747,6 @@ void renderImageHeader(
         updateImageInterpolationMode();
       };
 
-      auto radioComponentMode = [&](const char* label, ComponentRenderMode mode) {
-        bool selected = imgSettings.componentRenderMode() == mode;
-        if (ImGui::RadioButton(label, selected)) {
-          setComponentMode(mode);
-        }
-      };
-
       if (vectorFieldImage) {
         struct VectorModeOption
         {
@@ -737,10 +761,13 @@ void renderImageHeader(
           VectorModeOption{"Mean", ComponentRenderMode::Mean},
           VectorModeOption{"RGB color", ComponentRenderMode::Color},
           VectorModeOption{"Direction color", ComponentRenderMode::VectorDirectionColor},
-          VectorModeOption{"Signed normal projection color", ComponentRenderMode::VectorSignedNormalProjection},
-          VectorModeOption{"Jacobian determinant", ComponentRenderMode::VectorJacobianDeterminant},
+          VectorModeOption{"Planar projection color", ComponentRenderMode::VectorPlanarProjectionColor},
+          VectorModeOption{"Normal projection color", ComponentRenderMode::VectorSignedNormalProjection},
+          VectorModeOption{"Deformation Jacobian determinant", ComponentRenderMode::VectorJacobianDeterminant},
+          VectorModeOption{"Gradient magnitude", ComponentRenderMode::VectorGradientMagnitude},
           VectorModeOption{"Divergence", ComponentRenderMode::VectorDivergence},
-          VectorModeOption{"Curl magnitude", ComponentRenderMode::VectorCurlMagnitude}};
+          VectorModeOption{"Curl magnitude", ComponentRenderMode::VectorCurlMagnitude},
+          VectorModeOption{"Laplacian magnitude", ComponentRenderMode::VectorLaplacianMagnitude}};
 
         const char* currentVectorModeLabel = vectorModeOptions[0].label;
         for (const auto& option : vectorModeOptions) {
@@ -763,22 +790,73 @@ void renderImageHeader(
           ImGui::EndCombo();
         }
 
-        ImGui::TextWrapped("%s", componentRenderModeDescription(imgSettings.componentRenderMode(), true, false));
+        disabledWrappedText(componentRenderModeDescription(
+          imgSettings.componentRenderMode(),
+          true,
+          false,
+          false,
+          imgSettings.vectorLogJacobianDeterminant()));
+        if (ComponentRenderMode::VectorPlanarProjectionColor == imgSettings.componentRenderMode()) {
+          bool signedColors = imgSettings.vectorPlanarProjectionSignedColors();
+          if (ImGui::Checkbox("Signed colors", &signedColors)) {
+            imgSettings.setVectorPlanarProjectionSignedColors(signedColors);
+            updateImageUniforms();
+          }
+          ImGui::SameLine();
+          helpMarker("Use distinct colors for right/left and up/down in-plane vector directions");
+        }
+        if (ComponentRenderMode::VectorJacobianDeterminant == imgSettings.componentRenderMode()) {
+          bool logJacobian = imgSettings.vectorLogJacobianDeterminant();
+          if (ImGui::Checkbox("Log-Jacobian", &logJacobian)) {
+            imgSettings.setVectorLogJacobianDeterminant(logJacobian);
+            if (const auto projectionMode = componentProjectionForImage(*image)) {
+              requestComponentProjectionImage(imageUid, *projectionMode);
+            }
+            updateImageUniforms();
+          }
+          ImGui::SameLine();
+          helpMarker("Show log(det(F)) instead of det(F), where F is the deformation gradient.");
+        }
       }
       else if (complexValuedImage) {
-        ImGui::TextUnformatted("Render complex image as:");
-        radioComponentMode("Magnitude", ComponentRenderMode::Magnitude);
-        ImGui::SameLine();
-        radioComponentMode("Phase", ComponentRenderMode::ComplexPhase);
-        ImGui::SameLine();
-        radioComponentMode("Real", ComponentRenderMode::ComplexReal);
-        ImGui::SameLine();
-        radioComponentMode("Imaginary", ComponentRenderMode::ComplexImaginary);
+        struct ComplexModeOption
+        {
+          const char* label;
+          ComponentRenderMode mode;
+        };
+        constexpr std::array complexModeOptions{
+          ComplexModeOption{"Magnitude", ComponentRenderMode::Magnitude},
+          ComplexModeOption{"Phase", ComponentRenderMode::ComplexPhase},
+          ComplexModeOption{"Real", ComponentRenderMode::ComplexReal},
+          ComplexModeOption{"Imaginary", ComponentRenderMode::ComplexImaginary}};
 
-        ImGui::TextWrapped("%s", componentRenderModeDescription(imgSettings.componentRenderMode(), false, false));
+        const char* currentComplexModeLabel = complexModeOptions[0].label;
+        for (const auto& option : complexModeOptions) {
+          if (option.mode == imgSettings.componentRenderMode()) {
+            currentComplexModeLabel = option.label;
+            break;
+          }
+        }
+
+        if (ImGui::BeginCombo("Render", currentComplexModeLabel)) {
+          for (const auto& option : complexModeOptions) {
+            const bool selected = option.mode == imgSettings.componentRenderMode();
+            if (ImGui::Selectable(option.label, selected)) {
+              setComponentMode(option.mode);
+            }
+            if (selected) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
+
+        ImGui::TextWrapped("%s", componentRenderModeDescription(imgSettings.componentRenderMode(), false, true, false));
 
         if (ComponentRenderMode::ComplexPhase == imgSettings.componentRenderMode()) {
+          ImGui::AlignTextToFramePadding();
           ImGui::TextUnformatted("Phase units:");
+          ImGui::SameLine();
           bool radians = ComplexPhaseUnit::Radians == imgSettings.complexPhaseUnit();
           if (ImGui::RadioButton("Radians", radians)) {
             imgSettings.setComplexPhaseUnit(ComplexPhaseUnit::Radians);
@@ -797,7 +875,9 @@ void renderImageHeader(
             updateImageUniforms();
           }
 
+          ImGui::AlignTextToFramePadding();
           ImGui::TextUnformatted("Phase range:");
+          ImGui::SameLine();
           const bool signedRange = ComplexPhaseRange::Signed == imgSettings.complexPhaseRange();
           const char* signedLabel =
             ComplexPhaseUnit::Degrees == imgSettings.complexPhaseUnit() ? "-180 to 180 deg" : "-pi to pi";
@@ -821,31 +901,51 @@ void renderImageHeader(
         }
       }
       else {
-        const std::string renderAsLabel =
-          "Render " + std::to_string(imgHeader.numComponentsPerPixel()) + "-component image as:";
-        ImGui::TextUnformatted(renderAsLabel.c_str());
-        radioComponentMode("Single component", ComponentRenderMode::SingleComponent);
-
+        struct MultiComponentModeOption
+        {
+          const char* label;
+          ComponentRenderMode mode;
+        };
+        std::vector<MultiComponentModeOption> componentModeOptions{
+          MultiComponentModeOption{"Single component", ComponentRenderMode::SingleComponent}};
         const bool canDisplayAsColor =
           (3 == imgHeader.numComponentsPerPixel() || 4 == imgHeader.numComponentsPerPixel());
         if (canDisplayAsColor) {
-          ImGui::SameLine();
           const bool hasAlphaComponent = 4 == imgHeader.numComponentsPerPixel();
-          radioComponentMode(hasAlphaComponent ? "RGBA color" : "RGB color", ComponentRenderMode::Color);
+          componentModeOptions.push_back(
+            MultiComponentModeOption{hasAlphaComponent ? "RGBA color" : "RGB color", ComponentRenderMode::Color});
+        }
+        componentModeOptions.push_back(MultiComponentModeOption{"Minimum", ComponentRenderMode::Minimum});
+        componentModeOptions.push_back(MultiComponentModeOption{"Maximum", ComponentRenderMode::Maximum});
+        componentModeOptions.push_back(MultiComponentModeOption{"Mean", ComponentRenderMode::Mean});
+        componentModeOptions.push_back(MultiComponentModeOption{"Magnitude", ComponentRenderMode::Magnitude});
+
+        const char* currentComponentModeLabel = componentModeOptions.front().label;
+        for (const auto& option : componentModeOptions) {
+          if (option.mode == imgSettings.componentRenderMode()) {
+            currentComponentModeLabel = option.label;
+            break;
+          }
         }
 
-        radioComponentMode("Minimum", ComponentRenderMode::Minimum);
-        ImGui::SameLine();
-        radioComponentMode("Maximum", ComponentRenderMode::Maximum);
-        ImGui::SameLine();
-        radioComponentMode("Mean", ComponentRenderMode::Mean);
-        ImGui::SameLine();
-        radioComponentMode("Magnitude", ComponentRenderMode::Magnitude);
+        if (ImGui::BeginCombo("Render", currentComponentModeLabel)) {
+          for (const auto& option : componentModeOptions) {
+            const bool selected = option.mode == imgSettings.componentRenderMode();
+            if (ImGui::Selectable(option.label, selected)) {
+              setComponentMode(option.mode);
+            }
+            if (selected) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
 
         ImGui::TextWrapped(
           "%s",
           componentRenderModeDescription(
             imgSettings.componentRenderMode(),
+            false,
             false,
             4 == imgHeader.numComponentsPerPixel()));
       }
@@ -869,33 +969,29 @@ void renderImageHeader(
       if (showPerComponentControls) {
         const uint32_t componentMax = imgHeader.numComponentsPerPixel() - 1;
         if (vectorFieldImage) {
-          ImGui::AlignTextToFramePadding();
-          ImGui::TextUnformatted("Component:");
-          ImGui::SameLine();
-
-          ImGui::BeginDisabled(0u == activeComp);
-          if (ImGui::ArrowButton("##previousVectorComponent", ImGuiDir_Left)) {
-            imgSettings.setActiveComponent(activeComp - 1u);
-            activeComp = imgSettings.activeComponent();
+          uint32_t componentInput = activeComp;
+          constexpr uint32_t componentStep = 1;
+          const std::string currentComponentLabel = vectorFieldComponentLabel(activeComp, componentMax);
+          const std::string componentPrefix = std::to_string(activeComp);
+          std::string componentFormat = "%u";
+          if (currentComponentLabel.starts_with(componentPrefix)) {
+            componentFormat += currentComponentLabel.substr(componentPrefix.size());
+          }
+          if (ImGui::InputScalar(
+                "Component",
+                ImGuiDataType_U32,
+                &componentInput,
+                &componentStep,
+                nullptr,
+                componentFormat.c_str()))
+          {
+            const uint32_t clampedComponent = std::min(componentInput, componentMax);
+            if (clampedComponent != activeComp) {
+              imgSettings.setActiveComponent(clampedComponent);
+              activeComp = imgSettings.activeComponent();
+            }
             updateImageUniforms();
           }
-          ImGui::EndDisabled();
-
-          ImGui::SameLine();
-          std::string currentComponentLabel = vectorFieldComponentLabel(activeComp, componentMax);
-          ImGui::PushItemWidth(
-            std::max(120.0f, ImGui::CalcTextSize("x (0 of 2)").x + 2.0f * ImGui::GetStyle().FramePadding.x));
-          ImGui::InputText("##vectorComponentLabel", &currentComponentLabel, ImGuiInputTextFlags_ReadOnly);
-          ImGui::PopItemWidth();
-
-          ImGui::SameLine();
-          ImGui::BeginDisabled(activeComp >= componentMax);
-          if (ImGui::ArrowButton("##nextVectorComponent", ImGuiDir_Right)) {
-            imgSettings.setActiveComponent(activeComp + 1u);
-            activeComp = imgSettings.activeComponent();
-            updateImageUniforms();
-          }
-          ImGui::EndDisabled();
         }
         else if (complexValuedImage) {
           const std::string currentComponentLabel = complexComponentLabel(activeComp, componentMax);
@@ -972,6 +1068,21 @@ void renderImageHeader(
         ImGui::Separator();
         ImGui::Spacing();
 
+        auto setVectorOverlayOnImage = [&](bool overlayOnImage) {
+          imgSettings.setVectorArrowOverlayOnImage(overlayOnImage);
+          imgSettings.setVectorWarpedGridOverlayOnImage(overlayOnImage);
+        };
+
+        bool vectorOverlayOnImage = imgSettings.vectorArrowOverlayVisible()
+                                      ? imgSettings.vectorArrowOverlayOnImage()
+                                      : imgSettings.vectorWarpedGridOverlayOnImage();
+        if (
+          imgSettings.vectorArrowOverlayOnImage() != vectorOverlayOnImage ||
+          imgSettings.vectorWarpedGridOverlayOnImage() != vectorOverlayOnImage)
+        {
+          setVectorOverlayOnImage(vectorOverlayOnImage);
+        }
+
         bool showArrowOverlay = imgSettings.vectorArrowOverlayVisible();
         if (ImGui::Checkbox("Vector field arrows", &showArrowOverlay)) {
           imgSettings.setVectorArrowOverlayVisible(showArrowOverlay);
@@ -979,28 +1090,31 @@ void renderImageHeader(
         ImGui::SameLine();
         helpMarker("Draw sampled arrows over the current slice to show the vector field direction");
 
-        if (imgSettings.vectorArrowOverlayVisible()) {
-          bool overlayOnImage = imgSettings.vectorArrowOverlayOnImage();
+        if (
+          imgSettings.vectorArrowOverlayVisible() && ImGui::TreeNodeEx("Arrow options", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+          bool overlayOnImage = vectorOverlayOnImage;
           if (ImGui::Checkbox("Overlay on image", &overlayOnImage)) {
-            imgSettings.setVectorArrowOverlayOnImage(overlayOnImage);
+            vectorOverlayOnImage = overlayOnImage;
+            setVectorOverlayOnImage(vectorOverlayOnImage);
           }
+          ImGui::SameLine();
+          helpMarker("Draw the image normally and place vector arrows on top. When off, only the arrows are drawn.");
 
           bool useDirectionColor = imgSettings.vectorArrowOverlayUseDirectionColor();
-          if (ImGui::Checkbox("Direction color", &useDirectionColor)) {
+          if (ImGui::Checkbox("Color by direction", &useDirectionColor)) {
             imgSettings.setVectorArrowOverlayUseDirectionColor(useDirectionColor);
           }
-
-          if (!imgSettings.vectorArrowOverlayUseDirectionColor()) {
-            glm::vec3 arrowColor = imgSettings.vectorArrowOverlayColor();
-            if (ImGui::ColorEdit3("Fixed color", glm::value_ptr(arrowColor), colorNoAlphaEditFlags)) {
-              imgSettings.setVectorArrowOverlayColor(arrowColor);
-            }
-          }
+          ImGui::SameLine();
+          helpMarker("Color arrows by vector direction using the absolute x, y, and z components as RGB.");
 
           bool scaleByMagnitude = imgSettings.vectorArrowOverlayScaleByMagnitude();
           if (ImGui::Checkbox("Scale arrows by magnitude", &scaleByMagnitude)) {
             imgSettings.setVectorArrowOverlayScaleByMagnitude(scaleByMagnitude);
           }
+          ImGui::SameLine();
+          helpMarker(
+            "Scale each arrow length by the vector magnitude. When off, arrows show direction with uniform length.");
 
           float scaleFactor = imgSettings.vectorArrowOverlayScaleFactor();
           if (ImGui::SliderFloat("Scale factor", &scaleFactor, 0.01f, 10.0f, "%.2f x", ImGuiSliderFlags_Logarithmic)) {
@@ -1012,19 +1126,19 @@ void renderImageHeader(
           const VectorArrowOverlaySpacingMode spacingMode = imgSettings.vectorArrowOverlaySpacingMode();
           if (VectorArrowOverlaySpacingMode::Pixels == spacingMode) {
             float spacing = imgSettings.vectorArrowOverlayDensity();
-            if (ImGui::SliderFloat("Arrow spacing", &spacing, 8.0f, 128.0f, "%.0f")) {
+            if (ImGui::SliderFloat("Spacing", &spacing, 8.0f, 128.0f, "%.0f px")) {
               imgSettings.setVectorArrowOverlayDensity(spacing);
             }
           }
           else if (VectorArrowOverlaySpacingMode::Voxels == spacingMode) {
             float spacing = imgSettings.vectorArrowOverlayVoxelSpacing();
-            if (ImGui::SliderFloat("Arrow spacing", &spacing, 0.1f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+            if (ImGui::SliderFloat("Spacing", &spacing, 0.1f, 10.0f, "%.2f vox", ImGuiSliderFlags_Logarithmic)) {
               imgSettings.setVectorArrowOverlayVoxelSpacing(spacing);
             }
           }
           else {
             float spacing = imgSettings.vectorArrowOverlayMillimeterSpacing();
-            if (ImGui::SliderFloat("Arrow spacing", &spacing, 0.1f, 100.0f, "%.2f")) {
+            if (ImGui::SliderFloat("Spacing", &spacing, 0.1f, 100.0f, "%.2f mm")) {
               imgSettings.setVectorArrowOverlayMillimeterSpacing(spacing);
             }
           }
@@ -1052,6 +1166,139 @@ void renderImageHeader(
           if (ImGui::SliderFloat("Line thickness", &lineThickness, 0.25f, 4.0f, "%.2f px")) {
             imgSettings.setVectorArrowOverlayLineThickness(lineThickness);
           }
+
+          if (!imgSettings.vectorArrowOverlayUseDirectionColor()) {
+            glm::vec4 arrowColor{imgSettings.vectorArrowOverlayColor(), imgSettings.vectorArrowOverlayOpacity()};
+            if (ImGui::ColorEdit4("Color", glm::value_ptr(arrowColor))) {
+              imgSettings.setVectorArrowOverlayColor(glm::vec3{arrowColor});
+              imgSettings.setVectorArrowOverlayOpacity(arrowColor.a);
+            }
+            ImGui::SameLine();
+            helpMarker("RGBA color used for vector arrows.");
+          }
+
+          ImGui::TreePop();
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        bool showWarpedGrid = imgSettings.vectorWarpedGridVisible();
+        if (ImGui::Checkbox("Vector field warped grid", &showWarpedGrid)) {
+          imgSettings.setVectorWarpedGridVisible(showWarpedGrid);
+        }
+        ImGui::SameLine();
+        helpMarker("Draw a grid warped by the vector field on the current slice.");
+
+        if (imgSettings.vectorWarpedGridVisible() && ImGui::TreeNodeEx("Grid options", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+          bool overlayOnImage = vectorOverlayOnImage;
+          if (ImGui::Checkbox("Overlay on image##warpedGrid", &overlayOnImage)) {
+            vectorOverlayOnImage = overlayOnImage;
+            setVectorOverlayOnImage(vectorOverlayOnImage);
+          }
+          ImGui::SameLine();
+          helpMarker("Draw the image normally and place the warped grid on top. When off, only the grid is drawn.");
+
+          VectorWarpedGridConvention convention = imgSettings.vectorWarpedGridConvention();
+          if (ImGui::BeginCombo("Convention", vectorWarpedGridConventionName(convention))) {
+            constexpr std::array conventions{
+              VectorWarpedGridConvention::SamplingField,
+              VectorWarpedGridConvention::ApparentDeformation};
+            for (const VectorWarpedGridConvention option : conventions) {
+              const bool selected = option == convention;
+              if (ImGui::Selectable(vectorWarpedGridConventionName(option), selected)) {
+                convention = option;
+                imgSettings.setVectorWarpedGridConvention(option);
+              }
+              if (selected) {
+                ImGui::SetItemDefaultFocus();
+              }
+            }
+            ImGui::EndCombo();
+          }
+          ImGui::SameLine();
+          helpMarker(
+            "Choose whether the stored vectors are shown as a sampling field or as an approximate apparent "
+            "deformation.");
+          if (VectorWarpedGridConvention::ApparentDeformation == imgSettings.vectorWarpedGridConvention()) {
+            ImGui::TextDisabled("Uses an approximate inverse by reversing the displacement.");
+          }
+
+          float gridScaleFactor = imgSettings.vectorWarpedGridScaleFactor();
+          if (ImGui::SliderFloat("Warp scale", &gridScaleFactor, 0.01f, 10.0f, "%.2f x", ImGuiSliderFlags_Logarithmic))
+          {
+            imgSettings.setVectorWarpedGridScaleFactor(gridScaleFactor);
+          }
+          ImGui::SameLine();
+          helpMarker("Dimensionless multiplier applied to the displacement before warping the grid.");
+
+          const VectorArrowOverlaySpacingMode gridSpacingMode = imgSettings.vectorWarpedGridSpacingMode();
+          if (VectorArrowOverlaySpacingMode::Pixels == gridSpacingMode) {
+            float spacing = imgSettings.vectorWarpedGridPixelSpacing();
+            if (ImGui::SliderFloat("Spacing", &spacing, 4.0f, 256.0f, "%.0f px")) {
+              imgSettings.setVectorWarpedGridPixelSpacing(spacing);
+            }
+          }
+          else if (VectorArrowOverlaySpacingMode::Voxels == gridSpacingMode) {
+            float spacing = imgSettings.vectorWarpedGridVoxelSpacing();
+            if (ImGui::SliderFloat("Spacing", &spacing, 0.1f, 100.0f, "%.2f vox", ImGuiSliderFlags_Logarithmic)) {
+              imgSettings.setVectorWarpedGridVoxelSpacing(spacing);
+            }
+          }
+          else {
+            float spacing = imgSettings.vectorWarpedGridMillimeterSpacing();
+            if (ImGui::SliderFloat("Spacing", &spacing, 0.1f, 100.0f, "%.2f mm")) {
+              imgSettings.setVectorWarpedGridMillimeterSpacing(spacing);
+            }
+          }
+          ImGui::SameLine();
+          helpMarker("Distance between neighboring grid lines, measured in the selected spacing units.");
+
+          VectorArrowOverlaySpacingMode selectedGridSpacingMode = gridSpacingMode;
+          if (ImGui::BeginCombo("Spacing units", vectorArrowOverlaySpacingModeName(selectedGridSpacingMode))) {
+            constexpr std::array spacingModes{
+              VectorArrowOverlaySpacingMode::Pixels,
+              VectorArrowOverlaySpacingMode::Voxels,
+              VectorArrowOverlaySpacingMode::Millimeters};
+            for (const VectorArrowOverlaySpacingMode mode : spacingModes) {
+              const bool selected = mode == selectedGridSpacingMode;
+              if (ImGui::Selectable(vectorArrowOverlaySpacingModeName(mode), selected)) {
+                selectedGridSpacingMode = mode;
+                imgSettings.setVectorWarpedGridSpacingMode(mode);
+              }
+              if (selected) {
+                ImGui::SetItemDefaultFocus();
+              }
+            }
+            ImGui::EndCombo();
+          }
+          ImGui::SameLine();
+          helpMarker(
+            "Choose whether grid spacing is specified in screen pixels, image voxels, or physical millimeters.");
+
+          float gridLineThickness = imgSettings.vectorWarpedGridLineThickness();
+          if (ImGui::SliderFloat("Line thickness", &gridLineThickness, 0.25f, 8.0f, "%.2f px")) {
+            imgSettings.setVectorWarpedGridLineThickness(gridLineThickness);
+          }
+          ImGui::SameLine();
+          helpMarker("Line thickness in screen pixels.");
+
+          glm::vec4 gridForeground = imgSettings.vectorWarpedGridForegroundColor();
+          if (ImGui::ColorEdit4("Foreground", glm::value_ptr(gridForeground))) {
+            imgSettings.setVectorWarpedGridForegroundColor(gridForeground);
+          }
+          ImGui::SameLine();
+          helpMarker("RGBA color used for warped grid lines.");
+
+          glm::vec4 gridBackground = imgSettings.vectorWarpedGridBackgroundColor();
+          if (ImGui::ColorEdit4("Background", glm::value_ptr(gridBackground))) {
+            imgSettings.setVectorWarpedGridBackgroundColor(gridBackground);
+          }
+          ImGui::SameLine();
+          helpMarker("RGBA color used between grid lines. Set alpha to zero for a transparent background.");
+
+          ImGui::TreePop();
         }
       }
 

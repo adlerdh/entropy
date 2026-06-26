@@ -158,6 +158,20 @@ private:
 
   void renderVectorOverlays();
 
+  /**
+   * @brief Render shader-based warped-grid overlays for vector-field images in one view.
+   *
+   * @param view View receiving the overlay.
+   * @param worldOffsetXhairs Crosshairs position including the view slice offset.
+   * @param displayModeUniform Shader comparison-mode value for the current view.
+   * @param sourceImages Original image ids to test for vector-field grid overlays.
+   */
+  void renderVectorWarpedGridOverlaysForView(
+    const View& view,
+    const glm::vec3& worldOffsetXhairs,
+    int displayModeUniform,
+    const CurrentImages& sourceImages);
+
   void renderOneImage(
     const View& view,
     const glm::vec3& worldOffsetXhairs,

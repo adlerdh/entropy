@@ -111,8 +111,32 @@ TEST_CASE("ImageSettings clamps window values, centers, widths, thresholds, and 
   settings.setVectorArrowOverlayLineThickness(12.0f);
   CHECK(settings.vectorArrowOverlayLineThickness() == Catch::Approx(4.0f));
 
+  settings.setVectorArrowOverlayOpacity(-1.0f);
+  CHECK(settings.vectorArrowOverlayOpacity() == Catch::Approx(0.0f));
+  settings.setVectorArrowOverlayOpacity(2.0f);
+  CHECK(settings.vectorArrowOverlayOpacity() == Catch::Approx(1.0f));
+
   settings.setVectorArrowOverlayScaleFactor(20.0f);
   CHECK(settings.vectorArrowOverlayScaleFactor() == Catch::Approx(10.0f));
+
+  CHECK(settings.vectorWarpedGridPixelSpacing() == Catch::Approx(32.0f));
+  CHECK(settings.vectorWarpedGridVoxelSpacing() == Catch::Approx(4.0f));
+  CHECK(settings.vectorWarpedGridMillimeterSpacing() == Catch::Approx(4.0f));
+  CHECK(settings.vectorWarpedGridSpacingMode() == VectorArrowOverlaySpacingMode::Voxels);
+  settings.setVectorWarpedGridPixelSpacing(0.0f);
+  CHECK(settings.vectorWarpedGridPixelSpacing() == Catch::Approx(1.0f));
+  settings.setVectorWarpedGridVoxelSpacing(0.0f);
+  CHECK(settings.vectorWarpedGridVoxelSpacing() == Catch::Approx(0.1f));
+  settings.setVectorWarpedGridMillimeterSpacing(0.0f);
+  CHECK(settings.vectorWarpedGridMillimeterSpacing() == Catch::Approx(0.1f));
+  settings.setVectorWarpedGridLineThickness(20.0f);
+  CHECK(settings.vectorWarpedGridLineThickness() == Catch::Approx(8.0f));
+  settings.setVectorWarpedGridScaleFactor(20.0f);
+  CHECK(settings.vectorWarpedGridScaleFactor() == Catch::Approx(10.0f));
+  settings.setVectorWarpedGridForegroundColor(glm::vec4{-1.0f, 0.25f, 2.0f, 0.5f});
+  CHECK(settings.vectorWarpedGridForegroundColor() == glm::vec4{0.0f, 0.25f, 1.0f, 0.5f});
+  settings.setVectorWarpedGridBackgroundColor(glm::vec4{0.2f, -1.0f, 0.4f, 2.0f});
+  CHECK(settings.vectorWarpedGridBackgroundColor() == glm::vec4{0.2f, 0.0f, 0.4f, 1.0f});
 }
 
 TEST_CASE("ImageSettings routes component-specific setters through the active component", "[image][settings]")

@@ -5,6 +5,7 @@
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 #include <ostream>
 #include <string>
@@ -32,9 +33,12 @@ enum class ComponentRenderMode
   ComplexImaginary,
   VectorDirectionColor,
   VectorSignedNormalProjection,
+  VectorPlanarProjectionColor,
   VectorJacobianDeterminant,
+  VectorGradientMagnitude,
   VectorDivergence,
-  VectorCurlMagnitude
+  VectorCurlMagnitude,
+  VectorLaplacianMagnitude
 };
 
 /// @brief Display units for complex-valued image phase.
@@ -57,6 +61,13 @@ enum class VectorArrowOverlaySpacingMode
   Pixels,
   Voxels,
   Millimeters
+};
+
+/// @brief Convention used to warp vector-field grid overlays.
+enum class VectorWarpedGridConvention
+{
+  SamplingField,
+  ApparentDeformation
 };
 
 /**
@@ -186,6 +197,12 @@ public:
   /// @brief Return vector arrow line thickness in screen pixels.
   float vectorArrowOverlayLineThickness() const;
 
+  /// @brief Set vector arrow opacity.
+  void setVectorArrowOverlayOpacity(float opacity);
+
+  /// @brief Return vector arrow opacity.
+  float vectorArrowOverlayOpacity() const;
+
   /// @brief Set whether arrow lengths are proportional to vector magnitude.
   void setVectorArrowOverlayScaleByMagnitude(bool scaleByMagnitude);
 
@@ -197,6 +214,84 @@ public:
 
   /// @brief Return dimensionless vector arrow scale multiplier.
   float vectorArrowOverlayScaleFactor() const;
+
+  /// @brief Show a warped grid generated from the vector field.
+  void setVectorWarpedGridVisible(bool visible);
+
+  /// @brief Return whether a warped grid is shown.
+  bool vectorWarpedGridVisible() const;
+
+  /// @brief Set whether the warped grid is drawn over the rendered image.
+  void setVectorWarpedGridOverlayOnImage(bool overlayOnImage);
+
+  /// @brief Return whether the warped grid is drawn over the rendered image.
+  bool vectorWarpedGridOverlayOnImage() const;
+
+  /// @brief Set convention used to interpret the displacement field for grid warping.
+  void setVectorWarpedGridConvention(VectorWarpedGridConvention convention);
+
+  /// @brief Return convention used to interpret the displacement field for grid warping.
+  VectorWarpedGridConvention vectorWarpedGridConvention() const;
+
+  /// @brief Set approximate warped-grid spacing in screen pixels.
+  void setVectorWarpedGridPixelSpacing(float spacingPx);
+
+  /// @brief Return approximate warped-grid spacing in screen pixels.
+  float vectorWarpedGridPixelSpacing() const;
+
+  /// @brief Set approximate warped-grid spacing in image voxels.
+  void setVectorWarpedGridVoxelSpacing(float spacingVoxels);
+
+  /// @brief Return approximate warped-grid spacing in image voxels.
+  float vectorWarpedGridVoxelSpacing() const;
+
+  /// @brief Set warped-grid spacing in subject millimeters.
+  void setVectorWarpedGridMillimeterSpacing(float spacingMm);
+
+  /// @brief Return warped-grid spacing in subject millimeters.
+  float vectorWarpedGridMillimeterSpacing() const;
+
+  /// @brief Set units used by the warped-grid spacing value.
+  void setVectorWarpedGridSpacingMode(VectorArrowOverlaySpacingMode mode);
+
+  /// @brief Return units used by the warped-grid spacing value.
+  VectorArrowOverlaySpacingMode vectorWarpedGridSpacingMode() const;
+
+  /// @brief Set warped-grid line thickness in screen pixels.
+  void setVectorWarpedGridLineThickness(float thicknessPx);
+
+  /// @brief Return warped-grid line thickness in screen pixels.
+  float vectorWarpedGridLineThickness() const;
+
+  /// @brief Set dimensionless warped-grid displacement scale multiplier.
+  void setVectorWarpedGridScaleFactor(float scaleFactor);
+
+  /// @brief Return dimensionless warped-grid displacement scale multiplier.
+  float vectorWarpedGridScaleFactor() const;
+
+  /// @brief Set warped-grid foreground RGBA color.
+  void setVectorWarpedGridForegroundColor(glm::vec4 color);
+
+  /// @brief Return warped-grid foreground RGBA color.
+  const glm::vec4& vectorWarpedGridForegroundColor() const;
+
+  /// @brief Set warped-grid background RGBA color.
+  void setVectorWarpedGridBackgroundColor(glm::vec4 color);
+
+  /// @brief Return warped-grid background RGBA color.
+  const glm::vec4& vectorWarpedGridBackgroundColor() const;
+
+  /// @brief Set whether planar projection color preserves in-plane vector signs.
+  void setVectorPlanarProjectionSignedColors(bool signedColors);
+
+  /// @brief Return whether planar projection color preserves in-plane vector signs.
+  bool vectorPlanarProjectionSignedColors() const;
+
+  /// @brief Set whether deformation Jacobian determinant rendering uses log(det).
+  void setVectorLogJacobianDeterminant(bool logJacobian);
+
+  /// @brief Return whether deformation Jacobian determinant rendering uses log(det).
+  bool vectorLogJacobianDeterminant() const;
 
   /// @brief Set display units for complex-valued image phase.
   void setComplexPhaseUnit(ComplexPhaseUnit unit);
@@ -826,12 +921,28 @@ private:
   float m_vectorArrowOverlayVoxelSpacing{1.0f};                     //!< Arrow spacing in image voxels
   float m_vectorArrowOverlayMillimeterSpacing{10.0f};               //!< Arrow spacing in subject millimeters
   VectorArrowOverlaySpacingMode m_vectorArrowOverlaySpacingMode{
-    VectorArrowOverlaySpacingMode::Pixels};                              //!< Spacing units
-  glm::vec3 m_vectorArrowOverlayColor{1.0f, 0.86f, 0.31f};               //!< Fixed vector arrow color
-  bool m_vectorArrowOverlayUseDirectionColor{false};                     //!< Color arrows by vector direction
-  float m_vectorArrowOverlayLineThickness{1.4f};                         //!< Arrow line thickness in screen pixels
-  bool m_vectorArrowOverlayScaleByMagnitude{true};                       //!< Scale arrow length by magnitude
-  float m_vectorArrowOverlayScaleFactor{1.0f};                           //!< Dimensionless arrow scale multiplier
+    VectorArrowOverlaySpacingMode::Pixels};                //!< Spacing units
+  glm::vec3 m_vectorArrowOverlayColor{1.0f, 0.86f, 0.31f}; //!< Fixed vector arrow color
+  bool m_vectorArrowOverlayUseDirectionColor{false};       //!< Color arrows by vector direction
+  float m_vectorArrowOverlayLineThickness{1.4f};           //!< Arrow line thickness in screen pixels
+  float m_vectorArrowOverlayOpacity{1.0f};                 //!< Arrow opacity multiplier
+  bool m_vectorArrowOverlayScaleByMagnitude{true};         //!< Scale arrow length by magnitude
+  float m_vectorArrowOverlayScaleFactor{1.0f};             //!< Dimensionless arrow scale multiplier
+  bool m_vectorWarpedGridVisible{false};                   //!< Show warped vector-field grid
+  bool m_vectorWarpedGridOverlayOnImage{true};             //!< Draw warped grid over the rendered image
+  VectorWarpedGridConvention m_vectorWarpedGridConvention{
+    VectorWarpedGridConvention::SamplingField};    //!< Warped grid convention
+  float m_vectorWarpedGridPixelSpacing{32.0f};     //!< Grid spacing in screen pixels
+  float m_vectorWarpedGridVoxelSpacing{4.0f};      //!< Grid spacing in image voxels
+  float m_vectorWarpedGridMillimeterSpacing{4.0f}; //!< Grid spacing in subject millimeters
+  VectorArrowOverlaySpacingMode m_vectorWarpedGridSpacingMode{
+    VectorArrowOverlaySpacingMode::Voxels};                              //!< Grid spacing units
+  float m_vectorWarpedGridLineThickness{1.5f};                           //!< Grid line thickness in screen pixels
+  float m_vectorWarpedGridScaleFactor{1.0f};                             //!< Dimensionless grid warp scale multiplier
+  glm::vec4 m_vectorWarpedGridForegroundColor{1.0f};                     //!< Grid line RGBA color
+  glm::vec4 m_vectorWarpedGridBackgroundColor{0.0f};                     //!< Grid background RGBA color
+  bool m_vectorPlanarProjectionSignedColors{true};                       //!< Preserve in-plane vector signs in color
+  bool m_vectorLogJacobianDeterminant{false};                            //!< Show log deformation Jacobian determinant
   bool m_ignoreAlpha{false};                                             //!< Ignore the alpha component of the image
   InterpolationMode m_colorInterpolationMode{InterpolationMode::Linear}; //!< Interpolation mode
 

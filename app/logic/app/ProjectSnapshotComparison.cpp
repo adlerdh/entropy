@@ -33,8 +33,22 @@ bool imageSettingsEqual(
          a->m_vectorArrowOverlayColor == b->m_vectorArrowOverlayColor &&
          a->m_vectorArrowOverlayUseDirectionColor == b->m_vectorArrowOverlayUseDirectionColor &&
          a->m_vectorArrowOverlayLineThickness == b->m_vectorArrowOverlayLineThickness &&
+         a->m_vectorArrowOverlayOpacity == b->m_vectorArrowOverlayOpacity &&
          a->m_vectorArrowOverlayScaleByMagnitude == b->m_vectorArrowOverlayScaleByMagnitude &&
          a->m_vectorArrowOverlayScaleFactor == b->m_vectorArrowOverlayScaleFactor &&
+         a->m_vectorWarpedGridVisible == b->m_vectorWarpedGridVisible &&
+         a->m_vectorWarpedGridOverlayOnImage == b->m_vectorWarpedGridOverlayOnImage &&
+         a->m_vectorWarpedGridConvention == b->m_vectorWarpedGridConvention &&
+         a->m_vectorWarpedGridPixelSpacing == b->m_vectorWarpedGridPixelSpacing &&
+         a->m_vectorWarpedGridVoxelSpacing == b->m_vectorWarpedGridVoxelSpacing &&
+         a->m_vectorWarpedGridMillimeterSpacing == b->m_vectorWarpedGridMillimeterSpacing &&
+         a->m_vectorWarpedGridSpacingMode == b->m_vectorWarpedGridSpacingMode &&
+         a->m_vectorWarpedGridLineThickness == b->m_vectorWarpedGridLineThickness &&
+         a->m_vectorWarpedGridScaleFactor == b->m_vectorWarpedGridScaleFactor &&
+         a->m_vectorWarpedGridForegroundColor == b->m_vectorWarpedGridForegroundColor &&
+         a->m_vectorWarpedGridBackgroundColor == b->m_vectorWarpedGridBackgroundColor &&
+         a->m_vectorPlanarProjectionSignedColors == b->m_vectorPlanarProjectionSignedColors &&
+         a->m_vectorLogJacobianDeterminant == b->m_vectorLogJacobianDeterminant &&
          a->m_ignoreAlpha == b->m_ignoreAlpha && a->m_colorInterpolationMode == b->m_colorInterpolationMode &&
          a->m_componentLevels == b->m_componentLevels && a->m_componentWindows == b->m_componentWindows &&
          a->m_componentThresholdLows == b->m_componentThresholdLows &&

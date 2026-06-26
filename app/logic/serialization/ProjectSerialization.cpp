@@ -88,9 +88,12 @@ constexpr std::array k_componentRenderModeNames{
   EnumName{serialize::ProjectComponentRenderMode::ComplexImaginary, "complexImaginary"},
   EnumName{serialize::ProjectComponentRenderMode::VectorDirectionColor, "vectorDirectionColor"},
   EnumName{serialize::ProjectComponentRenderMode::VectorSignedNormalProjection, "vectorSignedNormalProjection"},
+  EnumName{serialize::ProjectComponentRenderMode::VectorPlanarProjectionColor, "vectorPlanarProjectionColor"},
   EnumName{serialize::ProjectComponentRenderMode::VectorJacobianDeterminant, "vectorJacobianDeterminant"},
+  EnumName{serialize::ProjectComponentRenderMode::VectorGradientMagnitude, "vectorGradientMagnitude"},
   EnumName{serialize::ProjectComponentRenderMode::VectorDivergence, "vectorDivergence"},
-  EnumName{serialize::ProjectComponentRenderMode::VectorCurlMagnitude, "vectorCurlMagnitude"}};
+  EnumName{serialize::ProjectComponentRenderMode::VectorCurlMagnitude, "vectorCurlMagnitude"},
+  EnumName{serialize::ProjectComponentRenderMode::VectorLaplacianMagnitude, "vectorLaplacianMagnitude"}};
 
 constexpr std::array k_complexPhaseUnitNames{
   EnumName{serialize::ProjectComplexPhaseUnit::Radians, "radians"},
@@ -104,6 +107,10 @@ constexpr std::array k_vectorArrowOverlaySpacingModeNames{
   EnumName{serialize::ProjectVectorArrowOverlaySpacingMode::Pixels, "pixels"},
   EnumName{serialize::ProjectVectorArrowOverlaySpacingMode::Voxels, "voxels"},
   EnumName{serialize::ProjectVectorArrowOverlaySpacingMode::Millimeters, "millimeters"}};
+
+constexpr std::array k_vectorWarpedGridConventionNames{
+  EnumName{serialize::ProjectVectorWarpedGridConvention::SamplingField, "samplingField"},
+  EnumName{serialize::ProjectVectorWarpedGridConvention::ApparentDeformation, "apparentDeformation"}};
 
 constexpr std::array k_interpolationModeNames{
   EnumName{InterpolationMode::NearestNeighbor, "nearest"},
@@ -205,9 +212,19 @@ json vec3ToJson(const glm::vec3& value)
   return json::array({value.x, value.y, value.z});
 }
 
+json vec4ToJson(const glm::vec4& value)
+{
+  return json::array({value.x, value.y, value.z, value.w});
+}
+
 glm::vec3 vec3FromJson(const json& j)
 {
   return glm::vec3{j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>()};
+}
+
+glm::vec4 vec4FromJson(const json& j)
+{
+  return glm::vec4{j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>(), j.at(3).get<float>()};
 }
 
 glm::mat4 matrixFromJson(const json& j)
@@ -311,8 +328,24 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"vectorArrowOverlayColor", vec3ToJson(settings.m_vectorArrowOverlayColor)},
     {"vectorArrowOverlayUseDirectionColor", settings.m_vectorArrowOverlayUseDirectionColor},
     {"vectorArrowOverlayLineThickness", settings.m_vectorArrowOverlayLineThickness},
+    {"vectorArrowOverlayOpacity", settings.m_vectorArrowOverlayOpacity},
     {"vectorArrowOverlayScaleByMagnitude", settings.m_vectorArrowOverlayScaleByMagnitude},
     {"vectorArrowOverlayScaleFactor", settings.m_vectorArrowOverlayScaleFactor},
+    {"vectorWarpedGridVisible", settings.m_vectorWarpedGridVisible},
+    {"vectorWarpedGridOverlayOnImage", settings.m_vectorWarpedGridOverlayOnImage},
+    {"vectorWarpedGridConvention",
+     enumToName(settings.m_vectorWarpedGridConvention, k_vectorWarpedGridConventionNames)},
+    {"vectorWarpedGridPixelSpacing", settings.m_vectorWarpedGridPixelSpacing},
+    {"vectorWarpedGridVoxelSpacing", settings.m_vectorWarpedGridVoxelSpacing},
+    {"vectorWarpedGridMillimeterSpacing", settings.m_vectorWarpedGridMillimeterSpacing},
+    {"vectorWarpedGridSpacingMode",
+     enumToName(settings.m_vectorWarpedGridSpacingMode, k_vectorArrowOverlaySpacingModeNames)},
+    {"vectorWarpedGridLineThickness", settings.m_vectorWarpedGridLineThickness},
+    {"vectorWarpedGridScaleFactor", settings.m_vectorWarpedGridScaleFactor},
+    {"vectorWarpedGridForegroundColor", vec4ToJson(settings.m_vectorWarpedGridForegroundColor)},
+    {"vectorWarpedGridBackgroundColor", vec4ToJson(settings.m_vectorWarpedGridBackgroundColor)},
+    {"vectorPlanarProjectionSignedColors", settings.m_vectorPlanarProjectionSignedColors},
+    {"vectorLogJacobianDeterminant", settings.m_vectorLogJacobianDeterminant},
     {"ignoreAlpha", settings.m_ignoreAlpha},
     {"colorInterpolationMode", enumToName(settings.m_colorInterpolationMode, k_interpolationModeNames)},
     {"edgeDetectionMethod", enumToName(settings.m_edgeDetectionMethod, k_edgeDetectionMethodNames)},
@@ -466,11 +499,65 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   if (j.count("vectorArrowOverlayLineThickness")) {
     j.at("vectorArrowOverlayLineThickness").get_to(settings.m_vectorArrowOverlayLineThickness);
   }
+  if (j.count("vectorArrowOverlayOpacity")) {
+    j.at("vectorArrowOverlayOpacity").get_to(settings.m_vectorArrowOverlayOpacity);
+  }
   if (j.count("vectorArrowOverlayScaleByMagnitude")) {
     j.at("vectorArrowOverlayScaleByMagnitude").get_to(settings.m_vectorArrowOverlayScaleByMagnitude);
   }
   if (j.count("vectorArrowOverlayScaleFactor")) {
     j.at("vectorArrowOverlayScaleFactor").get_to(settings.m_vectorArrowOverlayScaleFactor);
+  }
+  if (j.count("vectorWarpedGridVisible")) {
+    j.at("vectorWarpedGridVisible").get_to(settings.m_vectorWarpedGridVisible);
+  }
+  if (j.count("vectorWarpedGridOverlayOnImage")) {
+    j.at("vectorWarpedGridOverlayOnImage").get_to(settings.m_vectorWarpedGridOverlayOnImage);
+  }
+  if (
+    const auto parsed = enumFromName<serialize::ProjectVectorWarpedGridConvention>(
+      j.value("vectorWarpedGridConvention", ""),
+      k_vectorWarpedGridConventionNames))
+  {
+    settings.m_vectorWarpedGridConvention = *parsed;
+  }
+  if (j.count("vectorWarpedGridPixelSpacing")) {
+    j.at("vectorWarpedGridPixelSpacing").get_to(settings.m_vectorWarpedGridPixelSpacing);
+  }
+  if (j.count("vectorWarpedGridVoxelSpacing")) {
+    j.at("vectorWarpedGridVoxelSpacing").get_to(settings.m_vectorWarpedGridVoxelSpacing);
+  }
+  if (j.count("vectorWarpedGridMillimeterSpacing")) {
+    j.at("vectorWarpedGridMillimeterSpacing").get_to(settings.m_vectorWarpedGridMillimeterSpacing);
+  }
+  if (
+    const auto parsed = enumFromName<serialize::ProjectVectorArrowOverlaySpacingMode>(
+      j.value("vectorWarpedGridSpacingMode", ""),
+      k_vectorArrowOverlaySpacingModeNames))
+  {
+    settings.m_vectorWarpedGridSpacingMode = *parsed;
+  }
+  if (j.count("vectorWarpedGridLineThickness")) {
+    j.at("vectorWarpedGridLineThickness").get_to(settings.m_vectorWarpedGridLineThickness);
+  }
+  if (j.count("vectorWarpedGridScaleFactor")) {
+    j.at("vectorWarpedGridScaleFactor").get_to(settings.m_vectorWarpedGridScaleFactor);
+  }
+  if (const auto color = j.find("vectorWarpedGridForegroundColor");
+      color != j.end() && color->is_array() && color->size() == 4)
+  {
+    settings.m_vectorWarpedGridForegroundColor = vec4FromJson(*color);
+  }
+  if (const auto color = j.find("vectorWarpedGridBackgroundColor");
+      color != j.end() && color->is_array() && color->size() == 4)
+  {
+    settings.m_vectorWarpedGridBackgroundColor = vec4FromJson(*color);
+  }
+  if (j.count("vectorPlanarProjectionSignedColors")) {
+    j.at("vectorPlanarProjectionSignedColors").get_to(settings.m_vectorPlanarProjectionSignedColors);
+  }
+  if (j.count("vectorLogJacobianDeterminant")) {
+    j.at("vectorLogJacobianDeterminant").get_to(settings.m_vectorLogJacobianDeterminant);
   }
   if (j.count("ignoreAlpha")) {
     j.at("ignoreAlpha").get_to(settings.m_ignoreAlpha);

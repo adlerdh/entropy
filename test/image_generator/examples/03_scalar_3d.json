@@ -1,0 +1,12 @@
+{
+  "output": "scalar_3d.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "size": [48, 48, 24],
+  "spacing": [1.0, 1.0, 2.0],
+  "origin": [-24.0, -24.0, -24.0],
+  "pattern": "gaussian",
+  "metadata": {
+    "entropy_example": "scalar 3D"
+  }
+}

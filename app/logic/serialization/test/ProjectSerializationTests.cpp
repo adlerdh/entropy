@@ -172,8 +172,22 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_vectorArrowOverlayColor = glm::vec3{0.7f, 0.8f, 0.9f},
     .m_vectorArrowOverlayUseDirectionColor = true,
     .m_vectorArrowOverlayLineThickness = 2.5f,
+    .m_vectorArrowOverlayOpacity = 0.65f,
     .m_vectorArrowOverlayScaleByMagnitude = false,
     .m_vectorArrowOverlayScaleFactor = 3.0f,
+    .m_vectorWarpedGridVisible = true,
+    .m_vectorWarpedGridOverlayOnImage = false,
+    .m_vectorWarpedGridConvention = serialize::ProjectVectorWarpedGridConvention::ApparentDeformation,
+    .m_vectorWarpedGridPixelSpacing = 40.0f,
+    .m_vectorWarpedGridVoxelSpacing = 6.0f,
+    .m_vectorWarpedGridMillimeterSpacing = 14.0f,
+    .m_vectorWarpedGridSpacingMode = serialize::ProjectVectorArrowOverlaySpacingMode::Voxels,
+    .m_vectorWarpedGridLineThickness = 2.25f,
+    .m_vectorWarpedGridScaleFactor = 1.75f,
+    .m_vectorWarpedGridForegroundColor = glm::vec4{0.1f, 0.2f, 0.3f, 0.4f},
+    .m_vectorWarpedGridBackgroundColor = glm::vec4{0.5f, 0.6f, 0.7f, 0.8f},
+    .m_vectorPlanarProjectionSignedColors = false,
+    .m_vectorLogJacobianDeterminant = true,
     .m_ignoreAlpha = true,
     .m_colorInterpolationMode = InterpolationMode::NearestNeighbor,
     .m_componentLevels = {10.0, 20.0, 30.0},
@@ -226,8 +240,22 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(settings.at("vectorArrowOverlayColor") == json::array({0.7f, 0.8f, 0.9f}));
   CHECK(settings.at("vectorArrowOverlayUseDirectionColor") == true);
   CHECK(settings.at("vectorArrowOverlayLineThickness") == 2.5f);
+  CHECK(settings.at("vectorArrowOverlayOpacity") == 0.65f);
   CHECK(settings.at("vectorArrowOverlayScaleByMagnitude") == false);
   CHECK(settings.at("vectorArrowOverlayScaleFactor") == 3.0f);
+  CHECK(settings.at("vectorWarpedGridVisible") == true);
+  CHECK(settings.at("vectorWarpedGridOverlayOnImage") == false);
+  CHECK(settings.at("vectorWarpedGridConvention") == "apparentDeformation");
+  CHECK(settings.at("vectorWarpedGridPixelSpacing") == 40.0f);
+  CHECK(settings.at("vectorWarpedGridVoxelSpacing") == 6.0f);
+  CHECK(settings.at("vectorWarpedGridMillimeterSpacing") == 14.0f);
+  CHECK(settings.at("vectorWarpedGridSpacingMode") == "voxels");
+  CHECK(settings.at("vectorWarpedGridLineThickness") == 2.25f);
+  CHECK(settings.at("vectorWarpedGridScaleFactor") == 1.75f);
+  CHECK(settings.at("vectorWarpedGridForegroundColor") == json::array({0.1f, 0.2f, 0.3f, 0.4f}));
+  CHECK(settings.at("vectorWarpedGridBackgroundColor") == json::array({0.5f, 0.6f, 0.7f, 0.8f}));
+  CHECK(settings.at("vectorPlanarProjectionSignedColors") == false);
+  CHECK(settings.at("vectorLogJacobianDeterminant") == true);
   CHECK(settings.at("activeComponent") == 2);
   CHECK(settings.at("ignoreAlpha") == true);
   CHECK(settings.at("colorInterpolationMode") == "nearest");
@@ -279,8 +307,23 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_vectorArrowOverlayColor == glm::vec3{0.7f, 0.8f, 0.9f});
   CHECK(parsedSettings.m_vectorArrowOverlayUseDirectionColor);
   CHECK(parsedSettings.m_vectorArrowOverlayLineThickness == 2.5f);
+  CHECK(parsedSettings.m_vectorArrowOverlayOpacity == 0.65f);
   CHECK_FALSE(parsedSettings.m_vectorArrowOverlayScaleByMagnitude);
   CHECK(parsedSettings.m_vectorArrowOverlayScaleFactor == 3.0f);
+  CHECK(parsedSettings.m_vectorWarpedGridVisible);
+  CHECK_FALSE(parsedSettings.m_vectorWarpedGridOverlayOnImage);
+  CHECK(
+    parsedSettings.m_vectorWarpedGridConvention == serialize::ProjectVectorWarpedGridConvention::ApparentDeformation);
+  CHECK(parsedSettings.m_vectorWarpedGridPixelSpacing == 40.0f);
+  CHECK(parsedSettings.m_vectorWarpedGridVoxelSpacing == 6.0f);
+  CHECK(parsedSettings.m_vectorWarpedGridMillimeterSpacing == 14.0f);
+  CHECK(parsedSettings.m_vectorWarpedGridSpacingMode == serialize::ProjectVectorArrowOverlaySpacingMode::Voxels);
+  CHECK(parsedSettings.m_vectorWarpedGridLineThickness == 2.25f);
+  CHECK(parsedSettings.m_vectorWarpedGridScaleFactor == 1.75f);
+  CHECK(parsedSettings.m_vectorWarpedGridForegroundColor == glm::vec4{0.1f, 0.2f, 0.3f, 0.4f});
+  CHECK(parsedSettings.m_vectorWarpedGridBackgroundColor == glm::vec4{0.5f, 0.6f, 0.7f, 0.8f});
+  CHECK_FALSE(parsedSettings.m_vectorPlanarProjectionSignedColors);
+  CHECK(parsedSettings.m_vectorLogJacobianDeterminant);
   CHECK(parsedSettings.m_activeComponent == 2);
   CHECK(parsedSettings.m_ignoreAlpha);
   CHECK(parsedSettings.m_colorInterpolationMode == InterpolationMode::NearestNeighbor);

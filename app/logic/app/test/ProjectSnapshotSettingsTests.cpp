@@ -50,13 +50,22 @@ TEST_CASE("Project snapshot component render modes round trip through serializat
       ComponentRenderMode::VectorSignedNormalProjection)) == ComponentRenderMode::VectorSignedNormalProjection);
   CHECK(
     project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
+      ComponentRenderMode::VectorPlanarProjectionColor)) == ComponentRenderMode::VectorPlanarProjectionColor);
+  CHECK(
+    project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
       ComponentRenderMode::VectorJacobianDeterminant)) == ComponentRenderMode::VectorJacobianDeterminant);
+  CHECK(
+    project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
+      ComponentRenderMode::VectorGradientMagnitude)) == ComponentRenderMode::VectorGradientMagnitude);
   CHECK(
     project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
       ComponentRenderMode::VectorDivergence)) == ComponentRenderMode::VectorDivergence);
   CHECK(
     project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
       ComponentRenderMode::VectorCurlMagnitude)) == ComponentRenderMode::VectorCurlMagnitude);
+  CHECK(
+    project_snapshot::fromSerializedComponentRenderMode(project_snapshot::toSerializedComponentRenderMode(
+      ComponentRenderMode::VectorLaplacianMagnitude)) == ComponentRenderMode::VectorLaplacianMagnitude);
   CHECK(
     project_snapshot::fromSerializedComplexPhaseUnit(
       project_snapshot::toSerializedComplexPhaseUnit(ComplexPhaseUnit::Degrees)) == ComplexPhaseUnit::Degrees);
@@ -67,4 +76,7 @@ TEST_CASE("Project snapshot component render modes round trip through serializat
     project_snapshot::fromSerializedVectorArrowOverlaySpacingMode(
       project_snapshot::toSerializedVectorArrowOverlaySpacingMode(VectorArrowOverlaySpacingMode::Millimeters)) ==
     VectorArrowOverlaySpacingMode::Millimeters);
+  CHECK(
+    project_snapshot::fromSerializedVectorWarpedGridConvention(project_snapshot::toSerializedVectorWarpedGridConvention(
+      VectorWarpedGridConvention::ApparentDeformation)) == VectorWarpedGridConvention::ApparentDeformation);
 }

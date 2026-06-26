@@ -1,0 +1,12 @@
+{
+  "output": "complex_float_3d.nrrd",
+  "pixel_kind": "complex",
+  "component_type": "float",
+  "size": [32, 32, 16],
+  "spacing": [1.0, 1.0, 1.5],
+  "origin": [-16.0, -16.0, -12.0],
+  "pattern": "complex_phase",
+  "metadata": {
+    "entropy_example": "complex-valued 3D image"
+  }
+}

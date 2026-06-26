@@ -14,6 +14,7 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <limits>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -84,6 +85,18 @@ void setDefaultComplexRendering(ImageSettings& settings, const ImageHeader& head
   }
 }
 
+float defaultVectorGridMillimeterSpacing(const ImageHeader& header)
+{
+  const glm::vec3& spacing = header.spacing();
+  float minSpacing = std::numeric_limits<float>::max();
+  for (int axis = 0; axis < 3; ++axis) {
+    if (spacing[axis] > 0.0f) {
+      minSpacing = std::min(minSpacing, spacing[axis]);
+    }
+  }
+  return 4.0f * (minSpacing == std::numeric_limits<float>::max() ? 1.0f : minSpacing);
+}
+
 void setDefaultVectorFieldRendering(ImageSettings& settings, const ImageHeader& header)
 {
   if (
@@ -92,6 +105,7 @@ void setDefaultVectorFieldRendering(ImageSettings& settings, const ImageHeader& 
     3u == header.numComponentsPerPixel() && ComponentType::Float32 == header.memoryComponentType())
   {
     settings.setComponentRenderMode(ComponentRenderMode::Magnitude);
+    settings.setVectorWarpedGridMillimeterSpacing(defaultVectorGridMillimeterSpacing(header));
   }
 }
 } // namespace

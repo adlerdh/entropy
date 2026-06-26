@@ -867,6 +867,10 @@ void renderInspectionWindowWithTable(
         complexColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Imaginary)));
       ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Magnitude)),
+        componentProjectionColumnFlags,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::Magnitude)));
+      ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Phase)),
         complexColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Phase)));
@@ -883,10 +887,6 @@ void renderInspectionWindowWithTable(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Maximum)),
         componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Maximum)));
-      ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Magnitude)),
-        componentProjectionColumnFlags,
-        inspectorColumnWidths.at(columnIndex(InspectorColumn::Magnitude)));
       ImGui::TableSetupColumn(
         sk_inspectorColumnNames.at(columnIndex(InspectorColumn::JacobianDeterminant)),
         vectorDerivativeColumnFlags,
@@ -1245,10 +1245,6 @@ void renderInspectionWindowWithTable(
           }
         };
 
-        renderComplexColumn(InspectorColumn::Real, "##complexReal");
-        renderComplexColumn(InspectorColumn::Imaginary, "##complexImaginary");
-        renderComplexColumn(InspectorColumn::Phase, "##complexPhase");
-
         auto renderComponentProjectionColumn = [&](InspectorColumn column, const char* itemId) {
           ImGui::TableNextColumn();
           if (const std::optional<double> value = componentProjectionValue(column, imageValuesNN)) {
@@ -1269,10 +1265,13 @@ void renderInspectionWindowWithTable(
           }
         };
 
+        renderComplexColumn(InspectorColumn::Real, "##complexReal");
+        renderComplexColumn(InspectorColumn::Imaginary, "##complexImaginary");
+        renderComponentProjectionColumn(InspectorColumn::Magnitude, "##componentMagnitude");
+        renderComplexColumn(InspectorColumn::Phase, "##complexPhase");
         renderComponentProjectionColumn(InspectorColumn::Minimum, "##componentMinimum");
         renderComponentProjectionColumn(InspectorColumn::Mean, "##componentMean");
         renderComponentProjectionColumn(InspectorColumn::Maximum, "##componentMaximum");
-        renderComponentProjectionColumn(InspectorColumn::Magnitude, "##componentMagnitude");
 
         auto renderVectorDerivativeColumn = [&](InspectorColumn column, const char* itemId) {
           ImGui::TableNextColumn();

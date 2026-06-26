@@ -53,6 +53,7 @@
 #include <nanovg_gl.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <functional>
 #include <list>
@@ -112,6 +113,84 @@ glm::vec3 viewBackNormal_subject(const Image& image, const View& view)
 {
   const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
   return glm::normalize(glm::mat3{image.transformations().subject_T_worldDef()} * worldViewNormal);
+}
+
+glm::vec3 viewDirection_subject(const Image& image, const View& view, Directions::View direction)
+{
+  const glm::vec3 worldViewDirection = helper::worldDirection(view.camera(), direction);
+  return glm::normalize(glm::mat3{image.transformations().subject_T_worldDef()} * worldViewDirection);
+}
+
+float screenDistance(const Viewport& windowVP, const View& view, const glm::vec3& worldA, const glm::vec3& worldB)
+{
+  const glm::vec2 a = helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldA);
+  const glm::vec2 b = helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldB);
+  if (!std::isfinite(a.x) || !std::isfinite(a.y) || !std::isfinite(b.x) || !std::isfinite(b.y)) {
+    return 0.0f;
+  }
+  return glm::length(b - a);
+}
+
+float screenPixelsPerMillimeter(const Viewport& windowVP, const View& view, const glm::vec3& worldCrosshairs)
+{
+  const glm::vec3 worldRight = helper::worldDirection(view.camera(), Directions::View::Right);
+  const glm::vec3 worldUp = helper::worldDirection(view.camera(), Directions::View::Up);
+  const float rightPx = screenDistance(windowVP, view, worldCrosshairs, worldCrosshairs + worldRight);
+  const float upPx = screenDistance(windowVP, view, worldCrosshairs, worldCrosshairs + worldUp);
+  const float meanPx = 0.5f * (rightPx + upPx);
+  return meanPx > 0.0f ? meanPx : 1.0f;
+}
+
+float screenPixelsPerVoxel(
+  const Viewport& windowVP,
+  const View& view,
+  const Image& image,
+  const glm::vec3& worldCrosshairs)
+{
+  const glm::mat4 subject_T_world = image.transformations().subject_T_worldDef();
+  const glm::mat4 pixel_T_subject = image.transformations().pixel_T_subject();
+  const glm::mat4 subject_T_pixel = image.transformations().subject_T_pixel();
+  const glm::mat4 world_T_subject = image.transformations().worldDef_T_subject();
+
+  const glm::vec3 subjectBase{subject_T_world * glm::vec4{worldCrosshairs, 1.0f}};
+  const glm::vec3 pixelBase{pixel_T_subject * glm::vec4{subjectBase, 1.0f}};
+  const glm::vec3 worldBase{world_T_subject * glm::vec4{subjectBase, 1.0f}};
+
+  std::array<float, 3> axisLengths{};
+  for (int axis = 0; axis < 3; ++axis) {
+    glm::vec3 pixelEnd = pixelBase;
+    pixelEnd[axis] += 1.0f;
+    const glm::vec3 subjectEnd{subject_T_pixel * glm::vec4{pixelEnd, 1.0f}};
+    const glm::vec3 worldEnd{world_T_subject * glm::vec4{subjectEnd, 1.0f}};
+    axisLengths[axis] = screenDistance(windowVP, view, worldBase, worldEnd);
+  }
+
+  std::sort(axisLengths.begin(), axisLengths.end(), std::greater<float>{});
+  const float meanInPlanePx = 0.5f * (axisLengths[0] + axisLengths[1]);
+  return meanInPlanePx > 0.0f ? meanInPlanePx : 1.0f;
+}
+
+float vectorWarpedGridSpacingMillimeters(
+  const ImageSettings& settings,
+  const Viewport& windowVP,
+  const View& view,
+  const Image& image,
+  const glm::vec3& worldCrosshairs)
+{
+  switch (settings.vectorWarpedGridSpacingMode()) {
+    case VectorArrowOverlaySpacingMode::Pixels:
+      return std::max(settings.vectorWarpedGridPixelSpacing(), 1.0f) /
+             screenPixelsPerMillimeter(windowVP, view, worldCrosshairs);
+    case VectorArrowOverlaySpacingMode::Voxels: {
+      const float pxPerVoxel = screenPixelsPerVoxel(windowVP, view, image, worldCrosshairs);
+      const float pxPerMm = screenPixelsPerMillimeter(windowVP, view, worldCrosshairs);
+      return std::max(settings.vectorWarpedGridVoxelSpacing(), 0.1f) * pxPerVoxel / std::max(pxPerMm, 1.0e-6f);
+    }
+    case VectorArrowOverlaySpacingMode::Millimeters:
+      return std::max(settings.vectorWarpedGridMillimeterSpacing(), 0.1f);
+  }
+
+  return std::max(settings.vectorWarpedGridMillimeterSpacing(), 0.1f);
 }
 
 void updateSegmentationUniformsForImage(
@@ -1011,6 +1090,14 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForMetricShaders(const std
       break; // Stop after NUM_METRIC_IMAGES images reached
     }
 
+    if (const Image* image = m_appData.image(imageUid);
+        image && ((image->settings().vectorArrowOverlayVisible() && !image->settings().vectorArrowOverlayOnImage()) ||
+                  (image->settings().vectorWarpedGridVisible() && !image->settings().vectorWarpedGridOverlayOnImage())))
+    {
+      I.emplace_back(ImgSegPair());
+      continue;
+    }
+
     const uuid renderImageUid = m_appData.effectiveImageUidForRendering(imageUid);
     if (std::end(R.m_imageTextures) != R.m_imageTextures.find(renderImageUid)) {
       ImgSegPair imgSegPair;
@@ -1042,7 +1129,8 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForImageShaders(const std:
 
   for (const auto& imageUid : imageUids) {
     if (const Image* image = m_appData.image(imageUid);
-        image && image->settings().vectorArrowOverlayVisible() && !image->settings().vectorArrowOverlayOnImage())
+        image && ((image->settings().vectorArrowOverlayVisible() && !image->settings().vectorArrowOverlayOnImage()) ||
+                  (image->settings().vectorWarpedGridVisible() && !image->settings().vectorWarpedGridOverlayOnImage())))
     {
       continue;
     }
@@ -1091,7 +1179,8 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
   const bool renderAllComponents =
     image->settings().displayImageAsColor() ||
     ComponentRenderMode::VectorDirectionColor == image->settings().componentRenderMode() ||
-    ComponentRenderMode::VectorSignedNormalProjection == image->settings().componentRenderMode();
+    ComponentRenderMode::VectorSignedNormalProjection == image->settings().componentRenderMode() ||
+    ComponentRenderMode::VectorPlanarProjectionColor == image->settings().componentRenderMode();
   if (!renderAllComponents) {
     // Modify the active component
     const uint32_t activeComp = image->settings().activeComponent();
@@ -1814,6 +1903,83 @@ void Rendering::volumeRenderOneImage(const View& view, GLShaderProgram& program,
   setupOpenGLState();
 }
 
+void Rendering::renderVectorWarpedGridOverlaysForView(
+  const View& view,
+  const glm::vec3& worldOffsetXhairs,
+  int displayModeUniform,
+  const CurrentImages& sourceImages)
+{
+  const RenderData& R = m_appData.renderData();
+  const Viewport& windowVP = m_appData.windowData().viewport();
+
+  bool isFixedImage = true;
+  for (const auto& imgSegPair : sourceImages) {
+    if (!imgSegPair.first) {
+      isFixedImage = false;
+      continue;
+    }
+
+    const uuid& imageUid = *imgSegPair.first;
+    const Image* image = m_appData.image(imageUid);
+    if (
+      !image || image->header().numComponentsPerPixel() != 3u || !image->settings().globalVisibility() ||
+      !image->settings().vectorWarpedGridVisible())
+    {
+      isFixedImage = false;
+      continue;
+    }
+    if (R.m_imageTextures.find(imageUid) == R.m_imageTextures.end()) {
+      isFixedImage = false;
+      continue;
+    }
+
+    const ImageSettings& settings = image->settings();
+    GLShaderProgram* program = nullptr;
+    switch (settings.colorInterpolationMode()) {
+      case InterpolationMode::NearestNeighbor:
+      case InterpolationMode::Linear:
+        program = m_shaderPrograms.at(ShaderProgramType::VectorWarpedGridLinear).get();
+        break;
+      case InterpolationMode::CubicBsplineConvolution:
+        program = m_shaderPrograms.at(ShaderProgramType::VectorWarpedGridCubic).get();
+        break;
+    }
+
+    const RenderData::ImageUniforms& U = R.m_uniforms.at(imageUid);
+    const auto boundTextures = bindColorImageTextures(ImgSegPair{imageUid, std::nullopt});
+    program->use();
+    {
+      program->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
+      program->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
+      program->setUniform("u_tex_T_world", U.imgTexture_T_world);
+      program->setUniform("u_imgSlope_native_T_texture", U.slope_native_T_texture);
+      program->setUniform("u_subject_T_texture", image->transformations().subject_T_texture());
+      program->setUniform("u_viewRight_subject", viewDirection_subject(*image, view, Directions::View::Right));
+      program->setUniform("u_viewUp_subject", viewDirection_subject(*image, view, Directions::View::Up));
+      program->setUniform(
+        "u_gridSpacing_subject",
+        vectorWarpedGridSpacingMillimeters(settings, windowVP, view, *image, worldOffsetXhairs));
+      program->setUniform("u_lineThickness_px", settings.vectorWarpedGridLineThickness());
+      program->setUniform("u_warpScale", settings.vectorWarpedGridScaleFactor());
+      program->setUniform(
+        "u_convention",
+        VectorWarpedGridConvention::ApparentDeformation == settings.vectorWarpedGridConvention() ? 1 : 0);
+      program->setUniform("u_foregroundColor", settings.vectorWarpedGridForegroundColor());
+      program->setUniform("u_backgroundColor", settings.vectorWarpedGridBackgroundColor());
+      program->setUniform("u_imgOpacity", U.imgOpacity);
+      program->setUniform("u_quadrants", R.m_quadrants);
+      program->setUniform("u_showFix", isFixedImage);
+      program->setUniform("u_renderMode", displayModeUniform);
+
+      renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{ImgSegPair{imageUid, std::nullopt}}, false);
+    }
+    program->stopUse();
+    unbindTextures(boundTextures);
+
+    isFixedImage = false;
+  }
+}
+
 void Rendering::renderAllImagesForView(
   const View& view,
   const FrameBounds& miewportViewBounds,
@@ -1835,24 +2001,37 @@ void Rendering::renderAllImagesForView(
     case ShaderGroup::Image: {
       const bool doXray = (IntensityProjectionMode::Xray == view.intensityProjectionMode());
       CurrentImages I;
+      CurrentImages sourceImages;
 
       int displayModeUniform = 0;
 
       if (ViewRenderMode::Image == view.renderMode()) {
         displayModeUniform = 0;
         I = getImageAndSegUidsForImageShaders(view.renderedImages());
+        for (const auto& imageUid : view.renderedImages()) {
+          sourceImages.emplace_back(ImgSegPair{imageUid, std::nullopt});
+        }
       }
       else if (ViewRenderMode::Checkerboard == view.renderMode()) {
         displayModeUniform = 1;
         I = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
+        for (const auto& imageUid : view.metricImages()) {
+          sourceImages.emplace_back(ImgSegPair{imageUid, std::nullopt});
+        }
       }
       else if (ViewRenderMode::Quadrants == view.renderMode()) {
         displayModeUniform = 2;
         I = getImageAndSegUidsForMetricShaders(view.metricImages());
+        for (const auto& imageUid : view.metricImages()) {
+          sourceImages.emplace_back(ImgSegPair{imageUid, std::nullopt});
+        }
       }
       else if (ViewRenderMode::Flashlight == view.renderMode()) {
         displayModeUniform = 3;
         I = getImageAndSegUidsForMetricShaders(view.metricImages());
+        for (const auto& imageUid : view.metricImages()) {
+          sourceImages.emplace_back(ImgSegPair{imageUid, std::nullopt});
+        }
       }
 
       // The first image in the stack is the fixed one:
@@ -1875,28 +2054,39 @@ void Rendering::renderAllImagesForView(
 
         if (
           ComponentRenderMode::VectorDirectionColor == img->settings().componentRenderMode() ||
-          ComponentRenderMode::VectorSignedNormalProjection == img->settings().componentRenderMode())
+          ComponentRenderMode::VectorSignedNormalProjection == img->settings().componentRenderMode() ||
+          ComponentRenderMode::VectorPlanarProjectionColor == img->settings().componentRenderMode())
         {
           GLShaderProgram* P = nullptr;
           const bool signedNormalProjection =
             ComponentRenderMode::VectorSignedNormalProjection == img->settings().componentRenderMode();
+          const bool planarProjection =
+            ComponentRenderMode::VectorPlanarProjectionColor == img->settings().componentRenderMode();
+
+          auto vectorShaderType = [&](InterpolationMode interpolationMode) {
+            if (signedNormalProjection) {
+              return InterpolationMode::CubicBsplineConvolution == interpolationMode
+                       ? ShaderProgramType::VectorSignedNormalProjectionCubic
+                       : ShaderProgramType::VectorSignedNormalProjectionLinear;
+            }
+            if (planarProjection) {
+              return InterpolationMode::CubicBsplineConvolution == interpolationMode
+                       ? ShaderProgramType::VectorPlanarProjectionColorCubic
+                       : ShaderProgramType::VectorPlanarProjectionColorLinear;
+            }
+            return InterpolationMode::CubicBsplineConvolution == interpolationMode
+                     ? ShaderProgramType::VectorDirectionColorCubic
+                     : ShaderProgramType::VectorDirectionColorLinear;
+          };
 
           switch (img->settings().colorInterpolationMode()) {
             case InterpolationMode::NearestNeighbor:
             case InterpolationMode::Linear: {
-              P = m_shaderPrograms
-                    .at(
-                      signedNormalProjection ? ShaderProgramType::VectorSignedNormalProjectionLinear
-                                             : ShaderProgramType::VectorDirectionColorLinear)
-                    .get();
+              P = m_shaderPrograms.at(vectorShaderType(InterpolationMode::Linear)).get();
               break;
             }
             case InterpolationMode::CubicBsplineConvolution: {
-              P = m_shaderPrograms
-                    .at(
-                      signedNormalProjection ? ShaderProgramType::VectorSignedNormalProjectionCubic
-                                             : ShaderProgramType::VectorDirectionColorCubic)
-                    .get();
+              P = m_shaderPrograms.at(vectorShaderType(InterpolationMode::CubicBsplineConvolution)).get();
               break;
             }
           }
@@ -1912,6 +2102,12 @@ void Rendering::renderAllImagesForView(
             if (signedNormalProjection) {
               P->setUniform("u_projectionScale", maxAbsVectorComponentValue(img->settings()));
               P->setUniform("u_viewNormal_subject", viewBackNormal_subject(*img, view));
+            }
+            else if (planarProjection) {
+              P->setUniform("u_projectionScale", maxAbsVectorComponentValue(img->settings()));
+              P->setUniform("u_viewRight_subject", viewDirection_subject(*img, view, Directions::View::Right));
+              P->setUniform("u_viewUp_subject", viewDirection_subject(*img, view, Directions::View::Up));
+              P->setUniform("u_signedColors", img->settings().vectorPlanarProjectionSignedColors());
             }
             P->setUniform("u_quadrants", R.m_quadrants);
             P->setUniform("u_showFix", isFixedImage); // ignored if not checkerboard or quadrants
@@ -2253,6 +2449,7 @@ void Rendering::renderAllImagesForView(
         isFixedImage = false;
       }
 
+      renderVectorWarpedGridOverlaysForView(view, worldOffsetXhairs, displayModeUniform, sourceImages);
       break;
     }
 
@@ -3043,6 +3240,31 @@ void Rendering::createShaderPrograms()
   fsVectorSignedNormalProjectionUniforms.insertUniform("u_viewNormal_subject", UniformType::Vec3, sk_zeroVec3);
   fsVectorSignedNormalProjectionUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
 
+  Uniforms fsVectorPlanarProjectionColorUniforms;
+  fsVectorPlanarProjectionColorUniforms.insertUniforms(fsRenderModeUniforms);
+  fsVectorPlanarProjectionColorUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgRgbaTexSamplers);
+  fsVectorPlanarProjectionColorUniforms.insertUniform("u_imgSlope_native_T_texture", UniformType::Float, 1.0f);
+  fsVectorPlanarProjectionColorUniforms.insertUniform("u_projectionScale", UniformType::Float, 1.0f);
+  fsVectorPlanarProjectionColorUniforms.insertUniform("u_viewRight_subject", UniformType::Vec3, sk_zeroVec3);
+  fsVectorPlanarProjectionColorUniforms.insertUniform("u_viewUp_subject", UniformType::Vec3, sk_zeroVec3);
+  fsVectorPlanarProjectionColorUniforms.insertUniform("u_signedColors", UniformType::Bool, true);
+  fsVectorPlanarProjectionColorUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+
+  Uniforms fsVectorWarpedGridUniforms;
+  fsVectorWarpedGridUniforms.insertUniforms(fsRenderModeUniforms);
+  fsVectorWarpedGridUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgRgbaTexSamplers);
+  fsVectorWarpedGridUniforms.insertUniform("u_imgSlope_native_T_texture", UniformType::Float, 1.0f);
+  fsVectorWarpedGridUniforms.insertUniform("u_subject_T_texture", UniformType::Mat4, sk_identMat4);
+  fsVectorWarpedGridUniforms.insertUniform("u_viewRight_subject", UniformType::Vec3, sk_zeroVec3);
+  fsVectorWarpedGridUniforms.insertUniform("u_viewUp_subject", UniformType::Vec3, sk_zeroVec3);
+  fsVectorWarpedGridUniforms.insertUniform("u_gridSpacing_subject", UniformType::Float, 10.0f);
+  fsVectorWarpedGridUniforms.insertUniform("u_lineThickness_px", UniformType::Float, 1.5f);
+  fsVectorWarpedGridUniforms.insertUniform("u_warpScale", UniformType::Float, 1.0f);
+  fsVectorWarpedGridUniforms.insertUniform("u_convention", UniformType::Int, 0);
+  fsVectorWarpedGridUniforms.insertUniform("u_foregroundColor", UniformType::Vec4, glm::vec4{1.0f});
+  fsVectorWarpedGridUniforms.insertUniform("u_backgroundColor", UniformType::Vec4, sk_zeroVec4);
+  fsVectorWarpedGridUniforms.insertUniform("u_imgOpacity", UniformType::Float, 1.0f);
+
   Uniforms fsEdgeUniforms;
   fsEdgeUniforms.insertUniforms(fsImageAdjustmentUniforms);
   fsEdgeUniforms.insertUniforms(fsRenderModeUniforms);
@@ -3159,7 +3381,7 @@ void Rendering::createShaderPrograms()
   fsOverlayUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
   fsOverlayUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
 
-  constexpr std::array<ShaderProgramType, 26> allShaders = {
+  constexpr std::array<ShaderProgramType, 30> allShaders = {
     ShaderProgramType::ImageGrayLinear,
     ShaderProgramType::ImageGrayLinearFloating,
     ShaderProgramType::ImageGrayCubic,
@@ -3169,6 +3391,10 @@ void Rendering::createShaderPrograms()
     ShaderProgramType::VectorDirectionColorCubic,
     ShaderProgramType::VectorSignedNormalProjectionLinear,
     ShaderProgramType::VectorSignedNormalProjectionCubic,
+    ShaderProgramType::VectorPlanarProjectionColorLinear,
+    ShaderProgramType::VectorPlanarProjectionColorCubic,
+    ShaderProgramType::VectorWarpedGridLinear,
+    ShaderProgramType::VectorWarpedGridCubic,
     ShaderProgramType::EdgeSobelLinear,
     ShaderProgramType::EdgeSobelCubic,
     ShaderProgramType::XrayLinear,
@@ -3276,6 +3502,38 @@ void Rendering::createShaderPrograms()
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
       vsImageUniforms,
       fsVectorSignedNormalProjectionUniforms}},
+    {ShaderProgramType::VectorPlanarProjectionColorLinear,
+     {"Image.vs",
+      "VectorPlanarProjectionColor.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsVectorPlanarProjectionColorUniforms}},
+    {ShaderProgramType::VectorPlanarProjectionColorCubic,
+     {"Image.vs",
+      "VectorPlanarProjectionColor.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsVectorPlanarProjectionColorUniforms}},
+    {ShaderProgramType::VectorWarpedGridLinear,
+     {"Image.vs",
+      "VectorWarpedGrid.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsVectorWarpedGridUniforms}},
+    {ShaderProgramType::VectorWarpedGridCubic,
+     {"Image.vs",
+      "VectorWarpedGrid.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsVectorWarpedGridUniforms}},
     {ShaderProgramType::EdgeSobelLinear,
      {"Image.vs",
       "Edge.fs",

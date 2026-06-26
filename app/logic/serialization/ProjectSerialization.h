@@ -11,6 +11,7 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 #include <cstdint>
 #include <map>
@@ -46,9 +47,12 @@ enum class ProjectComponentRenderMode : std::uint8_t
   ComplexImaginary,
   VectorDirectionColor,
   VectorSignedNormalProjection,
+  VectorPlanarProjectionColor,
   VectorJacobianDeterminant,
+  VectorGradientMagnitude,
   VectorDivergence,
-  VectorCurlMagnitude
+  VectorCurlMagnitude,
+  VectorLaplacianMagnitude
 };
 
 /// @brief Serialized complex phase display units.
@@ -71,6 +75,13 @@ enum class ProjectVectorArrowOverlaySpacingMode : std::uint8_t
   Pixels,
   Voxels,
   Millimeters
+};
+
+/// @brief Serialized warped-grid convention for vector fields.
+enum class ProjectVectorWarpedGridConvention : std::uint8_t
+{
+  SamplingField,
+  ApparentDeformation
 };
 
 /**
@@ -108,9 +119,25 @@ struct ImageSettings
   glm::vec3 m_vectorArrowOverlayColor{1.0f, 0.86f, 0.31f}; //!< Fixed vector arrow color.
   bool m_vectorArrowOverlayUseDirectionColor = false;      //!< Color arrows by vector direction.
   float m_vectorArrowOverlayLineThickness = 1.4f;          //!< Vector arrow line thickness in pixels.
+  float m_vectorArrowOverlayOpacity = 1.0f;                //!< Vector arrow opacity.
   bool m_vectorArrowOverlayScaleByMagnitude = true;        //!< Scale arrow length by vector magnitude.
   float m_vectorArrowOverlayScaleFactor = 1.0f;            //!< Dimensionless vector arrow length multiplier.
-  bool m_ignoreAlpha = false; //!< Ignore alpha when rendering four-component images as RGBA.
+  bool m_vectorWarpedGridVisible = false;                  //!< Show warped vector-field grid.
+  bool m_vectorWarpedGridOverlayOnImage = true;            //!< Draw warped grid over the rendered image.
+  ProjectVectorWarpedGridConvention m_vectorWarpedGridConvention =
+    ProjectVectorWarpedGridConvention::SamplingField; //!< Warped grid convention.
+  float m_vectorWarpedGridPixelSpacing = 32.0f;       //!< Warped grid spacing in screen pixels.
+  float m_vectorWarpedGridVoxelSpacing = 4.0f;        //!< Warped grid spacing in image voxels.
+  float m_vectorWarpedGridMillimeterSpacing = 4.0f;   //!< Warped grid spacing in subject millimeters.
+  ProjectVectorArrowOverlaySpacingMode m_vectorWarpedGridSpacingMode =
+    ProjectVectorArrowOverlaySpacingMode::Voxels;    //!< Warped grid spacing units.
+  float m_vectorWarpedGridLineThickness = 1.5f;      //!< Warped grid line thickness in pixels.
+  float m_vectorWarpedGridScaleFactor = 1.0f;        //!< Dimensionless warped grid scale multiplier.
+  glm::vec4 m_vectorWarpedGridForegroundColor{1.0f}; //!< Warped grid foreground RGBA color.
+  glm::vec4 m_vectorWarpedGridBackgroundColor{0.0f}; //!< Warped grid background RGBA color.
+  bool m_vectorPlanarProjectionSignedColors = true;  //!< Preserve in-plane vector signs in projection color.
+  bool m_vectorLogJacobianDeterminant = false;       //!< Show log deformation Jacobian determinant.
+  bool m_ignoreAlpha = false;                        //!< Ignore alpha when rendering four-component images as RGBA.
   InterpolationMode m_colorInterpolationMode = InterpolationMode::Linear; //!< RGB/RGBA interpolation mode.
   std::vector<double> m_componentLevels;                                  //!< Per-component window centers.
   std::vector<double> m_componentWindows;                                 //!< Per-component window widths.

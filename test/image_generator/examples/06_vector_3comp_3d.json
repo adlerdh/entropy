@@ -1,0 +1,13 @@
+{
+  "output": "vector_3comp_3d.nrrd",
+  "pixel_kind": "vector",
+  "component_type": "float",
+  "components": 3,
+  "size": [32, 32, 16],
+  "spacing": [1.0, 1.0, 2.0],
+  "origin": [-16.0, -16.0, -16.0],
+  "pattern": "component_ramp",
+  "metadata": {
+    "entropy_example": "3-component vector field candidate"
+  }
+}

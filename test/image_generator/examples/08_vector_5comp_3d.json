@@ -1,0 +1,13 @@
+{
+  "output": "vector_5comp_3d.nrrd",
+  "pixel_kind": "vector",
+  "component_type": "float",
+  "components": 5,
+  "size": [24, 24, 16],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-12.0, -12.0, -8.0],
+  "pattern": "component_ramp",
+  "metadata": {
+    "entropy_example": "5-component image"
+  }
+}

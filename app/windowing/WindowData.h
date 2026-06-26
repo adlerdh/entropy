@@ -149,6 +149,9 @@ public:
   void clearLayouts();
   void resetDefaultLayouts();
 
+  /** @brief Select the default layout for the currently loaded image set. */
+  void setCurrentLayoutToDefaultForImages(const AppData& appData);
+
   /** @brief Replace all layouts with one three-view overview layout. */
   void resetToThreeUpLayout();
 

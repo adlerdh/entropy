@@ -23,8 +23,11 @@ enum class ComponentProjectionMode
   ComplexPhaseSignedDegrees,
   ComplexPhaseUnsignedDegrees,
   VectorJacobianDeterminant,
+  VectorLogJacobianDeterminant,
+  VectorGradientMagnitude,
   VectorDivergence,
-  VectorCurlMagnitude
+  VectorCurlMagnitude,
+  VectorLaplacianMagnitude
 };
 
 /**

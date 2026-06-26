@@ -131,7 +131,6 @@ void EntropyApp::onImagesReady()
 
   if (!preserveLayouts) {
     m_data.windowData().resetDefaultLayouts();
-    m_data.windowData().setCurrentLayoutIndex(1);
   }
 
   auto& renderData = m_data.renderData();
@@ -169,6 +168,7 @@ void EntropyApp::onImagesReady()
   }
   else {
     m_data.windowData().reconcileImageDependentLayouts(m_data, dicomNativeViewTypesByImage());
+    m_data.windowData().setCurrentLayoutToDefaultForImages(m_data);
     m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data);
 
     if (m_data.project().m_layoutsFileName) {
@@ -176,7 +176,7 @@ void EntropyApp::onImagesReady()
       if (layout::open(layoutFile, *m_data.project().m_layoutsFileName)) {
         if (layoutFile.m_layouts.empty()) {
           spdlog::warn(
-            "Referenced layout file {} contains no layouts; using a Three-up layout",
+            "Referenced layout file {} contains no layouts; using the default layout",
             *m_data.project().m_layoutsFileName);
         }
         if (!m_data.windowData().applyLayoutPresets(m_data, layoutFile.m_layouts, layoutFile.m_currentLayoutIndex)) {

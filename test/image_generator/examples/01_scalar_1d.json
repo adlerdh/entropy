@@ -1,0 +1,12 @@
+{
+  "output": "scalar_1d.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "size": [64],
+  "spacing": [0.5],
+  "origin": [-16.0],
+  "pattern": "ramp",
+  "metadata": {
+    "entropy_example": "scalar 1D"
+  }
+}

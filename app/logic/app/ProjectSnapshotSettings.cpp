@@ -81,9 +81,12 @@ bool componentRenderModeIsValidForImage(ComponentRenderMode mode, const Image& i
       return isComplexValuedImage(image);
     case ComponentRenderMode::VectorDirectionColor:
     case ComponentRenderMode::VectorSignedNormalProjection:
+    case ComponentRenderMode::VectorPlanarProjectionColor:
     case ComponentRenderMode::VectorJacobianDeterminant:
+    case ComponentRenderMode::VectorGradientMagnitude:
     case ComponentRenderMode::VectorDivergence:
     case ComponentRenderMode::VectorCurlMagnitude:
+    case ComponentRenderMode::VectorLaplacianMagnitude:
       return isVectorFieldCandidate(image);
   }
 
@@ -119,8 +122,24 @@ serialize::ImageSettings imageSettings(const Image& image)
   settings.m_vectorArrowOverlayColor = imageSettings.vectorArrowOverlayColor();
   settings.m_vectorArrowOverlayUseDirectionColor = imageSettings.vectorArrowOverlayUseDirectionColor();
   settings.m_vectorArrowOverlayLineThickness = imageSettings.vectorArrowOverlayLineThickness();
+  settings.m_vectorArrowOverlayOpacity = imageSettings.vectorArrowOverlayOpacity();
   settings.m_vectorArrowOverlayScaleByMagnitude = imageSettings.vectorArrowOverlayScaleByMagnitude();
   settings.m_vectorArrowOverlayScaleFactor = imageSettings.vectorArrowOverlayScaleFactor();
+  settings.m_vectorWarpedGridVisible = imageSettings.vectorWarpedGridVisible();
+  settings.m_vectorWarpedGridOverlayOnImage = imageSettings.vectorWarpedGridOverlayOnImage();
+  settings.m_vectorWarpedGridConvention =
+    toSerializedVectorWarpedGridConvention(imageSettings.vectorWarpedGridConvention());
+  settings.m_vectorWarpedGridPixelSpacing = imageSettings.vectorWarpedGridPixelSpacing();
+  settings.m_vectorWarpedGridVoxelSpacing = imageSettings.vectorWarpedGridVoxelSpacing();
+  settings.m_vectorWarpedGridMillimeterSpacing = imageSettings.vectorWarpedGridMillimeterSpacing();
+  settings.m_vectorWarpedGridSpacingMode =
+    toSerializedVectorArrowOverlaySpacingMode(imageSettings.vectorWarpedGridSpacingMode());
+  settings.m_vectorWarpedGridLineThickness = imageSettings.vectorWarpedGridLineThickness();
+  settings.m_vectorWarpedGridScaleFactor = imageSettings.vectorWarpedGridScaleFactor();
+  settings.m_vectorWarpedGridForegroundColor = imageSettings.vectorWarpedGridForegroundColor();
+  settings.m_vectorWarpedGridBackgroundColor = imageSettings.vectorWarpedGridBackgroundColor();
+  settings.m_vectorPlanarProjectionSignedColors = imageSettings.vectorPlanarProjectionSignedColors();
+  settings.m_vectorLogJacobianDeterminant = imageSettings.vectorLogJacobianDeterminant();
   settings.m_ignoreAlpha = imageSettings.ignoreAlpha();
   settings.m_colorInterpolationMode = imageSettings.colorInterpolationMode();
   settings.m_componentLevels.reserve(imageSettings.numComponents());
@@ -242,8 +261,24 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setVectorArrowOverlayColor(settings.m_vectorArrowOverlayColor);
   imageSettings.setVectorArrowOverlayUseDirectionColor(settings.m_vectorArrowOverlayUseDirectionColor);
   imageSettings.setVectorArrowOverlayLineThickness(settings.m_vectorArrowOverlayLineThickness);
+  imageSettings.setVectorArrowOverlayOpacity(settings.m_vectorArrowOverlayOpacity);
   imageSettings.setVectorArrowOverlayScaleByMagnitude(settings.m_vectorArrowOverlayScaleByMagnitude);
   imageSettings.setVectorArrowOverlayScaleFactor(settings.m_vectorArrowOverlayScaleFactor);
+  imageSettings.setVectorWarpedGridVisible(settings.m_vectorWarpedGridVisible);
+  imageSettings.setVectorWarpedGridOverlayOnImage(settings.m_vectorWarpedGridOverlayOnImage);
+  imageSettings.setVectorWarpedGridConvention(
+    fromSerializedVectorWarpedGridConvention(settings.m_vectorWarpedGridConvention));
+  imageSettings.setVectorWarpedGridPixelSpacing(settings.m_vectorWarpedGridPixelSpacing);
+  imageSettings.setVectorWarpedGridVoxelSpacing(settings.m_vectorWarpedGridVoxelSpacing);
+  imageSettings.setVectorWarpedGridMillimeterSpacing(settings.m_vectorWarpedGridMillimeterSpacing);
+  imageSettings.setVectorWarpedGridSpacingMode(
+    fromSerializedVectorArrowOverlaySpacingMode(settings.m_vectorWarpedGridSpacingMode));
+  imageSettings.setVectorWarpedGridLineThickness(settings.m_vectorWarpedGridLineThickness);
+  imageSettings.setVectorWarpedGridScaleFactor(settings.m_vectorWarpedGridScaleFactor);
+  imageSettings.setVectorWarpedGridForegroundColor(settings.m_vectorWarpedGridForegroundColor);
+  imageSettings.setVectorWarpedGridBackgroundColor(settings.m_vectorWarpedGridBackgroundColor);
+  imageSettings.setVectorPlanarProjectionSignedColors(settings.m_vectorPlanarProjectionSignedColors);
+  imageSettings.setVectorLogJacobianDeterminant(settings.m_vectorLogJacobianDeterminant);
   imageSettings.setIgnoreAlpha(settings.m_ignoreAlpha);
   imageSettings.setColorInterpolationMode(settings.m_colorInterpolationMode);
   const std::size_t numLevelComponents =

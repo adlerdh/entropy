@@ -22,7 +22,10 @@ namespace
 bool isVectorDerivativeProjection(ComponentProjectionMode mode)
 {
   return ComponentProjectionMode::VectorJacobianDeterminant == mode ||
-         ComponentProjectionMode::VectorDivergence == mode || ComponentProjectionMode::VectorCurlMagnitude == mode;
+         ComponentProjectionMode::VectorLogJacobianDeterminant == mode ||
+         ComponentProjectionMode::VectorGradientMagnitude == mode ||
+         ComponentProjectionMode::VectorDivergence == mode || ComponentProjectionMode::VectorCurlMagnitude == mode ||
+         ComponentProjectionMode::VectorLaplacianMagnitude == mode;
 }
 
 std::size_t linearIndex(const glm::uvec3& dims, uint32_t x, uint32_t y, uint32_t z)
@@ -74,6 +77,46 @@ double derivativeAt(const Image& image, uint32_t vectorComponent, uint32_t axis,
   return (sample(coordinate + 1u) - sample(coordinate - 1u)) / (2.0 * dx);
 }
 
+double
+secondDerivativeAt(const Image& image, uint32_t vectorComponent, uint32_t axis, uint32_t x, uint32_t y, uint32_t z)
+{
+  const glm::uvec3 dims = image.header().pixelDimensions();
+  const glm::vec3 spacing = image.header().spacing();
+
+  auto sample = [&](uint32_t coordinate) {
+    uint32_t xx = x;
+    uint32_t yy = y;
+    uint32_t zz = z;
+    if (0u == axis) {
+      xx = coordinate;
+    }
+    else if (1u == axis) {
+      yy = coordinate;
+    }
+    else {
+      zz = coordinate;
+    }
+    return vectorValueAt(image, vectorComponent, xx, yy, zz);
+  };
+
+  const uint32_t n = dims[axis];
+  if (n <= 2u) {
+    return 0.0;
+  }
+
+  const uint32_t coordinate = 0u == axis ? x : (1u == axis ? y : z);
+  const double dx = std::max(static_cast<double>(spacing[axis]), std::numeric_limits<double>::epsilon());
+
+  if (0u == coordinate) {
+    return (sample(2u) - 2.0 * sample(1u) + sample(0u)) / (dx * dx);
+  }
+  if (coordinate + 1u >= n) {
+    return (sample(n - 1u) - 2.0 * sample(n - 2u) + sample(n - 3u)) / (dx * dx);
+  }
+
+  return (sample(coordinate + 1u) - 2.0 * sample(coordinate) + sample(coordinate - 1u)) / (dx * dx);
+}
+
 entropy_expected::expected<std::vector<float>, std::string> createVectorDerivativeValues(
   const Image& image,
   ComponentProjectionMode mode)
@@ -117,12 +160,17 @@ std::optional<ComponentProjectionMode> componentProjectionFromRenderMode(Compone
       return ComponentProjectionMode::ComplexPhaseSignedRadians;
     case ComponentRenderMode::VectorJacobianDeterminant:
       return ComponentProjectionMode::VectorJacobianDeterminant;
+    case ComponentRenderMode::VectorGradientMagnitude:
+      return ComponentProjectionMode::VectorGradientMagnitude;
     case ComponentRenderMode::VectorDivergence:
       return ComponentProjectionMode::VectorDivergence;
     case ComponentRenderMode::VectorCurlMagnitude:
       return ComponentProjectionMode::VectorCurlMagnitude;
+    case ComponentRenderMode::VectorLaplacianMagnitude:
+      return ComponentProjectionMode::VectorLaplacianMagnitude;
     case ComponentRenderMode::VectorDirectionColor:
     case ComponentRenderMode::VectorSignedNormalProjection:
+    case ComponentRenderMode::VectorPlanarProjectionColor:
     case ComponentRenderMode::SingleComponent:
     case ComponentRenderMode::Color:
     case ComponentRenderMode::ComplexReal:
@@ -137,6 +185,12 @@ std::optional<ComponentProjectionMode> componentProjectionForImage(const Image& 
 {
   if (ComponentRenderMode::ComplexPhase == image.settings().componentRenderMode()) {
     return complexPhaseProjectionMode(image.settings().complexPhaseRange(), image.settings().complexPhaseUnit());
+  }
+  if (
+    ComponentRenderMode::VectorJacobianDeterminant == image.settings().componentRenderMode() &&
+    image.settings().vectorLogJacobianDeterminant())
+  {
+    return ComponentProjectionMode::VectorLogJacobianDeterminant;
   }
 
   return componentProjectionFromRenderMode(image.settings().componentRenderMode());
@@ -173,11 +227,17 @@ std::string componentProjectionModeName(ComponentProjectionMode mode)
     case ComponentProjectionMode::ComplexPhaseUnsignedDegrees:
       return "Phase [0, 360]";
     case ComponentProjectionMode::VectorJacobianDeterminant:
-      return "Jacobian determinant";
+      return "Deformation Jacobian determinant";
+    case ComponentProjectionMode::VectorLogJacobianDeterminant:
+      return "Log deformation Jacobian determinant";
+    case ComponentProjectionMode::VectorGradientMagnitude:
+      return "Gradient magnitude";
     case ComponentProjectionMode::VectorDivergence:
       return "Divergence";
     case ComponentProjectionMode::VectorCurlMagnitude:
       return "Curl magnitude";
+    case ComponentProjectionMode::VectorLaplacianMagnitude:
+      return "Laplacian magnitude";
   }
 
   return "Unknown";
@@ -195,8 +255,11 @@ bool isScalarComponentProjection(ComponentProjectionMode mode)
     case ComponentProjectionMode::ComplexPhaseSignedDegrees:
     case ComponentProjectionMode::ComplexPhaseUnsignedDegrees:
     case ComponentProjectionMode::VectorJacobianDeterminant:
+    case ComponentProjectionMode::VectorLogJacobianDeterminant:
+    case ComponentProjectionMode::VectorGradientMagnitude:
     case ComponentProjectionMode::VectorDivergence:
     case ComponentProjectionMode::VectorCurlMagnitude:
+    case ComponentProjectionMode::VectorLaplacianMagnitude:
       return true;
   }
 
@@ -224,8 +287,24 @@ vectorDerivativeProjectionValue(const Image& image, ComponentProjectionMode mode
 
   jacobian = jacobian * glm::transpose(glm::dmat3{image.header().directions()});
 
-  if (ComponentProjectionMode::VectorJacobianDeterminant == mode) {
-    return glm::determinant(glm::dmat3(1.0) + jacobian);
+  if (
+    ComponentProjectionMode::VectorJacobianDeterminant == mode ||
+    ComponentProjectionMode::VectorLogJacobianDeterminant == mode)
+  {
+    const double determinant = glm::determinant(glm::dmat3(1.0) + jacobian);
+    if (ComponentProjectionMode::VectorLogJacobianDeterminant == mode) {
+      return determinant > 0.0 ? std::log(determinant) : std::numeric_limits<double>::quiet_NaN();
+    }
+    return determinant;
+  }
+  if (ComponentProjectionMode::VectorGradientMagnitude == mode) {
+    double sumSquares = 0.0;
+    for (uint32_t column = 0; column < 3u; ++column) {
+      for (uint32_t row = 0; row < 3u; ++row) {
+        sumSquares += jacobian[column][row] * jacobian[column][row];
+      }
+    }
+    return std::sqrt(sumSquares);
   }
   if (ComponentProjectionMode::VectorDivergence == mode) {
     return jacobian[0][0] + jacobian[1][1] + jacobian[2][2];
@@ -236,6 +315,15 @@ vectorDerivativeProjectionValue(const Image& image, ComponentProjectionMode mode
       jacobian[2][0] - jacobian[0][2],
       jacobian[0][1] - jacobian[1][0]};
     return glm::length(curl);
+  }
+  if (ComponentProjectionMode::VectorLaplacianMagnitude == mode) {
+    glm::dvec3 laplacian(0.0);
+    for (uint32_t component = 0; component < 3u; ++component) {
+      for (uint32_t axis = 0; axis < 3u; ++axis) {
+        laplacian[component] += secondDerivativeAt(image, component, axis, voxel.x, voxel.y, voxel.z);
+      }
+    }
+    return glm::length(laplacian);
   }
 
   return std::nullopt;
@@ -288,13 +376,13 @@ std::string vectorFieldComponentLabel(uint32_t component, uint32_t componentMax)
 {
   std::string label = std::to_string(component) + " of " + std::to_string(componentMax);
   if (0u == component) {
-    label = "x (" + label + ")";
+    label += " (x)";
   }
   else if (1u == component) {
-    label = "y (" + label + ")";
+    label += " (y)";
   }
   else if (2u == component) {
-    label = "z (" + label + ")";
+    label += " (z)";
   }
   return label;
 }
@@ -473,8 +561,11 @@ entropy_expected::expected<Image, std::string> createComponentProjectionImage(
         break;
       }
       case ComponentProjectionMode::VectorJacobianDeterminant:
+      case ComponentProjectionMode::VectorLogJacobianDeterminant:
+      case ComponentProjectionMode::VectorGradientMagnitude:
       case ComponentProjectionMode::VectorDivergence:
       case ComponentProjectionMode::VectorCurlMagnitude:
+      case ComponentProjectionMode::VectorLaplacianMagnitude:
         break;
     }
   }

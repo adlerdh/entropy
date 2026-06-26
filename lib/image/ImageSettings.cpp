@@ -186,6 +186,16 @@ float ImageSettings::vectorArrowOverlayLineThickness() const
   return m_vectorArrowOverlayLineThickness;
 }
 
+void ImageSettings::setVectorArrowOverlayOpacity(float opacity)
+{
+  m_vectorArrowOverlayOpacity = std::clamp(opacity, 0.0f, 1.0f);
+}
+
+float ImageSettings::vectorArrowOverlayOpacity() const
+{
+  return m_vectorArrowOverlayOpacity;
+}
+
 void ImageSettings::setVectorArrowOverlayScaleByMagnitude(bool scaleByMagnitude)
 {
   m_vectorArrowOverlayScaleByMagnitude = scaleByMagnitude;
@@ -204,6 +214,136 @@ void ImageSettings::setVectorArrowOverlayScaleFactor(float scaleFactor)
 float ImageSettings::vectorArrowOverlayScaleFactor() const
 {
   return m_vectorArrowOverlayScaleFactor;
+}
+
+void ImageSettings::setVectorWarpedGridVisible(bool visible)
+{
+  m_vectorWarpedGridVisible = visible;
+}
+
+bool ImageSettings::vectorWarpedGridVisible() const
+{
+  return m_vectorWarpedGridVisible;
+}
+
+void ImageSettings::setVectorWarpedGridOverlayOnImage(bool overlayOnImage)
+{
+  m_vectorWarpedGridOverlayOnImage = overlayOnImage;
+}
+
+bool ImageSettings::vectorWarpedGridOverlayOnImage() const
+{
+  return m_vectorWarpedGridOverlayOnImage;
+}
+
+void ImageSettings::setVectorWarpedGridConvention(VectorWarpedGridConvention convention)
+{
+  m_vectorWarpedGridConvention = convention;
+}
+
+VectorWarpedGridConvention ImageSettings::vectorWarpedGridConvention() const
+{
+  return m_vectorWarpedGridConvention;
+}
+
+void ImageSettings::setVectorWarpedGridPixelSpacing(float spacingPx)
+{
+  m_vectorWarpedGridPixelSpacing = std::clamp(spacingPx, 1.0f, 1000.0f);
+}
+
+float ImageSettings::vectorWarpedGridPixelSpacing() const
+{
+  return m_vectorWarpedGridPixelSpacing;
+}
+
+void ImageSettings::setVectorWarpedGridVoxelSpacing(float spacingVoxels)
+{
+  m_vectorWarpedGridVoxelSpacing = std::clamp(spacingVoxels, 0.1f, 1000.0f);
+}
+
+float ImageSettings::vectorWarpedGridVoxelSpacing() const
+{
+  return m_vectorWarpedGridVoxelSpacing;
+}
+
+void ImageSettings::setVectorWarpedGridMillimeterSpacing(float spacingMm)
+{
+  m_vectorWarpedGridMillimeterSpacing = std::clamp(spacingMm, 0.1f, 1000.0f);
+}
+
+float ImageSettings::vectorWarpedGridMillimeterSpacing() const
+{
+  return m_vectorWarpedGridMillimeterSpacing;
+}
+
+void ImageSettings::setVectorWarpedGridSpacingMode(VectorArrowOverlaySpacingMode mode)
+{
+  m_vectorWarpedGridSpacingMode = mode;
+}
+
+VectorArrowOverlaySpacingMode ImageSettings::vectorWarpedGridSpacingMode() const
+{
+  return m_vectorWarpedGridSpacingMode;
+}
+
+void ImageSettings::setVectorWarpedGridLineThickness(float thicknessPx)
+{
+  m_vectorWarpedGridLineThickness = std::clamp(thicknessPx, 0.25f, 8.0f);
+}
+
+float ImageSettings::vectorWarpedGridLineThickness() const
+{
+  return m_vectorWarpedGridLineThickness;
+}
+
+void ImageSettings::setVectorWarpedGridScaleFactor(float scaleFactor)
+{
+  m_vectorWarpedGridScaleFactor = std::clamp(scaleFactor, 0.0f, 10.0f);
+}
+
+float ImageSettings::vectorWarpedGridScaleFactor() const
+{
+  return m_vectorWarpedGridScaleFactor;
+}
+
+void ImageSettings::setVectorWarpedGridForegroundColor(glm::vec4 color)
+{
+  m_vectorWarpedGridForegroundColor = glm::clamp(color, glm::vec4{0.0f}, glm::vec4{1.0f});
+}
+
+const glm::vec4& ImageSettings::vectorWarpedGridForegroundColor() const
+{
+  return m_vectorWarpedGridForegroundColor;
+}
+
+void ImageSettings::setVectorWarpedGridBackgroundColor(glm::vec4 color)
+{
+  m_vectorWarpedGridBackgroundColor = glm::clamp(color, glm::vec4{0.0f}, glm::vec4{1.0f});
+}
+
+const glm::vec4& ImageSettings::vectorWarpedGridBackgroundColor() const
+{
+  return m_vectorWarpedGridBackgroundColor;
+}
+
+void ImageSettings::setVectorPlanarProjectionSignedColors(bool signedColors)
+{
+  m_vectorPlanarProjectionSignedColors = signedColors;
+}
+
+bool ImageSettings::vectorPlanarProjectionSignedColors() const
+{
+  return m_vectorPlanarProjectionSignedColors;
+}
+
+void ImageSettings::setVectorLogJacobianDeterminant(bool logJacobian)
+{
+  m_vectorLogJacobianDeterminant = logJacobian;
+}
+
+bool ImageSettings::vectorLogJacobianDeterminant() const
+{
+  return m_vectorLogJacobianDeterminant;
 }
 
 void ImageSettings::setComplexPhaseUnit(ComplexPhaseUnit unit)

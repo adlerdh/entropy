@@ -51,6 +51,19 @@ std::pair<double, double> componentRange(const ComponentType& componentType);
 std::pair<glm::vec3, glm::vec3> computeWorldMinMaxCornersOfImage(const Image& image);
 
 /**
+ * @brief Count image axes with more than one pixel sample.
+ * @param header Image header to inspect.
+ * @return Number of non-singleton pixel dimensions.
+ */
+std::size_t countNonSingletonPixelDimensions(const ImageHeader& header);
+
+/**
+ * @brief Return true when the image is linear or planar in Entropy's 3D pixel model.
+ * @param header Image header to inspect.
+ */
+bool isLinearOrPlanarImage(const ImageHeader& header);
+
+/**
  * @brief Count image slices along a world-space view direction.
  * @param image Image geometry to inspect.
  * @param worldDir View normal in world coordinates.

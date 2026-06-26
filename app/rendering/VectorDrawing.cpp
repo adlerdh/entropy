@@ -1155,6 +1155,7 @@ void drawVectorFieldArrows(
     const float spacingPx =
       std::clamp(vectorArrowSpacingPixels(settings, windowVP, view, *image, worldCrosshairs), 4.0f, 512.0f);
     const float lineThickness = settings.vectorArrowOverlayLineThickness();
+    const float arrowOpacity = settings.vectorArrowOverlayOpacity();
     const float scaleFactor = settings.vectorArrowOverlayScaleFactor();
     const bool scaleByMagnitude = settings.vectorArrowOverlayScaleByMagnitude();
     const bool useDirectionColor = settings.vectorArrowOverlayUseDirectionColor();
@@ -1231,7 +1232,7 @@ void drawVectorFieldArrows(
         nvg,
         samplePos,
         samplePos + screenDelta,
-        nvgRGBAf(arrowColor.r, arrowColor.g, arrowColor.b, 0.86f * settings.globalOpacity()),
+        nvgRGBAf(arrowColor.r, arrowColor.g, arrowColor.b, 0.86f * arrowOpacity * settings.globalOpacity()),
         lineThickness);
     };
 

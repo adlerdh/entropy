@@ -618,6 +618,8 @@ set(entropy_SHADERS
   "${entropy_APP_DIR}/rendering/shaders/ImageColor.fs"
   "${entropy_APP_DIR}/rendering/shaders/VectorDirectionColor.fs"
   "${entropy_APP_DIR}/rendering/shaders/VectorSignedNormalProjection.fs"
+  "${entropy_APP_DIR}/rendering/shaders/VectorPlanarProjectionColor.fs"
+  "${entropy_APP_DIR}/rendering/shaders/VectorWarpedGrid.fs"
   "${entropy_APP_DIR}/rendering/shaders/IsoContour.fs"
   "${entropy_APP_DIR}/rendering/shaders/Metric.vs"
   "${entropy_APP_DIR}/rendering/shaders/Overlay.fs"
@@ -901,6 +903,7 @@ if(BUILD_TESTING)
   add_subdirectory(app/logic/sync/test)
   add_subdirectory(app/rendering/test)
   add_subdirectory(app/windowing/test)
+  add_subdirectory(test/image_generator)
   add_subdirectory(test/warp_field_generator)
 endif()
 

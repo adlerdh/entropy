@@ -1,0 +1,13 @@
+{
+  "output": "vector_4comp_3d.nrrd",
+  "pixel_kind": "vector",
+  "component_type": "float",
+  "components": 4,
+  "size": [32, 24, 16],
+  "spacing": [1.0, 1.25, 2.0],
+  "origin": [-16.0, -15.0, -16.0],
+  "pattern": "component_ramp",
+  "metadata": {
+    "entropy_example": "4-component image for RGBA-style rendering"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "output": "scalar_2d.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "size": [64, 48],
+  "spacing": [0.5, 0.75],
+  "origin": [-16.0, -18.0],
+  "pattern": "checker",
+  "metadata": {
+    "entropy_example": "scalar 2D"
+  }
+}
