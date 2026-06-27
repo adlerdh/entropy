@@ -478,6 +478,14 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
     }
   }
 
+  for (const auto& imageUid : m_data.imageUidsOrdered()) {
+    const Image* image = m_data.warpField(imageUid);
+    if (image && image->header().fileName() == fileName) {
+      spdlog::info("Using already-loaded image {} from {} as a deformation field", imageUid, fileName);
+      return {imageUid, false};
+    }
+  }
+
   Image def(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::InterleavedImage);
 
   if (def.header().numComponentsPerPixel() < 3) {

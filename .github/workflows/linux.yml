@@ -128,16 +128,16 @@ jobs:
         run: cmake --preset superbuild-debug -D Entropy_USE_CCACHE=OFF
 
       - name: Build Debug SuperBuild
-        run: cmake --build --preset superbuild-debug --parallel
+        run: cmake --build --preset superbuild-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Debug app
         run: cmake --preset app-debug -D Entropy_USE_CCACHE=OFF
 
       - name: Build Debug app
-        run: cmake --build --preset app-debug --parallel
+        run: cmake --build --preset app-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Run Debug tests
-        run: ctest --test-dir build-debug --parallel --output-on-failure
+        run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
   coverage:
     name: Coverage Report
@@ -221,19 +221,19 @@ jobs:
         run: cmake --preset superbuild-coverage
 
       - name: Build Coverage SuperBuild
-        run: cmake --build --preset superbuild-coverage --parallel
+        run: cmake --build --preset superbuild-coverage --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Coverage app
         run: cmake --preset app-coverage
 
       - name: Build Coverage app
-        run: cmake --build --preset app-coverage --parallel
+        run: cmake --build --preset app-coverage --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Generate coverage summary
-        run: cmake --build --preset coverage --parallel
+        run: cmake --build --preset coverage --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Generate HTML coverage
-        run: cmake --build --preset coverage-html --parallel
+        run: cmake --build --preset coverage-html --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Upload coverage HTML
         uses: actions/upload-artifact@v7
@@ -329,19 +329,19 @@ jobs:
         run: cmake --preset superbuild-release
 
       - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel
+        run: cmake --build --preset superbuild-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Release app
         run: cmake --preset app-release
 
       - name: Build Release app
-        run: cmake --build --preset app-release --parallel
+        run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Run Release tests
-        run: ctest --test-dir build-release --parallel --output-on-failure
+        run: ctest --test-dir build-release --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Build DEB and portable TAR.GZ
-        run: cmake --build --preset package-release --parallel
+        run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Inspect DEB package
         run: |

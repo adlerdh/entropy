@@ -2984,9 +2984,14 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
     return;
   }
 
-  GLShaderProgram& P = *m_shaderPrograms.at(ShaderProgramType::SegmentationNearest);
+  const std::optional<uuid> deformationUid = activeRenderableDeformationUid(*imageUid);
+  const bool renderWarped = deformationUid.has_value();
+  GLShaderProgram& P = *m_shaderPrograms.at(
+    renderWarped ? ShaderProgramType::SegmentationNearestWarped : ShaderProgramType::SegmentationNearest);
   preview.texture->bind(msk_segTexSampler.index);
   const auto boundBufferTextures = bindSegBufferTextures(imgSegPair);
+  const auto boundDeformationTextures =
+    renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
 
   P.use();
   {
@@ -3000,6 +3005,10 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
     P.setUniform("u_quadrants", R.m_quadrants);
     P.setUniform("u_showFix", false);
     P.setUniform("u_renderMode", static_cast<int>(ViewRenderMode::Image));
+
+    if (renderWarped) {
+      setDeformationUniforms(P, *imageUid, *deformationUid, preview.texture_T_world);
+    }
 
     const float fillOpacity =
       (preview.allowFill && BrushPreviewStyle::OutlineAndFill == m_appData.settings().brushPreviewStyle())
@@ -3022,6 +3031,7 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
   }
   P.stopUse();
 
+  unbindTextures(boundDeformationTextures);
   unbindBufferTextures(boundBufferTextures);
   preview.texture->unbind();
 }

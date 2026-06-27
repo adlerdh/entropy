@@ -52,6 +52,14 @@ $$UINT_TEXTURE_LOOKUP_FUNCTION$$
 /// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
 $$SAMPLE_TEX_COORD_FUNCTION$$
 
+/**
+ * @brief Look up a segmentation label, treating samples outside the image domain as background.
+ */
+uint safeSegLookup(vec3 texCoord)
+{
+  return isInsideTexture(texCoord) ? uintTextureLookup(u_segTex, texCoord) : 0u;
+}
+
 /// Look up segmentation texture label value (after mapping to GL texture units):
 /// uint getSegValue(vec3 texOffset, out float opacity);
 $$GET_SEG_VALUE_FUNCTION$$

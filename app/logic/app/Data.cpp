@@ -532,9 +532,15 @@ std::optional<uuid> AppData::addDef(Image def)
     return std::nullopt;
   }
 
+  std::lock_guard<std::mutex> lock(m_componentDataMutex);
+
+  const std::size_t numComps = def.header().numComponentsPerPixel();
   auto uid = generateRandomUuid();
-  m_defs.emplace(uid, std::move(def));
+  m_images.emplace(uid, std::move(def));
+  m_imageUidsOrdered.push_back(uid);
   m_defUidsOrdered.push_back(uid);
+  m_imageToComponentData[uid] = std::vector<ComponentData>(numComps);
+
   return uid;
 }
 
@@ -701,6 +707,10 @@ bool AppData::removeImage(const uuid& imageUid)
 
   m_images.erase(imageUid);
   m_imageUidsOrdered.erase(imageOrderIt);
+  m_defs.erase(imageUid);
+  m_defUidsOrdered.erase(
+    std::remove(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), imageUid),
+    std::end(m_defUidsOrdered));
   removeWarpReferences(imageUid);
 
   if (const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUid);
@@ -852,10 +862,6 @@ bool AppData::removeDef(const uuid& defUid)
     // Remove the deformation
     m_defs.erase(defMapIt);
   }
-  else {
-    // This deformation does not exist
-    return false;
-  }
 
   auto defVecIt = std::find(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), defUid);
   if (std::end(m_defUidsOrdered) != defVecIt) {
@@ -863,6 +869,16 @@ bool AppData::removeDef(const uuid& defUid)
   }
   else {
     return false;
+  }
+
+  if (const auto imageIt = std::find(std::begin(m_imageUidsOrdered), std::end(m_imageUidsOrdered), defUid);
+      std::end(m_imageUidsOrdered) != imageIt)
+  {
+    m_images.erase(defUid);
+    m_imageUidsOrdered.erase(imageIt);
+    m_imageToComponentData.erase(defUid);
+    m_renderData.m_imageTextures.erase(defUid);
+    m_renderData.m_uniforms.erase(defUid);
   }
 
   // Remove all image warp assignments that reference this field.
@@ -1084,6 +1100,11 @@ const Image* AppData::def(const uuid& defUid) const
 {
   auto it = m_defs.find(defUid);
   if (std::end(m_defs) != it) return &it->second;
+
+  if (std::find(std::begin(m_defUidsOrdered), std::end(m_defUidsOrdered), defUid) != std::end(m_defUidsOrdered)) {
+    return image(defUid);
+  }
+
   return nullptr;
 }
 
@@ -1565,7 +1586,7 @@ std::size_t AppData::numSegs() const
 }
 std::size_t AppData::numDefs() const
 {
-  return m_defs.size();
+  return m_defUidsOrdered.size();
 }
 std::size_t AppData::numImageColorMaps() const
 {

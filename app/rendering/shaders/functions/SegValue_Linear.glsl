@@ -38,7 +38,11 @@ uint getSegValue(vec3 texOffset, out float opacity)
 {
   opacity = 1.0;
 
-  vec3 baseTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
+  vec3 baseTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos) + texOffset;
+  if (!isInsideTexture(baseTc)) {
+    return 0u;
+  }
+
   vec3 baseVoxCoord = baseTc * vec3(textureSize(u_segTex, 0));
   vec3 c = floor(baseVoxCoord);
   vec3 d = pow(vec3(textureSize(u_segTex, 0)), vec3(-1));
@@ -48,11 +52,11 @@ uint getSegValue(vec3 texOffset, out float opacity)
 
   uint neighCenterLabels[8];
   for (int i = 0; i < 8; ++i) {
-    neighCenterLabels[i] = uintTextureLookup(u_segTex, t + texOffset + neigh[i] * d);
+    neighCenterLabels[i] = safeSegLookup(t + neigh[i] * d);
   }
 
-  vec3 fracPart = baseVoxCoord + texOffset * vec3(textureSize(u_segTex, 0)) - c; // fractional part
-  vec3 w[2] = vec3[2](vec3(1.0) - fracPart, fracPart);                           // interpolation weights
+  vec3 fracPart = baseVoxCoord - c;                    // fractional part
+  vec3 w[2] = vec3[2](vec3(1.0) - fracPart, fracPart); // interpolation weights
 
   // float segEdgeWidth = 0.02;
   float maxInterp = 0.0;
@@ -67,7 +71,7 @@ uint getSegValue(vec3 texOffset, out float opacity)
     vec3 texPos = row * u_texSamplingDirsForSmoothSeg[0] + col * u_texSamplingDirsForSmoothSeg[1];
 
     // Segmentation value of neighbor at (row, col) offset
-    uint label = uintTextureLookup(u_segTex, baseTc + texPos);
+    uint label = safeSegLookup(baseTc + texPos);
 
     float interp = 0.0;
     for (int j = 0; j <= 7; ++j) {

@@ -1,6 +1,7 @@
 #include "EntropyApp.h"
 
 #include "logic/app/DataHelper.h"
+#include "rendering/TextureSetup.h"
 
 #include <utility>
 
@@ -54,7 +55,9 @@ void EntropyApp::setCallbacks()
   };
   imguiCallbacks.project.loadDeformationField = [this](const fs::path& fileName) -> std::optional<uuids::uuid> {
     const auto [defUid, loaded] = loadDeformationField(fileName);
-    (void)loaded;
+    if (defUid && loaded) {
+      createImageTextures(m_data, std::vector<uuids::uuid>{*defUid});
+    }
     return defUid;
   };
   imguiCallbacks.project.openProjectFile = [this](const fs::path& fileName) {
