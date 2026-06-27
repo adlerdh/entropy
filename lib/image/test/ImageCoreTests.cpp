@@ -105,6 +105,26 @@ Image makeRawImage()
     buffers);
 }
 
+Image makeSparseBinaryImage()
+{
+  const glm::uvec3 dims{100, 100, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 1, dims);
+  ioInfo.m_sizeInfo.m_imageSizeInPixels = static_cast<std::size_t>(dims.x) * dims.y * dims.z;
+  ioInfo.m_sizeInfo.m_imageSizeInComponents = ioInfo.m_sizeInfo.m_imageSizeInPixels;
+  ioInfo.m_sizeInfo.m_imageSizeInBytes = ioInfo.m_sizeInfo.m_imageSizeInComponents * sizeof(float);
+  ImageHeader header(ioInfo, ioInfo, false);
+
+  std::vector<float> values(ioInfo.m_sizeInfo.m_imageSizeInPixels, 0.0f);
+  values.at(values.size() / 2) = 100.0f;
+  std::vector<const void*> buffers{values.data()};
+  return Image(
+    header,
+    "sparse-binary",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+}
+
 Image makeThreeComponentImage()
 {
   const glm::uvec3 dims{2, 2, 1};
@@ -714,6 +734,17 @@ TEST_CASE("Raw Image construction computes values, stats, and transformations", 
   CHECK(image.header().spacing() == glm::vec3(1.0f));
   image.setUseZeroPixelOrigin(true);
   CHECK(image.header().origin() == glm::vec3(0.0f));
+}
+
+TEST_CASE("Raw sparse binary images initialize full-range window and level", "[image][raw][settings]")
+{
+  Image image = makeSparseBinaryImage();
+
+  CHECK(image.settings().componentStatistics(0).onlineStats.min == Catch::Approx(0.0));
+  CHECK(image.settings().componentStatistics(0).onlineStats.max == Catch::Approx(100.0));
+  CHECK(image.settings().windowWidth(0) == Catch::Approx(100.0));
+  CHECK(image.settings().windowCenter(0) == Catch::Approx(50.0));
+  CHECK(image.settings().windowValuesLowHigh(0) == std::pair<double, double>{0.0, 100.0});
 }
 
 TEST_CASE("Raw time-series vector images sample the requested time frame", "[image][raw][time][vector]")

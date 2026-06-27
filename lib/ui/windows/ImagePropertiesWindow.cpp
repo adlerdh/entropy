@@ -7,9 +7,12 @@
 #include "image/Image.h"
 
 #include "logic/app/Data.h"
+#include "logic/app/StackTrace.h"
 
 #include <IconsForkAwesome.h>
 #include <imgui/imgui.h>
+
+#include <spdlog/spdlog.h>
 
 #include <string>
 
@@ -34,6 +37,7 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuid& imageUid)>& updateImageUniforms,
   const std::function<void(const uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
+  const std::function<std::optional<uuid>(const std::filesystem::path& fileName)>& loadDeformationField,
   const std::function<bool(const uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const std::function<void(const uuid& imageUid, ComponentProjectionMode mode)>& requestComponentProjectionImage,
   const std::function<void(const uuid& imageUid)>& requestSetReferenceImage,
@@ -72,31 +76,43 @@ void renderImagePropertiesWindow(
       if (Image* image = appData.image(imageUid)) {
         const bool isActiveImage = activeUid && (imageUid == *activeUid);
 
-        renderImageHeader(
-          appData,
-          appData.guiData(),
-          imageUid,
-          imageIndex++,
-          image,
-          isActiveImage,
-          appData.numImages(),
-          updateAllImageUniforms,
-          [&imageUid, updateImageUniforms]() { updateImageUniforms(imageUid); },
-          [&imageUid, updateImageInterpolationMode]() { updateImageInterpolationMode(imageUid); },
-          [updateImageColorMapInterpolationMode](std::size_t cmapIndex) {
-            updateImageColorMapInterpolationMode(cmapIndex);
-          },
-          getNumImageColorMaps,
-          getImageColorMap,
-          moveImageBackward,
-          moveImageForward,
-          moveImageToBack,
-          moveImageToFront,
-          setLockManualImageTransformation,
-          requestComponentProjectionImage,
-          requestSetReferenceImage,
-          requestRemoveImage,
-          recenterAllViews);
+        try {
+          renderImageHeader(
+            appData,
+            appData.guiData(),
+            imageUid,
+            imageIndex++,
+            image,
+            isActiveImage,
+            appData.numImages(),
+            updateAllImageUniforms,
+            [&imageUid, updateImageUniforms]() { updateImageUniforms(imageUid); },
+            [&imageUid, updateImageInterpolationMode]() { updateImageInterpolationMode(imageUid); },
+            [updateImageColorMapInterpolationMode](std::size_t cmapIndex) {
+              updateImageColorMapInterpolationMode(cmapIndex);
+            },
+            getNumImageColorMaps,
+            getImageColorMap,
+            loadDeformationField,
+            moveImageBackward,
+            moveImageForward,
+            moveImageToBack,
+            moveImageToFront,
+            setLockManualImageTransformation,
+            requestComponentProjectionImage,
+            requestSetReferenceImage,
+            requestRemoveImage,
+            recenterAllViews);
+        }
+        catch (const std::exception& e) {
+          spdlog::error(
+            "Exception while rendering image header for image {} ('{}'): {}\n{}",
+            imageUid,
+            image->settings().displayName(),
+            e.what(),
+            stack_trace::current(1));
+          throw;
+        }
       }
     }
 

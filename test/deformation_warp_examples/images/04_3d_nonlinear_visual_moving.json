@@ -1,0 +1,15 @@
+{
+  "output": "04_3d_nonlinear_visual_moving.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "size": [128, 128, 128],
+  "spacing": [1.25, 1.25, 1.25],
+  "origin": [-80.0, -80.0, -80.0],
+  "pattern": "checker",
+  "amplitude": 80.0,
+  "metadata": {
+    "entropy_deformation_pair": "04_3d_nonlinear_visual",
+    "role": "moving",
+    "note": "Visual stress pair; not exact resampled ground truth."
+  }
+}

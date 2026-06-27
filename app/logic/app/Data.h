@@ -221,6 +221,18 @@ public:
   const Image* def(const uuid& defUid) const;
   Image* def(const uuid& defUid);
 
+  /**
+   * @brief Resolve a UID that can be used as a warp field.
+   *
+   * Dedicated deformation fields are accepted, as are normal loaded images that
+   * can be interpreted as 3-component vector fields.
+   *
+   * @param warpUid Candidate warp-field UID.
+   * @return Warp-field image, or nullptr when the UID cannot be used as a warp.
+   */
+  const Image* warpField(const uuid& warpUid) const;
+  Image* warpField(const uuid& warpUid);
+
   /// Get the distance maps (keyed by isosurface value) associated with an image component
   const std::map<double, Image>& distanceMaps(const uuid& imageUid, ComponentIndexType component) const;
 
@@ -319,6 +331,13 @@ public:
   uuid_range_t imageUidsOrdered() const;
   uuid_range_t segUidsOrdered() const;
   uuid_range_t defUidsOrdered() const;
+  /**
+   * @brief Return all loaded images that can be selected as warp fields.
+   *
+   * Dedicated deformation fields are listed first, followed by ordinary loaded
+   * 3-component vector-field images.
+   */
+  uuid_range_t warpFieldCandidateUidsOrdered() const;
   uuid_range_t imageColorMapUidsOrdered() const;
   uuid_range_t labelTableUidsOrdered() const;
   uuid_range_t landmarkGroupUidsOrdered() const;
@@ -329,17 +348,71 @@ public:
   bool assignActiveSegUidToImage(const uuid& imageUid, const uuid& activeSegUid);
   std::optional<uuid> imageToActiveSegUid(const uuid& imageUid) const;
 
-  /// Set/get the active deformation field for an image
-  bool assignActiveDefUidToImage(const uuid& imageUid, const uuid& activeDefUid);
-  std::optional<uuid> imageToActiveDefUid(const uuid& imageUid) const;
+  /**
+   * @brief Assign the active inverse warp for an image.
+   *
+   * @param imageUid Moving image that will be sampled through the warp.
+   * @param activeWarpUid Inverse warp UID.
+   * @return True when both image and warp field exist and the field is usable.
+   */
+  bool assignActiveInverseWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid);
+
+  /** @brief Clear the active inverse warp for an image. */
+  void clearActiveInverseWarpUidForImage(const uuid& imageUid);
+
+  /**
+   * @brief Return the active inverse warp for an image.
+   *
+   * @param imageUid Image UID.
+   * @return Active inverse warp UID, or std::nullopt when none is assigned.
+   */
+  std::optional<uuid> imageToActiveInverseWarpUid(const uuid& imageUid) const;
+
+  /**
+   * @brief Assign the active forward warp for an image.
+   *
+   * @param imageUid Image whose forward warp is being assigned.
+   * @param activeWarpUid Forward warp UID.
+   * @return True when both image and warp field exist and the field is usable.
+   */
+  bool assignActiveForwardWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid);
+
+  /** @brief Clear the active forward warp for an image. */
+  void clearActiveForwardWarpUidForImage(const uuid& imageUid);
+
+  /**
+   * @brief Return the active forward warp for an image.
+   *
+   * @param imageUid Image UID.
+   * @return Active forward warp UID, or std::nullopt when none is assigned.
+   */
+  std::optional<uuid> imageToActiveForwardWarpUid(const uuid& imageUid) const;
 
   /// Assign a segmentation to an image.
   /// Makes it the active segmentation if it is the first one.
   bool assignSegUidToImage(const uuid& imageUid, const uuid& segUid);
 
-  /// Assign a deformation field to an image.
-  /// Makes it the active deformation field if it is the first one.
-  bool assignDefUidToImage(const uuid& imageUid, const uuid& defUid);
+  /**
+   * @brief Add an inverse warp to an image.
+   *
+   * Makes the field active when it is the first inverse warp assigned to the image.
+   *
+   * @param imageUid Image UID.
+   * @param warpUid Inverse warp UID.
+   * @return True when the field was assigned.
+   */
+  bool assignInverseWarpUidToImage(const uuid& imageUid, const uuid& warpUid);
+
+  /**
+   * @brief Add a forward warp to an image.
+   *
+   * Assigns the field as the active forward warp without changing the active inverse warp.
+   *
+   * @param imageUid Image UID.
+   * @param warpUid Forward warp UID.
+   * @return True when the field was assigned.
+   */
+  bool assignForwardWarpUidToImage(const uuid& imageUid, const uuid& warpUid);
 
   /// Get all segmentations for an image
   std::vector<uuid> imageToSegUids(const uuid& imageUid) const;
@@ -440,6 +513,12 @@ private:
 
   void loadImageColorMaps();
 
+  /**
+   * @brief Remove a warp field UID from all image assignments.
+   * @param warpUid Warp field UID to remove.
+   */
+  void removeWarpReferences(const uuid& warpUid);
+
   /// @todo Put into EntropyApp
   AppSettings m_settings; //!< Application settings
   AppState m_state;       //!< Application state
@@ -492,8 +571,11 @@ private:
   /// Map of image to its deformation fields
   std::unordered_map<uuid, std::vector<uuid> > m_imageToDefs;
 
-  /// Map of image to its active deformation field
-  std::unordered_map<uuid, uuid> m_imageToActiveDef;
+  /// Map of image to the active inverse warp used for image sampling
+  std::unordered_map<uuid, uuid> m_imageToActiveInverseWarp;
+
+  /// Map of image to the active forward warp used for landmarks and annotations
+  std::unordered_map<uuid, uuid> m_imageToActiveForwardWarp;
 
   /// Map of image to its landmark groups
   std::unordered_map<uuid, std::vector<uuid> > m_imageToLandmarkGroups;

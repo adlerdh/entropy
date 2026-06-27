@@ -10,6 +10,7 @@ in VS_OUT
 {
   vec3 v_texCoord;
   vec3 v_voxCoord;
+  vec3 v_worldPos;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 }
@@ -47,6 +48,9 @@ $$HELPER_FUNCTIONS$$
 
 /// float uintTextureLookup(sampler3D texture, vec3 texCoord);
 $$UINT_TEXTURE_LOOKUP_FUNCTION$$
+
+/// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
+$$SAMPLE_TEX_COORD_FUNCTION$$
 
 /// Look up segmentation texture label value (after mapping to GL texture units):
 /// uint getSegValue(vec3 texOffset, out float opacity);
@@ -89,7 +93,7 @@ void main()
 
   float interpOpacity = 1.0;
   uint seg = getSegValue(vec3(0, 0, 0), interpOpacity);
-  float mask = float(isInsideTexture(fs_in.v_texCoord));
+  float mask = float(isInsideTexture(sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos)));
   float overrideMask = u_useSegColorOverride ? float(seg != uint(0)) : 1.0;
   float alpha = u_segOpacity * interpOpacity * getSegInteriorAlpha(seg) * mask * overrideMask;
 

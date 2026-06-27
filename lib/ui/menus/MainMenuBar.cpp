@@ -96,6 +96,28 @@ void addSegmentation(const MainMenuBarCallbacks& callbacks)
   }
 }
 
+void loadInverseWarpForActiveImage(const MainMenuBarCallbacks& callbacks)
+{
+  if (!callbacks.canLoadDeformationFieldForActiveImage || !callbacks.loadInverseWarpForActiveImage) {
+    return;
+  }
+
+  if (const auto selectedFile = native_dialog::openFile(native_dialog::imageFilters())) {
+    callbacks.loadInverseWarpForActiveImage(*selectedFile);
+  }
+}
+
+void loadForwardWarpForActiveImage(const MainMenuBarCallbacks& callbacks)
+{
+  if (!callbacks.canLoadDeformationFieldForActiveImage || !callbacks.loadForwardWarpForActiveImage) {
+    return;
+  }
+
+  if (const auto selectedFile = native_dialog::openFile(native_dialog::imageFilters())) {
+    callbacks.loadForwardWarpForActiveImage(*selectedFile);
+  }
+}
+
 void saveProject(const MainMenuBarCallbacks& callbacks)
 {
   if (!callbacks.canSaveProject) {
@@ -285,14 +307,26 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Move Image to Back", MainMenuAction::MoveActiveImageToBack);
   actionMenuItem(callbacks, "Move Image to Front", MainMenuAction::MoveActiveImageToFront);
   ImGui::Separator();
-  actionMenuItem(callbacks, "Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
-  actionMenuItem(callbacks, "Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
-  actionMenuItem(callbacks, "Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
-  actionMenuItem(
-    callbacks,
-    "Save Initial + Manual Transformation...",
-    MainMenuAction::SaveActiveImageInitialAndManualTransformation);
-  ImGui::Separator();
+  if (ImGui::BeginMenu("Affine transformations", callbacks.canAddImage)) {
+    actionMenuItem(callbacks, "Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
+    actionMenuItem(callbacks, "Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
+    actionMenuItem(callbacks, "Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
+    actionMenuItem(
+      callbacks,
+      "Save Initial + Manual Transformation...",
+      MainMenuAction::SaveActiveImageInitialAndManualTransformation);
+    ImGui::EndMenu();
+  }
+  if (ImGui::BeginMenu("Deformation fields", callbacks.canAddImage)) {
+    if (ImGui::MenuItem("Load inverse warp...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage)) {
+      loadInverseWarpForActiveImage(callbacks);
+    }
+    if (ImGui::MenuItem("Load forward warp...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage)) {
+      loadForwardWarpForActiveImage(callbacks);
+    }
+    actionMenuItem(callbacks, "Apply warp", MainMenuAction::ToggleApplyActiveImageWarp);
+    ImGui::EndMenu();
+  }
   if (ImGui::BeginMenu("Time Series", actionEnabled(callbacks, MainMenuAction::ToggleGlobalTimeControls))) {
     actionMenuItem(callbacks, "Show Time Controls", MainMenuAction::ToggleGlobalTimeControls);
     ImGui::Separator();
@@ -304,7 +338,6 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     actionMenuItem(callbacks, "Last Frame", MainMenuAction::LastTimePoint);
     ImGui::EndMenu();
   }
-  ImGui::Separator();
   if (ImGui::BeginMenu("Isosurfaces", callbacks.canAddImage)) {
     actionMenuItem(callbacks, "Show Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
     ImGui::Separator();

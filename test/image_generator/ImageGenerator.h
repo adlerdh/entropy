@@ -35,7 +35,8 @@ enum class Pattern
   PulsingGaussian,
   TwoMovingGaussians,
   RotatingWave,
-  TimeVaryingWarpField
+  TimeVaryingWarpField,
+  Sphere
 };
 
 /**
@@ -54,6 +55,7 @@ struct ImageSpec
   Pattern pattern = Pattern::Ramp;
   double amplitude = 100.0;
   double offset = 0.0;
+  double sphereRadius = 10.0;
   std::map<std::string, std::string> metadata;
 };
 

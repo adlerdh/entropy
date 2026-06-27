@@ -6,6 +6,7 @@
 #include "ui/ImageExport.h"
 #include "ui/ImGuiCustomControls.h"
 #include "ui/NativeFileDialogs.h"
+#include "ui/dialogs/NativeMessageDialogs.h"
 #include "ui/widgets/Widgets.h"
 #include "ui/widgets/ImageHistogram.h"
 
@@ -28,6 +29,7 @@
 
 #include <IconsForkAwesome.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/epsilon.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -46,6 +48,7 @@
 #include <cctype>
 #include <cstdint>
 #include <iomanip>
+#include <limits>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -62,9 +65,155 @@ using namespace entropy::ui::headers;
 
 namespace
 {
+struct WorldAabb
+{
+  glm::vec3 min{std::numeric_limits<float>::max()};
+  glm::vec3 max{std::numeric_limits<float>::lowest()};
+};
+
 constexpr double k_minTimePlaybackSpeed = 0.1;
 constexpr double k_minTimePlaybackFramesPerSecond = 1.0;
 constexpr double k_maxTimePlaybackFramesPerSecond = 120.0;
+constexpr float k_warpStrengthFineSliderFraction = 0.75f;
+constexpr float k_warpStrengthFineMax = 1.0f;
+constexpr float k_warpStrengthMax = 4.0f;
+
+float warpStrengthToSlider(float strength)
+{
+  strength = std::clamp(strength, 0.0f, k_warpStrengthMax);
+  if (strength <= k_warpStrengthFineMax) {
+    return k_warpStrengthFineSliderFraction * strength / k_warpStrengthFineMax;
+  }
+  return k_warpStrengthFineSliderFraction +
+         ((strength - k_warpStrengthFineMax) / (k_warpStrengthMax - k_warpStrengthFineMax)) *
+           (1.0f - k_warpStrengthFineSliderFraction);
+}
+
+float sliderToWarpStrength(float slider)
+{
+  slider = std::clamp(slider, 0.0f, 1.0f);
+  if (slider <= k_warpStrengthFineSliderFraction) {
+    return slider * k_warpStrengthFineMax / k_warpStrengthFineSliderFraction;
+  }
+  return k_warpStrengthFineMax +
+         ((slider - k_warpStrengthFineSliderFraction) / (1.0f - k_warpStrengthFineSliderFraction)) *
+           (k_warpStrengthMax - k_warpStrengthFineMax);
+}
+
+std::string warpStrengthPreview(float strength)
+{
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(strength < 1.0f ? 3 : 2) << strength << "x";
+  return stream.str();
+}
+
+bool warpStrengthSlider(float* strength)
+{
+  float slider = warpStrengthToSlider(*strength);
+  const std::string preview = warpStrengthPreview(*strength);
+  if (ImGui::SliderFloat("Strength", &slider, 0.0f, 1.0f, preview.c_str())) {
+    *strength = sliderToWarpStrength(slider);
+    return true;
+  }
+  return false;
+}
+
+WorldAabb imageWorldAabb(const Image& image)
+{
+  WorldAabb box;
+  const glm::mat4 world_T_subject = image.transformations().worldDef_T_subject();
+  for (const glm::vec3& corner : image.header().subjectBBoxCorners()) {
+    const glm::vec3 worldCorner{world_T_subject * glm::vec4{corner, 1.0f}};
+    box.min = glm::min(box.min, worldCorner);
+    box.max = glm::max(box.max, worldCorner);
+  }
+  return box;
+}
+
+bool worldAabbContains(const WorldAabb& domain, const WorldAabb& target, float tolerance)
+{
+  return glm::all(glm::lessThanEqual(domain.min, target.min + glm::vec3{tolerance})) &&
+         glm::all(glm::greaterThanEqual(domain.max, target.max - glm::vec3{tolerance}));
+}
+
+bool vec3NearlyEqual(const glm::vec3& a, const glm::vec3& b, float epsilon)
+{
+  return glm::all(glm::epsilonEqual(a, b, epsilon));
+}
+
+std::vector<std::string> deformationFieldWarnings(const Image& field, const Image& target)
+{
+  constexpr float k_geometryEpsilon = 1.0e-4f;
+  constexpr float k_domainToleranceMm = 1.0e-3f;
+
+  std::vector<std::string> warnings;
+  if (field.header().numComponentsPerPixel() < 3) {
+    warnings.emplace_back("The selected field has fewer than three components per voxel.");
+    return warnings;
+  }
+
+  if (field.header().pixelDimensions() != target.header().pixelDimensions()) {
+    warnings.emplace_back("The field grid dimensions differ from the expected image.");
+  }
+  if (!vec3NearlyEqual(field.header().spacing(), target.header().spacing(), k_geometryEpsilon)) {
+    warnings.emplace_back("The field voxel spacing differs from the expected image.");
+  }
+  if (!vec3NearlyEqual(field.header().origin(), target.header().origin(), k_geometryEpsilon)) {
+    warnings.emplace_back("The field origin differs from the expected image.");
+  }
+  if (
+    !vec3NearlyEqual(field.header().directions()[0], target.header().directions()[0], k_geometryEpsilon) ||
+    !vec3NearlyEqual(field.header().directions()[1], target.header().directions()[1], k_geometryEpsilon) ||
+    !vec3NearlyEqual(field.header().directions()[2], target.header().directions()[2], k_geometryEpsilon))
+  {
+    warnings.emplace_back("The field direction matrix differs from the expected image.");
+  }
+  if (!worldAabbContains(imageWorldAabb(field), imageWorldAabb(target), k_domainToleranceMm)) {
+    warnings.emplace_back("The field physical domain does not fully cover the expected image.");
+  }
+
+  return warnings;
+}
+
+std::string joinedWarnings(const std::vector<std::string>& warnings)
+{
+  std::string text;
+  for (const std::string& warning : warnings) {
+    if (!text.empty()) {
+      text += '\n';
+    }
+    text += "- " + warning;
+  }
+  return text;
+}
+
+bool confirmDeformationFieldWarnings(const char* title, const std::vector<std::string>& warnings)
+{
+  if (warnings.empty()) {
+    return true;
+  }
+
+  const auto result = native_dialog::showMessageDialog(
+    {title,
+     "The selected deformation field may not match the expected image space.",
+     joinedWarnings(warnings),
+     "Use field",
+     "Cancel",
+     ""});
+  return !result || native_dialog::MessageDialogResult::FirstButton == *result;
+}
+
+void renderInlineDeformationWarnings(const std::vector<std::string>& warnings)
+{
+  if (warnings.empty()) {
+    return;
+  }
+
+  const ImVec4 warningColor{1.0f, 0.72f, 0.28f, 1.0f};
+  for (const std::string& warning : warnings) {
+    ImGui::TextColored(warningColor, "%s", warning.c_str());
+  }
+}
 
 double minTimePlaybackSpeed(const Image& image)
 {
@@ -670,6 +819,7 @@ void renderImageHeader(
   const std::function<void(std::size_t cmapIndex)>& /*updateImageColorMapInterpolationMode*/,
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<ImageColorMap*(size_t cmapIndex)>& getImageColorMap,
+  const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadDeformationField,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageBackward,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageForward,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToBack,
@@ -1006,6 +1156,23 @@ void renderImageHeader(
       };
 
       if (vectorFieldImage) {
+        auto findJacobianDivergingColorMapIndex = [&]() -> std::optional<std::size_t> {
+          for (std::size_t cmapIndex = 0; cmapIndex < getNumImageColorMaps(); ++cmapIndex) {
+            const ImageColorMap* cmap = getImageColorMap(cmapIndex);
+            if (!cmap) {
+              continue;
+            }
+
+            if (
+              cmap->technicalName().find("diverging_bwr") != std::string::npos ||
+              cmap->description().find("diverging_bwr") != std::string::npos)
+            {
+              return cmapIndex;
+            }
+          }
+          return std::nullopt;
+        };
+
         struct VectorModeOption
         {
           const char* label;
@@ -1084,6 +1251,64 @@ void renderImageHeader(
           }
           ImGui::SameLine();
           helpMarker("Show log(det(F)) instead of det(F), where F is the deformation gradient.");
+
+          ImageSettings* jacobianProjectionSettings = nullptr;
+          if (const auto projectionMode = componentProjectionForImage(*image)) {
+            if (
+              const auto projectionUid =
+                appData.componentProjectionImageUid(imageUid, *projectionMode, activeTimePoint))
+            {
+              if (Image* projectionImage = appData.image(*projectionUid)) {
+                jacobianProjectionSettings = &projectionImage->settings();
+              }
+            }
+          }
+
+          auto applyJacobianPreset = [&]() {
+            if (!jacobianProjectionSettings) {
+              if (const auto projectionMode = componentProjectionForImage(*image)) {
+                requestComponentProjectionImage(imageUid, *projectionMode);
+              }
+              return false;
+            }
+
+            bool changed = false;
+            if (const auto cmapIndex = findJacobianDivergingColorMapIndex()) {
+              if (jacobianProjectionSettings->colorMapIndex(0) != *cmapIndex) {
+                jacobianProjectionSettings->setColorMapIndex(0, *cmapIndex);
+                changed = true;
+              }
+              if (!jacobianProjectionSettings->colorMapContinuous(0)) {
+                jacobianProjectionSettings->setColorMapContinuous(0, true);
+                changed = true;
+              }
+              if (jacobianProjectionSettings->isColorMapInverted(0)) {
+                jacobianProjectionSettings->setColorMapInverted(0, false);
+                changed = true;
+              }
+            }
+
+            const double presetCenter = imgSettings.vectorLogJacobianDeterminant() ? 0.0 : 1.0;
+            constexpr double k_jacobianPresetWindowWidth = 0.1;
+            if (std::abs(jacobianProjectionSettings->windowCenter(0) - presetCenter) > 1.0e-12) {
+              jacobianProjectionSettings->setWindowCenter(0, presetCenter);
+              changed = true;
+            }
+            if (std::abs(jacobianProjectionSettings->windowWidth(0) - k_jacobianPresetWindowWidth) > 1.0e-12) {
+              jacobianProjectionSettings->setWindowWidth(0, k_jacobianPresetWindowWidth);
+              changed = true;
+            }
+
+            return changed;
+          };
+
+          if (ImGui::Button("Set Jacobian color map") && applyJacobianPreset()) {
+            updateImageUniforms();
+          }
+          ImGui::SameLine();
+          helpMarker(
+            "Use a blue-white-red diverging color map and a narrow window. "
+            "For log-Jacobian this centers the window on 0; otherwise it centers on 1.");
         }
       }
       else if (complexValuedImage) {
@@ -2339,34 +2564,203 @@ void renderImageHeader(
 
   renderImageDicomMetadata(appData, imageUid);
 
-  if (ImGui::TreeNode("Transformations")) {
-    /// @note This code is commented out for now, since additional images are implicitly locked
-    /// to the reference image, since the reference image does not get transformed.
+  auto renderDeformationWarpHeader = [&]() {
+    if (isRef || !ImGui::TreeNode("Deformation Warps")) {
+      return;
+    }
 
-    /*
-        if (! isRef)
-        {
-            ImGui::Spacing();
+    const uuid_range_t loadedDeformationRange = appData.warpFieldCandidateUidsOrdered();
+    const std::vector<uuids::uuid> loadedDeformationUids{
+      std::begin(loadedDeformationRange),
+      std::end(loadedDeformationRange)};
+    const std::optional<uuids::uuid> activeInverseWarpUid = appData.imageToActiveInverseWarpUid(imageUid);
+    const std::optional<uuids::uuid> activeForwardWarpUid = appData.imageToActiveForwardWarpUid(imageUid);
+    const Image* referenceImage = appData.refImageUid() ? appData.image(*appData.refImageUid()) : nullptr;
 
-            // Note: We could change this to imgSettings.isLockedToReference(),
-            // if at some time in the future we allow transformation of the reference image.
-
-            bool lockTxToReference = true;
-
-            if (ImGui::Checkbox("Lock to reference", &lockTxToReference))
-            {
-                imgSettings.setLockedToReference(lockTxToReference);
-                updateImageUniforms();
-            }
-            ImGui::SameLine();
-            helpMarker("Lock this image's transformation to the reference image, "
-                        "so that it moves with the reference (always true)");
-
-            ImGui::Spacing();
-            ImGui::Separator();
+    auto deformationNamesAndIndex = [&](std::optional<uuids::uuid> activeUid) {
+      int activeIndex = activeUid ? -1 : 0;
+      std::vector<std::string> names;
+      names.emplace_back("Unassigned");
+      names.reserve(loadedDeformationUids.size() + 1);
+      for (std::size_t i = 0; i < loadedDeformationUids.size(); ++i) {
+        const Image* def = appData.warpField(loadedDeformationUids.at(i));
+        names.push_back(def ? def->settings().displayName() : std::string{"Missing deformation"});
+        if (activeUid && *activeUid == loadedDeformationUids.at(i)) {
+          activeIndex = static_cast<int>(i + 1);
         }
-        */
+      }
+      return std::pair{std::move(names), activeIndex};
+    };
 
+    auto confirmAndAssignInverseWarp = [&](const uuids::uuid& defUid) {
+      const Image* def = appData.warpField(defUid);
+      if (!def || !referenceImage) {
+        return false;
+      }
+
+      const std::vector<std::string> warnings = deformationFieldWarnings(*def, *referenceImage);
+      if (!confirmDeformationFieldWarnings("Inverse warp warning", warnings)) {
+        return false;
+      }
+      if (!appData.assignInverseWarpUidToImage(imageUid, defUid)) {
+        spdlog::error("Unable to assign inverse warp {} to image {}", defUid, imageUid);
+        return false;
+      }
+      updateImageUniforms();
+      return true;
+    };
+
+    auto confirmAndAssignForwardWarp = [&](const uuids::uuid& defUid) {
+      const Image* def = appData.warpField(defUid);
+      if (!def) {
+        return false;
+      }
+
+      const std::vector<std::string> warnings = deformationFieldWarnings(*def, *image);
+      if (!confirmDeformationFieldWarnings("Forward warp warning", warnings)) {
+        return false;
+      }
+      if (!appData.assignForwardWarpUidToImage(imageUid, defUid)) {
+        spdlog::error("Unable to assign forward warp {} to image {}", defUid, imageUid);
+        return false;
+      }
+      return true;
+    };
+
+    auto loadAndAssignDeformationField = [&](bool forwardWarp) {
+      if (!loadDeformationField) {
+        spdlog::error("No deformation-field load callback is installed");
+        return;
+      }
+
+      const std::optional<std::filesystem::path> selectedFile = native_dialog::openFile(native_dialog::imageFilters());
+      if (!selectedFile) {
+        return;
+      }
+
+      const std::optional<uuids::uuid> defUid = loadDeformationField(*selectedFile);
+      if (!defUid) {
+        spdlog::error("Unable to load deformation field from {}", *selectedFile);
+        return;
+      }
+
+      if (forwardWarp) {
+        (void)confirmAndAssignForwardWarp(*defUid);
+      }
+      else {
+        (void)confirmAndAssignInverseWarp(*defUid);
+      }
+    };
+
+    if (ImGui::Button("Load inverse warp...")) {
+      loadAndAssignDeformationField(false);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Load forward warp...")) {
+      loadAndAssignDeformationField(true);
+    }
+
+    auto [inverseWarpNames, activeInverseWarpIndex] = deformationNamesAndIndex(activeInverseWarpUid);
+    const std::size_t activeInverseWarpNameIndex =
+      activeInverseWarpIndex > 0 ? static_cast<std::size_t>(activeInverseWarpIndex) : 0;
+    ImGui::BeginDisabled(loadedDeformationUids.empty());
+    if (ImGui::BeginCombo("Inverse warp", inverseWarpNames.at(activeInverseWarpNameIndex).c_str())) {
+      for (std::size_t i = 0; i < inverseWarpNames.size(); ++i) {
+        const bool selected = static_cast<int>(i) == activeInverseWarpIndex;
+        if (ImGui::Selectable(inverseWarpNames.at(i).c_str(), selected)) {
+          if (0 == i) {
+            appData.clearActiveInverseWarpUidForImage(imageUid);
+            updateImageUniforms();
+          }
+          else {
+            (void)confirmAndAssignInverseWarp(loadedDeformationUids.at(i - 1));
+          }
+        }
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    helpMarker("Inverse warp is sampled in reference/fixed space and gives the moving-image sampling offset.");
+
+    if (activeInverseWarpUid && referenceImage) {
+      if (const Image* def = appData.warpField(*activeInverseWarpUid)) {
+        renderInlineDeformationWarnings(deformationFieldWarnings(*def, *referenceImage));
+      }
+    }
+
+    auto [forwardWarpNames, activeForwardWarpIndex] = deformationNamesAndIndex(activeForwardWarpUid);
+    const std::size_t activeForwardWarpNameIndex =
+      activeForwardWarpIndex > 0 ? static_cast<std::size_t>(activeForwardWarpIndex) : 0;
+    ImGui::BeginDisabled(loadedDeformationUids.empty());
+    if (ImGui::BeginCombo("Forward warp", forwardWarpNames.at(activeForwardWarpNameIndex).c_str())) {
+      for (std::size_t i = 0; i < forwardWarpNames.size(); ++i) {
+        const bool selected = static_cast<int>(i) == activeForwardWarpIndex;
+        if (ImGui::Selectable(forwardWarpNames.at(i).c_str(), selected)) {
+          if (0 == i) {
+            appData.clearActiveForwardWarpUidForImage(imageUid);
+          }
+          else {
+            (void)confirmAndAssignForwardWarp(loadedDeformationUids.at(i - 1));
+          }
+        }
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    helpMarker("Forward warp maps moving-image positions to reference/fixed space for landmarks and annotations.");
+
+    if (activeForwardWarpUid) {
+      if (const Image* forwardWarp = appData.warpField(*activeForwardWarpUid)) {
+        renderInlineDeformationWarnings(deformationFieldWarnings(*forwardWarp, *image));
+      }
+    }
+
+    if (loadedDeformationUids.empty()) {
+      ImGui::TextDisabled("No deformation fields are loaded.");
+    }
+
+    const bool hasAssignedInverseWarp = activeInverseWarpUid.has_value();
+    ImGui::BeginDisabled(!hasAssignedInverseWarp);
+    bool enabled = imgSettings.warpEnabled();
+    if (ImGui::Checkbox("Apply warp", &enabled)) {
+      imgSettings.setWarpEnabled(enabled);
+      updateImageUniforms();
+    }
+    ImGui::SameLine();
+    helpMarker("Warp this moving image at render time using the active inverse warp.");
+
+    if (hasAssignedInverseWarp && imgSettings.warpEnabled()) {
+      float strength = imgSettings.warpStrength();
+      if (warpStrengthSlider(&strength)) {
+        imgSettings.setWarpStrength(strength);
+        updateImageUniforms();
+      }
+      ImGui::SameLine();
+      helpMarker(
+        "0.0x disables displacement, 1.0x applies the field as stored, and larger values exaggerate the warp.");
+    }
+    ImGui::EndDisabled();
+
+    disabledWrappedText("The inverse warp is sampled in reference space and gives the moving-image sampling offset.");
+    ImGui::TextDisabled("Forward-warp rendering of landmarks and annotations is not implemented yet.");
+    ImGui::SameLine();
+    helpMarker(
+      "The forward warp is stored now so landmark and annotation warping can use it once that rendering path is "
+      "implemented.");
+
+    ImGui::TreePop();
+    ImGui::Separator();
+  };
+
+  if (ImGui::TreeNode("Affine Transformation")) {
     ImGui::Spacing();
 
     // The initial affine and manual affine transformations are disabled for the reference image:
@@ -2589,6 +2983,8 @@ void renderImageHeader(
 
     ImGui::TreePop();
   }
+
+  renderDeformationWarpHeader();
 
   if (!image->hasPixelData()) {
     ImGui::TextUnformatted("Pixel data is not loaded yet.");

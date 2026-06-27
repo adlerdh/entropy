@@ -38,7 +38,9 @@ uint getSegValue(vec3 texOffset, out float opacity)
 {
   opacity = 1.0;
 
-  vec3 c = floor(fs_in.v_voxCoord);
+  vec3 baseTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
+  vec3 baseVoxCoord = baseTc * vec3(textureSize(u_segTex, 0));
+  vec3 c = floor(baseVoxCoord);
   vec3 d = pow(vec3(textureSize(u_segTex, 0)), vec3(-1));
 
   // texture coordinates corresponding to the CENTER of the voxel
@@ -49,8 +51,8 @@ uint getSegValue(vec3 texOffset, out float opacity)
     neighCenterLabels[i] = uintTextureLookup(u_segTex, t + texOffset + neigh[i] * d);
   }
 
-  vec3 fracPart = fs_in.v_voxCoord + texOffset * vec3(textureSize(u_segTex, 0)) - c; // fractional part
-  vec3 w[2] = vec3[2](vec3(1.0) - fracPart, fracPart);                               // interpolation weights
+  vec3 fracPart = baseVoxCoord + texOffset * vec3(textureSize(u_segTex, 0)) - c; // fractional part
+  vec3 w[2] = vec3[2](vec3(1.0) - fracPart, fracPart);                           // interpolation weights
 
   // float segEdgeWidth = 0.02;
   float maxInterp = 0.0;
@@ -65,7 +67,7 @@ uint getSegValue(vec3 texOffset, out float opacity)
     vec3 texPos = row * u_texSamplingDirsForSmoothSeg[0] + col * u_texSamplingDirsForSmoothSeg[1];
 
     // Segmentation value of neighbor at (row, col) offset
-    uint label = uintTextureLookup(u_segTex, fs_in.v_texCoord + texPos);
+    uint label = uintTextureLookup(u_segTex, baseTc + texPos);
 
     float interp = 0.0;
     for (int j = 0; j <= 7; ++j) {

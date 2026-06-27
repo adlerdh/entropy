@@ -76,6 +76,7 @@ Supported patterns are:
 - `two_moving_gaussians`: two 3D blobs with opposite signs that move along different paths over time.
 - `rotating_wave`: 3D wave pattern that rotates over time.
 - `time_varying_warp_field`: 3-component vector field with pulsing expansion, twist, and wave motion over time.
+- `sphere`: binary sphere centered in the image; set its physical radius with `sphere_radius`.
 
 Command-line options can override common JSON fields:
 

@@ -9,10 +9,20 @@ std::string to_string(ShaderProgramType type)
       return "Image - Gray - Linear - Floating-Point";
     case ShaderProgramType::ImageGrayCubic:
       return "Image - GrayCubicTextureLookup";
+    case ShaderProgramType::ImageGrayLinearWarped:
+      return "Image - Gray - Linear - Fixed-Point - Warped";
+    case ShaderProgramType::ImageGrayLinearFloatingWarped:
+      return "Image - Gray - Linear - Floating-Point - Warped";
+    case ShaderProgramType::ImageGrayCubicWarped:
+      return "Image - GrayCubicTextureLookup - Warped";
     case ShaderProgramType::ImageColorLinear:
       return "Image - ColorLinearTextureLookup";
     case ShaderProgramType::ImageColorCubic:
       return "Image - ColorCubicTextureLookup";
+    case ShaderProgramType::ImageColorLinearWarped:
+      return "Image - ColorLinearTextureLookup - Warped";
+    case ShaderProgramType::ImageColorCubicWarped:
+      return "Image - ColorCubicTextureLookup - Warped";
     case ShaderProgramType::VectorDirectionColorLinear:
       return "Vector Direction Color - LinearTextureLookup";
     case ShaderProgramType::VectorDirectionColorCubic:
@@ -33,6 +43,10 @@ std::string to_string(ShaderProgramType type)
       return "Edge - Sobel - LinearTextureLookup";
     case ShaderProgramType::EdgeSobelCubic:
       return "Edge - Sobel - CubicTextureLookup";
+    case ShaderProgramType::EdgeSobelLinearWarped:
+      return "Edge - Sobel - LinearTextureLookup - Warped";
+    case ShaderProgramType::EdgeSobelCubicWarped:
+      return "Edge - Sobel - CubicTextureLookup - Warped";
     case ShaderProgramType::XrayLinear:
       return "Xray - LinearTextureLookup";
     case ShaderProgramType::XrayCubic:
@@ -41,6 +55,10 @@ std::string to_string(ShaderProgramType type)
       return "Segmentation - Nearest - TextureLookup";
     case ShaderProgramType::SegmentationLinear:
       return "Segmentation - Linear TextureLookup";
+    case ShaderProgramType::SegmentationNearestWarped:
+      return "Segmentation - Nearest - TextureLookup - Warped";
+    case ShaderProgramType::SegmentationLinearWarped:
+      return "Segmentation - Linear TextureLookup - Warped";
     case ShaderProgramType::IsoContourLinearFloating:
       return "IsoContour - Linear - Floating-Point";
     case ShaderProgramType::IsoContourLinearFixed:

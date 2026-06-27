@@ -18,6 +18,7 @@ out VS_OUT
 {
   vec3 v_texCoord;     // Seg texture coords of the vertex
   vec3 v_voxCoord;     // Seg voxel coords
+  vec3 v_worldPos;     // World/reference-space position of the vertex
   vec2 v_checkerCoord; // Checkerboard square coords
   vec2 v_clipPos;      // Clip position
 }
@@ -39,6 +40,7 @@ void main()
   vec4 segTexPos = u_tex_T_world * worldPos;
   vec4 segVoxPos = u_voxel_T_world * worldPos;
 
+  vs_out.v_worldPos = vec3(worldPos / worldPos.w);
   vs_out.v_texCoord = vec3(segTexPos / segTexPos.w);
   vs_out.v_voxCoord = vec3(segVoxPos / segVoxPos.w);
 }

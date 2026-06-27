@@ -1,0 +1,15 @@
+{
+  "output": "03_3d_translation_256_reference.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "size": [256, 256, 256],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-128.0, -128.0, -128.0],
+  "pattern": "checker",
+  "amplitude": 100.0,
+  "metadata": {
+    "entropy_deformation_pair": "03_3d_translation_256",
+    "role": "reference",
+    "expected_sampling_field": "03_3d_translation_256_field.nrrd"
+  }
+}

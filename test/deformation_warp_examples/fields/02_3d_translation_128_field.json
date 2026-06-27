@@ -1,0 +1,15 @@
+{
+  "output": "02_3d_translation_128_field.nrrd",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "size": [128, 128, 128],
+  "spacing": [1.5, 1.5, 1.5],
+  "origin": [-96.0, -96.0, -96.0],
+  "operations": [
+    {
+      "type": "affine",
+      "translation": [12.0, -6.0, 9.0]
+    }
+  ]
+}

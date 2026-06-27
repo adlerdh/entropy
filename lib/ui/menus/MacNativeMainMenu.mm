@@ -26,6 +26,8 @@ bool g_installed = false;
 - (void)addImage:(id)sender;
 - (void)addDicomSeries:(id)sender;
 - (void)addSegmentation:(id)sender;
+- (void)loadInverseWarp:(id)sender;
+- (void)loadForwardWarp:(id)sender;
 - (void)saveProject:(id)sender;
 - (void)saveProjectAs:(id)sender;
 - (void)closeProject:(id)sender;
@@ -70,6 +72,16 @@ bool g_installed = false;
 - (void)addSegmentation:(id)sender {
   (void)sender;
   main_menu::addSegmentation(g_callbacks);
+}
+
+- (void)loadInverseWarp:(id)sender {
+  (void)sender;
+  main_menu::loadInverseWarpForActiveImage(g_callbacks);
+}
+
+- (void)loadForwardWarp:(id)sender {
+  (void)sender;
+  main_menu::loadForwardWarpForActiveImage(g_callbacks);
 }
 
 - (void)saveProject:(id)sender {
@@ -167,6 +179,14 @@ bool g_installed = false;
 
   if (action == @selector(addSegmentation:)) {
     return g_callbacks.canAddSegmentation && g_callbacks.addSegmentationFile;
+  }
+
+  if (action == @selector(loadInverseWarp:)) {
+    return g_callbacks.canLoadDeformationFieldForActiveImage && g_callbacks.loadInverseWarpForActiveImage;
+  }
+
+  if (action == @selector(loadForwardWarp:)) {
+    return g_callbacks.canLoadDeformationFieldForActiveImage && g_callbacks.loadForwardWarpForActiveImage;
   }
 
   if (action == @selector(saveProject:)) {
@@ -313,14 +333,24 @@ void addImageMenu(NSMenu* mainMenu) {
   addActionMenuItem(menu, @"Move Image to Back", MainMenuAction::MoveActiveImageToBack);
   addActionMenuItem(menu, @"Move Image to Front", MainMenuAction::MoveActiveImageToFront);
   [menu addItem:[NSMenuItem separatorItem]];
-  addActionMenuItem(menu, @"Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
-  addActionMenuItem(menu, @"Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
-  addActionMenuItem(menu, @"Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
+  NSMenuItem* affineItem = [[NSMenuItem alloc] initWithTitle:@"Affine transformations" action:nil keyEquivalent:@""];
+  NSMenu* affineMenu = [[NSMenu alloc] initWithTitle:@"Affine transformations"];
+  addActionMenuItem(affineMenu, @"Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
+  addActionMenuItem(affineMenu, @"Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
+  addActionMenuItem(affineMenu, @"Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
   addActionMenuItem(
-    menu,
+    affineMenu,
     @"Save Initial + Manual Transformation...",
     MainMenuAction::SaveActiveImageInitialAndManualTransformation);
-  [menu addItem:[NSMenuItem separatorItem]];
+  [affineItem setSubmenu:affineMenu];
+  [menu addItem:affineItem];
+  NSMenuItem* deformationItem = [[NSMenuItem alloc] initWithTitle:@"Deformation fields" action:nil keyEquivalent:@""];
+  NSMenu* deformationMenu = [[NSMenu alloc] initWithTitle:@"Deformation fields"];
+  addTargetedMenuItem(deformationMenu, @"Load inverse warp...", @selector(loadInverseWarp:), @"");
+  addTargetedMenuItem(deformationMenu, @"Load forward warp...", @selector(loadForwardWarp:), @"");
+  addActionMenuItem(deformationMenu, @"Apply warp", MainMenuAction::ToggleApplyActiveImageWarp);
+  [deformationItem setSubmenu:deformationMenu];
+  [menu addItem:deformationItem];
   NSMenuItem* timeSeriesItem = [[NSMenuItem alloc] initWithTitle:@"Time Series" action:nil keyEquivalent:@""];
   NSMenu* timeSeriesMenu = [[NSMenu alloc] initWithTitle:@"Time Series"];
   addActionMenuItem(timeSeriesMenu, @"Show Time Controls", MainMenuAction::ToggleGlobalTimeControls);
@@ -338,7 +368,6 @@ void addImageMenu(NSMenu* mainMenu) {
   addActionMenuItem(timeSeriesMenu, @"Last Frame", MainMenuAction::LastTimePoint);
   [timeSeriesItem setSubmenu:timeSeriesMenu];
   [menu addItem:timeSeriesItem];
-  [menu addItem:[NSMenuItem separatorItem]];
   NSMenuItem* isosurfacesItem = [[NSMenuItem alloc] initWithTitle:@"Isosurfaces" action:nil keyEquivalent:@""];
   NSMenu* isosurfacesMenu = [[NSMenu alloc] initWithTitle:@"Isosurfaces"];
   addActionMenuItem(isosurfacesMenu, @"Show Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);

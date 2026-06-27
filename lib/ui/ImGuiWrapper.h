@@ -60,6 +60,9 @@ struct ImGuiProjectCallbacks
   /** @brief Add a segmentation file to a specific image. */
   std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> addSegmentationFileToImage;
 
+  /** @brief Load a deformation field and return its UID if successful. */
+  std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)> loadDeformationField;
+
   /** @brief Open a project file. */
   std::function<void(const std::filesystem::path& fileName)> openProjectFile;
 
@@ -303,6 +306,7 @@ private:
   std::function<void(const std::filesystem::path& fileName)> m_addSegmentationFile = nullptr;
   std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> m_addSegmentationFileToImage =
     nullptr;
+  std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)> m_loadDeformationField = nullptr;
   std::function<void(const std::filesystem::path& fileName)> m_openProjectFile = nullptr;
   std::function<void(GuiData::LargeImageLoadDecision decision)> m_largeImageLoadDecision = nullptr;
   std::function<void(

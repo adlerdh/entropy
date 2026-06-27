@@ -21,6 +21,8 @@ TEST_CASE("Loading status project items include images and segmentations", "[Loa
 {
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "reference.nii.gz";
+  project.m_referenceImage.m_inverseWarpFileName = "inverse-warp.nrrd";
+  project.m_referenceImage.m_forwardWarpFileName = "forward-warp.nrrd";
 
   serialize::Segmentation segmentation;
   segmentation.m_segFileName = "reference-seg.nrrd";
@@ -32,13 +34,17 @@ TEST_CASE("Loading status project items include images and segmentations", "[Loa
 
   const auto items = loading_status::projectItems(project);
 
-  REQUIRE(items.size() == 3);
+  REQUIRE(items.size() == 5);
   CHECK(items[0].kind == GuiData::LoadingStatusItem::Kind::Image);
   CHECK(items[0].fileName == "reference.nii.gz");
-  CHECK(items[1].kind == GuiData::LoadingStatusItem::Kind::Segmentation);
-  CHECK(items[1].fileName == "reference-seg.nrrd");
+  CHECK(items[1].kind == GuiData::LoadingStatusItem::Kind::Image);
+  CHECK(items[1].fileName == "inverse-warp.nrrd");
   CHECK(items[2].kind == GuiData::LoadingStatusItem::Kind::Image);
-  CHECK(items[2].fileName == "moving.nii.gz");
+  CHECK(items[2].fileName == "forward-warp.nrrd");
+  CHECK(items[3].kind == GuiData::LoadingStatusItem::Kind::Segmentation);
+  CHECK(items[3].fileName == "reference-seg.nrrd");
+  CHECK(items[4].kind == GuiData::LoadingStatusItem::Kind::Image);
+  CHECK(items[4].fileName == "moving.nii.gz");
 }
 
 TEST_CASE("Loading status paths can match by exact path or filename", "[LoadingStatusItems]")

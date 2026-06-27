@@ -1,0 +1,17 @@
+{
+  "output": "05_3d_sphere_expansion_reference.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "size": [65, 65, 65],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-32.0, -32.0, -32.0],
+  "pattern": "sphere",
+  "sphere_radius": 10.0,
+  "amplitude": 100.0,
+  "offset": 0.0,
+  "metadata": {
+    "entropy_deformation_pair": "05_3d_sphere_expansion",
+    "role": "reference",
+    "expected_sampling_field": "05_3d_sphere_expansion_field.nrrd"
+  }
+}

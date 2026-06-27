@@ -155,6 +155,18 @@ public:
   /// @brief Return whether the image transform is locked to the reference image.
   bool isLockedToReference() const;
 
+  /// @brief Set whether the assigned warp is applied when rendering this image.
+  void setWarpEnabled(bool enabled);
+
+  /// @brief Return whether the assigned warp is applied when rendering this image.
+  bool warpEnabled() const;
+
+  /// @brief Set warp strength multiplier used for render-time warping.
+  void setWarpStrength(float strength);
+
+  /// @brief Return warp strength multiplier used for render-time warping.
+  float warpStrength() const;
+
   /// @brief Set whether a 3- or 4-component image should be interpreted as RGB/RGBA color.
   void setDisplayImageAsColor(bool doColor);
 
@@ -935,6 +947,8 @@ private:
   float m_globalOpacity{1.0f};               //!< Global opacity
   glm::vec3 m_borderColor{1.0f, 0.0f, 1.0f}; //!< Border color
   bool m_lockedToReference{true};            //!< Lock this image to the reference image
+  bool m_warpEnabled{true};                  //!< Apply the assigned warp while rendering
+  float m_warpStrength{1.0f};                //!< Warp strength multiplier
 
   ComponentRenderMode m_componentRenderMode{ComponentRenderMode::SingleComponent}; //!< Multi-component render mode
   ComplexPhaseUnit m_complexPhaseUnit{ComplexPhaseUnit::Radians};   //!< Display units for complex phase values

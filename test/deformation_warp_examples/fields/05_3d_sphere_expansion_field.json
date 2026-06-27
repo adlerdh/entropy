@@ -1,0 +1,16 @@
+{
+  "output": "05_3d_sphere_expansion_field.nrrd",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "size": [65, 65, 65],
+  "spacing": [1.0, 1.0, 1.0],
+  "origin": [-32.0, -32.0, -32.0],
+  "operations": [
+    {
+      "type": "affine",
+      "center": [0.0, 0.0, 0.0],
+      "matrix": [0.5, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.5]
+    }
+  ]
+}

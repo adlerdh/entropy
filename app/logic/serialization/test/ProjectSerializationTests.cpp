@@ -161,6 +161,8 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_globalOpacity = 0.25,
     .m_borderColor = glm::vec3{0.4f, 0.5f, 0.6f},
     .m_lockedToReference = false,
+    .m_warpEnabled = false,
+    .m_warpStrength = 2.5f,
     .m_level = 42.0,
     .m_window = 12.0,
     .m_thresholdLow = 1.0,
@@ -240,6 +242,8 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(settings.at("globalOpacity") == 0.25);
   CHECK(settings.at("borderColor") == json::array({0.4f, 0.5f, 0.6f}));
   CHECK(settings.at("lockedToReference") == false);
+  CHECK(settings.at("warpEnabled") == false);
+  CHECK(settings.at("warpStrength") == 2.5f);
   CHECK(settings.at("componentRenderMode") == "complexPhase");
   CHECK(settings.at("complexPhaseUnit") == "degrees");
   CHECK(settings.at("complexPhaseRange") == "unsigned");
@@ -312,6 +316,8 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_globalOpacity == 0.25);
   CHECK(parsedSettings.m_borderColor == glm::vec3{0.4f, 0.5f, 0.6f});
   CHECK_FALSE(parsedSettings.m_lockedToReference);
+  CHECK_FALSE(parsedSettings.m_warpEnabled);
+  CHECK(parsedSettings.m_warpStrength == 2.5f);
   CHECK(parsedSettings.m_componentRenderMode == serialize::ProjectComponentRenderMode::ComplexPhase);
   CHECK(parsedSettings.m_complexPhaseUnit == serialize::ProjectComplexPhaseUnit::Degrees);
   CHECK(parsedSettings.m_complexPhaseRange == serialize::ProjectComplexPhaseRange::Unsigned);
@@ -383,6 +389,41 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(parsedSettings.m_showIsocontoursIn2D);
   CHECK(parsedSettings.m_isocontourLineWidthIn2D == 3.5);
   CHECK(parsedSettings.m_isosurfaceOpacityModulator == 0.45f);
+}
+
+TEST_CASE("Project serialization preserves inverse and forward warp paths", "[project][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path imageFile = root / "moving.nii.gz";
+  const fs::path forwardFile = root / "forward.nrrd";
+  const fs::path inverseFile = root / "inverse.nrrd";
+  const fs::path projectFile = root / "project.json";
+
+  touchFile(imageFile);
+  touchFile(forwardFile);
+  touchFile(inverseFile);
+
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = imageFile;
+  project.m_referenceImage.m_inverseWarpFileName = inverseFile;
+  project.m_referenceImage.m_forwardWarpFileName = forwardFile;
+
+  const json inlineJson = project;
+  CHECK(inlineJson.at("reference").at("inverseWarp") == inverseFile.string());
+  CHECK(inlineJson.at("reference").at("forwardWarp") == forwardFile.string());
+
+  REQUIRE(serialize::save(project, projectFile));
+
+  const json savedJson = json::parse(std::ifstream(projectFile));
+  CHECK(savedJson.at("reference").at("inverseWarp") == "inverse.nrrd");
+  CHECK(savedJson.at("reference").at("forwardWarp") == "forward.nrrd");
+
+  serialize::EntropyProject loaded;
+  REQUIRE(serialize::open(loaded, projectFile));
+  REQUIRE(loaded.m_referenceImage.m_inverseWarpFileName);
+  REQUIRE(loaded.m_referenceImage.m_forwardWarpFileName);
+  CHECK(*loaded.m_referenceImage.m_inverseWarpFileName == fs::canonical(inverseFile));
+  CHECK(*loaded.m_referenceImage.m_forwardWarpFileName == fs::canonical(forwardFile));
 }
 
 TEST_CASE("Project serialization preserves segmentation settings", "[project][serialization]")

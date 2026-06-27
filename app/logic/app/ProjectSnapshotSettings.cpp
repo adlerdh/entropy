@@ -108,6 +108,8 @@ serialize::ImageSettings imageSettings(const Image& image)
   settings.m_globalOpacity = imageSettings.globalOpacity();
   settings.m_borderColor = imageSettings.borderColor();
   settings.m_lockedToReference = imageSettings.isLockedToReference();
+  settings.m_warpEnabled = imageSettings.warpEnabled();
+  settings.m_warpStrength = imageSettings.warpStrength();
   settings.m_level = imageSettings.windowCenter();
   settings.m_window = imageSettings.windowWidth();
   settings.m_thresholdLow = thresholds.first;
@@ -242,6 +244,8 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setGlobalOpacity(settings.m_globalOpacity);
   imageSettings.setBorderColor(settings.m_borderColor);
   imageSettings.setLockedToReference(settings.m_lockedToReference);
+  imageSettings.setWarpEnabled(settings.m_warpEnabled);
+  imageSettings.setWarpStrength(settings.m_warpStrength);
   if (settings.m_activeComponent < imageSettings.numComponents()) {
     imageSettings.setActiveComponent(settings.m_activeComponent);
   }
@@ -250,7 +254,9 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setTimePlaybackPlaying(settings.m_timePlaybackPlaying && image.isTimeSeries());
   imageSettings.setTimePlaybackSpeed(settings.m_timePlaybackSpeed);
   imageSettings.setWindowCenter(settings.m_level);
-  imageSettings.setWindowWidth(settings.m_window);
+  if (settings.m_window > 0.0) {
+    imageSettings.setWindowWidth(settings.m_window);
+  }
   imageSettings.setThresholdLow(settings.m_thresholdLow);
   imageSettings.setThresholdHigh(settings.m_thresholdHigh);
   imageSettings.setOpacity(settings.m_opacity);
@@ -303,7 +309,10 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   const std::size_t numWindowComponents =
     std::min<std::size_t>(settings.m_componentWindows.size(), imageSettings.numComponents());
   for (std::size_t component = 0; component < numWindowComponents; ++component) {
-    imageSettings.setWindowWidth(static_cast<uint32_t>(component), settings.m_componentWindows.at(component));
+    const double windowWidth = settings.m_componentWindows.at(component);
+    if (windowWidth > 0.0) {
+      imageSettings.setWindowWidth(static_cast<uint32_t>(component), windowWidth);
+    }
   }
   const std::size_t numThresholdLowComponents =
     std::min<std::size_t>(settings.m_componentThresholdLows.size(), imageSettings.numComponents());

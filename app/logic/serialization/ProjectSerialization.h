@@ -95,6 +95,8 @@ struct ImageSettings
   double m_globalOpacity = 1.0;              //!< Global opacity multiplier.
   glm::vec3 m_borderColor{1.0f, 0.0f, 1.0f}; //!< Image border RGB color.
   bool m_lockedToReference = true;           //!< Lock image transformations to the reference image.
+  bool m_warpEnabled = true;                 //!< Apply assigned warp during image rendering.
+  float m_warpStrength = 1.0f;               //!< Warp strength multiplier.
 
   double m_level = 0.0f;  //! Window center value in image units
   double m_window = 1.0f; //! Window width in image units
@@ -254,9 +256,18 @@ struct Image
   std::optional<std::filesystem::path> m_affineTxFileName = std::nullopt;
 
   /**
-   * Optional deformable transformation image file name
+   * Optional inverse warp image file name.
+   *
+   * The inverse warp is used for moving-image sampling in reference/fixed space.
    */
-  std::optional<std::filesystem::path> m_deformationFileName = std::nullopt;
+  std::optional<std::filesystem::path> m_inverseWarpFileName = std::nullopt;
+
+  /**
+   * Optional forward warp image file name.
+   *
+   * The forward warp maps moving-image positions back to reference/fixed space.
+   */
+  std::optional<std::filesystem::path> m_forwardWarpFileName = std::nullopt;
 
   /**
    * Optional manual transformation matrix from affine-registered subject space to world space

@@ -74,9 +74,17 @@ TEST_CASE("Project snapshot comparison detects image state changes", "[ProjectSn
   changedImageSettings.m_referenceImage.m_settings->m_lockedToReference = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedImageSettings));
 
+  changedImageSettings = project;
+  changedImageSettings.m_referenceImage.m_settings->m_warpStrength = 2.0f;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedImageSettings));
+
   auto changedTransform = project;
   changedTransform.m_additionalImages.front().m_worldDefTx->operator[](3).x = 3.0f;
   CHECK_FALSE(project_snapshot::equivalent(project, changedTransform));
+
+  auto changedForwardWarp = project;
+  changedForwardWarp.m_additionalImages.front().m_forwardWarpFileName = "forward-warp.nrrd";
+  CHECK_FALSE(project_snapshot::equivalent(project, changedForwardWarp));
 }
 
 TEST_CASE("Project snapshot comparison detects related data changes", "[ProjectSnapshotComparison]")

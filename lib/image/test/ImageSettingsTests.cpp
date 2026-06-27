@@ -30,6 +30,21 @@ makeStats(long double minValue, long double q1, long double median, long double 
   return stats;
 }
 
+ComponentStats makeSparseBinaryStats()
+{
+  ComponentStats stats;
+  stats.onlineStats.min = 0.0L;
+  stats.onlineStats.max = 100.0L;
+  stats.onlineStats.mean = 2.0L;
+  stats.onlineStats.stdev = 14.0L;
+  stats.onlineStats.variance = 196.0L;
+  stats.onlineStats.sum = 200.0L;
+  stats.onlineStats.count = 100;
+  stats.quantiles.fill(0.0L);
+  stats.quantiles[100] = 100.0L;
+  return stats;
+}
+
 ImageSettings makeSettings()
 {
   return ImageSettings(
@@ -252,6 +267,17 @@ TEST_CASE("ImageSettings updates statistics without resetting visibility when re
   CHECK(settings.foregroundThresholds(0) == std::pair<double, double>{150.0, 200.0});
 }
 
+TEST_CASE("ImageSettings falls back to min/max window for sparse binary images", "[image][settings]")
+{
+  ImageSettings settings("sparse-binary", 100, 1, ComponentType::Float32, {makeSparseBinaryStats()});
+
+  CHECK(settings.minMaxImageRange(0) == std::pair<double, double>{0.0, 100.0});
+  CHECK(settings.windowValuesLowHigh(0) == std::pair<double, double>{0.0, 100.0});
+  CHECK(settings.windowCenter(0) == Catch::Approx(50.0));
+  CHECK(settings.windowWidth(0) == Catch::Approx(100.0));
+  CHECK(settings.windowQuantilesLowHigh(0) == std::pair<double, double>{0.0, 1.0});
+}
+
 TEST_CASE("ImageSettings maps native component values to texture values", "[image][settings]")
 {
   ImageSettings uint8Settings("uint8", 2, 1, ComponentType::UInt8, {makeStats(0.0, 0.0, 128.0, 255.0, 255.0)});
@@ -321,7 +347,7 @@ TEST_CASE("ImageSettings active-component overloads and global display flags rou
 
   settings.setWindowQuantileLow(0.2, true);
   settings.setWindowQuantileHigh(0.8, true);
-  CHECK(settings.windowQuantilesLowHigh() == std::pair<double, double>{0.0, 0.0});
+  CHECK(settings.windowQuantilesLowHigh() == std::pair<double, double>{0.01, 0.99});
 
   settings.setThresholdLow(-5.0);
   settings.setThresholdHigh(6.0);
@@ -397,4 +423,23 @@ TEST_CASE("ImageSettings active-component overloads and global display flags rou
   auto& histogram = settings.histogramSettings();
   histogram.m_isCumulative = true;
   CHECK(settings.histogramSettings().m_isCumulative);
+}
+
+TEST_CASE("ImageSettings clamps warp rendering strength", "[image][settings]")
+{
+  ImageSettings settings;
+
+  CHECK(settings.warpEnabled());
+  CHECK(settings.warpStrength() == Catch::Approx(1.0f));
+
+  settings.setWarpEnabled(false);
+  settings.setWarpStrength(-1.0f);
+  CHECK_FALSE(settings.warpEnabled());
+  CHECK(settings.warpStrength() == Catch::Approx(0.0f));
+
+  settings.setWarpStrength(2.5f);
+  CHECK(settings.warpStrength() == Catch::Approx(2.5f));
+
+  settings.setWarpStrength(8.0f);
+  CHECK(settings.warpStrength() == Catch::Approx(4.0f));
 }

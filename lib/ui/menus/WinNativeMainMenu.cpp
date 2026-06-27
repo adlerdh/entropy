@@ -17,6 +17,8 @@ constexpr UINT k_openProjectCommand = 1002;
 constexpr UINT k_addImageCommand = 1003;
 constexpr UINT k_openDicomSeriesCommand = 1008;
 constexpr UINT k_addDicomSeriesCommand = 1009;
+constexpr UINT k_loadInverseWarpCommand = 1010;
+constexpr UINT k_loadForwardWarpCommand = 1011;
 constexpr UINT k_addSegmentationCommand = 1004;
 constexpr UINT k_saveProjectCommand = 1005;
 constexpr UINT k_saveProjectAsCommand = 1006;
@@ -69,6 +71,8 @@ bool isMenuCommand(UINT command)
     case k_addImageCommand:
     case k_openDicomSeriesCommand:
     case k_addDicomSeriesCommand:
+    case k_loadInverseWarpCommand:
+    case k_loadForwardWarpCommand:
     case k_addSegmentationCommand:
     case k_saveProjectCommand:
     case k_saveProjectAsCommand:
@@ -119,6 +123,14 @@ void updateEnabledState(const MenuState& state)
   enableMenuCommand(state, k_openDicomSeriesCommand, callbacks.canOpenProject && callbacks.openDicomFolders);
   enableMenuCommand(state, k_addImageCommand, callbacks.canAddImage && callbacks.addImageFiles);
   enableMenuCommand(state, k_addDicomSeriesCommand, callbacks.canAddImage && callbacks.openDicomFolders);
+  enableMenuCommand(
+    state,
+    k_loadInverseWarpCommand,
+    callbacks.canLoadDeformationFieldForActiveImage && callbacks.loadInverseWarpForActiveImage);
+  enableMenuCommand(
+    state,
+    k_loadForwardWarpCommand,
+    callbacks.canLoadDeformationFieldForActiveImage && callbacks.loadForwardWarpForActiveImage);
   enableMenuCommand(state, k_addSegmentationCommand, callbacks.canAddSegmentation && callbacks.addSegmentationFile);
   enableMenuCommand(state, k_saveProjectCommand, callbacks.canSaveProject && callbacks.saveProject);
   enableMenuCommand(state, k_saveProjectAsCommand, callbacks.canSaveProject && callbacks.saveProjectAs);
@@ -193,6 +205,12 @@ void handleMenuCommand(const MenuState& state, UINT command)
       break;
     case k_addImageCommand:
       main_menu::addImage(callbacks);
+      break;
+    case k_loadInverseWarpCommand:
+      main_menu::loadInverseWarpForActiveImage(callbacks);
+      break;
+    case k_loadForwardWarpCommand:
+      main_menu::loadForwardWarpForActiveImage(callbacks);
       break;
     case k_addSegmentationCommand:
       main_menu::addSegmentation(callbacks);
@@ -337,12 +355,25 @@ bool populateModesMenu(HMENU menu)
 
 bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
 {
+  HMENU affineMenu = CreatePopupMenu();
+  if (!affineMenu) {
+    return false;
+  }
+  HMENU deformationMenu = CreatePopupMenu();
+  if (!deformationMenu) {
+    DestroyMenu(affineMenu);
+    return false;
+  }
   HMENU isosurfacesMenu = CreatePopupMenu();
   if (!isosurfacesMenu) {
+    DestroyMenu(affineMenu);
+    DestroyMenu(deformationMenu);
     return false;
   }
   HMENU timeSeriesMenu = CreatePopupMenu();
   if (!timeSeriesMenu) {
+    DestroyMenu(affineMenu);
+    DestroyMenu(deformationMenu);
     DestroyMenu(isosurfacesMenu);
     return false;
   }
@@ -366,6 +397,55 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     !insertActionMenuItem(timeSeriesMenu, timeSeriesPosition++, MainMenuAction::NextTimePoint, L"&Next Frame\tAlt+.") ||
     !insertActionMenuItem(timeSeriesMenu, timeSeriesPosition++, MainMenuAction::LastTimePoint, L"&Last Frame"))
   {
+    DestroyMenu(affineMenu);
+    DestroyMenu(deformationMenu);
+    DestroyMenu(isosurfacesMenu);
+    DestroyMenu(timeSeriesMenu);
+    return false;
+  }
+
+  UINT affinePosition = 0;
+  if (
+    !insertActionMenuItem(
+      affineMenu,
+      affinePosition++,
+      MainMenuAction::ToggleActiveImageTransformationLock,
+      L"&Lock Transformation") ||
+    !insertActionMenuItem(
+      affineMenu,
+      affinePosition++,
+      MainMenuAction::ResetActiveImageManualTransformation,
+      L"&Reset Manual Transformation") ||
+    !insertActionMenuItem(
+      affineMenu,
+      affinePosition++,
+      MainMenuAction::SaveActiveImageManualTransformation,
+      L"Save &Manual Transformation...") ||
+    !insertActionMenuItem(
+      affineMenu,
+      affinePosition++,
+      MainMenuAction::SaveActiveImageInitialAndManualTransformation,
+      L"Save &Initial + Manual Transformation..."))
+  {
+    DestroyMenu(affineMenu);
+    DestroyMenu(deformationMenu);
+    DestroyMenu(isosurfacesMenu);
+    DestroyMenu(timeSeriesMenu);
+    return false;
+  }
+
+  UINT deformationPosition = 0;
+  if (
+    !insertMenuItem(deformationMenu, deformationPosition++, k_loadInverseWarpCommand, L"Load &inverse warp...") ||
+    !insertMenuItem(deformationMenu, deformationPosition++, k_loadForwardWarpCommand, L"Load &forward warp...") ||
+    !insertActionMenuItem(
+      deformationMenu,
+      deformationPosition++,
+      MainMenuAction::ToggleApplyActiveImageWarp,
+      L"&Apply warp"))
+  {
+    DestroyMenu(affineMenu);
+    DestroyMenu(deformationMenu);
     DestroyMenu(isosurfacesMenu);
     DestroyMenu(timeSeriesMenu);
     return false;
@@ -391,7 +471,10 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
       MainMenuAction::ToggleActiveImageIsosurfaces,
       L"&Show Isosurfaces"))
   {
+    DestroyMenu(affineMenu);
+    DestroyMenu(deformationMenu);
     DestroyMenu(isosurfacesMenu);
+    DestroyMenu(timeSeriesMenu);
     return false;
   }
 
@@ -409,31 +492,14 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageForward, L"Move Image &Forward") &&
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToBack, L"Move Image to Bac&k") &&
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToFront, L"Move Image to Fron&t") &&
-    insertSeparator(menu, position++) &&
-    insertActionMenuItem(
-      menu,
-      position++,
-      MainMenuAction::ToggleActiveImageTransformationLock,
-      L"&Lock Transformation") &&
-    insertActionMenuItem(
-      menu,
-      position++,
-      MainMenuAction::ResetActiveImageManualTransformation,
-      L"&Reset Manual Transformation") &&
-    insertActionMenuItem(
-      menu,
-      position++,
-      MainMenuAction::SaveActiveImageManualTransformation,
-      L"Save &Manual Transformation...") &&
-    insertActionMenuItem(
-      menu,
-      position++,
-      MainMenuAction::SaveActiveImageInitialAndManualTransformation,
-      L"Save &Initial + Manual Transformation...") &&
-    insertSeparator(menu, position++) && insertSubmenu(menu, position++, timeSeriesMenu, L"&Time Series") &&
-    insertSeparator(menu, position++) && insertSubmenu(menu, position++, isosurfacesMenu, L"I&sosurfaces");
+    insertSeparator(menu, position++) && insertSubmenu(menu, position++, affineMenu, L"&Affine transformations") &&
+    insertSubmenu(menu, position++, deformationMenu, L"&Deformation fields") &&
+    insertSubmenu(menu, position++, timeSeriesMenu, L"&Time Series") &&
+    insertSubmenu(menu, position++, isosurfacesMenu, L"I&sosurfaces");
 
   if (!ok) {
+    DestroyMenu(affineMenu);
+    DestroyMenu(deformationMenu);
     DestroyMenu(isosurfacesMenu);
     DestroyMenu(timeSeriesMenu);
   }

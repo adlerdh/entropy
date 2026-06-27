@@ -642,6 +642,8 @@ set(entropy_SHADERS
   "${entropy_APP_DIR}/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/SegValue_Linear.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/SegValue_Nearest.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/SampleTexCoord_Deformation.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/SampleTexCoord_Identity.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_Cubic.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_Linear.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_FloatingPoint_Linear.glsl"

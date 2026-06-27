@@ -1,0 +1,15 @@
+{
+  "output": "01_2d_translation_reference.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "size": [128, 128],
+  "spacing": [1.0, 1.0],
+  "origin": [-64.0, -64.0],
+  "pattern": "gaussian",
+  "amplitude": 100.0,
+  "metadata": {
+    "entropy_deformation_pair": "01_2d_translation",
+    "role": "reference",
+    "expected_sampling_field": "01_2d_translation_field.nrrd"
+  }
+}

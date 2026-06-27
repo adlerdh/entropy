@@ -52,6 +52,11 @@ void EntropyApp::setCallbacks()
   imguiCallbacks.project.addSegmentationFileToImage = [this](const uuids::uuid& imageUid, const fs::path& fileName) {
     addSegmentationFileToImage(fileName, imageUid);
   };
+  imguiCallbacks.project.loadDeformationField = [this](const fs::path& fileName) -> std::optional<uuids::uuid> {
+    const auto [defUid, loaded] = loadDeformationField(fileName);
+    (void)loaded;
+    return defUid;
+  };
   imguiCallbacks.project.openProjectFile = [this](const fs::path& fileName) {
     loadProjectFile(fileName);
   };

@@ -15,6 +15,7 @@
 in VS_OUT
 {
   vec3 v_texCoord;
+  vec3 v_worldPos;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 }
@@ -62,6 +63,9 @@ $$COLOR_HELPER_FUNCTIONS$$
 /// float textureLookup(sampler3D texture, vec3 texCoord);
 $$TEXTURE_LOOKUP_FUNCTION$$
 
+/// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
+$$SAMPLE_TEX_COORD_FUNCTION$$
+
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
 $$DO_RENDER_FUNCTION$$
 
@@ -74,8 +78,9 @@ void main()
     discard;
   }
 
-  float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
-  img = computeProjection(fs_in.v_texCoord, img);
+  vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
+  float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
+  img = computeProjection(sampleTc, img);
 
   // Apply window/level and normalize image values to [0.0, 1.0] range:
   float imgNorm = clamp(u_imgSlopeIntercept[0] * img + u_imgSlopeIntercept[1], 0.0, 1.0);
@@ -95,7 +100,7 @@ void main()
   imgColorHsv.yz *= u_cmapHsvModFactors.yz;
 
   // Conditionally use HSV modified colors:
-  float mask = float(isInsideTexture(fs_in.v_texCoord));                   // image mask based on texture coords
+  float mask = float(isInsideTexture(sampleTc));                           // image mask based on texture coords
   float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds); // alpha = opacity * mask * threshold
 
   // Output color (premult. RGBA)

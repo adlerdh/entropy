@@ -20,7 +20,8 @@ bool imageSettingsEqual(
 
   return a->m_displayName == b->m_displayName && a->m_globalVisibility == b->m_globalVisibility &&
          a->m_globalOpacity == b->m_globalOpacity && a->m_borderColor == b->m_borderColor && a->m_level == b->m_level &&
-         a->m_lockedToReference == b->m_lockedToReference && a->m_window == b->m_window &&
+         a->m_lockedToReference == b->m_lockedToReference && a->m_warpEnabled == b->m_warpEnabled &&
+         a->m_warpStrength == b->m_warpStrength && a->m_window == b->m_window &&
          a->m_thresholdLow == b->m_thresholdLow && a->m_thresholdHigh == b->m_thresholdHigh &&
          a->m_opacity == b->m_opacity && a->m_activeComponent == b->m_activeComponent &&
          a->m_activeTimePoint == b->m_activeTimePoint && a->m_timePlaybackLoop == b->m_timePlaybackLoop &&
@@ -165,9 +166,9 @@ bool dicomSourcesEqual(const std::optional<serialize::DicomSource>& a, const std
 bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
 {
   return a.m_imageFileName == b.m_imageFileName && dicomSourcesEqual(a.m_dicomSource, b.m_dicomSource) &&
-         a.m_affineTxFileName == b.m_affineTxFileName && a.m_deformationFileName == b.m_deformationFileName &&
-         matricesEqual(a.m_worldDefTx, b.m_worldDefTx) && a.m_annotationsFileName == b.m_annotationsFileName &&
-         imageSettingsEqual(a.m_settings, b.m_settings) &&
+         a.m_affineTxFileName == b.m_affineTxFileName && a.m_inverseWarpFileName == b.m_inverseWarpFileName &&
+         a.m_forwardWarpFileName == b.m_forwardWarpFileName && matricesEqual(a.m_worldDefTx, b.m_worldDefTx) &&
+         a.m_annotationsFileName == b.m_annotationsFileName && imageSettingsEqual(a.m_settings, b.m_settings) &&
          vectorsEqual(a.m_segmentations, b.m_segmentations, segmentationsEqual) &&
          vectorsEqual(a.m_landmarkGroups, b.m_landmarkGroups, landmarkGroupsEqual);
 }

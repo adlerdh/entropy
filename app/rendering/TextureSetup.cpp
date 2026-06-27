@@ -33,6 +33,9 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
 
     const auto* image = appData.image(imageUid);
     if (!image) {
+      image = appData.def(imageUid);
+    }
+    if (!image) {
       spdlog::warn("Image {} is invalid", imageUid);
       continue;
     }
@@ -134,12 +137,19 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
         T.setAutoGenerateMipmaps(false); // no mipmapping for images
         T.setSize(image->header().pixelDimensions());
 
+        const void* imageBuffer = image->bufferAsVoid(k_comp0, activeTimePoint);
+        if (!imageBuffer) {
+          spdlog::warn("Image {} has no texture data for interleaved component buffer", imageUid);
+          componentTextures.clear();
+          break;
+        }
+
         T.setData(
           sk_mipmapLevel,
           sizedInternalNormalizedFormat,
           bufferPixelNormalizedFormat,
           GLTexture::getBufferPixelDataType(compType),
-          image->bufferAsVoid(k_comp0, activeTimePoint));
+          imageBuffer);
 
         spdlog::debug("Done creating the texture for all interleaved components of image {}", imageUid);
         break;
@@ -190,18 +200,30 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
           T.setAutoGenerateMipmaps(false); // no mipmapping for images
           T.setSize(image->header().pixelDimensions());
 
+          const void* imageBuffer = image->bufferAsVoid(comp, activeTimePoint);
+          if (!imageBuffer) {
+            spdlog::warn("Image {} has no texture data for component {}", imageUid, comp);
+            componentTextures.clear();
+            break;
+          }
+
           T.setData(
             sk_mipmapLevel,
             sizedInternalNormalizedFormat,
             bufferPixelNormalizedFormat,
             GLTexture::getBufferPixelDataType(compType),
-            image->bufferAsVoid(comp, activeTimePoint));
+            imageBuffer);
         }
 
         spdlog::debug("Done creating {} image component textures", componentTextures.size());
         break;
       }
     } // end switch ( image->bufferType() )
+
+    if (componentTextures.empty()) {
+      spdlog::warn("No image textures were created for image {}", imageUid);
+      continue;
+    }
 
     appData.renderData().m_imageTextures.emplace(imageUid, std::move(componentTextures));
 

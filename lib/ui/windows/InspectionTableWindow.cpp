@@ -24,6 +24,8 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <unordered_map>
 #include <vector>
 
@@ -48,39 +50,46 @@ enum class InspectorColumn : int
   Maximum,
   Magnitude,
   JacobianDeterminant,
+  LogJacobianDeterminant,
   CurlMagnitude,
   Divergence,
   Label,
   Region,
   Voxel,
   Subject,
+  SampleVoxel,
+  SampleSubject,
   TimeFrame,
   TimeValue,
   Count
 };
 
-constexpr std::size_t sk_inspectorColumnCount = static_cast<std::size_t>(InspectorColumn::Count);
+constexpr std::size_t k_inspectorColumnCount = static_cast<std::size_t>(InspectorColumn::Count);
+static_assert(
+  std::tuple_size_v<std::remove_reference_t<decltype(std::declval<GuiData&>().m_inspectionColumnVisible)> > ==
+  k_inspectorColumnCount);
 
-constexpr std::array<const char*, sk_inspectorColumnCount> sk_inspectorColumnNames{
-  "Image",   "Value",  "Value (interp.)", "Percentile",   "Real",          "Imaginary", "Phase",
-  "Minimum", "Mean",   "Maximum",         "Magnitude",    "Jacobian Det.", "Curl Mag.", "Divergence",
-  "Label",   "Region", "Voxel",           "Subject (mm)", "Time frame",    "Time"};
+constexpr std::array<const char*, k_inspectorColumnCount> k_inspectorColumnNames{
+  "Image",      "Value", "Value (interp.)", "Percentile", "Real",          "Imaginary",         "Phase",
+  "Minimum",    "Mean",  "Maximum",         "Magnitude",  "Jacobian Det.", "Log-Jacobian Det.", "Curl Mag.",
+  "Divergence", "Label", "Region",          "Voxel",      "Subject (mm)",  "Sampled voxel",     "Sampled subject (mm)",
+  "Time frame", "Time"};
 
-constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnMinWidths{
-  120.0f, 64.0f,  72.0f, 78.0f, 64.0f, 82.0f, 72.0f, 78.0f,  64.0f, 78.0f,
-  88.0f,  108.0f, 90.0f, 94.0f, 48.0f, 72.0f, 96.0f, 148.0f, 82.0f, 64.0f};
+constexpr std::array<float, k_inspectorColumnCount> k_inspectorColumnMinWidths{
+  120.0f, 64.0f, 72.0f, 78.0f, 64.0f, 82.0f, 72.0f,  78.0f,  64.0f,  78.0f, 88.0f, 108.0f,
+  132.0f, 90.0f, 94.0f, 48.0f, 72.0f, 96.0f, 148.0f, 125.0f, 160.0f, 82.0f, 64.0f};
 
-constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnDefaultWidths{
-  150.0f, 82.0f,  122.0f, 100.0f, 82.0f, 112.0f, 96.0f,  96.0f,  82.0f, 96.0f,
-  108.0f, 122.0f, 104.0f, 112.0f, 62.0f, 140.0f, 125.0f, 210.0f, 96.0f, 82.0f};
+constexpr std::array<float, k_inspectorColumnCount> k_inspectorColumnDefaultWidths{
+  150.0f, 82.0f,  122.0f, 100.0f, 82.0f,  112.0f, 96.0f,  96.0f,  82.0f,  96.0f, 108.0f, 122.0f,
+  150.0f, 104.0f, 112.0f, 62.0f,  140.0f, 125.0f, 210.0f, 150.0f, 210.0f, 96.0f, 82.0f};
 
-constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnMaxWidths{
-  280.0f, 110.0f, 130.0f, 115.0f, 110.0f, 130.0f, 120.0f, 115.0f, 110.0f, 115.0f,
-  125.0f, 140.0f, 120.0f, 130.0f, 72.0f,  180.0f, 150.0f, 230.0f, 120.0f, 110.0f};
+constexpr std::array<float, k_inspectorColumnCount> k_inspectorColumnMaxWidths{
+  280.0f, 110.0f, 130.0f, 115.0f, 110.0f, 130.0f, 120.0f, 115.0f, 110.0f, 115.0f, 125.0f, 140.0f,
+  170.0f, 120.0f, 130.0f, 72.0f,  180.0f, 150.0f, 230.0f, 170.0f, 230.0f, 120.0f, 110.0f};
 
-constexpr std::array<bool, sk_inspectorColumnCount> sk_inspectorColumnCanHide{false, true, true, true, true, true, true,
-                                                                              true,  true, true, true, true, true, true,
-                                                                              true,  true, true, true, true, true};
+constexpr std::array<bool, k_inspectorColumnCount> k_inspectorColumnCanHide{
+  false, true, true, true, true, true, true, true, true, true, true, true,
+  true,  true, true, true, true, true, true, true, true, true, true};
 
 constexpr int columnIndex(InspectorColumn column)
 {
@@ -144,6 +153,22 @@ bool hasTimeSeriesImage(const AppData& appData)
   for (const auto& imageUid : appData.imageUidsOrdered()) {
     const Image* image = appData.image(imageUid);
     if (image && image->isTimeSeries()) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool hasWarpedImage(const AppData& appData)
+{
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
+    const Image* image = appData.image(imageUid);
+    const std::optional<uuid> defUid = appData.imageToActiveInverseWarpUid(imageUid);
+    if (
+      image && image->settings().warpEnabled() && image->settings().warpStrength() > 0.0f && defUid &&
+      appData.warpField(*defUid))
+    {
       return true;
     }
   }
@@ -233,12 +258,15 @@ bool isComponentProjectionColumn(InspectorColumn column)
     case InspectorColumn::Imaginary:
     case InspectorColumn::Phase:
     case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::LogJacobianDeterminant:
     case InspectorColumn::CurlMagnitude:
     case InspectorColumn::Divergence:
     case InspectorColumn::Label:
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
     case InspectorColumn::Subject:
+    case InspectorColumn::SampleVoxel:
+    case InspectorColumn::SampleSubject:
     case InspectorColumn::Count:
       return false;
   }
@@ -250,6 +278,7 @@ bool isVectorDerivativeColumn(InspectorColumn column)
 {
   switch (column) {
     case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::LogJacobianDeterminant:
     case InspectorColumn::CurlMagnitude:
     case InspectorColumn::Divergence:
       return true;
@@ -270,6 +299,8 @@ bool isVectorDerivativeColumn(InspectorColumn column)
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
     case InspectorColumn::Subject:
+    case InspectorColumn::SampleVoxel:
+    case InspectorColumn::SampleSubject:
     case InspectorColumn::Count:
       return false;
   }
@@ -295,6 +326,43 @@ bool isComplexColumn(InspectorColumn column)
     case InspectorColumn::Maximum:
     case InspectorColumn::Magnitude:
     case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::LogJacobianDeterminant:
+    case InspectorColumn::CurlMagnitude:
+    case InspectorColumn::Divergence:
+    case InspectorColumn::Label:
+    case InspectorColumn::Region:
+    case InspectorColumn::Voxel:
+    case InspectorColumn::Subject:
+    case InspectorColumn::SampleVoxel:
+    case InspectorColumn::SampleSubject:
+    case InspectorColumn::Count:
+      return false;
+  }
+
+  return false;
+}
+
+bool isWarpedCoordinateColumn(InspectorColumn column)
+{
+  switch (column) {
+    case InspectorColumn::SampleVoxel:
+    case InspectorColumn::SampleSubject:
+      return true;
+    case InspectorColumn::Image:
+    case InspectorColumn::TimeFrame:
+    case InspectorColumn::TimeValue:
+    case InspectorColumn::Value:
+    case InspectorColumn::InterpolatedValue:
+    case InspectorColumn::Percentile:
+    case InspectorColumn::Real:
+    case InspectorColumn::Imaginary:
+    case InspectorColumn::Phase:
+    case InspectorColumn::Minimum:
+    case InspectorColumn::Mean:
+    case InspectorColumn::Maximum:
+    case InspectorColumn::Magnitude:
+    case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::LogJacobianDeterminant:
     case InspectorColumn::CurlMagnitude:
     case InspectorColumn::Divergence:
     case InspectorColumn::Label:
@@ -306,6 +374,48 @@ bool isComplexColumn(InspectorColumn column)
   }
 
   return false;
+}
+
+struct WarpedSamplePosition
+{
+  glm::dvec3 voxel;
+  glm::dvec3 subject;
+};
+
+std::optional<WarpedSamplePosition>
+warpedSamplePosition(const AppData& appData, const uuid& imageUid, const Image& image, const glm::vec3& subjectPos)
+{
+  if (!image.settings().warpEnabled() || image.settings().warpStrength() <= 0.0f) {
+    return std::nullopt;
+  }
+
+  const std::optional<uuid> defUid = appData.imageToActiveInverseWarpUid(imageUid);
+  const Image* def = defUid ? appData.warpField(*defUid) : nullptr;
+  if (!def || def->header().numComponentsPerPixel() < 3) {
+    return std::nullopt;
+  }
+
+  const glm::dvec4 worldPosH =
+    glm::dmat4{image.transformations().worldDef_T_subject()} * glm::dvec4{glm::dvec3{subjectPos}, 1.0};
+  const glm::dvec3 worldPos = glm::dvec3{worldPosH} / worldPosH.w;
+  const glm::dvec4 defVoxelH = glm::dmat4{def->transformations().pixel_T_worldDef()} * glm::dvec4{worldPos, 1.0};
+  const glm::dvec3 defVoxel = glm::dvec3{defVoxelH} / defVoxelH.w;
+  const uint32_t timePoint = def->timeAxis().clamp(def->settings().activeTimePoint());
+
+  const auto dx = def->valueLinear<double>(0, defVoxel.x, defVoxel.y, defVoxel.z, timePoint);
+  const auto dy = def->valueLinear<double>(1, defVoxel.x, defVoxel.y, defVoxel.z, timePoint);
+  const auto dz = def->valueLinear<double>(2, defVoxel.x, defVoxel.y, defVoxel.z, timePoint);
+  if (!dx || !dy || !dz) {
+    return std::nullopt;
+  }
+
+  const glm::dvec3 sampleWorld =
+    worldPos + static_cast<double>(image.settings().warpStrength()) * glm::dvec3{*dx, *dy, *dz};
+  const glm::dvec4 sampleVoxelH = glm::dmat4{image.transformations().pixel_T_worldDef()} * glm::dvec4{sampleWorld, 1.0};
+  const glm::dvec4 sampleSubjectH =
+    glm::dmat4{image.transformations().subject_T_worldDef()} * glm::dvec4{sampleWorld, 1.0};
+
+  return WarpedSamplePosition{glm::dvec3{sampleVoxelH} / sampleVoxelH.w, glm::dvec3{sampleSubjectH} / sampleSubjectH.w};
 }
 
 std::optional<double> complexColumnValue(InspectorColumn column, const Image& image, const std::vector<double>& values)
@@ -336,12 +446,15 @@ std::optional<double> complexColumnValue(InspectorColumn column, const Image& im
     case InspectorColumn::Maximum:
     case InspectorColumn::Magnitude:
     case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::LogJacobianDeterminant:
     case InspectorColumn::CurlMagnitude:
     case InspectorColumn::Divergence:
     case InspectorColumn::Label:
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
     case InspectorColumn::Subject:
+    case InspectorColumn::SampleVoxel:
+    case InspectorColumn::SampleSubject:
     case InspectorColumn::Count:
       break;
   }
@@ -396,12 +509,15 @@ std::optional<double> componentProjectionValue(InspectorColumn column, const std
     case InspectorColumn::Imaginary:
     case InspectorColumn::Phase:
     case InspectorColumn::JacobianDeterminant:
+    case InspectorColumn::LogJacobianDeterminant:
     case InspectorColumn::CurlMagnitude:
     case InspectorColumn::Divergence:
     case InspectorColumn::Label:
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
     case InspectorColumn::Subject:
+    case InspectorColumn::SampleVoxel:
+    case InspectorColumn::SampleSubject:
     case InspectorColumn::Count:
       break;
   }
@@ -432,6 +548,12 @@ vectorDerivativeColumnValue(InspectorColumn column, const Image& image, const st
         ComponentProjectionMode::VectorJacobianDeterminant,
         voxel,
         timePoint);
+    case InspectorColumn::LogJacobianDeterminant:
+      return vectorDerivativeProjectionValue(
+        image,
+        ComponentProjectionMode::VectorLogJacobianDeterminant,
+        voxel,
+        timePoint);
     case InspectorColumn::CurlMagnitude:
       return vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorCurlMagnitude, voxel, timePoint);
     case InspectorColumn::Divergence:
@@ -453,6 +575,8 @@ vectorDerivativeColumnValue(InspectorColumn column, const Image& image, const st
     case InspectorColumn::Region:
     case InspectorColumn::Voxel:
     case InspectorColumn::Subject:
+    case InspectorColumn::SampleVoxel:
+    case InspectorColumn::SampleSubject:
     case InspectorColumn::Count:
       break;
   }
@@ -501,6 +625,8 @@ const char* inspectionColumnTooltip(InspectorColumn column)
       return "Magnitude of the component vector at the nearest image voxel";
     case InspectorColumn::JacobianDeterminant:
       return "Jacobian determinant of the vector field at the nearest image voxel";
+    case InspectorColumn::LogJacobianDeterminant:
+      return "Natural log of the Jacobian determinant at the nearest image voxel";
     case InspectorColumn::CurlMagnitude:
       return "Curl magnitude of the vector field at the nearest image voxel";
     case InspectorColumn::Divergence:
@@ -513,6 +639,10 @@ const char* inspectionColumnTooltip(InspectorColumn column)
       return "Voxel index (i: column, j: row, k: slice)";
     case InspectorColumn::Subject:
       return "Subject-space LPS coordinates in millimeters (x: R->L, y: A->P, z: I->S)";
+    case InspectorColumn::SampleVoxel:
+      return "Moving-image voxel coordinate sampled after deformation";
+    case InspectorColumn::SampleSubject:
+      return "Moving-image subject coordinate sampled after deformation";
     case InspectorColumn::Image:
     case InspectorColumn::Count:
       break;
@@ -537,33 +667,38 @@ void renderInspectionWindowWithTable(
 {
   static bool s_firstRun = true; // Is this the first run?
 
-  static constexpr float sk_pad = 10.0f;
+  static constexpr float k_pad = 10.0f;
   static int corner = -1;
 
   //    bool selectionButtonShown = false;
 
-  static const ImVec2 sk_windowPadding(0.0f, 0.0f);
-  static const ImVec2 sk_framePadding(0.0f, 0.0f);
-  static const ImVec2 sk_itemInnerSpacing(1.0f, 1.0f);
-  static const ImVec2 sk_cellPadding(0.0f, 0.0f);
-  static const float sk_windowRounding(0.0f);
+  static const ImVec2 k_windowPadding(0.0f, 0.0f);
+  static const ImVec2 k_itemInnerSpacing(1.0f, 1.0f);
+  static const ImVec2 k_cellPadding(0.0f, 0.0f);
+  static const float k_windowRounding(0.0f);
 
   //    static const ImVec4 blueColor( 0.0f, 0.5f, 1.0f, 1.0f );
 
-  static const ImGuiTableFlags sk_tableFlags =
+  static const ImGuiTableFlags k_tableFlags =
     ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders |
     ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY;
 
-  static const ImGuiWindowFlags sk_windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoFocusOnAppearing;
+  static const ImGuiWindowFlags k_windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoFocusOnAppearing;
 
   static bool s_showTitleBar = false;
   static bool s_autoSizeColumnsRequested = false;
-  static std::array<bool, sk_inspectorColumnCount> s_autoSizeColumnRequested{};
+  static std::array<bool, k_inspectorColumnCount> s_autoSizeColumnRequested{};
   static bool s_hadTimeSeriesColumnAvailable = false;
+  static bool s_hadWarpedCoordinateColumnAvailable = false;
   const bool canShowTimeFrameColumn = hasTimeSeriesImage(appData);
   const bool canShowComponentProjectionColumns = hasMultiComponentImage(appData);
   const bool canShowComplexColumns = hasComplexValuedImage(appData);
   const bool canShowVectorDerivativeColumns = hasVectorFieldImage(appData);
+  const bool canShowWarpedCoordinateColumns = hasWarpedImage(appData);
+  if (!canShowWarpedCoordinateColumns) {
+    appData.guiData().m_inspectionColumnVisible.at(columnIndex(InspectorColumn::SampleVoxel)) = false;
+    appData.guiData().m_inspectionColumnVisible.at(columnIndex(InspectorColumn::SampleSubject)) = false;
+  }
 
   if (canShowTimeFrameColumn && !s_hadTimeSeriesColumnAvailable) {
     appData.guiData().m_inspectionColumnVisible.at(columnIndex(InspectorColumn::TimeFrame)) = true;
@@ -572,6 +707,13 @@ void renderInspectionWindowWithTable(
     s_autoSizeColumnRequested.at(columnIndex(InspectorColumn::TimeValue)) = true;
   }
   s_hadTimeSeriesColumnAvailable = canShowTimeFrameColumn;
+  if (canShowWarpedCoordinateColumns && !s_hadWarpedCoordinateColumnAvailable) {
+    appData.guiData().m_inspectionColumnVisible.at(columnIndex(InspectorColumn::SampleVoxel)) = true;
+    appData.guiData().m_inspectionColumnVisible.at(columnIndex(InspectorColumn::SampleSubject)) = true;
+    s_autoSizeColumnRequested.at(columnIndex(InspectorColumn::SampleVoxel)) = true;
+    s_autoSizeColumnRequested.at(columnIndex(InspectorColumn::SampleSubject)) = true;
+  }
+  s_hadWarpedCoordinateColumnAvailable = canShowWarpedCoordinateColumns;
   const std::string timeValueHeader = timeValueColumnName(appData);
 
   // For which images to show coordinates?
@@ -591,13 +733,14 @@ void renderInspectionWindowWithTable(
                                       canShowTimeFrameColumn,
                                       canShowComponentProjectionColumns,
                                       canShowComplexColumns,
-                                      canShowVectorDerivativeColumns]() {
+                                      canShowVectorDerivativeColumns,
+                                      canShowWarpedCoordinateColumns]() {
     if (ImGui::MenuItem("Auto-size columns")) {
       s_autoSizeColumnsRequested = true;
     }
     ImGui::Separator();
 
-    for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+    for (std::size_t column = 0; column < k_inspectorColumnNames.size(); ++column) {
       const auto inspectorColumn = static_cast<InspectorColumn>(column);
       if (
         (InspectorColumn::TimeFrame == inspectorColumn || InspectorColumn::TimeValue == inspectorColumn) &&
@@ -618,23 +761,27 @@ void renderInspectionWindowWithTable(
         appData.guiData().m_inspectionColumnVisible.at(column) = false;
         continue;
       }
+      if (isWarpedCoordinateColumn(inspectorColumn) && !canShowWarpedCoordinateColumns) {
+        appData.guiData().m_inspectionColumnVisible.at(column) = false;
+        continue;
+      }
 
       bool visible = appData.guiData().m_inspectionColumnVisible.at(column);
-      if (!sk_inspectorColumnCanHide.at(column)) {
+      if (!k_inspectorColumnCanHide.at(column)) {
         ImGui::BeginDisabled();
       }
-      const char* columnName = sk_inspectorColumnNames.at(column);
+      const char* columnName = k_inspectorColumnNames.at(column);
       if (InspectorColumn::TimeValue == inspectorColumn) {
         columnName = timeValueHeader.c_str();
       }
-      if (ImGui::MenuItem(columnName, nullptr, visible) && sk_inspectorColumnCanHide.at(column)) {
+      if (ImGui::MenuItem(columnName, nullptr, visible) && k_inspectorColumnCanHide.at(column)) {
         const bool newVisible = !visible;
         appData.guiData().m_inspectionColumnVisible.at(column) = newVisible;
         if (newVisible) {
           s_autoSizeColumnRequested.at(column) = true;
         }
       }
-      if (!sk_inspectorColumnCanHide.at(column)) {
+      if (!k_inspectorColumnCanHide.at(column)) {
         ImGui::EndDisabled();
       }
     }
@@ -716,11 +863,11 @@ void renderInspectionWindowWithTable(
   };
 
   auto columnWidths = [&]() {
-    std::array<float, sk_inspectorColumnCount> widths{};
+    std::array<float, k_inspectorColumnCount> widths{};
     for (std::size_t column = 0; column < widths.size(); ++column) {
       widths[column] = std::max(
         k_inspectorColumnDefaultWidths.at(column),
-        inspectionColumnWidthForText(sk_inspectorColumnNames.at(column)));
+        inspectionColumnWidthForText(k_inspectorColumnNames.at(column)));
     }
 
     auto expandWidth = [&widths](InspectorColumn column, const char* text) {
@@ -736,6 +883,8 @@ void renderInspectionWindowWithTable(
     expandWidth(InspectorColumn::Label, "00000");
     expandWidth(InspectorColumn::Voxel, "0000, 0000, 0000");
     expandWidth(InspectorColumn::Subject, "-000.000, -000.000, -000.000");
+    expandWidth(InspectorColumn::SampleVoxel, "-0000.000, -0000.000, -0000.000");
+    expandWidth(InspectorColumn::SampleSubject, "-000.000, -000.000, -000.000");
 
     for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
       const auto imageUid = appData.imageUid(imageIndex);
@@ -765,6 +914,7 @@ void renderInspectionWindowWithTable(
       }
       if (isVectorFieldImage(*image)) {
         expandWidth(InspectorColumn::JacobianDeterminant, "-0000.000");
+        expandWidth(InspectorColumn::LogJacobianDeterminant, "-0000.000");
         expandWidth(InspectorColumn::CurlMagnitude, "-0000.000");
         expandWidth(InspectorColumn::Divergence, "-0000.000");
       }
@@ -796,7 +946,7 @@ void renderInspectionWindowWithTable(
   };
 
   const bool useOverlayPresentation = corner != -1;
-  ImGuiWindowFlags windowFlags = sk_windowFlags;
+  ImGuiWindowFlags windowFlags = k_windowFlags;
 
   if (corner != -1) {
     windowFlags |= ImGuiWindowFlags_NoMove;
@@ -804,8 +954,8 @@ void renderInspectionWindowWithTable(
     ImGuiIO& io = ImGui::GetIO();
 
     const ImVec2 windowPos(
-      (corner & 1) ? io.DisplaySize.x - sk_pad : sk_pad,
-      (corner & 2) ? io.DisplaySize.y - sk_pad : sk_pad);
+      (corner & 1) ? io.DisplaySize.x - k_pad : k_pad,
+      (corner & 2) ? io.DisplaySize.y - k_pad : k_pad);
 
     const ImVec2 windowPosPivot((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
 
@@ -824,17 +974,17 @@ void renderInspectionWindowWithTable(
     ImGui::SetNextWindowBgAlpha(0.0f);
   }
 
-  const std::array<float, sk_inspectorColumnCount> inspectorColumnWidths = columnWidths();
+  const std::array<float, k_inspectorColumnCount> inspectorColumnWidths = columnWidths();
 
-  ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, sk_cellPadding);
+  ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, k_cellPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImGui::GetStyle().FramePadding);
-  ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, sk_itemInnerSpacing);
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, k_itemInnerSpacing);
   ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
   ImGui::PushStyleVar(
     ImGuiStyleVar_WindowPadding,
-    useOverlayPresentation ? sk_windowPadding : ImGui::GetStyle().WindowPadding);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, sk_windowRounding);
+    useOverlayPresentation ? k_windowPadding : ImGui::GetStyle().WindowPadding);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, k_windowRounding);
 
   setNextWindowSizeConstraintsToMainViewport(480.0f, 120.0f);
   ImGui::SetNextWindowSize(ImVec2{720.0f, 180.0f}, ImGuiCond_FirstUseEver);
@@ -856,24 +1006,24 @@ void renderInspectionWindowWithTable(
       ImGui::PopStyleColor(1); // ImGuiCol_MenuBarBg
     }
 
-    if (ImGui::BeginTable("Image Information", static_cast<int>(sk_inspectorColumnCount), sk_tableFlags)) {
+    if (ImGui::BeginTable("Image Information", static_cast<int>(k_inspectorColumnCount), k_tableFlags)) {
       ImGui::TableSetupScrollFreeze(1, 1);
 
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Image)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Image)),
         ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Image)));
 
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Value)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Value)),
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Value)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::InterpolatedValue)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::InterpolatedValue)),
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::InterpolatedValue)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Percentile)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Percentile)),
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Percentile)));
 
@@ -886,71 +1036,86 @@ void renderInspectionWindowWithTable(
       const ImGuiTableColumnFlags vectorDerivativeColumnFlags =
         ImGuiTableColumnFlags_WidthFixed |
         (canShowVectorDerivativeColumns ? ImGuiTableColumnFlags_None : ImGuiTableColumnFlags_Disabled);
+      const ImGuiTableColumnFlags warpedCoordinateColumnFlags =
+        ImGuiTableColumnFlags_WidthFixed |
+        (canShowWarpedCoordinateColumns ? ImGuiTableColumnFlags_None : ImGuiTableColumnFlags_Disabled);
 
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Real)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Real)),
         complexColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Real)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Imaginary)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Imaginary)),
         complexColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Imaginary)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Magnitude)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Magnitude)),
         componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Magnitude)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Phase)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Phase)),
         complexColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Phase)));
 
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Minimum)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Minimum)),
         componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Minimum)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Mean)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Mean)),
         componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Mean)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Maximum)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Maximum)),
         componentProjectionColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Maximum)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::JacobianDeterminant)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::JacobianDeterminant)),
         vectorDerivativeColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::JacobianDeterminant)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::CurlMagnitude)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::LogJacobianDeterminant)),
+        vectorDerivativeColumnFlags,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::LogJacobianDeterminant)));
+      ImGui::TableSetupColumn(
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::CurlMagnitude)),
         vectorDerivativeColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::CurlMagnitude)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Divergence)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Divergence)),
         vectorDerivativeColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Divergence)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Label)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Label)),
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Label)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Region)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Region)),
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Region)));
 
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Voxel)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Voxel)),
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Voxel)));
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::Subject)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::Subject)),
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Subject)));
+      ImGui::TableSetupColumn(
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::SampleVoxel)),
+        warpedCoordinateColumnFlags,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::SampleVoxel)));
+      ImGui::TableSetupColumn(
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::SampleSubject)),
+        warpedCoordinateColumnFlags,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::SampleSubject)));
 
       const ImGuiTableColumnFlags timeFrameColumnFlags =
         ImGuiTableColumnFlags_WidthFixed |
         (canShowTimeFrameColumn ? ImGuiTableColumnFlags_None : ImGuiTableColumnFlags_Disabled);
       ImGui::TableSetupColumn(
-        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::TimeFrame)),
+        k_inspectorColumnNames.at(columnIndex(InspectorColumn::TimeFrame)),
         timeFrameColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::TimeFrame)));
       ImGui::TableSetupColumn(
@@ -958,10 +1123,10 @@ void renderInspectionWindowWithTable(
         timeFrameColumnFlags,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::TimeValue)));
 
-      for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+      for (std::size_t column = 0; column < k_inspectorColumnNames.size(); ++column) {
         ImGui::TableSetColumnEnabled(
           static_cast<int>(column),
-          appData.guiData().m_inspectionColumnVisible.at(column) || !sk_inspectorColumnCanHide.at(column));
+          appData.guiData().m_inspectionColumnVisible.at(column) || !k_inspectorColumnCanHide.at(column));
       }
 
       ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
@@ -984,9 +1149,9 @@ void renderInspectionWindowWithTable(
         }
       }
 
-      for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
+      for (std::size_t column = 0; column < k_inspectorColumnNames.size(); ++column) {
         ImGui::TableSetColumnIndex(static_cast<int>(column));
-        const char* columnName = sk_inspectorColumnNames.at(column);
+        const char* columnName = k_inspectorColumnNames.at(column);
         if (InspectorColumn::TimeValue == static_cast<InspectorColumn>(column)) {
           columnName = timeValueHeader.c_str();
         }
@@ -1018,9 +1183,9 @@ void renderInspectionWindowWithTable(
         ParcellationLabelTable* table = (seg ? getLabelTable(seg->settings().labelTableIndex()) : nullptr);
 
         // Get all image component values
-        static constexpr bool sk_getOnlyActiveComponent = false;
-        std::vector<double> imageValuesNN = getImageValuesNN(imageIndex, sk_getOnlyActiveComponent);
-        std::vector<double> imageValuesLinear = getImageValuesLinear(imageIndex, sk_getOnlyActiveComponent);
+        static constexpr bool k_getOnlyActiveComponent = false;
+        std::vector<double> imageValuesNN = getImageValuesNN(imageIndex, k_getOnlyActiveComponent);
+        std::vector<double> imageValuesLinear = getImageValuesLinear(imageIndex, k_getOnlyActiveComponent);
 
         const std::optional<int64_t> segLabel = getSegLabel(imageIndex);
 
@@ -1339,6 +1504,7 @@ void renderInspectionWindowWithTable(
         };
 
         renderVectorDerivativeColumn(InspectorColumn::JacobianDeterminant, "##vectorJacobianDeterminant");
+        renderVectorDerivativeColumn(InspectorColumn::LogJacobianDeterminant, "##vectorLogJacobianDeterminant");
         renderVectorDerivativeColumn(InspectorColumn::CurlMagnitude, "##vectorCurlMagnitude");
         renderVectorDerivativeColumn(InspectorColumn::Divergence, "##vectorDivergence");
 
@@ -1381,12 +1547,12 @@ void renderInspectionWindowWithTable(
         }
 
         if (voxelPos) {
-          static const glm::ivec3 sk_zero{0};
-          static const glm::ivec3 sk_minDim{0};
+          static const glm::ivec3 k_zero{0};
+          static const glm::ivec3 k_minDim{0};
 
           ImGui::TableNextColumn(); // "Voxel"
 
-          const glm::ivec3 sk_maxDim = static_cast<glm::ivec3>(image->header().pixelDimensions()) - glm::ivec3{1, 1, 1};
+          const glm::ivec3 k_maxDim = static_cast<glm::ivec3>(image->header().pixelDimensions()) - glm::ivec3{1, 1, 1};
 
           glm::ivec3 a = *voxelPos;
           ImGui::PushItemWidth(-1);
@@ -1396,12 +1562,12 @@ void renderInspectionWindowWithTable(
                 glm::value_ptr(a),
                 3,
                 1.0f,
-                glm::value_ptr(sk_minDim),
-                glm::value_ptr(sk_maxDim),
+                glm::value_ptr(k_minDim),
+                glm::value_ptr(k_maxDim),
                 "%d"))
           {
             if (
-              glm::all(glm::greaterThanEqual(a, sk_zero)) &&
+              glm::all(glm::greaterThanEqual(a, k_zero)) &&
               glm::all(glm::lessThan(a, glm::ivec3{image->header().pixelDimensions()})))
             {
               setVoxelPos(imageIndex, a);
@@ -1440,6 +1606,33 @@ void renderInspectionWindowWithTable(
           ImGui::TableNextColumn(); // "Subject LPS"
           ImGui::Text("<N/A>");
         }
+
+        const std::optional<WarpedSamplePosition> warpedSample =
+          subjectPos ? warpedSamplePosition(appData, *imageUid, *image, *subjectPos) : std::nullopt;
+
+        auto renderWarpedCoordinateColumn = [&](InspectorColumn column, const char* itemId) {
+          ImGui::TableNextColumn();
+          if (warpedSample) {
+            glm::dvec3 value = (InspectorColumn::SampleVoxel == column) ? warpedSample->voxel : warpedSample->subject;
+            ImGui::PushItemWidth(-1);
+            ImGui::InputScalarN(
+              itemId,
+              ImGuiDataType_Double,
+              glm::value_ptr(value),
+              3,
+              nullptr,
+              nullptr,
+              appData.guiData().m_coordsPrecisionFormat.c_str(),
+              ImGuiInputTextFlags_ReadOnly);
+            ImGui::PopItemWidth();
+          }
+          else {
+            ImGui::Text("<N/A>");
+          }
+        };
+
+        renderWarpedCoordinateColumn(InspectorColumn::SampleVoxel, "##sampleVoxel");
+        renderWarpedCoordinateColumn(InspectorColumn::SampleSubject, "##sampleSubject");
 
         ImGui::TableNextColumn(); // "Time frame"
         if (const std::optional<uint32_t> timeFrame = timeFrameValue(*image)) {
@@ -1484,8 +1677,8 @@ void renderInspectionWindowWithTable(
         ImGui::PopID(); /** PopID: imageIndex **/
       }
 
-      for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
-        if (!sk_inspectorColumnCanHide.at(column)) {
+      for (std::size_t column = 0; column < k_inspectorColumnNames.size(); ++column) {
+        if (!k_inspectorColumnCanHide.at(column)) {
           continue;
         }
 

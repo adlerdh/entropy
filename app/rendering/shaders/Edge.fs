@@ -9,6 +9,7 @@
 in VS_OUT
 {
   vec3 v_texCoord;
+  vec3 v_worldPos;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 }
@@ -58,6 +59,9 @@ $$COMPUTE_EDGE_FUNCTION$$
 /// float textureLookup(sampler3D texture, vec3 texCoord);
 $$TEXTURE_LOOKUP_FUNCTION$$
 
+/// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
+$$SAMPLE_TEX_COORD_FUNCTION$$
+
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
 $$DO_RENDER_FUNCTION$$
 
@@ -73,7 +77,8 @@ bool isEdgeNeighborhoodInsideTexture(vec3 texCoord)
 
 void main()
 {
-  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord) || !isEdgeNeighborhoodInsideTexture(fs_in.v_texCoord)) {
+  vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
+  if (!doRender(fs_in.v_clipPos, fs_in.v_checkerCoord) || !isEdgeNeighborhoodInsideTexture(sampleTc)) {
     discard;
   }
 
@@ -81,7 +86,7 @@ void main()
   for (int j = 0; j <= 2; ++j) {
     for (int i = 0; i <= 2; ++i) {
       vec3 texSamplingPos = float(i - 1) * u_texelDirs[0] + float(j - 1) * u_texelDirs[1];
-      float v = clamp(textureLookup(u_imgTex, fs_in.v_texCoord + texSamplingPos), u_imgMinMax[0], u_imgMinMax[1]);
+      float v = clamp(textureLookup(u_imgTex, sampleTc + texSamplingPos), u_imgMinMax[0], u_imgMinMax[1]);
       V[i][j] =
         u_imgSlopeIntercept[0] * v + u_imgSlopeIntercept[1]; // max window/level to normalize values in [0.0, 1.0]
     }
@@ -91,8 +96,8 @@ void main()
   float gradMag = computeEdge(V, u_edgeMagnitude);
   gradMag = mix(gradMag, float(gradMag > u_edgeMagnitude), float(u_thresholdEdges));
 
-  float mask = float(isInsideTexture(fs_in.v_texCoord));
-  float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
+  float mask = float(isInsideTexture(sampleTc));
+  float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
   float alpha = u_imgOpacity * mask * hardThreshold(img, u_imgThresholds);
 
   vec4 gradColormap = texture(u_cmapTex, u_cmapSlopeIntercept[0] * gradMag + u_cmapSlopeIntercept[1]);

@@ -159,21 +159,28 @@ public:
     const std::size_t c = compAndOffset->first;
     const std::size_t offset = compAndOffset->second;
 
+    auto valueFromBuffer = [c, offset](const auto& buffers) -> std::optional<T> {
+      if (c >= buffers.size() || offset >= buffers[c].size()) {
+        return std::nullopt;
+      }
+      return static_cast<T>(buffers[c][offset]);
+    };
+
     switch (m_header.memoryComponentType()) {
       case ComponentType::Int8:
-        return static_cast<T>(m_data_int8.at(c)[offset]);
+        return valueFromBuffer(m_data_int8);
       case ComponentType::UInt8:
-        return static_cast<T>(m_data_uint8.at(c)[offset]);
+        return valueFromBuffer(m_data_uint8);
       case ComponentType::Int16:
-        return static_cast<T>(m_data_int16.at(c)[offset]);
+        return valueFromBuffer(m_data_int16);
       case ComponentType::UInt16:
-        return static_cast<T>(m_data_uint16.at(c)[offset]);
+        return valueFromBuffer(m_data_uint16);
       case ComponentType::Int32:
-        return static_cast<T>(m_data_int32.at(c)[offset]);
+        return valueFromBuffer(m_data_int32);
       case ComponentType::UInt32:
-        return static_cast<T>(m_data_uint32.at(c)[offset]);
+        return valueFromBuffer(m_data_uint32);
       case ComponentType::Float32:
-        return static_cast<T>(m_data_float32.at(c)[offset]);
+        return valueFromBuffer(m_data_float32);
       default:
         return std::nullopt;
     }

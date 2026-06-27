@@ -6,7 +6,9 @@
 #include <uuid.h>
 
 #include <cstddef>
+#include <filesystem>
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -30,6 +32,7 @@ class ImageColorMap;
  * @param updateImageUniforms Callback that refreshes uniforms for one image.
  * @param updateImageInterpolationMode Callback that updates interpolation state for one image.
  * @param updateImageColorMapInterpolationMode Callback that updates interpolation state for one color map.
+ * @param loadDeformationField Callback that loads a deformation field and returns its UID.
  * @param setLockManualImageTransformation Callback that toggles manual transform locking for one image.
  * @param requestComponentProjectionImage Callback that starts creation of a scalar component projection.
  * @param requestSetReferenceImage Callback that requests a new reference image.
@@ -52,6 +55,7 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
   const std::function<void(const uuids::uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
+  const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadDeformationField,
   const std::function<bool(const uuids::uuid& imageUid, bool locked)>& setLockManualImageTransformation,
   const std::function<void(const uuids::uuid& imageUid, ComponentProjectionMode mode)>& requestComponentProjectionImage,
   const std::function<void(const uuids::uuid& imageUid)>& requestSetReferenceImage,

@@ -478,13 +478,19 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
     }
   }
 
-  // Components of a deformation field image are loaded as interleaved images
   Image def(fileName, Image::ImageRepresentation::Image, Image::MultiComponentBufferType::InterleavedImage);
 
   if (def.header().numComponentsPerPixel() < 3) {
     spdlog::error(
       "The deformation field from file {} has fewer than three components per pixel "
       "and so will not be loaded.",
+      fileName);
+    return noDefLoaded;
+  }
+
+  if (!def.bufferAsVoid(0, def.timeAxis().clamp(def.settings().activeTimePoint()))) {
+    spdlog::error(
+      "The deformation field from file {} does not expose loaded pixel data and so will not be loaded.",
       fileName);
     return noDefLoaded;
   }
@@ -652,58 +658,58 @@ bool EntropyApp::loadSerializedImage(
     }
   }
 
-  if (serializedImage.m_deformationFileName) {
-    std::optional<uuids::uuid> deformationUid;
-    bool isDeformationNewImage = false;
+  if (serializedImage.m_inverseWarpFileName) {
+    std::optional<uuids::uuid> inverseWarpUid;
+    bool isInverseWarpNewImage = false;
 
     try {
-      spdlog::debug("Attempting to load deformation field image from {}", *serializedImage.m_deformationFileName);
-      std::tie(deformationUid, isDeformationNewImage) = loadDeformationField(*serializedImage.m_deformationFileName);
+      spdlog::debug("Attempting to load inverse warp image from {}", *serializedImage.m_inverseWarpFileName);
+      std::tie(inverseWarpUid, isInverseWarpNewImage) = loadDeformationField(*serializedImage.m_inverseWarpFileName);
     }
     catch (const std::exception& e) {
-      spdlog::error(
-        "Exception loading deformation field from {}: {}",
-        *serializedImage.m_deformationFileName,
-        e.what());
+      spdlog::error("Exception loading inverse warp from {}: {}", *serializedImage.m_inverseWarpFileName, e.what());
     }
 
     do {
-      if (!deformationUid) {
+      if (!inverseWarpUid) {
         spdlog::error(
-          "Unable to load deformation field from {} for image {}",
-          *serializedImage.m_deformationFileName,
+          "Unable to load inverse warp from {} for image {}",
+          *serializedImage.m_inverseWarpFileName,
           *imageUid);
         break;
       }
 
-      if (!isDeformationNewImage) {
+      if (!isInverseWarpNewImage) {
         spdlog::info(
-          "Deformation field from {} already exists in this project as image {}",
-          *serializedImage.m_deformationFileName,
-          *deformationUid);
+          "Inverse warp from {} already exists in this project as image {}",
+          *serializedImage.m_inverseWarpFileName,
+          *inverseWarpUid);
+      }
+
+      Image* inverseWarp = m_data.def(*inverseWarpUid);
+
+      if (!inverseWarp) {
+        spdlog::error("Null inverse warp image {}", *inverseWarpUid);
         break;
       }
 
-      Image* deformation = m_data.def(*deformationUid);
+      if (isInverseWarpNewImage) {
+        inverseWarp->settings().setDisplayName(inverseWarp->settings().displayName() + " (deformation)");
 
-      if (!deformation) {
-        spdlog::error("Null deformation field image {}", *deformationUid);
-        break;
+        // TODO: Load this from project settings.
+        for (uint32_t i = 0; i < inverseWarp->header().numComponentsPerPixel(); ++i) {
+          inverseWarp->settings().setColorMapIndex(i, 25);
+        }
       }
 
-      deformation->settings().setDisplayName(deformation->settings().displayName() + " (deformation)");
-
-      // TODO: Load this from project settings.
-      for (uint32_t i = 0; i < deformation->header().numComponentsPerPixel(); ++i) {
-        deformation->settings().setColorMapIndex(i, 25);
-      }
-
-      if (m_data.assignDefUidToImage(*imageUid, *deformationUid)) {
-        spdlog::info("Assigned deformation field {} to image {}", *deformationUid, *imageUid);
+      if (m_data.assignInverseWarpUidToImage(*imageUid, *inverseWarpUid)) {
+        spdlog::info("Assigned inverse warp {} to image {}", *inverseWarpUid, *imageUid);
       }
       else {
-        spdlog::error("Unable to assign deformation field {} to image {}", *deformationUid, *imageUid);
-        m_data.removeDef(*deformationUid);
+        spdlog::error("Unable to assign inverse warp {} to image {}", *inverseWarpUid, *imageUid);
+        if (isInverseWarpNewImage) {
+          m_data.removeDef(*inverseWarpUid);
+        }
         break;
       }
 
@@ -716,6 +722,65 @@ bool EntropyApp::loadSerializedImage(
     // 3) need warning when header tx doesn't match that of reference
     // 4) even if all components are loaded as RGB texure, we should be able to view each component
     // separately in a shader that takes in as a uniform the active component
+  }
+
+  if (serializedImage.m_forwardWarpFileName) {
+    std::optional<uuids::uuid> forwardWarpUid;
+    bool isForwardWarpNewImage = false;
+
+    try {
+      spdlog::debug("Attempting to load forward warp image from {}", *serializedImage.m_forwardWarpFileName);
+      std::tie(forwardWarpUid, isForwardWarpNewImage) = loadDeformationField(*serializedImage.m_forwardWarpFileName);
+    }
+    catch (const std::exception& e) {
+      spdlog::error("Exception loading forward warp from {}: {}", *serializedImage.m_forwardWarpFileName, e.what());
+    }
+
+    do {
+      if (!forwardWarpUid) {
+        spdlog::error(
+          "Unable to load forward warp from {} for image {}",
+          *serializedImage.m_forwardWarpFileName,
+          *imageUid);
+        break;
+      }
+
+      if (!isForwardWarpNewImage) {
+        spdlog::info(
+          "Forward warp from {} already exists in this project as image {}",
+          *serializedImage.m_forwardWarpFileName,
+          *forwardWarpUid);
+      }
+
+      Image* forwardWarp = m_data.def(*forwardWarpUid);
+
+      if (!forwardWarp) {
+        spdlog::error("Null forward warp image {}", *forwardWarpUid);
+        break;
+      }
+
+      if (isForwardWarpNewImage) {
+        forwardWarp->settings().setDisplayName(forwardWarp->settings().displayName() + " (deformation)");
+
+        // TODO: Load this from project settings.
+        for (uint32_t i = 0; i < forwardWarp->header().numComponentsPerPixel(); ++i) {
+          forwardWarp->settings().setColorMapIndex(i, 25);
+        }
+      }
+
+      if (m_data.assignForwardWarpUidToImage(*imageUid, *forwardWarpUid)) {
+        spdlog::info("Assigned forward warp {} to image {}", *forwardWarpUid, *imageUid);
+      }
+      else {
+        spdlog::error("Unable to assign forward warp {} to image {}", *forwardWarpUid, *imageUid);
+        if (isForwardWarpNewImage) {
+          m_data.removeDef(*forwardWarpUid);
+        }
+        break;
+      }
+
+      break;
+    } while (1);
   }
 
   // Set annotations from file:

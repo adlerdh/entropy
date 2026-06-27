@@ -146,14 +146,23 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
 
   const auto defUids = m_data.imageToDefUids(imageUid);
   if (!defUids.empty()) {
-    const Image* def = m_data.def(defUids.front());
-    if (def && def->header().existsOnDisk() && !def->header().fileName().empty()) {
-      serializedImage.m_deformationFileName = def->header().fileName();
+    const auto activeInverseWarpUid = m_data.imageToActiveInverseWarpUid(imageUid);
+    const Image* inverseWarp =
+      activeInverseWarpUid ? m_data.warpField(*activeInverseWarpUid) : m_data.warpField(defUids.front());
+    if (inverseWarp && inverseWarp->header().existsOnDisk() && !inverseWarp->header().fileName().empty()) {
+      serializedImage.m_inverseWarpFileName = inverseWarp->header().fileName();
+    }
+
+    if (const auto activeForwardWarpUid = m_data.imageToActiveForwardWarpUid(imageUid)) {
+      const Image* forwardWarp = m_data.warpField(*activeForwardWarpUid);
+      if (forwardWarp && forwardWarp->header().existsOnDisk() && !forwardWarp->header().fileName().empty()) {
+        serializedImage.m_forwardWarpFileName = forwardWarp->header().fileName();
+      }
     }
 
     if (defUids.size() > 1) {
       spdlog::warn(
-        "Image {} has {} deformation fields, but project files currently save only the first one",
+        "Image {} has {} deformation fields, but project files currently save only the active inverse and forward ones",
         imageUid,
         defUids.size());
     }

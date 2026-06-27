@@ -1,0 +1,15 @@
+{
+  "output": "01_2d_translation_moving.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "size": [128, 128],
+  "spacing": [1.0, 1.0],
+  "origin": [-56.0, -69.0],
+  "pattern": "gaussian",
+  "amplitude": 100.0,
+  "metadata": {
+    "entropy_deformation_pair": "01_2d_translation",
+    "role": "moving",
+    "physical_shift_mm": "[8, -5, 0]"
+  }
+}

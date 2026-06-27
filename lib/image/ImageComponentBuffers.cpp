@@ -552,21 +552,28 @@ const void* Image::bufferAsVoid(uint32_t comp, uint32_t timePoint) const
   }
 
   auto F = [this](uint32_t i, std::size_t frameOffset) -> const void* {
+    auto bufferData = [i, frameOffset](const auto& buffers) -> const void* {
+      if (i >= buffers.size() || frameOffset >= buffers[i].size()) {
+        return nullptr;
+      }
+      return static_cast<const void*>(buffers[i].data() + frameOffset);
+    };
+
     switch (m_header.memoryComponentType()) {
       case ComponentType::Int8:
-        return static_cast<const void*>(m_data_int8.at(i).data() + frameOffset);
+        return bufferData(m_data_int8);
       case ComponentType::UInt8:
-        return static_cast<const void*>(m_data_uint8.at(i).data() + frameOffset);
+        return bufferData(m_data_uint8);
       case ComponentType::Int16:
-        return static_cast<const void*>(m_data_int16.at(i).data() + frameOffset);
+        return bufferData(m_data_int16);
       case ComponentType::UInt16:
-        return static_cast<const void*>(m_data_uint16.at(i).data() + frameOffset);
+        return bufferData(m_data_uint16);
       case ComponentType::Int32:
-        return static_cast<const void*>(m_data_int32.at(i).data() + frameOffset);
+        return bufferData(m_data_int32);
       case ComponentType::UInt32:
-        return static_cast<const void*>(m_data_uint32.at(i).data() + frameOffset);
+        return bufferData(m_data_uint32);
       case ComponentType::Float32:
-        return static_cast<const void*>(m_data_float32.at(i).data() + frameOffset);
+        return bufferData(m_data_float32);
       default:
         return static_cast<const void*>(nullptr);
     }

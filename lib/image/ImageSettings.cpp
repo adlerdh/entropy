@@ -12,6 +12,43 @@
 #undef min
 #undef max
 
+namespace
+{
+
+constexpr int k_defaultWindowLowQuantileIndex = 1;   // 1% level
+constexpr int k_defaultWindowHighQuantileIndex = 99; // 99% level
+constexpr int k_maxQuantileIndex = 100;
+
+struct DefaultWindow
+{
+  double low = 0.0;
+  double high = 0.0;
+  double lowQuantile = 0.0;
+  double highQuantile = 0.0;
+};
+
+DefaultWindow computeDefaultWindow(const ComponentStats& stats)
+{
+  DefaultWindow window;
+  window.low = static_cast<double>(stats.quantiles[k_defaultWindowLowQuantileIndex]);
+  window.high = static_cast<double>(stats.quantiles[k_defaultWindowHighQuantileIndex]);
+  window.lowQuantile = 0.01;
+  window.highQuantile = 0.99;
+
+  const double minValue = static_cast<double>(stats.onlineStats.min);
+  const double maxValue = static_cast<double>(stats.onlineStats.max);
+  if (window.high <= window.low && minValue < maxValue) {
+    window.low = minValue;
+    window.high = maxValue;
+    window.lowQuantile = 0.0;
+    window.highQuantile = 1.0;
+  }
+
+  return window;
+}
+
+} // namespace
+
 ImageSettings::ImageSettings(
   std::string displayName,
   std::size_t numPixels,
@@ -114,6 +151,26 @@ void ImageSettings::setLockedToReference(bool locked)
 bool ImageSettings::isLockedToReference() const
 {
   return m_lockedToReference;
+}
+
+void ImageSettings::setWarpEnabled(bool enabled)
+{
+  m_warpEnabled = enabled;
+}
+
+bool ImageSettings::warpEnabled() const
+{
+  return m_warpEnabled;
+}
+
+void ImageSettings::setWarpStrength(float strength)
+{
+  m_warpStrength = std::clamp(strength, 0.0f, 4.0f);
+}
+
+float ImageSettings::warpStrength() const
+{
+  return m_warpStrength;
 }
 
 void ImageSettings::setDisplayImageAsColor(bool doColor)
@@ -1499,12 +1556,6 @@ void ImageSettings::updateWithNewComponentStatistics(
   std::vector<ComponentStats> componentStats,
   bool setDefaultVisibilitySettings)
 {
-  // Default window covers 1st to 99th quantile intensity range of the first pixel component.
-  // Recall that the histogram has 1001 bins.
-  constexpr int qLow = 1;   // 1% level
-  constexpr int qHigh = 99; // 99% level
-  constexpr int qMax = 100; // 100% level
-
   if (componentStats.size() != m_numComponents) {
     spdlog::error(
       "Component statistics has {} components, where {} are expected",
@@ -1534,21 +1585,24 @@ void ImageSettings::updateWithNewComponentStatistics(
     setting.m_thresholds =
       std::make_pair(static_cast<double>(stats.onlineStats.min), static_cast<double>(stats.onlineStats.max));
 
-    // Default window limits are the low and high quantiles:
-    const double winLow = static_cast<double>(stats.quantiles[qLow]);
-    const double winHigh = static_cast<double>(stats.quantiles[qHigh]);
+    // Default window limits are the low and high quantiles. Sparse binary images can have both
+    // quantiles on the background value; use the full component range when the robust range
+    // collapses so foreground objects are visible on first load.
+    const DefaultWindow window = computeDefaultWindow(stats);
 
-    setting.m_windowCenter = 0.5 * (winLow + winHigh);
-    setting.m_windowWidth = winHigh - winLow;
+    setting.m_windowCenter = 0.5 * (window.low + window.high);
+    setting.m_windowWidth = window.high - window.low;
+    setting.m_windowQuantilesLowHigh = {window.lowQuantile, window.highQuantile};
 
-    setting.m_foregroundThresholds =
-      std::make_pair(static_cast<double>(stats.quantiles[qLow]), static_cast<double>(stats.quantiles[qMax]));
+    setting.m_foregroundThresholds = std::make_pair(
+      static_cast<double>(stats.quantiles[k_defaultWindowLowQuantileIndex]),
+      static_cast<double>(stats.quantiles[k_maxQuantileIndex]));
 
     // Default thresholds for foreground mask that is used for the raycasting distance map:
     // Use the [50%, 100%] intensity range to define foreground
     // (until we have an algorithm to compute a foreground mask)
     setting.m_foregroundThresholds.first = static_cast<double>(stats.quantiles[50]);
-    setting.m_foregroundThresholds.second = static_cast<double>(stats.quantiles[qMax]);
+    setting.m_foregroundThresholds.second = static_cast<double>(stats.quantiles[k_maxQuantileIndex]);
 
     // Update histogram settings
     setting.m_histogramSettings.m_numBinsMethod = NumBinsComputationMethod::FreedmanDiaconis;

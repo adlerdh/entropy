@@ -13,6 +13,7 @@
 #include <imgui/imgui.h>
 #include <imGuIZMOquat.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -518,7 +519,10 @@ void renderViewSettingsComboWindow(
         }
 
         static const ImVec4 s_textColor(0.75f, 0.75f, 0.75f, 1.0f);
+        const float wrapWidth = std::max(0.0f, viewFrameBounds.bounds.width - 2.0f * sk_framePad.x);
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + wrapWidth);
         ImGui::TextColored(s_textColor, "%s", imageNamesText.c_str());
+        ImGui::PopTextWrapPos();
       }
     }
 

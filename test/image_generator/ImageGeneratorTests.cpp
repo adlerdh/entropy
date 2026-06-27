@@ -37,6 +37,24 @@ TEST_CASE("Image generator parses richer time-series patterns", "[image-generato
   CHECK(warp.pattern == image_generator::Pattern::TimeVaryingWarpField);
 }
 
+TEST_CASE("Image generator creates binary spheres in physical coordinates", "[image-generator]")
+{
+  const auto spec = image_generator::parseSpecJson(R"json({
+    "output": "sphere.nrrd",
+    "size": [33, 33, 33],
+    "spacing": [1.0, 1.0, 1.0],
+    "origin": [-16.0, -16.0, -16.0],
+    "pattern": "sphere",
+    "sphere_radius": 5.0,
+    "amplitude": 10.0,
+    "offset": 2.0
+  })json");
+
+  CHECK(spec.pattern == image_generator::Pattern::Sphere);
+  CHECK(image_generator::expectedComponentValue(spec, {16, 16, 16}, 0) == 12.0);
+  CHECK(image_generator::expectedComponentValue(spec, {0, 0, 0}, 0) == 2.0);
+}
+
 TEST_CASE("Time-varying warp field changes vector values over time", "[image-generator][time][vector]")
 {
   const auto spec = image_generator::parseSpecJson(R"json({

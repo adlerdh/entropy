@@ -22,6 +22,7 @@
 #include "logic/app/AppPaths.h"
 #include "logic/app/CallbackHandler.h"
 #include "logic/app/Data.h"
+#include "logic/app/StackTrace.h"
 #include "logic/app/UserPreferences.h"
 #include "logic/annotation/PointRecord.h"
 #include "logic/annotation/SerializeAnnot.h"
@@ -1307,6 +1308,7 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
   m_openDicomFolders = std::move(callbacks.project.openDicomFolders);
   m_addSegmentationFile = std::move(callbacks.project.addSegmentationFile);
   m_addSegmentationFileToImage = std::move(callbacks.project.addSegmentationFileToImage);
+  m_loadDeformationField = std::move(callbacks.project.loadDeformationField);
   m_openProjectFile = std::move(callbacks.project.openProjectFile);
   m_largeImageLoadDecision = std::move(callbacks.project.largeImageLoadDecision);
   m_loadDicomSeries = std::move(callbacks.project.loadDicomSeries);
@@ -2259,6 +2261,16 @@ void ImGuiWrapper::render()
           }
         }
         break;
+      case MainMenuAction::ToggleApplyActiveImageWarp:
+        if (const auto imageUid = activeImageUid()) {
+          if (Image* image = m_appData.image(*imageUid)) {
+            image->settings().setWarpEnabled(!image->settings().warpEnabled());
+            if (m_updateImageUniforms) {
+              m_updateImageUniforms(*imageUid);
+            }
+          }
+        }
+        break;
       case MainMenuAction::ShowOpacityMixer:
         m_appData.guiData().m_showOpacityBlenderWindow = !m_appData.guiData().m_showOpacityBlenderWindow;
         break;
@@ -2557,6 +2569,9 @@ void ImGuiWrapper::render()
             return image->transformations().get_enable_affine_T_subject();
           }
           return false;
+        case MainMenuAction::ToggleApplyActiveImageWarp:
+          return canUseProjectActions && hasActiveImage && activeImageUid() != m_appData.refImageUid() &&
+                 m_appData.imageToActiveInverseWarpUid(*activeImageUid()).has_value();
         case MainMenuAction::PaintSegmentationFromAnnotation:
           return canUseProjectActions && hasActiveSeg && hasActiveAnnotation;
         case MainMenuAction::SaveAnnotations:
@@ -2629,6 +2644,11 @@ void ImGuiWrapper::render()
         const auto imageUid = m_appData.activeImageUid();
         const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
         return image ? image->transformations().is_worldDef_T_affine_locked() : false;
+      }
+      case MainMenuAction::ToggleApplyActiveImageWarp: {
+        const auto imageUid = m_appData.activeImageUid();
+        const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+        return image ? image->settings().warpEnabled() : false;
       }
       case MainMenuAction::ToggleScaleBars:
         return m_appData.renderData().m_showScaleBars;
@@ -2862,12 +2882,78 @@ void ImGuiWrapper::render()
       ImPlot::ShowDemoWindow(&m_appData.guiData().m_showImPlotDemoWindow);
     }
 
+    const auto activeImageUidForMenu = m_appData.activeImageUid();
+    const auto refImageUidForMenu = m_appData.refImageUid();
+    const bool canLoadDeformationFieldForActiveImage =
+      ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning && activeImageUidForMenu &&
+      (!refImageUidForMenu || *activeImageUidForMenu != *refImageUidForMenu) && m_loadDeformationField;
+
     const MainMenuBarCallbacks mainMenuCallbacks{
       .openImageFiles = m_openImageFiles,
       .addImageFiles = m_addImageFiles,
       .openDicomFolders = m_openDicomFolders,
       .requestDicomFolderPathDialog = [this]() { m_appData.guiData().m_showDicomFolderPathPopup = true; },
       .addSegmentationFile = m_addSegmentationFile,
+      .loadInverseWarpForActiveImage =
+        [this](const fs::path& fileName) {
+          const auto imageUid = m_appData.activeImageUid();
+          const auto refImageUid = m_appData.refImageUid();
+          if (!imageUid || (refImageUid && *imageUid == *refImageUid) || !m_loadDeformationField) {
+            return;
+          }
+
+          const std::optional<uuids::uuid> defUid = m_loadDeformationField(fileName);
+          if (!defUid) {
+            spdlog::error("Unable to load deformation field from {}", fileName);
+            return;
+          }
+
+          if (!m_appData.assignInverseWarpUidToImage(*imageUid, *defUid)) {
+            spdlog::error("Unable to assign deformation field {} to image {}", *defUid, *imageUid);
+            return;
+          }
+
+          if (m_updateImageUniforms) {
+            try {
+              m_updateImageUniforms(*imageUid);
+            }
+            catch (const std::exception& e) {
+              spdlog::error(
+                "Exception after assigning deformation field {} to active image {}: {}\n{}",
+                *defUid,
+                *imageUid,
+                e.what(),
+                stack_trace::current(1));
+              throw;
+            }
+          }
+          if (m_postEmptyGlfwEvent) {
+            m_postEmptyGlfwEvent();
+          }
+        },
+      .loadForwardWarpForActiveImage =
+        [this](const fs::path& fileName) {
+          const auto imageUid = m_appData.activeImageUid();
+          const auto refImageUid = m_appData.refImageUid();
+          if (!imageUid || (refImageUid && *imageUid == *refImageUid) || !m_loadDeformationField) {
+            return;
+          }
+
+          const std::optional<uuids::uuid> defUid = m_loadDeformationField(fileName);
+          if (!defUid) {
+            spdlog::error("Unable to load forward warp from {}", fileName);
+            return;
+          }
+
+          if (!m_appData.assignForwardWarpUidToImage(*imageUid, *defUid)) {
+            spdlog::error("Unable to assign forward warp {} to image {}", *defUid, *imageUid);
+            return;
+          }
+
+          if (m_postEmptyGlfwEvent) {
+            m_postEmptyGlfwEvent();
+          }
+        },
       .openProjectFile = m_openProjectFile,
       .saveProject = m_saveProject,
       .saveProjectAs = m_saveProjectAs,
@@ -2915,6 +3001,7 @@ void ImGuiWrapper::render()
       .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
       .canAddSegmentation =
         ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning && m_appData.activeImageUid(),
+      .canLoadDeformationFieldForActiveImage = canLoadDeformationFieldForActiveImage,
       .canSaveProject = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
       .canCloseProject = ProjectLoadState::Empty != projectLoadState && !backgroundTaskRunning,
       .canUseLayouts = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning};
@@ -3047,18 +3134,24 @@ void ImGuiWrapper::render()
     using namespace std::placeholders;
 
     if (m_appData.guiData().m_showInspectionWindow) {
-      renderInspectionWindowWithTable(
-        m_appData,
-        std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
-        m_getSubjectPos,
-        m_getVoxelPos,
-        m_setSubjectPos,
-        m_setVoxelPos,
-        m_getImageValuesNN,
-        m_getImageValuesLinear,
-        m_getSegLabel,
-        getLabelTable,
-        m_updateImageUniforms);
+      try {
+        renderInspectionWindowWithTable(
+          m_appData,
+          std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
+          m_getSubjectPos,
+          m_getVoxelPos,
+          m_setSubjectPos,
+          m_setVoxelPos,
+          m_getImageValuesNN,
+          m_getImageValuesLinear,
+          m_getSegLabel,
+          getLabelTable,
+          m_updateImageUniforms);
+      }
+      catch (const std::exception& e) {
+        spdlog::error("Exception while rendering voxel inspector: {}\n{}", e.what(), stack_trace::current(1));
+        throw;
+      }
     }
 
     if (m_appData.guiData().m_showImagePropertiesWindow) {
@@ -3078,6 +3171,7 @@ void ImGuiWrapper::render()
         m_updateImageUniforms,
         m_updateImageInterpolationMode,
         m_updateImageColorMapInterpolationMode,
+        m_loadDeformationField,
         m_setLockManualImageTransformation,
         [this](const uuids::uuid& imageUid, ComponentProjectionMode mode) {
           requestComponentProjectionImage(imageUid, mode);

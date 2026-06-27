@@ -5,7 +5,6 @@
 #include "logic/camera/CameraHelpers.h"
 
 #include <glm/glm.hpp>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
 
@@ -75,7 +74,8 @@ AppData::AppData()
   , m_imageToSegs()
   , m_imageToActiveSeg()
   , m_imageToDefs()
-  , m_imageToActiveDef()
+  , m_imageToActiveInverseWarp()
+  , m_imageToActiveForwardWarp()
   , m_imageToLandmarkGroups()
   , m_imageToActiveLandmarkGroup()
   , m_imageToAnnotations()
@@ -140,7 +140,8 @@ void AppData::clearProjectData()
   m_imageToSegs.clear();
   m_imageToActiveSeg.clear();
   m_imageToDefs.clear();
-  m_imageToActiveDef.clear();
+  m_imageToActiveInverseWarp.clear();
+  m_imageToActiveForwardWarp.clear();
   m_imageToLandmarkGroups.clear();
   m_imageToActiveLandmarkGroup.clear();
   m_imageToAnnotations.clear();
@@ -700,6 +701,7 @@ bool AppData::removeImage(const uuid& imageUid)
 
   m_images.erase(imageUid);
   m_imageUidsOrdered.erase(imageOrderIt);
+  removeWarpReferences(imageUid);
 
   if (const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUid);
       projectionsIt != m_imageToComponentProjectionImages.end())
@@ -716,7 +718,8 @@ bool AppData::removeImage(const uuid& imageUid)
   m_imageToSegs.erase(imageUid);
   m_imageToActiveSeg.erase(imageUid);
   m_imageToDefs.erase(imageUid);
-  m_imageToActiveDef.erase(imageUid);
+  m_imageToActiveInverseWarp.erase(imageUid);
+  m_imageToActiveForwardWarp.erase(imageUid);
   m_imageToLandmarkGroups.erase(imageUid);
   m_imageToActiveLandmarkGroup.erase(imageUid);
   m_imageToAnnotations.erase(imageUid);
@@ -862,22 +865,36 @@ bool AppData::removeDef(const uuid& defUid)
     return false;
   }
 
-  // Remove deformation from image-to-deformation map for all images
-  for (auto& m : m_imageToDefs) {
-    m.second.erase(std::remove(std::begin(m.second), std::end(m.second), defUid), std::end(m.second));
+  // Remove all image warp assignments that reference this field.
+  removeWarpReferences(defUid);
+
+  return true;
+}
+
+void AppData::removeWarpReferences(const uuid& warpUid)
+{
+  for (auto& [imageUid, warpUids] : m_imageToDefs) {
+    (void)imageUid;
+    warpUids.erase(std::remove(std::begin(warpUids), std::end(warpUids), warpUid), std::end(warpUids));
   }
 
-  // Remove it as an active deformation
-  for (auto it = std::begin(m_imageToActiveDef); it != std::end(m_imageToActiveDef);) {
-    if (defUid == it->second) {
-      it = m_imageToActiveDef.erase(it);
+  for (auto it = std::begin(m_imageToActiveInverseWarp); it != std::end(m_imageToActiveInverseWarp);) {
+    if (warpUid == it->second) {
+      it = m_imageToActiveInverseWarp.erase(it);
     }
     else {
       ++it;
     }
   }
 
-  return true;
+  for (auto it = std::begin(m_imageToActiveForwardWarp); it != std::end(m_imageToActiveForwardWarp);) {
+    if (warpUid == it->second) {
+      it = m_imageToActiveForwardWarp.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
 }
 
 bool AppData::removeAnnotation(const uuid& annotUid)
@@ -1073,6 +1090,25 @@ const Image* AppData::def(const uuid& defUid) const
 Image* AppData::def(const uuid& defUid)
 {
   return const_cast<Image*>(const_cast<const AppData*>(this)->def(defUid));
+}
+
+const Image* AppData::warpField(const uuid& warpUid) const
+{
+  if (const Image* defImage = def(warpUid)) {
+    return defImage;
+  }
+
+  const Image* image = this->image(warpUid);
+  if (image && isVectorFieldCandidate(*image)) {
+    return image;
+  }
+
+  return nullptr;
+}
+
+Image* AppData::warpField(const uuid& warpUid)
+{
+  return const_cast<Image*>(const_cast<const AppData*>(this)->warpField(warpUid));
 }
 
 const std::map<double, Image>& AppData::distanceMaps(const uuid& imageUid, ComponentIndexType component) const
@@ -1563,6 +1599,24 @@ uuid_range_t AppData::defUidsOrdered() const
   return m_defUidsOrdered;
 }
 
+uuid_range_t AppData::warpFieldCandidateUidsOrdered() const
+{
+  uuid_range_t candidates = m_defUidsOrdered;
+
+  for (const uuid& imageUid : m_imageUidsOrdered) {
+    if (std::find(std::begin(candidates), std::end(candidates), imageUid) != std::end(candidates)) {
+      continue;
+    }
+
+    const Image* image = this->image(imageUid);
+    if (image && isVectorFieldCandidate(*image)) {
+      candidates.push_back(imageUid);
+    }
+  }
+
+  return candidates;
+}
+
 uuid_range_t AppData::imageColorMapUidsOrdered() const
 {
   return m_imageColorMapUidsOrdered;
@@ -1625,21 +1679,53 @@ bool AppData::assignActiveSegUidToImage(const uuid& imageUid, const uuid& active
   return false;
 }
 
-std::optional<uuid> AppData::imageToActiveDefUid(const uuid& imageUid) const
+std::optional<uuid> AppData::imageToActiveInverseWarpUid(const uuid& imageUid) const
 {
-  auto it = m_imageToActiveDef.find(imageUid);
-  if (std::end(m_imageToActiveDef) != it) {
+  auto it = m_imageToActiveInverseWarp.find(imageUid);
+  if (std::end(m_imageToActiveInverseWarp) != it) {
     return it->second;
   }
   return std::nullopt;
 }
 
-bool AppData::assignActiveDefUidToImage(const uuid& imageUid, const uuid& activeDefUid)
+std::optional<uuid> AppData::imageToActiveForwardWarpUid(const uuid& imageUid) const
 {
-  if (image(imageUid) && seg(activeDefUid)) {
-    m_imageToActiveDef[imageUid] = activeDefUid;
+  auto it = m_imageToActiveForwardWarp.find(imageUid);
+  if (std::end(m_imageToActiveForwardWarp) != it) {
+    return it->second;
+  }
+  return std::nullopt;
+}
+
+void AppData::clearActiveInverseWarpUidForImage(const uuid& imageUid)
+{
+  m_imageToActiveInverseWarp.erase(imageUid);
+}
+
+bool AppData::assignActiveInverseWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid)
+{
+  const Image* defImage = warpField(activeWarpUid);
+  if (image(imageUid) && defImage && defImage->header().numComponentsPerPixel() >= 3) {
+    m_imageToActiveInverseWarp[imageUid] = activeWarpUid;
     return true;
   }
+  spdlog::error("Cannot assign warp field {} as an inverse warp for image {}", activeWarpUid, imageUid);
+  return false;
+}
+
+void AppData::clearActiveForwardWarpUidForImage(const uuid& imageUid)
+{
+  m_imageToActiveForwardWarp.erase(imageUid);
+}
+
+bool AppData::assignActiveForwardWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid)
+{
+  const Image* defImage = warpField(activeWarpUid);
+  if (image(imageUid) && defImage && defImage->header().numComponentsPerPixel() >= 3) {
+    m_imageToActiveForwardWarp[imageUid] = activeWarpUid;
+    return true;
+  }
+  spdlog::error("Cannot assign warp field {} as a forward warp for image {}", activeWarpUid, imageUid);
   return false;
 }
 
@@ -1683,19 +1769,37 @@ bool AppData::assignSegUidToImage(const uuid& imageUid, const uuid& segUid)
   return false;
 }
 
-bool AppData::assignDefUidToImage(const uuid& imageUid, const uuid& defUid)
+bool AppData::assignInverseWarpUidToImage(const uuid& imageUid, const uuid& warpUid)
 {
-  if (image(imageUid) && def(defUid)) {
-    m_imageToDefs[imageUid].emplace_back(defUid);
-
-    if (1 == m_imageToDefs[imageUid].size()) {
-      // If this is the first deformation field, make it the active one
-      assignActiveDefUidToImage(imageUid, defUid);
+  const Image* movingImage = image(imageUid);
+  const Image* defImage = warpField(warpUid);
+  if (movingImage && defImage && defImage->header().numComponentsPerPixel() >= 3) {
+    auto& defUids = m_imageToDefs[imageUid];
+    if (std::find(std::begin(defUids), std::end(defUids), warpUid) != std::end(defUids)) {
+      return assignActiveInverseWarpUidToImage(imageUid, warpUid);
     }
 
-    return true;
+    m_imageToDefs[imageUid].emplace_back(warpUid);
+    return assignActiveInverseWarpUidToImage(imageUid, warpUid);
   }
 
+  spdlog::error("Cannot assign inverse warp field {} to image {}", warpUid, imageUid);
+  return false;
+}
+
+bool AppData::assignForwardWarpUidToImage(const uuid& imageUid, const uuid& warpUid)
+{
+  const Image* movingImage = image(imageUid);
+  const Image* defImage = warpField(warpUid);
+  if (movingImage && defImage && defImage->header().numComponentsPerPixel() >= 3) {
+    auto& defUids = m_imageToDefs[imageUid];
+    if (std::find(std::begin(defUids), std::end(defUids), warpUid) == std::end(defUids)) {
+      m_imageToDefs[imageUid].emplace_back(warpUid);
+    }
+    return assignActiveForwardWarpUidToImage(imageUid, warpUid);
+  }
+
+  spdlog::error("Cannot assign forward warp field {} to image {}", warpUid, imageUid);
   return false;
 }
 

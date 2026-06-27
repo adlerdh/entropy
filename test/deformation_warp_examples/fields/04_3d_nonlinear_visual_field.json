@@ -1,0 +1,32 @@
+{
+  "output": "04_3d_nonlinear_visual_field.nrrd",
+  "component_type": "float",
+  "spatial_dimension": 3,
+  "vector_dimension": 3,
+  "size": [128, 128, 128],
+  "spacing": [1.25, 1.25, 1.25],
+  "origin": [-80.0, -80.0, -80.0],
+  "composition_mode": "additive",
+  "operations": [
+    {
+      "type": "expansion",
+      "center": [0.0, 0.0, 0.0],
+      "radii": [42.0, 36.0, 30.0],
+      "amplitude": 7.0
+    },
+    {
+      "type": "twist",
+      "center": [0.0, 0.0, 0.0],
+      "axis": [0.0, 0.0, 1.0],
+      "radii": [55.0, 55.0, 48.0],
+      "amplitude": 0.35
+    },
+    {
+      "type": "wave",
+      "normal": [1.0, 1.0, 0.25],
+      "direction": [0.0, 0.0, 1.0],
+      "frequency": 0.025,
+      "amplitude": 3.0
+    }
+  ]
+}

@@ -310,6 +310,8 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"globalOpacity", settings.m_globalOpacity},
     {"borderColor", vec3ToJson(settings.m_borderColor)},
     {"lockedToReference", settings.m_lockedToReference},
+    {"warpEnabled", settings.m_warpEnabled},
+    {"warpStrength", settings.m_warpStrength},
     {"level", settings.m_level},
     {"window", settings.m_window},
     {"thresholdLow", settings.m_thresholdLow},
@@ -437,6 +439,12 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   }
   if (j.count("lockedToReference")) {
     j.at("lockedToReference").get_to(settings.m_lockedToReference);
+  }
+  if (j.count("warpEnabled")) {
+    j.at("warpEnabled").get_to(settings.m_warpEnabled);
+  }
+  if (j.count("warpStrength")) {
+    j.at("warpStrength").get_to(settings.m_warpStrength);
   }
   if (j.count("level")) {
     j.at("level").get_to(settings.m_level);
@@ -830,8 +838,12 @@ void to_json(json& j, const serialize::Image& image)
     j["affine"] = image.m_affineTxFileName->string();
   }
 
-  if (image.m_deformationFileName) {
-    j["deformation"] = image.m_deformationFileName->string();
+  if (image.m_inverseWarpFileName) {
+    j["inverseWarp"] = image.m_inverseWarpFileName->string();
+  }
+
+  if (image.m_forwardWarpFileName) {
+    j["forwardWarp"] = image.m_forwardWarpFileName->string();
   }
 
   if (image.m_worldDefTx) {
@@ -869,8 +881,12 @@ void from_json(const json& j, serialize::Image& image)
     image.m_affineTxFileName = j.at("affine").get<std::string>();
   }
 
-  if (j.count("deformation")) {
-    image.m_deformationFileName = j.at("deformation").get<std::string>();
+  if (j.count("inverseWarp")) {
+    image.m_inverseWarpFileName = j.at("inverseWarp").get<std::string>();
+  }
+
+  if (j.count("forwardWarp")) {
+    image.m_forwardWarpFileName = j.at("forwardWarp").get<std::string>();
   }
 
   if (j.count("manualTransformation")) {
@@ -1088,13 +1104,23 @@ bool open(EntropyProject& project, const fs::path& fileName)
       }
     }
 
-    if (image.m_deformationFileName) {
-      if (image.m_deformationFileName->empty()) {
-        spdlog::warn("Ignoring empty deformation path for image {}", image.m_imageFileName);
-        image.m_deformationFileName = std::nullopt;
+    if (image.m_inverseWarpFileName) {
+      if (image.m_inverseWarpFileName->empty()) {
+        spdlog::warn("Ignoring empty inverse warp path for image {}", image.m_imageFileName);
+        image.m_inverseWarpFileName = std::nullopt;
       }
       else {
-        image.m_deformationFileName = fs::canonical(*image.m_deformationFileName);
+        image.m_inverseWarpFileName = fs::canonical(*image.m_inverseWarpFileName);
+      }
+    }
+
+    if (image.m_forwardWarpFileName) {
+      if (image.m_forwardWarpFileName->empty()) {
+        spdlog::warn("Ignoring empty forward warp path for image {}", image.m_imageFileName);
+        image.m_forwardWarpFileName = std::nullopt;
+      }
+      else {
+        image.m_forwardWarpFileName = fs::canonical(*image.m_forwardWarpFileName);
       }
     }
 
@@ -1214,8 +1240,12 @@ bool save(const EntropyProject& project, const fs::path& fileName)
       image.m_affineTxFileName = fs::relative(*image.m_affineTxFileName, projectBasePath);
     }
 
-    if (image.m_deformationFileName) {
-      image.m_deformationFileName = fs::relative(*image.m_deformationFileName, projectBasePath);
+    if (image.m_inverseWarpFileName) {
+      image.m_inverseWarpFileName = fs::relative(*image.m_inverseWarpFileName, projectBasePath);
+    }
+
+    if (image.m_forwardWarpFileName) {
+      image.m_forwardWarpFileName = fs::relative(*image.m_forwardWarpFileName, projectBasePath);
     }
 
     if (image.m_annotationsFileName) {

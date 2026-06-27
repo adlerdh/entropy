@@ -9,6 +9,7 @@
 in VS_OUT
 {
   vec3 v_texCoord;
+  vec3 v_worldPos;
   vec2 v_checkerCoord;
   vec2 v_clipPos;
 }
@@ -43,6 +44,9 @@ $$HELPER_FUNCTIONS$$
 /// float textureLookup(sampler3D texture, vec3 texCoord);
 $$TEXTURE_LOOKUP_FUNCTION$$
 
+/// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
+$$SAMPLE_TEX_COORD_FUNCTION$$
+
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
 $$DO_RENDER_FUNCTION$$
 
@@ -52,12 +56,14 @@ void main()
     discard;
   }
 
+  vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
+
   // Look up the image values (after mapping to GL texture units):
   vec4 img = vec4(
-    clamp(textureLookup(u_imgTex[0], fs_in.v_texCoord), u_imgMinMax[0][0], u_imgMinMax[0][1]),
-    clamp(textureLookup(u_imgTex[1], fs_in.v_texCoord), u_imgMinMax[1][0], u_imgMinMax[1][1]),
-    clamp(textureLookup(u_imgTex[2], fs_in.v_texCoord), u_imgMinMax[2][0], u_imgMinMax[2][1]),
-    clamp(textureLookup(u_imgTex[3], fs_in.v_texCoord), u_imgMinMax[3][0], u_imgMinMax[3][1]));
+    clamp(textureLookup(u_imgTex[0], sampleTc), u_imgMinMax[0][0], u_imgMinMax[0][1]),
+    clamp(textureLookup(u_imgTex[1], sampleTc), u_imgMinMax[1][0], u_imgMinMax[1][1]),
+    clamp(textureLookup(u_imgTex[2], sampleTc), u_imgMinMax[2][0], u_imgMinMax[2][1]),
+    clamp(textureLookup(u_imgTex[3], sampleTc), u_imgMinMax[3][0], u_imgMinMax[3][1]));
 
   float forcedOpaque = float(u_alphaIsOne);
 
@@ -75,7 +81,7 @@ void main()
   imgNorm.a = mix(imgNorm.a, 1.0, forcedOpaque);
 
   // Apply alpha to each component:
-  float mask = float(isInsideTexture(fs_in.v_texCoord));
+  float mask = float(isInsideTexture(sampleTc));
   for (int i = 0; i <= 3; ++i) {
     imgNorm[i] *= u_imgOpacity[i] * thresh[i] * mask;
   }

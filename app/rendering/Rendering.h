@@ -195,7 +195,16 @@ private:
   std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& P);
   std::list<std::reference_wrapper<GLTexture>> bindColorImageTextures(const ImgSegPair& P);
   std::list<std::reference_wrapper<GLTexture>> bindSegTextures(const ImgSegPair& P);
+  std::list<std::reference_wrapper<GLTexture>> bindDeformationTextures(const uuids::uuid& defUid);
   void unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures);
+
+  bool ensureDeformationTexture(const uuids::uuid& defUid);
+  std::optional<uuids::uuid> activeRenderableDeformationUid(const uuids::uuid& imageUid);
+  void setDeformationUniforms(
+    GLShaderProgram& program,
+    const uuids::uuid& imageUid,
+    const uuids::uuid& defUid,
+    const glm::mat4& sampleTex_T_world) const;
 
   // Bind/unbind metric images and color map
   std::list<std::reference_wrapper<GLTexture>> bindMetricImageTextures(

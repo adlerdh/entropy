@@ -267,7 +267,7 @@ struct GuiData
    * The initializer is ordered to match the inspector table column declarations in InspectionTableWindow.cpp.
    * Interpolated values and region names start hidden, matching the previous table defaults.
    */
-  std::array<bool, 20> m_inspectionColumnVisible{
+  std::array<bool, 23> m_inspectionColumnVisible{
     true,   //!< Image column.
     true,   //!< Nearest-neighbor image value column.
     false,  //!< Linearly interpolated image value column.
@@ -280,12 +280,15 @@ struct GuiData
     false,  //!< Maximum component value column.
     false,  //!< Magnitude of component values column.
     false,  //!< Vector-field Jacobian determinant column.
+    false,  //!< Vector-field log-Jacobian determinant column.
     false,  //!< Vector-field curl magnitude column.
     false,  //!< Vector-field divergence column.
     true,   //!< Active segmentation label column.
     false,  //!< Active segmentation region name column.
     true,   //!< Voxel index column.
     true,   //!< Physical subject coordinate column.
+    false,  //!< Warped sampling voxel index column.
+    false,  //!< Warped sampling subject coordinate column.
     false,  //!< Time frame column.
     false}; //!< Time value column.
 

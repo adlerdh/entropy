@@ -57,6 +57,7 @@ enum class MainMenuAction
   ResetActiveImageManualTransformation,
   SaveActiveImageManualTransformation,
   SaveActiveImageInitialAndManualTransformation,
+  ToggleApplyActiveImageWarp,
   ShowOpacityMixer,
   ToggleTimePlayback,
   ToggleGlobalTimeControls,
@@ -113,6 +114,8 @@ struct MainMenuBarCallbacks
   std::function<void(const std::vector<std::filesystem::path>& folderNames)> openDicomFolders;
   std::function<void()> requestDicomFolderPathDialog;
   std::function<void(const std::filesystem::path& fileName)> addSegmentationFile;
+  std::function<void(const std::filesystem::path& fileName)> loadInverseWarpForActiveImage;
+  std::function<void(const std::filesystem::path& fileName)> loadForwardWarpForActiveImage;
   std::function<void(const std::filesystem::path& fileName)> openProjectFile;
   std::function<bool()> saveProject;
   std::function<bool(const std::filesystem::path& fileName)> saveProjectAs;
@@ -139,6 +142,7 @@ struct MainMenuBarCallbacks
   bool canOpenProject = true;
   bool canAddImage = false;
   bool canAddSegmentation = false;
+  bool canLoadDeformationFieldForActiveImage = false;
   bool canSaveProject = false;
   bool canCloseProject = false;
   bool canUseLayouts = false;
@@ -152,6 +156,8 @@ void addImage(const MainMenuBarCallbacks& callbacks);
 void openDicomSeries(const MainMenuBarCallbacks& callbacks);
 void addDicomSeries(const MainMenuBarCallbacks& callbacks);
 void addSegmentation(const MainMenuBarCallbacks& callbacks);
+void loadInverseWarpForActiveImage(const MainMenuBarCallbacks& callbacks);
+void loadForwardWarpForActiveImage(const MainMenuBarCallbacks& callbacks);
 void saveProject(const MainMenuBarCallbacks& callbacks);
 void saveProjectAs(const MainMenuBarCallbacks& callbacks);
 void closeProject(const MainMenuBarCallbacks& callbacks);

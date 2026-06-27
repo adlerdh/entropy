@@ -82,6 +82,9 @@ Pattern patternFromString(std::string text)
   if ("time_varying_warp_field" == text || "time-varying-warp-field" == text || "timevaryingwarpfield" == text) {
     return Pattern::TimeVaryingWarpField;
   }
+  if ("sphere" == text || "binary_sphere" == text || "binary-sphere" == text) {
+    return Pattern::Sphere;
+  }
   throw std::runtime_error("Unknown pattern: " + text);
 }
 
@@ -132,6 +135,22 @@ double coordinate(const std::vector<std::size_t>& index, const std::vector<std::
     return 0.0;
   }
   return static_cast<double>(index.at(axis)) / static_cast<double>(size.at(axis) - 1);
+}
+
+double physicalCoordinate(const ImageSpec& spec, const std::vector<std::size_t>& index, std::size_t axis)
+{
+  if (axis >= spec.size.size()) {
+    return 0.0;
+  }
+  return spec.origin.at(axis) + (static_cast<double>(index.at(axis)) * spec.spacing.at(axis));
+}
+
+double physicalCenter(const ImageSpec& spec, std::size_t axis)
+{
+  if (axis >= spec.size.size()) {
+    return 0.0;
+  }
+  return spec.origin.at(axis) + (0.5 * static_cast<double>(spec.size.at(axis) - 1) * spec.spacing.at(axis));
 }
 
 std::size_t linearIndex(const std::vector<std::size_t>& index, const std::vector<std::size_t>& size)
@@ -242,6 +261,14 @@ double patternValue(const ImageSpec& spec, const std::vector<std::size_t>& index
         default:
           return spec.offset + spec.amplitude * ((0.6 * expansion * pz) + (0.25 * swirl * std::sin(k_pi * x)));
       }
+    }
+    case Pattern::Sphere: {
+      double radiusSquared = 0.0;
+      for (std::size_t axis = 0; axis < std::min<std::size_t>(3, spec.size.size()); ++axis) {
+        const double delta = physicalCoordinate(spec, index, axis) - physicalCenter(spec, axis);
+        radiusSquared += delta * delta;
+      }
+      return radiusSquared <= spec.sphereRadius * spec.sphereRadius ? spec.offset + spec.amplitude : spec.offset;
     }
   }
   return spec.offset;
@@ -459,6 +486,7 @@ ImageSpec parseSpecJson(const std::string& text)
   }
   spec.amplitude = j.value("amplitude", spec.amplitude);
   spec.offset = j.value("offset", spec.offset);
+  spec.sphereRadius = j.value("sphere_radius", spec.sphereRadius);
   spec.metadata = optionalStringMap(j, "metadata");
   return spec;
 }
@@ -513,6 +541,9 @@ void validateSpec(const ImageSpec& spec)
     if ("float" != type && "float32" != type && "double" != type && "float64" != type) {
       throw std::runtime_error("Complex images support float or double component types");
     }
+  }
+  if (Pattern::Sphere == spec.pattern && spec.sphereRadius <= 0.0) {
+    throw std::runtime_error("Sphere radius must be positive");
   }
 }
 
