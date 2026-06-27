@@ -820,6 +820,11 @@ void renderImageHeader(
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<ImageColorMap*(size_t cmapIndex)>& getImageColorMap,
   const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadDeformationField,
+  const std::function<void(
+    const uuids::uuid& imageUid,
+    const uuids::uuid& sourceWarpUid,
+    ComputedWarpDirection direction,
+    const WarpInversionOptions& options)>& requestWarpInversion,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageBackward,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageForward,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToBack,
@@ -2565,7 +2570,7 @@ void renderImageHeader(
   renderImageDicomMetadata(appData, imageUid);
 
   auto renderDeformationWarpHeader = [&]() {
-    if (isRef || !ImGui::TreeNode("Deformation Warps")) {
+    if (isRef || !ImGui::TreeNode("Deformation")) {
       return;
     }
 
@@ -2660,6 +2665,8 @@ void renderImageHeader(
       loadAndAssignDeformationField(true);
     }
 
+    static WarpInversionOptions inversionOptions;
+
     auto [inverseWarpNames, activeInverseWarpIndex] = deformationNamesAndIndex(activeInverseWarpUid);
     const std::size_t activeInverseWarpNameIndex =
       activeInverseWarpIndex > 0 ? static_cast<std::size_t>(activeInverseWarpIndex) : 0;
@@ -2727,15 +2734,41 @@ void renderImageHeader(
       ImGui::TextDisabled("No deformation fields are loaded.");
     }
 
+    if (requestWarpInversion && (activeForwardWarpUid || activeInverseWarpUid)) {
+      if (activeForwardWarpUid) {
+        if (ImGui::Button("Compute inverse warp")) {
+          requestWarpInversion(imageUid, *activeForwardWarpUid, ComputedWarpDirection::Inverse, inversionOptions);
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", "Compute the inverse warp that matches the selected forward warp.");
+        }
+      }
+      if (activeForwardWarpUid && activeInverseWarpUid) {
+        ImGui::SameLine();
+      }
+      if (activeInverseWarpUid) {
+        if (ImGui::Button("Compute forward warp")) {
+          requestWarpInversion(imageUid, *activeInverseWarpUid, ComputedWarpDirection::Forward, inversionOptions);
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", "Compute the forward warp that matches the selected inverse warp.");
+        }
+      }
+    }
+
     const bool hasAssignedInverseWarp = activeInverseWarpUid.has_value();
     ImGui::BeginDisabled(!hasAssignedInverseWarp);
     bool enabled = imgSettings.warpEnabled();
-    if (ImGui::Checkbox("Apply warp", &enabled)) {
+    const bool hasBothWarpDirections = activeInverseWarpUid.has_value() && activeForwardWarpUid.has_value();
+    if (ImGui::Checkbox(hasBothWarpDirections ? "Apply warps" : "Apply warp", &enabled)) {
       imgSettings.setWarpEnabled(enabled);
       updateImageUniforms();
     }
     ImGui::SameLine();
-    helpMarker("Warp this moving image at render time using the active inverse warp.");
+    helpMarker(
+      hasBothWarpDirections ? "Apply the inverse warp to image and segmentation rendering, and apply the forward warp "
+                              "to landmarks and annotations."
+                            : "Warp this moving image at render time using the active inverse warp.");
 
     if (hasAssignedInverseWarp && imgSettings.warpEnabled()) {
       float strength = imgSettings.warpStrength();
@@ -2750,11 +2783,33 @@ void renderImageHeader(
     ImGui::EndDisabled();
 
     disabledWrappedText("The inverse warp is sampled in reference space and gives the moving-image sampling offset.");
-    ImGui::TextDisabled("Forward-warp rendering of landmarks and annotations is not implemented yet.");
-    ImGui::SameLine();
-    helpMarker(
-      "The forward warp is stored now so landmark and annotation warping can use it once that rendering path is "
-      "implemented.");
+    disabledWrappedText("The forward warp maps moving landmarks and annotations into reference space for display.");
+
+    if (ImGui::TreeNode("Advanced warp inversion")) {
+      int maxIterations = static_cast<int>(inversionOptions.maxIterations);
+      if (ImGui::InputInt("Maximum iterations", &maxIterations, 1, 10)) {
+        inversionOptions.maxIterations = static_cast<uint32_t>(std::max(1, maxIterations));
+      }
+
+      double meanTolerance = inversionOptions.meanErrorTolerance;
+      if (ImGui::InputDouble("Mean tolerance", &meanTolerance, 0.0, 0.0, "%.6g")) {
+        inversionOptions.meanErrorTolerance = std::max(0.0, meanTolerance);
+      }
+
+      double maxTolerance = inversionOptions.maxErrorTolerance;
+      if (ImGui::InputDouble("Max tolerance", &maxTolerance, 0.0, 0.0, "%.6g")) {
+        inversionOptions.maxErrorTolerance = std::max(0.0, maxTolerance);
+      }
+
+      bool enforceBoundary = inversionOptions.enforceBoundaryCondition;
+      if (ImGui::Checkbox("Zero boundary displacement", &enforceBoundary)) {
+        inversionOptions.enforceBoundaryCondition = enforceBoundary;
+      }
+      ImGui::SameLine();
+      helpMarker("Keep the computed field zero-valued on the image boundary.");
+
+      ImGui::TreePop();
+    }
 
     ImGui::TreePop();
     ImGui::Separator();

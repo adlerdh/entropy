@@ -109,6 +109,43 @@ void setDefaultVectorFieldRendering(ImageSettings& settings, const ImageHeader& 
   }
 }
 
+InterpolationMode defaultInterpolationMode(const ImageRepresentation& imageRep, ComponentType componentType)
+{
+  if (ImageRepresentation::Segmentation == imageRep) {
+    return InterpolationMode::NearestNeighbor;
+  }
+
+  switch (componentType) {
+    case ComponentType::Int8:
+    case ComponentType::UInt8:
+    case ComponentType::Int16:
+    case ComponentType::UInt16:
+    case ComponentType::Int32:
+    case ComponentType::UInt32:
+      return InterpolationMode::NearestNeighbor;
+    case ComponentType::Float32:
+    case ComponentType::Float64:
+    case ComponentType::LongDouble:
+    case ComponentType::Long:
+    case ComponentType::ULong:
+    case ComponentType::LongLong:
+    case ComponentType::ULongLong:
+    case ComponentType::Undefined:
+      return InterpolationMode::Linear;
+  }
+
+  return InterpolationMode::Linear;
+}
+
+void setDefaultInterpolationModes(ImageSettings& settings, const ImageRepresentation& imageRep)
+{
+  const InterpolationMode mode = defaultInterpolationMode(imageRep, settings.componentType());
+  for (uint32_t component = 0; component < settings.numComponents(); ++component) {
+    settings.setInterpolationMode(component, mode);
+  }
+  settings.setColorInterpolationMode(mode);
+}
+
 ImageTimeAxis timeAxisFromIoInfo(const ImageIoInfo& info)
 {
   return {
@@ -271,17 +308,7 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
     componentStats);
   setDefaultComplexRendering(m_settings, m_header);
   setDefaultVectorFieldRendering(m_settings, m_header);
-
-  switch (m_imageRep) {
-    case ImageRepresentation::Image: {
-      m_settings.setInterpolationMode(InterpolationMode::Linear);
-      break;
-    }
-    case ImageRepresentation::Segmentation: {
-      m_settings.setInterpolationMode(InterpolationMode::NearestNeighbor);
-      break;
-    }
-  }
+  setDefaultInterpolationModes(m_settings, m_imageRep);
 
   m_loadState = LoadState::LoadedPixels;
 }
@@ -312,17 +339,7 @@ Image::Image(
     std::move(componentStats));
   setDefaultComplexRendering(m_settings, m_header);
   setDefaultVectorFieldRendering(m_settings, m_header);
-
-  switch (m_imageRep) {
-    case ImageRepresentation::Image: {
-      m_settings.setInterpolationMode(InterpolationMode::Linear);
-      break;
-    }
-    case ImageRepresentation::Segmentation: {
-      m_settings.setInterpolationMode(InterpolationMode::NearestNeighbor);
-      break;
-    }
-  }
+  setDefaultInterpolationModes(m_settings, m_imageRep);
 }
 
 Image::Image(
@@ -532,17 +549,7 @@ Image::Image(
     std::move(componentStats));
   setDefaultComplexRendering(m_settings, m_header);
   setDefaultVectorFieldRendering(m_settings, m_header);
-
-  switch (m_imageRep) {
-    case ImageRepresentation::Image: {
-      m_settings.setInterpolationMode(InterpolationMode::Linear);
-      break;
-    }
-    case ImageRepresentation::Segmentation: {
-      m_settings.setInterpolationMode(InterpolationMode::NearestNeighbor);
-      break;
-    }
-  }
+  setDefaultInterpolationModes(m_settings, m_imageRep);
 
   m_loadState = LoadState::LoadedPixels;
 }

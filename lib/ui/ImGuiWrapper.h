@@ -5,6 +5,7 @@
 #include "common/SegmentationTypes.h"
 #include "image/DicomSeries.h"
 #include "image/ImageDerivedData.h"
+#include "image/WarpInversion.h"
 #include "logic/app/Settings.h"
 #include "ui/GuiData.h"
 #include "ui/UiScaleManager.h"
@@ -13,9 +14,11 @@
 #include <uuid.h>
 
 #include <cstdint>
+#include <atomic>
 #include <filesystem>
 #include <functional>
 #include <future>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -381,6 +384,37 @@ private:
   void requestComponentProjectionImage(const uuids::uuid& imageUid, ComponentProjectionMode mode);
   void requestMissingComponentProjectionImages();
   void processComponentProjectionFutures();
+
+  struct WarpInversionTaskState
+  {
+    uuids::uuid imageUid;
+    uuids::uuid sourceWarpUid;
+    ComputedWarpDirection direction{ComputedWarpDirection::Inverse};
+    std::string description;
+    std::shared_ptr<std::atomic<double> > progress;
+    std::shared_ptr<std::atomic_bool> cancel;
+  };
+
+  struct WarpInversionTaskResult
+  {
+    uuids::uuid imageUid;
+    uuids::uuid sourceWarpUid;
+    ComputedWarpDirection direction{ComputedWarpDirection::Inverse};
+    entropy_expected::expected<WarpInversionResult, std::string> result;
+  };
+
+  std::unordered_map<uuids::uuid, WarpInversionTaskState> m_warpInversionTaskStates;
+  std::unordered_map<uuids::uuid, std::future<WarpInversionTaskResult> > m_warpInversionFutures;
+  std::unordered_set<std::string> m_pendingWarpInversionKeys;
+  std::mutex m_warpInversionFuturesMutex;
+
+  void requestWarpInversion(
+    const uuids::uuid& imageUid,
+    const uuids::uuid& sourceWarpUid,
+    ComputedWarpDirection direction,
+    const WarpInversionOptions& options);
+  void processWarpInversionFutures();
+  void renderWarpInversionProgressPopup();
 
   /// Queue of UIDs referring to task UIDs of futures.
   /// These are completed isosurface mesh generation tasks that now need

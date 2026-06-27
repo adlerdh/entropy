@@ -229,8 +229,8 @@ void renderModeMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Rotate View", MainMenuAction::SetModeRotateView);
   actionMenuItem(callbacks, "Rotate Crosshairs", MainMenuAction::SetModeRotateCrosshairs);
   ImGui::Separator();
-  actionMenuItem(callbacks, "Brush", MainMenuAction::SetModeSegment, "B");
-  actionMenuItem(callbacks, "Annotate", MainMenuAction::SetModeAnnotate);
+  actionMenuItem(callbacks, "Segmentation Brush", MainMenuAction::SetModeSegment, "B");
+  actionMenuItem(callbacks, "Vector Annotate", MainMenuAction::SetModeAnnotate);
   ImGui::Separator();
   actionMenuItem(callbacks, "Translate Image", MainMenuAction::SetModeTranslateImage, "T");
   actionMenuItem(callbacks, "Rotate Image", MainMenuAction::SetModeRotateImage, "R");
@@ -282,6 +282,14 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
 {
   actionMenuItem(callbacks, "Show Images Panel", MainMenuAction::ToggleImagesWindow);
   ImGui::Separator();
+  if (ImGui::MenuItem("Add Image(s)...", nullptr, false, callbacks.canAddImage)) {
+    addImage(callbacks);
+  }
+  if (ImGui::MenuItem("Add DICOM Series...", nullptr, false, callbacks.canAddImage)) {
+    addDicomSeries(callbacks);
+  }
+  actionMenuItem(callbacks, "Export DICOM Series as Image...", MainMenuAction::ExportActiveImage);
+  ImGui::Separator();
   if (ImGui::BeginMenu("Active Image", callbacks.canAddImage)) {
     const auto names = callbacks.imageNames ? callbacks.imageNames() : std::vector<std::string>{};
     const std::size_t activeIndex = callbacks.activeImageIndex ? callbacks.activeImageIndex() : 0;
@@ -292,13 +300,6 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     }
     ImGui::EndMenu();
   }
-  if (ImGui::MenuItem("Add Image(s)...", nullptr, false, callbacks.canAddImage)) {
-    addImage(callbacks);
-  }
-  if (ImGui::MenuItem("Add DICOM Series...", nullptr, false, callbacks.canAddImage)) {
-    addDicomSeries(callbacks);
-  }
-  actionMenuItem(callbacks, "Export DICOM Series as Image...", MainMenuAction::ExportActiveImage);
   actionMenuItem(callbacks, "Remove Active Image", MainMenuAction::RemoveActiveImage);
   actionMenuItem(callbacks, "Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
   ImGui::Separator();
@@ -341,8 +342,8 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   if (ImGui::BeginMenu("Isosurfaces", callbacks.canAddImage)) {
     actionMenuItem(callbacks, "Show Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
     ImGui::Separator();
-    actionMenuItem(callbacks, "Add...", MainMenuAction::AddIsosurface);
-    actionMenuItem(callbacks, "Add Range...", MainMenuAction::AddIsosurfaceRange);
+    actionMenuItem(callbacks, "Add Isosurface...", MainMenuAction::AddIsosurface);
+    actionMenuItem(callbacks, "Add Isosurface Range...", MainMenuAction::AddIsosurfaceRange);
     actionMenuItem(callbacks, "Show Isosurfaces", MainMenuAction::ToggleActiveImageIsosurfaces);
     ImGui::EndMenu();
   }

@@ -14,7 +14,7 @@ set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 9)
-set(VERSION_FEATURE 5)
+set(VERSION_FEATURE 6)
 set(VERSION_PATCH 0)
 set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION_PATCH}")
 
@@ -468,6 +468,7 @@ set(entropy_SOURCES
 
   "${entropy_APP_DIR}/logic/app/CallbackHandler.cpp"
   "${entropy_APP_DIR}/logic/app/Data.cpp"
+  "${entropy_APP_DIR}/logic/app/DeformationWarp.cpp"
   "${entropy_APP_DIR}/logic/app/DataHelper.cpp"
   "${entropy_APP_DIR}/logic/app/ImageScaleInteraction.cpp"
   "${entropy_APP_DIR}/logic/app/ImageSelectionPolicy.cpp"

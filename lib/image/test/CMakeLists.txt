@@ -6,6 +6,7 @@ add_executable(EntropyImageTests
   ImageSettingsTests.cpp
   ImageTimeAxisTests.cpp
   TimePlaybackControllerTests.cpp
+  WarpInversionTests.cpp
   ComprehensiveImageLoadingTests.cpp
   ImageLoadingTests.cpp
   SegmentationDerivedDataTests.cpp

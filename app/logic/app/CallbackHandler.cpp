@@ -1,5 +1,6 @@
 #include "logic/app/CallbackHandler.h"
 
+#include "logic/app/DeformationWarp.h"
 #include "logic/app/DataHelper.h"
 #include "logic/app/ImageScaleInteraction.h"
 #include "common/MathFuncs.h"
@@ -47,42 +48,6 @@ constexpr float viewAABBoxScaleFactor = 1.10f;
 constexpr float parallelThreshold_degrees = 0.1f;
 
 constexpr float imageFrontBackTranslationScaleFactor = 10.0f;
-
-glm::vec3 homogeneousPointToVec3(const glm::vec4& point)
-{
-  return glm::vec3{point} / point.w;
-}
-
-glm::vec4 segmentationBrushSampleWorldPosition(const AppData& appData, const uuid& imageUid, const glm::vec4& worldPos)
-{
-  const Image* image = appData.image(imageUid);
-  if (!image || !image->settings().warpEnabled() || image->settings().warpStrength() <= 0.0f) {
-    return worldPos;
-  }
-
-  const std::optional<uuid> inverseWarpUid = appData.imageToActiveInverseWarpUid(imageUid);
-  const Image* inverseWarp = inverseWarpUid ? appData.warpField(*inverseWarpUid) : nullptr;
-  if (!inverseWarp || inverseWarp->header().numComponentsPerPixel() < 3) {
-    return worldPos;
-  }
-
-  const glm::vec3 worldPoint = homogeneousPointToVec3(worldPos);
-  const glm::vec4 warpVoxelH = inverseWarp->transformations().pixel_T_worldDef() * glm::vec4{worldPoint, 1.0f};
-  const glm::vec3 warpVoxel = homogeneousPointToVec3(warpVoxelH);
-  const uint32_t timePoint = inverseWarp->timeAxis().clamp(inverseWarp->settings().activeTimePoint());
-
-  const auto dx = inverseWarp->valueLinear<double>(0, warpVoxel.x, warpVoxel.y, warpVoxel.z, timePoint);
-  const auto dy = inverseWarp->valueLinear<double>(1, warpVoxel.x, warpVoxel.y, warpVoxel.z, timePoint);
-  const auto dz = inverseWarp->valueLinear<double>(2, warpVoxel.x, warpVoxel.y, warpVoxel.z, timePoint);
-  if (!dx || !dy || !dz) {
-    return worldPos;
-  }
-
-  const glm::vec3 sampleWorld =
-    worldPoint + image->settings().warpStrength() *
-                   glm::vec3{static_cast<float>(*dx), static_cast<float>(*dy), static_cast<float>(*dz)};
-  return glm::vec4{sampleWorld, 1.0f};
-}
 
 std::pair<std::optional<uuid>, Image*> targetTimeSeriesImage(AppData& appData)
 {
@@ -817,7 +782,7 @@ void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
 
     const glm::ivec3 dims{seg->header().pixelDimensions()};
     const glm::vec4 sampleWorldPos =
-      segmentationBrushSampleWorldPosition(m_appData, imageUid, hit.worldPos_offsetApplied);
+      deformation_warp::inverseWarpSampleWorldPosition(m_appData, imageUid, hit.worldPos_offsetApplied);
 
     // Use the offset position, so that the user can paint in any offset view of a lightbox layout:
     const glm::mat4& pixel_T_worldDef = seg->transformations().pixel_T_worldDef();
@@ -955,7 +920,7 @@ void CallbackHandler::updateBrushPreview(const ViewHit& hit, bool swapFgAndBg, b
     const glm::ivec3 dims{seg->header().pixelDimensions()};
     const glm::mat4& pixel_T_worldDef = seg->transformations().pixel_T_worldDef();
     const glm::vec4 sampleWorldPos =
-      segmentationBrushSampleWorldPosition(m_appData, imageUid, hit.worldPos_offsetApplied);
+      deformation_warp::inverseWarpSampleWorldPosition(m_appData, imageUid, hit.worldPos_offsetApplied);
     const glm::vec4 pixelPos = pixel_T_worldDef * sampleWorldPos;
     const glm::vec3 pixelPos3 = pixelPos / pixelPos.w;
     const glm::ivec3 roundedPixelPos{glm::round(pixelPos3)};

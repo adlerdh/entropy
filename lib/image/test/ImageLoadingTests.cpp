@@ -358,6 +358,30 @@ std::vector<T> arithmeticValues(std::size_t count)
   return values;
 }
 
+InterpolationMode expectedDefaultInterpolationMode(ComponentType memoryComponentType)
+{
+  switch (memoryComponentType) {
+    case ComponentType::Int8:
+    case ComponentType::UInt8:
+    case ComponentType::Int16:
+    case ComponentType::UInt16:
+    case ComponentType::Int32:
+    case ComponentType::UInt32:
+      return InterpolationMode::NearestNeighbor;
+    case ComponentType::Float32:
+    case ComponentType::Float64:
+    case ComponentType::Long:
+    case ComponentType::ULong:
+    case ComponentType::LongLong:
+    case ComponentType::ULongLong:
+    case ComponentType::LongDouble:
+    case ComponentType::Undefined:
+      return InterpolationMode::Linear;
+  }
+
+  return InterpolationMode::Linear;
+}
+
 template<typename T>
 void checkScalarImageRoundTrip(
   const fs::path& dir,
@@ -402,7 +426,8 @@ void checkScalarImageRoundTrip(
   CHECK(
     static_cast<double>(stats.max) ==
     Catch::Approx(static_cast<double>(*std::max_element(values.begin(), values.end()))));
-  CHECK(image.settings().interpolationMode() == InterpolationMode::Linear);
+  CHECK(image.settings().interpolationMode() == expectedDefaultInterpolationMode(expectedMemoryType));
+  CHECK(image.settings().colorInterpolationMode() == expectedDefaultInterpolationMode(expectedMemoryType));
 
   CHECK(image.generateSortedBuffers());
   CHECK(

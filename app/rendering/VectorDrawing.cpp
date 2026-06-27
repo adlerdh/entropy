@@ -2,6 +2,7 @@
 
 #include "rendering/LightboxOffsetLabelFormat.h"
 
+#include "logic/app/DeformationWarp.h"
 #include "logic/app/DataHelper.h"
 #include "common/DirectionMaps.h"
 #include "common/Viewport.h"
@@ -36,6 +37,7 @@
 #include <functional>
 #include <list>
 #include <limits>
+#include <vector>
 
 namespace
 {
@@ -771,11 +773,13 @@ void drawLandmarks(
 
         // Put landmark into World space
         const glm::vec4 worldLmPos = world_T_landmark * glm::vec4{point.getPosition(), 1.0f};
-        const glm::vec3 worldLmPos3 = glm::vec3{worldLmPos / worldLmPos.w};
+        const glm::vec4 displayWorldLmPos =
+          deformation_warp::forwardWarpDisplayWorldPosition(appData, imgUid, worldLmPos);
+        const glm::vec3 displayWorldLmPos3 = glm::vec3{displayWorldLmPos / displayWorldLmPos.w};
 
         // Landmark must be within a distance of half the image slice spacing along the
         // direction of the view to be rendered in the view
-        const float distLmToPlane = std::abs(math::signedDistancePointToPlane(worldLmPos3, worldViewPlane));
+        const float distLmToPlane = std::abs(math::signedDistancePointToPlane(displayWorldLmPos3, worldViewPlane));
 
         // Maximum distance beyond which the landmark is not rendered:
         const float maxDist = 0.5f * sliceSpacing;
@@ -787,7 +791,7 @@ void drawLandmarks(
           appData.windowData().viewport(),
           view.camera(),
           view.windowClip_T_viewClip(),
-          worldLmPos3);
+          displayWorldLmPos3);
 
         const bool inView = miewportViewBounds.bounds.xoffset < miewportPos.x &&
                             miewportViewBounds.bounds.yoffset < miewportPos.y &&
@@ -872,17 +876,28 @@ void drawAnnotations(
   // Radius of polygon vertex selection circle
   static constexpr float sk_vertexSelectionRadius = sk_vertexRadius + 1.0f;
 
-  // Convert vertex coordinates from local annotation plane space to Miewport space:
-  auto convertAnnotationPlaneVertexToMiewport =
-    [&appData, &view](const Image& image, const Annotation& annot, const glm::vec2& annotPlaneVertex) -> glm::vec2 {
+  // Convert vertex coordinates from local annotation plane space to displayed world space:
+  auto convertAnnotationPlaneVertexToWorld = [&appData](
+                                               const uuids::uuid& imageUid,
+                                               const Image& image,
+                                               const Annotation& annot,
+                                               const glm::vec2& annotPlaneVertex) -> glm::vec3 {
     const glm::vec3 subjectPos = annot.unprojectFromAnnotationPlaneToSubjectPoint(annotPlaneVertex);
     const glm::vec4 worldPos = image.transformations().worldDef_T_subject() * glm::vec4{subjectPos, 1.0f};
+    const glm::vec4 displayWorldPos = deformation_warp::forwardWarpDisplayWorldPosition(appData, imageUid, worldPos);
+    return glm::vec3{displayWorldPos / displayWorldPos.w};
+  };
 
+  auto convertAnnotationPlaneVertexToMiewport = [&appData, &view, &convertAnnotationPlaneVertexToWorld](
+                                                  const uuids::uuid& imageUid,
+                                                  const Image& image,
+                                                  const Annotation& annot,
+                                                  const glm::vec2& annotPlaneVertex) -> glm::vec2 {
     return helper::miewport_T_world(
       appData.windowData().viewport(),
       view.camera(),
       view.windowClip_T_viewClip(),
-      glm::vec3{worldPos / worldPos.w});
+      convertAnnotationPlaneVertexToWorld(imageUid, image, annot, annotPlaneVertex));
   };
 
   startNvgFrame(nvg, appData.windowData().viewport()); /*** START FRAME ***/
@@ -898,6 +913,7 @@ void drawAnnotations(
     miewportViewBounds.viewport[3]);
 
   const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
+  const glm::vec4 worldViewPlane = math::makePlane(worldViewNormal, worldCrosshairs);
 
   // Render annotations for each image
   for (const auto& imgSegPair : I) {
@@ -933,7 +949,16 @@ void drawAnnotations(
     // for annotation searching:
     const float sliceSpacing = 0.5f * data::sliceScrollDistance(-worldViewNormal, *img);
 
-    const auto annotUids = data::findAnnotationsForImage(appData, imgUid, subjectPlaneEquation, sliceSpacing);
+    const bool renderForwardWarped = img->settings().warpEnabled() && img->settings().warpStrength() > 0.0f &&
+                                     appData.imageToActiveForwardWarpUid(imgUid).has_value();
+    std::vector<uuids::uuid> annotUids;
+    if (renderForwardWarped) {
+      const auto allAnnotUids = appData.annotationsForImage(imgUid);
+      annotUids.assign(std::begin(allAnnotUids), std::end(allAnnotUids));
+    }
+    else {
+      annotUids = data::findAnnotationsForImage(appData, imgUid, subjectPlaneEquation, sliceSpacing);
+    }
 
     for (const auto& annotUid : annotUids) {
       const Annotation* annot = appData.annotation(annotUid);
@@ -956,6 +981,30 @@ void drawAnnotations(
         continue;
       }
 
+      if (renderForwardWarped) {
+        bool intersectsViewPlane = false;
+        for (const glm::vec2& vertex : annotPlaneVertices) {
+          const glm::vec3 worldPos = convertAnnotationPlaneVertexToWorld(imgUid, *img, *annot, vertex);
+          if (std::abs(math::signedDistancePointToPlane(worldPos, worldViewPlane)) < sliceSpacing) {
+            intersectsViewPlane = true;
+            break;
+          }
+        }
+
+        if (!intersectsViewPlane) {
+          const glm::vec3 worldPos = convertAnnotationPlaneVertexToWorld(
+            imgUid,
+            *img,
+            *annot,
+            annot->projectSubjectPointToAnnotationPlane(annot->getSubjectPlaneOrigin()));
+          intersectsViewPlane = std::abs(math::signedDistancePointToPlane(worldPos, worldViewPlane)) < sliceSpacing;
+        }
+
+        if (!intersectsViewPlane) {
+          continue;
+        }
+      }
+
       // Track the minimum and maximum vertex positions for drawing the bounding box
       glm::vec2 miewportMinPos{std::numeric_limits<float>::max()};
       glm::vec2 miewportMaxPos{std::numeric_limits<float>::lowest()};
@@ -971,9 +1020,9 @@ void drawAnnotations(
         bool isFirst = true;
 
         for (const auto& command : annot->getBezierCommands()) {
-          const glm::vec2 c1 = convertAnnotationPlaneVertexToMiewport(*img, *annot, std::get<0>(command));
-          const glm::vec2 c2 = convertAnnotationPlaneVertexToMiewport(*img, *annot, std::get<1>(command));
-          const glm::vec2 p = convertAnnotationPlaneVertexToMiewport(*img, *annot, std::get<2>(command));
+          const glm::vec2 c1 = convertAnnotationPlaneVertexToMiewport(imgUid, *img, *annot, std::get<0>(command));
+          const glm::vec2 c2 = convertAnnotationPlaneVertexToMiewport(imgUid, *img, *annot, std::get<1>(command));
+          const glm::vec2 p = convertAnnotationPlaneVertexToMiewport(imgUid, *img, *annot, std::get<2>(command));
 
           miewportMinPos = glm::min(miewportMinPos, c1);
           miewportMinPos = glm::min(miewportMinPos, c2);
@@ -1004,7 +1053,7 @@ void drawAnnotations(
         bool isFirst = true;
 
         for (const glm::vec2& vertex : annotPlaneVertices) {
-          const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(*img, *annot, vertex);
+          const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(imgUid, *img, *annot, vertex);
           miewportMinPos = glm::min(miewportMinPos, miewportPos);
           miewportMaxPos = glm::max(miewportMaxPos, miewportPos);
 
@@ -1046,7 +1095,7 @@ void drawAnnotations(
       // Draw the annotation outer boundary vertices:
       if (!appData.renderData().m_globalAnnotationParams.hidePolygonVertices && annot->getVertexVisibility()) {
         for (const glm::vec2& vertex : annotPlaneVertices) {
-          const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(*img, *annot, vertex);
+          const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(imgUid, *img, *annot, vertex);
           const float radius = std::max(sk_vertexRadius, annot->getLineThickness());
           const glm::vec4& vertColor = annot->getVertexColor();
 
@@ -1072,7 +1121,8 @@ void drawAnnotations(
           const auto selectedVertexCoords = annot->polygon().getBoundaryVertex(boundary, vertexIndex);
 
           if ((OUTER_BOUNDARY == boundary) && selectedVertexCoords) {
-            const glm::vec2 miewportPos = convertAnnotationPlaneVertexToMiewport(*img, *annot, *selectedVertexCoords);
+            const glm::vec2 miewportPos =
+              convertAnnotationPlaneVertexToMiewport(imgUid, *img, *annot, *selectedVertexCoords);
             const float radius = std::max(sk_vertexSelectionRadius, annot->getLineThickness());
 
             nvgStrokeWidth(nvg, sk_vertexSelectionStrokeWidth);

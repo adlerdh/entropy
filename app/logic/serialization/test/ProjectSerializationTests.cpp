@@ -2,6 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 #include <filesystem>
@@ -45,6 +46,27 @@ void touchFile(const fs::path& path)
   fs::create_directories(path.parent_path());
   std::ofstream out(path);
   out << "test";
+}
+
+glm::mat4 testManualTransformation()
+{
+  glm::mat4 tx{1.0f};
+  tx[0][0] = 1.25f;
+  tx[1][1] = 0.75f;
+  tx[2][2] = 1.5f;
+  tx[3][0] = 3.0f;
+  tx[3][1] = -4.0f;
+  tx[3][2] = 5.5f;
+  return tx;
+}
+
+void checkMat4(const glm::mat4& actual, const glm::mat4& expected)
+{
+  for (int col = 0; col < 4; ++col) {
+    for (int row = 0; row < 4; ++row) {
+      CHECK(actual[col][row] == expected[col][row]);
+    }
+  }
 }
 } // namespace
 
@@ -149,6 +171,74 @@ TEST_CASE("Project serialization supports an external layouts file reference", "
   REQUIRE(serialize::open(loaded, projectFile));
   REQUIRE(loaded.m_layoutsFileName);
   CHECK(*loaded.m_layoutsFileName == fs::canonical(layoutsFile));
+}
+
+TEST_CASE(
+  "Project serialization preserves image affine transform references and manual transforms",
+  "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "reference.nii.gz";
+
+  serialize::Image image;
+  image.m_imageFileName = "moving.nii.gz";
+  image.m_affineTxFileName = "moving-affine.txt";
+  image.m_worldDefTx = testManualTransformation();
+  project.m_additionalImages.push_back(image);
+
+  const json root = project;
+  REQUIRE(root.contains("additional"));
+  REQUIRE(root.at("additional").size() == 1);
+
+  const json& serializedImage = root.at("additional").at(0);
+  CHECK(serializedImage.at("affine") == "moving-affine.txt");
+  REQUIRE(serializedImage.contains("manualTransformation"));
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_additionalImages.size() == 1);
+  REQUIRE(parsed.m_additionalImages.at(0).m_affineTxFileName.has_value());
+  CHECK(*parsed.m_additionalImages.at(0).m_affineTxFileName == fs::path{"moving-affine.txt"});
+  REQUIRE(parsed.m_additionalImages.at(0).m_worldDefTx.has_value());
+  checkMat4(*parsed.m_additionalImages.at(0).m_worldDefTx, *image.m_worldDefTx);
+}
+
+TEST_CASE(
+  "Project file save and open preserve affine transform paths and manual transforms",
+  "[project][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path referenceFile = root / "reference.nii.gz";
+  const fs::path movingFile = root / "moving.nii.gz";
+  const fs::path affineFile = root / "moving-affine.txt";
+  const fs::path projectFile = root / "project.json";
+
+  touchFile(referenceFile);
+  touchFile(movingFile);
+  touchFile(affineFile);
+
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = referenceFile;
+
+  serialize::Image image;
+  image.m_imageFileName = movingFile;
+  image.m_affineTxFileName = affineFile;
+  image.m_worldDefTx = testManualTransformation();
+  project.m_additionalImages.push_back(image);
+
+  REQUIRE(serialize::save(project, projectFile));
+
+  const json saved = json::parse(std::ifstream{projectFile});
+  REQUIRE(saved.contains("additional"));
+  CHECK(saved.at("additional").at(0).at("affine") == "moving-affine.txt");
+  REQUIRE(saved.at("additional").at(0).contains("manualTransformation"));
+
+  serialize::EntropyProject loaded;
+  REQUIRE(serialize::open(loaded, projectFile));
+  REQUIRE(loaded.m_additionalImages.size() == 1);
+  REQUIRE(loaded.m_additionalImages.at(0).m_affineTxFileName.has_value());
+  CHECK(*loaded.m_additionalImages.at(0).m_affineTxFileName == fs::canonical(affineFile));
+  REQUIRE(loaded.m_additionalImages.at(0).m_worldDefTx.has_value());
+  checkMat4(*loaded.m_additionalImages.at(0).m_worldDefTx, *image.m_worldDefTx);
 }
 
 TEST_CASE("Project serialization preserves image edge settings", "[project][serialization]")

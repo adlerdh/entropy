@@ -10,6 +10,7 @@ set(entropy_ITK_COMPONENTS
   ITKImageStatistics
   ITKThresholding
   ITKDistanceMap
+  ITKDisplacementField
   ITKImageGrid
   ITKImageFunction
   ITKStatistics

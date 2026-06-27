@@ -1,6 +1,7 @@
 #include "logic/states/annotation/AnnotationStateMachine.h"
 #include "logic/states/annotation/AnnotationStates.h"
 
+#include "logic/app/DeformationWarp.h"
 #include "logic/app/DataHelper.h"
 #include "common/MathFuncs.h"
 
@@ -19,6 +20,39 @@ using uuid = uuids::uuid;
 static constexpr size_t OUTER_BOUNDARY = 0;
 
 static constexpr size_t FIRST_VERTEX_INDEX = 0;
+
+bool renderAnnotationsWithForwardWarp(const AppData& appData, const uuids::uuid& imageUid, const Image& image)
+{
+  return image.settings().warpEnabled() && image.settings().warpStrength() > 0.0f &&
+         appData.imageToActiveForwardWarpUid(imageUid).has_value();
+}
+
+glm::vec2 hitMiewportPosition(const AppData& appData, const ViewHit& hit)
+{
+  const Viewport& windowVP = appData.windowData().viewport();
+  const glm::vec2 viewportPos = helper::viewport_T_windowClip(windowVP, hit.windowClipPos);
+  return helper::miewport_T_viewport(windowVP.height(), viewportPos);
+}
+
+glm::vec2 warpedAnnotationVertexMiewport(
+  const AppData& appData,
+  const ViewHit& hit,
+  const uuids::uuid& imageUid,
+  const Image& image,
+  const Annotation& annot,
+  const glm::vec2& annotPlaneVertex)
+{
+  const glm::vec3 subjectPos = annot.unprojectFromAnnotationPlaneToSubjectPoint(annotPlaneVertex);
+  const glm::vec4 worldPos = image.transformations().worldDef_T_subject() * glm::vec4{subjectPos, 1.0f};
+  const glm::vec4 displayWorldPos = deformation_warp::forwardWarpDisplayWorldPosition(appData, imageUid, worldPos);
+  const glm::vec3 displayWorldPos3 = glm::vec3{displayWorldPos / displayWorldPos.w};
+
+  return helper::miewport_T_world(
+    appData.windowData().viewport(),
+    hit.view->camera(),
+    hit.view->windowClip_T_viewClip(),
+    displayWorldPos3);
+}
 } // namespace
 
 namespace state::annot
@@ -1100,15 +1134,23 @@ std::vector<std::pair<uuid, size_t> > AnnotationStateMachine::findHitVertices(co
   // Use the image slice scroll distance as the threshold for plane distances
   const float planeDistanceThresh = 0.5f * data::sliceScrollDistance(hit.worldFrontAxis, *activeImage);
 
-  // Find all annotations for the active image that match this plane
-  const auto uidsOfAnnotsOnImageSlice =
-    data::findAnnotationsForImage(*ms_appData, *activeImageUid, subjectPlaneEquation, planeDistanceThresh);
+  const bool forwardWarped = renderAnnotationsWithForwardWarp(*ms_appData, *activeImageUid, *activeImage);
+  const auto annotUidsRange = ms_appData->annotationsForImage(*activeImageUid);
+  std::vector<uuid> uidsOfAnnotsOnImageSlice;
+  if (forwardWarped) {
+    uidsOfAnnotsOnImageSlice.assign(std::begin(annotUidsRange), std::end(annotUidsRange));
+  }
+  else {
+    uidsOfAnnotsOnImageSlice =
+      data::findAnnotationsForImage(*ms_appData, *activeImageUid, subjectPlaneEquation, planeDistanceThresh);
+  }
 
   float closestDistance_inPixels = std::numeric_limits<float>::max();
   size_t indexOfClosest = 0;
 
   // Pairs of {annotationUid, vertex index}
   std::vector<std::pair<uuid, size_t> > annotsAndVertices;
+  const glm::vec2 hitMiewportPos = hitMiewportPosition(*ms_appData, hit);
 
   // Loop over all annotations and determine whether we're atop a vertex:
   for (const auto& annotUid : uidsOfAnnotsOnImageSlice) {
@@ -1125,8 +1167,12 @@ std::vector<std::pair<uuid, size_t> > AnnotationStateMachine::findHitVertices(co
     if (0 == annot->numBoundaries()) continue;
 
     for (const glm::vec2& annotPoint : annot->getBoundaryVertices(OUTER_BOUNDARY)) {
-      const glm::vec2 dist_inMM = glm::abs(annotPoint - hoveredPoint);
-      const float dist_inPixels = glm::length(dist_inMM / mmPerPixel);
+      const float dist_inPixels =
+        forwardWarped
+          ? glm::length(
+              warpedAnnotationVertexMiewport(*ms_appData, hit, *activeImageUid, *activeImage, *annot, annotPoint) -
+              hitMiewportPos)
+          : glm::length(glm::abs(annotPoint - hoveredPoint) / mmPerPixel);
 
       if (dist_inPixels < sk_distThresh_inPixels) {
         annotsAndVertices.emplace_back(std::make_pair(annotUid, vertexIndex));
@@ -1173,11 +1219,19 @@ std::vector<uuid> AnnotationStateMachine::findHitPolygon(const ViewHit& hit)
   // Use the image slice scroll distance as the threshold for plane distances
   const float planeDistanceThresh = 0.5f * data::sliceScrollDistance(hit.worldFrontAxis, *activeImage);
 
-  // Find all annotations for the active image that match this plane
-  const auto uidsOfAnnotsOnImageSlice =
-    data::findAnnotationsForImage(*ms_appData, *activeImageUid, subjectPlaneEquation, planeDistanceThresh);
+  const bool forwardWarped = renderAnnotationsWithForwardWarp(*ms_appData, *activeImageUid, *activeImage);
+  const auto annotUidsRange = ms_appData->annotationsForImage(*activeImageUid);
+  std::vector<uuid> uidsOfAnnotsOnImageSlice;
+  if (forwardWarped) {
+    uidsOfAnnotsOnImageSlice.assign(std::begin(annotUidsRange), std::end(annotUidsRange));
+  }
+  else {
+    uidsOfAnnotsOnImageSlice =
+      data::findAnnotationsForImage(*ms_appData, *activeImageUid, subjectPlaneEquation, planeDistanceThresh);
+  }
 
   std::vector<uuid> annots;
+  const glm::vec2 hitMiewportPos = hitMiewportPosition(*ms_appData, hit);
 
   // Loop over all annotations and determine whether we're atop one of the polygons:
   for (const auto& annotUid : uidsOfAnnotsOnImageSlice) {
@@ -1189,10 +1243,22 @@ std::vector<uuid> AnnotationStateMachine::findHitPolygon(const ViewHit& hit)
 
     if (0 == annot->numBoundaries()) continue;
 
-    if (math::pnpoly(
-          annot->getBoundaryVertices(OUTER_BOUNDARY),
-          annot->projectSubjectPointToAnnotationPlane(subjectPlanePoint)))
-    {
+    bool hitPolygon = false;
+    if (forwardWarped) {
+      std::vector<glm::vec2> miewportVertices;
+      for (const glm::vec2& vertex : annot->getBoundaryVertices(OUTER_BOUNDARY)) {
+        miewportVertices.push_back(
+          warpedAnnotationVertexMiewport(*ms_appData, hit, *activeImageUid, *activeImage, *annot, vertex));
+      }
+      hitPolygon = math::pnpoly(miewportVertices, hitMiewportPos);
+    }
+    else {
+      hitPolygon = math::pnpoly(
+        annot->getBoundaryVertices(OUTER_BOUNDARY),
+        annot->projectSubjectPointToAnnotationPlane(subjectPlanePoint));
+    }
+
+    if (hitPolygon) {
       annots.emplace_back(annotUid);
     }
   }

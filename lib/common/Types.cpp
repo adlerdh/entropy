@@ -82,9 +82,9 @@ bool isValidSegmentationComponentType(const ComponentType& compType)
 std::string typeString(const InterpolationMode& mode)
 {
   static const std::unordered_map<InterpolationMode, std::string> s_modeToString{
-    {InterpolationMode::NearestNeighbor, "Nearest"},
+    {InterpolationMode::NearestNeighbor, "Nearest-neighbor"},
     {InterpolationMode::Linear, "Linear"},
-    {InterpolationMode::CubicBsplineConvolution, "Cubic B-Spline Convolution"}};
+    {InterpolationMode::CubicBsplineConvolution, "Cubic B-spline convolution"}};
 
   return s_modeToString.at(mode);
 }

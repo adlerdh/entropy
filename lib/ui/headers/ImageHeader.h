@@ -2,6 +2,7 @@
 
 #include "common/PublicTypes.h"
 #include "image/ImageDerivedData.h"
+#include "image/WarpInversion.h"
 
 #include <uuid.h>
 
@@ -45,6 +46,11 @@ void renderImageHeader(
   const std::function<std::size_t(void)>& getNumImageColorMaps,
   const std::function<ImageColorMap*(std::size_t cmapIndex)>& getImageColorMap,
   const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadDeformationField,
+  const std::function<void(
+    const uuids::uuid& imageUid,
+    const uuids::uuid& sourceWarpUid,
+    ComputedWarpDirection direction,
+    const WarpInversionOptions& options)>& requestWarpInversion,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageBackward,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageForward,
   const std::function<bool(const uuids::uuid& imageUid)>& moveImageToBack,

@@ -23,6 +23,7 @@ target_sources(EntropyImage PRIVATE
   ImageUtility.cpp
   SegUtil.cpp
   TimePlaybackController.cpp
+  WarpInversion.cpp
 )
 
 target_include_directories(EntropyImage

@@ -827,6 +827,35 @@ TEST_CASE("Raw interleaved images truncate to the first four components per pixe
   CHECK(image.quantileToValue(3, 1.0) == Catch::Approx(23.0));
 }
 
+TEST_CASE("Integer component images default to nearest-neighbor interpolation", "[image][settings]")
+{
+  const glm::uvec3 dims{2, 2, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::UInt16, 3, dims);
+  ImageHeader header(ioInfo, ioInfo, false);
+  const std::vector<uint16_t> c0{1, 2, 3, 4};
+  const std::vector<uint16_t> c1{5, 6, 7, 8};
+  const std::vector<uint16_t> c2{9, 10, 11, 12};
+  std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
+
+  const Image image(
+    header,
+    "integer-components",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+
+  for (uint32_t component = 0; component < image.settings().numComponents(); ++component) {
+    CHECK(image.settings().interpolationMode(component) == InterpolationMode::NearestNeighbor);
+  }
+  CHECK(image.settings().colorInterpolationMode() == InterpolationMode::NearestNeighbor);
+
+  const Image floatImage = makeThreeComponentImage();
+  for (uint32_t component = 0; component < floatImage.settings().numComponents(); ++component) {
+    CHECK(floatImage.settings().interpolationMode(component) == InterpolationMode::Linear);
+  }
+  CHECK(floatImage.settings().colorInterpolationMode() == InterpolationMode::Linear);
+}
+
 TEST_CASE("Component projections create scalar images from multi-component images", "[image][derived]")
 {
   const Image image = makeThreeComponentImage();
