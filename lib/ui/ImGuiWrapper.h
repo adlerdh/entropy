@@ -94,6 +94,9 @@ struct ImGuiProjectCallbacks
   /** @brief Save layouts to a selected path. */
   std::function<bool(const std::filesystem::path& fileName)> saveLayoutsFile;
 
+  /** @brief Reset project-wide settings without removing loaded data. */
+  std::function<void()> resetProjectSettings;
+
   /** @brief Close the current project without prompting. */
   std::function<void()> closeProjectWithoutPrompt;
 
@@ -322,6 +325,7 @@ private:
   std::function<void()> m_closeProject = nullptr;
   std::function<void(const std::filesystem::path& fileName)> m_loadLayoutsFile = nullptr;
   std::function<bool(const std::filesystem::path& fileName)> m_saveLayoutsFile = nullptr;
+  std::function<void()> m_resetProjectSettings = nullptr;
   std::function<void()> m_closeProjectWithoutPrompt = nullptr;
   std::function<void()> m_requestQuitApp = nullptr;
   std::function<void()> m_quitAppWithoutPrompt = nullptr;

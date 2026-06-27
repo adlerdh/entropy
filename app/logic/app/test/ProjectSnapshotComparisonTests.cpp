@@ -39,13 +39,9 @@ serialize::EntropyProject makeProject()
   project.m_layouts.push_back(layout);
   project.m_currentLayoutIndex = 0;
 
-  project.m_interface.m_showLayoutTabs = true;
-  project.m_interface.m_layoutTabPlacement = serialize::ProjectLayoutTabPlacement::Top;
-  project.m_interface.m_showGlobalTimeControls = true;
-  project.m_interface.m_imageValuePrecision = 3;
-  project.m_interface.m_coordsPrecision = 4;
-  project.m_interface.m_txPrecision = 5;
-  project.m_interface.m_percentilePrecision = 2;
+  project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Human;
+  project.m_view.m_lockAnatomicalDirectionsToReferenceImage = false;
+  project.m_view.m_crosshairsSnapping = CrosshairsSnapping::Disabled;
 
   return project;
 }
@@ -113,10 +109,42 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedLayout));
 
   auto changedInterface = project;
-  changedInterface.m_interface.m_layoutTabPlacement = serialize::ProjectLayoutTabPlacement::Bottom;
+  changedInterface.m_interface.m_synchronizeTimeSeries = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedInterface));
 
-  changedInterface = project;
-  changedInterface.m_interface.m_showGlobalTimeControls = false;
-  CHECK_FALSE(project_snapshot::equivalent(project, changedInterface));
+  auto changedView = project;
+  changedView.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
+  changedView.m_view.m_crosshairsSnapping = CrosshairsSnapping::ActiveImage;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  auto changedComparison = project;
+  changedComparison.m_comparison.m_checkerboardSquares = 17;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
+
+  changedComparison = project;
+  changedComparison.m_comparison.m_localNcc.m_patchRadius = 5;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));
+
+  auto changedRaycasting = project;
+  changedRaycasting.m_raycasting.m_samplingFactor = 1.25f;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedRaycasting));
+
+  auto changedIntensityProjection = project;
+  changedIntensityProjection.m_intensityProjection.m_slabThicknessMm = 12.0f;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedIntensityProjection));
+
+  auto changedSegmentationDisplay = project;
+  changedSegmentationDisplay.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ViewPixel;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedSegmentationDisplay));
+
+  auto changedIsosurfaces = project;
+  changedIsosurfaces.m_isosurfaces.m_modulateOpacityWithImageOpacity = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedIsosurfaces));
+
+  auto changedAnnotationDisplay = project;
+  changedAnnotationDisplay.m_annotationDisplay.m_annotationsOnTop = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedAnnotationDisplay));
 }

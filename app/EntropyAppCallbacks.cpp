@@ -87,6 +87,9 @@ void EntropyApp::setCallbacks()
   imguiCallbacks.project.saveLayoutsFile = [this](const fs::path& fileName) {
     return saveLayoutsFile(fileName);
   };
+  imguiCallbacks.project.resetProjectSettings = [this]() {
+    resetProjectSettings();
+  };
   imguiCallbacks.project.closeProjectWithoutPrompt = [this]() {
     continueAfterUnsavedProjectPrompt();
   };

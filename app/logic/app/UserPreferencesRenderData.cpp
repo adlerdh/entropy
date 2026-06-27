@@ -2,13 +2,36 @@
 
 #include "common/LoggingSettings.h"
 #include "rendering/RenderData.h"
+#include "ui/GuiData.h"
 
 #include <algorithm>
 #include <filesystem>
+#include <string>
 #include <system_error>
 
 namespace
 {
+
+user_preferences::PrecisionPreferences precisionPreferencesFromGuiData(const GuiData& guiData)
+{
+  return user_preferences::PrecisionPreferences{
+    .imageValuePrecision = guiData.m_imageValuePrecision,
+    .coordsPrecision = guiData.m_coordsPrecision,
+    .txPrecision = guiData.m_txPrecision,
+    .percentilePrecision = guiData.m_percentilePrecision};
+}
+
+void applyPrecisionPreferences(GuiData& guiData, const user_preferences::PrecisionPreferences& preferences)
+{
+  guiData.m_imageValuePrecision = preferences.imageValuePrecision;
+  guiData.m_imageValuePrecisionFormat = std::string{"%0."} + std::to_string(preferences.imageValuePrecision) + "f";
+  guiData.m_coordsPrecision = preferences.coordsPrecision;
+  guiData.setCoordsPrecisionFormat();
+  guiData.m_txPrecision = preferences.txPrecision;
+  guiData.setTxPrecisionFormat();
+  guiData.m_percentilePrecision = preferences.percentilePrecision;
+  guiData.m_percentilePrecisionFormat = std::string{"%0."} + std::to_string(preferences.percentilePrecision) + "f";
+}
 
 user_preferences::RenderPreferences::LocalNccPresentation localNccPresentationFromRenderData(
   RenderData::LocalNccPresentation presentation)
@@ -222,37 +245,105 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_globalAnnotationParams.hidePolygonVertices = preferences.hideAnnotationVertices;
 }
 
+void preserveProjectRenderPreferences(
+  user_preferences::RenderPreferences& preferences,
+  const user_preferences::RenderPreferences& currentPreferences)
+{
+  // Application defaults must not reset presentation state that now belongs to the open project.
+  preferences.crosshairsSnapping = currentPreferences.crosshairsSnapping;
+  preferences.anatomicalLabelType = currentPreferences.anatomicalLabelType;
+  preferences.useMaximumIntensityProjectionExtent = currentPreferences.useMaximumIntensityProjectionExtent;
+  preferences.intensityProjectionSlabThicknessMm = currentPreferences.intensityProjectionSlabThicknessMm;
+  preferences.xrayEnergyKeV = currentPreferences.xrayEnergyKeV;
+  preferences.xrayWindow = currentPreferences.xrayWindow;
+  preferences.xrayLevel = currentPreferences.xrayLevel;
+  preferences.isocontourFloatingPointInterpolation = currentPreferences.isocontourFloatingPointInterpolation;
+  preferences.modulateIsocontourOpacityWithImageOpacity = currentPreferences.modulateIsocontourOpacityWithImageOpacity;
+  preferences.modulateSegmentationOpacityWithImageOpacity =
+    currentPreferences.modulateSegmentationOpacityWithImageOpacity;
+  preferences.segmentationOutlineStyle = currentPreferences.segmentationOutlineStyle;
+  preferences.segmentationInteriorOpacity = currentPreferences.segmentationInteriorOpacity;
+  preferences.segmentationErosionFactor = currentPreferences.segmentationErosionFactor;
+  preferences.squaredDifference = currentPreferences.squaredDifference;
+  preferences.squaredDifferenceMetric = currentPreferences.squaredDifferenceMetric;
+  preferences.localNccMetric = currentPreferences.localNccMetric;
+  preferences.localNccPatchRadius = currentPreferences.localNccPatchRadius;
+  preferences.localNccSampleSpacing = currentPreferences.localNccSampleSpacing;
+  preferences.localNccMinValidFraction = currentPreferences.localNccMinValidFraction;
+  preferences.localNccVarianceEpsilon = currentPreferences.localNccVarianceEpsilon;
+  preferences.localNccIgnoreNegativeCorrelation = currentPreferences.localNccIgnoreNegativeCorrelation;
+  preferences.localNccPresentation = currentPreferences.localNccPresentation;
+  preferences.localNccInvalidStyle = currentPreferences.localNccInvalidStyle;
+  preferences.localLinearResidualMetric = currentPreferences.localLinearResidualMetric;
+  preferences.localLinearResidualPatchRadius = currentPreferences.localLinearResidualPatchRadius;
+  preferences.localLinearResidualSampleSpacing = currentPreferences.localLinearResidualSampleSpacing;
+  preferences.localLinearResidualMinValidFraction = currentPreferences.localLinearResidualMinValidFraction;
+  preferences.localLinearResidualVarianceEpsilon = currentPreferences.localLinearResidualVarianceEpsilon;
+  preferences.localLinearResidualInvalidStyle = currentPreferences.localLinearResidualInvalidStyle;
+  preferences.overlayMagentaCyan = currentPreferences.overlayMagentaCyan;
+  preferences.quadrants = currentPreferences.quadrants;
+  preferences.checkerboardSquares = currentPreferences.checkerboardSquares;
+  preferences.flashlightRadiusFraction = currentPreferences.flashlightRadiusFraction;
+  preferences.flashlightOverlayMovingImage = currentPreferences.flashlightOverlayMovingImage;
+  preferences.raycastSamplingFactor = currentPreferences.raycastSamplingFactor;
+  preferences.transparentBackgroundWhenNoHit = currentPreferences.transparentBackgroundWhenNoHit;
+  preferences.renderFrontFaces = currentPreferences.renderFrontFaces;
+  preferences.renderBackFaces = currentPreferences.renderBackFaces;
+  preferences.segmentationMasking = currentPreferences.segmentationMasking;
+  preferences.annotationsOnTop = currentPreferences.annotationsOnTop;
+  preferences.landmarksOnTop = currentPreferences.landmarksOnTop;
+  preferences.hideAnnotationVertices = currentPreferences.hideAnnotationVertices;
+}
+
 } // namespace
 
 namespace user_preferences
 {
 
-std::string toJsonString(const AppSettings& settings, const RenderData& renderData)
+std::string toJsonString(const AppSettings& settings, const RenderData& renderData, const GuiData& guiData)
 {
-  return toJsonString(settings, renderPreferencesFromRenderData(renderData));
+  return toJsonString(settings, renderPreferencesFromRenderData(renderData), precisionPreferencesFromGuiData(guiData));
 }
 
-bool applyJsonString(AppSettings& settings, RenderData& renderData, const std::string& text, std::string* error)
+bool applyJsonString(
+  AppSettings& settings,
+  RenderData& renderData,
+  GuiData& guiData,
+  const std::string& text,
+  std::string* error)
 {
   RenderPreferences renderPreferences = renderPreferencesFromRenderData(renderData);
-  if (!applyJsonString(settings, renderPreferences, text, error)) {
+  PrecisionPreferences precisionPreferences = precisionPreferencesFromGuiData(guiData);
+  if (!applyJsonString(settings, renderPreferences, precisionPreferences, text, error)) {
     return false;
   }
 
   applyRenderPreferences(renderData, renderPreferences);
+  applyPrecisionPreferences(guiData, precisionPreferences);
   return true;
 }
 
 bool save(
   const AppSettings& settings,
   const RenderData& renderData,
+  const GuiData& guiData,
   const std::filesystem::path& fileName,
   std::string* error)
 {
-  return save(settings, renderPreferencesFromRenderData(renderData), fileName, error);
+  return save(
+    settings,
+    renderPreferencesFromRenderData(renderData),
+    precisionPreferencesFromGuiData(guiData),
+    fileName,
+    error);
 }
 
-bool load(AppSettings& settings, RenderData& renderData, const std::filesystem::path& fileName, std::string* error)
+bool load(
+  AppSettings& settings,
+  RenderData& renderData,
+  GuiData& guiData,
+  const std::filesystem::path& fileName,
+  std::string* error)
 {
   std::error_code ec;
   if (!std::filesystem::exists(fileName, ec)) {
@@ -260,17 +351,28 @@ bool load(AppSettings& settings, RenderData& renderData, const std::filesystem::
   }
 
   RenderPreferences renderPreferences = renderPreferencesFromRenderData(renderData);
-  const bool loaded = load(settings, renderPreferences, fileName, error);
+  PrecisionPreferences precisionPreferences = precisionPreferencesFromGuiData(guiData);
+  const bool loaded = load(settings, renderPreferences, precisionPreferences, fileName, error);
   if (loaded) {
     applyRenderPreferences(renderData, renderPreferences);
+    applyPrecisionPreferences(guiData, precisionPreferences);
   }
   return loaded;
 }
 
-void applyDefaults(AppSettings& settings, RenderData& renderData)
+void applyDefaults(AppSettings& settings, RenderData& renderData, GuiData& guiData)
 {
+  const bool synchronizeTimeSeries = settings.synchronizeTimeSeries();
+  const bool lockAnatomicalDirections = settings.lockAnatomicalCoordinateAxesWithReferenceImage();
+  const user_preferences::RenderPreferences currentRenderPreferences = renderPreferencesFromRenderData(renderData);
+  user_preferences::RenderPreferences defaultPreferences = defaultRenderPreferences();
+  preserveProjectRenderPreferences(defaultPreferences, currentRenderPreferences);
+
   settings = AppSettings{};
-  applyRenderPreferences(renderData, defaultRenderPreferences());
+  settings.setSynchronizeTimeSeries(synchronizeTimeSeries);
+  settings.setLockAnatomicalCoordinateAxesWithReferenceImage(lockAnatomicalDirections);
+  applyRenderPreferences(renderData, defaultPreferences);
+  applyPrecisionPreferences(guiData, PrecisionPreferences{});
   entropy::logging::setDefaultLoggerSinkLevel(entropy::logging::defaultLogLevel());
 }
 

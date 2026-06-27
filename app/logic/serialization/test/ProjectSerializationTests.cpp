@@ -109,37 +109,223 @@ TEST_CASE("Project serialization preserves interface settings", "[project][seria
 {
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
-  project.m_interface.m_showLayoutTabs = false;
-  project.m_interface.m_layoutTabPlacement = serialize::ProjectLayoutTabPlacement::Bottom;
-  project.m_interface.m_showGlobalTimeControls = false;
   project.m_interface.m_synchronizeTimeSeries = false;
-  project.m_interface.m_imageValuePrecision = 4;
-  project.m_interface.m_coordsPrecision = 5;
-  project.m_interface.m_txPrecision = 6;
-  project.m_interface.m_percentilePrecision = 7;
 
   const json root = project;
 
   REQUIRE(root.contains("interface"));
-  CHECK(root.at("interface").at("showLayoutTabs") == false);
-  CHECK(root.at("interface").at("layoutTabsPosition") == "bottom");
-  CHECK(root.at("interface").at("showGlobalTimeControls") == false);
+  CHECK_FALSE(root.at("interface").contains("showLayoutTabs"));
+  CHECK_FALSE(root.at("interface").contains("layoutTabsPosition"));
+  CHECK_FALSE(root.at("interface").contains("showGlobalTimeControls"));
   CHECK(root.at("interface").at("synchronizeTimeSeries") == false);
-  CHECK(root.at("interface").at("imageValuePrecision") == 4);
-  CHECK(root.at("interface").at("coordinatesPrecision") == 5);
-  CHECK(root.at("interface").at("transformPrecision") == 6);
-  CHECK(root.at("interface").at("percentilePrecision") == 7);
+  CHECK_FALSE(root.at("interface").contains("imageValuePrecision"));
+  CHECK_FALSE(root.at("interface").contains("coordinatesPrecision"));
+  CHECK_FALSE(root.at("interface").contains("transformPrecision"));
+  CHECK_FALSE(root.at("interface").contains("percentilePrecision"));
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
-  CHECK(parsed.m_interface.m_showLayoutTabs == false);
-  CHECK(parsed.m_interface.m_layoutTabPlacement == serialize::ProjectLayoutTabPlacement::Bottom);
-  CHECK(parsed.m_interface.m_showGlobalTimeControls == false);
   CHECK(parsed.m_interface.m_synchronizeTimeSeries == false);
-  CHECK(parsed.m_interface.m_imageValuePrecision == 4);
-  CHECK(parsed.m_interface.m_coordsPrecision == 5);
-  CHECK(parsed.m_interface.m_txPrecision == 6);
-  CHECK(parsed.m_interface.m_percentilePrecision == 7);
+}
+
+TEST_CASE("Project serialization preserves project view settings", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
+  project.m_view.m_lockAnatomicalDirectionsToReferenceImage = true;
+  project.m_view.m_crosshairsSnapping = CrosshairsSnapping::ActiveImage;
+
+  const json root = project;
+
+  REQUIRE(root.contains("view"));
+  CHECK(root.at("view").at("anatomicalLabelType") == "rodent");
+  CHECK(root.at("view").at("lockAnatomicalDirectionsToReferenceImage") == true);
+  CHECK(root.at("view").at("crosshairsSnapping") == "activeImage");
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+
+  CHECK(parsed.m_view.m_anatomicalLabelType == AnatomicalLabelType::Rodent);
+  CHECK(parsed.m_view.m_lockAnatomicalDirectionsToReferenceImage == true);
+  CHECK(parsed.m_view.m_crosshairsSnapping == CrosshairsSnapping::ActiveImage);
+}
+
+TEST_CASE("Project serialization preserves comparison settings", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_comparison.m_difference.m_squared = false;
+  project.m_comparison.m_difference.m_metric.m_colorMapIndex = 9;
+  project.m_comparison.m_difference.m_metric.m_slopeIntercept = {2.0f, -1.0f};
+  project.m_comparison.m_difference.m_metric.m_invertColormap = true;
+  project.m_comparison.m_difference.m_metric.m_continuousColormap = false;
+  project.m_comparison.m_difference.m_metric.m_colormapLevels = 11;
+  project.m_comparison.m_localNcc.m_presentation = serialize::ProjectLocalNccPresentation::Correlation;
+  project.m_comparison.m_localNcc.m_negativeCorrelationAsMismatch = false;
+  project.m_comparison.m_localNcc.m_patchRadius = 5;
+  project.m_comparison.m_localNcc.m_sampleSpacing = 2.5f;
+  project.m_comparison.m_localNcc.m_minimumValidFraction = 0.6f;
+  project.m_comparison.m_localNcc.m_varianceEpsilon = 0.0025f;
+  project.m_comparison.m_localNcc.m_invalidStyle = serialize::ProjectLocalMetricInvalidStyle::Gray;
+  project.m_comparison.m_localLinearResidual.m_patchRadius = 4;
+  project.m_comparison.m_localLinearResidual.m_sampleSpacing = 3.5f;
+  project.m_comparison.m_localLinearResidual.m_minimumValidFraction = 0.5f;
+  project.m_comparison.m_localLinearResidual.m_varianceEpsilon = 0.0035f;
+  project.m_comparison.m_localLinearResidual.m_invalidStyle = serialize::ProjectLocalMetricInvalidStyle::Gray;
+  project.m_comparison.m_overlayMagentaCyan = false;
+  project.m_comparison.m_quadrants = {false, true};
+  project.m_comparison.m_checkerboardSquares = 31;
+  project.m_comparison.m_flashlightRadiusFraction = 0.55f;
+  project.m_comparison.m_flashlightOverlayMovingImage = false;
+
+  const json root = project;
+
+  REQUIRE(root.contains("comparison"));
+  CHECK(root.at("comparison").at("difference").at("squared") == false);
+  CHECK(root.at("comparison").at("difference").at("metric").at("colormapIndex") == 9);
+  CHECK(root.at("comparison").at("difference").at("metric").at("windowSlopeIntercept").at(0) == 2.0f);
+  CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("presentation") == "correlation");
+  CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("invalidStyle") == "gray");
+  CHECK(root.at("comparison").at("localLinearResidual").at("patchRadius") == 4);
+  CHECK(root.at("comparison").at("overlay").at("magentaCyan") == false);
+  CHECK(root.at("comparison").at("quadrants").at("x") == false);
+  CHECK(root.at("comparison").at("checkerboard").at("squares") == 31);
+  CHECK(root.at("comparison").at("flashlight").at("radiusFraction") == 0.55f);
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+
+  CHECK(parsed.m_comparison.m_difference.m_squared == false);
+  CHECK(parsed.m_comparison.m_difference.m_metric.m_colorMapIndex == 9);
+  CHECK(parsed.m_comparison.m_difference.m_metric.m_slopeIntercept == glm::vec2{2.0f, -1.0f});
+  CHECK(parsed.m_comparison.m_difference.m_metric.m_invertColormap == true);
+  CHECK(parsed.m_comparison.m_difference.m_metric.m_continuousColormap == false);
+  CHECK(parsed.m_comparison.m_difference.m_metric.m_colormapLevels == 11);
+  CHECK(parsed.m_comparison.m_localNcc.m_presentation == serialize::ProjectLocalNccPresentation::Correlation);
+  CHECK(parsed.m_comparison.m_localNcc.m_negativeCorrelationAsMismatch == false);
+  CHECK(parsed.m_comparison.m_localNcc.m_patchRadius == 5);
+  CHECK(parsed.m_comparison.m_localNcc.m_sampleSpacing == 2.5f);
+  CHECK(parsed.m_comparison.m_localNcc.m_minimumValidFraction == 0.6f);
+  CHECK(parsed.m_comparison.m_localNcc.m_varianceEpsilon == 0.0025f);
+  CHECK(parsed.m_comparison.m_localNcc.m_invalidStyle == serialize::ProjectLocalMetricInvalidStyle::Gray);
+  CHECK(parsed.m_comparison.m_localLinearResidual.m_patchRadius == 4);
+  CHECK(parsed.m_comparison.m_localLinearResidual.m_sampleSpacing == 3.5f);
+  CHECK(parsed.m_comparison.m_localLinearResidual.m_minimumValidFraction == 0.5f);
+  CHECK(parsed.m_comparison.m_localLinearResidual.m_varianceEpsilon == 0.0035f);
+  CHECK(parsed.m_comparison.m_localLinearResidual.m_invalidStyle == serialize::ProjectLocalMetricInvalidStyle::Gray);
+  CHECK(parsed.m_comparison.m_overlayMagentaCyan == false);
+  CHECK(parsed.m_comparison.m_quadrants == glm::ivec2{false, true});
+  CHECK(parsed.m_comparison.m_checkerboardSquares == 31);
+  CHECK(parsed.m_comparison.m_flashlightRadiusFraction == 0.55f);
+  CHECK(parsed.m_comparison.m_flashlightOverlayMovingImage == false);
+}
+
+TEST_CASE("Project serialization preserves rendering presentation settings", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_raycasting.m_samplingFactor = 1.25f;
+  project.m_raycasting.m_transparentBackgroundWhenNoHit = false;
+  project.m_raycasting.m_renderFrontFaces = false;
+  project.m_raycasting.m_renderBackFaces = true;
+  project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskOut;
+  project.m_intensityProjection.m_useMaximumImageExtent = true;
+  project.m_intensityProjection.m_slabThicknessMm = 12.5f;
+  project.m_intensityProjection.m_xrayEnergyKeV = 120.0f;
+  project.m_intensityProjection.m_xrayWindow = 0.35f;
+  project.m_intensityProjection.m_xrayLevel = 0.65f;
+  project.m_segmentationDisplay.m_modulateOpacityWithImageOpacity = false;
+  project.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ImageVoxel;
+  project.m_segmentationDisplay.m_interiorOpacity = 0.4f;
+  project.m_segmentationDisplay.m_erosionFactor = 0.8f;
+  project.m_isosurfaces.m_floatingPointInterpolation = true;
+  project.m_isosurfaces.m_modulateOpacityWithImageOpacity = true;
+  project.m_annotationDisplay.m_annotationsOnTop = true;
+  project.m_annotationDisplay.m_landmarksOnTop = true;
+  project.m_annotationDisplay.m_hideAnnotationVertices = true;
+
+  const json root = project;
+
+  CHECK(root.at("raycasting").at("samplingFactor") == 1.25f);
+  CHECK(root.at("raycasting").at("transparentBackgroundWhenNoHit") == false);
+  CHECK(root.at("raycasting").at("renderFrontFaces") == false);
+  CHECK(root.at("raycasting").at("segmentationMasking") == "maskOut");
+  CHECK(root.at("intensityProjection").at("useMaximumImageExtent") == true);
+  CHECK(root.at("intensityProjection").at("slabThicknessMm") == 12.5f);
+  CHECK(root.at("intensityProjection").at("xrayEnergyKeV") == 120.0f);
+  CHECK(root.at("segmentationDisplay").at("outlineStyle") == "voxel");
+  CHECK(root.at("segmentationDisplay").at("erosionFactor") == 0.8f);
+  CHECK(root.at("isosurfaces").at("floatingPointInterpolation") == true);
+  CHECK(root.at("isosurfaces").at("modulateOpacityWithImageOpacity") == true);
+  CHECK(root.at("annotationDisplay").at("annotationsOnTop") == true);
+  CHECK(root.at("annotationDisplay").at("hideAnnotationVertices") == true);
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+
+  CHECK(parsed.m_raycasting.m_samplingFactor == 1.25f);
+  CHECK(parsed.m_raycasting.m_transparentBackgroundWhenNoHit == false);
+  CHECK(parsed.m_raycasting.m_renderFrontFaces == false);
+  CHECK(parsed.m_raycasting.m_renderBackFaces == true);
+  CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::MaskOut);
+  CHECK(parsed.m_intensityProjection.m_useMaximumImageExtent == true);
+  CHECK(parsed.m_intensityProjection.m_slabThicknessMm == 12.5f);
+  CHECK(parsed.m_intensityProjection.m_xrayEnergyKeV == 120.0f);
+  CHECK(parsed.m_intensityProjection.m_xrayWindow == 0.35f);
+  CHECK(parsed.m_intensityProjection.m_xrayLevel == 0.65f);
+  CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity == false);
+  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::ImageVoxel);
+  CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 0.4f);
+  CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.8f);
+  CHECK(parsed.m_isosurfaces.m_floatingPointInterpolation == true);
+  CHECK(parsed.m_isosurfaces.m_modulateOpacityWithImageOpacity == true);
+  CHECK(parsed.m_annotationDisplay.m_annotationsOnTop == true);
+  CHECK(parsed.m_annotationDisplay.m_landmarksOnTop == true);
+  CHECK(parsed.m_annotationDisplay.m_hideAnnotationVertices == true);
+}
+
+TEST_CASE("Project serialization sanitizes project-wide presentation settings", "[project][serialization]")
+{
+  const json root = {
+    {"reference", {{"image", "image.nii.gz"}}},
+    {"raycasting",
+     {{"samplingFactor", 0.0f},
+      {"segmentationMasking", "bad"},
+      {"transparentBackgroundWhenNoHit", false},
+      {"renderFrontFaces", false}}},
+    {"intensityProjection",
+     {{"useMaximumImageExtent", true},
+      {"slabThicknessMm", -1.0f},
+      {"xrayEnergyKeV", 120.0f},
+      {"xrayWindow", 0.0f},
+      {"xrayLevel", 2.0f}}},
+    {"segmentationDisplay",
+     {{"modulateOpacityWithImageOpacity", false},
+      {"outlineStyle", "bad"},
+      {"interiorOpacity", 2.0f},
+      {"erosionFactor", 0.0f}}},
+    {"isosurfaces", {{"floatingPointInterpolation", true}, {"modulateOpacityWithImageOpacity", true}}},
+    {"annotationDisplay", {{"annotationsOnTop", true}, {"landmarksOnTop", true}, {"hideAnnotationVertices", true}}}};
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+
+  CHECK(parsed.m_raycasting.m_samplingFactor == 0.1f);
+  CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::Disabled);
+  CHECK(parsed.m_raycasting.m_transparentBackgroundWhenNoHit == false);
+  CHECK(parsed.m_raycasting.m_renderFrontFaces == false);
+  CHECK(parsed.m_raycasting.m_renderBackFaces == true);
+  CHECK(parsed.m_intensityProjection.m_useMaximumImageExtent == true);
+  CHECK(parsed.m_intensityProjection.m_slabThicknessMm == 0.0f);
+  CHECK(parsed.m_intensityProjection.m_xrayEnergyKeV == 120.0f);
+  CHECK(parsed.m_intensityProjection.m_xrayWindow == 1.0e-3f);
+  CHECK(parsed.m_intensityProjection.m_xrayLevel == 1.0f);
+  CHECK(parsed.m_segmentationDisplay.m_modulateOpacityWithImageOpacity == false);
+  CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::Disabled);
+  CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 1.0f);
+  CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.5f);
+  CHECK(parsed.m_isosurfaces.m_floatingPointInterpolation == true);
+  CHECK(parsed.m_isosurfaces.m_modulateOpacityWithImageOpacity == true);
+  CHECK(parsed.m_annotationDisplay.m_annotationsOnTop == true);
+  CHECK(parsed.m_annotationDisplay.m_landmarksOnTop == true);
+  CHECK(parsed.m_annotationDisplay.m_hideAnnotationVertices == true);
 }
 
 TEST_CASE("Project serialization supports an external layouts file reference", "[project][serialization]")

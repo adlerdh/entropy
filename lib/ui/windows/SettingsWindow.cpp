@@ -1862,7 +1862,9 @@ void requestRestoreDefaults(const SettingsPersistenceCallbacks& persistenceCallb
   const auto result = native_dialog::showMessageDialog(
     {"Restore default settings?",
      "Restore all application settings to their built-in defaults?",
-     "This changes the current session immediately. Use Save to write the restored settings to disk.",
+     "This changes UI, tool, synchronization, logging, and other application preferences. Project settings, loaded "
+     "data, layouts, transformations, and warp assignments are not reset. Use Save to write the restored application "
+     "settings to disk.",
      "Restore Defaults",
      "Cancel",
      ""});
@@ -1889,7 +1891,9 @@ void renderRestoreDefaultsPopup(const SettingsPersistenceCallbacks& persistenceC
     ImGui::TextWrapped("Restore all application settings to their built-in defaults?");
     ImGui::Spacing();
     ImGui::TextWrapped(
-      "This changes the current session immediately. Use Save to write the restored settings to disk.");
+      "This changes UI, tool, synchronization, logging, and other application preferences. Project settings, loaded "
+      "data, layouts, transformations, and warp assignments are not reset. Use Save to write the restored application "
+      "settings to disk.");
     ImGui::Spacing();
 
     if (ImGui::Button("Restore Defaults")) {
@@ -2184,7 +2188,7 @@ void renderSettingsWindow(
   setNextWindowSizeConstraintsToMainViewport(560.0f, 420.0f);
   ImGui::SetNextWindowSize(ImVec2{760.0f, 560.0f}, ImGuiCond_FirstUseEver);
 
-  if (ImGui::Begin("Settings", &(appData.guiData().m_showSettingsWindow), ImGuiWindowFlags_NoDocking)) {
+  if (ImGui::Begin("Application Settings", &(appData.guiData().m_showSettingsWindow), ImGuiWindowFlags_NoDocking)) {
     RenderData& renderData = appData.renderData();
 
     const ImGuiStyle& style = ImGui::GetStyle();
@@ -2234,7 +2238,7 @@ void renderSettingsWindow(
 
     if (ImGui::BeginChild("##SettingsFooter", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar)) {
       ImGui::Separator();
-      renderReadOnlyPathField("Settings file", persistenceCallbacks.settingsFile);
+      renderReadOnlyPathField("Application settings file", persistenceCallbacks.settingsFile);
 
       if (const std::string statusText =
             persistenceCallbacks.statusText ? persistenceCallbacks.statusText() : std::string{};

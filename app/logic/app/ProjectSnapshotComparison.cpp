@@ -177,11 +177,90 @@ bool projectInterfaceSettingsEqual(
   const serialize::ProjectInterfaceSettings& a,
   const serialize::ProjectInterfaceSettings& b)
 {
-  return a.m_showLayoutTabs == b.m_showLayoutTabs && a.m_layoutTabPlacement == b.m_layoutTabPlacement &&
-         a.m_showGlobalTimeControls == b.m_showGlobalTimeControls &&
-         a.m_synchronizeTimeSeries == b.m_synchronizeTimeSeries && a.m_imageValuePrecision == b.m_imageValuePrecision &&
-         a.m_coordsPrecision == b.m_coordsPrecision && a.m_txPrecision == b.m_txPrecision &&
-         a.m_percentilePrecision == b.m_percentilePrecision;
+  return a.m_synchronizeTimeSeries == b.m_synchronizeTimeSeries;
+}
+
+bool projectViewSettingsEqual(const serialize::ProjectViewSettings& a, const serialize::ProjectViewSettings& b)
+{
+  return a.m_anatomicalLabelType == b.m_anatomicalLabelType &&
+         a.m_lockAnatomicalDirectionsToReferenceImage == b.m_lockAnatomicalDirectionsToReferenceImage &&
+         a.m_crosshairsSnapping == b.m_crosshairsSnapping;
+}
+
+bool metricSettingsEqual(const serialize::ProjectMetricSettings& a, const serialize::ProjectMetricSettings& b)
+{
+  return a.m_colorMapIndex == b.m_colorMapIndex && a.m_slopeIntercept == b.m_slopeIntercept &&
+         a.m_invertColormap == b.m_invertColormap && a.m_continuousColormap == b.m_continuousColormap &&
+         a.m_colormapLevels == b.m_colormapLevels;
+}
+
+bool comparisonSettingsEqual(
+  const serialize::ProjectComparisonSettings& a,
+  const serialize::ProjectComparisonSettings& b)
+{
+  return a.m_difference.m_squared == b.m_difference.m_squared &&
+         metricSettingsEqual(a.m_difference.m_metric, b.m_difference.m_metric) &&
+         metricSettingsEqual(a.m_localNcc.m_metric, b.m_localNcc.m_metric) &&
+         a.m_localNcc.m_presentation == b.m_localNcc.m_presentation &&
+         a.m_localNcc.m_negativeCorrelationAsMismatch == b.m_localNcc.m_negativeCorrelationAsMismatch &&
+         a.m_localNcc.m_patchRadius == b.m_localNcc.m_patchRadius &&
+         a.m_localNcc.m_sampleSpacing == b.m_localNcc.m_sampleSpacing &&
+         a.m_localNcc.m_minimumValidFraction == b.m_localNcc.m_minimumValidFraction &&
+         a.m_localNcc.m_varianceEpsilon == b.m_localNcc.m_varianceEpsilon &&
+         a.m_localNcc.m_invalidStyle == b.m_localNcc.m_invalidStyle &&
+         metricSettingsEqual(a.m_localLinearResidual.m_metric, b.m_localLinearResidual.m_metric) &&
+         a.m_localLinearResidual.m_patchRadius == b.m_localLinearResidual.m_patchRadius &&
+         a.m_localLinearResidual.m_sampleSpacing == b.m_localLinearResidual.m_sampleSpacing &&
+         a.m_localLinearResidual.m_minimumValidFraction == b.m_localLinearResidual.m_minimumValidFraction &&
+         a.m_localLinearResidual.m_varianceEpsilon == b.m_localLinearResidual.m_varianceEpsilon &&
+         a.m_localLinearResidual.m_invalidStyle == b.m_localLinearResidual.m_invalidStyle &&
+         a.m_overlayMagentaCyan == b.m_overlayMagentaCyan && a.m_quadrants == b.m_quadrants &&
+         a.m_checkerboardSquares == b.m_checkerboardSquares &&
+         a.m_flashlightRadiusFraction == b.m_flashlightRadiusFraction &&
+         a.m_flashlightOverlayMovingImage == b.m_flashlightOverlayMovingImage;
+}
+
+bool raycastingSettingsEqual(
+  const serialize::ProjectRaycastingSettings& a,
+  const serialize::ProjectRaycastingSettings& b)
+{
+  return a.m_samplingFactor == b.m_samplingFactor &&
+         a.m_transparentBackgroundWhenNoHit == b.m_transparentBackgroundWhenNoHit &&
+         a.m_renderFrontFaces == b.m_renderFrontFaces && a.m_renderBackFaces == b.m_renderBackFaces &&
+         a.m_segmentationMasking == b.m_segmentationMasking;
+}
+
+bool intensityProjectionSettingsEqual(
+  const serialize::ProjectIntensityProjectionSettings& a,
+  const serialize::ProjectIntensityProjectionSettings& b)
+{
+  return a.m_useMaximumImageExtent == b.m_useMaximumImageExtent && a.m_slabThicknessMm == b.m_slabThicknessMm &&
+         a.m_xrayEnergyKeV == b.m_xrayEnergyKeV && a.m_xrayWindow == b.m_xrayWindow && a.m_xrayLevel == b.m_xrayLevel;
+}
+
+bool segmentationDisplaySettingsEqual(
+  const serialize::ProjectSegmentationDisplaySettings& a,
+  const serialize::ProjectSegmentationDisplaySettings& b)
+{
+  return a.m_modulateOpacityWithImageOpacity == b.m_modulateOpacityWithImageOpacity &&
+         a.m_outlineStyle == b.m_outlineStyle && a.m_interiorOpacity == b.m_interiorOpacity &&
+         a.m_erosionFactor == b.m_erosionFactor;
+}
+
+bool isosurfaceDisplaySettingsEqual(
+  const serialize::ProjectIsosurfaceDisplaySettings& a,
+  const serialize::ProjectIsosurfaceDisplaySettings& b)
+{
+  return a.m_floatingPointInterpolation == b.m_floatingPointInterpolation &&
+         a.m_modulateOpacityWithImageOpacity == b.m_modulateOpacityWithImageOpacity;
+}
+
+bool annotationDisplaySettingsEqual(
+  const serialize::ProjectAnnotationDisplaySettings& a,
+  const serialize::ProjectAnnotationDisplaySettings& b)
+{
+  return a.m_annotationsOnTop == b.m_annotationsOnTop && a.m_landmarksOnTop == b.m_landmarksOnTop &&
+         a.m_hideAnnotationVertices == b.m_hideAnnotationVertices;
 }
 } // namespace
 
@@ -193,6 +272,12 @@ bool equivalent(const serialize::EntropyProject& a, const serialize::EntropyProj
          vectorsEqual(a.m_additionalImages, b.m_additionalImages, imagesEqual) &&
          vectorsEqual(a.m_layouts, b.m_layouts, projectLayoutsEqual) &&
          a.m_currentLayoutIndex == b.m_currentLayoutIndex &&
-         projectInterfaceSettingsEqual(a.m_interface, b.m_interface);
+         projectInterfaceSettingsEqual(a.m_interface, b.m_interface) && projectViewSettingsEqual(a.m_view, b.m_view) &&
+         comparisonSettingsEqual(a.m_comparison, b.m_comparison) &&
+         raycastingSettingsEqual(a.m_raycasting, b.m_raycasting) &&
+         intensityProjectionSettingsEqual(a.m_intensityProjection, b.m_intensityProjection) &&
+         segmentationDisplaySettingsEqual(a.m_segmentationDisplay, b.m_segmentationDisplay) &&
+         isosurfaceDisplaySettingsEqual(a.m_isosurfaces, b.m_isosurfaces) &&
+         annotationDisplaySettingsEqual(a.m_annotationDisplay, b.m_annotationDisplay);
 }
 } // namespace project_snapshot

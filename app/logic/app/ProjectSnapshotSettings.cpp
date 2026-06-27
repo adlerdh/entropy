@@ -14,21 +14,12 @@ GuiData::LayoutTabPlacement guiLayoutTabPlacement(UiLayoutTabPlacement placement
                                                    : GuiData::LayoutTabPlacement::Top;
 }
 
-serialize::ProjectLayoutTabPlacement projectLayoutTabPlacement(UiLayoutTabPlacement placement)
-{
-  return UiLayoutTabPlacement::Bottom == placement ? serialize::ProjectLayoutTabPlacement::Bottom
-                                                   : serialize::ProjectLayoutTabPlacement::Top;
-}
-
-UiLayoutTabPlacement uiLayoutTabPlacement(serialize::ProjectLayoutTabPlacement placement)
-{
-  return serialize::ProjectLayoutTabPlacement::Bottom == placement ? UiLayoutTabPlacement::Bottom
-                                                                   : UiLayoutTabPlacement::Top;
-}
 } // namespace
 
 namespace project_snapshot
 {
+// Project-owned interface and view settings.
+
 void syncLayoutTabGuiData(AppData& appData)
 {
   appData.guiData().m_showLayoutTabs = appData.settings().showLayoutTabs();
@@ -37,33 +28,275 @@ void syncLayoutTabGuiData(AppData& appData)
 
 serialize::ProjectInterfaceSettings interfaceSettings(const AppData& appData)
 {
-  return serialize::ProjectInterfaceSettings{
-    .m_showLayoutTabs = appData.settings().showLayoutTabs(),
-    .m_layoutTabPlacement = projectLayoutTabPlacement(appData.settings().layoutTabPlacement()),
-    .m_showGlobalTimeControls = appData.settings().showGlobalTimeControls(),
-    .m_synchronizeTimeSeries = appData.settings().synchronizeTimeSeries(),
-    .m_imageValuePrecision = appData.guiData().m_imageValuePrecision,
-    .m_coordsPrecision = appData.guiData().m_coordsPrecision,
-    .m_txPrecision = appData.guiData().m_txPrecision,
-    .m_percentilePrecision = appData.guiData().m_percentilePrecision};
+  return serialize::ProjectInterfaceSettings{.m_synchronizeTimeSeries = appData.settings().synchronizeTimeSeries()};
 }
 
 void applyInterfaceSettings(AppData& appData, const serialize::ProjectInterfaceSettings& settings)
 {
-  appData.settings().setShowLayoutTabs(settings.m_showLayoutTabs);
-  appData.settings().setLayoutTabPlacement(uiLayoutTabPlacement(settings.m_layoutTabPlacement));
-  appData.settings().setShowGlobalTimeControls(settings.m_showGlobalTimeControls);
   appData.settings().setSynchronizeTimeSeries(settings.m_synchronizeTimeSeries);
   syncLayoutTabGuiData(appData);
+}
 
-  appData.guiData().m_imageValuePrecision = clampPrecision(settings.m_imageValuePrecision);
-  appData.guiData().m_imageValuePrecisionFormat = precisionFormat(settings.m_imageValuePrecision);
-  appData.guiData().m_coordsPrecision = clampPrecision(settings.m_coordsPrecision);
-  appData.guiData().setCoordsPrecisionFormat();
-  appData.guiData().m_txPrecision = clampPrecision(settings.m_txPrecision);
-  appData.guiData().setTxPrecisionFormat();
-  appData.guiData().m_percentilePrecision = clampPrecision(settings.m_percentilePrecision);
-  appData.guiData().m_percentilePrecisionFormat = precisionFormat(settings.m_percentilePrecision);
+serialize::ProjectViewSettings viewSettings(const AppData& appData)
+{
+  return serialize::ProjectViewSettings{
+    .m_anatomicalLabelType = appData.renderData().m_anatomicalLabelType,
+    .m_lockAnatomicalDirectionsToReferenceImage = appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage(),
+    .m_crosshairsSnapping = appData.renderData().m_snapCrosshairs};
+}
+
+void applyViewSettings(AppData& appData, const serialize::ProjectViewSettings& settings)
+{
+  appData.renderData().m_anatomicalLabelType = settings.m_anatomicalLabelType;
+  appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(
+    settings.m_lockAnatomicalDirectionsToReferenceImage);
+  appData.renderData().m_snapCrosshairs = settings.m_crosshairsSnapping;
+}
+
+// Project-owned comparison metric and mode settings.
+
+serialize::ProjectMetricSettings metricSettings(const RenderData::MetricParams& params)
+{
+  return serialize::ProjectMetricSettings{
+    .m_colorMapIndex = params.m_colorMapIndex,
+    .m_slopeIntercept = params.m_slopeIntercept,
+    .m_invertColormap = params.m_invertCmap,
+    .m_continuousColormap = params.m_cmapContinuous,
+    .m_colormapLevels = params.m_cmapQuantizationLevels};
+}
+
+void applyMetricSettings(RenderData::MetricParams& params, const serialize::ProjectMetricSettings& settings)
+{
+  params.m_colorMapIndex = settings.m_colorMapIndex;
+  params.m_slopeIntercept = settings.m_slopeIntercept;
+  params.m_invertCmap = settings.m_invertColormap;
+  params.m_cmapContinuous = settings.m_continuousColormap;
+  params.m_cmapQuantizationLevels = settings.m_colormapLevels;
+}
+
+serialize::ProjectLocalNccPresentation localNccPresentation(RenderData::LocalNccPresentation presentation)
+{
+  return RenderData::LocalNccPresentation::Correlation == presentation
+           ? serialize::ProjectLocalNccPresentation::Correlation
+           : serialize::ProjectLocalNccPresentation::Dissimilarity;
+}
+
+RenderData::LocalNccPresentation localNccPresentation(serialize::ProjectLocalNccPresentation presentation)
+{
+  return serialize::ProjectLocalNccPresentation::Correlation == presentation
+           ? RenderData::LocalNccPresentation::Correlation
+           : RenderData::LocalNccPresentation::Dissimilarity;
+}
+
+serialize::ProjectLocalMetricInvalidStyle localMetricInvalidStyle(RenderData::LocalNccInvalidStyle style)
+{
+  return RenderData::LocalNccInvalidStyle::Gray == style ? serialize::ProjectLocalMetricInvalidStyle::Gray
+                                                         : serialize::ProjectLocalMetricInvalidStyle::Transparent;
+}
+
+RenderData::LocalNccInvalidStyle localMetricInvalidStyle(serialize::ProjectLocalMetricInvalidStyle style)
+{
+  return serialize::ProjectLocalMetricInvalidStyle::Gray == style ? RenderData::LocalNccInvalidStyle::Gray
+                                                                  : RenderData::LocalNccInvalidStyle::Transparent;
+}
+
+serialize::ProjectSegmentationRaycastMasking raycastSegmentationMasking(RenderData::SegMaskingForRaycasting masking)
+{
+  switch (masking) {
+    case RenderData::SegMaskingForRaycasting::SegMasksIn:
+      return serialize::ProjectSegmentationRaycastMasking::MaskIn;
+    case RenderData::SegMaskingForRaycasting::SegMasksOut:
+      return serialize::ProjectSegmentationRaycastMasking::MaskOut;
+    case RenderData::SegMaskingForRaycasting::Disabled:
+      return serialize::ProjectSegmentationRaycastMasking::Disabled;
+  }
+
+  return serialize::ProjectSegmentationRaycastMasking::Disabled;
+}
+
+RenderData::SegMaskingForRaycasting raycastSegmentationMasking(serialize::ProjectSegmentationRaycastMasking masking)
+{
+  switch (masking) {
+    case serialize::ProjectSegmentationRaycastMasking::MaskIn:
+      return RenderData::SegMaskingForRaycasting::SegMasksIn;
+    case serialize::ProjectSegmentationRaycastMasking::MaskOut:
+      return RenderData::SegMaskingForRaycasting::SegMasksOut;
+    case serialize::ProjectSegmentationRaycastMasking::Disabled:
+      return RenderData::SegMaskingForRaycasting::Disabled;
+  }
+
+  return RenderData::SegMaskingForRaycasting::Disabled;
+}
+
+serialize::ProjectComparisonSettings comparisonSettings(const AppData& appData)
+{
+  const auto& renderData = appData.renderData();
+  return serialize::ProjectComparisonSettings{
+    .m_difference =
+      serialize::ProjectDifferenceMetricSettings{
+        .m_squared = renderData.m_useSquare,
+        .m_metric = metricSettings(renderData.m_squaredDifferenceParams)},
+    .m_localNcc =
+      serialize::ProjectLocalNccMetricSettings{
+        .m_metric = metricSettings(renderData.m_localNccParams),
+        .m_presentation = localNccPresentation(renderData.m_localNccPresentation),
+        .m_negativeCorrelationAsMismatch = renderData.m_localNccIgnoreNegativeCorrelation,
+        .m_patchRadius = renderData.m_localNccPatchRadius,
+        .m_sampleSpacing = renderData.m_localNccSampleSpacing,
+        .m_minimumValidFraction = renderData.m_localNccMinValidFraction,
+        .m_varianceEpsilon = renderData.m_localNccVarianceEpsilon,
+        .m_invalidStyle = localMetricInvalidStyle(renderData.m_localNccInvalidStyle)},
+    .m_localLinearResidual =
+      serialize::ProjectLocalLinearResidualMetricSettings{
+        .m_metric = metricSettings(renderData.m_localLinearResidualParams),
+        .m_patchRadius = renderData.m_localLinearResidualPatchRadius,
+        .m_sampleSpacing = renderData.m_localLinearResidualSampleSpacing,
+        .m_minimumValidFraction = renderData.m_localLinearResidualMinValidFraction,
+        .m_varianceEpsilon = renderData.m_localLinearResidualVarianceEpsilon,
+        .m_invalidStyle = localMetricInvalidStyle(renderData.m_localLinearResidualInvalidStyle)},
+    .m_overlayMagentaCyan = renderData.m_overlayMagentaCyan,
+    .m_quadrants = renderData.m_quadrants,
+    .m_checkerboardSquares = renderData.m_numCheckerboardSquares,
+    .m_flashlightRadiusFraction = renderData.m_flashlightRadius,
+    .m_flashlightOverlayMovingImage = renderData.m_flashlightOverlays};
+}
+
+void applyComparisonSettings(AppData& appData, const serialize::ProjectComparisonSettings& settings)
+{
+  auto& renderData = appData.renderData();
+  renderData.m_useSquare = settings.m_difference.m_squared;
+  applyMetricSettings(renderData.m_squaredDifferenceParams, settings.m_difference.m_metric);
+
+  applyMetricSettings(renderData.m_localNccParams, settings.m_localNcc.m_metric);
+  renderData.m_localNccPresentation = localNccPresentation(settings.m_localNcc.m_presentation);
+  renderData.m_localNccIgnoreNegativeCorrelation = settings.m_localNcc.m_negativeCorrelationAsMismatch;
+  renderData.m_localNccPatchRadius = settings.m_localNcc.m_patchRadius;
+  renderData.m_localNccSampleSpacing = settings.m_localNcc.m_sampleSpacing;
+  renderData.m_localNccMinValidFraction = settings.m_localNcc.m_minimumValidFraction;
+  renderData.m_localNccVarianceEpsilon = settings.m_localNcc.m_varianceEpsilon;
+  renderData.m_localNccInvalidStyle = localMetricInvalidStyle(settings.m_localNcc.m_invalidStyle);
+
+  applyMetricSettings(renderData.m_localLinearResidualParams, settings.m_localLinearResidual.m_metric);
+  renderData.m_localLinearResidualPatchRadius = settings.m_localLinearResidual.m_patchRadius;
+  renderData.m_localLinearResidualSampleSpacing = settings.m_localLinearResidual.m_sampleSpacing;
+  renderData.m_localLinearResidualMinValidFraction = settings.m_localLinearResidual.m_minimumValidFraction;
+  renderData.m_localLinearResidualVarianceEpsilon = settings.m_localLinearResidual.m_varianceEpsilon;
+  renderData.m_localLinearResidualInvalidStyle = localMetricInvalidStyle(settings.m_localLinearResidual.m_invalidStyle);
+
+  renderData.m_overlayMagentaCyan = settings.m_overlayMagentaCyan;
+  renderData.m_quadrants = settings.m_quadrants;
+  renderData.m_numCheckerboardSquares = settings.m_checkerboardSquares;
+  renderData.m_flashlightRadius = settings.m_flashlightRadiusFraction;
+  renderData.m_flashlightOverlays = settings.m_flashlightOverlayMovingImage;
+}
+
+// Project-owned rendering presentation settings.
+
+serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
+{
+  const auto& renderData = appData.renderData();
+  return serialize::ProjectRaycastingSettings{
+    .m_samplingFactor = renderData.m_raycastSamplingFactor,
+    .m_transparentBackgroundWhenNoHit = renderData.m_3dTransparentIfNoHit,
+    .m_renderFrontFaces = renderData.m_renderFrontFaces,
+    .m_renderBackFaces = renderData.m_renderBackFaces,
+    .m_segmentationMasking = raycastSegmentationMasking(renderData.m_segMasking)};
+}
+
+void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastingSettings& settings)
+{
+  auto& renderData = appData.renderData();
+  renderData.m_raycastSamplingFactor = settings.m_samplingFactor;
+  renderData.m_3dTransparentIfNoHit = settings.m_transparentBackgroundWhenNoHit;
+  renderData.m_renderFrontFaces = settings.m_renderFrontFaces;
+  renderData.m_renderBackFaces = settings.m_renderBackFaces;
+  renderData.m_segMasking = raycastSegmentationMasking(settings.m_segmentationMasking);
+}
+
+serialize::ProjectIntensityProjectionSettings intensityProjectionSettings(const AppData& appData)
+{
+  const auto& renderData = appData.renderData();
+  return serialize::ProjectIntensityProjectionSettings{
+    .m_useMaximumImageExtent = renderData.m_doMaxExtentIntensityProjection,
+    .m_slabThicknessMm = renderData.m_intensityProjectionSlabThickness,
+    .m_xrayEnergyKeV = renderData.m_xrayEnergyKeV,
+    .m_xrayWindow = renderData.m_xrayIntensityWindow,
+    .m_xrayLevel = renderData.m_xrayIntensityLevel};
+}
+
+void applyIntensityProjectionSettings(AppData& appData, const serialize::ProjectIntensityProjectionSettings& settings)
+{
+  auto& renderData = appData.renderData();
+  renderData.m_doMaxExtentIntensityProjection = settings.m_useMaximumImageExtent;
+  renderData.m_intensityProjectionSlabThickness = settings.m_slabThicknessMm;
+  renderData.setXrayEnergy(settings.m_xrayEnergyKeV);
+  renderData.m_xrayIntensityWindow = settings.m_xrayWindow;
+  renderData.m_xrayIntensityLevel = settings.m_xrayLevel;
+}
+
+serialize::ProjectSegmentationDisplaySettings segmentationDisplaySettings(const AppData& appData)
+{
+  const auto& renderData = appData.renderData();
+  return serialize::ProjectSegmentationDisplaySettings{
+    .m_modulateOpacityWithImageOpacity = renderData.m_modulateSegOpacityWithImageOpacity,
+    .m_outlineStyle = renderData.m_segOutlineStyle,
+    .m_interiorOpacity = renderData.m_segInteriorOpacity,
+    .m_erosionFactor = renderData.m_segInterpCutoff};
+}
+
+void applySegmentationDisplaySettings(AppData& appData, const serialize::ProjectSegmentationDisplaySettings& settings)
+{
+  auto& renderData = appData.renderData();
+  renderData.m_modulateSegOpacityWithImageOpacity = settings.m_modulateOpacityWithImageOpacity;
+  renderData.m_segOutlineStyle = settings.m_outlineStyle;
+  renderData.m_segInteriorOpacity = settings.m_interiorOpacity;
+  renderData.m_segInterpCutoff = settings.m_erosionFactor;
+}
+
+serialize::ProjectIsosurfaceDisplaySettings isosurfaceDisplaySettings(const AppData& appData)
+{
+  const auto& renderData = appData.renderData();
+  return serialize::ProjectIsosurfaceDisplaySettings{
+    .m_floatingPointInterpolation = renderData.m_isocontourFloatingPointInterpolation,
+    .m_modulateOpacityWithImageOpacity = renderData.m_modulateIsocontourOpacityWithImageOpacity};
+}
+
+void applyIsosurfaceDisplaySettings(AppData& appData, const serialize::ProjectIsosurfaceDisplaySettings& settings)
+{
+  auto& renderData = appData.renderData();
+  renderData.m_isocontourFloatingPointInterpolation = settings.m_floatingPointInterpolation;
+  renderData.m_modulateIsocontourOpacityWithImageOpacity = settings.m_modulateOpacityWithImageOpacity;
+}
+
+serialize::ProjectAnnotationDisplaySettings annotationDisplaySettings(const AppData& appData)
+{
+  const auto& renderData = appData.renderData();
+  return serialize::ProjectAnnotationDisplaySettings{
+    .m_annotationsOnTop = renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes,
+    .m_landmarksOnTop = renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes,
+    .m_hideAnnotationVertices = renderData.m_globalAnnotationParams.hidePolygonVertices};
+}
+
+void applyAnnotationDisplaySettings(AppData& appData, const serialize::ProjectAnnotationDisplaySettings& settings)
+{
+  auto& renderData = appData.renderData();
+  renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes = settings.m_annotationsOnTop;
+  renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes = settings.m_landmarksOnTop;
+  renderData.m_globalAnnotationParams.hidePolygonVertices = settings.m_hideAnnotationVertices;
+}
+
+// Project-wide reset.
+
+void applyDefaultProjectSettings(AppData& appData)
+{
+  applyInterfaceSettings(appData, serialize::ProjectInterfaceSettings{});
+  applyViewSettings(appData, serialize::ProjectViewSettings{});
+  applyComparisonSettings(appData, serialize::ProjectComparisonSettings{});
+  applyRaycastingSettings(appData, serialize::ProjectRaycastingSettings{});
+  applyIntensityProjectionSettings(appData, serialize::ProjectIntensityProjectionSettings{});
+  applySegmentationDisplaySettings(appData, serialize::ProjectSegmentationDisplaySettings{});
+  applyIsosurfaceDisplaySettings(appData, serialize::ProjectIsosurfaceDisplaySettings{});
+  applyAnnotationDisplaySettings(appData, serialize::ProjectAnnotationDisplaySettings{});
 }
 
 bool componentRenderModeIsValidForImage(ComponentRenderMode mode, const Image& image)
@@ -96,6 +329,8 @@ bool componentRenderModeIsValidForImage(ComponentRenderMode mode, const Image& i
 
   return false;
 }
+
+// Per-image and per-segmentation settings.
 
 serialize::ImageSettings imageSettings(const Image& image)
 {

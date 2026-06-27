@@ -1318,6 +1318,7 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
   m_closeProject = std::move(callbacks.project.closeProject);
   m_loadLayoutsFile = std::move(callbacks.project.loadLayoutsFile);
   m_saveLayoutsFile = std::move(callbacks.project.saveLayoutsFile);
+  m_resetProjectSettings = std::move(callbacks.project.resetProjectSettings);
   m_closeProjectWithoutPrompt = std::move(callbacks.project.closeProjectWithoutPrompt);
   m_requestQuitApp = std::move(callbacks.project.requestQuitApp);
   m_quitAppWithoutPrompt = std::move(callbacks.project.quitAppWithoutPrompt);
@@ -2326,6 +2327,27 @@ void ImGuiWrapper::render()
     landmarkGroup->addPoint(newIndex, point);
   };
 
+  auto requestResetProjectSettings = [this]() {
+    if (!m_resetProjectSettings) {
+      return;
+    }
+
+    const auto result = native_dialog::showMessageDialog(
+      {"Reset project settings?",
+       "Reset project display and review settings to defaults?",
+       "This resets project-wide view, comparison, raycasting, projection, segmentation display, isosurface display, "
+       "annotation display, and time-series synchronization settings. Loaded images, segmentations, landmarks, "
+       "annotations, layouts, affine transformations, per-image settings, and deformation warp assignments are not "
+       "removed or reset.",
+       "Reset Project Settings",
+       "Cancel",
+       ""});
+
+    if (result && native_dialog::MessageDialogResult::FirstButton == *result) {
+      m_resetProjectSettings();
+    }
+  };
+
   auto performMenuAction = [activeImageUid,
                             activeSegUid,
                             activeAnnotation,
@@ -2339,6 +2361,7 @@ void ImGuiWrapper::render()
                             moveImageForward,
                             moveImageToBack,
                             moveImageToFront,
+                            requestResetProjectSettings,
                             this](MainMenuAction action) {
     switch (action) {
       case MainMenuAction::SetModePointer:
@@ -2711,6 +2734,9 @@ void ImGuiWrapper::render()
         m_appData.guiData().m_showModeToolbar = !m_appData.guiData().m_showModeToolbar;
         if (m_readjustViewport) m_readjustViewport();
         break;
+      case MainMenuAction::ResetProjectSettings:
+        requestResetProjectSettings();
+        break;
       case MainMenuAction::AddLandmark:
         addLandmarkAtCrosshairs();
         break;
@@ -2784,6 +2810,8 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleTimePlayback:
           return loaded && globalTimeControlImageUid(m_appData).has_value();
         case MainMenuAction::ToggleLayoutTabs:
+          return canUseProjectActions;
+        case MainMenuAction::ResetProjectSettings:
           return canUseProjectActions;
         case MainMenuAction::PreviousForegroundLabel:
         case MainMenuAction::NextForegroundLabel:
@@ -3235,6 +3263,7 @@ void ImGuiWrapper::render()
       .quitApp = m_requestQuitApp,
       .loadLayoutsFile = m_loadLayoutsFile,
       .saveLayoutsFile = m_saveLayoutsFile,
+      .resetProjectSettings = m_resetProjectSettings,
       .defaultLayoutsSaveDirectory = defaultLayoutsSaveDirectory,
       .defaultLayoutsSaveName = defaultLayoutsSaveName,
       .layoutNames = layoutNames,
@@ -3320,7 +3349,13 @@ void ImGuiWrapper::render()
         .saveSettings =
           [this, settingsFile]() {
             std::string error;
-            if (user_preferences::save(m_appData.settings(), m_appData.renderData(), settingsFile, &error)) {
+            if (user_preferences::save(
+                  m_appData.settings(),
+                  m_appData.renderData(),
+                  m_appData.guiData(),
+                  settingsFile,
+                  &error))
+            {
               s_settingsPersistenceStatus = "Saved";
               return true;
             }
@@ -3330,7 +3365,12 @@ void ImGuiWrapper::render()
         .saveSettingsAs =
           [this](const std::filesystem::path& fileName) {
             std::string error;
-            if (user_preferences::save(m_appData.settings(), m_appData.renderData(), fileName, &error)) {
+            if (user_preferences::save(
+                  m_appData.settings(),
+                  m_appData.renderData(),
+                  m_appData.guiData(),
+                  fileName,
+                  &error)) {
               s_settingsPersistenceStatus = "Saved " + fileName.filename().string();
               return true;
             }
@@ -3339,7 +3379,7 @@ void ImGuiWrapper::render()
           },
         .restoreDefaults =
           [this, applyActivePreferences]() {
-            user_preferences::applyDefaults(m_appData.settings(), m_appData.renderData());
+            user_preferences::applyDefaults(m_appData.settings(), m_appData.renderData(), m_appData.guiData());
             applyActivePreferences();
             syncLayoutTabGuiDataFromSettings(m_appData);
             s_settingsPersistenceStatus = "Defaults restored";

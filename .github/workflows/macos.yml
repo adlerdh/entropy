@@ -342,8 +342,8 @@ jobs:
         with:
           name: macos-packages
           path: |
-            build-release/packages/Entropy-*-macOS.dmg
-            build-release/packages/Entropy-*-macOS.zip
+            build-release/packages/Entropy-*-macOS-*.dmg
+            build-release/packages/Entropy-*-macOS-*.zip
           if-no-files-found: error
 
       - name: Show Release ccache stats

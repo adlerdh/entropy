@@ -104,7 +104,8 @@ enum class MainMenuAction
   ResetPanelLayout,
   ToggleImGuiDemoWindow,
   ToggleImPlotDemoWindow,
-  ToggleToolbar
+  ToggleToolbar,
+  ResetProjectSettings
 };
 
 struct MainMenuBarCallbacks
@@ -126,6 +127,7 @@ struct MainMenuBarCallbacks
   std::function<void()> quitApp;
   std::function<void(const std::filesystem::path& fileName)> loadLayoutsFile;
   std::function<bool(const std::filesystem::path& fileName)> saveLayoutsFile;
+  std::function<void()> resetProjectSettings;
   std::function<std::filesystem::path()> defaultLayoutsSaveDirectory;
   std::function<std::string()> defaultLayoutsSaveName;
   std::function<std::vector<std::string>()> layoutNames;

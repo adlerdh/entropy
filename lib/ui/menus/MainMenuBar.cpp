@@ -239,15 +239,15 @@ void renderModeMenu(const MainMenuBarCallbacks& callbacks)
 
 void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
 {
-  static const std::string k_entropySyncLabel = std::string(ICON_FK_EXCHANGE) + " Synchronize Entropy Instances";
-  static const std::string k_snapSyncLabel = std::string(ICON_FK_EXCHANGE) + " Synchronize with ITK-SNAP";
+  static const std::string k_entropySyncLabel = std::string(ICON_FK_RSS) + " Synchronize Entropy Instances";
+  static const std::string k_snapSyncLabel = std::string(ICON_FK_RSS) + " Synchronize with ITK-SNAP";
 
   actionMenuItem(callbacks, "Recenter Views", MainMenuAction::Recenter, "C");
   actionMenuItem(callbacks, "Reset Views and Crosshairs", MainMenuAction::ResetView, "Shift+C");
   ImGui::Separator();
   actionMenuItem(callbacks, "Show Image", MainMenuAction::ToggleImageVisibility, "W");
-  actionMenuItem(callbacks, "Show Segmentation", MainMenuAction::ToggleSegmentationVisibility, "S");
   actionMenuItem(callbacks, "Show Image Edges", MainMenuAction::ToggleImageEdges, "Shift+E");
+  actionMenuItem(callbacks, "Show Segmentation", MainMenuAction::ToggleSegmentationVisibility, "S");
   actionMenuItem(callbacks, "Show Segmentation Outline", MainMenuAction::ToggleSegmentationOutline, "Space");
   ImGui::Separator();
   actionMenuItem(callbacks, "Decrease Active Image Opacity", MainMenuAction::DecreaseActiveImageOpacity, "Q");
@@ -467,6 +467,8 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
         main_menu::saveProjectAs(callbacks);
       }
 
+      main_menu::actionMenuItem(callbacks, "Reset Project Settings...", MainMenuAction::ResetProjectSettings);
+
       ImGui::Separator();
 
       if (ImGui::MenuItem("Close Project", nullptr, false, callbacks.canCloseProject)) {
@@ -556,8 +558,8 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       main_menu::actionMenuItem(callbacks, "Annotations", MainMenuAction::ToggleAnnotationsWindow);
       main_menu::actionMenuItem(callbacks, "Landmarks", MainMenuAction::ToggleLandmarksWindow);
       main_menu::actionMenuItem(callbacks, "Isosurfaces", MainMenuAction::ToggleIsosurfacesWindow);
-      main_menu::actionMenuItem(callbacks, "Settings", MainMenuAction::ToggleSettingsWindow);
-      main_menu::actionMenuItem(callbacks, "Inspector", MainMenuAction::ToggleInspectorWindow);
+      main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow);
+      main_menu::actionMenuItem(callbacks, "Voxel Inspector Panel", MainMenuAction::ToggleInspectorWindow);
       main_menu::actionMenuItem(callbacks, "Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Reset Panel Layout", MainMenuAction::ResetPanelLayout);

@@ -426,8 +426,8 @@ jobs:
       - name: Locate release assets
         run: |
           package_dir="build-release/packages"
-          dmg=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-macOS.dmg" | head -n 1)
-          zip=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-macOS.zip" | head -n 1)
+          dmg=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-macOS-*.dmg" | head -n 1)
+          zip=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-macOS-*.zip" | head -n 1)
 
           if [[ -z "$dmg" ]]; then
             echo "DMG package was not found in $package_dir" >&2
@@ -448,8 +448,8 @@ jobs:
         with:
           name: entropy-${{ env.ENTROPY_VERSION }}-macos
           path: |
-            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS.dmg
-            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS.zip
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS-*.dmg
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS-*.zip
           if-no-files-found: error
 
       - name: Show Release ccache stats
@@ -469,18 +469,29 @@ jobs:
       GH_TOKEN: ${{ github.token }}
 
     steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Download release artifacts
         uses: actions/download-artifact@v7
         with:
           path: release-assets
           merge-multiple: true
 
+      - name: Create source archives
+        run: |
+          prefix="Entropy-${ENTROPY_VERSION}/"
+          git archive --format=zip --prefix="$prefix" -o "release-assets/Entropy-${ENTROPY_VERSION}-source.zip" HEAD
+          git archive --format=tar.gz --prefix="$prefix" -o "release-assets/Entropy-${ENTROPY_VERSION}-source.tar.gz" HEAD
+
       - name: List release assets
         run: |
           find release-assets -maxdepth 1 -type f -print | sort
           asset_count=$(find release-assets -maxdepth 1 -type f | wc -l)
-          if [[ "$asset_count" -ne 6 ]]; then
-            echo "Expected 6 release assets, found $asset_count" >&2
+          if [[ "$asset_count" -ne 8 ]]; then
+            echo "Expected 8 release assets, found $asset_count" >&2
             exit 1
           fi
 

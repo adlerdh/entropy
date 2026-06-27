@@ -145,6 +145,15 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   return preferences;
 }
 
+user_preferences::PrecisionPreferences makeNonDefaultPrecisionPreferences()
+{
+  return user_preferences::PrecisionPreferences{
+    .imageValuePrecision = 4,
+    .coordsPrecision = 5,
+    .txPrecision = 6,
+    .percentilePrecision = 7};
+}
+
 void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected)
 {
   CHECK(actual.synchronizeZooms() == expected.synchronizeZooms());
@@ -274,28 +283,97 @@ void requireRenderPreferencesEqual(
   CHECK(actual.hideAnnotationVertices == expected.hideAnnotationVertices);
 }
 
+void requirePrecisionPreferencesEqual(
+  const user_preferences::PrecisionPreferences& actual,
+  const user_preferences::PrecisionPreferences& expected)
+{
+  CHECK(actual.imageValuePrecision == expected.imageValuePrecision);
+  CHECK(actual.coordsPrecision == expected.coordsPrecision);
+  CHECK(actual.txPrecision == expected.txPrecision);
+  CHECK(actual.percentilePrecision == expected.percentilePrecision);
+}
+
+void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPreferences& renderPreferences)
+{
+  settings.setLockAnatomicalCoordinateAxesWithReferenceImage(false);
+  settings.setSynchronizeTimeSeries(true);
+  renderPreferences.crosshairsSnapping = CrosshairsSnapping::Disabled;
+  renderPreferences.anatomicalLabelType = AnatomicalLabelType::Human;
+
+  const user_preferences::RenderPreferences defaults;
+  renderPreferences.squaredDifference = defaults.squaredDifference;
+  renderPreferences.squaredDifferenceMetric = defaults.squaredDifferenceMetric;
+  renderPreferences.localNccMetric = defaults.localNccMetric;
+  renderPreferences.localNccPatchRadius = defaults.localNccPatchRadius;
+  renderPreferences.localNccSampleSpacing = defaults.localNccSampleSpacing;
+  renderPreferences.localNccMinValidFraction = defaults.localNccMinValidFraction;
+  renderPreferences.localNccVarianceEpsilon = defaults.localNccVarianceEpsilon;
+  renderPreferences.localNccIgnoreNegativeCorrelation = defaults.localNccIgnoreNegativeCorrelation;
+  renderPreferences.localNccPresentation = defaults.localNccPresentation;
+  renderPreferences.localNccInvalidStyle = defaults.localNccInvalidStyle;
+  renderPreferences.localLinearResidualMetric = defaults.localLinearResidualMetric;
+  renderPreferences.localLinearResidualPatchRadius = defaults.localLinearResidualPatchRadius;
+  renderPreferences.localLinearResidualSampleSpacing = defaults.localLinearResidualSampleSpacing;
+  renderPreferences.localLinearResidualMinValidFraction = defaults.localLinearResidualMinValidFraction;
+  renderPreferences.localLinearResidualVarianceEpsilon = defaults.localLinearResidualVarianceEpsilon;
+  renderPreferences.localLinearResidualInvalidStyle = defaults.localLinearResidualInvalidStyle;
+  renderPreferences.overlayMagentaCyan = defaults.overlayMagentaCyan;
+  renderPreferences.quadrants = defaults.quadrants;
+  renderPreferences.checkerboardSquares = defaults.checkerboardSquares;
+  renderPreferences.flashlightRadiusFraction = defaults.flashlightRadiusFraction;
+  renderPreferences.flashlightOverlayMovingImage = defaults.flashlightOverlayMovingImage;
+  renderPreferences.useMaximumIntensityProjectionExtent = defaults.useMaximumIntensityProjectionExtent;
+  renderPreferences.intensityProjectionSlabThicknessMm = defaults.intensityProjectionSlabThicknessMm;
+  renderPreferences.xrayEnergyKeV = defaults.xrayEnergyKeV;
+  renderPreferences.xrayWindow = defaults.xrayWindow;
+  renderPreferences.xrayLevel = defaults.xrayLevel;
+  renderPreferences.raycastSamplingFactor = defaults.raycastSamplingFactor;
+  renderPreferences.transparentBackgroundWhenNoHit = defaults.transparentBackgroundWhenNoHit;
+  renderPreferences.renderFrontFaces = defaults.renderFrontFaces;
+  renderPreferences.renderBackFaces = defaults.renderBackFaces;
+  renderPreferences.segmentationMasking = defaults.segmentationMasking;
+  renderPreferences.modulateSegmentationOpacityWithImageOpacity = defaults.modulateSegmentationOpacityWithImageOpacity;
+  renderPreferences.segmentationOutlineStyle = defaults.segmentationOutlineStyle;
+  renderPreferences.segmentationInteriorOpacity = defaults.segmentationInteriorOpacity;
+  renderPreferences.segmentationErosionFactor = defaults.segmentationErosionFactor;
+  renderPreferences.isocontourFloatingPointInterpolation = defaults.isocontourFloatingPointInterpolation;
+  renderPreferences.modulateIsocontourOpacityWithImageOpacity = defaults.modulateIsocontourOpacityWithImageOpacity;
+  renderPreferences.annotationsOnTop = defaults.annotationsOnTop;
+  renderPreferences.landmarksOnTop = defaults.landmarksOnTop;
+  renderPreferences.hideAnnotationVertices = defaults.hideAnnotationVertices;
+}
+
 } // namespace
 
 TEST_CASE("user preferences round-trip every persisted application and rendering setting", "[app][settings]")
 {
   AppSettings expectedSettings;
   setNonDefaultSettings(expectedSettings);
-  const user_preferences::RenderPreferences expectedRenderPreferences = makeNonDefaultRenderPreferences();
+  user_preferences::RenderPreferences expectedRenderPreferences = makeNonDefaultRenderPreferences();
+  user_preferences::PrecisionPreferences expectedPrecisionPreferences = makeNonDefaultPrecisionPreferences();
 
-  const std::string text = user_preferences::toJsonString(expectedSettings, expectedRenderPreferences);
+  const std::string text =
+    user_preferences::toJsonString(expectedSettings, expectedRenderPreferences, expectedPrecisionPreferences);
+  resetProjectOwnedSettings(expectedSettings, expectedRenderPreferences);
 
   AppSettings actualSettings;
   user_preferences::RenderPreferences actualRenderPreferences;
-  REQUIRE(user_preferences::applyJsonString(actualSettings, actualRenderPreferences, text));
+  user_preferences::PrecisionPreferences actualPrecisionPreferences;
+  REQUIRE(user_preferences::applyJsonString(actualSettings, actualRenderPreferences, actualPrecisionPreferences, text));
 
   requireSettingsEqual(actualSettings, expectedSettings);
   requireRenderPreferencesEqual(actualRenderPreferences, expectedRenderPreferences);
+  requirePrecisionPreferencesEqual(actualPrecisionPreferences, expectedPrecisionPreferences);
 
   const json root = json::parse(text);
   CHECK(root.at("format") == "entropy.userSettings");
   CHECK(root.at("version") == 1);
+  CHECK(root.at("interface").at("precision").at("imageValues") == 4);
+  CHECK(root.at("interface").at("precision").at("coordinates") == 5);
+  CHECK(root.at("interface").at("precision").at("transformations") == 6);
+  CHECK(root.at("interface").at("precision").at("percentiles") == 7);
   CHECK(root.at("views").at("showOverlays") == false);
-  CHECK(root.at("synchronization").at("timeSeries").at("synchronizeTimePoints") == false);
+  CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == true);
 }
 
@@ -321,18 +399,22 @@ TEST_CASE("user preferences save creates parent directories and load restores th
 {
   AppSettings expectedSettings;
   setNonDefaultSettings(expectedSettings);
-  const user_preferences::RenderPreferences expectedRenderPreferences = makeNonDefaultRenderPreferences();
+  user_preferences::RenderPreferences expectedRenderPreferences = makeNonDefaultRenderPreferences();
+  user_preferences::PrecisionPreferences expectedPrecisionPreferences = makeNonDefaultPrecisionPreferences();
   const std::filesystem::path fileName = tempSettingsFile("nested/settings.json");
   std::filesystem::remove(fileName);
 
-  REQUIRE(user_preferences::save(expectedSettings, expectedRenderPreferences, fileName));
+  REQUIRE(user_preferences::save(expectedSettings, expectedRenderPreferences, expectedPrecisionPreferences, fileName));
+  resetProjectOwnedSettings(expectedSettings, expectedRenderPreferences);
 
   AppSettings actualSettings;
   user_preferences::RenderPreferences actualRenderPreferences;
-  REQUIRE(user_preferences::load(actualSettings, actualRenderPreferences, fileName));
+  user_preferences::PrecisionPreferences actualPrecisionPreferences;
+  REQUIRE(user_preferences::load(actualSettings, actualRenderPreferences, actualPrecisionPreferences, fileName));
 
   requireSettingsEqual(actualSettings, expectedSettings);
   requireRenderPreferencesEqual(actualRenderPreferences, expectedRenderPreferences);
+  requirePrecisionPreferencesEqual(actualPrecisionPreferences, expectedPrecisionPreferences);
 }
 
 TEST_CASE("user preferences reject invalid JSON without mutating existing values", "[app][settings]")
@@ -340,20 +422,25 @@ TEST_CASE("user preferences reject invalid JSON without mutating existing values
   AppSettings settings;
   setNonDefaultSettings(settings);
   user_preferences::RenderPreferences renderPreferences = makeNonDefaultRenderPreferences();
+  user_preferences::PrecisionPreferences precisionPreferences = makeNonDefaultPrecisionPreferences();
   const AppSettings expectedSettings = settings;
   const user_preferences::RenderPreferences expectedRenderPreferences = renderPreferences;
+  const user_preferences::PrecisionPreferences expectedPrecisionPreferences = precisionPreferences;
 
   std::string error;
-  REQUIRE_FALSE(user_preferences::applyJsonString(settings, renderPreferences, "{ not json", &error));
+  REQUIRE_FALSE(
+    user_preferences::applyJsonString(settings, renderPreferences, precisionPreferences, "{ not json", &error));
   CHECK_FALSE(error.empty());
   requireSettingsEqual(settings, expectedSettings);
   requireRenderPreferencesEqual(renderPreferences, expectedRenderPreferences);
+  requirePrecisionPreferencesEqual(precisionPreferences, expectedPrecisionPreferences);
 }
 
 TEST_CASE("user preferences preserve defaults for missing invalid and legacy fields", "[app][settings]")
 {
   AppSettings settings;
   user_preferences::RenderPreferences renderPreferences;
+  user_preferences::PrecisionPreferences precisionPreferences;
 
   const std::string text = R"({
     "interface": {
@@ -361,7 +448,13 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
       "font": "notAFont",
       "windowBackgroundOpacity": 0.01,
       "showLayoutTabs": "bad",
-      "layoutTabsPosition": "side"
+      "layoutTabsPosition": "side",
+      "precision": {
+        "imageValues": 99,
+        "coordinates": "bad",
+        "transformations": 6,
+        "percentiles": 8
+      }
     },
     "views": {
       "crosshairs": {
@@ -423,35 +516,55 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
     }
   })";
 
-  REQUIRE(user_preferences::applyJsonString(settings, renderPreferences, text));
+  REQUIRE(user_preferences::applyJsonString(settings, renderPreferences, precisionPreferences, text));
 
   REQUIRE(settings.uiScaleOverride());
   CHECK(*settings.uiScaleOverride() == Catch::Approx(4.0f));
   CHECK(settings.uiFontFamily() == UiFontFamily::Inter);
   CHECK(settings.uiWindowBgOpacity() == Catch::Approx(0.2f));
+  CHECK(precisionPreferences.imageValuePrecision == 9);
+  CHECK(precisionPreferences.coordsPrecision == 3);
+  CHECK(precisionPreferences.txPrecision == 6);
+  CHECK(precisionPreferences.percentilePrecision == 8);
   CHECK(renderPreferences.crosshairsColor == user_preferences::RenderPreferences{}.crosshairsColor);
-  CHECK(renderPreferences.crosshairsSnapping == CrosshairsSnapping::ActiveImage);
+  CHECK(renderPreferences.crosshairsSnapping == user_preferences::RenderPreferences{}.crosshairsSnapping);
   CHECK(renderPreferences.anatomicalLabelScale == Catch::Approx(2.0f));
   CHECK(renderPreferences.scaleBarTargetFraction == Catch::Approx(1.0f));
   CHECK(renderPreferences.scaleBarMarginPx == Catch::Approx(12.0f));
   CHECK(settings.brushSizeInVoxels() == 511);
   CHECK(settings.brushPreviewFillOpacity() == Catch::Approx(0.0f));
-  CHECK(renderPreferences.localNccPatchRadius == 5);
-  CHECK(renderPreferences.localNccSampleSpacing == Catch::Approx(0.5f));
-  CHECK(renderPreferences.localNccMinValidFraction == Catch::Approx(1.0f));
-  CHECK(renderPreferences.localNccVarianceEpsilon == Catch::Approx(2.5f));
+  CHECK(renderPreferences.localNccPatchRadius == user_preferences::RenderPreferences{}.localNccPatchRadius);
+  CHECK(
+    renderPreferences.localNccSampleSpacing ==
+    Catch::Approx(user_preferences::RenderPreferences{}.localNccSampleSpacing));
+  CHECK(
+    renderPreferences.localNccMinValidFraction ==
+    Catch::Approx(user_preferences::RenderPreferences{}.localNccMinValidFraction));
+  CHECK(
+    renderPreferences.localNccVarianceEpsilon ==
+    Catch::Approx(user_preferences::RenderPreferences{}.localNccVarianceEpsilon));
   CHECK(renderPreferences.localNccPresentation == user_preferences::RenderPreferences{}.localNccPresentation);
   CHECK(renderPreferences.localNccInvalidStyle == user_preferences::RenderPreferences{}.localNccInvalidStyle);
-  CHECK(renderPreferences.localLinearResidualPatchRadius == 5);
-  CHECK(renderPreferences.localLinearResidualSampleSpacing == Catch::Approx(0.5f));
-  CHECK(renderPreferences.localLinearResidualMinValidFraction == Catch::Approx(1.0f));
-  CHECK(renderPreferences.localLinearResidualVarianceEpsilon == Catch::Approx(3.5f));
+  CHECK(
+    renderPreferences.localLinearResidualPatchRadius ==
+    user_preferences::RenderPreferences{}.localLinearResidualPatchRadius);
+  CHECK(
+    renderPreferences.localLinearResidualSampleSpacing ==
+    Catch::Approx(user_preferences::RenderPreferences{}.localLinearResidualSampleSpacing));
+  CHECK(
+    renderPreferences.localLinearResidualMinValidFraction ==
+    Catch::Approx(user_preferences::RenderPreferences{}.localLinearResidualMinValidFraction));
+  CHECK(
+    renderPreferences.localLinearResidualVarianceEpsilon ==
+    Catch::Approx(user_preferences::RenderPreferences{}.localLinearResidualVarianceEpsilon));
   CHECK(
     renderPreferences.localLinearResidualInvalidStyle ==
     user_preferences::RenderPreferences{}.localLinearResidualInvalidStyle);
-  CHECK(renderPreferences.checkerboardSquares == 2);
+  CHECK(renderPreferences.checkerboardSquares == user_preferences::RenderPreferences{}.checkerboardSquares);
   CHECK(renderPreferences.targetFrameTimeSeconds == Catch::Approx(1.0));
-  CHECK(renderPreferences.raycastSamplingFactor == Catch::Approx(0.1f));
+  CHECK(
+    renderPreferences.raycastSamplingFactor ==
+    Catch::Approx(user_preferences::RenderPreferences{}.raycastSamplingFactor));
   CHECK(renderPreferences.asciiCharsetIndex == 2);
   CHECK(renderPreferences.asciiBackgroundAlpha == Catch::Approx(1.0f));
   CHECK(renderPreferences.asciiSpatialExponent == Catch::Approx(4.0f));
@@ -472,17 +585,27 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("interface").at("showLayoutTabs") == true);
   CHECK(root.at("interface").at("layoutTabsPosition") == "top");
   CHECK(root.at("interface").at("showGlobalTimeControls") == true);
+  CHECK(root.at("interface").at("precision").at("imageValues") == 3);
+  CHECK(root.at("interface").at("precision").at("coordinates") == 3);
+  CHECK(root.at("interface").at("precision").at("transformations") == 3);
+  CHECK(root.at("interface").at("precision").at("percentiles") == 2);
   CHECK(root.at("views").at("showOverlays") == true);
-  CHECK(root.at("views").at("crosshairs").at("snapping") == "disabled");
+  CHECK_FALSE(root.at("views").at("crosshairs").contains("snapping"));
+  CHECK_FALSE(root.at("views").contains("lockAnatomicalDirectionsToReferenceImage"));
+  CHECK_FALSE(root.at("views").at("anatomicalLabels").contains("type"));
   CHECK(root.at("views").at("anatomicalLabels").at("scale").get<float>() == Catch::Approx(1.0f));
   CHECK(root.at("views").at("scaleBars").at("show") == true);
   CHECK(root.at("views").at("lightbox").at("showOffsetLabels") == true);
-  CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("presentation") == "dissimilarity");
-  CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("patchRadius") == 3);
-  CHECK(root.at("rendering").at("isosurfaces").at("floatingPointInterpolation") == false);
-  CHECK(root.at("rendering").at("isosurfaces").at("modulateOpacityWithImage") == true);
+  CHECK_FALSE(root.contains("comparison"));
+  CHECK_FALSE(root.at("images").contains("intensityProjectionDefaults"));
+  CHECK_FALSE(root.at("segmentation").contains("display"));
+  CHECK_FALSE(root.at("rendering").contains("raycasting"));
+  CHECK_FALSE(root.at("rendering").contains("isosurfaces"));
+  CHECK_FALSE(root.at("annotations").contains("annotationsOnTop"));
+  CHECK_FALSE(root.at("annotations").contains("landmarksOnTop"));
+  CHECK_FALSE(root.at("annotations").contains("hideAnnotationVertices"));
   CHECK(root.at("segmentation").at("brushPreview").at("mode") == "hover");
-  CHECK(root.at("synchronization").at("timeSeries").at("synchronizeTimePoints") == true);
+  CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
   CHECK(root.at("synchronization").at("itkSnap").at("enabled") == false);
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);
 }

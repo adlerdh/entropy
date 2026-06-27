@@ -3,15 +3,19 @@
 #include "image/ImageSettings.h"
 #include "logic/serialization/ProjectSerialization.h"
 
-#include <algorithm>
-#include <cstdint>
-#include <string>
-
 class AppData;
 class Image;
 
 namespace project_snapshot
 {
+/**
+ * @name Per-asset settings
+ *
+ * These helpers serialize settings that belong to an individual image or segmentation. They do
+ * not reset or apply project-wide presentation defaults.
+ */
+/// @{
+
 /**
  * @brief Build serialized image settings from the runtime image state.
  * @param image Image whose display settings should be serialized.
@@ -40,46 +44,146 @@ serialize::SegSettings segmentationSettings(const Image& segmentation);
  */
 void applySegmentationSettings(Image& segmentation, const serialize::SegSettings& settings);
 
+/// @}
+
 /**
- * @brief Build serialized interface settings from the current application data.
- * @param appData Application data containing the current interface state.
+ * @name Project-wide settings
+ *
+ * These helpers are the ownership boundary for values stored live in `AppData`/`RenderData` but
+ * persisted with the project. Application preferences must not write these values.
+ */
+/// @{
+
+/**
+ * @brief Build project-owned interface settings from the current application data.
+ * @param appData Application data containing the current project review state.
  * @return Project interface settings suitable for project JSON serialization.
  */
 serialize::ProjectInterfaceSettings interfaceSettings(const AppData& appData);
 
 /**
- * @brief Apply serialized interface settings to the application data.
+ * @brief Apply project-owned interface settings to the application data.
  * @param appData Application data to update.
  * @param settings Serialized interface settings to restore.
  */
 void applyInterfaceSettings(AppData& appData, const serialize::ProjectInterfaceSettings& settings);
 
 /**
+ * @brief Build project-owned view settings from the current application data.
+ * @param appData Application data containing the current project view state.
+ * @return Project view settings suitable for project JSON serialization.
+ */
+serialize::ProjectViewSettings viewSettings(const AppData& appData);
+
+/**
+ * @brief Apply project-owned view settings to the application data.
+ * @param appData Application data to update.
+ * @param settings Serialized project view settings to restore.
+ */
+void applyViewSettings(AppData& appData, const serialize::ProjectViewSettings& settings);
+
+/**
+ * @brief Build project-owned comparison settings from the current application data.
+ * @param appData Application data containing the current project comparison state.
+ * @return Project comparison settings suitable for project JSON serialization.
+ */
+serialize::ProjectComparisonSettings comparisonSettings(const AppData& appData);
+
+/**
+ * @brief Apply project-owned comparison settings to the application data.
+ * @param appData Application data to update.
+ * @param settings Serialized project comparison settings to restore.
+ */
+void applyComparisonSettings(AppData& appData, const serialize::ProjectComparisonSettings& settings);
+
+/**
+ * @brief Build project-owned raycasting settings from the current application data.
+ * @param appData Application data containing current project rendering state.
+ * @return Project raycasting settings suitable for project JSON serialization.
+ */
+serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData);
+
+/**
+ * @brief Apply project-owned raycasting settings to the application data.
+ * @param appData Application data to update.
+ * @param settings Serialized raycasting settings to restore.
+ */
+void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastingSettings& settings);
+
+/**
+ * @brief Build project-owned intensity projection defaults from the current application data.
+ * @param appData Application data containing current project rendering state.
+ * @return Project intensity projection defaults suitable for project JSON serialization.
+ */
+serialize::ProjectIntensityProjectionSettings intensityProjectionSettings(const AppData& appData);
+
+/**
+ * @brief Apply project-owned intensity projection defaults to the application data.
+ * @param appData Application data to update.
+ * @param settings Serialized intensity projection defaults to restore.
+ */
+void applyIntensityProjectionSettings(AppData& appData, const serialize::ProjectIntensityProjectionSettings& settings);
+
+/**
+ * @brief Build project-owned segmentation display settings from the current application data.
+ * @param appData Application data containing current project rendering state.
+ * @return Project segmentation display settings suitable for project JSON serialization.
+ */
+serialize::ProjectSegmentationDisplaySettings segmentationDisplaySettings(const AppData& appData);
+
+/**
+ * @brief Apply project-owned segmentation display settings to the application data.
+ * @param appData Application data to update.
+ * @param settings Serialized segmentation display settings to restore.
+ */
+void applySegmentationDisplaySettings(AppData& appData, const serialize::ProjectSegmentationDisplaySettings& settings);
+
+/**
+ * @brief Build project-owned isosurface display settings from the current application data.
+ * @param appData Application data containing current project rendering state.
+ * @return Project isosurface display settings suitable for project JSON serialization.
+ */
+serialize::ProjectIsosurfaceDisplaySettings isosurfaceDisplaySettings(const AppData& appData);
+
+/**
+ * @brief Apply project-owned isosurface display settings to the application data.
+ * @param appData Application data to update.
+ * @param settings Serialized isosurface display settings to restore.
+ */
+void applyIsosurfaceDisplaySettings(AppData& appData, const serialize::ProjectIsosurfaceDisplaySettings& settings);
+
+/**
+ * @brief Build project-owned annotation display settings from the current application data.
+ * @param appData Application data containing current project annotation and landmark rendering state.
+ * @return Project annotation display settings suitable for project JSON serialization.
+ */
+serialize::ProjectAnnotationDisplaySettings annotationDisplaySettings(const AppData& appData);
+
+/**
+ * @brief Apply project-owned annotation display settings to the application data.
+ * @param appData Application data to update.
+ * @param settings Serialized annotation display settings to restore.
+ */
+void applyAnnotationDisplaySettings(AppData& appData, const serialize::ProjectAnnotationDisplaySettings& settings);
+
+/**
+ * @brief Reset project-wide settings to built-in defaults.
+ *
+ * This resets only project-level display/review settings. It does not modify loaded images,
+ * segmentations, landmarks, annotations, layouts, affine transforms, or deformation warp
+ * assignments.
+ *
+ * @param appData Application data to update.
+ */
+void applyDefaultProjectSettings(AppData& appData);
+
+/// @}
+
+/**
  * @brief Synchronize layout-tab UI state after loading app or project settings.
  * @param appData Application data containing persistent settings and transient GUI state.
  */
 void syncLayoutTabGuiData(AppData& appData);
-
-/**
- * @brief Clamp saved precision values to the supported display range.
- * @param precision Requested number of fractional digits.
- * @return Supported precision value.
- */
-inline std::uint32_t clampPrecision(std::uint32_t precision)
-{
-  constexpr std::uint32_t kMaxPrecision = 9;
-  return std::min(precision, kMaxPrecision);
-}
-
-/**
- * @brief Create a printf-style floating-point format for a saved precision value.
- * @param precision Requested number of fractional digits.
- * @return Format string such as "%0.3f".
- */
-inline std::string precisionFormat(std::uint32_t precision)
-{
-  return std::string{"%0."} + std::to_string(clampPrecision(precision)) + "f";
-}
 
 /**
  * @brief Convert a runtime component render mode to its project serialization value.

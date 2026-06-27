@@ -86,16 +86,6 @@ void setFloatFromJson(float& value, const json& object, const char* key, float m
   value = std::clamp(it->get<float>(), minValue, maxValue);
 }
 
-void setNonnegativeFloatFromJson(float& value, const json& object, const char* key)
-{
-  const auto it = object.find(key);
-  if (it == object.end() || !it->is_number()) {
-    return;
-  }
-
-  value = std::max(it->get<float>(), 0.0f);
-}
-
 void setDoubleFromJson(double& value, const json& object, const char* key, double minValue, double maxValue)
 {
   const auto it = object.find(key);
@@ -192,16 +182,16 @@ constexpr std::array sk_layoutTabPlacementNames{
   EnumName{UiLayoutTabPlacement::Top, "top"},
   EnumName{UiLayoutTabPlacement::Bottom, "bottom"}};
 
-constexpr std::array sk_crosshairsSnappingNames{
-  EnumName{CrosshairsSnapping::Disabled, "disabled"},
-  EnumName{CrosshairsSnapping::ReferenceImage, "referenceImage"},
-  EnumName{CrosshairsSnapping::ActiveImage, "activeImage"}};
+constexpr std::uint32_t kMaxPrecision = 9;
 
-constexpr std::array sk_anatomicalLabelNames{
-  EnumName{AnatomicalLabelType::Human, "human"},
-  EnumName{AnatomicalLabelType::Cartesian, "cartesian"},
-  EnumName{AnatomicalLabelType::Rodent, "rodent"},
-  EnumName{AnatomicalLabelType::Disabled, "disabled"}};
+std::uint32_t precisionFromJson(const json& root, std::string_view key, std::uint32_t fallback)
+{
+  const auto value = root.find(key);
+  if (value == root.end() || !value->is_number_unsigned()) {
+    return fallback;
+  }
+  return std::min(value->get<std::uint32_t>(), kMaxPrecision);
+}
 
 constexpr std::array sk_scaleBarPositionNames{
   EnumName{ScaleBarPosition::BottomRight, "rightBottom"},
@@ -238,40 +228,10 @@ constexpr std::array sk_brushPreviewStyleNames{
   EnumName{BrushPreviewStyle::Outline, "outline"},
   EnumName{BrushPreviewStyle::OutlineAndFill, "outlineAndFill"}};
 
-constexpr std::array sk_raycastSegMaskingNames{
-  EnumName{user_preferences::RenderPreferences::SegMaskingForRaycasting::Disabled, "disabled"},
-  EnumName{user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksIn, "maskIn"},
-  EnumName{user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut, "maskOut"}};
-
-constexpr std::array sk_localNccPresentationNames{
-  EnumName{user_preferences::RenderPreferences::LocalNccPresentation::Dissimilarity, "dissimilarity"},
-  EnumName{user_preferences::RenderPreferences::LocalNccPresentation::Correlation, "correlation"}};
-
-constexpr std::array sk_localNccInvalidStyleNames{
-  EnumName{user_preferences::RenderPreferences::LocalNccInvalidStyle::Transparent, "transparent"},
-  EnumName{user_preferences::RenderPreferences::LocalNccInvalidStyle::Gray, "gray"}};
-
-json metricParamsToJson(const user_preferences::RenderPreferences::MetricParams& params)
-{
-  return {
-    {"windowSlopeIntercept", vec2ToJson(params.slopeIntercept)},
-    {"colormapIndex", params.colorMapIndex},
-    {"invertColormap", params.invertColormap},
-    {"continuousColormap", params.continuousColormap},
-    {"colormapLevels", params.colormapLevels}};
-}
-
-void applyMetricParamsFromJson(user_preferences::RenderPreferences::MetricParams& params, const json& object)
-{
-  setVec2FromJson(params.slopeIntercept, object, "windowSlopeIntercept");
-  setFromJson(params.colorMapIndex, object, "colormapIndex");
-  setFromJson(params.invertColormap, object, "invertColormap");
-  setFromJson(params.continuousColormap, object, "continuousColormap");
-  setFromJson(params.colormapLevels, object, "colormapLevels");
-  params.colormapLevels = std::max(params.colormapLevels, 2);
-}
-
-json toJson(const AppSettings& settings, const user_preferences::RenderPreferences& renderPreferences)
+json toJson(
+  const AppSettings& settings,
+  const user_preferences::RenderPreferences& renderPreferences,
+  const user_preferences::PrecisionPreferences& precisionPreferences)
 {
   json uiScale = "auto";
   if (settings.uiScaleOverride()) {
@@ -289,21 +249,22 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
       {"windowBackgroundOpacity", settings.uiWindowBgOpacity()},
       {"showLayoutTabs", settings.showLayoutTabs()},
       {"layoutTabsPosition", enumToName(settings.layoutTabPlacement(), sk_layoutTabPlacementNames)},
-      {"showGlobalTimeControls", settings.showGlobalTimeControls()}}},
+      {"showGlobalTimeControls", settings.showGlobalTimeControls()},
+      {"precision",
+       {{"imageValues", precisionPreferences.imageValuePrecision},
+        {"coordinates", precisionPreferences.coordsPrecision},
+        {"transformations", precisionPreferences.txPrecision},
+        {"percentiles", precisionPreferences.percentilePrecision}}}}},
     {"views",
      {{"showImageBorders", renderPreferences.showImageBorders},
       {"showOverlays", settings.overlays()},
-      {"lockAnatomicalDirectionsToReferenceImage", settings.lockAnatomicalCoordinateAxesWithReferenceImage()},
-      {"crosshairs",
-       {{"color", vec4ToJson(renderPreferences.crosshairsColor)},
-        {"snapping", enumToName(renderPreferences.crosshairsSnapping, sk_crosshairsSnappingNames)}}},
+      {"crosshairs", {{"color", vec4ToJson(renderPreferences.crosshairsColor)}}},
       {"synchronizeViewZooms", settings.synchronizeZooms()},
       {"backgrounds",
        {{"2d", vec3ToJson(renderPreferences.background2dColor)},
         {"3d", vec4ToJson(renderPreferences.background3dColor)}}},
       {"anatomicalLabels",
        {{"color", vec4ToJson(renderPreferences.anatomicalLabelColor)},
-        {"type", enumToName(renderPreferences.anatomicalLabelType, sk_anatomicalLabelNames)},
         {"scale", renderPreferences.anatomicalLabelScale}}},
       {"scaleBars",
        {{"show", renderPreferences.showScaleBars},
@@ -317,21 +278,9 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
       {"lightbox",
        {{"showOffsetLabels", renderPreferences.showLightboxOffsetLabels},
         {"offsetLabelColor", vec4ToJson(renderPreferences.lightboxOffsetLabelColor)}}}}},
-    {"images",
-     {{"floatingPointLinearInterpolation", renderPreferences.floatingPointLinearInterpolation},
-      {"intensityProjectionDefaults",
-       {{"useMaximumImageExtent", renderPreferences.useMaximumIntensityProjectionExtent},
-        {"slabThicknessMm", renderPreferences.intensityProjectionSlabThicknessMm},
-        {"xrayEnergyKeV", renderPreferences.xrayEnergyKeV},
-        {"xrayWindow", renderPreferences.xrayWindow},
-        {"xrayLevel", renderPreferences.xrayLevel}}}}},
+    {"images", {{"floatingPointLinearInterpolation", renderPreferences.floatingPointLinearInterpolation}}},
     {"segmentation",
-     {{"display",
-       {{"modulateWithImageOpacity", renderPreferences.modulateSegmentationOpacityWithImageOpacity},
-        {"outlineStyle", enumToName(renderPreferences.segmentationOutlineStyle, sk_segmentationOutlineNames)},
-        {"interiorOpacity", renderPreferences.segmentationInteriorOpacity},
-        {"erosionFactor", renderPreferences.segmentationErosionFactor}}},
-      {"brush",
+     {{"brush",
        {{"replaceBackgroundWithForeground", settings.replaceBackgroundWithForeground()},
         {"use3d", settings.use3dBrush()},
         {"useIsotropic", settings.useIsotropicBrush()},
@@ -347,47 +296,10 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
         {"fillOpacity", settings.brushPreviewFillOpacity()},
         {"showWhilePainting", settings.brushPreviewWhilePainting()},
         {"outlineStyle", enumToName(settings.brushPreviewOutlineStyle(), sk_segmentationOutlineNames)}}}}},
-    {"comparison",
-     {{"difference",
-       {{"squared", renderPreferences.squaredDifference},
-        {"metric", metricParamsToJson(renderPreferences.squaredDifferenceMetric)}}},
-      {"localNormalizedCrossCorrelation",
-       {{"metric", metricParamsToJson(renderPreferences.localNccMetric)},
-        {"presentation", enumToName(renderPreferences.localNccPresentation, sk_localNccPresentationNames)},
-        {"negativeCorrelationAsMismatch", renderPreferences.localNccIgnoreNegativeCorrelation},
-        {"patchRadius", renderPreferences.localNccPatchRadius},
-        {"sampleSpacing", renderPreferences.localNccSampleSpacing},
-        {"minimumValidFraction", renderPreferences.localNccMinValidFraction},
-        {"varianceEpsilon", renderPreferences.localNccVarianceEpsilon},
-        {"invalidStyle", enumToName(renderPreferences.localNccInvalidStyle, sk_localNccInvalidStyleNames)}}},
-      {"localLinearResidual",
-       {{"metric", metricParamsToJson(renderPreferences.localLinearResidualMetric)},
-        {"patchRadius", renderPreferences.localLinearResidualPatchRadius},
-        {"sampleSpacing", renderPreferences.localLinearResidualSampleSpacing},
-        {"minimumValidFraction", renderPreferences.localLinearResidualMinValidFraction},
-        {"varianceEpsilon", renderPreferences.localLinearResidualVarianceEpsilon},
-        {"invalidStyle", enumToName(renderPreferences.localLinearResidualInvalidStyle, sk_localNccInvalidStyleNames)}}},
-      {"overlay", {{"magentaCyan", renderPreferences.overlayMagentaCyan}}},
-      {"quadrants",
-       {{"x", static_cast<bool>(renderPreferences.quadrants.x)},
-        {"y", static_cast<bool>(renderPreferences.quadrants.y)}}},
-      {"checkerboard", {{"squares", renderPreferences.checkerboardSquares}}},
-      {"flashlight",
-       {{"radiusFraction", renderPreferences.flashlightRadiusFraction},
-        {"overlayMovingImage", renderPreferences.flashlightOverlayMovingImage}}}}},
     {"rendering",
      {{"frameRate",
        {{"limit", renderPreferences.limitFrameRate},
         {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}},
-      {"raycasting",
-       {{"samplingFactor", renderPreferences.raycastSamplingFactor},
-        {"transparentBackgroundWhenNoHit", renderPreferences.transparentBackgroundWhenNoHit},
-        {"renderFrontFaces", renderPreferences.renderFrontFaces},
-        {"renderBackFaces", renderPreferences.renderBackFaces},
-        {"segmentationMasking", enumToName(renderPreferences.segmentationMasking, sk_raycastSegMaskingNames)}}},
-      {"isosurfaces",
-       {{"floatingPointInterpolation", renderPreferences.isocontourFloatingPointInterpolation},
-        {"modulateOpacityWithImage", renderPreferences.modulateIsocontourOpacityWithImageOpacity}}},
       {"asciiShading",
        {{"enabled", renderPreferences.asciiEnabled},
         {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
@@ -398,14 +310,9 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
         {"useColormapAsForeground", renderPreferences.asciiUseColormapAsForeground},
         {"spatialMatching", renderPreferences.asciiSpatialMatching},
         {"spatialExponent", renderPreferences.asciiSpatialExponent}}}}},
-    {"annotations",
-     {{"annotationsOnTop", renderPreferences.annotationsOnTop},
-      {"landmarksOnTop", renderPreferences.landmarksOnTop},
-      {"hideAnnotationVertices", renderPreferences.hideAnnotationVertices},
-      {"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
+    {"annotations", {{"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
     {"synchronization",
-     {{"timeSeries", {{"synchronizeTimePoints", settings.synchronizeTimeSeries()}}},
-      {"itkSnap",
+     {{"itkSnap",
        {{"enabled", settings.cursorSyncEnabled()},
         {"sendCursor", settings.sendCursorSync()},
         {"receiveCursor", settings.receiveCursorSync()},
@@ -419,7 +326,11 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
        {{"logVerbosity", std::string{entropy::logging::logLevelLabel(entropy::logging::defaultLoggerSinkLevel())}}}}}}};
 }
 
-void applyJson(AppSettings& settings, user_preferences::RenderPreferences& renderPreferences, const json& root)
+void applyJson(
+  AppSettings& settings,
+  user_preferences::RenderPreferences& renderPreferences,
+  user_preferences::PrecisionPreferences& precisionPreferences,
+  const json& root)
 {
   if (const auto interface = root.find("interface"); interface != root.end() && interface->is_object()) {
     if (const auto scale = interface->find("uiScale"); scale != interface->end()) {
@@ -460,6 +371,16 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
     {
       settings.setShowGlobalTimeControls(showTimeControls->get<bool>());
     }
+    if (const auto precision = interface->find("precision"); precision != interface->end() && precision->is_object()) {
+      precisionPreferences.imageValuePrecision =
+        precisionFromJson(*precision, "imageValues", precisionPreferences.imageValuePrecision);
+      precisionPreferences.coordsPrecision =
+        precisionFromJson(*precision, "coordinates", precisionPreferences.coordsPrecision);
+      precisionPreferences.txPrecision =
+        precisionFromJson(*precision, "transformations", precisionPreferences.txPrecision);
+      precisionPreferences.percentilePrecision =
+        precisionFromJson(*precision, "percentiles", precisionPreferences.percentilePrecision);
+    }
   }
 
   if (const auto views = root.find("views"); views != root.end() && views->is_object()) {
@@ -467,15 +388,8 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
     if (const auto overlays = views->find("showOverlays"); overlays != views->end() && overlays->is_boolean()) {
       settings.setOverlays(overlays->get<bool>());
     }
-    if (const auto lock = views->find("lockAnatomicalDirectionsToReferenceImage");
-        lock != views->end() && lock->is_boolean())
-    {
-      settings.setLockAnatomicalCoordinateAxesWithReferenceImage(lock->get<bool>());
-    }
-
     if (const auto crosshairs = views->find("crosshairs"); crosshairs != views->end() && crosshairs->is_object()) {
       setVec4FromJson(renderPreferences.crosshairsColor, *crosshairs, "color");
-      setEnumFromJson(renderPreferences.crosshairsSnapping, *crosshairs, "snapping", sk_crosshairsSnappingNames);
     }
     if (const auto syncZooms = views->find("synchronizeViewZooms");
         syncZooms != views->end() && syncZooms->is_boolean())
@@ -488,7 +402,6 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
     }
     if (const auto labels = views->find("anatomicalLabels"); labels != views->end() && labels->is_object()) {
       setVec4FromJson(renderPreferences.anatomicalLabelColor, *labels, "color");
-      setEnumFromJson(renderPreferences.anatomicalLabelType, *labels, "type", sk_anatomicalLabelNames);
       setFloatFromJson(renderPreferences.anatomicalLabelScale, *labels, "scale", 0.5f, 2.0f);
     }
     if (const auto scaleBars = views->find("scaleBars"); scaleBars != views->end() && scaleBars->is_object()) {
@@ -509,35 +422,9 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
 
   if (const auto images = root.find("images"); images != root.end() && images->is_object()) {
     setFromJson(renderPreferences.floatingPointLinearInterpolation, *images, "floatingPointLinearInterpolation");
-    if (const auto projection = images->find("intensityProjectionDefaults");
-        projection != images->end() && projection->is_object())
-    {
-      setFromJson(renderPreferences.useMaximumIntensityProjectionExtent, *projection, "useMaximumImageExtent");
-      setFloatFromJson(
-        renderPreferences.intensityProjectionSlabThicknessMm,
-        *projection,
-        "slabThicknessMm",
-        0.0f,
-        1.0e6f);
-      if (const auto energy = projection->find("xrayEnergyKeV"); energy != projection->end() && energy->is_number()) {
-        renderPreferences.xrayEnergyKeV = energy->get<float>();
-      }
-      setFloatFromJson(renderPreferences.xrayWindow, *projection, "xrayWindow", 1.0e-3f, 1.0f);
-      setFloatFromJson(renderPreferences.xrayLevel, *projection, "xrayLevel", 0.0f, 1.0f);
-    }
   }
 
   if (const auto segmentation = root.find("segmentation"); segmentation != root.end() && segmentation->is_object()) {
-    if (const auto display = segmentation->find("display"); display != segmentation->end() && display->is_object()) {
-      setFromJson(renderPreferences.modulateSegmentationOpacityWithImageOpacity, *display, "modulateWithImageOpacity");
-      setEnumFromJson(
-        renderPreferences.segmentationOutlineStyle,
-        *display,
-        "outlineStyle",
-        sk_segmentationOutlineNames);
-      setFloatFromJson(renderPreferences.segmentationInteriorOpacity, *display, "interiorOpacity", 0.0f, 1.0f);
-      setFloatFromJson(renderPreferences.segmentationErosionFactor, *display, "erosionFactor", 0.5f, 1.0f);
-    }
     if (const auto brush = segmentation->find("brush"); brush != segmentation->end() && brush->is_object()) {
       if (const auto value = brush->find("replaceBackgroundWithForeground");
           value != brush->end() && value->is_boolean())
@@ -594,100 +481,6 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
     }
   }
 
-  if (const auto comparison = root.find("comparison"); comparison != root.end() && comparison->is_object()) {
-    if (const auto difference = comparison->find("difference");
-        difference != comparison->end() && difference->is_object())
-    {
-      setFromJson(renderPreferences.squaredDifference, *difference, "squared");
-      if (const auto metric = difference->find("metric"); metric != difference->end() && metric->is_object()) {
-        applyMetricParamsFromJson(renderPreferences.squaredDifferenceMetric, *metric);
-      }
-    }
-    if (const auto localNcc = comparison->find("localNormalizedCrossCorrelation");
-        localNcc != comparison->end() && localNcc->is_object())
-    {
-      if (const auto metric = localNcc->find("metric"); metric != localNcc->end() && metric->is_object()) {
-        applyMetricParamsFromJson(renderPreferences.localNccMetric, *metric);
-      }
-      if (
-        const auto parsed = enumFromName<user_preferences::RenderPreferences::LocalNccPresentation>(
-          localNcc->value("presentation", ""),
-          sk_localNccPresentationNames))
-      {
-        renderPreferences.localNccPresentation = *parsed;
-      }
-      if (
-        const auto parsed = enumFromName<user_preferences::RenderPreferences::LocalNccInvalidStyle>(
-          localNcc->value("invalidStyle", ""),
-          sk_localNccInvalidStyleNames))
-      {
-        renderPreferences.localNccInvalidStyle = *parsed;
-      }
-      setFromJson(renderPreferences.localNccIgnoreNegativeCorrelation, *localNcc, "negativeCorrelationAsMismatch");
-      setFromJson(renderPreferences.localNccPatchRadius, *localNcc, "patchRadius");
-      setFloatFromJson(renderPreferences.localNccSampleSpacing, *localNcc, "sampleSpacing", 0.5f, 4.0f);
-      setFloatFromJson(renderPreferences.localNccMinValidFraction, *localNcc, "minimumValidFraction", 0.1f, 1.0f);
-      setNonnegativeFloatFromJson(renderPreferences.localNccVarianceEpsilon, *localNcc, "varianceEpsilon");
-      renderPreferences.localNccPatchRadius = std::clamp(renderPreferences.localNccPatchRadius, 1, 5);
-    }
-    if (const auto localLinearResidual = comparison->find("localLinearResidual");
-        localLinearResidual != comparison->end() && localLinearResidual->is_object())
-    {
-      if (const auto metric = localLinearResidual->find("metric");
-          metric != localLinearResidual->end() && metric->is_object())
-      {
-        applyMetricParamsFromJson(renderPreferences.localLinearResidualMetric, *metric);
-      }
-      if (
-        const auto parsed = enumFromName<user_preferences::RenderPreferences::LocalNccInvalidStyle>(
-          localLinearResidual->value("invalidStyle", ""),
-          sk_localNccInvalidStyleNames))
-      {
-        renderPreferences.localLinearResidualInvalidStyle = *parsed;
-      }
-      setFromJson(renderPreferences.localLinearResidualPatchRadius, *localLinearResidual, "patchRadius");
-      setFloatFromJson(
-        renderPreferences.localLinearResidualSampleSpacing,
-        *localLinearResidual,
-        "sampleSpacing",
-        0.5f,
-        4.0f);
-      setFloatFromJson(
-        renderPreferences.localLinearResidualMinValidFraction,
-        *localLinearResidual,
-        "minimumValidFraction",
-        0.1f,
-        1.0f);
-      setNonnegativeFloatFromJson(
-        renderPreferences.localLinearResidualVarianceEpsilon,
-        *localLinearResidual,
-        "varianceEpsilon");
-      renderPreferences.localLinearResidualPatchRadius =
-        std::clamp(renderPreferences.localLinearResidualPatchRadius, 1, 5);
-    }
-    if (const auto overlay = comparison->find("overlay"); overlay != comparison->end() && overlay->is_object()) {
-      setFromJson(renderPreferences.overlayMagentaCyan, *overlay, "magentaCyan");
-    }
-    if (const auto quadrants = comparison->find("quadrants"); quadrants != comparison->end() && quadrants->is_object())
-    {
-      bool x = static_cast<bool>(renderPreferences.quadrants.x);
-      bool y = static_cast<bool>(renderPreferences.quadrants.y);
-      setFromJson(x, *quadrants, "x");
-      setFromJson(y, *quadrants, "y");
-      renderPreferences.quadrants = glm::ivec2{x, y};
-    }
-    if (const auto checker = comparison->find("checkerboard"); checker != comparison->end() && checker->is_object()) {
-      setFromJson(renderPreferences.checkerboardSquares, *checker, "squares");
-      renderPreferences.checkerboardSquares = std::clamp(renderPreferences.checkerboardSquares, 2, 2048);
-    }
-    if (const auto flashlight = comparison->find("flashlight");
-        flashlight != comparison->end() && flashlight->is_object())
-    {
-      setFloatFromJson(renderPreferences.flashlightRadiusFraction, *flashlight, "radiusFraction", 0.01f, 1.0f);
-      setFromJson(renderPreferences.flashlightOverlayMovingImage, *flashlight, "overlayMovingImage");
-    }
-  }
-
   if (const auto rendering = root.find("rendering"); rendering != root.end() && rendering->is_object()) {
     if (const auto frameRate = rendering->find("frameRate"); frameRate != rendering->end() && frameRate->is_object()) {
       setFromJson(renderPreferences.limitFrameRate, *frameRate, "limit");
@@ -697,28 +490,6 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
         "targetFrameTimeSeconds",
         1.0 / 240.0,
         1.0);
-    }
-    if (const auto raycasting = rendering->find("raycasting");
-        raycasting != rendering->end() && raycasting->is_object())
-    {
-      setFloatFromJson(renderPreferences.raycastSamplingFactor, *raycasting, "samplingFactor", 0.1f, 5.0f);
-      setFromJson(renderPreferences.transparentBackgroundWhenNoHit, *raycasting, "transparentBackgroundWhenNoHit");
-      setFromJson(renderPreferences.renderFrontFaces, *raycasting, "renderFrontFaces");
-      setFromJson(renderPreferences.renderBackFaces, *raycasting, "renderBackFaces");
-      setEnumFromJson(
-        renderPreferences.segmentationMasking,
-        *raycasting,
-        "segmentationMasking",
-        sk_raycastSegMaskingNames);
-    }
-    if (const auto isosurfaces = rendering->find("isosurfaces");
-        isosurfaces != rendering->end() && isosurfaces->is_object())
-    {
-      setFromJson(renderPreferences.isocontourFloatingPointInterpolation, *isosurfaces, "floatingPointInterpolation");
-      setFromJson(
-        renderPreferences.modulateIsocontourOpacityWithImageOpacity,
-        *isosurfaces,
-        "modulateOpacityWithImage");
     }
     if (const auto ascii = rendering->find("asciiShading"); ascii != rendering->end() && ascii->is_object()) {
       setFromJson(renderPreferences.asciiEnabled, *ascii, "enabled");
@@ -735,9 +506,6 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
   }
 
   if (const auto annotations = root.find("annotations"); annotations != root.end() && annotations->is_object()) {
-    setFromJson(renderPreferences.annotationsOnTop, *annotations, "annotationsOnTop");
-    setFromJson(renderPreferences.landmarksOnTop, *annotations, "landmarksOnTop");
-    setFromJson(renderPreferences.hideAnnotationVertices, *annotations, "hideAnnotationVertices");
     if (const auto value = annotations->find("crosshairsMoveWhileAnnotating");
         value != annotations->end() && value->is_boolean())
     {
@@ -746,14 +514,6 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
   }
 
   if (const auto sync = root.find("synchronization"); sync != root.end() && sync->is_object()) {
-    if (const auto timeSeries = sync->find("timeSeries"); timeSeries != sync->end() && timeSeries->is_object()) {
-      if (const auto value = timeSeries->find("synchronizeTimePoints");
-          value != timeSeries->end() && value->is_boolean())
-      {
-        settings.setSynchronizeTimeSeries(value->get<bool>());
-      }
-    }
-
     const auto applyItkSnapSync = [&settings](const json& object) {
       if (const auto value = object.find("enabled"); value != object.end() && value->is_boolean()) {
         settings.setCursorSyncEnabled(value->get<bool>());
@@ -821,20 +581,24 @@ RenderPreferences defaultRenderPreferences()
   return {};
 }
 
-std::string toJsonString(const AppSettings& settings, const RenderPreferences& renderPreferences)
+std::string toJsonString(
+  const AppSettings& settings,
+  const RenderPreferences& renderPreferences,
+  const PrecisionPreferences& precisionPreferences)
 {
-  return toJson(settings, renderPreferences).dump(2);
+  return toJson(settings, renderPreferences, precisionPreferences).dump(2);
 }
 
 bool applyJsonString(
   AppSettings& settings,
   RenderPreferences& renderPreferences,
+  PrecisionPreferences& precisionPreferences,
   const std::string& text,
   std::string* error)
 {
   try {
     const json root = json::parse(text);
-    applyJson(settings, renderPreferences, root);
+    applyJson(settings, renderPreferences, precisionPreferences, root);
     return true;
   }
   catch (const std::exception& e) {
@@ -845,9 +609,20 @@ bool applyJsonString(
   }
 }
 
+bool applyJsonString(
+  AppSettings& settings,
+  RenderPreferences& renderPreferences,
+  const std::string& text,
+  std::string* error)
+{
+  PrecisionPreferences precisionPreferences;
+  return applyJsonString(settings, renderPreferences, precisionPreferences, text, error);
+}
+
 bool save(
   const AppSettings& settings,
   const RenderPreferences& renderPreferences,
+  const PrecisionPreferences& precisionPreferences,
   const std::filesystem::path& fileName,
   std::string* error)
 {
@@ -857,7 +632,7 @@ bool save(
     }
     std::ofstream out(fileName, std::ios::out | std::ios::trunc);
     out.exceptions(std::ios::badbit | std::ios::failbit);
-    out << toJsonString(settings, renderPreferences) << '\n';
+    out << toJsonString(settings, renderPreferences, precisionPreferences) << '\n';
     spdlog::info("Saved user settings to {}", fileName);
     return true;
   }
@@ -870,9 +645,19 @@ bool save(
   }
 }
 
+bool save(
+  const AppSettings& settings,
+  const RenderPreferences& renderPreferences,
+  const std::filesystem::path& fileName,
+  std::string* error)
+{
+  return save(settings, renderPreferences, PrecisionPreferences{}, fileName, error);
+}
+
 bool load(
   AppSettings& settings,
   RenderPreferences& renderPreferences,
+  PrecisionPreferences& precisionPreferences,
   const std::filesystem::path& fileName,
   std::string* error)
 {
@@ -886,7 +671,7 @@ bool load(
     in.exceptions(std::ios::badbit | std::ios::failbit);
     std::ostringstream buffer;
     buffer << in.rdbuf();
-    if (!applyJsonString(settings, renderPreferences, buffer.str(), error)) {
+    if (!applyJsonString(settings, renderPreferences, precisionPreferences, buffer.str(), error)) {
       return false;
     }
     spdlog::info("Loaded user settings from {}", fileName);
@@ -899,6 +684,16 @@ bool load(
     spdlog::error("Failed to load user settings from {}: {}", fileName, e.what());
     return false;
   }
+}
+
+bool load(
+  AppSettings& settings,
+  RenderPreferences& renderPreferences,
+  const std::filesystem::path& fileName,
+  std::string* error)
+{
+  PrecisionPreferences precisionPreferences;
+  return load(settings, renderPreferences, precisionPreferences, fileName, error);
 }
 
 } // namespace user_preferences

@@ -4,6 +4,7 @@
 
 #include "common/Types.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <cstddef>
@@ -12,16 +13,18 @@
 #include <glm/vec4.hpp>
 
 struct RenderData;
+struct GuiData;
 
 namespace user_preferences
 {
 
 /**
- * @brief Rendering preferences persisted in the user settings file.
+ * @brief Plain rendering preference values used while reading and writing user settings.
  *
- * This type intentionally contains only plain user-facing preference values.
- * It mirrors the persisted subset of RenderData without requiring OpenGL
- * resources, which keeps preference parsing and schema tests headless.
+ * This type mirrors RenderData without requiring OpenGL resources, which keeps preference parsing
+ * and schema tests headless. Not every field is persisted to the application settings file:
+ * project-owned presentation fields are intentionally omitted from user settings JSON and are
+ * preserved when application defaults are restored.
  */
 struct RenderPreferences
 {
@@ -135,6 +138,17 @@ struct RenderPreferences
 };
 
 /**
+ * @brief Numeric display precision persisted in the user settings file.
+ */
+struct PrecisionPreferences
+{
+  std::uint32_t imageValuePrecision = 3; //!< Decimal places for image values.
+  std::uint32_t coordsPrecision = 3;     //!< Decimal places for coordinates.
+  std::uint32_t txPrecision = 3;         //!< Decimal places for transformations.
+  std::uint32_t percentilePrecision = 2; //!< Decimal places for percentiles.
+};
+
+/**
  * @brief Return the built-in persisted rendering preferences.
  */
 RenderPreferences defaultRenderPreferences();
@@ -145,10 +159,28 @@ RenderPreferences defaultRenderPreferences();
  * @param renderPreferences Rendering preferences to serialize.
  * @return Human-readable JSON representation of the user preferences.
  */
-std::string toJsonString(const AppSettings& settings, const RenderPreferences& renderPreferences);
+std::string toJsonString(
+  const AppSettings& settings,
+  const RenderPreferences& renderPreferences,
+  const PrecisionPreferences& precisionPreferences = PrecisionPreferences{});
 
 /**
  * @brief Apply user preferences from versioned JSON text.
+ * @param settings Application settings to update.
+ * @param renderPreferences Rendering preferences to update.
+ * @param text JSON text to parse.
+ * @param error Optional destination for a parse or validation error.
+ * @return True iff the text was parsed and applied successfully.
+ */
+bool applyJsonString(
+  AppSettings& settings,
+  RenderPreferences& renderPreferences,
+  PrecisionPreferences& precisionPreferences,
+  const std::string& text,
+  std::string* error = nullptr);
+
+/**
+ * @brief Apply user preferences from versioned JSON text without numeric precision output.
  * @param settings Application settings to update.
  * @param renderPreferences Rendering preferences to update.
  * @param text JSON text to parse.
@@ -172,11 +204,41 @@ bool applyJsonString(
 bool save(
   const AppSettings& settings,
   const RenderPreferences& renderPreferences,
+  const PrecisionPreferences& precisionPreferences,
+  const std::filesystem::path& fileName,
+  std::string* error = nullptr);
+
+/**
+ * @brief Save user preferences to disk without requiring RenderData or precision state.
+ * @param settings Application settings to serialize.
+ * @param renderPreferences Rendering preferences to serialize.
+ * @param fileName Destination JSON file.
+ * @param error Optional destination for an I/O or serialization error.
+ * @return True iff the preferences were written successfully.
+ */
+bool save(
+  const AppSettings& settings,
+  const RenderPreferences& renderPreferences,
   const std::filesystem::path& fileName,
   std::string* error = nullptr);
 
 /**
  * @brief Load user preferences from disk without requiring RenderData.
+ * @param settings Application settings to update.
+ * @param renderPreferences Rendering preferences to update.
+ * @param fileName Source JSON file.
+ * @param error Optional destination for an I/O or parse error.
+ * @return True iff the file was absent or was loaded successfully.
+ */
+bool load(
+  AppSettings& settings,
+  RenderPreferences& renderPreferences,
+  PrecisionPreferences& precisionPreferences,
+  const std::filesystem::path& fileName,
+  std::string* error = nullptr);
+
+/**
+ * @brief Load user preferences from disk without requiring RenderData or precision state.
  * @param settings Application settings to update.
  * @param renderPreferences Rendering preferences to update.
  * @param fileName Source JSON file.
@@ -195,7 +257,7 @@ bool load(
  * @param renderData Rendering defaults to serialize.
  * @return Human-readable JSON representation of the user preferences.
  */
-std::string toJsonString(const AppSettings& settings, const RenderData& renderData);
+std::string toJsonString(const AppSettings& settings, const RenderData& renderData, const GuiData& guiData);
 
 /**
  * @brief Apply user preferences from versioned JSON text.
@@ -208,6 +270,7 @@ std::string toJsonString(const AppSettings& settings, const RenderData& renderDa
 bool applyJsonString(
   AppSettings& settings,
   RenderData& renderData,
+  GuiData& guiData,
   const std::string& text,
   std::string* error = nullptr);
 
@@ -222,6 +285,7 @@ bool applyJsonString(
 bool save(
   const AppSettings& settings,
   const RenderData& renderData,
+  const GuiData& guiData,
   const std::filesystem::path& fileName,
   std::string* error = nullptr);
 
@@ -236,6 +300,7 @@ bool save(
 bool load(
   AppSettings& settings,
   RenderData& renderData,
+  GuiData& guiData,
   const std::filesystem::path& fileName,
   std::string* error = nullptr);
 
@@ -244,6 +309,6 @@ bool load(
  * @param settings Application settings to reset.
  * @param renderData Rendering defaults to reset.
  */
-void applyDefaults(AppSettings& settings, RenderData& renderData);
+void applyDefaults(AppSettings& settings, RenderData& renderData, GuiData& guiData);
 
 } // namespace user_preferences

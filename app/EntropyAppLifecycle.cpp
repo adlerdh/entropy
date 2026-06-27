@@ -70,7 +70,13 @@ void EntropyApp::init()
   {
     std::string preferencesError;
     const fs::path settingsFile = app_paths::userSettingsFile();
-    if (!user_preferences::load(m_data.settings(), m_data.renderData(), settingsFile, &preferencesError)) {
+    if (!user_preferences::load(
+          m_data.settings(),
+          m_data.renderData(),
+          m_data.guiData(),
+          settingsFile,
+          &preferencesError))
+    {
       spdlog::warn("Using built-in settings after failing to load {}: {}", settingsFile, preferencesError);
     }
     m_imgui.setUserScaleOverride(m_data.settings().uiScaleOverride());

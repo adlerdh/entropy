@@ -330,6 +330,11 @@ bool populateFileMenu(HMENU fileMenu)
          insertSeparator(fileMenu, position++) &&
          insertMenuItem(fileMenu, position++, k_saveProjectCommand, L"&Save Project\tCtrl+S") &&
          insertMenuItem(fileMenu, position++, k_saveProjectAsCommand, L"Save Project &As...\tCtrl+Shift+S") &&
+         insertActionMenuItem(
+           fileMenu,
+           position++,
+           MainMenuAction::ResetProjectSettings,
+           L"Reset Project &Settings...") &&
          insertSeparator(fileMenu, position++) &&
          insertMenuItem(fileMenu, position++, k_closeProjectCommand, L"&Close Project") &&
          insertSeparator(fileMenu, position++) && insertMenuItem(fileMenu, position++, k_quitCommand, L"&Quit\tCtrl+Q");
@@ -657,8 +662,8 @@ bool populateWindowsMenu(HMENU menu)
             insertActionMenuItem(menu, position++, MainMenuAction::ToggleAnnotationsWindow, L"&Annotations") &&
             insertActionMenuItem(menu, position++, MainMenuAction::ToggleLandmarksWindow, L"&Landmarks") &&
             insertActionMenuItem(menu, position++, MainMenuAction::ToggleIsosurfacesWindow, L"I&sosurfaces") &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Se&ttings") &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Ins&pector") &&
+            insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings") &&
+            insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector Panel") &&
             insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
             insertSeparator(menu, position++) &&
             insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&

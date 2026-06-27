@@ -1,3 +1,14 @@
+set(entropy_PACKAGE_ARCHITECTURE_DEFAULT "${CMAKE_SYSTEM_PROCESSOR}")
+string(TOLOWER "${entropy_PACKAGE_ARCHITECTURE_DEFAULT}" entropy_PACKAGE_ARCHITECTURE_LOWER)
+if(entropy_PACKAGE_ARCHITECTURE_LOWER MATCHES "^(amd64|x86_64)$")
+  set(entropy_PACKAGE_ARCHITECTURE_DEFAULT "x86_64")
+elseif(entropy_PACKAGE_ARCHITECTURE_LOWER MATCHES "^(arm64|aarch64)$")
+  set(entropy_PACKAGE_ARCHITECTURE_DEFAULT "arm64")
+endif()
+
+set(Entropy_PACKAGE_ARCHITECTURE "${entropy_PACKAGE_ARCHITECTURE_DEFAULT}"
+    CACHE STRING "Architecture label used in generated package filenames")
+
 if(UNIX AND NOT APPLE)
   include(LinuxPackaging)
 elseif(APPLE)

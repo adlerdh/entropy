@@ -335,7 +335,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show settings");
+            ImGui::SetTooltip("%s", "Show application settings");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -357,7 +357,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Inspector Panel");
+            ImGui::SetTooltip("%s", "Show Voxel Inspector Panel");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button

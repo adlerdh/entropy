@@ -68,9 +68,16 @@ std::optional<Enum> enumFromName(std::string_view name, const std::array<EnumNam
   return it->value;
 }
 
-constexpr std::array k_layoutTabPlacementNames{
-  EnumName{serialize::ProjectLayoutTabPlacement::Top, "top"},
-  EnumName{serialize::ProjectLayoutTabPlacement::Bottom, "bottom"}};
+constexpr std::array k_anatomicalLabelNames{
+  EnumName{AnatomicalLabelType::Human, "human"},
+  EnumName{AnatomicalLabelType::Cartesian, "cartesian"},
+  EnumName{AnatomicalLabelType::Rodent, "rodent"},
+  EnumName{AnatomicalLabelType::Disabled, "disabled"}};
+
+constexpr std::array k_crosshairsSnappingNames{
+  EnumName{CrosshairsSnapping::Disabled, "disabled"},
+  EnumName{CrosshairsSnapping::ReferenceImage, "referenceImage"},
+  EnumName{CrosshairsSnapping::ActiveImage, "activeImage"}};
 
 constexpr std::array k_edgeDetectionMethodNames{
   EnumName{serialize::ProjectEdgeDetectionMethod::Pixel, "pixel"},
@@ -111,6 +118,24 @@ constexpr std::array k_vectorArrowOverlaySpacingModeNames{
 constexpr std::array k_vectorWarpedGridConventionNames{
   EnumName{serialize::ProjectVectorWarpedGridConvention::SamplingField, "samplingField"},
   EnumName{serialize::ProjectVectorWarpedGridConvention::ApparentDeformation, "apparentDeformation"}};
+
+constexpr std::array k_localNccPresentationNames{
+  EnumName{serialize::ProjectLocalNccPresentation::Dissimilarity, "dissimilarity"},
+  EnumName{serialize::ProjectLocalNccPresentation::Correlation, "correlation"}};
+
+constexpr std::array k_localMetricInvalidStyleNames{
+  EnumName{serialize::ProjectLocalMetricInvalidStyle::Transparent, "transparent"},
+  EnumName{serialize::ProjectLocalMetricInvalidStyle::Gray, "gray"}};
+
+constexpr std::array k_raycastSegmentationMaskingNames{
+  EnumName{serialize::ProjectSegmentationRaycastMasking::Disabled, "disabled"},
+  EnumName{serialize::ProjectSegmentationRaycastMasking::MaskIn, "maskIn"},
+  EnumName{serialize::ProjectSegmentationRaycastMasking::MaskOut, "maskOut"}};
+
+constexpr std::array k_segmentationOutlineNames{
+  EnumName{SegmentationOutlineStyle::Disabled, "disabled"},
+  EnumName{SegmentationOutlineStyle::ViewPixel, "pixel"},
+  EnumName{SegmentationOutlineStyle::ImageVoxel, "voxel"}};
 
 constexpr std::array k_interpolationModeNames{
   EnumName{InterpolationMode::NearestNeighbor, "nearest"},
@@ -207,6 +232,11 @@ json matrixToJson(const glm::mat4& matrix)
   return j;
 }
 
+json vec2ToJson(const glm::vec2& value)
+{
+  return json::array({value.x, value.y});
+}
+
 json vec3ToJson(const glm::vec3& value)
 {
   return json::array({value.x, value.y, value.z});
@@ -215,6 +245,11 @@ json vec3ToJson(const glm::vec3& value)
 json vec4ToJson(const glm::vec4& value)
 {
   return json::array({value.x, value.y, value.z, value.w});
+}
+
+glm::vec2 vec2FromJson(const json& j)
+{
+  return glm::vec2{j.at(0).get<float>(), j.at(1).get<float>()};
 }
 
 glm::vec3 vec3FromJson(const json& j)
@@ -912,55 +947,348 @@ void from_json(const json& j, serialize::Image& image)
 
 void to_json(json& j, const ProjectInterfaceSettings& settings)
 {
-  j = json{
-    {"showLayoutTabs", settings.m_showLayoutTabs},
-    {"layoutTabsPosition", enumToName(settings.m_layoutTabPlacement, k_layoutTabPlacementNames)},
-    {"showGlobalTimeControls", settings.m_showGlobalTimeControls},
-    {"synchronizeTimeSeries", settings.m_synchronizeTimeSeries},
-    {"imageValuePrecision", settings.m_imageValuePrecision},
-    {"coordinatesPrecision", settings.m_coordsPrecision},
-    {"transformPrecision", settings.m_txPrecision},
-    {"percentilePrecision", settings.m_percentilePrecision}};
+  j = json{{"synchronizeTimeSeries", settings.m_synchronizeTimeSeries}};
 }
 
 void from_json(const json& j, ProjectInterfaceSettings& settings)
 {
-  if (const auto showTabs = j.find("showLayoutTabs"); showTabs != j.end() && showTabs->is_boolean()) {
-    settings.m_showLayoutTabs = showTabs->get<bool>();
-  }
-  if (
-    const auto parsed =
-      enumFromName<ProjectLayoutTabPlacement>(j.value("layoutTabsPosition", ""), k_layoutTabPlacementNames))
-  {
-    settings.m_layoutTabPlacement = *parsed;
-  }
-  if (const auto showTimeControls = j.find("showGlobalTimeControls");
-      showTimeControls != j.end() && showTimeControls->is_boolean())
-  {
-    settings.m_showGlobalTimeControls = showTimeControls->get<bool>();
-  }
   if (const auto syncTime = j.find("synchronizeTimeSeries"); syncTime != j.end() && syncTime->is_boolean()) {
     settings.m_synchronizeTimeSeries = syncTime->get<bool>();
   }
-  if (const auto precision = j.find("imageValuePrecision"); precision != j.end()) {
-    if (const auto parsed = unsignedIntFromJson(*precision)) {
-      settings.m_imageValuePrecision = *parsed;
+}
+
+void to_json(json& j, const ProjectViewSettings& settings)
+{
+  j = json{
+    {"anatomicalLabelType", enumToName(settings.m_anatomicalLabelType, k_anatomicalLabelNames)},
+    {"lockAnatomicalDirectionsToReferenceImage", settings.m_lockAnatomicalDirectionsToReferenceImage},
+    {"crosshairsSnapping", enumToName(settings.m_crosshairsSnapping, k_crosshairsSnappingNames)}};
+}
+
+void from_json(const json& j, ProjectViewSettings& settings)
+{
+  if (const auto parsed = enumFromName<AnatomicalLabelType>(j.value("anatomicalLabelType", ""), k_anatomicalLabelNames))
+  {
+    settings.m_anatomicalLabelType = *parsed;
+  }
+  if (const auto lock = j.find("lockAnatomicalDirectionsToReferenceImage"); lock != j.end() && lock->is_boolean()) {
+    settings.m_lockAnatomicalDirectionsToReferenceImage = lock->get<bool>();
+  }
+  if (
+    const auto parsed = enumFromName<CrosshairsSnapping>(j.value("crosshairsSnapping", ""), k_crosshairsSnappingNames))
+  {
+    settings.m_crosshairsSnapping = *parsed;
+  }
+}
+
+void to_json(json& j, const ProjectMetricSettings& settings)
+{
+  j = json{
+    {"colormapIndex", settings.m_colorMapIndex},
+    {"windowSlopeIntercept", vec2ToJson(settings.m_slopeIntercept)},
+    {"invertColormap", settings.m_invertColormap},
+    {"continuousColormap", settings.m_continuousColormap},
+    {"colormapLevels", settings.m_colormapLevels}};
+}
+
+void from_json(const json& j, ProjectMetricSettings& settings)
+{
+  if (const auto value = j.find("colormapIndex"); value != j.end() && value->is_number_unsigned()) {
+    settings.m_colorMapIndex = value->get<std::size_t>();
+  }
+  if (const auto value = j.find("windowSlopeIntercept"); value != j.end() && value->is_array() && value->size() == 2) {
+    settings.m_slopeIntercept = vec2FromJson(*value);
+  }
+  if (const auto value = j.find("invertColormap"); value != j.end() && value->is_boolean()) {
+    settings.m_invertColormap = value->get<bool>();
+  }
+  if (const auto value = j.find("continuousColormap"); value != j.end() && value->is_boolean()) {
+    settings.m_continuousColormap = value->get<bool>();
+  }
+  if (const auto value = j.find("colormapLevels"); value != j.end() && value->is_number_integer()) {
+    settings.m_colormapLevels = std::max(value->get<int>(), 2);
+  }
+}
+
+void to_json(json& j, const ProjectDifferenceMetricSettings& settings)
+{
+  j = json{{"squared", settings.m_squared}, {"metric", settings.m_metric}};
+}
+
+void from_json(const json& j, ProjectDifferenceMetricSettings& settings)
+{
+  if (const auto value = j.find("squared"); value != j.end() && value->is_boolean()) {
+    settings.m_squared = value->get<bool>();
+  }
+  if (const auto metric = j.find("metric"); metric != j.end() && metric->is_object()) {
+    metric->get_to(settings.m_metric);
+  }
+}
+
+void to_json(json& j, const ProjectLocalNccMetricSettings& settings)
+{
+  j = json{
+    {"metric", settings.m_metric},
+    {"presentation", enumToName(settings.m_presentation, k_localNccPresentationNames)},
+    {"negativeCorrelationAsMismatch", settings.m_negativeCorrelationAsMismatch},
+    {"patchRadius", settings.m_patchRadius},
+    {"sampleSpacing", settings.m_sampleSpacing},
+    {"minimumValidFraction", settings.m_minimumValidFraction},
+    {"varianceEpsilon", settings.m_varianceEpsilon},
+    {"invalidStyle", enumToName(settings.m_invalidStyle, k_localMetricInvalidStyleNames)}};
+}
+
+void from_json(const json& j, ProjectLocalNccMetricSettings& settings)
+{
+  if (const auto metric = j.find("metric"); metric != j.end() && metric->is_object()) {
+    metric->get_to(settings.m_metric);
+  }
+  if (
+    const auto parsed =
+      enumFromName<ProjectLocalNccPresentation>(j.value("presentation", ""), k_localNccPresentationNames))
+  {
+    settings.m_presentation = *parsed;
+  }
+  if (
+    const auto parsed =
+      enumFromName<ProjectLocalMetricInvalidStyle>(j.value("invalidStyle", ""), k_localMetricInvalidStyleNames))
+  {
+    settings.m_invalidStyle = *parsed;
+  }
+  if (const auto value = j.find("negativeCorrelationAsMismatch"); value != j.end() && value->is_boolean()) {
+    settings.m_negativeCorrelationAsMismatch = value->get<bool>();
+  }
+  if (const auto value = j.find("patchRadius"); value != j.end() && value->is_number_integer()) {
+    settings.m_patchRadius = std::clamp(value->get<int>(), 1, 5);
+  }
+  if (const auto value = j.find("sampleSpacing"); value != j.end() && value->is_number()) {
+    settings.m_sampleSpacing = std::clamp(value->get<float>(), 0.5f, 4.0f);
+  }
+  if (const auto value = j.find("minimumValidFraction"); value != j.end() && value->is_number()) {
+    settings.m_minimumValidFraction = std::clamp(value->get<float>(), 0.1f, 1.0f);
+  }
+  if (const auto value = j.find("varianceEpsilon"); value != j.end() && value->is_number()) {
+    settings.m_varianceEpsilon = std::max(value->get<float>(), 0.0f);
+  }
+}
+
+void to_json(json& j, const ProjectLocalLinearResidualMetricSettings& settings)
+{
+  j = json{
+    {"metric", settings.m_metric},
+    {"patchRadius", settings.m_patchRadius},
+    {"sampleSpacing", settings.m_sampleSpacing},
+    {"minimumValidFraction", settings.m_minimumValidFraction},
+    {"varianceEpsilon", settings.m_varianceEpsilon},
+    {"invalidStyle", enumToName(settings.m_invalidStyle, k_localMetricInvalidStyleNames)}};
+}
+
+void from_json(const json& j, ProjectLocalLinearResidualMetricSettings& settings)
+{
+  if (const auto metric = j.find("metric"); metric != j.end() && metric->is_object()) {
+    metric->get_to(settings.m_metric);
+  }
+  if (
+    const auto parsed =
+      enumFromName<ProjectLocalMetricInvalidStyle>(j.value("invalidStyle", ""), k_localMetricInvalidStyleNames))
+  {
+    settings.m_invalidStyle = *parsed;
+  }
+  if (const auto value = j.find("patchRadius"); value != j.end() && value->is_number_integer()) {
+    settings.m_patchRadius = std::clamp(value->get<int>(), 1, 5);
+  }
+  if (const auto value = j.find("sampleSpacing"); value != j.end() && value->is_number()) {
+    settings.m_sampleSpacing = std::clamp(value->get<float>(), 0.5f, 4.0f);
+  }
+  if (const auto value = j.find("minimumValidFraction"); value != j.end() && value->is_number()) {
+    settings.m_minimumValidFraction = std::clamp(value->get<float>(), 0.1f, 1.0f);
+  }
+  if (const auto value = j.find("varianceEpsilon"); value != j.end() && value->is_number()) {
+    settings.m_varianceEpsilon = std::max(value->get<float>(), 0.0f);
+  }
+}
+
+void to_json(json& j, const ProjectComparisonSettings& settings)
+{
+  j = json{
+    {"difference", settings.m_difference},
+    {"localNormalizedCrossCorrelation", settings.m_localNcc},
+    {"localLinearResidual", settings.m_localLinearResidual},
+    {"overlay", {{"magentaCyan", settings.m_overlayMagentaCyan}}},
+    {"quadrants", {{"x", static_cast<bool>(settings.m_quadrants.x)}, {"y", static_cast<bool>(settings.m_quadrants.y)}}},
+    {"checkerboard", {{"squares", settings.m_checkerboardSquares}}},
+    {"flashlight",
+     {{"radiusFraction", settings.m_flashlightRadiusFraction},
+      {"overlayMovingImage", settings.m_flashlightOverlayMovingImage}}}};
+}
+
+void from_json(const json& j, ProjectComparisonSettings& settings)
+{
+  if (const auto difference = j.find("difference"); difference != j.end() && difference->is_object()) {
+    difference->get_to(settings.m_difference);
+  }
+  if (const auto localNcc = j.find("localNormalizedCrossCorrelation"); localNcc != j.end() && localNcc->is_object()) {
+    localNcc->get_to(settings.m_localNcc);
+  }
+  if (const auto localResidual = j.find("localLinearResidual"); localResidual != j.end() && localResidual->is_object())
+  {
+    localResidual->get_to(settings.m_localLinearResidual);
+  }
+  if (const auto overlay = j.find("overlay"); overlay != j.end() && overlay->is_object()) {
+    if (const auto value = overlay->find("magentaCyan"); value != overlay->end() && value->is_boolean()) {
+      settings.m_overlayMagentaCyan = value->get<bool>();
     }
   }
-  if (const auto precision = j.find("coordinatesPrecision"); precision != j.end()) {
-    if (const auto parsed = unsignedIntFromJson(*precision)) {
-      settings.m_coordsPrecision = *parsed;
+  if (const auto quadrants = j.find("quadrants"); quadrants != j.end() && quadrants->is_object()) {
+    bool x = static_cast<bool>(settings.m_quadrants.x);
+    bool y = static_cast<bool>(settings.m_quadrants.y);
+    if (const auto value = quadrants->find("x"); value != quadrants->end() && value->is_boolean()) {
+      x = value->get<bool>();
+    }
+    if (const auto value = quadrants->find("y"); value != quadrants->end() && value->is_boolean()) {
+      y = value->get<bool>();
+    }
+    settings.m_quadrants = glm::ivec2{x, y};
+  }
+  if (const auto checker = j.find("checkerboard"); checker != j.end() && checker->is_object()) {
+    if (const auto value = checker->find("squares"); value != checker->end() && value->is_number_integer()) {
+      settings.m_checkerboardSquares = std::clamp(value->get<int>(), 2, 2048);
     }
   }
-  if (const auto precision = j.find("transformPrecision"); precision != j.end()) {
-    if (const auto parsed = unsignedIntFromJson(*precision)) {
-      settings.m_txPrecision = *parsed;
+  if (const auto flashlight = j.find("flashlight"); flashlight != j.end() && flashlight->is_object()) {
+    if (const auto value = flashlight->find("radiusFraction"); value != flashlight->end() && value->is_number()) {
+      settings.m_flashlightRadiusFraction = std::clamp(value->get<float>(), 0.01f, 1.0f);
+    }
+    if (const auto value = flashlight->find("overlayMovingImage"); value != flashlight->end() && value->is_boolean()) {
+      settings.m_flashlightOverlayMovingImage = value->get<bool>();
     }
   }
-  if (const auto precision = j.find("percentilePrecision"); precision != j.end()) {
-    if (const auto parsed = unsignedIntFromJson(*precision)) {
-      settings.m_percentilePrecision = *parsed;
-    }
+}
+
+void to_json(json& j, const ProjectRaycastingSettings& settings)
+{
+  j = json{
+    {"samplingFactor", settings.m_samplingFactor},
+    {"transparentBackgroundWhenNoHit", settings.m_transparentBackgroundWhenNoHit},
+    {"renderFrontFaces", settings.m_renderFrontFaces},
+    {"renderBackFaces", settings.m_renderBackFaces},
+    {"segmentationMasking", enumToName(settings.m_segmentationMasking, k_raycastSegmentationMaskingNames)}};
+}
+
+void from_json(const json& j, ProjectRaycastingSettings& settings)
+{
+  if (const auto value = j.find("samplingFactor"); value != j.end() && value->is_number()) {
+    settings.m_samplingFactor = std::clamp(value->get<float>(), 0.1f, 5.0f);
+  }
+  if (const auto value = j.find("transparentBackgroundWhenNoHit"); value != j.end() && value->is_boolean()) {
+    settings.m_transparentBackgroundWhenNoHit = value->get<bool>();
+  }
+  if (const auto value = j.find("renderFrontFaces"); value != j.end() && value->is_boolean()) {
+    settings.m_renderFrontFaces = value->get<bool>();
+  }
+  if (const auto value = j.find("renderBackFaces"); value != j.end() && value->is_boolean()) {
+    settings.m_renderBackFaces = value->get<bool>();
+  }
+  if (
+    const auto parsed = enumFromName<ProjectSegmentationRaycastMasking>(
+      j.value("segmentationMasking", ""),
+      k_raycastSegmentationMaskingNames))
+  {
+    settings.m_segmentationMasking = *parsed;
+  }
+}
+
+void to_json(json& j, const ProjectIntensityProjectionSettings& settings)
+{
+  j = json{
+    {"useMaximumImageExtent", settings.m_useMaximumImageExtent},
+    {"slabThicknessMm", settings.m_slabThicknessMm},
+    {"xrayEnergyKeV", settings.m_xrayEnergyKeV},
+    {"xrayWindow", settings.m_xrayWindow},
+    {"xrayLevel", settings.m_xrayLevel}};
+}
+
+void from_json(const json& j, ProjectIntensityProjectionSettings& settings)
+{
+  if (const auto value = j.find("useMaximumImageExtent"); value != j.end() && value->is_boolean()) {
+    settings.m_useMaximumImageExtent = value->get<bool>();
+  }
+  if (const auto value = j.find("slabThicknessMm"); value != j.end() && value->is_number()) {
+    settings.m_slabThicknessMm = std::max(value->get<float>(), 0.0f);
+  }
+  if (const auto value = j.find("xrayEnergyKeV"); value != j.end() && value->is_number()) {
+    settings.m_xrayEnergyKeV = value->get<float>();
+  }
+  if (const auto value = j.find("xrayWindow"); value != j.end() && value->is_number()) {
+    settings.m_xrayWindow = std::clamp(value->get<float>(), 1.0e-3f, 1.0f);
+  }
+  if (const auto value = j.find("xrayLevel"); value != j.end() && value->is_number()) {
+    settings.m_xrayLevel = std::clamp(value->get<float>(), 0.0f, 1.0f);
+  }
+}
+
+void to_json(json& j, const ProjectSegmentationDisplaySettings& settings)
+{
+  j = json{
+    {"modulateOpacityWithImageOpacity", settings.m_modulateOpacityWithImageOpacity},
+    {"outlineStyle", enumToName(settings.m_outlineStyle, k_segmentationOutlineNames)},
+    {"interiorOpacity", settings.m_interiorOpacity},
+    {"erosionFactor", settings.m_erosionFactor}};
+}
+
+void from_json(const json& j, ProjectSegmentationDisplaySettings& settings)
+{
+  if (const auto value = j.find("modulateOpacityWithImageOpacity"); value != j.end() && value->is_boolean()) {
+    settings.m_modulateOpacityWithImageOpacity = value->get<bool>();
+  }
+  if (
+    const auto parsed = enumFromName<SegmentationOutlineStyle>(j.value("outlineStyle", ""), k_segmentationOutlineNames))
+  {
+    settings.m_outlineStyle = *parsed;
+  }
+  if (const auto value = j.find("interiorOpacity"); value != j.end() && value->is_number()) {
+    settings.m_interiorOpacity = std::clamp(value->get<float>(), 0.0f, 1.0f);
+  }
+  if (const auto value = j.find("erosionFactor"); value != j.end() && value->is_number()) {
+    settings.m_erosionFactor = std::clamp(value->get<float>(), 0.5f, 1.0f);
+  }
+}
+
+void to_json(json& j, const ProjectIsosurfaceDisplaySettings& settings)
+{
+  j = json{
+    {"floatingPointInterpolation", settings.m_floatingPointInterpolation},
+    {"modulateOpacityWithImageOpacity", settings.m_modulateOpacityWithImageOpacity}};
+}
+
+void from_json(const json& j, ProjectIsosurfaceDisplaySettings& settings)
+{
+  if (const auto value = j.find("floatingPointInterpolation"); value != j.end() && value->is_boolean()) {
+    settings.m_floatingPointInterpolation = value->get<bool>();
+  }
+  if (const auto value = j.find("modulateOpacityWithImageOpacity"); value != j.end() && value->is_boolean()) {
+    settings.m_modulateOpacityWithImageOpacity = value->get<bool>();
+  }
+}
+
+void to_json(json& j, const ProjectAnnotationDisplaySettings& settings)
+{
+  j = json{
+    {"annotationsOnTop", settings.m_annotationsOnTop},
+    {"landmarksOnTop", settings.m_landmarksOnTop},
+    {"hideAnnotationVertices", settings.m_hideAnnotationVertices}};
+}
+
+void from_json(const json& j, ProjectAnnotationDisplaySettings& settings)
+{
+  if (const auto value = j.find("annotationsOnTop"); value != j.end() && value->is_boolean()) {
+    settings.m_annotationsOnTop = value->get<bool>();
+  }
+  if (const auto value = j.find("landmarksOnTop"); value != j.end() && value->is_boolean()) {
+    settings.m_landmarksOnTop = value->get<bool>();
+  }
+  if (const auto value = j.find("hideAnnotationVertices"); value != j.end() && value->is_boolean()) {
+    settings.m_hideAnnotationVertices = value->get<bool>();
   }
 }
 
@@ -981,6 +1309,13 @@ void to_json(json& j, const EntropyProject& project)
     j["currentLayoutIndex"] = *project.m_currentLayoutIndex;
   }
   j["interface"] = project.m_interface;
+  j["view"] = project.m_view;
+  j["comparison"] = project.m_comparison;
+  j["raycasting"] = project.m_raycasting;
+  j["intensityProjection"] = project.m_intensityProjection;
+  j["segmentationDisplay"] = project.m_segmentationDisplay;
+  j["isosurfaces"] = project.m_isosurfaces;
+  j["annotationDisplay"] = project.m_annotationDisplay;
 }
 
 void from_json(const json& j, EntropyProject& project)
@@ -1001,6 +1336,33 @@ void from_json(const json& j, EntropyProject& project)
   }
   if (const auto interface = j.find("interface"); interface != j.end() && interface->is_object()) {
     interface->get_to(project.m_interface);
+  }
+  if (const auto view = j.find("view"); view != j.end() && view->is_object()) {
+    view->get_to(project.m_view);
+  }
+  if (const auto comparison = j.find("comparison"); comparison != j.end() && comparison->is_object()) {
+    comparison->get_to(project.m_comparison);
+  }
+  if (const auto raycasting = j.find("raycasting"); raycasting != j.end() && raycasting->is_object()) {
+    raycasting->get_to(project.m_raycasting);
+  }
+  if (const auto intensityProjection = j.find("intensityProjection");
+      intensityProjection != j.end() && intensityProjection->is_object())
+  {
+    intensityProjection->get_to(project.m_intensityProjection);
+  }
+  if (const auto segmentationDisplay = j.find("segmentationDisplay");
+      segmentationDisplay != j.end() && segmentationDisplay->is_object())
+  {
+    segmentationDisplay->get_to(project.m_segmentationDisplay);
+  }
+  if (const auto isosurfaces = j.find("isosurfaces"); isosurfaces != j.end() && isosurfaces->is_object()) {
+    isosurfaces->get_to(project.m_isosurfaces);
+  }
+  if (const auto annotationDisplay = j.find("annotationDisplay");
+      annotationDisplay != j.end() && annotationDisplay->is_object())
+  {
+    annotationDisplay->get_to(project.m_annotationDisplay);
   }
 }
 

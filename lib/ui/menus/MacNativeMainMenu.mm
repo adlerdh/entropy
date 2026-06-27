@@ -510,7 +510,6 @@ void addViewsMenu(NSMenu* mainMenu) {
     NSEventModifierFlagShift);
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Show Image", MainMenuAction::ToggleImageVisibility, @"eye", @"w");
-  addSymbolActionMenuItem(menu, @"Show Segmentation", MainMenuAction::ToggleSegmentationVisibility, @"star", @"s");
   addSymbolActionMenuItem(
     menu,
     @"Show Image Edges",
@@ -518,12 +517,8 @@ void addViewsMenu(NSMenu* mainMenu) {
     @"waveform.path.ecg",
     @"e",
     NSEventModifierFlagShift);
-  addSymbolActionMenuItem(
-    menu,
-    @"Show Segmentation Outline",
-    MainMenuAction::ToggleSegmentationOutline,
-    @"line.diagonal",
-    @" ");
+  addSymbolActionMenuItem(menu, @"Show Segmentation", MainMenuAction::ToggleSegmentationVisibility, @"star.fill", @"s");
+  addSymbolActionMenuItem(menu, @"Show Segmentation Outline", MainMenuAction::ToggleSegmentationOutline, @"star", @" ");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(
     menu,
@@ -559,10 +554,10 @@ void addViewsMenu(NSMenu* mainMenu) {
     menu,
     @"Synchronize Entropy Instances",
     MainMenuAction::ToggleEntropyInstanceSync,
-    @"arrow.triangle.2.circlepath");
+    @"dot.radiowaves.left.and.right");
   NSMenuItem* syncItem = [[NSMenuItem alloc] initWithTitle:@"Synchronize with ITK-SNAP" action:nil keyEquivalent:@""];
   [syncItem setIndentationLevel:0];
-  setMenuItemSymbol(syncItem, @"arrow.triangle.2.circlepath");
+  setMenuItemSymbol(syncItem, @"dot.radiowaves.left.and.right");
   NSMenu* syncMenu = [[NSMenu alloc] initWithTitle:@"Synchronize with ITK-SNAP"];
   addActionMenuItem(syncMenu, @"Enable Synchronization", MainMenuAction::ToggleSync);
   [syncMenu addItem:[NSMenuItem separatorItem]];
@@ -593,9 +588,9 @@ void addWindowsMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Annotations Panel", MainMenuAction::ToggleAnnotationsWindow, @"pencil.and.outline");
   addSymbolActionMenuItem(menu, @"Landmarks Panel", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
   addSymbolActionMenuItem(menu, @"Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow, @"cube.transparent");
-  addSymbolActionMenuItem(menu, @"Inspector", MainMenuAction::ToggleInspectorWindow, @"info.circle");
+  addSymbolActionMenuItem(menu, @"Voxel Inspector Panel", MainMenuAction::ToggleInspectorWindow, @"info.circle");
   addSymbolActionMenuItem(menu, @"Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow, @"slider.horizontal.3");
-  addSymbolActionMenuItem(menu, @"Settings", MainMenuAction::ToggleSettingsWindow, @"gearshape");
+  addSymbolActionMenuItem(menu, @"Application Settings", MainMenuAction::ToggleSettingsWindow, @"gearshape");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Reset Panel Layout", MainMenuAction::ResetPanelLayout, @"rectangle.3.group");
   [menu addItem:[NSMenuItem separatorItem]];
@@ -631,7 +626,7 @@ void installMacOSNativeMainMenu() {
   addSymbolMenuItem(appMenu, @"About Entropy", @selector(showAbout:), @"", @"info.circle");
   addSymbolActionMenuItem(
     appMenu,
-    @"Settings...",
+    @"Application Settings...",
     MainMenuAction::ToggleSettingsWindow,
     @"gearshape",
     @",",
@@ -672,6 +667,11 @@ void installMacOSNativeMainMenu() {
     @"s",
     @"square.and.arrow.down.on.square",
     NSEventModifierFlagCommand | NSEventModifierFlagShift);
+  addSymbolActionMenuItem(
+    fileMenu,
+    @"Reset Project Settings...",
+    MainMenuAction::ResetProjectSettings,
+    @"arrow.counterclockwise");
   [fileMenu addItem:[NSMenuItem separatorItem]];
   g_closeProjectItem = addSymbolMenuItem(fileMenu, @"Close Project", @selector(closeProject:), @"w", @"xmark.circle");
   [fileMenuItem setSubmenu:fileMenu];

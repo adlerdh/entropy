@@ -10,9 +10,11 @@
 #include <nlohmann/json.hpp>
 
 #include <glm/mat4x4.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -82,6 +84,150 @@ enum class ProjectVectorWarpedGridConvention : std::uint8_t
 {
   SamplingField,
   ApparentDeformation
+};
+
+/// @brief Serialized local NCC display convention.
+enum class ProjectLocalNccPresentation : std::uint8_t
+{
+  Dissimilarity,
+  Correlation
+};
+
+/// @brief Serialized display style for invalid local metric patches.
+enum class ProjectLocalMetricInvalidStyle : std::uint8_t
+{
+  Transparent,
+  Gray
+};
+
+/// @brief Serialized segmentation masking mode for volume raycasting.
+enum class ProjectSegmentationRaycastMasking : std::uint8_t
+{
+  Disabled,
+  MaskIn,
+  MaskOut
+};
+
+/**
+ * @brief Serialized colormap/window parameters for comparison metrics.
+ */
+struct ProjectMetricSettings
+{
+  std::size_t m_colorMapIndex = 0;        //!< Color map index.
+  glm::vec2 m_slopeIntercept{1.0f, 0.0f}; //!< Metric window slope/intercept.
+  bool m_invertColormap = false;          //!< Invert the metric color map.
+  bool m_continuousColormap = true;       //!< Use continuous colormap interpolation.
+  int m_colormapLevels = 8;               //!< Number of discrete color levels.
+};
+
+/**
+ * @brief Serialized difference metric settings.
+ */
+struct ProjectDifferenceMetricSettings
+{
+  bool m_squared = true;          //!< Use squared difference instead of absolute difference.
+  ProjectMetricSettings m_metric; //!< Difference metric colormap/window settings.
+};
+
+/**
+ * @brief Serialized local normalized cross-correlation metric settings.
+ */
+struct ProjectLocalNccMetricSettings
+{
+  ProjectMetricSettings m_metric; //!< Local NCC colormap/window settings.
+  ProjectLocalNccPresentation m_presentation =
+    ProjectLocalNccPresentation::Dissimilarity; //!< Correlation or dissimilarity presentation.
+  bool m_negativeCorrelationAsMismatch = true;  //!< Treat negative correlation as mismatch in dissimilarity mode.
+  int m_patchRadius = 3;                        //!< Patch radius in samples.
+  float m_sampleSpacing = 1.0f;                 //!< Patch sample spacing in voxel steps.
+  float m_minimumValidFraction = 0.75f;         //!< Required valid sample fraction.
+  float m_varianceEpsilon = 1.0e-5f;            //!< Minimum variance before a patch is invalid.
+  ProjectLocalMetricInvalidStyle m_invalidStyle =
+    ProjectLocalMetricInvalidStyle::Transparent; //!< Invalid patch display.
+};
+
+/**
+ * @brief Serialized local linear residual metric settings.
+ */
+struct ProjectLocalLinearResidualMetricSettings
+{
+  ProjectMetricSettings m_metric;       //!< Local residual colormap/window settings.
+  int m_patchRadius = 3;                //!< Patch radius in samples.
+  float m_sampleSpacing = 1.0f;         //!< Patch sample spacing in voxel steps.
+  float m_minimumValidFraction = 0.75f; //!< Required valid sample fraction.
+  float m_varianceEpsilon = 1.0e-5f;    //!< Minimum variance before a patch is invalid.
+  ProjectLocalMetricInvalidStyle m_invalidStyle =
+    ProjectLocalMetricInvalidStyle::Transparent; //!< Invalid patch display.
+};
+
+/**
+ * @brief Project-wide comparison mode and metric settings.
+ */
+struct ProjectComparisonSettings
+{
+  ProjectDifferenceMetricSettings m_difference;                   //!< Difference metric settings.
+  ProjectLocalNccMetricSettings m_localNcc;                       //!< Local NCC settings.
+  ProjectLocalLinearResidualMetricSettings m_localLinearResidual; //!< Local linear residual settings.
+  bool m_overlayMagentaCyan = true;                               //!< Overlay color convention.
+  glm::ivec2 m_quadrants{true, true};                             //!< Quadrant comparison axes.
+  int m_checkerboardSquares = 10;                                 //!< Checkerboard square count.
+  float m_flashlightRadiusFraction = 0.15f;                       //!< Flashlight radius as view fraction.
+  bool m_flashlightOverlayMovingImage = true;                     //!< Overlay or replace in flashlight mode.
+};
+
+/**
+ * @brief Project-wide volume raycasting settings.
+ */
+struct ProjectRaycastingSettings
+{
+  float m_samplingFactor = 0.5f;                //!< Ray-marching sampling factor.
+  bool m_transparentBackgroundWhenNoHit = true; //!< Make missed 3D rays transparent.
+  bool m_renderFrontFaces = true;               //!< Render front faces in 3D raycasting.
+  bool m_renderBackFaces = true;                //!< Render back faces in 3D raycasting.
+  ProjectSegmentationRaycastMasking m_segmentationMasking =
+    ProjectSegmentationRaycastMasking::Disabled; //!< Segmentation mask behavior.
+};
+
+/**
+ * @brief Project-wide intensity projection defaults.
+ */
+struct ProjectIntensityProjectionSettings
+{
+  bool m_useMaximumImageExtent = false; //!< Project through the full image extent.
+  float m_slabThicknessMm = 10.0f;      //!< Default projection slab thickness.
+  float m_xrayEnergyKeV = 80.0f;        //!< X-ray projection photon energy.
+  float m_xrayWindow = 1.0f;            //!< X-ray projection contrast window.
+  float m_xrayLevel = 0.5f;             //!< X-ray projection contrast level.
+};
+
+/**
+ * @brief Project-wide segmentation display defaults.
+ */
+struct ProjectSegmentationDisplaySettings
+{
+  bool m_modulateOpacityWithImageOpacity = true; //!< Scale segmentation opacity by image opacity.
+  SegmentationOutlineStyle m_outlineStyle = SegmentationOutlineStyle::Disabled; //!< Global segmentation outline.
+  float m_interiorOpacity = 0.2f;                                               //!< Interior opacity when outlined.
+  float m_erosionFactor = 0.5f;                                                 //!< Linear interpolation cutoff.
+};
+
+/**
+ * @brief Project-wide isosurface rendering settings.
+ */
+struct ProjectIsosurfaceDisplaySettings
+{
+  bool m_floatingPointInterpolation = false;      //!< Use floating-point interpolation for isocontours.
+  bool m_modulateOpacityWithImageOpacity = false; //!< Scale isocontour opacity by image opacity.
+};
+
+/**
+ * @brief Project-wide annotation and landmark display settings.
+ */
+struct ProjectAnnotationDisplaySettings
+{
+  bool m_annotationsOnTop = false;       //!< Render annotations over all image planes.
+  bool m_landmarksOnTop = false;         //!< Render landmarks over all image planes.
+  bool m_hideAnnotationVertices = false; //!< Hide annotation polygon vertices.
 };
 
 /**
@@ -296,27 +442,21 @@ struct Image
 };
 
 /**
- * @brief Serialized layout tab bar edge.
- */
-enum class ProjectLayoutTabPlacement : std::uint8_t
-{
-  Top,
-  Bottom
-};
-
-/**
  * @brief Interface settings saved with a project.
  */
 struct ProjectInterfaceSettings
 {
-  bool m_showLayoutTabs = true;                                                    //!< Show the layout tab bar.
-  ProjectLayoutTabPlacement m_layoutTabPlacement = ProjectLayoutTabPlacement::Top; //!< Layout tab bar edge.
-  bool m_showGlobalTimeControls = true;    //!< Show the global time-series control window.
-  bool m_synchronizeTimeSeries = true;     //!< Synchronize displayed time points across time-series images.
-  std::uint32_t m_imageValuePrecision = 3; //!< Decimal places for displayed image values.
-  std::uint32_t m_coordsPrecision = 3;     //!< Decimal places for displayed coordinates.
-  std::uint32_t m_txPrecision = 3;         //!< Decimal places for displayed transform values.
-  std::uint32_t m_percentilePrecision = 2; //!< Decimal places for displayed percentiles.
+  bool m_synchronizeTimeSeries = true; //!< Synchronize displayed time points across time-series images.
+};
+
+/**
+ * @brief Project-wide view behavior and anatomical convention settings.
+ */
+struct ProjectViewSettings
+{
+  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human; //!< Anatomical label convention.
+  bool m_lockAnatomicalDirectionsToReferenceImage = false; //!< Lock anatomical axes to the reference image.
+  CrosshairsSnapping m_crosshairsSnapping = CrosshairsSnapping::Disabled; //!< Crosshairs snapping behavior.
 };
 
 /**
@@ -330,6 +470,13 @@ struct EntropyProject
   std::vector<layout::LayoutSpec> m_layouts;
   std::optional<std::size_t> m_currentLayoutIndex = std::nullopt;
   ProjectInterfaceSettings m_interface;
+  ProjectViewSettings m_view;
+  ProjectComparisonSettings m_comparison;
+  ProjectRaycastingSettings m_raycasting;
+  ProjectIntensityProjectionSettings m_intensityProjection;
+  ProjectSegmentationDisplaySettings m_segmentationDisplay;
+  ProjectIsosurfaceDisplaySettings m_isosurfaces;
+  ProjectAnnotationDisplaySettings m_annotationDisplay;
 };
 
 /**
@@ -345,6 +492,104 @@ void to_json(nlohmann::json& j, const ProjectInterfaceSettings& settings);
  * @param settings Settings to update.
  */
 void from_json(const nlohmann::json& j, ProjectInterfaceSettings& settings);
+
+/**
+ * @brief Serialize project view settings to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectViewSettings& settings);
+
+/**
+ * @brief Deserialize project view settings from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectViewSettings& settings);
+
+/**
+ * @brief Serialize project comparison settings to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectComparisonSettings& settings);
+
+/**
+ * @brief Deserialize project comparison settings from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectComparisonSettings& settings);
+
+/**
+ * @brief Serialize project raycasting settings to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectRaycastingSettings& settings);
+
+/**
+ * @brief Deserialize project raycasting settings from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectRaycastingSettings& settings);
+
+/**
+ * @brief Serialize project intensity projection defaults to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectIntensityProjectionSettings& settings);
+
+/**
+ * @brief Deserialize project intensity projection defaults from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectIntensityProjectionSettings& settings);
+
+/**
+ * @brief Serialize project segmentation display settings to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectSegmentationDisplaySettings& settings);
+
+/**
+ * @brief Deserialize project segmentation display settings from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectSegmentationDisplaySettings& settings);
+
+/**
+ * @brief Serialize project isosurface display settings to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectIsosurfaceDisplaySettings& settings);
+
+/**
+ * @brief Deserialize project isosurface display settings from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectIsosurfaceDisplaySettings& settings);
+
+/**
+ * @brief Serialize project annotation display settings to JSON.
+ * @param j Destination JSON object.
+ * @param settings Settings to serialize.
+ */
+void to_json(nlohmann::json& j, const ProjectAnnotationDisplaySettings& settings);
+
+/**
+ * @brief Deserialize project annotation display settings from JSON.
+ * @param j Source JSON object.
+ * @param settings Settings to update.
+ */
+void from_json(const nlohmann::json& j, ProjectAnnotationDisplaySettings& settings);
 
 /**
  * @brief Serialize an Entropy project to JSON.

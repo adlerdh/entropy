@@ -150,6 +150,9 @@ public:
   /** @brief Close the current project and reset project-owned state. */
   void closeProject();
 
+  /** @brief Reset project-wide settings without removing loaded data or transforms. */
+  void resetProjectSettings();
+
   /** @brief Continue the pending action selected before the unsaved-project prompt appeared. */
   void continueAfterUnsavedProjectPrompt();
 

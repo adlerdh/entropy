@@ -2,17 +2,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-TEST_CASE("Project snapshot precision values are clamped and formatted", "[ProjectSnapshotSettings]")
-{
-  CHECK(project_snapshot::clampPrecision(0) == 0);
-  CHECK(project_snapshot::clampPrecision(4) == 4);
-  CHECK(project_snapshot::clampPrecision(100) == 9);
-
-  CHECK(project_snapshot::precisionFormat(0) == "%0.0f");
-  CHECK(project_snapshot::precisionFormat(3) == "%0.3f");
-  CHECK(project_snapshot::precisionFormat(100) == "%0.9f");
-}
-
 TEST_CASE("Project snapshot component render modes round trip through serialization", "[ProjectSnapshotSettings]")
 {
   CHECK(
