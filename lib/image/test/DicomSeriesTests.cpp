@@ -56,6 +56,19 @@ TEST_CASE("DICOM series loadable state requires files", "[image][dicom]")
   CHECK(info.loadable());
 }
 
+TEST_CASE("DICOM temporal metadata identifies time series", "[image][dicom][time]")
+{
+  dicom::SeriesTemporalInfo single;
+  CHECK_FALSE(single.isTimeSeries());
+
+  dicom::SeriesTemporalInfo cine;
+  cine.numTimePoints = 12;
+  cine.spacing = 33.3;
+  cine.units = "ms";
+  cine.multiframe = true;
+  CHECK(cine.isTimeSeries());
+}
+
 TEST_CASE("DICOM metadata tag names use readable labels", "[image][dicom]")
 {
   CHECK(dicom::metadataTagName("0010|0010") == "Patient Name");

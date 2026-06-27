@@ -89,6 +89,8 @@ TEST_CASE("Project serialization preserves interface settings", "[project][seria
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
   project.m_interface.m_showLayoutTabs = false;
   project.m_interface.m_layoutTabPlacement = serialize::ProjectLayoutTabPlacement::Bottom;
+  project.m_interface.m_showGlobalTimeControls = false;
+  project.m_interface.m_synchronizeTimeSeries = false;
   project.m_interface.m_imageValuePrecision = 4;
   project.m_interface.m_coordsPrecision = 5;
   project.m_interface.m_txPrecision = 6;
@@ -99,6 +101,8 @@ TEST_CASE("Project serialization preserves interface settings", "[project][seria
   REQUIRE(root.contains("interface"));
   CHECK(root.at("interface").at("showLayoutTabs") == false);
   CHECK(root.at("interface").at("layoutTabsPosition") == "bottom");
+  CHECK(root.at("interface").at("showGlobalTimeControls") == false);
+  CHECK(root.at("interface").at("synchronizeTimeSeries") == false);
   CHECK(root.at("interface").at("imageValuePrecision") == 4);
   CHECK(root.at("interface").at("coordinatesPrecision") == 5);
   CHECK(root.at("interface").at("transformPrecision") == 6);
@@ -108,6 +112,8 @@ TEST_CASE("Project serialization preserves interface settings", "[project][seria
 
   CHECK(parsed.m_interface.m_showLayoutTabs == false);
   CHECK(parsed.m_interface.m_layoutTabPlacement == serialize::ProjectLayoutTabPlacement::Bottom);
+  CHECK(parsed.m_interface.m_showGlobalTimeControls == false);
+  CHECK(parsed.m_interface.m_synchronizeTimeSeries == false);
   CHECK(parsed.m_interface.m_imageValuePrecision == 4);
   CHECK(parsed.m_interface.m_coordsPrecision == 5);
   CHECK(parsed.m_interface.m_txPrecision == 6);
@@ -154,12 +160,17 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_globalVisibility = false,
     .m_globalOpacity = 0.25,
     .m_borderColor = glm::vec3{0.4f, 0.5f, 0.6f},
+    .m_lockedToReference = false,
     .m_level = 42.0,
     .m_window = 12.0,
     .m_thresholdLow = 1.0,
     .m_thresholdHigh = 11.0,
     .m_opacity = 0.75,
     .m_activeComponent = 2,
+    .m_activeTimePoint = 4,
+    .m_timePlaybackLoop = false,
+    .m_timePlaybackPlaying = true,
+    .m_timePlaybackSpeed = 1.5,
     .m_componentRenderMode = serialize::ProjectComponentRenderMode::ComplexPhase,
     .m_complexPhaseUnit = serialize::ProjectComplexPhaseUnit::Degrees,
     .m_complexPhaseRange = serialize::ProjectComplexPhaseRange::Unsigned,
@@ -228,6 +239,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(settings.at("globalVisibility") == false);
   CHECK(settings.at("globalOpacity") == 0.25);
   CHECK(settings.at("borderColor") == json::array({0.4f, 0.5f, 0.6f}));
+  CHECK(settings.at("lockedToReference") == false);
   CHECK(settings.at("componentRenderMode") == "complexPhase");
   CHECK(settings.at("complexPhaseUnit") == "degrees");
   CHECK(settings.at("complexPhaseRange") == "unsigned");
@@ -257,6 +269,10 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(settings.at("vectorPlanarProjectionSignedColors") == false);
   CHECK(settings.at("vectorLogJacobianDeterminant") == true);
   CHECK(settings.at("activeComponent") == 2);
+  CHECK(settings.at("activeTimePoint") == 4);
+  CHECK(settings.at("timePlaybackLoop") == false);
+  CHECK(settings.at("timePlaybackPlaying") == true);
+  CHECK(settings.at("timePlaybackSpeed") == 1.5);
   CHECK(settings.at("ignoreAlpha") == true);
   CHECK(settings.at("colorInterpolationMode") == "nearest");
   CHECK(settings.at("componentLevels") == json::array({10.0, 20.0, 30.0}));
@@ -295,6 +311,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(parsedSettings.m_globalVisibility);
   CHECK(parsedSettings.m_globalOpacity == 0.25);
   CHECK(parsedSettings.m_borderColor == glm::vec3{0.4f, 0.5f, 0.6f});
+  CHECK_FALSE(parsedSettings.m_lockedToReference);
   CHECK(parsedSettings.m_componentRenderMode == serialize::ProjectComponentRenderMode::ComplexPhase);
   CHECK(parsedSettings.m_complexPhaseUnit == serialize::ProjectComplexPhaseUnit::Degrees);
   CHECK(parsedSettings.m_complexPhaseRange == serialize::ProjectComplexPhaseRange::Unsigned);
@@ -325,6 +342,10 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(parsedSettings.m_vectorPlanarProjectionSignedColors);
   CHECK(parsedSettings.m_vectorLogJacobianDeterminant);
   CHECK(parsedSettings.m_activeComponent == 2);
+  CHECK(parsedSettings.m_activeTimePoint == 4);
+  CHECK_FALSE(parsedSettings.m_timePlaybackLoop);
+  CHECK(parsedSettings.m_timePlaybackPlaying);
+  CHECK(parsedSettings.m_timePlaybackSpeed == 1.5);
   CHECK(parsedSettings.m_ignoreAlpha);
   CHECK(parsedSettings.m_colorInterpolationMode == InterpolationMode::NearestNeighbor);
   CHECK(parsedSettings.m_componentLevels == std::vector<double>{10.0, 20.0, 30.0});

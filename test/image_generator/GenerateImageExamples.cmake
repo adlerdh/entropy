@@ -8,6 +8,7 @@ if(NOT DEFINED IMAGE_GENERATOR_EXAMPLE_OUTPUT_DIR)
   message(FATAL_ERROR "IMAGE_GENERATOR_EXAMPLE_OUTPUT_DIR is required")
 endif()
 
+file(REMOVE_RECURSE "${IMAGE_GENERATOR_EXAMPLE_OUTPUT_DIR}")
 file(MAKE_DIRECTORY "${IMAGE_GENERATOR_EXAMPLE_OUTPUT_DIR}")
 file(GLOB image_specs LIST_DIRECTORIES false "${IMAGE_GENERATOR_EXAMPLE_DIR}/*.json")
 list(SORT image_specs)
@@ -17,11 +18,11 @@ if(NOT image_specs)
 endif()
 
 foreach(spec IN LISTS image_specs)
-  get_filename_component(stem "${spec}" NAME_WE)
   execute_process(
-    COMMAND "${IMAGE_GENERATOR}" --spec "${spec}" --output "${IMAGE_GENERATOR_EXAMPLE_OUTPUT_DIR}/${stem}.nrrd"
+    COMMAND "${IMAGE_GENERATOR}" --spec "${spec}"
     RESULT_VARIABLE result
     COMMAND_ECHO STDOUT
+    WORKING_DIRECTORY "${IMAGE_GENERATOR_EXAMPLE_OUTPUT_DIR}"
   )
   if(NOT result EQUAL 0)
     message(FATAL_ERROR "Failed to generate image example from ${spec}")

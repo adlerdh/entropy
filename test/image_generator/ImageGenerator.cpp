@@ -61,6 +61,27 @@ Pattern patternFromString(std::string text)
   if ("complex_phase" == text || "complex-phase" == text || "phase" == text) {
     return Pattern::ComplexPhase;
   }
+  if ("time_ramp" == text || "time-ramp" == text || "timeramp" == text) {
+    return Pattern::TimeRamp;
+  }
+  if ("temporal_sine" == text || "temporal-sine" == text || "sine" == text) {
+    return Pattern::TemporalSine;
+  }
+  if ("moving_gaussian" == text || "moving-gaussian" == text || "movinggaussian" == text) {
+    return Pattern::MovingGaussian;
+  }
+  if ("pulsing_gaussian" == text || "pulsing-gaussian" == text || "pulsinggaussian" == text) {
+    return Pattern::PulsingGaussian;
+  }
+  if ("two_moving_gaussians" == text || "two-moving-gaussians" == text || "twomovinggaussians" == text) {
+    return Pattern::TwoMovingGaussians;
+  }
+  if ("rotating_wave" == text || "rotating-wave" == text || "rotatingwave" == text) {
+    return Pattern::RotatingWave;
+  }
+  if ("time_varying_warp_field" == text || "time-varying-warp-field" == text || "timevaryingwarpfield" == text) {
+    return Pattern::TimeVaryingWarpField;
+  }
   throw std::runtime_error("Unknown pattern: " + text);
 }
 
@@ -129,10 +150,13 @@ double patternValue(const ImageSpec& spec, const std::vector<std::size_t>& index
   const double x = coordinate(index, spec.size, 0);
   const double y = coordinate(index, spec.size, 1);
   const double z = coordinate(index, spec.size, 2);
+  const double t = coordinate(index, spec.size, 3);
+  constexpr double k_pi = 3.14159265358979323846;
+  constexpr double k_twoPi = 2.0 * k_pi;
 
   switch (spec.pattern) {
     case Pattern::Ramp:
-      return spec.offset + spec.amplitude * (x + 2.0 * y + 3.0 * z + static_cast<double>(component));
+      return spec.offset + spec.amplitude * (x + 2.0 * y + 3.0 * z + 4.0 * t + static_cast<double>(component));
     case Pattern::Checker: {
       std::size_t parity = component;
       for (const std::size_t value : index) {
@@ -151,7 +175,74 @@ double patternValue(const ImageSpec& spec, const std::vector<std::size_t>& index
       return spec.offset + (100.0 * static_cast<double>(component)) +
              static_cast<double>(linearIndex(index, spec.size));
     case Pattern::ComplexPhase:
-      return spec.offset + spec.amplitude * std::sin((x + y + z) * 6.283185307179586);
+      return spec.offset + spec.amplitude * std::sin((x + y + z + t) * k_twoPi);
+    case Pattern::TimeRamp:
+      return spec.offset + spec.amplitude * (10.0 * t + x + 0.5 * y + 0.25 * z + static_cast<double>(component));
+    case Pattern::TemporalSine:
+      return spec.offset +
+             spec.amplitude * (1.0 + 0.1 * static_cast<double>(component)) *
+               std::sin(k_twoPi * (t + 0.15 * x + 0.10 * y + 0.05 * z));
+    case Pattern::MovingGaussian: {
+      const double centerX = 0.25 + 0.5 * t;
+      const double centerY = 0.5 + 0.2 * std::sin(k_twoPi * t);
+      const double centerZ = 0.5;
+      const double dx = x - centerX;
+      const double dy = y - centerY;
+      const double dz = z - centerZ;
+      const double r2 = dx * dx + dy * dy + dz * dz;
+      return spec.offset + (1.0 + 0.25 * static_cast<double>(component)) * spec.amplitude * std::exp(-18.0 * r2);
+    }
+    case Pattern::PulsingGaussian: {
+      const double radiusScale = 10.0 + 8.0 * (0.5 + 0.5 * std::sin(k_twoPi * t));
+      const double intensityScale = 0.6 + 0.4 * std::cos(k_twoPi * t);
+      const double dx = x - 0.5;
+      const double dy = y - 0.5;
+      const double dz = z - 0.5;
+      const double r2 = (dx * dx) + (dy * dy) + (dz * dz);
+      return spec.offset + spec.amplitude * intensityScale * std::exp(-radiusScale * r2);
+    }
+    case Pattern::TwoMovingGaussians: {
+      const double aX = 0.25 + 0.50 * t;
+      const double aY = 0.35 + 0.18 * std::sin(k_twoPi * t);
+      const double aZ = 0.35 + 0.12 * std::cos(k_twoPi * t);
+      const double bX = 0.75 - 0.45 * t;
+      const double bY = 0.65 + 0.16 * std::cos(k_twoPi * t);
+      const double bZ = 0.65 - 0.18 * std::sin(k_twoPi * t);
+      const double aR2 = (x - aX) * (x - aX) + (y - aY) * (y - aY) + (z - aZ) * (z - aZ);
+      const double bR2 = (x - bX) * (x - bX) + (y - bY) * (y - bY) + (z - bZ) * (z - bZ);
+      const double blobA = std::exp(-32.0 * aR2);
+      const double blobB = std::exp(-24.0 * bR2);
+      return spec.offset + spec.amplitude * (blobA - 0.8 * blobB);
+    }
+    case Pattern::RotatingWave: {
+      const double centeredX = x - 0.5;
+      const double centeredY = y - 0.5;
+      const double angle = std::atan2(centeredY, centeredX);
+      const double radius = std::sqrt(centeredX * centeredX + centeredY * centeredY);
+      const double axialEnvelope = std::exp(-5.0 * (z - 0.5) * (z - 0.5));
+      return spec.offset +
+             spec.amplitude * axialEnvelope * std::sin(10.0 * radius + 3.0 * angle - k_twoPi * t);
+    }
+    case Pattern::TimeVaryingWarpField: {
+      const double px = (2.0 * x) - 1.0;
+      const double py = (2.0 * y) - 1.0;
+      const double pz = (2.0 * z) - 1.0;
+      const double r2 = (px * px) + (py * py) + (pz * pz);
+      const double envelope = std::exp(-2.0 * r2);
+      const double pulse = std::sin(k_twoPi * t);
+      const double twist = std::cos(k_twoPi * t);
+      const double expansion = 0.45 * pulse * envelope;
+      const double swirl = 0.35 * twist * envelope;
+      const double wave = 0.15 * std::sin(k_twoPi * (x + y + z + t));
+      switch (component % 3u) {
+        case 0:
+          return spec.offset + spec.amplitude * ((expansion * px) - (swirl * py) + wave);
+        case 1:
+          return spec.offset + spec.amplitude * ((expansion * py) + (swirl * px) - 0.5 * wave);
+        default:
+          return spec.offset + spec.amplitude * ((0.6 * expansion * pz) + (0.25 * swirl * std::sin(k_pi * x)));
+      }
+    }
   }
   return spec.offset;
 }
@@ -161,9 +252,11 @@ std::complex<double> complexValue(const ImageSpec& spec, const std::vector<std::
   const double x = coordinate(index, spec.size, 0);
   const double y = coordinate(index, spec.size, 1);
   const double z = coordinate(index, spec.size, 2);
-  const double phase = 6.283185307179586 * (x + 0.5 * y + 0.25 * z);
+  const double t = coordinate(index, spec.size, 3);
+  const double phase = 6.283185307179586 * (x + 0.5 * y + 0.25 * z + t);
   const double magnitude =
-    std::max(1.0, spec.amplitude * std::exp(-4.0 * ((x - 0.5) * (x - 0.5) + (y - 0.5) * (y - 0.5))));
+    std::max(1.0, spec.amplitude * (1.0 + 0.35 * std::sin(6.283185307179586 * t)) *
+                     std::exp(-4.0 * ((x - 0.5) * (x - 0.5) + (y - 0.5) * (y - 0.5))));
   return {spec.offset + magnitude * std::cos(phase), magnitude * std::sin(phase)};
 }
 
@@ -327,8 +420,11 @@ void writeTypedImage(const ImageSpec& spec)
     case 3:
       writeTypedImage<T, 3>(spec);
       return;
+    case 4:
+      writeTypedImage<T, 4>(spec);
+      return;
     default:
-      throw std::runtime_error("Only 1D, 2D, and 3D images are supported");
+      throw std::runtime_error("Only 1D, 2D, 3D, and 4D images are supported");
   }
 }
 
@@ -388,8 +484,8 @@ void validateSpec(const ImageSpec& spec)
   if (spec.output.empty()) {
     throw std::runtime_error("Output image file is required");
   }
-  if (spec.size.empty() || spec.size.size() > 3) {
-    throw std::runtime_error("Image size must contain one, two, or three dimensions");
+  if (spec.size.empty() || spec.size.size() > 4) {
+    throw std::runtime_error("Image size must contain one, two, three, or four dimensions");
   }
   if (std::ranges::any_of(spec.size, [](std::size_t value) { return value == 0; })) {
     throw std::runtime_error("Image dimensions must be greater than zero");
@@ -420,12 +516,25 @@ void validateSpec(const ImageSpec& spec)
   }
 }
 
+double expectedComponentValue(const ImageSpec& spec, const std::vector<std::size_t>& index, std::size_t component)
+{
+  return patternValue(spec, index, component);
+}
+
+std::complex<double> expectedComplexValue(const ImageSpec& spec, const std::vector<std::size_t>& index)
+{
+  return complexValue(spec, index);
+}
+
 void writeImage(const ImageSpec& spec)
 {
   validateSpec(spec);
 
   const std::string type = lower(spec.componentType);
-  if ("uint8" == type || "uchar" == type) {
+  if ("int8" == type || "char" == type) {
+    writeTypedImage<std::int8_t>(spec);
+  }
+  else if ("uint8" == type || "uchar" == type) {
     writeTypedImage<std::uint8_t>(spec);
   }
   else if ("int16" == type || "short" == type) {

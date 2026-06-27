@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <limits>
 #include <string>
 #include <type_traits>
@@ -51,7 +52,8 @@ fs::path writeScalarImage(
   const std::array<std::size_t, NDim>& dims,
   const std::array<double, NDim>& spacing,
   const std::array<double, NDim>& origin,
-  const std::vector<T>& values)
+  const std::vector<T>& values,
+  const std::string& extension = ".nrrd")
 {
   using ImageType = itk::Image<T, NDim>;
   using WriterType = itk::ImageFileWriter<ImageType>;
@@ -83,7 +85,7 @@ fs::path writeScalarImage(
   image->Allocate();
   std::copy(values.begin(), values.end(), image->GetBufferPointer());
 
-  const fs::path fileName = dir / (name + ".nrrd");
+  const fs::path fileName = dir / (name + extension);
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName(fileName.string());
   writer->SetInput(image);
@@ -143,6 +145,58 @@ fs::path writeVectorImage(
   return fileName;
 }
 
+template<typename T, unsigned int NDim>
+fs::path writeVectorImage(
+  const fs::path& dir,
+  const std::string& name,
+  const std::array<std::size_t, NDim>& dims,
+  const std::array<double, NDim>& spacing,
+  const std::array<double, NDim>& origin,
+  unsigned int numComponents,
+  const std::vector<T>& interleavedValues,
+  const std::string& extension = ".nrrd")
+{
+  using ImageType = itk::VectorImage<T, NDim>;
+  using WriterType = itk::ImageFileWriter<ImageType>;
+
+  typename ImageType::IndexType start;
+  typename ImageType::SizeType size;
+  typename ImageType::PointType itkOrigin;
+  typename ImageType::SpacingType itkSpacing;
+  start.Fill(0);
+
+  std::size_t numPixels = 1;
+  for (unsigned int i = 0; i < NDim; ++i) {
+    size[i] = dims[i];
+    itkOrigin[i] = origin[i];
+    itkSpacing[i] = spacing[i];
+    numPixels *= dims[i];
+  }
+  REQUIRE(interleavedValues.size() == numPixels * numComponents);
+
+  typename ImageType::RegionType region;
+  region.SetIndex(start);
+  region.SetSize(size);
+
+  typename ImageType::Pointer image = ImageType::New();
+  image->SetVectorLength(numComponents);
+  image->SetRegions(region);
+  image->SetOrigin(itkOrigin);
+  image->SetSpacing(itkSpacing);
+  image->SetDirection(identityDirection<NDim>());
+  image->Allocate();
+
+  std::copy(interleavedValues.begin(), interleavedValues.end(), image->GetBufferPointer());
+
+  const fs::path fileName = dir / (name + extension);
+  typename WriterType::Pointer writer = WriterType::New();
+  writer->SetFileName(fileName.string());
+  writer->SetInput(image);
+  writer->UseCompressionOff();
+  writer->Update();
+  return fileName;
+}
+
 fs::path writeRgbImage(const fs::path& dir)
 {
   using PixelType = itk::RGBPixel<uint8_t>;
@@ -182,6 +236,52 @@ fs::path writeRgbImage(const fs::path& dir)
   writer->SetInput(image);
   writer->UseCompressionOff();
   writer->Update();
+  return fileName;
+}
+
+fs::path writeNrrdVectorAxisImage(const fs::path& dir)
+{
+  const fs::path fileName = dir / "nrrd-vector-axis.nrrd";
+  std::ofstream out(fileName, std::ios::binary);
+  out << "NRRD0004\n"
+      << "type: float\n"
+      << "dimension: 4\n"
+      << "space: left-posterior-superior\n"
+      << "sizes: 5 2 2 1\n"
+      << "space directions: none (1,0,0) (0,1,0) (0,0,1)\n"
+      << "kinds: vector domain domain domain\n"
+      << "endian: little\n"
+      << "encoding: raw\n"
+      << "space origin: (0,0,0)\n"
+      << "\n";
+
+  const std::array<float, 20> values{0.0f,  1.0f,  2.0f,  3.0f,  4.0f,  10.0f, 11.0f, 12.0f, 13.0f, 14.0f,
+                                     20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 30.0f, 31.0f, 32.0f, 33.0f, 34.0f};
+  out.write(reinterpret_cast<const char*>(values.data()), static_cast<std::streamsize>(values.size() * sizeof(float)));
+  return fileName;
+}
+
+fs::path writeNrrdVectorAxisTimeImage(const fs::path& dir)
+{
+  const fs::path fileName = dir / "nrrd-vector-axis-time.nrrd";
+  std::ofstream out(fileName, std::ios::binary);
+  out << "NRRD0004\n"
+      << "type: float\n"
+      << "dimension: 5\n"
+      << "space dimension: 4\n"
+      << "sizes: 2 2 1 1 3\n"
+      << "space directions: none (1,0,0,0) (0,1,0,0) (0,0,1,0) (0,0,0,2)\n"
+      << "kinds: vector domain domain domain domain\n"
+      << "endian: little\n"
+      << "encoding: raw\n"
+      << "space origin: (0,0,0,10)\n"
+      << "entropy_time_axis:=last\n"
+      << "entropy_time_units:=frame\n"
+      << "\n";
+
+  const std::array<float, 12>
+    values{0.0f, 1.0f, 10.0f, 11.0f, 100.0f, 101.0f, 110.0f, 111.0f, 200.0f, 201.0f, 210.0f, 211.0f};
+  out.write(reinterpret_cast<const char*>(values.data()), static_cast<std::streamsize>(values.size() * sizeof(float)));
   return fileName;
 }
 
@@ -526,6 +626,157 @@ TEST_CASE("Vector images can be loaded as one interleaved component buffer", "[i
   CHECK(image.quantileToValue(0, 0.0) == Catch::Approx(10.0));
   CHECK(image.quantileToValue(1, 0.0) == Catch::Approx(20.0));
   CHECK(image.quantileToValue(2, 0.0) == Catch::Approx(30.0));
+}
+
+TEST_CASE("4D scalar images load as time series", "[image][loading][time]")
+{
+  const fs::path dir = testDirectory();
+  const fs::path fileName = writeScalarImage<float, 4>(
+    dir,
+    "scalar-time",
+    {2, 2, 1, 3},
+    {1.0, 2.0, 3.0, 4.0},
+    {0.0, 0.0, 0.0, 10.0},
+    {0.0f, 1.0f, 2.0f, 3.0f, 10.0f, 11.0f, 12.0f, 13.0f, 20.0f, 21.0f, 22.0f, 23.0f});
+
+  Image image(fileName, Rep::Image, BufferType::SeparateImages);
+
+  CHECK(image.isTimeSeries());
+  CHECK(image.timeAxis().numTimePoints() == 3);
+  CHECK(image.timeAxis().value(0).value() == Catch::Approx(10.0));
+  CHECK(image.timeAxis().value(2).value() == Catch::Approx(18.0));
+  CHECK(image.header().pixelDimensions() == glm::uvec3{2, 2, 1});
+  CHECK(image.header().numPixels() == 4);
+  CHECK(image.value<double>(0, 0, 0).value() == Catch::Approx(0.0));
+  CHECK(image.value<double>(0, 0, 1).value() == Catch::Approx(10.0));
+  CHECK(image.value<double>(0, 3, 2).value() == Catch::Approx(23.0));
+  CHECK(image.value<double>(0, 1, 1, 0, 2).value() == Catch::Approx(23.0));
+  CHECK(image.valueLinear<double>(0, 1.0, 1.0, 0.0, 2).value() == Catch::Approx(23.0));
+  CHECK(image.bufferAsVoid(0, 3) == nullptr);
+  CHECK(image.settings().minMaxImageRange(0).first == Catch::Approx(0.0));
+  CHECK(image.settings().minMaxImageRange(0).second == Catch::Approx(23.0));
+  CHECK(image.bufferAsVoid(0, 2) != nullptr);
+}
+
+TEST_CASE("4D MetaImage scalar images load as time series", "[image][loading][time][mha]")
+{
+  const fs::path dir = testDirectory();
+  const fs::path fileName = writeScalarImage<float, 4>(
+    dir,
+    "scalar-time",
+    {2, 2, 1, 3},
+    {1.0, 2.0, 3.0, 1.25},
+    {0.0, 0.0, 0.0, 0.0},
+    {0.0f, 1.0f, 2.0f, 3.0f, 10.0f, 11.0f, 12.0f, 13.0f, 20.0f, 21.0f, 22.0f, 23.0f},
+    ".mha");
+
+  Image image(fileName, Rep::Image, BufferType::SeparateImages);
+
+  CHECK(image.isTimeSeries());
+  CHECK(image.timeAxis().numTimePoints() == 3);
+  CHECK(image.timeAxis().value(0).value() == Catch::Approx(0.0));
+  CHECK(image.timeAxis().value(2).value() == Catch::Approx(2.5));
+  CHECK(image.header().pixelDimensions() == glm::uvec3{2, 2, 1});
+  CHECK(image.header().numPixels() == 4);
+  CHECK(image.value<double>(0, 0, 0).value() == Catch::Approx(0.0));
+  CHECK(image.value<double>(0, 3, 2).value() == Catch::Approx(23.0));
+}
+
+TEST_CASE("4D vector images preserve interleaved frame offsets", "[image][loading][time][vector]")
+{
+  const fs::path dir = testDirectory();
+  const fs::path fileName = writeVectorImage<float, 4>(
+    dir,
+    "vector-time",
+    {2, 1, 1, 2},
+    {1.0, 1.0, 1.0, 1.0},
+    {0.0, 0.0, 0.0, 0.0},
+    3,
+    {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f});
+
+  Image image(fileName, Rep::Image, BufferType::InterleavedImage);
+
+  CHECK(image.isTimeSeries());
+  CHECK(image.header().pixelDimensions() == glm::uvec3{2, 1, 1});
+  CHECK(image.header().numComponentsPerPixel() == 3);
+  CHECK(image.bufferAsVoid(0, 1) != nullptr);
+  CHECK(image.bufferAsVoid(1, 1) == nullptr);
+  CHECK(image.value<double>(0, 0, 0).value() == Catch::Approx(1.0));
+  CHECK(image.value<double>(2, 1, 0).value() == Catch::Approx(6.0));
+  CHECK(image.value<double>(0, 0, 1).value() == Catch::Approx(11.0));
+  CHECK(image.value<double>(2, 1, 1).value() == Catch::Approx(16.0));
+  CHECK(image.bufferAsVoid(0, 2) == nullptr);
+
+  CHECK(image.generateSortedBuffers());
+  CHECK(image.quantileToValue(0, 0.0) == Catch::Approx(1.0));
+  CHECK(image.quantileToValue(0, 1.0) == Catch::Approx(14.0));
+  CHECK(image.quantileToValue(2, 0.0) == Catch::Approx(3.0));
+  CHECK(image.quantileToValue(2, 1.0) == Catch::Approx(16.0));
+}
+
+TEST_CASE("4D MetaImage vector image headers load as spatial time series", "[image][loading][time][vector][mhd]")
+{
+  const fs::path dir = testDirectory();
+  const fs::path fileName = writeVectorImage<float, 4>(
+    dir,
+    "vector-time",
+    {2, 1, 1, 2},
+    {1.0, 2.0, 3.0, 1.25},
+    {0.0, 0.0, 0.0, 0.0},
+    3,
+    {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f},
+    ".mhd");
+
+  const auto header = readImageHeaderOnly(fileName, Rep::Image, BufferType::InterleavedImage);
+  REQUIRE(header);
+  CHECK(header->pixelDimensions() == glm::uvec3{2, 1, 1});
+  CHECK(header->numPixels() == 2);
+  CHECK(header->numComponentsPerPixel() == 3);
+
+  Image image(fileName, Rep::Image, BufferType::InterleavedImage);
+
+  CHECK(image.isTimeSeries());
+  CHECK(image.timeAxis().numTimePoints() == 2);
+  CHECK(image.timeAxis().value(1).value() == Catch::Approx(1.25));
+  CHECK(image.header().pixelDimensions() == glm::uvec3{2, 1, 1});
+  CHECK(image.header().numComponentsPerPixel() == 3);
+  CHECK(image.value<double>(0, 0, 0).value() == Catch::Approx(1.0));
+  CHECK(image.value<double>(2, 1, 1).value() == Catch::Approx(16.0));
+}
+
+TEST_CASE("NRRD vector axis images load as multi-component spatial images", "[image][loading][vector][nrrd]")
+{
+  const fs::path fileName = writeNrrdVectorAxisImage(testDirectory());
+
+  Image image(fileName, Rep::Image, BufferType::SeparateImages);
+
+  CHECK_FALSE(image.isTimeSeries());
+  CHECK(image.header().pixelDimensions() == glm::uvec3{2, 2, 1});
+  CHECK(image.header().numPixels() == 4);
+  CHECK(image.header().numComponentsPerPixel() == 5);
+  CHECK(image.value<double>(0, 0).value() == Catch::Approx(0.0));
+  CHECK(image.value<double>(4, 0).value() == Catch::Approx(4.0));
+  CHECK(image.value<double>(0, 3).value() == Catch::Approx(30.0));
+  CHECK(image.value<double>(4, 3).value() == Catch::Approx(34.0));
+}
+
+TEST_CASE("NRRD vector axis time images preserve components and time frames", "[image][loading][time][vector][nrrd]")
+{
+  const fs::path fileName = writeNrrdVectorAxisTimeImage(testDirectory());
+
+  Image image(fileName, Rep::Image, BufferType::SeparateImages);
+
+  CHECK(image.isTimeSeries());
+  CHECK(image.timeAxis().numTimePoints() == 3);
+  CHECK(image.timeAxis().value(0).value() == Catch::Approx(10.0));
+  CHECK(image.timeAxis().value(2).value() == Catch::Approx(14.0));
+  CHECK(image.header().pixelDimensions() == glm::uvec3{2, 1, 1});
+  CHECK(image.header().numPixels() == 2);
+  CHECK(image.header().numComponentsPerPixel() == 2);
+  CHECK(image.value<double>(0, 0, 0).value() == Catch::Approx(0.0));
+  CHECK(image.value<double>(1, 1, 0).value() == Catch::Approx(11.0));
+  CHECK(image.value<double>(0, 0, 2).value() == Catch::Approx(200.0));
+  CHECK(image.value<double>(1, 1, 2).value() == Catch::Approx(211.0));
 }
 
 TEST_CASE("RGB images load as three component vector images", "[image][loading][rgb]")

@@ -909,7 +909,10 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     }
 
     case GLFW_KEY_COMMA: {
-      if (s_modifierState.shift) {
+      if (s_modifierState.alt) {
+        H.cycleTimePoint(-1);
+      }
+      else if (s_modifierState.shift) {
         H.cycleBackgroundSegLabel(-1);
       }
       else {
@@ -918,7 +921,10 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       break;
     }
     case GLFW_KEY_PERIOD: {
-      if (s_modifierState.shift) {
+      if (s_modifierState.alt) {
+        H.cycleTimePoint(1);
+      }
+      else if (s_modifierState.shift) {
         H.cycleBackgroundSegLabel(1);
       }
       else {

@@ -12,17 +12,17 @@
 namespace
 {
 constexpr const char* kExampleSpec = R"json({
-  "output": "synthetic_vector3_3d.nrrd",
+  "output": "synthetic_vector3_4d.nrrd",
   "pixel_kind": "vector",
   "component_type": "float",
   "components": 3,
-  "size": [32, 32, 16],
-  "spacing": [1.0, 1.0, 2.0],
-  "origin": [-16.0, -16.0, -16.0],
-  "pattern": "component_ramp",
+  "size": [32, 32, 16, 5],
+  "spacing": [1.0, 1.0, 2.0, 1.0],
+  "origin": [-16.0, -16.0, -16.0, 0.0],
+  "pattern": "moving_gaussian",
   "metadata": {
     "entropy_test_image": "true",
-    "description": "3-component synthetic vector image"
+    "description": "3-component synthetic vector time series"
   }
 })json";
 } // namespace
@@ -52,7 +52,11 @@ int main(int argc, char** argv)
   app.add_option("--spacing", spacing, "Image spacing override");
   app.add_option("--origin", origin, "Image origin override");
   app.add_option("--direction", direction, "Row-major image direction matrix override");
-  app.add_option("--pattern", pattern, "Pattern override: ramp, checker, gaussian, component_ramp, complex_phase");
+  app.add_option(
+    "--pattern",
+    pattern,
+    "Pattern override: ramp, checker, gaussian, component_ramp, complex_phase, time_ramp, temporal_sine, "
+    "moving_gaussian, pulsing_gaussian, two_moving_gaussians, rotating_wave, time_varying_warp_field");
   app.add_flag("--print-example", printExample, "Print an example JSON specification and exit");
 
   CLI11_PARSE(app, argc, argv);

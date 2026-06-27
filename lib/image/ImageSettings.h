@@ -119,6 +119,30 @@ public:
   /// @brief Get the in-memory component type for all component buffers.
   ComponentType componentType() const;
 
+  /// @brief Set the active time point used for display.
+  void setActiveTimePoint(uint32_t timePoint);
+
+  /// @brief Get the active time point used for display.
+  uint32_t activeTimePoint() const;
+
+  /// @brief Set whether time playback loops when it reaches the last frame.
+  void setTimePlaybackLoop(bool loop);
+
+  /// @brief Return whether time playback loops when it reaches the last frame.
+  bool timePlaybackLoop() const;
+
+  /// @brief Set whether time-series playback is actively advancing frames.
+  void setTimePlaybackPlaying(bool playing);
+
+  /// @brief Return whether time-series playback is actively advancing frames.
+  bool timePlaybackPlaying() const;
+
+  /// @brief Set the playback speed multiplier for time-series images.
+  void setTimePlaybackSpeed(double speed);
+
+  /// @brief Get the playback speed multiplier for time-series images.
+  double timePlaybackSpeed() const;
+
   /// @brief Set the RGB border color used when drawing image bounds.
   void setBorderColor(glm::vec3 borderColor);
 
@@ -964,7 +988,11 @@ private:
   std::vector<ComponentStats> m_componentStats;       //!< Per-component statistics
   std::vector<ComponentSettings> m_componentSettings; //!< Per-component settings
 
-  uint32_t m_activeComponent{0}; //!< Active component
+  uint32_t m_activeComponent{0};     //!< Active component
+  uint32_t m_activeTimePoint{0};     //!< Active time point for time-series display
+  bool m_timePlaybackLoop{true};     //!< Loop playback at the last time point
+  bool m_timePlaybackPlaying{false}; //!< Whether time-series playback is running
+  double m_timePlaybackSpeed{1.0};   //!< Time playback speed multiplier
 
   /// Exact quantiles requires sorted buffers
   bool m_usingExactQuantiles = false;

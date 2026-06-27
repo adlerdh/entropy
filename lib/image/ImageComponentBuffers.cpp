@@ -238,7 +238,7 @@ bool Image::generateSortedBuffers()
       return true;
     }
     case MultiComponentBufferType::InterleavedImage: {
-      const std::size_t N = m_header.numPixels();
+      const std::size_t N = m_header.numPixels() * m_timeAxis.numTimePoints();
       const std::size_t numComponents = m_header.numComponentsPerPixel();
 
       switch (m_header.memoryComponentType()) {
@@ -545,24 +545,28 @@ bool Image::loadSegBuffer(
   return true;
 }
 
-const void* Image::bufferAsVoid(uint32_t comp) const
+const void* Image::bufferAsVoid(uint32_t comp, uint32_t timePoint) const
 {
-  auto F = [this](uint32_t i) -> const void* {
+  if (timePoint >= m_timeAxis.numTimePoints()) {
+    return nullptr;
+  }
+
+  auto F = [this](uint32_t i, std::size_t frameOffset) -> const void* {
     switch (m_header.memoryComponentType()) {
       case ComponentType::Int8:
-        return static_cast<const void*>(m_data_int8.at(i).data());
+        return static_cast<const void*>(m_data_int8.at(i).data() + frameOffset);
       case ComponentType::UInt8:
-        return static_cast<const void*>(m_data_uint8.at(i).data());
+        return static_cast<const void*>(m_data_uint8.at(i).data() + frameOffset);
       case ComponentType::Int16:
-        return static_cast<const void*>(m_data_int16.at(i).data());
+        return static_cast<const void*>(m_data_int16.at(i).data() + frameOffset);
       case ComponentType::UInt16:
-        return static_cast<const void*>(m_data_uint16.at(i).data());
+        return static_cast<const void*>(m_data_uint16.at(i).data() + frameOffset);
       case ComponentType::Int32:
-        return static_cast<const void*>(m_data_int32.at(i).data());
+        return static_cast<const void*>(m_data_int32.at(i).data() + frameOffset);
       case ComponentType::UInt32:
-        return static_cast<const void*>(m_data_uint32.at(i).data());
+        return static_cast<const void*>(m_data_uint32.at(i).data() + frameOffset);
       case ComponentType::Float32:
-        return static_cast<const void*>(m_data_float32.at(i).data());
+        return static_cast<const void*>(m_data_float32.at(i).data() + frameOffset);
       default:
         return static_cast<const void*>(nullptr);
     }
@@ -573,20 +577,20 @@ const void* Image::bufferAsVoid(uint32_t comp) const
       if (m_header.numComponentsPerPixel() <= comp) {
         return nullptr;
       }
-      return F(comp);
+      return F(comp, static_cast<std::size_t>(timePoint) * m_header.numPixels());
     case MultiComponentBufferType::InterleavedImage:
       if (1 <= comp) {
         return nullptr;
       }
-      return F(0);
+      return F(0, static_cast<std::size_t>(timePoint) * m_header.numPixels() * m_header.numComponentsPerPixel());
   }
 
   return nullptr;
 }
 
-void* Image::bufferAsVoid(uint32_t comp)
+void* Image::bufferAsVoid(uint32_t comp, uint32_t timePoint)
 {
-  return const_cast<void*>(const_cast<const Image*>(this)->bufferAsVoid(comp));
+  return const_cast<void*>(const_cast<const Image*>(this)->bufferAsVoid(comp, timePoint));
 }
 
 const void* Image::bufferSortedAsVoid(uint32_t comp) const
@@ -635,20 +639,28 @@ Image::getComponentAndOffsetForBuffer(uint32_t comp, int i, int j, int k) const
   return getComponentAndOffsetForBuffer(comp, index);
 }
 
-std::optional<std::pair<std::size_t, std::size_t>> Image::getComponentAndOffsetForBuffer(
-  uint32_t comp,
-  std::size_t index) const
+std::optional<std::pair<std::size_t, std::size_t>>
+Image::getComponentAndOffsetForBuffer(uint32_t comp, std::size_t index, uint32_t timePoint) const
 {
   if (comp >= m_header.numComponentsPerPixel()) {
     spdlog::error("Invalid image component {} (image has {})", comp, m_header.numComponentsPerPixel());
     return std::nullopt;
   }
+  if (timePoint >= m_timeAxis.numTimePoints()) {
+    spdlog::error("Invalid image time point {} (image has {})", timePoint, m_timeAxis.numTimePoints());
+    return std::nullopt;
+  }
 
   switch (m_bufferType) {
     case MultiComponentBufferType::SeparateImages:
-      return std::make_pair(comp, index);
+      return separateComponentFrameAddress(comp, index, timePoint, m_header.numPixels());
     case MultiComponentBufferType::InterleavedImage:
-      return std::make_pair(0, m_header.numComponentsPerPixel() * index + comp);
+      return interleavedComponentFrameAddress(
+        comp,
+        index,
+        timePoint,
+        m_header.numPixels(),
+        m_header.numComponentsPerPixel());
   }
 
   return std::nullopt;

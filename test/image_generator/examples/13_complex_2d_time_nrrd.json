@@ -1,0 +1,15 @@
+{
+  "output": "13_complex_2d_time.nrrd",
+  "pixel_kind": "complex",
+  "component_type": "float",
+  "components": 1,
+  "size": [32, 28, 8],
+  "spacing": [1.0, 1.0, 0.8],
+  "origin": [-16.0, -14.0, 0.0],
+  "pattern": "complex_phase",
+  "metadata": {
+    "entropy_time_axis": "last",
+    "entropy_time_units": "frame",
+    "entropy_example": "2D complex-valued time series"
+  }
+}

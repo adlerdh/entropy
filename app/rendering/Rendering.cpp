@@ -3081,6 +3081,7 @@ void Rendering::renderVectorOverlays()
           isOblique,
           R.m_anatomicalLabelColor,
           R.m_anatomicalLabelType,
+          R.m_anatomicalLabelScale,
           labelPosInfo_forLabels);
       }
 

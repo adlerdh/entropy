@@ -37,6 +37,8 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setUiWindowBgOpacity(0.42f);
   settings.setShowLayoutTabs(false);
   settings.setLayoutTabPlacement(UiLayoutTabPlacement::Bottom);
+  settings.setShowGlobalTimeControls(false);
+  settings.setSynchronizeTimeSeries(false);
   settings.setReplaceBackgroundWithForeground(true);
   settings.setUse3dBrush(true);
   settings.setUseIsotropicBrush(false);
@@ -65,6 +67,7 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.background3dColor = {0.3f, 0.4f, 0.5f, 0.6f};
   preferences.anatomicalLabelColor = {0.7f, 0.6f, 0.5f, 0.4f};
   preferences.anatomicalLabelType = AnatomicalLabelType::Rodent;
+  preferences.anatomicalLabelScale = 1.6f;
   preferences.showScaleBars = false;
   preferences.showScaleBarsInLightboxViews = true;
   preferences.scaleBarColor = {0.8f, 0.7f, 0.6f, 0.5f};
@@ -161,6 +164,8 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actual.uiWindowBgOpacity() == Catch::Approx(expected.uiWindowBgOpacity()));
   CHECK(actual.showLayoutTabs() == expected.showLayoutTabs());
   CHECK(actual.layoutTabPlacement() == expected.layoutTabPlacement());
+  CHECK(actual.showGlobalTimeControls() == expected.showGlobalTimeControls());
+  CHECK(actual.synchronizeTimeSeries() == expected.synchronizeTimeSeries());
   CHECK(actual.replaceBackgroundWithForeground() == expected.replaceBackgroundWithForeground());
   CHECK(actual.use3dBrush() == expected.use3dBrush());
   CHECK(actual.useIsotropicBrush() == expected.useIsotropicBrush());
@@ -192,6 +197,7 @@ void requireRenderPreferencesEqual(
   CHECK(actual.background3dColor == expected.background3dColor);
   CHECK(actual.anatomicalLabelColor == expected.anatomicalLabelColor);
   CHECK(actual.anatomicalLabelType == expected.anatomicalLabelType);
+  CHECK(actual.anatomicalLabelScale == Catch::Approx(expected.anatomicalLabelScale));
   CHECK(actual.showScaleBars == expected.showScaleBars);
   CHECK(actual.showScaleBarsInLightboxViews == expected.showScaleBarsInLightboxViews);
   CHECK(actual.scaleBarColor == expected.scaleBarColor);
@@ -289,6 +295,7 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("format") == "entropy.userSettings");
   CHECK(root.at("version") == 1);
   CHECK(root.at("views").at("showOverlays") == false);
+  CHECK(root.at("synchronization").at("timeSeries").at("synchronizeTimePoints") == false);
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == true);
 }
 
@@ -361,6 +368,9 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
         "color": [1, "bad", 3, 4],
         "snapping": "activeImage"
       },
+      "anatomicalLabels": {
+        "scale": 99
+      },
       "scaleBars": {
         "targetLengthFraction": 10,
         "marginPixels": 1
@@ -421,6 +431,7 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
   CHECK(settings.uiWindowBgOpacity() == Catch::Approx(0.2f));
   CHECK(renderPreferences.crosshairsColor == user_preferences::RenderPreferences{}.crosshairsColor);
   CHECK(renderPreferences.crosshairsSnapping == CrosshairsSnapping::ActiveImage);
+  CHECK(renderPreferences.anatomicalLabelScale == Catch::Approx(2.0f));
   CHECK(renderPreferences.scaleBarTargetFraction == Catch::Approx(1.0f));
   CHECK(renderPreferences.scaleBarMarginPx == Catch::Approx(12.0f));
   CHECK(settings.brushSizeInVoxels() == 511);
@@ -460,8 +471,10 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("interface").at("colorScheme") == "entropyDark");
   CHECK(root.at("interface").at("showLayoutTabs") == true);
   CHECK(root.at("interface").at("layoutTabsPosition") == "top");
+  CHECK(root.at("interface").at("showGlobalTimeControls") == true);
   CHECK(root.at("views").at("showOverlays") == true);
   CHECK(root.at("views").at("crosshairs").at("snapping") == "disabled");
+  CHECK(root.at("views").at("anatomicalLabels").at("scale").get<float>() == Catch::Approx(1.0f));
   CHECK(root.at("views").at("scaleBars").at("show") == true);
   CHECK(root.at("views").at("lightbox").at("showOffsetLabels") == true);
   CHECK(root.at("comparison").at("localNormalizedCrossCorrelation").at("presentation") == "dissimilarity");
@@ -469,6 +482,7 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("rendering").at("isosurfaces").at("floatingPointInterpolation") == false);
   CHECK(root.at("rendering").at("isosurfaces").at("modulateOpacityWithImage") == true);
   CHECK(root.at("segmentation").at("brushPreview").at("mode") == "hover");
+  CHECK(root.at("synchronization").at("timeSeries").at("synchronizeTimePoints") == true);
   CHECK(root.at("synchronization").at("itkSnap").at("enabled") == false);
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);
 }

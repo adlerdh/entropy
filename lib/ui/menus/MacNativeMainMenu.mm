@@ -321,6 +321,24 @@ void addImageMenu(NSMenu* mainMenu) {
     @"Save Initial + Manual Transformation...",
     MainMenuAction::SaveActiveImageInitialAndManualTransformation);
   [menu addItem:[NSMenuItem separatorItem]];
+  NSMenuItem* timeSeriesItem = [[NSMenuItem alloc] initWithTitle:@"Time Series" action:nil keyEquivalent:@""];
+  NSMenu* timeSeriesMenu = [[NSMenu alloc] initWithTitle:@"Time Series"];
+  addActionMenuItem(timeSeriesMenu, @"Show Time Controls", MainMenuAction::ToggleGlobalTimeControls);
+  [timeSeriesMenu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(timeSeriesMenu, @"Play / Pause", MainMenuAction::ToggleTimePlayback);
+  [timeSeriesMenu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(timeSeriesMenu, @"First Frame", MainMenuAction::FirstTimePoint);
+  addActionMenuItem(
+    timeSeriesMenu,
+    @"Previous Frame",
+    MainMenuAction::PreviousTimePoint,
+    @",",
+    NSEventModifierFlagOption);
+  addActionMenuItem(timeSeriesMenu, @"Next Frame", MainMenuAction::NextTimePoint, @".", NSEventModifierFlagOption);
+  addActionMenuItem(timeSeriesMenu, @"Last Frame", MainMenuAction::LastTimePoint);
+  [timeSeriesItem setSubmenu:timeSeriesMenu];
+  [menu addItem:timeSeriesItem];
+  [menu addItem:[NSMenuItem separatorItem]];
   NSMenuItem* isosurfacesItem = [[NSMenuItem alloc] initWithTitle:@"Isosurfaces" action:nil keyEquivalent:@""];
   NSMenu* isosurfacesMenu = [[NSMenu alloc] initWithTitle:@"Isosurfaces"];
   addActionMenuItem(isosurfacesMenu, @"Show Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
@@ -402,6 +420,7 @@ void addViewsMenu(NSMenu* mainMenu) {
   addActionMenuItem(menu, @"Decrease Segmentation Opacity", MainMenuAction::DecreaseSegmentationOpacity, @"a");
   addActionMenuItem(menu, @"Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, @"d");
   [menu addItem:[NSMenuItem separatorItem]];
+  addActionMenuItem(menu, @"Snap Crosshairs to Voxels", MainMenuAction::ToggleCrosshairsVoxelSnapping);
   addActionMenuItem(menu, @"Show Scale Bars", MainMenuAction::ToggleScaleBars);
   addActionMenuItem(menu, @"ASCII Rendering", MainMenuAction::ToggleAsciiRendering);
   addActionMenuItem(menu, @"Cycle Overlays", MainMenuAction::ToggleOverlays, @"o");

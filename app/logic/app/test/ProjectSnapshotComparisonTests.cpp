@@ -41,6 +41,7 @@ serialize::EntropyProject makeProject()
 
   project.m_interface.m_showLayoutTabs = true;
   project.m_interface.m_layoutTabPlacement = serialize::ProjectLayoutTabPlacement::Top;
+  project.m_interface.m_showGlobalTimeControls = true;
   project.m_interface.m_imageValuePrecision = 3;
   project.m_interface.m_coordsPrecision = 4;
   project.m_interface.m_txPrecision = 5;
@@ -67,6 +68,10 @@ TEST_CASE("Project snapshot comparison detects image state changes", "[ProjectSn
 
   auto changedImageSettings = project;
   changedImageSettings.m_referenceImage.m_settings->m_showEdges = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedImageSettings));
+
+  changedImageSettings = project;
+  changedImageSettings.m_referenceImage.m_settings->m_lockedToReference = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedImageSettings));
 
   auto changedTransform = project;
@@ -101,5 +106,9 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
 
   auto changedInterface = project;
   changedInterface.m_interface.m_layoutTabPlacement = serialize::ProjectLayoutTabPlacement::Bottom;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedInterface));
+
+  changedInterface = project;
+  changedInterface.m_interface.m_showGlobalTimeControls = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedInterface));
 }

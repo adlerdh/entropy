@@ -155,7 +155,7 @@ typename itk::ImageBase<NDim>::Pointer readImage(const std::string& fileName)
 
     reader->SetFileName(fileName.c_str());
     reader->Update();
-    return static_cast<itk::ImageBase<3>::Pointer>(reader->GetOutput());
+    return static_cast<typename itk::ImageBase<NDim>::Pointer>(reader->GetOutput());
   }
   catch (const std::exception& e) {
     spdlog::error("Exception reading image from {}: {}", fileName, e.what());

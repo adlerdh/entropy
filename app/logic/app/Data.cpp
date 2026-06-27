@@ -959,8 +959,11 @@ Image* AppData::image(const uuid& imageUid)
   return const_cast<Image*>(const_cast<const AppData*>(this)->image(imageUid));
 }
 
-std::optional<uuid>
-AppData::setComponentProjectionImage(const uuid& imageUid, ComponentProjectionMode mode, Image image)
+std::optional<uuid> AppData::setComponentProjectionImage(
+  const uuid& imageUid,
+  ComponentProjectionMode mode,
+  uint32_t timePoint,
+  Image image)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
 
@@ -969,25 +972,27 @@ AppData::setComponentProjectionImage(const uuid& imageUid, ComponentProjectionMo
   }
 
   auto& projections = m_imageToComponentProjectionImages[imageUid];
-  if (const auto projectionIt = projections.find(mode); projectionIt != projections.end()) {
+  const ComponentProjectionCacheKey key{mode, timePoint};
+  if (const auto projectionIt = projections.find(key); projectionIt != projections.end()) {
     m_componentProjectionImages.insert_or_assign(projectionIt->second, std::move(image));
     return projectionIt->second;
   }
 
   const uuid projectionUid = generateRandomUuid();
-  projections.emplace(mode, projectionUid);
+  projections.emplace(key, projectionUid);
   m_componentProjectionImages.emplace(projectionUid, std::move(image));
   return projectionUid;
 }
 
-std::optional<uuid> AppData::componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMode mode) const
+std::optional<uuid>
+AppData::componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMode mode, uint32_t timePoint) const
 {
   const auto projectionsIt = m_imageToComponentProjectionImages.find(imageUid);
   if (m_imageToComponentProjectionImages.end() == projectionsIt) {
     return std::nullopt;
   }
 
-  const auto projectionIt = projectionsIt->second.find(mode);
+  const auto projectionIt = projectionsIt->second.find(ComponentProjectionCacheKey{mode, timePoint});
   if (projectionsIt->second.end() == projectionIt) {
     return std::nullopt;
   }
@@ -1011,7 +1016,8 @@ uuid AppData::effectiveImageUidForRendering(const uuid& imageUid) const
     return imageUid;
   }
 
-  return componentProjectionImageUid(imageUid, *projectionMode).value_or(imageUid);
+  const uint32_t timePoint = imageIt->second.timeAxis().clamp(imageIt->second.settings().activeTimePoint());
+  return componentProjectionImageUid(imageUid, *projectionMode, timePoint).value_or(imageUid);
 }
 
 /*

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <complex>
 #include <map>
 #include <string>
 #include <vector>
@@ -27,7 +28,14 @@ enum class Pattern
   Checker,
   Gaussian,
   ComponentRamp,
-  ComplexPhase
+  ComplexPhase,
+  TimeRamp,
+  TemporalSine,
+  MovingGaussian,
+  PulsingGaussian,
+  TwoMovingGaussians,
+  RotatingWave,
+  TimeVaryingWarpField
 };
 
 /**
@@ -66,6 +74,23 @@ ImageSpec loadSpecJson(const std::filesystem::path& fileName);
  * @throws std::runtime_error when the specification is inconsistent.
  */
 void validateSpec(const ImageSpec& spec);
+
+/**
+ * @brief Compute the deterministic scalar/vector component value for a generated image.
+ * @param spec Image specification.
+ * @param index Pixel index, including the time index when the spec has a time dimension.
+ * @param component Component index for vector images; ignored for scalar images.
+ * @return Value written by writeImage for scalar and vector images before file-format casts.
+ */
+double expectedComponentValue(const ImageSpec& spec, const std::vector<std::size_t>& index, std::size_t component);
+
+/**
+ * @brief Compute the deterministic complex value for a generated complex image.
+ * @param spec Image specification.
+ * @param index Pixel index, including the time index when the spec has a time dimension.
+ * @return Complex value written by writeImage before file-format casts.
+ */
+std::complex<double> expectedComplexValue(const ImageSpec& spec, const std::vector<std::size_t>& index);
 
 /**
  * @brief Write the requested image to disk.

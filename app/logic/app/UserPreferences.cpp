@@ -288,7 +288,8 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
       {"density", enumToName(settings.uiDensityPreset(), sk_uiDensityPresetNames)},
       {"windowBackgroundOpacity", settings.uiWindowBgOpacity()},
       {"showLayoutTabs", settings.showLayoutTabs()},
-      {"layoutTabsPosition", enumToName(settings.layoutTabPlacement(), sk_layoutTabPlacementNames)}}},
+      {"layoutTabsPosition", enumToName(settings.layoutTabPlacement(), sk_layoutTabPlacementNames)},
+      {"showGlobalTimeControls", settings.showGlobalTimeControls()}}},
     {"views",
      {{"showImageBorders", renderPreferences.showImageBorders},
       {"showOverlays", settings.overlays()},
@@ -302,7 +303,8 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
         {"3d", vec4ToJson(renderPreferences.background3dColor)}}},
       {"anatomicalLabels",
        {{"color", vec4ToJson(renderPreferences.anatomicalLabelColor)},
-        {"type", enumToName(renderPreferences.anatomicalLabelType, sk_anatomicalLabelNames)}}},
+        {"type", enumToName(renderPreferences.anatomicalLabelType, sk_anatomicalLabelNames)},
+        {"scale", renderPreferences.anatomicalLabelScale}}},
       {"scaleBars",
        {{"show", renderPreferences.showScaleBars},
         {"showInLightboxViews", renderPreferences.showScaleBarsInLightboxViews},
@@ -402,7 +404,8 @@ json toJson(const AppSettings& settings, const user_preferences::RenderPreferenc
       {"hideAnnotationVertices", renderPreferences.hideAnnotationVertices},
       {"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
     {"synchronization",
-     {{"itkSnap",
+     {{"timeSeries", {{"synchronizeTimePoints", settings.synchronizeTimeSeries()}}},
+      {"itkSnap",
        {{"enabled", settings.cursorSyncEnabled()},
         {"sendCursor", settings.sendCursorSync()},
         {"receiveCursor", settings.receiveCursorSync()},
@@ -452,6 +455,11 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
     {
       settings.setLayoutTabPlacement(*parsed);
     }
+    if (const auto showTimeControls = interface->find("showGlobalTimeControls");
+        showTimeControls != interface->end() && showTimeControls->is_boolean())
+    {
+      settings.setShowGlobalTimeControls(showTimeControls->get<bool>());
+    }
   }
 
   if (const auto views = root.find("views"); views != root.end() && views->is_object()) {
@@ -481,6 +489,7 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
     if (const auto labels = views->find("anatomicalLabels"); labels != views->end() && labels->is_object()) {
       setVec4FromJson(renderPreferences.anatomicalLabelColor, *labels, "color");
       setEnumFromJson(renderPreferences.anatomicalLabelType, *labels, "type", sk_anatomicalLabelNames);
+      setFloatFromJson(renderPreferences.anatomicalLabelScale, *labels, "scale", 0.5f, 2.0f);
     }
     if (const auto scaleBars = views->find("scaleBars"); scaleBars != views->end() && scaleBars->is_object()) {
       setFromJson(renderPreferences.showScaleBars, *scaleBars, "show");
@@ -737,6 +746,14 @@ void applyJson(AppSettings& settings, user_preferences::RenderPreferences& rende
   }
 
   if (const auto sync = root.find("synchronization"); sync != root.end() && sync->is_object()) {
+    if (const auto timeSeries = sync->find("timeSeries"); timeSeries != sync->end() && timeSeries->is_object()) {
+      if (const auto value = timeSeries->find("synchronizeTimePoints");
+          value != timeSeries->end() && value->is_boolean())
+      {
+        settings.setSynchronizeTimeSeries(value->get<bool>());
+      }
+    }
+
     const auto applyItkSnapSync = [&settings](const json& object) {
       if (const auto value = object.find("enabled"); value != object.end() && value->is_boolean()) {
         settings.setCursorSyncEnabled(value->get<bool>());

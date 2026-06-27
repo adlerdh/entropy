@@ -1,0 +1,16 @@
+{
+  "output": "18_scalar_3d_time_pulsing_gaussian.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "components": 1,
+  "size": [48, 48, 24, 12],
+  "spacing": [0.8, 0.8, 1.6, 0.25],
+  "origin": [-19.2, -19.2, -19.2, 0.0],
+  "pattern": "pulsing_gaussian",
+  "amplitude": 200.0,
+  "metadata": {
+    "entropy_time_axis": "last",
+    "entropy_time_units": "sec",
+    "entropy_example": "3D scalar time series with a pulsing Gaussian blob"
+  }
+}

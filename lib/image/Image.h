@@ -6,6 +6,7 @@
 #include "image/ImageHeaderOverrides.h"
 #include "image/ImageIoInfo.h"
 #include "image/ImageSettings.h"
+#include "image/ImageTimeAxis.h"
 #include "image/ImageTransformations.h"
 #include "image/ImageTypes.h"
 #include "image/external/TDigest.h"
@@ -76,7 +77,8 @@ public:
     const std::string& displayName,
     const ImageRepresentation& imageRep,
     const MultiComponentBufferType& bufferType,
-    const std::vector<const void*>& imageDataComponents);
+    const std::vector<const void*>& imageDataComponents,
+    ImageTimeAxis timeAxis = {});
 
   Image(const Image&) = default;
   Image& operator=(const Image&) = default;
@@ -122,10 +124,10 @@ public:
    * header().componentType().
    * @note A scalar image has a single component (0)
    */
-  const void* bufferAsVoid(uint32_t component) const;
+  const void* bufferAsVoid(uint32_t component, uint32_t timePoint = 0) const;
 
   /// @brief Get a non-const void pointer to the raw buffer data of an image component.
-  void* bufferAsVoid(uint32_t component);
+  void* bufferAsVoid(uint32_t component, uint32_t timePoint = 0);
 
   /** @brief Get a const void pointer to the sorted buffer data of an image component.
    *  @param[in] component Image component to get
@@ -143,13 +145,13 @@ public:
   /// @param index Linear pixel index in x-fastest order.
   /// @return The converted value, or std::nullopt for an invalid index/component/type.
   template<typename T>
-  std::optional<T> value(uint32_t component, std::size_t index) const
+  std::optional<T> value(uint32_t component, std::size_t index, uint32_t timePoint = 0) const
   {
     if (index >= m_header.numPixels()) {
       return std::nullopt;
     }
 
-    const auto compAndOffset = getComponentAndOffsetForBuffer(component, index);
+    const auto compAndOffset = getComponentAndOffsetForBuffer(component, index, timePoint);
     if (!compAndOffset) {
       return std::nullopt;
     }
@@ -181,7 +183,7 @@ public:
   /// @tparam T Requested return type. The stored component value is cast to this type.
   /// @return The converted value, or std::nullopt when the index is outside the image.
   template<typename T>
-  std::optional<T> value(uint32_t component, int i, int j, int k) const
+  std::optional<T> value(uint32_t component, int i, int j, int k, uint32_t timePoint = 0) const
   {
     const glm::u64vec3& dims = m_header.pixelDimensions();
 
@@ -195,7 +197,7 @@ public:
     const std::size_t index = dims.x * dims.y * static_cast<std::size_t>(k) + dims.x * static_cast<std::size_t>(j) +
                               static_cast<std::size_t>(i);
 
-    return value<T>(component, index);
+    return value<T>(component, index, timePoint);
   }
 
   /// @brief Linearly sample a component at continuous 3D image coordinates.
@@ -206,7 +208,7 @@ public:
   /// @tparam T Requested return type.
   /// @return The interpolated value, or std::nullopt when the coordinate/component cannot be read.
   template<typename T>
-  std::optional<T> valueLinear(uint32_t comp, double i, double j, double k) const
+  std::optional<T> valueLinear(uint32_t comp, double i, double j, double k, uint32_t timePoint = 0) const
   {
     const glm::dvec3 ZERO{0.0};
     const glm::dvec3 ONE{1.0};
@@ -227,14 +229,14 @@ public:
     const int fy = static_cast<int>(f.y);
     const int fz = static_cast<int>(f.z);
 
-    const auto c000 = value<double>(comp, fx + 0, fy + 0, fz + 0);
-    const auto c001 = value<double>(comp, fx + 0, fy + 0, fz + 1);
-    const auto c010 = value<double>(comp, fx + 0, fy + 1, fz + 0);
-    const auto c011 = value<double>(comp, fx + 0, fy + 1, fz + 1);
-    const auto c100 = value<double>(comp, fx + 1, fy + 0, fz + 0);
-    const auto c101 = value<double>(comp, fx + 1, fy + 0, fz + 1);
-    const auto c110 = value<double>(comp, fx + 1, fy + 1, fz + 0);
-    const auto c111 = value<double>(comp, fx + 1, fy + 1, fz + 1);
+    const auto c000 = value<double>(comp, fx + 0, fy + 0, fz + 0, timePoint);
+    const auto c001 = value<double>(comp, fx + 0, fy + 0, fz + 1, timePoint);
+    const auto c010 = value<double>(comp, fx + 0, fy + 1, fz + 0, timePoint);
+    const auto c011 = value<double>(comp, fx + 0, fy + 1, fz + 1, timePoint);
+    const auto c100 = value<double>(comp, fx + 1, fy + 0, fz + 0, timePoint);
+    const auto c101 = value<double>(comp, fx + 1, fy + 0, fz + 1, timePoint);
+    const auto c110 = value<double>(comp, fx + 1, fy + 1, fz + 0, timePoint);
+    const auto c111 = value<double>(comp, fx + 1, fy + 1, fz + 1, timePoint);
 
     const glm::dvec3 diff = coordClamped - glm::floor(coordClamped);
 
@@ -477,6 +479,12 @@ public:
   /// @brief Get mutable access to the image header.
   ImageHeader& header();
 
+  /// @brief Return true when this image has more than one time point.
+  bool isTimeSeries() const;
+
+  /// @brief Get time-axis metadata.
+  const ImageTimeAxis& timeAxis() const;
+
   /// @brief Get read-only access to affine and display transformations associated with the image.
   const ImageTransformations& transformations() const;
 
@@ -516,8 +524,8 @@ private:
     const;
 
   /// @brief Map a logical component and linear pixel index to an owned buffer index and element offset.
-  std::optional<std::pair<std::size_t, std::size_t>> getComponentAndOffsetForBuffer(uint32_t comp, std::size_t index)
-    const;
+  std::optional<std::pair<std::size_t, std::size_t>>
+  getComponentAndOffsetForBuffer(uint32_t comp, std::size_t index, uint32_t timePoint = 0) const;
 
   /**
    * @remark If the image has a multi-component pixels and m_bufferType ==
@@ -557,6 +565,7 @@ private:
 
   ImageIoInfo m_ioInfoOnDisk;   //!< Info about image as stored on disk
   ImageIoInfo m_ioInfoInMemory; //!< Info about image as loaded into memory
+  ImageTimeAxis m_timeAxis;     //!< Time-axis metadata.
 
   ImageHeader m_header;
   ImageHeaderOverrides m_headerOverrides;

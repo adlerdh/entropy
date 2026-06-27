@@ -625,6 +625,13 @@ void renderDicomSeriesSelectionPopup(
         ImGui::TextWrapped("Study UID: %s", series.metadata.studyInstanceUid.c_str());
         ImGui::TextWrapped("Series UID: %s", series.seriesInstanceUid.c_str());
         ImGui::Text("Slices: %zu", series.files.size());
+        if (series.temporal.isTimeSeries()) {
+          ImGui::Text(
+            "Time frames: %u (spacing %.6g %s)",
+            series.temporal.numTimePoints,
+            series.temporal.spacing,
+            series.temporal.units.c_str());
+        }
         ImGui::Separator();
 
         const float metadataFooterHeight = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;

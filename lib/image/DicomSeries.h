@@ -60,6 +60,20 @@ struct SeriesMetadata
 };
 
 /**
+ * @brief Temporal metadata for DICOM cine or multiframe image data.
+ */
+struct SeriesTemporalInfo
+{
+  uint32_t numTimePoints = 1;  //!< Number of temporal frames.
+  double spacing = 1.0;        //!< Time spacing between frames.
+  std::string units = "frame"; //!< Time units.
+  bool multiframe = false;     //!< True when frames are encoded in one DICOM object.
+
+  /// @brief Return whether the series should be treated as a time series.
+  bool isTimeSeries() const;
+};
+
+/**
  * @brief Small grayscale preview of one representative DICOM slice.
  */
 struct SlicePreview
@@ -88,6 +102,7 @@ struct SeriesInfo
   std::vector<std::filesystem::path> files;
   SeriesGeometry geometry;
   SeriesMetadata metadata;
+  SeriesTemporalInfo temporal;
   std::vector<MetadataEntry> metadataSummary;
   std::vector<std::string> warnings;
 

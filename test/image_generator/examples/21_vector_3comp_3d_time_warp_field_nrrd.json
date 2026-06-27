@@ -1,0 +1,16 @@
+{
+  "output": "21_vector_3comp_3d_time_warp_field.nrrd",
+  "pixel_kind": "vector",
+  "component_type": "float",
+  "components": 3,
+  "size": [40, 40, 24, 12],
+  "spacing": [1.0, 1.0, 1.5, 0.25],
+  "origin": [-20.0, -20.0, -18.0, 0.0],
+  "pattern": "time_varying_warp_field",
+  "amplitude": 6.0,
+  "metadata": {
+    "entropy_time_axis": "last",
+    "entropy_time_units": "sec",
+    "entropy_example": "3-component 3D time-varying warp field with pulsing expansion and twist"
+  }
+}

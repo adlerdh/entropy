@@ -195,6 +195,26 @@ void AppSettings::setLayoutTabPlacement(UiLayoutTabPlacement placement)
   m_layoutTabPlacement = placement;
 }
 
+bool AppSettings::showGlobalTimeControls() const
+{
+  return m_showGlobalTimeControls;
+}
+
+void AppSettings::setShowGlobalTimeControls(bool show)
+{
+  m_showGlobalTimeControls = show;
+}
+
+bool AppSettings::synchronizeTimeSeries() const
+{
+  return m_synchronizeTimeSeries;
+}
+
+void AppSettings::setSynchronizeTimeSeries(bool synchronize)
+{
+  m_synchronizeTimeSeries = synchronize;
+}
+
 void AppSettings::setForegroundLabel(std::size_t label, const ParcellationLabelTable& activeLabelTable)
 {
   const auto oldForegroundLabel = m_foregroundLabel;

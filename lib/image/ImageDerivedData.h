@@ -71,10 +71,14 @@ bool isScalarComponentProjection(ComponentProjectionMode mode);
  * @param image Three-component vector-field image.
  * @param mode Vector derivative projection to compute.
  * @param voxel Voxel coordinate where the value is sampled.
+ * @param timePoint Source image time point.
  * @return Projection value, or std::nullopt when the image, mode, or voxel is invalid.
  */
-std::optional<double>
-vectorDerivativeProjectionValue(const Image& image, ComponentProjectionMode mode, const glm::uvec3& voxel);
+std::optional<double> vectorDerivativeProjectionValue(
+  const Image& image,
+  ComponentProjectionMode mode,
+  const glm::uvec3& voxel,
+  uint32_t timePoint = 0);
 
 /**
  * @brief Return whether the image is a two-component complex-valued image.
@@ -162,8 +166,8 @@ std::vector<DistanceMapImageResult> createDistanceMapImages(const Image& image, 
  * @brief Create a scalar image by projecting each pixel's component vector.
  * @param image Source multi-component image.
  * @param mode Projection to compute across components at each pixel.
+ * @param timePoint Source image time point.
  * @return Derived Float32 scalar image, or an error explaining why it cannot be created.
  */
-entropy_expected::expected<Image, std::string> createComponentProjectionImage(
-  const Image& image,
-  ComponentProjectionMode mode);
+entropy_expected::expected<Image, std::string>
+createComponentProjectionImage(const Image& image, ComponentProjectionMode mode, uint32_t timePoint = 0);

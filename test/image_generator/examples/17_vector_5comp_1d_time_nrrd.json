@@ -1,0 +1,15 @@
+{
+  "output": "17_vector_5comp_1d_time.nrrd",
+  "pixel_kind": "vector",
+  "component_type": "float",
+  "components": 5,
+  "size": [48, 9],
+  "spacing": [0.8, 0.5],
+  "origin": [-19.2, 0.0],
+  "pattern": "component_ramp",
+  "metadata": {
+    "entropy_time_axis": "last",
+    "entropy_time_units": "frame",
+    "entropy_example": "5-component 1D vector time series"
+  }
+}

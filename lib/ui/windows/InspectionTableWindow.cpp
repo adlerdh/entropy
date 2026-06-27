@@ -54,110 +54,33 @@ enum class InspectorColumn : int
   Region,
   Voxel,
   Subject,
+  TimeFrame,
+  TimeValue,
   Count
 };
 
 constexpr std::size_t sk_inspectorColumnCount = static_cast<std::size_t>(InspectorColumn::Count);
 
 constexpr std::array<const char*, sk_inspectorColumnCount> sk_inspectorColumnNames{
-  "Image",
-  "Value",
-  "Value (interp.)",
-  "Percentile",
-  "Real",
-  "Imaginary",
-  "Phase",
-  "Minimum",
-  "Mean",
-  "Maximum",
-  "Magnitude",
-  "Jacobian Det.",
-  "Curl Mag.",
-  "Divergence",
-  "Label",
-  "Region",
-  "Voxel",
-  "Subject (mm)"};
+  "Image",   "Value",  "Value (interp.)", "Percentile",   "Real",          "Imaginary", "Phase",
+  "Minimum", "Mean",   "Maximum",         "Magnitude",    "Jacobian Det.", "Curl Mag.", "Divergence",
+  "Label",   "Region", "Voxel",           "Subject (mm)", "Time frame",    "Time"};
 
 constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnMinWidths{
-  120.0f,
-  64.0f,
-  72.0f,
-  78.0f,
-  64.0f,
-  82.0f,
-  72.0f,
-  78.0f,
-  64.0f,
-  78.0f,
-  88.0f,
-  108.0f,
-  90.0f,
-  94.0f,
-  48.0f,
-  72.0f,
-  96.0f,
-  148.0f};
+  120.0f, 64.0f,  72.0f, 78.0f, 64.0f, 82.0f, 72.0f, 78.0f,  64.0f, 78.0f,
+  88.0f,  108.0f, 90.0f, 94.0f, 48.0f, 72.0f, 96.0f, 148.0f, 82.0f, 64.0f};
 
 constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnDefaultWidths{
-  150.0f,
-  82.0f,
-  122.0f,
-  100.0f,
-  82.0f,
-  112.0f,
-  96.0f,
-  96.0f,
-  82.0f,
-  96.0f,
-  108.0f,
-  122.0f,
-  104.0f,
-  112.0f,
-  62.0f,
-  140.0f,
-  125.0f,
-  210.0f};
+  150.0f, 82.0f,  122.0f, 100.0f, 82.0f, 112.0f, 96.0f,  96.0f,  82.0f, 96.0f,
+  108.0f, 122.0f, 104.0f, 112.0f, 62.0f, 140.0f, 125.0f, 210.0f, 96.0f, 82.0f};
 
 constexpr std::array<float, sk_inspectorColumnCount> k_inspectorColumnMaxWidths{
-  280.0f,
-  110.0f,
-  130.0f,
-  115.0f,
-  110.0f,
-  130.0f,
-  120.0f,
-  115.0f,
-  110.0f,
-  115.0f,
-  125.0f,
-  140.0f,
-  120.0f,
-  130.0f,
-  72.0f,
-  180.0f,
-  150.0f,
-  230.0f};
+  280.0f, 110.0f, 130.0f, 115.0f, 110.0f, 130.0f, 120.0f, 115.0f, 110.0f, 115.0f,
+  125.0f, 140.0f, 120.0f, 130.0f, 72.0f,  180.0f, 150.0f, 230.0f, 120.0f, 110.0f};
 
-constexpr std::array<bool, sk_inspectorColumnCount> sk_inspectorColumnCanHide{
-  false,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true};
+constexpr std::array<bool, sk_inspectorColumnCount> sk_inspectorColumnCanHide{false, true, true, true, true, true, true,
+                                                                              true,  true, true, true, true, true, true,
+                                                                              true,  true, true, true, true, true};
 
 constexpr int columnIndex(InspectorColumn column)
 {
@@ -216,6 +139,61 @@ bool hasVectorFieldImage(const AppData& appData)
   return false;
 }
 
+bool hasTimeSeriesImage(const AppData& appData)
+{
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
+    const Image* image = appData.image(imageUid);
+    if (image && image->isTimeSeries()) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+std::optional<uint32_t> timeFrameValue(const Image& image)
+{
+  if (!image.isTimeSeries()) {
+    return std::nullopt;
+  }
+
+  return image.timeAxis().clamp(image.settings().activeTimePoint());
+}
+
+std::optional<double> timeValue(const Image& image)
+{
+  if (const std::optional<uint32_t> timePoint = timeFrameValue(image)) {
+    return image.timeAxis().value(*timePoint);
+  }
+
+  return std::nullopt;
+}
+
+std::string timeValueColumnName(const AppData& appData)
+{
+  std::optional<std::string> units;
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
+    const Image* image = appData.image(imageUid);
+    if (!image || !image->isTimeSeries()) {
+      continue;
+    }
+
+    const std::string& imageUnits = image->timeAxis().units();
+    if (!units) {
+      units = imageUnits;
+      continue;
+    }
+    if (*units != imageUnits) {
+      return "Time";
+    }
+  }
+
+  if (units && !units->empty()) {
+    return "Time (" + *units + ")";
+  }
+  return "Time";
+}
+
 bool usesGlobalImageVisibilityControl(const Image& image)
 {
   return image.header().numComponentsPerPixel() > 1 &&
@@ -246,6 +224,8 @@ bool isComponentProjectionColumn(InspectorColumn column)
     case InspectorColumn::Magnitude:
       return true;
     case InspectorColumn::Image:
+    case InspectorColumn::TimeFrame:
+    case InspectorColumn::TimeValue:
     case InspectorColumn::Value:
     case InspectorColumn::InterpolatedValue:
     case InspectorColumn::Percentile:
@@ -274,6 +254,8 @@ bool isVectorDerivativeColumn(InspectorColumn column)
     case InspectorColumn::Divergence:
       return true;
     case InspectorColumn::Image:
+    case InspectorColumn::TimeFrame:
+    case InspectorColumn::TimeValue:
     case InspectorColumn::Value:
     case InspectorColumn::InterpolatedValue:
     case InspectorColumn::Percentile:
@@ -303,6 +285,8 @@ bool isComplexColumn(InspectorColumn column)
     case InspectorColumn::Phase:
       return true;
     case InspectorColumn::Image:
+    case InspectorColumn::TimeFrame:
+    case InspectorColumn::TimeValue:
     case InspectorColumn::Value:
     case InspectorColumn::InterpolatedValue:
     case InspectorColumn::Percentile:
@@ -342,6 +326,8 @@ std::optional<double> complexColumnValue(InspectorColumn column, const Image& im
         image.settings().complexPhaseRange(),
         image.settings().complexPhaseUnit());
     case InspectorColumn::Image:
+    case InspectorColumn::TimeFrame:
+    case InspectorColumn::TimeValue:
     case InspectorColumn::Value:
     case InspectorColumn::InterpolatedValue:
     case InspectorColumn::Percentile:
@@ -401,6 +387,8 @@ std::optional<double> componentProjectionValue(InspectorColumn column, const std
     case InspectorColumn::Magnitude:
       return std::sqrt(sumSquares);
     case InspectorColumn::Image:
+    case InspectorColumn::TimeFrame:
+    case InspectorColumn::TimeValue:
     case InspectorColumn::Value:
     case InspectorColumn::InterpolatedValue:
     case InspectorColumn::Percentile:
@@ -435,15 +423,22 @@ vectorDerivativeColumnValue(InspectorColumn column, const Image& image, const st
     static_cast<uint32_t>(voxelPos->x),
     static_cast<uint32_t>(voxelPos->y),
     static_cast<uint32_t>(voxelPos->z)};
+  const uint32_t timePoint = image.timeAxis().clamp(image.settings().activeTimePoint());
 
   switch (column) {
     case InspectorColumn::JacobianDeterminant:
-      return vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorJacobianDeterminant, voxel);
+      return vectorDerivativeProjectionValue(
+        image,
+        ComponentProjectionMode::VectorJacobianDeterminant,
+        voxel,
+        timePoint);
     case InspectorColumn::CurlMagnitude:
-      return vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorCurlMagnitude, voxel);
+      return vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorCurlMagnitude, voxel, timePoint);
     case InspectorColumn::Divergence:
-      return vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorDivergence, voxel);
+      return vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorDivergence, voxel, timePoint);
     case InspectorColumn::Image:
+    case InspectorColumn::TimeFrame:
+    case InspectorColumn::TimeValue:
     case InspectorColumn::Value:
     case InspectorColumn::InterpolatedValue:
     case InspectorColumn::Percentile:
@@ -480,6 +475,10 @@ float clampInspectionColumnWidth(InspectorColumn column, float width)
 const char* inspectionColumnTooltip(InspectorColumn column)
 {
   switch (column) {
+    case InspectorColumn::TimeFrame:
+      return "Displayed time frame index";
+    case InspectorColumn::TimeValue:
+      return "Physical time value for the displayed frame";
     case InspectorColumn::Value:
       return "Nearest image voxel value";
     case InspectorColumn::InterpolatedValue:
@@ -560,9 +559,20 @@ void renderInspectionWindowWithTable(
   static bool s_showTitleBar = false;
   static bool s_autoSizeColumnsRequested = false;
   static std::array<bool, sk_inspectorColumnCount> s_autoSizeColumnRequested{};
+  static bool s_hadTimeSeriesColumnAvailable = false;
+  const bool canShowTimeFrameColumn = hasTimeSeriesImage(appData);
   const bool canShowComponentProjectionColumns = hasMultiComponentImage(appData);
   const bool canShowComplexColumns = hasComplexValuedImage(appData);
   const bool canShowVectorDerivativeColumns = hasVectorFieldImage(appData);
+
+  if (canShowTimeFrameColumn && !s_hadTimeSeriesColumnAvailable) {
+    appData.guiData().m_inspectionColumnVisible.at(columnIndex(InspectorColumn::TimeFrame)) = true;
+    appData.guiData().m_inspectionColumnVisible.at(columnIndex(InspectorColumn::TimeValue)) = true;
+    s_autoSizeColumnRequested.at(columnIndex(InspectorColumn::TimeFrame)) = true;
+    s_autoSizeColumnRequested.at(columnIndex(InspectorColumn::TimeValue)) = true;
+  }
+  s_hadTimeSeriesColumnAvailable = canShowTimeFrameColumn;
+  const std::string timeValueHeader = timeValueColumnName(appData);
 
   // For which images to show coordinates?
   static std::unordered_map<uuid, bool> s_showSubject;
@@ -577,6 +587,8 @@ void renderInspectionWindowWithTable(
   }
 
   auto renderColumnVisibilityItems = [&appData,
+                                      &timeValueHeader,
+                                      canShowTimeFrameColumn,
                                       canShowComponentProjectionColumns,
                                       canShowComplexColumns,
                                       canShowVectorDerivativeColumns]() {
@@ -587,6 +599,13 @@ void renderInspectionWindowWithTable(
 
     for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
       const auto inspectorColumn = static_cast<InspectorColumn>(column);
+      if (
+        (InspectorColumn::TimeFrame == inspectorColumn || InspectorColumn::TimeValue == inspectorColumn) &&
+        !canShowTimeFrameColumn)
+      {
+        appData.guiData().m_inspectionColumnVisible.at(column) = false;
+        continue;
+      }
       if (isComponentProjectionColumn(inspectorColumn) && !canShowComponentProjectionColumns) {
         appData.guiData().m_inspectionColumnVisible.at(column) = false;
         continue;
@@ -604,8 +623,11 @@ void renderInspectionWindowWithTable(
       if (!sk_inspectorColumnCanHide.at(column)) {
         ImGui::BeginDisabled();
       }
-      if (ImGui::MenuItem(sk_inspectorColumnNames.at(column), nullptr, visible) && sk_inspectorColumnCanHide.at(column))
-      {
+      const char* columnName = sk_inspectorColumnNames.at(column);
+      if (InspectorColumn::TimeValue == inspectorColumn) {
+        columnName = timeValueHeader.c_str();
+      }
+      if (ImGui::MenuItem(columnName, nullptr, visible) && sk_inspectorColumnCanHide.at(column)) {
         const bool newVisible = !visible;
         appData.guiData().m_inspectionColumnVisible.at(column) = newVisible;
         if (newVisible) {
@@ -706,6 +728,8 @@ void renderInspectionWindowWithTable(
       widths[index] = std::max(widths[index], inspectionColumnWidthForText(text));
     };
 
+    expandWidth(InspectorColumn::TimeFrame, "000");
+    expandWidth(InspectorColumn::TimeValue, "-0000.000");
     expandWidth(InspectorColumn::Value, "-0000.000");
     expandWidth(InspectorColumn::InterpolatedValue, "-0000.000");
     expandWidth(InspectorColumn::Percentile, "100.00");
@@ -725,6 +749,11 @@ void renderInspectionWindowWithTable(
 
       const Image* image = appData.image(*imageUid);
       if (!image) continue;
+
+      if (image->isTimeSeries()) {
+        expandWidth(InspectorColumn::TimeFrame, "000");
+        expandWidth(InspectorColumn::TimeValue, "-0000.000");
+      }
 
       if (image->header().numComponentsPerPixel() > 1) {
         expandWidth(InspectorColumn::Value, "-0000.000, -0000.000, -0000.000");
@@ -917,6 +946,18 @@ void renderInspectionWindowWithTable(
         ImGuiTableColumnFlags_WidthFixed,
         inspectorColumnWidths.at(columnIndex(InspectorColumn::Subject)));
 
+      const ImGuiTableColumnFlags timeFrameColumnFlags =
+        ImGuiTableColumnFlags_WidthFixed |
+        (canShowTimeFrameColumn ? ImGuiTableColumnFlags_None : ImGuiTableColumnFlags_Disabled);
+      ImGui::TableSetupColumn(
+        sk_inspectorColumnNames.at(columnIndex(InspectorColumn::TimeFrame)),
+        timeFrameColumnFlags,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::TimeFrame)));
+      ImGui::TableSetupColumn(
+        timeValueHeader.c_str(),
+        timeFrameColumnFlags,
+        inspectorColumnWidths.at(columnIndex(InspectorColumn::TimeValue)));
+
       for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
         ImGui::TableSetColumnEnabled(
           static_cast<int>(column),
@@ -945,7 +986,11 @@ void renderInspectionWindowWithTable(
 
       for (std::size_t column = 0; column < sk_inspectorColumnNames.size(); ++column) {
         ImGui::TableSetColumnIndex(static_cast<int>(column));
-        ImGui::TableHeader(sk_inspectorColumnNames.at(column));
+        const char* columnName = sk_inspectorColumnNames.at(column);
+        if (InspectorColumn::TimeValue == static_cast<InspectorColumn>(column)) {
+          columnName = timeValueHeader.c_str();
+        }
+        ImGui::TableHeader(columnName);
 
         const char* tooltip = inspectionColumnTooltip(static_cast<InspectorColumn>(column));
         if (tooltip && ImGui::IsItemHovered()) {
@@ -1394,6 +1439,46 @@ void renderInspectionWindowWithTable(
         else {
           ImGui::TableNextColumn(); // "Subject LPS"
           ImGui::Text("<N/A>");
+        }
+
+        ImGui::TableNextColumn(); // "Time frame"
+        if (const std::optional<uint32_t> timeFrame = timeFrameValue(*image)) {
+          static constexpr uint32_t k_minTimeFrame = 0;
+          const uint32_t maxTimeFrame = image->timeAxis().numTimePoints() - 1u;
+          uint32_t value = *timeFrame;
+
+          ImGui::PushItemWidth(-1);
+          if (ImGui::DragScalar("##timeFrame", ImGuiDataType_U32, &value, 1.0f, &k_minTimeFrame, &maxTimeFrame, "%u")) {
+            const uint32_t requestedTimeFrame = image->timeAxis().clamp(value);
+            if (requestedTimeFrame != image->settings().activeTimePoint()) {
+              image->settings().setActiveTimePoint(requestedTimeFrame);
+              if (updateImageUniforms) {
+                updateImageUniforms(*imageUid);
+              }
+            }
+          }
+          ImGui::PopItemWidth();
+        }
+        else {
+          ImGui::TextUnformatted("N/A");
+        }
+
+        ImGui::TableNextColumn(); // "Time"
+        if (const std::optional<double> time = timeValue(*image)) {
+          double value = *time;
+          ImGui::PushItemWidth(-1);
+          ImGui::InputScalar(
+            "##timeValue",
+            ImGuiDataType_Double,
+            &value,
+            nullptr,
+            nullptr,
+            appData.guiData().m_imageValuePrecisionFormat.c_str(),
+            ImGuiInputTextFlags_ReadOnly);
+          ImGui::PopItemWidth();
+        }
+        else {
+          ImGui::TextUnformatted("N/A");
         }
 
         ImGui::PopID(); /** PopID: imageIndex **/

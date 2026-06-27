@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 #include <vector>
 
 namespace
@@ -46,6 +47,63 @@ constexpr float viewAABBoxScaleFactor = 1.10f;
 constexpr float parallelThreshold_degrees = 0.1f;
 
 constexpr float imageFrontBackTranslationScaleFactor = 10.0f;
+
+std::pair<std::optional<uuid>, Image*> targetTimeSeriesImage(AppData& appData)
+{
+  auto targetUid = appData.activeImageUid();
+  Image* targetImage = targetUid ? appData.image(*targetUid) : nullptr;
+  if (targetImage && targetImage->isTimeSeries()) {
+    return {targetUid, targetImage};
+  }
+
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
+    Image* image = appData.image(imageUid);
+    if (image && image->isTimeSeries()) {
+      return {imageUid, image};
+    }
+  }
+  return {std::nullopt, nullptr};
+}
+
+void setTimePoint(AppData& appData, const uuid& imageUid, Image& image, uint32_t timePoint)
+{
+  const uint32_t clamped = image.timeAxis().clamp(timePoint);
+  if (image.settings().activeTimePoint() == clamped) {
+    return;
+  }
+  image.settings().setActiveTimePoint(clamped);
+  appData.renderData().m_imageTextures.erase(imageUid);
+  createImageTextures(appData, std::vector<uuid>{imageUid});
+}
+
+void setTimePointWithSynchronization(AppData& appData, const uuid& imageUid, Image& image, uint32_t timePoint)
+{
+  setTimePoint(appData, imageUid, image, timePoint);
+  if (!appData.settings().synchronizeTimeSeries()) {
+    return;
+  }
+
+  for (const auto& otherUid : appData.imageUidsOrdered()) {
+    if (otherUid == imageUid) {
+      continue;
+    }
+    Image* other = appData.image(otherUid);
+    if (other && other->isTimeSeries()) {
+      setTimePoint(appData, otherUid, *other, timePoint);
+    }
+  }
+}
+
+bool anyTimeSeriesPlaybackRunning(const AppData& appData)
+{
+  for (const auto& imageUid : appData.imageUidsOrdered()) {
+    const Image* image = appData.image(imageUid);
+    if (image && image->isTimeSeries() && image->settings().timePlaybackPlaying()) {
+      return true;
+    }
+  }
+  return false;
+}
 } // namespace
 
 CallbackHandler::CallbackHandler(AppData& appData, GlfwWrapper& glfwWrapper, Rendering& rendering)
@@ -1968,6 +2026,51 @@ void CallbackHandler::cycleActiveImage(int i)
   }
 
   m_appData.setActiveImageUid(*newImageUid);
+}
+
+void CallbackHandler::cycleTimePoint(int i)
+{
+  auto [targetUid, targetImage] = targetTimeSeriesImage(m_appData);
+
+  if (!targetUid || !targetImage) {
+    return;
+  }
+
+  const int numTimePoints = static_cast<int>(targetImage->timeAxis().numTimePoints());
+  const int activeTimePoint = static_cast<int>(targetImage->settings().activeTimePoint());
+  const uint32_t requestedTimePoint = static_cast<uint32_t>((numTimePoints + activeTimePoint + i) % numTimePoints);
+
+  setTimePointWithSynchronization(m_appData, *targetUid, *targetImage, requestedTimePoint);
+}
+
+void CallbackHandler::toggleTimePlayback()
+{
+  auto [targetUid, targetImage] = targetTimeSeriesImage(m_appData);
+  if (!targetUid || !targetImage) {
+    return;
+  }
+
+  const bool playing = !targetImage->settings().timePlaybackPlaying();
+  targetImage->settings().setTimePlaybackPlaying(playing);
+  m_appData.state().setAnimating(playing || anyTimeSeriesPlaybackRunning(m_appData));
+}
+
+void CallbackHandler::setTimePointToFirst()
+{
+  auto [targetUid, targetImage] = targetTimeSeriesImage(m_appData);
+  if (!targetUid || !targetImage) {
+    return;
+  }
+  setTimePointWithSynchronization(m_appData, *targetUid, *targetImage, 0u);
+}
+
+void CallbackHandler::setTimePointToLast()
+{
+  auto [targetUid, targetImage] = targetTimeSeriesImage(m_appData);
+  if (!targetUid || !targetImage) {
+    return;
+  }
+  setTimePointWithSynchronization(m_appData, *targetUid, *targetImage, targetImage->timeAxis().numTimePoints() - 1u);
 }
 
 /// @todo Put into DataHelper

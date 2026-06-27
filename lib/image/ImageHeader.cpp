@@ -21,7 +21,7 @@ ImageHeader::ImageHeader(const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioI
   , m_existsOnDisk(true)
 
   , m_fileName(ioInfoOnDisk.m_fileInfo.m_fileName)
-  , m_numComponentsPerPixel(ioInfoOnDisk.m_pixelInfo.m_numComponents)
+  , m_numComponentsPerPixel(ioInfoInMemory.m_pixelInfo.m_numComponents)
   , m_numPixels(ioInfoOnDisk.m_sizeInfo.m_imageSizeInPixels)
   , m_fileImageSizeInBytes(ioInfoOnDisk.m_sizeInfo.m_imageSizeInBytes)
   , m_memoryImageSizeInBytes(ioInfoInMemory.m_sizeInfo.m_imageSizeInBytes)
@@ -136,6 +136,8 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
   }
 
   m_pixelDimensions = glm::uvec3{dims[0], dims[1], dims[2]};
+  m_numPixels = static_cast<uint64_t>(m_pixelDimensions.x) * static_cast<uint64_t>(m_pixelDimensions.y) *
+                static_cast<uint64_t>(m_pixelDimensions.z);
 
   m_spacing =
     m_headerOverrides.m_useIdentityPixelSpacings ? glm::vec3(1.0f) : glm::vec3{spacing[0], spacing[1], spacing[2]};

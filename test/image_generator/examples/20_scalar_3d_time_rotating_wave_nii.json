@@ -1,0 +1,14 @@
+{
+  "output": "20_scalar_3d_time_rotating_wave.nii.gz",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "components": 1,
+  "size": [56, 56, 24, 14],
+  "spacing": [0.75, 0.75, 1.5, 0.1],
+  "origin": [-21.0, -21.0, -18.0, 0.0],
+  "pattern": "rotating_wave",
+  "amplitude": 120.0,
+  "metadata": {
+    "entropy_example": "3D scalar NIfTI time series with a rotating wave"
+  }
+}

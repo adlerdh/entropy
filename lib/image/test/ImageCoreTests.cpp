@@ -122,6 +122,60 @@ Image makeThreeComponentImage()
     buffers);
 }
 
+Image makeTimeSeriesVectorImage()
+{
+  const glm::uvec3 dims{2, 2, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 3, dims);
+  ImageHeader header(ioInfo, ioInfo, false);
+  const std::vector<float> c0{1.0f, 2.0f, 3.0f, 4.0f, 11.0f, 12.0f, 13.0f, 14.0f};
+  const std::vector<float> c1{5.0f, 6.0f, 7.0f, 8.0f, 15.0f, 16.0f, 17.0f, 18.0f};
+  const std::vector<float> c2{9.0f, 10.0f, 11.0f, 12.0f, 19.0f, 20.0f, 21.0f, 22.0f};
+  std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
+  return Image(
+    header,
+    "time-series-vector",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers,
+    ImageTimeAxis{2u, 0.0, 1.0, "sec"});
+}
+
+Image makeTimeSeriesLinearVectorField()
+{
+  const glm::uvec3 dims{3, 3, 3};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 3, dims);
+  ioInfo.m_spaceInfo.m_spacing = {2.0, 3.0, 4.0};
+  ImageHeader header(ioInfo, ioInfo, false);
+
+  std::vector<float> c0(2u * header.numPixels(), 0.0f);
+  std::vector<float> c1(2u * header.numPixels(), 0.0f);
+  std::vector<float> c2(2u * header.numPixels(), 0.0f);
+  for (uint32_t timePoint = 0; timePoint < 2u; ++timePoint) {
+    const float scale = static_cast<float>(timePoint + 1u);
+    for (uint32_t z = 0; z < dims.z; ++z) {
+      for (uint32_t y = 0; y < dims.y; ++y) {
+        for (uint32_t x = 0; x < dims.x; ++x) {
+          const std::size_t index = static_cast<std::size_t>(timePoint) * header.numPixels() +
+                                    static_cast<std::size_t>(dims.x) * dims.y * z +
+                                    static_cast<std::size_t>(dims.x) * y + x;
+          c0[index] = scale * 0.5f * static_cast<float>(x);
+          c1[index] = scale * (1.0f / 3.0f) * static_cast<float>(y);
+          c2[index] = scale * 0.25f * static_cast<float>(z);
+        }
+      }
+    }
+  }
+
+  std::vector<const void*> buffers{c0.data(), c1.data(), c2.data()};
+  return Image(
+    header,
+    "time-series-linear-vector-field",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers,
+    ImageTimeAxis{2u, 0.0, 1.0, "sec"});
+}
+
 Image makeLinearVectorField(const std::vector<std::vector<double>>& directions = {})
 {
   const glm::uvec3 dims{3, 3, 3};
@@ -660,6 +714,55 @@ TEST_CASE("Raw Image construction computes values, stats, and transformations", 
   CHECK(image.header().spacing() == glm::vec3(1.0f));
   image.setUseZeroPixelOrigin(true);
   CHECK(image.header().origin() == glm::vec3(0.0f));
+}
+
+TEST_CASE("Raw time-series vector images sample the requested time frame", "[image][raw][time][vector]")
+{
+  Image image = makeTimeSeriesVectorImage();
+
+  CHECK(image.isTimeSeries());
+  CHECK(image.value<double>(0, 0, 0).value() == Catch::Approx(1.0));
+  CHECK(image.value<double>(0, 0, 1).value() == Catch::Approx(11.0));
+  CHECK(image.valueLinear<double>(0, 0.5, 0.0, 0.0, 0).value() == Catch::Approx(1.5));
+  CHECK(image.valueLinear<double>(0, 0.5, 0.0, 0.0, 1).value() == Catch::Approx(11.5));
+  CHECK(image.valueLinear<double>(2, 1.0, 1.0, 0.0, 1).value() == Catch::Approx(22.0));
+}
+
+TEST_CASE("Component projections use the requested source time frame", "[image][derived][time][vector]")
+{
+  Image image = makeTimeSeriesVectorImage();
+
+  const auto magnitude0 = createComponentProjectionImage(image, ComponentProjectionMode::Magnitude, 0);
+  const auto magnitude1 = createComponentProjectionImage(image, ComponentProjectionMode::Magnitude, 1);
+  REQUIRE(magnitude0);
+  REQUIRE(magnitude1);
+
+  CHECK(magnitude0->value<double>(0, 0).value() == Catch::Approx(std::sqrt(1.0 * 1.0 + 5.0 * 5.0 + 9.0 * 9.0)));
+  CHECK(magnitude1->value<double>(0, 0).value() == Catch::Approx(std::sqrt(11.0 * 11.0 + 15.0 * 15.0 + 19.0 * 19.0)));
+}
+
+TEST_CASE("Vector derivative projections use the requested source time frame", "[image][derived][time][vector]")
+{
+  Image image = makeTimeSeriesLinearVectorField();
+  const glm::uvec3 centerVoxel{1u, 1u, 1u};
+
+  const double expectedJacobian0 = (1.0 + 0.25) * (1.0 + 1.0 / 9.0) * (1.0 + 0.0625);
+  const double expectedJacobian1 = (1.0 + 0.5) * (1.0 + 2.0 / 9.0) * (1.0 + 0.125);
+
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorJacobianDeterminant, centerVoxel, 0)
+      .value() == Catch::Approx(expectedJacobian0));
+  CHECK(
+    vectorDerivativeProjectionValue(image, ComponentProjectionMode::VectorJacobianDeterminant, centerVoxel, 1)
+      .value() == Catch::Approx(expectedJacobian1));
+
+  const auto jacobian0 = createComponentProjectionImage(image, ComponentProjectionMode::VectorJacobianDeterminant, 0);
+  const auto jacobian1 = createComponentProjectionImage(image, ComponentProjectionMode::VectorJacobianDeterminant, 1);
+  REQUIRE(jacobian0);
+  REQUIRE(jacobian1);
+
+  CHECK(jacobian0->value<double>(0, 13).value() == Catch::Approx(expectedJacobian0));
+  CHECK(jacobian1->value<double>(0, 13).value() == Catch::Approx(expectedJacobian1));
 }
 
 TEST_CASE("Raw interleaved images truncate to the first four components per pixel", "[image][raw][interleaved]")

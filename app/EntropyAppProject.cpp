@@ -458,6 +458,8 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
     return;
   }
 
+  spdlog::info("Opening project file {}", fileName);
+
   m_pendingProjectReplacementPaths = {fileName};
   if (requestProjectReplacement(GuiData::UnsavedProjectAction::OpenProject)) {
     return;
@@ -469,6 +471,8 @@ void EntropyApp::loadProjectFile(const fs::path& fileName)
 void EntropyApp::performLoadProjectFile(const fs::path& fileName)
 {
   serialize::EntropyProject project;
+
+  spdlog::info("Loading project file {}", fileName);
 
   if (!serialize::open(project, fileName)) {
     spdlog::error("Could not open project file {}", fileName);
@@ -510,6 +514,12 @@ void EntropyApp::clearPendingProjectReplacement()
 void EntropyApp::beginLoadProject(serialize::EntropyProject project, std::optional<fs::path> projectFileName)
 {
   closeProject();
+  if (projectFileName) {
+    spdlog::info("Beginning project load from {}", *projectFileName);
+  }
+  else {
+    spdlog::info("Beginning project load from image inputs");
+  }
   m_data.setProject(std::move(project));
   m_data.setProjectFileName(std::move(projectFileName));
   project_snapshot::applyInterfaceSettings(m_data, m_data.project().m_interface);

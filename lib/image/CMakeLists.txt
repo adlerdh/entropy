@@ -18,9 +18,11 @@ target_sources(EntropyImage PRIVATE
   ImageQuantiles.cpp
   ImageIoInfo.cpp
   ImageSettings.cpp
+  ImageTimeAxis.cpp
   ImageTransformations.cpp
   ImageUtility.cpp
   SegUtil.cpp
+  TimePlaybackController.cpp
 )
 
 target_include_directories(EntropyImage

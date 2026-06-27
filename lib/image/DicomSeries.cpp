@@ -22,6 +22,7 @@
 #include <limits>
 #include <set>
 #include <sstream>
+#include <type_traits>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
@@ -44,7 +45,7 @@ constexpr std::array<const char*, 9> sk_phiTags{
   "0008|1050"  // PerformingPhysicianName
 };
 
-constexpr std::array<const char*, 14> sk_summaryTags{
+constexpr std::array<const char*, 18> sk_summaryTags{
   "0008|0020", // StudyDate
   "0008|0030", // StudyTime
   "0008|0060", // Modality
@@ -58,7 +59,11 @@ constexpr std::array<const char*, 14> sk_summaryTags{
   "0020|000e", // SeriesInstanceUID
   "0020|0011", // SeriesNumber
   "0020|0032", // ImagePositionPatient
-  "0020|0037"  // ImageOrientationPatient
+  "0020|0037", // ImageOrientationPatient
+  "0028|0008", // NumberOfFrames
+  "0018|0040", // CineRate
+  "0018|1063", // FrameTime
+  "0018|1065"  // FrameTimeVector
 };
 
 const std::unordered_map<std::string, std::string>& metadataTagNames()
@@ -93,6 +98,7 @@ const std::unordered_map<std::string, std::string>& metadataTagNames()
     {"0018|0021", "Sequence Variant"},
     {"0018|0022", "Scan Options"},
     {"0018|0023", "MR Acquisition Type"},
+    {"0018|0040", "Cine Rate"},
     {"0018|0050", "Slice Thickness"},
     {"0018|0080", "Repetition Time"},
     {"0018|0081", "Echo Time"},
@@ -106,6 +112,8 @@ const std::unordered_map<std::string, std::string>& metadataTagNames()
     {"0018|0091", "Echo Train Length"},
     {"0018|1020", "Software Versions"},
     {"0018|1030", "Protocol Name"},
+    {"0018|1063", "Frame Time"},
+    {"0018|1065", "Frame Time Vector"},
     {"0018|1310", "Acquisition Matrix"},
     {"0018|1312", "In-plane Phase Encoding Direction"},
     {"0018|1314", "Flip Angle"},
@@ -122,6 +130,7 @@ const std::unordered_map<std::string, std::string>& metadataTagNames()
     {"0020|1041", "Slice Location"},
     {"0028|0002", "Samples per Pixel"},
     {"0028|0004", "Photometric Interpretation"},
+    {"0028|0008", "Number of Frames"},
     {"0028|0010", "Rows"},
     {"0028|0011", "Columns"},
     {"0028|0030", "Pixel Spacing"},
@@ -171,6 +180,25 @@ std::optional<glm::vec3> parseDicomVec3(std::string value)
   return std::nullopt;
 }
 
+std::optional<double> parseDicomDouble(std::string value)
+{
+  std::replace(value.begin(), value.end(), static_cast<char>(92), ' ');
+  std::istringstream stream(value);
+  double result = 0.0;
+  if (stream >> result) {
+    return result;
+  }
+  return std::nullopt;
+}
+
+std::optional<uint32_t> parseDicomUInt(std::string value)
+{
+  if (const auto parsed = parseDicomDouble(std::move(value)); parsed && *parsed >= 0.0) {
+    return static_cast<uint32_t>(*parsed);
+  }
+  return std::nullopt;
+}
+
 std::vector<dicom::RawMetadataEntry> rawMetadataEntries(const MetadataDictionary& dict)
 {
   std::vector<dicom::RawMetadataEntry> entries;
@@ -205,6 +233,30 @@ dicom::SeriesMetadata readSeriesMetadata(const MetadataDictionary& dict)
   metadata.seriesNumber = metadataValue(dict, "0020|0011");
   metadata.acquisitionDate = metadataValue(dict, "0008|0020");
   return metadata;
+}
+
+dicom::SeriesTemporalInfo readTemporalInfo(const MetadataDictionary& dict)
+{
+  dicom::SeriesTemporalInfo temporal;
+  if (const auto frames = parseDicomUInt(metadataValue(dict, "0028|0008")); frames && *frames > 1u) {
+    temporal.numTimePoints = *frames;
+    temporal.multiframe = true;
+  }
+
+  if (const auto frameTimeMs = parseDicomDouble(metadataValue(dict, "0018|1063")); frameTimeMs && *frameTimeMs > 0.0) {
+    temporal.spacing = *frameTimeMs;
+    temporal.units = "ms";
+  }
+  else if (const auto cineRate = parseDicomDouble(metadataValue(dict, "0018|0040")); cineRate && *cineRate > 0.0) {
+    temporal.spacing = 1.0 / *cineRate;
+    temporal.units = "sec";
+  }
+  else if (temporal.multiframe) {
+    temporal.spacing = 1.0;
+    temporal.units = "frame";
+  }
+
+  return temporal;
 }
 
 std::string sliceOrientationFromDirections(const glm::mat3& directions)
@@ -264,7 +316,10 @@ dicom::SeriesGeometry geometryFromImage(const typename itk::Image<T, 3>::Pointer
   return geometry;
 }
 
-std::vector<std::string> geometryWarnings(const dicom::SeriesGeometry& geometry, std::size_t fileCount)
+std::vector<std::string> geometryWarnings(
+  const dicom::SeriesGeometry& geometry,
+  std::size_t fileCount,
+  const dicom::SeriesTemporalInfo& temporal)
 {
   std::vector<std::string> warnings;
   if (geometry.dimensions.x == 0 || geometry.dimensions.y == 0 || geometry.dimensions.z == 0) {
@@ -273,7 +328,7 @@ std::vector<std::string> geometryWarnings(const dicom::SeriesGeometry& geometry,
   if (geometry.spacing.x <= 0.0f || geometry.spacing.y <= 0.0f || geometry.spacing.z <= 0.0f) {
     warnings.emplace_back("Image spacing is incomplete or non-positive");
   }
-  if (fileCount != 0 && geometry.dimensions.z != 0 && geometry.dimensions.z != fileCount) {
+  if (!temporal.multiframe && fileCount != 0 && geometry.dimensions.z != 0 && geometry.dimensions.z != fileCount) {
     warnings.emplace_back("Slice count does not match file count; this may be a multi-frame or irregular series");
   }
   return warnings;
@@ -427,8 +482,127 @@ bool isImageLikeModality(const std::string& modality)
 }
 
 template<typename T>
+ComponentType dicomComponentTypeFor()
+{
+  if constexpr (std::is_same_v<T, int8_t>) {
+    return ComponentType::Int8;
+  }
+  else if constexpr (std::is_same_v<T, uint8_t>) {
+    return ComponentType::UInt8;
+  }
+  else if constexpr (std::is_same_v<T, int16_t>) {
+    return ComponentType::Int16;
+  }
+  else if constexpr (std::is_same_v<T, uint16_t>) {
+    return ComponentType::UInt16;
+  }
+  else if constexpr (std::is_same_v<T, int32_t>) {
+    return ComponentType::Int32;
+  }
+  else if constexpr (std::is_same_v<T, uint32_t>) {
+    return ComponentType::UInt32;
+  }
+  else if constexpr (std::is_same_v<T, float>) {
+    return ComponentType::Float32;
+  }
+  else {
+    return ComponentType::Undefined;
+  }
+}
+
+template<typename T>
+ImageIoInfo dicomCineIoInfo(const typename itk::Image<T, 3>::Pointer image, const fs::path& fileName)
+{
+  const auto region = image->GetLargestPossibleRegion();
+  const auto size = region.GetSize();
+  const auto spacing = image->GetSpacing();
+  const auto origin = image->GetOrigin();
+  const auto direction = image->GetDirection();
+  const ComponentType componentType = dicomComponentTypeFor<T>();
+
+  ImageIoInfo info;
+  info.m_fileInfo.m_fileName = fileName;
+  info.m_componentInfo.m_componentType = componentType;
+  info.m_componentInfo.m_componentTypeString = componentTypeString(componentType);
+  info.m_componentInfo.m_componentSizeInBytes = sizeof(T);
+  info.m_pixelInfo.m_pixelType = PixelType::Scalar;
+  info.m_pixelInfo.m_pixelTypeString = "scalar";
+  info.m_pixelInfo.m_numComponents = 1u;
+  info.m_pixelInfo.m_pixelStrideInBytes = sizeof(T);
+
+  const std::size_t spatialPixels = static_cast<std::size_t>(size[0]) * static_cast<std::size_t>(size[1]);
+  info.m_sizeInfo.m_imageSizeInPixels = spatialPixels;
+  info.m_sizeInfo.m_imageSizeInComponents = spatialPixels;
+  info.m_sizeInfo.m_imageSizeInBytes = spatialPixels * sizeof(T);
+
+  info.m_spaceInfo.m_numDimensions = 3u;
+  info.m_spaceInfo.m_dimensions = {size[0], size[1], 1u};
+  info.m_spaceInfo.m_origin = {origin[0], origin[1], origin[2]};
+  info.m_spaceInfo.m_spacing = {spacing[0], spacing[1], 1.0};
+  info.m_spaceInfo.m_directions = {
+    {direction[0][0], direction[1][0], direction[2][0]},
+    {direction[0][1], direction[1][1], direction[2][1]},
+    {direction[0][2], direction[1][2], direction[2][2]}};
+
+  return info;
+}
+
+template<typename T>
+std::optional<Image> loadScalarMultiframeCineImage(const dicom::SeriesInfo& series)
+{
+  using ImageType = itk::Image<T, 3>;
+  using ReaderType = itk::ImageFileReader<ImageType>;
+
+  if (series.files.size() != 1u) {
+    return std::nullopt;
+  }
+
+  try {
+    auto imageIo = itk::GDCMImageIO::New();
+    auto reader = ReaderType::New();
+    reader->SetImageIO(imageIo);
+    reader->SetFileName(series.files.front().string());
+    reader->Update();
+
+    typename ImageType::Pointer itkImage = reader->GetOutput();
+    if (!itkImage) {
+      return std::nullopt;
+    }
+
+    const auto size = itkImage->GetLargestPossibleRegion().GetSize();
+    const uint32_t numFrames = std::max<uint32_t>(1u, static_cast<uint32_t>(size[2]));
+    ImageIoInfo info = dicomCineIoInfo<T>(itkImage, series.files.front());
+    info.m_timeInfo.m_numTimePoints = numFrames;
+    info.m_timeInfo.m_origin = 0.0;
+    info.m_timeInfo.m_spacing = series.temporal.spacing;
+    info.m_timeInfo.m_units = series.temporal.units;
+
+    ImageHeader header(info, info, false);
+    header.setFileName(series.files.front());
+    header.setExistsOnDisk(true);
+
+    Image image(
+      header,
+      series.displayName,
+      Image::ImageRepresentation::Image,
+      Image::MultiComponentBufferType::SeparateImages,
+      std::vector<const void*>{itkImage->GetBufferPointer()},
+      ImageTimeAxis(numFrames, 0.0, series.temporal.spacing, series.temporal.units));
+    return image;
+  }
+  catch (const std::exception& e) {
+    spdlog::error("Exception loading DICOM cine series {}: {}", series.seriesInstanceUid, e.what());
+    return std::nullopt;
+  }
+}
+
+template<typename T>
 std::optional<Image> loadScalarSeriesImage(const dicom::SeriesInfo& series)
 {
+  if (series.temporal.multiframe && series.files.size() == 1u) {
+    return loadScalarMultiframeCineImage<T>(series);
+  }
+
   using ImageType = itk::Image<T, 3>;
   using ReaderType = itk::ImageSeriesReader<ImageType>;
 
@@ -549,6 +723,11 @@ loadSlicePreviewImage(const fs::path& fileName, std::size_t sliceIndex, std::uin
 
 namespace dicom
 {
+bool SeriesTemporalInfo::isTimeSeries() const
+{
+  return numTimePoints > 1u;
+}
+
 bool SeriesInfo::loadable() const
 {
   return !files.empty();
@@ -706,6 +885,7 @@ DiscoverResult discoverSeries(const std::vector<fs::path>& inputPaths, const Dis
         if (info.metadata.seriesInstanceUid.empty()) {
           info.metadata.seriesInstanceUid = seriesUid;
         }
+        info.temporal = readTemporalInfo(dict);
         info.metadataSummary = filteredMetadataEntries(rawMetadataEntries(dict), options.includePrivateMetadata);
         info.displayName = displayNameForSeries(info.metadata, seriesUid);
 
@@ -716,10 +896,12 @@ DiscoverResult discoverSeries(const std::vector<fs::path>& inputPaths, const Dis
         const std::optional<SeriesGeometry> geometry = readSeriesGeometry<float>(info.files, imageIo);
         if (geometry) {
           info.geometry = *geometry;
-          auto warnings = geometryWarnings(info.geometry, info.files.size());
+          auto warnings = geometryWarnings(info.geometry, info.files.size(), info.temporal);
           info.warnings.insert(info.warnings.end(), warnings.begin(), warnings.end());
-          auto spacingWarnings = sliceSpacingWarnings(info.files, info.geometry);
-          info.warnings.insert(info.warnings.end(), spacingWarnings.begin(), spacingWarnings.end());
+          if (!info.temporal.multiframe) {
+            auto spacingWarnings = sliceSpacingWarnings(info.files, info.geometry);
+            info.warnings.insert(info.warnings.end(), spacingWarnings.begin(), spacingWarnings.end());
+          }
         }
         else {
           info.warnings.emplace_back("Could not read series geometry");

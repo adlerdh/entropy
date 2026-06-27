@@ -252,6 +252,7 @@ struct RenderData
 
   glm::vec4 m_crosshairsColor;      // Crosshairs color (non-premultiplied by alpha)
   glm::vec4 m_anatomicalLabelColor; // Anatomical label text color (non-premultiplied by alpha)
+  float m_anatomicalLabelScale = 1.0f;
 
   AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human;
 

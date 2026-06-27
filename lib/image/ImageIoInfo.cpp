@@ -10,6 +10,10 @@
 #include <itkMetaDataObject.h>
 
 #include <algorithm>
+#include <cctype>
+#include <fstream>
+#include <numeric>
+#include <optional>
 #include <sstream>
 
 namespace
@@ -264,8 +268,8 @@ bool setSpaceInfoFromItk(SpaceInfo& info, const itk::ImageIOBase::Pointer imageI
 
   info.m_numDimensions = static_cast<uint32_t>(imageIo->GetNumberOfDimensions());
 
-  if (3 < info.m_numDimensions) {
-    spdlog::error("Image dimension ({}) greater than 3 is not supported", info.m_numDimensions);
+  if (5 < info.m_numDimensions) {
+    spdlog::error("Image dimension ({}) greater than 5 is not supported", info.m_numDimensions);
     return false;
   }
 
@@ -282,6 +286,305 @@ bool setSpaceInfoFromItk(SpaceInfo& info, const itk::ImageIOBase::Pointer imageI
   }
 
   return true;
+}
+
+bool setTimeInfoFromItk(TimeInfo& info, const itk::ImageIOBase::Pointer imageIo)
+{
+  if (!imageIo || imageIo.IsNull()) {
+    return false;
+  }
+
+  const auto numDimensions = static_cast<uint32_t>(imageIo->GetNumberOfDimensions());
+  if (numDimensions < 4u) {
+    info = TimeInfo{};
+    return true;
+  }
+
+  info.m_numTimePoints = static_cast<uint32_t>(imageIo->GetDimensions(3));
+  info.m_origin = imageIo->GetOrigin(3);
+  info.m_spacing = imageIo->GetSpacing(3);
+  info.m_units = "frame";
+  return true;
+}
+
+std::string trim(std::string text)
+{
+  const auto first = std::find_if_not(text.begin(), text.end(), [](unsigned char c) { return std::isspace(c); });
+  const auto last =
+    std::find_if_not(text.rbegin(), text.rend(), [](unsigned char c) { return std::isspace(c); }).base();
+  return first < last ? std::string(first, last) : std::string{};
+}
+
+std::vector<std::string> splitWords(const std::string& text)
+{
+  std::istringstream stream(text);
+  std::vector<std::string> words;
+  std::string word;
+  while (stream >> word) {
+    words.push_back(word);
+  }
+  return words;
+}
+
+std::optional<std::pair<std::string, std::string>> parseHeaderKeyValue(const std::string& line)
+{
+  const auto separator = line.find_first_of(":=");
+  if (separator == std::string::npos) {
+    return std::nullopt;
+  }
+
+  std::string key = trim(line.substr(0, separator));
+  std::string value = trim(line.substr(separator + 1));
+  if (!value.empty() && value.front() == '=') {
+    value = trim(value.substr(1));
+  }
+
+  if (key.empty()) {
+    return std::nullopt;
+  }
+
+  return std::make_pair(std::move(key), std::move(value));
+}
+
+struct NrrdAxisMetadata
+{
+  bool hasVectorAxis = false;
+  bool hasTimeAxis = false;
+  std::string timeUnits = "frame";
+};
+
+struct EntropyTimeMetadata
+{
+  bool hasTimeAxis = false;
+  std::string timeUnits = "frame";
+};
+
+EntropyTimeMetadata readEntropyTimeMetadata(const MetaDataMap& metaData)
+{
+  EntropyTimeMetadata metadata;
+
+  if (const auto it = metaData.find("entropy_time_axis"); it != metaData.end()) {
+    if (const auto timeAxis = std::get_if<std::string>(&it->second)) {
+      metadata.hasTimeAxis = *timeAxis == "last";
+    }
+  }
+  if (const auto it = metaData.find("entropy_time_units"); it != metaData.end()) {
+    if (const auto timeUnits = std::get_if<std::string>(&it->second); timeUnits && !timeUnits->empty()) {
+      metadata.timeUnits = *timeUnits;
+    }
+  }
+
+  return metadata;
+}
+
+EntropyTimeMetadata readMetaImageTimeMetadata(const std::filesystem::path& fileName)
+{
+  std::string extension = fileName.extension().string();
+  std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+  if (extension != ".mha" && extension != ".mhd") {
+    return {};
+  }
+
+  std::ifstream in(fileName, std::ios::binary);
+  if (!in) {
+    return {};
+  }
+
+  EntropyTimeMetadata metadata;
+  std::string line;
+  while (std::getline(in, line)) {
+    if (!line.empty() && line.back() == '\r') {
+      line.pop_back();
+    }
+
+    const auto parsed = parseHeaderKeyValue(line);
+    if (!parsed) {
+      continue;
+    }
+
+    const auto& [key, value] = *parsed;
+    if (key == "entropy_time_axis") {
+      metadata.hasTimeAxis = value == "last";
+    }
+    else if (key == "entropy_time_units" && !value.empty()) {
+      metadata.timeUnits = value;
+    }
+    else if (key == "ElementDataFile") {
+      break;
+    }
+  }
+
+  return metadata;
+}
+
+NrrdAxisMetadata readNrrdAxisMetadata(const std::filesystem::path& fileName)
+{
+  std::string extension = fileName.extension().string();
+  std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+  if (extension != ".nrrd" && extension != ".nhdr") {
+    return {};
+  }
+
+  std::ifstream in(fileName, std::ios::binary);
+  if (!in) {
+    return {};
+  }
+
+  NrrdAxisMetadata metadata;
+  std::string line;
+  while (std::getline(in, line)) {
+    if (!line.empty() && line.back() == '\r') {
+      line.pop_back();
+    }
+    if (line.empty()) {
+      break;
+    }
+    if (line.starts_with('#')) {
+      continue;
+    }
+
+    const auto parsed = parseHeaderKeyValue(line);
+    if (!parsed) {
+      continue;
+    }
+
+    const auto& [key, value] = *parsed;
+    if (key == "kinds") {
+      const std::vector<std::string> kinds = splitWords(value);
+      metadata.hasVectorAxis = !kinds.empty() && kinds.front() == "vector";
+    }
+    else if (key == "entropy_time_axis") {
+      metadata.hasTimeAxis = value == "last";
+    }
+    else if (key == "entropy_time_units" && !value.empty()) {
+      metadata.timeUnits = value;
+    }
+  }
+
+  return metadata;
+}
+
+void updateSizeInfo(ImageIoInfo& info)
+{
+  const std::size_t imageSizeInPixels = std::accumulate(
+    info.m_spaceInfo.m_dimensions.begin(),
+    info.m_spaceInfo.m_dimensions.end(),
+    std::size_t{1},
+    std::multiplies<>());
+  info.m_sizeInfo.m_imageSizeInPixels = imageSizeInPixels;
+  info.m_sizeInfo.m_imageSizeInComponents = imageSizeInPixels * info.m_pixelInfo.m_numComponents;
+  info.m_sizeInfo.m_imageSizeInBytes =
+    info.m_sizeInfo.m_imageSizeInComponents * info.m_componentInfo.m_componentSizeInBytes;
+}
+
+void normalizeNrrdAxes(ImageIoInfo& info, const std::filesystem::path& fileName)
+{
+  const NrrdAxisMetadata metadata = readNrrdAxisMetadata(fileName);
+  const bool normalizeVectorAxis = metadata.hasVectorAxis && info.m_pixelInfo.m_numComponents <= 1u;
+  if (!normalizeVectorAxis && !metadata.hasTimeAxis) {
+    return;
+  }
+
+  const uint32_t originalDimensions = info.m_spaceInfo.m_numDimensions;
+  if (originalDimensions == 0u) {
+    return;
+  }
+
+  const std::optional<uint32_t> vectorAxis = normalizeVectorAxis ? std::optional<uint32_t>{0u} : std::nullopt;
+  const std::optional<uint32_t> timeAxis = metadata.hasTimeAxis && originalDimensions > (vectorAxis ? 2u : 1u)
+                                             ? std::optional<uint32_t>{originalDimensions - 1u}
+                                             : std::nullopt;
+
+  std::vector<uint32_t> spatialAxes;
+  spatialAxes.reserve(originalDimensions);
+  for (uint32_t axis = 0; axis < originalDimensions; ++axis) {
+    if ((vectorAxis && axis == *vectorAxis) || (timeAxis && axis == *timeAxis)) {
+      continue;
+    }
+    spatialAxes.push_back(axis);
+  }
+
+  if (spatialAxes.empty() || spatialAxes.size() > 3u) {
+    return;
+  }
+
+  if (vectorAxis) {
+    info.m_pixelInfo.m_pixelType = PixelType::VariableLengthVector;
+    info.m_pixelInfo.m_pixelTypeString = "variable length vector";
+    info.m_pixelInfo.m_numComponents = static_cast<uint32_t>(info.m_spaceInfo.m_dimensions.at(*vectorAxis));
+    info.m_pixelInfo.m_pixelStrideInBytes =
+      info.m_pixelInfo.m_numComponents * info.m_componentInfo.m_componentSizeInBytes;
+  }
+
+  if (timeAxis) {
+    info.m_timeInfo.m_numTimePoints = static_cast<uint32_t>(info.m_spaceInfo.m_dimensions.at(*timeAxis));
+    info.m_timeInfo.m_origin = info.m_spaceInfo.m_origin.at(*timeAxis);
+    info.m_timeInfo.m_spacing = info.m_spaceInfo.m_spacing.at(*timeAxis);
+    info.m_timeInfo.m_units = metadata.timeUnits;
+  }
+  else {
+    info.m_timeInfo = TimeInfo{};
+  }
+
+  std::vector<uint32_t> logicalAxes = spatialAxes;
+  if (timeAxis) {
+    logicalAxes.push_back(*timeAxis);
+  }
+
+  SpaceInfo normalizedSpace;
+  normalizedSpace.m_numDimensions = static_cast<uint32_t>(logicalAxes.size());
+  normalizedSpace.m_dimensions.reserve(logicalAxes.size());
+  normalizedSpace.m_origin.reserve(logicalAxes.size());
+  normalizedSpace.m_spacing.reserve(logicalAxes.size());
+  normalizedSpace.m_directions.assign(logicalAxes.size(), std::vector<double>(logicalAxes.size(), 0.0));
+
+  for (const uint32_t axis : logicalAxes) {
+    normalizedSpace.m_dimensions.push_back(info.m_spaceInfo.m_dimensions.at(axis));
+    normalizedSpace.m_origin.push_back(info.m_spaceInfo.m_origin.at(axis));
+    normalizedSpace.m_spacing.push_back(info.m_spaceInfo.m_spacing.at(axis));
+  }
+
+  for (std::size_t row = 0; row < logicalAxes.size(); ++row) {
+    const uint32_t sourceRow = logicalAxes[row];
+    if (sourceRow >= info.m_spaceInfo.m_directions.size()) {
+      continue;
+    }
+    for (std::size_t col = 0; col < logicalAxes.size(); ++col) {
+      const uint32_t sourceCol = logicalAxes[col];
+      if (sourceCol < info.m_spaceInfo.m_directions[sourceRow].size()) {
+        normalizedSpace.m_directions[row][col] = info.m_spaceInfo.m_directions[sourceRow][sourceCol];
+      }
+    }
+  }
+
+  info.m_spaceInfo = std::move(normalizedSpace);
+  updateSizeInfo(info);
+}
+
+void normalizeCanonicalTimeAxis(ImageIoInfo& info, const EntropyTimeMetadata& metadata)
+{
+  if (
+    info.m_spaceInfo.m_numDimensions < 4u || info.m_spaceInfo.m_dimensions.size() < 4u ||
+    info.m_spaceInfo.m_origin.size() < 4u || info.m_spaceInfo.m_spacing.size() < 4u)
+  {
+    return;
+  }
+
+  if (metadata.hasTimeAxis && info.m_timeInfo.m_numTimePoints > 1u) {
+    info.m_timeInfo.m_units = metadata.timeUnits;
+    return;
+  }
+
+  if (info.m_timeInfo.m_numTimePoints <= 1u && info.m_spaceInfo.m_dimensions[3] > 1u) {
+    info.m_timeInfo.m_numTimePoints = static_cast<uint32_t>(info.m_spaceInfo.m_dimensions[3]);
+    info.m_timeInfo.m_origin = info.m_spaceInfo.m_origin[3];
+    info.m_timeInfo.m_spacing = info.m_spaceInfo.m_spacing[3];
+    info.m_timeInfo.m_units = metadata.hasTimeAxis ? metadata.timeUnits : "frame";
+  }
 }
 } // anonymous namespace
 
@@ -307,7 +610,7 @@ bool SizeInfo::validate() const
 
 bool SpaceInfo::validate() const
 {
-  const bool topLevelValid = 0u < m_numDimensions && m_numDimensions <= 3u && m_dimensions.size() == m_numDimensions &&
+  const bool topLevelValid = 0u < m_numDimensions && m_numDimensions <= 5u && m_dimensions.size() == m_numDimensions &&
                              m_origin.size() == m_numDimensions && m_spacing.size() == m_numDimensions &&
                              m_directions.size() == m_numDimensions;
 
@@ -320,11 +623,16 @@ bool SpaceInfo::validate() const
   });
 }
 
+bool TimeInfo::validate() const
+{
+  return 0u < m_numTimePoints && !m_units.empty();
+}
+
 bool ImageIoInfo::validate() const
 {
   return (
     m_fileInfo.validate() && m_componentInfo.validate() && m_pixelInfo.validate() && m_sizeInfo.validate() &&
-    m_spaceInfo.validate());
+    m_spaceInfo.validate() && m_timeInfo.validate());
 }
 
 bool setImageIoInfoFromItk(ImageIoInfo& info, const itk::ImageIOBase::Pointer imageIo)
@@ -338,7 +646,58 @@ bool setImageIoInfoFromItk(ImageIoInfo& info, const itk::ImageIOBase::Pointer im
   return (
     setFileInfoFromItk(info.m_fileInfo, imageIo) && setComponentInfoFromItk(info.m_componentInfo, imageIo) &&
     setPixelInfoFromItk(info.m_pixelInfo, imageIo) && setSizeInfoFromItk(info.m_sizeInfo, imageIo) &&
-    setSpaceInfoFromItk(info.m_spaceInfo, imageIo));
+    setSpaceInfoFromItk(info.m_spaceInfo, imageIo) && setTimeInfoFromItk(info.m_timeInfo, imageIo));
+}
+
+void normalizeImageIoAxesForEntropy(ImageIoInfo& info, const std::filesystem::path& fileName)
+{
+  EntropyTimeMetadata metadata = readEntropyTimeMetadata(info.m_metaData);
+  if (!metadata.hasTimeAxis) {
+    metadata = readMetaImageTimeMetadata(fileName);
+  }
+  normalizeNrrdAxes(info, fileName);
+  normalizeCanonicalTimeAxis(info, metadata);
+}
+
+ImageIoInfo spatializedImageIoInfoForEntropy(const ImageIoInfo& source)
+{
+  ImageIoInfo info = source;
+  if (source.m_timeInfo.m_numTimePoints <= 1u && source.m_spaceInfo.m_numDimensions <= 3u) {
+    return info;
+  }
+
+  const bool hasTimeAxis = source.m_timeInfo.m_numTimePoints > 1u && source.m_spaceInfo.m_numDimensions >= 2u;
+  const uint32_t spatialDimensions = hasTimeAxis ? source.m_spaceInfo.m_numDimensions - 1u : 3u;
+
+  info.m_spaceInfo.m_numDimensions = spatialDimensions;
+  info.m_spaceInfo.m_dimensions.assign(
+    source.m_spaceInfo.m_dimensions.begin(),
+    source.m_spaceInfo.m_dimensions.begin() + spatialDimensions);
+  info.m_spaceInfo.m_origin.assign(
+    source.m_spaceInfo.m_origin.begin(),
+    source.m_spaceInfo.m_origin.begin() + spatialDimensions);
+  info.m_spaceInfo.m_spacing.assign(
+    source.m_spaceInfo.m_spacing.begin(),
+    source.m_spaceInfo.m_spacing.begin() + spatialDimensions);
+
+  info.m_spaceInfo.m_directions.assign(spatialDimensions, std::vector<double>(spatialDimensions, 0.0));
+  for (uint32_t row = 0; row < spatialDimensions; ++row) {
+    for (uint32_t col = 0; col < spatialDimensions; ++col) {
+      info.m_spaceInfo.m_directions[row][col] = source.m_spaceInfo.m_directions[row][col];
+    }
+  }
+
+  const std::size_t spatialPixels = std::accumulate(
+    info.m_spaceInfo.m_dimensions.begin(),
+    info.m_spaceInfo.m_dimensions.end(),
+    std::size_t{1},
+    std::multiplies<>());
+  const uint32_t numTimePoints = hasTimeAxis ? source.m_timeInfo.m_numTimePoints : 1u;
+  info.m_sizeInfo.m_imageSizeInPixels = spatialPixels;
+  info.m_sizeInfo.m_imageSizeInComponents = spatialPixels * info.m_pixelInfo.m_numComponents * numTimePoints;
+  info.m_sizeInfo.m_imageSizeInBytes =
+    info.m_sizeInfo.m_imageSizeInComponents * info.m_componentInfo.m_componentSizeInBytes;
+  return info;
 }
 
 bool setSizeInfoFromItkImageBase(

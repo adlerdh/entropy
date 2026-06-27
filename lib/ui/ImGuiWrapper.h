@@ -366,6 +366,7 @@ private:
   {
     uuids::uuid sourceImageUid;
     ComponentProjectionMode mode{ComponentProjectionMode::Mean};
+    uint32_t timePoint{0};
     entropy_expected::expected<Image, std::string> image;
   };
 

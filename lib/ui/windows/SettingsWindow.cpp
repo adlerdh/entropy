@@ -703,10 +703,11 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   // Anatomical labels:
   const bool anatomicalLabelsOpen = ImGui::CollapsingHeader("Anatomical Labels", ImGuiTreeNodeFlags_DefaultOpen);
   if (anatomicalLabelsOpen) {
-    ImGui::ColorEdit4(
-      "Annotation text color",
-      glm::value_ptr(renderData.m_anatomicalLabelColor),
-      k_colorAlphaEditFlags);
+    ImGui::ColorEdit4("Label text color", glm::value_ptr(renderData.m_anatomicalLabelColor), k_colorAlphaEditFlags);
+    float labelScale = renderData.m_anatomicalLabelScale;
+    if (mySliderF32("Scale", &labelScale, 0.5f, 2.0f, "%.1fx")) {
+      renderData.m_anatomicalLabelScale = std::clamp(labelScale, 0.5f, 2.0f);
+    }
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
     static constexpr bool kOrientChangeRecenterCrosshairs = false;
@@ -976,6 +977,12 @@ void renderInterfaceTab(
   }
 
   ImGui::Spacing();
+  bool showGlobalTimeControls = appData.settings().showGlobalTimeControls();
+  if (ImGui::Checkbox("Show global time controls", &showGlobalTimeControls)) {
+    appData.settings().setShowGlobalTimeControls(showGlobalTimeControls);
+  }
+
+  ImGui::Spacing();
   ImGui::Separator();
   ImGui::Spacing();
 
@@ -1216,6 +1223,16 @@ void renderSynchronizeTab(AppData& appData)
   helpMarker(
     "Synchronize cursor position between running Entropy instances that have the same project or same ordered image "
     "list loaded");
+
+  bool synchronizeTimeSeries = appData.settings().synchronizeTimeSeries();
+  if (ImGui::Checkbox("Synchronize time points across images", &synchronizeTimeSeries)) {
+    appData.settings().setSynchronizeTimeSeries(synchronizeTimeSeries);
+  }
+  ImGui::SameLine();
+  helpMarker(
+    "When enabled, changing one time-series image frame changes other loaded time-series images to the same frame "
+    "index "
+    "when available.");
 
   ImGui::Spacing();
   ImGui::Separator();

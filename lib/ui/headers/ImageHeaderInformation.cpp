@@ -99,7 +99,7 @@ void renderImageHeaderInformation(
   // Number of components:
   uint32_t numComponentsPerPixel = imgHeader.numComponentsPerPixel();
   ImGui::InputScalar(
-    "Num. components",
+    "Components",
     ImGuiDataType_U32,
     &numComponentsPerPixel,
     nullptr,
@@ -151,6 +151,63 @@ void renderImageHeaderInformation(
   ImGui::Spacing();
   ImGui::Separator();
   ImGui::Spacing();
+
+  if (image.isTimeSeries()) {
+    uint32_t numTimePoints = image.timeAxis().numTimePoints();
+    ImGui::InputScalar(
+      "Time frames",
+      ImGuiDataType_U32,
+      &numTimePoints,
+      nullptr,
+      nullptr,
+      nullptr,
+      ImGuiInputTextFlags_ReadOnly);
+    ImGui::SameLine();
+    helpMarker("Number of frames along the image time axis");
+
+    const std::string units = image.timeAxis().units();
+    std::string timeUnits = units.empty() ? "frame" : units;
+    ImGui::InputText("Time units", &timeUnits, ImGuiInputTextFlags_ReadOnly);
+    ImGui::SameLine();
+    helpMarker("Units used for time values");
+
+    if (const auto spacingValue = image.timeAxis().spacing()) {
+      double timeSpacing = *spacingValue;
+      ImGui::InputScalar(
+        "Time spacing",
+        ImGuiDataType_Double,
+        &timeSpacing,
+        nullptr,
+        nullptr,
+        appData.guiData().m_imageValuePrecisionFormat.c_str(),
+        ImGuiInputTextFlags_ReadOnly);
+    }
+    else {
+      std::string timeSpacing = "variable";
+      ImGui::InputText("Time spacing", &timeSpacing, ImGuiInputTextFlags_ReadOnly);
+    }
+    ImGui::SameLine();
+    helpMarker("Time spacing between adjacent frames, or variable for irregularly sampled time axes");
+
+    double timeRange[2]{
+      image.timeAxis().value(0).value_or(0.0),
+      image.timeAxis().value(numTimePoints - 1u).value_or(0.0)};
+    ImGui::InputScalarN(
+      "Time range",
+      ImGuiDataType_Double,
+      timeRange,
+      2,
+      nullptr,
+      nullptr,
+      appData.guiData().m_imageValuePrecisionFormat.c_str(),
+      ImGuiInputTextFlags_ReadOnly);
+    ImGui::SameLine();
+    helpMarker("Time value range from the first frame to the final frame");
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+  }
 
   // Dimensions:
   glm::uvec3 dimensions = imgHeader.pixelDimensions();

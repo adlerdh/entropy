@@ -175,6 +175,18 @@ public:
    */
   void setLayoutTabPlacement(UiLayoutTabPlacement placement);
 
+  /// @brief Return whether the global time-series control window is shown.
+  bool showGlobalTimeControls() const;
+
+  /// @brief Set whether the global time-series control window is shown.
+  void setShowGlobalTimeControls(bool show);
+
+  /// @brief Return whether time-series images change frames together.
+  bool synchronizeTimeSeries() const;
+
+  /// @brief Set whether time-series images change frames together.
+  void setSynchronizeTimeSeries(bool synchronize);
+
   std::size_t foregroundLabel() const;
   std::size_t backgroundLabel() const;
 
@@ -246,6 +258,8 @@ private:
   float m_uiWindowBgOpacity = 0.95f;
   bool m_showLayoutTabs = true;
   UiLayoutTabPlacement m_layoutTabPlacement = UiLayoutTabPlacement::Top;
+  bool m_showGlobalTimeControls = true;
+  bool m_synchronizeTimeSeries = true;
 
   bool m_cursorSyncEnabled = false;
   bool m_sendCursorSync = true;

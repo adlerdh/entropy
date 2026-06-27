@@ -487,6 +487,7 @@ void drawAnatomicalLabels(
   bool isViewOblique,
   const glm::vec4& fontColor,
   const AnatomicalLabelType& anatLabelType,
+  float labelScale,
   const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo)
 {
   static constexpr float sk_fontMult = 0.03f;
@@ -577,7 +578,8 @@ void drawAnatomicalLabels(
     miewportViewBounds.viewport[3]);
 
   const float fontSizePixels =
-    std::max(sk_fontMult * std::min(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height), 8.0f);
+    std::max(sk_fontMult * std::min(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height), 8.0f) *
+    glm::clamp(labelScale, 0.5f, 2.0f);
 
   // For inward shift of the labels:
   const glm::vec2 inwardFontShift{
@@ -1160,6 +1162,7 @@ void drawVectorFieldArrows(
     const bool scaleByMagnitude = settings.vectorArrowOverlayScaleByMagnitude();
     const bool useDirectionColor = settings.vectorArrowOverlayUseDirectionColor();
     const glm::vec3 fixedColor = settings.vectorArrowOverlayColor();
+    const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
 
     const glm::mat4 subject_T_world = image->transformations().subject_T_worldDef();
     const glm::mat4 world_T_subject = image->transformations().worldDef_T_subject();
@@ -1187,9 +1190,9 @@ void drawVectorFieldArrows(
         return;
       }
 
-      const auto xValue = image->valueLinear<double>(0, pixelPos.x, pixelPos.y, pixelPos.z);
-      const auto yValue = image->valueLinear<double>(1, pixelPos.x, pixelPos.y, pixelPos.z);
-      const auto zValue = image->valueLinear<double>(2, pixelPos.x, pixelPos.y, pixelPos.z);
+      const auto xValue = image->valueLinear<double>(0, pixelPos.x, pixelPos.y, pixelPos.z, activeTimePoint);
+      const auto yValue = image->valueLinear<double>(1, pixelPos.x, pixelPos.y, pixelPos.z, activeTimePoint);
+      const auto zValue = image->valueLinear<double>(2, pixelPos.x, pixelPos.y, pixelPos.z, activeTimePoint);
       if (!xValue || !yValue || !zValue) {
         return;
       }

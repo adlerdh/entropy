@@ -274,6 +274,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadImage(const fs::path
   logLoadedImageDetails(image, fileName);
 
   auto loadedImage = std::make_pair(m_data.addImage(std::move(image)), true);
+  spdlog::info("Loaded image from {} as {}", fileName, loadedImage.first);
   markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Image, fileName);
   return loadedImage;
 }
@@ -293,6 +294,11 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDicomSeriesImage(con
 
   logLoadedImageDetails(*image, series.files.front());
   auto loadedImage = std::make_pair(m_data.addImage(std::move(*image)), true);
+  spdlog::info(
+    "Loaded DICOM series {} from {} as {}",
+    series.seriesInstanceUid,
+    series.files.front(),
+    loadedImage.first);
   markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Image, series.files.front());
   return loadedImage;
 }
@@ -363,6 +369,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
     // No valid image was provided to match with this segmentation.
     // Add just the segmentation without pairing it to an image.
     if (const auto segUid = m_data.addSeg(std::move(seg))) {
+      spdlog::info("Loaded segmentation from file {} as {}", fileName, *segUid);
       markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Segmentation, fileName);
       return {*segUid, true};
     }
@@ -448,7 +455,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
   m_callbackHandler.syncManualImageTransformationOnSegs(*matchingImageUid);
 
   if (const auto segUid = m_data.addSeg(std::move(seg))) {
-    spdlog::info("Loaded segmentation from file {}", fileName);
+    spdlog::info("Loaded segmentation from file {} for image {} as {}", fileName, *matchingImageUid, *segUid);
     markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Segmentation, fileName);
     return {*segUid, true};
   }
@@ -583,8 +590,6 @@ bool EntropyApp::loadSerializedImage(
     spdlog::error("Null image {}", *imageUid);
     return false;
   }
-
-  spdlog::info("Loaded image from {} as {}", imageToLoad.m_imageFileName, *imageUid);
 
   if (resolvedDicomSource) {
     m_dicomSourcesByImageUid[*imageUid] = *resolvedDicomSource;
@@ -794,6 +799,9 @@ bool EntropyApp::loadSerializedImage(
       if (!linked) {
         spdlog::error("Unable to assigned landmark group {} to image {}", lmGroupUid, *imageUid);
       }
+      else {
+        spdlog::info("Added landmark group {} from {} to image {}", lmGroupUid, lm.m_csvFileName, *imageUid);
+      }
     }
     else {
       spdlog::error("Unable to open landmarks from CSV file {} for image {}", lm.m_csvFileName, *imageUid);
@@ -832,12 +840,6 @@ bool EntropyApp::loadSerializedImage(
 
     if (segInfo.uid) {
       if (segInfo.isNewSeg) {
-        spdlog::info(
-          "Loaded segmentation from file {} for image {} as {}",
-          serializedSeg.m_segFileName,
-          *imageUid,
-          *segInfo.uid);
-
         // New segmentation needs a new table
         segInfo.needsNewLabelColorTable = true;
       }
@@ -972,6 +974,11 @@ void EntropyApp::loadImageFiles(const std::vector<fs::path>& fileNames)
     return;
   }
 
+  spdlog::info("Opening {} image file(s)", imageFiles.size());
+  for (const auto& fileName : imageFiles) {
+    spdlog::info("Opening image file {}", fileName);
+  }
+
   if (containsDicomInputPath(imageFiles)) {
     openDicomSeriesFolders(imageFiles);
     return;
@@ -1001,6 +1008,8 @@ void EntropyApp::performLoadImageFiles(const std::vector<fs::path>& fileNames)
     closeProject();
   }
 
+  spdlog::info("Loading {} image file(s) as a new project", imageFiles.size());
+
   serialize::EntropyProject project = createProjectFromImageFiles(imageFiles);
 
   m_pendingLargeImageLoadContext = LargeImageLoadContext::Project;
@@ -1020,6 +1029,11 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
   const std::vector<fs::path> imageFiles = nonEmptyPaths(fileNames);
   if (imageFiles.empty()) {
     return;
+  }
+
+  spdlog::info("Adding {} image file(s)", imageFiles.size());
+  for (const auto& fileName : imageFiles) {
+    spdlog::info("Adding image file {}", fileName);
   }
 
   if (containsDicomInputPath(imageFiles)) {
@@ -1175,6 +1189,8 @@ void EntropyApp::performOpenDicomSeriesFolders(const std::vector<fs::path>& fold
     closeProject();
   }
 
+  spdlog::info("Opening {} DICOM input path(s) as a new project", dicomFolders.size());
+
   beginDicomSeriesScan(dicomFolders, false);
 }
 
@@ -1188,6 +1204,11 @@ void EntropyApp::beginDicomSeriesScan(const std::vector<fs::path>& inputPaths, b
   if (ProjectLoadState::Loading == m_data.state().projectLoadState() || m_data.state().animating()) {
     spdlog::warn("Ignoring DICOM request because another load task is running");
     return;
+  }
+
+  spdlog::info("Scanning {} DICOM input path(s)", scanInputs.size());
+  for (const auto& inputPath : scanInputs) {
+    spdlog::info("Scanning DICOM input {}", inputPath);
   }
 
   if (m_futureDiscoverDicom.valid()) {
@@ -1282,6 +1303,11 @@ void EntropyApp::loadDicomSeries(
 {
   if (series.empty()) {
     return;
+  }
+
+  spdlog::info("{} {} selected DICOM series", addToExistingProject ? "Adding" : "Opening", series.size());
+  for (const auto& seriesInfo : series) {
+    spdlog::info("Selected DICOM series {} with {} file(s)", seriesInfo.seriesInstanceUid, seriesInfo.files.size());
   }
 
   std::vector<dicom::SeriesInfo> seriesToLoad = series;

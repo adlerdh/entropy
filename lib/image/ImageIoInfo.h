@@ -80,11 +80,26 @@ public:
   /// @brief Return true when dimensions, origin, spacing, and directions are internally consistent.
   bool validate() const;
 
-  uint32_t m_numDimensions{0u};                  //!< Number of spatial dimensions, currently 1 to 3.
+  uint32_t m_numDimensions{0u};                  //!< Number of dimensions reported by IO.
   std::vector<std::size_t> m_dimensions;         //!< Pixel dimensions for each axis.
   std::vector<double> m_origin;                  //!< Physical origin for each axis.
   std::vector<double> m_spacing;                 //!< Physical spacing for each axis.
   std::vector<std::vector<double>> m_directions; //!< Direction matrix rows/columns as reported by IO.
+};
+
+/**
+ * @brief Time-axis metadata derived from image IO.
+ */
+class TimeInfo
+{
+public:
+  /// @brief Return true when the time axis metadata is usable.
+  bool validate() const;
+
+  uint32_t m_numTimePoints{1u}; //!< Number of frames along the time axis.
+  double m_origin{0.0};         //!< Time value of the first frame.
+  double m_spacing{1.0};        //!< Time spacing between adjacent frames.
+  std::string m_units{"frame"}; //!< Display units for time values.
 };
 
 /// @brief Supported metadata value types copied from image IO dictionaries.
@@ -127,5 +142,24 @@ public:
   PixelInfo m_pixelInfo;         //!< Pixel-level metadata.
   SizeInfo m_sizeInfo;           //!< Buffer size metadata.
   SpaceInfo m_spaceInfo;         //!< Spatial metadata.
+  TimeInfo m_timeInfo;           //!< Time-axis metadata.
   MetaDataMap m_metaData;        //!< Additional backend metadata.
 };
+
+/**
+ * @brief Normalize format-specific axis metadata into Entropy's image model.
+ * @param info Image IO metadata to update in-place.
+ * @param fileName Source image path, used for file-format metadata that ITK does not expose uniformly.
+ *
+ * NRRD files may encode vector components as an explicit axis. Canonical 4D images use the fourth
+ * axis as time. This function converts those conventions into component and time metadata while
+ * preserving the logical spatial axes.
+ */
+void normalizeImageIoAxesForEntropy(ImageIoInfo& info, const std::filesystem::path& fileName);
+
+/**
+ * @brief Convert on-disk metadata to the spatial metadata used by Entropy in memory.
+ * @param source Normalized on-disk image IO metadata.
+ * @return Metadata with time removed from the spatial dimensions.
+ */
+ImageIoInfo spatializedImageIoInfoForEntropy(const ImageIoInfo& source);

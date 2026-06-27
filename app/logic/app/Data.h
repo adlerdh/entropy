@@ -39,6 +39,24 @@
 using ComponentIndexType = uint32_t;
 
 /**
+ * @brief Cache key for a scalar component projection derived from one source image frame.
+ */
+struct ComponentProjectionCacheKey
+{
+  ComponentProjectionMode mode{ComponentProjectionMode::Mean}; //!< Projection operation.
+  uint32_t timePoint{0};                                       //!< Source image time point.
+
+  /// @brief Order keys for use in std::map.
+  bool operator<(const ComponentProjectionCacheKey& other) const
+  {
+    if (mode != other.mode) {
+      return mode < other.mode;
+    }
+    return timePoint < other.timePoint;
+  }
+};
+
+/**
  * @brief Holds all application data
  * @todo A simple database would be better suited for this purpose
  */
@@ -170,18 +188,22 @@ public:
    * @brief Add or replace a cached scalar projection for a multi-component source image.
    * @param imageUid Source image UID.
    * @param mode Component projection represented by \p image.
+   * @param timePoint Source image time point used to compute \p image.
    * @param image Derived scalar image.
    * @return UID of the cached projection, or std::nullopt when the source image is invalid.
    */
-  std::optional<uuid> setComponentProjectionImage(const uuid& imageUid, ComponentProjectionMode mode, Image image);
+  std::optional<uuid>
+  setComponentProjectionImage(const uuid& imageUid, ComponentProjectionMode mode, uint32_t timePoint, Image image);
 
   /**
    * @brief Get the UID of a cached scalar component projection.
    * @param imageUid Source image UID.
    * @param mode Component projection mode.
+   * @param timePoint Source image time point.
    * @return Cached projection UID, or std::nullopt when the projection does not exist.
    */
-  std::optional<uuid> componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMode mode) const;
+  std::optional<uuid>
+  componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMode mode, uint32_t timePoint) const;
 
   /**
    * @brief Get the renderable image UID for an image's current component mode.
@@ -433,7 +455,9 @@ private:
   std::vector<uuid> m_imageUidsOrdered;     //!< Image UIDs in order
 
   std::unordered_map<uuid, Image> m_componentProjectionImages; //!< Hidden scalar component projections
-  std::unordered_map<uuid, std::map<ComponentProjectionMode, uuid> > m_imageToComponentProjectionImages;
+  /// @todo This cache is time-point-aware but not memory-bounded. Replace it with an LRU cache when
+  /// large time series make it possible to accumulate many derived frames.
+  std::unordered_map<uuid, std::map<ComponentProjectionCacheKey, uuid> > m_imageToComponentProjectionImages;
 
   std::unordered_map<uuid, Image> m_segs; //!< Segmentations, also stored as images
   std::vector<uuid> m_segUidsOrdered;     //!< Segmentation UIDs in order

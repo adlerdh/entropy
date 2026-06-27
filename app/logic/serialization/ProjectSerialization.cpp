@@ -309,12 +309,17 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"globalVisibility", settings.m_globalVisibility},
     {"globalOpacity", settings.m_globalOpacity},
     {"borderColor", vec3ToJson(settings.m_borderColor)},
+    {"lockedToReference", settings.m_lockedToReference},
     {"level", settings.m_level},
     {"window", settings.m_window},
     {"thresholdLow", settings.m_thresholdLow},
     {"thresholdHigh", settings.m_thresholdHigh},
     {"opacity", settings.m_opacity},
     {"activeComponent", settings.m_activeComponent},
+    {"activeTimePoint", settings.m_activeTimePoint},
+    {"timePlaybackLoop", settings.m_timePlaybackLoop},
+    {"timePlaybackPlaying", settings.m_timePlaybackPlaying},
+    {"timePlaybackSpeed", settings.m_timePlaybackSpeed},
     {"componentRenderMode", enumToName(settings.m_componentRenderMode, k_componentRenderModeNames)},
     {"complexPhaseUnit", enumToName(settings.m_complexPhaseUnit, k_complexPhaseUnitNames)},
     {"complexPhaseRange", enumToName(settings.m_complexPhaseRange, k_complexPhaseRangeNames)},
@@ -430,6 +435,9 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   if (const auto color = j.find("borderColor"); color != j.end() && color->is_array() && color->size() == 3) {
     settings.m_borderColor = vec3FromJson(*color);
   }
+  if (j.count("lockedToReference")) {
+    j.at("lockedToReference").get_to(settings.m_lockedToReference);
+  }
   if (j.count("level")) {
     j.at("level").get_to(settings.m_level);
   }
@@ -447,6 +455,18 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   }
   if (const auto activeComponent = unsignedIntFromJson(j.value("activeComponent", json{}))) {
     settings.m_activeComponent = *activeComponent;
+  }
+  if (const auto activeTimePoint = unsignedIntFromJson(j.value("activeTimePoint", json{}))) {
+    settings.m_activeTimePoint = *activeTimePoint;
+  }
+  if (j.count("timePlaybackLoop")) {
+    j.at("timePlaybackLoop").get_to(settings.m_timePlaybackLoop);
+  }
+  if (j.count("timePlaybackPlaying")) {
+    j.at("timePlaybackPlaying").get_to(settings.m_timePlaybackPlaying);
+  }
+  if (j.count("timePlaybackSpeed")) {
+    j.at("timePlaybackSpeed").get_to(settings.m_timePlaybackSpeed);
   }
   if (
     const auto parsed = enumFromName<serialize::ProjectComponentRenderMode>(
@@ -879,6 +899,8 @@ void to_json(json& j, const ProjectInterfaceSettings& settings)
   j = json{
     {"showLayoutTabs", settings.m_showLayoutTabs},
     {"layoutTabsPosition", enumToName(settings.m_layoutTabPlacement, k_layoutTabPlacementNames)},
+    {"showGlobalTimeControls", settings.m_showGlobalTimeControls},
+    {"synchronizeTimeSeries", settings.m_synchronizeTimeSeries},
     {"imageValuePrecision", settings.m_imageValuePrecision},
     {"coordinatesPrecision", settings.m_coordsPrecision},
     {"transformPrecision", settings.m_txPrecision},
@@ -895,6 +917,14 @@ void from_json(const json& j, ProjectInterfaceSettings& settings)
       enumFromName<ProjectLayoutTabPlacement>(j.value("layoutTabsPosition", ""), k_layoutTabPlacementNames))
   {
     settings.m_layoutTabPlacement = *parsed;
+  }
+  if (const auto showTimeControls = j.find("showGlobalTimeControls");
+      showTimeControls != j.end() && showTimeControls->is_boolean())
+  {
+    settings.m_showGlobalTimeControls = showTimeControls->get<bool>();
+  }
+  if (const auto syncTime = j.find("synchronizeTimeSeries"); syncTime != j.end() && syncTime->is_boolean()) {
+    settings.m_synchronizeTimeSeries = syncTime->get<bool>();
   }
   if (const auto precision = j.find("imageValuePrecision"); precision != j.end()) {
     if (const auto parsed = unsignedIntFromJson(*precision)) {

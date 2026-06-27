@@ -1,0 +1,15 @@
+{
+  "output": "10_scalar_1d_time.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "components": 1,
+  "size": [64, 6],
+  "spacing": [0.5, 1.0],
+  "origin": [-16.0, 0.0],
+  "pattern": "temporal_sine",
+  "metadata": {
+    "entropy_time_axis": "last",
+    "entropy_time_units": "frame",
+    "entropy_example": "1D scalar time series"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "output": "11_scalar_2d_time.nii.gz",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "components": 1,
+  "size": [48, 40, 1, 7],
+  "spacing": [0.75, 0.75, 1.0, 1.5],
+  "origin": [-18.0, -15.0, 0.0, 0.0],
+  "pattern": "moving_gaussian",
+  "metadata": {
+    "entropy_example": "2D scalar NIfTI time series"
+  }
+}

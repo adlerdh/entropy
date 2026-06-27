@@ -31,6 +31,7 @@
 #include "logic/states/annotation/AnnotationStateMachine.h"
 
 #include "common/UuidUtility.h"
+#include "image/TimePlaybackController.h"
 #include "rendering/TextureSetup.h"
 
 #include <IconsForkAwesome.h>
@@ -59,8 +60,11 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 #include <memory>
 #include <numeric>
+#include <sstream>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -76,6 +80,7 @@ static const glm::vec3 k_zeroVec{0.0f, 0.0f, 0.0f};
 constexpr float k_layoutTabWindowPaddingX = 6.0f;
 constexpr float k_layoutTabWindowPaddingY = 0.0f;
 constexpr float k_layoutTabFrameRounding = 3.0f;
+constexpr double k_maxTimePlaybackFramesPerSecond = 120.0;
 
 float scaledPixel(float value)
 {
@@ -822,6 +827,273 @@ void renderLoadingStatusWindow(const GuiData& guiData)
   ImGui::PopStyleVar();
 }
 
+void refreshTimeSeriesTexture(AppData& appData, const uuids::uuid& imageUid)
+{
+  appData.renderData().m_imageTextures.erase(imageUid);
+  createImageTextures(appData, std::vector<uuids::uuid>{imageUid});
+}
+
+void setTimePoint(AppData& appData, const uuids::uuid& imageUid, Image& image, uint32_t timePoint)
+{
+  const uint32_t clamped = image.timeAxis().clamp(timePoint);
+  if (image.settings().activeTimePoint() == clamped) {
+    return;
+  }
+  image.settings().setActiveTimePoint(clamped);
+  refreshTimeSeriesTexture(appData, imageUid);
+}
+
+void setTimePointWithSynchronization(AppData& appData, const uuids::uuid& imageUid, Image& image, uint32_t timePoint)
+{
+  setTimePoint(appData, imageUid, image, timePoint);
+  if (!appData.settings().synchronizeTimeSeries()) {
+    return;
+  }
+
+  for (const uuids::uuid& otherUid : appData.imageUidsOrdered()) {
+    if (otherUid == imageUid) {
+      continue;
+    }
+    Image* other = appData.image(otherUid);
+    if (other && other->isTimeSeries()) {
+      setTimePoint(appData, otherUid, *other, timePoint);
+    }
+  }
+}
+
+std::string timePointControlLabel(const Image& image, uint32_t timePoint)
+{
+  std::ostringstream os;
+  os << timePoint << " of " << (image.timeAxis().numTimePoints() - 1u);
+  if (const auto value = image.timeAxis().value(timePoint)) {
+    os << " (" << std::fixed << std::setprecision(2) << *value << " " << image.timeAxis().units() << ")";
+  }
+  return os.str();
+}
+
+float timePointControlLabelWidth(const Image& image)
+{
+  const uint32_t lastTimePoint = image.timeAxis().numTimePoints() - 1u;
+  return std::max(
+    ImGui::CalcTextSize(timePointControlLabel(image, 0u).c_str()).x,
+    ImGui::CalcTextSize(timePointControlLabel(image, lastTimePoint).c_str()).x);
+}
+
+void renderReservedWidthText(const char* text, float reservedWidth, ImU32 color)
+{
+  const ImVec2 pos = ImGui::GetCursorScreenPos();
+  const float height = ImGui::GetFrameHeight();
+  const float offsetY = 0.5f * (height - ImGui::GetTextLineHeight());
+  ImGui::Dummy(ImVec2{reservedWidth, height});
+  ImGui::GetWindowDrawList()->AddText(ImVec2{pos.x, pos.y + offsetY}, color, text);
+}
+
+void renderReservedWidthText(const char* text, float reservedWidth)
+{
+  renderReservedWidthText(text, reservedWidth, ImGui::GetColorU32(ImGuiCol_Text));
+}
+
+std::string playbackRateLabel(const Image& image)
+{
+  const double speed = std::min(
+    image.settings().timePlaybackSpeed(),
+    image.timeAxis().maxPlaybackSpeedForFrameRate(k_maxTimePlaybackFramesPerSecond));
+  const double framePeriod = image.timeAxis().playbackFramePeriodSeconds(speed);
+  const double framesPerSecond = playbackFramesPerSecond(framePeriod);
+  const char* frameWord = std::abs(framesPerSecond - 1.0) < 1.0e-6 ? "frame" : "frames";
+  std::ostringstream os;
+  os << std::fixed << std::setprecision(1) << speed << "x (" << framesPerSecond << ' ' << frameWord << "/sec)";
+  return os.str();
+}
+
+std::optional<uuids::uuid> globalTimeControlImageUid(AppData& appData)
+{
+  if (const auto activeUid = appData.activeImageUid()) {
+    if (const Image* activeImage = appData.image(*activeUid); activeImage && activeImage->isTimeSeries()) {
+      return activeUid;
+    }
+  }
+
+  for (const uuids::uuid& imageUid : appData.imageUidsOrdered()) {
+    if (const Image* image = appData.image(imageUid); image && image->isTimeSeries()) {
+      return imageUid;
+    }
+  }
+  return std::nullopt;
+}
+
+void updateTimePlayback(AppData& appData, const uuids::uuid& imageUid, Image& image, uint32_t activeTimePoint)
+{
+  static std::unordered_map<uuids::uuid, TimePlaybackState> s_playbackStateByImage;
+
+  if (!image.settings().timePlaybackPlaying()) {
+    s_playbackStateByImage.erase(imageUid);
+    return;
+  }
+
+  TimePlaybackState& state = s_playbackStateByImage[imageUid];
+  const TimePlaybackUpdate update = updateTimePlaybackFrame(
+    state,
+    TimePlaybackInput{
+      .playing = image.settings().timePlaybackPlaying(),
+      .loop = image.settings().timePlaybackLoop(),
+      .activeTimePoint = activeTimePoint,
+      .numTimePoints = image.timeAxis().numTimePoints(),
+      .framePeriodSeconds = image.timeAxis().playbackFramePeriodSeconds(image.settings().timePlaybackSpeed()),
+      .nowSeconds = ImGui::GetTime()});
+  if (update.playingChanged) {
+    image.settings().setTimePlaybackPlaying(update.playing);
+  }
+  if (!update.playing) {
+    s_playbackStateByImage.erase(imageUid);
+  }
+  if (!update.advanced) {
+    return;
+  }
+
+  setTimePointWithSynchronization(appData, imageUid, image, update.timePoint);
+}
+
+bool anyTimeSeriesPlaybackRunning(const AppData& appData)
+{
+  for (const uuids::uuid& imageUid : appData.imageUidsOrdered()) {
+    const Image* image = appData.image(imageUid);
+    if (image && image->isTimeSeries() && image->settings().timePlaybackPlaying()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void renderGlobalTimeControl(AppData& appData)
+{
+  static bool s_timePlaybackWasRunning = false;
+  auto updatePlaybackAnimationState = [&appData]() {
+    const bool playbackRunning = anyTimeSeriesPlaybackRunning(appData);
+    if (playbackRunning) {
+      appData.state().setAnimating(true);
+    }
+    else if (s_timePlaybackWasRunning) {
+      appData.state().setAnimating(false);
+    }
+    s_timePlaybackWasRunning = playbackRunning;
+  };
+
+  const auto imageUid = globalTimeControlImageUid(appData);
+  if (!imageUid) {
+    if (s_timePlaybackWasRunning) {
+      appData.state().setAnimating(false);
+      s_timePlaybackWasRunning = false;
+    }
+    return;
+  }
+
+  Image* image = appData.image(*imageUid);
+  if (!image || !image->isTimeSeries()) {
+    if (s_timePlaybackWasRunning) {
+      appData.state().setAnimating(false);
+      s_timePlaybackWasRunning = false;
+    }
+    return;
+  }
+
+  const uint32_t maxTimePoint = image->timeAxis().numTimePoints() - 1u;
+  updateTimePlayback(appData, *imageUid, *image, image->timeAxis().clamp(image->settings().activeTimePoint()));
+  const uint32_t activeTimePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
+  uint32_t requestedTimePoint = activeTimePoint;
+
+  if (!appData.settings().showGlobalTimeControls()) {
+    updatePlaybackAnimationState();
+    return;
+  }
+
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  if (!viewport) {
+    updatePlaybackAnimationState();
+    return;
+  }
+
+  const ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                                 ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
+                                 ImGuiWindowFlags_NoDocking;
+  ImGui::SetNextWindowViewport(viewport->ID);
+  ImGui::SetNextWindowPos(
+    ImVec2{viewport->WorkPos.x + viewport->WorkSize.x * 0.5f, viewport->WorkPos.y + viewport->WorkSize.y - 12.0f},
+    ImGuiCond_Always,
+    ImVec2{0.5f, 1.0f});
+
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{8.0f, 6.0f});
+  if (ImGui::Begin("GlobalTimeControl", nullptr, flags)) {
+    const float timeLabelWidth = timePointControlLabelWidth(*image);
+    const std::string timeLabel = timePointControlLabel(*image, activeTimePoint);
+    const std::string rateLabel = playbackRateLabel(*image);
+    const float rateLabelWidth = ImGui::CalcTextSize(rateLabel.c_str()).x;
+    const ImVec2 buttonSize{ImGui::GetFrameHeight(), ImGui::GetFrameHeight()};
+
+    bool playing = image->settings().timePlaybackPlaying();
+    const std::string playbackButtonLabel =
+      std::string{playing ? ICON_FK_PAUSE : ICON_FK_PLAY} + "##globalToggleTimePlayback";
+    if (ImGui::Button(playbackButtonLabel.c_str(), buttonSize)) {
+      playing = !playing;
+      image->settings().setTimePlaybackPlaying(playing);
+      appData.state().setAnimating(playing || anyTimeSeriesPlaybackRunning(appData));
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip(playing ? "Pause time-series playback" : "Play time series");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FK_FAST_BACKWARD "##globalFirstTimePoint", buttonSize)) {
+      requestedTimePoint = 0u;
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Go to first time frame");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FK_STEP_BACKWARD "##globalPreviousTimePoint", buttonSize)) {
+      requestedTimePoint =
+        activeTimePoint == 0u ? (image->settings().timePlaybackLoop() ? maxTimePoint : 0u) : activeTimePoint - 1u;
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Go to previous time frame");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FK_STEP_FORWARD "##globalNextTimePoint", buttonSize)) {
+      requestedTimePoint = activeTimePoint == maxTimePoint ? (image->settings().timePlaybackLoop() ? 0u : maxTimePoint)
+                                                           : activeTimePoint + 1u;
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Go to next time frame");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FK_FAST_FORWARD "##globalLastTimePoint", buttonSize)) {
+      requestedTimePoint = maxTimePoint;
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Go to last time frame");
+    }
+    ImGui::SameLine();
+    renderReservedWidthText(timeLabel.c_str(), timeLabelWidth);
+    ImGui::SameLine();
+    renderReservedWidthText(rateLabel.c_str(), rateLabelWidth, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+    ImGui::SameLine();
+    bool loop = image->settings().timePlaybackLoop();
+    if (ImGui::Checkbox("Loop##globalTimePlaybackLoop", &loop)) {
+      image->settings().setTimePlaybackLoop(loop);
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Loop playback from the last frame back to the first frame");
+    }
+
+    if (requestedTimePoint != activeTimePoint) {
+      setTimePointWithSynchronization(appData, *imageUid, *image, requestedTimePoint);
+    }
+  }
+  ImGui::End();
+  ImGui::PopStyleVar(2);
+  updatePlaybackAnimationState();
+}
+
 void renderEmptyWorkspace(
   ProjectLoadState projectLoadState,
   const std::function<void(const std::vector<fs::path>& fileNames)>& openImageFiles,
@@ -957,9 +1229,9 @@ UiFontSpec uiFontSpec(UiFontFamily family)
   return {"Space Grotesk Light", "res/fonts/SpaceGrotesk/SpaceGrotesk-Light.ttf", 16.0f};
 }
 
-std::string componentProjectionTaskKey(const uuids::uuid& imageUid, ComponentProjectionMode mode)
+std::string componentProjectionTaskKey(const uuids::uuid& imageUid, ComponentProjectionMode mode, uint32_t timePoint)
 {
-  return uuids::to_string(imageUid) + ":" + std::to_string(static_cast<int>(mode));
+  return uuids::to_string(imageUid) + ":" + std::to_string(static_cast<int>(mode)) + ":" + std::to_string(timePoint);
 }
 
 } // namespace
@@ -1094,11 +1366,18 @@ void ImGuiWrapper::storeFuture(const uuids::uuid& taskUid, std::future<AsyncTask
 
 void ImGuiWrapper::requestComponentProjectionImage(const uuids::uuid& imageUid, ComponentProjectionMode mode)
 {
-  if (m_appData.componentProjectionImageUid(imageUid, mode)) {
+  const Image* image = m_appData.image(imageUid);
+  if (!image) {
+    spdlog::warn("Cannot compute component projection for invalid image {}", imageUid);
     return;
   }
 
-  const std::string taskKey = componentProjectionTaskKey(imageUid, mode);
+  const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
+  if (m_appData.componentProjectionImageUid(imageUid, mode, timePoint)) {
+    return;
+  }
+
+  const std::string taskKey = componentProjectionTaskKey(imageUid, mode, timePoint);
   {
     std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
     if (m_pendingComponentProjectionKeys.contains(taskKey)) {
@@ -1107,18 +1386,14 @@ void ImGuiWrapper::requestComponentProjectionImage(const uuids::uuid& imageUid, 
     m_pendingComponentProjectionKeys.insert(taskKey);
   }
 
-  const Image* image = m_appData.image(imageUid);
-  if (!image) {
-    spdlog::warn("Cannot compute component projection for invalid image {}", imageUid);
-    std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
-    m_pendingComponentProjectionKeys.erase(taskKey);
-    return;
-  }
-
   const uuids::uuid taskUid = generateRandomUuid();
   Image imageCopy = *image;
-  auto future = std::async(std::launch::async, [imageUid, mode, imageCopy = std::move(imageCopy)]() mutable {
-    return ComponentProjectionTaskResult{imageUid, mode, createComponentProjectionImage(imageCopy, mode)};
+  auto future = std::async(std::launch::async, [imageUid, mode, timePoint, imageCopy = std::move(imageCopy)]() mutable {
+    return ComponentProjectionTaskResult{
+      imageUid,
+      mode,
+      timePoint,
+      createComponentProjectionImage(imageCopy, mode, timePoint)};
   });
 
   {
@@ -1127,10 +1402,11 @@ void ImGuiWrapper::requestComponentProjectionImage(const uuids::uuid& imageUid, 
   }
 
   spdlog::debug(
-    "Started {} component projection task {} for image {}",
+    "Started {} component projection task {} for image {} frame {}",
     componentProjectionModeName(mode),
     taskUid,
-    imageUid);
+    imageUid,
+    timePoint);
 
   if (m_postEmptyGlfwEvent) {
     m_postEmptyGlfwEvent();
@@ -1150,7 +1426,8 @@ void ImGuiWrapper::requestMissingComponentProjectionImages()
     }
 
     const auto mode = componentProjectionForImage(*image);
-    if (mode && !m_appData.componentProjectionImageUid(imageUid, *mode)) {
+    const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
+    if (mode && !m_appData.componentProjectionImageUid(imageUid, *mode, timePoint)) {
       requestComponentProjectionImage(imageUid, *mode);
     }
   }
@@ -1185,20 +1462,25 @@ void ImGuiWrapper::processComponentProjectionFutures()
     ComponentProjectionTaskResult result = future.get();
     {
       std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
-      m_pendingComponentProjectionKeys.erase(componentProjectionTaskKey(result.sourceImageUid, result.mode));
+      m_pendingComponentProjectionKeys.erase(
+        componentProjectionTaskKey(result.sourceImageUid, result.mode, result.timePoint));
     }
 
     if (!result.image) {
       spdlog::warn(
-        "Unable to compute {} component projection for image {}: {}",
+        "Unable to compute {} component projection for image {} frame {}: {}",
         componentProjectionModeName(result.mode),
         result.sourceImageUid,
+        result.timePoint,
         result.image.error());
       continue;
     }
 
-    const auto projectionUid =
-      m_appData.setComponentProjectionImage(result.sourceImageUid, result.mode, std::move(*result.image));
+    const auto projectionUid = m_appData.setComponentProjectionImage(
+      result.sourceImageUid,
+      result.mode,
+      result.timePoint,
+      std::move(*result.image));
     if (!projectionUid) {
       spdlog::warn("Source image {} no longer exists for component projection", result.sourceImageUid);
       continue;
@@ -1849,6 +2131,11 @@ void ImGuiWrapper::render()
       case MainMenuAction::IncreaseSegmentationOpacity:
         m_callbackHandler.changeSegOpacity(0.05, false);
         break;
+      case MainMenuAction::ToggleCrosshairsVoxelSnapping:
+        m_appData.renderData().m_snapCrosshairs =
+          CrosshairsSnapping::Disabled == m_appData.renderData().m_snapCrosshairs ? CrosshairsSnapping::ReferenceImage
+                                                                                  : CrosshairsSnapping::Disabled;
+        break;
       case MainMenuAction::ToggleScaleBars:
         m_appData.renderData().m_showScaleBars = !m_appData.renderData().m_showScaleBars;
         break;
@@ -1974,6 +2261,24 @@ void ImGuiWrapper::render()
         break;
       case MainMenuAction::ShowOpacityMixer:
         m_appData.guiData().m_showOpacityBlenderWindow = !m_appData.guiData().m_showOpacityBlenderWindow;
+        break;
+      case MainMenuAction::ToggleGlobalTimeControls:
+        m_appData.settings().setShowGlobalTimeControls(!m_appData.settings().showGlobalTimeControls());
+        break;
+      case MainMenuAction::ToggleTimePlayback:
+        m_callbackHandler.toggleTimePlayback();
+        break;
+      case MainMenuAction::FirstTimePoint:
+        m_callbackHandler.setTimePointToFirst();
+        break;
+      case MainMenuAction::PreviousTimePoint:
+        m_callbackHandler.cycleTimePoint(-1);
+        break;
+      case MainMenuAction::NextTimePoint:
+        m_callbackHandler.cycleTimePoint(1);
+        break;
+      case MainMenuAction::LastTimePoint:
+        m_callbackHandler.setTimePointToLast();
         break;
       case MainMenuAction::AddIsosurface:
         m_appData.guiData().m_showIsosurfacesWindow = true;
@@ -2160,6 +2465,7 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleImageEdges:
         case MainMenuAction::DecreaseActiveImageOpacity:
         case MainMenuAction::IncreaseActiveImageOpacity:
+        case MainMenuAction::ToggleCrosshairsVoxelSnapping:
         case MainMenuAction::ToggleScaleBars:
         case MainMenuAction::ToggleAsciiRendering:
         case MainMenuAction::ToggleLightboxOffsets:
@@ -2173,13 +2479,27 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleSyncSendPan:
         case MainMenuAction::ToggleSyncReceivePan:
         case MainMenuAction::ShowOpacityMixer:
+        case MainMenuAction::FirstTimePoint:
+        case MainMenuAction::PreviousTimePoint:
+        case MainMenuAction::NextTimePoint:
+        case MainMenuAction::LastTimePoint:
         case MainMenuAction::AddIsosurface:
         case MainMenuAction::AddIsosurfaceRange:
         case MainMenuAction::ToggleActiveImageIsosurfaces:
         case MainMenuAction::CreateSegmentation:
         case MainMenuAction::CreateLandmarkGroup:
         case MainMenuAction::AddLayout:
+          if (
+            action == MainMenuAction::FirstTimePoint || action == MainMenuAction::PreviousTimePoint ||
+            action == MainMenuAction::NextTimePoint || action == MainMenuAction::LastTimePoint)
+          {
+            return loaded && globalTimeControlImageUid(m_appData).has_value();
+          }
           return canUseProjectActions && hasActiveImage;
+        case MainMenuAction::ToggleGlobalTimeControls:
+          return loaded;
+        case MainMenuAction::ToggleTimePlayback:
+          return loaded && globalTimeControlImageUid(m_appData).has_value();
         case MainMenuAction::ToggleLayoutTabs:
           return canUseProjectActions;
         case MainMenuAction::PreviousForegroundLabel:
@@ -2312,12 +2632,16 @@ void ImGuiWrapper::render()
       }
       case MainMenuAction::ToggleScaleBars:
         return m_appData.renderData().m_showScaleBars;
+      case MainMenuAction::ToggleCrosshairsVoxelSnapping:
+        return CrosshairsSnapping::Disabled != m_appData.renderData().m_snapCrosshairs;
       case MainMenuAction::ToggleAsciiRendering:
         return m_appData.renderData().m_asciiEnabled;
       case MainMenuAction::ToggleLightboxOffsets:
         return m_appData.renderData().m_showLightboxOffsetLabels;
       case MainMenuAction::ToggleLayoutTabs:
         return m_appData.settings().showLayoutTabs();
+      case MainMenuAction::ToggleGlobalTimeControls:
+        return m_appData.settings().showGlobalTimeControls();
       case MainMenuAction::ToggleEntropyInstanceSync:
         return m_appData.settings().entropyInstanceSyncEnabled();
       case MainMenuAction::ToggleSync:
@@ -2354,6 +2678,11 @@ void ImGuiWrapper::render()
         return m_appData.guiData().m_showOpacityBlenderWindow;
       case MainMenuAction::ShowOpacityMixer:
         return m_appData.guiData().m_showOpacityBlenderWindow;
+      case MainMenuAction::ToggleTimePlayback: {
+        const auto imageUid = globalTimeControlImageUid(m_appData);
+        const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
+        return image ? image->settings().timePlaybackPlaying() : false;
+      }
       case MainMenuAction::ToggleActiveImageIsosurfaces: {
         const auto imageUid = m_appData.activeImageUid();
         const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
@@ -2611,6 +2940,7 @@ void ImGuiWrapper::render()
 
     if (hasLoadedProject) {
       renderLayoutTabs(m_appData);
+      renderGlobalTimeControl(m_appData);
     }
 
     if (m_appData.guiData().m_showSettingsWindow) {

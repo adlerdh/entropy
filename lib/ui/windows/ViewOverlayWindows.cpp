@@ -146,6 +146,7 @@ void renderViewSettingsComboWindow(
             ImGui::SetTooltip("%s", (sk_selectImages).c_str());
           }
 
+          ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
           if (ImGui::BeginPopup("imageVisibilityPopup")) {
             ImGui::Text("Visible images:");
             ImGui::PushID("visibleimages"); /*** ID = visibleimages ***/
@@ -195,6 +196,7 @@ void renderViewSettingsComboWindow(
 
             ImGui::EndPopup();
           }
+          ImGui::PopStyleVar();
         }
         else if (ViewRenderMode::Disabled == renderMode) {
           ImGui::Button(label);

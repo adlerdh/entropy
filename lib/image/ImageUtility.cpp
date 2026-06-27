@@ -90,16 +90,19 @@ template<typename T>
 std::vector<T> copyImageComponentValues(const Image& image, uint32_t component)
 {
   const std::size_t numPixels = image.header().numPixels();
+  const std::size_t numValues = numPixels * image.timeAxis().numTimePoints();
   std::vector<T> values;
-  values.reserve(numPixels);
+  values.reserve(numValues);
 
-  for (std::size_t i = 0; i < numPixels; ++i) {
-    const auto value = image.value<T>(component, i);
-    if (!value) {
-      spdlog::error("Unable to read image component {} value at index {}", component, i);
-      throw_debug("Unable to read image component value")
+  for (uint32_t timePoint = 0; timePoint < image.timeAxis().numTimePoints(); ++timePoint) {
+    for (std::size_t i = 0; i < numPixels; ++i) {
+      const auto value = image.value<T>(component, i, timePoint);
+      if (!value) {
+        spdlog::error("Unable to read image component {} value at index {} and time {}", component, i, timePoint);
+        throw_debug("Unable to read image component value")
+      }
+      values.push_back(*value);
     }
-    values.push_back(*value);
   }
 
   return values;
@@ -124,8 +127,9 @@ std::optional<ImageHeader> readImageHeaderOnly(
     spdlog::error("Error setting image IO information for image from file {}", fileName);
     return std::nullopt;
   }
+  normalizeImageIoAxesForEntropy(ioInfoOnDisk, fileName);
 
-  ImageIoInfo ioInfoInMemory = ioInfoOnDisk;
+  ImageIoInfo ioInfoInMemory = spatializedImageIoInfoForEntropy(ioInfoOnDisk);
   const uint32_t numCompsOnDisk = ioInfoOnDisk.m_pixelInfo.m_numComponents;
   uint32_t numCompsToLoad = numCompsOnDisk;
 
@@ -182,7 +186,8 @@ std::optional<ImageHeader> readImageHeaderOnly(
   ioInfoInMemory.m_componentInfo.m_componentTypeString = componentTypeString(memoryType);
   ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = componentSizeInBytes(memoryType);
   ioInfoInMemory.m_pixelInfo.m_numComponents = numCompsToLoad;
-  ioInfoInMemory.m_sizeInfo.m_imageSizeInComponents = ioInfoInMemory.m_sizeInfo.m_imageSizeInPixels * numCompsToLoad;
+  ioInfoInMemory.m_sizeInfo.m_imageSizeInComponents =
+    ioInfoInMemory.m_sizeInfo.m_imageSizeInPixels * numCompsToLoad * ioInfoOnDisk.m_timeInfo.m_numTimePoints;
   ioInfoInMemory.m_sizeInfo.m_imageSizeInBytes =
     ioInfoInMemory.m_sizeInfo.m_imageSizeInComponents * ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
 
@@ -465,7 +470,7 @@ std::vector<ComponentStats> computeImageStatisticsOnSortedValues(const Image& im
 {
   std::vector<ComponentStats> componentStats;
 
-  const std::size_t N = image.header().numPixels();
+  const std::size_t N = image.header().numPixels() * image.timeAxis().numTimePoints();
 
   for (uint32_t i = 0; i < image.header().numComponentsPerPixel(); ++i) {
     const void* bufferSorted = image.bufferSortedAsVoid(i);
@@ -520,7 +525,7 @@ std::vector<OnlineStats> computeImageStatisticsOnUnsortedValues(const Image& ima
 {
   std::vector<OnlineStats> componentStats;
 
-  const std::size_t N = image.header().numPixels();
+  const std::size_t N = image.header().numPixels() * image.timeAxis().numTimePoints();
 
   for (uint32_t i = 0; i < image.header().numComponentsPerPixel(); ++i) {
     const void* buffer = image.bufferAsVoid(i);
@@ -610,7 +615,7 @@ std::vector<tdigest::TDigest> computeTDigests(const Image& image)
 {
   spdlog::debug("Computing T-digest for image intensities");
 
-  const std::size_t N = image.header().numPixels();
+  const std::size_t N = image.header().numPixels() * image.timeAxis().numTimePoints();
   std::vector<tdigest::TDigest> digests;
 
   const unsigned int numTh = std::max(std::thread::hardware_concurrency() - 1, 1u);

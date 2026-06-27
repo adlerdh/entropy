@@ -56,6 +56,46 @@ ComponentType ImageSettings::componentType() const
   return m_componentType;
 }
 
+void ImageSettings::setActiveTimePoint(uint32_t timePoint)
+{
+  m_activeTimePoint = timePoint;
+}
+
+uint32_t ImageSettings::activeTimePoint() const
+{
+  return m_activeTimePoint;
+}
+
+void ImageSettings::setTimePlaybackLoop(bool loop)
+{
+  m_timePlaybackLoop = loop;
+}
+
+bool ImageSettings::timePlaybackLoop() const
+{
+  return m_timePlaybackLoop;
+}
+
+void ImageSettings::setTimePlaybackPlaying(bool playing)
+{
+  m_timePlaybackPlaying = playing;
+}
+
+bool ImageSettings::timePlaybackPlaying() const
+{
+  return m_timePlaybackPlaying;
+}
+
+void ImageSettings::setTimePlaybackSpeed(double speed)
+{
+  m_timePlaybackSpeed = std::max(0.0, speed);
+}
+
+double ImageSettings::timePlaybackSpeed() const
+{
+  return m_timePlaybackSpeed;
+}
+
 void ImageSettings::setBorderColor(glm::vec3 borderColor)
 {
   m_borderColor = std::move(borderColor);

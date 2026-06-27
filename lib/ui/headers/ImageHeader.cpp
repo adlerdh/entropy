@@ -12,6 +12,7 @@
 // data::roundPointToNearestImageVoxelCenter
 // data::getAnnotationSubjectPlaneName
 #include "logic/app/DataHelper.h"
+#include "rendering/TextureSetup.h"
 
 #include "image/DicomSeries.h"
 #include "image/Image.h"
@@ -20,6 +21,7 @@
 #include "image/ImageSettings.h"
 #include "image/ImageTransformations.h"
 #include "image/ImageUtility.h"
+#include "image/TimePlaybackController.h"
 
 #include "logic/app/Data.h"
 #include "logic/states/annotation/AnnotationStateMachine.h"
@@ -43,6 +45,7 @@
 #include <array>
 #include <cctype>
 #include <cstdint>
+#include <iomanip>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -59,6 +62,24 @@ using namespace entropy::ui::headers;
 
 namespace
 {
+constexpr double k_minTimePlaybackSpeed = 0.1;
+constexpr double k_minTimePlaybackFramesPerSecond = 1.0;
+constexpr double k_maxTimePlaybackFramesPerSecond = 120.0;
+
+double minTimePlaybackSpeed(const Image& image)
+{
+  return std::min(
+    k_minTimePlaybackSpeed,
+    image.timeAxis().maxPlaybackSpeedForFrameRate(k_minTimePlaybackFramesPerSecond));
+}
+
+double maxTimePlaybackSpeed(const Image& image)
+{
+  return std::max(
+    k_minTimePlaybackSpeed,
+    image.timeAxis().maxPlaybackSpeedForFrameRate(k_maxTimePlaybackFramesPerSecond));
+}
+
 const char* vectorArrowOverlaySpacingModeName(VectorArrowOverlaySpacingMode mode)
 {
   switch (mode) {
@@ -90,6 +111,56 @@ void disabledWrappedText(const char* text)
   ImGui::PushTextWrapPos();
   ImGui::TextDisabled("%s", text);
   ImGui::PopTextWrapPos();
+}
+
+void disabledWrappedTextWithInlineStatus(const char* text, const std::string& status)
+{
+  ImGui::PushTextWrapPos();
+  ImGui::TextDisabled("%s", text);
+  ImGui::SameLine();
+  if (!status.empty()) {
+    ImGui::TextDisabled("%s", status.c_str());
+  }
+  else {
+    ImGui::Dummy(ImVec2(ImGui::CalcTextSize("Computing Laplacian magnitude projection...").x, 0.0f));
+  }
+  ImGui::PopTextWrapPos();
+}
+
+bool autoWindowButton(
+  const char* label,
+  Image& image,
+  ImageSettings& settings,
+  uint32_t component,
+  double low,
+  double high)
+{
+  if (!ImGui::SmallButton(label)) {
+    return false;
+  }
+
+  settings.setWindowValueLow(component, image.quantileToValue(component, low));
+  settings.setWindowValueHigh(component, image.quantileToValue(component, high));
+  return true;
+}
+
+bool renderAutoWindowButtons(Image& image, ImageSettings& settings, uint32_t component)
+{
+  ImGui::PushID(&image);
+  ImGui::AlignTextToFramePadding();
+  ImGui::TextDisabled("Auto window:");
+  ImGui::SameLine();
+
+  bool changed = autoWindowButton("0-100%", image, settings, component, 0.0, 1.0);
+  ImGui::SameLine();
+  changed |= autoWindowButton("1-99%", image, settings, component, 0.01, 0.99);
+  ImGui::SameLine();
+  changed |= autoWindowButton("2-98%", image, settings, component, 0.02, 0.98);
+  ImGui::SameLine();
+  helpMarker("Set window/level from image percentiles for the displayed component");
+
+  ImGui::PopID();
+  return changed;
 }
 
 bool visibilityCheckboxBeforeSlider(const char* id, bool* visible, const char* tooltip)
@@ -399,6 +470,190 @@ void renderImageFileMetadata(const ImageHeader& header)
   }
 }
 
+void refreshImageTextureForActiveTimePoint(AppData& appData, const uuids::uuid& imageUid)
+{
+  appData.renderData().m_imageTextures.erase(imageUid);
+  createImageTextures(appData, std::vector<uuids::uuid>{imageUid});
+}
+
+void setImageTimePoint(AppData& appData, const uuids::uuid& imageUid, Image& image, uint32_t timePoint)
+{
+  const uint32_t clamped = image.timeAxis().clamp(timePoint);
+  if (image.settings().activeTimePoint() == clamped) {
+    return;
+  }
+  image.settings().setActiveTimePoint(clamped);
+  refreshImageTextureForActiveTimePoint(appData, imageUid);
+}
+
+void setTimePointWithOptionalSynchronization(
+  AppData& appData,
+  const uuids::uuid& imageUid,
+  Image& image,
+  uint32_t timePoint)
+{
+  setImageTimePoint(appData, imageUid, image, timePoint);
+  if (!appData.settings().synchronizeTimeSeries()) {
+    return;
+  }
+
+  for (const uuids::uuid& otherUid : appData.imageUidsOrdered()) {
+    if (otherUid == imageUid) {
+      continue;
+    }
+    Image* other = appData.image(otherUid);
+    if (!other || !other->isTimeSeries()) {
+      continue;
+    }
+    setImageTimePoint(appData, otherUid, *other, timePoint);
+  }
+}
+
+std::string timePointInputFormat(const Image& image, uint32_t timePoint)
+{
+  std::ostringstream os;
+  os << "%u of " << (image.timeAxis().numTimePoints() - 1u);
+  if (const auto value = image.timeAxis().value(timePoint)) {
+    os << " (" << std::fixed << std::setprecision(2) << *value << " " << image.timeAxis().units() << ")";
+  }
+  return os.str();
+}
+
+std::string timeSeriesSummaryLabel(const Image& image)
+{
+  std::ostringstream os;
+  os << image.timeAxis().numTimePoints() << " frames";
+  if (const auto spacing = image.timeAxis().spacing()) {
+    os << ", " << *spacing;
+    if (!image.timeAxis().units().empty()) {
+      os << ' ' << image.timeAxis().units();
+    }
+    os << " spacing";
+  }
+  else {
+    os << ", variable spacing";
+  }
+  return os.str();
+}
+
+std::string playbackSpeedLabel(const Image& image)
+{
+  const double speed = image.settings().timePlaybackSpeed();
+  const double framePeriod = image.timeAxis().playbackFramePeriodSeconds(speed);
+  const double framesPerSecond = playbackFramesPerSecond(framePeriod);
+  const char* frameWord = std::abs(framesPerSecond - 1.0) < 1.0e-6 ? "frame" : "frames";
+  std::ostringstream os;
+  os << "%.1fx (" << std::fixed << std::setprecision(1) << framesPerSecond << ' ' << frameWord << "/sec)";
+  return os.str();
+}
+
+void renderTimeSeriesHeader(AppData& appData, const uuids::uuid& imageUid, Image& image)
+{
+  if (!image.isTimeSeries()) {
+    return;
+  }
+
+  ImageSettings& settings = image.settings();
+  const uint32_t oldTimePoint = image.timeAxis().clamp(settings.activeTimePoint());
+  uint32_t newTimePoint = oldTimePoint;
+
+  ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+  if (ImGui::TreeNode("Time Series")) {
+    ImGui::TextDisabled("%s", timeSeriesSummaryLabel(image).c_str());
+
+    const uint32_t maxTimePoint = image.timeAxis().numTimePoints() - 1u;
+    uint32_t timePointInput = oldTimePoint;
+    constexpr uint32_t timePointStep = 1u;
+    const std::string timePointFormat = timePointInputFormat(image, oldTimePoint);
+    if (ImGui::InputScalar(
+          "Frame",
+          ImGuiDataType_U32,
+          &timePointInput,
+          &timePointStep,
+          nullptr,
+          timePointFormat.c_str()))
+    {
+      newTimePoint = image.timeAxis().clamp(timePointInput);
+    }
+    ImGui::SameLine();
+    helpMarker("Select the displayed time frame");
+
+    bool playing = settings.timePlaybackPlaying();
+    const std::string playbackButtonLabel =
+      std::string{playing ? ICON_FK_PAUSE : ICON_FK_PLAY} + "##toggleTimePlayback";
+    if (ImGui::Button(playbackButtonLabel.c_str())) {
+      playing = !playing;
+      settings.setTimePlaybackPlaying(playing);
+      if (playing) {
+        appData.state().setAnimating(true);
+      }
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip(playing ? "Pause time-series playback" : "Play time series");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FK_FAST_BACKWARD "##firstTimePoint")) {
+      newTimePoint = 0u;
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Go to first time frame");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FK_STEP_BACKWARD "##previousTimePoint")) {
+      newTimePoint = oldTimePoint == 0u ? (settings.timePlaybackLoop() ? maxTimePoint : 0u) : oldTimePoint - 1u;
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Go to previous time frame");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FK_STEP_FORWARD "##nextTimePoint")) {
+      newTimePoint =
+        oldTimePoint == maxTimePoint ? (settings.timePlaybackLoop() ? 0u : maxTimePoint) : oldTimePoint + 1u;
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Go to next time frame");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FK_FAST_FORWARD "##lastTimePoint")) {
+      newTimePoint = maxTimePoint;
+    }
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Go to last time frame");
+    }
+    ImGui::SameLine();
+    bool loop = settings.timePlaybackLoop();
+    if (ImGui::Checkbox("Loop", &loop)) {
+      settings.setTimePlaybackLoop(loop);
+    }
+
+    const double minPlaybackSpeed = minTimePlaybackSpeed(image);
+    const double maxPlaybackSpeed = maxTimePlaybackSpeed(image);
+    double playbackSpeed = std::clamp(settings.timePlaybackSpeed(), minPlaybackSpeed, maxPlaybackSpeed);
+    if (playbackSpeed != settings.timePlaybackSpeed()) {
+      settings.setTimePlaybackSpeed(playbackSpeed);
+    }
+    const std::string playbackSpeedFormat = playbackSpeedLabel(image);
+    if (mySliderF64("Playback speed", &playbackSpeed, minPlaybackSpeed, maxPlaybackSpeed, playbackSpeedFormat.c_str()))
+    {
+      settings.setTimePlaybackSpeed(playbackSpeed);
+    }
+    ImGui::SameLine();
+    helpMarker(
+      "Playback speed multiplier. The slider range is adjusted from the image time spacing to include 1 to 120 "
+      "frames/sec playback.");
+
+    ImGui::TreePop();
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+  }
+
+  if (newTimePoint != oldTimePoint) {
+    setTimePointWithOptionalSynchronization(appData, imageUid, image, newTimePoint);
+  }
+}
+
 } // namespace
 
 void renderImageHeader(
@@ -472,12 +727,13 @@ void renderImageHeader(
   Image* activeSeg = (activeSegUid) ? appData.seg(*activeSegUid) : nullptr;
 
   uint32_t activeComp = imgSettings.activeComponent();
+  const uint32_t activeTimePoint = image->timeAxis().clamp(imgSettings.activeTimePoint());
   Image* displayImage = image;
   ImageSettings* displaySettings = &imgSettings;
   uint32_t displayComp = activeComp;
 
   if (const auto projectionMode = componentProjectionForImage(*image)) {
-    if (const auto projectionUid = appData.componentProjectionImageUid(imageUid, *projectionMode)) {
+    if (const auto projectionUid = appData.componentProjectionImageUid(imageUid, *projectionMode, activeTimePoint)) {
       if (Image* projectionImage = appData.image(*projectionUid)) {
         displayImage = projectionImage;
         displaySettings = &projectionImage->settings();
@@ -717,6 +973,8 @@ void renderImageHeader(
   const bool showComponentControls =
     (imgHeader.numComponentsPerPixel() > 1 && Image::MultiComponentBufferType::SeparateImages == image->bufferType());
 
+  renderTimeSeriesHeader(appData, imageUid, *image);
+
   if (showComponentControls) {
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
     const bool complexValuedImage = isComplexValuedImage(*image);
@@ -790,12 +1048,22 @@ void renderImageHeader(
           ImGui::EndCombo();
         }
 
-        disabledWrappedText(componentRenderModeDescription(
-          imgSettings.componentRenderMode(),
-          true,
-          false,
-          false,
-          imgSettings.vectorLogJacobianDeterminant()));
+        const auto pendingProjectionMode = componentProjectionForImage(*image);
+        const bool projectionPending =
+          pendingProjectionMode &&
+          !appData.componentProjectionImageUid(imageUid, *pendingProjectionMode, activeTimePoint);
+        const std::string projectionStatus =
+          projectionPending
+            ? fmt::format("Computing {} projection...", componentProjectionModeName(*pendingProjectionMode))
+            : std::string{};
+        disabledWrappedTextWithInlineStatus(
+          componentRenderModeDescription(
+            imgSettings.componentRenderMode(),
+            true,
+            false,
+            false,
+            imgSettings.vectorLogJacobianDeterminant()),
+          projectionStatus);
         if (ComponentRenderMode::VectorPlanarProjectionColor == imgSettings.componentRenderMode()) {
           bool signedColors = imgSettings.vectorPlanarProjectionSignedColors();
           if (ImGui::Checkbox("Signed colors", &signedColors)) {
@@ -851,7 +1119,7 @@ void renderImageHeader(
           ImGui::EndCombo();
         }
 
-        ImGui::TextWrapped("%s", componentRenderModeDescription(imgSettings.componentRenderMode(), false, true, false));
+        disabledWrappedText(componentRenderModeDescription(imgSettings.componentRenderMode(), false, true, false));
 
         if (ComponentRenderMode::ComplexPhase == imgSettings.componentRenderMode()) {
           ImGui::AlignTextToFramePadding();
@@ -941,13 +1209,11 @@ void renderImageHeader(
           ImGui::EndCombo();
         }
 
-        ImGui::TextWrapped(
-          "%s",
-          componentRenderModeDescription(
-            imgSettings.componentRenderMode(),
-            false,
-            false,
-            4 == imgHeader.numComponentsPerPixel()));
+        disabledWrappedText(componentRenderModeDescription(
+          imgSettings.componentRenderMode(),
+          false,
+          false,
+          4 == imgHeader.numComponentsPerPixel()));
       }
 
       if (
@@ -1057,10 +1323,12 @@ void renderImageHeader(
           helpMarker("Selected image component opacity");
         }
       }
-      else if (const auto projectionMode = componentProjectionForImage(*image);
-               projectionMode && !appData.componentProjectionImageUid(imageUid, *projectionMode))
-      {
-        ImGui::TextDisabled("Computing %s projection...", componentProjectionModeName(*projectionMode).c_str());
+      else if (!vectorFieldImage) {
+        if (const auto projectionMode = componentProjectionForImage(*image);
+            projectionMode && !appData.componentProjectionImageUid(imageUid, *projectionMode, activeTimePoint))
+        {
+          ImGui::TextDisabled("Computing %s projection...", componentProjectionModeName(*projectionMode).c_str());
+        }
       }
 
       if (vectorFieldImage) {
@@ -1687,55 +1955,10 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker("Lower and upper image thresholds");
     }
+    if (renderAutoWindowButtons(viewImage, viewSettings, viewComp)) {
+      updateImageUniforms();
+    }
     ImGui::Spacing();
-
-    /*
-        ImGui::Text("Auto window: "); ImGui::SameLine();
-
-        const auto& stats = imgSettings.componentStatistics(activeComp);
-
-        if (ImGui::Button("Max"))
-        {
-            imgSettings.setWindowValueLow(stats.m_minimum);
-            imgSettings.setWindowValueHigh(stats.m_maximum);
-            updateImageUniforms();
-        }
-        ImGui::SameLine();
-
-        /// @todo Clear this up.... [1, 99]%
-        /// Or separate buttons for low, high window
-        if (ImGui::Button("99\%"))
-        {
-            imgSettings.setWindowValueLow(stats.m_quantiles[1]);
-            imgSettings.setWindowValueHigh(stats.m_quantiles[99]);
-            updateImageUniforms();
-        }
-        ImGui::SameLine();
-
-        if (ImGui::Button("98\%"))
-        {
-            imgSettings.setWindowValueLow(stats.m_quantiles[2]);
-            imgSettings.setWindowValueHigh(stats.m_quantiles[98]);
-            updateImageUniforms();
-        }
-        ImGui::SameLine();
-
-        if (ImGui::Button("95\%"))
-        {
-            imgSettings.setWindowValueLow(stats.m_quantiles[5]);
-            imgSettings.setWindowValueHigh(stats.m_quantiles[95]);
-            updateImageUniforms();
-        }
-        ImGui::SameLine();
-
-        if (ImGui::Button("90\%"))
-        {
-            imgSettings.setWindowValueLow(stats.m_quantiles[10]);
-            imgSettings.setWindowValueHigh(stats.m_quantiles[90]);
-            updateImageUniforms();
-        }
-        ImGui::SameLine(); helpMarker("Set window based on percentiles of the image histogram");
-*/
 
     auto getImageInterpMode = [&viewSettings]() {
       return (viewSettings.displayImageAsColor()) ? viewSettings.colorInterpolationMode()

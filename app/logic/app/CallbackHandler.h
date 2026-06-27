@@ -284,6 +284,27 @@ public:
   void cycleImageComponent(int i);
   void cycleActiveImage(int i);
 
+  /**
+   * @brief Move the active time-series image by a relative frame offset.
+   * @param i Relative frame offset.
+   */
+  void cycleTimePoint(int i);
+
+  /**
+   * @brief Toggle playback for the active time-series image.
+   */
+  void toggleTimePlayback();
+
+  /**
+   * @brief Move the active time-series image to its first frame.
+   */
+  void setTimePointToFirst();
+
+  /**
+   * @brief Move the active time-series image to its last frame.
+   */
+  void setTimePointToLast();
+
   void cycleForegroundSegLabel(int i);
   void cycleBackgroundSegLabel(int i);
 

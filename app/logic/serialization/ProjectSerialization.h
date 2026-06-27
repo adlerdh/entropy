@@ -94,6 +94,7 @@ struct ImageSettings
   bool m_globalVisibility = true;            //!< Global image visibility.
   double m_globalOpacity = 1.0;              //!< Global opacity multiplier.
   glm::vec3 m_borderColor{1.0f, 0.0f, 1.0f}; //!< Image border RGB color.
+  bool m_lockedToReference = true;           //!< Lock image transformations to the reference image.
 
   double m_level = 0.0f;  //! Window center value in image units
   double m_window = 1.0f; //! Window width in image units
@@ -103,7 +104,11 @@ struct ImageSettings
 
   double m_opacity = 1.0f; //!< Opacity [0, 1]
 
-  uint32_t m_activeComponent = 0; //!< Active image component.
+  uint32_t m_activeComponent = 0;     //!< Active image component.
+  uint32_t m_activeTimePoint = 0;     //!< Active time point for time-series images.
+  bool m_timePlaybackLoop = true;     //!< Loop time playback.
+  bool m_timePlaybackPlaying = false; //!< Time playback is running.
+  double m_timePlaybackSpeed = 1.0;   //!< Time playback speed multiplier.
   ProjectComponentRenderMode m_componentRenderMode =
     ProjectComponentRenderMode::SingleComponent;                                 //!< Multi-component render mode.
   ProjectComplexPhaseUnit m_complexPhaseUnit = ProjectComplexPhaseUnit::Radians; //!< Complex phase display units.
@@ -295,6 +300,8 @@ struct ProjectInterfaceSettings
 {
   bool m_showLayoutTabs = true;                                                    //!< Show the layout tab bar.
   ProjectLayoutTabPlacement m_layoutTabPlacement = ProjectLayoutTabPlacement::Top; //!< Layout tab bar edge.
+  bool m_showGlobalTimeControls = true;    //!< Show the global time-series control window.
+  bool m_synchronizeTimeSeries = true;     //!< Synchronize displayed time points across time-series images.
   std::uint32_t m_imageValuePrecision = 3; //!< Decimal places for displayed image values.
   std::uint32_t m_coordsPrecision = 3;     //!< Decimal places for displayed coordinates.
   std::uint32_t m_txPrecision = 3;         //!< Decimal places for displayed transform values.

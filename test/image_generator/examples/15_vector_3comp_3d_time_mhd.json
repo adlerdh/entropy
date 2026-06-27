@@ -1,0 +1,15 @@
+{
+  "output": "15_vector_3comp_3d_time.mhd",
+  "pixel_kind": "vector",
+  "component_type": "float",
+  "components": 3,
+  "size": [18, 16, 12, 6],
+  "spacing": [1.0, 1.0, 2.0, 1.0],
+  "origin": [-9.0, -8.0, -12.0, 0.0],
+  "pattern": "moving_gaussian",
+  "metadata": {
+    "entropy_time_axis": "last",
+    "entropy_time_units": "frame",
+    "entropy_example": "3-component 3D vector MetaImage time series"
+  }
+}

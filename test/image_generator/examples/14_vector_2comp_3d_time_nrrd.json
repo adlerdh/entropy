@@ -1,0 +1,15 @@
+{
+  "output": "14_vector_2comp_3d_time.nrrd",
+  "pixel_kind": "vector",
+  "component_type": "float",
+  "components": 2,
+  "size": [20, 18, 10, 4],
+  "spacing": [1.0, 1.0, 1.5, 2.0],
+  "origin": [-10.0, -9.0, -7.5, 0.0],
+  "pattern": "temporal_sine",
+  "metadata": {
+    "entropy_time_axis": "last",
+    "entropy_time_units": "frame",
+    "entropy_example": "2-component 3D vector time series"
+  }
+}

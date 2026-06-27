@@ -40,6 +40,8 @@ serialize::ProjectInterfaceSettings interfaceSettings(const AppData& appData)
   return serialize::ProjectInterfaceSettings{
     .m_showLayoutTabs = appData.settings().showLayoutTabs(),
     .m_layoutTabPlacement = projectLayoutTabPlacement(appData.settings().layoutTabPlacement()),
+    .m_showGlobalTimeControls = appData.settings().showGlobalTimeControls(),
+    .m_synchronizeTimeSeries = appData.settings().synchronizeTimeSeries(),
     .m_imageValuePrecision = appData.guiData().m_imageValuePrecision,
     .m_coordsPrecision = appData.guiData().m_coordsPrecision,
     .m_txPrecision = appData.guiData().m_txPrecision,
@@ -50,6 +52,8 @@ void applyInterfaceSettings(AppData& appData, const serialize::ProjectInterfaceS
 {
   appData.settings().setShowLayoutTabs(settings.m_showLayoutTabs);
   appData.settings().setLayoutTabPlacement(uiLayoutTabPlacement(settings.m_layoutTabPlacement));
+  appData.settings().setShowGlobalTimeControls(settings.m_showGlobalTimeControls);
+  appData.settings().setSynchronizeTimeSeries(settings.m_synchronizeTimeSeries);
   syncLayoutTabGuiData(appData);
 
   appData.guiData().m_imageValuePrecision = clampPrecision(settings.m_imageValuePrecision);
@@ -103,6 +107,7 @@ serialize::ImageSettings imageSettings(const Image& image)
   settings.m_globalVisibility = imageSettings.globalVisibility();
   settings.m_globalOpacity = imageSettings.globalOpacity();
   settings.m_borderColor = imageSettings.borderColor();
+  settings.m_lockedToReference = imageSettings.isLockedToReference();
   settings.m_level = imageSettings.windowCenter();
   settings.m_window = imageSettings.windowWidth();
   settings.m_thresholdLow = thresholds.first;
@@ -142,6 +147,10 @@ serialize::ImageSettings imageSettings(const Image& image)
   settings.m_vectorLogJacobianDeterminant = imageSettings.vectorLogJacobianDeterminant();
   settings.m_ignoreAlpha = imageSettings.ignoreAlpha();
   settings.m_colorInterpolationMode = imageSettings.colorInterpolationMode();
+  settings.m_activeTimePoint = imageSettings.activeTimePoint();
+  settings.m_timePlaybackLoop = imageSettings.timePlaybackLoop();
+  settings.m_timePlaybackPlaying = imageSettings.timePlaybackPlaying();
+  settings.m_timePlaybackSpeed = imageSettings.timePlaybackSpeed();
   settings.m_componentLevels.reserve(imageSettings.numComponents());
   settings.m_componentWindows.reserve(imageSettings.numComponents());
   settings.m_componentThresholdLows.reserve(imageSettings.numComponents());
@@ -232,9 +241,14 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setGlobalVisibility(settings.m_globalVisibility);
   imageSettings.setGlobalOpacity(settings.m_globalOpacity);
   imageSettings.setBorderColor(settings.m_borderColor);
+  imageSettings.setLockedToReference(settings.m_lockedToReference);
   if (settings.m_activeComponent < imageSettings.numComponents()) {
     imageSettings.setActiveComponent(settings.m_activeComponent);
   }
+  imageSettings.setActiveTimePoint(image.timeAxis().clamp(settings.m_activeTimePoint));
+  imageSettings.setTimePlaybackLoop(settings.m_timePlaybackLoop);
+  imageSettings.setTimePlaybackPlaying(settings.m_timePlaybackPlaying && image.isTimeSeries());
+  imageSettings.setTimePlaybackSpeed(settings.m_timePlaybackSpeed);
   imageSettings.setWindowCenter(settings.m_level);
   imageSettings.setWindowWidth(settings.m_window);
   imageSettings.setThresholdLow(settings.m_thresholdLow);

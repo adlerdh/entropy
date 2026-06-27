@@ -44,6 +44,7 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
 
     const ComponentType compType = image->header().memoryComponentType();
     const uint32_t numComp = image->header().numComponentsPerPixel();
+    const uint32_t activeTimePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
 
     std::vector<GLTexture> componentTextures;
 
@@ -138,7 +139,7 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
           sizedInternalNormalizedFormat,
           bufferPixelNormalizedFormat,
           GLTexture::getBufferPixelDataType(compType),
-          image->bufferAsVoid(k_comp0));
+          image->bufferAsVoid(k_comp0, activeTimePoint));
 
         spdlog::debug("Done creating the texture for all interleaved components of image {}", imageUid);
         break;
@@ -194,7 +195,7 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
             sizedInternalNormalizedFormat,
             bufferPixelNormalizedFormat,
             GLTexture::getBufferPixelDataType(compType),
-            image->bufferAsVoid(comp));
+            image->bufferAsVoid(comp, activeTimePoint));
         }
 
         spdlog::debug("Done creating {} image component textures", componentTextures.size());

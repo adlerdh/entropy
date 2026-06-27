@@ -233,6 +233,7 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Decrease Segmentation Opacity", MainMenuAction::DecreaseSegmentationOpacity, "A");
   actionMenuItem(callbacks, "Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, "D");
   ImGui::Separator();
+  actionMenuItem(callbacks, "Snap Crosshairs to Voxels", MainMenuAction::ToggleCrosshairsVoxelSnapping);
   actionMenuItem(callbacks, "Show Scale Bars", MainMenuAction::ToggleScaleBars);
   actionMenuItem(callbacks, "ASCII Rendering", MainMenuAction::ToggleAsciiRendering);
   actionMenuItem(callbacks, "Cycle Overlays", MainMenuAction::ToggleOverlays, "O");
@@ -291,6 +292,18 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     callbacks,
     "Save Initial + Manual Transformation...",
     MainMenuAction::SaveActiveImageInitialAndManualTransformation);
+  ImGui::Separator();
+  if (ImGui::BeginMenu("Time Series", actionEnabled(callbacks, MainMenuAction::ToggleGlobalTimeControls))) {
+    actionMenuItem(callbacks, "Show Time Controls", MainMenuAction::ToggleGlobalTimeControls);
+    ImGui::Separator();
+    actionMenuItem(callbacks, "Play / Pause", MainMenuAction::ToggleTimePlayback);
+    ImGui::Separator();
+    actionMenuItem(callbacks, "First Frame", MainMenuAction::FirstTimePoint);
+    actionMenuItem(callbacks, "Previous Frame", MainMenuAction::PreviousTimePoint, "Alt+,");
+    actionMenuItem(callbacks, "Next Frame", MainMenuAction::NextTimePoint, "Alt+.");
+    actionMenuItem(callbacks, "Last Frame", MainMenuAction::LastTimePoint);
+    ImGui::EndMenu();
+  }
   ImGui::Separator();
   if (ImGui::BeginMenu("Isosurfaces", callbacks.canAddImage)) {
     actionMenuItem(callbacks, "Show Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);

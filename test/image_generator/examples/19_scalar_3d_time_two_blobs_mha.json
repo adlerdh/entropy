@@ -1,0 +1,16 @@
+{
+  "output": "19_scalar_3d_time_two_blobs.mha",
+  "pixel_kind": "scalar",
+  "component_type": "float",
+  "components": 1,
+  "size": [48, 44, 28, 10],
+  "spacing": [0.9, 0.9, 1.4, 0.2],
+  "origin": [-21.6, -19.8, -19.6, 0.0],
+  "pattern": "two_moving_gaussians",
+  "amplitude": 180.0,
+  "metadata": {
+    "entropy_time_axis": "last",
+    "entropy_time_units": "sec",
+    "entropy_example": "3D scalar time series with two moving positive/negative blobs"
+  }
+}

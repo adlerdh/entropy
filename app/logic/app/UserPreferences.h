@@ -60,6 +60,7 @@ struct RenderPreferences
   glm::vec4 background3dColor{0.0f, 0.0f, 0.0f, 0.5f};
   glm::vec4 anatomicalLabelColor{0.695f, 0.870f, 0.090f, 1.0f};
   AnatomicalLabelType anatomicalLabelType = AnatomicalLabelType::Human;
+  float anatomicalLabelScale = 1.0f;
 
   bool showScaleBars = true;
   bool showScaleBarsInLightboxViews = false;

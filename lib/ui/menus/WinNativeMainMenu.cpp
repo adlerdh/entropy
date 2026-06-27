@@ -341,6 +341,35 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
   if (!isosurfacesMenu) {
     return false;
   }
+  HMENU timeSeriesMenu = CreatePopupMenu();
+  if (!timeSeriesMenu) {
+    DestroyMenu(isosurfacesMenu);
+    return false;
+  }
+
+  UINT timeSeriesPosition = 0;
+  if (
+    !insertActionMenuItem(
+      timeSeriesMenu,
+      timeSeriesPosition++,
+      MainMenuAction::ToggleGlobalTimeControls,
+      L"Show &Time Controls") ||
+    !insertSeparator(timeSeriesMenu, timeSeriesPosition++) ||
+    !insertActionMenuItem(timeSeriesMenu, timeSeriesPosition++, MainMenuAction::ToggleTimePlayback, L"&Play / Pause") ||
+    !insertSeparator(timeSeriesMenu, timeSeriesPosition++) ||
+    !insertActionMenuItem(timeSeriesMenu, timeSeriesPosition++, MainMenuAction::FirstTimePoint, L"&First Frame") ||
+    !insertActionMenuItem(
+      timeSeriesMenu,
+      timeSeriesPosition++,
+      MainMenuAction::PreviousTimePoint,
+      L"&Previous Frame\tAlt+,") ||
+    !insertActionMenuItem(timeSeriesMenu, timeSeriesPosition++, MainMenuAction::NextTimePoint, L"&Next Frame\tAlt+.") ||
+    !insertActionMenuItem(timeSeriesMenu, timeSeriesPosition++, MainMenuAction::LastTimePoint, L"&Last Frame"))
+  {
+    DestroyMenu(isosurfacesMenu);
+    DestroyMenu(timeSeriesMenu);
+    return false;
+  }
 
   UINT isosurfacesPosition = 0;
   if (
@@ -401,10 +430,12 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
       position++,
       MainMenuAction::SaveActiveImageInitialAndManualTransformation,
       L"Save &Initial + Manual Transformation...") &&
+    insertSeparator(menu, position++) && insertSubmenu(menu, position++, timeSeriesMenu, L"&Time Series") &&
     insertSeparator(menu, position++) && insertSubmenu(menu, position++, isosurfacesMenu, L"I&sosurfaces");
 
   if (!ok) {
     DestroyMenu(isosurfacesMenu);
+    DestroyMenu(timeSeriesMenu);
   }
   return ok;
 }
@@ -533,6 +564,11 @@ bool populateViewsMenu(HMENU menu)
            MainMenuAction::IncreaseSegmentationOpacity,
            L"Increase Segmentation Opacity\tD") &&
          insertSeparator(menu, position++) &&
+         insertActionMenuItem(
+           menu,
+           position++,
+           MainMenuAction::ToggleCrosshairsVoxelSnapping,
+           L"Snap Crosshairs to &Voxels") &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleScaleBars, L"Show Scale &Bars") &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleAsciiRendering, L"&ASCII Rendering") &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleOverlays, L"&Cycle Overlays\tO") &&

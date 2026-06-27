@@ -51,6 +51,7 @@ void drawAnatomicalLabels(
   bool isObliqueView,
   const glm::vec4& color,
   const AnatomicalLabelType& anatLabelType,
+  float labelScale,
   const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo);
 
 void drawCircle(

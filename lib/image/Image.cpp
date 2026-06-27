@@ -108,6 +108,15 @@ void setDefaultVectorFieldRendering(ImageSettings& settings, const ImageHeader& 
     settings.setVectorWarpedGridMillimeterSpacing(defaultVectorGridMillimeterSpacing(header));
   }
 }
+
+ImageTimeAxis timeAxisFromIoInfo(const ImageIoInfo& info)
+{
+  return {
+    info.m_timeInfo.m_numTimePoints,
+    info.m_timeInfo.m_origin,
+    info.m_timeInfo.m_spacing,
+    info.m_timeInfo.m_units};
+}
 } // namespace
 
 Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, const MultiComponentBufferType& bufferType)
@@ -120,15 +129,16 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
     throw_debug("Error creating itk::ImageIOBase")
   }
 
-  /// @todo Handle 4D images
   if (!setImageIoInfoFromItk(m_ioInfoOnDisk, imageIo)) {
     spdlog::error("Error setting image IO information for image from file {}", fileName);
     throw_debug("Error setting image IO information")
   }
+  normalizeImageIoAxesForEntropy(m_ioInfoOnDisk, fileName);
 
-  // The information in memory (destination image) may not match the information on disk (source
-  // image)
-  m_ioInfoInMemory = m_ioInfoOnDisk;
+  // The in-memory image model is spatially 3D. A 4D source is represented as 3D frames plus a
+  // separate time axis.
+  m_ioInfoInMemory = spatializedImageIoInfoForEntropy(m_ioInfoOnDisk);
+  m_timeAxis = timeAxisFromIoInfo(m_ioInfoOnDisk);
 
   const bool componentIsFloatingPoint = isComponentFloatingPoint(m_ioInfoOnDisk.m_componentInfo.m_componentType);
 
@@ -183,6 +193,10 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
     throw_debug("No components to load for image")
   }
 
+  m_ioInfoInMemory.m_pixelInfo.m_numComponents = numCompsToLoad;
+  m_ioInfoInMemory.m_pixelInfo.m_pixelStrideInBytes =
+    numCompsToLoad * m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
+
   std::function<bool(const void* buffer, std::size_t numElements)> loadBufferFn = nullptr;
 
   switch (m_imageRep) {
@@ -204,16 +218,22 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
   if (componentIsFloatingPoint) {
     // Read image with floating point components from disk to an ITK image with 32-bit float point
     // pixel components
-    loaded =
-      loadImage<float>(fileName, numPixels, numCompsOnDisk, numCompsToLoad, isVectorImage, m_bufferType, loadBufferFn);
+    loaded = loadImage<float>(
+      fileName,
+      m_ioInfoOnDisk.m_spaceInfo.m_numDimensions,
+      numPixels,
+      numCompsToLoad,
+      isVectorImage,
+      m_bufferType,
+      loadBufferFn);
   }
   else {
     // Read image with integer components from disk to an ITK image with 64-bit signed integer pixel
     // components
     loaded = loadImage<int64_t>(
       fileName,
+      m_ioInfoOnDisk.m_spaceInfo.m_numDimensions,
       numPixels,
-      numCompsOnDisk,
       numCompsToLoad,
       isVectorImage,
       m_bufferType,
@@ -310,8 +330,9 @@ Image::Image(
   const std::string& displayName,
   const ImageRepresentation& imageRep,
   const MultiComponentBufferType& bufferType,
-  const std::vector<const void*>& imageDataComponents)
-  : m_imageRep(imageRep), m_bufferType(bufferType), m_header(header)
+  const std::vector<const void*>& imageDataComponents,
+  ImageTimeAxis timeAxis)
+  : m_imageRep(imageRep), m_bufferType(bufferType), m_timeAxis(std::move(timeAxis)), m_header(header)
 {
   if (imageDataComponents.empty()) {
     spdlog::error("No image data buffers provided for constructing Image");
@@ -382,6 +403,7 @@ Image::Image(
   }
 
   const std::size_t numPixels = m_header.numPixels();
+  const std::size_t numBufferPixels = numPixels * m_timeAxis.numTimePoints();
   const uint32_t numComps = m_header.numComponentsPerPixel();
   const bool isVectorImage = (numComps > 1);
 
@@ -427,13 +449,13 @@ Image::Image(
         for (std::size_t c = 0; c < m_header.numComponentsPerPixel(); ++c) {
           switch (m_imageRep) {
             case ImageRepresentation::Segmentation: {
-              if (!loadSegBuffer(imageDataComponents[c], numPixels, srcCompType, dstCompType)) {
+              if (!loadSegBuffer(imageDataComponents[c], numBufferPixels, srcCompType, dstCompType)) {
                 throw_debug("Error loading segmentation image buffer")
               }
               break;
             }
             case ImageRepresentation::Image: {
-              if (!loadImageBuffer(imageDataComponents[c], numPixels, srcCompType, dstCompType)) {
+              if (!loadImageBuffer(imageDataComponents[c], numBufferPixels, srcCompType, dstCompType)) {
                 throw_debug("Error loading image buffer")
               }
               break;
@@ -444,12 +466,13 @@ Image::Image(
       }
       case MultiComponentBufferType::InterleavedImage: {
         // Load a single buffer with interleaved components:
-        const std::size_t N = numPixels * numCompsToLoad;
+        const std::size_t N = numBufferPixels * numCompsToLoad;
         const void* buffer = imageDataComponents[0];
         std::vector<std::byte> compactedBuffer;
 
         if (numCompsToLoad < numComps) {
-          compactedBuffer = compactInterleavedComponents(buffer, numPixels, numComps, numCompsToLoad, srcCompType);
+          compactedBuffer =
+            compactInterleavedComponents(buffer, numBufferPixels, numComps, numCompsToLoad, srcCompType);
           buffer = compactedBuffer.data();
         }
 
@@ -473,12 +496,12 @@ Image::Image(
   else // scalar image
   {
     if (ImageRepresentation::Segmentation == m_imageRep) {
-      if (!loadSegBuffer(imageDataComponents[0], numPixels, srcCompType, dstCompType)) {
+      if (!loadSegBuffer(imageDataComponents[0], numBufferPixels, srcCompType, dstCompType)) {
         throw_debug("Error loading segmentation image buffer")
       }
     }
     else {
-      if (!loadImageBuffer(imageDataComponents[0], numPixels, srcCompType, dstCompType)) {
+      if (!loadImageBuffer(imageDataComponents[0], numBufferPixels, srcCompType, dstCompType)) {
         throw_debug("Error loading image buffer")
       }
     }
@@ -557,6 +580,16 @@ const ImageHeader& Image::header() const
 ImageHeader& Image::header()
 {
   return m_header;
+}
+
+bool Image::isTimeSeries() const
+{
+  return m_timeAxis.isTimeSeries();
+}
+
+const ImageTimeAxis& Image::timeAxis() const
+{
+  return m_timeAxis;
 }
 
 const ImageTransformations& Image::transformations() const

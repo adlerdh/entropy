@@ -3,6 +3,7 @@
 #include "common/LoggingSettings.h"
 #include "rendering/RenderData.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <system_error>
 
@@ -51,6 +52,7 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.background3dColor = renderData.m_3dBackgroundColor;
   preferences.anatomicalLabelColor = renderData.m_anatomicalLabelColor;
   preferences.anatomicalLabelType = renderData.m_anatomicalLabelType;
+  preferences.anatomicalLabelScale = renderData.m_anatomicalLabelScale;
   preferences.showScaleBars = renderData.m_showScaleBars;
   preferences.showScaleBarsInLightboxViews = renderData.m_showScaleBarsInLightboxViews;
   preferences.scaleBarColor = renderData.m_scaleBarColor;
@@ -140,6 +142,7 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_3dBackgroundColor = preferences.background3dColor;
   renderData.m_anatomicalLabelColor = preferences.anatomicalLabelColor;
   renderData.m_anatomicalLabelType = preferences.anatomicalLabelType;
+  renderData.m_anatomicalLabelScale = std::clamp(preferences.anatomicalLabelScale, 0.5f, 2.0f);
   renderData.m_showScaleBars = preferences.showScaleBars;
   renderData.m_showScaleBarsInLightboxViews = preferences.showScaleBarsInLightboxViews;
   renderData.m_scaleBarColor = preferences.scaleBarColor;

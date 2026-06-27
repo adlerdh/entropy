@@ -33,12 +33,20 @@ std::size_t linearIndex(const glm::uvec3& dims, uint32_t x, uint32_t y, uint32_t
   return static_cast<std::size_t>(dims.x) * dims.y * z + static_cast<std::size_t>(dims.x) * y + x;
 }
 
-double vectorValueAt(const Image& image, uint32_t component, uint32_t x, uint32_t y, uint32_t z)
+double vectorValueAt(const Image& image, uint32_t component, uint32_t x, uint32_t y, uint32_t z, uint32_t timePoint)
 {
-  return image.value<double>(component, static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)).value_or(0.0);
+  return image.value<double>(component, static_cast<int>(x), static_cast<int>(y), static_cast<int>(z), timePoint)
+    .value_or(0.0);
 }
 
-double derivativeAt(const Image& image, uint32_t vectorComponent, uint32_t axis, uint32_t x, uint32_t y, uint32_t z)
+double derivativeAt(
+  const Image& image,
+  uint32_t vectorComponent,
+  uint32_t axis,
+  uint32_t x,
+  uint32_t y,
+  uint32_t z,
+  uint32_t timePoint)
 {
   const glm::uvec3 dims = image.header().pixelDimensions();
   const glm::vec3 spacing = image.header().spacing();
@@ -56,7 +64,7 @@ double derivativeAt(const Image& image, uint32_t vectorComponent, uint32_t axis,
     else {
       zz = coordinate;
     }
-    return vectorValueAt(image, vectorComponent, xx, yy, zz);
+    return vectorValueAt(image, vectorComponent, xx, yy, zz, timePoint);
   };
 
   const uint32_t n = dims[axis];
@@ -77,8 +85,14 @@ double derivativeAt(const Image& image, uint32_t vectorComponent, uint32_t axis,
   return (sample(coordinate + 1u) - sample(coordinate - 1u)) / (2.0 * dx);
 }
 
-double
-secondDerivativeAt(const Image& image, uint32_t vectorComponent, uint32_t axis, uint32_t x, uint32_t y, uint32_t z)
+double secondDerivativeAt(
+  const Image& image,
+  uint32_t vectorComponent,
+  uint32_t axis,
+  uint32_t x,
+  uint32_t y,
+  uint32_t z,
+  uint32_t timePoint)
 {
   const glm::uvec3 dims = image.header().pixelDimensions();
   const glm::vec3 spacing = image.header().spacing();
@@ -96,7 +110,7 @@ secondDerivativeAt(const Image& image, uint32_t vectorComponent, uint32_t axis, 
     else {
       zz = coordinate;
     }
-    return vectorValueAt(image, vectorComponent, xx, yy, zz);
+    return vectorValueAt(image, vectorComponent, xx, yy, zz, timePoint);
   };
 
   const uint32_t n = dims[axis];
@@ -117,9 +131,8 @@ secondDerivativeAt(const Image& image, uint32_t vectorComponent, uint32_t axis, 
   return (sample(coordinate + 1u) - 2.0 * sample(coordinate) + sample(coordinate - 1u)) / (dx * dx);
 }
 
-entropy_expected::expected<std::vector<float>, std::string> createVectorDerivativeValues(
-  const Image& image,
-  ComponentProjectionMode mode)
+entropy_expected::expected<std::vector<float>, std::string>
+createVectorDerivativeValues(const Image& image, ComponentProjectionMode mode, uint32_t timePoint)
 {
   if (!isVectorFieldCandidate(image)) {
     return entropy_expected::unexpected("Vector derivative projection requires a three-component image");
@@ -131,7 +144,8 @@ entropy_expected::expected<std::vector<float>, std::string> createVectorDerivati
   for (uint32_t z = 0; z < dims.z; ++z) {
     for (uint32_t y = 0; y < dims.y; ++y) {
       for (uint32_t x = 0; x < dims.x; ++x) {
-        const std::optional<double> value = vectorDerivativeProjectionValue(image, mode, glm::uvec3{x, y, z});
+        const std::optional<double> value =
+          vectorDerivativeProjectionValue(image, mode, glm::uvec3{x, y, z}, timePoint);
         if (!value) {
           return entropy_expected::unexpected("Unsupported vector derivative projection");
         }
@@ -266,8 +280,11 @@ bool isScalarComponentProjection(ComponentProjectionMode mode)
   return false;
 }
 
-std::optional<double>
-vectorDerivativeProjectionValue(const Image& image, ComponentProjectionMode mode, const glm::uvec3& voxel)
+std::optional<double> vectorDerivativeProjectionValue(
+  const Image& image,
+  ComponentProjectionMode mode,
+  const glm::uvec3& voxel,
+  uint32_t timePoint)
 {
   if (!isVectorFieldCandidate(image) || !isVectorDerivativeProjection(mode)) {
     return std::nullopt;
@@ -277,11 +294,12 @@ vectorDerivativeProjectionValue(const Image& image, ComponentProjectionMode mode
   if (voxel.x >= dims.x || voxel.y >= dims.y || voxel.z >= dims.z) {
     return std::nullopt;
   }
+  const uint32_t clampedTimePoint = image.timeAxis().clamp(timePoint);
 
   glm::dmat3 jacobian(0.0);
   for (uint32_t component = 0; component < 3u; ++component) {
     for (uint32_t axis = 0; axis < 3u; ++axis) {
-      jacobian[axis][component] = derivativeAt(image, component, axis, voxel.x, voxel.y, voxel.z);
+      jacobian[axis][component] = derivativeAt(image, component, axis, voxel.x, voxel.y, voxel.z, clampedTimePoint);
     }
   }
 
@@ -320,7 +338,7 @@ vectorDerivativeProjectionValue(const Image& image, ComponentProjectionMode mode
     glm::dvec3 laplacian(0.0);
     for (uint32_t component = 0; component < 3u; ++component) {
       for (uint32_t axis = 0; axis < 3u; ++axis) {
-        laplacian[component] += secondDerivativeAt(image, component, axis, voxel.x, voxel.y, voxel.z);
+        laplacian[component] += secondDerivativeAt(image, component, axis, voxel.x, voxel.y, voxel.z, clampedTimePoint);
       }
     }
     return glm::length(laplacian);
@@ -460,10 +478,14 @@ std::vector<DistanceMapImageResult> createDistanceMapImages(const Image& image, 
   return results;
 }
 
-entropy_expected::expected<Image, std::string> createComponentProjectionImage(
-  const Image& image,
-  ComponentProjectionMode mode)
+entropy_expected::expected<Image, std::string>
+createComponentProjectionImage(const Image& image, ComponentProjectionMode mode, uint32_t timePoint)
 {
+  /// @todo These CPU projections are the correctness reference for time-varying multi-component images.
+  /// Display-only projections such as magnitude, min/mean/max, phase, and vector-field derivative maps
+  /// should eventually move to shader or compute-shader paths so the active frame can be visualized
+  /// without allocating one derived CPU image per mode and time point. Keep CPU implementations as tests
+  /// and as an export path for users who need a real derived image on disk.
   const uint32_t numComponents = image.header().numComponentsPerPixel();
   if (numComponents < 2) {
     return entropy_expected::unexpected("Component projection requires at least two image components");
@@ -482,9 +504,10 @@ entropy_expected::expected<Image, std::string> createComponentProjectionImage(
   }
 
   const std::size_t numPixels = image.header().numPixels();
+  const uint32_t clampedTimePoint = image.timeAxis().clamp(timePoint);
   std::vector<float> values(numPixels, 0.0f);
   if (isVectorDerivativeProjection(mode)) {
-    auto derivativeValues = createVectorDerivativeValues(image, mode);
+    auto derivativeValues = createVectorDerivativeValues(image, mode, clampedTimePoint);
     if (!derivativeValues) {
       return entropy_expected::unexpected(derivativeValues.error());
     }
@@ -501,7 +524,7 @@ entropy_expected::expected<Image, std::string> createComponentProjectionImage(
     uint32_t finiteComponentCount = 0;
 
     for (uint32_t component = 0; component < numComponents; ++component) {
-      const auto value = image.value<double>(component, pixel);
+      const auto value = image.value<double>(component, pixel, clampedTimePoint);
       if (!value) {
         return entropy_expected::unexpected(std::format("Unable to read component {} at pixel {}", component, pixel));
       }
@@ -540,8 +563,8 @@ entropy_expected::expected<Image, std::string> createComponentProjectionImage(
       case ComponentProjectionMode::ComplexPhaseUnsignedRadians:
       case ComponentProjectionMode::ComplexPhaseSignedDegrees:
       case ComponentProjectionMode::ComplexPhaseUnsignedDegrees: {
-        const auto real = image.value<double>(0, pixel);
-        const auto imaginary = image.value<double>(1, pixel);
+        const auto real = image.value<double>(0, pixel, clampedTimePoint);
+        const auto imaginary = image.value<double>(1, pixel, clampedTimePoint);
         if (!real || !imaginary) {
           return entropy_expected::unexpected(std::format("Unable to read complex value at pixel {}", pixel));
         }
