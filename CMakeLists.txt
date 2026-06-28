@@ -455,6 +455,7 @@ add_subdirectory("${entropy_LIB_DIR}/common")
 add_subdirectory("${entropy_LIB_DIR}/image")
 add_subdirectory("${entropy_LIB_DIR}/viewer")
 add_subdirectory("${entropy_LIB_DIR}/layout")
+add_subdirectory("${entropy_LIB_DIR}/registration")
 
 #--------------------------------------------------------------------------------
 # Entropy executable
