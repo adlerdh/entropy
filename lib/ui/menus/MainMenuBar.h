@@ -58,6 +58,8 @@ enum class MainMenuAction
   SaveActiveImageManualTransformation,
   SaveActiveImageInitialAndManualTransformation,
   ToggleApplyActiveImageWarp,
+  ShowRegistrationSetupWindow,
+  ToggleRegistrationJobsWindow,
   ShowOpacityMixer,
   ToggleTimePlayback,
   ToggleGlobalTimeControls,

@@ -46,6 +46,7 @@ set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/LandmarkPropertiesWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/OpacityMixerModel.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/OpacityMixerWindow.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/windows/RegistrationWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/SegmentationPropertiesWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/SettingsWindow.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows/ViewOverlayModel.cpp"
@@ -85,6 +86,7 @@ target_link_libraries(EntropyUI
   PUBLIC
     Entropy::Common
     Entropy::Image
+    Entropy::Registration
     glm::glm
     imgui
     implot

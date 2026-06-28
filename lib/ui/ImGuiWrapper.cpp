@@ -2565,6 +2565,12 @@ void ImGuiWrapper::render()
           }
         }
         break;
+      case MainMenuAction::ShowRegistrationSetupWindow:
+        m_appData.guiData().m_showRegistrationSetupWindow = true;
+        break;
+      case MainMenuAction::ToggleRegistrationJobsWindow:
+        m_appData.guiData().m_showRegistrationJobsWindow = !m_appData.guiData().m_showRegistrationJobsWindow;
+        break;
       case MainMenuAction::ShowOpacityMixer:
         m_appData.guiData().m_showOpacityBlenderWindow = !m_appData.guiData().m_showOpacityBlenderWindow;
         break;
@@ -2871,6 +2877,10 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleApplyActiveImageWarp:
           return canUseProjectActions && hasActiveImage && activeImageUid() != m_appData.refImageUid() &&
                  m_appData.imageToActiveInverseWarpUid(*activeImageUid()).has_value();
+        case MainMenuAction::ShowRegistrationSetupWindow:
+          return canUseProjectActions && hasActiveImage && activeImageUid() != m_appData.refImageUid();
+        case MainMenuAction::ToggleRegistrationJobsWindow:
+          return canUseProjectActions;
         case MainMenuAction::PaintSegmentationFromAnnotation:
           return canUseProjectActions && hasActiveSeg && hasActiveAnnotation;
         case MainMenuAction::SaveAnnotations:
@@ -2949,6 +2959,8 @@ void ImGuiWrapper::render()
         const Image* image = imageUid ? m_appData.image(*imageUid) : nullptr;
         return image ? image->settings().warpEnabled() : false;
       }
+      case MainMenuAction::ToggleRegistrationJobsWindow:
+        return m_appData.guiData().m_showRegistrationJobsWindow;
       case MainMenuAction::ToggleScaleBars:
         return m_appData.renderData().m_showScaleBars;
       case MainMenuAction::ToggleCrosshairsVoxelSnapping:
@@ -3532,6 +3544,14 @@ void ImGuiWrapper::render()
 
     if (m_appData.guiData().m_showOpacityBlenderWindow) {
       renderOpacityBlenderWindow(m_appData, m_updateImageUniforms);
+    }
+
+    if (m_appData.guiData().m_showRegistrationSetupWindow) {
+      renderRegistrationSetupWindow(m_appData);
+    }
+
+    if (m_appData.guiData().m_showRegistrationJobsWindow) {
+      renderRegistrationJobsWindow(m_appData);
     }
 
     renderModeToolbar(

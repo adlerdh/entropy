@@ -328,6 +328,11 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     actionMenuItem(callbacks, "Apply warp", MainMenuAction::ToggleApplyActiveImageWarp);
     ImGui::EndMenu();
   }
+  if (ImGui::BeginMenu("Registration", callbacks.canAddImage)) {
+    actionMenuItem(callbacks, "Register active image to reference...", MainMenuAction::ShowRegistrationSetupWindow);
+    actionMenuItem(callbacks, "Registration jobs...", MainMenuAction::ToggleRegistrationJobsWindow);
+    ImGui::EndMenu();
+  }
   if (ImGui::BeginMenu("Time Series", actionEnabled(callbacks, MainMenuAction::ToggleGlobalTimeControls))) {
     actionMenuItem(callbacks, "Show Time Controls", MainMenuAction::ToggleGlobalTimeControls);
     ImGui::Separator();

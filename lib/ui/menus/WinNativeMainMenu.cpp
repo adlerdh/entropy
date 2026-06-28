@@ -382,6 +382,14 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     DestroyMenu(isosurfacesMenu);
     return false;
   }
+  HMENU registrationMenu = CreatePopupMenu();
+  if (!registrationMenu) {
+    DestroyMenu(affineMenu);
+    DestroyMenu(deformationMenu);
+    DestroyMenu(isosurfacesMenu);
+    DestroyMenu(timeSeriesMenu);
+    return false;
+  }
 
   UINT timeSeriesPosition = 0;
   if (
@@ -406,6 +414,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     DestroyMenu(deformationMenu);
     DestroyMenu(isosurfacesMenu);
     DestroyMenu(timeSeriesMenu);
+    DestroyMenu(registrationMenu);
     return false;
   }
 
@@ -436,6 +445,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     DestroyMenu(deformationMenu);
     DestroyMenu(isosurfacesMenu);
     DestroyMenu(timeSeriesMenu);
+    DestroyMenu(registrationMenu);
     return false;
   }
 
@@ -453,6 +463,28 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     DestroyMenu(deformationMenu);
     DestroyMenu(isosurfacesMenu);
     DestroyMenu(timeSeriesMenu);
+    DestroyMenu(registrationMenu);
+    return false;
+  }
+
+  UINT registrationPosition = 0;
+  if (
+    !insertActionMenuItem(
+      registrationMenu,
+      registrationPosition++,
+      MainMenuAction::ShowRegistrationSetupWindow,
+      L"&Register Active Image to Reference...") ||
+    !insertActionMenuItem(
+      registrationMenu,
+      registrationPosition++,
+      MainMenuAction::ToggleRegistrationJobsWindow,
+      L"Registration &Jobs..."))
+  {
+    DestroyMenu(affineMenu);
+    DestroyMenu(deformationMenu);
+    DestroyMenu(isosurfacesMenu);
+    DestroyMenu(timeSeriesMenu);
+    DestroyMenu(registrationMenu);
     return false;
   }
 
@@ -499,6 +531,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToFront, L"Move Image to Fron&t") &&
     insertSeparator(menu, position++) && insertSubmenu(menu, position++, affineMenu, L"&Affine transformations") &&
     insertSubmenu(menu, position++, deformationMenu, L"&Deformation fields") &&
+    insertSubmenu(menu, position++, registrationMenu, L"&Registration") &&
     insertSubmenu(menu, position++, timeSeriesMenu, L"&Time Series") &&
     insertSubmenu(menu, position++, isosurfacesMenu, L"I&sosurfaces");
 
@@ -507,6 +540,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     DestroyMenu(deformationMenu);
     DestroyMenu(isosurfacesMenu);
     DestroyMenu(timeSeriesMenu);
+    DestroyMenu(registrationMenu);
   }
   return ok;
 }

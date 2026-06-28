@@ -56,6 +56,8 @@ struct GuiData
   bool m_showLandmarksWindow = false;                               //!< Show the landmarks window.
   bool m_showAnnotationsWindow = false;                             //!< Show the annotations window.
   bool m_showIsosurfacesWindow = false;                             //!< Show the isosurfaces window.
+  bool m_showRegistrationSetupWindow = false;                       //!< Show the registration setup window.
+  bool m_showRegistrationJobsWindow = false;                        //!< Show the registration jobs window.
   bool m_requestAddIsosurface = false;                              //!< Add one isosurface for the active image.
   bool m_requestAddIsosurfaceRange = false;                         //!< Open the isosurface range dialog.
   bool m_showSettingsWindow = false;                                //!< Show the settings window.

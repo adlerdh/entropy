@@ -374,6 +374,21 @@ void addImageMenu(NSMenu* mainMenu) {
     @"waveform.path.ecg");
   [deformationItem setSubmenu:deformationMenu];
   [menu addItem:deformationItem];
+  NSMenuItem* registrationItem = [[NSMenuItem alloc] initWithTitle:@"Registration" action:nil keyEquivalent:@""];
+  setMenuItemSymbol(registrationItem, @"arrow.triangle.2.circlepath");
+  NSMenu* registrationMenu = [[NSMenu alloc] initWithTitle:@"Registration"];
+  addSymbolActionMenuItem(
+    registrationMenu,
+    @"Register Active Image to Reference...",
+    MainMenuAction::ShowRegistrationSetupWindow,
+    @"arrow.triangle.2.circlepath");
+  addSymbolActionMenuItem(
+    registrationMenu,
+    @"Registration Jobs...",
+    MainMenuAction::ToggleRegistrationJobsWindow,
+    @"list.bullet.rectangle");
+  [registrationItem setSubmenu:registrationMenu];
+  [menu addItem:registrationItem];
   NSMenuItem* timeSeriesItem = [[NSMenuItem alloc] initWithTitle:@"Time Series" action:nil keyEquivalent:@""];
   NSMenu* timeSeriesMenu = [[NSMenu alloc] initWithTitle:@"Time Series"];
   addSymbolActionMenuItem(timeSeriesMenu, @"Show Time Controls", MainMenuAction::ToggleGlobalTimeControls, @"clock");
