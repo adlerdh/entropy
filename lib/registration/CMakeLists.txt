@@ -10,6 +10,7 @@ target_sources(EntropyRegistration PRIVATE
   ImportPlan.cpp
   Json.cpp
   Jobs.cpp
+  Process.cpp
   Progress.cpp
   Setup.cpp
   Types.cpp

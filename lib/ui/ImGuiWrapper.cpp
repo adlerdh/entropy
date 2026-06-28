@@ -33,6 +33,8 @@
 
 #include "common/UuidUtility.h"
 #include "image/TimePlaybackController.h"
+#include "registration/Config.h"
+#include "registration/Process.h"
 #include "rendering/TextureSetup.h"
 
 #include <IconsForkAwesome.h>
@@ -1745,6 +1747,151 @@ void ImGuiWrapper::processWarpInversionFutures()
   }
 }
 
+void ImGuiWrapper::requestQueuedRegistrationJobs()
+{
+  const int maxConcurrentJobs = std::max(1, m_appData.settings().registrationBackendConfig().maxConcurrentJobs);
+  std::size_t runningJobs = 0;
+  {
+    std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
+    runningJobs = m_runningRegistrationJobIds.size();
+  }
+
+  if (runningJobs >= static_cast<std::size_t>(maxConcurrentJobs)) {
+    return;
+  }
+
+  const registration::BackendConfig config = m_appData.settings().registrationBackendConfig();
+  const registration::CommandGenerationOptions commandOptions = registration::commandOptions(config);
+  const auto postEmptyEvent = m_postEmptyGlfwEvent;
+
+  std::vector<std::pair<std::string, registration::JobSpec>> jobsToLaunch;
+  for (const registration::JobRecord& job : m_appData.registrationJobs().jobs()) {
+    if (job.status != registration::JobStatus::Queued) {
+      continue;
+    }
+
+    {
+      std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
+      if (m_runningRegistrationJobIds.contains(job.id)) {
+        continue;
+      }
+    }
+
+    jobsToLaunch.emplace_back(job.id, job.spec);
+    ++runningJobs;
+    if (runningJobs >= static_cast<std::size_t>(maxConcurrentJobs)) {
+      break;
+    }
+  }
+
+  for (const auto& [jobId, jobSpec] : jobsToLaunch) {
+    m_appData.registrationJobs().setStatus(jobId, registration::JobStatus::Running);
+    const uuids::uuid taskUid = generateRandomUuid();
+    auto future = std::async(std::launch::async, [jobId, jobSpec, commandOptions, postEmptyEvent]() {
+      registration::JobExecution execution;
+      try {
+        registration::ShellProcessRunner runner;
+        execution = registration::executeJob(jobSpec, commandOptions, runner);
+      }
+      catch (const std::exception& e) {
+        execution.status = registration::JobStatus::Failed;
+        execution.errorMessage = e.what();
+      }
+
+      if (postEmptyEvent) {
+        postEmptyEvent();
+      }
+      return RegistrationJobTaskResult{jobId, std::move(execution)};
+    });
+
+    {
+      std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
+      m_runningRegistrationJobIds.insert(jobId);
+      m_registrationJobIdsByTask.emplace(taskUid, jobId);
+      m_registrationJobFutures.emplace(taskUid, std::move(future));
+    }
+
+    spdlog::info("Started registration job {}", jobId);
+  }
+}
+
+void ImGuiWrapper::processRegistrationJobFutures()
+{
+  using namespace std::chrono_literals;
+
+  std::vector<uuids::uuid> readyTasks;
+  {
+    std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
+    for (auto& [taskUid, future] : m_registrationJobFutures) {
+      if (future.valid() && std::future_status::ready == future.wait_for(0ms)) {
+        readyTasks.push_back(taskUid);
+      }
+    }
+  }
+
+  for (const uuids::uuid& taskUid : readyTasks) {
+    std::future<RegistrationJobTaskResult> future;
+    std::string jobId;
+    {
+      std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
+      auto futureIt = m_registrationJobFutures.find(taskUid);
+      if (m_registrationJobFutures.end() == futureIt) {
+        continue;
+      }
+      future = std::move(futureIt->second);
+      m_registrationJobFutures.erase(futureIt);
+
+      if (const auto jobIt = m_registrationJobIdsByTask.find(taskUid); m_registrationJobIdsByTask.end() != jobIt) {
+        jobId = jobIt->second;
+        m_registrationJobIdsByTask.erase(jobIt);
+      }
+    }
+
+    RegistrationJobTaskResult result;
+    try {
+      result = future.get();
+      if (jobId.empty()) {
+        jobId = result.jobId;
+      }
+    }
+    catch (const std::exception& e) {
+      spdlog::error("Registration job task {} failed: {}", taskUid, e.what());
+      if (!jobId.empty()) {
+        registration::JobExecution failed;
+        failed.status = registration::JobStatus::Failed;
+        failed.errorMessage = e.what();
+        m_appData.registrationJobs().applyExecution(jobId, failed);
+      }
+    }
+
+    {
+      std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
+      if (!jobId.empty()) {
+        m_runningRegistrationJobIds.erase(jobId);
+      }
+    }
+
+    if (!result.jobId.empty()) {
+      if (const registration::JobRecord* job = m_appData.registrationJobs().find(result.jobId);
+          job && job->status == registration::JobStatus::Cancelled)
+      {
+        spdlog::info("Registration job {} completed after cancellation; leaving job cancelled", result.jobId);
+      }
+      else {
+        m_appData.registrationJobs().applyExecution(result.jobId, result.execution);
+      }
+      spdlog::info(
+        "Registration job {} finished with status {}",
+        result.jobId,
+        registration::label(result.execution.status));
+    }
+  }
+
+  if (!readyTasks.empty() && m_postEmptyGlfwEvent) {
+    m_postEmptyGlfwEvent();
+  }
+}
+
 void ImGuiWrapper::renderWarpInversionProgressPopup()
 {
   std::vector<WarpInversionTaskState> states;
@@ -2017,6 +2164,8 @@ void ImGuiWrapper::render()
   generateIsosurfaceMeshGpuRecords();
   processComponentProjectionFutures();
   processWarpInversionFutures();
+  processRegistrationJobFutures();
+  requestQueuedRegistrationJobs();
 
   if (m_pendingUserScaleOverride) {
     m_uiScaleManager.setUserScaleOverride(*m_pendingUserScaleOverride);

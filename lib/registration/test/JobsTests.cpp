@@ -113,6 +113,10 @@ TEST_CASE("registration job store applies execution summaries", "[registration][
   execution.errorMessage = "backend failed";
   execution.warnings = {"warning"};
   execution.progressEvents = {progress(0.5)};
+  registration::CommandExecution command;
+  command.displayString = "backend --arg";
+  execution.commands = {command};
+  execution.outputLines = {{registration::OutputStream::Stdout, "output"}};
 
   REQUIRE(store.applyExecution(id, execution));
 
@@ -122,6 +126,10 @@ TEST_CASE("registration job store applies execution summaries", "[registration][
   CHECK(job->errorMessage == "backend failed");
   REQUIRE(job->warnings.size() == 1);
   CHECK(job->warnings.front() == "warning");
+  REQUIRE(job->commands.size() == 1);
+  CHECK(job->commands.front().displayString == "backend --arg");
+  REQUIRE(job->outputLines.size() == 1);
+  CHECK(job->outputLines.front().text == "output");
   REQUIRE(registration::latestProgress(*job));
   CHECK(*registration::latestProgress(*job) == 0.5);
 }

@@ -15,13 +15,15 @@ namespace registration
  */
 struct JobRecord
 {
-  std::string id;                         //!< Stable job identifier.
-  JobSpec spec;                           //!< Job request.
-  JobStatus status = JobStatus::Queued;   //!< Current normalized status.
-  std::vector<ProgressEvent> progress;    //!< Parsed progress events.
-  std::vector<std::string> warnings;      //!< Non-fatal warnings.
-  std::string errorMessage;               //!< Failure summary.
-  std::optional<ResultManifest> manifest; //!< Imported or completed result manifest.
+  std::string id;                             //!< Stable job identifier.
+  JobSpec spec;                               //!< Job request.
+  JobStatus status = JobStatus::Queued;       //!< Current normalized status.
+  std::vector<CommandExecution> commands;     //!< Completed backend command summaries.
+  std::vector<ProgressEvent> progress;        //!< Parsed progress events.
+  std::vector<ProcessOutputLine> outputLines; //!< Raw backend stdout/stderr lines.
+  std::vector<std::string> warnings;          //!< Non-fatal warnings.
+  std::string errorMessage;                   //!< Failure summary.
+  std::optional<ResultManifest> manifest;     //!< Imported or completed result manifest.
 };
 
 /**

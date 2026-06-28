@@ -91,6 +91,8 @@ TEST_CASE("registration job execution reports progress and completion", "[regist
 
   CHECK(execution.status == registration::JobStatus::Completed);
   REQUIRE(execution.progressEvents.size() == 1);
+  REQUIRE(execution.outputLines.size() == 1);
+  CHECK(execution.outputLines.front().text == registration::progressEventLine(event));
   CHECK(execution.progressEvents.front().stageName == "deformable");
   REQUIRE_FALSE(statuses.empty());
   CHECK(statuses.back() == registration::JobStatus::Completed);
@@ -112,6 +114,8 @@ TEST_CASE("registration job execution stops after a failed command", "[registrat
   CHECK(execution.commands.front().result.exitCode == 2);
   REQUIRE_FALSE(execution.warnings.empty());
   CHECK(execution.warnings.front() == "metric diverged");
+  REQUIRE(execution.outputLines.size() == 1);
+  CHECK(execution.outputLines.front().text == "metric diverged");
 }
 
 TEST_CASE("registration job execution reports cancelled process", "[registration][execution]")

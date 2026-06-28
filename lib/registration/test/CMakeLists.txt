@@ -7,6 +7,7 @@ add_executable(EntropyRegistrationTests
   ImportPlanTests.cpp
   JsonTests.cpp
   JobsTests.cpp
+  ProcessTests.cpp
   ProgressTests.cpp
   SetupTests.cpp
   ValidationTests.cpp
@@ -16,6 +17,10 @@ target_link_libraries(EntropyRegistrationTests PRIVATE
   Catch2::Catch2WithMain
   Entropy::Registration
   entropy_warnings
+)
+
+target_compile_definitions(EntropyRegistrationTests PRIVATE
+  ENTROPY_TEST_CMAKE_COMMAND="${CMAKE_COMMAND}"
 )
 
 entropy_enable_coverage_for_target(EntropyRegistrationTests)

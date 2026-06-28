@@ -17,6 +17,8 @@ void setStatus(JobExecution& execution, JobStatus status, const JobExecutionCall
 
 void recordOutputLine(JobExecution& execution, const ProcessOutputLine& line, const JobExecutionCallbacks& callbacks)
 {
+  execution.outputLines.push_back(line);
+
   if (callbacks.onOutputLine) {
     callbacks.onOutputLine(line);
   }

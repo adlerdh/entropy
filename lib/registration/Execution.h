@@ -26,11 +26,12 @@ struct CommandExecution
  */
 struct JobExecution
 {
-  JobStatus status = JobStatus::Queued;      //!< Final normalized status.
-  std::vector<CommandExecution> commands;    //!< Command results in execution order.
-  std::vector<ProgressEvent> progressEvents; //!< Parsed structured progress events.
-  std::vector<std::string> warnings;         //!< Non-fatal warnings.
-  std::string errorMessage;                  //!< Fatal error summary.
+  JobStatus status = JobStatus::Queued;       //!< Final normalized status.
+  std::vector<CommandExecution> commands;     //!< Command results in execution order.
+  std::vector<ProgressEvent> progressEvents;  //!< Parsed structured progress events.
+  std::vector<ProcessOutputLine> outputLines; //!< Raw backend stdout/stderr lines.
+  std::vector<std::string> warnings;          //!< Non-fatal warnings.
+  std::string errorMessage;                   //!< Fatal error summary.
 };
 
 /**

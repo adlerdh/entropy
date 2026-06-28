@@ -7,6 +7,7 @@
 #include "image/ImageDerivedData.h"
 #include "image/WarpInversion.h"
 #include "logic/app/Settings.h"
+#include "registration/Execution.h"
 #include "ui/GuiData.h"
 #include "ui/UiScaleManager.h"
 
@@ -419,6 +420,20 @@ private:
     const WarpInversionOptions& options);
   void processWarpInversionFutures();
   void renderWarpInversionProgressPopup();
+
+  struct RegistrationJobTaskResult
+  {
+    std::string jobId;
+    registration::JobExecution execution;
+  };
+
+  std::unordered_map<uuids::uuid, std::future<RegistrationJobTaskResult> > m_registrationJobFutures;
+  std::unordered_map<uuids::uuid, std::string> m_registrationJobIdsByTask;
+  std::unordered_set<std::string> m_runningRegistrationJobIds;
+  std::mutex m_registrationJobFuturesMutex;
+
+  void requestQueuedRegistrationJobs();
+  void processRegistrationJobFutures();
 
   /// Queue of UIDs referring to task UIDs of futures.
   /// These are completed isosurface mesh generation tasks that now need

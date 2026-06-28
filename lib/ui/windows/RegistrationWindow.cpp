@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <filesystem>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -139,6 +140,76 @@ float progressFraction(const registration::JobRecord& job)
     return static_cast<float>(std::clamp(*progress, 0.0, 1.0));
   }
   return registration::JobStatus::Completed == job.status ? 1.0f : 0.0f;
+}
+
+const char* outputStreamLabel(registration::OutputStream stream)
+{
+  return registration::OutputStream::Stderr == stream ? "stderr" : "stdout";
+}
+
+std::string jobLogText(const registration::JobRecord& job)
+{
+  std::ostringstream stream;
+  stream << jobTitle(job) << '\n';
+  stream << "Status: " << statusText(job.status) << "\n\n";
+
+  if (!job.commands.empty()) {
+    stream << "Commands:\n";
+    for (const registration::CommandExecution& command : job.commands) {
+      stream << "  " << command.displayString << '\n';
+      stream << "    exit: " << command.result.exitCode << '\n';
+      if (!command.result.failureMessage.empty()) {
+        stream << "    error: " << command.result.failureMessage << '\n';
+      }
+    }
+    stream << '\n';
+  }
+
+  if (!job.warnings.empty()) {
+    stream << "Warnings:\n";
+    for (const std::string& warning : job.warnings) {
+      stream << "  " << warning << '\n';
+    }
+    stream << '\n';
+  }
+
+  if (!job.errorMessage.empty()) {
+    stream << "Error:\n  " << job.errorMessage << "\n\n";
+  }
+
+  stream << "Output:\n";
+  for (const registration::ProcessOutputLine& line : job.outputLines) {
+    stream << '[' << outputStreamLabel(line.stream) << "] " << line.text << '\n';
+  }
+  return stream.str();
+}
+
+void renderRegistrationJobDetailsPopup(const registration::JobRecord* job)
+{
+  if (!job) {
+    return;
+  }
+
+  if (ImGui::BeginPopupModal("Registration Job Details", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::TextWrapped("%s", jobTitle(*job).c_str());
+    ImGui::TextColored(statusColor(job->status), "%s", statusText(job->status));
+
+    const std::string logText = jobLogText(*job);
+    if (ImGui::Button("Copy Log")) {
+      ImGui::SetClipboardText(logText.c_str());
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Close")) {
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::Separator();
+    if (ImGui::BeginChild("RegistrationJobLog", ImVec2{720.0f, 420.0f}, ImGuiChildFlags_Borders)) {
+      ImGui::TextUnformatted(logText.c_str());
+    }
+    ImGui::EndChild();
+    ImGui::EndPopup();
+  }
 }
 
 void renderVisibleParameters(const registration::SetupState& state)
@@ -268,6 +339,10 @@ void renderRegistrationJobsWindow(AppData& appData)
     return;
   }
 
+  static std::string s_selectedLogJobId;
+  const registration::JobRecord* selectedLogJob = nullptr;
+  bool openDetailsPopup = false;
+
   constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_RowBg |
                                          ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
                                          ImGuiTableFlags_ScrollY;
@@ -334,11 +409,26 @@ void renderRegistrationJobsWindow(AppData& appData)
       ImGui::BeginDisabled(!job.manifest.has_value());
       ImGui::SmallButton("Import");
       ImGui::EndDisabled();
+      if (!job.commands.empty() || !job.outputLines.empty() || !job.warnings.empty() || !job.errorMessage.empty()) {
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Log")) {
+          s_selectedLogJobId = job.id;
+          openDetailsPopup = true;
+        }
+      }
       ImGui::PopID();
     }
 
     ImGui::EndTable();
   }
+
+  if (!s_selectedLogJobId.empty()) {
+    selectedLogJob = jobs.find(s_selectedLogJobId);
+  }
+  if (openDetailsPopup) {
+    ImGui::OpenPopup("Registration Job Details");
+  }
+  renderRegistrationJobDetailsPopup(selectedLogJob);
   ImGui::End();
 }
 

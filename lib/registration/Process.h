@@ -92,4 +92,24 @@ public:
   run(const CommandSpec& command, const ProcessOptions& options, const ProcessCallbacks& callbacks) = 0;
 };
 
+/**
+ * @brief Process runner that launches backend commands through the platform shell.
+ *
+ * This runner is intentionally isolated behind IProcessRunner. It is suitable for the first backend integration
+ * path and can later be replaced by a lower-level runner with stronger cancellation and streaming guarantees.
+ */
+class ShellProcessRunner final : public IProcessRunner
+{
+public:
+  /**
+   * @brief Run one process command and capture merged stdout/stderr output.
+   * @param command Command to execute.
+   * @param options Launch options.
+   * @param callbacks Streaming callbacks.
+   * @return Completed process result.
+   */
+  ProcessResult run(const CommandSpec& command, const ProcessOptions& options, const ProcessCallbacks& callbacks)
+    override;
+};
+
 } // namespace registration
