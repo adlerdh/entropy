@@ -269,8 +269,7 @@ BackendCapabilities fireAntsCapabilities()
     TransformModel::RigidAffine,
     TransformModel::Deformable,
     TransformModel::AffineDeformable};
-  capabilities.metrics =
-    {Metric::MSE, Metric::MI, Metric::CC, Metric::FusedCC, Metric::FusedMI, Metric::MaskedCC, Metric::MaskedMSE};
+  capabilities.metrics = {Metric::MSE, Metric::MI, Metric::CC, Metric::NCC, Metric::WNCC};
   capabilities.features = {
     Feature::FixedMovingImages,
     Feature::FixedMask,
@@ -314,6 +313,22 @@ BackendCapabilities fireAntsCapabilities()
       31.0,
       "Local cross-correlation kernel size.",
       true),
+    choiceParameter(
+      "miKernel",
+      "MI kernel",
+      "gaussian",
+      {"gaussian", "b-spline"},
+      "Kernel used by the FireANTs mutual information loss.",
+      true),
+    numericParameter(
+      "miBins",
+      "MI bins",
+      ParameterKind::Integer,
+      "32",
+      8.0,
+      128.0,
+      "Number of histogram bins used by the mutual information loss.",
+      true),
     numericParameter(
       "smoothWarpSigma",
       "Smooth warp sigma",
@@ -335,16 +350,30 @@ BackendCapabilities fireAntsCapabilities()
     choiceParameter(
       "deformationType",
       "Deformation type",
-      "compositive",
-      {"compositive", "geodesic"},
-      "FireANTs deformation model.",
+      "Greedy",
+      {"Greedy", "SyN"},
+      "FireANTs deformable transform used for deformable stages.",
       true),
     parameter(
-      "extraJson",
-      "Bridge JSON overrides",
+      "normalizeImageIntensities",
+      "Normalize intensities",
+      ParameterKind::Boolean,
+      "false",
+      "Normalize fixed and moving intensities to [0, 1] before registration.",
+      true),
+    parameter(
+      "winsorizeImageIntensities",
+      "Winsorize intensities",
+      ParameterKind::FloatVector,
+      "",
+      "Optional lower,upper quantiles or percentiles used to clamp image intensities before registration.",
+      true),
+    parameter(
+      "extraArgs",
+      "Extra arguments",
       ParameterKind::Text,
       "",
-      "Raw FireANTs bridge JSON overrides in Expert mode.",
+      "Raw fireantsRegistration command-line arguments appended in Expert mode.",
       false,
       true)};
   return capabilities;

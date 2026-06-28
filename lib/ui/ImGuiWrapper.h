@@ -286,6 +286,7 @@ public:
   void render();
 
 private:
+  bool materializeRegistrationInputs(registration::JobSpec& job);
   void importRegistrationJobOutputs(const std::string& jobId);
 
   /**

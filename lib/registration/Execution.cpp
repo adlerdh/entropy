@@ -293,6 +293,7 @@ JobExecution executeJob(
     processCallbacks.onOutputLine = [&](const ProcessOutputLine& line) {
       recordOutputLine(execution, line, callbacks);
     };
+    processCallbacks.shouldCancel = callbacks.shouldCancel;
 
     ProcessResult result = processRunner.run(command, options, processCallbacks);
     for (const ProcessOutputLine& line : result.outputLines) {

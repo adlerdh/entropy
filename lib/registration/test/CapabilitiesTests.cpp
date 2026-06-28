@@ -18,7 +18,8 @@ TEST_CASE("registration backend capabilities expose expected high-level features
   const registration::BackendCapabilities fireAnts =
     registration::capabilitiesForBackend(registration::Backend::FireANTs);
   CHECK(registration::supportsFeature(fireAnts, registration::Feature::StructuredProgress));
-  CHECK(registration::supportsMetric(fireAnts, registration::Metric::MaskedCC));
+  CHECK(registration::supportsMetric(fireAnts, registration::Metric::CC));
+  CHECK_FALSE(registration::supportsMetric(fireAnts, registration::Metric::MaskedCC));
   CHECK_FALSE(registration::supportsFeature(fireAnts, registration::Feature::SurfaceTransform));
 }
 

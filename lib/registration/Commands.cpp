@@ -58,6 +58,23 @@ bool booleanParameterValue(const JobSpec& job, std::string_view key)
   return value && (*value == "true" || *value == "1" || *value == "yes" || *value == "on");
 }
 
+void appendWhitespaceSeparatedArguments(std::vector<std::string>& args, const std::string& text)
+{
+  std::istringstream stream{text};
+  std::string value;
+  while (stream >> value) {
+    args.push_back(value);
+  }
+}
+
+void appendExpertArguments(std::vector<std::string>& args, const JobSpec& job)
+{
+  if (const std::optional<std::string> value = parameterValue(job, "extraArgs")) {
+    appendWhitespaceSeparatedArguments(args, *value);
+  }
+  args.insert(args.end(), job.extraArguments.begin(), job.extraArguments.end());
+}
+
 std::string repeatedRadius(const std::string& radius, int dimension)
 {
   std::ostringstream stream;
@@ -190,6 +207,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
     if (booleanParameterValue(job, "singlePrecision")) {
       command.args.push_back("-float");
     }
+    appendExpertArguments(command.args, job);
     commands.push_back(std::move(command));
   }
 
@@ -234,6 +252,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
     if (booleanParameterValue(job, "singlePrecision")) {
       command.args.push_back("-float");
     }
+    appendExpertArguments(command.args, job);
     commands.push_back(std::move(command));
   }
 
@@ -329,6 +348,7 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
     registrationCommand.args.push_back("--masks");
     registrationCommand.args.push_back("[" + pathString(job.fixedMask.fileName) + ",NULL]");
   }
+  appendExpertArguments(registrationCommand.args, job);
   commands.push_back(std::move(registrationCommand));
 
   if (job.outputs.loadWarpedSegmentation && !job.movingMask.fileName.empty()) {

@@ -76,7 +76,7 @@ TEST_CASE("registration capabilities serialize readable enum names", "[registrat
 
   const registration::BackendCapabilities restored = json.get<registration::BackendCapabilities>();
   CHECK(restored.backend == registration::Backend::FireANTs);
-  CHECK(registration::supportsMetric(restored, registration::Metric::MaskedCC));
+  CHECK(registration::supportsMetric(restored, registration::Metric::CC));
 }
 
 TEST_CASE("registration progress events round-trip through JSON", "[registration][serialization]")

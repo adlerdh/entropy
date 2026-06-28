@@ -71,6 +71,7 @@ struct ProcessResult
 struct ProcessCallbacks
 {
   std::function<void(const ProcessOutputLine&)> onOutputLine; //!< Called for every output line.
+  std::function<bool()> shouldCancel;                         //!< True when the process should be cancelled.
 };
 
 /**

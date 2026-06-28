@@ -33,6 +33,7 @@
 
 #include "common/UuidUtility.h"
 #include "image/TimePlaybackController.h"
+#include "registration/Artifacts.h"
 #include "registration/Config.h"
 #include "registration/ImportPlan.h"
 #include "registration/Process.h"
@@ -70,6 +71,7 @@
 #include <numeric>
 #include <sstream>
 #include <string>
+#include <system_error>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -1357,6 +1359,120 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
   m_paintActiveSegmentationWithActivePolygon = std::move(callbacks.editing.paintActiveSegmentationWithActivePolygon);
 }
 
+bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
+{
+  auto parseUid = [](const registration::DataRef& ref) -> std::optional<uuids::uuid> {
+    if (ref.uid.empty()) {
+      return std::nullopt;
+    }
+    return uuids::uuid::from_string(ref.uid);
+  };
+
+  auto exportRef = [&](registration::DataRef& ref, const std::filesystem::path& path) -> bool {
+    if (!ref.fileName.empty()) {
+      return true;
+    }
+
+    const std::optional<uuids::uuid> uid = parseUid(ref);
+    if (!uid) {
+      spdlog::error("Cannot export registration input '{}'; it has no valid UID", ref.displayName);
+      return false;
+    }
+
+    std::error_code error;
+    std::filesystem::create_directories(path.parent_path(), error);
+    if (error) {
+      spdlog::error("Cannot create registration input directory {}: {}", path.parent_path(), error.message());
+      return false;
+    }
+
+    Image* image = nullptr;
+    switch (ref.source) {
+      case registration::DataSource::LoadedImage:
+        image = m_appData.image(*uid);
+        break;
+      case registration::DataSource::Segmentation:
+        image = m_appData.seg(*uid);
+        break;
+      case registration::DataSource::None:
+      case registration::DataSource::LandmarkGroup:
+      case registration::DataSource::AnnotationSet:
+      case registration::DataSource::Surface:
+      case registration::DataSource::ExternalFile:
+        break;
+    }
+
+    if (!image) {
+      spdlog::error(
+        "Cannot export registration input '{}' with UID {}; unsupported source type or object is missing",
+        ref.displayName,
+        ref.uid);
+      return false;
+    }
+
+    if (!image->saveComponentToDisk(0, path)) {
+      spdlog::error("Cannot export registration input '{}' to {}", ref.displayName, path);
+      return false;
+    }
+
+    ref.fileName = path;
+    spdlog::info("Exported registration input '{}' to {}", ref.displayName, path);
+    return true;
+  };
+
+  auto exportArtifact = [&](const registration::InputArtifact& artifact) -> bool {
+    switch (artifact.role) {
+      case registration::ArtifactRole::FixedMask:
+        return exportRef(job.fixedMask, artifact.path);
+      case registration::ArtifactRole::MovingMask:
+        return exportRef(job.movingMask, artifact.path);
+      case registration::ArtifactRole::AuxiliaryFixedImage:
+      case registration::ArtifactRole::AuxiliaryMovingImage: {
+        for (registration::AuxiliaryImagePair& pair : job.auxiliaryImagePairs) {
+          if (pair.fixed.uid == artifact.source.uid && artifact.role == registration::ArtifactRole::AuxiliaryFixedImage)
+          {
+            return exportRef(pair.fixed, artifact.path);
+          }
+          if (
+            pair.moving.uid == artifact.source.uid && artifact.role == registration::ArtifactRole::AuxiliaryMovingImage)
+          {
+            return exportRef(pair.moving, artifact.path);
+          }
+        }
+        break;
+      }
+      case registration::ArtifactRole::FixedLandmarks:
+      case registration::ArtifactRole::MovingLandmarks:
+      case registration::ArtifactRole::Surface:
+        spdlog::error(
+          "Registration input export for {} is not implemented yet; provide a file-backed input for now",
+          registration::label(artifact.role));
+        return false;
+      case registration::ArtifactRole::JobSpec:
+      case registration::ArtifactRole::ResultManifest:
+      case registration::ArtifactRole::AffineTransform:
+      case registration::ArtifactRole::InverseWarp:
+      case registration::ArtifactRole::ForwardWarp:
+      case registration::ArtifactRole::WarpedImage:
+      case registration::ArtifactRole::WarpedSegmentation:
+      case registration::ArtifactRole::TransformedLandmarks:
+      case registration::ArtifactRole::TransformedSurface:
+        break;
+    }
+
+    spdlog::error("Unable to match registration input artifact {}", registration::label(artifact.role));
+    return false;
+  };
+
+  for (const registration::InputArtifact& artifact : registration::buildInputArtifactPlan(job)) {
+    if (artifact.exportRequired && !exportArtifact(artifact)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 void ImGuiWrapper::importRegistrationJobOutputs(const std::string& jobId)
 {
   registration::JobStore& jobs = m_appData.registrationJobs();
@@ -1937,7 +2053,17 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
       }
     }
 
-    jobsToLaunch.emplace_back(job.id, job.spec);
+    registration::JobSpec jobSpec = job.spec;
+    if (!materializeRegistrationInputs(jobSpec)) {
+      m_appData.registrationJobs().appendProgress(
+        job.id,
+        registration::ProgressEvent{
+          .kind = registration::ProgressEventKind::Failed,
+          .message = "Unable to export registration inputs for backend execution."});
+      continue;
+    }
+
+    jobsToLaunch.emplace_back(job.id, std::move(jobSpec));
     ++runningJobs;
     if (runningJobs >= static_cast<std::size_t>(maxConcurrentJobs)) {
       break;

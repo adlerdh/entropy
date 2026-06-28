@@ -67,6 +67,27 @@ TEST_CASE("Greedy command generation uses selected parameter values", "[registra
   CHECK(preview.find("-float") != std::string::npos);
 }
 
+TEST_CASE(
+  "registration command generation appends expert arguments to registration commands",
+  "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.parameterValues = {{"extraArgs", "-debug -dump-pyramid"}};
+  job.extraArguments = {"-extra-file", "debug.txt"};
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 3);
+  CHECK(
+    registration::displayCommand(commands.at(0)).find("-debug -dump-pyramid -extra-file debug.txt") !=
+    std::string::npos);
+  CHECK(
+    registration::displayCommand(commands.at(1)).find("-debug -dump-pyramid -extra-file debug.txt") !=
+    std::string::npos);
+  CHECK(registration::displayCommand(commands.at(2)).find("-debug") == std::string::npos);
+}
+
 TEST_CASE("Greedy command generation reslices moving segmentation when requested", "[registration][commands]")
 {
   registration::JobSpec job = baseJob(registration::Backend::Greedy);

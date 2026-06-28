@@ -51,3 +51,31 @@ TEST_CASE("shell process runner reports non-zero exit status", "[registration][p
   CHECK_FALSE(result.launchFailed);
   CHECK(result.exitCode != 0);
 }
+
+#ifndef _WIN32
+TEST_CASE("shell process runner cancels an already running process", "[registration][process]")
+{
+  registration::ShellProcessRunner runner;
+  bool processStarted = false;
+  registration::ProcessCallbacks callbacks;
+  callbacks.onOutputLine = [&](const registration::ProcessOutputLine& line) {
+    if (line.text == "ready") {
+      processStarted = true;
+    }
+  };
+  callbacks.shouldCancel = [&]() {
+    return processStarted;
+  };
+
+  registration::CommandSpec command;
+  command.description = "cancellable shell";
+  command.executable = "/bin/sh";
+  command.args = {"-c", "echo ready; sleep 5"};
+
+  const registration::ProcessResult result = runner.run(command, registration::ProcessOptions{}, callbacks);
+
+  CHECK(result.cancelled);
+  CHECK_FALSE(result.launchFailed);
+  CHECK(result.exitCode != 0);
+}
+#endif
