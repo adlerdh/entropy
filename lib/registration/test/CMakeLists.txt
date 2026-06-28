@@ -5,6 +5,7 @@ add_executable(EntropyRegistrationTests
   JsonTests.cpp
   JobsTests.cpp
   ProgressTests.cpp
+  SetupTests.cpp
   ValidationTests.cpp
 )
 

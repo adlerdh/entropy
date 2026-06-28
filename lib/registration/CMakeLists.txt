@@ -8,6 +8,7 @@ target_sources(EntropyRegistration PRIVATE
   Json.cpp
   Jobs.cpp
   Progress.cpp
+  Setup.cpp
   Types.cpp
   Validation.cpp
 )
