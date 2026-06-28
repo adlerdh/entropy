@@ -439,7 +439,9 @@ void renderRegistrationSetupWindow(AppData& appData)
   ImGui::End();
 }
 
-void renderRegistrationJobsWindow(AppData& appData)
+void renderRegistrationJobsWindow(
+  AppData& appData,
+  const std::function<void(const std::string& jobId)>& importJobOutputs)
 {
   setNextDockablePanelWindowClass();
   if (!ImGui::Begin("Registration Jobs##RegistrationJobs", &appData.guiData().m_showRegistrationJobsWindow)) {
@@ -522,8 +524,10 @@ void renderRegistrationJobsWindow(AppData& appData)
       }
       ImGui::EndDisabled();
       ImGui::SameLine();
-      ImGui::BeginDisabled(!job.manifest.has_value());
-      ImGui::SmallButton("Import");
+      ImGui::BeginDisabled(!job.manifest.has_value() || !importJobOutputs);
+      if (ImGui::SmallButton("Import")) {
+        importJobOutputs(job.id);
+      }
       ImGui::EndDisabled();
       if (!job.commands.empty() || !job.outputLines.empty() || !job.warnings.empty() || !job.errorMessage.empty()) {
         ImGui::SameLine();

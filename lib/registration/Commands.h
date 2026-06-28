@@ -23,8 +23,10 @@ struct CommandSpec
  */
 struct CommandGenerationOptions
 {
-  std::string greedyExecutable = "greedy";                      //!< Greedy command or executable path.
-  std::string antsRegistrationExecutable = "antsRegistration";  //!< ANTs registration executable path.
+  std::string greedyExecutable = "greedy";                     //!< Greedy command or executable path.
+  std::string antsRegistrationExecutable = "antsRegistration"; //!< ANTs registration executable path.
+  /** @brief ANTs transform application executable path. */
+  std::string antsApplyTransformsExecutable = "antsApplyTransforms";
   std::string fireAntsPythonExecutable = "python";              //!< Python executable used for FireANTs.
   std::string fireAntsBridgeModule = "entropy_fireants_bridge"; //!< Python bridge module name.
 };

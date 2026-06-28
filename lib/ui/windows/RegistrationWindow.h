@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>
+#include <string>
+
 class AppData;
 
 /**
@@ -11,8 +14,11 @@ void renderRegistrationSetupWindow(AppData& appData);
 /**
  * @brief Render the registration jobs window.
  * @param appData Application data containing GUI visibility state.
+ * @param importJobOutputs Callback invoked when the user imports one completed job's outputs.
  */
-void renderRegistrationJobsWindow(AppData& appData);
+void renderRegistrationJobsWindow(
+  AppData& appData,
+  const std::function<void(const std::string& jobId)>& importJobOutputs);
 
 /**
  * @brief Render the compact registration progress window when jobs are active.

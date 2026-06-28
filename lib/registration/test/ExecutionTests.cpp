@@ -7,6 +7,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <utility>
@@ -19,13 +20,15 @@ class ScriptedRunner final : public registration::IProcessRunner
 public:
   std::vector<registration::ProcessResult> results;
   std::vector<registration::CommandSpec> commands;
+  std::vector<registration::ProcessOptions> options;
 
   registration::ProcessResult run(
     const registration::CommandSpec& command,
-    const registration::ProcessOptions&,
+    const registration::ProcessOptions& processOptions,
     const registration::ProcessCallbacks& callbacks) override
   {
     commands.push_back(command);
+    options.push_back(processOptions);
     REQUIRE_FALSE(results.empty());
     registration::ProcessResult result = results.front();
     results.erase(results.begin());
@@ -129,6 +132,27 @@ TEST_CASE("registration job execution writes FireANTs job spec before launch", "
   const registration::JobSpec restored = json.get<registration::JobSpec>();
   CHECK(restored.fixedImage.uid == "fixed");
   CHECK(restored.movingImage.uid == "moving");
+}
+
+TEST_CASE("registration job execution exposes the FireANTs bridge on PYTHONPATH", "[registration][execution]")
+{
+  ScriptedRunner runner;
+  registration::ProcessResult success;
+  success.exitCode = 0;
+  runner.results.push_back(success);
+
+  const registration::JobSpec job = jobForOneCommand("fireants-pythonpath");
+  const registration::JobExecution execution = registration::executeJob(job, runner);
+
+  CHECK(execution.status == registration::JobStatus::Completed);
+  REQUIRE(runner.options.size() == 1);
+  const auto& environment = runner.options.front().environment;
+  const auto it =
+    std::find_if(environment.begin(), environment.end(), [](const registration::EnvironmentVariable& variable) {
+      return variable.name == "PYTHONPATH";
+    });
+  REQUIRE(it != environment.end());
+  CHECK(it->value.find("registration") != std::string::npos);
 }
 
 TEST_CASE("registration job execution reads backend result manifest when present", "[registration][execution]")

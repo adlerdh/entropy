@@ -286,6 +286,8 @@ public:
   void render();
 
 private:
+  void importRegistrationJobOutputs(const std::string& jobId);
+
   /**
    * @brief Load the active ImGui UI font and icon font into the font atlas.
    *

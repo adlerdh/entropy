@@ -7,6 +7,7 @@ TEST_CASE("registration backend config converts to command options", "[registrat
   registration::BackendConfig config;
   config.greedyExecutable = "/opt/greedy";
   config.antsRegistrationExecutable = "/opt/antsRegistration";
+  config.antsApplyTransformsExecutable = "/opt/antsApplyTransforms";
   config.fireAntsPythonExecutable = "/opt/python";
   config.fireAntsBridgeModule = "entropy_custom_fireants";
 
@@ -14,6 +15,7 @@ TEST_CASE("registration backend config converts to command options", "[registrat
 
   CHECK(options.greedyExecutable == "/opt/greedy");
   CHECK(options.antsRegistrationExecutable == "/opt/antsRegistration");
+  CHECK(options.antsApplyTransformsExecutable == "/opt/antsApplyTransforms");
   CHECK(options.fireAntsPythonExecutable == "/opt/python");
   CHECK(options.fireAntsBridgeModule == "entropy_custom_fireants");
 }

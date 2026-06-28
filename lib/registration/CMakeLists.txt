@@ -31,6 +31,10 @@ target_link_libraries(EntropyRegistration
     entropy_warnings
 )
 
+target_compile_definitions(EntropyRegistration PRIVATE
+  ENTROPY_FIREANTS_BRIDGE_PYTHONPATH="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 target_compile_options(EntropyRegistration PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
     -Werror

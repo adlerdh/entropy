@@ -67,6 +67,23 @@ TEST_CASE("Greedy command generation uses selected parameter values", "[registra
   CHECK(preview.find("-float") != std::string::npos);
 }
 
+TEST_CASE("Greedy command generation reslices moving segmentation when requested", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.outputs.loadWarpedSegmentation = true;
+  job.movingMask = imageRef("moving-seg", "moving_seg.nii.gz");
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 4);
+  CHECK(commands.back().description == "Greedy reslice warped segmentation");
+  const std::string preview = registration::displayCommand(commands.back());
+  CHECK(preview.find("-ri LABEL 0.2vox") != std::string::npos);
+  CHECK(preview.find("moving_seg.nii.gz") != std::string::npos);
+  CHECK(preview.find("moving_to_fixed_warped_segmentation_01.nii.gz") != std::string::npos);
+}
+
 TEST_CASE("ANTs command generation includes staged output and metric", "[registration][commands]")
 {
   registration::JobSpec job = baseJob(registration::Backend::ANTs);
@@ -103,6 +120,25 @@ TEST_CASE("ANTs command generation uses selected pyramid and convergence paramet
   CHECK(preview.find("--smoothing-sigmas 3x0vox") != std::string::npos);
 }
 
+TEST_CASE("ANTs command generation reslices moving segmentation when requested", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.outputs.loadWarpedSegmentation = true;
+  job.movingMask = imageRef("moving-seg", "moving_seg.nii.gz");
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 2);
+  CHECK(commands.back().description == "ANTs reslice warped segmentation");
+  CHECK(commands.back().executable == "antsApplyTransforms");
+  const std::string preview = registration::displayCommand(commands.back());
+  CHECK(preview.find("-n GenericLabel") != std::string::npos);
+  CHECK(preview.find("moving_to_fixed_warped_segmentation_01.nii.gz") != std::string::npos);
+  CHECK(preview.find("moving_to_fixed1Warp.nii.gz") != std::string::npos);
+  CHECK(preview.find("moving_to_fixed0GenericAffine.mat") != std::string::npos);
+}
+
 TEST_CASE("FireANTs command generation uses the bridge module", "[registration][commands]")
 {
   registration::JobSpec job = baseJob(registration::Backend::FireANTs);
@@ -120,6 +156,7 @@ TEST_CASE("command generation uses configured backend executable paths", "[regis
   registration::CommandGenerationOptions options;
   options.greedyExecutable = "/opt/greedy/bin/greedy";
   options.antsRegistrationExecutable = "/opt/ants/bin/antsRegistration";
+  options.antsApplyTransformsExecutable = "/opt/ants/bin/antsApplyTransforms";
   options.fireAntsPythonExecutable = "/venv/bin/python";
   options.fireAntsBridgeModule = "custom_bridge";
 
@@ -129,6 +166,13 @@ TEST_CASE("command generation uses configured backend executable paths", "[regis
   CHECK(
     registration::generateCommands(baseJob(registration::Backend::ANTs), options).front().executable ==
     "/opt/ants/bin/antsRegistration");
+
+  registration::JobSpec antsJob = baseJob(registration::Backend::ANTs);
+  antsJob.outputs.loadWarpedSegmentation = true;
+  antsJob.movingMask = imageRef("moving-seg", "moving_seg.nii.gz");
+  const std::vector<registration::CommandSpec> antsCommands = registration::generateCommands(antsJob, options);
+  REQUIRE(antsCommands.size() == 2);
+  CHECK(antsCommands.back().executable == "/opt/ants/bin/antsApplyTransforms");
 
   const std::vector<registration::CommandSpec> fireAntsCommands =
     registration::generateCommands(baseJob(registration::Backend::FireANTs), options);

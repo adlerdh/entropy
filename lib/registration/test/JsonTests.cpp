@@ -131,6 +131,7 @@ TEST_CASE("registration backend config round-trips through JSON", "[registration
   config.defaultBackend = registration::Backend::FireANTs;
   config.greedyExecutable = "/opt/greedy";
   config.antsRegistrationExecutable = "/opt/antsRegistration";
+  config.antsApplyTransformsExecutable = "/opt/antsApplyTransforms";
   config.fireAntsPythonExecutable = "/venv/bin/python";
   config.fireAntsBridgeModule = "custom_bridge";
   config.defaultOutputDirectory = "/tmp/entropy-registration";
@@ -147,6 +148,7 @@ TEST_CASE("registration backend config round-trips through JSON", "[registration
   CHECK(restored.defaultBackend == registration::Backend::FireANTs);
   CHECK(restored.greedyExecutable == "/opt/greedy");
   CHECK(restored.antsRegistrationExecutable == "/opt/antsRegistration");
+  CHECK(restored.antsApplyTransformsExecutable == "/opt/antsApplyTransforms");
   CHECK(restored.fireAntsPythonExecutable == "/venv/bin/python");
   CHECK(restored.fireAntsBridgeModule == "custom_bridge");
   CHECK(restored.defaultOutputDirectory == "/tmp/entropy-registration");

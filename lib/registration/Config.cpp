@@ -8,6 +8,7 @@ CommandGenerationOptions commandOptions(const BackendConfig& config)
   CommandGenerationOptions options;
   options.greedyExecutable = config.greedyExecutable.string();
   options.antsRegistrationExecutable = config.antsRegistrationExecutable.string();
+  options.antsApplyTransformsExecutable = config.antsApplyTransformsExecutable.string();
   options.fireAntsPythonExecutable = config.fireAntsPythonExecutable.string();
   options.fireAntsBridgeModule = config.fireAntsBridgeModule;
   return options;

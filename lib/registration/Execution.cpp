@@ -6,9 +6,23 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <string_view>
 #include <system_error>
+#include <vector>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#elif defined(__linux__)
+#include <unistd.h>
+#endif
 
 namespace registration
 {
@@ -83,6 +97,116 @@ bool prepareOutputDirectory(const JobSpec& job, JobExecution& execution)
   return true;
 }
 
+std::string pathListSeparator()
+{
+#ifdef _WIN32
+  return ";";
+#else
+  return ":";
+#endif
+}
+
+std::string fireAntsBridgePythonPath()
+{
+#ifdef ENTROPY_FIREANTS_BRIDGE_PYTHONPATH
+  return ENTROPY_FIREANTS_BRIDGE_PYTHONPATH;
+#else
+  return {};
+#endif
+}
+
+std::filesystem::path executableDirectory()
+{
+#ifdef _WIN32
+  std::vector<wchar_t> buffer(MAX_PATH);
+  while (true) {
+    const DWORD length = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+    if (length == 0) {
+      return {};
+    }
+    if (length < buffer.size() - 1) {
+      return std::filesystem::path{buffer.data()}.parent_path();
+    }
+    buffer.resize(buffer.size() * 2);
+  }
+#elif defined(__APPLE__)
+  std::vector<char> buffer(1024);
+  while (true) {
+    uint32_t size = static_cast<uint32_t>(buffer.size());
+    if (_NSGetExecutablePath(buffer.data(), &size) == 0) {
+      return std::filesystem::weakly_canonical(std::filesystem::path{buffer.data()}).parent_path();
+    }
+    buffer.resize(size);
+  }
+#elif defined(__linux__)
+  std::vector<char> buffer(1024);
+  while (true) {
+    const ssize_t length = readlink("/proc/self/exe", buffer.data(), buffer.size());
+    if (length < 0) {
+      return {};
+    }
+    if (static_cast<std::size_t>(length) < buffer.size()) {
+      return std::filesystem::path{std::string{buffer.data(), static_cast<std::size_t>(length)}}.parent_path();
+    }
+    buffer.resize(buffer.size() * 2);
+  }
+#else
+  return {};
+#endif
+}
+
+std::vector<std::filesystem::path> fireAntsBridgePythonPaths()
+{
+  std::vector<std::filesystem::path> paths;
+  if (const std::string sourcePath = fireAntsBridgePythonPath(); !sourcePath.empty()) {
+    paths.emplace_back(sourcePath);
+  }
+
+  const std::filesystem::path exeDir = executableDirectory();
+  if (!exeDir.empty()) {
+#ifdef _WIN32
+    paths.push_back(exeDir / "share" / "entropy" / "python");
+#elif defined(__APPLE__)
+    paths.push_back((exeDir / ".." / "Resources" / "python").lexically_normal());
+#elif defined(__linux__)
+    paths.push_back((exeDir / ".." / "share" / "entropy" / "python").lexically_normal());
+#endif
+  }
+
+  return paths;
+}
+
+void configureFireAntsEnvironment(const JobSpec& job, ProcessOptions& options)
+{
+  if (job.backend != Backend::FireANTs) {
+    return;
+  }
+
+  std::string pythonPath;
+  for (const std::filesystem::path& path : fireAntsBridgePythonPaths()) {
+    if (path.empty()) {
+      continue;
+    }
+    if (!pythonPath.empty()) {
+      pythonPath += pathListSeparator();
+    }
+    pythonPath += path.string();
+  }
+
+  if (const char* existingPythonPath = std::getenv("PYTHONPATH");
+      existingPythonPath && std::string_view{existingPythonPath}.size() > 0)
+  {
+    if (!pythonPath.empty()) {
+      pythonPath += pathListSeparator();
+    }
+    pythonPath += existingPythonPath;
+  }
+
+  if (!pythonPath.empty()) {
+    options.environment.push_back(EnvironmentVariable{"PYTHONPATH", std::move(pythonPath)});
+  }
+}
+
 bool writeFireAntsJobSpec(const JobSpec& job, JobExecution& execution)
 {
   if (job.backend != Backend::FireANTs) {
@@ -150,6 +274,7 @@ JobExecution executeJob(
 
   ProcessOptions options;
   options.workingDirectory = job.outputDirectory;
+  configureFireAntsEnvironment(job, options);
 
   if (!prepareOutputDirectory(job, execution) || !writeFireAntsJobSpec(job, execution)) {
     setStatus(execution, JobStatus::Failed, callbacks);

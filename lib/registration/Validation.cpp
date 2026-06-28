@@ -139,6 +139,13 @@ ValidationResult validateJob(const JobSpec& job, const BackendCapabilities& capa
       Feature::WarpedSegmentationOutput,
       "outputs.warpedSegmentation",
       "The selected backend does not support warped segmentation output.");
+    if (!hasPathOrUid(job.movingMask)) {
+      addMessage(
+        result,
+        ValidationSeverity::Error,
+        "outputs.warpedSegmentation",
+        "Choose a moving segmentation before requesting warped segmentation output.");
+    }
   }
   if (job.outputs.transformSurfaces && job.surfaces.empty()) {
     addMessage(

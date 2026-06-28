@@ -132,6 +132,21 @@ std::string antsTransform(TransformModel model)
   return "SyN[0.1,3,0]";
 }
 
+std::filesystem::path antsOutputPrefixPath(const JobSpec& job)
+{
+  return job.outputDirectory / outputPrefix(job);
+}
+
+std::filesystem::path antsAffineTransformPath(const JobSpec& job)
+{
+  return antsOutputPrefixPath(job).string() + "0GenericAffine.mat";
+}
+
+std::filesystem::path antsWarpPath(const JobSpec& job)
+{
+  return antsOutputPrefixPath(job).string() + "1Warp.nii.gz";
+}
+
 std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerationOptions& options)
 {
   std::vector<CommandSpec> commands;
@@ -248,15 +263,45 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
     commands.push_back(std::move(command));
   }
 
+  if (job.outputs.loadWarpedSegmentation && !job.movingMask.fileName.empty()) {
+    CommandSpec command;
+    command.description = "Greedy reslice warped segmentation";
+    command.executable = options.greedyExecutable;
+    command.args = {
+      "-d",
+      std::to_string(job.dimension),
+      "-rf",
+      pathString(job.fixedImage.fileName),
+      "-ri",
+      "LABEL",
+      "0.2vox",
+      "-rm",
+      pathString(job.movingMask.fileName),
+      pathString(artifactPath(job, ArtifactRole::WarpedSegmentation)),
+      "-r"};
+    if (includesDeformable(job.transformModel)) {
+      command.args.push_back(pathString(inverseWarp));
+    }
+    if (includesAffine(job.transformModel)) {
+      command.args.push_back(pathString(affine));
+    }
+    if (threads != "0") {
+      command.args.push_back("-threads");
+      command.args.push_back(threads);
+    }
+    commands.push_back(std::move(command));
+  }
+
   return commands;
 }
 
 std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGenerationOptions& options)
 {
-  CommandSpec command;
-  command.description = "ANTs registration";
-  command.executable = options.antsRegistrationExecutable;
-  const std::filesystem::path prefix = job.outputDirectory / outputPrefix(job);
+  std::vector<CommandSpec> commands;
+  CommandSpec registrationCommand;
+  registrationCommand.description = "ANTs registration";
+  registrationCommand.executable = options.antsRegistrationExecutable;
+  const std::filesystem::path prefix = antsOutputPrefixPath(job);
   const std::filesystem::path warped = artifactPath(job, ArtifactRole::WarpedImage);
   const std::string iterations = parameterValueOr(job, "iterations", job.iterationSchedule);
   const std::string shrinkFactors = parameterValueOr(job, "shrinkFactors", "4x2x1");
@@ -264,7 +309,7 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
   const std::string convergenceThreshold = parameterValueOr(job, "convergenceThreshold", "1e-6");
   const std::string convergenceWindow = parameterValueOr(job, "convergenceWindow", "10");
 
-  command.args = {
+  registrationCommand.args = {
     "-d",
     std::to_string(job.dimension),
     "--output",
@@ -281,10 +326,38 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
     "--smoothing-sigmas",
     smoothingSigmas + "vox"};
   if (!job.fixedMask.fileName.empty()) {
-    command.args.push_back("--masks");
-    command.args.push_back("[" + pathString(job.fixedMask.fileName) + ",NULL]");
+    registrationCommand.args.push_back("--masks");
+    registrationCommand.args.push_back("[" + pathString(job.fixedMask.fileName) + ",NULL]");
   }
-  return {command};
+  commands.push_back(std::move(registrationCommand));
+
+  if (job.outputs.loadWarpedSegmentation && !job.movingMask.fileName.empty()) {
+    CommandSpec command;
+    command.description = "ANTs reslice warped segmentation";
+    command.executable = options.antsApplyTransformsExecutable;
+    command.args = {
+      "-d",
+      std::to_string(job.dimension),
+      "-i",
+      pathString(job.movingMask.fileName),
+      "-r",
+      pathString(job.fixedImage.fileName),
+      "-o",
+      pathString(artifactPath(job, ArtifactRole::WarpedSegmentation)),
+      "-n",
+      "GenericLabel"};
+    if (includesDeformable(job.transformModel)) {
+      command.args.push_back("-t");
+      command.args.push_back(pathString(antsWarpPath(job)));
+    }
+    if (includesAffine(job.transformModel)) {
+      command.args.push_back("-t");
+      command.args.push_back(pathString(antsAffineTransformPath(job)));
+    }
+    commands.push_back(std::move(command));
+  }
+
+  return commands;
 }
 
 std::vector<CommandSpec> fireAntsCommands(const JobSpec& job, const CommandGenerationOptions& options)

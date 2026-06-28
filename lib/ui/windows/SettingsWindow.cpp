@@ -1190,9 +1190,13 @@ void renderRegistrationTab(AppData& appData)
       config.greedyExecutable,
       "Command or executable path used to launch Greedy.");
     renderPathSetting(
-      "ANTs executable",
+      "ANTs registration",
       config.antsRegistrationExecutable,
       "Command or executable path used to launch antsRegistration.");
+    renderPathSetting(
+      "ANTs apply transforms",
+      config.antsApplyTransformsExecutable,
+      "Command or executable path used to launch antsApplyTransforms for warped outputs.");
     renderPathSetting(
       "FireANTs Python",
       config.fireAntsPythonExecutable,

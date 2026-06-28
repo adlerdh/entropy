@@ -34,6 +34,7 @@
 #include "common/UuidUtility.h"
 #include "image/TimePlaybackController.h"
 #include "registration/Config.h"
+#include "registration/ImportPlan.h"
 #include "registration/Process.h"
 #include "rendering/TextureSetup.h"
 
@@ -1354,6 +1355,153 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
   m_setReferenceImage = std::move(callbacks.editing.setReferenceImage);
   m_removeImage = std::move(callbacks.editing.removeImage);
   m_paintActiveSegmentationWithActivePolygon = std::move(callbacks.editing.paintActiveSegmentationWithActivePolygon);
+}
+
+void ImGuiWrapper::importRegistrationJobOutputs(const std::string& jobId)
+{
+  registration::JobStore& jobs = m_appData.registrationJobs();
+  const registration::JobRecord* job = jobs.find(jobId);
+  if (!job || !job->manifest) {
+    return;
+  }
+
+  const registration::JobSpec spec = job->spec;
+  const registration::ResultManifest manifest = *job->manifest;
+  const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest);
+
+  auto appendEvent = [&jobs, &jobId](registration::ProgressEventKind kind, std::string message) {
+    jobs.appendProgress(jobId, registration::ProgressEvent{.kind = kind, .message = std::move(message)});
+  };
+
+  auto parseTargetImageUid = [&appendEvent](const registration::ImportStep& step) -> std::optional<uuids::uuid> {
+    if (step.targetImageUid.empty()) {
+      appendEvent(registration::ProgressEventKind::Warning, "Registration import step has no target image UID.");
+      return std::nullopt;
+    }
+    std::optional<uuids::uuid> uid = uuids::uuid::from_string(step.targetImageUid);
+    if (!uid) {
+      appendEvent(
+        registration::ProgressEventKind::Warning,
+        "Registration import step has an invalid target image UID: " + step.targetImageUid);
+    }
+    return uid;
+  };
+
+  jobs.setStatus(jobId, registration::JobStatus::ImportingOutputs);
+  appendEvent(registration::ProgressEventKind::Started, "Importing registration outputs.");
+
+  for (const std::string& warning : plan.warnings) {
+    appendEvent(registration::ProgressEventKind::Warning, warning);
+  }
+
+  bool hadError = false;
+  for (const registration::ImportStep& step : plan.steps) {
+    try {
+      if (!step.path.empty() && !fs::exists(step.path)) {
+        appendEvent(
+          registration::ProgressEventKind::Warning,
+          "Registration output does not exist and was not imported: " + step.path.string());
+        continue;
+      }
+
+      switch (step.action) {
+        case registration::ImportAction::LoadInverseWarp: {
+          const std::optional<uuids::uuid> imageUid = parseTargetImageUid(step);
+          if (!imageUid || !m_loadDeformationField) {
+            break;
+          }
+          const std::optional<uuids::uuid> warpUid = m_loadDeformationField(step.path);
+          if (warpUid && m_appData.assignInverseWarpUidToImage(*imageUid, *warpUid)) {
+            appendEvent(registration::ProgressEventKind::Artifact, "Imported inverse warp: " + step.path.string());
+            if (m_updateImageUniforms) {
+              m_updateImageUniforms(*imageUid);
+            }
+          }
+          else {
+            appendEvent(
+              registration::ProgressEventKind::Warning,
+              "Unable to import inverse warp: " + step.path.string());
+          }
+          break;
+        }
+        case registration::ImportAction::LoadForwardWarp: {
+          const std::optional<uuids::uuid> imageUid = parseTargetImageUid(step);
+          if (!imageUid || !m_loadDeformationField) {
+            break;
+          }
+          const std::optional<uuids::uuid> warpUid = m_loadDeformationField(step.path);
+          if (warpUid && m_appData.assignForwardWarpUidToImage(*imageUid, *warpUid)) {
+            appendEvent(registration::ProgressEventKind::Artifact, "Imported forward warp: " + step.path.string());
+          }
+          else {
+            appendEvent(
+              registration::ProgressEventKind::Warning,
+              "Unable to import forward warp: " + step.path.string());
+          }
+          break;
+        }
+        case registration::ImportAction::AssignWarpsToMovingImage:
+          appendEvent(registration::ProgressEventKind::Progress, "Assigned imported warps to the moving image.");
+          break;
+        case registration::ImportAction::LoadWarpedImage:
+          if (m_addImageFiles) {
+            m_addImageFiles({step.path});
+            appendEvent(registration::ProgressEventKind::Artifact, "Queued warped image import: " + step.path.string());
+          }
+          else {
+            appendEvent(registration::ProgressEventKind::Warning, "No image import callback is available.");
+          }
+          break;
+        case registration::ImportAction::LoadWarpedSegmentation: {
+          const std::optional<uuids::uuid> imageUid = parseTargetImageUid(step);
+          if (imageUid && m_addSegmentationFileToImage) {
+            m_addSegmentationFileToImage(*imageUid, step.path);
+            appendEvent(
+              registration::ProgressEventKind::Artifact,
+              "Queued warped segmentation import: " + step.path.string());
+          }
+          else {
+            appendEvent(registration::ProgressEventKind::Warning, "No segmentation import callback is available.");
+          }
+          break;
+        }
+        case registration::ImportAction::TransformLandmarksAndAnnotations:
+          appendEvent(
+            registration::ProgressEventKind::Warning,
+            "Transformed landmark/annotation import is not wired to the app yet: " + step.path.string());
+          break;
+        case registration::ImportAction::LoadTransformedSurface:
+          appendEvent(
+            registration::ProgressEventKind::Warning,
+            "Transformed surface import is not wired to the app yet: " + step.path.string());
+          break;
+        case registration::ImportAction::MakeWarpedImageActive:
+          appendEvent(
+            registration::ProgressEventKind::Warning,
+            "The warped image was queued for loading, but cannot be made active until image loading reports its UID.");
+          break;
+      }
+    }
+    catch (const std::exception& e) {
+      hadError = true;
+      appendEvent(registration::ProgressEventKind::Failed, e.what());
+      spdlog::error(
+        "Exception while importing registration output for job {}: {}\n{}",
+        jobId,
+        e.what(),
+        stack_trace::current(1));
+      break;
+    }
+  }
+
+  if (!hadError) {
+    appendEvent(registration::ProgressEventKind::Completed, "Registration outputs imported.");
+    jobs.setStatus(jobId, registration::JobStatus::Completed);
+  }
+
+  if (m_postEmptyGlfwEvent) {
+    m_postEmptyGlfwEvent();
+  }
 }
 
 void ImGuiWrapper::storeFuture(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)
@@ -3719,7 +3867,9 @@ void ImGuiWrapper::render()
     }
 
     if (m_appData.guiData().m_showRegistrationJobsWindow) {
-      renderRegistrationJobsWindow(m_appData);
+      renderRegistrationJobsWindow(m_appData, [this](const std::string& jobId) {
+        importRegistrationJobOutputs(jobId);
+      });
     }
 
     renderRegistrationProgressWindow(m_appData);

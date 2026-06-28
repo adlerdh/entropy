@@ -38,6 +38,10 @@ install(FILES "${entropy_ABOUT_ICON_SOURCE}"
     RENAME "${entropy_ABOUT_ICON_FILE_NAME}"
 )
 
+install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python"
+)
+
 foreach(entropy_LINUX_ICON_SIZE IN ITEMS 16 32 48 64 128 256 512)
     install(FILES "${entropy_RES_DIR}/icons/Linux/hicolor/${entropy_LINUX_ICON_SIZE}x${entropy_LINUX_ICON_SIZE}/apps/${entropy_LINUX_APP_ID}.png"
       DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/${entropy_LINUX_ICON_SIZE}x${entropy_LINUX_ICON_SIZE}/apps"

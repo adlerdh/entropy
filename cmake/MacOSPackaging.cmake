@@ -22,6 +22,10 @@ install(FILES "${entropy_ABOUT_ICON_SOURCE}"
     RENAME "${entropy_ABOUT_ICON_FILE_NAME}"
 )
 
+install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
+    DESTINATION "${APP_NAME}.app/Contents/Resources/python"
+)
+
 set(entropy_BUNDLE_LIBRARY_DIRS
     "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
     "${qtbase_PREFIX}/install/lib"

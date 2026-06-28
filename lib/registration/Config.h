@@ -18,6 +18,8 @@ struct BackendConfig
   std::filesystem::path greedyExecutable = "greedy"; //!< Greedy command or executable path.
   std::filesystem::path antsRegistrationExecutable = //!< ANTs antsRegistration executable path.
     "antsRegistration";
+  std::filesystem::path antsApplyTransformsExecutable = //!< ANTs antsApplyTransforms executable path.
+    "antsApplyTransforms";
   std::filesystem::path fireAntsPythonExecutable = "python"; //!< Python executable used for FireANTs.
   std::string fireAntsBridgeModule =                         //!< FireANTs Python bridge module.
     "entropy_fireants_bridge";

@@ -60,6 +60,7 @@ void setNonDefaultSettings(AppSettings& settings)
   registrationConfig.defaultBackend = registration::Backend::ANTs;
   registrationConfig.greedyExecutable = "/opt/greedy/bin/greedy";
   registrationConfig.antsRegistrationExecutable = "/opt/ants/bin/antsRegistration";
+  registrationConfig.antsApplyTransformsExecutable = "/opt/ants/bin/antsApplyTransforms";
   registrationConfig.fireAntsPythonExecutable = "/opt/fireants/bin/python";
   registrationConfig.fireAntsBridgeModule = "entropy_test_fireants_bridge";
   registrationConfig.defaultOutputDirectory = "/tmp/entropy-registration";
@@ -212,6 +213,7 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actualRegistration.defaultBackend == expectedRegistration.defaultBackend);
   CHECK(actualRegistration.greedyExecutable == expectedRegistration.greedyExecutable);
   CHECK(actualRegistration.antsRegistrationExecutable == expectedRegistration.antsRegistrationExecutable);
+  CHECK(actualRegistration.antsApplyTransformsExecutable == expectedRegistration.antsApplyTransformsExecutable);
   CHECK(actualRegistration.fireAntsPythonExecutable == expectedRegistration.fireAntsPythonExecutable);
   CHECK(actualRegistration.fireAntsBridgeModule == expectedRegistration.fireAntsBridgeModule);
   CHECK(actualRegistration.defaultOutputDirectory == expectedRegistration.defaultOutputDirectory);
@@ -403,6 +405,7 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("registration").at("defaultBackend") == "ANTs");
   CHECK(root.at("registration").at("greedyExecutable") == "/opt/greedy/bin/greedy");
   CHECK(root.at("registration").at("antsRegistrationExecutable") == "/opt/ants/bin/antsRegistration");
+  CHECK(root.at("registration").at("antsApplyTransformsExecutable") == "/opt/ants/bin/antsApplyTransforms");
   CHECK(root.at("registration").at("fireAntsPythonExecutable") == "/opt/fireants/bin/python");
   CHECK(root.at("registration").at("fireAntsBridgeModule") == "entropy_test_fireants_bridge");
   CHECK(root.at("registration").at("defaultOutputDirectory") == "/tmp/entropy-registration");

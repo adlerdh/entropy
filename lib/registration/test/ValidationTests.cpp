@@ -71,3 +71,19 @@ TEST_CASE("registration validation warns when landmarks cannot drive backend opt
   REQUIRE_FALSE(result.messages.empty());
   CHECK(result.messages.front().severity == registration::ValidationSeverity::Warning);
 }
+
+TEST_CASE("registration validation requires a moving segmentation for warped segmentation output", "[registration]")
+{
+  registration::JobSpec job = minimalJob(registration::Backend::Greedy);
+  job.outputs.loadWarpedSegmentation = true;
+
+  registration::ValidationResult result =
+    registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK_FALSE(result.canLaunch());
+
+  job.movingMask = imageRef("moving-seg", "moving_seg");
+  result = registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+}
