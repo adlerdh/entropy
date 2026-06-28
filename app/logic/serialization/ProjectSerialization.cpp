@@ -320,6 +320,76 @@ std::vector<glm::vec3> vec3ArrayFromJson(const json& j)
   return values;
 }
 
+std::string optionalPathToString(const std::optional<fs::path>& path)
+{
+  return path ? path->string() : std::string{};
+}
+
+std::vector<std::string> pathVectorToStrings(const std::vector<fs::path>& paths)
+{
+  std::vector<std::string> values;
+  values.reserve(paths.size());
+  for (const fs::path& path : paths) {
+    values.push_back(path.string());
+  }
+  return values;
+}
+
+std::vector<fs::path> pathVectorFromJson(const json& j)
+{
+  std::vector<fs::path> paths;
+  if (!j.is_array()) {
+    return paths;
+  }
+
+  paths.reserve(j.size());
+  for (const auto& value : j) {
+    if (value.is_string()) {
+      paths.emplace_back(value.get<std::string>());
+    }
+  }
+  return paths;
+}
+
+void optionalPathFromJson(const json& j, const char* key, std::optional<fs::path>& path)
+{
+  if (const auto value = j.find(key); value != j.end() && value->is_string()) {
+    const std::string parsed = value->get<std::string>();
+    if (!parsed.empty()) {
+      path = parsed;
+    }
+  }
+}
+
+void makePathCanonicalAbsolute(std::optional<fs::path>& path, const fs::path& projectBasePath, const char* description)
+{
+  if (!path) {
+    return;
+  }
+  if (path->empty()) {
+    spdlog::warn("Ignoring empty {} path", description);
+    path = std::nullopt;
+    return;
+  }
+
+  fs::path absolutePath = path->is_absolute() ? *path : (projectBasePath / *path).lexically_normal();
+  std::error_code error;
+  if (fs::exists(absolutePath, error)) {
+    absolutePath = fs::canonical(absolutePath);
+  }
+  else {
+    spdlog::warn("Referenced {} {} does not exist", description, absolutePath);
+  }
+  *path = absolutePath;
+}
+
+void makePathCanonicalAbsolute(fs::path& path, const fs::path& projectBasePath, const char* description)
+{
+  std::optional<fs::path> optionalPath = path;
+  makePathCanonicalAbsolute(optionalPath, projectBasePath, description);
+  path = optionalPath.value_or(fs::path{});
+}
+
 } // namespace
 
 namespace imageio
@@ -1292,6 +1362,64 @@ void from_json(const json& j, ProjectAnnotationDisplaySettings& settings)
   }
 }
 
+void to_json(json& j, const RegistrationResult& result)
+{
+  j = json{
+    {"backend", result.m_backend},
+    {"fixedImageUid", result.m_fixedImageUid},
+    {"movingImageUid", result.m_movingImageUid},
+    {"warpedSegmentations", pathVectorToStrings(result.m_warpedSegmentations)},
+    {"transformedSurfaces", pathVectorToStrings(result.m_transformedSurfaces)},
+    {"transformedLandmarks", pathVectorToStrings(result.m_transformedLandmarks)},
+    {"warnings", result.m_warnings}};
+
+  if (result.m_manifestFileName) {
+    j["manifest"] = optionalPathToString(result.m_manifestFileName);
+  }
+  if (result.m_warpedImage) {
+    j["warpedImage"] = optionalPathToString(result.m_warpedImage);
+  }
+  if (result.m_inverseWarp) {
+    j["inverseWarp"] = optionalPathToString(result.m_inverseWarp);
+  }
+  if (result.m_forwardWarp) {
+    j["forwardWarp"] = optionalPathToString(result.m_forwardWarp);
+  }
+  if (result.m_affineTransform) {
+    j["affineTransform"] = optionalPathToString(result.m_affineTransform);
+  }
+}
+
+void from_json(const json& j, RegistrationResult& result)
+{
+  if (const auto value = j.find("backend"); value != j.end() && value->is_string()) {
+    result.m_backend = value->get<std::string>();
+  }
+  if (const auto value = j.find("fixedImageUid"); value != j.end() && value->is_string()) {
+    result.m_fixedImageUid = value->get<std::string>();
+  }
+  if (const auto value = j.find("movingImageUid"); value != j.end() && value->is_string()) {
+    result.m_movingImageUid = value->get<std::string>();
+  }
+  optionalPathFromJson(j, "manifest", result.m_manifestFileName);
+  optionalPathFromJson(j, "warpedImage", result.m_warpedImage);
+  optionalPathFromJson(j, "inverseWarp", result.m_inverseWarp);
+  optionalPathFromJson(j, "forwardWarp", result.m_forwardWarp);
+  optionalPathFromJson(j, "affineTransform", result.m_affineTransform);
+  if (const auto value = j.find("warpedSegmentations"); value != j.end()) {
+    result.m_warpedSegmentations = pathVectorFromJson(*value);
+  }
+  if (const auto value = j.find("transformedSurfaces"); value != j.end()) {
+    result.m_transformedSurfaces = pathVectorFromJson(*value);
+  }
+  if (const auto value = j.find("transformedLandmarks"); value != j.end()) {
+    result.m_transformedLandmarks = pathVectorFromJson(*value);
+  }
+  if (const auto value = j.find("warnings"); value != j.end() && value->is_array()) {
+    result.m_warnings = value->get<std::vector<std::string>>();
+  }
+}
+
 void to_json(json& j, const EntropyProject& project)
 {
   j = json{{"reference", project.m_referenceImage}};
@@ -1316,6 +1444,9 @@ void to_json(json& j, const EntropyProject& project)
   j["segmentationDisplay"] = project.m_segmentationDisplay;
   j["isosurfaces"] = project.m_isosurfaces;
   j["annotationDisplay"] = project.m_annotationDisplay;
+  if (!project.m_registrationResults.empty()) {
+    j["registrationResults"] = project.m_registrationResults;
+  }
 }
 
 void from_json(const json& j, EntropyProject& project)
@@ -1363,6 +1494,11 @@ void from_json(const json& j, EntropyProject& project)
       annotationDisplay != j.end() && annotationDisplay->is_object())
   {
     annotationDisplay->get_to(project.m_annotationDisplay);
+  }
+  if (const auto registrationResults = j.find("registrationResults");
+      registrationResults != j.end() && registrationResults->is_array())
+  {
+    registrationResults->get_to(project.m_registrationResults);
   }
 }
 
@@ -1438,6 +1574,24 @@ bool open(EntropyProject& project, const fs::path& fileName)
         spdlog::warn("Referenced {} {} does not exist", description, absolutePath);
       }
       *path = absolutePath;
+    };
+
+  auto makeRegistrationResultPathsCanonicalAbsolute =
+    [](serialize::RegistrationResult& result, const fs::path& projectBasePath) {
+      makePathCanonicalAbsolute(result.m_manifestFileName, projectBasePath, "registration manifest");
+      makePathCanonicalAbsolute(result.m_warpedImage, projectBasePath, "registered image");
+      makePathCanonicalAbsolute(result.m_inverseWarp, projectBasePath, "registration inverse warp");
+      makePathCanonicalAbsolute(result.m_forwardWarp, projectBasePath, "registration forward warp");
+      makePathCanonicalAbsolute(result.m_affineTransform, projectBasePath, "registration affine transform");
+      for (fs::path& path : result.m_warpedSegmentations) {
+        makePathCanonicalAbsolute(path, projectBasePath, "registered segmentation");
+      }
+      for (fs::path& path : result.m_transformedSurfaces) {
+        makePathCanonicalAbsolute(path, projectBasePath, "transformed registration surface");
+      }
+      for (fs::path& path : result.m_transformedLandmarks) {
+        makePathCanonicalAbsolute(path, projectBasePath, "transformed registration landmarks");
+      }
     };
 
   // Make all paths in the image absolute:
@@ -1552,6 +1706,9 @@ bool open(EntropyProject& project, const fs::path& fileName)
 
     applyToImagePaths(project, projectBasePath, makeCanonicalAbsolute);
     makeOptionalPathCanonicalAbsolute(project.m_layoutsFileName, projectBasePath, "layouts file");
+    for (serialize::RegistrationResult& result : project.m_registrationResults) {
+      makeRegistrationResultPathsCanonicalAbsolute(result, projectBasePath);
+    }
 
     const json jAbs = project;
     spdlog::debug("Parsed project JSON (with absolute paths):\n{}", jAbs.dump(2));
@@ -1623,6 +1780,30 @@ bool save(const EntropyProject& project, const fs::path& fileName)
     }
   };
 
+  auto makeRelativeIfPresent = [](std::optional<fs::path>& path, const fs::path& projectBasePath) {
+    if (path && !path->empty()) {
+      path = fs::relative(*path, projectBasePath);
+    }
+  };
+
+  auto makeRegistrationResultPathsRelative =
+    [&](serialize::RegistrationResult& result, const fs::path& projectBasePath) {
+      makeRelativeIfPresent(result.m_manifestFileName, projectBasePath);
+      makeRelativeIfPresent(result.m_warpedImage, projectBasePath);
+      makeRelativeIfPresent(result.m_inverseWarp, projectBasePath);
+      makeRelativeIfPresent(result.m_forwardWarp, projectBasePath);
+      makeRelativeIfPresent(result.m_affineTransform, projectBasePath);
+      for (fs::path& path : result.m_warpedSegmentations) {
+        path = fs::relative(path, projectBasePath);
+      }
+      for (fs::path& path : result.m_transformedSurfaces) {
+        path = fs::relative(path, projectBasePath);
+      }
+      for (fs::path& path : result.m_transformedLandmarks) {
+        path = fs::relative(path, projectBasePath);
+      }
+    };
+
   try {
     // Create version of project with image paths relative to project filename base path:
     EntropyProject projectRelative = project;
@@ -1644,6 +1825,9 @@ bool save(const EntropyProject& project, const fs::path& fileName)
 
     // Make all image paths relative to the project file:
     applyToImagePaths(projectRelative, projectBasePath, makeRelative);
+    for (serialize::RegistrationResult& result : projectRelative.m_registrationResults) {
+      makeRegistrationResultPathsRelative(result, projectBasePath);
+    }
     const json j = projectRelative;
 
     std::ofstream outFile(fileName);

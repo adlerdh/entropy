@@ -1764,6 +1764,18 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
   const registration::CommandGenerationOptions commandOptions = registration::commandOptions(config);
   const auto postEmptyEvent = m_postEmptyGlfwEvent;
 
+  {
+    std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
+    for (const registration::JobRecord& job : m_appData.registrationJobs().jobs()) {
+      if (job.status != registration::JobStatus::Cancelled) {
+        continue;
+      }
+      if (const auto it = m_registrationJobCancelFlags.find(job.id); it != m_registrationJobCancelFlags.end()) {
+        it->second->store(true);
+      }
+    }
+  }
+
   std::vector<std::pair<std::string, registration::JobSpec>> jobsToLaunch;
   for (const registration::JobRecord& job : m_appData.registrationJobs().jobs()) {
     if (job.status != registration::JobStatus::Queued) {
@@ -1787,11 +1799,16 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
   for (const auto& [jobId, jobSpec] : jobsToLaunch) {
     m_appData.registrationJobs().setStatus(jobId, registration::JobStatus::Running);
     const uuids::uuid taskUid = generateRandomUuid();
-    auto future = std::async(std::launch::async, [jobId, jobSpec, commandOptions, postEmptyEvent]() {
+    auto cancelFlag = std::make_shared<std::atomic_bool>(false);
+    auto future = std::async(std::launch::async, [jobId, jobSpec, commandOptions, postEmptyEvent, cancelFlag]() {
       registration::JobExecution execution;
       try {
         registration::ShellProcessRunner runner;
-        execution = registration::executeJob(jobSpec, commandOptions, runner);
+        registration::JobExecutionCallbacks callbacks;
+        callbacks.shouldCancel = [cancelFlag]() {
+          return cancelFlag->load();
+        };
+        execution = registration::executeJob(jobSpec, commandOptions, runner, callbacks);
       }
       catch (const std::exception& e) {
         execution.status = registration::JobStatus::Failed;
@@ -1807,6 +1824,7 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
     {
       std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
       m_runningRegistrationJobIds.insert(jobId);
+      m_registrationJobCancelFlags.emplace(jobId, std::move(cancelFlag));
       m_registrationJobIdsByTask.emplace(taskUid, jobId);
       m_registrationJobFutures.emplace(taskUid, std::move(future));
     }
@@ -1868,6 +1886,7 @@ void ImGuiWrapper::processRegistrationJobFutures()
       std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
       if (!jobId.empty()) {
         m_runningRegistrationJobIds.erase(jobId);
+        m_registrationJobCancelFlags.erase(jobId);
       }
     }
 

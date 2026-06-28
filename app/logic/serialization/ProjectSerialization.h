@@ -231,6 +231,25 @@ struct ProjectAnnotationDisplaySettings
 };
 
 /**
+ * @brief Completed registration result saved with a project.
+ */
+struct RegistrationResult
+{
+  std::string m_backend;                                     //!< Backend that produced the result.
+  std::string m_fixedImageUid;                               //!< Fixed/reference image UID at registration time.
+  std::string m_movingImageUid;                              //!< Moving image UID at registration time.
+  std::optional<std::filesystem::path> m_manifestFileName;   //!< Result manifest JSON path, when available.
+  std::optional<std::filesystem::path> m_warpedImage;        //!< Warped moving image output.
+  std::optional<std::filesystem::path> m_inverseWarp;        //!< Fixed-to-moving sampling warp output.
+  std::optional<std::filesystem::path> m_forwardWarp;        //!< Moving-to-fixed point warp output.
+  std::optional<std::filesystem::path> m_affineTransform;    //!< Affine/composite transform output.
+  std::vector<std::filesystem::path> m_warpedSegmentations;  //!< Warped segmentation outputs.
+  std::vector<std::filesystem::path> m_transformedSurfaces;  //!< Transformed surface outputs.
+  std::vector<std::filesystem::path> m_transformedLandmarks; //!< Transformed landmark outputs.
+  std::vector<std::string> m_warnings;                       //!< Non-fatal warnings reported by backend/import.
+};
+
+/**
  * @todo Create enum for all image color maps
  * @brief Serialized data for image settings
  */
@@ -477,6 +496,7 @@ struct EntropyProject
   ProjectSegmentationDisplaySettings m_segmentationDisplay;
   ProjectIsosurfaceDisplaySettings m_isosurfaces;
   ProjectAnnotationDisplaySettings m_annotationDisplay;
+  std::vector<RegistrationResult> m_registrationResults;
 };
 
 /**
@@ -590,6 +610,20 @@ void to_json(nlohmann::json& j, const ProjectAnnotationDisplaySettings& settings
  * @param settings Settings to update.
  */
 void from_json(const nlohmann::json& j, ProjectAnnotationDisplaySettings& settings);
+
+/**
+ * @brief Serialize a completed registration result to JSON.
+ * @param j Destination JSON object.
+ * @param result Result to serialize.
+ */
+void to_json(nlohmann::json& j, const RegistrationResult& result);
+
+/**
+ * @brief Deserialize a completed registration result from JSON.
+ * @param j Source JSON object.
+ * @param result Result to update.
+ */
+void from_json(const nlohmann::json& j, RegistrationResult& result);
 
 /**
  * @brief Serialize an Entropy project to JSON.

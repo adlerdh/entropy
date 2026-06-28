@@ -702,6 +702,78 @@ TEST_CASE("Project serialization preserves inverse and forward warp paths", "[pr
   CHECK(*loaded.m_referenceImage.m_forwardWarpFileName == fs::canonical(forwardFile));
 }
 
+TEST_CASE("Project serialization preserves registration result artifacts", "[project][serialization]")
+{
+  const fs::path root = uniqueTempProjectDirectory();
+  const fs::path imageFile = root / "moving.nii.gz";
+  const fs::path manifestFile = root / "registration" / "result.json";
+  const fs::path warpedFile = root / "registration" / "warped.nii.gz";
+  const fs::path inverseFile = root / "registration" / "inverse.nrrd";
+  const fs::path forwardFile = root / "registration" / "forward.nrrd";
+  const fs::path affineFile = root / "registration" / "affine.mat";
+  const fs::path segFile = root / "registration" / "seg.nii.gz";
+  const fs::path surfaceFile = root / "registration" / "surface.vtk";
+  const fs::path landmarksFile = root / "registration" / "landmarks.json";
+  const fs::path projectFile = root / "project.json";
+
+  touchFile(imageFile);
+  touchFile(manifestFile);
+  touchFile(warpedFile);
+  touchFile(inverseFile);
+  touchFile(forwardFile);
+  touchFile(affineFile);
+  touchFile(segFile);
+  touchFile(surfaceFile);
+  touchFile(landmarksFile);
+
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = imageFile;
+  project.m_registrationResults.push_back(serialize::RegistrationResult{
+    .m_backend = "Greedy",
+    .m_fixedImageUid = "fixed",
+    .m_movingImageUid = "moving",
+    .m_manifestFileName = manifestFile,
+    .m_warpedImage = warpedFile,
+    .m_inverseWarp = inverseFile,
+    .m_forwardWarp = forwardFile,
+    .m_affineTransform = affineFile,
+    .m_warpedSegmentations = {segFile},
+    .m_transformedSurfaces = {surfaceFile},
+    .m_transformedLandmarks = {landmarksFile},
+    .m_warnings = {"low overlap"}});
+
+  const json inlineJson = project;
+  REQUIRE(inlineJson.contains("registrationResults"));
+  CHECK(inlineJson.at("registrationResults").at(0).at("backend") == "Greedy");
+  CHECK(inlineJson.at("registrationResults").at(0).at("manifest") == manifestFile.string());
+  CHECK(inlineJson.at("registrationResults").at(0).at("warnings").at(0) == "low overlap");
+
+  REQUIRE(serialize::save(project, projectFile));
+
+  const json savedJson = json::parse(std::ifstream(projectFile));
+  const json& savedResult = savedJson.at("registrationResults").at(0);
+  CHECK(savedResult.at("manifest") == "registration/result.json");
+  CHECK(savedResult.at("warpedImage") == "registration/warped.nii.gz");
+  CHECK(savedResult.at("inverseWarp") == "registration/inverse.nrrd");
+  CHECK(savedResult.at("forwardWarp") == "registration/forward.nrrd");
+  CHECK(savedResult.at("warpedSegmentations").at(0) == "registration/seg.nii.gz");
+
+  serialize::EntropyProject loaded;
+  REQUIRE(serialize::open(loaded, projectFile));
+  REQUIRE(loaded.m_registrationResults.size() == 1);
+  const serialize::RegistrationResult& loadedResult = loaded.m_registrationResults.front();
+  REQUIRE(loadedResult.m_manifestFileName);
+  REQUIRE(loadedResult.m_warpedImage);
+  REQUIRE(loadedResult.m_inverseWarp);
+  CHECK(*loadedResult.m_manifestFileName == fs::canonical(manifestFile));
+  CHECK(*loadedResult.m_warpedImage == fs::canonical(warpedFile));
+  CHECK(*loadedResult.m_inverseWarp == fs::canonical(inverseFile));
+  REQUIRE(loadedResult.m_warpedSegmentations.size() == 1);
+  CHECK(loadedResult.m_warpedSegmentations.front() == fs::canonical(segFile));
+  REQUIRE(loadedResult.m_warnings.size() == 1);
+  CHECK(loadedResult.m_warnings.front() == "low overlap");
+}
+
 TEST_CASE("Project serialization preserves segmentation settings", "[project][serialization]")
 {
   serialize::EntropyProject project;

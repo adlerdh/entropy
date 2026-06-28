@@ -148,3 +148,26 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedAnnotationDisplay.m_annotationDisplay.m_annotationsOnTop = true;
   CHECK_FALSE(project_snapshot::equivalent(project, changedAnnotationDisplay));
 }
+
+TEST_CASE("Project snapshot comparison detects registration result changes", "[ProjectSnapshotComparison]")
+{
+  serialize::EntropyProject project = makeProject();
+  project.m_registrationResults.push_back(serialize::RegistrationResult{
+    .m_backend = "Greedy",
+    .m_fixedImageUid = "fixed",
+    .m_movingImageUid = "moving",
+    .m_manifestFileName = "registration/result.json",
+    .m_warpedImage = "registration/warped.nii.gz",
+    .m_inverseWarp = "registration/inverse.nrrd",
+    .m_forwardWarp = "registration/forward.nrrd"});
+
+  CHECK(project_snapshot::equivalent(project, project));
+
+  serialize::EntropyProject changedRegistration = project;
+  changedRegistration.m_registrationResults.front().m_inverseWarp = "registration/other-inverse.nrrd";
+  CHECK_FALSE(project_snapshot::equivalent(project, changedRegistration));
+
+  serialize::EntropyProject missingRegistration = project;
+  missingRegistration.m_registrationResults.clear();
+  CHECK_FALSE(project_snapshot::equivalent(project, missingRegistration));
+}

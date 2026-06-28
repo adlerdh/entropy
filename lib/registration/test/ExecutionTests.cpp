@@ -1,8 +1,14 @@
 #include "registration/Execution.h"
+#include "registration/Artifacts.h"
+#include "registration/Json.h"
 #include "registration/Progress.h"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <nlohmann/json.hpp>
+
+#include <filesystem>
+#include <fstream>
 #include <utility>
 
 namespace
@@ -43,14 +49,15 @@ registration::DataRef imageRef(std::string uid, std::string fileName)
   return ref;
 }
 
-registration::JobSpec jobForOneCommand()
+registration::JobSpec jobForOneCommand(const std::string& suffix = "case")
 {
   registration::JobSpec job;
   job.backend = registration::Backend::FireANTs;
   job.fixedImage = imageRef("fixed", "fixed.nii.gz");
   job.movingImage = imageRef("moving", "moving.nii.gz");
-  job.outputDirectory = "/tmp/reg";
+  job.outputDirectory = std::filesystem::temp_directory_path() / ("entropy-registration-execution-tests-" + suffix);
   job.outputPrefix = "case";
+  std::filesystem::remove_all(job.outputDirectory);
   return job;
 }
 
@@ -87,15 +94,71 @@ TEST_CASE("registration job execution reports progress and completion", "[regist
     statuses.push_back(status);
   };
 
-  const registration::JobExecution execution = registration::executeJob(jobForOneCommand(), runner, callbacks);
+  const registration::JobSpec job = jobForOneCommand("progress");
+  const registration::JobExecution execution = registration::executeJob(job, runner, callbacks);
 
   CHECK(execution.status == registration::JobStatus::Completed);
+  REQUIRE(execution.manifest);
+  CHECK(execution.manifest->success);
+  CHECK(execution.manifest->warpedImage == registration::artifactPath(job, registration::ArtifactRole::WarpedImage));
   REQUIRE(execution.progressEvents.size() == 1);
   REQUIRE(execution.outputLines.size() == 1);
   CHECK(execution.outputLines.front().text == registration::progressEventLine(event));
   CHECK(execution.progressEvents.front().stageName == "deformable");
   REQUIRE_FALSE(statuses.empty());
   CHECK(statuses.back() == registration::JobStatus::Completed);
+}
+
+TEST_CASE("registration job execution writes FireANTs job spec before launch", "[registration][execution]")
+{
+  ScriptedRunner runner;
+  registration::ProcessResult success;
+  success.exitCode = 0;
+  runner.results.push_back(success);
+
+  const registration::JobSpec job = jobForOneCommand("writes-spec");
+  const registration::JobExecution execution = registration::executeJob(job, runner);
+
+  CHECK(execution.status == registration::JobStatus::Completed);
+
+  std::ifstream stream(registration::artifactPath(job, registration::ArtifactRole::JobSpec));
+  REQUIRE(stream);
+
+  nlohmann::json json;
+  stream >> json;
+  const registration::JobSpec restored = json.get<registration::JobSpec>();
+  CHECK(restored.fixedImage.uid == "fixed");
+  CHECK(restored.movingImage.uid == "moving");
+}
+
+TEST_CASE("registration job execution reads backend result manifest when present", "[registration][execution]")
+{
+  registration::JobSpec job = jobForOneCommand("reads-manifest");
+  std::filesystem::create_directories(job.outputDirectory);
+
+  registration::ResultManifest backendManifest;
+  backendManifest.success = true;
+  backendManifest.backend = registration::Backend::FireANTs;
+  backendManifest.fixedImageUid = "fixed";
+  backendManifest.movingImageUid = "moving";
+  backendManifest.warpedImage = "backend-warped.nii.gz";
+
+  {
+    std::ofstream stream(registration::artifactPath(job, registration::ArtifactRole::ResultManifest));
+    const nlohmann::json json = backendManifest;
+    stream << json.dump(2) << '\n';
+  }
+
+  ScriptedRunner runner;
+  registration::ProcessResult success;
+  success.exitCode = 0;
+  runner.results.push_back(success);
+
+  const registration::JobExecution execution = registration::executeJob(job, runner);
+
+  REQUIRE(execution.manifest);
+  CHECK(execution.manifest->success);
+  CHECK(execution.manifest->warpedImage == "backend-warped.nii.gz");
 }
 
 TEST_CASE("registration job execution stops after a failed command", "[registration][execution]")
@@ -128,6 +191,26 @@ TEST_CASE("registration job execution reports cancelled process", "[registration
   const registration::JobExecution execution = registration::executeJob(jobForOneCommand(), runner);
 
   CHECK(execution.status == registration::JobStatus::Cancelled);
+  CHECK(execution.errorMessage == "Registration was cancelled.");
+}
+
+TEST_CASE("registration job execution honors cancellation before launching a command", "[registration][execution]")
+{
+  ScriptedRunner runner;
+  registration::ProcessResult success;
+  success.exitCode = 0;
+  runner.results.push_back(success);
+
+  registration::JobExecutionCallbacks callbacks;
+  callbacks.shouldCancel = [] {
+    return true;
+  };
+
+  const registration::JobExecution execution =
+    registration::executeJob(jobForOneCommand("cancel-before-launch"), runner, callbacks);
+
+  CHECK(execution.status == registration::JobStatus::Cancelled);
+  CHECK(runner.commands.empty());
   CHECK(execution.errorMessage == "Registration was cancelled.");
 }
 

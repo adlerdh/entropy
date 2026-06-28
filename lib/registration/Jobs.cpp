@@ -107,6 +107,7 @@ bool JobStore::applyExecution(const std::string& id, const JobExecution& executi
   job->progress.insert(job->progress.end(), execution.progressEvents.begin(), execution.progressEvents.end());
   job->outputLines.insert(job->outputLines.end(), execution.outputLines.begin(), execution.outputLines.end());
   job->warnings.insert(job->warnings.end(), execution.warnings.begin(), execution.warnings.end());
+  job->manifest = execution.manifest;
   job->errorMessage = execution.errorMessage;
   return true;
 }

@@ -2,6 +2,7 @@ add_library(EntropyRegistration STATIC)
 add_library(Entropy::Registration ALIAS EntropyRegistration)
 
 target_sources(EntropyRegistration PRIVATE
+  Artifacts.cpp
   Availability.cpp
   Capabilities.cpp
   Commands.cpp

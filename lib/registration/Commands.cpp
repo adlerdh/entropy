@@ -1,5 +1,7 @@
 #include "registration/Commands.h"
 
+#include "registration/Artifacts.h"
+
 #include <filesystem>
 #include <sstream>
 
@@ -25,12 +27,6 @@ bool includesDeformable(TransformModel model)
 std::string pathString(const std::filesystem::path& path)
 {
   return path.string();
-}
-
-std::filesystem::path outputPath(const JobSpec& job, const char* suffix)
-{
-  const std::string prefix = job.outputPrefix.empty() ? "registration" : job.outputPrefix;
-  return job.outputDirectory / (prefix + suffix);
 }
 
 std::string greedyMetric(Metric metric)
@@ -98,10 +94,10 @@ std::string antsTransform(TransformModel model)
 std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerationOptions& options)
 {
   std::vector<CommandSpec> commands;
-  const std::filesystem::path affine = outputPath(job, "_affine.mat");
-  const std::filesystem::path inverseWarp = outputPath(job, "_inverse_warp.nii.gz");
-  const std::filesystem::path forwardWarp = outputPath(job, "_forward_warp.nii.gz");
-  const std::filesystem::path warpedImage = outputPath(job, "_warped.nii.gz");
+  const std::filesystem::path affine = artifactPath(job, ArtifactRole::AffineTransform);
+  const std::filesystem::path inverseWarp = artifactPath(job, ArtifactRole::InverseWarp);
+  const std::filesystem::path forwardWarp = artifactPath(job, ArtifactRole::ForwardWarp);
+  const std::filesystem::path warpedImage = artifactPath(job, ArtifactRole::WarpedImage);
 
   if (includesAffine(job.transformModel)) {
     CommandSpec command;
@@ -198,9 +194,8 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
   CommandSpec command;
   command.description = "ANTs registration";
   command.executable = options.antsRegistrationExecutable;
-  const std::filesystem::path prefix =
-    job.outputDirectory / (job.outputPrefix.empty() ? "registration" : job.outputPrefix);
-  const std::filesystem::path warped = outputPath(job, "_warped.nii.gz");
+  const std::filesystem::path prefix = job.outputDirectory / outputPrefix(job);
+  const std::filesystem::path warped = artifactPath(job, ArtifactRole::WarpedImage);
 
   command.args = {
     "-d",
@@ -230,7 +225,7 @@ std::vector<CommandSpec> fireAntsCommands(const JobSpec& job, const CommandGener
   CommandSpec command;
   command.description = "FireANTs bridge registration";
   command.executable = options.fireAntsPythonExecutable;
-  command.args = {"-m", options.fireAntsBridgeModule, "run", pathString(outputPath(job, "_job.json"))};
+  command.args = {"-m", options.fireAntsBridgeModule, "run", pathString(artifactPath(job, ArtifactRole::JobSpec))};
   return {command};
 }
 

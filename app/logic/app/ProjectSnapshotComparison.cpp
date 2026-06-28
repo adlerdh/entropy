@@ -262,6 +262,16 @@ bool annotationDisplaySettingsEqual(
   return a.m_annotationsOnTop == b.m_annotationsOnTop && a.m_landmarksOnTop == b.m_landmarksOnTop &&
          a.m_hideAnnotationVertices == b.m_hideAnnotationVertices;
 }
+
+bool registrationResultsEqual(const serialize::RegistrationResult& a, const serialize::RegistrationResult& b)
+{
+  return a.m_backend == b.m_backend && a.m_fixedImageUid == b.m_fixedImageUid &&
+         a.m_movingImageUid == b.m_movingImageUid && a.m_manifestFileName == b.m_manifestFileName &&
+         a.m_warpedImage == b.m_warpedImage && a.m_inverseWarp == b.m_inverseWarp &&
+         a.m_forwardWarp == b.m_forwardWarp && a.m_affineTransform == b.m_affineTransform &&
+         a.m_warpedSegmentations == b.m_warpedSegmentations && a.m_transformedSurfaces == b.m_transformedSurfaces &&
+         a.m_transformedLandmarks == b.m_transformedLandmarks && a.m_warnings == b.m_warnings;
+}
 } // namespace
 
 namespace project_snapshot
@@ -278,6 +288,7 @@ bool equivalent(const serialize::EntropyProject& a, const serialize::EntropyProj
          intensityProjectionSettingsEqual(a.m_intensityProjection, b.m_intensityProjection) &&
          segmentationDisplaySettingsEqual(a.m_segmentationDisplay, b.m_segmentationDisplay) &&
          isosurfaceDisplaySettingsEqual(a.m_isosurfaces, b.m_isosurfaces) &&
-         annotationDisplaySettingsEqual(a.m_annotationDisplay, b.m_annotationDisplay);
+         annotationDisplaySettingsEqual(a.m_annotationDisplay, b.m_annotationDisplay) &&
+         vectorsEqual(a.m_registrationResults, b.m_registrationResults, registrationResultsEqual);
 }
 } // namespace project_snapshot

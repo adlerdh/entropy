@@ -5,6 +5,7 @@
 #include "registration/Types.h"
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,7 @@ struct JobExecution
   std::vector<ProgressEvent> progressEvents;  //!< Parsed structured progress events.
   std::vector<ProcessOutputLine> outputLines; //!< Raw backend stdout/stderr lines.
   std::vector<std::string> warnings;          //!< Non-fatal warnings.
+  std::optional<ResultManifest> manifest;     //!< Expected or backend-written result manifest.
   std::string errorMessage;                   //!< Fatal error summary.
 };
 
@@ -42,6 +44,7 @@ struct JobExecutionCallbacks
   std::function<void(JobStatus)> onStatusChanged;             //!< Called when the normalized status changes.
   std::function<void(const ProgressEvent&)> onProgressEvent;  //!< Called for every parsed progress event.
   std::function<void(const ProcessOutputLine&)> onOutputLine; //!< Called for raw stdout/stderr lines.
+  std::function<bool()> shouldCancel;                         //!< Return true when execution should stop.
 };
 
 /**

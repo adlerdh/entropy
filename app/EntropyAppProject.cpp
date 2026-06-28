@@ -9,12 +9,15 @@
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/LandmarkGroup.h"
 #include "logic/serialization/ProjectSerialization.h"
+#include "registration/Artifacts.h"
 #include "ui/NativeFileDialogs.h"
 
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
 #include <cmath>
+#include <set>
+#include <string>
 #include <utility>
 
 namespace fs = std::filesystem;
@@ -91,6 +94,67 @@ bool isApproximatelyIdentity(const glm::mat4& matrix)
 
   return true;
 }
+
+serialize::RegistrationResult registrationResultSnapshot(const registration::JobRecord& job)
+{
+  serialize::RegistrationResult result;
+  result.m_backend = std::string{registration::label(job.spec.backend)};
+  result.m_fixedImageUid = job.spec.fixedImage.uid;
+  result.m_movingImageUid = job.spec.movingImage.uid;
+
+  if (!job.manifest) {
+    return result;
+  }
+
+  const registration::ResultManifest& manifest = *job.manifest;
+  result.m_manifestFileName = registration::artifactPath(job.spec, registration::ArtifactRole::ResultManifest);
+  if (!manifest.warpedImage.empty()) {
+    result.m_warpedImage = manifest.warpedImage;
+  }
+  if (!manifest.inverseWarp.empty()) {
+    result.m_inverseWarp = manifest.inverseWarp;
+  }
+  if (!manifest.forwardWarp.empty()) {
+    result.m_forwardWarp = manifest.forwardWarp;
+  }
+  if (!manifest.affineTransform.empty()) {
+    result.m_affineTransform = manifest.affineTransform;
+  }
+  result.m_warpedSegmentations = manifest.warpedSegmentations;
+  result.m_transformedSurfaces = manifest.transformedSurfaces;
+  result.m_transformedLandmarks = manifest.transformedLandmarks;
+  result.m_warnings = manifest.warnings;
+
+  return result;
+}
+
+std::string registrationResultKey(const serialize::RegistrationResult& result)
+{
+  const std::string manifest = result.m_manifestFileName ? result.m_manifestFileName->string() : std::string{};
+  return result.m_backend + '\n' + result.m_fixedImageUid + '\n' + result.m_movingImageUid + '\n' + manifest;
+}
+
+std::vector<serialize::RegistrationResult> registrationResultSnapshots(const AppData& data)
+{
+  std::vector<serialize::RegistrationResult> results = data.project().m_registrationResults;
+  std::set<std::string> keys;
+  for (const serialize::RegistrationResult& result : results) {
+    keys.insert(registrationResultKey(result));
+  }
+
+  for (const registration::JobRecord& job : data.registrationJobs().jobs()) {
+    if (job.status != registration::JobStatus::Completed || !job.manifest) {
+      continue;
+    }
+
+    serialize::RegistrationResult result = registrationResultSnapshot(job);
+    if (keys.insert(registrationResultKey(result)).second) {
+      results.push_back(std::move(result));
+    }
+  }
+
+  return results;
+}
 } // namespace
 
 serialize::EntropyProject EntropyApp::createProjectSnapshot() const
@@ -124,6 +188,7 @@ serialize::EntropyProject EntropyApp::createProjectSnapshot() const
   project.m_segmentationDisplay = project_snapshot::segmentationDisplaySettings(m_data);
   project.m_isosurfaces = project_snapshot::isosurfaceDisplaySettings(m_data);
   project.m_annotationDisplay = project_snapshot::annotationDisplaySettings(m_data);
+  project.m_registrationResults = registrationResultSnapshots(m_data);
 
   return project;
 }
