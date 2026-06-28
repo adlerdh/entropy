@@ -153,6 +153,7 @@ void AppData::clearProjectData()
   m_windowData.clearLayouts();
   m_state.setAnimating(false);
   m_state.setProjectLoadState(ProjectLoadState::Empty);
+  m_registrationJobs = {};
 }
 
 const serialize::EntropyProject& AppData::project() const
@@ -2154,6 +2155,16 @@ const WindowData& AppData::windowData() const
 WindowData& AppData::windowData()
 {
   return m_windowData;
+}
+
+const registration::JobStore& AppData::registrationJobs() const
+{
+  return m_registrationJobs;
+}
+
+registration::JobStore& AppData::registrationJobs()
+{
+  return m_registrationJobs;
 }
 
 void AppData::saveAllViewWorldCenterPositions()

@@ -106,4 +106,11 @@ std::optional<double> latestProgress(const JobRecord& job);
  */
 std::string latestMessage(const JobRecord& job);
 
+/**
+ * @brief Return whether a status represents an active job.
+ * @param status Status to inspect.
+ * @return True for queued, preparing, running, writing, or importing jobs.
+ */
+bool isActiveJobStatus(JobStatus status);
+
 } // namespace registration

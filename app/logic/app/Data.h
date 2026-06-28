@@ -15,6 +15,8 @@
 #include "logic/app/State.h"
 #include "logic/serialization/ProjectSerialization.h"
 
+#include "registration/Jobs.h"
+
 #include "rendering/RenderData.h"
 #include "windowing/WindowData.h"
 
@@ -82,6 +84,16 @@ public:
 
   const WindowData& windowData() const;
   WindowData& windowData();
+
+  /**
+   * @brief Return immutable registration jobs.
+   */
+  const registration::JobStore& registrationJobs() const;
+
+  /**
+   * @brief Return mutable registration jobs.
+   */
+  registration::JobStore& registrationJobs();
 
   /// @todo Put into AppState
   void setProject(serialize::EntropyProject project);
@@ -523,9 +535,10 @@ private:
   AppSettings m_settings; //!< Application settings
   AppState m_state;       //!< Application state
 
-  GuiData m_guiData;       //!< Data for the UI
-  RenderData m_renderData; //!< Data for rendering
-  WindowData m_windowData; //!< Data for windowing
+  GuiData m_guiData;                         //!< Data for the UI
+  RenderData m_renderData;                   //!< Data for rendering
+  WindowData m_windowData;                   //!< Data for windowing
+  registration::JobStore m_registrationJobs; //!< In-memory registration job records.
 
   serialize::EntropyProject m_project;                    //!< Project that is used for serialization
   std::optional<std::filesystem::path> m_projectFileName; //!< File name of the currently loaded/saved project

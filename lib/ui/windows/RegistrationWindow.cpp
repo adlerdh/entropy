@@ -11,6 +11,7 @@
 
 #include <array>
 #include <algorithm>
+#include <cfloat>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -81,6 +82,63 @@ void renderValidation(const registration::ValidationResult& validation)
     const ImVec4 color = isError ? ImVec4{0.95f, 0.35f, 0.30f, 1.0f} : ImVec4{0.95f, 0.75f, 0.25f, 1.0f};
     ImGui::TextColored(color, "%s: %s", isError ? "Error" : "Warning", message.text.c_str());
   }
+}
+
+const char* statusText(registration::JobStatus status)
+{
+  switch (status) {
+    case registration::JobStatus::Queued:
+      return "Queued";
+    case registration::JobStatus::PreparingInputs:
+      return "Preparing";
+    case registration::JobStatus::Running:
+      return "Running";
+    case registration::JobStatus::WritingOutputs:
+      return "Writing";
+    case registration::JobStatus::ImportingOutputs:
+      return "Importing";
+    case registration::JobStatus::Completed:
+      return "Completed";
+    case registration::JobStatus::Cancelled:
+      return "Cancelled";
+    case registration::JobStatus::Failed:
+      return "Failed";
+  }
+  return "Unknown";
+}
+
+ImVec4 statusColor(registration::JobStatus status)
+{
+  switch (status) {
+    case registration::JobStatus::Completed:
+      return ImVec4{0.35f, 0.85f, 0.45f, 1.0f};
+    case registration::JobStatus::Cancelled:
+      return ImVec4{0.75f, 0.75f, 0.75f, 1.0f};
+    case registration::JobStatus::Failed:
+      return ImVec4{0.95f, 0.35f, 0.30f, 1.0f};
+    case registration::JobStatus::Queued:
+    case registration::JobStatus::PreparingInputs:
+    case registration::JobStatus::Running:
+    case registration::JobStatus::WritingOutputs:
+    case registration::JobStatus::ImportingOutputs:
+      return ImVec4{0.35f, 0.70f, 0.95f, 1.0f};
+  }
+  return ImVec4{0.75f, 0.75f, 0.75f, 1.0f};
+}
+
+std::string jobTitle(const registration::JobRecord& job)
+{
+  const std::string fixed = job.spec.fixedImage.displayName.empty() ? "fixed" : job.spec.fixedImage.displayName;
+  const std::string moving = job.spec.movingImage.displayName.empty() ? "moving" : job.spec.movingImage.displayName;
+  return moving + " to " + fixed;
+}
+
+float progressFraction(const registration::JobRecord& job)
+{
+  if (const std::optional<double> progress = registration::latestProgress(job)) {
+    return static_cast<float>(std::clamp(*progress, 0.0, 1.0));
+  }
+  return registration::JobStatus::Completed == job.status ? 1.0f : 0.0f;
 }
 
 void renderVisibleParameters(const registration::SetupState& state)
@@ -182,10 +240,13 @@ void renderRegistrationSetupWindow(AppData& appData)
   }
 
   ImGui::BeginDisabled(!state.validation.canLaunch());
-  ImGui::Button("Start registration");
+  if (ImGui::Button("Start registration")) {
+    appData.registrationJobs().add(state.job);
+    appData.guiData().m_showRegistrationJobsWindow = true;
+  }
   ImGui::EndDisabled();
   if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-    ImGui::SetTooltip("%s", "Starting jobs will be enabled when the backend runner is wired.");
+    ImGui::SetTooltip("%s", "Create a registration job record. Backend execution will be wired in the next phase.");
   }
 
   ImGui::End();
@@ -199,7 +260,127 @@ void renderRegistrationJobsWindow(AppData& appData)
     return;
   }
 
-  ImGui::TextDisabled("No registration jobs have been started.");
-  ImGui::TextWrapped("%s", "Completed jobs will appear here with progress, logs, warnings, and import controls.");
+  registration::JobStore& jobs = appData.registrationJobs();
+  if (jobs.jobs().empty()) {
+    ImGui::TextDisabled("No registration jobs have been started.");
+    ImGui::TextWrapped("%s", "Started jobs will appear here with progress, logs, warnings, and import controls.");
+    ImGui::End();
+    return;
+  }
+
+  constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_RowBg |
+                                         ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
+                                         ImGuiTableFlags_ScrollY;
+  if (ImGui::BeginTable("RegistrationJobsTable", 8, tableFlags, ImVec2{0.0f, 0.0f})) {
+    ImGui::TableSetupColumn("Job", ImGuiTableColumnFlags_WidthStretch, 1.7f);
+    ImGui::TableSetupColumn("Backend", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+    ImGui::TableSetupColumn("Transform", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+    ImGui::TableSetupColumn("Metric", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+    ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+    ImGui::TableSetupColumn("Progress", ImGuiTableColumnFlags_WidthFixed, 110.0f);
+    ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch, 1.3f);
+    ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+    ImGui::TableHeadersRow();
+
+    for (const registration::JobRecord& job : jobs.jobs()) {
+      ImGui::PushID(job.id.c_str());
+      ImGui::TableNextRow();
+
+      ImGui::TableSetColumnIndex(0);
+      ImGui::TextWrapped("%s", jobTitle(job).c_str());
+
+      ImGui::TableSetColumnIndex(1);
+      const std::string backendLabel{registration::label(job.spec.backend)};
+      ImGui::TextUnformatted(backendLabel.c_str());
+
+      ImGui::TableSetColumnIndex(2);
+      const std::string transformLabel{registration::label(job.spec.transformModel)};
+      ImGui::TextUnformatted(transformLabel.c_str());
+
+      ImGui::TableSetColumnIndex(3);
+      const std::string metricLabel{registration::label(job.spec.metric)};
+      ImGui::TextUnformatted(metricLabel.c_str());
+
+      ImGui::TableSetColumnIndex(4);
+      ImGui::TextColored(statusColor(job.status), "%s", statusText(job.status));
+
+      ImGui::TableSetColumnIndex(5);
+      ImGui::ProgressBar(progressFraction(job), ImVec2{-FLT_MIN, 0.0f});
+
+      ImGui::TableSetColumnIndex(6);
+      const std::string message = registration::latestMessage(job);
+      if (!message.empty()) {
+        ImGui::TextWrapped("%s", message.c_str());
+      }
+      else if (!job.warnings.empty()) {
+        ImGui::TextWrapped("%s", job.warnings.back().c_str());
+      }
+      else {
+        ImGui::TextDisabled("Waiting for backend execution");
+      }
+
+      ImGui::TableSetColumnIndex(7);
+      const bool active = registration::isActiveJobStatus(job.status);
+      ImGui::BeginDisabled(!active);
+      if (ImGui::SmallButton("Cancel")) {
+        jobs.appendProgress(
+          job.id,
+          registration::ProgressEvent{
+            .kind = registration::ProgressEventKind::Cancelled,
+            .message = "Registration was cancelled before backend execution"});
+      }
+      ImGui::EndDisabled();
+      ImGui::SameLine();
+      ImGui::BeginDisabled(!job.manifest.has_value());
+      ImGui::SmallButton("Import");
+      ImGui::EndDisabled();
+      ImGui::PopID();
+    }
+
+    ImGui::EndTable();
+  }
+  ImGui::End();
+}
+
+void renderRegistrationProgressWindow(AppData& appData)
+{
+  const registration::JobStore& jobs = appData.registrationJobs();
+  if (!jobs.hasActiveJobs()) {
+    return;
+  }
+
+  const registration::JobRecord* activeJob = nullptr;
+  for (const registration::JobRecord& job : jobs.jobs()) {
+    if (registration::isActiveJobStatus(job.status)) {
+      activeJob = &job;
+      break;
+    }
+  }
+  if (!activeJob) {
+    return;
+  }
+
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  const ImVec2 padding = ImGui::GetStyle().WindowPadding;
+  const ImVec2 pos{viewport->WorkPos.x + padding.x, viewport->WorkPos.y + viewport->WorkSize.y - padding.y};
+  ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2{0.0f, 1.0f});
+  ImGui::SetNextWindowSizeConstraints(ImVec2{280.0f, 0.0f}, ImVec2{520.0f, FLT_MAX});
+
+  constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                                     ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+                                     ImGuiWindowFlags_NoNav;
+  if (ImGui::Begin("RegistrationProgress", nullptr, flags)) {
+    ImGui::TextUnformatted("Registration job");
+    ImGui::TextWrapped("%s", jobTitle(*activeJob).c_str());
+    ImGui::TextColored(statusColor(activeJob->status), "%s", statusText(activeJob->status));
+    ImGui::ProgressBar(progressFraction(*activeJob), ImVec2{ImGui::GetContentRegionAvail().x, 0.0f});
+    const std::string message = registration::latestMessage(*activeJob);
+    if (!message.empty()) {
+      ImGui::TextWrapped("%s", message.c_str());
+    }
+    else {
+      ImGui::TextDisabled("Waiting for backend execution");
+    }
+  }
   ImGui::End();
 }

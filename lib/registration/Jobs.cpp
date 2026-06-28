@@ -5,14 +5,14 @@
 
 namespace registration
 {
-namespace
-{
-
-bool isActive(JobStatus status)
+bool isActiveJobStatus(JobStatus status)
 {
   return status == JobStatus::Queued || status == JobStatus::PreparingInputs || status == JobStatus::Running ||
          status == JobStatus::WritingOutputs || status == JobStatus::ImportingOutputs;
 }
+
+namespace
+{
 
 void applyProgressStatus(JobRecord& job, const ProgressEvent& event)
 {
@@ -111,7 +111,7 @@ bool JobStore::applyExecution(const std::string& id, const JobExecution& executi
 
 bool JobStore::hasActiveJobs() const
 {
-  return std::any_of(m_jobs.begin(), m_jobs.end(), [](const JobRecord& job) { return isActive(job.status); });
+  return std::any_of(m_jobs.begin(), m_jobs.end(), [](const JobRecord& job) { return isActiveJobStatus(job.status); });
 }
 
 std::optional<double> latestProgress(const JobRecord& job)

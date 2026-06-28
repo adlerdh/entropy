@@ -3554,6 +3554,8 @@ void ImGuiWrapper::render()
       renderRegistrationJobsWindow(m_appData);
     }
 
+    renderRegistrationProgressWindow(m_appData);
+
     renderModeToolbar(
       m_appData,
       getMouseMode,

@@ -13,3 +13,9 @@ void renderRegistrationSetupWindow(AppData& appData);
  * @param appData Application data containing GUI visibility state.
  */
 void renderRegistrationJobsWindow(AppData& appData);
+
+/**
+ * @brief Render the compact registration progress window when jobs are active.
+ * @param appData Application data containing registration jobs.
+ */
+void renderRegistrationProgressWindow(AppData& appData);

@@ -51,6 +51,11 @@ TEST_CASE("registration job store tracks status and active jobs", "[registration
   const std::string id = store.add(makeJob());
 
   CHECK(store.hasActiveJobs());
+  CHECK(registration::isActiveJobStatus(registration::JobStatus::Queued));
+  CHECK(registration::isActiveJobStatus(registration::JobStatus::ImportingOutputs));
+  CHECK_FALSE(registration::isActiveJobStatus(registration::JobStatus::Completed));
+  CHECK_FALSE(registration::isActiveJobStatus(registration::JobStatus::Failed));
+
   REQUIRE(store.setStatus(id, registration::JobStatus::Completed));
   CHECK_FALSE(store.hasActiveJobs());
 }
