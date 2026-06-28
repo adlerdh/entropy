@@ -33,6 +33,7 @@ registration::JobSpec makeJob()
   job.landmarks.matchedPairs = 5;
   job.landmarks.fixedLandmarks = makeRef("fixed-lm", "fixed.csv", registration::DataSource::LandmarkGroup);
   job.landmarks.movingLandmarks = makeRef("moving-lm", "moving.csv", registration::DataSource::LandmarkGroup);
+  job.parameterValues = {{"iterations", "40x20"}, {"threads", "6"}};
   job.extraArguments = {"--verbose", "1"};
   return job;
 }
@@ -56,6 +57,9 @@ TEST_CASE("registration job specs round-trip through JSON", "[registration][seri
   CHECK(restored.outputs.loadWarpedSegmentation);
   CHECK(restored.landmarks.enabled);
   CHECK(restored.landmarks.matchedPairs == 5);
+  REQUIRE(restored.parameterValues.size() == 2);
+  CHECK(restored.parameterValues.front().key == "iterations");
+  CHECK(restored.parameterValues.front().value == "40x20");
   CHECK(restored.extraArguments == original.extraArguments);
 }
 

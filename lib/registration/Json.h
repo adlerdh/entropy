@@ -47,6 +47,9 @@ void from_json(const nlohmann::json& j, OutputRequests& value);
 void to_json(nlohmann::json& j, const ParameterSchema& value);
 void from_json(const nlohmann::json& j, ParameterSchema& value);
 
+void to_json(nlohmann::json& j, const ParameterValue& value);
+void from_json(const nlohmann::json& j, ParameterValue& value);
+
 void to_json(nlohmann::json& j, const BackendCapabilities& value);
 void from_json(const nlohmann::json& j, BackendCapabilities& value);
 

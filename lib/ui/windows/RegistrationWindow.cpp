@@ -7,12 +7,15 @@
 #include "registration/Setup.h"
 
 #include <imgui/imgui.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
 #include <uuid.h>
 
 #include <array>
 #include <algorithm>
 #include <cfloat>
+#include <cstdlib>
 #include <filesystem>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -83,6 +86,42 @@ void renderValidation(const registration::ValidationResult& validation)
     const ImVec4 color = isError ? ImVec4{0.95f, 0.35f, 0.30f, 1.0f} : ImVec4{0.95f, 0.75f, 0.25f, 1.0f};
     ImGui::TextColored(color, "%s: %s", isError ? "Error" : "Warning", message.text.c_str());
   }
+}
+
+void renderHelpTooltip(const std::string& tooltip)
+{
+  if (!tooltip.empty() && ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("%s", tooltip.c_str());
+  }
+}
+
+int parseInteger(std::string_view value, int fallback)
+{
+  const std::string text{value};
+  char* end = nullptr;
+  const long parsed = std::strtol(text.c_str(), &end, 10);
+  return end && *end == '\0' ? static_cast<int>(parsed) : fallback;
+}
+
+double parseDouble(std::string_view value, double fallback)
+{
+  const std::string text{value};
+  char* end = nullptr;
+  const double parsed = std::strtod(text.c_str(), &end);
+  return end && *end == '\0' ? parsed : fallback;
+}
+
+std::string setupSignature(
+  const std::vector<registration::SetupImageChoice>& choices,
+  const std::filesystem::path& outputDirectory)
+{
+  std::ostringstream stream;
+  stream << outputDirectory.string();
+  for (const registration::SetupImageChoice& choice : choices) {
+    stream << '|' << choice.image.uid << ':' << choice.image.fileName.string() << ':' << choice.isReference << ':'
+           << choice.isActive << ':' << choice.dimension;
+  }
+  return stream.str();
 }
 
 const char* statusText(registration::JobStatus status)
@@ -212,7 +251,76 @@ void renderRegistrationJobDetailsPopup(const registration::JobRecord* job)
   }
 }
 
-void renderVisibleParameters(const registration::SetupState& state)
+void renderParameterWidget(registration::ParameterValue& value, const registration::ParameterSchema& parameter)
+{
+  switch (parameter.kind) {
+    case registration::ParameterKind::Boolean: {
+      bool checked = value.value == "true" || value.value == "1" || value.value == "yes" || value.value == "on";
+      if (ImGui::Checkbox(parameter.label.c_str(), &checked)) {
+        value.value = checked ? "true" : "false";
+      }
+      renderHelpTooltip(parameter.tooltip);
+      break;
+    }
+    case registration::ParameterKind::Integer: {
+      int parsed = parseInteger(value.value, parseInteger(parameter.defaultValue, 0));
+      if (parameter.minValue || parameter.maxValue) {
+        const int minValue = static_cast<int>(parameter.minValue.value_or(-2147483647.0));
+        const int maxValue = static_cast<int>(parameter.maxValue.value_or(2147483647.0));
+        if (ImGui::SliderInt(parameter.label.c_str(), &parsed, minValue, maxValue)) {
+          value.value = std::to_string(parsed);
+        }
+      }
+      else if (ImGui::InputInt(parameter.label.c_str(), &parsed)) {
+        value.value = std::to_string(parsed);
+      }
+      renderHelpTooltip(parameter.tooltip);
+      break;
+    }
+    case registration::ParameterKind::Float: {
+      double parsed = parseDouble(value.value, parseDouble(parameter.defaultValue, 0.0));
+      if (parameter.minValue || parameter.maxValue) {
+        const double minValue = parameter.minValue.value_or(0.0);
+        const double maxValue = parameter.maxValue.value_or(1.0);
+        if (ImGui::SliderScalar(parameter.label.c_str(), ImGuiDataType_Double, &parsed, &minValue, &maxValue, "%.4g")) {
+          value.value = std::to_string(parsed);
+        }
+      }
+      else if (ImGui::InputDouble(parameter.label.c_str(), &parsed)) {
+        value.value = std::to_string(parsed);
+      }
+      renderHelpTooltip(parameter.tooltip);
+      break;
+    }
+    case registration::ParameterKind::Choice: {
+      const char* preview = value.value.empty() ? parameter.defaultValue.c_str() : value.value.c_str();
+      if (ImGui::BeginCombo(parameter.label.c_str(), preview)) {
+        for (const std::string& choice : parameter.choices) {
+          const bool selected = value.value == choice;
+          if (ImGui::Selectable(choice.c_str(), selected)) {
+            value.value = choice;
+          }
+          if (selected) {
+            ImGui::SetItemDefaultFocus();
+          }
+        }
+        ImGui::EndCombo();
+      }
+      renderHelpTooltip(parameter.tooltip);
+      break;
+    }
+    case registration::ParameterKind::Text:
+    case registration::ParameterKind::IntegerVector:
+    case registration::ParameterKind::FloatVector:
+    case registration::ParameterKind::FilePath:
+    case registration::ParameterKind::DirectoryPath:
+      ImGui::InputText(parameter.label.c_str(), &value.value);
+      renderHelpTooltip(parameter.tooltip);
+      break;
+  }
+}
+
+void renderVisibleParameters(registration::SetupState& state)
 {
   const std::vector<registration::ParameterSchema> parameters = registration::visibleParameters(state);
   if (parameters.empty()) {
@@ -221,14 +329,11 @@ void renderVisibleParameters(const registration::SetupState& state)
   }
 
   for (const registration::ParameterSchema& parameter : parameters) {
-    const registration::ParameterValue* value = registration::findParameterValue(state, parameter.key);
-    const std::string valueText = value ? value->value : parameter.defaultValue;
-    ImGui::Text("%s", parameter.label.c_str());
-    if (!parameter.tooltip.empty() && ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("%s", parameter.tooltip.c_str());
+    registration::ParameterValue* value = registration::findParameterValue(state, parameter.key);
+    if (!value) {
+      continue;
     }
-    ImGui::SameLine();
-    ImGui::TextDisabled("%s", valueText.c_str());
+    renderParameterWidget(*value, parameter);
   }
 }
 
@@ -263,8 +368,18 @@ void renderRegistrationSetupWindow(AppData& appData)
 
   const std::filesystem::path outputDirectory =
     config.defaultOutputDirectory.empty() ? std::filesystem::temp_directory_path() : config.defaultOutputDirectory;
-  registration::SetupState state =
-    registration::createSetupState(imageChoices(appData), config.defaultBackend, outputDirectory);
+  const std::vector<registration::SetupImageChoice> choices = imageChoices(appData);
+  static std::optional<registration::SetupState> s_state;
+  static std::string s_setupSignature;
+  const std::string signature = setupSignature(choices, outputDirectory);
+  if (!s_state || s_setupSignature != signature) {
+    s_state = registration::createSetupState(choices, config.defaultBackend, outputDirectory);
+    s_setupSignature = signature;
+  }
+  registration::SetupState& state = *s_state;
+  if (state.job.backend != config.defaultBackend) {
+    registration::setBackend(state, config.defaultBackend);
+  }
   state.showAdvancedParameters = s_showAdvanced;
   state.showExpertParameters = s_showExpert;
 
@@ -312,6 +427,7 @@ void renderRegistrationSetupWindow(AppData& appData)
 
   ImGui::BeginDisabled(!state.validation.canLaunch());
   if (ImGui::Button("Start registration")) {
+    state.job.parameterValues = state.parameterValues;
     appData.registrationJobs().add(state.job);
     appData.guiData().m_showRegistrationJobsWindow = true;
   }

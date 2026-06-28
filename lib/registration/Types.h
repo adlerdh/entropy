@@ -223,6 +223,15 @@ struct ParameterSchema
 };
 
 /**
+ * @brief Current value for one backend parameter.
+ */
+struct ParameterValue
+{
+  std::string key;   //!< Stable parameter key.
+  std::string value; //!< Current text-form value.
+};
+
+/**
  * @brief Capabilities and parameter schema advertised by a backend.
  */
 struct BackendCapabilities
@@ -257,6 +266,7 @@ struct JobSpec
   OutputRequests outputs;                                           //!< Requested imports and generated outputs.
   std::filesystem::path outputDirectory;                            //!< Job working/output directory.
   std::string outputPrefix;                                         //!< File prefix for generated artifacts.
+  std::vector<ParameterValue> parameterValues;                      //!< Backend parameter values selected in setup UI.
   std::vector<std::string> extraArguments;                          //!< Expert raw backend arguments.
 };
 

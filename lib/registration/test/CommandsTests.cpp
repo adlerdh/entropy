@@ -51,6 +51,22 @@ TEST_CASE("Greedy command generation emits affine deformable and reslice steps",
   CHECK(preview.find("moving_to_fixed_forward_warp.nii.gz") != std::string::npos);
 }
 
+TEST_CASE("Greedy command generation uses selected parameter values", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.parameterValues = {{"iterations", "12x6"}, {"wnccRadius", "4"}, {"threads", "3"}, {"singlePrecision", "true"}};
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 3);
+  const std::string preview = registration::displayCommand(commands.at(0));
+  CHECK(preview.find("12x6") != std::string::npos);
+  CHECK(preview.find("4x4x4") != std::string::npos);
+  CHECK(preview.find("-threads 3") != std::string::npos);
+  CHECK(preview.find("-float") != std::string::npos);
+}
+
 TEST_CASE("ANTs command generation includes staged output and metric", "[registration][commands]")
 {
   registration::JobSpec job = baseJob(registration::Backend::ANTs);
@@ -64,6 +80,27 @@ TEST_CASE("ANTs command generation includes staged output and metric", "[registr
   const std::string preview = registration::displayCommand(commands.front());
   CHECK(preview.find("SyN") != std::string::npos);
   CHECK(preview.find("CC[fixed.nii.gz,moving.nii.gz,1,4]") != std::string::npos);
+}
+
+TEST_CASE("ANTs command generation uses selected pyramid and convergence parameters", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.metric = registration::Metric::CC;
+  job.parameterValues = {
+    {"iterations", "80x20"},
+    {"shrinkFactors", "8x2"},
+    {"smoothingSigmas", "3x0"},
+    {"convergenceThreshold", "1e-5"},
+    {"convergenceWindow", "5"}};
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 1);
+  const std::string preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("[80x20,1e-5,5]") != std::string::npos);
+  CHECK(preview.find("--shrink-factors 8x2") != std::string::npos);
+  CHECK(preview.find("--smoothing-sigmas 3x0vox") != std::string::npos);
 }
 
 TEST_CASE("FireANTs command generation uses the bridge module", "[registration][commands]")

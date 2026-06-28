@@ -273,6 +273,17 @@ void from_json(const nlohmann::json& j, ParameterSchema& value)
   getOptional(j, "expert", value.expert);
 }
 
+void to_json(nlohmann::json& j, const ParameterValue& value)
+{
+  j = nlohmann::json{{"key", value.key}, {"value", value.value}};
+}
+
+void from_json(const nlohmann::json& j, ParameterValue& value)
+{
+  getOptional(j, "key", value.key);
+  getOptional(j, "value", value.value);
+}
+
 void to_json(nlohmann::json& j, const BackendCapabilities& value)
 {
   j = nlohmann::json{
@@ -316,6 +327,7 @@ void to_json(nlohmann::json& j, const JobSpec& value)
     {"outputs", value.outputs},
     {"outputDirectory", pathToString(value.outputDirectory)},
     {"outputPrefix", value.outputPrefix},
+    {"parameterValues", value.parameterValues},
     {"extraArguments", value.extraArguments}};
 }
 
@@ -346,6 +358,7 @@ void from_json(const nlohmann::json& j, JobSpec& value)
     value.outputDirectory = pathFromJson(j.at("outputDirectory"));
   }
   getOptional(j, "outputPrefix", value.outputPrefix);
+  getOptional(j, "parameterValues", value.parameterValues);
   getOptional(j, "extraArguments", value.extraArguments);
 }
 

@@ -44,6 +44,7 @@ TEST_CASE("registration setup defaults to reference fixed image and active movin
   CHECK(state.job.fixedImage.uid == "fixed");
   CHECK(state.job.movingImage.uid == "moving");
   CHECK(state.job.outputPrefix == "Moving_Image_to_Fixed_Image");
+  CHECK_FALSE(state.job.parameterValues.empty());
   CHECK(state.validation.canLaunch());
 }
 
@@ -130,6 +131,11 @@ TEST_CASE("registration setup preserves matching parameter values when switching
   iterations = registration::findParameterValue(state, "iterations");
   REQUIRE(iterations);
   CHECK(iterations->value == "25x10");
+  REQUIRE_FALSE(state.job.parameterValues.empty());
+  CHECK(std::any_of(
+    state.job.parameterValues.begin(),
+    state.job.parameterValues.end(),
+    [](const registration::ParameterValue& value) { return value.key == "iterations" && value.value == "25x10"; }));
 }
 
 TEST_CASE("registration setup returns command previews only for launchable jobs", "[registration][setup]")
@@ -140,6 +146,13 @@ TEST_CASE("registration setup returns command previews only for launchable jobs"
     "/tmp/entropy-reg");
 
   CHECK_FALSE(registration::commandPreviews(state).empty());
+
+  registration::ParameterValue* iterations = registration::findParameterValue(state, "iterations");
+  REQUIRE(iterations);
+  iterations->value = "7x3";
+  const std::vector<std::string> previews = registration::commandPreviews(state);
+  REQUIRE_FALSE(previews.empty());
+  CHECK(previews.front().find("7x3") != std::string::npos);
 
   state.job.movingImage = {};
   registration::refreshValidation(state);

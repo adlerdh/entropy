@@ -145,6 +145,7 @@ SetupState createSetupState(
 
   state.job.outputPrefix = defaultOutputPrefix(state.job.fixedImage, state.job.movingImage);
   state.parameterValues = defaultParameterValues(state.capabilities);
+  state.job.parameterValues = state.parameterValues;
   refreshValidation(state);
   return state;
 }
@@ -156,6 +157,7 @@ void setBackend(SetupState& state, Backend backend)
   normalizeJobForCapabilities(state.job, state.capabilities);
   state.parameterValues = defaultParameterValues(state.capabilities);
   preserveParameterValues(state.parameterValues, oldValues);
+  state.job.parameterValues = state.parameterValues;
   refreshValidation(state);
 }
 
@@ -203,7 +205,9 @@ std::vector<std::string> commandPreviews(const SetupState& state, const CommandG
     return {};
   }
 
-  const std::vector<CommandSpec> commands = generateCommands(state.job, commandOptions);
+  JobSpec job = state.job;
+  job.parameterValues = state.parameterValues;
+  const std::vector<CommandSpec> commands = generateCommands(job, commandOptions);
   std::vector<std::string> previews;
   previews.reserve(commands.size());
   for (const CommandSpec& command : commands) {

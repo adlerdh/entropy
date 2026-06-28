@@ -23,15 +23,6 @@ struct SetupImageChoice
 };
 
 /**
- * @brief Current value for one backend parameter in the setup UI.
- */
-struct ParameterValue
-{
-  std::string key;   //!< Stable parameter key.
-  std::string value; //!< Current text-form value.
-};
-
-/**
  * @brief Backend-neutral state for the Register Image setup dialog.
  */
 struct SetupState

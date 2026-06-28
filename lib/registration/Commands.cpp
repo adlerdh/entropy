@@ -2,8 +2,11 @@
 
 #include "registration/Artifacts.h"
 
+#include <algorithm>
 #include <filesystem>
+#include <optional>
 #include <sstream>
+#include <string_view>
 
 namespace registration
 {
@@ -27,6 +30,44 @@ bool includesDeformable(TransformModel model)
 std::string pathString(const std::filesystem::path& path)
 {
   return path.string();
+}
+
+std::optional<std::string> parameterValue(const JobSpec& job, std::string_view key)
+{
+  const auto it =
+    std::find_if(job.parameterValues.begin(), job.parameterValues.end(), [&](const ParameterValue& value) {
+      return value.key == key;
+    });
+  if (it == job.parameterValues.end() || it->value.empty()) {
+    return std::nullopt;
+  }
+  return it->value;
+}
+
+std::string parameterValueOr(const JobSpec& job, std::string_view key, std::string fallback)
+{
+  if (const std::optional<std::string> value = parameterValue(job, key)) {
+    return *value;
+  }
+  return fallback;
+}
+
+bool booleanParameterValue(const JobSpec& job, std::string_view key)
+{
+  const std::optional<std::string> value = parameterValue(job, key);
+  return value && (*value == "true" || *value == "1" || *value == "yes" || *value == "on");
+}
+
+std::string repeatedRadius(const std::string& radius, int dimension)
+{
+  std::ostringstream stream;
+  for (int i = 0; i < std::max(1, dimension); ++i) {
+    if (i > 0) {
+      stream << 'x';
+    }
+    stream << radius;
+  }
+  return stream.str();
 }
 
 std::string greedyMetric(Metric metric)
@@ -98,6 +139,9 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
   const std::filesystem::path inverseWarp = artifactPath(job, ArtifactRole::InverseWarp);
   const std::filesystem::path forwardWarp = artifactPath(job, ArtifactRole::ForwardWarp);
   const std::filesystem::path warpedImage = artifactPath(job, ArtifactRole::WarpedImage);
+  const std::string iterations = parameterValueOr(job, "iterations", job.iterationSchedule);
+  const std::string metricRadius = repeatedRadius(parameterValueOr(job, "wnccRadius", "2"), job.dimension);
+  const std::string threads = parameterValueOr(job, "threads", "0");
 
   if (includesAffine(job.transformModel)) {
     CommandSpec command;
@@ -109,20 +153,27 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       "-a",
       "-m",
       greedyMetric(job.metric),
-      "2x2x2",
+      metricRadius,
       "-i",
       pathString(job.fixedImage.fileName),
       pathString(job.movingImage.fileName),
       "-o",
       pathString(affine),
       "-n",
-      job.iterationSchedule};
+      iterations};
     if (job.useImageCentersForInitialization) {
       command.args.push_back("-ia-image-centers");
     }
     if (!job.fixedMask.fileName.empty()) {
       command.args.push_back("-gm");
       command.args.push_back(pathString(job.fixedMask.fileName));
+    }
+    if (threads != "0") {
+      command.args.push_back("-threads");
+      command.args.push_back(threads);
+    }
+    if (booleanParameterValue(job, "singlePrecision")) {
+      command.args.push_back("-float");
     }
     commands.push_back(std::move(command));
   }
@@ -136,7 +187,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       std::to_string(job.dimension),
       "-m",
       greedyMetric(job.metric),
-      "2x2x2",
+      metricRadius,
       "-i",
       pathString(job.fixedImage.fileName),
       pathString(job.movingImage.fileName),
@@ -144,7 +195,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       pathString(inverseWarp),
       "-sv",
       "-n",
-      job.iterationSchedule};
+      iterations};
     if (includesAffine(job.transformModel)) {
       command.args.push_back("-it");
       command.args.push_back(pathString(affine));
@@ -160,6 +211,13 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
     if (job.outputs.loadForwardWarp) {
       command.args.push_back("-oinv");
       command.args.push_back(pathString(forwardWarp));
+    }
+    if (threads != "0") {
+      command.args.push_back("-threads");
+      command.args.push_back(threads);
+    }
+    if (booleanParameterValue(job, "singlePrecision")) {
+      command.args.push_back("-float");
     }
     commands.push_back(std::move(command));
   }
@@ -183,6 +241,10 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
     if (includesAffine(job.transformModel)) {
       command.args.push_back(pathString(affine));
     }
+    if (threads != "0") {
+      command.args.push_back("-threads");
+      command.args.push_back(threads);
+    }
     commands.push_back(std::move(command));
   }
 
@@ -196,6 +258,11 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
   command.executable = options.antsRegistrationExecutable;
   const std::filesystem::path prefix = job.outputDirectory / outputPrefix(job);
   const std::filesystem::path warped = artifactPath(job, ArtifactRole::WarpedImage);
+  const std::string iterations = parameterValueOr(job, "iterations", job.iterationSchedule);
+  const std::string shrinkFactors = parameterValueOr(job, "shrinkFactors", "4x2x1");
+  const std::string smoothingSigmas = parameterValueOr(job, "smoothingSigmas", "2x1x0");
+  const std::string convergenceThreshold = parameterValueOr(job, "convergenceThreshold", "1e-6");
+  const std::string convergenceWindow = parameterValueOr(job, "convergenceWindow", "10");
 
   command.args = {
     "-d",
@@ -208,11 +275,11 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
     antsMetric(job.metric) + "[" + pathString(job.fixedImage.fileName) + "," + pathString(job.movingImage.fileName) +
       ",1,4]",
     "--convergence",
-    "[" + job.iterationSchedule + ",1e-6,10]",
+    "[" + iterations + "," + convergenceThreshold + "," + convergenceWindow + "]",
     "--shrink-factors",
-    "4x2x1",
+    shrinkFactors,
     "--smoothing-sigmas",
-    "2x1x0vox"};
+    smoothingSigmas + "vox"};
   if (!job.fixedMask.fileName.empty()) {
     command.args.push_back("--masks");
     command.args.push_back("[" + pathString(job.fixedMask.fileName) + ",NULL]");
