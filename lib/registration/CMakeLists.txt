@@ -4,7 +4,9 @@ add_library(Entropy::Registration ALIAS EntropyRegistration)
 target_sources(EntropyRegistration PRIVATE
   Capabilities.cpp
   Commands.cpp
+  Execution.cpp
   Json.cpp
+  Jobs.cpp
   Progress.cpp
   Types.cpp
   Validation.cpp
