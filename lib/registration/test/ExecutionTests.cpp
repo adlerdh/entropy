@@ -126,3 +126,23 @@ TEST_CASE("registration job execution reports cancelled process", "[registration
   CHECK(execution.status == registration::JobStatus::Cancelled);
   CHECK(execution.errorMessage == "Registration was cancelled.");
 }
+
+TEST_CASE("registration job execution uses configured command options", "[registration][execution]")
+{
+  ScriptedRunner runner;
+  registration::ProcessResult success;
+  success.exitCode = 0;
+  runner.results.push_back(success);
+
+  registration::CommandGenerationOptions options;
+  options.fireAntsPythonExecutable = "/venv/bin/python";
+  options.fireAntsBridgeModule = "custom_bridge";
+
+  const registration::JobExecution execution = registration::executeJob(jobForOneCommand(), options, runner);
+
+  CHECK(execution.status == registration::JobStatus::Completed);
+  REQUIRE(runner.commands.size() == 1);
+  CHECK(runner.commands.front().executable == "/venv/bin/python");
+  REQUIRE(runner.commands.front().args.size() > 1);
+  CHECK(runner.commands.front().args.at(1) == "custom_bridge");
+}

@@ -2,9 +2,12 @@ add_library(EntropyRegistration STATIC)
 add_library(Entropy::Registration ALIAS EntropyRegistration)
 
 target_sources(EntropyRegistration PRIVATE
+  Availability.cpp
   Capabilities.cpp
   Commands.cpp
+  Config.cpp
   Execution.cpp
+  ImportPlan.cpp
   Json.cpp
   Jobs.cpp
   Progress.cpp

@@ -77,3 +77,25 @@ TEST_CASE("FireANTs command generation uses the bridge module", "[registration][
   CHECK(commands.front().args.at(1) == "entropy_fireants_bridge");
   CHECK(registration::displayCommand(commands.front()).find("moving_to_fixed_job.json") != std::string::npos);
 }
+
+TEST_CASE("command generation uses configured backend executable paths", "[registration][commands]")
+{
+  registration::CommandGenerationOptions options;
+  options.greedyExecutable = "/opt/greedy/bin/greedy";
+  options.antsRegistrationExecutable = "/opt/ants/bin/antsRegistration";
+  options.fireAntsPythonExecutable = "/venv/bin/python";
+  options.fireAntsBridgeModule = "custom_bridge";
+
+  CHECK(
+    registration::generateCommands(baseJob(registration::Backend::Greedy), options).front().executable ==
+    "/opt/greedy/bin/greedy");
+  CHECK(
+    registration::generateCommands(baseJob(registration::Backend::ANTs), options).front().executable ==
+    "/opt/ants/bin/antsRegistration");
+
+  const std::vector<registration::CommandSpec> fireAntsCommands =
+    registration::generateCommands(baseJob(registration::Backend::FireANTs), options);
+  REQUIRE(fireAntsCommands.size() == 1);
+  CHECK(fireAntsCommands.front().executable == "/venv/bin/python");
+  CHECK(fireAntsCommands.front().args.at(1) == "custom_bridge");
+}

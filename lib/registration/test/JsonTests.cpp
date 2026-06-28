@@ -120,3 +120,35 @@ TEST_CASE("registration result manifests round-trip artifact paths", "[registrat
   CHECK(restored.transformedSurfaces.front() == "surface.vtk");
   CHECK(restored.warpConvention == manifest.warpConvention);
 }
+
+TEST_CASE("registration backend config round-trips through JSON", "[registration][serialization]")
+{
+  registration::BackendConfig config;
+  config.defaultBackend = registration::Backend::FireANTs;
+  config.greedyExecutable = "/opt/greedy";
+  config.antsRegistrationExecutable = "/opt/antsRegistration";
+  config.fireAntsPythonExecutable = "/venv/bin/python";
+  config.fireAntsBridgeModule = "custom_bridge";
+  config.defaultOutputDirectory = "/tmp/entropy-registration";
+  config.keepTemporaryFiles = true;
+  config.maxConcurrentJobs = 2;
+  config.defaultCpuThreadCount = 8;
+  config.defaultFireAntsDevice = "cuda:1";
+  config.showExpertOptionsByDefault = true;
+
+  const nlohmann::json json = config;
+  const registration::BackendConfig restored = json.get<registration::BackendConfig>();
+
+  CHECK(json.at("defaultBackend") == "FireANTs");
+  CHECK(restored.defaultBackend == registration::Backend::FireANTs);
+  CHECK(restored.greedyExecutable == "/opt/greedy");
+  CHECK(restored.antsRegistrationExecutable == "/opt/antsRegistration");
+  CHECK(restored.fireAntsPythonExecutable == "/venv/bin/python");
+  CHECK(restored.fireAntsBridgeModule == "custom_bridge");
+  CHECK(restored.defaultOutputDirectory == "/tmp/entropy-registration");
+  CHECK(restored.keepTemporaryFiles);
+  CHECK(restored.maxConcurrentJobs == 2);
+  CHECK(restored.defaultCpuThreadCount == 8);
+  CHECK(restored.defaultFireAntsDevice == "cuda:1");
+  CHECK(restored.showExpertOptionsByDefault);
+}

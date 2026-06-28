@@ -1,5 +1,6 @@
 #pragma once
 
+#include "registration/Config.h"
 #include "registration/Types.h"
 
 #include <nlohmann/json_fwd.hpp>
@@ -57,5 +58,8 @@ void from_json(const nlohmann::json& j, ProgressEvent& value);
 
 void to_json(nlohmann::json& j, const ResultManifest& value);
 void from_json(const nlohmann::json& j, ResultManifest& value);
+
+void to_json(nlohmann::json& j, const BackendConfig& value);
+void from_json(const nlohmann::json& j, BackendConfig& value);
 
 } // namespace registration

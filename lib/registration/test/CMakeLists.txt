@@ -1,7 +1,10 @@
 add_executable(EntropyRegistrationTests
+  AvailabilityTests.cpp
   CapabilitiesTests.cpp
   CommandsTests.cpp
+  ConfigTests.cpp
   ExecutionTests.cpp
+  ImportPlanTests.cpp
   JsonTests.cpp
   JobsTests.cpp
   ProgressTests.cpp

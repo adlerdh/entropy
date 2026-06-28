@@ -53,10 +53,14 @@ std::string commandFailureMessage(const CommandSpec& command, const ProcessResul
 
 } // namespace
 
-JobExecution executeJob(const JobSpec& job, IProcessRunner& processRunner, const JobExecutionCallbacks& callbacks)
+JobExecution executeJob(
+  const JobSpec& job,
+  const CommandGenerationOptions& commandOptions,
+  IProcessRunner& processRunner,
+  const JobExecutionCallbacks& callbacks)
 {
   JobExecution execution;
-  std::vector<CommandSpec> commands = generateCommands(job);
+  std::vector<CommandSpec> commands = generateCommands(job, commandOptions);
 
   setStatus(execution, JobStatus::PreparingInputs, callbacks);
   if (commands.empty()) {
@@ -101,6 +105,11 @@ JobExecution executeJob(const JobSpec& job, IProcessRunner& processRunner, const
   setStatus(execution, JobStatus::WritingOutputs, callbacks);
   setStatus(execution, JobStatus::Completed, callbacks);
   return execution;
+}
+
+JobExecution executeJob(const JobSpec& job, IProcessRunner& processRunner, const JobExecutionCallbacks& callbacks)
+{
+  return executeJob(job, CommandGenerationOptions{}, processRunner, callbacks);
 }
 
 } // namespace registration

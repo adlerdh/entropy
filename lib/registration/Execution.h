@@ -46,6 +46,20 @@ struct JobExecutionCallbacks
 /**
  * @brief Run a generated registration command sequence.
  * @param job Validated job specification.
+ * @param commandOptions Executable and bridge options.
+ * @param processRunner Process runner implementation.
+ * @param callbacks Optional job callbacks.
+ * @return Final job execution summary.
+ */
+JobExecution executeJob(
+  const JobSpec& job,
+  const CommandGenerationOptions& commandOptions,
+  IProcessRunner& processRunner,
+  const JobExecutionCallbacks& callbacks = {});
+
+/**
+ * @brief Run a generated registration command sequence using default executable names.
+ * @param job Validated job specification.
  * @param processRunner Process runner implementation.
  * @param callbacks Optional job callbacks.
  * @return Final job execution summary.

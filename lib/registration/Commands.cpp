@@ -95,7 +95,7 @@ std::string antsTransform(TransformModel model)
   return "SyN[0.1,3,0]";
 }
 
-std::vector<CommandSpec> greedyCommands(const JobSpec& job)
+std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerationOptions& options)
 {
   std::vector<CommandSpec> commands;
   const std::filesystem::path affine = outputPath(job, "_affine.mat");
@@ -106,7 +106,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job)
   if (includesAffine(job.transformModel)) {
     CommandSpec command;
     command.description = "Greedy affine registration";
-    command.executable = "greedy";
+    command.executable = options.greedyExecutable;
     command.args = {
       "-d",
       std::to_string(job.dimension),
@@ -134,7 +134,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job)
   if (includesDeformable(job.transformModel)) {
     CommandSpec command;
     command.description = "Greedy deformable registration";
-    command.executable = "greedy";
+    command.executable = options.greedyExecutable;
     command.args = {
       "-d",
       std::to_string(job.dimension),
@@ -171,7 +171,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job)
   if (job.outputs.loadWarpedImage) {
     CommandSpec command;
     command.description = "Greedy reslice warped image";
-    command.executable = "greedy";
+    command.executable = options.greedyExecutable;
     command.args = {
       "-d",
       std::to_string(job.dimension),
@@ -193,11 +193,11 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job)
   return commands;
 }
 
-std::vector<CommandSpec> antsCommands(const JobSpec& job)
+std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGenerationOptions& options)
 {
   CommandSpec command;
   command.description = "ANTs registration";
-  command.executable = "antsRegistration";
+  command.executable = options.antsRegistrationExecutable;
   const std::filesystem::path prefix =
     job.outputDirectory / (job.outputPrefix.empty() ? "registration" : job.outputPrefix);
   const std::filesystem::path warped = outputPath(job, "_warped.nii.gz");
@@ -225,12 +225,12 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job)
   return {command};
 }
 
-std::vector<CommandSpec> fireAntsCommands(const JobSpec& job)
+std::vector<CommandSpec> fireAntsCommands(const JobSpec& job, const CommandGenerationOptions& options)
 {
   CommandSpec command;
   command.description = "FireANTs bridge registration";
-  command.executable = "python";
-  command.args = {"-m", "entropy_fireants_bridge", "run", pathString(outputPath(job, "_job.json"))};
+  command.executable = options.fireAntsPythonExecutable;
+  command.args = {"-m", options.fireAntsBridgeModule, "run", pathString(outputPath(job, "_job.json"))};
   return {command};
 }
 
@@ -260,17 +260,22 @@ std::string quoteArg(const std::string& value)
 
 } // namespace
 
-std::vector<CommandSpec> generateCommands(const JobSpec& job)
+std::vector<CommandSpec> generateCommands(const JobSpec& job, const CommandGenerationOptions& options)
 {
   switch (job.backend) {
     case Backend::Greedy:
-      return greedyCommands(job);
+      return greedyCommands(job, options);
     case Backend::ANTs:
-      return antsCommands(job);
+      return antsCommands(job, options);
     case Backend::FireANTs:
-      return fireAntsCommands(job);
+      return fireAntsCommands(job, options);
   }
   return {};
+}
+
+std::vector<CommandSpec> generateCommands(const JobSpec& job)
+{
+  return generateCommands(job, CommandGenerationOptions{});
 }
 
 std::string displayCommand(const CommandSpec& command)

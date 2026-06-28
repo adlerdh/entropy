@@ -467,4 +467,45 @@ void from_json(const nlohmann::json& j, ResultManifest& value)
   getOptional(j, "elapsedSeconds", value.elapsedSeconds);
 }
 
+void to_json(nlohmann::json& j, const BackendConfig& value)
+{
+  j = nlohmann::json{
+    {"defaultBackend", value.defaultBackend},
+    {"greedyExecutable", pathToString(value.greedyExecutable)},
+    {"antsRegistrationExecutable", pathToString(value.antsRegistrationExecutable)},
+    {"fireAntsPythonExecutable", pathToString(value.fireAntsPythonExecutable)},
+    {"fireAntsBridgeModule", value.fireAntsBridgeModule},
+    {"defaultOutputDirectory", pathToString(value.defaultOutputDirectory)},
+    {"keepTemporaryFiles", value.keepTemporaryFiles},
+    {"maxConcurrentJobs", value.maxConcurrentJobs},
+    {"defaultCpuThreadCount", value.defaultCpuThreadCount},
+    {"defaultFireAntsDevice", value.defaultFireAntsDevice},
+    {"showExpertOptionsByDefault", value.showExpertOptionsByDefault}};
+}
+
+void from_json(const nlohmann::json& j, BackendConfig& value)
+{
+  if (j.contains("defaultBackend")) {
+    value.defaultBackend = enumFromJson<Backend>(j.at("defaultBackend"), backendFromString);
+  }
+  if (j.contains("greedyExecutable")) {
+    value.greedyExecutable = pathFromJson(j.at("greedyExecutable"));
+  }
+  if (j.contains("antsRegistrationExecutable")) {
+    value.antsRegistrationExecutable = pathFromJson(j.at("antsRegistrationExecutable"));
+  }
+  if (j.contains("fireAntsPythonExecutable")) {
+    value.fireAntsPythonExecutable = pathFromJson(j.at("fireAntsPythonExecutable"));
+  }
+  getOptional(j, "fireAntsBridgeModule", value.fireAntsBridgeModule);
+  if (j.contains("defaultOutputDirectory")) {
+    value.defaultOutputDirectory = pathFromJson(j.at("defaultOutputDirectory"));
+  }
+  getOptional(j, "keepTemporaryFiles", value.keepTemporaryFiles);
+  getOptional(j, "maxConcurrentJobs", value.maxConcurrentJobs);
+  getOptional(j, "defaultCpuThreadCount", value.defaultCpuThreadCount);
+  getOptional(j, "defaultFireAntsDevice", value.defaultFireAntsDevice);
+  getOptional(j, "showExpertOptionsByDefault", value.showExpertOptionsByDefault);
+}
+
 } // namespace registration
