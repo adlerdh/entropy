@@ -3,6 +3,7 @@
 #include "logic/app/ParcellationLabelTable.h"
 #include "common/SegmentationTypes.h"
 #include "common/Types.h"
+#include "registration/Config.h"
 
 #include <glm/vec3.hpp>
 
@@ -246,6 +247,16 @@ public:
   bool lockAnatomicalCoordinateAxesWithReferenceImage() const;
   void setLockAnatomicalCoordinateAxesWithReferenceImage(bool lock);
 
+  /**
+   * @brief Return immutable registration backend settings.
+   */
+  const registration::BackendConfig& registrationBackendConfig() const;
+
+  /**
+   * @brief Return mutable registration backend settings.
+   */
+  registration::BackendConfig& registrationBackendConfig();
+
 private:
   void bumpBrushPreviewRevision();
 
@@ -260,6 +271,7 @@ private:
   UiLayoutTabPlacement m_layoutTabPlacement = UiLayoutTabPlacement::Top;
   bool m_showGlobalTimeControls = true;
   bool m_synchronizeTimeSeries = true;
+  registration::BackendConfig m_registrationBackendConfig;
 
   bool m_cursorSyncEnabled = false;
   bool m_sendCursorSync = true;

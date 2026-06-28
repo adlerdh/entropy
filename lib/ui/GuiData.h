@@ -35,6 +35,7 @@ struct GuiData
     Comparison,      //!< Image comparison and metric settings page.
     Rendering,       //!< Rendering, projection, raycasting, and ASCII settings page.
     Annotations,     //!< Annotation and landmark display settings page.
+    Registration,    //!< External registration backend settings page.
     Synchronization, //!< ITK-SNAP synchronization settings page.
     System           //!< System, runtime, and diagnostics settings page.
   };

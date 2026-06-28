@@ -55,6 +55,19 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setBrushSizeInMm(3.25f);
   settings.setCrosshairsMoveWhileAnnotating(true);
   settings.setLockAnatomicalCoordinateAxesWithReferenceImage(true);
+
+  registration::BackendConfig& registrationConfig = settings.registrationBackendConfig();
+  registrationConfig.defaultBackend = registration::Backend::ANTs;
+  registrationConfig.greedyExecutable = "/opt/greedy/bin/greedy";
+  registrationConfig.antsRegistrationExecutable = "/opt/ants/bin/antsRegistration";
+  registrationConfig.fireAntsPythonExecutable = "/opt/fireants/bin/python";
+  registrationConfig.fireAntsBridgeModule = "entropy_test_fireants_bridge";
+  registrationConfig.defaultOutputDirectory = "/tmp/entropy-registration";
+  registrationConfig.keepTemporaryFiles = true;
+  registrationConfig.maxConcurrentJobs = 3;
+  registrationConfig.defaultCpuThreadCount = 7;
+  registrationConfig.defaultFireAntsDevice = "cuda:1";
+  registrationConfig.showExpertOptionsByDefault = true;
 }
 
 user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
@@ -193,6 +206,20 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(
     actual.lockAnatomicalCoordinateAxesWithReferenceImage() ==
     expected.lockAnatomicalCoordinateAxesWithReferenceImage());
+
+  const registration::BackendConfig& actualRegistration = actual.registrationBackendConfig();
+  const registration::BackendConfig& expectedRegistration = expected.registrationBackendConfig();
+  CHECK(actualRegistration.defaultBackend == expectedRegistration.defaultBackend);
+  CHECK(actualRegistration.greedyExecutable == expectedRegistration.greedyExecutable);
+  CHECK(actualRegistration.antsRegistrationExecutable == expectedRegistration.antsRegistrationExecutable);
+  CHECK(actualRegistration.fireAntsPythonExecutable == expectedRegistration.fireAntsPythonExecutable);
+  CHECK(actualRegistration.fireAntsBridgeModule == expectedRegistration.fireAntsBridgeModule);
+  CHECK(actualRegistration.defaultOutputDirectory == expectedRegistration.defaultOutputDirectory);
+  CHECK(actualRegistration.keepTemporaryFiles == expectedRegistration.keepTemporaryFiles);
+  CHECK(actualRegistration.maxConcurrentJobs == expectedRegistration.maxConcurrentJobs);
+  CHECK(actualRegistration.defaultCpuThreadCount == expectedRegistration.defaultCpuThreadCount);
+  CHECK(actualRegistration.defaultFireAntsDevice == expectedRegistration.defaultFireAntsDevice);
+  CHECK(actualRegistration.showExpertOptionsByDefault == expectedRegistration.showExpertOptionsByDefault);
 }
 
 void requireRenderPreferencesEqual(
@@ -373,6 +400,17 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("interface").at("precision").at("transformations") == 6);
   CHECK(root.at("interface").at("precision").at("percentiles") == 7);
   CHECK(root.at("views").at("showOverlays") == false);
+  CHECK(root.at("registration").at("defaultBackend") == "ANTs");
+  CHECK(root.at("registration").at("greedyExecutable") == "/opt/greedy/bin/greedy");
+  CHECK(root.at("registration").at("antsRegistrationExecutable") == "/opt/ants/bin/antsRegistration");
+  CHECK(root.at("registration").at("fireAntsPythonExecutable") == "/opt/fireants/bin/python");
+  CHECK(root.at("registration").at("fireAntsBridgeModule") == "entropy_test_fireants_bridge");
+  CHECK(root.at("registration").at("defaultOutputDirectory") == "/tmp/entropy-registration");
+  CHECK(root.at("registration").at("keepTemporaryFiles") == true);
+  CHECK(root.at("registration").at("maxConcurrentJobs") == 3);
+  CHECK(root.at("registration").at("defaultCpuThreadCount") == 7);
+  CHECK(root.at("registration").at("defaultFireAntsDevice") == "cuda:1");
+  CHECK(root.at("registration").at("showExpertOptionsByDefault") == true);
   CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == true);
 }

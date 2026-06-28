@@ -3,6 +3,7 @@
 #include "logic/app/Data.h"
 #include "ui/Helpers.h"
 
+#include "registration/Config.h"
 #include "registration/Setup.h"
 
 #include <imgui/imgui.h>
@@ -10,6 +11,7 @@
 
 #include <array>
 #include <algorithm>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -101,9 +103,11 @@ void renderVisibleParameters(const registration::SetupState& state)
   }
 }
 
-void renderCommandPreview(const registration::SetupState& state)
+void renderCommandPreview(
+  const registration::SetupState& state,
+  const registration::CommandGenerationOptions& commandOptions)
 {
-  const std::vector<std::string> commands = registration::commandPreviews(state);
+  const std::vector<std::string> commands = registration::commandPreviews(state, commandOptions);
   if (commands.empty()) {
     ImGui::TextDisabled("No command preview available.");
     return;
@@ -124,23 +128,26 @@ void renderRegistrationSetupWindow(AppData& appData)
     return;
   }
 
-  static registration::Backend s_backend = registration::Backend::Greedy;
   static bool s_showAdvanced = false;
-  static bool s_showExpert = false;
+  registration::BackendConfig& config = appData.settings().registrationBackendConfig();
+  static bool s_showExpert = config.showExpertOptionsByDefault;
 
+  const std::filesystem::path outputDirectory =
+    config.defaultOutputDirectory.empty() ? std::filesystem::temp_directory_path() : config.defaultOutputDirectory;
   registration::SetupState state =
-    registration::createSetupState(imageChoices(appData), s_backend, std::filesystem::temp_directory_path());
+    registration::createSetupState(imageChoices(appData), config.defaultBackend, outputDirectory);
   state.showAdvancedParameters = s_showAdvanced;
   state.showExpertParameters = s_showExpert;
 
-  int selectedBackend = backendIndex(s_backend);
-  const char* preview = registration::label(k_backends.at(static_cast<std::size_t>(selectedBackend))).data();
-  if (ImGui::BeginCombo("Backend", preview)) {
+  int selectedBackend = backendIndex(config.defaultBackend);
+  const std::string preview{registration::label(k_backends.at(static_cast<std::size_t>(selectedBackend)))};
+  if (ImGui::BeginCombo("Backend", preview.c_str())) {
     for (int i = 0; i < static_cast<int>(k_backends.size()); ++i) {
       const registration::Backend backend = k_backends.at(static_cast<std::size_t>(i));
       const bool selected = i == selectedBackend;
-      if (ImGui::Selectable(registration::label(backend).data(), selected)) {
-        s_backend = backend;
+      const std::string backendLabel{registration::label(backend)};
+      if (ImGui::Selectable(backendLabel.c_str(), selected)) {
+        config.defaultBackend = backend;
       }
       if (selected) {
         ImGui::SetItemDefaultFocus();
@@ -171,7 +178,7 @@ void renderRegistrationSetupWindow(AppData& appData)
   }
 
   if (ImGui::CollapsingHeader("Command Preview", ImGuiTreeNodeFlags_DefaultOpen)) {
-    renderCommandPreview(state);
+    renderCommandPreview(state, registration::commandOptions(config));
   }
 
   ImGui::BeginDisabled(!state.validation.canLaunch());

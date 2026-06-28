@@ -95,6 +95,14 @@ const ParameterValue* findParameterValue(const SetupState& state, std::string_vi
 /**
  * @brief Return command preview strings for the current setup state.
  * @param state Setup state to inspect.
+ * @param commandOptions Executable and bridge options.
+ * @return Display commands, or an empty list when validation blocks launch.
+ */
+std::vector<std::string> commandPreviews(const SetupState& state, const CommandGenerationOptions& commandOptions);
+
+/**
+ * @brief Return command preview strings using default executable names.
+ * @param state Setup state to inspect.
  * @return Display commands, or an empty list when validation blocks launch.
  */
 std::vector<std::string> commandPreviews(const SetupState& state);

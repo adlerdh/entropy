@@ -197,19 +197,24 @@ const ParameterValue* findParameterValue(const SetupState& state, std::string_vi
   return it == state.parameterValues.end() ? nullptr : &*it;
 }
 
-std::vector<std::string> commandPreviews(const SetupState& state)
+std::vector<std::string> commandPreviews(const SetupState& state, const CommandGenerationOptions& commandOptions)
 {
   if (!state.validation.canLaunch()) {
     return {};
   }
 
-  const std::vector<CommandSpec> commands = generateCommands(state.job);
+  const std::vector<CommandSpec> commands = generateCommands(state.job, commandOptions);
   std::vector<std::string> previews;
   previews.reserve(commands.size());
   for (const CommandSpec& command : commands) {
     previews.push_back(displayCommand(command));
   }
   return previews;
+}
+
+std::vector<std::string> commandPreviews(const SetupState& state)
+{
+  return commandPreviews(state, CommandGenerationOptions{});
 }
 
 } // namespace registration

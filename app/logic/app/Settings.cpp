@@ -215,6 +215,16 @@ void AppSettings::setSynchronizeTimeSeries(bool synchronize)
   m_synchronizeTimeSeries = synchronize;
 }
 
+const registration::BackendConfig& AppSettings::registrationBackendConfig() const
+{
+  return m_registrationBackendConfig;
+}
+
+registration::BackendConfig& AppSettings::registrationBackendConfig()
+{
+  return m_registrationBackendConfig;
+}
+
 void AppSettings::setForegroundLabel(std::size_t label, const ParcellationLabelTable& activeLabelTable)
 {
   const auto oldForegroundLabel = m_foregroundLabel;

@@ -1,6 +1,7 @@
 #include "logic/app/UserPreferences.h"
 
 #include "common/LoggingSettings.h"
+#include "registration/Json.h"
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -311,6 +312,7 @@ json toJson(
         {"spatialMatching", renderPreferences.asciiSpatialMatching},
         {"spatialExponent", renderPreferences.asciiSpatialExponent}}}}},
     {"annotations", {{"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
+    {"registration", settings.registrationBackendConfig()},
     {"synchronization",
      {{"itkSnap",
        {{"enabled", settings.cursorSyncEnabled()},
@@ -511,6 +513,12 @@ void applyJson(
     {
       settings.setCrosshairsMoveWhileAnnotating(value->get<bool>());
     }
+  }
+
+  if (const auto registrationSettings = root.find("registration");
+      registrationSettings != root.end() && registrationSettings->is_object())
+  {
+    settings.registrationBackendConfig() = registrationSettings->get<registration::BackendConfig>();
   }
 
   if (const auto sync = root.find("synchronization"); sync != root.end() && sync->is_object()) {

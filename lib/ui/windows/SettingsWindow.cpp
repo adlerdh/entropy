@@ -11,10 +11,12 @@
 #include "common/LoggingSettings.h"
 #include "logic/app/AppPaths.h"
 #include "logic/app/Data.h"
+#include "registration/Config.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui/imgui.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
 
 #include <algorithm>
 #include <array>
@@ -50,6 +52,11 @@ static constexpr ImGuiColorEditFlags k_colorAlphaEditFlags =
   ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB |
   ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf |
   ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_InputRGB;
+
+constexpr std::array k_registrationBackends{
+  registration::Backend::Greedy,
+  registration::Backend::ANTs,
+  registration::Backend::FireANTs};
 
 /**
  * @brief Return an absolute, canonical display path when possible.
@@ -115,6 +122,27 @@ void renderReadOnlyPathField(const char* label, const std::filesystem::path& pat
   ImGui::PushItemWidth(itemWidth >= 0.0f ? itemWidth : fillWidthForLabeledControl(label));
   ImGui::InputText(label, buffer.data(), buffer.size(), ImGuiInputTextFlags_ReadOnly);
   ImGui::PopItemWidth();
+}
+
+void renderPathSetting(const char* label, std::filesystem::path& path, const char* tooltip)
+{
+  std::string value = path.string();
+  ImGui::PushItemWidth(fillWidthForLabeledControl(label));
+  if (ImGui::InputText(label, &value)) {
+    path = value;
+  }
+  ImGui::PopItemWidth();
+  ImGui::SameLine();
+  helpMarker(tooltip);
+}
+
+void renderTextSetting(const char* label, std::string& value, const char* tooltip)
+{
+  ImGui::PushItemWidth(fillWidthForLabeledControl(label));
+  ImGui::InputText(label, &value);
+  ImGui::PopItemWidth();
+  ImGui::SameLine();
+  helpMarker(tooltip);
 }
 
 /**
@@ -1129,6 +1157,88 @@ void renderImagesTab(AppData& appData)
   finishSettingsSection(imageDisplayDefaultsOpen);
 
   renderIntensityProjectionDefaults(appData.renderData());
+}
+
+/**
+ * @brief Render registration backend settings.
+ */
+void renderRegistrationTab(AppData& appData)
+{
+  registration::BackendConfig& config = appData.settings().registrationBackendConfig();
+
+  const bool backendDefaultsOpen = ImGui::CollapsingHeader("Backend Defaults", ImGuiTreeNodeFlags_DefaultOpen);
+  if (backendDefaultsOpen) {
+    const std::string preview{registration::label(config.defaultBackend)};
+    if (ImGui::BeginCombo("Default backend", preview.c_str())) {
+      for (const registration::Backend backend : k_registrationBackends) {
+        const bool selected = backend == config.defaultBackend;
+        const std::string backendLabel{registration::label(backend)};
+        if (ImGui::Selectable(backendLabel.c_str(), selected)) {
+          config.defaultBackend = backend;
+        }
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::SameLine();
+    helpMarker("Backend preselected for new registration jobs.");
+
+    renderPathSetting(
+      "Greedy executable",
+      config.greedyExecutable,
+      "Command or executable path used to launch Greedy.");
+    renderPathSetting(
+      "ANTs executable",
+      config.antsRegistrationExecutable,
+      "Command or executable path used to launch antsRegistration.");
+    renderPathSetting(
+      "FireANTs Python",
+      config.fireAntsPythonExecutable,
+      "Python executable used to run the FireANTs bridge module.");
+    renderTextSetting(
+      "FireANTs module",
+      config.fireAntsBridgeModule,
+      "Python module that exposes Entropy's FireANTs command-line bridge.");
+    renderPathSetting(
+      "Output directory",
+      config.defaultOutputDirectory,
+      "Default directory for registration outputs. Leave empty to use the system temporary directory.");
+  }
+  finishSettingsSection(backendDefaultsOpen);
+
+  const bool executionOpen = ImGui::CollapsingHeader("Execution", ImGuiTreeNodeFlags_DefaultOpen);
+  if (executionOpen) {
+    int maxConcurrentJobs = config.maxConcurrentJobs;
+    ImGui::PushItemWidth(fillWidthForLabeledControl("Max concurrent jobs"));
+    if (ImGui::InputInt("Max concurrent jobs", &maxConcurrentJobs)) {
+      config.maxConcurrentJobs = std::max(1, maxConcurrentJobs);
+    }
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    helpMarker("Maximum number of registration jobs Entropy should run at the same time.");
+
+    int cpuThreads = config.defaultCpuThreadCount;
+    ImGui::PushItemWidth(fillWidthForLabeledControl("CPU threads"));
+    if (ImGui::InputInt("CPU threads", &cpuThreads)) {
+      config.defaultCpuThreadCount = std::max(0, cpuThreads);
+    }
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    helpMarker("Default CPU thread count. Zero lets the backend choose.");
+
+    renderTextSetting("FireANTs device", config.defaultFireAntsDevice, "PyTorch device passed to FireANTs.");
+
+    ImGui::Checkbox("Keep temporary files", &config.keepTemporaryFiles);
+    ImGui::SameLine();
+    helpMarker("Keep exported intermediate files for debugging backend failures.");
+
+    ImGui::Checkbox("Show expert options by default", &config.showExpertOptionsByDefault);
+    ImGui::SameLine();
+    helpMarker("Open registration setup dialogs with expert backend options visible.");
+  }
+  finishSettingsSection(executionOpen);
 }
 
 /**
@@ -2154,6 +2264,9 @@ static void renderSettingsPage(
       break;
     case GuiData::SettingsTab::Annotations:
       renderAnnotationsTab(renderData);
+      break;
+    case GuiData::SettingsTab::Registration:
+      renderRegistrationTab(appData);
       break;
     case GuiData::SettingsTab::System:
       renderSystemTab(appData);
