@@ -748,7 +748,7 @@ TEST_CASE("Project serialization preserves registration result artifacts", "[pro
   const json inlineJson = project;
   REQUIRE(inlineJson.contains("registrationResults"));
   CHECK(inlineJson.at("registrationResults").at(0).at("backend") == "Greedy");
-  CHECK(inlineJson.at("registrationResults").at(0).at("manifest") == manifestFile.string());
+  CHECK(inlineJson.at("registrationResults").at(0).at("manifest") == manifestFile.generic_string());
   CHECK(inlineJson.at("registrationResults").at(0).at("warnings").at(0) == "low overlap");
 
   REQUIRE(serialize::save(project, projectFile));

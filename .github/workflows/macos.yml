@@ -146,6 +146,93 @@ jobs:
         if: always()
         run: ccache --show-stats
 
+  debug-x64:
+    name: Debug Build And Tests (x86_64)
+    runs-on: macos-13
+    needs: format
+    env:
+      ENTROPY_MACOS_ARCHITECTURES: x86_64
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install build dependencies
+        run: brew install ccache
+
+      - name: Validate runner tools
+        run: |
+          sw_vers
+          test "$(uname -m)" = "x86_64"
+          cmake --version
+          git --version
+          ccache --version
+          xcodebuild -version
+          xcrun --show-sdk-version
+
+      - name: Restore Debug ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: macos13-x86_64-appleclang-debug-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            macos13-x86_64-appleclang-debug-ccache-v1-
+
+      - name: Reset Debug ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
+      - name: Restore Debug SuperBuild cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-debug/external/catch2-*
+            build-debug/external/cli11-*
+            build-debug/external/cmakerc-*
+            build-debug/external/glfw-*
+            build-debug/external/glm-*
+            build-debug/external/iconfont-*
+            build-debug/external/imgui-*
+            build-debug/external/implot-*
+            build-debug/external/itk-*
+            build-debug/external/nanovg-*
+            build-debug/external/nativefiledialog-*
+            build-debug/external/nlohmann_json-*
+            build-debug/external/qtbase-*
+            build-debug/external/spdlog-*
+            build-debug/external/stduuid-*
+            build-debug/external/tinyfsm-*
+          key: macos13-x86_64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            macos13-x86_64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Debug SuperBuild
+        run: >
+          cmake --preset superbuild-debug
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
+
+      - name: Build Debug SuperBuild
+        run: cmake --build --preset superbuild-debug --parallel 1
+
+      - name: Configure Debug app
+        run: >
+          cmake --preset app-debug
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+
+      - name: Build Debug app
+        run: cmake --build --preset app-debug --parallel
+
+      - name: Run Debug tests
+        run: ctest --test-dir build-debug --parallel --output-on-failure
+
+      - name: Show Debug ccache stats
+        if: always()
+        run: ccache --show-stats
+
   coverage:
     name: Coverage Report
     runs-on: macos-14

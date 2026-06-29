@@ -322,7 +322,7 @@ std::vector<glm::vec3> vec3ArrayFromJson(const json& j)
 
 std::string optionalPathToString(const std::optional<fs::path>& path)
 {
-  return path ? path->string() : std::string{};
+  return path ? path->generic_string() : std::string{};
 }
 
 std::vector<std::string> pathVectorToStrings(const std::vector<fs::path>& paths)
@@ -330,7 +330,7 @@ std::vector<std::string> pathVectorToStrings(const std::vector<fs::path>& paths)
   std::vector<std::string> values;
   values.reserve(paths.size());
   for (const fs::path& path : paths) {
-    values.push_back(path.string());
+    values.push_back(path.generic_string());
   }
   return values;
 }
