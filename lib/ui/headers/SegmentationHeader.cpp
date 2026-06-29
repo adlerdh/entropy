@@ -133,6 +133,9 @@ void renderSegmentationHeader(
   if (!isActiveImage) {
     if (ImGui::Button(ICON_FK_TOGGLE_OFF)) {
       if (appData.setActiveImageUid(imageUid)) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
         return;
       }
     }
@@ -165,18 +168,27 @@ void renderSegmentationHeader(
   if (segUids.empty()) {
     ImGui::Text("This image has no segmentation");
     spdlog::error("Image {} has no segmentations", imageUid);
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     return;
   }
 
   auto activeSegUid = appData.imageToActiveSegUid(imageUid);
   if (!activeSegUid) {
     spdlog::error("Image {} has no active segmentation", imageUid);
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     return;
   }
 
   Image* activeSeg = appData.seg(*activeSegUid);
   if (!activeSeg) {
     spdlog::error("Active segmentation for image {} is null", imageUid);
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     return;
   }
 
@@ -379,6 +391,8 @@ void renderSegmentationHeader(
     ImGui::TreePop();
   }
 
+  ImGui::Spacing();
+  ImGui::Separator();
   ImGui::Spacing();
   ImGui::PopID(); /*** PopID activeSegUid ***/
 }

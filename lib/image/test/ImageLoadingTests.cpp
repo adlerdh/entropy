@@ -360,25 +360,7 @@ std::vector<T> arithmeticValues(std::size_t count)
 
 InterpolationMode expectedDefaultInterpolationMode(ComponentType memoryComponentType)
 {
-  switch (memoryComponentType) {
-    case ComponentType::Int8:
-    case ComponentType::UInt8:
-    case ComponentType::Int16:
-    case ComponentType::UInt16:
-    case ComponentType::Int32:
-    case ComponentType::UInt32:
-      return InterpolationMode::NearestNeighbor;
-    case ComponentType::Float32:
-    case ComponentType::Float64:
-    case ComponentType::Long:
-    case ComponentType::ULong:
-    case ComponentType::LongLong:
-    case ComponentType::ULongLong:
-    case ComponentType::LongDouble:
-    case ComponentType::Undefined:
-      return InterpolationMode::Linear;
-  }
-
+  (void)memoryComponentType;
   return InterpolationMode::Linear;
 }
 

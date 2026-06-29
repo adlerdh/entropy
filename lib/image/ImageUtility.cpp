@@ -131,17 +131,7 @@ std::optional<ImageHeader> readImageHeaderOnly(
 
   ImageIoInfo ioInfoInMemory = spatializedImageIoInfoForEntropy(ioInfoOnDisk);
   const uint32_t numCompsOnDisk = ioInfoOnDisk.m_pixelInfo.m_numComponents;
-  uint32_t numCompsToLoad = numCompsOnDisk;
-
-  if (numCompsOnDisk > 1) {
-    if (Image::MultiComponentBufferType::InterleavedImage == bufferType) {
-      numCompsToLoad = std::min<uint32_t>(numCompsToLoad, 4u);
-    }
-
-    if (Image::ImageRepresentation::Segmentation == imageRep) {
-      numCompsToLoad = 1;
-    }
-  }
+  const uint32_t componentsToLoad = componentCountToLoad(imageRep, numCompsOnDisk);
 
   using CType = ComponentType;
   CType memoryType = ioInfoInMemory.m_componentInfo.m_componentType;
@@ -185,15 +175,26 @@ std::optional<ImageHeader> readImageHeaderOnly(
   ioInfoInMemory.m_componentInfo.m_componentType = memoryType;
   ioInfoInMemory.m_componentInfo.m_componentTypeString = componentTypeString(memoryType);
   ioInfoInMemory.m_componentInfo.m_componentSizeInBytes = componentSizeInBytes(memoryType);
-  ioInfoInMemory.m_pixelInfo.m_numComponents = numCompsToLoad;
+  ioInfoInMemory.m_pixelInfo.m_numComponents = componentsToLoad;
   ioInfoInMemory.m_sizeInfo.m_imageSizeInComponents =
-    ioInfoInMemory.m_sizeInfo.m_imageSizeInPixels * numCompsToLoad * ioInfoOnDisk.m_timeInfo.m_numTimePoints;
+    ioInfoInMemory.m_sizeInfo.m_imageSizeInPixels * componentsToLoad * ioInfoOnDisk.m_timeInfo.m_numTimePoints;
   ioInfoInMemory.m_sizeInfo.m_imageSizeInBytes =
     ioInfoInMemory.m_sizeInfo.m_imageSizeInComponents * ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
 
   ImageHeader header(ioInfoOnDisk, ioInfoInMemory, Image::MultiComponentBufferType::InterleavedImage == bufferType);
-  header.setNumComponentsPerPixel(numCompsToLoad);
+  header.setNumComponentsPerPixel(componentsToLoad);
   return header;
+}
+
+uint32_t componentCountToLoad(ImageRepresentation imageRep, uint32_t sourceComponents)
+{
+  if (0u == sourceComponents) {
+    return 0u;
+  }
+  if (ImageRepresentation::Segmentation == imageRep) {
+    return 1u;
+  }
+  return sourceComponents;
 }
 
 std::string getFileName(const std::string& filePath, bool withExtension)

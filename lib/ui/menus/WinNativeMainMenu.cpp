@@ -451,13 +451,13 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
 
   UINT deformationPosition = 0;
   if (
-    !insertMenuItem(deformationMenu, deformationPosition++, k_loadInverseWarpCommand, L"Load &inverse warp...") ||
-    !insertMenuItem(deformationMenu, deformationPosition++, k_loadForwardWarpCommand, L"Load &forward warp...") ||
+    !insertMenuItem(deformationMenu, deformationPosition++, k_loadInverseWarpCommand, L"Load &Inverse Warp...") ||
+    !insertMenuItem(deformationMenu, deformationPosition++, k_loadForwardWarpCommand, L"Load &Forward Warp...") ||
     !insertActionMenuItem(
       deformationMenu,
       deformationPosition++,
       MainMenuAction::ToggleApplyActiveImageWarp,
-      L"&Apply warp"))
+      L"&Apply Warp"))
   {
     DestroyMenu(affineMenu);
     DestroyMenu(deformationMenu);
@@ -478,7 +478,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
       registrationMenu,
       registrationPosition++,
       MainMenuAction::ToggleRegistrationJobsWindow,
-      L"Registration &Jobs..."))
+      L"Image Registration &Jobs..."))
   {
     DestroyMenu(affineMenu);
     DestroyMenu(deformationMenu);
@@ -529,11 +529,11 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageForward, L"Move Image &Forward") &&
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToBack, L"Move Image to Bac&k") &&
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToFront, L"Move Image to Fron&t") &&
-    insertSeparator(menu, position++) && insertSubmenu(menu, position++, affineMenu, L"&Affine transformations") &&
-    insertSubmenu(menu, position++, deformationMenu, L"&Deformation fields") &&
-    insertSubmenu(menu, position++, registrationMenu, L"&Registration") &&
-    insertSubmenu(menu, position++, timeSeriesMenu, L"&Time Series") &&
-    insertSubmenu(menu, position++, isosurfacesMenu, L"I&sosurfaces");
+    insertSeparator(menu, position++) && insertSubmenu(menu, position++, timeSeriesMenu, L"&Time Series") &&
+    insertSeparator(menu, position++) && insertSubmenu(menu, position++, isosurfacesMenu, L"I&sosurfaces") &&
+    insertSeparator(menu, position++) && insertSubmenu(menu, position++, affineMenu, L"&Affine Transformations") &&
+    insertSubmenu(menu, position++, deformationMenu, L"&Deformable Transformations") &&
+    insertSubmenu(menu, position++, registrationMenu, L"&Image Registration");
 
   if (!ok) {
     DestroyMenu(affineMenu);
@@ -691,18 +691,21 @@ bool populateViewsMenu(HMENU menu)
 bool populateWindowsMenu(HMENU menu)
 {
   UINT position = 0;
-  bool ok = insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"&Images") &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleSegmentationsWindow, L"&Segmentations") &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleAnnotationsWindow, L"&Annotations") &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleLandmarksWindow, L"&Landmarks") &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleIsosurfacesWindow, L"I&sosurfaces") &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings") &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector Panel") &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
-            insertSeparator(menu, position++) &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&
-            insertSeparator(menu, position++) &&
-            insertActionMenuItem(menu, position++, MainMenuAction::ToggleToolbar, L"T&oolbar");
+  bool ok =
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"&Images") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleSegmentationsWindow, L"&Segmentations") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ShowRegistrationSetupWindow, L"&Registration Panel") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleAnnotationsWindow, L"&Annotations") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleLandmarksWindow, L"&Landmarks") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleIsosurfacesWindow, L"I&sosurfaces") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector Panel") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegistrationJobsWindow, L"Image Registration &Jobs") &&
+    insertSeparator(menu, position++) &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&
+    insertSeparator(menu, position++) &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleToolbar, L"T&oolbar");
 #ifndef NDEBUG
   ok = ok && insertActionMenuItem(menu, position++, MainMenuAction::ToggleImGuiDemoWindow, L"ImGui &Demo") &&
        insertActionMenuItem(menu, position++, MainMenuAction::ToggleImPlotDemoWindow, L"ImPlot Demo");

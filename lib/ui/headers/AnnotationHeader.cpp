@@ -165,6 +165,9 @@ void renderAnnotationsHeader(
   const auto& annotUids = appData.annotationsForImage(imageUid);
   if (annotUids.empty()) {
     ImGui::Text("This image has no annotations.");
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::PopID(); // imageUid
     return;
   }
@@ -241,6 +244,9 @@ void renderAnnotationsHeader(
   if (!activeAnnotUid) {
     // If there is no active/selected annotation, then do not render the rest of the header,
     // which shows view properites of the annotation
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::PopID(); // imageUid
     return;
   }
@@ -248,6 +254,9 @@ void renderAnnotationsHeader(
   Annotation* activeAnnot = appData.annotation(*activeAnnotUid);
   if (!activeAnnot) {
     spdlog::error("Null active annotation {}", *activeAnnotUid);
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::PopID(); // imageUid
     return;
   }
@@ -564,5 +573,8 @@ void renderAnnotationsHeader(
     }
   }
 
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
   ImGui::PopID(); /** PopID imageUid **/
 }

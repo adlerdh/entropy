@@ -2,6 +2,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
+#include <iterator>
+
 namespace
 {
 
@@ -25,6 +28,15 @@ registration::JobSpec baseJob(registration::Backend backend)
   job.outputDirectory = "/tmp/reg";
   job.outputPrefix = "moving_to_fixed";
   return job;
+}
+
+std::string argumentAfter(const std::vector<std::string>& args, const std::string& key)
+{
+  const auto it = std::find(args.begin(), args.end(), key);
+  if (it == args.end() || std::next(it) == args.end()) {
+    return {};
+  }
+  return *std::next(it);
 }
 
 } // namespace
@@ -65,6 +77,106 @@ TEST_CASE("Greedy command generation uses selected parameter values", "[registra
   CHECK(preview.find("4x4x4") != std::string::npos);
   CHECK(preview.find("-threads 3") != std::string::npos);
   CHECK(preview.find("-float") != std::string::npos);
+}
+
+TEST_CASE("Greedy command generation emits advanced affine and deformable options", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.parameterValues = {
+    {"smoothingUnits", "mm"},
+    {"smoothingSigma", "2,0.5"},
+    {"stepSize", "0.75"},
+    {"velocityModel", "svlb"},
+    {"inverseExponentiation", "5"},
+    {"fixedMaskTrim", "4x4x4"},
+    {"affineJitter", "0.25"},
+    {"affineSearchIterations", "20"},
+    {"affineSearchRotation", "flip"},
+    {"affineSearchTranslation", "25"},
+    {"affineMoments", "2"},
+    {"affineDeterminant", "1"},
+    {"warpPrecision", "0.01"}};
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 3);
+  const std::string affinePreview = registration::displayCommand(commands.at(0));
+  CHECK(affinePreview.find("-gm-trim 4x4x4") != std::string::npos);
+  CHECK(affinePreview.find("-jitter 0.25") != std::string::npos);
+  CHECK(affinePreview.find("-search 20 flip 25") != std::string::npos);
+  CHECK(affinePreview.find("-ia-moments 2") != std::string::npos);
+  CHECK(affinePreview.find("-det 1") != std::string::npos);
+
+  const std::string deformablePreview = registration::displayCommand(commands.at(1));
+  CHECK(deformablePreview.find("-s 2mm 0.5mm") != std::string::npos);
+  CHECK(deformablePreview.find("-e 0.75") != std::string::npos);
+  CHECK(deformablePreview.find("-svlb") != std::string::npos);
+  CHECK(deformablePreview.find("-wp 0.01") != std::string::npos);
+  CHECK(deformablePreview.find("-exp 5 -oinv") != std::string::npos);
+}
+
+TEST_CASE("Greedy command generation uses current affine initialization path", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::Affine;
+  job.useCurrentAffineTransformsForInitialization = true;
+  job.useImageCentersForInitialization = false;
+  job.initialAffineTransform = "/tmp/reg/initial_affine.mat";
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE_FALSE(commands.empty());
+  const std::string preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("-ia /tmp/reg/initial_affine.mat") != std::string::npos);
+  CHECK(preview.find("-ia-image-centers") == std::string::npos);
+}
+
+TEST_CASE("Greedy command generation constrains affine degrees of freedom", "[registration][commands]")
+{
+  auto affineDofFor = [](registration::TransformModel model) {
+    registration::JobSpec job = baseJob(registration::Backend::Greedy);
+    job.transformModel = model;
+    job.outputs.loadWarpedImage = false;
+    job.outputs.loadInverseWarp = false;
+    job.outputs.loadForwardWarp = false;
+
+    const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+    REQUIRE_FALSE(commands.empty());
+    return argumentAfter(commands.front().args, "-dof");
+  };
+
+  CHECK(affineDofFor(registration::TransformModel::Rigid) == "6");
+  CHECK(affineDofFor(registration::TransformModel::Similarity) == "7");
+  CHECK(affineDofFor(registration::TransformModel::Affine) == "12");
+  CHECK(affineDofFor(registration::TransformModel::RigidAffine) == "12");
+  CHECK(affineDofFor(registration::TransformModel::AffineDeformable) == "12");
+}
+
+TEST_CASE("Greedy command generation emits masks and auxiliary image pairs", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.fixedMask = imageRef("fixed-mask", "fixed_mask.nii.gz");
+  job.movingMask = imageRef("moving-mask", "moving_mask.nii.gz");
+  registration::AuxiliaryImagePair pair;
+  pair.fixed = imageRef("aux-fixed", "aux_fixed.nii.gz");
+  pair.moving = imageRef("aux-moving", "aux_moving.nii.gz");
+  pair.weight = 0.5;
+  job.auxiliaryImagePairs.push_back(pair);
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 3);
+  const std::string affinePreview = registration::displayCommand(commands.at(0));
+  CHECK(affinePreview.find("-gm fixed_mask.nii.gz") != std::string::npos);
+  CHECK(affinePreview.find("-w 0.500000 -i aux_fixed.nii.gz aux_moving.nii.gz") != std::string::npos);
+
+  const std::string deformablePreview = registration::displayCommand(commands.at(1));
+  CHECK(deformablePreview.find("-gm fixed_mask.nii.gz") != std::string::npos);
+  CHECK(deformablePreview.find("-mm moving_mask.nii.gz") != std::string::npos);
+  CHECK(deformablePreview.find("-w 0.500000 -i aux_fixed.nii.gz aux_moving.nii.gz") != std::string::npos);
 }
 
 TEST_CASE(
@@ -139,6 +251,42 @@ TEST_CASE("ANTs command generation uses selected pyramid and convergence paramet
   CHECK(preview.find("[80x20,1e-5,5]") != std::string::npos);
   CHECK(preview.find("--shrink-factors 8x2") != std::string::npos);
   CHECK(preview.find("--smoothing-sigmas 3x0vox") != std::string::npos);
+}
+
+TEST_CASE("ANTs command generation emits masks and auxiliary metrics", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.metric = registration::Metric::CC;
+  job.fixedMask = imageRef("fixed-mask", "fixed_mask.nii.gz");
+  job.movingMask = imageRef("moving-mask", "moving_mask.nii.gz");
+  registration::AuxiliaryImagePair pair;
+  pair.fixed = imageRef("aux-fixed", "aux_fixed.nii.gz");
+  pair.moving = imageRef("aux-moving", "aux_moving.nii.gz");
+  pair.metric = registration::Metric::MSE;
+  pair.weight = 0.25;
+  job.auxiliaryImagePairs.push_back(pair);
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 1);
+  const std::string preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("--masks '[fixed_mask.nii.gz,moving_mask.nii.gz]'") != std::string::npos);
+  CHECK(preview.find("--metric 'MeanSquares[aux_fixed.nii.gz,aux_moving.nii.gz,0.250000,4]'") != std::string::npos);
+}
+
+TEST_CASE("ANTs command generation uses current affine initialization path", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.transformModel = registration::TransformModel::Affine;
+  job.useCurrentAffineTransformsForInitialization = true;
+  job.initialAffineTransform = "/tmp/reg/initial_affine.mat";
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 1);
+  const std::string preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("--initial-moving-transform /tmp/reg/initial_affine.mat") != std::string::npos);
 }
 
 TEST_CASE("ANTs command generation reslices moving segmentation when requested", "[registration][commands]")

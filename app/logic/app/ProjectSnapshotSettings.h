@@ -339,7 +339,7 @@ inline serialize::ProjectVectorArrowOverlaySpacingMode toSerializedVectorArrowOv
       return serialize::ProjectVectorArrowOverlaySpacingMode::Millimeters;
   }
 
-  return serialize::ProjectVectorArrowOverlaySpacingMode::Pixels;
+  return serialize::ProjectVectorArrowOverlaySpacingMode::Voxels;
 }
 
 inline VectorArrowOverlaySpacingMode fromSerializedVectorArrowOverlaySpacingMode(
@@ -354,7 +354,7 @@ inline VectorArrowOverlaySpacingMode fromSerializedVectorArrowOverlaySpacingMode
       return VectorArrowOverlaySpacingMode::Millimeters;
   }
 
-  return VectorArrowOverlaySpacingMode::Pixels;
+  return VectorArrowOverlaySpacingMode::Voxels;
 }
 
 inline serialize::ProjectVectorWarpedGridConvention toSerializedVectorWarpedGridConvention(

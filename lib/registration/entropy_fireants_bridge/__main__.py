@@ -11,6 +11,7 @@ Entropy through JSON-lines progress events and a result manifest JSON file.
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import importlib.util
 import json
 import os
@@ -61,6 +62,16 @@ def _transform_stages(job: dict[str, Any]) -> list[str]:
     raise ValueError(f"FireANTs bridge does not support transform model '{model}'.")
 
 
+def _has_deformable_stage(job: dict[str, Any]) -> bool:
+    return str(job.get("transformModel") or "AffineDeformable") in {
+        "Deformable",
+        "AffineDeformable",
+        "BSplineDisplacement",
+        "GaussianDisplacement",
+        "TimeVaryingVelocity",
+    }
+
+
 def _metric(job: dict[str, Any], fixed: str, moving: str) -> str:
     metric = str(job.get("metric") or "CC")
     if metric in {"MSE", "SSD"}:
@@ -88,7 +99,7 @@ def _transform_arg(job: dict[str, Any], stage: str) -> str:
 
 
 def _convergence_arg(job: dict[str, Any]) -> str:
-    iterations = _parameter_value(job, "iterations", job.get("iterationSchedule") or "100x50x25")
+    iterations = _parameter_value(job, "iterations", job.get("iterationSchedule") or "128x64x32")
     return (
         f"[{iterations},"
         f"{_parameter_value(job, 'convergenceThreshold', '1e-6')},"
@@ -125,7 +136,10 @@ def _build_fireants_command(job: dict[str, Any]) -> tuple[list[str], Path, Path,
         "--device",
         _parameter_value(job, "device", "cuda:0"),
     ]
-    if job.get("useImageCentersForInitialization", True):
+    initial_affine = str(job.get("initialAffineTransform") or "")
+    if initial_affine:
+        command += ["--initial-moving-transform", initial_affine]
+    elif job.get("useImageCentersForInitialization", True):
         command += ["--initial-moving-transform", f"[{fixed},{moving},1]"]
     fixed_mask = str((job.get("fixedMask") or {}).get("fileName") or "")
     moving_mask = str((job.get("movingMask") or {}).get("fileName") or "")
@@ -156,6 +170,7 @@ def _build_fireants_command(job: dict[str, Any]) -> tuple[list[str], Path, Path,
 
 def _expected_manifest(job: dict[str, Any], success: bool, error: str = "") -> dict[str, Any]:
     outputs = job.get("outputs") or {}
+    has_deformable_stage = _has_deformable_stage(job)
     manifest = {
         "version": 1,
         "success": success,
@@ -176,9 +191,9 @@ def _expected_manifest(job: dict[str, Any], success: bool, error: str = "") -> d
     }
     if outputs.get("loadWarpedImage", True):
         manifest["warpedImage"] = _artifact_path(job, "_warped.nii.gz")
-    if outputs.get("loadInverseWarp", True) or outputs.get("applyWarpToMovingImage", True):
+    if has_deformable_stage and (outputs.get("loadInverseWarp", True) or outputs.get("applyWarpToMovingImage", True)):
         manifest["inverseWarp"] = _artifact_path(job, "_inverse_warp.nii.gz")
-    if (
+    if has_deformable_stage and (
         outputs.get("loadForwardWarp", True)
         or outputs.get("transformLandmarksAndAnnotations", True)
         or outputs.get("transformSurfaces", False)
@@ -196,6 +211,7 @@ def _expected_manifest(job: dict[str, Any], success: bool, error: str = "") -> d
 def _fireants_manifest(job: dict[str, Any], success: bool, transform_path: Path | None = None, error: str = "") -> dict[str, Any]:
     manifest = _expected_manifest(job, success=success, error=error)
     outputs = job.get("outputs") or {}
+    has_deformable_stage = _has_deformable_stage(job)
     warnings = manifest["warnings"]
     manifest["forwardWarp"] = ""
     manifest["warpedSegmentations"] = []
@@ -206,18 +222,21 @@ def _fireants_manifest(job: dict[str, Any], success: bool, transform_path: Path 
         if transform_path.suffix == ".txt":
             manifest["affineTransform"] = str(transform_path)
             manifest["inverseWarp"] = ""
-        else:
+        elif has_deformable_stage:
             expected_inverse = Path(_artifact_path(job, "_inverse_warp.nii.gz"))
             if transform_path != expected_inverse:
                 expected_inverse.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(transform_path, expected_inverse)
             manifest["inverseWarp"] = str(expected_inverse)
             manifest["affineTransform"] = ""
+        else:
+            manifest["affineTransform"] = ""
+            manifest["inverseWarp"] = ""
     else:
         manifest["affineTransform"] = ""
         manifest["inverseWarp"] = ""
 
-    if outputs.get("loadForwardWarp", True):
+    if has_deformable_stage and outputs.get("loadForwardWarp", True):
         warnings.append("FireANTs CLI does not currently produce a forward warp; this output was skipped.")
     if outputs.get("loadWarpedSegmentation", False):
         warnings.append("FireANTs CLI apply-transform support is not available yet; warped segmentation output was skipped.")
@@ -332,7 +351,11 @@ def check() -> int:
     if importlib.util.find_spec("fireants") is None:
         print("FireANTs is not importable in this Python environment.", file=sys.stderr)
         return 2
-    print("FireANTs is importable.")
+    try:
+        fireants_version = importlib.metadata.version("fireants")
+    except importlib.metadata.PackageNotFoundError:
+        fireants_version = "unknown"
+    print(f"FireANTs is importable. fireants version: {fireants_version}.")
     return 0
 
 

@@ -14,6 +14,7 @@ namespace registration
  */
 enum class ImportAction
 {
+  ApplyAffineTransform,             //!< Apply the affine transform to the moving image.
   LoadInverseWarp,                  //!< Load the fixed-to-moving sampling warp.
   LoadForwardWarp,                  //!< Load the moving-to-fixed point warp.
   AssignWarpsToMovingImage,         //!< Assign imported warps to the moving image.

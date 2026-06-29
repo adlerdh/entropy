@@ -28,6 +28,8 @@ registration::JobSpec makeJob()
   job.fixedMask = makeRef("fixed-mask", "fixed-mask.nii.gz", registration::DataSource::Segmentation);
   job.outputDirectory = "/tmp/entropy-registration";
   job.outputPrefix = "moving_to_fixed";
+  job.useCurrentAffineTransformsForInitialization = true;
+  job.initialAffineTransform = "/tmp/entropy-registration/initial_affine.mat";
   job.outputs.loadWarpedSegmentation = true;
   job.landmarks.enabled = true;
   job.landmarks.matchedPairs = 5;
@@ -50,11 +52,15 @@ TEST_CASE("registration job specs round-trip through JSON", "[registration][seri
   CHECK(json.at("backend") == "ANTs");
   CHECK(json.at("transformModel") == "AffineDeformable");
   CHECK(json.at("metric") == "CC");
+  CHECK(json.at("useCurrentAffineTransformsForInitialization") == true);
+  CHECK(json.at("initialAffineTransform") == "/tmp/entropy-registration/initial_affine.mat");
   CHECK(restored.backend == original.backend);
   CHECK(restored.fixedImage.uid == original.fixedImage.uid);
   CHECK(restored.movingImage.fileName == original.movingImage.fileName);
   CHECK(restored.fixedMask.source == registration::DataSource::Segmentation);
   CHECK(restored.outputs.loadWarpedSegmentation);
+  CHECK(restored.useCurrentAffineTransformsForInitialization);
+  CHECK(restored.initialAffineTransform == original.initialAffineTransform);
   CHECK(restored.landmarks.enabled);
   CHECK(restored.landmarks.matchedPairs == 5);
   REQUIRE(restored.parameterValues.size() == 2);

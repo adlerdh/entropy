@@ -1848,11 +1848,7 @@ void CallbackHandler::toggleImageVisibility()
 
   Image& image = result->get();
 
-  // Toggle the global visibility if this is a multi-component images and
-  // each component is stored as a separate image.
-  const bool isMulticomponentImage =
-    (image.header().numComponentsPerPixel() > 1 &&
-     Image::MultiComponentBufferType::SeparateImages == image.bufferType());
+  const bool isMulticomponentImage = image.header().numComponentsPerPixel() > 1;
 
   if (isMulticomponentImage) {
     image.settings().setGlobalVisibility(!image.settings().globalVisibility());

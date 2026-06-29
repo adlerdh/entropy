@@ -18,11 +18,11 @@ std::string typeString(const ViewRenderMode& mode)
     case ViewRenderMode::LocalNcc:
       return "Local NCC";
     case ViewRenderMode::LocalLinearResidual:
-      return "Local Linear Residual";
+      return "Local linear residual";
     case ViewRenderMode::JointHistogram:
-      return "Joint Histogram";
+      return "Joint histogram";
     case ViewRenderMode::VolumeRender:
-      return "Volume Render";
+      return "Volume render";
     case ViewRenderMode::Disabled:
       return "Disabled";
     case ViewRenderMode::NumElements:
@@ -38,18 +38,18 @@ std::string typeString(const IntensityProjectionMode& mode)
     case IntensityProjectionMode::None:
       return "None";
     case IntensityProjectionMode::Maximum:
-      return "Maximum Projection";
+      return "Maximum projection";
     case IntensityProjectionMode::Mean:
-      return "Mean Projection";
+      return "Mean projection";
     case IntensityProjectionMode::Minimum:
-      return "Minimum Projection";
+      return "Minimum projection";
     case IntensityProjectionMode::Xray:
-      return "X-ray Projection";
+      return "X-ray projection";
     case IntensityProjectionMode::NumElements:
       break;
   }
 
-  return "Unknown Projection";
+  return "Unknown projection";
 }
 
 std::string descriptionString(const ViewRenderMode& mode)

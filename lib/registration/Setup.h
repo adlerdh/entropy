@@ -55,6 +55,24 @@ SetupState createSetupState(
 void setBackend(SetupState& state, Backend backend);
 
 /**
+ * @brief Set the fixed/reference image from a setup choice.
+ * @param state Setup state to update.
+ * @param image Fixed image choice.
+ *
+ * Updates the job dimension, output prefix, and validation.
+ */
+void setFixedImage(SetupState& state, const SetupImageChoice& image);
+
+/**
+ * @brief Set the moving image from a setup choice.
+ * @param state Setup state to update.
+ * @param image Moving image choice.
+ *
+ * Updates the output prefix and validation.
+ */
+void setMovingImage(SetupState& state, const SetupImageChoice& image);
+
+/**
  * @brief Recompute setup validation for the current job and capabilities.
  * @param state Setup state to update.
  */

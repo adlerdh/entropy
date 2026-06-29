@@ -2,6 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <string>
 #include <utility>
 
@@ -35,6 +36,7 @@ registration::ResultManifest manifest()
   result.success = true;
   result.inverseWarp = "inverse.nii.gz";
   result.forwardWarp = "forward.nii.gz";
+  result.affineTransform = "affine.mat";
   result.warpedImage = "warped.nii.gz";
   result.warpedSegmentations = {"seg.nii.gz"};
   result.transformedLandmarks = {"landmarks.json"};
@@ -53,17 +55,18 @@ TEST_CASE("registration import plan names warped outputs", "[registration][impor
   CHECK(registration::forwardWarpName(spec.fixedImage, spec.movingImage) == "Moving forward warp from Fixed");
 }
 
-TEST_CASE("registration import plan orders warp assignment before loaded warped image", "[registration][import]")
+TEST_CASE("registration import plan loads warped image before warp fields", "[registration][import]")
 {
   const registration::ImportPlan plan = registration::buildImportPlan(job(), manifest());
 
-  REQUIRE(plan.steps.size() == 8);
-  CHECK(plan.steps.at(0).action == registration::ImportAction::LoadInverseWarp);
-  CHECK(plan.steps.at(0).displayName == "Moving inverse warp to Fixed");
-  CHECK(plan.steps.at(1).action == registration::ImportAction::LoadForwardWarp);
-  CHECK(plan.steps.at(2).action == registration::ImportAction::AssignWarpsToMovingImage);
-  CHECK(plan.steps.at(3).action == registration::ImportAction::LoadWarpedImage);
-  CHECK(plan.steps.at(3).displayName == "Moving registered to Fixed");
+  REQUIRE(plan.steps.size() == 9);
+  CHECK(plan.steps.at(0).action == registration::ImportAction::ApplyAffineTransform);
+  CHECK(plan.steps.at(1).action == registration::ImportAction::LoadWarpedImage);
+  CHECK(plan.steps.at(1).displayName == "Moving registered to Fixed");
+  CHECK(plan.steps.at(2).action == registration::ImportAction::LoadInverseWarp);
+  CHECK(plan.steps.at(2).displayName == "Moving inverse warp to Fixed");
+  CHECK(plan.steps.at(3).action == registration::ImportAction::LoadForwardWarp);
+  CHECK(plan.steps.at(4).action == registration::ImportAction::AssignWarpsToMovingImage);
   CHECK(plan.steps.back().action == registration::ImportAction::MakeWarpedImageActive);
 }
 
@@ -81,8 +84,31 @@ TEST_CASE("registration import plan respects disabled outputs", "[registration][
 
   const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest());
 
-  CHECK(plan.steps.empty());
+  REQUIRE(plan.steps.size() == 1);
+  CHECK(plan.steps.front().action == registration::ImportAction::ApplyAffineTransform);
   CHECK(plan.warnings.empty());
+}
+
+TEST_CASE("registration import plan ignores warp artifacts for affine-only transforms", "[registration][import]")
+{
+  for (const registration::TransformModel model :
+       {registration::TransformModel::Rigid,
+        registration::TransformModel::Affine,
+        registration::TransformModel::RigidAffine})
+  {
+    registration::JobSpec spec = job();
+    spec.transformModel = model;
+
+    const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest());
+
+    REQUIRE_FALSE(plan.steps.empty());
+    CHECK(plan.steps.front().action == registration::ImportAction::ApplyAffineTransform);
+    CHECK(std::none_of(plan.steps.begin(), plan.steps.end(), [](const registration::ImportStep& step) {
+      return step.action == registration::ImportAction::LoadInverseWarp ||
+             step.action == registration::ImportAction::LoadForwardWarp ||
+             step.action == registration::ImportAction::AssignWarpsToMovingImage;
+    }));
+  }
 }
 
 TEST_CASE("registration import plan warns for requested missing artifacts", "[registration][import]")

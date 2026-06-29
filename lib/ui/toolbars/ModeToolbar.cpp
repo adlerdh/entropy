@@ -261,6 +261,28 @@ void renderModeToolbar(
 
       ImGui::PushID(id);
       {
+        ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showRegistrationSetupWindow ? activeColor : inactiveColor));
+        {
+          if (ImGui::Button(ICON_FK_RANDOM, buttonSize)) {
+            guiData.m_showRegistrationSetupWindow = !guiData.m_showRegistrationSetupWindow;
+          }
+
+          if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", "Show Image Registration Panel");
+          }
+        }
+        ImGui::PopStyleColor(1); // ImGuiCol_Button
+
+        ++id;
+      }
+      ImGui::PopID();
+
+      if (isHoriz) {
+        ImGui::SameLine();
+      }
+
+      ImGui::PushID(id);
+      {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showAnnotationsWindow ? activeColor : inactiveColor));
         {
           if (ImGui::Button(ICON_FK_OBJECT_UNGROUP, buttonSize)) // ICON_FK_STAR_O
@@ -335,7 +357,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show application settings");
+            ImGui::SetTooltip("%s", "Show Application Settings");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button

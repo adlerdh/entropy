@@ -172,11 +172,13 @@ uint32_t expectedComponents(const LoadingCase& testCase)
   if (testCase.pixelKind == PixelKind::Complex) {
     return 2u;
   }
-  const auto components = static_cast<uint32_t>(testCase.components);
-  if (testCase.bufferType == BufferType::InterleavedImage) {
-    return std::min(components, 4u);
+  if (testCase.pixelKind == PixelKind::RGB) {
+    return 3u;
   }
-  return components;
+  if (testCase.pixelKind == PixelKind::RGBA) {
+    return 4u;
+  }
+  return static_cast<uint32_t>(testCase.components);
 }
 
 ComponentType expectedMemoryComponentType(const LoadingCase& testCase)
@@ -447,6 +449,22 @@ std::vector<LoadingCase> comprehensiveCases()
      .size = {4, 3, 3},
      .pattern = Pattern::TimeRamp,
      .entropyTimeAxis = true},
+    {.name = "rgb-3comp-3d-uint8-nrrd",
+     .pixelKind = PixelKind::RGB,
+     .componentType = "uint8",
+     .components = 3,
+     .size = {4, 3, 2},
+     .pattern = Pattern::Ramp,
+     .amplitude = 20.0,
+     .offset = 20.0},
+    {.name = "rgba-4comp-3d-uint8-nrrd",
+     .pixelKind = PixelKind::RGBA,
+     .componentType = "uint8",
+     .components = 4,
+     .size = {4, 3, 2},
+     .pattern = Pattern::Ramp,
+     .amplitude = 18.0,
+     .offset = 30.0},
     {.name = "vector-5comp-1d-time-nrrd-interleaved",
      .pixelKind = PixelKind::Vector,
      .componentType = "float",
@@ -490,5 +508,11 @@ TEST_CASE("Generated synthetic images round-trip through Entropy image loading",
     image_generator::writeImage(spec);
     REQUIRE(fs::exists(spec.output));
     checkLoadedImage(testCase, spec);
+
+    LoadingCase alternateLayoutCase = testCase;
+    alternateLayoutCase.bufferType =
+      testCase.bufferType == BufferType::SeparateImages ? BufferType::InterleavedImage : BufferType::SeparateImages;
+    CAPTURE(alternateLayoutCase.bufferType);
+    checkLoadedImage(alternateLayoutCase, spec);
   }
 }

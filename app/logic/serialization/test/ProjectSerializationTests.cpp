@@ -439,6 +439,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
     .m_lockedToReference = false,
     .m_warpEnabled = false,
     .m_warpStrength = 2.5f,
+    .m_allowExaggeratedWarp = true,
     .m_level = 42.0,
     .m_window = 12.0,
     .m_thresholdLow = 1.0,
@@ -520,6 +521,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(settings.at("lockedToReference") == false);
   CHECK(settings.at("warpEnabled") == false);
   CHECK(settings.at("warpStrength") == 2.5f);
+  CHECK(settings.at("allowExaggeratedWarp") == true);
   CHECK(settings.at("componentRenderMode") == "complexPhase");
   CHECK(settings.at("complexPhaseUnit") == "degrees");
   CHECK(settings.at("complexPhaseRange") == "unsigned");
@@ -594,6 +596,7 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK_FALSE(parsedSettings.m_lockedToReference);
   CHECK_FALSE(parsedSettings.m_warpEnabled);
   CHECK(parsedSettings.m_warpStrength == 2.5f);
+  CHECK(parsedSettings.m_allowExaggeratedWarp);
   CHECK(parsedSettings.m_componentRenderMode == serialize::ProjectComponentRenderMode::ComplexPhase);
   CHECK(parsedSettings.m_complexPhaseUnit == serialize::ProjectComplexPhaseUnit::Degrees);
   CHECK(parsedSettings.m_complexPhaseRange == serialize::ProjectComplexPhaseRange::Unsigned);

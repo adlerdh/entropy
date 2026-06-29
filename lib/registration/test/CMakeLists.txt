@@ -1,4 +1,5 @@
 add_executable(EntropyRegistrationTests
+  AffineTransformIOTests.cpp
   ArtifactsTests.cpp
   AvailabilityTests.cpp
   CapabilitiesTests.cpp

@@ -152,17 +152,19 @@ TEST_CASE("settings pages stay in the intended navigation order", "[ui][settings
   CHECK(pages[1].label == std::string("Interface"));
   CHECK(pages[2].page == GuiData::SettingsTab::Images);
   CHECK(pages[3].page == GuiData::SettingsTab::Segmentation);
-  CHECK(pages[4].page == GuiData::SettingsTab::Comparison);
-  CHECK(pages[5].page == GuiData::SettingsTab::Rendering);
+  CHECK(pages[4].page == GuiData::SettingsTab::Registration);
+  CHECK(pages[4].label == std::string("Registration"));
+  CHECK(pages[5].page == GuiData::SettingsTab::Comparison);
   CHECK(pages[6].page == GuiData::SettingsTab::Annotations);
-  CHECK(pages[7].page == GuiData::SettingsTab::Registration);
-  CHECK(pages[7].label == std::string("Registration"));
-  CHECK(pages[8].page == GuiData::SettingsTab::Synchronization);
-  CHECK(pages[8].label == std::string("Synchronization"));
+  CHECK(pages[6].label == std::string("Annotation"));
+  CHECK(pages[7].page == GuiData::SettingsTab::Synchronization);
+  CHECK(pages[7].label == std::string("Synchronization"));
+  CHECK(pages[8].page == GuiData::SettingsTab::Rendering);
   CHECK(pages[9].page == GuiData::SettingsTab::System);
   CHECK(pages[9].label == std::string("System"));
 
   CHECK(settings::settingsPageLabel(GuiData::SettingsTab::Rendering) == std::string("Rendering"));
+  CHECK(settings::settingsPageLabel(GuiData::SettingsTab::Annotations) == std::string("Annotation"));
   CHECK(settings::settingsPageLabel(GuiData::SettingsTab::Registration) == std::string("Registration"));
   CHECK(settings::settingsPageLabel(GuiData::SettingsTab::Synchronization) == std::string("Synchronization"));
 }

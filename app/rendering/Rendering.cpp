@@ -1197,8 +1197,10 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
       return;
     }
 
+    const bool packedInterleavedTexture =
+      Image::MultiComponentBufferType::InterleavedImage == image->bufferType() && textures.size() == 1u;
     const std::size_t textureIndex =
-      Image::MultiComponentBufferType::InterleavedImage == image->bufferType() ? 0u : activeComp;
+      packedInterleavedTexture ? 0u : std::min<std::size_t>(activeComp, textures.size() - 1u);
     if (textureIndex >= textures.size()) {
       spdlog::warn("Image {} component {} has no texture for interpolation update", effectiveImageUid, activeComp);
       return;
@@ -1629,7 +1631,8 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(
   GLTexture& imgTex = (std::end(R.m_imageTextures) == imageTextureIt || imageTextureIt->second.empty())
                         ? R.m_blankImageBlackTransparentTexture
                         : imageTextureIt->second
-                            [Image::MultiComponentBufferType::InterleavedImage == image->bufferType()
+                            [Image::MultiComponentBufferType::InterleavedImage == image->bufferType() &&
+                                 imageTextureIt->second.size() == 1u
                                ? 0u
                                : std::min<std::size_t>(S.activeComponent(), imageTextureIt->second.size() - 1u)];
   imgTex.bind(msk_imgTexSampler.index);
@@ -1761,8 +1764,11 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
 
   auto& renderData = m_appData.renderData();
   auto textureIt = renderData.m_imageTextures.find(defUid);
+  if (textureIt == std::end(renderData.m_imageTextures) || textureIt->second.empty()) {
+    return boundTextures;
+  }
 
-  if (Image::MultiComponentBufferType::InterleavedImage == def->bufferType()) {
+  if (textureIt->second.size() == 1u) {
     GLTexture& texture = textureIt->second.front();
     for (const auto samplerUnit : msk_defTexSamplers.indices) {
       texture.bind(samplerUnit);
@@ -1788,10 +1794,7 @@ bool Rendering::ensureDeformationTexture(const uuid& defUid)
   }
 
   const auto textureLayoutIsUsable = [def](const std::vector<GLTexture>& textures) {
-    if (Image::MultiComponentBufferType::InterleavedImage == def->bufferType()) {
-      return !textures.empty();
-    }
-    return textures.size() >= 3;
+    return def->header().numComponentsPerPixel() >= 3u && textures.size() >= 3u;
   };
 
   auto& renderData = m_appData.renderData();
@@ -1849,7 +1852,10 @@ void Rendering::setDeformationUniforms(
   program.setUniform("u_sampleTex_T_world", sampleTex_T_world);
   program.setUniform("u_defSlope_native_T_texture", def->settings().slope_native_T_texture());
   program.setUniform("u_deformationStrength", image->settings().warpStrength());
-  program.setUniform("u_defInterleaved", Image::MultiComponentBufferType::InterleavedImage == def->bufferType());
+  const auto textureIt = m_appData.renderData().m_imageTextures.find(defUid);
+  const bool packedDeformationTexture =
+    textureIt != std::end(m_appData.renderData().m_imageTextures) && textureIt->second.size() == 1u;
+  program.setUniform("u_defInterleaved", packedDeformationTexture);
 }
 
 void Rendering::unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures)
@@ -1965,7 +1971,8 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindMetricImageTextures(
       GLTexture& T = (std::end(R.m_imageTextures) == textureIt || textureIt->second.empty())
                        ? R.m_blankImageBlackTransparentTexture
                        : textureIt->second
-                           [Image::MultiComponentBufferType::InterleavedImage == image->bufferType()
+                           [Image::MultiComponentBufferType::InterleavedImage == image->bufferType() &&
+                                textureIt->second.size() == 1u
                               ? 0u
                               : std::min<std::size_t>(activeComp, textureIt->second.size() - 1u)];
       T.bind(msk_metricImgTexSamplers.indices[i]);

@@ -262,6 +262,7 @@ struct ImageSettings
   bool m_lockedToReference = true;           //!< Lock image transformations to the reference image.
   bool m_warpEnabled = true;                 //!< Apply assigned warp during image rendering.
   float m_warpStrength = 1.0f;               //!< Warp strength multiplier.
+  bool m_allowExaggeratedWarp = false;       //!< Permit warp strength greater than 1.0x.
 
   double m_level = 0.0f;  //! Window center value in image units
   double m_window = 1.0f; //! Window width in image units
@@ -277,17 +278,17 @@ struct ImageSettings
   bool m_timePlaybackPlaying = false; //!< Time playback is running.
   double m_timePlaybackSpeed = 1.0;   //!< Time playback speed multiplier.
   ProjectComponentRenderMode m_componentRenderMode =
-    ProjectComponentRenderMode::SingleComponent;                                 //!< Multi-component render mode.
+    ProjectComponentRenderMode::Magnitude;                                       //!< Multi-component render mode.
   ProjectComplexPhaseUnit m_complexPhaseUnit = ProjectComplexPhaseUnit::Radians; //!< Complex phase display units.
   ProjectComplexPhaseRange m_complexPhaseRange =
     ProjectComplexPhaseRange::Signed;                  //!< Complex phase display range convention.
   bool m_vectorArrowOverlayVisible = false;            //!< Show vector-field arrows over slices.
   bool m_vectorArrowOverlayOnImage = true;             //!< Draw vector-field arrows over the rendered image.
   float m_vectorArrowOverlayDensity = 32.0f;           //!< Vector arrow spacing value.
-  float m_vectorArrowOverlayVoxelSpacing = 1.0f;       //!< Vector arrow spacing in image voxels.
+  float m_vectorArrowOverlayVoxelSpacing = 8.0f;       //!< Vector arrow spacing in image voxels.
   float m_vectorArrowOverlayMillimeterSpacing = 10.0f; //!< Vector arrow spacing in subject millimeters.
   ProjectVectorArrowOverlaySpacingMode m_vectorArrowOverlaySpacingMode =
-    ProjectVectorArrowOverlaySpacingMode::Pixels;          //!< Vector arrow spacing units.
+    ProjectVectorArrowOverlaySpacingMode::Voxels;          //!< Vector arrow spacing units.
   glm::vec3 m_vectorArrowOverlayColor{1.0f, 0.86f, 0.31f}; //!< Fixed vector arrow color.
   bool m_vectorArrowOverlayUseDirectionColor = false;      //!< Color arrows by vector direction.
   float m_vectorArrowOverlayLineThickness = 1.4f;          //!< Vector arrow line thickness in pixels.

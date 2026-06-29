@@ -85,7 +85,7 @@ TEST_CASE("component type strings are stable user-facing descriptions", "[common
 TEST_CASE("interpolation mode strings cover all advertised modes", "[common][types]")
 {
   REQUIRE(AllInterpolationModes.size() == 3);
-  CHECK(typeString(InterpolationMode::NearestNeighbor) == "Nearest-neighbor");
+  CHECK(typeString(InterpolationMode::NearestNeighbor) == "Nearest neighbor");
   CHECK(typeString(InterpolationMode::Linear) == "Linear");
   CHECK(typeString(InterpolationMode::CubicBsplineConvolution) == "Cubic B-spline convolution");
 }

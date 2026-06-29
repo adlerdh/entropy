@@ -37,6 +37,17 @@ std::optional<ImageHeader> readImageHeaderOnly(
   MultiComponentBufferType bufferType);
 
 /**
+ * @brief Return the number of logical components Entropy should keep for an image role.
+ * @param imageRep Whether the file is being loaded as an image or segmentation.
+ * @param sourceComponents Components per pixel reported by image IO.
+ * @return Source component count for images, or one component for segmentations.
+ *
+ * Entropy treats segmentations as scalar label images. If a segmentation file has multiple
+ * components, only component zero is loaded.
+ */
+uint32_t componentCountToLoad(ImageRepresentation imageRep, uint32_t sourceComponents);
+
+/**
  * @brief Get the range of values that can be held in components of a given type.
  * Only for components supported by Entropy.
  * @param componentType Component type to query.

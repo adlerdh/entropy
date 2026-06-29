@@ -1,0 +1,15 @@
+{
+  "output": "scalar_int8_3d.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "int8",
+  "components": 1,
+  "size": [24, 20, 12],
+  "spacing": [1.0, 1.2, 2.0],
+  "origin": [-12.0, -12.0, -12.0],
+  "pattern": "ramp",
+  "amplitude": 18.0,
+  "offset": -64.0,
+  "metadata": {
+    "entropy_example": "signed 8-bit scalar image"
+  }
+}

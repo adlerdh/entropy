@@ -4,6 +4,8 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <itkImageFileReader.h>
 #include <itkMetaDataObject.h>
+#include <itkRGBAPixel.h>
+#include <itkRGBPixel.h>
 #include <itkVectorImage.h>
 
 #include <filesystem>
@@ -99,6 +101,27 @@ TEST_CASE("Image generator parses vector image specifications", "[image-generato
   CHECK(spec.metadata.at("kind") == "test");
 }
 
+TEST_CASE("Image generator parses RGB and RGBA image specifications", "[image-generator]")
+{
+  const auto rgb = image_generator::parseSpecJson(R"json({
+    "output": "rgb.nrrd",
+    "pixel_kind": "rgb",
+    "component_type": "uint8",
+    "components": 3
+  })json");
+  CHECK(rgb.pixelKind == image_generator::PixelKind::RGB);
+  CHECK(rgb.components == 3);
+
+  const auto rgba = image_generator::parseSpecJson(R"json({
+    "output": "rgba.nrrd",
+    "pixel_kind": "rgba",
+    "component_type": "uint8",
+    "components": 4
+  })json");
+  CHECK(rgba.pixelKind == image_generator::PixelKind::RGBA);
+  CHECK(rgba.components == 4);
+}
+
 TEST_CASE("Image generator validation catches inconsistent component counts", "[image-generator]")
 {
   auto spec = image_generator::parseSpecJson(R"json({
@@ -118,6 +141,24 @@ TEST_CASE("Image generator validation catches inconsistent component counts", "[
   })json");
 
   CHECK_THROWS_WITH(image_generator::validateSpec(spec), "Complex images support float or double component types");
+
+  spec = image_generator::parseSpecJson(R"json({
+    "output": "bad.nrrd",
+    "pixel_kind": "rgb",
+    "component_type": "uint8",
+    "components": 4,
+    "size": [4, 4]
+  })json");
+  CHECK_THROWS_WITH(image_generator::validateSpec(spec), "RGB images must have exactly three components");
+
+  spec = image_generator::parseSpecJson(R"json({
+    "output": "bad.nrrd",
+    "pixel_kind": "rgba",
+    "component_type": "uint8",
+    "components": 3,
+    "size": [4, 4]
+  })json");
+  CHECK_THROWS_WITH(image_generator::validateSpec(spec), "RGBA images must have exactly four components");
 }
 
 TEST_CASE("Image generator preserves explicit lower-dimensional time-series metadata", "[image-generator][time]")
@@ -167,6 +208,55 @@ TEST_CASE("Image generator writes a small vector image", "[image-generator][itk]
   CHECK(image->GetNumberOfComponentsPerPixel() == 3);
   CHECK(image->GetLargestPossibleRegion().GetSize()[0] == 4);
   CHECK(image->GetLargestPossibleRegion().GetSize()[1] == 3);
+}
+
+TEST_CASE("Image generator writes RGB and RGBA pixel images", "[image-generator][itk][rgb]")
+{
+  const std::filesystem::path rgbOutput = std::filesystem::temp_directory_path() / "entropy-image-generator-rgb.nrrd";
+  auto rgbSpec = image_generator::parseSpecJson(R"json({
+    "pixel_kind": "rgb",
+    "component_type": "uint8",
+    "components": 3,
+    "size": [4, 3],
+    "pattern": "ramp",
+    "amplitude": 20,
+    "offset": 10
+  })json");
+  rgbSpec.output = rgbOutput;
+
+  image_generator::writeImage(rgbSpec);
+  REQUIRE(std::filesystem::exists(rgbOutput));
+
+  using RgbPixelType = itk::RGBPixel<uint8_t>;
+  using RgbImageType = itk::Image<RgbPixelType, 2>;
+  auto rgbReader = itk::ImageFileReader<RgbImageType>::New();
+  rgbReader->SetFileName(rgbOutput.string());
+  rgbReader->Update();
+  CHECK(rgbReader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] == 4);
+  CHECK(rgbReader->GetOutput()->GetLargestPossibleRegion().GetSize()[1] == 3);
+
+  const std::filesystem::path rgbaOutput = std::filesystem::temp_directory_path() / "entropy-image-generator-rgba.nrrd";
+  auto rgbaSpec = image_generator::parseSpecJson(R"json({
+    "pixel_kind": "rgba",
+    "component_type": "uint8",
+    "components": 4,
+    "size": [4, 3],
+    "pattern": "ramp",
+    "amplitude": 18,
+    "offset": 20
+  })json");
+  rgbaSpec.output = rgbaOutput;
+
+  image_generator::writeImage(rgbaSpec);
+  REQUIRE(std::filesystem::exists(rgbaOutput));
+
+  using RgbaPixelType = itk::RGBAPixel<uint8_t>;
+  using RgbaImageType = itk::Image<RgbaPixelType, 2>;
+  auto rgbaReader = itk::ImageFileReader<RgbaImageType>::New();
+  rgbaReader->SetFileName(rgbaOutput.string());
+  rgbaReader->Update();
+  CHECK(rgbaReader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] == 4);
+  CHECK(rgbaReader->GetOutput()->GetLargestPossibleRegion().GetSize()[1] == 3);
 }
 
 TEST_CASE("Image generator writes a small 4D vector time series", "[image-generator][itk][4d]")

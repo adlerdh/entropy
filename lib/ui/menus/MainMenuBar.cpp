@@ -308,31 +308,6 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Move Image to Back", MainMenuAction::MoveActiveImageToBack);
   actionMenuItem(callbacks, "Move Image to Front", MainMenuAction::MoveActiveImageToFront);
   ImGui::Separator();
-  if (ImGui::BeginMenu("Affine transformations", callbacks.canAddImage)) {
-    actionMenuItem(callbacks, "Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
-    actionMenuItem(callbacks, "Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
-    actionMenuItem(callbacks, "Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
-    actionMenuItem(
-      callbacks,
-      "Save Initial + Manual Transformation...",
-      MainMenuAction::SaveActiveImageInitialAndManualTransformation);
-    ImGui::EndMenu();
-  }
-  if (ImGui::BeginMenu("Deformation fields", callbacks.canAddImage)) {
-    if (ImGui::MenuItem("Load inverse warp...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage)) {
-      loadInverseWarpForActiveImage(callbacks);
-    }
-    if (ImGui::MenuItem("Load forward warp...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage)) {
-      loadForwardWarpForActiveImage(callbacks);
-    }
-    actionMenuItem(callbacks, "Apply warp", MainMenuAction::ToggleApplyActiveImageWarp);
-    ImGui::EndMenu();
-  }
-  if (ImGui::BeginMenu("Registration", callbacks.canAddImage)) {
-    actionMenuItem(callbacks, "Register active image to reference...", MainMenuAction::ShowRegistrationSetupWindow);
-    actionMenuItem(callbacks, "Registration jobs...", MainMenuAction::ToggleRegistrationJobsWindow);
-    ImGui::EndMenu();
-  }
   if (ImGui::BeginMenu("Time Series", actionEnabled(callbacks, MainMenuAction::ToggleGlobalTimeControls))) {
     actionMenuItem(callbacks, "Show Time Controls", MainMenuAction::ToggleGlobalTimeControls);
     ImGui::Separator();
@@ -344,12 +319,39 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     actionMenuItem(callbacks, "Last Frame", MainMenuAction::LastTimePoint);
     ImGui::EndMenu();
   }
+  ImGui::Separator();
   if (ImGui::BeginMenu("Isosurfaces", callbacks.canAddImage)) {
     actionMenuItem(callbacks, "Show Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
     ImGui::Separator();
     actionMenuItem(callbacks, "Add Isosurface...", MainMenuAction::AddIsosurface);
     actionMenuItem(callbacks, "Add Isosurface Range...", MainMenuAction::AddIsosurfaceRange);
     actionMenuItem(callbacks, "Show Isosurfaces", MainMenuAction::ToggleActiveImageIsosurfaces);
+    ImGui::EndMenu();
+  }
+  ImGui::Separator();
+  if (ImGui::BeginMenu("Affine Transformations", callbacks.canAddImage)) {
+    actionMenuItem(callbacks, "Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
+    actionMenuItem(callbacks, "Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
+    actionMenuItem(callbacks, "Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
+    actionMenuItem(
+      callbacks,
+      "Save Initial + Manual Transformation...",
+      MainMenuAction::SaveActiveImageInitialAndManualTransformation);
+    ImGui::EndMenu();
+  }
+  if (ImGui::BeginMenu("Deformable Transformations", callbacks.canAddImage)) {
+    if (ImGui::MenuItem("Load Inverse Warp...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage)) {
+      loadInverseWarpForActiveImage(callbacks);
+    }
+    if (ImGui::MenuItem("Load Forward Warp...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage)) {
+      loadForwardWarpForActiveImage(callbacks);
+    }
+    actionMenuItem(callbacks, "Apply Warp", MainMenuAction::ToggleApplyActiveImageWarp);
+    ImGui::EndMenu();
+  }
+  if (ImGui::BeginMenu("Image Registration", callbacks.canAddImage)) {
+    actionMenuItem(callbacks, "Register Active Image to Reference...", MainMenuAction::ShowRegistrationSetupWindow);
+    actionMenuItem(callbacks, "Image Registration Jobs...", MainMenuAction::ToggleRegistrationJobsWindow);
     ImGui::EndMenu();
   }
 }
@@ -560,12 +562,14 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       static_cast<void>(uiData);
       main_menu::actionMenuItem(callbacks, "Images", MainMenuAction::ToggleImagesWindow);
       main_menu::actionMenuItem(callbacks, "Segmentations", MainMenuAction::ToggleSegmentationsWindow);
+      main_menu::actionMenuItem(callbacks, "Registration Panel", MainMenuAction::ShowRegistrationSetupWindow);
       main_menu::actionMenuItem(callbacks, "Annotations", MainMenuAction::ToggleAnnotationsWindow);
       main_menu::actionMenuItem(callbacks, "Landmarks", MainMenuAction::ToggleLandmarksWindow);
       main_menu::actionMenuItem(callbacks, "Isosurfaces", MainMenuAction::ToggleIsosurfacesWindow);
       main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow);
       main_menu::actionMenuItem(callbacks, "Voxel Inspector Panel", MainMenuAction::ToggleInspectorWindow);
       main_menu::actionMenuItem(callbacks, "Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
+      main_menu::actionMenuItem(callbacks, "Image Registration Jobs", MainMenuAction::ToggleRegistrationJobsWindow);
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Reset Panel Layout", MainMenuAction::ResetPanelLayout);
       ImGui::Separator();

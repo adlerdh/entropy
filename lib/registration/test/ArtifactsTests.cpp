@@ -151,3 +151,26 @@ TEST_CASE("registration expected result manifest follows requested outputs", "[r
   REQUIRE(manifest.transformedSurfaces.size() == 1);
   CHECK(manifest.transformedSurfaces.front() == "/tmp/entropy-registration/moving_to_fixed_transformed_surface_01.vtk");
 }
+
+TEST_CASE("registration expected result manifest omits warps for affine-only transforms", "[registration][artifacts]")
+{
+  for (const registration::TransformModel model :
+       {registration::TransformModel::Rigid,
+        registration::TransformModel::Affine,
+        registration::TransformModel::RigidAffine})
+  {
+    registration::JobSpec job = baseJob();
+    job.transformModel = model;
+    job.outputs.loadInverseWarp = true;
+    job.outputs.loadForwardWarp = true;
+    job.outputs.applyWarpToMovingImage = true;
+    job.outputs.transformLandmarksAndAnnotations = true;
+    job.outputs.transformSurfaces = true;
+
+    const registration::ResultManifest manifest = registration::buildExpectedResultManifest(job);
+
+    CHECK(manifest.inverseWarp.empty());
+    CHECK(manifest.forwardWarp.empty());
+    CHECK_FALSE(manifest.affineTransform.empty());
+  }
+}

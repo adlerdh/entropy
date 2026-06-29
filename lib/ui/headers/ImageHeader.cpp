@@ -74,13 +74,17 @@ struct WorldAabb
 constexpr double k_minTimePlaybackSpeed = 0.1;
 constexpr double k_minTimePlaybackFramesPerSecond = 1.0;
 constexpr double k_maxTimePlaybackFramesPerSecond = 120.0;
-constexpr float k_warpStrengthFineSliderFraction = 0.75f;
 constexpr float k_warpStrengthFineMax = 1.0f;
 constexpr float k_warpStrengthMax = 4.0f;
+constexpr float k_warpStrengthFineSliderFraction = 0.75f;
 
-float warpStrengthToSlider(float strength)
+float warpStrengthToSlider(float strength, bool allowExaggerated)
 {
-  strength = std::clamp(strength, 0.0f, k_warpStrengthMax);
+  const float maxStrength = allowExaggerated ? k_warpStrengthMax : k_warpStrengthFineMax;
+  strength = std::clamp(strength, 0.0f, maxStrength);
+  if (!allowExaggerated) {
+    return strength / k_warpStrengthFineMax;
+  }
   if (strength <= k_warpStrengthFineMax) {
     return k_warpStrengthFineSliderFraction * strength / k_warpStrengthFineMax;
   }
@@ -89,9 +93,12 @@ float warpStrengthToSlider(float strength)
            (1.0f - k_warpStrengthFineSliderFraction);
 }
 
-float sliderToWarpStrength(float slider)
+float sliderToWarpStrength(float slider, bool allowExaggerated)
 {
   slider = std::clamp(slider, 0.0f, 1.0f);
+  if (!allowExaggerated) {
+    return slider * k_warpStrengthFineMax;
+  }
   if (slider <= k_warpStrengthFineSliderFraction) {
     return slider * k_warpStrengthFineMax / k_warpStrengthFineSliderFraction;
   }
@@ -103,16 +110,16 @@ float sliderToWarpStrength(float slider)
 std::string warpStrengthPreview(float strength)
 {
   std::ostringstream stream;
-  stream << std::fixed << std::setprecision(strength < 1.0f ? 3 : 2) << strength << "x";
+  stream << std::fixed << std::setprecision(2) << strength << "x";
   return stream.str();
 }
 
-bool warpStrengthSlider(float* strength)
+bool warpStrengthSlider(float* strength, bool allowExaggerated)
 {
-  float slider = warpStrengthToSlider(*strength);
+  float slider = warpStrengthToSlider(*strength, allowExaggerated);
   const std::string preview = warpStrengthPreview(*strength);
   if (ImGui::SliderFloat("Strength", &slider, 0.0f, 1.0f, preview.c_str())) {
-    *strength = sliderToWarpStrength(slider);
+    *strength = sliderToWarpStrength(slider, allowExaggerated);
     return true;
   }
   return false;
@@ -233,14 +240,14 @@ const char* vectorArrowOverlaySpacingModeName(VectorArrowOverlaySpacingMode mode
 {
   switch (mode) {
     case VectorArrowOverlaySpacingMode::Pixels:
-      return "Pixels";
+      return "Screen pixels";
     case VectorArrowOverlaySpacingMode::Voxels:
-      return "Voxels";
+      return "Image voxels";
     case VectorArrowOverlaySpacingMode::Millimeters:
       return "Millimeters";
   }
 
-  return "Pixels";
+  return "Screen pixels";
 }
 
 const char* vectorWarpedGridConventionName(VectorWarpedGridConvention convention)
@@ -658,6 +665,19 @@ void setTimePointWithOptionalSynchronization(
   }
 }
 
+void stopOtherTimeSeriesPlayback(AppData& appData, const uuids::uuid& playingImageUid)
+{
+  for (const uuids::uuid& otherUid : appData.imageUidsOrdered()) {
+    if (otherUid == playingImageUid) {
+      continue;
+    }
+    Image* other = appData.image(otherUid);
+    if (other && other->isTimeSeries()) {
+      other->settings().setTimePlaybackPlaying(false);
+    }
+  }
+}
+
 std::string timePointInputFormat(const Image& image, uint32_t timePoint)
 {
   std::ostringstream os;
@@ -671,16 +691,16 @@ std::string timePointInputFormat(const Image& image, uint32_t timePoint)
 std::string timeSeriesSummaryLabel(const Image& image)
 {
   std::ostringstream os;
-  os << image.timeAxis().numTimePoints() << " frames";
+  os << "Time frames: " << image.timeAxis().numTimePoints();
   if (const auto spacing = image.timeAxis().spacing()) {
-    os << ", " << *spacing;
+    os << " with " << *spacing;
     if (!image.timeAxis().units().empty()) {
       os << ' ' << image.timeAxis().units();
     }
     os << " spacing";
   }
   else {
-    os << ", variable spacing";
+    os << " with variable spacing";
   }
   return os.str();
 }
@@ -734,6 +754,7 @@ void renderTimeSeriesHeader(AppData& appData, const uuids::uuid& imageUid, Image
       playing = !playing;
       settings.setTimePlaybackPlaying(playing);
       if (playing) {
+        stopOtherTimeSeriesPlayback(appData, imageUid);
         appData.state().setAnimating(true);
       }
     }
@@ -963,6 +984,9 @@ void renderImageHeader(
   if (!isActiveImage) {
     if (ImGui::Button(ICON_FK_TOGGLE_OFF)) {
       if (appData.setActiveImageUid(imageUid)) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
         ImGui::PopID(); // imageUid
         return;
       }
@@ -1125,19 +1149,20 @@ void renderImageHeader(
   ImGui::Separator();
   ImGui::Spacing();
 
-  const bool showComponentControls =
-    (imgHeader.numComponentsPerPixel() > 1 && Image::MultiComponentBufferType::SeparateImages == image->bufferType());
+  const bool vectorFieldImage = isVectorFieldImage(*image);
+  const bool showComponentControls = imgHeader.numComponentsPerPixel() > 1;
 
   renderTimeSeriesHeader(appData, imageUid, *image);
 
   if (showComponentControls) {
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
     const bool complexValuedImage = isComplexValuedImage(*image);
-    const bool vectorFieldImage = isVectorFieldImage(*image);
     if (ImGui::TreeNode(
           complexValuedImage ? "Complex Image Settings"
                              : (vectorFieldImage ? "Vector Field Rendering" : "Multi-Component Rendering")))
     {
+      ImGui::TextDisabled("Components per voxel: %u", imgHeader.numComponentsPerPixel());
+
       auto setComponentMode = [&](ComponentRenderMode mode) {
         if (imgSettings.componentRenderMode() == mode) {
           return;
@@ -1405,7 +1430,8 @@ void renderImageHeader(
           ComponentRenderMode mode;
         };
         std::vector<MultiComponentModeOption> componentModeOptions{
-          MultiComponentModeOption{"Single component", ComponentRenderMode::SingleComponent}};
+          MultiComponentModeOption{"Single component", ComponentRenderMode::SingleComponent},
+          MultiComponentModeOption{"Magnitude", ComponentRenderMode::Magnitude}};
         const bool canDisplayAsColor =
           (3 == imgHeader.numComponentsPerPixel() || 4 == imgHeader.numComponentsPerPixel());
         if (canDisplayAsColor) {
@@ -1416,7 +1442,6 @@ void renderImageHeader(
         componentModeOptions.push_back(MultiComponentModeOption{"Minimum", ComponentRenderMode::Minimum});
         componentModeOptions.push_back(MultiComponentModeOption{"Maximum", ComponentRenderMode::Maximum});
         componentModeOptions.push_back(MultiComponentModeOption{"Mean", ComponentRenderMode::Mean});
-        componentModeOptions.push_back(MultiComponentModeOption{"Magnitude", ComponentRenderMode::Magnitude});
 
         const char* currentComponentModeLabel = componentModeOptions.front().label;
         for (const auto& option : componentModeOptions) {
@@ -1510,7 +1535,8 @@ void renderImageHeader(
         else {
           uint32_t componentInput = activeComp;
           constexpr uint32_t componentStep = 1;
-          const std::string componentFormat = "%u of " + std::to_string(componentMax);
+          const std::string componentFormat =
+            "%u of " + std::to_string(componentMax) + " (" + std::to_string(componentMax + 1u) + " total)";
           if (ImGui::InputScalar(
                 "Component",
                 ImGuiDataType_U32,
@@ -1624,13 +1650,13 @@ void renderImageHeader(
           const VectorArrowOverlaySpacingMode spacingMode = imgSettings.vectorArrowOverlaySpacingMode();
           if (VectorArrowOverlaySpacingMode::Pixels == spacingMode) {
             float spacing = imgSettings.vectorArrowOverlayDensity();
-            if (ImGui::SliderFloat("Spacing", &spacing, 8.0f, 128.0f, "%.0f px")) {
+            if (ImGui::SliderFloat("Spacing", &spacing, 8.0f, 100.0f, "%.0f px")) {
               imgSettings.setVectorArrowOverlayDensity(spacing);
             }
           }
           else if (VectorArrowOverlaySpacingMode::Voxels == spacingMode) {
             float spacing = imgSettings.vectorArrowOverlayVoxelSpacing();
-            if (ImGui::SliderFloat("Spacing", &spacing, 0.1f, 10.0f, "%.2f vox", ImGuiSliderFlags_Logarithmic)) {
+            if (ImGui::SliderFloat("Spacing", &spacing, 0.1f, 100.0f, "%.2f vox", ImGuiSliderFlags_Logarithmic)) {
               imgSettings.setVectorArrowOverlayVoxelSpacing(spacing);
             }
           }
@@ -1734,7 +1760,7 @@ void renderImageHeader(
           const VectorArrowOverlaySpacingMode gridSpacingMode = imgSettings.vectorWarpedGridSpacingMode();
           if (VectorArrowOverlaySpacingMode::Pixels == gridSpacingMode) {
             float spacing = imgSettings.vectorWarpedGridPixelSpacing();
-            if (ImGui::SliderFloat("Spacing", &spacing, 4.0f, 256.0f, "%.0f px")) {
+            if (ImGui::SliderFloat("Spacing", &spacing, 4.0f, 100.0f, "%.0f px")) {
               imgSettings.setVectorWarpedGridPixelSpacing(spacing);
             }
           }
@@ -2559,7 +2585,7 @@ void renderImageHeader(
     ImGui::TreePop();
   }
 
-  if (ImGui::TreeNode("Image Header")) {
+  if (ImGui::TreeNode("Header")) {
     renderImageHeaderInformation(appData, imageUid, *image, updateImageUniforms, recenterAllViews);
     ImGui::TreePop();
     ImGui::Separator();
@@ -2570,7 +2596,7 @@ void renderImageHeader(
   renderImageDicomMetadata(appData, imageUid);
 
   auto renderDeformationWarpHeader = [&]() {
-    if (isRef || !ImGui::TreeNode("Deformation")) {
+    if (isRef || !ImGui::TreeNode("Deformable Transformations")) {
       return;
     }
 
@@ -2771,14 +2797,25 @@ void renderImageHeader(
                             : "Warp this moving image at render time using the active inverse warp.");
 
     if (hasAssignedInverseWarp && imgSettings.warpEnabled()) {
+      if (!imgSettings.allowExaggeratedWarp() && imgSettings.warpStrength() > k_warpStrengthFineMax) {
+        imgSettings.setWarpStrength(k_warpStrengthFineMax);
+        updateImageUniforms();
+      }
       float strength = imgSettings.warpStrength();
-      if (warpStrengthSlider(&strength)) {
+      if (warpStrengthSlider(&strength, imgSettings.allowExaggeratedWarp())) {
         imgSettings.setWarpStrength(strength);
         updateImageUniforms();
       }
       ImGui::SameLine();
       helpMarker(
         "0.0x disables displacement, 1.0x applies the field as stored, and larger values exaggerate the warp.");
+      bool allowExaggeratedWarp = imgSettings.allowExaggeratedWarp();
+      if (ImGui::Checkbox("Allow exaggerated warp", &allowExaggeratedWarp)) {
+        imgSettings.setAllowExaggeratedWarp(allowExaggeratedWarp);
+        updateImageUniforms();
+      }
+      ImGui::SameLine();
+      helpMarker("Allow warp strength values above 1.0x, up to 4.0x, for visualizing exaggerated deformation.");
     }
     ImGui::EndDisabled();
 
@@ -2815,7 +2852,7 @@ void renderImageHeader(
     ImGui::Separator();
   };
 
-  if (ImGui::TreeNode("Affine Transformation")) {
+  if (ImGui::TreeNode("Affine Transformations")) {
     ImGui::Spacing();
 
     // The initial affine and manual affine transformations are disabled for the reference image:
@@ -3043,6 +3080,9 @@ void renderImageHeader(
 
   if (!image->hasPixelData()) {
     ImGui::TextUnformatted("Pixel data is not loaded yet.");
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::PopID(); // imageUid
     return;
   }
@@ -3096,6 +3136,8 @@ void renderImageHeader(
     ImGui::TreePop();
   }
 
+  ImGui::Spacing();
+  ImGui::Separator();
   ImGui::Spacing();
 
   ImGui::PopID(); // imageUid

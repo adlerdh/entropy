@@ -11,14 +11,14 @@ template<typename ReadComponentType, uint32_t Dimension>
 bool loadImageAtDimension(
   const std::filesystem::path& fileName,
   std::size_t numPixels,
-  uint32_t numCompsToLoad,
-  bool isVectorImage,
+  uint32_t componentsToLoad,
+  bool isMultiComponentImage,
   const Image::MultiComponentBufferType bufferType,
   std::function<bool(const void* buffer, std::size_t numElements)> loadBuffer)
 {
   using ReadImageType = itk::Image<ReadComponentType, Dimension>;
 
-  if (isVectorImage) {
+  if (isMultiComponentImage) {
     constexpr bool pixelIsVector = true;
     typename itk::ImageBase<Dimension>::Pointer baseImage =
       readImage<ReadComponentType, Dimension, pixelIsVector>(fileName.string());
@@ -30,25 +30,25 @@ bool loadImageAtDimension(
     std::vector<typename ReadImageType::Pointer> componentImages =
       splitImageIntoComponents<ReadComponentType, Dimension>(baseImage);
 
-    if (componentImages.size() < numCompsToLoad) {
+    if (componentImages.size() < componentsToLoad) {
       spdlog::error(
         "Only {} image component(s) were loaded from {}, but {} component(s) were expected",
         componentImages.size(),
         fileName,
-        numCompsToLoad);
+        componentsToLoad);
       return false;
     }
 
     std::unique_ptr<ReadComponentType[]> allComponentBuffers = nullptr;
     if (Image::MultiComponentBufferType::InterleavedImage == bufferType) {
-      allComponentBuffers = std::make_unique<ReadComponentType[]>(numPixels * numCompsToLoad);
+      allComponentBuffers = std::make_unique<ReadComponentType[]>(numPixels * componentsToLoad);
       if (!allComponentBuffers) {
         spdlog::error("Null buffer holding all components of image file {}", fileName);
         return false;
       }
     }
 
-    for (uint32_t component = 0; component < numCompsToLoad; ++component) {
+    for (uint32_t component = 0; component < componentsToLoad; ++component) {
       const ReadComponentType* buffer =
         componentImages[component] ? componentImages[component]->GetBufferPointer() : nullptr;
       if (!buffer) {
@@ -66,7 +66,7 @@ bool loadImageAtDimension(
         }
         case Image::MultiComponentBufferType::InterleavedImage: {
           for (std::size_t pixel = 0; pixel < numPixels; ++pixel) {
-            allComponentBuffers[numCompsToLoad * pixel + component] = buffer[pixel];
+            allComponentBuffers[componentsToLoad * pixel + component] = buffer[pixel];
           }
           break;
         }
@@ -74,7 +74,7 @@ bool loadImageAtDimension(
     }
 
     if (Image::MultiComponentBufferType::InterleavedImage == bufferType) {
-      const std::size_t numElements = numPixels * numCompsToLoad;
+      const std::size_t numElements = numPixels * componentsToLoad;
       if (!loadBuffer(static_cast<const void*>(allComponentBuffers.get()), numElements)) {
         spdlog::error("Error loading interleaved image buffer for image file {}", fileName);
         return false;
@@ -119,8 +119,8 @@ bool loadImageAtDimension(
  * @param[in] fileName Image file to load.
  * @param[in] numDimensions Number of image dimensions to request from ITK.
  * @param[in] numPixels Expected number of pixels in the loaded file buffer.
- * @param[in] numCompsToLoad Number of components to load into memory.
- * @param[in] isVectorImage Whether the on-disk image has vector pixels.
+ * @param[in] componentsToLoad Number of logical components to load into memory.
+ * @param[in] isMultiComponentImage Whether the on-disk image has more than one component per pixel.
  * @param[in] bufferType Desired in-memory multi-component buffer layout.
  * @param[in] loadBuffer Callback that stores each raw loaded buffer.
  * @return True when all requested image data was loaded.
@@ -130,8 +130,8 @@ bool loadImage(
   const std::filesystem::path& fileName,
   uint32_t numDimensions,
   std::size_t numPixels,
-  uint32_t numCompsToLoad,
-  bool isVectorImage,
+  uint32_t componentsToLoad,
+  bool isMultiComponentImage,
   const Image::MultiComponentBufferType bufferType,
   std::function<bool(const void* buffer, std::size_t numElements)> loadBuffer)
 {
@@ -140,32 +140,32 @@ bool loadImage(
       return image_utility_load_detail::loadImageAtDimension<ReadComponentType, 1>(
         fileName,
         numPixels,
-        numCompsToLoad,
-        isVectorImage,
+        componentsToLoad,
+        isMultiComponentImage,
         bufferType,
         std::move(loadBuffer));
     case 2u:
       return image_utility_load_detail::loadImageAtDimension<ReadComponentType, 2>(
         fileName,
         numPixels,
-        numCompsToLoad,
-        isVectorImage,
+        componentsToLoad,
+        isMultiComponentImage,
         bufferType,
         std::move(loadBuffer));
     case 3u:
       return image_utility_load_detail::loadImageAtDimension<ReadComponentType, 3>(
         fileName,
         numPixels,
-        numCompsToLoad,
-        isVectorImage,
+        componentsToLoad,
+        isMultiComponentImage,
         bufferType,
         std::move(loadBuffer));
     case 4u:
       return image_utility_load_detail::loadImageAtDimension<ReadComponentType, 4>(
         fileName,
         numPixels,
-        numCompsToLoad,
-        isVectorImage,
+        componentsToLoad,
+        isMultiComponentImage,
         bufferType,
         std::move(loadBuffer));
     default:

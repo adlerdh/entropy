@@ -3,6 +3,7 @@
 #include "registration/Capabilities.h"
 
 #include <algorithm>
+#include <string>
 
 namespace registration
 {
@@ -80,6 +81,13 @@ ValidationResult validateJob(const JobSpec& job, const BackendCapabilities& capa
       "movingMask",
       "The selected backend does not support moving masks.");
   }
+  if (job.backend == Backend::FireANTs && hasPathOrUid(job.fixedMask) != hasPathOrUid(job.movingMask)) {
+    addMessage(
+      result,
+      ValidationSeverity::Error,
+      "masks",
+      "FireANTs requires both fixed and moving masks when masks are used.");
+  }
   if (!job.auxiliaryImagePairs.empty()) {
     requireFeature(
       result,
@@ -87,6 +95,23 @@ ValidationResult validateJob(const JobSpec& job, const BackendCapabilities& capa
       Feature::AuxiliaryImagePairs,
       "auxiliaryImagePairs",
       "The selected backend does not support auxiliary image pairs.");
+    for (std::size_t index = 0; index < job.auxiliaryImagePairs.size(); ++index) {
+      const AuxiliaryImagePair& pair = job.auxiliaryImagePairs[index];
+      if (!hasPathOrUid(pair.fixed) || !hasPathOrUid(pair.moving)) {
+        addMessage(
+          result,
+          ValidationSeverity::Error,
+          "auxiliaryImagePairs",
+          "Auxiliary image pair " + std::to_string(index + 1u) + " must have both fixed and moving images.");
+      }
+      if (pair.weight <= 0.0) {
+        addMessage(
+          result,
+          ValidationSeverity::Error,
+          "auxiliaryImagePairs",
+          "Auxiliary image pair " + std::to_string(index + 1u) + " must have a positive weight.");
+      }
+    }
   }
   if (job.landmarks.enabled) {
     if (job.landmarks.matchedPairs == 0) {

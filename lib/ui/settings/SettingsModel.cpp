@@ -203,11 +203,11 @@ const std::array<SettingsPageChoice, 10>& settingsPageChoices()
     SettingsPageChoice{GuiData::SettingsTab::Interface, "Interface"},
     SettingsPageChoice{GuiData::SettingsTab::Images, "Images"},
     SettingsPageChoice{GuiData::SettingsTab::Segmentation, "Segmentation"},
-    SettingsPageChoice{GuiData::SettingsTab::Comparison, "Comparison"},
-    SettingsPageChoice{GuiData::SettingsTab::Rendering, "Rendering"},
-    SettingsPageChoice{GuiData::SettingsTab::Annotations, "Annotations"},
     SettingsPageChoice{GuiData::SettingsTab::Registration, "Registration"},
+    SettingsPageChoice{GuiData::SettingsTab::Comparison, "Comparison"},
+    SettingsPageChoice{GuiData::SettingsTab::Annotations, "Annotation"},
     SettingsPageChoice{GuiData::SettingsTab::Synchronization, "Synchronization"},
+    SettingsPageChoice{GuiData::SettingsTab::Rendering, "Rendering"},
     SettingsPageChoice{GuiData::SettingsTab::System, "System"}};
 
   return sk_choices;

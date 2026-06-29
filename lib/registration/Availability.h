@@ -2,7 +2,9 @@
 
 #include "registration/Config.h"
 
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace registration
@@ -16,6 +18,26 @@ enum class BackendAvailabilityStatus
   Available, //!< Executable exists and reported successfully.
   Missing,   //!< Executable could not be found or launched.
   Error      //!< Executable launched but reported an error.
+};
+
+/**
+ * @brief Compatibility assessment for an available backend.
+ */
+enum class BackendCompatibilityStatus
+{
+  Compatible,  //!< Backend version is known to satisfy Entropy's requirements.
+  Untested,    //!< Backend is available, but its version could not be validated.
+  Incompatible //!< Backend version is older than Entropy's supported minimum.
+};
+
+/**
+ * @brief Semantic version parsed from backend probe output.
+ */
+struct SemanticVersion
+{
+  int major = 0; //!< Major version number.
+  int minor = 0; //!< Minor version number.
+  int patch = 0; //!< Patch version number.
 };
 
 /**
@@ -56,10 +78,28 @@ struct BackendAvailability
 {
   Backend backend = Backend::Greedy;                                     //!< Backend that was checked.
   BackendAvailabilityStatus status = BackendAvailabilityStatus::Missing; //!< Availability status.
-  std::filesystem::path executable;                                      //!< Executable that was checked.
-  std::string versionText;                                               //!< Version or identifying output.
-  std::string message;                                                   //!< User-facing status message.
+  BackendCompatibilityStatus compatibility =                             //!< Version compatibility status.
+    BackendCompatibilityStatus::Untested;
+  std::filesystem::path executable;               //!< Executable that was checked.
+  std::string versionText;                        //!< Version or identifying output.
+  std::optional<SemanticVersion> detectedVersion; //!< Parsed backend version, if available.
+  std::string message;                            //!< User-facing status message.
+  std::string compatibilityMessage;               //!< User-facing compatibility warning or note.
 };
+
+/**
+ * @brief Return Entropy's minimum supported backend version, if one is known.
+ * @param backend Backend to query.
+ * @return Minimum supported version, or nullopt when Entropy cannot enforce one.
+ */
+std::optional<SemanticVersion> minimumSupportedVersion(Backend backend);
+
+/**
+ * @brief Parse the first semantic version-like token from backend probe output.
+ * @param text Raw backend probe output.
+ * @return Parsed version, or nullopt if no version could be found.
+ */
+std::optional<SemanticVersion> parseSemanticVersion(std::string_view text);
 
 /**
  * @brief Return the probe arguments for a backend.

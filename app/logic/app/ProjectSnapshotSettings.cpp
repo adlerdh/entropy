@@ -345,6 +345,7 @@ serialize::ImageSettings imageSettings(const Image& image)
   settings.m_lockedToReference = imageSettings.isLockedToReference();
   settings.m_warpEnabled = imageSettings.warpEnabled();
   settings.m_warpStrength = imageSettings.warpStrength();
+  settings.m_allowExaggeratedWarp = imageSettings.allowExaggeratedWarp();
   settings.m_level = imageSettings.windowCenter();
   settings.m_window = imageSettings.windowWidth();
   settings.m_thresholdLow = thresholds.first;
@@ -480,6 +481,7 @@ void applyImageSettings(Image& image, const serialize::ImageSettings& settings)
   imageSettings.setBorderColor(settings.m_borderColor);
   imageSettings.setLockedToReference(settings.m_lockedToReference);
   imageSettings.setWarpEnabled(settings.m_warpEnabled);
+  imageSettings.setAllowExaggeratedWarp(settings.m_allowExaggeratedWarp);
   imageSettings.setWarpStrength(settings.m_warpStrength);
   if (settings.m_activeComponent < imageSettings.numComponents()) {
     imageSettings.setActiveComponent(settings.m_activeComponent);

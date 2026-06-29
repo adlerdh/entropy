@@ -1,0 +1,15 @@
+{
+  "output": "rgb_uint8_3d.nrrd",
+  "pixel_kind": "rgb",
+  "component_type": "uint8",
+  "components": 3,
+  "size": [32, 28, 16],
+  "spacing": [1.0, 1.0, 1.5],
+  "origin": [-16.0, -14.0, -12.0],
+  "pattern": "ramp",
+  "amplitude": 35.0,
+  "offset": 30.0,
+  "metadata": {
+    "entropy_example": "ITK RGB pixel image"
+  }
+}

@@ -3,6 +3,7 @@
 #include "registration/Artifacts.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <optional>
 #include <sstream>
@@ -13,23 +14,19 @@ namespace registration
 namespace
 {
 
-bool includesAffine(TransformModel model)
-{
-  return model == TransformModel::Rigid || model == TransformModel::Affine || model == TransformModel::RigidAffine ||
-         model == TransformModel::AffineDeformable || model == TransformModel::Similarity ||
-         model == TransformModel::Translation;
-}
-
-bool includesDeformable(TransformModel model)
-{
-  return model == TransformModel::Deformable || model == TransformModel::AffineDeformable ||
-         model == TransformModel::BSplineDisplacement || model == TransformModel::GaussianDisplacement ||
-         model == TransformModel::TimeVaryingVelocity;
-}
-
 std::string pathString(const std::filesystem::path& path)
 {
   return path.string();
+}
+
+bool hasInputRef(const DataRef& ref)
+{
+  return !ref.uid.empty() || !ref.fileName.empty();
+}
+
+std::filesystem::path inputPath(const DataRef& ref, const std::filesystem::path& plannedPath)
+{
+  return ref.fileName.empty() ? plannedPath : ref.fileName;
 }
 
 std::optional<std::string> parameterValue(const JobSpec& job, std::string_view key)
@@ -50,6 +47,18 @@ std::string parameterValueOr(const JobSpec& job, std::string_view key, std::stri
     return *value;
   }
   return fallback;
+}
+
+int integerParameterValueOr(const JobSpec& job, std::string_view key, int fallback)
+{
+  const std::optional<std::string> value = parameterValue(job, key);
+  if (!value) {
+    return fallback;
+  }
+
+  char* end = nullptr;
+  const long parsed = std::strtol(value->c_str(), &end, 10);
+  return end && *end == '\0' ? static_cast<int>(parsed) : fallback;
 }
 
 bool booleanParameterValue(const JobSpec& job, std::string_view key)
@@ -103,6 +112,131 @@ std::string greedyMetric(Metric metric)
     default:
       return "WNCC";
   }
+}
+
+std::string greedySmoothingValue(const std::string& value, const std::string& units)
+{
+  const bool alreadyHasUnits = value.find("vox") != std::string::npos || value.find("mm") != std::string::npos;
+  return alreadyHasUnits ? value : value + units;
+}
+
+std::string greedyChoiceToken(const std::string& value)
+{
+  const std::size_t open = value.find('(');
+  const std::size_t close = open == std::string::npos ? std::string::npos : value.find(')', open + 1u);
+  if (open == std::string::npos || close == std::string::npos || close <= open + 1u) {
+    return value;
+  }
+  return value.substr(open + 1u, close - open - 1u);
+}
+
+void appendGreedyAuxiliaryPairs(std::vector<std::string>& args, const JobSpec& job)
+{
+  for (std::size_t index = 0; index < job.auxiliaryImagePairs.size(); ++index) {
+    const AuxiliaryImagePair& pair = job.auxiliaryImagePairs[index];
+    if (!hasInputRef(pair.fixed) || !hasInputRef(pair.moving)) {
+      continue;
+    }
+    args.push_back("-w");
+    args.push_back(std::to_string(pair.weight));
+    args.push_back("-i");
+    args.push_back(pathString(inputPath(pair.fixed, artifactPath(job, ArtifactRole::AuxiliaryFixedImage, index))));
+    args.push_back(pathString(inputPath(pair.moving, artifactPath(job, ArtifactRole::AuxiliaryMovingImage, index))));
+  }
+}
+
+void appendGreedyFixedMaskArgs(std::vector<std::string>& args, const JobSpec& job)
+{
+  if (hasInputRef(job.fixedMask)) {
+    args.push_back("-gm");
+    args.push_back(pathString(inputPath(job.fixedMask, artifactPath(job, ArtifactRole::FixedMask))));
+  }
+  if (const std::optional<std::string> trim = parameterValue(job, "fixedMaskTrim")) {
+    args.push_back("-gm-trim");
+    args.push_back(*trim);
+  }
+}
+
+void appendGreedyAffineAdvancedArgs(std::vector<std::string>& args, const JobSpec& job)
+{
+  const int searchIterations = integerParameterValueOr(job, "affineSearchIterations", 0);
+  if (searchIterations > 0) {
+    args.push_back("-search");
+    args.push_back(std::to_string(searchIterations));
+    args.push_back(greedyChoiceToken(parameterValueOr(job, "affineSearchRotation", "Any rotation (any)")));
+    args.push_back(parameterValueOr(job, "affineSearchTranslation", "50"));
+  }
+
+  const std::string determinant = greedyChoiceToken(parameterValueOr(job, "affineDeterminant", "None (free)"));
+  if (determinant == "1" || determinant == "-1") {
+    args.push_back("-det");
+    args.push_back(determinant);
+  }
+
+  if (const std::optional<std::string> jitter = parameterValue(job, "affineJitter")) {
+    args.push_back("-jitter");
+    args.push_back(*jitter);
+  }
+}
+
+void appendGreedyDeformableAdvancedArgs(std::vector<std::string>& args, const JobSpec& job)
+{
+  if (const std::optional<std::string> smoothing = parameterValue(job, "smoothingSigma")) {
+    std::string gradientSigma;
+    std::string warpSigma;
+    std::istringstream stream{*smoothing};
+    std::getline(stream, gradientSigma, ',');
+    std::getline(stream, warpSigma, ',');
+    if (!gradientSigma.empty() && !warpSigma.empty()) {
+      const std::string units = parameterValueOr(job, "smoothingUnits", "vox");
+      args.push_back("-s");
+      args.push_back(greedySmoothingValue(gradientSigma, units));
+      args.push_back(greedySmoothingValue(warpSigma, units));
+    }
+  }
+
+  if (const std::optional<std::string> stepSize = parameterValue(job, "stepSize")) {
+    args.push_back("-e");
+    args.push_back(*stepSize);
+  }
+
+  const std::string velocityModel =
+    greedyChoiceToken(parameterValueOr(job, "velocityModel", "Stationary velocity (sv)"));
+  if (velocityModel == "svlb") {
+    args.push_back("-svlb");
+  }
+  else if (velocityModel == "sv-incompr") {
+    args.push_back("-sv-incompr");
+  }
+  else {
+    args.push_back("-sv");
+  }
+
+  if (const std::optional<std::string> warpPrecision = parameterValue(job, "warpPrecision")) {
+    args.push_back("-wp");
+    args.push_back(*warpPrecision);
+  }
+}
+
+int greedyAffineDof(TransformModel model)
+{
+  switch (model) {
+    case TransformModel::Rigid:
+      return 6;
+    case TransformModel::Similarity:
+      return 7;
+    case TransformModel::Affine:
+    case TransformModel::RigidAffine:
+    case TransformModel::AffineDeformable:
+      return 12;
+    case TransformModel::Translation:
+    case TransformModel::Deformable:
+    case TransformModel::BSplineDisplacement:
+    case TransformModel::GaussianDisplacement:
+    case TransformModel::TimeVaryingVelocity:
+      return 12;
+  }
+  return 12;
 }
 
 std::string antsMetric(Metric metric)
@@ -175,7 +309,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
   const std::string metricRadius = repeatedRadius(parameterValueOr(job, "wnccRadius", "2"), job.dimension);
   const std::string threads = parameterValueOr(job, "threads", "0");
 
-  if (includesAffine(job.transformModel)) {
+  if (includesAffineTransform(job.transformModel)) {
     CommandSpec command;
     command.description = "Greedy affine registration";
     command.executable = options.greedyExecutable;
@@ -193,13 +327,24 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       pathString(affine),
       "-n",
       iterations};
-    if (job.useImageCentersForInitialization) {
+    appendGreedyAuxiliaryPairs(command.args, job);
+    command.args.push_back("-dof");
+    command.args.push_back(std::to_string(greedyAffineDof(job.transformModel)));
+    if (!job.initialAffineTransform.empty()) {
+      command.args.push_back("-ia");
+      command.args.push_back(pathString(job.initialAffineTransform));
+    }
+    else if (const std::string moments = greedyChoiceToken(parameterValueOr(job, "affineMoments", "Off"));
+             moments == "1" || moments == "2")
+    {
+      command.args.push_back("-ia-moments");
+      command.args.push_back(moments);
+    }
+    else if (job.useImageCentersForInitialization) {
       command.args.push_back("-ia-image-centers");
     }
-    if (!job.fixedMask.fileName.empty()) {
-      command.args.push_back("-gm");
-      command.args.push_back(pathString(job.fixedMask.fileName));
-    }
+    appendGreedyFixedMaskArgs(command.args, job);
+    appendGreedyAffineAdvancedArgs(command.args, job);
     if (threads != "0") {
       command.args.push_back("-threads");
       command.args.push_back(threads);
@@ -211,7 +356,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
     commands.push_back(std::move(command));
   }
 
-  if (includesDeformable(job.transformModel)) {
+  if (includesDeformableTransform(job.transformModel)) {
     CommandSpec command;
     command.description = "Greedy deformable registration";
     command.executable = options.greedyExecutable;
@@ -226,22 +371,24 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       pathString(job.movingImage.fileName),
       "-o",
       pathString(inverseWarp),
-      "-sv",
       "-n",
       iterations};
-    if (includesAffine(job.transformModel)) {
+    appendGreedyAuxiliaryPairs(command.args, job);
+    if (includesAffineTransform(job.transformModel)) {
       command.args.push_back("-it");
       command.args.push_back(pathString(affine));
     }
-    if (!job.fixedMask.fileName.empty()) {
-      command.args.push_back("-gm");
-      command.args.push_back(pathString(job.fixedMask.fileName));
-    }
-    if (!job.movingMask.fileName.empty()) {
+    appendGreedyFixedMaskArgs(command.args, job);
+    if (hasInputRef(job.movingMask)) {
       command.args.push_back("-mm");
-      command.args.push_back(pathString(job.movingMask.fileName));
+      command.args.push_back(pathString(inputPath(job.movingMask, artifactPath(job, ArtifactRole::MovingMask))));
     }
+    appendGreedyDeformableAdvancedArgs(command.args, job);
     if (job.outputs.loadForwardWarp) {
+      if (const std::optional<std::string> invExp = parameterValue(job, "inverseExponentiation")) {
+        command.args.push_back("-exp");
+        command.args.push_back(*invExp);
+      }
       command.args.push_back("-oinv");
       command.args.push_back(pathString(forwardWarp));
     }
@@ -269,10 +416,10 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       pathString(job.movingImage.fileName),
       pathString(warpedImage),
       "-r"};
-    if (includesDeformable(job.transformModel)) {
+    if (includesDeformableTransform(job.transformModel)) {
       command.args.push_back(pathString(inverseWarp));
     }
-    if (includesAffine(job.transformModel)) {
+    if (includesAffineTransform(job.transformModel)) {
       command.args.push_back(pathString(affine));
     }
     if (threads != "0") {
@@ -282,7 +429,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
     commands.push_back(std::move(command));
   }
 
-  if (job.outputs.loadWarpedSegmentation && !job.movingMask.fileName.empty()) {
+  if (job.outputs.loadWarpedSegmentation && hasInputRef(job.movingMask)) {
     CommandSpec command;
     command.description = "Greedy reslice warped segmentation";
     command.executable = options.greedyExecutable;
@@ -295,13 +442,13 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       "LABEL",
       "0.2vox",
       "-rm",
-      pathString(job.movingMask.fileName),
+      pathString(inputPath(job.movingMask, artifactPath(job, ArtifactRole::MovingMask))),
       pathString(artifactPath(job, ArtifactRole::WarpedSegmentation)),
       "-r"};
-    if (includesDeformable(job.transformModel)) {
+    if (includesDeformableTransform(job.transformModel)) {
       command.args.push_back(pathString(inverseWarp));
     }
-    if (includesAffine(job.transformModel)) {
+    if (includesAffineTransform(job.transformModel)) {
       command.args.push_back(pathString(affine));
     }
     if (threads != "0") {
@@ -344,14 +491,37 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
     shrinkFactors,
     "--smoothing-sigmas",
     smoothingSigmas + "vox"};
-  if (!job.fixedMask.fileName.empty()) {
+  for (std::size_t index = 0; index < job.auxiliaryImagePairs.size(); ++index) {
+    const AuxiliaryImagePair& pair = job.auxiliaryImagePairs[index];
+    if (!hasInputRef(pair.fixed) || !hasInputRef(pair.moving)) {
+      continue;
+    }
+    registrationCommand.args.push_back("--metric");
+    registrationCommand.args.push_back(
+      antsMetric(pair.metric) + "[" +
+      pathString(inputPath(pair.fixed, artifactPath(job, ArtifactRole::AuxiliaryFixedImage, index))) + "," +
+      pathString(inputPath(pair.moving, artifactPath(job, ArtifactRole::AuxiliaryMovingImage, index))) + "," +
+      std::to_string(pair.weight) + ",4]");
+  }
+  if (!job.initialAffineTransform.empty()) {
+    registrationCommand.args.push_back("--initial-moving-transform");
+    registrationCommand.args.push_back(pathString(job.initialAffineTransform));
+  }
+  if (hasInputRef(job.fixedMask) || hasInputRef(job.movingMask)) {
     registrationCommand.args.push_back("--masks");
-    registrationCommand.args.push_back("[" + pathString(job.fixedMask.fileName) + ",NULL]");
+    registrationCommand.args.push_back(
+      "[" +
+      (hasInputRef(job.fixedMask) ? pathString(inputPath(job.fixedMask, artifactPath(job, ArtifactRole::FixedMask)))
+                                  : std::string{"NULL"}) +
+      "," +
+      (hasInputRef(job.movingMask) ? pathString(inputPath(job.movingMask, artifactPath(job, ArtifactRole::MovingMask)))
+                                   : std::string{"NULL"}) +
+      "]");
   }
   appendExpertArguments(registrationCommand.args, job);
   commands.push_back(std::move(registrationCommand));
 
-  if (job.outputs.loadWarpedSegmentation && !job.movingMask.fileName.empty()) {
+  if (job.outputs.loadWarpedSegmentation && hasInputRef(job.movingMask)) {
     CommandSpec command;
     command.description = "ANTs reslice warped segmentation";
     command.executable = options.antsApplyTransformsExecutable;
@@ -359,18 +529,18 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
       "-d",
       std::to_string(job.dimension),
       "-i",
-      pathString(job.movingMask.fileName),
+      pathString(inputPath(job.movingMask, artifactPath(job, ArtifactRole::MovingMask))),
       "-r",
       pathString(job.fixedImage.fileName),
       "-o",
       pathString(artifactPath(job, ArtifactRole::WarpedSegmentation)),
       "-n",
       "GenericLabel"};
-    if (includesDeformable(job.transformModel)) {
+    if (includesDeformableTransform(job.transformModel)) {
       command.args.push_back("-t");
       command.args.push_back(pathString(antsWarpPath(job)));
     }
-    if (includesAffine(job.transformModel)) {
+    if (includesAffineTransform(job.transformModel)) {
       command.args.push_back("-t");
       command.args.push_back(pathString(antsAffineTransformPath(job)));
     }

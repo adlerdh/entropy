@@ -232,7 +232,7 @@ void renderImageHeaderInformation(
     3,
     nullptr,
     nullptr,
-    "%0.6f",
+    coordFormat,
     ImGuiInputTextFlags_ReadOnly);
   ImGui::SameLine();
   helpMarker("Voxel spacing (mm)");

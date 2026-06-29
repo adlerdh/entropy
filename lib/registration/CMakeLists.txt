@@ -2,6 +2,7 @@ add_library(EntropyRegistration STATIC)
 add_library(Entropy::Registration ALIAS EntropyRegistration)
 
 target_sources(EntropyRegistration PRIVATE
+  AffineTransformIO.cpp
   Artifacts.cpp
   Availability.cpp
   Capabilities.cpp
@@ -25,6 +26,7 @@ target_include_directories(EntropyRegistration
 
 target_link_libraries(EntropyRegistration
   PUBLIC
+    glm::glm
     nlohmann_json::nlohmann_json
   PRIVATE
     entropy_logging_level

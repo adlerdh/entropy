@@ -339,57 +339,8 @@ void addImageMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Move Image to Back", MainMenuAction::MoveActiveImageToBack, @"backward.end");
   addSymbolActionMenuItem(menu, @"Move Image to Front", MainMenuAction::MoveActiveImageToFront, @"forward.end");
   [menu addItem:[NSMenuItem separatorItem]];
-  NSMenuItem* affineItem = [[NSMenuItem alloc] initWithTitle:@"Affine transformations" action:nil keyEquivalent:@""];
-  NSMenu* affineMenu = [[NSMenu alloc] initWithTitle:@"Affine transformations"];
-  addSymbolActionMenuItem(
-    affineMenu,
-    @"Lock Transformation",
-    MainMenuAction::ToggleActiveImageTransformationLock,
-    @"lock");
-  addSymbolActionMenuItem(
-    affineMenu,
-    @"Reset Manual Transformation",
-    MainMenuAction::ResetActiveImageManualTransformation,
-    @"arrow.counterclockwise");
-  addSymbolActionMenuItem(
-    affineMenu,
-    @"Save Manual Transformation...",
-    MainMenuAction::SaveActiveImageManualTransformation,
-    @"square.and.arrow.down");
-  addSymbolActionMenuItem(
-    affineMenu,
-    @"Save Initial + Manual Transformation...",
-    MainMenuAction::SaveActiveImageInitialAndManualTransformation,
-    @"square.and.arrow.down.on.square");
-  [affineItem setSubmenu:affineMenu];
-  [menu addItem:affineItem];
-  NSMenuItem* deformationItem = [[NSMenuItem alloc] initWithTitle:@"Deformation fields" action:nil keyEquivalent:@""];
-  NSMenu* deformationMenu = [[NSMenu alloc] initWithTitle:@"Deformation fields"];
-  addSymbolMenuItem(deformationMenu, @"Load inverse warp...", @selector(loadInverseWarp:), @"", @"arrow.down.doc");
-  addSymbolMenuItem(deformationMenu, @"Load forward warp...", @selector(loadForwardWarp:), @"", @"arrow.down.doc");
-  addSymbolActionMenuItem(
-    deformationMenu,
-    @"Apply warp",
-    MainMenuAction::ToggleApplyActiveImageWarp,
-    @"waveform.path.ecg");
-  [deformationItem setSubmenu:deformationMenu];
-  [menu addItem:deformationItem];
-  NSMenuItem* registrationItem = [[NSMenuItem alloc] initWithTitle:@"Registration" action:nil keyEquivalent:@""];
-  setMenuItemSymbol(registrationItem, @"arrow.triangle.2.circlepath");
-  NSMenu* registrationMenu = [[NSMenu alloc] initWithTitle:@"Registration"];
-  addSymbolActionMenuItem(
-    registrationMenu,
-    @"Register Active Image to Reference...",
-    MainMenuAction::ShowRegistrationSetupWindow,
-    @"arrow.triangle.2.circlepath");
-  addSymbolActionMenuItem(
-    registrationMenu,
-    @"Registration Jobs...",
-    MainMenuAction::ToggleRegistrationJobsWindow,
-    @"list.bullet.rectangle");
-  [registrationItem setSubmenu:registrationMenu];
-  [menu addItem:registrationItem];
   NSMenuItem* timeSeriesItem = [[NSMenuItem alloc] initWithTitle:@"Time Series" action:nil keyEquivalent:@""];
+  setMenuItemSymbol(timeSeriesItem, @"clock");
   NSMenu* timeSeriesMenu = [[NSMenu alloc] initWithTitle:@"Time Series"];
   addSymbolActionMenuItem(timeSeriesMenu, @"Show Time Controls", MainMenuAction::ToggleGlobalTimeControls, @"clock");
   [timeSeriesMenu addItem:[NSMenuItem separatorItem]];
@@ -413,7 +364,9 @@ void addImageMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(timeSeriesMenu, @"Last Frame", MainMenuAction::LastTimePoint, @"forward.end");
   [timeSeriesItem setSubmenu:timeSeriesMenu];
   [menu addItem:timeSeriesItem];
+  [menu addItem:[NSMenuItem separatorItem]];
   NSMenuItem* isosurfacesItem = [[NSMenuItem alloc] initWithTitle:@"Isosurfaces" action:nil keyEquivalent:@""];
+  setMenuItemSymbol(isosurfacesItem, @"cube.transparent");
   NSMenu* isosurfacesMenu = [[NSMenu alloc] initWithTitle:@"Isosurfaces"];
   addSymbolActionMenuItem(
     isosurfacesMenu,
@@ -430,6 +383,61 @@ void addImageMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(isosurfacesMenu, @"Show Isosurfaces", MainMenuAction::ToggleActiveImageIsosurfaces, @"eye");
   [isosurfacesItem setSubmenu:isosurfacesMenu];
   [menu addItem:isosurfacesItem];
+  [menu addItem:[NSMenuItem separatorItem]];
+  NSMenuItem* affineItem = [[NSMenuItem alloc] initWithTitle:@"Affine Transformations" action:nil keyEquivalent:@""];
+  setMenuItemSymbol(affineItem, @"arrow.up.left.and.arrow.down.right");
+  NSMenu* affineMenu = [[NSMenu alloc] initWithTitle:@"Affine Transformations"];
+  addSymbolActionMenuItem(
+    affineMenu,
+    @"Lock Transformation",
+    MainMenuAction::ToggleActiveImageTransformationLock,
+    @"lock");
+  addSymbolActionMenuItem(
+    affineMenu,
+    @"Reset Manual Transformation",
+    MainMenuAction::ResetActiveImageManualTransformation,
+    @"arrow.counterclockwise");
+  addSymbolActionMenuItem(
+    affineMenu,
+    @"Save Manual Transformation...",
+    MainMenuAction::SaveActiveImageManualTransformation,
+    @"square.and.arrow.down");
+  addSymbolActionMenuItem(
+    affineMenu,
+    @"Save Initial + Manual Transformation...",
+    MainMenuAction::SaveActiveImageInitialAndManualTransformation,
+    @"square.and.arrow.down.on.square");
+  [affineItem setSubmenu:affineMenu];
+  [menu addItem:affineItem];
+  NSMenuItem* deformationItem = [[NSMenuItem alloc] initWithTitle:@"Deformable Transformations"
+                                                           action:nil
+                                                    keyEquivalent:@""];
+  setMenuItemSymbol(deformationItem, @"waveform.path.ecg");
+  NSMenu* deformationMenu = [[NSMenu alloc] initWithTitle:@"Deformable Transformations"];
+  addSymbolMenuItem(deformationMenu, @"Load Inverse Warp...", @selector(loadInverseWarp:), @"", @"arrow.down.doc");
+  addSymbolMenuItem(deformationMenu, @"Load Forward Warp...", @selector(loadForwardWarp:), @"", @"arrow.down.doc");
+  addSymbolActionMenuItem(
+    deformationMenu,
+    @"Apply Warp",
+    MainMenuAction::ToggleApplyActiveImageWarp,
+    @"waveform.path.ecg");
+  [deformationItem setSubmenu:deformationMenu];
+  [menu addItem:deformationItem];
+  NSMenuItem* registrationItem = [[NSMenuItem alloc] initWithTitle:@"Image Registration" action:nil keyEquivalent:@""];
+  setMenuItemSymbol(registrationItem, @"arrow.triangle.2.circlepath");
+  NSMenu* registrationMenu = [[NSMenu alloc] initWithTitle:@"Image Registration"];
+  addSymbolActionMenuItem(
+    registrationMenu,
+    @"Register Active Image to Reference...",
+    MainMenuAction::ShowRegistrationSetupWindow,
+    @"arrow.triangle.2.circlepath");
+  addSymbolActionMenuItem(
+    registrationMenu,
+    @"Image Registration Jobs...",
+    MainMenuAction::ToggleRegistrationJobsWindow,
+    @"list.bullet.rectangle");
+  [registrationItem setSubmenu:registrationMenu];
+  [menu addItem:registrationItem];
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }
@@ -600,6 +608,11 @@ void addWindowsMenu(NSMenu* mainMenu) {
     @"Segmentations Panel",
     MainMenuAction::ToggleSegmentationsWindow,
     @"square.3.layers.3d");
+  addSymbolActionMenuItem(
+    menu,
+    @"Registration Panel",
+    MainMenuAction::ShowRegistrationSetupWindow,
+    @"arrow.up.left.and.arrow.down.right");
   addSymbolActionMenuItem(menu, @"Annotations Panel", MainMenuAction::ToggleAnnotationsWindow, @"pencil.and.outline");
   addSymbolActionMenuItem(menu, @"Landmarks Panel", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
   addSymbolActionMenuItem(menu, @"Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow, @"cube.transparent");
@@ -609,7 +622,7 @@ void addWindowsMenu(NSMenu* mainMenu) {
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Reset Panel Layout", MainMenuAction::ResetPanelLayout, @"rectangle.3.group");
   [menu addItem:[NSMenuItem separatorItem]];
-  addActionMenuItem(menu, @"Toolbar", MainMenuAction::ToggleToolbar);
+  addSymbolActionMenuItem(menu, @"Toolbar", MainMenuAction::ToggleToolbar, @"wrench.and.screwdriver");
 #ifndef NDEBUG
   addActionMenuItem(menu, @"ImGui Demo", MainMenuAction::ToggleImGuiDemoWindow);
   addActionMenuItem(menu, @"ImPlot Demo", MainMenuAction::ToggleImPlotDemoWindow);

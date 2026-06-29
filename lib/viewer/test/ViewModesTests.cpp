@@ -86,7 +86,7 @@ TEST_CASE("viewer mode labels cover all public choices", "[viewer][modes]")
   }
 
   CHECK(typeString(ViewRenderMode::Image) == "Layers");
-  CHECK(typeString(IntensityProjectionMode::Xray) == "X-ray Projection");
+  CHECK(typeString(IntensityProjectionMode::Xray) == "X-ray projection");
 }
 
 TEST_CASE("viewer mode labels tolerate sentinel values", "[viewer][modes]")
@@ -96,8 +96,8 @@ TEST_CASE("viewer mode labels tolerate sentinel values", "[viewer][modes]")
   CHECK(typeString(static_cast<ViewRenderMode>(100)) == "Unknown");
   CHECK(descriptionString(static_cast<ViewRenderMode>(100)) == "Unknown render mode");
 
-  CHECK(typeString(IntensityProjectionMode::NumElements) == "Unknown Projection");
+  CHECK(typeString(IntensityProjectionMode::NumElements) == "Unknown projection");
   CHECK(descriptionString(IntensityProjectionMode::NumElements) == "Unknown intensity projection");
-  CHECK(typeString(static_cast<IntensityProjectionMode>(100)) == "Unknown Projection");
+  CHECK(typeString(static_cast<IntensityProjectionMode>(100)) == "Unknown projection");
   CHECK(descriptionString(static_cast<IntensityProjectionMode>(100)) == "Unknown intensity projection");
 }

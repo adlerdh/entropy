@@ -110,16 +110,20 @@ TEST_CASE("ImageSettings clamps window values, centers, widths, thresholds, and 
   CHECK(settings.globalOpacity() == Catch::Approx(1.0));
 
   CHECK(settings.vectorArrowOverlayDensity() == Catch::Approx(32.0f));
+  CHECK(settings.vectorArrowOverlayVoxelSpacing() == Catch::Approx(8.0f));
+  CHECK(settings.vectorArrowOverlaySpacingMode() == VectorArrowOverlaySpacingMode::Voxels);
   settings.setVectorArrowOverlayDensity(0.0f);
   CHECK(settings.vectorArrowOverlayDensity() > 0.0f);
   CHECK(settings.vectorArrowOverlayDensity() == Catch::Approx(0.1f));
   settings.setVectorArrowOverlayDensity(-10.0f);
   CHECK(settings.vectorArrowOverlayDensity() == Catch::Approx(0.1f));
+  settings.setVectorArrowOverlayDensity(200.0f);
+  CHECK(settings.vectorArrowOverlayDensity() == Catch::Approx(100.0f));
 
   settings.setVectorArrowOverlayVoxelSpacing(0.0f);
   CHECK(settings.vectorArrowOverlayVoxelSpacing() == Catch::Approx(0.1f));
-  settings.setVectorArrowOverlayVoxelSpacing(20.0f);
-  CHECK(settings.vectorArrowOverlayVoxelSpacing() == Catch::Approx(10.0f));
+  settings.setVectorArrowOverlayVoxelSpacing(200.0f);
+  CHECK(settings.vectorArrowOverlayVoxelSpacing() == Catch::Approx(100.0f));
   settings.setVectorArrowOverlayMillimeterSpacing(0.0f);
   CHECK(settings.vectorArrowOverlayMillimeterSpacing() == Catch::Approx(0.1f));
 
@@ -140,6 +144,8 @@ TEST_CASE("ImageSettings clamps window values, centers, widths, thresholds, and 
   CHECK(settings.vectorWarpedGridSpacingMode() == VectorArrowOverlaySpacingMode::Voxels);
   settings.setVectorWarpedGridPixelSpacing(0.0f);
   CHECK(settings.vectorWarpedGridPixelSpacing() == Catch::Approx(1.0f));
+  settings.setVectorWarpedGridPixelSpacing(200.0f);
+  CHECK(settings.vectorWarpedGridPixelSpacing() == Catch::Approx(100.0f));
   settings.setVectorWarpedGridVoxelSpacing(0.0f);
   CHECK(settings.vectorWarpedGridVoxelSpacing() == Catch::Approx(0.1f));
   settings.setVectorWarpedGridMillimeterSpacing(0.0f);
@@ -431,6 +437,7 @@ TEST_CASE("ImageSettings clamps warp rendering strength", "[image][settings]")
 
   CHECK(settings.warpEnabled());
   CHECK(settings.warpStrength() == Catch::Approx(1.0f));
+  CHECK_FALSE(settings.allowExaggeratedWarp());
 
   settings.setWarpEnabled(false);
   settings.setWarpStrength(-1.0f);
@@ -442,4 +449,12 @@ TEST_CASE("ImageSettings clamps warp rendering strength", "[image][settings]")
 
   settings.setWarpStrength(8.0f);
   CHECK(settings.warpStrength() == Catch::Approx(4.0f));
+
+  settings.setAllowExaggeratedWarp(false);
+  CHECK(settings.warpStrength() == Catch::Approx(1.0f));
+
+  settings.setAllowExaggeratedWarp(true);
+  settings.setWarpStrength(3.5f);
+  CHECK(settings.allowExaggeratedWarp());
+  CHECK(settings.warpStrength() == Catch::Approx(3.5f));
 }

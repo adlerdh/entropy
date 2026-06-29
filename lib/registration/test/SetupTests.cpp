@@ -44,6 +44,8 @@ TEST_CASE("registration setup defaults to reference fixed image and active movin
   CHECK(state.job.fixedImage.uid == "fixed");
   CHECK(state.job.movingImage.uid == "moving");
   CHECK(state.job.outputPrefix == "Moving_Image_to_Fixed_Image");
+  CHECK(state.job.useCurrentAffineTransformsForInitialization);
+  CHECK_FALSE(state.job.useImageCentersForInitialization);
   CHECK_FALSE(state.job.parameterValues.empty());
   CHECK(state.validation.canLaunch());
 }
@@ -60,6 +62,31 @@ TEST_CASE("registration setup picks a different moving image when active is the 
   CHECK(state.job.fixedImage.uid == "fixed");
   CHECK(state.job.movingImage.uid == "moving");
   CHECK(state.validation.canLaunch());
+}
+
+TEST_CASE("registration setup supports explicit fixed and moving image changes", "[registration][setup]")
+{
+  const std::vector<registration::SetupImageChoice> images = {
+    imageChoice("fixed", "Fixed", true, false),
+    imageChoice("moving", "Moving", false, true),
+    imageChoice("other", "Other")};
+
+  registration::SetupState state =
+    registration::createSetupState(images, registration::Backend::Greedy, "/tmp/entropy-reg");
+
+  registration::setMovingImage(state, images.at(2));
+  CHECK(state.job.movingImage.uid == "other");
+  CHECK(state.job.outputPrefix == "Other_to_Fixed");
+  CHECK(state.validation.canLaunch());
+
+  registration::setFixedImage(state, images.at(1));
+  CHECK(state.job.fixedImage.uid == "moving");
+  CHECK(state.job.dimension == images.at(1).dimension);
+  CHECK(state.job.outputPrefix == "Other_to_Moving");
+  CHECK(state.validation.canLaunch());
+
+  registration::setMovingImage(state, images.at(1));
+  CHECK_FALSE(state.validation.canLaunch());
 }
 
 TEST_CASE(

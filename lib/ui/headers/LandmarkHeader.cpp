@@ -120,6 +120,9 @@ void renderLandmarkGroupHeader(
   if (lmGroupUids.empty()) {
     ImGui::Text("This image has no landmarks.");
     addNewLmGroupButton();
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::PopID(); // imageUid
     return;
   }
@@ -136,6 +139,9 @@ void renderLandmarkGroupHeader(
     }
     else {
       spdlog::error("Unable to assign active landmark group {} to image {}", lmGroupUids[0], imageUid);
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
       ImGui::PopID(); // imageUid
       return;
     }
@@ -145,6 +151,9 @@ void renderLandmarkGroupHeader(
 
   if (!activeLmGroup) {
     spdlog::error("Landmark group {} for image {} is null", *activeLmGroupUid, imageUid);
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::PopID(); // imageUid
     return;
   }
@@ -328,6 +337,8 @@ void renderLandmarkGroupHeader(
     }
   }
 
+  ImGui::Spacing();
+  ImGui::Separator();
   ImGui::Spacing();
   ImGui::PopID(); /** PopID imageUid **/
 }

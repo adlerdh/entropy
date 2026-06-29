@@ -87,3 +87,38 @@ TEST_CASE("registration validation requires a moving segmentation for warped seg
 
   CHECK(result.canLaunch());
 }
+
+TEST_CASE("registration validation requires FireANTs masks to be paired", "[registration]")
+{
+  registration::JobSpec job = minimalJob(registration::Backend::FireANTs);
+  job.fixedMask = imageRef("fixed-mask", "fixed_mask");
+
+  registration::ValidationResult result =
+    registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK_FALSE(result.canLaunch());
+
+  job.movingMask = imageRef("moving-mask", "moving_mask");
+  result = registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+}
+
+TEST_CASE("registration validation rejects incomplete auxiliary image pairs", "[registration]")
+{
+  registration::JobSpec job = minimalJob(registration::Backend::Greedy);
+  registration::AuxiliaryImagePair pair;
+  pair.fixed = imageRef("aux-fixed", "aux_fixed");
+  pair.weight = 1.0;
+  job.auxiliaryImagePairs.push_back(pair);
+
+  registration::ValidationResult result =
+    registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK_FALSE(result.canLaunch());
+
+  job.auxiliaryImagePairs.front().moving = imageRef("aux-moving", "aux_moving");
+  result = registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+}

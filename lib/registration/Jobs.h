@@ -2,6 +2,7 @@
 
 #include "registration/Execution.h"
 
+#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -15,9 +16,15 @@ namespace registration
  */
 struct JobRecord
 {
+  using Clock = std::chrono::system_clock;
+
   std::string id;                             //!< Stable job identifier.
+  std::uint64_t order = 0;                    //!< One-based insertion order.
   JobSpec spec;                               //!< Job request.
   JobStatus status = JobStatus::Queued;       //!< Current normalized status.
+  Clock::time_point queuedAt{};               //!< Time at which the job was created.
+  std::optional<Clock::time_point> startedAt; //!< First time the job entered an active running state.
+  std::optional<Clock::time_point> endedAt;   //!< Time at which the job reached a terminal state.
   std::vector<CommandExecution> commands;     //!< Completed backend command summaries.
   std::vector<ProgressEvent> progress;        //!< Parsed progress events.
   std::vector<ProcessOutputLine> outputLines; //!< Raw backend stdout/stderr lines.
@@ -107,6 +114,20 @@ std::optional<double> latestProgress(const JobRecord& job);
  * @return Latest message text, or an empty string when unavailable.
  */
 std::string latestMessage(const JobRecord& job);
+
+/**
+ * @brief Return the elapsed job duration when enough timing data is available.
+ * @param job Job to inspect.
+ * @return End-start duration for completed jobs, or now-start for active jobs.
+ */
+std::optional<std::chrono::system_clock::duration> jobDuration(const JobRecord& job);
+
+/**
+ * @brief Format a job duration with compact human-readable units.
+ * @param duration Duration to format.
+ * @return Duration text using ms, sec, min, or hr as appropriate.
+ */
+std::string formatDuration(std::chrono::system_clock::duration duration);
 
 /**
  * @brief Return whether a status represents an active job.

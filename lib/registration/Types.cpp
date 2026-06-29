@@ -130,6 +130,20 @@ constexpr std::array progressEventKindLabels{
 
 } // namespace
 
+bool includesAffineTransform(TransformModel model)
+{
+  return model == TransformModel::Rigid || model == TransformModel::Affine || model == TransformModel::RigidAffine ||
+         model == TransformModel::AffineDeformable || model == TransformModel::Similarity ||
+         model == TransformModel::Translation;
+}
+
+bool includesDeformableTransform(TransformModel model)
+{
+  return model == TransformModel::Deformable || model == TransformModel::AffineDeformable ||
+         model == TransformModel::BSplineDisplacement || model == TransformModel::GaussianDisplacement ||
+         model == TransformModel::TimeVaryingVelocity;
+}
+
 std::string_view label(Backend backend)
 {
   return enumLabel(backend, backendLabels);

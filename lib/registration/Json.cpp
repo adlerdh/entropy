@@ -319,6 +319,8 @@ void to_json(nlohmann::json& j, const JobSpec& value)
     {"metric", value.metric},
     {"iterationSchedule", value.iterationSchedule},
     {"useImageCentersForInitialization", value.useImageCentersForInitialization},
+    {"useCurrentAffineTransformsForInitialization", value.useCurrentAffineTransformsForInitialization},
+    {"initialAffineTransform", pathToString(value.initialAffineTransform)},
     {"fixedMask", value.fixedMask},
     {"movingMask", value.movingMask},
     {"auxiliaryImagePairs", value.auxiliaryImagePairs},
@@ -348,6 +350,10 @@ void from_json(const nlohmann::json& j, JobSpec& value)
   }
   getOptional(j, "iterationSchedule", value.iterationSchedule);
   getOptional(j, "useImageCentersForInitialization", value.useImageCentersForInitialization);
+  getOptional(j, "useCurrentAffineTransformsForInitialization", value.useCurrentAffineTransformsForInitialization);
+  if (j.contains("initialAffineTransform")) {
+    value.initialAffineTransform = pathFromJson(j.at("initialAffineTransform"));
+  }
   getOptional(j, "fixedMask", value.fixedMask);
   getOptional(j, "movingMask", value.movingMask);
   getOptional(j, "auxiliaryImagePairs", value.auxiliaryImagePairs);

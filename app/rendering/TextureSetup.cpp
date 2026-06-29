@@ -5,6 +5,181 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+namespace
+{
+
+template<typename T>
+std::vector<T> copyComponentFrameValues(const Image& image, uint32_t component, uint32_t timePoint)
+{
+  std::vector<T> values;
+  values.reserve(image.header().numPixels());
+
+  for (std::size_t index = 0; index < image.header().numPixels(); ++index) {
+    const std::optional<T> value = image.value<T>(component, index, timePoint);
+    if (!value) {
+      return {};
+    }
+    values.push_back(*value);
+  }
+
+  return values;
+}
+
+template<typename T>
+bool appendScalarComponentTexture(
+  std::vector<GLTexture>& componentTextures,
+  const Image& image,
+  uint32_t component,
+  const T* data,
+  const GLTexture::PixelStoreSettings& pixelPackSettings,
+  const GLTexture::PixelStoreSettings& pixelUnpackSettings,
+  tex::WrapMode wrapMode)
+{
+  if (!data) {
+    return false;
+  }
+
+  tex::MinificationFilter minFilter;
+  tex::MagnificationFilter maxFilter;
+  switch (image.settings().interpolationMode(component)) {
+    case InterpolationMode::NearestNeighbor:
+      minFilter = tex::MinificationFilter::Nearest;
+      maxFilter = tex::MagnificationFilter::Nearest;
+      break;
+    case InterpolationMode::Linear:
+    case InterpolationMode::CubicBsplineConvolution:
+      minFilter = tex::MinificationFilter::Linear;
+      maxFilter = tex::MagnificationFilter::Linear;
+      break;
+  }
+
+  static constexpr GLint k_mipmapLevel = 0;
+  GLTexture& texture = componentTextures.emplace_back(
+    tex::Target::Texture3D,
+    GLTexture::MultisampleSettings(),
+    pixelPackSettings,
+    pixelUnpackSettings);
+
+  texture.generate();
+  texture.setMinificationFilter(minFilter);
+  texture.setMagnificationFilter(maxFilter);
+  texture.setWrapMode(wrapMode);
+  texture.setAutoGenerateMipmaps(false);
+  texture.setSize(image.header().pixelDimensions());
+  texture.setData(
+    k_mipmapLevel,
+    GLTexture::getSizedInternalNormalizedRedFormat(image.header().memoryComponentType()),
+    GLTexture::getBufferPixelNormalizedRedFormat(image.header().memoryComponentType()),
+    GLTexture::getBufferPixelDataType(image.header().memoryComponentType()),
+    data);
+  return true;
+}
+
+template<typename T>
+bool appendDeinterleavedComponentTexture(
+  std::vector<GLTexture>& componentTextures,
+  const Image& image,
+  uint32_t component,
+  uint32_t timePoint,
+  const GLTexture::PixelStoreSettings& pixelPackSettings,
+  const GLTexture::PixelStoreSettings& pixelUnpackSettings,
+  tex::WrapMode wrapMode)
+{
+  const std::vector<T> values = copyComponentFrameValues<T>(image, component, timePoint);
+  return values.size() == image.header().numPixels() && appendScalarComponentTexture(
+                                                          componentTextures,
+                                                          image,
+                                                          component,
+                                                          values.data(),
+                                                          pixelPackSettings,
+                                                          pixelUnpackSettings,
+                                                          wrapMode);
+}
+
+bool appendDeinterleavedComponentTexture(
+  std::vector<GLTexture>& componentTextures,
+  const Image& image,
+  uint32_t component,
+  uint32_t timePoint,
+  const GLTexture::PixelStoreSettings& pixelPackSettings,
+  const GLTexture::PixelStoreSettings& pixelUnpackSettings,
+  tex::WrapMode wrapMode)
+{
+  switch (image.header().memoryComponentType()) {
+    case ComponentType::Int8:
+      return appendDeinterleavedComponentTexture<int8_t>(
+        componentTextures,
+        image,
+        component,
+        timePoint,
+        pixelPackSettings,
+        pixelUnpackSettings,
+        wrapMode);
+    case ComponentType::UInt8:
+      return appendDeinterleavedComponentTexture<uint8_t>(
+        componentTextures,
+        image,
+        component,
+        timePoint,
+        pixelPackSettings,
+        pixelUnpackSettings,
+        wrapMode);
+    case ComponentType::Int16:
+      return appendDeinterleavedComponentTexture<int16_t>(
+        componentTextures,
+        image,
+        component,
+        timePoint,
+        pixelPackSettings,
+        pixelUnpackSettings,
+        wrapMode);
+    case ComponentType::UInt16:
+      return appendDeinterleavedComponentTexture<uint16_t>(
+        componentTextures,
+        image,
+        component,
+        timePoint,
+        pixelPackSettings,
+        pixelUnpackSettings,
+        wrapMode);
+    case ComponentType::Int32:
+      return appendDeinterleavedComponentTexture<int32_t>(
+        componentTextures,
+        image,
+        component,
+        timePoint,
+        pixelPackSettings,
+        pixelUnpackSettings,
+        wrapMode);
+    case ComponentType::UInt32:
+      return appendDeinterleavedComponentTexture<uint32_t>(
+        componentTextures,
+        image,
+        component,
+        timePoint,
+        pixelPackSettings,
+        pixelUnpackSettings,
+        wrapMode);
+    case ComponentType::Float32:
+      return appendDeinterleavedComponentTexture<float>(
+        componentTextures,
+        image,
+        component,
+        timePoint,
+        pixelPackSettings,
+        pixelUnpackSettings,
+        wrapMode);
+    default:
+      return false;
+  }
+}
+
+} // namespace
+
 std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imageUids)
 {
   static constexpr GLint sk_mipmapLevel = 0; // Load image data into first mipmap level
@@ -16,8 +191,9 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
   //    static const tex::WrapMode sk_wrapModeClampToBorder = tex::WrapMode::ClampToBorder;
   //    static const glm::vec4 sk_border{ 0.0f, 0.0f, 0.0f, 0.0f }; // Black border
 
-  // Map from image UID to vector of textures for the image components.
-  // Images with interleaved components will have one component texture.
+  // Map from image UID to textures used for component rendering. Each logical component gets a
+  // scalar texture, regardless of whether the CPU image buffer is separated or interleaved. This
+  // matches the shader interface, where RGB/RGBA/vector modes sample u_imgTex[component].
   std::unordered_map<uuids::uuid, std::vector<GLTexture>> imageTextures;
 
   std::vector<uuids::uuid> createdImageTexUids;
@@ -53,105 +229,25 @@ std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imag
 
     switch (image->bufferType()) {
       case Image::MultiComponentBufferType::InterleavedImage: {
-        spdlog::debug("Image {} has {} interleaved components, so one texture will be created.", imageUid, numComp);
-
-        // For images with interleaved components, all components are at index 0
-        constexpr uint32_t k_comp0 = 0;
-
-        if (4 < numComp) {
-          spdlog::warn(
-            "Image {} has {} interleaved components, exceeding the maximum "
-            "of 4 allowed per texture; it will not be loaded as a texture",
-            imageUid,
-            numComp);
-          continue;
-        }
-
-        tex::MinificationFilter minFilter;
-        tex::MagnificationFilter maxFilter;
-
-        switch (image->settings().interpolationMode(k_comp0)) {
-          case InterpolationMode::NearestNeighbor: {
-            minFilter = tex::MinificationFilter::Nearest;
-            maxFilter = tex::MagnificationFilter::Nearest;
-            break;
-          }
-          case InterpolationMode::Linear:
-          case InterpolationMode::CubicBsplineConvolution: {
-            minFilter = tex::MinificationFilter::Linear;
-            maxFilter = tex::MagnificationFilter::Linear;
+        spdlog::debug(
+          "Image {} has {} interleaved component(s); creating one scalar texture per logical component.",
+          imageUid,
+          numComp);
+        for (uint32_t comp = 0; comp < numComp; ++comp) {
+          if (!appendDeinterleavedComponentTexture(
+                componentTextures,
+                *image,
+                comp,
+                activeTimePoint,
+                pixelPackSettings,
+                pixelUnpackSettings,
+                sk_wrapModeClampToEdge))
+          {
+            spdlog::warn("Image {} could not create a scalar texture for component {}", imageUid, comp);
+            componentTextures.clear();
             break;
           }
         }
-
-        // The texture pixel format types depend on the number of components
-        tex::SizedInternalFormat sizedInternalNormalizedFormat;
-        tex::BufferPixelFormat bufferPixelNormalizedFormat;
-
-        switch (numComp) {
-          case 1: {
-            // Red:
-            sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRedFormat(compType);
-            bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRedFormat(compType);
-            break;
-          }
-          case 2: {
-            // Red, green:
-            sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRGFormat(compType);
-            bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRGFormat(compType);
-            break;
-          }
-          case 3: {
-            // Red, green, blue:
-            sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRGBFormat(compType);
-            bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRGBFormat(compType);
-            break;
-          }
-          case 4: {
-            // Red, green, blue, alpha:
-            sizedInternalNormalizedFormat = GLTexture::getSizedInternalNormalizedRGBAFormat(compType);
-            bufferPixelNormalizedFormat = GLTexture::getBufferPixelNormalizedRGBAFormat(compType);
-            break;
-          }
-          default: {
-            spdlog::warn(
-              "Image {} has invalid number of components ({}); "
-              "it will not be loaded as a texture",
-              imageUid,
-              numComp);
-            continue;
-          }
-        }
-
-        GLTexture& T = componentTextures.emplace_back(
-          tex::Target::Texture3D,
-          GLTexture::MultisampleSettings(),
-          pixelPackSettings,
-          pixelUnpackSettings);
-
-        T.generate();
-        T.setMinificationFilter(minFilter);
-        T.setMagnificationFilter(maxFilter);
-        //            T.setBorderColor( sk_border );
-        T.setWrapMode(sk_wrapModeClampToEdge);
-        T.setAutoGenerateMipmaps(false); // no mipmapping for images
-        T.setSize(image->header().pixelDimensions());
-
-        const void* imageBuffer = image->bufferAsVoid(k_comp0, activeTimePoint);
-        if (!imageBuffer) {
-          spdlog::warn("Image {} has no texture data for interleaved component buffer", imageUid);
-          componentTextures.clear();
-          break;
-        }
-
-        T.setData(
-          sk_mipmapLevel,
-          sizedInternalNormalizedFormat,
-          bufferPixelNormalizedFormat,
-          GLTexture::getBufferPixelDataType(compType),
-          imageBuffer);
-
-        spdlog::debug("Done creating the texture for all interleaved components of image {}", imageUid);
         break;
       }
       case Image::MultiComponentBufferType::SeparateImages: {

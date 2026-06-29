@@ -16,7 +16,9 @@ enum class PixelKind
 {
   Scalar,
   Vector,
-  Complex
+  Complex,
+  RGB,
+  RGBA
 };
 
 /**

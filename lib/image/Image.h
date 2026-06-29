@@ -115,14 +115,15 @@ public:
   /// @brief Return the selected in-memory layout for multi-component pixel data.
   const MultiComponentBufferType& bufferType() const;
 
-  /** @brief Get a const void pointer to the raw buffer data of an image component.
-   * @param[in] component Image component to get
-   * @note If \c MultiComponentBufferType::InterleavedImage, then 0 is the only valid input
-   * component
-   * @note The component must be in the range [0, header().numComponentsPerPixel() - 1].
-   * To read the data, cast this buffer to the appropriate component type obtained via
-   * header().componentType().
-   * @note A scalar image has a single component (0)
+  /** @brief Get a const void pointer to an owned raw buffer.
+   * @param[in] component Raw buffer slot to get.
+   * @param[in] timePoint Time frame whose first value should be returned.
+   * @return Pointer to the raw buffer slot, or nullptr when the slot/time is invalid.
+   *
+   * For separated buffers, each logical component has its own raw buffer slot. For interleaved
+   * buffers, raw slot 0 stores all logical components in pixel-major order, so slot 0 is the only
+   * valid raw slot. Prefer value() for logical component access that is independent of buffer
+   * layout.
    */
   const void* bufferAsVoid(uint32_t component, uint32_t timePoint = 0) const;
 
@@ -534,18 +535,9 @@ private:
   std::optional<std::pair<std::size_t, std::size_t>>
   getComponentAndOffsetForBuffer(uint32_t comp, std::size_t index, uint32_t timePoint = 0) const;
 
-  /**
-   * @remark If the image has a multi-component pixels and m_bufferType ==
-   * MultiComponentBufferType::SeparateImages, then its components are separated and stored in a
-   * vector of images. This is so that the buffer to each image component can be retrieved
-   * independently of the others. If the components were not separated, then the original buffer
-   * would be accessed as a 1-D array with interleaved components:
-   * buffer[c + numComponents * (x + xSize * (y + ySize * z))]; where c is the desired component.
-   *
-   * @remark if m_bufferType == MultiComponentBufferType::InterleavedImage then only the 0th
-   * component is used to hold all components
-   */
-
+  /// Pixel buffers grouped by component type. For separated layout, the outer vector has one entry
+  /// per logical component. For interleaved layout, the outer vector has one entry and stores all
+  /// logical components in pixel-major order.
   std::vector<std::vector<int8_t>> m_data_int8;
   std::vector<std::vector<uint8_t>> m_data_uint8;
   std::vector<std::vector<int16_t>> m_data_int16;

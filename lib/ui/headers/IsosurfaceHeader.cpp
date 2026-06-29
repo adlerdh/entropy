@@ -581,11 +581,7 @@ void renderIsosurfacesHeader(
   // By default, adjust image component 0:
   static uint32_t componentToAdjust = 0;
 
-  // Component selection combo selection list. The component selection is shown only for
-  // multi-component images, where each component is stored as a separate image.
-  const bool showComponentSelection =
-    (image->header().numComponentsPerPixel() > 1 &&
-     Image::MultiComponentBufferType::SeparateImages == image->bufferType());
+  const bool showComponentSelection = image->header().numComponentsPerPixel() > 1;
 
   if (showComponentSelection) {
     if (ImGui::BeginCombo("Image component", std::to_string(componentToAdjust).c_str())) {
@@ -650,6 +646,9 @@ void renderIsosurfacesHeader(
         selectedSurfaceUid = *uid;
         imageToSelectedSurfaceUid[imageUid] = *uid;
       }
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
       ImGui::PopID(); // imageUid
       return;
     }
@@ -669,10 +668,16 @@ void renderIsosurfacesHeader(
           storeFuture,
           addTaskToIsosurfaceGpuMeshGenerationQueue))
     {
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
       ImGui::PopID(); // imageUid
       return;
     }
 
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::PopID(); // imageUid
     return;
   }
@@ -1100,6 +1105,9 @@ void renderIsosurfacesHeader(
     }
   }
 
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
   ImGui::PopStyleColor();
   ImGui::PopID(); /** PopID surfaceUid **/
 }

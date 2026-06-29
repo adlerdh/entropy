@@ -1,0 +1,15 @@
+{
+  "output": "complex_double_3d.nrrd",
+  "pixel_kind": "complex",
+  "component_type": "double",
+  "components": 1,
+  "size": [24, 24, 16],
+  "spacing": [1.0, 1.0, 1.5],
+  "origin": [-12.0, -12.0, -12.0],
+  "pattern": "complex_phase",
+  "amplitude": 60.0,
+  "offset": 0.0,
+  "metadata": {
+    "entropy_example": "double precision complex image"
+  }
+}

@@ -4,6 +4,8 @@
 #include <itkImageFileWriter.h>
 #include <itkImageRegionIterator.h>
 #include <itkMetaDataObject.h>
+#include <itkRGBAPixel.h>
+#include <itkRGBPixel.h>
 #include <itkVectorImage.h>
 #include <nlohmann/json.hpp>
 
@@ -39,6 +41,12 @@ PixelKind pixelKindFromString(std::string text)
   }
   if ("complex" == text) {
     return PixelKind::Complex;
+  }
+  if ("rgb" == text) {
+    return PixelKind::RGB;
+  }
+  if ("rgba" == text) {
+    return PixelKind::RGBA;
   }
   throw std::runtime_error("Unknown pixel kind: " + text);
 }
@@ -419,6 +427,61 @@ void writeComplexImage(const ImageSpec& spec)
 }
 
 template<typename T, unsigned int Dimension>
+void writeRgbImage(const ImageSpec& spec)
+{
+  using PixelType = itk::RGBPixel<T>;
+  using ImageType = itk::Image<PixelType, Dimension>;
+
+  auto image = ImageType::New();
+  image->SetRegions(itkSize<Dimension>(spec));
+  image->SetSpacing(itkSpacing<Dimension>(spec));
+  image->SetOrigin(itkOrigin<Dimension>(spec));
+  image->SetDirection(directionMatrix<Dimension>(spec));
+  image->Allocate();
+  applyMetadata<ImageType>(image, spec);
+
+  itk::ImageRegionIterator<ImageType> it(image, image->GetLargestPossibleRegion());
+  for (it.GoToBegin(); !it.IsAtEnd(); ++it) {
+    const std::vector<std::size_t> index = vectorIndex<Dimension>(it.GetIndex());
+    PixelType pixel;
+    pixel.SetRed(static_cast<T>(patternValue(spec, index, 0)));
+    pixel.SetGreen(static_cast<T>(patternValue(spec, index, 1)));
+    pixel.SetBlue(static_cast<T>(patternValue(spec, index, 2)));
+    it.Set(pixel);
+  }
+
+  itk::WriteImage(image, spec.output.string());
+}
+
+template<typename T, unsigned int Dimension>
+void writeRgbaImage(const ImageSpec& spec)
+{
+  using PixelType = itk::RGBAPixel<T>;
+  using ImageType = itk::Image<PixelType, Dimension>;
+
+  auto image = ImageType::New();
+  image->SetRegions(itkSize<Dimension>(spec));
+  image->SetSpacing(itkSpacing<Dimension>(spec));
+  image->SetOrigin(itkOrigin<Dimension>(spec));
+  image->SetDirection(directionMatrix<Dimension>(spec));
+  image->Allocate();
+  applyMetadata<ImageType>(image, spec);
+
+  itk::ImageRegionIterator<ImageType> it(image, image->GetLargestPossibleRegion());
+  for (it.GoToBegin(); !it.IsAtEnd(); ++it) {
+    const std::vector<std::size_t> index = vectorIndex<Dimension>(it.GetIndex());
+    PixelType pixel;
+    pixel.SetRed(static_cast<T>(patternValue(spec, index, 0)));
+    pixel.SetGreen(static_cast<T>(patternValue(spec, index, 1)));
+    pixel.SetBlue(static_cast<T>(patternValue(spec, index, 2)));
+    pixel.SetAlpha(static_cast<T>(patternValue(spec, index, 3)));
+    it.Set(pixel);
+  }
+
+  itk::WriteImage(image, spec.output.string());
+}
+
+template<typename T, unsigned int Dimension>
 void writeTypedImage(const ImageSpec& spec)
 {
   switch (spec.pixelKind) {
@@ -430,6 +493,12 @@ void writeTypedImage(const ImageSpec& spec)
       return;
     case PixelKind::Complex:
       writeComplexImage<T, Dimension>(spec);
+      return;
+    case PixelKind::RGB:
+      writeRgbImage<T, Dimension>(spec);
+      return;
+    case PixelKind::RGBA:
+      writeRgbaImage<T, Dimension>(spec);
       return;
   }
 }
@@ -535,6 +604,12 @@ void validateSpec(const ImageSpec& spec)
   }
   if (PixelKind::Vector == spec.pixelKind && spec.components < 2) {
     throw std::runtime_error("Vector images must have at least two components");
+  }
+  if (PixelKind::RGB == spec.pixelKind && spec.components != 3) {
+    throw std::runtime_error("RGB images must have exactly three components");
+  }
+  if (PixelKind::RGBA == spec.pixelKind && spec.components != 4) {
+    throw std::runtime_error("RGBA images must have exactly four components");
   }
   if (PixelKind::Complex == spec.pixelKind) {
     const std::string type = lower(spec.componentType);

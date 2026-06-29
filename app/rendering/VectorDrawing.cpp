@@ -1313,7 +1313,7 @@ void drawVectorFieldArrows(
       const float requestedStep = std::max(settings.vectorArrowOverlayVoxelSpacing(), 0.1f);
       const float minStepForScreenSpacing =
         std::max(requestedStep, 4.0f / std::max(screenPixelsPerVoxel(windowVP, view, *image, worldCrosshairs), 0.1f));
-      const float voxelStep = std::min(minStepForScreenSpacing, 10.0f);
+      const float voxelStep = std::min(minStepForScreenSpacing, 100.0f);
 
       for (float b = 0.0f; b < static_cast<float>(dims[axis1]); b += voxelStep) {
         for (float a = 0.0f; a < static_cast<float>(dims[axis0]); a += voxelStep) {

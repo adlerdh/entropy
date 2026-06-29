@@ -387,20 +387,25 @@ std::string complexComponentLabel(uint32_t component, uint32_t componentMax)
   else if (1u == component) {
     label += " (imaginary)";
   }
+  label += " (" + std::to_string(componentMax + 1u) + " total)";
   return label;
 }
 
 std::string vectorFieldComponentLabel(uint32_t component, uint32_t componentMax)
 {
   std::string label = std::to_string(component) + " of " + std::to_string(componentMax);
+  const std::string total = std::to_string(componentMax + 1u) + " total";
   if (0u == component) {
-    label += " (x)";
+    label += " (x; " + total + ")";
   }
   else if (1u == component) {
-    label += " (y)";
+    label += " (y; " + total + ")";
   }
   else if (2u == component) {
-    label += " (z)";
+    label += " (z; " + total + ")";
+  }
+  else {
+    label += " (" + total + ")";
   }
   return label;
 }

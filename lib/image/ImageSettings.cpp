@@ -18,6 +18,7 @@ namespace
 constexpr int k_defaultWindowLowQuantileIndex = 1;   // 1% level
 constexpr int k_defaultWindowHighQuantileIndex = 99; // 99% level
 constexpr int k_maxQuantileIndex = 100;
+constexpr double k_minConstantImageWindowWidth = 1.0e-6;
 
 struct DefaultWindow
 {
@@ -45,6 +46,11 @@ DefaultWindow computeDefaultWindow(const ComponentStats& stats)
   }
 
   return window;
+}
+
+double constantImageWindowWidth(double value)
+{
+  return std::max(1.0, 0.1 * std::abs(value));
 }
 
 } // namespace
@@ -173,6 +179,19 @@ float ImageSettings::warpStrength() const
   return m_warpStrength;
 }
 
+void ImageSettings::setAllowExaggeratedWarp(bool allow)
+{
+  m_allowExaggeratedWarp = allow;
+  if (!m_allowExaggeratedWarp) {
+    m_warpStrength = std::min(m_warpStrength, 1.0f);
+  }
+}
+
+bool ImageSettings::allowExaggeratedWarp() const
+{
+  return m_allowExaggeratedWarp;
+}
+
 void ImageSettings::setDisplayImageAsColor(bool doColor)
 {
   setComponentRenderMode(doColor ? ComponentRenderMode::Color : ComponentRenderMode::SingleComponent);
@@ -215,7 +234,7 @@ bool ImageSettings::vectorArrowOverlayOnImage() const
 
 void ImageSettings::setVectorArrowOverlayDensity(float densityPx)
 {
-  m_vectorArrowOverlayDensity = std::clamp(densityPx, 0.1f, 1000.0f);
+  m_vectorArrowOverlayDensity = std::clamp(densityPx, 0.1f, 100.0f);
 }
 
 float ImageSettings::vectorArrowOverlayDensity() const
@@ -225,7 +244,7 @@ float ImageSettings::vectorArrowOverlayDensity() const
 
 void ImageSettings::setVectorArrowOverlayVoxelSpacing(float spacingVoxels)
 {
-  m_vectorArrowOverlayVoxelSpacing = std::clamp(spacingVoxels, 0.1f, 10.0f);
+  m_vectorArrowOverlayVoxelSpacing = std::clamp(spacingVoxels, 0.1f, 100.0f);
 }
 
 float ImageSettings::vectorArrowOverlayVoxelSpacing() const
@@ -345,7 +364,7 @@ VectorWarpedGridConvention ImageSettings::vectorWarpedGridConvention() const
 
 void ImageSettings::setVectorWarpedGridPixelSpacing(float spacingPx)
 {
-  m_vectorWarpedGridPixelSpacing = std::clamp(spacingPx, 1.0f, 1000.0f);
+  m_vectorWarpedGridPixelSpacing = std::clamp(spacingPx, 1.0f, 100.0f);
 }
 
 float ImageSettings::vectorWarpedGridPixelSpacing() const
@@ -1576,10 +1595,18 @@ void ImageSettings::updateWithNewComponentStatistics(
     setting.m_minMaxThresholdRange =
       std::make_pair(static_cast<double>(stats.onlineStats.min), static_cast<double>(stats.onlineStats.max));
 
-    setting.m_minMaxWindowCenterRange =
-      std::make_pair(static_cast<double>(stats.onlineStats.min), static_cast<double>(stats.onlineStats.max));
-    setting.m_minMaxWindowWidthRange =
-      std::make_pair(0.0, static_cast<double>(stats.onlineStats.max - stats.onlineStats.min));
+    const double minValue = static_cast<double>(stats.onlineStats.min);
+    const double maxValue = static_cast<double>(stats.onlineStats.max);
+    const bool constantComponent = minValue >= maxValue;
+    if (constantComponent) {
+      const double width = constantImageWindowWidth(minValue);
+      setting.m_minMaxWindowCenterRange = std::make_pair(minValue - width, minValue + width);
+      setting.m_minMaxWindowWidthRange = std::make_pair(k_minConstantImageWindowWidth, 10.0 * width);
+    }
+    else {
+      setting.m_minMaxWindowCenterRange = std::make_pair(minValue, maxValue);
+      setting.m_minMaxWindowWidthRange = std::make_pair(0.0, maxValue - minValue);
+    }
 
     // Default thresholds are min/max values:
     setting.m_thresholds =
@@ -1592,6 +1619,10 @@ void ImageSettings::updateWithNewComponentStatistics(
 
     setting.m_windowCenter = 0.5 * (window.low + window.high);
     setting.m_windowWidth = window.high - window.low;
+    if (constantComponent) {
+      setting.m_windowCenter = minValue;
+      setting.m_windowWidth = constantImageWindowWidth(minValue);
+    }
     setting.m_windowQuantilesLowHigh = {window.lowQuantile, window.highQuantile};
 
     setting.m_foregroundThresholds = std::make_pair(
@@ -1697,19 +1728,23 @@ void ImageSettings::updateInternals()
 
     const double imageRange = S.m_minMaxImageRange.second - S.m_minMaxImageRange.first;
 
-    if (imageRange <= 0.0 || windowWidth(i) <= 0.0) {
-      // Resort to default slope/intercept and normalized threshold values
-      // if either the image range or the window width are not positive:
-
+    if (windowWidth(i) <= 0.0) {
       S.m_slope_native = 0.0;
       S.m_intercept_native = 0.0;
-
       S.m_slope_texture = 0.0;
       S.m_intercept_texture = 0.0;
-
       S.m_largest_slope_texture = 0.0;
       S.m_largest_intercept_texture = 0.0;
+      continue;
+    }
 
+    if (imageRange <= 0.0) {
+      S.m_slope_native = 1.0 / windowWidth(i);
+      S.m_intercept_native = 0.5 - windowCenter(i) / windowWidth(i);
+      S.m_slope_texture = 0.0;
+      S.m_intercept_texture = 0.5;
+      S.m_largest_slope_texture = 0.0;
+      S.m_largest_intercept_texture = 0.5;
       continue;
     }
 

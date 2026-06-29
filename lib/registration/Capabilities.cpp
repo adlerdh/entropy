@@ -78,8 +78,8 @@ BackendCapabilities greedyCapabilities()
   capabilities.backend = Backend::Greedy;
   capabilities.transformModels = {
     TransformModel::Rigid,
+    TransformModel::Similarity,
     TransformModel::Affine,
-    TransformModel::RigidAffine,
     TransformModel::Deformable,
     TransformModel::AffineDeformable};
   capabilities.metrics = {Metric::SSD, Metric::MI, Metric::NMI, Metric::NCC, Metric::WNCC};
@@ -98,9 +98,9 @@ BackendCapabilities greedyCapabilities()
   capabilities.parameters = {
     parameter(
       "iterations",
-      "Iterations",
+      "Iterations per level (coarse to fine):",
       ParameterKind::IntegerVector,
-      "100x50x10",
+      "128x64x32",
       "Multi-resolution iteration schedule from coarse to fine."),
     numericParameter(
       "wnccRadius",
@@ -122,6 +122,86 @@ BackendCapabilities greedyCapabilities()
       ParameterKind::FloatVector,
       "1.732,0.7071",
       "Greedy update smoothing sigmas for deformation regularity.",
+      true),
+    numericParameter(
+      "stepSize",
+      "Step size",
+      ParameterKind::Float,
+      "1.0",
+      0.0,
+      10.0,
+      "Greedy deformable update step size (-e).",
+      true),
+    choiceParameter(
+      "velocityModel",
+      "Velocity model",
+      "Stationary velocity (sv)",
+      {"Stationary velocity (sv)",
+       "Accurate stationary velocity (svlb)",
+       "Incompressible stationary velocity (sv-incompr)"},
+      "Greedy deformable update model: stationary velocity, accurate stationary velocity, or incompressible.",
+      true),
+    numericParameter(
+      "inverseExponentiation",
+      "Exponentiation depth",
+      ParameterKind::Integer,
+      "4",
+      0.0,
+      12.0,
+      "Greedy exponent used for warp inversion, root computation, and stationary velocity fields.",
+      true),
+    parameter(
+      "fixedMaskTrim",
+      "Fixed mask trim",
+      ParameterKind::Text,
+      "",
+      "Optional trim radius for Greedy -gm-trim, for example 8x8x8.",
+      true),
+    numericParameter(
+      "affineJitter",
+      "Affine jitter",
+      ParameterKind::Float,
+      "0.5",
+      0.0,
+      10.0,
+      "Small random jitter applied to affine metric sample points.",
+      true),
+    numericParameter(
+      "affineSearchIterations",
+      "Affine search iterations",
+      ParameterKind::Integer,
+      "0",
+      0.0,
+      10000.0,
+      "Number of random rigid-transform search iterations before affine optimization.",
+      true),
+    choiceParameter(
+      "affineSearchRotation",
+      "Affine search rotation",
+      "Any rotation (any)",
+      {"Any rotation (any)", "Any rotation or flip (flip)"},
+      "Greedy -search rotation range: degrees, any, or flip.",
+      true),
+    parameter(
+      "affineSearchTranslation",
+      "Affine search translation",
+      ParameterKind::Text,
+      "50",
+      "Greedy -search translation range in physical units.",
+      true),
+    choiceParameter(
+      "affineMoments",
+      "Affine moments initialization",
+      "Off",
+      {"Off", "First moments (1)", "Second moments (2)"},
+      "Initialize affine registration by matching first or second moments instead of image centers/current affine.",
+      true),
+    choiceParameter(
+      "affineDeterminant",
+      "Affine determinant",
+      "None (free)",
+      {"None (free)", "No flip (1)", "Flip (-1)"},
+      "Optionally force the affine determinant sign: free, no flip, or flip.",
       true),
     numericParameter(
       "threads",
@@ -198,9 +278,9 @@ BackendCapabilities antsCapabilities()
   capabilities.parameters = {
     parameter(
       "iterations",
-      "Iterations",
+      "Iterations per level (coarse to fine):",
       ParameterKind::IntegerVector,
-      "100x50x25",
+      "128x64x32",
       "Per-level convergence iteration schedule."),
     parameter(
       "shrinkFactors",
@@ -290,9 +370,9 @@ BackendCapabilities fireAntsCapabilities()
     parameter("scales", "Scales", ParameterKind::IntegerVector, "4x2x1", "Image pyramid scales from coarse to fine."),
     parameter(
       "iterations",
-      "Iterations",
+      "Iterations per level (coarse to fine):",
       ParameterKind::IntegerVector,
-      "100x50x25",
+      "128x64x32",
       "Per-scale optimization iterations."),
     choiceParameter("optimizer", "Optimizer", "Adam", {"Adam", "SGD"}, "PyTorch optimizer used by FireANTs.", true),
     numericParameter(

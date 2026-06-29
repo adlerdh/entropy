@@ -796,7 +796,7 @@ TEST_CASE("Vector derivative projections use the requested source time frame", "
   CHECK(jacobian1->value<double>(0, 13).value() == Catch::Approx(expectedJacobian1));
 }
 
-TEST_CASE("Raw interleaved images truncate to the first four components per pixel", "[image][raw][interleaved]")
+TEST_CASE("Raw interleaved images preserve all components per pixel", "[image][raw][interleaved]")
 {
   const glm::uvec3 dims{2, 1, 1};
   ImageIoInfo ioInfo = makeIoInfo(ComponentType::UInt16, 5, dims);
@@ -812,22 +812,94 @@ TEST_CASE("Raw interleaved images truncate to the first four components per pixe
     Image::MultiComponentBufferType::InterleavedImage,
     buffers);
 
-  CHECK(image.header().numComponentsPerPixel() == 4);
+  CHECK(image.header().numComponentsPerPixel() == 5);
   CHECK(image.value<double>(0, 0).value() == Catch::Approx(10.0));
   CHECK(image.value<double>(1, 0).value() == Catch::Approx(11.0));
   CHECK(image.value<double>(2, 0).value() == Catch::Approx(12.0));
   CHECK(image.value<double>(3, 0).value() == Catch::Approx(13.0));
+  CHECK(image.value<double>(4, 0).value() == Catch::Approx(14.0));
   CHECK(image.value<double>(0, 1).value() == Catch::Approx(20.0));
   CHECK(image.value<double>(1, 1).value() == Catch::Approx(21.0));
   CHECK(image.value<double>(2, 1).value() == Catch::Approx(22.0));
   CHECK(image.value<double>(3, 1).value() == Catch::Approx(23.0));
+  CHECK(image.value<double>(4, 1).value() == Catch::Approx(24.0));
 
   CHECK(image.generateSortedBuffers());
   CHECK(image.quantileToValue(0, 1.0) == Catch::Approx(20.0));
   CHECK(image.quantileToValue(3, 1.0) == Catch::Approx(23.0));
+  CHECK(image.quantileToValue(4, 1.0) == Catch::Approx(24.0));
 }
 
-TEST_CASE("Integer component images default to nearest-neighbor interpolation", "[image][settings]")
+TEST_CASE("Raw images expose logical components for separated and interleaved layouts", "[image][raw][components]")
+{
+  const glm::uvec3 dims{3, 1, 1};
+  constexpr std::size_t k_numPixels = 3;
+
+  for (uint32_t numComponents = 1; numComponents <= 5; ++numComponents) {
+    CAPTURE(numComponents);
+
+    std::vector<std::vector<float>> separatedValues(numComponents);
+    std::vector<const void*> separatedBuffers;
+    separatedBuffers.reserve(numComponents);
+    std::vector<float> interleavedValues(k_numPixels * numComponents, 0.0f);
+
+    for (uint32_t component = 0; component < numComponents; ++component) {
+      separatedValues[component].resize(k_numPixels);
+      for (std::size_t pixel = 0; pixel < k_numPixels; ++pixel) {
+        const float value = 100.0f * static_cast<float>(component) + static_cast<float>(pixel + 1u);
+        separatedValues[component][pixel] = value;
+        interleavedValues[numComponents * pixel + component] = value;
+      }
+      separatedBuffers.push_back(separatedValues[component].data());
+    }
+
+    auto checkImage = [&](Image::MultiComponentBufferType bufferType, const std::vector<const void*>& buffers) {
+      const bool interleaved = Image::MultiComponentBufferType::InterleavedImage == bufferType;
+      ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, numComponents, dims);
+      ImageHeader header(ioInfo, ioInfo, interleaved);
+      Image image(
+        header,
+        interleaved ? "raw-interleaved" : "raw-separated",
+        Image::ImageRepresentation::Image,
+        bufferType,
+        buffers);
+
+      CHECK(image.bufferType() == bufferType);
+      CHECK(image.header().numComponentsPerPixel() == numComponents);
+      CHECK(image.header().interleavedComponents() == interleaved);
+      CHECK(image.bufferAsVoid(0) != nullptr);
+      if (interleaved) {
+        CHECK(image.bufferAsVoid(1) == nullptr);
+      }
+      else if (numComponents > 1u) {
+        CHECK(image.bufferAsVoid(1) != nullptr);
+      }
+
+      for (uint32_t component = 0; component < numComponents; ++component) {
+        for (std::size_t pixel = 0; pixel < k_numPixels; ++pixel) {
+          const float expected = 100.0f * static_cast<float>(component) + static_cast<float>(pixel + 1u);
+          REQUIRE(image.value<double>(component, pixel));
+          CHECK(*image.value<double>(component, pixel) == Catch::Approx(expected));
+        }
+      }
+
+      CHECK(image.generateSortedBuffers());
+      for (uint32_t component = 0; component < numComponents; ++component) {
+        CHECK(image.quantileToValue(component, 0.0) == Catch::Approx(100.0 * component + 1.0));
+        CHECK(image.quantileToValue(component, 1.0) == Catch::Approx(100.0 * component + 3.0));
+      }
+    };
+
+    checkImage(Image::MultiComponentBufferType::SeparateImages, separatedBuffers);
+
+    const std::vector<const void*> interleavedBuffers{interleavedValues.data()};
+    checkImage(Image::MultiComponentBufferType::InterleavedImage, interleavedBuffers);
+  }
+}
+
+TEST_CASE(
+  "Integer component image interpolation defaults distinguish intensity and label-like data",
+  "[image][settings]")
 {
   const glm::uvec3 dims{2, 2, 1};
   ImageIoInfo ioInfo = makeIoInfo(ComponentType::UInt16, 3, dims);
@@ -845,15 +917,64 @@ TEST_CASE("Integer component images default to nearest-neighbor interpolation", 
     buffers);
 
   for (uint32_t component = 0; component < image.settings().numComponents(); ++component) {
-    CHECK(image.settings().interpolationMode(component) == InterpolationMode::NearestNeighbor);
+    CHECK(image.settings().interpolationMode(component) == InterpolationMode::Linear);
   }
-  CHECK(image.settings().colorInterpolationMode() == InterpolationMode::NearestNeighbor);
+  CHECK(image.settings().colorInterpolationMode() == InterpolationMode::Linear);
+
+  const glm::uvec3 labelDims{32, 32, 1};
+  ImageIoInfo labelInfo = makeIoInfo(ComponentType::UInt16, 1, labelDims);
+  ImageHeader labelHeader(labelInfo, labelInfo, false);
+  std::vector<uint16_t> labels(labelDims.x * labelDims.y, 0u);
+  std::fill(labels.begin() + 128, labels.begin() + 512, 3u);
+  const std::vector<const void*> labelBuffers{labels.data()};
+
+  const Image labelLikeImage(
+    labelHeader,
+    "label-like-integer-image",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    labelBuffers);
+
+  CHECK(labelLikeImage.settings().interpolationMode() == InterpolationMode::NearestNeighbor);
+  CHECK(labelLikeImage.settings().colorInterpolationMode() == InterpolationMode::NearestNeighbor);
+
+  const Image segmentation(
+    labelHeader,
+    "segmentation",
+    Image::ImageRepresentation::Segmentation,
+    Image::MultiComponentBufferType::SeparateImages,
+    labelBuffers);
+
+  CHECK(segmentation.settings().interpolationMode() == InterpolationMode::NearestNeighbor);
+  CHECK(segmentation.settings().colorInterpolationMode() == InterpolationMode::NearestNeighbor);
 
   const Image floatImage = makeThreeComponentImage();
   for (uint32_t component = 0; component < floatImage.settings().numComponents(); ++component) {
     CHECK(floatImage.settings().interpolationMode(component) == InterpolationMode::Linear);
   }
   CHECK(floatImage.settings().colorInterpolationMode() == InterpolationMode::Linear);
+}
+
+TEST_CASE("Constant components get an editable nonzero window", "[image][settings]")
+{
+  const glm::uvec3 dims{4, 4, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 1, dims);
+  ImageHeader header(ioInfo, ioInfo, false);
+  const std::vector<float> values(dims.x * dims.y, 5.0f);
+  const std::vector<const void*> buffers{values.data()};
+
+  const Image image(
+    header,
+    "constant-image",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+
+  CHECK(image.settings().windowCenter() == Catch::Approx(5.0));
+  CHECK(image.settings().windowWidth() > 0.0);
+  CHECK(image.settings().minMaxWindowWidthRange().second > image.settings().minMaxWindowWidthRange().first);
+  CHECK(image.settings().slopeIntercept_normalized_T_texture().first == Catch::Approx(0.0));
+  CHECK(image.settings().slopeIntercept_normalized_T_texture().second == Catch::Approx(0.5));
 }
 
 TEST_CASE("Component projections create scalar images from multi-component images", "[image][derived]")
@@ -925,8 +1046,8 @@ TEST_CASE("Complex phase helpers support signed and unsigned radians and degrees
     Catch::Approx(3.0 * std::numbers::pi / 2.0));
   CHECK(complexPhaseValue(-1.0, 0.0, ComplexPhaseRange::Signed, ComplexPhaseUnit::Degrees) == Catch::Approx(180.0));
   CHECK(complexPhaseValue(0.0, -1.0, ComplexPhaseRange::Unsigned, ComplexPhaseUnit::Degrees) == Catch::Approx(270.0));
-  CHECK(complexComponentLabel(0, 1) == "0 of 1 (real)");
-  CHECK(complexComponentLabel(1, 1) == "1 of 1 (imaginary)");
+  CHECK(complexComponentLabel(0, 1) == "0 of 1 (real) (2 total)");
+  CHECK(complexComponentLabel(1, 1) == "1 of 1 (imaginary) (2 total)");
 }
 
 TEST_CASE("Complex phase projection creates scalar images from complex components", "[image][derived][complex]")
@@ -962,6 +1083,30 @@ TEST_CASE("Complex phase projection creates scalar images from complex component
   CHECK(phase->value<double>(0, 1).value() == Catch::Approx(90.0));
   CHECK(phase->value<double>(0, 2).value() == Catch::Approx(270.0));
   CHECK(phase->value<double>(0, 3).value() == Catch::Approx(180.0));
+}
+
+TEST_CASE("Multi-component images default to magnitude rendering", "[image][settings][components]")
+{
+  const glm::uvec3 dims{2, 2, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 5, dims);
+  ioInfo.m_pixelInfo.m_pixelType = PixelType::Vector;
+  ioInfo.m_pixelInfo.m_pixelTypeString = "vector";
+  ImageHeader header(ioInfo, ioInfo, false);
+
+  const std::vector<float> c0{1.0f, 2.0f, 3.0f, 4.0f};
+  const std::vector<float> c1{2.0f, 3.0f, 4.0f, 5.0f};
+  const std::vector<float> c2{3.0f, 4.0f, 5.0f, 6.0f};
+  const std::vector<float> c3{4.0f, 5.0f, 6.0f, 7.0f};
+  const std::vector<float> c4{5.0f, 6.0f, 7.0f, 8.0f};
+  std::vector<const void*> buffers{c0.data(), c1.data(), c2.data(), c3.data(), c4.data()};
+  const Image image(
+    header,
+    "five-component",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::SeparateImages,
+    buffers);
+
+  CHECK(image.settings().componentRenderMode() == ComponentRenderMode::Magnitude);
 }
 
 TEST_CASE("Component projections ignore non-finite component values", "[image][derived]")
@@ -1036,9 +1181,9 @@ TEST_CASE("Vector field derivative projections use physical spacing", "[image][d
   CHECK(isVectorFieldImage(image));
   CHECK(image.settings().vectorWarpedGridVoxelSpacing() == Catch::Approx(4.0f));
   CHECK(image.settings().vectorWarpedGridMillimeterSpacing() == Catch::Approx(8.0f));
-  CHECK(vectorFieldComponentLabel(0, 2) == "0 of 2 (x)");
-  CHECK(vectorFieldComponentLabel(1, 2) == "1 of 2 (y)");
-  CHECK(vectorFieldComponentLabel(2, 2) == "2 of 2 (z)");
+  CHECK(vectorFieldComponentLabel(0, 2) == "0 of 2 (x; 3 total)");
+  CHECK(vectorFieldComponentLabel(1, 2) == "1 of 2 (y; 3 total)");
+  CHECK(vectorFieldComponentLabel(2, 2) == "2 of 2 (z; 3 total)");
 
   const glm::uvec3 centerVoxel{1, 1, 1};
   const auto jacobian = createComponentProjectionImage(image, ComponentProjectionMode::VectorJacobianDeterminant);

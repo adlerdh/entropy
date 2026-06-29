@@ -481,6 +481,9 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
   for (const auto& imageUid : m_data.imageUidsOrdered()) {
     const Image* image = m_data.warpField(imageUid);
     if (image && image->header().fileName() == fileName) {
+      if (Image* mutableImage = m_data.image(imageUid)) {
+        mutableImage->settings().setComponentRenderMode(ComponentRenderMode::Magnitude);
+      }
       spdlog::info("Using already-loaded image {} from {} as a deformation field", imageUid, fileName);
       return {imageUid, false};
     }
@@ -516,6 +519,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
   spdlog::info("Settings:\n{}", def.settings());
 
   // TODO: Do check of deformation field header against the reference image header?
+  def.settings().setComponentRenderMode(ComponentRenderMode::Magnitude);
 
   if (const auto defUid = m_data.addDef(std::move(def))) {
     spdlog::info("Loaded deformation field image from file {} as {}", fileName, *defUid);

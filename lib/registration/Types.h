@@ -37,6 +37,20 @@ enum class TransformModel : std::uint8_t
 };
 
 /**
+ * @brief Return whether the transform model contains an affine stage.
+ * @param model Transform model to query.
+ * @return True when the model can produce an affine transform.
+ */
+bool includesAffineTransform(TransformModel model);
+
+/**
+ * @brief Return whether the transform model contains a deformation field stage.
+ * @param model Transform model to query.
+ * @return True when the model can produce dense inverse/forward warp fields.
+ */
+bool includesDeformableTransform(TransformModel model);
+
+/**
  * @brief Similarity metric or loss used by a registration stage.
  */
 enum class Metric : std::uint8_t
@@ -256,8 +270,10 @@ struct JobSpec
   DataRef movingImage;                                              //!< Moving image.
   TransformModel transformModel = TransformModel::AffineDeformable; //!< Requested transform model.
   Metric metric = Metric::WNCC;                                     //!< Primary metric/loss.
-  std::string iterationSchedule = "100x50x10";                      //!< Multi-resolution iteration schedule.
-  bool useImageCentersForInitialization = true;                     //!< Initialize from image centers when supported.
+  std::string iterationSchedule = "128x64x32";                      //!< Multi-resolution iteration schedule.
+  bool useImageCentersForInitialization = false;                    //!< Initialize from image centers when supported.
+  bool useCurrentAffineTransformsForInitialization = true;          //!< Initialize from Entropy's current affine state.
+  std::filesystem::path initialAffineTransform;                     //!< Backend-readable initial affine transform file.
   DataRef fixedMask;                                                //!< Optional fixed mask.
   DataRef movingMask;                                               //!< Optional moving mask.
   std::vector<AuxiliaryImagePair> auxiliaryImagePairs;              //!< Additional image/label constraints.

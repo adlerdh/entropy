@@ -2,6 +2,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <chrono>
+#include <filesystem>
+
 namespace
 {
 
@@ -43,6 +46,27 @@ TEST_CASE("registration job store creates stable ordered job ids", "[registratio
   CHECK(second == "registration-2");
   REQUIRE(store.jobs().size() == 2);
   CHECK(store.jobs().front().id == first);
+  CHECK(store.jobs().front().order == 1);
+  CHECK(store.jobs().back().order == 2);
+}
+
+TEST_CASE("registration job store expands system temp output into per-job folders", "[registration][jobs]")
+{
+  registration::JobStore store;
+  registration::JobSpec tempJob = makeJob();
+  tempJob.outputDirectory = std::filesystem::temp_directory_path();
+
+  const std::string id = store.add(tempJob);
+
+  REQUIRE(store.find(id));
+  CHECK(store.find(id)->spec.outputDirectory == std::filesystem::temp_directory_path() / "entropy-registration" / id);
+
+  registration::JobSpec explicitJob = makeJob();
+  explicitJob.outputDirectory = "/tmp/user-selected-registration-output";
+  const std::string explicitId = store.add(explicitJob);
+
+  REQUIRE(store.find(explicitId));
+  CHECK(store.find(explicitId)->spec.outputDirectory == explicitJob.outputDirectory);
 }
 
 TEST_CASE("registration job store tracks status and active jobs", "[registration][jobs]")
@@ -132,4 +156,37 @@ TEST_CASE("registration job store applies execution summaries", "[registration][
   CHECK(job->outputLines.front().text == "output");
   REQUIRE(registration::latestProgress(*job));
   CHECK(*registration::latestProgress(*job) == 0.5);
+}
+
+TEST_CASE("registration job store tracks start and end times", "[registration][jobs]")
+{
+  registration::JobStore store;
+  const std::string id = store.add(makeJob());
+  const registration::JobRecord* job = store.find(id);
+  REQUIRE(job);
+  CHECK_FALSE(job->startedAt);
+  CHECK_FALSE(job->endedAt);
+
+  REQUIRE(store.appendProgress(id, eventOfKind(registration::ProgressEventKind::Started)));
+  job = store.find(id);
+  REQUIRE(job);
+  CHECK(job->startedAt.has_value());
+  CHECK_FALSE(job->endedAt);
+
+  REQUIRE(store.appendProgress(id, eventOfKind(registration::ProgressEventKind::Completed)));
+  job = store.find(id);
+  REQUIRE(job);
+  CHECK(job->endedAt.has_value());
+  CHECK(registration::jobDuration(*job).has_value());
+}
+
+TEST_CASE("registration job duration formatting chooses readable units", "[registration][jobs]")
+{
+  using namespace std::chrono_literals;
+
+  CHECK(registration::formatDuration(25ms) == "25 ms");
+  CHECK(registration::formatDuration(1500ms) == "1.5 sec");
+  CHECK(registration::formatDuration(12s) == "12 sec");
+  CHECK(registration::formatDuration(90s) == "1.5 min");
+  CHECK(registration::formatDuration(2h + 30min) == "2.5 hr");
 }

@@ -1,0 +1,15 @@
+{
+  "output": "scalar_int16_3d.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "int16",
+  "components": 1,
+  "size": [24, 20, 12],
+  "spacing": [0.8, 0.8, 1.6],
+  "origin": [-9.6, -8.0, -9.6],
+  "pattern": "checker",
+  "amplitude": 1200.0,
+  "offset": 0.0,
+  "metadata": {
+    "entropy_example": "signed 16-bit scalar image"
+  }
+}

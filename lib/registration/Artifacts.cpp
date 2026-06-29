@@ -131,10 +131,14 @@ ResultManifest buildExpectedResultManifest(const JobSpec& job)
   if (job.outputs.loadWarpedImage) {
     manifest.warpedImage = artifactPath(job, ArtifactRole::WarpedImage);
   }
-  if (job.outputs.loadInverseWarp || job.outputs.applyWarpToMovingImage) {
+  const bool hasDeformableOutput = includesDeformableTransform(job.transformModel);
+  if (hasDeformableOutput && (job.outputs.loadInverseWarp || job.outputs.applyWarpToMovingImage)) {
     manifest.inverseWarp = artifactPath(job, ArtifactRole::InverseWarp);
   }
-  if (job.outputs.loadForwardWarp || job.outputs.transformLandmarksAndAnnotations || job.outputs.transformSurfaces) {
+  if (
+    hasDeformableOutput &&
+    (job.outputs.loadForwardWarp || job.outputs.transformLandmarksAndAnnotations || job.outputs.transformSurfaces))
+  {
     manifest.forwardWarp = artifactPath(job, ArtifactRole::ForwardWarp);
   }
   if (job.outputs.loadWarpedSegmentation) {

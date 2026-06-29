@@ -62,37 +62,15 @@ ImportPlan buildImportPlan(const JobSpec& job, const ResultManifest& manifest)
 {
   ImportPlan plan;
   plan.warnings = manifest.warnings;
+  const bool hasDeformableOutput = includesDeformableTransform(job.transformModel);
 
-  if (job.outputs.loadInverseWarp) {
-    if (hasPath(manifest.inverseWarp)) {
-      addStep(
-        plan,
-        ImportAction::LoadInverseWarp,
-        manifest.inverseWarp,
-        inverseWarpName(job.fixedImage, job.movingImage),
-        job.movingImage.uid);
-    }
-    else {
-      addMissingWarning(plan, "inverse warp");
-    }
-  }
-
-  if (job.outputs.loadForwardWarp) {
-    if (hasPath(manifest.forwardWarp)) {
-      addStep(
-        plan,
-        ImportAction::LoadForwardWarp,
-        manifest.forwardWarp,
-        forwardWarpName(job.fixedImage, job.movingImage),
-        job.movingImage.uid);
-    }
-    else {
-      addMissingWarning(plan, "forward warp");
-    }
-  }
-
-  if (job.outputs.applyWarpToMovingImage && (hasPath(manifest.inverseWarp) || hasPath(manifest.forwardWarp))) {
-    addStep(plan, ImportAction::AssignWarpsToMovingImage, {}, {}, job.movingImage.uid);
+  if (hasPath(manifest.affineTransform)) {
+    addStep(
+      plan,
+      ImportAction::ApplyAffineTransform,
+      manifest.affineTransform,
+      "Affine transform",
+      job.movingImage.uid);
   }
 
   if (job.outputs.loadWarpedImage) {
@@ -107,6 +85,41 @@ ImportPlan buildImportPlan(const JobSpec& job, const ResultManifest& manifest)
     else {
       addMissingWarning(plan, "warped image");
     }
+  }
+
+  if (hasDeformableOutput && job.outputs.loadInverseWarp) {
+    if (hasPath(manifest.inverseWarp)) {
+      addStep(
+        plan,
+        ImportAction::LoadInverseWarp,
+        manifest.inverseWarp,
+        inverseWarpName(job.fixedImage, job.movingImage),
+        job.movingImage.uid);
+    }
+    else {
+      addMissingWarning(plan, "inverse warp");
+    }
+  }
+
+  if (hasDeformableOutput && job.outputs.loadForwardWarp) {
+    if (hasPath(manifest.forwardWarp)) {
+      addStep(
+        plan,
+        ImportAction::LoadForwardWarp,
+        manifest.forwardWarp,
+        forwardWarpName(job.fixedImage, job.movingImage),
+        job.movingImage.uid);
+    }
+    else {
+      addMissingWarning(plan, "forward warp");
+    }
+  }
+
+  if (
+    hasDeformableOutput && job.outputs.applyWarpToMovingImage &&
+    (hasPath(manifest.inverseWarp) || hasPath(manifest.forwardWarp)))
+  {
+    addStep(plan, ImportAction::AssignWarpsToMovingImage, {}, {}, job.movingImage.uid);
   }
 
   if (job.outputs.loadWarpedSegmentation) {

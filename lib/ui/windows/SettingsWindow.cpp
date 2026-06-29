@@ -90,6 +90,11 @@ float fillWidthForLabeledControl(const char* label, float extraTrailingWidth = 0
   return std::max(1.0f, ImGui::GetContentRegionAvail().x - labelWidth - spacing - extraTrailingWidth);
 }
 
+float settingsControlWidth()
+{
+  return ImGui::CalcItemWidth();
+}
+
 float fillWidthForLabelColumn(float labelWidth)
 {
   const float spacing = labelWidth > 0.0f ? ImGui::GetStyle().ItemSpacing.x : 0.0f;
@@ -139,6 +144,27 @@ void renderPathSetting(const char* label, std::filesystem::path& path, const cha
 void renderTextSetting(const char* label, std::string& value, const char* tooltip)
 {
   ImGui::PushItemWidth(fillWidthForLabeledControl(label));
+  ImGui::InputText(label, &value);
+  ImGui::PopItemWidth();
+  ImGui::SameLine();
+  helpMarker(tooltip);
+}
+
+void renderPathSettingFixedWidth(const char* label, std::filesystem::path& path, const char* tooltip)
+{
+  std::string value = path.string();
+  ImGui::PushItemWidth(settingsControlWidth());
+  if (ImGui::InputText(label, &value)) {
+    path = value;
+  }
+  ImGui::PopItemWidth();
+  ImGui::SameLine();
+  helpMarker(tooltip);
+}
+
+void renderTextSettingFixedWidth(const char* label, std::string& value, const char* tooltip)
+{
+  ImGui::PushItemWidth(settingsControlWidth());
   ImGui::InputText(label, &value);
   ImGui::PopItemWidth();
   ImGui::SameLine();
@@ -1159,6 +1185,81 @@ void renderImagesTab(AppData& appData)
   renderIntensityProjectionDefaults(appData.renderData());
 }
 
+struct RegistrationBackendInfo
+{
+  const char* header;
+  const char* fullName;
+  const char* summary;
+  const char* primaryAuthors;
+  const char* publication;
+  const char* copyright;
+  const char* license;
+  const char* supportedVersions;
+  const char* projectUrl;
+  const char* documentationUrl;
+};
+
+constexpr std::array k_registrationBackendInfo{
+  RegistrationBackendInfo{
+    "Greedy",
+    "Greedy diffeomorphic registration",
+    "Fast command-line medical image registration with affine and deformable registration modes.",
+    "Primary author: Paul A. Yushkevich.",
+    "Commonly cited as the Greedy registration tool; see project documentation for citation guidance.",
+    "See the upstream Greedy source distribution for copyright details.",
+    "GNU General Public License version 3.",
+    "Entropy targets the Greedy command-line interface exposed by the installed greedy executable.",
+    "https://github.com/pyushkevich/greedy",
+    "https://sites.google.com/view/greedyreg/about"},
+  RegistrationBackendInfo{
+    "ANTs",
+    "Advanced Normalization Tools",
+    "State-of-the-art command-line medical image registration and segmentation toolkit built on ITK.",
+    "ANTsX/ConsortiumOfANTS contributors, including Brian Avants, Nick Tustison, and collaborators.",
+    "See ANTsX publication and citation guidance in the upstream repository.",
+    "Copyright 2009-2023 ConsortiumOfANTS.",
+    "Apache License 2.0.",
+    "Entropy targets antsRegistration and antsApplyTransforms command-line tools from ANTs releases.",
+    "https://github.com/ANTsX/ANTs",
+    "https://github.com/ANTsX/ANTs/wiki"},
+  RegistrationBackendInfo{
+    "FireANTs",
+    "FireANTs: Adaptive Riemannian Optimization for Multi-Scale Diffeomorphic Registration",
+    "GPU-oriented Python registration package for fast Riemannian diffeomorphic registration.",
+    "Rohit Jena, Pratik Chaudhari, and James C. Gee.",
+    "Jena, Chaudhari, and Gee, Nature Communications, 2024.",
+    "Copyright notices in the upstream package identify Rohit Jena as copyright holder.",
+    "FireANTs License version 1.0.",
+    "Entropy targets the FireANTs Python CLI through Entropy's bridge module.",
+    "https://github.com/rohitrango/FireANTs",
+    "https://fireants.readthedocs.io/en/latest/"}};
+
+void renderRegistrationBackendInfoRow(const char* label, const char* value)
+{
+  ImGui::TextDisabled("%s", label);
+  ImGui::SameLine();
+  ImGui::TextWrapped("%s", value);
+}
+
+void renderRegistrationBackendInfo(const RegistrationBackendInfo& info)
+{
+  ImGui::SeparatorText(info.header);
+  ImGui::TextWrapped("%s", info.summary);
+  renderRegistrationBackendInfoRow("Full name:", info.fullName);
+  renderRegistrationBackendInfoRow("Authors:", info.primaryAuthors);
+  renderRegistrationBackendInfoRow("Publication:", info.publication);
+  renderRegistrationBackendInfoRow("Copyright:", info.copyright);
+  renderRegistrationBackendInfoRow("License:", info.license);
+  renderRegistrationBackendInfoRow("Supported versions:", info.supportedVersions);
+
+  ImGui::TextDisabled("Project:");
+  ImGui::SameLine();
+  ImGui::TextLinkOpenURL(info.projectUrl, info.projectUrl);
+  ImGui::TextDisabled("Documentation:");
+  ImGui::SameLine();
+  ImGui::TextLinkOpenURL(info.documentationUrl, info.documentationUrl);
+}
+
 /**
  * @brief Render registration backend settings.
  */
@@ -1169,6 +1270,7 @@ void renderRegistrationTab(AppData& appData)
   const bool backendDefaultsOpen = ImGui::CollapsingHeader("Backend Defaults", ImGuiTreeNodeFlags_DefaultOpen);
   if (backendDefaultsOpen) {
     const std::string preview{registration::label(config.defaultBackend)};
+    ImGui::PushItemWidth(settingsControlWidth());
     if (ImGui::BeginCombo("Default backend", preview.c_str())) {
       for (const registration::Backend backend : k_registrationBackends) {
         const bool selected = backend == config.defaultBackend;
@@ -1182,30 +1284,31 @@ void renderRegistrationTab(AppData& appData)
       }
       ImGui::EndCombo();
     }
+    ImGui::PopItemWidth();
     ImGui::SameLine();
     helpMarker("Backend preselected for new registration jobs.");
 
-    renderPathSetting(
+    renderPathSettingFixedWidth(
       "Greedy executable",
       config.greedyExecutable,
       "Command or executable path used to launch Greedy.");
-    renderPathSetting(
-      "ANTs registration",
+    renderPathSettingFixedWidth(
+      "ANTs registration executable",
       config.antsRegistrationExecutable,
       "Command or executable path used to launch antsRegistration.");
-    renderPathSetting(
-      "ANTs apply transforms",
+    renderPathSettingFixedWidth(
+      "ANTs apply transforms executable",
       config.antsApplyTransformsExecutable,
       "Command or executable path used to launch antsApplyTransforms for warped outputs.");
-    renderPathSetting(
+    renderPathSettingFixedWidth(
       "FireANTs Python",
       config.fireAntsPythonExecutable,
       "Python executable used to run the FireANTs bridge module.");
-    renderTextSetting(
+    renderTextSettingFixedWidth(
       "FireANTs module",
       config.fireAntsBridgeModule,
       "Python module that exposes Entropy's FireANTs command-line bridge.");
-    renderPathSetting(
+    renderPathSettingFixedWidth(
       "Output directory",
       config.defaultOutputDirectory,
       "Default directory for registration outputs. Leave empty to use the system temporary directory.");
@@ -1215,7 +1318,7 @@ void renderRegistrationTab(AppData& appData)
   const bool executionOpen = ImGui::CollapsingHeader("Execution", ImGuiTreeNodeFlags_DefaultOpen);
   if (executionOpen) {
     int maxConcurrentJobs = config.maxConcurrentJobs;
-    ImGui::PushItemWidth(fillWidthForLabeledControl("Max concurrent jobs"));
+    ImGui::PushItemWidth(settingsControlWidth());
     if (ImGui::InputInt("Max concurrent jobs", &maxConcurrentJobs)) {
       config.maxConcurrentJobs = std::max(1, maxConcurrentJobs);
     }
@@ -1224,7 +1327,7 @@ void renderRegistrationTab(AppData& appData)
     helpMarker("Maximum number of registration jobs Entropy should run at the same time.");
 
     int cpuThreads = config.defaultCpuThreadCount;
-    ImGui::PushItemWidth(fillWidthForLabeledControl("CPU threads"));
+    ImGui::PushItemWidth(settingsControlWidth());
     if (ImGui::InputInt("CPU threads", &cpuThreads)) {
       config.defaultCpuThreadCount = std::max(0, cpuThreads);
     }
@@ -1232,7 +1335,7 @@ void renderRegistrationTab(AppData& appData)
     ImGui::SameLine();
     helpMarker("Default CPU thread count. Zero lets the backend choose.");
 
-    renderTextSetting("FireANTs device", config.defaultFireAntsDevice, "PyTorch device passed to FireANTs.");
+    renderTextSettingFixedWidth("FireANTs device", config.defaultFireAntsDevice, "PyTorch device passed to FireANTs.");
 
     ImGui::Checkbox("Keep temporary files", &config.keepTemporaryFiles);
     ImGui::SameLine();
@@ -1243,6 +1346,16 @@ void renderRegistrationTab(AppData& appData)
     helpMarker("Open registration setup dialogs with expert backend options visible.");
   }
   finishSettingsSection(executionOpen);
+
+  const bool backendInfoOpen = ImGui::CollapsingHeader("Backend Information");
+  if (backendInfoOpen) {
+    ImGui::TextWrapped(
+      "Entropy launches external registration tools and imports their outputs. These summaries identify the upstream "
+      "projects that Entropy can call; use the links for authoritative licensing, citation, and version details.");
+    for (const RegistrationBackendInfo& info : k_registrationBackendInfo) {
+      renderRegistrationBackendInfo(info);
+    }
+  }
 }
 
 /**

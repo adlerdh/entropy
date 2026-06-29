@@ -52,13 +52,19 @@ cmake --build build-release --target GenerateImageExamples
 }
 ```
 
-`pixel_kind` may be `scalar`, `vector`, or `complex`. `size` controls dimensionality: one value creates a 1D image, two
-values create a 2D image, three values create a 3D image, and four values create a 4D image. For portable time-series
+`pixel_kind` may be `scalar`, `vector`, `complex`, `rgb`, or `rgba`. `size` controls dimensionality: one value creates a
+1D image, two values create a 2D image, three values create a 3D image, and four values create a 4D image. For portable
+time-series
 examples, use a canonical 4D shape with singleton unused spatial axes, such as `[x, 1, 1, t]` for 1D time series,
 `[x, y, 1, t]` for 2D time series, and `[x, y, z, t]` for 3D time series. NRRD examples may also use
 `entropy_time_axis=last` metadata to mark lower-dimensional `[x, t]` or `[x, y, t]` images as time series. Vector
 images use `components` to set the number of components per pixel. Complex images write one
-complex value per pixel and should use `float` or `double` component type.
+complex value per pixel and should use `float` or `double` component type. RGB and RGBA images write real ITK RGB/RGBA
+pixel images and should use three and four components, respectively.
+
+Entropy's closed-loop image loading tests load generated complex, RGB/RGBA, and vector images using both internal
+multi-component buffer layouts: separated component buffers and one interleaved component buffer. The JSON spec controls
+the image written to disk; the internal buffer layout is selected by the Entropy image loader during the test.
 
 Supported component types are `int8`, `uint8`, `int16`, `uint16`, `int32`, `uint32`, `float`, and `double`.
 
@@ -81,7 +87,7 @@ Supported patterns are:
 Command-line options can override common JSON fields:
 
 - `--output`: output image file.
-- `--pixel-kind` or `--pixel-type`: `scalar`, `vector`, or `complex`.
+- `--pixel-kind` or `--pixel-type`: `scalar`, `vector`, `complex`, `rgb`, or `rgba`.
 - `--component-type` or `--component`: output component type.
 - `--components`: number of vector components.
 - `--size` or `--dimensions`: image dimensions.

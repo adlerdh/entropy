@@ -417,6 +417,7 @@ void to_json(json& j, const serialize::ImageSettings& settings)
     {"lockedToReference", settings.m_lockedToReference},
     {"warpEnabled", settings.m_warpEnabled},
     {"warpStrength", settings.m_warpStrength},
+    {"allowExaggeratedWarp", settings.m_allowExaggeratedWarp},
     {"level", settings.m_level},
     {"window", settings.m_window},
     {"thresholdLow", settings.m_thresholdLow},
@@ -550,6 +551,9 @@ void from_json(const json& j, serialize::ImageSettings& settings)
   }
   if (j.count("warpStrength")) {
     j.at("warpStrength").get_to(settings.m_warpStrength);
+  }
+  if (j.count("allowExaggeratedWarp")) {
+    j.at("allowExaggeratedWarp").get_to(settings.m_allowExaggeratedWarp);
   }
   if (j.count("level")) {
     j.at("level").get_to(settings.m_level);

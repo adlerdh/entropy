@@ -1,0 +1,15 @@
+{
+  "output": "scalar_uint8_3d.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "uint8",
+  "components": 1,
+  "size": [24, 20, 12],
+  "spacing": [1.0, 1.2, 2.0],
+  "origin": [-12.0, -12.0, -12.0],
+  "pattern": "gaussian",
+  "amplitude": 180.0,
+  "offset": 10.0,
+  "metadata": {
+    "entropy_example": "unsigned 8-bit scalar image"
+  }
+}

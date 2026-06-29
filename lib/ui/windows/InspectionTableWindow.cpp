@@ -221,8 +221,7 @@ std::string timeValueColumnName(const AppData& appData)
 
 bool usesGlobalImageVisibilityControl(const Image& image)
 {
-  return image.header().numComponentsPerPixel() > 1 &&
-         Image::MultiComponentBufferType::SeparateImages == image.bufferType();
+  return image.header().numComponentsPerPixel() > 1;
 }
 
 bool imageVisibleInAllViews(const Image& image)

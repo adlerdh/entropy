@@ -21,9 +21,6 @@ namespace fs = std::filesystem;
 
 namespace
 {
-// Maximum number of components to load for images with interleaved buffer components
-constexpr uint32_t MAX_INTERLEAVED_COMPS = 4;
-
 std::size_t componentSizeInBytes(ComponentType componentType)
 {
   switch (componentType) {
@@ -78,9 +75,12 @@ std::vector<std::byte> compactInterleavedComponents(
   return compacted;
 }
 
-void setDefaultComplexRendering(ImageSettings& settings, const ImageHeader& header)
+void setDefaultComponentRendering(
+  ImageSettings& settings,
+  const ImageHeader& header,
+  Image::ImageRepresentation imageRep)
 {
-  if (PixelType::Complex == header.pixelType() && 2u == header.numComponentsPerPixel()) {
+  if (Image::ImageRepresentation::Image == imageRep && header.numComponentsPerPixel() > 1u) {
     settings.setComponentRenderMode(ComponentRenderMode::Magnitude);
   }
 }
@@ -104,17 +104,12 @@ void setDefaultVectorFieldRendering(ImageSettings& settings, const ImageHeader& 
      PixelType::VariableLengthVector == header.pixelType()) &&
     3u == header.numComponentsPerPixel() && ComponentType::Float32 == header.memoryComponentType())
   {
-    settings.setComponentRenderMode(ComponentRenderMode::Magnitude);
     settings.setVectorWarpedGridMillimeterSpacing(defaultVectorGridMillimeterSpacing(header));
   }
 }
 
-InterpolationMode defaultInterpolationMode(const ImageRepresentation& imageRep, ComponentType componentType)
+bool isIntegerComponentType(ComponentType componentType)
 {
-  if (ImageRepresentation::Segmentation == imageRep) {
-    return InterpolationMode::NearestNeighbor;
-  }
-
   switch (componentType) {
     case ComponentType::Int8:
     case ComponentType::UInt8:
@@ -122,7 +117,7 @@ InterpolationMode defaultInterpolationMode(const ImageRepresentation& imageRep, 
     case ComponentType::UInt16:
     case ComponentType::Int32:
     case ComponentType::UInt32:
-      return InterpolationMode::NearestNeighbor;
+      return true;
     case ComponentType::Float32:
     case ComponentType::Float64:
     case ComponentType::LongDouble:
@@ -131,15 +126,68 @@ InterpolationMode defaultInterpolationMode(const ImageRepresentation& imageRep, 
     case ComponentType::LongLong:
     case ComponentType::ULongLong:
     case ComponentType::Undefined:
-      return InterpolationMode::Linear;
+      return false;
+  }
+
+  return false;
+}
+
+bool hasLabelLikeIntegerValues(const Image& image)
+{
+  if (!isIntegerComponentType(image.header().memoryComponentType()) || 0u == image.header().numPixels()) {
+    return false;
+  }
+
+  constexpr std::size_t k_maxSamples = 100000;
+  constexpr std::size_t k_maxLabelValues = 64;
+  constexpr double k_maxUniqueFraction = 0.02;
+
+  const std::size_t numPixels = image.header().numPixels();
+  const std::size_t sampleCount = std::min(numPixels, k_maxSamples);
+  const std::size_t stride = std::max<std::size_t>(1, numPixels / sampleCount);
+
+  for (uint32_t component = 0; component < image.header().numComponentsPerPixel(); ++component) {
+    std::vector<double> uniqueValues;
+    uniqueValues.reserve(k_maxLabelValues + 1u);
+
+    for (std::size_t pixel = 0, samples = 0; pixel < numPixels && samples < sampleCount; pixel += stride, ++samples) {
+      const std::optional<double> value = image.value<double>(component, pixel);
+      if (!value) {
+        continue;
+      }
+      if (std::find(uniqueValues.begin(), uniqueValues.end(), *value) == uniqueValues.end()) {
+        uniqueValues.push_back(*value);
+        if (uniqueValues.size() > k_maxLabelValues) {
+          return false;
+        }
+      }
+    }
+
+    const double uniqueFraction =
+      sampleCount > 0u ? static_cast<double>(uniqueValues.size()) / static_cast<double>(sampleCount) : 1.0;
+    if (uniqueValues.size() > k_maxLabelValues || uniqueFraction > k_maxUniqueFraction) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+InterpolationMode defaultInterpolationMode(const ImageRepresentation& imageRep, bool labelLikeIntegerValues)
+{
+  if (ImageRepresentation::Segmentation == imageRep || labelLikeIntegerValues) {
+    return InterpolationMode::NearestNeighbor;
   }
 
   return InterpolationMode::Linear;
 }
 
-void setDefaultInterpolationModes(ImageSettings& settings, const ImageRepresentation& imageRep)
+void setDefaultInterpolationModes(
+  ImageSettings& settings,
+  const ImageRepresentation& imageRep,
+  bool labelLikeIntegerValues = false)
 {
-  const InterpolationMode mode = defaultInterpolationMode(imageRep, settings.componentType());
+  const InterpolationMode mode = defaultInterpolationMode(imageRep, labelLikeIntegerValues);
   for (uint32_t component = 0; component < settings.numComponents(); ++component) {
     settings.setInterpolationMode(component, mode);
   }
@@ -187,7 +235,7 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
 
   const std::size_t numPixels = m_ioInfoOnDisk.m_sizeInfo.m_imageSizeInPixels;
   const uint32_t numCompsOnDisk = m_ioInfoOnDisk.m_pixelInfo.m_numComponents;
-  const bool isVectorImage = (numCompsOnDisk > 1);
+  const bool isMultiComponentImage = (numCompsOnDisk > 1);
 
   spdlog::info(
     "Attempting to open image from {} with {} pixels and {} components per pixel",
@@ -196,43 +244,25 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
     numCompsOnDisk);
 
   // The number of components to load in the destination image may not match the number of
-  // components in the source image.
-  uint32_t numCompsToLoad = numCompsOnDisk;
+  // components in the source image. Segmentations are always loaded as scalar label images.
+  const uint32_t componentsToLoad = componentCountToLoad(m_imageRep, numCompsOnDisk);
 
-  if (isVectorImage) {
-    if (Image::MultiComponentBufferType::InterleavedImage == m_bufferType) {
-      if (numCompsToLoad > MAX_INTERLEAVED_COMPS) {
-        numCompsToLoad = MAX_INTERLEAVED_COMPS;
-        spdlog::warn(
-          "Opened image {} with {} interleaved components; only the first {} components will be "
-          "loaded",
-          fileName,
-          numCompsOnDisk,
-          numCompsToLoad);
-      }
-    }
-
-    if (Image::ImageRepresentation::Segmentation == m_imageRep) {
-      spdlog::warn(
-        "Opened a segmentation image from {} with {} components; "
-        "only the first component of the segmentation will be used",
-        fileName,
-        numCompsOnDisk);
-      numCompsToLoad = 1;
-    }
-
-    // Adjust the number of components in the image header
-    m_header.setNumComponentsPerPixel(numCompsToLoad);
+  if (isMultiComponentImage && Image::ImageRepresentation::Segmentation == m_imageRep) {
+    spdlog::warn(
+      "Opened a segmentation image from {} with {} components; "
+      "only the first component of the segmentation will be used",
+      fileName,
+      numCompsOnDisk);
   }
 
-  if (0 == numCompsToLoad) {
+  if (0 == componentsToLoad) {
     spdlog::error("No components to load for image from file {}", fileName);
     throw_debug("No components to load for image")
   }
 
-  m_ioInfoInMemory.m_pixelInfo.m_numComponents = numCompsToLoad;
+  m_ioInfoInMemory.m_pixelInfo.m_numComponents = componentsToLoad;
   m_ioInfoInMemory.m_pixelInfo.m_pixelStrideInBytes =
-    numCompsToLoad * m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
+    componentsToLoad * m_ioInfoInMemory.m_componentInfo.m_componentSizeInBytes;
 
   std::function<bool(const void* buffer, std::size_t numElements)> loadBufferFn = nullptr;
 
@@ -259,8 +289,8 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
       fileName,
       m_ioInfoOnDisk.m_spaceInfo.m_numDimensions,
       numPixels,
-      numCompsToLoad,
-      isVectorImage,
+      componentsToLoad,
+      isMultiComponentImage,
       m_bufferType,
       loadBufferFn);
   }
@@ -271,8 +301,8 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
       fileName,
       m_ioInfoOnDisk.m_spaceInfo.m_numDimensions,
       numPixels,
-      numCompsToLoad,
-      isVectorImage,
+      componentsToLoad,
+      isMultiComponentImage,
       m_bufferType,
       loadBufferFn);
   }
@@ -306,9 +336,9 @@ Image::Image(const fs::path& fileName, const ImageRepresentation& imageRep, cons
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
     componentStats);
-  setDefaultComplexRendering(m_settings, m_header);
+  setDefaultComponentRendering(m_settings, m_header, m_imageRep);
   setDefaultVectorFieldRendering(m_settings, m_header);
-  setDefaultInterpolationModes(m_settings, m_imageRep);
+  setDefaultInterpolationModes(m_settings, m_imageRep, hasLabelLikeIntegerValues(*this));
 
   m_loadState = LoadState::LoadedPixels;
 }
@@ -337,9 +367,9 @@ Image::Image(
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
     std::move(componentStats));
-  setDefaultComplexRendering(m_settings, m_header);
+  setDefaultComponentRendering(m_settings, m_header, m_imageRep);
   setDefaultVectorFieldRendering(m_settings, m_header);
-  setDefaultInterpolationModes(m_settings, m_imageRep);
+  setDefaultInterpolationModes(m_settings, m_imageRep, hasLabelLikeIntegerValues(*this));
 }
 
 Image::Image(
@@ -422,38 +452,25 @@ Image::Image(
   const std::size_t numPixels = m_header.numPixels();
   const std::size_t numBufferPixels = numPixels * m_timeAxis.numTimePoints();
   const uint32_t numComps = m_header.numComponentsPerPixel();
-  const bool isVectorImage = (numComps > 1);
+  const bool isMultiComponentImage = (numComps > 1);
 
-  if (isVectorImage) {
-    // Create multi-component image
-    uint32_t numCompsToLoad = numComps;
+  if (isMultiComponentImage) {
+    // Create a multi-component image. Segmentations are scalar label images, so only the first
+    // component is retained when raw segmentation input has multiple components.
+    const uint32_t componentsToLoad = componentCountToLoad(m_imageRep, numComps);
 
-    if (MultiComponentBufferType::InterleavedImage == m_bufferType) {
-      // Set a maximum of MAX_COMPS components
-      numCompsToLoad = std::min(numCompsToLoad, MAX_INTERLEAVED_COMPS);
-
-      if (numComps > MAX_INTERLEAVED_COMPS) {
-        spdlog::warn(
-          "The number of image components ({}) exceeds that maximum that will be created ({})"
-          "because this image uses interleaved buffer format",
-          numComps,
-          MAX_INTERLEAVED_COMPS);
-      }
-    }
-
-    if (ImageRepresentation::Segmentation == m_imageRep) {
+    if (componentsToLoad < numComps) {
       spdlog::warn("Attempting to create a segmentation image with {} components", numComps);
       spdlog::warn("Only one component of the segmentation image will be created");
-      numCompsToLoad = 1;
     }
 
-    if (0 == numCompsToLoad) {
+    if (0 == componentsToLoad) {
       spdlog::error("No components to create for image from file {}", m_header.fileName());
       throw_debug("No components to create for image")
     }
 
     // Adjust the number of components in the image header
-    m_header.setNumComponentsPerPixel(numCompsToLoad);
+    m_header.setNumComponentsPerPixel(componentsToLoad);
 
     switch (m_bufferType) {
       case MultiComponentBufferType::SeparateImages: {
@@ -483,13 +500,13 @@ Image::Image(
       }
       case MultiComponentBufferType::InterleavedImage: {
         // Load a single buffer with interleaved components:
-        const std::size_t N = numBufferPixels * numCompsToLoad;
+        const std::size_t N = numBufferPixels * componentsToLoad;
         const void* buffer = imageDataComponents[0];
         std::vector<std::byte> compactedBuffer;
 
-        if (numCompsToLoad < numComps) {
+        if (componentsToLoad < numComps) {
           compactedBuffer =
-            compactInterleavedComponents(buffer, numBufferPixels, numComps, numCompsToLoad, srcCompType);
+            compactInterleavedComponents(buffer, numBufferPixels, numComps, componentsToLoad, srcCompType);
           buffer = compactedBuffer.data();
         }
 
@@ -547,9 +564,9 @@ Image::Image(
     m_header.numComponentsPerPixel(),
     m_header.memoryComponentType(),
     std::move(componentStats));
-  setDefaultComplexRendering(m_settings, m_header);
+  setDefaultComponentRendering(m_settings, m_header, m_imageRep);
   setDefaultVectorFieldRendering(m_settings, m_header);
-  setDefaultInterpolationModes(m_settings, m_imageRep);
+  setDefaultInterpolationModes(m_settings, m_imageRep, hasLabelLikeIntegerValues(*this));
 
   m_loadState = LoadState::LoadedPixels;
 }

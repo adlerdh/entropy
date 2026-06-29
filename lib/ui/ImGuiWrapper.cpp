@@ -34,6 +34,8 @@
 #include "common/UuidUtility.h"
 #include "image/TimePlaybackController.h"
 #include "registration/Artifacts.h"
+#include "registration/AffineTransformIO.h"
+#include "registration/Availability.h"
 #include "registration/Config.h"
 #include "registration/ImportPlan.h"
 #include "registration/Process.h"
@@ -67,6 +69,7 @@
 #include <fstream>
 #include <format>
 #include <iomanip>
+#include <iterator>
 #include <memory>
 #include <numeric>
 #include <sstream>
@@ -88,6 +91,45 @@ constexpr float k_layoutTabWindowPaddingX = 6.0f;
 constexpr float k_layoutTabWindowPaddingY = 0.0f;
 constexpr float k_layoutTabFrameRounding = 3.0f;
 constexpr double k_maxTimePlaybackFramesPerSecond = 120.0;
+
+class ProcessExecutableProbe final : public registration::IExecutableProbe
+{
+public:
+  explicit ProcessExecutableProbe(registration::IProcessRunner& runner) : m_runner(runner) {}
+
+  registration::ExecutableProbeResult probe(
+    const std::filesystem::path& executable,
+    const std::vector<std::string>& arguments) override
+  {
+    registration::CommandSpec command;
+    command.executable = executable.string();
+    command.args = arguments;
+    command.description = "Registration backend compatibility check";
+
+    registration::ProcessOptions options;
+    options.mergeStdErrIntoStdOut = true;
+    const registration::ProcessResult processResult = m_runner.run(command, options, {});
+
+    registration::ExecutableProbeResult result;
+    result.found = !processResult.launchFailed && processResult.exitCode != 127;
+    result.exitCode = processResult.exitCode;
+    result.failureMessage = processResult.failureMessage;
+    for (const registration::ProcessOutputLine& line : processResult.outputLines) {
+      if (line.stream == registration::OutputStream::Stderr) {
+        result.standardError += line.text;
+        result.standardError += '\n';
+      }
+      else {
+        result.standardOutput += line.text;
+        result.standardOutput += '\n';
+      }
+    }
+    return result;
+  }
+
+private:
+  registration::IProcessRunner& m_runner;
+};
 
 float scaledPixel(float value)
 {
@@ -112,6 +154,148 @@ LayoutTabMetrics layoutTabMetrics()
     .frameRounding = scaledPixel(k_layoutTabFrameRounding),
     .windowHeight = windowHeight,
     .innerGap = dockspaceClearance};
+}
+
+bool pathIsWithinDirectory(const fs::path& path, const fs::path& directory)
+{
+  std::error_code error;
+  const fs::path normalizedPath = fs::weakly_canonical(path, error);
+  if (error) {
+    return false;
+  }
+
+  const fs::path normalizedDirectory = fs::weakly_canonical(directory, error);
+  if (error) {
+    return false;
+  }
+
+  auto pathIt = normalizedPath.begin();
+  for (auto dirIt = normalizedDirectory.begin(); dirIt != normalizedDirectory.end(); ++dirIt, ++pathIt) {
+    if (pathIt == normalizedPath.end() || *pathIt != *dirIt) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void removeTemporaryRegistrationInputs(const registration::JobSpec& job, registration::JobExecution& execution)
+{
+  if (job.outputDirectory.empty()) {
+    return;
+  }
+
+  std::error_code error;
+  const fs::path tempDirectory = fs::temp_directory_path(error);
+  if (error || !pathIsWithinDirectory(job.outputDirectory, tempDirectory)) {
+    return;
+  }
+
+  for (const registration::InputArtifact& artifact : registration::buildInputArtifactPlan(job)) {
+    if (artifact.path.empty() || !pathIsWithinDirectory(artifact.path, job.outputDirectory)) {
+      continue;
+    }
+
+    error.clear();
+    if (fs::is_regular_file(artifact.path, error) && !error) {
+      error.clear();
+      (void)fs::remove(artifact.path, error);
+      if (error) {
+        execution.warnings.push_back(
+          "Could not remove temporary registration input " + artifact.path.string() + ": " + error.message());
+      }
+    }
+  }
+
+  if (!job.initialAffineTransform.empty() && pathIsWithinDirectory(job.initialAffineTransform, job.outputDirectory)) {
+    error.clear();
+    if (fs::is_regular_file(job.initialAffineTransform, error) && !error) {
+      error.clear();
+      (void)fs::remove(job.initialAffineTransform, error);
+      if (error) {
+        execution.warnings.push_back(
+          "Could not remove temporary registration input " + job.initialAffineTransform.string() + ": " +
+          error.message());
+      }
+    }
+  }
+}
+
+bool checkRegistrationBackendBeforeLaunch(
+  const registration::JobSpec& job,
+  const registration::BackendConfig& config,
+  registration::IProcessRunner& runner,
+  registration::JobExecution& execution)
+{
+  if (job.backend == registration::Backend::FireANTs) {
+    return true;
+  }
+
+  ProcessExecutableProbe probe{runner};
+  const registration::BackendAvailability availability =
+    registration::checkBackendAvailability(job.backend, config, probe);
+  if (availability.status != registration::BackendAvailabilityStatus::Available) {
+    execution.status = registration::JobStatus::Failed;
+    execution.errorMessage = availability.message;
+    return false;
+  }
+
+  if (availability.compatibility != registration::BackendCompatibilityStatus::Compatible) {
+    execution.warnings.push_back(availability.compatibilityMessage);
+  }
+  return true;
+}
+
+std::optional<glm::dmat4> readBackendSamplingAffine(const fs::path& affinePath, registration::Backend backend)
+{
+  return (backend == registration::Backend::Greedy) ? registration::readGreedyAffineTransform(affinePath)
+                                                    : registration::readAffineTransform(affinePath);
+}
+
+bool applyImportedAffineToImage(
+  AppData& appData,
+  const uuids::uuid& imageUid,
+  const fs::path& affinePath,
+  registration::Backend backend)
+{
+  Image* image = appData.image(imageUid);
+  if (!image) {
+    return false;
+  }
+
+  const std::optional<glm::dmat4> samplingAffine = readBackendSamplingAffine(affinePath, backend);
+  if (!samplingAffine) {
+    return false;
+  }
+  const glm::dmat4 displayAffine = glm::inverse(*samplingAffine);
+
+  ImageTransformations& imageTx = image->transformations();
+  const bool wasLocked = imageTx.is_worldDef_T_affine_locked();
+  imageTx.set_worldDef_T_affine_locked(false);
+  imageTx.set_enable_affine_T_subject(true);
+  imageTx.set_affine_T_subject(glm::mat4{displayAffine});
+  imageTx.set_affine_T_subject_fileName(affinePath);
+  imageTx.set_enable_worldDef_T_affine(true);
+  imageTx.reset_worldDef_T_affine();
+  imageTx.set_worldDef_T_affine_locked(wasLocked);
+
+  for (const uuids::uuid& segUid : appData.imageToSegUids(imageUid)) {
+    Image* seg = appData.seg(segUid);
+    if (!seg) {
+      continue;
+    }
+
+    ImageTransformations& segTx = seg->transformations();
+    const bool wasSegLocked = segTx.is_worldDef_T_affine_locked();
+    segTx.set_worldDef_T_affine_locked(false);
+    segTx.set_enable_affine_T_subject(imageTx.get_enable_affine_T_subject());
+    segTx.set_affine_T_subject(imageTx.get_affine_T_subject());
+    segTx.set_affine_T_subject_fileName(affinePath);
+    segTx.set_enable_worldDef_T_affine(imageTx.get_enable_worldDef_T_affine());
+    segTx.reset_worldDef_T_affine();
+    segTx.set_worldDef_T_affine_locked(wasSegLocked);
+  }
+
+  return true;
 }
 
 bool updateLayoutTabBarHeight(GuiData& guiData)
@@ -868,6 +1052,19 @@ void setTimePointWithSynchronization(AppData& appData, const uuids::uuid& imageU
   }
 }
 
+void stopOtherTimeSeriesPlayback(AppData& appData, const uuids::uuid& playingImageUid)
+{
+  for (const uuids::uuid& otherUid : appData.imageUidsOrdered()) {
+    if (otherUid == playingImageUid) {
+      continue;
+    }
+    Image* other = appData.image(otherUid);
+    if (other && other->isTimeSeries()) {
+      other->settings().setTimePlaybackPlaying(false);
+    }
+  }
+}
+
 std::string timePointControlLabel(const Image& image, uint32_t timePoint)
 {
   std::ostringstream os;
@@ -972,6 +1169,28 @@ bool anyTimeSeriesPlaybackRunning(const AppData& appData)
   return false;
 }
 
+void updateAllTimeSeriesPlayback(AppData& appData)
+{
+  std::optional<uuids::uuid> playbackDriverUid;
+  for (const uuids::uuid& imageUid : appData.imageUidsOrdered()) {
+    Image* image = appData.image(imageUid);
+    if (!image || !image->isTimeSeries()) {
+      continue;
+    }
+
+    if (image->settings().timePlaybackPlaying()) {
+      if (playbackDriverUid) {
+        image->settings().setTimePlaybackPlaying(false);
+        updateTimePlayback(appData, imageUid, *image, image->timeAxis().clamp(image->settings().activeTimePoint()));
+        continue;
+      }
+      playbackDriverUid = imageUid;
+    }
+
+    updateTimePlayback(appData, imageUid, *image, image->timeAxis().clamp(image->settings().activeTimePoint()));
+  }
+}
+
 void renderGlobalTimeControl(AppData& appData)
 {
   static bool s_timePlaybackWasRunning = false;
@@ -985,6 +1204,8 @@ void renderGlobalTimeControl(AppData& appData)
     }
     s_timePlaybackWasRunning = playbackRunning;
   };
+
+  updateAllTimeSeriesPlayback(appData);
 
   const auto imageUid = globalTimeControlImageUid(appData);
   if (!imageUid) {
@@ -1005,7 +1226,6 @@ void renderGlobalTimeControl(AppData& appData)
   }
 
   const uint32_t maxTimePoint = image->timeAxis().numTimePoints() - 1u;
-  updateTimePlayback(appData, *imageUid, *image, image->timeAxis().clamp(image->settings().activeTimePoint()));
   const uint32_t activeTimePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
   uint32_t requestedTimePoint = activeTimePoint;
 
@@ -1044,6 +1264,9 @@ void renderGlobalTimeControl(AppData& appData)
     if (ImGui::Button(playbackButtonLabel.c_str(), buttonSize)) {
       playing = !playing;
       image->settings().setTimePlaybackPlaying(playing);
+      if (playing) {
+        stopOtherTimeSeriesPlayback(appData, *imageUid);
+      }
       appData.state().setAnimating(playing || anyTimeSeriesPlaybackRunning(appData));
     }
     if (ImGui::IsItemHovered()) {
@@ -1464,6 +1687,37 @@ bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
     return false;
   };
 
+  if (job.useCurrentAffineTransformsForInitialization) {
+    const std::optional<uuids::uuid> movingUid = parseUid(job.movingImage);
+    const Image* movingImage = movingUid ? m_appData.image(*movingUid) : nullptr;
+    if (!movingImage) {
+      spdlog::error("Cannot export current affine initialization; moving image is missing");
+      return false;
+    }
+
+    std::error_code error;
+    std::filesystem::create_directories(job.outputDirectory, error);
+    if (error) {
+      spdlog::error("Cannot create registration output directory {}: {}", job.outputDirectory, error.message());
+      return false;
+    }
+
+    const glm::dmat4 currentDisplayAffine{movingImage->transformations().worldDef_T_subject()};
+    const glm::dmat4 currentSamplingAffine = glm::inverse(currentDisplayAffine);
+    job.initialAffineTransform = job.outputDirectory / (registration::outputPrefix(job) + "_initial_affine.mat");
+    const bool saved =
+      job.backend == registration::Backend::Greedy
+        ? registration::writeGreedyAffineTransform(job.initialAffineTransform, currentSamplingAffine)
+        : registration::writeItkAffineTransform(job.initialAffineTransform, currentSamplingAffine, job.dimension);
+    if (!saved) {
+      spdlog::error("Cannot save current affine initialization to {}", job.initialAffineTransform);
+      job.initialAffineTransform.clear();
+      return false;
+    }
+    job.useImageCentersForInitialization = false;
+    spdlog::info("Exported registration initial affine transform to {}", job.initialAffineTransform);
+  }
+
   for (const registration::InputArtifact& artifact : registration::buildInputArtifactPlan(job)) {
     if (artifact.exportRequired && !exportArtifact(artifact)) {
       return false;
@@ -1521,6 +1775,24 @@ void ImGuiWrapper::importRegistrationJobOutputs(const std::string& jobId)
       }
 
       switch (step.action) {
+        case registration::ImportAction::ApplyAffineTransform: {
+          const std::optional<uuids::uuid> imageUid = parseTargetImageUid(step);
+          if (!imageUid) {
+            break;
+          }
+          if (applyImportedAffineToImage(m_appData, *imageUid, step.path, spec.backend)) {
+            appendEvent(registration::ProgressEventKind::Artifact, "Applied affine transform: " + step.path.string());
+            if (m_updateImageUniforms) {
+              m_updateImageUniforms(*imageUid);
+            }
+          }
+          else {
+            appendEvent(
+              registration::ProgressEventKind::Warning,
+              "Unable to parse or apply affine transform: " + step.path.string());
+          }
+          break;
+        }
         case registration::ImportAction::LoadInverseWarp: {
           const std::optional<uuids::uuid> imageUid = parseTargetImageUid(step);
           if (!imageUid || !m_loadDeformationField) {
@@ -1613,6 +1885,12 @@ void ImGuiWrapper::importRegistrationJobOutputs(const std::string& jobId)
   if (!hadError) {
     appendEvent(registration::ProgressEventKind::Completed, "Registration outputs imported.");
     jobs.setStatus(jobId, registration::JobStatus::Completed);
+  }
+
+  m_appData.setRainbowColorsForAllImages();
+  m_appData.setRainbowColorsForAllLandmarkGroups();
+  if (m_updateAllImageUniforms) {
+    m_updateAllImageUniforms();
   }
 
   if (m_postEmptyGlfwEvent) {
@@ -2074,26 +2352,39 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
     m_appData.registrationJobs().setStatus(jobId, registration::JobStatus::Running);
     const uuids::uuid taskUid = generateRandomUuid();
     auto cancelFlag = std::make_shared<std::atomic_bool>(false);
-    auto future = std::async(std::launch::async, [jobId, jobSpec, commandOptions, postEmptyEvent, cancelFlag]() {
-      registration::JobExecution execution;
-      try {
-        registration::ShellProcessRunner runner;
-        registration::JobExecutionCallbacks callbacks;
-        callbacks.shouldCancel = [cancelFlag]() {
-          return cancelFlag->load();
-        };
-        execution = registration::executeJob(jobSpec, commandOptions, runner, callbacks);
-      }
-      catch (const std::exception& e) {
-        execution.status = registration::JobStatus::Failed;
-        execution.errorMessage = e.what();
-      }
+    const bool keepTemporaryFiles = config.keepTemporaryFiles;
+    auto future = std::async(
+      std::launch::async,
+      [jobId, jobSpec, config, commandOptions, postEmptyEvent, cancelFlag, keepTemporaryFiles]() {
+        registration::JobExecution execution;
+        try {
+          registration::ShellProcessRunner runner;
+          registration::JobExecutionCallbacks callbacks;
+          callbacks.shouldCancel = [cancelFlag]() {
+            return cancelFlag->load();
+          };
+          if (checkRegistrationBackendBeforeLaunch(jobSpec, config, runner, execution)) {
+            std::vector<std::string> preflightWarnings = std::move(execution.warnings);
+            execution = registration::executeJob(jobSpec, commandOptions, runner, callbacks);
+            execution.warnings.insert(
+              execution.warnings.begin(),
+              std::make_move_iterator(preflightWarnings.begin()),
+              std::make_move_iterator(preflightWarnings.end()));
+          }
+          if (!keepTemporaryFiles && execution.status != registration::JobStatus::Failed) {
+            removeTemporaryRegistrationInputs(jobSpec, execution);
+          }
+        }
+        catch (const std::exception& e) {
+          execution.status = registration::JobStatus::Failed;
+          execution.errorMessage = e.what();
+        }
 
-      if (postEmptyEvent) {
-        postEmptyEvent();
-      }
-      return RegistrationJobTaskResult{jobId, std::move(execution)};
-    });
+        if (postEmptyEvent) {
+          postEmptyEvent();
+        }
+        return RegistrationJobTaskResult{jobId, std::move(execution)};
+      });
 
     {
       std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
@@ -3320,7 +3611,7 @@ void ImGuiWrapper::render()
           return canUseProjectActions && hasActiveImage && activeImageUid() != m_appData.refImageUid() &&
                  m_appData.imageToActiveInverseWarpUid(*activeImageUid()).has_value();
         case MainMenuAction::ShowRegistrationSetupWindow:
-          return canUseProjectActions && hasActiveImage && activeImageUid() != m_appData.refImageUid();
+          return canUseProjectActions;
         case MainMenuAction::ToggleRegistrationJobsWindow:
           return canUseProjectActions;
         case MainMenuAction::PaintSegmentationFromAnnotation:
@@ -3373,9 +3664,7 @@ void ImGuiWrapper::render()
         if (!image) {
           return false;
         }
-        const bool isMulticomponentImage =
-          (image->header().numComponentsPerPixel() > 1 &&
-           Image::MultiComponentBufferType::SeparateImages == image->bufferType());
+        const bool isMulticomponentImage = image->header().numComponentsPerPixel() > 1;
         return isMulticomponentImage ? image->settings().globalVisibility() : image->settings().visibility();
       }
       case MainMenuAction::ToggleSegmentationVisibility: {
@@ -3449,6 +3738,8 @@ void ImGuiWrapper::render()
         return m_appData.guiData().m_showInspectionWindow;
       case MainMenuAction::ToggleOpacityMixerWindow:
         return m_appData.guiData().m_showOpacityBlenderWindow;
+      case MainMenuAction::ShowRegistrationSetupWindow:
+        return m_appData.guiData().m_showRegistrationSetupWindow;
       case MainMenuAction::ShowOpacityMixer:
         return m_appData.guiData().m_showOpacityBlenderWindow;
       case MainMenuAction::ToggleTimePlayback: {

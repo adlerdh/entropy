@@ -125,6 +125,9 @@ SetupState createSetupState(
   state.job.outputDirectory = outputDirectory;
   state.job.transformModel = defaultTransformModel(state.capabilities);
   state.job.metric = defaultMetric(state.capabilities);
+  if (state.job.useCurrentAffineTransformsForInitialization) {
+    state.job.useImageCentersForInitialization = false;
+  }
 
   const SetupImageChoice* fixed = firstReferenceImage(images);
   if (!fixed && !images.empty()) {
@@ -158,6 +161,21 @@ void setBackend(SetupState& state, Backend backend)
   state.parameterValues = defaultParameterValues(state.capabilities);
   preserveParameterValues(state.parameterValues, oldValues);
   state.job.parameterValues = state.parameterValues;
+  refreshValidation(state);
+}
+
+void setFixedImage(SetupState& state, const SetupImageChoice& image)
+{
+  state.job.fixedImage = image.image;
+  state.job.dimension = image.dimension;
+  state.job.outputPrefix = defaultOutputPrefix(state.job.fixedImage, state.job.movingImage);
+  refreshValidation(state);
+}
+
+void setMovingImage(SetupState& state, const SetupImageChoice& image)
+{
+  state.job.movingImage = image.image;
+  state.job.outputPrefix = defaultOutputPrefix(state.job.fixedImage, state.job.movingImage);
   refreshValidation(state);
 }
 

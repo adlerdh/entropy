@@ -21,13 +21,13 @@ bool imageSettingsEqual(
   return a->m_displayName == b->m_displayName && a->m_globalVisibility == b->m_globalVisibility &&
          a->m_globalOpacity == b->m_globalOpacity && a->m_borderColor == b->m_borderColor && a->m_level == b->m_level &&
          a->m_lockedToReference == b->m_lockedToReference && a->m_warpEnabled == b->m_warpEnabled &&
-         a->m_warpStrength == b->m_warpStrength && a->m_window == b->m_window &&
-         a->m_thresholdLow == b->m_thresholdLow && a->m_thresholdHigh == b->m_thresholdHigh &&
-         a->m_opacity == b->m_opacity && a->m_activeComponent == b->m_activeComponent &&
-         a->m_activeTimePoint == b->m_activeTimePoint && a->m_timePlaybackLoop == b->m_timePlaybackLoop &&
-         a->m_timePlaybackPlaying == b->m_timePlaybackPlaying && a->m_timePlaybackSpeed == b->m_timePlaybackSpeed &&
-         a->m_componentRenderMode == b->m_componentRenderMode && a->m_complexPhaseUnit == b->m_complexPhaseUnit &&
-         a->m_complexPhaseRange == b->m_complexPhaseRange &&
+         a->m_warpStrength == b->m_warpStrength && a->m_allowExaggeratedWarp == b->m_allowExaggeratedWarp &&
+         a->m_window == b->m_window && a->m_thresholdLow == b->m_thresholdLow &&
+         a->m_thresholdHigh == b->m_thresholdHigh && a->m_opacity == b->m_opacity &&
+         a->m_activeComponent == b->m_activeComponent && a->m_activeTimePoint == b->m_activeTimePoint &&
+         a->m_timePlaybackLoop == b->m_timePlaybackLoop && a->m_timePlaybackPlaying == b->m_timePlaybackPlaying &&
+         a->m_timePlaybackSpeed == b->m_timePlaybackSpeed && a->m_componentRenderMode == b->m_componentRenderMode &&
+         a->m_complexPhaseUnit == b->m_complexPhaseUnit && a->m_complexPhaseRange == b->m_complexPhaseRange &&
          a->m_vectorArrowOverlayVisible == b->m_vectorArrowOverlayVisible &&
          a->m_vectorArrowOverlayOnImage == b->m_vectorArrowOverlayOnImage &&
          a->m_vectorArrowOverlayDensity == b->m_vectorArrowOverlayDensity &&

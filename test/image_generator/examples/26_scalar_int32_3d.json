@@ -1,0 +1,15 @@
+{
+  "output": "scalar_int32_3d.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "int32",
+  "components": 1,
+  "size": [20, 18, 10],
+  "spacing": [1.5, 1.5, 2.5],
+  "origin": [-15.0, -13.5, -12.5],
+  "pattern": "ramp",
+  "amplitude": 5000.0,
+  "offset": -10000.0,
+  "metadata": {
+    "entropy_example": "signed 32-bit scalar image"
+  }
+}

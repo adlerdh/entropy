@@ -1,0 +1,15 @@
+{
+  "output": "scalar_uint16_3d.nrrd",
+  "pixel_kind": "scalar",
+  "component_type": "uint16",
+  "components": 1,
+  "size": [24, 20, 12],
+  "spacing": [0.8, 0.8, 1.6],
+  "origin": [-9.6, -8.0, -9.6],
+  "pattern": "gaussian",
+  "amplitude": 32000.0,
+  "offset": 100.0,
+  "metadata": {
+    "entropy_example": "unsigned 16-bit scalar image"
+  }
+}

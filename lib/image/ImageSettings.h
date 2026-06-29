@@ -167,6 +167,12 @@ public:
   /// @brief Return warp strength multiplier used for render-time warping.
   float warpStrength() const;
 
+  /// @brief Set whether the warp strength slider may exceed the stored field magnitude.
+  void setAllowExaggeratedWarp(bool allow);
+
+  /// @brief Return whether warp strength values above 1.0x are allowed.
+  bool allowExaggeratedWarp() const;
+
   /// @brief Set whether a 3- or 4-component image should be interpreted as RGB/RGBA color.
   void setDisplayImageAsColor(bool doColor);
 
@@ -949,6 +955,7 @@ private:
   bool m_lockedToReference{true};            //!< Lock this image to the reference image
   bool m_warpEnabled{true};                  //!< Apply the assigned warp while rendering
   float m_warpStrength{1.0f};                //!< Warp strength multiplier
+  bool m_allowExaggeratedWarp{false};        //!< Permit warp strength greater than 1.0x
 
   ComponentRenderMode m_componentRenderMode{ComponentRenderMode::SingleComponent}; //!< Multi-component render mode
   ComplexPhaseUnit m_complexPhaseUnit{ComplexPhaseUnit::Radians};   //!< Display units for complex phase values
@@ -956,10 +963,10 @@ private:
   bool m_vectorArrowOverlayVisible{false};                          //!< Show vector-field arrows on slices
   bool m_vectorArrowOverlayOnImage{true};                           //!< Draw arrows over the rendered image
   float m_vectorArrowOverlayDensity{32.0f};                         //!< Arrow spacing in screen pixels
-  float m_vectorArrowOverlayVoxelSpacing{1.0f};                     //!< Arrow spacing in image voxels
+  float m_vectorArrowOverlayVoxelSpacing{8.0f};                     //!< Arrow spacing in image voxels
   float m_vectorArrowOverlayMillimeterSpacing{10.0f};               //!< Arrow spacing in subject millimeters
   VectorArrowOverlaySpacingMode m_vectorArrowOverlaySpacingMode{
-    VectorArrowOverlaySpacingMode::Pixels};                //!< Spacing units
+    VectorArrowOverlaySpacingMode::Voxels};                //!< Spacing units
   glm::vec3 m_vectorArrowOverlayColor{1.0f, 0.86f, 0.31f}; //!< Fixed vector arrow color
   bool m_vectorArrowOverlayUseDirectionColor{false};       //!< Color arrows by vector direction
   float m_vectorArrowOverlayLineThickness{1.4f};           //!< Arrow line thickness in screen pixels
