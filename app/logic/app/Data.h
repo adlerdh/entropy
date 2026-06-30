@@ -119,10 +119,10 @@ public:
   std::optional<uuid> addSeg(Image seg);
 
   /**
-   * @brief Add an image deformation field
-   * @param[in] def Deformation field image. The image must have at least three components (x, y, z)
+   * @brief Add an image warp field.
+   * @param[in] def Warp-field image. The image must have at least three components (x, y, z)
    * per pixel.
-   * @return If added, deformation field image's newly generated unique identifier; else nullpt.
+   * @return If added, warp-field image's newly generated unique identifier; else nullpt.
    */
   std::optional<uuid> addDef(Image def);
 
@@ -236,7 +236,7 @@ public:
   /**
    * @brief Resolve a UID that can be used as a warp field.
    *
-   * Dedicated deformation fields are accepted, as are normal loaded images that
+   * Dedicated warp fields are accepted, as are normal loaded images that
    * can be interpreted as 3-component vector fields.
    *
    * @param warpUid Candidate warp-field UID.
@@ -346,7 +346,7 @@ public:
   /**
    * @brief Return all loaded images that can be selected as warp fields.
    *
-   * Dedicated deformation fields are listed first, followed by ordinary loaded
+   * Dedicated warp fields are listed first, followed by ordinary loaded
    * 3-component vector-field images.
    */
   uuid_range_t warpFieldCandidateUidsOrdered() const;
@@ -429,7 +429,7 @@ public:
   /// Get all segmentations for an image
   std::vector<uuid> imageToSegUids(const uuid& imageUid) const;
 
-  /// Get all deformation fields for an image
+  /// Get all warp fields for an image
   std::vector<uuid> imageToDefUids(const uuid& imageUid) const;
 
   /// Assign a group of landmarks to an image
@@ -554,8 +554,8 @@ private:
   std::unordered_map<uuid, Image> m_segs; //!< Segmentations, also stored as images
   std::vector<uuid> m_segUidsOrdered;     //!< Segmentation UIDs in order
 
-  std::unordered_map<uuid, Image> m_defs; //!< Deformation fields, also stored as images
-  std::vector<uuid> m_defUidsOrdered;     //!< Deformation field UIDs in order
+  std::unordered_map<uuid, Image> m_defs; //!< Warp fields, also stored as images
+  std::vector<uuid> m_defUidsOrdered;     //!< Warp-field UIDs in order
 
   std::unordered_map<uuid, ImageColorMap> m_imageColorMaps; //!< Image color maps
   std::vector<uuid> m_imageColorMapUidsOrdered;             //!< Image color map UIDs in order
@@ -581,7 +581,7 @@ private:
   /// Map of image to its active segmentation
   std::unordered_map<uuid, uuid> m_imageToActiveSeg;
 
-  /// Map of image to its deformation fields
+  /// Map of image to its warp fields
   std::unordered_map<uuid, std::vector<uuid> > m_imageToDefs;
 
   /// Map of image to the active inverse warp used for image sampling

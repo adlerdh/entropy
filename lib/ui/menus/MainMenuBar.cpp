@@ -330,23 +330,31 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   }
   ImGui::Separator();
   if (ImGui::BeginMenu("Affine Transformations", callbacks.canAddImage)) {
-    actionMenuItem(callbacks, "Lock Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
-    actionMenuItem(callbacks, "Reset Manual Transformation", MainMenuAction::ResetActiveImageManualTransformation);
-    actionMenuItem(callbacks, "Save Manual Transformation...", MainMenuAction::SaveActiveImageManualTransformation);
+    actionMenuItem(callbacks, "Lock Manual Affine Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
+    ImGui::Separator();
+    actionMenuItem(callbacks, "Load Initial Affine...", MainMenuAction::LoadActiveImageInitialTransformation);
+    actionMenuItem(callbacks, "Save Initial Affine...", MainMenuAction::SaveActiveImageInitialTransformation);
+    actionMenuItem(callbacks, "Reset Initial Affine", MainMenuAction::ResetActiveImageInitialTransformation);
+    ImGui::Separator();
+    actionMenuItem(callbacks, "Save Manual Affine...", MainMenuAction::SaveActiveImageManualTransformation);
+    actionMenuItem(callbacks, "Reset Manual Affine", MainMenuAction::ResetActiveImageManualTransformation);
+    ImGui::Separator();
     actionMenuItem(
       callbacks,
-      "Save Initial + Manual Transformation...",
-      MainMenuAction::SaveActiveImageInitialAndManualTransformation);
+      "Save Effective (Manual * Initial) Affine...",
+      MainMenuAction::SaveActiveImageEffectiveTransformation);
     ImGui::EndMenu();
   }
   if (ImGui::BeginMenu("Deformable Transformations", callbacks.canAddImage)) {
-    if (ImGui::MenuItem("Load Inverse Warp...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage)) {
+    if (ImGui::MenuItem("Load Inverse Warp Field...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage))
+    {
       loadInverseWarpForActiveImage(callbacks);
     }
-    if (ImGui::MenuItem("Load Forward Warp...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage)) {
+    if (ImGui::MenuItem("Load Forward Warp Field...", nullptr, false, callbacks.canLoadDeformationFieldForActiveImage))
+    {
       loadForwardWarpForActiveImage(callbacks);
     }
-    actionMenuItem(callbacks, "Apply Warp", MainMenuAction::ToggleApplyActiveImageWarp);
+    actionMenuItem(callbacks, "Apply Deformable Warp", MainMenuAction::ToggleApplyActiveImageWarp);
     ImGui::EndMenu();
   }
   if (ImGui::BeginMenu("Image Registration", callbacks.canAddImage)) {

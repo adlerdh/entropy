@@ -182,9 +182,9 @@ public:
     const std::optional<uuids::uuid>& imageUid = std::nullopt);
 
   /**
-   * @brief Load a deformation field from disk.
-   * @param fileName Deformation-field image path.
-   * @return Deformation-field UID and true when loaded; existing UID and false when already loaded.
+   * @brief Load a warp field from disk.
+   * @param fileName Warp-field image path.
+   * @return Warp-field UID and true when loaded; existing UID and false when already loaded.
    * @throws Propagates image-loading exceptions from the image library.
    */
   std::pair<std::optional<uuids::uuid>, bool> loadDeformationField(const std::filesystem::path& fileName);

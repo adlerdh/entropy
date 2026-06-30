@@ -465,14 +465,14 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadSegmentation(
 
 std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(const fs::path& fileName)
 {
-  // Return value indicating that deformation field was not loaded:
+  // Return value indicating that warp field was not loaded:
   const std::pair<std::optional<uuids::uuid>, bool> noDefLoaded{std::nullopt, false};
 
-  // Has this deformation field already been loaded? Search for its file name:
+  // Has this warp field already been loaded? Search for its file name:
   for (const auto& defUid : m_data.defUidsOrdered()) {
     if (const Image* def = m_data.def(defUid)) {
       if (def->header().fileName() == fileName) {
-        spdlog::info("Deformation field from {} has already been loaded as {}", fileName, defUid);
+        spdlog::info("Warp field from {} has already been loaded as {}", fileName, defUid);
         return {defUid, false};
       }
     }
@@ -484,7 +484,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
       if (Image* mutableImage = m_data.image(imageUid)) {
         mutableImage->settings().setComponentRenderMode(ComponentRenderMode::Magnitude);
       }
-      spdlog::info("Using already-loaded image {} from {} as a deformation field", imageUid, fileName);
+      spdlog::info("Using already-loaded image {} from {} as a warp field", imageUid, fileName);
       return {imageUid, false};
     }
   }
@@ -493,20 +493,18 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
 
   if (def.header().numComponentsPerPixel() < 3) {
     spdlog::error(
-      "The deformation field from file {} has fewer than three components per pixel "
+      "The warp field from file {} has fewer than three components per pixel "
       "and so will not be loaded.",
       fileName);
     return noDefLoaded;
   }
 
   if (!def.bufferAsVoid(0, def.timeAxis().clamp(def.settings().activeTimePoint()))) {
-    spdlog::error(
-      "The deformation field from file {} does not expose loaded pixel data and so will not be loaded.",
-      fileName);
+    spdlog::error("The warp field from file {} does not expose loaded pixel data and so will not be loaded.", fileName);
     return noDefLoaded;
   }
 
-  spdlog::info("Read deformation field image from file {}", fileName);
+  spdlog::info("Read warp field image from file {}", fileName);
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   std::ostringstream ss;
@@ -518,11 +516,11 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
   spdlog::info("Transformation:\n{}", def.transformations());
   spdlog::info("Settings:\n{}", def.settings());
 
-  // TODO: Do check of deformation field header against the reference image header?
+  // TODO: Do check of warp field header against the reference image header?
   def.settings().setComponentRenderMode(ComponentRenderMode::Magnitude);
 
   if (const auto defUid = m_data.addDef(std::move(def))) {
-    spdlog::info("Loaded deformation field image from file {} as {}", fileName, *defUid);
+    spdlog::info("Loaded warp field image from file {} as {}", fileName, *defUid);
     return {*defUid, true};
   }
 
@@ -728,7 +726,7 @@ bool EntropyApp::loadSerializedImage(
       break;
     } while (1);
 
-    // TODO: Deformation field images are special:
+    // TODO: Warp field images are special:
     // 1) no segmentation is created
     // 2) no affine transformation can be applied: it copies the affine tx of its image
     // 3) need warning when header tx doesn't match that of reference

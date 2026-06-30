@@ -64,7 +64,7 @@ struct ImGuiProjectCallbacks
   /** @brief Add a segmentation file to a specific image. */
   std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> addSegmentationFileToImage;
 
-  /** @brief Load a deformation field and return its UID if successful. */
+  /** @brief Load a warp field and return its UID if successful. */
   std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)> loadDeformationField;
 
   /** @brief Open a project file. */

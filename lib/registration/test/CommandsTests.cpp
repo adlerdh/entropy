@@ -79,6 +79,31 @@ TEST_CASE("Greedy command generation uses selected parameter values", "[registra
   CHECK(preview.find("-float") != std::string::npos);
 }
 
+TEST_CASE("Greedy command generation emits radius only for NCC metrics", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::Affine;
+  job.parameterValues = {{"wnccRadius", "4"}};
+
+  job.metric = registration::Metric::WNCC;
+  std::string preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("-m WNCC 4x4x4") != std::string::npos);
+
+  job.metric = registration::Metric::NCC;
+  preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("-m NCC 4x4x4") != std::string::npos);
+
+  job.metric = registration::Metric::NMI;
+  preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("-m NMI -i") != std::string::npos);
+  CHECK(preview.find("4x4x4") == std::string::npos);
+
+  job.metric = registration::Metric::MI;
+  preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("-m MI -i") != std::string::npos);
+  CHECK(preview.find("4x4x4") == std::string::npos);
+}
+
 TEST_CASE("Greedy command generation emits advanced affine and deformable options", "[registration][commands]")
 {
   registration::JobSpec job = baseJob(registration::Backend::Greedy);

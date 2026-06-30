@@ -64,7 +64,7 @@ ImportPlan buildImportPlan(const JobSpec& job, const ResultManifest& manifest)
   plan.warnings = manifest.warnings;
   const bool hasDeformableOutput = includesDeformableTransform(job.transformModel);
 
-  if (hasPath(manifest.affineTransform)) {
+  if (job.outputs.loadAffineTransform && hasPath(manifest.affineTransform)) {
     addStep(
       plan,
       ImportAction::ApplyAffineTransform,

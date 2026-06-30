@@ -1,5 +1,7 @@
 #include "registration/Setup.h"
 
+#include "registration/Artifacts.h"
+
 #include <algorithm>
 #include <cctype>
 
@@ -89,6 +91,14 @@ std::vector<ParameterValue> defaultParameterValues(const BackendCapabilities& ca
   return values;
 }
 
+bool parameterAppliesToJob(const ParameterSchema& parameter, const JobSpec& job)
+{
+  if (job.backend == Backend::Greedy && parameter.key == "wnccRadius") {
+    return job.metric == Metric::NCC || job.metric == Metric::WNCC;
+  }
+  return true;
+}
+
 void preserveParameterValues(std::vector<ParameterValue>& values, const std::vector<ParameterValue>& oldValues)
 {
   for (ParameterValue& value : values) {
@@ -109,6 +119,26 @@ void normalizeJobForCapabilities(JobSpec& job, const BackendCapabilities& capabi
   }
   if (!supportsMetric(capabilities, job.metric)) {
     job.metric = defaultMetric(capabilities);
+  }
+}
+
+std::filesystem::path previewInitialAffinePath(const JobSpec& job)
+{
+  std::filesystem::path outputDirectory = job.outputDirectory;
+  if (outputDirectory == std::filesystem::temp_directory_path()) {
+    outputDirectory /= "entropy-registration";
+    outputDirectory /= "<job-id>";
+  }
+  return outputDirectory / (outputPrefix(job) + "_initial_affine.mat");
+}
+
+void materializePreviewOnlyInputs(JobSpec& job)
+{
+  if (
+    job.useCurrentAffineTransformsForInitialization && includesAffineTransform(job.transformModel) &&
+    job.initialAffineTransform.empty())
+  {
+    job.initialAffineTransform = previewInitialAffinePath(job);
   }
 }
 
@@ -188,6 +218,9 @@ std::vector<ParameterSchema> visibleParameters(const SetupState& state)
 {
   std::vector<ParameterSchema> parameters;
   for (const ParameterSchema& parameter : state.capabilities.parameters) {
+    if (!parameterAppliesToJob(parameter, state.job)) {
+      continue;
+    }
     if (parameter.expert && !state.showExpertParameters) {
       continue;
     }
@@ -225,6 +258,7 @@ std::vector<std::string> commandPreviews(const SetupState& state, const CommandG
 
   JobSpec job = state.job;
   job.parameterValues = state.parameterValues;
+  materializePreviewOnlyInputs(job);
   const std::vector<CommandSpec> commands = generateCommands(job, commandOptions);
   std::vector<std::string> previews;
   previews.reserve(commands.size());

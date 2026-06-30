@@ -34,9 +34,9 @@ namespace
 {
 
 constexpr std::array k_backends{
-  registration::Backend::Greedy,
   registration::Backend::ANTs,
-  registration::Backend::FireANTs};
+  registration::Backend::FireANTs,
+  registration::Backend::Greedy};
 
 constexpr int k_minResolutionLevels = 1;
 constexpr int k_maxResolutionLevels = 8;
@@ -108,6 +108,29 @@ std::vector<DataChoice> maskChoices(const AppData& appData)
     }
   }
   return choices;
+}
+
+std::optional<std::string> outputDirectoryWarning(const std::string& text)
+{
+  if (text.empty()) {
+    return std::nullopt;
+  }
+
+  std::error_code error;
+  const std::filesystem::path path{text};
+  if (!std::filesystem::exists(path, error)) {
+    return "Folder does not exist.";
+  }
+  if (error) {
+    return "Folder cannot be checked: " + error.message();
+  }
+  if (!std::filesystem::is_directory(path, error)) {
+    return "Path exists, but is not a folder.";
+  }
+  if (error) {
+    return "Folder cannot be checked: " + error.message();
+  }
+  return std::nullopt;
 }
 
 int backendIndex(registration::Backend backend)
@@ -511,9 +534,9 @@ std::string transformDisplayLabel(registration::Backend backend, registration::T
       case registration::TransformModel::Affine:
         return "Affine (12 DOF)";
       case registration::TransformModel::AffineDeformable:
-        return "Affine + deformable (12 DOF affine)";
+        return "Affine + deformable transformation (12 DOF affine)";
       case registration::TransformModel::Deformable:
-        return "Deformable";
+        return "Deformable transformation";
       case registration::TransformModel::RigidAffine:
       case registration::TransformModel::Translation:
       case registration::TransformModel::BSplineDisplacement:
@@ -748,8 +771,8 @@ int compareJobTableColumn(
         std::string{registration::label(right.spec.transformModel)});
     case JobTableColumn::Metric:
       return compareStrings(
-        metricDisplayLabel(left.spec.backend, left.spec.metric),
-        metricDisplayLabel(right.spec.backend, right.spec.metric));
+        std::string{registration::label(left.spec.metric)},
+        std::string{registration::label(right.spec.metric)});
     case JobTableColumn::Status:
       return compareStrings(statusText(left.status), statusText(right.status));
     case JobTableColumn::Progress:
@@ -1155,7 +1178,24 @@ void renderAuxiliaryImagePairs(
   ImGui::EndDisabled();
 }
 
-void renderVisibleParameters(registration::SetupState& state)
+bool renderParameterByKey(registration::SetupState& state, const registration::ParameterSchema& parameter)
+{
+  registration::ParameterValue* value = registration::findParameterValue(state, parameter.key);
+  if (!value) {
+    return false;
+  }
+  renderParameterWidget(*value, parameter);
+  return true;
+}
+
+void renderParameterVisibilityToggles(bool& showAdvanced, bool& showExpert)
+{
+  ImGui::Checkbox("Show advanced options", &showAdvanced);
+  ImGui::SameLine();
+  ImGui::Checkbox("Show expert options", &showExpert);
+}
+
+void renderVisibleParameters(registration::SetupState& state, bool& showAdvanced, bool& showExpert)
 {
   const std::vector<registration::ParameterSchema> parameters = registration::visibleParameters(state);
   if (parameters.empty()) {
@@ -1163,12 +1203,31 @@ void renderVisibleParameters(registration::SetupState& state)
     return;
   }
 
+  bool renderedToggles = false;
   for (const registration::ParameterSchema& parameter : parameters) {
-    registration::ParameterValue* value = registration::findParameterValue(state, parameter.key);
-    if (!value) {
+    if (parameter.advanced || parameter.expert) {
       continue;
     }
-    renderParameterWidget(*value, parameter);
+    if (renderParameterByKey(state, parameter) && parameter.key == "smoothingUnits") {
+      renderParameterVisibilityToggles(showAdvanced, showExpert);
+      renderedToggles = true;
+      state.showAdvancedParameters = showAdvanced;
+      state.showExpertParameters = showExpert;
+    }
+  }
+
+  if (!renderedToggles) {
+    renderParameterVisibilityToggles(showAdvanced, showExpert);
+    state.showAdvancedParameters = showAdvanced;
+    state.showExpertParameters = showExpert;
+  }
+
+  const std::vector<registration::ParameterSchema> expandedParameters = registration::visibleParameters(state);
+  for (const registration::ParameterSchema& parameter : expandedParameters) {
+    if (!parameter.advanced && !parameter.expert) {
+      continue;
+    }
+    renderParameterByKey(state, parameter);
   }
 }
 
@@ -1252,9 +1311,11 @@ void renderRegistrationSetupWindow(AppData& appData)
   static bool s_showExpert = config.showExpertOptionsByDefault;
   static std::filesystem::path s_lastDefaultOutputDirectory;
   static std::string s_outputDirectoryText;
+  static std::optional<std::string> s_outputDirectoryWarning;
   if (s_lastDefaultOutputDirectory != config.defaultOutputDirectory) {
     s_outputDirectoryText = config.defaultOutputDirectory.string();
     s_lastDefaultOutputDirectory = config.defaultOutputDirectory;
+    s_outputDirectoryWarning = outputDirectoryWarning(s_outputDirectoryText);
   }
 
   const std::filesystem::path outputDirectory =
@@ -1336,23 +1397,53 @@ void renderRegistrationSetupWindow(AppData& appData)
       ImGui::Separator();
     }
 
+    if (ImGui::CollapsingHeader("Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
+      renderTransformCombo(state);
+      renderMetricCombo(state);
+      ImGui::Separator();
+      renderVisibleParameters(state, s_showAdvanced, s_showExpert);
+      ImGui::Separator();
+    }
+
     if (ImGui::CollapsingHeader("Options", ImGuiTreeNodeFlags_DefaultOpen)) {
-      if (ImGui::InputText("Output directory", &s_outputDirectoryText)) {
+      const auto commitOutputDirectory = [&]() {
         config.defaultOutputDirectory =
           s_outputDirectoryText.empty() ? std::filesystem::path{} : std::filesystem::path{s_outputDirectoryText};
         s_lastDefaultOutputDirectory = config.defaultOutputDirectory;
         state.job.outputDirectory = config.defaultOutputDirectory.empty() ? std::filesystem::temp_directory_path()
                                                                           : config.defaultOutputDirectory;
+        s_outputDirectoryWarning = outputDirectoryWarning(s_outputDirectoryText);
         registration::refreshValidation(state);
+      };
+
+      if (ImGui::InputText("Output directory", &s_outputDirectoryText, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        commitOutputDirectory();
+      }
+      if (ImGui::IsItemDeactivatedAfterEdit()) {
+        commitOutputDirectory();
       }
       ImGui::SameLine();
       helpMarker(
         "Directory where registration outputs are written. Leave empty to use a per-job folder in the system "
         "temporary directory.");
+      if (s_outputDirectoryWarning) {
+        ImGui::TextDisabled("%s", s_outputDirectoryWarning->c_str());
+      }
       if (config.defaultOutputDirectory.empty()) {
         ImGui::TextDisabled(
           "Using per-job folders under: %s",
           (std::filesystem::temp_directory_path() / "entropy-registration").string().c_str());
+      }
+
+      if (state.job.backend == registration::Backend::FireANTs && s_showExpert) {
+        ImGui::SeparatorText("Developer");
+        ImGui::PushItemWidth(controlWidth);
+        ImGui::InputText("FireANTs bridge module", &config.fireAntsBridgeModule);
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        helpMarker(
+          "Python module launched with 'python -m'. This is normally Entropy's bundled FireANTs bridge and should "
+          "only be changed when testing alternate bridge modules.");
       }
 
       if (ImGui::Checkbox(
@@ -1368,25 +1459,42 @@ void renderRegistrationSetupWindow(AppData& appData)
       helpMarker(
         "Initialize registration with the moving image's current initial and manual affine transforms. "
         "After import, the computed affine replaces those transforms as the new initial affine.");
-      if (ImGui::Checkbox("Load Moving to Fixed image", &state.job.outputs.loadWarpedImage)) {
+      ImGui::Spacing();
+      ImGui::TextUnformatted("Output data to load following registration:");
+
+      if (ImGui::Checkbox("Moving image transformed to fixed image space", &state.job.outputs.loadWarpedImage)) {
+        registration::refreshValidation(state);
+      }
+      ImGui::SameLine();
+      helpMarker("Load the baked/resampled moving image produced by the backend as a new image.");
+
+      if (ImGui::Checkbox("Transformation matrix for moving image", &state.job.outputs.loadAffineTransform)) {
+        registration::refreshValidation(state);
+      }
+      ImGui::SameLine();
+      helpMarker("Apply the computed affine transform to the original moving image.");
+
+      if (ImGui::Checkbox(
+            "Inverse warp field for transforming/resampling moving image to fixed image space",
+            &state.job.outputs.loadInverseWarp))
+      {
         registration::refreshValidation(state);
       }
       ImGui::SameLine();
       helpMarker(
-        "Load the baked/resampled moving image produced by the backend. "
-        "The original moving image still receives the computed affine and warps when this is off.");
-      ImGui::Separator();
-    }
+        "Load and assign the inverse sampling warp. This field is sampled in fixed/reference space and points to "
+        "moving-image sample locations.");
 
-    if (ImGui::CollapsingHeader("Parameters", ImGuiTreeNodeFlags_DefaultOpen)) {
-      renderTransformCombo(state);
-      renderMetricCombo(state);
-      ImGui::Separator();
-      ImGui::Checkbox("Show advanced options", &s_showAdvanced);
+      if (ImGui::Checkbox(
+            "Forward warp field for transforming moving image landmarks and annotations to fixed image space",
+            &state.job.outputs.loadForwardWarp))
+      {
+        registration::refreshValidation(state);
+      }
       ImGui::SameLine();
-      ImGui::Checkbox("Show expert options", &s_showExpert);
-      ImGui::Separator();
-      renderVisibleParameters(state);
+      helpMarker(
+        "Load and assign the forward point warp. This field maps moving-space points into fixed/reference image "
+        "space, which is the direction needed for landmarks and annotations.");
       ImGui::Separator();
     }
 
@@ -1605,7 +1713,7 @@ void renderRegistrationJobsWindow(
       ImGui::TextUnformatted(transformLabel.c_str());
 
       ImGui::TableSetColumnIndex(5);
-      const std::string metricLabel = metricDisplayLabel(job.spec.backend, job.spec.metric);
+      const std::string metricLabel{registration::label(job.spec.metric)};
       ImGui::TextUnformatted(metricLabel.c_str());
 
       ImGui::TableSetColumnIndex(6);

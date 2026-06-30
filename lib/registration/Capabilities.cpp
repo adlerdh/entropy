@@ -104,12 +104,12 @@ BackendCapabilities greedyCapabilities()
       "Multi-resolution iteration schedule from coarse to fine."),
     numericParameter(
       "wnccRadius",
-      "WNCC radius",
+      "NCC/WNCC radius",
       ParameterKind::Integer,
       "2",
       1.0,
       12.0,
-      "Patch radius used by NCC/WNCC metrics. Larger values smooth the metric response."),
+      "Patch radius used by NCC and WNCC metrics. Larger values smooth the metric response."),
     choiceParameter(
       "smoothingUnits",
       "Smoothing units",
@@ -121,7 +121,7 @@ BackendCapabilities greedyCapabilities()
       "Smoothing sigma",
       ParameterKind::FloatVector,
       "1.732,0.7071",
-      "Greedy update smoothing sigmas for deformation regularity.",
+      "Greedy update smoothing sigmas for deformable transformation regularity.",
       true),
     numericParameter(
       "stepSize",
@@ -139,7 +139,8 @@ BackendCapabilities greedyCapabilities()
       {"Stationary velocity (sv)",
        "Accurate stationary velocity (svlb)",
        "Incompressible stationary velocity (sv-incompr)"},
-      "Greedy deformable update model: stationary velocity, accurate stationary velocity, or incompressible.",
+      "Greedy deformable transformation update model: stationary velocity, accurate stationary velocity, or "
+      "incompressible.",
       true),
     numericParameter(
       "inverseExponentiation",
@@ -192,8 +193,8 @@ BackendCapabilities greedyCapabilities()
     choiceParameter(
       "affineMoments",
       "Affine moments initialization",
-      "Off",
-      {"Off", "First moments (1)", "Second moments (2)"},
+      "Disabled (off)",
+      {"Disabled (off)", "First moments (1)", "Second moments (2)"},
       "Initialize affine registration by matching first or second moments instead of image centers/current affine.",
       true),
     choiceParameter(
@@ -429,10 +430,10 @@ BackendCapabilities fireAntsCapabilities()
       true),
     choiceParameter(
       "deformationType",
-      "Deformation type",
+      "Deformable transformation",
       "Greedy",
       {"Greedy", "SyN"},
-      "FireANTs deformable transform used for deformable stages.",
+      "FireANTs deformable transformation model used for deformable stages.",
       true),
     parameter(
       "normalizeImageIntensities",

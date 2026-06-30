@@ -221,6 +221,7 @@ void to_json(nlohmann::json& j, const OutputRequests& value)
 {
   j = nlohmann::json{
     {"loadWarpedImage", value.loadWarpedImage},
+    {"loadAffineTransform", value.loadAffineTransform},
     {"loadInverseWarp", value.loadInverseWarp},
     {"loadForwardWarp", value.loadForwardWarp},
     {"applyWarpToMovingImage", value.applyWarpToMovingImage},
@@ -233,6 +234,7 @@ void to_json(nlohmann::json& j, const OutputRequests& value)
 void from_json(const nlohmann::json& j, OutputRequests& value)
 {
   getOptional(j, "loadWarpedImage", value.loadWarpedImage);
+  getOptional(j, "loadAffineTransform", value.loadAffineTransform);
   getOptional(j, "loadInverseWarp", value.loadInverseWarp);
   getOptional(j, "loadForwardWarp", value.loadForwardWarp);
   getOptional(j, "applyWarpToMovingImage", value.applyWarpToMovingImage);

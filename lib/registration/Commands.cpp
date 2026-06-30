@@ -114,6 +114,15 @@ std::string greedyMetric(Metric metric)
   }
 }
 
+std::vector<std::string> greedyMetricArguments(const JobSpec& job)
+{
+  std::vector<std::string> args{greedyMetric(job.metric)};
+  if (job.metric == Metric::NCC || job.metric == Metric::WNCC) {
+    args.push_back(repeatedRadius(parameterValueOr(job, "wnccRadius", "2"), job.dimension));
+  }
+  return args;
+}
+
 std::string greedySmoothingValue(const std::string& value, const std::string& units)
 {
   const bool alreadyHasUnits = value.find("vox") != std::string::npos || value.find("mm") != std::string::npos;
@@ -306,7 +315,6 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
   const std::filesystem::path forwardWarp = artifactPath(job, ArtifactRole::ForwardWarp);
   const std::filesystem::path warpedImage = artifactPath(job, ArtifactRole::WarpedImage);
   const std::string iterations = parameterValueOr(job, "iterations", job.iterationSchedule);
-  const std::string metricRadius = repeatedRadius(parameterValueOr(job, "wnccRadius", "2"), job.dimension);
   const std::string threads = parameterValueOr(job, "threads", "0");
 
   if (includesAffineTransform(job.transformModel)) {
@@ -318,15 +326,18 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       std::to_string(job.dimension),
       "-a",
       "-m",
-      greedyMetric(job.metric),
-      metricRadius,
-      "-i",
-      pathString(job.fixedImage.fileName),
-      pathString(job.movingImage.fileName),
-      "-o",
-      pathString(affine),
-      "-n",
-      iterations};
+    };
+    const std::vector<std::string> metricArgs = greedyMetricArguments(job);
+    command.args.insert(command.args.end(), metricArgs.begin(), metricArgs.end());
+    command.args.insert(
+      command.args.end(),
+      {"-i",
+       pathString(job.fixedImage.fileName),
+       pathString(job.movingImage.fileName),
+       "-o",
+       pathString(affine),
+       "-n",
+       iterations});
     appendGreedyAuxiliaryPairs(command.args, job);
     command.args.push_back("-dof");
     command.args.push_back(std::to_string(greedyAffineDof(job.transformModel)));
@@ -364,15 +375,18 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       "-d",
       std::to_string(job.dimension),
       "-m",
-      greedyMetric(job.metric),
-      metricRadius,
-      "-i",
-      pathString(job.fixedImage.fileName),
-      pathString(job.movingImage.fileName),
-      "-o",
-      pathString(inverseWarp),
-      "-n",
-      iterations};
+    };
+    const std::vector<std::string> metricArgs = greedyMetricArguments(job);
+    command.args.insert(command.args.end(), metricArgs.begin(), metricArgs.end());
+    command.args.insert(
+      command.args.end(),
+      {"-i",
+       pathString(job.fixedImage.fileName),
+       pathString(job.movingImage.fileName),
+       "-o",
+       pathString(inverseWarp),
+       "-n",
+       iterations});
     appendGreedyAuxiliaryPairs(command.args, job);
     if (includesAffineTransform(job.transformModel)) {
       command.args.push_back("-it");

@@ -5,7 +5,7 @@ uniform float u_defSlope_native_T_texture;
 uniform float u_deformationStrength;
 uniform bool u_defInterleaved;
 
-// Deformation fields are interpreted as sampling fields:
+// Warp fields are interpreted as sampling fields:
 // moving_sample_world = displayed_world + strength * displacement_world(displayed_world).
 vec3 sampleDisplacementWorld(vec3 worldPos)
 {

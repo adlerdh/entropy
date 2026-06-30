@@ -31,6 +31,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
@@ -46,6 +47,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <iomanip>
 #include <limits>
@@ -148,35 +150,62 @@ bool vec3NearlyEqual(const glm::vec3& a, const glm::vec3& b, float epsilon)
   return glm::all(glm::epsilonEqual(a, b, epsilon));
 }
 
-std::vector<std::string> deformationFieldWarnings(const Image& field, const Image& target)
+std::optional<glm::quat> rotationFromAngleAxis(float angleDegrees, glm::vec3 axis)
+{
+  if (!std::isfinite(angleDegrees) || !std::isfinite(axis.x) || !std::isfinite(axis.y) || !std::isfinite(axis.z)) {
+    return std::nullopt;
+  }
+
+  const float axisLength = glm::length(axis);
+  if (axisLength <= glm::epsilon<float>()) {
+    return std::nullopt;
+  }
+
+  return glm::normalize(glm::angleAxis(glm::radians(angleDegrees), axis / axisLength));
+}
+
+glm::vec3 editableRotationAxis(glm::quat rotation)
+{
+  rotation = glm::normalize(rotation);
+  glm::vec3 axis = glm::axis(rotation);
+  if (
+    !std::isfinite(axis.x) || !std::isfinite(axis.y) || !std::isfinite(axis.z) ||
+    glm::length(axis) <= glm::epsilon<float>())
+  {
+    return glm::vec3{0.0f, 0.0f, 1.0f};
+  }
+  return glm::normalize(axis);
+}
+
+std::vector<std::string> warpFieldWarnings(const Image& field, const Image& target)
 {
   constexpr float k_geometryEpsilon = 1.0e-4f;
   constexpr float k_domainToleranceMm = 1.0e-3f;
 
   std::vector<std::string> warnings;
   if (field.header().numComponentsPerPixel() < 3) {
-    warnings.emplace_back("The selected field has fewer than three components per voxel.");
+    warnings.emplace_back("The selected warp field has fewer than three components per voxel.");
     return warnings;
   }
 
   if (field.header().pixelDimensions() != target.header().pixelDimensions()) {
-    warnings.emplace_back("The field grid dimensions differ from the expected image.");
+    warnings.emplace_back("The warp field grid dimensions differ from the expected image.");
   }
   if (!vec3NearlyEqual(field.header().spacing(), target.header().spacing(), k_geometryEpsilon)) {
-    warnings.emplace_back("The field voxel spacing differs from the expected image.");
+    warnings.emplace_back("The warp field voxel spacing differs from the expected image.");
   }
   if (!vec3NearlyEqual(field.header().origin(), target.header().origin(), k_geometryEpsilon)) {
-    warnings.emplace_back("The field origin differs from the expected image.");
+    warnings.emplace_back("The warp field origin differs from the expected image.");
   }
   if (
     !vec3NearlyEqual(field.header().directions()[0], target.header().directions()[0], k_geometryEpsilon) ||
     !vec3NearlyEqual(field.header().directions()[1], target.header().directions()[1], k_geometryEpsilon) ||
     !vec3NearlyEqual(field.header().directions()[2], target.header().directions()[2], k_geometryEpsilon))
   {
-    warnings.emplace_back("The field direction matrix differs from the expected image.");
+    warnings.emplace_back("The warp field direction matrix differs from the expected image.");
   }
   if (!worldAabbContains(imageWorldAabb(field), imageWorldAabb(target), k_domainToleranceMm)) {
-    warnings.emplace_back("The field physical domain does not fully cover the expected image.");
+    warnings.emplace_back("The warp field physical domain does not fully cover the expected image.");
   }
 
   return warnings;
@@ -194,7 +223,7 @@ std::string joinedWarnings(const std::vector<std::string>& warnings)
   return text;
 }
 
-bool confirmDeformationFieldWarnings(const char* title, const std::vector<std::string>& warnings)
+bool confirmWarpFieldWarnings(const char* title, const std::vector<std::string>& warnings)
 {
   if (warnings.empty()) {
     return true;
@@ -202,15 +231,25 @@ bool confirmDeformationFieldWarnings(const char* title, const std::vector<std::s
 
   const auto result = native_dialog::showMessageDialog(
     {title,
-     "The selected deformation field may not match the expected image space.",
+     "The selected warp field may not match the expected image space.",
      joinedWarnings(warnings),
-     "Use field",
+     "Use warp field",
      "Cancel",
      ""});
   return !result || native_dialog::MessageDialogResult::FirstButton == *result;
 }
 
-void renderInlineDeformationWarnings(const std::vector<std::string>& warnings)
+bool confirmResetAffineTransformation(
+  const char* title,
+  const char* message,
+  const char* informativeText,
+  const char* resetButton)
+{
+  const auto result = native_dialog::showMessageDialog({title, message, informativeText, resetButton, "Cancel", ""});
+  return result && native_dialog::MessageDialogResult::FirstButton == *result;
+}
+
+void renderInlineWarpFieldWarnings(const std::vector<std::string>& warnings)
 {
   if (warnings.empty()) {
     return;
@@ -840,7 +879,7 @@ void renderImageHeader(
   const std::function<void(std::size_t cmapIndex)>& /*updateImageColorMapInterpolationMode*/,
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<ImageColorMap*(size_t cmapIndex)>& getImageColorMap,
-  const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadDeformationField,
+  const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadWarpField,
   const std::function<void(
     const uuids::uuid& imageUid,
     const uuids::uuid& sourceWarpUid,
@@ -2595,28 +2634,28 @@ void renderImageHeader(
 
   renderImageDicomMetadata(appData, imageUid);
 
-  auto renderDeformationWarpHeader = [&]() {
+  auto renderDeformableTransformationsHeader = [&]() {
     if (isRef || !ImGui::TreeNode("Deformable Transformations")) {
       return;
     }
 
-    const uuid_range_t loadedDeformationRange = appData.warpFieldCandidateUidsOrdered();
-    const std::vector<uuids::uuid> loadedDeformationUids{
-      std::begin(loadedDeformationRange),
-      std::end(loadedDeformationRange)};
+    const uuid_range_t loadedWarpFieldRange = appData.warpFieldCandidateUidsOrdered();
+    const std::vector<uuids::uuid> loadedWarpFieldUids{
+      std::begin(loadedWarpFieldRange),
+      std::end(loadedWarpFieldRange)};
     const std::optional<uuids::uuid> activeInverseWarpUid = appData.imageToActiveInverseWarpUid(imageUid);
     const std::optional<uuids::uuid> activeForwardWarpUid = appData.imageToActiveForwardWarpUid(imageUid);
     const Image* referenceImage = appData.refImageUid() ? appData.image(*appData.refImageUid()) : nullptr;
 
-    auto deformationNamesAndIndex = [&](std::optional<uuids::uuid> activeUid) {
+    auto warpFieldNamesAndIndex = [&](std::optional<uuids::uuid> activeUid) {
       int activeIndex = activeUid ? -1 : 0;
       std::vector<std::string> names;
       names.emplace_back("Unassigned");
-      names.reserve(loadedDeformationUids.size() + 1);
-      for (std::size_t i = 0; i < loadedDeformationUids.size(); ++i) {
-        const Image* def = appData.warpField(loadedDeformationUids.at(i));
-        names.push_back(def ? def->settings().displayName() : std::string{"Missing deformation"});
-        if (activeUid && *activeUid == loadedDeformationUids.at(i)) {
+      names.reserve(loadedWarpFieldUids.size() + 1);
+      for (std::size_t i = 0; i < loadedWarpFieldUids.size(); ++i) {
+        const Image* def = appData.warpField(loadedWarpFieldUids.at(i));
+        names.push_back(def ? def->settings().displayName() : std::string{"Missing warp field"});
+        if (activeUid && *activeUid == loadedWarpFieldUids.at(i)) {
           activeIndex = static_cast<int>(i + 1);
         }
       }
@@ -2629,8 +2668,8 @@ void renderImageHeader(
         return false;
       }
 
-      const std::vector<std::string> warnings = deformationFieldWarnings(*def, *referenceImage);
-      if (!confirmDeformationFieldWarnings("Inverse warp warning", warnings)) {
+      const std::vector<std::string> warnings = warpFieldWarnings(*def, *referenceImage);
+      if (!confirmWarpFieldWarnings("Inverse warp warning", warnings)) {
         return false;
       }
       if (!appData.assignInverseWarpUidToImage(imageUid, defUid)) {
@@ -2647,8 +2686,8 @@ void renderImageHeader(
         return false;
       }
 
-      const std::vector<std::string> warnings = deformationFieldWarnings(*def, *image);
-      if (!confirmDeformationFieldWarnings("Forward warp warning", warnings)) {
+      const std::vector<std::string> warnings = warpFieldWarnings(*def, *image);
+      if (!confirmWarpFieldWarnings("Forward warp warning", warnings)) {
         return false;
       }
       if (!appData.assignForwardWarpUidToImage(imageUid, defUid)) {
@@ -2658,9 +2697,9 @@ void renderImageHeader(
       return true;
     };
 
-    auto loadAndAssignDeformationField = [&](bool forwardWarp) {
-      if (!loadDeformationField) {
-        spdlog::error("No deformation-field load callback is installed");
+    auto loadAndAssignWarpField = [&](bool forwardWarp) {
+      if (!loadWarpField) {
+        spdlog::error("No warp-field load callback is installed");
         return;
       }
 
@@ -2669,9 +2708,9 @@ void renderImageHeader(
         return;
       }
 
-      const std::optional<uuids::uuid> defUid = loadDeformationField(*selectedFile);
+      const std::optional<uuids::uuid> defUid = loadWarpField(*selectedFile);
       if (!defUid) {
-        spdlog::error("Unable to load deformation field from {}", *selectedFile);
+        spdlog::error("Unable to load warp field from {}", *selectedFile);
         return;
       }
 
@@ -2683,20 +2722,27 @@ void renderImageHeader(
       }
     };
 
-    if (ImGui::Button("Load inverse warp...")) {
-      loadAndAssignDeformationField(false);
+    static WarpInversionOptions inversionOptions;
+    const bool hasAssignedInverseWarp = activeInverseWarpUid.has_value();
+    const bool hasBothWarpDirections = activeInverseWarpUid.has_value() && activeForwardWarpUid.has_value();
+
+    ImGui::BeginDisabled(!hasAssignedInverseWarp);
+    bool enabled = imgSettings.warpEnabled();
+    if (ImGui::Checkbox(hasBothWarpDirections ? "Apply deformable warps" : "Apply deformable warp", &enabled)) {
+      imgSettings.setWarpEnabled(enabled);
+      updateImageUniforms();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Load forward warp...")) {
-      loadAndAssignDeformationField(true);
-    }
+    helpMarker(
+      hasBothWarpDirections ? "Apply the inverse warp to image and segmentation rendering, and apply the forward warp "
+                              "to landmarks and annotations."
+                            : "Warp this moving image at render time using the active inverse warp.");
+    ImGui::EndDisabled();
 
-    static WarpInversionOptions inversionOptions;
-
-    auto [inverseWarpNames, activeInverseWarpIndex] = deformationNamesAndIndex(activeInverseWarpUid);
+    auto [inverseWarpNames, activeInverseWarpIndex] = warpFieldNamesAndIndex(activeInverseWarpUid);
     const std::size_t activeInverseWarpNameIndex =
       activeInverseWarpIndex > 0 ? static_cast<std::size_t>(activeInverseWarpIndex) : 0;
-    ImGui::BeginDisabled(loadedDeformationUids.empty());
+    ImGui::BeginDisabled(loadedWarpFieldUids.empty());
     if (ImGui::BeginCombo("Inverse warp", inverseWarpNames.at(activeInverseWarpNameIndex).c_str())) {
       for (std::size_t i = 0; i < inverseWarpNames.size(); ++i) {
         const bool selected = static_cast<int>(i) == activeInverseWarpIndex;
@@ -2706,7 +2752,7 @@ void renderImageHeader(
             updateImageUniforms();
           }
           else {
-            (void)confirmAndAssignInverseWarp(loadedDeformationUids.at(i - 1));
+            (void)confirmAndAssignInverseWarp(loadedWarpFieldUids.at(i - 1));
           }
         }
         if (selected) {
@@ -2721,14 +2767,14 @@ void renderImageHeader(
 
     if (activeInverseWarpUid && referenceImage) {
       if (const Image* def = appData.warpField(*activeInverseWarpUid)) {
-        renderInlineDeformationWarnings(deformationFieldWarnings(*def, *referenceImage));
+        renderInlineWarpFieldWarnings(warpFieldWarnings(*def, *referenceImage));
       }
     }
 
-    auto [forwardWarpNames, activeForwardWarpIndex] = deformationNamesAndIndex(activeForwardWarpUid);
+    auto [forwardWarpNames, activeForwardWarpIndex] = warpFieldNamesAndIndex(activeForwardWarpUid);
     const std::size_t activeForwardWarpNameIndex =
       activeForwardWarpIndex > 0 ? static_cast<std::size_t>(activeForwardWarpIndex) : 0;
-    ImGui::BeginDisabled(loadedDeformationUids.empty());
+    ImGui::BeginDisabled(loadedWarpFieldUids.empty());
     if (ImGui::BeginCombo("Forward warp", forwardWarpNames.at(activeForwardWarpNameIndex).c_str())) {
       for (std::size_t i = 0; i < forwardWarpNames.size(); ++i) {
         const bool selected = static_cast<int>(i) == activeForwardWarpIndex;
@@ -2737,7 +2783,7 @@ void renderImageHeader(
             appData.clearActiveForwardWarpUidForImage(imageUid);
           }
           else {
-            (void)confirmAndAssignForwardWarp(loadedDeformationUids.at(i - 1));
+            (void)confirmAndAssignForwardWarp(loadedWarpFieldUids.at(i - 1));
           }
         }
         if (selected) {
@@ -2752,12 +2798,20 @@ void renderImageHeader(
 
     if (activeForwardWarpUid) {
       if (const Image* forwardWarp = appData.warpField(*activeForwardWarpUid)) {
-        renderInlineDeformationWarnings(deformationFieldWarnings(*forwardWarp, *image));
+        renderInlineWarpFieldWarnings(warpFieldWarnings(*forwardWarp, *image));
       }
     }
 
-    if (loadedDeformationUids.empty()) {
-      ImGui::TextDisabled("No deformation fields are loaded.");
+    if (loadedWarpFieldUids.empty()) {
+      ImGui::TextDisabled("No warp fields are loaded.");
+    }
+
+    if (ImGui::Button("Load inverse warp field...")) {
+      loadAndAssignWarpField(false);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Load forward warp field...")) {
+      loadAndAssignWarpField(true);
     }
 
     if (requestWarpInversion && (activeForwardWarpUid || activeInverseWarpUid)) {
@@ -2782,20 +2836,7 @@ void renderImageHeader(
       }
     }
 
-    const bool hasAssignedInverseWarp = activeInverseWarpUid.has_value();
     ImGui::BeginDisabled(!hasAssignedInverseWarp);
-    bool enabled = imgSettings.warpEnabled();
-    const bool hasBothWarpDirections = activeInverseWarpUid.has_value() && activeForwardWarpUid.has_value();
-    if (ImGui::Checkbox(hasBothWarpDirections ? "Apply warps" : "Apply warp", &enabled)) {
-      imgSettings.setWarpEnabled(enabled);
-      updateImageUniforms();
-    }
-    ImGui::SameLine();
-    helpMarker(
-      hasBothWarpDirections ? "Apply the inverse warp to image and segmentation rendering, and apply the forward warp "
-                              "to landmarks and annotations."
-                            : "Warp this moving image at render time using the active inverse warp.");
-
     if (hasAssignedInverseWarp && imgSettings.warpEnabled()) {
       if (!imgSettings.allowExaggeratedWarp() && imgSettings.warpStrength() > k_warpStrengthFineMax) {
         imgSettings.setWarpStrength(k_warpStrengthFineMax);
@@ -2815,12 +2856,13 @@ void renderImageHeader(
         updateImageUniforms();
       }
       ImGui::SameLine();
-      helpMarker("Allow warp strength values above 1.0x, up to 4.0x, for visualizing exaggerated deformation.");
+      helpMarker("Allow warp strength values above 1.0x, up to 4.0x, for visualizing an exaggerated warp.");
     }
     ImGui::EndDisabled();
 
-    disabledWrappedText("The inverse warp is sampled in reference space and gives the moving-image sampling offset.");
-    disabledWrappedText("The forward warp maps moving landmarks and annotations into reference space for display.");
+    disabledWrappedText(
+      "The inverse warp is sampled in reference space and gives the moving-image sampling offset; the forward warp "
+      "maps moving landmarks and annotations into reference space for display.");
 
     if (ImGui::TreeNode("Advanced warp inversion")) {
       int maxIterations = static_cast<int>(inversionOptions.maxIterations);
@@ -2853,32 +2895,45 @@ void renderImageHeader(
   };
 
   if (ImGui::TreeNode("Affine Transformations")) {
-    ImGui::Spacing();
+    disabledWrappedText("Applied order: image header geometry -> initial/imported affine -> manual affine");
 
     // The initial affine and manual affine transformations are disabled for the reference image:
     const bool forceDisableInitialTxs = isRef;
+    static const auto dialogFilters = native_dialog::transformFilters();
+    const auto mirrorInitialAffineToSegmentations = [&]() {
+      for (const uuids::uuid& segUid : appData.imageToSegUids(imageUid)) {
+        if (Image* seg = appData.seg(segUid)) {
+          auto& segTx = seg->transformations();
+          segTx.set_enable_affine_T_subject(imgTx.get_enable_affine_T_subject());
+          segTx.set_affine_T_subject(imgTx.get_affine_T_subject());
+          segTx.set_affine_T_subject_fileName(imgTx.get_affine_T_subject_fileName());
+        }
+      }
+    };
 
-    ImGui::Text("Initial affine transformation:");
-    ImGui::SameLine();
-    helpMarker("Initial affine transformation matrix (read from file)");
-
-    bool enable_affine_T_subject = imgTx.get_enable_affine_T_subject();
-    if (ImGui::Checkbox("Apply##affine_T_subject", &enable_affine_T_subject) && !forceDisableInitialTxs) {
-      imgTx.set_enable_affine_T_subject(enable_affine_T_subject);
-      updateImageUniforms();
-    }
-    ImGui::SameLine();
-
-    if (forceDisableInitialTxs) {
+    if (ImGui::TreeNodeEx("Initial (imported) affine transformation", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::SameLine();
       helpMarker(
-        "Enable/disable application of the initial affine transformation. "
-        "Always disabled for the reference image.");
-    }
-    else {
-      helpMarker("Enable/disable application of the initial affine transformation.");
-    }
+        "Affine transform loaded from a project, transform file, or registration result. "
+        "It is applied after image header geometry and before manual affine edits.");
 
-    if (enable_affine_T_subject && !forceDisableInitialTxs) {
+      bool enable_affine_T_subject = imgTx.get_enable_affine_T_subject();
+      ImGui::BeginDisabled(forceDisableInitialTxs);
+      if (ImGui::Checkbox("Apply initial affine", &enable_affine_T_subject)) {
+        imgTx.set_enable_affine_T_subject(enable_affine_T_subject);
+        updateImageUniforms();
+      }
+      ImGui::EndDisabled();
+      ImGui::SameLine();
+
+      if (forceDisableInitialTxs) {
+        helpMarker("The reference image defines the project space, so its initial affine transform is not applied.");
+      }
+      else {
+        helpMarker("Apply this imported affine transform before any manual affine adjustment.");
+      }
+
+      ImGui::BeginDisabled(forceDisableInitialTxs || !enable_affine_T_subject);
       if (auto fileName = imgTx.get_affine_T_subject_fileName()) {
         std::string fileNameString = fileName->string();
         ImGui::InputText("File", &fileNameString, ImGuiInputTextFlags_ReadOnly);
@@ -2895,41 +2950,89 @@ void renderImageHeader(
       ImGui::InputFloat4("##init_col3", glm::value_ptr(aff_T_sub[3]), txFormat, ImGuiInputTextFlags_ReadOnly);
       ImGui::PopItemWidth();
       ImGui::PopID();
+      ImGui::EndDisabled();
+
+      ImGui::BeginDisabled(forceDisableInitialTxs);
+      if (ImGui::Button("Load initial affine...")) {
+        if (const auto selectedFile = native_dialog::openFile(native_dialog::transformFilters())) {
+          glm::dmat4 affine_T_subject{1.0};
+          if (serialize::openAffineTxFile(affine_T_subject, *selectedFile)) {
+            imgTx.set_enable_affine_T_subject(true);
+            imgTx.set_affine_T_subject(glm::mat4{affine_T_subject});
+            imgTx.set_affine_T_subject_fileName(*selectedFile);
+            mirrorInitialAffineToSegmentations();
+            updateAllImageUniforms();
+          }
+          else {
+            spdlog::error("Error loading initial affine transformation matrix from file {}", *selectedFile);
+          }
+        }
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Save...##initialAffine")) {
+        if (const auto selectedFile = native_dialog::saveFile(dialogFilters)) {
+          const glm::dmat4 affine_T_subject{imgTx.get_affine_T_subject()};
+          if (serialize::saveAffineTxFile(affine_T_subject, *selectedFile)) {
+            spdlog::info("Saved initial affine transformation matrix to file {}", *selectedFile);
+          }
+          else {
+            spdlog::error("Error saving initial affine transformation matrix to file {}", *selectedFile);
+          }
+        }
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Reset##initialAffine")) {
+        if (confirmResetAffineTransformation(
+              "Reset initial affine?",
+              "Reset the initial/imported affine transformation to identity?",
+              "This clears the source transform file and cannot be undone.",
+              "Reset Initial Affine"))
+        {
+          imgTx.set_enable_affine_T_subject(true);
+          imgTx.set_affine_T_subject(glm::mat4{1.0f});
+          imgTx.set_affine_T_subject_fileName(std::nullopt);
+          mirrorInitialAffineToSegmentations();
+          updateAllImageUniforms();
+        }
+      }
+      ImGui::SameLine();
+      helpMarker("Load, save, or reset the initial/imported affine transformation matrix.");
+      ImGui::EndDisabled();
+
+      ImGui::TreePop();
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
     }
 
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
-
-    ImGui::Text("Manual affine transformation:");
-    ImGui::SameLine();
-    helpMarker("Manual affine transformation from Subject to World space");
-
-    bool enable_worldDef_T_affine = imgTx.get_enable_worldDef_T_affine();
-    if (ImGui::Checkbox("Apply##worldDef_T_affine", &enable_worldDef_T_affine) && !forceDisableInitialTxs) {
-      imgTx.set_enable_worldDef_T_affine(enable_worldDef_T_affine);
-      updateImageUniforms();
-    }
-    ImGui::SameLine();
-
-    if (forceDisableInitialTxs) {
+    if (ImGui::TreeNodeEx("Manual affine transformation", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::SameLine();
       helpMarker(
-        "Enable/disable application of the manual affine transformation from Subject to "
-        "World space. Always disabled for the reference image.");
-    }
-    else {
-      helpMarker(
-        "Enable/disable application of the manual affine transformation from Subject to World "
-        "space.");
-    }
+        "User-controlled affine adjustment applied after the initial affine transform. "
+        "Interactive translation, rotation, and scale tools update this transform.");
 
-    if (enable_worldDef_T_affine && !forceDisableInitialTxs) {
+      bool enable_worldDef_T_affine = imgTx.get_enable_worldDef_T_affine();
+      ImGui::BeginDisabled(forceDisableInitialTxs);
+      if (ImGui::Checkbox("Apply manual affine", &enable_worldDef_T_affine)) {
+        imgTx.set_enable_worldDef_T_affine(enable_worldDef_T_affine);
+        updateImageUniforms();
+      }
+      ImGui::EndDisabled();
+      ImGui::SameLine();
+      if (forceDisableInitialTxs) {
+        helpMarker("The reference image defines the project space, so its manual affine transform is not applied.");
+      }
+      else {
+        helpMarker("Apply the manual affine adjustment on top of the initial affine transform.");
+      }
+
+      ImGui::BeginDisabled(forceDisableInitialTxs || !enable_worldDef_T_affine);
       glm::quat w_T_s_rotation = imgTx.get_worldDef_T_affine_rotation();
       glm::vec3 w_T_s_scale = imgTx.get_worldDef_T_affine_scale();
       glm::vec3 w_T_s_trans = imgTx.get_worldDef_T_affine_translation();
 
-      float angle = glm::degrees(glm::angle(w_T_s_rotation));
-      glm::vec3 axis = glm::normalize(glm::axis(w_T_s_rotation));
+      float angle = glm::degrees(glm::angle(glm::normalize(w_T_s_rotation)));
+      glm::vec3 axis = editableRotationAxis(w_T_s_rotation);
 
       if (ImGui::InputFloat3("Translation", glm::value_ptr(w_T_s_trans), txFormat)) {
         imgTx.set_worldDef_T_affine_translation(w_T_s_trans);
@@ -2951,42 +3054,27 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker("Image scale in x, y, z");
 
-      /// @todo Put in a more friendly rotation widget. For now, disable changing the rotation
+      /// @todo Put in a more friendly rotation widget.
       /// @see https://github.com/BrutPitt/imGuIZMO.quat
       /// @see https://github.com/CedricGuillemet/ImGuizmo
 
-      //            ImGui::Text("Rotation");
       if (ImGui::InputFloat("Rotation angle", &angle, 0.01f, 0.1f, txFormat)) {
-        //                const float n = glm::length(axis);
-        //                if (n < 1e-6f)
-        //                {
-        //                    const glm::quat newRot = glm::angleAxis(glm::radians(angle),
-        //                    glm::normalize(axis)); imgTx.set_worldDef_T_affine_rotation(newRot);
-        //                    updateImageUniforms();
-        //                }
+        if (const std::optional<glm::quat> rotation = rotationFromAngleAxis(angle, axis)) {
+          imgTx.set_worldDef_T_affine_rotation(*rotation);
+          updateImageUniforms();
+        }
       }
       ImGui::SameLine();
-      helpMarker("Image rotation angle (degrees) [editing disabled]");
+      helpMarker("Image rotation angle in degrees");
 
       if (ImGui::InputFloat3("Rotation axis", glm::value_ptr(axis), txFormat)) {
-        //                const float n = glm::length(axis);
-        //                if (n < 1e-6f)
-        //                {
-        //                    const glm::quat newRot = glm::angleAxis(glm::radians(angle),
-        //                    glm::normalize(axis)); imgTx.set_worldDef_T_affine_rotation(newRot);
-        //                    updateImageUniforms();
-        //                }
+        if (const std::optional<glm::quat> rotation = rotationFromAngleAxis(angle, axis)) {
+          imgTx.set_worldDef_T_affine_rotation(*rotation);
+          updateImageUniforms();
+        }
       }
       ImGui::SameLine();
-      helpMarker("Image rotation axis [editing disabled]");
-
-      //            if (ImGui::InputFloat4("Rotation", glm::value_ptr(w_T_s_rotation), "%.3f"))
-      //            {
-      //                imgTx.set_worldDef_T_affine_rotation(w_T_s_rotation);
-      //                updateImageUniforms();
-      //            }
-      //            ImGui::SameLine();
-      //            HelpMarker("Image rotation defined as a quaternion");
+      helpMarker("Image rotation axis; zero-length axes are ignored");
 
       ImGui::Spacing();
       glm::mat4 world_T_affine = glm::transpose(imgTx.get_worldDef_T_affine());
@@ -3002,70 +3090,87 @@ void renderImageHeader(
       ImGui::PopID();
 
       ImGui::Spacing();
-      ImGui::Separator();
-      ImGui::Spacing();
+      ImGui::EndDisabled();
 
-      if (ImGui::Button("Reset manual transformation to identity")) {
-        imgTx.reset_worldDef_T_affine();
-        updateImageUniforms();
+      ImGui::BeginDisabled(forceDisableInitialTxs);
+      if (ImGui::Button("Load manual affine...")) {
+        if (const auto selectedFile = native_dialog::openFile(dialogFilters)) {
+          glm::dmat4 worldDef_T_affine{1.0};
+          if (serialize::openAffineTxFile(worldDef_T_affine, *selectedFile)) {
+            imgTx.set_enable_worldDef_T_affine(true);
+            imgTx.set_worldDef_T_affine(glm::mat4{worldDef_T_affine});
+            updateAllImageUniforms();
+          }
+          else {
+            spdlog::error("Error loading manual affine transformation matrix from file {}", *selectedFile);
+          }
+        }
       }
       ImGui::SameLine();
-      helpMarker(
-        "Reset the manual component of the affine transformation matrix from Subject to World "
-        "space");
 
       // Save manual tx to file:
-      static const char* buttonText("Save manual transformation...");
-      static const char* dialogTitle("Select Manual Transformation");
-      static const auto dialogFilters = native_dialog::transformFilters();
+      static const char* buttonText("Save...##manualAffine");
+      static const char* dialogTitle("Select Manual Affine Transformation");
 
       const auto selectedManualTxFile = ImGui::renderFileButtonDialogAndWindow(buttonText, dialogTitle, dialogFilters);
 
       ImGui::SameLine();
-      helpMarker(
-        "Save the manual component of the affine transformation matrix from Subject to World "
-        "space");
+      if (ImGui::Button("Reset##manualAffine")) {
+        if (confirmResetAffineTransformation(
+              "Reset manual affine?",
+              "Reset the manual affine transformation to identity?",
+              "This clears manual translation, rotation, and scale adjustments and cannot be undone.",
+              "Reset Manual Affine"))
+        {
+          imgTx.reset_worldDef_T_affine();
+          updateImageUniforms();
+        }
+      }
+      ImGui::SameLine();
+      helpMarker("Load, save, or reset the manual affine transformation matrix from Subject to World space.");
 
       if (selectedManualTxFile) {
         const glm::dmat4 worldDef_T_affine{imgTx.get_worldDef_T_affine()};
         if (serialize::saveAffineTxFile(worldDef_T_affine, *selectedManualTxFile)) {
-          spdlog::info("Saved manual transformation matrix to file {}", *selectedManualTxFile);
+          spdlog::info("Saved manual affine transformation matrix to file {}", *selectedManualTxFile);
         }
         else {
-          spdlog::error("Error saving manual transformation matrix to file {}", *selectedManualTxFile);
+          spdlog::error("Error saving manual affine transformation matrix to file {}", *selectedManualTxFile);
         }
       }
+      ImGui::EndDisabled();
 
-      if (imgTx.get_enable_affine_T_subject()) {
-        // Save concatenated initial + manual tx to file:
-        static const char* saveInitAndManualTxButtonText("Save initial + manual transformation...");
-        static const char* saveInitAndManualTxDialogTitle("Select Concatenated Initial and Manual Transformation");
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+      ImGui::TreePop();
+    }
 
-        const auto selectedInitAndManualConcatTxFile = ImGui::renderFileButtonDialogAndWindow(
-          saveInitAndManualTxButtonText,
-          saveInitAndManualTxDialogTitle,
-          dialogFilters);
+    if (imgTx.get_enable_affine_T_subject()) {
+      // Save effective affine tx to file:
+      static const char* saveEffectiveTxButtonText("Save effective (manual * initial) affine transformation...");
+      static const char* saveEffectiveTxDialogTitle("Select Effective Affine Transformation");
 
-        ImGui::SameLine();
-        helpMarker(
-          "Save the concatenated initial and manual affine transformation matrix from Subject to "
-          "World space");
+      const auto selectedEffectiveTxFile =
+        ImGui::renderFileButtonDialogAndWindow(saveEffectiveTxButtonText, saveEffectiveTxDialogTitle, dialogFilters);
 
-        if (selectedInitAndManualConcatTxFile) {
-          const glm::dmat4 affine_T_subject{imgTx.get_affine_T_subject()};
-          const glm::dmat4 worldDef_T_affine{imgTx.get_worldDef_T_affine()};
+      ImGui::SameLine();
+      helpMarker(
+        "Save the effective affine transformation matrix, defined as manual affine multiplied by initial/imported "
+        "affine.");
 
-          if (serialize::saveAffineTxFile(worldDef_T_affine * affine_T_subject, *selectedInitAndManualConcatTxFile)) {
-            spdlog::info(
-              "Saved concatenated initial and manual affine transformation matrix to file {}",
-              *selectedInitAndManualConcatTxFile);
-          }
-          else {
-            spdlog::error(
-              "Error saving concatenated initial and manual affine transformation matrix to file "
-              "{}",
-              *selectedInitAndManualConcatTxFile);
-          }
+      if (selectedEffectiveTxFile) {
+        const glm::dmat4 affine_T_subject{imgTx.get_affine_T_subject()};
+        const glm::dmat4 worldDef_T_affine{imgTx.get_worldDef_T_affine()};
+
+        if (serialize::saveAffineTxFile(worldDef_T_affine * affine_T_subject, *selectedEffectiveTxFile)) {
+          spdlog::info("Saved effective affine transformation matrix to file {}", *selectedEffectiveTxFile);
+        }
+        else {
+          spdlog::error(
+            "Error saving effective affine transformation matrix to file "
+            "{}",
+            *selectedEffectiveTxFile);
         }
       }
     }
@@ -3076,7 +3181,7 @@ void renderImageHeader(
     ImGui::TreePop();
   }
 
-  renderDeformationWarpHeader();
+  renderDeformableTransformationsHeader();
 
   if (!image->hasPixelData()) {
     ImGui::TextUnformatted("Pixel data is not loaded yet.");

@@ -8,6 +8,7 @@
 
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <cstdint>
 
@@ -232,7 +233,19 @@ TEST_CASE(
   CHECK(tx.get_worldDef_T_affine()[3][0] == Catch::Approx(1.0f));
   CHECK(tx.get_worldDef_T_affine()[0][0] == Catch::Approx(2.0f));
 
+  tx.set_worldDef_T_affine_scale(glm::vec3(1.0f));
+  tx.set_worldDef_T_affine_translation(glm::vec3(0.0f));
+  tx.set_worldDef_T_affine_rotation(glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f)));
+  CHECK(tx.get_worldDef_T_affine()[0][0] == Catch::Approx(0.0f).margin(1.0e-5));
+  CHECK(tx.get_worldDef_T_affine()[0][1] == Catch::Approx(1.0f).margin(1.0e-5));
+  CHECK(tx.get_worldDef_T_affine()[1][0] == Catch::Approx(-1.0f).margin(1.0e-5));
+
   const glm::mat4 manual = tx.get_worldDef_T_affine();
+  tx.set_worldDef_T_affine_locked(true);
+  tx.set_worldDef_T_affine_rotation(glm::quat{1.0f, 0.0f, 0.0f, 0.0f});
+  checkMat4Near(tx.get_worldDef_T_affine(), manual);
+  tx.set_worldDef_T_affine_locked(false);
+
   tx.set_enable_worldDef_T_affine(false);
   CHECK(tx.get_worldDef_T_affine() == glm::mat4(1.0f));
   CHECK(tx.worldDef_T_subject() == glm::mat4(1.0f));

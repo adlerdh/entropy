@@ -424,22 +424,40 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
       affineMenu,
       affinePosition++,
       MainMenuAction::ToggleActiveImageTransformationLock,
-      L"&Lock Transformation") ||
+      L"&Lock Manual Affine Transformation") ||
+    !insertSeparator(affineMenu, affinePosition++) ||
     !insertActionMenuItem(
       affineMenu,
       affinePosition++,
-      MainMenuAction::ResetActiveImageManualTransformation,
-      L"&Reset Manual Transformation") ||
+      MainMenuAction::LoadActiveImageInitialTransformation,
+      L"&Load Initial Affine...") ||
+    !insertActionMenuItem(
+      affineMenu,
+      affinePosition++,
+      MainMenuAction::SaveActiveImageInitialTransformation,
+      L"Save &Initial &Affine...") ||
+    !insertActionMenuItem(
+      affineMenu,
+      affinePosition++,
+      MainMenuAction::ResetActiveImageInitialTransformation,
+      L"Reset Initial Affine") ||
+    !insertSeparator(affineMenu, affinePosition++) ||
     !insertActionMenuItem(
       affineMenu,
       affinePosition++,
       MainMenuAction::SaveActiveImageManualTransformation,
-      L"Save &Manual Transformation...") ||
+      L"Save &Manual Affine...") ||
     !insertActionMenuItem(
       affineMenu,
       affinePosition++,
-      MainMenuAction::SaveActiveImageInitialAndManualTransformation,
-      L"Save &Initial + Manual Transformation..."))
+      MainMenuAction::ResetActiveImageManualTransformation,
+      L"&Reset Manual Affine") ||
+    !insertSeparator(affineMenu, affinePosition++) ||
+    !insertActionMenuItem(
+      affineMenu,
+      affinePosition++,
+      MainMenuAction::SaveActiveImageEffectiveTransformation,
+      L"Save &Effective (Manual * Initial) Affine..."))
   {
     DestroyMenu(affineMenu);
     DestroyMenu(deformationMenu);
@@ -451,13 +469,13 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
 
   UINT deformationPosition = 0;
   if (
-    !insertMenuItem(deformationMenu, deformationPosition++, k_loadInverseWarpCommand, L"Load &Inverse Warp...") ||
-    !insertMenuItem(deformationMenu, deformationPosition++, k_loadForwardWarpCommand, L"Load &Forward Warp...") ||
+    !insertMenuItem(deformationMenu, deformationPosition++, k_loadInverseWarpCommand, L"Load &Inverse Warp Field...") ||
+    !insertMenuItem(deformationMenu, deformationPosition++, k_loadForwardWarpCommand, L"Load &Forward Warp Field...") ||
     !insertActionMenuItem(
       deformationMenu,
       deformationPosition++,
       MainMenuAction::ToggleApplyActiveImageWarp,
-      L"&Apply Warp"))
+      L"&Apply Deformable Warp"))
   {
     DestroyMenu(affineMenu);
     DestroyMenu(deformationMenu);

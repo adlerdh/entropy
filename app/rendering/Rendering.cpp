@@ -316,7 +316,7 @@ const Uniforms::SamplerIndexType msk_imgCmapTexSampler{1}; // one image colormap
 
 // Samplers for color image shaders:
 const Uniforms::SamplerIndexVectorType msk_imgRgbaTexSamplers{{0, 1, 2, 3}}; // Four (RGBA) images
-const Uniforms::SamplerIndexVectorType msk_defTexSamplers{{4, 5, 6}};        // Deformation field x/y/z
+const Uniforms::SamplerIndexVectorType msk_defTexSamplers{{4, 5, 6}};        // Warp field x/y/z
 
 // Samplers for segmentation shaders:
 const Uniforms::SamplerIndexType msk_segTexSampler{0};           // one segmentation
@@ -728,7 +728,7 @@ void Rendering::initTextures()
 
   const std::vector<uuid> defUidsOfCreatedTextures = createImageTextures(m_appData, m_appData.defUidsOrdered());
   if (defUidsOfCreatedTextures.size() != m_appData.numDefs()) {
-    spdlog::error("Not all deformation field textures were created");
+    spdlog::error("Not all warp field textures were created");
   }
 
   const std::vector<uuid> segUidsOfCreatedTextures = createSegTextures(m_appData, m_appData.segUidsOrdered());

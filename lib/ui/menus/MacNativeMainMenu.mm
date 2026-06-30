@@ -389,24 +389,42 @@ void addImageMenu(NSMenu* mainMenu) {
   NSMenu* affineMenu = [[NSMenu alloc] initWithTitle:@"Affine Transformations"];
   addSymbolActionMenuItem(
     affineMenu,
-    @"Lock Transformation",
+    @"Lock Manual Affine Transformation",
     MainMenuAction::ToggleActiveImageTransformationLock,
     @"lock");
+  [affineMenu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(
     affineMenu,
-    @"Reset Manual Transformation",
-    MainMenuAction::ResetActiveImageManualTransformation,
-    @"arrow.counterclockwise");
-  addSymbolActionMenuItem(
-    affineMenu,
-    @"Save Manual Transformation...",
-    MainMenuAction::SaveActiveImageManualTransformation,
+    @"Load Initial Affine...",
+    MainMenuAction::LoadActiveImageInitialTransformation,
     @"square.and.arrow.down");
   addSymbolActionMenuItem(
     affineMenu,
-    @"Save Initial + Manual Transformation...",
-    MainMenuAction::SaveActiveImageInitialAndManualTransformation,
-    @"square.and.arrow.down.on.square");
+    @"Save Initial Affine...",
+    MainMenuAction::SaveActiveImageInitialTransformation,
+    @"square.and.arrow.up");
+  addSymbolActionMenuItem(
+    affineMenu,
+    @"Reset Initial Affine",
+    MainMenuAction::ResetActiveImageInitialTransformation,
+    @"arrow.counterclockwise");
+  [affineMenu addItem:[NSMenuItem separatorItem]];
+  addSymbolActionMenuItem(
+    affineMenu,
+    @"Save Manual Affine...",
+    MainMenuAction::SaveActiveImageManualTransformation,
+    @"square.and.arrow.up");
+  addSymbolActionMenuItem(
+    affineMenu,
+    @"Reset Manual Affine",
+    MainMenuAction::ResetActiveImageManualTransformation,
+    @"arrow.counterclockwise");
+  [affineMenu addItem:[NSMenuItem separatorItem]];
+  addSymbolActionMenuItem(
+    affineMenu,
+    @"Save Effective (Manual * Initial) Affine...",
+    MainMenuAction::SaveActiveImageEffectiveTransformation,
+    @"square.and.arrow.up.on.square");
   [affineItem setSubmenu:affineMenu];
   [menu addItem:affineItem];
   NSMenuItem* deformationItem = [[NSMenuItem alloc] initWithTitle:@"Deformable Transformations"
@@ -414,11 +432,21 @@ void addImageMenu(NSMenu* mainMenu) {
                                                     keyEquivalent:@""];
   setMenuItemSymbol(deformationItem, @"waveform.path.ecg");
   NSMenu* deformationMenu = [[NSMenu alloc] initWithTitle:@"Deformable Transformations"];
-  addSymbolMenuItem(deformationMenu, @"Load Inverse Warp...", @selector(loadInverseWarp:), @"", @"arrow.down.doc");
-  addSymbolMenuItem(deformationMenu, @"Load Forward Warp...", @selector(loadForwardWarp:), @"", @"arrow.down.doc");
+  addSymbolMenuItem(
+    deformationMenu,
+    @"Load Inverse Warp Field...",
+    @selector(loadInverseWarp:),
+    @"",
+    @"arrow.down.doc");
+  addSymbolMenuItem(
+    deformationMenu,
+    @"Load Forward Warp Field...",
+    @selector(loadForwardWarp:),
+    @"",
+    @"arrow.down.doc");
   addSymbolActionMenuItem(
     deformationMenu,
-    @"Apply Warp",
+    @"Apply Deformable Warp",
     MainMenuAction::ToggleApplyActiveImageWarp,
     @"waveform.path.ecg");
   [deformationItem setSubmenu:deformationMenu];

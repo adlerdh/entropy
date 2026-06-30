@@ -142,6 +142,29 @@ TEST_CASE(
   CHECK(containsParameter(parameters, "extraArgs"));
 }
 
+TEST_CASE("registration setup shows Greedy radius only for NCC metrics", "[registration][setup]")
+{
+  registration::SetupState state = registration::createSetupState(
+    {imageChoice("fixed", "Fixed", true, false), imageChoice("moving", "Moving", false, true)},
+    registration::Backend::Greedy,
+    "/tmp/entropy-reg");
+
+  state.job.metric = registration::Metric::WNCC;
+  CHECK(containsParameter(registration::visibleParameters(state), "wnccRadius"));
+
+  state.job.metric = registration::Metric::NCC;
+  CHECK(containsParameter(registration::visibleParameters(state), "wnccRadius"));
+
+  state.job.metric = registration::Metric::NMI;
+  CHECK_FALSE(containsParameter(registration::visibleParameters(state), "wnccRadius"));
+
+  state.job.metric = registration::Metric::MI;
+  CHECK_FALSE(containsParameter(registration::visibleParameters(state), "wnccRadius"));
+
+  state.job.metric = registration::Metric::SSD;
+  CHECK_FALSE(containsParameter(registration::visibleParameters(state), "wnccRadius"));
+}
+
 TEST_CASE("registration setup preserves matching parameter values when switching backend", "[registration][setup]")
 {
   registration::SetupState state = registration::createSetupState(
@@ -180,6 +203,12 @@ TEST_CASE("registration setup returns command previews only for launchable jobs"
   const std::vector<std::string> previews = registration::commandPreviews(state);
   REQUIRE_FALSE(previews.empty());
   CHECK(previews.front().find("7x3") != std::string::npos);
+  CHECK(previews.front().find("-ia /tmp/entropy-reg/Moving_to_Fixed_initial_affine.mat") != std::string::npos);
+
+  state.job.useCurrentAffineTransformsForInitialization = false;
+  const std::vector<std::string> previewsWithoutCurrentAffine = registration::commandPreviews(state);
+  REQUIRE_FALSE(previewsWithoutCurrentAffine.empty());
+  CHECK(previewsWithoutCurrentAffine.front().find("_initial_affine.mat") == std::string::npos);
 
   state.job.movingImage = {};
   registration::refreshValidation(state);

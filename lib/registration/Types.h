@@ -44,7 +44,7 @@ enum class TransformModel : std::uint8_t
 bool includesAffineTransform(TransformModel model);
 
 /**
- * @brief Return whether the transform model contains a deformation field stage.
+ * @brief Return whether the transform model contains a deformable transformation stage.
  * @param model Transform model to query.
  * @return True when the model can produce dense inverse/forward warp fields.
  */
@@ -210,6 +210,7 @@ struct LandmarkOptions
 struct OutputRequests
 {
   bool loadWarpedImage = true;                  //!< Import the warped moving image.
+  bool loadAffineTransform = true;              //!< Apply the affine transform to the moving image.
   bool loadInverseWarp = true;                  //!< Import the fixed-to-moving sampling warp.
   bool loadForwardWarp = true;                  //!< Import the moving-to-fixed point warp when produced.
   bool applyWarpToMovingImage = true;           //!< Assign imported warps to the moving image.

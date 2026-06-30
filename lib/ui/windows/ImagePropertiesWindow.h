@@ -33,7 +33,7 @@ class ImageColorMap;
  * @param updateImageUniforms Callback that refreshes uniforms for one image.
  * @param updateImageInterpolationMode Callback that updates interpolation state for one image.
  * @param updateImageColorMapInterpolationMode Callback that updates interpolation state for one color map.
- * @param loadDeformationField Callback that loads a deformation field and returns its UID.
+ * @param loadWarpField Callback that loads a warp field and returns its UID.
  * @param requestWarpInversion Callback that computes the matching inverse or forward warp.
  * @param setLockManualImageTransformation Callback that toggles manual transform locking for one image.
  * @param requestComponentProjectionImage Callback that starts creation of a scalar component projection.
@@ -57,7 +57,7 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
   const std::function<void(const uuids::uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
-  const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadDeformationField,
+  const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadWarpField,
   const std::function<void(
     const uuids::uuid& imageUid,
     const uuids::uuid& sourceWarpUid,

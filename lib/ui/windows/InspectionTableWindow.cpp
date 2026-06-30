@@ -639,9 +639,9 @@ const char* inspectionColumnTooltip(InspectorColumn column)
     case InspectorColumn::Subject:
       return "Subject-space LPS coordinates in millimeters (x: R->L, y: A->P, z: I->S)";
     case InspectorColumn::SampleVoxel:
-      return "Moving-image voxel coordinate sampled after deformation";
+      return "Moving-image voxel coordinate sampled after applying the inverse warp";
     case InspectorColumn::SampleSubject:
-      return "Moving-image subject coordinate sampled after deformation";
+      return "Moving-image subject coordinate sampled after applying the inverse warp";
     case InspectorColumn::Image:
     case InspectorColumn::Count:
       break;

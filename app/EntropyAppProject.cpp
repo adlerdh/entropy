@@ -234,7 +234,7 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
 
     if (defUids.size() > 1) {
       spdlog::warn(
-        "Image {} has {} deformation fields, but project files currently save only the active inverse and forward ones",
+        "Image {} has {} warp fields, but project files currently save only the active inverse and forward ones",
         imageUid,
         defUids.size());
     }

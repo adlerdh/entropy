@@ -527,7 +527,7 @@ std::optional<uuid> AppData::addDef(Image def)
 {
   if (def.header().numComponentsPerPixel() < 3) {
     spdlog::error(
-      "Deformation field image {} with only {} components cannot be added",
+      "Warp field image {} with only {} components cannot be added",
       def.settings().displayName(),
       def.header().numComponentsPerPixel());
     return std::nullopt;

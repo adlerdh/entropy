@@ -148,7 +148,7 @@ jobs:
 
   debug-x64:
     name: Debug Build And Tests (x86_64)
-    runs-on: macos-13
+    runs-on: macos-15-intel
     needs: format
     env:
       ENTROPY_MACOS_ARCHITECTURES: x86_64
@@ -174,9 +174,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .ccache
-          key: macos13-x86_64-appleclang-debug-ccache-v1-${{ github.run_id }}
+          key: macos15-intel-x86_64-appleclang-debug-ccache-v1-${{ github.run_id }}
           restore-keys: |
-            macos13-x86_64-appleclang-debug-ccache-v1-
+            macos15-intel-x86_64-appleclang-debug-ccache-v1-
 
       - name: Reset Debug ccache stats
         run: |
@@ -203,9 +203,9 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: macos13-x86_64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos15-intel-x86_64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos13-x86_64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos15-intel-x86_64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Debug SuperBuild
         run: >

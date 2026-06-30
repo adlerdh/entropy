@@ -3096,6 +3096,30 @@ void ImGuiWrapper::render()
                             moveImageToFront,
                             requestResetProjectSettings,
                             this](MainMenuAction action) {
+    const auto mirrorInitialAffineToSegmentations = [this](const uuids::uuid& imageUid, const Image& image) {
+      for (const uuids::uuid& segUid : m_appData.imageToSegUids(imageUid)) {
+        if (Image* seg = m_appData.seg(segUid)) {
+          auto& segTx = seg->transformations();
+          segTx.set_enable_affine_T_subject(image.transformations().get_enable_affine_T_subject());
+          segTx.set_affine_T_subject(image.transformations().get_affine_T_subject());
+          segTx.set_affine_T_subject_fileName(image.transformations().get_affine_T_subject_fileName());
+        }
+      }
+    };
+
+    const auto updateAffineUniforms = [this]() {
+      if (m_updateAllImageUniforms) {
+        m_updateAllImageUniforms();
+      }
+    };
+
+    const auto confirmResetAffineTransformation =
+      [](const char* title, const char* message, const char* informativeText, const char* resetButton) {
+        const auto result =
+          native_dialog::showMessageDialog({title, message, informativeText, resetButton, "Cancel", ""});
+        return result && native_dialog::MessageDialogResult::FirstButton == *result;
+      };
+
     switch (action) {
       case MainMenuAction::SetModePointer:
         m_callbackHandler.setMouseMode(MouseMode::Pointer);
@@ -3241,13 +3265,73 @@ void ImGuiWrapper::render()
           }
         }
         break;
+      case MainMenuAction::LoadActiveImageInitialTransformation:
+        if (const auto imageUid = activeImageUid()) {
+          Image* image = m_appData.image(*imageUid);
+          const auto selectedFile = image ? native_dialog::openFile(native_dialog::transformFilters()) : std::nullopt;
+          if (image && selectedFile) {
+            glm::dmat4 affine_T_subject{1.0};
+            if (serialize::openAffineTxFile(affine_T_subject, *selectedFile)) {
+              image->transformations().set_enable_affine_T_subject(true);
+              image->transformations().set_affine_T_subject(glm::mat4{affine_T_subject});
+              image->transformations().set_affine_T_subject_fileName(*selectedFile);
+              mirrorInitialAffineToSegmentations(*imageUid, *image);
+              updateAffineUniforms();
+              spdlog::info("Loaded initial affine transformation matrix from file {}", *selectedFile);
+            }
+            else {
+              spdlog::error("Error loading initial affine transformation matrix from file {}", *selectedFile);
+            }
+          }
+        }
+        break;
+      case MainMenuAction::SaveActiveImageInitialTransformation:
+        if (const auto imageUid = activeImageUid()) {
+          const Image* image = m_appData.image(*imageUid);
+          const auto selectedFile = image ? native_dialog::saveFile(native_dialog::transformFilters()) : std::nullopt;
+          if (image && selectedFile) {
+            const glm::dmat4 affine_T_subject{image->transformations().get_affine_T_subject()};
+            if (serialize::saveAffineTxFile(affine_T_subject, *selectedFile)) {
+              spdlog::info("Saved initial affine transformation matrix to file {}", *selectedFile);
+            }
+            else {
+              spdlog::error("Error saving initial affine transformation matrix to file {}", *selectedFile);
+            }
+          }
+        }
+        break;
+      case MainMenuAction::ResetActiveImageInitialTransformation:
+        if (const auto imageUid = activeImageUid()) {
+          if (Image* image = m_appData.image(*imageUid)) {
+            if (confirmResetAffineTransformation(
+                  "Reset initial affine?",
+                  "Reset the initial/imported affine transformation to identity?",
+                  "This clears the source transform file and cannot be undone.",
+                  "Reset Initial Affine"))
+            {
+              image->transformations().set_enable_affine_T_subject(true);
+              image->transformations().set_affine_T_subject(glm::mat4{1.0f});
+              image->transformations().set_affine_T_subject_fileName(std::nullopt);
+              mirrorInitialAffineToSegmentations(*imageUid, *image);
+              updateAffineUniforms();
+            }
+          }
+        }
+        break;
       case MainMenuAction::ResetActiveImageManualTransformation:
         if (const auto imageUid = activeImageUid()) {
           Image* image = m_appData.image(*imageUid);
           if (image) {
-            image->transformations().reset_worldDef_T_affine();
-            if (m_updateImageUniforms) {
-              m_updateImageUniforms(*imageUid);
+            if (confirmResetAffineTransformation(
+                  "Reset manual affine?",
+                  "Reset the manual affine transformation to identity?",
+                  "This clears manual translation, rotation, and scale adjustments and cannot be undone.",
+                  "Reset Manual Affine"))
+            {
+              image->transformations().reset_worldDef_T_affine();
+              if (m_updateImageUniforms) {
+                m_updateImageUniforms(*imageUid);
+              }
             }
           }
         }
@@ -3259,15 +3343,15 @@ void ImGuiWrapper::render()
           if (selectedFile) {
             const glm::dmat4 worldDef_T_affine{image->transformations().get_worldDef_T_affine()};
             if (serialize::saveAffineTxFile(worldDef_T_affine, *selectedFile)) {
-              spdlog::info("Saved manual transformation matrix to file {}", *selectedFile);
+              spdlog::info("Saved manual affine transformation matrix to file {}", *selectedFile);
             }
             else {
-              spdlog::error("Error saving manual transformation matrix to file {}", *selectedFile);
+              spdlog::error("Error saving manual affine transformation matrix to file {}", *selectedFile);
             }
           }
         }
         break;
-      case MainMenuAction::SaveActiveImageInitialAndManualTransformation:
+      case MainMenuAction::SaveActiveImageEffectiveTransformation:
         if (const auto imageUid = activeImageUid()) {
           const Image* image = m_appData.image(*imageUid);
           const auto selectedFile = image ? native_dialog::saveFile(native_dialog::transformFilters()) : std::nullopt;
@@ -3276,14 +3360,10 @@ void ImGuiWrapper::render()
             const glm::dmat4 affine_T_subject{tx.get_affine_T_subject()};
             const glm::dmat4 worldDef_T_affine{tx.get_worldDef_T_affine()};
             if (serialize::saveAffineTxFile(worldDef_T_affine * affine_T_subject, *selectedFile)) {
-              spdlog::info(
-                "Saved concatenated initial and manual affine transformation matrix to file {}",
-                *selectedFile);
+              spdlog::info("Saved effective affine transformation matrix to file {}", *selectedFile);
             }
             else {
-              spdlog::error(
-                "Error saving concatenated initial and manual affine transformation matrix to file {}",
-                *selectedFile);
+              spdlog::error("Error saving effective affine transformation matrix to file {}", *selectedFile);
             }
           }
         }
@@ -3598,10 +3678,13 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleActiveImageTransformationLock:
           if (!canUseProjectActions || !hasActiveImage || !m_setLockManualImageTransformation) return false;
           return activeImageUid() != m_appData.refImageUid();
+        case MainMenuAction::LoadActiveImageInitialTransformation:
+        case MainMenuAction::SaveActiveImageInitialTransformation:
+        case MainMenuAction::ResetActiveImageInitialTransformation:
         case MainMenuAction::ResetActiveImageManualTransformation:
         case MainMenuAction::SaveActiveImageManualTransformation:
           return canUseProjectActions && hasActiveImage && activeImageUid() != m_appData.refImageUid();
-        case MainMenuAction::SaveActiveImageInitialAndManualTransformation:
+        case MainMenuAction::SaveActiveImageEffectiveTransformation:
           if (!canUseProjectActions || !hasActiveImage || activeImageUid() == m_appData.refImageUid()) return false;
           if (const Image* image = m_appData.image(*activeImageUid())) {
             return image->transformations().get_enable_affine_T_subject();
@@ -3948,12 +4031,12 @@ void ImGuiWrapper::render()
 
           const std::optional<uuids::uuid> defUid = m_loadDeformationField(fileName);
           if (!defUid) {
-            spdlog::error("Unable to load deformation field from {}", fileName);
+            spdlog::error("Unable to load inverse warp field from {}", fileName);
             return;
           }
 
           if (!m_appData.assignInverseWarpUidToImage(*imageUid, *defUid)) {
-            spdlog::error("Unable to assign deformation field {} to image {}", *defUid, *imageUid);
+            spdlog::error("Unable to assign inverse warp field {} to image {}", *defUid, *imageUid);
             return;
           }
 
@@ -3963,7 +4046,7 @@ void ImGuiWrapper::render()
             }
             catch (const std::exception& e) {
               spdlog::error(
-                "Exception after assigning deformation field {} to active image {}: {}\n{}",
+                "Exception after assigning inverse warp field {} to active image {}: {}\n{}",
                 *defUid,
                 *imageUid,
                 e.what(),

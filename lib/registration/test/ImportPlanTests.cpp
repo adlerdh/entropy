@@ -74,6 +74,7 @@ TEST_CASE("registration import plan respects disabled outputs", "[registration][
 {
   registration::JobSpec spec = job();
   spec.outputs.loadWarpedImage = false;
+  spec.outputs.loadAffineTransform = false;
   spec.outputs.loadInverseWarp = false;
   spec.outputs.loadForwardWarp = false;
   spec.outputs.applyWarpToMovingImage = false;
@@ -84,9 +85,23 @@ TEST_CASE("registration import plan respects disabled outputs", "[registration][
 
   const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest());
 
-  REQUIRE(plan.steps.size() == 1);
-  CHECK(plan.steps.front().action == registration::ImportAction::ApplyAffineTransform);
+  CHECK(plan.steps.empty());
   CHECK(plan.warnings.empty());
+}
+
+TEST_CASE("registration import plan respects disabled affine transform import", "[registration][import]")
+{
+  registration::JobSpec spec = job();
+  spec.outputs.loadAffineTransform = false;
+
+  const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest());
+
+  CHECK(std::none_of(plan.steps.begin(), plan.steps.end(), [](const registration::ImportStep& step) {
+    return step.action == registration::ImportAction::ApplyAffineTransform;
+  }));
+  CHECK(std::any_of(plan.steps.begin(), plan.steps.end(), [](const registration::ImportStep& step) {
+    return step.action == registration::ImportAction::LoadWarpedImage;
+  }));
 }
 
 TEST_CASE("registration import plan ignores warp artifacts for affine-only transforms", "[registration][import]")

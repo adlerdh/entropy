@@ -46,7 +46,7 @@ void renderConfirmRemoveImagePopup(
       {popupTitle,
        "Remove '" + displayName + "' from the project?",
        "This removes the image from the current project and updates the saved project description.\n\n"
-       "Segmentations, deformation fields, landmarks, and annotations used only by this image will be removed from the "
+       "Segmentations, warp fields, landmarks, and annotations used only by this image will be removed from the "
        "project.\n\n"
        "Files on disk will not be deleted.\n\n"
        "Save the project after this operation if you want the removal preserved in the project file.",
@@ -76,7 +76,7 @@ void renderConfirmRemoveImagePopup(
     ImGui::TextWrapped("This removes the image from the current project and updates the saved project description.");
     ImGui::Spacing();
     ImGui::BulletText(
-      "Segmentations, deformation fields, landmarks, and annotations used only by this image will be removed from the "
+      "Segmentations, warp fields, landmarks, and annotations used only by this image will be removed from the "
       "project.");
     ImGui::BulletText("Files on disk will not be deleted.");
     ImGui::BulletText("Save the project after this operation if you want the removal preserved in the project file.");
