@@ -1,4 +1,4 @@
-name: macOS CI
+name: macOS CI (arm64 + x86_64)
 
 on:
   pull_request:
@@ -62,7 +62,7 @@ jobs:
         run: git diff --exit-code
 
   debug:
-    name: Debug Build And Tests
+    name: Debug Build And Tests (arm64)
     runs-on: macos-14
     needs: format
 
@@ -234,7 +234,7 @@ jobs:
         run: ccache --show-stats
 
   coverage:
-    name: Coverage Report
+    name: Coverage Report (arm64)
     runs-on: macos-14
     needs: format
     if: github.event_name == 'workflow_dispatch'
@@ -331,7 +331,7 @@ jobs:
         run: ccache --show-stats
 
   package:
-    name: Release Packages
+    name: Release Packages (arm64)
     runs-on: macos-14
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -427,7 +427,7 @@ jobs:
       - name: Upload macOS packages
         uses: actions/upload-artifact@v7
         with:
-          name: macos-packages
+          name: macos-arm64-packages
           path: |
             build-release/packages/Entropy-*-macOS-*.dmg
             build-release/packages/Entropy-*-macOS-*.zip
@@ -438,7 +438,7 @@ jobs:
         run: ccache --show-stats
 
   macos-26-smoke:
-    name: macOS 26 Smoke Build And Tests
+    name: macOS 26 Smoke Build And Tests (arm64)
     runs-on: macos-26
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

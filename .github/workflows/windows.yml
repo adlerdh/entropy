@@ -1,4 +1,4 @@
-name: Windows CI
+name: Windows CI (x86_64)
 
 on:
   pull_request:
@@ -62,7 +62,7 @@ jobs:
         run: git diff --exit-code
 
   debug:
-    name: Debug Build And Tests
+    name: Debug Build And Tests (x86_64)
     runs-on: windows-2022
     needs: format
 
@@ -125,7 +125,7 @@ jobs:
         run: ctest --test-dir build-debug -C Debug --parallel --output-on-failure
 
   coverage:
-    name: Coverage Report
+    name: Coverage Report (x86_64)
     runs-on: windows-2022
     needs: format
     if: github.event_name == 'workflow_dispatch'
@@ -239,7 +239,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Release Build Tests And Packages
+    name: Release Build Tests And Packages (x86_64)
     runs-on: windows-2022
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -317,14 +317,14 @@ jobs:
       - name: Upload Windows packages
         uses: actions/upload-artifact@v7
         with:
-          name: windows-packages
+          name: windows-x86_64-packages
           path: |
             build-release/packages/*.msi
             build-release/packages/*portable.zip
           if-no-files-found: error
 
   windows-2025-smoke:
-    name: Windows Server 2025 Smoke Build And Tests
+    name: Windows Server 2025 Smoke Build And Tests (x86_64)
     runs-on: windows-2025
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

@@ -29,6 +29,23 @@ namespace registration
 namespace
 {
 
+void fillMissingExpectedArtifacts(const JobSpec& job, ResultManifest& manifest)
+{
+  const ResultManifest expectedManifest = buildExpectedResultManifest(job);
+  if (manifest.warpedImage.empty()) {
+    manifest.warpedImage = expectedManifest.warpedImage;
+  }
+  if (manifest.inverseWarp.empty()) {
+    manifest.inverseWarp = expectedManifest.inverseWarp;
+  }
+  if (manifest.forwardWarp.empty()) {
+    manifest.forwardWarp = expectedManifest.forwardWarp;
+  }
+  if (manifest.affineTransform.empty()) {
+    manifest.affineTransform = expectedManifest.affineTransform;
+  }
+}
+
 void setStatus(JobExecution& execution, JobStatus status, const JobExecutionCallbacks& callbacks)
 {
   execution.status = status;
@@ -331,6 +348,9 @@ JobExecution executeJob(
   }
   if (!execution.manifest) {
     execution.manifest = buildExpectedResultManifest(job);
+  }
+  else {
+    fillMissingExpectedArtifacts(job, *execution.manifest);
   }
   execution.manifest->success = true;
   setStatus(execution, JobStatus::Completed, callbacks);

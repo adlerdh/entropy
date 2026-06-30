@@ -67,6 +67,15 @@ bool booleanParameterValue(const JobSpec& job, std::string_view key)
   return value && (*value == "true" || *value == "1" || *value == "yes" || *value == "on");
 }
 
+bool booleanParameterValueOr(const JobSpec& job, std::string_view key, bool fallback)
+{
+  const std::optional<std::string> value = parameterValue(job, key);
+  if (!value) {
+    return fallback;
+  }
+  return *value == "true" || *value == "1" || *value == "yes" || *value == "on";
+}
+
 void appendWhitespaceSeparatedArguments(std::vector<std::string>& args, const std::string& text)
 {
   std::istringstream stream{text};
@@ -166,6 +175,14 @@ void appendGreedyFixedMaskArgs(std::vector<std::string>& args, const JobSpec& jo
   }
 }
 
+void appendGreedyMovingMaskArgs(std::vector<std::string>& args, const JobSpec& job)
+{
+  if (hasInputRef(job.movingMask)) {
+    args.push_back("-mm");
+    args.push_back(pathString(inputPath(job.movingMask, artifactPath(job, ArtifactRole::MovingMask))));
+  }
+}
+
 void appendGreedyAffineAdvancedArgs(std::vector<std::string>& args, const JobSpec& job)
 {
   const int searchIterations = integerParameterValueOr(job, "affineSearchIterations", 0);
@@ -209,6 +226,11 @@ void appendGreedyDeformableAdvancedArgs(std::vector<std::string>& args, const Jo
     args.push_back(*stepSize);
   }
 
+  if (const std::optional<std::string> exponentiation = parameterValue(job, "inverseExponentiation")) {
+    args.push_back("-exp");
+    args.push_back(*exponentiation);
+  }
+
   const std::string velocityModel =
     greedyChoiceToken(parameterValueOr(job, "velocityModel", "Stationary velocity (sv)"));
   if (velocityModel == "svlb") {
@@ -248,48 +270,104 @@ int greedyAffineDof(TransformModel model)
   return 12;
 }
 
-std::string antsMetric(Metric metric)
+bool needsForwardWarpOutput(const JobSpec& job)
 {
+  return job.outputs.loadForwardWarp || job.outputs.transformLandmarksAndAnnotations || job.outputs.transformSurfaces;
+}
+
+std::string antsMetricArguments(
+  Metric metric,
+  const std::filesystem::path& fixedImage,
+  const std::filesystem::path& movingImage,
+  std::string_view samplingStrategy,
+  std::string_view samplingPercentage,
+  double weight = 1.0)
+{
+  const std::string fixed = pathString(fixedImage);
+  const std::string moving = pathString(movingImage);
+  const std::string metricWeight = std::to_string(weight);
+  const std::string sampling = samplingStrategy.empty() || samplingStrategy == "None"
+                                 ? std::string{}
+                                 : "," + std::string{samplingStrategy} + "," + std::string{samplingPercentage};
   switch (metric) {
     case Metric::MI:
-      return "MI";
+      return "MI[" + fixed + "," + moving + "," + metricWeight + ",32" + sampling + "]";
     case Metric::Mattes:
-      return "Mattes";
+      return "Mattes[" + fixed + "," + moving + "," + metricWeight + ",32" + sampling + "]";
     case Metric::Demons:
-      return "Demons";
+      return "Demons[" + fixed + "," + moving + "," + metricWeight + ",0" + sampling + "]";
     case Metric::GC:
-      return "GC";
+      return "GC[" + fixed + "," + moving + "," + metricWeight + ",0" + sampling + "]";
     case Metric::MSE:
     case Metric::SSD:
-      return "MeanSquares";
+      return "MeanSquares[" + fixed + "," + moving + "," + metricWeight + ",0" + sampling + "]";
     default:
-      return "CC";
+      return "CC[" + fixed + "," + moving + "," + metricWeight + ",4" + sampling + "]";
   }
 }
 
-std::string antsTransform(TransformModel model)
+void appendAntsStage(
+  std::vector<std::string>& args,
+  std::string transform,
+  Metric metric,
+  const std::filesystem::path& fixedImage,
+  const std::filesystem::path& movingImage,
+  const std::string& iterations,
+  const std::string& shrinkFactors,
+  const std::string& smoothingSigmas,
+  const std::string& convergenceThreshold,
+  const std::string& convergenceWindow,
+  const std::string& samplingStrategy,
+  const std::string& samplingPercentage)
 {
+  args.insert(
+    args.end(),
+    {"--transform",
+     std::move(transform),
+     "--metric",
+     antsMetricArguments(metric, fixedImage, movingImage, samplingStrategy, samplingPercentage),
+     "--convergence",
+     "[" + iterations + "," + convergenceThreshold + "," + convergenceWindow + "]",
+     "--shrink-factors",
+     shrinkFactors,
+     "--smoothing-sigmas",
+     smoothingSigmas + "vox"});
+}
+
+std::string antsTransform(const JobSpec& job, TransformModel model)
+{
+  const std::string gradientStep = parameterValueOr(job, "antsGradientStep", "0.1");
   switch (model) {
     case TransformModel::Translation:
-      return "Translation[0.1]";
+      return "Translation[" + gradientStep + "]";
     case TransformModel::Rigid:
-      return "Rigid[0.1]";
+      return "Rigid[" + gradientStep + "]";
     case TransformModel::Similarity:
-      return "Similarity[0.1]";
+      return "Similarity[" + gradientStep + "]";
     case TransformModel::Affine:
     case TransformModel::RigidAffine:
-      return "Affine[0.1]";
+      return "Affine[" + gradientStep + "]";
     case TransformModel::BSplineDisplacement:
-      return "BSplineSyN[0.1,26,0,3]";
+      return "BSplineSyN[" + gradientStep + "," + parameterValueOr(job, "bsplineSyNUpdateMeshSize", "26") + "," +
+             parameterValueOr(job, "bsplineSyNTotalMeshSize", "0") + "," +
+             parameterValueOr(job, "bsplineSyNSplineOrder", "3") + "]";
     case TransformModel::GaussianDisplacement:
-      return "GaussianDisplacementField[0.1,3,0]";
+      return "GaussianDisplacementField[" + gradientStep + "," +
+             parameterValueOr(job, "gaussianDisplacementUpdateVariance", "3") + "," +
+             parameterValueOr(job, "gaussianDisplacementTotalVariance", "0") + "]";
     case TransformModel::TimeVaryingVelocity:
-      return "TimeVaryingVelocityField[0.1,4,3,0,0]";
+      return "TimeVaryingVelocityField[" + gradientStep + "," +
+             parameterValueOr(job, "timeVaryingVelocityTimeIndices", "4") + "," +
+             parameterValueOr(job, "timeVaryingVelocityUpdateVariance", "3") + "," +
+             parameterValueOr(job, "timeVaryingVelocityUpdateTimeVariance", "0") + "," +
+             parameterValueOr(job, "timeVaryingVelocityTotalVariance", "0") + "]";
     case TransformModel::Deformable:
     case TransformModel::AffineDeformable:
-      return "SyN[0.1,3,0]";
+      return "SyN[" + gradientStep + "," + parameterValueOr(job, "synUpdateFieldVariance", "3") + "," +
+             parameterValueOr(job, "synTotalFieldVariance", "0") + "]";
   }
-  return "SyN[0.1,3,0]";
+  return "SyN[" + gradientStep + "," + parameterValueOr(job, "synUpdateFieldVariance", "3") + "," +
+         parameterValueOr(job, "synTotalFieldVariance", "0") + "]";
 }
 
 std::filesystem::path antsOutputPrefixPath(const JobSpec& job)
@@ -304,7 +382,17 @@ std::filesystem::path antsAffineTransformPath(const JobSpec& job)
 
 std::filesystem::path antsWarpPath(const JobSpec& job)
 {
-  return antsOutputPrefixPath(job).string() + "1Warp.nii.gz";
+  const char* index = includesAffineTransform(job.transformModel) ? "1" : "0";
+  return antsOutputPrefixPath(job).string() + index + "Warp.nii.gz";
+}
+
+std::string antsOutputArgument(const JobSpec& job)
+{
+  if (!job.outputs.loadWarpedImage) {
+    return pathString(antsOutputPrefixPath(job));
+  }
+  return "[" + pathString(antsOutputPrefixPath(job)) + "," + pathString(artifactPath(job, ArtifactRole::WarpedImage)) +
+         "]";
 }
 
 std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerationOptions& options)
@@ -316,6 +404,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
   const std::filesystem::path warpedImage = artifactPath(job, ArtifactRole::WarpedImage);
   const std::string iterations = parameterValueOr(job, "iterations", job.iterationSchedule);
   const std::string threads = parameterValueOr(job, "threads", "0");
+  const std::string verbosity = greedyChoiceToken(parameterValueOr(job, "verbosity", "Default (1)"));
 
   if (includesAffineTransform(job.transformModel)) {
     CommandSpec command;
@@ -355,6 +444,7 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       command.args.push_back("-ia-image-centers");
     }
     appendGreedyFixedMaskArgs(command.args, job);
+    appendGreedyMovingMaskArgs(command.args, job);
     appendGreedyAffineAdvancedArgs(command.args, job);
     if (threads != "0") {
       command.args.push_back("-threads");
@@ -363,6 +453,8 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
     if (booleanParameterValue(job, "singlePrecision")) {
       command.args.push_back("-float");
     }
+    command.args.push_back("-V");
+    command.args.push_back(verbosity);
     appendExpertArguments(command.args, job);
     commands.push_back(std::move(command));
   }
@@ -393,16 +485,9 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       command.args.push_back(pathString(affine));
     }
     appendGreedyFixedMaskArgs(command.args, job);
-    if (hasInputRef(job.movingMask)) {
-      command.args.push_back("-mm");
-      command.args.push_back(pathString(inputPath(job.movingMask, artifactPath(job, ArtifactRole::MovingMask))));
-    }
+    appendGreedyMovingMaskArgs(command.args, job);
     appendGreedyDeformableAdvancedArgs(command.args, job);
-    if (job.outputs.loadForwardWarp) {
-      if (const std::optional<std::string> invExp = parameterValue(job, "inverseExponentiation")) {
-        command.args.push_back("-exp");
-        command.args.push_back(*invExp);
-      }
+    if (needsForwardWarpOutput(job)) {
       command.args.push_back("-oinv");
       command.args.push_back(pathString(forwardWarp));
     }
@@ -413,6 +498,8 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
     if (booleanParameterValue(job, "singlePrecision")) {
       command.args.push_back("-float");
     }
+    command.args.push_back("-V");
+    command.args.push_back(verbosity);
     appendExpertArguments(command.args, job);
     commands.push_back(std::move(command));
   }
@@ -440,6 +527,8 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       command.args.push_back("-threads");
       command.args.push_back(threads);
     }
+    command.args.push_back("-V");
+    command.args.push_back(verbosity);
     commands.push_back(std::move(command));
   }
 
@@ -469,6 +558,8 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       command.args.push_back("-threads");
       command.args.push_back(threads);
     }
+    command.args.push_back("-V");
+    command.args.push_back(verbosity);
     commands.push_back(std::move(command));
   }
 
@@ -481,41 +572,73 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
   CommandSpec registrationCommand;
   registrationCommand.description = "ANTs registration";
   registrationCommand.executable = options.antsRegistrationExecutable;
-  const std::filesystem::path prefix = antsOutputPrefixPath(job);
-  const std::filesystem::path warped = artifactPath(job, ArtifactRole::WarpedImage);
   const std::string iterations = parameterValueOr(job, "iterations", job.iterationSchedule);
   const std::string shrinkFactors = parameterValueOr(job, "shrinkFactors", "4x2x1");
   const std::string smoothingSigmas = parameterValueOr(job, "smoothingSigmas", "2x1x0");
   const std::string convergenceThreshold = parameterValueOr(job, "convergenceThreshold", "1e-6");
   const std::string convergenceWindow = parameterValueOr(job, "convergenceWindow", "10");
+  const std::string samplingStrategy = parameterValueOr(job, "samplingStrategy", "Regular");
+  const std::string samplingPercentage = parameterValueOr(job, "samplingPercentage", "0.25");
 
-  registrationCommand.args = {
-    "-d",
-    std::to_string(job.dimension),
-    "--output",
-    "[" + pathString(prefix) + "," + pathString(warped) + "]",
-    "--transform",
-    antsTransform(job.transformModel),
-    "--metric",
-    antsMetric(job.metric) + "[" + pathString(job.fixedImage.fileName) + "," + pathString(job.movingImage.fileName) +
-      ",1,4]",
-    "--convergence",
-    "[" + iterations + "," + convergenceThreshold + "," + convergenceWindow + "]",
-    "--shrink-factors",
-    shrinkFactors,
-    "--smoothing-sigmas",
-    smoothingSigmas + "vox"};
+  registrationCommand.args = {"-d", std::to_string(job.dimension), "--output", antsOutputArgument(job)};
+
+  if (job.transformModel == TransformModel::AffineDeformable) {
+    appendAntsStage(
+      registrationCommand.args,
+      antsTransform(job, TransformModel::Affine),
+      job.metric,
+      job.fixedImage.fileName,
+      job.movingImage.fileName,
+      iterations,
+      shrinkFactors,
+      smoothingSigmas,
+      convergenceThreshold,
+      convergenceWindow,
+      samplingStrategy,
+      samplingPercentage);
+    appendAntsStage(
+      registrationCommand.args,
+      antsTransform(job, TransformModel::Deformable),
+      job.metric,
+      job.fixedImage.fileName,
+      job.movingImage.fileName,
+      iterations,
+      shrinkFactors,
+      smoothingSigmas,
+      convergenceThreshold,
+      convergenceWindow,
+      samplingStrategy,
+      samplingPercentage);
+  }
+  else {
+    appendAntsStage(
+      registrationCommand.args,
+      antsTransform(job, job.transformModel),
+      job.metric,
+      job.fixedImage.fileName,
+      job.movingImage.fileName,
+      iterations,
+      shrinkFactors,
+      smoothingSigmas,
+      convergenceThreshold,
+      convergenceWindow,
+      samplingStrategy,
+      samplingPercentage);
+  }
+
   for (std::size_t index = 0; index < job.auxiliaryImagePairs.size(); ++index) {
     const AuxiliaryImagePair& pair = job.auxiliaryImagePairs[index];
     if (!hasInputRef(pair.fixed) || !hasInputRef(pair.moving)) {
       continue;
     }
     registrationCommand.args.push_back("--metric");
-    registrationCommand.args.push_back(
-      antsMetric(pair.metric) + "[" +
-      pathString(inputPath(pair.fixed, artifactPath(job, ArtifactRole::AuxiliaryFixedImage, index))) + "," +
-      pathString(inputPath(pair.moving, artifactPath(job, ArtifactRole::AuxiliaryMovingImage, index))) + "," +
-      std::to_string(pair.weight) + ",4]");
+    registrationCommand.args.push_back(antsMetricArguments(
+      pair.metric,
+      inputPath(pair.fixed, artifactPath(job, ArtifactRole::AuxiliaryFixedImage, index)),
+      inputPath(pair.moving, artifactPath(job, ArtifactRole::AuxiliaryMovingImage, index)),
+      samplingStrategy,
+      samplingPercentage,
+      pair.weight));
   }
   if (!job.initialAffineTransform.empty()) {
     registrationCommand.args.push_back("--initial-moving-transform");
@@ -532,8 +655,22 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
                                    : std::string{"NULL"}) +
       "]");
   }
+  registrationCommand.args.push_back("--verbose");
+  registrationCommand.args.push_back(booleanParameterValueOr(job, "verbose", true) ? "1" : "0");
   appendExpertArguments(registrationCommand.args, job);
   commands.push_back(std::move(registrationCommand));
+
+  if (job.outputs.loadAffineTransform && includesAffineTransform(job.transformModel)) {
+    CommandSpec command;
+    command.description = "ANTs convert affine transform";
+    command.executable = options.antsConvertTransformFileExecutable;
+    command.args = {
+      std::to_string(job.dimension),
+      pathString(antsAffineTransformPath(job)),
+      pathString(artifactPath(job, ArtifactRole::AffineTransform)),
+      "--homogeneousMatrix"};
+    commands.push_back(std::move(command));
+  }
 
   if (job.outputs.loadWarpedSegmentation && hasInputRef(job.movingMask)) {
     CommandSpec command;
@@ -558,6 +695,8 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
       command.args.push_back("-t");
       command.args.push_back(pathString(antsAffineTransformPath(job)));
     }
+    command.args.push_back("--verbose");
+    command.args.push_back(booleanParameterValueOr(job, "verbose", true) ? "1" : "0");
     commands.push_back(std::move(command));
   }
 

@@ -12,9 +12,11 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <initializer_list>
 #include <numeric>
 #include <optional>
 #include <sstream>
+#include <string_view>
 
 namespace
 {
@@ -565,6 +567,85 @@ void normalizeNrrdAxes(ImageIoInfo& info, const std::filesystem::path& fileName)
   updateSizeInfo(info);
 }
 
+bool hasMedicalImageExtension(const std::filesystem::path& fileName, std::initializer_list<std::string_view> extensions)
+{
+  std::string extension = fileName.filename().string();
+  std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+
+  return std::any_of(extensions.begin(), extensions.end(), [&extension](std::string_view suffix) {
+    return extension.size() >= suffix.size() && extension.substr(extension.size() - suffix.size()) == suffix;
+  });
+}
+
+void normalizeNiftiVectorAxes(ImageIoInfo& info, const std::filesystem::path& fileName)
+{
+  if (
+    !hasMedicalImageExtension(fileName, {".nii", ".nii.gz"}) || info.m_spaceInfo.m_numDimensions != 5u ||
+    info.m_spaceInfo.m_dimensions.size() != 5u)
+  {
+    return;
+  }
+
+  const uint32_t timeAxis = 3u;
+  const uint32_t vectorAxis = 4u;
+  const auto vectorAxisComponents = static_cast<uint32_t>(info.m_spaceInfo.m_dimensions.at(vectorAxis));
+  if (vectorAxisComponents <= 1u) {
+    return;
+  }
+  const uint32_t numComponents =
+    info.m_pixelInfo.m_numComponents > 1u ? info.m_pixelInfo.m_numComponents : vectorAxisComponents;
+
+  info.m_pixelInfo.m_pixelType = PixelType::Vector;
+  info.m_pixelInfo.m_pixelTypeString = "vector";
+  info.m_pixelInfo.m_numComponents = numComponents;
+  info.m_pixelInfo.m_pixelStrideInBytes = numComponents * info.m_componentInfo.m_componentSizeInBytes;
+
+  if (info.m_spaceInfo.m_dimensions.at(timeAxis) > 1u) {
+    info.m_timeInfo.m_numTimePoints = static_cast<uint32_t>(info.m_spaceInfo.m_dimensions.at(timeAxis));
+    info.m_timeInfo.m_origin = info.m_spaceInfo.m_origin.at(timeAxis);
+    info.m_timeInfo.m_spacing = info.m_spaceInfo.m_spacing.at(timeAxis);
+    info.m_timeInfo.m_units = "frame";
+  }
+  else {
+    info.m_timeInfo = TimeInfo{};
+  }
+
+  std::vector<uint32_t> logicalAxes{0u, 1u, 2u};
+  if (info.m_timeInfo.m_numTimePoints > 1u) {
+    logicalAxes.push_back(timeAxis);
+  }
+
+  SpaceInfo normalizedSpace;
+  normalizedSpace.m_numDimensions = static_cast<uint32_t>(logicalAxes.size());
+  normalizedSpace.m_dimensions.reserve(logicalAxes.size());
+  normalizedSpace.m_origin.reserve(logicalAxes.size());
+  normalizedSpace.m_spacing.reserve(logicalAxes.size());
+  normalizedSpace.m_directions.assign(logicalAxes.size(), std::vector<double>(logicalAxes.size(), 0.0));
+
+  for (const uint32_t axis : logicalAxes) {
+    normalizedSpace.m_dimensions.push_back(info.m_spaceInfo.m_dimensions.at(axis));
+    normalizedSpace.m_origin.push_back(info.m_spaceInfo.m_origin.at(axis));
+    normalizedSpace.m_spacing.push_back(info.m_spaceInfo.m_spacing.at(axis));
+  }
+
+  for (std::size_t row = 0; row < logicalAxes.size(); ++row) {
+    const uint32_t sourceRow = logicalAxes[row];
+    for (std::size_t col = 0; col < logicalAxes.size(); ++col) {
+      const uint32_t sourceCol = logicalAxes[col];
+      if (
+        sourceRow < info.m_spaceInfo.m_directions.size() && sourceCol < info.m_spaceInfo.m_directions[sourceRow].size())
+      {
+        normalizedSpace.m_directions[row][col] = info.m_spaceInfo.m_directions[sourceRow][sourceCol];
+      }
+    }
+  }
+
+  info.m_spaceInfo = std::move(normalizedSpace);
+  updateSizeInfo(info);
+}
+
 void normalizeCanonicalTimeAxis(ImageIoInfo& info, const EntropyTimeMetadata& metadata)
 {
   if (
@@ -656,6 +737,7 @@ void normalizeImageIoAxesForEntropy(ImageIoInfo& info, const std::filesystem::pa
     metadata = readMetaImageTimeMetadata(fileName);
   }
   normalizeNrrdAxes(info, fileName);
+  normalizeNiftiVectorAxes(info, fileName);
   normalizeCanonicalTimeAxis(info, metadata);
 }
 

@@ -29,6 +29,12 @@ bool containsParameter(const std::vector<registration::ParameterSchema>& paramet
   });
 }
 
+std::string normalizedPreviewPath(std::string value)
+{
+  std::replace(value.begin(), value.end(), '\\', '/');
+  return value;
+}
+
 } // namespace
 
 TEST_CASE("registration setup defaults to reference fixed image and active moving image", "[registration][setup]")
@@ -118,6 +124,40 @@ TEST_CASE("registration setup backend switch clamps unsupported transform and me
   CHECK(state.validation.canLaunch());
 }
 
+TEST_CASE("registration setup defaults Greedy to WNCC", "[registration][setup]")
+{
+  const registration::SetupState state = registration::createSetupState(
+    {imageChoice("fixed", "Fixed", true, false), imageChoice("moving", "Moving", false, true)},
+    registration::Backend::Greedy,
+    "/tmp/entropy-reg");
+
+  CHECK(state.job.metric == registration::Metric::WNCC);
+}
+
+TEST_CASE("registration setup resets metric to backend default when switching backend", "[registration][setup]")
+{
+  registration::SetupState state = registration::createSetupState(
+    {imageChoice("fixed", "Fixed", true, false), imageChoice("moving", "Moving", false, true)},
+    registration::Backend::ANTs,
+    "/tmp/entropy-reg");
+
+  REQUIRE(state.job.metric == registration::Metric::MI);
+
+  registration::setBackend(state, registration::Backend::Greedy);
+
+  CHECK(state.job.metric == registration::Metric::WNCC);
+}
+
+TEST_CASE("registration setup defaults ANTs to mutual information", "[registration][setup]")
+{
+  const registration::SetupState state = registration::createSetupState(
+    {imageChoice("fixed", "Fixed", true, false), imageChoice("moving", "Moving", false, true)},
+    registration::Backend::ANTs,
+    "/tmp/entropy-reg");
+
+  CHECK(state.job.metric == registration::Metric::MI);
+}
+
 TEST_CASE(
   "registration setup parameter disclosure hides advanced and expert values by default",
   "[registration][setup]")
@@ -165,6 +205,39 @@ TEST_CASE("registration setup shows Greedy radius only for NCC metrics", "[regis
   CHECK_FALSE(containsParameter(registration::visibleParameters(state), "wnccRadius"));
 }
 
+TEST_CASE("registration setup shows only ANTs parameters that apply to the selected transform", "[registration][setup]")
+{
+  registration::SetupState state = registration::createSetupState(
+    {imageChoice("fixed", "Fixed", true, false), imageChoice("moving", "Moving", false, true)},
+    registration::Backend::ANTs,
+    "/tmp/entropy-reg");
+  state.showAdvancedParameters = true;
+
+  state.job.transformModel = registration::TransformModel::AffineDeformable;
+  std::vector<registration::ParameterSchema> parameters = registration::visibleParameters(state);
+  CHECK(containsParameter(parameters, "antsGradientStep"));
+  CHECK(containsParameter(parameters, "synUpdateFieldVariance"));
+  CHECK_FALSE(containsParameter(parameters, "bsplineSyNUpdateMeshSize"));
+  CHECK_FALSE(containsParameter(parameters, "gaussianDisplacementUpdateVariance"));
+  CHECK_FALSE(containsParameter(parameters, "timeVaryingVelocityTimeIndices"));
+
+  state.job.transformModel = registration::TransformModel::BSplineDisplacement;
+  parameters = registration::visibleParameters(state);
+  CHECK(containsParameter(parameters, "antsGradientStep"));
+  CHECK_FALSE(containsParameter(parameters, "synUpdateFieldVariance"));
+  CHECK(containsParameter(parameters, "bsplineSyNUpdateMeshSize"));
+  CHECK_FALSE(containsParameter(parameters, "gaussianDisplacementUpdateVariance"));
+  CHECK_FALSE(containsParameter(parameters, "timeVaryingVelocityTimeIndices"));
+
+  state.job.transformModel = registration::TransformModel::TimeVaryingVelocity;
+  parameters = registration::visibleParameters(state);
+  CHECK(containsParameter(parameters, "antsGradientStep"));
+  CHECK_FALSE(containsParameter(parameters, "synUpdateFieldVariance"));
+  CHECK_FALSE(containsParameter(parameters, "bsplineSyNUpdateMeshSize"));
+  CHECK_FALSE(containsParameter(parameters, "gaussianDisplacementUpdateVariance"));
+  CHECK(containsParameter(parameters, "timeVaryingVelocityTimeIndices"));
+}
+
 TEST_CASE("registration setup preserves matching parameter values when switching backend", "[registration][setup]")
 {
   registration::SetupState state = registration::createSetupState(
@@ -202,8 +275,9 @@ TEST_CASE("registration setup returns command previews only for launchable jobs"
   iterations->value = "7x3";
   const std::vector<std::string> previews = registration::commandPreviews(state);
   REQUIRE_FALSE(previews.empty());
-  CHECK(previews.front().find("7x3") != std::string::npos);
-  CHECK(previews.front().find("-ia /tmp/entropy-reg/Moving_to_Fixed_initial_affine.mat") != std::string::npos);
+  const std::string normalizedPreview = normalizedPreviewPath(previews.front());
+  CHECK(normalizedPreview.find("7x3") != std::string::npos);
+  CHECK(normalizedPreview.find("-ia /tmp/entropy-reg/Moving_to_Fixed_initial_affine.mat") != std::string::npos);
 
   state.job.useCurrentAffineTransformsForInitialization = false;
   const std::vector<std::string> previewsWithoutCurrentAffine = registration::commandPreviews(state);
@@ -213,4 +287,22 @@ TEST_CASE("registration setup returns command previews only for launchable jobs"
   state.job.movingImage = {};
   registration::refreshValidation(state);
   CHECK(registration::commandPreviews(state).empty());
+}
+
+TEST_CASE("registration setup previews ANTs affine initialization as an ITK transform file", "[registration][setup]")
+{
+  registration::SetupState state = registration::createSetupState(
+    {imageChoice("fixed", "Fixed", true, false), imageChoice("moving", "Moving", false, true)},
+    registration::Backend::ANTs,
+    "/tmp/entropy-reg");
+  state.job.transformModel = registration::TransformModel::Affine;
+
+  const std::vector<std::string> previews = registration::commandPreviews(state);
+
+  REQUIRE_FALSE(previews.empty());
+  const std::string normalizedPreview = normalizedPreviewPath(previews.front());
+  CHECK(
+    normalizedPreview.find("--initial-moving-transform /tmp/entropy-reg/Moving_to_Fixed_initial_affine.tfm") !=
+    std::string::npos);
+  CHECK(normalizedPreview.find("_initial_affine.mat") == std::string::npos);
 }

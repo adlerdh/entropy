@@ -185,6 +185,40 @@ TEST_CASE("registration job execution reads backend result manifest when present
   CHECK(execution.manifest->warpedImage == "backend-warped.nii.gz");
 }
 
+TEST_CASE("registration job execution fills missing expected ANTs warp paths", "[registration][execution]")
+{
+  registration::JobSpec job = jobForOneCommand("fills-ants-warps");
+  job.backend = registration::Backend::ANTs;
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.outputs.loadAffineTransform = false;
+  job.outputPrefix = "moving_to_fixed";
+  std::filesystem::create_directories(job.outputDirectory);
+
+  registration::ResultManifest backendManifest;
+  backendManifest.success = true;
+  backendManifest.backend = registration::Backend::ANTs;
+  backendManifest.fixedImageUid = "fixed";
+  backendManifest.movingImageUid = "moving";
+
+  {
+    std::ofstream stream(registration::artifactPath(job, registration::ArtifactRole::ResultManifest));
+    const nlohmann::json json = backendManifest;
+    stream << json.dump(2) << '\n';
+  }
+
+  ScriptedRunner runner;
+  registration::ProcessResult success;
+  success.exitCode = 0;
+  runner.results.push_back(success);
+
+  const registration::JobExecution execution = registration::executeJob(job, runner);
+
+  REQUIRE(execution.manifest);
+  CHECK(execution.manifest->success);
+  CHECK(execution.manifest->inverseWarp == job.outputDirectory / "moving_to_fixed1Warp.nii.gz");
+  CHECK(execution.manifest->forwardWarp == job.outputDirectory / "moving_to_fixed1InverseWarp.nii.gz");
+}
+
 TEST_CASE("registration job execution stops after a failed command", "[registration][execution]")
 {
   ScriptedRunner runner;

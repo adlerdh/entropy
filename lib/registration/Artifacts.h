@@ -68,6 +68,13 @@ std::string outputPrefix(const JobSpec& job);
 std::filesystem::path artifactPath(const JobSpec& job, ArtifactRole role, std::size_t index = 0);
 
 /**
+ * @brief Build the backend-readable path used for Entropy-exported affine initialization.
+ * @param job Registration job.
+ * @return Greedy matrix path for Greedy jobs, or ITK transform path for ITK-based backends.
+ */
+std::filesystem::path initialAffineInputPath(const JobSpec& job);
+
+/**
  * @brief Build the manifest Entropy expects a backend to produce for a successful job.
  * @param job Registration job.
  * @return Result manifest populated with requested output artifact paths.

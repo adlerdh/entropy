@@ -2,6 +2,21 @@
 
 namespace registration
 {
+namespace
+{
+
+std::filesystem::path siblingExecutableIfDefault(
+  const std::filesystem::path& configured,
+  const std::filesystem::path& sibling,
+  const char* defaultExecutableName)
+{
+  if (configured != defaultExecutableName || sibling.empty() || !sibling.has_parent_path()) {
+    return configured;
+  }
+  return sibling.parent_path() / defaultExecutableName;
+}
+
+} // namespace
 
 CommandGenerationOptions commandOptions(const BackendConfig& config)
 {
@@ -9,6 +24,11 @@ CommandGenerationOptions commandOptions(const BackendConfig& config)
   options.greedyExecutable = config.greedyExecutable.string();
   options.antsRegistrationExecutable = config.antsRegistrationExecutable.string();
   options.antsApplyTransformsExecutable = config.antsApplyTransformsExecutable.string();
+  options.antsConvertTransformFileExecutable = siblingExecutableIfDefault(
+                                                 config.antsConvertTransformFileExecutable,
+                                                 config.antsRegistrationExecutable,
+                                                 "ConvertTransformFile")
+                                                 .string();
   options.fireAntsPythonExecutable = config.fireAntsPythonExecutable.string();
   options.fireAntsBridgeModule = config.fireAntsBridgeModule;
   return options;

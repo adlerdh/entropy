@@ -635,6 +635,41 @@ TEST_CASE("Vector images can be loaded as one interleaved component buffer", "[i
   CHECK(image.quantileToValue(2, 0.0) == Catch::Approx(30.0));
 }
 
+TEST_CASE("NIfTI vector displacement images load as interleaved vector fields", "[image][loading][vector][nifti]")
+{
+  const fs::path dir = testDirectory();
+  const fs::path fileName = writeVectorImage<float, 3>(
+    dir,
+    "ants-style-vector-field",
+    {2, 2, 1},
+    {1.5, 2.0, 2.5},
+    {-3.0, 4.0, 5.0},
+    3,
+    {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f},
+    ".nii.gz");
+
+  const auto header = readImageHeaderOnly(fileName, Rep::Image, BufferType::InterleavedImage);
+  REQUIRE(header);
+  CHECK(header->pixelDimensions() == glm::uvec3{2, 2, 1});
+  CHECK(header->numComponentsPerPixel() == 3);
+  CHECK(header->interleavedComponents());
+
+  Image image(fileName, Rep::Image, BufferType::InterleavedImage);
+
+  CHECK(image.header().pixelDimensions() == glm::uvec3{2, 2, 1});
+  CHECK(image.header().numComponentsPerPixel() == 3);
+  CHECK(image.header().interleavedComponents());
+  CHECK(image.bufferAsVoid(0) != nullptr);
+  CHECK(image.bufferAsVoid(1) == nullptr);
+  CHECK(image.timeAxis().numTimePoints() == 1);
+  CHECK(image.value<double>(0, 0).value() == Catch::Approx(1.0));
+  CHECK(image.value<double>(1, 0).value() == Catch::Approx(2.0));
+  CHECK(image.value<double>(2, 0).value() == Catch::Approx(3.0));
+  CHECK(image.value<double>(0, 3).value() == Catch::Approx(10.0));
+  CHECK(image.value<double>(1, 3).value() == Catch::Approx(11.0));
+  CHECK(image.value<double>(2, 3).value() == Catch::Approx(12.0));
+}
+
 TEST_CASE("4D scalar images load as time series", "[image][loading][time]")
 {
   const fs::path dir = testDirectory();

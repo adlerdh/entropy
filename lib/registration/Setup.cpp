@@ -43,6 +43,9 @@ TransformModel defaultTransformModel(const BackendCapabilities& capabilities)
 
 Metric defaultMetric(const BackendCapabilities& capabilities)
 {
+  if (capabilities.backend == Backend::ANTs && supportsMetric(capabilities, Metric::MI)) {
+    return Metric::MI;
+  }
   if (supportsMetric(capabilities, Metric::WNCC)) {
     return Metric::WNCC;
   }
@@ -96,6 +99,26 @@ bool parameterAppliesToJob(const ParameterSchema& parameter, const JobSpec& job)
   if (job.backend == Backend::Greedy && parameter.key == "wnccRadius") {
     return job.metric == Metric::NCC || job.metric == Metric::WNCC;
   }
+  if (job.backend == Backend::ANTs) {
+    if (parameter.key == "synUpdateFieldVariance" || parameter.key == "synTotalFieldVariance") {
+      return job.transformModel == TransformModel::Deformable || job.transformModel == TransformModel::AffineDeformable;
+    }
+    if (
+      parameter.key == "bsplineSyNUpdateMeshSize" || parameter.key == "bsplineSyNTotalMeshSize" ||
+      parameter.key == "bsplineSyNSplineOrder")
+    {
+      return job.transformModel == TransformModel::BSplineDisplacement;
+    }
+    if (parameter.key == "gaussianDisplacementUpdateVariance" || parameter.key == "gaussianDisplacementTotalVariance") {
+      return job.transformModel == TransformModel::GaussianDisplacement;
+    }
+    if (
+      parameter.key == "timeVaryingVelocityTimeIndices" || parameter.key == "timeVaryingVelocityUpdateVariance" ||
+      parameter.key == "timeVaryingVelocityUpdateTimeVariance" || parameter.key == "timeVaryingVelocityTotalVariance")
+    {
+      return job.transformModel == TransformModel::TimeVaryingVelocity;
+    }
+  }
   return true;
 }
 
@@ -124,12 +147,14 @@ void normalizeJobForCapabilities(JobSpec& job, const BackendCapabilities& capabi
 
 std::filesystem::path previewInitialAffinePath(const JobSpec& job)
 {
-  std::filesystem::path outputDirectory = job.outputDirectory;
+  JobSpec previewJob = job;
+  std::filesystem::path outputDirectory = previewJob.outputDirectory;
   if (outputDirectory == std::filesystem::temp_directory_path()) {
     outputDirectory /= "entropy-registration";
     outputDirectory /= "<job-id>";
   }
-  return outputDirectory / (outputPrefix(job) + "_initial_affine.mat");
+  previewJob.outputDirectory = outputDirectory;
+  return initialAffineInputPath(previewJob);
 }
 
 void materializePreviewOnlyInputs(JobSpec& job)
@@ -185,9 +210,13 @@ SetupState createSetupState(
 
 void setBackend(SetupState& state, Backend backend)
 {
+  const Backend oldBackend = state.job.backend;
   const std::vector<ParameterValue> oldValues = state.parameterValues;
   state.capabilities = capabilitiesForBackend(backend);
   normalizeJobForCapabilities(state.job, state.capabilities);
+  if (oldBackend != backend) {
+    state.job.metric = defaultMetric(state.capabilities);
+  }
   state.parameterValues = defaultParameterValues(state.capabilities);
   preserveParameterValues(state.parameterValues, oldValues);
   state.job.parameterValues = state.parameterValues;

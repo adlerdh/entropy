@@ -129,6 +129,16 @@ bool JobStore::appendProgress(const std::string& id, ProgressEvent event)
   return true;
 }
 
+bool JobStore::appendOutputLine(const std::string& id, ProcessOutputLine line)
+{
+  JobRecord* job = find(id);
+  if (!job) {
+    return false;
+  }
+  job->outputLines.push_back(std::move(line));
+  return true;
+}
+
 bool JobStore::applyExecution(const std::string& id, const JobExecution& execution)
 {
   JobRecord* job = find(id);
@@ -139,7 +149,9 @@ bool JobStore::applyExecution(const std::string& id, const JobExecution& executi
   updateTimingForStatus(*job, execution.status);
   job->commands.insert(job->commands.end(), execution.commands.begin(), execution.commands.end());
   job->progress.insert(job->progress.end(), execution.progressEvents.begin(), execution.progressEvents.end());
-  job->outputLines.insert(job->outputLines.end(), execution.outputLines.begin(), execution.outputLines.end());
+  if (job->outputLines.empty()) {
+    job->outputLines.insert(job->outputLines.end(), execution.outputLines.begin(), execution.outputLines.end());
+  }
   job->warnings.insert(job->warnings.end(), execution.warnings.begin(), execution.warnings.end());
   job->manifest = execution.manifest;
   job->errorMessage = execution.errorMessage;

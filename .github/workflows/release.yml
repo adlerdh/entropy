@@ -1,4 +1,4 @@
-name: Release
+name: Release (x86_64 + arm64)
 
 on:
   push:
@@ -61,7 +61,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   windows:
-    name: Windows Release
+    name: Windows Release (x86_64)
     runs-on: windows-2022
     needs: metadata
     env:
@@ -161,14 +161,14 @@ jobs:
       - name: Upload Windows packages as workflow artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: entropy-${{ env.ENTROPY_VERSION }}-windows
+          name: entropy-${{ env.ENTROPY_VERSION }}-windows-x86_64
           path: |
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Windows-*.msi
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Windows-*-portable.zip
           if-no-files-found: error
 
   linux:
-    name: Linux Release
+    name: Linux Release (x86_64)
     runs-on: ubuntu-22.04
     needs: metadata
     env:
@@ -308,7 +308,7 @@ jobs:
       - name: Upload Linux packages as workflow artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: entropy-${{ env.ENTROPY_VERSION }}-linux
+          name: entropy-${{ env.ENTROPY_VERSION }}-linux-x86_64
           path: |
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Linux-*.deb
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Linux-*-portable.tar.gz
@@ -319,7 +319,7 @@ jobs:
         run: ccache --show-stats
 
   macos:
-    name: macOS Release
+    name: macOS Release (arm64)
     runs-on: macos-14
     needs: metadata
     env:
@@ -446,7 +446,7 @@ jobs:
       - name: Upload macOS packages as workflow artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: entropy-${{ env.ENTROPY_VERSION }}-macos
+          name: entropy-${{ env.ENTROPY_VERSION }}-macos-arm64
           path: |
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS-*.dmg
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS-*.zip

@@ -1,4 +1,4 @@
-name: Linux CI
+name: Linux CI (x86_64)
 
 on:
   pull_request:
@@ -62,7 +62,7 @@ jobs:
         run: git diff --exit-code
 
   debug:
-    name: Debug Build And Tests
+    name: Debug Build And Tests (x86_64)
     runs-on: ubuntu-22.04
     needs: format
     if: github.event_name != 'push' || startsWith(github.ref, 'refs/heads/')
@@ -140,7 +140,7 @@ jobs:
         run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
   coverage:
-    name: Coverage Report
+    name: Coverage Report (x86_64)
     runs-on: ubuntu-22.04
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
@@ -247,7 +247,7 @@ jobs:
         run: ccache --show-stats
 
   package:
-    name: Release Packages
+    name: Release Packages (x86_64)
     runs-on: ubuntu-22.04
     needs: format
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -356,7 +356,7 @@ jobs:
       - name: Upload Linux packages
         uses: actions/upload-artifact@v7
         with:
-          name: linux-packages
+          name: linux-x86_64-packages
           path: |
             build-release/packages/Entropy-*-Linux-*.deb
             build-release/packages/Entropy-*-Linux-*-portable.tar.gz

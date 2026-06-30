@@ -152,6 +152,8 @@ def _build_fireants_command(job: dict[str, Any]) -> tuple[list[str], Path, Path,
     winsorize = _parameter_value(job, "winsorizeImageIntensities", "")
     if winsorize:
         command += ["--winsorize-image-intensities", f"[{winsorize}]"]
+    if _parameter_value(job, "verbose", "true").lower() in {"true", "1", "yes", "on"}:
+        command.append("--verbose")
 
     metric = _metric(job, fixed, moving)
     convergence = _convergence_arg(job)

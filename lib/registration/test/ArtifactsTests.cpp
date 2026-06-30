@@ -74,6 +74,20 @@ TEST_CASE("registration artifact paths fall back to a generic prefix", "[registr
     "/tmp/entropy-registration/registration_affine.mat");
 }
 
+TEST_CASE("registration affine initialization paths use backend-readable extensions", "[registration][artifacts]")
+{
+  registration::JobSpec job = baseJob();
+
+  job.backend = registration::Backend::Greedy;
+  CHECK(registration::initialAffineInputPath(job) == "/tmp/entropy-registration/moving_to_fixed_initial_affine.mat");
+
+  job.backend = registration::Backend::ANTs;
+  CHECK(registration::initialAffineInputPath(job) == "/tmp/entropy-registration/moving_to_fixed_initial_affine.tfm");
+
+  job.backend = registration::Backend::FireANTs;
+  CHECK(registration::initialAffineInputPath(job) == "/tmp/entropy-registration/moving_to_fixed_initial_affine.tfm");
+}
+
 TEST_CASE("registration input artifact plan distinguishes existing files from app exports", "[registration][artifacts]")
 {
   registration::JobSpec job = baseJob();
@@ -173,4 +187,54 @@ TEST_CASE("registration expected result manifest omits warps for affine-only tra
     CHECK(manifest.forwardWarp.empty());
     CHECK_FALSE(manifest.affineTransform.empty());
   }
+}
+
+TEST_CASE(
+  "registration expected result manifest omits affine for deformable-only transforms",
+  "[registration][artifacts]")
+{
+  registration::JobSpec job = baseJob();
+  job.transformModel = registration::TransformModel::Deformable;
+  job.outputs.loadAffineTransform = true;
+
+  const registration::ResultManifest manifest = registration::buildExpectedResultManifest(job);
+
+  CHECK(manifest.affineTransform.empty());
+}
+
+TEST_CASE("registration expected result manifest uses ANTs warp output names", "[registration][artifacts]")
+{
+  registration::JobSpec job = baseJob();
+  job.backend = registration::Backend::ANTs;
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.outputs.loadInverseWarp = true;
+  job.outputs.loadForwardWarp = true;
+
+  registration::ResultManifest manifest = registration::buildExpectedResultManifest(job);
+
+  CHECK(manifest.inverseWarp == "/tmp/entropy-registration/moving_to_fixed1Warp.nii.gz");
+  CHECK(manifest.forwardWarp == "/tmp/entropy-registration/moving_to_fixed1InverseWarp.nii.gz");
+
+  job.transformModel = registration::TransformModel::Deformable;
+  manifest = registration::buildExpectedResultManifest(job);
+
+  CHECK(manifest.inverseWarp == "/tmp/entropy-registration/moving_to_fixed0Warp.nii.gz");
+  CHECK(manifest.forwardWarp == "/tmp/entropy-registration/moving_to_fixed0InverseWarp.nii.gz");
+}
+
+TEST_CASE(
+  "registration expected result manifest predicts ANTs warp names even when import toggles are off",
+  "[registration][artifacts]")
+{
+  registration::JobSpec job = baseJob();
+  job.backend = registration::Backend::ANTs;
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.outputs.loadInverseWarp = false;
+  job.outputs.loadForwardWarp = false;
+  job.outputs.applyWarpToMovingImage = false;
+
+  const registration::ResultManifest manifest = registration::buildExpectedResultManifest(job);
+
+  CHECK(manifest.inverseWarp == "/tmp/entropy-registration/moving_to_fixed1Warp.nii.gz");
+  CHECK(manifest.forwardWarp == "/tmp/entropy-registration/moving_to_fixed1InverseWarp.nii.gz");
 }

@@ -158,6 +158,21 @@ TEST_CASE("registration job store applies execution summaries", "[registration][
   CHECK(*registration::latestProgress(*job) == 0.5);
 }
 
+TEST_CASE("registration job store appends live output lines", "[registration][jobs]")
+{
+  registration::JobStore store;
+  const std::string id = store.add(makeJob());
+
+  REQUIRE(store.appendOutputLine(id, {registration::OutputStream::Stdout, "level 0"}));
+  REQUIRE(store.appendOutputLine(id, {registration::OutputStream::Stdout, "level 1"}));
+
+  const registration::JobRecord* job = store.find(id);
+  REQUIRE(job);
+  REQUIRE(job->outputLines.size() == 2);
+  CHECK(job->outputLines.at(0).text == "level 0");
+  CHECK(job->outputLines.at(1).text == "level 1");
+}
+
 TEST_CASE("registration job store tracks start and end times", "[registration][jobs]")
 {
   registration::JobStore store;

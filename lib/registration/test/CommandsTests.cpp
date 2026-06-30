@@ -77,6 +77,20 @@ TEST_CASE("Greedy command generation uses selected parameter values", "[registra
   CHECK(preview.find("4x4x4") != std::string::npos);
   CHECK(preview.find("-threads 3") != std::string::npos);
   CHECK(preview.find("-float") != std::string::npos);
+  CHECK(preview.find("-V 1") != std::string::npos);
+}
+
+TEST_CASE("Greedy command generation uses selected verbosity", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::Affine;
+  job.parameterValues = {{"verbosity", "Verbose (2)"}};
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 2);
+  const std::string preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("-V 2") != std::string::npos);
 }
 
 TEST_CASE("Greedy command generation emits radius only for NCC metrics", "[registration][commands]")
@@ -136,9 +150,10 @@ TEST_CASE("Greedy command generation emits advanced affine and deformable option
   const std::string deformablePreview = registration::displayCommand(commands.at(1));
   CHECK(deformablePreview.find("-s 2mm 0.5mm") != std::string::npos);
   CHECK(deformablePreview.find("-e 0.75") != std::string::npos);
+  CHECK(deformablePreview.find("-exp 5") != std::string::npos);
   CHECK(deformablePreview.find("-svlb") != std::string::npos);
   CHECK(deformablePreview.find("-wp 0.01") != std::string::npos);
-  CHECK(deformablePreview.find("-exp 5 -oinv") != std::string::npos);
+  CHECK(deformablePreview.find("-oinv") != std::string::npos);
 }
 
 TEST_CASE("Greedy command generation uses current affine initialization path", "[registration][commands]")
@@ -196,12 +211,48 @@ TEST_CASE("Greedy command generation emits masks and auxiliary image pairs", "[r
   REQUIRE(commands.size() == 3);
   const std::string affinePreview = registration::displayCommand(commands.at(0));
   CHECK(affinePreview.find("-gm fixed_mask.nii.gz") != std::string::npos);
+  CHECK(affinePreview.find("-mm moving_mask.nii.gz") != std::string::npos);
   CHECK(affinePreview.find("-w 0.500000 -i aux_fixed.nii.gz aux_moving.nii.gz") != std::string::npos);
 
   const std::string deformablePreview = registration::displayCommand(commands.at(1));
   CHECK(deformablePreview.find("-gm fixed_mask.nii.gz") != std::string::npos);
   CHECK(deformablePreview.find("-mm moving_mask.nii.gz") != std::string::npos);
   CHECK(deformablePreview.find("-w 0.500000 -i aux_fixed.nii.gz aux_moving.nii.gz") != std::string::npos);
+}
+
+TEST_CASE(
+  "Greedy command generation emits stationary velocity exponentiation without inverse warp output",
+  "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::Deformable;
+  job.outputs.loadForwardWarp = false;
+  job.outputs.transformLandmarksAndAnnotations = false;
+  job.outputs.transformSurfaces = false;
+  job.parameterValues = {{"inverseExponentiation", "6"}, {"velocityModel", "Stationary velocity (sv)"}};
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 2);
+  const std::string preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("-exp 6") != std::string::npos);
+  CHECK(preview.find("-oinv") == std::string::npos);
+}
+
+TEST_CASE("Greedy command generation writes forward warp when point outputs need it", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::Deformable;
+  job.outputs.loadForwardWarp = false;
+  job.outputs.transformLandmarksAndAnnotations = true;
+  job.outputs.transformSurfaces = false;
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 2);
+  const std::string preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("-oinv") != std::string::npos);
+  CHECK(preview.find("moving_to_fixed_forward_warp.nii.gz") != std::string::npos);
 }
 
 TEST_CASE(
@@ -250,11 +301,126 @@ TEST_CASE("ANTs command generation includes staged output and metric", "[registr
 
   const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
 
-  REQUIRE(commands.size() == 1);
+  REQUIRE(commands.size() == 2);
   CHECK(commands.front().executable == "antsRegistration");
   const std::string preview = registration::displayCommand(commands.front());
-  CHECK(preview.find("SyN") != std::string::npos);
-  CHECK(preview.find("CC[fixed.nii.gz,moving.nii.gz,1,4]") != std::string::npos);
+  CHECK(preview.find("--transform 'Affine[0.1]'") != std::string::npos);
+  CHECK(preview.find("--transform 'SyN[0.1,3,0]'") != std::string::npos);
+  CHECK(preview.find("CC[fixed.nii.gz,moving.nii.gz,1.000000,4,Regular,0.25]") != std::string::npos);
+  CHECK(preview.find("--verbose 1") != std::string::npos);
+
+  CHECK(commands.back().description == "ANTs convert affine transform");
+  CHECK(commands.back().executable == "ConvertTransformFile");
+  const std::string convertPreview = registration::displayCommand(commands.back());
+  CHECK(convertPreview.find("moving_to_fixed0GenericAffine.mat") != std::string::npos);
+  CHECK(convertPreview.find("moving_to_fixed_affine.mat --homogeneousMatrix") != std::string::npos);
+}
+
+TEST_CASE("ANTs command generation can disable verbose output", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.parameterValues = {{"verbose", "false"}};
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 2);
+  const std::string preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("--verbose 0") != std::string::npos);
+}
+
+TEST_CASE("ANTs command generation uses selected transform bracket parameters", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.parameterValues = {{"antsGradientStep", "0.25"}, {"synUpdateFieldVariance", "5"}, {"synTotalFieldVariance", "1"}};
+
+  std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+  REQUIRE_FALSE(commands.empty());
+  std::string preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("--transform 'Affine[0.25]'") != std::string::npos);
+  CHECK(preview.find("--transform 'SyN[0.25,5,1]'") != std::string::npos);
+
+  job.transformModel = registration::TransformModel::BSplineDisplacement;
+  job.parameterValues = {
+    {"antsGradientStep", "0.2"},
+    {"bsplineSyNUpdateMeshSize", "12"},
+    {"bsplineSyNTotalMeshSize", "4"},
+    {"bsplineSyNSplineOrder", "2"}};
+
+  commands = registration::generateCommands(job);
+  REQUIRE_FALSE(commands.empty());
+  preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("--transform 'BSplineSyN[0.2,12,4,2]'") != std::string::npos);
+
+  job.transformModel = registration::TransformModel::GaussianDisplacement;
+  job.parameterValues = {
+    {"antsGradientStep", "0.3"},
+    {"gaussianDisplacementUpdateVariance", "6"},
+    {"gaussianDisplacementTotalVariance", "2"}};
+
+  commands = registration::generateCommands(job);
+  REQUIRE_FALSE(commands.empty());
+  preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("--transform 'GaussianDisplacementField[0.3,6,2]'") != std::string::npos);
+
+  job.transformModel = registration::TransformModel::TimeVaryingVelocity;
+  job.parameterValues = {
+    {"antsGradientStep", "0.4"},
+    {"timeVaryingVelocityTimeIndices", "5"},
+    {"timeVaryingVelocityUpdateVariance", "7"},
+    {"timeVaryingVelocityUpdateTimeVariance", "1"},
+    {"timeVaryingVelocityTotalVariance", "3"}};
+
+  commands = registration::generateCommands(job);
+  REQUIRE_FALSE(commands.empty());
+  preview = registration::displayCommand(commands.front());
+  CHECK(preview.find("--transform 'TimeVaryingVelocityField[0.4,5,7,1,3]'") != std::string::npos);
+}
+
+TEST_CASE("ANTs command generation only requests warped image output when needed", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.outputs.loadWarpedImage = true;
+
+  std::string preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(
+    preview.find("--output '[/tmp/reg/moving_to_fixed,/tmp/reg/moving_to_fixed_warped.nii.gz]'") != std::string::npos);
+
+  job.outputs.loadWarpedImage = false;
+  preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("--output /tmp/reg/moving_to_fixed") != std::string::npos);
+  CHECK(preview.find("moving_to_fixed_warped.nii.gz") == std::string::npos);
+}
+
+TEST_CASE("ANTs command generation uses metric-specific parameters", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+
+  job.metric = registration::Metric::MI;
+  std::string preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("MI[fixed.nii.gz,moving.nii.gz,1.000000,32,Regular,0.25]") != std::string::npos);
+
+  job.metric = registration::Metric::Mattes;
+  preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("Mattes[fixed.nii.gz,moving.nii.gz,1.000000,32,Regular,0.25]") != std::string::npos);
+
+  job.metric = registration::Metric::CC;
+  preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("CC[fixed.nii.gz,moving.nii.gz,1.000000,4,Regular,0.25]") != std::string::npos);
+}
+
+TEST_CASE("ANTs command generation applies selected metric sampling parameters", "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.metric = registration::Metric::MI;
+  job.parameterValues = {{"samplingStrategy", "Random"}, {"samplingPercentage", "0.1"}};
+
+  std::string preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("MI[fixed.nii.gz,moving.nii.gz,1.000000,32,Random,0.1]") != std::string::npos);
+
+  job.parameterValues = {{"samplingStrategy", "None"}, {"samplingPercentage", "0.1"}};
+  preview = registration::displayCommand(registration::generateCommands(job).front());
+  CHECK(preview.find("MI[fixed.nii.gz,moving.nii.gz,1.000000,32]") != std::string::npos);
 }
 
 TEST_CASE("ANTs command generation uses selected pyramid and convergence parameters", "[registration][commands]")
@@ -271,7 +437,7 @@ TEST_CASE("ANTs command generation uses selected pyramid and convergence paramet
 
   const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
 
-  REQUIRE(commands.size() == 1);
+  REQUIRE(commands.size() == 2);
   const std::string preview = registration::displayCommand(commands.front());
   CHECK(preview.find("[80x20,1e-5,5]") != std::string::npos);
   CHECK(preview.find("--shrink-factors 8x2") != std::string::npos);
@@ -294,10 +460,12 @@ TEST_CASE("ANTs command generation emits masks and auxiliary metrics", "[registr
 
   const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
 
-  REQUIRE(commands.size() == 1);
+  REQUIRE(commands.size() == 2);
   const std::string preview = registration::displayCommand(commands.front());
   CHECK(preview.find("--masks '[fixed_mask.nii.gz,moving_mask.nii.gz]'") != std::string::npos);
-  CHECK(preview.find("--metric 'MeanSquares[aux_fixed.nii.gz,aux_moving.nii.gz,0.250000,4]'") != std::string::npos);
+  CHECK(
+    preview.find("--metric 'MeanSquares[aux_fixed.nii.gz,aux_moving.nii.gz,0.250000,0,Regular,0.25]'") !=
+    std::string::npos);
 }
 
 TEST_CASE("ANTs command generation uses current affine initialization path", "[registration][commands]")
@@ -305,13 +473,13 @@ TEST_CASE("ANTs command generation uses current affine initialization path", "[r
   registration::JobSpec job = baseJob(registration::Backend::ANTs);
   job.transformModel = registration::TransformModel::Affine;
   job.useCurrentAffineTransformsForInitialization = true;
-  job.initialAffineTransform = "/tmp/reg/initial_affine.mat";
+  job.initialAffineTransform = "/tmp/reg/initial_affine.tfm";
 
   const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
 
-  REQUIRE(commands.size() == 1);
+  REQUIRE(commands.size() == 2);
   const std::string preview = registration::displayCommand(commands.front());
-  CHECK(preview.find("--initial-moving-transform /tmp/reg/initial_affine.mat") != std::string::npos);
+  CHECK(preview.find("--initial-moving-transform /tmp/reg/initial_affine.tfm") != std::string::npos);
 }
 
 TEST_CASE("ANTs command generation reslices moving segmentation when requested", "[registration][commands]")
@@ -323,14 +491,33 @@ TEST_CASE("ANTs command generation reslices moving segmentation when requested",
 
   const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
 
-  REQUIRE(commands.size() == 2);
+  REQUIRE(commands.size() == 3);
   CHECK(commands.back().description == "ANTs reslice warped segmentation");
   CHECK(commands.back().executable == "antsApplyTransforms");
   const std::string preview = registration::displayCommand(commands.back());
   CHECK(preview.find("-n GenericLabel") != std::string::npos);
+  CHECK(preview.find("--verbose 1") != std::string::npos);
   CHECK(preview.find("moving_to_fixed_warped_segmentation_01.nii.gz") != std::string::npos);
   CHECK(preview.find("moving_to_fixed1Warp.nii.gz") != std::string::npos);
   CHECK(preview.find("moving_to_fixed0GenericAffine.mat") != std::string::npos);
+}
+
+TEST_CASE(
+  "ANTs command generation uses zero-index warp names for deformable-only registration",
+  "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.transformModel = registration::TransformModel::Deformable;
+  job.outputs.loadAffineTransform = false;
+  job.outputs.loadWarpedSegmentation = true;
+  job.movingMask = imageRef("moving-seg", "moving_seg.nii.gz");
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 2);
+  const std::string preview = registration::displayCommand(commands.back());
+  CHECK(preview.find("moving_to_fixed0Warp.nii.gz") != std::string::npos);
+  CHECK(preview.find("moving_to_fixed1Warp.nii.gz") == std::string::npos);
 }
 
 TEST_CASE("FireANTs command generation uses the bridge module", "[registration][commands]")
@@ -351,6 +538,7 @@ TEST_CASE("command generation uses configured backend executable paths", "[regis
   options.greedyExecutable = "/opt/greedy/bin/greedy";
   options.antsRegistrationExecutable = "/opt/ants/bin/antsRegistration";
   options.antsApplyTransformsExecutable = "/opt/ants/bin/antsApplyTransforms";
+  options.antsConvertTransformFileExecutable = "/opt/ants/bin/ConvertTransformFile";
   options.fireAntsPythonExecutable = "/venv/bin/python";
   options.fireAntsBridgeModule = "custom_bridge";
 
@@ -365,7 +553,8 @@ TEST_CASE("command generation uses configured backend executable paths", "[regis
   antsJob.outputs.loadWarpedSegmentation = true;
   antsJob.movingMask = imageRef("moving-seg", "moving_seg.nii.gz");
   const std::vector<registration::CommandSpec> antsCommands = registration::generateCommands(antsJob, options);
-  REQUIRE(antsCommands.size() == 2);
+  REQUIRE(antsCommands.size() == 3);
+  CHECK(antsCommands.at(1).executable == "/opt/ants/bin/ConvertTransformFile");
   CHECK(antsCommands.back().executable == "/opt/ants/bin/antsApplyTransforms");
 
   const std::vector<registration::CommandSpec> fireAntsCommands =

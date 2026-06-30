@@ -36,7 +36,7 @@ registration::JobSpec makeJob()
   job.landmarks.matchedPairs = 5;
   job.landmarks.fixedLandmarks = makeRef("fixed-lm", "fixed.csv", registration::DataSource::LandmarkGroup);
   job.landmarks.movingLandmarks = makeRef("moving-lm", "moving.csv", registration::DataSource::LandmarkGroup);
-  job.parameterValues = {{"iterations", "40x20"}, {"threads", "6"}};
+  job.parameterValues = {{"iterations", "40x20"}, {"threads", "6"}, {"verbose", "true"}};
   job.extraArguments = {"--verbose", "1"};
   return job;
 }
@@ -66,9 +66,11 @@ TEST_CASE("registration job specs round-trip through JSON", "[registration][seri
   CHECK(restored.initialAffineTransform == original.initialAffineTransform);
   CHECK(restored.landmarks.enabled);
   CHECK(restored.landmarks.matchedPairs == 5);
-  REQUIRE(restored.parameterValues.size() == 2);
+  REQUIRE(restored.parameterValues.size() == 3);
   CHECK(restored.parameterValues.front().key == "iterations");
   CHECK(restored.parameterValues.front().value == "40x20");
+  CHECK(restored.parameterValues.back().key == "verbose");
+  CHECK(restored.parameterValues.back().value == "true");
   CHECK(restored.extraArguments == original.extraArguments);
 }
 
@@ -141,6 +143,7 @@ TEST_CASE("registration backend config round-trips through JSON", "[registration
   config.greedyExecutable = "/opt/greedy";
   config.antsRegistrationExecutable = "/opt/antsRegistration";
   config.antsApplyTransformsExecutable = "/opt/antsApplyTransforms";
+  config.antsConvertTransformFileExecutable = "/opt/ConvertTransformFile";
   config.fireAntsPythonExecutable = "/venv/bin/python";
   config.fireAntsBridgeModule = "custom_bridge";
   config.defaultOutputDirectory = "/tmp/entropy-registration";
@@ -158,6 +161,7 @@ TEST_CASE("registration backend config round-trips through JSON", "[registration
   CHECK(restored.greedyExecutable == "/opt/greedy");
   CHECK(restored.antsRegistrationExecutable == "/opt/antsRegistration");
   CHECK(restored.antsApplyTransformsExecutable == "/opt/antsApplyTransforms");
+  CHECK(restored.antsConvertTransformFileExecutable == "/opt/ConvertTransformFile");
   CHECK(restored.fireAntsPythonExecutable == "/venv/bin/python");
   CHECK(restored.fireAntsBridgeModule == "custom_bridge");
   CHECK(restored.defaultOutputDirectory == "/tmp/entropy-registration");

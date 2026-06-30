@@ -32,11 +32,17 @@ TEST_CASE("registration backend capabilities expose expected high-level features
   CHECK(registration::supportsTransformModel(greedy, registration::TransformModel::Similarity));
   CHECK(registration::supportsTransformModel(greedy, registration::TransformModel::Affine));
   CHECK_FALSE(registration::supportsTransformModel(greedy, registration::TransformModel::RigidAffine));
+  const registration::ParameterSchema* greedyVerbosity = findParameter(greedy, "verbosity");
+  REQUIRE(greedyVerbosity);
+  CHECK(greedyVerbosity->advanced);
+  CHECK(greedyVerbosity->defaultValue == "Default (1)");
 
   const registration::BackendCapabilities ants = registration::capabilitiesForBackend(registration::Backend::ANTs);
-  CHECK(registration::supportsFeature(ants, registration::Feature::LandmarkDrivenRegistration));
-  CHECK(registration::supportsMetric(ants, registration::Metric::PointSet));
+  CHECK_FALSE(registration::supportsFeature(ants, registration::Feature::LandmarkDrivenRegistration));
+  CHECK_FALSE(registration::supportsMetric(ants, registration::Metric::PointSet));
+  CHECK(registration::supportsMetric(ants, registration::Metric::MI));
   CHECK(registration::supportsTransformModel(ants, registration::TransformModel::TimeVaryingVelocity));
+  CHECK_FALSE(registration::supportsTransformModel(ants, registration::TransformModel::RigidAffine));
 
   const registration::BackendCapabilities fireAnts =
     registration::capabilitiesForBackend(registration::Backend::FireANTs);
@@ -44,6 +50,10 @@ TEST_CASE("registration backend capabilities expose expected high-level features
   CHECK(registration::supportsMetric(fireAnts, registration::Metric::CC));
   CHECK_FALSE(registration::supportsMetric(fireAnts, registration::Metric::MaskedCC));
   CHECK_FALSE(registration::supportsFeature(fireAnts, registration::Feature::SurfaceTransform));
+  const registration::ParameterSchema* fireAntsVerbose = findParameter(fireAnts, "verbose");
+  REQUIRE(fireAntsVerbose);
+  CHECK(fireAntsVerbose->advanced);
+  CHECK(fireAntsVerbose->defaultValue == "true");
 }
 
 TEST_CASE("registration backend schemas include user-facing tooltip text", "[registration]")

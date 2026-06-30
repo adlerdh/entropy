@@ -20,6 +20,8 @@ struct BackendConfig
     "antsRegistration";
   std::filesystem::path antsApplyTransformsExecutable = //!< ANTs antsApplyTransforms executable path.
     "antsApplyTransforms";
+  std::filesystem::path antsConvertTransformFileExecutable = //!< ANTs ConvertTransformFile executable path.
+    "ConvertTransformFile";
   std::filesystem::path fireAntsPythonExecutable = "python"; //!< Python executable used for FireANTs.
   std::string fireAntsBridgeModule =                         //!< FireANTs Python bridge module.
     "entropy_fireants_bridge";

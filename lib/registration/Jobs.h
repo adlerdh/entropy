@@ -83,6 +83,14 @@ public:
   bool appendProgress(const std::string& id, ProgressEvent event);
 
   /**
+   * @brief Append one raw backend output line to one job.
+   * @param id Job ID.
+   * @param line Process output line.
+   * @return True iff the job exists.
+   */
+  bool appendOutputLine(const std::string& id, ProcessOutputLine line);
+
+  /**
    * @brief Complete a job from an execution summary.
    * @param id Job ID.
    * @param execution Execution summary.

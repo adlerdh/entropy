@@ -1321,6 +1321,11 @@ void renderRegistrationTab(AppData& appData)
       "Command or executable path used to launch antsApplyTransforms for warped outputs.",
       true);
     renderPathSettingFixedWidth(
+      "ANTs convert transform executable",
+      config.antsConvertTransformFileExecutable,
+      "Command or executable path used to convert ANTs affine output into Entropy's importable matrix artifact.",
+      true);
+    renderPathSettingFixedWidth(
       "FireANTs Python executable",
       config.fireAntsPythonExecutable,
       "Python executable used to run the FireANTs bridge module.",

@@ -251,6 +251,15 @@ std::optional<glm::dmat4> readBackendSamplingAffine(const fs::path& affinePath, 
                                                     : registration::readAffineTransform(affinePath);
 }
 
+std::optional<glm::dmat4> readBackendDisplayAffine(const fs::path& affinePath, registration::Backend backend)
+{
+  const std::optional<glm::dmat4> affine = readBackendSamplingAffine(affinePath, backend);
+  if (!affine) {
+    return std::nullopt;
+  }
+  return glm::inverse(*affine);
+}
+
 bool applyImportedAffineToImage(
   AppData& appData,
   const uuids::uuid& imageUid,
@@ -262,17 +271,16 @@ bool applyImportedAffineToImage(
     return false;
   }
 
-  const std::optional<glm::dmat4> samplingAffine = readBackendSamplingAffine(affinePath, backend);
-  if (!samplingAffine) {
+  const std::optional<glm::dmat4> displayAffine = readBackendDisplayAffine(affinePath, backend);
+  if (!displayAffine) {
     return false;
   }
-  const glm::dmat4 displayAffine = glm::inverse(*samplingAffine);
 
   ImageTransformations& imageTx = image->transformations();
   const bool wasLocked = imageTx.is_worldDef_T_affine_locked();
   imageTx.set_worldDef_T_affine_locked(false);
   imageTx.set_enable_affine_T_subject(true);
-  imageTx.set_affine_T_subject(glm::mat4{displayAffine});
+  imageTx.set_affine_T_subject(glm::mat4{*displayAffine});
   imageTx.set_affine_T_subject_fileName(affinePath);
   imageTx.set_enable_worldDef_T_affine(true);
   imageTx.reset_worldDef_T_affine();
@@ -1704,7 +1712,7 @@ bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
 
     const glm::dmat4 currentDisplayAffine{movingImage->transformations().worldDef_T_subject()};
     const glm::dmat4 currentSamplingAffine = glm::inverse(currentDisplayAffine);
-    job.initialAffineTransform = job.outputDirectory / (registration::outputPrefix(job) + "_initial_affine.mat");
+    job.initialAffineTransform = registration::initialAffineInputPath(job);
     const bool saved =
       job.backend == registration::Backend::Greedy
         ? registration::writeGreedyAffineTransform(job.initialAffineTransform, currentSamplingAffine)
@@ -1736,12 +1744,31 @@ void ImGuiWrapper::importRegistrationJobOutputs(const std::string& jobId)
   }
 
   const registration::JobSpec spec = job->spec;
-  const registration::ResultManifest manifest = *job->manifest;
-  const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest);
-
   auto appendEvent = [&jobs, &jobId](registration::ProgressEventKind kind, std::string message) {
     jobs.appendProgress(jobId, registration::ProgressEvent{.kind = kind, .message = std::move(message)});
   };
+
+  registration::ResultManifest manifest = *job->manifest;
+  if (spec.backend == registration::Backend::ANTs && registration::includesDeformableTransform(spec.transformModel)) {
+    const registration::ResultManifest expectedManifest = registration::buildExpectedResultManifest(spec);
+    if (
+      manifest.inverseWarp.empty() && !expectedManifest.inverseWarp.empty() && fs::exists(expectedManifest.inverseWarp))
+    {
+      manifest.inverseWarp = expectedManifest.inverseWarp;
+      appendEvent(
+        registration::ProgressEventKind::Artifact,
+        "Discovered ANTs inverse warp artifact: " + manifest.inverseWarp.string());
+    }
+    if (
+      manifest.forwardWarp.empty() && !expectedManifest.forwardWarp.empty() && fs::exists(expectedManifest.forwardWarp))
+    {
+      manifest.forwardWarp = expectedManifest.forwardWarp;
+      appendEvent(
+        registration::ProgressEventKind::Artifact,
+        "Discovered ANTs forward warp artifact: " + manifest.forwardWarp.string());
+    }
+  }
+  const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest);
 
   auto parseTargetImageUid = [&appendEvent](const registration::ImportStep& step) -> std::optional<uuids::uuid> {
     if (step.targetImageUid.empty()) {
@@ -2353,15 +2380,35 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
     const uuids::uuid taskUid = generateRandomUuid();
     auto cancelFlag = std::make_shared<std::atomic_bool>(false);
     const bool keepTemporaryFiles = config.keepTemporaryFiles;
+    auto pendingOutputLines = &m_pendingRegistrationOutputLines;
+    auto registrationMutex = &m_registrationJobFuturesMutex;
     auto future = std::async(
       std::launch::async,
-      [jobId, jobSpec, config, commandOptions, postEmptyEvent, cancelFlag, keepTemporaryFiles]() {
+      [jobId,
+       jobSpec,
+       config,
+       commandOptions,
+       postEmptyEvent,
+       cancelFlag,
+       keepTemporaryFiles,
+       pendingOutputLines,
+       registrationMutex]() {
         registration::JobExecution execution;
         try {
           registration::ShellProcessRunner runner;
           registration::JobExecutionCallbacks callbacks;
           callbacks.shouldCancel = [cancelFlag]() {
             return cancelFlag->load();
+          };
+          callbacks.onOutputLine = [jobId, postEmptyEvent, pendingOutputLines, registrationMutex](
+                                     const registration::ProcessOutputLine& line) {
+            {
+              std::lock_guard<std::mutex> lock(*registrationMutex);
+              pendingOutputLines->push_back(PendingRegistrationOutputLine{jobId, line});
+            }
+            if (postEmptyEvent) {
+              postEmptyEvent();
+            }
           };
           if (checkRegistrationBackendBeforeLaunch(jobSpec, config, runner, execution)) {
             std::vector<std::string> preflightWarnings = std::move(execution.warnings);
@@ -2371,6 +2418,7 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
               std::make_move_iterator(preflightWarnings.begin()),
               std::make_move_iterator(preflightWarnings.end()));
           }
+          execution.outputLines.clear();
           if (!keepTemporaryFiles && execution.status != registration::JobStatus::Failed) {
             removeTemporaryRegistrationInputs(jobSpec, execution);
           }
@@ -2401,6 +2449,15 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
 void ImGuiWrapper::processRegistrationJobFutures()
 {
   using namespace std::chrono_literals;
+
+  std::vector<PendingRegistrationOutputLine> pendingOutputLines;
+  {
+    std::lock_guard<std::mutex> lock(m_registrationJobFuturesMutex);
+    pendingOutputLines.swap(m_pendingRegistrationOutputLines);
+  }
+  for (auto& pendingLine : pendingOutputLines) {
+    m_appData.registrationJobs().appendOutputLine(pendingLine.jobId, std::move(pendingLine.line));
+  }
 
   std::vector<uuids::uuid> readyTasks;
   {

@@ -39,8 +39,15 @@ constexpr std::array k_backends{
   registration::Backend::Greedy};
 
 constexpr int k_minResolutionLevels = 1;
-constexpr int k_maxResolutionLevels = 8;
+constexpr int k_maxResolutionLevels = 4;
 constexpr int k_minIterationsPerLevel = 1;
+constexpr int k_minShrinkFactor = 1;
+constexpr int k_maxIterationsPerLevel = 512;
+constexpr int k_maxShrinkFactor = 16;
+constexpr float k_maxSmoothingSigma = 8.0f;
+constexpr std::array k_defaultIterationsByLevel{128, 64, 32, 16};
+constexpr std::array k_defaultShrinkFactorsByLevel{8, 4, 2, 1};
+constexpr std::array k_defaultSmoothingSigmasByLevel{3.0, 2.0, 1.0, 0.0};
 
 std::vector<registration::SetupImageChoice> imageChoices(const AppData& appData)
 {
@@ -272,6 +279,8 @@ int parseInteger(std::string_view value, int fallback)
   return end && *end == '\0' ? static_cast<int>(parsed) : fallback;
 }
 
+double parseDouble(std::string_view value, double fallback);
+
 std::vector<int> parseIntegerSchedule(std::string_view value, std::string_view fallback)
 {
   auto parse = [](std::string_view text) {
@@ -316,6 +325,130 @@ std::string formatIntegerSchedule(const std::vector<int>& values)
     stream << std::max(k_minIterationsPerLevel, values.at(i));
   }
   return stream.str();
+}
+
+std::vector<double> parseDoubleSchedule(std::string_view value, std::string_view fallback)
+{
+  auto parse = [](std::string_view text) {
+    std::vector<double> values;
+    std::string token;
+    for (const char ch : text) {
+      if (ch == 'x' || ch == 'X' || ch == ',' || ch == ';' || std::isspace(static_cast<unsigned char>(ch))) {
+        if (!token.empty()) {
+          values.push_back(parseDouble(token, 0.0));
+          token.clear();
+        }
+        continue;
+      }
+      token.push_back(ch);
+    }
+    if (!token.empty()) {
+      values.push_back(parseDouble(token, 0.0));
+    }
+    return values;
+  };
+
+  std::vector<double> values = parse(value);
+  if (values.empty()) {
+    values = parse(fallback);
+  }
+  if (values.empty()) {
+    values.push_back(0.0);
+  }
+  if (values.size() > static_cast<std::size_t>(k_maxResolutionLevels)) {
+    values.resize(static_cast<std::size_t>(k_maxResolutionLevels));
+  }
+  return values;
+}
+
+std::string formatDoubleSchedule(const std::vector<double>& values)
+{
+  std::ostringstream stream;
+  stream << std::setprecision(6);
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    if (i > 0u) {
+      stream << 'x';
+    }
+    stream << values.at(i);
+  }
+  return stream.str();
+}
+
+std::vector<int> integerDefaultsForSchedule(std::string_view key, int levelCount)
+{
+  levelCount = std::clamp(levelCount, k_minResolutionLevels, k_maxResolutionLevels);
+  if (key == "shrinkFactors" || key == "scales") {
+    const auto begin = k_defaultShrinkFactorsByLevel.end() - levelCount;
+    return {begin, k_defaultShrinkFactorsByLevel.end()};
+  }
+  return {
+    k_defaultIterationsByLevel.begin(),
+    k_defaultIterationsByLevel.begin() + static_cast<std::ptrdiff_t>(levelCount)};
+}
+
+std::vector<double> doubleDefaultsForSchedule(std::string_view key, int levelCount)
+{
+  levelCount = std::clamp(levelCount, k_minResolutionLevels, k_maxResolutionLevels);
+  if (key == "smoothingSigmas") {
+    const auto begin = k_defaultSmoothingSigmasByLevel.end() - levelCount;
+    return {begin, k_defaultSmoothingSigmasByLevel.end()};
+  }
+  return std::vector<double>(static_cast<std::size_t>(levelCount), 0.0);
+}
+
+void resizeIntegerSchedule(std::vector<int>& values, int levelCount, std::string_view key)
+{
+  const std::vector<int> defaults = integerDefaultsForSchedule(key, levelCount);
+  if (values.size() > defaults.size()) {
+    if (key == "shrinkFactors" || key == "scales") {
+      values.erase(values.begin(), values.end() - static_cast<std::ptrdiff_t>(defaults.size()));
+    }
+    else {
+      values.resize(defaults.size());
+    }
+    return;
+  }
+  if (key == "shrinkFactors" || key == "scales") {
+    values.insert(
+      values.begin(),
+      defaults.begin(),
+      defaults.begin() + static_cast<std::ptrdiff_t>(defaults.size() - values.size()));
+  }
+  else {
+    values.insert(values.end(), defaults.begin() + static_cast<std::ptrdiff_t>(values.size()), defaults.end());
+  }
+}
+
+void resizeDoubleSchedule(std::vector<double>& values, int levelCount, std::string_view key)
+{
+  const std::vector<double> defaults = doubleDefaultsForSchedule(key, levelCount);
+  if (values.size() > defaults.size()) {
+    if (key == "smoothingSigmas") {
+      values.erase(values.begin(), values.end() - static_cast<std::ptrdiff_t>(defaults.size()));
+    }
+    else {
+      values.resize(defaults.size());
+    }
+    return;
+  }
+  if (key == "smoothingSigmas") {
+    values.insert(
+      values.begin(),
+      defaults.begin(),
+      defaults.begin() + static_cast<std::ptrdiff_t>(defaults.size() - values.size()));
+  }
+  else {
+    values.insert(values.end(), defaults.begin() + static_cast<std::ptrdiff_t>(values.size()), defaults.end());
+  }
+}
+
+int resolutionLevelCount(const registration::SetupState& state)
+{
+  const registration::ParameterValue* iterations = registration::findParameterValue(state, "iterations");
+  if (!iterations) {
+    return 3;
+  }
+  return static_cast<int>(parseIntegerSchedule(iterations->value, "128x64x32").size());
 }
 
 double parseDouble(std::string_view value, double fallback)
@@ -545,6 +678,53 @@ std::string transformDisplayLabel(registration::Backend backend, registration::T
         break;
     }
   }
+
+  if (backend == registration::Backend::ANTs) {
+    switch (model) {
+      case registration::TransformModel::Translation:
+        return "Translation";
+      case registration::TransformModel::Rigid:
+        return "Rigid";
+      case registration::TransformModel::Similarity:
+        return "Similarity";
+      case registration::TransformModel::Affine:
+        return "Affine";
+      case registration::TransformModel::RigidAffine:
+        return "Affine";
+      case registration::TransformModel::Deformable:
+        return "Symmetric normalization (SyN)";
+      case registration::TransformModel::AffineDeformable:
+        return "Affine + symmetric normalization (SyN)";
+      case registration::TransformModel::BSplineDisplacement:
+        return "B-spline symmetric normalization (BSplineSyN)";
+      case registration::TransformModel::GaussianDisplacement:
+        return "Gaussian displacement field";
+      case registration::TransformModel::TimeVaryingVelocity:
+        return "Time-varying velocity field";
+    }
+  }
+
+  if (backend == registration::Backend::FireANTs) {
+    switch (model) {
+      case registration::TransformModel::Rigid:
+        return "Rigid (Rigid)";
+      case registration::TransformModel::Similarity:
+        return "Similarity (Similarity)";
+      case registration::TransformModel::Affine:
+        return "Affine (Affine)";
+      case registration::TransformModel::Deformable:
+        return "Deformable transformation (Deformable)";
+      case registration::TransformModel::AffineDeformable:
+        return "Affine + deformable transformation (AffineDeformable)";
+      case registration::TransformModel::RigidAffine:
+      case registration::TransformModel::Translation:
+      case registration::TransformModel::BSplineDisplacement:
+      case registration::TransformModel::GaussianDisplacement:
+      case registration::TransformModel::TimeVaryingVelocity:
+        break;
+    }
+  }
+
   return std::string{registration::label(model)};
 }
 
@@ -927,34 +1107,124 @@ void renderRegistrationJobDetailsPopup(const registration::JobRecord* job)
   }
 }
 
+bool sliderIntN(const char* label, int* values, int count, int minValue, int maxValue)
+{
+  switch (count) {
+    case 1:
+      return ImGui::SliderInt(label, values, minValue, maxValue);
+    case 2:
+      return ImGui::SliderInt2(label, values, minValue, maxValue);
+    case 3:
+      return ImGui::SliderInt3(label, values, minValue, maxValue);
+    case 4:
+      return ImGui::SliderInt4(label, values, minValue, maxValue);
+    default:
+      return false;
+  }
+}
+
+bool sliderFloatN(const char* label, float* values, int count, float minValue, float maxValue, const char* format)
+{
+  switch (count) {
+    case 1:
+      return ImGui::SliderFloat(label, values, minValue, maxValue, format);
+    case 2:
+      return ImGui::SliderFloat2(label, values, minValue, maxValue, format);
+    case 3:
+      return ImGui::SliderFloat3(label, values, minValue, maxValue, format);
+    case 4:
+      return ImGui::SliderFloat4(label, values, minValue, maxValue, format);
+    default:
+      return false;
+  }
+}
+
 void renderIterationsPerLevelWidget(registration::ParameterValue& value, const registration::ParameterSchema& parameter)
 {
   std::vector<int> iterations = parseIntegerSchedule(value.value, parameter.defaultValue);
   int levelCount = static_cast<int>(iterations.size());
-  if (ImGui::InputInt("Resolution levels", &levelCount)) {
+  if (ImGui::SliderInt("Resolution levels", &levelCount, k_minResolutionLevels, k_maxResolutionLevels)) {
     levelCount = std::clamp(levelCount, k_minResolutionLevels, k_maxResolutionLevels);
-    const int fillValue = iterations.empty() ? 100 : iterations.back();
-    iterations.resize(static_cast<std::size_t>(levelCount), fillValue);
+    resizeIntegerSchedule(iterations, levelCount, parameter.key);
     value.value = formatIntegerSchedule(iterations);
   }
   renderHelpMarker("Number of multi-resolution pyramid levels, ordered coarse to fine.");
 
-  ImGui::TextUnformatted(parameter.label.c_str());
-  renderHelpMarker(parameter.tooltip);
-  for (std::size_t i = 0; i < iterations.size(); ++i) {
-    ImGui::PushID(static_cast<int>(i));
-    if (i > 0u) {
-      ImGui::SameLine();
-    }
-    ImGui::SetNextItemWidth(72.0f);
-    int parsed = iterations.at(i);
-    const std::string label = "L" + std::to_string(i + 1u);
-    if (ImGui::InputInt(label.c_str(), &parsed, 0, 0)) {
-      iterations.at(i) = std::max(k_minIterationsPerLevel, parsed);
-      value.value = formatIntegerSchedule(iterations);
-    }
-    ImGui::PopID();
+  std::array<int, k_maxResolutionLevels> values{};
+  std::copy(iterations.begin(), iterations.end(), values.begin());
+  if (sliderIntN(
+        parameter.label.c_str(),
+        values.data(),
+        static_cast<int>(iterations.size()),
+        k_minIterationsPerLevel,
+        k_maxIterationsPerLevel))
+  {
+    std::copy_n(values.begin(), iterations.size(), iterations.begin());
+    value.value = formatIntegerSchedule(iterations);
   }
+  renderHelpMarker(parameter.tooltip);
+}
+
+void renderIntegerScheduleWidget(
+  registration::ParameterValue& value,
+  const registration::ParameterSchema& parameter,
+  int levelCount,
+  int minimumValue,
+  int maximumValue)
+{
+  std::vector<int> values = parseIntegerSchedule(value.value, parameter.defaultValue);
+  const std::size_t originalSize = values.size();
+  resizeIntegerSchedule(values, levelCount, parameter.key);
+  if (values.size() != originalSize) {
+    value.value = formatIntegerSchedule(values);
+  }
+  std::array<int, k_maxResolutionLevels> sliderValues{};
+  std::copy(values.begin(), values.end(), sliderValues.begin());
+  if (sliderIntN(
+        parameter.label.c_str(),
+        sliderValues.data(),
+        static_cast<int>(values.size()),
+        minimumValue,
+        maximumValue))
+  {
+    std::copy_n(sliderValues.begin(), values.size(), values.begin());
+    value.value = formatIntegerSchedule(values);
+  }
+  renderHelpMarker(parameter.tooltip);
+}
+
+void renderDoubleScheduleWidget(
+  registration::ParameterValue& value,
+  const registration::ParameterSchema& parameter,
+  int levelCount,
+  double minimumValue)
+{
+  std::vector<double> values = parseDoubleSchedule(value.value, parameter.defaultValue);
+  const std::size_t originalSize = values.size();
+  resizeDoubleSchedule(values, levelCount, parameter.key);
+  if (values.size() != originalSize) {
+    value.value = formatDoubleSchedule(values);
+  }
+  std::array<float, k_maxResolutionLevels> sliderValues{};
+  std::transform(values.begin(), values.end(), sliderValues.begin(), [](double parsed) {
+    return static_cast<float>(parsed);
+  });
+  if (sliderFloatN(
+        parameter.label.c_str(),
+        sliderValues.data(),
+        static_cast<int>(values.size()),
+        static_cast<float>(minimumValue),
+        k_maxSmoothingSigma,
+        "%.4g"))
+  {
+    std::transform(
+      sliderValues.begin(),
+      sliderValues.begin() + static_cast<std::ptrdiff_t>(values.size()),
+      values.begin(),
+      [](float parsed) { return static_cast<double>(parsed); });
+    value.value = formatDoubleSchedule(values);
+  }
+  renderHelpMarker(parameter.tooltip);
 }
 
 void renderFloatPairWidget(registration::ParameterValue& value, const registration::ParameterSchema& parameter)
@@ -966,10 +1236,24 @@ void renderFloatPairWidget(registration::ParameterValue& value, const registrati
   renderHelpMarker(parameter.tooltip);
 }
 
-void renderParameterWidget(registration::ParameterValue& value, const registration::ParameterSchema& parameter)
+void renderParameterWidget(
+  registration::SetupState& state,
+  registration::ParameterValue& value,
+  const registration::ParameterSchema& parameter)
 {
   if (parameter.key == "iterations" && parameter.kind == registration::ParameterKind::IntegerVector) {
     renderIterationsPerLevelWidget(value, parameter);
+    return;
+  }
+  if (
+    (parameter.key == "shrinkFactors" || parameter.key == "scales") &&
+    parameter.kind == registration::ParameterKind::IntegerVector)
+  {
+    renderIntegerScheduleWidget(value, parameter, resolutionLevelCount(state), k_minShrinkFactor, k_maxShrinkFactor);
+    return;
+  }
+  if (parameter.key == "smoothingSigmas" && parameter.kind == registration::ParameterKind::FloatVector) {
+    renderDoubleScheduleWidget(value, parameter, resolutionLevelCount(state), 0.0);
     return;
   }
   if (parameter.key == "smoothingSigma" && parameter.kind == registration::ParameterKind::FloatVector) {
@@ -1184,7 +1468,7 @@ bool renderParameterByKey(registration::SetupState& state, const registration::P
   if (!value) {
     return false;
   }
-  renderParameterWidget(*value, parameter);
+  renderParameterWidget(state, *value, parameter);
   return true;
 }
 
@@ -1468,7 +1752,7 @@ void renderRegistrationSetupWindow(AppData& appData)
       ImGui::SameLine();
       helpMarker("Load the baked/resampled moving image produced by the backend as a new image.");
 
-      if (ImGui::Checkbox("Transformation matrix for moving image", &state.job.outputs.loadAffineTransform)) {
+      if (ImGui::Checkbox("Affine transformation matrix for moving image", &state.job.outputs.loadAffineTransform)) {
         registration::refreshValidation(state);
       }
       ImGui::SameLine();
@@ -1696,12 +1980,10 @@ void renderRegistrationJobsWindow(
         ImGui::PopStyleColor(2);
       }
       ImGui::EndDisabled();
-      if (!job.commands.empty() || !job.outputLines.empty() || !job.warnings.empty() || !job.errorMessage.empty()) {
-        ImGui::SameLine();
-        if (ImGui::SmallButton("Log")) {
-          s_selectedLogJobId = job.id;
-          openDetailsPopup = true;
-        }
+      ImGui::SameLine();
+      if (ImGui::SmallButton("Log")) {
+        s_selectedLogJobId = job.id;
+        openDetailsPopup = true;
       }
 
       ImGui::TableSetColumnIndex(3);

@@ -61,6 +61,7 @@ void setNonDefaultSettings(AppSettings& settings)
   registrationConfig.greedyExecutable = "/opt/greedy/bin/greedy";
   registrationConfig.antsRegistrationExecutable = "/opt/ants/bin/antsRegistration";
   registrationConfig.antsApplyTransformsExecutable = "/opt/ants/bin/antsApplyTransforms";
+  registrationConfig.antsConvertTransformFileExecutable = "/opt/ants/bin/ConvertTransformFile";
   registrationConfig.fireAntsPythonExecutable = "/opt/fireants/bin/python";
   registrationConfig.fireAntsBridgeModule = "entropy_test_fireants_bridge";
   registrationConfig.defaultOutputDirectory = "/tmp/entropy-registration";
@@ -214,6 +215,8 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actualRegistration.greedyExecutable == expectedRegistration.greedyExecutable);
   CHECK(actualRegistration.antsRegistrationExecutable == expectedRegistration.antsRegistrationExecutable);
   CHECK(actualRegistration.antsApplyTransformsExecutable == expectedRegistration.antsApplyTransformsExecutable);
+  CHECK(
+    actualRegistration.antsConvertTransformFileExecutable == expectedRegistration.antsConvertTransformFileExecutable);
   CHECK(actualRegistration.fireAntsPythonExecutable == expectedRegistration.fireAntsPythonExecutable);
   CHECK(actualRegistration.fireAntsBridgeModule == expectedRegistration.fireAntsBridgeModule);
   CHECK(actualRegistration.defaultOutputDirectory == expectedRegistration.defaultOutputDirectory);
@@ -406,6 +409,7 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("registration").at("greedyExecutable") == "/opt/greedy/bin/greedy");
   CHECK(root.at("registration").at("antsRegistrationExecutable") == "/opt/ants/bin/antsRegistration");
   CHECK(root.at("registration").at("antsApplyTransformsExecutable") == "/opt/ants/bin/antsApplyTransforms");
+  CHECK(root.at("registration").at("antsConvertTransformFileExecutable") == "/opt/ants/bin/ConvertTransformFile");
   CHECK(root.at("registration").at("fireAntsPythonExecutable") == "/opt/fireants/bin/python");
   CHECK(root.at("registration").at("fireAntsBridgeModule") == "entropy_test_fireants_bridge");
   CHECK(root.at("registration").at("defaultOutputDirectory") == "/tmp/entropy-registration");

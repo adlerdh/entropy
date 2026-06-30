@@ -33,6 +33,23 @@ void addInput(
   artifacts.push_back(std::move(artifact));
 }
 
+std::filesystem::path antsOutputPrefixPath(const JobSpec& job)
+{
+  return job.outputDirectory / outputPrefix(job);
+}
+
+std::filesystem::path antsWarpPath(const JobSpec& job)
+{
+  const char* index = includesAffineTransform(job.transformModel) ? "1" : "0";
+  return antsOutputPrefixPath(job).string() + index + "Warp.nii.gz";
+}
+
+std::filesystem::path antsInverseWarpPath(const JobSpec& job)
+{
+  const char* index = includesAffineTransform(job.transformModel) ? "1" : "0";
+  return antsOutputPrefixPath(job).string() + index + "InverseWarp.nii.gz";
+}
+
 } // namespace
 
 std::string_view label(ArtifactRole role)
@@ -120,6 +137,12 @@ std::filesystem::path artifactPath(const JobSpec& job, ArtifactRole role, std::s
   return job.outputDirectory / (prefix + "_artifact");
 }
 
+std::filesystem::path initialAffineInputPath(const JobSpec& job)
+{
+  const char* extension = job.backend == Backend::Greedy ? ".mat" : ".tfm";
+  return job.outputDirectory / (outputPrefix(job) + "_initial_affine" + extension);
+}
+
 ResultManifest buildExpectedResultManifest(const JobSpec& job)
 {
   ResultManifest manifest;
@@ -132,14 +155,19 @@ ResultManifest buildExpectedResultManifest(const JobSpec& job)
     manifest.warpedImage = artifactPath(job, ArtifactRole::WarpedImage);
   }
   const bool hasDeformableOutput = includesDeformableTransform(job.transformModel);
-  if (hasDeformableOutput && (job.outputs.loadInverseWarp || job.outputs.applyWarpToMovingImage)) {
-    manifest.inverseWarp = artifactPath(job, ArtifactRole::InverseWarp);
-  }
   if (
     hasDeformableOutput &&
-    (job.outputs.loadForwardWarp || job.outputs.transformLandmarksAndAnnotations || job.outputs.transformSurfaces))
+    (job.backend == Backend::ANTs || job.outputs.loadInverseWarp || job.outputs.applyWarpToMovingImage))
   {
-    manifest.forwardWarp = artifactPath(job, ArtifactRole::ForwardWarp);
+    manifest.inverseWarp =
+      job.backend == Backend::ANTs ? antsWarpPath(job) : artifactPath(job, ArtifactRole::InverseWarp);
+  }
+  if (
+    hasDeformableOutput && (job.backend == Backend::ANTs || job.outputs.loadForwardWarp ||
+                            job.outputs.transformLandmarksAndAnnotations || job.outputs.transformSurfaces))
+  {
+    manifest.forwardWarp =
+      job.backend == Backend::ANTs ? antsInverseWarpPath(job) : artifactPath(job, ArtifactRole::ForwardWarp);
   }
   if (job.outputs.loadWarpedSegmentation) {
     manifest.warpedSegmentations.push_back(artifactPath(job, ArtifactRole::WarpedSegmentation));
@@ -151,7 +179,9 @@ ResultManifest buildExpectedResultManifest(const JobSpec& job)
     manifest.transformedSurfaces.push_back(artifactPath(job, ArtifactRole::TransformedSurface));
   }
 
-  manifest.affineTransform = artifactPath(job, ArtifactRole::AffineTransform);
+  if (includesAffineTransform(job.transformModel) && job.outputs.loadAffineTransform) {
+    manifest.affineTransform = artifactPath(job, ArtifactRole::AffineTransform);
+  }
   return manifest;
 }
 

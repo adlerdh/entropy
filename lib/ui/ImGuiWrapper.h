@@ -430,10 +430,17 @@ private:
     registration::JobExecution execution;
   };
 
+  struct PendingRegistrationOutputLine
+  {
+    std::string jobId;
+    registration::ProcessOutputLine line;
+  };
+
   std::unordered_map<uuids::uuid, std::future<RegistrationJobTaskResult> > m_registrationJobFutures;
   std::unordered_map<uuids::uuid, std::string> m_registrationJobIdsByTask;
   std::unordered_map<std::string, std::shared_ptr<std::atomic_bool> > m_registrationJobCancelFlags;
   std::unordered_set<std::string> m_runningRegistrationJobIds;
+  std::vector<PendingRegistrationOutputLine> m_pendingRegistrationOutputLines;
   std::mutex m_registrationJobFuturesMutex;
 
   void requestQueuedRegistrationJobs();
