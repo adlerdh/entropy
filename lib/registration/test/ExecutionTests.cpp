@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <utility>
@@ -54,13 +55,17 @@ registration::DataRef imageRef(std::string uid, std::string fileName)
 
 registration::JobSpec jobForOneCommand(const std::string& suffix = "case")
 {
+  static std::uint64_t counter = 0;
+
   registration::JobSpec job;
   job.backend = registration::Backend::FireANTs;
   job.fixedImage = imageRef("fixed", "fixed.nii.gz");
   job.movingImage = imageRef("moving", "moving.nii.gz");
-  job.outputDirectory = std::filesystem::temp_directory_path() / ("entropy-registration-execution-tests-" + suffix);
+  job.outputDirectory = std::filesystem::temp_directory_path() /
+                        ("entropy-registration-execution-tests-" + suffix + "-" + std::to_string(++counter));
   job.outputPrefix = "case";
-  std::filesystem::remove_all(job.outputDirectory);
+  std::error_code error;
+  std::filesystem::remove_all(job.outputDirectory, error);
   return job;
 }
 
