@@ -316,7 +316,7 @@ void addModeMenu(NSMenu* mainMenu) {
 void addImageMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Image" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Image"];
-  addSymbolActionMenuItem(menu, @"Show Images Panel", MainMenuAction::ToggleImagesWindow, @"slider.horizontal.3");
+  addSymbolActionMenuItem(menu, @"Images", MainMenuAction::ToggleImagesWindow, @"slider.horizontal.3");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"Add Image(s)...", @selector(addImage:), @"", @"plus.rectangle.on.rectangle");
   addSymbolMenuItem(menu, @"Add DICOM Series...", @selector(addDicomSeries:), @"", @"externaldrive.badge.plus");
@@ -370,7 +370,7 @@ void addImageMenu(NSMenu* mainMenu) {
   NSMenu* isosurfacesMenu = [[NSMenu alloc] initWithTitle:@"Isosurfaces"];
   addSymbolActionMenuItem(
     isosurfacesMenu,
-    @"Show Isosurfaces Panel",
+    @"Isosurfaces",
     MainMenuAction::ToggleIsosurfacesWindow,
     @"cube.transparent");
   [isosurfacesMenu addItem:[NSMenuItem separatorItem]];
@@ -456,7 +456,7 @@ void addImageMenu(NSMenu* mainMenu) {
   NSMenu* registrationMenu = [[NSMenu alloc] initWithTitle:@"Image Registration"];
   addSymbolActionMenuItem(
     registrationMenu,
-    @"Register Active Image to Reference...",
+    @"Registration...",
     MainMenuAction::ShowRegistrationSetupWindow,
     @"arrow.triangle.2.circlepath");
   addSymbolActionMenuItem(
@@ -473,7 +473,7 @@ void addImageMenu(NSMenu* mainMenu) {
 void addSegmentationMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Segmentation" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Segmentation"];
-  addSymbolActionMenuItem(menu, @"Show Segmentations Panel", MainMenuAction::ToggleSegmentationsWindow, @"star");
+  addSymbolActionMenuItem(menu, @"Segmentations", MainMenuAction::ToggleSegmentationsWindow, @"star");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"Add Segmentation...", @selector(addSegmentation:), @"", @"folder.badge.plus");
   addSymbolActionMenuItem(menu, @"Create Blank Segmentation", MainMenuAction::CreateSegmentation, @"doc");
@@ -509,11 +509,7 @@ void addSegmentationMenu(NSMenu* mainMenu) {
 void addAnnotationMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Annotation" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Annotation"];
-  addSymbolActionMenuItem(
-    menu,
-    @"Show Annotations Panel",
-    MainMenuAction::ToggleAnnotationsWindow,
-    @"pencil.and.outline");
+  addSymbolActionMenuItem(menu, @"Annotations", MainMenuAction::ToggleAnnotationsWindow, @"pencil.and.outline");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Save All Annotations...", MainMenuAction::SaveAnnotations, @"square.and.arrow.down");
   addSymbolActionMenuItem(menu, @"Remove Active Annotation", MainMenuAction::RemoveAnnotation, @"trash");
@@ -535,7 +531,7 @@ void addAnnotationMenu(NSMenu* mainMenu) {
 void addLandmarkMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Landmarks" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Landmarks"];
-  addSymbolActionMenuItem(menu, @"Show Landmarks Panel", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
+  addSymbolActionMenuItem(menu, @"Landmarks", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Create Landmark Group", MainMenuAction::CreateLandmarkGroup, @"plus");
   addSymbolActionMenuItem(
@@ -630,21 +626,17 @@ void addViewsMenu(NSMenu* mainMenu) {
 void addWindowsMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Window" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Window"];
-  addSymbolActionMenuItem(menu, @"Images Panel", MainMenuAction::ToggleImagesWindow, @"photo.stack");
+  addSymbolActionMenuItem(menu, @"Images", MainMenuAction::ToggleImagesWindow, @"photo.stack");
+  addSymbolActionMenuItem(menu, @"Segmentations", MainMenuAction::ToggleSegmentationsWindow, @"square.3.layers.3d");
   addSymbolActionMenuItem(
     menu,
-    @"Segmentations Panel",
-    MainMenuAction::ToggleSegmentationsWindow,
-    @"square.3.layers.3d");
-  addSymbolActionMenuItem(
-    menu,
-    @"Registration Panel",
+    @"Registration",
     MainMenuAction::ShowRegistrationSetupWindow,
     @"arrow.up.left.and.arrow.down.right");
-  addSymbolActionMenuItem(menu, @"Annotations Panel", MainMenuAction::ToggleAnnotationsWindow, @"pencil.and.outline");
-  addSymbolActionMenuItem(menu, @"Landmarks Panel", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
-  addSymbolActionMenuItem(menu, @"Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow, @"cube.transparent");
-  addSymbolActionMenuItem(menu, @"Voxel Inspector Panel", MainMenuAction::ToggleInspectorWindow, @"info.circle");
+  addSymbolActionMenuItem(menu, @"Annotations", MainMenuAction::ToggleAnnotationsWindow, @"pencil.and.outline");
+  addSymbolActionMenuItem(menu, @"Landmarks", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
+  addSymbolActionMenuItem(menu, @"Isosurfaces", MainMenuAction::ToggleIsosurfacesWindow, @"cube.transparent");
+  addSymbolActionMenuItem(menu, @"Voxel Inspector", MainMenuAction::ToggleInspectorWindow, @"info.circle");
   addSymbolActionMenuItem(menu, @"Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow, @"slider.horizontal.3");
   addSymbolActionMenuItem(menu, @"Application Settings", MainMenuAction::ToggleSettingsWindow, @"gearshape");
   [menu addItem:[NSMenuItem separatorItem]];

@@ -963,7 +963,7 @@ private:
   bool m_vectorArrowOverlayVisible{false};                          //!< Show vector-field arrows on slices
   bool m_vectorArrowOverlayOnImage{true};                           //!< Draw arrows over the rendered image
   float m_vectorArrowOverlayDensity{32.0f};                         //!< Arrow spacing in screen pixels
-  float m_vectorArrowOverlayVoxelSpacing{8.0f};                     //!< Arrow spacing in image voxels
+  float m_vectorArrowOverlayVoxelSpacing{4.0f};                     //!< Arrow spacing in image voxels
   float m_vectorArrowOverlayMillimeterSpacing{10.0f};               //!< Arrow spacing in subject millimeters
   VectorArrowOverlaySpacingMode m_vectorArrowOverlaySpacingMode{
     VectorArrowOverlaySpacingMode::Voxels};                //!< Spacing units

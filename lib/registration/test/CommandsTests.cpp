@@ -520,6 +520,25 @@ TEST_CASE(
   CHECK(preview.find("moving_to_fixed1Warp.nii.gz") == std::string::npos);
 }
 
+TEST_CASE(
+  "ANTs command generation uses one-index warp names for deformable-only registration with affine initialization",
+  "[registration][commands]")
+{
+  registration::JobSpec job = baseJob(registration::Backend::ANTs);
+  job.transformModel = registration::TransformModel::Deformable;
+  job.outputs.loadAffineTransform = false;
+  job.outputs.loadWarpedSegmentation = true;
+  job.initialAffineTransform = "/tmp/reg/initial_affine.tfm";
+  job.movingMask = imageRef("moving-seg", "moving_seg.nii.gz");
+
+  const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
+
+  REQUIRE(commands.size() == 2);
+  const std::string preview = registration::displayCommand(commands.back());
+  CHECK(preview.find("moving_to_fixed1Warp.nii.gz") != std::string::npos);
+  CHECK(preview.find("moving_to_fixed0Warp.nii.gz") == std::string::npos);
+}
+
 TEST_CASE("FireANTs command generation uses the bridge module", "[registration][commands]")
 {
   registration::JobSpec job = baseJob(registration::Backend::FireANTs);

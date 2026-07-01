@@ -1,4 +1,5 @@
 include(GNUInstallDirs)
+include(PackageDocs)
 
 set(entropy_LINUX_APP_ID "io.github.adlerdh.entropy")
 set(entropy_LINUX_PRIVATE_LIB_DIR "${CMAKE_INSTALL_LIBDIR}/entropy")
@@ -41,6 +42,8 @@ install(FILES "${entropy_ABOUT_ICON_SOURCE}"
 install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python"
 )
+
+entropy_install_package_documents("${CMAKE_INSTALL_DOCDIR}")
 
 foreach(entropy_LINUX_ICON_SIZE IN ITEMS 16 32 48 64 128 256 512)
     install(FILES "${entropy_RES_DIR}/icons/Linux/hicolor/${entropy_LINUX_ICON_SIZE}x${entropy_LINUX_ICON_SIZE}/apps/${entropy_LINUX_APP_ID}.png"

@@ -1,4 +1,5 @@
 include(GNUInstallDirs)
+include(PackageDocs)
 
 set(entropy_WINDOWS_INSTALL_BINDIR ".")
 set(entropy_WINDOWS_UPGRADE_GUID "93B363B9-12B9-4478-8D98-FB97AA2BB68E")
@@ -51,6 +52,8 @@ install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python"
     COMPONENT Runtime
 )
+
+entropy_install_package_documents("." COMPONENT Runtime)
 
 set(CPACK_GENERATOR "WIX;ZIP")
 set(CPACK_PACKAGE_NAME "${APP_NAME}")

@@ -223,7 +223,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Image Panel");
+            ImGui::SetTooltip("%s", "Show Images");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -246,7 +246,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Segmentation Panel");
+            ImGui::SetTooltip("%s", "Show Segmentations");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -268,7 +268,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Image Registration Panel");
+            ImGui::SetTooltip("%s", "Show Registration");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -291,7 +291,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Annotation Panel");
+            ImGui::SetTooltip("%s", "Show Annotations");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -313,7 +313,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Landmark Panel");
+            ImGui::SetTooltip("%s", "Show Landmarks");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -335,7 +335,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Isosurfaces Panel");
+            ImGui::SetTooltip("%s", "Show Isosurfaces");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -379,7 +379,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Voxel Inspector Panel");
+            ImGui::SetTooltip("%s", "Show Voxel Inspector");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button

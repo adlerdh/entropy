@@ -1,5 +1,7 @@
 option(Entropy_STRIP_PACKAGED_APP "Strip local symbols from the installed macOS app bundle before signing" ON)
 
+include(PackageDocs)
+
 set_target_properties(entropy PROPERTIES
     OUTPUT_NAME "${APP_NAME}"
     MACOSX_BUNDLE TRUE
@@ -25,6 +27,8 @@ install(FILES "${entropy_ABOUT_ICON_SOURCE}"
 install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
     DESTINATION "${APP_NAME}.app/Contents/Resources/python"
 )
+
+entropy_install_package_documents("${APP_NAME}.app/Contents/Resources")
 
 set(entropy_BUNDLE_LIBRARY_DIRS
     "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"

@@ -126,6 +126,46 @@ TEST_CASE("registration import plan ignores warp artifacts for affine-only trans
   }
 }
 
+TEST_CASE("registration import plan fills omitted ANTs warp paths", "[registration][import]")
+{
+  registration::JobSpec spec = job();
+  spec.backend = registration::Backend::ANTs;
+  spec.transformModel = registration::TransformModel::AffineDeformable;
+  spec.outputDirectory = "/tmp/entropy-registration";
+  spec.outputPrefix = "moving_to_fixed";
+
+  registration::ResultManifest result = manifest();
+  result.inverseWarp.clear();
+  result.forwardWarp.clear();
+
+  const registration::ImportPlan plan = registration::buildImportPlan(spec, result);
+
+  auto stepWithAction = [&plan](registration::ImportAction action) {
+    return std::find_if(plan.steps.begin(), plan.steps.end(), [&](const registration::ImportStep& step) {
+      return step.action == action;
+    });
+  };
+
+  const auto inverseStep = stepWithAction(registration::ImportAction::LoadInverseWarp);
+  REQUIRE(inverseStep != plan.steps.end());
+  CHECK(inverseStep->path == "/tmp/entropy-registration/moving_to_fixed1Warp.nii.gz");
+
+  const auto forwardStep = stepWithAction(registration::ImportAction::LoadForwardWarp);
+  REQUIRE(forwardStep != plan.steps.end());
+  CHECK(forwardStep->path == "/tmp/entropy-registration/moving_to_fixed1InverseWarp.nii.gz");
+
+  spec.transformModel = registration::TransformModel::Deformable;
+  spec.initialAffineTransform = "/tmp/entropy-registration/moving_to_fixed_initial_affine.tfm";
+
+  const registration::ImportPlan deformableWithInitialPlan = registration::buildImportPlan(spec, result);
+  const auto initializedInverseStep = std::find_if(
+    deformableWithInitialPlan.steps.begin(),
+    deformableWithInitialPlan.steps.end(),
+    [](const registration::ImportStep& step) { return step.action == registration::ImportAction::LoadInverseWarp; });
+  REQUIRE(initializedInverseStep != deformableWithInitialPlan.steps.end());
+  CHECK(initializedInverseStep->path == "/tmp/entropy-registration/moving_to_fixed1Warp.nii.gz");
+}
+
 TEST_CASE("registration import plan warns for requested missing artifacts", "[registration][import]")
 {
   registration::ResultManifest result;

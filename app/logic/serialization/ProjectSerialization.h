@@ -285,7 +285,7 @@ struct ImageSettings
   bool m_vectorArrowOverlayVisible = false;            //!< Show vector-field arrows over slices.
   bool m_vectorArrowOverlayOnImage = true;             //!< Draw vector-field arrows over the rendered image.
   float m_vectorArrowOverlayDensity = 32.0f;           //!< Vector arrow spacing value.
-  float m_vectorArrowOverlayVoxelSpacing = 8.0f;       //!< Vector arrow spacing in image voxels.
+  float m_vectorArrowOverlayVoxelSpacing = 4.0f;       //!< Vector arrow spacing in image voxels.
   float m_vectorArrowOverlayMillimeterSpacing = 10.0f; //!< Vector arrow spacing in subject millimeters.
   ProjectVectorArrowOverlaySpacingMode m_vectorArrowOverlaySpacingMode =
     ProjectVectorArrowOverlaySpacingMode::Voxels;          //!< Vector arrow spacing units.

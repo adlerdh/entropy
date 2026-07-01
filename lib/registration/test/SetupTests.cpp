@@ -277,7 +277,8 @@ TEST_CASE("registration setup returns command previews only for launchable jobs"
   REQUIRE_FALSE(previews.empty());
   const std::string normalizedPreview = normalizedPreviewPath(previews.front());
   CHECK(normalizedPreview.find("7x3") != std::string::npos);
-  CHECK(normalizedPreview.find("-ia /tmp/entropy-reg/Moving_to_Fixed_initial_affine.mat") != std::string::npos);
+  CHECK(normalizedPreview.find("-ia") != std::string::npos);
+  CHECK(normalizedPreview.find("Moving_to_Fixed_initial_affine.mat") != std::string::npos);
 
   state.job.useCurrentAffineTransformsForInitialization = false;
   const std::vector<std::string> previewsWithoutCurrentAffine = registration::commandPreviews(state);

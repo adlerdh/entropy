@@ -437,6 +437,117 @@ jobs:
         if: always()
         run: ccache --show-stats
 
+  package-x86_64:
+    name: Release Packages (x86_64)
+    runs-on: macos-15-intel
+    needs: format
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    env:
+      ENTROPY_MACOS_ARCHITECTURES: x86_64
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install build dependencies
+        run: brew install ccache
+
+      - name: Validate runner tools
+        run: |
+          sw_vers
+          test "$(uname -m)" = "x86_64"
+          cmake --version
+          cpack --version
+          git --version
+          ccache --version
+          xcodebuild -version
+          xcrun --show-sdk-version
+
+      - name: Restore Release ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: macos15-intel-x86_64-appleclang-release-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            macos15-intel-x86_64-appleclang-release-ccache-v1-
+
+      - name: Reset Release ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
+      - name: Restore Release SuperBuild cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-release/external/catch2-*
+            build-release/external/cli11-*
+            build-release/external/cmakerc-*
+            build-release/external/glfw-*
+            build-release/external/glm-*
+            build-release/external/iconfont-*
+            build-release/external/imgui-*
+            build-release/external/implot-*
+            build-release/external/itk-*
+            build-release/external/nanovg-*
+            build-release/external/nativefiledialog-*
+            build-release/external/nlohmann_json-*
+            build-release/external/qtbase-*
+            build-release/external/spdlog-*
+            build-release/external/stduuid-*
+            build-release/external/tinyfsm-*
+          key: macos15-intel-x86_64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            macos15-intel-x86_64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Release SuperBuild
+        run: >
+          cmake --preset superbuild-release
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
+          -DEntropy_PACKAGE_ARCHITECTURE=x86_64
+
+      - name: Build Release SuperBuild
+        run: cmake --build --preset superbuild-release --parallel 1
+
+      - name: Configure Release app
+        run: >
+          cmake --preset app-release
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_PACKAGE_ARCHITECTURE=x86_64
+
+      - name: Build Release app
+        run: cmake --build --preset app-release --parallel
+
+      - name: Run Release tests
+        run: ctest --test-dir build-release --parallel --output-on-failure
+
+      - name: Validate deployment target
+        run: otool -l build-release/bin/Entropy.app/Contents/MacOS/entropy | grep -A3 LC_BUILD_VERSION
+
+      - name: Build DMG and ZIP
+        run: cmake --build --preset package-release --parallel
+
+      - name: Smoke-test staged install
+        run: |
+          cmake --install build-release --prefix build-release/macos-package-install
+          build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
+
+      - name: Upload macOS x86_64 packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-x86_64-packages
+          path: |
+            build-release/packages/Entropy-*-macOS-x86_64.dmg
+            build-release/packages/Entropy-*-macOS-x86_64.zip
+          if-no-files-found: error
+
+      - name: Show Release ccache stats
+        if: always()
+        run: ccache --show-stats
+
   macos-26-smoke:
     name: macOS 26 Smoke Build And Tests (arm64)
     runs-on: macos-26

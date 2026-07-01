@@ -220,6 +220,12 @@ TEST_CASE("registration expected result manifest uses ANTs warp output names", "
 
   CHECK(manifest.inverseWarp == "/tmp/entropy-registration/moving_to_fixed0Warp.nii.gz");
   CHECK(manifest.forwardWarp == "/tmp/entropy-registration/moving_to_fixed0InverseWarp.nii.gz");
+
+  job.initialAffineTransform = "/tmp/entropy-registration/moving_to_fixed_initial_affine.tfm";
+  manifest = registration::buildExpectedResultManifest(job);
+
+  CHECK(manifest.inverseWarp == "/tmp/entropy-registration/moving_to_fixed1Warp.nii.gz");
+  CHECK(manifest.forwardWarp == "/tmp/entropy-registration/moving_to_fixed1InverseWarp.nii.gz");
 }
 
 TEST_CASE(

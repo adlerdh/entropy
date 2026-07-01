@@ -75,6 +75,34 @@ std::filesystem::path artifactPath(const JobSpec& job, ArtifactRole role, std::s
 std::filesystem::path initialAffineInputPath(const JobSpec& job);
 
 /**
+ * @brief Build the ANTs output prefix path passed to --output.
+ * @param job Registration job.
+ * @return ANTs output prefix in the job output directory.
+ */
+std::filesystem::path antsOutputPrefixPath(const JobSpec& job);
+
+/**
+ * @brief Build the affine transform path written by ANTs.
+ * @param job Registration job.
+ * @return ANTs affine transform path.
+ */
+std::filesystem::path antsAffineTransformPath(const JobSpec& job);
+
+/**
+ * @brief Build the inverse/sampling warp path written by ANTs.
+ * @param job Registration job.
+ * @return ANTs fixed-to-moving sampling warp path.
+ */
+std::filesystem::path antsWarpPath(const JobSpec& job);
+
+/**
+ * @brief Build the forward point-warp path written by ANTs.
+ * @param job Registration job.
+ * @return ANTs moving-to-fixed inverse-warp output path.
+ */
+std::filesystem::path antsInverseWarpPath(const JobSpec& job);
+
+/**
  * @brief Build the manifest Entropy expects a backend to produce for a successful job.
  * @param job Registration job.
  * @return Result manifest populated with requested output artifact paths.

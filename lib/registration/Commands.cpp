@@ -370,22 +370,6 @@ std::string antsTransform(const JobSpec& job, TransformModel model)
          parameterValueOr(job, "synTotalFieldVariance", "0") + "]";
 }
 
-std::filesystem::path antsOutputPrefixPath(const JobSpec& job)
-{
-  return job.outputDirectory / outputPrefix(job);
-}
-
-std::filesystem::path antsAffineTransformPath(const JobSpec& job)
-{
-  return antsOutputPrefixPath(job).string() + "0GenericAffine.mat";
-}
-
-std::filesystem::path antsWarpPath(const JobSpec& job)
-{
-  const char* index = includesAffineTransform(job.transformModel) ? "1" : "0";
-  return antsOutputPrefixPath(job).string() + index + "Warp.nii.gz";
-}
-
 std::string antsOutputArgument(const JobSpec& job)
 {
   if (!job.outputs.loadWarpedImage) {

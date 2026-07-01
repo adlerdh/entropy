@@ -33,21 +33,9 @@ void addInput(
   artifacts.push_back(std::move(artifact));
 }
 
-std::filesystem::path antsOutputPrefixPath(const JobSpec& job)
+const char* antsDeformableTransformIndex(const JobSpec& job)
 {
-  return job.outputDirectory / outputPrefix(job);
-}
-
-std::filesystem::path antsWarpPath(const JobSpec& job)
-{
-  const char* index = includesAffineTransform(job.transformModel) ? "1" : "0";
-  return antsOutputPrefixPath(job).string() + index + "Warp.nii.gz";
-}
-
-std::filesystem::path antsInverseWarpPath(const JobSpec& job)
-{
-  const char* index = includesAffineTransform(job.transformModel) ? "1" : "0";
-  return antsOutputPrefixPath(job).string() + index + "InverseWarp.nii.gz";
+  return includesAffineTransform(job.transformModel) || !job.initialAffineTransform.empty() ? "1" : "0";
 }
 
 } // namespace
@@ -141,6 +129,26 @@ std::filesystem::path initialAffineInputPath(const JobSpec& job)
 {
   const char* extension = job.backend == Backend::Greedy ? ".mat" : ".tfm";
   return job.outputDirectory / (outputPrefix(job) + "_initial_affine" + extension);
+}
+
+std::filesystem::path antsOutputPrefixPath(const JobSpec& job)
+{
+  return job.outputDirectory / outputPrefix(job);
+}
+
+std::filesystem::path antsAffineTransformPath(const JobSpec& job)
+{
+  return antsOutputPrefixPath(job).string() + "0GenericAffine.mat";
+}
+
+std::filesystem::path antsWarpPath(const JobSpec& job)
+{
+  return antsOutputPrefixPath(job).string() + antsDeformableTransformIndex(job) + "Warp.nii.gz";
+}
+
+std::filesystem::path antsInverseWarpPath(const JobSpec& job)
+{
+  return antsOutputPrefixPath(job).string() + antsDeformableTransformIndex(job) + "InverseWarp.nii.gz";
 }
 
 ResultManifest buildExpectedResultManifest(const JobSpec& job)

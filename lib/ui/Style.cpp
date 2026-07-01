@@ -99,13 +99,13 @@ void applyCustomDarkStyle(ImGuiStyle* dst)
   colors[ImGuiCol_ChildBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.00f);
   colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
   colors[ImGuiCol_Border] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
-  colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+  colors[ImGuiCol_BorderShadow] = ImVec4(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f);
   colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.21f, 0.22f, 0.54f);
   colors[ImGuiCol_FrameBgHovered] = ImVec4(0.40f, 0.40f, 0.40f, 0.40f);
   colors[ImGuiCol_FrameBgActive] = ImVec4(0.20f, 0.41f, 0.68f, 1.00f);
-  colors[ImGuiCol_TitleBg] = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
-  colors[ImGuiCol_TitleBgActive] = ImVec4(0.22f, 0.25f, 0.30f, 1.00f);
-  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
+  colors[ImGuiCol_TitleBg] = ImVec4(25.0f / 255.0f, 25.0f / 255.0f, 25.0f / 255.0f, 1.00f);
+  colors[ImGuiCol_TitleBgActive] = ImVec4(29.0f / 255.0f, 59.0f / 255.0f, 97.0f / 255.0f, 1.00f);
+  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(10.0f / 255.0f, 10.0f / 255.0f, 10.0f / 255.0f, 130.0f / 255.0f);
   colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
   colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
   colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
@@ -119,9 +119,9 @@ void applyCustomDarkStyle(ImGuiStyle* dst)
   colors[ImGuiCol_ButtonHovered] = ImVec4(0.46f, 0.47f, 0.48f, 1.00f);
   // colors[ImGuiCol_ButtonActive]         = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
   colors[ImGuiCol_ButtonActive] = ImVec4(0.20f, 0.41f, 0.68f, 1.00f);
-  colors[ImGuiCol_HeaderActive] = ImVec4(0.22f, 0.29f, 0.38f, 1.00f);
-  colors[ImGuiCol_Header] = colors[ImGuiCol_HeaderActive];
-  colors[ImGuiCol_HeaderHovered] = colors[ImGuiCol_HeaderActive];
+  colors[ImGuiCol_Header] = ImVec4(29.0f / 255.0f, 59.0f / 255.0f, 97.0f / 255.0f, 1.00f);
+  colors[ImGuiCol_HeaderHovered] = ImVec4(117.0f / 255.0f, 120.0f / 255.0f, 122.0f / 255.0f, 1.00f);
+  colors[ImGuiCol_HeaderActive] = ImVec4(51.0f / 255.0f, 105.0f / 255.0f, 173.0f / 255.0f, 1.00f);
   colors[ImGuiCol_Separator] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
   colors[ImGuiCol_SeparatorHovered] = ImVec4(0.72f, 0.72f, 0.72f, 0.78f);
   colors[ImGuiCol_SeparatorActive] = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
@@ -131,11 +131,11 @@ void applyCustomDarkStyle(ImGuiStyle* dst)
   colors[ImGuiCol_InputTextCursor] = ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
   colors[ImGuiCol_TabHovered] = ImVec4(0.46f, 0.47f, 0.48f, 1.00f);
   colors[ImGuiCol_Tab] = ImVec4(0.16f, 0.16f, 0.17f, 0.92f);
-  colors[ImGuiCol_TabSelected] = ImVec4(0.29f, 0.29f, 0.29f, 1.00f);
-  colors[ImGuiCol_TabSelectedOverline] = ImVec4(0.20f, 0.41f, 0.68f, 1.00f);
-  colors[ImGuiCol_TabDimmed] = ImVec4(0.10f, 0.10f, 0.11f, 0.92f);
-  colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.20f, 0.20f, 0.21f, 1.00f);
-  colors[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(0.20f, 0.41f, 0.68f, 0.55f);
+  colors[ImGuiCol_TabSelected] = ImVec4(51.0f / 255.0f, 105.0f / 255.0f, 173.0f / 255.0f, 1.00f);
+  colors[ImGuiCol_TabSelectedOverline] = ImVec4(75.0f / 255.0f, 155.0f / 255.0f, 255.0f / 255.0f, 1.00f);
+  colors[ImGuiCol_TabDimmed] = ImVec4(112.0f / 255.0f, 112.0f / 255.0f, 112.0f / 255.0f, 137.0f / 255.0f);
+  colors[ImGuiCol_TabDimmedSelected] = ImVec4(51.0f / 255.0f, 105.0f / 255.0f, 173.0f / 255.0f, 1.00f);
+  colors[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(75.0f / 255.0f, 155.0f / 255.0f, 255.0f / 255.0f, 1.00f);
   colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
   colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
   colors[ImGuiCol_PlotHistogram] = ImVec4(0.73f, 0.60f, 0.15f, 1.00f);
@@ -572,7 +572,9 @@ void applyUiStylePreset(UiColorPreset preset, ImGuiStyle* dst)
       break;
   }
 
-  style.Colors[ImGuiCol_TitleBgActive] = style.Colors[ImGuiCol_HeaderActive];
-  style.Colors[ImGuiCol_TabSelected] = style.Colors[ImGuiCol_HeaderActive];
-  style.Colors[ImGuiCol_TabDimmedSelected] = style.Colors[ImGuiCol_HeaderActive];
+  if (preset != UiColorPreset::EntropyDark) {
+    style.Colors[ImGuiCol_TitleBgActive] = style.Colors[ImGuiCol_HeaderActive];
+    style.Colors[ImGuiCol_TabSelected] = style.Colors[ImGuiCol_HeaderActive];
+    style.Colors[ImGuiCol_TabDimmedSelected] = style.Colors[ImGuiCol_HeaderActive];
+  }
 }

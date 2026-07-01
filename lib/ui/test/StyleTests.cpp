@@ -13,6 +13,15 @@ bool sameColor(const ImVec4& a, const ImVec4& b)
   return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
 }
 
+ImVec4 hexColor(int r, int g, int b, int a)
+{
+  return ImVec4(
+    static_cast<float>(r) / 255.0f,
+    static_cast<float>(g) / 255.0f,
+    static_cast<float>(b) / 255.0f,
+    static_cast<float>(a) / 255.0f);
+}
+
 struct ImGuiContextScope
 {
   ImGuiContextScope()
@@ -99,19 +108,28 @@ TEST_CASE("UI density presets update spacing and rounding", "[ui][style]")
   CHECK(comfortable.WindowPadding.x == 12.0f);
 }
 
-TEST_CASE("Entropy Dark uses active header color for selected headers", "[ui][style]")
+TEST_CASE("Entropy Dark uses the default Entropy dark palette colors", "[ui][style]")
 {
   ImGuiStyle style;
   applyUiStylePreset(UiColorPreset::EntropyDark, &style);
 
-  CHECK(sameColor(style.Colors[ImGuiCol_Header], style.Colors[ImGuiCol_HeaderActive]));
-  CHECK(sameColor(style.Colors[ImGuiCol_HeaderHovered], style.Colors[ImGuiCol_HeaderActive]));
+  CHECK(sameColor(style.Colors[ImGuiCol_BorderShadow], hexColor(0x3f, 0x3f, 0x3f, 0x3f)));
+  CHECK(sameColor(style.Colors[ImGuiCol_TitleBg], hexColor(0x19, 0x19, 0x19, 0xff)));
+  CHECK(sameColor(style.Colors[ImGuiCol_TitleBgActive], hexColor(0x1d, 0x3b, 0x61, 0xff)));
+  CHECK(sameColor(style.Colors[ImGuiCol_TitleBgCollapsed], hexColor(0x0a, 0x0a, 0x0a, 0x82)));
+  CHECK(sameColor(style.Colors[ImGuiCol_Header], hexColor(0x1d, 0x3b, 0x61, 0xff)));
+  CHECK(sameColor(style.Colors[ImGuiCol_HeaderHovered], hexColor(0x75, 0x78, 0x7a, 0xff)));
+  CHECK(sameColor(style.Colors[ImGuiCol_HeaderActive], hexColor(0x33, 0x69, 0xad, 0xff)));
+  CHECK(sameColor(style.Colors[ImGuiCol_TabSelected], hexColor(0x33, 0x69, 0xad, 0xff)));
+  CHECK(sameColor(style.Colors[ImGuiCol_TabSelectedOverline], hexColor(0x4b, 0x9b, 0xff, 0xff)));
+  CHECK(sameColor(style.Colors[ImGuiCol_TabDimmed], hexColor(0x70, 0x70, 0x70, 0x89)));
+  CHECK(sameColor(style.Colors[ImGuiCol_TabDimmedSelected], hexColor(0x33, 0x69, 0xad, 0xff)));
+  CHECK(sameColor(style.Colors[ImGuiCol_TabDimmedSelectedOverline], hexColor(0x4b, 0x9b, 0xff, 0xff)));
 }
 
 TEST_CASE("UI color presets use active header color for active title bars", "[ui][style]")
 {
-  static constexpr std::array<UiColorPreset, 9> presets{
-    UiColorPreset::EntropyDark,
+  static constexpr std::array<UiColorPreset, 8> presets{
     UiColorPreset::ImGuiDark,
     UiColorPreset::ImGuiClassic,
     UiColorPreset::ImGuiLight,
@@ -132,8 +150,7 @@ TEST_CASE("UI color presets use active header color for active title bars", "[ui
 
 TEST_CASE("UI color presets use active header color for selected tabs", "[ui][style]")
 {
-  static constexpr std::array<UiColorPreset, 9> presets{
-    UiColorPreset::EntropyDark,
+  static constexpr std::array<UiColorPreset, 8> presets{
     UiColorPreset::ImGuiDark,
     UiColorPreset::ImGuiClassic,
     UiColorPreset::ImGuiLight,

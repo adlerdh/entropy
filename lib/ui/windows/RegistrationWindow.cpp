@@ -1585,7 +1585,7 @@ void renderRegistrationSetupWindow(AppData& appData)
   ImGui::SetNextWindowSize(defaultSize, ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSizeConstraints(ImVec2{360.0f, 320.0f}, ImVec2{FLT_MAX, FLT_MAX});
   setNextDockablePanelWindowClass();
-  if (!ImGui::Begin("Image Registration##RegistrationSetup", &appData.guiData().m_showRegistrationSetupWindow)) {
+  if (!ImGui::Begin("Image Registration Setup##RegistrationSetup", &appData.guiData().m_showRegistrationSetupWindow)) {
     ImGui::End();
     return;
   }

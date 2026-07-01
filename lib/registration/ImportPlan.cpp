@@ -1,5 +1,7 @@
 #include "registration/ImportPlan.h"
 
+#include "registration/Artifacts.h"
+
 namespace registration
 {
 namespace
@@ -41,6 +43,28 @@ void addStep(
   plan.steps.push_back(std::move(step));
 }
 
+ResultManifest manifestWithExpectedAntsArtifacts(const JobSpec& job, ResultManifest manifest)
+{
+  if (job.backend != Backend::ANTs || !includesDeformableTransform(job.transformModel)) {
+    return manifest;
+  }
+
+  const ResultManifest expected = buildExpectedResultManifest(job);
+  if (manifest.inverseWarp.empty()) {
+    manifest.inverseWarp = expected.inverseWarp;
+  }
+  if (manifest.forwardWarp.empty()) {
+    manifest.forwardWarp = expected.forwardWarp;
+  }
+  if (manifest.warpedImage.empty()) {
+    manifest.warpedImage = expected.warpedImage;
+  }
+  if (manifest.affineTransform.empty()) {
+    manifest.affineTransform = expected.affineTransform;
+  }
+  return manifest;
+}
+
 } // namespace
 
 std::string warpedImageName(const DataRef& fixedImage, const DataRef& movingImage)
@@ -61,24 +85,25 @@ std::string forwardWarpName(const DataRef& fixedImage, const DataRef& movingImag
 ImportPlan buildImportPlan(const JobSpec& job, const ResultManifest& manifest)
 {
   ImportPlan plan;
-  plan.warnings = manifest.warnings;
+  const ResultManifest resolvedManifest = manifestWithExpectedAntsArtifacts(job, manifest);
+  plan.warnings = resolvedManifest.warnings;
   const bool hasDeformableOutput = includesDeformableTransform(job.transformModel);
 
-  if (job.outputs.loadAffineTransform && hasPath(manifest.affineTransform)) {
+  if (job.outputs.loadAffineTransform && hasPath(resolvedManifest.affineTransform)) {
     addStep(
       plan,
       ImportAction::ApplyAffineTransform,
-      manifest.affineTransform,
+      resolvedManifest.affineTransform,
       "Affine transform",
       job.movingImage.uid);
   }
 
   if (job.outputs.loadWarpedImage) {
-    if (hasPath(manifest.warpedImage)) {
+    if (hasPath(resolvedManifest.warpedImage)) {
       addStep(
         plan,
         ImportAction::LoadWarpedImage,
-        manifest.warpedImage,
+        resolvedManifest.warpedImage,
         warpedImageName(job.fixedImage, job.movingImage),
         job.movingImage.uid);
     }
@@ -88,11 +113,11 @@ ImportPlan buildImportPlan(const JobSpec& job, const ResultManifest& manifest)
   }
 
   if (hasDeformableOutput && job.outputs.loadInverseWarp) {
-    if (hasPath(manifest.inverseWarp)) {
+    if (hasPath(resolvedManifest.inverseWarp)) {
       addStep(
         plan,
         ImportAction::LoadInverseWarp,
-        manifest.inverseWarp,
+        resolvedManifest.inverseWarp,
         inverseWarpName(job.fixedImage, job.movingImage),
         job.movingImage.uid);
     }
@@ -102,11 +127,11 @@ ImportPlan buildImportPlan(const JobSpec& job, const ResultManifest& manifest)
   }
 
   if (hasDeformableOutput && job.outputs.loadForwardWarp) {
-    if (hasPath(manifest.forwardWarp)) {
+    if (hasPath(resolvedManifest.forwardWarp)) {
       addStep(
         plan,
         ImportAction::LoadForwardWarp,
-        manifest.forwardWarp,
+        resolvedManifest.forwardWarp,
         forwardWarpName(job.fixedImage, job.movingImage),
         job.movingImage.uid);
     }
@@ -117,36 +142,36 @@ ImportPlan buildImportPlan(const JobSpec& job, const ResultManifest& manifest)
 
   if (
     hasDeformableOutput && job.outputs.applyWarpToMovingImage &&
-    (hasPath(manifest.inverseWarp) || hasPath(manifest.forwardWarp)))
+    (hasPath(resolvedManifest.inverseWarp) || hasPath(resolvedManifest.forwardWarp)))
   {
     addStep(plan, ImportAction::AssignWarpsToMovingImage, {}, {}, job.movingImage.uid);
   }
 
   if (job.outputs.loadWarpedSegmentation) {
-    if (manifest.warpedSegmentations.empty()) {
+    if (resolvedManifest.warpedSegmentations.empty()) {
       addMissingWarning(plan, "warped segmentation");
     }
-    for (const std::filesystem::path& path : manifest.warpedSegmentations) {
+    for (const std::filesystem::path& path : resolvedManifest.warpedSegmentations) {
       addStep(plan, ImportAction::LoadWarpedSegmentation, path, "Warped segmentation", job.movingImage.uid);
     }
   }
 
   if (job.outputs.transformLandmarksAndAnnotations) {
-    for (const std::filesystem::path& path : manifest.transformedLandmarks) {
+    for (const std::filesystem::path& path : resolvedManifest.transformedLandmarks) {
       addStep(plan, ImportAction::TransformLandmarksAndAnnotations, path, "Transformed landmarks", job.movingImage.uid);
     }
   }
 
   if (job.outputs.transformSurfaces) {
-    if (manifest.transformedSurfaces.empty()) {
+    if (resolvedManifest.transformedSurfaces.empty()) {
       addMissingWarning(plan, "transformed surface");
     }
-    for (const std::filesystem::path& path : manifest.transformedSurfaces) {
+    for (const std::filesystem::path& path : resolvedManifest.transformedSurfaces) {
       addStep(plan, ImportAction::LoadTransformedSurface, path, "Transformed surface", job.movingImage.uid);
     }
   }
 
-  if (job.outputs.makeWarpedImageActive && hasPath(manifest.warpedImage)) {
+  if (job.outputs.makeWarpedImageActive && hasPath(resolvedManifest.warpedImage)) {
     addStep(plan, ImportAction::MakeWarpedImageActive, {}, {}, job.movingImage.uid);
   }
 

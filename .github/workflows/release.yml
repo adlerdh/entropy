@@ -456,6 +456,146 @@ jobs:
         if: always()
         run: ccache --show-stats
 
+  macos-x86_64:
+    name: macOS Release (x86_64)
+    runs-on: macos-15-intel
+    needs: metadata
+    env:
+      ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
+      SUPERBUILD_CACHE_VERSION: v2
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 2G
+      ENTROPY_MACOS_ARCHITECTURES: x86_64
+      ENTROPY_MACOS_DEPLOYMENT_TARGET: "13.3"
+      ENTROPY_MACOS_SUPERBUILD_PARALLEL: 2
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: brew install ccache
+
+      - name: Validate runner tools
+        run: |
+          sw_vers
+          test "$(uname -m)" = "x86_64"
+          cmake --version
+          cpack --version
+          git --version
+          ccache --version
+          xcodebuild -version
+          xcrun --show-sdk-version
+
+      - name: Restore Release ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: macos15-intel-x86_64-appleclang-release-publish-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            macos15-intel-x86_64-appleclang-release-publish-ccache-v1-
+
+      - name: Reset Release ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
+      - name: Restore Release SuperBuild cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-release/external/catch2-*
+            build-release/external/cli11-*
+            build-release/external/cmakerc-*
+            build-release/external/glfw-*
+            build-release/external/glm-*
+            build-release/external/iconfont-*
+            build-release/external/imgui-*
+            build-release/external/implot-*
+            build-release/external/itk-*
+            build-release/external/nanovg-*
+            build-release/external/nativefiledialog-*
+            build-release/external/nlohmann_json-*
+            build-release/external/qtbase-*
+            build-release/external/spdlog-*
+            build-release/external/stduuid-*
+            build-release/external/tinyfsm-*
+          key: macos15-intel-x86_64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            macos15-intel-x86_64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Release SuperBuild
+        run: >
+          cmake --preset superbuild-release
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
+          -DEntropy_PACKAGE_ARCHITECTURE=x86_64
+
+      - name: Build Release SuperBuild
+        run: cmake --build --preset superbuild-release --parallel 1
+
+      - name: Configure Release app
+        run: >
+          cmake --preset app-release
+          -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
+          -DEntropy_PACKAGE_ARCHITECTURE=x86_64
+
+      - name: Build Release app
+        run: cmake --build --preset app-release --parallel
+
+      - name: Run Release tests
+        run: ctest --test-dir build-release --parallel --output-on-failure
+
+      - name: Validate deployment target
+        run: otool -l build-release/bin/Entropy.app/Contents/MacOS/entropy | grep -A3 LC_BUILD_VERSION
+
+      - name: Build DMG and ZIP
+        run: cmake --build --preset package-release --parallel
+
+      - name: Smoke-test staged install
+        run: |
+          cmake --install build-release --prefix build-release/macos-package-install
+          build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
+
+      - name: Locate release assets
+        run: |
+          package_dir="build-release/packages"
+          dmg=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-macOS-x86_64.dmg" | head -n 1)
+          zip=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-macOS-x86_64.zip" | head -n 1)
+
+          if [[ -z "$dmg" ]]; then
+            echo "macOS x86_64 DMG package was not found in $package_dir" >&2
+            exit 1
+          fi
+          if [[ -z "$zip" ]]; then
+            echo "macOS x86_64 ZIP package was not found in $package_dir" >&2
+            exit 1
+          fi
+
+          {
+            echo "DMG: $(basename "$dmg")"
+            echo "ZIP: $(basename "$zip")"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload macOS x86_64 packages as workflow artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: entropy-${{ env.ENTROPY_VERSION }}-macos-x86_64
+          path: |
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS-x86_64.dmg
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-macOS-x86_64.zip
+          if-no-files-found: error
+
+      - name: Show Release ccache stats
+        if: always()
+        run: ccache --show-stats
+
   publish:
     name: Publish GitHub Release
     runs-on: ubuntu-22.04
@@ -464,6 +604,7 @@ jobs:
       - windows
       - linux
       - macos
+      - macos-x86_64
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
       GH_TOKEN: ${{ github.token }}
@@ -490,10 +631,39 @@ jobs:
         run: |
           find release-assets -maxdepth 1 -type f -print | sort
           asset_count=$(find release-assets -maxdepth 1 -type f | wc -l)
-          if [[ "$asset_count" -ne 8 ]]; then
-            echo "Expected 8 release assets, found $asset_count" >&2
+          if [[ "$asset_count" -ne 10 ]]; then
+            echo "Expected 10 release assets, found $asset_count" >&2
             exit 1
           fi
+
+      - name: Create release notes
+        run: |
+          tag="$GITHUB_REF_NAME"
+          generated_notes="$(mktemp)"
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+            --method POST \
+            --field tag_name="$tag" \
+            --jq .body > "$generated_notes"
+
+          cat > release-notes.md <<EOF
+          ## Downloads
+
+          - macOS Apple Silicon (arm64): \`Entropy-${ENTROPY_VERSION}-macOS-arm64.dmg\`
+          - macOS Intel (x86_64): \`Entropy-${ENTROPY_VERSION}-macOS-x86_64.dmg\`
+          - Windows x86_64: \`Entropy-${ENTROPY_VERSION}-Windows-x86_64.msi\`
+          - Linux x86_64: \`Entropy-${ENTROPY_VERSION}-Linux-x86_64.deb\`
+          - Portable archives are also attached for macOS, Windows, and Linux.
+          - Source archives are attached as \`zip\` and \`tar.gz\`.
+
+          ## Notes
+
+          - macOS builds are architecture-specific, not universal binaries.
+          - Registration backends such as ANTs, FireANTs, and Greedy must be installed separately.
+          - Prefer the platform installer/package for normal use; portable archives are intended for manual installs and testing.
+
+          EOF
+          cat "$generated_notes" >> release-notes.md
 
       - name: Create GitHub Release
         run: |
@@ -506,5 +676,5 @@ jobs:
           gh release create "$tag" \
             release-assets/* \
             --verify-tag \
-            --generate-notes \
+            --notes-file release-notes.md \
             --title "Entropy $ENTROPY_VERSION"

@@ -110,7 +110,7 @@ TEST_CASE("ImageSettings clamps window values, centers, widths, thresholds, and 
   CHECK(settings.globalOpacity() == Catch::Approx(1.0));
 
   CHECK(settings.vectorArrowOverlayDensity() == Catch::Approx(32.0f));
-  CHECK(settings.vectorArrowOverlayVoxelSpacing() == Catch::Approx(8.0f));
+  CHECK(settings.vectorArrowOverlayVoxelSpacing() == Catch::Approx(4.0f));
   CHECK(settings.vectorArrowOverlaySpacingMode() == VectorArrowOverlaySpacingMode::Voxels);
   settings.setVectorArrowOverlayDensity(0.0f);
   CHECK(settings.vectorArrowOverlayDensity() > 0.0f);
