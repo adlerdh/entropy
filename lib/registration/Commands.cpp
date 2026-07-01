@@ -16,7 +16,7 @@ namespace
 
 std::string pathString(const std::filesystem::path& path)
 {
-  return path.string();
+  return path.generic_string();
 }
 
 bool hasInputRef(const DataRef& ref)
