@@ -40,6 +40,11 @@ foreach(_flag_var IN ITEMS
   endif()
 endforeach()
 
+if(DEFINED CMAKE_MSVC_DEBUG_INFORMATION_FORMAT AND NOT "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT}" STREQUAL "")
+  list(APPEND _ext_cmake_build_type_args
+    "-DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT:STRING=${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT}")
+endif()
+
 set(_ext_compiler_launcher_args)
 foreach(_launcher_var IN ITEMS CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER)
   if(DEFINED ${_launcher_var} AND NOT "${${_launcher_var}}" STREQUAL "")

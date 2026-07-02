@@ -71,6 +71,12 @@ if(_isMultiConfig)
       CACHE STRING "Configs" FORCE)
 endif()
 
+if(MSVC AND CMAKE_GENERATOR MATCHES "Ninja")
+  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "Embedded" CACHE STRING
+    "Use object-embedded debug information for Ninja/MSVC builds to avoid parallel PDB writer contention"
+    FORCE)
+endif()
+
 if(MSVC)
   foreach(_entropy_msvc_flag_var IN ITEMS
       CMAKE_C_FLAGS_DEBUG
