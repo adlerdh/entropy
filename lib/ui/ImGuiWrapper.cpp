@@ -408,9 +408,10 @@ bool keepDockTabsVisible(ImGuiDockNode* node)
   }
 
   bool changed = false;
-  const ImGuiDockNodeFlags visibleTabFlags =
-    node->LocalFlags &
-    ~(ImGuiDockNodeFlags_AutoHideTabBar | ImGuiDockNodeFlags_HiddenTabBar | ImGuiDockNodeFlags_NoTabBar);
+  constexpr ImGuiDockNodeFlags k_hiddenTabFlags = static_cast<ImGuiDockNodeFlags>(ImGuiDockNodeFlags_AutoHideTabBar) |
+                                                  static_cast<ImGuiDockNodeFlags>(ImGuiDockNodeFlags_HiddenTabBar) |
+                                                  static_cast<ImGuiDockNodeFlags>(ImGuiDockNodeFlags_NoTabBar);
+  const ImGuiDockNodeFlags visibleTabFlags = static_cast<ImGuiDockNodeFlags>(node->LocalFlags & ~k_hiddenTabFlags);
   if (visibleTabFlags != node->LocalFlags) {
     node->SetLocalFlags(visibleTabFlags);
     changed = true;
@@ -516,9 +517,10 @@ void applyDefaultPanelDockLayout(ImGuiID dockspaceId, const GuiData& guiData)
   const DockspaceGeometry geometry = mainDockspaceGeometry(guiData);
 
   ImGui::DockBuilderRemoveNode(dockspaceId);
-  ImGui::DockBuilderAddNode(
-    dockspaceId,
-    ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode);
+  constexpr ImGuiDockNodeFlags k_dockspaceFlags = static_cast<ImGuiDockNodeFlags>(ImGuiDockNodeFlags_DockSpace) |
+                                                  ImGuiDockNodeFlags_PassthruCentralNode |
+                                                  ImGuiDockNodeFlags_NoDockingInCentralNode;
+  ImGui::DockBuilderAddNode(dockspaceId, k_dockspaceFlags);
   ImGui::DockBuilderSetNodePos(dockspaceId, geometry.pos);
   ImGui::DockBuilderSetNodeSize(dockspaceId, geometry.size);
 

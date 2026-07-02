@@ -168,7 +168,7 @@ jobs:
           if-no-files-found: error
 
   linux:
-    name: Linux Release (x86_64)
+    name: Ubuntu 22.04 Release (x86_64)
     runs-on: ubuntu-22.04
     needs: metadata
     env:
@@ -277,8 +277,8 @@ jobs:
 
       - name: Inspect DEB package
         run: |
-          dpkg-deb --info build-release/packages/Entropy-${ENTROPY_VERSION}-Linux-*.deb
-          dpkg-deb --contents build-release/packages/Entropy-${ENTROPY_VERSION}-Linux-*.deb
+          dpkg-deb --info build-release/packages/Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-*.deb
+          dpkg-deb --contents build-release/packages/Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-*.deb
 
       - name: Smoke-test staged install
         run: |
@@ -288,8 +288,8 @@ jobs:
       - name: Locate release assets
         run: |
           package_dir="build-release/packages"
-          deb=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-Linux-*.deb" | head -n 1)
-          tarball=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-Linux-*-portable.tar.gz" | head -n 1)
+          deb=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-*.deb" | head -n 1)
+          tarball=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-*-portable.tar.gz" | head -n 1)
 
           if [[ -z "$deb" ]]; then
             echo "DEB package was not found in $package_dir" >&2
@@ -308,10 +308,10 @@ jobs:
       - name: Upload Linux packages as workflow artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: entropy-${{ env.ENTROPY_VERSION }}-linux-x86_64
+          name: entropy-${{ env.ENTROPY_VERSION }}-ubuntu-22.04-x86_64
           path: |
-            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Linux-*.deb
-            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Linux-*-portable.tar.gz
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Ubuntu-22.04-*.deb
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Ubuntu-22.04-*-portable.tar.gz
           if-no-files-found: error
 
       - name: Show Release ccache stats
@@ -652,7 +652,7 @@ jobs:
           - macOS Apple Silicon (arm64): \`Entropy-${ENTROPY_VERSION}-macOS-arm64.dmg\`
           - macOS Intel (x86_64): \`Entropy-${ENTROPY_VERSION}-macOS-x86_64.dmg\`
           - Windows x86_64: \`Entropy-${ENTROPY_VERSION}-Windows-x86_64.msi\`
-          - Linux x86_64: \`Entropy-${ENTROPY_VERSION}-Linux-x86_64.deb\`
+          - Ubuntu 22.04 x86_64: \`Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-x86_64.deb\`
           - Portable archives are also attached for macOS, Windows, and Linux.
           - Source archives are attached as \`zip\` and \`tar.gz\`.
 

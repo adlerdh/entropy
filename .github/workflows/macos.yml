@@ -10,7 +10,24 @@ on:
   schedule:
     # Weekly full macOS validation. Run manually when release confidence is needed sooner.
     - cron: "11 9 * * 0"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      run_debug:
+        description: "Run debug build and unit tests"
+        type: boolean
+        default: true
+      run_release:
+        description: "Run release build and package artifacts"
+        type: boolean
+        default: false
+      run_smoke:
+        description: "Run smoke build on macOS 26"
+        type: boolean
+        default: false
+      run_coverage:
+        description: "Run macOS coverage troubleshooting job"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -65,6 +82,11 @@ jobs:
     name: Debug Build And Tests (arm64)
     runs-on: macos-14
     needs: format
+    if: >
+      github.event_name == 'pull_request' ||
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_debug)
 
     steps:
       - name: Check out source
@@ -140,7 +162,7 @@ jobs:
         run: cmake --build --preset app-debug --parallel
 
       - name: Run Debug tests
-        run: ctest --test-dir build-debug --parallel --output-on-failure
+        run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Show Debug ccache stats
         if: always()
@@ -150,6 +172,11 @@ jobs:
     name: Debug Build And Tests (x86_64)
     runs-on: macos-15-intel
     needs: format
+    if: >
+      github.event_name == 'pull_request' ||
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_debug)
     env:
       ENTROPY_MACOS_ARCHITECTURES: x86_64
 
@@ -227,17 +254,17 @@ jobs:
         run: cmake --build --preset app-debug --parallel
 
       - name: Run Debug tests
-        run: ctest --test-dir build-debug --parallel --output-on-failure
+        run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Show Debug ccache stats
         if: always()
         run: ccache --show-stats
 
   coverage:
-    name: Coverage Report (arm64)
+    name: macOS Coverage Report (arm64)
     runs-on: macos-14
     needs: format
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.run_coverage
 
     steps:
       - name: Check out source
@@ -331,10 +358,10 @@ jobs:
         run: ccache --show-stats
 
   package:
-    name: Release Packages (arm64)
+    name: macOS Release Packages (arm64)
     runs-on: macos-14
     needs: format
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_release)
 
     steps:
       - name: Check out source
@@ -411,7 +438,7 @@ jobs:
         run: cmake --build --preset app-release --parallel
 
       - name: Run Release tests
-        run: ctest --test-dir build-release --parallel --output-on-failure
+        run: ctest --test-dir build-release --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Validate deployment target
         run: otool -l build-release/bin/Entropy.app/Contents/MacOS/entropy | grep -A3 LC_BUILD_VERSION
@@ -424,13 +451,13 @@ jobs:
           cmake --install build-release --prefix build-release/macos-package-install
           build-release/macos-package-install/Entropy.app/Contents/MacOS/entropy --help
 
-      - name: Upload macOS packages
+      - name: Upload macOS arm64 packages
         uses: actions/upload-artifact@v7
         with:
           name: macos-arm64-packages
           path: |
-            build-release/packages/Entropy-*-macOS-*.dmg
-            build-release/packages/Entropy-*-macOS-*.zip
+            build-release/packages/Entropy-*-macOS-arm64.dmg
+            build-release/packages/Entropy-*-macOS-arm64.zip
           if-no-files-found: error
 
       - name: Show Release ccache stats
@@ -438,10 +465,10 @@ jobs:
         run: ccache --show-stats
 
   package-x86_64:
-    name: Release Packages (x86_64)
+    name: macOS Release Packages (x86_64)
     runs-on: macos-15-intel
     needs: format
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_release)
     env:
       ENTROPY_MACOS_ARCHITECTURES: x86_64
 
@@ -522,7 +549,7 @@ jobs:
         run: cmake --build --preset app-release --parallel
 
       - name: Run Release tests
-        run: ctest --test-dir build-release --parallel --output-on-failure
+        run: ctest --test-dir build-release --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Validate deployment target
         run: otool -l build-release/bin/Entropy.app/Contents/MacOS/entropy | grep -A3 LC_BUILD_VERSION
@@ -552,7 +579,7 @@ jobs:
     name: macOS 26 Smoke Build And Tests (arm64)
     runs-on: macos-26
     needs: format
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_smoke)
 
     steps:
       - name: Check out source
@@ -628,7 +655,7 @@ jobs:
         run: cmake --build --preset app-debug --parallel
 
       - name: Run Debug tests
-        run: ctest --test-dir build-debug --parallel --output-on-failure
+        run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Show Debug ccache stats
         if: always()

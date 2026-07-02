@@ -10,7 +10,24 @@ on:
   schedule:
     # Weekly full Windows validation. Run manually when release confidence is needed sooner.
     - cron: "23 8 * * 0"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      run_debug:
+        description: "Run debug build and unit tests"
+        type: boolean
+        default: true
+      run_release:
+        description: "Run release build and package artifacts"
+        type: boolean
+        default: false
+      run_smoke:
+        description: "Run smoke build on Windows Server 2025"
+        type: boolean
+        default: false
+      run_coverage:
+        description: "Run Windows coverage troubleshooting job"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -25,6 +42,7 @@ env:
   CMAKE_BUILD_PARALLEL_LEVEL: 2
   CTEST_PARALLEL_LEVEL: 2
   SUPERBUILD_CACHE_VERSION: v1
+  SCCACHE_CACHE_VERSION: v1
 
 jobs:
   format:
@@ -65,6 +83,18 @@ jobs:
     name: Debug Build And Tests (x86_64)
     runs-on: windows-2022
     needs: format
+    if: >
+      github.event_name == 'pull_request' ||
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_debug)
+    env:
+      CMAKE_GENERATOR: Ninja
+      CMAKE_GENERATOR_PLATFORM: ""
+      CMAKE_BUILD_PARALLEL_LEVEL: 4
+      CTEST_PARALLEL_LEVEL: 3
+      SCCACHE_DIR: ${{ github.workspace }}\.sccache
+      SCCACHE_CACHE_SIZE: 5G
 
     steps:
       - name: Check out source
@@ -73,14 +103,38 @@ jobs:
       - name: Map short workspace path
         run: 'subst S: "$env:GITHUB_WORKSPACE"'
 
+      - name: Set up MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
       - name: Validate runner tools
         working-directory: 'S:\'
         run: |
           cmake --version
           git --version
-          vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          ninja --version
+          cl 2>&1 | Select-Object -First 1
+          sccache --version
 
-      - name: Restore Debug SuperBuild cache
+      - name: Restore Debug sccache
+        uses: actions/cache@v5
+        with:
+          path: .sccache
+          key: windows-msvc2022-ninja-debug-sccache-${{ env.SCCACHE_CACHE_VERSION }}-${{ github.run_id }}
+          restore-keys: |
+            windows-msvc2022-ninja-debug-sccache-${{ env.SCCACHE_CACHE_VERSION }}-
+
+      - name: Reset Debug sccache stats
+        working-directory: 'S:\'
+        run: |
+          sccache --zero-stats
+          sccache --start-server
+
+      - name: Restore Debug Ninja SuperBuild cache
         uses: actions/cache@v5
         with:
           path: |
@@ -100,13 +154,20 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: windows-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: windows-msvc2022-ninja-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-msvc2022-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            windows-msvc2022-ninja-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Debug SuperBuild
         working-directory: 'S:\'
-        run: cmake --preset superbuild-debug
+        run: >
+          cmake --preset superbuild-debug
+          -G Ninja
+          -DCMAKE_C_COMPILER=cl
+          -DCMAKE_CXX_COMPILER=cl
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DEntropy_USE_CCACHE=OFF
 
       - name: Build Debug SuperBuild
         working-directory: 'S:\'
@@ -114,7 +175,14 @@ jobs:
 
       - name: Configure Debug app
         working-directory: 'S:\'
-        run: cmake --preset app-debug
+        run: >
+          cmake --preset app-debug
+          -G Ninja
+          -DCMAKE_C_COMPILER=cl
+          -DCMAKE_CXX_COMPILER=cl
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DEntropy_USE_CCACHE=OFF
 
       - name: Build Debug app
         working-directory: 'S:\'
@@ -122,13 +190,20 @@ jobs:
 
       - name: Run Debug tests
         working-directory: 'S:\'
-        run: ctest --test-dir build-debug -C Debug --parallel --output-on-failure
+        run: ctest --test-dir build-debug --parallel $env:CTEST_PARALLEL_LEVEL --output-on-failure
+
+      - name: Show Debug sccache stats
+        if: always()
+        working-directory: 'S:\'
+        run: |
+          sccache --show-stats
+          sccache --stop-server
 
   coverage:
-    name: Coverage Report (x86_64)
+    name: Windows Coverage Report (x86_64)
     runs-on: windows-2022
     needs: format
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.run_coverage
 
     steps:
       - name: Check out source
@@ -239,10 +314,10 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Release Build Tests And Packages (x86_64)
+    name: Windows Release (x86_64)
     runs-on: windows-2022
     needs: format
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_release)
 
     steps:
       - name: Check out source
@@ -302,7 +377,7 @@ jobs:
 
       - name: Run Release tests
         working-directory: 'S:\'
-        run: ctest --test-dir build-release -C Release --parallel --output-on-failure
+        run: ctest --test-dir build-release -C Release --parallel $env:CTEST_PARALLEL_LEVEL --output-on-failure
 
       - name: Build MSI and portable ZIP
         working-directory: 'S:\'
@@ -327,7 +402,7 @@ jobs:
     name: Windows Server 2025 Smoke Build And Tests (x86_64)
     runs-on: windows-2025
     needs: format
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_smoke)
     env:
       CMAKE_GENERATOR: "Visual Studio 18 2026"
       CMAKE_GENERATOR_PLATFORM: x64
@@ -389,4 +464,4 @@ jobs:
 
       - name: Run Debug tests
         working-directory: 'S:\'
-        run: ctest --test-dir build-debug -C Debug --parallel --output-on-failure
+        run: ctest --test-dir build-debug -C Debug --parallel $env:CTEST_PARALLEL_LEVEL --output-on-failure

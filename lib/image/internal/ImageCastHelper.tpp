@@ -98,6 +98,4 @@ std::vector<DstCompType> createBuffer(const void* buffer, std::size_t numElement
       throw_debug("Unknown component type when creating buffer")
     }
   }
-
-  return std::vector<DstCompType>{};
 }

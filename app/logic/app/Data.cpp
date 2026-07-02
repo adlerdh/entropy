@@ -1157,8 +1157,6 @@ const std::map<double, Image>& AppData::distanceMaps(const uuid& imageUid, Compo
     spdlog::error("No component data for image {}. Cannot get distance map for it.", imageUid);
     return EMPTY;
   }
-
-  return EMPTY;
 }
 
 const std::map<uint32_t, Image>& AppData::noiseEstimates(const uuid& imageUid, ComponentIndexType component) const
@@ -1186,8 +1184,6 @@ const std::map<uint32_t, Image>& AppData::noiseEstimates(const uuid& imageUid, C
     spdlog::error("No component data for image {}. Cannot get noise estimate for it.", imageUid);
     return EMPTY;
   }
-
-  return EMPTY;
 }
 
 const Isosurface* AppData::isosurface(const uuid& imageUid, ComponentIndexType comp, const uuid& isosurfaceUid) const

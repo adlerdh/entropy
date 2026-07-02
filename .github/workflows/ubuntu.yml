@@ -1,4 +1,4 @@
-name: Linux CI (x86_64)
+name: Ubuntu CI (x86_64)
 
 on:
   pull_request:
@@ -10,15 +10,28 @@ on:
     tags:
       - "v*.*.*.*"
   schedule:
-    # Weekly full Linux validation. Run manually when release confidence is needed sooner.
+    # Weekly full Ubuntu validation. Run manually when release confidence is needed sooner.
     - cron: "47 8 * * 0"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      run_debug:
+        description: "Run debug build and unit tests"
+        type: boolean
+        default: true
+      run_release:
+        description: "Run release build and package artifacts"
+        type: boolean
+        default: false
+      run_coverage:
+        description: "Run Ubuntu coverage report"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: linux-ci-${{ github.ref }}
+  group: ubuntu-ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -65,7 +78,14 @@ jobs:
     name: Debug Build And Tests (x86_64)
     runs-on: ubuntu-22.04
     needs: format
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/heads/')
+    if: >
+      github.event_name == 'pull_request' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_debug)
+    env:
+      CMAKE_BUILD_PARALLEL_LEVEL: 4
+      CTEST_PARALLEL_LEVEL: 3
 
     steps:
       - name: Check out source
@@ -120,9 +140,9 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: linux-ubuntu2204-gcc13-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: ubuntu2204-gcc13-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            linux-ubuntu2204-gcc13-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            ubuntu2204-gcc13-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Debug SuperBuild
         run: cmake --preset superbuild-debug -D Entropy_USE_CCACHE=OFF
@@ -143,7 +163,10 @@ jobs:
     name: Coverage Report (x86_64)
     runs-on: ubuntu-22.04
     needs: format
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    if: >
+      github.event_name == 'schedule' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_coverage)
 
     steps:
       - name: Check out source
@@ -184,9 +207,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .ccache
-          key: linux-ubuntu2204-gcc13-coverage-ccache-v1-${{ github.run_id }}
+          key: ubuntu2204-gcc13-coverage-ccache-v1-${{ github.run_id }}
           restore-keys: |
-            linux-ubuntu2204-gcc13-coverage-ccache-v1-
+            ubuntu2204-gcc13-coverage-ccache-v1-
 
       - name: Reset Coverage ccache stats
         run: |
@@ -213,9 +236,9 @@ jobs:
             build-coverage/external/spdlog-*
             build-coverage/external/stduuid-*
             build-coverage/external/tinyfsm-*
-          key: linux-ubuntu2204-gcc13-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: ubuntu2204-gcc13-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            linux-ubuntu2204-gcc13-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            ubuntu2204-gcc13-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Coverage SuperBuild
         run: cmake --preset superbuild-coverage
@@ -238,7 +261,7 @@ jobs:
       - name: Upload coverage HTML
         uses: actions/upload-artifact@v7
         with:
-          name: linux-coverage-html
+          name: ubuntu-coverage-html
           path: build-coverage/coverage/html/
           if-no-files-found: error
 
@@ -250,7 +273,7 @@ jobs:
     name: Release Packages (x86_64)
     runs-on: ubuntu-22.04
     needs: format
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_release)
 
     steps:
       - name: Check out source
@@ -292,9 +315,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .ccache
-          key: linux-ubuntu2204-gcc13-release-ccache-v1-${{ github.run_id }}
+          key: ubuntu2204-gcc13-release-ccache-v1-${{ github.run_id }}
           restore-keys: |
-            linux-ubuntu2204-gcc13-release-ccache-v1-
+            ubuntu2204-gcc13-release-ccache-v1-
 
       - name: Reset Release ccache stats
         run: |
@@ -321,9 +344,9 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: linux-ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            linux-ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Release SuperBuild
         run: cmake --preset superbuild-release
@@ -345,21 +368,21 @@ jobs:
 
       - name: Inspect DEB package
         run: |
-          dpkg-deb --info build-release/packages/Entropy-*-Linux-*.deb
-          dpkg-deb --contents build-release/packages/Entropy-*-Linux-*.deb
+          dpkg-deb --info build-release/packages/Entropy-*-Ubuntu-22.04-*.deb
+          dpkg-deb --contents build-release/packages/Entropy-*-Ubuntu-22.04-*.deb
 
       - name: Smoke-test staged install
         run: |
-          cmake --install build-release --prefix build-release/linux-package-install
-          build-release/linux-package-install/bin/entropy --help
+          cmake --install build-release --prefix build-release/ubuntu-package-install
+          build-release/ubuntu-package-install/bin/entropy --help
 
-      - name: Upload Linux packages
+      - name: Upload Ubuntu packages
         uses: actions/upload-artifact@v7
         with:
-          name: linux-x86_64-packages
+          name: ubuntu-22.04-x86_64-packages
           path: |
-            build-release/packages/Entropy-*-Linux-*.deb
-            build-release/packages/Entropy-*-Linux-*-portable.tar.gz
+            build-release/packages/Entropy-*-Ubuntu-22.04-*.deb
+            build-release/packages/Entropy-*-Ubuntu-22.04-*-portable.tar.gz
           if-no-files-found: error
 
       - name: Show Release ccache stats

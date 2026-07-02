@@ -1285,7 +1285,11 @@ void drawVectorFieldArrows(
         nvg,
         samplePos,
         samplePos + screenDelta,
-        nvgRGBAf(arrowColor.r, arrowColor.g, arrowColor.b, 0.86f * arrowOpacity * settings.globalOpacity()),
+        nvgRGBAf(
+          arrowColor.r,
+          arrowColor.g,
+          arrowColor.b,
+          static_cast<float>(0.86f * arrowOpacity * settings.globalOpacity())),
         lineThickness);
     };
 

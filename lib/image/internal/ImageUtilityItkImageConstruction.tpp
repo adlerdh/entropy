@@ -320,6 +320,4 @@ typename itk::Image<T, 3>::Pointer createItkImageFromImageComponent(const Image&
       return nullptr;
     }
   }
-
-  return nullptr;
 }

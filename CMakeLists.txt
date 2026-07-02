@@ -438,6 +438,7 @@ target_compile_options(implot PRIVATE
   >
   $<$<CXX_COMPILER_ID:MSVC>:
     /W4
+    /wd4390
     /wd5054
   >
 )

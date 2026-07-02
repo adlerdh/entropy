@@ -10,6 +10,7 @@
 #define NOMINMAX
 #include <windows.h>
 #else
+#include <cerrno>
 #include <csignal>
 #include <cstring>
 #include <execinfo.h>
@@ -18,6 +19,24 @@
 
 namespace
 {
+#if !defined(_WIN32)
+void writeToStderr(const char* text, std::size_t size)
+{
+  while (size > 0) {
+    const ssize_t written = ::write(STDERR_FILENO, text, size);
+    if (written > 0) {
+      text += written;
+      size -= static_cast<std::size_t>(written);
+      continue;
+    }
+    if (written < 0 && errno == EINTR) {
+      continue;
+    }
+    break;
+  }
+}
+#endif
+
 [[noreturn]] void terminateWithTrace()
 {
   std::ostringstream message;
@@ -42,7 +61,7 @@ namespace
   WriteFile(GetStdHandle(STD_ERROR_HANDLE), text.data(), static_cast<DWORD>(text.size()), &written, nullptr);
   TerminateProcess(GetCurrentProcess(), EXIT_FAILURE);
 #else
-  (void)::write(STDERR_FILENO, text.data(), text.size());
+  writeToStderr(text.data(), text.size());
   std::_Exit(EXIT_FAILURE);
 #endif
 }
@@ -76,7 +95,7 @@ const char* signalName(int signal)
 
 void writeLiteral(const char* text)
 {
-  (void)::write(STDERR_FILENO, text, std::strlen(text));
+  writeToStderr(text, std::strlen(text));
 }
 
 void crashSignalHandler(int signal)

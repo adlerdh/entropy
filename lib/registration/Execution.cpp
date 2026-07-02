@@ -123,6 +123,25 @@ std::string pathListSeparator()
 #endif
 }
 
+std::string environmentVariable(std::string_view name)
+{
+#ifdef _WIN32
+  char* value = nullptr;
+  std::size_t valueSize = 0;
+  if (_dupenv_s(&value, &valueSize, std::string{name}.c_str()) != 0 || !value) {
+    return {};
+  }
+  std::string result{value, valueSize > 0 ? valueSize - 1 : 0};
+  std::free(value);
+  return result;
+#else
+  if (const char* value = std::getenv(std::string{name}.c_str())) {
+    return value;
+  }
+  return {};
+#endif
+}
+
 std::string fireAntsBridgePythonPath()
 {
 #ifdef ENTROPY_FIREANTS_BRIDGE_PYTHONPATH
@@ -210,9 +229,7 @@ void configureFireAntsEnvironment(const JobSpec& job, ProcessOptions& options)
     pythonPath += path.string();
   }
 
-  if (const char* existingPythonPath = std::getenv("PYTHONPATH");
-      existingPythonPath && std::string_view{existingPythonPath}.size() > 0)
-  {
+  if (const std::string existingPythonPath = environmentVariable("PYTHONPATH"); !existingPythonPath.empty()) {
     if (!pythonPath.empty()) {
       pythonPath += pathListSeparator();
     }

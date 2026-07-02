@@ -385,8 +385,6 @@ public:
       default:
         return false;
     }
-
-    return false;
   }
 
   /// @brief Fill all component buffers with one value.
