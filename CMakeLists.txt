@@ -71,6 +71,18 @@ if(_isMultiConfig)
       CACHE STRING "Configs" FORCE)
 endif()
 
+if(MSVC)
+  foreach(_entropy_msvc_flag_var IN ITEMS
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_C_FLAGS_RELWITHDEBINFO
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+    if(DEFINED ${_entropy_msvc_flag_var} AND NOT "${${_entropy_msvc_flag_var}}" MATCHES "(^| )/FS($| )")
+      string(APPEND ${_entropy_msvc_flag_var} " /FS")
+    endif()
+  endforeach()
+endif()
+
 add_library(entropy_warnings INTERFACE)
 target_compile_options(entropy_warnings INTERFACE
   $<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>>:

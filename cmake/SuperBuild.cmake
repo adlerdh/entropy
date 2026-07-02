@@ -24,6 +24,22 @@ if(NOT _isMultiConfig AND CMAKE_BUILD_TYPE)
   list(APPEND _ext_cmake_build_type_args -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
 endif()
 
+foreach(_flag_var IN ITEMS
+    CMAKE_C_FLAGS
+    CMAKE_CXX_FLAGS
+    CMAKE_C_FLAGS_DEBUG
+    CMAKE_CXX_FLAGS_DEBUG
+    CMAKE_C_FLAGS_RELEASE
+    CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_C_FLAGS_RELWITHDEBINFO
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    CMAKE_C_FLAGS_MINSIZEREL
+    CMAKE_CXX_FLAGS_MINSIZEREL)
+  if(DEFINED ${_flag_var} AND NOT "${${_flag_var}}" STREQUAL "")
+    list(APPEND _ext_cmake_build_type_args "-D${_flag_var}:STRING=${${_flag_var}}")
+  endif()
+endforeach()
+
 set(_ext_compiler_launcher_args)
 foreach(_launcher_var IN ITEMS CMAKE_C_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER)
   if(DEFINED ${_launcher_var} AND NOT "${${_launcher_var}}" STREQUAL "")
