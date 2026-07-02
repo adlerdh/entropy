@@ -130,9 +130,7 @@ jobs:
 
       - name: Reset Debug sccache stats
         working-directory: 'S:\'
-        run: |
-          sccache --zero-stats
-          sccache --start-server
+        run: sccache --zero-stats
 
       - name: Restore Debug Ninja SuperBuild cache
         uses: actions/cache@v5
