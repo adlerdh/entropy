@@ -696,7 +696,7 @@ jobs:
             linux-fedora43-gcc-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Release SuperBuild
-        run: cmake --preset superbuild-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+        run: cmake --preset superbuild-release -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL" -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
 
       - name: Build Release SuperBuild
         run: cmake --build --preset superbuild-release --parallel
