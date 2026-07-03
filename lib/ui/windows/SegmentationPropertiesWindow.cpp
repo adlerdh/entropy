@@ -9,6 +9,7 @@
 
 #include <imgui/imgui.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -39,8 +40,13 @@ void renderSegmentationPropertiesWindow(
   if (ImGui::Begin("Segmentations##Segmentations", &(appData.guiData().m_showSegmentationsWindow))) {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
+    const std::size_t visibleImageCount =
+      std::min(appData.numImages(), appData.guiData().m_visibleImageCountDuringLoad.value_or(appData.numImages()));
 
     for (const auto& imageUid : appData.imageUidsOrdered()) {
+      if (imageIndex >= visibleImageCount) {
+        break;
+      }
       if (Image* image = appData.image(imageUid)) {
         const bool isActiveImage = activeUid && (imageUid == *activeUid);
 

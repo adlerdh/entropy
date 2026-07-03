@@ -67,6 +67,9 @@ struct ImGuiProjectCallbacks
   /** @brief Load a warp field and return its UID if successful. */
   std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)> loadDeformationField;
 
+  /** @brief Import completed registration outputs through the application loading pipeline. */
+  std::function<void(const std::string& jobId)> importRegistrationJobOutputs;
+
   /** @brief Open a project file. */
   std::function<void(const std::filesystem::path& fileName)> openProjectFile;
 
@@ -287,7 +290,6 @@ public:
 
 private:
   bool materializeRegistrationInputs(registration::JobSpec& job);
-  void importRegistrationJobOutputs(const std::string& jobId);
 
   /**
    * @brief Load the active ImGui UI font and icon font into the font atlas.
@@ -317,6 +319,7 @@ private:
   std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> m_addSegmentationFileToImage =
     nullptr;
   std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)> m_loadDeformationField = nullptr;
+  std::function<void(const std::string& jobId)> m_importRegistrationJobOutputs = nullptr;
   std::function<void(const std::filesystem::path& fileName)> m_openProjectFile = nullptr;
   std::function<void(GuiData::LargeImageLoadDecision decision)> m_largeImageLoadDecision = nullptr;
   std::function<void(

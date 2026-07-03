@@ -6,6 +6,7 @@ endif()
 
 set(APP_NAME "Entropy")
 set(APP_DESCRIPTION "Visualize, compare, segment, annotate, and co-register medical images")
+set(APP_FILE_DESCRIPTION "Entropy Medical Image Viewer")
 set(PICSL_NAME "Penn Image Computing and Science Lab (PICSL), University of Pennsylvania")
 set(PUBLISHER_NAME "Daniel H. Adler")
 set(AUTHOR_CREDIT_LINE "Primary author and maintainer: Daniel H. Adler, Ph.D.")
@@ -486,6 +487,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/EntropyAppCallbacks.cpp"
   "${entropy_APP_DIR}/EntropyAppLifecycle.cpp"
   "${entropy_APP_DIR}/EntropyAppProject.cpp"
+  "${entropy_APP_DIR}/EntropyAppRegistration.cpp"
 
   "${entropy_APP_DIR}/logic/app/CallbackHandler.cpp"
   "${entropy_APP_DIR}/logic/app/Data.cpp"

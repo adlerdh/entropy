@@ -91,13 +91,12 @@ const glm::vec2 sk_zeroVec2{0.0f, 0.0f};
 void syncScalarProjectionLayerSettings(const ImageSettings& source, ImageSettings& projection)
 {
   constexpr uint32_t k_projectionComponent = 0;
-  const uint32_t sourceComponent = source.activeComponent();
 
   projection.setBorderColor(source.borderColor());
   projection.setGlobalVisibility(source.globalVisibility());
   projection.setGlobalOpacity(source.globalOpacity());
-  projection.setVisibility(k_projectionComponent, source.visibility(sourceComponent));
-  projection.setOpacity(k_projectionComponent, source.opacity(sourceComponent));
+  projection.setVisibility(k_projectionComponent, source.visibility());
+  projection.setOpacity(k_projectionComponent, source.opacity());
 }
 
 float maxAbsVectorComponentValue(const ImageSettings& settings)
@@ -729,6 +728,23 @@ void Rendering::initTextures()
   const std::vector<uuid> defUidsOfCreatedTextures = createImageTextures(m_appData, m_appData.defUidsOrdered());
   if (defUidsOfCreatedTextures.size() != m_appData.numDefs()) {
     spdlog::error("Not all warp field textures were created");
+  }
+
+  std::vector<uuid> projectionUids;
+  for (const uuid& imageUid : m_appData.imageUidsOrdered()) {
+    const uuid effectiveImageUid = m_appData.effectiveImageUidForRendering(imageUid);
+    if (effectiveImageUid == imageUid) {
+      continue;
+    }
+    if (
+      std::find(projectionUids.begin(), projectionUids.end(), effectiveImageUid) == projectionUids.end() &&
+      m_appData.renderData().m_imageTextures.find(effectiveImageUid) == m_appData.renderData().m_imageTextures.end())
+    {
+      projectionUids.push_back(effectiveImageUid);
+    }
+  }
+  if (!projectionUids.empty()) {
+    createImageTextures(m_appData, projectionUids);
   }
 
   const std::vector<uuid> segUidsOfCreatedTextures = createSegTextures(m_appData, m_appData.segUidsOrdered());

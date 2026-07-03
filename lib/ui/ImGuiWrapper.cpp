@@ -37,7 +37,6 @@
 #include "registration/AffineTransformIO.h"
 #include "registration/Availability.h"
 #include "registration/Config.h"
-#include "registration/ImportPlan.h"
 #include "registration/Process.h"
 #include "rendering/TextureSetup.h"
 
@@ -242,67 +241,6 @@ bool checkRegistrationBackendBeforeLaunch(
   if (availability.compatibility != registration::BackendCompatibilityStatus::Compatible) {
     execution.warnings.push_back(availability.compatibilityMessage);
   }
-  return true;
-}
-
-std::optional<glm::dmat4> readBackendSamplingAffine(const fs::path& affinePath, registration::Backend backend)
-{
-  return (backend == registration::Backend::Greedy) ? registration::readGreedyAffineTransform(affinePath)
-                                                    : registration::readAffineTransform(affinePath);
-}
-
-std::optional<glm::dmat4> readBackendDisplayAffine(const fs::path& affinePath, registration::Backend backend)
-{
-  const std::optional<glm::dmat4> affine = readBackendSamplingAffine(affinePath, backend);
-  if (!affine) {
-    return std::nullopt;
-  }
-  return glm::inverse(*affine);
-}
-
-bool applyImportedAffineToImage(
-  AppData& appData,
-  const uuids::uuid& imageUid,
-  const fs::path& affinePath,
-  registration::Backend backend)
-{
-  Image* image = appData.image(imageUid);
-  if (!image) {
-    return false;
-  }
-
-  const std::optional<glm::dmat4> displayAffine = readBackendDisplayAffine(affinePath, backend);
-  if (!displayAffine) {
-    return false;
-  }
-
-  ImageTransformations& imageTx = image->transformations();
-  const bool wasLocked = imageTx.is_worldDef_T_affine_locked();
-  imageTx.set_worldDef_T_affine_locked(false);
-  imageTx.set_enable_affine_T_subject(true);
-  imageTx.set_affine_T_subject(glm::mat4{*displayAffine});
-  imageTx.set_affine_T_subject_fileName(affinePath);
-  imageTx.set_enable_worldDef_T_affine(true);
-  imageTx.reset_worldDef_T_affine();
-  imageTx.set_worldDef_T_affine_locked(wasLocked);
-
-  for (const uuids::uuid& segUid : appData.imageToSegUids(imageUid)) {
-    Image* seg = appData.seg(segUid);
-    if (!seg) {
-      continue;
-    }
-
-    ImageTransformations& segTx = seg->transformations();
-    const bool wasSegLocked = segTx.is_worldDef_T_affine_locked();
-    segTx.set_worldDef_T_affine_locked(false);
-    segTx.set_enable_affine_T_subject(imageTx.get_enable_affine_T_subject());
-    segTx.set_affine_T_subject(imageTx.get_affine_T_subject());
-    segTx.set_affine_T_subject_fileName(affinePath);
-    segTx.set_enable_worldDef_T_affine(imageTx.get_enable_worldDef_T_affine());
-    segTx.reset_worldDef_T_affine();
-    segTx.set_worldDef_T_affine_locked(wasSegLocked);
-  }
-
   return true;
 }
 
@@ -1003,7 +941,8 @@ void renderLoadingStatusWindow(const GuiData& guiData)
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{scaledPixel(12.0f), scaledPixel(10.0f)});
 
-  if (ImGui::Begin("LoadingStatus", nullptr, flags)) {
+  const std::string windowTitle = (title.empty() ? "Loading images" : title) + "###LoadingStatus";
+  if (ImGui::Begin(windowTitle.c_str(), nullptr, flags)) {
     const int dotCount = static_cast<int>(ImGui::GetTime() * 3.0) % 4;
     std::string text = title.empty() ? "Loading images" : title;
     text.append(static_cast<std::size_t>(dotCount), '.');
@@ -1548,6 +1487,7 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
   m_addSegmentationFile = std::move(callbacks.project.addSegmentationFile);
   m_addSegmentationFileToImage = std::move(callbacks.project.addSegmentationFileToImage);
   m_loadDeformationField = std::move(callbacks.project.loadDeformationField);
+  m_importRegistrationJobOutputs = std::move(callbacks.project.importRegistrationJobOutputs);
   m_openProjectFile = std::move(callbacks.project.openProjectFile);
   m_largeImageLoadDecision = std::move(callbacks.project.largeImageLoadDecision);
   m_loadDicomSeries = std::move(callbacks.project.loadDicomSeries);
@@ -1737,196 +1677,6 @@ bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
   return true;
 }
 
-void ImGuiWrapper::importRegistrationJobOutputs(const std::string& jobId)
-{
-  registration::JobStore& jobs = m_appData.registrationJobs();
-  const registration::JobRecord* job = jobs.find(jobId);
-  if (!job || !job->manifest) {
-    return;
-  }
-
-  const registration::JobSpec spec = job->spec;
-  auto appendEvent = [&jobs, &jobId](registration::ProgressEventKind kind, std::string message) {
-    jobs.appendProgress(jobId, registration::ProgressEvent{.kind = kind, .message = std::move(message)});
-  };
-
-  registration::ResultManifest manifest = *job->manifest;
-  if (spec.backend == registration::Backend::ANTs && registration::includesDeformableTransform(spec.transformModel)) {
-    const registration::ResultManifest expectedManifest = registration::buildExpectedResultManifest(spec);
-    if (
-      manifest.inverseWarp.empty() && !expectedManifest.inverseWarp.empty() && fs::exists(expectedManifest.inverseWarp))
-    {
-      manifest.inverseWarp = expectedManifest.inverseWarp;
-      appendEvent(
-        registration::ProgressEventKind::Artifact,
-        "Discovered ANTs inverse warp artifact: " + manifest.inverseWarp.string());
-    }
-    if (
-      manifest.forwardWarp.empty() && !expectedManifest.forwardWarp.empty() && fs::exists(expectedManifest.forwardWarp))
-    {
-      manifest.forwardWarp = expectedManifest.forwardWarp;
-      appendEvent(
-        registration::ProgressEventKind::Artifact,
-        "Discovered ANTs forward warp artifact: " + manifest.forwardWarp.string());
-    }
-  }
-  const registration::ImportPlan plan = registration::buildImportPlan(spec, manifest);
-
-  auto parseTargetImageUid = [&appendEvent](const registration::ImportStep& step) -> std::optional<uuids::uuid> {
-    if (step.targetImageUid.empty()) {
-      appendEvent(registration::ProgressEventKind::Warning, "Registration import step has no target image UID.");
-      return std::nullopt;
-    }
-    std::optional<uuids::uuid> uid = uuids::uuid::from_string(step.targetImageUid);
-    if (!uid) {
-      appendEvent(
-        registration::ProgressEventKind::Warning,
-        "Registration import step has an invalid target image UID: " + step.targetImageUid);
-    }
-    return uid;
-  };
-
-  jobs.setStatus(jobId, registration::JobStatus::ImportingOutputs);
-  appendEvent(registration::ProgressEventKind::Started, "Importing registration outputs.");
-
-  for (const std::string& warning : plan.warnings) {
-    appendEvent(registration::ProgressEventKind::Warning, warning);
-  }
-
-  bool hadError = false;
-  for (const registration::ImportStep& step : plan.steps) {
-    try {
-      if (!step.path.empty() && !fs::exists(step.path)) {
-        appendEvent(
-          registration::ProgressEventKind::Warning,
-          "Registration output does not exist and was not imported: " + step.path.string());
-        continue;
-      }
-
-      switch (step.action) {
-        case registration::ImportAction::ApplyAffineTransform: {
-          const std::optional<uuids::uuid> imageUid = parseTargetImageUid(step);
-          if (!imageUid) {
-            break;
-          }
-          if (applyImportedAffineToImage(m_appData, *imageUid, step.path, spec.backend)) {
-            appendEvent(registration::ProgressEventKind::Artifact, "Applied affine transform: " + step.path.string());
-            if (m_updateImageUniforms) {
-              m_updateImageUniforms(*imageUid);
-            }
-          }
-          else {
-            appendEvent(
-              registration::ProgressEventKind::Warning,
-              "Unable to parse or apply affine transform: " + step.path.string());
-          }
-          break;
-        }
-        case registration::ImportAction::LoadInverseWarp: {
-          const std::optional<uuids::uuid> imageUid = parseTargetImageUid(step);
-          if (!imageUid || !m_loadDeformationField) {
-            break;
-          }
-          const std::optional<uuids::uuid> warpUid = m_loadDeformationField(step.path);
-          if (warpUid && m_appData.assignInverseWarpUidToImage(*imageUid, *warpUid)) {
-            appendEvent(registration::ProgressEventKind::Artifact, "Imported inverse warp: " + step.path.string());
-            if (m_updateImageUniforms) {
-              m_updateImageUniforms(*imageUid);
-            }
-          }
-          else {
-            appendEvent(
-              registration::ProgressEventKind::Warning,
-              "Unable to import inverse warp: " + step.path.string());
-          }
-          break;
-        }
-        case registration::ImportAction::LoadForwardWarp: {
-          const std::optional<uuids::uuid> imageUid = parseTargetImageUid(step);
-          if (!imageUid || !m_loadDeformationField) {
-            break;
-          }
-          const std::optional<uuids::uuid> warpUid = m_loadDeformationField(step.path);
-          if (warpUid && m_appData.assignForwardWarpUidToImage(*imageUid, *warpUid)) {
-            appendEvent(registration::ProgressEventKind::Artifact, "Imported forward warp: " + step.path.string());
-          }
-          else {
-            appendEvent(
-              registration::ProgressEventKind::Warning,
-              "Unable to import forward warp: " + step.path.string());
-          }
-          break;
-        }
-        case registration::ImportAction::AssignWarpsToMovingImage:
-          appendEvent(registration::ProgressEventKind::Progress, "Assigned imported warps to the moving image.");
-          break;
-        case registration::ImportAction::LoadWarpedImage:
-          if (m_addImageFiles) {
-            m_addImageFiles({step.path});
-            appendEvent(registration::ProgressEventKind::Artifact, "Queued warped image import: " + step.path.string());
-          }
-          else {
-            appendEvent(registration::ProgressEventKind::Warning, "No image import callback is available.");
-          }
-          break;
-        case registration::ImportAction::LoadWarpedSegmentation: {
-          const std::optional<uuids::uuid> imageUid = parseTargetImageUid(step);
-          if (imageUid && m_addSegmentationFileToImage) {
-            m_addSegmentationFileToImage(*imageUid, step.path);
-            appendEvent(
-              registration::ProgressEventKind::Artifact,
-              "Queued warped segmentation import: " + step.path.string());
-          }
-          else {
-            appendEvent(registration::ProgressEventKind::Warning, "No segmentation import callback is available.");
-          }
-          break;
-        }
-        case registration::ImportAction::TransformLandmarksAndAnnotations:
-          appendEvent(
-            registration::ProgressEventKind::Warning,
-            "Transformed landmark/annotation import is not wired to the app yet: " + step.path.string());
-          break;
-        case registration::ImportAction::LoadTransformedSurface:
-          appendEvent(
-            registration::ProgressEventKind::Warning,
-            "Transformed surface import is not wired to the app yet: " + step.path.string());
-          break;
-        case registration::ImportAction::MakeWarpedImageActive:
-          appendEvent(
-            registration::ProgressEventKind::Warning,
-            "The warped image was queued for loading, but cannot be made active until image loading reports its UID.");
-          break;
-      }
-    }
-    catch (const std::exception& e) {
-      hadError = true;
-      appendEvent(registration::ProgressEventKind::Failed, e.what());
-      spdlog::error(
-        "Exception while importing registration output for job {}: {}\n{}",
-        jobId,
-        e.what(),
-        stack_trace::current(1));
-      break;
-    }
-  }
-
-  if (!hadError) {
-    appendEvent(registration::ProgressEventKind::Completed, "Registration outputs imported.");
-    jobs.setStatus(jobId, registration::JobStatus::Completed);
-  }
-
-  m_appData.setRainbowColorsForAllImages();
-  m_appData.setRainbowColorsForAllLandmarkGroups();
-  if (m_updateAllImageUniforms) {
-    m_updateAllImageUniforms();
-  }
-
-  if (m_postEmptyGlfwEvent) {
-    m_postEmptyGlfwEvent();
-  }
-}
-
 void ImGuiWrapper::storeFuture(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)
 {
   std::lock_guard<std::mutex> lock(m_futuresMutex);
@@ -2068,6 +1818,7 @@ void ImGuiWrapper::processComponentProjectionFutures()
 
     if (m_updateImageUniforms) {
       m_updateImageUniforms(*projectionUid);
+      m_updateImageUniforms(result.sourceImageUid);
     }
 
     spdlog::debug(
@@ -2799,9 +2550,12 @@ std::pair<std::string, std::string> ImGuiWrapper::getImageDisplayAndFileNames(st
 void ImGuiWrapper::render()
 {
   using namespace std::placeholders;
+  const bool loadingOrImporting = m_appData.state().animating();
 
   generateIsosurfaceMeshGpuRecords();
-  processComponentProjectionFutures();
+  if (!loadingOrImporting) {
+    processComponentProjectionFutures();
+  }
   processWarpInversionFutures();
   processRegistrationJobFutures();
   requestQueuedRegistrationJobs();
@@ -4317,7 +4071,9 @@ void ImGuiWrapper::render()
       return;
     }
 
-    requestMissingComponentProjectionImages();
+    if (!loadingOrImporting) {
+      requestMissingComponentProjectionImages();
+    }
 
     if (m_appData.guiData().m_showIsosurfacesWindow) {
       renderIsosurfacesWindow(
@@ -4423,7 +4179,9 @@ void ImGuiWrapper::render()
 
     if (m_appData.guiData().m_showRegistrationJobsWindow) {
       renderRegistrationJobsWindow(m_appData, [this](const std::string& jobId) {
-        importRegistrationJobOutputs(jobId);
+        if (m_importRegistrationJobOutputs) {
+          m_importRegistrationJobOutputs(jobId);
+        }
       });
     }
 

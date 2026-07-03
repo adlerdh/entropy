@@ -323,6 +323,8 @@ JobExecution executeJob(
       return execution;
     }
 
+    recordOutputLine(execution, ProcessOutputLine{OutputStream::Command, displayCommand(command)}, callbacks);
+
     ProcessCallbacks processCallbacks;
     processCallbacks.onOutputLine = [&](const ProcessOutputLine& line) {
       recordOutputLine(execution, line, callbacks);

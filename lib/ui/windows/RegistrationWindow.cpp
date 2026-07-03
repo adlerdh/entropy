@@ -1034,7 +1034,15 @@ void renderJobTableProgressBar(const registration::JobRecord& job)
 
 const char* outputStreamLabel(registration::OutputStream stream)
 {
-  return registration::OutputStream::Stderr == stream ? "stderr" : "stdout";
+  switch (stream) {
+    case registration::OutputStream::Command:
+      return "command";
+    case registration::OutputStream::Stderr:
+      return "stderr";
+    case registration::OutputStream::Stdout:
+      return "stdout";
+  }
+  return "stdout";
 }
 
 std::string jobLogText(const registration::JobRecord& job)
@@ -1069,6 +1077,10 @@ std::string jobLogText(const registration::JobRecord& job)
 
   stream << "Output:\n";
   for (const registration::ProcessOutputLine& line : job.outputLines) {
+    if (line.stream == registration::OutputStream::Command) {
+      stream << "\nCommand:\n  " << line.text << '\n';
+      continue;
+    }
     stream << '[' << outputStreamLabel(line.stream) << "] " << line.text << '\n';
   }
   return stream.str();
@@ -1875,20 +1887,40 @@ void renderRegistrationJobsWindow(
   constexpr ImGuiTableFlags tableFlags =
     ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable |
     ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit;
-  if (ImGui::BeginTable("RegistrationJobsTable", 13, tableFlags, ImVec2{0.0f, 0.0f})) {
-    const ImGuiStyle& style = ImGui::GetStyle();
-    const auto smallButtonWidth = [&](const char* label) {
-      return ImGui::CalcTextSize(label).x + (2.0f * style.FramePadding.x);
-    };
-    const float actionsColumnWidth = smallButtonWidth("Cancel") + smallButtonWidth("Import") + smallButtonWidth("Log") +
-                                     (2.0f * style.ItemSpacing.x) + (4.0f * style.CellPadding.x) + style.ScrollbarSize;
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const auto smallButtonWidth = [&](const char* label) {
+    return ImGui::CalcTextSize(label).x + (2.0f * style.FramePadding.x);
+  };
+  const float actionsColumnWidth = smallButtonWidth("Cancel") + smallButtonWidth("Import") + smallButtonWidth("Log") +
+                                   (2.0f * style.ItemSpacing.x) + (4.0f * style.CellPadding.x) + style.ScrollbarSize;
+  constexpr float orderColumnWidth = 44.0f;
+  constexpr float jobColumnWidth = 160.0f;
+  constexpr float backendColumnWidth = 82.0f;
+  constexpr float transformColumnWidth = 128.0f;
+  constexpr float metricColumnWidth = 90.0f;
+  constexpr float statusColumnWidth = 96.0f;
+  constexpr float progressColumnWidth = 110.0f;
+  constexpr float startColumnWidth = 150.0f;
+  constexpr float endColumnWidth = 150.0f;
+  constexpr float durationColumnWidth = 88.0f;
+  constexpr float messageColumnWidth = 240.0f;
+  constexpr float outputColumnMinWidth = 420.0f;
+  const float fixedColumnsWidth = orderColumnWidth + jobColumnWidth + actionsColumnWidth + backendColumnWidth +
+                                  transformColumnWidth + metricColumnWidth + statusColumnWidth + progressColumnWidth +
+                                  startColumnWidth + endColumnWidth + durationColumnWidth + messageColumnWidth;
+  const float tableInnerWidth = std::max(fixedColumnsWidth + outputColumnMinWidth, ImGui::GetContentRegionAvail().x);
 
+  if (ImGui::BeginTable("RegistrationJobsTable", 13, tableFlags, ImVec2{0.0f, 0.0f}, tableInnerWidth)) {
     ImGui::TableSetupColumn(
       "#",
       ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultSort,
-      44.0f,
+      orderColumnWidth,
       static_cast<ImGuiID>(JobTableColumn::Order));
-    ImGui::TableSetupColumn("Job", ImGuiTableColumnFlags_WidthFixed, 160.0f, static_cast<ImGuiID>(JobTableColumn::Job));
+    ImGui::TableSetupColumn(
+      "Job",
+      ImGuiTableColumnFlags_WidthFixed,
+      jobColumnWidth,
+      static_cast<ImGuiID>(JobTableColumn::Job));
     ImGui::TableSetupColumn(
       "Actions",
       ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize,
@@ -1897,43 +1929,47 @@ void renderRegistrationJobsWindow(
     ImGui::TableSetupColumn(
       "Backend",
       ImGuiTableColumnFlags_WidthFixed,
-      82.0f,
+      backendColumnWidth,
       static_cast<ImGuiID>(JobTableColumn::Backend));
     ImGui::TableSetupColumn(
       "Transform",
       ImGuiTableColumnFlags_WidthFixed,
-      128.0f,
+      transformColumnWidth,
       static_cast<ImGuiID>(JobTableColumn::Transform));
     ImGui::TableSetupColumn(
       "Metric",
       ImGuiTableColumnFlags_WidthFixed,
-      90.0f,
+      metricColumnWidth,
       static_cast<ImGuiID>(JobTableColumn::Metric));
     ImGui::TableSetupColumn(
       "Status",
       ImGuiTableColumnFlags_WidthFixed,
-      96.0f,
+      statusColumnWidth,
       static_cast<ImGuiID>(JobTableColumn::Status));
     ImGui::TableSetupColumn(
       "Progress",
       ImGuiTableColumnFlags_WidthFixed,
-      110.0f,
+      progressColumnWidth,
       static_cast<ImGuiID>(JobTableColumn::Progress));
     ImGui::TableSetupColumn(
       "Start",
       ImGuiTableColumnFlags_WidthFixed,
-      150.0f,
+      startColumnWidth,
       static_cast<ImGuiID>(JobTableColumn::Start));
-    ImGui::TableSetupColumn("End", ImGuiTableColumnFlags_WidthFixed, 150.0f, static_cast<ImGuiID>(JobTableColumn::End));
+    ImGui::TableSetupColumn(
+      "End",
+      ImGuiTableColumnFlags_WidthFixed,
+      endColumnWidth,
+      static_cast<ImGuiID>(JobTableColumn::End));
     ImGui::TableSetupColumn(
       "Duration",
       ImGuiTableColumnFlags_WidthFixed,
-      88.0f,
+      durationColumnWidth,
       static_cast<ImGuiID>(JobTableColumn::Duration));
     ImGui::TableSetupColumn(
       "Message",
       ImGuiTableColumnFlags_WidthFixed,
-      240.0f,
+      messageColumnWidth,
       static_cast<ImGuiID>(JobTableColumn::Message));
     ImGui::TableSetupColumn(
       "Output",
@@ -2120,7 +2156,7 @@ void renderRegistrationProgressWindow(AppData& appData)
 
   const registration::JobRecord* activeJob = nullptr;
   for (const registration::JobRecord& job : jobs.jobs()) {
-    if (registration::isActiveJobStatus(job.status)) {
+    if (registration::isActiveJobStatus(job.status) && job.status != registration::JobStatus::ImportingOutputs) {
       activeJob = &job;
       break;
     }

@@ -8,6 +8,8 @@
 #include <glm/vec3.hpp>
 #include <imgui/imgui.h>
 
+#include <algorithm>
+
 namespace
 {
 using uuid = uuids::uuid;
@@ -25,8 +27,13 @@ void renderAnnotationWindow(
   if (ImGui::Begin("Annotations", &(appData.guiData().m_showAnnotationsWindow))) {
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
+    const std::size_t visibleImageCount =
+      std::min(appData.numImages(), appData.guiData().m_visibleImageCountDuringLoad.value_or(appData.numImages()));
 
     for (const auto& imageUid : appData.imageUidsOrdered()) {
+      if (imageIndex >= visibleImageCount) {
+        break;
+      }
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
       renderAnnotationsHeader(
         appData,

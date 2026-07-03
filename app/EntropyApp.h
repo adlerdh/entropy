@@ -101,6 +101,9 @@ public:
   /** @brief Add a segmentation file to a specific image. */
   void addSegmentationFileToImage(const std::filesystem::path& fileName, const uuids::uuid& imageUid);
 
+  /** @brief Import outputs from a completed registration job through the async loading pipeline. */
+  void importRegistrationJobOutputs(const std::string& jobId);
+
   /** @brief Replace the current project with a serialized project file. */
   void loadProjectFile(const std::filesystem::path& fileName);
 
@@ -278,15 +281,19 @@ private:
    * @param windowTitleStatus Temporary status text for the window title.
    * @param loadTask Background task that returns true on success.
    * @param onLoadFailed Main-thread callback when loading fails.
-   * @param showLoadingOverlay True to show a loading overlay while the task runs.
+   * @param showLoadingOverlay True to show a loading
+   * overlay while the task runs.
    * @param loadingItems Items to show in the loading-status popup.
+   * @param
+   * loadingStatusTitle Title for the loading-status popup.
    */
   void startAsyncImageLoad(
     std::string windowTitleStatus,
     std::function<bool()> loadTask,
     std::function<void()> onLoadFailed,
     bool showLoadingOverlay = true,
-    std::vector<GuiData::LoadingStatusItem> loadingItems = {});
+    std::vector<GuiData::LoadingStatusItem> loadingItems = {},
+    std::string loadingStatusTitle = "Loading images");
 
   /** @brief Show the loading-status popup. */
   void beginLoadingStatus(std::string title, std::vector<GuiData::LoadingStatusItem> items);

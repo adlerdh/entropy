@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <imgui/imgui.h>
 
+#include <algorithm>
 #include <cinttypes>
 #include <optional>
 #include <string>
@@ -57,6 +58,8 @@ void renderInspectionWindow(
 
   static const ImVec4 buttonColor(0.0f, 0.0f, 0.0f, 0.0f);
   static const ImVec4 blueColor(0.0f, 0.5f, 1.0f, 1.0f);
+  const std::size_t visibleImageCount =
+    std::min(numImages, appData.guiData().m_visibleImageCountDuringLoad.value_or(numImages));
 
   // For which images to show coordinates?
   static std::unordered_map<uuid, bool> s_showSubject;
@@ -70,7 +73,7 @@ void renderInspectionWindow(
     s_firstRun = false;
   }
 
-  auto contextMenu = [&numImages, &appData, &getImageDisplayAndFileName]() {
+  auto contextMenu = [&visibleImageCount, &appData, &getImageDisplayAndFileName]() {
     if (ImGui::BeginMenu("Show")) {
       //                if ( ImGui::MenuItem( "World", nullptr, s_showWorldCoords ) )
       //                {
@@ -81,7 +84,7 @@ void renderInspectionWindow(
       //                    ImGui::SetTooltip( "Show World-space crosshairs coordinates" );
       //                }
 
-      for (std::size_t imageIndex = 0; imageIndex < numImages; ++imageIndex) {
+      for (std::size_t imageIndex = 0; imageIndex < visibleImageCount; ++imageIndex) {
         const auto imageUid = appData.imageUid(imageIndex);
         if (!imageUid) continue;
 
@@ -175,7 +178,7 @@ void renderInspectionWindow(
     bool firstImageShown = true;
     bool showedAtLeastOneImage = false; // is info for at least one image shown?
 
-    for (std::size_t imageIndex = 0; imageIndex < numImages; ++imageIndex) {
+    for (std::size_t imageIndex = 0; imageIndex < visibleImageCount; ++imageIndex) {
       const auto imageUid = appData.imageUid(imageIndex);
       const Image* image = (imageUid ? appData.image(*imageUid) : nullptr);
       if (!image) continue;

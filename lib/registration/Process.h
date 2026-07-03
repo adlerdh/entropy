@@ -15,6 +15,7 @@ namespace registration
  */
 enum class OutputStream
 {
+  Command,
   Stdout,
   Stderr
 };
@@ -39,11 +40,11 @@ struct ProcessOptions
 };
 
 /**
- * @brief One line emitted by a backend process.
+ * @brief One output-log line emitted by Entropy or a backend process.
  */
 struct ProcessOutputLine
 {
-  OutputStream stream = OutputStream::Stdout; //!< Source stream.
+  OutputStream stream = OutputStream::Stdout; //!< Source stream or Entropy command marker.
   std::string text;                           //!< Line text without trailing newline.
 };
 
@@ -94,16 +95,18 @@ public:
 };
 
 /**
- * @brief Process runner that launches backend commands through the platform shell.
+ * @brief Process runner that launches backend commands through the platform process API.
  *
- * This runner is intentionally isolated behind IProcessRunner. It is suitable for the first backend integration
- * path and can later be replaced by a lower-level runner with stronger cancellation and streaming guarantees.
+ * This runner is
+ * intentionally isolated behind IProcessRunner. On Windows it uses CreateProcessW with redirected
+ * pipes and no
+ * visible console window; on POSIX it uses the platform shell with redirected output.
  */
 class ShellProcessRunner final : public IProcessRunner
 {
 public:
   /**
-   * @brief Run one process command and capture merged stdout/stderr output.
+   * @brief Run one process command and capture stdout/stderr output.
    * @param command Command to execute.
    * @param options Launch options.
    * @param callbacks Streaming callbacks.

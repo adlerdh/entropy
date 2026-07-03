@@ -25,8 +25,13 @@ void renderIsosurfacesWindow(
   if (ImGui::Begin("Isosurfaces", &(appData.guiData().m_showIsosurfacesWindow))) {
     std::size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
+    const std::size_t visibleImageCount =
+      std::min(appData.numImages(), appData.guiData().m_visibleImageCountDuringLoad.value_or(appData.numImages()));
 
     for (const auto& imageUid : appData.imageUidsOrdered()) {
+      if (imageIndex >= visibleImageCount) {
+        break;
+      }
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
 
       renderIsosurfacesHeader(

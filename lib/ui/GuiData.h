@@ -157,6 +157,9 @@ struct GuiData
 
   std::shared_ptr<LoadingStatus> m_loadingStatus = std::make_shared<LoadingStatus>(); //!< Active image-load status.
 
+  /// Number of already-finalized images that image-dependent panels may render while a background load is active.
+  std::optional<std::size_t> m_visibleImageCountDuringLoad = std::nullopt;
+
   /**
    * @brief State for selecting one or more discovered DICOM series to load.
    */

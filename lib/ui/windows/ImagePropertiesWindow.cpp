@@ -14,6 +14,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <string>
 
 namespace
@@ -76,8 +77,13 @@ void renderImagePropertiesWindow(
 
     size_t imageIndex = 0;
     const auto activeUid = appData.activeImageUid();
+    const std::size_t visibleImageCount =
+      std::min(numImages, appData.guiData().m_visibleImageCountDuringLoad.value_or(numImages));
 
     for (const auto& imageUid : appData.imageUidsOrdered()) {
+      if (imageIndex >= visibleImageCount) {
+        break;
+      }
       if (Image* image = appData.image(imageUid)) {
         const bool isActiveImage = activeUid && (imageUid == *activeUid);
 

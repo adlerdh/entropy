@@ -156,6 +156,7 @@ void EntropyApp::onImagesReady()
   m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
   updateWindowTitleStatus();
 
+  m_data.guiData().m_visibleImageCountDuringLoad = std::nullopt;
   m_data.state().setAnimating(false);
   m_data.settings().setOverlays(true);
 

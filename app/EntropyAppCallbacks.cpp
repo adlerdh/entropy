@@ -60,6 +60,9 @@ void EntropyApp::setCallbacks()
     }
     return defUid;
   };
+  imguiCallbacks.project.importRegistrationJobOutputs = [this](const std::string& jobId) {
+    importRegistrationJobOutputs(jobId);
+  };
   imguiCallbacks.project.openProjectFile = [this](const fs::path& fileName) {
     loadProjectFile(fileName);
   };

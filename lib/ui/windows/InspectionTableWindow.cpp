@@ -36,6 +36,12 @@ using uuid = uuids::uuid;
 const ImVec4 whiteText(1, 1, 1, 1);
 const ImVec4 blackText(0, 0, 0, 1);
 
+std::size_t visibleImageCount(const AppData& appData)
+{
+  const std::size_t numImages = appData.numImages();
+  return std::min(numImages, appData.guiData().m_visibleImageCountDuringLoad.value_or(numImages));
+}
+
 enum class InspectorColumn : int
 {
   Image = 0,
@@ -114,8 +120,10 @@ std::optional<double> activeComponentPercentile(const Image& image, const std::v
 
 bool hasMultiComponentImage(const AppData& appData)
 {
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
-    const Image* image = appData.image(imageUid);
+  const std::size_t numVisibleImages = visibleImageCount(appData);
+  for (std::size_t imageIndex = 0; imageIndex < numVisibleImages; ++imageIndex) {
+    const auto imageUid = appData.imageUid(imageIndex);
+    const Image* image = imageUid ? appData.image(*imageUid) : nullptr;
     if (image && image->header().numComponentsPerPixel() > 1) {
       return true;
     }
@@ -126,8 +134,10 @@ bool hasMultiComponentImage(const AppData& appData)
 
 bool hasComplexValuedImage(const AppData& appData)
 {
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
-    const Image* image = appData.image(imageUid);
+  const std::size_t numVisibleImages = visibleImageCount(appData);
+  for (std::size_t imageIndex = 0; imageIndex < numVisibleImages; ++imageIndex) {
+    const auto imageUid = appData.imageUid(imageIndex);
+    const Image* image = imageUid ? appData.image(*imageUid) : nullptr;
     if (image && isComplexValuedImage(*image)) {
       return true;
     }
@@ -138,8 +148,10 @@ bool hasComplexValuedImage(const AppData& appData)
 
 bool hasVectorFieldImage(const AppData& appData)
 {
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
-    const Image* image = appData.image(imageUid);
+  const std::size_t numVisibleImages = visibleImageCount(appData);
+  for (std::size_t imageIndex = 0; imageIndex < numVisibleImages; ++imageIndex) {
+    const auto imageUid = appData.imageUid(imageIndex);
+    const Image* image = imageUid ? appData.image(*imageUid) : nullptr;
     if (image && isVectorFieldImage(*image)) {
       return true;
     }
@@ -150,8 +162,10 @@ bool hasVectorFieldImage(const AppData& appData)
 
 bool hasTimeSeriesImage(const AppData& appData)
 {
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
-    const Image* image = appData.image(imageUid);
+  const std::size_t numVisibleImages = visibleImageCount(appData);
+  for (std::size_t imageIndex = 0; imageIndex < numVisibleImages; ++imageIndex) {
+    const auto imageUid = appData.imageUid(imageIndex);
+    const Image* image = imageUid ? appData.image(*imageUid) : nullptr;
     if (image && image->isTimeSeries()) {
       return true;
     }
@@ -162,9 +176,14 @@ bool hasTimeSeriesImage(const AppData& appData)
 
 bool hasWarpedImage(const AppData& appData)
 {
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
-    const Image* image = appData.image(imageUid);
-    const std::optional<uuid> defUid = appData.imageToActiveInverseWarpUid(imageUid);
+  const std::size_t numVisibleImages = visibleImageCount(appData);
+  for (std::size_t imageIndex = 0; imageIndex < numVisibleImages; ++imageIndex) {
+    const auto imageUid = appData.imageUid(imageIndex);
+    if (!imageUid) {
+      continue;
+    }
+    const Image* image = appData.image(*imageUid);
+    const std::optional<uuid> defUid = appData.imageToActiveInverseWarpUid(*imageUid);
     if (
       image && image->settings().warpEnabled() && image->settings().warpStrength() > 0.0f && defUid &&
       appData.warpField(*defUid))
@@ -197,8 +216,10 @@ std::optional<double> timeValue(const Image& image)
 std::string timeValueColumnName(const AppData& appData)
 {
   std::optional<std::string> units;
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
-    const Image* image = appData.image(imageUid);
+  const std::size_t numVisibleImages = visibleImageCount(appData);
+  for (std::size_t imageIndex = 0; imageIndex < numVisibleImages; ++imageIndex) {
+    const auto imageUid = appData.imageUid(imageIndex);
+    const Image* image = imageUid ? appData.image(*imageUid) : nullptr;
     if (!image || !image->isTimeSeries()) {
       continue;
     }
@@ -720,8 +741,11 @@ void renderInspectionWindowWithTable(
 
   if (s_firstRun) {
     // Show all images by default:
-    for (const auto& imageUid : appData.imageUidsOrdered()) {
-      s_showSubject.insert({imageUid, true});
+    const std::size_t numVisibleImages = visibleImageCount(appData);
+    for (std::size_t imageIndex = 0; imageIndex < numVisibleImages; ++imageIndex) {
+      if (const auto imageUid = appData.imageUid(imageIndex)) {
+        s_showSubject.insert({*imageUid, true});
+      }
     }
 
     s_firstRun = false;
@@ -794,7 +818,8 @@ void renderInspectionWindowWithTable(
   };
 
   auto renderImagesItems = [&appData, &getImageDisplayAndFileName]() {
-    for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
+    const std::size_t numVisibleImages = visibleImageCount(appData);
+    for (std::size_t imageIndex = 0; imageIndex < numVisibleImages; ++imageIndex) {
       const auto imageUid = appData.imageUid(imageIndex);
       if (!imageUid) continue;
 
@@ -1162,7 +1187,8 @@ void renderInspectionWindowWithTable(
         }
       }
 
-      for (std::size_t imageIndex = 0; imageIndex < appData.numImages(); ++imageIndex) {
+      const std::size_t numVisibleImages = visibleImageCount(appData);
+      for (std::size_t imageIndex = 0; imageIndex < numVisibleImages; ++imageIndex) {
         const auto imageUid = appData.imageUid(imageIndex);
         Image* image = (imageUid ? appData.image(*imageUid) : nullptr);
         if (!image) continue;

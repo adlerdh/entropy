@@ -473,6 +473,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
     if (const Image* def = m_data.def(defUid)) {
       if (def->header().fileName() == fileName) {
         spdlog::info("Warp field from {} has already been loaded as {}", fileName, defUid);
+        markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Image, fileName);
         return {defUid, false};
       }
     }
@@ -485,6 +486,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
         mutableImage->settings().setComponentRenderMode(ComponentRenderMode::Magnitude);
       }
       spdlog::info("Using already-loaded image {} from {} as a warp field", imageUid, fileName);
+      markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Image, fileName);
       return {imageUid, false};
     }
   }
@@ -521,6 +523,7 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
 
   if (const auto defUid = m_data.addDef(std::move(def))) {
     spdlog::info("Loaded warp field image from file {} as {}", fileName, *defUid);
+    markLoadingStatusItemLoaded(GuiData::LoadingStatusItem::Kind::Image, fileName);
     return {*defUid, true};
   }
 
@@ -1717,7 +1720,8 @@ void EntropyApp::startAsyncImageLoad(
   std::function<bool()> loadTask,
   std::function<void()> onLoadFailed,
   bool showLoadingOverlay,
-  std::vector<GuiData::LoadingStatusItem> loadingItems)
+  std::vector<GuiData::LoadingStatusItem> loadingItems,
+  std::string loadingStatusTitle)
 {
   if (m_futureLoadProject.valid()) {
     m_futureLoadProject.wait();
@@ -1731,7 +1735,8 @@ void EntropyApp::startAsyncImageLoad(
   m_imageLoadCancelled = false;
   m_imagesReady = false;
   m_imageLoadFailed = false;
-  beginLoadingStatus("Loading images", std::move(loadingItems));
+  m_data.guiData().m_visibleImageCountDuringLoad = m_data.numImages();
+  beginLoadingStatus(std::move(loadingStatusTitle), std::move(loadingItems));
 
   m_glfw.setWindowTitleStatus(windowTitleStatus);
   m_glfw.setEventProcessingMode(EventProcessingMode::Poll);
@@ -1754,6 +1759,7 @@ void EntropyApp::startAsyncImageLoad(
         onLoadFailed();
       }
       hideLoadingStatus();
+      m_data.guiData().m_visibleImageCountDuringLoad = std::nullopt;
       m_imagesReady = false;
       m_imageLoadFailed = false;
       m_glfw.postEmptyEvent();

@@ -18,7 +18,7 @@ BEGIN
     BLOCK "040904b0"
     BEGIN
       VALUE "CompanyName", "@PUBLISHER_NAME@\0"
-      VALUE "FileDescription", "@APP_DESCRIPTION@\0"
+      VALUE "FileDescription", "@APP_FILE_DESCRIPTION@\0"
       VALUE "FileVersion", "@VERSION_FULL@\0"
       VALUE "InternalName", "entropy\0"
       VALUE "LegalCopyright", "@COPYRIGHT_LINE@\0"

@@ -1,5 +1,6 @@
 #include "registration/Execution.h"
 #include "registration/Artifacts.h"
+#include "registration/Commands.h"
 #include "registration/Json.h"
 #include "registration/Progress.h"
 
@@ -110,8 +111,11 @@ TEST_CASE("registration job execution reports progress and completion", "[regist
   CHECK(execution.manifest->success);
   CHECK(execution.manifest->warpedImage == registration::artifactPath(job, registration::ArtifactRole::WarpedImage));
   REQUIRE(execution.progressEvents.size() == 1);
-  REQUIRE(execution.outputLines.size() == 1);
-  CHECK(execution.outputLines.front().text == registration::progressEventLine(event));
+  REQUIRE(runner.commands.size() == 1);
+  REQUIRE(execution.outputLines.size() == 2);
+  CHECK(execution.outputLines.front().stream == registration::OutputStream::Command);
+  CHECK(execution.outputLines.front().text == registration::displayCommand(runner.commands.front()));
+  CHECK(execution.outputLines.back().text == registration::progressEventLine(event));
   CHECK(execution.progressEvents.front().stageName == "deformable");
   REQUIRE_FALSE(statuses.empty());
   CHECK(statuses.back() == registration::JobStatus::Completed);
@@ -240,8 +244,11 @@ TEST_CASE("registration job execution stops after a failed command", "[registrat
   CHECK(execution.commands.front().result.exitCode == 2);
   REQUIRE_FALSE(execution.warnings.empty());
   CHECK(execution.warnings.front() == "metric diverged");
-  REQUIRE(execution.outputLines.size() == 1);
-  CHECK(execution.outputLines.front().text == "metric diverged");
+  REQUIRE(runner.commands.size() == 1);
+  REQUIRE(execution.outputLines.size() == 2);
+  CHECK(execution.outputLines.front().stream == registration::OutputStream::Command);
+  CHECK(execution.outputLines.front().text == registration::displayCommand(runner.commands.front()));
+  CHECK(execution.outputLines.back().text == "metric diverged");
 }
 
 TEST_CASE("registration job execution reports cancelled process", "[registration][execution]")
