@@ -10,8 +10,10 @@ set(entropy_WINDOWS_RUNTIME_DEPENDENCY_DIRS
     "${nativefiledialog_PREFIX}/install/bin"
     "${qtbase_PREFIX}/install/bin"
     "${spdlog_PREFIX}/install/bin"
-    "${itk_PREFIX}/build/bin/$<CONFIG>"
 )
+if(NOT Entropy_STATIC_BUNDLED_DEPENDENCIES)
+    list(APPEND entropy_WINDOWS_RUNTIME_DEPENDENCY_DIRS "${itk_PREFIX}/build/bin/$<CONFIG>")
+endif()
 
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "${entropy_WINDOWS_INSTALL_BINDIR}")
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_COMPONENT Runtime)
@@ -35,12 +37,14 @@ install(RUNTIME_DEPENDENCY_SET entropy_WINDOWS_RUNTIME_DEPENDENCIES
     COMPONENT Runtime
 )
 
-install(DIRECTORY "${itk_PREFIX}/build/bin/$<CONFIG>/"
-    DESTINATION "${entropy_WINDOWS_INSTALL_BINDIR}"
-    COMPONENT Runtime
-    FILES_MATCHING
-      PATTERN "*.dll"
-)
+if(NOT Entropy_STATIC_BUNDLED_DEPENDENCIES)
+    install(DIRECTORY "${itk_PREFIX}/build/bin/$<CONFIG>/"
+        DESTINATION "${entropy_WINDOWS_INSTALL_BINDIR}"
+        COMPONENT Runtime
+        FILES_MATCHING
+          PATTERN "*.dll"
+    )
+endif()
 
 install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python"

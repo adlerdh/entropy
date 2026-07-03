@@ -5,11 +5,11 @@ if(POLICY CMP0175)
 endif()
 
 set(APP_NAME "Entropy")
-set(APP_DESCRIPTION "Visualize, compare, segment, and annotate 3D medical images")
-set(PICSL_NAME "Penn Image Computing and Science Lab (PICSL, University of Pennsylvania)")
+set(APP_DESCRIPTION "Visualize, compare, segment, annotate, and co-register medical images")
+set(PICSL_NAME "Penn Image Computing and Science Lab (PICSL), University of Pennsylvania")
 set(PUBLISHER_NAME "Daniel H. Adler")
 set(AUTHOR_CREDIT_LINE "Primary author and maintainer: Daniel H. Adler, Ph.D.")
-set(COPYRIGHT_LINE "Copyright 2021-2026 Daniel H. Adler, Ph.D. and ${PICSL_NAME}")
+set(COPYRIGHT_LINE "Copyright 2021-2026 Daniel H. Adler, Ph.D. and the ${PICSL_NAME}")
 set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)
@@ -136,7 +136,7 @@ option(Entropy_STATIC_BUNDLED_DEPENDENCIES
   "Build bundled third-party dependencies as static libraries where practical; Qt and system libraries stay dynamic"
   ${entropy_STATIC_BUNDLED_DEPENDENCIES_DEFAULT})
 option(Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS
-  "Build GLFW, Native File Dialog Extended, and spdlog as static libraries for Windows release packages; ITK and Qt stay dynamic"
+  "Build GLFW, Native File Dialog Extended, and spdlog as static libraries for Windows release packages; Qt stays dynamic"
   OFF)
 
 if(BUILD_SHARED_LIBS)

@@ -3,7 +3,7 @@
 
 Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D.
 
-Copyright 2021-2026 Daniel H. Adler, Ph.D. and Penn Image Computing and Science Lab (PICSL, University of Pennsylvania). All rights reserved.
+Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of Pennsylvania. All rights reserved.
 
 ## Documentation
 
