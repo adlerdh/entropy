@@ -120,6 +120,19 @@ jobs:
           "${CC}" --version
           "${CXX}" --version
 
+      - name: Restore Debug ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: ubuntu2204-gcc13-debug-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            ubuntu2204-gcc13-debug-ccache-v1-
+
+      - name: Reset Debug ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
       - name: Restore Debug SuperBuild cache
         uses: actions/cache@v5
         with:
@@ -145,19 +158,23 @@ jobs:
             ubuntu2204-gcc13-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
 
       - name: Configure Debug SuperBuild
-        run: cmake --preset superbuild-debug -D Entropy_USE_CCACHE=OFF
+        run: cmake --preset superbuild-debug -D Entropy_USE_CCACHE=ON
 
       - name: Build Debug SuperBuild
         run: cmake --build --preset superbuild-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Debug app
-        run: cmake --preset app-debug -D Entropy_USE_CCACHE=OFF
+        run: cmake --preset app-debug -D Entropy_USE_CCACHE=ON
 
       - name: Build Debug app
         run: cmake --build --preset app-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Run Debug tests
         run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
+
+      - name: Show Debug ccache stats
+        if: always()
+        run: ccache --show-stats
 
   coverage:
     name: Coverage Report (x86_64)
