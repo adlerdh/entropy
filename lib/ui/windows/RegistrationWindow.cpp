@@ -1994,11 +1994,10 @@ void renderRegistrationJobsWindow(
       const bool active = registration::isActiveJobStatus(job.status);
       ImGui::BeginDisabled(!active);
       if (ImGui::SmallButton("Cancel")) {
-        jobs.appendProgress(
-          job.id,
-          registration::ProgressEvent{
-            .kind = registration::ProgressEventKind::Cancelled,
-            .message = "Registration was cancelled before backend execution"});
+        registration::ProgressEvent event;
+        event.kind = registration::ProgressEventKind::Cancelled;
+        event.message = "Registration was cancelled before backend execution";
+        jobs.appendProgress(job.id, std::move(event));
       }
       ImGui::EndDisabled();
       ImGui::SameLine();

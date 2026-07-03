@@ -280,7 +280,7 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
 
 void renderImageMenu(const MainMenuBarCallbacks& callbacks)
 {
-  actionMenuItem(callbacks, "Images", MainMenuAction::ToggleImagesWindow);
+  actionMenuItem(callbacks, "Images Panel", MainMenuAction::ToggleImagesWindow);
   ImGui::Separator();
   if (ImGui::MenuItem("Add Image(s)...", nullptr, false, callbacks.canAddImage)) {
     addImage(callbacks);
@@ -321,7 +321,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   }
   ImGui::Separator();
   if (ImGui::BeginMenu("Isosurfaces", callbacks.canAddImage)) {
-    actionMenuItem(callbacks, "Isosurfaces", MainMenuAction::ToggleIsosurfacesWindow);
+    actionMenuItem(callbacks, "Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
     ImGui::Separator();
     actionMenuItem(callbacks, "Add Isosurface...", MainMenuAction::AddIsosurface);
     actionMenuItem(callbacks, "Add Isosurface Range...", MainMenuAction::AddIsosurfaceRange);
@@ -366,7 +366,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
 
 void renderSegmentationMenu(const MainMenuBarCallbacks& callbacks)
 {
-  actionMenuItem(callbacks, "Segmentations", MainMenuAction::ToggleSegmentationsWindow);
+  actionMenuItem(callbacks, "Segmentations Panel", MainMenuAction::ToggleSegmentationsWindow);
   ImGui::Separator();
   if (ImGui::MenuItem("Add Segmentation...", nullptr, false, callbacks.canAddSegmentation)) {
     addSegmentation(callbacks);
@@ -387,7 +387,7 @@ void renderSegmentationMenu(const MainMenuBarCallbacks& callbacks)
 
 void renderAnnotationMenu(const MainMenuBarCallbacks& callbacks)
 {
-  actionMenuItem(callbacks, "Annotations", MainMenuAction::ToggleAnnotationsWindow);
+  actionMenuItem(callbacks, "Annotations Panel", MainMenuAction::ToggleAnnotationsWindow);
   ImGui::Separator();
   actionMenuItem(callbacks, "Save All Annotations...", MainMenuAction::SaveAnnotations);
   actionMenuItem(callbacks, "Remove Active Annotation", MainMenuAction::RemoveAnnotation);
@@ -402,7 +402,7 @@ void renderAnnotationMenu(const MainMenuBarCallbacks& callbacks)
 
 void renderLandmarkMenu(const MainMenuBarCallbacks& callbacks)
 {
-  actionMenuItem(callbacks, "Landmarks", MainMenuAction::ToggleLandmarksWindow);
+  actionMenuItem(callbacks, "Landmarks Panel", MainMenuAction::ToggleLandmarksWindow);
   ImGui::Separator();
   actionMenuItem(callbacks, "Create Landmark Group", MainMenuAction::CreateLandmarkGroup);
   actionMenuItem(callbacks, "Save Active Landmark Group...", MainMenuAction::SaveLandmarkGroup);
@@ -568,16 +568,18 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
 
     if (ImGui::BeginMenu("Window")) {
       static_cast<void>(uiData);
-      main_menu::actionMenuItem(callbacks, "Images", MainMenuAction::ToggleImagesWindow);
-      main_menu::actionMenuItem(callbacks, "Segmentations", MainMenuAction::ToggleSegmentationsWindow);
-      main_menu::actionMenuItem(callbacks, "Registration", MainMenuAction::ShowRegistrationSetupWindow);
-      main_menu::actionMenuItem(callbacks, "Annotations", MainMenuAction::ToggleAnnotationsWindow);
-      main_menu::actionMenuItem(callbacks, "Landmarks", MainMenuAction::ToggleLandmarksWindow);
-      main_menu::actionMenuItem(callbacks, "Isosurfaces", MainMenuAction::ToggleIsosurfacesWindow);
-      main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow);
+      main_menu::actionMenuItem(callbacks, "Images Panel", MainMenuAction::ToggleImagesWindow);
+      main_menu::actionMenuItem(callbacks, "Segmentations Panel", MainMenuAction::ToggleSegmentationsWindow);
+      main_menu::actionMenuItem(callbacks, "Registration Panel", MainMenuAction::ShowRegistrationSetupWindow);
+      main_menu::actionMenuItem(callbacks, "Annotations Panel", MainMenuAction::ToggleAnnotationsWindow);
+      main_menu::actionMenuItem(callbacks, "Landmarks Panel", MainMenuAction::ToggleLandmarksWindow);
+      main_menu::actionMenuItem(callbacks, "Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
+      ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Voxel Inspector", MainMenuAction::ToggleInspectorWindow);
       main_menu::actionMenuItem(callbacks, "Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
       main_menu::actionMenuItem(callbacks, "Registration Jobs", MainMenuAction::ToggleRegistrationJobsWindow);
+      ImGui::Separator();
+      main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow);
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Reset Panel Layout", MainMenuAction::ResetPanelLayout);
       ImGui::Separator();

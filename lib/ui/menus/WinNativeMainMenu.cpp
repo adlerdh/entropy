@@ -350,8 +350,8 @@ bool populateModesMenu(HMENU menu)
          insertActionMenuItem(menu, position++, MainMenuAction::SetModeRotateView, L"&Rotate View") &&
          insertActionMenuItem(menu, position++, MainMenuAction::SetModeRotateCrosshairs, L"Rotate Cross&hairs") &&
          insertSeparator(menu, position++) &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModeSegment, L"&Brush") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModeAnnotate, L"&Annotate") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeSegment, L"Segmentation &Brush") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeAnnotate, L"Vector &Annotate") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::SetModeTranslateImage, L"&Translate Image") &&
          insertActionMenuItem(menu, position++, MainMenuAction::SetModeRotateImage, L"R&otate Image") &&
@@ -491,7 +491,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
       registrationMenu,
       registrationPosition++,
       MainMenuAction::ShowRegistrationSetupWindow,
-      L"Image Registration &Panel...") ||
+      L"&Registration...") ||
     !insertActionMenuItem(
       registrationMenu,
       registrationPosition++,
@@ -512,14 +512,18 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
       isosurfacesMenu,
       isosurfacesPosition++,
       MainMenuAction::ToggleIsosurfacesWindow,
-      L"I&sosurfaces") ||
+      L"I&sosurfaces Panel") ||
     !insertSeparator(isosurfacesMenu, isosurfacesPosition++) ||
-    !insertActionMenuItem(isosurfacesMenu, isosurfacesPosition++, MainMenuAction::AddIsosurface, L"&Add...") ||
+    !insertActionMenuItem(
+      isosurfacesMenu,
+      isosurfacesPosition++,
+      MainMenuAction::AddIsosurface,
+      L"Add I&sosurface...") ||
     !insertActionMenuItem(
       isosurfacesMenu,
       isosurfacesPosition++,
       MainMenuAction::AddIsosurfaceRange,
-      L"Add &Range...") ||
+      L"Add Isosurface &Range...") ||
     !insertActionMenuItem(
       isosurfacesMenu,
       isosurfacesPosition++,
@@ -535,11 +539,11 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
 
   UINT position = 0;
   const bool ok =
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"&Images") &&
-    insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
-    insertMenuItem(menu, position++, k_addImageCommand, L"&Add Image(s)...") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"&Images Panel") &&
+    insertSeparator(menu, position++) && insertMenuItem(menu, position++, k_addImageCommand, L"&Add Image(s)...") &&
     insertMenuItem(menu, position++, k_addDicomSeriesCommand, L"Add &DICOM Series...") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ExportActiveImage, L"&Export DICOM Series as Image...") &&
+    insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
     insertActionMenuItem(menu, position++, MainMenuAction::RemoveActiveImage, L"&Remove Active Image") &&
     insertActionMenuItem(menu, position++, MainMenuAction::SetActiveImageAsReference, L"Set Image as &Reference") &&
     insertSeparator(menu, position++) &&
@@ -566,7 +570,7 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
 bool populateSegmentationMenu(HMENU menu)
 {
   UINT position = 0;
-  return insertActionMenuItem(menu, position++, MainMenuAction::ToggleSegmentationsWindow, L"Se&gmentations") &&
+  return insertActionMenuItem(menu, position++, MainMenuAction::ToggleSegmentationsWindow, L"Se&gmentations Panel") &&
          insertSeparator(menu, position++) &&
          insertMenuItem(menu, position++, k_addSegmentationCommand, L"&Add Segmentation...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::CreateSegmentation, L"&Create Blank Segmentation") &&
@@ -594,7 +598,7 @@ bool populateSegmentationMenu(HMENU menu)
 bool populateAnnotationsMenu(HMENU menu)
 {
   UINT position = 0;
-  return insertActionMenuItem(menu, position++, MainMenuAction::ToggleAnnotationsWindow, L"&Annotations") &&
+  return insertActionMenuItem(menu, position++, MainMenuAction::ToggleAnnotationsWindow, L"&Annotations Panel") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::SaveAnnotations, L"&Save All Annotations...") &&
          insertActionMenuItem(menu, position++, MainMenuAction::RemoveAnnotation, L"&Remove Active Annotation") &&
@@ -614,7 +618,7 @@ bool populateAnnotationsMenu(HMENU menu)
 bool populateLandmarksMenu(HMENU menu)
 {
   UINT position = 0;
-  return insertActionMenuItem(menu, position++, MainMenuAction::ToggleLandmarksWindow, L"&Landmarks") &&
+  return insertActionMenuItem(menu, position++, MainMenuAction::ToggleLandmarksWindow, L"&Landmarks Panel") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::CreateLandmarkGroup, L"&Create Landmark Group") &&
          insertActionMenuItem(menu, position++, MainMenuAction::SaveLandmarkGroup, L"&Save Active Landmark Group...") &&
@@ -650,12 +654,12 @@ bool populateViewsMenu(HMENU menu)
          insertActionMenuItem(menu, position++, MainMenuAction::ResetView, L"Reset Views and &Crosshairs\tShift+C") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleImageVisibility, L"Show &Image\tW") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ToggleImageEdges, L"Show Image &Edges\tShift+E") &&
          insertActionMenuItem(
            menu,
            position++,
            MainMenuAction::ToggleSegmentationVisibility,
            L"Show &Segmentation\tS") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::ToggleImageEdges, L"Show Image &Edges\tShift+E") &&
          insertActionMenuItem(
            menu,
            position++,
@@ -706,16 +710,18 @@ bool populateWindowsMenu(HMENU menu)
 {
   UINT position = 0;
   bool ok =
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"&Images") &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleSegmentationsWindow, L"&Segmentations") &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ShowRegistrationSetupWindow, L"&Registration") &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleAnnotationsWindow, L"&Annotations") &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleLandmarksWindow, L"&Landmarks") &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleIsosurfacesWindow, L"I&sosurfaces") &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleImagesWindow, L"&Images Panel") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleSegmentationsWindow, L"&Segmentations Panel") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ShowRegistrationSetupWindow, L"&Registration Panel") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleAnnotationsWindow, L"&Annotations Panel") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleLandmarksWindow, L"&Landmarks Panel") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleIsosurfacesWindow, L"I&sosurfaces Panel") &&
+    insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegistrationJobsWindow, L"Registration &Jobs") &&
+    insertSeparator(menu, position++) &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings") &&
     insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&
     insertSeparator(menu, position++) &&

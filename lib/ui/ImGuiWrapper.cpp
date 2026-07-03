@@ -2113,11 +2113,10 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
 
     registration::JobSpec jobSpec = job.spec;
     if (!materializeRegistrationInputs(jobSpec)) {
-      m_appData.registrationJobs().appendProgress(
-        job.id,
-        registration::ProgressEvent{
-          .kind = registration::ProgressEventKind::Failed,
-          .message = "Unable to export registration inputs for backend execution."});
+      registration::ProgressEvent event;
+      event.kind = registration::ProgressEventKind::Failed;
+      event.message = "Unable to export registration inputs for backend execution.";
+      m_appData.registrationJobs().appendProgress(job.id, std::move(event));
       continue;
     }
 

@@ -699,9 +699,9 @@ void renderInspectionWindowWithTable(
 
   //    static const ImVec4 blueColor( 0.0f, 0.5f, 1.0f, 1.0f );
 
-  static const ImGuiTableFlags k_tableFlags =
-    ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders |
-    ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY;
+  static const ImGuiTableFlags k_tableFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable |
+                                              ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders |
+                                              ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
 
   static const ImGuiWindowFlags k_windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoFocusOnAppearing;
 
@@ -1003,7 +1003,6 @@ void renderInspectionWindowWithTable(
   ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, k_cellPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImGui::GetStyle().FramePadding);
   ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, k_itemInnerSpacing);
-  ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 0.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
   ImGui::PushStyleVar(
     ImGuiStyleVar_WindowPadding,
@@ -1742,5 +1741,5 @@ void renderInspectionWindowWithTable(
   // ImGuiStyleVar_WindowBorderSize
   // ImGuiStyleVar_WindowPadding
   // ImGuiStyleVar_WindowRounding
-  ImGui::PopStyleVar(7);
+  ImGui::PopStyleVar(6);
 }

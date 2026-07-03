@@ -113,6 +113,14 @@ std::vector<GuiData::LoadingStatusItem> registrationLoadingItems(const registrat
   return items;
 }
 
+registration::ProgressEvent makeRegistrationProgressEvent(registration::ProgressEventKind kind, std::string message)
+{
+  registration::ProgressEvent event;
+  event.kind = kind;
+  event.message = std::move(message);
+  return event;
+}
+
 } // namespace
 
 void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
@@ -132,7 +140,7 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
   const registration::JobStatus statusBeforeImport = job->status;
   registration::ResultManifest manifest = *job->manifest;
   auto appendEvent = [&jobs, &jobId](registration::ProgressEventKind kind, std::string message) {
-    jobs.appendProgress(jobId, registration::ProgressEvent{.kind = kind, .message = std::move(message)});
+    jobs.appendProgress(jobId, makeRegistrationProgressEvent(kind, std::move(message)));
   };
 
   if (spec.backend == registration::Backend::ANTs && registration::includesDeformableTransform(spec.transformModel)) {
@@ -165,7 +173,7 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
     [this, jobId, spec, plan, statusBeforeImport]() {
       registration::JobStore& asyncJobs = m_data.registrationJobs();
       auto appendAsyncEvent = [&asyncJobs, &jobId](registration::ProgressEventKind kind, std::string message) {
-        asyncJobs.appendProgress(jobId, registration::ProgressEvent{.kind = kind, .message = std::move(message)});
+        asyncJobs.appendProgress(jobId, makeRegistrationProgressEvent(kind, std::move(message)));
       };
 
       auto parseTargetImageUid =
