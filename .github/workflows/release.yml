@@ -60,7 +60,7 @@ jobs:
             echo "Version: $version"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  windows:
+  windows-x86_64:
     name: Windows Release (x86_64)
     runs-on: windows-2022
     needs: metadata
@@ -167,7 +167,7 @@ jobs:
             build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Windows-*-portable.zip
           if-no-files-found: error
 
-  linux:
+  linux-x86_64:
     name: Ubuntu 22.04 Release (x86_64)
     runs-on: ubuntu-22.04
     needs: metadata
@@ -318,7 +318,7 @@ jobs:
         if: always()
         run: ccache --show-stats
 
-  macos:
+  macos-arm64:
     name: macOS Release (arm64)
     runs-on: macos-14
     needs: metadata
@@ -601,9 +601,9 @@ jobs:
     runs-on: ubuntu-22.04
     needs:
       - metadata
-      - windows
-      - linux
-      - macos
+      - windows-x86_64
+      - linux-x86_64
+      - macos-arm64
       - macos-x86_64
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
@@ -653,7 +653,7 @@ jobs:
           - macOS Intel (x86_64): \`Entropy-${ENTROPY_VERSION}-macOS-x86_64.dmg\`
           - Windows x86_64: \`Entropy-${ENTROPY_VERSION}-Windows-x86_64.msi\`
           - Ubuntu 22.04 x86_64: \`Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-x86_64.deb\`
-          - Portable archives are also attached for macOS, Windows, and Linux.
+          - Portable archives are also attached for macOS, Windows, and Ubuntu.
           - Source archives are attached as \`zip\` and \`tar.gz\`.
 
           ## Notes

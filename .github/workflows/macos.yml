@@ -78,7 +78,7 @@ jobs:
       - name: Require clean formatting result
         run: git diff --exit-code
 
-  debug:
+  debug-arm64:
     name: Debug Build And Tests (arm64)
     runs-on: macos-14
     needs: format
@@ -168,7 +168,7 @@ jobs:
         if: always()
         run: ccache --show-stats
 
-  debug-x64:
+  debug-x86_64:
     name: Debug Build And Tests (x86_64)
     runs-on: macos-15-intel
     needs: format
@@ -260,7 +260,7 @@ jobs:
         if: always()
         run: ccache --show-stats
 
-  coverage:
+  coverage-arm64:
     name: macOS Coverage Report (arm64)
     runs-on: macos-14
     needs: format
@@ -357,7 +357,7 @@ jobs:
         if: always()
         run: ccache --show-stats
 
-  package:
+  package-arm64:
     name: macOS Release Packages (arm64)
     runs-on: macos-14
     needs: format
@@ -575,7 +575,7 @@ jobs:
         if: always()
         run: ccache --show-stats
 
-  macos-26-smoke:
+  smoke-arm64-macos-26:
     name: macOS 26 Smoke Build And Tests (arm64)
     runs-on: macos-26
     needs: format
