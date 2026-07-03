@@ -643,6 +643,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Trust checkout directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Validate runner tools
         run: |
           cat /etc/fedora-release
