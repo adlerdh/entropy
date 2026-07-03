@@ -400,6 +400,27 @@ endif()
 
 message(STATUS "Adding external library ITK in ${itk_PREFIX}")
 
+set(ITK_PATCH_FILE "${itk_PREFIX}/patch_itk.cmake")
+set(ITK_FLOATING_POINT_EXCEPTIONS_HEADER
+    "${itk_PREFIX}/src/Modules/Core/Common/include/itkFloatingPointExceptions.h")
+file(MAKE_DIRECTORY "${itk_PREFIX}")
+file(WRITE "${ITK_PATCH_FILE}"
+  "set(fpe_header [==[${ITK_FLOATING_POINT_EXCEPTIONS_HEADER}]==])
+"
+  [=[
+file(READ "${fpe_header}" contents)
+if(NOT contents MATCHES [==[#include <cstdint>]==])
+  string(REPLACE
+    [==[#include "itkSingletonMacro.h"]==]
+    [==[#include "itkSingletonMacro.h"
+
+#include <cstdint>]==]
+    contents
+    "${contents}")
+  file(WRITE "${fpe_header}" "${contents}")
+endif()
+]=])
+
 set(_itk_module_args
   -DITK_BUILD_DEFAULT_MODULES:BOOL=OFF
   -DITKGroup_Bridge:BOOL=OFF
@@ -438,6 +459,10 @@ ExternalProject_Add(ITK
   DOWNLOAD_DIR "${itk_PREFIX}/download"
   SOURCE_DIR "${itk_PREFIX}/src"
   BINARY_DIR "${itk_PREFIX}/build"
+
+  # ITK 5.4.3 uses uint8_t in this header without including <cstdint>, which
+  # breaks with newer GCC/libstdc++ combinations such as Fedora 43's GCC 15.
+  PATCH_COMMAND ${CMAKE_COMMAND} -P "${ITK_PATCH_FILE}"
 
   CMAKE_ARGS
     ${_ext_cmake_build_type_args}

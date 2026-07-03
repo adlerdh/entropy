@@ -59,6 +59,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(CMAKE_VERBOSE_MAKEFILE "Show full native build commands" OFF)
 set(Entropy_SUPERBUILD_PARALLEL "" CACHE STRING "Parallel level for ExternalProject builds; empty uses the native build tool default")
 set(Entropy_SUPERBUILD_CONFIG "Release" CACHE STRING "Build config for multi-config SuperBuild generators")
+set(Entropy_LINUX_PACKAGE_PLATFORM_LABEL "Ubuntu-22.04" CACHE STRING "Platform label used in generated Linux package filenames")
+set(Entropy_LINUX_CPACK_GENERATORS "DEB;TGZ" CACHE STRING "CPack generators used for Linux packages")
 set_property(CACHE Entropy_SUPERBUILD_CONFIG PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")

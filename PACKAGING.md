@@ -11,6 +11,12 @@ The output directory is controlled by `Entropy_PACKAGE_OUTPUT_DIR` and can be ch
 cmake --preset app-release -DEntropy_PACKAGE_OUTPUT_DIR=/tmp/entropy-packages
 ```
 
+Linux package filenames include `Entropy_LINUX_PACKAGE_PLATFORM_LABEL`, which defaults to `Ubuntu-22.04`. Linux package generators are controlled by `Entropy_LINUX_CPACK_GENERATORS`, which defaults to `DEB;TGZ`:
+```sh
+cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Ubuntu-24.04
+cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43 "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+```
+
 ## Release Flow
 Use this sequence for normal release packages on Linux, macOS, and Windows:
 
@@ -33,7 +39,7 @@ cpack --config build-release/CPackConfig.cmake
 
 ## GitHub Tag Releases
 
-Public GitHub Releases are created by `.github/workflows/release.yml`. The release workflow runs only when a tag matching `v*.*.*.*` is pushed. It verifies that the tag exactly matches the version in `CMakeLists.txt`, then builds the Windows release package, runs release tests, smoke-tests a staged install, creates a GitHub Release, and uploads the MSI and portable ZIP as release assets.
+Public GitHub Releases are created by `.github/workflows/release.yml`. The release workflow runs only when a tag matching `v*.*.*.*` is pushed. It verifies that the tag exactly matches the version in `CMakeLists.txt`, then builds the Windows, Ubuntu, Fedora, and macOS release packages, runs release tests, smoke-tests staged installs, creates a GitHub Release, and uploads installer packages plus portable archives as release assets.
 
 Before creating a release tag, update these values in `CMakeLists.txt`:
 
@@ -67,25 +73,34 @@ The generated GitHub Release assets are named like:
 ```text
 Entropy-0.9.5.0-Windows-x86_64.msi
 Entropy-0.9.5.0-Windows-x86_64-portable.zip
+Entropy-0.9.5.0-Ubuntu-22.04-x86_64.deb
+Entropy-0.9.5.0-Fedora-43-x86_64.rpm
 ```
 
 The same files are also uploaded as workflow artifacts for debugging. The GitHub Release assets are the public download files; avoid storing large binaries directly in GitHub Pages. If a project website needs download links, point the website to the GitHub Release or its latest-release page.
 
 ## Linux Packages
-On Linux, CPack creates both a Debian package and a portable tarball named like:
+On Linux, CPack creates packages based on `Entropy_LINUX_CPACK_GENERATORS`. The default Ubuntu build creates a Debian package and a portable tarball named like:
 ```text
-build-release/packages/Entropy-x.y.z.w-Linux-x86_64.deb
-build-release/packages/Entropy-x.y.z.w-Linux-x86_64-portable.tar.gz
+build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
+build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64-portable.tar.gz
+```
+
+A Fedora build configured with `Entropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43` and `Entropy_LINUX_CPACK_GENERATORS=RPM;TGZ` creates artifacts named like:
+```text
+build-release/packages/Entropy-x.y.z.w-Fedora-43-x86_64.rpm
+build-release/packages/Entropy-x.y.z.w-Fedora-43-x86_64-portable.tar.gz
 ```
 
 To force a single generator when running CPack directly:
 ```sh
 cpack -G DEB --config build-release/CPackConfig.cmake
+cpack -G RPM --config build-release/CPackConfig.cmake
 cpack -G TGZ --config build-release/CPackConfig.cmake
 ```
 
 ### Linux Package Layout
-The DEB installs the runtime payload under `/usr`, while the portable tarball contains the same payload under a top-level archive directory:
+The DEB and RPM packages install the runtime payload under `/usr`, while the portable tarball contains the same payload under a top-level archive directory:
 ```text
 bin/entropy
 lib/entropy/libQt6Core.so*
@@ -101,7 +116,7 @@ $ORIGIN/../lib/entropy
 The app resolves `share/entropy` relative to the executable first, so both `/usr/bin/entropy` from the DEB and `bin/entropy` from the portable tarball can find packaged resources. The install step checks bundled private libraries and fails if any copied library still contains the build directory in its RPATH or RUNPATH.
 
 ### Linux Runtime Dependencies
-The DEB uses `dpkg-shlibdeps` to detect non-bundled system library dependencies. It also recommends `xdg-desktop-portal` plus a common portal backend:
+The DEB uses `dpkg-shlibdeps` to detect non-bundled system library dependencies. For the current Ubuntu package, that includes `libpcre2-16-0`, which is required by the bundled Qt Core library and resolved automatically by `apt install ./Entropy-...deb`. It also recommends `xdg-desktop-portal` plus a common portal backend:
 ```text
 xdg-desktop-portal, xdg-desktop-portal-gtk | xdg-desktop-portal-kde | xdg-desktop-portal-gnome
 ```
@@ -116,20 +131,25 @@ If Ubuntu 22.04 compatibility is required, build the release package on Ubuntu 2
 ### Test a Linux Package
 Inspect the DEB:
 ```sh
-dpkg-deb --info build-release/packages/Entropy-x.y.z.w-Linux-x86_64.deb
-dpkg-deb --contents build-release/packages/Entropy-x.y.z.w-Linux-x86_64.deb
+dpkg-deb --info build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
+dpkg-deb --contents build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
 ```
 
 Install locally and launch:
 ```sh
-sudo apt install ./build-release/packages/Entropy-x.y.z.w-Linux-x86_64.deb
+sudo apt install ./build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
 entropy --help
 entropy
 ```
 
+Use `apt install ./...deb` for local package testing, not `dpkg -i`. The DEB declares normal Ubuntu runtime dependencies such as `libpcre2-16-0`, and `apt` resolves and installs them. `dpkg -i` only unpacks the file and configures it if every dependency is already installed. If a `dpkg -i` attempt leaves Entropy unpacked but unconfigured, repair the install with:
+```sh
+sudo apt --fix-broken install
+```
+
 If you are testing a rebuilt package with the same version number as the package already installed, force apt to replace the installed files:
 ```sh
-sudo apt install --reinstall ./build-release/packages/Entropy-x.y.z.w-Linux-x86_64.deb
+sudo apt install --reinstall ./build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
 ```
 
 Also test the desktop launcher and at least one open/save file dialog on a clean graphical Ubuntu system.
@@ -141,6 +161,44 @@ readelf -d build-release/linux-package-install/bin/entropy
 ldd build-release/linux-package-install/bin/entropy
 build-release/linux-package-install/bin/entropy --help
 ```
+
+### Fedora Local Package Check
+Run the Fedora packaging path inside the same Fedora container used by CI. This keeps Fedora runtime and RPM dependency detection tied to Fedora rather than the host distribution.
+
+```sh
+mkdir -p /tmp/entropy-fedora-local-build
+docker run --rm \
+  -v "$PWD:/work:ro" \
+  -v /tmp/entropy-fedora-local-build:/build \
+  -w /work \
+  fedora:43 \
+  bash -lc '
+    set -euo pipefail
+    dnf install -y --setopt=install_weak_deps=False \
+      ccache cmake file gcc gcc-c++ git dbus-devel libX11-devel libXcursor-devel \
+      libXext-devel libXfixes-devel libXi-devel libXinerama-devel libXrandr-devel \
+      libglvnd-devel libglvnd-opengl libxkbcommon-devel make mesa-libGL-devel \
+      rpm-build wayland-devel
+    git config --global --add safe.directory /work
+    export CC=gcc CXX=g++
+    cmake -S /work -B /build -DEntropy_SUPERBUILD=ON -DCMAKE_BUILD_TYPE=Release \
+      -DEntropy_STATIC_BUNDLED_DEPENDENCIES=ON \
+      -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43 \
+      "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+    cmake --build /build --parallel
+    cmake -S /work -B /build -DEntropy_SUPERBUILD=OFF -DCMAKE_BUILD_TYPE=Release \
+      -DEntropy_STATIC_BUNDLED_DEPENDENCIES=ON \
+      -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43 \
+      "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+    cmake --build /build --parallel
+    ctest --test-dir /build --parallel --output-on-failure
+    cmake --build /build --target package --parallel
+    rpm -qpi /build/packages/Entropy-*-Fedora-43-*.rpm
+    rpm -qp --requires /build/packages/Entropy-*-Fedora-43-*.rpm
+  '
+```
+
+The generated Fedora artifacts remain under `/tmp/entropy-fedora-local-build/packages` on the host.
 
 ## macOS DMG Package
 On macOS, Entropy is built as an `.app` bundle. CPack creates a drag-and-drop DMG named like:

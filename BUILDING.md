@@ -271,6 +271,27 @@ The Debug, Coverage, and Release SuperBuild dependency trees are cached separate
 
 The coverage job uses its own `build-coverage` tree. On Windows, OpenCppCoverage does not require compiler instrumentation, but the project still enables coverage through a separate CMake preset so the `coverage` and `coverage-html` targets are available and use Debug-style symbols. This duplicates the app/test build work from the Debug job on a separate runner; dependency caching keeps the SuperBuild cost lower after the first successful cache save.
 
+## GitHub Actions Fedora CI
+
+The Fedora workflow is defined in `.github/workflows/fedora.yml` and runs Fedora 43 inside a container on an Ubuntu GitHub-hosted runner. GitHub does not provide native Fedora hosted runners, so the container supplies the Fedora userspace, compiler, development packages, and RPM tooling.
+
+Fedora CI is intentionally manual-only through `workflow_dispatch`; it does not run for pull requests, pushes to `main`, or schedules. The manual workflow can run formatting checks, the Debug SuperBuild, Debug app build, Debug unit tests, and optional Release RPM/TAR.GZ packaging. Fedora release artifacts for public releases are built by the tag-driven `.github/workflows/release.yml` workflow.
+
+The Fedora validation includes:
+
+- `pre-commit run --all-files --show-diff-on-failure`
+- `cmake --preset superbuild-debug`
+- `cmake --build --preset superbuild-debug --parallel`
+- `cmake --preset app-debug`
+- `cmake --build --preset app-debug --parallel`
+- `ctest --test-dir build-debug --parallel --output-on-failure`
+- `cmake --preset superbuild-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43 "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"`
+- `cmake --build --preset superbuild-release --parallel`
+- `cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43 "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"`
+- `cmake --build --preset app-release --parallel`
+- `ctest --test-dir build-release --parallel --output-on-failure`
+- `cmake --build --preset package-release --parallel`
+
 ## Build Options
 
 These are the project-level CMake cache options and important build variables you are likely to use. Pass them at configure time with `-DNAME=value`, or place local overrides in `CMakeUserPresets.json`.
@@ -294,6 +315,8 @@ Entropy-specific user-facing cache options use the `Entropy_` prefix. Lowercase 
 | `Entropy_GLAD_GL_VERSION` | String | `3.3` | App stage | Selects the vendored GLAD OpenGL Core loader. Valid values are `3.3`, `4.1`, and `4.6`; Entropy defaults to `3.3` for broad hardware and platform compatibility. |
 | `Entropy_GLAD_GL_DEBUG` | Boolean | `false` | App stage | Uses the debug GLAD loader variant for the selected OpenGL version. Useful when debugging OpenGL calls. |
 | `Entropy_PACKAGE_OUTPUT_DIR` | Path | `${CMAKE_BINARY_DIR}/packages` | Packaging | Directory where CPack writes generated artifacts and `_CPack_Packages` scratch files. See [PACKAGING.md](PACKAGING.md). |
+| `Entropy_LINUX_PACKAGE_PLATFORM_LABEL` | String | `Ubuntu-22.04` | Linux packaging | Platform label embedded in generated Linux package filenames, such as `Ubuntu-22.04` or `Fedora-43`. |
+| `Entropy_LINUX_CPACK_GENERATORS` | String | `DEB;TGZ` | Linux packaging | Semicolon-separated CPack generators for Linux packages. Use `RPM;TGZ` for Fedora RPM builds. |
 | `Entropy_STRIP_PACKAGED_APP` | Boolean | `ON` | macOS packaging | Strips local symbols from the installed `.app` bundle before signing. |
 | `Entropy_MACOS_CODESIGN_IDENTITY` | String | `-` | macOS app/package stage | Code-signing identity for installed and packaged macOS apps. `-` creates an ad-hoc signature. An empty value skips signing. Use a Developer ID Application identity for public distribution. |
 | `Entropy_MACOSX_BUNDLE_IDENTIFIER` | String | `io.github.adlerdh.entropy` | macOS app/package stage | Bundle identifier written to the macOS app `Info.plist`. |

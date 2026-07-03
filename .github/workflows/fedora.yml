@@ -1,0 +1,297 @@
+name: Fedora CI (x86_64)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_debug:
+        description: "Run debug build and unit tests"
+        type: boolean
+        default: true
+      run_release:
+        description: "Run release build and package artifacts"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+
+concurrency:
+  group: fedora-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CC: gcc
+  CXX: g++
+  CMAKE_BUILD_PARALLEL_LEVEL: 2
+  CTEST_PARALLEL_LEVEL: 2
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_COMPILERCHECK: content
+  CCACHE_MAXSIZE: 2G
+  SUPERBUILD_CACHE_VERSION: v1
+  FEDORA_VERSION: "43"
+  FEDORA_PACKAGE_LABEL: Fedora-43
+
+jobs:
+  format:
+    name: Format Check
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:43
+
+    steps:
+      - name: Install formatting tools
+        run: |
+          dnf install -y git python3-pip
+          python3 -m pip install pre-commit 'clang-format==18.1.8'
+
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Validate formatting tools
+        run: |
+          clang-format --version
+          pre-commit --version
+
+      - name: Run pre-commit checks
+        run: pre-commit run --all-files --show-diff-on-failure
+
+      - name: Require clean formatting result
+        run: git diff --exit-code
+
+  debug:
+    name: Debug Build And Tests (x86_64)
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:43
+    needs: format
+    if: >
+      inputs.run_debug
+    env:
+      CMAKE_BUILD_PARALLEL_LEVEL: 4
+      CTEST_PARALLEL_LEVEL: 3
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          dnf install -y \
+            ccache \
+            cmake \
+            file \
+            gcc \
+            gcc-c++ \
+            git \
+            libX11-devel \
+            libXcursor-devel \
+            libXext-devel \
+            libXfixes-devel \
+            libXi-devel \
+            libXinerama-devel \
+            libXrandr-devel \
+            dbus-devel \
+            libglvnd-devel \
+            libglvnd-opengl \
+            libxkbcommon-devel \
+            make \
+            mesa-libGL-devel \
+            wayland-devel
+
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Validate runner tools
+        run: |
+          cat /etc/fedora-release
+          cmake --version
+          git --version
+          ccache --version
+          "${CC}" --version
+          "${CXX}" --version
+
+      - name: Restore Debug ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: fedora43-gcc-debug-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            fedora43-gcc-debug-ccache-v1-
+
+      - name: Reset Debug ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
+      - name: Restore Debug SuperBuild cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-debug/external/catch2-*
+            build-debug/external/cli11-*
+            build-debug/external/cmakerc-*
+            build-debug/external/glfw-*
+            build-debug/external/glm-*
+            build-debug/external/iconfont-*
+            build-debug/external/imgui-*
+            build-debug/external/implot-*
+            build-debug/external/itk-*
+            build-debug/external/nanovg-*
+            build-debug/external/nativefiledialog-*
+            build-debug/external/nlohmann_json-*
+            build-debug/external/qtbase-*
+            build-debug/external/spdlog-*
+            build-debug/external/stduuid-*
+            build-debug/external/tinyfsm-*
+          key: fedora43-gcc-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            fedora43-gcc-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Debug SuperBuild
+        run: cmake --preset superbuild-debug -DEntropy_USE_CCACHE=ON
+
+      - name: Build Debug SuperBuild
+        run: cmake --build --preset superbuild-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Configure Debug app
+        run: cmake --preset app-debug -DEntropy_USE_CCACHE=ON
+
+      - name: Build Debug app
+        run: cmake --build --preset app-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Run Debug tests
+        run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
+
+      - name: Show Debug ccache stats
+        if: always()
+        run: ccache --show-stats
+
+  package:
+    name: Release Packages (x86_64)
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:43
+    needs: format
+    if: inputs.run_release
+
+    steps:
+      - name: Install build and packaging dependencies
+        run: |
+          dnf install -y \
+            ccache \
+            cmake \
+            file \
+            gcc \
+            gcc-c++ \
+            git \
+            libX11-devel \
+            libXcursor-devel \
+            libXext-devel \
+            libXfixes-devel \
+            libXi-devel \
+            libXinerama-devel \
+            libXrandr-devel \
+            dbus-devel \
+            libglvnd-devel \
+            libglvnd-opengl \
+            libxkbcommon-devel \
+            make \
+            mesa-libGL-devel \
+            rpm-build \
+            wayland-devel
+
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Validate runner tools
+        run: |
+          cat /etc/fedora-release
+          cmake --version
+          cpack --version
+          git --version
+          ccache --version
+          "${CC}" --version
+          "${CXX}" --version
+          rpm --version
+          rpmbuild --version
+
+      - name: Restore Release ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: fedora43-gcc-release-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            fedora43-gcc-release-ccache-v1-
+
+      - name: Reset Release ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
+      - name: Restore Release SuperBuild cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-release/external/catch2-*
+            build-release/external/cli11-*
+            build-release/external/cmakerc-*
+            build-release/external/glfw-*
+            build-release/external/glm-*
+            build-release/external/iconfont-*
+            build-release/external/imgui-*
+            build-release/external/implot-*
+            build-release/external/itk-*
+            build-release/external/nanovg-*
+            build-release/external/nativefiledialog-*
+            build-release/external/nlohmann_json-*
+            build-release/external/qtbase-*
+            build-release/external/spdlog-*
+            build-release/external/stduuid-*
+            build-release/external/tinyfsm-*
+          key: fedora43-gcc-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            fedora43-gcc-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Release SuperBuild
+        run: cmake --preset superbuild-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+
+      - name: Build Release SuperBuild
+        run: cmake --build --preset superbuild-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Configure Release app
+        run: cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+
+      - name: Build Release app
+        run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Run Release tests
+        run: ctest --test-dir build-release --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
+
+      - name: Build RPM and portable TAR.GZ
+        run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Inspect RPM package
+        run: |
+          rpm -qpi build-release/packages/Entropy-*-${FEDORA_PACKAGE_LABEL}-*.rpm
+          rpm -qpl build-release/packages/Entropy-*-${FEDORA_PACKAGE_LABEL}-*.rpm
+          rpm -qp --requires build-release/packages/Entropy-*-${FEDORA_PACKAGE_LABEL}-*.rpm > rpm-requires.txt
+          cat rpm-requires.txt
+          if grep -E '^libQt6Core[.]so[.]6' rpm-requires.txt; then
+            echo "RPM requires bundled Qt Core instead of using the packaged private library" >&2
+            exit 1
+          fi
+
+      - name: Smoke-test staged install
+        run: |
+          cmake --install build-release --prefix build-release/fedora-package-install
+          build-release/fedora-package-install/bin/entropy --help
+
+      - name: Upload Fedora packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: fedora-43-x86_64-packages
+          path: |
+            build-release/packages/Entropy-*-Fedora-43-*.rpm
+            build-release/packages/Entropy-*-Fedora-43-*-portable.tar.gz
+          if-no-files-found: error
+
+      - name: Show Release ccache stats
+        if: always()
+        run: ccache --show-stats

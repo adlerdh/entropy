@@ -596,6 +596,169 @@ jobs:
         if: always()
         run: ccache --show-stats
 
+  fedora-x86_64:
+    name: Fedora 43 Release (x86_64)
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:43
+    needs: metadata
+    env:
+      CC: gcc
+      CXX: g++
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: content
+      CCACHE_MAXSIZE: 2G
+      ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
+      FEDORA_PACKAGE_LABEL: Fedora-43
+
+    steps:
+      - name: Install build and packaging dependencies
+        run: |
+          dnf install -y \
+            ccache \
+            cmake \
+            file \
+            gcc \
+            gcc-c++ \
+            git \
+            libX11-devel \
+            libXcursor-devel \
+            libXext-devel \
+            libXfixes-devel \
+            libXi-devel \
+            libXinerama-devel \
+            libXrandr-devel \
+            dbus-devel \
+            libglvnd-devel \
+            libglvnd-opengl \
+            libxkbcommon-devel \
+            make \
+            mesa-libGL-devel \
+            rpm-build \
+            wayland-devel
+
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate runner tools
+        run: |
+          cat /etc/fedora-release
+          cmake --version
+          cpack --version
+          git --version
+          ccache --version
+          "${CC}" --version
+          "${CXX}" --version
+          rpm --version
+          rpmbuild --version
+
+      - name: Restore Release ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: linux-fedora43-gcc-release-publish-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            linux-fedora43-gcc-release-publish-ccache-v1-
+
+      - name: Reset Release ccache stats
+        run: |
+          ccache --max-size="${CCACHE_MAXSIZE}"
+          ccache --zero-stats
+
+      - name: Restore Release SuperBuild cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-release/external/catch2-*
+            build-release/external/cli11-*
+            build-release/external/cmakerc-*
+            build-release/external/glfw-*
+            build-release/external/glm-*
+            build-release/external/iconfont-*
+            build-release/external/imgui-*
+            build-release/external/implot-*
+            build-release/external/itk-*
+            build-release/external/nanovg-*
+            build-release/external/nativefiledialog-*
+            build-release/external/nlohmann_json-*
+            build-release/external/qtbase-*
+            build-release/external/spdlog-*
+            build-release/external/stduuid-*
+            build-release/external/tinyfsm-*
+          key: linux-fedora43-gcc-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            linux-fedora43-gcc-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+
+      - name: Configure Release SuperBuild
+        run: cmake --preset superbuild-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+
+      - name: Build Release SuperBuild
+        run: cmake --build --preset superbuild-release --parallel
+
+      - name: Configure Release app
+        run: cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+
+      - name: Build Release app
+        run: cmake --build --preset app-release --parallel
+
+      - name: Run Release tests
+        run: ctest --test-dir build-release --parallel --output-on-failure
+
+      - name: Build RPM and portable TAR.GZ
+        run: cmake --build --preset package-release --parallel
+
+      - name: Inspect RPM package
+        run: |
+          rpm -qpi build-release/packages/Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm
+          rpm -qpl build-release/packages/Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm
+          rpm -qp --requires build-release/packages/Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm > rpm-requires.txt
+          cat rpm-requires.txt
+          if grep -E '^libQt6Core[.]so[.]6' rpm-requires.txt; then
+            echo "RPM requires bundled Qt Core instead of using the packaged private library" >&2
+            exit 1
+          fi
+
+      - name: Smoke-test staged install
+        run: |
+          cmake --install build-release --prefix build-release/fedora-package-install
+          build-release/fedora-package-install/bin/entropy --help
+
+      - name: Locate release assets
+        run: |
+          package_dir="build-release/packages"
+          rpm=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*.rpm" | head -n 1)
+          tarball=$(find "$package_dir" -maxdepth 1 -type f -name "Entropy-${ENTROPY_VERSION}-${FEDORA_PACKAGE_LABEL}-*-portable.tar.gz" | head -n 1)
+
+          if [[ -z "$rpm" ]]; then
+            echo "RPM package was not found in $package_dir" >&2
+            exit 1
+          fi
+          if [[ -z "$tarball" ]]; then
+            echo "Portable TAR.GZ package was not found in $package_dir" >&2
+            exit 1
+          fi
+
+          {
+            echo "RPM: $(basename "$rpm")"
+            echo "Portable TAR.GZ: $(basename "$tarball")"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Fedora packages as workflow artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: entropy-${{ env.ENTROPY_VERSION }}-fedora-43-x86_64
+          path: |
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Fedora-43-*.rpm
+            build-release/packages/Entropy-${{ env.ENTROPY_VERSION }}-Fedora-43-*-portable.tar.gz
+          if-no-files-found: error
+
+      - name: Show Release ccache stats
+        if: always()
+        run: ccache --show-stats
+
   publish:
     name: Publish GitHub Release
     runs-on: ubuntu-22.04
@@ -603,6 +766,7 @@ jobs:
       - metadata
       - windows-x86_64
       - linux-x86_64
+      - fedora-x86_64
       - macos-arm64
       - macos-x86_64
     env:
@@ -631,8 +795,8 @@ jobs:
         run: |
           find release-assets -maxdepth 1 -type f -print | sort
           asset_count=$(find release-assets -maxdepth 1 -type f | wc -l)
-          if [[ "$asset_count" -ne 10 ]]; then
-            echo "Expected 10 release assets, found $asset_count" >&2
+          if [[ "$asset_count" -ne 12 ]]; then
+            echo "Expected 12 release assets, found $asset_count" >&2
             exit 1
           fi
 
@@ -653,7 +817,8 @@ jobs:
           - macOS Intel (x86_64): \`Entropy-${ENTROPY_VERSION}-macOS-x86_64.dmg\`
           - Windows x86_64: \`Entropy-${ENTROPY_VERSION}-Windows-x86_64.msi\`
           - Ubuntu 22.04 x86_64: \`Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-x86_64.deb\`
-          - Portable archives are also attached for macOS, Windows, and Ubuntu.
+          - Fedora 43 x86_64: \`Entropy-${ENTROPY_VERSION}-Fedora-43-x86_64.rpm\`
+          - Portable archives are also attached for macOS, Windows, Ubuntu, and Fedora.
           - Source archives are attached as \`zip\` and \`tar.gz\`.
 
           ## Notes
