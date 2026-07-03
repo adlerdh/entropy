@@ -1,39 +1,39 @@
 #include "ui/AboutIcon.h"
-#include "logic/app/AppPaths.h"
 
 #include <glad/glad.h>
 
 #define STBI_ONLY_PNG
 #include <stb_image.h>
 
-#include <filesystem>
+#include <cmrc/cmrc.hpp>
+#include <exception>
+
+CMRC_DECLARE(icons);
 
 namespace
 {
 
-std::filesystem::path iconPath()
-{
-  static constexpr const char* sk_iconFileName = ENTROPY_ABOUT_ICON_FILE_NAME;
-
-  const std::filesystem::path resourcePath = app_paths::resourceDirectory() / sk_iconFileName;
-  if (std::filesystem::exists(resourcePath)) {
-    return resourcePath;
-  }
-
-  const std::filesystem::path workingPath = std::filesystem::current_path() / sk_iconFileName;
-  if (std::filesystem::exists(workingPath)) {
-    return workingPath;
-  }
-
-  return ENTROPY_ABOUT_ICON_SOURCE_FILE;
-}
-
 GLuint loadTexture()
 {
+  cmrc::file icon;
+  try {
+    const auto filesystem = cmrc::icons::get_filesystem();
+    icon = filesystem.open(ENTROPY_ABOUT_ICON_RESOURCE_PATH);
+  }
+  catch (const std::exception&) {
+    return 0;
+  }
+
   int width = 0;
   int height = 0;
   int channels = 0;
-  stbi_uc* pixels = stbi_load(iconPath().string().c_str(), &width, &height, &channels, 4);
+  stbi_uc* pixels = stbi_load_from_memory(
+    reinterpret_cast<const stbi_uc*>(icon.begin()),
+    static_cast<int>(icon.size()),
+    &width,
+    &height,
+    &channels,
+    4);
 
   if (!pixels || width <= 0 || height <= 0) {
     stbi_image_free(pixels);

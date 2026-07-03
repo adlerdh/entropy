@@ -583,7 +583,7 @@ set(entropy_SOURCES
 
 set(entropy_ABOUT_ICON_SOURCE
   "${entropy_RES_DIR}/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png")
-set(entropy_ABOUT_ICON_FILE_NAME "AboutEntropyIcon.png")
+set(entropy_ABOUT_ICON_RESOURCE_PATH "res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png")
 
 if(APPLE)
   set(entropy_MACOS_APP_ICON "${entropy_RES_DIR}/icons/macOS/Entropy.icon")
@@ -759,6 +759,9 @@ cmrc_add_resource_library(entropy-shaders ALIAS entropy::shaders ${entropy_SHADE
   WHENCE "${entropy_APP_DIR}"
   PREFIX "app"
 )
+cmrc_add_resource_library(entropy-icons ALIAS entropy::icons "${entropy_ABOUT_ICON_SOURCE}" NAMESPACE icons
+  WHENCE "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 add_subdirectory("${entropy_LIB_DIR}/ui")
 
@@ -794,14 +797,6 @@ if(APPLE)
       "$<TARGET_BUNDLE_DIR:entropy>/Contents/MacOS/entropy"
       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/entropy"
     COMMAND
-      "${CMAKE_COMMAND}" -E copy_if_different
-      "${entropy_ABOUT_ICON_SOURCE}"
-      "$<TARGET_BUNDLE_DIR:entropy>/Contents/Resources/${entropy_ABOUT_ICON_FILE_NAME}"
-    COMMAND
-      "${CMAKE_COMMAND}" -E copy_if_different
-      "${entropy_ABOUT_ICON_SOURCE}"
-      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${entropy_ABOUT_ICON_FILE_NAME}"
-    COMMAND
       "${CMAKE_COMMAND}" -E make_directory
       "$<TARGET_BUNDLE_DIR:entropy>/Contents/Resources/python"
     COMMAND
@@ -817,8 +812,7 @@ target_sources(entropy PRIVATE
 )
 
 target_compile_definitions(entropy PRIVATE
-  ENTROPY_ABOUT_ICON_FILE_NAME="${entropy_ABOUT_ICON_FILE_NAME}"
-  ENTROPY_ABOUT_ICON_SOURCE_FILE="${entropy_ABOUT_ICON_SOURCE}"
+  ENTROPY_ABOUT_ICON_RESOURCE_PATH="${entropy_ABOUT_ICON_RESOURCE_PATH}"
   ENTROPY_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/entropy"
 )
 
@@ -842,6 +836,7 @@ target_link_libraries(entropy PRIVATE
   stduuid
   entropy::colormaps
   entropy::fonts
+  entropy::icons
   entropy::licenses
   entropy::shaders
   entropy_warnings

@@ -1717,7 +1717,8 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindColorImageTextures(c
   auto& compTextures = R.m_imageTextures.at(*imgUid);
 
   for (std::size_t i = 0; i < 4; ++i) {
-    const bool compExists = (i < image->settings().numComponents() && i < compTextures.size());
+    const bool compExists =
+      (i < static_cast<std::size_t>(image->settings().numComponents()) && i < compTextures.size());
     GLTexture& tex = compExists ? compTextures.at(i) : R.m_blankImageBlackTransparentTexture;
     tex.bind(msk_imgRgbaTexSamplers.indices[i]);
     boundTextures.push_back(tex);

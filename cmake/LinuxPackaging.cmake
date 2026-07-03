@@ -34,11 +34,6 @@ install(FILES "${entropy_LINUX_DESKTOP_FILE}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
 )
 
-install(FILES "${entropy_ABOUT_ICON_SOURCE}"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy"
-    RENAME "${entropy_ABOUT_ICON_FILE_NAME}"
-)
-
 install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python"
 )

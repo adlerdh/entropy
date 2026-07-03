@@ -124,6 +124,7 @@ std::string current(unsigned int skipFrames)
     CaptureStackBackTrace(static_cast<DWORD>(skipFrames + 1), static_cast<DWORD>(std::size(frames)), frames, nullptr);
 
   std::ostringstream out;
+  out << "Module base: " << GetModuleHandleW(nullptr) << '\n';
   out << "Stack trace:\n";
   for (USHORT i = 0; i < frameCount; ++i) {
     out << "  [" << i << "] " << frames[i] << '\n';

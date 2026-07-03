@@ -775,6 +775,12 @@ void EntropyApp::requestCloseProject()
 
 void EntropyApp::requestQuitApp()
 {
+  const bool hasLoadedData = ProjectLoadState::Loaded == m_data.state().projectLoadState() && 0 < m_data.numImages();
+  if (!hasLoadedData) {
+    quitAppWithoutPrompt();
+    return;
+  }
+
   if (projectHasUnsavedChanges()) {
     m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::QuitApp;
     m_data.guiData().m_showUnsavedProjectPopup = true;

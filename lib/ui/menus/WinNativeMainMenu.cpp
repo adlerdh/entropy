@@ -660,7 +660,7 @@ bool populateViewsMenu(HMENU menu)
            menu,
            position++,
            MainMenuAction::ToggleSegmentationOutline,
-           L"Toggle Segmentation &Outline\tSpace") &&
+           L"Show Segmentation &Outline\tSpace") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(
            menu,

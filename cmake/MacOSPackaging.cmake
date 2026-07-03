@@ -19,11 +19,6 @@ install(TARGETS entropy
     RUNTIME DESTINATION bin
 )
 
-install(FILES "${entropy_ABOUT_ICON_SOURCE}"
-    DESTINATION "${APP_NAME}.app/Contents/Resources"
-    RENAME "${entropy_ABOUT_ICON_FILE_NAME}"
-)
-
 install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
     DESTINATION "${APP_NAME}.app/Contents/Resources/python"
 )

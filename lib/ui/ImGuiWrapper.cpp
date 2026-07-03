@@ -2546,10 +2546,6 @@ void ImGuiWrapper::renderWarpInversionProgressPopup()
   }
 
   if (states.empty()) {
-    if (ImGui::BeginPopupModal("Warp inversion progress", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-      ImGui::CloseCurrentPopup();
-      ImGui::EndPopup();
-    }
     return;
   }
 

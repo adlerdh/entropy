@@ -77,8 +77,7 @@ add_library(EntropyUI STATIC ${entropy_UI_SOURCES})
 add_library(Entropy::UI ALIAS EntropyUI)
 
 target_compile_definitions(EntropyUI PRIVATE
-  ENTROPY_ABOUT_ICON_FILE_NAME="${entropy_ABOUT_ICON_FILE_NAME}"
-  ENTROPY_ABOUT_ICON_SOURCE_FILE="${entropy_ABOUT_ICON_SOURCE}"
+  ENTROPY_ABOUT_ICON_RESOURCE_PATH="${entropy_ABOUT_ICON_RESOURCE_PATH}"
   ENTROPY_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/entropy"
 )
 
@@ -101,6 +100,7 @@ target_link_libraries(EntropyUI
     Qt6::Core
     entropy::colormaps
     entropy::fonts
+    entropy::icons
     entropy::licenses
     entropy::shaders
     entropy_warnings

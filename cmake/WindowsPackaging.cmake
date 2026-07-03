@@ -42,12 +42,6 @@ install(DIRECTORY "${itk_PREFIX}/build/bin/$<CONFIG>/"
       PATTERN "*.dll"
 )
 
-install(FILES "${entropy_ABOUT_ICON_SOURCE}"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy"
-    RENAME "${entropy_ABOUT_ICON_FILE_NAME}"
-    COMPONENT Runtime
-)
-
 install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python"
     COMPONENT Runtime
@@ -90,6 +84,7 @@ if(Entropy_WIX_ROOT)
     set(CPACK_WIX_ROOT "${Entropy_WIX_ROOT}")
 endif()
 set(CPACK_WIX_PRODUCT_ICON "${entropy_WINDOWS_APP_ICON}")
+set(CPACK_WIX_UI_BANNER "${CMAKE_SOURCE_DIR}/res/installer/Windows/WixUIBanner.bmp")
 set(CPACK_WIX_UI_DIALOG "${CMAKE_SOURCE_DIR}/res/installer/Windows/WixUIDialog.bmp")
 set(CPACK_WIX_PROGRAM_MENU_FOLDER "${APP_NAME}")
 set(CPACK_WIX_UI_REF "WixUI_InstallDir")
