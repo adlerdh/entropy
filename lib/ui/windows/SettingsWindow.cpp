@@ -60,6 +60,13 @@ constexpr std::array k_registrationBackends{
   registration::Backend::FireANTs,
   registration::Backend::Greedy};
 
+void disabledTextWrapped(const char* text)
+{
+  ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+  ImGui::TextWrapped("%s", text);
+  ImGui::PopStyleColor();
+}
+
 /**
  * @brief Return an absolute, canonical display path when possible.
  * @param[in] path Path to normalize for display.
@@ -196,7 +203,7 @@ void renderTextSettingFixedWidth(const char* label, std::string& value, const ch
  */
 void renderUiSettingsFileSection(const SettingsPersistenceCallbacks& persistenceCallbacks)
 {
-  ImGui::TextWrapped(
+  disabledTextWrapped(
     "This file stores UI state such as window positions, docking layout, panel sizes, table columns, and similar "
     "interface settings.");
   renderReadOnlyPathField(
@@ -402,7 +409,7 @@ bool renderLocalNccSettings(
     return false;
   }
 
-  ImGui::TextWrapped(
+  disabledTextWrapped(
     "Local NCC compares the pattern of intensities inside a small patch, so it can show agreement even when image "
     "intensities differ by scale or offset. Higher correlation means better local agreement; dissimilarity converts "
     "poor agreement into brighter mismatch values.");
@@ -511,10 +518,10 @@ bool renderLocalLinearResidualSettings(
     return false;
   }
 
-  ImGui::TextWrapped(
-    "This metric fits moving = a * fixed + b inside each local patch and displays the remaining residual error. Low "
-    "values mean the images match after local gain and bias correction; the fitted a and b coefficients are used "
-    "internally and are not displayed by this residual map.");
+  disabledTextWrapped(
+    "Local linear residual fits 'moving = a * fixed +b' inside each local patch and displays the remaining residual "
+    "error. Low values mean the images match after local gain and bias correction; the fitted a and b coefficients "
+    "are used internally and are not displayed by this residual map.");
   ImGui::Spacing();
 
   renderMetricSettingsPanel(
@@ -831,6 +838,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     }
     ImGui::SameLine();
     helpMarker("Anatomical left is on view right; anatomical right is on view left");
+    ImGui::SameLine();
 
     if (ImGui::RadioButton(
           "Neurological",
@@ -1385,8 +1393,7 @@ void renderRegistrationTab(AppData& appData)
     helpMarker("Backend preselected for new registration jobs.");
 
     ImGui::Spacing();
-    ImGui::TextDisabled(
-      "%s",
+    disabledTextWrapped(
       "Backend registration executable fields can be command names when the tools are on the system PATH, or full "
       "paths to the executable files.");
 
@@ -1695,37 +1702,47 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
       settings.setUseRoundBrush(true);
     }
     ImGui::SameLine();
+    helpMarker("Paint with a circular brush footprint");
+    ImGui::SameLine();
     if (ImGui::RadioButton("Square", !useRound)) {
       settings.setUseRoundBrush(false);
     }
     ImGui::SameLine();
-    helpMarker("Default segmentation brush shape");
+    helpMarker("Paint with a square brush footprint");
 
     bool use3d = settings.use3dBrush();
     if (ImGui::RadioButton("2D", !use3d)) {
       settings.setUse3dBrush(false);
     }
     ImGui::SameLine();
+    helpMarker("Paint only on the current view slice");
+    ImGui::SameLine();
     if (ImGui::RadioButton("3D", use3d)) {
       settings.setUse3dBrush(true);
     }
     ImGui::SameLine();
-    helpMarker("Default segmentation brush dimensionality");
+    helpMarker("Paint through neighboring slices in image space");
 
     bool useIso = settings.useIsotropicBrush();
     if (ImGui::Checkbox("Isotropic brush", &useIso)) {
       settings.setUseIsotropicBrush(useIso);
     }
+    ImGui::SameLine();
+    helpMarker("Use equal physical brush radius in all image directions");
 
     bool replaceBgWithFg = settings.replaceBackgroundWithForeground();
     if (ImGui::Checkbox("Replace background with foreground", &replaceBgWithFg)) {
       settings.setReplaceBackgroundWithForeground(replaceBgWithFg);
     }
+    ImGui::SameLine();
+    helpMarker("Use the foreground label as the replacement when painting over background voxels");
 
     bool xhairsMove = settings.crosshairsMoveWithBrush();
     if (ImGui::Checkbox("Crosshairs move with brush", &xhairsMove)) {
       settings.setCrosshairsMoveWithBrush(xhairsMove);
     }
+    ImGui::SameLine();
+    helpMarker("Move the crosshairs to the brush position while painting");
   }
   finishSettingsSection(brushOpen);
 
@@ -1737,11 +1754,13 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
       settings.setBrushPreviewMode(BrushPreviewMode::Hover);
     }
     ImGui::SameLine();
+    helpMarker("Preview the affected voxels while hovering before painting");
+    ImGui::SameLine();
     if (ImGui::RadioButton("Off##brushPreview", BrushPreviewMode::Disabled == previewMode)) {
       settings.setBrushPreviewMode(BrushPreviewMode::Disabled);
     }
     ImGui::SameLine();
-    helpMarker("Show the voxels that the brush would affect");
+    helpMarker("Disable brush preview rendering");
 
     if (BrushPreviewMode::Disabled != settings.brushPreviewMode()) {
       BrushPreviewVoxels previewVoxels = settings.brushPreviewVoxels();
@@ -1749,9 +1768,13 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
         settings.setBrushPreviewVoxels(BrushPreviewVoxels::Changed);
       }
       ImGui::SameLine();
+      helpMarker("Preview only voxels whose label would change");
+      ImGui::SameLine();
       if (ImGui::RadioButton("All voxels##brushPreviewVoxels", BrushPreviewVoxels::All == previewVoxels)) {
         settings.setBrushPreviewVoxels(BrushPreviewVoxels::All);
       }
+      ImGui::SameLine();
+      helpMarker("Preview every voxel inside the brush footprint");
 
       SegmentationOutlineStyle previewOutlineStyle = settings.brushPreviewOutlineStyle();
       if (ImGui::RadioButton(
@@ -1761,33 +1784,45 @@ void renderSegmentationTab(AppData& appData, RenderData& renderData)
         settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ViewPixel);
       }
       ImGui::SameLine();
+      helpMarker("Draw preview boundaries in screen pixels");
+      ImGui::SameLine();
       if (ImGui::RadioButton(
             "Voxel outline##brushPreviewOutlineStyle",
             SegmentationOutlineStyle::ImageVoxel == previewOutlineStyle))
       {
         settings.setBrushPreviewOutlineStyle(SegmentationOutlineStyle::ImageVoxel);
       }
+      ImGui::SameLine();
+      helpMarker("Draw preview boundaries around image voxels");
 
       BrushPreviewStyle previewStyle = settings.brushPreviewStyle();
       if (ImGui::RadioButton("Outline##brushPreviewStyle", BrushPreviewStyle::Outline == previewStyle)) {
         settings.setBrushPreviewStyle(BrushPreviewStyle::Outline);
       }
       ImGui::SameLine();
+      helpMarker("Draw only the preview outline");
+      ImGui::SameLine();
       if (ImGui::RadioButton("Outline + fill##brushPreviewStyle", BrushPreviewStyle::OutlineAndFill == previewStyle)) {
         settings.setBrushPreviewStyle(BrushPreviewStyle::OutlineAndFill);
       }
+      ImGui::SameLine();
+      helpMarker("Draw the preview outline and translucent fill");
 
       if (BrushPreviewStyle::OutlineAndFill == settings.brushPreviewStyle()) {
         float previewFillOpacityPercent = 100.0f * settings.brushPreviewFillOpacity();
         if (mySliderF32("Fill opacity##brushPreviewFillOpacity", &previewFillOpacityPercent, 0.0f, 100.0f, "%.0f%%")) {
           settings.setBrushPreviewFillOpacity(previewFillOpacityPercent / 100.0f);
         }
+        ImGui::SameLine();
+        helpMarker("Opacity of the filled brush preview");
       }
 
       bool previewWhilePainting = settings.brushPreviewWhilePainting();
       if (ImGui::Checkbox("Show while painting##brushPreviewWhilePainting", &previewWhilePainting)) {
         settings.setBrushPreviewWhilePainting(previewWhilePainting);
       }
+      ImGui::SameLine();
+      helpMarker("Keep showing the preview while the brush is actively painting");
     }
   }
 }
@@ -1807,7 +1842,7 @@ void renderMetricsTab(
   ImGui::PushID("diff");
   const bool differenceOpen = ImGui::CollapsingHeader("Difference Metrics", ImGuiTreeNodeFlags_DefaultOpen);
   if (differenceOpen) {
-    ImGui::TextWrapped(
+    disabledTextWrapped(
       "Difference compares the displayed intensity values directly at each location. Low values mean the images have "
       "similar intensities; high values mean they differ, so this metric works best when both images use comparable "
       "intensity scales.");
@@ -1871,7 +1906,7 @@ bool renderComparisonModesTab(RenderData& renderData)
   //                if ( ImGui::TreeNode( "Comparison comparison" ) )
   //                {
   // Overlap style:
-  ImGui::Text("Overlap:");
+  ImGui::Text("Overlap color scheme:");
 
   if (ImGui::RadioButton("Cyan, magenta, white", true == renderData.m_overlayMagentaCyan)) {
     renderData.m_overlayMagentaCyan = true;
@@ -1963,7 +1998,7 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
     return;
   }
 
-  ImGui::TextWrapped(
+  disabledTextWrapped(
     "These values are used when intensity projection is enabled from a view overlay. Per-view projection modes are "
     "still selected from the view overlay.");
 
@@ -2624,11 +2659,6 @@ void renderSettingsWindow(
 
       const float buttonY = std::max(ImGui::GetCursorPosY(), ImGui::GetContentRegionMax().y - ImGui::GetFrameHeight());
       ImGui::SetCursorPosY(buttonY);
-      if (ImGui::Button("Close")) {
-        appData.guiData().m_showSettingsWindow = false;
-      }
-
-      ImGui::SameLine();
       if (ImGui::Button("Restore Defaults")) {
         requestRestoreDefaults(persistenceCallbacks);
       }
@@ -2652,6 +2682,10 @@ void renderSettingsWindow(
             persistenceCallbacks.saveSettingsAs(*selectedFile);
           }
         }
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Close")) {
+        appData.guiData().m_showSettingsWindow = false;
       }
     }
     ImGui::EndChild();

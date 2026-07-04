@@ -1,3 +1,9 @@
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
+
 #include "ui/updates/UpdateCheck.h"
 
 #include "registration/Process.h"
@@ -18,11 +24,14 @@
 #include <vector>
 
 #ifdef _WIN32
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
 #include <Windows.h>
 #include <shellapi.h>
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
 #endif
 
 #ifndef ENTROPY_VERSION

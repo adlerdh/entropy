@@ -110,12 +110,14 @@ void renderKeyboardShortcutsWindow(bool& open)
     return;
   }
 
+  const float footerHeight = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;
+
   constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_BordersInnerV |
                                     ImGuiTableFlags_BordersOuter | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable |
                                     ImGuiTableFlags_Reorderable | ImGuiTableFlags_ScrollY |
                                     ImGuiTableFlags_SizingStretchProp;
 
-  if (ImGui::BeginTable("KeyboardShortcutsTable", 3, flags, ImVec2{0.0f, 0.0f})) {
+  if (ImGui::BeginTable("KeyboardShortcutsTable", 3, flags, ImVec2{0.0f, -footerHeight})) {
     ImGui::TableSetupColumn("Shortcut", ImGuiTableColumnFlags_WidthFixed, 130.0f);
     ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthFixed, 220.0f);
     ImGui::TableSetupColumn("Details", ImGuiTableColumnFlags_WidthStretch);
@@ -139,6 +141,11 @@ void renderKeyboardShortcutsWindow(bool& open)
     }
 
     ImGui::EndTable();
+  }
+
+  ImGui::Separator();
+  if (ImGui::Button("Close")) {
+    open = false;
   }
 
   ImGui::End();
