@@ -40,6 +40,8 @@ bool g_installed = false;
 - (void)performMenuAction:(id)sender;
 - (void)showAbout:(id)sender;
 - (void)showKeyboardShortcuts:(id)sender;
+- (void)checkForUpdates:(id)sender;
+- (void)openDownloadPage:(id)sender;
 - (void)quitApp:(id)sender;
 - (BOOL)validateMenuItem:(NSMenuItem*)menuItem;
 @end
@@ -154,6 +156,20 @@ bool g_installed = false;
   (void)sender;
   if (g_callbacks.showKeyboardShortcuts) {
     g_callbacks.showKeyboardShortcuts();
+  }
+}
+
+- (void)checkForUpdates:(id)sender {
+  (void)sender;
+  if (g_callbacks.checkForUpdates) {
+    g_callbacks.checkForUpdates();
+  }
+}
+
+- (void)openDownloadPage:(id)sender {
+  (void)sender;
+  if (g_callbacks.openDownloadPage) {
+    g_callbacks.openDownloadPage();
   }
 }
 
@@ -672,6 +688,9 @@ void addWindowsMenu(NSMenu* mainMenu) {
 void addHelpMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Help" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Help"];
+  addSymbolMenuItem(menu, @"Check for Updates...", @selector(checkForUpdates:), @"", @"arrow.triangle.2.circlepath");
+  addSymbolMenuItem(menu, @"Download Entropy...", @selector(openDownloadPage:), @"", @"square.and.arrow.down");
+  [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"Keyboard Shortcuts", @selector(showKeyboardShortcuts:), @"", @"keyboard");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"About Entropy", @selector(showAbout:), @"", @"info.circle");

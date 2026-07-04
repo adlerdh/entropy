@@ -2298,6 +2298,79 @@ void ImGuiWrapper::processRegistrationJobFutures()
   }
 }
 
+void ImGuiWrapper::requestUpdateCheck(bool manualCheck)
+{
+  using namespace entropy::ui::updates;
+
+  if (m_updateCheckFuture.valid() && std::future_status::ready != m_updateCheckFuture.wait_for(std::chrono::seconds{0}))
+  {
+    if (manualCheck) {
+      m_updateCheckWindowState.open = true;
+      m_updateCheckWindowState.manualCheck = true;
+    }
+    return;
+  }
+
+  m_updateCheckWindowState.open = manualCheck || m_updateCheckWindowState.open;
+  m_updateCheckWindowState.checking = true;
+  m_updateCheckWindowState.manualCheck = manualCheck;
+  m_updateCheckWindowState.hasResult = false;
+
+  const std::string etag = m_updateCheckEtag;
+  m_updateCheckFuture = std::async(std::launch::async, [etag]() {
+    registration::ShellProcessRunner runner;
+    return fetchLatestRelease(runner, CheckRequest{.currentVersion = ENTROPY_VERSION, .etag = etag});
+  });
+
+  if (m_postEmptyGlfwEvent) {
+    m_postEmptyGlfwEvent();
+  }
+}
+
+void ImGuiWrapper::requestAutomaticUpdateCheckIfNeeded()
+{
+  if (m_automaticUpdateCheckRequested || !m_appData.settings().automaticUpdateChecksEnabled()) {
+    return;
+  }
+
+  m_automaticUpdateCheckRequested = true;
+  requestUpdateCheck(false);
+}
+
+void ImGuiWrapper::processUpdateCheckFuture()
+{
+  using namespace std::chrono_literals;
+
+  if (!m_updateCheckFuture.valid() || std::future_status::ready != m_updateCheckFuture.wait_for(0ms)) {
+    return;
+  }
+
+  entropy::ui::updates::CheckResult result;
+  try {
+    result = m_updateCheckFuture.get();
+  }
+  catch (const std::exception& e) {
+    result.status = entropy::ui::updates::CheckStatus::Failed;
+    result.error = e.what();
+  }
+
+  if (!result.etag.empty()) {
+    m_updateCheckEtag = result.etag;
+  }
+
+  const bool showAutomaticResult =
+    !m_updateCheckWindowState.manualCheck && result.status == entropy::ui::updates::CheckStatus::UpdateAvailable;
+
+  m_updateCheckWindowState.result = std::move(result);
+  m_updateCheckWindowState.checking = false;
+  m_updateCheckWindowState.hasResult = true;
+  m_updateCheckWindowState.open = m_updateCheckWindowState.open || showAutomaticResult;
+
+  if (m_postEmptyGlfwEvent) {
+    m_postEmptyGlfwEvent();
+  }
+}
+
 void ImGuiWrapper::renderWarpInversionProgressPopup()
 {
   std::vector<WarpInversionTaskState> states;
@@ -3730,6 +3803,9 @@ void ImGuiWrapper::render()
 
   ImGui::NewFrame();
 
+  requestAutomaticUpdateCheckIfNeeded();
+  processUpdateCheckFuture();
+
   const ProjectLoadState projectLoadState = m_appData.state().projectLoadState();
   const bool backgroundTaskRunning = m_appData.state().animating();
   const bool hasLoadedProject =
@@ -3977,6 +4053,14 @@ void ImGuiWrapper::render()
       .isActionChecked = isMenuActionChecked,
       .showAbout = [this]() { m_appData.guiData().m_showAboutDialog = true; },
       .showKeyboardShortcuts = [this]() { m_appData.guiData().m_showKeyboardShortcutsWindow = true; },
+      .checkForUpdates = [this]() { requestUpdateCheck(true); },
+      .openDownloadPage =
+        []() {
+          std::string error;
+          if (!entropy::ui::updates::openUrlInDefaultBrowser(entropy::ui::updates::k_downloadPageUrl, &error)) {
+            spdlog::warn("Failed to open Entropy download page: {}", error);
+          }
+        },
       .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
       .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
       .canAddSegmentation =
@@ -4009,6 +4093,7 @@ void ImGuiWrapper::render()
       renderLoadingStatusWindow(m_appData.guiData());
     }
     renderWarpInversionProgressPopup();
+    entropy::ui::updates::renderUpdateCheckWindow(m_updateCheckWindowState);
 
     if (hasLoadedProject) {
       renderLayoutTabs(m_appData);

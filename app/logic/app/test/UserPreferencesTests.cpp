@@ -39,6 +39,7 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setLayoutTabPlacement(UiLayoutTabPlacement::Bottom);
   settings.setShowGlobalTimeControls(false);
   settings.setSynchronizeTimeSeries(false);
+  settings.setAutomaticUpdateChecksEnabled(true);
   settings.setReplaceBackgroundWithForeground(true);
   settings.setUse3dBrush(true);
   settings.setUseIsotropicBrush(false);
@@ -196,6 +197,7 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actual.layoutTabPlacement() == expected.layoutTabPlacement());
   CHECK(actual.showGlobalTimeControls() == expected.showGlobalTimeControls());
   CHECK(actual.synchronizeTimeSeries() == expected.synchronizeTimeSeries());
+  CHECK(actual.automaticUpdateChecksEnabled() == expected.automaticUpdateChecksEnabled());
   CHECK(actual.replaceBackgroundWithForeground() == expected.replaceBackgroundWithForeground());
   CHECK(actual.use3dBrush() == expected.use3dBrush());
   CHECK(actual.useIsotropicBrush() == expected.useIsotropicBrush());
@@ -435,6 +437,7 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("registration").at("showExpertOptionsByDefault") == true);
   CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == true);
+  CHECK(root.at("system").at("updates").at("automaticChecks") == true);
 }
 
 TEST_CASE("user preferences file load treats a missing file as defaults-preserving success", "[app][settings]")
@@ -675,4 +678,5 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
   CHECK(root.at("synchronization").at("itkSnap").at("enabled") == false);
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == false);
+  CHECK(root.at("system").at("updates").at("automaticChecks") == false);
 }

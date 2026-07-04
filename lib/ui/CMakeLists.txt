@@ -34,6 +34,7 @@ set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/toolbars/ModeToolbar.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/toolbars/SegmentationToolbar.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/UiScaleManager.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/updates/UpdateCheck.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/widgets/ActiveImageSelection.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/widgets/ActiveImageSelectionModel.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/widgets/LandmarkWidget.cpp"
@@ -81,6 +82,7 @@ add_library(Entropy::UI ALIAS EntropyUI)
 
 target_compile_definitions(EntropyUI PRIVATE
   ENTROPY_ABOUT_ICON_RESOURCE_PATH="${entropy_ABOUT_ICON_RESOURCE_PATH}"
+  ENTROPY_VERSION="${PROJECT_VERSION}"
   ENTROPY_RESOURCE_DIR="${CMAKE_INSTALL_FULL_DATADIR}/entropy"
 )
 

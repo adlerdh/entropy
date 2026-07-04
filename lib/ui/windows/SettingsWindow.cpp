@@ -1231,6 +1231,19 @@ void renderInterfaceTab(
  */
 void renderSystemTab(AppData& appData)
 {
+  const bool updatesOpen = ImGui::CollapsingHeader("Updates", ImGuiTreeNodeFlags_DefaultOpen);
+  if (updatesOpen) {
+    bool automaticChecks = appData.settings().automaticUpdateChecksEnabled();
+    if (ImGui::Checkbox("Automatically check for updates", &automaticChecks)) {
+      appData.settings().setAutomaticUpdateChecksEnabled(automaticChecks);
+    }
+    ImGui::SameLine();
+    helpMarker(
+      "When enabled, Entropy checks GitHub for a newer release once per app session and shows a notification only "
+      "when an update is available.");
+  }
+  finishSettingsSection(updatesOpen);
+
   const bool diagnosticsOpen = ImGui::CollapsingHeader("Diagnostics", ImGuiTreeNodeFlags_DefaultOpen);
   if (diagnosticsOpen) {
     renderDiagnosticsSettings();

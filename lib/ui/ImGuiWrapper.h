@@ -10,6 +10,7 @@
 #include "registration/Execution.h"
 #include "ui/GuiData.h"
 #include "ui/UiScaleManager.h"
+#include "ui/updates/UpdateCheck.h"
 
 #include <glm/fwd.hpp>
 #include <uuid.h>
@@ -448,6 +449,15 @@ private:
 
   void requestQueuedRegistrationJobs();
   void processRegistrationJobFutures();
+
+  std::future<entropy::ui::updates::CheckResult> m_updateCheckFuture;
+  entropy::ui::updates::CheckWindowState m_updateCheckWindowState;
+  std::string m_updateCheckEtag;
+  bool m_automaticUpdateCheckRequested = false;
+
+  void requestUpdateCheck(bool manualCheck);
+  void requestAutomaticUpdateCheckIfNeeded();
+  void processUpdateCheckFuture();
 
   /// Queue of UIDs referring to task UIDs of futures.
   /// These are completed isosurface mesh generation tasks that now need

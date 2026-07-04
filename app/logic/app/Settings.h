@@ -188,6 +188,12 @@ public:
   /// @brief Set whether time-series images change frames together.
   void setSynchronizeTimeSeries(bool synchronize);
 
+  /// @brief Return whether Entropy should check GitHub for updates automatically.
+  bool automaticUpdateChecksEnabled() const;
+
+  /// @brief Set whether Entropy should check GitHub for updates automatically.
+  void setAutomaticUpdateChecksEnabled(bool enabled);
+
   std::size_t foregroundLabel() const;
   std::size_t backgroundLabel() const;
 
@@ -271,6 +277,7 @@ private:
   UiLayoutTabPlacement m_layoutTabPlacement = UiLayoutTabPlacement::Top;
   bool m_showGlobalTimeControls = true;
   bool m_synchronizeTimeSeries = true;
+  bool m_automaticUpdateChecksEnabled = false;
   registration::BackendConfig m_registrationBackendConfig;
 
   bool m_cursorSyncEnabled = false;

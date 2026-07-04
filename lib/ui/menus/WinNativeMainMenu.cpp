@@ -30,6 +30,8 @@ constexpr UINT k_nextLayoutCommand = 1104;
 constexpr UINT k_showAboutCommand = 1105;
 constexpr UINT k_quitCommand = 1106;
 constexpr UINT k_showKeyboardShortcutsCommand = 1107;
+constexpr UINT k_checkForUpdatesCommand = 1108;
+constexpr UINT k_openDownloadPageCommand = 1109;
 constexpr UINT k_selectLayoutCommandBase = 1200;
 constexpr UINT k_selectActiveImageCommandBase = 1400;
 constexpr UINT k_actionCommandBase = 2000;
@@ -84,6 +86,8 @@ bool isMenuCommand(UINT command)
     case k_nextLayoutCommand:
     case k_showAboutCommand:
     case k_showKeyboardShortcutsCommand:
+    case k_checkForUpdatesCommand:
+    case k_openDownloadPageCommand:
     case k_quitCommand:
       return true;
     default:
@@ -250,6 +254,16 @@ void handleMenuCommand(const MenuState& state, UINT command)
     case k_showKeyboardShortcutsCommand:
       if (callbacks.showKeyboardShortcuts) {
         callbacks.showKeyboardShortcuts();
+      }
+      break;
+    case k_checkForUpdatesCommand:
+      if (callbacks.checkForUpdates) {
+        callbacks.checkForUpdates();
+      }
+      break;
+    case k_openDownloadPageCommand:
+      if (callbacks.openDownloadPage) {
+        callbacks.openDownloadPage();
       }
       break;
     case k_quitCommand:
@@ -741,7 +755,10 @@ bool populateWindowsMenu(HMENU menu)
 bool populateHelpMenu(HMENU menu)
 {
   UINT position = 0;
-  return insertMenuItem(menu, position++, k_showKeyboardShortcutsCommand, L"&Keyboard Shortcuts") &&
+  return insertMenuItem(menu, position++, k_checkForUpdatesCommand, L"Check for &Updates...") &&
+         insertMenuItem(menu, position++, k_openDownloadPageCommand, L"&Download Entropy...") &&
+         insertSeparator(menu, position++) &&
+         insertMenuItem(menu, position++, k_showKeyboardShortcutsCommand, L"&Keyboard Shortcuts") &&
          insertSeparator(menu, position++) && insertMenuItem(menu, position++, k_showAboutCommand, L"&About Entropy");
 }
 

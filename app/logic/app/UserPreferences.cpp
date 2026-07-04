@@ -330,7 +330,8 @@ json toJson(
       {"entropyInstances", {{"enabled", settings.entropyInstanceSyncEnabled()}}}}},
     {"system",
      {{"diagnostics",
-       {{"logVerbosity", std::string{entropy::logging::logLevelLabel(entropy::logging::defaultLoggerSinkLevel())}}}}}}};
+       {{"logVerbosity", std::string{entropy::logging::logLevelLabel(entropy::logging::defaultLoggerSinkLevel())}}}},
+      {"updates", {{"automaticChecks", settings.automaticUpdateChecksEnabled()}}}}}};
 }
 
 void applyJson(
@@ -584,6 +585,11 @@ void applyJson(
             break;
           }
         }
+      }
+    }
+    if (const auto updates = system->find("updates"); updates != system->end() && updates->is_object()) {
+      if (const auto value = updates->find("automaticChecks"); value != updates->end() && value->is_boolean()) {
+        settings.setAutomaticUpdateChecksEnabled(value->get<bool>());
       }
     }
   }

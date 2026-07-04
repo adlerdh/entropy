@@ -9,6 +9,7 @@ add_executable(EntropyUiTests
   OpacityMixerModelTests.cpp
   SettingsModelTests.cpp
   StyleTests.cpp
+  UpdateCheckTests.cpp
   ActiveImageSelectionModelTests.cpp
   UiControlsTests.cpp
   UiHeaderIncludeTests.cpp
@@ -24,6 +25,7 @@ target_sources(EntropyUiTests PRIVATE
   "${entropy_UI_DIR}/LinuxUiScale.cpp"
   "${entropy_UI_DIR}/Style.cpp"
   "${entropy_UI_DIR}/settings/SettingsModel.cpp"
+  "${entropy_UI_DIR}/updates/UpdateCheck.cpp"
   "${entropy_UI_DIR}/UiScaleManager.cpp"
   "${entropy_UI_DIR}/widgets/ActiveImageSelectionModel.cpp"
   "${entropy_UI_DIR}/windows/OpacityMixerModel.cpp"
@@ -34,7 +36,9 @@ target_sources(EntropyUiTests PRIVATE
 target_link_libraries(EntropyUiTests PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
+  Entropy::Registration
   imgui
+  nlohmann_json::nlohmann_json
   spdlog::spdlog
   entropy_warnings
 )

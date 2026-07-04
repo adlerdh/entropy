@@ -215,6 +215,16 @@ void AppSettings::setSynchronizeTimeSeries(bool synchronize)
   m_synchronizeTimeSeries = synchronize;
 }
 
+bool AppSettings::automaticUpdateChecksEnabled() const
+{
+  return m_automaticUpdateChecksEnabled;
+}
+
+void AppSettings::setAutomaticUpdateChecksEnabled(bool enabled)
+{
+  m_automaticUpdateChecksEnabled = enabled;
+}
+
 const registration::BackendConfig& AppSettings::registrationBackendConfig() const
 {
   return m_registrationBackendConfig;

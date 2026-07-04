@@ -590,6 +590,13 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
     }
 
     if (ImGui::BeginMenu("Help")) {
+      if (ImGui::MenuItem("Check for Updates...", nullptr, false, callbacks.checkForUpdates != nullptr)) {
+        callbacks.checkForUpdates();
+      }
+      if (ImGui::MenuItem("Download Entropy...", nullptr, false, callbacks.openDownloadPage != nullptr)) {
+        callbacks.openDownloadPage();
+      }
+      ImGui::Separator();
       if (ImGui::MenuItem("Keyboard Shortcuts", nullptr, false, callbacks.showKeyboardShortcuts != nullptr)) {
         callbacks.showKeyboardShortcuts();
       }
