@@ -88,6 +88,16 @@ ValidationResult validateJob(const JobSpec& job, const BackendCapabilities& capa
       "masks",
       "FireANTs requires both fixed and moving masks when masks are used.");
   }
+  if (
+    job.backend == Backend::Greedy && hasPathOrUid(job.movingMask) && !includesDeformableTransform(job.transformModel))
+  {
+    addMessage(
+      result,
+      ValidationSeverity::Warning,
+      "movingMask",
+      "Greedy moving masks are applied during deformable registration only and will be ignored for affine-only "
+      "registration.");
+  }
   if (!job.auxiliaryImagePairs.empty()) {
     requireFeature(
       result,

@@ -428,7 +428,6 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       command.args.push_back("-ia-image-centers");
     }
     appendGreedyFixedMaskArgs(command.args, job);
-    appendGreedyMovingMaskArgs(command.args, job);
     appendGreedyAffineAdvancedArgs(command.args, job);
     if (threads != "0") {
       command.args.push_back("-threads");

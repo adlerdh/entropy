@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <initializer_list>
 #include <iterator>
 
 namespace
@@ -37,6 +38,16 @@ std::string argumentAfter(const std::vector<std::string>& args, const std::strin
     return {};
   }
   return *std::next(it);
+}
+
+bool hasArgSequence(const std::vector<std::string>& args, std::initializer_list<const char*> sequence)
+{
+  std::vector<std::string> expected;
+  expected.reserve(sequence.size());
+  for (const char* value : sequence) {
+    expected.emplace_back(value);
+  }
+  return std::search(args.begin(), args.end(), expected.begin(), expected.end()) != args.end();
 }
 
 } // namespace
@@ -209,15 +220,15 @@ TEST_CASE("Greedy command generation emits masks and auxiliary image pairs", "[r
   const std::vector<registration::CommandSpec> commands = registration::generateCommands(job);
 
   REQUIRE(commands.size() == 3);
-  const std::string affinePreview = registration::displayCommand(commands.at(0));
-  CHECK(affinePreview.find("-gm fixed_mask.nii.gz") != std::string::npos);
-  CHECK(affinePreview.find("-mm moving_mask.nii.gz") != std::string::npos);
-  CHECK(affinePreview.find("-w 0.500000 -i aux_fixed.nii.gz aux_moving.nii.gz") != std::string::npos);
+  const std::vector<std::string>& affineArgs = commands.at(0).args;
+  CHECK(hasArgSequence(affineArgs, {"-gm", "fixed_mask.nii.gz"}));
+  CHECK_FALSE(hasArgSequence(affineArgs, {"-mm", "moving_mask.nii.gz"}));
+  CHECK(hasArgSequence(affineArgs, {"-w", "0.500000", "-i", "aux_fixed.nii.gz", "aux_moving.nii.gz"}));
 
-  const std::string deformablePreview = registration::displayCommand(commands.at(1));
-  CHECK(deformablePreview.find("-gm fixed_mask.nii.gz") != std::string::npos);
-  CHECK(deformablePreview.find("-mm moving_mask.nii.gz") != std::string::npos);
-  CHECK(deformablePreview.find("-w 0.500000 -i aux_fixed.nii.gz aux_moving.nii.gz") != std::string::npos);
+  const std::vector<std::string>& deformableArgs = commands.at(1).args;
+  CHECK(hasArgSequence(deformableArgs, {"-gm", "fixed_mask.nii.gz"}));
+  CHECK(hasArgSequence(deformableArgs, {"-mm", "moving_mask.nii.gz"}));
+  CHECK(hasArgSequence(deformableArgs, {"-w", "0.500000", "-i", "aux_fixed.nii.gz", "aux_moving.nii.gz"}));
 }
 
 TEST_CASE(

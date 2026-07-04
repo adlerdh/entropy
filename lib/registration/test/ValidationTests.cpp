@@ -104,6 +104,27 @@ TEST_CASE("registration validation requires FireANTs masks to be paired", "[regi
   CHECK(result.canLaunch());
 }
 
+TEST_CASE("registration validation warns when Greedy affine-only jobs include a moving mask", "[registration]")
+{
+  registration::JobSpec job = minimalJob(registration::Backend::Greedy);
+  job.transformModel = registration::TransformModel::Affine;
+  job.movingMask = imageRef("moving-mask", "moving_mask");
+  job.outputPrefix = "moving_to_fixed";
+
+  registration::ValidationResult result =
+    registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+  REQUIRE_FALSE(result.messages.empty());
+  CHECK(result.messages.front().severity == registration::ValidationSeverity::Warning);
+
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  result = registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+  CHECK(result.messages.empty());
+}
+
 TEST_CASE("registration validation rejects incomplete auxiliary image pairs", "[registration]")
 {
   registration::JobSpec job = minimalJob(registration::Backend::Greedy);

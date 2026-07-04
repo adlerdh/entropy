@@ -1684,8 +1684,11 @@ void renderRegistrationSetupWindow(AppData& appData)
       }
       ImGui::SameLine();
       helpMarker(
-        "Optional mask in moving image space. The backend excludes moving-image samples outside the selected "
-        "moving-region constraint when supported.");
+        state.job.backend == registration::Backend::Greedy
+          ? "Optional mask in moving image space. Greedy applies moving masks during deformable registration; "
+            "affine-only Greedy registration ignores moving masks."
+          : "Optional mask in moving image space. The backend excludes moving-image samples outside the "
+            "selected moving-region constraint when supported.");
 
       renderAuxiliaryImagePairs(state, choices);
       ImGui::Separator();
