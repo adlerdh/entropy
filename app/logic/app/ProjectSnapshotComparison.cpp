@@ -182,7 +182,13 @@ bool projectInterfaceSettingsEqual(
 
 bool projectViewSettingsEqual(const serialize::ProjectViewSettings& a, const serialize::ProjectViewSettings& b)
 {
-  return a.m_anatomicalLabelType == b.m_anatomicalLabelType &&
+  return a.m_showImageBorders == b.m_showImageBorders &&
+         a.m_showImageBordersInLightboxViews == b.m_showImageBordersInLightboxViews &&
+         a.m_showCrosshairs == b.m_showCrosshairs &&
+         a.m_showCrosshairsInLightboxViews == b.m_showCrosshairsInLightboxViews &&
+         a.m_showAnatomicalLabels == b.m_showAnatomicalLabels &&
+         a.m_showAnatomicalLabelsInLightboxViews == b.m_showAnatomicalLabelsInLightboxViews &&
+         a.m_anatomicalLabelType == b.m_anatomicalLabelType &&
          a.m_lockAnatomicalDirectionsToReferenceImage == b.m_lockAnatomicalDirectionsToReferenceImage &&
          a.m_crosshairsSnapping == b.m_crosshairsSnapping;
 }

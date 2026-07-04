@@ -30,6 +30,12 @@ void GuiData::setTxPrecisionFormat()
   m_txPrecisionFormat = precisionFormat(m_txPrecision);
 }
 
+void GuiData::setTimeValuePrecisionFormat()
+{
+  m_timeValuePrecision = clampPrecision(m_timeValuePrecision);
+  m_timeValuePrecisionFormat = precisionFormat(m_timeValuePrecision);
+}
+
 GuiData::Margins GuiData::computeToolbarMargins() const
 {
   Margins margins;

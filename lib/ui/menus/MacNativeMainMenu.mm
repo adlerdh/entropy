@@ -39,6 +39,7 @@ bool g_installed = false;
 - (void)selectActiveImage:(id)sender;
 - (void)performMenuAction:(id)sender;
 - (void)showAbout:(id)sender;
+- (void)showKeyboardShortcuts:(id)sender;
 - (void)quitApp:(id)sender;
 - (BOOL)validateMenuItem:(NSMenuItem*)menuItem;
 @end
@@ -146,6 +147,13 @@ bool g_installed = false;
   (void)sender;
   if (g_callbacks.showAbout) {
     g_callbacks.showAbout();
+  }
+}
+
+- (void)showKeyboardShortcuts:(id)sender {
+  (void)sender;
+  if (g_callbacks.showKeyboardShortcuts) {
+    g_callbacks.showKeyboardShortcuts();
   }
 }
 
@@ -664,6 +672,8 @@ void addWindowsMenu(NSMenu* mainMenu) {
 void addHelpMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Help" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Help"];
+  addSymbolMenuItem(menu, @"Keyboard Shortcuts", @selector(showKeyboardShortcuts:), @"", @"keyboard");
+  [menu addItem:[NSMenuItem separatorItem]];
   addSymbolMenuItem(menu, @"About Entropy", @selector(showAbout:), @"", @"info.circle");
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
@@ -771,8 +781,8 @@ void rebuildLayoutsMenu() {
     MainMenuAction::ToggleLayoutTabs,
     @"rectangle.topthird.inset.filled");
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
-  addTargetedMenuItem(g_layoutsMenu, @"Previous Layout", @selector(previousLayout:), @"[", 0);
-  addTargetedMenuItem(g_layoutsMenu, @"Next Layout", @selector(nextLayout:), @"]", 0);
+  addSymbolMenuItem(g_layoutsMenu, @"Previous Layout", @selector(previousLayout:), @"[", @"arrow.left.square", 0);
+  addSymbolMenuItem(g_layoutsMenu, @"Next Layout", @selector(nextLayout:), @"]", @"arrow.right.square", 0);
   [g_layoutsMenu addItem:[NSMenuItem separatorItem]];
 
   const auto names = g_callbacks.layoutNames ? g_callbacks.layoutNames() : std::vector<std::string>{};

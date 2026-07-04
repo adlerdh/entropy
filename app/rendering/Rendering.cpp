@@ -2046,6 +2046,10 @@ void Rendering::renderOneImage_overlays(
   bool renderImageBorders)
 {
   auto& renderData = m_appData.renderData();
+  const bool renderBordersInCurrentLayout =
+    renderImageBorders && renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
+    (!m_appData.windowData().currentLayout().isLightbox() ||
+     renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews);
 
   if (renderLandmarkAndAnnotationOverlays && !renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
     drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, I);
@@ -2057,15 +2061,8 @@ void Rendering::renderOneImage_overlays(
     setupOpenGLState();
   }
 
-  if (renderImageBorders) {
-    drawImageViewIntersections(
-      m_nvg,
-      miewportViewBounds,
-      worldOffsetXhairs,
-      m_appData,
-      view,
-      I,
-      renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
+  if (renderBordersInCurrentLayout) {
+    drawImageViewIntersections(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, I, true);
     setupOpenGLState();
   }
 }
@@ -2950,7 +2947,13 @@ void Rendering::renderAllImageBordersForView(
   const FrameBounds& miewportViewBounds,
   const glm::vec3& worldOffsetXhairs)
 {
-  if (!m_nvg) {
+  const RenderData& renderData = m_appData.renderData();
+  const bool renderBordersInCurrentLayout =
+    renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
+    (!m_appData.windowData().currentLayout().isLightbox() ||
+     renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews);
+
+  if (!m_nvg || !renderBordersInCurrentLayout) {
     return;
   }
 
@@ -2965,7 +2968,7 @@ void Rendering::renderAllImageBordersForView(
           m_appData,
           view,
           CurrentImages{imgSegPair},
-          m_appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
+          true);
         setupOpenGLState();
       }
       break;
@@ -2978,7 +2981,7 @@ void Rendering::renderAllImageBordersForView(
         m_appData,
         view,
         getImageAndSegUidsForMetricShaders(view.metricImages()),
-        m_appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections);
+        true);
       setupOpenGLState();
       break;
     }
@@ -3287,8 +3290,11 @@ void Rendering::renderVectorOverlays()
         drawVectorFieldArrows(m_nvg, miewportViewBounds, worldXhairsOffset, m_appData, *view, vectorOverlayImages);
       }
 
+      const bool showCrosshairsInCurrentLayout =
+        R.m_showCrosshairs && (!windowData.currentLayout().isLightbox() || R.m_showCrosshairsInLightboxViews);
+
       // Do not render crosshairs in volume rendering mode
-      if (ViewRenderMode::VolumeRender != view->renderMode()) {
+      if (showCrosshairsInCurrentLayout && ViewRenderMode::VolumeRender != view->renderMode()) {
         // If aligning views to crosshairs, then crosshairs are based on the crosshairs
         // transform (world_T_crosshairsFrame)
         const auto labelPosInfo_forXhairs =
@@ -3305,7 +3311,12 @@ void Rendering::renderVectorOverlays()
         drawCrosshairs(m_nvg, miewportViewBounds, *view, R.m_crosshairsColor, labelPosInfo_forXhairs);
       }
 
-      if (AnatomicalLabelType::Disabled != R.m_anatomicalLabelType) {
+      const bool allowAnatomicalLabelsInCurrentLayout =
+        !windowData.currentLayout().isLightbox() || R.m_showAnatomicalLabelsInLightboxViews;
+      if (
+        R.m_showAnatomicalLabels && allowAnatomicalLabelsInCurrentLayout &&
+        AnatomicalLabelType::Disabled != R.m_anatomicalLabelType)
+      {
         const bool isOblique = ViewType::Oblique == view->viewType();
         drawAnatomicalLabels(
           m_nvg,
@@ -3330,7 +3341,8 @@ void Rendering::renderVectorOverlays()
           R.m_scaleBarOrientation,
           R.m_scaleBarTicks,
           R.m_scaleBarTargetFraction,
-          R.m_scaleBarMarginPx);
+          R.m_scaleBarMarginPx,
+          static_cast<int>(m_appData.guiData().m_coordsPrecision));
       }
 
       if (

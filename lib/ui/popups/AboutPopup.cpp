@@ -89,7 +89,7 @@ void renderAboutDialogModalPopup(bool open)
     ImGui::BeginGroup();
     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x);
     ImGui::Text("%s (version %s)", APP_NAME, VERSION_FULL);
-    ImGui::TextWrapped("--> %s", APP_DESCRIPTION);
+    ImGui::TextWrapped("→ %s", APP_DESCRIPTION);
     ImGui::TextLinkOpenURL("https://github.com/adlerdh/entropy", "https://github.com/adlerdh/entropy");
 
     ImGui::Spacing();

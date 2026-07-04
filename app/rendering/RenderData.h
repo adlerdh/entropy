@@ -17,7 +17,6 @@
 
 #include <uuid.h>
 
-#include <map>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -157,10 +156,10 @@ struct RenderData
   RenderData();
 
   /**
-   * @brief Set the energy of x-rays used for x-ray intensity projection mode
-   * @param energyMeV X-ray energy in MeV
+   * @brief Set the photon energy used for x-ray intensity projection mode.
+   * @param energyKeV Monoenergetic x-ray photon energy in keV.
    */
-  void setXrayEnergy(float energyMeV);
+  void setXrayEnergy(float energyKeV);
 
   Quad m_quad;
   Circle m_circle;
@@ -223,20 +222,10 @@ struct RenderData
   float m_xrayIntensityWindow;
   float m_xrayIntensityLevel;
 
-  // Map of photon mass attenuation coefficients of liquid water, normalized by water density,
-  // (in units of [cm^2/g]) at varying photon energy levels [MeV]:
-  /// @see https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/water.html
-  static const std::map<float, float> msk_waterMassAttenCoeffs;
-
-  // Map of photon mass attenuation coefficients of dry air at sea level, normalized by air density,
-  // (in units of [cm^2/g]) at varying photon energy levels [MeV]:
-  /// @see https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/air.html
-  static const std::map<float, float> msk_airMassAttenCoeffs;
-
-  // Current energy (in KeV) for photons used in x-ray intensity projection
+  // Current energy (in keV) for photons used in x-ray intensity projection
   float m_xrayEnergyKeV;
 
-  // Current water and air photon mass attenuation coefficients
+  // Current water and air photon linear attenuation coefficients in cm^-1
   float m_waterMassAttenCoeff;
   float m_airMassAttenCoeff;
 
@@ -250,8 +239,12 @@ struct RenderData
   // box
   bool m_3dTransparentIfNoHit;
 
-  glm::vec4 m_crosshairsColor;      // Crosshairs color (non-premultiplied by alpha)
+  glm::vec4 m_crosshairsColor; // Crosshairs color (non-premultiplied by alpha)
+  bool m_showCrosshairs;
+  bool m_showCrosshairsInLightboxViews;
   glm::vec4 m_anatomicalLabelColor; // Anatomical label text color (non-premultiplied by alpha)
+  bool m_showAnatomicalLabels;
+  bool m_showAnatomicalLabelsInLightboxViews;
   float m_anatomicalLabelScale = 1.0f;
 
   AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human;
@@ -410,6 +403,7 @@ struct RenderData
 
     /// Render the intersections of inactive images with the view planes?
     bool renderInactiveImageViewIntersections = true;
+    bool renderInactiveImageViewIntersectionsInLightboxViews = false;
   };
 
   LandmarkParams m_globalLandmarkParams;

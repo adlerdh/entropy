@@ -4,6 +4,7 @@ add_executable(EntropyRenderingTests
   LocalNccMetricTests.cpp
   PixelEdgeGeometryTests.cpp
   ScaleBarGeometryTests.cpp
+  XrayAttenuationTests.cpp
 )
 
 target_sources(EntropyRenderingTests PRIVATE
@@ -12,6 +13,7 @@ target_sources(EntropyRenderingTests PRIVATE
   "${entropy_APP_DIR}/rendering/LocalNccMetric.cpp"
   "${entropy_APP_DIR}/rendering/PixelEdgeGeometry.cpp"
   "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"
+  "${entropy_APP_DIR}/rendering/XrayAttenuation.cpp"
 )
 
 target_link_libraries(EntropyRenderingTests PRIVATE

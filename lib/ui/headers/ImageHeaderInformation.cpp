@@ -179,7 +179,7 @@ void renderImageHeaderInformation(
         &timeSpacing,
         nullptr,
         nullptr,
-        appData.guiData().m_imageValuePrecisionFormat.c_str(),
+        appData.guiData().m_timeValuePrecisionFormat.c_str(),
         ImGuiInputTextFlags_ReadOnly);
     }
     else {
@@ -199,7 +199,7 @@ void renderImageHeaderInformation(
       2,
       nullptr,
       nullptr,
-      appData.guiData().m_imageValuePrecisionFormat.c_str(),
+      appData.guiData().m_timeValuePrecisionFormat.c_str(),
       ImGuiInputTextFlags_ReadOnly);
     ImGui::SameLine();
     helpMarker("Time value range from the first frame to the final frame");

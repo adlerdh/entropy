@@ -105,7 +105,7 @@ void applyCustomDarkStyle(ImGuiStyle* dst)
   colors[ImGuiCol_FrameBgActive] = ImVec4(0.20f, 0.41f, 0.68f, 1.00f);
   colors[ImGuiCol_TitleBg] = ImVec4(25.0f / 255.0f, 25.0f / 255.0f, 25.0f / 255.0f, 1.00f);
   colors[ImGuiCol_TitleBgActive] = ImVec4(29.0f / 255.0f, 59.0f / 255.0f, 97.0f / 255.0f, 1.00f);
-  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(10.0f / 255.0f, 10.0f / 255.0f, 10.0f / 255.0f, 130.0f / 255.0f);
+  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(10.0f / 255.0f, 10.0f / 255.0f, 10.0f / 255.0f, 144.0f / 255.0f);
   colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
   colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
   colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);

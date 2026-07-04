@@ -76,11 +76,16 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
 {
   user_preferences::RenderPreferences preferences;
   preferences.showImageBorders = false;
+  preferences.showImageBordersInLightboxViews = false;
   preferences.crosshairsSnapping = CrosshairsSnapping::ActiveImage;
   preferences.crosshairsColor = {0.1f, 0.2f, 0.3f, 0.4f};
+  preferences.showCrosshairs = false;
+  preferences.showCrosshairsInLightboxViews = false;
   preferences.background2dColor = {0.2f, 0.3f, 0.4f};
   preferences.background3dColor = {0.3f, 0.4f, 0.5f, 0.6f};
   preferences.anatomicalLabelColor = {0.7f, 0.6f, 0.5f, 0.4f};
+  preferences.showAnatomicalLabels = false;
+  preferences.showAnatomicalLabelsInLightboxViews = false;
   preferences.anatomicalLabelType = AnatomicalLabelType::Rodent;
   preferences.anatomicalLabelScale = 1.6f;
   preferences.showScaleBars = false;
@@ -166,7 +171,8 @@ user_preferences::PrecisionPreferences makeNonDefaultPrecisionPreferences()
     .imageValuePrecision = 4,
     .coordsPrecision = 5,
     .txPrecision = 6,
-    .percentilePrecision = 7};
+    .percentilePrecision = 7,
+    .timeValuePrecision = 8};
 }
 
 void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected)
@@ -232,11 +238,16 @@ void requireRenderPreferencesEqual(
   const user_preferences::RenderPreferences& expected)
 {
   CHECK(actual.showImageBorders == expected.showImageBorders);
+  CHECK(actual.showImageBordersInLightboxViews == expected.showImageBordersInLightboxViews);
   CHECK(actual.crosshairsSnapping == expected.crosshairsSnapping);
   CHECK(actual.crosshairsColor == expected.crosshairsColor);
+  CHECK(actual.showCrosshairs == expected.showCrosshairs);
+  CHECK(actual.showCrosshairsInLightboxViews == expected.showCrosshairsInLightboxViews);
   CHECK(actual.background2dColor == expected.background2dColor);
   CHECK(actual.background3dColor == expected.background3dColor);
   CHECK(actual.anatomicalLabelColor == expected.anatomicalLabelColor);
+  CHECK(actual.showAnatomicalLabels == expected.showAnatomicalLabels);
+  CHECK(actual.showAnatomicalLabelsInLightboxViews == expected.showAnatomicalLabelsInLightboxViews);
   CHECK(actual.anatomicalLabelType == expected.anatomicalLabelType);
   CHECK(actual.anatomicalLabelScale == Catch::Approx(expected.anatomicalLabelScale));
   CHECK(actual.showScaleBars == expected.showScaleBars);
@@ -323,6 +334,7 @@ void requirePrecisionPreferencesEqual(
   CHECK(actual.coordsPrecision == expected.coordsPrecision);
   CHECK(actual.txPrecision == expected.txPrecision);
   CHECK(actual.percentilePrecision == expected.percentilePrecision);
+  CHECK(actual.timeValuePrecision == expected.timeValuePrecision);
 }
 
 void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPreferences& renderPreferences)
@@ -330,6 +342,8 @@ void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPr
   settings.setLockAnatomicalCoordinateAxesWithReferenceImage(false);
   settings.setSynchronizeTimeSeries(true);
   renderPreferences.crosshairsSnapping = CrosshairsSnapping::Disabled;
+  renderPreferences.showAnatomicalLabels = true;
+  renderPreferences.showAnatomicalLabelsInLightboxViews = true;
   renderPreferences.anatomicalLabelType = AnatomicalLabelType::Human;
 
   const user_preferences::RenderPreferences defaults;
@@ -404,6 +418,7 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("interface").at("precision").at("coordinates") == 5);
   CHECK(root.at("interface").at("precision").at("transformations") == 6);
   CHECK(root.at("interface").at("precision").at("percentiles") == 7);
+  CHECK(root.at("interface").at("precision").at("timeValues") == 8);
   CHECK(root.at("views").at("showOverlays") == false);
   CHECK(root.at("registration").at("defaultBackend") == "ANTs");
   CHECK(root.at("registration").at("greedyExecutable") == "/opt/greedy/bin/greedy");
@@ -498,7 +513,8 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
         "imageValues": 99,
         "coordinates": "bad",
         "transformations": 6,
-        "percentiles": 8
+        "percentiles": 8,
+        "timeValues": 99
       }
     },
     "views": {
@@ -571,6 +587,7 @@ TEST_CASE("user preferences preserve defaults for missing invalid and legacy fie
   CHECK(precisionPreferences.coordsPrecision == 3);
   CHECK(precisionPreferences.txPrecision == 6);
   CHECK(precisionPreferences.percentilePrecision == 8);
+  CHECK(precisionPreferences.timeValuePrecision == 9);
   CHECK(renderPreferences.crosshairsColor == user_preferences::RenderPreferences{}.crosshairsColor);
   CHECK(renderPreferences.crosshairsSnapping == user_preferences::RenderPreferences{}.crosshairsSnapping);
   CHECK(renderPreferences.anatomicalLabelScale == Catch::Approx(2.0f));
@@ -634,7 +651,12 @@ TEST_CASE("default user preference JSON documents built-in defaults", "[app][set
   CHECK(root.at("interface").at("precision").at("coordinates") == 3);
   CHECK(root.at("interface").at("precision").at("transformations") == 3);
   CHECK(root.at("interface").at("precision").at("percentiles") == 2);
+  CHECK(root.at("interface").at("precision").at("timeValues") == 2);
   CHECK(root.at("views").at("showOverlays") == true);
+  CHECK(root.at("views").at("showImageBorders") == true);
+  CHECK(root.at("views").at("lightbox").at("showImageBorders") == false);
+  CHECK(root.at("views").at("crosshairs").at("show") == true);
+  CHECK(root.at("views").at("crosshairs").at("showInLightboxViews") == true);
   CHECK_FALSE(root.at("views").at("crosshairs").contains("snapping"));
   CHECK_FALSE(root.at("views").contains("lockAnatomicalDirectionsToReferenceImage"));
   CHECK_FALSE(root.at("views").at("anatomicalLabels").contains("type"));

@@ -118,27 +118,35 @@ TEST_CASE("precision format helpers use their own precision fields", "[ui][gui]"
   {
     guiData.m_coordsPrecision = 2;
     guiData.m_txPrecision = 6;
+    guiData.m_timeValuePrecision = 4;
 
     guiData.setCoordsPrecisionFormat();
     guiData.setTxPrecisionFormat();
+    guiData.setTimeValuePrecisionFormat();
 
     CHECK(guiData.m_coordsPrecision == 2);
     CHECK(guiData.m_coordsPrecisionFormat == "%0.2f");
     CHECK(guiData.m_txPrecision == 6);
     CHECK(guiData.m_txPrecisionFormat == "%0.6f");
+    CHECK(guiData.m_timeValuePrecision == 4);
+    CHECK(guiData.m_timeValuePrecisionFormat == "%0.4f");
   }
 
   SECTION("large precision")
   {
     guiData.m_coordsPrecision = 99;
     guiData.m_txPrecision = 99;
+    guiData.m_timeValuePrecision = 99;
 
     guiData.setCoordsPrecisionFormat();
     guiData.setTxPrecisionFormat();
+    guiData.setTimeValuePrecisionFormat();
 
     CHECK(guiData.m_coordsPrecision == 9);
     CHECK(guiData.m_coordsPrecisionFormat == "%0.9f");
     CHECK(guiData.m_txPrecision == 9);
     CHECK(guiData.m_txPrecisionFormat == "%0.9f");
+    CHECK(guiData.m_timeValuePrecision == 9);
+    CHECK(guiData.m_timeValuePrecisionFormat == "%0.9f");
   }
 }

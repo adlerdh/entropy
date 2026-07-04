@@ -36,6 +36,7 @@ namespace
 static constexpr bool k_recenterCrosshairs = true;
 static constexpr bool k_realignCrosshairs = true;
 static constexpr bool k_doNotRecenterOnCurrentCrosshairsPosition = false;
+static constexpr float k_viewOptionControlWidth = 180.0f;
 
 void requestResetInterfaceSettings(const SettingsPersistenceCallbacks& persistenceCallbacks);
 void renderResetInterfaceSettingsPopup(const SettingsPersistenceCallbacks& persistenceCallbacks);
@@ -591,11 +592,16 @@ bool renderLocalLinearResidualSettings(
 void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRecenterType& recenterAllViews)
 {
   // Show image-view intersection border
-  ImGui::Checkbox(
-    "Show image borders",
-    &(renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections));
+  bool showImageBorders = renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
+  if (ImGui::Checkbox("Show image borders", &showImageBorders)) {
+    renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections = showImageBorders;
+    renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews = showImageBorders;
+  }
   ImGui::SameLine();
   helpMarker("Show borders of image intersections with views");
+  if (!renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections) {
+    renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews = false;
+  }
 
   /// @note strokeWidth seems to not work with NanoVG across all platforms
   /*
@@ -627,6 +633,14 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   // Crosshairs
   const bool crosshairsOpen = ImGui::CollapsingHeader("Crosshairs", ImGuiTreeNodeFlags_DefaultOpen);
   if (crosshairsOpen) {
+    if (ImGui::Checkbox("Show crosshairs", &renderData.m_showCrosshairs)) {
+      if (!renderData.m_showCrosshairs) {
+        renderData.m_showCrosshairsInLightboxViews = false;
+      }
+    }
+    ImGui::SameLine();
+    helpMarker("Show crosshairs in anatomical views");
+
     ImGui::ColorEdit4("Crosshairs line color", glm::value_ptr(renderData.m_crosshairsColor), k_colorAlphaEditFlags);
 
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
@@ -656,7 +670,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   finishSettingsSection(crosshairsOpen);
 
   // View centering:
-  const bool viewRecenteringOpen = ImGui::CollapsingHeader("View Recentering", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool viewRecenteringOpen = ImGui::CollapsingHeader("Recentering", ImGuiTreeNodeFlags_DefaultOpen);
   if (viewRecenteringOpen) {
     ImGui::Text("Center views and crosshairs on:");
 
@@ -764,7 +778,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   finishSettingsSection(viewRecenteringOpen);
 
   // View backgrounds:
-  const bool backgroundColorOpen = ImGui::CollapsingHeader("Background Colors", ImGuiTreeNodeFlags_DefaultOpen);
+  const bool backgroundColorOpen = ImGui::CollapsingHeader("Background", ImGuiTreeNodeFlags_DefaultOpen);
   if (backgroundColorOpen) {
     ImGui::ColorEdit3("2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
 
@@ -775,11 +789,21 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   // Anatomical labels:
   const bool anatomicalLabelsOpen = ImGui::CollapsingHeader("Anatomical Labels", ImGuiTreeNodeFlags_DefaultOpen);
   if (anatomicalLabelsOpen) {
+    bool showAnatomicalLabels = renderData.m_showAnatomicalLabels;
+    if (ImGui::Checkbox("Show anatomical labels", &showAnatomicalLabels)) {
+      renderData.m_showAnatomicalLabels = showAnatomicalLabels;
+      renderData.m_showAnatomicalLabelsInLightboxViews = showAnatomicalLabels;
+    }
+    ImGui::SameLine();
+    helpMarker("Show anatomical direction labels in anatomical views");
+
     ImGui::ColorEdit4("Label text color", glm::value_ptr(renderData.m_anatomicalLabelColor), k_colorAlphaEditFlags);
     float labelScale = renderData.m_anatomicalLabelScale;
+    ImGui::PushItemWidth(k_viewOptionControlWidth);
     if (mySliderF32("Scale", &labelScale, 0.5f, 2.0f, "%.1fx")) {
       renderData.m_anatomicalLabelScale = std::clamp(labelScale, 0.5f, 2.0f);
     }
+    ImGui::PopItemWidth();
     ImGui::Dummy(ImVec2(0.0f, 1.0f));
 
     static constexpr bool kOrientChangeRecenterCrosshairs = false;
@@ -798,7 +822,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
         kOrientChangeResetZoom);
     };
 
-    ImGui::Text("View L/R orientation convention:");
+    ImGui::Text("Left/right orientation convention:");
     if (ImGui::RadioButton(
           "Radiological",
           ViewConvention::Radiological == appData.windowData().getViewOrientationConvention()))
@@ -808,7 +832,6 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     ImGui::SameLine();
     helpMarker("Anatomical left is on view right; anatomical right is on view left");
 
-    ImGui::SameLine();
     if (ImGui::RadioButton(
           "Neurological",
           ViewConvention::Neurological == appData.windowData().getViewOrientationConvention()))
@@ -841,13 +864,6 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     }
     ImGui::SameLine();
     helpMarker("+x, -x, +y, -y, +z, -z");
-
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Disabled", AnatomicalLabelType::Disabled == renderData.m_anatomicalLabelType)) {
-      renderData.m_anatomicalLabelType = AnatomicalLabelType::Disabled;
-    }
-    ImGui::SameLine();
-    helpMarker("Disable anatomical labels");
   }
   finishSettingsSection(anatomicalLabelsOpen);
 
@@ -861,13 +877,6 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     helpMarker("Show physical scale bars on anatomical views");
 
     if (showScaleBars) {
-      bool showScaleBarsInLightboxViews = renderData.m_showScaleBarsInLightboxViews;
-      if (ImGui::Checkbox("Show in lightbox views", &showScaleBarsInLightboxViews)) {
-        renderData.m_showScaleBarsInLightboxViews = showScaleBarsInLightboxViews;
-      }
-      ImGui::SameLine();
-      helpMarker("Show scale bars in each tile of lightbox layouts");
-
       ImGui::ColorEdit4("Scale bars color", glm::value_ptr(renderData.m_scaleBarColor), k_colorAlphaEditFlags);
 
       auto setScaleBarPosition = [&](ScaleBarPosition position) {
@@ -877,6 +886,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       };
 
       ImGui::Spacing();
+      ImGui::PushItemWidth(k_viewOptionControlWidth);
       if (ImGui::BeginCombo("Position", ui_settings::scaleBarPositionName(renderData.m_scaleBarPosition))) {
         for (const auto position : ui_settings::orderedScaleBarPositions()) {
           const bool selected = position == renderData.m_scaleBarPosition;
@@ -889,6 +899,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
         }
         ImGui::EndCombo();
       }
+      ImGui::PopItemWidth();
 
       auto drawScaleBarPositionButton = [&](const ui_settings::ScaleBarPositionButton& button) {
         static constexpr ImVec2 k_buttonSize{32.0f, 24.0f};
@@ -953,8 +964,8 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
 
       ImGui::Spacing();
       int targetLengthPercent = ui_settings::targetLengthPercentFromFraction(renderData.m_scaleBarTargetFraction);
-      ImGui::PushItemWidth(180);
-      if (ImGui::SliderInt("Target length", &targetLengthPercent, 5, 100, "%d%%", ImGuiSliderFlags_AlwaysClamp)) {
+      ImGui::PushItemWidth(k_viewOptionControlWidth);
+      if (ImGui::SliderInt("Length", &targetLengthPercent, 5, 100, "%d%%", ImGuiSliderFlags_AlwaysClamp)) {
         renderData.m_scaleBarTargetFraction = ui_settings::targetLengthFractionFromPercent(targetLengthPercent);
       }
       ImGui::PopItemWidth();
@@ -963,7 +974,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
         "Approximate fraction of the view occupied by the scale bar before rounding to a clean physical length");
 
       int scaleBarMarginPx = ui_settings::marginPixelsFromFloat(renderData.m_scaleBarMarginPx);
-      ImGui::PushItemWidth(180);
+      ImGui::PushItemWidth(k_viewOptionControlWidth);
       if (ImGui::SliderInt("Margin", &scaleBarMarginPx, 12, 96, "%d px", ImGuiSliderFlags_AlwaysClamp)) {
         renderData.m_scaleBarMarginPx = ui_settings::marginFloatFromPixels(scaleBarMarginPx);
       }
@@ -990,6 +1001,58 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   finishSettingsSection(scaleBarsOpen);
 
   if (ImGui::CollapsingHeader("Lightbox Views", ImGuiTreeNodeFlags_DefaultOpen)) {
+    const bool showImageBorders = renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
+    if (!showImageBorders) {
+      renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews = false;
+    }
+    ImGui::BeginDisabled(!showImageBorders);
+    bool showImageBordersInLightboxViews =
+      showImageBorders &&
+      renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews;
+    if (ImGui::Checkbox("Show image borders##lightboxViews", &showImageBordersInLightboxViews)) {
+      renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews =
+        showImageBordersInLightboxViews;
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    helpMarker("Show image intersection borders in each tile of lightbox layouts");
+
+    const bool showCrosshairs = renderData.m_showCrosshairs;
+    if (!showCrosshairs) {
+      renderData.m_showCrosshairsInLightboxViews = false;
+    }
+    ImGui::BeginDisabled(!showCrosshairs);
+    bool showCrosshairsInLightboxViews = showCrosshairs && renderData.m_showCrosshairsInLightboxViews;
+    if (ImGui::Checkbox("Show crosshairs##lightboxViews", &showCrosshairsInLightboxViews)) {
+      renderData.m_showCrosshairsInLightboxViews = showCrosshairsInLightboxViews;
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    helpMarker("Show crosshairs in each tile of lightbox layouts");
+
+    const bool showAnatomicalLabels = renderData.m_showAnatomicalLabels;
+    if (!showAnatomicalLabels) {
+      renderData.m_showAnatomicalLabelsInLightboxViews = false;
+    }
+    ImGui::BeginDisabled(!showAnatomicalLabels);
+    bool showAnatomicalLabelsInLightboxViews = showAnatomicalLabels && renderData.m_showAnatomicalLabelsInLightboxViews;
+    if (ImGui::Checkbox("Show anatomical labels##lightboxViews", &showAnatomicalLabelsInLightboxViews)) {
+      renderData.m_showAnatomicalLabelsInLightboxViews = showAnatomicalLabelsInLightboxViews;
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    helpMarker("Show anatomical direction labels in each tile of lightbox layouts");
+
+    const bool showScaleBars = renderData.m_showScaleBars;
+    ImGui::BeginDisabled(!showScaleBars);
+    bool showScaleBarsInLightboxViews = renderData.m_showScaleBarsInLightboxViews;
+    if (ImGui::Checkbox("Show scale bars##lightboxViews", &showScaleBarsInLightboxViews)) {
+      renderData.m_showScaleBarsInLightboxViews = showScaleBarsInLightboxViews;
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    helpMarker("Show scale bars in each tile of lightbox layouts");
+
     bool showOffsetLabels = renderData.m_showLightboxOffsetLabels;
     if (ImGui::Checkbox("Show slice offset labels", &showOffsetLabels)) {
       renderData.m_showLightboxOffsetLabels = showOffsetLabels;
@@ -1053,6 +1116,8 @@ void renderInterfaceTab(
   if (ImGui::Checkbox("Show global time controls", &showGlobalTimeControls)) {
     appData.settings().setShowGlobalTimeControls(showGlobalTimeControls);
   }
+  ImGui::SameLine();
+  helpMarker("Show the floating time-series playback controls shared by loaded time-series images.");
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -1775,8 +1840,6 @@ void renderMetricsTab(
     getImageColorMap);
   ImGui::PopID();
 
-  finishSettingsSection(localLinearResidualOpen);
-
   ImGui::PopID(); /*** PopID metrics ***/
 }
 
@@ -1929,7 +1992,7 @@ void renderIntensityProjectionDefaults(RenderData& renderData)
         "%0.3f KeV",
         ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic))
   {
-    renderData.setXrayEnergy(energy / 1000.0f);
+    renderData.setXrayEnergy(energy);
   }
 
   float window = renderData.m_xrayIntensityWindow;
@@ -2121,7 +2184,6 @@ void renderRenderingTab(RenderData& renderData)
 
     ImGui::PopID(); /*** PopID ascii ***/
   }
-  finishSettingsSection(asciiOpen);
 }
 
 /**
@@ -2282,6 +2344,7 @@ void renderPrecisionTab(AppData& appData)
   uint32_t coordPrecision = appData.guiData().m_coordsPrecision;
   uint32_t txPrecision = appData.guiData().m_txPrecision;
   uint32_t percentilePrecision = appData.guiData().m_percentilePrecision;
+  uint32_t timeValuePrecision = appData.guiData().m_timeValuePrecision;
 
   ImGui::Text("Floating-point precision in user interface:");
 
@@ -2292,14 +2355,14 @@ void renderPrecisionTab(AppData& appData)
       ui_settings::precisionFormat(appData.guiData().m_imageValuePrecision);
   }
   ImGui::SameLine();
-  helpMarker("Floating-point precision of image values (e.g. in Inspector window)");
+  helpMarker("Decimal places for displayed image and segmentation values.");
 
   if (ImGui::InputScalar("Coordinates", ImGuiDataType_U32, &coordPrecision, &k_stepPrecision, &k_stepPrecision, "%d")) {
     appData.guiData().m_coordsPrecision = ui_settings::clampPrecision(coordPrecision);
     appData.guiData().setCoordsPrecisionFormat();
   }
   ImGui::SameLine();
-  helpMarker("Floating-point precision of image spatial coordinates (e.g. in Inspector window)");
+  helpMarker("Decimal places for displayed spatial coordinates and physical length labels.");
 
   if (ImGui::InputScalar("Transformations", ImGuiDataType_U32, &txPrecision, &k_stepPrecision, &k_stepPrecision, "%d"))
   {
@@ -2307,7 +2370,7 @@ void renderPrecisionTab(AppData& appData)
     appData.guiData().setTxPrecisionFormat();
   }
   ImGui::SameLine();
-  helpMarker("Floating-point precision of image transformation parameters");
+  helpMarker("Decimal places for displayed affine transformation values.");
 
   if (ImGui::InputScalar(
         "Percentiles",
@@ -2322,7 +2385,21 @@ void renderPrecisionTab(AppData& appData)
       ui_settings::precisionFormat(appData.guiData().m_percentilePrecision);
   }
   ImGui::SameLine();
-  helpMarker("Floating-point precision of percentiles (e.g. in histogram)");
+  helpMarker("Decimal places for displayed percentile values.");
+
+  if (ImGui::InputScalar(
+        "Time values",
+        ImGuiDataType_U32,
+        &timeValuePrecision,
+        &k_stepPrecision,
+        &k_stepPrecision,
+        "%d"))
+  {
+    appData.guiData().m_timeValuePrecision = ui_settings::clampPrecision(timeValuePrecision);
+    appData.guiData().setTimeValuePrecisionFormat();
+  }
+  ImGui::SameLine();
+  helpMarker("Decimal places for displayed time points, time spacing, and time ranges.");
 
   ImGui::PopID(); /*** PopID precision ***/
 }

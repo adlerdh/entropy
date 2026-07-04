@@ -146,6 +146,7 @@ struct MainMenuBarCallbacks
   std::function<bool(MainMenuAction)> isActionEnabled;
   std::function<bool(MainMenuAction)> isActionChecked;
   std::function<void()> showAbout;
+  std::function<void()> showKeyboardShortcuts;
   bool canOpenProject = true;
   bool canAddImage = false;
   bool canAddSegmentation = false;

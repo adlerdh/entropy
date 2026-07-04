@@ -65,6 +65,9 @@ void renderViewSettingsComboWindow(
   const auto& getImageDisplayAndFileName = images.getImageDisplayAndFileName;
   const auto& getImageVisibilitySetting = images.getImageVisibilitySetting;
   const auto& getImageIsActive = images.getImageIsActive;
+  const auto getImageIsReference = [&images](std::size_t imageIndex) {
+    return images.getImageIsReference ? images.getImageIsReference(imageIndex) : false;
+  };
 
   const ViewType& viewType = modes.viewType;
   const ViewRenderMode& renderMode = modes.renderMode;
@@ -156,7 +159,11 @@ void renderViewSettingsComboWindow(
               ImGui::PushID(static_cast<int>(i)); /*** ID = i ***/
               auto displayAndFileName = getImageDisplayAndFileName(i);
               const std::string displayName = view_overlay::imageChoiceLabel(
-                {displayAndFileName.first, getImageVisibilitySetting(i), getImageIsActive(i), isImageRendered(i)});
+                {displayAndFileName.first,
+                 getImageVisibilitySetting(i),
+                 getImageIsActive(i),
+                 getImageIsReference(i),
+                 isImageRendered(i)});
 
               bool rendered = isImageRendered(i);
               const bool oldRendered = rendered;
@@ -221,7 +228,11 @@ void renderViewSettingsComboWindow(
 
               const auto displayAndFileName = getImageDisplayAndFileName(i);
               const std::string displayName = view_overlay::imageChoiceLabel(
-                {displayAndFileName.first, getImageVisibilitySetting(i), getImageIsActive(i), isImageUsedForMetric(i)});
+                {displayAndFileName.first,
+                 getImageVisibilitySetting(i),
+                 getImageIsActive(i),
+                 getImageIsReference(i),
+                 isImageUsedForMetric(i)});
 
               bool rendered = isImageUsedForMetric(i);
               const bool oldRendered = rendered;
@@ -502,7 +513,11 @@ void renderViewSettingsComboWindow(
           for (std::size_t i = 0; i < numImages; ++i) {
             const auto displayAndFileName = getImageDisplayAndFileName(i);
             choices.push_back(
-              {displayAndFileName.first, getImageVisibilitySetting(i), getImageIsActive(i), isImageRendered(i)});
+              {displayAndFileName.first,
+               getImageVisibilitySetting(i),
+               getImageIsActive(i),
+               getImageIsReference(i),
+               isImageRendered(i)});
           }
           imageNamesText = view_overlay::selectedVisibleImageNames(choices);
         }
@@ -513,7 +528,12 @@ void renderViewSettingsComboWindow(
         else {
           for (std::size_t i = 0; i < numImages; ++i) {
             const auto displayAndFileName = getImageDisplayAndFileName(i);
-            choices.push_back({displayAndFileName.first, getImageVisibilitySetting(i), false, isImageUsedForMetric(i)});
+            choices.push_back(
+              {displayAndFileName.first,
+               getImageVisibilitySetting(i),
+               false,
+               getImageIsReference(i),
+               isImageUsedForMetric(i)});
           }
           imageNamesText = view_overlay::selectedVisibleImageNames(choices);
         }

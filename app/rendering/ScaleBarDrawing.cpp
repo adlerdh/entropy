@@ -57,7 +57,8 @@ void drawScaleBar(
   ScaleBarOrientation orientation,
   ScaleBarTicks ticks,
   float targetFraction,
-  float marginPx)
+  float marginPx,
+  int lengthPrecision)
 {
   const glm::vec2 worldMmPerPixel = helper::worldPixelSize(windowVP, view.camera(), view.viewClip_T_windowClip());
   const auto layout = entropy::rendering::scale_bar::computeLayout(
@@ -67,7 +68,8 @@ void drawScaleBar(
     orientation,
     ticks,
     targetFraction,
-    marginPx);
+    marginPx,
+    lengthPrecision);
   if (!layout) {
     return;
   }

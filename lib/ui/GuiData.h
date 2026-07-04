@@ -71,6 +71,7 @@ struct GuiData
   bool m_showImGuiDemoWindow = false;         //!< Show the ImGui demo window.
   bool m_showImPlotDemoWindow = false;        //!< Show the ImPlot demo window.
   bool m_showAboutDialog = false;             //!< Show the About Entropy dialog.
+  bool m_showKeyboardShortcutsWindow = false; //!< Show the keyboard shortcuts reference window.
   bool m_showAddLayoutPopup = false;          //!< Show the Add Layout popup.
 
   /**
@@ -246,6 +247,9 @@ struct GuiData
   /// Update m_txPrecisionFormat from m_txPrecision.
   void setTxPrecisionFormat();
 
+  /// Update m_timeValuePrecisionFormat from m_timeValuePrecision.
+  void setTimeValuePrecisionFormat();
+
   /// printf-style precision format string used for spatial coordinates.
   std::string m_coordsPrecisionFormat = "%0.3f";
 
@@ -269,6 +273,12 @@ struct GuiData
 
   /// Number of digits after the decimal point for percentiles.
   uint32_t m_percentilePrecision = 2;
+
+  /// printf-style precision format string used for time values.
+  std::string m_timeValuePrecisionFormat = "%0.2f";
+
+  /// Number of digits after the decimal point for time values.
+  uint32_t m_timeValuePrecision = 2;
 
   /**
    * @brief Visibility state for the Voxel Inspector table columns.

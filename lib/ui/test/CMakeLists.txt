@@ -2,6 +2,8 @@ add_executable(EntropyUiTests
   GuiDataTests.cpp
   HeaderCommonTests.cpp
   IsosurfaceRangeModelTests.cpp
+  KeyboardShortcutsTests.cpp
+  LoadingStatusModelTests.cpp
   LinuxUiScaleTests.cpp
   NativeMessageDialogModelTests.cpp
   OpacityMixerModelTests.cpp
@@ -17,6 +19,7 @@ add_executable(EntropyUiTests
 target_sources(EntropyUiTests PRIVATE
   "${entropy_UI_DIR}/GuiData.cpp"
   "${entropy_UI_DIR}/IsosurfaceRangeModel.cpp"
+  "${entropy_UI_DIR}/windows/KeyboardShortcuts.cpp"
   "${entropy_UI_DIR}/dialogs/NativeMessageDialogModel.cpp"
   "${entropy_UI_DIR}/LinuxUiScale.cpp"
   "${entropy_UI_DIR}/Style.cpp"
@@ -24,6 +27,7 @@ target_sources(EntropyUiTests PRIVATE
   "${entropy_UI_DIR}/UiScaleManager.cpp"
   "${entropy_UI_DIR}/widgets/ActiveImageSelectionModel.cpp"
   "${entropy_UI_DIR}/windows/OpacityMixerModel.cpp"
+  "${entropy_UI_DIR}/windows/LoadingStatusModel.cpp"
   "${entropy_UI_DIR}/windows/ViewOverlayModel.cpp"
 )
 

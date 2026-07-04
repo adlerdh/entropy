@@ -17,6 +17,7 @@ struct ImageChoice
   std::string displayName; //!< User-visible image name.
   bool visible = true;     //!< Whether the image is globally visible.
   bool active = false;     //!< Whether the image is the active image.
+  bool reference = false;  //!< Whether the image is the reference image.
   bool selected = false;   //!< Whether the image is selected for the current view operation.
 };
 

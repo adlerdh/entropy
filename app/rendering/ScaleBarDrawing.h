@@ -19,4 +19,5 @@ void drawScaleBar(
   ScaleBarOrientation orientation,
   ScaleBarTicks ticks,
   float targetFraction,
-  float marginPx);
+  float marginPx,
+  int lengthPrecision);

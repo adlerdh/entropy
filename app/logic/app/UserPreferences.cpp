@@ -255,11 +255,15 @@ json toJson(
        {{"imageValues", precisionPreferences.imageValuePrecision},
         {"coordinates", precisionPreferences.coordsPrecision},
         {"transformations", precisionPreferences.txPrecision},
-        {"percentiles", precisionPreferences.percentilePrecision}}}}},
+        {"percentiles", precisionPreferences.percentilePrecision},
+        {"timeValues", precisionPreferences.timeValuePrecision}}}}},
     {"views",
      {{"showImageBorders", renderPreferences.showImageBorders},
       {"showOverlays", settings.overlays()},
-      {"crosshairs", {{"color", vec4ToJson(renderPreferences.crosshairsColor)}}},
+      {"crosshairs",
+       {{"show", renderPreferences.showCrosshairs},
+        {"showInLightboxViews", renderPreferences.showCrosshairsInLightboxViews},
+        {"color", vec4ToJson(renderPreferences.crosshairsColor)}}},
       {"synchronizeViewZooms", settings.synchronizeZooms()},
       {"backgrounds",
        {{"2d", vec3ToJson(renderPreferences.background2dColor)},
@@ -277,7 +281,8 @@ json toJson(
         {"marginPixels", renderPreferences.scaleBarMarginPx},
         {"ticks", enumToName(renderPreferences.scaleBarTicks, sk_scaleBarTicksNames)}}},
       {"lightbox",
-       {{"showOffsetLabels", renderPreferences.showLightboxOffsetLabels},
+       {{"showImageBorders", renderPreferences.showImageBordersInLightboxViews},
+        {"showOffsetLabels", renderPreferences.showLightboxOffsetLabels},
         {"offsetLabelColor", vec4ToJson(renderPreferences.lightboxOffsetLabelColor)}}}}},
     {"images", {{"floatingPointLinearInterpolation", renderPreferences.floatingPointLinearInterpolation}}},
     {"segmentation",
@@ -382,6 +387,8 @@ void applyJson(
         precisionFromJson(*precision, "transformations", precisionPreferences.txPrecision);
       precisionPreferences.percentilePrecision =
         precisionFromJson(*precision, "percentiles", precisionPreferences.percentilePrecision);
+      precisionPreferences.timeValuePrecision =
+        precisionFromJson(*precision, "timeValues", precisionPreferences.timeValuePrecision);
     }
   }
 
@@ -391,6 +398,8 @@ void applyJson(
       settings.setOverlays(overlays->get<bool>());
     }
     if (const auto crosshairs = views->find("crosshairs"); crosshairs != views->end() && crosshairs->is_object()) {
+      setFromJson(renderPreferences.showCrosshairs, *crosshairs, "show");
+      setFromJson(renderPreferences.showCrosshairsInLightboxViews, *crosshairs, "showInLightboxViews");
       setVec4FromJson(renderPreferences.crosshairsColor, *crosshairs, "color");
     }
     if (const auto syncZooms = views->find("synchronizeViewZooms");
@@ -417,6 +426,7 @@ void applyJson(
       setEnumFromJson(renderPreferences.scaleBarTicks, *scaleBars, "ticks", sk_scaleBarTicksNames);
     }
     if (const auto lightbox = views->find("lightbox"); lightbox != views->end() && lightbox->is_object()) {
+      setFromJson(renderPreferences.showImageBordersInLightboxViews, *lightbox, "showImageBorders");
       setFromJson(renderPreferences.showLightboxOffsetLabels, *lightbox, "showOffsetLabels");
       setVec4FromJson(renderPreferences.lightboxOffsetLabelColor, *lightbox, "offsetLabelColor");
     }

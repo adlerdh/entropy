@@ -90,7 +90,7 @@ constexpr std::array<float, k_inspectorColumnCount> k_inspectorColumnDefaultWidt
   150.0f, 104.0f, 112.0f, 62.0f,  140.0f, 125.0f, 210.0f, 150.0f, 210.0f, 96.0f, 82.0f};
 
 constexpr std::array<float, k_inspectorColumnCount> k_inspectorColumnMaxWidths{
-  280.0f, 110.0f, 130.0f, 115.0f, 110.0f, 130.0f, 120.0f, 115.0f, 110.0f, 115.0f, 125.0f, 140.0f,
+  640.0f, 110.0f, 130.0f, 115.0f, 110.0f, 130.0f, 120.0f, 115.0f, 110.0f, 115.0f, 125.0f, 140.0f,
   170.0f, 120.0f, 130.0f, 72.0f,  180.0f, 150.0f, 230.0f, 170.0f, 230.0f, 120.0f, 110.0f};
 
 constexpr std::array<bool, k_inspectorColumnCount> k_inspectorColumnCanHide{
@@ -610,6 +610,27 @@ float inspectionColumnWidthForText(const char* text)
   return ImGui::CalcTextSize(text).x + 2.0f * (style.CellPadding.x + style.FramePadding.x);
 }
 
+float imageColumnWidthForCellText(const char* displayName, const char* roleSuffix)
+{
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const float visibilityButtonWidth = ImGui::GetFrameHeight();
+  const float nameWidth = ImGui::CalcTextSize(displayName).x + 2.0f * style.FramePadding.x;
+  const float suffixWidth =
+    roleSuffix && roleSuffix[0] != '\0' ? ImGui::CalcTextSize(roleSuffix).x + style.ItemSpacing.x : 0.0f;
+  return visibilityButtonWidth + style.ItemSpacing.x + nameWidth + suffixWidth + 2.0f * style.CellPadding.x;
+}
+
+void submitAutosizeWidthMarker(float width)
+{
+  if (width <= 0.0f) {
+    return;
+  }
+
+  const ImVec2 cursorPos = ImGui::GetCursorPos();
+  ImGui::Dummy(ImVec2{width, 0.0f});
+  ImGui::SetCursorPos(cursorPos);
+}
+
 float clampInspectionColumnWidth(InspectorColumn column, float width)
 {
   const std::size_t index = static_cast<std::size_t>(column);
@@ -699,9 +720,9 @@ void renderInspectionWindowWithTable(
 
   //    static const ImVec4 blueColor( 0.0f, 0.5f, 1.0f, 1.0f );
 
-  static const ImGuiTableFlags k_tableFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable |
-                                              ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders |
-                                              ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
+  static const ImGuiTableFlags k_tableFlags =
+    ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders |
+    ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY;
 
   static const ImGuiWindowFlags k_windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoFocusOnAppearing;
 
@@ -917,11 +938,17 @@ void renderInspectionWindowWithTable(
       auto it = s_showSubject.find(*imageUid);
       if (std::end(s_showSubject) != it && !it->second) continue;
 
-      const auto names = getImageDisplayAndFileName(imageIndex);
-      expandWidth(InspectorColumn::Image, names.first.c_str());
-
       const Image* image = appData.image(*imageUid);
       if (!image) continue;
+
+      const bool isRef = appData.refImageUid() && *appData.refImageUid() == *imageUid;
+      const bool isActiveImage = appData.activeImageUid() && *appData.activeImageUid() == *imageUid;
+      const std::string roleSuffix =
+        entropy::ui::headers::imageRoleSuffixShortReference(isRef, isActiveImage, appData.numImages());
+      const std::size_t imageColumnIndex = columnIndex(InspectorColumn::Image);
+      widths[imageColumnIndex] = std::max(
+        widths[imageColumnIndex],
+        imageColumnWidthForCellText(image->settings().displayName().c_str(), roleSuffix.c_str()));
 
       if (image->isTimeSeries()) {
         expandWidth(InspectorColumn::TimeFrame, "000");
@@ -1216,7 +1243,12 @@ void renderInspectionWindowWithTable(
         const std::optional<glm::ivec3> voxelPos = getVoxelPos(imageIndex);
         const std::optional<glm::vec3> subjectPos = getSubjectPos(imageIndex);
 
+        auto markColumnAutosizeWidth = [&](InspectorColumn column) {
+          submitAutosizeWidthMarker(inspectorColumnWidths.at(columnIndex(column)));
+        };
+
         ImGui::TableNextColumn(); // "Image"
+        markColumnAutosizeWidth(InspectorColumn::Image);
 
         glm::vec3 darkerBorderColorHsv = glm::hsvColor(image->settings().borderColor());
         darkerBorderColorHsv[2] = std::max(0.5f * darkerBorderColorHsv[2], 0.0f);
@@ -1278,6 +1310,7 @@ void renderInspectionWindowWithTable(
         }
 
         ImGui::TableNextColumn(); // "Value (NN)"
+        markColumnAutosizeWidth(InspectorColumn::Value);
 
         if (!imageValuesNN.empty()) {
           if (isComponentFloatingPoint(image->header().memoryComponentType())) {
@@ -1358,6 +1391,7 @@ void renderInspectionWindowWithTable(
         }
 
         ImGui::TableNextColumn(); // "Value (Linear)"
+        markColumnAutosizeWidth(InspectorColumn::InterpolatedValue);
 
         if (!imageValuesLinear.empty()) {
           // Display linearly interpolated image values using doubles for both floating point and
@@ -1437,6 +1471,7 @@ void renderInspectionWindowWithTable(
         }
 
         ImGui::TableNextColumn(); // "Percentile"
+        markColumnAutosizeWidth(InspectorColumn::Percentile);
 
         if (const std::optional<double> percentile = activeComponentPercentile(*image, imageValuesNN)) {
           double a = *percentile;
@@ -1461,6 +1496,7 @@ void renderInspectionWindowWithTable(
 
         auto renderComplexColumn = [&](InspectorColumn column, const char* itemId) {
           ImGui::TableNextColumn();
+          markColumnAutosizeWidth(column);
           if (const std::optional<double> value = complexColumnValue(column, *image, imageValuesNN)) {
             double displayValue = *value;
             ImGui::PushItemWidth(-1);
@@ -1481,6 +1517,7 @@ void renderInspectionWindowWithTable(
 
         auto renderComponentProjectionColumn = [&](InspectorColumn column, const char* itemId) {
           ImGui::TableNextColumn();
+          markColumnAutosizeWidth(column);
           if (const std::optional<double> value = componentProjectionValue(column, imageValuesNN)) {
             double displayValue = *value;
             ImGui::PushItemWidth(-1);
@@ -1509,6 +1546,7 @@ void renderInspectionWindowWithTable(
 
         auto renderVectorDerivativeColumn = [&](InspectorColumn column, const char* itemId) {
           ImGui::TableNextColumn();
+          markColumnAutosizeWidth(column);
           if (const std::optional<double> value = vectorDerivativeColumnValue(column, *image, voxelPos)) {
             double displayValue = *value;
             ImGui::PushItemWidth(-1);
@@ -1534,6 +1572,7 @@ void renderInspectionWindowWithTable(
 
         if (segLabel) {
           ImGui::TableNextColumn(); // "Label"
+          markColumnAutosizeWidth(InspectorColumn::Label);
 
           // Segmentation labels are unsigned, so we can cast:
           uint64_t l = static_cast<uint64_t>(*segLabel);
@@ -1550,6 +1589,7 @@ void renderInspectionWindowWithTable(
             }
 
             ImGui::TableNextColumn(); // "Region"
+            markColumnAutosizeWidth(InspectorColumn::Region);
 
             ImGui::PushItemWidth(-1);
             if (ImGui::InputText("##labelName", &labelName)) {
@@ -1559,14 +1599,17 @@ void renderInspectionWindowWithTable(
           }
           else {
             ImGui::TableNextColumn(); // "Region"
+            markColumnAutosizeWidth(InspectorColumn::Region);
             ImGui::Text("<N/A>");
           }
         }
         else {
           ImGui::TableNextColumn(); // "Label"
+          markColumnAutosizeWidth(InspectorColumn::Label);
           ImGui::Text("<N/A>");
 
           ImGui::TableNextColumn(); // "Region"
+          markColumnAutosizeWidth(InspectorColumn::Region);
           ImGui::Text("<N/A>");
         }
 
@@ -1575,6 +1618,7 @@ void renderInspectionWindowWithTable(
           static const glm::ivec3 k_minDim{0};
 
           ImGui::TableNextColumn(); // "Voxel"
+          markColumnAutosizeWidth(InspectorColumn::Voxel);
 
           const glm::ivec3 k_maxDim = static_cast<glm::ivec3>(image->header().pixelDimensions()) - glm::ivec3{1, 1, 1};
 
@@ -1601,11 +1645,13 @@ void renderInspectionWindowWithTable(
         }
         else {
           ImGui::TableNextColumn(); // "Voxel"
+          markColumnAutosizeWidth(InspectorColumn::Voxel);
           ImGui::Text("<N/A>");
         }
 
         if (subjectPos) {
           ImGui::TableNextColumn(); // "Subject LPS"
+          markColumnAutosizeWidth(InspectorColumn::Subject);
 
           // Step size is the  minimum voxel spacing
           const float stepSize = glm::compMin(image->header().spacing());
@@ -1628,6 +1674,7 @@ void renderInspectionWindowWithTable(
         }
         else {
           ImGui::TableNextColumn(); // "Subject LPS"
+          markColumnAutosizeWidth(InspectorColumn::Subject);
           ImGui::Text("<N/A>");
         }
 
@@ -1636,6 +1683,7 @@ void renderInspectionWindowWithTable(
 
         auto renderWarpedCoordinateColumn = [&](InspectorColumn column, const char* itemId) {
           ImGui::TableNextColumn();
+          markColumnAutosizeWidth(column);
           if (warpedSample) {
             glm::dvec3 value = (InspectorColumn::SampleVoxel == column) ? warpedSample->voxel : warpedSample->subject;
             ImGui::PushItemWidth(-1);
@@ -1659,6 +1707,7 @@ void renderInspectionWindowWithTable(
         renderWarpedCoordinateColumn(InspectorColumn::SampleSubject, "##sampleSubject");
 
         ImGui::TableNextColumn(); // "Time frame"
+        markColumnAutosizeWidth(InspectorColumn::TimeFrame);
         if (const std::optional<uint32_t> timeFrame = timeFrameValue(*image)) {
           static constexpr uint32_t k_minTimeFrame = 0;
           const uint32_t maxTimeFrame = image->timeAxis().numTimePoints() - 1u;
@@ -1681,6 +1730,7 @@ void renderInspectionWindowWithTable(
         }
 
         ImGui::TableNextColumn(); // "Time"
+        markColumnAutosizeWidth(InspectorColumn::TimeValue);
         if (const std::optional<double> time = timeValue(*image)) {
           double value = *time;
           ImGui::PushItemWidth(-1);
@@ -1690,7 +1740,7 @@ void renderInspectionWindowWithTable(
             &value,
             nullptr,
             nullptr,
-            appData.guiData().m_imageValuePrecisionFormat.c_str(),
+            appData.guiData().m_timeValuePrecisionFormat.c_str(),
             ImGuiInputTextFlags_ReadOnly);
           ImGui::PopItemWidth();
         }

@@ -60,7 +60,7 @@ DistanceUnit distanceUnitForLightboxOffsetReferenceMm(double referenceMm)
 
 } // namespace
 
-std::string formatOffsetDistanceMm(double offsetMm, double unitReferenceOffsetMm)
+std::string formatOffsetDistanceMm(double offsetMm, double unitReferenceOffsetMm, int precision)
 {
   const DistanceUnit unit = distanceUnitForLightboxOffsetReferenceMm(unitReferenceOffsetMm);
   const double value = offsetMm * unit.scale;
@@ -78,7 +78,7 @@ std::string formatOffsetDistanceMm(double offsetMm, double unitReferenceOffsetMm
     out << static_cast<int>(roundedValue);
   }
   else {
-    out << std::setprecision(6) << value;
+    out << std::fixed << std::setprecision(std::max(0, precision)) << value;
   }
   return trimTrailingDecimalZeros(out.str()) + " " + unit.label;
 }

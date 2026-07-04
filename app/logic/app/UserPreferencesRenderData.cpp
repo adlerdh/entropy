@@ -18,7 +18,8 @@ user_preferences::PrecisionPreferences precisionPreferencesFromGuiData(const Gui
     .imageValuePrecision = guiData.m_imageValuePrecision,
     .coordsPrecision = guiData.m_coordsPrecision,
     .txPrecision = guiData.m_txPrecision,
-    .percentilePrecision = guiData.m_percentilePrecision};
+    .percentilePrecision = guiData.m_percentilePrecision,
+    .timeValuePrecision = guiData.m_timeValuePrecision};
 }
 
 void applyPrecisionPreferences(GuiData& guiData, const user_preferences::PrecisionPreferences& preferences)
@@ -31,6 +32,8 @@ void applyPrecisionPreferences(GuiData& guiData, const user_preferences::Precisi
   guiData.setTxPrecisionFormat();
   guiData.m_percentilePrecision = preferences.percentilePrecision;
   guiData.m_percentilePrecisionFormat = std::string{"%0."} + std::to_string(preferences.percentilePrecision) + "f";
+  guiData.m_timeValuePrecision = preferences.timeValuePrecision;
+  guiData.setTimeValuePrecisionFormat();
 }
 
 user_preferences::RenderPreferences::LocalNccPresentation localNccPresentationFromRenderData(
@@ -69,11 +72,17 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
 {
   user_preferences::RenderPreferences preferences;
   preferences.showImageBorders = renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
+  preferences.showImageBordersInLightboxViews =
+    renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews;
   preferences.crosshairsSnapping = renderData.m_snapCrosshairs;
   preferences.crosshairsColor = renderData.m_crosshairsColor;
+  preferences.showCrosshairs = renderData.m_showCrosshairs;
+  preferences.showCrosshairsInLightboxViews = renderData.m_showCrosshairsInLightboxViews;
   preferences.background2dColor = renderData.m_2dBackgroundColor;
   preferences.background3dColor = renderData.m_3dBackgroundColor;
   preferences.anatomicalLabelColor = renderData.m_anatomicalLabelColor;
+  preferences.showAnatomicalLabels = renderData.m_showAnatomicalLabels;
+  preferences.showAnatomicalLabelsInLightboxViews = renderData.m_showAnatomicalLabelsInLightboxViews;
   preferences.anatomicalLabelType = renderData.m_anatomicalLabelType;
   preferences.anatomicalLabelScale = renderData.m_anatomicalLabelScale;
   preferences.showScaleBars = renderData.m_showScaleBars;
@@ -159,11 +168,18 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
 void applyRenderPreferences(RenderData& renderData, const user_preferences::RenderPreferences& preferences)
 {
   renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections = preferences.showImageBorders;
+  renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews =
+    preferences.showImageBorders && preferences.showImageBordersInLightboxViews;
   renderData.m_snapCrosshairs = preferences.crosshairsSnapping;
   renderData.m_crosshairsColor = preferences.crosshairsColor;
+  renderData.m_showCrosshairs = preferences.showCrosshairs;
+  renderData.m_showCrosshairsInLightboxViews = preferences.showCrosshairs && preferences.showCrosshairsInLightboxViews;
   renderData.m_2dBackgroundColor = preferences.background2dColor;
   renderData.m_3dBackgroundColor = preferences.background3dColor;
   renderData.m_anatomicalLabelColor = preferences.anatomicalLabelColor;
+  renderData.m_showAnatomicalLabels = preferences.showAnatomicalLabels;
+  renderData.m_showAnatomicalLabelsInLightboxViews =
+    preferences.showAnatomicalLabels && preferences.showAnatomicalLabelsInLightboxViews;
   renderData.m_anatomicalLabelType = preferences.anatomicalLabelType;
   renderData.m_anatomicalLabelScale = std::clamp(preferences.anatomicalLabelScale, 0.5f, 2.0f);
   renderData.m_showScaleBars = preferences.showScaleBars;
@@ -250,7 +266,13 @@ void preserveProjectRenderPreferences(
   const user_preferences::RenderPreferences& currentPreferences)
 {
   // Application defaults must not reset presentation state that now belongs to the open project.
+  preferences.showImageBorders = currentPreferences.showImageBorders;
+  preferences.showImageBordersInLightboxViews = currentPreferences.showImageBordersInLightboxViews;
+  preferences.showCrosshairs = currentPreferences.showCrosshairs;
+  preferences.showCrosshairsInLightboxViews = currentPreferences.showCrosshairsInLightboxViews;
   preferences.crosshairsSnapping = currentPreferences.crosshairsSnapping;
+  preferences.showAnatomicalLabels = currentPreferences.showAnatomicalLabels;
+  preferences.showAnatomicalLabelsInLightboxViews = currentPreferences.showAnatomicalLabelsInLightboxViews;
   preferences.anatomicalLabelType = currentPreferences.anatomicalLabelType;
   preferences.useMaximumIntensityProjectionExtent = currentPreferences.useMaximumIntensityProjectionExtent;
   preferences.intensityProjectionSlabThicknessMm = currentPreferences.intensityProjectionSlabThicknessMm;

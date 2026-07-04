@@ -30,6 +30,10 @@ std::string imageChoiceLabel(const ImageChoice& choice)
     label += " (active)";
   }
 
+  if (choice.reference) {
+    label += " (ref.)";
+  }
+
   return label;
 }
 
@@ -47,9 +51,15 @@ std::string selectedVisibleImageNames(const std::vector<ImageChoice>& choices)
       label += ", ";
     }
 
-    label += choice.displayName;
     if (choice.active) {
-      label += " (active)";
+      label += choice.displayName + " (active)";
+    }
+    else {
+      label += choice.displayName;
+    }
+
+    if (choice.reference) {
+      label += " (ref.)";
     }
 
     first = false;

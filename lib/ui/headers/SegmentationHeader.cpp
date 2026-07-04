@@ -386,7 +386,7 @@ void renderSegmentationHeader(
     ImGui::TreePop();
   }
 
-  if (ImGui::TreeNode("Header Information")) {
+  if (ImGui::TreeNode("Header")) {
     renderImageHeaderInformation(appData, imageUid, *activeSeg, updateImageUniforms, recenterAllViews);
     ImGui::TreePop();
   }

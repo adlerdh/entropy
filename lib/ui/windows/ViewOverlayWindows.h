@@ -50,6 +50,7 @@ struct ViewOverlayImageCallbacks
     getImageDisplayAndFileName;                                          //!< Display/file name.
   std::function<bool(std::size_t imageIndex)> getImageVisibilitySetting; //!< Global image visibility.
   std::function<bool(std::size_t imageIndex)> getImageIsActive;          //!< Active-image predicate.
+  std::function<bool(std::size_t imageIndex)> getImageIsReference;       //!< Reference-image predicate.
 };
 
 /**

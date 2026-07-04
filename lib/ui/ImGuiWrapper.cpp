@@ -3,6 +3,7 @@
 #include "common/MathFuncs.h"
 
 #include "ui/Helpers.h"
+#include "ui/GradientBackgroundRenderer.h"
 #include "ui/ImageExport.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
 #include "ui/menus/MainMenuBar.h"
@@ -14,6 +15,7 @@
 #include "ui/Style.h"
 #include "ui/toolbars/Toolbars.h"
 #include "ui/windows/Windows.h"
+#include "ui/windows/LoadingStatusModel.h"
 #include "ui/windows/OpacityMixerWindow.h"
 #ifdef _WIN32
 #include "ui/menus/WinNativeMainMenu.h"
@@ -286,7 +288,7 @@ struct DockspaceGeometry
 
 DockspaceGeometry mainDockspaceGeometry(const GuiData& guiData)
 {
-  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  ImGuiViewport* viewport = ImGui::GetMainViewport();
   DockspaceGeometry geometry{viewport->Pos, viewport->Size};
 
   const GuiData::Margins toolbarMargins = guiData.computeToolbarMargins();
@@ -307,7 +309,7 @@ DockspaceGeometry mainDockspaceGeometry(const GuiData& guiData)
 
 ImGuiID renderMainDockspace(const GuiData& guiData)
 {
-  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  ImGuiViewport* viewport = ImGui::GetMainViewport();
   if (!viewport) {
     return 0;
   }
@@ -949,6 +951,11 @@ void renderLoadingStatusWindow(const GuiData& guiData)
     ImGui::TextUnformatted(text.c_str());
 
     if (!items.empty()) {
+      const auto byteProgress = entropy::ui::loading_status_model::loadingProgress(items);
+      const float progress = entropy::ui::loading_status_model::progressFraction(byteProgress);
+      const std::string progressLabel = entropy::ui::loading_status_model::progressPercentLabel(progress);
+      ImGui::ProgressBar(progress, ImVec2{scaledPixel(320.0f), 0.0f}, progressLabel.c_str());
+
       ImGui::Separator();
       for (const auto& item : items) {
         if (item.loaded) {
@@ -1014,22 +1021,22 @@ void stopOtherTimeSeriesPlayback(AppData& appData, const uuids::uuid& playingIma
   }
 }
 
-std::string timePointControlLabel(const Image& image, uint32_t timePoint)
+std::string timePointControlLabel(const Image& image, uint32_t timePoint, uint32_t timePrecision)
 {
   std::ostringstream os;
   os << timePoint << " of " << (image.timeAxis().numTimePoints() - 1u);
   if (const auto value = image.timeAxis().value(timePoint)) {
-    os << " (" << std::fixed << std::setprecision(2) << *value << " " << image.timeAxis().units() << ")";
+    os << " (" << std::fixed << std::setprecision(timePrecision) << *value << " " << image.timeAxis().units() << ")";
   }
   return os.str();
 }
 
-float timePointControlLabelWidth(const Image& image)
+float timePointControlLabelWidth(const Image& image, uint32_t timePrecision)
 {
   const uint32_t lastTimePoint = image.timeAxis().numTimePoints() - 1u;
   return std::max(
-    ImGui::CalcTextSize(timePointControlLabel(image, 0u).c_str()).x,
-    ImGui::CalcTextSize(timePointControlLabel(image, lastTimePoint).c_str()).x);
+    ImGui::CalcTextSize(timePointControlLabel(image, 0u, timePrecision).c_str()).x,
+    ImGui::CalcTextSize(timePointControlLabel(image, lastTimePoint, timePrecision).c_str()).x);
 }
 
 void renderReservedWidthText(const char* text, float reservedWidth, ImU32 color)
@@ -1201,8 +1208,9 @@ void renderGlobalTimeControl(AppData& appData)
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{8.0f, 6.0f});
   if (ImGui::Begin("GlobalTimeControl", nullptr, flags)) {
-    const float timeLabelWidth = timePointControlLabelWidth(*image);
-    const std::string timeLabel = timePointControlLabel(*image, activeTimePoint);
+    const uint32_t timePrecision = appData.guiData().m_timeValuePrecision;
+    const float timeLabelWidth = timePointControlLabelWidth(*image, timePrecision);
+    const std::string timeLabel = timePointControlLabel(*image, activeTimePoint, timePrecision);
     const std::string rateLabel = playbackRateLabel(*image);
     const float rateLabelWidth = ImGui::CalcTextSize(rateLabel.c_str()).x;
     const ImVec2 buttonSize{ImGui::GetFrameHeight(), ImGui::GetFrameHeight()};
@@ -1286,14 +1294,19 @@ void renderEmptyWorkspace(
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
   const ImGuiStyle& style = ImGui::GetStyle();
+  entropy::ui::renderGradientBackground();
+
   const float panelMargin = scaledPixel(16.0f);
   const ImVec2 windowPadding{panelMargin, scaledPixel(20.0f)};
   const char* text = ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No project loaded.";
-  constexpr std::array<const char*, 3> buttonLabels{"Open Image(s)...", "Open DICOM Series...", "Open Project..."};
+  const std::array<std::string, 3> buttonLabels{
+    std::string{ICON_FK_PICTURE_O} + " Open Image(s)...",
+    std::string{ICON_FK_FILES_O} + " Open DICOM Series...",
+    std::string{ICON_FK_FOLDER_OPEN_O} + " Open Project..."};
 
   float buttonWidth = 0.0f;
-  for (const char* label : buttonLabels) {
-    buttonWidth = std::max(buttonWidth, buttonWidthForLabel(label));
+  for (const std::string& label : buttonLabels) {
+    buttonWidth = std::max(buttonWidth, buttonWidthForLabel(label.c_str()));
   }
 
   const float buttonsWidth = 3.0f * buttonWidth + 2.0f * style.ItemSpacing.x;
@@ -1315,7 +1328,7 @@ void renderEmptyWorkspace(
 
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.0f, (contentWidth - buttonsWidth) * 0.5f));
 
-    if (ImGui::Button("Open Image(s)...", ImVec2{buttonWidth, 0.0f})) {
+    if (ImGui::Button(buttonLabels[0].c_str(), ImVec2{buttonWidth, 0.0f})) {
       const auto selectedFiles = native_dialog::openFiles(native_dialog::imageFilters());
       if (!selectedFiles.empty() && openImageFiles) {
         openImageFiles(selectedFiles);
@@ -1324,7 +1337,7 @@ void renderEmptyWorkspace(
 
     ImGui::SameLine();
 
-    if (ImGui::Button("Open DICOM Series...", ImVec2{buttonWidth, 0.0f})) {
+    if (ImGui::Button(buttonLabels[1].c_str(), ImVec2{buttonWidth, 0.0f})) {
       const auto selectedFolders = native_dialog::pickFoldersWithStatus();
       if (!selectedFolders.paths.empty() && openDicomFolders) {
         openDicomFolders(selectedFolders.paths);
@@ -1336,7 +1349,7 @@ void renderEmptyWorkspace(
 
     ImGui::SameLine();
 
-    if (ImGui::Button("Open Project...", ImVec2{buttonWidth, 0.0f})) {
+    if (ImGui::Button(buttonLabels[2].c_str(), ImVec2{buttonWidth, 0.0f})) {
       if (const auto selectedFile = native_dialog::openFile(native_dialog::projectFilters())) {
         if (openProjectFile) {
           openProjectFile(*selectedFile);
@@ -2673,6 +2686,19 @@ void ImGuiWrapper::render()
     return false;
   };
 
+  auto getImageIsReference = [this](std::size_t imageIndex) -> bool {
+    if (m_appData.numImages() <= 1) {
+      return false;
+    }
+
+    if (const auto imageUid = m_appData.imageUid(imageIndex)) {
+      if (const auto refImageUid = m_appData.refImageUid()) {
+        return (*imageUid == *refImageUid);
+      }
+    }
+    return false;
+  };
+
   auto moveImageBackward = [this](const uuids::uuid& imageUid) -> bool {
     if (m_appData.moveImageBackwards(imageUid)) {
       m_appData.windowData().updateImageOrdering(m_appData.imageUidsOrdered());
@@ -3950,6 +3976,7 @@ void ImGuiWrapper::render()
       .isActionEnabled = isMenuActionEnabled,
       .isActionChecked = isMenuActionChecked,
       .showAbout = [this]() { m_appData.guiData().m_showAboutDialog = true; },
+      .showKeyboardShortcuts = [this]() { m_appData.guiData().m_showKeyboardShortcutsWindow = true; },
       .canOpenProject = ProjectLoadState::Loading != projectLoadState && !backgroundTaskRunning,
       .canAddImage = ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning,
       .canAddSegmentation =
@@ -3973,6 +4000,10 @@ void ImGuiWrapper::render()
       m_openDicomFolders,
       [this]() { m_appData.guiData().m_showDicomFolderPathPopup = true; },
       m_openProjectFile);
+
+    if (ProjectLoadState::Loading == projectLoadState) {
+      entropy::ui::renderGradientBackground();
+    }
 
     if (backgroundTaskRunning) {
       renderLoadingStatusWindow(m_appData.guiData());
@@ -4059,6 +4090,7 @@ void ImGuiWrapper::render()
     }
 
     if (!hasLoadedProject) {
+      entropy::ui::renderKeyboardShortcutsWindow(m_appData.guiData().m_showKeyboardShortcutsWindow);
       renderAboutDialogModalPopup(m_appData.guiData().m_showAboutDialog);
       m_appData.guiData().m_showAboutDialog = false;
 
@@ -4074,6 +4106,8 @@ void ImGuiWrapper::render()
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
       return;
     }
+
+    entropy::ui::renderKeyboardShortcutsWindow(m_appData.guiData().m_showKeyboardShortcutsWindow);
 
     if (!loadingOrImporting) {
       requestMissingComponentProjectionImages();
@@ -4281,7 +4315,8 @@ void ImGuiWrapper::render()
       },
       std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
       getImageIsVisibleSetting,
-      getImageIsActive};
+      getImageIsActive,
+      getImageIsReference};
 
     const ViewOverlayModeCallbacks modeCallbacks{
       currentLayout.viewType(),
@@ -4380,7 +4415,8 @@ void ImGuiWrapper::render()
         [this, view](std::size_t index, bool visible) { view->setImageUsedForMetric(m_appData, index, visible); },
         std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
         getImageIsVisibleSetting,
-        getImageIsActive};
+        getImageIsActive,
+        getImageIsReference};
 
       const ViewOverlayModeCallbacks modeCallbacks{
         view->viewType(),

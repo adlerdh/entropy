@@ -1034,6 +1034,12 @@ void from_json(const json& j, ProjectInterfaceSettings& settings)
 void to_json(json& j, const ProjectViewSettings& settings)
 {
   j = json{
+    {"showImageBorders", settings.m_showImageBorders},
+    {"showImageBordersInLightboxViews", settings.m_showImageBordersInLightboxViews},
+    {"showCrosshairs", settings.m_showCrosshairs},
+    {"showCrosshairsInLightboxViews", settings.m_showCrosshairsInLightboxViews},
+    {"showAnatomicalLabels", settings.m_showAnatomicalLabels},
+    {"showAnatomicalLabelsInLightboxViews", settings.m_showAnatomicalLabelsInLightboxViews},
     {"anatomicalLabelType", enumToName(settings.m_anatomicalLabelType, k_anatomicalLabelNames)},
     {"lockAnatomicalDirectionsToReferenceImage", settings.m_lockAnatomicalDirectionsToReferenceImage},
     {"crosshairsSnapping", enumToName(settings.m_crosshairsSnapping, k_crosshairsSnappingNames)}};
@@ -1041,9 +1047,31 @@ void to_json(json& j, const ProjectViewSettings& settings)
 
 void from_json(const json& j, ProjectViewSettings& settings)
 {
+  if (const auto value = j.find("showImageBorders"); value != j.end() && value->is_boolean()) {
+    settings.m_showImageBorders = value->get<bool>();
+  }
+  if (const auto value = j.find("showImageBordersInLightboxViews"); value != j.end() && value->is_boolean()) {
+    settings.m_showImageBordersInLightboxViews = value->get<bool>();
+  }
+  if (const auto value = j.find("showCrosshairs"); value != j.end() && value->is_boolean()) {
+    settings.m_showCrosshairs = value->get<bool>();
+  }
+  if (const auto value = j.find("showCrosshairsInLightboxViews"); value != j.end() && value->is_boolean()) {
+    settings.m_showCrosshairsInLightboxViews = value->get<bool>();
+  }
+  if (const auto value = j.find("showAnatomicalLabels"); value != j.end() && value->is_boolean()) {
+    settings.m_showAnatomicalLabels = value->get<bool>();
+  }
+  if (const auto value = j.find("showAnatomicalLabelsInLightboxViews"); value != j.end() && value->is_boolean()) {
+    settings.m_showAnatomicalLabelsInLightboxViews = value->get<bool>();
+  }
   if (const auto parsed = enumFromName<AnatomicalLabelType>(j.value("anatomicalLabelType", ""), k_anatomicalLabelNames))
   {
     settings.m_anatomicalLabelType = *parsed;
+    if (AnatomicalLabelType::Disabled == settings.m_anatomicalLabelType) {
+      settings.m_showAnatomicalLabels = false;
+      settings.m_anatomicalLabelType = AnatomicalLabelType::Human;
+    }
   }
   if (const auto lock = j.find("lockAnatomicalDirectionsToReferenceImage"); lock != j.end() && lock->is_boolean()) {
     settings.m_lockAnatomicalDirectionsToReferenceImage = lock->get<bool>();
@@ -1052,6 +1080,16 @@ void from_json(const json& j, ProjectViewSettings& settings)
     const auto parsed = enumFromName<CrosshairsSnapping>(j.value("crosshairsSnapping", ""), k_crosshairsSnappingNames))
   {
     settings.m_crosshairsSnapping = *parsed;
+  }
+
+  if (!settings.m_showImageBorders) {
+    settings.m_showImageBordersInLightboxViews = false;
+  }
+  if (!settings.m_showCrosshairs) {
+    settings.m_showCrosshairsInLightboxViews = false;
+  }
+  if (!settings.m_showAnatomicalLabels) {
+    settings.m_showAnatomicalLabelsInLightboxViews = false;
   }
 }
 

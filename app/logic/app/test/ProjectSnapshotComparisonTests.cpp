@@ -117,7 +117,31 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));
 
   changedView = project;
+  changedView.m_view.m_showAnatomicalLabels = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
+  changedView.m_view.m_showAnatomicalLabelsInLightboxViews = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
   changedView.m_view.m_crosshairsSnapping = CrosshairsSnapping::ActiveImage;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
+  changedView.m_view.m_showImageBorders = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
+  changedView.m_view.m_showImageBordersInLightboxViews = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
+  changedView.m_view.m_showCrosshairs = false;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
+  changedView.m_view.m_showCrosshairsInLightboxViews = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));
 
   auto changedComparison = project;

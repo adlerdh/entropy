@@ -58,7 +58,10 @@ uniform vec3 u_texSamplingDirZ;  // Z view camera direction (in texture sampling
 // Sampling distance in centimeters (used for X-ray IP mode)
 uniform float u_mipSamplingDistance_cm;
 
-// Photon mass attenuation coefficients [1/cm] of liquid water and dry air (at sea level):
+// Photon linear attenuation coefficients [1/cm] for liquid water and dry air near sea level.
+// Derived from NIST X-Ray Mass Attenuation Coefficients (mu/rho, cm^2/g) multiplied by density:
+// https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/water.html
+// https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/air.html
 uniform float u_waterAttenCoeff;
 uniform float u_airAttenCoeff;
 
@@ -72,14 +75,17 @@ $$TEXTURE_LOOKUP_FUNCTION$$
 $$DO_RENDER_FUNCTION$$
 
 /**
- * @brief Convert texture intensity to Hounsefield Units, then to Photon Mass Attenuation
- * coefficient
+ * @brief Convert texture intensity to Hounsfield units, then to a photon linear attenuation coefficient.
+ *
+ * The x-ray projection mode is physically meaningful for CT-like images whose native scalar
+ * intensities are Hounsfield units. The conversion uses:
+ *   HU = 1000 * (mu - mu_water) / (mu_water - mu_air)
+ * rearranged as:
+ *   mu = mu_water + (HU / 1000) * (mu_water - mu_air)
  */
 float convertTexToAtten(float img)
 {
-  float hu = u_imgSlope_native_T_texture * img; // Hounsefield units
-
-  // Photon mass attenuation coefficient:
+  float hu = u_imgSlope_native_T_texture * img; // Hounsfield units
   return max((hu / 1000.0) * (u_waterAttenCoeff - u_airAttenCoeff) + u_waterAttenCoeff, 0.0);
 }
 

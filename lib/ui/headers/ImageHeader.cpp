@@ -424,7 +424,7 @@ const char* componentRenderModeDescription(
     case ComponentRenderMode::ComplexImaginary:
       return "Imaginary component as a scalar image.";
     case ComponentRenderMode::VectorDirectionColor:
-      return "Direction color in subject/LPS coordinates: red = x, green = y, blue = z; signs ignored.";
+      return "Direction color in subject/LPS coordinates:\nred = x, green = y, blue = z; signs ignored.";
     case ComponentRenderMode::VectorSignedNormalProjection:
       return "View-normal projection color: red toward viewer, blue into screen.";
     case ComponentRenderMode::VectorPlanarProjectionColor:
@@ -735,22 +735,22 @@ void stopOtherTimeSeriesPlayback(AppData& appData, const uuids::uuid& playingIma
   }
 }
 
-std::string timePointInputFormat(const Image& image, uint32_t timePoint)
+std::string timePointInputFormat(const Image& image, uint32_t timePoint, uint32_t timePrecision)
 {
   std::ostringstream os;
   os << "%u of " << (image.timeAxis().numTimePoints() - 1u);
   if (const auto value = image.timeAxis().value(timePoint)) {
-    os << " (" << std::fixed << std::setprecision(2) << *value << " " << image.timeAxis().units() << ")";
+    os << " (" << std::fixed << std::setprecision(timePrecision) << *value << " " << image.timeAxis().units() << ")";
   }
   return os.str();
 }
 
-std::string timeSeriesSummaryLabel(const Image& image)
+std::string timeSeriesSummaryLabel(const Image& image, uint32_t timePrecision)
 {
   std::ostringstream os;
   os << "Time frames: " << image.timeAxis().numTimePoints();
   if (const auto spacing = image.timeAxis().spacing()) {
-    os << " with " << *spacing;
+    os << " with " << std::fixed << std::setprecision(timePrecision) << *spacing;
     if (!image.timeAxis().units().empty()) {
       os << ' ' << image.timeAxis().units();
     }
@@ -785,12 +785,13 @@ void renderTimeSeriesHeader(AppData& appData, const uuids::uuid& imageUid, Image
 
   ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
   if (ImGui::TreeNode("Time Series")) {
-    ImGui::TextDisabled("%s", timeSeriesSummaryLabel(image).c_str());
+    ImGui::TextDisabled("%s", timeSeriesSummaryLabel(image, appData.guiData().m_timeValuePrecision).c_str());
 
     const uint32_t maxTimePoint = image.timeAxis().numTimePoints() - 1u;
     uint32_t timePointInput = oldTimePoint;
     constexpr uint32_t timePointStep = 1u;
-    const std::string timePointFormat = timePointInputFormat(image, oldTimePoint);
+    const std::string timePointFormat =
+      timePointInputFormat(image, oldTimePoint, appData.guiData().m_timeValuePrecision);
     if (ImGui::InputScalar(
           "Frame",
           ImGuiDataType_U32,
@@ -1018,9 +1019,41 @@ void renderImageHeader(
 
   ImGui::Spacing();
 
+  const float nameRowStartX = ImGui::GetCursorPosX();
+  const float normalInputRightX = nameRowStartX + ImGui::CalcItemWidth() + 2.0f * ImGui::GetStyle().ItemSpacing.x;
+
+  if (!isActiveImage) {
+    if (ImGui::Button(ICON_FK_TOGGLE_OFF, buttonSize)) {
+      if (appData.setActiveImageUid(imageUid)) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::PopID(); // imageUid
+        return;
+      }
+    }
+  }
+  else {
+    ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+    ImGui::Button(ICON_FK_TOGGLE_ON, buttonSize);
+    ImGui::PopStyleColor(1); // ImGuiCol_Button
+  }
+
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip(
+      isActiveImage
+        ? "This image is active. New segmentations, landmarks, annotations, manual transformations, and image-panel "
+          "edits apply to the active image."
+        : "Make this the active image. New segmentations, landmarks, annotations, manual transformations, and "
+          "image-panel edits will apply to it.");
+  }
+
+  ImGui::SameLine();
+
   // Border color:
   glm::vec3 borderColor{imgSettings.borderColor()};
 
+  ImGui::SetNextItemWidth(buttonSize.x);
   if (ImGui::ColorEdit3("##BorderColor", glm::value_ptr(borderColor), colorNoAlphaEditFlags)) {
     imgSettings.setBorderColor(borderColor);
     imgSettings.setEdgeColor(borderColor); // Set edge color to border color
@@ -1032,54 +1065,38 @@ void renderImageHeader(
   std::string displayName = imgSettings.displayName();
   ImGui::SameLine();
 
+  ImGui::SetNextItemWidth(std::max(1.0f, normalInputRightX - ImGui::GetCursorPosX()));
   if (ImGui::InputText("Name", &displayName)) {
     imgSettings.setDisplayName(displayName);
   }
   ImGui::SameLine();
   helpMarker("Set the image display name and border color");
 
-  if (!isActiveImage) {
-    if (ImGui::Button(ICON_FK_TOGGLE_OFF)) {
-      if (appData.setActiveImageUid(imageUid)) {
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-        ImGui::PopID(); // imageUid
-        return;
-      }
-    }
+  const bool forceLocked = isRef;
+  const bool isLocked = (forceLocked || image->transformations().is_worldDef_T_affine_locked());
 
-    if (ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Make this the active image");
+  const ImGuiStyle& style = ImGui::GetStyle();
+  ImGui::PushStyleVar(
+    ImGuiStyleVar_ItemSpacing,
+    ImVec2{std::max(2.0f, 0.5f * style.ItemSpacing.x), style.ItemSpacing.y});
+
+  if (isRef) {
+    ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+  }
+  if (ImGui::Button(ICON_FK_BULLSEYE, buttonSize)) {
+    if (!isRef) {
+      requestSetReferenceImage(imageUid);
     }
   }
-  else {
-    ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    ImGui::Button(ICON_FK_TOGGLE_ON);
-    ImGui::PopStyleColor(1); // ImGuiCol_Button
-
-    if (ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("This is the active image");
-    }
+  if (isRef) {
+    ImGui::PopStyleColor(); // ImGuiCol_Button
+  }
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+    ImGui::SetTooltip(
+      isRef ? "This image is the project reference image" : "Make this image the project reference image");
   }
 
   ImGui::SameLine();
-
-  if (isRef && isActiveImage) {
-    ImGui::Text("%s", referenceAndActiveImageMessage);
-  }
-  else if (isRef) {
-    ImGui::Text("%s", referenceImageMessage);
-  }
-  else if (isActiveImage) {
-    ImGui::Text("%s", activeImageMessage);
-  }
-  else {
-    ImGui::Text("%s", nonActiveImageMessage);
-  }
-
-  const bool forceLocked = isRef;
-  const bool isLocked = (forceLocked || image->transformations().is_worldDef_T_affine_locked());
 
   ImGui::PushStyleColor(ImGuiCol_Button, (isLocked ? inactiveColor : activeColor));
   if (ImGui::Button((isLocked ? ICON_FK_LOCK : ICON_FK_UNLOCK), buttonSize)) {
@@ -1119,22 +1136,6 @@ void renderImageHeader(
   if (isRef) {
     ImGui::BeginDisabled();
   }
-  if (ImGui::Button(ICON_FK_BULLSEYE, buttonSize)) {
-    requestSetReferenceImage(imageUid);
-  }
-  if (isRef) {
-    ImGui::EndDisabled();
-  }
-  if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-    ImGui::SetTooltip(
-      isRef ? "This image is the project reference image" : "Make this image the project reference image");
-  }
-
-  ImGui::SameLine();
-
-  if (isRef) {
-    ImGui::BeginDisabled();
-  }
   if (ImGui::Button(ICON_FK_TIMES, buttonSize)) {
     requestRemoveImage(imageUid);
   }
@@ -1145,46 +1146,68 @@ void renderImageHeader(
     ImGui::SetTooltip(isRef ? "The reference image cannot be removed" : "Remove this image from the project");
   }
 
-  if (0 < imageIndex) {
-    // Rules for showing the buttons that change image order:
-    const bool showDecreaseIndex = true | (1 < imageIndex);
-    const bool showIncreaseIndex = true | (imageIndex < numImages - 1);
+  if (numImages > 1) {
+    ImGui::SameLine(0.0f, style.ItemSpacing.x * 1.5f);
+    const ImVec2 separatorPos = ImGui::GetCursorScreenPos();
+    ImGui::GetWindowDrawList()->AddLine(
+      ImVec2{separatorPos.x, separatorPos.y + 2.0f},
+      ImVec2{separatorPos.x, separatorPos.y + buttonSize.y - 2.0f},
+      ImGui::GetColorU32(ImGuiCol_Separator));
+    ImGui::Dummy(ImVec2{1.0f, buttonSize.y});
+    ImGui::SameLine(0.0f, style.ItemSpacing.x * 1.5f);
 
-    if (showDecreaseIndex) {
-      if (ImGui::Button(ICON_FK_FAST_BACKWARD)) {
+    const bool canMoveBackward = imageIndex > 1;
+    const bool canMoveForward = !isRef && imageIndex + 1 < numImages;
+
+    ImGui::BeginDisabled(!canMoveBackward);
+    if (ImGui::Button(ICON_FK_FAST_BACKWARD, buttonSize)) {
+      if (canMoveBackward) {
         moveImageToBack(imageUid);
       }
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Move image to backmost layer");
-      }
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("Move image to backmost layer");
+    }
 
-      ImGui::SameLine();
-      if (ImGui::Button(ICON_FK_BACKWARD)) {
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!canMoveBackward);
+    if (ImGui::Button(ICON_FK_BACKWARD, buttonSize)) {
+      if (canMoveBackward) {
         moveImageBackward(imageUid);
       }
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Move image backward in layers (decrease the image order)");
-      }
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("Move image backward in layers (decrease the image order)");
     }
 
-    if (showIncreaseIndex) {
-      ImGui::SameLine();
-      if (ImGui::Button(ICON_FK_FORWARD)) {
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!canMoveForward);
+    if (ImGui::Button(ICON_FK_FORWARD, buttonSize)) {
+      if (canMoveForward) {
         moveImageForward(imageUid);
       }
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Move image forward in layers (increase the image order)");
-      }
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("Move image forward in layers (increase the image order)");
+    }
 
-      ImGui::SameLine();
-      if (ImGui::Button(ICON_FK_FAST_FORWARD)) {
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!canMoveForward);
+    if (ImGui::Button(ICON_FK_FAST_FORWARD, buttonSize)) {
+      if (canMoveForward) {
         moveImageToFront(imageUid);
       }
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Move image to frontmost layer");
-      }
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("Move image to frontmost layer");
     }
   }
+
+  ImGui::PopStyleVar();
 
   if (image_export::imageHasDicomSource(appData, imageUid)) {
     const bool canExportImage = image->hasPixelData();
@@ -2834,11 +2857,11 @@ void renderImageHeader(
       ImGui::TextDisabled("No warp fields are loaded.");
     }
 
-    if (ImGui::Button("Load inverse warp field...")) {
+    if (ImGui::Button("Load inverse warp...")) {
       loadAndAssignWarpField(false);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Load forward warp field...")) {
+    if (ImGui::Button("Load forward warp...")) {
       loadAndAssignWarpField(true);
     }
 
@@ -2868,10 +2891,9 @@ void renderImageHeader(
 
     disabledWrappedText(
       "The inverse warp is sampled in reference space and gives the moving-image sampling offset. "
-      "A moving-grid forward warp can map moving landmarks and annotations into reference space for display; "
-      "a reference-grid forward warp is accepted but not used for landmark or annotation display.");
+      "A moving-grid forward warp can map moving landmarks and annotations into reference space for display.");
 
-    if (ImGui::TreeNodeEx("Warp inversion", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (!loadedWarpFieldUids.empty() && ImGui::TreeNodeEx("Warp inversion", ImGuiTreeNodeFlags_DefaultOpen)) {
       if (requestWarpInversion && (activeForwardWarpUid || activeInverseWarpUid)) {
         if (activeForwardWarpUid) {
           if (ImGui::Button("Compute inverse warp")) {
@@ -2925,7 +2947,7 @@ void renderImageHeader(
   };
 
   if (ImGui::TreeNode("Affine Transformations")) {
-    disabledWrappedText("Applied order: image header geometry -> initial/imported affine -> manual affine");
+    disabledWrappedText("Applied order: image header geometry → initial/imported affine → manual affine");
 
     // The initial affine and manual affine transformations are disabled for the reference image:
     const bool forceDisableInitialTxs = isRef;
@@ -3111,7 +3133,7 @@ void renderImageHeader(
 
       ImGui::PushID("subjectToWorld");
       ImGui::PushItemWidth(-1);
-      ImGui::Text("Subject-to-World matrix:");
+      ImGui::Text("Equivalent Subject-to-World matrix:");
       ImGui::InputFloat4("##sTw_col0", glm::value_ptr(world_T_affine[0]), txFormat, ImGuiInputTextFlags_ReadOnly);
       ImGui::InputFloat4("##sTw_col1", glm::value_ptr(world_T_affine[1]), txFormat, ImGuiInputTextFlags_ReadOnly);
       ImGui::InputFloat4("##sTw_col2", glm::value_ptr(world_T_affine[2]), txFormat, ImGuiInputTextFlags_ReadOnly);
@@ -3176,9 +3198,9 @@ void renderImageHeader(
       ImGui::TreePop();
     }
 
-    if (imgTx.get_enable_affine_T_subject()) {
+    if (imgTx.get_enable_affine_T_subject() && imgTx.get_enable_worldDef_T_affine()) {
       // Save effective affine tx to file:
-      static const char* saveEffectiveTxButtonText("Save effective (manual * initial) affine transformation...");
+      static const char* saveEffectiveTxButtonText("Save effective (manual * initial) affine...");
       static const char* saveEffectiveTxDialogTitle("Select Effective Affine Transformation");
 
       const auto selectedEffectiveTxFile =

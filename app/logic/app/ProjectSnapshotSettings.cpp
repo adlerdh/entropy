@@ -40,6 +40,13 @@ void applyInterfaceSettings(AppData& appData, const serialize::ProjectInterfaceS
 serialize::ProjectViewSettings viewSettings(const AppData& appData)
 {
   return serialize::ProjectViewSettings{
+    .m_showImageBorders = appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections,
+    .m_showImageBordersInLightboxViews =
+      appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews,
+    .m_showCrosshairs = appData.renderData().m_showCrosshairs,
+    .m_showCrosshairsInLightboxViews = appData.renderData().m_showCrosshairsInLightboxViews,
+    .m_showAnatomicalLabels = appData.renderData().m_showAnatomicalLabels,
+    .m_showAnatomicalLabelsInLightboxViews = appData.renderData().m_showAnatomicalLabelsInLightboxViews,
     .m_anatomicalLabelType = appData.renderData().m_anatomicalLabelType,
     .m_lockAnatomicalDirectionsToReferenceImage = appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage(),
     .m_crosshairsSnapping = appData.renderData().m_snapCrosshairs};
@@ -47,6 +54,16 @@ serialize::ProjectViewSettings viewSettings(const AppData& appData)
 
 void applyViewSettings(AppData& appData, const serialize::ProjectViewSettings& settings)
 {
+  appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersections =
+    settings.m_showImageBorders;
+  appData.renderData().m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews =
+    settings.m_showImageBorders && settings.m_showImageBordersInLightboxViews;
+  appData.renderData().m_showCrosshairs = settings.m_showCrosshairs;
+  appData.renderData().m_showCrosshairsInLightboxViews =
+    settings.m_showCrosshairs && settings.m_showCrosshairsInLightboxViews;
+  appData.renderData().m_showAnatomicalLabels = settings.m_showAnatomicalLabels;
+  appData.renderData().m_showAnatomicalLabelsInLightboxViews =
+    settings.m_showAnatomicalLabels && settings.m_showAnatomicalLabelsInLightboxViews;
   appData.renderData().m_anatomicalLabelType = settings.m_anatomicalLabelType;
   appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(
     settings.m_lockAnatomicalDirectionsToReferenceImage);

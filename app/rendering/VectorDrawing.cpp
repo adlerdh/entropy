@@ -1471,7 +1471,10 @@ void drawLightboxOffsetLabel(
   const glm::vec2 viewportMinCorner(viewportViewBounds.bounds.xoffset, viewportViewBounds.bounds.yoffset);
   const glm::vec2 viewportSize(viewportViewBounds.bounds.width, viewportViewBounds.bounds.height);
   const float fontSizePixels = glm::clamp(0.065f * std::min(viewportSize.x, viewportSize.y), 9.0f, 14.0f);
-  const std::string label = entropy::rendering::lightbox::formatOffsetDistanceMm(offsetMm, unitReferenceLengthMm);
+  const std::string label = entropy::rendering::lightbox::formatOffsetDistanceMm(
+    offsetMm,
+    unitReferenceLengthMm,
+    static_cast<int>(appData.guiData().m_coordsPrecision));
 
   nvgScissor(
     nvg,

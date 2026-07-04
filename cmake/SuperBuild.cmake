@@ -443,6 +443,17 @@ foreach(_itk_module IN LISTS entropy_ITK_COMPONENTS)
   list(APPEND _itk_module_args -DModule_${_itk_module}:BOOL=ON)
 endforeach()
 
+set(_itk_zlib_ng_args)
+if(APPLE AND CMAKE_OSX_ARCHITECTURES MATCHES "(^|;)arm64($|;)")
+  # ITK's bundled zlib-ng tries to pass ARMv7-style -mfpu flags when NEON is
+  # enabled, but AppleClang rejects those flags for arm64-apple-darwin targets.
+  list(APPEND _itk_zlib_ng_args
+    -DWITH_ACLE:BOOL=OFF
+    -DWITH_ARMV6:BOOL=OFF
+    -DWITH_NEON:BOOL=OFF
+  )
+endif()
+
 ExternalProject_Add(ITK
   URL "https://github.com/InsightSoftwareConsortium/ITK/releases/download/v${itk_VERSION}/InsightToolkit-${itk_VERSION}.tar.gz"
   URL_HASH SHA512=39e9003cc76a08f486c28e47df4b66944d1ba1e7917ad986ace84422acf2abc6956956929bebb08f37b04a9905f251eb941443a3d873c40852130aa1c189cf4b
@@ -476,6 +487,7 @@ ExternalProject_Add(ITK
     -DBUILD_STATIC_LIBS:BOOL=${_entropy_itk_static_libs}
     -DBUILD_EXAMPLES:BOOL=OFF
     -DBUILD_TESTING:BOOL=OFF
+    ${_itk_zlib_ng_args}
     ${_itk_module_args}
 
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}

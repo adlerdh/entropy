@@ -57,11 +57,16 @@ struct RenderPreferences
   };
 
   bool showImageBorders = true;
+  bool showImageBordersInLightboxViews = false;
   CrosshairsSnapping crosshairsSnapping = CrosshairsSnapping::Disabled;
   glm::vec4 crosshairsColor{0.05f, 0.6f, 1.0f, 1.0f};
+  bool showCrosshairs = true;
+  bool showCrosshairsInLightboxViews = true;
   glm::vec3 background2dColor{0.1f, 0.1f, 0.1f};
   glm::vec4 background3dColor{0.0f, 0.0f, 0.0f, 0.5f};
   glm::vec4 anatomicalLabelColor{0.695f, 0.870f, 0.090f, 1.0f};
+  bool showAnatomicalLabels = true;
+  bool showAnatomicalLabelsInLightboxViews = true;
   AnatomicalLabelType anatomicalLabelType = AnatomicalLabelType::Human;
   float anatomicalLabelScale = 1.0f;
 
@@ -146,6 +151,7 @@ struct PrecisionPreferences
   std::uint32_t coordsPrecision = 3;     //!< Decimal places for coordinates.
   std::uint32_t txPrecision = 3;         //!< Decimal places for transformations.
   std::uint32_t percentilePrecision = 2; //!< Decimal places for percentiles.
+  std::uint32_t timeValuePrecision = 2;  //!< Decimal places for time values.
 };
 
 /**

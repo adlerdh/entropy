@@ -11,7 +11,9 @@
 #include <imgui/imgui.h>
 
 #include <algorithm>
+#include <array>
 #include <cinttypes>
+#include <cstdio>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -19,7 +21,14 @@
 namespace
 {
 using uuid = uuids::uuid;
+
+std::string formatDouble(const char* format, double value)
+{
+  std::array<char, 64> buffer{};
+  std::snprintf(buffer.data(), buffer.size(), format, value);
+  return buffer.data();
 }
+} // namespace
 
 // enum class PopupWindowPosition
 //{
@@ -219,7 +228,12 @@ void renderInspectionWindow(
         // Show subject coordinates for the reference image only:
         if (const auto subjectPos = getSubjectPos(imageIndex)) {
           const glm::dvec3 p{*subjectPos};
-          ImGui::Text("(%.3f, %.3f, %.3f) mm", p.x, p.y, p.z);
+          const char* coordFormat = appData.guiData().m_coordsPrecisionFormat.c_str();
+          ImGui::Text(
+            "(%s, %s, %s) mm",
+            formatDouble(coordFormat, p.x).c_str(),
+            formatDouble(coordFormat, p.y).c_str(),
+            formatDouble(coordFormat, p.z).c_str());
         }
       }
 
@@ -232,11 +246,15 @@ void renderInspectionWindow(
 
       if (const auto imageValue = getImageValueNN(imageIndex)) {
         if (isComponentFloatingPoint(image->header().memoryComponentType())) {
+          const char* valueFormat = appData.guiData().m_imageValuePrecisionFormat.c_str();
           if (image->header().numComponentsPerPixel() > 1) {
-            ImGui::Text("Value (comp. %d): %0.3f", image->settings().activeComponent(), *imageValue);
+            ImGui::Text(
+              "Value (comp. %d): %s",
+              image->settings().activeComponent(),
+              formatDouble(valueFormat, *imageValue).c_str());
           }
           else {
-            ImGui::Text("Value: %0.3f", *imageValue);
+            ImGui::Text("Value: %s", formatDouble(valueFormat, *imageValue).c_str());
           }
         }
         else {

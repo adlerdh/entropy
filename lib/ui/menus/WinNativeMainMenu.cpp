@@ -29,6 +29,7 @@ constexpr UINT k_previousLayoutCommand = 1103;
 constexpr UINT k_nextLayoutCommand = 1104;
 constexpr UINT k_showAboutCommand = 1105;
 constexpr UINT k_quitCommand = 1106;
+constexpr UINT k_showKeyboardShortcutsCommand = 1107;
 constexpr UINT k_selectLayoutCommandBase = 1200;
 constexpr UINT k_selectActiveImageCommandBase = 1400;
 constexpr UINT k_actionCommandBase = 2000;
@@ -82,6 +83,7 @@ bool isMenuCommand(UINT command)
     case k_previousLayoutCommand:
     case k_nextLayoutCommand:
     case k_showAboutCommand:
+    case k_showKeyboardShortcutsCommand:
     case k_quitCommand:
       return true;
     default:
@@ -243,6 +245,11 @@ void handleMenuCommand(const MenuState& state, UINT command)
     case k_showAboutCommand:
       if (callbacks.showAbout) {
         callbacks.showAbout();
+      }
+      break;
+    case k_showKeyboardShortcutsCommand:
+      if (callbacks.showKeyboardShortcuts) {
+        callbacks.showKeyboardShortcuts();
       }
       break;
     case k_quitCommand:
@@ -734,7 +741,8 @@ bool populateWindowsMenu(HMENU menu)
 bool populateHelpMenu(HMENU menu)
 {
   UINT position = 0;
-  return insertMenuItem(menu, position++, k_showAboutCommand, L"&About Entropy");
+  return insertMenuItem(menu, position++, k_showKeyboardShortcutsCommand, L"&Keyboard Shortcuts") &&
+         insertSeparator(menu, position++) && insertMenuItem(menu, position++, k_showAboutCommand, L"&About Entropy");
 }
 
 bool clearMenu(HMENU menu)

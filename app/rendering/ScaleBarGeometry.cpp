@@ -18,6 +18,22 @@ float paddingPx(float marginPx)
 {
   return std::max(marginPx, 12.0f);
 }
+
+std::string trimTrailingDecimalZeros(std::string value)
+{
+  const auto decimalPos = value.find('.');
+  if (std::string::npos == decimalPos) {
+    return value;
+  }
+
+  while (!value.empty() && value.back() == '0') {
+    value.pop_back();
+  }
+  if (!value.empty() && value.back() == '.') {
+    value.pop_back();
+  }
+  return value;
+}
 } // namespace
 
 double computeNiceScaleBarLengthMm(double targetLengthMm, double minLengthMm, double maxLengthMm)
@@ -54,7 +70,7 @@ double computeNiceScaleBarLengthMm(double targetLengthMm, double minLengthMm, do
   return bestUnderTarget > 0.0 ? bestUnderTarget : smallestFit;
 }
 
-std::string formatScaleBarLength(double lengthMm)
+std::string formatScaleBarLength(double lengthMm, int precision)
 {
   double value = lengthMm;
   const char* unit = "mm";
@@ -89,10 +105,9 @@ std::string formatScaleBarLength(double lengthMm)
     out << static_cast<int>(std::round(value));
   }
   else {
-    out << std::setprecision(2) << value;
+    out << std::fixed << std::setprecision(std::max(0, precision)) << value;
   }
-  out << " " << unit;
-  return out.str();
+  return trimTrailingDecimalZeros(out.str()) + " " + unit;
 }
 
 int computeScaleBarIntervals(float barLengthPx, ScaleBarTicks ticks)
@@ -151,7 +166,8 @@ std::optional<Layout> computeLayout(
   ScaleBarOrientation orientation,
   ScaleBarTicks ticks,
   float targetFraction,
-  float marginPx)
+  float marginPx,
+  int lengthPrecision)
 {
   const float padding = paddingPx(marginPx);
   const glm::vec2 miewportMinCorner(miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset);
@@ -237,7 +253,7 @@ std::optional<Layout> computeLayout(
 
   layout.end = layout.start + direction(orientation) * barLengthPx;
   layout.intervals = computeScaleBarIntervals(barLengthPx, ticks);
-  layout.label = formatScaleBarLength(lengthMm);
+  layout.label = formatScaleBarLength(lengthMm, lengthPrecision);
   layout.labelPos = 0.5f * (layout.start + layout.end);
   if (ScaleBarOrientation::Horizontal == orientation) {
     layout.labelPos.y += isTop(position) ? labelClearance : -labelClearance;

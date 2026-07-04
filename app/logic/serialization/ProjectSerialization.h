@@ -478,6 +478,12 @@ struct ProjectInterfaceSettings
  */
 struct ProjectViewSettings
 {
+  bool m_showImageBorders = true;                    //!< Show image borders in all view layouts.
+  bool m_showImageBordersInLightboxViews = false;    //!< Show image borders in lightbox layout tiles.
+  bool m_showCrosshairs = true;                      //!< Show crosshairs in all views.
+  bool m_showCrosshairsInLightboxViews = true;       //!< Show crosshairs in lightbox layout tiles.
+  bool m_showAnatomicalLabels = true;                //!< Show anatomical direction labels in all views.
+  bool m_showAnatomicalLabelsInLightboxViews = true; //!< Show anatomical direction labels in lightbox layout tiles.
   AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human; //!< Anatomical label convention.
   bool m_lockAnatomicalDirectionsToReferenceImage = false; //!< Lock anatomical axes to the reference image.
   CrosshairsSnapping m_crosshairsSnapping = CrosshairsSnapping::Disabled; //!< Crosshairs snapping behavior.

@@ -132,6 +132,12 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
 {
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
+  project.m_view.m_showImageBorders = false;
+  project.m_view.m_showImageBordersInLightboxViews = false;
+  project.m_view.m_showCrosshairs = false;
+  project.m_view.m_showCrosshairsInLightboxViews = false;
+  project.m_view.m_showAnatomicalLabels = false;
+  project.m_view.m_showAnatomicalLabelsInLightboxViews = false;
   project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
   project.m_view.m_lockAnatomicalDirectionsToReferenceImage = true;
   project.m_view.m_crosshairsSnapping = CrosshairsSnapping::ActiveImage;
@@ -139,12 +145,24 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   const json root = project;
 
   REQUIRE(root.contains("view"));
+  CHECK(root.at("view").at("showImageBorders") == false);
+  CHECK(root.at("view").at("showImageBordersInLightboxViews") == false);
+  CHECK(root.at("view").at("showCrosshairs") == false);
+  CHECK(root.at("view").at("showCrosshairsInLightboxViews") == false);
+  CHECK(root.at("view").at("showAnatomicalLabels") == false);
+  CHECK(root.at("view").at("showAnatomicalLabelsInLightboxViews") == false);
   CHECK(root.at("view").at("anatomicalLabelType") == "rodent");
   CHECK(root.at("view").at("lockAnatomicalDirectionsToReferenceImage") == true);
   CHECK(root.at("view").at("crosshairsSnapping") == "activeImage");
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
+  CHECK(parsed.m_view.m_showImageBorders == false);
+  CHECK(parsed.m_view.m_showImageBordersInLightboxViews == false);
+  CHECK(parsed.m_view.m_showCrosshairs == false);
+  CHECK(parsed.m_view.m_showCrosshairsInLightboxViews == false);
+  CHECK(parsed.m_view.m_showAnatomicalLabels == false);
+  CHECK(parsed.m_view.m_showAnatomicalLabelsInLightboxViews == false);
   CHECK(parsed.m_view.m_anatomicalLabelType == AnatomicalLabelType::Rodent);
   CHECK(parsed.m_view.m_lockAnatomicalDirectionsToReferenceImage == true);
   CHECK(parsed.m_view.m_crosshairsSnapping == CrosshairsSnapping::ActiveImage);

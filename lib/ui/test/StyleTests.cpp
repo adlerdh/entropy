@@ -116,7 +116,7 @@ TEST_CASE("Entropy Dark uses the default Entropy dark palette colors", "[ui][sty
   CHECK(sameColor(style.Colors[ImGuiCol_BorderShadow], hexColor(0x3f, 0x3f, 0x3f, 0x3f)));
   CHECK(sameColor(style.Colors[ImGuiCol_TitleBg], hexColor(0x19, 0x19, 0x19, 0xff)));
   CHECK(sameColor(style.Colors[ImGuiCol_TitleBgActive], hexColor(0x1d, 0x3b, 0x61, 0xff)));
-  CHECK(sameColor(style.Colors[ImGuiCol_TitleBgCollapsed], hexColor(0x0a, 0x0a, 0x0a, 0x82)));
+  CHECK(sameColor(style.Colors[ImGuiCol_TitleBgCollapsed], hexColor(0x0a, 0x0a, 0x0a, 0x90)));
   CHECK(sameColor(style.Colors[ImGuiCol_Header], hexColor(0x1d, 0x3b, 0x61, 0xff)));
   CHECK(sameColor(style.Colors[ImGuiCol_HeaderHovered], hexColor(0x75, 0x78, 0x7a, 0xff)));
   CHECK(sameColor(style.Colors[ImGuiCol_HeaderActive], hexColor(0x33, 0x69, 0xad, 0xff)));

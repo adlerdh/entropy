@@ -30,7 +30,7 @@ double computeNiceScaleBarLengthMm(double targetLengthMm, double minLengthMm, do
 /**
  * @brief Format a physical scale-bar length using an appropriate metric unit.
  */
-std::string formatScaleBarLength(double lengthMm);
+std::string formatScaleBarLength(double lengthMm, int precision = 2);
 
 /**
  * @brief Return the number of ruler intervals for a scale bar of the given pixel length.
@@ -62,5 +62,6 @@ std::optional<Layout> computeLayout(
   ScaleBarOrientation orientation,
   ScaleBarTicks ticks,
   float targetFraction,
-  float marginPx);
+  float marginPx,
+  int lengthPrecision = 2);
 } // namespace entropy::rendering::scale_bar

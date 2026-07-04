@@ -165,6 +165,7 @@ void renderAnnotationsHeader(
   const auto& annotUids = appData.annotationsForImage(imageUid);
   if (annotUids.empty()) {
     ImGui::Text("This image has no annotations.");
+    ImGui::TextWrapped("%s", "Switch to Annotate mode and select the view in which to draw annotations.");
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();

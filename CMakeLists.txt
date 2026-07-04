@@ -557,6 +557,7 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"
   "${entropy_APP_DIR}/rendering/TextureSetup.cpp"
   "${entropy_APP_DIR}/rendering/VectorDrawing.cpp"
+  "${entropy_APP_DIR}/rendering/XrayAttenuation.cpp"
 
   "${entropy_APP_DIR}/rendering/common/ShaderType.cpp"
 
