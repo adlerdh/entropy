@@ -303,10 +303,14 @@ struct ImageSettings
   float m_vectorWarpedGridVoxelSpacing = 4.0f;        //!< Warped grid spacing in image voxels.
   float m_vectorWarpedGridMillimeterSpacing = 4.0f;   //!< Warped grid spacing in subject millimeters.
   ProjectVectorArrowOverlaySpacingMode m_vectorWarpedGridSpacingMode =
-    ProjectVectorArrowOverlaySpacingMode::Voxels;    //!< Warped grid spacing units.
-  float m_vectorWarpedGridLineThickness = 1.5f;      //!< Warped grid line thickness in pixels.
-  float m_vectorWarpedGridScaleFactor = 1.0f;        //!< Dimensionless warped grid scale multiplier.
-  glm::vec4 m_vectorWarpedGridForegroundColor{1.0f}; //!< Warped grid foreground RGBA color.
+    ProjectVectorArrowOverlaySpacingMode::Voxels; //!< Warped grid spacing units.
+  float m_vectorWarpedGridLineThickness = 1.5f;   //!< Warped grid line thickness in pixels.
+  float m_vectorWarpedGridScaleFactor = 1.0f;     //!< Dimensionless warped grid scale multiplier.
+  glm::vec4 m_vectorWarpedGridForegroundColor{
+    209.0f / 255.0f,
+    79.0f / 255.0f,
+    1.0f,
+    1.0f};                                           //!< Warped grid foreground RGBA color.
   glm::vec4 m_vectorWarpedGridBackgroundColor{0.0f}; //!< Warped grid background RGBA color.
   bool m_vectorPlanarProjectionSignedColors = true;  //!< Preserve in-plane vector signs in projection color.
   bool m_vectorLogJacobianDeterminant = false;       //!< Show log deformation Jacobian determinant.

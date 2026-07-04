@@ -27,6 +27,10 @@ void renderSegToolbar(
   const std::function<void(size_t)>& setActiveImageIndex,
   const std::function<bool(size_t imageIndex)>& getImageHasActiveSeg,
   const std::function<void(size_t imageIndex, bool set)>& setImageHasActiveSeg,
+  const std::function<
+    std::optional<uuids::uuid>(const uuids::uuid& matchingImageUid, const std::string& segDisplayName)>& createBlankSeg,
+  const std::function<void(const uuids::uuid& imageUid)>& updateImageUniforms,
+  const std::function<void(MouseMode)>& setMouseMode,
   const std::function<void(void)>& readjustViewport,
   const std::function<bool(const uuids::uuid& imageUid, const uuids::uuid& seedSegUid, const SeedSegmentationType&)>&
     executePoissonSeg)
@@ -64,9 +68,53 @@ void renderSegToolbar(
     return;
   }
 
+  const Image* activeImage = appData.image(*activeImageUid);
+  if (!activeImage) {
+    spdlog::error("The active image {} is null", *activeImageUid);
+    return;
+  }
+
   const auto activeSegUid = appData.imageToActiveSegUid(*activeImageUid);
   if (!activeSegUid) {
-    spdlog::error("There is no active segmentation for image {}", *activeImageUid);
+    static constexpr const char* k_createSegPopupTitle = "Create segmentation?";
+    ImGui::OpenPopup(k_createSegPopupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
+
+    if (ImGui::BeginPopupModal(
+          k_createSegPopupTitle,
+          nullptr,
+          ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize))
+    {
+      ImGui::TextWrapped(
+        "There is no segmentation for the active image \"%s\".",
+        activeImage->settings().displayName().c_str());
+      ImGui::TextUnformatted("Create a new blank segmentation for painting?");
+      ImGui::Spacing();
+
+      if (ImGui::Button("Create", ImVec2(100.0f, 0.0f))) {
+        const size_t numSegsForImage = appData.imageToSegUids(*activeImageUid).size();
+        const std::string segDisplayName = "Untitled segmentation " + std::to_string(numSegsForImage + 1) +
+                                           " for image " + activeImage->settings().displayName();
+
+        if (createBlankSeg && createBlankSeg(*activeImageUid, segDisplayName)) {
+          if (updateImageUniforms) {
+            updateImageUniforms(*activeImageUid);
+          }
+          ImGui::CloseCurrentPopup();
+        }
+        else {
+          spdlog::error("Error creating new blank segmentation for image {}", *activeImageUid);
+        }
+      }
+
+      ImGui::SameLine();
+      if (ImGui::Button("Cancel", ImVec2(100.0f, 0.0f))) {
+        setMouseMode(MouseMode::Pointer);
+        ImGui::CloseCurrentPopup();
+      }
+
+      ImGui::EndPopup();
+    }
+
     return;
   }
 

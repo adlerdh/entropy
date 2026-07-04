@@ -63,12 +63,15 @@ struct GuiData
   bool m_requestAddIsosurfaceRange = false;                         //!< Open the isosurface range dialog.
   bool m_showSettingsWindow = false;                                //!< Show the settings window.
   std::optional<SettingsTab> m_requestedSettingsTab = std::nullopt; //!< One-shot requested settings page.
-  bool m_showInspectionWindow = true;                               //!< Show the cursor inspection window.
-  bool m_showOpacityBlenderWindow = false;                          //!< Show the opacity mixer window.
-  bool m_showImGuiDemoWindow = false;                               //!< Show the ImGui demo window.
-  bool m_showImPlotDemoWindow = false;                              //!< Show the ImPlot demo window.
-  bool m_showAboutDialog = false;                                   //!< Show the About Entropy dialog.
-  bool m_showAddLayoutPopup = false;                                //!< Show the Add Layout popup.
+  bool m_appSettingsDirty = false;            //!< Application settings differ from the last saved state.
+  bool m_showUnsavedAppSettingsPopup = false; //!< Show the unsaved application settings prompt.
+  std::string m_savedAppSettingsJson;         //!< Last saved application settings JSON fingerprint.
+  bool m_showInspectionWindow = true;         //!< Show the cursor inspection window.
+  bool m_showOpacityBlenderWindow = false;    //!< Show the opacity mixer window.
+  bool m_showImGuiDemoWindow = false;         //!< Show the ImGui demo window.
+  bool m_showImPlotDemoWindow = false;        //!< Show the ImPlot demo window.
+  bool m_showAboutDialog = false;             //!< Show the About Entropy dialog.
+  bool m_showAddLayoutPopup = false;          //!< Show the Add Layout popup.
 
   /**
    * @brief Deferred action selected when the unsaved-project confirmation popup resolves.

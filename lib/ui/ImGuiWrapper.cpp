@@ -1325,11 +1325,11 @@ void renderEmptyWorkspace(
     ImGui::SameLine();
 
     if (ImGui::Button("Open DICOM Series...", ImVec2{buttonWidth, 0.0f})) {
-      const auto selectedFolders = native_dialog::pickFolders();
-      if (!selectedFolders.empty() && openDicomFolders) {
-        openDicomFolders(selectedFolders);
+      const auto selectedFolders = native_dialog::pickFoldersWithStatus();
+      if (!selectedFolders.paths.empty() && openDicomFolders) {
+        openDicomFolders(selectedFolders.paths);
       }
-      else if (requestDicomFolderPathDialog) {
+      else if (native_dialog::PathDialogStatus::Canceled != selectedFolders.status && requestDicomFolderPathDialog) {
         requestDicomFolderPathDialog();
       }
     }
@@ -3792,7 +3792,24 @@ void ImGuiWrapper::render()
     return names;
   };
 
+  static std::string s_settingsPersistenceStatus;
+  auto saveUserSettingsToDefault = [this]() {
+    const std::filesystem::path settingsFile = app_paths::userSettingsFile();
+    std::string error;
+    if (user_preferences::save(m_appData.settings(), m_appData.renderData(), m_appData.guiData(), settingsFile, &error))
+    {
+      user_preferences::markSavedAppSettingsState(m_appData.settings(), m_appData.renderData(), m_appData.guiData());
+      s_settingsPersistenceStatus = "Saved";
+      return true;
+    }
+
+    s_settingsPersistenceStatus = "Save failed: " + error;
+    return false;
+  };
+  user_preferences::updateAppSettingsDirtyState(m_appData.settings(), m_appData.renderData(), m_appData.guiData());
+
   renderConfirmCloseAppPopup(m_appData, m_quitAppWithoutPrompt);
+  renderUnsavedAppSettingsPopup(m_appData, saveUserSettingsToDefault, m_quitAppWithoutPrompt);
   renderUnsavedProjectPopup(
     m_appData,
     m_saveProject,
@@ -3968,7 +3985,6 @@ void ImGuiWrapper::render()
     }
 
     if (m_appData.guiData().m_showSettingsWindow) {
-      static std::string s_settingsPersistenceStatus;
       const auto applyActivePreferences = [this]() {
         setUserScaleOverride(m_appData.settings().uiScaleOverride());
         requestFontReload();
@@ -3982,22 +3998,7 @@ void ImGuiWrapper::render()
       const std::filesystem::path settingsFile = app_paths::userSettingsFile();
       const SettingsPersistenceCallbacks settingsPersistenceCallbacks{
         .settingsFile = settingsFile,
-        .saveSettings =
-          [this, settingsFile]() {
-            std::string error;
-            if (user_preferences::save(
-                  m_appData.settings(),
-                  m_appData.renderData(),
-                  m_appData.guiData(),
-                  settingsFile,
-                  &error))
-            {
-              s_settingsPersistenceStatus = "Saved";
-              return true;
-            }
-            s_settingsPersistenceStatus = "Save failed: " + error;
-            return false;
-          },
+        .saveSettings = saveUserSettingsToDefault,
         .saveSettingsAs =
           [this](const std::filesystem::path& fileName) {
             std::string error;
@@ -4018,6 +4019,10 @@ void ImGuiWrapper::render()
             user_preferences::applyDefaults(m_appData.settings(), m_appData.renderData(), m_appData.guiData());
             applyActivePreferences();
             syncLayoutTabGuiDataFromSettings(m_appData);
+            user_preferences::updateAppSettingsDirtyState(
+              m_appData.settings(),
+              m_appData.renderData(),
+              m_appData.guiData());
             s_settingsPersistenceStatus = "Defaults restored";
           },
         .resetInterfaceSettings =
@@ -4221,6 +4226,9 @@ void ImGuiWrapper::render()
       setActiveImageIndex,
       getImageHasActiveSeg,
       setImageHasActiveSeg,
+      m_createBlankSeg,
+      m_updateImageUniforms,
+      setMouseMode,
       m_readjustViewport,
       m_executePoissonSeg);
 

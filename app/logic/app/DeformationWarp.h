@@ -20,6 +20,11 @@ namespace deformation_warp
 glm::vec3 homogeneousPointToVec3(const glm::vec4& point);
 
 /**
+ * @brief Return true when a warp field grid occupies the same image domain.
+ */
+bool warpFieldMatchesImageDomain(const Image& warpField, const Image& image);
+
+/**
  * @brief Sample a 3-component warp field in world coordinates.
  * @param warpField Warp-field image storing displacements in physical LPS/world units.
  * @param worldPos World position where the warp field is sampled.

@@ -3508,7 +3508,10 @@ void Rendering::createShaderPrograms()
   fsVectorWarpedGridUniforms.insertUniform("u_lineThickness_px", UniformType::Float, 1.5f);
   fsVectorWarpedGridUniforms.insertUniform("u_warpScale", UniformType::Float, 1.0f);
   fsVectorWarpedGridUniforms.insertUniform("u_convention", UniformType::Int, 0);
-  fsVectorWarpedGridUniforms.insertUniform("u_foregroundColor", UniformType::Vec4, glm::vec4{1.0f});
+  fsVectorWarpedGridUniforms.insertUniform(
+    "u_foregroundColor",
+    UniformType::Vec4,
+    glm::vec4{209.0f / 255.0f, 79.0f / 255.0f, 1.0f, 1.0f});
   fsVectorWarpedGridUniforms.insertUniform("u_backgroundColor", UniformType::Vec4, sk_zeroVec4);
   fsVectorWarpedGridUniforms.insertUniform("u_imgOpacity", UniformType::Float, 1.0f);
 

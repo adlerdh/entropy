@@ -716,14 +716,12 @@ bool populateWindowsMenu(HMENU menu)
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleAnnotationsWindow, L"&Annotations Panel") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleLandmarksWindow, L"&Landmarks Panel") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleIsosurfacesWindow, L"I&sosurfaces Panel") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&
     insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegistrationJobsWindow, L"Registration &Jobs") &&
-    insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings") &&
-    insertSeparator(menu, position++) &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&
     insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleToolbar, L"T&oolbar");
 #ifndef NDEBUG

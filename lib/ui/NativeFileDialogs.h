@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 
 #include <optional>
@@ -8,6 +9,26 @@
 
 namespace native_dialog
 {
+/**
+ *  Outcome of a native path-selection dialog.
+ */
+enum class PathDialogStatus : std::uint8_t
+{
+  Selected,    //!< The user selected one or more paths.
+  Canceled,    //!< The user canceled the dialog.
+  Unavailable, //!< Native dialogs could not be initialized.
+  Error        //!< The native dialog reported an error.
+};
+
+/**
+ *  Result from a native dialog that may need to distinguish cancel from failure.
+ */
+struct PathDialogResult
+{
+  PathDialogStatus status = PathDialogStatus::Canceled; //!< Dialog outcome.
+  std::vector<std::filesystem::path> paths;             //!< Selected paths when status is Selected.
+};
+
 /**
  * @brief File type filter passed to native open/save dialogs.
  */
@@ -54,6 +75,14 @@ std::optional<std::filesystem::path> pickFolder(const std::filesystem::path& def
  * @return Selected folders; empty when canceled or unavailable.
  */
 std::vector<std::filesystem::path> pickFolders(const std::filesystem::path& defaultPath = {});
+
+/**
+ *  Show a native multi-folder picker and report whether empty means cancel or failure.
+ *
+ *  defaultPath Optional initial folder.
+ *  Dialog status and selected folders.
+ */
+PathDialogResult pickFoldersWithStatus(const std::filesystem::path& defaultPath = {});
 
 /**
  * @brief Show a native save-file dialog.

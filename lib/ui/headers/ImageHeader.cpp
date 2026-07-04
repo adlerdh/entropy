@@ -25,6 +25,7 @@
 #include "image/TimePlaybackController.h"
 
 #include "logic/app/Data.h"
+#include "logic/app/DeformationWarp.h"
 #include "logic/states/annotation/AnnotationStateMachine.h"
 
 #include <IconsForkAwesome.h>
@@ -211,6 +212,23 @@ std::vector<std::string> warpFieldWarnings(const Image& field, const Image& targ
   return warnings;
 }
 
+std::vector<std::string>
+forwardWarpFieldWarnings(const Image& field, const Image& movingImage, const Image* referenceImage)
+{
+  std::vector<std::string> movingWarnings = warpFieldWarnings(field, movingImage);
+  if (movingWarnings.empty()) {
+    return {};
+  }
+  if (referenceImage && warpFieldWarnings(field, *referenceImage).empty()) {
+    return {};
+  }
+
+  movingWarnings.insert(
+    movingWarnings.begin(),
+    "The forward warp field does not match either the moving-image space or the reference-image space.");
+  return movingWarnings;
+}
+
 std::string joinedWarnings(const std::vector<std::string>& warnings)
 {
   std::string text;
@@ -343,7 +361,7 @@ bool renderAutoWindowButtons(Image& image, ImageSettings& settings, uint32_t com
 {
   ImGui::PushID(&image);
   ImGui::AlignTextToFramePadding();
-  ImGui::TextDisabled("Auto window:");
+  ImGui::TextDisabled("Window:");
   ImGui::SameLine();
 
   bool changed = autoWindowButton("0-100%", image, settings, component, 0.0, 1.0);
@@ -2686,7 +2704,7 @@ void renderImageHeader(
         return false;
       }
 
-      const std::vector<std::string> warnings = warpFieldWarnings(*def, *image);
+      const std::vector<std::string> warnings = forwardWarpFieldWarnings(*def, *image, referenceImage);
       if (!confirmWarpFieldWarnings("Forward warp warning", warnings)) {
         return false;
       }
@@ -2794,11 +2812,21 @@ void renderImageHeader(
     }
     ImGui::EndDisabled();
     ImGui::SameLine();
-    helpMarker("Forward warp maps moving-image positions to reference/fixed space for landmarks and annotations.");
+    helpMarker(
+      "Forward warp fields may be stored on either the moving-image or reference-image grid. Only moving-grid forward "
+      "warps are sampled directly for landmark and annotation display.");
 
     if (activeForwardWarpUid) {
       if (const Image* forwardWarp = appData.warpField(*activeForwardWarpUid)) {
-        renderInlineWarpFieldWarnings(warpFieldWarnings(*forwardWarp, *image));
+        renderInlineWarpFieldWarnings(forwardWarpFieldWarnings(*forwardWarp, *image, referenceImage));
+        if (
+          referenceImage && !deformation_warp::warpFieldMatchesImageDomain(*forwardWarp, *image) &&
+          deformation_warp::warpFieldMatchesImageDomain(*forwardWarp, *referenceImage))
+        {
+          disabledWrappedText(
+            "This forward warp is stored in reference-image space. It is accepted, but landmarks and annotations are "
+            "not warped because direct point warping requires a moving-image-space forward warp.");
+        }
       }
     }
 
@@ -2812,28 +2840,6 @@ void renderImageHeader(
     ImGui::SameLine();
     if (ImGui::Button("Load forward warp field...")) {
       loadAndAssignWarpField(true);
-    }
-
-    if (requestWarpInversion && (activeForwardWarpUid || activeInverseWarpUid)) {
-      if (activeForwardWarpUid) {
-        if (ImGui::Button("Compute inverse warp")) {
-          requestWarpInversion(imageUid, *activeForwardWarpUid, ComputedWarpDirection::Inverse, inversionOptions);
-        }
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", "Compute the inverse warp that matches the selected forward warp.");
-        }
-      }
-      if (activeForwardWarpUid && activeInverseWarpUid) {
-        ImGui::SameLine();
-      }
-      if (activeInverseWarpUid) {
-        if (ImGui::Button("Compute forward warp")) {
-          requestWarpInversion(imageUid, *activeInverseWarpUid, ComputedWarpDirection::Forward, inversionOptions);
-        }
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", "Compute the forward warp that matches the selected inverse warp.");
-        }
-      }
     }
 
     ImGui::BeginDisabled(!hasAssignedInverseWarp);
@@ -2861,10 +2867,34 @@ void renderImageHeader(
     ImGui::EndDisabled();
 
     disabledWrappedText(
-      "The inverse warp is sampled in reference space and gives the moving-image sampling offset; the forward warp "
-      "maps moving landmarks and annotations into reference space for display.");
+      "The inverse warp is sampled in reference space and gives the moving-image sampling offset. "
+      "A moving-grid forward warp can map moving landmarks and annotations into reference space for display; "
+      "a reference-grid forward warp is accepted but not used for landmark or annotation display.");
 
-    if (ImGui::TreeNode("Advanced warp inversion")) {
+    if (ImGui::TreeNodeEx("Warp inversion", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (requestWarpInversion && (activeForwardWarpUid || activeInverseWarpUid)) {
+        if (activeForwardWarpUid) {
+          if (ImGui::Button("Compute inverse warp")) {
+            requestWarpInversion(imageUid, *activeForwardWarpUid, ComputedWarpDirection::Inverse, inversionOptions);
+          }
+          if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", "Compute the inverse warp that matches the selected forward warp.");
+          }
+        }
+        if (activeForwardWarpUid && activeInverseWarpUid) {
+          ImGui::SameLine();
+        }
+        if (activeInverseWarpUid) {
+          if (ImGui::Button("Compute forward warp")) {
+            requestWarpInversion(imageUid, *activeInverseWarpUid, ComputedWarpDirection::Forward, inversionOptions);
+          }
+          if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", "Compute the forward warp that matches the selected inverse warp.");
+          }
+        }
+        ImGui::Separator();
+      }
+
       int maxIterations = static_cast<int>(inversionOptions.maxIterations);
       if (ImGui::InputInt("Maximum iterations", &maxIterations, 1, 10)) {
         inversionOptions.maxIterations = static_cast<uint32_t>(std::max(1, maxIterations));

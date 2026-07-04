@@ -18,6 +18,14 @@ class AppData;
 void renderConfirmCloseAppPopup(AppData& appData, const std::function<void(void)>& quitAppWithoutPrompt);
 
 /**
+ *  Render the dirty-application-settings save/discard/cancel popup.
+ */
+void renderUnsavedAppSettingsPopup(
+  AppData& appData,
+  const std::function<bool(void)>& saveSettings,
+  const std::function<void(void)>& quitAppWithoutPrompt);
+
+/**
  * @brief Render the dirty-project save/discard/cancel popup.
  */
 void renderUnsavedProjectPopup(

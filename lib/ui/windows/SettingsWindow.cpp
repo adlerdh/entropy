@@ -16,6 +16,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
 #include <algorithm>
@@ -1305,6 +1306,12 @@ void renderRegistrationTab(AppData& appData)
     ImGui::SameLine();
     helpMarker("Backend preselected for new registration jobs.");
 
+    ImGui::Spacing();
+    ImGui::TextDisabled(
+      "%s",
+      "Backend registration executable fields can be command names when the tools are on the system PATH, or full "
+      "paths to the executable files.");
+
     renderPathSettingFixedWidth(
       "Greedy executable",
       config.greedyExecutable,
@@ -1381,10 +1388,6 @@ void renderRegistrationTab(AppData& appData)
     ImGui::Checkbox("Keep temporary files", &config.keepTemporaryFiles);
     ImGui::SameLine();
     helpMarker("Keep exported intermediate files for debugging backend failures.");
-
-    ImGui::Checkbox("Show expert options by default", &config.showExpertOptionsByDefault);
-    ImGui::SameLine();
-    helpMarker("Open registration setup dialogs with expert backend options visible.");
   }
   finishSettingsSection(executionOpen);
 
@@ -2459,7 +2462,12 @@ void renderSettingsWindow(
   setNextWindowSizeConstraintsToMainViewport(560.0f, 420.0f);
   ImGui::SetNextWindowSize(ImVec2{760.0f, 560.0f}, ImGuiCond_FirstUseEver);
 
-  if (ImGui::Begin("Application Settings", &(appData.guiData().m_showSettingsWindow), ImGuiWindowFlags_NoDocking)) {
+  const bool settingsDirty = appData.guiData().m_appSettingsDirty;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking;
+  if (settingsDirty) {
+    windowFlags |= ImGuiWindowFlags_UnsavedDocument;
+  }
+  if (ImGui::Begin("Application Settings", &(appData.guiData().m_showSettingsWindow), windowFlags)) {
     RenderData& renderData = appData.renderData();
 
     const ImGuiStyle& style = ImGui::GetStyle();
@@ -2484,6 +2492,8 @@ void renderSettingsWindow(
 
         ImGui::TableSetColumnIndex(1);
         if (ImGui::BeginChild("##SettingsPage", ImVec2{0.0f, 0.0f}, ImGuiChildFlags_Borders)) {
+          ImGuiContext& imguiContext = *ImGui::GetCurrentContext();
+          const bool settingsEditedBeforePage = imguiContext.ActiveIdHasBeenEditedThisFrame;
           renderSettingsPage(
             s_selectedPage,
             appData,
@@ -2499,6 +2509,9 @@ void renderSettingsWindow(
             readjustViewport,
             persistenceCallbacks,
             recenterAllViews);
+          if (!settingsEditedBeforePage && imguiContext.ActiveIdHasBeenEditedThisFrame) {
+            appData.guiData().m_appSettingsDirty = true;
+          }
         }
         ImGui::EndChild();
 

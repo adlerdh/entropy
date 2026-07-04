@@ -31,6 +31,21 @@
 namespace fs = std::filesystem;
 using namespace entropy::ui::popups;
 
+namespace
+{
+constexpr float k_confirmationPopupWidth = 360.0f;
+
+ImGuiWindowFlags confirmationPopupFlags()
+{
+  return ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
+}
+
+void setNextConfirmationPopupSize()
+{
+  ImGui::SetNextWindowSize(scaledSize(k_confirmationPopupWidth, 0.0f), ImGuiCond_Always);
+}
+} // namespace
+
 void renderUnsavedProjectPopup(
   AppData& appData,
   const std::function<bool(void)>& saveProject,
@@ -64,7 +79,10 @@ void renderUnsavedProjectPopup(
 
   auto continueAction = [&]() {
     if (isQuit) {
-      if (quitAppWithoutPrompt) {
+      if (closeProjectWithoutPrompt) {
+        closeProjectWithoutPrompt();
+      }
+      else if (quitAppWithoutPrompt) {
         quitAppWithoutPrompt();
       }
     }
@@ -117,13 +135,14 @@ void renderUnsavedProjectPopup(
   }
 
   if (guiData.m_showUnsavedProjectPopup && !ImGui::IsPopupOpen(popupTitle)) {
-    ImGui::OpenPopup(popupTitle, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::OpenPopup(popupTitle, confirmationPopupFlags());
   }
 
   const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+  setNextConfirmationPopupSize();
 
-  if (ImGui::BeginPopupModal(popupTitle, nullptr, ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize)) {
+  if (ImGui::BeginPopupModal(popupTitle, nullptr, confirmationPopupFlags())) {
     ImGui::TextWrapped("The current project has unsaved changes.");
     ImGui::TextWrapped("Save before %s?", actionText);
     ImGui::Separator();

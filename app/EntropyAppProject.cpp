@@ -5,6 +5,7 @@
 #include "logic/app/LoadingStatusItems.h"
 #include "logic/app/ProjectSnapshotComparison.h"
 #include "logic/app/ProjectSnapshotSettings.h"
+#include "logic/app/UserPreferences.h"
 #include "logic/app/WindowTitleStatus.h"
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/LandmarkGroup.h"
@@ -775,16 +776,24 @@ void EntropyApp::requestCloseProject()
 
 void EntropyApp::requestQuitApp()
 {
-  const bool hasLoadedData = ProjectLoadState::Loaded == m_data.state().projectLoadState() && 0 < m_data.numImages();
-  if (!hasLoadedData) {
-    quitAppWithoutPrompt();
-    return;
-  }
+  user_preferences::updateAppSettingsDirtyState(m_data.settings(), m_data.renderData(), m_data.guiData());
 
   if (projectHasUnsavedChanges()) {
     m_data.guiData().m_pendingUnsavedProjectAction = GuiData::UnsavedProjectAction::QuitApp;
     m_data.guiData().m_showUnsavedProjectPopup = true;
     m_glfw.postEmptyEvent();
+    return;
+  }
+
+  if (m_data.guiData().m_appSettingsDirty) {
+    m_data.guiData().m_showUnsavedAppSettingsPopup = true;
+    m_glfw.postEmptyEvent();
+    return;
+  }
+
+  const bool hasLoadedData = ProjectLoadState::Loaded == m_data.state().projectLoadState() && 0 < m_data.numImages();
+  if (!hasLoadedData) {
+    quitAppWithoutPrompt();
     return;
   }
 
@@ -822,6 +831,11 @@ void EntropyApp::continueAfterUnsavedProjectPrompt()
       }
       return;
     case GuiData::UnsavedProjectAction::QuitApp:
+      if (m_data.guiData().m_appSettingsDirty) {
+        m_data.guiData().m_showUnsavedAppSettingsPopup = true;
+        m_glfw.postEmptyEvent();
+        return;
+      }
       quitAppWithoutPrompt();
       return;
   }
@@ -860,6 +874,7 @@ void EntropyApp::closeProject()
   m_data.guiData().m_pendingDicomSeriesSelectionPrompt = std::nullopt;
   m_data.guiData().m_showDicomSeriesSelectionPopup = false;
   m_data.guiData().m_showUnsavedProjectPopup = false;
+  m_data.guiData().m_showUnsavedAppSettingsPopup = false;
   m_data.guiData().m_showConfirmCloseAppPopup = false;
   m_data.guiData().m_showLargeImageLoadPrompt = false;
 

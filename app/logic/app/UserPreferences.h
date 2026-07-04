@@ -260,6 +260,16 @@ bool load(
 std::string toJsonString(const AppSettings& settings, const RenderData& renderData, const GuiData& guiData);
 
 /**
+ *  Store the current user preference JSON as the last saved application settings state.
+ */
+void markSavedAppSettingsState(const AppSettings& settings, const RenderData& renderData, GuiData& guiData);
+
+/**
+ *  Refresh whether current user preferences differ from the last saved state.
+ */
+void updateAppSettingsDirtyState(const AppSettings& settings, const RenderData& renderData, GuiData& guiData);
+
+/**
  * @brief Apply user preferences from versioned JSON text.
  * @param settings Application settings to update.
  * @param renderData Rendering defaults to update.

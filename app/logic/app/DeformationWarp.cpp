@@ -4,12 +4,33 @@
 
 #include "image/Image.h"
 
+#include <glm/gtc/epsilon.hpp>
+
 namespace deformation_warp
 {
+namespace
+{
+constexpr float k_geometryEpsilon = 1.0e-4f;
+
+bool vec3NearlyEqual(const glm::vec3& a, const glm::vec3& b)
+{
+  return glm::all(glm::epsilonEqual(a, b, k_geometryEpsilon));
+}
+} // namespace
 
 glm::vec3 homogeneousPointToVec3(const glm::vec4& point)
 {
   return glm::vec3{point} / point.w;
+}
+
+bool warpFieldMatchesImageDomain(const Image& warpField, const Image& image)
+{
+  return warpField.header().pixelDimensions() == image.header().pixelDimensions() &&
+         vec3NearlyEqual(warpField.header().spacing(), image.header().spacing()) &&
+         vec3NearlyEqual(warpField.header().origin(), image.header().origin()) &&
+         vec3NearlyEqual(warpField.header().directions()[0], image.header().directions()[0]) &&
+         vec3NearlyEqual(warpField.header().directions()[1], image.header().directions()[1]) &&
+         vec3NearlyEqual(warpField.header().directions()[2], image.header().directions()[2]);
 }
 
 std::optional<glm::vec3> sampleWarpDisplacementWorld(const Image& warpField, const glm::vec3& worldPos)
@@ -65,6 +86,10 @@ forwardWarpDisplayWorldPosition(const AppData& appData, const uuids::uuid& image
   const std::optional<uuids::uuid> forwardWarpUid = appData.imageToActiveForwardWarpUid(imageUid);
   const Image* forwardWarp = forwardWarpUid ? appData.warpField(*forwardWarpUid) : nullptr;
   if (!forwardWarp) {
+    return worldPos;
+  }
+
+  if (!warpFieldMatchesImageDomain(*forwardWarp, *image)) {
     return worldPos;
   }
 

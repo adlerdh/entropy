@@ -305,6 +305,24 @@ std::string toJsonString(const AppSettings& settings, const RenderData& renderDa
   return toJsonString(settings, renderPreferencesFromRenderData(renderData), precisionPreferencesFromGuiData(guiData));
 }
 
+void markSavedAppSettingsState(const AppSettings& settings, const RenderData& renderData, GuiData& guiData)
+{
+  guiData.m_savedAppSettingsJson = toJsonString(settings, renderData, guiData);
+  guiData.m_appSettingsDirty = false;
+}
+
+void updateAppSettingsDirtyState(const AppSettings& settings, const RenderData& renderData, GuiData& guiData)
+{
+  if (guiData.m_savedAppSettingsJson.empty()) {
+    markSavedAppSettingsState(settings, renderData, guiData);
+    return;
+  }
+
+  if (toJsonString(settings, renderData, guiData) != guiData.m_savedAppSettingsJson) {
+    guiData.m_appSettingsDirty = true;
+  }
+}
+
 bool applyJsonString(
   AppSettings& settings,
   RenderData& renderData,

@@ -981,10 +981,10 @@ private:
   float m_vectorWarpedGridVoxelSpacing{4.0f};      //!< Grid spacing in image voxels
   float m_vectorWarpedGridMillimeterSpacing{4.0f}; //!< Grid spacing in subject millimeters
   VectorArrowOverlaySpacingMode m_vectorWarpedGridSpacingMode{
-    VectorArrowOverlaySpacingMode::Voxels};                              //!< Grid spacing units
-  float m_vectorWarpedGridLineThickness{1.5f};                           //!< Grid line thickness in screen pixels
-  float m_vectorWarpedGridScaleFactor{1.0f};                             //!< Dimensionless grid warp scale multiplier
-  glm::vec4 m_vectorWarpedGridForegroundColor{1.0f};                     //!< Grid line RGBA color
+    VectorArrowOverlaySpacingMode::Voxels};    //!< Grid spacing units
+  float m_vectorWarpedGridLineThickness{1.5f}; //!< Grid line thickness in screen pixels
+  float m_vectorWarpedGridScaleFactor{1.0f};   //!< Dimensionless grid warp scale multiplier
+  glm::vec4 m_vectorWarpedGridForegroundColor{209.0f / 255.0f, 79.0f / 255.0f, 1.0f, 1.0f}; //!< Grid line RGBA color
   glm::vec4 m_vectorWarpedGridBackgroundColor{0.0f};                     //!< Grid background RGBA color
   bool m_vectorPlanarProjectionSignedColors{true};                       //!< Preserve in-plane vector signs in color
   bool m_vectorLogJacobianDeterminant{false};                            //!< Show log deformation Jacobian determinant

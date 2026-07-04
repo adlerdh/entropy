@@ -87,25 +87,30 @@ std::optional<fs::path> handleDialogResult(NFD::UniquePath& outPath, nfdresult_t
   return std::nullopt;
 }
 
-std::vector<fs::path> handleMultiDialogResult(NFD::UniquePathSet& outPaths, nfdresult_t result)
+native_dialog::PathDialogResult handleMultiDialogResultWithStatus(NFD::UniquePathSet& outPaths, nfdresult_t result)
 {
+  native_dialog::PathDialogResult dialogResult;
+
   std::vector<fs::path> selectedPaths;
 
   if (NFD_CANCEL == result) {
-    return selectedPaths;
+    dialogResult.status = native_dialog::PathDialogStatus::Canceled;
+    return dialogResult;
   }
 
   if (NFD_OKAY != result) {
     spdlog::error("Native file dialog error: {}", NFD::GetError());
     NFD::ClearError();
-    return selectedPaths;
+    dialogResult.status = native_dialog::PathDialogStatus::Error;
+    return dialogResult;
   }
 
   nfdpathsetsize_t count = 0;
   if (NFD_OKAY != NFD::PathSet::Count(outPaths.get(), count)) {
     spdlog::error("Native file dialog error: {}", NFD::GetError());
     NFD::ClearError();
-    return selectedPaths;
+    dialogResult.status = native_dialog::PathDialogStatus::Error;
+    return dialogResult;
   }
 
   selectedPaths.reserve(count);
@@ -114,8 +119,8 @@ std::vector<fs::path> handleMultiDialogResult(NFD::UniquePathSet& outPaths, nfdr
     if (NFD_OKAY != NFD::PathSet::GetPath(outPaths.get(), i, rawPath) || !rawPath) {
       spdlog::error("Native file dialog error: {}", NFD::GetError());
       NFD::ClearError();
-      selectedPaths.clear();
-      return selectedPaths;
+      dialogResult.status = native_dialog::PathDialogStatus::Error;
+      return dialogResult;
     }
 
     NFD::UniquePathSetPath path(rawPath);
@@ -129,7 +134,15 @@ std::vector<fs::path> handleMultiDialogResult(NFD::UniquePathSet& outPaths, nfdr
     }
   }
 
-  return selectedPaths;
+  dialogResult.status =
+    selectedPaths.empty() ? native_dialog::PathDialogStatus::Canceled : native_dialog::PathDialogStatus::Selected;
+  dialogResult.paths = std::move(selectedPaths);
+  return dialogResult;
+}
+
+std::vector<fs::path> handleMultiDialogResult(NFD::UniquePathSet& outPaths, nfdresult_t result)
+{
+  return handleMultiDialogResultWithStatus(outPaths, result).paths;
 }
 } // namespace
 
@@ -189,8 +202,13 @@ std::optional<fs::path> pickFolder(const fs::path& defaultPath)
 
 std::vector<fs::path> pickFolders(const fs::path& defaultPath)
 {
+  return pickFoldersWithStatus(defaultPath).paths;
+}
+
+PathDialogResult pickFoldersWithStatus(const fs::path& defaultPath)
+{
   if (!ensureNfdInitialized()) {
-    return {};
+    return {.status = PathDialogStatus::Unavailable, .paths = {}};
   }
 
   const std::string defaultPathString = dialogDefaultPathString(defaultPath);
@@ -199,7 +217,7 @@ std::vector<fs::path> pickFolders(const fs::path& defaultPath)
   const nfdresult_t result =
     NFD::PickFolderMultiple(outPaths, defaultPathString.empty() ? nullptr : defaultPathString.c_str());
 
-  return handleMultiDialogResult(outPaths, result);
+  return handleMultiDialogResultWithStatus(outPaths, result);
 }
 
 std::optional<fs::path>

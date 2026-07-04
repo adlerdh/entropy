@@ -1078,7 +1078,7 @@ std::string jobLogText(const registration::JobRecord& job)
   stream << "Output:\n";
   for (const registration::ProcessOutputLine& line : job.outputLines) {
     if (line.stream == registration::OutputStream::Command) {
-      stream << "\nCommand:\n  " << line.text << '\n';
+      stream << "\nCommand:\n" << line.text << "\n\n";
       continue;
     }
     stream << '[' << outputStreamLabel(line.stream) << "] " << line.text << '\n';
@@ -1484,14 +1484,13 @@ bool renderParameterByKey(registration::SetupState& state, const registration::P
   return true;
 }
 
-void renderParameterVisibilityToggles(bool& showAdvanced, bool& showExpert)
+void renderParameterVisibilityToggle(bool& showAdvanced)
 {
-  ImGui::Checkbox("Show advanced options", &showAdvanced);
-  ImGui::SameLine();
-  ImGui::Checkbox("Show expert options", &showExpert);
+  ImGui::Separator();
+  ImGui::Checkbox("Show advanced parameters", &showAdvanced);
 }
 
-void renderVisibleParameters(registration::SetupState& state, bool& showAdvanced, bool& showExpert)
+void renderVisibleParameters(registration::SetupState& state, bool& showAdvanced)
 {
   const std::vector<registration::ParameterSchema> parameters = registration::visibleParameters(state);
   if (parameters.empty()) {
@@ -1505,17 +1504,17 @@ void renderVisibleParameters(registration::SetupState& state, bool& showAdvanced
       continue;
     }
     if (renderParameterByKey(state, parameter) && parameter.key == "smoothingUnits") {
-      renderParameterVisibilityToggles(showAdvanced, showExpert);
+      renderParameterVisibilityToggle(showAdvanced);
       renderedToggles = true;
       state.showAdvancedParameters = showAdvanced;
-      state.showExpertParameters = showExpert;
+      state.showExpertParameters = false;
     }
   }
 
   if (!renderedToggles) {
-    renderParameterVisibilityToggles(showAdvanced, showExpert);
+    renderParameterVisibilityToggle(showAdvanced);
     state.showAdvancedParameters = showAdvanced;
-    state.showExpertParameters = showExpert;
+    state.showExpertParameters = false;
   }
 
   const std::vector<registration::ParameterSchema> expandedParameters = registration::visibleParameters(state);
@@ -1604,7 +1603,6 @@ void renderRegistrationSetupWindow(AppData& appData)
 
   static bool s_showAdvanced = false;
   registration::BackendConfig& config = appData.settings().registrationBackendConfig();
-  static bool s_showExpert = config.showExpertOptionsByDefault;
   static std::filesystem::path s_lastDefaultOutputDirectory;
   static std::string s_outputDirectoryText;
   static std::optional<std::string> s_outputDirectoryWarning;
@@ -1630,7 +1628,7 @@ void renderRegistrationSetupWindow(AppData& appData)
     registration::setBackend(state, config.defaultBackend);
   }
   state.showAdvancedParameters = s_showAdvanced;
-  state.showExpertParameters = s_showExpert;
+  state.showExpertParameters = false;
 
   const ImGuiStyle& style = ImGui::GetStyle();
   const float footerHeight = (2.0f * ImGui::GetFrameHeightWithSpacing()) + style.ItemSpacing.y;
@@ -1697,7 +1695,8 @@ void renderRegistrationSetupWindow(AppData& appData)
       renderTransformCombo(state);
       renderMetricCombo(state);
       ImGui::Separator();
-      renderVisibleParameters(state, s_showAdvanced, s_showExpert);
+      ImGui::TextDisabled("Control-click numeric inputs to type values directly.");
+      renderVisibleParameters(state, s_showAdvanced);
       ImGui::Separator();
     }
 
@@ -1731,7 +1730,7 @@ void renderRegistrationSetupWindow(AppData& appData)
           (std::filesystem::temp_directory_path() / "entropy-registration").string().c_str());
       }
 
-      if (state.job.backend == registration::Backend::FireANTs && s_showExpert) {
+      if (state.job.backend == registration::Backend::FireANTs && s_showAdvanced) {
         ImGui::SeparatorText("Developer");
         ImGui::PushItemWidth(controlWidth);
         ImGui::InputText("FireANTs bridge module", &config.fireAntsBridgeModule);
@@ -1838,6 +1837,10 @@ void renderRegistrationSetupWindow(AppData& appData)
         "advanced debugging.");
     }
     ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (ImGui::Button("Open Jobs")) {
+      appData.guiData().m_showRegistrationJobsWindow = true;
+    }
     ImGui::SameLine();
     if (ImGui::Button("Close")) {
       appData.guiData().m_showRegistrationSetupWindow = false;

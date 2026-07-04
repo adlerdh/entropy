@@ -55,13 +55,13 @@ void openDicomSeries(const MainMenuBarCallbacks& callbacks)
     return;
   }
 
-  const auto selectedFolders = native_dialog::pickFolders();
-  if (!selectedFolders.empty() && callbacks.openDicomFolders) {
-    callbacks.openDicomFolders(selectedFolders);
+  const auto selectedFolders = native_dialog::pickFoldersWithStatus();
+  if (!selectedFolders.paths.empty() && callbacks.openDicomFolders) {
+    callbacks.openDicomFolders(selectedFolders.paths);
     return;
   }
 
-  if (callbacks.requestDicomFolderPathDialog) {
+  if (native_dialog::PathDialogStatus::Canceled != selectedFolders.status && callbacks.requestDicomFolderPathDialog) {
     callbacks.requestDicomFolderPathDialog();
   }
 }
@@ -72,13 +72,13 @@ void addDicomSeries(const MainMenuBarCallbacks& callbacks)
     return;
   }
 
-  const auto selectedFolders = native_dialog::pickFolders();
-  if (!selectedFolders.empty() && callbacks.openDicomFolders) {
-    callbacks.openDicomFolders(selectedFolders);
+  const auto selectedFolders = native_dialog::pickFoldersWithStatus();
+  if (!selectedFolders.paths.empty() && callbacks.openDicomFolders) {
+    callbacks.openDicomFolders(selectedFolders.paths);
     return;
   }
 
-  if (callbacks.requestDicomFolderPathDialog) {
+  if (native_dialog::PathDialogStatus::Canceled != selectedFolders.status && callbacks.requestDicomFolderPathDialog) {
     callbacks.requestDicomFolderPathDialog();
   }
 }
@@ -574,14 +574,12 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       main_menu::actionMenuItem(callbacks, "Annotations Panel", MainMenuAction::ToggleAnnotationsWindow);
       main_menu::actionMenuItem(callbacks, "Landmarks Panel", MainMenuAction::ToggleLandmarksWindow);
       main_menu::actionMenuItem(callbacks, "Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
+      main_menu::actionMenuItem(callbacks, "Reset Panel Layout", MainMenuAction::ResetPanelLayout);
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Voxel Inspector", MainMenuAction::ToggleInspectorWindow);
       main_menu::actionMenuItem(callbacks, "Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
       main_menu::actionMenuItem(callbacks, "Registration Jobs", MainMenuAction::ToggleRegistrationJobsWindow);
-      ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow);
-      ImGui::Separator();
-      main_menu::actionMenuItem(callbacks, "Reset Panel Layout", MainMenuAction::ResetPanelLayout);
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Toolbar", MainMenuAction::ToggleToolbar);
 #ifndef NDEBUG

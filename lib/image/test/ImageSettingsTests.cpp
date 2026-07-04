@@ -142,6 +142,7 @@ TEST_CASE("ImageSettings clamps window values, centers, widths, thresholds, and 
   CHECK(settings.vectorWarpedGridVoxelSpacing() == Catch::Approx(4.0f));
   CHECK(settings.vectorWarpedGridMillimeterSpacing() == Catch::Approx(4.0f));
   CHECK(settings.vectorWarpedGridSpacingMode() == VectorArrowOverlaySpacingMode::Voxels);
+  CHECK(settings.vectorWarpedGridForegroundColor() == glm::vec4{209.0f / 255.0f, 79.0f / 255.0f, 1.0f, 1.0f});
   settings.setVectorWarpedGridPixelSpacing(0.0f);
   CHECK(settings.vectorWarpedGridPixelSpacing() == Catch::Approx(1.0f));
   settings.setVectorWarpedGridPixelSpacing(200.0f);

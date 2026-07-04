@@ -85,6 +85,7 @@ void EntropyApp::init()
     m_imgui.applyUiDensityPreset(m_data.settings().uiDensityPreset());
     m_imgui.applyUiWindowBgOpacity(m_data.settings().uiWindowBgOpacity());
     project_snapshot::syncLayoutTabGuiData(m_data);
+    user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderData(), m_data.guiData());
   }
 
   m_rendering.init();
