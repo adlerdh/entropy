@@ -92,6 +92,7 @@ jobs:
             libXrandr-devel \
             dbus-devel \
             libglvnd-devel \
+            openssl-devel \
             libglvnd-opengl \
             libxkbcommon-devel \
             make \
@@ -133,6 +134,7 @@ jobs:
             build-debug/external/catch2-*
             build-debug/external/cli11-*
             build-debug/external/cmakerc-*
+            build-debug/external/curl-*
             build-debug/external/glfw-*
             build-debug/external/glm-*
             build-debug/external/iconfont-*
@@ -196,6 +198,7 @@ jobs:
             libXrandr-devel \
             dbus-devel \
             libglvnd-devel \
+            openssl-devel \
             libglvnd-opengl \
             libxkbcommon-devel \
             make \
@@ -241,6 +244,7 @@ jobs:
             build-release/external/catch2-*
             build-release/external/cli11-*
             build-release/external/cmakerc-*
+            build-release/external/curl-*
             build-release/external/glfw-*
             build-release/external/glm-*
             build-release/external/iconfont-*

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "registration/Process.h"
-
 #include <optional>
 #include <string>
 
@@ -72,9 +70,9 @@ std::optional<ReleaseInfo> parseLatestReleaseJson(const std::string& text, std::
 CheckResult parseGitHubReleaseHttpResponse(const std::string& responseText, const std::string& currentVersion);
 
 /**
- * @brief Query GitHub's latest-release endpoint using curl through Entropy's process runner.
+ * @brief Query GitHub's latest-release endpoint using libcurl.
  */
-CheckResult fetchLatestRelease(registration::IProcessRunner& processRunner, const CheckRequest& request);
+CheckResult fetchLatestRelease(const CheckRequest& request);
 
 /**
  * @brief Open a URL in the user's default browser.

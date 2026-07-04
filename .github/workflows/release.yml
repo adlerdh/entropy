@@ -94,6 +94,7 @@ jobs:
             build-release/external/catch2-*
             build-release/external/cli11-*
             build-release/external/cmakerc-*
+            build-release/external/curl-*
             build-release/external/glfw-*
             build-release/external/glm-*
             build-release/external/iconfont-*
@@ -200,6 +201,7 @@ jobs:
             fakeroot \
             file \
             libdbus-1-dev \
+            libssl-dev \
             libgl1-mesa-dev \
             libwayland-dev \
             libxcursor-dev \
@@ -240,6 +242,7 @@ jobs:
             build-release/external/catch2-*
             build-release/external/cli11-*
             build-release/external/cmakerc-*
+            build-release/external/curl-*
             build-release/external/glfw-*
             build-release/external/glm-*
             build-release/external/iconfont-*
@@ -631,6 +634,7 @@ jobs:
             libXrandr-devel \
             dbus-devel \
             libglvnd-devel \
+            openssl-devel \
             libglvnd-opengl \
             libxkbcommon-devel \
             make \
@@ -678,6 +682,7 @@ jobs:
             build-release/external/catch2-*
             build-release/external/cli11-*
             build-release/external/cmakerc-*
+            build-release/external/curl-*
             build-release/external/glfw-*
             build-release/external/glm-*
             build-release/external/iconfont-*

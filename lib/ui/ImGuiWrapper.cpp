@@ -2318,8 +2318,7 @@ void ImGuiWrapper::requestUpdateCheck(bool manualCheck)
 
   const std::string etag = m_updateCheckEtag;
   m_updateCheckFuture = std::async(std::launch::async, [etag]() {
-    registration::ShellProcessRunner runner;
-    return fetchLatestRelease(runner, CheckRequest{.currentVersion = ENTROPY_VERSION, .etag = etag});
+    return fetchLatestRelease(CheckRequest{.currentVersion = ENTROPY_VERSION, .etag = etag});
   });
 
   if (m_postEmptyGlfwEvent) {

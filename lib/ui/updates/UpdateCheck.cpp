@@ -1,5 +1,8 @@
 #include "ui/updates/UpdateCheck.h"
 
+#include "registration/Process.h"
+
+#include <curl/curl.h>
 #include <imgui/imgui.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -8,6 +11,8 @@
 #include <cctype>
 #include <charconv>
 #include <cfloat>
+#include <cstring>
+#include <memory>
 #include <sstream>
 #include <string_view>
 #include <vector>
@@ -105,17 +110,97 @@ int parseHttpStatus(std::string_view line)
   return status;
 }
 
-std::string joinOutput(const std::vector<registration::ProcessOutputLine>& lines, registration::OutputStream stream)
+struct CurlGlobalState
 {
-  std::string text;
-  for (const registration::ProcessOutputLine& line : lines) {
-    if (line.stream != stream) {
-      continue;
-    }
-    text += line.text;
-    text += '\n';
+  CurlGlobalState()
+  {
+    code = curl_global_init(CURL_GLOBAL_DEFAULT);
   }
-  return text;
+
+  ~CurlGlobalState()
+  {
+    if (code == CURLE_OK) {
+      curl_global_cleanup();
+    }
+  }
+
+  CURLcode code = CURLE_FAILED_INIT;
+};
+
+const CurlGlobalState& curlGlobalState()
+{
+  static const CurlGlobalState state;
+  return state;
+}
+
+struct CurlEasyDeleter
+{
+  void operator()(CURL* curl) const
+  {
+    if (curl != nullptr) {
+      curl_easy_cleanup(curl);
+    }
+  }
+};
+
+struct CurlHeaderListDeleter
+{
+  void operator()(curl_slist* headers) const
+  {
+    if (headers != nullptr) {
+      curl_slist_free_all(headers);
+    }
+  }
+};
+
+using CurlEasyHandle = std::unique_ptr<CURL, CurlEasyDeleter>;
+using CurlHeaderList = std::unique_ptr<curl_slist, CurlHeaderListDeleter>;
+
+struct CurlResponse
+{
+  std::string body;
+  std::string etag;
+};
+
+bool appendCurlHeader(curl_slist*& headers, const std::string& header)
+{
+  curl_slist* appendedHeaders = curl_slist_append(headers, header.c_str());
+  if (appendedHeaders == nullptr) {
+    return false;
+  }
+  headers = appendedHeaders;
+  return true;
+}
+
+std::size_t writeCurlBody(char* ptr, std::size_t size, std::size_t nmemb, void* userdata)
+{
+  const std::size_t byteCount = size * nmemb;
+  auto* response = static_cast<CurlResponse*>(userdata);
+  response->body.append(ptr, byteCount);
+  return byteCount;
+}
+
+std::size_t writeCurlHeader(char* ptr, std::size_t size, std::size_t nmemb, void* userdata)
+{
+  const std::size_t byteCount = size * nmemb;
+  auto* response = static_cast<CurlResponse*>(userdata);
+  std::string_view line{ptr, byteCount};
+  if (!line.empty() && line.back() == '\n') {
+    line.remove_suffix(1);
+  }
+  if (!line.empty() && line.back() == '\r') {
+    line.remove_suffix(1);
+  }
+
+  constexpr std::string_view etagPrefix = "etag:";
+  if (line.size() >= etagPrefix.size()) {
+    std::string name{line.substr(0, etagPrefix.size())};
+    name = toLower(name);
+    if (name == etagPrefix) {
+      response->etag = trim(std::string{line.substr(etagPrefix.size())});
+    }
+  }
+  return byteCount;
 }
 
 void renderWrappedLabel(const char* text)
@@ -300,52 +385,87 @@ CheckResult parseGitHubReleaseHttpResponse(const std::string& responseText, cons
   return result;
 }
 
-CheckResult fetchLatestRelease(registration::IProcessRunner& processRunner, const CheckRequest& request)
+CheckResult fetchLatestRelease(const CheckRequest& request)
 {
-  registration::CommandSpec command;
-  command.description = "Check Entropy updates";
-  command.executable = "curl";
-  command.args = {
-    "-L",
-    "--silent",
-    "--show-error",
-    "--connect-timeout",
-    "5",
-    "--max-time",
-    "15",
-    "-i",
-    "-H",
-    "Accept: application/vnd.github+json",
-    "-H",
-    "X-GitHub-Api-Version: 2022-11-28",
-    "-H",
-    "User-Agent: Entropy/" + request.currentVersion};
-  if (!request.etag.empty()) {
-    command.args.push_back("-H");
-    command.args.push_back("If-None-Match: " + request.etag);
-  }
-  command.args.push_back(k_latestReleaseApiUrl);
-
-  registration::ProcessOptions options;
-  options.mergeStdErrIntoStdOut = false;
-  const registration::ProcessResult processResult = processRunner.run(command, options, {});
-
-  if (processResult.launchFailed) {
+  const CurlGlobalState& global = curlGlobalState();
+  if (global.code != CURLE_OK) {
     return CheckResult{
       .status = CheckStatus::Failed,
-      .error = processResult.failureMessage.empty() ? "Could not launch curl" : processResult.failureMessage};
-  }
-  if (processResult.exitCode != 0) {
-    const std::string stderrText = joinOutput(processResult.outputLines, registration::OutputStream::Stderr);
-    return CheckResult{
-      .status = CheckStatus::Failed,
-      .error =
-        stderrText.empty() ? "curl failed with exit code " + std::to_string(processResult.exitCode) : trim(stderrText)};
+      .error = "Could not initialize libcurl: " + std::string{curl_easy_strerror(global.code)}};
   }
 
-  return parseGitHubReleaseHttpResponse(
-    joinOutput(processResult.outputLines, registration::OutputStream::Stdout),
-    request.currentVersion);
+  CurlEasyHandle curl{curl_easy_init()};
+  if (!curl) {
+    return CheckResult{.status = CheckStatus::Failed, .error = "Could not create a libcurl easy handle"};
+  }
+
+  CurlResponse response;
+  char errorBuffer[CURL_ERROR_SIZE] = {};
+
+  curl_slist* rawHeaders = nullptr;
+  CurlHeaderList headers;
+  if (
+    !appendCurlHeader(rawHeaders, "Accept: application/vnd.github+json") ||
+    !appendCurlHeader(rawHeaders, "X-GitHub-Api-Version: 2022-11-28") ||
+    (!request.etag.empty() && !appendCurlHeader(rawHeaders, "If-None-Match: " + request.etag)))
+  {
+    headers.reset(rawHeaders);
+    return CheckResult{.status = CheckStatus::Failed, .error = "Could not allocate libcurl request headers"};
+  }
+  headers.reset(rawHeaders);
+
+  const std::string userAgent = "Entropy/" + request.currentVersion;
+  curl_easy_setopt(curl.get(), CURLOPT_URL, k_latestReleaseApiUrl);
+  curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headers.get());
+  curl_easy_setopt(curl.get(), CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, 5L);
+  curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, 15L);
+  curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
+  curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, userAgent.c_str());
+  curl_easy_setopt(curl.get(), CURLOPT_ERRORBUFFER, errorBuffer);
+  curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, writeCurlBody);
+  curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &response);
+  curl_easy_setopt(curl.get(), CURLOPT_HEADERFUNCTION, writeCurlHeader);
+  curl_easy_setopt(curl.get(), CURLOPT_HEADERDATA, &response);
+
+  const CURLcode curlCode = curl_easy_perform(curl.get());
+  if (curlCode != CURLE_OK) {
+    const std::string detail = errorBuffer[0] != '\0' ? errorBuffer : curl_easy_strerror(curlCode);
+    return CheckResult{.status = CheckStatus::Failed, .error = "GitHub update check failed through libcurl: " + detail};
+  }
+
+  long status = 0;
+  curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &status);
+
+  CheckResult result;
+  result.etag = response.etag;
+  if (status == 304) {
+    result.status = CheckStatus::NotModified;
+    return result;
+  }
+  if (status == 404) {
+    result.status = CheckStatus::NoPublishedReleases;
+    return result;
+  }
+  if (status < 200 || status >= 300) {
+    result.status = CheckStatus::Failed;
+    result.error = status == 0 ? "No HTTP response received from GitHub"
+                               : "GitHub update check failed with HTTP status " + std::to_string(status);
+    return result;
+  }
+
+  std::string parseError;
+  const std::optional<ReleaseInfo> latest = parseLatestReleaseJson(response.body, &parseError);
+  if (!latest) {
+    result.status = CheckStatus::Failed;
+    result.error = "Could not parse GitHub release response: " + parseError;
+    return result;
+  }
+
+  result.latestRelease = *latest;
+  result.status = compareReleaseVersions(request.currentVersion, latest->tagName) < 0 ? CheckStatus::UpdateAvailable
+                                                                                      : CheckStatus::UpToDate;
+  return result;
 }
 
 bool openUrlInDefaultBrowser(const std::string& url, std::string* error)

@@ -173,6 +173,7 @@ endfunction()
 set(catch2_VERSION "3.8.1")
 set(cli11_VERSION "2.6.2")
 set(cmakerc_VERSION "2.0.1")
+set(curl_VERSION "8.21.0")
 set(glfw_VERSION "3.4")
 set(glm_VERSION "1.0.3")
 set(iconfont_VERSION "210b5a399a64270674560d633638952d1e8d804d")
@@ -194,6 +195,7 @@ set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/external")
 set(catch2_PREFIX "${EXTERNAL_DIR}/catch2-${catch2_VERSION}")
 set(cli11_PREFIX "${EXTERNAL_DIR}/cli11-${cli11_VERSION}")
 set(cmakerc_PREFIX "${EXTERNAL_DIR}/cmakerc-${cmakerc_VERSION}")
+set(curl_PREFIX "${EXTERNAL_DIR}/curl-${curl_VERSION}")
 set(glfw_PREFIX "${EXTERNAL_DIR}/glfw-${glfw_VERSION}")
 set(glm_PREFIX "${EXTERNAL_DIR}/glm-${glm_VERSION}")
 set(iconfont_PREFIX "${EXTERNAL_DIR}/iconfont-${iconfont_VERSION}")
@@ -250,6 +252,35 @@ message(STATUS "Using CLI11 in ${CLI11_DIR}")
 
 # CMakeRC: Standalone CMake-based C++ resource compiler
 include("${cmakerc_PREFIX}/src/CMakeRC.cmake")
+
+# libcurl: portable client-side URL transfer library used for update checks.
+# macOS uses the SDK libcurl; Windows/Linux use the SuperBuild-pinned CMake package.
+if(APPLE)
+  execute_process(
+    COMMAND xcrun --sdk macosx --show-sdk-path
+    OUTPUT_VARIABLE entropy_MACOS_SDK_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
+  set(CURL_INCLUDE_DIR "${entropy_MACOS_SDK_PATH}/usr/include")
+  find_library(CURL_LIBRARY curl
+    PATHS "${entropy_MACOS_SDK_PATH}/usr/lib"
+    NO_DEFAULT_PATH)
+  set(CURL_INCLUDE_DIR "${CURL_INCLUDE_DIR}" CACHE PATH "macOS SDK curl include directory" FORCE)
+  set(CURL_LIBRARY "${CURL_LIBRARY}" CACHE FILEPATH "macOS SDK curl library" FORCE)
+  set(CURL_LIBRARY_RELEASE "${CURL_LIBRARY}" CACHE FILEPATH "macOS SDK curl release library" FORCE)
+  set(CURL_LIBRARY_DEBUG "CURL_LIBRARY_DEBUG-NOTFOUND" CACHE FILEPATH "macOS SDK curl debug library" FORCE)
+  find_package(CURL REQUIRED MODULE COMPONENTS HTTPS)
+else()
+  find_package(CURL ${curl_VERSION} REQUIRED CONFIG COMPONENTS HTTPS
+    HINTS "${curl_PREFIX}/install"
+    NO_DEFAULT_PATH)
+endif()
+
+if(CURL_DIR AND NOT CURL_DIR MATCHES "-NOTFOUND$")
+  message(STATUS "Using CURL in ${CURL_DIR}")
+else()
+  message(STATUS "Using CURL ${CURL_VERSION_STRING}")
+endif()
 
 # GLFW: Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan application development
 find_package(glfw3 ${glfw_VERSION} REQUIRED HINTS "${glfw_PREFIX}/install")
@@ -708,6 +739,7 @@ endmacro()
 
 entropy_add_license_resource("CLI11.txt" "${cli11_PREFIX}/src/LICENSE")
 entropy_add_license_resource("CMakeRC.txt" "${cmakerc_PREFIX}/src/LICENSE.txt")
+entropy_add_license_resource("curl.txt" "${entropy_RES_DIR}/licenses/curl.txt")
 entropy_add_license_resource("GLFW.txt" "${glfw_PREFIX}/src/LICENSE.md")
 entropy_add_license_resource("GLM.txt" "${glm_PREFIX}/src/copying.txt")
 entropy_add_license_resource("IconFontCppHeaders.txt" "${entropy_RES_DIR}/licenses/IconFontCppHeaders-Zlib.txt")

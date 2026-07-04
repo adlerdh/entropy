@@ -79,6 +79,8 @@ set(_entropy_itk_static_libs ${_entropy_bundled_dependency_static_libs})
 set(_entropy_nativefiledialog_shared_libs ${_entropy_bundled_dependency_shared_libs})
 set(_entropy_spdlog_shared_libs ${_entropy_bundled_dependency_shared_libs})
 set(_entropy_spdlog_pic ${_entropy_bundled_dependency_shared_libs})
+set(_entropy_curl_shared_libs ${_entropy_bundled_dependency_shared_libs})
+set(_entropy_curl_static_libs ${_entropy_bundled_dependency_static_libs})
 
 if(WIN32 AND Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS)
   set(_entropy_glfw_shared_libs OFF)
@@ -86,6 +88,25 @@ if(WIN32 AND Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS)
   set(_entropy_nativefiledialog_shared_libs OFF)
   set(_entropy_spdlog_shared_libs OFF)
   set(_entropy_spdlog_pic OFF)
+endif()
+
+set(_entropy_curl_tls_args)
+if(WIN32)
+  list(APPEND _entropy_curl_tls_args
+    -DCURL_USE_SCHANNEL:BOOL=ON
+    -DCURL_USE_OPENSSL:BOOL=OFF
+    -DCURL_CA_NATIVE:BOOL=ON
+  )
+elseif(APPLE)
+  list(APPEND _entropy_curl_tls_args
+    -DCURL_USE_OPENSSL:BOOL=OFF
+    -DCURL_CA_NATIVE:BOOL=ON
+  )
+else()
+  list(APPEND _entropy_curl_tls_args
+    -DCURL_USE_OPENSSL:BOOL=ON
+    -DCURL_CA_NATIVE:BOOL=ON
+  )
 endif()
 
 set(_ext_shared_runtime_args)
@@ -226,6 +247,73 @@ ExternalProject_Add(cmakerc
   CMAKE_GENERATOR ${gen}
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E echo "Skipping CMakeRC install step"
 )
+
+
+if(NOT APPLE)
+  message(STATUS "Adding external library curl in ${curl_PREFIX}")
+
+  ExternalProject_Add(curl
+    URL "https://curl.se/download/curl-${curl_VERSION}.tar.xz"
+    URL_HASH SHA256=aa1b66a70eace83dc624508745646c08ae561de512ab403adffb93ac87fc72e6
+    DOWNLOAD_NAME "curl-${curl_VERSION}.tar.xz"
+    DOWNLOAD_EXTRACT_TIMESTAMP false
+
+    PREFIX "${curl_PREFIX}"
+    TMP_DIR "${curl_PREFIX}/tmp"
+    STAMP_DIR "${curl_PREFIX}/stamp"
+    DOWNLOAD_DIR "${curl_PREFIX}/download"
+    SOURCE_DIR "${curl_PREFIX}/src"
+    BINARY_DIR "${curl_PREFIX}/build"
+    INSTALL_DIR "${curl_PREFIX}/install"
+
+    CMAKE_ARGS
+      ${_ext_cmake_build_type_args}
+      ${_ext_compiler_launcher_args}
+      ${_ext_apple_platform_args}
+      ${_ext_shared_runtime_args}
+      ${_entropy_curl_tls_args}
+      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+      -DBUILD_CURL_EXE:BOOL=OFF
+      -DBUILD_EXAMPLES:BOOL=OFF
+      -DBUILD_LIBCURL_DOCS:BOOL=OFF
+      -DBUILD_MISC_DOCS:BOOL=OFF
+      -DBUILD_SHARED_LIBS:BOOL=${_entropy_curl_shared_libs}
+      -DBUILD_STATIC_LIBS:BOOL=${_entropy_curl_static_libs}
+      -DBUILD_TESTING:BOOL=OFF
+      -DCURL_BUILD_EVERYTHING:BOOL=OFF
+      -DCURL_DISABLE_DICT:BOOL=ON
+      -DCURL_DISABLE_FILE:BOOL=ON
+      -DCURL_DISABLE_FTP:BOOL=ON
+      -DCURL_DISABLE_GOPHER:BOOL=ON
+      -DCURL_DISABLE_IMAP:BOOL=ON
+      -DCURL_DISABLE_LDAP:BOOL=ON
+      -DCURL_DISABLE_LDAPS:BOOL=ON
+      -DCURL_DISABLE_MQTT:BOOL=ON
+      -DCURL_DISABLE_POP3:BOOL=ON
+      -DCURL_DISABLE_RTSP:BOOL=ON
+      -DCURL_DISABLE_SMTP:BOOL=ON
+      -DCURL_DISABLE_TELNET:BOOL=ON
+      -DCURL_DISABLE_TFTP:BOOL=ON
+      -DCURL_DISABLE_WEBSOCKETS:BOOL=ON
+      -DCURL_ENABLE_EXPORT_TARGET:BOOL=ON
+      -DCURL_USE_LIBPSL:BOOL=OFF
+      -DCURL_USE_LIBSSH2:BOOL=OFF
+      -DCURL_USE_PKGCONFIG:BOOL=OFF
+      -DCURL_ZLIB:BOOL=OFF
+      -DENABLE_CURL_MANUAL:BOOL=OFF
+      -DENABLE_THREADED_RESOLVER:BOOL=ON
+      -DHTTP_ONLY:BOOL=ON
+      -DPICKY_COMPILER:BOOL=OFF
+      -DUSE_NGHTTP2:BOOL=OFF
+
+    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --parallel ${Entropy_SUPERBUILD_PARALLEL}
+    INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> ${_cfg_arg} --target install
+
+    CMAKE_GENERATOR ${gen}
+  )
+else()
+  message(STATUS "Using macOS SDK libcurl instead of SuperBuild curl to avoid bundling a separate TLS backend")
+endif()
 
 
 message(STATUS "Adding external library GLFW in ${glfw_PREFIX}")

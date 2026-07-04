@@ -9,8 +9,8 @@ namespace entropy::ui
 {
 struct GradientBackgroundOptions
 {
-  glm::vec3 edgeColor{0.10f, 0.10f, 0.10f};
-  glm::vec3 centerColor{0.15f, 0.15f, 0.15f};
+  glm::vec3 edgeColor{0.08f, 0.08f, 0.08f};
+  glm::vec3 centerColor{0.16f, 0.16f, 0.16f};
   float rectangularExponent = 8.0f;
   bool dither = true;
   std::optional<glm::ivec4> viewportPx;

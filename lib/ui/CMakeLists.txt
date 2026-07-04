@@ -102,6 +102,7 @@ target_link_libraries(EntropyUI
     nanovg
     nfd::nfd
     nlohmann_json::nlohmann_json
+    CURL::libcurl
     Qt6::Core
     entropy::colormaps
     entropy::fonts

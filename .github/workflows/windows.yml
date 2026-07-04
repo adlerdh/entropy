@@ -139,6 +139,7 @@ jobs:
             build-debug/external/catch2-*
             build-debug/external/cli11-*
             build-debug/external/cmakerc-*
+            build-debug/external/curl-*
             build-debug/external/glfw-*
             build-debug/external/glm-*
             build-debug/external/iconfont-*
@@ -239,6 +240,7 @@ jobs:
             build-coverage/external/catch2-*
             build-coverage/external/cli11-*
             build-coverage/external/cmakerc-*
+            build-coverage/external/curl-*
             build-coverage/external/glfw-*
             build-coverage/external/glm-*
             build-coverage/external/iconfont-*
@@ -340,6 +342,7 @@ jobs:
             build-release/external/catch2-*
             build-release/external/cli11-*
             build-release/external/cmakerc-*
+            build-release/external/curl-*
             build-release/external/glfw-*
             build-release/external/glm-*
             build-release/external/iconfont-*
@@ -427,6 +430,7 @@ jobs:
             build-debug/external/catch2-*
             build-debug/external/cli11-*
             build-debug/external/cmakerc-*
+            build-debug/external/curl-*
             build-debug/external/glfw-*
             build-debug/external/glm-*
             build-debug/external/iconfont-*

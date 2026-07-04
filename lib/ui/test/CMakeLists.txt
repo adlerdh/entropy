@@ -37,6 +37,7 @@ target_link_libraries(EntropyUiTests PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
   Entropy::Registration
+  CURL::libcurl
   imgui
   nlohmann_json::nlohmann_json
   spdlog::spdlog
