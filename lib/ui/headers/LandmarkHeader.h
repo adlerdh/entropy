@@ -23,4 +23,5 @@ void renderLandmarkGroupHeader(
   const uuids::uuid& imageUid,
   std::size_t imageIndex,
   bool isActiveImage,
+  bool hasFollowingHeader,
   const AllViewsRecenterType& recenterAllViews);

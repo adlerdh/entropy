@@ -35,11 +35,13 @@ void renderAnnotationWindow(
         break;
       }
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
+      const bool hasFollowingHeader = imageIndex + 1 < visibleImageCount;
       renderAnnotationsHeader(
         appData,
         imageUid,
         imageIndex++,
         isActiveImage,
+        hasFollowingHeader,
         setViewCameraDirection,
         paintActiveSegmentationWithActivePolygon,
         recenterAllViews);

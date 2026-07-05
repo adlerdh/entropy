@@ -25,6 +25,7 @@ void renderAnnotationsHeader(
   const uuids::uuid& imageUid,
   std::size_t imageIndex,
   bool isActiveImage,
+  bool hasFollowingHeader,
   const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>& setViewCameraDirection,
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
   const AllViewsRecenterType& recenterAllViews);

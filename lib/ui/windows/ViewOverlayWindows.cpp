@@ -14,6 +14,7 @@
 #include <imGuIZMOquat.h>
 
 #include <algorithm>
+#include <cfloat>
 #include <string>
 #include <vector>
 
@@ -448,8 +449,19 @@ void renderViewSettingsComboWindow(
         // Disable opening the view type combo box if the ASM is in a state where it should not
         // change.
         const bool xhairsRotated = math::isRotationIdentity(worldCrosshairs.world_T_frame_rotation());
+        static const ImVec2 sk_viewTypePopupPadding(8.0f, 8.0f);
+        if (ViewType::ThreeD == viewType) {
+          const ImGuiStyle& style = ImGui::GetStyle();
+          const float minPopupWidth = ImGui::GetFrameHeight() + style.ItemInnerSpacing.x +
+                                      ImGui::CalcTextSize("View position follows crosshairs").x + style.ItemSpacing.x +
+                                      ImGui::CalcTextSize(ICON_FK_QUESTION_CIRCLE_O).x +
+                                      2.0f * sk_viewTypePopupPadding.x;
+          ImGui::SetNextWindowSizeConstraints(ImVec2(minPopupWidth, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
+        }
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_viewTypePopupPadding);
         const bool clickedViewTypeCombo =
           ImGui::BeginCombo("##viewTypeCombo", to_string(viewType, !xhairsRotated).c_str());
+        ImGui::PopStyleVar();
 
         if (isOblique) {
           ImGui::PopStyleColor(1); // ImGuiCol_Text
@@ -487,9 +499,7 @@ void renderViewSettingsComboWindow(
               ImGui::Spacing();
 
               static bool viewPositionFollowsXhairs = false;
-              if (ImGui::Checkbox("View position follows crosshairs", &viewPositionFollowsXhairs)) {
-                viewPositionFollowsXhairs = !viewPositionFollowsXhairs;
-              }
+              ImGui::Checkbox("View position follows crosshairs", &viewPositionFollowsXhairs);
               ImGui::SameLine();
               helpMarker("Set view position to be at the crosshairs");
             }

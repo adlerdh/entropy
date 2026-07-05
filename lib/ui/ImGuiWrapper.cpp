@@ -437,13 +437,17 @@ DefaultDockLayoutFractions defaultDockLayoutFractions(const ImVec2& dockspaceSiz
   const bool wideWorkspace = aspectRatio >= 2.10f;
   const bool narrowWorkspace = aspectRatio <= 1.35f;
 
-  const float sideTargetFraction = wideWorkspace ? 0.23f : (narrowWorkspace ? 0.18f : 0.20f);
-  const float sideMinSize = narrowWorkspace ? 220.0f : 280.0f;
-  const float sideMaxSize = wideWorkspace ? 640.0f : 520.0f;
+  const float leftTargetFraction = wideWorkspace ? 0.23f : (narrowWorkspace ? 0.18f : 0.20f);
+  const float leftMinSize = narrowWorkspace ? 220.0f : 280.0f;
+  const float leftMaxSize = wideWorkspace ? 640.0f : 520.0f;
+
+  const float rightTargetFraction = wideWorkspace ? 0.20f : (narrowWorkspace ? 0.16f : 0.17f);
+  const float rightMinSize = narrowWorkspace ? 200.0f : 240.0f;
+  const float rightMaxSize = wideWorkspace ? 560.0f : 440.0f;
 
   return DefaultDockLayoutFractions{
-    .leftPanel = clampedDockSplitFraction(dockspaceSize.x, sideTargetFraction, sideMinSize, sideMaxSize),
-    .rightPanel = clampedDockSplitFraction(dockspaceSize.x, sideTargetFraction, sideMinSize, sideMaxSize),
+    .leftPanel = clampedDockSplitFraction(dockspaceSize.x, leftTargetFraction, leftMinSize, leftMaxSize),
+    .rightPanel = clampedDockSplitFraction(dockspaceSize.x, rightTargetFraction, rightMinSize, rightMaxSize),
     .inspector = clampedDockSplitFraction(dockspaceSize.y, 0.10f, 120.0f, 190.0f),
     .opacityMixer = 1.0f / 3.0f};
 }
@@ -4095,7 +4099,6 @@ void ImGuiWrapper::render()
     entropy::ui::updates::renderUpdateCheckWindow(m_updateCheckWindowState);
 
     if (hasLoadedProject) {
-      renderLayoutTabs(m_appData);
       renderGlobalTimeControl(m_appData);
     }
 
@@ -4323,6 +4326,8 @@ void ImGuiWrapper::render()
       std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
       getActiveImageIndex,
       setActiveImageIndex);
+
+    renderLayoutTabs(m_appData);
 
     renderAddLayoutModalPopup(m_appData, m_appData.guiData().m_showAddLayoutPopup, [this]() {
       if (m_recenterAllViews) {

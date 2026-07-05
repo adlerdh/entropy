@@ -32,12 +32,14 @@ void renderLandmarkPropertiesWindow(
         break;
       }
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
+      const bool hasFollowingHeader = imageIndex + 1 < visibleImageCount;
 
       renderLandmarkGroupHeader(
         appData,
         imageUid,
         imageIndex++,
         isActiveImage,
+        hasFollowingHeader,
         recenterAllViewsOnCurrentCrosshairsPosition);
     }
   }

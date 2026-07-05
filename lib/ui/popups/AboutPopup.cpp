@@ -149,6 +149,8 @@ void renderAboutDialogModalPopup(bool open)
     }
     ImGui::EndChild();
 
+    ImGui::Separator();
+
     if (ImGui::Button("Close")) {
       ImGui::CloseCurrentPopup();
     }

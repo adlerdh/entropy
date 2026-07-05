@@ -2364,7 +2364,8 @@ void renderImageHeader(
 
       if (ImGui::TreeNode("Color map settings")) {
         // Image colormap dialog:
-        *showImageColormapWindow |= ImGui::Button("Select color map");
+        static const std::string selectColorMapButtonText = std::string(ICON_FK_PAINT_BRUSH) + " Select color map";
+        *showImageColormapWindow |= ImGui::Button(selectColorMapButtonText.c_str());
 
         bool invertedCmap = viewSettings.isColorMapInverted();
 
@@ -2857,11 +2858,15 @@ void renderImageHeader(
       ImGui::TextDisabled("No warp fields are loaded.");
     }
 
-    if (ImGui::Button("Load inverse warp...")) {
+    static const std::string loadInverseWarpButtonText =
+      std::string(ICON_FK_ARROW_CIRCLE_O_LEFT) + " Load inverse warp...";
+    static const std::string loadForwardWarpButtonText =
+      std::string(ICON_FK_ARROW_CIRCLE_O_RIGHT) + " Load forward warp...";
+    if (ImGui::Button(loadInverseWarpButtonText.c_str())) {
       loadAndAssignWarpField(false);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Load forward warp...")) {
+    if (ImGui::Button(loadForwardWarpButtonText.c_str())) {
       loadAndAssignWarpField(true);
     }
 
@@ -3005,7 +3010,11 @@ void renderImageHeader(
       ImGui::EndDisabled();
 
       ImGui::BeginDisabled(forceDisableInitialTxs);
-      if (ImGui::Button("Load initial affine...")) {
+      static const std::string loadInitialAffineButtonText =
+        std::string(ICON_FK_FOLDER_OPEN_O) + " Load initial affine...";
+      static const std::string saveInitialAffineButtonText = std::string(ICON_FK_FLOPPY_O) + " Save...##initialAffine";
+      static const std::string resetInitialAffineButtonText = std::string(ICON_FK_UNDO) + " Reset##initialAffine";
+      if (ImGui::Button(loadInitialAffineButtonText.c_str())) {
         if (const auto selectedFile = native_dialog::openFile(native_dialog::transformFilters())) {
           glm::dmat4 affine_T_subject{1.0};
           if (serialize::openAffineTxFile(affine_T_subject, *selectedFile)) {
@@ -3021,7 +3030,7 @@ void renderImageHeader(
         }
       }
       ImGui::SameLine();
-      if (ImGui::Button("Save...##initialAffine")) {
+      if (ImGui::Button(saveInitialAffineButtonText.c_str())) {
         if (const auto selectedFile = native_dialog::saveFile(dialogFilters)) {
           const glm::dmat4 affine_T_subject{imgTx.get_affine_T_subject()};
           if (serialize::saveAffineTxFile(affine_T_subject, *selectedFile)) {
@@ -3033,7 +3042,7 @@ void renderImageHeader(
         }
       }
       ImGui::SameLine();
-      if (ImGui::Button("Reset##initialAffine")) {
+      if (ImGui::Button(resetInitialAffineButtonText.c_str())) {
         if (confirmResetAffineTransformation(
               "Reset initial affine?",
               "Reset the initial/imported affine transformation to identity?",
@@ -3145,7 +3154,11 @@ void renderImageHeader(
       ImGui::EndDisabled();
 
       ImGui::BeginDisabled(forceDisableInitialTxs);
-      if (ImGui::Button("Load manual affine...")) {
+      static const std::string loadManualAffineButtonText =
+        std::string(ICON_FK_FOLDER_OPEN_O) + " Load manual affine...";
+      static const std::string saveManualAffineButtonText = std::string(ICON_FK_FLOPPY_O) + " Save...##manualAffine";
+      static const std::string resetManualAffineButtonText = std::string(ICON_FK_UNDO) + " Reset##manualAffine";
+      if (ImGui::Button(loadManualAffineButtonText.c_str())) {
         if (const auto selectedFile = native_dialog::openFile(dialogFilters)) {
           glm::dmat4 worldDef_T_affine{1.0};
           if (serialize::openAffineTxFile(worldDef_T_affine, *selectedFile)) {
@@ -3161,13 +3174,13 @@ void renderImageHeader(
       ImGui::SameLine();
 
       // Save manual tx to file:
-      static const char* buttonText("Save...##manualAffine");
       static const char* dialogTitle("Select Manual Affine Transformation");
 
-      const auto selectedManualTxFile = ImGui::renderFileButtonDialogAndWindow(buttonText, dialogTitle, dialogFilters);
+      const auto selectedManualTxFile =
+        ImGui::renderFileButtonDialogAndWindow(saveManualAffineButtonText.c_str(), dialogTitle, dialogFilters);
 
       ImGui::SameLine();
-      if (ImGui::Button("Reset##manualAffine")) {
+      if (ImGui::Button(resetManualAffineButtonText.c_str())) {
         if (confirmResetAffineTransformation(
               "Reset manual affine?",
               "Reset the manual affine transformation to identity?",
@@ -3200,11 +3213,14 @@ void renderImageHeader(
 
     if (imgTx.get_enable_affine_T_subject() && imgTx.get_enable_worldDef_T_affine()) {
       // Save effective affine tx to file:
-      static const char* saveEffectiveTxButtonText("Save effective (manual * initial) affine...");
+      static const std::string saveEffectiveTxButtonText =
+        std::string(ICON_FK_FLOPPY_O) + " Save effective (manual * initial) affine...";
       static const char* saveEffectiveTxDialogTitle("Select Effective Affine Transformation");
 
-      const auto selectedEffectiveTxFile =
-        ImGui::renderFileButtonDialogAndWindow(saveEffectiveTxButtonText, saveEffectiveTxDialogTitle, dialogFilters);
+      const auto selectedEffectiveTxFile = ImGui::renderFileButtonDialogAndWindow(
+        saveEffectiveTxButtonText.c_str(),
+        saveEffectiveTxDialogTitle,
+        dialogFilters);
 
       ImGui::SameLine();
       helpMarker(

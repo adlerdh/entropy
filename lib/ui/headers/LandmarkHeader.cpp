@@ -58,10 +58,11 @@ void renderLandmarkGroupHeader(
   const uuids::uuid& imageUid,
   size_t imageIndex,
   bool isActiveImage,
+  bool hasFollowingHeader,
   const AllViewsRecenterType& recenterAllViews)
 {
-  static const char* newLmGroupButtonText("Create new group of landmarks");
-  static const char* saveLmsButtonText("Save landmarks...");
+  static const std::string newLmGroupButtonText = std::string(ICON_FK_FILE_O) + " Create new landmarks group";
+  static const std::string saveLmsButtonText = std::string(ICON_FK_FLOPPY_O) + " Save landmarks...";
   static const char* saveLmsDialogTitle("Save Landmark Group");
   static const auto saveLmsDialogFilters = native_dialog::landmarkFilters();
 
@@ -71,7 +72,7 @@ void renderLandmarkGroupHeader(
   }
 
   auto addNewLmGroupButton = [&appData, &image, &imageUid]() {
-    if (ImGui::Button(newLmGroupButtonText)) {
+    if (ImGui::Button(newLmGroupButtonText.c_str())) {
       LandmarkGroup newGroup;
       newGroup.setName(std::string("Landmarks for ") + image->settings().displayName());
 
@@ -120,9 +121,11 @@ void renderLandmarkGroupHeader(
   if (lmGroupUids.empty()) {
     ImGui::Text("This image has no landmarks.");
     addNewLmGroupButton();
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
+    if (hasFollowingHeader) {
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+    }
     ImGui::PopID(); // imageUid
     return;
   }
@@ -139,9 +142,11 @@ void renderLandmarkGroupHeader(
     }
     else {
       spdlog::error("Unable to assign active landmark group {} to image {}", lmGroupUids[0], imageUid);
-      ImGui::Spacing();
-      ImGui::Separator();
-      ImGui::Spacing();
+      if (hasFollowingHeader) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+      }
       ImGui::PopID(); // imageUid
       return;
     }
@@ -151,9 +156,11 @@ void renderLandmarkGroupHeader(
 
   if (!activeLmGroup) {
     spdlog::error("Landmark group {} for image {} is null", *activeLmGroupUid, imageUid);
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
+    if (hasFollowingHeader) {
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+    }
     ImGui::PopID(); // imageUid
     return;
   }
@@ -317,10 +324,11 @@ void renderLandmarkGroupHeader(
   ImGui::Spacing();
 
   addNewLmGroupButton();
+  ImGui::SameLine();
 
   // Save landmarks to CSV and save settings to project file:
   const auto selectedFile =
-    ImGui::renderFileButtonDialogAndWindow(saveLmsButtonText, saveLmsDialogTitle, saveLmsDialogFilters);
+    ImGui::renderFileButtonDialogAndWindow(saveLmsButtonText.c_str(), saveLmsDialogTitle, saveLmsDialogFilters);
 
   ImGui::SameLine();
   helpMarker("Save the landmarks to a CSV file");
@@ -337,8 +345,10 @@ void renderLandmarkGroupHeader(
     }
   }
 
-  ImGui::Spacing();
-  ImGui::Separator();
-  ImGui::Spacing();
+  if (hasFollowingHeader) {
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+  }
   ImGui::PopID(); /** PopID imageUid **/
 }

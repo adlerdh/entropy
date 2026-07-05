@@ -58,6 +58,7 @@ void renderAnnotationsHeader(
   const uuids::uuid& imageUid,
   size_t imageIndex,
   bool isActiveImage,
+  bool hasFollowingHeader,
   const std::function<void(const uuids::uuid& viewUid, const glm::vec3& worldFwdDirection)>& setViewDirection,
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
   const AllViewsRecenterType& recenterAllViews)
@@ -165,10 +166,14 @@ void renderAnnotationsHeader(
   const auto& annotUids = appData.annotationsForImage(imageUid);
   if (annotUids.empty()) {
     ImGui::Text("This image has no annotations.");
-    ImGui::TextWrapped("%s", "Switch to Annotate mode and select the view in which to draw annotations.");
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+    ImGui::TextWrapped("%s", "Switch to Annotate mode and select a view in which to create annotations.");
+    ImGui::PopStyleColor();
+    if (hasFollowingHeader) {
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+    }
     ImGui::PopID(); // imageUid
     return;
   }
@@ -245,9 +250,11 @@ void renderAnnotationsHeader(
   if (!activeAnnotUid) {
     // If there is no active/selected annotation, then do not render the rest of the header,
     // which shows view properites of the annotation
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
+    if (hasFollowingHeader) {
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+    }
     ImGui::PopID(); // imageUid
     return;
   }
@@ -255,9 +262,11 @@ void renderAnnotationsHeader(
   Annotation* activeAnnot = appData.annotation(*activeAnnotUid);
   if (!activeAnnot) {
     spdlog::error("Null active annotation {}", *activeAnnotUid);
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
+    if (hasFollowingHeader) {
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+    }
     ImGui::PopID(); // imageUid
     return;
   }
@@ -574,8 +583,10 @@ void renderAnnotationsHeader(
     }
   }
 
-  ImGui::Spacing();
-  ImGui::Separator();
-  ImGui::Spacing();
+  if (hasFollowingHeader) {
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+  }
   ImGui::PopID(); /** PopID imageUid **/
 }
