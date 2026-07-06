@@ -7,6 +7,7 @@
 #include "logic/app/Data.h"
 #include "logic/app/DataHelper.h"
 #include "logic/app/ImageSelectionPolicy.h"
+#include "logic/camera/Camera3DControls.h"
 #include "logic/camera/MathUtility.h"
 
 #include "image/ImageUtility.h"
@@ -1845,9 +1846,23 @@ void WindowData::recenterView(
 
   if (ViewType::ThreeD == view.viewType()) {
     const camera3d::SceneFrame scene{.m_center = worldCenter, .m_size = worldFov};
-    const glm::vec3 target =
+    const glm::vec3 orbitTarget =
       (camera3d::OrbitTargetMode::Crosshairs == view.threeDState().m_orbitTargetMode) ? worldCenter : scene.m_center;
-    view.recenterThreeDCamera(scene, target);
+    if (view.threeDState().m_viewPositionFollowsCrosshairs) {
+      if (resetZoom) {
+        view.initializeThreeDCameraIfNeeded(scene);
+        camera3d::resetFollowing(view.threeDCamera(), view.threeDState(), scene, worldCenter, orbitTarget);
+        return;
+      }
+      view.initializeThreeDCameraIfNeeded(scene);
+      camera3d::recenterFollowing(view.threeDCamera(), view.threeDState(), scene, worldCenter, orbitTarget);
+      return;
+    }
+    if (resetZoom) {
+      view.resetThreeDCamera(scene, orbitTarget);
+      return;
+    }
+    view.recenterThreeDCamera(scene, orbitTarget);
     return;
   }
 

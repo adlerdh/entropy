@@ -10,6 +10,7 @@
 #include "image/Image.h"
 
 #include "logic/app/Data.h"
+#include "logic/camera/CameraFrustumSlice.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
 #include "logic/states/annotation/AnnotationStateHelpers.h"
@@ -64,6 +65,16 @@ bool isFiniteVec2(const glm::vec2& value)
 bool isInsideRect(const glm::vec2& value, const glm::vec2& min, const glm::vec2& size)
 {
   return value.x >= min.x && value.y >= min.y && value.x < min.x + size.x && value.y < min.y + size.y;
+}
+
+NVGcolor nvgColor(const glm::vec4& color)
+{
+  return nvgRGBAf(color.r, color.g, color.b, color.a);
+}
+
+glm::vec2 projectWorldToMiewport(const Viewport& windowVP, const View& view, const glm::vec3& worldPos)
+{
+  return helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldPos);
 }
 
 void drawArrow(NVGcontext* nvg, const glm::vec2& start, const glm::vec2& end, const NVGcolor& color, float width)
@@ -1447,6 +1458,64 @@ void drawCrosshairs(
         nvgStroke(nvg);
       }
     }
+  }
+
+  nvgResetScissor(nvg);
+}
+
+void drawThreeDCameraFrustumOverlay(
+  NVGcontext* nvg,
+  const FrameBounds& miewportViewBounds,
+  const Viewport& windowVP,
+  const View& view,
+  const camera3d::FrustumSliceOverlay& overlay,
+  const glm::vec4& color)
+{
+  static constexpr float k_eyeRadiusPx = 4.0f;
+  static constexpr float k_shadowAlphaScale = 0.65f;
+  const NVGcolor lineColor = nvgColor(color);
+  const NVGcolor shadowColor = nvgRGBAf(0.0f, 0.0f, 0.0f, k_shadowAlphaScale * color.a);
+
+  nvgScissor(
+    nvg,
+    miewportViewBounds.viewport[0],
+    miewportViewBounds.viewport[1],
+    miewportViewBounds.viewport[2],
+    miewportViewBounds.viewport[3]);
+
+  nvgLineCap(nvg, NVG_BUTT);
+  nvgLineJoin(nvg, NVG_MITER);
+
+  auto drawSegments = [&](const NVGcolor& strokeColor, float strokeWidth) {
+    nvgStrokeColor(nvg, strokeColor);
+    nvgStrokeWidth(nvg, strokeWidth);
+    nvgBeginPath(nvg);
+    for (const auto& segment : overlay.segments) {
+      const glm::vec2 a = projectWorldToMiewport(windowVP, view, segment.a);
+      const glm::vec2 b = projectWorldToMiewport(windowVP, view, segment.b);
+      if (!isFiniteVec2(a) || !isFiniteVec2(b)) {
+        continue;
+      }
+      nvgMoveTo(nvg, a.x, a.y);
+      nvgLineTo(nvg, b.x, b.y);
+    }
+    nvgStroke(nvg);
+  };
+
+  drawSegments(shadowColor, 4.0f);
+  drawSegments(lineColor, 2.0f);
+
+  const glm::vec2 eye = projectWorldToMiewport(windowVP, view, overlay.eye);
+  if (isFiniteVec2(eye)) {
+    nvgBeginPath(nvg);
+    nvgCircle(nvg, eye.x, eye.y, k_eyeRadiusPx + 2.0f);
+    nvgFillColor(nvg, shadowColor);
+    nvgFill(nvg);
+
+    nvgBeginPath(nvg);
+    nvgCircle(nvg, eye.x, eye.y, k_eyeRadiusPx);
+    nvgFillColor(nvg, lineColor);
+    nvgFill(nvg);
   }
 
   nvgResetScissor(nvg);

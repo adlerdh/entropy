@@ -17,6 +17,10 @@
 class AppData;
 class View;
 class Viewport;
+namespace camera3d
+{
+struct FrustumSliceOverlay;
+}
 
 struct NVGcontext;
 
@@ -110,6 +114,14 @@ void drawCrosshairs(
   const View& view,
   const glm::vec4& color,
   const std::array<AnatomicalLabelPosInfo, 2>& labelPosInfo);
+
+void drawThreeDCameraFrustumOverlay(
+  NVGcontext* nvg,
+  const FrameBounds& miewportViewBounds,
+  const Viewport& windowVP,
+  const View& view,
+  const camera3d::FrustumSliceOverlay& overlay,
+  const glm::vec4& color);
 
 void drawLightboxOffsetLabel(
   NVGcontext* nvg,

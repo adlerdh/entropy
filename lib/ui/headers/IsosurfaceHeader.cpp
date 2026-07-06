@@ -567,10 +567,18 @@ void renderIsosurfacesHeader(
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
   ImGui::PushStyleColor(ImGuiCol_Text, headerColors.second);
 
-  if (isActiveImage && (appData.guiData().m_requestAddIsosurface || appData.guiData().m_requestAddIsosurfaceRange)) {
+  const bool requestedHeader =
+    appData.guiData().m_requestedIsosurfacesImageUid && *appData.guiData().m_requestedIsosurfacesImageUid == imageUid;
+  if (
+    requestedHeader ||
+    (isActiveImage && (appData.guiData().m_requestAddIsosurface || appData.guiData().m_requestAddIsosurfaceRange)))
+  {
     ImGui::SetNextItemOpen(true, ImGuiCond_Always);
   }
   const bool open = ImGui::CollapsingHeader(headerName.c_str(), headerFlags);
+  if (requestedHeader) {
+    appData.guiData().m_requestedIsosurfacesImageUid = std::nullopt;
+  }
 
   ImGui::PopStyleColor(2); // ImGuiCol_Header, ImGuiCol_Text
 

@@ -265,58 +265,12 @@ void preserveProjectRenderPreferences(
   user_preferences::RenderPreferences& preferences,
   const user_preferences::RenderPreferences& currentPreferences)
 {
-  // Application defaults must not reset presentation state that now belongs to the open project.
-  preferences.showImageBorders = currentPreferences.showImageBorders;
-  preferences.showImageBordersInLightboxViews = currentPreferences.showImageBordersInLightboxViews;
-  preferences.showCrosshairs = currentPreferences.showCrosshairs;
-  preferences.showCrosshairsInLightboxViews = currentPreferences.showCrosshairsInLightboxViews;
-  preferences.crosshairsSnapping = currentPreferences.crosshairsSnapping;
-  preferences.showAnatomicalLabels = currentPreferences.showAnatomicalLabels;
-  preferences.showAnatomicalLabelsInLightboxViews = currentPreferences.showAnatomicalLabelsInLightboxViews;
-  preferences.anatomicalLabelType = currentPreferences.anatomicalLabelType;
-  preferences.showScaleBars = currentPreferences.showScaleBars;
-  preferences.showScaleBarsInLightboxViews = currentPreferences.showScaleBarsInLightboxViews;
-  preferences.useMaximumIntensityProjectionExtent = currentPreferences.useMaximumIntensityProjectionExtent;
-  preferences.intensityProjectionSlabThicknessMm = currentPreferences.intensityProjectionSlabThicknessMm;
-  preferences.xrayEnergyKeV = currentPreferences.xrayEnergyKeV;
-  preferences.xrayWindow = currentPreferences.xrayWindow;
-  preferences.xrayLevel = currentPreferences.xrayLevel;
-  preferences.isocontourFloatingPointInterpolation = currentPreferences.isocontourFloatingPointInterpolation;
-  preferences.modulateIsocontourOpacityWithImageOpacity = currentPreferences.modulateIsocontourOpacityWithImageOpacity;
-  preferences.modulateSegmentationOpacityWithImageOpacity =
-    currentPreferences.modulateSegmentationOpacityWithImageOpacity;
-  preferences.segmentationOutlineStyle = currentPreferences.segmentationOutlineStyle;
-  preferences.segmentationInteriorOpacity = currentPreferences.segmentationInteriorOpacity;
-  preferences.segmentationErosionFactor = currentPreferences.segmentationErosionFactor;
-  preferences.squaredDifference = currentPreferences.squaredDifference;
-  preferences.squaredDifferenceMetric = currentPreferences.squaredDifferenceMetric;
-  preferences.localNccMetric = currentPreferences.localNccMetric;
-  preferences.localNccPatchRadius = currentPreferences.localNccPatchRadius;
-  preferences.localNccSampleSpacing = currentPreferences.localNccSampleSpacing;
-  preferences.localNccMinValidFraction = currentPreferences.localNccMinValidFraction;
-  preferences.localNccVarianceEpsilon = currentPreferences.localNccVarianceEpsilon;
-  preferences.localNccIgnoreNegativeCorrelation = currentPreferences.localNccIgnoreNegativeCorrelation;
-  preferences.localNccPresentation = currentPreferences.localNccPresentation;
-  preferences.localNccInvalidStyle = currentPreferences.localNccInvalidStyle;
-  preferences.localLinearResidualMetric = currentPreferences.localLinearResidualMetric;
-  preferences.localLinearResidualPatchRadius = currentPreferences.localLinearResidualPatchRadius;
-  preferences.localLinearResidualSampleSpacing = currentPreferences.localLinearResidualSampleSpacing;
-  preferences.localLinearResidualMinValidFraction = currentPreferences.localLinearResidualMinValidFraction;
-  preferences.localLinearResidualVarianceEpsilon = currentPreferences.localLinearResidualVarianceEpsilon;
-  preferences.localLinearResidualInvalidStyle = currentPreferences.localLinearResidualInvalidStyle;
-  preferences.overlayMagentaCyan = currentPreferences.overlayMagentaCyan;
-  preferences.quadrants = currentPreferences.quadrants;
-  preferences.checkerboardSquares = currentPreferences.checkerboardSquares;
-  preferences.flashlightRadiusFraction = currentPreferences.flashlightRadiusFraction;
-  preferences.flashlightOverlayMovingImage = currentPreferences.flashlightOverlayMovingImage;
-  preferences.raycastSamplingFactor = currentPreferences.raycastSamplingFactor;
-  preferences.transparentBackgroundWhenNoHit = currentPreferences.transparentBackgroundWhenNoHit;
-  preferences.renderFrontFaces = currentPreferences.renderFrontFaces;
-  preferences.renderBackFaces = currentPreferences.renderBackFaces;
-  preferences.segmentationMasking = currentPreferences.segmentationMasking;
-  preferences.annotationsOnTop = currentPreferences.annotationsOnTop;
-  preferences.landmarksOnTop = currentPreferences.landmarksOnTop;
-  preferences.hideAnnotationVertices = currentPreferences.hideAnnotationVertices;
+  user_preferences::preserveProjectOwnedRenderPreferences(preferences, currentPreferences);
+}
+
+user_preferences::RenderPreferences applicationRenderPreferencesFromRenderData(const RenderData& renderData)
+{
+  return user_preferences::applicationRenderPreferences(renderPreferencesFromRenderData(renderData));
 }
 
 } // namespace
@@ -326,7 +280,10 @@ namespace user_preferences
 
 std::string toJsonString(const AppSettings& settings, const RenderData& renderData, const GuiData& guiData)
 {
-  return toJsonString(settings, renderPreferencesFromRenderData(renderData), precisionPreferencesFromGuiData(guiData));
+  return toJsonString(
+    settings,
+    applicationRenderPreferencesFromRenderData(renderData),
+    precisionPreferencesFromGuiData(guiData));
 }
 
 void markSavedAppSettingsState(const AppSettings& settings, const RenderData& renderData, GuiData& guiData)
@@ -342,9 +299,7 @@ void updateAppSettingsDirtyState(const AppSettings& settings, const RenderData& 
     return;
   }
 
-  if (toJsonString(settings, renderData, guiData) != guiData.m_savedAppSettingsJson) {
-    guiData.m_appSettingsDirty = true;
-  }
+  guiData.m_appSettingsDirty = toJsonString(settings, renderData, guiData) != guiData.m_savedAppSettingsJson;
 }
 
 bool applyJsonString(
@@ -360,6 +315,7 @@ bool applyJsonString(
     return false;
   }
 
+  preserveProjectRenderPreferences(renderPreferences, renderPreferencesFromRenderData(renderData));
   applyRenderPreferences(renderData, renderPreferences);
   applyPrecisionPreferences(guiData, precisionPreferences);
   return true;
@@ -374,7 +330,7 @@ bool save(
 {
   return save(
     settings,
-    renderPreferencesFromRenderData(renderData),
+    applicationRenderPreferencesFromRenderData(renderData),
     precisionPreferencesFromGuiData(guiData),
     fileName,
     error);
@@ -396,6 +352,7 @@ bool load(
   PrecisionPreferences precisionPreferences = precisionPreferencesFromGuiData(guiData);
   const bool loaded = load(settings, renderPreferences, precisionPreferences, fileName, error);
   if (loaded) {
+    preserveProjectRenderPreferences(renderPreferences, renderPreferencesFromRenderData(renderData));
     applyRenderPreferences(renderData, renderPreferences);
     applyPrecisionPreferences(guiData, precisionPreferences);
   }

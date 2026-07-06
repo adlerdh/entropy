@@ -185,8 +185,14 @@ struct ProjectRaycastingSettings
   bool m_backgroundEdgeBrighteningEnabled = true;         //!< Brighten raycast background near image-domain edges.
   bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D raycast views.
   float m_crosshairs3DGlyphDiameterVoxelDiagonals = 2.0f; //!< 3D crosshairs glyph diameter in voxel diagonals.
-  bool m_renderFrontFaces = true;                         //!< Render front faces in 3D raycasting.
-  bool m_renderBackFaces = true;                          //!< Render back faces in 3D raycasting.
+  bool m_showThreeDCameraFrustumIn2DViews = false;        //!< Show the active 3D camera frustum in 2D views.
+  glm::vec4 m_threeDCameraFrustumColor{
+    0x7c / 255.0f,
+    0x5e / 255.0f,
+    0xd5 / 255.0f,
+    0xa2 / 255.0f};               //!< 2D frustum overlay color.
+  bool m_renderFrontFaces = true; //!< Render front faces in 3D raycasting.
+  bool m_renderBackFaces = true;  //!< Render back faces in 3D raycasting.
   ProjectSegmentationRaycastMasking m_segmentationMasking =
     ProjectSegmentationRaycastMasking::Disabled; //!< Segmentation mask behavior.
 };

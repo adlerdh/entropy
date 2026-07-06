@@ -12,7 +12,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <limits>
 
 namespace
 {
@@ -94,6 +96,21 @@ AABB<float> sceneAabb(const camera3d::SceneFrame& scene)
 {
   const glm::vec3 halfSize = 0.5f * safeSceneSize(scene.m_size);
   return {scene.m_center - halfSize, scene.m_center + halfSize};
+}
+
+std::array<glm::vec3, 8> sceneAabbCorners(const camera3d::SceneFrame& scene)
+{
+  const auto [boxMin, boxMax] = sceneAabb(scene);
+  return {{
+    {boxMin.x, boxMin.y, boxMin.z},
+    {boxMax.x, boxMin.y, boxMin.z},
+    {boxMin.x, boxMax.y, boxMin.z},
+    {boxMax.x, boxMax.y, boxMin.z},
+    {boxMin.x, boxMin.y, boxMax.z},
+    {boxMax.x, boxMin.y, boxMax.z},
+    {boxMin.x, boxMax.y, boxMax.z},
+    {boxMax.x, boxMax.y, boxMax.z},
+  }};
 }
 
 std::optional<glm::vec3>
@@ -261,16 +278,29 @@ Pose defaultCoronalPose(const SceneFrame& scene)
     .m_back = Directions::get(Directions::Cartesian::NegY)};
 }
 
-void configureClipPlanes(Camera& camera, const SceneFrame& scene, float eyeToTargetDistance)
+void configureClipPlanes(Camera& camera, const SceneFrame& scene, float)
 {
   const SceneMetrics metrics = sceneMetrics(scene);
   const float diagonal = metrics.m_diagonal;
-  const float radius = 0.5f * diagonal;
   const float voxelMargin = k_clipPlaneVoxelMarginFraction * metrics.m_voxelDiagonal;
   const float minNearDistance = std::max(k_nearVoxelDiagonalFraction * metrics.m_voxelDiagonal, k_minSceneSize);
-  const float distanceToNearScene = eyeToTargetDistance - radius;
-  const float nearDistance = std::max(minNearDistance, distanceToNearScene - voxelMargin);
-  const float farDistance = std::max(eyeToTargetDistance + radius + voxelMargin, nearDistance + diagonal);
+  const glm::vec3 eye = helper::worldOrigin(camera);
+  const glm::vec3 front = worldCameraFront(camera);
+
+  float minDepth = std::numeric_limits<float>::max();
+  float maxDepth = std::numeric_limits<float>::lowest();
+  for (const glm::vec3& corner : sceneAabbCorners(scene)) {
+    const float depth = glm::dot(corner - eye, front);
+    minDepth = std::min(minDepth, depth);
+    maxDepth = std::max(maxDepth, depth);
+  }
+
+  const float nearDistance = std::max(minNearDistance, minDepth - voxelMargin);
+  const float farDistance = std::max(maxDepth + voxelMargin, nearDistance + diagonal);
+
+  if (nearDistance >= camera.farDistance()) {
+    camera.setFarDistance(nearDistance + diagonal);
+  }
   camera.setNearDistance(nearDistance);
   camera.setFarDistance(farDistance);
 }
@@ -278,6 +308,64 @@ void configureClipPlanes(Camera& camera, const SceneFrame& scene, float eyeToTar
 void setDefaultCoronalPose(Camera& camera, State& state, const SceneFrame& scene)
 {
   Controller{camera, state}.initializeDefaultPose(scene);
+}
+
+void resetView(Camera& camera, State& state, const SceneFrame& scene, const glm::vec3& target)
+{
+  const ProjectionType projectionType = state.m_projectionType;
+  const OrbitTargetMode orbitTargetMode = state.m_orbitTargetMode;
+  const bool followsCrosshairs = state.m_viewPositionFollowsCrosshairs;
+  const float aspectRatio = camera.aspectRatio();
+
+  auto projection = helper::createCameraProjection(projectionType);
+  projection->setAspectRatio(aspectRatio);
+  camera.setProjection(std::move(projection));
+
+  state = State{};
+  state.m_projectionType = projectionType;
+  state.m_orbitTargetMode = orbitTargetMode;
+  state.m_viewPositionFollowsCrosshairs = (ProjectionType::Orthographic == projectionType) ? false : followsCrosshairs;
+
+  Controller controller{camera, state};
+  controller.initializeDefaultPose(scene);
+  controller.recenter(scene, target);
+  state.m_userMovedCamera = false;
+}
+
+void recenterFollowing(
+  Camera& camera,
+  State& state,
+  const SceneFrame& scene,
+  const glm::vec3& crosshairs,
+  const glm::vec3& orbitTarget)
+{
+  Controller{camera, state}.recenterFollowing(scene, crosshairs, orbitTarget);
+}
+
+void resetFollowing(
+  Camera& camera,
+  State& state,
+  const SceneFrame& scene,
+  const glm::vec3& crosshairs,
+  const glm::vec3& orbitTarget)
+{
+  const ProjectionType projectionType = state.m_projectionType;
+  const OrbitTargetMode orbitTargetMode = state.m_orbitTargetMode;
+  const float aspectRatio = camera.aspectRatio();
+
+  auto projection = helper::createCameraProjection(projectionType);
+  projection->setAspectRatio(aspectRatio);
+  camera.setProjection(std::move(projection));
+
+  state = State{};
+  state.m_projectionType = projectionType;
+  state.m_orbitTargetMode = orbitTargetMode;
+  state.m_viewPositionFollowsCrosshairs = ProjectionType::Perspective == projectionType;
+
+  Controller controller{camera, state};
+  controller.initializeDefaultPose(scene);
+  controller.recenterFollowing(scene, crosshairs, orbitTarget);
+  state.m_userMovedCamera = false;
 }
 
 void recenter(Camera& camera, State& state, const SceneFrame& scene, const glm::vec3& target)
@@ -393,8 +481,8 @@ void Controller::initializeDefaultPose(const SceneFrame& scene)
 
   m_camera.setDefaultFov(metrics.m_defaultFov);
   m_camera.setZoom(zoomForProjection(m_state, m_state.m_projectionType));
-  configureClipPlanes(m_camera, scene, m_state.m_orbitDistance);
   setCameraPose(m_camera, pose.m_eye, pose.m_right, pose.m_up, pose.m_back);
+  configureClipPlanes(m_camera, scene, m_state.m_orbitDistance);
 }
 
 void Controller::updateScene(const SceneFrame& scene)
@@ -421,8 +509,33 @@ void Controller::recenter(const SceneFrame& scene, const glm::vec3& target)
   m_state.m_orthographicZoom = orthographicZoom;
   m_camera.setDefaultFov(metrics.m_defaultFov);
   m_camera.setZoom(zoomForProjection(m_state, m_state.m_projectionType));
+  if (m_state.m_viewPositionFollowsCrosshairs) {
+    setCameraPose(m_camera, target, worldCameraRight(m_camera), worldCameraUp(m_camera), worldCameraBack(m_camera));
+  }
+  else {
+    setCameraTargetPreservingOrientation(m_camera, target, m_state.m_orbitDistance);
+  }
   configureClipPlanes(m_camera, scene, m_state.m_orbitDistance);
-  setCameraTargetPreservingOrientation(m_camera, target, m_state.m_orbitDistance);
+  m_state.m_userMovedCamera = false;
+}
+
+void Controller::recenterFollowing(const SceneFrame& scene, const glm::vec3& crosshairs, const glm::vec3& orbitTarget)
+{
+  const SceneMetrics metrics = sceneMetrics(scene);
+  const float perspectiveZoom = m_state.m_perspectiveZoom;
+  const float orthographicZoom = m_state.m_orthographicZoom;
+  m_state.m_orbitTarget = orbitTarget;
+  m_state.m_crosshairsFollowOffset = glm::vec3{0.0f};
+  m_state.m_minTargetDistance = metrics.m_minTargetDistance;
+  m_state.m_minPanDistance = metrics.m_minPanDistance;
+  m_state.m_scrollDistance = metrics.m_scrollDistance;
+  m_state.m_perspectiveZoom = perspectiveZoom;
+  m_state.m_orthographicZoom = orthographicZoom;
+  m_camera.setDefaultFov(metrics.m_defaultFov);
+  m_camera.setZoom(zoomForProjection(m_state, m_state.m_projectionType));
+  setCameraPose(m_camera, crosshairs, worldCameraRight(m_camera), worldCameraUp(m_camera), worldCameraBack(m_camera));
+  m_state.m_orbitDistance = distanceToTarget(m_camera, m_state.m_orbitTarget);
+  configureClipPlanes(m_camera, scene, m_state.m_orbitDistance);
   m_state.m_userMovedCamera = false;
 }
 

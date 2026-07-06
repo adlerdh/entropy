@@ -622,7 +622,12 @@ void renderViewSettingsComboWindow(
           ImGui::PushStyleColor(ImGuiCol_Button, activeButtonColor);
         }
         if (ImGui::Button(ICON_FK_CUBE)) {
-          modes.showIsosurfacesPanel();
+          if (modes.showIsosurfacesPanelForRaycastImage) {
+            modes.showIsosurfacesPanelForRaycastImage();
+          }
+          else {
+            modes.showIsosurfacesPanel();
+          }
         }
         if (isosurfacesPanelVisible) {
           ImGui::PopStyleColor();

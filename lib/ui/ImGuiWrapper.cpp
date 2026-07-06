@@ -4454,6 +4454,13 @@ void ImGuiWrapper::render()
       .applyImageSelectionAndShaderToAllViews = nullptr,
       .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
       .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
+      .showIsosurfacesPanelForRaycastImage =
+        [this, &currentLayout]() {
+          m_appData.guiData().m_showIsosurfacesWindow = true;
+          if (!currentLayout.visibleImages().empty()) {
+            m_appData.guiData().m_requestedIsosurfacesImageUid = currentLayout.visibleImages().front();
+          }
+        },
       .getThreeDRenderImageBox = [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
       .setThreeDRenderImageBox =
         [this](bool renderImageBox) {
@@ -4576,6 +4583,13 @@ void ImGuiWrapper::render()
         .applyImageSelectionAndShaderToAllViews = applyImageSelectionAndRenderModesToAllViews,
         .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
         .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
+        .showIsosurfacesPanelForRaycastImage =
+          [this, view]() {
+            m_appData.guiData().m_showIsosurfacesWindow = true;
+            if (!view->visibleImages().empty()) {
+              m_appData.guiData().m_requestedIsosurfacesImageUid = view->visibleImages().front();
+            }
+          },
         .getThreeDProjectionType = [view]() { return view->threeDState().m_projectionType; },
         .setThreeDProjectionType =
           [view](ProjectionType projectionType) {

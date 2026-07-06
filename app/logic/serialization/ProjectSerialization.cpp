@@ -1296,6 +1296,8 @@ void to_json(json& j, const ProjectRaycastingSettings& settings)
     {"backgroundEdgeBrighteningEnabled", settings.m_backgroundEdgeBrighteningEnabled},
     {"showCrosshairsIn3D", settings.m_showCrosshairsIn3D},
     {"crosshairs3DGlyphDiameterVoxelDiagonals", settings.m_crosshairs3DGlyphDiameterVoxelDiagonals},
+    {"showThreeDCameraFrustumIn2DViews", settings.m_showThreeDCameraFrustumIn2DViews},
+    {"threeDCameraFrustumColor", vec4ToJson(settings.m_threeDCameraFrustumColor)},
     {"renderFrontFaces", settings.m_renderFrontFaces},
     {"renderBackFaces", settings.m_renderBackFaces},
     {"segmentationMasking", enumToName(settings.m_segmentationMasking, k_raycastSegmentationMaskingNames)}};
@@ -1317,6 +1319,14 @@ void from_json(const json& j, ProjectRaycastingSettings& settings)
   }
   if (const auto value = j.find("crosshairs3DGlyphDiameterVoxelDiagonals"); value != j.end() && value->is_number()) {
     settings.m_crosshairs3DGlyphDiameterVoxelDiagonals = std::clamp(value->get<float>(), 0.1f, 10.0f);
+  }
+  if (const auto value = j.find("showThreeDCameraFrustumIn2DViews"); value != j.end() && value->is_boolean()) {
+    settings.m_showThreeDCameraFrustumIn2DViews = value->get<bool>();
+  }
+  if (const auto value = j.find("threeDCameraFrustumColor");
+      value != j.end() && value->is_array() && value->size() == 4)
+  {
+    settings.m_threeDCameraFrustumColor = glm::clamp(vec4FromJson(*value), glm::vec4{0.0f}, glm::vec4{1.0f});
   }
   if (const auto value = j.find("renderFrontFaces"); value != j.end() && value->is_boolean()) {
     settings.m_renderFrontFaces = value->get<bool>();

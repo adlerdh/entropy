@@ -52,17 +52,18 @@ struct GuiData
   /// Global setting to turn on/off rendering of the UI overlays (crosshairs, anatomical labels).
   bool m_renderUiOverlays = false;
 
-  bool m_showImagePropertiesWindow = true;                          //!< Show the image properties window.
-  bool m_showSegmentationsWindow = false;                           //!< Show the segmentations window.
-  bool m_showLandmarksWindow = false;                               //!< Show the landmarks window.
-  bool m_showAnnotationsWindow = false;                             //!< Show the annotations window.
-  bool m_showIsosurfacesWindow = false;                             //!< Show the isosurfaces window.
-  bool m_showRegistrationSetupWindow = false;                       //!< Show the registration setup window.
-  bool m_showRegistrationJobsWindow = false;                        //!< Show the registration jobs window.
-  bool m_requestAddIsosurface = false;                              //!< Add one isosurface for the active image.
-  bool m_requestAddIsosurfaceRange = false;                         //!< Open the isosurface range dialog.
-  bool m_showSettingsWindow = false;                                //!< Show the settings window.
-  std::optional<SettingsTab> m_requestedSettingsTab = std::nullopt; //!< One-shot requested settings page.
+  bool m_showImagePropertiesWindow = true;    //!< Show the image properties window.
+  bool m_showSegmentationsWindow = false;     //!< Show the segmentations window.
+  bool m_showLandmarksWindow = false;         //!< Show the landmarks window.
+  bool m_showAnnotationsWindow = false;       //!< Show the annotations window.
+  bool m_showIsosurfacesWindow = false;       //!< Show the isosurfaces window.
+  bool m_showRegistrationSetupWindow = false; //!< Show the registration setup window.
+  bool m_showRegistrationJobsWindow = false;  //!< Show the registration jobs window.
+  bool m_requestAddIsosurface = false;        //!< Add one isosurface for the active image.
+  bool m_requestAddIsosurfaceRange = false;   //!< Open the isosurface range dialog.
+  std::optional<uuids::uuid> m_requestedIsosurfacesImageUid = std::nullopt; //!< One-shot image header to open.
+  bool m_showSettingsWindow = false;                                        //!< Show the settings window.
+  std::optional<SettingsTab> m_requestedSettingsTab = std::nullopt;         //!< One-shot requested settings page.
   bool m_appSettingsDirty = false;            //!< Application settings differ from the last saved state.
   bool m_showUnsavedAppSettingsPopup = false; //!< Show the unsaved application settings prompt.
   std::string m_savedAppSettingsJson;         //!< Last saved application settings JSON fingerprint.

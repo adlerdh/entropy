@@ -2100,13 +2100,14 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Render a subtle outline of the raycast image box in 3D views");
 
-  ImGui::Checkbox("Show crosshairs glyph", &renderData.m_showCrosshairsIn3D);
+  ImGui::Spacing();
+  ImGui::Checkbox("Show crosshairs glyph in 3D", &renderData.m_showCrosshairsIn3D);
   ImGui::SameLine();
   helpMarker("Render a small depth-correct sphere at the crosshairs position in 3D raycast views");
 
   if (renderData.m_showCrosshairsIn3D) {
     ImGui::DragFloat(
-      "Crosshairs glyph diameter",
+      "Glyph diameter",
       &renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
       0.05f,
       0.1f,
@@ -2115,6 +2116,20 @@ void renderRaycastingTab(RenderData& renderData)
       ImGuiSliderFlags_AlwaysClamp);
     ImGui::SameLine();
     helpMarker("Sphere diameter as a multiple of the current image voxel diagonal");
+  }
+
+  ImGui::Spacing();
+  ImGui::Checkbox("Show 3D camera frustum in 2D views", &renderData.m_showThreeDCameraFrustumIn2DViews);
+  ImGui::SameLine();
+  helpMarker("Show the last-interacted 3D raycast camera eye and frustum footprint in 2D views");
+
+  if (renderData.m_showThreeDCameraFrustumIn2DViews) {
+    ImGui::ColorEdit4(
+      "3D camera frustum color",
+      glm::value_ptr(renderData.m_threeDCameraFrustumColor),
+      k_colorAlphaEditFlags);
+    ImGui::SameLine();
+    helpMarker("Color used for the 3D camera eye dot and frustum lines in 2D views");
   }
 
   ImGui::Spacing();

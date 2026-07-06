@@ -438,3 +438,10 @@ void View::recenterThreeDCamera(const camera3d::SceneFrame& scene, const glm::ve
   camera3d::recenter(m_threeDCamera, m_threeDState, scene, target);
   m_threeDCameraInitialized = true;
 }
+
+void View::resetThreeDCamera(const camera3d::SceneFrame& scene, const glm::vec3& target)
+{
+  initializeThreeDCameraIfNeeded(scene);
+  camera3d::resetView(m_threeDCamera, m_threeDState, scene, target);
+  m_threeDCameraInitialized = true;
+}

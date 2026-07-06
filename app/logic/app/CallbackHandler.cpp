@@ -1460,6 +1460,7 @@ bool prepareThreeDView(AppData& appData, View* view)
     return false;
   }
 
+  appData.renderData().m_lastInteractedThreeDViewUid = view->uid();
   const camera3d::SceneFrame scene = threeDSceneFrameForView(appData, *view);
   view->initializeThreeDCameraIfNeeded(scene);
   camera3d::Controller{view->threeDCamera(), view->threeDState()}.updateScene(scene);
@@ -1479,6 +1480,10 @@ void CallbackHandler::doThreeDCameraOrbit(const ViewHit& startHit, const ViewHit
   const camera3d::SceneFrame scene = threeDSceneFrameForView(m_appData, *view);
   state.m_orbitTarget = threeDTargetForView(m_appData, *view, scene);
   camera3d::orbit(view->threeDCamera(), state, prevHit.viewClipPos, currHit.viewClipPos);
+  if (state.m_viewPositionFollowsCrosshairs) {
+    state.m_crosshairsFollowOffset =
+      helper::worldOrigin(view->threeDCamera()) - m_appData.state().worldCrosshairs().worldOrigin();
+  }
 }
 
 void CallbackHandler::doThreeDCameraRotateAboutEye(

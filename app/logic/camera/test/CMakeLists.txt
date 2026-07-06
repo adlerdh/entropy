@@ -1,6 +1,7 @@
 add_executable(EntropyCameraTests
   Camera3DInteractionTests.cpp
   Camera3DControlsTests.cpp
+  CameraFrustumSliceTests.cpp
   CameraRecenterTests.cpp
   RaycastIsoSurfacePickerTests.cpp
 )
@@ -8,6 +9,7 @@ add_executable(EntropyCameraTests
 target_sources(EntropyCameraTests PRIVATE
   "${entropy_APP_DIR}/logic/camera/Camera.cpp"
   "${entropy_APP_DIR}/logic/camera/Camera3DControls.cpp"
+  "${entropy_APP_DIR}/logic/camera/CameraFrustumSlice.cpp"
   "${entropy_APP_DIR}/logic/camera/Camera3DInteraction.cpp"
   "${entropy_APP_DIR}/logic/camera/CameraHelpers.cpp"
   "${entropy_APP_DIR}/logic/camera/CameraTypes.cpp"

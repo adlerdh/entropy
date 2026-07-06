@@ -268,6 +268,9 @@ struct RenderData
   bool m_raycastBackgroundEdgeBrighteningEnabled;
   bool m_showCrosshairsIn3D;
   float m_crosshairs3DGlyphDiameterVoxelDiagonals;
+  bool m_showThreeDCameraFrustumIn2DViews;
+  glm::vec4 m_threeDCameraFrustumColor;
+  std::optional<uuids::uuid> m_lastInteractedThreeDViewUid;
 
   enum class SegMaskingForRaycasting
   {

@@ -223,6 +223,8 @@ serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
     .m_backgroundEdgeBrighteningEnabled = renderData.m_raycastBackgroundEdgeBrighteningEnabled,
     .m_showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
     .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
+    .m_showThreeDCameraFrustumIn2DViews = renderData.m_showThreeDCameraFrustumIn2DViews,
+    .m_threeDCameraFrustumColor = renderData.m_threeDCameraFrustumColor,
     .m_renderFrontFaces = renderData.m_renderFrontFaces,
     .m_renderBackFaces = renderData.m_renderBackFaces,
     .m_segmentationMasking = raycastSegmentationMasking(renderData.m_segMasking)};
@@ -236,6 +238,8 @@ void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastin
   renderData.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_backgroundEdgeBrighteningEnabled;
   renderData.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
   renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
+  renderData.m_showThreeDCameraFrustumIn2DViews = settings.m_showThreeDCameraFrustumIn2DViews;
+  renderData.m_threeDCameraFrustumColor = settings.m_threeDCameraFrustumColor;
   renderData.m_renderFrontFaces = settings.m_renderFrontFaces;
   renderData.m_renderBackFaces = settings.m_renderBackFaces;
   renderData.m_segMasking = raycastSegmentationMasking(settings.m_segmentationMasking);

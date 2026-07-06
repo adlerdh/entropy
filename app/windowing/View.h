@@ -71,6 +71,7 @@ public:
   void setThreeDProjectionType(ProjectionType projectionType);
   void initializeThreeDCameraIfNeeded(const camera3d::SceneFrame& scene);
   void recenterThreeDCamera(const camera3d::SceneFrame& scene, const glm::vec3& target);
+  void resetThreeDCamera(const camera3d::SceneFrame& scene, const glm::vec3& target);
 
   /**
    * @brief Update the view's camera based on the crosshairs World-space position.

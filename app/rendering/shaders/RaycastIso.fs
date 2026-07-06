@@ -250,9 +250,11 @@ void main()
   // the per-fragment ray start; using the camera eye here would break orthographic projection because
   // orthographic rays are parallel but originate at different positions across the view plane.
   vec4 texRayStartPos = u_tex_T_world * vec4(fs_in.v_worldRayStart, 1.0);
-  vec3 texStartPos = vec3(texRayStartPos) + 0.5 * texStep * rand(gl_FragCoord.xy) * texRayDir;
+  vec3 texUnjitteredStartPos = vec3(texRayStartPos);
+  vec3 texStartPos = texUnjitteredStartPos + 0.5 * texStep * rand(gl_FragCoord.xy) * texRayDir;
 
   vec2 interx = slabs(texStartPos, texRayDir);
+  vec2 unjitteredInterx = slabs(texUnjitteredStartPos, texRayDir);
 
   if (interx[1] <= interx[0] || interx[1] <= 0.0) {
     // The ray did not intersect the bounding box
@@ -263,8 +265,14 @@ void main()
   float tMin = max(0.0, interx[0]);
   float tMax = interx[1];
 
-  vec3 texPosMin = texStartPos + tMin * texRayDir;
-  vec3 texPosMax = texStartPos + tMax * texRayDir;
+  float edgeTMin = max(0.0, unjitteredInterx[0]);
+  float edgeTMax = unjitteredInterx[1];
+  if (unjitteredInterx[1] <= unjitteredInterx[0] || unjitteredInterx[1] <= 0.0) {
+    edgeTMin = tMin;
+    edgeTMax = tMax;
+  }
+  vec3 texPosMin = texUnjitteredStartPos + edgeTMin * texRayDir;
+  vec3 texPosMax = texUnjitteredStartPos + edgeTMax * texRayDir;
   float frontEdgeAmount = imageBoxEdgeAmount(texPosMin);
   float backEdgeAmount = imageBoxEdgeAmount(texPosMax);
   vec4 bgColor = brightenRaycastBackground(u_bgColor, backEdgeAmount);

@@ -821,6 +821,10 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     }
 
     case GLFW_KEY_C: {
+      if (GLFW_REPEAT == action) {
+        break;
+      }
+
       // Shift does a "hard" reset of the crosshairs, oblique orientations, and zoom
       const bool hardReset = (s_modifierState.shift);
       const bool recenterCrosshairs = hardReset;

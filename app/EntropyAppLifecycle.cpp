@@ -159,10 +159,9 @@ void EntropyApp::onImagesReady()
 
   m_data.guiData().m_visibleImageCountDuringLoad = std::nullopt;
   m_data.state().setAnimating(false);
-  m_data.settings().setOverlays(true);
 
   m_data.guiData().m_renderUiWindows = true;
-  m_data.guiData().m_renderUiOverlays = true;
+  m_data.guiData().m_renderUiOverlays = m_data.settings().overlays();
 
   spdlog::debug("Begin setting up window state");
 

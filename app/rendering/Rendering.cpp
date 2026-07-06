@@ -11,6 +11,8 @@
 
 #include "logic/app/Data.h"
 #include "logic/app/StackTrace.h"
+#include "logic/camera/Camera3DControls.h"
+#include "logic/camera/CameraFrustumSlice.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
 #include "logic/states/annotation/AnnotationStateHelpers.h"
@@ -220,6 +222,33 @@ bool hasVisibleIsosurfaceForView(const AppData& appData, const View& view)
   }
 
   return false;
+}
+
+bool canDrawFrustumForThreeDView(const AppData& appData, const View& view)
+{
+  return ViewType::ThreeD == view.viewType() && ViewRenderMode::VolumeRender == view.renderMode() &&
+         hasVisibleIsosurfaceForView(appData, view);
+}
+
+const View* activeThreeDFrustumSource(const AppData& appData)
+{
+  const WindowData& windowData = appData.windowData();
+  const std::optional<uuid>& lastInteractedViewUid = appData.renderData().m_lastInteractedThreeDViewUid;
+  if (lastInteractedViewUid) {
+    const View* view = windowData.getCurrentView(*lastInteractedViewUid);
+    if (view && canDrawFrustumForThreeDView(appData, *view)) {
+      return view;
+    }
+  }
+
+  for (const uuid& viewUid : windowData.currentViewUids()) {
+    const View* view = windowData.getCurrentView(viewUid);
+    if (view && canDrawFrustumForThreeDView(appData, *view)) {
+      return view;
+    }
+  }
+
+  return nullptr;
 }
 
 void drawEmptyThreeDViewHint(NVGcontext* nvg, const FrameBounds& miewportViewBounds)
@@ -3382,14 +3411,26 @@ void Rendering::renderImageData()
 
     if (ViewType::ThreeD == view->viewType() && !view->threeDState().m_userMovedCamera) {
       const camera3d::SceneFrame scene = threeDSceneForView(*view);
-      const glm::vec3 target = (camera3d::OrbitTargetMode::Crosshairs == view->threeDState().m_orbitTargetMode)
-                                 ? m_appData.state().worldCrosshairs().worldOrigin()
-                                 : scene.m_center;
-      view->recenterThreeDCamera(scene, target);
+      const glm::vec3 crosshairs = m_appData.state().worldCrosshairs().worldOrigin();
+      const glm::vec3 orbitTarget =
+        (camera3d::OrbitTargetMode::Crosshairs == view->threeDState().m_orbitTargetMode) ? crosshairs : scene.m_center;
+      if (view->threeDState().m_viewPositionFollowsCrosshairs) {
+        view->initializeThreeDCameraIfNeeded(scene);
+        camera3d::recenterFollowing(view->threeDCamera(), view->threeDState(), scene, crosshairs, orbitTarget);
+      }
+      else {
+        view->recenterThreeDCamera(scene, orbitTarget);
+      }
     }
     else if (ViewType::ThreeD == view->viewType()) {
       const camera3d::SceneFrame scene = threeDSceneForView(*view);
       camera3d::Controller{view->threeDCamera(), view->threeDState()}.updateScene(scene);
+      if (view->threeDState().m_viewPositionFollowsCrosshairs) {
+        camera3d::followCrosshairs(
+          view->threeDCamera(),
+          view->threeDState(),
+          m_appData.state().worldCrosshairs().worldOrigin());
+      }
     }
 
     // Offset the crosshairs according to the image slice in the view
@@ -3473,6 +3514,8 @@ void Rendering::renderVectorOverlays()
   const float lightboxOffsetUnitReference = (R.m_showLightboxOffsetLabels && windowData.currentLayout().isLightbox())
                                               ? lightboxOffsetUnitReferenceMm(m_appData, windowData)
                                               : 0.0f;
+  const View* threeDFrustumSource =
+    R.m_showThreeDCameraFrustumIn2DViews ? activeThreeDFrustumSource(m_appData) : nullptr;
 
   for (const auto& viewUid : windowData.currentViewUids()) {
     const View* view = windowData.getCurrentView(viewUid);
@@ -3511,6 +3554,22 @@ void Rendering::renderVectorOverlays()
 
       if (ViewType::ThreeD == view->viewType() && !hasVisibleIsosurfaceForView(m_appData, *view)) {
         drawEmptyThreeDViewHint(m_nvg, miewportViewBounds);
+      }
+
+      if (threeDFrustumSource && ViewType::ThreeD != view->viewType() && ViewRenderMode::Disabled != view->renderMode())
+      {
+        const glm::vec3 planeNormal = helper::worldDirection(view->camera(), Directions::View::Front);
+        const camera3d::FrustumSliceOverlay overlay =
+          camera3d::frustumSliceOverlay(threeDFrustumSource->threeDCamera(), worldXhairsOffset, planeNormal);
+        if (!overlay.segments.empty()) {
+          drawThreeDCameraFrustumOverlay(
+            m_nvg,
+            miewportViewBounds,
+            windowVP,
+            *view,
+            overlay,
+            R.m_threeDCameraFrustumColor);
+        }
       }
 
       const bool showCrosshairsInCurrentLayout =

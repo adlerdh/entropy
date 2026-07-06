@@ -605,6 +605,68 @@ RenderPreferences defaultRenderPreferences()
   return {};
 }
 
+void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const RenderPreferences& currentPreferences)
+{
+  // Application defaults must not reset presentation state that belongs to the open project.
+  preferences.showImageBorders = currentPreferences.showImageBorders;
+  preferences.showImageBordersInLightboxViews = currentPreferences.showImageBordersInLightboxViews;
+  preferences.showCrosshairs = currentPreferences.showCrosshairs;
+  preferences.showCrosshairsInLightboxViews = currentPreferences.showCrosshairsInLightboxViews;
+  preferences.crosshairsSnapping = currentPreferences.crosshairsSnapping;
+  preferences.showAnatomicalLabels = currentPreferences.showAnatomicalLabels;
+  preferences.showAnatomicalLabelsInLightboxViews = currentPreferences.showAnatomicalLabelsInLightboxViews;
+  preferences.anatomicalLabelType = currentPreferences.anatomicalLabelType;
+  preferences.showScaleBars = currentPreferences.showScaleBars;
+  preferences.showScaleBarsInLightboxViews = currentPreferences.showScaleBarsInLightboxViews;
+  preferences.useMaximumIntensityProjectionExtent = currentPreferences.useMaximumIntensityProjectionExtent;
+  preferences.intensityProjectionSlabThicknessMm = currentPreferences.intensityProjectionSlabThicknessMm;
+  preferences.xrayEnergyKeV = currentPreferences.xrayEnergyKeV;
+  preferences.xrayWindow = currentPreferences.xrayWindow;
+  preferences.xrayLevel = currentPreferences.xrayLevel;
+  preferences.isocontourFloatingPointInterpolation = currentPreferences.isocontourFloatingPointInterpolation;
+  preferences.modulateIsocontourOpacityWithImageOpacity = currentPreferences.modulateIsocontourOpacityWithImageOpacity;
+  preferences.modulateSegmentationOpacityWithImageOpacity =
+    currentPreferences.modulateSegmentationOpacityWithImageOpacity;
+  preferences.segmentationOutlineStyle = currentPreferences.segmentationOutlineStyle;
+  preferences.segmentationInteriorOpacity = currentPreferences.segmentationInteriorOpacity;
+  preferences.segmentationErosionFactor = currentPreferences.segmentationErosionFactor;
+  preferences.squaredDifference = currentPreferences.squaredDifference;
+  preferences.squaredDifferenceMetric = currentPreferences.squaredDifferenceMetric;
+  preferences.localNccMetric = currentPreferences.localNccMetric;
+  preferences.localNccPatchRadius = currentPreferences.localNccPatchRadius;
+  preferences.localNccSampleSpacing = currentPreferences.localNccSampleSpacing;
+  preferences.localNccMinValidFraction = currentPreferences.localNccMinValidFraction;
+  preferences.localNccVarianceEpsilon = currentPreferences.localNccVarianceEpsilon;
+  preferences.localNccIgnoreNegativeCorrelation = currentPreferences.localNccIgnoreNegativeCorrelation;
+  preferences.localNccPresentation = currentPreferences.localNccPresentation;
+  preferences.localNccInvalidStyle = currentPreferences.localNccInvalidStyle;
+  preferences.localLinearResidualMetric = currentPreferences.localLinearResidualMetric;
+  preferences.localLinearResidualPatchRadius = currentPreferences.localLinearResidualPatchRadius;
+  preferences.localLinearResidualSampleSpacing = currentPreferences.localLinearResidualSampleSpacing;
+  preferences.localLinearResidualMinValidFraction = currentPreferences.localLinearResidualMinValidFraction;
+  preferences.localLinearResidualVarianceEpsilon = currentPreferences.localLinearResidualVarianceEpsilon;
+  preferences.localLinearResidualInvalidStyle = currentPreferences.localLinearResidualInvalidStyle;
+  preferences.overlayMagentaCyan = currentPreferences.overlayMagentaCyan;
+  preferences.quadrants = currentPreferences.quadrants;
+  preferences.checkerboardSquares = currentPreferences.checkerboardSquares;
+  preferences.flashlightRadiusFraction = currentPreferences.flashlightRadiusFraction;
+  preferences.flashlightOverlayMovingImage = currentPreferences.flashlightOverlayMovingImage;
+  preferences.raycastSamplingFactor = currentPreferences.raycastSamplingFactor;
+  preferences.transparentBackgroundWhenNoHit = currentPreferences.transparentBackgroundWhenNoHit;
+  preferences.renderFrontFaces = currentPreferences.renderFrontFaces;
+  preferences.renderBackFaces = currentPreferences.renderBackFaces;
+  preferences.segmentationMasking = currentPreferences.segmentationMasking;
+  preferences.annotationsOnTop = currentPreferences.annotationsOnTop;
+  preferences.landmarksOnTop = currentPreferences.landmarksOnTop;
+  preferences.hideAnnotationVertices = currentPreferences.hideAnnotationVertices;
+}
+
+RenderPreferences applicationRenderPreferences(RenderPreferences preferences)
+{
+  preserveProjectOwnedRenderPreferences(preferences, RenderPreferences{});
+  return preferences;
+}
+
 std::string toJsonString(
   const AppSettings& settings,
   const RenderPreferences& renderPreferences,

@@ -87,6 +87,25 @@ void configureClipPlanes(Camera& camera, const SceneFrame& scene, float eyeToTar
 /// Reset to Entropy's default 3D pose: coronal, view front +Y, view up +Z.
 void setDefaultCoronalPose(Camera& camera, State& state, const SceneFrame& scene);
 
+/// Reset the 3D camera pose and projection scale while preserving projection type and view options.
+void resetView(Camera& camera, State& state, const SceneFrame& scene, const glm::vec3& target);
+
+/// Recenter a crosshairs-following camera without letting orbit state move the camera eye.
+void recenterFollowing(
+  Camera& camera,
+  State& state,
+  const SceneFrame& scene,
+  const glm::vec3& crosshairs,
+  const glm::vec3& orbitTarget);
+
+/// Reset a crosshairs-following camera without letting orbit state move the camera eye.
+void resetFollowing(
+  Camera& camera,
+  State& state,
+  const SceneFrame& scene,
+  const glm::vec3& crosshairs,
+  const glm::vec3& orbitTarget);
+
 /// Reframe the camera around the requested target without changing the selected interaction mode.
 void recenter(Camera& camera, State& state, const SceneFrame& scene, const glm::vec3& target);
 
@@ -128,6 +147,7 @@ public:
   void initializeDefaultPose(const SceneFrame& scene);
   void updateScene(const SceneFrame& scene);
   void recenter(const SceneFrame& scene, const glm::vec3& target);
+  void recenterFollowing(const SceneFrame& scene, const glm::vec3& crosshairs, const glm::vec3& orbitTarget);
   void setProjection(ProjectionType projectionType);
   void orbit(const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos);
   void rotateAboutEye(const glm::vec2& ndcOldPos, const glm::vec2& ndcNewPos);

@@ -160,6 +160,24 @@ struct PrecisionPreferences
 RenderPreferences defaultRenderPreferences();
 
 /**
+ * @brief Preserve project-owned rendering values while applying application preferences.
+ * @param preferences Preferences being applied from user settings.
+ * @param currentPreferences Current rendering preferences from the open project.
+ *
+ * Application settings are allowed to change user-interface preferences, but project-owned
+ * presentation settings must remain controlled by the loaded project.
+ */
+void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const RenderPreferences& currentPreferences);
+
+/**
+ * @brief Return the subset of render preferences that belongs in application settings.
+ *
+ * Project-owned presentation fields are normalized to built-in defaults so that opening or
+ * editing a project does not make the application settings appear modified.
+ */
+RenderPreferences applicationRenderPreferences(RenderPreferences preferences);
+
+/**
  * @brief Return the current user preferences as versioned JSON text.
  * @param settings Application settings to serialize.
  * @param renderPreferences Rendering preferences to serialize.

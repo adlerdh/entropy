@@ -237,8 +237,9 @@ bool raycastingSettingsEqual(
          a.m_backgroundEdgeBrighteningEnabled == b.m_backgroundEdgeBrighteningEnabled &&
          a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
          a.m_crosshairs3DGlyphDiameterVoxelDiagonals == b.m_crosshairs3DGlyphDiameterVoxelDiagonals &&
-         a.m_renderFrontFaces == b.m_renderFrontFaces && a.m_renderBackFaces == b.m_renderBackFaces &&
-         a.m_segmentationMasking == b.m_segmentationMasking;
+         a.m_showThreeDCameraFrustumIn2DViews == b.m_showThreeDCameraFrustumIn2DViews &&
+         a.m_threeDCameraFrustumColor == b.m_threeDCameraFrustumColor && a.m_renderFrontFaces == b.m_renderFrontFaces &&
+         a.m_renderBackFaces == b.m_renderBackFaces && a.m_segmentationMasking == b.m_segmentationMasking;
 }
 
 bool intensityProjectionSettingsEqual(

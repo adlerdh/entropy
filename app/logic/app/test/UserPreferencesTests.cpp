@@ -480,6 +480,27 @@ TEST_CASE("user preferences save creates parent directories and load restores th
   requirePrecisionPreferencesEqual(actualPrecisionPreferences, expectedPrecisionPreferences);
 }
 
+TEST_CASE("application render preferences ignore project-owned presentation settings", "[app][settings]")
+{
+  user_preferences::RenderPreferences preferences;
+  preferences.raycastSamplingFactor = 0.25f;
+  preferences.showCrosshairs = false;
+  preferences.showCrosshairsInLightboxViews = false;
+  preferences.showImageBorders = false;
+  preferences.asciiEnabled = true;
+
+  const user_preferences::RenderPreferences appPreferences =
+    user_preferences::applicationRenderPreferences(preferences);
+
+  CHECK(appPreferences.raycastSamplingFactor == user_preferences::RenderPreferences{}.raycastSamplingFactor);
+  CHECK(appPreferences.showCrosshairs == user_preferences::RenderPreferences{}.showCrosshairs);
+  CHECK(
+    appPreferences.showCrosshairsInLightboxViews ==
+    user_preferences::RenderPreferences{}.showCrosshairsInLightboxViews);
+  CHECK(appPreferences.showImageBorders == user_preferences::RenderPreferences{}.showImageBorders);
+  CHECK(appPreferences.asciiEnabled == true);
+}
+
 TEST_CASE("user preferences reject invalid JSON without mutating existing values", "[app][settings]")
 {
   AppSettings settings;

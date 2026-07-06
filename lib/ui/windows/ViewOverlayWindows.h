@@ -72,6 +72,7 @@ struct ViewOverlayModeCallbacks
   std::function<void(const uuids::uuid& viewUid)> applyImageSelectionAndShaderToAllViews; //!< Apply to all views.
   std::function<bool()> isIsosurfacesPanelVisible;                  //!< Is the isosurfaces panel currently visible.
   std::function<void()> showIsosurfacesPanel;                       //!< Open the isosurfaces panel.
+  std::function<void()> showIsosurfacesPanelForRaycastImage;        //!< Open the panel for the current raycast image.
   std::function<ProjectionType()> getThreeDProjectionType;          //!< Current 3D projection type.
   std::function<void(ProjectionType)> setThreeDProjectionType;      //!< Set 3D projection type.
   std::function<float()> getThreeDFovAngleDegrees;                  //!< Current perspective field-of-view angle.
