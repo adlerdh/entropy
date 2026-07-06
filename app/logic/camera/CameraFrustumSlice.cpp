@@ -85,7 +85,7 @@ namespace camera3d
 
 FrustumSliceOverlay frustumSliceOverlay(const Camera& camera, const glm::vec3& planePoint, const glm::vec3& planeNormal)
 {
-  FrustumSliceOverlay overlay{.eye = helper::worldOrigin(camera)};
+  FrustumSliceOverlay overlay{helper::worldOrigin(camera), {}};
 
   if (glm::length(planeNormal) <= 0.0f) {
     return overlay;
