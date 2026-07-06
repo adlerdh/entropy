@@ -144,6 +144,15 @@ TEST_CASE("Project snapshot comparison detects layout and interface changes", "[
   changedView.m_view.m_showCrosshairsInLightboxViews = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedView));
 
+  changedView = project;
+  changedView.m_view.m_showScaleBars = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
+  changedView = project;
+  changedView.m_view.m_showScaleBars = true;
+  changedView.m_view.m_showScaleBarsInLightboxViews = true;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedView));
+
   auto changedComparison = project;
   changedComparison.m_comparison.m_checkerboardSquares = 17;
   CHECK_FALSE(project_snapshot::equivalent(project, changedComparison));

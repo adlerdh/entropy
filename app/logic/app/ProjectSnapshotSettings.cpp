@@ -47,6 +47,8 @@ serialize::ProjectViewSettings viewSettings(const AppData& appData)
     .m_showCrosshairsInLightboxViews = appData.renderData().m_showCrosshairsInLightboxViews,
     .m_showAnatomicalLabels = appData.renderData().m_showAnatomicalLabels,
     .m_showAnatomicalLabelsInLightboxViews = appData.renderData().m_showAnatomicalLabelsInLightboxViews,
+    .m_showScaleBars = appData.renderData().m_showScaleBars,
+    .m_showScaleBarsInLightboxViews = appData.renderData().m_showScaleBarsInLightboxViews,
     .m_anatomicalLabelType = appData.renderData().m_anatomicalLabelType,
     .m_lockAnatomicalDirectionsToReferenceImage = appData.settings().lockAnatomicalCoordinateAxesWithReferenceImage(),
     .m_crosshairsSnapping = appData.renderData().m_snapCrosshairs};
@@ -64,6 +66,9 @@ void applyViewSettings(AppData& appData, const serialize::ProjectViewSettings& s
   appData.renderData().m_showAnatomicalLabels = settings.m_showAnatomicalLabels;
   appData.renderData().m_showAnatomicalLabelsInLightboxViews =
     settings.m_showAnatomicalLabels && settings.m_showAnatomicalLabelsInLightboxViews;
+  appData.renderData().m_showScaleBars = settings.m_showScaleBars;
+  appData.renderData().m_showScaleBarsInLightboxViews =
+    settings.m_showScaleBars && settings.m_showScaleBarsInLightboxViews;
   appData.renderData().m_anatomicalLabelType = settings.m_anatomicalLabelType;
   appData.settings().setLockAnatomicalCoordinateAxesWithReferenceImage(
     settings.m_lockAnatomicalDirectionsToReferenceImage);
@@ -215,6 +220,9 @@ serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
   return serialize::ProjectRaycastingSettings{
     .m_samplingFactor = renderData.m_raycastSamplingFactor,
     .m_transparentBackgroundWhenNoHit = renderData.m_3dTransparentIfNoHit,
+    .m_backgroundEdgeBrighteningEnabled = renderData.m_raycastBackgroundEdgeBrighteningEnabled,
+    .m_showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
+    .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
     .m_renderFrontFaces = renderData.m_renderFrontFaces,
     .m_renderBackFaces = renderData.m_renderBackFaces,
     .m_segmentationMasking = raycastSegmentationMasking(renderData.m_segMasking)};
@@ -225,6 +233,9 @@ void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastin
   auto& renderData = appData.renderData();
   renderData.m_raycastSamplingFactor = settings.m_samplingFactor;
   renderData.m_3dTransparentIfNoHit = settings.m_transparentBackgroundWhenNoHit;
+  renderData.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_backgroundEdgeBrighteningEnabled;
+  renderData.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
+  renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
   renderData.m_renderFrontFaces = settings.m_renderFrontFaces;
   renderData.m_renderBackFaces = settings.m_renderBackFaces;
   renderData.m_segMasking = raycastSegmentationMasking(settings.m_segmentationMasking);

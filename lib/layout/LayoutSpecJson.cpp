@@ -100,6 +100,20 @@ const std::vector<std::pair<IntensityProjectionMode, const char*>>& intensityPro
   return names;
 }
 
+const std::vector<std::pair<int, const char*>>& threeDProjectionTypeNames()
+{
+  // Keep this mapping in sync with ProjectionType without pulling app camera headers into layout JSON.
+  static const std::vector<std::pair<int, const char*>> names{{0, "Orthographic"}, {1, "Perspective"}};
+  return names;
+}
+
+const std::vector<std::pair<int, const char*>>& threeDOrbitTargetModeNames()
+{
+  // Keep this mapping in sync with camera3d::OrbitTargetMode without pulling app camera headers into layout JSON.
+  static const std::vector<std::pair<int, const char*>> names{{0, "VisibleImages"}, {1, "Crosshairs"}};
+  return names;
+}
+
 const std::vector<std::pair<int, const char*>>& offsetModeNames()
 {
   // Keep this mapping in sync with ViewOffsetMode without pulling common runtime headers into this test target.
@@ -132,6 +146,9 @@ void to_json(nlohmann::json& j, const ImageSelectionSpec& selection)
   if (!selection.m_renderedImageIndices.empty()) {
     j["rendered"] = selection.m_renderedImageIndices;
   }
+  if (!selection.m_volumeRenderedImageIndices.empty()) {
+    j["volumeRendered"] = selection.m_volumeRenderedImageIndices;
+  }
   if (!selection.m_metricImageIndices.empty()) {
     j["metric"] = selection.m_metricImageIndices;
   }
@@ -141,6 +158,12 @@ void from_json(const nlohmann::json& j, ImageSelectionSpec& selection)
 {
   if (j.count("rendered")) {
     j.at("rendered").get_to(selection.m_renderedImageIndices);
+  }
+  if (j.count("volumeRendered")) {
+    j.at("volumeRendered").get_to(selection.m_volumeRenderedImageIndices);
+    if (selection.m_volumeRenderedImageIndices.size() > 1) {
+      selection.m_volumeRenderedImageIndices.resize(1);
+    }
   }
   if (j.count("metric")) {
     j.at("metric").get_to(selection.m_metricImageIndices);
@@ -170,7 +193,13 @@ void to_json(nlohmann::json& j, const ViewSpec& view)
       {"zoom", optionalSizeToJson(view.m_zoomSyncMembershipGroup)}}},
     {"preferredDefaultRenderedImages", view.m_preferredDefaultRenderedImages},
     {"defaultRenderAllImages", view.m_defaultRenderAllImages},
-    {"imageSelection", view.m_imageSelection}};
+    {"imageSelection", view.m_imageSelection},
+    {"threeD",
+     {{"projectionType", enumValueToJson(view.m_threeDProjectionType, threeDProjectionTypeNames())},
+      {"orbitTargetMode", enumValueToJson(view.m_threeDOrbitTargetMode, threeDOrbitTargetModeNames())},
+      {"cameraFollowsCrosshairs", view.m_threeDCameraFollowsCrosshairs},
+      {"perspectiveZoom", view.m_threeDPerspectiveZoom},
+      {"orthographicZoom", view.m_threeDOrthographicZoom}}}};
 }
 
 void from_json(const nlohmann::json& j, ViewSpec& view)
@@ -238,6 +267,24 @@ void from_json(const nlohmann::json& j, ViewSpec& view)
   }
   if (j.count("imageSelection")) {
     j.at("imageSelection").get_to(view.m_imageSelection);
+  }
+  if (j.count("threeD")) {
+    const auto& t = j.at("threeD");
+    if (t.count("projectionType")) {
+      view.m_threeDProjectionType = enumValueFromJson(t.at("projectionType"), threeDProjectionTypeNames());
+    }
+    if (t.count("orbitTargetMode")) {
+      view.m_threeDOrbitTargetMode = enumValueFromJson(t.at("orbitTargetMode"), threeDOrbitTargetModeNames());
+    }
+    if (t.count("cameraFollowsCrosshairs")) {
+      t.at("cameraFollowsCrosshairs").get_to(view.m_threeDCameraFollowsCrosshairs);
+    }
+    if (t.count("perspectiveZoom")) {
+      t.at("perspectiveZoom").get_to(view.m_threeDPerspectiveZoom);
+    }
+    if (t.count("orthographicZoom")) {
+      t.at("orthographicZoom").get_to(view.m_threeDOrthographicZoom);
+    }
   }
 }
 

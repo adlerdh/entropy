@@ -16,6 +16,7 @@ class AppData;
  * @param imageUid UID of the image whose isosurfaces are displayed.
  * @param imageIndex Zero-based image index used for the collapsing header label.
  * @param isActiveImage True when this image is the active image.
+ * @param hasFollowingHeader True when another image header follows this one in the panel.
  * @param storeFuture Callback that stores asynchronous mesh-generation task futures.
  * @param addTaskToIsosurfaceGpuMeshGenerationQueue Callback that queues completed CPU meshes for GPU upload.
  */
@@ -24,5 +25,6 @@ void renderIsosurfacesHeader(
   const uuids::uuid& imageUid,
   size_t imageIndex,
   bool isActiveImage,
+  bool hasFollowingHeader,
   std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
   std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue);

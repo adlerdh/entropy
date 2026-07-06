@@ -321,16 +321,35 @@ std::pair<float, float> hits(glm::vec3 e1, glm::vec3 d, glm::vec3 uMinCorner, gl
 
 std::tuple<bool, float, float> slabs(glm::vec3 rayPos, glm::vec3 rayDir, glm::vec3 boxMin, glm::vec3 boxMax)
 {
-  glm::vec3 t0 = (boxMin - rayPos) / rayDir;
-  glm::vec3 t1 = (boxMax - rayPos) / rayDir;
+  constexpr float sk_parallelRayTolerance = 1.0e-7f;
 
-  glm::vec3 tmin = min(t0, t1);
-  glm::vec3 tmax = max(t0, t1);
+  float tEntry = -std::numeric_limits<float>::infinity();
+  float tExit = std::numeric_limits<float>::infinity();
 
-  float a = glm::compMax(tmin);
-  float b = glm::compMin(tmax);
+  for (int axis = 0; axis < 3; ++axis) {
+    if (std::abs(rayDir[axis]) < sk_parallelRayTolerance) {
+      if (rayPos[axis] < boxMin[axis] || rayPos[axis] > boxMax[axis]) {
+        return std::make_tuple(false, 1.0f, 0.0f);
+      }
+      continue;
+    }
 
-  return std::make_tuple(a <= b, a, b);
+    float t0 = (boxMin[axis] - rayPos[axis]) / rayDir[axis];
+    float t1 = (boxMax[axis] - rayPos[axis]) / rayDir[axis];
+
+    if (t1 < t0) {
+      std::swap(t0, t1);
+    }
+
+    tEntry = std::max(tEntry, t0);
+    tExit = std::min(tExit, t1);
+
+    if (tExit <= tEntry) {
+      return std::make_tuple(false, tEntry, tExit);
+    }
+  }
+
+  return std::make_tuple(tEntry < tExit, tEntry, tExit);
 }
 
 std::optional<float> computeRayLineSegmentIntersection(

@@ -180,10 +180,13 @@ struct ProjectComparisonSettings
  */
 struct ProjectRaycastingSettings
 {
-  float m_samplingFactor = 0.5f;                //!< Ray-marching sampling factor.
-  bool m_transparentBackgroundWhenNoHit = true; //!< Make missed 3D rays transparent.
-  bool m_renderFrontFaces = true;               //!< Render front faces in 3D raycasting.
-  bool m_renderBackFaces = true;                //!< Render back faces in 3D raycasting.
+  float m_samplingFactor = 0.5f;                          //!< Ray-marching sampling factor.
+  bool m_transparentBackgroundWhenNoHit = true;           //!< Make missed 3D rays transparent.
+  bool m_backgroundEdgeBrighteningEnabled = true;         //!< Brighten raycast background near image-domain edges.
+  bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D raycast views.
+  float m_crosshairs3DGlyphDiameterVoxelDiagonals = 2.0f; //!< 3D crosshairs glyph diameter in voxel diagonals.
+  bool m_renderFrontFaces = true;                         //!< Render front faces in 3D raycasting.
+  bool m_renderBackFaces = true;                          //!< Render back faces in 3D raycasting.
   ProjectSegmentationRaycastMasking m_segmentationMasking =
     ProjectSegmentationRaycastMasking::Disabled; //!< Segmentation mask behavior.
 };
@@ -484,6 +487,8 @@ struct ProjectViewSettings
   bool m_showCrosshairsInLightboxViews = true;       //!< Show crosshairs in lightbox layout tiles.
   bool m_showAnatomicalLabels = true;                //!< Show anatomical direction labels in all views.
   bool m_showAnatomicalLabelsInLightboxViews = true; //!< Show anatomical direction labels in lightbox layout tiles.
+  bool m_showScaleBars = false;                      //!< Show scale bars in all views.
+  bool m_showScaleBarsInLightboxViews = false;       //!< Show scale bars in lightbox layout tiles.
   AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human; //!< Anatomical label convention.
   bool m_lockAnatomicalDirectionsToReferenceImage = false; //!< Lock anatomical axes to the reference image.
   CrosshairsSnapping m_crosshairsSnapping = CrosshairsSnapping::Disabled; //!< Crosshairs snapping behavior.

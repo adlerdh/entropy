@@ -53,6 +53,47 @@ const std::list<uuids::uuid>& ControlFrame::renderedImages() const
 void ControlFrame::setRenderedImages(const std::list<uuids::uuid>& imageUids, bool filterByDefaults)
 {
   m_imageSelection.setRenderedImages(imageUids, filterByDefaults);
+  if (ViewRenderMode::VolumeRender == m_renderMode) {
+    m_imageSelection.ensureVolumeRenderedImageSelected();
+  }
+}
+
+bool ControlFrame::isImageVolumeRendered(const AppData& appData, std::size_t index)
+{
+  auto imageUid = appData.imageUid(index);
+  if (!imageUid) {
+    return false;
+  }
+  return isImageVolumeRendered(*imageUid);
+}
+
+bool ControlFrame::isImageVolumeRendered(const uuids::uuid& imageUid)
+{
+  return m_imageSelection.isImageVolumeRendered(imageUid);
+}
+
+void ControlFrame::setImageVolumeRendered(const AppData& appData, std::size_t index, bool visible)
+{
+  auto imageUid = appData.imageUid(index);
+  if (!imageUid) {
+    return;
+  }
+  setImageVolumeRendered(appData, *imageUid, visible);
+}
+
+void ControlFrame::setImageVolumeRendered(const AppData& appData, const uuids::uuid& imageUid, bool visible)
+{
+  m_imageSelection.setImageVolumeRendered(imageUid, appData.imageUidsOrdered(), visible);
+}
+
+const std::list<uuids::uuid>& ControlFrame::volumeRenderedImages() const
+{
+  return m_imageSelection.volumeRenderedImages();
+}
+
+void ControlFrame::setVolumeRenderedImages(const std::list<uuids::uuid>& imageUids)
+{
+  m_imageSelection.setVolumeRenderedImages(imageUids);
 }
 
 bool ControlFrame::isImageUsedForMetric(const AppData& appData, std::size_t index)
@@ -157,6 +198,9 @@ ViewRenderMode ControlFrame::renderMode() const
 void ControlFrame::setRenderMode(const ViewRenderMode& shaderType)
 {
   m_renderMode = shaderType;
+  if (ViewRenderMode::VolumeRender == m_renderMode) {
+    m_imageSelection.ensureVolumeRenderedImageSelected();
+  }
 }
 
 IntensityProjectionMode ControlFrame::intensityProjectionMode() const

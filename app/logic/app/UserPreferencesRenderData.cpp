@@ -274,6 +274,8 @@ void preserveProjectRenderPreferences(
   preferences.showAnatomicalLabels = currentPreferences.showAnatomicalLabels;
   preferences.showAnatomicalLabelsInLightboxViews = currentPreferences.showAnatomicalLabelsInLightboxViews;
   preferences.anatomicalLabelType = currentPreferences.anatomicalLabelType;
+  preferences.showScaleBars = currentPreferences.showScaleBars;
+  preferences.showScaleBarsInLightboxViews = currentPreferences.showScaleBarsInLightboxViews;
   preferences.useMaximumIntensityProjectionExtent = currentPreferences.useMaximumIntensityProjectionExtent;
   preferences.intensityProjectionSlabThicknessMm = currentPreferences.intensityProjectionSlabThicknessMm;
   preferences.xrayEnergyKeV = currentPreferences.xrayEnergyKeV;

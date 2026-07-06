@@ -89,6 +89,49 @@ void FrameImageSelection::setRenderedImages(const std::list<uuids::uuid>& imageU
   }
 }
 
+bool FrameImageSelection::isImageVolumeRendered(const uuids::uuid& imageUid) const
+{
+  return contains(m_volumeRenderedImageUids, imageUid);
+}
+
+void FrameImageSelection::setImageVolumeRendered(
+  const uuids::uuid& imageUid,
+  uuid_range_t orderedImageUids,
+  bool visible)
+{
+  if (!visible) {
+    m_volumeRenderedImageUids.remove(imageUid);
+    return;
+  }
+
+  if (!imageIndex(orderedImageUids, imageUid)) {
+    return;
+  }
+
+  m_volumeRenderedImageUids.clear();
+  m_volumeRenderedImageUids.push_back(imageUid);
+}
+
+const std::list<uuids::uuid>& FrameImageSelection::volumeRenderedImages() const
+{
+  return m_volumeRenderedImageUids;
+}
+
+void FrameImageSelection::setVolumeRenderedImages(const std::list<uuids::uuid>& imageUids)
+{
+  m_volumeRenderedImageUids.clear();
+  if (!imageUids.empty()) {
+    m_volumeRenderedImageUids.push_back(imageUids.front());
+  }
+}
+
+void FrameImageSelection::ensureVolumeRenderedImageSelected()
+{
+  if (m_volumeRenderedImageUids.empty() && !m_renderedImageUids.empty()) {
+    m_volumeRenderedImageUids.push_back(m_renderedImageUids.front());
+  }
+}
+
 bool FrameImageSelection::isImageUsedForMetric(const uuids::uuid& imageUid) const
 {
   return contains(m_metricImageUids, imageUid);
@@ -137,6 +180,9 @@ const std::list<uuids::uuid>& FrameImageSelection::visibleImages(ViewRenderMode 
     case ViewRenderMode::Image: {
       return renderedImages();
     }
+    case ViewRenderMode::VolumeRender: {
+      return m_volumeRenderedImageUids.empty() ? renderedImages() : volumeRenderedImages();
+    }
     case ViewRenderMode::Disabled: {
       return sk_noImages;
     }
@@ -170,6 +216,7 @@ void FrameImageSelection::updateImageOrdering(uuid_range_t orderedImageUids)
 {
   m_renderedImageUids = image_selection::reorderSelectedImages(m_renderedImageUids, orderedImageUids);
   m_metricImageUids = image_selection::reorderSelectedImages(m_metricImageUids, orderedImageUids, sk_maxMetricImages);
+  m_volumeRenderedImageUids = image_selection::reorderSelectedImages(m_volumeRenderedImageUids, orderedImageUids, 1u);
 }
 
 } // namespace viewer

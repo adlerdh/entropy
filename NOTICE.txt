@@ -1,0 +1,12 @@
+Entropy
+Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing
+and Science Lab (PICSL), University of Pennsylvania.
+
+This product includes software developed for Entropy.
+Project URL: https://github.com/adlerdh/entropy
+
+Entropy is licensed under the Apache License, Version 2.0.
+See LICENSE.txt for the license terms.
+
+Third-party notices and license information are listed in
+THIRD_PARTY_NOTICES.md.

@@ -35,6 +35,9 @@ public:
   void setImageRendered(const AppData& appData, std::size_t index, bool visible) override;
   void setRenderedImages(const std::list<uuid>& imageUids, bool filterByDefaults) override;
 
+  void setImageVolumeRendered(const AppData& appData, std::size_t index, bool visible) override;
+  void setVolumeRenderedImages(const std::list<uuid>& imageUids) override;
+
   void setMetricImages(const std::list<uuid>& imageUids) override;
   void setImageUsedForMetric(const AppData& appData, std::size_t index, bool visible) override;
 

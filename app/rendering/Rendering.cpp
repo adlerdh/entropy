@@ -193,6 +193,57 @@ float vectorWarpedGridSpacingMillimeters(
   return std::max(settings.vectorWarpedGridMillimeterSpacing(), 0.1f);
 }
 
+bool hasVisibleIsosurfaceForView(const AppData& appData, const View& view)
+{
+  if (ViewType::ThreeD != view.viewType()) {
+    return false;
+  }
+
+  for (const uuid& imageUid : view.visibleImages()) {
+    const Image* image = appData.image(imageUid);
+    if (!image) {
+      continue;
+    }
+
+    const ImageSettings& settings = image->settings();
+    if (!settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible()) {
+      continue;
+    }
+
+    const uint32_t activeComponent = settings.activeComponent();
+    for (const auto& surfaceUid : appData.isosurfaceUids(imageUid, activeComponent)) {
+      const Isosurface* surface = appData.isosurface(imageUid, activeComponent, surfaceUid);
+      if (surface && surface->visible && surface->opacity > 0.0f) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+void drawEmptyThreeDViewHint(NVGcontext* nvg, const FrameBounds& miewportViewBounds)
+{
+  static const NVGcolor s_textColor(nvgRGBA(185, 185, 185, 215));
+  static const NVGcolor s_shadowColor(nvgRGBA(20, 20, 20, 180));
+  static const char* sk_hint = "Create an isosurface to show in this 3D view";
+
+  const float x = miewportViewBounds.bounds.xoffset + 0.5f * miewportViewBounds.bounds.width;
+  const float y = miewportViewBounds.bounds.yoffset + 0.5f * miewportViewBounds.bounds.height;
+
+  nvgFontSize(nvg, 16.0f);
+  nvgFontFace(nvg, "robotoLight");
+  nvgTextAlign(nvg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+
+  nvgFontBlur(nvg, 2.0f);
+  nvgFillColor(nvg, s_shadowColor);
+  nvgText(nvg, x, y, sk_hint, nullptr);
+
+  nvgFontBlur(nvg, 0.0f);
+  nvgFillColor(nvg, s_textColor);
+  nvgText(nvg, x, y, sk_hint, nullptr);
+}
+
 void updateSegmentationUniformsForImage(
   const AppData& appData,
   const uuid& segmentationOwnerImageUid,
@@ -2046,17 +2097,18 @@ void Rendering::renderOneImage_overlays(
   bool renderImageBorders)
 {
   auto& renderData = m_appData.renderData();
+  const bool allowLandmarksAndAnnotations = renderLandmarkAndAnnotationOverlays && ViewType::ThreeD != view.viewType();
   const bool renderBordersInCurrentLayout =
     renderImageBorders && renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections &&
     (!m_appData.windowData().currentLayout().isLightbox() ||
      renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews);
 
-  if (renderLandmarkAndAnnotationOverlays && !renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
+  if (allowLandmarksAndAnnotations && !renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes) {
     drawLandmarks(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, I);
     setupOpenGLState();
   }
 
-  if (renderLandmarkAndAnnotationOverlays && !renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes) {
+  if (allowLandmarksAndAnnotations && !renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes) {
     drawAnnotations(m_nvg, miewportViewBounds, worldOffsetXhairs, m_appData, view, I);
     setupOpenGLState();
   }
@@ -2084,6 +2136,10 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
   int displayModeUniform,
   const CurrentImages& sourceImages)
 {
+  if (ViewType::ThreeD == view.viewType()) {
+    return;
+  }
+
   const RenderData& R = m_appData.renderData();
   const Viewport& windowVP = m_appData.windowData().viewport();
 
@@ -2850,7 +2906,7 @@ void Rendering::renderAllImagesForView(
     }
 
     case ShaderGroup::Volume: {
-      const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
+      const CurrentImages I = getImageAndSegUidsForImageShaders(view.visibleImages());
       if (I.empty()) {
         return;
       }
@@ -2898,8 +2954,7 @@ void Rendering::renderAllImagesForView(
         P.setUniform("u_tex_T_world", U.imgTexture_T_world);
         P.setUniform("u_world_T_imgTex", U.world_T_imgTexture);
 
-        // The camera is positioned at the crosshairs:
-        P.setUniform("u_worldEyePos", worldOffsetXhairs);
+        P.setUniform("u_worldEyePos", helper::worldOrigin(view.camera()));
         P.setUniform("u_texGrads", U.textureGradientStep);
 
         /// @note Shader expects 8 values
@@ -2924,7 +2979,16 @@ void Rendering::renderAllImagesForView(
         // (RenderData::SegMaskingForRaycasting::SegMasksOut == R.m_segMasking));
 
         P.setUniform("u_bgColor", R.m_3dBackgroundColor.a * R.m_3dBackgroundColor);
+        P.setUniform("u_bgEdgeBrighteningEnabled", R.m_raycastBackgroundEdgeBrighteningEnabled);
         P.setUniform("u_noHitTransparent", R.m_3dTransparentIfNoHit);
+        P.setUniform(
+          "u_showCrosshairs3D",
+          R.m_showCrosshairsIn3D && !view.threeDState().m_viewPositionFollowsCrosshairs);
+        P.setUniform("u_crosshairsWorldPos", m_appData.state().worldCrosshairs().worldOrigin());
+        P.setUniform("u_crosshairsColor", R.m_crosshairsColor);
+        P.setUniform(
+          "u_crosshairsRadiusMm",
+          0.5f * R.m_crosshairs3DGlyphDiameterVoxelDiagonals * glm::length(image->header().spacing()));
 
         volumeRenderOneImage(view, P, CurrentImages{imgSegPair});
       }
@@ -3068,6 +3132,10 @@ void Rendering::renderAllLandmarksForView(
   const FrameBounds& miewportViewBounds,
   const glm::vec3& worldOffsetXhairs)
 {
+  if (ViewType::ThreeD == view.viewType()) {
+    return;
+  }
+
   switch (view.renderMode()) {
     case ViewRenderMode::Image: {
       const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
@@ -3109,6 +3177,10 @@ void Rendering::renderAllAnnotationsForView(
   const FrameBounds& miewportViewBounds,
   const glm::vec3& worldOffsetXhairs)
 {
+  if (ViewType::ThreeD == view.viewType()) {
+    return;
+  }
+
   switch (view.renderMode()) {
     case ViewRenderMode::Image: {
       const CurrentImages I = getImageAndSegUidsForImageShaders(view.renderedImages());
@@ -3168,10 +3240,31 @@ void Rendering::renderImageData()
   const bool renderLandmarksOnTop = R.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
   const bool renderAnnotationsOnTop = R.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
 
+  auto threeDSceneForView = [this](const View& view) {
+    const ImageSelection selection =
+      view.visibleImages().empty() ? ImageSelection::AllLoadedImages : ImageSelection::VisibleImagesInView;
+    camera3d::SceneFrame scene =
+      camera3d::sceneFrameFromAABB(data::computeWorldAABBoxEnclosingImages(m_appData, selection, &view));
+    scene.m_voxelDiagonal = data::computeMinVoxelDiagonalForImages(m_appData, selection, &view);
+    return scene;
+  };
+
   // Render images for each view in the layout
   for (const auto& [viewUid, view] : m_appData.windowData().currentLayout().views()) {
     if (!view) {
       continue;
+    }
+
+    if (ViewType::ThreeD == view->viewType() && !view->threeDState().m_userMovedCamera) {
+      const camera3d::SceneFrame scene = threeDSceneForView(*view);
+      const glm::vec3 target = (camera3d::OrbitTargetMode::Crosshairs == view->threeDState().m_orbitTargetMode)
+                                 ? m_appData.state().worldCrosshairs().worldOrigin()
+                                 : scene.m_center;
+      view->recenterThreeDCamera(scene, target);
+    }
+    else if (ViewType::ThreeD == view->viewType()) {
+      const camera3d::SceneFrame scene = threeDSceneForView(*view);
+      camera3d::Controller{view->threeDCamera(), view->threeDState()}.updateScene(scene);
     }
 
     // Offset the crosshairs according to the image slice in the view
@@ -3282,12 +3375,17 @@ void Rendering::renderVectorOverlays()
         m_appData.state().worldCrosshairs().worldOrigin());
 
       if (
-        ViewRenderMode::Image == view->renderMode() || ViewRenderMode::Checkerboard == view->renderMode() ||
-        ViewRenderMode::Quadrants == view->renderMode() || ViewRenderMode::Flashlight == view->renderMode())
+        ViewType::ThreeD != view->viewType() &&
+        (ViewRenderMode::Image == view->renderMode() || ViewRenderMode::Checkerboard == view->renderMode() ||
+         ViewRenderMode::Quadrants == view->renderMode() || ViewRenderMode::Flashlight == view->renderMode()))
       {
         const std::list<uuid>& vectorOverlayImages =
           ViewRenderMode::Image == view->renderMode() ? view->renderedImages() : view->metricImages();
         drawVectorFieldArrows(m_nvg, miewportViewBounds, worldXhairsOffset, m_appData, *view, vectorOverlayImages);
+      }
+
+      if (ViewType::ThreeD == view->viewType() && !hasVisibleIsosurfaceForView(m_appData, *view)) {
+        drawEmptyThreeDViewHint(m_nvg, miewportViewBounds);
       }
 
       const bool showCrosshairsInCurrentLayout =
@@ -4135,6 +4233,11 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program)
     fsUniforms.insertUniform("u_shininess", UniformType::FloatVector, FloatVector{0.0f});
 
     fsUniforms.insertUniform("u_bgColor", UniformType::Vec4, sk_zeroVec4);
+    fsUniforms.insertUniform("u_bgEdgeBrighteningEnabled", UniformType::Bool, true);
+    fsUniforms.insertUniform("u_showCrosshairs3D", UniformType::Bool, false);
+    fsUniforms.insertUniform("u_crosshairsWorldPos", UniformType::Vec3, sk_zeroVec3);
+    fsUniforms.insertUniform("u_crosshairsColor", UniformType::Vec4, sk_zeroVec4);
+    fsUniforms.insertUniform("u_crosshairsRadiusMm", UniformType::Float, 0.5f);
 
     fsUniforms.insertUniform("u_samplingFactor", UniformType::Float, 1.0f);
     fsUniforms.insertUniform("u_imgInvDims", UniformType::Vec3, glm::vec3{1.0f});
@@ -4177,6 +4280,15 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
   constexpr int maxNumIsos = 8;
 
   auto& isoData = appData.renderData().m_isosurfaceData;
+  isoData.numIsos = 0;
+  std::fill(std::begin(isoData.values), std::end(isoData.values), 0.0f);
+  std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
+  std::fill(std::begin(isoData.edgeStrengths), std::end(isoData.edgeStrengths), 0.0f);
+  std::fill(std::begin(isoData.ambient), std::end(isoData.ambient), glm::vec3{0.0f});
+  std::fill(std::begin(isoData.diffuse), std::end(isoData.diffuse), glm::vec3{0.0f});
+  std::fill(std::begin(isoData.specular), std::end(isoData.specular), glm::vec3{0.0f});
+  std::fill(std::begin(isoData.shininesses), std::end(isoData.shininesses), 0.0f);
+
   const Image* image = appData.image(imageUid);
   if (!image) {
     return;
@@ -4184,10 +4296,7 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
 
   const ImageSettings& settings = image->settings();
 
-  // Turn off all of the isosurfaces
-  // std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
-
-  if (!settings.isosurfacesVisible()) {
+  if (!settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible()) {
     return;
   }
 
@@ -4205,11 +4314,15 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
       continue;
     }
 
+    const float opacity = surface->opacity * settings.isosurfaceOpacityModulator();
+    if (opacity <= 0.0f) {
+      continue;
+    }
+
     // Map isovalue from native image intensity to texture intensity:
     isoData.values[i] = static_cast<float>(settings.mapNativeIntensityToTexture(surface->value));
 
-    // The isosurfaces are hidden if the image is hidden
-    isoData.opacities[i] = settings.visibility() ? surface->opacity * settings.isosurfaceOpacityModulator() : 0.0f;
+    isoData.opacities[i] = opacity;
 
     isoData.edgeStrengths[i] = surface->edgeStrength;
     isoData.shininesses[i] = surface->material.shininess;

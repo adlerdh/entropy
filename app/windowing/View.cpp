@@ -34,7 +34,6 @@
 namespace
 {
 using uuid = uuids::uuid;
-;
 
 static const glm::vec3 sk_origin{0.0f};
 static const glm::mat3 I{1.0f};
@@ -134,6 +133,7 @@ View::View(
   , m_offset(std::move(offsetSetting))
   , m_projectionType(sk_viewTypeToDefaultProjectionTypeMap.at(m_viewType))
   , m_camera(m_projectionType, [this]() { return get_anatomy_T_start(m_viewType); })
+  , m_threeDCamera(ProjectionType::Perspective, nullptr)
   , m_viewConvention(viewConvention)
   , m_crosshairs(crosshairs)
   , m_viewAlignment(viewAlignment)
@@ -181,8 +181,18 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
   static constexpr std::size_t k_maxNumWarnings = 10;
   static std::size_t warnCount = 0;
 
-  const glm::vec3 worldCameraOrigin = helper::worldOrigin(m_camera);
-  const glm::vec3 worldCameraFront = helper::worldDirection(m_camera, Directions::View::Front);
+  Camera& activeCamera = camera();
+
+  if (ViewType::ThreeD == m_viewType) {
+    const glm::vec4 clipCrosshairs = helper::clip_T_world(activeCamera) * glm::vec4{worldCrosshairs, 1.0f};
+    if (std::abs(clipCrosshairs.w) > 0.0f) {
+      m_clipPlaneDepth = clipCrosshairs.z / clipCrosshairs.w;
+    }
+    return worldCrosshairs;
+  }
+
+  const glm::vec3 worldCameraOrigin = helper::worldOrigin(activeCamera);
+  const glm::vec3 worldCameraFront = helper::worldDirection(activeCamera, Directions::View::Front);
 
   // Compute the depth of the view plane in camera Clip space, because it is needed for the
   // coordinates of the quad that is textured with the image.
@@ -197,7 +207,10 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
   float worldCameraToPlaneDistance;
 
   if (math::vectorPlaneIntersection(worldCameraOrigin, worldCameraFront, worldViewPlane, worldCameraToPlaneDistance)) {
-    helper::setWorldTarget(m_camera, worldCameraOrigin + worldCameraToPlaneDistance * worldCameraFront, std::nullopt);
+    helper::setWorldTarget(
+      activeCamera,
+      worldCameraOrigin + worldCameraToPlaneDistance * worldCameraFront,
+      std::nullopt);
     warnCount = 0; // Reset warning counter
   }
   else {
@@ -214,7 +227,7 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
     return worldCrosshairs;
   }
 
-  const glm::vec4 clipPlanePos = helper::clip_T_world(m_camera) * glm::vec4{worldPlanePos, 1.0f};
+  const glm::vec4 clipPlanePos = helper::clip_T_world(activeCamera) * glm::vec4{worldPlanePos, 1.0f};
   m_clipPlaneDepth = clipPlanePos.z / clipPlanePos.w;
 
   return worldPlanePos;
@@ -242,7 +255,7 @@ std::optional<intersection::IntersectionVerticesVec4> View::computeImageSliceInt
   std::optional<intersection::IntersectionVertices> pixelIntersectionPositions =
     sliceIntersector
       .computePlaneIntersections(
-        pixel_T_world * m_camera.world_T_camera(),
+        pixel_T_world * camera().world_T_camera(),
         pixel_T_world * crosshairs.world_T_frame(),
         image->header().pixelBBoxCorners())
       .first;
@@ -269,7 +282,7 @@ void View::setViewType(const ViewType& newViewType)
 
   const auto newProjType = sk_viewTypeToDefaultProjectionTypeMap.at(newViewType);
 
-  if (m_projectionType != newProjType) {
+  if (ViewType::ThreeD != newViewType && m_projectionType != newProjType) {
     spdlog::debug("Changing camera projection from {} to {}", typeString(m_projectionType), typeString(newProjType));
 
     std::unique_ptr<Projection> newProj;
@@ -298,11 +311,12 @@ void View::setViewType(const ViewType& newViewType)
     newProj->setZoom(currProj->getZoom());
 
     m_camera.setProjection(std::move(newProj));
+    m_projectionType = newProjType;
   }
 
   // Since different view types have different allowable render modes, the render mode must be
   // reconciled with the change in view type:
-  m_renderMode = reconcileRenderModeForViewType(newViewType, m_renderMode);
+  ControlFrame::setRenderMode(reconcileRenderModeForViewType(newViewType, m_renderMode));
 
   if (ViewType::Oblique == newViewType) {
     // Transitioning to an Oblique view type from an Orthogonal view type:
@@ -365,10 +379,62 @@ const ViewOffsetSetting& View::offsetSetting() const
 
 const Camera& View::camera() const
 {
-  return m_camera;
+  return (ViewType::ThreeD == m_viewType) ? m_threeDCamera : m_camera;
 }
 
 Camera& View::camera()
 {
+  return (ViewType::ThreeD == m_viewType) ? m_threeDCamera : m_camera;
+}
+
+const Camera& View::sliceCamera() const
+{
   return m_camera;
+}
+
+Camera& View::sliceCamera()
+{
+  return m_camera;
+}
+
+const Camera& View::threeDCamera() const
+{
+  return m_threeDCamera;
+}
+
+Camera& View::threeDCamera()
+{
+  return m_threeDCamera;
+}
+
+const camera3d::State& View::threeDState() const
+{
+  return m_threeDState;
+}
+
+camera3d::State& View::threeDState()
+{
+  return m_threeDState;
+}
+
+void View::setThreeDProjectionType(ProjectionType projectionType)
+{
+  camera3d::setProjection(m_threeDCamera, m_threeDState, projectionType);
+}
+
+void View::initializeThreeDCameraIfNeeded(const camera3d::SceneFrame& scene)
+{
+  if (m_threeDCameraInitialized) {
+    return;
+  }
+
+  camera3d::setDefaultCoronalPose(m_threeDCamera, m_threeDState, scene);
+  m_threeDCameraInitialized = true;
+}
+
+void View::recenterThreeDCamera(const camera3d::SceneFrame& scene, const glm::vec3& target)
+{
+  initializeThreeDCameraIfNeeded(scene);
+  camera3d::recenter(m_threeDCamera, m_threeDState, scene, target);
+  m_threeDCameraInitialized = true;
 }

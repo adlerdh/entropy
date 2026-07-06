@@ -60,6 +60,15 @@ public:
   const std::list<uuids::uuid>& renderedImages() const;
   virtual void setRenderedImages(const std::list<uuids::uuid>& imageUids, bool filterByDefaults);
 
+  bool isImageVolumeRendered(const AppData& appData, std::size_t index);
+  bool isImageVolumeRendered(const uuids::uuid& imageUid);
+
+  virtual void setImageVolumeRendered(const AppData& appData, std::size_t index, bool visible);
+  virtual void setImageVolumeRendered(const AppData& appData, const uuids::uuid& imageUid, bool visible);
+
+  const std::list<uuids::uuid>& volumeRenderedImages() const;
+  virtual void setVolumeRenderedImages(const std::list<uuids::uuid>& imageUids);
+
   bool isImageUsedForMetric(const AppData& appData, std::size_t index);
   bool isImageUsedForMetric(const uuids::uuid& imageUid);
 
@@ -77,7 +86,7 @@ public:
   void setDefaultRenderAllImages(bool renderAll);
   bool defaultRenderAllImages() const;
 
-  /** @brief Reorder rendered and metric image selections after the image order changes. */
+  /** @brief Reorder rendered, volume, and metric image selections after the image order changes. */
   virtual void updateImageOrdering(uuid_range_t orderedImageUids);
 
   const UiControls& uiControls() const;

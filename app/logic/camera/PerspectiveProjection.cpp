@@ -8,7 +8,7 @@ namespace
 {
 constexpr float k_initAngle = glm::pi<float>() / 3.0f;
 constexpr float k_minAngle = glm::radians(0.5f);
-constexpr float k_maxAngle = glm::radians(120.0f);
+constexpr float k_maxAngle = glm::radians(150.0f);
 } // namespace
 
 PerspectiveProjection::PerspectiveProjection() : Projection() {}

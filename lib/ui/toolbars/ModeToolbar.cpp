@@ -330,7 +330,7 @@ void renderModeToolbar(
       {
         ImGui::PushStyleColor(ImGuiCol_Button, (guiData.m_showIsosurfacesWindow ? activeColor : inactiveColor));
         {
-          if (ImGui::Button(ICON_FK_SHIP, buttonSize)) {
+          if (ImGui::Button(ICON_FK_CUBE, buttonSize)) {
             guiData.m_showIsosurfacesWindow = !guiData.m_showIsosurfacesWindow;
           }
 

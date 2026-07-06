@@ -50,6 +50,8 @@ struct ViewCameraSnapshot
   ViewType m_viewType = ViewType::Axial;
   std::size_t m_viewIndex = 0;
   Camera m_camera;
+  Camera m_threeDCamera;
+  camera3d::State m_threeDState;
   bool m_used = false;
 };
 
@@ -116,6 +118,13 @@ void copyCameraState(const Camera& source, Camera& target)
   target.setNearDistance(source.nearDistance());
   target.setFarDistance(source.farDistance());
   target.setZoom(source.getZoom());
+}
+
+void copyViewCameraState(const View& source, View& target)
+{
+  copyCameraState(source.sliceCamera(), target.sliceCamera());
+  copyCameraState(source.threeDCamera(), target.threeDCamera());
+  target.threeDState() = source.threeDState();
 }
 
 std::optional<uuid> layoutImageUid(const Layout& layout)
@@ -1107,7 +1116,9 @@ std::vector<ViewCameraSnapshot> createManagedLayoutCameraSnapshots(const std::ve
         .m_viewImageUid = viewImageUid(*view),
         .m_viewType = view->viewType(),
         .m_viewIndex = viewIndex,
-        .m_camera = view->camera(),
+        .m_camera = view->sliceCamera(),
+        .m_threeDCamera = view->threeDCamera(),
+        .m_threeDState = view->threeDState(),
         .m_used = false});
       ++viewIndex;
     }
@@ -1211,7 +1222,7 @@ bool initializeFromSyncedRestoredCamera(
 
   for (const auto& [syncMode, syncGroupUid] : candidates) {
     if (View* source = restoredSyncedView(layout, view, snapshots, snapshotIndex, syncMode, syncGroupUid)) {
-      copyCameraState(source->camera(), view.camera());
+      copyViewCameraState(*source, view);
       return true;
     }
   }
@@ -1237,7 +1248,9 @@ CameraRestoreSummary restoreManagedLayoutCameraSnapshots(
 
       if (snapshotIt != snapshotIndex.end()) {
         ViewCameraSnapshot& snapshot = snapshots.at(snapshotIt->second);
-        copyCameraState(snapshot.m_camera, view->camera());
+        copyCameraState(snapshot.m_camera, view->sliceCamera());
+        copyCameraState(snapshot.m_threeDCamera, view->threeDCamera());
+        view->threeDState() = snapshot.m_threeDState;
         snapshot.m_used = true;
         ++summary.m_restored;
       }
@@ -1830,6 +1843,14 @@ void WindowData::recenterView(
     }
   }
 
+  if (ViewType::ThreeD == view.viewType()) {
+    const camera3d::SceneFrame scene{.m_center = worldCenter, .m_size = worldFov};
+    const glm::vec3 target =
+      (camera3d::OrbitTargetMode::Crosshairs == view.threeDState().m_orbitTargetMode) ? worldCenter : scene.m_center;
+    view.recenterThreeDCamera(scene, target);
+    return;
+  }
+
   helper::positionCameraForWorldTargetAndFov(view.camera(), worldFov, worldCenter);
 }
 
@@ -2271,7 +2292,9 @@ void WindowData::recomputeCameraAspectRatios()
       }
 
       const float viewAspect = view->windowClipViewport()[2] / view->windowClipViewport()[3];
-      view->camera().setAspectRatio(m_viewport.aspectRatio() * viewAspect);
+      const float cameraAspectRatio = m_viewport.aspectRatio() * viewAspect;
+      view->sliceCamera().setAspectRatio(cameraAspectRatio);
+      view->threeDCamera().setAspectRatio(cameraAspectRatio);
     }
   }
 }

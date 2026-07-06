@@ -138,6 +138,8 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   project.m_view.m_showCrosshairsInLightboxViews = false;
   project.m_view.m_showAnatomicalLabels = false;
   project.m_view.m_showAnatomicalLabelsInLightboxViews = false;
+  project.m_view.m_showScaleBars = true;
+  project.m_view.m_showScaleBarsInLightboxViews = true;
   project.m_view.m_anatomicalLabelType = AnatomicalLabelType::Rodent;
   project.m_view.m_lockAnatomicalDirectionsToReferenceImage = true;
   project.m_view.m_crosshairsSnapping = CrosshairsSnapping::ActiveImage;
@@ -151,6 +153,8 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(root.at("view").at("showCrosshairsInLightboxViews") == false);
   CHECK(root.at("view").at("showAnatomicalLabels") == false);
   CHECK(root.at("view").at("showAnatomicalLabelsInLightboxViews") == false);
+  CHECK(root.at("view").at("showScaleBars") == true);
+  CHECK(root.at("view").at("showScaleBarsInLightboxViews") == true);
   CHECK(root.at("view").at("anatomicalLabelType") == "rodent");
   CHECK(root.at("view").at("lockAnatomicalDirectionsToReferenceImage") == true);
   CHECK(root.at("view").at("crosshairsSnapping") == "activeImage");
@@ -163,6 +167,8 @@ TEST_CASE("Project serialization preserves project view settings", "[project][se
   CHECK(parsed.m_view.m_showCrosshairsInLightboxViews == false);
   CHECK(parsed.m_view.m_showAnatomicalLabels == false);
   CHECK(parsed.m_view.m_showAnatomicalLabelsInLightboxViews == false);
+  CHECK(parsed.m_view.m_showScaleBars == true);
+  CHECK(parsed.m_view.m_showScaleBarsInLightboxViews == true);
   CHECK(parsed.m_view.m_anatomicalLabelType == AnatomicalLabelType::Rodent);
   CHECK(parsed.m_view.m_lockAnatomicalDirectionsToReferenceImage == true);
   CHECK(parsed.m_view.m_crosshairsSnapping == CrosshairsSnapping::ActiveImage);
@@ -243,6 +249,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
   project.m_raycasting.m_samplingFactor = 1.25f;
   project.m_raycasting.m_transparentBackgroundWhenNoHit = false;
+  project.m_raycasting.m_backgroundEdgeBrighteningEnabled = false;
+  project.m_raycasting.m_showCrosshairsIn3D = true;
+  project.m_raycasting.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.75f;
   project.m_raycasting.m_renderFrontFaces = false;
   project.m_raycasting.m_renderBackFaces = true;
   project.m_raycasting.m_segmentationMasking = serialize::ProjectSegmentationRaycastMasking::MaskOut;
@@ -265,6 +274,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
 
   CHECK(root.at("raycasting").at("samplingFactor") == 1.25f);
   CHECK(root.at("raycasting").at("transparentBackgroundWhenNoHit") == false);
+  CHECK(root.at("raycasting").at("backgroundEdgeBrighteningEnabled") == false);
+  CHECK(root.at("raycasting").at("showCrosshairsIn3D") == true);
+  CHECK(root.at("raycasting").at("crosshairs3DGlyphDiameterVoxelDiagonals") == 1.75f);
   CHECK(root.at("raycasting").at("renderFrontFaces") == false);
   CHECK(root.at("raycasting").at("segmentationMasking") == "maskOut");
   CHECK(root.at("intensityProjection").at("useMaximumImageExtent") == true);
@@ -281,6 +293,9 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
 
   CHECK(parsed.m_raycasting.m_samplingFactor == 1.25f);
   CHECK(parsed.m_raycasting.m_transparentBackgroundWhenNoHit == false);
+  CHECK(parsed.m_raycasting.m_backgroundEdgeBrighteningEnabled == false);
+  CHECK(parsed.m_raycasting.m_showCrosshairsIn3D == true);
+  CHECK(parsed.m_raycasting.m_crosshairs3DGlyphDiameterVoxelDiagonals == 1.75f);
   CHECK(parsed.m_raycasting.m_renderFrontFaces == false);
   CHECK(parsed.m_raycasting.m_renderBackFaces == true);
   CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::MaskOut);

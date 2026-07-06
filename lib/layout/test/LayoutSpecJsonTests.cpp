@@ -18,6 +18,7 @@ layout::LayoutSpec makePopulatedLayoutSpec()
   spec.m_preferredDefaultRenderedImages = {0, 2};
   spec.m_defaultRenderAllImages = false;
   spec.m_imageSelection.m_renderedImageIndices = {2};
+  spec.m_imageSelection.m_volumeRenderedImageIndices = {1};
   spec.m_imageSelection.m_metricImageIndices = {0, 2};
 
   layout::ViewSpec first;
@@ -41,7 +42,13 @@ layout::LayoutSpec makePopulatedLayoutSpec()
   first.m_preferredDefaultRenderedImages = {1};
   first.m_defaultRenderAllImages = false;
   first.m_imageSelection.m_renderedImageIndices = {1};
+  first.m_imageSelection.m_volumeRenderedImageIndices = {2};
   first.m_imageSelection.m_metricImageIndices = {0, 1};
+  first.m_threeDProjectionType = 0;
+  first.m_threeDOrbitTargetMode = 1;
+  first.m_threeDCameraFollowsCrosshairs = true;
+  first.m_threeDPerspectiveZoom = 0.75f;
+  first.m_threeDOrthographicZoom = 1.5f;
 
   layout::ViewSpec second;
   second.m_left = 0.0f;
@@ -66,6 +73,7 @@ layout::LayoutSpec makePopulatedLayoutSpec()
 void requireSame(const layout::ImageSelectionSpec& actual, const layout::ImageSelectionSpec& expected)
 {
   REQUIRE(actual.m_renderedImageIndices == expected.m_renderedImageIndices);
+  REQUIRE(actual.m_volumeRenderedImageIndices == expected.m_volumeRenderedImageIndices);
   REQUIRE(actual.m_metricImageIndices == expected.m_metricImageIndices);
 }
 
@@ -91,6 +99,11 @@ void requireSame(const layout::ViewSpec& actual, const layout::ViewSpec& expecte
   REQUIRE(actual.m_preferredDefaultRenderedImages == expected.m_preferredDefaultRenderedImages);
   REQUIRE(actual.m_defaultRenderAllImages == expected.m_defaultRenderAllImages);
   requireSame(actual.m_imageSelection, expected.m_imageSelection);
+  REQUIRE(actual.m_threeDProjectionType == expected.m_threeDProjectionType);
+  REQUIRE(actual.m_threeDOrbitTargetMode == expected.m_threeDOrbitTargetMode);
+  REQUIRE(actual.m_threeDCameraFollowsCrosshairs == expected.m_threeDCameraFollowsCrosshairs);
+  REQUIRE(actual.m_threeDPerspectiveZoom == expected.m_threeDPerspectiveZoom);
+  REQUIRE(actual.m_threeDOrthographicZoom == expected.m_threeDOrthographicZoom);
 }
 
 void requireSame(const layout::LayoutSpec& actual, const layout::LayoutSpec& expected)
@@ -135,6 +148,8 @@ TEST_CASE("layout spec JSON writes readable enum names", "[layout][serialization
   CHECK(json.at("intensityProjectionMode") == "Minimum");
   CHECK(json.at("views").at(0).at("viewType") == "Axial");
   CHECK(json.at("views").at(0).at("offset").at("mode") == "RelativeToImageScrolls");
+  CHECK(json.at("views").at(0).at("threeD").at("projectionType") == "Orthographic");
+  CHECK(json.at("views").at(0).at("threeD").at("orbitTargetMode") == "Crosshairs");
   CHECK(json.at("views").at(1).at("offset").at("mode") == "None");
 }
 

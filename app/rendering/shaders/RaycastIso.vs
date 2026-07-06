@@ -10,7 +10,8 @@ uniform float u_clipDepth;
 // Vertex shader outputs:
 out VS_OUT
 {
-  vec3 v_worldRayDir; // Ray direction in World space (NOT normalized)
+  vec3 v_worldRayStart; // Ray start in World space
+  vec3 v_worldRayDir;   // Ray direction in World space (NOT normalized)
 }
 vs_out;
 
@@ -30,5 +31,6 @@ void main()
   vec4 worldPos2 = u_world_T_clip * clipPos2;
   worldPos2 /= worldPos2.w;
 
+  vs_out.v_worldRayStart = vec3(worldPos1);
   vs_out.v_worldRayDir = vec3(worldPos2 - worldPos1);
 }

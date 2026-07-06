@@ -10,6 +10,15 @@ using uuid = uuids::uuid;
 
 // Viewport of a full window, defined in window Clip space:
 static const glm::vec4 sk_winClipFullWindowViewport{-1.0f, -1.0f, 2.0f, 2.0f};
+
+ViewRenderMode reconcileRenderModeForViewType(ViewType viewType, ViewRenderMode renderMode)
+{
+  if (ViewType::ThreeD == viewType) {
+    return ViewRenderMode::VolumeRender;
+  }
+
+  return ViewRenderMode::VolumeRender == renderMode ? ViewRenderMode::Image : renderMode;
+}
 } // namespace
 
 Layout::Layout(bool isLightbox)
@@ -76,6 +85,18 @@ void Layout::setRenderedImages(const std::list<uuid>& imageUids, bool filterByDe
   updateAllViewsInLayout();
 }
 
+void Layout::setImageVolumeRendered(const AppData& appData, std::size_t index, bool visible)
+{
+  ControlFrame::setImageVolumeRendered(appData, index, visible);
+  updateAllViewsInLayout();
+}
+
+void Layout::setVolumeRenderedImages(const std::list<uuid>& imageUids)
+{
+  ControlFrame::setVolumeRenderedImages(imageUids);
+  updateAllViewsInLayout();
+}
+
 void Layout::setMetricImages(const std::list<uuid>& imageUids)
 {
   ControlFrame::setMetricImages(imageUids);
@@ -97,12 +118,13 @@ void Layout::updateImageOrdering(uuid_range_t orderedImageUids)
 void Layout::setViewType(const ViewType& viewType)
 {
   ControlFrame::setViewType(viewType);
+  ControlFrame::setRenderMode(reconcileRenderModeForViewType(viewType, renderMode()));
   updateAllViewsInLayout();
 }
 
 void Layout::setRenderMode(const ViewRenderMode& renderMode)
 {
-  ControlFrame::setRenderMode(renderMode);
+  ControlFrame::setRenderMode(reconcileRenderModeForViewType(viewType(), renderMode));
   updateAllViewsInLayout();
 }
 
@@ -117,6 +139,7 @@ void Layout::updateAllViewsInLayout()
   for (auto& [viewUid, view] : m_views) {
     if (view) {
       view->setRenderedImages(renderedImages(), false);
+      view->setVolumeRenderedImages(volumeRenderedImages());
       view->setMetricImages(metricImages());
       view->setViewType(m_viewType);
       view->setRenderMode(m_renderMode);

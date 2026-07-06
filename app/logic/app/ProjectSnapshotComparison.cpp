@@ -188,6 +188,8 @@ bool projectViewSettingsEqual(const serialize::ProjectViewSettings& a, const ser
          a.m_showCrosshairsInLightboxViews == b.m_showCrosshairsInLightboxViews &&
          a.m_showAnatomicalLabels == b.m_showAnatomicalLabels &&
          a.m_showAnatomicalLabelsInLightboxViews == b.m_showAnatomicalLabelsInLightboxViews &&
+         a.m_showScaleBars == b.m_showScaleBars &&
+         a.m_showScaleBarsInLightboxViews == b.m_showScaleBarsInLightboxViews &&
          a.m_anatomicalLabelType == b.m_anatomicalLabelType &&
          a.m_lockAnatomicalDirectionsToReferenceImage == b.m_lockAnatomicalDirectionsToReferenceImage &&
          a.m_crosshairsSnapping == b.m_crosshairsSnapping;
@@ -232,6 +234,9 @@ bool raycastingSettingsEqual(
 {
   return a.m_samplingFactor == b.m_samplingFactor &&
          a.m_transparentBackgroundWhenNoHit == b.m_transparentBackgroundWhenNoHit &&
+         a.m_backgroundEdgeBrighteningEnabled == b.m_backgroundEdgeBrighteningEnabled &&
+         a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&
+         a.m_crosshairs3DGlyphDiameterVoxelDiagonals == b.m_crosshairs3DGlyphDiameterVoxelDiagonals &&
          a.m_renderFrontFaces == b.m_renderFrontFaces && a.m_renderBackFaces == b.m_renderBackFaces &&
          a.m_segmentationMasking == b.m_segmentationMasking;
 }

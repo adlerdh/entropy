@@ -3,6 +3,7 @@
 #include "common/Types.h"
 #include "logic/app/CrosshairsState.h"
 #include "logic/camera/Camera.h"
+#include "logic/camera/Camera3DControls.h"
 #include "rendering/utility/math/SliceIntersectorTypes.h"
 #include "windowing/ControlFrame.h"
 
@@ -58,6 +59,19 @@ public:
   const Camera& camera() const;
   Camera& camera();
 
+  const Camera& sliceCamera() const;
+  Camera& sliceCamera();
+
+  const Camera& threeDCamera() const;
+  Camera& threeDCamera();
+
+  const camera3d::State& threeDState() const;
+  camera3d::State& threeDState();
+
+  void setThreeDProjectionType(ProjectionType projectionType);
+  void initializeThreeDCameraIfNeeded(const camera3d::SceneFrame& scene);
+  void recenterThreeDCamera(const camera3d::SceneFrame& scene, const glm::vec3& target);
+
   /**
    * @brief Update the view's camera based on the crosshairs World-space position.
    * @param appData Application data used for image geometry.
@@ -102,6 +116,9 @@ private:
 
   ProjectionType m_projectionType;
   Camera m_camera;
+  Camera m_threeDCamera;
+  camera3d::State m_threeDState;
+  bool m_threeDCameraInitialized = false;
 
   const ViewConvention& m_viewConvention;
   const CrosshairsState& m_crosshairs;

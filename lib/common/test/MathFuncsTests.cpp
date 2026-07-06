@@ -194,6 +194,80 @@ TEST_CASE("ray and box helpers return expected entry and exit distances", "[comm
   CHECK(missEntry > missExit);
 }
 
+TEST_CASE("slab ray-box intersection handles origins inside the box", "[common][math]")
+{
+  const glm::vec3 boxMin{0.0f, 0.0f, 0.0f};
+  const glm::vec3 boxMax{1.0f, 1.0f, 1.0f};
+
+  const auto [doesHit, entry, exit] =
+    math::slabs(glm::vec3{0.5f, 0.5f, 0.5f}, glm::vec3{1.0f, 0.0f, 0.0f}, boxMin, boxMax);
+
+  CHECK(doesHit);
+  CHECK(entry == Catch::Approx(-0.5f));
+  CHECK(exit == Catch::Approx(0.5f));
+}
+
+TEST_CASE("slab ray-box intersection handles rays parallel to box faces", "[common][math]")
+{
+  const glm::vec3 boxMin{0.0f, 0.0f, 0.0f};
+  const glm::vec3 boxMax{1.0f, 1.0f, 1.0f};
+
+  const auto [parallelHit, hitEntry, hitExit] =
+    math::slabs(glm::vec3{-1.0f, 0.5f, 0.5f}, glm::vec3{1.0f, 0.0f, 0.0f}, boxMin, boxMax);
+  CHECK(parallelHit);
+  CHECK(hitEntry == Catch::Approx(1.0f));
+  CHECK(hitExit == Catch::Approx(2.0f));
+
+  const auto [parallelMiss, missEntry, missExit] =
+    math::slabs(glm::vec3{-1.0f, 2.0f, 0.5f}, glm::vec3{1.0f, 0.0f, 0.0f}, boxMin, boxMax);
+  CHECK_FALSE(parallelMiss);
+  CHECK(missEntry > missExit);
+}
+
+TEST_CASE("slab ray-box intersection handles boundary starts", "[common][math]")
+{
+  const glm::vec3 boxMin{0.0f, 0.0f, 0.0f};
+  const glm::vec3 boxMax{1.0f, 1.0f, 1.0f};
+
+  const auto [inwardHit, inwardEntry, inwardExit] =
+    math::slabs(glm::vec3{0.0f, 0.5f, 0.5f}, glm::vec3{1.0f, 0.0f, 0.0f}, boxMin, boxMax);
+  CHECK(inwardHit);
+  CHECK(inwardEntry == Catch::Approx(0.0f));
+  CHECK(inwardExit == Catch::Approx(1.0f));
+
+  const auto [outwardHit, outwardEntry, outwardExit] =
+    math::slabs(glm::vec3{0.0f, 0.5f, 0.5f}, glm::vec3{-1.0f, 0.0f, 0.0f}, boxMin, boxMax);
+  CHECK(outwardHit);
+  CHECK(outwardEntry == Catch::Approx(-1.0f));
+  CHECK(outwardExit == Catch::Approx(0.0f));
+}
+
+TEST_CASE("slab ray-box intersection treats tangent contact as a miss", "[common][math]")
+{
+  const glm::vec3 boxMin{0.0f, 0.0f, 0.0f};
+  const glm::vec3 boxMax{1.0f, 1.0f, 1.0f};
+
+  const auto [doesHit, entry, exit] =
+    math::slabs(glm::vec3{-1.0f, 2.0f, 0.5f}, glm::vec3{1.0f, -2.0f, 0.0f}, boxMin, boxMax);
+
+  CHECK_FALSE(doesHit);
+  CHECK(entry == Catch::Approx(1.0f));
+  CHECK(exit == Catch::Approx(1.0f));
+}
+
+TEST_CASE("slab ray-box intersection works for arbitrary AABBs", "[common][math]")
+{
+  const glm::vec3 boxMin{-2.0f, 1.0f, 3.0f};
+  const glm::vec3 boxMax{2.0f, 5.0f, 7.0f};
+
+  const auto [doesHit, entry, exit] =
+    math::slabs(glm::vec3{0.0f, 3.0f, 10.0f}, glm::vec3{0.0f, 0.0f, -2.0f}, boxMin, boxMax);
+
+  CHECK(doesHit);
+  CHECK(entry == Catch::Approx(1.5f));
+  CHECK(exit == Catch::Approx(3.5f));
+}
+
 TEST_CASE("ray and line segment helper handles hit miss and parallel cases", "[common][math]")
 {
   const auto hit = math::computeRayLineSegmentIntersection(

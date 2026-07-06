@@ -144,6 +144,14 @@ public:
     const RotationOrigin& rotationOrigin,
     const AxisConstraint& constraint);
 
+  void doThreeDCameraOrbit(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit);
+  void doThreeDCameraRotateAboutEye(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit);
+  void doThreeDCameraRoll(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit);
+  void doThreeDCameraPan(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit);
+  void doThreeDCameraScroll(const ViewHit& hit, const glm::vec2& scrollOffset, bool faster, bool adjustPerspectiveFov);
+  void doThreeDCameraKeyboardPanOrRotate(const ViewHit& hit, const glm::ivec2& direction, bool rotate, bool faster);
+  void doThreeDIsosurfacePick(const ViewHit& hit);
+
   /**
    * @brief 3D rotation of the camera
    * @param viewUid
@@ -345,4 +353,7 @@ private:
    * @param[in] viewUid View UID to check against the active UID.
    */
   bool checkAndSetActiveView(const uuid& viewUid);
+
+  /// Move any 3D view whose camera eye follows the global crosshairs.
+  void updateThreeDViewsFollowingCrosshairs();
 };

@@ -1,15 +1,21 @@
 add_executable(EntropyCameraTests
+  Camera3DInteractionTests.cpp
+  Camera3DControlsTests.cpp
   CameraRecenterTests.cpp
+  RaycastIsoSurfacePickerTests.cpp
 )
 
 target_sources(EntropyCameraTests PRIVATE
   "${entropy_APP_DIR}/logic/camera/Camera.cpp"
+  "${entropy_APP_DIR}/logic/camera/Camera3DControls.cpp"
+  "${entropy_APP_DIR}/logic/camera/Camera3DInteraction.cpp"
   "${entropy_APP_DIR}/logic/camera/CameraHelpers.cpp"
   "${entropy_APP_DIR}/logic/camera/CameraTypes.cpp"
   "${entropy_APP_DIR}/logic/camera/MathUtility.cpp"
   "${entropy_APP_DIR}/logic/camera/OrthogonalProjection.cpp"
   "${entropy_APP_DIR}/logic/camera/PerspectiveProjection.cpp"
   "${entropy_APP_DIR}/logic/camera/Projection.cpp"
+  "${entropy_APP_DIR}/logic/camera/RaycastIsoSurfacePicker.cpp"
 )
 
 target_link_libraries(EntropyCameraTests PRIVATE

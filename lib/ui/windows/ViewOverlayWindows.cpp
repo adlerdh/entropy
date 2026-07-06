@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,15 @@ bool iconButtonWithTooltip(const char* icon, const char* tooltip)
     ImGui::SetTooltip("%s", tooltip);
   }
   return clicked;
+}
+
+void helpTooltip(const char* text)
+{
+  ImGui::SameLine();
+  ImGui::TextDisabled("%s", ICON_FK_QUESTION_CIRCLE_O);
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("%s", text);
+  }
 }
 
 } // namespace
@@ -89,6 +99,8 @@ void renderViewSettingsComboWindow(
   const auto& setXrayProjectionLevel = projection.setXrayProjectionLevel;
   const auto& getXrayProjectionEnergy = projection.getXrayProjectionEnergy;
   const auto& setXrayProjectionEnergy = projection.setXrayProjectionEnergy;
+
+  const bool singleVolumeImageSelection = ViewType::ThreeD == viewType && ViewRenderMode::VolumeRender == renderMode;
 
   static const glm::vec2 sk_framePad{4.0f, 4.0f};
   static const ImVec2 sk_windowPadding(0.0f, 0.0f);
@@ -169,10 +181,17 @@ void renderViewSettingsComboWindow(
               bool rendered = isImageRendered(i);
               const bool oldRendered = rendered;
 
-              ImGui::Checkbox(displayName.c_str(), &rendered);
+              if (singleVolumeImageSelection) {
+                if (ImGui::RadioButton(displayName.c_str(), rendered)) {
+                  setImageRendered(i, true);
+                }
+              }
+              else {
+                ImGui::Checkbox(displayName.c_str(), &rendered);
 
-              if (oldRendered != rendered) {
-                setImageRendered(i, rendered);
+                if (oldRendered != rendered) {
+                  setImageRendered(i, rendered);
+                }
               }
 
               if (ImGui::IsItemHovered()) {
@@ -182,22 +201,24 @@ void renderViewSettingsComboWindow(
               ImGui::PopID(); /*** ID = i ***/
             }
 
-            ImGui::Separator();
-            if (iconButtonWithTooltip(ICON_FK_EYE, "Show all images in this view")) {
-              for (std::size_t i = 0; i < numImages; ++i) {
-                setImageRendered(i, true);
+            if (!singleVolumeImageSelection) {
+              ImGui::Separator();
+              if (iconButtonWithTooltip(ICON_FK_EYE, "Show all images in this view")) {
+                for (std::size_t i = 0; i < numImages; ++i) {
+                  setImageRendered(i, true);
+                }
               }
-            }
-            ImGui::SameLine();
-            if (iconButtonWithTooltip(ICON_FK_EYE_SLASH, "Hide all images in this view")) {
-              for (std::size_t i = 0; i < numImages; ++i) {
-                setImageRendered(i, false);
-              }
-            }
-            if (applyImageVisibilityToAllViews) {
               ImGui::SameLine();
-              if (iconButtonWithTooltip(ICON_FK_RSS, "Apply this image visibility to all views in the layout")) {
-                applyImageVisibilityToAllViews(viewOrLayoutUid);
+              if (iconButtonWithTooltip(ICON_FK_EYE_SLASH, "Hide all images in this view")) {
+                for (std::size_t i = 0; i < numImages; ++i) {
+                  setImageRendered(i, false);
+                }
+              }
+              if (applyImageVisibilityToAllViews) {
+                ImGui::SameLine();
+                if (iconButtonWithTooltip(ICON_FK_RSS, "Apply this image visibility to all views in the layout")) {
+                  applyImageVisibilityToAllViews(viewOrLayoutUid);
+                }
               }
             }
 
@@ -452,10 +473,9 @@ void renderViewSettingsComboWindow(
         static const ImVec2 sk_viewTypePopupPadding(8.0f, 8.0f);
         if (ViewType::ThreeD == viewType) {
           const ImGuiStyle& style = ImGui::GetStyle();
-          const float minPopupWidth = ImGui::GetFrameHeight() + style.ItemInnerSpacing.x +
-                                      ImGui::CalcTextSize("View position follows crosshairs").x + style.ItemSpacing.x +
-                                      ImGui::CalcTextSize(ICON_FK_QUESTION_CIRCLE_O).x +
-                                      2.0f * sk_viewTypePopupPadding.x;
+          const float minPopupWidth =
+            ImGui::GetFrameHeight() + style.ItemInnerSpacing.x + ImGui::CalcTextSize("Camera follows crosshairs").x +
+            style.ItemSpacing.x + ImGui::CalcTextSize(ICON_FK_QUESTION_CIRCLE_O).x + 2.0f * sk_viewTypePopupPadding.x;
           ImGui::SetNextWindowSizeConstraints(ImVec2(minPopupWidth, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
         }
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_viewTypePopupPadding);
@@ -468,10 +488,16 @@ void renderViewSettingsComboWindow(
         }
 
         if (clickedViewTypeCombo) {
+          ViewType selectedViewType = viewType;
           if (state::annot::isInStateWhereViewTypeCanChange(viewOrLayoutUid)) {
             auto renderViewTypeChoice = [&](const ViewType& vt) {
               const bool isSelected = (vt == viewType);
-              if (ImGui::Selectable(to_string(vt, !xhairsRotated).c_str(), isSelected)) {
+              if (ImGui::Selectable(
+                    to_string(vt, !xhairsRotated).c_str(),
+                    isSelected,
+                    ImGuiSelectableFlags_DontClosePopups))
+              {
+                selectedViewType = vt;
                 setViewType(vt);
                 recenter();
               }
@@ -492,16 +518,92 @@ void renderViewSettingsComboWindow(
               }
             }
 
-            if (ViewType::ThreeD == viewType) {
+            if (ViewType::ThreeD == selectedViewType) {
               ImGui::Spacing();
               ImGui::Separator();
               ImGui::Spacing();
-              ImGui::Spacing();
 
-              static bool viewPositionFollowsXhairs = false;
-              ImGui::Checkbox("View position follows crosshairs", &viewPositionFollowsXhairs);
-              ImGui::SameLine();
-              helpMarker("Set view position to be at the crosshairs");
+              ProjectionType projectionType = ProjectionType::Perspective;
+              if (modes.getThreeDProjectionType && modes.setThreeDProjectionType) {
+                projectionType = modes.getThreeDProjectionType();
+                ImGui::Spacing();
+                ImGui::TextUnformatted("Projection:");
+                if (ImGui::RadioButton("Perspective", ProjectionType::Perspective == projectionType)) {
+                  modes.setThreeDProjectionType(ProjectionType::Perspective);
+                  projectionType = ProjectionType::Perspective;
+                }
+                ImGui::SameLine();
+                if (ImGui::RadioButton("Orthographic", ProjectionType::Orthographic == projectionType)) {
+                  modes.setThreeDProjectionType(ProjectionType::Orthographic);
+                  projectionType = ProjectionType::Orthographic;
+                }
+
+                if (modes.getThreeDFovAngleDegrees && modes.setThreeDFovAngleDegrees) {
+                  float fovDegrees = modes.getThreeDFovAngleDegrees();
+                  const bool isPerspective = ProjectionType::Perspective == projectionType;
+                  if (!isPerspective) {
+                    ImGui::BeginDisabled();
+                  }
+                  ImGui::SetNextItemWidth(120.0f);
+                  if (ImGui::DragFloat(
+                        "Field of view",
+                        &fovDegrees,
+                        0.1f,
+                        0.5f,
+                        150.0f,
+                        "%.1f deg",
+                        ImGuiSliderFlags_AlwaysClamp))
+                  {
+                    modes.setThreeDFovAngleDegrees(fovDegrees);
+                  }
+                  if (!isPerspective) {
+                    ImGui::EndDisabled();
+                  }
+                }
+              }
+
+              if (modes.getThreeDOrbitTargetMode && modes.setThreeDOrbitTargetMode) {
+                camera3d::OrbitTargetMode targetMode = modes.getThreeDOrbitTargetMode();
+                ImGui::Spacing();
+                ImGui::Spacing();
+                ImGui::TextUnformatted("Orbit around:");
+                if (ImGui::RadioButton("Image center", camera3d::OrbitTargetMode::VisibleImages == targetMode)) {
+                  modes.setThreeDOrbitTargetMode(camera3d::OrbitTargetMode::VisibleImages);
+                }
+                ImGui::SameLine();
+                if (ImGui::RadioButton("Crosshairs", camera3d::OrbitTargetMode::Crosshairs == targetMode)) {
+                  modes.setThreeDOrbitTargetMode(camera3d::OrbitTargetMode::Crosshairs);
+                }
+              }
+
+              if (modes.getThreeDViewPositionFollowsCrosshairs && modes.setThreeDViewPositionFollowsCrosshairs) {
+                ImGui::Spacing();
+                ImGui::Spacing();
+                bool followsCrosshairs = modes.getThreeDViewPositionFollowsCrosshairs();
+                const bool isPerspective = ProjectionType::Perspective == projectionType;
+                if (!isPerspective && followsCrosshairs) {
+                  followsCrosshairs = false;
+                  modes.setThreeDViewPositionFollowsCrosshairs(false);
+                }
+                if (!isPerspective) {
+                  ImGui::BeginDisabled();
+                }
+                if (ImGui::Checkbox("Camera follows crosshairs", &followsCrosshairs)) {
+                  modes.setThreeDViewPositionFollowsCrosshairs(followsCrosshairs);
+                }
+                if (!isPerspective) {
+                  ImGui::EndDisabled();
+                }
+                helpTooltip("Move the 3D camera eye to the crosshairs position when the crosshairs move.");
+              }
+
+              if (modes.getThreeDRenderImageBox && modes.setThreeDRenderImageBox) {
+                bool renderImageBox = modes.getThreeDRenderImageBox();
+                if (ImGui::Checkbox("Show image box", &renderImageBox)) {
+                  modes.setThreeDRenderImageBox(renderImageBox);
+                }
+                helpTooltip("Render a subtle outline of the raycast image box in 3D views.");
+              }
             }
           }
 
@@ -509,6 +611,25 @@ void renderViewSettingsComboWindow(
         }
 
         ImGui::PopItemWidth();
+      }
+
+      if (ViewType::ThreeD == viewType && ViewRenderMode::Disabled != renderMode && modes.showIsosurfacesPanel) {
+        ImGui::SameLine();
+        const bool isosurfacesPanelVisible =
+          modes.isIsosurfacesPanelVisible ? modes.isIsosurfacesPanelVisible() : false;
+        const ImVec4 activeButtonColor = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
+        if (isosurfacesPanelVisible) {
+          ImGui::PushStyleColor(ImGuiCol_Button, activeButtonColor);
+        }
+        if (ImGui::Button(ICON_FK_CUBE)) {
+          modes.showIsosurfacesPanel();
+        }
+        if (isosurfacesPanelVisible) {
+          ImGui::PopStyleColor();
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", "Show Isosurfaces Panel");
+        }
       }
 
       // Text label of visible images:

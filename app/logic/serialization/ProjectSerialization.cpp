@@ -1040,6 +1040,8 @@ void to_json(json& j, const ProjectViewSettings& settings)
     {"showCrosshairsInLightboxViews", settings.m_showCrosshairsInLightboxViews},
     {"showAnatomicalLabels", settings.m_showAnatomicalLabels},
     {"showAnatomicalLabelsInLightboxViews", settings.m_showAnatomicalLabelsInLightboxViews},
+    {"showScaleBars", settings.m_showScaleBars},
+    {"showScaleBarsInLightboxViews", settings.m_showScaleBarsInLightboxViews},
     {"anatomicalLabelType", enumToName(settings.m_anatomicalLabelType, k_anatomicalLabelNames)},
     {"lockAnatomicalDirectionsToReferenceImage", settings.m_lockAnatomicalDirectionsToReferenceImage},
     {"crosshairsSnapping", enumToName(settings.m_crosshairsSnapping, k_crosshairsSnappingNames)}};
@@ -1064,6 +1066,12 @@ void from_json(const json& j, ProjectViewSettings& settings)
   }
   if (const auto value = j.find("showAnatomicalLabelsInLightboxViews"); value != j.end() && value->is_boolean()) {
     settings.m_showAnatomicalLabelsInLightboxViews = value->get<bool>();
+  }
+  if (const auto value = j.find("showScaleBars"); value != j.end() && value->is_boolean()) {
+    settings.m_showScaleBars = value->get<bool>();
+  }
+  if (const auto value = j.find("showScaleBarsInLightboxViews"); value != j.end() && value->is_boolean()) {
+    settings.m_showScaleBarsInLightboxViews = value->get<bool>();
   }
   if (const auto parsed = enumFromName<AnatomicalLabelType>(j.value("anatomicalLabelType", ""), k_anatomicalLabelNames))
   {
@@ -1090,6 +1098,9 @@ void from_json(const json& j, ProjectViewSettings& settings)
   }
   if (!settings.m_showAnatomicalLabels) {
     settings.m_showAnatomicalLabelsInLightboxViews = false;
+  }
+  if (!settings.m_showScaleBars) {
+    settings.m_showScaleBarsInLightboxViews = false;
   }
 }
 
@@ -1282,6 +1293,9 @@ void to_json(json& j, const ProjectRaycastingSettings& settings)
   j = json{
     {"samplingFactor", settings.m_samplingFactor},
     {"transparentBackgroundWhenNoHit", settings.m_transparentBackgroundWhenNoHit},
+    {"backgroundEdgeBrighteningEnabled", settings.m_backgroundEdgeBrighteningEnabled},
+    {"showCrosshairsIn3D", settings.m_showCrosshairsIn3D},
+    {"crosshairs3DGlyphDiameterVoxelDiagonals", settings.m_crosshairs3DGlyphDiameterVoxelDiagonals},
     {"renderFrontFaces", settings.m_renderFrontFaces},
     {"renderBackFaces", settings.m_renderBackFaces},
     {"segmentationMasking", enumToName(settings.m_segmentationMasking, k_raycastSegmentationMaskingNames)}};
@@ -1294,6 +1308,15 @@ void from_json(const json& j, ProjectRaycastingSettings& settings)
   }
   if (const auto value = j.find("transparentBackgroundWhenNoHit"); value != j.end() && value->is_boolean()) {
     settings.m_transparentBackgroundWhenNoHit = value->get<bool>();
+  }
+  if (const auto value = j.find("backgroundEdgeBrighteningEnabled"); value != j.end() && value->is_boolean()) {
+    settings.m_backgroundEdgeBrighteningEnabled = value->get<bool>();
+  }
+  if (const auto value = j.find("showCrosshairsIn3D"); value != j.end() && value->is_boolean()) {
+    settings.m_showCrosshairsIn3D = value->get<bool>();
+  }
+  if (const auto value = j.find("crosshairs3DGlyphDiameterVoxelDiagonals"); value != j.end() && value->is_number()) {
+    settings.m_crosshairs3DGlyphDiameterVoxelDiagonals = std::clamp(value->get<float>(), 0.1f, 10.0f);
   }
   if (const auto value = j.find("renderFrontFaces"); value != j.end() && value->is_boolean()) {
     settings.m_renderFrontFaces = value->get<bool>();

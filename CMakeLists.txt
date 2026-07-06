@@ -546,12 +546,15 @@ set(entropy_SOURCES
   "${entropy_APP_DIR}/logic/annotation/SerializeAnnot.cpp"
 
   "${entropy_APP_DIR}/logic/camera/Camera.cpp"
+  "${entropy_APP_DIR}/logic/camera/Camera3DControls.cpp"
+  "${entropy_APP_DIR}/logic/camera/Camera3DInteraction.cpp"
   "${entropy_APP_DIR}/logic/camera/CameraHelpers.cpp"
   "${entropy_APP_DIR}/logic/camera/CameraTypes.cpp"
   "${entropy_APP_DIR}/logic/camera/MathUtility.cpp"
   "${entropy_APP_DIR}/logic/camera/OrthogonalProjection.cpp"
   "${entropy_APP_DIR}/logic/camera/PerspectiveProjection.cpp"
   "${entropy_APP_DIR}/logic/camera/Projection.cpp"
+  "${entropy_APP_DIR}/logic/camera/RaycastIsoSurfacePicker.cpp"
 
   "${entropy_APP_DIR}/logic/interaction/ViewHit.cpp"
   "${entropy_APP_DIR}/logic/interaction/events/ButtonState.cpp"

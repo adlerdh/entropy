@@ -598,6 +598,8 @@ bool renderLocalLinearResidualSettings(
  */
 void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRecenterType& recenterAllViews)
 {
+  ImGui::ColorEdit3("Background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
+
   // Show image-view intersection border
   bool showImageBorders = renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
   if (ImGui::Checkbox("Show image borders", &showImageBorders)) {
@@ -640,7 +642,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   // Crosshairs
   const bool crosshairsOpen = ImGui::CollapsingHeader("Crosshairs", ImGuiTreeNodeFlags_DefaultOpen);
   if (crosshairsOpen) {
-    if (ImGui::Checkbox("Show crosshairs", &renderData.m_showCrosshairs)) {
+    if (ImGui::Checkbox("Show crosshairs in 2D", &renderData.m_showCrosshairs)) {
       if (!renderData.m_showCrosshairs) {
         renderData.m_showCrosshairsInLightboxViews = false;
       }
@@ -783,15 +785,6 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     helpMarker("Recenter views and crosshairs on all loaded images");
   }
   finishSettingsSection(viewRecenteringOpen);
-
-  // View backgrounds:
-  const bool backgroundColorOpen = ImGui::CollapsingHeader("Background", ImGuiTreeNodeFlags_DefaultOpen);
-  if (backgroundColorOpen) {
-    ImGui::ColorEdit3("2D background color", glm::value_ptr(renderData.m_2dBackgroundColor), k_colorEditFlags);
-
-    ImGui::ColorEdit4("3D background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
-  }
-  finishSettingsSection(backgroundColorOpen);
 
   // Anatomical labels:
   const bool anatomicalLabelsOpen = ImGui::CollapsingHeader("Anatomical Labels", ImGuiTreeNodeFlags_DefaultOpen);
@@ -2075,7 +2068,7 @@ void renderRaycastingTab(RenderData& renderData)
         k_factorStep,
         k_minFactor,
         k_maxFactor,
-        "%0.1f",
+        "%0.1f vox",
         ImGuiSliderFlags_AlwaysClamp))
   {
     // Update uniforms if m_raycastSamplingFactor gets added to uniforms
@@ -2083,8 +2076,9 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Sampling rate as a fraction of the voxel size along the ray path");
 
-  ImGui::Spacing();
-  ImGui::Dummy(ImVec2(0.0f, 1.0f));
+  ImGui::ColorEdit4("Raycast background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
+  ImGui::SameLine();
+  helpMarker("Color used for raycast pixels that do not hit visible image content");
 
   // Should the no-hit zone of raycast views be transparent, so that the view background is
   // visible?
@@ -2100,6 +2094,28 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::Checkbox("Render back faces", &renderData.m_renderBackFaces);
   ImGui::SameLine();
   helpMarker("Render back faces in raycasting");
+
+  ImGui::Spacing();
+  ImGui::Checkbox("Show image box", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);
+  ImGui::SameLine();
+  helpMarker("Render a subtle outline of the raycast image box in 3D views");
+
+  ImGui::Checkbox("Show crosshairs glyph", &renderData.m_showCrosshairsIn3D);
+  ImGui::SameLine();
+  helpMarker("Render a small depth-correct sphere at the crosshairs position in 3D raycast views");
+
+  if (renderData.m_showCrosshairsIn3D) {
+    ImGui::DragFloat(
+      "Crosshairs glyph diameter",
+      &renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
+      0.05f,
+      0.1f,
+      10.0f,
+      "%0.2f vox",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Sphere diameter as a multiple of the current image voxel diagonal");
+  }
 
   ImGui::Spacing();
   ImGui::Dummy(ImVec2(0.0f, 1.0f));

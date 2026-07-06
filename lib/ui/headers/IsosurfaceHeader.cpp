@@ -48,9 +48,11 @@ struct AddSurfacesDialogState
 
 std::unordered_map<uuids::uuid, AddSurfacesDialogState> addSurfacesDialogStateByImage;
 
-glm::vec3 defaultIsosurfaceColor()
+glm::vec3 defaultIsosurfaceColor(const glm::vec3& imageBorderColor)
 {
-  return k_defaultIsosurfaceColor;
+  glm::vec3 hsv = glm::hsvColor(glm::clamp(imageBorderColor, glm::vec3{0.0f}, glm::vec3{1.0f}));
+  hsv.y = std::clamp(0.5f * hsv.y, 0.0f, 1.0f);
+  return glm::clamp(glm::rgbColor(hsv), glm::vec3{0.0f}, glm::vec3{1.0f});
 }
 
 /**
@@ -288,7 +290,7 @@ bool renderAddSurfacesDialog(
         const double t =
           (values.size() <= 1) ? 0.0 : static_cast<double>(valueIndex) / static_cast<double>(values.size() - 1);
         const glm::vec3 color = state.colorRange ? entropy::ui::interpolateHsvColor(state.startColor, state.endColor, t)
-                                                 : defaultIsosurfaceColor();
+                                                 : defaultIsosurfaceColor(image->settings().borderColor());
 
         lastAddedUid = addSurfaceAtValue(
           appData,
@@ -342,7 +344,7 @@ void openAddSurfacesDialog(const uuids::uuid& imageUid, const Image& image, uint
   params.end = static_cast<double>(stats.onlineStats.max);
   params.count = k_defaultRangeCount;
   entropy::ui::updateIsosurfaceRangeSpacing(params);
-  state.startColor = defaultIsosurfaceColor();
+  state.startColor = defaultIsosurfaceColor(image.settings().borderColor());
   state.endColor = k_defaultIsosurfaceRangeEndColor;
 
   ImGui::OpenPopup(k_addSurfacesPopupName);
@@ -473,7 +475,7 @@ std::optional<uuids::uuid> addNewSurface(
     component,
     index,
     static_cast<double>(stats.quantiles[k_defaultIsovalueQuantile]),
-    defaultIsosurfaceColor(),
+    defaultIsosurfaceColor(image->settings().borderColor()),
     storeFuture,
     addTaskToIsosurfaceGpuMeshGenerationQueue);
 }
@@ -485,6 +487,7 @@ void renderIsosurfacesHeader(
   const uuids::uuid& imageUid,
   std::size_t imageIndex,
   bool isActiveImage,
+  bool hasFollowingHeader,
   std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
   std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
@@ -646,9 +649,11 @@ void renderIsosurfacesHeader(
         selectedSurfaceUid = *uid;
         imageToSelectedSurfaceUid[imageUid] = *uid;
       }
-      ImGui::Spacing();
-      ImGui::Separator();
-      ImGui::Spacing();
+      if (hasFollowingHeader) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+      }
       ImGui::PopID(); // imageUid
       return;
     }
@@ -668,16 +673,20 @@ void renderIsosurfacesHeader(
           storeFuture,
           addTaskToIsosurfaceGpuMeshGenerationQueue))
     {
-      ImGui::Spacing();
-      ImGui::Separator();
-      ImGui::Spacing();
+      if (hasFollowingHeader) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+      }
       ImGui::PopID(); // imageUid
       return;
     }
 
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::Spacing();
+    if (hasFollowingHeader) {
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+    }
     ImGui::PopID(); // imageUid
     return;
   }
@@ -1001,7 +1010,7 @@ void renderIsosurfacesHeader(
     }
 
     if (ImGui::TreeNode("Image Settings")) {
-      ImGui::Text("Settings for all image isosurfaces: ");
+      ImGui::TextDisabled("Settings for all image isosurfaces:");
       ImGui::Spacing();
 
       bool hideAll = !imgSettings.isosurfacesVisible();
@@ -1105,9 +1114,11 @@ void renderIsosurfacesHeader(
     }
   }
 
-  ImGui::Spacing();
-  ImGui::Separator();
-  ImGui::Spacing();
+  if (hasFollowingHeader) {
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+  }
   ImGui::PopStyleColor();
   ImGui::PopID(); /** PopID surfaceUid **/
 }

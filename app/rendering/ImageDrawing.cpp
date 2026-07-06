@@ -512,8 +512,10 @@ void drawRaycastQuad(
   program.setUniform("u_clip_T_world", clip_T_world);
   program.setUniform("u_clip_T_imgTex", clip_T_world * world_T_clip);
 
-  /// @todo This must match the camera eye position
-  program.setUniform("u_clipDepth", view.clipPlaneDepth());
+  // Raycasting is a screen-space pass. Draw the full viewport quad on the near clip plane and
+  // let the fragment shader intersect each eye ray with the volume. Using the 2D slice
+  // clip-plane depth here can move the quad behind the camera when a 3D orbit crosses its target.
+  program.setUniform("u_clipDepth", -1.0f);
 
   /// @todo the near distance must equal 0.5 voxel spacing and far distance must be beyond volume...
   /// look at how ED does it

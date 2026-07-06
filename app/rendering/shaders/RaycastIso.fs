@@ -8,6 +8,8 @@
 // 3D texture coordinates (s,t,p) are in [0.0, 1.0]^3
 #define MIN_IMAGE_TEXCOORD vec3(0.0)
 #define MAX_IMAGE_TEXCOORD vec3(1.0)
+#define RAY_BOX_PARALLEL_EPS 1.0e-7
+#define RAY_BOX_BIG 1.0e20
 
 out vec4 FragColor;
 
@@ -37,6 +39,12 @@ uniform vec3 u_specular[NISO];
 uniform float u_shininess[NISO];
 
 uniform vec4 u_bgColor; // premultiplied by alpha
+uniform bool u_bgEdgeBrighteningEnabled;
+
+uniform bool u_showCrosshairs3D;
+uniform vec3 u_crosshairsWorldPos;
+uniform vec4 u_crosshairsColor; // non-premultiplied by alpha
+uniform float u_crosshairsRadiusMm;
 
 uniform bool u_renderFrontFaces;
 uniform bool u_renderBackFaces;
@@ -49,7 +57,8 @@ uniform bool u_noHitTransparent;
 // Redeclared vertex shader outputs: now the fragment shader inputs
 in VS_OUT
 {
-  vec3 v_worldRayDir; // Ray direction in World space (NOT normalized)
+  vec3 v_worldRayStart; // Ray start in World space
+  vec3 v_worldRayDir;   // Ray direction in World space (NOT normalized)
 }
 fs_in;
 
@@ -81,13 +90,100 @@ float getImageValue(sampler3D tex, vec3 texCoord)
   return texture(tex, texCoord)[0];
 }
 
+const float EDGE_BRIGHTENING_DISTANCE_VOX = 1.0;
+const float EDGE_BACKGROUND_BRIGHTENING = 0.65;
+const float EDGE_OVERLAY_BRIGHTENING = 0.35;
+
+float faceEdgeDistanceVox(vec3 texPos)
+{
+  vec3 pos = clamp(texPos, MIN_IMAGE_TEXCOORD, MAX_IMAGE_TEXCOORD);
+  vec3 faceDistanceTex = min(pos - MIN_IMAGE_TEXCOORD, MAX_IMAGE_TEXCOORD - pos);
+  vec3 faceDistanceVox = faceDistanceTex / max(u_imgInvDims, vec3(1.0e-6));
+
+  // Identify the image-box face containing this point, then measure distance to that
+  // rectangular face's nearest edge. Applying this to both ray entry and exit points handles
+  // visible edges on both front and back faces.
+  if (faceDistanceTex.x <= faceDistanceTex.y && faceDistanceTex.x <= faceDistanceTex.z) {
+    return min(faceDistanceVox.y, faceDistanceVox.z);
+  }
+  if (faceDistanceTex.y <= faceDistanceTex.z) {
+    return min(faceDistanceVox.x, faceDistanceVox.z);
+  }
+  return min(faceDistanceVox.x, faceDistanceVox.y);
+}
+
+float imageBoxEdgeAmount(vec3 texPos)
+{
+  if (!u_bgEdgeBrighteningEnabled) {
+    return 0.0;
+  }
+
+  float nearestFaceEdgeDistanceVox = faceEdgeDistanceVox(texPos);
+  float aaVox = fwidth(nearestFaceEdgeDistanceVox);
+  return 1.0 - smoothstep(
+                 max(EDGE_BRIGHTENING_DISTANCE_VOX - aaVox, 0.0),
+                 EDGE_BRIGHTENING_DISTANCE_VOX + aaVox,
+                 nearestFaceEdgeDistanceVox);
+}
+
+vec4 brightenRaycastBackground(vec4 bgColor, float edgeAmount)
+{
+  // Preserve premultiplied alpha while brightening RGB toward premultiplied white. This makes
+  // even a black raycast background visibly brighten at image-box face edges.
+  return vec4(mix(bgColor.rgb, vec3(bgColor.a), EDGE_BACKGROUND_BRIGHTENING * edgeAmount), bgColor.a);
+}
+
+vec4 brightenRaycastResult(vec4 color, float edgeAmount)
+{
+  return vec4(mix(color.rgb, vec3(max(color.a, u_bgColor.a)), EDGE_OVERLAY_BRIGHTENING * edgeAmount), color.a);
+}
+
 vec2 slabs(vec3 texRayPos, vec3 texRayDir)
 {
-  vec3 t0 = (MIN_IMAGE_TEXCOORD - texRayPos) / texRayDir;
-  vec3 t1 = (MAX_IMAGE_TEXCOORD - texRayPos) / texRayDir;
-  vec3 tMin = min(t0, t1);
-  vec3 tMax = max(t0, t1);
+  // Intersect the ray with the image-domain AABB in normalized texture coordinates.
+  // The explicit parallel-ray branch avoids NaNs from 0/0 when a ray starts exactly
+  // on a box face and travels parallel to that face.
+  vec3 tMin = vec3(-RAY_BOX_BIG);
+  vec3 tMax = vec3(RAY_BOX_BIG);
+
+  for (int axis = 0; axis < 3; ++axis) {
+    if (abs(texRayDir[axis]) < RAY_BOX_PARALLEL_EPS) {
+      if (texRayPos[axis] < MIN_IMAGE_TEXCOORD[axis] || texRayPos[axis] > MAX_IMAGE_TEXCOORD[axis]) {
+        return vec2(1.0, 0.0);
+      }
+    }
+    else {
+      float t0 = (MIN_IMAGE_TEXCOORD[axis] - texRayPos[axis]) / texRayDir[axis];
+      float t1 = (MAX_IMAGE_TEXCOORD[axis] - texRayPos[axis]) / texRayDir[axis];
+      tMin[axis] = min(t0, t1);
+      tMax[axis] = max(t0, t1);
+    }
+  }
+
   return vec2(compMax(tMin), compMin(tMax));
+}
+
+float raySphereFirstHit(vec3 rayPos, vec3 rayDir, vec3 sphereCenter, float sphereRadius)
+{
+  if (sphereRadius <= 0.0) {
+    return -1.0;
+  }
+
+  vec3 oc = rayPos - sphereCenter;
+  float b = dot(oc, rayDir);
+  float c = dot(oc, oc) - sphereRadius * sphereRadius;
+  float discriminant = b * b - c;
+
+  if (discriminant < 0.0) {
+    return -1.0;
+  }
+
+  float root = sqrt(discriminant);
+  float t = -b - root;
+  if (t < 0.0) {
+    t = -b + root;
+  }
+  return t >= 0.0 ? t : -1.0;
 }
 
 vec3 gradient(vec3 texPos)
@@ -134,7 +230,8 @@ void main()
   vec4 color = vec4(0.0);
 
   // The ray direction must be re-normalized after interpolation from Vertex to Fragment stage:
-  vec3 texRayDir = mat3(u_tex_T_world) * normalize(fs_in.v_worldRayDir);
+  vec3 worldRayDir = normalize(fs_in.v_worldRayDir);
+  vec3 texRayDir = mat3(u_tex_T_world) * worldRayDir;
 
   // Convert physical (mm) to texel units along the ray direction
   float texel_T_mm = length(texRayDir);
@@ -149,9 +246,11 @@ void main()
                                          u_imgInvDims.y * sqrt(1.0 + (dirSq.z + dirSq.x)) / max(dirSq.y, 1.0e-6)),
                                        u_imgInvDims.z * sqrt(1.0 + (dirSq.x + dirSq.y)) / max(dirSq.z, 1.0e-6));
 
-  // Randomly purturb the ray starting positions along the ray direction:
-  vec4 texEyePos = u_tex_T_world * vec4(u_worldEyePos, 1.0);
-  vec3 texStartPos = vec3(texEyePos) + 0.5 * texStep * rand(gl_FragCoord.xy) * texRayDir;
+  // Randomly perturb the ray starting positions along the ray direction. The vertex shader provides
+  // the per-fragment ray start; using the camera eye here would break orthographic projection because
+  // orthographic rays are parallel but originate at different positions across the view plane.
+  vec4 texRayStartPos = u_tex_T_world * vec4(fs_in.v_worldRayStart, 1.0);
+  vec3 texStartPos = vec3(texRayStartPos) + 0.5 * texStep * rand(gl_FragCoord.xy) * texRayDir;
 
   vec2 interx = slabs(texStartPos, texRayDir);
 
@@ -166,6 +265,9 @@ void main()
 
   vec3 texPosMin = texStartPos + tMin * texRayDir;
   vec3 texPosMax = texStartPos + tMax * texRayDir;
+  float frontEdgeAmount = imageBoxEdgeAmount(texPosMin);
+  float backEdgeAmount = imageBoxEdgeAmount(texPosMax);
+  vec4 bgColor = brightenRaycastBackground(u_bgColor, backEdgeAmount);
 
   int hitCount = 0;
   int stepCount = 0;
@@ -173,6 +275,7 @@ void main()
   // Current position along the ray
   vec3 texPos = texStartPos + tMin * texRayDir;
   vec3 texFirstHitPos = texPos; // Initialize first hit position to front of volume
+  float firstHitT = RAY_BOX_BIG;
   int firstHit = 1;
 
   // Save old value and position
@@ -217,6 +320,7 @@ void main()
 
         // Record the first hit:
         texFirstHitPos = mix(texFirstHitPos, texHitPos, float(firstHit));
+        firstHitT = mix(firstHitT, dot(texHitPos - texStartPos, texRayDir), float(firstHit));
         firstHit = firstHit ^ 1;
 
         // An isosurface intersection occurred, so there is no need to loop over the remaining
@@ -237,7 +341,25 @@ void main()
   //  float normDistance = abs(oldT - tMin);
   //  float fog = exp(-normDistance*normDistance);
 
-  FragColor = color + (1.0 - color.a) * u_bgColor;
+  if (u_showCrosshairs3D) {
+    float crosshairsWorldT =
+      raySphereFirstHit(fs_in.v_worldRayStart, worldRayDir, u_crosshairsWorldPos, u_crosshairsRadiusMm);
+    vec3 crosshairsWorldHitPos = fs_in.v_worldRayStart + crosshairsWorldT * worldRayDir;
+    vec3 crosshairsTexHitPos = vec3(u_tex_T_world * vec4(crosshairsWorldHitPos, 1.0));
+    float crosshairsTexT = dot(crosshairsTexHitPos - texStartPos, texRayDir);
+
+    if (crosshairsWorldT >= 0.0 && crosshairsTexT >= tMin && crosshairsTexT <= tMax && crosshairsTexT <= firstHitT) {
+      vec3 sphereNormal = normalize(crosshairsWorldHitPos - u_crosshairsWorldPos);
+      float diffuse = clamp(dot(sphereNormal, -worldRayDir), 0.0, 1.0);
+      float specular = pow(diffuse, 24.0);
+      vec3 glyphRgb = min(u_crosshairsColor.rgb * (0.35 + 0.65 * diffuse) + 0.18 * specular, vec3(1.0));
+      vec4 glyphColor = vec4(glyphRgb * u_crosshairsColor.a, u_crosshairsColor.a);
+      color = glyphColor + (1.0 - glyphColor.a) * color;
+      texFirstHitPos = crosshairsTexHitPos;
+    }
+  }
+
+  FragColor = brightenRaycastResult(color + (1.0 - color.a) * bgColor, frontEdgeAmount);
 
   vec4 clipFirstHitPos = u_clip_T_imgTex * vec4(texFirstHitPos, 1.0);
   float ndcFirstHitDepth = clipFirstHitPos.z / clipFirstHitPos.w;

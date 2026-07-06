@@ -7,6 +7,9 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+#include <cmath>
+
 namespace
 {
 using uuid = uuids::uuid;
@@ -32,6 +35,31 @@ ViewOffsetMode viewOffsetModeFromInt(int value)
   return ViewOffsetMode::None;
 }
 
+ProjectionType projectionTypeFromInt(int value)
+{
+  switch (static_cast<ProjectionType>(value)) {
+    case ProjectionType::Orthographic:
+    case ProjectionType::Perspective:
+      return static_cast<ProjectionType>(value);
+  }
+  return ProjectionType::Perspective;
+}
+
+camera3d::OrbitTargetMode orbitTargetModeFromInt(int value)
+{
+  switch (static_cast<camera3d::OrbitTargetMode>(value)) {
+    case camera3d::OrbitTargetMode::VisibleImages:
+    case camera3d::OrbitTargetMode::Crosshairs:
+      return static_cast<camera3d::OrbitTargetMode>(value);
+  }
+  return camera3d::OrbitTargetMode::VisibleImages;
+}
+
+float saneZoom(float value)
+{
+  return std::isfinite(value) ? std::clamp(value, 0.01f, 100.0f) : 1.0f;
+}
+
 std::optional<uuid> syncGroupUidForIndex(
   Layout& layout,
   CameraSyncMode mode,
@@ -54,6 +82,7 @@ layout::ImageSelectionSpec createImageSelectionSpec(uuid_range_t orderedImageUid
 {
   layout::ImageSelectionSpec selection;
   selection.m_renderedImageIndices = layout::imageIndicesForUids(orderedImageUids, frame.renderedImages());
+  selection.m_volumeRenderedImageIndices = layout::imageIndicesForUids(orderedImageUids, frame.volumeRenderedImages());
   selection.m_metricImageIndices = layout::imageIndicesForUids(orderedImageUids, frame.metricImages());
   return selection;
 }
@@ -64,6 +93,10 @@ void applyImageSelectionSpec(
   const layout::ImageSelectionSpec& selection)
 {
   frame.setRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_renderedImageIndices), false);
+  frame.setVolumeRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_volumeRenderedImageIndices));
+  if (ViewRenderMode::VolumeRender == frame.renderMode() && frame.volumeRenderedImages().empty()) {
+    frame.setVolumeRenderedImages(frame.renderedImages());
+  }
   frame.setMetricImages(layout::imageUidsForIndices(orderedImageUids, selection.m_metricImageIndices));
 }
 
@@ -171,6 +204,11 @@ LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids)
     viewSpec.m_preferredDefaultRenderedImages = view.preferredDefaultRenderedImages();
     viewSpec.m_defaultRenderAllImages = view.defaultRenderAllImages();
     viewSpec.m_imageSelection = createImageSelectionSpec(orderedImageUids, view);
+    viewSpec.m_threeDProjectionType = static_cast<int>(view.threeDState().m_projectionType);
+    viewSpec.m_threeDOrbitTargetMode = static_cast<int>(view.threeDState().m_orbitTargetMode);
+    viewSpec.m_threeDCameraFollowsCrosshairs = view.threeDState().m_viewPositionFollowsCrosshairs;
+    viewSpec.m_threeDPerspectiveZoom = view.threeDState().m_perspectiveZoom;
+    viewSpec.m_threeDOrthographicZoom = view.threeDState().m_orthographicZoom;
 
     layoutSpec.m_views.emplace_back(std::move(viewSpec));
   }
@@ -271,6 +309,18 @@ Layout instantiateLayoutSpec(
     view->setPreferredDefaultRenderedImages(normalizedViewSpec.m_preferredDefaultRenderedImages);
     view->setDefaultRenderAllImages(normalizedViewSpec.m_defaultRenderAllImages);
     applyImageSelectionSpec(*view, orderedImageUids, normalizedViewSpec.m_imageSelection);
+    view->setThreeDProjectionType(projectionTypeFromInt(normalizedViewSpec.m_threeDProjectionType));
+    view->threeDState().m_projectionType = projectionTypeFromInt(normalizedViewSpec.m_threeDProjectionType);
+    view->threeDState().m_orbitTargetMode = orbitTargetModeFromInt(normalizedViewSpec.m_threeDOrbitTargetMode);
+    view->threeDState().m_viewPositionFollowsCrosshairs =
+      ProjectionType::Perspective == view->threeDState().m_projectionType &&
+      normalizedViewSpec.m_threeDCameraFollowsCrosshairs;
+    view->threeDState().m_perspectiveZoom = saneZoom(normalizedViewSpec.m_threeDPerspectiveZoom);
+    view->threeDState().m_orthographicZoom = saneZoom(normalizedViewSpec.m_threeDOrthographicZoom);
+    view->threeDCamera().setZoom(
+      ProjectionType::Orthographic == view->threeDState().m_projectionType ? view->threeDState().m_orthographicZoom
+                                                                           : view->threeDState().m_perspectiveZoom);
+    view->threeDState().m_userMovedCamera = false;
 
     const uuid viewUid = view->uid();
     layout.addView(std::move(view));
@@ -282,6 +332,11 @@ Layout instantiateLayoutSpec(
   layout.ControlFrame::setRenderedImages(
     imageUidsForIndices(orderedImageUids, spec.m_imageSelection.m_renderedImageIndices),
     false);
+  layout.ControlFrame::setVolumeRenderedImages(
+    imageUidsForIndices(orderedImageUids, spec.m_imageSelection.m_volumeRenderedImageIndices));
+  if (ViewRenderMode::VolumeRender == layout.renderMode() && layout.volumeRenderedImages().empty()) {
+    layout.ControlFrame::setVolumeRenderedImages(layout.renderedImages());
+  }
   layout.ControlFrame::setMetricImages(
     imageUidsForIndices(orderedImageUids, spec.m_imageSelection.m_metricImageIndices));
   return layout;

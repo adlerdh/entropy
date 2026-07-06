@@ -58,6 +58,10 @@ float computeViewOffsetDistance(
  * @return AABB in World-space coordinates
  */
 AABB<float> computeWorldAABBoxEnclosingImages(const AppData& appData, const ImageSelection& imageSelection);
+AABB<float>
+computeWorldAABBoxEnclosingImages(const AppData& appData, const ImageSelection& imageSelection, const View* view);
+
+float computeMinVoxelDiagonalForImages(const AppData& appData, const ImageSelection& imageSelection, const View* view);
 
 std::optional<uuids::uuid> createLabelColorTableForSegmentation(AppData& appData, const uuids::uuid& segUid);
 

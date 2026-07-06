@@ -33,12 +33,14 @@ void renderIsosurfacesWindow(
         break;
       }
       const bool isActiveImage = activeUid && (imageUid == *activeUid);
+      const bool hasFollowingHeader = imageIndex + 1 < visibleImageCount;
 
       renderIsosurfacesHeader(
         appData,
         imageUid,
         imageIndex++,
         isActiveImage,
+        hasFollowingHeader,
         storeFuture,
         addTaskToIsosurfaceGpuMeshGenerationQueue);
     }

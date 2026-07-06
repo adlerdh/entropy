@@ -14,6 +14,7 @@ struct KeyboardShortcutRow
 };
 
 const std::vector<KeyboardShortcutRow>& keyboardShortcutRows();
+const std::vector<KeyboardShortcutRow>& threeDViewControlRows();
 
 void renderKeyboardShortcutsWindow(bool& open);
 } // namespace entropy::ui

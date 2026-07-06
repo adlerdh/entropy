@@ -16,6 +16,7 @@
 #include <glm/gtx/vector_angle.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 
 namespace
@@ -24,6 +25,40 @@ namespace
 constexpr float defaultRefSpaceVoxelScale = 1.0f;
 constexpr float defaultSliceScrollDistance = defaultRefSpaceVoxelScale;
 constexpr float defaultSliceMoveDistance = defaultRefSpaceVoxelScale;
+
+bool finitePositive(float value)
+{
+  return std::isfinite(value) && value > 0.0f;
+}
+
+float effectiveVoxelDiagonal(const Image& image)
+{
+  const glm::uvec3 dims = image.header().pixelDimensions();
+  const glm::vec3 spacing = glm::abs(image.header().spacing());
+
+  float squaredDistance = 0.0f;
+  float minPositiveSpacing = std::numeric_limits<float>::max();
+  for (glm::length_t axis = 0; axis < 3; ++axis) {
+    if (!finitePositive(spacing[axis])) {
+      continue;
+    }
+
+    minPositiveSpacing = std::min(minPositiveSpacing, spacing[axis]);
+    if (dims[axis] > 1u) {
+      squaredDistance += spacing[axis] * spacing[axis];
+    }
+  }
+
+  if (squaredDistance > 0.0f) {
+    return std::sqrt(squaredDistance);
+  }
+
+  if (minPositiveSpacing < std::numeric_limits<float>::max()) {
+    return minPositiveSpacing;
+  }
+
+  return defaultRefSpaceVoxelScale;
+}
 } // namespace
 
 namespace data
@@ -249,6 +284,12 @@ glm::vec2 sliceMoveDistance(
 
 AABB<float> computeWorldAABBoxEnclosingImages(const AppData& appData, const ImageSelection& imageSelection)
 {
+  return computeWorldAABBoxEnclosingImages(appData, imageSelection, nullptr);
+}
+
+AABB<float>
+computeWorldAABBoxEnclosingImages(const AppData& appData, const ImageSelection& imageSelection, const View* view)
+{
   const AABB<float> defaultAABB{{-1, -1, -1}, {1, 1, 1}};
 
   switch (imageSelection) {
@@ -256,9 +297,10 @@ AABB<float> computeWorldAABBoxEnclosingImages(const AppData& appData, const Imag
     case ImageSelection::FixedImageInView:
     case ImageSelection::MovingImageInView:
     case ImageSelection::FixedAndMovingImagesInView: {
-      // These image selection modes are dependent on a specific view.
-      // Since we want an AABB that applies to all views, just return the default AABB:
-      return defaultAABB;
+      if (!view) {
+        return defaultAABB;
+      }
+      break;
     }
 
     case ImageSelection::ReferenceImage:
@@ -272,7 +314,7 @@ AABB<float> computeWorldAABBoxEnclosingImages(const AppData& appData, const Imag
   std::vector<glm::vec3> corners;
   bool anyImagesUsed = false;
 
-  for (const auto& imageUid : selectImages(appData, imageSelection, nullptr)) {
+  for (const auto& imageUid : selectImages(appData, imageSelection, view)) {
     const auto* img = appData.image(imageUid);
     if (!img) {
       continue;
@@ -290,6 +332,28 @@ AABB<float> computeWorldAABBoxEnclosingImages(const AppData& appData, const Imag
   }
 
   return math::computeAABBox<float>(corners);
+}
+
+float computeMinVoxelDiagonalForImages(const AppData& appData, const ImageSelection& imageSelection, const View* view)
+{
+  float minVoxelDiagonal = std::numeric_limits<float>::max();
+  std::size_t numImagesUsed = 0;
+
+  for (const auto& imageUid : selectImages(appData, imageSelection, view)) {
+    const Image* image = appData.image(imageUid);
+    if (!image) {
+      continue;
+    }
+
+    minVoxelDiagonal = std::min(minVoxelDiagonal, effectiveVoxelDiagonal(*image));
+    ++numImagesUsed;
+  }
+
+  if (0 == numImagesUsed) {
+    return defaultRefSpaceVoxelScale;
+  }
+
+  return minVoxelDiagonal;
 }
 
 std::optional<uuids::uuid> createLabelColorTableForSegmentation(AppData& appData, const uuids::uuid& segUid)

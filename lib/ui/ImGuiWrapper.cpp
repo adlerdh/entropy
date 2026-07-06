@@ -4391,11 +4391,34 @@ void ImGuiWrapper::render()
       m_appData.state().worldCrosshairs(),
       m_appData.windowData().getContentScaleRatios()};
 
+    const bool useVolumeImageSelection =
+      ViewType::ThreeD == currentLayout.viewType() && ViewRenderMode::VolumeRender == currentLayout.renderMode();
+    auto isLayoutVolumeImageRendered = [this, &currentLayout](std::size_t index) {
+      const auto imageUid = m_appData.imageUid(index);
+      if (!imageUid) {
+        return false;
+      }
+      const auto& volumeImages = currentLayout.volumeRenderedImages();
+      if (!volumeImages.empty()) {
+        return currentLayout.isImageVolumeRendered(*imageUid);
+      }
+      const auto& renderedImages = currentLayout.renderedImages();
+      return !renderedImages.empty() && renderedImages.front() == *imageUid;
+    };
+
     const ViewOverlayImageCallbacks imageCallbacks{
       m_appData.numImages(),
-      [this, &currentLayout](std::size_t index) { return currentLayout.isImageRendered(m_appData, index); },
-      [this, &currentLayout](std::size_t index, bool visible) {
-        currentLayout.setImageRendered(m_appData, index, visible);
+      [this, &currentLayout, useVolumeImageSelection, isLayoutVolumeImageRendered](std::size_t index) {
+        return useVolumeImageSelection ? isLayoutVolumeImageRendered(index)
+                                       : currentLayout.isImageRendered(m_appData, index);
+      },
+      [this, &currentLayout, useVolumeImageSelection](std::size_t index, bool visible) {
+        if (useVolumeImageSelection) {
+          currentLayout.setImageVolumeRendered(m_appData, index, visible);
+        }
+        else {
+          currentLayout.setImageRendered(m_appData, index, visible);
+        }
       },
       nullptr,
       [this, &currentLayout](std::size_t index) { return currentLayout.isImageUsedForMetric(m_appData, index); },
@@ -4408,26 +4431,37 @@ void ImGuiWrapper::render()
       getImageIsReference};
 
     const ViewOverlayModeCallbacks modeCallbacks{
-      currentLayout.viewType(),
-      currentLayout.renderMode(),
-      currentLayout.intensityProjectionMode(),
-      [this](const ViewType& viewType) { m_appData.windowData().setCurrentLayoutViewType(m_appData, viewType); },
-      [&currentLayout](const ViewRenderMode& renderMode) { return currentLayout.setRenderMode(renderMode); },
-      [&currentLayout](const IntensityProjectionMode& ipMode) {
-        return currentLayout.setIntensityProjectionMode(ipMode);
-      },
-      [this]() {
-        m_recenterAllViews(
-          k_recenterCrosshairs,
-          k_realignCrosshairs,
-          k_doNotRecenterOnCurrentCrosshairsPosition,
-          k_resetObliqueOrientation,
-          k_resetZoom);
-      },
-      nullptr,
-      LayoutKind::Lightbox == currentLayout.kind()
-        ? std::vector<ViewType>{ViewType::Axial, ViewType::Coronal, ViewType::Sagittal}
-        : std::vector<ViewType>{}};
+      .viewType = currentLayout.viewType(),
+      .renderMode = currentLayout.renderMode(),
+      .intensityProjectionMode = currentLayout.intensityProjectionMode(),
+      .setViewType =
+        [this](const ViewType& viewType) { m_appData.windowData().setCurrentLayoutViewType(m_appData, viewType); },
+      .setRenderMode =
+        [&currentLayout](const ViewRenderMode& renderMode) { return currentLayout.setRenderMode(renderMode); },
+      .setIntensityProjectionMode =
+        [&currentLayout](const IntensityProjectionMode& ipMode) {
+          return currentLayout.setIntensityProjectionMode(ipMode);
+        },
+      .recenter =
+        [this]() {
+          m_recenterAllViews(
+            k_recenterCrosshairs,
+            k_realignCrosshairs,
+            k_doNotRecenterOnCurrentCrosshairsPosition,
+            k_resetObliqueOrientation,
+            k_resetZoom);
+        },
+      .applyImageSelectionAndShaderToAllViews = nullptr,
+      .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
+      .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
+      .getThreeDRenderImageBox = [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
+      .setThreeDRenderImageBox =
+        [this](bool renderImageBox) {
+          m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled = renderImageBox;
+        },
+      .selectableViewTypes = LayoutKind::Lightbox == currentLayout.kind()
+                               ? std::vector<ViewType>{ViewType::Axial, ViewType::Coronal, ViewType::Sagittal}
+                               : std::vector<ViewType>{}};
 
     const ViewOverlayProjectionCallbacks projectionCallbacks{
       [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },
@@ -4495,10 +4529,34 @@ void ImGuiWrapper::render()
         m_appData.state().worldCrosshairs(),
         m_appData.windowData().getContentScaleRatios()};
 
+      const bool useVolumeImageSelection =
+        ViewType::ThreeD == view->viewType() && ViewRenderMode::VolumeRender == view->renderMode();
+      auto isViewVolumeImageRendered = [this, view](std::size_t index) {
+        const auto imageUid = m_appData.imageUid(index);
+        if (!imageUid) {
+          return false;
+        }
+        const auto& volumeImages = view->volumeRenderedImages();
+        if (!volumeImages.empty()) {
+          return view->isImageVolumeRendered(*imageUid);
+        }
+        const auto& renderedImages = view->renderedImages();
+        return !renderedImages.empty() && renderedImages.front() == *imageUid;
+      };
+
       const ViewOverlayImageCallbacks imageCallbacks{
         m_appData.numImages(),
-        [this, view](std::size_t index) { return view->isImageRendered(m_appData, index); },
-        [this, view](std::size_t index, bool visible) { view->setImageRendered(m_appData, index, visible); },
+        [this, view, useVolumeImageSelection, isViewVolumeImageRendered](std::size_t index) {
+          return useVolumeImageSelection ? isViewVolumeImageRendered(index) : view->isImageRendered(m_appData, index);
+        },
+        [this, view, useVolumeImageSelection](std::size_t index, bool visible) {
+          if (useVolumeImageSelection) {
+            view->setImageVolumeRendered(m_appData, index, visible);
+          }
+          else {
+            view->setImageRendered(m_appData, index, visible);
+          }
+        },
         applyImageSelectionToAllViews,
         [this, view](std::size_t index) { return view->isImageUsedForMetric(m_appData, index); },
         [this, view](std::size_t index, bool visible) { view->setImageUsedForMetric(m_appData, index, visible); },
@@ -4508,14 +4566,65 @@ void ImGuiWrapper::render()
         getImageIsReference};
 
       const ViewOverlayModeCallbacks modeCallbacks{
-        view->viewType(),
-        view->renderMode(),
-        view->intensityProjectionMode(),
-        setViewType,
-        setRenderMode,
-        setIntensityProjectionMode,
-        recenter,
-        applyImageSelectionAndRenderModesToAllViews};
+        .viewType = view->viewType(),
+        .renderMode = view->renderMode(),
+        .intensityProjectionMode = view->intensityProjectionMode(),
+        .setViewType = setViewType,
+        .setRenderMode = setRenderMode,
+        .setIntensityProjectionMode = setIntensityProjectionMode,
+        .recenter = recenter,
+        .applyImageSelectionAndShaderToAllViews = applyImageSelectionAndRenderModesToAllViews,
+        .isIsosurfacesPanelVisible = [this]() { return m_appData.guiData().m_showIsosurfacesWindow; },
+        .showIsosurfacesPanel = [this]() { m_appData.guiData().m_showIsosurfacesWindow = true; },
+        .getThreeDProjectionType = [view]() { return view->threeDState().m_projectionType; },
+        .setThreeDProjectionType =
+          [view](ProjectionType projectionType) {
+            view->setThreeDProjectionType(projectionType);
+            if (ProjectionType::Orthographic == projectionType) {
+              view->threeDState().m_viewPositionFollowsCrosshairs = false;
+            }
+          },
+        .getThreeDFovAngleDegrees =
+          [view]() {
+            constexpr float k_radiansToDegrees = 57.29577951308232f;
+            return k_radiansToDegrees * view->threeDCamera().angle();
+          },
+        .setThreeDFovAngleDegrees =
+          [view](float fovDegrees) {
+            constexpr float k_defaultPerspectiveFovDegrees = 60.0f;
+            constexpr float k_minPerspectiveFovDegrees = 0.5f;
+            constexpr float k_maxPerspectiveFovDegrees = 150.0f;
+            const float clampedFovDegrees =
+              std::clamp(fovDegrees, k_minPerspectiveFovDegrees, k_maxPerspectiveFovDegrees);
+            view->threeDCamera().setZoom(k_defaultPerspectiveFovDegrees / clampedFovDegrees);
+            view->threeDState().m_perspectiveZoom = view->threeDCamera().getZoom();
+            view->threeDState().m_userMovedCamera = true;
+          },
+        .getThreeDViewPositionFollowsCrosshairs =
+          [view]() { return view->threeDState().m_viewPositionFollowsCrosshairs; },
+        .setThreeDViewPositionFollowsCrosshairs =
+          [this, view](bool followsCrosshairs) {
+            view->threeDState().m_viewPositionFollowsCrosshairs = followsCrosshairs;
+            if (followsCrosshairs) {
+              view->threeDState().m_crosshairsFollowOffset = glm::vec3{0.0f};
+              camera3d::followCrosshairs(
+                view->threeDCamera(),
+                view->threeDState(),
+                glm::vec3{m_appData.state().worldCrosshairs().worldOrigin()});
+            }
+          },
+        .getThreeDOrbitTargetMode = [view]() { return view->threeDState().m_orbitTargetMode; },
+        .setThreeDOrbitTargetMode =
+          [view](camera3d::OrbitTargetMode mode) {
+            view->threeDState().m_orbitTargetMode = mode;
+            view->threeDState().m_userMovedCamera = false;
+          },
+        .getThreeDRenderImageBox =
+          [this]() { return m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled; },
+        .setThreeDRenderImageBox =
+          [this](bool renderImageBox) {
+            m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled = renderImageBox;
+          }};
 
       const ViewOverlayProjectionCallbacks projectionCallbacks{
         [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },

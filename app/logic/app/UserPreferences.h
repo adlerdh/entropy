@@ -63,7 +63,7 @@ struct RenderPreferences
   bool showCrosshairs = true;
   bool showCrosshairsInLightboxViews = true;
   glm::vec3 background2dColor{0.1f, 0.1f, 0.1f};
-  glm::vec4 background3dColor{0.0f, 0.0f, 0.0f, 0.5f};
+  glm::vec4 background3dColor{22.0f / 255.0f, 22.0f / 255.0f, 22.0f / 255.0f, 1.0f};
   glm::vec4 anatomicalLabelColor{0.695f, 0.870f, 0.090f, 1.0f};
   bool showAnatomicalLabels = true;
   bool showAnatomicalLabelsInLightboxViews = true;

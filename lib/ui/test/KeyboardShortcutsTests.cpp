@@ -5,10 +5,10 @@
 #include <set>
 #include <string>
 
-TEST_CASE("Keyboard shortcut catalog has complete rows", "[ui][keyboard-shortcuts]")
+namespace
 {
-  const auto& rows = entropy::ui::keyboardShortcutRows();
-
+void checkRowsAreComplete(const std::vector<entropy::ui::KeyboardShortcutRow>& rows)
+{
   REQUIRE_FALSE(rows.empty());
   for (const auto& row : rows) {
     CHECK_FALSE(row.section.empty());
@@ -18,19 +18,38 @@ TEST_CASE("Keyboard shortcut catalog has complete rows", "[ui][keyboard-shortcut
   }
 }
 
-TEST_CASE("Keyboard shortcut catalog keeps shortcut action pairs unique", "[ui][keyboard-shortcuts]")
+void checkShortcutActionPairsAreUnique(const std::vector<entropy::ui::KeyboardShortcutRow>& rows)
 {
   std::set<std::pair<std::string, std::string>> seen;
 
-  for (const auto& row : entropy::ui::keyboardShortcutRows()) {
+  for (const auto& row : rows) {
     CHECK(seen.emplace(row.shortcut, row.action).second);
   }
 }
 
-TEST_CASE("Keyboard shortcut descriptions do not end with periods", "[ui][keyboard-shortcuts]")
+void checkDescriptionsDoNotEndWithPeriods(const std::vector<entropy::ui::KeyboardShortcutRow>& rows)
 {
-  for (const auto& row : entropy::ui::keyboardShortcutRows()) {
+  for (const auto& row : rows) {
     REQUIRE_FALSE(row.details.empty());
     CHECK(row.details.back() != '.');
   }
+}
+} // namespace
+
+TEST_CASE("Keyboard shortcut catalog has complete rows", "[ui][keyboard-shortcuts]")
+{
+  checkRowsAreComplete(entropy::ui::keyboardShortcutRows());
+  checkRowsAreComplete(entropy::ui::threeDViewControlRows());
+}
+
+TEST_CASE("Keyboard shortcut catalog keeps shortcut action pairs unique", "[ui][keyboard-shortcuts]")
+{
+  checkShortcutActionPairsAreUnique(entropy::ui::keyboardShortcutRows());
+  checkShortcutActionPairsAreUnique(entropy::ui::threeDViewControlRows());
+}
+
+TEST_CASE("Keyboard shortcut descriptions do not end with periods", "[ui][keyboard-shortcuts]")
+{
+  checkDescriptionsDoNotEndWithPeriods(entropy::ui::keyboardShortcutRows());
+  checkDescriptionsDoNotEndWithPeriods(entropy::ui::threeDViewControlRows());
 }

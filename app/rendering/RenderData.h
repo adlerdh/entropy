@@ -265,6 +265,9 @@ struct RenderData
   bool m_renderBackFaces;  // Flag to render back faces in 3D raycasting
 
   float m_raycastSamplingFactor; // Sampling factor for raycasting
+  bool m_raycastBackgroundEdgeBrighteningEnabled;
+  bool m_showCrosshairsIn3D;
+  float m_crosshairs3DGlyphDiameterVoxelDiagonals;
 
   enum class SegMaskingForRaycasting
   {

@@ -16,8 +16,9 @@ namespace layout
  */
 struct ImageSelectionSpec
 {
-  std::vector<std::size_t> m_renderedImageIndices; //!< Images rendered in the view.
-  std::vector<std::size_t> m_metricImageIndices;   //!< Images used by metric/comparison modes.
+  std::vector<std::size_t> m_renderedImageIndices;       //!< Images rendered in the view.
+  std::vector<std::size_t> m_volumeRenderedImageIndices; //!< Single image rendered in 3D volume raycasting.
+  std::vector<std::size_t> m_metricImageIndices;         //!< Images used by metric/comparison modes.
 };
 
 /**
@@ -52,6 +53,12 @@ struct ViewSpec
   std::set<std::size_t> m_preferredDefaultRenderedImages; //!< Preferred default rendered image indices.
   bool m_defaultRenderAllImages = true;                   //!< Whether this view renders all images by default.
   ImageSelectionSpec m_imageSelection;                    //!< Explicit image selection for this view.
+
+  int m_threeDProjectionType = 1;               //!< Serialized 3D projection type.
+  int m_threeDOrbitTargetMode = 0;              //!< Serialized 3D orbit target mode.
+  bool m_threeDCameraFollowsCrosshairs = false; //!< Whether 3D camera position follows crosshairs.
+  float m_threeDPerspectiveZoom = 1.0f;         //!< Saved 3D perspective projection zoom.
+  float m_threeDOrthographicZoom = 1.0f;        //!< Saved 3D orthographic projection zoom.
 };
 
 /**

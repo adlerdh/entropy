@@ -102,12 +102,37 @@ TEST_CASE("frame image selection exposes visible images by render mode", "[viewe
 {
   viewer::FrameImageSelection selection;
   selection.setRenderedImages({uuidFromIndex(1)}, false);
+  selection.setVolumeRenderedImages({uuidFromIndex(4)});
   selection.setMetricImages({uuidFromIndex(2), uuidFromIndex(3)});
 
   CHECK(asVector(selection.visibleImages(ViewRenderMode::Image)) == std::vector{uuidFromIndex(1)});
+  CHECK(asVector(selection.visibleImages(ViewRenderMode::VolumeRender)) == std::vector{uuidFromIndex(4)});
   CHECK(
     asVector(selection.visibleImages(ViewRenderMode::Difference)) == std::vector{uuidFromIndex(2), uuidFromIndex(3)});
   CHECK(selection.visibleImages(ViewRenderMode::Disabled).empty());
+}
+
+TEST_CASE("frame image selection keeps one volume raycast image", "[viewer][frame_image_selection]")
+{
+  const std::vector ordered{uuidFromIndex(1), uuidFromIndex(2), uuidFromIndex(3)};
+  viewer::FrameImageSelection selection;
+  selection.setRenderedImages({uuidFromIndex(1), uuidFromIndex(2)}, false);
+
+  selection.ensureVolumeRenderedImageSelected();
+  CHECK(asVector(selection.visibleImages(ViewRenderMode::VolumeRender)) == std::vector{uuidFromIndex(1)});
+
+  selection.setImageVolumeRendered(uuidFromIndex(2), ordered, true);
+  CHECK(selection.isImageVolumeRendered(uuidFromIndex(2)));
+  CHECK(asVector(selection.volumeRenderedImages()) == std::vector{uuidFromIndex(2)});
+  CHECK(asVector(selection.visibleImages(ViewRenderMode::VolumeRender)) == std::vector{uuidFromIndex(2)});
+
+  selection.setImageVolumeRendered(uuidFromIndex(3), ordered, true);
+  CHECK_FALSE(selection.isImageVolumeRendered(uuidFromIndex(2)));
+  CHECK(selection.isImageVolumeRendered(uuidFromIndex(3)));
+  CHECK(asVector(selection.volumeRenderedImages()) == std::vector{uuidFromIndex(3)});
+
+  selection.setVolumeRenderedImages({uuidFromIndex(1), uuidFromIndex(2)});
+  CHECK(asVector(selection.volumeRenderedImages()) == std::vector{uuidFromIndex(1)});
 }
 
 TEST_CASE("frame image selection reorders selections and drops missing images", "[viewer][frame_image_selection]")
@@ -115,9 +140,11 @@ TEST_CASE("frame image selection reorders selections and drops missing images", 
   viewer::FrameImageSelection selection;
   selection.setRenderedImages({uuidFromIndex(1), uuidFromIndex(2), uuidFromIndex(4)}, false);
   selection.setMetricImages({uuidFromIndex(1), uuidFromIndex(2), uuidFromIndex(3)});
+  selection.setVolumeRenderedImages({uuidFromIndex(2)});
 
   selection.updateImageOrdering({uuidFromIndex(3), uuidFromIndex(2), uuidFromIndex(1)});
 
   CHECK(asVector(selection.renderedImages()) == std::vector{uuidFromIndex(2), uuidFromIndex(1)});
   CHECK(asVector(selection.metricImages()) == std::vector{uuidFromIndex(3), uuidFromIndex(2)});
+  CHECK(asVector(selection.volumeRenderedImages()) == std::vector{uuidFromIndex(2)});
 }

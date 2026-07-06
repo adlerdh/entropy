@@ -4,6 +4,7 @@
 #include "common/Types.h"
 
 #include "logic/app/ImageScaleInteraction.h"
+#include "logic/camera/Camera3DInteraction.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/interaction/ViewHit.h"
 #include "logic/interaction/events/ButtonState.h"
@@ -38,11 +39,34 @@ static std::optional<entropy::app::ImageScaleConstraint> s_imageScaleViewAxisCon
 
 constexpr float kImageScaleDeadZoneRadiusViewClip = 0.06f;
 constexpr float kImageScaleAxisConstraintDominanceRatio = 1.5f;
+constexpr double kDoubleClickMaxSeconds = 0.35;
+constexpr float kDoubleClickMaxDistanceWindowPixels = 6.0f;
 
 // Should zooms be synchronized for all views?
 bool syncZoomsForAllViews(const ModifierState& modState)
 {
   return (modState.shift || ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift));
+}
+
+bool isLeftDoubleClick(int button, int action, const glm::vec2& windowCursorPos)
+{
+  static double s_lastLeftClickTime = -1.0;
+  static glm::vec2 s_lastLeftClickWindowPos{0.0f};
+
+  if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS) {
+    return false;
+  }
+
+  const double now = glfwGetTime();
+  const float maxDistanceSquared = kDoubleClickMaxDistanceWindowPixels * kDoubleClickMaxDistanceWindowPixels;
+  const bool isDoubleClick =
+    s_lastLeftClickTime >= 0.0 && now - s_lastLeftClickTime <= kDoubleClickMaxSeconds &&
+    glm::dot(windowCursorPos - s_lastLeftClickWindowPos, windowCursorPos - s_lastLeftClickWindowPos) <=
+      maxDistanceSquared;
+
+  s_lastLeftClickTime = now;
+  s_lastLeftClickWindowPos = windowCursorPos;
+  return isDoubleClick;
 }
 } // namespace
 
@@ -215,56 +239,30 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
   }
 
   if (ViewType::ThreeD == startView->viewType()) {
-    switch (app->appData().state().mouseMode()) {
-      case MouseMode::Pointer: {
-        break;
-      }
-      case MouseMode::WindowLevel: {
-        break;
-      }
-      case MouseMode::CameraZoom: {
-        break;
-      }
-      case MouseMode::CameraTranslate: {
-        break;
-      }
-      case MouseMode::CameraRotate: {
-        using enum RotationOrigin;
-
-        if (!currHit_withOverride) {
-          break;
-        }
-
-        switch (startView->viewType()) {
-          case ViewType::ThreeD: {
-            if (s_mouseButtonState.left) {
-              if (s_modifierState.alt) {
-                H.doCameraRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride, Crosshairs);
-              }
-              else {
-                H.doCameraRotate3d(*s_startHit, *s_prevHit, *currHit_withOverride, Crosshairs, AxisConstraint::None);
-              }
-            }
-            else if (s_mouseButtonState.right) {
-              if (s_modifierState.alt) {
-                H.doCameraRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride, CameraEye);
-              }
-              else {
-                H.doCameraRotate3d(*s_startHit, *s_prevHit, *currHit_withOverride, CameraEye, AxisConstraint::None);
-              }
-            }
+    if (currHit_withOverride) {
+      const std::optional<camera3d::DragAction> action = camera3d::dragActionForInput(
+        app->appData().state().mouseMode(),
+        s_mouseButtonState,
+        s_modifierState,
+        startView->threeDState().m_viewPositionFollowsCrosshairs);
+      if (action) {
+        switch (*action) {
+          case camera3d::DragAction::Orbit:
+            H.doThreeDCameraOrbit(*s_startHit, *s_prevHit, *currHit_withOverride);
             break;
-          }
-          default: {
+          case camera3d::DragAction::RotateAboutEye:
+            H.doThreeDCameraRotateAboutEye(*s_startHit, *s_prevHit, *currHit_withOverride);
             break;
-          }
+          case camera3d::DragAction::Roll:
+            H.doThreeDCameraRoll(*s_startHit, *s_prevHit, *currHit_withOverride);
+            break;
+          case camera3d::DragAction::Pan:
+            H.doThreeDCameraPan(*s_startHit, *s_prevHit, *currHit_withOverride);
+            break;
         }
-        break;
-      }
-      default: {
-        break;
       }
     }
+    s_prevHit = currHit_withOverride;
     return;
   }
 
@@ -608,6 +606,14 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 
   CallbackHandler& H = app->callbackHandler();
 
+  if (
+    isLeftDoubleClick(button, action, windowCursorPos) && MouseMode::Pointer == app->appData().state().mouseMode() &&
+    ViewType::ThreeD == hit_invalidOutsideView->view->viewType())
+  {
+    H.doThreeDIsosurfacePick(*hit_invalidOutsideView);
+    return;
+  }
+
   // Send event to the annotation state machine and also end crosshairs rotation (if in progress)
   switch (action) {
     case GLFW_PRESS: {
@@ -646,6 +652,7 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
   }
 
   const bool shiftDown = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
+  const bool altDown = ImGui::IsKeyDown(ImGuiKey_LeftAlt) || ImGui::IsKeyDown(ImGuiKey_RightAlt);
 
   double mindowCursorPosX, mindowCursorPosY;
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
@@ -661,6 +668,11 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
   }
 
   CallbackHandler& H = app->callbackHandler();
+
+  if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {
+    H.doThreeDCameraScroll(*hit_invalidOutsideView, {scrollOffsetX, scrollOffsetY}, shiftDown, altDown);
+    return;
+  }
 
   switch (app->appData().state().mouseMode()) {
     case MouseMode::Pointer:
@@ -864,28 +876,64 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       if (!hit_invalidOutsideView) {
         break;
       }
-      H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, -1, 0);
+      if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {
+        H.doThreeDCameraKeyboardPanOrRotate(
+          *hit_invalidOutsideView,
+          {-1, 0},
+          s_modifierState.alt || s_modifierState.control || s_modifierState.super,
+          s_modifierState.shift);
+      }
+      else {
+        H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, -1, 0);
+      }
       break;
     }
     case GLFW_KEY_RIGHT: {
       if (!hit_invalidOutsideView) {
         break;
       }
-      H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 1, 0);
+      if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {
+        H.doThreeDCameraKeyboardPanOrRotate(
+          *hit_invalidOutsideView,
+          {1, 0},
+          s_modifierState.alt || s_modifierState.control || s_modifierState.super,
+          s_modifierState.shift);
+      }
+      else {
+        H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 1, 0);
+      }
       break;
     }
     case GLFW_KEY_UP: {
       if (!hit_invalidOutsideView) {
         break;
       }
-      H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 0, 1);
+      if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {
+        H.doThreeDCameraKeyboardPanOrRotate(
+          *hit_invalidOutsideView,
+          {0, 1},
+          s_modifierState.alt || s_modifierState.control || s_modifierState.super,
+          s_modifierState.shift);
+      }
+      else {
+        H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 0, 1);
+      }
       break;
     }
     case GLFW_KEY_DOWN: {
       if (!hit_invalidOutsideView) {
         break;
       }
-      H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 0, -1);
+      if (ViewType::ThreeD == hit_invalidOutsideView->view->viewType()) {
+        H.doThreeDCameraKeyboardPanOrRotate(
+          *hit_invalidOutsideView,
+          {0, -1},
+          s_modifierState.alt || s_modifierState.control || s_modifierState.super,
+          s_modifierState.shift);
+      }
+      else {
+        H.moveCrosshairsOnViewSlice(*hit_invalidOutsideView, 0, -1);
+      }
       break;
     }
 

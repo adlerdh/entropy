@@ -12,6 +12,7 @@
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
+#include "logic/camera/RaycastIsoSurfacePicker.h"
 
 #include "logic/segmentation/AnnotationSegmentation.h"
 #include "logic/segmentation/Poisson.h"
@@ -34,6 +35,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -638,12 +640,14 @@ void CallbackHandler::recenterViews(
     const glm::vec3 worldPos = math::computeAABBoxCenter(worldBox);
     const glm::vec3 worldPosSnapped = data::snapWorldPointToImageVoxels(m_appData, worldPos, forceSnapping);
     m_appData.state().setWorldCrosshairsPos(worldPosSnapped);
+    updateThreeDViewsFollowingCrosshairs();
   }
 
   if (realignCrosshairs) {
     CoordinateFrame xhairs = m_appData.state().worldCrosshairs();
     xhairs.setIdentityRotation();
     m_appData.state().setWorldCrosshairs(xhairs);
+    updateThreeDViewsFollowingCrosshairs();
   }
 
   const glm::vec3 worldCenter = recenterOnCurrentCrosshairsPos ? m_appData.state().worldCrosshairs().worldOrigin()
@@ -690,7 +694,9 @@ void CallbackHandler::doCrosshairsMove(const ViewHit& hit)
     return;
   }
 
-  m_appData.state().setWorldCrosshairsPos(glm::vec3{hit.worldPos});
+  const glm::vec3 newCrosshairs = glm::vec3{hit.worldPos};
+  m_appData.state().setWorldCrosshairsPos(newCrosshairs);
+  updateThreeDViewsFollowingCrosshairs();
 }
 
 void CallbackHandler::doCrosshairsScroll(const ViewHit& hit, const glm::vec2& scrollOffset, bool fineScroll)
@@ -706,6 +712,7 @@ void CallbackHandler::doCrosshairsScroll(const ViewHit& hit, const glm::vec2& sc
 
   const glm::vec3 worldPosSnapped = data::snapWorldPointToImageVoxels(m_appData, worldPos);
   m_appData.state().setWorldCrosshairsPos(worldPosSnapped);
+  updateThreeDViewsFollowingCrosshairs();
 }
 
 void CallbackHandler::doSegment(const ViewHit& hit, bool swapFgAndBg)
@@ -1397,6 +1404,158 @@ void CallbackHandler::doCameraRotate3d(
   }
 }
 
+namespace
+{
+
+float minPositiveSpacing(const Image& image)
+{
+  const glm::vec3 spacing = image.header().spacing();
+  float result = std::numeric_limits<float>::max();
+  for (int axis = 0; axis < 3; ++axis) {
+    if (spacing[axis] > 0.0f) {
+      result = std::min(result, spacing[axis]);
+    }
+  }
+  return std::isfinite(result) ? result : 1.0f;
+}
+
+std::vector<double> pickableIsoValues(const AppData& appData, const uuid& imageUid, const Image& image)
+{
+  const ImageSettings& settings = image.settings();
+  if (!settings.globalVisibility() || !settings.visibility() || !settings.isosurfacesVisible()) {
+    return {};
+  }
+
+  std::vector<double> values;
+  const uint32_t activeComponent = settings.activeComponent();
+  for (const uuid& surfaceUid : appData.isosurfaceUids(imageUid, activeComponent)) {
+    const Isosurface* surface = appData.isosurface(imageUid, activeComponent, surfaceUid);
+    if (surface && surface->visible) {
+      values.push_back(surface->value);
+    }
+  }
+  return values;
+}
+
+camera3d::SceneFrame threeDSceneFrameForView(const AppData& appData, const View& view)
+{
+  const ImageSelection selection =
+    view.visibleImages().empty() ? ImageSelection::AllLoadedImages : ImageSelection::VisibleImagesInView;
+  camera3d::SceneFrame scene =
+    camera3d::sceneFrameFromAABB(data::computeWorldAABBoxEnclosingImages(appData, selection, &view));
+  scene.m_voxelDiagonal = data::computeMinVoxelDiagonalForImages(appData, selection, &view);
+  return scene;
+}
+
+glm::vec3 threeDTargetForView(const AppData& appData, const View& view, const camera3d::SceneFrame& scene)
+{
+  return (camera3d::OrbitTargetMode::Crosshairs == view.threeDState().m_orbitTargetMode)
+           ? appData.state().worldCrosshairs().worldOrigin()
+           : scene.m_center;
+}
+
+bool prepareThreeDView(AppData& appData, View* view)
+{
+  if (!view || ViewType::ThreeD != view->viewType()) {
+    return false;
+  }
+
+  const camera3d::SceneFrame scene = threeDSceneFrameForView(appData, *view);
+  view->initializeThreeDCameraIfNeeded(scene);
+  camera3d::Controller{view->threeDCamera(), view->threeDState()}.updateScene(scene);
+  return true;
+}
+
+} // namespace
+
+void CallbackHandler::doThreeDCameraOrbit(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
+{
+  View* view = startHit.view;
+  if (!prepareThreeDView(m_appData, view)) {
+    return;
+  }
+
+  camera3d::State& state = view->threeDState();
+  const camera3d::SceneFrame scene = threeDSceneFrameForView(m_appData, *view);
+  state.m_orbitTarget = threeDTargetForView(m_appData, *view, scene);
+  camera3d::orbit(view->threeDCamera(), state, prevHit.viewClipPos, currHit.viewClipPos);
+}
+
+void CallbackHandler::doThreeDCameraRotateAboutEye(
+  const ViewHit& startHit,
+  const ViewHit& prevHit,
+  const ViewHit& currHit)
+{
+  View* view = startHit.view;
+  if (!prepareThreeDView(m_appData, view)) {
+    return;
+  }
+  camera3d::rotateAboutEye(view->threeDCamera(), view->threeDState(), prevHit.viewClipPos, currHit.viewClipPos);
+}
+
+void CallbackHandler::doThreeDCameraRoll(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
+{
+  View* view = startHit.view;
+  if (!prepareThreeDView(m_appData, view)) {
+    return;
+  }
+  camera3d::roll(view->threeDCamera(), view->threeDState(), prevHit.viewClipPos, currHit.viewClipPos);
+}
+
+void CallbackHandler::doThreeDCameraPan(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)
+{
+  View* view = startHit.view;
+  if (!prepareThreeDView(m_appData, view)) {
+    return;
+  }
+  const camera3d::SceneFrame scene = threeDSceneFrameForView(m_appData, *view);
+  camera3d::panOnSceneAabbPlane(
+    view->threeDCamera(),
+    view->threeDState(),
+    scene,
+    startHit.viewClipPos,
+    prevHit.viewClipPos,
+    currHit.viewClipPos);
+}
+
+void CallbackHandler::doThreeDCameraScroll(
+  const ViewHit& hit,
+  const glm::vec2& scrollOffset,
+  bool faster,
+  bool adjustPerspectiveFov)
+{
+  if (!prepareThreeDView(m_appData, hit.view)) {
+    return;
+  }
+  camera3d::dollyOrZoom(
+    hit.view->threeDCamera(),
+    hit.view->threeDState(),
+    hit.viewClipPos,
+    static_cast<float>(scrollOffset.y),
+    faster,
+    adjustPerspectiveFov);
+}
+
+void CallbackHandler::doThreeDCameraKeyboardPanOrRotate(
+  const ViewHit& hit,
+  const glm::ivec2& direction,
+  bool rotate,
+  bool faster)
+{
+  if (!prepareThreeDView(m_appData, hit.view)) {
+    return;
+  }
+
+  const float step = faster ? 0.12f : 0.04f;
+  const glm::vec2 delta = step * glm::vec2{direction};
+  if (rotate) {
+    camera3d::rotateAboutEye(hit.view->threeDCamera(), hit.view->threeDState(), glm::vec2{0.0f}, delta);
+  }
+  else {
+    camera3d::pan(hit.view->threeDCamera(), hit.view->threeDState(), glm::vec2{0.0f}, -delta);
+  }
+}
+
 void CallbackHandler::doCameraRotate3d(const uuid& viewUid, const glm::quat& camera_T_world_rotationDelta)
 {
   auto& windowData = m_appData.windowData();
@@ -1488,6 +1647,59 @@ void CallbackHandler::handleSetViewForwardDirection(const uuid& viewUid, const g
   }
 }
 
+void CallbackHandler::doThreeDIsosurfacePick(const ViewHit& hit)
+{
+  if (!hit.view || ViewType::ThreeD != hit.view->viewType()) {
+    return;
+  }
+  if (hit.view->threeDState().m_viewPositionFollowsCrosshairs) {
+    return;
+  }
+  if (!checkAndSetActiveView(hit.viewUid)) {
+    return;
+  }
+
+  for (const uuid& imageUid : hit.view->visibleImages()) {
+    const Image* image = m_appData.image(imageUid);
+    if (!image) {
+      continue;
+    }
+
+    const std::vector<double> isoValues = pickableIsoValues(m_appData, imageUid, *image);
+    if (isoValues.empty()) {
+      continue;
+    }
+
+    const ImageSettings& settings = image->settings();
+    const uint32_t activeComponent = settings.activeComponent();
+    const uint32_t activeTimePoint = image->timeAxis().clamp(settings.activeTimePoint());
+    const float stepLength =
+      std::max(1.0e-5f, m_appData.renderData().m_raycastSamplingFactor * minPositiveSpacing(*image));
+    const glm::vec3 worldRayOrigin = helper::world_T_ndc(hit.view->threeDCamera(), glm::vec3{hit.viewClipPos, -1.0f});
+    const glm::vec3 worldRayDirection = helper::worldRayDirection(hit.view->threeDCamera(), hit.viewClipPos);
+
+    const auto hitResult = camera3d::pickFirstIsoSurfaceHit(
+      {.worldRayOrigin = worldRayOrigin,
+       .worldRayDirection = worldRayDirection,
+       .pixel_T_world = image->transformations().pixel_T_worldDef(),
+       .world_T_pixel = image->transformations().worldDef_T_pixel(),
+       .pixelDimensions = glm::vec3{image->header().pixelDimensions()},
+       .stepLength = stepLength,
+       .renderFrontFaces = m_appData.renderData().m_renderFrontFaces,
+       .renderBackFaces = m_appData.renderData().m_renderBackFaces,
+       .isoValues = isoValues,
+       .sampleValue = [image, activeComponent, activeTimePoint](const glm::vec3& pixelPos) {
+         return image->valueLinear<double>(activeComponent, pixelPos.x, pixelPos.y, pixelPos.z, activeTimePoint);
+       }});
+
+    if (hitResult) {
+      m_appData.state().setWorldCrosshairsPos(hitResult->worldPosition);
+      updateThreeDViewsFollowingCrosshairs();
+    }
+    return;
+  }
+}
+
 void CallbackHandler::doCameraZoomDrag(
   const ViewHit& startHit,
   const ViewHit& prevHit,
@@ -1536,7 +1748,9 @@ void CallbackHandler::doCameraZoomDrag(
         continue;
       }
 
-      if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid)) {
+      if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid);
+          otherView && ViewType::ThreeD != otherView->viewType())
+      {
         helper::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
       }
     }
@@ -1550,7 +1764,9 @@ void CallbackHandler::doCameraZoomDrag(
         continue;
       }
 
-      if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid)) {
+      if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
+          syncedView && ViewType::ThreeD != syncedView->viewType())
+      {
         helper::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
       }
     }
@@ -1606,7 +1822,9 @@ void CallbackHandler::doCameraZoomScroll(
         continue;
       }
 
-      if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid)) {
+      if (View* otherView = m_appData.windowData().getCurrentView(otherViewUid);
+          otherView && ViewType::ThreeD != otherView->viewType())
+      {
         helper::zoomNdc(otherView->camera(), factor, getCenterViewClipPos(otherView));
       }
     }
@@ -1620,7 +1838,9 @@ void CallbackHandler::doCameraZoomScroll(
         continue;
       }
 
-      if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid)) {
+      if (View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
+          syncedView && ViewType::ThreeD != syncedView->viewType())
+      {
         helper::zoomNdc(syncedView->camera(), factor, getCenterViewClipPos(syncedView));
       }
     }
@@ -1635,6 +1855,7 @@ void CallbackHandler::scrollViewSlice(const ViewHit& hit, int numSlices)
   m_appData.state().setWorldCrosshairsPos(
     m_appData.state().worldCrosshairs().worldOrigin() +
     static_cast<float>(numSlices) * scrollDistance * hit.worldFrontAxis);
+  updateThreeDViewsFollowingCrosshairs();
 }
 
 void CallbackHandler::doImageTranslate(
@@ -2140,6 +2361,7 @@ void CallbackHandler::moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, i
   m_appData.state().setWorldCrosshairsPos(
     worldCrosshairs + static_cast<float>(stepX) * moveDistances.x * worldRightAxis +
     static_cast<float>(stepY) * moveDistances.y * worldUpAxis);
+  updateThreeDViewsFollowingCrosshairs();
 }
 
 void CallbackHandler::doCrosshairsRotate2D(
@@ -2182,6 +2404,7 @@ void CallbackHandler::doCrosshairsRotate2D(
     // Set new crosshairs (used by all other views except the one in which rotation is being done):
     // m_appData.saveAllViewWorldCenterPositions();
     state.setWorldCrosshairs(worldXhairsRotated);
+    updateThreeDViewsFollowingCrosshairs();
     // m_appData.restoreAllViewWorldCenterPositions();
   }
   else {
@@ -2205,6 +2428,7 @@ void CallbackHandler::doCrosshairsRotate2D(
     // Set new crosshairs (used by all other views except the one in which rotation is being done):
     // m_appData.saveAllViewWorldCenterPositions();
     state.setWorldCrosshairs(worldXhairsOldRotated);
+    updateThreeDViewsFollowingCrosshairs();
     // m_appData.restoreAllViewWorldCenterPositions();
   }
 
@@ -2277,6 +2501,7 @@ void CallbackHandler::moveCrosshairsToSegLabelCentroid(const uuid& imageUid, std
 
   worldPos = data::snapWorldPointToImageVoxels(m_appData, worldPos);
   m_appData.state().setWorldCrosshairsPos(worldPos);
+  updateThreeDViewsFollowingCrosshairs();
 }
 
 void CallbackHandler::setMouseMode(MouseMode mode)
@@ -2367,4 +2592,17 @@ bool CallbackHandler::checkAndSetActiveView(const uuid& viewUid)
   // There is no active view, so set this to be the active view:
   m_appData.windowData().setActiveViewUid(viewUid);
   return true;
+}
+
+void CallbackHandler::updateThreeDViewsFollowingCrosshairs()
+{
+  const glm::vec3 crosshairs = m_appData.state().worldCrosshairs().worldOrigin();
+  for (const auto& viewUid : m_appData.windowData().currentViewUids()) {
+    View* view = m_appData.windowData().getCurrentView(viewUid);
+    if (!view || ViewType::ThreeD != view->viewType() || !view->threeDState().m_viewPositionFollowsCrosshairs) {
+      continue;
+    }
+    view->threeDState().m_crosshairsFollowOffset = glm::vec3{0.0f};
+    camera3d::followCrosshairs(view->threeDCamera(), view->threeDState(), crosshairs);
+  }
 }
