@@ -179,10 +179,6 @@ const std::vector<KeyboardShortcutRow>& threeDViewControlRows()
      "Look around",
      "Rotate the hovered 3D view about the camera eye"},
     {"Keyboard", "Shift + arrow keys", "Faster pan or rotation", "Increase keyboard movement speed"},
-
-    {"View options", "Camera follows crosshairs", "Follow crosshairs", "Move the 3D camera eye when crosshairs move"},
-    {"View options", "Orbit around image center", "Set orbit target", "Orbit around the center of the visible image"},
-    {"View options", "Orbit around crosshairs", "Set orbit target", "Orbit around the current crosshairs position"},
   };
   return k_rows;
 }

@@ -51,6 +51,10 @@ std::string to_string(ShaderProgramType type)
       return "Xray - LinearTextureLookup";
     case ShaderProgramType::XrayCubic:
       return "Xray - CubicTextureLookup";
+    case ShaderProgramType::XrayLinearWarped:
+      return "Xray - LinearTextureLookup - Warped";
+    case ShaderProgramType::XrayCubicWarped:
+      return "Xray - CubicTextureLookup - Warped";
     case ShaderProgramType::SegmentationNearest:
       return "Segmentation - Nearest - TextureLookup";
     case ShaderProgramType::SegmentationLinear:
@@ -65,22 +69,44 @@ std::string to_string(ShaderProgramType type)
       return "IsoContour - Linear - Fixed-Point";
     case ShaderProgramType::IsoContourCubicFixed:
       return "IsoContour - Cubic - Fixed-Point";
+    case ShaderProgramType::IsoContourLinearFloatingWarped:
+      return "IsoContour - Linear - Floating-Point - Warped";
+    case ShaderProgramType::IsoContourLinearFixedWarped:
+      return "IsoContour - Linear - Fixed-Point - Warped";
+    case ShaderProgramType::IsoContourCubicFixedWarped:
+      return "IsoContour - Cubic - Fixed-Point - Warped";
     case ShaderProgramType::DifferenceLinear:
       return "Difference - Linear";
     case ShaderProgramType::DifferenceCubic:
       return "Difference - Cubic";
+    case ShaderProgramType::DifferenceLinearWarped:
+      return "Difference - Linear - Warped";
+    case ShaderProgramType::DifferenceCubicWarped:
+      return "Difference - Cubic - Warped";
     case ShaderProgramType::LocalNccLinear:
       return "Local NCC - Linear";
     case ShaderProgramType::LocalNccCubic:
       return "Local NCC - Cubic";
+    case ShaderProgramType::LocalNccLinearWarped:
+      return "Local NCC - Linear - Warped";
+    case ShaderProgramType::LocalNccCubicWarped:
+      return "Local NCC - Cubic - Warped";
     case ShaderProgramType::LocalLinearResidualLinear:
       return "Local Linear Residual - Linear";
     case ShaderProgramType::LocalLinearResidualCubic:
       return "Local Linear Residual - Cubic";
+    case ShaderProgramType::LocalLinearResidualLinearWarped:
+      return "Local Linear Residual - Linear - Warped";
+    case ShaderProgramType::LocalLinearResidualCubicWarped:
+      return "Local Linear Residual - Cubic - Warped";
     case ShaderProgramType::OverlapLinear:
       return "Overlap - Linear";
     case ShaderProgramType::OverlapCubic:
       return "Overlap - Cubic";
+    case ShaderProgramType::OverlapLinearWarped:
+      return "Overlap - Linear - Warped";
+    case ShaderProgramType::OverlapCubicWarped:
+      return "Overlap - Cubic - Warped";
     case ShaderProgramType::AsciiPost:
       return "ASCII Post-Process";
     case ShaderProgramType::AsciiCellMean:

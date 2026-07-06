@@ -9,6 +9,7 @@
 in VS_OUT
 {
   vec3 v_texCoord[2];
+  vec3 v_worldPos;
 }
 fs_in;
 
@@ -17,8 +18,6 @@ layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha
 // Texture samplers:
 uniform sampler3D u_imgTex[2];     // images (scalar, red channel only)
 uniform sampler1D u_metricCmapTex; // metric color map (non-premultiplied RGBA)
-
-uniform mat4 img1Tex_T_img0Tex; // transform from image 0 to image 1 Texture space.
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept[2];     // map texture to normalized intensity [0, 1], plus window/leveling
@@ -29,12 +28,18 @@ uniform bool u_useSquare;                // use squared difference (true) or abs
 // Intensiy Projection mode uniforms:
 uniform int u_mipMode;           // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
 uniform int u_halfNumMipSamples; // half number of MIP samples (0 when no projection used)
-uniform vec3 u_texSamplingDirZ;  // Z view camera direction (in texture sampling space)
+uniform mat4 img1Tex_T_img0Tex;
+uniform vec3 u_tex0SamplingDirX;
+uniform vec3 u_tex0SamplingDirY;
+uniform vec3 u_texSamplingDirZ; // Z view camera direction (in texture sampling space)
 
 $$HELPER_FUNCTIONS$$
 
 /// float textureLookup(sampler3D texture, vec3 texCoords);
 $$TEXTURE_LOOKUP_FUNCTION$$
+
+/// vec3 metricTexCoord(int imageIndex, vec2 patchOffset, int slabOffset);
+$$METRIC_SAMPLING_FUNCTIONS$$
 
 /**
  * @brief Compute the  metric
@@ -43,10 +48,9 @@ float computeMetricAndMask(in int sampleOffset, out bool hitBoundary)
 {
   hitBoundary = false;
 
-  vec3 texOffset = float(sampleOffset) * u_texSamplingDirZ;
   vec3 tc[2] = vec3[2](vec3(0.0), vec3(0.0));
-  tc[0] = fs_in.v_texCoord[0] + texOffset;
-  tc[1] = vec3(img1Tex_T_img0Tex * vec4(tc[0], 1.0));
+  tc[0] = metricTexCoord(0, vec2(0.0), sampleOffset);
+  tc[1] = metricTexCoord(1, vec2(0.0), sampleOffset);
 
   if (!isInsideTexture(tc[0]) || !isInsideTexture(tc[1])) {
     hitBoundary = true;

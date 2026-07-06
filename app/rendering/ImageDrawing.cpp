@@ -189,6 +189,7 @@ void drawImageQuad(
 
   // Direction to sample direction along the camera view's Z axis for image 0:
   glm::vec3 texSamplingDirZ(0.0f);
+  glm::vec3 worldSamplingDirZ(0.0f);
 
   // Half the number of samples for MIPs (for image 0):
   int halfNumMipSamples = 0;
@@ -202,6 +203,8 @@ void drawImageQuad(
 
     texSamplingDirZ =
       computeTexSamplingDir(pixel_T_clip, image0->transformations().invPixelDimensions(), Directions::View::Back);
+    worldSamplingDirZ =
+      glm::vec3{glm::inverse(image0->transformations().texture_T_worldDef()) * glm::vec4{texSamplingDirZ, 0.0f}};
 
     const auto s = computeMipSamplingParams(view.camera(), *image0, mipSlabThickness_mm, doMaxExtentMip);
     halfNumMipSamples = s.first;
@@ -255,6 +258,7 @@ void drawImageQuad(
       // Only render with intensity projection when edges are not visible:
       program.setUniform("u_halfNumMipSamples", halfNumMipSamples);
       program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
+      program.setUniform("u_worldSamplingDirZ", worldSamplingDirZ);
       program.setUniform("u_mipMode", underlyingType_asInt32(view.intensityProjectionMode()));
 
       if (IntensityProjectionMode::Xray == view.intensityProjectionMode()) {
@@ -302,9 +306,16 @@ void drawImageQuad(
       view.viewClip_T_windowClip(),
       image0->transformations().invPixelDimensions(),
       posInfo[1].viewClipDir);
+    const glm::mat4 world_T_tex0 = glm::inverse(image0->transformations().texture_T_worldDef());
+    const glm::vec3 worldSamplingDirX = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirX, 0.0f}};
+    const glm::vec3 worldSamplingDirY = glm::vec3{world_T_tex0 * glm::vec4{tex0SamplingDirY, 0.0f}};
 
     program.setUniform("u_tex0SamplingDirX", tex0SamplingDirX);
     program.setUniform("u_tex0SamplingDirY", tex0SamplingDirY);
+    program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
+    program.setUniform("u_worldSamplingDirX", worldSamplingDirX);
+    program.setUniform("u_worldSamplingDirY", worldSamplingDirY);
+    program.setUniform("u_worldSamplingDirZ", worldSamplingDirZ);
   }
   quad.m_vao.bind();
   {

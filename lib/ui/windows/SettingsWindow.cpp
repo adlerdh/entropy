@@ -1901,11 +1901,11 @@ bool renderComparisonModesTab(RenderData& renderData)
   // Overlap style:
   ImGui::Text("Overlap color scheme:");
 
-  if (ImGui::RadioButton("Cyan, magenta, white", true == renderData.m_overlayMagentaCyan)) {
-    renderData.m_overlayMagentaCyan = true;
-  }
   if (ImGui::RadioButton("Red, green, yellow", false == renderData.m_overlayMagentaCyan)) {
     renderData.m_overlayMagentaCyan = false;
+  }
+  if (ImGui::RadioButton("Cyan, magenta, white", true == renderData.m_overlayMagentaCyan)) {
+    renderData.m_overlayMagentaCyan = true;
   }
 
   ImGui::SameLine();

@@ -53,9 +53,10 @@ uniform float u_flashlightRadius;       // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
 // Intensiy Projection mode uniforms:
-uniform int u_mipMode;           // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
-uniform int u_halfNumMipSamples; // half number of MIP samples (0 when no projection used)
-uniform vec3 u_texSamplingDirZ;  // Z view camera direction (in texture sampling space)
+uniform int u_mipMode;            // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
+uniform int u_halfNumMipSamples;  // half number of MIP samples (0 when no projection used)
+uniform vec3 u_texSamplingDirZ;   // Z view camera direction (in texture sampling space)
+uniform vec3 u_worldSamplingDirZ; // Z view camera direction (in world space)
 
 $$HELPER_FUNCTIONS$$
 $$COLOR_HELPER_FUNCTIONS$$
@@ -69,7 +70,7 @@ $$SAMPLE_TEX_COORD_FUNCTION$$
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
 $$DO_RENDER_FUNCTION$$
 
-/// float computeProjection(vec3 baseTc, float img);
+/// float computeProjection(vec3 baseTc, vec3 baseWorldPos, float img);
 $$IP_FUNCTION$$
 
 void main()
@@ -80,7 +81,7 @@ void main()
 
   vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
   float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
-  img = computeProjection(sampleTc, img);
+  img = computeProjection(sampleTc, fs_in.v_worldPos, img);
 
   // Apply window/level and normalize image values to [0.0, 1.0] range:
   float imgNorm = clamp(u_imgSlopeIntercept[0] * img + u_imgSlopeIntercept[1], 0.0, 1.0);

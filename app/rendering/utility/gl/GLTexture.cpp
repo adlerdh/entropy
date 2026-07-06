@@ -22,7 +22,8 @@ const std::unordered_map<Target, Binding> GLTexture::s_bindingMap = {
   {Target::Texture2DArray, Binding::TextureBinding2DArray},
   {Target::Texture2DMultisample, Binding::TextureBinding2DMultisample},
   {Target::TextureRectangle, Binding::TextureBindingRectangle},
-  {Target::Texture2DMultisampleArray, Binding::TextureBinding2DMultisampleArray}};
+  {Target::Texture2DMultisampleArray, Binding::TextureBinding2DMultisampleArray},
+  {Target::TextureBuffer, Binding::TextureBindingBuffer}};
 
 // Sized internal normalized formats:
 
@@ -314,6 +315,7 @@ GLTexture::GLTexture(GLTexture&& other) noexcept
   , m_id(std::move(other.m_id))
   , m_size(std::move(other.m_size))
   , m_autoGenerateMipmaps(std::move(other.m_autoGenerateMipmaps))
+  , m_samplerID(std::move(other.m_samplerID))
   , m_multisampleSettings(std::move(other.m_multisampleSettings))
   , m_pixelPackSettings(std::move(other.m_pixelPackSettings))
   , m_pixelUnpackSettings(std::move(other.m_pixelUnpackSettings))
@@ -321,6 +323,7 @@ GLTexture::GLTexture(GLTexture&& other) noexcept
   other.m_id = 0;
   other.m_size = glm::uvec3{1};
   other.m_autoGenerateMipmaps = false;
+  other.m_samplerID = 0;
   other.m_multisampleSettings = MultisampleSettings();
   other.m_pixelPackSettings = PixelStoreSettings();
   other.m_pixelUnpackSettings = PixelStoreSettings();
@@ -334,6 +337,7 @@ GLTexture& GLTexture::operator=(GLTexture&& other) noexcept
     std::swap(m_id, other.m_id);
     std::swap(m_size, other.m_size);
     std::swap(m_autoGenerateMipmaps, other.m_autoGenerateMipmaps);
+    std::swap(m_samplerID, other.m_samplerID);
     std::swap(m_multisampleSettings, other.m_multisampleSettings);
     std::swap(m_pixelPackSettings, other.m_pixelPackSettings);
     std::swap(m_pixelUnpackSettings, other.m_pixelUnpackSettings);
@@ -420,7 +424,7 @@ bool GLTexture::isBound(std::optional<uint32_t> textureUnit)
   const bool result = (static_cast<GLuint>(boundID) == m_id);
 
   if (textureUnit) {
-    glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + prevUnit));
+    glActiveTexture(static_cast<GLenum>(prevUnit));
   }
 
   return result;
@@ -428,7 +432,28 @@ bool GLTexture::isBound(std::optional<uint32_t> textureUnit)
 
 void GLTexture::unbind()
 {
-  glBindTexture(m_targetEnum, 0);
+  if (0 == m_id) {
+    return;
+  }
+
+  GLint previousTextureUnit = 0;
+  glGetIntegerv(GL_ACTIVE_TEXTURE, &previousTextureUnit);
+
+  GLint maxTextureUnits = 0;
+  glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
+
+  const GLenum binding = underlyingType(s_bindingMap.at(m_target));
+  for (GLint unit = 0; unit < maxTextureUnits; ++unit) {
+    glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + unit));
+
+    GLint boundId = 0;
+    glGetIntegerv(binding, &boundId);
+    if (static_cast<GLuint>(boundId) == m_id) {
+      glBindTexture(m_targetEnum, 0);
+    }
+  }
+
+  glActiveTexture(static_cast<GLenum>(previousTextureUnit));
 }
 
 void GLTexture::bindSampler(uint32_t textureUnit)

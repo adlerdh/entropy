@@ -15,7 +15,7 @@ set(LICENSE_LINE "Apache License, Version 2.0")
 
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 9)
-set(VERSION_FEATURE 6)
+set(VERSION_FEATURE 7)
 set(VERSION_PATCH 0)
 set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_FEATURE}.${VERSION_PATCH}")
 
@@ -699,6 +699,8 @@ set(entropy_SHADERS
   "${entropy_APP_DIR}/rendering/shaders/functions/ComputeEdge_Sobel.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/Helpers.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/IntensityProjection.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/MetricSampling_Deformation.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/MetricSampling_Identity.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/SegInteriorAlpha_NoOutline.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/SegInteriorAlpha_WithOutline.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/SegValue_Linear.glsl"

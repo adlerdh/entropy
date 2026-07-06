@@ -379,6 +379,8 @@ const Uniforms::SamplerIndexType msk_jumpTexSampler{1}; // distance map texture
 // Samplers for metric shaders:
 const Uniforms::SamplerIndexVectorType msk_metricImgTexSamplers{{0, 1}};
 const Uniforms::SamplerIndexType msk_metricCmapTexSampler{2};
+const Uniforms::SamplerIndexVectorType msk_metricDefTexSamplers0{{3, 4, 5}};
+const Uniforms::SamplerIndexVectorType msk_metricDefTexSamplers1{{6, 7, 8}};
 
 std::string loadFile(const std::string& path)
 {
@@ -1820,6 +1822,13 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindSegTextures(const Im
 
 std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(const uuid& defUid)
 {
+  return bindDeformationTextures(defUid, msk_defTexSamplers);
+}
+
+std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
+  const uuid& defUid,
+  const Uniforms::SamplerIndexVectorType& samplers)
+{
   std::list<std::reference_wrapper<GLTexture>> boundTextures;
   if (!ensureDeformationTexture(defUid)) {
     return boundTextures;
@@ -1838,7 +1847,7 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
 
   if (textureIt->second.size() == 1u) {
     GLTexture& texture = textureIt->second.front();
-    for (const auto samplerUnit : msk_defTexSamplers.indices) {
+    for (const auto samplerUnit : samplers.indices) {
       texture.bind(samplerUnit);
     }
     boundTextures.push_back(texture);
@@ -1847,7 +1856,7 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
 
   for (std::size_t component = 0; component < 3; ++component) {
     GLTexture& texture = textureIt->second.at(component);
-    texture.bind(msk_defTexSamplers.indices[component]);
+    texture.bind(samplers.indices[component]);
     boundTextures.push_back(texture);
   }
 
@@ -1862,7 +1871,7 @@ bool Rendering::ensureDeformationTexture(const uuid& defUid)
   }
 
   const auto textureLayoutIsUsable = [def](const std::vector<GLTexture>& textures) {
-    return def->header().numComponentsPerPixel() >= 3u && textures.size() >= 3u;
+    return def->header().numComponentsPerPixel() >= 3u && (1u == textures.size() || textures.size() >= 3u);
   };
 
   auto& renderData = m_appData.renderData();
@@ -1924,6 +1933,32 @@ void Rendering::setDeformationUniforms(
   const bool packedDeformationTexture =
     textureIt != std::end(m_appData.renderData().m_imageTextures) && textureIt->second.size() == 1u;
   program.setUniform("u_defInterleaved", packedDeformationTexture);
+}
+
+void Rendering::setMetricDeformationUniforms(
+  GLShaderProgram& program,
+  std::size_t slot,
+  const uuid& imageUid,
+  const uuid& defUid,
+  const glm::mat4& sampleTex_T_world) const
+{
+  const Image* image = m_appData.image(imageUid);
+  const Image* def = m_appData.warpField(defUid);
+  if (!image || !def || slot >= 2u) {
+    return;
+  }
+
+  const std::string index = "[" + std::to_string(slot) + "]";
+  program.setUniform("u_defTex_T_world" + index, def->transformations().texture_T_worldDef());
+  program.setUniform("u_sampleTex_T_world" + index, sampleTex_T_world);
+  program.setUniform("u_defSlope_native_T_texture" + index, def->settings().slope_native_T_texture());
+  program.setUniform("u_deformationStrength" + index, image->settings().warpStrength());
+  program.setUniform("u_warpEnabled" + index, true);
+
+  const auto textureIt = m_appData.renderData().m_imageTextures.find(defUid);
+  const bool packedDeformationTexture =
+    textureIt != std::end(m_appData.renderData().m_imageTextures) && textureIt->second.size() == 1u;
+  program.setUniform("u_defInterleaved" + index, packedDeformationTexture);
 }
 
 void Rendering::unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures)
@@ -2354,17 +2389,27 @@ void Rendering::renderAllImagesForView(
         else if (!img->settings().displayImageAsColor()) {
           auto drawGrayImage = [&](bool disableIntensityProjectionForEdges) {
             GLShaderProgram* P = nullptr;
-            const bool warpGrayImage = renderWarped && !doXray;
+            const bool warpGrayImage = renderWarped;
             switch (img->settings().interpolationMode()) {
               case InterpolationMode::NearestNeighbor: {
-                P = m_shaderPrograms
+                if (doXray) {
+                  P = m_shaderPrograms
+                        .at(warpGrayImage ? ShaderProgramType::XrayLinearWarped : ShaderProgramType::XrayLinear)
+                        .get();
+                }
+                else {
+                  P =
+                    m_shaderPrograms
                       .at(warpGrayImage ? ShaderProgramType::ImageGrayLinearWarped : ShaderProgramType::ImageGrayLinear)
                       .get();
+                }
                 break;
               }
               case InterpolationMode::Linear: {
                 if (doXray) {
-                  P = m_shaderPrograms.at(ShaderProgramType::XrayLinear).get();
+                  P = m_shaderPrograms
+                        .at(warpGrayImage ? ShaderProgramType::XrayLinearWarped : ShaderProgramType::XrayLinear)
+                        .get();
                 }
                 else {
                   const ShaderProgramType shaderType =
@@ -2378,7 +2423,9 @@ void Rendering::renderAllImagesForView(
               }
               case InterpolationMode::CubicBsplineConvolution: {
                 if (doXray) {
-                  P = m_shaderPrograms.at(ShaderProgramType::XrayCubic).get();
+                  P = m_shaderPrograms
+                        .at(warpGrayImage ? ShaderProgramType::XrayCubicWarped : ShaderProgramType::XrayCubic)
+                        .get();
                 }
                 else {
                   P = m_shaderPrograms
@@ -2539,26 +2586,44 @@ void Rendering::renderAllImagesForView(
                 // used for the image. Therefore, we use the floating-point linear program instead
                 // (the only option). This effectively never allows us to show NN isocontours. isoP
                 // = &m_isoContourTexLookupLinearProgram; // fixed-point (disabled)
-                isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourLinearFloating).get();
+                isoP = m_shaderPrograms
+                         .at(
+                           renderWarped ? ShaderProgramType::IsoContourLinearFloatingWarped
+                                        : ShaderProgramType::IsoContourLinearFloating)
+                         .get();
                 break;
               }
               case InterpolationMode::Linear: {
                 if (R.m_isocontourFloatingPointInterpolation) {
                   // Floating-point interpolation is linear only (at this time)
-                  isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourLinearFloating).get();
+                  isoP = m_shaderPrograms
+                           .at(
+                             renderWarped ? ShaderProgramType::IsoContourLinearFloatingWarped
+                                          : ShaderProgramType::IsoContourLinearFloating)
+                           .get();
                 }
                 else {
-                  isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourLinearFixed).get();
+                  isoP = m_shaderPrograms
+                           .at(
+                             renderWarped ? ShaderProgramType::IsoContourLinearFixedWarped
+                                          : ShaderProgramType::IsoContourLinearFixed)
+                           .get();
                 }
                 break;
               }
               case InterpolationMode::CubicBsplineConvolution: {
-                isoP = m_shaderPrograms.at(ShaderProgramType::IsoContourCubicFixed).get();
+                isoP = m_shaderPrograms
+                         .at(
+                           renderWarped ? ShaderProgramType::IsoContourCubicFixedWarped
+                                        : ShaderProgramType::IsoContourCubicFixed)
+                         .get();
                 break;
               }
             }
 
             const auto boundIsoTextures = bindScalarImageTextures(imgSegPair);
+            const auto boundIsoDefTextures =
+              renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
             isoP->use();
 
             for (const auto& surfaceUid : m_appData.isosurfaceUids(imgUid, activeComp)) {
@@ -2598,11 +2663,15 @@ void Rendering::renderAllImagesForView(
               isoP->setUniform("u_showFix",
                                isFixedImage); // ignored if not checkerboard or quadrants
               isoP->setUniform("u_renderMode", displayModeUniform);
+              if (renderWarped) {
+                setDeformationUniforms(*isoP, imgUid, *deformationUid, U.imgTexture_T_world);
+              }
 
               renderOneImage(view, worldOffsetXhairs, *isoP, CurrentImages{imgSegPair}, false);
             }
 
             isoP->stopUse();
+            unbindTextures(boundIsoDefTextures);
             unbindTextures(boundIsoTextures);
           }
         }
@@ -2747,12 +2816,50 @@ void Rendering::renderAllImagesForView(
       const bool useTricubic =
         imgs[0] && imgs[1] && (InterpolationMode::CubicBsplineConvolution == imgs[0]->settings().interpolationMode()) &&
         (InterpolationMode::CubicBsplineConvolution == imgs[1]->settings().interpolationMode());
+      const std::array<std::optional<uuid>, 2> deformationUids{
+        (I[0].first ? activeRenderableDeformationUid(*I[0].first) : std::nullopt),
+        (I[1].first ? activeRenderableDeformationUid(*I[1].first) : std::nullopt)};
+      const bool renderWarpedMetric = deformationUids[0].has_value() || deformationUids[1].has_value();
 
       const auto boundMetricTextures = bindMetricImageTextures(I, view.renderMode());
+      std::list<std::reference_wrapper<GLTexture>> boundMetricDefTextures;
+      if (deformationUids[0]) {
+        auto boundDefTextures = bindDeformationTextures(*deformationUids[0], msk_metricDefTexSamplers0);
+        boundMetricDefTextures.splice(boundMetricDefTextures.end(), boundDefTextures);
+      }
+      if (deformationUids[1]) {
+        auto boundDefTextures = bindDeformationTextures(*deformationUids[1], msk_metricDefTexSamplers1);
+        boundMetricDefTextures.splice(boundMetricDefTextures.end(), boundDefTextures);
+      }
+
+      auto setMetricWarpUniforms = [&](GLShaderProgram& P) {
+        if (!renderWarpedMetric) {
+          return;
+        }
+
+        P.setSamplerUniform("u_defTex0", msk_metricDefTexSamplers0);
+        P.setSamplerUniform("u_defTex1", msk_metricDefTexSamplers1);
+        P.setUniform("u_sampleTex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
+        P.setUniform("u_warpEnabled[0]", false);
+        P.setUniform("u_warpEnabled[1]", false);
+        P.setUniform("u_defInterleaved[0]", false);
+        P.setUniform("u_defInterleaved[1]", false);
+
+        if (deformationUids[0] && I[0].first) {
+          setMetricDeformationUniforms(P, 0, *I[0].first, *deformationUids[0], U[0].imgTexture_T_world);
+        }
+        if (deformationUids[1] && I[1].first) {
+          setMetricDeformationUniforms(P, 1, *I[1].first, *deformationUids[1], U[1].imgTexture_T_world);
+        }
+      };
 
       if (ViewRenderMode::Difference == view.renderMode()) {
-        GLShaderProgram& P = useTricubic ? *m_shaderPrograms.at(ShaderProgramType::DifferenceCubic)
-                                         : *m_shaderPrograms.at(ShaderProgramType::DifferenceLinear);
+        GLShaderProgram& P =
+          useTricubic
+            ? *m_shaderPrograms.at(
+                renderWarpedMetric ? ShaderProgramType::DifferenceCubicWarped : ShaderProgramType::DifferenceCubic)
+            : *m_shaderPrograms.at(
+                renderWarpedMetric ? ShaderProgramType::DifferenceLinearWarped : ShaderProgramType::DifferenceLinear);
 
         const auto& params = R.m_squaredDifferenceParams;
 
@@ -2769,14 +2876,19 @@ void Rendering::renderAllImagesForView(
           P.setUniform("u_metricCmapSlopeIntercept", params.m_cmapSlopeIntercept);
           P.setUniform("u_metricSlopeIntercept", params.m_slopeIntercept);
           P.setUniform("u_useSquare", R.m_useSquare);
+          setMetricWarpUniforms(P);
 
           renderOneImage(view, worldOffsetXhairs, P, I, false);
         }
         P.stopUse();
       }
       else if (ViewRenderMode::LocalNcc == view.renderMode()) {
-        GLShaderProgram& P = useTricubic ? *m_shaderPrograms.at(ShaderProgramType::LocalNccCubic)
-                                         : *m_shaderPrograms.at(ShaderProgramType::LocalNccLinear);
+        GLShaderProgram& P =
+          useTricubic
+            ? *m_shaderPrograms.at(
+                renderWarpedMetric ? ShaderProgramType::LocalNccCubicWarped : ShaderProgramType::LocalNccCubic)
+            : *m_shaderPrograms.at(
+                renderWarpedMetric ? ShaderProgramType::LocalNccLinearWarped : ShaderProgramType::LocalNccLinear);
 
         const auto& params = R.m_localNccParams;
 
@@ -2799,14 +2911,19 @@ void Rendering::renderAllImagesForView(
           P.setUniform("u_ignoreNegativeCorrelation", R.m_localNccIgnoreNegativeCorrelation);
           P.setUniform("u_presentation", static_cast<int>(R.m_localNccPresentation));
           P.setUniform("u_invalidStyle", static_cast<int>(R.m_localNccInvalidStyle));
+          setMetricWarpUniforms(P);
 
           renderOneImage(view, worldOffsetXhairs, P, I, false);
         }
         P.stopUse();
       }
       else if (ViewRenderMode::LocalLinearResidual == view.renderMode()) {
-        GLShaderProgram& P = useTricubic ? *m_shaderPrograms.at(ShaderProgramType::LocalLinearResidualCubic)
-                                         : *m_shaderPrograms.at(ShaderProgramType::LocalLinearResidualLinear);
+        GLShaderProgram& P = useTricubic ? *m_shaderPrograms.at(
+                                             renderWarpedMetric ? ShaderProgramType::LocalLinearResidualCubicWarped
+                                                                : ShaderProgramType::LocalLinearResidualCubic)
+                                         : *m_shaderPrograms.at(
+                                             renderWarpedMetric ? ShaderProgramType::LocalLinearResidualLinearWarped
+                                                                : ShaderProgramType::LocalLinearResidualLinear);
 
         const auto& params = R.m_localLinearResidualParams;
 
@@ -2827,20 +2944,26 @@ void Rendering::renderAllImagesForView(
           P.setUniform("u_minValidFraction", R.m_localLinearResidualMinValidFraction);
           P.setUniform("u_varianceEpsilon", R.m_localLinearResidualVarianceEpsilon);
           P.setUniform("u_invalidStyle", static_cast<int>(R.m_localLinearResidualInvalidStyle));
+          setMetricWarpUniforms(P);
 
           renderOneImage(view, worldOffsetXhairs, P, I, false);
         }
         P.stopUse();
       }
       else if (ViewRenderMode::Overlay == view.renderMode()) {
-        GLShaderProgram& P = useTricubic ? *m_shaderPrograms.at(ShaderProgramType::OverlapCubic)
-                                         : *m_shaderPrograms.at(ShaderProgramType::OverlapLinear);
+        GLShaderProgram& P =
+          useTricubic
+            ? *m_shaderPrograms.at(
+                renderWarpedMetric ? ShaderProgramType::OverlapCubicWarped : ShaderProgramType::OverlapCubic)
+            : *m_shaderPrograms.at(
+                renderWarpedMetric ? ShaderProgramType::OverlapLinearWarped : ShaderProgramType::OverlapLinear);
 
         P.use();
         {
           P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
 
           P.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
+          P.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
           P.setUniform(
             "u_imgSlopeIntercept",
             std::vector<glm::vec2>{U[0].slopeIntercept_normalized_T_texture, U[1].slopeIntercept_normalized_T_texture});
@@ -2848,12 +2971,14 @@ void Rendering::renderAllImagesForView(
           P.setUniform("u_imgThresholds", std::vector<glm::vec2>{U[0].thresholds, U[1].thresholds});
           P.setUniform("u_imgOpacity", std::vector<float>{U[0].imgOpacity, U[1].imgOpacity});
           P.setUniform("u_magentaCyan", R.m_overlayMagentaCyan);
+          setMetricWarpUniforms(P);
 
           renderOneImage(view, worldOffsetXhairs, P, I, false);
         }
         P.stopUse();
       }
 
+      unbindTextures(boundMetricDefTextures);
       unbindTextures(boundMetricTextures);
 
       for (unsigned int i = 0; i < NUM_METRIC_IMAGES; ++i) {
@@ -3492,6 +3617,8 @@ void Rendering::createShaderPrograms()
   const std::string uintTexLookupLinearRep = loadFile(shaderPath + "functions/UIntTextureLookup_Linear.glsl");
   const std::string sampleTexCoordIdentityRep = loadFile(shaderPath + "functions/SampleTexCoord_Identity.glsl");
   const std::string sampleTexCoordDeformationRep = loadFile(shaderPath + "functions/SampleTexCoord_Deformation.glsl");
+  const std::string metricSamplingIdentityRep = loadFile(shaderPath + "functions/MetricSampling_Identity.glsl");
+  const std::string metricSamplingDeformationRep = loadFile(shaderPath + "functions/MetricSampling_Deformation.glsl");
   const std::string segValueNearestRep = loadFile(shaderPath + "functions/SegValue_Nearest.glsl");
   const std::string segValueLinearRep = loadFile(shaderPath + "functions/SegValue_Linear.glsl");
   const std::string segInteriorAlphaWithOutlineRep =
@@ -3553,6 +3680,7 @@ void Rendering::createShaderPrograms()
   fsIntensityProjectionUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
   fsIntensityProjectionUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
   fsIntensityProjectionUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  fsIntensityProjectionUniforms.insertUniform("u_worldSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
 
   Uniforms fsDeformationUniforms;
   fsDeformationUniforms.insertUniform("u_defTex", UniformType::SamplerVector, msk_defTexSamplers);
@@ -3652,6 +3780,8 @@ void Rendering::createShaderPrograms()
   fsXrayUniforms.insertUniform("u_mipSamplingDistance_cm", UniformType::Float, 0.0f);
   fsXrayUniforms.insertUniform("u_waterAttenCoeff", UniformType::Float, 0.0f);
   fsXrayUniforms.insertUniform("u_airAttenCoeff", UniformType::Float, 0.0f);
+  Uniforms fsXrayWarpedUniforms = fsXrayUniforms;
+  fsXrayWarpedUniforms.insertUniforms(fsDeformationUniforms);
 
   Uniforms fsSegAdjustmentUniforms;
   fsSegAdjustmentUniforms.insertUniform("u_segOpacity", UniformType::Float, 0.0f);
@@ -3690,6 +3820,28 @@ void Rendering::createShaderPrograms()
   fsIsoUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
   fsIsoUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
   fsIsoUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
+  Uniforms fsIsoWarpedUniforms = fsIsoUniforms;
+  fsIsoWarpedUniforms.insertUniforms(fsDeformationUniforms);
+
+  Uniforms fsMetricDeformationUniforms;
+  fsMetricDeformationUniforms.insertUniform("u_defTex0", UniformType::SamplerVector, msk_metricDefTexSamplers0);
+  fsMetricDeformationUniforms.insertUniform("u_defTex1", UniformType::SamplerVector, msk_metricDefTexSamplers1);
+  fsMetricDeformationUniforms.insertUniform(
+    "u_defTex_T_world",
+    UniformType::Mat4Vector,
+    Mat4Vector{sk_identMat4, sk_identMat4});
+  fsMetricDeformationUniforms.insertUniform(
+    "u_sampleTex_T_world",
+    UniformType::Mat4Vector,
+    Mat4Vector{sk_identMat4, sk_identMat4});
+  fsMetricDeformationUniforms.insertUniform(
+    "u_defSlope_native_T_texture",
+    UniformType::FloatVector,
+    FloatVector{1.0f, 1.0f});
+  fsMetricDeformationUniforms.insertUniform("u_deformationStrength", UniformType::FloatVector, FloatVector{1.0f, 1.0f});
+  fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirX", UniformType::Vec3, sk_zeroVec3);
+  fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirY", UniformType::Vec3, sk_zeroVec3);
+  fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
 
   Uniforms fsDiffUniforms;
   fsDiffUniforms.insertUniforms(fsIntensityProjectionUniforms);
@@ -3700,6 +3852,8 @@ void Rendering::createShaderPrograms()
   fsDiffUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsDiffUniforms.insertUniform("u_useSquare", UniformType::Bool, true);
   fsDiffUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
+  Uniforms fsDiffWarpedUniforms = fsDiffUniforms;
+  fsDiffWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
   Uniforms fsLocalNccUniforms;
   fsLocalNccUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
@@ -3713,6 +3867,7 @@ void Rendering::createShaderPrograms()
   fsLocalNccUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
   fsLocalNccUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3);
   fsLocalNccUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3);
+  fsLocalNccUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
   fsLocalNccUniforms.insertUniform("u_patchRadius", UniformType::Int, 3);
   fsLocalNccUniforms.insertUniform("u_sampleSpacing", UniformType::Float, 1.0f);
   fsLocalNccUniforms.insertUniform("u_minValidFraction", UniformType::Float, 0.75f);
@@ -3720,6 +3875,8 @@ void Rendering::createShaderPrograms()
   fsLocalNccUniforms.insertUniform("u_ignoreNegativeCorrelation", UniformType::Bool, true);
   fsLocalNccUniforms.insertUniform("u_presentation", UniformType::Int, 0);
   fsLocalNccUniforms.insertUniform("u_invalidStyle", UniformType::Int, 0);
+  Uniforms fsLocalNccWarpedUniforms = fsLocalNccUniforms;
+  fsLocalNccWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
   Uniforms fsLocalLinearResidualUniforms;
   fsLocalLinearResidualUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
@@ -3733,11 +3890,14 @@ void Rendering::createShaderPrograms()
   fsLocalLinearResidualUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
   fsLocalLinearResidualUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3);
   fsLocalLinearResidualUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3);
+  fsLocalLinearResidualUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
   fsLocalLinearResidualUniforms.insertUniform("u_patchRadius", UniformType::Int, 3);
   fsLocalLinearResidualUniforms.insertUniform("u_sampleSpacing", UniformType::Float, 1.0f);
   fsLocalLinearResidualUniforms.insertUniform("u_minValidFraction", UniformType::Float, 0.75f);
   fsLocalLinearResidualUniforms.insertUniform("u_varianceEpsilon", UniformType::Float, 1.0e-5f);
   fsLocalLinearResidualUniforms.insertUniform("u_invalidStyle", UniformType::Int, 0);
+  Uniforms fsLocalLinearResidualWarpedUniforms = fsLocalLinearResidualUniforms;
+  fsLocalLinearResidualWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
   Uniforms fsOverlayUniforms;
   fsOverlayUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_metricImgTexSamplers);
@@ -3746,8 +3906,14 @@ void Rendering::createShaderPrograms()
   fsOverlayUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
   fsOverlayUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
   fsOverlayUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
+  fsOverlayUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
+  fsOverlayUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3);
+  fsOverlayUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3);
+  fsOverlayUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  Uniforms fsOverlayWarpedUniforms = fsOverlayUniforms;
+  fsOverlayWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
-  constexpr std::array<ShaderProgramType, 39> allShaders = {
+  constexpr std::array<ShaderProgramType, 53> allShaders = {
     ShaderProgramType::ImageGrayLinear,
     ShaderProgramType::ImageGrayLinearFloating,
     ShaderProgramType::ImageGrayCubic,
@@ -3772,6 +3938,8 @@ void Rendering::createShaderPrograms()
     ShaderProgramType::EdgeSobelCubicWarped,
     ShaderProgramType::XrayLinear,
     ShaderProgramType::XrayCubic,
+    ShaderProgramType::XrayLinearWarped,
+    ShaderProgramType::XrayCubicWarped,
     ShaderProgramType::SegmentationNearest,
     ShaderProgramType::SegmentationLinear,
     ShaderProgramType::SegmentationNearestWarped,
@@ -3779,14 +3947,25 @@ void Rendering::createShaderPrograms()
     ShaderProgramType::IsoContourLinearFloating,
     ShaderProgramType::IsoContourLinearFixed,
     ShaderProgramType::IsoContourCubicFixed,
+    ShaderProgramType::IsoContourLinearFloatingWarped,
+    ShaderProgramType::IsoContourLinearFixedWarped,
+    ShaderProgramType::IsoContourCubicFixedWarped,
     ShaderProgramType::DifferenceLinear,
     ShaderProgramType::DifferenceCubic,
+    ShaderProgramType::DifferenceLinearWarped,
+    ShaderProgramType::DifferenceCubicWarped,
     ShaderProgramType::LocalNccLinear,
     ShaderProgramType::LocalNccCubic,
+    ShaderProgramType::LocalNccLinearWarped,
+    ShaderProgramType::LocalNccCubicWarped,
     ShaderProgramType::LocalLinearResidualLinear,
     ShaderProgramType::LocalLinearResidualCubic,
+    ShaderProgramType::LocalLinearResidualLinearWarped,
+    ShaderProgramType::LocalLinearResidualCubicWarped,
     ShaderProgramType::OverlapLinear,
-    ShaderProgramType::OverlapCubic};
+    ShaderProgramType::OverlapCubic,
+    ShaderProgramType::OverlapLinearWarped,
+    ShaderProgramType::OverlapCubicWarped};
 
   struct ShaderInfo
   {
@@ -4016,6 +4195,7 @@ void Rendering::createShaderPrograms()
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordIdentityRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
       vsImageUniforms,
       fsXrayUniforms}},
@@ -4025,9 +4205,30 @@ void Rendering::createShaderPrograms()
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordIdentityRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
       vsImageUniforms,
       fsXrayUniforms}},
+    {ShaderProgramType::XrayLinearWarped,
+     {"Image.vs",
+      "Xray.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsXrayWarpedUniforms}},
+    {ShaderProgramType::XrayCubicWarped,
+     {"Image.vs",
+      "Xray.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsXrayWarpedUniforms}},
     {ShaderProgramType::SegmentationNearest,
      {"Seg.vs",
       "Seg.fs",
@@ -4077,6 +4278,7 @@ void Rendering::createShaderPrograms()
       "IsoContour.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texFloatingPointLinearRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordIdentityRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
       vsImageUniforms,
       fsIsoUniforms}},
@@ -4085,6 +4287,7 @@ void Rendering::createShaderPrograms()
       "IsoContour.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordIdentityRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
       vsImageUniforms,
       fsIsoUniforms}},
@@ -4093,57 +4296,165 @@ void Rendering::createShaderPrograms()
       "IsoContour.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordIdentityRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
       vsImageUniforms,
       fsIsoUniforms}},
+    {ShaderProgramType::IsoContourLinearFloatingWarped,
+     {"Image.vs",
+      "IsoContour.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texFloatingPointLinearRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsIsoWarpedUniforms}},
+    {ShaderProgramType::IsoContourLinearFixedWarped,
+     {"Image.vs",
+      "IsoContour.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsIsoWarpedUniforms}},
+    {ShaderProgramType::IsoContourCubicFixedWarped,
+     {"Image.vs",
+      "IsoContour.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
+       {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
+      vsImageUniforms,
+      fsIsoWarpedUniforms}},
     {ShaderProgramType::DifferenceLinear,
      {"Metric.vs",
       "Difference.fs",
-      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep}},
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingIdentityRep}},
       vsMetricUniforms,
       fsDiffUniforms}},
     {ShaderProgramType::DifferenceCubic,
      {"Metric.vs",
       "Difference.fs",
-      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep}},
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingIdentityRep}},
       vsMetricUniforms,
       fsDiffUniforms}},
+    {ShaderProgramType::DifferenceLinearWarped,
+     {"Metric.vs",
+      "Difference.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
+      vsMetricUniforms,
+      fsDiffWarpedUniforms}},
+    {ShaderProgramType::DifferenceCubicWarped,
+     {"Metric.vs",
+      "Difference.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
+      vsMetricUniforms,
+      fsDiffWarpedUniforms}},
     {ShaderProgramType::LocalNccLinear,
      {"Metric.vs",
       "LocalNcc.fs",
-      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep}},
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingIdentityRep}},
       vsMetricUniforms,
       fsLocalNccUniforms}},
     {ShaderProgramType::LocalNccCubic,
      {"Metric.vs",
       "LocalNcc.fs",
-      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep}},
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingIdentityRep}},
       vsMetricUniforms,
       fsLocalNccUniforms}},
+    {ShaderProgramType::LocalNccLinearWarped,
+     {"Metric.vs",
+      "LocalNcc.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
+      vsMetricUniforms,
+      fsLocalNccWarpedUniforms}},
+    {ShaderProgramType::LocalNccCubicWarped,
+     {"Metric.vs",
+      "LocalNcc.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
+      vsMetricUniforms,
+      fsLocalNccWarpedUniforms}},
     {ShaderProgramType::LocalLinearResidualLinear,
      {"Metric.vs",
       "LocalLinearResidual.fs",
-      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep}},
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingIdentityRep}},
       vsMetricUniforms,
       fsLocalLinearResidualUniforms}},
     {ShaderProgramType::LocalLinearResidualCubic,
      {"Metric.vs",
       "LocalLinearResidual.fs",
-      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep}},
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingIdentityRep}},
       vsMetricUniforms,
       fsLocalLinearResidualUniforms}},
+    {ShaderProgramType::LocalLinearResidualLinearWarped,
+     {"Metric.vs",
+      "LocalLinearResidual.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
+      vsMetricUniforms,
+      fsLocalLinearResidualWarpedUniforms}},
+    {ShaderProgramType::LocalLinearResidualCubicWarped,
+     {"Metric.vs",
+      "LocalLinearResidual.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
+      vsMetricUniforms,
+      fsLocalLinearResidualWarpedUniforms}},
     {ShaderProgramType::OverlapLinear,
      {"Metric.vs",
       "Overlay.fs",
-      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep}},
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingIdentityRep}},
       vsMetricUniforms,
       fsOverlayUniforms}},
     {ShaderProgramType::OverlapCubic,
      {"Metric.vs",
       "Overlay.fs",
-      {{"$$HELPER_FUNCTIONS$$", helpersRep}, {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep}},
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingIdentityRep}},
       vsMetricUniforms,
-      fsOverlayUniforms}}};
+      fsOverlayUniforms}},
+    {ShaderProgramType::OverlapLinearWarped,
+     {"Metric.vs",
+      "Overlay.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
+      vsMetricUniforms,
+      fsOverlayWarpedUniforms}},
+    {ShaderProgramType::OverlapCubicWarped,
+     {"Metric.vs",
+      "Overlay.fs",
+      {{"$$HELPER_FUNCTIONS$$", helpersRep},
+       {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
+       {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
+      vsMetricUniforms,
+      fsOverlayWarpedUniforms}}};
 
   for (const auto& shaderType : allShaders) {
     const auto& info = shaderTypeToInfo.at(shaderType);

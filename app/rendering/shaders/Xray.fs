@@ -51,9 +51,10 @@ uniform float u_flashlightRadius;       // flashlight circle radius
 uniform bool u_flashlightMovingOnFixed; // overlay moving on fixed image (true) or opposite (false)
 
 // Intensiy Projection mode uniforms:
-uniform int u_mipMode;           // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
-uniform int u_halfNumMipSamples; // half number of MIP samples (0 when no projection used)
-uniform vec3 u_texSamplingDirZ;  // Z view camera direction (in texture sampling space)
+uniform int u_mipMode;            // MIP mode (0: none, 1: max, 2: mean, 3: min, 4: X-ray)
+uniform int u_halfNumMipSamples;  // half number of MIP samples (0 when no projection used)
+uniform vec3 u_texSamplingDirZ;   // Z view camera direction (in texture sampling space)
+uniform vec3 u_worldSamplingDirZ; // Z view camera direction (in world space)
 
 // Sampling distance in centimeters (used for X-ray IP mode)
 uniform float u_mipSamplingDistance_cm;
@@ -70,6 +71,9 @@ $$COLOR_HELPER_FUNCTIONS$$
 
 /// float textureLookup(sampler3D texture, vec3 texCoord);
 $$TEXTURE_LOOKUP_FUNCTION$$
+
+/// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
+$$SAMPLE_TEX_COORD_FUNCTION$$
 
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
 $$DO_RENDER_FUNCTION$$
@@ -97,7 +101,8 @@ void main()
 
   // Look up the texture values and convert to mass attenuation coefficient.
   // Keep a running sum of attenuation for all samples.
-  float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
+  vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
+  float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
   float thresh = hardThreshold(img, u_imgThresholds);
   float atten = thresh * convertTexToAtten(img);
   float useXray = float(XRAY_IP_MODE == u_mipMode);
@@ -107,11 +112,13 @@ void main()
   {
     for (int i = 1; i <= u_halfNumMipSamples; ++i) {
       vec3 tc = fs_in.v_texCoord + dir * i * u_texSamplingDirZ;
-      if (!isInsideTexture(tc)) {
+      vec3 worldPos = fs_in.v_worldPos + dir * i * u_worldSamplingDirZ;
+      vec3 sampleTc = sampleTexCoord(tc, worldPos);
+      if (!isInsideTexture(sampleTc)) {
         break;
       }
 
-      img = clamp(textureLookup(u_imgTex, tc), u_imgMinMax[0], u_imgMinMax[1]);
+      img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
       thresh = hardThreshold(img, u_imgThresholds);
       atten += useXray * thresh * convertTexToAtten(img);
     }
@@ -136,7 +143,7 @@ void main()
   imgColorHsv.yz *= u_cmapHsvModFactors.yz;
 
   // Conditionally use HSV modified colors:
-  float mask = float(isInsideTexture(fs_in.v_texCoord));
+  float mask = float(isInsideTexture(sampleTc));
   float alpha = u_imgOpacity * mask;
 
   o_color = alpha * imgColorOrig.a * vec4(mix(imgColorOrig.rgb, hsv2rgb(imgColorHsv), float(u_applyHsvMod)), 1.0);

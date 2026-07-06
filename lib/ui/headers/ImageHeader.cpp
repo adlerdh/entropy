@@ -326,20 +326,6 @@ void disabledWrappedText(const char* text)
   ImGui::PopTextWrapPos();
 }
 
-void disabledWrappedTextWithInlineStatus(const char* text, const std::string& status)
-{
-  ImGui::PushTextWrapPos();
-  ImGui::TextDisabled("%s", text);
-  ImGui::SameLine();
-  if (!status.empty()) {
-    ImGui::TextDisabled("%s", status.c_str());
-  }
-  else {
-    ImGui::Dummy(ImVec2(ImGui::CalcTextSize("Computing Laplacian magnitude projection...").x, 0.0f));
-  }
-  ImGui::PopTextWrapPos();
-}
-
 bool autoWindowButton(
   const char* label,
   Image& image,
@@ -1333,14 +1319,15 @@ void renderImageHeader(
           projectionPending
             ? fmt::format("Computing {} projection...", componentProjectionModeName(*pendingProjectionMode))
             : std::string{};
-        disabledWrappedTextWithInlineStatus(
-          componentRenderModeDescription(
-            imgSettings.componentRenderMode(),
-            true,
-            false,
-            false,
-            imgSettings.vectorLogJacobianDeterminant()),
-          projectionStatus);
+        disabledWrappedText(componentRenderModeDescription(
+          imgSettings.componentRenderMode(),
+          true,
+          false,
+          false,
+          imgSettings.vectorLogJacobianDeterminant()));
+        if (!projectionStatus.empty()) {
+          ImGui::TextDisabled("%s", projectionStatus.c_str());
+        }
         if (ComponentRenderMode::VectorPlanarProjectionColor == imgSettings.componentRenderMode()) {
           bool signedColors = imgSettings.vectorPlanarProjectionSignedColors();
           if (ImGui::Checkbox("Signed colors", &signedColors)) {

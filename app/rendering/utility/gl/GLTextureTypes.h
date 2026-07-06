@@ -35,7 +35,8 @@ enum class Binding : uint32_t
   TextureBinding2DArray = GL_TEXTURE_BINDING_2D_ARRAY,
   TextureBinding2DMultisample = GL_TEXTURE_BINDING_2D_MULTISAMPLE,
   TextureBindingRectangle = GL_TEXTURE_BINDING_RECTANGLE,
-  TextureBinding2DMultisampleArray = GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
+  TextureBinding2DMultisampleArray = GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY,
+  TextureBindingBuffer = GL_TEXTURE_BINDING_BUFFER
 };
 
 enum class CubeMapFace : uint32_t

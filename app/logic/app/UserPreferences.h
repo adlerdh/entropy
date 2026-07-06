@@ -113,7 +113,7 @@ struct RenderPreferences
   float localLinearResidualMinValidFraction = 0.75f;
   float localLinearResidualVarianceEpsilon = 1.0e-5f;
   LocalNccInvalidStyle localLinearResidualInvalidStyle = LocalNccInvalidStyle::Transparent;
-  bool overlayMagentaCyan = true;
+  bool overlayMagentaCyan = false;
   glm::ivec2 quadrants{true, true};
   int checkerboardSquares = 10;
   float flashlightRadiusFraction = 0.15f;

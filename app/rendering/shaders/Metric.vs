@@ -12,6 +12,7 @@ uniform mat4 u_tex_T_world[2]; // World to image texture space
 out VS_OUT
 {
   vec3 v_texCoord[2]; // Image texture coords of the vertex
+  vec3 v_worldPos;    // World-space position of the vertex
 }
 vs_out;
 
@@ -21,6 +22,7 @@ void main()
   gl_Position = u_view_T_clip * clipPos3d;
 
   vec4 worldPos = u_world_T_clip * clipPos3d;
+  vs_out.v_worldPos = vec3(worldPos / worldPos.w);
 
   for (int i = 0; i < 2; ++i) {
     vec4 imgTexPos = u_tex_T_world[i] * worldPos;

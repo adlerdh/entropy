@@ -168,7 +168,7 @@ struct ProjectComparisonSettings
   ProjectDifferenceMetricSettings m_difference;                   //!< Difference metric settings.
   ProjectLocalNccMetricSettings m_localNcc;                       //!< Local NCC settings.
   ProjectLocalLinearResidualMetricSettings m_localLinearResidual; //!< Local linear residual settings.
-  bool m_overlayMagentaCyan = true;                               //!< Overlay color convention.
+  bool m_overlayMagentaCyan = false;                              //!< Overlay color convention.
   glm::ivec2 m_quadrants{true, true};                             //!< Quadrant comparison axes.
   int m_checkerboardSquares = 10;                                 //!< Checkerboard square count.
   float m_flashlightRadiusFraction = 0.15f;                       //!< Flashlight radius as view fraction.

@@ -8,6 +8,7 @@
 in VS_OUT
 {
   vec3 v_texCoord[2];
+  vec3 v_worldPos;
 }
 fs_in;
 
@@ -16,14 +17,14 @@ layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha
 uniform sampler3D u_imgTex[2];     // images (scalar, red channel only)
 uniform sampler1D u_metricCmapTex; // metric color map (non-premultiplied RGBA)
 
-uniform mat4 img1Tex_T_img0Tex; // transform from image 0 to image 1 Texture space
-
 uniform vec2 u_imgSlopeIntercept[2];     // map texture to normalized intensity [0, 1]
 uniform vec2 u_metricCmapSlopeIntercept; // slope and intercept for the metric colormap
 uniform vec2 u_metricSlopeIntercept;     // slope and intercept for the final metric
 
+uniform mat4 img1Tex_T_img0Tex;
 uniform vec3 u_tex0SamplingDirX;
 uniform vec3 u_tex0SamplingDirY;
+uniform vec3 u_texSamplingDirZ;
 uniform int u_patchRadius;
 uniform float u_sampleSpacing;
 uniform float u_minValidFraction;
@@ -37,10 +38,13 @@ $$HELPER_FUNCTIONS$$
 /// float textureLookup(sampler3D texture, vec3 texCoords);
 $$TEXTURE_LOOKUP_FUNCTION$$
 
+/// vec3 metricTexCoord(int imageIndex, vec2 patchOffset, int slabOffset);
+$$METRIC_SAMPLING_FUNCTIONS$$
+
 bool pairedSample(vec2 patchOffset, out float value0, out float value1)
 {
-  vec3 tex0 = fs_in.v_texCoord[0] + patchOffset.x * u_tex0SamplingDirX + patchOffset.y * u_tex0SamplingDirY;
-  vec3 tex1 = vec3(img1Tex_T_img0Tex * vec4(tex0, 1.0));
+  vec3 tex0 = metricTexCoord(0, patchOffset, 0);
+  vec3 tex1 = metricTexCoord(1, patchOffset, 0);
 
   if (!isInsideTexture(tex0) || !isInsideTexture(tex1)) {
     return false;

@@ -144,7 +144,7 @@ RenderData::RenderData()
 
   , m_edgeMagnitudeSmoothing(1.0f, 1.0f)
   , m_numCheckerboardSquares(10)
-  , m_overlayMagentaCyan(true)
+  , m_overlayMagentaCyan(false)
   , m_quadrants(true, true)
   , m_useSquare(true)
 

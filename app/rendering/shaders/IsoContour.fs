@@ -70,18 +70,22 @@ uniform int u_halfNumMipSamples;
 
 // Z view camera direction, represented in texture sampling space
 uniform vec3 u_texSamplingDirZ;
+uniform vec3 u_worldSamplingDirZ;
 
 $$HELPER_FUNCTIONS$$
 
 // float textureLookup(sampler3D texture, vec3 texCoords);
 $$TEXTURE_LOOKUP_FUNCTION$$
 
+/// vec3 sampleTexCoord(vec3 texCoord, vec3 worldPos);
+$$SAMPLE_TEX_COORD_FUNCTION$$
+
 /// bool doRender(vec2 clipPos, vec2 checkerCoord);
 $$DO_RENDER_FUNCTION$$
 
 /// Compute min/mean/max projection. Returns img when MIP is not used (i.e. u_halfNumMipSamples ==
 /// 0)
-float computeProjection(float img)
+float computeProjection(vec3 baseTc, vec3 baseWorldPos, float img)
 {
   // Number of samples used for computing the final image value:
   int numSamples = 1;
@@ -89,10 +93,12 @@ float computeProjection(float img)
   // Accumulate intensity projection in forwards (+Z) and backwards (-Z) directions:
   for (int i = 1; i <= u_halfNumMipSamples; ++i) {
     for (int dir = -1; dir <= 1; dir += 2) {
-      vec3 c = fs_in.v_texCoord + dir * i * u_texSamplingDirZ;
-      if (!isInsideTexture(c)) break;
+      vec3 c = baseTc + dir * i * u_texSamplingDirZ;
+      vec3 worldPos = baseWorldPos + dir * i * u_worldSamplingDirZ;
+      vec3 sampleTc = sampleTexCoord(c, worldPos);
+      if (!isInsideTexture(sampleTc)) break;
 
-      float a = clamp(textureLookup(u_imgTex, c), u_imgMinMax[0], u_imgMinMax[1]);
+      float a = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
 
       img = float(MAX_IP_MODE == u_mipMode) * max(img, a) + float(MEAN_IP_MODE == u_mipMode) * (img + a) +
             float(MIN_IP_MODE == u_mipMode) * min(img, a);
@@ -111,12 +117,13 @@ void main()
     discard;
   }
 
-  if (!isInsideTexture(fs_in.v_texCoord)) {
+  vec3 sampleTc = sampleTexCoord(fs_in.v_texCoord, fs_in.v_worldPos);
+  if (!isInsideTexture(sampleTc)) {
     discard;
   }
 
-  float img = clamp(textureLookup(u_imgTex, fs_in.v_texCoord), u_imgMinMax[0], u_imgMinMax[1]);
-  img = computeProjection(img);
+  float img = clamp(textureLookup(u_imgTex, sampleTc), u_imgMinMax[0], u_imgMinMax[1]);
+  img = computeProjection(sampleTc, fs_in.v_worldPos, img);
 
   /*
   // Optimization when using distance maps:
@@ -148,6 +155,19 @@ void main()
   vec3 tb = vec3(texture_T_clip * vec4(pb, u_clipDepth, 1.0));
   vec3 tc = vec3(texture_T_clip * vec4(pc, u_clipDepth, 1.0));
   vec3 td = vec3(texture_T_clip * vec4(pd, u_clipDepth, 1.0));
+  vec4 waH = u_world_T_clip * vec4(pa, u_clipDepth, 1.0);
+  vec4 wbH = u_world_T_clip * vec4(pb, u_clipDepth, 1.0);
+  vec4 wcH = u_world_T_clip * vec4(pc, u_clipDepth, 1.0);
+  vec4 wdH = u_world_T_clip * vec4(pd, u_clipDepth, 1.0);
+  vec3 wa = vec3(waH / waH.w);
+  vec3 wb = vec3(wbH / wbH.w);
+  vec3 wc = vec3(wcH / wcH.w);
+  vec3 wd = vec3(wdH / wdH.w);
+
+  ta = sampleTexCoord(ta, wa);
+  tb = sampleTexCoord(tb, wb);
+  tc = sampleTexCoord(tc, wc);
+  td = sampleTexCoord(td, wd);
 
   if (!isInsideTexture(ta) || !isInsideTexture(tb) || !isInsideTexture(tc) || !isInsideTexture(td)) {
     discard;
