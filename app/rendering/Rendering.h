@@ -243,6 +243,7 @@ private:
   PixelEdgeRenderer m_pixelEdgeRenderer;
 
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
+  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms2D;
 
   GLShaderProgram m_raycastIsoProgram;
 

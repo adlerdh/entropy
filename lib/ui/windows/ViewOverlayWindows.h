@@ -53,6 +53,8 @@ struct ViewOverlayImageCallbacks
   std::function<bool(std::size_t imageIndex)> getImageVisibilitySetting; //!< Global image visibility.
   std::function<bool(std::size_t imageIndex)> getImageIsActive;          //!< Active-image predicate.
   std::function<bool(std::size_t imageIndex)> getImageIsReference;       //!< Reference-image predicate.
+  std::function<bool(std::size_t imageIndex)>
+    canImageBeVolumeRendered; //!< Whether this image can be selected for 3D volume rendering.
 };
 
 /**

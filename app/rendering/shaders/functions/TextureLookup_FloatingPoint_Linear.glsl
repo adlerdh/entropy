@@ -62,3 +62,8 @@ float textureLookup(sampler3D tex, vec3 texCoords)
 
   return mix(txy0, txy1, w.z);
 }
+
+float textureLookup(sampler3D tex, vec3 texCoords, int imageIndex)
+{
+  return textureLookup(tex, texCoords);
+}

@@ -709,9 +709,13 @@ set(entropy_SHADERS
   "${entropy_APP_DIR}/rendering/shaders/functions/SampleTexCoord_Deformation.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/SampleTexCoord_Identity.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_Cubic.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_Cubic_2D.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_Linear.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_Linear_2D.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_FloatingPoint_Linear.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/TextureLookup_FloatingPoint_Linear_2D.glsl"
   "${entropy_APP_DIR}/rendering/shaders/functions/UIntTextureLookup_Linear.glsl"
+  "${entropy_APP_DIR}/rendering/shaders/functions/UIntTextureLookup_Linear_2D.glsl"
 )
 
 file(GLOB entropy_COLORMAPS

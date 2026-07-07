@@ -980,8 +980,7 @@ void renderLoadingStatusWindow(const GuiData& guiData)
 
 void refreshTimeSeriesTexture(AppData& appData, const uuids::uuid& imageUid)
 {
-  appData.renderData().m_imageTextures.erase(imageUid);
-  createImageTextures(appData, std::vector<uuids::uuid>{imageUid});
+  refreshImageTexturesForActiveTimePoint(appData, imageUid);
 }
 
 void setTimePoint(AppData& appData, const uuids::uuid& imageUid, Image& image, uint32_t timePoint)
@@ -1717,28 +1716,75 @@ void ImGuiWrapper::requestComponentProjectionImage(const uuids::uuid& imageUid, 
   }
 
   const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
-  if (m_appData.componentProjectionImageUid(imageUid, mode, timePoint)) {
+  requestComponentProjectionImage(imageUid, mode, timePoint);
+}
+
+void ImGuiWrapper::requestComponentProjectionImage(
+  const uuids::uuid& imageUid,
+  ComponentProjectionMode mode,
+  uint32_t requestedTimePoint)
+{
+  const Image* image = m_appData.image(imageUid);
+  if (!image) {
+    spdlog::warn("Cannot compute component projection for invalid image {}", imageUid);
     return;
   }
 
-  const std::string taskKey = componentProjectionTaskKey(imageUid, mode, timePoint);
+  const uint32_t timePoint = image->timeAxis().clamp(requestedTimePoint);
+  std::vector<uint32_t> requestedTimePoints;
+  requestedTimePoints.reserve(image->timeAxis().numTimePoints());
+  requestedTimePoints.push_back(timePoint);
+  for (uint32_t i = 0; i < image->timeAxis().numTimePoints(); ++i) {
+    if (i != timePoint) {
+      requestedTimePoints.push_back(i);
+    }
+  }
+  requestComponentProjectionImages(imageUid, mode, requestedTimePoints);
+}
+
+void ImGuiWrapper::requestComponentProjectionImages(
+  const uuids::uuid& imageUid,
+  ComponentProjectionMode mode,
+  const std::vector<uint32_t>& timePoints)
+{
+  const Image* image = m_appData.image(imageUid);
+  if (!image) {
+    spdlog::warn("Cannot compute component projection for invalid image {}", imageUid);
+    return;
+  }
+
+  std::vector<uint32_t> missingTimePoints;
   {
     std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
-    if (m_pendingComponentProjectionKeys.contains(taskKey)) {
-      return;
+    for (const uint32_t requestedTimePoint : timePoints) {
+      const uint32_t timePoint = image->timeAxis().clamp(requestedTimePoint);
+      if (m_appData.componentProjectionImageUid(imageUid, mode, timePoint)) {
+        continue;
+      }
+      const std::string taskKey = componentProjectionTaskKey(imageUid, mode, timePoint);
+      if (m_pendingComponentProjectionKeys.contains(taskKey)) {
+        continue;
+      }
+      m_pendingComponentProjectionKeys.insert(taskKey);
+      missingTimePoints.push_back(timePoint);
     }
-    m_pendingComponentProjectionKeys.insert(taskKey);
+  }
+
+  if (missingTimePoints.empty()) {
+    return;
   }
 
   const uuids::uuid taskUid = generateRandomUuid();
   Image imageCopy = *image;
-  auto future = std::async(std::launch::async, [imageUid, mode, timePoint, imageCopy = std::move(imageCopy)]() mutable {
-    return ComponentProjectionTaskResult{
-      imageUid,
-      mode,
-      timePoint,
-      createComponentProjectionImage(imageCopy, mode, timePoint)};
-  });
+  auto future =
+    std::async(std::launch::async, [imageUid, mode, missingTimePoints, imageCopy = std::move(imageCopy)]() mutable {
+      ComponentProjectionTaskResult result{imageUid, mode, {}};
+      result.frames.reserve(missingTimePoints.size());
+      for (const uint32_t timePoint : missingTimePoints) {
+        result.frames.emplace_back(timePoint, createComponentProjectionImage(imageCopy, mode, timePoint));
+      }
+      return result;
+    });
 
   {
     std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
@@ -1746,11 +1792,11 @@ void ImGuiWrapper::requestComponentProjectionImage(const uuids::uuid& imageUid, 
   }
 
   spdlog::debug(
-    "Started {} component projection task {} for image {} frame {}",
+    "Started {} component projection task {} for image {} with {} frame(s)",
     componentProjectionModeName(mode),
     taskUid,
     imageUid,
-    timePoint);
+    missingTimePoints.size());
 
   if (m_postEmptyGlfwEvent) {
     m_postEmptyGlfwEvent();
@@ -1771,8 +1817,16 @@ void ImGuiWrapper::requestMissingComponentProjectionImages()
 
     const auto mode = componentProjectionForImage(*image);
     const uint32_t timePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
-    if (mode && !m_appData.componentProjectionImageUid(imageUid, *mode, timePoint)) {
-      requestComponentProjectionImage(imageUid, *mode);
+    if (mode) {
+      std::vector<uint32_t> requestedTimePoints;
+      requestedTimePoints.reserve(image->timeAxis().numTimePoints());
+      requestedTimePoints.push_back(timePoint);
+      for (uint32_t i = 0; i < image->timeAxis().numTimePoints(); ++i) {
+        if (i != timePoint) {
+          requestedTimePoints.push_back(i);
+        }
+      }
+      requestComponentProjectionImages(imageUid, *mode, requestedTimePoints);
     }
   }
 }
@@ -1806,42 +1860,48 @@ void ImGuiWrapper::processComponentProjectionFutures()
     ComponentProjectionTaskResult result = future.get();
     {
       std::lock_guard<std::mutex> lock(m_componentProjectionFuturesMutex);
-      m_pendingComponentProjectionKeys.erase(
-        componentProjectionTaskKey(result.sourceImageUid, result.mode, result.timePoint));
+      for (const auto& [timePoint, image] : result.frames) {
+        (void)image;
+        m_pendingComponentProjectionKeys.erase(
+          componentProjectionTaskKey(result.sourceImageUid, result.mode, timePoint));
+      }
     }
 
-    if (!result.image) {
-      spdlog::warn(
-        "Unable to compute {} component projection for image {} frame {}: {}",
-        componentProjectionModeName(result.mode),
-        result.sourceImageUid,
-        result.timePoint,
-        result.image.error());
-      continue;
-    }
+    for (auto& [timePoint, image] : result.frames) {
+      if (!image) {
+        spdlog::warn(
+          "Unable to compute {} component projection for image {} frame {}: {}",
+          componentProjectionModeName(result.mode),
+          result.sourceImageUid,
+          timePoint,
+          image.error());
+        continue;
+      }
 
-    const auto projectionUid = m_appData.setComponentProjectionImage(
-      result.sourceImageUid,
-      result.mode,
-      result.timePoint,
-      std::move(*result.image));
-    if (!projectionUid) {
-      spdlog::warn("Source image {} no longer exists for component projection", result.sourceImageUid);
-      continue;
-    }
+      const auto projectionUid =
+        m_appData.setComponentProjectionImage(result.sourceImageUid, result.mode, timePoint, std::move(*image));
+      if (!projectionUid) {
+        spdlog::warn("Source image {} no longer exists for component projection", result.sourceImageUid);
+        continue;
+      }
 
-    m_appData.renderData().m_imageTextures.erase(*projectionUid);
-    createImageTextures(m_appData, std::vector<uuids::uuid>{*projectionUid});
+      m_appData.renderData().m_imageTextures.erase(*projectionUid);
+      createImageTextures(m_appData, std::vector<uuids::uuid>{*projectionUid});
+
+      if (m_updateImageUniforms) {
+        m_updateImageUniforms(*projectionUid);
+      }
+    }
 
     if (m_updateImageUniforms) {
-      m_updateImageUniforms(*projectionUid);
       m_updateImageUniforms(result.sourceImageUid);
     }
 
     spdlog::debug(
-      "Finished {} component projection for image {}",
+      "Finished {} component projection for image {} with {} frame(s)",
       componentProjectionModeName(result.mode),
-      result.sourceImageUid);
+      result.sourceImageUid,
+      result.frames.size());
   }
 
   if (!readyTasks.empty() && m_postEmptyGlfwEvent) {
@@ -4393,6 +4453,15 @@ void ImGuiWrapper::render()
 
     const bool useVolumeImageSelection =
       ViewType::ThreeD == currentLayout.viewType() && ViewRenderMode::VolumeRender == currentLayout.renderMode();
+    auto canImageBeVolumeRendered = [this](std::size_t index) {
+      const auto imageUid = m_appData.imageUid(index);
+      if (!imageUid) {
+        return false;
+      }
+      const auto layoutIt = m_appData.renderData().m_imageTextureLayouts.find(*imageUid);
+      return layoutIt == std::end(m_appData.renderData().m_imageTextureLayouts) ||
+             RenderData::TextureDimension::Texture3D == layoutIt->second.dimension;
+    };
     auto isLayoutVolumeImageRendered = [this, &currentLayout](std::size_t index) {
       const auto imageUid = m_appData.imageUid(index);
       if (!imageUid) {
@@ -4408,13 +4477,14 @@ void ImGuiWrapper::render()
 
     const ViewOverlayImageCallbacks imageCallbacks{
       m_appData.numImages(),
-      [this, &currentLayout, useVolumeImageSelection, isLayoutVolumeImageRendered](std::size_t index) {
-        return useVolumeImageSelection ? isLayoutVolumeImageRendered(index)
+      [this, &currentLayout, useVolumeImageSelection, isLayoutVolumeImageRendered, canImageBeVolumeRendered](
+        std::size_t index) {
+        return useVolumeImageSelection ? canImageBeVolumeRendered(index) && isLayoutVolumeImageRendered(index)
                                        : currentLayout.isImageRendered(m_appData, index);
       },
-      [this, &currentLayout, useVolumeImageSelection](std::size_t index, bool visible) {
+      [this, &currentLayout, useVolumeImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
         if (useVolumeImageSelection) {
-          currentLayout.setImageVolumeRendered(m_appData, index, visible);
+          currentLayout.setImageVolumeRendered(m_appData, index, visible && canImageBeVolumeRendered(index));
         }
         else {
           currentLayout.setImageRendered(m_appData, index, visible);
@@ -4428,7 +4498,8 @@ void ImGuiWrapper::render()
       std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
       getImageIsVisibleSetting,
       getImageIsActive,
-      getImageIsReference};
+      getImageIsReference,
+      canImageBeVolumeRendered};
 
     const ViewOverlayModeCallbacks modeCallbacks{
       .viewType = currentLayout.viewType(),
@@ -4538,6 +4609,15 @@ void ImGuiWrapper::render()
 
       const bool useVolumeImageSelection =
         ViewType::ThreeD == view->viewType() && ViewRenderMode::VolumeRender == view->renderMode();
+      auto canImageBeVolumeRendered = [this](std::size_t index) {
+        const auto imageUid = m_appData.imageUid(index);
+        if (!imageUid) {
+          return false;
+        }
+        const auto layoutIt = m_appData.renderData().m_imageTextureLayouts.find(*imageUid);
+        return layoutIt == std::end(m_appData.renderData().m_imageTextureLayouts) ||
+               RenderData::TextureDimension::Texture3D == layoutIt->second.dimension;
+      };
       auto isViewVolumeImageRendered = [this, view](std::size_t index) {
         const auto imageUid = m_appData.imageUid(index);
         if (!imageUid) {
@@ -4553,12 +4633,13 @@ void ImGuiWrapper::render()
 
       const ViewOverlayImageCallbacks imageCallbacks{
         m_appData.numImages(),
-        [this, view, useVolumeImageSelection, isViewVolumeImageRendered](std::size_t index) {
-          return useVolumeImageSelection ? isViewVolumeImageRendered(index) : view->isImageRendered(m_appData, index);
+        [this, view, useVolumeImageSelection, isViewVolumeImageRendered, canImageBeVolumeRendered](std::size_t index) {
+          return useVolumeImageSelection ? canImageBeVolumeRendered(index) && isViewVolumeImageRendered(index)
+                                         : view->isImageRendered(m_appData, index);
         },
-        [this, view, useVolumeImageSelection](std::size_t index, bool visible) {
+        [this, view, useVolumeImageSelection, canImageBeVolumeRendered](std::size_t index, bool visible) {
           if (useVolumeImageSelection) {
-            view->setImageVolumeRendered(m_appData, index, visible);
+            view->setImageVolumeRendered(m_appData, index, visible && canImageBeVolumeRendered(index));
           }
           else {
             view->setImageRendered(m_appData, index, visible);
@@ -4570,7 +4651,8 @@ void ImGuiWrapper::render()
         std::bind(&ImGuiWrapper::getImageDisplayAndFileNames, this, _1),
         getImageIsVisibleSetting,
         getImageIsActive,
-        getImageIsReference};
+        getImageIsReference,
+        canImageBeVolumeRendered};
 
       const ViewOverlayModeCallbacks modeCallbacks{
         .viewType = view->viewType(),

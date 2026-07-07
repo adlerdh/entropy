@@ -10,7 +10,7 @@ fs_in;
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
 // Texture samplers:
-uniform sampler3D u_imgTex[2]; // images (scalar, red channel only)
+uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[2]; // images (scalar, red channel only)
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept[2]; // map texture to normalized intensity [0, 1], plus window/leveling
@@ -41,11 +41,11 @@ void main()
     float val;
     switch (i) {
       case 0: {
-        val = clamp(textureLookup(u_imgTex[0], texCoord), u_imgMinMax[i][0], u_imgMinMax[i][1]);
+        val = clamp(textureLookup(u_imgTex[0], texCoord, 0), u_imgMinMax[i][0], u_imgMinMax[i][1]);
         break;
       }
       case 1: {
-        val = clamp(textureLookup(u_imgTex[1], texCoord), u_imgMinMax[i][0], u_imgMinMax[i][1]);
+        val = clamp(textureLookup(u_imgTex[1], texCoord, 1), u_imgMinMax[i][0], u_imgMinMax[i][1]);
         break;
       }
     }

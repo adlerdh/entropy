@@ -671,8 +671,7 @@ void renderImageFileMetadata(const ImageHeader& header)
 
 void refreshImageTextureForActiveTimePoint(AppData& appData, const uuids::uuid& imageUid)
 {
-  appData.renderData().m_imageTextures.erase(imageUid);
-  createImageTextures(appData, std::vector<uuids::uuid>{imageUid});
+  refreshImageTexturesForActiveTimePoint(appData, imageUid);
 }
 
 void setImageTimePoint(AppData& appData, const uuids::uuid& imageUid, Image& image, uint32_t timePoint)

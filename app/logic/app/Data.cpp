@@ -499,6 +499,7 @@ bool AppData::replaceImage(const uuid& imageUid, Image image)
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
       m_renderData.m_imageTextures.erase(projectionUid);
+      m_renderData.m_imageTextureLayouts.erase(projectionUid);
       m_renderData.m_uniforms.erase(projectionUid);
     }
     m_imageToComponentProjectionImages.erase(projectionsIt);
@@ -721,6 +722,7 @@ bool AppData::removeImage(const uuid& imageUid)
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
       m_renderData.m_imageTextures.erase(projectionUid);
+      m_renderData.m_imageTextureLayouts.erase(projectionUid);
       m_renderData.m_uniforms.erase(projectionUid);
     }
     m_imageToComponentProjectionImages.erase(projectionsIt);
@@ -879,6 +881,7 @@ bool AppData::removeDef(const uuid& defUid)
     m_imageUidsOrdered.erase(imageIt);
     m_imageToComponentData.erase(defUid);
     m_renderData.m_imageTextures.erase(defUid);
+    m_renderData.m_imageTextureLayouts.erase(defUid);
     m_renderData.m_uniforms.erase(defUid);
   }
 

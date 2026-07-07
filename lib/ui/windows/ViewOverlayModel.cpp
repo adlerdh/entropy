@@ -26,15 +26,32 @@ std::string imageChoiceLabel(const ImageChoice& choice)
     label += " (hidden)";
   }
 
-  if (choice.active) {
-    label += " (active)";
+  if (choice.reference && choice.active) {
+    label += " (ref. + act.)";
   }
-
-  if (choice.reference) {
+  else if (choice.reference) {
     label += " (ref.)";
+  }
+  else if (choice.active) {
+    label += " (act.)";
   }
 
   return label;
+}
+
+std::string selectedImageRoleSuffix(const ImageChoice& choice)
+{
+  if (choice.reference && choice.active) {
+    return " (ref. + act.)";
+  }
+  if (choice.reference) {
+    return " (ref.)";
+  }
+  if (choice.active) {
+    return " (act.)";
+  }
+
+  return {};
 }
 
 std::string selectedVisibleImageNames(const std::vector<ImageChoice>& choices)
@@ -51,16 +68,7 @@ std::string selectedVisibleImageNames(const std::vector<ImageChoice>& choices)
       label += ", ";
     }
 
-    if (choice.active) {
-      label += choice.displayName + " (active)";
-    }
-    else {
-      label += choice.displayName;
-    }
-
-    if (choice.reference) {
-      label += " (ref.)";
-    }
+    label += choice.displayName + selectedImageRoleSuffix(choice);
 
     first = false;
   }

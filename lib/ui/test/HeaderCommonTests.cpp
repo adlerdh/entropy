@@ -8,8 +8,8 @@ TEST_CASE("Image role suffixes show active state for a single image", "[ui][head
   CHECK(entropy::ui::headers::imageRoleSuffix(false, true, 1) == " (active)");
   CHECK(entropy::ui::headers::imageRoleSuffix(true, false, 1).empty());
 
-  CHECK(entropy::ui::headers::imageRoleSuffixShortReference(true, true, 1) == "(active)");
-  CHECK(entropy::ui::headers::imageRoleSuffixShortReference(false, true, 1) == "(active)");
+  CHECK(entropy::ui::headers::imageRoleSuffixShortReference(true, true, 1) == "(act.)");
+  CHECK(entropy::ui::headers::imageRoleSuffixShortReference(false, true, 1) == "(act.)");
   CHECK(entropy::ui::headers::imageRoleSuffixShortReference(true, false, 1).empty());
 }
 
@@ -20,8 +20,8 @@ TEST_CASE("Image role suffixes show reference and active state for multiple imag
   CHECK(entropy::ui::headers::imageRoleSuffix(false, true, 2) == " (active)");
   CHECK(entropy::ui::headers::imageRoleSuffix(false, false, 2).empty());
 
-  CHECK(entropy::ui::headers::imageRoleSuffixShortReference(true, true, 2) == "(ref. + active)");
+  CHECK(entropy::ui::headers::imageRoleSuffixShortReference(true, true, 2) == "(ref. + act.)");
   CHECK(entropy::ui::headers::imageRoleSuffixShortReference(true, false, 2) == "(ref.)");
-  CHECK(entropy::ui::headers::imageRoleSuffixShortReference(false, true, 2) == "(active)");
+  CHECK(entropy::ui::headers::imageRoleSuffixShortReference(false, true, 2) == "(act.)");
   CHECK(entropy::ui::headers::imageRoleSuffixShortReference(false, false, 2).empty());
 }

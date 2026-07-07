@@ -12,8 +12,8 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
-uniform sampler3D u_imgTex[2];     // images (scalar, red channel only)
-uniform sampler1D u_metricCmapTex; // metric color map (non-premultiplied RGBA)
+uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[2]; // images (scalar, red channel only)
+uniform sampler1D u_metricCmapTex;          // metric color map (non-premultiplied RGBA)
 
 uniform vec2 u_imgSlopeIntercept[2];     // map texture to normalized intensity [0, 1]
 uniform vec2 u_metricCmapSlopeIntercept; // slope and intercept for the metric colormap
@@ -46,8 +46,8 @@ bool pairedSample(vec2 patchOffset, out float value0, out float value1)
     return false;
   }
 
-  value0 = clamp(u_imgSlopeIntercept[0][0] * textureLookup(u_imgTex[0], tex0) + u_imgSlopeIntercept[0][1], 0.0, 1.0);
-  value1 = clamp(u_imgSlopeIntercept[1][0] * textureLookup(u_imgTex[1], tex1) + u_imgSlopeIntercept[1][1], 0.0, 1.0);
+  value0 = clamp(u_imgSlopeIntercept[0][0] * textureLookup(u_imgTex[0], tex0, 0) + u_imgSlopeIntercept[0][1], 0.0, 1.0);
+  value1 = clamp(u_imgSlopeIntercept[1][0] * textureLookup(u_imgTex[1], tex1, 1) + u_imgSlopeIntercept[1][1], 0.0, 1.0);
   return true;
 }
 

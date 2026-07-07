@@ -79,6 +79,9 @@ void renderViewSettingsComboWindow(
   const auto getImageIsReference = [&images](std::size_t imageIndex) {
     return images.getImageIsReference ? images.getImageIsReference(imageIndex) : false;
   };
+  const auto canImageBeVolumeRendered = [&images](std::size_t imageIndex) {
+    return images.canImageBeVolumeRendered ? images.canImageBeVolumeRendered(imageIndex) : true;
+  };
 
   const ViewType& viewType = modes.viewType;
   const ViewRenderMode& renderMode = modes.renderMode;
@@ -182,8 +185,15 @@ void renderViewSettingsComboWindow(
               const bool oldRendered = rendered;
 
               if (singleVolumeImageSelection) {
-                if (ImGui::RadioButton(displayName.c_str(), rendered)) {
+                const bool canVolumeRender = canImageBeVolumeRendered(i);
+                if (!canVolumeRender) {
+                  ImGui::BeginDisabled();
+                }
+                if (ImGui::RadioButton(displayName.c_str(), rendered) && canVolumeRender) {
                   setImageRendered(i, true);
+                }
+                if (!canVolumeRender) {
+                  ImGui::EndDisabled();
                 }
               }
               else {
@@ -194,8 +204,16 @@ void renderViewSettingsComboWindow(
                 }
               }
 
-              if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
+              if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+                if (singleVolumeImageSelection && !canImageBeVolumeRendered(i)) {
+                  ImGui::SetTooltip(
+                    "%s",
+                    "This image is uploaded as a 2D texture. It can be shown in 2D views but cannot be volume "
+                    "rendered.");
+                }
+                else {
+                  ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
+                }
               }
 
               ImGui::PopID(); /*** ID = i ***/

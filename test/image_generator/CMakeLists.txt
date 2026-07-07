@@ -37,6 +37,18 @@ target_link_libraries(ImageGenerator PRIVATE
 
 entropy_copy_runtime_dlls(ImageGenerator)
 
+add_executable(Large2DImageGenerator
+  Large2DImageGeneratorMain.cpp
+)
+
+target_link_libraries(Large2DImageGenerator PRIVATE
+  CLI11::CLI11
+  ImageGeneratorCore
+  entropy_warnings
+)
+
+entropy_copy_runtime_dlls(Large2DImageGenerator)
+
 add_custom_target(GenerateImageExamples
   COMMAND
     "${CMAKE_COMMAND}"

@@ -55,3 +55,8 @@ float textureLookup(sampler3D tex, vec3 texCoords)
 
   return mix(tex001, tex000, g0.z); // weigh along the z-direction
 }
+
+float textureLookup(sampler3D tex, vec3 texCoords, int imageIndex)
+{
+  return textureLookup(tex, texCoords);
+}

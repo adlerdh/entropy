@@ -18,8 +18,8 @@ fs_in;
 layout(location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
 
 // Texture samplers:
-uniform sampler3D u_imgTex;  // image (scalar, red channel only)
-uniform sampler1D u_cmapTex; // image color map (non-premultiplied RGBA)
+uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex; // image (scalar, red channel only)
+uniform sampler1D u_cmapTex;             // image color map (non-premultiplied RGBA)
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept; // slope/intercept for normalization to the largest window

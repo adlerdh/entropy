@@ -369,14 +369,14 @@ private:
   std::function<void()> m_paintActiveSegmentationWithActivePolygon = nullptr;
 
   UiScaleManager m_uiScaleManager;
-  std::optional<std::optional<float> > m_pendingUserScaleOverride;
+  std::optional<std::optional<float>> m_pendingUserScaleOverride;
   bool m_pendingFontReload = false;
   bool m_applyDefaultPanelLayout = false;
 
   /// Futures created by running tasks asynchronously from the UI.
   /// These are created during the lifetime of the application.
   /// -Key: UID for the task
-  std::unordered_map<uuids::uuid, std::future<AsyncTaskDetails> > m_futures;
+  std::unordered_map<uuids::uuid, std::future<AsyncTaskDetails>> m_futures;
 
   /// Mutex protecting \c m_futures
   std::mutex m_futuresMutex;
@@ -385,15 +385,19 @@ private:
   {
     uuids::uuid sourceImageUid;
     ComponentProjectionMode mode{ComponentProjectionMode::Mean};
-    uint32_t timePoint{0};
-    entropy_expected::expected<Image, std::string> image;
+    std::vector<std::pair<uint32_t, entropy_expected::expected<Image, std::string>>> frames;
   };
 
-  std::unordered_map<uuids::uuid, std::future<ComponentProjectionTaskResult> > m_componentProjectionFutures;
+  std::unordered_map<uuids::uuid, std::future<ComponentProjectionTaskResult>> m_componentProjectionFutures;
   std::unordered_set<std::string> m_pendingComponentProjectionKeys;
   std::mutex m_componentProjectionFuturesMutex;
 
   void requestComponentProjectionImage(const uuids::uuid& imageUid, ComponentProjectionMode mode);
+  void requestComponentProjectionImage(const uuids::uuid& imageUid, ComponentProjectionMode mode, uint32_t timePoint);
+  void requestComponentProjectionImages(
+    const uuids::uuid& imageUid,
+    ComponentProjectionMode mode,
+    const std::vector<uint32_t>& timePoints);
   void requestMissingComponentProjectionImages();
   void processComponentProjectionFutures();
 
@@ -403,7 +407,7 @@ private:
     uuids::uuid sourceWarpUid;
     ComputedWarpDirection direction{ComputedWarpDirection::Inverse};
     std::string description;
-    std::shared_ptr<std::atomic<double> > progress;
+    std::shared_ptr<std::atomic<double>> progress;
     std::shared_ptr<std::atomic_bool> cancel;
   };
 
@@ -416,7 +420,7 @@ private:
   };
 
   std::unordered_map<uuids::uuid, WarpInversionTaskState> m_warpInversionTaskStates;
-  std::unordered_map<uuids::uuid, std::future<WarpInversionTaskResult> > m_warpInversionFutures;
+  std::unordered_map<uuids::uuid, std::future<WarpInversionTaskResult>> m_warpInversionFutures;
   std::unordered_set<std::string> m_pendingWarpInversionKeys;
   std::mutex m_warpInversionFuturesMutex;
 
@@ -440,9 +444,9 @@ private:
     registration::ProcessOutputLine line;
   };
 
-  std::unordered_map<uuids::uuid, std::future<RegistrationJobTaskResult> > m_registrationJobFutures;
+  std::unordered_map<uuids::uuid, std::future<RegistrationJobTaskResult>> m_registrationJobFutures;
   std::unordered_map<uuids::uuid, std::string> m_registrationJobIdsByTask;
-  std::unordered_map<std::string, std::shared_ptr<std::atomic_bool> > m_registrationJobCancelFlags;
+  std::unordered_map<std::string, std::shared_ptr<std::atomic_bool>> m_registrationJobCancelFlags;
   std::unordered_set<std::string> m_runningRegistrationJobIds;
   std::vector<PendingRegistrationOutputLine> m_pendingRegistrationOutputLines;
   std::mutex m_registrationJobFuturesMutex;

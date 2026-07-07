@@ -1627,18 +1627,21 @@ bool EntropyApp::removeImage(const uuids::uuid& imageUid)
 
   auto& renderData = m_data.renderData();
   renderData.m_imageTextures.erase(imageUid);
+  renderData.m_imageTextureLayouts.erase(imageUid);
   renderData.m_distanceMapTextures.erase(imageUid);
   renderData.m_uniforms.erase(imageUid);
 
   for (const auto& segUid : segUids) {
     if (!m_data.seg(segUid)) {
       renderData.m_segTextures.erase(segUid);
+      renderData.m_segTextureLayouts.erase(segUid);
     }
   }
 
   for (const auto& defUid : defUids) {
     if (!m_data.def(defUid)) {
       renderData.m_imageTextures.erase(defUid);
+      renderData.m_imageTextureLayouts.erase(defUid);
       renderData.m_distanceMapTextures.erase(defUid);
       renderData.m_uniforms.erase(defUid);
     }

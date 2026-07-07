@@ -42,6 +42,10 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, uuid_range
 // Return vector of image UIDs for which textures were created
 std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imageUids);
 
+// Refresh existing image textures from the image's active time point when possible.
+// Falls back to recreating textures if the image has no compatible texture yet.
+bool refreshImageTexturesForActiveTimePoint(AppData& appData, const uuids::uuid& imageUid);
+
 TextureCreationResult createSegTexturesWithReport(AppData& appData, uuid_range_t segUids);
 
 // Return vector of seg UIDs for which textures were created

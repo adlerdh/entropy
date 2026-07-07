@@ -24,7 +24,7 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha)
 
-uniform sampler3D u_imgTex; // Texture unit 0: image (scalar)
+uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex; // Texture unit 0: image (scalar)
 
 // Uniforms from vertex shader:
 uniform mat4 u_tex_T_world;

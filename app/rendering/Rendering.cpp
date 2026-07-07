@@ -227,13 +227,31 @@ float vectorWarpedGridSpacingMillimeters(
   return std::max(settings.vectorWarpedGridMillimeterSpacing(), 0.1f);
 }
 
+bool imageHasRaycastableTextureLayout(const AppData& appData, const uuid& imageUid)
+{
+  const auto layoutIt = appData.renderData().m_imageTextureLayouts.find(imageUid);
+  return layoutIt == std::end(appData.renderData().m_imageTextureLayouts) ||
+         RenderData::TextureDimension::Texture3D == layoutIt->second.dimension;
+}
+
+std::list<uuid> raycastableImageUidsForView(const AppData& appData, const View& view)
+{
+  std::list<uuid> imageUids;
+  for (const uuid& imageUid : view.visibleImages()) {
+    if (imageHasRaycastableTextureLayout(appData, imageUid)) {
+      imageUids.push_back(imageUid);
+    }
+  }
+  return imageUids;
+}
+
 bool hasVisibleIsosurfaceForView(const AppData& appData, const View& view)
 {
   if (ViewType::ThreeD != view.viewType()) {
     return false;
   }
 
-  for (const uuid& imageUid : view.visibleImages()) {
+  for (const uuid& imageUid : raycastableImageUidsForView(appData, view)) {
     const Image* image = appData.image(imageUid);
     if (!image) {
       continue;
@@ -377,6 +395,45 @@ uint32_t growBrushPreviewCapacity(uint32_t current, uint32_t required)
   const uint64_t grown = static_cast<uint64_t>(current) + std::max<uint64_t>(1, current / 2);
   return static_cast<uint32_t>(
     std::min<uint64_t>(std::max<uint64_t>(grown, required), std::numeric_limits<uint32_t>::max()));
+}
+
+RenderData::PlanarTextureLayout textureLayoutOrDefault(
+  const std::unordered_map<uuids::uuid, RenderData::PlanarTextureLayout>& layouts,
+  const std::optional<uuids::uuid>& uid)
+{
+  if (!uid) {
+    return {};
+  }
+  const auto it = layouts.find(*uid);
+  return it != std::end(layouts) ? it->second : RenderData::PlanarTextureLayout{};
+}
+
+bool isTexture2D(const RenderData::PlanarTextureLayout& layout)
+{
+  return RenderData::TextureDimension::Texture2D == layout.dimension;
+}
+
+glm::ivec2 textureAxesForProgramSlot(const RenderData::PlanarTextureLayout& layout)
+{
+  return isTexture2D(layout) ? layout.axes : glm::ivec2{0, 1};
+}
+
+GLShaderProgram& shaderProgramForTextureDimension(
+  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms3D,
+  std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms2D,
+  ShaderProgramType shaderType,
+  RenderData::TextureDimension dimension)
+{
+  return *(RenderData::TextureDimension::Texture2D == dimension ? shaderPrograms2D : shaderPrograms3D).at(shaderType);
+}
+
+void setTexture2DAxesUniforms(
+  GLShaderProgram& program,
+  const RenderData::PlanarTextureLayout& slot0,
+  const RenderData::PlanarTextureLayout& slot1 = {})
+{
+  program.setUniform("u_tex2DAxes[0]", textureAxesForProgramSlot(slot0));
+  program.setUniform("u_tex2DAxes[1]", textureAxesForProgramSlot(slot1));
 }
 
 glm::uvec3 growBrushPreviewCapacity(const glm::uvec3& current, const glm::uvec3& required)
@@ -929,6 +986,7 @@ bool Rendering::removeSegTexture(const uuid& segUid)
   }
 
   m_appData.renderData().m_segTextures.erase(it);
+  m_appData.renderData().m_segTextureLayouts.erase(segUid);
   return true;
 }
 
@@ -1005,6 +1063,17 @@ void Rendering::updateSegTexture(
   const auto* seg = m_appData.seg(segUid);
   if (!seg) {
     spdlog::warn("Segmentation {} is invalid", segUid);
+    return;
+  }
+
+  const auto layoutIt = m_appData.renderData().m_segTextureLayouts.find(segUid);
+  if (
+    layoutIt != std::end(m_appData.renderData().m_segTextureLayouts) &&
+    RenderData::TextureDimension::Texture2D == layoutIt->second.dimension)
+  {
+    m_appData.renderData().m_segTextures.erase(segUid);
+    m_appData.renderData().m_segTextureLayouts.erase(segUid);
+    createSegTextures(m_appData, uuid_range_t{segUid});
     return;
   }
 
@@ -1205,6 +1274,17 @@ void Rendering::updateImageTexture(
   const auto* img = m_appData.image(imageUid);
   if (!img) {
     spdlog::warn("Segmentation {} is invalid", imageUid);
+    return;
+  }
+
+  const auto layoutIt = m_appData.renderData().m_imageTextureLayouts.find(imageUid);
+  if (
+    layoutIt != std::end(m_appData.renderData().m_imageTextureLayouts) &&
+    RenderData::TextureDimension::Texture2D == layoutIt->second.dimension)
+  {
+    m_appData.renderData().m_imageTextures.erase(imageUid);
+    m_appData.renderData().m_imageTextureLayouts.erase(imageUid);
+    createImageTextures(m_appData, uuid_range_t{imageUid});
     return;
   }
 
@@ -1943,6 +2023,7 @@ bool Rendering::ensureDeformationTexture(const uuid& defUid)
 
   if (textureIt != std::end(renderData.m_imageTextures)) {
     renderData.m_imageTextures.erase(textureIt);
+    renderData.m_imageTextureLayouts.erase(defUid);
   }
 
   const std::vector<uuid> createdTextureUids = createImageTextures(m_appData, uuid_range_t{defUid});
@@ -2261,14 +2342,24 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
     }
 
     const ImageSettings& settings = image->settings();
+    const RenderData::PlanarTextureLayout imageTextureLayout =
+      textureLayoutOrDefault(R.m_imageTextureLayouts, ImgSegPair{imageUid, std::nullopt}.first);
     GLShaderProgram* program = nullptr;
     switch (settings.colorInterpolationMode()) {
       case InterpolationMode::NearestNeighbor:
       case InterpolationMode::Linear:
-        program = m_shaderPrograms.at(ShaderProgramType::VectorWarpedGridLinear).get();
+        program = &shaderProgramForTextureDimension(
+          m_shaderPrograms,
+          m_shaderPrograms2D,
+          ShaderProgramType::VectorWarpedGridLinear,
+          imageTextureLayout.dimension);
         break;
       case InterpolationMode::CubicBsplineConvolution:
-        program = m_shaderPrograms.at(ShaderProgramType::VectorWarpedGridCubic).get();
+        program = &shaderProgramForTextureDimension(
+          m_shaderPrograms,
+          m_shaderPrograms2D,
+          ShaderProgramType::VectorWarpedGridCubic,
+          imageTextureLayout.dimension);
         break;
     }
 
@@ -2277,6 +2368,7 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
     program->use();
     {
       program->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
+      setTexture2DAxesUniforms(*program, imageTextureLayout);
       program->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
       program->setUniform("u_tex_T_world", U.imgTexture_T_world);
       program->setUniform("u_imgSlope_native_T_texture", U.slope_native_T_texture);
@@ -2380,6 +2472,8 @@ void Rendering::renderAllImagesForView(
         const RenderData::ImageUniforms& U = R.m_uniforms.at(imgUid);
         const std::optional<uuid> deformationUid = activeRenderableDeformationUid(imgUid);
         const bool renderWarped = deformationUid.has_value();
+        const RenderData::PlanarTextureLayout imageTextureLayout =
+          textureLayoutOrDefault(R.m_imageTextureLayouts, imgSegPair.first);
 
         if (
           ComponentRenderMode::VectorDirectionColor == img->settings().componentRenderMode() ||
@@ -2411,11 +2505,19 @@ void Rendering::renderAllImagesForView(
           switch (img->settings().colorInterpolationMode()) {
             case InterpolationMode::NearestNeighbor:
             case InterpolationMode::Linear: {
-              P = m_shaderPrograms.at(vectorShaderType(InterpolationMode::Linear)).get();
+              P = &shaderProgramForTextureDimension(
+                m_shaderPrograms,
+                m_shaderPrograms2D,
+                vectorShaderType(InterpolationMode::Linear),
+                imageTextureLayout.dimension);
               break;
             }
             case InterpolationMode::CubicBsplineConvolution: {
-              P = m_shaderPrograms.at(vectorShaderType(InterpolationMode::CubicBsplineConvolution)).get();
+              P = &shaderProgramForTextureDimension(
+                m_shaderPrograms,
+                m_shaderPrograms2D,
+                vectorShaderType(InterpolationMode::CubicBsplineConvolution),
+                imageTextureLayout.dimension);
               break;
             }
           }
@@ -2424,6 +2526,7 @@ void Rendering::renderAllImagesForView(
           P->use();
           {
             P->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
+            setTexture2DAxesUniforms(*P, imageTextureLayout);
             P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
             P->setUniform("u_tex_T_world", U.imgTexture_T_world);
             P->setUniform("u_imgSlope_native_T_texture", U.slope_native_T_texture);
@@ -2454,23 +2557,28 @@ void Rendering::renderAllImagesForView(
             switch (img->settings().interpolationMode()) {
               case InterpolationMode::NearestNeighbor: {
                 if (doXray) {
-                  P = m_shaderPrograms
-                        .at(warpGrayImage ? ShaderProgramType::XrayLinearWarped : ShaderProgramType::XrayLinear)
-                        .get();
+                  P = &shaderProgramForTextureDimension(
+                    m_shaderPrograms,
+                    m_shaderPrograms2D,
+                    warpGrayImage ? ShaderProgramType::XrayLinearWarped : ShaderProgramType::XrayLinear,
+                    imageTextureLayout.dimension);
                 }
                 else {
-                  P =
-                    m_shaderPrograms
-                      .at(warpGrayImage ? ShaderProgramType::ImageGrayLinearWarped : ShaderProgramType::ImageGrayLinear)
-                      .get();
+                  P = &shaderProgramForTextureDimension(
+                    m_shaderPrograms,
+                    m_shaderPrograms2D,
+                    warpGrayImage ? ShaderProgramType::ImageGrayLinearWarped : ShaderProgramType::ImageGrayLinear,
+                    imageTextureLayout.dimension);
                 }
                 break;
               }
               case InterpolationMode::Linear: {
                 if (doXray) {
-                  P = m_shaderPrograms
-                        .at(warpGrayImage ? ShaderProgramType::XrayLinearWarped : ShaderProgramType::XrayLinear)
-                        .get();
+                  P = &shaderProgramForTextureDimension(
+                    m_shaderPrograms,
+                    m_shaderPrograms2D,
+                    warpGrayImage ? ShaderProgramType::XrayLinearWarped : ShaderProgramType::XrayLinear,
+                    imageTextureLayout.dimension);
                 }
                 else {
                   const ShaderProgramType shaderType =
@@ -2478,20 +2586,28 @@ void Rendering::renderAllImagesForView(
                       ? (warpGrayImage ? ShaderProgramType::ImageGrayLinearFloatingWarped
                                        : ShaderProgramType::ImageGrayLinearFloating)
                       : (warpGrayImage ? ShaderProgramType::ImageGrayLinearWarped : ShaderProgramType::ImageGrayLinear);
-                  P = m_shaderPrograms.at(shaderType).get();
+                  P = &shaderProgramForTextureDimension(
+                    m_shaderPrograms,
+                    m_shaderPrograms2D,
+                    shaderType,
+                    imageTextureLayout.dimension);
                 }
                 break;
               }
               case InterpolationMode::CubicBsplineConvolution: {
                 if (doXray) {
-                  P = m_shaderPrograms
-                        .at(warpGrayImage ? ShaderProgramType::XrayCubicWarped : ShaderProgramType::XrayCubic)
-                        .get();
+                  P = &shaderProgramForTextureDimension(
+                    m_shaderPrograms,
+                    m_shaderPrograms2D,
+                    warpGrayImage ? ShaderProgramType::XrayCubicWarped : ShaderProgramType::XrayCubic,
+                    imageTextureLayout.dimension);
                 }
                 else {
-                  P = m_shaderPrograms
-                        .at(warpGrayImage ? ShaderProgramType::ImageGrayCubicWarped : ShaderProgramType::ImageGrayCubic)
-                        .get();
+                  P = &shaderProgramForTextureDimension(
+                    m_shaderPrograms,
+                    m_shaderPrograms2D,
+                    warpGrayImage ? ShaderProgramType::ImageGrayCubicWarped : ShaderProgramType::ImageGrayCubic,
+                    imageTextureLayout.dimension);
                 }
                 break;
               }
@@ -2504,6 +2620,7 @@ void Rendering::renderAllImagesForView(
             {
               P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
               P->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
+              setTexture2DAxesUniforms(*P, imageTextureLayout);
 
               P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
               P->setUniform("u_tex_T_world", U.imgTexture_T_world);
@@ -2581,15 +2698,19 @@ void Rendering::renderAllImagesForView(
             switch (img->settings().interpolationMode()) {
               case InterpolationMode::NearestNeighbor:
               case InterpolationMode::Linear: {
-                P = m_shaderPrograms
-                      .at(renderWarped ? ShaderProgramType::EdgeSobelLinearWarped : ShaderProgramType::EdgeSobelLinear)
-                      .get();
+                P = &shaderProgramForTextureDimension(
+                  m_shaderPrograms,
+                  m_shaderPrograms2D,
+                  renderWarped ? ShaderProgramType::EdgeSobelLinearWarped : ShaderProgramType::EdgeSobelLinear,
+                  imageTextureLayout.dimension);
                 break;
               }
               case InterpolationMode::CubicBsplineConvolution: {
-                P = m_shaderPrograms
-                      .at(renderWarped ? ShaderProgramType::EdgeSobelCubicWarped : ShaderProgramType::EdgeSobelCubic)
-                      .get();
+                P = &shaderProgramForTextureDimension(
+                  m_shaderPrograms,
+                  m_shaderPrograms2D,
+                  renderWarped ? ShaderProgramType::EdgeSobelCubicWarped : ShaderProgramType::EdgeSobelCubic,
+                  imageTextureLayout.dimension);
                 break;
               }
             }
@@ -2601,6 +2722,7 @@ void Rendering::renderAllImagesForView(
             {
               P->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
               P->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
+              setTexture2DAxesUniforms(*P, imageTextureLayout);
 
               P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
               P->setUniform("u_tex_T_world", U.imgTexture_T_world);
@@ -2647,37 +2769,41 @@ void Rendering::renderAllImagesForView(
                 // used for the image. Therefore, we use the floating-point linear program instead
                 // (the only option). This effectively never allows us to show NN isocontours. isoP
                 // = &m_isoContourTexLookupLinearProgram; // fixed-point (disabled)
-                isoP = m_shaderPrograms
-                         .at(
-                           renderWarped ? ShaderProgramType::IsoContourLinearFloatingWarped
-                                        : ShaderProgramType::IsoContourLinearFloating)
-                         .get();
+                isoP = &shaderProgramForTextureDimension(
+                  m_shaderPrograms,
+                  m_shaderPrograms2D,
+                  renderWarped ? ShaderProgramType::IsoContourLinearFloatingWarped
+                               : ShaderProgramType::IsoContourLinearFloating,
+                  imageTextureLayout.dimension);
                 break;
               }
               case InterpolationMode::Linear: {
                 if (R.m_isocontourFloatingPointInterpolation) {
                   // Floating-point interpolation is linear only (at this time)
-                  isoP = m_shaderPrograms
-                           .at(
-                             renderWarped ? ShaderProgramType::IsoContourLinearFloatingWarped
-                                          : ShaderProgramType::IsoContourLinearFloating)
-                           .get();
+                  isoP = &shaderProgramForTextureDimension(
+                    m_shaderPrograms,
+                    m_shaderPrograms2D,
+                    renderWarped ? ShaderProgramType::IsoContourLinearFloatingWarped
+                                 : ShaderProgramType::IsoContourLinearFloating,
+                    imageTextureLayout.dimension);
                 }
                 else {
-                  isoP = m_shaderPrograms
-                           .at(
-                             renderWarped ? ShaderProgramType::IsoContourLinearFixedWarped
-                                          : ShaderProgramType::IsoContourLinearFixed)
-                           .get();
+                  isoP = &shaderProgramForTextureDimension(
+                    m_shaderPrograms,
+                    m_shaderPrograms2D,
+                    renderWarped ? ShaderProgramType::IsoContourLinearFixedWarped
+                                 : ShaderProgramType::IsoContourLinearFixed,
+                    imageTextureLayout.dimension);
                 }
                 break;
               }
               case InterpolationMode::CubicBsplineConvolution: {
-                isoP = m_shaderPrograms
-                         .at(
-                           renderWarped ? ShaderProgramType::IsoContourCubicFixedWarped
-                                        : ShaderProgramType::IsoContourCubicFixed)
-                         .get();
+                isoP = &shaderProgramForTextureDimension(
+                  m_shaderPrograms,
+                  m_shaderPrograms2D,
+                  renderWarped ? ShaderProgramType::IsoContourCubicFixedWarped
+                               : ShaderProgramType::IsoContourCubicFixed,
+                  imageTextureLayout.dimension);
                 break;
               }
             }
@@ -2708,6 +2834,7 @@ void Rendering::renderAllImagesForView(
               const float isoOp = imgS.isosurfaceOpacityModulator() * imgOp; // global opacity mod
 
               isoP->setSamplerUniform("u_imgTex", msk_imgTexSampler.index);
+              setTexture2DAxesUniforms(*isoP, imageTextureLayout);
 
               isoP->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
               isoP->setUniform("u_tex_T_world", U.imgTexture_T_world);
@@ -2743,15 +2870,19 @@ void Rendering::renderAllImagesForView(
           switch (img->settings().colorInterpolationMode()) {
             case InterpolationMode::NearestNeighbor:
             case InterpolationMode::Linear: {
-              P = m_shaderPrograms
-                    .at(renderWarped ? ShaderProgramType::ImageColorLinearWarped : ShaderProgramType::ImageColorLinear)
-                    .get();
+              P = &shaderProgramForTextureDimension(
+                m_shaderPrograms,
+                m_shaderPrograms2D,
+                renderWarped ? ShaderProgramType::ImageColorLinearWarped : ShaderProgramType::ImageColorLinear,
+                imageTextureLayout.dimension);
               break;
             }
             case InterpolationMode::CubicBsplineConvolution: {
-              P = m_shaderPrograms
-                    .at(renderWarped ? ShaderProgramType::ImageColorCubicWarped : ShaderProgramType::ImageColorCubic)
-                    .get();
+              P = &shaderProgramForTextureDimension(
+                m_shaderPrograms,
+                m_shaderPrograms2D,
+                renderWarped ? ShaderProgramType::ImageColorCubicWarped : ShaderProgramType::ImageColorCubic,
+                imageTextureLayout.dimension);
               break;
             }
           }
@@ -2763,6 +2894,7 @@ void Rendering::renderAllImagesForView(
           {
             P->setSamplerUniform("u_imgTex", msk_imgRgbaTexSamplers);
             P->setSamplerUniform("u_cmapTex", msk_imgCmapTexSampler.index);
+            setTexture2DAxesUniforms(*P, imageTextureLayout);
 
             P->setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
             P->setUniform("u_tex_T_world", U.imgTexture_T_world);
@@ -2795,7 +2927,13 @@ void Rendering::renderAllImagesForView(
             (InterpolationMode::NearestNeighbor == seg->settings().interpolationMode())
               ? (renderWarped ? ShaderProgramType::SegmentationNearestWarped : ShaderProgramType::SegmentationNearest)
               : (renderWarped ? ShaderProgramType::SegmentationLinearWarped : ShaderProgramType::SegmentationLinear);
-          GLShaderProgram& P = *m_shaderPrograms.at(segShaderType);
+          const RenderData::PlanarTextureLayout segTextureLayout =
+            textureLayoutOrDefault(R.m_segTextureLayouts, segUid);
+          GLShaderProgram& P = shaderProgramForTextureDimension(
+            m_shaderPrograms,
+            m_shaderPrograms2D,
+            segShaderType,
+            segTextureLayout.dimension);
 
           const auto boundTextures = bindSegTextures(imgSegPair);
           const auto boundDefTextures =
@@ -2806,6 +2944,7 @@ void Rendering::renderAllImagesForView(
           {
             P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
             P.setSamplerUniform("u_segLabelCmapTex", msk_segLabelTableTexSampler.index);
+            setTexture2DAxesUniforms(P, segTextureLayout);
 
             P.setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
             P.setUniform("u_tex_T_world", U.segTexture_T_world);
@@ -2881,6 +3020,17 @@ void Rendering::renderAllImagesForView(
         (I[0].first ? activeRenderableDeformationUid(*I[0].first) : std::nullopt),
         (I[1].first ? activeRenderableDeformationUid(*I[1].first) : std::nullopt)};
       const bool renderWarpedMetric = deformationUids[0].has_value() || deformationUids[1].has_value();
+      const std::array<RenderData::PlanarTextureLayout, 2> metricTextureLayouts{
+        textureLayoutOrDefault(R.m_imageTextureLayouts, I[0].first),
+        textureLayoutOrDefault(R.m_imageTextureLayouts, I[1].first)};
+      const bool mixedMetricTextureDimensions = metricTextureLayouts[0].dimension != metricTextureLayouts[1].dimension;
+
+      if (mixedMetricTextureDimensions) {
+        spdlog::warn(
+          "Metric rendering between mixed 2D-fallback and 3D textures is not supported yet; skipping metric view");
+        break;
+      }
+      const RenderData::TextureDimension metricTextureDimension = metricTextureLayouts[0].dimension;
 
       const auto boundMetricTextures = bindMetricImageTextures(I, view.renderMode());
       std::list<std::reference_wrapper<GLTexture>> boundMetricDefTextures;
@@ -2915,12 +3065,13 @@ void Rendering::renderAllImagesForView(
       };
 
       if (ViewRenderMode::Difference == view.renderMode()) {
-        GLShaderProgram& P =
+        GLShaderProgram& P = shaderProgramForTextureDimension(
+          m_shaderPrograms,
+          m_shaderPrograms2D,
           useTricubic
-            ? *m_shaderPrograms.at(
-                renderWarpedMetric ? ShaderProgramType::DifferenceCubicWarped : ShaderProgramType::DifferenceCubic)
-            : *m_shaderPrograms.at(
-                renderWarpedMetric ? ShaderProgramType::DifferenceLinearWarped : ShaderProgramType::DifferenceLinear);
+            ? (renderWarpedMetric ? ShaderProgramType::DifferenceCubicWarped : ShaderProgramType::DifferenceCubic)
+            : (renderWarpedMetric ? ShaderProgramType::DifferenceLinearWarped : ShaderProgramType::DifferenceLinear),
+          metricTextureDimension);
 
         const auto& params = R.m_squaredDifferenceParams;
 
@@ -2928,6 +3079,7 @@ void Rendering::renderAllImagesForView(
         {
           P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
           P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
+          setTexture2DAxesUniforms(P, metricTextureLayouts[0], metricTextureLayouts[1]);
 
           P.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
           P.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
@@ -2944,12 +3096,13 @@ void Rendering::renderAllImagesForView(
         P.stopUse();
       }
       else if (ViewRenderMode::LocalNcc == view.renderMode()) {
-        GLShaderProgram& P =
+        GLShaderProgram& P = shaderProgramForTextureDimension(
+          m_shaderPrograms,
+          m_shaderPrograms2D,
           useTricubic
-            ? *m_shaderPrograms.at(
-                renderWarpedMetric ? ShaderProgramType::LocalNccCubicWarped : ShaderProgramType::LocalNccCubic)
-            : *m_shaderPrograms.at(
-                renderWarpedMetric ? ShaderProgramType::LocalNccLinearWarped : ShaderProgramType::LocalNccLinear);
+            ? (renderWarpedMetric ? ShaderProgramType::LocalNccCubicWarped : ShaderProgramType::LocalNccCubic)
+            : (renderWarpedMetric ? ShaderProgramType::LocalNccLinearWarped : ShaderProgramType::LocalNccLinear),
+          metricTextureDimension);
 
         const auto& params = R.m_localNccParams;
 
@@ -2957,6 +3110,7 @@ void Rendering::renderAllImagesForView(
         {
           P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
           P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
+          setTexture2DAxesUniforms(P, metricTextureLayouts[0], metricTextureLayouts[1]);
 
           P.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
           P.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
@@ -2979,12 +3133,14 @@ void Rendering::renderAllImagesForView(
         P.stopUse();
       }
       else if (ViewRenderMode::LocalLinearResidual == view.renderMode()) {
-        GLShaderProgram& P = useTricubic ? *m_shaderPrograms.at(
-                                             renderWarpedMetric ? ShaderProgramType::LocalLinearResidualCubicWarped
-                                                                : ShaderProgramType::LocalLinearResidualCubic)
-                                         : *m_shaderPrograms.at(
-                                             renderWarpedMetric ? ShaderProgramType::LocalLinearResidualLinearWarped
-                                                                : ShaderProgramType::LocalLinearResidualLinear);
+        GLShaderProgram& P = shaderProgramForTextureDimension(
+          m_shaderPrograms,
+          m_shaderPrograms2D,
+          useTricubic ? (renderWarpedMetric ? ShaderProgramType::LocalLinearResidualCubicWarped
+                                            : ShaderProgramType::LocalLinearResidualCubic)
+                      : (renderWarpedMetric ? ShaderProgramType::LocalLinearResidualLinearWarped
+                                            : ShaderProgramType::LocalLinearResidualLinear),
+          metricTextureDimension);
 
         const auto& params = R.m_localLinearResidualParams;
 
@@ -2992,6 +3148,7 @@ void Rendering::renderAllImagesForView(
         {
           P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
           P.setSamplerUniform("u_metricCmapTex", msk_metricCmapTexSampler.index);
+          setTexture2DAxesUniforms(P, metricTextureLayouts[0], metricTextureLayouts[1]);
 
           P.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
           P.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
@@ -3012,16 +3169,18 @@ void Rendering::renderAllImagesForView(
         P.stopUse();
       }
       else if (ViewRenderMode::Overlay == view.renderMode()) {
-        GLShaderProgram& P =
+        GLShaderProgram& P = shaderProgramForTextureDimension(
+          m_shaderPrograms,
+          m_shaderPrograms2D,
           useTricubic
-            ? *m_shaderPrograms.at(
-                renderWarpedMetric ? ShaderProgramType::OverlapCubicWarped : ShaderProgramType::OverlapCubic)
-            : *m_shaderPrograms.at(
-                renderWarpedMetric ? ShaderProgramType::OverlapLinearWarped : ShaderProgramType::OverlapLinear);
+            ? (renderWarpedMetric ? ShaderProgramType::OverlapCubicWarped : ShaderProgramType::OverlapCubic)
+            : (renderWarpedMetric ? ShaderProgramType::OverlapLinearWarped : ShaderProgramType::OverlapLinear),
+          metricTextureDimension);
 
         P.use();
         {
           P.setSamplerUniform("u_imgTex", msk_metricImgTexSamplers);
+          setTexture2DAxesUniforms(P, metricTextureLayouts[0], metricTextureLayouts[1]);
 
           P.setUniform("u_tex_T_world", std::vector<glm::mat4>{U[0].imgTexture_T_world, U[1].imgTexture_T_world});
           P.setUniform("img1Tex_T_img0Tex", U[1].imgTexture_T_world * glm::inverse(U[0].imgTexture_T_world));
@@ -3047,9 +3206,15 @@ void Rendering::renderAllImagesForView(
           continue;
         }
 
-        GLShaderProgram& P = (InterpolationMode::NearestNeighbor == segs[i]->settings().interpolationMode())
-                               ? *m_shaderPrograms.at(ShaderProgramType::SegmentationNearest)
-                               : *m_shaderPrograms.at(ShaderProgramType::SegmentationLinear);
+        const RenderData::PlanarTextureLayout segTextureLayout =
+          textureLayoutOrDefault(R.m_segTextureLayouts, I[i].second);
+        GLShaderProgram& P = shaderProgramForTextureDimension(
+          m_shaderPrograms,
+          m_shaderPrograms2D,
+          (InterpolationMode::NearestNeighbor == segs[i]->settings().interpolationMode())
+            ? ShaderProgramType::SegmentationNearest
+            : ShaderProgramType::SegmentationLinear,
+          segTextureLayout.dimension);
 
         const auto boundTextures = bindSegTextures(I[i]);
         const auto boundBufferTextures = bindSegBufferTextures(I[i]);
@@ -3058,6 +3223,7 @@ void Rendering::renderAllImagesForView(
         {
           P.setSamplerUniform("u_segTex", msk_segTexSampler.index);
           P.setSamplerUniform("u_segLabelCmapTex", msk_segLabelTableTexSampler.index);
+          setTexture2DAxesUniforms(P, segTextureLayout);
 
           P.setUniform("u_numCheckers", 1.0f); // checkerboarding disabled
           P.setUniform("u_tex_T_world", U[i].segTexture_T_world);
@@ -3092,7 +3258,7 @@ void Rendering::renderAllImagesForView(
     }
 
     case ShaderGroup::Volume: {
-      const CurrentImages I = getImageAndSegUidsForImageShaders(view.visibleImages());
+      const CurrentImages I = getImageAndSegUidsForImageShaders(raycastableImageUidsForView(m_appData, view));
       if (I.empty()) {
         return;
       }
@@ -3703,6 +3869,11 @@ void Rendering::createShaderPrograms()
   const std::string texLinearRep = loadFile(shaderPath + "functions/TextureLookup_Linear.glsl");
   const std::string texCubicRep = loadFile(shaderPath + "functions/TextureLookup_Cubic.glsl");
   const std::string uintTexLookupLinearRep = loadFile(shaderPath + "functions/UIntTextureLookup_Linear.glsl");
+  const std::string texFloatingPointLinear2DRep =
+    loadFile(shaderPath + "functions/TextureLookup_FloatingPoint_Linear_2D.glsl");
+  const std::string texLinear2DRep = loadFile(shaderPath + "functions/TextureLookup_Linear_2D.glsl");
+  const std::string texCubic2DRep = loadFile(shaderPath + "functions/TextureLookup_Cubic_2D.glsl");
+  const std::string uintTexLookupLinear2DRep = loadFile(shaderPath + "functions/UIntTextureLookup_Linear_2D.glsl");
   const std::string sampleTexCoordIdentityRep = loadFile(shaderPath + "functions/SampleTexCoord_Identity.glsl");
   const std::string sampleTexCoordDeformationRep = loadFile(shaderPath + "functions/SampleTexCoord_Deformation.glsl");
   const std::string metricSamplingIdentityRep = loadFile(shaderPath + "functions/MetricSampling_Identity.glsl");
@@ -3786,6 +3957,8 @@ void Rendering::createShaderPrograms()
   fsImageGrayUniforms.insertUniforms(fsIntensityProjectionUniforms);
   fsImageGrayUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
   fsImageGrayUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
+  fsImageGrayUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsImageGrayUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsImageGrayWarpedUniforms = fsImageGrayUniforms;
   fsImageGrayWarpedUniforms.insertUniforms(fsDeformationUniforms);
 
@@ -3797,6 +3970,8 @@ void Rendering::createShaderPrograms()
   fsImageColorUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f});
   fsImageColorUniforms.insertUniform("u_imgMinMax", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
   fsImageColorUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
+  fsImageColorUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsImageColorUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsImageColorWarpedUniforms = fsImageColorUniforms;
   fsImageColorWarpedUniforms.insertUniforms(fsDeformationUniforms);
 
@@ -3805,6 +3980,8 @@ void Rendering::createShaderPrograms()
   fsVectorDirectionColorUniforms.insertUniform("u_imgTex", UniformType::SamplerVector, msk_imgRgbaTexSamplers);
   fsVectorDirectionColorUniforms.insertUniform("u_imgSlope_native_T_texture", UniformType::Float, 1.0f);
   fsVectorDirectionColorUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+  fsVectorDirectionColorUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsVectorDirectionColorUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
 
   Uniforms fsVectorSignedNormalProjectionUniforms;
   fsVectorSignedNormalProjectionUniforms.insertUniforms(fsRenderModeUniforms);
@@ -3813,6 +3990,10 @@ void Rendering::createShaderPrograms()
   fsVectorSignedNormalProjectionUniforms.insertUniform("u_projectionScale", UniformType::Float, 1.0f);
   fsVectorSignedNormalProjectionUniforms.insertUniform("u_viewNormal_subject", UniformType::Vec3, sk_zeroVec3);
   fsVectorSignedNormalProjectionUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+  fsVectorSignedNormalProjectionUniforms
+    .insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsVectorSignedNormalProjectionUniforms
+    .insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
 
   Uniforms fsVectorPlanarProjectionColorUniforms;
   fsVectorPlanarProjectionColorUniforms.insertUniforms(fsRenderModeUniforms);
@@ -3823,6 +4004,10 @@ void Rendering::createShaderPrograms()
   fsVectorPlanarProjectionColorUniforms.insertUniform("u_viewUp_subject", UniformType::Vec3, sk_zeroVec3);
   fsVectorPlanarProjectionColorUniforms.insertUniform("u_signedColors", UniformType::Bool, true);
   fsVectorPlanarProjectionColorUniforms.insertUniform("u_imgOpacity", UniformType::Float, 0.0f);
+  fsVectorPlanarProjectionColorUniforms
+    .insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsVectorPlanarProjectionColorUniforms
+    .insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
 
   Uniforms fsVectorWarpedGridUniforms;
   fsVectorWarpedGridUniforms.insertUniforms(fsRenderModeUniforms);
@@ -3841,6 +4026,8 @@ void Rendering::createShaderPrograms()
     glm::vec4{209.0f / 255.0f, 79.0f / 255.0f, 1.0f, 1.0f});
   fsVectorWarpedGridUniforms.insertUniform("u_backgroundColor", UniformType::Vec4, sk_zeroVec4);
   fsVectorWarpedGridUniforms.insertUniform("u_imgOpacity", UniformType::Float, 1.0f);
+  fsVectorWarpedGridUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsVectorWarpedGridUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
 
   Uniforms fsEdgeUniforms;
   fsEdgeUniforms.insertUniforms(fsImageAdjustmentUniforms);
@@ -3854,6 +4041,8 @@ void Rendering::createShaderPrograms()
   fsEdgeUniforms.insertUniform("u_colormapEdges", UniformType::Bool, false);
   fsEdgeUniforms.insertUniform("u_edgeColor", UniformType::Vec4, sk_zeroVec4);
   fsEdgeUniforms.insertUniform("u_texelDirs", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
+  fsEdgeUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsEdgeUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsEdgeWarpedUniforms = fsEdgeUniforms;
   fsEdgeWarpedUniforms.insertUniforms(fsDeformationUniforms);
 
@@ -3864,6 +4053,8 @@ void Rendering::createShaderPrograms()
   fsXrayUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
   fsXrayUniforms.insertUniform("u_cmapTex", UniformType::Sampler, msk_imgCmapTexSampler);
   fsXrayUniforms.insertUniform("u_imgSlope_native_T_texture", UniformType::Float, 1.0f);
+  fsXrayUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsXrayUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
 
   fsXrayUniforms.insertUniforms(fsIntensityProjectionUniforms);
   fsXrayUniforms.insertUniform("u_mipSamplingDistance_cm", UniformType::Float, 0.0f);
@@ -3887,6 +4078,8 @@ void Rendering::createShaderPrograms()
   fsSegNearestUniforms.insertUniforms(fsSegAdjustmentUniforms);
   fsSegNearestUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
   fsSegNearestUniforms.insertUniform("u_segLabelCmapTex", UniformType::Sampler, msk_segLabelTableTexSampler);
+  fsSegNearestUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsSegNearestUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsSegNearestWarpedUniforms = fsSegNearestUniforms;
   fsSegNearestWarpedUniforms.insertUniforms(fsDeformationUniforms);
 
@@ -3909,6 +4102,8 @@ void Rendering::createShaderPrograms()
   fsIsoUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
   fsIsoUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
   fsIsoUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
+  fsIsoUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsIsoUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsIsoWarpedUniforms = fsIsoUniforms;
   fsIsoWarpedUniforms.insertUniforms(fsDeformationUniforms);
 
@@ -3941,6 +4136,8 @@ void Rendering::createShaderPrograms()
   fsDiffUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsDiffUniforms.insertUniform("u_useSquare", UniformType::Bool, true);
   fsDiffUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4, sk_optionalUniform);
+  fsDiffUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsDiffUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsDiffWarpedUniforms = fsDiffUniforms;
   fsDiffWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
@@ -3964,6 +4161,8 @@ void Rendering::createShaderPrograms()
   fsLocalNccUniforms.insertUniform("u_ignoreNegativeCorrelation", UniformType::Bool, true);
   fsLocalNccUniforms.insertUniform("u_presentation", UniformType::Int, 0);
   fsLocalNccUniforms.insertUniform("u_invalidStyle", UniformType::Int, 0);
+  fsLocalNccUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsLocalNccUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsLocalNccWarpedUniforms = fsLocalNccUniforms;
   fsLocalNccWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
@@ -3985,6 +4184,8 @@ void Rendering::createShaderPrograms()
   fsLocalLinearResidualUniforms.insertUniform("u_minValidFraction", UniformType::Float, 0.75f);
   fsLocalLinearResidualUniforms.insertUniform("u_varianceEpsilon", UniformType::Float, 1.0e-5f);
   fsLocalLinearResidualUniforms.insertUniform("u_invalidStyle", UniformType::Int, 0);
+  fsLocalLinearResidualUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsLocalLinearResidualUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsLocalLinearResidualWarpedUniforms = fsLocalLinearResidualUniforms;
   fsLocalLinearResidualWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
@@ -3999,6 +4200,8 @@ void Rendering::createShaderPrograms()
   fsOverlayUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
   fsOverlayUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
   fsOverlayUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsOverlayUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsOverlayUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsOverlayWarpedUniforms = fsOverlayUniforms;
   fsOverlayWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
@@ -4545,6 +4748,34 @@ void Rendering::createShaderPrograms()
       vsMetricUniforms,
       fsOverlayWarpedUniforms}}};
 
+  auto replacementsForTextureDimension =
+    [&](const std::unordered_map<std::string, std::string>& replacements, RenderData::TextureDimension dimension) {
+      std::unordered_map<std::string, std::string> result = replacements;
+      if (RenderData::TextureDimension::Texture2D == dimension) {
+        result["$$IMAGE_SAMPLER_TYPE$$"] = "sampler2D";
+        result["$$SEG_SAMPLER_TYPE$$"] = "usampler2D";
+        if (const auto it = result.find("$$TEXTURE_LOOKUP_FUNCTION$$"); it != result.end()) {
+          if (it->second == texCubicRep) {
+            it->second = texCubic2DRep;
+          }
+          else if (it->second == texFloatingPointLinearRep) {
+            it->second = texFloatingPointLinear2DRep;
+          }
+          else {
+            it->second = texLinear2DRep;
+          }
+        }
+        if (const auto it = result.find("$$UINT_TEXTURE_LOOKUP_FUNCTION$$"); it != result.end()) {
+          it->second = uintTexLookupLinear2DRep;
+        }
+      }
+      else {
+        result["$$IMAGE_SAMPLER_TYPE$$"] = "sampler3D";
+        result["$$SEG_SAMPLER_TYPE$$"] = "usampler3D";
+      }
+      return result;
+    };
+
   for (const auto& shaderType : allShaders) {
     const auto& info = shaderTypeToInfo.at(shaderType);
 
@@ -4552,7 +4783,7 @@ void Rendering::createShaderPrograms()
       to_string(shaderType),
       info.vsFileName,
       info.fsFileName,
-      info.fsReplacements,
+      replacementsForTextureDimension(info.fsReplacements, RenderData::TextureDimension::Texture3D),
       info.vsUniforms,
       info.fsUniforms);
 
@@ -4562,6 +4793,22 @@ void Rendering::createShaderPrograms()
     else {
       spdlog::error(prog.error());
       throw_debug(std::format("Failed to create shader program {}", to_string(shaderType)))
+    }
+
+    auto prog2D = createShaderProgram(
+      to_string(shaderType) + " - Texture2D",
+      info.vsFileName,
+      info.fsFileName,
+      replacementsForTextureDimension(info.fsReplacements, RenderData::TextureDimension::Texture2D),
+      info.vsUniforms,
+      info.fsUniforms);
+
+    if (prog2D) {
+      m_shaderPrograms2D.emplace(shaderType, std::move(*prog2D));
+    }
+    else {
+      spdlog::error(prog2D.error());
+      throw_debug(std::format("Failed to create 2D shader program {}", to_string(shaderType)))
     }
   }
 

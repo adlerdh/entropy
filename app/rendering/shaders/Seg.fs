@@ -18,7 +18,7 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha)
 
-uniform usampler3D u_segTex;             // segmentation (scalar, red channel only)
+uniform $$SEG_SAMPLER_TYPE$$ u_segTex;   // segmentation (scalar, red channel only)
 uniform samplerBuffer u_segLabelCmapTex; // seg label color map (non-premultiplied RGBA)
 
 // Segmentation adjustment uniforms:

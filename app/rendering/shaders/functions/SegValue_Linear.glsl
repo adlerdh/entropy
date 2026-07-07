@@ -43,9 +43,9 @@ uint getSegValue(vec3 texOffset, out float opacity)
     return 0u;
   }
 
-  vec3 baseVoxCoord = baseTc * vec3(textureSize(u_segTex, 0));
+  vec3 baseVoxCoord = baseTc * vec3(segTextureSize());
   vec3 c = floor(baseVoxCoord);
-  vec3 d = pow(vec3(textureSize(u_segTex, 0)), vec3(-1));
+  vec3 d = pow(vec3(segTextureSize()), vec3(-1));
 
   // texture coordinates corresponding to the CENTER of the voxel
   vec3 t = vec3(c.x * d.x, c.y * d.y, c.z * d.z) + 0.5 * d;

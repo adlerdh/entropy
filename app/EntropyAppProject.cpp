@@ -880,8 +880,10 @@ void EntropyApp::closeProject()
 
   auto& renderData = m_data.renderData();
   renderData.m_imageTextures.clear();
+  renderData.m_imageTextureLayouts.clear();
   renderData.m_distanceMapTextures.clear();
   renderData.m_segTextures.clear();
+  renderData.m_segTextureLayouts.clear();
   renderData.m_labelBufferTextures.clear();
   renderData.m_colormapTextures.clear();
   renderData.m_uniforms.clear();

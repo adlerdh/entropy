@@ -12,3 +12,8 @@ uint uintTextureLookup(usampler3D tex, vec3 texCoords)
   // vec3 vox = (fract(texCoords) - 0.5 / res) * res;
   // return texelFetch(tex, ivec3(floor(vox)), 0).r;
 }
+
+ivec3 segTextureSize()
+{
+  return textureSize(u_segTex, 0);
+}

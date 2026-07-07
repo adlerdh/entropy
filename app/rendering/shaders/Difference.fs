@@ -16,8 +16,8 @@ fs_in;
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha RGBA)
 
 // Texture samplers:
-uniform sampler3D u_imgTex[2];     // images (scalar, red channel only)
-uniform sampler1D u_metricCmapTex; // metric color map (non-premultiplied RGBA)
+uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[2]; // images (scalar, red channel only)
+uniform sampler1D u_metricCmapTex;          // metric color map (non-premultiplied RGBA)
 
 // Image adjustment uniforms:
 uniform vec2 u_imgSlopeIntercept[2];     // map texture to normalized intensity [0, 1], plus window/leveling
@@ -62,11 +62,11 @@ float computeMetricAndMask(in int sampleOffset, out bool hitBoundary)
     float img;
     switch (i) {
       case 0: {
-        img = textureLookup(u_imgTex[0], tc[i]);
+        img = textureLookup(u_imgTex[0], tc[i], 0);
         break;
       }
       case 1: {
-        img = textureLookup(u_imgTex[1], tc[i]);
+        img = textureLookup(u_imgTex[1], tc[i], 1);
         break;
       }
     }

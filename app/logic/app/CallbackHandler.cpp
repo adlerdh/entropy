@@ -75,8 +75,7 @@ void setTimePoint(AppData& appData, const uuid& imageUid, Image& image, uint32_t
     return;
   }
   image.settings().setActiveTimePoint(clamped);
-  appData.renderData().m_imageTextures.erase(imageUid);
-  createImageTextures(appData, std::vector<uuid>{imageUid});
+  refreshImageTexturesForActiveTimePoint(appData, imageUid);
 }
 
 void setTimePointWithSynchronization(AppData& appData, const uuid& imageUid, Image& image, uint32_t timePoint)

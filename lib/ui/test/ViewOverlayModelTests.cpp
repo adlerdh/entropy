@@ -26,9 +26,9 @@ TEST_CASE("view overlay labels image choices with visibility and active state", 
 {
   CHECK(view_overlay::imageChoiceLabel({"T1", true, false, false, false}) == "T1");
   CHECK(view_overlay::imageChoiceLabel({"T2", false, false, false, false}) == "T2 (hidden)");
-  CHECK(view_overlay::imageChoiceLabel({"FLAIR", true, true, false, false}) == "FLAIR (active)");
+  CHECK(view_overlay::imageChoiceLabel({"FLAIR", true, true, false, false}) == "FLAIR (act.)");
   CHECK(view_overlay::imageChoiceLabel({"T1", true, false, true, false}) == "T1 (ref.)");
-  CHECK(view_overlay::imageChoiceLabel({"Seg", false, true, true, false}) == "Seg (hidden) (active) (ref.)");
+  CHECK(view_overlay::imageChoiceLabel({"Seg", false, true, true, false}) == "Seg (hidden) (ref. + act.)");
 }
 
 TEST_CASE("view overlay joins selected visible image names", "[ui][view_overlay]")
@@ -39,5 +39,5 @@ TEST_CASE("view overlay joins selected visible image names", "[ui][view_overlay]
     {"FLAIR", true, false, false, false},
     {"CT", true, false, false, true}};
 
-  CHECK(view_overlay::selectedVisibleImageNames(choices) == "T1 (active) (ref.), CT");
+  CHECK(view_overlay::selectedVisibleImageNames(choices) == "T1 (ref. + act.), CT");
 }

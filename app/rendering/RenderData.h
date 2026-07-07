@@ -107,6 +107,18 @@ struct RenderData
     bool overlayPixelEdges = false;
   };
 
+  enum class TextureDimension
+  {
+    Texture3D,
+    Texture2D
+  };
+
+  struct PlanarTextureLayout
+  {
+    TextureDimension dimension = TextureDimension::Texture3D;
+    glm::ivec2 axes{0, 1};
+  };
+
   struct Quad
   {
     Quad();
@@ -167,10 +179,16 @@ struct RenderData
   /// For each image, a vector of image textures (one per component)
   std::unordered_map<uuids::uuid, std::vector<GLTexture> > m_imageTextures;
 
+  /// Texture dimensionality and axis mapping for each image texture.
+  std::unordered_map<uuids::uuid, PlanarTextureLayout> m_imageTextureLayouts;
+
   /// For each image, a map of image component to distance map textures
   std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture> > m_distanceMapTextures;
 
   std::unordered_map<uuids::uuid, GLTexture> m_segTextures;
+
+  /// Texture dimensionality and axis mapping for each segmentation texture.
+  std::unordered_map<uuids::uuid, PlanarTextureLayout> m_segTextureLayouts;
 
   std::unordered_map<uuids::uuid, BrushPreview> m_brushPreviews;
 

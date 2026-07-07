@@ -8,3 +8,8 @@ float textureLookup(sampler3D tex, vec3 texCoord)
 {
   return texture(tex, texCoord)[0];
 }
+
+float textureLookup(sampler3D tex, vec3 texCoord, int imageIndex)
+{
+  return textureLookup(tex, texCoord);
+}

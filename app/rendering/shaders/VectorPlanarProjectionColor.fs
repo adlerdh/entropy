@@ -17,7 +17,7 @@ fs_in;
 
 layout(location = 0) out vec4 o_color; // output RGBA color (premultiplied alpha)
 
-uniform sampler3D u_imgTex[4]; // vector field components; only x/y/z are used
+uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex[4]; // vector field components; only x/y/z are used
 
 uniform float u_imgSlope_native_T_texture; // map texture value to native component units
 uniform float u_projectionScale;           // native-unit scale for mapping projected length to [0, 1]
