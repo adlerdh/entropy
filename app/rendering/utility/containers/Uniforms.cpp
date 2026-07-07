@@ -112,7 +112,13 @@ GLint Uniforms::queryAndSetLocation(const std::string& name, std::function<GLint
   const GLint loc = locationGetter(name);
 
   if (-1 == loc) {
-    spdlog::info("Unrecognized uniform '{}': its location will not be set", name);
+    const Decl& uniform = m_uniformsMap.at(name);
+    if (uniform.m_isRequired) {
+      spdlog::warn("Required uniform '{}' is not active in the linked shader program", name);
+    }
+    else {
+      spdlog::trace("Optional uniform '{}' is not active in the linked shader program; skipping location setup", name);
+    }
     return loc;
   }
   else {

@@ -85,10 +85,42 @@ namespace
 {
 using namespace uuids;
 
+constexpr bool sk_optionalUniform = false;
+
 const glm::vec3 WHITE{1.0f};
 const glm::mat4 sk_identMat3{1.0f};
 const glm::mat4 sk_identMat4{1.0f};
 const glm::vec2 sk_zeroVec2{0.0f, 0.0f};
+
+void logOpenGLTextureLimits()
+{
+  GLint maxTextureSize = 0;
+  GLint max3DTextureSize = 0;
+  GLint maxArrayTextureLayers = 0;
+  GLint maxTextureBufferSize = 0;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+  glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max3DTextureSize);
+  glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTextureLayers);
+  glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxTextureBufferSize);
+
+  spdlog::debug(
+    "OpenGL texture limits:\n"
+    "  1D textures: max length = GL_MAX_TEXTURE_SIZE = {}\n"
+    "  2D textures: max width and max height each = GL_MAX_TEXTURE_SIZE = {} (max {} x {})\n"
+    "  3D textures: max width, max height, and max depth each = GL_MAX_3D_TEXTURE_SIZE = {} (max {} x {} x {})\n"
+    "  Array textures: max layer count = GL_MAX_ARRAY_TEXTURE_LAYERS = {}\n"
+    "  Buffer textures: max texels = GL_MAX_TEXTURE_BUFFER_SIZE = {}",
+    maxTextureSize,
+    maxTextureSize,
+    maxTextureSize,
+    maxTextureSize,
+    max3DTextureSize,
+    max3DTextureSize,
+    max3DTextureSize,
+    max3DTextureSize,
+    maxArrayTextureLayers,
+    maxTextureBufferSize);
+}
 
 void syncScalarProjectionLayerSettings(const ImageSettings& source, ImageSettings& projection)
 {
@@ -569,6 +601,8 @@ Rendering::Rendering(AppData& appData)
     spdlog::error("Exception when loading font file: {}", e.what());
   }
 
+  logOpenGLTextureLimits();
+
   createShaderPrograms();
 
   /***************************************************/
@@ -804,7 +838,6 @@ void Rendering::initTextures()
 
   if (imageUidsOfCreatedTextures.size() != m_appData.numImages()) {
     spdlog::error("Not all image textures were created");
-    /// @todo remove the images for which the texture was not created
   }
 
   const std::vector<uuid> defUidsOfCreatedTextures = createImageTextures(m_appData, m_appData.defUidsOrdered());
@@ -833,7 +866,6 @@ void Rendering::initTextures()
 
   if (segUidsOfCreatedTextures.size() != m_appData.numSegs()) {
     spdlog::error("Not all segmentation textures were created");
-    /// @todo remove the segs for which the texture was not created
   }
 
   m_appData.renderData().m_distanceMapTextures = createDistanceMapTextures(m_appData);
@@ -3106,9 +3138,6 @@ void Rendering::renderAllImagesForView(
         /// @todo Put a lot of these into the uniform settings...
 
         P.setUniform("u_tex_T_world", U.imgTexture_T_world);
-        P.setUniform("u_world_T_imgTex", U.world_T_imgTexture);
-
-        P.setUniform("u_worldEyePos", helper::worldOrigin(view.camera()));
         P.setUniform("u_texGrads", U.textureGradientStep);
 
         /// @note Shader expects 8 values
@@ -3738,8 +3767,9 @@ void Rendering::createShaderPrograms()
   Uniforms fsIntensityProjectionUniforms;
   fsIntensityProjectionUniforms.insertUniform("u_mipMode", UniformType::Int, 0);
   fsIntensityProjectionUniforms.insertUniform("u_halfNumMipSamples", UniformType::Int, 0);
-  fsIntensityProjectionUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
-  fsIntensityProjectionUniforms.insertUniform("u_worldSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  fsIntensityProjectionUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsIntensityProjectionUniforms
+    .insertUniform("u_worldSamplingDirZ", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
 
   Uniforms fsDeformationUniforms;
   fsDeformationUniforms.insertUniform("u_defTex", UniformType::SamplerVector, msk_defTexSamplers);
@@ -3898,9 +3928,9 @@ void Rendering::createShaderPrograms()
     UniformType::FloatVector,
     FloatVector{1.0f, 1.0f});
   fsMetricDeformationUniforms.insertUniform("u_deformationStrength", UniformType::FloatVector, FloatVector{1.0f, 1.0f});
-  fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirX", UniformType::Vec3, sk_zeroVec3);
-  fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirY", UniformType::Vec3, sk_zeroVec3);
-  fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirX", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirY", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsMetricDeformationUniforms.insertUniform("u_worldSamplingDirZ", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
 
   Uniforms fsDiffUniforms;
   fsDiffUniforms.insertUniforms(fsIntensityProjectionUniforms);
@@ -3910,7 +3940,7 @@ void Rendering::createShaderPrograms()
   fsDiffUniforms.insertUniform("u_metricCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsDiffUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsDiffUniforms.insertUniform("u_useSquare", UniformType::Bool, true);
-  fsDiffUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
+  fsDiffUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4, sk_optionalUniform);
   Uniforms fsDiffWarpedUniforms = fsDiffUniforms;
   fsDiffWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
@@ -3923,10 +3953,10 @@ void Rendering::createShaderPrograms()
     Vec2Vector{sk_zeroVec2, sk_zeroVec2});
   fsLocalNccUniforms.insertUniform("u_metricCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsLocalNccUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsLocalNccUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
-  fsLocalNccUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3);
-  fsLocalNccUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3);
-  fsLocalNccUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  fsLocalNccUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4, sk_optionalUniform);
+  fsLocalNccUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsLocalNccUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsLocalNccUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
   fsLocalNccUniforms.insertUniform("u_patchRadius", UniformType::Int, 3);
   fsLocalNccUniforms.insertUniform("u_sampleSpacing", UniformType::Float, 1.0f);
   fsLocalNccUniforms.insertUniform("u_minValidFraction", UniformType::Float, 0.75f);
@@ -3946,10 +3976,10 @@ void Rendering::createShaderPrograms()
     Vec2Vector{sk_zeroVec2, sk_zeroVec2});
   fsLocalLinearResidualUniforms.insertUniform("u_metricCmapSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
   fsLocalLinearResidualUniforms.insertUniform("u_metricSlopeIntercept", UniformType::Vec2, sk_zeroVec2);
-  fsLocalLinearResidualUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
-  fsLocalLinearResidualUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3);
-  fsLocalLinearResidualUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3);
-  fsLocalLinearResidualUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  fsLocalLinearResidualUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4, sk_optionalUniform);
+  fsLocalLinearResidualUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsLocalLinearResidualUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsLocalLinearResidualUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
   fsLocalLinearResidualUniforms.insertUniform("u_patchRadius", UniformType::Int, 3);
   fsLocalLinearResidualUniforms.insertUniform("u_sampleSpacing", UniformType::Float, 1.0f);
   fsLocalLinearResidualUniforms.insertUniform("u_minValidFraction", UniformType::Float, 0.75f);
@@ -3965,10 +3995,10 @@ void Rendering::createShaderPrograms()
   fsOverlayUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2, sk_zeroVec2});
   fsOverlayUniforms.insertUniform("u_imgOpacity", UniformType::FloatVector, FloatVector{0.0f, 0.0f});
   fsOverlayUniforms.insertUniform("u_magentaCyan", UniformType::Bool, true);
-  fsOverlayUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4);
-  fsOverlayUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3);
-  fsOverlayUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3);
-  fsOverlayUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3);
+  fsOverlayUniforms.insertUniform("img1Tex_T_img0Tex", UniformType::Mat4, sk_identMat4, sk_optionalUniform);
+  fsOverlayUniforms.insertUniform("u_tex0SamplingDirX", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsOverlayUniforms.insertUniform("u_tex0SamplingDirY", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
+  fsOverlayUniforms.insertUniform("u_texSamplingDirZ", UniformType::Vec3, sk_zeroVec3, sk_optionalUniform);
   Uniforms fsOverlayWarpedUniforms = fsOverlayUniforms;
   fsOverlayWarpedUniforms.insertUniforms(fsMetricDeformationUniforms);
 
@@ -4585,11 +4615,8 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program)
     fsUniforms.insertUniform("u_jumpTex", UniformType::Sampler, msk_jumpTexSampler);
 
     fsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
-    fsUniforms.insertUniform("u_clip_T_world", UniformType::Mat4, sk_identMat4);
-    fsUniforms.insertUniform("u_world_T_imgTex", UniformType::Mat4, sk_identMat4);
     fsUniforms.insertUniform("u_clip_T_imgTex", UniformType::Mat4, sk_identMat4);
 
-    fsUniforms.insertUniform("u_worldEyePos", UniformType::Vec3, sk_zeroVec3);
     fsUniforms.insertUniform("u_texGrads", UniformType::Mat3, sk_identMat3);
 
     fsUniforms.insertUniform("u_numIsos", UniformType::Int, 0);

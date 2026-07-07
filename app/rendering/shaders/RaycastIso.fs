@@ -18,11 +18,8 @@ uniform usampler3D u_jumpTex; // distance texture
 // uniform usampler3D u_segTex; // segmentation
 
 uniform mat4 u_tex_T_world;
-uniform mat4 u_world_T_imgTex;
-uniform mat4 u_clip_T_world;
 uniform mat4 u_clip_T_imgTex;
 
-uniform vec3 u_worldEyePos;
 uniform mat3 u_texGrads;
 
 uniform vec3 u_imgInvDims;

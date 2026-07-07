@@ -149,6 +149,12 @@ void EntropyApp::onImagesReady()
   renderData.m_uniforms.clear();
 
   m_rendering.initTextures();
+  if (0 == m_data.numImages() || !m_data.refImage()) {
+    spdlog::warn("Texture initialization removed all renderable project images; closing the project");
+    closeProject();
+    return;
+  }
+
   m_rendering.updateImageUniforms(m_data.imageUidsOrdered());
 
   spdlog::debug("Textures and uniforms ready; rendering enabled");

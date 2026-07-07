@@ -10,8 +10,127 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include <algorithm>
+#include <sstream>
 
 using namespace tex;
+
+namespace
+{
+
+struct TextureLimits
+{
+  GLint maxTextureSize{0};        // GL_MAX_TEXTURE_SIZE: 1D and 2D max width/height
+  GLint max3DTextureSize{0};      // GL_MAX_3D_TEXTURE_SIZE: 3D max width/height/depth
+  GLint maxArrayTextureLayers{0}; // GL_MAX_ARRAY_TEXTURE_LAYERS: array texture layer count
+  GLint maxCubeMapTextureSize{0};
+};
+
+TextureLimits queryTextureLimits()
+{
+  TextureLimits limits;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &limits.maxTextureSize);
+  glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &limits.max3DTextureSize);
+  glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &limits.maxArrayTextureLayers);
+  glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &limits.maxCubeMapTextureSize);
+  return limits;
+}
+
+const char* openGLErrorMessage(GLenum error)
+{
+  switch (error) {
+    case GL_INVALID_ENUM:
+      return "Enumeration parameter not legal for function";
+    case GL_INVALID_VALUE:
+      return "Value parameter not legal for function";
+    case GL_INVALID_OPERATION:
+      return "Set of state not legal for parameters given to command";
+    case GL_OUT_OF_MEMORY:
+      return "Memory cannot be allocated for operation";
+    case GL_INVALID_FRAMEBUFFER_OPERATION:
+      return "Attempt to read from or write/render to incomplete framebuffer";
+    default:
+      return "Unknown OpenGL error";
+  }
+}
+
+void clearOpenGLErrors()
+{
+  while (GL_NO_ERROR != glGetError()) {
+  }
+}
+
+void throwIfOpenGLErrorAfterTextureUpload(
+  GLenum target,
+  GLint internalFormat,
+  const glm::ivec3& size,
+  GLenum format,
+  GLenum type)
+{
+  if (const GLenum error = glGetError(); GL_NO_ERROR != error) {
+    std::ostringstream ss;
+    ss << "OpenGL texture upload failed with error " << error << " (" << openGLErrorMessage(error) << ")"
+       << "; target=" << target << ", internalFormat=" << internalFormat << ", size=" << glm::to_string(size)
+       << ", format=" << format << ", type=" << type;
+    throw_debug(ss.str())
+  }
+}
+
+void throwIfTextureSizeExceedsLimits(Target target, const glm::ivec3& size)
+{
+  const TextureLimits limits = queryTextureLimits();
+  bool valid = true;
+  std::string limitName;
+  GLint limitValue = 0;
+
+  switch (target) {
+    case Target::Texture1D:
+      valid = size.x <= limits.maxTextureSize;
+      limitName = "GL_MAX_TEXTURE_SIZE";
+      limitValue = limits.maxTextureSize;
+      break;
+    case Target::Texture2D:
+    case Target::TextureRectangle:
+    case Target::Texture2DMultisample:
+      valid = size.x <= limits.maxTextureSize && size.y <= limits.maxTextureSize;
+      limitName = "GL_MAX_TEXTURE_SIZE";
+      limitValue = limits.maxTextureSize;
+      break;
+    case Target::Texture3D:
+      valid =
+        size.x <= limits.max3DTextureSize && size.y <= limits.max3DTextureSize && size.z <= limits.max3DTextureSize;
+      limitName = "GL_MAX_3D_TEXTURE_SIZE";
+      limitValue = limits.max3DTextureSize;
+      break;
+    case Target::Texture1DArray:
+      valid = size.x <= limits.maxTextureSize && size.y <= limits.maxArrayTextureLayers;
+      limitName = "GL_MAX_TEXTURE_SIZE / GL_MAX_ARRAY_TEXTURE_LAYERS";
+      limitValue = std::min(limits.maxTextureSize, limits.maxArrayTextureLayers);
+      break;
+    case Target::Texture2DArray:
+    case Target::Texture2DMultisampleArray:
+      valid =
+        size.x <= limits.maxTextureSize && size.y <= limits.maxTextureSize && size.z <= limits.maxArrayTextureLayers;
+      limitName = "GL_MAX_TEXTURE_SIZE / GL_MAX_ARRAY_TEXTURE_LAYERS";
+      limitValue = std::min(limits.maxTextureSize, limits.maxArrayTextureLayers);
+      break;
+    case Target::TextureCubeMap:
+      valid = size.x <= limits.maxCubeMapTextureSize && size.y <= limits.maxCubeMapTextureSize;
+      limitName = "GL_MAX_CUBE_MAP_TEXTURE_SIZE";
+      limitValue = limits.maxCubeMapTextureSize;
+      break;
+    case Target::TextureBuffer:
+      return;
+  }
+
+  if (!valid) {
+    std::ostringstream ss;
+    ss << "Texture size " << glm::to_string(size) << " exceeds " << limitName << " for target "
+       << underlyingType_asInt32(target) << " (limit " << limitValue << ")";
+    throw_debug(ss.str())
+  }
+}
+
+} // namespace
 
 const std::unordered_map<Target, Binding> GLTexture::s_bindingMap = {
   {Target::Texture1D, Binding::TextureBinding1D},
@@ -512,6 +631,9 @@ void GLTexture::setData(
   const GLenum _type = underlyingType(type);
   const glm::ivec3 _size(m_size);
 
+  throwIfTextureSizeExceedsLimits(m_target, _size);
+  clearOpenGLErrors();
+
   Binder binder(*this);
 
   std::optional<PixelStoreSettings> oldUnpackSettings = std::nullopt;
@@ -577,6 +699,8 @@ void GLTexture::setData(
     }
   }
 
+  throwIfOpenGLErrorAfterTextureUpload(m_targetEnum, _internalFormat, _size, _format, _type);
+
   if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
         Target::Texture2DMultisampleArray == m_target))
   {
@@ -589,7 +713,7 @@ void GLTexture::setData(
     applyPixelUnpackSettings(*oldUnpackSettings);
   }
 
-  CHECK_GL_ERROR(m_errorChecker);
+  m_errorChecker(__FILE__, __FUNCTION__, __LINE__);
 }
 
 void GLTexture::setSubData(
@@ -677,7 +801,7 @@ void GLTexture::setSubData(
     applyPixelUnpackSettings(*oldUnpackSettings);
   }
 
-  CHECK_GL_ERROR(m_errorChecker);
+  m_errorChecker(__FILE__, __FUNCTION__, __LINE__);
 }
 
 void GLTexture::setCubeMapFaceData(
@@ -721,7 +845,7 @@ void GLTexture::setCubeMapFaceData(
     applyPixelUnpackSettings(*oldUnpackSettings);
   }
 
-  CHECK_GL_ERROR(m_errorChecker);
+  m_errorChecker(__FILE__, __FUNCTION__, __LINE__);
 }
 
 void GLTexture::readData(GLint level, const BufferPixelFormat& format, const BufferPixelDataType& type, GLvoid* data)
