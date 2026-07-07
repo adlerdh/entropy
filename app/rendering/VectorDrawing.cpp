@@ -1205,7 +1205,9 @@ void drawVectorFieldArrows(
   bool isFixedImage = true;
   for (const auto& imageUid : imageUids) {
     const Image* image = appData.image(imageUid);
-    if (!image || !image->settings().vectorArrowOverlayVisible()) {
+    const bool imageWarpApplied = image && image->settings().warpEnabled() && image->settings().warpStrength() > 0.0f &&
+                                  appData.imageToActiveInverseWarpUid(imageUid).has_value();
+    if (!image || !image->settings().vectorArrowOverlayVisible() || imageWarpApplied) {
       isFixedImage = false;
       continue;
     }

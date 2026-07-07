@@ -201,6 +201,117 @@ int compareDicomSeriesRows(
   }
 }
 
+float autoWidthForText(std::string_view text)
+{
+  return ImGui::CalcTextSize(text.data(), text.data() + text.size()).x + 2.0f * ImGui::GetStyle().CellPadding.x + 8.0f;
+}
+
+float clampColumnWidth(float width, float minWidth, float maxWidth)
+{
+  return std::clamp(width, minWidth, maxWidth);
+}
+
+float dicomSeriesColumnAutoWidth(
+  const GuiData::DicomSeriesSelectionPrompt& prompt,
+  int columnIndex,
+  std::string_view header)
+{
+  float width = autoWidthForText(header);
+  auto addText = [&](std::string_view text) {
+    width = std::max(width, autoWidthForText(text));
+  };
+
+  for (std::size_t i = 0; i < prompt.series.size(); ++i) {
+    const auto& series = prompt.series.at(i);
+    switch (columnIndex) {
+      case 0:
+        width = std::max(width, ImGui::GetFrameHeight() + 2.0f * ImGui::GetStyle().CellPadding.x + 12.0f);
+        break;
+      case 1:
+        width = std::max(width, ImGui::GetFrameHeight() + 2.0f * ImGui::GetStyle().CellPadding.x + 12.0f);
+        break;
+      case 2:
+        addText(series.displayName);
+        break;
+      case 3:
+        addText(series.metadata.modality);
+        break;
+      case 4:
+        addText(series.metadata.seriesNumber);
+        break;
+      case 5:
+        addText(std::to_string(series.files.size()));
+        break;
+      case 6:
+        addText(series.geometry.sliceOrientation);
+        break;
+      case 7:
+        addText(formatUVec3(series.geometry.dimensions));
+        break;
+      case 8:
+        addText(formatVec3(series.geometry.spacing));
+        break;
+      case 9:
+        addText(formatVec3(fieldOfViewMm(series.geometry)));
+        break;
+      case 10:
+        addText(formatVec3(series.geometry.origin));
+        break;
+      case 11:
+        addText(formatMat3(series.geometry.directions));
+        break;
+      case 12:
+        addText(series.seriesInstanceUid);
+        break;
+      case 13:
+        addText(series.metadata.studyInstanceUid);
+        break;
+      case 14:
+        addText("View...");
+        break;
+      case 15:
+        addText(joinWarnings(series.warnings));
+        break;
+      default:
+        break;
+    }
+  }
+
+  switch (columnIndex) {
+    case 0:
+      return clampColumnWidth(width, 52.0f, 72.0f);
+    case 1:
+      return clampColumnWidth(width, 92.0f, 112.0f);
+    case 2:
+      return clampColumnWidth(width, 220.0f, 620.0f);
+    case 3:
+      return clampColumnWidth(width, 72.0f, 120.0f);
+    case 4:
+      return clampColumnWidth(width, 82.0f, 120.0f);
+    case 5:
+      return clampColumnWidth(width, 64.0f, 96.0f);
+    case 6:
+      return clampColumnWidth(width, 100.0f, 160.0f);
+    case 7:
+      return clampColumnWidth(width, 116.0f, 180.0f);
+    case 8:
+    case 9:
+    case 10:
+      return clampColumnWidth(width, 140.0f, 220.0f);
+    case 11:
+      return clampColumnWidth(width, 220.0f, 420.0f);
+    case 12:
+    case 13:
+      return clampColumnWidth(width, 260.0f, 620.0f);
+    case 14:
+      return clampColumnWidth(width, 92.0f, 116.0f);
+    case 15:
+      return clampColumnWidth(width, 180.0f, 420.0f);
+    default:
+      return width;
+  }
+}
+
 std::vector<std::size_t> sortedDicomSeriesRowIndices(
   const GuiData::DicomSeriesSelectionPrompt& prompt,
   const ImGuiTableSortSpecs* sortSpecs)
@@ -510,6 +621,19 @@ void renderDicomSeriesSelectionPopup(
       for (std::size_t column = 0; column < prompt.seriesColumnVisible.size(); ++column) {
         const bool columnVisible = prompt.seriesColumnVisible.at(column) && (column != 1 || allowReferenceColumn);
         ImGui::TableSetColumnEnabled(static_cast<int>(column), columnVisible);
+      }
+
+      if (prompt.autoSizeColumnsOnNextRender) {
+        for (std::size_t column = 0; column < kSeriesColumnNames.size(); ++column) {
+          const bool columnVisible = prompt.seriesColumnVisible.at(column) && (column != 1 || allowReferenceColumn);
+          if (!columnVisible) {
+            continue;
+          }
+          ImGui::SetColumnWidth(
+            static_cast<int>(column),
+            dicomSeriesColumnAutoWidth(prompt, static_cast<int>(column), kSeriesColumnNames.at(column)));
+        }
+        prompt.autoSizeColumnsOnNextRender = false;
       }
 
       ImGui::TableHeadersRow();

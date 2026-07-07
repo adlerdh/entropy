@@ -194,6 +194,9 @@ struct GuiData
 
     int previewSliceCount = 10; //!< Number of representative slices requested for each series preview.
 
+    /// True when the DICOM series table should size columns from the newly scanned series contents.
+    bool autoSizeColumnsOnNextRender = true;
+
     /**
      * @brief Visibility state for the DICOM series table columns.
      *

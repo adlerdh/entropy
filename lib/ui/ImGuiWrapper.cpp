@@ -1429,6 +1429,24 @@ std::string componentProjectionTaskKey(const uuids::uuid& imageUid, ComponentPro
   return uuids::to_string(imageUid) + ":" + std::to_string(static_cast<int>(mode)) + ":" + std::to_string(timePoint);
 }
 
+bool imageIsOnlyNonWarpImage(const AppData& appData, const uuids::uuid& imageUid)
+{
+  const uuid_range_t warpCandidateUids = appData.warpFieldCandidateUidsOrdered();
+  std::size_t nonWarpImageCount = 0;
+  bool foundImage = false;
+  for (const uuids::uuid& candidateUid : appData.imageUidsOrdered()) {
+    const bool isOtherWarpCandidate =
+      candidateUid != imageUid && std::find(std::begin(warpCandidateUids), std::end(warpCandidateUids), candidateUid) !=
+                                    std::end(warpCandidateUids);
+    if (isOtherWarpCandidate) {
+      continue;
+    }
+    ++nonWarpImageCount;
+    foundImage = foundImage || candidateUid == imageUid;
+  }
+  return foundImage && nonWarpImageCount == 1u;
+}
+
 } // namespace
 
 ImGuiWrapper::ImGuiWrapper(GLFWwindow* window, AppData& appData, CallbackHandler& callbackHandler)
@@ -3661,7 +3679,9 @@ void ImGuiWrapper::render()
           }
           return false;
         case MainMenuAction::ToggleApplyActiveImageWarp:
-          return canUseProjectActions && hasActiveImage && activeImageUid() != m_appData.refImageUid() &&
+          return canUseProjectActions && hasActiveImage &&
+                 (activeImageUid() != m_appData.refImageUid() ||
+                  imageIsOnlyNonWarpImage(m_appData, *activeImageUid())) &&
                  m_appData.imageToActiveInverseWarpUid(*activeImageUid()).has_value();
         case MainMenuAction::ShowRegistrationSetupWindow:
           return canUseProjectActions;
@@ -4001,9 +4021,12 @@ void ImGuiWrapper::render()
 
     const auto activeImageUidForMenu = m_appData.activeImageUid();
     const auto refImageUidForMenu = m_appData.refImageUid();
+    const bool activeImageCanSelfWarp =
+      activeImageUidForMenu && imageIsOnlyNonWarpImage(m_appData, *activeImageUidForMenu);
     const bool canLoadDeformationFieldForActiveImage =
       ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning && activeImageUidForMenu &&
-      (!refImageUidForMenu || *activeImageUidForMenu != *refImageUidForMenu) && m_loadDeformationField;
+      (!refImageUidForMenu || *activeImageUidForMenu != *refImageUidForMenu || activeImageCanSelfWarp) &&
+      m_loadDeformationField;
 
     const MainMenuBarCallbacks mainMenuCallbacks{
       .openImageFiles = m_openImageFiles,
@@ -4015,7 +4038,10 @@ void ImGuiWrapper::render()
         [this](const fs::path& fileName) {
           const auto imageUid = m_appData.activeImageUid();
           const auto refImageUid = m_appData.refImageUid();
-          if (!imageUid || (refImageUid && *imageUid == *refImageUid) || !m_loadDeformationField) {
+          if (
+            !imageUid || (refImageUid && *imageUid == *refImageUid && !imageIsOnlyNonWarpImage(m_appData, *imageUid)) ||
+            !m_loadDeformationField)
+          {
             return;
           }
 
@@ -4052,7 +4078,10 @@ void ImGuiWrapper::render()
         [this](const fs::path& fileName) {
           const auto imageUid = m_appData.activeImageUid();
           const auto refImageUid = m_appData.refImageUid();
-          if (!imageUid || (refImageUid && *imageUid == *refImageUid) || !m_loadDeformationField) {
+          if (
+            !imageUid || (refImageUid && *imageUid == *refImageUid && !imageIsOnlyNonWarpImage(m_appData, *imageUid)) ||
+            !m_loadDeformationField)
+          {
             return;
           }
 

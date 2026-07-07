@@ -218,6 +218,13 @@ public:
   componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMode mode, uint32_t timePoint) const;
 
   /**
+   * @brief Get the source image UID for a cached scalar component projection.
+   * @param projectionUid Hidden projection image UID.
+   * @return Source image UID, or std::nullopt when \p projectionUid is not a projection.
+   */
+  std::optional<uuid> componentProjectionSourceImageUid(const uuid& projectionUid) const;
+
+  /**
    * @brief Get the renderable image UID for an image's current component mode.
    * @param imageUid Source image UID selected by the view/layout.
    * @return Source UID, or a cached projection UID when that projection should be rendered.
@@ -550,6 +557,7 @@ private:
   /// @todo This cache is time-point-aware but not memory-bounded. Replace it with an LRU cache when
   /// large time series make it possible to accumulate many derived frames.
   std::unordered_map<uuid, std::map<ComponentProjectionCacheKey, uuid> > m_imageToComponentProjectionImages;
+  std::unordered_map<uuid, uuid> m_componentProjectionToSourceImage; //!< Hidden projection UID to source image UID.
 
   std::unordered_map<uuid, Image> m_segs; //!< Segmentations, also stored as images
   std::vector<uuid> m_segUidsOrdered;     //!< Segmentation UIDs in order

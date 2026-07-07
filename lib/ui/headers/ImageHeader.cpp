@@ -74,6 +74,24 @@ struct WorldAabb
   glm::vec3 max{std::numeric_limits<float>::lowest()};
 };
 
+bool imageIsOnlyNonWarpImage(const AppData& appData, const uuids::uuid& imageUid)
+{
+  const uuid_range_t warpCandidateUids = appData.warpFieldCandidateUidsOrdered();
+  std::size_t nonWarpImageCount = 0;
+  bool foundImage = false;
+  for (const uuids::uuid& candidateUid : appData.imageUidsOrdered()) {
+    const bool isOtherWarpCandidate =
+      candidateUid != imageUid && std::find(std::begin(warpCandidateUids), std::end(warpCandidateUids), candidateUid) !=
+                                    std::end(warpCandidateUids);
+    if (isOtherWarpCandidate) {
+      continue;
+    }
+    ++nonWarpImageCount;
+    foundImage = foundImage || candidateUid == imageUid;
+  }
+  return foundImage && nonWarpImageCount == 1u;
+}
+
 constexpr double k_minTimePlaybackSpeed = 0.1;
 constexpr double k_minTimePlaybackFramesPerSecond = 1.0;
 constexpr double k_maxTimePlaybackFramesPerSecond = 120.0;
@@ -1195,11 +1213,12 @@ void renderImageHeader(
   ImGui::PopStyleVar();
 
   if (image_export::imageHasDicomSource(appData, imageUid)) {
+    static const std::string exportDicomButtonText = std::string(ICON_FK_FLOPPY_O) + " Export DICOM Series as Image...";
     const bool canExportImage = image->hasPixelData();
     if (!canExportImage) {
       ImGui::BeginDisabled();
     }
-    if (ImGui::Button("Export DICOM Series as Image...")) {
+    if (ImGui::Button(exportDicomButtonText.c_str())) {
       image_export::exportDicomImage(appData, imageUid);
     }
     if (!canExportImage) {
@@ -2663,7 +2682,8 @@ void renderImageHeader(
   renderImageDicomMetadata(appData, imageUid);
 
   auto renderDeformableTransformationsHeader = [&]() {
-    if (isRef || !ImGui::TreeNode("Deformable Transformations")) {
+    const bool allowReferenceSelfWarp = isRef && imageIsOnlyNonWarpImage(appData, imageUid);
+    if ((isRef && !allowReferenceSelfWarp) || !ImGui::TreeNode("Deformable Transformations")) {
       return;
     }
 
@@ -2764,7 +2784,7 @@ void renderImageHeader(
     helpMarker(
       hasBothWarpDirections ? "Apply the inverse warp to image and segmentation rendering, and apply the forward warp "
                               "to landmarks and annotations."
-                            : "Warp this moving image at render time using the active inverse warp.");
+                            : "Warp this image at render time using the active inverse warp.");
     ImGui::EndDisabled();
 
     auto [inverseWarpNames, activeInverseWarpIndex] = warpFieldNamesAndIndex(activeInverseWarpUid);
@@ -2791,7 +2811,7 @@ void renderImageHeader(
     }
     ImGui::EndDisabled();
     ImGui::SameLine();
-    helpMarker("Inverse warp is sampled in reference/fixed space and gives the moving-image sampling offset.");
+    helpMarker("Inverse warp is sampled in reference/fixed space and gives the image sampling offset.");
 
     if (activeInverseWarpUid && referenceImage) {
       if (const Image* def = appData.warpField(*activeInverseWarpUid)) {
@@ -2881,7 +2901,7 @@ void renderImageHeader(
     ImGui::EndDisabled();
 
     disabledWrappedText(
-      "The inverse warp is sampled in reference space and gives the moving-image sampling offset. "
+      "The inverse warp is sampled in reference space and gives the image sampling offset. "
       "A moving-grid forward warp can map moving landmarks and annotations into reference space for display.");
 
     if (!loadedWarpFieldUids.empty() && ImGui::TreeNodeEx("Warp inversion", ImGuiTreeNodeFlags_DefaultOpen)) {

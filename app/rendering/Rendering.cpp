@@ -301,26 +301,34 @@ const View* activeThreeDFrustumSource(const AppData& appData)
   return nullptr;
 }
 
-void drawEmptyThreeDViewHint(NVGcontext* nvg, const FrameBounds& miewportViewBounds)
+void drawEmptyThreeDViewHint(NVGcontext* nvg, const FrameBounds& viewportViewBounds)
 {
   static const NVGcolor s_textColor(nvgRGBA(185, 185, 185, 215));
   static const NVGcolor s_shadowColor(nvgRGBA(20, 20, 20, 180));
-  static const char* sk_hint = "Create an isosurface to show in this 3D view";
+  static const char* sk_hint = "Create an isosurface for the image to be rendered in this view";
 
-  const float x = miewportViewBounds.bounds.xoffset + 0.5f * miewportViewBounds.bounds.width;
-  const float y = miewportViewBounds.bounds.yoffset + 0.5f * miewportViewBounds.bounds.height;
+  const float horizontalMargin = std::min(28.0f, std::max(8.0f, 0.08f * viewportViewBounds.bounds.width));
+  const float textBoxWidth = std::max(40.0f, viewportViewBounds.bounds.width - 2.0f * horizontalMargin);
+  const float x = viewportViewBounds.bounds.xoffset + horizontalMargin;
+  const float centerY = viewportViewBounds.bounds.yoffset + 0.5f * viewportViewBounds.bounds.height;
 
   nvgFontSize(nvg, 16.0f);
   nvgFontFace(nvg, "robotoLight");
-  nvgTextAlign(nvg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+  nvgTextAlign(nvg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+  nvgTextLineHeight(nvg, 1.25f);
+
+  float bounds[4]{};
+  nvgTextBoxBounds(nvg, x, centerY, textBoxWidth, sk_hint, nullptr, bounds);
+  const float textHeight = bounds[3] - bounds[1];
+  const float y = centerY - 0.5f * textHeight;
 
   nvgFontBlur(nvg, 2.0f);
   nvgFillColor(nvg, s_shadowColor);
-  nvgText(nvg, x, y, sk_hint, nullptr);
+  nvgTextBox(nvg, x, y, textBoxWidth, sk_hint, nullptr);
 
   nvgFontBlur(nvg, 0.0f);
   nvgFillColor(nvg, s_textColor);
-  nvgText(nvg, x, y, sk_hint, nullptr);
+  nvgTextBox(nvg, x, y, textBoxWidth, sk_hint, nullptr);
 }
 
 void updateSegmentationUniformsForImage(
@@ -619,6 +627,12 @@ std::unique_ptr<DepthPeelRenderer> createDdpRenderer(
   return renderer;
 }
 #endif
+
+uuid deformationSettingsOwnerImageUid(const AppData& appData, const uuid& imageUid)
+{
+  return appData.componentProjectionSourceImageUid(imageUid).value_or(imageUid);
+}
+
 } // namespace
 
 Rendering::Rendering(AppData& appData)
@@ -2037,12 +2051,13 @@ bool Rendering::ensureDeformationTexture(const uuid& defUid)
 
 std::optional<uuid> Rendering::activeRenderableDeformationUid(const uuid& imageUid)
 {
-  const Image* image = m_appData.image(imageUid);
+  const uuid ownerUid = deformationSettingsOwnerImageUid(m_appData, imageUid);
+  const Image* image = m_appData.image(ownerUid);
   if (!image || !image->settings().warpEnabled() || image->settings().warpStrength() <= 0.0f) {
     return std::nullopt;
   }
 
-  const auto defUid = m_appData.imageToActiveInverseWarpUid(imageUid);
+  const auto defUid = m_appData.imageToActiveInverseWarpUid(ownerUid);
   if (!defUid || !m_appData.warpField(*defUid)) {
     return std::nullopt;
   }
@@ -2060,7 +2075,8 @@ void Rendering::setDeformationUniforms(
   const uuid& defUid,
   const glm::mat4& sampleTex_T_world) const
 {
-  const Image* image = m_appData.image(imageUid);
+  const uuid ownerUid = deformationSettingsOwnerImageUid(m_appData, imageUid);
+  const Image* image = m_appData.image(ownerUid);
   const Image* def = m_appData.warpField(defUid);
   if (!image || !def) {
     return;
@@ -2084,7 +2100,8 @@ void Rendering::setMetricDeformationUniforms(
   const uuid& defUid,
   const glm::mat4& sampleTex_T_world) const
 {
-  const Image* image = m_appData.image(imageUid);
+  const uuid ownerUid = deformationSettingsOwnerImageUid(m_appData, imageUid);
+  const Image* image = m_appData.image(ownerUid);
   const Image* def = m_appData.warpField(defUid);
   if (!image || !def || slot >= 2u) {
     return;
@@ -2331,7 +2348,7 @@ void Rendering::renderVectorWarpedGridOverlaysForView(
     const Image* image = m_appData.image(imageUid);
     if (
       !image || image->header().numComponentsPerPixel() != 3u || !image->settings().globalVisibility() ||
-      !image->settings().vectorWarpedGridVisible())
+      !image->settings().vectorWarpedGridVisible() || activeRenderableDeformationUid(imageUid).has_value())
     {
       isFixedImage = false;
       continue;

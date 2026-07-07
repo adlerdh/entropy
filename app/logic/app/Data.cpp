@@ -58,6 +58,7 @@ AppData::AppData()
   , m_imageUidsOrdered()
   , m_componentProjectionImages()
   , m_imageToComponentProjectionImages()
+  , m_componentProjectionToSourceImage()
   , m_segs()
   , m_segUidsOrdered()
   , m_defs()
@@ -123,6 +124,7 @@ void AppData::clearProjectData()
   m_imageUidsOrdered.clear();
   m_componentProjectionImages.clear();
   m_imageToComponentProjectionImages.clear();
+  m_componentProjectionToSourceImage.clear();
   m_segs.clear();
   m_segUidsOrdered.clear();
   m_defs.clear();
@@ -498,6 +500,7 @@ bool AppData::replaceImage(const uuid& imageUid, Image image)
     for (const auto& [mode, projectionUid] : projectionsIt->second) {
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
+      m_componentProjectionToSourceImage.erase(projectionUid);
       m_renderData.m_imageTextures.erase(projectionUid);
       m_renderData.m_imageTextureLayouts.erase(projectionUid);
       m_renderData.m_uniforms.erase(projectionUid);
@@ -721,6 +724,7 @@ bool AppData::removeImage(const uuid& imageUid)
     for (const auto& [mode, projectionUid] : projectionsIt->second) {
       (void)mode;
       m_componentProjectionImages.erase(projectionUid);
+      m_componentProjectionToSourceImage.erase(projectionUid);
       m_renderData.m_imageTextures.erase(projectionUid);
       m_renderData.m_imageTextureLayouts.erase(projectionUid);
       m_renderData.m_uniforms.erase(projectionUid);
@@ -1012,12 +1016,14 @@ std::optional<uuid> AppData::setComponentProjectionImage(
   const ComponentProjectionCacheKey key{mode, timePoint};
   if (const auto projectionIt = projections.find(key); projectionIt != projections.end()) {
     m_componentProjectionImages.insert_or_assign(projectionIt->second, std::move(image));
+    m_componentProjectionToSourceImage[projectionIt->second] = imageUid;
     return projectionIt->second;
   }
 
   const uuid projectionUid = generateRandomUuid();
   projections.emplace(key, projectionUid);
   m_componentProjectionImages.emplace(projectionUid, std::move(image));
+  m_componentProjectionToSourceImage[projectionUid] = imageUid;
   return projectionUid;
 }
 
@@ -1035,6 +1041,20 @@ AppData::componentProjectionImageUid(const uuid& imageUid, ComponentProjectionMo
   }
 
   if (m_componentProjectionImages.end() == m_componentProjectionImages.find(projectionIt->second)) {
+    return std::nullopt;
+  }
+
+  return projectionIt->second;
+}
+
+std::optional<uuid> AppData::componentProjectionSourceImageUid(const uuid& projectionUid) const
+{
+  const auto projectionIt = m_componentProjectionToSourceImage.find(projectionUid);
+  if (m_componentProjectionToSourceImage.end() == projectionIt) {
+    return std::nullopt;
+  }
+
+  if (m_images.end() == m_images.find(projectionIt->second)) {
     return std::nullopt;
   }
 
