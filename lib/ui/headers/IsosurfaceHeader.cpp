@@ -575,7 +575,11 @@ void renderIsosurfacesHeader(
   {
     ImGui::SetNextItemOpen(true, ImGuiCond_Always);
   }
-  const bool open = ImGui::CollapsingHeader(headerName.c_str(), headerFlags);
+  const bool open = entropy::ui::headers::activeImageCollapsingHeader(
+    appData.guiData(),
+    isActiveImage,
+    headerName.c_str(),
+    headerFlags);
   if (requestedHeader) {
     appData.guiData().m_requestedIsosurfacesImageUid = std::nullopt;
   }

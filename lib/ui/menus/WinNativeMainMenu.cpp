@@ -444,12 +444,6 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     !insertActionMenuItem(
       affineMenu,
       affinePosition++,
-      MainMenuAction::ToggleActiveImageTransformationLock,
-      L"&Lock Manual Affine Transformation") ||
-    !insertSeparator(affineMenu, affinePosition++) ||
-    !insertActionMenuItem(
-      affineMenu,
-      affinePosition++,
       MainMenuAction::LoadActiveImageInitialTransformation,
       L"&Load Initial Affine...") ||
     !insertActionMenuItem(
@@ -567,14 +561,19 @@ bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
     insertSeparator(menu, position++) && insertSubmenu(menu, position++, activeImagesMenu, L"&Active Image") &&
     insertActionMenuItem(menu, position++, MainMenuAction::RemoveActiveImage, L"&Remove Active Image") &&
     insertActionMenuItem(menu, position++, MainMenuAction::SetActiveImageAsReference, L"Set Image as &Reference") &&
+    insertActionMenuItem(
+      menu,
+      position++,
+      MainMenuAction::ToggleActiveImageTransformationLock,
+      L"&Lock Manual Affine Transformation") &&
     insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageBackward, L"Move Image &Backward") &&
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageForward, L"Move Image &Forward") &&
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToBack, L"Move Image to Bac&k") &&
     insertActionMenuItem(menu, position++, MainMenuAction::MoveActiveImageToFront, L"Move Image to Fron&t") &&
     insertSeparator(menu, position++) && insertSubmenu(menu, position++, timeSeriesMenu, L"&Time Series") &&
-    insertSeparator(menu, position++) && insertSubmenu(menu, position++, isosurfacesMenu, L"I&sosurfaces") &&
-    insertSeparator(menu, position++) && insertSubmenu(menu, position++, affineMenu, L"&Affine Transformations") &&
+    insertSubmenu(menu, position++, isosurfacesMenu, L"I&sosurfaces") && insertSeparator(menu, position++) &&
+    insertSubmenu(menu, position++, affineMenu, L"&Affine Transformations") &&
     insertSubmenu(menu, position++, deformationMenu, L"&Deformable Transformations") &&
     insertSubmenu(menu, position++, registrationMenu, L"&Image Registration");
 

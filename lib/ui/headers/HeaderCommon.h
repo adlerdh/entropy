@@ -5,6 +5,8 @@
 #include <glm/gtx/color_space.hpp>
 #include <imgui/imgui.h>
 
+#include "ui/GuiData.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <string>
@@ -15,6 +17,27 @@ namespace entropy::ui::headers
 
 inline const ImVec4 whiteText(1, 1, 1, 1);
 inline const ImVec4 blackText(0, 0, 0, 1);
+inline constexpr const char* activeImageHeaderBoldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
+
+inline ImFont* activeImageHeaderBoldFont(const GuiData& guiData)
+{
+  const auto fontIt = guiData.m_fonts.find(activeImageHeaderBoldFontPath);
+  return fontIt != std::end(guiData.m_fonts) ? fontIt->second : nullptr;
+}
+
+inline bool
+activeImageCollapsingHeader(const GuiData& guiData, bool isActiveImage, const char* label, ImGuiTreeNodeFlags flags = 0)
+{
+  ImFont* boldFont = isActiveImage ? activeImageHeaderBoldFont(guiData) : nullptr;
+  if (boldFont) {
+    ImGui::PushFont(boldFont);
+  }
+  const bool open = ImGui::CollapsingHeader(label, flags);
+  if (boldFont) {
+    ImGui::PopFont();
+  }
+  return open;
+}
 
 inline ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
 {

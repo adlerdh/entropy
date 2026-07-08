@@ -147,9 +147,12 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.limitFrameRate = true;
   preferences.targetFrameTimeSeconds = 0.25;
   preferences.raycastSamplingFactor = 1.75f;
+  preferences.adaptiveRaycastSamplingEnabled = true;
+  preferences.adaptiveRaycastTargetFrameRate = 45.0f;
   preferences.transparentBackgroundWhenNoHit = false;
   preferences.renderFrontFaces = false;
   preferences.renderBackFaces = true;
+  preferences.reversePovRotation = true;
   preferences.segmentationMasking = user_preferences::RenderPreferences::SegMaskingForRaycasting::SegMasksOut;
   preferences.asciiEnabled = true;
   preferences.asciiCellSizePx = {10.0f, 20.0f};
@@ -310,9 +313,12 @@ void requireRenderPreferencesEqual(
   CHECK(actual.limitFrameRate == expected.limitFrameRate);
   CHECK(actual.targetFrameTimeSeconds == Catch::Approx(expected.targetFrameTimeSeconds));
   CHECK(actual.raycastSamplingFactor == Catch::Approx(expected.raycastSamplingFactor));
+  CHECK(actual.adaptiveRaycastSamplingEnabled == expected.adaptiveRaycastSamplingEnabled);
+  CHECK(actual.adaptiveRaycastTargetFrameRate == Catch::Approx(expected.adaptiveRaycastTargetFrameRate));
   CHECK(actual.transparentBackgroundWhenNoHit == expected.transparentBackgroundWhenNoHit);
   CHECK(actual.renderFrontFaces == expected.renderFrontFaces);
   CHECK(actual.renderBackFaces == expected.renderBackFaces);
+  CHECK(actual.reversePovRotation == expected.reversePovRotation);
   CHECK(actual.segmentationMasking == expected.segmentationMasking);
   CHECK(actual.asciiEnabled == expected.asciiEnabled);
   CHECK(actual.asciiCellSizePx == expected.asciiCellSizePx);
@@ -376,6 +382,8 @@ void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPr
   renderPreferences.xrayWindow = defaults.xrayWindow;
   renderPreferences.xrayLevel = defaults.xrayLevel;
   renderPreferences.raycastSamplingFactor = defaults.raycastSamplingFactor;
+  renderPreferences.adaptiveRaycastSamplingEnabled = defaults.adaptiveRaycastSamplingEnabled;
+  renderPreferences.adaptiveRaycastTargetFrameRate = defaults.adaptiveRaycastTargetFrameRate;
   renderPreferences.transparentBackgroundWhenNoHit = defaults.transparentBackgroundWhenNoHit;
   renderPreferences.renderFrontFaces = defaults.renderFrontFaces;
   renderPreferences.renderBackFaces = defaults.renderBackFaces;
@@ -484,21 +492,31 @@ TEST_CASE("application render preferences ignore project-owned presentation sett
 {
   user_preferences::RenderPreferences preferences;
   preferences.raycastSamplingFactor = 0.25f;
+  preferences.adaptiveRaycastSamplingEnabled = true;
+  preferences.adaptiveRaycastTargetFrameRate = 45.0f;
   preferences.showCrosshairs = false;
   preferences.showCrosshairsInLightboxViews = false;
   preferences.showImageBorders = false;
   preferences.asciiEnabled = true;
+  preferences.reversePovRotation = true;
 
   const user_preferences::RenderPreferences appPreferences =
     user_preferences::applicationRenderPreferences(preferences);
 
   CHECK(appPreferences.raycastSamplingFactor == user_preferences::RenderPreferences{}.raycastSamplingFactor);
+  CHECK(
+    appPreferences.adaptiveRaycastSamplingEnabled ==
+    user_preferences::RenderPreferences{}.adaptiveRaycastSamplingEnabled);
+  CHECK(
+    appPreferences.adaptiveRaycastTargetFrameRate ==
+    Catch::Approx(user_preferences::RenderPreferences{}.adaptiveRaycastTargetFrameRate));
   CHECK(appPreferences.showCrosshairs == user_preferences::RenderPreferences{}.showCrosshairs);
   CHECK(
     appPreferences.showCrosshairsInLightboxViews ==
     user_preferences::RenderPreferences{}.showCrosshairsInLightboxViews);
   CHECK(appPreferences.showImageBorders == user_preferences::RenderPreferences{}.showImageBorders);
   CHECK(appPreferences.asciiEnabled == true);
+  CHECK(appPreferences.reversePovRotation == true);
 }
 
 TEST_CASE("user preferences reject invalid JSON without mutating existing values", "[app][settings]")

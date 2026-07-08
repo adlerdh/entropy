@@ -12,6 +12,8 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+
 namespace
 {
 using uuid = uuids::uuid;
@@ -53,6 +55,30 @@ glm::vec2 warpedAnnotationVertexMiewport(
     hit.view->windowClip_T_viewClip(),
     displayWorldPos3);
 }
+
+bool activeImageIsDrawableInView(const View& view, const uuids::uuid& imageUid, const Image& image)
+{
+  const auto& visibleImages = view.visibleImages();
+  if (std::find(std::begin(visibleImages), std::end(visibleImages), imageUid) == std::end(visibleImages)) {
+    return false;
+  }
+
+  const auto& settings = image.settings();
+  if (!settings.globalVisibility() || settings.globalOpacity() <= 0.0) {
+    return false;
+  }
+
+  if (settings.displayImageAsColor()) {
+    for (uint32_t component = 0; component < settings.numComponents(); ++component) {
+      if (settings.visibility(component) && settings.opacity(component) > 0.0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  return settings.visibility() && settings.opacity() > 0.0;
+}
 } // namespace
 
 namespace state::annot
@@ -82,6 +108,22 @@ bool AnnotationStateMachine::checkAppData()
   return true;
 }
 
+bool AnnotationStateMachine::activeImageVisibleInSelectedView()
+{
+  if (!checkAppData() || !ms_selectedViewUid) {
+    return false;
+  }
+
+  const auto activeImageUid = ms_appData->activeImageUid();
+  if (!activeImageUid) {
+    return false;
+  }
+
+  const View* selectedView = ms_appData->windowData().getView(*ms_selectedViewUid);
+  const Image* activeImage = ms_appData->image(*activeImageUid);
+  return selectedView && activeImage && activeImageIsDrawableInView(*selectedView, *activeImageUid, *activeImage);
+}
+
 Image* AnnotationStateMachine::checkActiveImage(const ViewHit& hit)
 {
   if (!checkAppData()) {
@@ -100,8 +142,12 @@ Image* AnnotationStateMachine::checkActiveImage(const ViewHit& hit)
     return nullptr;
   }
 
-  if (!std::count(std::begin(hit.view->visibleImages()), std::end(hit.view->visibleImages()), *activeImageUid)) {
-    // The active image is not visible in the view hit by the mouse
+  if (!hit.view || !activeImageIsDrawableInView(*hit.view, *activeImageUid, *activeImage)) {
+    static std::size_t logCount = 0;
+    if (logCount < 3) {
+      ++logCount;
+      spdlog::info("Cannot create annotation because the active image is not visible in the selected view");
+    }
     return nullptr;
   }
 

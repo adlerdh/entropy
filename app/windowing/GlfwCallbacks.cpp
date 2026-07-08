@@ -420,12 +420,8 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       switch (startView->viewType()) {
         case ViewType::Oblique: {
           if (s_mouseButtonState.left) {
-            H.doCameraRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride, ViewCenter);
-          }
-          else if (s_mouseButtonState.right) {
-            // Depending on which mouse button key modifier is held, a different axis constraint is
+            // Depending on which key modifier is held, a different axis constraint is
             // applied to the 3D camera rotation.
-
             if (s_modifierState.shift) {
               H.doCameraRotate3d(*s_startHit, *s_prevHit, *currHit_withOverride, Crosshairs, X);
             }
@@ -438,6 +434,9 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
             else {
               H.doCameraRotate3d(*s_startHit, *s_prevHit, *currHit_withOverride, Crosshairs, AxisConstraint::None);
             }
+          }
+          else if (s_mouseButtonState.right) {
+            H.doCameraRotate2d(*s_startHit, *s_prevHit, *currHit_withOverride, ViewCenter);
           }
           break;
         }

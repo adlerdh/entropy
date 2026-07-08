@@ -79,6 +79,9 @@ public:
     return ms_growingAnnotUid;
   }
 
+  ///  Return true when the active image can be seen in the selected annotation view.
+  static bool activeImageVisibleInSelectedView();
+
 protected:
   /// Default action when entering a state
   virtual void entry() {}

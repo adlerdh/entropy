@@ -282,10 +282,14 @@ struct RenderData
   bool m_renderBackFaces;  // Flag to render back faces in 3D raycasting
 
   float m_raycastSamplingFactor; // Sampling factor for raycasting
+  bool m_adaptiveRaycastSamplingEnabled;
+  float m_adaptiveRaycastTargetFrameRate;
+  float m_adaptiveRaycastEffectiveSamplingFactor;
   bool m_raycastBackgroundEdgeBrighteningEnabled;
   bool m_showCrosshairsIn3D;
   float m_crosshairs3DGlyphDiameterVoxelDiagonals;
   bool m_showThreeDCameraFrustumIn2DViews;
+  bool m_reverseThreeDRotateAboutEye;
   glm::vec4 m_threeDCameraFrustumColor;
   std::optional<uuids::uuid> m_lastInteractedThreeDViewUid;
 

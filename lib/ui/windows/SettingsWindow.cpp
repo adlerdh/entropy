@@ -604,7 +604,6 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   bool showImageBorders = renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
   if (ImGui::Checkbox("Show image borders", &showImageBorders)) {
     renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections = showImageBorders;
-    renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews = showImageBorders;
   }
   ImGui::SameLine();
   helpMarker("Show borders of image intersections with views");
@@ -2076,6 +2075,34 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Sampling rate as a fraction of the voxel size along the ray path");
 
+  if (
+    ImGui::Checkbox("Adaptive raycast sampling", &renderData.m_adaptiveRaycastSamplingEnabled) &&
+    renderData.m_adaptiveRaycastSamplingEnabled)
+  {
+    renderData.m_adaptiveRaycastTargetFrameRate =
+      renderData.m_manualFramerateLimiter
+        ? static_cast<float>(std::clamp(1.0 / renderData.m_targetFrameTimeSeconds, 5.0, 120.0))
+        : 30.0f;
+    renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(renderData.m_raycastSamplingFactor, 0.5f, 2.0f);
+  }
+  ImGui::SameLine();
+  helpMarker("Automatically adjust the raycast sampling rate to approach a target frame rate");
+
+  if (renderData.m_adaptiveRaycastSamplingEnabled) {
+    ImGui::DragFloat(
+      "Adaptive target frame rate",
+      &renderData.m_adaptiveRaycastTargetFrameRate,
+      1.0f,
+      5.0f,
+      120.0f,
+      "%0.0f Hz",
+      ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SameLine();
+    helpMarker("Target frame rate for adaptive raycast sampling; sampling is bounded to 0.5-2.0 voxels");
+
+    ImGui::Text("Effective sampling rate: %0.2f vox", renderData.m_adaptiveRaycastEffectiveSamplingFactor);
+  }
+
   ImGui::ColorEdit4("Raycast background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
   ImGui::SameLine();
   helpMarker("Color used for raycast pixels that do not hit visible image content");
@@ -2095,10 +2122,13 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Render back faces in raycasting");
 
-  ImGui::Spacing();
   ImGui::Checkbox("Show image box", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);
   ImGui::SameLine();
   helpMarker("Render a subtle outline of the raycast image box in 3D views");
+
+  ImGui::Checkbox("Reverse POV camera rotation", &renderData.m_reverseThreeDRotateAboutEye);
+  ImGui::SameLine();
+  helpMarker("Reverse drag direction for POV 3D rotation about the current eye position");
 
   ImGui::Spacing();
   ImGui::Checkbox("Show crosshairs glyph in 3D", &renderData.m_showCrosshairsIn3D);
@@ -2125,7 +2155,7 @@ void renderRaycastingTab(RenderData& renderData)
 
   if (renderData.m_showThreeDCameraFrustumIn2DViews) {
     ImGui::ColorEdit4(
-      "3D camera frustum color",
+      "Camera frustum line color",
       glm::value_ptr(renderData.m_threeDCameraFrustumColor),
       k_colorAlphaEditFlags);
     ImGui::SameLine();

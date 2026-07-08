@@ -1494,7 +1494,12 @@ void CallbackHandler::doThreeDCameraRotateAboutEye(
   if (!prepareThreeDView(m_appData, view)) {
     return;
   }
-  camera3d::rotateAboutEye(view->threeDCamera(), view->threeDState(), prevHit.viewClipPos, currHit.viewClipPos);
+  const bool reverseRotation = m_appData.renderData().m_reverseThreeDRotateAboutEye;
+  camera3d::rotateAboutEye(
+    view->threeDCamera(),
+    view->threeDState(),
+    reverseRotation ? currHit.viewClipPos : prevHit.viewClipPos,
+    reverseRotation ? prevHit.viewClipPos : currHit.viewClipPos);
 }
 
 void CallbackHandler::doThreeDCameraRoll(const ViewHit& startHit, const ViewHit& prevHit, const ViewHit& currHit)

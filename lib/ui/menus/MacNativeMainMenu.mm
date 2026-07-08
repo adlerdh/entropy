@@ -357,6 +357,11 @@ void addImageMenu(NSMenu* mainMenu) {
   [menu addItem:activeImageItem];
   addSymbolActionMenuItem(menu, @"Remove Active Image", MainMenuAction::RemoveActiveImage, @"xmark");
   addSymbolActionMenuItem(menu, @"Set Image as Reference", MainMenuAction::SetActiveImageAsReference, @"scope");
+  addSymbolActionMenuItem(
+    menu,
+    @"Lock Manual Affine Transformation",
+    MainMenuAction::ToggleActiveImageTransformationLock,
+    @"lock");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Move Image Backward", MainMenuAction::MoveActiveImageBackward, @"backward");
   addSymbolActionMenuItem(menu, @"Move Image Forward", MainMenuAction::MoveActiveImageForward, @"forward");
@@ -388,7 +393,6 @@ void addImageMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(timeSeriesMenu, @"Last Frame", MainMenuAction::LastTimePoint, @"forward.end");
   [timeSeriesItem setSubmenu:timeSeriesMenu];
   [menu addItem:timeSeriesItem];
-  [menu addItem:[NSMenuItem separatorItem]];
   NSMenuItem* isosurfacesItem = [[NSMenuItem alloc] initWithTitle:@"Isosurfaces" action:nil keyEquivalent:@""];
   setMenuItemSymbol(isosurfacesItem, @"cube.transparent");
   NSMenu* isosurfacesMenu = [[NSMenu alloc] initWithTitle:@"Isosurfaces"];
@@ -411,12 +415,6 @@ void addImageMenu(NSMenu* mainMenu) {
   NSMenuItem* affineItem = [[NSMenuItem alloc] initWithTitle:@"Affine Transformations" action:nil keyEquivalent:@""];
   setMenuItemSymbol(affineItem, @"arrow.up.left.and.arrow.down.right");
   NSMenu* affineMenu = [[NSMenu alloc] initWithTitle:@"Affine Transformations"];
-  addSymbolActionMenuItem(
-    affineMenu,
-    @"Lock Manual Affine Transformation",
-    MainMenuAction::ToggleActiveImageTransformationLock,
-    @"lock");
-  [affineMenu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(
     affineMenu,
     @"Load Initial Affine...",

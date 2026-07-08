@@ -66,6 +66,7 @@ void drawRaycastQuad(
   GLShaderProgram& program,
   RenderData::Quad& quad,
   const View& view,
+  const glm::mat4& texture_T_world,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid> > >& I,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage);
 

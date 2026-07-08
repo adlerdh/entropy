@@ -18,6 +18,7 @@ uniform usampler3D u_jumpTex; // distance texture
 // uniform usampler3D u_segTex; // segmentation
 
 uniform mat4 u_tex_T_world;
+uniform mat4 u_world_T_tex;
 uniform mat4 u_clip_T_imgTex;
 
 uniform mat3 u_texGrads;
@@ -82,11 +83,18 @@ float when_ge(float x, float y)
   return 1.0 - when_lt(x, y);
 }
 
+bool isInsideTexture(vec3 texCoord)
+{
+  return all(greaterThanEqual(texCoord, MIN_IMAGE_TEXCOORD)) && all(lessThanEqual(texCoord, MAX_IMAGE_TEXCOORD));
+}
+
 float getImageValue(sampler3D tex, vec3 texCoord)
 {
   return texture(tex, texCoord)[0];
 }
-
+$$SAMPLE_TEX_COORD_FUNCTION$$
+$$SAMPLE_IMAGE_VALUE_FUNCTION$$
+$$RAYCAST_JUMP_DISTANCE_FUNCTION$$
 const float EDGE_BRIGHTENING_DISTANCE_VOX = 1.0;
 const float EDGE_BACKGROUND_BRIGHTENING = 0.65;
 const float EDGE_OVERLAY_BRIGHTENING = 0.35;
@@ -186,9 +194,9 @@ float raySphereFirstHit(vec3 rayPos, vec3 rayDir, vec3 sphereCenter, float spher
 vec3 gradient(vec3 texPos)
 {
   return normalize(vec3(
-    getImageValue(u_imgTex, texPos + u_texGrads[0]) - getImageValue(u_imgTex, texPos - u_texGrads[0]),
-    getImageValue(u_imgTex, texPos + u_texGrads[1]) - getImageValue(u_imgTex, texPos - u_texGrads[1]),
-    getImageValue(u_imgTex, texPos + u_texGrads[2]) - getImageValue(u_imgTex, texPos - u_texGrads[2])));
+    sampleImageValue(texPos + u_texGrads[0]) - sampleImageValue(texPos - u_texGrads[0]),
+    sampleImageValue(texPos + u_texGrads[1]) - sampleImageValue(texPos - u_texGrads[1]),
+    sampleImageValue(texPos + u_texGrads[2]) - sampleImageValue(texPos - u_texGrads[2])));
 }
 
 vec3 bisect(vec3 pos, vec3 dir, float t0, float t1, float sgn, float iso)
@@ -197,7 +205,7 @@ vec3 bisect(vec3 pos, vec3 dir, float t0, float t1, float sgn, float iso)
   vec3 c = pos + t * dir;
 
   for (int i = 0; i < NUM_BISECTIONS; ++i) {
-    float test = sgn * (getImageValue(u_imgTex, c) - iso);
+    float test = sgn * (sampleImageValue(c) - iso);
     t1 += (t - t1) * when_ge(test, 0.0); // if (test >= 0.0) { t1 = t; }
     t0 += (t - t0) * when_lt(test, 0.0); // else { t0 = t; }
     t = 0.5 * (t0 + t1);
@@ -284,7 +292,7 @@ void main()
   int firstHit = 1;
 
   // Save old value and position
-  float oldValue = getImageValue(u_imgTex, texPos);
+  float oldValue = sampleImageValue(texPos);
   vec3 oldTexPos = texPos;
   float oldT = tMin;
 
@@ -296,14 +304,14 @@ void main()
       t += jump;
       oldTexPos = texPos;
       texPos = texStartPos + t * texRayDir;
-      jump = 0.98 * texel_T_mm * float(texture(u_jumpTex, texPos).r); // 2% safety factor
+      jump = 0.98 * texel_T_mm * raycastJumpDistance(texPos); // 2% safety factor
       ++numJumps;
     } while (jump > texStep && t <= tMax && numJumps <= MAX_JUMPS);
 
     //    FragColor = vec4(vec3(float(numJumps)/10.0), 1.0);
     //    return;
 
-    float value = getImageValue(u_imgTex, texPos);
+    float value = sampleImageValue(texPos);
 
     for (int i = 0; i < u_numIsos; ++i) {
       bool frontHit = u_renderFrontFaces && value >= u_isoValues[i] && oldValue < u_isoValues[i];
@@ -353,14 +361,23 @@ void main()
     vec3 crosshairsTexHitPos = vec3(u_tex_T_world * vec4(crosshairsWorldHitPos, 1.0));
     float crosshairsTexT = dot(crosshairsTexHitPos - texStartPos, texRayDir);
 
-    if (crosshairsWorldT >= 0.0 && crosshairsTexT >= tMin && crosshairsTexT <= tMax && crosshairsTexT <= firstHitT) {
+    if (crosshairsWorldT >= 0.0 && crosshairsTexT >= tMin && crosshairsTexT <= tMax) {
       vec3 sphereNormal = normalize(crosshairsWorldHitPos - u_crosshairsWorldPos);
       float diffuse = clamp(dot(sphereNormal, -worldRayDir), 0.0, 1.0);
       float specular = pow(diffuse, 24.0);
       vec3 glyphRgb = min(u_crosshairsColor.rgb * (0.35 + 0.65 * diffuse) + 0.18 * specular, vec3(1.0));
-      vec4 glyphColor = vec4(glyphRgb * u_crosshairsColor.a, u_crosshairsColor.a);
-      color = glyphColor + (1.0 - glyphColor.a) * color;
-      texFirstHitPos = crosshairsTexHitPos;
+
+      if (crosshairsTexT <= firstHitT) {
+        vec4 glyphColor = vec4(glyphRgb * u_crosshairsColor.a, u_crosshairsColor.a);
+        color = glyphColor + (1.0 - glyphColor.a) * color;
+        texFirstHitPos = crosshairsTexHitPos;
+      }
+      else {
+        float rim = pow(1.0 - diffuse, 2.0);
+        float occludedAlpha = u_crosshairsColor.a * mix(0.36, 0.52, rim);
+        vec4 occludedGlyphColor = vec4(glyphRgb * occludedAlpha, occludedAlpha);
+        color = occludedGlyphColor + (1.0 - occludedGlyphColor.a) * color;
+      }
     }
   }
 

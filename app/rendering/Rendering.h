@@ -128,7 +128,7 @@ private:
   void setupOpenGLState();
 
   void createShaderPrograms();
-  bool createRaycastIsoProgram(GLShaderProgram& program);
+  bool createRaycastIsoProgram(GLShaderProgram& program, bool warped);
 
   /**
    * @brief Render data associated with images: image slices, segmentations, annotations, and
@@ -190,7 +190,11 @@ private:
 
   void renderBrushPreview(const View& view, const glm::vec3& worldOffsetXhairs, const ImgSegPair& imgSegPair);
 
-  void volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I);
+  void volumeRenderOneImage(
+    const View& view,
+    GLShaderProgram& program,
+    const glm::mat4& texture_T_world,
+    const CurrentImages& I);
 
   // Bind/unbind textures for images, segmentations, and image color maps
   std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& P);
@@ -231,6 +235,11 @@ private:
   // Get current image and segmentation UIDs to render in the image shaders
   CurrentImages getImageAndSegUidsForImageShaders(const std::list<uuids::uuid>& imageUids) const;
 
+  float raycastSamplingFactorForCurrentFrame();
+  void updateAdaptiveRaycastSampling();
+  bool beginRaycastTiming();
+  void endRaycastTiming(bool timingActive);
+
   AppData& m_appData;
 
   // NanoVG context for vector graphics (owned by this class)
@@ -246,6 +255,15 @@ private:
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms2D;
 
   GLShaderProgram m_raycastIsoProgram;
+  GLShaderProgram m_raycastIsoWarpedProgram;
+
+  unsigned int m_raycastTimerQuery;
+  bool m_raycastTimerQueryPending;
+  bool m_adaptiveRaycastInitialized;
+  bool m_adaptiveRaycastWasEnabled;
+  float m_lastManualRaycastSamplingFactor;
+  float m_adaptiveRaycastSamplingFactor;
+  double m_smoothedRaycastSeconds;
 
   /// Is the application done loading images?
   bool m_isAppDoneLoadingImages;

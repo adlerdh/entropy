@@ -947,10 +947,10 @@ void renderLoadingStatusWindow(const GuiData& guiData)
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{scaledPixel(12.0f), scaledPixel(10.0f)});
 
-  const std::string windowTitle = (title.empty() ? "Loading images" : title) + "###LoadingStatus";
+  const std::string windowTitle = (title.empty() ? "Loading Images" : title) + "###LoadingStatus";
   if (ImGui::Begin(windowTitle.c_str(), nullptr, flags)) {
     const int dotCount = static_cast<int>(ImGui::GetTime() * 3.0) % 4;
-    std::string text = title.empty() ? "Loading images" : title;
+    std::string text = title.empty() ? "Loading Images" : title;
     text.append(static_cast<std::size_t>(dotCount), '.');
     ImGui::TextUnformatted(text.c_str());
 
@@ -2647,6 +2647,7 @@ void ImGuiWrapper::applyUiWindowBgOpacity(float opacity)
 void ImGuiWrapper::initializeFonts(float scale)
 {
   static const std::string forkAwesomeFontPath = std::string("res/fonts/ForkAwesome/") + FONT_ICON_FILE_NAME_FK;
+  static constexpr const char* interBoldFontPath = "res/fonts/Inter/Inter-Bold.ttf";
   const UiFontSpec uiFont = uiFontSpec(m_appData.settings().uiFontFamily());
 
   spdlog::debug("Begin loading fonts for UI scale {}", scale);
@@ -2683,12 +2684,29 @@ void ImGuiWrapper::initializeFonts(float scale)
 
   m_appData.guiData().m_fonts.clear();
 
+  ImFontConfig interBoldFontConfig;
+  myImFormatString(
+    interBoldFontConfig.Name,
+    IM_ARRAYSIZE(interBoldFontConfig.Name),
+    "%s, %.0fpx",
+    "Inter Bold",
+    uiFont.size);
+
   ImFont* uiFontPtr = loadFont(uiFont.path, uiFontConfig, uiFont.size, nullptr);
   ImFont* fork1Ptr =
+    loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, forkAwesomeFontSize, forkAwesomeIconGlyphRange);
+  ImFont* interBoldFontPtr = loadFont(interBoldFontPath, interBoldFontConfig, uiFont.size, nullptr);
+  ImFont* boldForkPtr =
     loadFont(forkAwesomeFontPath, forkAwesomeFontConfig, forkAwesomeFontSize, forkAwesomeIconGlyphRange);
 
   if (uiFontPtr && fork1Ptr) {
     m_appData.guiData().m_fonts[uiFont.path] = uiFontPtr;
+    if (interBoldFontPtr && boldForkPtr) {
+      m_appData.guiData().m_fonts[interBoldFontPath] = interBoldFontPtr;
+    }
+    else {
+      spdlog::error("Unable to load font {} or {}", interBoldFontPath, forkAwesomeFontPath);
+    }
     m_appData.guiData().m_fonts[std::string(uiFont.path) + forkAwesomeFontPath] = fork1Ptr;
     ImGui::GetIO().FontDefault = uiFontPtr;
     spdlog::debug("Loaded font {}", uiFont.path);

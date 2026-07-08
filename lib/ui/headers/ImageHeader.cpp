@@ -1011,7 +1011,7 @@ void renderImageHeader(
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
   ImGui::PushStyleColor(ImGuiCol_Text, headerColors.second);
 
-  const bool clicked = ImGui::CollapsingHeader(headerName.c_str(), headerFlags);
+  const bool clicked = activeImageCollapsingHeader(appData.guiData(), isActiveImage, headerName.c_str(), headerFlags);
 
   ImGui::PopStyleColor(2); // ImGuiCol_Header, ImGuiCol_Text
 
@@ -1136,6 +1136,25 @@ void renderImageHeader(
 
   ImGui::SameLine();
 
+  if (image_export::imageHasDicomSource(appData, imageUid)) {
+    static const std::string exportDicomButtonText = std::string(ICON_FK_FLOPPY_O) + "##ExportDicomSeriesAsImage";
+    const bool canExportImage = image->hasPixelData();
+    if (!canExportImage) {
+      ImGui::BeginDisabled();
+    }
+    if (ImGui::Button(exportDicomButtonText.c_str(), buttonSize)) {
+      image_export::exportDicomImage(appData, imageUid);
+    }
+    if (!canExportImage) {
+      ImGui::EndDisabled();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      ImGui::SetTooltip("Export DICOM series as image");
+    }
+
+    ImGui::SameLine();
+  }
+
   if (isRef) {
     ImGui::BeginDisabled();
   }
@@ -1211,23 +1230,6 @@ void renderImageHeader(
   }
 
   ImGui::PopStyleVar();
-
-  if (image_export::imageHasDicomSource(appData, imageUid)) {
-    static const std::string exportDicomButtonText = std::string(ICON_FK_FLOPPY_O) + " Export DICOM Series as Image...";
-    const bool canExportImage = image->hasPixelData();
-    if (!canExportImage) {
-      ImGui::BeginDisabled();
-    }
-    if (ImGui::Button(exportDicomButtonText.c_str())) {
-      image_export::exportDicomImage(appData, imageUid);
-    }
-    if (!canExportImage) {
-      ImGui::EndDisabled();
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-      ImGui::SetTooltip("Export this DICOM series as a 3D medical image");
-    }
-  }
 
   ImGui::Spacing();
   ImGui::Separator();

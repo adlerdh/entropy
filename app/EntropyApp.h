@@ -293,7 +293,7 @@ private:
     std::function<void()> onLoadFailed,
     bool showLoadingOverlay = true,
     std::vector<GuiData::LoadingStatusItem> loadingItems = {},
-    std::string loadingStatusTitle = "Loading images");
+    std::string loadingStatusTitle = "Loading Images");
 
   /** @brief Show the loading-status popup. */
   void beginLoadingStatus(std::string title, std::vector<GuiData::LoadingStatusItem> items);

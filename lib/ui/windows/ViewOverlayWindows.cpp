@@ -732,7 +732,9 @@ void renderViewOrientationToolWindow(
     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
     ImGuiWindowFlags_NoDocking;
 
-  static constexpr float sk_gizmoSize = 96.0f;
+  static constexpr float sk_gizmoSizeFraction = 0.14f;
+  static constexpr float sk_minGizmoSize = 72.0f;
+  static constexpr float sk_maxGizmoSize = 128.0f;
   static constexpr int sk_gizmoMode = (imguiGizmo::mode3Axes | imguiGizmo::cubeAtOrigin);
 
   static constexpr int sk_corner = 2; // bottom-left
@@ -772,7 +774,10 @@ void renderViewOrientationToolWindow(
     const glm::quat oldQuat = getViewCameraRotation();
     glm::quat newQuat = oldQuat;
 
-    if (ImGui::gizmo3D("", newQuat, sk_gizmoSize, sk_gizmoMode)) {
+    const float viewMinDimension = std::min(viewFrameBounds.bounds.width, viewFrameBounds.bounds.height);
+    const float gizmoSize = std::clamp(sk_gizmoSizeFraction * viewMinDimension, sk_minGizmoSize, sk_maxGizmoSize);
+
+    if (ImGui::gizmo3D("", newQuat, gizmoSize, sk_gizmoMode)) {
       setViewCameraRotation(newQuat * glm::inverse(oldQuat));
     }
 

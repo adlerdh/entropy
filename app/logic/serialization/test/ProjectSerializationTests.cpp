@@ -248,11 +248,14 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
   project.m_raycasting.m_samplingFactor = 1.25f;
+  project.m_raycasting.m_adaptiveSamplingEnabled = true;
+  project.m_raycasting.m_adaptiveSamplingTargetFrameRate = 45.0f;
   project.m_raycasting.m_transparentBackgroundWhenNoHit = false;
   project.m_raycasting.m_backgroundEdgeBrighteningEnabled = false;
   project.m_raycasting.m_showCrosshairsIn3D = true;
   project.m_raycasting.m_crosshairs3DGlyphDiameterVoxelDiagonals = 1.75f;
   project.m_raycasting.m_showThreeDCameraFrustumIn2DViews = true;
+  project.m_raycasting.m_reverseThreeDRotateAboutEye = true;
   project.m_raycasting.m_threeDCameraFrustumColor = {1.0f, 0.25f, 0.75f, 0.8f};
   project.m_raycasting.m_renderFrontFaces = false;
   project.m_raycasting.m_renderBackFaces = true;
@@ -275,11 +278,14 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   const json root = project;
 
   CHECK(root.at("raycasting").at("samplingFactor") == 1.25f);
+  CHECK(root.at("raycasting").at("adaptiveSamplingEnabled") == true);
+  CHECK(root.at("raycasting").at("adaptiveSamplingTargetFrameRate") == 45.0f);
   CHECK(root.at("raycasting").at("transparentBackgroundWhenNoHit") == false);
   CHECK(root.at("raycasting").at("backgroundEdgeBrighteningEnabled") == false);
   CHECK(root.at("raycasting").at("showCrosshairsIn3D") == true);
   CHECK(root.at("raycasting").at("crosshairs3DGlyphDiameterVoxelDiagonals") == 1.75f);
   CHECK(root.at("raycasting").at("showThreeDCameraFrustumIn2DViews") == true);
+  CHECK(root.at("raycasting").at("reverseThreeDRotateAboutEye") == true);
   CHECK(root.at("raycasting").at("threeDCameraFrustumColor").at(0) == 1.0f);
   CHECK(root.at("raycasting").at("threeDCameraFrustumColor").at(1) == 0.25f);
   CHECK(root.at("raycasting").at("threeDCameraFrustumColor").at(2) == 0.75f);
@@ -299,11 +305,14 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
   CHECK(parsed.m_raycasting.m_samplingFactor == 1.25f);
+  CHECK(parsed.m_raycasting.m_adaptiveSamplingEnabled == true);
+  CHECK(parsed.m_raycasting.m_adaptiveSamplingTargetFrameRate == 45.0f);
   CHECK(parsed.m_raycasting.m_transparentBackgroundWhenNoHit == false);
   CHECK(parsed.m_raycasting.m_backgroundEdgeBrighteningEnabled == false);
   CHECK(parsed.m_raycasting.m_showCrosshairsIn3D == true);
   CHECK(parsed.m_raycasting.m_crosshairs3DGlyphDiameterVoxelDiagonals == 1.75f);
   CHECK(parsed.m_raycasting.m_showThreeDCameraFrustumIn2DViews == true);
+  CHECK(parsed.m_raycasting.m_reverseThreeDRotateAboutEye == true);
   CHECK(parsed.m_raycasting.m_threeDCameraFrustumColor.x == 1.0f);
   CHECK(parsed.m_raycasting.m_threeDCameraFrustumColor.y == 0.25f);
   CHECK(parsed.m_raycasting.m_threeDCameraFrustumColor.z == 0.75f);

@@ -306,6 +306,7 @@ json toJson(
      {{"frameRate",
        {{"limit", renderPreferences.limitFrameRate},
         {"targetFrameTimeSeconds", renderPreferences.targetFrameTimeSeconds}}},
+      {"camera", {{"reversePovRotation", renderPreferences.reversePovRotation}}},
       {"asciiShading",
        {{"enabled", renderPreferences.asciiEnabled},
         {"cellSizePx", vec2ToJson(renderPreferences.asciiCellSizePx)},
@@ -504,6 +505,9 @@ void applyJson(
         1.0 / 240.0,
         1.0);
     }
+    if (const auto camera = rendering->find("camera"); camera != rendering->end() && camera->is_object()) {
+      setFromJson(renderPreferences.reversePovRotation, *camera, "reversePovRotation");
+    }
     if (const auto ascii = rendering->find("asciiShading"); ascii != rendering->end() && ascii->is_object()) {
       setFromJson(renderPreferences.asciiEnabled, *ascii, "enabled");
       setVec2FromJson(renderPreferences.asciiCellSizePx, *ascii, "cellSizePx");
@@ -652,6 +656,8 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.flashlightRadiusFraction = currentPreferences.flashlightRadiusFraction;
   preferences.flashlightOverlayMovingImage = currentPreferences.flashlightOverlayMovingImage;
   preferences.raycastSamplingFactor = currentPreferences.raycastSamplingFactor;
+  preferences.adaptiveRaycastSamplingEnabled = currentPreferences.adaptiveRaycastSamplingEnabled;
+  preferences.adaptiveRaycastTargetFrameRate = currentPreferences.adaptiveRaycastTargetFrameRate;
   preferences.transparentBackgroundWhenNoHit = currentPreferences.transparentBackgroundWhenNoHit;
   preferences.renderFrontFaces = currentPreferences.renderFrontFaces;
   preferences.renderBackFaces = currentPreferences.renderBackFaces;

@@ -640,6 +640,14 @@ Rendering::Rendering(AppData& appData)
   , m_asciiRenderer(appData)
   , m_pixelEdgeRenderer()
   , m_raycastIsoProgram("RaycastIsoSurfaceProgram")
+  , m_raycastIsoWarpedProgram("RaycastIsoSurfaceWarpedProgram")
+  , m_raycastTimerQuery(0)
+  , m_raycastTimerQueryPending(false)
+  , m_adaptiveRaycastInitialized(false)
+  , m_adaptiveRaycastWasEnabled(false)
+  , m_lastManualRaycastSamplingFactor(0.5f)
+  , m_adaptiveRaycastSamplingFactor(0.5f)
+  , m_smoothedRaycastSeconds(0.0)
   , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
 {
@@ -725,10 +733,119 @@ Rendering::Rendering(AppData& appData)
 
 Rendering::~Rendering()
 {
+  if (m_raycastTimerQuery != 0) {
+    glDeleteQueries(1, &m_raycastTimerQuery);
+    m_raycastTimerQuery = 0;
+  }
+
   if (m_nvg) {
     nvgDeleteGL3(m_nvg);
     m_nvg = nullptr;
   }
+}
+
+namespace
+{
+constexpr float sk_adaptiveRaycastMinSamplingFactor = 0.5f;
+constexpr float sk_adaptiveRaycastMaxSamplingFactor = 2.0f;
+constexpr float sk_adaptiveRaycastMinFps = 5.0f;
+constexpr float sk_adaptiveRaycastMaxFps = 120.0f;
+} // namespace
+
+void Rendering::updateAdaptiveRaycastSampling()
+{
+  RenderData& renderData = m_appData.renderData();
+  const float manualFactor = std::clamp(
+    renderData.m_raycastSamplingFactor,
+    sk_adaptiveRaycastMinSamplingFactor,
+    sk_adaptiveRaycastMaxSamplingFactor);
+
+  if (!renderData.m_adaptiveRaycastSamplingEnabled) {
+    m_adaptiveRaycastWasEnabled = false;
+    m_adaptiveRaycastInitialized = false;
+    m_adaptiveRaycastSamplingFactor = manualFactor;
+    m_lastManualRaycastSamplingFactor = renderData.m_raycastSamplingFactor;
+    renderData.m_adaptiveRaycastEffectiveSamplingFactor = manualFactor;
+    return;
+  }
+
+  if (
+    !m_adaptiveRaycastWasEnabled || !m_adaptiveRaycastInitialized ||
+    std::abs(renderData.m_raycastSamplingFactor - m_lastManualRaycastSamplingFactor) > 0.001f)
+  {
+    m_adaptiveRaycastSamplingFactor = manualFactor;
+    m_smoothedRaycastSeconds = 0.0;
+    m_adaptiveRaycastInitialized = true;
+  }
+
+  m_adaptiveRaycastWasEnabled = true;
+  m_lastManualRaycastSamplingFactor = renderData.m_raycastSamplingFactor;
+  renderData.m_adaptiveRaycastTargetFrameRate =
+    std::clamp(renderData.m_adaptiveRaycastTargetFrameRate, sk_adaptiveRaycastMinFps, sk_adaptiveRaycastMaxFps);
+
+  if (m_raycastTimerQuery == 0) {
+    glGenQueries(1, &m_raycastTimerQuery);
+  }
+
+  if (m_raycastTimerQueryPending) {
+    GLint available = GL_FALSE;
+    glGetQueryObjectiv(m_raycastTimerQuery, GL_QUERY_RESULT_AVAILABLE, &available);
+    if (available == GL_TRUE) {
+      GLuint64 elapsedNs = 0;
+      glGetQueryObjectui64v(m_raycastTimerQuery, GL_QUERY_RESULT, &elapsedNs);
+      m_raycastTimerQueryPending = false;
+
+      const double elapsedSeconds = static_cast<double>(elapsedNs) * 1.0e-9;
+      m_smoothedRaycastSeconds =
+        m_smoothedRaycastSeconds <= 0.0 ? elapsedSeconds : 0.8 * m_smoothedRaycastSeconds + 0.2 * elapsedSeconds;
+
+      const double targetSeconds = 1.0 / static_cast<double>(renderData.m_adaptiveRaycastTargetFrameRate);
+      const double ratio = m_smoothedRaycastSeconds / targetSeconds;
+      if (ratio > 1.08) {
+        const float adjustment = static_cast<float>(std::clamp(std::sqrt(ratio), 1.0, 1.15));
+        m_adaptiveRaycastSamplingFactor *= adjustment;
+      }
+      else if (ratio < 0.75) {
+        const float adjustment = static_cast<float>(std::clamp(std::sqrt(ratio), 0.90, 1.0));
+        m_adaptiveRaycastSamplingFactor *= adjustment;
+      }
+      m_adaptiveRaycastSamplingFactor = std::clamp(
+        m_adaptiveRaycastSamplingFactor,
+        sk_adaptiveRaycastMinSamplingFactor,
+        sk_adaptiveRaycastMaxSamplingFactor);
+    }
+  }
+
+  renderData.m_adaptiveRaycastEffectiveSamplingFactor = m_adaptiveRaycastSamplingFactor;
+}
+
+float Rendering::raycastSamplingFactorForCurrentFrame()
+{
+  updateAdaptiveRaycastSampling();
+  const RenderData& renderData = m_appData.renderData();
+  return renderData.m_adaptiveRaycastSamplingEnabled ? m_adaptiveRaycastSamplingFactor
+                                                     : renderData.m_raycastSamplingFactor;
+}
+
+bool Rendering::beginRaycastTiming()
+{
+  const RenderData& renderData = m_appData.renderData();
+  if (!renderData.m_adaptiveRaycastSamplingEnabled || m_raycastTimerQuery == 0 || m_raycastTimerQueryPending) {
+    return false;
+  }
+
+  glBeginQuery(GL_TIME_ELAPSED, m_raycastTimerQuery);
+  return true;
+}
+
+void Rendering::endRaycastTiming(const bool timingActive)
+{
+  if (!timingActive) {
+    return;
+  }
+
+  glEndQuery(GL_TIME_ELAPSED);
+  m_raycastTimerQueryPending = true;
 }
 
 void Rendering::setupOpenGLState()
@@ -2312,13 +2429,17 @@ void Rendering::renderOneImage_overlays(
   }
 }
 
-void Rendering::volumeRenderOneImage(const View& view, GLShaderProgram& program, const CurrentImages& I)
+void Rendering::volumeRenderOneImage(
+  const View& view,
+  GLShaderProgram& program,
+  const glm::mat4& texture_T_world,
+  const CurrentImages& I)
 {
   auto getImage = [this](const std::optional<uuid>& imageUid) -> const Image* {
     return (imageUid ? m_appData.image(*imageUid) : nullptr);
   };
 
-  drawRaycastQuad(program, m_appData.renderData().m_quad, view, I, getImage);
+  drawRaycastQuad(program, m_appData.renderData().m_quad, view, texture_T_world, I, getImage);
 
   setupOpenGLState();
 }
@@ -3302,12 +3423,17 @@ void Rendering::renderAllImagesForView(
 
       updateIsosurfaceDataFor3d(m_appData, *imgSegPair.first);
 
+      const auto deformationUid = activeRenderableDeformationUid(*imgSegPair.first);
+      const bool renderWarped = deformationUid.has_value();
+
       const auto boundImageTextures = bindScalarImageTextures(imgSegPair);
+      const auto boundDefTextures =
+        renderWarped ? bindDeformationTextures(*deformationUid) : std::list<std::reference_wrapper<GLTexture>>{};
       const auto boundSegBufferTextures = bindSegBufferTextures(imgSegPair);
 
       const auto& U = R.m_uniforms.at(*imgSegPair.first);
 
-      GLShaderProgram& P = m_raycastIsoProgram;
+      GLShaderProgram& P = renderWarped ? m_raycastIsoWarpedProgram : m_raycastIsoProgram;
 
       P.use();
       {
@@ -3318,6 +3444,7 @@ void Rendering::renderAllImagesForView(
         /// @todo Put a lot of these into the uniform settings...
 
         P.setUniform("u_tex_T_world", U.imgTexture_T_world);
+        P.setUniform("u_world_T_tex", U.world_T_imgTexture);
         P.setUniform("u_texGrads", U.textureGradientStep);
 
         /// @note Shader expects 8 values
@@ -3331,7 +3458,7 @@ void Rendering::renderAllImagesForView(
         P.setUniform("u_shininess", R.m_isosurfaceData.shininesses);
 
         /// @todo Set this to larger sampling factor when the user is moving the slider
-        P.setUniform("u_samplingFactor", R.m_raycastSamplingFactor);
+        P.setUniform("u_samplingFactor", raycastSamplingFactorForCurrentFrame());
         P.setUniform("u_imgInvDims", 1.0f / glm::vec3{image->header().pixelDimensions()});
 
         P.setUniform("u_renderFrontFaces", R.m_renderFrontFaces);
@@ -3352,11 +3479,17 @@ void Rendering::renderAllImagesForView(
         P.setUniform(
           "u_crosshairsRadiusMm",
           0.5f * R.m_crosshairs3DGlyphDiameterVoxelDiagonals * glm::length(image->header().spacing()));
+        if (renderWarped) {
+          setDeformationUniforms(P, *imgSegPair.first, *deformationUid, U.imgTexture_T_world);
+        }
 
-        volumeRenderOneImage(view, P, CurrentImages{imgSegPair});
+        const bool raycastTimingActive = beginRaycastTiming();
+        volumeRenderOneImage(view, P, U.imgTexture_T_world, CurrentImages{imgSegPair});
+        endRaycastTiming(raycastTimingActive);
       }
       P.stopUse();
 
+      unbindTextures(boundDefTextures);
       unbindTextures(boundImageTextures);
       unbindBufferTextures(boundSegBufferTextures);
       break;
@@ -4839,15 +4972,18 @@ void Rendering::createShaderPrograms()
     }
   }
 
-  if (!createRaycastIsoProgram(m_raycastIsoProgram)) {
+  if (!createRaycastIsoProgram(m_raycastIsoProgram, false)) {
     throw_debug("Failed to create isosurface raycasting program")
+  }
+  if (!createRaycastIsoProgram(m_raycastIsoWarpedProgram, true)) {
+    throw_debug("Failed to create warped isosurface raycasting program")
   }
 
   m_asciiRenderer.registerShaderPrograms(m_shaderPrograms);
   m_pixelEdgeRenderer.registerShaderPrograms(m_shaderPrograms);
 }
 
-bool Rendering::createRaycastIsoProgram(GLShaderProgram& program)
+bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
 {
   static const std::string vsFileName{"app/rendering/shaders/RaycastIso.vs"};
   static const std::string fsFileName{"app/rendering/shaders/RaycastIso.fs"};
@@ -4868,6 +5004,37 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program)
     throw_debug("Unable to load shader")
   }
 
+  const std::string shaderPath("app/rendering/shaders/functions/");
+  const std::string sampleTexCoordIdentityRep = loadFile(shaderPath + "SampleTexCoord_Identity.glsl");
+  const std::string sampleTexCoordDeformationRep = loadFile(shaderPath + "SampleTexCoord_Deformation.glsl");
+  const std::string sampleImageValueIdentityRep =
+    "float sampleImageValue(vec3 texCoord)\n"
+    "{\n"
+    "  return getImageValue(u_imgTex, texCoord);\n"
+    "}\n";
+  const std::string sampleImageValueDeformationRep =
+    "float sampleImageValue(vec3 texCoord)\n"
+    "{\n"
+    "  vec3 worldPos = vec3(u_world_T_tex * vec4(texCoord, 1.0));\n"
+    "  vec3 sampleTc = sampleTexCoord(texCoord, worldPos);\n"
+    "  return isInsideTexture(sampleTc) ? getImageValue(u_imgTex, sampleTc) : 0.0;\n"
+    "}\n";
+  const std::string jumpTextureRep =
+    "float raycastJumpDistance(vec3 texCoord)\n"
+    "{\n"
+    "  return float(texture(u_jumpTex, texCoord).r);\n"
+    "}\n";
+  const std::string jumpDisabledRep =
+    "float raycastJumpDistance(vec3 texCoord)\n"
+    "{\n"
+    "  return 0.0;\n"
+    "}\n";
+  fsSource = replacePlaceholders(
+    fsSource,
+    {{"$$SAMPLE_TEX_COORD_FUNCTION$$", warped ? sampleTexCoordDeformationRep : sampleTexCoordIdentityRep},
+     {"$$SAMPLE_IMAGE_VALUE_FUNCTION$$", warped ? sampleImageValueDeformationRep : sampleImageValueIdentityRep},
+     {"$$RAYCAST_JUMP_DISTANCE_FUNCTION$$", warped ? jumpDisabledRep : jumpTextureRep}});
+
   {
     Uniforms vsUniforms;
     vsUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
@@ -4886,9 +5053,10 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program)
 
     fsUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);
     // fsUniforms.insertUniform("u_segTex", UniformType::Sampler, msk_segTexSampler);
-    fsUniforms.insertUniform("u_jumpTex", UniformType::Sampler, msk_jumpTexSampler);
+    fsUniforms.insertUniform("u_jumpTex", UniformType::Sampler, msk_jumpTexSampler, !warped);
 
     fsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
+    fsUniforms.insertUniform("u_world_T_tex", UniformType::Mat4, sk_identMat4, warped);
     fsUniforms.insertUniform("u_clip_T_imgTex", UniformType::Mat4, sk_identMat4);
 
     fsUniforms.insertUniform("u_texGrads", UniformType::Mat3, sk_identMat3);
@@ -4919,6 +5087,15 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program)
 
     // fsUniforms.insertUniform("u_segMasksIn", UniformType::Bool, false);
     // fsUniforms.insertUniform("u_segMasksOut", UniformType::Bool, false);
+
+    if (warped) {
+      fsUniforms.insertUniform("u_defTex", UniformType::SamplerVector, msk_defTexSamplers);
+      fsUniforms.insertUniform("u_defTex_T_world", UniformType::Mat4, sk_identMat4);
+      fsUniforms.insertUniform("u_sampleTex_T_world", UniformType::Mat4, sk_identMat4);
+      fsUniforms.insertUniform("u_defSlope_native_T_texture", UniformType::Float, 1.0f);
+      fsUniforms.insertUniform("u_deformationStrength", UniformType::Float, 1.0f);
+      fsUniforms.insertUniform("u_defInterleaved", UniformType::Bool, false);
+    }
 
     GLShader fs("fsRaycast", ShaderType::Fragment, fsSource.c_str());
     fs.setRegisteredUniforms(std::move(fsUniforms));

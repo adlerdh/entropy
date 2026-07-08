@@ -302,6 +302,7 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   }
   actionMenuItem(callbacks, "Remove Active Image", MainMenuAction::RemoveActiveImage);
   actionMenuItem(callbacks, "Set Image as Reference", MainMenuAction::SetActiveImageAsReference);
+  actionMenuItem(callbacks, "Lock Manual Affine Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
   ImGui::Separator();
   actionMenuItem(callbacks, "Move Image Backward", MainMenuAction::MoveActiveImageBackward);
   actionMenuItem(callbacks, "Move Image Forward", MainMenuAction::MoveActiveImageForward);
@@ -319,7 +320,6 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
     actionMenuItem(callbacks, "Last Frame", MainMenuAction::LastTimePoint);
     ImGui::EndMenu();
   }
-  ImGui::Separator();
   if (ImGui::BeginMenu("Isosurfaces", callbacks.canAddImage)) {
     actionMenuItem(callbacks, "Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
     ImGui::Separator();
@@ -330,8 +330,6 @@ void renderImageMenu(const MainMenuBarCallbacks& callbacks)
   }
   ImGui::Separator();
   if (ImGui::BeginMenu("Affine Transformations", callbacks.canAddImage)) {
-    actionMenuItem(callbacks, "Lock Manual Affine Transformation", MainMenuAction::ToggleActiveImageTransformationLock);
-    ImGui::Separator();
     actionMenuItem(callbacks, "Load Initial Affine...", MainMenuAction::LoadActiveImageInitialTransformation);
     actionMenuItem(callbacks, "Save Initial Affine...", MainMenuAction::SaveActiveImageInitialTransformation);
     actionMenuItem(callbacks, "Reset Initial Affine", MainMenuAction::ResetActiveImageInitialTransformation);

@@ -732,6 +732,7 @@ set(entropy_FONTS
   "${entropy_RES_DIR}/fonts/ForkAwesome/forkawesome-webfont.ttf"
   "${entropy_RES_DIR}/fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
   "${entropy_RES_DIR}/fonts/Inter/Inter-Regular.ttf"
+  "${entropy_RES_DIR}/fonts/Inter/Inter-Bold.ttf"
   "${entropy_RES_DIR}/fonts/NotoSans/NotoSans-Regular.ttf"
   "${entropy_RES_DIR}/fonts/Roboto/Roboto-Light.ttf"
   "${entropy_RES_DIR}/fonts/Roboto/Roboto-Regular.ttf"

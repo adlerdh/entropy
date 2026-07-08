@@ -500,6 +500,7 @@ void drawRaycastQuad(
   GLShaderProgram& program,
   RenderData::Quad& quad,
   const View& view,
+  const glm::mat4& texture_T_world,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage)
 {
@@ -521,7 +522,7 @@ void drawRaycastQuad(
   program.setUniform("u_view_T_clip", view.windowClip_T_viewClip());
   program.setUniform("u_world_T_clip", world_T_clip);
   program.setUniform("u_clip_T_world", clip_T_world);
-  program.setUniform("u_clip_T_imgTex", clip_T_world * world_T_clip);
+  program.setUniform("u_clip_T_imgTex", clip_T_world * glm::inverse(texture_T_world));
 
   // Raycasting is a screen-space pass. Draw the full viewport quad on the near clip plane and
   // let the fragment shader intersect each eye ray with the volume. Using the 2D slice

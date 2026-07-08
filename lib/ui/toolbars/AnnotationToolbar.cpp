@@ -7,6 +7,7 @@
 #include "logic/app/Data.h"
 #include "logic/states/FsmList.hpp"
 #include "logic/states/annotation/AnnotationStateHelpers.h"
+#include "logic/states/annotation/AnnotationStateMachine.h"
 
 #include <IconsForkAwesome.h>
 #include <glm/glm.hpp>
@@ -157,11 +158,21 @@ void renderAnnotationToolbar(
       ImGui::PushID(id);
       {
         static const std::string sk_addNew = std::string(ICON_FK_PLUS) + " New polygon";
+        const bool canCreatePolygon = state::annot::AnnotationStateMachine::activeImageVisibleInSelectedView();
+        if (!canCreatePolygon) {
+          ImGui::BeginDisabled();
+        }
         if (ImGui::Button(sk_addNew.c_str())) {
           send_event(state::annot::CreateNewAnnotationEvent());
         }
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", "Create a new polygon");
+        if (!canCreatePolygon) {
+          ImGui::EndDisabled();
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+          ImGui::SetTooltip(
+            "%s",
+            canCreatePolygon ? "Create a new polygon"
+                             : "Show the active image in the selected view before creating a polygon");
         }
         ++id;
       }

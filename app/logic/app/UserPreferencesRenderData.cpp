@@ -145,9 +145,12 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.limitFrameRate = renderData.m_manualFramerateLimiter;
   preferences.targetFrameTimeSeconds = renderData.m_targetFrameTimeSeconds;
   preferences.raycastSamplingFactor = renderData.m_raycastSamplingFactor;
+  preferences.adaptiveRaycastSamplingEnabled = renderData.m_adaptiveRaycastSamplingEnabled;
+  preferences.adaptiveRaycastTargetFrameRate = renderData.m_adaptiveRaycastTargetFrameRate;
   preferences.transparentBackgroundWhenNoHit = renderData.m_3dTransparentIfNoHit;
   preferences.renderFrontFaces = renderData.m_renderFrontFaces;
   preferences.renderBackFaces = renderData.m_renderBackFaces;
+  preferences.reversePovRotation = renderData.m_reverseThreeDRotateAboutEye;
   preferences.segmentationMasking =
     static_cast<user_preferences::RenderPreferences::SegMaskingForRaycasting>(renderData.m_segMasking);
   preferences.asciiEnabled = renderData.m_asciiEnabled;
@@ -242,9 +245,13 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_manualFramerateLimiter = preferences.limitFrameRate;
   renderData.m_targetFrameTimeSeconds = preferences.targetFrameTimeSeconds;
   renderData.m_raycastSamplingFactor = preferences.raycastSamplingFactor;
+  renderData.m_adaptiveRaycastSamplingEnabled = preferences.adaptiveRaycastSamplingEnabled;
+  renderData.m_adaptiveRaycastTargetFrameRate = preferences.adaptiveRaycastTargetFrameRate;
+  renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(preferences.raycastSamplingFactor, 0.5f, 2.0f);
   renderData.m_3dTransparentIfNoHit = preferences.transparentBackgroundWhenNoHit;
   renderData.m_renderFrontFaces = preferences.renderFrontFaces;
   renderData.m_renderBackFaces = preferences.renderBackFaces;
+  renderData.m_reverseThreeDRotateAboutEye = preferences.reversePovRotation;
   renderData.m_segMasking = static_cast<RenderData::SegMaskingForRaycasting>(preferences.segmentationMasking);
   renderData.m_asciiEnabled = preferences.asciiEnabled;
   renderData.m_asciiCellSizePx = preferences.asciiCellSizePx;

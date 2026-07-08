@@ -156,7 +156,7 @@ struct GuiData
   {
     mutable std::mutex mutex;                //!< Guards title, visibility, and items.
     bool visible = false;                    //!< Show the loading popup.
-    std::string title = "Loading images..."; //!< Popup title text.
+    std::string title = "Loading Images..."; //!< Popup title text.
     std::vector<LoadingStatusItem> items;    //!< Files shown in load order.
   };
 

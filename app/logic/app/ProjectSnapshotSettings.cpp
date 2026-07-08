@@ -219,11 +219,14 @@ serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
   const auto& renderData = appData.renderData();
   return serialize::ProjectRaycastingSettings{
     .m_samplingFactor = renderData.m_raycastSamplingFactor,
+    .m_adaptiveSamplingEnabled = renderData.m_adaptiveRaycastSamplingEnabled,
+    .m_adaptiveSamplingTargetFrameRate = renderData.m_adaptiveRaycastTargetFrameRate,
     .m_transparentBackgroundWhenNoHit = renderData.m_3dTransparentIfNoHit,
     .m_backgroundEdgeBrighteningEnabled = renderData.m_raycastBackgroundEdgeBrighteningEnabled,
     .m_showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
     .m_crosshairs3DGlyphDiameterVoxelDiagonals = renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals,
     .m_showThreeDCameraFrustumIn2DViews = renderData.m_showThreeDCameraFrustumIn2DViews,
+    .m_reverseThreeDRotateAboutEye = renderData.m_reverseThreeDRotateAboutEye,
     .m_threeDCameraFrustumColor = renderData.m_threeDCameraFrustumColor,
     .m_renderFrontFaces = renderData.m_renderFrontFaces,
     .m_renderBackFaces = renderData.m_renderBackFaces,
@@ -234,11 +237,15 @@ void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastin
 {
   auto& renderData = appData.renderData();
   renderData.m_raycastSamplingFactor = settings.m_samplingFactor;
+  renderData.m_adaptiveRaycastSamplingEnabled = settings.m_adaptiveSamplingEnabled;
+  renderData.m_adaptiveRaycastTargetFrameRate = settings.m_adaptiveSamplingTargetFrameRate;
+  renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
   renderData.m_3dTransparentIfNoHit = settings.m_transparentBackgroundWhenNoHit;
   renderData.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_backgroundEdgeBrighteningEnabled;
   renderData.m_showCrosshairsIn3D = settings.m_showCrosshairsIn3D;
   renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals = settings.m_crosshairs3DGlyphDiameterVoxelDiagonals;
   renderData.m_showThreeDCameraFrustumIn2DViews = settings.m_showThreeDCameraFrustumIn2DViews;
+  renderData.m_reverseThreeDRotateAboutEye = settings.m_reverseThreeDRotateAboutEye;
   renderData.m_threeDCameraFrustumColor = settings.m_threeDCameraFrustumColor;
   renderData.m_renderFrontFaces = settings.m_renderFrontFaces;
   renderData.m_renderBackFaces = settings.m_renderBackFaces;

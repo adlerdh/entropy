@@ -120,7 +120,7 @@ void renderSegmentationHeader(
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
   ImGui::PushStyleColor(ImGuiCol_Text, headerColors.second);
 
-  const bool open = ImGui::CollapsingHeader(headerName.c_str(), headerFlags);
+  const bool open = activeImageCollapsingHeader(appData.guiData(), isActiveImage, headerName.c_str(), headerFlags);
 
   ImGui::PopStyleColor(2); // ImGuiCol_Header, ImGuiCol_Text
 

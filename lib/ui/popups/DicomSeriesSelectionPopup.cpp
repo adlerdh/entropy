@@ -601,7 +601,11 @@ void renderDicomSeriesSelectionPopup(
     {
       ImGui::TableSetupColumn("Load", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 52.0f);
       ImGui::TableSetupColumn("Reference", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide, 92.0f);
-      ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed, 560.0f);
+      ImGui::TableSetupColumn(
+        "Description",
+        ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultSort |
+          ImGuiTableColumnFlags_PreferSortAscending,
+        560.0f);
       ImGui::TableSetupColumn("Modality", ImGuiTableColumnFlags_WidthFixed, 84.0f);
       ImGui::TableSetupColumn("Series No.", ImGuiTableColumnFlags_WidthFixed, 82.0f);
       ImGui::TableSetupColumn("Slices", ImGuiTableColumnFlags_WidthFixed, 70.0f);
@@ -816,6 +820,9 @@ void renderDicomSeriesSelectionPopup(
           referenceIndex = selectedSeries.size();
         }
         selectedSeries.push_back(prompt.series.at(i));
+      }
+      if (selectedCount == 1 && prompt.allowReferenceSelection) {
+        referenceIndex = 0;
       }
       const bool addToExistingProject = prompt.addToExistingProject;
       guiData.m_pendingDicomSeriesSelectionPrompt = std::nullopt;
