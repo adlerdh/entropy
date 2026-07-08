@@ -353,7 +353,6 @@ void updateSegmentationUniformsForImage(
 
   uniforms.segTexture_T_world =
     seg->transformations().texture_T_subject() * image.transformations().subject_T_worldDef();
-  uniforms.segVoxel_T_world = seg->transformations().pixel_T_subject() * image.transformations().subject_T_worldDef();
 
   if (imageSettings.numComponents() > 1) {
     uniforms.segOpacity = static_cast<float>(
@@ -2965,7 +2964,6 @@ void Rendering::renderAllImagesForView(
 
             P.setUniform("u_numCheckers", static_cast<float>(R.m_numCheckerboardSquares));
             P.setUniform("u_tex_T_world", U.segTexture_T_world);
-            P.setUniform("u_voxel_T_world", U.segVoxel_T_world);
             P.setUniform("u_segOpacity", U.segOpacity * (R.m_modulateSegOpacityWithImageOpacity ? U.imgOpacity : 1.0f));
             P.setUniform("u_useSegColorOverride", false);
             P.setUniform("u_segColorOverride", sk_zeroVec4);
@@ -3244,7 +3242,6 @@ void Rendering::renderAllImagesForView(
 
           P.setUniform("u_numCheckers", 1.0f); // checkerboarding disabled
           P.setUniform("u_tex_T_world", U[i].segTexture_T_world);
-          P.setUniform("u_voxel_T_world", U[i].segVoxel_T_world);
           P.setUniform(
             "u_segOpacity",
             U[i].segOpacity * (R.m_modulateSegOpacityWithImageOpacity ? U[i].imgOpacity : 1.0f));
@@ -3904,28 +3901,41 @@ void Rendering::createShaderPrograms()
   const std::string ipFunctionRep = loadFile(shaderPath + "functions/IntensityProjection.glsl");
 
   // All the vertex shader uniforms:
-  Uniforms vsTransformUniforms;
-  vsTransformUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
-  vsTransformUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
-  vsTransformUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
-  vsTransformUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
+  Uniforms vsClipWorldUniforms;
+  vsClipWorldUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
+  vsClipWorldUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
+  vsClipWorldUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
 
   Uniforms vsViewModeUniforms;
   vsViewModeUniforms.insertUniform("u_aspectRatio", UniformType::Float, 1.0f);
   vsViewModeUniforms.insertUniform("u_numCheckers", UniformType::Int, 1);
 
   Uniforms vsImageUniforms;
-  vsImageUniforms.insertUniforms(vsTransformUniforms);
+  vsImageUniforms.insertUniforms(vsClipWorldUniforms);
+  vsImageUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
   vsImageUniforms.insertUniforms(vsViewModeUniforms);
 
+  Uniforms vsImageWarpedUniforms;
+  vsImageWarpedUniforms.insertUniforms(vsClipWorldUniforms);
+  vsImageWarpedUniforms.insertUniforms(vsViewModeUniforms);
+
   Uniforms vsSegUniforms;
-  vsSegUniforms.insertUniform("u_voxel_T_world", UniformType::Mat4, sk_identMat4);
+  vsSegUniforms.insertUniforms(vsClipWorldUniforms);
+  vsSegUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
+  vsSegUniforms.insertUniforms(vsViewModeUniforms);
+
+  Uniforms vsSegWarpedUniforms;
+  vsSegWarpedUniforms.insertUniforms(vsClipWorldUniforms);
+  vsSegWarpedUniforms.insertUniforms(vsViewModeUniforms);
 
   Uniforms vsMetricUniforms;
   vsMetricUniforms.insertUniform("u_view_T_clip", UniformType::Mat4, sk_identMat4);
   vsMetricUniforms.insertUniform("u_world_T_clip", UniformType::Mat4, sk_identMat4);
   vsMetricUniforms.insertUniform("u_clipDepth", UniformType::Float, 0.0f);
   vsMetricUniforms.insertUniform("u_tex_T_world", UniformType::Mat4Vector, Mat4Vector{sk_identMat4, sk_identMat4});
+
+  Uniforms vsMetricWarpedUniforms;
+  vsMetricWarpedUniforms.insertUniforms(vsClipWorldUniforms);
 
   // All the fragment shader uniforms:
   Uniforms fsImageAdjustmentUniforms;
@@ -4320,7 +4330,7 @@ void Rendering::createShaderPrograms()
       vsImageUniforms,
       fsImageGrayUniforms}},
     {ShaderProgramType::ImageGrayLinearWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "ImageGrey.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
@@ -4328,10 +4338,10 @@ void Rendering::createShaderPrograms()
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep},
        {"$$IP_FUNCTION$$", ipFunctionRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsImageGrayWarpedUniforms}},
     {ShaderProgramType::ImageGrayLinearFloatingWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "ImageGrey.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
@@ -4339,10 +4349,10 @@ void Rendering::createShaderPrograms()
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep},
        {"$$IP_FUNCTION$$", ipFunctionRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsImageGrayWarpedUniforms}},
     {ShaderProgramType::ImageGrayCubicWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "ImageGrey.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
@@ -4350,7 +4360,7 @@ void Rendering::createShaderPrograms()
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep},
        {"$$IP_FUNCTION$$", ipFunctionRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsImageGrayWarpedUniforms}},
     {ShaderProgramType::ImageColorLinear,
      {"Image.vs",
@@ -4372,23 +4382,23 @@ void Rendering::createShaderPrograms()
       vsImageUniforms,
       fsImageColorUniforms}},
     {ShaderProgramType::ImageColorLinearWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "ImageColor.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsImageColorWarpedUniforms}},
     {ShaderProgramType::ImageColorCubicWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "ImageColor.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsImageColorWarpedUniforms}},
     {ShaderProgramType::VectorDirectionColorLinear,
      {"Image.vs",
@@ -4477,7 +4487,7 @@ void Rendering::createShaderPrograms()
       vsImageUniforms,
       fsEdgeUniforms}},
     {ShaderProgramType::EdgeSobelLinearWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "Edge.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
@@ -4485,10 +4495,10 @@ void Rendering::createShaderPrograms()
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsEdgeWarpedUniforms}},
     {ShaderProgramType::EdgeSobelCubicWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "Edge.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
@@ -4496,7 +4506,7 @@ void Rendering::createShaderPrograms()
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsEdgeWarpedUniforms}},
     {ShaderProgramType::XrayLinear,
      {"Image.vs",
@@ -4519,24 +4529,24 @@ void Rendering::createShaderPrograms()
       vsImageUniforms,
       fsXrayUniforms}},
     {ShaderProgramType::XrayLinearWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "Xray.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsXrayWarpedUniforms}},
     {ShaderProgramType::XrayCubicWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "Xray.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$COLOR_HELPER_FUNCTIONS$$", colorHelpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsXrayWarpedUniforms}},
     {ShaderProgramType::SegmentationNearest,
      {"Seg.vs",
@@ -4561,7 +4571,7 @@ void Rendering::createShaderPrograms()
       vsSegUniforms,
       fsSegLinearUniforms}},
     {ShaderProgramType::SegmentationNearestWarped,
-     {"Seg.vs",
+     {"SegWarped.vs",
       "Seg.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$UINT_TEXTURE_LOOKUP_FUNCTION$$", uintTexLookupLinearRep},
@@ -4569,10 +4579,10 @@ void Rendering::createShaderPrograms()
        {"$$GET_SEG_VALUE_FUNCTION$$", segValueNearestRep},
        {"$$GET_SEG_INTERIOR_ALPHA_FUNCTION$$", segInteriorAlphaWithOutlineRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsSegUniforms,
+      vsSegWarpedUniforms,
       fsSegNearestWarpedUniforms}},
     {ShaderProgramType::SegmentationLinearWarped,
-     {"Seg.vs",
+     {"SegWarped.vs",
       "Seg.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$UINT_TEXTURE_LOOKUP_FUNCTION$$", uintTexLookupLinearRep},
@@ -4580,7 +4590,7 @@ void Rendering::createShaderPrograms()
        {"$$GET_SEG_VALUE_FUNCTION$$", segValueLinearRep},
        {"$$GET_SEG_INTERIOR_ALPHA_FUNCTION$$", segInteriorAlphaWithOutlineRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsSegUniforms,
+      vsSegWarpedUniforms,
       fsSegLinearWarpedUniforms}},
     {ShaderProgramType::IsoContourLinearFloating,
      {"Image.vs",
@@ -4610,31 +4620,31 @@ void Rendering::createShaderPrograms()
       vsImageUniforms,
       fsIsoUniforms}},
     {ShaderProgramType::IsoContourLinearFloatingWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "IsoContour.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texFloatingPointLinearRep},
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsIsoWarpedUniforms}},
     {ShaderProgramType::IsoContourLinearFixedWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "IsoContour.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsIsoWarpedUniforms}},
     {ShaderProgramType::IsoContourCubicFixedWarped,
-     {"Image.vs",
+     {"ImageWarped.vs",
       "IsoContour.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
        {"$$SAMPLE_TEX_COORD_FUNCTION$$", sampleTexCoordDeformationRep},
        {"$$DO_RENDER_FUNCTION$$", doRenderRep}},
-      vsImageUniforms,
+      vsImageWarpedUniforms,
       fsIsoWarpedUniforms}},
     {ShaderProgramType::DifferenceLinear,
      {"Metric.vs",
@@ -4653,20 +4663,20 @@ void Rendering::createShaderPrograms()
       vsMetricUniforms,
       fsDiffUniforms}},
     {ShaderProgramType::DifferenceLinearWarped,
-     {"Metric.vs",
+     {"MetricWarped.vs",
       "Difference.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
        {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
-      vsMetricUniforms,
+      vsMetricWarpedUniforms,
       fsDiffWarpedUniforms}},
     {ShaderProgramType::DifferenceCubicWarped,
-     {"Metric.vs",
+     {"MetricWarped.vs",
       "Difference.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
        {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
-      vsMetricUniforms,
+      vsMetricWarpedUniforms,
       fsDiffWarpedUniforms}},
     {ShaderProgramType::LocalNccLinear,
      {"Metric.vs",
@@ -4685,20 +4695,20 @@ void Rendering::createShaderPrograms()
       vsMetricUniforms,
       fsLocalNccUniforms}},
     {ShaderProgramType::LocalNccLinearWarped,
-     {"Metric.vs",
+     {"MetricWarped.vs",
       "LocalNcc.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
        {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
-      vsMetricUniforms,
+      vsMetricWarpedUniforms,
       fsLocalNccWarpedUniforms}},
     {ShaderProgramType::LocalNccCubicWarped,
-     {"Metric.vs",
+     {"MetricWarped.vs",
       "LocalNcc.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
        {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
-      vsMetricUniforms,
+      vsMetricWarpedUniforms,
       fsLocalNccWarpedUniforms}},
     {ShaderProgramType::LocalLinearResidualLinear,
      {"Metric.vs",
@@ -4717,20 +4727,20 @@ void Rendering::createShaderPrograms()
       vsMetricUniforms,
       fsLocalLinearResidualUniforms}},
     {ShaderProgramType::LocalLinearResidualLinearWarped,
-     {"Metric.vs",
+     {"MetricWarped.vs",
       "LocalLinearResidual.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
        {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
-      vsMetricUniforms,
+      vsMetricWarpedUniforms,
       fsLocalLinearResidualWarpedUniforms}},
     {ShaderProgramType::LocalLinearResidualCubicWarped,
-     {"Metric.vs",
+     {"MetricWarped.vs",
       "LocalLinearResidual.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
        {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
-      vsMetricUniforms,
+      vsMetricWarpedUniforms,
       fsLocalLinearResidualWarpedUniforms}},
     {ShaderProgramType::OverlapLinear,
      {"Metric.vs",
@@ -4749,20 +4759,20 @@ void Rendering::createShaderPrograms()
       vsMetricUniforms,
       fsOverlayUniforms}},
     {ShaderProgramType::OverlapLinearWarped,
-     {"Metric.vs",
+     {"MetricWarped.vs",
       "Overlay.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texLinearRep},
        {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
-      vsMetricUniforms,
+      vsMetricWarpedUniforms,
       fsOverlayWarpedUniforms}},
     {ShaderProgramType::OverlapCubicWarped,
-     {"Metric.vs",
+     {"MetricWarped.vs",
       "Overlay.fs",
       {{"$$HELPER_FUNCTIONS$$", helpersRep},
        {"$$TEXTURE_LOOKUP_FUNCTION$$", texCubicRep},
        {"$$METRIC_SAMPLING_FUNCTIONS$$", metricSamplingDeformationRep}},
-      vsMetricUniforms,
+      vsMetricWarpedUniforms,
       fsOverlayWarpedUniforms}}};
 
   auto replacementsForTextureDimension =

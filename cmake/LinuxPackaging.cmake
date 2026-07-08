@@ -129,6 +129,7 @@ set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/adlerdh/entropy")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS "${entropy_LINUX_PRIVATE_LIB_FULL_DIR}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "ca-certificates")
 set(CPACK_DEBIAN_PACKAGE_RECOMMENDS
     "xdg-desktop-portal, xdg-desktop-portal-gtk | xdg-desktop-portal-kde | xdg-desktop-portal-gnome")
 

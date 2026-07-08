@@ -6,7 +6,6 @@ layout(location = 0) in vec2 clipPos;
 uniform mat4 u_view_T_clip;  // Clip to View space
 uniform mat4 u_world_T_clip; // Clip to World space
 uniform float u_clipDepth;   // view plane depth in Clip space
-uniform mat4 u_tex_T_world;  // World to segmentation texture space
 
 // View mode uniforms:
 uniform float u_aspectRatio; // view aspect ratio (for checkerboard and flashlight modes)
@@ -15,7 +14,7 @@ uniform float u_numCheckers; // number of checker squares along the longest view
 // Vertex shader outputs/varyings:
 out VS_OUT
 {
-  vec3 v_texCoord;     // Seg texture coords of the vertex
+  vec3 v_texCoord;     // Image texture coords of the vertex
   vec3 v_worldPos;     // World/reference-space position of the vertex
   vec2 v_checkerCoord; // Checkerboard square coords
   vec2 v_clipPos;      // Clip position
@@ -35,7 +34,6 @@ void main()
   gl_Position = u_view_T_clip * clipPos3d;
 
   vec4 worldPos = u_world_T_clip * clipPos3d;
-  vec4 segTexPos = u_tex_T_world * worldPos;
   vs_out.v_worldPos = vec3(worldPos / worldPos.w);
-  vs_out.v_texCoord = vec3(segTexPos / segTexPos.w);
+  vs_out.v_texCoord = vec3(0.0);
 }

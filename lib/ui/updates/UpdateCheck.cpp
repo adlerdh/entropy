@@ -14,10 +14,13 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <charconv>
 #include <cfloat>
+#include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <memory>
 #include <sstream>
 #include <string_view>
@@ -180,6 +183,47 @@ bool appendCurlHeader(curl_slist*& headers, const std::string& header)
   headers = appendedHeaders;
   return true;
 }
+
+#if defined(__linux__)
+bool hasNonEmptyEnvironmentVariable(const char* name)
+{
+  const char* value = std::getenv(name);
+  return value != nullptr && value[0] != '\0';
+}
+
+void configureLinuxCaStore(CURL* curl)
+{
+  namespace fs = std::filesystem;
+
+  if (!hasNonEmptyEnvironmentVariable("CURL_CA_BUNDLE") && !hasNonEmptyEnvironmentVariable("SSL_CERT_FILE")) {
+    static constexpr std::array k_caBundleFiles{
+      "/etc/ssl/certs/ca-certificates.crt",
+      "/etc/pki/tls/certs/ca-bundle.crt",
+      "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
+      "/etc/ssl/ca-bundle.pem"};
+
+    for (const char* path : k_caBundleFiles) {
+      std::error_code error;
+      if (fs::is_regular_file(path, error)) {
+        curl_easy_setopt(curl, CURLOPT_CAINFO, path);
+        break;
+      }
+    }
+  }
+
+  if (!hasNonEmptyEnvironmentVariable("SSL_CERT_DIR")) {
+    static constexpr std::array k_caCertificateDirs{"/etc/ssl/certs", "/etc/pki/tls/certs"};
+
+    for (const char* path : k_caCertificateDirs) {
+      std::error_code error;
+      if (fs::is_directory(path, error)) {
+        curl_easy_setopt(curl, CURLOPT_CAPATH, path);
+        break;
+      }
+    }
+  }
+}
+#endif
 
 std::size_t writeCurlBody(char* ptr, std::size_t size, std::size_t nmemb, void* userdata)
 {
@@ -436,6 +480,9 @@ CheckResult fetchLatestRelease(const CheckRequest& request)
   curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &response);
   curl_easy_setopt(curl.get(), CURLOPT_HEADERFUNCTION, writeCurlHeader);
   curl_easy_setopt(curl.get(), CURLOPT_HEADERDATA, &response);
+#if defined(__linux__)
+  configureLinuxCaStore(curl.get());
+#endif
 
   const CURLcode curlCode = curl_easy_perform(curl.get());
   if (curlCode != CURLE_OK) {

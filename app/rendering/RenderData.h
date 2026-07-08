@@ -51,7 +51,6 @@ struct RenderData
     glm::mat4 world_T_imgTexture{1.0f}; // Mapping from image Texture space to World space
 
     glm::mat4 segTexture_T_world{1.0f}; // Mapping from World to segmentation Texture space
-    glm::mat4 segVoxel_T_world{1.0f};   // Mapping from World to segmentation Voxel space
 
     glm::vec3 voxelSpacing{1.0f}; // Image voxel spacing (mm)
 

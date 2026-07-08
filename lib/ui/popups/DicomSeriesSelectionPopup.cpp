@@ -14,6 +14,7 @@
 #include "BuildStamp.h"
 
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
 #include <spdlog/fmt/std.h>
@@ -629,7 +630,7 @@ void renderDicomSeriesSelectionPopup(
           if (!columnVisible) {
             continue;
           }
-          ImGui::SetColumnWidth(
+          ImGui::TableSetColumnWidth(
             static_cast<int>(column),
             dicomSeriesColumnAutoWidth(prompt, static_cast<int>(column), kSeriesColumnNames.at(column)));
         }
