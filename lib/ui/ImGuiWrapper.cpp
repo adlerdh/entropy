@@ -2393,7 +2393,7 @@ void ImGuiWrapper::requestUpdateCheck(bool manualCheck)
     return;
   }
 
-  m_updateCheckWindowState.open = manualCheck || m_updateCheckWindowState.open;
+  m_updateCheckWindowState.open = manualCheck;
   m_updateCheckWindowState.checking = true;
   m_updateCheckWindowState.manualCheck = manualCheck;
   m_updateCheckWindowState.hasResult = false;
@@ -2445,7 +2445,7 @@ void ImGuiWrapper::processUpdateCheckFuture()
   m_updateCheckWindowState.result = std::move(result);
   m_updateCheckWindowState.checking = false;
   m_updateCheckWindowState.hasResult = true;
-  m_updateCheckWindowState.open = m_updateCheckWindowState.open || showAutomaticResult;
+  m_updateCheckWindowState.open = m_updateCheckWindowState.manualCheck || showAutomaticResult;
 
   if (m_postEmptyGlfwEvent) {
     m_postEmptyGlfwEvent();
@@ -4203,7 +4203,10 @@ void ImGuiWrapper::render()
       renderLoadingStatusWindow(m_appData.guiData());
     }
     renderWarpInversionProgressPopup();
-    entropy::ui::updates::renderUpdateCheckWindow(m_updateCheckWindowState);
+    entropy::ui::updates::renderUpdateCheckWindow(
+      m_updateCheckWindowState,
+      m_appData.settings().automaticUpdateChecksEnabled(),
+      [this](bool enabled) { m_appData.settings().setAutomaticUpdateChecksEnabled(enabled); });
 
     if (hasLoadedProject) {
       renderGlobalTimeControl(m_appData);

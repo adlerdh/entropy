@@ -28,13 +28,13 @@ struct GuiData
    */
   enum class SettingsTab : std::uint8_t
   {
-    Views,           //!< View, overlay, crosshair, lightbox, and scale bar settings page.
+    Views,           //!< View, overlay, crosshair, annotation, lightbox, and scale bar settings page.
     Interface,       //!< Interface appearance and behavior settings page.
     Images,          //!< Global image display default settings page.
     Segmentation,    //!< Segmentation display and brush settings page.
     Comparison,      //!< Image comparison and metric settings page.
     Rendering,       //!< Rendering, projection, raycasting, and ASCII settings page.
-    Annotations,     //!< Annotation and landmark display settings page.
+    Annotations,     //!< Deprecated settings page; annotation display settings are shown under Views.
     Registration,    //!< External registration backend settings page.
     Synchronization, //!< ITK-SNAP synchronization settings page.
     System           //!< System, runtime, and diagnostics settings page.

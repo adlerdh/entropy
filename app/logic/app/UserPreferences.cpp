@@ -656,8 +656,6 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.flashlightRadiusFraction = currentPreferences.flashlightRadiusFraction;
   preferences.flashlightOverlayMovingImage = currentPreferences.flashlightOverlayMovingImage;
   preferences.raycastSamplingFactor = currentPreferences.raycastSamplingFactor;
-  preferences.adaptiveRaycastSamplingEnabled = currentPreferences.adaptiveRaycastSamplingEnabled;
-  preferences.adaptiveRaycastTargetFrameRate = currentPreferences.adaptiveRaycastTargetFrameRate;
   preferences.transparentBackgroundWhenNoHit = currentPreferences.transparentBackgroundWhenNoHit;
   preferences.renderFrontFaces = currentPreferences.renderFrontFaces;
   preferences.renderBackFaces = currentPreferences.renderBackFaces;

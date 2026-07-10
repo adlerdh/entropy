@@ -560,18 +560,30 @@ bool openUrlInDefaultBrowser(const std::string& url, std::string* error)
 #endif
 }
 
-void renderUpdateCheckWindow(CheckWindowState& state)
+void renderUpdateCheckWindow(
+  CheckWindowState& state,
+  bool automaticChecksEnabled,
+  const std::function<void(bool)>& setAutomaticChecksEnabled)
 {
   if (!state.open) {
     return;
   }
 
   const float windowWidth = updateCheckWindowWidth(state);
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
+  const ImVec2 center{
+    viewport->WorkPos.x + 0.5f * viewport->WorkSize.x,
+    viewport->WorkPos.y + 0.5f * viewport->WorkSize.y};
+
+  ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2{0.5f, 0.5f});
   ImGui::SetNextWindowSizeConstraints(ImVec2{windowWidth, 0.0f}, ImVec2{windowWidth, FLT_MAX});
-  if (!ImGui::Begin("Entropy Updates", &state.open, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize)) {
-    ImGui::End();
+  ImGui::OpenPopup("Entropy Updates");
+
+  bool open = state.open;
+  if (!ImGui::BeginPopupModal("Entropy Updates", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
     return;
   }
+  state.open = open;
 
   if (state.checking) {
     renderWrappedLabel("Checking GitHub for Entropy updates...");
@@ -611,6 +623,13 @@ void renderUpdateCheckWindow(CheckWindowState& state)
   ImGui::Separator();
   ImGui::Spacing();
 
+  bool automaticChecks = automaticChecksEnabled;
+  if (ImGui::Checkbox("Check for updates automatically", &automaticChecks)) {
+    setAutomaticChecksEnabled(automaticChecks);
+  }
+
+  ImGui::Spacing();
+
   if (ImGui::Button("Open Download Page")) {
     std::string error;
     if (!openUrlInDefaultBrowser(k_downloadPageUrl, &error)) {
@@ -620,9 +639,10 @@ void renderUpdateCheckWindow(CheckWindowState& state)
   ImGui::SameLine();
   if (ImGui::Button("Close")) {
     state.open = false;
+    ImGui::CloseCurrentPopup();
   }
 
-  ImGui::End();
+  ImGui::EndPopup();
 }
 
 } // namespace entropy::ui::updates

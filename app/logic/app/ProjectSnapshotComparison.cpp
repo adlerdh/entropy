@@ -232,8 +232,7 @@ bool raycastingSettingsEqual(
   const serialize::ProjectRaycastingSettings& a,
   const serialize::ProjectRaycastingSettings& b)
 {
-  return a.m_samplingFactor == b.m_samplingFactor && a.m_adaptiveSamplingEnabled == b.m_adaptiveSamplingEnabled &&
-         a.m_adaptiveSamplingTargetFrameRate == b.m_adaptiveSamplingTargetFrameRate &&
+  return a.m_samplingFactor == b.m_samplingFactor &&
          a.m_transparentBackgroundWhenNoHit == b.m_transparentBackgroundWhenNoHit &&
          a.m_backgroundEdgeBrighteningEnabled == b.m_backgroundEdgeBrighteningEnabled &&
          a.m_showCrosshairsIn3D == b.m_showCrosshairsIn3D &&

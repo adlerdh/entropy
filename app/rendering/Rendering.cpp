@@ -35,6 +35,8 @@
 
 #include <cmrc/cmrc.hpp>
 
+#include <cmath>
+
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
@@ -643,11 +645,15 @@ Rendering::Rendering(AppData& appData)
   , m_raycastIsoWarpedProgram("RaycastIsoSurfaceWarpedProgram")
   , m_raycastTimerQuery(0)
   , m_raycastTimerQueryPending(false)
+  , m_raycastRenderedThisFrame(false)
   , m_adaptiveRaycastInitialized(false)
   , m_adaptiveRaycastWasEnabled(false)
-  , m_lastManualRaycastSamplingFactor(0.5f)
-  , m_adaptiveRaycastSamplingFactor(0.5f)
+  , m_lastManualRaycastSamplingFactor(0.8f)
+  , m_adaptiveRaycastSamplingFactor(0.8f)
   , m_smoothedRaycastSeconds(0.0)
+  , m_smoothedFrameSeconds(0.0)
+  , m_adaptiveFrameWindowSeconds(0.0)
+  , m_adaptiveFrameWindowCount(0)
   , m_isAppDoneLoadingImages(false)
   , m_showOverlays(true)
 {
@@ -750,6 +756,7 @@ constexpr float sk_adaptiveRaycastMinSamplingFactor = 0.5f;
 constexpr float sk_adaptiveRaycastMaxSamplingFactor = 2.0f;
 constexpr float sk_adaptiveRaycastMinFps = 5.0f;
 constexpr float sk_adaptiveRaycastMaxFps = 120.0f;
+constexpr int sk_adaptiveRaycastFrameWindow = 30;
 } // namespace
 
 void Rendering::updateAdaptiveRaycastSampling()
@@ -765,6 +772,8 @@ void Rendering::updateAdaptiveRaycastSampling()
     m_adaptiveRaycastInitialized = false;
     m_adaptiveRaycastSamplingFactor = manualFactor;
     m_lastManualRaycastSamplingFactor = renderData.m_raycastSamplingFactor;
+    m_adaptiveFrameWindowSeconds = 0.0;
+    m_adaptiveFrameWindowCount = 0;
     renderData.m_adaptiveRaycastEffectiveSamplingFactor = manualFactor;
     return;
   }
@@ -775,6 +784,9 @@ void Rendering::updateAdaptiveRaycastSampling()
   {
     m_adaptiveRaycastSamplingFactor = manualFactor;
     m_smoothedRaycastSeconds = 0.0;
+    m_smoothedFrameSeconds = 0.0;
+    m_adaptiveFrameWindowSeconds = 0.0;
+    m_adaptiveFrameWindowCount = 0;
     m_adaptiveRaycastInitialized = true;
   }
 
@@ -797,24 +809,14 @@ void Rendering::updateAdaptiveRaycastSampling()
 
       const double elapsedSeconds = static_cast<double>(elapsedNs) * 1.0e-9;
       m_smoothedRaycastSeconds =
-        m_smoothedRaycastSeconds <= 0.0 ? elapsedSeconds : 0.8 * m_smoothedRaycastSeconds + 0.2 * elapsedSeconds;
-
-      const double targetSeconds = 1.0 / static_cast<double>(renderData.m_adaptiveRaycastTargetFrameRate);
-      const double ratio = m_smoothedRaycastSeconds / targetSeconds;
-      if (ratio > 1.08) {
-        const float adjustment = static_cast<float>(std::clamp(std::sqrt(ratio), 1.0, 1.15));
-        m_adaptiveRaycastSamplingFactor *= adjustment;
-      }
-      else if (ratio < 0.75) {
-        const float adjustment = static_cast<float>(std::clamp(std::sqrt(ratio), 0.90, 1.0));
-        m_adaptiveRaycastSamplingFactor *= adjustment;
-      }
-      m_adaptiveRaycastSamplingFactor = std::clamp(
-        m_adaptiveRaycastSamplingFactor,
-        sk_adaptiveRaycastMinSamplingFactor,
-        sk_adaptiveRaycastMaxSamplingFactor);
+        m_smoothedRaycastSeconds <= 0.0 ? elapsedSeconds : 0.65 * m_smoothedRaycastSeconds + 0.35 * elapsedSeconds;
     }
   }
+
+  m_adaptiveRaycastSamplingFactor = std::clamp(
+    m_adaptiveRaycastSamplingFactor,
+    sk_adaptiveRaycastMinSamplingFactor,
+    sk_adaptiveRaycastMaxSamplingFactor);
 
   renderData.m_adaptiveRaycastEffectiveSamplingFactor = m_adaptiveRaycastSamplingFactor;
 }
@@ -825,6 +827,47 @@ float Rendering::raycastSamplingFactorForCurrentFrame()
   const RenderData& renderData = m_appData.renderData();
   return renderData.m_adaptiveRaycastSamplingEnabled ? m_adaptiveRaycastSamplingFactor
                                                      : renderData.m_raycastSamplingFactor;
+}
+
+void Rendering::recordCompletedRaycastFrame(const double renderFrameSeconds)
+{
+  RenderData& renderData = m_appData.renderData();
+  if (!renderData.m_adaptiveRaycastSamplingEnabled) {
+    return;
+  }
+
+  if (!std::isfinite(renderFrameSeconds) || renderFrameSeconds <= 0.0) {
+    return;
+  }
+
+  // Measure once per complete Entropy frame that actually rendered a raycast view.
+  // Per-draw or per-uniform timings can overcount when several raycast setup paths run
+  // in one displayed frame. The GPU timer is still used as a lower bound for raycast cost.
+  const double raycastSeconds = std::max(renderFrameSeconds, m_smoothedRaycastSeconds);
+  m_smoothedFrameSeconds =
+    m_smoothedFrameSeconds <= 0.0 ? raycastSeconds : 0.80 * m_smoothedFrameSeconds + 0.20 * raycastSeconds;
+  renderData.m_adaptiveRaycastMeasuredFrameRate = static_cast<float>(1.0 / m_smoothedFrameSeconds);
+
+  m_adaptiveFrameWindowSeconds += raycastSeconds;
+  ++m_adaptiveFrameWindowCount;
+
+  if (m_adaptiveFrameWindowCount < sk_adaptiveRaycastFrameWindow) {
+    return;
+  }
+
+  const double averageFrameSeconds = m_adaptiveFrameWindowSeconds / static_cast<double>(m_adaptiveFrameWindowCount);
+  const double measuredFps = 1.0 / averageFrameSeconds;
+  const double targetFps = static_cast<double>(renderData.m_adaptiveRaycastTargetFrameRate);
+
+  if (measuredFps < 0.90 * targetFps) {
+    m_adaptiveRaycastSamplingFactor *= 1.05f;
+  }
+  else if (measuredFps > 1.15 * targetFps) {
+    m_adaptiveRaycastSamplingFactor *= 0.98f;
+  }
+
+  m_adaptiveFrameWindowSeconds = 0.0;
+  m_adaptiveFrameWindowCount = 0;
 }
 
 bool Rendering::beginRaycastTiming()
@@ -840,6 +883,7 @@ bool Rendering::beginRaycastTiming()
 
 void Rendering::endRaycastTiming(const bool timingActive)
 {
+  m_raycastRenderedThisFrame = true;
   if (!timingActive) {
     return;
   }
@@ -1689,6 +1733,9 @@ void Rendering::framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime)
 
 void Rendering::render()
 {
+  const auto renderFrameStartTime = Clock::now();
+  m_raycastRenderedThisFrame = false;
+
   // Rebuild ASCII atlas if the charset changed via the UI
   m_asciiRenderer.maybeRebuildAtlas();
 
@@ -1717,6 +1764,11 @@ void Rendering::render()
   catch (const std::exception& e) {
     spdlog::error("Exception while rendering vector overlays: {}\n{}", e.what(), stack_trace::current(1));
     throw;
+  }
+
+  if (m_raycastRenderedThisFrame) {
+    const double renderFrameSeconds = std::chrono::duration<double>(Clock::now() - renderFrameStartTime).count();
+    recordCompletedRaycastFrame(renderFrameSeconds);
   }
 }
 

@@ -248,8 +248,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = "image.nii.gz";
   project.m_raycasting.m_samplingFactor = 1.25f;
-  project.m_raycasting.m_adaptiveSamplingEnabled = true;
-  project.m_raycasting.m_adaptiveSamplingTargetFrameRate = 45.0f;
   project.m_raycasting.m_transparentBackgroundWhenNoHit = false;
   project.m_raycasting.m_backgroundEdgeBrighteningEnabled = false;
   project.m_raycasting.m_showCrosshairsIn3D = true;
@@ -278,8 +276,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   const json root = project;
 
   CHECK(root.at("raycasting").at("samplingFactor") == 1.25f);
-  CHECK(root.at("raycasting").at("adaptiveSamplingEnabled") == true);
-  CHECK(root.at("raycasting").at("adaptiveSamplingTargetFrameRate") == 45.0f);
+  CHECK_FALSE(root.at("raycasting").contains("adaptiveSamplingEnabled"));
+  CHECK_FALSE(root.at("raycasting").contains("adaptiveSamplingTargetFrameRate"));
   CHECK(root.at("raycasting").at("transparentBackgroundWhenNoHit") == false);
   CHECK(root.at("raycasting").at("backgroundEdgeBrighteningEnabled") == false);
   CHECK(root.at("raycasting").at("showCrosshairsIn3D") == true);
@@ -305,8 +303,6 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
   CHECK(parsed.m_raycasting.m_samplingFactor == 1.25f);
-  CHECK(parsed.m_raycasting.m_adaptiveSamplingEnabled == true);
-  CHECK(parsed.m_raycasting.m_adaptiveSamplingTargetFrameRate == 45.0f);
   CHECK(parsed.m_raycasting.m_transparentBackgroundWhenNoHit == false);
   CHECK(parsed.m_raycasting.m_backgroundEdgeBrighteningEnabled == false);
   CHECK(parsed.m_raycasting.m_showCrosshairsIn3D == true);
@@ -361,7 +357,7 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
 
-  CHECK(parsed.m_raycasting.m_samplingFactor == 0.1f);
+  CHECK(parsed.m_raycasting.m_samplingFactor == 0.5f);
   CHECK(parsed.m_raycasting.m_segmentationMasking == serialize::ProjectSegmentationRaycastMasking::Disabled);
   CHECK(parsed.m_raycasting.m_transparentBackgroundWhenNoHit == false);
   CHECK(parsed.m_raycasting.m_renderFrontFaces == false);

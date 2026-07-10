@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <string>
 
@@ -80,8 +81,11 @@ CheckResult fetchLatestRelease(const CheckRequest& request);
 bool openUrlInDefaultBrowser(const std::string& url, std::string* error = nullptr);
 
 /**
- * @brief Render the non-modal update check status window.
+ * @brief Render the modal update check status window.
  */
-void renderUpdateCheckWindow(CheckWindowState& state);
+void renderUpdateCheckWindow(
+  CheckWindowState& state,
+  bool automaticChecksEnabled,
+  const std::function<void(bool)>& setAutomaticChecksEnabled);
 
 } // namespace entropy::ui::updates

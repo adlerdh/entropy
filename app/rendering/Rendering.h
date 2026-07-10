@@ -237,6 +237,7 @@ private:
 
   float raycastSamplingFactorForCurrentFrame();
   void updateAdaptiveRaycastSampling();
+  void recordCompletedRaycastFrame(double renderFrameSeconds);
   bool beginRaycastTiming();
   void endRaycastTiming(bool timingActive);
 
@@ -259,11 +260,15 @@ private:
 
   unsigned int m_raycastTimerQuery;
   bool m_raycastTimerQueryPending;
+  bool m_raycastRenderedThisFrame;
   bool m_adaptiveRaycastInitialized;
   bool m_adaptiveRaycastWasEnabled;
   float m_lastManualRaycastSamplingFactor;
   float m_adaptiveRaycastSamplingFactor;
   double m_smoothedRaycastSeconds;
+  double m_smoothedFrameSeconds;
+  double m_adaptiveFrameWindowSeconds;
+  int m_adaptiveFrameWindowCount;
 
   /// Is the application done loading images?
   bool m_isAppDoneLoadingImages;

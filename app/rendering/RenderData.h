@@ -285,6 +285,7 @@ struct RenderData
   bool m_adaptiveRaycastSamplingEnabled;
   float m_adaptiveRaycastTargetFrameRate;
   float m_adaptiveRaycastEffectiveSamplingFactor;
+  float m_adaptiveRaycastMeasuredFrameRate;
   bool m_raycastBackgroundEdgeBrighteningEnabled;
   bool m_showCrosshairsIn3D;
   float m_crosshairs3DGlyphDiameterVoxelDiagonals;

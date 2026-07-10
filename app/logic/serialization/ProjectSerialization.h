@@ -180,9 +180,7 @@ struct ProjectComparisonSettings
  */
 struct ProjectRaycastingSettings
 {
-  float m_samplingFactor = 0.5f;                          //!< Ray-marching sampling factor.
-  bool m_adaptiveSamplingEnabled = false;                 //!< Adapt ray-marching sampling to a target frame rate.
-  float m_adaptiveSamplingTargetFrameRate = 30.0f;        //!< Adaptive raycasting target frame rate.
+  float m_samplingFactor = 0.8f;                          //!< Ray-marching sampling factor.
   bool m_transparentBackgroundWhenNoHit = true;           //!< Make missed 3D rays transparent.
   bool m_backgroundEdgeBrighteningEnabled = true;         //!< Brighten raycast background near image-domain edges.
   bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D raycast views.

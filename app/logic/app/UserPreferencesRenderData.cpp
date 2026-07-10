@@ -145,8 +145,6 @@ user_preferences::RenderPreferences renderPreferencesFromRenderData(const Render
   preferences.limitFrameRate = renderData.m_manualFramerateLimiter;
   preferences.targetFrameTimeSeconds = renderData.m_targetFrameTimeSeconds;
   preferences.raycastSamplingFactor = renderData.m_raycastSamplingFactor;
-  preferences.adaptiveRaycastSamplingEnabled = renderData.m_adaptiveRaycastSamplingEnabled;
-  preferences.adaptiveRaycastTargetFrameRate = renderData.m_adaptiveRaycastTargetFrameRate;
   preferences.transparentBackgroundWhenNoHit = renderData.m_3dTransparentIfNoHit;
   preferences.renderFrontFaces = renderData.m_renderFrontFaces;
   preferences.renderBackFaces = renderData.m_renderBackFaces;
@@ -244,9 +242,9 @@ void applyRenderPreferences(RenderData& renderData, const user_preferences::Rend
   renderData.m_flashlightOverlays = preferences.flashlightOverlayMovingImage;
   renderData.m_manualFramerateLimiter = preferences.limitFrameRate;
   renderData.m_targetFrameTimeSeconds = preferences.targetFrameTimeSeconds;
-  renderData.m_raycastSamplingFactor = preferences.raycastSamplingFactor;
-  renderData.m_adaptiveRaycastSamplingEnabled = preferences.adaptiveRaycastSamplingEnabled;
-  renderData.m_adaptiveRaycastTargetFrameRate = preferences.adaptiveRaycastTargetFrameRate;
+  renderData.m_raycastSamplingFactor = std::clamp(preferences.raycastSamplingFactor, 0.5f, 2.0f);
+  renderData.m_adaptiveRaycastSamplingEnabled = false;
+  renderData.m_adaptiveRaycastTargetFrameRate = 30.0f;
   renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(preferences.raycastSamplingFactor, 0.5f, 2.0f);
   renderData.m_3dTransparentIfNoHit = preferences.transparentBackgroundWhenNoHit;
   renderData.m_renderFrontFaces = preferences.renderFrontFaces;

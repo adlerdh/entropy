@@ -594,6 +594,37 @@ bool renderLocalLinearResidualSettings(
 }
 
 /**
+ * @brief Render annotation and landmark display settings inside the Views page.
+ */
+void renderAnnotationViewSettings(RenderData& renderData)
+{
+  ImGui::PushID("annotations"); /*** PushID annotations ***/
+
+  bool annotOnTop = renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
+  if (ImGui::Checkbox("Annotations on top", &annotOnTop)) {
+    renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes = annotOnTop;
+  }
+  ImGui::SameLine();
+  helpMarker("Render annotations on top of all image layers");
+
+  bool lmOnTop = renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
+  if (ImGui::Checkbox("Landmarks on top", &lmOnTop)) {
+    renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes = lmOnTop;
+  }
+  ImGui::SameLine();
+  helpMarker("Render landmarks on top of all image layers");
+
+  bool hideVertices = renderData.m_globalAnnotationParams.hidePolygonVertices;
+  if (ImGui::Checkbox("Hide all annotation vertices", &hideVertices)) {
+    renderData.m_globalAnnotationParams.hidePolygonVertices = hideVertices;
+  }
+  ImGui::SameLine();
+  helpMarker("Hide all annotation vertices");
+
+  ImGui::PopID(); /*** PopID annotations ***/
+}
+
+/**
  * @brief Render the Views settings page contents.
  */
 void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRecenterType& recenterAllViews)
@@ -999,6 +1030,12 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
     }
   }
   finishSettingsSection(scaleBarsOpen);
+
+  const bool annotationsOpen = ImGui::CollapsingHeader("Annotations", ImGuiTreeNodeFlags_DefaultOpen);
+  if (annotationsOpen) {
+    renderAnnotationViewSettings(renderData);
+  }
+  finishSettingsSection(annotationsOpen);
 
   if (ImGui::CollapsingHeader("Lightbox Views", ImGuiTreeNodeFlags_DefaultOpen)) {
     const bool showImageBorders = renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
@@ -2058,9 +2095,11 @@ void renderRaycastingTab(RenderData& renderData)
   /// change
 
   static constexpr float k_factorStep = 0.1f;
-  static constexpr float k_minFactor = 0.1f;
-  static constexpr float k_maxFactor = 5.0f;
+  static constexpr float k_minFactor = 0.5f;
+  static constexpr float k_maxFactor = 2.0f;
 
+  renderData.m_adaptiveRaycastSamplingEnabled = false;
+  renderData.m_raycastSamplingFactor = std::clamp(renderData.m_raycastSamplingFactor, k_minFactor, k_maxFactor);
   if (ImGui::DragFloat(
         "Raycast sampling rate",
         &(renderData.m_raycastSamplingFactor),
@@ -2075,34 +2114,7 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Sampling rate as a fraction of the voxel size along the ray path");
 
-  if (
-    ImGui::Checkbox("Adaptive raycast sampling", &renderData.m_adaptiveRaycastSamplingEnabled) &&
-    renderData.m_adaptiveRaycastSamplingEnabled)
-  {
-    renderData.m_adaptiveRaycastTargetFrameRate =
-      renderData.m_manualFramerateLimiter
-        ? static_cast<float>(std::clamp(1.0 / renderData.m_targetFrameTimeSeconds, 5.0, 120.0))
-        : 30.0f;
-    renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(renderData.m_raycastSamplingFactor, 0.5f, 2.0f);
-  }
-  ImGui::SameLine();
-  helpMarker("Automatically adjust the raycast sampling rate to approach a target frame rate");
-
-  if (renderData.m_adaptiveRaycastSamplingEnabled) {
-    ImGui::DragFloat(
-      "Adaptive target frame rate",
-      &renderData.m_adaptiveRaycastTargetFrameRate,
-      1.0f,
-      5.0f,
-      120.0f,
-      "%0.0f Hz",
-      ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SameLine();
-    helpMarker("Target frame rate for adaptive raycast sampling; sampling is bounded to 0.5-2.0 voxels");
-
-    ImGui::Text("Effective sampling rate: %0.2f vox", renderData.m_adaptiveRaycastEffectiveSamplingFactor);
-  }
-
+  ImGui::Spacing();
   ImGui::ColorEdit4("Raycast background color", glm::value_ptr(renderData.m_3dBackgroundColor), k_colorAlphaEditFlags);
   ImGui::SameLine();
   helpMarker("Color used for raycast pixels that do not hit visible image content");
@@ -2114,6 +2126,7 @@ void renderRaycastingTab(RenderData& renderData)
   helpMarker("Background of view is transparent outside of image volume");
 
   // Should the front and back faces be rendered in 3D raycasting?
+  ImGui::Spacing();
   ImGui::Checkbox("Render front faces", &renderData.m_renderFrontFaces);
   ImGui::SameLine();
   helpMarker("Render front faces in raycasting");
@@ -2122,6 +2135,7 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Render back faces in raycasting");
 
+  ImGui::Spacing();
   ImGui::Checkbox("Show image box", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);
   ImGui::SameLine();
   helpMarker("Render a subtle outline of the raycast image box in 3D views");
@@ -2181,7 +2195,11 @@ void renderRaycastingTab(RenderData& renderData)
     renderData.m_segMasking = RenderData::SegMaskingForRaycasting::SegMasksOut;
   }
   ImGui::SameLine();
-  helpMarker("Mask image based on segmentation value");
+  helpMarker(
+    "Controls how the active image segmentation affects 3D raycasting.\n\n"
+    "Disable: ignore segmentation values and raycast the full image volume.\n"
+    "Mask in: render only samples inside non-background segmentation labels.\n"
+    "Mask out: hide samples inside non-background segmentation labels and render the rest of the image.");
 
   ImGui::PopID(); /*** PopID raycasting ***/
 }
@@ -2410,37 +2428,6 @@ void renderResetInterfaceSettingsPopup(const SettingsPersistenceCallbacks& persi
 }
 
 /**
- * @brief Render the Annotations settings page contents.
- */
-void renderAnnotationsTab(RenderData& renderData)
-{
-  ImGui::PushID("landmarks"); /*** PushID landmarks ***/
-
-  bool annotOnTop = renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes;
-  if (ImGui::Checkbox("Annotations on top", &annotOnTop)) {
-    renderData.m_globalAnnotationParams.renderOnTopOfAllImagePlanes = annotOnTop;
-  }
-  ImGui::SameLine();
-  helpMarker("Render annotations on top of all image layers");
-
-  bool lmOnTop = renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;
-  if (ImGui::Checkbox("Landmarks on top", &lmOnTop)) {
-    renderData.m_globalLandmarkParams.renderOnTopOfAllImagePlanes = lmOnTop;
-  }
-  ImGui::SameLine();
-  helpMarker("Render landmarks on top of all image layers");
-
-  bool hideVertices = renderData.m_globalAnnotationParams.hidePolygonVertices;
-  if (ImGui::Checkbox("Hide all annotation vertices", &hideVertices)) {
-    renderData.m_globalAnnotationParams.hidePolygonVertices = hideVertices;
-  }
-  ImGui::SameLine();
-  helpMarker("Hide all annotation vertices");
-
-  ImGui::PopID(); /*** PopID landmarks ***/
-}
-
-/**
  * @brief Render the Precision settings section contents.
  */
 void renderPrecisionTab(AppData& appData)
@@ -2596,6 +2583,9 @@ static void renderSettingsPage(
     case GuiData::SettingsTab::Views:
       renderViewsTab(appData, renderData, recenterAllViews);
       break;
+    case GuiData::SettingsTab::Annotations:
+      renderViewsTab(appData, renderData, recenterAllViews);
+      break;
     case GuiData::SettingsTab::Images:
       renderImagesTab(appData);
       break;
@@ -2608,9 +2598,6 @@ static void renderSettingsPage(
       break;
     case GuiData::SettingsTab::Rendering:
       renderRenderingTab(renderData);
-      break;
-    case GuiData::SettingsTab::Annotations:
-      renderAnnotationsTab(renderData);
       break;
     case GuiData::SettingsTab::Registration:
       renderRegistrationTab(appData);

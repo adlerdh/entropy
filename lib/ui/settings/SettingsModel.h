@@ -126,7 +126,7 @@ const std::array<UiColorPreset, 9>& uiColorPresets();
 const std::array<UiDensityPreset, 3>& uiDensityPresets();
 
 /** @brief Return settings pages in the order shown in the side navigation. */
-const std::array<SettingsPageChoice, 10>& settingsPageChoices();
+const std::array<SettingsPageChoice, 9>& settingsPageChoices();
 
 /**
  * @brief Return the user-visible label for a settings page.

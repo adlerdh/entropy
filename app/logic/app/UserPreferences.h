@@ -121,9 +121,7 @@ struct RenderPreferences
 
   bool limitFrameRate = false;
   double targetFrameTimeSeconds = 1.0 / 60.0;
-  float raycastSamplingFactor = 0.5f;
-  bool adaptiveRaycastSamplingEnabled = false;
-  float adaptiveRaycastTargetFrameRate = 30.0f;
+  float raycastSamplingFactor = 0.8f;
   bool transparentBackgroundWhenNoHit = true;
   bool renderFrontFaces = true;
   bool renderBackFaces = true;

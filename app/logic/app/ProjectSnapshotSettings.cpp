@@ -219,8 +219,6 @@ serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
   const auto& renderData = appData.renderData();
   return serialize::ProjectRaycastingSettings{
     .m_samplingFactor = renderData.m_raycastSamplingFactor,
-    .m_adaptiveSamplingEnabled = renderData.m_adaptiveRaycastSamplingEnabled,
-    .m_adaptiveSamplingTargetFrameRate = renderData.m_adaptiveRaycastTargetFrameRate,
     .m_transparentBackgroundWhenNoHit = renderData.m_3dTransparentIfNoHit,
     .m_backgroundEdgeBrighteningEnabled = renderData.m_raycastBackgroundEdgeBrighteningEnabled,
     .m_showCrosshairsIn3D = renderData.m_showCrosshairsIn3D,
@@ -236,9 +234,9 @@ serialize::ProjectRaycastingSettings raycastingSettings(const AppData& appData)
 void applyRaycastingSettings(AppData& appData, const serialize::ProjectRaycastingSettings& settings)
 {
   auto& renderData = appData.renderData();
-  renderData.m_raycastSamplingFactor = settings.m_samplingFactor;
-  renderData.m_adaptiveRaycastSamplingEnabled = settings.m_adaptiveSamplingEnabled;
-  renderData.m_adaptiveRaycastTargetFrameRate = settings.m_adaptiveSamplingTargetFrameRate;
+  renderData.m_raycastSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
+  renderData.m_adaptiveRaycastSamplingEnabled = false;
+  renderData.m_adaptiveRaycastTargetFrameRate = 30.0f;
   renderData.m_adaptiveRaycastEffectiveSamplingFactor = std::clamp(settings.m_samplingFactor, 0.5f, 2.0f);
   renderData.m_3dTransparentIfNoHit = settings.m_transparentBackgroundWhenNoHit;
   renderData.m_raycastBackgroundEdgeBrighteningEnabled = settings.m_backgroundEdgeBrighteningEnabled;

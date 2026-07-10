@@ -1292,8 +1292,6 @@ void to_json(json& j, const ProjectRaycastingSettings& settings)
 {
   j = json{
     {"samplingFactor", settings.m_samplingFactor},
-    {"adaptiveSamplingEnabled", settings.m_adaptiveSamplingEnabled},
-    {"adaptiveSamplingTargetFrameRate", settings.m_adaptiveSamplingTargetFrameRate},
     {"transparentBackgroundWhenNoHit", settings.m_transparentBackgroundWhenNoHit},
     {"backgroundEdgeBrighteningEnabled", settings.m_backgroundEdgeBrighteningEnabled},
     {"showCrosshairsIn3D", settings.m_showCrosshairsIn3D},
@@ -1309,13 +1307,7 @@ void to_json(json& j, const ProjectRaycastingSettings& settings)
 void from_json(const json& j, ProjectRaycastingSettings& settings)
 {
   if (const auto value = j.find("samplingFactor"); value != j.end() && value->is_number()) {
-    settings.m_samplingFactor = std::clamp(value->get<float>(), 0.1f, 5.0f);
-  }
-  if (const auto value = j.find("adaptiveSamplingEnabled"); value != j.end() && value->is_boolean()) {
-    settings.m_adaptiveSamplingEnabled = value->get<bool>();
-  }
-  if (const auto value = j.find("adaptiveSamplingTargetFrameRate"); value != j.end() && value->is_number()) {
-    settings.m_adaptiveSamplingTargetFrameRate = std::clamp(value->get<float>(), 5.0f, 120.0f);
+    settings.m_samplingFactor = std::clamp(value->get<float>(), 0.5f, 2.0f);
   }
   if (const auto value = j.find("transparentBackgroundWhenNoHit"); value != j.end() && value->is_boolean()) {
     settings.m_transparentBackgroundWhenNoHit = value->get<bool>();
