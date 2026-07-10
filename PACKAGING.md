@@ -21,8 +21,8 @@ cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43 "-DE
 Use this sequence for normal release packages on Linux, macOS, and Windows:
 
 ```sh
-cmake --preset superbuild-release
-cmake --build --preset superbuild-release --parallel
+cmake --preset deps-release
+cmake --build --preset deps-release --parallel
 
 cmake --preset app-release
 cmake --build --preset app-release --parallel
@@ -256,9 +256,9 @@ Terminal launches keep the development defaults used by the command-line app.
 ## Package Size Notes
 Release packages default to `Entropy_STATIC_BUNDLED_DEPENDENCIES=ON`, which links ITK, GLFW, Native File Dialog Extended, spdlog, and small helper libraries statically into the executable. Qt Core stays dynamic and is bundled privately so the app does not depend on a system-provided Qt version.
 
-Release packages should be built from `build-release`, not `build-default`. A `RelWithDebInfo` dependency tree can include debug information in copied private libraries and produce much larger packages. The release superbuild avoids that by building dependencies with `CMAKE_BUILD_TYPE=Release`.
+Release packages should be built from `build-release`, not `build-debug`. A Debug dependency tree can include debug information in copied private libraries and produce much larger packages. The release dependency build avoids that by building dependencies with `CMAKE_BUILD_TYPE=Release`.
 
-Changing `Entropy_STATIC_BUNDLED_DEPENDENCIES` changes how third-party dependencies are built. Reconfigure and rebuild the superbuild after changing it; do not reuse a dependency tree that was previously built with the opposite static/shared setting.
+Changing `Entropy_STATIC_BUNDLED_DEPENDENCIES` changes how third-party dependencies are built. Reconfigure and rebuild the dependency stage after changing it; do not reuse a dependency tree that was previously built with the opposite static/shared setting.
 
 ## Windows Packages
 On Windows, CPack creates an MSI installer and a portable ZIP archive named like:
@@ -280,8 +280,8 @@ WiX Toolset v3.14.1
 
 Build the release dependency tree and app first:
 ```powershell
-cmake --preset superbuild-release
-cmake --build --preset superbuild-release --parallel
+cmake --preset deps-release
+cmake --build --preset deps-release --parallel
 
 cmake --preset app-release
 cmake --build --preset app-release --parallel

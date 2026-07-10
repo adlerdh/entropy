@@ -11,85 +11,43 @@
       "hidden": true,
       "binaryDir": "${sourceDir}/build-${presetName}",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "BUILD_SHARED_LIBS": true,
         "Entropy_USE_CCACHE": true,
         "Entropy_SUPERBUILD_PARALLEL": ""
       }
     },
     {
-      "name": "default",
-      "displayName": "Default app configure",
-      "description": "Configure Entropy after the matching superbuild stage has populated dependencies.",
+      "name": "deps-debug",
+      "displayName": "Debug dependencies configure",
+      "description": "Configure the Debug dependencies.",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build-default",
-      "cacheVariables": {
-        "Entropy_SUPERBUILD": false
-      }
-    },
-    {
-      "name": "superbuild",
-      "displayName": "Default superbuild configure",
-      "description": "Configure the dependency superbuild.",
-      "inherits": "base",
-      "binaryDir": "${sourceDir}/build-default",
-      "cacheVariables": {
-        "Entropy_SUPERBUILD": true,
-        "Entropy_SUPERBUILD_CONFIG": "RelWithDebInfo"
-      }
-    },
-    {
-      "name": "app",
-      "displayName": "Default app configure",
-      "description": "Configure the Entropy app after running the superbuild preset.",
-      "inherits": "default"
-    },
-    {
-      "name": "superbuild-debug",
-      "displayName": "Debug superbuild configure",
-      "inherits": "superbuild",
       "binaryDir": "${sourceDir}/build-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "Entropy_SUPERBUILD": true,
         "Entropy_SUPERBUILD_CONFIG": "Debug"
       }
     },
     {
       "name": "app-debug",
       "displayName": "Debug app configure",
-      "inherits": "app",
+      "description": "Configure the Debug Entropy app after running deps-debug.",
+      "inherits": "base",
       "binaryDir": "${sourceDir}/build-debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-    {
-      "name": "superbuild-coverage",
-      "displayName": "Coverage superbuild configure",
-      "inherits": "superbuild",
-      "binaryDir": "${sourceDir}/build-coverage",
-      "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "Entropy_SUPERBUILD_CONFIG": "Debug"
+        "Entropy_SUPERBUILD": false
       }
     },
     {
-      "name": "app-coverage",
-      "displayName": "Coverage app configure",
-      "inherits": "app",
-      "binaryDir": "${sourceDir}/build-coverage",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "Entropy_ENABLE_COVERAGE": true
-      }
-    },
-    {
-      "name": "superbuild-release",
-      "displayName": "Release superbuild configure",
-      "inherits": "superbuild",
+      "name": "deps-release",
+      "displayName": "Release dependencies configure",
+      "description": "Configure the Release dependencies.",
+      "inherits": "base",
       "binaryDir": "${sourceDir}/build-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "Entropy_SUPERBUILD": true,
         "Entropy_STATIC_BUNDLED_DEPENDENCIES": true,
         "Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS": true,
         "Entropy_SUPERBUILD_CONFIG": "Release"
@@ -98,10 +56,12 @@
     {
       "name": "app-release",
       "displayName": "Release app configure",
-      "inherits": "app",
+      "description": "Configure the Release Entropy app after running deps-release.",
+      "inherits": "base",
       "binaryDir": "${sourceDir}/build-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "Entropy_SUPERBUILD": false,
         "Entropy_STATIC_BUNDLED_DEPENDENCIES": true,
         "Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS": true
       }
@@ -109,27 +69,9 @@
   ],
   "buildPresets": [
     {
-      "name": "superbuild",
-      "displayName": "Build default dependencies",
-      "configurePreset": "superbuild",
-      "configuration": "RelWithDebInfo"
-    },
-    {
-      "name": "app",
-      "displayName": "Build default app",
-      "configurePreset": "app",
-      "configuration": "RelWithDebInfo"
-    },
-    {
-      "name": "default",
-      "displayName": "Build default app",
-      "configurePreset": "default",
-      "configuration": "RelWithDebInfo"
-    },
-    {
-      "name": "superbuild-debug",
+      "name": "deps-debug",
       "displayName": "Build Debug dependencies",
-      "configurePreset": "superbuild-debug",
+      "configurePreset": "deps-debug",
       "configuration": "Debug"
     },
     {
@@ -139,39 +81,9 @@
       "configuration": "Debug"
     },
     {
-      "name": "superbuild-coverage",
-      "displayName": "Build coverage dependencies",
-      "configurePreset": "superbuild-coverage",
-      "configuration": "Debug"
-    },
-    {
-      "name": "app-coverage",
-      "displayName": "Build coverage app",
-      "configurePreset": "app-coverage",
-      "configuration": "Debug"
-    },
-    {
-      "name": "coverage",
-      "displayName": "Run unit tests with coverage",
-      "configurePreset": "app-coverage",
-      "configuration": "Debug",
-      "targets": [
-        "coverage"
-      ]
-    },
-    {
-      "name": "coverage-html",
-      "displayName": "Run unit tests with HTML coverage",
-      "configurePreset": "app-coverage",
-      "configuration": "Debug",
-      "targets": [
-        "coverage-html"
-      ]
-    },
-    {
-      "name": "superbuild-release",
+      "name": "deps-release",
       "displayName": "Build Release dependencies",
-      "configurePreset": "superbuild-release",
+      "configurePreset": "deps-release",
       "configuration": "Release"
     },
     {

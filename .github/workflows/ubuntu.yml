@@ -43,7 +43,7 @@ env:
   CCACHE_BASEDIR: ${{ github.workspace }}
   CCACHE_COMPILERCHECK: content
   CCACHE_MAXSIZE: 2G
-  SUPERBUILD_CACHE_VERSION: v1
+  DEPS_CACHE_VERSION: v1
 
 jobs:
   format:
@@ -134,7 +134,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Debug SuperBuild cache
+      - name: Restore Debug Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -155,15 +155,15 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: ubuntu2204-gcc13-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: ubuntu2204-gcc13-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            ubuntu2204-gcc13-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            ubuntu2204-gcc13-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Debug SuperBuild
-        run: cmake --preset superbuild-debug -D Entropy_USE_CCACHE=ON
+      - name: Configure Debug Dependencies
+        run: cmake --preset deps-debug -D Entropy_USE_CCACHE=ON
 
-      - name: Build Debug SuperBuild
-        run: cmake --build --preset superbuild-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+      - name: Build Debug Dependencies
+        run: cmake --build --preset deps-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Debug app
         run: cmake --preset app-debug -D Entropy_USE_CCACHE=ON
@@ -236,7 +236,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Coverage SuperBuild cache
+      - name: Restore Coverage Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -257,27 +257,39 @@ jobs:
             build-coverage/external/spdlog-*
             build-coverage/external/stduuid-*
             build-coverage/external/tinyfsm-*
-          key: ubuntu2204-gcc13-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: ubuntu2204-gcc13-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            ubuntu2204-gcc13-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            ubuntu2204-gcc13-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Coverage SuperBuild
-        run: cmake --preset superbuild-coverage
+      - name: Configure Coverage Dependencies
+        run: >
+          cmake -S . -B build-coverage
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_SHARED_LIBS=ON
+          -DEntropy_USE_CCACHE=ON
+          -DEntropy_SUPERBUILD=ON
+          -DEntropy_SUPERBUILD_CONFIG=Debug
 
-      - name: Build Coverage SuperBuild
-        run: cmake --build --preset superbuild-coverage --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+      - name: Build Coverage Dependencies
+        run: cmake --build build-coverage --config Debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Coverage app
-        run: cmake --preset app-coverage
+        run: >
+          cmake -S . -B build-coverage
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_SHARED_LIBS=ON
+          -DEntropy_USE_CCACHE=ON
+          -DEntropy_SUPERBUILD=OFF
+          -DEntropy_ENABLE_COVERAGE=ON
 
       - name: Build Coverage app
-        run: cmake --build --preset app-coverage --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+        run: cmake --build build-coverage --config Debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Generate coverage summary
-        run: cmake --build --preset coverage --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+        run: cmake --build build-coverage --target coverage --config Debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Generate HTML coverage
-        run: cmake --build --preset coverage-html --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+        run: cmake --build build-coverage --target coverage-html --config Debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Upload coverage HTML
         uses: actions/upload-artifact@v7
@@ -346,7 +358,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -367,15 +379,15 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
-        run: cmake --preset superbuild-release
+      - name: Configure Release Dependencies
+        run: cmake --preset deps-release
 
-      - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+      - name: Build Release Dependencies
+        run: cmake --build --preset deps-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Release app
         run: cmake --preset app-release

@@ -41,7 +41,7 @@ env:
   CMAKE_GENERATOR_PLATFORM: x64
   CMAKE_BUILD_PARALLEL_LEVEL: 2
   CTEST_PARALLEL_LEVEL: 2
-  SUPERBUILD_CACHE_VERSION: v1
+  DEPS_CACHE_VERSION: v1
   SCCACHE_CACHE_VERSION: v1
 
 jobs:
@@ -132,7 +132,7 @@ jobs:
         working-directory: 'S:\'
         run: sccache --zero-stats
 
-      - name: Restore Debug Ninja SuperBuild cache
+      - name: Restore Debug Ninja Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -153,14 +153,14 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: windows-msvc2022-ninja-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: windows-msvc2022-ninja-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-msvc2022-ninja-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            windows-msvc2022-ninja-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Debug SuperBuild
+      - name: Configure Debug Dependencies
         working-directory: 'S:\'
         run: >
-          cmake --preset superbuild-debug
+          cmake --preset deps-debug
           -G Ninja
           -DCMAKE_C_COMPILER=cl
           -DCMAKE_CXX_COMPILER=cl
@@ -168,9 +168,9 @@ jobs:
           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DEntropy_USE_CCACHE=OFF
 
-      - name: Build Debug SuperBuild
+      - name: Build Debug Dependencies
         working-directory: 'S:\'
-        run: cmake --build --preset superbuild-debug --parallel
+        run: cmake --build --preset deps-debug --parallel
 
       - name: Configure Debug app
         working-directory: 'S:\'
@@ -233,7 +233,7 @@ jobs:
           $openCppCoveragePath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           Get-Command OpenCppCoverage -ErrorAction Stop
 
-      - name: Restore Coverage SuperBuild cache
+      - name: Restore Coverage Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -254,29 +254,41 @@ jobs:
             build-coverage/external/spdlog-*
             build-coverage/external/stduuid-*
             build-coverage/external/tinyfsm-*
-          key: windows-msvc2022-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: windows-msvc2022-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-msvc2022-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            windows-msvc2022-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Coverage SuperBuild
+      - name: Configure Coverage Dependencies
         working-directory: 'S:\'
-        run: cmake --preset superbuild-coverage
+        run: >
+          cmake -S . -B build-coverage
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_SHARED_LIBS=ON
+          -DEntropy_USE_CCACHE=ON
+          -DEntropy_SUPERBUILD=ON
+          -DEntropy_SUPERBUILD_CONFIG=Debug
 
-      - name: Build Coverage SuperBuild
+      - name: Build Coverage Dependencies
         working-directory: 'S:\'
-        run: cmake --build --preset superbuild-coverage --parallel
+        run: cmake --build build-coverage --config Debug --parallel
 
       - name: Configure Coverage app
         working-directory: 'S:\'
-        run: cmake --preset app-coverage
+        run: >
+          cmake -S . -B build-coverage
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_SHARED_LIBS=ON
+          -DEntropy_USE_CCACHE=ON
+          -DEntropy_SUPERBUILD=OFF
+          -DEntropy_ENABLE_COVERAGE=ON
 
       - name: Build Coverage app
         working-directory: 'S:\'
-        run: cmake --build --preset app-coverage --parallel
+        run: cmake --build build-coverage --config Debug --parallel
 
       - name: Generate XML coverage
         working-directory: 'S:\'
-        run: cmake --build --preset coverage --parallel
+        run: cmake --build build-coverage --target coverage --config Debug --parallel
 
       - name: Summarize XML coverage
         working-directory: 'S:\'
@@ -297,7 +309,7 @@ jobs:
 
       - name: Generate HTML coverage
         working-directory: 'S:\'
-        run: cmake --build --preset coverage-html --parallel
+        run: cmake --build build-coverage --target coverage-html --config Debug --parallel
 
       - name: Upload coverage XML
         uses: actions/upload-artifact@v7
@@ -335,7 +347,7 @@ jobs:
           Get-Command candle.exe -ErrorAction Stop
           Get-Command light.exe -ErrorAction Stop
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -356,17 +368,17 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: windows-msvc2022-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            windows-msvc2022-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
+      - name: Configure Release Dependencies
         working-directory: 'S:\'
-        run: cmake --preset superbuild-release
+        run: cmake --preset deps-release
 
-      - name: Build Release SuperBuild
+      - name: Build Release Dependencies
         working-directory: 'S:\'
-        run: cmake --build --preset superbuild-release --parallel
+        run: cmake --build --preset deps-release --parallel
 
       - name: Configure Release app
         working-directory: 'S:\'
@@ -423,7 +435,7 @@ jobs:
           git --version
           vswhere -latest -products * -version "[18.0,19.0)" -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 
-      - name: Restore Debug SuperBuild cache
+      - name: Restore Debug Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -444,17 +456,17 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: windows-2025-msvc2026-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: windows-2025-msvc2026-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-2025-msvc2026-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            windows-2025-msvc2026-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Debug SuperBuild
+      - name: Configure Debug Dependencies
         working-directory: 'S:\'
-        run: cmake --preset superbuild-debug
+        run: cmake --preset deps-debug
 
-      - name: Build Debug SuperBuild
+      - name: Build Debug Dependencies
         working-directory: 'S:\'
-        run: cmake --build --preset superbuild-debug --parallel
+        run: cmake --build --preset deps-debug --parallel
 
       - name: Configure Debug app
         working-directory: 'S:\'

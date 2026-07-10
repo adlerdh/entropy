@@ -27,7 +27,7 @@ env:
   CCACHE_BASEDIR: ${{ github.workspace }}
   CCACHE_COMPILERCHECK: content
   CCACHE_MAXSIZE: 2G
-  SUPERBUILD_CACHE_VERSION: v1
+  DEPS_CACHE_VERSION: v1
   FEDORA_VERSION: "43"
   FEDORA_PACKAGE_LABEL: Fedora-43
 
@@ -127,7 +127,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Debug SuperBuild cache
+      - name: Restore Debug Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -148,15 +148,15 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: fedora43-gcc-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: fedora43-gcc-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            fedora43-gcc-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            fedora43-gcc-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Debug SuperBuild
-        run: cmake --preset superbuild-debug -DEntropy_USE_CCACHE=ON -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL"
+      - name: Configure Debug Dependencies
+        run: cmake --preset deps-debug -DEntropy_USE_CCACHE=ON -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL"
 
-      - name: Build Debug SuperBuild
-        run: cmake --build --preset superbuild-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+      - name: Build Debug Dependencies
+        run: cmake --build --preset deps-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Debug app
         run: cmake --preset app-debug -DEntropy_USE_CCACHE=ON
@@ -237,7 +237,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -258,15 +258,15 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: fedora43-gcc-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            fedora43-gcc-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
-        run: cmake --preset superbuild-release -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL" -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+      - name: Configure Release Dependencies
+        run: cmake --preset deps-release -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL" -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
 
-      - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+      - name: Build Release Dependencies
+        run: cmake --build --preset deps-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Configure Release app
         run: cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"

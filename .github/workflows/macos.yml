@@ -43,7 +43,7 @@ env:
   CCACHE_BASEDIR: ${{ github.workspace }}
   CCACHE_COMPILERCHECK: content
   CCACHE_MAXSIZE: 2G
-  SUPERBUILD_CACHE_VERSION: v2
+  DEPS_CACHE_VERSION: v2
   ENTROPY_MACOS_ARCHITECTURES: arm64
   ENTROPY_MACOS_DEPLOYMENT_TARGET: "13.3"
   ENTROPY_MACOS_SUPERBUILD_PARALLEL: 2
@@ -118,7 +118,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Debug SuperBuild cache
+      - name: Restore Debug Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -138,19 +138,19 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: macos14-arm64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos14-arm64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos14-arm64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos14-arm64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Debug SuperBuild
+      - name: Configure Debug Dependencies
         run: >
-          cmake --preset superbuild-debug
+          cmake --preset deps-debug
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
-      - name: Build Debug SuperBuild
-        run: cmake --build --preset superbuild-debug --parallel 1
+      - name: Build Debug Dependencies
+        run: cmake --build --preset deps-debug --parallel 1
 
       - name: Configure Debug app
         run: >
@@ -208,7 +208,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Debug SuperBuild cache
+      - name: Restore Debug Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -228,19 +228,19 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: macos15-intel-x86_64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos15-intel-x86_64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos15-intel-x86_64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos15-intel-x86_64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Debug SuperBuild
+      - name: Configure Debug Dependencies
         run: >
-          cmake --preset superbuild-debug
+          cmake --preset deps-debug
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
-      - name: Build Debug SuperBuild
-        run: cmake --build --preset superbuild-debug --parallel 1
+      - name: Build Debug Dependencies
+        run: cmake --build --preset deps-debug --parallel 1
 
       - name: Configure Debug app
         run: >
@@ -295,7 +295,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Coverage SuperBuild cache
+      - name: Restore Coverage Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -315,34 +315,44 @@ jobs:
             build-coverage/external/spdlog-*
             build-coverage/external/stduuid-*
             build-coverage/external/tinyfsm-*
-          key: macos14-arm64-appleclang-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos14-arm64-appleclang-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos14-arm64-appleclang-coverage-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos14-arm64-appleclang-coverage-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Coverage SuperBuild
+      - name: Configure Coverage Dependencies
         run: >
-          cmake --preset superbuild-coverage
+          cmake -S . -B build-coverage
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_SHARED_LIBS=ON
+          -DEntropy_USE_CCACHE=ON
+          -DEntropy_SUPERBUILD=ON
+          -DEntropy_SUPERBUILD_CONFIG=Debug
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
-      - name: Build Coverage SuperBuild
-        run: cmake --build --preset superbuild-coverage --parallel 1
+      - name: Build Coverage Dependencies
+        run: cmake --build build-coverage --config Debug --parallel 1
 
       - name: Configure Coverage app
         run: >
-          cmake --preset app-coverage
+          cmake -S . -B build-coverage
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_SHARED_LIBS=ON
+          -DEntropy_USE_CCACHE=ON
+          -DEntropy_SUPERBUILD=OFF
+          -DEntropy_ENABLE_COVERAGE=ON
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Coverage app
-        run: cmake --build --preset app-coverage --parallel
+        run: cmake --build build-coverage --config Debug --parallel
 
       - name: Generate coverage summary
-        run: cmake --build --preset coverage --parallel
+        run: cmake --build build-coverage --target coverage --config Debug --parallel
 
       - name: Generate HTML coverage
-        run: cmake --build --preset coverage-html --parallel
+        run: cmake --build build-coverage --target coverage-html --config Debug --parallel
 
       - name: Upload coverage HTML
         uses: actions/upload-artifact@v7
@@ -392,7 +402,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -412,19 +422,19 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: macos14-arm64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos14-arm64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
+      - name: Configure Release Dependencies
         run: >
-          cmake --preset superbuild-release
+          cmake --preset deps-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
-      - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel 1
+      - name: Build Release Dependencies
+        run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
         run: >
@@ -501,7 +511,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -521,20 +531,20 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: macos15-intel-x86_64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos15-intel-x86_64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos15-intel-x86_64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos15-intel-x86_64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
+      - name: Configure Release Dependencies
         run: >
-          cmake --preset superbuild-release
+          cmake --preset deps-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
 
-      - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel 1
+      - name: Build Release Dependencies
+        run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
         run: >
@@ -609,7 +619,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Debug SuperBuild cache
+      - name: Restore Debug Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -629,19 +639,19 @@ jobs:
             build-debug/external/spdlog-*
             build-debug/external/stduuid-*
             build-debug/external/tinyfsm-*
-          key: macos26-arm64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos26-arm64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos26-arm64-appleclang-debug-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos26-arm64-appleclang-debug-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Debug SuperBuild
+      - name: Configure Debug Dependencies
         run: >
-          cmake --preset superbuild-debug
+          cmake --preset deps-debug
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
-      - name: Build Debug SuperBuild
-        run: cmake --build --preset superbuild-debug --parallel 1
+      - name: Build Debug Dependencies
+        run: cmake --build --preset deps-debug --parallel 1
 
       - name: Configure Debug app
         run: >

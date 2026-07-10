@@ -15,7 +15,7 @@ concurrency:
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 2
   CTEST_PARALLEL_LEVEL: 2
-  SUPERBUILD_CACHE_VERSION: v1
+  DEPS_CACHE_VERSION: v1
 
 jobs:
   metadata:
@@ -87,7 +87,7 @@ jobs:
           Get-Command candle.exe -ErrorAction Stop
           Get-Command light.exe -ErrorAction Stop
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -108,17 +108,17 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: windows-msvc2022-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            windows-msvc2022-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            windows-msvc2022-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
+      - name: Configure Release Dependencies
         working-directory: 'S:\'
-        run: cmake --preset superbuild-release
+        run: cmake --preset deps-release
 
-      - name: Build Release SuperBuild
+      - name: Build Release Dependencies
         working-directory: 'S:\'
-        run: cmake --build --preset superbuild-release --parallel
+        run: cmake --build --preset deps-release --parallel
 
       - name: Configure Release app
         working-directory: 'S:\'
@@ -235,7 +235,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -256,15 +256,15 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: linux-ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: linux-ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            linux-ubuntu2204-gcc13-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            linux-ubuntu2204-gcc13-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
-        run: cmake --preset superbuild-release
+      - name: Configure Release Dependencies
+        run: cmake --preset deps-release
 
-      - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel
+      - name: Build Release Dependencies
+        run: cmake --build --preset deps-release --parallel
 
       - name: Configure Release app
         run: cmake --preset app-release
@@ -327,7 +327,7 @@ jobs:
     needs: metadata
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
-      SUPERBUILD_CACHE_VERSION: v2
+      DEPS_CACHE_VERSION: v2
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_COMPILERCHECK: content
@@ -369,7 +369,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -389,19 +389,19 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: macos14-arm64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos14-arm64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos14-arm64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
+      - name: Configure Release Dependencies
         run: >
-          cmake --preset superbuild-release
+          cmake --preset deps-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
-      - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel 1
+      - name: Build Release Dependencies
+        run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
         run: >
@@ -465,7 +465,7 @@ jobs:
     needs: metadata
     env:
       ENTROPY_VERSION: ${{ needs.metadata.outputs.entropy_version }}
-      SUPERBUILD_CACHE_VERSION: v2
+      DEPS_CACHE_VERSION: v2
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_COMPILERCHECK: content
@@ -507,7 +507,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -527,20 +527,20 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: macos15-intel-x86_64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: macos15-intel-x86_64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            macos15-intel-x86_64-appleclang-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            macos15-intel-x86_64-appleclang-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
+      - name: Configure Release Dependencies
         run: >
-          cmake --preset superbuild-release
+          cmake --preset deps-release
           -DCMAKE_OSX_ARCHITECTURES="${ENTROPY_MACOS_ARCHITECTURES}"
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
 
-      - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel 1
+      - name: Build Release Dependencies
+        run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
         run: >
@@ -675,7 +675,7 @@ jobs:
           ccache --max-size="${CCACHE_MAXSIZE}"
           ccache --zero-stats
 
-      - name: Restore Release SuperBuild cache
+      - name: Restore Release Dependencies cache
         uses: actions/cache@v5
         with:
           path: |
@@ -696,15 +696,15 @@ jobs:
             build-release/external/spdlog-*
             build-release/external/stduuid-*
             build-release/external/tinyfsm-*
-          key: linux-fedora43-gcc-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          key: linux-fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
           restore-keys: |
-            linux-fedora43-gcc-release-superbuild-${{ env.SUPERBUILD_CACHE_VERSION }}-
+            linux-fedora43-gcc-release-deps-${{ env.DEPS_CACHE_VERSION }}-
 
-      - name: Configure Release SuperBuild
-        run: cmake --preset superbuild-release -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL" -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+      - name: Configure Release Dependencies
+        run: cmake --preset deps-release -DEntropy_SUPERBUILD_PARALLEL="$CMAKE_BUILD_PARALLEL_LEVEL" -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
 
-      - name: Build Release SuperBuild
-        run: cmake --build --preset superbuild-release --parallel
+      - name: Build Release Dependencies
+        run: cmake --build --preset deps-release --parallel
 
       - name: Configure Release app
         run: cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL="${FEDORA_PACKAGE_LABEL}" "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
