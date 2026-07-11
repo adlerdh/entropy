@@ -123,10 +123,10 @@ void EntropyApp::setCallbacks()
   };
 
   imguiCallbacks.view.getOverlayVisibility = [this]() {
-    return m_callbackHandler.showOverlays();
+    return m_callbackHandler.showUserInterface();
   };
   imguiCallbacks.view.setOverlayVisibility = [this](bool show) {
-    m_callbackHandler.setShowOverlays(show);
+    m_callbackHandler.setShowUserInterface(show);
   };
   imguiCallbacks.view.updateAllImageUniforms = [this]() {
     m_rendering.updateImageUniforms(m_data.imageUidsOrdered());

@@ -225,7 +225,7 @@ void renderModeMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Pointer", MainMenuAction::SetModePointer, "V");
   actionMenuItem(callbacks, "Window / Level", MainMenuAction::SetModeWindowLevel, "L");
   actionMenuItem(callbacks, "Zoom", MainMenuAction::SetModeZoom, "Z");
-  actionMenuItem(callbacks, "Pan / Dolly", MainMenuAction::SetModePan, "X");
+  actionMenuItem(callbacks, "Pan / Dolly", MainMenuAction::SetModePan, "P");
   actionMenuItem(callbacks, "Rotate View", MainMenuAction::SetModeRotateView);
   actionMenuItem(callbacks, "Rotate Crosshairs", MainMenuAction::SetModeRotateCrosshairs);
   ImGui::Separator();
@@ -255,10 +255,14 @@ void renderViewsMenu(const MainMenuBarCallbacks& callbacks)
   actionMenuItem(callbacks, "Decrease Segmentation Opacity", MainMenuAction::DecreaseSegmentationOpacity, "A");
   actionMenuItem(callbacks, "Increase Segmentation Opacity", MainMenuAction::IncreaseSegmentationOpacity, "D");
   ImGui::Separator();
+  ImGui::Separator();
+  actionMenuItem(callbacks, "Show Crosshairs", MainMenuAction::ToggleCrosshairs, "X");
   actionMenuItem(callbacks, "Snap Crosshairs to Voxels", MainMenuAction::ToggleCrosshairsVoxelSnapping);
   actionMenuItem(callbacks, "Show Scale Bars", MainMenuAction::ToggleScaleBars);
+  actionMenuItem(callbacks, "Show User Interface", MainMenuAction::ToggleUserInterface, "U");
+  actionMenuItem(callbacks, "Cycle View Overlays", MainMenuAction::CycleViewOverlays, "O");
+  ImGui::Separator();
   actionMenuItem(callbacks, "ASCII Rendering", MainMenuAction::ToggleAsciiRendering);
-  actionMenuItem(callbacks, "Cycle Overlays", MainMenuAction::ToggleOverlays, "O");
   ImGui::Separator();
   actionMenuItem(callbacks, "Enter Full Screen", MainMenuAction::ToggleFullScreen, "F4");
   ImGui::Separator();
@@ -574,7 +578,7 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       main_menu::actionMenuItem(callbacks, "Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow);
       main_menu::actionMenuItem(callbacks, "Reset Panel Layout", MainMenuAction::ResetPanelLayout);
       ImGui::Separator();
-      main_menu::actionMenuItem(callbacks, "Voxel Inspector", MainMenuAction::ToggleInspectorWindow);
+      main_menu::actionMenuItem(callbacks, "Voxel Inspector", MainMenuAction::ToggleInspectorWindow, "I");
       main_menu::actionMenuItem(callbacks, "Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
       main_menu::actionMenuItem(callbacks, "Registration Jobs", MainMenuAction::ToggleRegistrationJobsWindow);
       main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow);

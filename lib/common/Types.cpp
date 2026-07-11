@@ -125,7 +125,7 @@ std::string typeString(const MouseMode& mouseMode)
      "pan\nRight button: zoom"},
     {MouseMode::WindowLevel, "Window/level and opacity (L)\nLeft button: window/level\nShift + right button: opacity"},
     {MouseMode::CameraTranslate,
-     "Pan/dolly view (X)\nLeft button: pan in plane\nRight button: dolly in/out of plane (3D "
+     "Pan/dolly view (P)\nLeft button: pan in plane\nRight button: dolly in/out of plane (3D "
      "views "
      "only)"},
     {MouseMode::CameraRotate,

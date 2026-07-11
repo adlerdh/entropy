@@ -379,7 +379,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Show Voxel Inspector Panel");
+            ImGui::SetTooltip("%s", "Show Voxel Inspector Panel (I)");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button
@@ -441,7 +441,7 @@ void renderModeToolbar(
           }
 
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Toggle view overlays (O)");
+            ImGui::SetTooltip("%s", "Toggle user interface (U)");
           }
         }
         ImGui::PopStyleColor(1); // ImGuiCol_Button

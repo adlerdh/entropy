@@ -312,27 +312,29 @@ NSMenuItem* addSymbolActionMenuItem(
 void addModeMenu(NSMenu* mainMenu) {
   NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:@"Mode" action:nil keyEquivalent:@""];
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@"Mode"];
-  addSymbolActionMenuItem(menu, @"Pointer", MainMenuAction::SetModePointer, @"cursorarrow");
-  addSymbolActionMenuItem(menu, @"Window / Level", MainMenuAction::SetModeWindowLevel, @"sun.max");
-  addSymbolActionMenuItem(menu, @"Zoom", MainMenuAction::SetModeZoom, @"magnifyingglass");
-  addSymbolActionMenuItem(menu, @"Pan / Dolly", MainMenuAction::SetModePan, @"hand.draw");
+  addSymbolActionMenuItem(menu, @"Pointer", MainMenuAction::SetModePointer, @"cursorarrow", @"v");
+  addSymbolActionMenuItem(menu, @"Window / Level", MainMenuAction::SetModeWindowLevel, @"sun.max", @"l");
+  addSymbolActionMenuItem(menu, @"Zoom", MainMenuAction::SetModeZoom, @"magnifyingglass", @"z");
+  addSymbolActionMenuItem(menu, @"Pan / Dolly", MainMenuAction::SetModePan, @"hand.draw", @"p");
   addSymbolActionMenuItem(menu, @"Rotate View", MainMenuAction::SetModeRotateView, @"rotate.3d");
   addSymbolActionMenuItem(menu, @"Rotate Crosshairs", MainMenuAction::SetModeRotateCrosshairs, @"scope");
   [menu addItem:[NSMenuItem separatorItem]];
-  addSymbolActionMenuItem(menu, @"Segmentation Brush", MainMenuAction::SetModeSegment, @"paintbrush");
+  addSymbolActionMenuItem(menu, @"Segmentation Brush", MainMenuAction::SetModeSegment, @"paintbrush", @"b");
   addSymbolActionMenuItem(menu, @"Vector Annotate", MainMenuAction::SetModeAnnotate, @"pencil");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(
     menu,
     @"Translate Image",
     MainMenuAction::SetModeTranslateImage,
-    @"arrow.up.and.down.and.arrow.left.and.right");
-  addSymbolActionMenuItem(menu, @"Rotate Image", MainMenuAction::SetModeRotateImage, @"rotate.right");
+    @"arrow.up.and.down.and.arrow.left.and.right",
+    @"t");
+  addSymbolActionMenuItem(menu, @"Rotate Image", MainMenuAction::SetModeRotateImage, @"rotate.right", @"r");
   addSymbolActionMenuItem(
     menu,
     @"Scale Image",
     MainMenuAction::SetModeScaleImage,
-    @"arrow.up.right.and.arrow.down.left");
+    @"arrow.up.right.and.arrow.down.left",
+    @"y");
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }
@@ -545,7 +547,7 @@ void addAnnotationMenu(NSMenu* mainMenu) {
     menu,
     @"Paint Segmentation from Annotation",
     MainMenuAction::PaintSegmentationFromAnnotation,
-    @"paintbrush");
+    @"paintbucket");
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }
@@ -614,10 +616,13 @@ void addViewsMenu(NSMenu* mainMenu) {
     @"circle.fill",
     @"d");
   [menu addItem:[NSMenuItem separatorItem]];
+  addSymbolActionMenuItem(menu, @"Show Crosshairs", MainMenuAction::ToggleCrosshairs, @"plus.viewfinder", @"x");
   addSymbolActionMenuItem(menu, @"Snap Crosshairs to Voxels", MainMenuAction::ToggleCrosshairsVoxelSnapping, @"scope");
   addSymbolActionMenuItem(menu, @"Show Scale Bars", MainMenuAction::ToggleScaleBars, @"ruler");
+  addSymbolActionMenuItem(menu, @"Show User Interface", MainMenuAction::ToggleUserInterface, @"sidebar.left", @"u");
+  addSymbolActionMenuItem(menu, @"Cycle View Overlays", MainMenuAction::CycleViewOverlays, @"square.2.layers.3d", @"o");
+  [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"ASCII Rendering", MainMenuAction::ToggleAsciiRendering, @"textformat");
-  addSymbolActionMenuItem(menu, @"Cycle Overlays", MainMenuAction::ToggleOverlays, @"square.2.layers.3d", @"o");
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(
     menu,
@@ -640,6 +645,7 @@ void addViewsMenu(NSMenu* mainMenu) {
   addActionMenuItem(syncMenu, @"Settings...", MainMenuAction::ShowSynchronizeSettingsWindow);
   [syncItem setSubmenu:syncMenu];
   [menu addItem:syncItem];
+  [menu addItem:[NSMenuItem separatorItem]];
   [menuItem setSubmenu:menu];
   [mainMenu addItem:menuItem];
 }
@@ -662,7 +668,7 @@ void addWindowsMenu(NSMenu* mainMenu) {
   addSymbolActionMenuItem(menu, @"Landmarks Panel", MainMenuAction::ToggleLandmarksWindow, @"mappin.and.ellipse");
   addSymbolActionMenuItem(menu, @"Isosurfaces Panel", MainMenuAction::ToggleIsosurfacesWindow, @"cube.transparent");
   [menu addItem:[NSMenuItem separatorItem]];
-  addSymbolActionMenuItem(menu, @"Voxel Inspector", MainMenuAction::ToggleInspectorWindow, @"info.circle");
+  addSymbolActionMenuItem(menu, @"Voxel Inspector", MainMenuAction::ToggleInspectorWindow, @"info.circle", @"i");
   addSymbolActionMenuItem(menu, @"Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow, @"slider.horizontal.3");
   addSymbolActionMenuItem(
     menu,

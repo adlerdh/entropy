@@ -21,6 +21,7 @@ TEST_CASE("macOS LaunchServices process serial number argument is ignored", "[co
 
   CHECK_FALSE(params.set);
   CHECK(params.imageFiles.empty());
+  CHECK(params.dicomPaths.empty());
   CHECK_FALSE(params.projectFile);
 }
 
@@ -105,6 +106,48 @@ TEST_CASE("one segmentation option can provide multiple segmentations for the pr
   CHECK(params.imageFiles[0].segmentations[1] == "seg-b.nii.gz");
 }
 
+TEST_CASE("image option accepts singular, plural, and short spellings", "[common][input]")
+{
+  char app[] = "Entropy";
+  char imageOpt0[] = "--image";
+  char image0[] = "image-a.nii.gz";
+  char imageOpt1[] = "--images";
+  char image1[] = "image-b.nii.gz";
+  char imageOpt2[] = "-i";
+  char image2[] = "image-c.nii.gz";
+
+  std::array<char*, 7> argv{app, imageOpt0, image0, imageOpt1, image1, imageOpt2, image2};
+
+  InputParams params;
+  REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+
+  REQUIRE(params.imageFiles.size() == 3);
+  CHECK(params.imageFiles[0].image == "image-a.nii.gz");
+  CHECK(params.imageFiles[1].image == "image-b.nii.gz");
+  CHECK(params.imageFiles[2].image == "image-c.nii.gz");
+}
+
+TEST_CASE("segmentation option accepts long and short spellings", "[common][input]")
+{
+  char app[] = "Entropy";
+  char imageOpt[] = "-i";
+  char image[] = "image.nii.gz";
+  char segOpt0[] = "--seg";
+  char seg0[] = "seg-a.nii.gz";
+  char segOpt1[] = "-s";
+  char seg1[] = "seg-b.nii.gz";
+
+  std::array<char*, 7> argv{app, imageOpt, image, segOpt0, seg0, segOpt1, seg1};
+
+  InputParams params;
+  REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+
+  REQUIRE(params.imageFiles.size() == 1);
+  REQUIRE(params.imageFiles[0].segmentations.size() == 2);
+  CHECK(params.imageFiles[0].segmentations[0] == "seg-a.nii.gz");
+  CHECK(params.imageFiles[0].segmentations[1] == "seg-b.nii.gz");
+}
+
 TEST_CASE("a new image option terminates a multi-value segmentation option", "[common][input]")
 {
   char app[] = "Entropy";
@@ -128,6 +171,28 @@ TEST_CASE("a new image option terminates a multi-value segmentation option", "[c
   CHECK(params.imageFiles[0].segmentations[1] == "seg-b.nii.gz");
   CHECK(params.imageFiles[1].image == "image-b.nii.gz");
   CHECK(params.imageFiles[1].segmentations.empty());
+}
+
+TEST_CASE("DICOM option accepts long and short spellings", "[common][input]")
+{
+  char app[] = "Entropy";
+  char dicomOpt0[] = "--dicom";
+  char dicom0[] = "dicom-a";
+  char dicom1[] = "dicom-b";
+  char dicomOpt1[] = "-d";
+  char dicom2[] = "dicom-c";
+
+  std::array<char*, 6> argv{app, dicomOpt0, dicom0, dicom1, dicomOpt1, dicom2};
+
+  InputParams params;
+  REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+
+  CHECK(params.imageFiles.empty());
+  REQUIRE(params.dicomPaths.size() == 3);
+  CHECK(params.dicomPaths[0] == "dicom-a");
+  CHECK(params.dicomPaths[1] == "dicom-b");
+  CHECK(params.dicomPaths[2] == "dicom-c");
+  CHECK_FALSE(params.projectFile);
 }
 
 TEST_CASE("positional image paths are accepted as an unambiguous shorthand", "[common][input]")
@@ -195,6 +260,33 @@ TEST_CASE("positional image paths cannot be mixed with segmentation options", "[
   CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
 }
 
+TEST_CASE("positional image paths cannot be mixed with DICOM options", "[common][input]")
+{
+  char app[] = "Entropy";
+  char positionalImage[] = "image.nii.gz";
+  char dicomOpt[] = "--dicom";
+  char dicomPath[] = "dicom-folder";
+
+  std::array<char*, 4> argv{app, positionalImage, dicomOpt, dicomPath};
+
+  InputParams params;
+  CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+}
+
+TEST_CASE("explicit image paths cannot be mixed with DICOM options", "[common][input]")
+{
+  char app[] = "Entropy";
+  char imageOpt[] = "--image";
+  char image[] = "image.nii.gz";
+  char dicomOpt[] = "--dicom";
+  char dicomPath[] = "dicom-folder";
+
+  std::array<char*, 5> argv{app, imageOpt, image, dicomOpt, dicomPath};
+
+  InputParams params;
+  CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+}
+
 TEST_CASE("standalone layout file can override project layouts", "[common][input]")
 {
   char app[] = "Entropy";
@@ -212,4 +304,49 @@ TEST_CASE("standalone layout file can override project layouts", "[common][input
   CHECK(*params.projectFile == "project.json");
   REQUIRE(params.layoutsFile);
   CHECK(*params.layoutsFile == "custom-layouts.json");
+}
+
+TEST_CASE("project option cannot be mixed with image, segmentation, or DICOM inputs", "[common][input]")
+{
+  SECTION("project with image")
+  {
+    char app[] = "Entropy";
+    char projectOpt[] = "--project";
+    char project[] = "project.json";
+    char imageOpt[] = "--image";
+    char image[] = "image.nii.gz";
+
+    std::array<char*, 5> argv{app, projectOpt, project, imageOpt, image};
+
+    InputParams params;
+    CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+  }
+
+  SECTION("project with segmentation")
+  {
+    char app[] = "Entropy";
+    char projectOpt[] = "--project";
+    char project[] = "project.json";
+    char segOpt[] = "--seg";
+    char seg[] = "seg.nii.gz";
+
+    std::array<char*, 5> argv{app, projectOpt, project, segOpt, seg};
+
+    InputParams params;
+    CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+  }
+
+  SECTION("project with DICOM")
+  {
+    char app[] = "Entropy";
+    char projectOpt[] = "--project";
+    char project[] = "project.json";
+    char dicomOpt[] = "--dicom";
+    char dicomPath[] = "dicom-folder";
+
+    std::array<char*, 5> argv{app, projectOpt, project, dicomOpt, dicomPath};
+
+    InputParams params;
+    CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+  }
 }

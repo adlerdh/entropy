@@ -47,8 +47,13 @@ bool iequals(const std::string& str1, const std::string& str2)
  */
 bool validateParams(InputParams& params)
 {
-  if (!params.projectFile && params.imageFiles.empty()) {
-    spdlog::info("No image or project file provided; starting with an empty workspace");
+  if (params.projectFile && (!params.imageFiles.empty() || !params.dicomPaths.empty())) {
+    spdlog::critical("--project/-p cannot be combined with image, segmentation, or DICOM inputs");
+    return false;
+  }
+
+  if (!params.projectFile && params.imageFiles.empty() && params.dicomPaths.empty()) {
+    spdlog::info("No image, DICOM, or project file provided; starting with an empty workspace");
     params.set = false;
     return true;
   }
@@ -119,8 +124,14 @@ void logInputs(const InputParams& params)
   else if (params.projectFile) {
     spdlog::info("Project file provided: {}", *params.projectFile);
   }
+  else if (!params.dicomPaths.empty()) {
+    spdlog::info("{} DICOM input path(s) provided:", params.dicomPaths.size());
+    for (size_t i = 0; i < params.dicomPaths.size(); ++i) {
+      spdlog::info("\tDICOM[{}]: {}", i, params.dicomPaths[i]);
+    }
+  }
   else {
-    spdlog::info("No image arguments or project file was provided");
+    spdlog::info("No image arguments, DICOM inputs, or project file was provided");
   }
 
   if (params.layoutsFile) {
@@ -151,6 +162,7 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
 {
   params.set = false;
   params.imageFiles.clear();
+  params.dicomPaths.clear();
   params.projectFile = std::nullopt;
   params.layoutsFile = std::nullopt;
 
@@ -170,21 +182,22 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
   program.add_option("--layouts", layoutsFile, "standalone JSON layout file");
   std::vector<std::string> positionalImageFiles;
   auto* positionalImageOption =
-    program.add_option("images", positionalImageFiles, "image paths; first image is reference")->expected(0, -1);
+    program.add_option("positional-images", positionalImageFiles, "image paths; first image is reference")
+      ->expected(0, -1);
 
   auto* imageOption = program
                         .add_option_function<std::string>(
-                          "--image",
+                          "-i,--image,--images",
                           [&params](const std::string& imageFile) { params.imageFiles.push_back({imageFile, {}}); },
                           "image path; repeat for multiple images")
                         ->trigger_on_parse();
 
   auto* segOption = program
                       .add_option_function<std::vector<std::string> >(
-                        "--seg",
+                        "-s,--seg,--segs",
                         [&params](const std::vector<std::string>& segFiles) {
                           if (params.imageFiles.empty()) {
-                            throw CLI::ValidationError("--seg must follow an --image option");
+                            throw CLI::ValidationError("--seg/-s must follow an --image/--images/-i option");
                           }
 
                           auto& lastImage = params.imageFiles.back();
@@ -196,10 +209,23 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
                       ->expected(1, -1)
                       ->trigger_on_parse();
 
-  projectOption->excludes(imageOption)->excludes(segOption)->excludes(positionalImageOption);
-  imageOption->excludes(projectOption)->excludes(positionalImageOption);
-  segOption->excludes(projectOption)->excludes(positionalImageOption);
-  positionalImageOption->excludes(projectOption)->excludes(imageOption)->excludes(segOption);
+  auto* dicomOption = program
+                        .add_option_function<std::vector<std::string> >(
+                          "-d,--dicom",
+                          [&params](const std::vector<std::string>& dicomPaths) {
+                            for (const std::string& dicomPath : dicomPaths) {
+                              params.dicomPaths.emplace_back(dicomPath);
+                            }
+                          },
+                          "DICOM folder or file path to scan; repeat for multiple inputs")
+                        ->expected(1, -1)
+                        ->trigger_on_parse();
+
+  projectOption->excludes(imageOption)->excludes(segOption)->excludes(dicomOption)->excludes(positionalImageOption);
+  imageOption->excludes(projectOption)->excludes(dicomOption)->excludes(positionalImageOption);
+  segOption->excludes(projectOption)->excludes(dicomOption)->excludes(positionalImageOption);
+  dicomOption->excludes(projectOption)->excludes(imageOption)->excludes(segOption)->excludes(positionalImageOption);
+  positionalImageOption->excludes(projectOption)->excludes(imageOption)->excludes(segOption)->excludes(dicomOption);
 
   try {
     auto filteredArgs = filterPlatformArguments(argc, argv);

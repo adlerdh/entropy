@@ -2208,16 +2208,7 @@ void CallbackHandler::cycleNextLayout()
 
 void CallbackHandler::cycleOverlayAndUiVisibility()
 {
-  static int toggle = 0;
-
-  if (0 == (toggle % 2)) {
-    m_appData.guiData().m_renderUiWindows = (!m_appData.guiData().m_renderUiWindows);
-  }
-  else if (1 == (toggle % 2)) {
-    setShowOverlays(!showOverlays());
-  }
-
-  toggle = (toggle + 1) % 4;
+  cycleViewOverlays();
 }
 
 void CallbackHandler::cycleImageComponent(int i)
@@ -2353,6 +2344,80 @@ void CallbackHandler::setShowOverlays(bool show)
   m_appData.settings().setOverlays(show); // this holds the data
   m_rendering.setShowVectorOverlays(show);
   m_appData.guiData().m_renderUiOverlays = show;
+}
+
+bool CallbackHandler::showUserInterface() const
+{
+  return m_appData.guiData().m_renderUiWindows && m_appData.guiData().m_renderUiOverlays;
+}
+
+void CallbackHandler::setShowUserInterface(bool show)
+{
+  m_appData.guiData().m_renderUiWindows = show;
+  m_appData.guiData().m_renderUiOverlays = show;
+}
+
+void CallbackHandler::toggleCrosshairs()
+{
+  auto& R = m_appData.renderData();
+  R.m_showCrosshairs = !R.m_showCrosshairs;
+  R.m_showCrosshairsInLightboxViews = R.m_showCrosshairs;
+}
+
+void CallbackHandler::cycleViewOverlays()
+{
+  enum class OverlayState
+  {
+    All,
+    CrosshairsOnly,
+    None,
+    Mixed
+  };
+
+  auto& R = m_appData.renderData();
+
+  const bool anyOverlay = R.m_showCrosshairs || R.m_showAnatomicalLabels || R.m_showScaleBars ||
+                          R.m_showLightboxOffsetLabels || R.m_showThreeDCameraFrustumIn2DViews;
+  const bool crosshairsOnly = R.m_showCrosshairs && !R.m_showAnatomicalLabels && !R.m_showScaleBars &&
+                              !R.m_showLightboxOffsetLabels && !R.m_showThreeDCameraFrustumIn2DViews;
+  const bool allOverlays = R.m_showCrosshairs && R.m_showAnatomicalLabels && R.m_showScaleBars &&
+                           R.m_showLightboxOffsetLabels && R.m_showThreeDCameraFrustumIn2DViews;
+
+  const OverlayState state = !anyOverlay      ? OverlayState::None
+                             : crosshairsOnly ? OverlayState::CrosshairsOnly
+                             : allOverlays    ? OverlayState::All
+                                              : OverlayState::Mixed;
+
+  const auto setAll = [&R](bool show) {
+    R.m_showCrosshairs = show;
+    R.m_showCrosshairsInLightboxViews = show;
+    R.m_showAnatomicalLabels = show;
+    R.m_showAnatomicalLabelsInLightboxViews = show;
+    R.m_showScaleBars = show;
+    R.m_showScaleBarsInLightboxViews = show;
+    R.m_showLightboxOffsetLabels = show;
+    R.m_showThreeDCameraFrustumIn2DViews = show;
+  };
+
+  switch (state) {
+    case OverlayState::All:
+      R.m_showCrosshairs = true;
+      R.m_showCrosshairsInLightboxViews = true;
+      R.m_showAnatomicalLabels = false;
+      R.m_showAnatomicalLabelsInLightboxViews = false;
+      R.m_showScaleBars = false;
+      R.m_showScaleBarsInLightboxViews = false;
+      R.m_showLightboxOffsetLabels = false;
+      R.m_showThreeDCameraFrustumIn2DViews = false;
+      break;
+    case OverlayState::CrosshairsOnly:
+      setAll(false);
+      break;
+    case OverlayState::None:
+    case OverlayState::Mixed:
+      setAll(true);
+      break;
+  }
 }
 
 void CallbackHandler::moveCrosshairsOnViewSlice(const ViewHit& hit, int stepX, int stepY)

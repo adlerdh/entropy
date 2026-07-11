@@ -320,6 +320,10 @@ public:
 
   bool showOverlays() const;
   void setShowOverlays(bool);
+  bool showUserInterface() const;
+  void setShowUserInterface(bool show);
+  void toggleCrosshairs();
+  void cycleViewOverlays();
 
   void setMouseMode(MouseMode);
 

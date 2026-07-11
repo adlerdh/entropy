@@ -364,19 +364,19 @@ bool populateFileMenu(HMENU fileMenu)
 bool populateModesMenu(HMENU menu)
 {
   UINT position = 0;
-  return insertActionMenuItem(menu, position++, MainMenuAction::SetModePointer, L"&Pointer") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModeWindowLevel, L"&Window / Level") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModeZoom, L"&Zoom") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModePan, L"&Pan / Dolly") &&
+  return insertActionMenuItem(menu, position++, MainMenuAction::SetModePointer, L"&Pointer\tV") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeWindowLevel, L"&Window / Level\tL") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeZoom, L"&Zoom\tZ") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModePan, L"&Pan / Dolly\tP") &&
          insertActionMenuItem(menu, position++, MainMenuAction::SetModeRotateView, L"&Rotate View") &&
          insertActionMenuItem(menu, position++, MainMenuAction::SetModeRotateCrosshairs, L"Rotate Cross&hairs") &&
          insertSeparator(menu, position++) &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModeSegment, L"Segmentation &Brush") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeSegment, L"Segmentation &Brush\tB") &&
          insertActionMenuItem(menu, position++, MainMenuAction::SetModeAnnotate, L"Vector &Annotate") &&
          insertSeparator(menu, position++) &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModeTranslateImage, L"&Translate Image") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModeRotateImage, L"R&otate Image") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::SetModeScaleImage, L"&Scale Image");
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeTranslateImage, L"&Translate Image\tT") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeRotateImage, L"R&otate Image\tR") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::SetModeScaleImage, L"&Scale Image\tY");
 }
 
 bool populateImageMenu(HMENU menu, HMENU activeImagesMenu)
@@ -707,14 +707,17 @@ bool populateViewsMenu(HMENU menu)
            MainMenuAction::IncreaseSegmentationOpacity,
            L"Increase Segmentation Opacity\tD") &&
          insertSeparator(menu, position++) &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ToggleCrosshairs, L"Show Crosshairs\tX") &&
          insertActionMenuItem(
            menu,
            position++,
            MainMenuAction::ToggleCrosshairsVoxelSnapping,
            L"Snap Crosshairs to &Voxels") &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleScaleBars, L"Show Scale &Bars") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::ToggleUserInterface, L"Show User Interface\tU") &&
+         insertActionMenuItem(menu, position++, MainMenuAction::CycleViewOverlays, L"Cycle View Overlays\tO") &&
+         insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleAsciiRendering, L"&ASCII Rendering") &&
-         insertActionMenuItem(menu, position++, MainMenuAction::ToggleOverlays, L"&Cycle Overlays\tO") &&
          insertSeparator(menu, position++) &&
          insertActionMenuItem(menu, position++, MainMenuAction::ToggleFullScreen, L"&Enter Full Screen\tF4") &&
          insertSeparator(menu, position++) &&
@@ -738,7 +741,7 @@ bool populateWindowsMenu(HMENU menu)
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleIsosurfacesWindow, L"I&sosurfaces Panel") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ResetPanelLayout, L"Reset Panel &Layout") &&
     insertSeparator(menu, position++) &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector\tI") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegistrationJobsWindow, L"Registration &Jobs") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings") &&

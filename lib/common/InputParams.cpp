@@ -12,6 +12,10 @@ std::ostream& operator<<(std::ostream& os, const InputParams& p)
     os << "\n";
   }
 
+  for (size_t i = 0; i < p.dicomPaths.size(); ++i) {
+    os << "DICOM[" << i << "]: " << p.dicomPaths[i] << "\n";
+  }
+
   if (p.projectFile) {
     os << "\nProject file: " << *p.projectFile;
   }

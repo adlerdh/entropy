@@ -778,7 +778,16 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       break;
     }
     case GLFW_KEY_X: {
+      H.toggleCrosshairs();
+      break;
+    }
+    case GLFW_KEY_P: {
       H.setMouseMode(MouseMode::CameraTranslate);
+      break;
+    }
+    case GLFW_KEY_I: {
+      auto& guiData = app->appData().guiData();
+      guiData.m_showInspectionWindow = !guiData.m_showInspectionWindow;
       break;
     }
 
@@ -815,7 +824,11 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
       break;
     }
     case GLFW_KEY_O: {
-      H.cycleOverlayAndUiVisibility();
+      H.cycleViewOverlays();
+      break;
+    }
+    case GLFW_KEY_U: {
+      H.setShowUserInterface(!H.showUserInterface());
       break;
     }
 

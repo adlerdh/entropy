@@ -1662,6 +1662,12 @@ bool EntropyApp::removeImage(const uuids::uuid& imageUid)
 
 void EntropyApp::loadImagesFromParams(const InputParams& params)
 {
+  if (!params.dicomPaths.empty()) {
+    m_pendingLayoutsFile = params.layoutsFile;
+    performOpenDicomSeriesFolders(params.dicomPaths);
+    return;
+  }
+
   const std::optional<fs::path> projectFileName = params.imageFiles.empty() ? params.projectFile : std::nullopt;
   m_pendingLayoutsFile = params.layoutsFile;
   m_data.setProject(serialize::createProjectFromInputParams(params));

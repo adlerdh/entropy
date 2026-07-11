@@ -3196,8 +3196,12 @@ void ImGuiWrapper::render()
           CrosshairsSnapping::Disabled == m_appData.renderData().m_snapCrosshairs ? CrosshairsSnapping::ReferenceImage
                                                                                   : CrosshairsSnapping::Disabled;
         break;
+      case MainMenuAction::ToggleCrosshairs:
+        m_callbackHandler.toggleCrosshairs();
+        break;
       case MainMenuAction::ToggleScaleBars:
         m_appData.renderData().m_showScaleBars = !m_appData.renderData().m_showScaleBars;
+        m_appData.renderData().m_showScaleBarsInLightboxViews = m_appData.renderData().m_showScaleBars;
         break;
       case MainMenuAction::ToggleAsciiRendering:
         m_appData.renderData().m_asciiEnabled = !m_appData.renderData().m_asciiEnabled;
@@ -3205,8 +3209,11 @@ void ImGuiWrapper::render()
       case MainMenuAction::ToggleLightboxOffsets:
         m_appData.renderData().m_showLightboxOffsetLabels = !m_appData.renderData().m_showLightboxOffsetLabels;
         break;
-      case MainMenuAction::ToggleOverlays:
-        m_callbackHandler.cycleOverlayAndUiVisibility();
+      case MainMenuAction::CycleViewOverlays:
+        m_callbackHandler.cycleViewOverlays();
+        break;
+      case MainMenuAction::ToggleUserInterface:
+        m_callbackHandler.setShowUserInterface(!m_callbackHandler.showUserInterface());
         break;
       case MainMenuAction::ToggleFullScreen:
         m_callbackHandler.toggleFullScreenMode();
@@ -3601,10 +3608,12 @@ void ImGuiWrapper::render()
         case MainMenuAction::DecreaseActiveImageOpacity:
         case MainMenuAction::IncreaseActiveImageOpacity:
         case MainMenuAction::ToggleCrosshairsVoxelSnapping:
+        case MainMenuAction::ToggleCrosshairs:
         case MainMenuAction::ToggleScaleBars:
         case MainMenuAction::ToggleAsciiRendering:
         case MainMenuAction::ToggleLightboxOffsets:
-        case MainMenuAction::ToggleOverlays:
+        case MainMenuAction::CycleViewOverlays:
+        case MainMenuAction::ToggleUserInterface:
         case MainMenuAction::ToggleEntropyInstanceSync:
         case MainMenuAction::ToggleSync:
         case MainMenuAction::ToggleSyncSendCursor:
@@ -3786,12 +3795,16 @@ void ImGuiWrapper::render()
         return m_appData.guiData().m_showRegistrationJobsWindow;
       case MainMenuAction::ToggleScaleBars:
         return m_appData.renderData().m_showScaleBars;
+      case MainMenuAction::ToggleCrosshairs:
+        return m_appData.renderData().m_showCrosshairs;
       case MainMenuAction::ToggleCrosshairsVoxelSnapping:
         return CrosshairsSnapping::Disabled != m_appData.renderData().m_snapCrosshairs;
       case MainMenuAction::ToggleAsciiRendering:
         return m_appData.renderData().m_asciiEnabled;
       case MainMenuAction::ToggleLightboxOffsets:
         return m_appData.renderData().m_showLightboxOffsetLabels;
+      case MainMenuAction::ToggleUserInterface:
+        return m_callbackHandler.showUserInterface();
       case MainMenuAction::ToggleLayoutTabs:
         return m_appData.settings().showLayoutTabs();
       case MainMenuAction::ToggleGlobalTimeControls:

@@ -18,9 +18,9 @@ Start here, then use the focused documents for the details you need:
 | [LICENSE.txt](LICENSE.txt) | Entropy license terms. |
 
 ## Running
-Entropy can load images directly from command line arguments or from a JSON project file.
+Entropy can load images directly from command line arguments, from DICOM folders/files, or from a JSON project file.
 
-1. Images can be provided directly with repeatable `--image` options. If an image has one or more accompanying segmentations, place `--seg` immediately after that image; the segmentations are attached to the preceding image in the order provided. `--seg` may be repeated, or it may be followed by multiple segmentation file names. e.g.:
+1. Images can be provided directly with repeatable `--image` or `--images` options. The short form is `-i`. If an image has one or more accompanying segmentations, place `--seg` (`-s`) immediately after that image; the segmentations are attached to the preceding image in the order provided. `--seg` may be repeated, or it may be followed by multiple segmentation file names. e.g.:
 
 ```sh
 entropy --image reference_image.nii.gz --seg reference_seg1.nii.gz reference_seg2.nii.gz \
@@ -28,9 +28,16 @@ entropy --image reference_image.nii.gz --seg reference_seg1.nii.gz reference_seg
         --image additional_image2.nii.gz --seg additional_image2_seg1.nii.gz --seg additional_image2_seg2.nii.gz
 ```
 
-Direct image inputs and `--project` are mutually exclusive.
+2. DICOM folders or files can be scanned with `--dicom` or `-d`. Entropy opens the DICOM series selection dialog after scanning so that the desired series can be loaded. e.g.:
 
-2. Images can be specified in a JSON project file that is loaded using the `-p` argument. A sample project file:
+```sh
+entropy --dicom /path/to/dicom_folder
+entropy -d /path/to/series_folder_a /path/to/series_folder_b
+```
+
+Direct image inputs, DICOM inputs, and `--project` are mutually exclusive. `--project`/`-p` must stand alone except for general options such as `--layouts` and `--log-level`.
+
+3. Images can be specified in a JSON project file that is loaded using the `--project` or `-p` argument. A sample project file:
 ```json
 {
   "reference":

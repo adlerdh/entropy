@@ -23,6 +23,9 @@ struct InputParams
   /// All image and segmentation paths, where the first image is the reference image
   std::vector<ImageSegPair> imageFiles;
 
+  /// DICOM folders or files to scan for loadable image series
+  std::vector<std::filesystem::path> dicomPaths;
+
   /// An optional path to a project file that specifies images, segmentations,
   /// landmarks, and annotations in JSON format
   std::optional<std::filesystem::path> projectFile;
