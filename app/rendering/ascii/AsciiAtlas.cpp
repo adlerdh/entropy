@@ -47,6 +47,7 @@ AsciiAtlas::AsciiAtlas(AsciiAtlas&& o) noexcept
   , m_glyphCount(o.m_glyphCount)
   , m_glyphPx(o.m_glyphPx)
   , m_slotPx(o.m_slotPx)
+  , m_characters(std::move(o.m_characters))
   , m_fillFractions(std::move(o.m_fillFractions))
   , m_glyphMeta(std::move(o.m_glyphMeta))
   , m_slotPixels(std::move(o.m_slotPixels))
@@ -63,6 +64,7 @@ AsciiAtlas& AsciiAtlas::operator=(AsciiAtlas&& o) noexcept
     m_glyphCount = o.m_glyphCount;
     m_glyphPx = o.m_glyphPx;
     m_slotPx = o.m_slotPx;
+    m_characters = std::move(o.m_characters);
     m_fillFractions = std::move(o.m_fillFractions);
     m_glyphMeta = std::move(o.m_glyphMeta);
     m_slotPixels = std::move(o.m_slotPixels);
@@ -78,6 +80,7 @@ void AsciiAtlas::destroy()
     glDeleteTextures(1, &m_texId);
     m_texId = 0;
   }
+  m_characters.clear();
   m_fillFractions.clear();
   m_glyphMeta.clear();
   m_slotPixels.clear();
@@ -100,10 +103,13 @@ bool AsciiAtlas::build(const unsigned char* ttfData, int ttfBytes, const std::st
   std::vector<uint8_t> atlasPixels(static_cast<size_t>(slotW * N * slotH), 0);
   m_fillFractions.resize(N);
   m_glyphMeta.resize(N);
+  m_characters.clear();
+  m_characters.reserve(static_cast<size_t>(N));
 
   for (int i = 0; i < N; ++i) {
     const auto& g = bakedGlyphs[i];
     m_fillFractions[i] = g.fillFraction;
+    m_characters.push_back(g.character);
     m_glyphMeta[i].u0 = static_cast<float>(i) / static_cast<float>(N);
     m_glyphMeta[i].u1 = static_cast<float>(i + 1) / static_cast<float>(N);
 

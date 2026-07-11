@@ -49,7 +49,6 @@
         "CMAKE_BUILD_TYPE": "Release",
         "Entropy_SUPERBUILD": true,
         "Entropy_STATIC_BUNDLED_DEPENDENCIES": true,
-        "Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS": true,
         "Entropy_SUPERBUILD_CONFIG": "Release"
       }
     },
@@ -62,8 +61,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "Entropy_SUPERBUILD": false,
-        "Entropy_STATIC_BUNDLED_DEPENDENCIES": true,
-        "Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS": true
+        "Entropy_STATIC_BUNDLED_DEPENDENCIES": true
       }
     }
   ],

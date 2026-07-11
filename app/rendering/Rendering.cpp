@@ -1977,6 +1977,11 @@ void Rendering::updateMetricUniforms()
   update(m_appData.renderData().m_jointHistogramParams, "Joint Histogram");
 }
 
+std::optional<std::string> Rendering::exportAsciiTextForView(const View& view)
+{
+  return m_asciiRenderer.exportPlainTextForView(view);
+}
+
 std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(const ImgSegPair& p)
 {
   const auto& imgUid = p.first;

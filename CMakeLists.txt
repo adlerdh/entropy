@@ -138,9 +138,6 @@ endif()
 option(Entropy_STATIC_BUNDLED_DEPENDENCIES
   "Build bundled third-party dependencies as static libraries where practical; Qt and system libraries stay dynamic"
   ${entropy_STATIC_BUNDLED_DEPENDENCIES_DEFAULT})
-option(Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS
-  "Build GLFW, Native File Dialog Extended, and spdlog as static libraries for Windows release packages; Qt stays dynamic"
-  OFF)
 
 if(BUILD_SHARED_LIBS)
   set(BUILD_STATIC_LIBS OFF)
@@ -151,7 +148,6 @@ endif()
 message(STATUS "BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}")
 message(STATUS "BUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}")
 message(STATUS "Entropy_STATIC_BUNDLED_DEPENDENCIES=${Entropy_STATIC_BUNDLED_DEPENDENCIES}")
-message(STATUS "Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS=${Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS}")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")

@@ -518,6 +518,9 @@ void renderViewSettingsComboWindow(
                 selectedViewType = vt;
                 setViewType(vt);
                 recenter();
+                if (ViewType::ThreeD == vt && modes.showIsosurfacesPanelForMissingRaycastImageIsosurface) {
+                  modes.showIsosurfacesPanelForMissingRaycastImageIsosurface();
+                }
               }
 
               if (isSelected) {
@@ -629,6 +632,18 @@ void renderViewSettingsComboWindow(
         }
 
         ImGui::PopItemWidth();
+      }
+
+      if (modes.exportAsciiText) {
+        ImGui::SameLine();
+        if (ImGui::Button(ICON_FK_CLIPBOARD)) {
+          if (const auto asciiText = modes.exportAsciiText()) {
+            ImGui::SetClipboardText(asciiText->c_str());
+          }
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("%s", "Copy this view's plain ASCII rendering to the clipboard");
+        }
       }
 
       if (ViewType::ThreeD == viewType && ViewRenderMode::Disabled != renderMode && modes.showIsosurfacesPanel) {

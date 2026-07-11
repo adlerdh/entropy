@@ -84,6 +84,12 @@ public:
     return m_glyphMeta;
   }
 
+  /// Characters in sorted glyph order.
+  const std::string& characters() const
+  {
+    return m_characters;
+  }
+
   /// Slot size in atlas pixels {slotW, slotH} (glyph cell + SDF padding on each side)
   glm::ivec2 slotSize() const
   {
@@ -112,6 +118,7 @@ private:
   int m_glyphCount = 0;
   glm::ivec2 m_glyphPx = {0, 0};
   glm::ivec2 m_slotPx = {0, 0};
+  std::string m_characters;
   std::vector<float> m_fillFractions;
   std::vector<GlyphMeta> m_glyphMeta;
   std::vector<std::vector<uint8_t>> m_slotPixels; // per-glyph slot pixels, sorted order

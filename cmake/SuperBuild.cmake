@@ -82,11 +82,8 @@ set(_entropy_spdlog_pic ${_entropy_bundled_dependency_shared_libs})
 set(_entropy_curl_shared_libs ${_entropy_bundled_dependency_shared_libs})
 set(_entropy_curl_static_libs ${_entropy_bundled_dependency_static_libs})
 
-if(WIN32 AND Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS)
-  set(_entropy_glfw_shared_libs OFF)
+if(Entropy_STATIC_BUNDLED_DEPENDENCIES)
   set(_entropy_glfw_library_type STATIC)
-  set(_entropy_nativefiledialog_shared_libs OFF)
-  set(_entropy_spdlog_shared_libs OFF)
   set(_entropy_spdlog_pic OFF)
 endif()
 

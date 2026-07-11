@@ -34,6 +34,9 @@
 #include <array>
 #include <cmath>
 #include <format>
+#include <limits>
+#include <optional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -274,6 +277,148 @@ bool AsciiRenderer::enabled() const
 {
   const auto& R = m_appData.renderData();
   return R.m_asciiEnabled && (m_asciiAtlas.textureId() != 0);
+}
+
+std::optional<std::string> AsciiRenderer::exportPlainTextForView(const View& view)
+{
+  if (
+    !enabled() || !m_asciiCellMeanTex || m_asciiCellMeanTexSize.x <= 0 || m_asciiCellMeanTexSize.y <= 0 ||
+    m_asciiAtlas.glyphCount() <= 0)
+  {
+    return std::nullopt;
+  }
+
+  const std::string& characters = m_asciiAtlas.characters();
+  const int glyphCount = std::min(m_asciiAtlas.glyphCount(), static_cast<int>(characters.size()));
+  if (glyphCount <= 0) {
+    return std::nullopt;
+  }
+
+  const Viewport& windowVP = m_appData.windowData().viewport();
+  const glm::vec4 deviceVP = windowVP.getDeviceAsVec4();
+  const glm::vec4 logicalVP = windowVP.getAsVec4();
+  const glm::vec2 dpr{
+    (logicalVP[2] > 0.0f) ? (deviceVP[2] / logicalVP[2]) : 1.0f,
+    (logicalVP[3] > 0.0f) ? (deviceVP[3] / logicalVP[3]) : 1.0f};
+
+  const glm::vec2 cellPxDev = m_appData.renderData().m_asciiCellSizePx * dpr;
+  if (cellPxDev.x <= 0.0f || cellPxDev.y <= 0.0f) {
+    return std::nullopt;
+  }
+
+  const glm::vec4 clip = view.windowClipViewport();
+  const float sceneX = (clip[0] * 0.5f + 0.5f) * deviceVP[2];
+  const float sceneY = (clip[1] * 0.5f + 0.5f) * deviceVP[3];
+  const float sceneW = clip[2] * 0.5f * deviceVP[2];
+  const float sceneH = clip[3] * 0.5f * deviceVP[3];
+
+  const int x0 = std::clamp(static_cast<int>(std::floor(sceneX / cellPxDev.x)), 0, m_asciiCellMeanTexSize.x);
+  const int y0 = std::clamp(static_cast<int>(std::floor(sceneY / cellPxDev.y)), 0, m_asciiCellMeanTexSize.y);
+  const int x1 = std::clamp(static_cast<int>(std::ceil((sceneX + sceneW) / cellPxDev.x)), 0, m_asciiCellMeanTexSize.x);
+  const int y1 = std::clamp(static_cast<int>(std::ceil((sceneY + sceneH) / cellPxDev.y)), 0, m_asciiCellMeanTexSize.y);
+
+  if (x1 <= x0 || y1 <= y0) {
+    return std::nullopt;
+  }
+
+  const auto coverage = m_asciiAtlas.computeRenderedCoverage(cellPxDev);
+  if (coverage.empty()) {
+    return std::nullopt;
+  }
+  const auto lut = buildLumLut(coverage);
+
+  std::vector<glm::vec4> cells(static_cast<size_t>(m_asciiCellMeanTexSize.x * m_asciiCellMeanTexSize.y));
+  m_asciiCellMeanTex->readData(0, tex::BufferPixelFormat::RGBA, tex::BufferPixelDataType::Float32, cells.data());
+
+  const bool useSpatialMatching = m_appData.renderData().m_asciiSpatialMode && m_asciiCellRegionsTex &&
+                                  m_asciiCellRegionsTexB &&
+                                  m_glyphProfilesPackedA.size() >= static_cast<size_t>(glyphCount) &&
+                                  m_glyphProfilesPackedB.size() >= static_cast<size_t>(glyphCount) &&
+                                  m_glyphRankToIndex.size() >= static_cast<size_t>(glyphCount);
+  std::vector<glm::vec4> cellProfilesA;
+  std::vector<glm::vec2> cellProfilesB;
+  if (useSpatialMatching) {
+    cellProfilesA.resize(cells.size());
+    cellProfilesB.resize(cells.size());
+    m_asciiCellRegionsTex
+      ->readData(0, tex::BufferPixelFormat::RGBA, tex::BufferPixelDataType::Float32, cellProfilesA.data());
+    m_asciiCellRegionsTexB
+      ->readData(0, tex::BufferPixelFormat::RG, tex::BufferPixelDataType::Float32, cellProfilesB.data());
+  }
+
+  auto glyphIndexForCell = [&](std::size_t cellIndex, int luminanceBin) {
+    const int lutGlyphOrRank = std::clamp(lut[static_cast<size_t>(luminanceBin)], 0, glyphCount - 1);
+    if (!useSpatialMatching) {
+      return lutGlyphOrRank;
+    }
+
+    glm::vec4 profileA = glm::clamp(cellProfilesA[cellIndex], glm::vec4{0.0f}, glm::vec4{1.0f});
+    glm::vec2 profileB = glm::clamp(cellProfilesB[cellIndex], glm::vec2{0.0f}, glm::vec2{1.0f});
+
+    profileA /= glm::max(
+      glm::vec4{m_glyphRegionMax[0], m_glyphRegionMax[1], m_glyphRegionMax[2], m_glyphRegionMax[3]},
+      glm::vec4{1.0e-6f});
+    profileB /= glm::max(glm::vec2{m_glyphRegionMax[4], m_glyphRegionMax[5]}, glm::vec2{1.0e-6f});
+
+    float localMax = std::max(
+      std::max(std::max(profileA.x, profileA.y), std::max(profileA.z, profileA.w)),
+      std::max(profileB.x, profileB.y));
+    localMax = std::max(localMax, 1.0e-4f);
+    const float spatialExponent = m_appData.renderData().m_asciiSpatialExponent;
+    profileA = glm::pow(glm::clamp(profileA / localMax, glm::vec4{0.0f}, glm::vec4{1.0f}), glm::vec4{spatialExponent}) *
+               localMax;
+    profileB = glm::pow(glm::clamp(profileB / localMax, glm::vec2{0.0f}, glm::vec2{1.0f}), glm::vec2{spatialExponent}) *
+               localMax;
+
+    const int baseRank = lutGlyphOrRank;
+    const int densityWindow = static_cast<int>(m_asciiSpatialDensityWindow);
+    const int rankLo = std::max(0, baseRank - densityWindow);
+    const int rankHi = std::min(glyphCount - 1, baseRank + densityWindow);
+
+    int bestGlyphIndex = m_glyphRankToIndex[static_cast<size_t>(baseRank)];
+    float bestDistance = std::numeric_limits<float>::max();
+    for (int rank = rankLo; rank <= rankHi; ++rank) {
+      const int glyphIndex =
+        std::clamp(m_glyphRankToIndex[static_cast<size_t>(rank)], 0, std::min(glyphCount, AsciiAtlas::kMaxGlyphs) - 1);
+      const glm::vec4 dA = profileA - m_glyphProfilesPackedA[static_cast<size_t>(glyphIndex)];
+      const glm::vec2 dB = profileB - glm::vec2{
+                                        m_glyphProfilesPackedB[static_cast<size_t>(glyphIndex)].x,
+                                        m_glyphProfilesPackedB[static_cast<size_t>(glyphIndex)].y};
+      const float distance = glm::dot(dA, dA) + glm::dot(dB, dB);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestGlyphIndex = glyphIndex;
+      }
+    }
+    return std::clamp(bestGlyphIndex, 0, glyphCount - 1);
+  };
+
+  std::string text;
+  const int exportWidth = x1 - x0;
+  const int exportHeight = y1 - y0;
+  text.reserve(static_cast<size_t>((exportWidth + 1) * exportHeight));
+
+  for (int y = y1 - 1; y >= y0; --y) {
+    for (int x = x0; x < x1; ++x) {
+      const std::size_t cellIndex = static_cast<size_t>(y * m_asciiCellMeanTexSize.x + x);
+      const glm::vec4 srcPM = cells[cellIndex];
+      if (srcPM.a < 0.001f) {
+        text.push_back(' ');
+        continue;
+      }
+
+      const glm::vec3 srcRgb = glm::vec3(srcPM) / std::max(srcPM.a, 1.0e-4f);
+      const float lum = std::clamp(glm::dot(srcRgb, glm::vec3{0.299f, 0.587f, 0.114f}), 0.0f, 1.0f);
+      const int bin = std::clamp(static_cast<int>(std::round(lum * 255.0f)), 0, 255);
+      const int glyphIndex = glyphIndexForCell(cellIndex, bin);
+      text.push_back(characters[static_cast<size_t>(glyphIndex)]);
+    }
+    if (y > y0) {
+      text.push_back('\n');
+    }
+  }
+
+  return text;
 }
 
 void AsciiRenderer::maybeRebuildAtlas()

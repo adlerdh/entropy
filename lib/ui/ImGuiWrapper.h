@@ -149,6 +149,9 @@ struct ImGuiViewCallbacks
 
   /** @brief Update metric shader uniforms after measurement settings change. */
   std::function<void()> updateMetricUniforms;
+
+  /** @brief Export the most recently rendered ASCII text for a view. */
+  std::function<std::optional<std::string>(const uuids::uuid& viewUid)> exportAsciiTextForView;
 };
 
 /**
@@ -348,6 +351,7 @@ private:
   std::function<void(std::size_t tableIndex)> m_updateLabelColorTableTexture = nullptr;
   std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)> m_moveCrosshairsToSegLabelCentroid = nullptr;
   std::function<void(void)> m_updateMetricUniforms = nullptr;
+  std::function<std::optional<std::string>(const uuids::uuid& viewUid)> m_exportAsciiTextForView = nullptr;
   std::function<glm::vec3()> m_getWorldDeformedPos = nullptr;
   std::function<std::optional<glm::vec3>(std::size_t imageIndex)> m_getSubjectPos = nullptr;
   std::function<std::optional<glm::ivec3>(std::size_t imageIndex)> m_getVoxelPos = nullptr;

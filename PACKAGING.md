@@ -333,7 +333,7 @@ To create only the portable ZIP archive, WiX is not required:
 cpack -G ZIP -C Release --config build-release\CPackConfig.cmake
 ```
 
-The Windows release presets set `Entropy_STATIC_BUNDLED_DEPENDENCIES=ON`, so ITK, GLFW, Native File Dialog Extended, spdlog, and small helper libraries are linked statically into `entropy.exe`. Qt Core and the Visual C++ runtime keep the normal Windows dynamic linkage and are bundled as required private runtime DLLs. `Entropy_WINDOWS_PACKAGE_STATIC_SMALL_DEPS=ON` remains enabled for Windows release builds, but `Entropy_STATIC_BUNDLED_DEPENDENCIES=ON` is the setting that makes ITK static.
+The Windows release presets set `Entropy_STATIC_BUNDLED_DEPENDENCIES=ON`, so ITK, GLFW, Native File Dialog Extended, spdlog, and small helper libraries are linked statically into `entropy.exe`. Qt Core and the Visual C++ runtime keep the normal Windows dynamic linkage and are bundled as required private runtime DLLs.
 
 The Windows MSI includes `entropy.exe`, required private runtime DLLs, the Visual C++ runtime DLLs, the app icon metadata, Start Menu and desktop shortcuts, package documents, and the FireANTs Python bridge. The About dialog icon is embedded into the executable with CMakeRC instead of installed under `share\entropy`.
 

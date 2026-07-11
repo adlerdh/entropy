@@ -2125,6 +2125,10 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::SameLine();
   helpMarker("Background of view is transparent outside of image volume");
 
+  ImGui::Checkbox("Show image box", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);
+  ImGui::SameLine();
+  helpMarker("Render a subtle outline of the raycast image box in 3D views");
+
   // Should the front and back faces be rendered in 3D raycasting?
   ImGui::Spacing();
   ImGui::Checkbox("Render front faces", &renderData.m_renderFrontFaces);
@@ -2134,11 +2138,6 @@ void renderRaycastingTab(RenderData& renderData)
   ImGui::Checkbox("Render back faces", &renderData.m_renderBackFaces);
   ImGui::SameLine();
   helpMarker("Render back faces in raycasting");
-
-  ImGui::Spacing();
-  ImGui::Checkbox("Show image box", &renderData.m_raycastBackgroundEdgeBrighteningEnabled);
-  ImGui::SameLine();
-  helpMarker("Render a subtle outline of the raycast image box in 3D views");
 
   ImGui::Checkbox("Reverse POV camera rotation", &renderData.m_reverseThreeDRotateAboutEye);
   ImGui::SameLine();

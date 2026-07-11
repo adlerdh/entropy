@@ -72,19 +72,22 @@ struct ViewOverlayModeCallbacks
   std::function<void()> recenter; //!< Recenter after mode/type changes when needed.
 
   std::function<void(const uuids::uuid& viewUid)> applyImageSelectionAndShaderToAllViews; //!< Apply to all views.
-  std::function<bool()> isIsosurfacesPanelVisible;                  //!< Is the isosurfaces panel currently visible.
-  std::function<void()> showIsosurfacesPanel;                       //!< Open the isosurfaces panel.
-  std::function<void()> showIsosurfacesPanelForRaycastImage;        //!< Open the panel for the current raycast image.
-  std::function<ProjectionType()> getThreeDProjectionType;          //!< Current 3D projection type.
-  std::function<void(ProjectionType)> setThreeDProjectionType;      //!< Set 3D projection type.
-  std::function<float()> getThreeDFovAngleDegrees;                  //!< Current perspective field-of-view angle.
-  std::function<void(float)> setThreeDFovAngleDegrees;              //!< Set perspective field-of-view angle.
+  std::function<bool()> isIsosurfacesPanelVisible;           //!< Is the isosurfaces panel currently visible.
+  std::function<void()> showIsosurfacesPanel;                //!< Open the isosurfaces panel.
+  std::function<void()> showIsosurfacesPanelForRaycastImage; //!< Open the panel for the current raycast image.
+  std::function<void()>
+    showIsosurfacesPanelForMissingRaycastImageIsosurface;      //!< Open the panel if the raycast image has no surfaces.
+  std::function<ProjectionType()> getThreeDProjectionType;     //!< Current 3D projection type.
+  std::function<void(ProjectionType)> setThreeDProjectionType; //!< Set 3D projection type.
+  std::function<float()> getThreeDFovAngleDegrees;             //!< Current perspective field-of-view angle.
+  std::function<void(float)> setThreeDFovAngleDegrees;         //!< Set perspective field-of-view angle.
   std::function<bool()> getThreeDViewPositionFollowsCrosshairs;     //!< Whether 3D eye position follows crosshairs.
   std::function<void(bool)> setThreeDViewPositionFollowsCrosshairs; //!< Set whether 3D eye position follows crosshairs.
   std::function<camera3d::OrbitTargetMode()> getThreeDOrbitTargetMode;     //!< Current 3D orbit target mode.
   std::function<void(camera3d::OrbitTargetMode)> setThreeDOrbitTargetMode; //!< Set 3D orbit target mode.
   std::function<bool()> getThreeDRenderImageBox;                           //!< Whether 3D raycast image box is drawn.
   std::function<void(bool)> setThreeDRenderImageBox;                       //!< Set 3D raycast image box drawing.
+  std::function<std::optional<std::string>()> exportAsciiText;             //!< Export this view's ASCII text.
   std::vector<ViewType> selectableViewTypes; //!< Empty means all supported view types are selectable.
 };
 
