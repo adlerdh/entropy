@@ -118,7 +118,7 @@ json pathGroupToJson(const RecentPathGroup& group)
   json paths = json::array();
   for (const auto& path : group.paths) {
     if (!path.empty()) {
-      paths.push_back(path.string());
+      paths.push_back(path.generic_string());
     }
   }
   return paths;
@@ -140,7 +140,7 @@ json pathsToJson(const std::vector<std::filesystem::path>& paths)
   json values = json::array();
   for (const auto& path : paths) {
     if (!path.empty()) {
-      values.push_back(path.string());
+      values.push_back(path.generic_string());
     }
   }
   return values;
