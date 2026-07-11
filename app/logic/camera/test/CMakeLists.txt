@@ -1,4 +1,4 @@
-add_executable(EntropyCameraTests
+add_executable(TestCamera
   Camera3DInteractionTests.cpp
   Camera3DControlsTests.cpp
   CameraFrustumSliceTests.cpp
@@ -6,7 +6,7 @@ add_executable(EntropyCameraTests
   RaycastIsoSurfacePickerTests.cpp
 )
 
-target_sources(EntropyCameraTests PRIVATE
+target_sources(TestCamera PRIVATE
   "${entropy_APP_DIR}/logic/camera/Camera.cpp"
   "${entropy_APP_DIR}/logic/camera/Camera3DControls.cpp"
   "${entropy_APP_DIR}/logic/camera/CameraFrustumSlice.cpp"
@@ -20,26 +20,26 @@ target_sources(EntropyCameraTests PRIVATE
   "${entropy_APP_DIR}/logic/camera/RaycastIsoSurfacePicker.cpp"
 )
 
-target_link_libraries(EntropyCameraTests PRIVATE
+target_link_libraries(TestCamera PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
   spdlog::spdlog
   entropy_warnings
 )
 
-entropy_enable_coverage_for_target(EntropyCameraTests)
-entropy_register_coverage_test_target(EntropyCameraTests)
+entropy_enable_coverage_for_target(TestCamera)
+entropy_register_coverage_test_target(TestCamera)
 
-target_include_directories(EntropyCameraTests PRIVATE
+target_include_directories(TestCamera PRIVATE
   "${entropy_APP_DIR}"
 )
 
-set_target_properties(EntropyCameraTests PROPERTIES
+set_target_properties(TestCamera PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
 
-entropy_copy_runtime_dlls(EntropyCameraTests)
+entropy_copy_runtime_dlls(TestCamera)
 
-catch_discover_tests(EntropyCameraTests)
+catch_discover_tests(TestCamera)

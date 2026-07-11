@@ -1,13 +1,13 @@
-add_executable(EntropySerializationTests
+add_executable(TestSerialization
   ProjectSerializationTests.cpp
 )
 
-target_sources(EntropySerializationTests PRIVATE
+target_sources(TestSerialization PRIVATE
   "${entropy_APP_DIR}/logic/serialization/ProjectSerialization.cpp"
   "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
 )
 
-target_link_libraries(EntropySerializationTests PRIVATE
+target_link_libraries(TestSerialization PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
   Entropy::Layout
@@ -16,20 +16,20 @@ target_link_libraries(EntropySerializationTests PRIVATE
   entropy_warnings
 )
 
-entropy_enable_coverage_for_target(EntropySerializationTests)
-entropy_register_coverage_test_target(EntropySerializationTests)
+entropy_enable_coverage_for_target(TestSerialization)
+entropy_register_coverage_test_target(TestSerialization)
 
-target_include_directories(EntropySerializationTests PRIVATE
+target_include_directories(TestSerialization PRIVATE
   "${entropy_APP_DIR}"
   "${entropy_EXT_DIR}"
 )
 
-set_target_properties(EntropySerializationTests PROPERTIES
+set_target_properties(TestSerialization PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
 
-entropy_copy_runtime_dlls(EntropySerializationTests)
+entropy_copy_runtime_dlls(TestSerialization)
 
-catch_discover_tests(EntropySerializationTests)
+catch_discover_tests(TestSerialization)

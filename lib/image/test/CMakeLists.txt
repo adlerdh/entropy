@@ -1,4 +1,4 @@
-add_executable(EntropyImageTests
+add_executable(TestImage
   DicomSeriesTests.cpp
   ImageColorMapTests.cpp
   ImageCoreTests.cpp
@@ -13,7 +13,7 @@ add_executable(EntropyImageTests
   ../../../test/image_generator/ImageGenerator.cpp
 )
 
-target_link_libraries(EntropyImageTests PRIVATE
+target_link_libraries(TestImage PRIVATE
   Catch2::Catch2WithMain
   Entropy::Image
   nlohmann_json::nlohmann_json
@@ -21,20 +21,20 @@ target_link_libraries(EntropyImageTests PRIVATE
   entropy_warnings
 )
 
-entropy_enable_coverage_for_target(EntropyImageTests)
-entropy_register_coverage_test_target(EntropyImageTests)
+entropy_enable_coverage_for_target(TestImage)
+entropy_register_coverage_test_target(TestImage)
 
-target_include_directories(EntropyImageTests PRIVATE
+target_include_directories(TestImage PRIVATE
   ${ITK_INCLUDE_DIRS}
   "${CMAKE_SOURCE_DIR}/test/image_generator"
 )
 
-set_target_properties(EntropyImageTests PROPERTIES
+set_target_properties(TestImage PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
 
-entropy_copy_runtime_dlls(EntropyImageTests)
+entropy_copy_runtime_dlls(TestImage)
 
-catch_discover_tests(EntropyImageTests)
+catch_discover_tests(TestImage)

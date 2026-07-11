@@ -1,4 +1,4 @@
-add_executable(EntropyUiTests
+add_executable(TestUi
   GuiDataTests.cpp
   HeaderCommonTests.cpp
   IsosurfaceRangeModelTests.cpp
@@ -17,7 +17,7 @@ add_executable(EntropyUiTests
   ViewOverlayModelTests.cpp
 )
 
-target_sources(EntropyUiTests PRIVATE
+target_sources(TestUi PRIVATE
   "${entropy_UI_DIR}/GuiData.cpp"
   "${entropy_UI_DIR}/IsosurfaceRangeModel.cpp"
   "${entropy_UI_DIR}/windows/KeyboardShortcuts.cpp"
@@ -33,7 +33,7 @@ target_sources(EntropyUiTests PRIVATE
   "${entropy_UI_DIR}/windows/ViewOverlayModel.cpp"
 )
 
-target_link_libraries(EntropyUiTests PRIVATE
+target_link_libraries(TestUi PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
   Entropy::Registration
@@ -44,10 +44,10 @@ target_link_libraries(EntropyUiTests PRIVATE
   entropy_warnings
 )
 
-entropy_enable_coverage_for_target(EntropyUiTests)
-entropy_register_coverage_test_target(EntropyUiTests)
+entropy_enable_coverage_for_target(TestUi)
+entropy_register_coverage_test_target(TestUi)
 
-target_include_directories(EntropyUiTests PRIVATE
+target_include_directories(TestUi PRIVATE
   "${entropy_APP_DIR}"
   "${entropy_LIB_DIR}"
   "${entropy_EXT_DIR}/glad/glad_gl_3.3_core/include"
@@ -56,12 +56,12 @@ target_include_directories(EntropyUiTests PRIVATE
   "${implot_SRC_DIR}"
 )
 
-set_target_properties(EntropyUiTests PROPERTIES
+set_target_properties(TestUi PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
 
-entropy_copy_runtime_dlls(EntropyUiTests)
+entropy_copy_runtime_dlls(TestUi)
 
-catch_discover_tests(EntropyUiTests)
+catch_discover_tests(TestUi)

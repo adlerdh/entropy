@@ -61,16 +61,16 @@ add_custom_target(GenerateImageExamples
   VERBATIM
 )
 
-add_executable(ImageGeneratorTests
+add_executable(TestImageGenerator
   ImageGeneratorTests.cpp
 )
 
-target_link_libraries(ImageGeneratorTests PRIVATE
+target_link_libraries(TestImageGenerator PRIVATE
   Catch2::Catch2WithMain
   ImageGeneratorCore
   entropy_warnings
 )
 
-entropy_copy_runtime_dlls(ImageGeneratorTests)
+entropy_copy_runtime_dlls(TestImageGenerator)
 
-catch_discover_tests(ImageGeneratorTests)
+catch_discover_tests(TestImageGenerator)

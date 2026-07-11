@@ -1,4 +1,4 @@
-add_executable(EntropyRenderingTests
+add_executable(TestRendering
   AsciiClipboardTests.cpp
   LightboxOffsetLabelFormatTests.cpp
   LocalLinearResidualMetricTests.cpp
@@ -8,7 +8,7 @@ add_executable(EntropyRenderingTests
   XrayAttenuationTests.cpp
 )
 
-target_sources(EntropyRenderingTests PRIVATE
+target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/ascii/AsciiClipboard.cpp"
   "${entropy_APP_DIR}/rendering/LocalLinearResidualMetric.cpp"
   "${entropy_APP_DIR}/rendering/LightboxOffsetLabelFormat.cpp"
@@ -18,25 +18,25 @@ target_sources(EntropyRenderingTests PRIVATE
   "${entropy_APP_DIR}/rendering/XrayAttenuation.cpp"
 )
 
-target_link_libraries(EntropyRenderingTests PRIVATE
+target_link_libraries(TestRendering PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
   entropy_warnings
 )
 
-entropy_enable_coverage_for_target(EntropyRenderingTests)
-entropy_register_coverage_test_target(EntropyRenderingTests)
+entropy_enable_coverage_for_target(TestRendering)
+entropy_register_coverage_test_target(TestRendering)
 
-target_include_directories(EntropyRenderingTests PRIVATE
+target_include_directories(TestRendering PRIVATE
   "${entropy_APP_DIR}"
 )
 
-set_target_properties(EntropyRenderingTests PROPERTIES
+set_target_properties(TestRendering PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
 
-entropy_copy_runtime_dlls(EntropyRenderingTests)
+entropy_copy_runtime_dlls(TestRendering)
 
-catch_discover_tests(EntropyRenderingTests)
+catch_discover_tests(TestRendering)

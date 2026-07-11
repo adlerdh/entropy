@@ -67,16 +67,16 @@ add_custom_target(GenerateDeformationWarpExamples
   VERBATIM
 )
 
-add_executable(WarpFieldGeneratorTests
+add_executable(TestWarpFieldGenerator
   WarpFieldGeneratorTests.cpp
 )
 
-target_link_libraries(WarpFieldGeneratorTests PRIVATE
+target_link_libraries(TestWarpFieldGenerator PRIVATE
   Catch2::Catch2WithMain
   WarpFieldGeneratorCore
   entropy_warnings
 )
 
-entropy_copy_runtime_dlls(WarpFieldGeneratorTests)
+entropy_copy_runtime_dlls(TestWarpFieldGenerator)
 
-catch_discover_tests(WarpFieldGeneratorTests)
+catch_discover_tests(TestWarpFieldGenerator)

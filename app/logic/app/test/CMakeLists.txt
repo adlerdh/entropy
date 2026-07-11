@@ -1,4 +1,4 @@
-add_executable(EntropyAppSettingsTests
+add_executable(TestAppSettings
   AppPathsTests.cpp
   ImageScaleInteractionTests.cpp
   ImageSelectionPolicyTests.cpp
@@ -10,7 +10,7 @@ add_executable(EntropyAppSettingsTests
   WindowTitleStatusTests.cpp
 )
 
-target_sources(EntropyAppSettingsTests PRIVATE
+target_sources(TestAppSettings PRIVATE
   "${entropy_APP_DIR}/logic/app/ImageScaleInteraction.cpp"
   "${entropy_APP_DIR}/logic/app/ImageSelectionPolicy.cpp"
   "${entropy_APP_DIR}/logic/app/LoadingStatusItems.cpp"
@@ -23,16 +23,16 @@ target_sources(EntropyAppSettingsTests PRIVATE
 )
 
 if(APPLE)
-  target_sources(EntropyAppSettingsTests PRIVATE
+  target_sources(TestAppSettings PRIVATE
     "${entropy_APP_DIR}/logic/app/AppPathsMac.mm"
   )
 else()
-  target_sources(EntropyAppSettingsTests PRIVATE
+  target_sources(TestAppSettings PRIVATE
     "${entropy_APP_DIR}/logic/app/AppPaths.cpp"
   )
 endif()
 
-target_link_libraries(EntropyAppSettingsTests PRIVATE
+target_link_libraries(TestAppSettings PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
   Entropy::Layout
@@ -44,15 +44,15 @@ target_link_libraries(EntropyAppSettingsTests PRIVATE
 )
 
 if(APPLE)
-  target_link_libraries(EntropyAppSettingsTests PRIVATE
+  target_link_libraries(TestAppSettings PRIVATE
     ${COCOA_LIBRARY}
   )
 endif()
 
-entropy_enable_coverage_for_target(EntropyAppSettingsTests)
-entropy_register_coverage_test_target(EntropyAppSettingsTests)
+entropy_enable_coverage_for_target(TestAppSettings)
+entropy_register_coverage_test_target(TestAppSettings)
 
-target_include_directories(EntropyAppSettingsTests PRIVATE
+target_include_directories(TestAppSettings PRIVATE
   "${entropy_APP_DIR}"
   "${entropy_EXT_DIR}"
   "${entropy_EXT_DIR}/glad/glad_gl_3.3_core/include"
@@ -60,12 +60,12 @@ target_include_directories(EntropyAppSettingsTests PRIVATE
   "${imgui_SRC_DIR}/imgui"
 )
 
-set_target_properties(EntropyAppSettingsTests PROPERTIES
+set_target_properties(TestAppSettings PROPERTIES
   CXX_STANDARD 23
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
 
-entropy_copy_runtime_dlls(EntropyAppSettingsTests)
+entropy_copy_runtime_dlls(TestAppSettings)
 
-catch_discover_tests(EntropyAppSettingsTests)
+catch_discover_tests(TestAppSettings)
