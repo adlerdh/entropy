@@ -1,6 +1,7 @@
 #include "ui/windows/ViewOverlayWindows.h"
 
 #include "common/DirectionMaps.h"
+#include "ui/Clipboard.h"
 #include "ui/Helpers.h"
 #include "ui/ImGuiCustomControls.h"
 #include "ui/windows/ViewOverlayModel.h"
@@ -634,15 +635,15 @@ void renderViewSettingsComboWindow(
         ImGui::PopItemWidth();
       }
 
-      if (modes.exportAsciiText) {
+      if (modes.exportAsciiClipboardPayload) {
         ImGui::SameLine();
         if (ImGui::Button(ICON_FK_CLIPBOARD)) {
-          if (const auto asciiText = modes.exportAsciiText()) {
-            ImGui::SetClipboardText(asciiText->c_str());
+          if (const auto payload = modes.exportAsciiClipboardPayload()) {
+            entropy::ui::setClipboardPayload(*payload);
           }
         }
         if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("%s", "Copy this view's plain ASCII rendering to the clipboard");
+          ImGui::SetTooltip("%s", "Copy this view's ASCII rendering to the clipboard");
         }
       }
 

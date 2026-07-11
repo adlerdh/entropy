@@ -1,4 +1,5 @@
 add_executable(EntropyCommonTests
+  ClipboardFormatsTests.cpp
   CommonHeaderIncludeTests.cpp
   CoordinateFrameTests.cpp
   DirectionMapsTests.cpp

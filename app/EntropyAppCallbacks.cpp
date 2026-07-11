@@ -151,12 +151,13 @@ void EntropyApp::setCallbacks()
   imguiCallbacks.view.updateMetricUniforms = [this]() {
     m_rendering.updateMetricUniforms();
   };
-  imguiCallbacks.view.exportAsciiTextForView = [this](const uuids::uuid& viewUid) -> std::optional<std::string> {
+  imguiCallbacks.view.exportAsciiClipboardPayloadForView =
+    [this](const uuids::uuid& viewUid) -> std::optional<entropy::ClipboardPayload> {
     const View* view = m_data.windowData().getView(viewUid);
     if (!view) {
       return std::nullopt;
     }
-    return m_rendering.exportAsciiTextForView(*view);
+    return m_rendering.exportAsciiClipboardPayloadForView(*view);
   };
   imguiCallbacks.inspection.getWorldDeformedPos = [this]() {
     return m_data.state().worldCrosshairs().worldOrigin();

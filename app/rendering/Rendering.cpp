@@ -1977,9 +1977,9 @@ void Rendering::updateMetricUniforms()
   update(m_appData.renderData().m_jointHistogramParams, "Joint Histogram");
 }
 
-std::optional<std::string> Rendering::exportAsciiTextForView(const View& view)
+std::optional<entropy::ClipboardPayload> Rendering::exportAsciiClipboardPayloadForView(const View& view)
 {
-  return m_asciiRenderer.exportPlainTextForView(view);
+  return m_asciiRenderer.exportClipboardPayloadForView(view);
 }
 
 std::list<std::reference_wrapper<GLTexture>> Rendering::bindScalarImageTextures(const ImgSegPair& p)

@@ -2290,6 +2290,10 @@ void renderRenderingTab(RenderData& renderData)
       }
 
       ImGui::SliderFloat("Cell size", &rd.m_asciiCellSizePx.y, 4.f, 64.f, "%.0f px");
+      ImGui::SameLine();
+      helpMarker(
+        "Size of each ASCII character cell in screen pixels. Larger cells produce coarser, more readable ASCII "
+        "shading.");
 
       ImGui::Checkbox("Use colormap as foreground", &rd.m_asciiUseColormap);
       ImGui::SameLine();
@@ -2301,11 +2305,19 @@ void renderRenderingTab(RenderData& renderData)
       ImGui::ColorEdit3("Background color", &rd.m_asciiBgColor.x);
       ImGui::SliderFloat("Background alpha", &rd.m_asciiBgAlpha, 0.f, 1.f);
 
-      ImGui::Checkbox("Spatial matching (3x2)", &rd.m_asciiSpatialMode);
-      if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Match glyphs by a 3x2 region luminance profile instead of total brightness");
-      if (rd.m_asciiSpatialMode)
+      ImGui::Spacing();
+      ImGui::Checkbox("Spatial matching", &rd.m_asciiSpatialMode);
+      ImGui::SameLine();
+      helpMarker(
+        "Choose ASCII characters by comparing a 3 by 2 regional luminance pattern within each cell, rather than using "
+        "only the cell's average brightness. This can preserve local structure better, but costs more GPU work.");
+      if (rd.m_asciiSpatialMode) {
         ImGui::SliderFloat("Spatial Exponent", &rd.m_asciiSpatialExponent, 0.25f, 4.0f, "%.2f");
+        ImGui::SameLine();
+        helpMarker(
+          "Controls how strongly regional luminance differences influence spatial glyph matching. Higher values favor "
+          "sharper local structure; lower values behave more like average-brightness matching.");
+      }
     }
 
     ImGui::PopID(); /*** PopID ascii ***/

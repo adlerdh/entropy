@@ -1546,7 +1546,7 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
   m_updateLabelColorTableTexture = std::move(callbacks.view.updateLabelColorTableTexture);
   m_moveCrosshairsToSegLabelCentroid = std::move(callbacks.view.moveCrosshairsToSegLabelCentroid);
   m_updateMetricUniforms = std::move(callbacks.view.updateMetricUniforms);
-  m_exportAsciiTextForView = std::move(callbacks.view.exportAsciiTextForView);
+  m_exportAsciiClipboardPayloadForView = std::move(callbacks.view.exportAsciiClipboardPayloadForView);
 
   m_getWorldDeformedPos = std::move(callbacks.inspection.getWorldDeformedPos);
   m_getSubjectPos = std::move(callbacks.inspection.getSubjectPos);
@@ -4820,10 +4820,11 @@ void ImGuiWrapper::render()
           [this](bool renderImageBox) {
             m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled = renderImageBox;
           },
-        .exportAsciiText = (m_appData.renderData().m_asciiEnabled && m_exportAsciiTextForView)
-                             ? std::function<std::optional<std::string>()>(
-                                 [this, viewUid]() { return m_exportAsciiTextForView(viewUid); })
-                             : std::function<std::optional<std::string>()>{}};
+        .exportAsciiClipboardPayload = (m_appData.renderData().m_asciiEnabled && m_exportAsciiClipboardPayloadForView)
+                                         ? std::function<std::optional<entropy::ClipboardPayload>()>([this, viewUid]() {
+                                             return m_exportAsciiClipboardPayloadForView(viewUid);
+                                           })
+                                         : std::function<std::optional<entropy::ClipboardPayload>()>{}};
 
       const ViewOverlayProjectionCallbacks projectionCallbacks{
         [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/CoordinateFrame.h"
+#include "common/ClipboardPayload.h"
 #include "common/Types.h"
 #include "logic/camera/Camera3DControls.h"
 #include "logic/camera/CameraTypes.h"
@@ -87,7 +88,8 @@ struct ViewOverlayModeCallbacks
   std::function<void(camera3d::OrbitTargetMode)> setThreeDOrbitTargetMode; //!< Set 3D orbit target mode.
   std::function<bool()> getThreeDRenderImageBox;                           //!< Whether 3D raycast image box is drawn.
   std::function<void(bool)> setThreeDRenderImageBox;                       //!< Set 3D raycast image box drawing.
-  std::function<std::optional<std::string>()> exportAsciiText;             //!< Export this view's ASCII text.
+  std::function<std::optional<entropy::ClipboardPayload>()>
+    exportAsciiClipboardPayload;             //!< Export this view's ASCII clipboard payload.
   std::vector<ViewType> selectableViewTypes; //!< Empty means all supported view types are selectable.
 };
 

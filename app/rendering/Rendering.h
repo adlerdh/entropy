@@ -69,8 +69,8 @@ public:
   /// Update the metric uniforms after any settings have changed
   void updateMetricUniforms();
 
-  /// Export the most recently rendered ASCII text for one view.
-  std::optional<std::string> exportAsciiTextForView(const View& view);
+  /// Export the most recently rendered ASCII clipboard payload for one view.
+  std::optional<entropy::ClipboardPayload> exportAsciiClipboardPayloadForView(const View& view);
 
   /// Update a label color table texture
   void updateLabelColorTableTexture(size_t tableIndex);

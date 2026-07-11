@@ -63,16 +63,19 @@ set(entropy_UI_SOURCES
 
 if(APPLE)
   list(APPEND entropy_UI_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/ClipboardMac.mm"
     "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/NativeMessageDialogsMac.mm"
     "${CMAKE_CURRENT_SOURCE_DIR}/menus/MacNativeMainMenu.mm"
   )
 elseif(WIN32)
   list(APPEND entropy_UI_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/ClipboardWin.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/NativeMessageDialogsWin.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/menus/WinNativeMainMenu.cpp"
   )
 else()
   list(APPEND entropy_UI_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/Clipboard.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/dialogs/NativeMessageDialogs.cpp"
   )
 endif()

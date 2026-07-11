@@ -1,4 +1,5 @@
 add_executable(EntropyRenderingTests
+  AsciiClipboardTests.cpp
   LightboxOffsetLabelFormatTests.cpp
   LocalLinearResidualMetricTests.cpp
   LocalNccMetricTests.cpp
@@ -8,6 +9,7 @@ add_executable(EntropyRenderingTests
 )
 
 target_sources(EntropyRenderingTests PRIVATE
+  "${entropy_APP_DIR}/rendering/ascii/AsciiClipboard.cpp"
   "${entropy_APP_DIR}/rendering/LocalLinearResidualMetric.cpp"
   "${entropy_APP_DIR}/rendering/LightboxOffsetLabelFormat.cpp"
   "${entropy_APP_DIR}/rendering/LocalNccMetric.cpp"

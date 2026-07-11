@@ -2,6 +2,7 @@ add_library(EntropyCommon STATIC)
 add_library(Entropy::Common ALIAS EntropyCommon)
 
 target_sources(EntropyCommon PRIVATE
+  ClipboardFormats.cpp
   CoordinateFrame.cpp
   DirectionMaps.cpp
   "${entropy_EXT_DIR}/wrfranklin/pnpoly.cpp"
