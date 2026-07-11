@@ -3508,7 +3508,9 @@ void Rendering::renderAllImagesForView(
         P.setUniform("u_numIsos", R.m_isosurfaceData.numIsos);
         P.setUniform("u_isoValues", R.m_isosurfaceData.values);
         P.setUniform("u_isoOpacities", R.m_isosurfaceData.opacities);
-        P.setUniform("u_isoEdges", R.m_isosurfaceData.edgeStrengths);
+        P.setUniform("u_isoRimOpacityStrengths", R.m_isosurfaceData.rimOpacityStrengths);
+        P.setUniform("u_isoRimEmissionStrengths", R.m_isosurfaceData.rimEmissionStrengths);
+        P.setUniform("u_isoRimPowers", R.m_isosurfaceData.rimPowers);
         P.setUniform("u_ambient", R.m_isosurfaceData.ambient);
         P.setUniform("u_diffuse", R.m_isosurfaceData.diffuse);
         P.setUniform("u_specular", R.m_isosurfaceData.specular);
@@ -5113,7 +5115,7 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
     fsUniforms.insertUniform("u_jumpTex", UniformType::Sampler, msk_jumpTexSampler, !warped);
 
     fsUniforms.insertUniform("u_tex_T_world", UniformType::Mat4, sk_identMat4);
-    fsUniforms.insertUniform("u_world_T_tex", UniformType::Mat4, sk_identMat4, warped);
+    fsUniforms.insertUniform("u_world_T_tex", UniformType::Mat4, sk_identMat4);
     fsUniforms.insertUniform("u_clip_T_imgTex", UniformType::Mat4, sk_identMat4);
 
     fsUniforms.insertUniform("u_texGrads", UniformType::Mat3, sk_identMat3);
@@ -5121,7 +5123,9 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
     fsUniforms.insertUniform("u_numIsos", UniformType::Int, 0);
     fsUniforms.insertUniform("u_isoValues", UniformType::FloatVector, FloatVector{0.0f});
     fsUniforms.insertUniform("u_isoOpacities", UniformType::FloatVector, FloatVector{1.0f});
-    fsUniforms.insertUniform("u_isoEdges", UniformType::FloatVector, FloatVector{0.0f});
+    fsUniforms.insertUniform("u_isoRimOpacityStrengths", UniformType::FloatVector, FloatVector{0.0f});
+    fsUniforms.insertUniform("u_isoRimEmissionStrengths", UniformType::FloatVector, FloatVector{0.0f});
+    fsUniforms.insertUniform("u_isoRimPowers", UniformType::FloatVector, FloatVector{2.0f});
 
     fsUniforms.insertUniform("u_ambient", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
     fsUniforms.insertUniform("u_diffuse", UniformType::Vec3Vector, Vec3Vector{sk_zeroVec3});
@@ -5188,7 +5192,9 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
   isoData.numIsos = 0;
   std::fill(std::begin(isoData.values), std::end(isoData.values), 0.0f);
   std::fill(std::begin(isoData.opacities), std::end(isoData.opacities), 0.0f);
-  std::fill(std::begin(isoData.edgeStrengths), std::end(isoData.edgeStrengths), 0.0f);
+  std::fill(std::begin(isoData.rimOpacityStrengths), std::end(isoData.rimOpacityStrengths), 0.0f);
+  std::fill(std::begin(isoData.rimEmissionStrengths), std::end(isoData.rimEmissionStrengths), 0.0f);
+  std::fill(std::begin(isoData.rimPowers), std::end(isoData.rimPowers), 2.0f);
   std::fill(std::begin(isoData.ambient), std::end(isoData.ambient), glm::vec3{0.0f});
   std::fill(std::begin(isoData.diffuse), std::end(isoData.diffuse), glm::vec3{0.0f});
   std::fill(std::begin(isoData.specular), std::end(isoData.specular), glm::vec3{0.0f});
@@ -5229,7 +5235,9 @@ void Rendering::updateIsosurfaceDataFor3d(AppData& appData, const uuid& imageUid
 
     isoData.opacities[i] = opacity;
 
-    isoData.edgeStrengths[i] = surface->edgeStrength;
+    isoData.rimOpacityStrengths[i] = surface->rimLightingEnabled ? surface->rimOpacityStrength : 0.0f;
+    isoData.rimEmissionStrengths[i] = surface->rimLightingEnabled ? surface->rimEmissionStrength : 0.0f;
+    isoData.rimPowers[i] = surface->rimPower;
     isoData.shininesses[i] = surface->material.shininess;
 
     if (settings.applyImageColormapToIsosurfaces()) {

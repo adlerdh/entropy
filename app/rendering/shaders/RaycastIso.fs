@@ -29,7 +29,9 @@ uniform float u_samplingFactor;
 uniform int u_numIsos;
 uniform float u_isoValues[NISO];
 uniform float u_isoOpacities[NISO];
-uniform float u_isoEdges[NISO];
+uniform float u_isoRimOpacityStrengths[NISO];
+uniform float u_isoRimEmissionStrengths[NISO];
+uniform float u_isoRimPowers[NISO];
 
 uniform vec3 u_ambient[NISO];
 uniform vec3 u_diffuse[NISO];
@@ -199,6 +201,14 @@ vec3 gradient(vec3 texPos)
     sampleImageValue(texPos + u_texGrads[2]) - sampleImageValue(texPos - u_texGrads[2])));
 }
 
+vec3 worldNormalFromTextureGradient(vec3 texNormal)
+{
+  // Texture-space gradients are covectors. If tex = A * world, then
+  // grad_world = transpose(A) * grad_tex. This keeps the rim term correct for
+  // anisotropic spacing and oblique image orientations.
+  return normalize(transpose(mat3(u_tex_T_world)) * texNormal);
+}
+
 vec3 bisect(vec3 pos, vec3 dir, float t0, float t1, float sgn, float iso)
 {
   float t = 0.5 * (t0 + t1);
@@ -216,15 +226,19 @@ vec3 bisect(vec3 pos, vec3 dir, float t0, float t1, float sgn, float iso)
 }
 
 // TODO add point light?
-vec4 shade(vec3 lightDir, vec3 viewDir, vec3 normal, int i)
+vec4 shade(vec3 worldLightDir, vec3 worldViewDir, vec3 texNormal, int i)
 {
-  vec3 h = normalize(lightDir + viewDir);
-  float a = mix(1.0, 4.0, u_isoEdges[i] > 0.0);
-  float d = abs(dot(normal, lightDir));
+  vec3 normal = worldNormalFromTextureGradient(texNormal);
+  vec3 h = normalize(worldLightDir + worldViewDir);
+  float d = abs(dot(normal, worldLightDir));
   float s = pow(abs(dot(normal, h)), u_shininess[i]);
-  float e = pow(1.0 - abs(dot(normal, viewDir)), u_isoEdges[i]);
+  float rim = pow(clamp(1.0 - abs(dot(normal, worldViewDir)), 0.0, 1.0), max(u_isoRimPowers[i], 1.0e-3));
+  float alphaScale = mix(1.0, rim, clamp(u_isoRimOpacityStrengths[i], 0.0, 1.0));
+  vec3 litColor = u_ambient[i] + d * u_diffuse[i] + s * u_specular[i];
+  vec3 rimColor = max(u_diffuse[i], u_ambient[i]);
+  litColor += max(u_isoRimEmissionStrengths[i], 0.0) * rim * rimColor;
 
-  return u_isoOpacities[i] * e * vec4(a * u_ambient[i] + d * u_diffuse[i] + s * u_specular[i], 1.0);
+  return vec4(u_isoOpacities[i] * alphaScale * litColor, u_isoOpacities[i] * alphaScale);
 }
 
 void main()
@@ -320,7 +334,9 @@ void main()
       if (u_isoOpacities[i] > 0.0 && (frontHit || backHit)) {
         ++hitCount;
         vec3 texHitPos = bisect(texStartPos, texRayDir, oldT, t, value - u_isoValues[i], u_isoValues[i]);
-        vec3 texLightDir = normalize(texStartPos - texHitPos);
+        vec3 worldHitPos = vec3(u_world_T_tex * vec4(texHitPos, 1.0));
+        vec3 worldLightVector = fs_in.v_worldRayStart - worldHitPos;
+        vec3 worldLightDir = length(worldLightVector) > 1.0e-6 ? normalize(worldLightVector) : -worldRayDir;
         vec3 texNormal = gradient(texHitPos);
 
         //        float segMask = float(
@@ -329,7 +345,7 @@ void main()
         //          (segMasksOut && texture(u_segTex, texPos).r == 0u));
         //        color += segMask * (1.0 - color.a) * shade(texLightDir, -texRayDir, texNormal, i);
 
-        color += (1.0 - color.a) * shade(texLightDir, -texRayDir, texNormal, i); // blend under
+        color += (1.0 - color.a) * shade(worldLightDir, -worldRayDir, texNormal, i); // blend under
 
         // Record the first hit:
         texFirstHitPos = mix(texFirstHitPos, texHitPos, float(firstHit));

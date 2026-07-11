@@ -720,6 +720,112 @@ TEST_CASE("Project serialization preserves image edge settings", "[project][seri
   CHECK(parsedSettings.m_isosurfaceOpacityModulator == 0.45f);
 }
 
+TEST_CASE("Isosurface serialization preserves rim lighting settings", "[project][serialization][isosurface]")
+{
+  Isosurface surface;
+  surface.name = "Cortex";
+  surface.value = 42.0;
+  surface.color = glm::vec3{0.1f, 0.2f, 0.3f};
+  surface.material.ambient = 0.2f;
+  surface.material.diffuse = 0.6f;
+  surface.material.specular = 0.3f;
+  surface.material.shininess = 12.0f;
+  surface.opacity = 0.7f;
+  surface.fillOpacity = 0.25f;
+  surface.visible = false;
+  surface.showIn2d = false;
+  surface.rimLightingEnabled = true;
+  surface.rimOpacityStrength = 0.8f;
+  surface.rimEmissionStrength = 1.25f;
+  surface.rimPower = 3.5f;
+
+  const json root = surface;
+
+  CHECK(root.at("rimOpacityStrength") == 0.8f);
+  CHECK(root.at("rimLightingEnabled") == true);
+  CHECK(root.at("rimEmissionStrength") == 1.25f);
+  CHECK(root.at("rimPower") == 3.5f);
+  CHECK_FALSE(root.contains("edgeStrength"));
+
+  const Isosurface parsed = root.get<Isosurface>();
+  CHECK(parsed.name == "Cortex");
+  CHECK(parsed.value == 42.0);
+  CHECK(parsed.color == glm::vec3{0.1f, 0.2f, 0.3f});
+  CHECK(parsed.material.ambient == 0.2f);
+  CHECK(parsed.material.diffuse == 0.6f);
+  CHECK(parsed.material.specular == 0.3f);
+  CHECK(parsed.material.shininess == 12.0f);
+  CHECK(parsed.opacity == 0.7f);
+  CHECK(parsed.fillOpacity == 0.25f);
+  CHECK_FALSE(parsed.visible);
+  CHECK_FALSE(parsed.showIn2d);
+  CHECK(parsed.rimLightingEnabled);
+  CHECK(parsed.rimOpacityStrength == 0.8f);
+  CHECK(parsed.rimEmissionStrength == 1.25f);
+  CHECK(parsed.rimPower == 3.5f);
+}
+
+TEST_CASE("Isosurface serialization migrates legacy edge strength", "[project][serialization][isosurface]")
+{
+  const json legacy = {
+    {"name", "Legacy"},
+    {"edgeStrength", 4.0f},
+  };
+
+  const Isosurface parsed = legacy.get<Isosurface>();
+  CHECK(parsed.name == "Legacy");
+  CHECK(parsed.rimLightingEnabled);
+  CHECK(parsed.rimOpacityStrength == 1.0f);
+  CHECK(parsed.rimEmissionStrength == 0.0f);
+  CHECK(parsed.rimPower == 4.0f);
+}
+
+TEST_CASE("Project serialization preserves image isosurfaces", "[project][serialization][isosurface]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.nii.gz";
+
+  serialize::ImageIsosurface imageSurface;
+  imageSurface.m_component = 2;
+  imageSurface.m_surface.name = "Rim surface";
+  imageSurface.m_surface.value = 7.5;
+  imageSurface.m_surface.color = glm::vec3{0.25f, 0.5f, 0.75f};
+  imageSurface.m_surface.opacity = 0.65f;
+  imageSurface.m_surface.fillOpacity = 0.15f;
+  imageSurface.m_surface.visible = false;
+  imageSurface.m_surface.showIn2d = false;
+  imageSurface.m_surface.rimLightingEnabled = true;
+  imageSurface.m_surface.rimOpacityStrength = 0.7f;
+  imageSurface.m_surface.rimEmissionStrength = 1.4f;
+  imageSurface.m_surface.rimPower = 3.0f;
+  project.m_referenceImage.m_isosurfaces.push_back(imageSurface);
+
+  const json root = project;
+  const json& savedSurface = root.at("reference").at("isosurfaces").at(0);
+  CHECK(savedSurface.at("component") == 2);
+  CHECK(savedSurface.at("surface").at("name") == "Rim surface");
+  CHECK(savedSurface.at("surface").at("rimLightingEnabled") == true);
+  CHECK(savedSurface.at("surface").at("rimOpacityStrength") == 0.7f);
+  CHECK(savedSurface.at("surface").at("rimEmissionStrength") == 1.4f);
+  CHECK(savedSurface.at("surface").at("rimPower") == 3.0f);
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_isosurfaces.size() == 1);
+  const serialize::ImageIsosurface& parsedSurface = parsed.m_referenceImage.m_isosurfaces.front();
+  CHECK(parsedSurface.m_component == 2);
+  CHECK(parsedSurface.m_surface.name == "Rim surface");
+  CHECK(parsedSurface.m_surface.value == 7.5);
+  CHECK(parsedSurface.m_surface.color == glm::vec3{0.25f, 0.5f, 0.75f});
+  CHECK(parsedSurface.m_surface.opacity == 0.65f);
+  CHECK(parsedSurface.m_surface.fillOpacity == 0.15f);
+  CHECK_FALSE(parsedSurface.m_surface.visible);
+  CHECK_FALSE(parsedSurface.m_surface.showIn2d);
+  CHECK(parsedSurface.m_surface.rimLightingEnabled);
+  CHECK(parsedSurface.m_surface.rimOpacityStrength == 0.7f);
+  CHECK(parsedSurface.m_surface.rimEmissionStrength == 1.4f);
+  CHECK(parsedSurface.m_surface.rimPower == 3.0f);
+}
+
 TEST_CASE("Project serialization preserves inverse and forward warp paths", "[project][serialization]")
 {
   const fs::path root = uniqueTempProjectDirectory();

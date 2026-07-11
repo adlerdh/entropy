@@ -891,6 +891,36 @@ bool EntropyApp::loadSerializedImage(
   constexpr float distanceMapDownsample = 0.25f;
   createDistanceMaps(*image, *imageUid, distanceMapDownsample, m_data);
 
+  for (const auto& serializedSurface : serializedImage.m_isosurfaces) {
+    if (serializedSurface.m_component >= image->header().numComponentsPerPixel()) {
+      spdlog::warn(
+        "Skipping isosurface '{}' for image {}; component {} is outside the image component range",
+        serializedSurface.m_surface.name,
+        *imageUid,
+        serializedSurface.m_component);
+      continue;
+    }
+
+    if (
+      const auto surfaceUid =
+        m_data.addIsosurface(*imageUid, serializedSurface.m_component, serializedSurface.m_surface))
+    {
+      spdlog::debug(
+        "Loaded isosurface {} ('{}') for image {} component {}",
+        *surfaceUid,
+        serializedSurface.m_surface.name,
+        *imageUid,
+        serializedSurface.m_component);
+    }
+    else {
+      spdlog::error(
+        "Unable to add isosurface '{}' to image {} component {}",
+        serializedSurface.m_surface.name,
+        *imageUid,
+        serializedSurface.m_component);
+    }
+  }
+
   // Load segmentation images:
 
   // Structure for holding information about a segmentation being loaded

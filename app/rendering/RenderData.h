@@ -447,7 +447,9 @@ struct RenderData
     int numIsos{0u};           //!< Actual number of surfaces
     std::vector<float> values; //!< Iso-values
     std::vector<float> opacities;
-    std::vector<float> edgeStrengths;
+    std::vector<float> rimOpacityStrengths;
+    std::vector<float> rimEmissionStrengths;
+    std::vector<float> rimPowers;
     std::vector<glm::vec3> colors;
 
     // Material lighting colors

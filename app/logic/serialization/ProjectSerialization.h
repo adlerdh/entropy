@@ -2,6 +2,7 @@
 
 #include "common/InputParams.h"
 #include "common/Types.h"
+#include "image/Isosurface.h"
 #include "layout/LayoutSpec.h"
 #include <filesystem>
 #include "logic/annotation/Annotation.h"
@@ -20,6 +21,11 @@
 #include <optional>
 #include <string>
 #include <vector>
+
+void to_json(nlohmann::json& j, const SurfaceMaterial& material);
+void from_json(const nlohmann::json& j, SurfaceMaterial& material);
+void to_json(nlohmann::json& j, const Isosurface& surface);
+void from_json(const nlohmann::json& j, Isosurface& surface);
 
 namespace serialize
 {
@@ -404,6 +410,15 @@ struct LandmarkGroup
 };
 
 /**
+ * @brief Serialized isosurface definition for one image component.
+ */
+struct ImageIsosurface
+{
+  uint32_t m_component = 0; //!< Image component index that owns this isosurface.
+  Isosurface m_surface;     //!< User-editable isosurface settings.
+};
+
+/**
  * @brief Serialized DICOM-series source metadata for an image.
  *
  * `m_imageFileName` remains in `serialize::Image` as a fallback path. This structure records
@@ -468,6 +483,11 @@ struct Image
    * Landmark groups (each image can have multiple landmark groups)
    */
   std::vector<serialize::LandmarkGroup> m_landmarkGroups;
+
+  /**
+   * Isosurface definitions associated with image components.
+   */
+  std::vector<serialize::ImageIsosurface> m_isosurfaces;
 
   /**
    * Optional image settings

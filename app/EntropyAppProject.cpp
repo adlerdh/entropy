@@ -300,6 +300,21 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
     serializedImage.m_annotationsFileName = annotation->getFileName();
   }
 
+  for (uint32_t component = 0; component < image->header().numComponentsPerPixel(); ++component) {
+    for (const auto& isosurfaceUid : m_data.isosurfaceUids(imageUid, component)) {
+      const Isosurface* surface = m_data.isosurface(imageUid, component, isosurfaceUid);
+      if (!surface) {
+        spdlog::warn("Cannot serialize missing isosurface {} for image {}", isosurfaceUid, imageUid);
+        continue;
+      }
+
+      serialize::ImageIsosurface serializedSurface;
+      serializedSurface.m_component = component;
+      serializedSurface.m_surface = *surface;
+      serializedImage.m_isosurfaces.emplace_back(std::move(serializedSurface));
+    }
+  }
+
   return serializedImage;
 }
 

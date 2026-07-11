@@ -37,7 +37,10 @@ public:
   float fillOpacity = 0.0f;          //!< Fill opacity
   bool visible = true;               //!< Visibility
   bool showIn2d = true;              //!< Show in 2D slice views
-  float edgeStrength = 0.0f;         //!< Strength of edge outline, where 0.0f disables edges
+  bool rimLightingEnabled = false;   //!< Enable view-angle rim opacity modulation and glow
+  float rimOpacityStrength = 1.0f;   //!< View-angle opacity modulation strength
+  float rimEmissionStrength = 1.0f;  //!< Additive view-angle rim-light strength
+  float rimPower = 2.0f;             //!< Rim falloff exponent; higher values produce a narrower rim
 
   // MeshRecord mesh;         //!< Mesh record of the isosurface
   bool meshInSync = false; //!< Is the mesh in sync with the isosurface value?

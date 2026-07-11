@@ -633,7 +633,7 @@ void renderIsosurfacesHeader(
   }
 
   if (isosurfaceUids.empty()) {
-    ImGui::Text("This image has no isosurfaces.");
+    ImGui::TextDisabled("This image has no isosurfaces.");
 
     ImGui::Spacing();
     addSurface = ImGui::Button(sk_addSurfaceButtonText.c_str()) || addSurface;
@@ -1006,17 +1006,40 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Fill opacity in 2D views");
 
-      int edgeStrength = static_cast<int>(surface->edgeStrength);
-      if (mySliderS32("Edges", &edgeStrength, 0, 5)) {
-        surface->edgeStrength = static_cast<float>(edgeStrength);
+      if (ImGui::TreeNode("Rim Lighting")) {
+        ImGui::Checkbox("Enable", &surface->rimLightingEnabled);
+        ImGui::SameLine();
+        helpMarker("Enable view-angle rim opacity modulation and glow for this surface in 3D raycasting");
+
+        if (!surface->rimLightingEnabled) {
+          ImGui::BeginDisabled();
+        }
+        if (mySliderF32("Opacity", &surface->rimOpacityStrength, 0.0f, 1.0f, "%0.2f")) {
+          surface->rimOpacityStrength = std::clamp(surface->rimOpacityStrength, 0.0f, 1.0f);
+        }
+        ImGui::SameLine();
+        helpMarker("Modulate surface opacity by view angle so silhouettes remain more visible in 3D raycasting");
+
+        if (mySliderF32("Glow", &surface->rimEmissionStrength, 0.0f, 2.0f, "%0.2f")) {
+          surface->rimEmissionStrength = std::max(surface->rimEmissionStrength, 0.0f);
+        }
+        ImGui::SameLine();
+        helpMarker("Add view-angle rim light at silhouettes in 3D raycasting");
+
+        if (mySliderF32("Falloff", &surface->rimPower, 0.25f, 8.0f, "%0.2f")) {
+          surface->rimPower = std::max(surface->rimPower, 0.25f);
+        }
+        ImGui::SameLine();
+        helpMarker("Controls rim width; higher values make a narrower rim");
+        if (!surface->rimLightingEnabled) {
+          ImGui::EndDisabled();
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TreePop();
       }
-
-      ImGui::SameLine();
-      helpMarker("Strength of surface edges (3D)");
-
-      ImGui::Spacing();
-      ImGui::Separator();
-      ImGui::Spacing();
 
       ImGui::TreePop();
     }

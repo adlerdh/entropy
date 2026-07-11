@@ -38,6 +38,113 @@ namespace fs = std::filesystem;
 
 namespace
 {
+json surfaceVec3ToJson(const glm::vec3& value)
+{
+  return json::array({value.x, value.y, value.z});
+}
+
+std::optional<glm::vec3> surfaceVec3FromJson(const json& value)
+{
+  if (!value.is_array() || value.size() != 3) {
+    return std::nullopt;
+  }
+  return glm::vec3{value.at(0).get<float>(), value.at(1).get<float>(), value.at(2).get<float>()};
+}
+} // namespace
+
+void to_json(json& j, const SurfaceMaterial& material)
+{
+  j = json{
+    {"ambient", material.ambient},
+    {"diffuse", material.diffuse},
+    {"specular", material.specular},
+    {"shininess", material.shininess}};
+}
+
+void from_json(const json& j, SurfaceMaterial& material)
+{
+  if (const auto value = j.find("ambient"); value != j.end() && value->is_number()) {
+    material.ambient = value->get<float>();
+  }
+  if (const auto value = j.find("diffuse"); value != j.end() && value->is_number()) {
+    material.diffuse = value->get<float>();
+  }
+  if (const auto value = j.find("specular"); value != j.end() && value->is_number()) {
+    material.specular = value->get<float>();
+  }
+  if (const auto value = j.find("shininess"); value != j.end() && value->is_number()) {
+    material.shininess = value->get<float>();
+  }
+}
+
+void to_json(json& j, const Isosurface& surface)
+{
+  j = json{
+    {"name", surface.name},
+    {"value", surface.value},
+    {"color", surfaceVec3ToJson(surface.color)},
+    {"material", surface.material},
+    {"opacity", surface.opacity},
+    {"fillOpacity", surface.fillOpacity},
+    {"visible", surface.visible},
+    {"showIn2d", surface.showIn2d},
+    {"rimLightingEnabled", surface.rimLightingEnabled},
+    {"rimOpacityStrength", surface.rimOpacityStrength},
+    {"rimEmissionStrength", surface.rimEmissionStrength},
+    {"rimPower", surface.rimPower}};
+}
+
+void from_json(const json& j, Isosurface& surface)
+{
+  if (const auto value = j.find("name"); value != j.end() && value->is_string()) {
+    surface.name = value->get<std::string>();
+  }
+  if (const auto value = j.find("value"); value != j.end() && value->is_number()) {
+    surface.value = value->get<double>();
+  }
+  if (const auto color = j.find("color"); color != j.end()) {
+    if (const auto parsed = surfaceVec3FromJson(*color)) {
+      surface.color = *parsed;
+    }
+  }
+  if (const auto value = j.find("material"); value != j.end() && value->is_object()) {
+    surface.material = value->get<SurfaceMaterial>();
+  }
+  if (const auto value = j.find("opacity"); value != j.end() && value->is_number()) {
+    surface.opacity = value->get<float>();
+  }
+  if (const auto value = j.find("fillOpacity"); value != j.end() && value->is_number()) {
+    surface.fillOpacity = value->get<float>();
+  }
+  if (const auto value = j.find("visible"); value != j.end() && value->is_boolean()) {
+    surface.visible = value->get<bool>();
+  }
+  if (const auto value = j.find("showIn2d"); value != j.end() && value->is_boolean()) {
+    surface.showIn2d = value->get<bool>();
+  }
+  if (const auto value = j.find("rimLightingEnabled"); value != j.end() && value->is_boolean()) {
+    surface.rimLightingEnabled = value->get<bool>();
+  }
+  if (const auto value = j.find("rimOpacityStrength"); value != j.end() && value->is_number()) {
+    surface.rimOpacityStrength = value->get<float>();
+  }
+  if (const auto value = j.find("rimEmissionStrength"); value != j.end() && value->is_number()) {
+    surface.rimEmissionStrength = value->get<float>();
+  }
+  if (const auto value = j.find("rimPower"); value != j.end() && value->is_number()) {
+    surface.rimPower = value->get<float>();
+  }
+  else if (const auto legacy = j.find("edgeStrength"); legacy != j.end() && legacy->is_number()) {
+    const float edgeStrength = legacy->get<float>();
+    surface.rimLightingEnabled = edgeStrength > 0.0f;
+    surface.rimOpacityStrength = 1.0f;
+    surface.rimEmissionStrength = 0.0f;
+    surface.rimPower = std::max(edgeStrength, 0.25f);
+  }
+}
+
+namespace
+{
 
 template<typename Enum>
 struct EnumName
@@ -892,6 +999,24 @@ void from_json(const json& j, serialize::LandmarkGroup& landmarks)
   }
 }
 
+void to_json(json& j, const serialize::ImageIsosurface& isosurface)
+{
+  j = json{{"component", isosurface.m_component}, {"surface", isosurface.m_surface}};
+}
+
+void from_json(const json& j, serialize::ImageIsosurface& isosurface)
+{
+  if (const auto component = unsignedIntFromJson(j.value("component", json{}))) {
+    isosurface.m_component = *component;
+  }
+  if (const auto surface = j.find("surface"); surface != j.end() && surface->is_object()) {
+    isosurface.m_surface = surface->get<Isosurface>();
+  }
+  else {
+    isosurface.m_surface = j.get<Isosurface>();
+  }
+}
+
 void to_json(json& j, const serialize::DicomSource& source)
 {
   j = json{{"seriesInstanceUid", source.m_seriesInstanceUid}};
@@ -971,6 +1096,10 @@ void to_json(json& j, const serialize::Image& image)
     j["landmarks"] = image.m_landmarkGroups;
   }
 
+  if (!image.m_isosurfaces.empty()) {
+    j["isosurfaces"] = image.m_isosurfaces;
+  }
+
   if (image.m_settings) {
     j["settings"] = *image.m_settings;
   }
@@ -1012,6 +1141,10 @@ void from_json(const json& j, serialize::Image& image)
 
   if (j.count("landmarks")) {
     j.at("landmarks").get_to(image.m_landmarkGroups);
+  }
+
+  if (j.count("isosurfaces")) {
+    j.at("isosurfaces").get_to(image.m_isosurfaces);
   }
 
   if (j.count("settings")) {

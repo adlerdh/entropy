@@ -25,6 +25,16 @@ serialize::EntropyProject makeProject()
   landmarks.m_inVoxelSpace = true;
   project.m_referenceImage.m_landmarkGroups.push_back(landmarks);
 
+  serialize::ImageIsosurface isosurface;
+  isosurface.m_component = 0;
+  isosurface.m_surface.name = "Surface";
+  isosurface.m_surface.value = 12.0;
+  isosurface.m_surface.rimLightingEnabled = true;
+  isosurface.m_surface.rimOpacityStrength = 0.5f;
+  isosurface.m_surface.rimEmissionStrength = 1.25f;
+  isosurface.m_surface.rimPower = 2.5f;
+  project.m_referenceImage.m_isosurfaces.push_back(isosurface);
+
   serialize::Image additionalImage;
   additionalImage.m_imageFileName = "moving.nii.gz";
   additionalImage.m_worldDefTx = glm::mat4{1.0f};
@@ -94,6 +104,10 @@ TEST_CASE("Project snapshot comparison detects related data changes", "[ProjectS
   auto changedLandmarks = project;
   changedLandmarks.m_referenceImage.m_landmarkGroups.front().m_inVoxelSpace = false;
   CHECK_FALSE(project_snapshot::equivalent(project, changedLandmarks));
+
+  auto changedIsosurface = project;
+  changedIsosurface.m_referenceImage.m_isosurfaces.front().m_surface.rimPower = 4.0f;
+  CHECK_FALSE(project_snapshot::equivalent(project, changedIsosurface));
 }
 
 TEST_CASE("Project snapshot comparison detects layout and interface changes", "[ProjectSnapshotComparison]")

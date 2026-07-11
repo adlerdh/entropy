@@ -117,6 +117,25 @@ bool landmarkGroupsEqual(const serialize::LandmarkGroup& a, const serialize::Lan
   return a.m_csvFileName == b.m_csvFileName && a.m_inVoxelSpace == b.m_inVoxelSpace;
 }
 
+bool surfaceMaterialsEqual(const SurfaceMaterial& a, const SurfaceMaterial& b)
+{
+  return a.ambient == b.ambient && a.diffuse == b.diffuse && a.specular == b.specular && a.shininess == b.shininess;
+}
+
+bool isosurfacesEqual(const Isosurface& a, const Isosurface& b)
+{
+  return a.name == b.name && a.value == b.value && a.color == b.color &&
+         surfaceMaterialsEqual(a.material, b.material) && a.opacity == b.opacity && a.fillOpacity == b.fillOpacity &&
+         a.visible == b.visible && a.showIn2d == b.showIn2d && a.rimLightingEnabled == b.rimLightingEnabled &&
+         a.rimOpacityStrength == b.rimOpacityStrength && a.rimEmissionStrength == b.rimEmissionStrength &&
+         a.rimPower == b.rimPower;
+}
+
+bool imageIsosurfacesEqual(const serialize::ImageIsosurface& a, const serialize::ImageIsosurface& b)
+{
+  return a.m_component == b.m_component && isosurfacesEqual(a.m_surface, b.m_surface);
+}
+
 template<typename T, typename Equal>
 bool vectorsEqual(const std::vector<T>& a, const std::vector<T>& b, Equal equal)
 {
@@ -170,7 +189,8 @@ bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
          a.m_forwardWarpFileName == b.m_forwardWarpFileName && matricesEqual(a.m_worldDefTx, b.m_worldDefTx) &&
          a.m_annotationsFileName == b.m_annotationsFileName && imageSettingsEqual(a.m_settings, b.m_settings) &&
          vectorsEqual(a.m_segmentations, b.m_segmentations, segmentationsEqual) &&
-         vectorsEqual(a.m_landmarkGroups, b.m_landmarkGroups, landmarkGroupsEqual);
+         vectorsEqual(a.m_landmarkGroups, b.m_landmarkGroups, landmarkGroupsEqual) &&
+         vectorsEqual(a.m_isosurfaces, b.m_isosurfaces, imageIsosurfacesEqual);
 }
 
 bool projectInterfaceSettingsEqual(
