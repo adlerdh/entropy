@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <sstream>
@@ -110,6 +111,83 @@ json vec3ToJson(const glm::vec3& value)
 json vec4ToJson(const glm::vec4& value)
 {
   return json::array({value.x, value.y, value.z, value.w});
+}
+
+json pathGroupToJson(const RecentPathGroup& group)
+{
+  json paths = json::array();
+  for (const auto& path : group.paths) {
+    if (!path.empty()) {
+      paths.push_back(path.string());
+    }
+  }
+  return paths;
+}
+
+json pathGroupsToJson(const std::vector<RecentPathGroup>& groups)
+{
+  json values = json::array();
+  for (const RecentPathGroup& group : groups) {
+    if (!group.paths.empty()) {
+      values.push_back(pathGroupToJson(group));
+    }
+  }
+  return values;
+}
+
+json pathsToJson(const std::vector<std::filesystem::path>& paths)
+{
+  json values = json::array();
+  for (const auto& path : paths) {
+    if (!path.empty()) {
+      values.push_back(path.string());
+    }
+  }
+  return values;
+}
+
+std::vector<RecentPathGroup> pathGroupsFromJson(const json& value)
+{
+  std::vector<RecentPathGroup> groups;
+  if (!value.is_array()) {
+    return groups;
+  }
+
+  for (const json& item : value) {
+    if (item.is_string()) {
+      groups.push_back(RecentPathGroup{{item.get<std::string>()}});
+      continue;
+    }
+    if (!item.is_array()) {
+      continue;
+    }
+
+    RecentPathGroup group;
+    for (const json& path : item) {
+      if (path.is_string()) {
+        group.paths.emplace_back(path.get<std::string>());
+      }
+    }
+    if (!group.paths.empty()) {
+      groups.push_back(std::move(group));
+    }
+  }
+
+  return groups;
+}
+
+std::vector<std::filesystem::path> pathsFromJson(const json& value)
+{
+  std::vector<std::filesystem::path> paths;
+  if (!value.is_array()) {
+    return paths;
+  }
+  for (const json& path : value) {
+    if (path.is_string()) {
+      paths.emplace_back(path.get<std::string>());
+    }
+  }
+  return paths;
 }
 
 void setVec2FromJson(glm::vec2& value, const json& object, const char* key)
@@ -319,6 +397,10 @@ json toJson(
         {"spatialExponent", renderPreferences.asciiSpatialExponent}}}}},
     {"annotations", {{"crosshairsMoveWhileAnnotating", settings.crosshairsMoveWhileAnnotating()}}},
     {"registration", settings.registrationBackendConfig()},
+    {"recent",
+     {{"images", pathGroupsToJson(settings.recentImageGroups())},
+      {"dicom", pathGroupsToJson(settings.recentDicomGroups())},
+      {"projects", pathsToJson(settings.recentProjectFiles())}}},
     {"synchronization",
      {{"itkSnap",
        {{"enabled", settings.cursorSyncEnabled()},
@@ -534,6 +616,18 @@ void applyJson(
       registrationSettings != root.end() && registrationSettings->is_object())
   {
     settings.registrationBackendConfig() = registrationSettings->get<registration::BackendConfig>();
+  }
+
+  if (const auto recent = root.find("recent"); recent != root.end() && recent->is_object()) {
+    if (const auto images = recent->find("images"); images != recent->end()) {
+      settings.setRecentImageGroups(pathGroupsFromJson(*images));
+    }
+    if (const auto dicom = recent->find("dicom"); dicom != recent->end()) {
+      settings.setRecentDicomGroups(pathGroupsFromJson(*dicom));
+    }
+    if (const auto projects = recent->find("projects"); projects != recent->end()) {
+      settings.setRecentProjectFiles(pathsFromJson(*projects));
+    }
   }
 
   if (const auto sync = root.find("synchronization"); sync != root.end() && sync->is_object()) {

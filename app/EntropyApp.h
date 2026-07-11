@@ -371,6 +371,18 @@ private:
   /** @brief Apply current project/load state to the application window title. */
   void updateWindowTitleStatus();
 
+  /** @brief Record recent image paths and persist application settings. */
+  void recordRecentImageGroup(const std::vector<std::filesystem::path>& fileNames);
+
+  /** @brief Record recent DICOM input paths and persist application settings. */
+  void recordRecentDicomGroup(const std::vector<std::filesystem::path>& folderNames);
+
+  /** @brief Record a recent project path and persist application settings. */
+  void recordRecentProjectFile(const std::filesystem::path& fileName);
+
+  /** @brief Persist application settings without marking them dirty. */
+  void saveAppSettingsQuietly();
+
   /**
    * @brief Load an image from disk.
    * @param fileName Image path.

@@ -1112,6 +1112,8 @@ void EntropyApp::performLoadImageFiles(const std::vector<fs::path>& fileNames)
     return;
   }
 
+  recordRecentImageGroup(imageFiles);
+
   if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
     closeProject();
   }
@@ -1155,6 +1157,8 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
     performLoadImageFiles(imageFiles);
     return;
   }
+
+  recordRecentImageGroup(imageFiles);
 
   const bool bypassPreflight = m_data.guiData().m_bypassNextImageLoadPreflight;
   m_data.guiData().m_bypassNextImageLoadPreflight = false;
@@ -1313,6 +1317,8 @@ void EntropyApp::beginDicomSeriesScan(const std::vector<fs::path>& inputPaths, b
     spdlog::warn("Ignoring DICOM request because another load task is running");
     return;
   }
+
+  recordRecentDicomGroup(scanInputs);
 
   spdlog::info("Scanning {} DICOM input path(s)", scanInputs.size());
   for (const auto& inputPath : scanInputs) {

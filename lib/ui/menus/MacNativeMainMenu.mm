@@ -14,9 +14,64 @@ NSMenuItem* g_addImageItem = nil;
 NSMenuItem* g_saveProjectItem = nil;
 NSMenuItem* g_saveProjectAsItem = nil;
 NSMenuItem* g_closeProjectItem = nil;
+NSMenu* g_openRecentMenu = nil;
 NSMenu* g_activeImagesMenu = nil;
 NSMenu* g_layoutsMenu = nil;
 bool g_installed = false;
+
+NSString* menuTitleForRecentPaths(const std::vector<std::filesystem::path>& paths) {
+  if (paths.empty()) {
+    return @"Untitled";
+  }
+
+  const std::string firstName =
+    paths.front().filename().empty() ? paths.front().string() : paths.front().filename().string();
+  if (paths.size() == 1) {
+    return [NSString stringWithUTF8String:firstName.c_str()];
+  }
+
+  return [NSString stringWithFormat:@"%s (+%zu more)", firstName.c_str(), paths.size() - 1];
+}
+
+NSString* tooltipForRecentPaths(const std::vector<std::filesystem::path>& paths) {
+  NSMutableString* tooltip = [NSMutableString string];
+  for (const auto& path : paths) {
+    if ([tooltip length] > 0) {
+      [tooltip appendString:@"\n"];
+    }
+    [tooltip appendString:[NSString stringWithUTF8String:path.string().c_str()]];
+  }
+  return tooltip;
+}
+
+NSArray* representedObjectForRecentPaths(const std::vector<std::filesystem::path>& paths) {
+  NSMutableArray* representedPaths = [NSMutableArray arrayWithCapacity:paths.size()];
+  for (const auto& path : paths) {
+    [representedPaths addObject:[NSString stringWithUTF8String:path.string().c_str()]];
+  }
+  return representedPaths;
+}
+
+bool representedRecentPathsExist(id representedObject) {
+  if ([representedObject isKindOfClass:[NSString class]]) {
+    NSString* path = (NSString*)representedObject;
+    std::error_code error;
+    return std::filesystem::exists(std::filesystem::path{[path UTF8String]}, error);
+  }
+
+  if ([representedObject isKindOfClass:[NSArray class]]) {
+    NSArray* paths = (NSArray*)representedObject;
+    for (NSString* path in paths) {
+      std::error_code error;
+      if (!std::filesystem::exists(std::filesystem::path{[path UTF8String]}, error)) {
+        return false;
+      }
+    }
+    return [paths count] > 0;
+  }
+
+  return false;
+}
 }  // namespace
 
 @interface EntropyMacMenuTarget : NSObject
@@ -25,6 +80,10 @@ bool g_installed = false;
 - (void)openDicomSeries:(id)sender;
 - (void)addImage:(id)sender;
 - (void)addDicomSeries:(id)sender;
+- (void)openRecentProject:(id)sender;
+- (void)openRecentImageGroup:(id)sender;
+- (void)openRecentDicomGroup:(id)sender;
+- (void)clearRecents:(id)sender;
 - (void)addSegmentation:(id)sender;
 - (void)loadInverseWarp:(id)sender;
 - (void)loadForwardWarp:(id)sender;
@@ -70,6 +129,45 @@ bool g_installed = false;
 - (void)addDicomSeries:(id)sender {
   (void)sender;
   main_menu::addDicomSeries(g_callbacks);
+}
+
+- (void)openRecentProject:(id)sender {
+  NSMenuItem* item = (NSMenuItem*)sender;
+  NSString* path = (NSString*)[item representedObject];
+  if (path && g_callbacks.openProjectFile) {
+    g_callbacks.openProjectFile(std::filesystem::path{[path UTF8String]});
+  }
+}
+
+- (void)openRecentImageGroup:(id)sender {
+  NSMenuItem* item = (NSMenuItem*)sender;
+  NSArray* paths = (NSArray*)[item representedObject];
+  std::vector<std::filesystem::path> fileNames;
+  for (NSString* path in paths) {
+    fileNames.emplace_back([path UTF8String]);
+  }
+  if (!fileNames.empty() && g_callbacks.openImageFiles) {
+    g_callbacks.openImageFiles(fileNames);
+  }
+}
+
+- (void)openRecentDicomGroup:(id)sender {
+  NSMenuItem* item = (NSMenuItem*)sender;
+  NSArray* paths = (NSArray*)[item representedObject];
+  std::vector<std::filesystem::path> folderNames;
+  for (NSString* path in paths) {
+    folderNames.emplace_back([path UTF8String]);
+  }
+  if (!folderNames.empty() && g_callbacks.openDicomFolders) {
+    g_callbacks.openDicomFolders(folderNames);
+  }
+}
+
+- (void)clearRecents:(id)sender {
+  (void)sender;
+  if (g_callbacks.clearRecents) {
+    g_callbacks.clearRecents();
+  }
 }
 
 - (void)addSegmentation:(id)sender {
@@ -201,6 +299,25 @@ bool g_installed = false;
     return g_callbacks.canAddImage && g_callbacks.openDicomFolders;
   }
 
+  if (action == @selector(openRecentProject:)) {
+    return g_callbacks.canOpenProject && g_callbacks.openProjectFile &&
+           representedRecentPathsExist([menuItem representedObject]);
+  }
+
+  if (action == @selector(openRecentImageGroup:)) {
+    return g_callbacks.canOpenProject && g_callbacks.openImageFiles &&
+           representedRecentPathsExist([menuItem representedObject]);
+  }
+
+  if (action == @selector(openRecentDicomGroup:)) {
+    return g_callbacks.canOpenProject && g_callbacks.openDicomFolders &&
+           representedRecentPathsExist([menuItem representedObject]);
+  }
+
+  if (action == @selector(clearRecents:)) {
+    return g_callbacks.clearRecents != nullptr;
+  }
+
   if (action == @selector(addSegmentation:)) {
     return g_callbacks.canAddSegmentation && g_callbacks.addSegmentationFile;
   }
@@ -307,6 +424,95 @@ NSMenuItem* addSymbolActionMenuItem(
   NSMenuItem* item = addActionMenuItem(menu, title, action, keyEquivalent, modifierMask);
   setMenuItemSymbol(item, systemSymbolName);
   return item;
+}
+
+void addDisabledMenuItem(NSMenu* menu, NSString* title) {
+  NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:title action:nil keyEquivalent:@""];
+  [item setEnabled:NO];
+  [menu addItem:item];
+}
+
+void addRecentProjectItems(NSMenu* menu, const std::vector<std::filesystem::path>& paths) {
+  if (paths.empty()) {
+    addDisabledMenuItem(menu, @"None");
+    return;
+  }
+
+  for (const auto& path : paths) {
+    const std::vector<std::filesystem::path> pathGroup{path};
+    NSMenuItem* item =
+      addTargetedMenuItem(menu, menuTitleForRecentPaths(pathGroup), @selector(openRecentProject:), @"", 0);
+    [item setRepresentedObject:[NSString stringWithUTF8String:path.string().c_str()]];
+    [item setToolTip:tooltipForRecentPaths(pathGroup)];
+  }
+}
+
+void addRecentGroupItems(NSMenu* menu, const std::vector<std::vector<std::filesystem::path>>& groups, SEL action) {
+  if (groups.empty()) {
+    addDisabledMenuItem(menu, @"None");
+    return;
+  }
+
+  for (const auto& group : groups) {
+    NSMenuItem* item = addTargetedMenuItem(menu, menuTitleForRecentPaths(group), action, @"", 0);
+    [item setRepresentedObject:representedObjectForRecentPaths(group)];
+    [item setToolTip:tooltipForRecentPaths(group)];
+  }
+}
+
+void rebuildOpenRecentMenu() {
+  if (!g_openRecentMenu) {
+    return;
+  }
+
+  [g_openRecentMenu removeAllItems];
+
+  const auto projects =
+    g_callbacks.recentProjectFiles ? g_callbacks.recentProjectFiles() : std::vector<std::filesystem::path>{};
+  const auto imageGroups =
+    g_callbacks.recentImageGroups ? g_callbacks.recentImageGroups() : std::vector<std::vector<std::filesystem::path>>{};
+  const auto dicomGroups =
+    g_callbacks.recentDicomGroups ? g_callbacks.recentDicomGroups() : std::vector<std::vector<std::filesystem::path>>{};
+
+  std::vector<std::vector<std::filesystem::path>> singleImages;
+  std::vector<std::vector<std::filesystem::path>> multiImageGroups;
+  for (const auto& group : imageGroups) {
+    if (group.empty()) {
+      continue;
+    }
+    if (group.size() == 1) {
+      singleImages.push_back(group);
+    } else {
+      multiImageGroups.push_back(group);
+    }
+  }
+
+  NSMenuItem* projectsItem = [[NSMenuItem alloc] initWithTitle:@"Projects" action:nil keyEquivalent:@""];
+  NSMenu* projectsMenu = [[NSMenu alloc] initWithTitle:@"Projects"];
+  addRecentProjectItems(projectsMenu, projects);
+  [projectsItem setSubmenu:projectsMenu];
+  [g_openRecentMenu addItem:projectsItem];
+
+  NSMenuItem* imagesItem = [[NSMenuItem alloc] initWithTitle:@"Images" action:nil keyEquivalent:@""];
+  NSMenu* imagesMenu = [[NSMenu alloc] initWithTitle:@"Images"];
+  addRecentGroupItems(imagesMenu, singleImages, @selector(openRecentImageGroup:));
+  [imagesItem setSubmenu:imagesMenu];
+  [g_openRecentMenu addItem:imagesItem];
+
+  NSMenuItem* imageGroupsItem = [[NSMenuItem alloc] initWithTitle:@"Image Groups" action:nil keyEquivalent:@""];
+  NSMenu* imageGroupsMenu = [[NSMenu alloc] initWithTitle:@"Image Groups"];
+  addRecentGroupItems(imageGroupsMenu, multiImageGroups, @selector(openRecentImageGroup:));
+  [imageGroupsItem setSubmenu:imageGroupsMenu];
+  [g_openRecentMenu addItem:imageGroupsItem];
+
+  NSMenuItem* dicomItem = [[NSMenuItem alloc] initWithTitle:@"DICOM Series" action:nil keyEquivalent:@""];
+  NSMenu* dicomMenu = [[NSMenu alloc] initWithTitle:@"DICOM Series"];
+  addRecentGroupItems(dicomMenu, dicomGroups, @selector(openRecentDicomGroup:));
+  [dicomItem setSubmenu:dicomMenu];
+  [g_openRecentMenu addItem:dicomItem];
+
+  [g_openRecentMenu addItem:[NSMenuItem separatorItem]];
+  addTargetedMenuItem(g_openRecentMenu, @"Clear Recents", @selector(clearRecents:), @"", 0);
 }
 
 void addModeMenu(NSMenu* mainMenu) {
@@ -736,8 +942,6 @@ void installMacOSNativeMainMenu() {
   NSMenu* fileMenu = [[NSMenu alloc] initWithTitle:@"File"];
   g_openImageItem =
     addSymbolMenuItem(fileMenu, @"Open Image(s)...", @selector(openImage:), @"o", @"photo.on.rectangle");
-  g_openDicomSeriesItem =
-    addSymbolMenuItem(fileMenu, @"Open DICOM Series...", @selector(openDicomSeries:), @"", @"externaldrive");
   g_openProjectItem = addSymbolMenuItem(
     fileMenu,
     @"Open Project...",
@@ -745,6 +949,13 @@ void installMacOSNativeMainMenu() {
     @"o",
     @"folder",
     NSEventModifierFlagCommand | NSEventModifierFlagShift);
+  g_openDicomSeriesItem =
+    addSymbolMenuItem(fileMenu, @"Open DICOM Series...", @selector(openDicomSeries:), @"", @"externaldrive");
+  g_openRecentMenu = [[NSMenu alloc] initWithTitle:@"Open Recent"];
+  NSMenuItem* openRecentItem = [[NSMenuItem alloc] initWithTitle:@"Open Recent" action:nil keyEquivalent:@""];
+  setMenuItemSymbol(openRecentItem, @"clock.arrow.circlepath");
+  [openRecentItem setSubmenu:g_openRecentMenu];
+  [fileMenu addItem:openRecentItem];
   [fileMenu addItem:[NSMenuItem separatorItem]];
   g_addImageItem =
     addSymbolMenuItem(fileMenu, @"Add Image(s)...", @selector(addImage:), @"", @"plus.rectangle.on.rectangle");
@@ -838,6 +1049,7 @@ void rebuildActiveImagesMenu() {
 void updateMacOSNativeMainMenu(const MainMenuBarCallbacks& callbacks) {
   g_callbacks = callbacks;
   installMacOSNativeMainMenu();
+  rebuildOpenRecentMenu();
   rebuildLayoutsMenu();
   rebuildActiveImagesMenu();
 }

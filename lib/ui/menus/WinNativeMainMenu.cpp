@@ -1,8 +1,11 @@
 #include "ui/menus/WinNativeMainMenu.h"
 
+#include <filesystem>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
@@ -36,14 +39,36 @@ constexpr UINT k_selectLayoutCommandBase = 1200;
 constexpr UINT k_selectActiveImageCommandBase = 1400;
 constexpr UINT k_actionCommandBase = 2000;
 constexpr UINT k_actionCommandEnd = 2300;
+constexpr UINT k_recentProjectCommandBase = 50000;
+constexpr UINT k_recentImageCommandBase = 50100;
+constexpr UINT k_recentImageGroupCommandBase = 50200;
+constexpr UINT k_recentDicomCommandBase = 50300;
+constexpr UINT k_clearRecentsCommand = 50400;
+constexpr UINT k_recentCommandCount = 100;
 
 constexpr UINT_PTR k_menuSubclassId = 1;
+
+enum class RecentCommandKind
+{
+  Project,
+  ImageGroup,
+  DicomGroup
+};
+
+struct RecentCommand
+{
+  RecentCommandKind kind = RecentCommandKind::Project;
+  std::vector<std::filesystem::path> paths;
+};
 
 struct MenuState
 {
   HMENU mainMenu = nullptr;
   HMENU layoutsMenu = nullptr;
   HMENU activeImagesMenu = nullptr;
+  HMENU openRecentMenu = nullptr;
+  std::unordered_map<UINT, RecentCommand> recentCommands;
+  std::string recentMenuSignature;
   MainMenuBarCallbacks callbacks;
 };
 
@@ -68,6 +93,15 @@ bool isMenuCommand(UINT command)
     return true;
   }
 
+  if (
+    (command >= k_recentProjectCommandBase && command < k_recentProjectCommandBase + k_recentCommandCount) ||
+    (command >= k_recentImageCommandBase && command < k_recentImageCommandBase + k_recentCommandCount) ||
+    (command >= k_recentImageGroupCommandBase && command < k_recentImageGroupCommandBase + k_recentCommandCount) ||
+    (command >= k_recentDicomCommandBase && command < k_recentDicomCommandBase + k_recentCommandCount))
+  {
+    return true;
+  }
+
   switch (command) {
     case k_openImageCommand:
     case k_openProjectCommand:
@@ -88,6 +122,7 @@ bool isMenuCommand(UINT command)
     case k_showKeyboardShortcutsCommand:
     case k_checkForUpdatesCommand:
     case k_openDownloadPageCommand:
+    case k_clearRecentsCommand:
     case k_quitCommand:
       return true;
     default:
@@ -109,6 +144,68 @@ std::wstring widenUtf8(const std::string& value)
   std::wstring result(static_cast<std::size_t>(size - 1), L'\0');
   MultiByteToWideChar(CP_UTF8, 0, value.c_str(), -1, result.data(), size);
   return result;
+}
+
+bool recentPathsExist(const std::vector<std::filesystem::path>& paths)
+{
+  if (paths.empty()) {
+    return false;
+  }
+
+  for (const auto& path : paths) {
+    std::error_code error;
+    if (!std::filesystem::exists(path, error)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::wstring recentPathLabel(const std::vector<std::filesystem::path>& paths)
+{
+  if (paths.empty()) {
+    return L"Untitled";
+  }
+
+  const auto fileName = paths.front().filename();
+  std::wstring label = fileName.empty() ? paths.front().wstring() : fileName.wstring();
+  if (paths.size() > 1) {
+    label += L" (+" + std::to_wstring(paths.size() - 1) + L" more)";
+  }
+  return label;
+}
+
+std::string buildRecentMenuSignature(const MainMenuBarCallbacks& callbacks)
+{
+  std::ostringstream stream;
+  const auto projects =
+    callbacks.recentProjectFiles ? callbacks.recentProjectFiles() : std::vector<std::filesystem::path>{};
+  const auto imageGroups =
+    callbacks.recentImageGroups ? callbacks.recentImageGroups() : std::vector<std::vector<std::filesystem::path>>{};
+  const auto dicomGroups =
+    callbacks.recentDicomGroups ? callbacks.recentDicomGroups() : std::vector<std::vector<std::filesystem::path>>{};
+
+  stream << "projects:";
+  for (const auto& project : projects) {
+    stream << project.string() << '\n';
+  }
+  stream << "images:";
+  for (const auto& group : imageGroups) {
+    stream << '[';
+    for (const auto& path : group) {
+      stream << path.string() << '\n';
+    }
+    stream << ']';
+  }
+  stream << "dicom:";
+  for (const auto& group : dicomGroups) {
+    stream << '[';
+    for (const auto& path : group) {
+      stream << path.string() << '\n';
+    }
+    stream << ']';
+  }
+  return stream.str();
 }
 
 void enableMenuCommand(const MenuState& state, UINT command, bool enabled)
@@ -171,6 +268,11 @@ void updateEnabledState(const MenuState& state)
       command,
       MF_BYCOMMAND | (main_menu::actionChecked(callbacks, action) ? MF_CHECKED : MF_UNCHECKED));
   }
+
+  for (const auto& [command, recentCommand] : state.recentCommands) {
+    enableMenuCommand(state, command, callbacks.canOpenProject && recentPathsExist(recentCommand.paths));
+  }
+  enableMenuCommand(state, k_clearRecentsCommand, callbacks.clearRecents != nullptr);
 }
 
 void handleMenuCommand(const MenuState& state, UINT command)
@@ -192,6 +294,29 @@ void handleMenuCommand(const MenuState& state, UINT command)
   if (command >= k_selectLayoutCommandBase && command < k_selectActiveImageCommandBase) {
     if (callbacks.setCurrentLayoutIndex) {
       callbacks.setCurrentLayoutIndex(command - k_selectLayoutCommandBase);
+    }
+    return;
+  }
+
+  const auto recentCommand = state.recentCommands.find(command);
+  if (recentCommand != std::end(state.recentCommands)) {
+    const RecentCommand& recent = recentCommand->second;
+    switch (recent.kind) {
+      case RecentCommandKind::Project:
+        if (callbacks.canOpenProject && callbacks.openProjectFile && !recent.paths.empty()) {
+          callbacks.openProjectFile(recent.paths.front());
+        }
+        break;
+      case RecentCommandKind::ImageGroup:
+        if (callbacks.canOpenProject && callbacks.openImageFiles) {
+          callbacks.openImageFiles(recent.paths);
+        }
+        break;
+      case RecentCommandKind::DicomGroup:
+        if (callbacks.canOpenProject && callbacks.openDicomFolders) {
+          callbacks.openDicomFolders(recent.paths);
+        }
+        break;
     }
     return;
   }
@@ -264,6 +389,11 @@ void handleMenuCommand(const MenuState& state, UINT command)
     case k_openDownloadPageCommand:
       if (callbacks.openDownloadPage) {
         callbacks.openDownloadPage();
+      }
+      break;
+    case k_clearRecentsCommand:
+      if (callbacks.clearRecents) {
+        callbacks.clearRecents();
       }
       break;
     case k_quitCommand:
@@ -340,12 +470,145 @@ bool insertSubmenu(HMENU menu, UINT position, HMENU submenu, const wchar_t* text
   return InsertMenuItemW(menu, position, TRUE, &item);
 }
 
-bool populateFileMenu(HMENU fileMenu)
+bool insertDisabledMenuItem(HMENU menu, UINT position, const wchar_t* text)
+{
+  MENUITEMINFOW item{};
+  item.cbSize = sizeof(item);
+  item.fMask = MIIM_FTYPE | MIIM_STRING | MIIM_STATE;
+  item.fType = MFT_STRING;
+  item.fState = MFS_DISABLED;
+  item.dwTypeData = const_cast<wchar_t*>(text);
+  return InsertMenuItemW(menu, position, TRUE, &item);
+}
+
+bool clearMenu(HMENU menu)
+{
+  while (GetMenuItemCount(menu) > 0) {
+    if (!DeleteMenu(menu, 0, MF_BYPOSITION)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool populateRecentPathGroupsMenu(
+  HMENU menu,
+  MenuState& state,
+  UINT commandBase,
+  RecentCommandKind kind,
+  const std::vector<std::vector<std::filesystem::path>>& groups)
+{
+  UINT position = 0;
+  if (groups.empty()) {
+    return insertDisabledMenuItem(menu, position, L"None");
+  }
+
+  for (std::size_t i = 0; i < groups.size() && i < k_recentCommandCount; ++i) {
+    const UINT command = commandBase + static_cast<UINT>(i);
+    const std::wstring label = recentPathLabel(groups.at(i));
+    if (!insertMenuItem(menu, position++, command, label.c_str())) {
+      return false;
+    }
+    state.recentCommands[command] = RecentCommand{.kind = kind, .paths = groups.at(i)};
+  }
+  return true;
+}
+
+bool populateRecentProjectsMenu(HMENU menu, MenuState& state, const std::vector<std::filesystem::path>& projects)
+{
+  std::vector<std::vector<std::filesystem::path>> groups;
+  groups.reserve(projects.size());
+  for (const auto& project : projects) {
+    groups.push_back({project});
+  }
+  return populateRecentPathGroupsMenu(menu, state, k_recentProjectCommandBase, RecentCommandKind::Project, groups);
+}
+
+bool populateOpenRecentMenu(HMENU menu, MenuState& state)
+{
+  if (!clearMenu(menu)) {
+    return false;
+  }
+
+  state.recentCommands.clear();
+
+  HMENU projectsMenu = CreatePopupMenu();
+  HMENU imagesMenu = CreatePopupMenu();
+  HMENU imageGroupsMenu = CreatePopupMenu();
+  HMENU dicomMenu = CreatePopupMenu();
+  if (!projectsMenu || !imagesMenu || !imageGroupsMenu || !dicomMenu) {
+    if (projectsMenu) DestroyMenu(projectsMenu);
+    if (imagesMenu) DestroyMenu(imagesMenu);
+    if (imageGroupsMenu) DestroyMenu(imageGroupsMenu);
+    if (dicomMenu) DestroyMenu(dicomMenu);
+    return false;
+  }
+
+  const auto projects =
+    state.callbacks.recentProjectFiles ? state.callbacks.recentProjectFiles() : std::vector<std::filesystem::path>{};
+  const auto imageGroups = state.callbacks.recentImageGroups ? state.callbacks.recentImageGroups()
+                                                             : std::vector<std::vector<std::filesystem::path>>{};
+  const auto dicomGroups = state.callbacks.recentDicomGroups ? state.callbacks.recentDicomGroups()
+                                                             : std::vector<std::vector<std::filesystem::path>>{};
+  state.recentMenuSignature = buildRecentMenuSignature(state.callbacks);
+
+  std::vector<std::vector<std::filesystem::path>> singleImages;
+  std::vector<std::vector<std::filesystem::path>> multiImageGroups;
+  for (const auto& group : imageGroups) {
+    if (group.empty()) {
+      continue;
+    }
+    if (group.size() == 1) {
+      singleImages.push_back(group);
+    }
+    else {
+      multiImageGroups.push_back(group);
+    }
+  }
+
+  if (
+    !populateRecentProjectsMenu(projectsMenu, state, projects) ||
+    !populateRecentPathGroupsMenu(
+      imagesMenu,
+      state,
+      k_recentImageCommandBase,
+      RecentCommandKind::ImageGroup,
+      singleImages) ||
+    !populateRecentPathGroupsMenu(
+      imageGroupsMenu,
+      state,
+      k_recentImageGroupCommandBase,
+      RecentCommandKind::ImageGroup,
+      multiImageGroups) ||
+    !populateRecentPathGroupsMenu(
+      dicomMenu,
+      state,
+      k_recentDicomCommandBase,
+      RecentCommandKind::DicomGroup,
+      dicomGroups))
+  {
+    DestroyMenu(projectsMenu);
+    DestroyMenu(imagesMenu);
+    DestroyMenu(imageGroupsMenu);
+    DestroyMenu(dicomMenu);
+    return false;
+  }
+
+  UINT position = 0;
+  return insertSubmenu(menu, position++, projectsMenu, L"&Projects") &&
+         insertSubmenu(menu, position++, imagesMenu, L"&Images") &&
+         insertSubmenu(menu, position++, imageGroupsMenu, L"Image &Groups") &&
+         insertSubmenu(menu, position++, dicomMenu, L"&DICOM Series") && insertSeparator(menu, position++) &&
+         insertMenuItem(menu, position++, k_clearRecentsCommand, L"&Clear Recents");
+}
+
+bool populateFileMenu(HMENU fileMenu, HMENU openRecentMenu)
 {
   UINT position = 0;
   return insertMenuItem(fileMenu, position++, k_openImageCommand, L"&Open Image(s)...\tCtrl+O") &&
-         insertMenuItem(fileMenu, position++, k_openDicomSeriesCommand, L"Open &DICOM Series...") &&
          insertMenuItem(fileMenu, position++, k_openProjectCommand, L"Open &Project...\tCtrl+Shift+O") &&
+         insertMenuItem(fileMenu, position++, k_openDicomSeriesCommand, L"Open &DICOM Series...") &&
+         insertSubmenu(fileMenu, position++, openRecentMenu, L"Open &Recent") &&
          insertSeparator(fileMenu, position++) &&
          insertMenuItem(fileMenu, position++, k_addImageCommand, L"&Add Image(s)...") &&
          insertSeparator(fileMenu, position++) &&
@@ -764,16 +1027,6 @@ bool populateHelpMenu(HMENU menu)
          insertSeparator(menu, position++) && insertMenuItem(menu, position++, k_showAboutCommand, L"&About Entropy");
 }
 
-bool clearMenu(HMENU menu)
-{
-  while (GetMenuItemCount(menu) > 0) {
-    if (!DeleteMenu(menu, 0, MF_BYPOSITION)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool populateLayoutsMenu(HMENU layoutsMenu, const MainMenuBarCallbacks& callbacks)
 {
   if (!clearMenu(layoutsMenu)) {
@@ -851,9 +1104,11 @@ bool installWindowsNativeMainMenu(HWND window, const MainMenuBarCallbacks& callb
   HMENU windowsMenu = CreatePopupMenu();
   HMENU helpMenu = CreatePopupMenu();
   state->activeImagesMenu = CreatePopupMenu();
+  state->openRecentMenu = CreatePopupMenu();
   if (
     !state->mainMenu || !fileMenu || !modesMenu || !imageMenu || !segmentationMenu || !annotationsMenu ||
-    !landmarksMenu || !state->layoutsMenu || !viewsMenu || !windowsMenu || !helpMenu || !state->activeImagesMenu)
+    !landmarksMenu || !state->layoutsMenu || !viewsMenu || !windowsMenu || !helpMenu || !state->activeImagesMenu ||
+    !state->openRecentMenu)
   {
     if (state->mainMenu) {
       DestroyMenu(state->mainMenu);
@@ -862,8 +1117,8 @@ bool installWindowsNativeMainMenu(HWND window, const MainMenuBarCallbacks& callb
   }
 
   if (
-    !populateFileMenu(fileMenu) || !populateModesMenu(modesMenu) ||
-    !populateActiveImagesMenu(state->activeImagesMenu, callbacks) ||
+    !populateOpenRecentMenu(state->openRecentMenu, *state) || !populateFileMenu(fileMenu, state->openRecentMenu) ||
+    !populateModesMenu(modesMenu) || !populateActiveImagesMenu(state->activeImagesMenu, callbacks) ||
     !populateImageMenu(imageMenu, state->activeImagesMenu) || !populateSegmentationMenu(segmentationMenu) ||
     !populateAnnotationsMenu(annotationsMenu) || !populateLandmarksMenu(landmarksMenu) ||
     !populateLayoutsMenu(state->layoutsMenu, callbacks) || !populateViewsMenu(viewsMenu) ||
@@ -921,6 +1176,10 @@ void updateWindowsNativeMainMenu(GLFWwindow* window, const MainMenuBarCallbacks&
   }
 
   stateIt->second->callbacks = callbacks;
+  const std::string recentSignature = buildRecentMenuSignature(callbacks);
+  if (recentSignature != stateIt->second->recentMenuSignature) {
+    populateOpenRecentMenu(stateIt->second->openRecentMenu, *stateIt->second);
+  }
   populateLayoutsMenu(stateIt->second->layoutsMenu, callbacks);
   populateActiveImagesMenu(stateIt->second->activeImagesMenu, callbacks);
   updateEnabledState(*stateIt->second);

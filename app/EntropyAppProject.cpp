@@ -1,6 +1,7 @@
 #include "EntropyApp.h"
 
 #include "image/ImageUtility.h"
+#include "logic/app/AppPaths.h"
 #include "layout/LayoutFileSerialization.h"
 #include "logic/app/LoadingStatusItems.h"
 #include "logic/app/ProjectSnapshotComparison.h"
@@ -460,6 +461,39 @@ void EntropyApp::updateWindowTitleStatus()
   m_glfw.setWindowTitleStatus(windowTitleStatus());
 }
 
+void EntropyApp::saveAppSettingsQuietly()
+{
+  if (m_data.guiData().m_appSettingsDirty) {
+    return;
+  }
+
+  std::string error;
+  const fs::path settingsFile = app_paths::userSettingsFile();
+  if (!user_preferences::save(m_data.settings(), m_data.renderData(), m_data.guiData(), settingsFile, &error)) {
+    spdlog::warn("Could not save recent file history to {}: {}", settingsFile, error);
+    return;
+  }
+  user_preferences::markSavedAppSettingsState(m_data.settings(), m_data.renderData(), m_data.guiData());
+}
+
+void EntropyApp::recordRecentImageGroup(const std::vector<fs::path>& fileNames)
+{
+  m_data.settings().recordRecentImageGroup(fileNames);
+  saveAppSettingsQuietly();
+}
+
+void EntropyApp::recordRecentDicomGroup(const std::vector<fs::path>& folderNames)
+{
+  m_data.settings().recordRecentDicomGroup(folderNames);
+  saveAppSettingsQuietly();
+}
+
+void EntropyApp::recordRecentProjectFile(const fs::path& fileName)
+{
+  m_data.settings().recordRecentProjectFile(fileName);
+  saveAppSettingsQuietly();
+}
+
 bool EntropyApp::saveProject()
 {
   if (!saveDirtyAnnotationsWithDialogs()) {
@@ -592,6 +626,8 @@ void EntropyApp::performLoadProjectFile(const fs::path& fileName)
     m_glfw.postEmptyEvent();
     return;
   }
+
+  recordRecentProjectFile(fileName);
 
   if (ProjectLoadState::Loaded == m_data.state().projectLoadState() && m_data.refImageUid()) {
     closeProject();

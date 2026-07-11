@@ -8,7 +8,15 @@
 #include <glm/vec3.hpp>
 
 #include <cstdint>
+#include <filesystem>
 #include <optional>
+#include <string>
+#include <vector>
+
+struct RecentPathGroup
+{
+  std::vector<std::filesystem::path> paths;
+};
 
 /**
  * @brief Font families that can be used for the main ImGui interface.
@@ -194,6 +202,18 @@ public:
   /// @brief Set whether Entropy should check GitHub for updates automatically.
   void setAutomaticUpdateChecksEnabled(bool enabled);
 
+  const std::vector<RecentPathGroup>& recentImageGroups() const;
+  const std::vector<RecentPathGroup>& recentDicomGroups() const;
+  const std::vector<std::filesystem::path>& recentProjectFiles() const;
+
+  void setRecentImageGroups(std::vector<RecentPathGroup> groups);
+  void setRecentDicomGroups(std::vector<RecentPathGroup> groups);
+  void setRecentProjectFiles(std::vector<std::filesystem::path> files);
+
+  void recordRecentImageGroup(const std::vector<std::filesystem::path>& paths);
+  void recordRecentDicomGroup(const std::vector<std::filesystem::path>& paths);
+  void recordRecentProjectFile(const std::filesystem::path& path);
+
   std::size_t foregroundLabel() const;
   std::size_t backgroundLabel() const;
 
@@ -278,6 +298,9 @@ private:
   bool m_showGlobalTimeControls = true;
   bool m_synchronizeTimeSeries = true;
   bool m_automaticUpdateChecksEnabled = false;
+  std::vector<RecentPathGroup> m_recentImageGroups;
+  std::vector<RecentPathGroup> m_recentDicomGroups;
+  std::vector<std::filesystem::path> m_recentProjectFiles;
   registration::BackendConfig m_registrationBackendConfig;
 
   bool m_cursorSyncEnabled = false;

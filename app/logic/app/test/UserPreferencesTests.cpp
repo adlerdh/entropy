@@ -56,6 +56,9 @@ void setNonDefaultSettings(AppSettings& settings)
   settings.setBrushSizeInMm(3.25f);
   settings.setCrosshairsMoveWhileAnnotating(true);
   settings.setLockAnatomicalCoordinateAxesWithReferenceImage(true);
+  settings.recordRecentImageGroup({"/data/image-a.nii.gz", "/data/image-b.nii.gz"});
+  settings.recordRecentDicomGroup({"/data/dicom-series"});
+  settings.recordRecentProjectFile("/data/project.entropy.json");
 
   registration::BackendConfig& registrationConfig = settings.registrationBackendConfig();
   registrationConfig.defaultBackend = registration::Backend::ANTs;
@@ -199,6 +202,15 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(actual.showGlobalTimeControls() == expected.showGlobalTimeControls());
   CHECK(actual.synchronizeTimeSeries() == expected.synchronizeTimeSeries());
   CHECK(actual.automaticUpdateChecksEnabled() == expected.automaticUpdateChecksEnabled());
+  CHECK(actual.recentImageGroups().size() == expected.recentImageGroups().size());
+  if (!expected.recentImageGroups().empty()) {
+    CHECK(actual.recentImageGroups().front().paths == expected.recentImageGroups().front().paths);
+  }
+  CHECK(actual.recentDicomGroups().size() == expected.recentDicomGroups().size());
+  if (!expected.recentDicomGroups().empty()) {
+    CHECK(actual.recentDicomGroups().front().paths == expected.recentDicomGroups().front().paths);
+  }
+  CHECK(actual.recentProjectFiles() == expected.recentProjectFiles());
   CHECK(actual.replaceBackgroundWithForeground() == expected.replaceBackgroundWithForeground());
   CHECK(actual.use3dBrush() == expected.use3dBrush());
   CHECK(actual.useIsotropicBrush() == expected.useIsotropicBrush());
@@ -437,6 +449,9 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("registration").at("defaultCpuThreadCount") == 7);
   CHECK(root.at("registration").at("defaultFireAntsDevice") == "cuda:1");
   CHECK(root.at("registration").at("showExpertOptionsByDefault") == true);
+  CHECK(root.at("recent").at("images").at(0) == json::array({"/data/image-a.nii.gz", "/data/image-b.nii.gz"}));
+  CHECK(root.at("recent").at("dicom").at(0) == json::array({"/data/dicom-series"}));
+  CHECK(root.at("recent").at("projects").at(0) == "/data/project.entropy.json");
   CHECK_FALSE(root.at("synchronization").contains("timeSeries"));
   CHECK(root.at("synchronization").at("entropyInstances").at("enabled") == true);
   CHECK(root.at("system").at("updates").at("automaticChecks") == true);

@@ -1284,12 +1284,84 @@ void renderGlobalTimeControl(AppData& appData)
   updatePlaybackAnimationState();
 }
 
+std::string recentPathLabel(const std::vector<fs::path>& paths)
+{
+  if (paths.empty()) {
+    return {};
+  }
+
+  const std::string first =
+    paths.front().filename().empty() ? paths.front().string() : paths.front().filename().string();
+  if (paths.size() == 1) {
+    return first;
+  }
+  return std::format("{}  (+{} more)", first, paths.size() - 1);
+}
+
+std::string recentPathTooltip(const std::vector<fs::path>& paths)
+{
+  std::ostringstream out;
+  for (std::size_t i = 0; i < paths.size(); ++i) {
+    if (i > 0) {
+      out << '\n';
+    }
+    out << paths[i].string();
+  }
+  return out.str();
+}
+
+bool recentPathsExist(const std::vector<fs::path>& paths)
+{
+  return !paths.empty() && std::all_of(paths.begin(), paths.end(), [](const fs::path& path) {
+    std::error_code ec;
+    return fs::exists(path, ec);
+  });
+}
+
+template<typename EntryRange, typename PathsForEntry, typename OpenEntry>
+void renderRecentEntries(
+  const char* title,
+  const char* emptyText,
+  const EntryRange& entries,
+  PathsForEntry pathsForEntry,
+  OpenEntry openEntry,
+  float rowWidth)
+{
+  ImGui::SeparatorText(title);
+  if (entries.empty()) {
+    ImGui::TextDisabled("%s", emptyText);
+    return;
+  }
+
+  int index = 0;
+  for (const auto& entry : entries) {
+    const std::vector<fs::path> paths = pathsForEntry(entry);
+    const bool pathsExist = recentPathsExist(paths);
+    const std::string label =
+      std::string{ICON_FK_HISTORY} + " " + recentPathLabel(paths) + "##recent" + title + std::to_string(index++);
+
+    ImGui::BeginDisabled(!pathsExist);
+    if (ImGui::Button(label.c_str(), ImVec2{rowWidth, 0.0f})) {
+      openEntry(paths);
+    }
+    ImGui::EndDisabled();
+
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      const std::string tooltip =
+        pathsExist ? recentPathTooltip(paths) : "Path not found:\n" + recentPathTooltip(paths);
+      ImGui::SetTooltip("%s", tooltip.c_str());
+    }
+  }
+}
+
 void renderEmptyWorkspace(
   ProjectLoadState projectLoadState,
+  const AppSettings& settings,
   const std::function<void(const std::vector<fs::path>& fileNames)>& openImageFiles,
   const std::function<void(const std::vector<fs::path>& folderNames)>& openDicomFolders,
   const std::function<void()>& requestDicomFolderPathDialog,
-  const std::function<void(const fs::path& fileName)>& openProjectFile)
+  const std::function<void(const fs::path& fileName)>& openProjectFile,
+  const std::function<void()>& clearRecents)
 {
   if (ProjectLoadState::Empty != projectLoadState && ProjectLoadState::Failed != projectLoadState) {
     return;
@@ -1301,7 +1373,7 @@ void renderEmptyWorkspace(
 
   const float panelMargin = scaledPixel(16.0f);
   const ImVec2 windowPadding{panelMargin, scaledPixel(20.0f)};
-  const char* text = ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No project loaded.";
+  const char* text = ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No images loaded.";
   const std::array<std::string, 3> buttonLabels{
     std::string{ICON_FK_PICTURE_O} + " Open Image(s)...",
     std::string{ICON_FK_FILES_O} + " Open DICOM Series...",
@@ -1313,18 +1385,61 @@ void renderEmptyWorkspace(
   }
 
   const float buttonsWidth = 3.0f * buttonWidth + 2.0f * style.ItemSpacing.x;
-  const float contentWidth = std::max(ImGui::CalcTextSize(text).x, buttonsWidth);
-  const float contentHeight = ImGui::GetTextLineHeight() + style.ItemSpacing.y + ImGui::GetFrameHeight();
-  const ImVec2 panelSize{contentWidth + 2.0f * windowPadding.x, contentHeight + 2.0f * windowPadding.y};
+  const float recentWidth = scaledPixel(560.0f);
+  const float contentWidth = std::max({ImGui::CalcTextSize(text).x, buttonsWidth, recentWidth});
+  const bool hasRecents = !settings.recentProjectFiles().empty() || !settings.recentImageGroups().empty() ||
+                          !settings.recentDicomGroups().empty();
+  std::vector<RecentPathGroup> recentSingleImages;
+  std::vector<RecentPathGroup> recentImageGroups;
+  for (const RecentPathGroup& group : settings.recentImageGroups()) {
+    if (group.paths.size() == 1) {
+      recentSingleImages.push_back(group);
+    }
+    else {
+      recentImageGroups.push_back(group);
+    }
+  }
 
-  ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-  ImGui::SetNextWindowSize(panelSize, ImGuiCond_Always);
+  const float launcherContentHeight = ImGui::GetTextLineHeight() + style.ItemSpacing.y + ImGui::GetFrameHeight();
+  const ImVec2 launcherPanelSize{contentWidth + 2.0f * windowPadding.x, launcherContentHeight + 2.0f * windowPadding.y};
+  const float panelGap = scaledPixel(12.0f);
+
+  const auto visibleEntryRows = [](std::size_t entryCount) {
+    return static_cast<float>(std::max<std::size_t>(1, entryCount));
+  };
+  const float recentRows = visibleEntryRows(settings.recentProjectFiles().size()) +
+                           visibleEntryRows(recentSingleImages.size()) + visibleEntryRows(recentImageGroups.size()) +
+                           visibleEntryRows(settings.recentDicomGroups().size());
+  constexpr float recentSectionCount = 4.0f;
+  const float recentNaturalContentHeight =
+    ImGui::GetTextLineHeightWithSpacing() + style.ItemSpacing.y +
+    recentSectionCount * (ImGui::GetTextLineHeightWithSpacing() + style.ItemSpacing.y) +
+    recentRows * ImGui::GetFrameHeightWithSpacing() + style.ItemSpacing.y + style.SeparatorTextPadding.y +
+    ImGui::GetFrameHeightWithSpacing();
+  const float recentListContentHeight =
+    ImGui::GetTextLineHeightWithSpacing() + style.ItemSpacing.y +
+    recentSectionCount * (ImGui::GetTextLineHeightWithSpacing() + style.ItemSpacing.y) +
+    recentRows * ImGui::GetFrameHeightWithSpacing();
+  const float recentNaturalPanelHeight = recentNaturalContentHeight + 2.0f * windowPadding.y;
+  const float recentAvailableHeight = std::max(
+    scaledPixel(120.0f),
+    viewport->WorkSize.y - launcherPanelSize.y - 2.0f * windowPadding.y - 3.0f * panelGap);
+  const float recentMaxHeight = std::min(2.0f * viewport->WorkSize.y / 3.0f, recentAvailableHeight);
+  const float recentPanelHeight = hasRecents ? std::min(recentNaturalPanelHeight, recentMaxHeight) : 0.0f;
+
+  const float totalHeight = launcherPanelSize.y + (hasRecents ? panelGap + recentPanelHeight : 0.0f);
+  const ImVec2 topLeft{
+    viewport->WorkPos.x + 0.5f * (viewport->WorkSize.x - launcherPanelSize.x),
+    viewport->WorkPos.y + 0.5f * (viewport->WorkSize.y - totalHeight)};
+
+  ImGui::SetNextWindowPos(topLeft, ImGuiCond_Always);
+  ImGui::SetNextWindowSize(launcherPanelSize, ImGuiCond_Always);
 
   constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                                      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking;
 
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding);
-  if (ImGui::Begin("EmptyWorkspace", nullptr, flags)) {
+  if (ImGui::Begin("EmptyWorkspaceLauncher", nullptr, flags)) {
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.0f, (contentWidth - ImGui::CalcTextSize(text).x) * 0.5f));
     ImGui::TextUnformatted(text);
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + style.ItemSpacing.y);
@@ -1362,6 +1477,91 @@ void renderEmptyWorkspace(
   }
   ImGui::End();
   ImGui::PopStyleVar();
+
+  if (hasRecents) {
+    const ImVec2 recentPos{topLeft.x, topLeft.y + launcherPanelSize.y + panelGap};
+    const ImVec2 recentSize{launcherPanelSize.x, recentPanelHeight};
+    ImGui::SetNextWindowPos(recentPos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(recentSize, ImGuiCond_Always);
+
+    constexpr ImGuiWindowFlags recentFlags = flags | ImGuiWindowFlags_NoScrollWithMouse;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding);
+    if (ImGui::Begin("EmptyWorkspaceRecents", nullptr, recentFlags)) {
+      const float footerHeight =
+        style.ItemSpacing.y + scaledPixel(1.0f) + style.ItemSpacing.y + ImGui::GetFrameHeight() + style.ItemSpacing.y;
+      const float listHeight = std::max(0.0f, ImGui::GetContentRegionAvail().y - footerHeight);
+      const bool listNeedsScrolling = recentListContentHeight > listHeight + scaledPixel(1.0f);
+      const ImGuiWindowFlags listFlags =
+        listNeedsScrolling ? ImGuiWindowFlags_None : ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+
+      if (ImGui::BeginChild("RecentDataList", ImVec2{0.0f, listHeight}, false, listFlags)) {
+        ImGui::TextUnformatted("Recent data:");
+        ImGui::Spacing();
+        const float rowWidth = ImGui::GetContentRegionAvail().x;
+
+        renderRecentEntries(
+          "Projects",
+          "None",
+          settings.recentProjectFiles(),
+          [](const fs::path& path) { return std::vector<fs::path>{path}; },
+          [&openProjectFile](const std::vector<fs::path>& paths) {
+            if (!paths.empty() && openProjectFile) {
+              openProjectFile(paths.front());
+            }
+          },
+          rowWidth);
+
+        renderRecentEntries(
+          "Images",
+          "None",
+          recentSingleImages,
+          [](const RecentPathGroup& group) { return group.paths; },
+          [&openImageFiles](const std::vector<fs::path>& paths) {
+            if (!paths.empty() && openImageFiles) {
+              openImageFiles(paths);
+            }
+          },
+          rowWidth);
+
+        renderRecentEntries(
+          "Image Groups",
+          "None",
+          recentImageGroups,
+          [](const RecentPathGroup& group) { return group.paths; },
+          [&openImageFiles](const std::vector<fs::path>& paths) {
+            if (!paths.empty() && openImageFiles) {
+              openImageFiles(paths);
+            }
+          },
+          rowWidth);
+
+        renderRecentEntries(
+          "DICOM Series",
+          "None",
+          settings.recentDicomGroups(),
+          [](const RecentPathGroup& group) { return group.paths; },
+          [&openDicomFolders](const std::vector<fs::path>& paths) {
+            if (!paths.empty() && openDicomFolders) {
+              openDicomFolders(paths);
+            }
+          },
+          rowWidth);
+      }
+      ImGui::EndChild();
+
+      ImGui::Spacing();
+      ImGui::Separator();
+      ImGui::Spacing();
+      if (ImGui::Button("Clear Recents", ImVec2{buttonWidthForLabel("Clear Recents"), 0.0f}) && clearRecents) {
+        clearRecents();
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Remove all recent projects, images, image groups, and DICOM series from this list");
+      }
+    }
+    ImGui::End();
+    ImGui::PopStyleVar();
+  }
 }
 
 ImFont* loadFont(
@@ -4065,6 +4265,30 @@ void ImGuiWrapper::render()
       .addImageFiles = m_addImageFiles,
       .openDicomFolders = m_openDicomFolders,
       .requestDicomFolderPathDialog = [this]() { m_appData.guiData().m_showDicomFolderPathPopup = true; },
+      .recentProjectFiles = [this]() { return m_appData.settings().recentProjectFiles(); },
+      .recentImageGroups =
+        [this]() {
+          std::vector<std::vector<fs::path>> groups;
+          for (const RecentPathGroup& group : m_appData.settings().recentImageGroups()) {
+            groups.push_back(group.paths);
+          }
+          return groups;
+        },
+      .recentDicomGroups =
+        [this]() {
+          std::vector<std::vector<fs::path>> groups;
+          for (const RecentPathGroup& group : m_appData.settings().recentDicomGroups()) {
+            groups.push_back(group.paths);
+          }
+          return groups;
+        },
+      .clearRecents =
+        [this, &saveUserSettingsToDefault]() {
+          m_appData.settings().setRecentProjectFiles({});
+          m_appData.settings().setRecentImageGroups({});
+          m_appData.settings().setRecentDicomGroups({});
+          saveUserSettingsToDefault();
+        },
       .addSegmentationFile = m_addSegmentationFile,
       .loadInverseWarpForActiveImage =
         [this](const fs::path& fileName) {
@@ -4204,10 +4428,17 @@ void ImGuiWrapper::render()
 
     renderEmptyWorkspace(
       projectLoadState,
+      m_appData.settings(),
       m_openImageFiles,
       m_openDicomFolders,
       [this]() { m_appData.guiData().m_showDicomFolderPathPopup = true; },
-      m_openProjectFile);
+      m_openProjectFile,
+      [this, &saveUserSettingsToDefault]() {
+        m_appData.settings().setRecentProjectFiles({});
+        m_appData.settings().setRecentImageGroups({});
+        m_appData.settings().setRecentDicomGroups({});
+        saveUserSettingsToDefault();
+      });
 
     if (ProjectLoadState::Loading == projectLoadState) {
       entropy::ui::renderGradientBackground();

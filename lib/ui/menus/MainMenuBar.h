@@ -121,6 +121,10 @@ struct MainMenuBarCallbacks
   std::function<void(const std::vector<std::filesystem::path>& fileNames)> addImageFiles;
   std::function<void(const std::vector<std::filesystem::path>& folderNames)> openDicomFolders;
   std::function<void()> requestDicomFolderPathDialog;
+  std::function<std::vector<std::filesystem::path>()> recentProjectFiles;
+  std::function<std::vector<std::vector<std::filesystem::path>>()> recentImageGroups;
+  std::function<std::vector<std::vector<std::filesystem::path>>()> recentDicomGroups;
+  std::function<void()> clearRecents;
   std::function<void(const std::filesystem::path& fileName)> addSegmentationFile;
   std::function<void(const std::filesystem::path& fileName)> loadInverseWarpForActiveImage;
   std::function<void(const std::filesystem::path& fileName)> loadForwardWarpForActiveImage;

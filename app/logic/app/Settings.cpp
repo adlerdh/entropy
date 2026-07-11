@@ -3,6 +3,78 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <utility>
+
+namespace
+{
+constexpr std::size_t kMaxRecentItems = 10;
+
+std::filesystem::path normalizedRecentPath(std::filesystem::path path)
+{
+  return path.lexically_normal();
+}
+
+std::vector<std::filesystem::path> normalizedRecentPaths(const std::vector<std::filesystem::path>& paths)
+{
+  std::vector<std::filesystem::path> normalized;
+  normalized.reserve(paths.size());
+  for (const auto& path : paths) {
+    if (!path.empty()) {
+      normalized.push_back(normalizedRecentPath(path));
+    }
+  }
+  return normalized;
+}
+
+void trimRecentPathGroups(std::vector<RecentPathGroup>& groups)
+{
+  if (groups.size() > kMaxRecentItems) {
+    groups.resize(kMaxRecentItems);
+  }
+}
+
+void trimRecentPaths(std::vector<std::filesystem::path>& paths)
+{
+  if (paths.size() > kMaxRecentItems) {
+    paths.resize(kMaxRecentItems);
+  }
+}
+
+void recordRecentPathGroup(std::vector<RecentPathGroup>& groups, const std::vector<std::filesystem::path>& paths)
+{
+  const std::vector<std::filesystem::path> normalized = normalizedRecentPaths(paths);
+  if (normalized.empty()) {
+    return;
+  }
+
+  groups.erase(
+    std::remove_if(
+      groups.begin(),
+      groups.end(),
+      [&normalized](const RecentPathGroup& group) { return normalizedRecentPaths(group.paths) == normalized; }),
+    groups.end());
+
+  groups.insert(groups.begin(), RecentPathGroup{normalized});
+  trimRecentPathGroups(groups);
+}
+
+void recordRecentPath(std::vector<std::filesystem::path>& paths, const std::filesystem::path& path)
+{
+  if (path.empty()) {
+    return;
+  }
+
+  const std::filesystem::path normalized = normalizedRecentPath(path);
+  paths.erase(
+    std::remove_if(
+      paths.begin(),
+      paths.end(),
+      [&normalized](const std::filesystem::path& existing) { return normalizedRecentPath(existing) == normalized; }),
+    paths.end());
+  paths.insert(paths.begin(), normalized);
+  trimRecentPaths(paths);
+}
+} // namespace
 
 void AppSettings::bumpBrushPreviewRevision()
 {
@@ -223,6 +295,60 @@ bool AppSettings::automaticUpdateChecksEnabled() const
 void AppSettings::setAutomaticUpdateChecksEnabled(bool enabled)
 {
   m_automaticUpdateChecksEnabled = enabled;
+}
+
+const std::vector<RecentPathGroup>& AppSettings::recentImageGroups() const
+{
+  return m_recentImageGroups;
+}
+
+const std::vector<RecentPathGroup>& AppSettings::recentDicomGroups() const
+{
+  return m_recentDicomGroups;
+}
+
+const std::vector<std::filesystem::path>& AppSettings::recentProjectFiles() const
+{
+  return m_recentProjectFiles;
+}
+
+void AppSettings::setRecentImageGroups(std::vector<RecentPathGroup> groups)
+{
+  m_recentImageGroups.clear();
+  for (auto it = groups.rbegin(); it != groups.rend(); ++it) {
+    recordRecentPathGroup(m_recentImageGroups, it->paths);
+  }
+}
+
+void AppSettings::setRecentDicomGroups(std::vector<RecentPathGroup> groups)
+{
+  m_recentDicomGroups.clear();
+  for (auto it = groups.rbegin(); it != groups.rend(); ++it) {
+    recordRecentPathGroup(m_recentDicomGroups, it->paths);
+  }
+}
+
+void AppSettings::setRecentProjectFiles(std::vector<std::filesystem::path> files)
+{
+  m_recentProjectFiles.clear();
+  for (auto it = files.rbegin(); it != files.rend(); ++it) {
+    recordRecentPath(m_recentProjectFiles, *it);
+  }
+}
+
+void AppSettings::recordRecentImageGroup(const std::vector<std::filesystem::path>& paths)
+{
+  recordRecentPathGroup(m_recentImageGroups, paths);
+}
+
+void AppSettings::recordRecentDicomGroup(const std::vector<std::filesystem::path>& paths)
+{
+  recordRecentPathGroup(m_recentDicomGroups, paths);
+}
+
+void AppSettings::recordRecentProjectFile(const std::filesystem::path& path)
+{
+  recordRecentPath(m_recentProjectFiles, path);
 }
 
 const registration::BackendConfig& AppSettings::registrationBackendConfig() const

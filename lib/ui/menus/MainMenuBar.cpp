@@ -8,10 +8,48 @@
 
 #include <spdlog/fmt/std.h>
 
+#include <algorithm>
+#include <format>
+#include <sstream>
+
 namespace fs = std::filesystem;
 
 namespace main_menu
 {
+std::string recentPathLabel(const std::vector<fs::path>& paths)
+{
+  if (paths.empty()) {
+    return {};
+  }
+
+  const std::string first =
+    paths.front().filename().empty() ? paths.front().string() : paths.front().filename().string();
+  if (paths.size() == 1) {
+    return first;
+  }
+  return std::format("{}  (+{} more)", first, paths.size() - 1);
+}
+
+std::string recentPathTooltip(const std::vector<fs::path>& paths)
+{
+  std::ostringstream out;
+  for (std::size_t i = 0; i < paths.size(); ++i) {
+    if (i > 0) {
+      out << '\n';
+    }
+    out << paths[i].string();
+  }
+  return out.str();
+}
+
+bool recentPathsExist(const std::vector<fs::path>& paths)
+{
+  return !paths.empty() && std::all_of(paths.begin(), paths.end(), [](const fs::path& path) {
+    std::error_code ec;
+    return fs::exists(path, ec);
+  });
+}
+
 void openImage(const MainMenuBarCallbacks& callbacks)
 {
   if (!callbacks.canOpenProject) {
@@ -80,6 +118,112 @@ void addDicomSeries(const MainMenuBarCallbacks& callbacks)
 
   if (native_dialog::PathDialogStatus::Canceled != selectedFolders.status && callbacks.requestDicomFolderPathDialog) {
     callbacks.requestDicomFolderPathDialog();
+  }
+}
+
+void renderRecentGroupMenuItems(
+  const std::vector<std::vector<fs::path>>& groups,
+  bool enabled,
+  const std::function<void(const std::vector<fs::path>& paths)>& openPaths)
+{
+  if (groups.empty()) {
+    ImGui::MenuItem("None", nullptr, false, false);
+    return;
+  }
+
+  for (const auto& paths : groups) {
+    const bool pathsExist = recentPathsExist(paths);
+    const std::string label = recentPathLabel(paths);
+    if (ImGui::MenuItem(label.c_str(), nullptr, false, enabled && pathsExist)) {
+      openPaths(paths);
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+      const std::string tooltip =
+        pathsExist ? recentPathTooltip(paths) : "Path not found:\n" + recentPathTooltip(paths);
+      ImGui::SetTooltip("%s", tooltip.c_str());
+    }
+  }
+}
+
+void renderOpenRecentMenu(const MainMenuBarCallbacks& callbacks)
+{
+  std::vector<fs::path> projects =
+    callbacks.recentProjectFiles ? callbacks.recentProjectFiles() : std::vector<fs::path>{};
+  std::vector<std::vector<fs::path>> imageGroups =
+    callbacks.recentImageGroups ? callbacks.recentImageGroups() : std::vector<std::vector<fs::path>>{};
+  std::vector<std::vector<fs::path>> dicomGroups =
+    callbacks.recentDicomGroups ? callbacks.recentDicomGroups() : std::vector<std::vector<fs::path>>{};
+
+  std::vector<std::vector<fs::path>> singleImages;
+  std::vector<std::vector<fs::path>> groupedImages;
+  for (const auto& group : imageGroups) {
+    if (group.size() == 1) {
+      singleImages.push_back(group);
+    }
+    else {
+      groupedImages.push_back(group);
+    }
+  }
+
+  if (ImGui::BeginMenu("Open Recent")) {
+    if (ImGui::BeginMenu("Projects")) {
+      std::vector<std::vector<fs::path>> projectGroups;
+      projectGroups.reserve(projects.size());
+      for (const fs::path& project : projects) {
+        projectGroups.push_back({project});
+      }
+      renderRecentGroupMenuItems(
+        projectGroups,
+        callbacks.canOpenProject,
+        [&callbacks](const std::vector<fs::path>& paths) {
+          if (!paths.empty() && callbacks.canOpenProject && callbacks.openProjectFile) {
+            callbacks.openProjectFile(paths.front());
+          }
+        });
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Images")) {
+      renderRecentGroupMenuItems(
+        singleImages,
+        callbacks.canOpenProject,
+        [&callbacks](const std::vector<fs::path>& paths) {
+          if (!paths.empty() && callbacks.canOpenProject && callbacks.openImageFiles) {
+            callbacks.openImageFiles(paths);
+          }
+        });
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Image Groups")) {
+      renderRecentGroupMenuItems(
+        groupedImages,
+        callbacks.canOpenProject,
+        [&callbacks](const std::vector<fs::path>& paths) {
+          if (!paths.empty() && callbacks.canOpenProject && callbacks.openImageFiles) {
+            callbacks.openImageFiles(paths);
+          }
+        });
+      ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("DICOM Series")) {
+      renderRecentGroupMenuItems(
+        dicomGroups,
+        callbacks.canOpenProject,
+        [&callbacks](const std::vector<fs::path>& paths) {
+          if (!paths.empty() && callbacks.canOpenProject && callbacks.openDicomFolders) {
+            callbacks.openDicomFolders(paths);
+          }
+        });
+      ImGui::EndMenu();
+    }
+
+    ImGui::Separator();
+    if (ImGui::MenuItem("Clear Recents", nullptr, false, callbacks.clearRecents != nullptr) && callbacks.clearRecents) {
+      callbacks.clearRecents();
+    }
+    ImGui::EndMenu();
   }
 }
 
@@ -460,13 +604,15 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
         main_menu::openImage(callbacks);
       }
 
+      if (ImGui::MenuItem("Open Project...", "Ctrl+Shift+O", false, callbacks.canOpenProject)) {
+        main_menu::openProject(callbacks);
+      }
+
       if (ImGui::MenuItem("Open DICOM Series...", nullptr, false, callbacks.canOpenProject)) {
         main_menu::openDicomSeries(callbacks);
       }
 
-      if (ImGui::MenuItem("Open Project...", "Ctrl+Shift+O", false, callbacks.canOpenProject)) {
-        main_menu::openProject(callbacks);
-      }
+      main_menu::renderOpenRecentMenu(callbacks);
 
       ImGui::Separator();
 
