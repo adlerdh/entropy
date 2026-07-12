@@ -106,25 +106,22 @@ TEST_CASE("one segmentation option can provide multiple segmentations for the pr
   CHECK(params.imageFiles[0].segmentations[1] == "seg-b.nii.gz");
 }
 
-TEST_CASE("image option accepts singular, plural, and short spellings", "[common][input]")
+TEST_CASE("image option accepts long and short spellings", "[common][input]")
 {
   char app[] = "Entropy";
   char imageOpt0[] = "--image";
   char image0[] = "image-a.nii.gz";
-  char imageOpt1[] = "--images";
+  char imageOpt1[] = "-i";
   char image1[] = "image-b.nii.gz";
-  char imageOpt2[] = "-i";
-  char image2[] = "image-c.nii.gz";
 
-  std::array<char*, 7> argv{app, imageOpt0, image0, imageOpt1, image1, imageOpt2, image2};
+  std::array<char*, 5> argv{app, imageOpt0, image0, imageOpt1, image1};
 
   InputParams params;
   REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
 
-  REQUIRE(params.imageFiles.size() == 3);
+  REQUIRE(params.imageFiles.size() == 2);
   CHECK(params.imageFiles[0].image == "image-a.nii.gz");
   CHECK(params.imageFiles[1].image == "image-b.nii.gz");
-  CHECK(params.imageFiles[2].image == "image-c.nii.gz");
 }
 
 TEST_CASE("segmentation option accepts long and short spellings", "[common][input]")
@@ -146,6 +143,35 @@ TEST_CASE("segmentation option accepts long and short spellings", "[common][inpu
   REQUIRE(params.imageFiles[0].segmentations.size() == 2);
   CHECK(params.imageFiles[0].segmentations[0] == "seg-a.nii.gz");
   CHECK(params.imageFiles[0].segmentations[1] == "seg-b.nii.gz");
+}
+
+TEST_CASE("plural image and segmentation option aliases are rejected", "[common][input]")
+{
+  SECTION("plural image option")
+  {
+    char app[] = "Entropy";
+    char imageOpt[] = "--images";
+    char image[] = "image.nii.gz";
+
+    std::array<char*, 3> argv{app, imageOpt, image};
+
+    InputParams params;
+    CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+  }
+
+  SECTION("plural segmentation option")
+  {
+    char app[] = "Entropy";
+    char imageOpt[] = "--image";
+    char image[] = "image.nii.gz";
+    char segOpt[] = "--segs";
+    char seg[] = "seg.nii.gz";
+
+    std::array<char*, 5> argv{app, imageOpt, image, segOpt, seg};
+
+    InputParams params;
+    CHECK_FALSE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
+  }
 }
 
 TEST_CASE("a new image option terminates a multi-value segmentation option", "[common][input]")

@@ -1,47 +1,249 @@
-# ENTROPY MEDICAL IMAGE VIEWER
-*A cross-platform tool for interactively visualizing, comparing, segmenting, and annotating 3D medical images.*
+# Entropy Medical Image Viewer
+
+<img src="res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png" alt="Entropy icon" align="left" width="96" hspace="16" vspace="4">
+
+Entropy is a cross-platform tool for visualizing, comparing, registering, segmenting, annotating, and inspecting medical images.
+
+It is built to handle projects with multiple images in a common reference space. It can load any number of images, arrange them in flexible layouts, render them with fast shader-based MPR views, and display their values, coordinates, and transforms. Different rendering modes help with comparing images and evaluating spatial alignment.
 
 Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D.
 
 Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of Pennsylvania. All rights reserved.
 
-## Documentation
+## Building
 
-Start here, then use the focused documents for the details you need:
+Entropy uses CMake and C++23. Build the pinned third-party libraries first, then configure and build Entropy against them following the "superbuild" pattern:
 
-| Document | What it covers |
+```sh
+BUILD_TYPE=debug # or release
+
+# Dependencies
+cmake --preset deps-${BUILD_TYPE}
+cmake --build --preset deps-${BUILD_TYPE} --parallel
+
+# Application
+cmake --preset app-${BUILD_TYPE}
+cmake --build --preset app-${BUILD_TYPE} --parallel
+```
+
+Reduce the parallelism if it runs out of memory. Run with:
+
+```sh
+open build-${BUILD_TYPE}/bin/Entropy.app # macOS
+.\build-${BUILD_TYPE}\bin\entropy.exe # Windows
+build-${BUILD_TYPE}/bin/entropy # Linux
+```
+
+Release packages are generated with preset `package-release` for:
+
+- macOS Apple Silicon
+- macOS Intel
+- Windows, x86_64
+- Ubuntu Linux, x86_64
+- Fedora Linux, x86_64
+
+See [BUILDING.md](BUILDING.md) for detailed platform and build requirements, compiler versions, Linux development packages, build options, tests, and coverage instructions. Packaging commands and artifact layouts are detailed in [PACKAGING.md](PACKAGING.md).
+
+## Overview
+
+Entropy is useful for reviewing multiple images in relation to one another in a common reference space. It handles multimodal scalar and multi-component images in 2D, 3D, and 4D (time series), as well as segmentations, vector annotations, and registration transformations (affine and deformation fields).
+
+### Image Visualization and Comparison
+
+Entropy is designed for crisp, responsive rendering. It uses GPU 3D texturing and preserves native voxel component types instead of casting to a fixed display type. A project contains a reference image that defines the common coordinate space, plus any number of additional images.
+
+- Flexible layouts with per-view image visibility
+  - Axial, coronal, sagittal, and oblique multi-planar reconstruction (MPR)
+  - Minimum, mean, and maximum intensity projections and X-ray simulation
+  - Tiled lightbox views
+  - Rotatable crosshairs
+  - 3D rendering of image isosurfaces
+- Rendering modes
+  - Layered images with opacity blending
+  - Horizontal and vertical swiping comparison
+  - Flashlight and checkerboard comparison
+  - Visual metrics: difference, overlap, local normalized cross-correlation (NCC), and local linear residual
+- Image adjustments
+  - Window width and level
+  - Layer opacity
+  - Color maps, continuous and discrete
+  - Image edge filtering
+  - Nearest neighbor, linear, and cubic B-spline interpolation
+- Precise image interrogation
+  - Voxel intensities and percentiles
+  - Spatial coordinates, including after transformation
+  - Iso-contouring
+- View and crosshairs synchronization
+  - Across linked views and layouts
+  - With other Entropy sessions or [ITK-SNAP](https://www.itksnap.org/)
+
+### Transformations and Warps
+
+Entropy has advanced support for image transformations:
+
+- Affine transformations (from voxel to physical space) from image headers
+- Import additional affine transformations
+- Manual translation, rotation, and scaling
+- Load inverse and forward deformable warp fields computed from external registration tools
+  - Interactively apply warps to images
+- Vector field visualization
+  - Vector field arrows and warped grid lines
+  - Compute maps of field magnitude, Jacobian determinant, Laplacian, divergence, and curl
+  - Compute matching inverse or forward warp fields for loaded deformation fields
+
+### Registration Backends
+
+Entropy does not implement its own full registration engine. Instead, it can launch external registration tools, monitor them, and import their results into the project where the images are already loaded. Current registration backends are:
+
+- [ANTs](https://github.com/ANTsX/ANTs)
+- [FireANTs](https://fireants.readthedocs.io/en/latest/)
+- [Greedy](https://greedy.readthedocs.io/en/latest/)
+
+The Image Registration workflow lets users select fixed and moving images, choose parameters for each backend, inspect the command preview, monitor progress and logs, and import generated outputs. Imported outputs can include transformed moving images, affine matrices, inverse warp fields, and forward warp fields. Backend executables are configured in Application Settings.
+
+### Segmentation, Annotations, and Landmarks
+
+The same views used for image comparison can be used to paint segmentation overlays, draw vector-based annotations, and place point landmarks:
+
+- Save, clear, remove, and inspect segmentation layers
+  - Multiple segmentations per image
+  - Filled or outline rendering
+- Paint segmentations with foreground and background labels
+  - Adjust brush shape (2D/3D, round/square) and behavior
+- Draw vector-based annotations, including on oblique planes
+  - Fill annotations to create segmentations
+- Create and save groups of point landmarks in physical or voxel coordinates
+
+## Supported Formats
+
+Entropy uses [ITK](https://itk.org/) for image I/O of these common medical image formats:
+
+- [Neuroimaging Informatics Technology Initiative (NIfTI)](https://nifti.nimh.nih.gov/nifti-1/) and Analyze header/image pairs (`.nii`, `.nii.gz`, `.hdr`, `.img`)
+- [Nearly Raw Raster Data (NRRD)](https://teem.sourceforge.net/nrrd/format.html) (`.nrrd`, `.nhdr`)
+- [MetaImage](https://insightsoftwareconsortium.github.io/ITKWikiArchive/Wiki/ITK/MetaIO/Documentation/) (`.mha`, `.mhd`, with companion raw data `.raw`, `.zraw`, or `.raw.gz`)
+- [DICOM](https://www.dicomstandard.org/current/) via [GDCM](https://gdcm.sourceforge.net/) (`.dcm` and DICOM series)
+
+Entropy also displays complete image header information and DICOM metadata. It loads the supporting files needed to make a review complete: segmentations, landmarks, annotations, affine transforms, deformation warp fields, layouts, and project files.
+
+### Multi-Component and Time Series Images
+
+Supported image categories include:
+
+- 2D and 3D scalar images
+- 4D time series
+- Integer (signed/unsigned 8/16/32-bit) and floating-point component types
+- Complex-valued images
+- RGB and RGBA images
+- Vector fields and deformation warp fields
+- General images with N components
+- Segmentations and label images
+
+Images with multiple components can be viewed by individual component, magnitude, RGB/RGBA interpretation, and derived projections where appropriate. Time series images can be reviewed with per-image and global time controls.
+
+## Technical Notes
+
+Entropy is a native C++ application built for interactive desktop performance across multiple platforms. Third-party dependencies are pinned from source.
+
+|  |  |
 | --- | --- |
-| [README.md](README.md) | Project overview, running Entropy, project-file examples, and keyboard shortcuts. |
-| [BUILDING.md](BUILDING.md) | Supported platforms, required tools, CMake options, build presets, and development build commands. |
-| [PACKAGING.md](PACKAGING.md) | Release package commands for Linux and macOS, output locations, package testing, signing notes, and platform packaging details. |
-| [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | Third-party dependency versions, notices, and licenses. |
-| [LICENSE.txt](LICENSE.txt) | Entropy license terms. |
+| Language | C++23 |
+| Build system | CMake presets with separate dependency and app stages |
+| Toolchains | Apple Clang, MSVC/Visual Studio 2022, and GCC |
+| Tests | Unit tests and coverage reports run in CI |
+| Platforms | macOS, Windows, Ubuntu, and Fedora |
+| Rendering | OpenGL 3.3 Core with GLSL 3.30 shaders |
+| Image I/O | Medical image loading through ITK |
+| UI | [Dear ImGui](https://github.com/ocornut/imgui) with native platform menu and dialog integration |
 
-## Running
-Entropy can load images directly from command line arguments, from DICOM folders/files, or from a JSON project file.
+Entropy targets OpenGL 3.3 Core with GLSL 3.30 shaders to maximize compatibility across platforms and operating system versions. Detailed compiler versions, operating system versions, development packages, and coverage workflows are documented in [BUILDING.md](BUILDING.md).
 
-1. Images can be provided directly with repeatable `--image` or `--images` options. The short form is `-i`. If an image has one or more accompanying segmentations, place `--seg` (`-s`) immediately after that image; the segmentations are attached to the preceding image in the order provided. `--seg` may be repeated, or it may be followed by multiple segmentation file names. e.g.:
+## Core Concepts
 
+### Reference Image
+
+The reference image defines the main project space. Additional images are compared against it and may have affine transformations or deformable warps that relate them to the reference and each other.
+
+### Active Image
+
+The active image is the image currently targeted by many editing, inspection, transformation, and menu actions.
+
+### Image Geometry and Affine Transformations
+
+Entropy separates image geometry from affine transformations loaded or edited by the user:
+
+1. The image header defines the image's native voxel to subject geometry
+2. The initial/imported affine transformation is used for a loaded alignment or an alignment computed by registration
+3. The manual affine transformation is intended for interactive adjustment
+
+This separation makes it possible to inspect and revise alignment without losing the original image geometry.
+
+### Deformable Warp Fields
+
+Entropy uses inverse warp fields for image sampling and forward warp fields for moving spatial objects, such as landmarks and annotations. A project with one image can still apply a warp to that image, treating the image as its own reference space.
+
+### Application Settings and Project Settings
+
+Application settings store personal UI preferences and backend configuration. Project settings store presentation and review state that is packaged with a project, such as layouts, comparison settings, raycasting settings, segmentation display defaults, and transformation assignments.
+
+## Quick Start
+
+One typical workflow is to load a reference image and one image to compare against it:
+
+1. Open one or more images from the File menu, the opening screen, or the command line
+2. Set the image that you want to compare against as the reference image
+3. Choose a layout and view types for the review or analysis task
+4. Use image visibility, opacity, comparison modes, and the opacity mixer to compare images
+5. Use the voxel inspector to verify coordinates and sampled values
+6. Add segmentations, annotations, landmarks, affine transformations, or warp fields as needed
+7. Save the work as an Entropy project
+
+### Command Line
+
+The command line accepts image, DICOM, and project inputs:
+
+| Option | Meaning |
+| --- | --- |
+| `--image`, `-i` | Image path, repeat for multiple images |
+| `--seg`, `-s` | Segmentation path(s) for the preceding image |
+| `--dicom`, `-d` | DICOM folder or file to scan |
+| `--project`, `-p` | Entropy project JSON file, mutually exclusive with `--image`, `--seg`, and `--dicom` |
+| `--layouts` | View layouts specification JSON file |
+| `--log-level`, `-l` | Console log level |
+
+Examples:
 ```sh
-entropy --image reference_image.nii.gz --seg reference_seg1.nii.gz reference_seg2.nii.gz \
-        --image additional_image1.nii.gz \
-        --image additional_image2.nii.gz --seg additional_image2_seg1.nii.gz --seg additional_image2_seg2.nii.gz
+entropy -i ref.nii.gz -s ref_seg.nii.gz -i moving.nii.gz
+entropy -p project.json
+entropy -d /path/to/dicom_folder
 ```
 
-2. DICOM folders or files can be scanned with `--dicom` or `-d`. Entropy opens the DICOM series selection dialog after scanning so that the desired series can be loaded. e.g.:
+Image inputs, DICOM inputs, and `--project` are mutually exclusive. Use `entropy --help` for the complete command-line reference.
 
-```sh
-entropy --dicom /path/to/dicom_folder
-entropy -d /path/to/series_folder_a /path/to/series_folder_b
-```
+### Project Files
 
-Direct image inputs, DICOM inputs, and `--project` are mutually exclusive. `--project`/`-p` must stand alone except for general options such as `--layouts` and `--log-level`.
+Entropy project files preserve all state needed to reopen a review. They include a reference image, additional images, segmentations, landmarks, annotations, transformations, layouts, and presentation settings. Minimal example:
 
-3. Images can be specified in a JSON project file that is loaded using the `--project` or `-p` argument. A sample project file:
 ```json
 {
-  "reference":
-  {
+  "reference": {
+    "image": "reference_image.nii.gz"
+  },
+  "additional": [
+    {
+      "image": "moving_image_1.nii.gz"
+    },
+    {
+      "image": "moving_image_2.nii.gz"
+    }
+  ]
+}
+```
+
+Including segmentations, landmarks, annotations, and an affine transformation:
+
+```json
+{
+  "reference": {
     "image": "reference_image.nii.gz",
     "segmentations": [
       {
@@ -56,108 +258,67 @@ Direct image inputs, DICOM inputs, and `--project` are mutually exclusive. `--pr
     ],
     "annotations": "reference_annotations.json"
   },
-  "additional":
-  [
+  "additional": [
     {
-      "image": "additional_image1.nii.gz",
-      "affine": "additional_image1_affine.txt",
+      "image": "moving_image.nii.gz",
+      "affine": "moving_image_affine.txt",
       "segmentations": [
         {
-          "path": "additional_image1_seg1.nii.gz"
-        },
-        {
-          "path": "additional_image1_seg2.nii.gz"
+          "path": "moving_image_seg.nii.gz"
         }
       ],
       "landmarks": [
         {
-          "path": "additional_image1_landmarks1.csv",
-          "inVoxelSpace": false
-        },
-        {
-          "path": "additional_image1_landmarks2.csv",
+          "path": "moving_image_landmarks.csv",
           "inVoxelSpace": false
         }
       ],
-      "annotations": "additional_image1_annotations.json"
-    },
-    {
-      "image": "additional_image2.nii.gz",
-      "affine": "additional_image2_affine.txt"
+      "annotations": "moving_image_annotations.json"
     }
   ]
 }
 ```
 
-> The project must specify a reference image with the "reference" entry. Any number of additional (overlay) images are provided in the "additional" vector. An image can have an optional affine transformation matrix file, any number of segmentation layers, and any number of landmark files.
+The project format may evolve as Entropy develops.
 
-> Note: The project file format is subject to change!
+### Keyboard Shortcuts
 
-3. Layouts can be loaded from a standalone JSON file with `--layouts`. This overrides the default/project layouts after the project or image inputs are loaded. Layout files can also be loaded and saved from the `Layouts` menu.
+Common shortcuts:
 
-Logs are output to the console and to files saved in the `log` folder. Log level can be set using the `-l` argument. See help (`-h`) for more details.
+| Shortcut | Action |
+| --- | --- |
+| `V` | Pointer and crosshairs mode |
+| `L` | Window/level mode |
+| `Z` | Zoom mode |
+| `P` | Pan mode |
+| `R` | Image rotation mode |
+| `T` | Image translation mode |
+| `B` | Segmentation brush mode |
+| `[` / `]` | Previous or next layout |
+| `Shift + [` / `Shift + ]` | Previous/next active image |
+| `Left` / `Right` / `Down` / `Up` | Move crosshairs |
+| `Page Down` / `Page Up` | Previous/next slice |
+| `W` | Toggle image visibility |
+| `S` | Toggle segmentation visibility |
+| `C` | Recenter views on crosshairs |
+| `Shift + C` | Reset view orientation, zoom, and centering |
+| `X` | Show/hide crosshairs |
+| `U` | Show/hide user interface |
+| `I` | Show/hide voxel inspector |
+| `O` | Cycle view overlays |
 
-### Settings persistence
-Entropy persists application settings between sessions in the standard user configuration location for each platform:
+The complete list is available under menu *Help > Keyboard Shortcuts*.
+
+## Settings
+
+Entropy persists application settings in the standard location for each platform:
 
 - macOS: `~/Library/Application Support/Entropy/settings.json`
-- Linux: `$XDG_CONFIG_HOME/entropy/settings.json`, or `~/.config/entropy/settings.json`
 - Windows: `%APPDATA%\Entropy\settings.json`
+- Linux: `$XDG_CONFIG_HOME/entropy/settings.json`, or `~/.config/entropy/settings.json`
 
-## Keyboard shortcuts
+Settings owned by a project are saved in project JSON files instead of the application settings file.
 
-On macOS, use Command instead of CTRL for application menu shortcuts.
+## License
 
-### File actions
-| Key | Action |
-| --- | --- |
-| `CTRL + O` | Open image |
-| `CTRL + SHIFT + O` | Open project |
-| `CTRL + S` | Save project |
-| `CTRL + SHIFT + S` | Save project as |
-| `CTRL + Q` | Quit Entropy |
-
-### Modes
-| Key | Mode | Controls |
-| --- | --- | --- |
-| `v` | Crosshairs | - left button: move crosshairs<br>- ctrl + left button: rotate crosshairs<br>- middle button: pan image<br>- right button: zoom image |
-| `z` | Zoom | - left button: zoom to crosshairs<br>- right button: zoom to cursor pointer |
-| `x` | Pan/dolly | - left button: pan image in plane<br>- right button: dolly in/out of plane (3D views only) |
-| `l` | Image adjustment | - left button: adjust image window left/right and level up/down<br>- shift + right button: adjust image opacity |
-| `t` | Image translation | - left button: translate image in plane<br>- right button: translate image in/out of plane |
-| `r` | Image rotation | - left button: rotate image in plane<br>- right button: rotate image in/out of plane |
-| `y` | Image scaling | - left button: scale image in plane about crosshairs<br>- shift + left button: isotropic scale<br>- alt/option + left button: constrain to view-horizontal or view-vertical scale |
-| `b` | Image segmentation (brush) | - left button: paint foreground label<br>- right button or shift: paint background label |
-
-### View properties
-| Key | Action |
-| --- | --- |
-| `w` | Toggle image visibility |
-| `s` | Toggle segmentation visibility |
-| `q` | Decrease active image opacity |
-| `e` | Increase active image opacity |
-| `shift+e` | Toggle image edges |
-| `a` | Decrease segmentation opacity |
-| `d` | Increase segmentation opacity |
-| `space` | Toggle segmentation outline |
-| `c` | Center views on crosshairs<br>- shift: reset zoom, recenter, and realign crosshairs |
-| `o` | Cycle visibility of all UI overlays |
-| `F4` | Toggle full-screen mode (ESC to exit) |
-
-### Image navigation
-| Key | Action |
-| --- | --- |
-| `left/right/down/up` arrows | Move crosshairs |
-| `page down/up` | Scroll slices<br>- shift: cycle active image component |
-
-### Layouts
-| Key | Action |
-| --- | --- |
-| `[`, `]` | Cycle view layout<br>- shift: cycle active image |
-
-### Segmentation brush
-| Key | Action |
-| --- | --- |
-| `<`, `>` | Cycle foreground label<br>- shift: cycle background label |
-| `-`, `+` | Decrease/increase brush size |
-| `shift` | Use background label while painting or previewing with the brush |
+Entropy is licensed under the Apache License 2.0; see [LICENSE.txt](LICENSE.txt). Required project notices are in [NOTICE.txt](NOTICE.txt). Third-party dependency notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

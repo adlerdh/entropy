@@ -187,17 +187,17 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
 
   auto* imageOption = program
                         .add_option_function<std::string>(
-                          "-i,--image,--images",
+                          "-i,--image",
                           [&params](const std::string& imageFile) { params.imageFiles.push_back({imageFile, {}}); },
                           "image path; repeat for multiple images")
                         ->trigger_on_parse();
 
   auto* segOption = program
                       .add_option_function<std::vector<std::string> >(
-                        "-s,--seg,--segs",
+                        "-s,--seg",
                         [&params](const std::vector<std::string>& segFiles) {
                           if (params.imageFiles.empty()) {
-                            throw CLI::ValidationError("--seg/-s must follow an --image/--images/-i option");
+                            throw CLI::ValidationError("--seg/-s must follow an --image/-i option");
                           }
 
                           auto& lastImage = params.imageFiles.back();
