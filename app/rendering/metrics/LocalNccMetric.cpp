@@ -1,4 +1,4 @@
-#include "rendering/LocalNccMetric.h"
+#include "rendering/metrics/LocalNccMetric.h"
 
 #include <algorithm>
 #include <cmath>

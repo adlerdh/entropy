@@ -1,4 +1,4 @@
-#include "rendering/PixelEdgeGeometry.h"
+#include "rendering/geometry/PixelEdgeGeometry.h"
 
 namespace entropy::rendering::pixel_edge
 {

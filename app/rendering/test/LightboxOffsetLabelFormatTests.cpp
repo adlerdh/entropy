@@ -1,4 +1,4 @@
-#include "rendering/LightboxOffsetLabelFormat.h"
+#include "rendering/helpers/LightboxOffsetLabelFormat.h"
 
 #include <catch2/catch_test_macros.hpp>
 

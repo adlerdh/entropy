@@ -1,6 +1,6 @@
 #include "rendering/VectorDrawing.h"
 
-#include "rendering/LightboxOffsetLabelFormat.h"
+#include "rendering/helpers/LightboxOffsetLabelFormat.h"
 
 #include "logic/app/DeformationWarp.h"
 #include "logic/app/DataHelper.h"

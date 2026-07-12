@@ -1,4 +1,4 @@
-#include "rendering/LightboxOffsetLabelFormat.h"
+#include "rendering/helpers/LightboxOffsetLabelFormat.h"
 
 #include <algorithm>
 #include <cmath>

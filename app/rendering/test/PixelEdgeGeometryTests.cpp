@@ -1,4 +1,4 @@
-#include "rendering/PixelEdgeGeometry.h"
+#include "rendering/geometry/PixelEdgeGeometry.h"
 
 #include <catch2/catch_test_macros.hpp>
 

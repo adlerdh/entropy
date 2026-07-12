@@ -1,6 +1,6 @@
 #include "rendering/ScaleBarDrawing.h"
 
-#include "rendering/ScaleBarGeometry.h"
+#include "rendering/geometry/ScaleBarGeometry.h"
 
 #include "common/Viewport.h"
 

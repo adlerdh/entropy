@@ -1,5 +1,5 @@
 #include "rendering/RenderData.h"
-#include "rendering/XrayAttenuation.h"
+#include "rendering/physics/XrayAttenuation.h"
 
 #include <spdlog/spdlog.h>
 

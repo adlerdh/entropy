@@ -1,4 +1,4 @@
-#include "rendering/LocalLinearResidualMetric.h"
+#include "rendering/metrics/LocalLinearResidualMetric.h"
 
 #include <algorithm>
 #include <cmath>

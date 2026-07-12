@@ -1,4 +1,4 @@
-#include "rendering/ScaleBarGeometry.h"
+#include "rendering/geometry/ScaleBarGeometry.h"
 
 #include <glm/glm.hpp>
 

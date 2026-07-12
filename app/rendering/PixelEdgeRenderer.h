@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/PixelEdgeGeometry.h"
+#include "rendering/geometry/PixelEdgeGeometry.h"
 #include "rendering/RenderData.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/utility/gl/GLFrameBufferObject.h"

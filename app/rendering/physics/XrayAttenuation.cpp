@@ -1,4 +1,4 @@
-#include "rendering/XrayAttenuation.h"
+#include "rendering/physics/XrayAttenuation.h"
 
 #include "common/MathFuncs.h"
 

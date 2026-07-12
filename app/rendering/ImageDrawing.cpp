@@ -1,4 +1,5 @@
 #include "rendering/ImageDrawing.h"
+#include "rendering/helpers/ImageDrawingHelpers.h"
 #include "rendering/utility/UnderlyingEnumType.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 
@@ -14,7 +15,6 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
-#include <glm/gtx/transform.hpp>
 
 #include <glad/glad.h>
 
@@ -25,6 +25,8 @@
 
 namespace
 {
+
+namespace image_drawing = entropy::rendering::image_drawing;
 
 bool isLocalPatchMetric(ViewRenderMode renderMode)
 {
@@ -46,105 +48,15 @@ void warnLocalPatchMetricMissingImage(std::string_view message)
   }
 }
 
-/**
- * @brief Compute Texture-space direction to sample direction along a camera view axis
- * @param[in] pixel_T_clip Clip-to-Pixel transformation matrix for the view camera and image
- * @param[in] invPixelDims
- * @param[in] axis View axis
- * @return Sampling direction in Texture space
- */
-glm::vec3
-computeTexSamplingDir(const glm::mat4& pixel_T_clip, const glm::vec3& invPixelDims, const Directions::View& axis)
-{
-  static const glm::vec4 clipOrigin{0.0f, 0.0f, -1.0f, 1.0};
-  const glm::vec4 clipPos = clipOrigin + glm::vec4{Directions::get(axis), 0.0f};
-
-  const glm::vec4 pixelOrigin = pixel_T_clip * clipOrigin;
-  const glm::vec4 pixelPos = pixel_T_clip * clipPos;
-
-  const glm::vec3 pixelDir = glm::normalize(pixelPos / pixelPos.w - pixelOrigin / pixelOrigin.w);
-
-  return glm::dot(glm::abs(pixelDir), invPixelDims) * pixelDir;
-}
-
-glm::vec3 computeTextureSamplingDirectionForViewPixelOffset(
-  const glm::mat4& texture_T_viewClip,
-  const Viewport& windowViewport,
-  const glm::mat4& viewClip_T_windowClip,
-  const glm::vec2& winPixelDir)
-{
-  static const glm::vec2 winPixelOrigin(0.0f, 0.0f);
-
-  const glm::vec4 winNdcOrigin{helper::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
-  const glm::vec4 winNdcPos{helper::windowNdc_T_window(windowViewport, winPixelDir), -1.0f, 1.0f};
-
-  glm::vec4 viewNdcOrigin = viewClip_T_windowClip * winNdcOrigin;
-  viewNdcOrigin /= viewNdcOrigin.w;
-  glm::vec4 viewNdcPos = viewClip_T_windowClip * winNdcPos;
-  viewNdcPos /= viewNdcPos.w;
-
-  glm::vec4 texOrigin = texture_T_viewClip * viewNdcOrigin;
-  texOrigin /= texOrigin.w;
-  glm::vec4 texPos = texture_T_viewClip * viewNdcPos;
-  texPos /= texPos.w;
-
-  return glm::vec3{texPos - texOrigin};
-}
-
-glm::vec3 computeTextureSamplingDirectionForImageVoxelOffset(
-  const glm::mat4& voxel_T_viewClip,
-  const Viewport& windowViewport,
-  const glm::mat4& viewClip_T_windowClip,
-  const glm::vec3& invPixelDimensions,
-  const glm::vec2& winPixelDir)
-{
-  static const glm::vec2 winPixelOrigin(0.0f, 0.0f);
-
-  const glm::vec4 winNdcOrigin{helper::windowNdc_T_window(windowViewport, winPixelOrigin), -1.0f, 1.0f};
-  const glm::vec4 winNdcPos{helper::windowNdc_T_window(windowViewport, winPixelDir), -1.0f, 1.0f};
-
-  glm::vec4 viewNdcOrigin = viewClip_T_windowClip * winNdcOrigin;
-  viewNdcOrigin /= viewNdcOrigin.w;
-  glm::vec4 viewNdcPos = viewClip_T_windowClip * winNdcPos;
-  viewNdcPos /= viewNdcPos.w;
-
-  glm::vec4 voxelOrigin = voxel_T_viewClip * viewNdcOrigin;
-  voxelOrigin /= voxelOrigin.w;
-  glm::vec4 voxelPos = voxel_T_viewClip * viewNdcPos;
-  voxelPos /= voxelPos.w;
-
-  const glm::vec3 voxelDir = glm::normalize(voxelPos - voxelOrigin);
-  const glm::vec3 texDir = glm::dot(glm::abs(voxelDir), invPixelDimensions) * voxelDir;
-
-  return texDir;
-}
-
-/**
- * @brief Compute half the number of samples and the sample distance (in centimeters) for MIPs
- * @param camera
- * @param image
- * @param doMaxExtentMip
- * @return Pair containing 1) half the number of image samples to compute per slab;
- * 2) the sampling distance in centimeters
- */
-std::pair<int, float>
+image_drawing::MipSamplingParams
 computeMipSamplingParams(const Camera& camera, const Image& image, float mipSlabThickness_mm, bool doMaxExtentMip)
 {
   const float mmPerSample = data::sliceScrollDistance(helper::worldDirection(camera, Directions::View::Front), image);
-
-  int halfNumMipSamples = 0;
-
-  if (!doMaxExtentMip) {
-    halfNumMipSamples = static_cast<int>(std::floor(0.5f * mipSlabThickness_mm / mmPerSample));
-  }
-  else {
-    // To achieve maximum extent, use the number of samples along the image diagonal.
-    // That way, the MIP will hit all voxels.
-    halfNumMipSamples = static_cast<int>(std::ceil(glm::length(glm::vec3{image.header().pixelDimensions()})));
-  }
-
-  // Convert sampling distance from mm to cm:
-  return std::make_pair(halfNumMipSamples, mmPerSample / 10.0f);
+  return image_drawing::computeMipSamplingParams(
+    mmPerSample,
+    image.header().pixelDimensions(),
+    mipSlabThickness_mm,
+    doMaxExtentMip);
 }
 
 } // namespace
@@ -162,11 +74,11 @@ void drawImageQuad(
   bool doMaxExtentMip,
   float xrayIntensityWindow,
   float xrayIntensityLevel,
-  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
+  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage,
   bool showEdges)
 {
-  if (I.empty()) {
+  if (imagePairs.empty()) {
     if (isLocalPatchMetric(renderMode)) {
       warnLocalPatchMetricMissingImage("No images provided when rendering local patch metric");
       return;
@@ -175,7 +87,7 @@ void drawImageQuad(
     return;
   }
 
-  const Image* image0 = getImage(I[0].first);
+  const Image* image0 = getImage(imagePairs[0].first);
   if (!image0) {
     if (isLocalPatchMetric(renderMode)) {
       warnLocalPatchMetricMissingImage("Null reference image when rendering local patch metric");
@@ -201,14 +113,16 @@ void drawImageQuad(
   if (IntensityProjectionMode::None != view.intensityProjectionMode()) {
     const glm::mat4 pixel_T_clip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
-    texSamplingDirZ =
-      computeTexSamplingDir(pixel_T_clip, image0->transformations().invPixelDimensions(), Directions::View::Back);
+    texSamplingDirZ = image_drawing::computeTextureSamplingDirectionForViewAxis(
+      pixel_T_clip,
+      image0->transformations().invPixelDimensions(),
+      Directions::View::Back);
     worldSamplingDirZ =
       glm::vec3{glm::inverse(image0->transformations().texture_T_worldDef()) * glm::vec4{texSamplingDirZ, 0.0f}};
 
     const auto s = computeMipSamplingParams(view.camera(), *image0, mipSlabThickness_mm, doMaxExtentMip);
-    halfNumMipSamples = s.first;
-    mipSamplingDistance_cm = s.second;
+    halfNumMipSamples = s.halfNumSamples;
+    mipSamplingDistance_cm = s.samplingDistanceCm;
   }
 
   std::vector<glm::vec3> voxelSamplingDirs{glm::vec3{0.0f}, glm::vec3{0.0f}};
@@ -222,7 +136,7 @@ void drawImageQuad(
     const glm::mat4 voxel_T_viewClip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
 
     for (int i = 0; i < 2; ++i) {
-      voxelSamplingDirs[i] = computeTextureSamplingDirectionForImageVoxelOffset(
+      voxelSamplingDirs[i] = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
         voxel_T_viewClip,
         windowViewport,
         view.viewClip_T_windowClip(),
@@ -278,12 +192,12 @@ void drawImageQuad(
     program.setUniform("u_texSamplingDirZ", texSamplingDirZ);
   }
   else if (isLocalPatchMetric(renderMode)) {
-    if (I.size() < 2) {
+    if (imagePairs.size() < 2) {
       warnLocalPatchMetricMissingImage("Not enough images provided when rendering local patch metric");
       return;
     }
 
-    const Image* img1 = getImage(I[1].first);
+    const Image* img1 = getImage(imagePairs[1].first);
     if (!img1) {
       warnLocalPatchMetricMissingImage("Null comparison image when rendering local patch metric");
       return;
@@ -294,13 +208,13 @@ void drawImageQuad(
       image0->transformations().worldDef_T_subject());
 
     const glm::mat4 voxel_T_viewClip = image0->transformations().pixel_T_worldDef() * world_T_viewClip;
-    const glm::vec3 tex0SamplingDirX = computeTextureSamplingDirectionForImageVoxelOffset(
+    const glm::vec3 tex0SamplingDirX = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
       voxel_T_viewClip,
       windowViewport,
       view.viewClip_T_windowClip(),
       image0->transformations().invPixelDimensions(),
       posInfo[0].viewClipDir);
-    const glm::vec3 tex0SamplingDirY = computeTextureSamplingDirectionForImageVoxelOffset(
+    const glm::vec3 tex0SamplingDirY = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
       voxel_T_viewClip,
       windowViewport,
       view.viewClip_T_windowClip(),
@@ -350,7 +264,7 @@ void drawSegQuad(
   const glm::mat4 voxel_T_viewClip = seg.transformations().pixel_T_worldDef() * world_T_viewClip;
 
   for (int i = 0; i < 2; ++i) {
-    voxelSamplingDirs[i] = computeTextureSamplingDirectionForImageVoxelOffset(
+    voxelSamplingDirs[i] = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
       voxel_T_viewClip,
       windowViewport,
       view.viewClip_T_windowClip(),
@@ -370,7 +284,7 @@ void drawSegQuad(
       const glm::mat4 texture_T_viewClip = seg.transformations().texture_T_worldDef() * world_T_viewClip;
 
       for (int i = 0; i < 2; ++i) {
-        texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForViewPixelOffset(
+        texSamplingDirsForSegOutline[i] = image_drawing::computeTextureSamplingDirectionForViewPixelOffset(
           texture_T_viewClip,
           windowViewport,
           view.viewClip_T_windowClip(),
@@ -448,7 +362,7 @@ void drawSegPreviewQuad(
   switch (segOutlineStyle) {
     case SegmentationOutlineStyle::ImageVoxel: {
       for (int i = 0; i < 2; ++i) {
-        texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForImageVoxelOffset(
+        texSamplingDirsForSegOutline[i] = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
           voxel_T_viewClip,
           windowViewport,
           view.viewClip_T_windowClip(),
@@ -459,7 +373,7 @@ void drawSegPreviewQuad(
     }
     case SegmentationOutlineStyle::ViewPixel: {
       for (int i = 0; i < 2; ++i) {
-        texSamplingDirsForSegOutline[i] = computeTextureSamplingDirectionForViewPixelOffset(
+        texSamplingDirsForSegOutline[i] = image_drawing::computeTextureSamplingDirectionForViewPixelOffset(
           texture_T_viewClip,
           windowViewport,
           view.viewClip_T_windowClip(),
@@ -501,15 +415,15 @@ void drawRaycastQuad(
   RenderData::Quad& quad,
   const View& view,
   const glm::mat4& texture_T_world,
-  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& I,
+  const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,
   const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage)
 {
-  if (I.empty()) {
+  if (imagePairs.empty()) {
     spdlog::error("No images provided when raycasting");
     return;
   }
 
-  const Image* image0 = getImage(I[0].first);
+  const Image* image0 = getImage(imagePairs[0].first);
   if (!image0) {
     spdlog::error("Null image when raycasting");
     return;

@@ -1,5 +1,6 @@
 add_executable(TestRendering
   AsciiClipboardTests.cpp
+  ImageDrawingHelpersTests.cpp
   LightboxOffsetLabelFormatTests.cpp
   LocalLinearResidualMetricTests.cpp
   LocalNccMetricTests.cpp
@@ -10,12 +11,13 @@ add_executable(TestRendering
 
 target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/ascii/AsciiClipboard.cpp"
-  "${entropy_APP_DIR}/rendering/LocalLinearResidualMetric.cpp"
-  "${entropy_APP_DIR}/rendering/LightboxOffsetLabelFormat.cpp"
-  "${entropy_APP_DIR}/rendering/LocalNccMetric.cpp"
-  "${entropy_APP_DIR}/rendering/PixelEdgeGeometry.cpp"
-  "${entropy_APP_DIR}/rendering/ScaleBarGeometry.cpp"
-  "${entropy_APP_DIR}/rendering/XrayAttenuation.cpp"
+  "${entropy_APP_DIR}/rendering/geometry/PixelEdgeGeometry.cpp"
+  "${entropy_APP_DIR}/rendering/geometry/ScaleBarGeometry.cpp"
+  "${entropy_APP_DIR}/rendering/helpers/ImageDrawingHelpers.cpp"
+  "${entropy_APP_DIR}/rendering/helpers/LightboxOffsetLabelFormat.cpp"
+  "${entropy_APP_DIR}/rendering/metrics/LocalLinearResidualMetric.cpp"
+  "${entropy_APP_DIR}/rendering/metrics/LocalNccMetric.cpp"
+  "${entropy_APP_DIR}/rendering/physics/XrayAttenuation.cpp"
 )
 
 target_link_libraries(TestRendering PRIVATE

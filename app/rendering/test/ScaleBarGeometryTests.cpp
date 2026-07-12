@@ -1,4 +1,4 @@
-#include "rendering/ScaleBarGeometry.h"
+#include "rendering/geometry/ScaleBarGeometry.h"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
