@@ -1,5 +1,4 @@
-#ifndef GL_TEXTURE_TYPES_H
-#define GL_TEXTURE_TYPES_H
+#pragma once
 
 #include <glad/glad.h>
 
@@ -332,5 +331,3 @@ enum class SamplingDirection : uint32_t
 };
 
 } // namespace tex
-
-#endif // GL_TEXTURE_TYPES_H

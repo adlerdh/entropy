@@ -1,5 +1,4 @@
-#ifndef REF_IMAGE_INTERACTION_HANDLER_H
-#define REF_IMAGE_INTERACTION_HANDLER_H
+#pragma once
 
 #include "common/PublicTypes.h"
 #include "logic/interaction/InteractionHandlerBase.h"
@@ -115,5 +114,3 @@ private:
   glm::vec2 m_ndcRightButtonLastPos;
   glm::vec2 m_ndcMiddleButtonLastPos;
 };
-
-#endif // REF_IMAGE_INTERACTION_HANDLER_H

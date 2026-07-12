@@ -1,5 +1,4 @@
-#ifndef CAMERA_HELPERS_H
-#define CAMERA_HELPERS_H
+#pragma once
 
 #include "logic/camera/Projection.h"
 #include "logic/utility/DirectionMaps.h"
@@ -301,5 +300,3 @@ glm::vec2 worldPixelSizeAtWorldPosition(const Viewport& viewport, const Camera& 
 float computeSmallestWorldDepthOffset(const Camera& camera, const glm::vec3& worldPos);
 
 } // namespace camera
-
-#endif // CAMERA_HELPERS_H

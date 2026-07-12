@@ -1,5 +1,4 @@
-#ifndef ANNOTATION_SLICE_H
-#define ANNOTATION_SLICE_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -63,5 +62,3 @@ private:
   /// UID of the current annotation. If no current annotation, then it is set to none.
   std::optional<uuids::uuid> m_currentAnnotationUid;
 };
-
-#endif // ANNOTATION_SLICE_H

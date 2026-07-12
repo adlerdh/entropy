@@ -1,5 +1,4 @@
-#ifndef GLTEXTURE_H
-#define GLTEXTURE_H
+#pragma once
 
 #include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
@@ -331,5 +330,3 @@ private:
   void applyPixelPackSettings(const PixelStoreSettings& settings);
   void applyPixelUnpackSettings(const PixelStoreSettings& settings);
 };
-
-#endif // GLTEXTURE_H

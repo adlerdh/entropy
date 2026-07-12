@@ -1,5 +1,5 @@
 #include "rendering/TextureSetup.h"
-
+#include "rendering/helpers/TextureSetupHelpers.h"
 #include "logic/app/Data.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
 
@@ -19,39 +19,23 @@
 namespace
 {
 
-struct TextureLimits
-{
-  GLint maxTextureSize{0};
-  GLint max3DTextureSize{0};
-  GLint maxArrayTextureLayers{0};
-};
+namespace texture_setup = entropy::rendering::texture_setup;
+using TextureUploadLayout = texture_setup::TextureUploadLayout;
 
-struct TextureUploadLayout
+texture_setup::TextureLimits queryTextureLimits()
 {
-  RenderData::PlanarTextureLayout layout;
-  glm::uvec3 uploadSize{1u};
-};
+  GLint maxTextureSize = 0;
+  GLint max3DTextureSize = 0;
+  GLint maxArrayTextureLayers = 0;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+  glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max3DTextureSize);
+  glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTextureLayers);
 
-TextureLimits queryTextureLimits()
-{
-  TextureLimits limits;
-  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &limits.maxTextureSize);
-  glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &limits.max3DTextureSize);
-  glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &limits.maxArrayTextureLayers);
+  texture_setup::TextureLimits limits;
+  limits.maxTextureSize = maxTextureSize;
+  limits.max3DTextureSize = max3DTextureSize;
+  limits.maxArrayTextureLayers = maxArrayTextureLayers;
   return limits;
-}
-
-bool fitsMax3DTextureSize(const glm::uvec3& size, const TextureLimits& limits)
-{
-  return size.x <= static_cast<uint32_t>(limits.max3DTextureSize) &&
-         size.y <= static_cast<uint32_t>(limits.max3DTextureSize) &&
-         size.z <= static_cast<uint32_t>(limits.max3DTextureSize);
-}
-
-bool fitsMax2DTextureSize(const glm::uvec2& size, const TextureLimits& limits)
-{
-  return size.x <= static_cast<uint32_t>(limits.maxTextureSize) &&
-         size.y <= static_cast<uint32_t>(limits.maxTextureSize);
 }
 
 bool shouldLogPlanarImageUpload(const uuids::uuid& imageUid)
@@ -71,56 +55,6 @@ bool imageUsesPlanar2DTexture(const AppData& appData, const uuids::uuid& imageUi
   const auto layoutIt = appData.renderData().m_imageTextureLayouts.find(imageUid);
   return layoutIt != std::end(appData.renderData().m_imageTextureLayouts) &&
          RenderData::TextureDimension::Texture2D == layoutIt->second.dimension;
-}
-
-std::vector<int> nonSingletonAxes(const glm::uvec3& size)
-{
-  std::vector<int> axes;
-  axes.reserve(3);
-  for (int axis = 0; axis < 3; ++axis) {
-    if (size[axis] > 1u) {
-      axes.push_back(axis);
-    }
-  }
-  return axes;
-}
-
-std::optional<TextureUploadLayout> textureUploadLayoutForImage(const glm::uvec3& size, const TextureLimits& limits)
-{
-  if (fitsMax3DTextureSize(size, limits)) {
-    return TextureUploadLayout{
-      .layout = RenderData::PlanarTextureLayout{.dimension = RenderData::TextureDimension::Texture3D},
-      .uploadSize = size};
-  }
-
-  const std::vector<int> axes = nonSingletonAxes(size);
-  if (axes.size() != 2u) {
-    return std::nullopt;
-  }
-
-  const glm::uvec2 size2D{size[axes[0]], size[axes[1]]};
-  if (!fitsMax2DTextureSize(size2D, limits)) {
-    return std::nullopt;
-  }
-
-  return TextureUploadLayout{
-    .layout =
-      RenderData::PlanarTextureLayout{
-        .dimension = RenderData::TextureDimension::Texture2D,
-        .axes = glm::ivec2{axes[0], axes[1]}},
-    .uploadSize = glm::uvec3{size2D.x, size2D.y, 1u}};
-}
-
-std::string textureLimitReason(const glm::uvec3& size, const TextureLimits& limits)
-{
-  const std::vector<int> axes = nonSingletonAxes(size);
-  if (axes.size() == 2u) {
-    return "This OpenGL context reports GL_MAX_3D_TEXTURE_SIZE = " + std::to_string(limits.max3DTextureSize) +
-           " and GL_MAX_TEXTURE_SIZE = " + std::to_string(limits.maxTextureSize) +
-           ". The image is planar, but its 2D dimensions still exceed the 2D texture limit.";
-  }
-  return "This OpenGL context reports GL_MAX_3D_TEXTURE_SIZE = " + std::to_string(limits.max3DTextureSize) +
-         ", meaning each 3D texture dimension must be less than or equal to that value.";
 }
 
 TextureCreationFailure makeTextureSizeFailure(
@@ -250,10 +184,10 @@ void handleTextureCreationFailures(AppData& appData, const std::vector<TextureCr
   }
 }
 
-TextureLimits logTextureLimitsOnce()
+texture_setup::TextureLimits logTextureLimitsOnce()
 {
   static bool logged = false;
-  const TextureLimits limits = queryTextureLimits();
+  const texture_setup::TextureLimits limits = queryTextureLimits();
   if (logged) {
     return limits;
   }
@@ -633,7 +567,7 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, uuid_range
   TextureCreationResult result;
 
   spdlog::debug("Begin creating 3D image textures");
-  const TextureLimits textureLimits = logTextureLimitsOnce();
+  const texture_setup::TextureLimits textureLimits = logTextureLimitsOnce();
 
   GLTexture::PixelStoreSettings pixelPackSettings;
   pixelPackSettings.m_alignment = sk_alignment;
@@ -660,21 +594,22 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, uuid_range
     const uint32_t numComp = image->header().numComponentsPerPixel();
     const uint32_t activeTimePoint = image->timeAxis().clamp(image->settings().activeTimePoint());
     const glm::uvec3 textureSize = image->header().pixelDimensions();
-    const std::optional<TextureUploadLayout> uploadLayout = textureUploadLayoutForImage(textureSize, textureLimits);
+    const std::optional<texture_setup::TextureUploadLayout> uploadLayout =
+      texture_setup::textureUploadLayoutForImage(textureSize, textureLimits);
     if (!uploadLayout) {
       spdlog::error(
         "Image {} ('{}') has dimensions {} and cannot be uploaded as an OpenGL texture. {}",
         imageUid,
         image->settings().displayName(),
         glm::to_string(textureSize),
-        textureLimitReason(textureSize, textureLimits));
+        texture_setup::textureLimitReason(textureSize, textureLimits));
       result.failures.push_back(makeTextureSizeFailure(
         TextureCreationFailure::Resource::Image,
         imageUid,
         image->settings().displayName(),
         textureSize,
         textureLimits.max3DTextureSize,
-        textureLimitReason(textureSize, textureLimits)));
+        texture_setup::textureLimitReason(textureSize, textureLimits)));
       continue;
     }
     if (
@@ -848,9 +783,9 @@ bool refreshImageTexturesForActiveTimePoint(AppData& appData, const uuids::uuid&
     return false;
   }
 
-  const TextureLimits textureLimits = logTextureLimitsOnce();
+  const texture_setup::TextureLimits textureLimits = logTextureLimitsOnce();
   const std::optional<TextureUploadLayout> uploadLayout =
-    textureUploadLayoutForImage(image->header().pixelDimensions(), textureLimits);
+    texture_setup::textureUploadLayoutForImage(image->header().pixelDimensions(), textureLimits);
   if (!uploadLayout) {
     appData.renderData().m_imageTextures.erase(imageUid);
     appData.renderData().m_imageTextureLayouts.erase(imageUid);
@@ -1029,7 +964,7 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, uuid_range_t
   TextureCreationResult result;
 
   spdlog::debug("Begin creating 3D segmentation textures");
-  const TextureLimits textureLimits = logTextureLimitsOnce();
+  const texture_setup::TextureLimits textureLimits = logTextureLimitsOnce();
 
   GLTexture::PixelStoreSettings pixelPackSettings;
   pixelPackSettings.m_alignment = k_alignment;
@@ -1050,21 +985,22 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, uuid_range_t
 
     const ComponentType compType = seg->header().memoryComponentType();
     const glm::uvec3 textureSize = seg->header().pixelDimensions();
-    const std::optional<TextureUploadLayout> uploadLayout = textureUploadLayoutForImage(textureSize, textureLimits);
+    const std::optional<texture_setup::TextureUploadLayout> uploadLayout =
+      texture_setup::textureUploadLayoutForImage(textureSize, textureLimits);
     if (!uploadLayout) {
       spdlog::error(
         "Segmentation {} ('{}') has dimensions {} and cannot be uploaded as an OpenGL texture. {}",
         segUid,
         seg->settings().displayName(),
         glm::to_string(textureSize),
-        textureLimitReason(textureSize, textureLimits));
+        texture_setup::textureLimitReason(textureSize, textureLimits));
       result.failures.push_back(makeTextureSizeFailure(
         TextureCreationFailure::Resource::Segmentation,
         segUid,
         seg->settings().displayName(),
         textureSize,
         textureLimits.max3DTextureSize,
-        textureLimitReason(textureSize, textureLimits)));
+        texture_setup::textureLimitReason(textureSize, textureLimits)));
       continue;
     }
     if (RenderData::TextureDimension::Texture2D == uploadLayout->layout.dimension && shouldLogPlanarSegUpload(segUid)) {

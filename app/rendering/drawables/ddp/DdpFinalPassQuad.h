@@ -1,5 +1,4 @@
-#ifndef DDP_FINAL_PASS_QUAD_H
-#define DDP_FINAL_PASS_QUAD_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/ddp/FullScreenQuad.h"
@@ -40,5 +39,3 @@ private:
 
   uint32_t m_currentTextureId;
 };
-
-#endif // DDPFINALPASSQUAD_H

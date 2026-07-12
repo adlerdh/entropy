@@ -1,5 +1,4 @@
-#ifndef DATA_LOADING_DETAILS_H
-#define DATA_LOADING_DETAILS_H
+#pragma once
 
 #include "UID.h"
 
@@ -77,5 +76,3 @@ std::unique_ptr<slideio::SlideCpuRecord> generateSlideCpuRecord(const std::strin
 } // namespace details
 
 } // namespace data
-
-#endif // DATA_LOADING_DETAILS_H

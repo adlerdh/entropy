@@ -1,5 +1,4 @@
-#ifndef SLIDE_CPU_RECORD_H
-#define SLIDE_CPU_RECORD_H
+#pragma once
 
 #include "slideio/SlideHeader.h"
 #include "slideio/SlideLevel.h"
@@ -60,5 +59,3 @@ private:
 };
 
 } // namespace slideio
-
-#endif // SLIDE_CPU_RECORD_H

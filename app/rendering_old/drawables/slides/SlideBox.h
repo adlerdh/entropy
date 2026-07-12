@@ -1,5 +1,4 @@
-#ifndef SLIDE_H
-#define SLIDE_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -64,5 +63,3 @@ private:
   std::shared_ptr<Transformation> m_stack_O_slide_tx;
   std::shared_ptr<TexturedMesh> m_boxMesh;
 };
-
-#endif // SLIDE_H

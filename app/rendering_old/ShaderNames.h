@@ -1,5 +1,4 @@
-#ifndef SHADER_NAMES_H
-#define SHADER_NAMES_H
+#pragma once
 
 #include <cstddef>
 
@@ -254,5 +253,3 @@ struct frag
   static const char* const debugTexture;
 };
 } // namespace DebugProgram
-
-#endif // SHADER_NAMES_H

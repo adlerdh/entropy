@@ -1,5 +1,4 @@
-#ifndef GL_FBO_H
-#define GL_FBO_H
+#pragma once
 
 // #include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/gl/GLFBOAttachmentTypes.h"
@@ -69,5 +68,3 @@ private:
   std::string m_name;
   GLuint m_id;
 };
-
-#endif // GL_FBO_H

@@ -1,5 +1,4 @@
-#ifndef SLICE_INTERSECTOR_TYPES_H
-#define SLICE_INTERSECTOR_TYPES_H
+#pragma once
 
 #include "common/IntersectionTypes.h"
 
@@ -29,5 +28,3 @@ enum class AlignmentMethod
 };
 
 } // namespace intersection
-
-#endif // SLICE_INTERSECTOR_TYPES_H

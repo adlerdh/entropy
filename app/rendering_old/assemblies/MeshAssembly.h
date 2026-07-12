@@ -1,5 +1,4 @@
-﻿#ifndef MESH_ASSEMBLY_H
-#define MESH_ASSEMBLY_H
+﻿#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering_old/assemblies/RenderingProperties.h"
@@ -118,5 +117,3 @@ private:
   /// Rendering properties for all meshes:
   MeshAssemblyRenderingProperties m_properties;
 };
-
-#endif // MESH_ASSEMBLY_H

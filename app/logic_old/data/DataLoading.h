@@ -1,5 +1,4 @@
-#ifndef DATA_LOADING_H
-#define DATA_LOADING_H
+#pragma once
 
 #include "UID.h"
 
@@ -139,5 +138,3 @@ std::optional<UID> loadImageColorMap(DataManager& dataManager, const std::string
 std::optional<UID> loadDefaultGreyscaleColorMap(DataManager& dataManager);
 
 } // namespace data
-
-#endif // DATA_LOADING_H

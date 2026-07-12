@@ -1,5 +1,4 @@
-#ifndef SERIALIZE_ANNOT_H
-#define SERIALIZE_ANNOT_H
+#pragma once
 
 #include "logic/annotation/Annotation.h"
 
@@ -41,5 +40,3 @@ void from_json(const nlohmann::json& j, Annotation& annot);
  * @param[out] Vector of annotations
  */
 void from_json(const nlohmann::json& j, std::vector<Annotation>& annots);
-
-#endif // SERIALIZE_ANNOT_H

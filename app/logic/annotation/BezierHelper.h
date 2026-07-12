@@ -1,5 +1,4 @@
-#ifndef BEZIER_HELPER_H
-#define BEZIER_HELPER_H
+#pragma once
 
 #include <glm/fwd.hpp>
 
@@ -15,5 +14,3 @@
  */
 std::vector<std::tuple<glm::vec2, glm::vec2, glm::vec2> >
 computeBezierCommands(const std::vector<glm::vec2>& points, float smoothing, bool closed);
-
-#endif // BEZIER_HELPER

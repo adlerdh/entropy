@@ -1,5 +1,4 @@
-#ifndef GUI_MANAGER_H
-#define GUI_MANAGER_H
+#pragma once
 
 #include "gui/docks/PublicSlideTypes.h"
 #include "gui/docks/PublicTypes.h"
@@ -405,5 +404,3 @@ private:
   /// View widgets, keyed by their UID
   std::unordered_map<UID, gui::ViewWidget*> m_viewWidgets;
 };
-
-#endif // GUI_MANAGER_H

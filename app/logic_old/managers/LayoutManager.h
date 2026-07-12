@@ -1,5 +1,4 @@
-#ifndef LAYOUT_MANAGER_H
-#define LAYOUT_MANAGER_H
+#pragma once
 
 #include "UID.h"
 #include "UIDRange.h"
@@ -65,5 +64,3 @@ private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
 };
-
-#endif // LAYOUT_MANAGER_H

@@ -1,5 +1,4 @@
-#ifndef ANNOTATION_EXTRUSION_H
-#define ANNOTATION_EXTRUSION_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -63,5 +62,3 @@ private:
   /// Transformation atop the mesh that uses scale along z axis to account for layering
   std::shared_ptr<Transformation> m_scaleTx;
 };
-
-#endif // ANNOTATION_EXTRUSION_H

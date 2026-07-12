@@ -1,5 +1,4 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#pragma once
 
 #include "common/CoordinateFrame.h"
 #include "common/PublicTypes.h"
@@ -153,5 +152,3 @@ private:
 };
 
 } // namespace camera
-
-#endif // CAMERA_H

@@ -1,5 +1,4 @@
-#ifndef SLIDEIO_SLIDE_PROPERTIES_H
-#define SLIDEIO_SLIDE_PROPERTIES_H
+#pragma once
 
 #include <glm/vec3.hpp>
 
@@ -61,5 +60,3 @@ private:
 };
 
 } // namespace slideio
-
-#endif // SLIDEIO_SLIDE_PROPERTIES_H

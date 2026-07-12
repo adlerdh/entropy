@@ -1,5 +1,4 @@
-#ifndef INTERACTION_HANDLER_BASE_H
-#define INTERACTION_HANDLER_BASE_H
+#pragma once
 
 #include "common/PublicTypes.h"
 #include "logic/interfaces/IInteractionHandler.h"
@@ -62,5 +61,3 @@ protected:
 
   bool m_updatesViewsOnEventHandled;
 };
-
-#endif // INTERACTION_HANDLER_BASE_H

@@ -1,5 +1,4 @@
-#ifndef DRAWABLE_SCALING_H
-#define DRAWABLE_SCALING_H
+#pragma once
 
 #include <array>
 #include <utility>
@@ -25,5 +24,3 @@ struct AxisScaling
 
 /// Describes the scaling of a drawable object along its three primary axes x, y, and z
 using DrawableScaling = std::array<AxisScaling, 3>;
-
-#endif // DRAWABLE_SCALING_H

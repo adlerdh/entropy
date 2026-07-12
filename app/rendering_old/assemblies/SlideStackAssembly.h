@@ -1,5 +1,4 @@
-#ifndef SLIDE_STACK_ASEEMBLY_H
-#define SLIDE_STACK_ASEEMBLY_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering_old/assemblies/RenderingProperties.h"
@@ -128,5 +127,3 @@ private:
 
   SlideStackAssemblyRenderingProperties m_properties;
 };
-
-#endif // SLIDE_STACK_ASEEMBLY_H

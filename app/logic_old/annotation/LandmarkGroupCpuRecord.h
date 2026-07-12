@@ -1,5 +1,4 @@
-#ifndef LANDMARK_GROUP_CPU_RECORD_H
-#define LANDMARK_GROUP_CPU_RECORD_H
+#pragma once
 
 #include "logic/annotation/PointList.h"
 #include "logic/annotation/PointRecord.h"
@@ -86,5 +85,3 @@ private:
   /// @note Set using the function \c changeLandmarkGroupLayering
   void setMaxLayer(uint32_t maxLayer);
 };
-
-#endif // LANDMARK_GROUP_CPU_RECORD_H

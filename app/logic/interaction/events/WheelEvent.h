@@ -1,5 +1,4 @@
-#ifndef WHEEL_EVENT_H
-#define WHEEL_EVENT_H
+#pragma once
 
 #include "logic/interaction/events/ButtonState.h"
 
@@ -13,5 +12,3 @@ struct WheelEvent
 
   bool accepted = false;
 };
-
-#endif // WHEEL_EVENT_H

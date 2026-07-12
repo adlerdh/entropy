@@ -1,5 +1,4 @@
-#ifndef LANDMARK_GROUP_H
-#define LANDMARK_GROUP_H
+#pragma once
 
 #include <filesystem>
 #include "logic/annotation/PointRecord.h"
@@ -150,5 +149,3 @@ private:
   /// @note Set using the function \c changeLandmarkGroupLayering
   void setMaxLayer(uint32_t maxLayer);
 };
-
-#endif // LANDMARK_GROUP_H

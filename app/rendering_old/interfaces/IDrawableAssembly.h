@@ -1,5 +1,4 @@
-#ifndef I_DRAWABLE_ASSEMBLY_H
-#define I_DRAWABLE_ASSEMBLY_H
+#pragma once
 
 #include "rendering/drawables/DrawableBase.h"
 #include "rendering_old/common/SceneType.h"
@@ -27,5 +26,3 @@ public:
    */
   virtual std::weak_ptr<DrawableBase> getRoot(const SceneType& sceneType) = 0;
 };
-
-#endif // I_DRAWABLE_ASSEMBLY_H

@@ -1,5 +1,4 @@
-#ifndef VECTOR_ARRAY_BUFFER_H
-#define VECTOR_ARRAY_BUFFER_H
+#pragma once
 
 #include <vtkType.h>
 
@@ -64,5 +63,3 @@ protected:
 };
 
 } // namespace vtkconvert
-
-#endif // VECTOR_ARRAY_BUFFER_H

@@ -1,5 +1,4 @@
-#ifndef SHADER_PROGRAM_CONTAINER_H
-#define SHADER_PROGRAM_CONTAINER_H
+#pragma once
 
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLShaderType.h"
@@ -60,5 +59,3 @@ private:
 
   bool m_validateBeforeUse;
 };
-
-#endif // SHADER_PROGRAM_CONTAINER_H

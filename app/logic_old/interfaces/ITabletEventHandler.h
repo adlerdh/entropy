@@ -1,5 +1,4 @@
-#ifndef I_TABLET_EVENT_HANDLER_H
-#define I_TABLET_EVENT_HANDLER_H
+#pragma once
 
 #include "common/Viewport.h"
 #include "logic/camera/Camera.h"
@@ -25,5 +24,3 @@ public:
 
   virtual bool handleTabletEvent(QTabletEvent*, const Viewport&, const Camera&) = 0;
 };
-
-#endif // I_TABLET_EVENT_HANDLER_H

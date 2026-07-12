@@ -1,5 +1,4 @@
-#ifndef SLIDE_ANNOTATION_CPU_RECORD_H
-#define SLIDE_ANNOTATION_CPU_RECORD_H
+#pragma once
 
 #include <glm/vec3.hpp>
 #include <uuid.h>
@@ -82,5 +81,3 @@ private:
   /// @note Set using the function \c changeSlideAnnotationLayering
   void setMaxLayer(uint32_t maxLayer);
 };
-
-#endif // SLIDE_ANNOTATION_CPU_RECORD_H

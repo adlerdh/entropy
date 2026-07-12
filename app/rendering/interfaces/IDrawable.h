@@ -1,5 +1,4 @@
-#ifndef I_DRAWABLE_H
-#define I_DRAWABLE_H
+#pragma once
 
 #include "common/CoordinateFrame.h"
 #include "common/Viewport.h"
@@ -52,5 +51,3 @@ public:
    */
   virtual void printTree(int depth) const = 0;
 };
-
-#endif // I_DRAWABLE_H

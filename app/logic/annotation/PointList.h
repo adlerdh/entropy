@@ -1,5 +1,4 @@
-#ifndef POINT_LIST_H
-#define POINT_LIST_H
+#pragma once
 
 #include "common/UuidRange.h"
 #include "logic/annotation/PointRecord.h"
@@ -167,5 +166,3 @@ private:
   /// Points stored as list
   std::list<PointType> m_points;
 };
-
-#endif // POINT_LIST_H

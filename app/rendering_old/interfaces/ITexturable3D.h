@@ -1,5 +1,4 @@
-#ifndef I_TEXTURABLE_3D_H
-#define I_TEXTURABLE_3D_H
+#pragma once
 
 #include "logic_old/records/ImageColorMapRecord.h"
 #include "logic_old/records/ImageRecord.h"
@@ -28,5 +27,3 @@ public:
   /// Set the parcellation labels record
   virtual void setLabelTableRecord(std::weak_ptr<LabelTableRecord>) = 0;
 };
-
-#endif // I_TEXTURABLE_3D_H

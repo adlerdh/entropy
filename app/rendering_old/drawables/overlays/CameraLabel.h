@@ -1,5 +1,4 @@
-#ifndef CAMERA_LABEL_H
-#define CAMERA_LABEL_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -101,5 +100,3 @@ private:
   /// Fixed orthogonal transformation for renering the labels
   const glm::mat4 m_clip_O_camera;
 };
-
-#endif // CAMERA_LABEL_H

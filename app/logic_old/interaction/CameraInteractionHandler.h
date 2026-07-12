@@ -1,5 +1,4 @@
-#ifndef CAMERA_INTERACTION_HANDLER_H
-#define CAMERA_INTERACTION_HANDLER_H
+#pragma once
 
 #include "logic/interaction/InteractionHandlerBase.h"
 #include "logic/interaction/InteractionModes.h"
@@ -113,5 +112,3 @@ private:
 
   const static std::unordered_map<CameraInteractionMode, MouseMoveMode> msk_defaultInternalModeMap;
 };
-
-#endif // CAMERA_INTERACTION_HANDLER_H

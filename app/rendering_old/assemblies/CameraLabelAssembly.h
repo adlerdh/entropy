@@ -1,5 +1,4 @@
-#ifndef CAMERA_LABEL_ASSEMBLY_H
-#define CAMERA_LABEL_ASSEMBLY_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering_old/interfaces/IDrawableAssembly.h"
@@ -44,5 +43,3 @@ private:
 
   std::array<std::shared_ptr<GLTexture>, 6> m_letterTextures;
 };
-
-#endif // CAMERA_LABEL_ASSEMBLY_H

@@ -1,5 +1,4 @@
-#ifndef CAMERA_ORTHOGRAPHIC_PROJECTION_H
-#define CAMERA_ORTHOGRAPHIC_PROJECTION_H
+#pragma once
 
 #include "logic/camera/Projection.h"
 
@@ -22,5 +21,3 @@ public:
 };
 
 } // namespace camera
-
-#endif // CAMERA_ORTHOGRAPHIC_PROJECTION_H

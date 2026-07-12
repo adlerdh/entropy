@@ -1,5 +1,4 @@
-#ifndef MESH_INFO_H
-#define MESH_INFO_H
+#pragma once
 
 #include "mesh/MeshTypes.h"
 
@@ -64,5 +63,3 @@ private:
 };
 
 // std::ostream& operator<< ( std::ostream&, const imageio::MeshInfo& );
-
-#endif // MESH_INFO_H

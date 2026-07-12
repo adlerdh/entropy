@@ -1,5 +1,4 @@
-#ifndef SLIDE_HEADER_H
-#define SLIDE_HEADER_H
+#pragma once
 
 #include "slideio/SlideAssociatedImages.h"
 
@@ -56,5 +55,3 @@ private:
 };
 
 } // namespace slideio
-
-#endif // SLIDE_HEADER_H

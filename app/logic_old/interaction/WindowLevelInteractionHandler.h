@@ -1,5 +1,4 @@
-#ifndef WINDOW_LEVEL_INTERACTION_HANDLER_H
-#define WINDOW_LEVEL_INTERACTION_HANDLER_H
+#pragma once
 
 #include "logic/interaction/InteractionHandlerBase.h"
 #include "logic/interaction/InteractionModes.h"
@@ -96,5 +95,3 @@ private:
   glm::vec2 m_ndcRightButtonLastPos;
   glm::vec2 m_ndcMiddleButtonLastPos;
 };
-
-#endif // WINDOW_LEVEL_INTERACTION_HANDLER_H

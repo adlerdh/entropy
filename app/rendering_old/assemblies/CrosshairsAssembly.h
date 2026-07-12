@@ -1,5 +1,4 @@
-#ifndef CROSSHAIRS_ASSEMBLY_H
-#define CROSSHAIRS_ASSEMBLY_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering_old/interfaces/IDrawableAssembly.h"
@@ -35,5 +34,3 @@ private:
   std::shared_ptr<Crosshairs> m_crosshairs3d;
   std::shared_ptr<MeshGpuRecord> m_meshGpuRecord3d;
 };
-
-#endif // CROSSHAIRS_ASSEMBLY_H

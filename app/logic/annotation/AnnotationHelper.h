@@ -1,5 +1,4 @@
-#ifndef ANNOTATION_HELPER_H
-#define ANNOTATION_HELPER_H
+#pragma once
 
 #include <uuid.h>
 
@@ -16,5 +15,3 @@ class PlanarPolygon;
  * @param[in,out] polygon Polygon to triangulate.
  */
 void triangulatePolygon(PlanarPolygon& polygon);
-
-#endif // ANNOTATION_HELPER_H

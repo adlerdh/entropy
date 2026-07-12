@@ -1,5 +1,4 @@
-#ifndef SLICE_INTERSECTOR_H
-#define SLICE_INTERSECTOR_H
+#pragma once
 
 #include "rendering/utility/math/SliceIntersectorTypes.h"
 
@@ -60,5 +59,3 @@ private:
 
   glm::vec4 m_modelPlaneEquation;
 };
-
-#endif // SLICE_INTERSECTOR_H

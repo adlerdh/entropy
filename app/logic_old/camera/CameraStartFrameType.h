@@ -1,5 +1,4 @@
-#ifndef CAMERA_START_FRAME_TYPE_H
-#define CAMERA_START_FRAME_TYPE_H
+#pragma once
 
 /// Describes the types of alignment for the starting frame of a camera
 enum class CameraStartFrameType
@@ -28,5 +27,3 @@ enum class CameraStartFrameType
   /// Aligned to look down facing the +Z axis of slide stack (first slide upwards)
   SlideStack_FacingPosZ
 };
-
-#endif // CAMERA_START_FRAME_TYPE_H

@@ -1,15 +1,10 @@
-#include "rendering/ScaleBarDrawing.h"
-
+#include "rendering/vector/ScaleBarDrawing.h"
 #include "rendering/geometry/ScaleBarGeometry.h"
-
 #include "common/Viewport.h"
-
 #include "logic/camera/CameraHelpers.h"
-
 #include "windowing/View.h"
 
 #include <glm/glm.hpp>
-
 #include <nanovg.h>
 
 #include <string>
@@ -50,7 +45,7 @@ void drawRuler(
 void drawScaleBar(
   NVGcontext* nvg,
   const FrameBounds& miewportViewBounds,
-  const Viewport& windowVP,
+  const Viewport& windowViewport,
   const View& view,
   const glm::vec4& color,
   ScaleBarPosition position,
@@ -60,7 +55,7 @@ void drawScaleBar(
   float marginPx,
   int lengthPrecision)
 {
-  const glm::vec2 worldMmPerPixel = helper::worldPixelSize(windowVP, view.camera(), view.viewClip_T_windowClip());
+  const glm::vec2 worldMmPerPixel = helper::worldPixelSize(windowViewport, view.camera(), view.viewClip_T_windowClip());
   const auto layout = entropy::rendering::scale_bar::computeLayout(
     miewportViewBounds,
     worldMmPerPixel,

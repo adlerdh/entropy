@@ -1,5 +1,4 @@
-#ifndef CAMERA_PROJECTION_H
-#define CAMERA_PROJECTION_H
+#pragma once
 
 #include "logic/camera/CameraTypes.h"
 
@@ -63,5 +62,3 @@ protected:
 };
 
 } // namespace camera
-
-#endif // CAMERA_PROJECTION_H

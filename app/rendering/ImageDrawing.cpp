@@ -3,12 +3,10 @@
 #include "rendering/utility/UnderlyingEnumType.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 
-#include "logic/app/DataHelper.h"
 #include "image/Image.h"
-
+#include "logic/app/DataHelper.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
-
 #include "windowing/View.h"
 
 #include <glm/glm.hpp>

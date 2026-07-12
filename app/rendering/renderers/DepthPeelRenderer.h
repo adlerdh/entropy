@@ -1,5 +1,4 @@
-#ifndef DUAL_DEPTH_PEEL_RENDERER_H
-#define DUAL_DEPTH_PEEL_RENDERER_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/interfaces/IRenderer.h"
@@ -58,5 +57,3 @@ private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
 };
-
-#endif // DUAL_DEPTH_PEEL_RENDERER_H

@@ -1,5 +1,4 @@
-#ifndef GL_VERTEX_ARRAY_OBJECT_H
-#define GL_VERTEX_ARRAY_OBJECT_H
+#pragma once
 
 #include "rendering/utility/containers/VertexAttributeInfo.h"
 #include "rendering/utility/containers/VertexIndicesInfo.h"
@@ -87,5 +86,3 @@ private:
   GLuint m_id;
   GLErrorChecker m_errorChecker;
 };
-
-#endif // GL_VERTEX_ARRAY_OBJECT_H

@@ -1,5 +1,4 @@
-#ifndef CROSSHAIRS_3D_DRAWABLE_H
-#define CROSSHAIRS_3D_DRAWABLE_H
+#pragma once
 
 #include "common/ObjectCounter.hpp"
 #include "rendering/common/ShaderProviderType.h"
@@ -39,5 +38,3 @@ private:
   std::array<std::shared_ptr<Transformation>, 3> m_txs;
   std::array<std::shared_ptr<BasicMesh>, 3> m_crosshairs;
 };
-
-#endif // CROSSHAIRS_3D_DRAWABLE_H

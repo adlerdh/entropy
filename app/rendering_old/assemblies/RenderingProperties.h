@@ -1,5 +1,4 @@
-#ifndef ASSEMBLY_RENDERING_PROPERTIES_H
-#define ASSEMBLY_RENDERING_PROPERTIES_H
+#pragma once
 
 #include <glm/vec3.hpp>
 
@@ -134,5 +133,3 @@ struct SlideStackAssemblyRenderingProperties
   /// 2D sections (default) or as 3D objects (used for blending slides)
   bool m_activeSlideViewShows2dSlides = true;
 };
-
-#endif // ASSEMBLY_RENDERING_PROPERTIES_H

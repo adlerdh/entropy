@@ -1,5 +1,4 @@
-#ifndef CAMERA_TYPES_H
-#define CAMERA_TYPES_H
+#pragma once
 
 namespace camera
 {
@@ -58,5 +57,3 @@ enum class ProjectionType
 };
 
 } // namespace camera
-
-#endif // CAMERA_TYPES_H

@@ -1,5 +1,4 @@
-#ifndef INTERACTION_MANAGER_H
-#define INTERACTION_MANAGER_H
+#pragma once
 
 #include "common/AABB.h"
 #include "UID.h"
@@ -175,5 +174,3 @@ private:
   /// i.e. linkedFrame.world_O_frame * anatomicalFrame.world_O_frame
   /// defines the "start anatomical frame" for the view camera.
 };
-
-#endif // INTERACTION_MANAGER_H

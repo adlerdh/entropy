@@ -1,5 +1,4 @@
-#ifndef POLYGON_TPP
-#define POLYGON_TPP
+#pragma once
 
 #include "common/AABB.h"
 #include "logic/annotation/BezierHelper.h"
@@ -523,5 +522,3 @@ private:
   /// Centroid of the polygon's outer boundary. Set to origin if the outer boundary is empty.
   PointType m_centroid;
 };
-
-#endif // POLYGON_TPP

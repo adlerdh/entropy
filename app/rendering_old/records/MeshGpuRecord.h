@@ -1,5 +1,4 @@
-#ifndef MESH_GPU_RECORD_H
-#define MESH_GPU_RECORD_H
+#pragma once
 
 #include "rendering/utility/containers/VertexAttributeInfo.h"
 #include "rendering/utility/containers/VertexIndicesInfo.h"
@@ -73,5 +72,3 @@ private:
   std::optional<VertexAttributeInfo> m_colorsInfo;
   VertexIndicesInfo m_indicesInfo;
 };
-
-#endif // MESH_GPU_RECORD_H

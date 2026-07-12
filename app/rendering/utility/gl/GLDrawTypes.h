@@ -1,5 +1,4 @@
-#ifndef GLDRAWTYPES_H
-#define GLDRAWTYPES_H
+#pragma once
 
 #include <glad/glad.h>
 
@@ -27,5 +26,3 @@ enum class IndexType : uint32_t
   UInt16 = GL_UNSIGNED_SHORT,
   UInt32 = GL_UNSIGNED_INT
 };
-
-#endif // GLDRAWTYPES_H

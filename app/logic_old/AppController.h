@@ -1,5 +1,4 @@
-#ifndef APP_CONTROLLER_H
-#define APP_CONTROLLER_H
+#pragma once
 
 #include "UID.h"
 #include "logic/serialization/ProjectSerialization.h"
@@ -89,5 +88,3 @@ private:
   QOpenGLContext* m_globalContext;
   QOffscreenSurface m_surface;
 };
-
-#endif // APP_CONTROLLER_H

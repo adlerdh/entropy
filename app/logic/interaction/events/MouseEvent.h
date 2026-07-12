@@ -1,5 +1,4 @@
-#ifndef MOUSE_EVENT_H
-#define MOUSE_EVENT_H
+#pragma once
 
 #include "logic/interaction/events/ButtonState.h"
 
@@ -12,5 +11,3 @@ struct MouseEvent
 
   bool accepted = false;
 };
-
-#endif // MOUSE_EVENT_H

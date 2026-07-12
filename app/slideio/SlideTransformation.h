@@ -1,5 +1,4 @@
-#ifndef SLIDE_TX_H
-#define SLIDE_TX_H
+#pragma once
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -134,5 +133,3 @@ private:
 };
 
 } // namespace slideio
-
-#endif // SLIDE_TX_H

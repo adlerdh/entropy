@@ -1,5 +1,4 @@
-#ifndef TRANSFORMATION_STATE_H
-#define TRANSFORMATION_STATE_H
+#pragma once
 
 /**
  * @brief Describes the state of an object's transformation.
@@ -14,5 +13,3 @@ enum class TransformationState
   /// view cameras. This is a "final" state.
   Committed
 };
-
-#endif // TRANSFORMATION_STATE_H

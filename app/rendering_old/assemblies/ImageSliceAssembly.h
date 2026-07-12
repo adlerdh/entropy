@@ -1,5 +1,4 @@
-#ifndef IMAGE_SLICE_ASSEMBLY_H
-#define IMAGE_SLICE_ASSEMBLY_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering_old/assemblies/RenderingProperties.h"
@@ -79,5 +78,3 @@ private:
 
   ImageSliceAssemblyRenderingProperties m_properties;
 };
-
-#endif // IMAGE_SLICE_ASSEMBLY_H

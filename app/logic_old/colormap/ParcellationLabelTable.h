@@ -1,5 +1,4 @@
-#ifndef PARCELLATION_LABEL_TABLE_H
-#define PARCELLATION_LABEL_TABLE_H
+#pragma once
 
 #include "rendering/utility/gl/GLTextureTypes.h"
 
@@ -121,5 +120,3 @@ private:
   /// Vector of label properties (size matching \c m_colors_RGBA_F32)
   std::vector<LabelProperties> m_properties;
 };
-
-#endif // PARCELLATION_LABEL_TABLE_H

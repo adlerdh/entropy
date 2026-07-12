@@ -1,5 +1,4 @@
-#ifndef SEGMENTATION_HELPERS_TPP
-#define SEGMENTATION_HELPERS_TPP
+#pragma once
 
 #include "common/SegmentationTypes.h"
 
@@ -61,5 +60,3 @@ LabelIndexMaps createLabelIndexMaps(const glm::ivec3& dims, const T* buffer, boo
 
   return labelMaps;
 }
-
-#endif // SEGMENTATION_HELPERS_TPP

@@ -1,5 +1,4 @@
-#ifndef MESH_GENERATION_H
-#define MESH_GENERATION_H
+#pragma once
 
 #include "mesh/MeshTypes.h"
 
@@ -49,5 +48,3 @@ vtkSmartPointer<vtkPolyData> generateLabelMesh(
 std::map<int32_t, double> generateIntegerImageHistogram(vtkImageData* imageData, const std::set<int32_t>& imageValues);
 
 } // namespace vtkdetails
-
-#endif // MESH_GENERATION_H

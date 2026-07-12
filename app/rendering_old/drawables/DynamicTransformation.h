@@ -1,5 +1,4 @@
-#ifndef DYNAMIC_TRANSFORMATION_H
-#define DYNAMIC_TRANSFORMATION_H
+#pragma once
 
 #include "rendering_old/drawables/Transformation.h"
 
@@ -24,5 +23,3 @@ private:
 
   GetterType<std::optional<glm::mat4> > m_thisToParentTxProvider;
 };
-
-#endif // DYNAMIC_TRANSFORMATION_H

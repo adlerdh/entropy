@@ -1,5 +1,4 @@
-#ifndef COMPUTER_BASE_H
-#define COMPUTER_BASE_H
+#pragma once
 
 class ComputerBase
 {
@@ -10,5 +9,3 @@ public:
   virtual void initialize() = 0;
   virtual void execute() = 0;
 };
-
-#endif // COMPUTER_BASE_H

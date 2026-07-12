@@ -1,5 +1,4 @@
-#ifndef MESH_POLYGON_OFFSET_H
-#define MESH_POLYGON_OFFSET_H
+#pragma once
 
 #include <utility>
 
@@ -18,5 +17,3 @@ extern const std::pair<float, float> landmarks;
 extern const std::pair<float, float> slideSlices;
 
 } // namespace PolygonOffset
-
-#endif // MESH_POLYGON_OFFSET_H

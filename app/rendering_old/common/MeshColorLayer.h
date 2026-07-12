@@ -1,5 +1,4 @@
-#ifndef MESH_COLOR_LAYER_H
-#define MESH_COLOR_LAYER_H
+#pragma once
 
 #include <cstdint>
 
@@ -63,5 +62,3 @@ enum class BasicMeshColorLayer : uint32_t
   /// Number of layers
   NumLayers
 };
-
-#endif // MESH_COLOR_LAYER_H

@@ -6,6 +6,8 @@ add_executable(TestRendering
   LocalNccMetricTests.cpp
   PixelEdgeGeometryTests.cpp
   ScaleBarGeometryTests.cpp
+  TextureSetupHelpersTests.cpp
+  VectorDrawingHelpersTests.cpp
   XrayAttenuationTests.cpp
 )
 
@@ -15,6 +17,8 @@ target_sources(TestRendering PRIVATE
   "${entropy_APP_DIR}/rendering/geometry/ScaleBarGeometry.cpp"
   "${entropy_APP_DIR}/rendering/helpers/ImageDrawingHelpers.cpp"
   "${entropy_APP_DIR}/rendering/helpers/LightboxOffsetLabelFormat.cpp"
+  "${entropy_APP_DIR}/rendering/helpers/TextureSetupHelpers.cpp"
+  "${entropy_APP_DIR}/rendering/helpers/VectorDrawingHelpers.cpp"
   "${entropy_APP_DIR}/rendering/metrics/LocalLinearResidualMetric.cpp"
   "${entropy_APP_DIR}/rendering/metrics/LocalNccMetric.cpp"
   "${entropy_APP_DIR}/rendering/physics/XrayAttenuation.cpp"

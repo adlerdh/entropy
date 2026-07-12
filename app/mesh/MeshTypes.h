@@ -1,5 +1,4 @@
-#ifndef MESH_TYPES_H
-#define MESH_TYPES_H
+#pragma once
 
 enum class MeshSource
 {
@@ -15,5 +14,3 @@ enum class MeshPrimitiveType
   TriangleFan,
   Triangles //!< Indexed triangles
 };
-
-#endif // MESH_TYPES_H

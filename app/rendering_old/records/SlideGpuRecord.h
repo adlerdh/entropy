@@ -1,5 +1,4 @@
-#ifndef SLIDE_GPU_RECORD_H
-#define SLIDE_GPU_RECORD_H
+#pragma once
 
 #include <memory>
 
@@ -29,5 +28,3 @@ private:
   /// Level being rendered
   //    int m_activeLevel;
 };
-
-#endif // SLIDE_GPU_RECORD_H

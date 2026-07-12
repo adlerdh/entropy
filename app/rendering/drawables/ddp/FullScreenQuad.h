@@ -1,5 +1,4 @@
-#ifndef FULL_SCREEN_QUAD_H
-#define FULL_SCREEN_QUAD_H
+#pragma once
 
 #include "rendering/drawables/DrawableBase.h"
 #include "rendering/utility/gl/GLVertexArrayObject.h"
@@ -34,5 +33,3 @@ private:
   std::unique_ptr<GLVertexArrayObject::IndexedDrawParams> m_vaoParams;
   std::unique_ptr<MeshGpuRecord> m_meshGpuRecord;
 };
-
-#endif // FULL_SCREEN_QUAD_H

@@ -1,5 +1,4 @@
-#ifndef INTERACTION_HANDLER_TYPE_H
-#define INTERACTION_HANDLER_TYPE_H
+#pragma once
 
 /**
  * @brief Describes the types of interaction handlers
@@ -33,5 +32,3 @@ enum class InteractionModeType
   StackRotate,
   StackTranslate
 };
-
-#endif // INTERACTION_HANDLER_TYPE_H

@@ -1,5 +1,4 @@
-#ifndef I_INTERACTION_HANDLER_H
-#define I_INTERACTION_HANDLER_H
+#pragma once
 
 #include "logic/interfaces/IGestureHandler.h"
 #include "logic/interfaces/IMouseEventHandler.h"
@@ -37,5 +36,3 @@ public:
   /// swipe, pan, pinch, tap, or tap-and-hold event
   virtual bool dispatchGestureEvent(QGestureEvent*, const Viewport&, const Camera&) = 0;
 };
-
-#endif // I_INTERACTION_HANDLER_H

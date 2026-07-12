@@ -1,5 +1,4 @@
-#ifndef DRAWABLE_LANDMARK_GROUP_H
-#define DRAWABLE_LANDMARK_GROUP_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -84,5 +83,3 @@ private:
   /// Child landmarks
   std::unordered_map<uuids::uuid, Landmark> m_landmarks;
 };
-
-#endif // DRAWABLE_LANDMARK_GROUP_H

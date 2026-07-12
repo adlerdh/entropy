@@ -1,5 +1,4 @@
-#ifndef INTERACTION_PACK_H
-#define INTERACTION_PACK_H
+#pragma once
 
 #include "gui/layout/ViewType.h"
 #include "logic/interaction/InteractionHandlerType.h"
@@ -72,5 +71,3 @@ private:
 
   IInteractionHandler* m_activeHandler;
 };
-
-#endif // INTERACTION_PACK_H

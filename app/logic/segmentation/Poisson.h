@@ -1,5 +1,4 @@
-#ifndef POISSON_H
-#define POISSON_H
+#pragma once
 
 #include "common/SegmentationTypes.h"
 
@@ -34,5 +33,3 @@ void sor(
 
 // Compute a decent value for the 'beta' parameter used in SOR.
 float computeBeta(const float* image, const glm::ivec3& dims);
-
-#endif // POISSON_H

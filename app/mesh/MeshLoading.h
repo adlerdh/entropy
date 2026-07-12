@@ -1,5 +1,4 @@
-#ifndef MESH_LOADER_H
-#define MESH_LOADER_H
+#pragma once
 
 #include "common/AsyncTasks.h"
 #include "mesh/MeshCpuRecord.h"
@@ -27,5 +26,3 @@ std::future<AsyncTaskDetails> generateIsosurfaceMeshCpuRecord(
 //         const std::unordered_set<int64_t>& labelValues );
 
 bool writeMeshToFile(const MeshCpuRecord&, const std::string& fileName);
-
-#endif // MESH_LOADER_H

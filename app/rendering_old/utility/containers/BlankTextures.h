@@ -1,5 +1,4 @@
-#ifndef BLANK_TEXTURES_H
-#define BLANK_TEXTURES_H
+#pragma once
 
 #include <memory>
 #include <optional>
@@ -27,5 +26,3 @@ private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
 };
-
-#endif // BLANK_TEXTURES_H

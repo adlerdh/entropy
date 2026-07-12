@@ -1,5 +1,4 @@
-#ifndef FULLSCREENDEBUGQUAD_H
-#define FULLSCREENDEBUGQUAD_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/ddp/FullScreenQuad.h"
@@ -38,5 +37,3 @@ private:
 
   std::weak_ptr<GLTexture> m_texture;
 };
-
-#endif // FULLSCREENDEBUGQUAD_H

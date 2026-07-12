@@ -1,5 +1,4 @@
-#ifndef GL_UNIFORM_TYPES_H
-#define GL_UNIFORM_TYPES_H
+#pragma once
 
 #include <glad/glad.h>
 
@@ -36,5 +35,3 @@ enum class UniformType : uint32_t
 
   Undefined = 0
 };
-
-#endif // GL_UNIFORM_TYPES_H

@@ -1,5 +1,4 @@
-#ifndef SHADER_STAGE_TYPES_H
-#define SHADER_STAGE_TYPES_H
+#pragma once
 
 #include <cstdint>
 
@@ -66,5 +65,3 @@ enum class DrawableType : uint8_t
   Transformation = 15,
   TexturedMesh = 16
 };
-
-#endif // SHADER_STAGE_TYPES_H

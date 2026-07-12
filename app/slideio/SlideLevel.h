@@ -1,5 +1,4 @@
-#ifndef SLIDE_LEVEL_H
-#define SLIDE_LEVEL_H
+#pragma once
 
 #include <glm/gtc/type_precision.hpp>
 #include <glm/vec2.hpp>
@@ -18,5 +17,3 @@ struct SlideLevel
 };
 
 } // namespace slideio
-
-#endif // SLIDE_LEVEL_H

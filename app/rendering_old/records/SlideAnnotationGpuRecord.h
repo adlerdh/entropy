@@ -1,5 +1,4 @@
-#ifndef SLIDE_ANNOTATION_GPU_RECORD_H
-#define SLIDE_ANNOTATION_GPU_RECORD_H
+#pragma once
 
 #include "rendering_old/records/MeshGpuRecord.h"
 
@@ -25,5 +24,3 @@ public:
 private:
   std::shared_ptr<MeshGpuRecord> m_meshGpuRecord;
 };
-
-#endif // SLIDE_ANNOTATION_GPU_RECORD_H

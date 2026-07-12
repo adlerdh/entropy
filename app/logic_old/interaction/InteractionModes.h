@@ -1,5 +1,4 @@
-#ifndef INTERACTION_MODES_H
-#define INTERACTION_MODES_H
+#pragma once
 
 enum class CameraInteractionMode
 {
@@ -45,5 +44,3 @@ enum class WindowLevelInteractionMode
 {
   Default
 };
-
-#endif // INTERACTION_MODES_H

@@ -1,5 +1,4 @@
-#ifndef SHADERINFO_H
-#define SHADERINFO_H
+#pragma once
 
 class ShaderInfo
 {
@@ -22,5 +21,3 @@ public:
     const void* param);
 #endif
 };
-
-#endif // SHADERINFO_H

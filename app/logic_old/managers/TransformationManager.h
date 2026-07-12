@@ -1,5 +1,4 @@
-#ifndef TRANSFORMATION_MANAGER_H
-#define TRANSFORMATION_MANAGER_H
+#pragma once
 
 #include "common/CoordinateFrame.h"
 #include "logic/TransformationState.h"
@@ -50,5 +49,3 @@ private:
   /// Coordinate frame of the Slide Stack
   std::unordered_map<TransformationState, CoordinateFrame> m_slideStackFrames;
 };
-
-#endif // TRANSFORMATION_MANAGER_H

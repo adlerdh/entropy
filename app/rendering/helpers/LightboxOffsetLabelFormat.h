@@ -1,5 +1,4 @@
-#ifndef LIGHTBOX_OFFSET_LABEL_FORMAT_H
-#define LIGHTBOX_OFFSET_LABEL_FORMAT_H
+#pragma once
 
 #include <string>
 
@@ -16,5 +15,3 @@ namespace entropy::rendering::lightbox
 std::string formatOffsetDistanceMm(double offsetMm, double unitReferenceOffsetMm, int precision = 6);
 
 } // namespace entropy::rendering::lightbox
-
-#endif // LIGHTBOX_OFFSET_LABEL_FORMAT_H

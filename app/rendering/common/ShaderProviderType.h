@@ -1,5 +1,4 @@
-#ifndef SHADER_PROVIDER_TYPE_H
-#define SHADER_PROVIDER_TYPE_H
+#pragma once
 
 #include <functional>
 #include <string>
@@ -14,5 +13,3 @@ using ShaderProgramActivatorType = std::function<GLShaderProgram*(const std::str
 /// Functional returning the uniforms for a given shader program.
 /// @todo Make this return pointer instead of reference and nullptr as sentinel.
 using UniformsProviderType = std::function<const Uniforms&(const std::string& shaderName)>;
-
-#endif // SHADER_PROVIDER_TYPE_H

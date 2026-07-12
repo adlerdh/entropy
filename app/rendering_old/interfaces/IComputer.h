@@ -1,5 +1,4 @@
-#ifndef I_COMPUTER_H
-#define I_COMPUTER_H
+#pragma once
 
 class IComputer
 {
@@ -9,5 +8,3 @@ public:
   virtual void initialize() = 0;
   virtual void execute() = 0;
 };
-
-#endif // I_COMPUTER_H

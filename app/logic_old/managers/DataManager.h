@@ -1,5 +1,4 @@
-#ifndef DATA_MANAGER_H
-#define DATA_MANAGER_H
+#pragma once
 
 #include "UIDRange.h"
 
@@ -334,5 +333,3 @@ private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
 };
-
-#endif // DATA_MANAGER_H

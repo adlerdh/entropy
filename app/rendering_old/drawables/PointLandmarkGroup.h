@@ -1,5 +1,4 @@
-#ifndef DRAWABLE_POINT_LANDMARK_GROUP_H
-#define DRAWABLE_POINT_LANDMARK_GROUP_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -52,5 +51,3 @@ private:
 
   std::weak_ptr<LandmarkGroupRecord> m_landmarkGroupRecord;
 };
-
-#endif // DRAWABLE_POINT_LANDMARK_GROUP_H

@@ -1,5 +1,4 @@
-#ifndef ANNOTATION_HELPER_H
-#define ANNOTATION_HELPER_H
+#pragma once
 
 #include <uuids.h>
 
@@ -44,5 +43,3 @@ void changeSlideAnnotationLayering(
   DataManager& dataManager,
   const uuids::uuid& slideAnnotUid,
   const LayerChangeType& layerChange);
-
-#endif // ANNOTATION_HELPER_H

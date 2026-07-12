@@ -1,5 +1,4 @@
-#ifndef MESH_CPU_RECORD_H
-#define MESH_CPU_RECORD_H
+#pragma once
 
 #include "mesh/MeshInfo.hpp"
 #include "mesh/MeshProperties.h"
@@ -39,5 +38,3 @@ private:
   MeshInfo m_meshInfo;
   MeshProperties m_properties;
 };
-
-#endif // MESH_CPU_RECORD_H

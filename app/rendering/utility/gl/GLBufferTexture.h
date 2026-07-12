@@ -1,5 +1,4 @@
-#ifndef GLBUFFERTEXTURE
-#define GLBUFFERTEXTURE
+#pragma once
 
 #include "rendering/utility/gl/GLBufferObject.h"
 #include "rendering/utility/gl/GLErrorChecker.h"
@@ -77,5 +76,3 @@ private:
   // Storage format for the texture image found found in the buffer object
   tex::SizedInternalBufferTextureFormat m_format;
 };
-
-#endif // GLBUFFERTEXTURE

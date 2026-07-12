@@ -1,5 +1,4 @@
-#ifndef BASIC_MESH_H
-#define BASIC_MESH_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -153,5 +152,3 @@ private:
   float m_polygonOffsetFactor;
   float m_polygonOffsetUnits;
 };
-
-#endif // BASIC_MESH_H

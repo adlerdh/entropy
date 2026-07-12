@@ -1,5 +1,4 @@
-#ifndef PLANAR_POLYGON_H
-#define PLANAR_POLYGON_H
+#pragma once
 
 #include "common/AABB.h"
 
@@ -124,5 +123,3 @@ private:
   /// 2D axis-aligned bounding box of the polygon; set to none if the polygon is empty.
   std::optional<AABBoxType> m_aabb;
 };
-
-#endif // PLANAR_POLYGON_H

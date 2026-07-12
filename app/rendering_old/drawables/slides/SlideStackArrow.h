@@ -1,5 +1,4 @@
-#ifndef SLIDE_STACK_ARROW_H
-#define SLIDE_STACK_ARROW_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -49,5 +48,3 @@ private:
   std::shared_ptr<BasicMesh> m_cylinder;
   std::shared_ptr<BasicMesh> m_sphere;
 };
-
-#endif // SLIDE_STACK_ARROW_H

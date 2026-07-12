@@ -1,5 +1,4 @@
-#ifndef POLYDATA_GENERATOR_H
-#define POLYDATA_GENERATOR_H
+#pragma once
 
 #include <glm/fwd.hpp>
 
@@ -16,5 +15,3 @@ vtkSmartPointer<vtkPolyData> generateSphere();
 vtkSmartPointer<vtkPolyData> generatePointyCylinders(double coneToCylinderLengthRatio);
 
 } // namespace vtkutils
-
-#endif // POLYDATA_GENERATOR_H

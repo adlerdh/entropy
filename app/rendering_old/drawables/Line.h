@@ -1,5 +1,4 @@
-#ifndef LINE_H
-#define LINE_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -67,5 +66,3 @@ private:
 
   glm::vec3 m_solidColor;
 };
-
-#endif // LINE_H

@@ -1,5 +1,4 @@
-#ifndef SLIDE_HELPER_H
-#define SLIDE_HELPER_H
+#pragma once
 
 #include "common/AABB.h"
 #include "logic_old/records/SlideRecord.h"
@@ -91,5 +90,3 @@ float slideStackHeight(weak_record_range_t<SlideRecord>);
 float slideStackPositiveExtent(weak_record_range_t<SlideRecord>);
 
 } // namespace slideio
-
-#endif // SLIDE_HELPER_H

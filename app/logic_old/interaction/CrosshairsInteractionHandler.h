@@ -1,5 +1,4 @@
-#ifndef CROSSHAIRS_INTERACTION_HANDLER_H
-#define CROSSHAIRS_INTERACTION_HANDLER_H
+#pragma once
 
 #include "logic/interaction/InteractionHandlerBase.h"
 #include "logic/interaction/InteractionModes.h"
@@ -119,5 +118,3 @@ private:
 
   const static std::unordered_map<CrosshairsInteractionMode, MouseMoveMode> msk_defaultInternalModeMap;
 };
-
-#endif // CROSSHAIRS_INTERACTION_HANDLER_H

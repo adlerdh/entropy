@@ -1,5 +1,4 @@
-#ifndef GLERRORCHECKER_H
-#define GLERRORCHECKER_H
+#pragma once
 
 #include <glad/glad.h>
 
@@ -18,5 +17,3 @@ public:
   void operator()(const char* file, const char* function, int line) const;
   void operator()() const;
 };
-
-#endif // GLERRORCHECKER_H

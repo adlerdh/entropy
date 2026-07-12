@@ -1,5 +1,4 @@
-#ifndef POLYGONIZER_H
-#define POLYGONIZER_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/utility/containers/Uniforms.h"
@@ -82,5 +81,3 @@ private:
   // read back from the GL pipeline following the Geometry Shader stage.
   std::vector<glm::vec3> m_feedbackTriangles;
 };
-
-#endif // POLYGONIZER_H

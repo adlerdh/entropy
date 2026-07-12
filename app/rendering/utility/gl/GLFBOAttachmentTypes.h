@@ -1,5 +1,4 @@
-#ifndef GL_FBOATTACHTYPES_H
-#define GL_FBOATTACHTYPES_H
+#pragma once
 
 #include <glad/glad.h>
 
@@ -24,5 +23,3 @@ enum class AttachmentType : uint32_t
 };
 
 } // namespace fbo
-
-#endif // GL_FBOATTACHTYPES_H

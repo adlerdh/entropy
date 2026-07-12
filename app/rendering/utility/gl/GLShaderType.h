@@ -1,5 +1,4 @@
-#ifndef GL_SHADER_TYPE_H
-#define GL_SHADER_TYPE_H
+#pragma once
 
 #include <glad/glad.h>
 
@@ -17,5 +16,3 @@ enum class ShaderType : uint32_t
 };
 
 // using ShaderType_utype = std::underlying_type< ShaderType >::type;
-
-#endif // GL_SHADER_TYPE_H

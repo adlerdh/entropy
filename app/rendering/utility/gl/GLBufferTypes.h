@@ -1,5 +1,4 @@
-#ifndef GLBUFFERTYPES_H
-#define GLBUFFERTYPES_H
+#pragma once
 
 #include <glad/glad.h>
 
@@ -97,5 +96,3 @@ enum class BufferNormalizeValues : bool
   True = true,
   False = false
 };
-
-#endif // GLBUFFERTYPES_H

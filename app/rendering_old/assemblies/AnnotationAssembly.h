@@ -1,5 +1,4 @@
-#ifndef ANNOTATION_ASSEMBLY_H
-#define ANNOTATION_ASSEMBLY_H
+#pragma once
 
 #include "rendering_old/interfaces/IDrawableAssembly.h"
 
@@ -114,5 +113,3 @@ private:
   /// Rendering properties for all annotations
   AnnotationAssemblyRenderingProperties m_properties;
 };
-
-#endif // LANDMARK_ASSEMBLY_H

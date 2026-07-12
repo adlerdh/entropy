@@ -1,5 +1,4 @@
-#ifndef DRAWABLE_BASE_H
-#define DRAWABLE_BASE_H
+#pragma once
 
 #include "rendering/common/DrawableOpacity.h"
 #include "rendering/interfaces/IDrawable.h"
@@ -163,5 +162,3 @@ private:
   /// Flag that shows/hides this drawable
   bool m_visible;
 };
-
-#endif // DRAWABLE_BASE_H

@@ -1,5 +1,4 @@
-#ifndef I_WHEEL_EVENT_HANDLER_H
-#define I_WHEEL_EVENT_HANDLER_H
+#pragma once
 
 #include "common/Viewport.h"
 #include "logic/camera/Camera.h"
@@ -16,5 +15,3 @@ public:
 
   virtual bool handleWheelEvent(QWheelEvent*, const Viewport&, const Camera&) = 0;
 };
-
-#endif // I_WHEEL_EVENT_HANDLER_H

@@ -1,5 +1,4 @@
-#ifndef SCENE_TYPE_H
-#define SCENE_TYPE_H
+#pragma once
 
 /**
  * @brief Types of scenes that can be rendered in views. Each scene contains a collection
@@ -31,5 +30,3 @@ enum class SceneType
   /// No scene.
   None
 };
-
-#endif // SCENE_TYPE_H

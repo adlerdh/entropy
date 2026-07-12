@@ -1,5 +1,4 @@
-#ifndef ASSEMBLY_MANAGER_H
-#define ASSEMBLY_MANAGER_H
+#pragma once
 
 #include "common/PublicTypes.h"
 #include "UID.h"
@@ -207,5 +206,3 @@ private:
   /// Default mapping from ViewType to SceneType
   static const std::unordered_map<gui::ViewType, SceneType> smk_defaultViewTypeToSceneTypeMap;
 };
-
-#endif // ASSEMBLY_MANAGER_H

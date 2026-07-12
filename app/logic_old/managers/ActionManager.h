@@ -1,5 +1,4 @@
-#ifndef ACTION_MANAGER_H
-#define ACTION_MANAGER_H
+#pragma once
 
 #include "common/PublicTypes.h"
 #include "UID.h"
@@ -131,5 +130,3 @@ private:
   SetterType<const CoordinateFrame&> m_crosshairsFrameChangedBroadcaster;
   SetterType<const CoordinateFrame&> m_crosshairsFrameChangedDoneBroadcaster;
 };
-
-#endif // ACTION_MANAGER_H

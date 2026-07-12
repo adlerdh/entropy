@@ -1,5 +1,4 @@
-#ifndef PERSPECTIVE_PROJECTION_H
-#define PERSPECTIVE_PROJECTION_H
+#pragma once
 
 #include "logic/camera/Projection.h"
 
@@ -22,5 +21,3 @@ public:
 };
 
 } // namespace camera
-
-#endif // PERSPECTIVE_PROJECTION_H

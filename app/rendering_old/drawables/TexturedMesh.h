@@ -1,5 +1,4 @@
-#ifndef TEXTURED_MESH_H
-#define TEXTURED_MESH_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -242,5 +241,3 @@ and not to the color buffer. This makes sure the depth buffer is up to date for 
 covered by object 1 but not by object 2. Note, the objects need to be drawn consecutively for this
 to work.
 */
-
-#endif // TEXTURED_MESH_H

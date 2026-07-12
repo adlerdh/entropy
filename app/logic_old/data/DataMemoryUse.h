@@ -1,5 +1,4 @@
-#ifndef DATA_MEMORY_USAGE_HELPER_H
-#define DATA_MEMORY_USAGE_HELPER_H
+#pragma once
 
 #include "logic/records/ImageColorMapRecord.h"
 #include "logic/records/ImageRecord.h"
@@ -32,5 +31,3 @@ CpuAndGpuMemoryUse parcellationsMemoryUse(DataManager&);
 CpuAndGpuMemoryUse slidesMemoryUse(DataManager&);
 
 } // namespace data
-
-#endif // DATA_MEMORY_USAGE_HELPER_H

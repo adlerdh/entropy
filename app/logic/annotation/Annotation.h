@@ -1,5 +1,4 @@
-#ifndef ANNOTATION_H
-#define ANNOTATION_H
+#pragma once
 
 #include <filesystem>
 #include "logic/annotation/AnnotPolygon.tpp"
@@ -214,5 +213,3 @@ private:
   /// 3D axes of the plane in Subject space
   std::pair<glm::vec3, glm::vec3> m_subjectPlaneAxes;
 };
-
-#endif // ANNOTATION_H

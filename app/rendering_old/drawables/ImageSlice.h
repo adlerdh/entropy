@@ -1,5 +1,4 @@
-#ifndef IMAGE_SLICE_H
-#define IMAGE_SLICE_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -103,5 +102,3 @@ private:
 
   bool m_showOutline;
 };
-
-#endif // IMAGE_SLICE_H

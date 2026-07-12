@@ -1,5 +1,4 @@
-#ifndef LANDMARK_ASSEMBLY_H
-#define LANDMARK_ASSEMBLY_H
+#pragma once
 
 #include "rendering_old/interfaces/IDrawableAssembly.h"
 
@@ -111,5 +110,3 @@ private:
   /// Rendering properties for all landmarks
   LandmarkAssemblyRenderingProperties m_lmProperties;
 };
-
-#endif // LANDMARK_ASSEMBLY_H

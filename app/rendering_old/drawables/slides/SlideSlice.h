@@ -1,5 +1,4 @@
-#ifndef SLIDE_SLICE_H
-#define SLIDE_SLICE_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/DrawableBase.h"
@@ -101,5 +100,3 @@ private:
 
   SliceIntersector m_sliceIntersector;
 };
-
-#endif // SLIDE_SLICE_H

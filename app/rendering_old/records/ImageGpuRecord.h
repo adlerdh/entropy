@@ -1,5 +1,4 @@
-#ifndef IMAGE_GPU_RECORD_H
-#define IMAGE_GPU_RECORD_H
+#pragma once
 
 #include <memory>
 
@@ -26,5 +25,3 @@ public:
 private:
   std::shared_ptr<GLTexture> m_texture;
 };
-
-#endif // IMAGE_GPU_RECORD_H

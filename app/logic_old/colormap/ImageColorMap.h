@@ -1,5 +1,4 @@
-#ifndef IMAGE_COLORMAP_H
-#define IMAGE_COLORMAP_H
+#pragma once
 
 #include "rendering/utility/gl/GLTextureTypes.h"
 
@@ -126,5 +125,3 @@ private:
   /// Preview color map
   std::vector<glm::vec4> m_preview;
 };
-
-#endif // IMAGE_COLORMAP_H

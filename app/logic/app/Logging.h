@@ -1,5 +1,4 @@
-#ifndef LOGGING_H
-#define LOGGING_H
+#pragma once
 
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -34,5 +33,3 @@ private:
   std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> m_console_sink;
   std::shared_ptr<spdlog::sinks::daily_file_sink_mt> m_daily_sink;
 };
-
-#endif // LOGGING_H

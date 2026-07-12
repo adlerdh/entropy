@@ -1,5 +1,4 @@
-#ifndef GLVERSIONCHECKER_H
-#define GLVERSIONCHECKER_H
+#pragma once
 
 #include "rendering/utility/gl/GLErrorChecker.h"
 
@@ -19,5 +18,3 @@ public:
 private:
   GLErrorChecker m_errorChecker;
 };
-
-#endif // GLVERSIONCHECKER_H

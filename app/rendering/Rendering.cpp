@@ -6,9 +6,9 @@
 #include "common/Types.h"
 
 #include "image/ImageColorMap.h"
+
 #include "logic/app/DataHelper.h"
 #include "logic/SurfaceUtility.h"
-
 #include "logic/app/Data.h"
 #include "logic/app/StackTrace.h"
 #include "logic/camera/Camera3DControls.h"
@@ -19,17 +19,14 @@
 #include "logic/states/FsmList.hpp"
 
 #include "rendering/ImageDrawing.h"
-#include "rendering/ScaleBarDrawing.h"
+#include "rendering/vector/FrustumOverlayDrawing.h"
+#include "rendering/vector/LightboxOverlayDrawing.h"
+#include "rendering/vector/ScaleBarDrawing.h"
 #include "rendering/TextureSetup.h"
-#include "rendering/VectorDrawing.h"
+#include "rendering/vector/VectorDrawing.h"
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLShader.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
-
-// #include "rendering/renderers/DepthPeelRenderer.h"
-// #include "rendering/utility/CreateGLObjects.h"
-// #include "rendering_old/utility/containers/BlankTextures.h"
-// #include "rendering/utility/vtk/PolyDataGenerator.h"
 
 #include "windowing/View.h"
 

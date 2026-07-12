@@ -1,5 +1,4 @@
-#ifndef DDP_BLEND_PASS_QUAD_H
-#define DDP_BLEND_PASS_QUAD_H
+#pragma once
 
 #include "rendering/common/ShaderProviderType.h"
 #include "rendering/drawables/ddp/FullScreenQuad.h"
@@ -37,5 +36,3 @@ private:
   std::array<GLTexture, 2>& m_backTempTextures;
   uint32_t m_currentTextureId;
 };
-
-#endif // DDPBLENDPASSQUAD_H

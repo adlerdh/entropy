@@ -1,5 +1,4 @@
-#ifndef ACCUMULATED_RENDERING_DATA_H
-#define ACCUMULATED_RENDERING_DATA_H
+#pragma once
 
 #include <glm/mat4x4.hpp>
 
@@ -21,5 +20,3 @@ struct AccumulatedRenderingData
   /// Flag for whether the drawable is pickable.
   bool m_pickable = true;
 };
-
-#endif // ACCUMULATED_RENDERING_DATA_H

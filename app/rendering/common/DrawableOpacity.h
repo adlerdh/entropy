@@ -1,5 +1,4 @@
-#ifndef RENDERING_DRAWABLE_OPACITY_H
-#define RENDERING_DRAWABLE_OPACITY_H
+#pragma once
 
 /**
  * @brief Describes the opacity of a rendered Drawable object. Opacity refers to the alpha value
@@ -32,5 +31,3 @@ struct DrawableOpacity
   /// Collective opacity of the all descendants Drawables of the parent Drawable object.
   OpacityFlag m_descendantFlag = OpacityFlag::Unknown;
 };
-
-#endif // RENDERING_DRAWABLE_OPACITY_H

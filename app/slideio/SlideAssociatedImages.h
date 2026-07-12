@@ -1,5 +1,4 @@
-#ifndef SLIDE_ASSOCIATED_IMAGES_H
-#define SLIDE_ASSOCIATED_IMAGES_H
+#pragma once
 
 #include <glm/gtc/type_precision.hpp>
 #include <glm/vec2.hpp>
@@ -45,5 +44,3 @@ private:
 };
 
 } // namespace slideio
-
-#endif // SLIDE_ASSOCIATED_IMAGES_H

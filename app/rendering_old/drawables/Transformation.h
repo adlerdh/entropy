@@ -1,5 +1,4 @@
-#ifndef TRANSFORMATION_H
-#define TRANSFORMATION_H
+#pragma once
 
 #include "rendering/drawables/DrawableBase.h"
 
@@ -19,5 +18,3 @@ public:
   /// @todo implement update() and pass down my matrix to children.
   /// Remove parent_O_this from all other nodes!
 };
-
-#endif // TRANSFORMATION_H

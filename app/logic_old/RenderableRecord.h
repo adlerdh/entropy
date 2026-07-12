@@ -1,5 +1,4 @@
-#ifndef RENDERABLE_RECORD_H
-#define RENDERABLE_RECORD_H
+#pragma once
 
 #include <uuid.h>
 
@@ -71,5 +70,3 @@ private:
   std::unique_ptr<CpuData> m_cpuData;
   std::unique_ptr<GpuData> m_gpuData;
 };
-
-#endif // RENDERABLE_RECORD_H

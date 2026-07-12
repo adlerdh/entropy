@@ -1,16 +1,14 @@
-#include "rendering/VectorDrawing.h"
+#include "rendering/vector/VectorDrawing.h"
 
-#include "rendering/helpers/LightboxOffsetLabelFormat.h"
+#include "rendering/helpers/VectorDrawingHelpers.h"
 
-#include "logic/app/DeformationWarp.h"
-#include "logic/app/DataHelper.h"
 #include "common/DirectionMaps.h"
 #include "common/Viewport.h"
-
 #include "image/Image.h"
 
+#include "logic/app/DeformationWarp.h"
 #include "logic/app/Data.h"
-#include "logic/camera/CameraFrustumSlice.h"
+#include "logic/app/DataHelper.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/MathUtility.h"
 #include "logic/states/annotation/AnnotationStateHelpers.h"
@@ -43,6 +41,8 @@
 namespace
 {
 
+namespace vector_drawing = entropy::rendering::vector_drawing;
+
 static const NVGcolor s_black(nvgRGBA(0, 0, 0, 255));
 static const NVGcolor s_grey25(nvgRGBA(63, 63, 63, 255));
 static const NVGcolor s_grey40(nvgRGBA(102, 102, 102, 255));
@@ -57,80 +57,49 @@ static const std::string ROBOTO_LIGHT("robotoLight");
 
 static constexpr float sk_outlineStrokeWidth = 2.0f;
 
-bool isFiniteVec2(const glm::vec2& value)
-{
-  return std::isfinite(value.x) && std::isfinite(value.y);
-}
-
-bool isInsideRect(const glm::vec2& value, const glm::vec2& min, const glm::vec2& size)
-{
-  return value.x >= min.x && value.y >= min.y && value.x < min.x + size.x && value.y < min.y + size.y;
-}
-
-NVGcolor nvgColor(const glm::vec4& color)
-{
-  return nvgRGBAf(color.r, color.g, color.b, color.a);
-}
-
-glm::vec2 projectWorldToMiewport(const Viewport& windowVP, const View& view, const glm::vec3& worldPos)
-{
-  return helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldPos);
-}
-
 void drawArrow(NVGcontext* nvg, const glm::vec2& start, const glm::vec2& end, const NVGcolor& color, float width)
 {
-  const glm::vec2 delta = end - start;
-  const float length = glm::length(delta);
-  if (length < 2.0f) {
+  const std::optional<vector_drawing::ArrowGeometry> arrowGeometry =
+    vector_drawing::computeArrowGeometry(start, end, width);
+  if (!arrowGeometry) {
     return;
   }
-
-  const glm::vec2 dir = delta / length;
-  const glm::vec2 normal{-dir.y, dir.x};
-  const float headLength = glm::clamp(0.32f * length, std::max(5.0f, 3.0f * width), std::max(10.0f, 5.0f * width));
-  const float headWidth = std::max(0.55f * headLength, 2.25f * width);
-  const glm::vec2 headBase = end - headLength * dir;
-  const glm::vec2 shaftEnd = end - std::max(0.5f * width, 1.0f) * dir;
 
   nvgStrokeWidth(nvg, width);
   nvgStrokeColor(nvg, color);
   nvgFillColor(nvg, color);
 
   nvgBeginPath(nvg);
-  nvgMoveTo(nvg, start.x, start.y);
-  nvgLineTo(nvg, shaftEnd.x, shaftEnd.y);
+  nvgMoveTo(nvg, arrowGeometry->shaftStart.x, arrowGeometry->shaftStart.y);
+  nvgLineTo(nvg, arrowGeometry->shaftEnd.x, arrowGeometry->shaftEnd.y);
   nvgStroke(nvg);
 
   nvgBeginPath(nvg);
-  nvgMoveTo(nvg, end.x, end.y);
-  nvgLineTo(nvg, headBase.x + headWidth * normal.x, headBase.y + headWidth * normal.y);
-  nvgLineTo(nvg, headBase.x - headWidth * normal.x, headBase.y - headWidth * normal.y);
+  nvgMoveTo(nvg, arrowGeometry->headTip.x, arrowGeometry->headTip.y);
+  nvgLineTo(nvg, arrowGeometry->headLeft.x, arrowGeometry->headLeft.y);
+  nvgLineTo(nvg, arrowGeometry->headRight.x, arrowGeometry->headRight.y);
   nvgClosePath(nvg);
   nvgFill(nvg);
 }
 
-float screenDistance(const Viewport& windowVP, const View& view, const glm::vec3& worldA, const glm::vec3& worldB)
+float screenDistance(const Viewport& windowViewport, const View& view, const glm::vec3& worldA, const glm::vec3& worldB)
 {
-  const glm::vec2 a = helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldA);
-  const glm::vec2 b = helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldB);
-  if (!isFiniteVec2(a) || !isFiniteVec2(b)) {
-    return 0.0f;
-  }
-  return glm::length(b - a);
+  const glm::vec2 a = helper::miewport_T_world(windowViewport, view.camera(), view.windowClip_T_viewClip(), worldA);
+  const glm::vec2 b = helper::miewport_T_world(windowViewport, view.camera(), view.windowClip_T_viewClip(), worldB);
+  return vector_drawing::screenDistanceFromMiewportPositions(a, b);
 }
 
-float screenPixelsPerMillimeter(const Viewport& windowVP, const View& view, const glm::vec3& worldCrosshairs)
+float screenPixelsPerMillimeter(const Viewport& windowViewport, const View& view, const glm::vec3& worldCrosshairs)
 {
   const glm::vec3 worldRight = helper::worldDirection(view.camera(), Directions::View::Right);
   const glm::vec3 worldUp = helper::worldDirection(view.camera(), Directions::View::Up);
-  const float rightPx = screenDistance(windowVP, view, worldCrosshairs, worldCrosshairs + worldRight);
-  const float upPx = screenDistance(windowVP, view, worldCrosshairs, worldCrosshairs + worldUp);
-  const float meanPx = 0.5f * (rightPx + upPx);
-  return meanPx > 0.0f ? meanPx : 1.0f;
+  const float rightPx = screenDistance(windowViewport, view, worldCrosshairs, worldCrosshairs + worldRight);
+  const float upPx = screenDistance(windowViewport, view, worldCrosshairs, worldCrosshairs + worldUp);
+  return vector_drawing::meanScreenPixelsPerMillimeter(rightPx, upPx);
 }
 
 float screenPixelsPerVoxel(
-  const Viewport& windowVP,
+  const Viewport& windowViewport,
   const View& view,
   const Image& image,
   const glm::vec3& worldCrosshairs)
@@ -150,91 +119,15 @@ float screenPixelsPerVoxel(
     pixelEnd[axis] += 1.0f;
     const glm::vec3 subjectEnd{subject_T_pixel * glm::vec4{pixelEnd, 1.0f}};
     const glm::vec3 worldEnd{world_T_subject * glm::vec4{subjectEnd, 1.0f}};
-    axisLengths[axis] = screenDistance(windowVP, view, worldBase, worldEnd);
+    axisLengths[axis] = screenDistance(windowViewport, view, worldBase, worldEnd);
   }
 
-  std::sort(axisLengths.begin(), axisLengths.end(), std::greater<float>{});
-  const float meanInPlanePx = 0.5f * (axisLengths[0] + axisLengths[1]);
-  return meanInPlanePx > 0.0f ? meanInPlanePx : 1.0f;
+  return vector_drawing::meanInPlaneScreenPixelsPerVoxel(axisLengths);
 }
 
-float vectorArrowSpacingPixels(
-  const ImageSettings& settings,
-  const Viewport& windowVP,
-  const View& view,
-  const Image& image,
-  const glm::vec3& worldCrosshairs)
-{
-  switch (settings.vectorArrowOverlaySpacingMode()) {
-    case VectorArrowOverlaySpacingMode::Pixels:
-      return std::max(settings.vectorArrowOverlayDensity(), 0.1f);
-    case VectorArrowOverlaySpacingMode::Voxels:
-      return std::max(settings.vectorArrowOverlayVoxelSpacing(), 0.1f) *
-             screenPixelsPerVoxel(windowVP, view, image, worldCrosshairs);
-    case VectorArrowOverlaySpacingMode::Millimeters:
-      return std::max(settings.vectorArrowOverlayMillimeterSpacing(), 0.1f) *
-             screenPixelsPerMillimeter(windowVP, view, worldCrosshairs);
-  }
-
-  return std::max(settings.vectorArrowOverlayDensity(), 0.1f);
-}
-
-glm::vec2 viewClip_T_miewport(const Viewport& windowVP, const View& view, const glm::vec2& miewportPos)
-{
-  const glm::vec2 viewportPos = helper::viewport_T_miewport(windowVP.height(), miewportPos);
-  const glm::vec2 windowClipPos = helper::windowClip_T_viewport(windowVP, viewportPos);
-  glm::vec4 viewClipPos = view.viewClip_T_windowClip() * glm::vec4{windowClipPos, 0.0f, 1.0f};
-  viewClipPos /= viewClipPos.w;
-  return glm::vec2{viewClipPos};
-}
-
-glm::vec2 checkerCoordForViewClip(const glm::vec2& viewClipPos, float numCheckers, float aspectRatio)
-{
-  const glm::vec2 checkerBase = numCheckers * 0.5f * (viewClipPos + glm::vec2{1.0f});
-  return glm::mix(
-    glm::vec2{checkerBase.x, checkerBase.y / aspectRatio},
-    glm::vec2{checkerBase.x * aspectRatio, checkerBase.y},
-    aspectRatio <= 1.0f ? 1.0f : 0.0f);
-}
-
-bool doRenderComparisonSample(
-  ViewRenderMode renderMode,
-  const glm::vec2& viewClipPos,
-  const glm::vec2& checkerCoord,
-  const glm::vec2& clipCrosshairs,
-  const glm::ivec2& quadrants,
-  bool showFixedImage,
-  float aspectRatio,
-  float flashlightRadius,
-  bool flashlightMovingOnFixed)
-{
-  if (ViewRenderMode::Image == renderMode) {
-    return true;
-  }
-
-  if (ViewRenderMode::Checkerboard == renderMode) {
-    const bool checkerShowsFixed = std::fmod(std::floor(checkerCoord.x) + std::floor(checkerCoord.y), 2.0f) > 0.5f;
-    return showFixedImage == checkerShowsFixed;
-  }
-
-  if (ViewRenderMode::Quadrants == renderMode) {
-    const glm::bvec2 quadrant{viewClipPos.x <= clipCrosshairs.x, viewClipPos.y > clipCrosshairs.y};
-    const bool quadrantShowsFixed =
-      ((!static_cast<bool>(quadrants.x) || quadrant.x) == (!static_cast<bool>(quadrants.y) || quadrant.y));
-    return showFixedImage == quadrantShowsFixed;
-  }
-
-  if (ViewRenderMode::Flashlight == renderMode) {
-    const glm::vec2 delta{aspectRatio * (viewClipPos.x - clipCrosshairs.x), viewClipPos.y - clipCrosshairs.y};
-    const float flashlightDistance = glm::length(delta);
-    return (showFixedImage == (flashlightDistance > flashlightRadius)) || (flashlightMovingOnFixed && showFixedImage);
-  }
-
-  return false;
-}
 } // namespace
 
-void startNvgFrame(NVGcontext* nvg, const Viewport& windowVP)
+void startNvgFrame(NVGcontext* nvg, const Viewport& windowViewport)
 {
   if (!nvg) {
     return;
@@ -250,7 +143,7 @@ void startNvgFrame(NVGcontext* nvg, const Viewport& windowVP)
   // sfactor = NVG_ONE and dfactor = NVG_ONE_MINUS_SRC_ALPHA
   nvgGlobalCompositeBlendFunc(nvg, NVG_SRC_ALPHA, NVG_ONE_MINUS_SRC_ALPHA);
 
-  nvgBeginFrame(nvg, windowVP.width(), windowVP.height(), windowVP.devicePixelRatio().x);
+  nvgBeginFrame(nvg, windowViewport.width(), windowViewport.height(), windowViewport.devicePixelRatio().x);
   nvgSave(nvg);
 }
 
@@ -264,7 +157,7 @@ void endNvgFrame(NVGcontext* nvg)
   nvgEndFrame(nvg);
 }
 
-void drawLoadingOverlay(NVGcontext* nvg, const Viewport& windowVP)
+void drawLoadingOverlay(NVGcontext* nvg, const Viewport& windowViewport)
 {
   using namespace std::chrono;
   /// @todo Progress indicators: https://github.com/ocornut/imgui/issues/1901
@@ -282,26 +175,26 @@ void drawLoadingOverlay(NVGcontext* nvg, const Viewport& windowVP)
 
   nvgFontBlur(nvg, 2.0f);
   nvgFillColor(nvg, s_greyShadowColor);
-  nvgText(nvg, 0.5f * windowVP.width(), 0.5f * windowVP.height(), sk_loadingText.c_str(), nullptr);
+  nvgText(nvg, 0.5f * windowViewport.width(), 0.5f * windowViewport.height(), sk_loadingText.c_str(), nullptr);
 
   nvgFontBlur(nvg, 0.0f);
   nvgFillColor(nvg, s_greyTextColor);
-  nvgText(nvg, 0.5f * windowVP.width(), 0.5f * windowVP.height(), sk_loadingText.c_str(), nullptr);
+  nvgText(nvg, 0.5f * windowViewport.width(), 0.5f * windowViewport.height(), sk_loadingText.c_str(), nullptr);
 
   const auto ms = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
   const float C = 2.0f * NVG_PI * static_cast<float>(ms.count() % 1000) / 1000.0f;
-  const float radius = windowVP.width() / 16.0f;
+  const float radius = windowViewport.width() / 16.0f;
 
   nvgStrokeWidth(nvg, 8.0f);
   nvgStrokeColor(nvg, s_greyTextColor);
 
   nvgBeginPath(nvg);
-  nvgArc(nvg, 0.5f * windowVP.width(), 0.75f * windowVP.height(), radius, sk_arcAngle + C, C, NVG_CCW);
+  nvgArc(nvg, 0.5f * windowViewport.width(), 0.75f * windowViewport.height(), radius, sk_arcAngle + C, C, NVG_CCW);
   nvgClosePath(nvg);
   nvgStroke(nvg);
 }
 
-void drawWindowOutline(NVGcontext* nvg, const Viewport& windowVP)
+void drawWindowOutline(NVGcontext* nvg, const Viewport& windowViewport)
 {
   static constexpr float k_pad = 1.0f;
 
@@ -311,18 +204,24 @@ void drawWindowOutline(NVGcontext* nvg, const Viewport& windowVP)
   //    nvgStrokeColor( nvg, s_red );
 
   nvgBeginPath(nvg);
-  nvgRoundedRect(nvg, k_pad, k_pad, windowVP.width() - 2.0f * k_pad, windowVP.height() - 2.0f * k_pad, 3.0f);
+  nvgRoundedRect(
+    nvg,
+    k_pad,
+    k_pad,
+    windowViewport.width() - 2.0f * k_pad,
+    windowViewport.height() - 2.0f * k_pad,
+    3.0f);
   nvgClosePath(nvg);
   nvgStroke(nvg);
 
   //        nvgStrokeWidth( nvg, 2.0f );
   //        nvgStrokeColor( nvg, s_grey50 );
-  //        nvgRect( nvg, pad, pad, windowVP.width() - pad, windowVP.height() - pad );
+  //        nvgRect( nvg, pad, pad, windowViewport.width() - pad, windowViewport.height() - pad );
   //        nvgStroke( nvg );
 
   //        nvgStrokeWidth( nvg, 1.0f );
   //        nvgStrokeColor( nvg, s_grey60 );
-  //        nvgRect( nvg, pad, pad, windowVP.width() - pad, windowVP.height() - pad );
+  //        nvgRect( nvg, pad, pad, windowViewport.width() - pad, windowViewport.height() - pad );
   //        nvgStroke( nvg );
 }
 
@@ -371,7 +270,7 @@ void drawImageViewIntersections(
   const glm::vec3& worldCrosshairsOrigin,
   AppData& appData,
   const View& view,
-  const ImageSegPairs& I,
+  const ImageSegPairs& imageSegPairs,
   bool renderInactiveImageIntersections)
 {
   // Line segment stipple length in pixels
@@ -394,7 +293,7 @@ void drawImageViewIntersections(
     miewportViewBounds.viewport[3]);
 
   // Render border for each image
-  for (const auto& imgSegPair : I) {
+  for (const auto& imgSegPair : imageSegPairs) {
     if (!imgSegPair.first) {
       continue;
     }
@@ -704,7 +603,7 @@ void drawLandmarks(
   const glm::vec3& worldCrosshairs,
   AppData& appData,
   const View& view,
-  const ImageSegPairs& I)
+  const ImageSegPairs& imageSegPairs)
 {
   static constexpr float sk_minSize = 4.0f;
   static constexpr float sk_maxSize = 128.0f;
@@ -725,7 +624,7 @@ void drawLandmarks(
   const glm::vec4 worldViewPlane = math::makePlane(worldViewNormal, worldCrosshairs);
 
   // Render landmarks for each image
-  for (const auto& imgSegPair : I) {
+  for (const auto& imgSegPair : imageSegPairs) {
     if (!imgSegPair.first) {
       // Non-existent image
       continue;
@@ -862,7 +761,7 @@ void drawAnnotations(
   const glm::vec3& worldCrosshairs,
   AppData& appData,
   const View& view,
-  const ImageSegPairs& I)
+  const ImageSegPairs& imageSegPairs)
 {
   /// @todo Should annotation opacity be modulated with image opacity? Landmarks opacity is not.
   /// img->settings().opacity()
@@ -927,7 +826,7 @@ void drawAnnotations(
   const glm::vec4 worldViewPlane = math::makePlane(worldViewNormal, worldCrosshairs);
 
   // Render annotations for each image
-  for (const auto& imgSegPair : I) {
+  for (const auto& imgSegPair : imageSegPairs) {
     if (!imgSegPair.first) {
       continue; // Non-existent image
     }
@@ -1183,7 +1082,7 @@ void drawVectorFieldArrows(
   static constexpr float k_maxArrowLengthViewportFraction = 0.22f;
   static constexpr float k_maxArrowLengthPx = 240.0f;
 
-  const Viewport& windowVP = appData.windowData().viewport();
+  const Viewport& windowViewport = appData.windowData().viewport();
   const glm::vec2 viewMin{miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset};
   const glm::vec2 viewSize{miewportViewBounds.bounds.width, miewportViewBounds.bounds.height};
   const glm::vec3 worldViewNormal = helper::worldDirection(view.camera(), Directions::View::Back);
@@ -1217,8 +1116,16 @@ void drawVectorFieldArrows(
     }
 
     const ImageSettings& settings = image->settings();
-    const float spacingPx =
-      std::clamp(vectorArrowSpacingPixels(settings, windowVP, view, *image, worldCrosshairs), 4.0f, 512.0f);
+    const float spacingPx = std::clamp(
+      vector_drawing::vectorArrowSpacingPixels(
+        settings.vectorArrowOverlaySpacingMode(),
+        settings.vectorArrowOverlayDensity(),
+        settings.vectorArrowOverlayVoxelSpacing(),
+        settings.vectorArrowOverlayMillimeterSpacing(),
+        screenPixelsPerVoxel(windowViewport, view, *image, worldCrosshairs),
+        screenPixelsPerMillimeter(windowViewport, view, worldCrosshairs)),
+      4.0f,
+      512.0f);
     const float lineThickness = settings.vectorArrowOverlayLineThickness();
     const float arrowOpacity = settings.vectorArrowOverlayOpacity();
     const float scaleFactor = settings.vectorArrowOverlayScaleFactor();
@@ -1237,9 +1144,10 @@ void drawVectorFieldArrows(
       k_maxArrowLengthPx);
 
     const auto drawSample = [&](const glm::vec2& samplePos, const glm::vec3& subjectPos, const glm::vec3& pixelPos) {
-      const glm::vec2 viewClipPos = viewClip_T_miewport(windowVP, view, samplePos);
-      const glm::vec2 checkerCoord = checkerCoordForViewClip(viewClipPos, numCheckers, aspectRatio);
-      if (!doRenderComparisonSample(
+      const glm::vec2 viewClipPos =
+        vector_drawing::viewClipFromMiewport(windowViewport, view.viewClip_T_windowClip(), samplePos);
+      const glm::vec2 checkerCoord = vector_drawing::checkerCoordForViewClip(viewClipPos, numCheckers, aspectRatio);
+      if (!vector_drawing::shouldRenderFixedComparisonSample(
             view.renderMode(),
             viewClipPos,
             checkerCoord,
@@ -1272,8 +1180,8 @@ void drawVectorFieldArrows(
         scaleByMagnitude ? scaleFactor * subjectVector : scaleFactor * glm::normalize(subjectVector);
       const glm::vec3 worldEnd{world_T_subject * glm::vec4{subjectPos + vectorForEndpoint, 1.0f}};
       const glm::vec2 endPos =
-        helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldEnd);
-      if (!isFiniteVec2(endPos)) {
+        helper::miewport_T_world(windowViewport, view.camera(), view.windowClip_T_viewClip(), worldEnd);
+      if (!vector_drawing::isFiniteVec2(endPos)) {
         return;
       }
 
@@ -1328,8 +1236,9 @@ void drawVectorFieldArrows(
       const int axis0 = (sliceAxis + 1) % 3;
       const int axis1 = (sliceAxis + 2) % 3;
       const float requestedStep = std::max(settings.vectorArrowOverlayVoxelSpacing(), 0.1f);
-      const float minStepForScreenSpacing =
-        std::max(requestedStep, 4.0f / std::max(screenPixelsPerVoxel(windowVP, view, *image, worldCrosshairs), 0.1f));
+      const float minStepForScreenSpacing = std::max(
+        requestedStep,
+        4.0f / std::max(screenPixelsPerVoxel(windowViewport, view, *image, worldCrosshairs), 0.1f));
       const float voxelStep = std::min(minStepForScreenSpacing, 100.0f);
 
       for (float b = 0.0f; b < static_cast<float>(dims[axis1]); b += voxelStep) {
@@ -1350,8 +1259,8 @@ void drawVectorFieldArrows(
           const glm::vec3 subjectPos{subject_T_pixel * glm::vec4{pixelPos, 1.0f}};
           const glm::vec3 worldPos{world_T_subject * glm::vec4{subjectPos, 1.0f}};
           const glm::vec2 samplePos =
-            helper::miewport_T_world(windowVP, view.camera(), view.windowClip_T_viewClip(), worldPos);
-          if (!isFiniteVec2(samplePos) || !isInsideRect(samplePos, viewMin, viewSize)) {
+            helper::miewport_T_world(windowViewport, view.camera(), view.windowClip_T_viewClip(), worldPos);
+          if (!vector_drawing::isFiniteVec2(samplePos) || !vector_drawing::isInsideRect(samplePos, viewMin, viewSize)) {
             continue;
           }
 
@@ -1366,7 +1275,7 @@ void drawVectorFieldArrows(
         for (float x = startX; x < viewMin.x + viewSize.x; x += spacingPx) {
           const glm::vec2 samplePos{x, y};
           const glm::vec3 worldNear =
-            helper::world_T_miewport(windowVP, view.camera(), view.viewClip_T_windowClip(), samplePos);
+            helper::world_T_miewport(windowViewport, view.camera(), view.viewClip_T_windowClip(), samplePos);
           const float signedDistance = glm::dot(worldNear - worldCrosshairs, worldViewNormal);
           const glm::vec3 worldOnSlice = worldNear - signedDistance * worldViewNormal;
           const glm::vec3 subjectPos{subject_T_world * glm::vec4{worldOnSlice, 1.0f}};
@@ -1461,112 +1370,6 @@ void drawCrosshairs(
       }
     }
   }
-
-  nvgResetScissor(nvg);
-}
-
-void drawThreeDCameraFrustumOverlay(
-  NVGcontext* nvg,
-  const FrameBounds& miewportViewBounds,
-  const Viewport& windowVP,
-  const View& view,
-  const camera3d::FrustumSliceOverlay& overlay,
-  const glm::vec4& color)
-{
-  static constexpr float k_eyeRadiusPx = 4.0f;
-  static constexpr float k_shadowAlphaScale = 0.65f;
-  const NVGcolor lineColor = nvgColor(color);
-  const NVGcolor shadowColor = nvgRGBAf(0.0f, 0.0f, 0.0f, k_shadowAlphaScale * color.a);
-
-  nvgScissor(
-    nvg,
-    miewportViewBounds.viewport[0],
-    miewportViewBounds.viewport[1],
-    miewportViewBounds.viewport[2],
-    miewportViewBounds.viewport[3]);
-
-  nvgLineCap(nvg, NVG_BUTT);
-  nvgLineJoin(nvg, NVG_MITER);
-
-  auto drawSegments = [&](const NVGcolor& strokeColor, float strokeWidth) {
-    nvgStrokeColor(nvg, strokeColor);
-    nvgStrokeWidth(nvg, strokeWidth);
-    nvgBeginPath(nvg);
-    for (const auto& segment : overlay.segments) {
-      const glm::vec2 a = projectWorldToMiewport(windowVP, view, segment.a);
-      const glm::vec2 b = projectWorldToMiewport(windowVP, view, segment.b);
-      if (!isFiniteVec2(a) || !isFiniteVec2(b)) {
-        continue;
-      }
-      nvgMoveTo(nvg, a.x, a.y);
-      nvgLineTo(nvg, b.x, b.y);
-    }
-    nvgStroke(nvg);
-  };
-
-  drawSegments(shadowColor, 4.0f);
-  drawSegments(lineColor, 2.0f);
-
-  const glm::vec2 eye = projectWorldToMiewport(windowVP, view, overlay.eye);
-  if (isFiniteVec2(eye)) {
-    nvgBeginPath(nvg);
-    nvgCircle(nvg, eye.x, eye.y, k_eyeRadiusPx + 2.0f);
-    nvgFillColor(nvg, shadowColor);
-    nvgFill(nvg);
-
-    nvgBeginPath(nvg);
-    nvgCircle(nvg, eye.x, eye.y, k_eyeRadiusPx);
-    nvgFillColor(nvg, lineColor);
-    nvgFill(nvg);
-  }
-
-  nvgResetScissor(nvg);
-}
-
-void drawLightboxOffsetLabel(
-  NVGcontext* nvg,
-  const FrameBounds& viewportViewBounds,
-  AppData& appData,
-  const View& view,
-  double unitReferenceLengthMm,
-  const glm::vec4& color)
-{
-  const float offsetMm = data::computeViewOffsetDistance(
-    appData,
-    view.offsetSetting(),
-    helper::worldDirection(view.camera(), Directions::View::Front));
-
-  static constexpr float sk_shadowBlur = 2.0f;
-  static constexpr float sk_padding = 5.0f;
-
-  const glm::vec2 viewportMinCorner(viewportViewBounds.bounds.xoffset, viewportViewBounds.bounds.yoffset);
-  const glm::vec2 viewportSize(viewportViewBounds.bounds.width, viewportViewBounds.bounds.height);
-  const float fontSizePixels = glm::clamp(0.065f * std::min(viewportSize.x, viewportSize.y), 9.0f, 14.0f);
-  const std::string label = entropy::rendering::lightbox::formatOffsetDistanceMm(
-    offsetMm,
-    unitReferenceLengthMm,
-    static_cast<int>(appData.guiData().m_coordsPrecision));
-
-  nvgScissor(
-    nvg,
-    viewportViewBounds.viewport[0],
-    viewportViewBounds.viewport[1],
-    viewportViewBounds.viewport[2],
-    viewportViewBounds.viewport[3]);
-
-  nvgFontSize(nvg, fontSizePixels);
-  nvgFontFace(nvg, ROBOTO_LIGHT.c_str());
-  nvgTextAlign(nvg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-
-  const glm::vec2 labelPos = viewportMinCorner + glm::vec2{sk_padding, sk_padding};
-
-  nvgFontBlur(nvg, sk_shadowBlur);
-  nvgFillColor(nvg, nvgRGBAf(0.0f, 0.0f, 0.0f, color.a));
-  nvgText(nvg, labelPos.x, labelPos.y, label.c_str(), nullptr);
-
-  nvgFontBlur(nvg, 0.0f);
-  nvgFillColor(nvg, nvgRGBAf(color.r, color.g, color.b, color.a));
-  nvgText(nvg, labelPos.x, labelPos.y, label.c_str(), nullptr);
 
   nvgResetScissor(nvg);
 }

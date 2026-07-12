@@ -1,5 +1,4 @@
-#ifndef GLBUFFEROBJECT_H
-#define GLBUFFEROBJECT_H
+#pragma once
 
 #include "rendering/utility/gl/GLBufferTypes.h"
 #include "rendering/utility/gl/GLErrorChecker.h"
@@ -168,5 +167,3 @@ private:
 
   std::size_t m_bufferSizeInBytes;
 };
-
-#endif // GLBUFFEROBJECT_H

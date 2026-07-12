@@ -1,5 +1,4 @@
-#ifndef I_MOUSE_EVENT_HANDLER_H
-#define I_MOUSE_EVENT_HANDLER_H
+#pragma once
 
 #include "common/Viewport.h"
 #include "logic/camera/Camera.h"
@@ -19,5 +18,3 @@ public:
   virtual bool handleMousePressEvent(QMouseEvent*, const Viewport&, const Camera&) = 0;
   virtual bool handleMouseReleaseEvent(QMouseEvent*, const Viewport&, const Camera&) = 0;
 };
-
-#endif // I_MOUSE_EVENT_HANDLER_H

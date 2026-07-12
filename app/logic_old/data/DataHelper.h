@@ -1,5 +1,4 @@
-#ifndef DATA_HELPER_H
-#define DATA_HELPER_H
+#pragma once
 
 #include "common/AABB.h"
 #include "common/CoordinateFrame.h"
@@ -106,5 +105,3 @@ gui::ViewSliderParams viewSliceSliderParams(
 gui::ViewSliderParams defaultViewSliderParams();
 
 } // namespace data
-
-#endif // DATA_HELPER_H

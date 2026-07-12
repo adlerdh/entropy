@@ -1,5 +1,4 @@
-#ifndef POINT_RECORD_H
-#define POINT_RECORD_H
+#pragma once
 
 #include "common/UuidUtility.h"
 
@@ -104,5 +103,3 @@ private:
   bool m_visibility;         //!< Visibility
   glm::vec3 m_color;         //!< RGB color
 };
-
-#endif // POINT_RECORD_H

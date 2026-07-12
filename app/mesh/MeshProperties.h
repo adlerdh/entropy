@@ -1,5 +1,4 @@
-#ifndef MESH_PROPERTIES_H
-#define MESH_PROPERTIES_H
+#pragma once
 
 #include <glm/vec3.hpp>
 
@@ -16,5 +15,3 @@ private:
   /// Mesh color as RGBA, non-premultiplied by alpha
   glm::vec3 m_materialColor;
 };
-
-#endif // MESH_PROPERTIES_H

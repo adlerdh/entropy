@@ -1,5 +1,4 @@
-#ifndef CONNECTION_MANAGER_H
-#define CONNECTION_MANAGER_H
+#pragma once
 
 #include "common/PublicTypes.h"
 #include "UID.h"
@@ -88,5 +87,3 @@ private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
 };
-
-#endif // CONNECTION_MANAGER_H

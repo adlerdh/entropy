@@ -1,5 +1,4 @@
-#ifndef I_RENDERER_H
-#define I_RENDERER_H
+#pragma once
 
 #include "common/CoordinateFrame.h"
 #include "common/Viewport.h"
@@ -49,5 +48,3 @@ public:
    */
   virtual std::pair<uint16_t, float> pickObjectIdAndNdcDepth(const glm::vec2& ndcPos) = 0;
 };
-
-#endif // I_RENDERER_H
