@@ -40,7 +40,6 @@ target_link_libraries(TestUi PRIVATE
   CURL::libcurl
   imgui
   nlohmann_json::nlohmann_json
-  spdlog::spdlog
   entropy_warnings
 )
 

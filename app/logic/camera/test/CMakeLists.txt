@@ -23,7 +23,6 @@ target_sources(TestCamera PRIVATE
 target_link_libraries(TestCamera PRIVATE
   Catch2::Catch2WithMain
   Entropy::Common
-  spdlog::spdlog
   entropy_warnings
 )
 

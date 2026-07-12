@@ -912,7 +912,6 @@ target_link_libraries(entropy PRIVATE
   nfd::nfd
   nlohmann_json::nlohmann_json
   Qt6::Core
-  spdlog::spdlog
   stduuid
   entropy::colormaps
   entropy::fonts

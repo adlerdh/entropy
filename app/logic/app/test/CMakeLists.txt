@@ -34,12 +34,10 @@ endif()
 
 target_link_libraries(TestAppSettings PRIVATE
   Catch2::Catch2WithMain
-  Entropy::Common
   Entropy::Layout
   Entropy::Registration
   Entropy::Viewer
   nlohmann_json::nlohmann_json
-  spdlog::spdlog
   entropy_warnings
 )
 
