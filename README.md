@@ -1,14 +1,14 @@
 # Entropy Medical Image Viewer
 
-<img src="res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png" alt="Entropy icon" align="left" width="96" hspace="16" vspace="4">
+<img src="res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png" alt="Entropy icon" align="left" width="128" hspace="16" vspace="4">
 
 Entropy is a cross-platform tool for visualizing, comparing, registering, segmenting, annotating, and inspecting medical images.
 
 It is built to handle projects with multiple images in a common reference space. It can load any number of images, arrange them in flexible layouts, render them with fast shader-based MPR views, and display their values, coordinates, and transforms. Different rendering modes help with comparing images and evaluating spatial alignment.
 
-Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D.
-
 Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Science Lab (PICSL), University of Pennsylvania. All rights reserved.
+
+Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D., with support from Professor [James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656).
 
 ## Building
 
@@ -146,16 +146,20 @@ Entropy is a native C++ application built for interactive desktop performance ac
 
 |  |  |
 | --- | --- |
+| Platforms | macOS, Windows, Ubuntu, and Fedora |
 | Language | C++23 |
 | Build system | CMake presets with separate dependency and app stages |
-| Toolchains | Apple Clang, MSVC/Visual Studio 2022, and GCC |
-| Tests | Unit tests and coverage reports run in CI |
-| Platforms | macOS, Windows, Ubuntu, and Fedora |
-| Rendering | OpenGL 3.3 Core with GLSL 3.30 shaders |
-| Image I/O | Medical image loading through ITK |
-| UI | [Dear ImGui](https://github.com/ocornut/imgui) with native platform menu and dialog integration |
+| Toolchains | Apple Clang, MSVC/Visual Studio, and GCC in CI |
+| Tests | Unit tests and coverage reports run with GitHub Actions |
+| Rendering | OpenGL 3.3 Core with GLSL shaders |
+| Image I/O | Medical image loading through [ITK](https://itk.org/) and [GDCM](https://gdcm.sourceforge.net/) |
+| UI | [Dear ImGui](https://github.com/ocornut/imgui) with [Docking support](https://github.com/ocornut/imgui/wiki/Docking) and native platform menus and dialog integration |
 
 Entropy targets OpenGL 3.3 Core with GLSL 3.30 shaders to maximize compatibility across platforms and operating system versions. Detailed compiler versions, operating system versions, development packages, and coverage workflows are documented in [BUILDING.md](BUILDING.md).
+
+### Continuous Integration
+
+GitHub Actions builds and tests Entropy on macOS, Windows, Ubuntu, and Fedora. Current CI coverage includes macOS 14.6.1, 15.3.1, 15.6.1, and 26.0.1; Windows 10 and 11; Ubuntu 22.04 and 24.04; and Fedora 43. The CI toolchains are Apple Clang 15.0.0+, MSVC/Visual Studio 2022 17.3.4+, and GCC 13.3.0+.
 
 ## Core Concepts
 
@@ -279,11 +283,11 @@ Including segmentations, landmarks, annotations, and an affine transformation:
 }
 ```
 
-The project format may evolve as Entropy develops.
+> The project format may evolve as Entropy develops.
 
 ### Keyboard Shortcuts
 
-Common shortcuts:
+The complete list is available under menu *Help > Keyboard Shortcuts*.
 
 | Shortcut | Action |
 | --- | --- |
@@ -307,18 +311,28 @@ Common shortcuts:
 | `I` | Show/hide voxel inspector |
 | `O` | Cycle view overlays |
 
-The complete list is available under menu *Help > Keyboard Shortcuts*.
+## Runtime Files
 
-## Settings
+Entropy writes a small number of user-level runtime files outside of project files
+
+### Settings
 
 Entropy persists application settings in the standard location for each platform:
 
 - macOS: `~/Library/Application Support/Entropy/settings.json`
 - Windows: `%APPDATA%\Entropy\settings.json`
-- Linux: `$XDG_CONFIG_HOME/entropy/settings.json`, or `~/.config/entropy/settings.json`
+- Linux: `${XDG_CONFIG_HOME:-~/.config}/entropy/settings.json`
 
 Settings owned by a project are saved in project JSON files instead of the application settings file.
 
+### Logging
+
+Entropy writes logs to the console and to daily log files. Log verbosity can be changed from Application Settings or with `--log-level`. Default log locations:
+
+- macOS: `~/Library/Logs/Entropy/`
+- Windows: `%APPDATA%\Entropy\Logs\`
+- Linux: `${XDG_STATE_HOME:-~/.local/state}/entropy/logs/`
+
 ## License
 
-Entropy is licensed under the Apache License 2.0; see [LICENSE.txt](LICENSE.txt). Required project notices are in [NOTICE.txt](NOTICE.txt). Third-party dependency notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Entropy source code and official release packages are distributed under the Apache License 2.0 ([LICENSE.txt](LICENSE.txt)). Required project notices are in [NOTICE.txt](NOTICE.txt). Third-party dependency notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

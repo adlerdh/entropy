@@ -127,11 +127,13 @@ void renderAboutDialogModalPopup(bool open)
           {"Current working directory",
            "Resource directory",
            "User data directory",
+           "Cache directory",
            "Log directory",
            "Uses platform user directories"});
         renderRuntimePathField("Current working directory", currentDirectory(), inputWidth);
         renderRuntimePathField("Resource directory", displayPath(app_paths::resourceDirectory()), inputWidth);
         renderRuntimePathField("User data directory", displayPath(app_paths::userDataDirectory()), inputWidth);
+        renderRuntimePathField("Cache directory", displayPath(app_paths::cacheDirectory()), inputWidth);
         renderRuntimePathField("Log directory", displayPath(app_paths::logDirectory()), inputWidth);
         renderRuntimePathField(
           "Uses platform user directories",

@@ -12,6 +12,7 @@ bool usesPlatformUserDirectories();
 
 std::filesystem::path resourceDirectory();
 std::filesystem::path logDirectory();
+std::filesystem::path cacheDirectory();
 std::filesystem::path userDataDirectory();
 std::filesystem::path userSettingsFile();
 

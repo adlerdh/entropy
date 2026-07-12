@@ -35,21 +35,43 @@ fs::path knownFolderPath(const KNOWNFOLDERID& folderId)
   return {};
 }
 
-fs::path windowsUserDataRoot()
+fs::path windowsEnvironmentPath(const char* name)
+{
+  char* appData = nullptr;
+  std::size_t appDataLength = 0;
+  if (_dupenv_s(&appData, &appDataLength, name) == 0 && appData != nullptr) {
+    fs::path result{appData};
+    std::free(appData);
+    return result;
+  }
+
+  return {};
+}
+
+fs::path windowsConfigRoot()
 {
   if (const fs::path roamingAppData = knownFolderPath(FOLDERID_RoamingAppData); !roamingAppData.empty()) {
     return roamingAppData / "Entropy";
   }
 
-  char* appData = nullptr;
-  std::size_t appDataLength = 0;
-  if (_dupenv_s(&appData, &appDataLength, "APPDATA") == 0 && appData != nullptr) {
-    fs::path result{appData};
-    std::free(appData);
-    return result / "Entropy";
+  if (const fs::path appData = windowsEnvironmentPath("APPDATA"); !appData.empty()) {
+    return appData / "Entropy";
   }
 
   return "Entropy";
+}
+
+fs::path windowsCacheRoot()
+{
+  if (const fs::path localAppData = knownFolderPath(FOLDERID_LocalAppData); !localAppData.empty()) {
+    return localAppData / "Entropy" / "Cache";
+  }
+
+  if (const fs::path localAppData = windowsEnvironmentPath("LOCALAPPDATA"); !localAppData.empty()) {
+    return localAppData / "Entropy" / "Cache";
+  }
+
+  return windowsConfigRoot() / "Cache";
 }
 
 fs::path executableDirectory()
@@ -72,17 +94,43 @@ fs::path executableDirectory()
 #endif
 
 #if defined(__linux__)
-fs::path linuxUserDataRoot()
+fs::path environmentPath(const char* name)
 {
-  if (const char* xdgConfigHome = std::getenv("XDG_CONFIG_HOME"); xdgConfigHome != nullptr && *xdgConfigHome != '\0') {
-    return fs::path{xdgConfigHome} / "entropy";
+  if (const char* value = std::getenv(name); value != nullptr && *value != '\0') {
+    return fs::path{value};
+  }
+
+  return {};
+}
+
+fs::path xdgPathOrDefault(const char* environmentVariable, const fs::path& defaultRelativePath)
+{
+  if (const fs::path environmentValue = environmentPath(environmentVariable);
+      !environmentValue.empty() && environmentValue.is_absolute())
+  {
+    return environmentValue;
   }
 
   if (const char* home = std::getenv("HOME"); home != nullptr && *home != '\0') {
-    return fs::path{home} / ".config" / "entropy";
+    return fs::path{home} / defaultRelativePath;
   }
 
-  return "entropy";
+  return ".";
+}
+
+fs::path linuxConfigRoot()
+{
+  return xdgPathOrDefault("XDG_CONFIG_HOME", fs::path{".config"});
+}
+
+fs::path linuxStateRoot()
+{
+  return xdgPathOrDefault("XDG_STATE_HOME", fs::path{".local"} / "state");
+}
+
+fs::path linuxCacheRoot()
+{
+  return xdgPathOrDefault("XDG_CACHE_HOME", fs::path{".cache"});
 }
 
 fs::path executableDirectory()
@@ -118,7 +166,7 @@ bool isRunningFromMacOSAppBundle()
 
 bool usesPlatformUserDirectories()
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__linux__)
   return true;
 #else
   return false;
@@ -149,18 +197,31 @@ std::filesystem::path resourceDirectory()
 std::filesystem::path logDirectory()
 {
 #ifdef _WIN32
-  return windowsUserDataRoot() / "Logs";
+  return windowsConfigRoot() / "Logs";
+#elif defined(__linux__)
+  return linuxStateRoot() / "entropy" / "logs";
 #else
   return "log";
+#endif
+}
+
+std::filesystem::path cacheDirectory()
+{
+#ifdef _WIN32
+  return windowsCacheRoot();
+#elif defined(__linux__)
+  return linuxCacheRoot() / "entropy";
+#else
+  return "cache";
 #endif
 }
 
 std::filesystem::path userDataDirectory()
 {
 #ifdef _WIN32
-  return windowsUserDataRoot();
+  return windowsConfigRoot();
 #elif defined(__linux__)
-  return linuxUserDataRoot();
+  return linuxConfigRoot() / "entropy";
 #else
   return ".";
 #endif

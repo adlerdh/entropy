@@ -1,24 +1,18 @@
-# Packaging the Entropy Medical Image Viewer
-This guide gives the release packaging commands for Entropy. For general build setup, supported platforms, and CMake option details, see [BUILDING.md](BUILDING.md).
+# Packaging Entropy
 
-Entropy packages are created with CPack from the release app build. By default, generated packages and CPack scratch files are written under the active build tree:
-```text
-build-release/packages/
-```
+This guide covers local release packaging and GitHub release behavior. For compiler requirements, dependency builds, tests, and general source build instructions, see [BUILDING.md](BUILDING.md).
 
-The output directory is controlled by `Entropy_PACKAGE_OUTPUT_DIR` and can be changed when configuring the app stage:
-```sh
-cmake --preset app-release -DEntropy_PACKAGE_OUTPUT_DIR=/tmp/entropy-packages
-```
+Entropy packages are created with [CPack](https://cmake.org/cmake/help/latest/module/CPack.html) from the release app build and written to `build-release/packages/`.
 
-Linux package filenames include `Entropy_LINUX_PACKAGE_PLATFORM_LABEL`, which defaults to `Ubuntu-22.04`. Linux package generators are controlled by `Entropy_LINUX_CPACK_GENERATORS`, which defaults to `DEB;TGZ`:
-```sh
-cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Ubuntu-24.04
-cmake --preset app-release -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43 "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
-```
+All packages include the runtime application plus `README.md`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_NOTICES.md`.
 
-## Release Flow
-Use this sequence for normal release packages on Linux, macOS, and Windows:
+Release package builds link bundled third-party libraries statically where practical. Qt and platform system libraries remain dynamic and are bundled or referenced according to the platform package format.
+
+Portable ZIP/TAR.GZ archives contain the same runtime application as installable packages, without installer metadata or shortcuts.
+
+## Release Package Flow
+
+Use this sequence for local release packages on Linux, macOS, and Windows:
 
 ```sh
 cmake --preset deps-release
@@ -30,266 +24,166 @@ cmake --build --preset app-release --parallel
 cmake --build --preset package-release --parallel
 ```
 
-The `package-release` preset builds CMake's `package` target, which runs CPack using `build-release/CPackConfig.cmake`. The final package appears under `build-release/packages/` unless `Entropy_PACKAGE_OUTPUT_DIR` was overridden.
+The `package-release` preset runs CMake's `package` target, which calls CPack with `build-release/CPackConfig.cmake`.
 
-If the release app is already configured and built, you can run CPack directly:
+If the release app is already configured and built, CPack can be run directly:
+
 ```sh
+# Single-config builds, such as Make or Ninja
 cpack --config build-release/CPackConfig.cmake
+
+# Multi-config builds, such as Visual Studio
+cpack -C Release --config build-release/CPackConfig.cmake
 ```
 
-## GitHub Tag Releases
+## Package Options
 
-Public GitHub Releases are created by `.github/workflows/release.yml`. The release workflow runs only when a tag matching `v*.*.*.*` is pushed. It verifies that the tag exactly matches the version in `CMakeLists.txt`, then builds the Windows, Ubuntu, Fedora, and macOS release packages, runs release tests, smoke-tests staged installs, creates a GitHub Release, and uploads installer packages plus portable archives as release assets.
+Pass these when configuring the app stage with `cmake --preset app-release -DNAME=value`.
 
-Before creating a release tag, update these values in `CMakeLists.txt`:
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `Entropy_PACKAGE_OUTPUT_DIR` | `build-release/packages` | Directory where CPack writes packages |
+| `Entropy_PACKAGE_ARCHITECTURE` | detected from host | Architecture label used in package filenames |
+| `Entropy_STATIC_BUNDLED_DEPENDENCIES` | `ON` in release presets | Links bundled dependencies statically where practical; Qt and system libraries stay dynamic |
+| `Entropy_LINUX_PACKAGE_PLATFORM_LABEL` | detected from `/etc/os-release` | Linux platform label in package filenames |
+| `Entropy_LINUX_CPACK_GENERATORS` | `DEB;TGZ` | Linux package generators; use `RPM;TGZ` for Fedora |
+| `Entropy_MACOS_CODESIGN_IDENTITY` | `-` | macOS signing identity; `-` means ad-hoc signing, empty skips signing |
+| `Entropy_STRIP_PACKAGED_APP` | `ON` | Strips local symbols from the installed macOS app bundle before signing |
+| `Entropy_WIX_ROOT` | empty | Optional explicit path to [WiX Toolset](https://wixtoolset.org/) v3 tools; normally discovered from the build tree, `PATH`, or `WIX` |
 
-```cmake
-set(VERSION_MAJOR 0)
-set(VERSION_MINOR 9)
-set(VERSION_FEATURE 5)
-set(VERSION_PATCH 0)
-```
-
-After the version bump has been reviewed and merged, create a signed tag if you have GPG signing configured:
-
-```sh
-git switch main
-git pull --ff-only
-git tag -s v0.9.5.0 -m "Entropy 0.9.5.0"
-git push origin v0.9.5.0
-```
-
-If signed tags are not configured, use an annotated tag:
-
-```sh
-git tag -a v0.9.5.0 -m "Entropy 0.9.5.0"
-git push origin v0.9.5.0
-```
-
-The tag name must match `VERSION_FULL` exactly. For example, `VERSION_MAJOR=0`, `VERSION_MINOR=9`, `VERSION_FEATURE=5`, and `VERSION_PATCH=0` require the tag `v0.9.5.0`. If the tag and CMake version disagree, the release workflow fails before building packages.
-
-The generated GitHub Release assets are named like:
-
-```text
-Entropy-0.9.5.0-Windows-x86_64.msi
-Entropy-0.9.5.0-Windows-x86_64-portable.zip
-Entropy-0.9.5.0-Ubuntu-22.04-x86_64.deb
-Entropy-0.9.5.0-Fedora-43-x86_64.rpm
-```
-
-The same files are also uploaded as workflow artifacts for debugging. The GitHub Release assets are the public download files; avoid storing large binaries directly in GitHub Pages. If a project website needs download links, point the website to the GitHub Release or its latest-release page.
+Changing dependency linkage options such as `Entropy_STATIC_BUNDLED_DEPENDENCIES` requires rebuilding the dependency stage. Do not reuse a dependency tree built with different linkage settings.
 
 ## Linux Packages
-On Linux, CPack creates packages based on `Entropy_LINUX_CPACK_GENERATORS`. The default Ubuntu build creates a Debian package and a portable tarball named like:
+
+Linux packages should be built on the oldest supported target distribution. A binary built on a newer Linux host may require newer `glibc`, `libstdc++`, or compiler runtime packages than older distributions provide.
+
+Official Linux CI release builds currently produce Ubuntu 22.04 DEB/TAR.GZ packages and Fedora 43 RPM/TAR.GZ packages. CI sets explicit labels for release artifacts so public download names stay stable.
+
+Required tools:
+
+- Ubuntu DEB packages: `dpkg-dev`, `fakeroot`, and `file`
+- Fedora RPM packages: `rpm-build` and `file`
+
+By default, CMake derives the Linux platform label from `/etc/os-release`, such as `Ubuntu-22.04` or `Fedora-43`. Override `Entropy_LINUX_PACKAGE_PLATFORM_LABEL` when a specific release label is needed.
+
+The default Linux generators are `DEB;TGZ`. On an Ubuntu 22.04 host, the default local package names are:
+
 ```text
-build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
-build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64-portable.tar.gz
+Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
+Entropy-x.y.z.w-Ubuntu-22.04-x86_64-portable.tar.gz
 ```
 
-A Fedora build configured with `Entropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43` and `Entropy_LINUX_CPACK_GENERATORS=RPM;TGZ` creates artifacts named like:
-```text
-build-release/packages/Entropy-x.y.z.w-Fedora-43-x86_64.rpm
-build-release/packages/Entropy-x.y.z.w-Fedora-43-x86_64-portable.tar.gz
+On Fedora, configure the app stage with RPM output before packaging:
+
+```sh
+cmake --preset app-release "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
+cmake --build --preset package-release --parallel
 ```
 
-To force a single generator when running CPack directly:
+On a Fedora 43 host, the package names are:
+
+```text
+Entropy-x.y.z.w-Fedora-43-x86_64.rpm
+Entropy-x.y.z.w-Fedora-43-x86_64-portable.tar.gz
+```
+
+The DEB and RPM install under `/usr`.
+
+[Native File Dialog Extended](https://github.com/btzy/nativefiledialog-extended) uses the Linux desktop portal backend, so native file dialogs need a working `xdg-desktop-portal` service. This service is the desktop-neutral interface that lets applications ask the user's desktop environment to show file picker dialogs.
+
+To create a specific Linux package type:
+
 ```sh
 cpack -G DEB --config build-release/CPackConfig.cmake
 cpack -G RPM --config build-release/CPackConfig.cmake
 cpack -G TGZ --config build-release/CPackConfig.cmake
 ```
 
-### Linux Package Layout
-The DEB and RPM packages install the runtime payload under `/usr`, while the portable tarball contains the same payload under a top-level archive directory:
-```text
-bin/entropy
-lib/entropy/libQt6Core.so*
-share/applications/io.github.adlerdh.entropy.desktop
-share/icons/hicolor/<size>x<size>/apps/io.github.adlerdh.entropy.png
-```
+Test a Linux package:
 
-ITK, GLFW, Native File Dialog Extended, spdlog, and small helper libraries are linked statically into the executable by default on Linux. Qt Core remains dynamic and is bundled under `lib/entropy`. The About dialog icon is embedded into the executable with CMakeRC instead of installed as a loose file. The installed executable uses this RPATH:
-```text
-$ORIGIN/../lib/entropy
-```
-
-The app resolves `share/entropy` relative to the executable first, so both `/usr/bin/entropy` from the DEB and `bin/entropy` from the portable tarball can find packaged resources. The install step checks bundled private libraries and fails if any copied library still contains the build directory in its RPATH or RUNPATH.
-
-### Linux Runtime Dependencies
-The DEB uses `dpkg-shlibdeps` to detect non-bundled system library dependencies. For the current Ubuntu package, that includes `libpcre2-16-0`, which is required by the bundled Qt Core library and resolved automatically by `apt install ./Entropy-...deb`. It also recommends `xdg-desktop-portal` plus a common portal backend:
-```text
-xdg-desktop-portal, xdg-desktop-portal-gtk | xdg-desktop-portal-kde | xdg-desktop-portal-gnome
-```
-
-Native File Dialog Extended uses the portal backend on Linux, so a working desktop portal is needed for native file dialogs.
-
-### Ubuntu Compatibility
-Linux binary compatibility is determined by the system used to build the package. A package built on a newer host may require newer `libc6`, `libstdc++6`, or compiler runtime packages than older Ubuntu releases provide.
-
-If Ubuntu 22.04 compatibility is required, build the release package on Ubuntu 22.04 or inside a real 22.04 container, VM, or sysroot with matching compilers and runtime libraries. A CMake toolchain file alone cannot make a binary built against a newer host glibc compatible with Ubuntu 22.04.
-
-### Test a Linux Package
-Inspect the DEB:
 ```sh
 dpkg-deb --info build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
 dpkg-deb --contents build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
-```
-
-Install locally and launch:
-```sh
 sudo apt install ./build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
-entropy --help
 entropy
 ```
 
-Use `apt install ./...deb` for local package testing, not `dpkg -i`. The DEB declares normal Ubuntu runtime dependencies such as `libpcre2-16-0`, and `apt` resolves and installs them. `dpkg -i` only unpacks the file and configures it if every dependency is already installed. If a `dpkg -i` attempt leaves Entropy unpacked but unconfigured, repair the install with:
-```sh
-sudo apt --fix-broken install
-```
+Use `apt install ./<package>`, not `dpkg -i`, so dependencies are resolved automatically.
 
-If you are testing a rebuilt package with the same version number as the package already installed, force apt to replace the installed files:
-```sh
-sudo apt install --reinstall ./build-release/packages/Entropy-x.y.z.w-Ubuntu-22.04-x86_64.deb
-```
+Test a staged Linux install without installing system-wide:
 
-Also test the desktop launcher and at least one open/save file dialog on a clean graphical Ubuntu system.
-
-For a staged install check without installing system-wide:
 ```sh
 cmake --install build-release --prefix build-release/linux-package-install
-readelf -d build-release/linux-package-install/bin/entropy
-ldd build-release/linux-package-install/bin/entropy
-build-release/linux-package-install/bin/entropy --help
+build-release/linux-package-install/bin/entropy
 ```
 
-### Fedora Local Package Check
-Run the Fedora packaging path inside the same Fedora container used by CI. This keeps Fedora runtime and RPM dependency detection tied to Fedora rather than the host distribution.
+## macOS Packages
 
-```sh
-mkdir -p /tmp/entropy-fedora-local-build
-docker run --rm \
-  -v "$PWD:/work:ro" \
-  -v /tmp/entropy-fedora-local-build:/build \
-  -w /work \
-  fedora:43 \
-  bash -lc '
-    set -euo pipefail
-    dnf install -y --setopt=install_weak_deps=False \
-      ccache cmake file gcc gcc-c++ git dbus-devel libX11-devel libXcursor-devel \
-      libXext-devel libXfixes-devel libXi-devel libXinerama-devel libXrandr-devel \
-      libglvnd-devel libglvnd-opengl libxkbcommon-devel make mesa-libGL-devel \
-      rpm-build wayland-devel
-    git config --global --add safe.directory /work
-    export CC=gcc CXX=g++
-    cmake -S /work -B /build -DEntropy_SUPERBUILD=ON -DCMAKE_BUILD_TYPE=Release \
-      -DEntropy_STATIC_BUNDLED_DEPENDENCIES=ON \
-      -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43 \
-      "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
-    cmake --build /build --parallel
-    cmake -S /work -B /build -DEntropy_SUPERBUILD=OFF -DCMAKE_BUILD_TYPE=Release \
-      -DEntropy_STATIC_BUNDLED_DEPENDENCIES=ON \
-      -DEntropy_LINUX_PACKAGE_PLATFORM_LABEL=Fedora-43 \
-      "-DEntropy_LINUX_CPACK_GENERATORS=RPM;TGZ"
-    cmake --build /build --parallel
-    ctest --test-dir /build --parallel --output-on-failure
-    cmake --build /build --target package --parallel
-    rpm -qpi /build/packages/Entropy-*-Fedora-43-*.rpm
-    rpm -qp --requires /build/packages/Entropy-*-Fedora-43-*.rpm
-  '
-```
+On macOS, Entropy is built as an `.app` bundle.
 
-The generated Fedora artifacts remain under `/tmp/entropy-fedora-local-build/packages` on the host.
+Required tools:
 
-## macOS DMG Package
-On macOS, Entropy is built as an `.app` bundle. CPack creates a drag-and-drop DMG named like:
+- Xcode or Xcode Command Line Tools
+- `codesign` for signed packages
+
+CPack creates a drag-and-drop DMG and a portable ZIP:
+
 ```text
-build-release/packages/Entropy-x.y.z.w-macOS.dmg
+Entropy-x.y.z.w-macOS-arm64.dmg
+Entropy-x.y.z.w-macOS-arm64.zip
+Entropy-x.y.z.w-macOS-x86_64.dmg
+Entropy-x.y.z.w-macOS-x86_64.zip
 ```
 
-To force the DragNDrop generator when running CPack directly:
+The arm64 and x86_64 packages are built separately. Entropy does not publish a universal macOS binary.
+
+To force the DMG generator:
+
 ```sh
 cpack -G DragNDrop --config build-release/CPackConfig.cmake
 ```
 
-### macOS Bundle Fixup And Signing
-The install and CPack steps copy required third-party dynamic libraries into:
-```text
-Entropy.app/Contents/Frameworks
+By default, local macOS packages use ad-hoc signing:
+
+```sh
+Entropy_MACOS_CODESIGN_IDENTITY=-
 ```
 
-CMake's bundle fixup rewrites library paths so the app does not depend on the build tree.
+*TODO:* For public distribution, we will configure the app stage with a Developer ID Application identity and notarize the final DMG or app outside the CMake package step:
 
-By default, `Entropy_MACOS_CODESIGN_IDENTITY` is `-`, which creates an ad-hoc signature. This is useful for local testing after bundle fixup. For a public release, configure the release app with a Developer ID Application identity:
 ```sh
-cmake --preset app-release -DEntropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+cmake --preset app-release -DEntropy_MACOS_CODESIGN_IDENTITY="Developer ID Application: <developer-name> (<team-id>)"
 cmake --build --preset package-release --parallel
 ```
 
-The package step does not notarize the app. Public macOS distribution still needs Developer ID signing and Apple notarization outside this CMake packaging step.
+Test a macOS package:
 
-### Test a macOS Package
-Test the build-tree app:
 ```sh
 open build-release/bin/Entropy.app
+cmake --install build-release --prefix build-release/macos-package-install
+open build-release/macos-package-install/Entropy.app
 ```
 
-Test a staged install:
-```sh
-cmake --install build-release --prefix build-release/install
-open build-release/install/Entropy.app
-```
-
-Test the DMG by opening it, dragging `Entropy.app` to `/Applications`, and launching from Finder or Launchpad.
-
-Finder-launched macOS builds write logs under:
-```text
-~/Library/Logs/Entropy
-```
-
-and UI state under:
-```text
-~/Library/Application Support/Entropy
-```
-
-Terminal launches keep the development defaults used by the command-line app.
-
-## Package Size Notes
-Release packages default to `Entropy_STATIC_BUNDLED_DEPENDENCIES=ON`, which links ITK, GLFW, Native File Dialog Extended, spdlog, and small helper libraries statically into the executable. Qt Core stays dynamic and is bundled privately so the app does not depend on a system-provided Qt version.
-
-Release packages should be built from `build-release`, not `build-debug`. A Debug dependency tree can include debug information in copied private libraries and produce much larger packages. The release dependency build avoids that by building dependencies with `CMAKE_BUILD_TYPE=Release`.
-
-Changing `Entropy_STATIC_BUNDLED_DEPENDENCIES` changes how third-party dependencies are built. Reconfigure and rebuild the dependency stage after changing it; do not reuse a dependency tree that was previously built with the opposite static/shared setting.
+Also open the DMG, drag `Entropy.app` to `/Applications`, and launch from Finder.
 
 ## Windows Packages
-On Windows, CPack creates an MSI installer and a portable ZIP archive named like:
-```text
-build-release/packages/Entropy-x.y.z.w-Windows-x86_64.msi
-build-release/packages/Entropy-x.y.z.w-Windows-x86_64-portable.zip
-```
 
-The Windows MSI package uses CPack's WiX generator. With CMake 3.28, use WiX Toolset v3 (`candle.exe` and `light.exe`). The portable ZIP uses CPack's archive generator and does not need WiX when generated by itself.
-
-### Windows Packaging Environment
 Required tools:
+
+- Visual Studio 2022 C++ build tools
+- PowerShell
+- WiX Toolset v3.14.1 for MSI packages
+
+The portable ZIP does not require WiX. The MSI uses CPack's WiX generator and needs `candle.exe` and `light.exe`.
+
+On Windows, CPack creates an MSI installer and a portable ZIP:
+
 ```text
-CMake 3.28 or newer
-Visual Studio 2022 C++ build tools
-PowerShell
-WiX Toolset v3.14.1
+Entropy-x.y.z.w-Windows-x86_64.msi
+Entropy-x.y.z.w-Windows-x86_64-portable.zip
 ```
 
-Build the release dependency tree and app first:
-```powershell
-cmake --preset deps-release
-cmake --build --preset deps-release --parallel
-
-cmake --preset app-release
-cmake --build --preset app-release --parallel
-```
-
-CPack needs WiX v3 tools when generating the MSI. Use one of these setup options.
-
-**Option 1:** install WiX globally with winget. This may require administrator privileges and may also require the Windows `.NET Framework 3.5` feature:
+Install WiX globally:
 
 ```powershell
 winget install --id WiXToolset.WiXToolset --version 3.14.1.8722 `
@@ -297,14 +191,7 @@ winget install --id WiXToolset.WiXToolset --version 3.14.1.8722 `
   --accept-source-agreements
 ```
 
-After installation, open a new PowerShell session and verify:
-
-```powershell
-Get-Command candle.exe
-Get-Command light.exe
-```
-
-**Option 2:** keep WiX local to the build tree. This does not require installing WiX globally. CMake will automatically use `build-release\tools\wix\tools` when that directory contains `candle.exe` and `light.exe`:
+Or keep WiX local to the build tree. CMake automatically checks `build-release\tools\wix\tools`:
 
 ```powershell
 New-Item -ItemType Directory -Force build-release\tools | Out-Null
@@ -316,42 +203,59 @@ Expand-Archive build-release\tools\wix.3.14.1.zip build-release\tools\wix -Force
 cmake --preset app-release
 ```
 
-Verify the local WiX tools:
-```powershell
-Get-Command build-release\tools\wix\tools\candle.exe
-Get-Command build-release\tools\wix\tools\light.exe
-```
+Create Windows packages:
 
-### Create a Windows Package
-After WiX is available and the app stage has been configured, run CPack directly to create both Windows artifacts:
 ```powershell
 cpack -C Release --config build-release\CPackConfig.cmake
 ```
 
-To create only the portable ZIP archive, WiX is not required:
+Create only the portable ZIP:
+
 ```powershell
 cpack -G ZIP -C Release --config build-release\CPackConfig.cmake
 ```
 
-The Windows release presets set `Entropy_STATIC_BUNDLED_DEPENDENCIES=ON`, so ITK, GLFW, Native File Dialog Extended, spdlog, and small helper libraries are linked statically into `entropy.exe`. Qt Core and the Visual C++ runtime keep the normal Windows dynamic linkage and are bundled as required private runtime DLLs.
+Test a staged Windows install:
 
-The Windows MSI includes `entropy.exe`, required private runtime DLLs, the Visual C++ runtime DLLs, the app icon metadata, Start Menu and desktop shortcuts, package documents, and the FireANTs Python bridge. The About dialog icon is embedded into the executable with CMakeRC instead of installed under `share\entropy`.
-
-The portable ZIP contains the same runtime payload without installer metadata or shortcuts. Extract it to a writable folder and run `entropy.exe` from that folder.
-
-Windows logs and UI state are written under:
-```text
-%LOCALAPPDATA%\Entropy
-%LOCALAPPDATA%\Entropy\Logs
-```
-
-### Test a Windows Package
-Test a staged install without installing the MSI system-wide:
 ```powershell
 cmake --install build-release --config Release --prefix build-release\windows-package-install
-build-release\windows-package-install\entropy.exe --help
+build-release\windows-package-install\entropy.exe
 ```
 
-Then install the MSI on a clean Windows system, launch Entropy from the Start Menu shortcut, verify open/save dialogs, and uninstall it from Apps > Installed apps or Programs and Features. Also extract the portable ZIP on a clean Windows system and run `entropy.exe --help` and `entropy.exe` from the extracted folder.
+Also install the MSI on a clean Windows system, launch Entropy from the Start Menu, verify open/save dialogs, uninstall it, and test the portable ZIP from an extracted folder.
 
-The current MSI is unsigned. For public distribution, sign the MSI with a trusted code-signing certificate after CPack creates it. MSIX is a good future path when package identity, signing, and update requirements are ready, but MSI is the current CPack-native installer path for this project.
+*TODO:* The current MSI is unsigned. For public distribution, we will sign the MSI with a trusted code-signing certificate after CPack creates it.
+
+## GitHub Releases
+
+Public GitHub Releases are created by [.github/workflows/release.yml](.github/workflows/release.yml). The workflow runs when a tag matching `v*.*.*.*` is pushed.
+
+Before tagging a release, update the versions in `CMakeLists.txt`:
+
+```cmake
+set(VERSION_MAJOR x)
+set(VERSION_MINOR y)
+set(VERSION_FEATURE z)
+set(VERSION_PATCH w)
+```
+
+Create an annotated or signed tag that exactly matches `VERSION_FULL`:
+
+```sh
+git switch main
+git pull --ff-only
+git tag -a vx.y.z.w -m "Entropy x.y.z.w"
+git push origin vx.y.z.w
+```
+
+If the tag and CMake version disagree, the release workflow fails before building packages.
+
+The release workflow builds and uploads:
+
+- macOS DMGs and portable archives for `arm64` and `x86_64`
+- Windows MSI and portable ZIP for `x86_64`
+- Ubuntu DEB and portable tarball for `x86_64`
+- Fedora RPM and portable tarball for `x86_64`
+- Source archives as `.zip` and `.tar.gz`
+
+Release notes are generated by the workflow and include a downloads section plus GitHub generated notes.

@@ -81,6 +81,16 @@ std::filesystem::path logDirectory() {
   return "log";
 }
 
+std::filesystem::path cacheDirectory() {
+  if (usesPlatformUserDirectories()) {
+    if (const fs::path cacheDir = userDirectory(NSCachesDirectory); !cacheDir.empty()) {
+      return cacheDir / [appName() fileSystemRepresentation];
+    }
+  }
+
+  return "cache";
+}
+
 std::filesystem::path userDataDirectory() {
   if (const fs::path appSupportDir = userDirectory(NSApplicationSupportDirectory); !appSupportDir.empty()) {
     return appSupportDir / [appName() fileSystemRepresentation];
