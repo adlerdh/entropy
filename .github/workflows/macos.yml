@@ -150,6 +150,7 @@ jobs:
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Debug Dependencies
+        timeout-minutes: 90
         run: cmake --build --preset deps-debug --parallel 1
 
       - name: Configure Debug app
@@ -159,9 +160,11 @@ jobs:
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Debug app
-        run: cmake --build --preset app-debug --parallel
+        timeout-minutes: 45
+        run: cmake --build --preset app-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Run Debug tests
+        timeout-minutes: 30
         run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Show Debug ccache stats
@@ -240,6 +243,7 @@ jobs:
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Debug Dependencies
+        timeout-minutes: 90
         run: cmake --build --preset deps-debug --parallel 1
 
       - name: Configure Debug app
@@ -249,9 +253,11 @@ jobs:
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Debug app
-        run: cmake --build --preset app-debug --parallel
+        timeout-minutes: 45
+        run: cmake --build --preset app-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Run Debug tests
+        timeout-minutes: 30
         run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Show Debug ccache stats
@@ -332,6 +338,7 @@ jobs:
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Coverage Dependencies
+        timeout-minutes: 90
         run: cmake --build build-coverage --config Debug --parallel 1
 
       - name: Configure Coverage app
@@ -346,13 +353,16 @@ jobs:
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Coverage app
-        run: cmake --build build-coverage --config Debug --parallel
+        timeout-minutes: 45
+        run: cmake --build build-coverage --config Debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Generate coverage summary
-        run: cmake --build build-coverage --target coverage --config Debug --parallel
+        timeout-minutes: 30
+        run: cmake --build build-coverage --target coverage --config Debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Generate HTML coverage
-        run: cmake --build build-coverage --target coverage-html --config Debug --parallel
+        timeout-minutes: 30
+        run: cmake --build build-coverage --target coverage-html --config Debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Upload coverage HTML
         uses: actions/upload-artifact@v7
@@ -434,6 +444,7 @@ jobs:
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Release Dependencies
+        timeout-minutes: 90
         run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
@@ -443,16 +454,19 @@ jobs:
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Release app
-        run: cmake --build --preset app-release --parallel
+        timeout-minutes: 45
+        run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Run Release tests
+        timeout-minutes: 30
         run: ctest --test-dir build-release --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Validate deployment target
         run: otool -l build-release/bin/Entropy.app/Contents/MacOS/entropy | grep -A3 LC_BUILD_VERSION
 
       - name: Build DMG and ZIP
-        run: cmake --build --preset package-release --parallel
+        timeout-minutes: 45
+        run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Smoke-test staged install
         run: |
@@ -544,6 +558,7 @@ jobs:
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
 
       - name: Build Release Dependencies
+        timeout-minutes: 90
         run: cmake --build --preset deps-release --parallel 1
 
       - name: Configure Release app
@@ -554,16 +569,19 @@ jobs:
           -DEntropy_PACKAGE_ARCHITECTURE=x86_64
 
       - name: Build Release app
-        run: cmake --build --preset app-release --parallel
+        timeout-minutes: 45
+        run: cmake --build --preset app-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Run Release tests
+        timeout-minutes: 30
         run: ctest --test-dir build-release --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Validate deployment target
         run: otool -l build-release/bin/Entropy.app/Contents/MacOS/entropy | grep -A3 LC_BUILD_VERSION
 
       - name: Build DMG and ZIP
-        run: cmake --build --preset package-release --parallel
+        timeout-minutes: 45
+        run: cmake --build --preset package-release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Smoke-test staged install
         run: |
@@ -651,6 +669,7 @@ jobs:
           -DEntropy_SUPERBUILD_PARALLEL="${ENTROPY_MACOS_SUPERBUILD_PARALLEL}"
 
       - name: Build Debug Dependencies
+        timeout-minutes: 90
         run: cmake --build --preset deps-debug --parallel 1
 
       - name: Configure Debug app
@@ -660,9 +679,11 @@ jobs:
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${ENTROPY_MACOS_DEPLOYMENT_TARGET}"
 
       - name: Build Debug app
-        run: cmake --build --preset app-debug --parallel
+        timeout-minutes: 45
+        run: cmake --build --preset app-debug --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
 
       - name: Run Debug tests
+        timeout-minutes: 30
         run: ctest --test-dir build-debug --parallel "${CTEST_PARALLEL_LEVEL}" --output-on-failure
 
       - name: Show Debug ccache stats
