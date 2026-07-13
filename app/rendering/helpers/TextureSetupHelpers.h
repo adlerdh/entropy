@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace entropy::rendering::texture_setup
+namespace rendering::texture_setup
 {
 
 /**
@@ -58,4 +58,4 @@ std::optional<TextureUploadLayout> textureUploadLayoutForImage(const glm::uvec3&
  */
 std::string textureLimitReason(const glm::uvec3& size, const TextureLimits& limits);
 
-} // namespace entropy::rendering::texture_setup
+} // namespace rendering::texture_setup

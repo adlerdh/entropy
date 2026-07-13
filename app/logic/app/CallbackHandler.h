@@ -222,7 +222,7 @@ public:
     const ViewHit& startHit,
     const ViewHit& prevHit,
     const ViewHit& currHit,
-    entropy::app::ImageScaleConstraint constraint);
+    app::ImageScaleConstraint constraint);
 
   /**
    * @brief scrollViewSlice

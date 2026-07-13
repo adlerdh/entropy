@@ -172,7 +172,7 @@ bool parseCommandLine(const int argc, char* argv[], InputParams& params)
   CLI::App program{desc.str(), APP_NAME};
   program.set_version_flag("--version", VERSION_FULL);
 
-  std::string logLevel = entropy::logging::defaultLogLevelName();
+  std::string logLevel = logging::defaultLogLevelName();
   program.add_option("-l,--log-level", logLevel, "console log level: {trace, debug, info, warn, err, critical, off}")
     ->default_val(logLevel);
 

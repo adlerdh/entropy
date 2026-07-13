@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace view_overlay = entropy::ui::view_overlay;
+namespace view_overlay = ui::view_overlay;
 
 TEST_CASE("view overlay chooses image or metric selection by render mode", "[ui][view_overlay]")
 {

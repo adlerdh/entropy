@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace entropy::ui::loading_status_model
+namespace ui::loading_status_model
 {
 
 std::uintmax_t loadingItemWeight(const GuiData::LoadingStatusItem& item)
@@ -39,4 +39,4 @@ std::string progressPercentLabel(float fraction)
   return std::to_string(percent) + "%";
 }
 
-} // namespace entropy::ui::loading_status_model
+} // namespace ui::loading_status_model

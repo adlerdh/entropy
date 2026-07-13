@@ -6,7 +6,7 @@
 
 #include <optional>
 
-namespace entropy::app
+namespace app
 {
 
 /**
@@ -95,4 +95,4 @@ std::optional<ImageScaleUpdate> computeImageScaleUpdate(
   const glm::vec3& viewFront,
   ImageScaleConstraint constraint);
 
-} // namespace entropy::app
+} // namespace app

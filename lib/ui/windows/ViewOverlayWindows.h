@@ -88,7 +88,7 @@ struct ViewOverlayModeCallbacks
   std::function<void(camera3d::OrbitTargetMode)> setThreeDOrbitTargetMode; //!< Set 3D orbit target mode.
   std::function<bool()> getThreeDRenderImageBox;                           //!< Whether 3D raycast image box is drawn.
   std::function<void(bool)> setThreeDRenderImageBox;                       //!< Set 3D raycast image box drawing.
-  std::function<std::optional<entropy::ClipboardPayload>()>
+  std::function<std::optional<ClipboardPayload>()>
     exportAsciiClipboardPayload;             //!< Export this view's ASCII clipboard payload.
   std::vector<ViewType> selectableViewTypes; //!< Empty means all supported view types are selectable.
 };

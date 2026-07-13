@@ -28,7 +28,7 @@
 #include <string_view>
 #include <vector>
 
-namespace ui_settings = entropy::ui::settings;
+namespace ui_settings = ui::settings;
 
 namespace
 {
@@ -223,18 +223,18 @@ void renderUiSettingsFileSection(const SettingsPersistenceCallbacks& persistence
  */
 void renderDiagnosticsSettings()
 {
-  const auto currentLogLevel = entropy::logging::defaultLoggerSinkLevel();
-  const auto currentLogLevelLabel = entropy::logging::logLevelLabel(currentLogLevel);
+  const auto currentLogLevel = logging::defaultLoggerSinkLevel();
+  const auto currentLogLevelLabel = logging::logLevelLabel(currentLogLevel);
 
   if (ImGui::BeginCombo("Log verbosity", currentLogLevelLabel.data())) {
-    for (const entropy::logging::LogLevelChoice& choice : entropy::logging::allLogLevelChoices()) {
-      if (!entropy::logging::isLogLevelChoiceAvailable(choice)) {
+    for (const logging::LogLevelChoice& choice : logging::allLogLevelChoices()) {
+      if (!logging::isLogLevelChoiceAvailable(choice)) {
         continue;
       }
 
       const bool selected = choice.level == currentLogLevel;
       if (ImGui::Selectable(choice.label.data(), selected)) {
-        entropy::logging::setDefaultLoggerSinkLevel(choice.level);
+        logging::setDefaultLoggerSinkLevel(choice.level);
       }
       if (selected) {
         ImGui::SetItemDefaultFocus();

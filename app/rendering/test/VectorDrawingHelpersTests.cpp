@@ -7,7 +7,7 @@
 
 #include <limits>
 
-namespace vector_drawing = entropy::rendering::vector_drawing;
+namespace vector_drawing = rendering::vector_drawing;
 
 TEST_CASE("vector drawing helpers classify finite positions and rectangles", "[rendering][vector-drawing]")
 {

@@ -13,7 +13,7 @@
 class AppData;
 class QSharedMemory;
 
-using ItkSnapIpcMessage = entropy::sync::itk_snap_protocol::ItkSnapIpcMessage;
+using ItkSnapIpcMessage = app_sync::itk_snap_protocol::ItkSnapIpcMessage;
 
 /**
  * @brief Per-anatomical-view state exchanged with ITK-SNAP.

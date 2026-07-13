@@ -4,7 +4,7 @@
 
 TEST_CASE("release versions compare numeric components", "[ui][updates]")
 {
-  using entropy::ui::updates::compareReleaseVersions;
+  using ui::updates::compareReleaseVersions;
 
   CHECK(compareReleaseVersions("0.9.6.0", "v0.9.6") == 0);
   CHECK(compareReleaseVersions("v0.9.7", "0.9.6.0") > 0);
@@ -24,7 +24,7 @@ TEST_CASE("latest GitHub release JSON is parsed", "[ui][updates]")
   })json";
 
   std::string error;
-  const auto release = entropy::ui::updates::parseLatestReleaseJson(text, &error);
+  const auto release = ui::updates::parseLatestReleaseJson(text, &error);
   REQUIRE(release.has_value());
   CHECK(release->tagName == "v0.9.7");
   CHECK(release->name == "Entropy 0.9.7");
@@ -40,8 +40,8 @@ TEST_CASE("latest GitHub release HTTP response detects update", "[ui][updates]")
     "\r\n"
     "{\"tag_name\":\"v0.9.7\",\"html_url\":\"https://github.com/adlerdh/entropy/releases/tag/v0.9.7\"}\n";
 
-  const auto result = entropy::ui::updates::parseGitHubReleaseHttpResponse(response, "0.9.6.0");
-  CHECK(result.status == entropy::ui::updates::CheckStatus::UpdateAvailable);
+  const auto result = ui::updates::parseGitHubReleaseHttpResponse(response, "0.9.6.0");
+  CHECK(result.status == ui::updates::CheckStatus::UpdateAvailable);
   CHECK(result.etag == "\"abc\"");
   CHECK(result.latestRelease.tagName == "v0.9.7");
 }
@@ -53,8 +53,8 @@ TEST_CASE("latest GitHub release HTTP response handles not modified", "[ui][upda
     "etag: \"abc\"\r\n"
     "\r\n";
 
-  const auto result = entropy::ui::updates::parseGitHubReleaseHttpResponse(response, "0.9.6.0");
-  CHECK(result.status == entropy::ui::updates::CheckStatus::NotModified);
+  const auto result = ui::updates::parseGitHubReleaseHttpResponse(response, "0.9.6.0");
+  CHECK(result.status == ui::updates::CheckStatus::NotModified);
   CHECK(result.etag == "\"abc\"");
 }
 
@@ -67,6 +67,6 @@ TEST_CASE("latest GitHub release HTTP response handles missing releases", "[ui][
     R"json({"message":"Not Found","status":"404"})json"
     "\n";
 
-  const auto result = entropy::ui::updates::parseGitHubReleaseHttpResponse(response, "0.9.6.0");
-  CHECK(result.status == entropy::ui::updates::CheckStatus::NoPublishedReleases);
+  const auto result = ui::updates::parseGitHubReleaseHttpResponse(response, "0.9.6.0");
+  CHECK(result.status == ui::updates::CheckStatus::NoPublishedReleases);
 }

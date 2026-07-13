@@ -6,7 +6,7 @@
 #include <limits>
 #include <sstream>
 
-namespace entropy::rendering::lightbox
+namespace rendering::lightbox
 {
 namespace
 {
@@ -83,4 +83,4 @@ std::string formatOffsetDistanceMm(double offsetMm, double unitReferenceOffsetMm
   return trimTrailingDecimalZeros(out.str()) + " " + unit.label;
 }
 
-} // namespace entropy::rendering::lightbox
+} // namespace rendering::lightbox

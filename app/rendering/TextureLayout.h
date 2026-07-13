@@ -2,7 +2,7 @@
 
 #include <glm/vec2.hpp>
 
-namespace entropy::rendering
+namespace rendering
 {
 
 /// OpenGL texture target used for an uploaded image or segmentation texture.
@@ -24,4 +24,4 @@ struct PlanarTextureLayout
   glm::ivec2 axes{0, 1};
 };
 
-} // namespace entropy::rendering
+} // namespace rendering

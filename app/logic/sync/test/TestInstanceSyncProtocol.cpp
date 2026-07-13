@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace entropy::sync::instance_protocol;
+using namespace app_sync::instance_protocol;
 
 TEST_CASE("Entropy instance sync encodes and decodes peer registry records", "[sync][entropy]")
 {

@@ -412,8 +412,7 @@ json toJson(
         {"receivePan", settings.receivePanSync()}}},
       {"entropyInstances", {{"enabled", settings.entropyInstanceSyncEnabled()}}}}},
     {"system",
-     {{"diagnostics",
-       {{"logVerbosity", std::string{entropy::logging::logLevelLabel(entropy::logging::defaultLoggerSinkLevel())}}}},
+     {{"diagnostics", {{"logVerbosity", std::string{logging::logLevelLabel(logging::defaultLoggerSinkLevel())}}}},
       {"updates", {{"automaticChecks", settings.automaticUpdateChecksEnabled()}}}}}};
 }
 
@@ -677,9 +676,9 @@ void applyJson(
     {
       if (const auto level = diagnostics->find("logVerbosity"); level != diagnostics->end() && level->is_string()) {
         const std::string levelName = level->get<std::string>();
-        for (const auto& choice : entropy::logging::allLogLevelChoices()) {
-          if (choice.label == levelName && entropy::logging::isLogLevelChoiceAvailable(choice)) {
-            entropy::logging::setDefaultLoggerSinkLevel(choice.level);
+        for (const auto& choice : logging::allLogLevelChoices()) {
+          if (choice.label == levelName && logging::isLogLevelChoiceAvailable(choice)) {
+            logging::setDefaultLoggerSinkLevel(choice.level);
             break;
           }
         }

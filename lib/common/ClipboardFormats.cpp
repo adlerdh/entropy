@@ -7,7 +7,7 @@
 #include <sstream>
 #include <vector>
 
-namespace entropy::clipboard
+namespace clipboard
 {
 
 std::string rgbCssHex(Rgb8 color)
@@ -173,4 +173,4 @@ std::string windowsHtmlClipboardPayload(std::string_view html)
   return payload;
 }
 
-} // namespace entropy::clipboard
+} // namespace clipboard

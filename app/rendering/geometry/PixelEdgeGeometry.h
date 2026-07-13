@@ -2,7 +2,7 @@
 
 #include <glm/vec4.hpp>
 
-namespace entropy::rendering::pixel_edge
+namespace rendering::pixel_edge
 {
 
 /**
@@ -29,4 +29,4 @@ struct ViewRect
  */
 ViewRect computeViewRect(glm::vec4 clipViewport, glm::vec4 deviceViewport);
 
-} // namespace entropy::rendering::pixel_edge
+} // namespace rendering::pixel_edge

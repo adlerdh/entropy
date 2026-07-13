@@ -17,7 +17,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
-using namespace entropy::ui::toolbars;
+using namespace ui::toolbars;
 
 void renderModeToolbar(
   AppData& appData,

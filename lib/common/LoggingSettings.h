@@ -9,7 +9,7 @@
 #include <span>
 #include <string_view>
 
-namespace entropy::logging
+namespace logging
 {
 
 /**
@@ -121,4 +121,4 @@ inline spdlog::level::level_enum defaultLoggerSinkLevel()
   return defaultLogLevel();
 }
 
-} // namespace entropy::logging
+} // namespace logging

@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-namespace entropy::clipboard
+namespace clipboard
 {
 
 struct Rgb8
@@ -34,4 +34,4 @@ std::string rtfDocument(
   std::optional<Rgb8> backgroundColor = std::nullopt);
 std::string windowsHtmlClipboardPayload(std::string_view html);
 
-} // namespace entropy::clipboard
+} // namespace clipboard

@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace entropy::rendering::texture_setup
+namespace rendering::texture_setup
 {
 
 std::vector<int> nonSingletonAxes(const glm::uvec3& size)
@@ -65,4 +65,4 @@ std::string textureLimitReason(const glm::uvec3& size, const TextureLimits& limi
          ", meaning each 3D texture dimension must be less than or equal to that value.";
 }
 
-} // namespace entropy::rendering::texture_setup
+} // namespace rendering::texture_setup

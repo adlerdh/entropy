@@ -7,7 +7,7 @@
 
 namespace
 {
-void checkRowsAreComplete(const std::vector<entropy::ui::KeyboardShortcutRow>& rows)
+void checkRowsAreComplete(const std::vector<ui::KeyboardShortcutRow>& rows)
 {
   REQUIRE_FALSE(rows.empty());
   for (const auto& row : rows) {
@@ -18,7 +18,7 @@ void checkRowsAreComplete(const std::vector<entropy::ui::KeyboardShortcutRow>& r
   }
 }
 
-void checkShortcutActionPairsAreUnique(const std::vector<entropy::ui::KeyboardShortcutRow>& rows)
+void checkShortcutActionPairsAreUnique(const std::vector<ui::KeyboardShortcutRow>& rows)
 {
   std::set<std::pair<std::string, std::string>> seen;
 
@@ -27,7 +27,7 @@ void checkShortcutActionPairsAreUnique(const std::vector<entropy::ui::KeyboardSh
   }
 }
 
-void checkDescriptionsDoNotEndWithPeriods(const std::vector<entropy::ui::KeyboardShortcutRow>& rows)
+void checkDescriptionsDoNotEndWithPeriods(const std::vector<ui::KeyboardShortcutRow>& rows)
 {
   for (const auto& row : rows) {
     REQUIRE_FALSE(row.details.empty());
@@ -38,18 +38,18 @@ void checkDescriptionsDoNotEndWithPeriods(const std::vector<entropy::ui::Keyboar
 
 TEST_CASE("Keyboard shortcut catalog has complete rows", "[ui][keyboard-shortcuts]")
 {
-  checkRowsAreComplete(entropy::ui::keyboardShortcutRows());
-  checkRowsAreComplete(entropy::ui::threeDViewControlRows());
+  checkRowsAreComplete(ui::keyboardShortcutRows());
+  checkRowsAreComplete(ui::threeDViewControlRows());
 }
 
 TEST_CASE("Keyboard shortcut catalog keeps shortcut action pairs unique", "[ui][keyboard-shortcuts]")
 {
-  checkShortcutActionPairsAreUnique(entropy::ui::keyboardShortcutRows());
-  checkShortcutActionPairsAreUnique(entropy::ui::threeDViewControlRows());
+  checkShortcutActionPairsAreUnique(ui::keyboardShortcutRows());
+  checkShortcutActionPairsAreUnique(ui::threeDViewControlRows());
 }
 
 TEST_CASE("Keyboard shortcut descriptions do not end with periods", "[ui][keyboard-shortcuts]")
 {
-  checkDescriptionsDoNotEndWithPeriods(entropy::ui::keyboardShortcutRows());
-  checkDescriptionsDoNotEndWithPeriods(entropy::ui::threeDViewControlRows());
+  checkDescriptionsDoNotEndWithPeriods(ui::keyboardShortcutRows());
+  checkDescriptionsDoNotEndWithPeriods(ui::threeDViewControlRows());
 }

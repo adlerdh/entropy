@@ -16,7 +16,7 @@
 namespace
 {
 
-namespace vector_drawing = entropy::rendering::vector_drawing;
+namespace vector_drawing = rendering::vector_drawing;
 
 NVGcolor nvgColor(const glm::vec4& color)
 {

@@ -6,7 +6,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
-namespace image_drawing = entropy::rendering::image_drawing;
+namespace image_drawing = rendering::image_drawing;
 
 namespace
 {

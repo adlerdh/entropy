@@ -1,6 +1,6 @@
 #pragma once
 
-namespace entropy::rendering::local_ncc
+namespace rendering::local_ncc
 {
 
 /** @brief Display transform applied to a local normalized cross-correlation value. */
@@ -27,4 +27,4 @@ float metricValue(float ncc, Presentation presentation, bool negativeCorrelation
  */
 int requiredSampleCount(int patchRadius, float minValidFraction);
 
-} // namespace entropy::rendering::local_ncc
+} // namespace rendering::local_ncc

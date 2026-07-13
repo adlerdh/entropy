@@ -5,7 +5,7 @@
 
 #include <glm/vec4.hpp>
 
-namespace scale_bar = entropy::rendering::scale_bar;
+namespace scale_bar = rendering::scale_bar;
 
 namespace
 {

@@ -955,9 +955,9 @@ void renderLoadingStatusWindow(const GuiData& guiData)
     ImGui::TextUnformatted(text.c_str());
 
     if (!items.empty()) {
-      const auto byteProgress = entropy::ui::loading_status_model::loadingProgress(items);
-      const float progress = entropy::ui::loading_status_model::progressFraction(byteProgress);
-      const std::string progressLabel = entropy::ui::loading_status_model::progressPercentLabel(progress);
+      const auto byteProgress = ui::loading_status_model::loadingProgress(items);
+      const float progress = ui::loading_status_model::progressFraction(byteProgress);
+      const std::string progressLabel = ui::loading_status_model::progressPercentLabel(progress);
       ImGui::ProgressBar(progress, ImVec2{scaledPixel(320.0f), 0.0f}, progressLabel.c_str());
 
       ImGui::Separator();
@@ -1369,7 +1369,7 @@ void renderEmptyWorkspace(
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
   const ImGuiStyle& style = ImGui::GetStyle();
-  entropy::ui::renderGradientBackground();
+  ui::renderGradientBackground();
 
   const float panelMargin = scaledPixel(16.0f);
   const ImVec2 windowPadding{panelMargin, scaledPixel(20.0f)};
@@ -2583,7 +2583,7 @@ void ImGuiWrapper::processRegistrationJobFutures()
 
 void ImGuiWrapper::requestUpdateCheck(bool manualCheck)
 {
-  using namespace entropy::ui::updates;
+  using namespace ui::updates;
 
   if (m_updateCheckFuture.valid() && std::future_status::ready != m_updateCheckFuture.wait_for(std::chrono::seconds{0}))
   {
@@ -2627,12 +2627,12 @@ void ImGuiWrapper::processUpdateCheckFuture()
     return;
   }
 
-  entropy::ui::updates::CheckResult result;
+  ui::updates::CheckResult result;
   try {
     result = m_updateCheckFuture.get();
   }
   catch (const std::exception& e) {
-    result.status = entropy::ui::updates::CheckStatus::Failed;
+    result.status = ui::updates::CheckStatus::Failed;
     result.error = e.what();
   }
 
@@ -2641,7 +2641,7 @@ void ImGuiWrapper::processUpdateCheckFuture()
   }
 
   const bool showAutomaticResult =
-    !m_updateCheckWindowState.manualCheck && result.status == entropy::ui::updates::CheckStatus::UpdateAvailable;
+    !m_updateCheckWindowState.manualCheck && result.status == ui::updates::CheckStatus::UpdateAvailable;
 
   m_updateCheckWindowState.result = std::move(result);
   m_updateCheckWindowState.checking = false;
@@ -4405,7 +4405,7 @@ void ImGuiWrapper::render()
       .openDownloadPage =
         []() {
           std::string error;
-          if (!entropy::ui::updates::openUrlInDefaultBrowser(entropy::ui::updates::k_downloadPageUrl, &error)) {
+          if (!ui::updates::openUrlInDefaultBrowser(ui::updates::k_downloadPageUrl, &error)) {
             spdlog::warn("Failed to open Entropy download page: {}", error);
           }
         },
@@ -4441,14 +4441,14 @@ void ImGuiWrapper::render()
       });
 
     if (ProjectLoadState::Loading == projectLoadState) {
-      entropy::ui::renderGradientBackground();
+      ui::renderGradientBackground();
     }
 
     if (backgroundTaskRunning) {
       renderLoadingStatusWindow(m_appData.guiData());
     }
     renderWarpInversionProgressPopup();
-    entropy::ui::updates::renderUpdateCheckWindow(
+    ui::updates::renderUpdateCheckWindow(
       m_updateCheckWindowState,
       m_appData.settings().automaticUpdateChecksEnabled(),
       [this](bool enabled) { m_appData.settings().setAutomaticUpdateChecksEnabled(enabled); });
@@ -4532,7 +4532,7 @@ void ImGuiWrapper::render()
     }
 
     if (!hasLoadedProject) {
-      entropy::ui::renderKeyboardShortcutsWindow(m_appData.guiData().m_showKeyboardShortcutsWindow);
+      ui::renderKeyboardShortcutsWindow(m_appData.guiData().m_showKeyboardShortcutsWindow);
       renderAboutDialogModalPopup(m_appData.guiData().m_showAboutDialog);
       m_appData.guiData().m_showAboutDialog = false;
 
@@ -4549,7 +4549,7 @@ void ImGuiWrapper::render()
       return;
     }
 
-    entropy::ui::renderKeyboardShortcutsWindow(m_appData.guiData().m_showKeyboardShortcutsWindow);
+    ui::renderKeyboardShortcutsWindow(m_appData.guiData().m_showKeyboardShortcutsWindow);
 
     if (!loadingOrImporting) {
       requestMissingComponentProjectionImages();
@@ -5065,10 +5065,10 @@ void ImGuiWrapper::render()
             m_appData.renderData().m_raycastBackgroundEdgeBrighteningEnabled = renderImageBox;
           },
         .exportAsciiClipboardPayload = (m_appData.renderData().m_asciiEnabled && m_exportAsciiClipboardPayloadForView)
-                                         ? std::function<std::optional<entropy::ClipboardPayload>()>([this, viewUid]() {
+                                         ? std::function<std::optional<ClipboardPayload>()>([this, viewUid]() {
                                              return m_exportAsciiClipboardPayloadForView(viewUid);
                                            })
-                                         : std::function<std::optional<entropy::ClipboardPayload>()>{}};
+                                         : std::function<std::optional<ClipboardPayload>()>{}};
 
       const ViewOverlayProjectionCallbacks projectionCallbacks{
         [this]() { return m_appData.renderData().m_intensityProjectionSlabThickness; },

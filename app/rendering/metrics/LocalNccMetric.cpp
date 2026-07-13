@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace entropy::rendering::local_ncc
+namespace rendering::local_ncc
 {
 
 float metricValue(float ncc, Presentation presentation, bool negativeCorrelationAsMismatch)
@@ -30,4 +30,4 @@ int requiredSampleCount(int patchRadius, float minValidFraction)
   return std::max(1, static_cast<int>(std::ceil(minValidFraction * static_cast<float>(sideLength * sideLength))));
 }
 
-} // namespace entropy::rendering::local_ncc
+} // namespace rendering::local_ncc

@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace entropy::ui::view_overlay
+namespace ui::view_overlay
 {
 
 /**
@@ -56,4 +56,4 @@ std::string imageChoiceLabel(const ImageChoice& choice);
  */
 std::string selectedVisibleImageNames(const std::vector<ImageChoice>& choices);
 
-} // namespace entropy::ui::view_overlay
+} // namespace ui::view_overlay

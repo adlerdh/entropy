@@ -9,7 +9,7 @@
 
 TEST_CASE("log level choices are ordered from critical through trace", "[common][logging]")
 {
-  const auto choices = entropy::logging::allLogLevelChoices();
+  const auto choices = logging::allLogLevelChoices();
 
   REQUIRE(choices.size() == 6);
   CHECK(choices[0].level == spdlog::level::critical);
@@ -22,20 +22,20 @@ TEST_CASE("log level choices are ordered from critical through trace", "[common]
 
 TEST_CASE("trace log level availability matches compile-time trace support", "[common][logging]")
 {
-  const auto choices = entropy::logging::allLogLevelChoices();
+  const auto choices = logging::allLogLevelChoices();
   const auto traceChoice = std::find_if(choices.begin(), choices.end(), [](const auto& choice) {
     return choice.level == spdlog::level::trace;
   });
 
   REQUIRE(traceChoice != choices.end());
-  CHECK(entropy::logging::isLogLevelChoiceAvailable(*traceChoice) == entropy::logging::traceLoggingAvailable());
+  CHECK(logging::isLogLevelChoiceAvailable(*traceChoice) == logging::traceLoggingAvailable());
 }
 
 TEST_CASE("unavailable trace level is represented as debug in selectable UI state", "[common][logging]")
 {
-  const auto selectableTrace = entropy::logging::selectableLogLevel(spdlog::level::trace);
+  const auto selectableTrace = logging::selectableLogLevel(spdlog::level::trace);
 
-  if (entropy::logging::traceLoggingAvailable()) {
+  if (logging::traceLoggingAvailable()) {
     CHECK(selectableTrace == spdlog::level::trace);
   }
   else {
@@ -45,13 +45,13 @@ TEST_CASE("unavailable trace level is represented as debug in selectable UI stat
 
 TEST_CASE("log level labels cover known levels and default unknown levels to info", "[common][logging]")
 {
-  CHECK(entropy::logging::logLevelLabel(spdlog::level::critical) == "Critical");
-  CHECK(entropy::logging::logLevelLabel(spdlog::level::err) == "Error");
-  CHECK(entropy::logging::logLevelLabel(spdlog::level::warn) == "Warning");
-  CHECK(entropy::logging::logLevelLabel(spdlog::level::info) == "Info");
-  CHECK(entropy::logging::logLevelLabel(spdlog::level::debug) == "Debug");
-  CHECK(entropy::logging::logLevelLabel(spdlog::level::trace) == "Trace");
-  CHECK(entropy::logging::logLevelLabel(spdlog::level::off) == "Info");
+  CHECK(logging::logLevelLabel(spdlog::level::critical) == "Critical");
+  CHECK(logging::logLevelLabel(spdlog::level::err) == "Error");
+  CHECK(logging::logLevelLabel(spdlog::level::warn) == "Warning");
+  CHECK(logging::logLevelLabel(spdlog::level::info) == "Info");
+  CHECK(logging::logLevelLabel(spdlog::level::debug) == "Debug");
+  CHECK(logging::logLevelLabel(spdlog::level::trace) == "Trace");
+  CHECK(logging::logLevelLabel(spdlog::level::off) == "Info");
 }
 
 TEST_CASE("default logger sink level helpers read and update sink levels", "[common][logging]")
@@ -61,11 +61,11 @@ TEST_CASE("default logger sink level helpers read and update sink levels", "[com
   const auto logger = std::make_shared<spdlog::logger>("common-test-logger", sink);
   spdlog::set_default_logger(logger);
 
-  entropy::logging::setDefaultLoggerSinkLevel(spdlog::level::warn);
-  CHECK(entropy::logging::defaultLoggerSinkLevel() == spdlog::level::warn);
+  logging::setDefaultLoggerSinkLevel(spdlog::level::warn);
+  CHECK(logging::defaultLoggerSinkLevel() == spdlog::level::warn);
 
-  entropy::logging::setDefaultLoggerSinkLevel(spdlog::level::trace);
-  CHECK(entropy::logging::defaultLoggerSinkLevel() == entropy::logging::selectableLogLevel(spdlog::level::trace));
+  logging::setDefaultLoggerSinkLevel(spdlog::level::trace);
+  CHECK(logging::defaultLoggerSinkLevel() == logging::selectableLogLevel(spdlog::level::trace));
 
   spdlog::set_default_logger(previousLogger);
 }

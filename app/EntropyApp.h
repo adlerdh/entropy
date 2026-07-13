@@ -460,11 +460,11 @@ private:
   std::optional<serialize::EntropyProject> m_savedProjectSnapshot = std::nullopt;
   std::vector<std::filesystem::path> m_pendingProjectReplacementPaths;
 
-  GlfwWrapper m_glfw;                                       //!< GLFW wrapper
-  AppData m_data;                                           //!< Application data
-  Rendering m_rendering;                                    //!< Render logic
-  CallbackHandler m_callbackHandler;                        //!< UI callback handlers
-  ItkSnapSync m_itkSnapSync;                                //!< Cursor, zoom, and pan synchronization with ITK-SNAP
-  entropy::sync::EntropyInstanceSync m_entropyInstanceSync; //!< Synchronization with running Entropy instances
-  ImGuiWrapper m_imgui;                                     //!< ImGui wrapper
+  GlfwWrapper m_glfw;                                  //!< GLFW wrapper
+  AppData m_data;                                      //!< Application data
+  Rendering m_rendering;                               //!< Render logic
+  CallbackHandler m_callbackHandler;                   //!< UI callback handlers
+  ItkSnapSync m_itkSnapSync;                           //!< Cursor, zoom, and pan synchronization with ITK-SNAP
+  app_sync::EntropyInstanceSync m_entropyInstanceSync; //!< Synchronization with running Entropy instances
+  ImGuiWrapper m_imgui;                                //!< ImGui wrapper
 };

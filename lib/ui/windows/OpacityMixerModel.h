@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-namespace entropy::ui::opacity_mixer
+namespace ui::opacity_mixer
 {
 
 /**
@@ -13,4 +13,4 @@ namespace entropy::ui::opacity_mixer
  */
 double blendedOpacity(std::size_t imageIndex, double mix);
 
-} // namespace entropy::ui::opacity_mixer
+} // namespace ui::opacity_mixer

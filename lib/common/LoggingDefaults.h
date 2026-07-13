@@ -6,7 +6,7 @@
 #define ENTROPY_DEFAULT_LOG_LEVEL SPDLOG_LEVEL_INFO
 #endif
 
-namespace entropy::logging
+namespace logging
 {
 
 /**
@@ -38,4 +38,4 @@ constexpr const char* defaultLogLevelName()
 #endif
 }
 
-} // namespace entropy::logging
+} // namespace logging

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace entropy::rendering::local_linear_residual
+namespace rendering::local_linear_residual
 {
 
 Fit fit(std::span<const float> fixed, std::span<const float> moving, float varianceEpsilon)
@@ -53,4 +53,4 @@ Fit fit(std::span<const float> fixed, std::span<const float> moving, float varia
   return result;
 }
 
-} // namespace entropy::rendering::local_linear_residual
+} // namespace rendering::local_linear_residual

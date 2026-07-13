@@ -9,7 +9,7 @@
 #include <initializer_list>
 #include <string>
 
-namespace entropy::ui::popups
+namespace ui::popups
 {
 namespace fs = std::filesystem;
 
@@ -90,4 +90,4 @@ inline std::string trimWhitespace(const std::string& value)
   return std::string(first, last);
 }
 
-} // namespace entropy::ui::popups
+} // namespace ui::popups

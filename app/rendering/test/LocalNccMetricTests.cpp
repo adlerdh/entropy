@@ -3,7 +3,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-namespace local_ncc = entropy::rendering::local_ncc;
+namespace local_ncc = rendering::local_ncc;
 
 TEST_CASE("local NCC metric maps correlation to dissimilarity", "[rendering][local-ncc]")
 {

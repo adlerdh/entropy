@@ -9,7 +9,7 @@
 #include <optional>
 #include <string>
 
-namespace entropy::ui::settings
+namespace ui::settings
 {
 
 struct ScaleChoice
@@ -135,4 +135,4 @@ const std::array<SettingsPageChoice, 9>& settingsPageChoices();
  */
 const char* settingsPageLabel(GuiData::SettingsTab page);
 
-} // namespace entropy::ui::settings
+} // namespace ui::settings

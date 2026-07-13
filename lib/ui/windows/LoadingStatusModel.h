@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace entropy::ui::loading_status_model
+namespace ui::loading_status_model
 {
 
 /**
@@ -41,4 +41,4 @@ float progressFraction(const LoadingProgress& progress);
  */
 std::string progressPercentLabel(float fraction);
 
-} // namespace entropy::ui::loading_status_model
+} // namespace ui::loading_status_model

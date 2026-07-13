@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace entropy::ui
+namespace ui
 {
 struct KeyboardShortcutRow
 {
@@ -17,4 +17,4 @@ const std::vector<KeyboardShortcutRow>& keyboardShortcutRows();
 const std::vector<KeyboardShortcutRow>& threeDViewControlRows();
 
 void renderKeyboardShortcutsWindow(bool& open);
-} // namespace entropy::ui
+} // namespace ui

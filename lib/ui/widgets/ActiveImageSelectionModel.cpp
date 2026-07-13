@@ -1,6 +1,6 @@
 #include "ui/widgets/ActiveImageSelectionModel.h"
 
-namespace entropy::ui::active_image_selection
+namespace ui::active_image_selection
 {
 
 SelectionState selectionState(std::size_t numImages, std::size_t activeIndex)
@@ -12,4 +12,4 @@ SelectionState selectionState(std::size_t numImages, std::size_t activeIndex)
   return activeIndex < numImages ? SelectionState::Valid : SelectionState::Invalid;
 }
 
-} // namespace entropy::ui::active_image_selection
+} // namespace ui::active_image_selection

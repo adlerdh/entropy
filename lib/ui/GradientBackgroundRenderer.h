@@ -5,7 +5,7 @@
 
 #include <optional>
 
-namespace entropy::ui
+namespace ui
 {
 struct GradientBackgroundOptions
 {
@@ -18,4 +18,4 @@ struct GradientBackgroundOptions
 
 /** Draws a rectangular vignette gradient into the default framebuffer. */
 void renderGradientBackground(const GradientBackgroundOptions& options = {});
-} // namespace entropy::ui
+} // namespace ui

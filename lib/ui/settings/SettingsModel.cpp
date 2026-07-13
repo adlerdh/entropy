@@ -4,7 +4,7 @@
 #include <cmath>
 #include <string>
 
-namespace entropy::ui::settings
+namespace ui::settings
 {
 
 namespace
@@ -223,4 +223,4 @@ const char* settingsPageLabel(GuiData::SettingsTab page)
   return "Views";
 }
 
-} // namespace entropy::ui::settings
+} // namespace ui::settings

@@ -7,7 +7,7 @@
 #include <iterator>
 #include <string>
 
-namespace entropy::ui::linux_ui_scale
+namespace ui::linux_ui_scale
 {
 namespace
 {
@@ -134,4 +134,4 @@ std::optional<float> primaryMonitorScale()
 {
   return scaleFromMonitorsXmlFile(defaultMonitorsXmlPath());
 }
-} // namespace entropy::ui::linux_ui_scale
+} // namespace ui::linux_ui_scale

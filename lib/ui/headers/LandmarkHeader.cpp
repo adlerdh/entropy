@@ -51,7 +51,7 @@
 #undef max
 
 namespace fs = std::filesystem;
-using namespace entropy::ui::headers;
+using namespace ui::headers;
 
 void renderLandmarkGroupHeader(
   AppData& appData,

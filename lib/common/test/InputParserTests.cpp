@@ -34,7 +34,7 @@ TEST_CASE("console log level defaults to the build configuration level", "[commo
   InputParams params;
   REQUIRE(parseCommandLine(static_cast<int>(argv.size()), argv.data(), params));
 
-  CHECK(params.consoleLogLevel == entropy::logging::defaultLogLevel());
+  CHECK(params.consoleLogLevel == logging::defaultLogLevel());
 }
 
 TEST_CASE("console log level option accepts all documented spellings", "[common][input]")

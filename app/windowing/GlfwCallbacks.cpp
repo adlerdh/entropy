@@ -35,7 +35,7 @@ static std::optional<ViewHit> s_prevHit;
 static std::optional<ViewHit> s_startHit;
 
 static std::optional<ViewHit> s_imageScaleEffectivePrevHit;
-static std::optional<entropy::app::ImageScaleConstraint> s_imageScaleViewAxisConstraint;
+static std::optional<app::ImageScaleConstraint> s_imageScaleViewAxisConstraint;
 
 constexpr float kImageScaleDeadZoneRadiusViewClip = 0.06f;
 constexpr float kImageScaleAxisConstraintDominanceRatio = 1.5f;
@@ -511,13 +511,13 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
       }
 
       if (s_mouseButtonState.left) {
-        auto constraint = entropy::app::ImageScaleConstraint::Free;
+        auto constraint = app::ImageScaleConstraint::Free;
         if (s_modifierState.shift) {
-          constraint = entropy::app::ImageScaleConstraint::Isotropic;
+          constraint = app::ImageScaleConstraint::Isotropic;
         }
         else if (s_modifierState.alt) {
           if (!s_imageScaleViewAxisConstraint) {
-            s_imageScaleViewAxisConstraint = entropy::app::imageScaleViewAxisConstraintFromDrag(
+            s_imageScaleViewAxisConstraint = app::imageScaleViewAxisConstraintFromDrag(
               currHit_withOverride->viewClipPos - s_startHit->viewClipPos,
               kImageScaleAxisConstraintDominanceRatio);
           }
@@ -534,7 +534,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
                                    glm::vec4{app->appData().state().worldRotationCenter(), 1.0f};
         if (std::abs(centerViewClip.w) > 0.0f) {
           centerViewClip /= centerViewClip.w;
-          if (entropy::app::imageScaleDragShouldWaitForDeadZone(
+          if (app::imageScaleDragShouldWaitForDeadZone(
                 s_startHit->viewClipPos,
                 currHit_withOverride->viewClipPos,
                 glm::vec2{centerViewClip},
@@ -544,7 +544,7 @@ void cursorPosCallback(GLFWwindow* window, double mindowCursorPosX, double mindo
           }
 
           if (
-            !s_imageScaleEffectivePrevHit && entropy::app::imageScaleStartsInDeadZone(
+            !s_imageScaleEffectivePrevHit && app::imageScaleStartsInDeadZone(
                                                s_startHit->viewClipPos,
                                                glm::vec2{centerViewClip},
                                                kImageScaleDeadZoneRadiusViewClip))

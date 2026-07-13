@@ -40,7 +40,7 @@ static constexpr glm::vec3 k_defaultIsosurfaceRangeEndColor{255.0f / 255.0f, 63.
 
 struct AddSurfacesDialogState
 {
-  entropy::ui::IsosurfaceRangeParameters range;
+  ui::IsosurfaceRangeParameters range;
   bool colorRange = false;
   glm::vec3 startColor{k_defaultIsosurfaceColor};
   glm::vec3 endColor{k_defaultIsosurfaceRangeEndColor};
@@ -104,7 +104,7 @@ std::optional<uuids::uuid> addSurfaceAtValue(
   }
 
   Isosurface surface;
-  surface.name = entropy::ui::defaultIsosurfaceName(index);
+  surface.name = ui::defaultIsosurfaceName(index);
   surface.value = value;
   surface.color = color;
   surface.opacity = 1.0f;
@@ -210,7 +210,7 @@ bool renderAddSurfacesDialog(
     auto& params = state.range;
     if (params.count == 0) {
       params.count = 2;
-      entropy::ui::updateIsosurfaceRangeSpacing(params);
+      ui::updateIsosurfaceRangeSpacing(params);
     }
 
     const auto& stats = image->settings().componentStatistics(component);
@@ -243,18 +243,18 @@ bool renderAddSurfacesDialog(
         params.start = params.end;
       }
 
-      entropy::ui::updateIsosurfaceRangeSpacing(params);
+      ui::updateIsosurfaceRangeSpacing(params);
     }
 
     if (ImGui::InputDouble("Spacing", &params.spacing, 0.0, 0.0, appData.guiData().m_imageValuePrecisionFormat.c_str()))
     {
-      entropy::ui::updateIsosurfaceRangeCount(params);
+      ui::updateIsosurfaceRangeCount(params);
     }
 
     static constexpr std::uint32_t k_countStep = 1;
     static constexpr std::uint32_t k_countStepFast = 10;
     if (ImGui::InputScalar("Count", ImGuiDataType_U32, &params.count, &k_countStep, &k_countStepFast)) {
-      entropy::ui::updateIsosurfaceRangeSpacing(params);
+      ui::updateIsosurfaceRangeSpacing(params);
     }
 
     ImGui::PopItemWidth();
@@ -276,7 +276,7 @@ bool renderAddSurfacesDialog(
     }
 
     ImGui::Spacing();
-    const auto values = entropy::ui::isosurfaceRangeValues(params);
+    const auto values = ui::isosurfaceRangeValues(params);
     ImGui::Text("Will add %zu isosurface%s.", values.size(), values.size() == 1 ? "" : "s");
 
     ImGui::Spacing();
@@ -289,7 +289,7 @@ bool renderAddSurfacesDialog(
         const double value = values[valueIndex];
         const double t =
           (values.size() <= 1) ? 0.0 : static_cast<double>(valueIndex) / static_cast<double>(values.size() - 1);
-        const glm::vec3 color = state.colorRange ? entropy::ui::interpolateHsvColor(state.startColor, state.endColor, t)
+        const glm::vec3 color = state.colorRange ? ui::interpolateHsvColor(state.startColor, state.endColor, t)
                                                  : defaultIsosurfaceColor(image->settings().borderColor());
 
         lastAddedUid = addSurfaceAtValue(
@@ -343,7 +343,7 @@ void openAddSurfacesDialog(const uuids::uuid& imageUid, const Image& image, uint
   params.start = static_cast<double>(stats.onlineStats.min);
   params.end = static_cast<double>(stats.onlineStats.max);
   params.count = k_defaultRangeCount;
-  entropy::ui::updateIsosurfaceRangeSpacing(params);
+  ui::updateIsosurfaceRangeSpacing(params);
   state.startColor = defaultIsosurfaceColor(image.settings().borderColor());
   state.endColor = k_defaultIsosurfaceRangeEndColor;
 
@@ -555,13 +555,10 @@ void renderIsosurfacesHeader(
   // Header is ID'ed only by the image index.
   // ### allows the header name to change without changing its ID.
   const bool isRef = appData.refImageUid() && *appData.refImageUid() == imageUid;
-  const std::string headerName = std::to_string(imageIndex) + ") " +
-                                 entropy::ui::headers::imageDisplayNameWithRole(
-                                   image->settings().displayName(),
-                                   isRef,
-                                   isActiveImage,
-                                   appData.numImages()) +
-                                 "###" + std::to_string(imageIndex);
+  const std::string headerName =
+    std::to_string(imageIndex) + ") " +
+    ui::headers::imageDisplayNameWithRole(image->settings().displayName(), isRef, isActiveImage, appData.numImages()) +
+    "###" + std::to_string(imageIndex);
 
   const auto headerColors = computeHeaderBgAndTextColors(image->settings().borderColor());
   ImGui::PushStyleColor(ImGuiCol_Header, headerColors.first);
@@ -575,11 +572,8 @@ void renderIsosurfacesHeader(
   {
     ImGui::SetNextItemOpen(true, ImGuiCond_Always);
   }
-  const bool open = entropy::ui::headers::activeImageCollapsingHeader(
-    appData.guiData(),
-    isActiveImage,
-    headerName.c_str(),
-    headerFlags);
+  const bool open =
+    ui::headers::activeImageCollapsingHeader(appData.guiData(), isActiveImage, headerName.c_str(), headerFlags);
   if (requestedHeader) {
     appData.guiData().m_requestedIsosurfacesImageUid = std::nullopt;
   }

@@ -41,7 +41,7 @@
 #define ENTROPY_VERSION "0.0.0"
 #endif
 
-namespace entropy::ui::updates
+namespace ui::updates
 {
 namespace
 {
@@ -645,4 +645,4 @@ void renderUpdateCheckWindow(
   ImGui::EndPopup();
 }
 
-} // namespace entropy::ui::updates
+} // namespace ui::updates

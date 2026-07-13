@@ -114,8 +114,8 @@ struct RenderData
     bool overlayPixelEdges = false;   //!< Composite pixel edges over image intensity instead of replacing the image.
   };
 
-  using TextureDimension = entropy::rendering::TextureDimension;
-  using PlanarTextureLayout = entropy::rendering::PlanarTextureLayout;
+  using TextureDimension = rendering::TextureDimension;
+  using PlanarTextureLayout = rendering::PlanarTextureLayout;
 
   /// Shared indexed quad geometry used by 2D image, segmentation, metric, and raycast screen-space passes.
   struct Quad

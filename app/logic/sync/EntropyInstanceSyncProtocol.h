@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-namespace entropy::sync::instance_protocol
+namespace app_sync::instance_protocol
 {
 
 inline constexpr int sk_protocolVersion = 1;
@@ -52,4 +52,4 @@ std::string encodeCursorMessage(
 std::optional<CursorMessage>
 decodeCursorMessage(const std::string& messageText, const std::string& localInstanceId, const std::string& projectKey);
 
-} // namespace entropy::sync::instance_protocol
+} // namespace app_sync::instance_protocol

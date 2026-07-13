@@ -377,7 +377,7 @@ void applyDefaults(AppSettings& settings, RenderData& renderData, GuiData& guiDa
   settings.setLockAnatomicalCoordinateAxesWithReferenceImage(lockAnatomicalDirections);
   applyRenderPreferences(renderData, defaultPreferences);
   applyPrecisionPreferences(guiData, PrecisionPreferences{});
-  entropy::logging::setDefaultLoggerSinkLevel(entropy::logging::defaultLogLevel());
+  logging::setDefaultLoggerSinkLevel(logging::defaultLogLevel());
 }
 
 } // namespace user_preferences

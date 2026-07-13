@@ -29,7 +29,7 @@
 #include <sstream>
 
 namespace fs = std::filesystem;
-using namespace entropy::ui::popups;
+using namespace ui::popups;
 
 namespace
 {

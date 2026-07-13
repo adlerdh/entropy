@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace opacity_mixer = entropy::ui::opacity_mixer;
+namespace opacity_mixer = ui::opacity_mixer;
 
 TEST_CASE("opacity mixer assigns all opacity to an exact image index", "[ui][opacity]")
 {

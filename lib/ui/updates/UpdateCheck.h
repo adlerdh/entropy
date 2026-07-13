@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 
-namespace entropy::ui::updates
+namespace ui::updates
 {
 inline constexpr const char* k_downloadPageUrl = "https://github.com/adlerdh/entropy/releases";
 inline constexpr const char* k_latestReleaseApiUrl = "https://api.github.com/repos/adlerdh/entropy/releases/latest";
@@ -88,4 +88,4 @@ void renderUpdateCheckWindow(
   bool automaticChecksEnabled,
   const std::function<void(bool)>& setAutomaticChecksEnabled);
 
-} // namespace entropy::ui::updates
+} // namespace ui::updates

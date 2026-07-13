@@ -5,13 +5,13 @@
 #include <algorithm>
 #include <cmath>
 
-namespace entropy::rendering::ascii_clipboard
+namespace rendering::ascii_clipboard
 {
 
-entropy::clipboard::Rgb8 toRgb8(const glm::vec3& rgb)
+clipboard::Rgb8 toRgb8(const glm::vec3& rgb)
 {
   const glm::vec3 clamped = glm::clamp(rgb, glm::vec3{0.0f}, glm::vec3{1.0f});
-  return entropy::clipboard::Rgb8{
+  return clipboard::Rgb8{
     static_cast<uint8_t>(std::round(clamped.r * 255.0f)),
     static_cast<uint8_t>(std::round(clamped.g * 255.0f)),
     static_cast<uint8_t>(std::round(clamped.b * 255.0f))};
@@ -66,9 +66,9 @@ glm::vec3 foregroundColorForCell(const glm::vec3& srcRgb, bool useColormap, cons
   return rgbPrime + glm::vec3{m};
 }
 
-std::string colorSpanOpen(entropy::clipboard::Rgb8 color)
+std::string colorSpanOpen(clipboard::Rgb8 color)
 {
-  return "<span style=\"color:" + entropy::clipboard::rgbCssHex(color) + "\">";
+  return "<span style=\"color:" + clipboard::rgbCssHex(color) + "\">";
 }
 
-} // namespace entropy::rendering::ascii_clipboard
+} // namespace rendering::ascii_clipboard

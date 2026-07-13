@@ -3,13 +3,12 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-namespace ascii_clipboard = entropy::rendering::ascii_clipboard;
+namespace ascii_clipboard = rendering::ascii_clipboard;
 
 TEST_CASE("ASCII clipboard RGB conversion clamps and rounds", "[rendering][ascii][clipboard]")
 {
-  CHECK(ascii_clipboard::toRgb8({-1.0f, 0.5f, 2.0f}) == entropy::clipboard::Rgb8{0, 128, 255});
-  CHECK(
-    ascii_clipboard::toRgb8({1.0f / 255.0f, 15.0f / 255.0f, 127.0f / 255.0f}) == entropy::clipboard::Rgb8{1, 15, 127});
+  CHECK(ascii_clipboard::toRgb8({-1.0f, 0.5f, 2.0f}) == clipboard::Rgb8{0, 128, 255});
+  CHECK(ascii_clipboard::toRgb8({1.0f / 255.0f, 15.0f / 255.0f, 127.0f / 255.0f}) == clipboard::Rgb8{1, 15, 127});
 }
 
 TEST_CASE("ASCII clipboard fixed foreground mode uses configured color", "[rendering][ascii][clipboard]")

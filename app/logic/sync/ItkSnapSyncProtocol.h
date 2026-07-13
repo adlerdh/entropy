@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace entropy::sync::itk_snap_protocol
+namespace app_sync::itk_snap_protocol
 {
 
 /** @brief Qt shared-memory key used by ITK-SNAP for cross-process synchronization. */
@@ -90,4 +90,4 @@ glm::dvec3 lpsFromRas(const glm::dvec3& ras);
 /** @brief Return whether an ITK-SNAP IPC protocol version can be read by Entropy. */
 bool isSupportedProtocolVersion(std::int16_t version);
 
-} // namespace entropy::sync::itk_snap_protocol
+} // namespace app_sync::itk_snap_protocol

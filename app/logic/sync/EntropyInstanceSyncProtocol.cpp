@@ -5,7 +5,7 @@
 
 #include <limits>
 
-namespace entropy::sync::instance_protocol
+namespace app_sync::instance_protocol
 {
 
 bool nearlyEqual(const glm::dvec3& a, const glm::dvec3& b)
@@ -123,4 +123,4 @@ decodeCursorMessage(const std::string& messageText, const std::string& localInst
   }
 }
 
-} // namespace entropy::sync::instance_protocol
+} // namespace app_sync::instance_protocol

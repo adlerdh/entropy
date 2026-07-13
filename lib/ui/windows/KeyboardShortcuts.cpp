@@ -2,7 +2,7 @@
 
 #include <imgui/imgui.h>
 
-namespace entropy::ui
+namespace ui
 {
 namespace
 {
@@ -226,4 +226,4 @@ void renderKeyboardShortcutsWindow(bool& open)
 
   ImGui::End();
 }
-} // namespace entropy::ui
+} // namespace ui

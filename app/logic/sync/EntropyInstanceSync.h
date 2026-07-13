@@ -13,7 +13,7 @@
 
 class AppData;
 
-namespace entropy::sync
+namespace app_sync
 {
 
 /**
@@ -116,4 +116,4 @@ private:
   SocketHandle m_socket = 0;
 };
 
-} // namespace entropy::sync
+} // namespace app_sync

@@ -9,7 +9,7 @@
 #include <cmath>
 #include <span>
 
-namespace entropy::app
+namespace app
 {
 namespace
 {
@@ -245,4 +245,4 @@ std::optional<ImageScaleUpdate> computeImageScaleUpdate(
   return ImageScaleUpdate{.m_scale = newScale, .m_translation = newTranslation};
 }
 
-} // namespace entropy::app
+} // namespace app

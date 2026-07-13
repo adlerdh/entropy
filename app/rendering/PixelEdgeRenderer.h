@@ -25,7 +25,7 @@
 class PixelEdgeRenderer
 {
 public:
-  using ViewRect = entropy::rendering::pixel_edge::ViewRect;
+  using ViewRect = rendering::pixel_edge::ViewRect;
 
   using DrawImageFn = std::function<void()>;
   using BindPostTexturesFn = std::function<void()>;

@@ -2,7 +2,7 @@
 
 #include <span>
 
-namespace entropy::rendering::local_linear_residual
+namespace rendering::local_linear_residual
 {
 
 /** @brief Least-squares fit for `moving ~= gain * fixed + bias`. */
@@ -23,4 +23,4 @@ struct Fit
  */
 Fit fit(std::span<const float> fixed, std::span<const float> moving, float varianceEpsilon);
 
-} // namespace entropy::rendering::local_linear_residual
+} // namespace rendering::local_linear_residual

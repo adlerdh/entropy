@@ -1,6 +1,6 @@
 #include "rendering/geometry/PixelEdgeGeometry.h"
 
-namespace entropy::rendering::pixel_edge
+namespace rendering::pixel_edge
 {
 
 ViewRect computeViewRect(glm::vec4 clipViewport, glm::vec4 deviceViewport)
@@ -19,4 +19,4 @@ ViewRect computeViewRect(glm::vec4 clipViewport, glm::vec4 deviceViewport)
     height};
 }
 
-} // namespace entropy::rendering::pixel_edge
+} // namespace rendering::pixel_edge

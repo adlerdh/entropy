@@ -13,7 +13,7 @@
 
 class Viewport;
 
-namespace entropy::rendering::vector_drawing
+namespace rendering::vector_drawing
 {
 
 struct ArrowGeometry
@@ -99,4 +99,4 @@ float vectorArrowSpacingPixels(
   float screenPixelsPerVoxel,
   float screenPixelsPerMillimeter);
 
-} // namespace entropy::rendering::vector_drawing
+} // namespace rendering::vector_drawing

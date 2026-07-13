@@ -142,7 +142,7 @@ void renderOpacityBlenderWindow(
         continue;
       }
 
-      const double op = entropy::ui::opacity_mixer::blendedOpacity(i, mix);
+      const double op = ui::opacity_mixer::blendedOpacity(i, mix);
 
       if (img->settings().displayImageAsColor()) {
         img->settings().setGlobalOpacity(op);

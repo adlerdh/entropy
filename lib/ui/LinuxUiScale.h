@@ -4,7 +4,7 @@
 #include <optional>
 #include <string_view>
 
-namespace entropy::ui::linux_ui_scale
+namespace ui::linux_ui_scale
 {
 /**
  * @brief Parse GNOME monitors.xml content.
@@ -25,4 +25,4 @@ std::filesystem::path defaultMonitorsXmlPath();
 
 /** @brief Current GNOME primary logical monitor scale, if available. */
 std::optional<float> primaryMonitorScale();
-} // namespace entropy::ui::linux_ui_scale
+} // namespace ui::linux_ui_scale

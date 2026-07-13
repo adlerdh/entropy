@@ -260,9 +260,9 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
 
 #if defined(__linux__)
   GLFWimage entropyWindowIcon{
-    entropy::windowing::kEntropyIconWidth,
-    entropy::windowing::kEntropyIconHeight,
-    const_cast<unsigned char*>(entropy::windowing::kEntropyIconRgba.data())};
+    windowing::kEntropyIconWidth,
+    windowing::kEntropyIconHeight,
+    const_cast<unsigned char*>(windowing::kEntropyIconRgba.data())};
   glfwSetWindowIcon(m_window, 1, &entropyWindowIcon);
 #endif
 
@@ -572,7 +572,7 @@ void GlfwWrapper::syncContentScale()
   std::optional<float> desktopScale;
 #if defined(__linux__)
   // GNOME Display Settings can update monitors.xml even when GLFW scale values stay stale.
-  desktopScale = entropy::ui::linux_ui_scale::primaryMonitorScale();
+  desktopScale = ui::linux_ui_scale::primaryMonitorScale();
 #endif
 
   const glm::vec2 scale = resolvePolledContentScale(

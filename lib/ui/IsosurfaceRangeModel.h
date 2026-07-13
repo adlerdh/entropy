@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace entropy::ui
+namespace ui
 {
 
 /**
@@ -79,4 +79,4 @@ std::string defaultIsosurfaceName(std::size_t index);
  */
 glm::vec3 interpolateHsvColor(const glm::vec3& startRgb, const glm::vec3& endRgb, double t);
 
-} // namespace entropy::ui
+} // namespace ui

@@ -3,9 +3,6 @@
 #include <optional>
 #include <string>
 
-namespace entropy
-{
-
 /**
  * @brief Clipboard representations of the same logical content.
  *
@@ -18,5 +15,3 @@ struct ClipboardPayload
   std::optional<std::string> html;
   std::optional<std::string> rtf;
 };
-
-} // namespace entropy

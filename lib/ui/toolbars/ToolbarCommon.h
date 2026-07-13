@@ -4,7 +4,7 @@
 #include <glm/vec4.hpp>
 #include <imgui/imgui.h>
 
-namespace entropy::ui::toolbars
+namespace ui::toolbars
 {
 
 inline const ImVec4 k_darkTextColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -71,4 +71,4 @@ toolbarWindowPositionForViewport(const glm::vec4& viewport, float windowHeight, 
   return ImVec2{(corner & 1) ? right - pad.x : left + pad.x, (corner & 2) ? bottom - pad.y : top + pad.y};
 }
 
-} // namespace entropy::ui::toolbars
+} // namespace ui::toolbars

@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace entropy::rendering::lightbox
+namespace rendering::lightbox
 {
 
 /**
@@ -14,4 +14,4 @@ namespace entropy::rendering::lightbox
  */
 std::string formatOffsetDistanceMm(double offsetMm, double unitReferenceOffsetMm, int precision = 6);
 
-} // namespace entropy::rendering::lightbox
+} // namespace rendering::lightbox

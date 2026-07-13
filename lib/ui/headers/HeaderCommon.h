@@ -12,7 +12,7 @@
 #include <string>
 #include <utility>
 
-namespace entropy::ui::headers
+namespace ui::headers
 {
 
 inline const ImVec4 whiteText(1, 1, 1, 1);
@@ -121,4 +121,4 @@ inline std::pair<ImVec4, ImVec4> computeHeaderBgAndTextColors(const glm::vec3& c
   return {headerColor, headerTextColor};
 }
 
-} // namespace entropy::ui::headers
+} // namespace ui::headers

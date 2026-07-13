@@ -66,10 +66,10 @@ HGLOBAL copyWideToGlobalMemory(const std::wstring& text)
 
 } // namespace
 
-namespace entropy::ui
+namespace ui
 {
 
-bool setClipboardPayload(const entropy::ClipboardPayload& payload)
+bool setClipboardPayload(const ClipboardPayload& payload)
 {
   if (!OpenClipboard(nullptr)) {
     return false;
@@ -90,7 +90,7 @@ bool setClipboardPayload(const entropy::ClipboardPayload& payload)
 
   if (payload.html && !payload.html->empty()) {
     const UINT htmlFormat = RegisterClipboardFormatW(L"HTML Format");
-    const std::string htmlPayload = entropy::clipboard::windowsHtmlClipboardPayload(*payload.html);
+    const std::string htmlPayload = clipboard::windowsHtmlClipboardPayload(*payload.html);
     if (HGLOBAL htmlHandle = copyBytesToGlobalMemory(htmlPayload)) {
       if (SetClipboardData(htmlFormat, htmlHandle)) {
         wroteAny = true;
@@ -117,4 +117,4 @@ bool setClipboardPayload(const entropy::ClipboardPayload& payload)
   return wroteAny;
 }
 
-} // namespace entropy::ui
+} // namespace ui

@@ -211,11 +211,8 @@ void renderInspectionWindow(
       const auto names = getImageDisplayAndFileName(imageIndex);
       const bool isRef = appData.refImageUid() && *appData.refImageUid() == *imageUid;
       const bool isActiveImage = appData.activeImageUid() && *appData.activeImageUid() == *imageUid;
-      const std::string displayName = entropy::ui::headers::imageDisplayNameWithShortReferenceRole(
-        names.first,
-        isRef,
-        isActiveImage,
-        appData.numImages());
+      const std::string displayName =
+        ui::headers::imageDisplayNameWithShortReferenceRole(names.first, isRef, isActiveImage, appData.numImages());
 
       ImGui::TextColored(blueColor, "%s:", displayName.c_str());
 

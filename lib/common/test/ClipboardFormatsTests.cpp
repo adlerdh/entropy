@@ -29,30 +29,30 @@ std::size_t parseOffset(const std::string& payload, std::string_view key)
 TEST_CASE("Clipboard HTML escaping covers special characters", "[common][clipboard]")
 {
   CHECK(
-    entropy::clipboard::escapeHtmlText(R"(<tag attr="a&b">'x'</tag>)") ==
+    clipboard::escapeHtmlText(R"(<tag attr="a&b">'x'</tag>)") ==
     "&lt;tag attr=&quot;a&amp;b&quot;&gt;&#39;x&#39;&lt;/tag&gt;");
 }
 
 TEST_CASE("Clipboard RGB colors format as CSS hex", "[common][clipboard]")
 {
-  CHECK(entropy::clipboard::rgbCssHex({0, 1, 15}) == "#00010F");
-  CHECK(entropy::clipboard::rgbCssHex({127, 128, 255}) == "#7F80FF");
+  CHECK(clipboard::rgbCssHex({0, 1, 15}) == "#00010F");
+  CHECK(clipboard::rgbCssHex({127, 128, 255}) == "#7F80FF");
 }
 
 TEST_CASE("Clipboard RTF escaping covers control characters", "[common][clipboard]")
 {
-  CHECK(entropy::clipboard::escapeRtfText(R"(\{}\n)") == R"(\\\{\}\\n)");
-  CHECK(entropy::clipboard::escapeRtfText("a\nb") == "a\\line\nb");
+  CHECK(clipboard::escapeRtfText(R"(\{}\n)") == R"(\\\{\}\\n)");
+  CHECK(clipboard::escapeRtfText("a\nb") == "a\\line\nb");
 }
 
 TEST_CASE("Clipboard RTF document contains color table and color runs", "[common][clipboard]")
 {
-  const std::vector<entropy::clipboard::ColoredTextRun> runs{
-    {"AB", entropy::clipboard::Rgb8{255, 0, 0}},
+  const std::vector<clipboard::ColoredTextRun> runs{
+    {"AB", clipboard::Rgb8{255, 0, 0}},
     {" ", std::nullopt},
-    {"C", entropy::clipboard::Rgb8{0, 128, 255}}};
+    {"C", clipboard::Rgb8{0, 128, 255}}};
 
-  const std::string rtf = entropy::clipboard::rtfDocument(runs, 20);
+  const std::string rtf = clipboard::rtfDocument(runs, 20);
 
   CHECK(rtf.starts_with("{\\rtf1\\ansi\\deff0"));
   CHECK(rtf.find("{\\fonttbl{\\f0\\fmodern Courier;}}") != std::string::npos);
@@ -63,9 +63,9 @@ TEST_CASE("Clipboard RTF document contains color table and color runs", "[common
 
 TEST_CASE("Clipboard RTF document can apply a background color", "[common][clipboard]")
 {
-  const std::vector<entropy::clipboard::ColoredTextRun> runs{{"A", entropy::clipboard::Rgb8{255, 255, 255}}};
+  const std::vector<clipboard::ColoredTextRun> runs{{"A", clipboard::Rgb8{255, 255, 255}}};
 
-  const std::string rtf = entropy::clipboard::rtfDocument(runs, 18, entropy::clipboard::Rgb8{16, 32, 48});
+  const std::string rtf = clipboard::rtfDocument(runs, 18, clipboard::Rgb8{16, 32, 48});
 
   CHECK(rtf.find("{\\colortbl;\\red16\\green32\\blue48;\\red255\\green255\\blue255;}") != std::string::npos);
   CHECK(rtf.find("\\f0\\fs18 \\highlight1 \\cf2 A") != std::string::npos);
@@ -74,7 +74,7 @@ TEST_CASE("Clipboard RTF document can apply a background color", "[common][clipb
 TEST_CASE("Windows HTML clipboard payload has valid byte offsets", "[common][clipboard]")
 {
   const std::string html = "<pre><span style=\"color:#FF0000\">A&amp;B</span></pre>";
-  const std::string payload = entropy::clipboard::windowsHtmlClipboardPayload(html);
+  const std::string payload = clipboard::windowsHtmlClipboardPayload(html);
 
   const std::size_t startHtml = parseOffset(payload, "StartHTML:");
   const std::size_t endHtml = parseOffset(payload, "EndHTML:");

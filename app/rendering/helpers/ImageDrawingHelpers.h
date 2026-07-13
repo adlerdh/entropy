@@ -7,7 +7,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-namespace entropy::rendering::image_drawing
+namespace rendering::image_drawing
 {
 
 struct MipSamplingParams
@@ -52,4 +52,4 @@ MipSamplingParams computeMipSamplingParams(
   float slabThicknessMm,
   bool useMaxExtent);
 
-} // namespace entropy::rendering::image_drawing
+} // namespace rendering::image_drawing

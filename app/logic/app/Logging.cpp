@@ -18,13 +18,13 @@ void Logging::setup()
 
     m_console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     m_console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [tid %t] [%^%l%$] %v");
-    m_console_sink->set_level(entropy::logging::defaultLogLevel());
+    m_console_sink->set_level(logging::defaultLogLevel());
 
     // The daily file sink uses shows more info: logger name and time zone.
     // Note: debug logging needs SPDLOG_XXX macro
     m_daily_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(logFileName.string(), 23, 59);
     m_daily_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e %z] [%n] [tid %t] [%l] [%s:%#] %v");
-    m_daily_sink->set_level(entropy::logging::defaultLogLevel());
+    m_daily_sink->set_level(logging::defaultLogLevel());
 
     spdlog::sinks_init_list sink_list{m_console_sink, m_daily_sink};
 

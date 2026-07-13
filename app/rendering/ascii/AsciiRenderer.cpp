@@ -280,7 +280,7 @@ bool AsciiRenderer::enabled() const
   return R.m_asciiEnabled && (m_asciiAtlas.textureId() != 0);
 }
 
-std::optional<entropy::ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(const View& view)
+std::optional<ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(const View& view)
 {
   if (
     !enabled() || !m_asciiCellMeanTex || m_asciiCellMeanTexSize.x <= 0 || m_asciiCellMeanTexSize.y <= 0 ||
@@ -396,7 +396,7 @@ std::optional<entropy::ClipboardPayload> AsciiRenderer::exportClipboardPayloadFo
 
   std::string text;
   std::string html;
-  std::vector<entropy::clipboard::ColoredTextRun> richRuns;
+  std::vector<clipboard::ColoredTextRun> richRuns;
   const int exportWidth = x1 - x0;
   const int exportHeight = y1 - y0;
   text.reserve(static_cast<size_t>((exportWidth + 1) * exportHeight));
@@ -404,31 +404,31 @@ std::optional<entropy::ClipboardPayload> AsciiRenderer::exportClipboardPayloadFo
   richRuns.reserve(text.capacity());
 
   const RenderData& R = m_appData.renderData();
-  const entropy::clipboard::Rgb8 htmlBg = entropy::rendering::ascii_clipboard::toRgb8(R.m_asciiBgColor);
+  const clipboard::Rgb8 htmlBg = rendering::ascii_clipboard::toRgb8(R.m_asciiBgColor);
   html +=
     "<!DOCTYPE html><html><body><pre style=\"margin:0; white-space:pre; font-family:monospace; "
     "background-color:";
-  html += entropy::clipboard::rgbCssHex(htmlBg);
+  html += clipboard::rgbCssHex(htmlBg);
   html += ";\">";
 
-  std::optional<entropy::clipboard::Rgb8> currentColor;
+  std::optional<clipboard::Rgb8> currentColor;
   auto closeSpan = [&]() {
     if (currentColor) {
       html += "</span>";
       currentColor = std::nullopt;
     }
   };
-  auto setColor = [&](const entropy::clipboard::Rgb8& color) {
+  auto setColor = [&](const clipboard::Rgb8& color) {
     if (currentColor && *currentColor == color) {
       return;
     }
     closeSpan();
     html += "<span style=\"color:";
-    html += entropy::clipboard::rgbCssHex(color);
+    html += clipboard::rgbCssHex(color);
     html += "\">";
     currentColor = color;
   };
-  auto appendRichText = [&](char c, std::optional<entropy::clipboard::Rgb8> color) {
+  auto appendRichText = [&](char c, std::optional<clipboard::Rgb8> color) {
     if (!richRuns.empty() && richRuns.back().color == color) {
       richRuns.back().text.push_back(c);
       return;
@@ -452,11 +452,11 @@ std::optional<entropy::ClipboardPayload> AsciiRenderer::exportClipboardPayloadFo
       const int bin = std::clamp(static_cast<int>(std::round(lum * 255.0f)), 0, 255);
       const int glyphIndex = glyphIndexForCell(cellIndex, bin);
       const char glyph = characters[static_cast<size_t>(glyphIndex)];
-      const entropy::clipboard::Rgb8 glyphColor = entropy::rendering::ascii_clipboard::toRgb8(
-        entropy::rendering::ascii_clipboard::foregroundColorForCell(srcRgb, R.m_asciiUseColormap, R.m_asciiFgColor));
+      const clipboard::Rgb8 glyphColor = rendering::ascii_clipboard::toRgb8(
+        rendering::ascii_clipboard::foregroundColorForCell(srcRgb, R.m_asciiUseColormap, R.m_asciiFgColor));
       text.push_back(glyph);
       setColor(glyphColor);
-      html += entropy::clipboard::escapeHtmlChar(glyph);
+      html += clipboard::escapeHtmlChar(glyph);
       appendRichText(glyph, glyphColor);
     }
     if (y > y0) {
@@ -470,10 +470,7 @@ std::optional<entropy::ClipboardPayload> AsciiRenderer::exportClipboardPayloadFo
   closeSpan();
   html += "</pre></body></html>";
 
-  return entropy::ClipboardPayload{
-    std::move(text),
-    std::move(html),
-    entropy::clipboard::rtfDocument(richRuns, 18, htmlBg)};
+  return ClipboardPayload{std::move(text), std::move(html), clipboard::rtfDocument(richRuns, 18, htmlBg)};
 }
 
 void AsciiRenderer::maybeRebuildAtlas()

@@ -10,7 +10,7 @@
 #include <limits>
 #include <sstream>
 
-namespace entropy::ui
+namespace ui
 {
 namespace
 {
@@ -112,4 +112,4 @@ glm::vec3 interpolateHsvColor(const glm::vec3& startRgb, const glm::vec3& endRgb
   return glm::clamp(glm::rgbColor(hsv), glm::vec3{0.0f}, glm::vec3{1.0f});
 }
 
-} // namespace entropy::ui
+} // namespace ui

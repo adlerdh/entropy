@@ -5,7 +5,7 @@
 
 #include <array>
 
-namespace local_linear_residual = entropy::rendering::local_linear_residual;
+namespace local_linear_residual = rendering::local_linear_residual;
 
 TEST_CASE("local linear residual fits gain and bias", "[rendering][local-linear-residual]")
 {

@@ -5,7 +5,6 @@
 #include "logic/camera/CameraTypes.h"
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/ascii/AsciiRenderer.h"
-#include "rendering/common/ShaderProviderType.h"
 #include "rendering/common/ShaderType.h"
 #include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/containers/Uniforms.h"
@@ -13,69 +12,136 @@
 #include <glm/fwd.hpp>
 #include <uuid.h>
 
-#include <functional>
+#include <chrono>
 #include <list>
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 class AppData;
 class GLBufferTexture;
 class GLTexture;
-class IDrawable;
-class IRenderer;
+class Image;
 class View;
 
 struct NVGcontext;
 
 /**
- * @brief Encapsulates all rendering
- * @todo Split this giant class apart
+ * @brief Top-level renderer that owns GPU resources and draws every view in the current layout.
+ *
+ * Rendering is the integration point between application state and the lower-level drawing helpers. It owns the
+ * OpenGL shader programs, texture objects, NanoVG context, ASCII renderer, and pixel-edge renderer. Most persistent
+ * render settings live in AppData/RenderData; this class translates those settings into current GPU state and issues
+ * the draw calls for image slices, metrics, raycast isosurfaces, overlays, segmentations, annotations, landmarks, and
+ * brush previews.
+ *
+ * The class is intentionally non-copyable through its OpenGL ownership. It should be initialized after an OpenGL
+ * context exists and destroyed before the context is torn down.
  */
 class Rendering
 {
 public:
-  Rendering(AppData&);
+  /**
+   * @brief Construct the renderer and create process-local rendering helpers.
+   *
+   * The OpenGL context must already be current. The constructor creates the NanoVG context, logs OpenGL texture limits,
+   * and compiles shader programs.
+   *
+   * @param appData Shared application state used to read images, views, settings, and render data.
+   */
+  explicit Rendering(AppData& appData);
+
+  /**
+   * @brief Destroy GPU queries and the NanoVG context owned by this renderer.
+   */
   ~Rendering();
 
-  /// Initialization
+  /**
+   * @brief Initialize the initial OpenGL state and texture resources.
+   */
   void init();
 
-  /// Create image and segmentation textures
+  /**
+   * @brief Create or refresh GPU textures for currently loaded images, deformation fields, segmentations, and labels.
+   */
   void initTextures();
 
-  /// @brief Framerate limiter
-  /// Manual frame limiting can help if we want non-standard framerates (e.g., 30 FPS)
-  /// @param[in, out] lastFrameTime Time point of last rendered frame.
-  /// It is updated in this function.
   using Clock = std::chrono::steady_clock;
+
+  /**
+   * @brief Sleep until the requested application frame interval has elapsed.
+   *
+   * Manual frame limiting is used when the application is configured for a target frame rate below the display rate.
+   *
+   * @param[in,out] lastFrameTime Time point of the last presented frame. Updated to the current frame time.
+   */
   void framerateLimiter(std::chrono::time_point<Clock>& lastFrameTime);
 
-  /// Render the scene
+  /**
+   * @brief Draw the current application layout.
+   */
   void render();
 
-  /// Update all texture interpolation parameters for the active image component
+  /**
+   * @brief Update sampler interpolation for all textures that belong to one image.
+   *
+   * @param imageUid Image whose active component and sampling settings should be applied.
+   */
   void updateImageInterpolation(const uuids::uuid& imageUid);
 
-  /// Update the texture interpolation parameters for the given image color map
-  void updateImageColorMapInterpolation(std::size_t cmapIndex);
+  /**
+   * @brief Update sampler interpolation for one image color map texture.
+   *
+   * @param colorMapIndex Index into RenderData::m_imageColorMapTextures.
+   */
+  void updateImageColorMapInterpolation(std::size_t colorMapIndex);
 
-  /// Update image uniforms after any settings have changed
+  /**
+   * @brief Update image uniforms for several images.
+   *
+   * @param imageUids Images whose uniforms should be recomputed.
+   */
   void updateImageUniforms(uuid_range_t imageUids);
+
+  /**
+   * @brief Update image uniforms for one image.
+   *
+   * @param imageUid Image whose uniforms should be recomputed.
+   */
   void updateImageUniforms(const uuids::uuid& imageUid);
 
-  /// Update the metric uniforms after any settings have changed
+  /**
+   * @brief Update uniforms shared by comparison and local metric shaders.
+   */
   void updateMetricUniforms();
 
-  /// Export the most recently rendered ASCII clipboard payload for one view.
-  std::optional<entropy::ClipboardPayload> exportAsciiClipboardPayloadForView(const View& view);
+  /**
+   * @brief Export the most recently rendered ASCII clipboard payload for one view.
+   *
+   * @param view View whose ASCII render payload should be exported.
+   * @return Clipboard payload if the view has a current ASCII render, otherwise std::nullopt.
+   */
+  std::optional<ClipboardPayload> exportAsciiClipboardPayloadForView(const View& view);
 
-  /// Update a label color table texture
+  /**
+   * @brief Upload one label color table to its GPU buffer texture.
+   *
+   * @param tableIndex Index into the application label color table collection.
+   */
   void updateLabelColorTableTexture(size_t tableIndex);
 
-  /// Updates the texture representation of a segmentation
+  /**
+   * @brief Upload a voxel subregion into an existing segmentation texture.
+   *
+   * @param segUid Segmentation image whose texture is being updated.
+   * @param compType Native component type of the uploaded data.
+   * @param startOffsetVoxel First voxel in the destination texture to update.
+   * @param sizeInVoxels Size of the uploaded region in voxels.
+   * @param data Pointer to tightly packed voxel data for the region.
+   */
   void updateSegTexture(
     const uuids::uuid& segUid,
     const ComponentType& compType,
@@ -83,7 +149,15 @@ public:
     const glm::uvec3& sizeInVoxels,
     const void* data);
 
-  /// @todo Is this function needed?
+  /**
+   * @brief Upload signed 64-bit segmentation data after converting it to the segmentation texture component type.
+   *
+   * @param segUid Segmentation image whose texture is being updated.
+   * @param compType Destination texture component type.
+   * @param startOffsetVoxel First voxel in the destination texture to update.
+   * @param sizeInVoxels Size of the uploaded region in voxels.
+   * @param data Pointer to tightly packed signed 64-bit source label values.
+   */
   void updateSegTextureWithInt64Data(
     const uuids::uuid& segUid,
     const ComponentType& compType,
@@ -91,6 +165,20 @@ public:
     const glm::uvec3& sizeInVoxels,
     const int64_t* data);
 
+  /**
+   * @brief Upload the current segmentation brush preview mask and metadata.
+   *
+   * The preview texture may grow to hold the requested size. Existing capacity is reused when possible.
+   *
+   * @param imageUid Image being painted.
+   * @param segUid Segmentation receiving paint edits.
+   * @param compType Component type used for the preview upload.
+   * @param sizeInVoxels Size of the preview mask in voxels.
+   * @param voxel_T_world Transform from world coordinates to preview voxel coordinates.
+   * @param color Brush preview color.
+   * @param allowFill Whether the preview includes fill behavior rather than brush-only behavior.
+   * @param data Pointer to tightly packed signed 64-bit preview mask values.
+   */
   void updateBrushPreviewTexture(
     const uuids::uuid& imageUid,
     const uuids::uuid& segUid,
@@ -101,198 +189,104 @@ public:
     bool allowFill,
     const int64_t* data);
 
+  /**
+   * @brief Clear all brush preview textures and associated preview metadata.
+   */
   void clearBrushPreviewTextures();
+
+  /**
+   * @brief Hide brush preview overlays without releasing their texture capacity.
+   */
   void hideBrushPreviewTextures();
 
+  /**
+   * @brief Upload a voxel subregion into one image component texture.
+   *
+   * @param imageUid Image whose component texture is being updated.
+   * @param component Image component index to update.
+   * @param compType Native component type of the uploaded data.
+   * @param startOffsetVoxel First voxel in the destination texture to update.
+   * @param sizeInVoxels Size of the uploaded region in voxels.
+   * @param data Pointer to tightly packed voxel data for the region.
+   */
   void updateImageTexture(
     const uuids::uuid& imageUid,
-    uint32_t comp,
+    uint32_t component,
     const ComponentType& compType,
     const glm::uvec3& startOffsetVoxel,
     const glm::uvec3& sizeInVoxels,
     const void* data);
 
+  /**
+   * @brief Create the GPU buffer texture for one label color table.
+   *
+   * @param labelTableUid Label color table to upload.
+   * @return True when a new texture was created, false when it already existed or the table was invalid.
+   */
   bool createLabelColorTableTexture(const uuids::uuid& labelTableUid);
 
+  /**
+   * @brief Remove the GPU texture and cached layout for a segmentation.
+   *
+   * @param segUid Segmentation whose GPU texture should be removed.
+   * @return True when the texture existed and was removed.
+   */
   bool removeSegTexture(const uuids::uuid& segUid);
 
-  /// Get/set the overlay visibility
+  /**
+   * @brief Return whether vector overlays are globally visible.
+   */
   bool showVectorOverlays() const;
+
+  /**
+   * @brief Set global vector overlay visibility.
+   *
+   * @param show True to draw vector overlays, false to suppress them.
+   */
   void setShowVectorOverlays(bool show);
 
 private:
-  // Number of images rendered per metric view
+  /// Number of image slots rendered by metric and comparison shaders.
   static constexpr std::size_t NUM_METRIC_IMAGES = 2;
 
+  /// Pair of optional image and segmentation ids passed into image and metric shader paths.
   using ImgSegPair = std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>;
 
-  // Vector of current image/segmentation pairs rendered by image shaders
+  /// Ordered image/segmentation pairs currently bound for one image, metric, or raycast draw.
   using CurrentImages = std::vector<ImgSegPair>;
 
-  void setupOpenGLState();
+#include "rendering/PrivateMethods.h"
 
-  void createShaderPrograms();
-  bool createRaycastIsoProgram(GLShaderProgram& program, bool warped);
-
-  /**
-   * @brief Render data associated with images: image slices, segmentations, annotations, and
-   * landmarks.
-   */
-  void renderImageData();
-
-  /// Render all images/landmarks/annotations for a view
-  void renderAllImagesForView(
-    const View& view,
-    const FrameBounds& miewportViewBounds,
-    const glm::vec3& worldOffsetXhairs,
-    bool renderLandmarkAndAnnotationOverlays = true,
-    bool renderImageBorders = true,
-    bool allowImagePostProcessing = true);
-  void renderAllImageBordersForView(
-    const View& view,
-    const FrameBounds& miewportViewBounds,
-    const glm::vec3& worldOffsetXhairs);
-  void renderAllLandmarksForView(
-    const View& view,
-    const FrameBounds& miewportViewBounds,
-    const glm::vec3& worldOffsetXhairs);
-  void renderAllAnnotationsForView(
-    const View& view,
-    const FrameBounds& miewportViewBounds,
-    const glm::vec3& worldOffsetXhairs);
-
-  void renderVectorOverlays();
-
-  /**
-   * @brief Render shader-based warped-grid overlays for vector-field images in one view.
-   *
-   * @param view View receiving the overlay.
-   * @param worldOffsetXhairs Crosshairs position including the view slice offset.
-   * @param displayModeUniform Shader comparison-mode value for the current view.
-   * @param sourceImages Original image ids to test for vector-field grid overlays.
-   */
-  void renderVectorWarpedGridOverlaysForView(
-    const View& view,
-    const glm::vec3& worldOffsetXhairs,
-    int displayModeUniform,
-    const CurrentImages& sourceImages);
-
-  void renderOneImage(
-    const View& view,
-    const glm::vec3& worldOffsetXhairs,
-    GLShaderProgram& program,
-    const CurrentImages& I,
-    bool showEdges);
-
-  void renderOneImage_overlays(
-    const View& view,
-    const FrameBounds& miewportViewBounds,
-    const glm::vec3& worldOffsetXhairs,
-    const CurrentImages& I,
-    bool renderLandmarkAndAnnotationOverlays,
-    bool renderImageBorders);
-
-  void renderBrushPreview(const View& view, const glm::vec3& worldOffsetXhairs, const ImgSegPair& imgSegPair);
-
-  void volumeRenderOneImage(
-    const View& view,
-    GLShaderProgram& program,
-    const glm::mat4& texture_T_world,
-    const CurrentImages& I);
-
-  // Bind/unbind textures for images, segmentations, and image color maps
-  std::list<std::reference_wrapper<GLTexture>> bindScalarImageTextures(const ImgSegPair& P);
-  std::list<std::reference_wrapper<GLTexture>> bindColorImageTextures(const ImgSegPair& P);
-  std::list<std::reference_wrapper<GLTexture>> bindSegTextures(const ImgSegPair& P);
-  std::list<std::reference_wrapper<GLTexture>> bindDeformationTextures(const uuids::uuid& defUid);
-  std::list<std::reference_wrapper<GLTexture>> bindDeformationTextures(
-    const uuids::uuid& defUid,
-    const Uniforms::SamplerIndexVectorType& samplers);
-  void unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures);
-
-  bool ensureDeformationTexture(const uuids::uuid& defUid);
-  std::optional<uuids::uuid> activeRenderableDeformationUid(const uuids::uuid& imageUid);
-  void setDeformationUniforms(
-    GLShaderProgram& program,
-    const uuids::uuid& imageUid,
-    const uuids::uuid& defUid,
-    const glm::mat4& sampleTex_T_world) const;
-  void setMetricDeformationUniforms(
-    GLShaderProgram& program,
-    std::size_t slot,
-    const uuids::uuid& imageUid,
-    const uuids::uuid& defUid,
-    const glm::mat4& sampleTex_T_world) const;
-
-  // Bind/unbind metric images and color map
-  std::list<std::reference_wrapper<GLTexture>> bindMetricImageTextures(
-    const CurrentImages& I,
-    const ViewRenderMode& metricType);
-
-  // Bind/unbind buffer textures (e.g. label color tables)
-  std::list<std::reference_wrapper<GLBufferTexture>> bindSegBufferTextures(const ImgSegPair& p);
-  void unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures);
-
-  // Get current image and segmentation UIDs to render in the metric shaders
-  CurrentImages getImageAndSegUidsForMetricShaders(const std::list<uuids::uuid>& metricImageUids) const;
-
-  // Get current image and segmentation UIDs to render in the image shaders
-  CurrentImages getImageAndSegUidsForImageShaders(const std::list<uuids::uuid>& imageUids) const;
-
-  float raycastSamplingFactorForCurrentFrame();
-  void updateAdaptiveRaycastSampling();
-  void recordCompletedRaycastFrame(double renderFrameSeconds);
-  bool beginRaycastTiming();
-  void endRaycastTiming(bool timingActive);
-
+  /// Shared application state. Not owned; Rendering reads and updates render-facing state through this reference.
   AppData& m_appData;
 
-  // NanoVG context for vector graphics (owned by this class)
+  /// NanoVG context for vector graphics. Owned by this class.
   NVGcontext* m_nvg;
 
-  // ASCII post-processing pipeline (atlas, FBOs, per-frame render)
+  /// ASCII post-processing pipeline for character atlas, framebuffers, render, and clipboard export.
   AsciiRenderer m_asciiRenderer;
 
-  // Pixel-space image-edge post-processing pipeline
+  /// Pixel-space image-edge post-processing pipeline.
   PixelEdgeRenderer m_pixelEdgeRenderer;
 
+  /// Shader programs for the normal 3D texture rendering path, keyed by render mode and interpolation variant.
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
+
+  /// Shader programs for planar 2D fallback textures that exceed GL_MAX_3D_TEXTURE_SIZE but fit GL_MAX_TEXTURE_SIZE.
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms2D;
 
+  /// Raycast isosurface shader for unwarped scalar image volumes.
   GLShaderProgram m_raycastIsoProgram;
+
+  /// Raycast isosurface shader variant that samples an inverse deformation field before sampling the scalar image.
   GLShaderProgram m_raycastIsoWarpedProgram;
 
-  unsigned int m_raycastTimerQuery;
-  bool m_raycastTimerQueryPending;
-  bool m_raycastRenderedThisFrame;
-  bool m_adaptiveRaycastInitialized;
-  bool m_adaptiveRaycastWasEnabled;
-  float m_lastManualRaycastSamplingFactor;
-  float m_adaptiveRaycastSamplingFactor;
-  double m_smoothedRaycastSeconds;
-  double m_smoothedFrameSeconds;
-  double m_adaptiveFrameWindowSeconds;
-  int m_adaptiveFrameWindowCount;
-
-  /// Is the application done loading images?
+  /// True once the application has finished the startup/image-loading phase.
   bool m_isAppDoneLoadingImages;
 
+  /// Global runtime overlay switch used by the view overlay cycling actions.
   bool m_showOverlays;
 
+  /// Refresh the CPU-side isosurface arrays consumed by the 3D raycast shader for one image.
   void updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& imageUid);
-
-#if 0
-  using DrawableProviderType = std::function<IDrawable*()>;
-
-  std::unique_ptr<IRenderer> m_renderer;
-  std::unique_ptr<ShaderProgramContainer> m_shaderPrograms;
-  std::unique_ptr<MeshRecord> m_meshRecord;
-  std::shared_ptr<MeshGpuRecord> m_cylinderGpuMeshRecord;
-  std::unique_ptr<BasicMesh> m_basicMesh;
-
-  ShaderProgramActivatorType m_shaderActivator;
-  UniformsProviderType m_uniformsProvider;
-  DrawableProviderType m_rootDrawableProvider;
-  DrawableProviderType m_overlayDrawableProvider;
-#endif
 };

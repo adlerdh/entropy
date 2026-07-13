@@ -152,7 +152,7 @@ void EntropyApp::setCallbacks()
     m_rendering.updateMetricUniforms();
   };
   imguiCallbacks.view.exportAsciiClipboardPayloadForView =
-    [this](const uuids::uuid& viewUid) -> std::optional<entropy::ClipboardPayload> {
+    [this](const uuids::uuid& viewUid) -> std::optional<ClipboardPayload> {
     const View* view = m_data.windowData().getView(viewUid);
     if (!view) {
       return std::nullopt;

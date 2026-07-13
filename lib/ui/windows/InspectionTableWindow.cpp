@@ -944,7 +944,7 @@ void renderInspectionWindowWithTable(
       const bool isRef = appData.refImageUid() && *appData.refImageUid() == *imageUid;
       const bool isActiveImage = appData.activeImageUid() && *appData.activeImageUid() == *imageUid;
       const std::string roleSuffix =
-        entropy::ui::headers::imageRoleSuffixShortReference(isRef, isActiveImage, appData.numImages());
+        ui::headers::imageRoleSuffixShortReference(isRef, isActiveImage, appData.numImages());
       const std::size_t imageColumnIndex = columnIndex(InspectorColumn::Image);
       widths[imageColumnIndex] = std::max(
         widths[imageColumnIndex],
@@ -1260,7 +1260,7 @@ void renderInspectionWindowWithTable(
         const bool isRef = appData.refImageUid() && *appData.refImageUid() == *imageUid;
         const bool isActiveImage = appData.activeImageUid() && *appData.activeImageUid() == *imageUid;
         const std::string roleSuffix =
-          entropy::ui::headers::imageRoleSuffixShortReference(isRef, isActiveImage, appData.numImages());
+          ui::headers::imageRoleSuffixShortReference(isRef, isActiveImage, appData.numImages());
         const float suffixWidth =
           roleSuffix.empty() ? 0.0f : ImGui::CalcTextSize(roleSuffix.c_str()).x + ImGui::GetStyle().ItemSpacing.x;
 

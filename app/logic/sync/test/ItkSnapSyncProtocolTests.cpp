@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace entropy::sync::itk_snap_protocol;
+using namespace app_sync::itk_snap_protocol;
 
 TEST_CASE("ITK-SNAP sync converts between Entropy LPS and ITK-SNAP RAS", "[sync][snap]")
 {

@@ -2,8 +2,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace texture_setup = entropy::rendering::texture_setup;
-using TextureDimension = entropy::rendering::TextureDimension;
+namespace texture_setup = rendering::texture_setup;
+using TextureDimension = rendering::TextureDimension;
 
 TEST_CASE("texture setup helpers classify non-singleton image axes", "[rendering][texture-setup]")
 {

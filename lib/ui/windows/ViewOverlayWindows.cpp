@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-namespace view_overlay = entropy::ui::view_overlay;
+namespace view_overlay = ui::view_overlay;
 
 namespace
 {
@@ -639,7 +639,7 @@ void renderViewSettingsComboWindow(
         ImGui::SameLine();
         if (ImGui::Button(ICON_FK_CLIPBOARD)) {
           if (const auto payload = modes.exportAsciiClipboardPayload()) {
-            entropy::ui::setClipboardPayload(*payload);
+            ui::setClipboardPayload(*payload);
           }
         }
         if (ImGui::IsItemHovered()) {

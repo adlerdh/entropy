@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace settings = entropy::ui::settings;
+namespace settings = ui::settings;
 
 TEST_CASE("scale bar edge positions force valid orientations", "[ui][settings]")
 {

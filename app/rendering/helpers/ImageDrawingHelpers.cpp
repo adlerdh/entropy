@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace entropy::rendering::image_drawing
+namespace rendering::image_drawing
 {
 namespace
 {
@@ -108,4 +108,4 @@ computeMipSamplingParams(float mmPerSample, const glm::uvec3& imageDimensions, f
   return params;
 }
 
-} // namespace entropy::rendering::image_drawing
+} // namespace rendering::image_drawing

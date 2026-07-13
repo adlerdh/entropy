@@ -16,7 +16,7 @@ constexpr float kShadowBlur = 2.0f;
 
 void drawRuler(
   NVGcontext* nvg,
-  const entropy::rendering::scale_bar::Layout& layout,
+  const rendering::scale_bar::Layout& layout,
   const glm::vec4& rulerColor,
   float strokeWidth)
 {
@@ -56,7 +56,7 @@ void drawScaleBar(
   int lengthPrecision)
 {
   const glm::vec2 worldMmPerPixel = helper::worldPixelSize(windowViewport, view.camera(), view.viewClip_T_windowClip());
-  const auto layout = entropy::rendering::scale_bar::computeLayout(
+  const auto layout = rendering::scale_bar::computeLayout(
     miewportViewBounds,
     worldMmPerPixel,
     position,

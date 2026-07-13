@@ -34,7 +34,7 @@
 #include <unistd.h>
 #endif
 
-using namespace entropy::sync::itk_snap_protocol;
+using namespace app_sync::itk_snap_protocol;
 
 namespace
 {

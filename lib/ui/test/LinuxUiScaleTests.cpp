@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <fstream>
 
-namespace linux_ui_scale = entropy::ui::linux_ui_scale;
+namespace linux_ui_scale = ui::linux_ui_scale;
 
 TEST_CASE("GNOME monitor scale parser returns primary logical monitor scale", "[ui][scale]")
 {

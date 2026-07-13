@@ -24,7 +24,7 @@
 namespace
 {
 
-namespace image_drawing = entropy::rendering::image_drawing;
+namespace image_drawing = rendering::image_drawing;
 
 bool isLocalPatchMetric(ViewRenderMode renderMode)
 {

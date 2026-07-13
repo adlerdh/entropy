@@ -9,7 +9,7 @@
 #include <cmath>
 #include <functional>
 
-namespace entropy::rendering::vector_drawing
+namespace rendering::vector_drawing
 {
 
 bool isFiniteVec2(const glm::vec2& value)
@@ -156,4 +156,4 @@ float vectorArrowSpacingPixels(
   return std::max(pixelSpacing, 0.1f);
 }
 
-} // namespace entropy::rendering::vector_drawing
+} // namespace rendering::vector_drawing

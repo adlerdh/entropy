@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace entropy::rendering::scale_bar
+namespace rendering::scale_bar
 {
 namespace
 {
@@ -265,4 +265,4 @@ std::optional<Layout> computeLayout(
 
   return layout;
 }
-} // namespace entropy::rendering::scale_bar
+} // namespace rendering::scale_bar

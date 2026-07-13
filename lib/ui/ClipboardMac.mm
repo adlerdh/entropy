@@ -12,9 +12,9 @@ NSString* nsString(const std::string& text) {
 
 }  // namespace
 
-namespace entropy::ui {
+namespace ui {
 
-bool setClipboardPayload(const entropy::ClipboardPayload& payload) {
+bool setClipboardPayload(const ClipboardPayload& payload) {
   NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
   [pasteboard clearContents];
   [pasteboard declareTypes:@[ NSPasteboardTypeRTF, NSPasteboardTypeHTML, NSPasteboardTypeString ] owner:nil];
@@ -34,4 +34,4 @@ bool setClipboardPayload(const entropy::ClipboardPayload& payload) {
   return wroteAny;
 }
 
-}  // namespace entropy::ui
+}  // namespace ui

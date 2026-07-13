@@ -1986,7 +1986,7 @@ void CallbackHandler::doImageScale(
   const ViewHit& startHit,
   const ViewHit& prevHit,
   const ViewHit& currHit,
-  entropy::app::ImageScaleConstraint constraint)
+  app::ImageScaleConstraint constraint)
 {
   View* viewToUse = startHit.view;
   if (!viewToUse) {
@@ -2009,7 +2009,7 @@ void CallbackHandler::doImageScale(
   }
 
   auto& imgTx = activeImage->transformations();
-  const auto scaleUpdate = entropy::app::computeImageScaleUpdate(
+  const auto scaleUpdate = app::computeImageScaleUpdate(
     imgTx.get_worldDef_T_affine(),
     imgTx.get_worldDef_T_affine_scale(),
     m_appData.state().worldRotationCenter(),

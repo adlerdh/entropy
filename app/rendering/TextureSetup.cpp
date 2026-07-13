@@ -19,7 +19,7 @@
 namespace
 {
 
-namespace texture_setup = entropy::rendering::texture_setup;
+namespace texture_setup = rendering::texture_setup;
 using TextureUploadLayout = texture_setup::TextureUploadLayout;
 
 texture_setup::TextureLimits queryTextureLimits()

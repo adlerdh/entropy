@@ -152,8 +152,7 @@ struct ImGuiViewCallbacks
   std::function<void()> updateMetricUniforms;
 
   /** @brief Export the most recently rendered ASCII clipboard payload for a view. */
-  std::function<std::optional<entropy::ClipboardPayload>(const uuids::uuid& viewUid)>
-    exportAsciiClipboardPayloadForView;
+  std::function<std::optional<ClipboardPayload>(const uuids::uuid& viewUid)> exportAsciiClipboardPayloadForView;
 };
 
 /**
@@ -353,8 +352,8 @@ private:
   std::function<void(std::size_t tableIndex)> m_updateLabelColorTableTexture = nullptr;
   std::function<void(const uuids::uuid& imageUid, std::size_t labelIndex)> m_moveCrosshairsToSegLabelCentroid = nullptr;
   std::function<void(void)> m_updateMetricUniforms = nullptr;
-  std::function<std::optional<entropy::ClipboardPayload>(const uuids::uuid& viewUid)>
-    m_exportAsciiClipboardPayloadForView = nullptr;
+  std::function<std::optional<ClipboardPayload>(const uuids::uuid& viewUid)> m_exportAsciiClipboardPayloadForView =
+    nullptr;
   std::function<glm::vec3()> m_getWorldDeformedPos = nullptr;
   std::function<std::optional<glm::vec3>(std::size_t imageIndex)> m_getSubjectPos = nullptr;
   std::function<std::optional<glm::ivec3>(std::size_t imageIndex)> m_getVoxelPos = nullptr;
@@ -461,8 +460,8 @@ private:
   void requestQueuedRegistrationJobs();
   void processRegistrationJobFutures();
 
-  std::future<entropy::ui::updates::CheckResult> m_updateCheckFuture;
-  entropy::ui::updates::CheckWindowState m_updateCheckWindowState;
+  std::future<ui::updates::CheckResult> m_updateCheckFuture;
+  ui::updates::CheckWindowState m_updateCheckWindowState;
   std::string m_updateCheckEtag;
   bool m_automaticUpdateCheckRequested = false;
 

@@ -2,7 +2,7 @@
 
 #include <array>
 
-namespace entropy::windowing
+namespace windowing
 {
 
 inline constexpr int kEntropyIconWidth = 64;
@@ -723,4 +723,4 @@ inline constexpr std::array<unsigned char, 64 * 64 * 4> kEntropyIconRgba = {{
   0,   0,   0,   0,   0,   0,   0,   0,
 }};
 
-} // namespace entropy::windowing
+} // namespace windowing

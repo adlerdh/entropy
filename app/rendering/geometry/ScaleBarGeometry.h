@@ -7,7 +7,7 @@
 #include <optional>
 #include <string>
 
-namespace entropy::rendering::scale_bar
+namespace rendering::scale_bar
 {
 struct Layout
 {
@@ -64,4 +64,4 @@ std::optional<Layout> computeLayout(
   float targetFraction,
   float marginPx,
   int lengthPrecision = 2);
-} // namespace entropy::rendering::scale_bar
+} // namespace rendering::scale_bar

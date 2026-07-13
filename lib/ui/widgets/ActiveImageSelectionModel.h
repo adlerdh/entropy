@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-namespace entropy::ui::active_image_selection
+namespace ui::active_image_selection
 {
 
 enum class SelectionState
@@ -20,4 +20,4 @@ enum class SelectionState
  */
 SelectionState selectionState(std::size_t numImages, std::size_t activeIndex);
 
-} // namespace entropy::ui::active_image_selection
+} // namespace ui::active_image_selection

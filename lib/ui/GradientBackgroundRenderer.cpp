@@ -8,7 +8,7 @@
 #include <array>
 #include <cmath>
 
-namespace entropy::ui
+namespace ui
 {
 namespace
 {
@@ -198,4 +198,4 @@ void renderGradientBackground(const GradientBackgroundOptions& options)
   previousCullEnabled ? glEnable(GL_CULL_FACE) : glDisable(GL_CULL_FACE);
 }
 
-} // namespace entropy::ui
+} // namespace ui

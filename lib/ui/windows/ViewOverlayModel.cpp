@@ -1,6 +1,6 @@
 #include "ui/windows/ViewOverlayModel.h"
 
-namespace entropy::ui::view_overlay
+namespace ui::view_overlay
 {
 
 bool usesVisibleImageSelection(const ViewRenderMode renderMode)
@@ -76,4 +76,4 @@ std::string selectedVisibleImageNames(const std::vector<ImageChoice>& choices)
   return label;
 }
 
-} // namespace entropy::ui::view_overlay
+} // namespace ui::view_overlay

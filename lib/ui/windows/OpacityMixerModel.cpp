@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace entropy::ui::opacity_mixer
+namespace ui::opacity_mixer
 {
 
 double blendedOpacity(std::size_t imageIndex, double mix)
@@ -26,4 +26,4 @@ double blendedOpacity(std::size_t imageIndex, double mix)
   return 0.0;
 }
 
-} // namespace entropy::ui::opacity_mixer
+} // namespace ui::opacity_mixer

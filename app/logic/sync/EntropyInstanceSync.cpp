@@ -40,14 +40,14 @@
 #include <unistd.h>
 #endif
 
-namespace entropy::sync
+namespace app_sync
 {
 namespace
 {
 constexpr std::int64_t sk_registryWriteIntervalMs = 1000;
 constexpr std::size_t sk_receiveBufferSize = 8192;
 
-using namespace entropy::sync::instance_protocol;
+using namespace app_sync::instance_protocol;
 
 #if defined(_WIN32)
 using NativeSocketHandle = SOCKET;
@@ -538,4 +538,4 @@ void EntropyInstanceSync::logOptionChanges()
   }
 }
 
-} // namespace entropy::sync
+} // namespace app_sync

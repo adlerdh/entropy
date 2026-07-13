@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace pixel_edge = entropy::rendering::pixel_edge;
+namespace pixel_edge = rendering::pixel_edge;
 
 namespace
 {

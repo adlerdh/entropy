@@ -3,7 +3,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-namespace model = entropy::ui::loading_status_model;
+namespace model = ui::loading_status_model;
 
 TEST_CASE("Loading status progress is weighted by bytes", "[ui][loading_status]")
 {

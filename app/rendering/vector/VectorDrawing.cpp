@@ -41,7 +41,7 @@
 namespace
 {
 
-namespace vector_drawing = entropy::rendering::vector_drawing;
+namespace vector_drawing = rendering::vector_drawing;
 
 static const NVGcolor s_black(nvgRGBA(0, 0, 0, 255));
 static const NVGcolor s_grey25(nvgRGBA(63, 63, 63, 255));

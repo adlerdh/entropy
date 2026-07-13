@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace active_image_selection = entropy::ui::active_image_selection;
+namespace active_image_selection = ui::active_image_selection;
 
 TEST_CASE("active image selection treats an empty image list as empty", "[ui][active-image]")
 {

@@ -43,7 +43,7 @@ void drawLightboxOffsetLabel(
   const glm::vec2 miewportMinCorner(miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset);
   const glm::vec2 miewportSize(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height);
   const float fontSizePixels = glm::clamp(0.065f * std::min(miewportSize.x, miewportSize.y), 9.0f, 14.0f);
-  const std::string label = entropy::rendering::lightbox::formatOffsetDistanceMm(
+  const std::string label = rendering::lightbox::formatOffsetDistanceMm(
     offsetMm,
     unitReferenceLengthMm,
     static_cast<int>(appData.guiData().m_coordsPrecision));

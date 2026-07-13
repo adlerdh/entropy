@@ -33,13 +33,13 @@ void renderActiveImageSelectionCombo(
 {
   const std::size_t activeIndex = getActiveImageIndex();
 
-  switch (entropy::ui::active_image_selection::selectionState(numImages, activeIndex)) {
-    case entropy::ui::active_image_selection::SelectionState::Empty:
+  switch (ui::active_image_selection::selectionState(numImages, activeIndex)) {
+    case ui::active_image_selection::SelectionState::Empty:
       return;
-    case entropy::ui::active_image_selection::SelectionState::Invalid:
+    case ui::active_image_selection::SelectionState::Invalid:
       spdlog::error("Invalid active image index");
       return;
-    case entropy::ui::active_image_selection::SelectionState::Valid:
+    case ui::active_image_selection::SelectionState::Valid:
       break;
   }
 
