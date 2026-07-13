@@ -7,6 +7,9 @@
 namespace fbo
 {
 
+/**
+ * @brief Framebuffer binding targets.
+ */
 enum class TargetType : uint32_t
 {
   Draw = GL_DRAW_FRAMEBUFFER,
@@ -14,6 +17,9 @@ enum class TargetType : uint32_t
   DrawAndRead = GL_FRAMEBUFFER
 };
 
+/**
+ * @brief Framebuffer attachment points used by the renderer.
+ */
 enum class AttachmentType : uint32_t
 {
   Color = GL_COLOR_ATTACHMENT0,

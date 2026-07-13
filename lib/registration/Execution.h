@@ -17,9 +17,9 @@ namespace registration
  */
 struct CommandExecution
 {
-  CommandSpec command;       //!< Command that was run.
-  ProcessResult result;      //!< Process result.
-  std::string displayString; //!< User-facing command preview string.
+  CommandSpec command;       //!< Command that was run
+  ProcessResult result;      //!< Process result
+  std::string displayString; //!< User-facing command preview string
 };
 
 /**
@@ -27,13 +27,13 @@ struct CommandExecution
  */
 struct JobExecution
 {
-  JobStatus status = JobStatus::Queued;       //!< Final normalized status.
-  std::vector<CommandExecution> commands;     //!< Command results in execution order.
-  std::vector<ProgressEvent> progressEvents;  //!< Parsed structured progress events.
-  std::vector<ProcessOutputLine> outputLines; //!< Raw backend stdout/stderr lines.
-  std::vector<std::string> warnings;          //!< Non-fatal warnings.
-  std::optional<ResultManifest> manifest;     //!< Expected or backend-written result manifest.
-  std::string errorMessage;                   //!< Fatal error summary.
+  JobStatus status = JobStatus::Queued;       //!< Final normalized status
+  std::vector<CommandExecution> commands;     //!< Command results in execution order
+  std::vector<ProgressEvent> progressEvents;  //!< Parsed structured progress events
+  std::vector<ProcessOutputLine> outputLines; //!< Raw backend stdout/stderr lines
+  std::vector<std::string> warnings;          //!< Non-fatal warnings
+  std::optional<ResultManifest> manifest;     //!< Expected or backend-written result manifest
+  std::string errorMessage;                   //!< Fatal error summary
 };
 
 /**
@@ -41,10 +41,10 @@ struct JobExecution
  */
 struct JobExecutionCallbacks
 {
-  std::function<void(JobStatus)> onStatusChanged;             //!< Called when the normalized status changes.
-  std::function<void(const ProgressEvent&)> onProgressEvent;  //!< Called for every parsed progress event.
-  std::function<void(const ProcessOutputLine&)> onOutputLine; //!< Called for raw stdout/stderr lines.
-  std::function<bool()> shouldCancel;                         //!< Return true when execution should stop.
+  std::function<void(JobStatus)> onStatusChanged;             //!< Called when the normalized status changes
+  std::function<void(const ProgressEvent&)> onProgressEvent;  //!< Called for every parsed progress event
+  std::function<void(const ProcessOutputLine&)> onOutputLine; //!< Called for raw stdout/stderr lines
+  std::function<bool()> shouldCancel;                         //!< Return true when execution should stop
 };
 
 /**

@@ -13,8 +13,8 @@
  */
 enum class ComputedWarpDirection
 {
-  Inverse, //!< Compute an inverse warp from an existing forward warp.
-  Forward  //!< Compute a forward warp from an existing inverse warp.
+  Inverse, //!< Compute an inverse warp from an existing forward warp
+  Forward  //!< Compute a forward warp from an existing inverse warp
 };
 
 /**
@@ -22,10 +22,10 @@ enum class ComputedWarpDirection
  */
 struct WarpInversionOptions
 {
-  uint32_t maxIterations = 100;         //!< Maximum number of fixed-point iterations.
-  double meanErrorTolerance = 1.0e-4;   //!< ITK mean error stopping threshold.
-  double maxErrorTolerance = 1.0e-2;    //!< ITK max error stopping threshold.
-  bool enforceBoundaryCondition = true; //!< Force zero displacement at field boundaries.
+  uint32_t maxIterations = 100;         //!< Maximum number of fixed-point iterations
+  double meanErrorTolerance = 1.0e-4;   //!< ITK mean error stopping threshold
+  double maxErrorTolerance = 1.0e-2;    //!< ITK max error stopping threshold
+  bool enforceBoundaryCondition = true; //!< Force zero displacement at field boundaries
 };
 
 /**
@@ -33,15 +33,15 @@ struct WarpInversionOptions
  */
 struct WarpInversionReport
 {
-  double itkMeanErrorNorm = 0.0;     //!< ITK-reported mean error norm.
-  double itkMaxErrorNorm = 0.0;      //!< ITK-reported max error norm.
-  double meanResidualMm = 0.0;       //!< Mean inverse-consistency residual in millimeters.
-  double maxResidualMm = 0.0;        //!< Max inverse-consistency residual in millimeters.
-  double meanResidualVoxels = 0.0;   //!< Mean residual normalized by output voxel spacing.
-  double maxResidualVoxels = 0.0;    //!< Max residual normalized by output voxel spacing.
-  uint64_t samples = 0;              //!< Number of output field samples checked.
-  uint64_t outsideOppositeField = 0; //!< Number of samples outside the opposite field.
-  double elapsedSeconds = 0.0;       //!< Wall-clock inversion time.
+  double itkMeanErrorNorm = 0.0;     //!< ITK-reported mean error norm
+  double itkMaxErrorNorm = 0.0;      //!< ITK-reported max error norm
+  double meanResidualMm = 0.0;       //!< Mean inverse-consistency residual in millimeters
+  double maxResidualMm = 0.0;        //!< Max inverse-consistency residual in millimeters
+  double meanResidualVoxels = 0.0;   //!< Mean residual normalized by output voxel spacing
+  double maxResidualVoxels = 0.0;    //!< Max residual normalized by output voxel spacing
+  uint64_t samples = 0;              //!< Number of output field samples checked
+  uint64_t outsideOppositeField = 0; //!< Number of samples outside the opposite field
+  double elapsedSeconds = 0.0;       //!< Wall-clock inversion time
 };
 
 /**
@@ -49,9 +49,9 @@ struct WarpInversionReport
  */
 struct WarpInversionResult
 {
-  Image image;                     //!< Computed 3-component float displacement field.
-  WarpInversionReport report;      //!< Inversion quality metrics.
-  ComputedWarpDirection direction; //!< Direction of the computed field.
+  Image image;                     //!< Computed 3-component float displacement field
+  WarpInversionReport report;      //!< Inversion quality metrics
+  ComputedWarpDirection direction; //!< Direction of the computed field
 };
 
 /**

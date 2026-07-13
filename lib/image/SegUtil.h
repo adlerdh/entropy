@@ -34,9 +34,9 @@ using SegmentationVoxelUpdateCallback = std::function<void(
  */
 struct SegmentationBrushFootprint
 {
-  SegmentationVoxelSet voxels; //!< Unique voxels touched by the brush.
-  glm::ivec3 minVoxel{0};      //!< Minimum touched voxel coordinate.
-  glm::ivec3 maxVoxel{0};      //!< Maximum touched voxel coordinate.
+  SegmentationVoxelSet voxels; //!< Unique voxels touched by the brush
+  glm::ivec3 minVoxel{0};      //!< Minimum touched voxel coordinate
+  glm::ivec3 maxVoxel{0};      //!< Maximum touched voxel coordinate
 };
 
 /**

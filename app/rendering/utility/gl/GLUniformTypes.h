@@ -4,6 +4,12 @@
 
 #include <cstdint>
 
+/**
+ * @brief Uniform payload types supported by Entropy's shader uniform registry.
+ *
+ * Values matching OpenGL enum constants represent native GLSL uniforms. Small integer values are Entropy-specific
+ * extension tags used for sampler arrays and vector/array payloads that do not have a single GL enum equivalent.
+ */
 enum class UniformType : uint32_t
 {
   Bool = GL_BOOL,

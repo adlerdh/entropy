@@ -5,9 +5,9 @@
  */
 enum class CameraSyncMode
 {
-  Rotation,    //!< View rotation/orientation.
-  Translation, //!< Crosshair translation.
-  Zoom         //!< Zoom level.
+  Rotation,    //!< View rotation/orientation
+  Translation, //!< Crosshair translation
+  Zoom         //!< Zoom level
 };
 
 /**
@@ -17,12 +17,12 @@ enum class CameraSyncMode
  */
 enum class LayoutKind
 {
-  Custom = 0,          //!< User-edited layout.
-  FourUp = 1,          //!< Axial/coronal/sagittal/3D layout.
-  ThreeUp = 2,         //!< Three orthogonal slice views.
-  OneUp = 3,           //!< Single view.
-  MultiImageGrid = 4,  //!< Multi-image grid.
-  AxCorSagByImage = 5, //!< Axial/coronal/sagittal views grouped by image.
-  Lightbox = 6,        //!< Slice lightbox.
-  NumElements          //!< Sentinel count.
+  Custom = 0,          //!< User-edited layout
+  FourUp = 1,          //!< Axial/coronal/sagittal/3D layout
+  ThreeUp = 2,         //!< Three orthogonal slice views
+  OneUp = 3,           //!< Single view
+  MultiImageGrid = 4,  //!< Multi-image grid
+  AxCorSagByImage = 5, //!< Axial/coronal/sagittal views grouped by image
+  Lightbox = 6,        //!< Slice lightbox
+  NumElements          //!< Sentinel count
 };

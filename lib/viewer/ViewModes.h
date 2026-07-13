@@ -11,17 +11,17 @@
  */
 enum class ViewRenderMode
 {
-  Image,               //!< Images rendered in 2D using color maps.
-  Checkerboard,        //!< Image pair rendered in 2D using checkerboard pattern.
-  Quadrants,           //!< Image pair rendered in 2D, with each image occupying opposing view quadrants.
-  Flashlight,          //!< Image pair rendered in 2D, with moving image appearing under the crosshairs.
-  Overlay,             //!< Image pair rendered in 2D with overlap highlighted.
-  Difference,          //!< Absolute or squared difference of the image pair rendered in 2D.
-  JointHistogram,      //!< Joint intensity histogram of the image pair.
-  VolumeRender,        //!< Volume rendering of one image using raycasting.
-  Disabled,            //!< Disabled (no rendering).
-  LocalNcc,            //!< Local normalized cross-correlation metric for the image pair.
-  LocalLinearResidual, //!< Residual after fitting a local linear intensity model.
+  Image,               //!< Images rendered in 2D using color maps
+  Checkerboard,        //!< Image pair rendered in 2D using checkerboard pattern
+  Quadrants,           //!< Image pair rendered in 2D, with each image occupying opposing view quadrants
+  Flashlight,          //!< Image pair rendered in 2D, with moving image appearing under the crosshairs
+  Overlay,             //!< Image pair rendered in 2D with overlap highlighted
+  Difference,          //!< Absolute or squared difference of the image pair rendered in 2D
+  JointHistogram,      //!< Joint intensity histogram of the image pair
+  VolumeRender,        //!< Volume rendering of one image using raycasting
+  Disabled,            //!< Disabled (no rendering)
+  LocalNcc,            //!< Local normalized cross-correlation metric for the image pair
+  LocalLinearResidual, //!< Residual after fitting a local linear intensity model
   NumElements
 };
 
@@ -32,11 +32,11 @@ enum class ViewRenderMode
  */
 enum class IntensityProjectionMode : int
 {
-  None = 0,    //!< No intensity projection.
-  Maximum = 1, //!< Maximum intensity projection.
-  Mean = 2,    //!< Mean intensity projection.
-  Minimum = 3, //!< Minimum intensity projection.
-  Xray = 4,    //!< Simulation of x-ray intensity projection.
+  None = 0,    //!< No intensity projection
+  Maximum = 1, //!< Maximum intensity projection
+  Mean = 2,    //!< Mean intensity projection
+  Minimum = 3, //!< Minimum intensity projection
+  Xray = 4,    //!< Simulation of x-ray intensity projection
   NumElements
 };
 

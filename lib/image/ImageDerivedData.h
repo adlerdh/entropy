@@ -132,8 +132,8 @@ std::string vectorFieldComponentLabel(uint32_t component, uint32_t componentMax)
  */
 struct ComponentImageResult
 {
-  uint32_t component{0}; //!< Source image component used to compute the derived image.
-  Image image;           //!< Derived scalar image.
+  uint32_t component{0}; //!< Source image component used to compute the derived image
+  Image image;           //!< Derived scalar image
 };
 
 /**
@@ -141,9 +141,9 @@ struct ComponentImageResult
  */
 struct DistanceMapImageResult
 {
-  uint32_t component{0};        //!< Source image component used to compute the distance map.
-  Image image;                  //!< Derived scalar distance-map image.
-  double boundaryIsoValue{0.0}; //!< Isovalue corresponding to the foreground boundary in the distance map.
+  uint32_t component{0};        //!< Source image component used to compute the distance map
+  Image image;                  //!< Derived scalar distance-map image
+  double boundaryIsoValue{0.0}; //!< Isovalue corresponding to the foreground boundary in the distance map
 };
 
 /**

@@ -13,12 +13,12 @@ namespace rendering::pixel_edge
  */
 struct ViewRect
 {
-  int sceneX = 0;  //!< View left in scene-texture pixels.
-  int sceneY = 0;  //!< View bottom in scene-texture pixels.
-  int windowX = 0; //!< View left in default-framebuffer pixels.
-  int windowY = 0; //!< View bottom in default-framebuffer pixels.
-  int width = 0;   //!< View width in device pixels.
-  int height = 0;  //!< View height in device pixels.
+  int sceneX = 0;  //!< View left in scene-texture pixels
+  int sceneY = 0;  //!< View bottom in scene-texture pixels
+  int windowX = 0; //!< View left in default-framebuffer pixels
+  int windowY = 0; //!< View bottom in default-framebuffer pixels
+  int width = 0;   //!< View width in device pixels
+  int height = 0;  //!< View height in device pixels
 };
 
 /**

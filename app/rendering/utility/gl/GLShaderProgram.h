@@ -1,7 +1,6 @@
 #pragma once
 
 #include "rendering/utility/gl/GLShader.h"
-// #include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/containers/Uniforms.h"
 
 #include <glm/fwd.hpp>
@@ -11,7 +10,15 @@
 #include <array>
 #include <string>
 
-/// @todo Implement call for glDetachShader()
+/**
+ * @brief Owns one linked OpenGL shader program and its registered uniforms.
+ *
+ * The class creates and deletes a GL program object, attaches compiled shaders, links the program, and provides typed
+ * uniform upload helpers. It is move-disabled by omission and copy-disabled because the OpenGL handle has unique
+ * ownership semantics.
+ *
+ * @todo Implement call for `glDetachShader()` once shader object lifetime is revisited.
+ */
 class GLShaderProgram
 {
 public:
@@ -26,17 +33,26 @@ public:
   const std::string& name() const;
   GLuint handle() const;
 
+  /// Link all attached shaders into an executable program.
   bool link();
+
   bool isLinked() const;
 
+  /// Attach a compiled shader object before linking.
   bool attachShader(const GLShader& shader);
 
-  /// meant to be called directly before a draw call with that shader bound and
-  /// all the bindings (VAO, textures) set. Its purpose is to ensure that the shader
-  /// can execute given the current GL state
+  /**
+   * @brief Validate the linked program against the current OpenGL state.
+   *
+   * This is meant to be called directly before a draw call with this program bound and all required VAO and texture
+   * bindings already configured.
+   */
   bool isValid();
 
+  /// Bind this shader program for subsequent draw calls.
   void use();
+
+  /// Unbind the current shader program.
   void stopUse();
 
   void bindAttribLocation(const std::string& name, GLuint location);
@@ -77,13 +93,22 @@ public:
     return true;
   }
 
+  /// Upload every dirty uniform in the supplied registry, then mark successfully uploaded uniforms clean.
   void applyUniforms(Uniforms& uniforms);
 
+  /// Replace the registered uniform declarations copied from shader setup.
   void setRegisteredUniforms(const Uniforms& uniforms);
+
+  /// Replace the registered uniform declarations moved from shader setup.
   void setRegisteredUniforms(Uniforms&& uniforms);
+
+  /// Return registered uniform declarations and their most recently queried locations.
   const Uniforms& getRegisteredUniforms() const;
 
+  /// Query an attribute location from the linked program.
   GLint getAttribLocation(const std::string& name);
+
+  /// Query a uniform location from the linked program.
   GLint getUniformLocation(const std::string& name);
 
   void printActiveUniforms();
@@ -95,11 +120,12 @@ private:
   GLuint m_handle;
   bool m_linked;
 
-  //    GLErrorChecker m_errorChecker;
-
   Uniforms m_registeredUniforms;
 
-  class UniformSetter // : public std::visitor<void>
+  /**
+   * @brief Variant visitor that dispatches a stored `Uniforms::ValueType` to the matching GL upload call.
+   */
+  class UniformSetter
   {
   public:
     UniformSetter(GLShaderProgram& parent);

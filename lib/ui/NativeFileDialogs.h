@@ -14,10 +14,10 @@ namespace native_dialog
  */
 enum class PathDialogStatus : std::uint8_t
 {
-  Selected,    //!< The user selected one or more paths.
-  Canceled,    //!< The user canceled the dialog.
-  Unavailable, //!< Native dialogs could not be initialized.
-  Error        //!< The native dialog reported an error.
+  Selected,    //!< The user selected one or more paths
+  Canceled,    //!< The user canceled the dialog
+  Unavailable, //!< Native dialogs could not be initialized
+  Error        //!< The native dialog reported an error
 };
 
 /**
@@ -25,8 +25,8 @@ enum class PathDialogStatus : std::uint8_t
  */
 struct PathDialogResult
 {
-  PathDialogStatus status = PathDialogStatus::Canceled; //!< Dialog outcome.
-  std::vector<std::filesystem::path> paths;             //!< Selected paths when status is Selected.
+  PathDialogStatus status = PathDialogStatus::Canceled; //!< Dialog outcome
+  std::vector<std::filesystem::path> paths;             //!< Selected paths when status is Selected
 };
 
 /**
@@ -34,8 +34,8 @@ struct PathDialogResult
  */
 struct Filter
 {
-  std::string name;       //!< Human-readable filter name shown by the platform dialog.
-  std::string extensions; //!< Comma-separated file extensions accepted by this filter.
+  std::string name;       //!< Human-readable filter name shown by the platform dialog
+  std::string extensions; //!< Comma-separated file extensions accepted by this filter
 };
 
 /**

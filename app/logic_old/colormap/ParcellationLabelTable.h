@@ -105,7 +105,7 @@ private:
   /// per RGBA component. Components are in range [0.0, 1.0]. RGBA colors in this vector
   /// account for opacity and 2D visibility. In other words, the RGBA components are
   /// modulated by label opacity and 2D visibility settings. The size of this vector
-  /// matches the size of \c m_properties.
+  /// matches the size of \c m_properties
   std::vector<glm::vec4> m_colors_RGBA_F32;
 
   struct LabelProperties

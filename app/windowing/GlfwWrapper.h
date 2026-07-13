@@ -17,9 +17,9 @@ struct GLFWwindow;
 /** @brief GLFW event wait mode used by the render loop. */
 enum class EventProcessingMode
 {
-  Poll,       //!< Process queued events and return.
-  Wait,       //!< Wait until an event arrives.
-  WaitTimeout //!< Wait until an event arrives or the timeout expires.
+  Poll,       //!< Process queued events and return
+  Wait,       //!< Wait until an event arrives
+  WaitTimeout //!< Wait until an event arrives or the timeout expires
 };
 
 /** @brief Owns the GLFW window, cursors, callbacks, and render loop. */
@@ -111,8 +111,8 @@ private:
   // as the monitor with the largest overlap with the window.
   GLFWmonitor* currentMonitor() const;
 
-  double m_lastContentScalePollSeconds = -1.0; //!< Last fallback content-scale poll time.
-  int m_platform;                              //!< GLFW platform selected during initialization.
+  double m_lastContentScalePollSeconds = -1.0; //!< Last fallback content-scale poll time
+  int m_platform;                              //!< GLFW platform selected during initialization
 
   // Application owning this wrapper. GLFW also stores this as the window user pointer.
   EntropyApp* m_app = nullptr;

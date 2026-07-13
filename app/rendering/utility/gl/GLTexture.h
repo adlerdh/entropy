@@ -13,9 +13,18 @@
 #include <optional>
 #include <unordered_map>
 
+/**
+ * @brief RAII wrapper around an OpenGL texture object and optional sampler object.
+ *
+ * The wrapper owns the texture name, remembers its target and logical dimensions, and provides the typed format helpers
+ * used when uploading native image component data to OpenGL.
+ */
 class GLTexture final
 {
 public:
+  /**
+   * @brief Multisample texture allocation parameters.
+   */
   struct MultisampleSettings
   {
     MultisampleSettings() : m_numSamples(1), m_fixedSampleLocations(false) {}
@@ -25,10 +34,13 @@ public:
     {
     }
 
-    GLsizei m_numSamples;
-    GLboolean m_fixedSampleLocations;
+    GLsizei m_numSamples;             //!< Number of samples per texel
+    GLboolean m_fixedSampleLocations; //!< Whether sample locations are identical for every texel
   };
 
+  /**
+   * @brief Pixel pack/unpack storage state used around texture transfers.
+   */
   struct PixelStoreSettings
   {
     PixelStoreSettings()
@@ -68,37 +80,34 @@ public:
     /// 1 (byte-alignment),
     /// 2 (rows aligned to even-numbered bytes),
     /// 4 (word-alignment), and
-    /// 8 (rows start on double-word boundaries).
+    /// 8 (rows start on double-word boundaries)
     GLint m_alignment = 4;
 
     /// Setting to k is equivalent to incrementing the pointer by k*L components or indices,
-    /// where L is the number of components or indices per image.
+    /// where L is the number of components or indices per image
     GLint m_skipImages = 0;
 
     /// Setting to j is equivalent to incrementing the pointer by j*M components or indices,
-    /// where M is the number of components or indices per row.
+    /// where M is the number of components or indices per row
     GLint m_skipRows = 0;
 
     /// Setting to i is equivalent to incrementing the pointer by i*N components or indices,
-    /// where N is the number of components or indices in each pixel.
+    /// where N is the number of components or indices in each pixel
     GLint m_skipPixels = 0;
 
-    /// If greater than 0, defines the number of pixels in an image of a
-    /// three-dimensional texture volume.
-    GLint m_imageHeight = 0;
+    GLint m_imageHeight = 0; //!< Pixels per image slice when greater than zero
 
-    /// If greater than 0, defines the number of pixels in a row.
-    GLint m_rowLength = 0;
+    GLint m_rowLength = 0; //!< Pixels per row when greater than zero
 
     /// If true, bits are ordered within a byte from least significant to most significant;
-    /// otherwise, the first bit in each byte is the most significant one.
+    /// otherwise, the first bit in each byte is the most significant one
     GLboolean m_lsbFirst = false;
 
     /// If true, byte ordering for multibyte color components, depth components,
     /// or stencil indices is reversed. That is, if a four-byte component consists of
     /// bytes b0b0, b1b1, b2b2, b3b3, it is stored in memory as b3b3, b2b2, b1b1, b0b0
     /// if true. This has no effect on the memory order of components within a pixel,
-    /// only on the order of bytes within components or indices.
+    /// only on the order of bytes within components or indices
     GLboolean m_swapBytes = false;
   };
 
@@ -116,29 +125,41 @@ public:
 
   ~GLTexture();
 
+  /// Generate the GL texture name if needed.
   void generate();
+
+  /// Unbind the texture from the current context or from a specific texture unit.
   void release(std::optional<uint32_t> textureUnit = std::nullopt);
+
+  /// Bind the texture to the current context or to a specific texture unit.
   void bind(std::optional<uint32_t> textureUnit = std::nullopt);
+
+  /// Return whether this texture is currently bound, optionally on the supplied texture unit.
   bool isBound(std::optional<uint32_t> textureUnit = std::nullopt);
+
+  /// Unbind this texture target from the current context.
   void unbind();
 
-  // Bind/bind sampler object to/from a texture unit
   /// @todo Place Sampler Object in separate class.
   /// @todo Store Sampler Object as member of GPU image record
+  /// Bind this texture's sampler object to a texture unit.
   void bindSampler(uint32_t textureUnit);
+
+  /// Unbind this texture's sampler object from a texture unit.
   void unbindSampler(uint32_t textureUnit);
 
   tex::Target target() const;
 
   GLuint id() const;
 
+  /// Return the logical texture dimensions last supplied to `setSize()`.
   glm::uvec3 size() const;
 
+  /// Store logical dimensions used by upload helpers and rendering metadata.
   void setSize(const glm::uvec3& size);
 
   /**
-   * @brief Allocates mutable storage for a mipmap level of the bound texture object and
-   * optionally writes pixel data to that mipmap level.
+   * @brief Allocate mutable storage for a mipmap level and optionally initialize it with pixel data.
    **/
   void setData(
     GLint level,
@@ -148,8 +169,7 @@ public:
     const GLvoid* data);
 
   /**
-   * @brief Writes the user's pixel data to some part of the given mipmap of the bound texture
-   *object.
+   * @brief Write pixel data to a subregion of an existing texture level.
    **/
   void setSubData(
     GLint level,
@@ -159,6 +179,7 @@ public:
     const tex::BufferPixelDataType& type,
     const GLvoid* data);
 
+  /// Allocate and upload one cube-map face.
   void setCubeMapFaceData(
     const tex::CubeMapFace& face,
     GLint level,
@@ -198,7 +219,8 @@ public:
 
   void setBorderColor(const glm::vec4& color);
 
-  void setAutoGenerateMipmaps(bool set);
+  /// Enable or disable automatic mipmap generation after texture uploads.
+  void setAutoGenerateMipmaps(bool enabled);
 
   void setMultisampleSettings(const MultisampleSettings& settings);
 

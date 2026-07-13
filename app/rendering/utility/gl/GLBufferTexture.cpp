@@ -69,7 +69,7 @@ GLBufferTexture::GLBufferTexture(GLBufferTexture&& other) noexcept
 GLBufferTexture& GLBufferTexture::operator=(GLBufferTexture&& other) noexcept
 {
   if (this != &other) {
-    detatchBufferFromTexture();
+    detachBufferFromTexture();
 
     m_buffer = std::move(other.m_buffer);
     m_texture = std::move(other.m_texture);
@@ -81,7 +81,7 @@ GLBufferTexture& GLBufferTexture::operator=(GLBufferTexture&& other) noexcept
 
 GLBufferTexture::~GLBufferTexture()
 {
-  detatchBufferFromTexture();
+  detachBufferFromTexture();
 }
 
 void GLBufferTexture::generate()
@@ -115,10 +115,15 @@ void GLBufferTexture::allocate(std::size_t sizeInBytes, const GLvoid* data)
   GLint maxSize;
   glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxSize);
 
-  if (sizeInBytes > static_cast<std::size_t>(maxSize)) {
+  const std::size_t bytesPerTexel =
+    sk_textureFormatToNumComponentsMap.at(m_format) * sk_textureFormatToNumBytesPerComponentMap.at(m_format);
+  const std::size_t texelCount = (sizeInBytes + bytesPerTexel - 1) / bytesPerTexel;
+
+  if (texelCount > static_cast<std::size_t>(maxSize)) {
     std::ostringstream ss;
-    ss << "Attempting to allocate " << sizeInBytes << " bytes in the texel array of a texture buffer object,"
-       << " which is greater than the maximum of " << maxSize << std::ends;
+    ss << "Attempting to allocate " << texelCount << " texels (" << sizeInBytes
+       << " bytes) in the texel array of a texture buffer object, which is greater than the maximum of " << maxSize
+       << " texels" << std::ends;
 
     throw_debug(ss.str());
   }
@@ -168,7 +173,12 @@ void GLBufferTexture::attachBufferToTexture(std::optional<uint32_t> textureUnit)
   CHECK_GL_ERROR(m_errorChecker);
 }
 
-void GLBufferTexture::detatchBufferFromTexture()
+void GLBufferTexture::detachBufferFromTexture()
 {
   glTexBuffer(GL_TEXTURE_BUFFER, 0, 0);
+}
+
+void GLBufferTexture::detatchBufferFromTexture()
+{
+  detachBufferFromTexture();
 }

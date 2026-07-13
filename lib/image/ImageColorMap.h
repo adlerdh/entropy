@@ -22,8 +22,8 @@ public:
    */
   enum class InterpolationMode
   {
-    Nearest, //!< Use nearest-neighbor sampling.
-    Linear   //!< Use linear interpolation between adjacent colors.
+    Nearest, //!< Use nearest-neighbor sampling
+    Linear   //!< Use linear interpolation between adjacent colors
   };
 
   /**
@@ -168,10 +168,10 @@ private:
   std::string m_description;   //!< Description of the color map
 
   /// Table of RGBA colors represented using 32-bit floating point values per component.
-  /// Components are only meaningful if in range [0.0, 1.0].
+  /// Components are only meaningful if in range [0.0, 1.0]
   std::vector<glm::vec4> m_colors_RGBA_F32;
 
-  std::vector<glm::vec4> m_preview;      //!< Optional preview color map.
-  InterpolationMode m_interpolationMode; //!< Interpolation mode.
-  bool m_transparentBorder;              //!< Whether border sampling should be transparent.
+  std::vector<glm::vec4> m_preview;      //!< Optional preview color map
+  InterpolationMode m_interpolationMode; //!< Interpolation mode
+  bool m_transparentBorder;              //!< Whether border sampling should be transparent
 };

@@ -6,8 +6,8 @@ namespace rendering::local_ncc
 /** @brief Display transform applied to a local normalized cross-correlation value. */
 enum class Presentation
 {
-  Dissimilarity, //!< Convert high correlation to low displayed mismatch.
-  Correlation    //!< Display correlation directly after mapping [-1, 1] to [0, 1].
+  Dissimilarity, //!< Convert high correlation to low displayed mismatch
+  Correlation    //!< Display correlation directly after mapping [-1, 1] to [0, 1]
 };
 
 /**

@@ -8,12 +8,18 @@
 
 #include <set>
 
+/**
+ * @brief RAII wrapper around an OpenGL buffer object.
+ *
+ * The wrapper owns one GL buffer name and remembers its target, usage hint, and current allocated byte size. Methods
+ * bind the buffer before mutating or reading it, so callers do not need to bind it separately.
+ */
 class GLBufferObject final
 {
 public:
   /**
-   * @param type Specifies the name of the buffer object
-   * @param usage Specifies the expected usage pattern of the data store.
+   * @param type OpenGL buffer target this object is bound to.
+   * @param usagePattern Expected buffer data usage hint.
    */
   GLBufferObject(const BufferType& type, const BufferUsagePattern& usagePattern);
 
@@ -23,126 +29,72 @@ public:
   GLBufferObject(GLBufferObject&&) noexcept;
   GLBufferObject& operator=(GLBufferObject&&) noexcept;
 
-  /**
-   * @brief Deletes the buffer object, including storage on GPU
-   */
+  /// Delete the GL buffer name and GPU storage if still owned.
   ~GLBufferObject();
 
-  /**
-   * @brief Generate buffer object name
-   */
+  /// Generate the GL buffer name if needed.
   void generate();
 
-  /**
-   * @brief Releases the buffer.
-   */
+  /// Unbind this buffer target from the current context.
   void release();
 
-  /**
-   * @brief Destroys the buffer, including all data on GPU.
-   */
+  /// Delete the GL buffer name and reset local state.
   void destroy();
 
-  /**
-   * @brief Bind the buffer object to the current context
-   */
+  /// Bind this buffer to its configured target.
   void bind();
 
   void unbind();
 
   /**
-   * @brief allocate To create mutable storage for a buffer object, you use this API
-   * (reallocates the buffer object's storage)
+   * @brief Allocate mutable storage and optionally initialize it with CPU data.
    *
-   * It is assumed that create() has been called on this buffer and that it has been bound to the
-   * current context
-   *
-   * @param sizeInBytes Specifies the size in bytes of the buffer object's new data store
-   * (how many bytes you want to allocate in this buffer object)
-   *
-   * @param data Specifies a pointer to data that will be copied into the data store for
-   * initialization, or NULL if no data is to be copied. (pointer to user memory that will be copied
-   * into the buffer object's data store. If this value is NULL, then no copying will occur, and the
-   * buffer object's data will be undefined)
-   *
-   * @note This calls bind() to first bind the texture
+   * @param sizeInBytes New buffer storage size.
+   * @param data Optional CPU data copied into the new storage. If null, storage contents are undefined.
    */
   void allocate(std::size_t sizeInBytes, const GLvoid* data);
 
   /**
-   * @brief Updates a subset of a buffer object's data store
+   * @brief Replace a byte range in the existing buffer storage.
    *
-   * It is assumed that create() has been called on this buffer and that it has been bound to the
-   * current context
-   *
-   * @param offset Specifies the offset into the buffer object's data store where data replacement
-   * will begin, measured in bytes
-   *
-   * @param sizeInBytes Specifies the size in bytes of the data store region being replaced
-   *
-   * @param data Specifies a pointer to the new data that will be copied into the data store.
-   *
-   * @note This calls bind()
+   * @param offset Byte offset where replacement begins.
+   * @param sizeInBytes Number of bytes to replace.
+   * @param data CPU data copied into the selected byte range.
    */
   void write(std::size_t offset, std::size_t sizeInBytes, const GLvoid* data);
 
   /**
-   * @brief returns a subset of a buffer object's data store.
-   * returns some or all of the data from the buffer object currently bound to target​.
-   * Data starting at byte offset offset​ and extending for size​ bytes is copied from the
-   * data store to the memory pointed to by data​. An error is thrown if the buffer object is
-   * currently mapped, or if offset​ and size​ together define a range beyond the bounds of the
-   * buffer object's data store
+   * @brief Copy a byte range from GPU buffer storage into CPU memory.
    *
-   * @param offset Specifies the offset into the buffer object's data store from which data will be
-   * returned, measured in bytes
-   *
-   * @param sizeInBytes Specifies the size in bytes of the data store region being returned
-   *
-   * @param data Specifies a pointer to the location where buffer object data is returned
-   * @return
+   * @param offset Byte offset where the read begins.
+   * @param sizeInBytes Number of bytes to read.
+   * @param data Destination CPU buffer.
    */
   void read(std::size_t offset, std::size_t sizeInBytes, GLvoid* data);
 
   /**
-     * @brief map map all of a buffer object data store into the client's address space
-     *
-     * QT: Maps the contents of this buffer into the application's memory space and returns a
-     pointer to it.
-     * Returns null if memory mapping is not possible.
-     * It is assumed that create() has been called on this buffer and that it has been bound to the
-     current context.
-
-     * glMapBuffer maps to the client's address space the entire data store of the buffer object
-     currently bound to target​.
-     * The data can then be directly read and/or written relative to the returned pointer, depending
-     on the specified
-     * access​ policy. If the GL is unable to map the buffer object's data store, glMapBuffer
-     generates an error and
-     * returns NULL
-     *
-     * @param access indicates the type of access to be performed
-     * Specifies a combination of access flags indicating the desired access to the mapped range
-     */
+   * @brief Map the full buffer into client address space.
+   *
+   * @param access Access policy requested for the mapped storage.
+   * @return Mapped pointer, or null if OpenGL cannot map the buffer.
+   */
   void* map(const BufferMapAccessPolicy& access);
 
   /**
-   * @brief mapRange map all or part of a buffer object's data store into the client's address space
-   * @param offset Specifies the starting offset within the buffer of the range to be mapped
-   * @param length Specifies the length of the range to be mapped
-   * @param accessFlags Specifies a set of access flags indicating the desired access to the mapped
-   * range
-   * @return
+   * @brief Map part of the buffer into client address space.
+   *
+   * @param offset Byte offset where the mapped range begins.
+   * @param length Number of bytes in the mapped range.
+   * @param accessFlags Access flags requested for the mapped range.
+   * @return Mapped pointer, or null if OpenGL cannot map the buffer.
    */
   void* mapRange(GLintptr offset, GLsizeiptr length, const std::set<BufferMapRangeAccessFlag>& accessFlags);
 
-  /**
-   * @brief release the mapping of a buffer object's data store into the client's address space
-   * @return
-   */
+  /// Unmap a previously mapped buffer range.
   bool unmap();
 
   /// @todo Change GLsizeiptr and GLintptr to std::size_t
+  /// Copy bytes between two buffer objects using OpenGL's copy buffer targets.
   void copyData(
     GLBufferObject& readBuffer,
     GLBufferObject& writeBuffer,
@@ -151,9 +103,12 @@ public:
     GLsizeiptr size);
 
   GLuint id() const;
+
   BufferType type() const;
+
   BufferUsagePattern usagePattern() const;
 
+  /// Return the currently allocated buffer size in bytes.
   std::size_t size() const;
 
 private:

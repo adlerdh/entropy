@@ -29,7 +29,7 @@ struct HistogramSettings
   bool m_isCumulative{false}; //!< Whether the histogram is cumulative (\c ImPlotHistogramFlags_Cumulative)
   bool m_isDensity{false};    //!< Whether the histogram shows probability densities (true) or counts
                               //!< (false) (\c ImPlotHistogramFlags_Density)
-  bool m_isHorizontal{false}; //!< Whether the histogram is horizontal, i.e. bins go left to right
+  bool m_isHorizontal{false}; //!< Whether histogram bins go left to right
                               //!< (\c ImPlotHistogramFlags_Horizontal)
   bool m_isLogScale{true};    //!< Apply log (base 10) to histogram bin counts or probabilities
 

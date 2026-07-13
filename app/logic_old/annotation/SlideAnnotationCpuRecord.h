@@ -61,11 +61,10 @@ private:
   std::unique_ptr<PlanarPolygon> m_polygon;
 
   /// Internal layer of the annotation: 0 is the backmost layer and higher layers are more
-  /// frontwards.
+  /// frontwards
   uint32_t m_layer;
 
-  /// The maximum layer among all annotations for a given slide.
-  uint32_t m_maxLayer;
+  uint32_t m_maxLayer; //!< The maximum layer among all annotations for a given slide
 
   /// Annotation opacity in [0.0, 1.0] range
   float m_opacity;

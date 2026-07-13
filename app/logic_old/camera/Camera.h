@@ -141,7 +141,7 @@ private:
   std::unique_ptr<Projection> m_projection;
 
   /// Functional providing the start frame of the camera relative to World space.
-  /// If null, then identity is used for startFrame_O_world.
+  /// If null, then identity is used for startFrame_O_world
   GetterType<CoordinateFrame> m_frameB_O_frameA_provider;
 
   /// Transformation of the camera relative to its start frame.

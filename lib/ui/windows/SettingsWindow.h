@@ -17,12 +17,12 @@ class ImageColorMap;
  */
 struct SettingsPersistenceCallbacks
 {
-  std::filesystem::path settingsFile; //!< Platform default JSON settings file shown to the user.
-  std::function<bool()> saveSettings; //!< Save current app preferences to the settings file.
-  std::function<bool(const std::filesystem::path& fileName)> saveSettingsAs; //!< Save preferences to a selected file.
-  std::function<void()> restoreDefaults;        //!< Restore built-in app preference defaults.
-  std::function<void()> resetInterfaceSettings; //!< Reset ImGui window, docking, table, and panel state.
-  std::function<std::string()> statusText;      //!< Return the latest persistence status message.
+  std::filesystem::path settingsFile; //!< Platform default JSON settings file shown to the user
+  std::function<bool()> saveSettings; //!< Save current app preferences to the settings file
+  std::function<bool(const std::filesystem::path& fileName)> saveSettingsAs; //!< Save preferences to a selected file
+  std::function<void()> restoreDefaults;        //!< Restore built-in app preference defaults
+  std::function<void()> resetInterfaceSettings; //!< Reset ImGui window, docking, table, and panel state
+  std::function<std::string()> statusText;      //!< Return the latest persistence status message
 };
 
 /**

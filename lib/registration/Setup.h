@@ -16,10 +16,10 @@ namespace registration
  */
 struct SetupImageChoice
 {
-  DataRef image;            //!< Image that can be used as fixed or moving input.
-  int dimension = 3;        //!< Spatial dimension of the image.
-  bool isReference = false; //!< True when this is Entropy's reference image.
-  bool isActive = false;    //!< True when this is Entropy's active image.
+  DataRef image;            //!< Image that can be used as fixed or moving input
+  int dimension = 3;        //!< Spatial dimension of the image
+  bool isReference = false; //!< True when this is Entropy's reference image
+  bool isActive = false;    //!< True when this is Entropy's active image
 };
 
 /**
@@ -27,12 +27,12 @@ struct SetupImageChoice
  */
 struct SetupState
 {
-  JobSpec job;                                 //!< Editable job specification.
-  BackendCapabilities capabilities;            //!< Capabilities for the selected backend.
-  std::vector<ParameterValue> parameterValues; //!< Current backend parameter values.
-  ValidationResult validation;                 //!< Latest validation result.
-  bool showAdvancedParameters = false;         //!< Reveal advanced parameters.
-  bool showExpertParameters = false;           //!< Reveal expert parameters.
+  JobSpec job;                                 //!< Editable job specification
+  BackendCapabilities capabilities;            //!< Capabilities for the selected backend
+  std::vector<ParameterValue> parameterValues; //!< Current backend parameter values
+  ValidationResult validation;                 //!< Latest validation result
+  bool showAdvancedParameters = false;         //!< Reveal advanced parameters
+  bool showExpertParameters = false;           //!< Reveal expert parameters
 };
 
 /**

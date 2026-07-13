@@ -366,22 +366,22 @@ enum class SegmentationOutlineStyle
 
 enum class BrushPreviewMode
 {
-  Hover,   //!< Show the brush preview under the cursor.
-  Disabled //!< Do not show the brush preview.
+  Hover,   //!< Show the brush preview under the cursor
+  Disabled //!< Do not show the brush preview
 };
 
 /// Which voxels should be included in the brush preview overlay.
 enum class BrushPreviewVoxels
 {
-  Changed, //!< Show only voxels whose labels would change.
-  All      //!< Show all voxels touched by the brush.
+  Changed, //!< Show only voxels whose labels would change
+  All      //!< Show all voxels touched by the brush
 };
 
 /// Brush preview rendering style.
 enum class BrushPreviewStyle
 {
-  Outline,       //!< Draw only the brush outline.
-  OutlineAndFill //!< Draw the outline and fill the preview voxels.
+  Outline,       //!< Draw only the brush outline
+  OutlineAndFill //!< Draw the outline and fill the preview voxels
 };
 
 /// Location of the rendered scale bar inside the view.
@@ -400,15 +400,15 @@ enum class ScaleBarPosition
 /// Orientation of the rendered scale bar.
 enum class ScaleBarOrientation
 {
-  Horizontal, //!< Draw the scale bar left-to-right.
-  Vertical    //!< Draw the scale bar bottom-to-top.
+  Horizontal, //!< Draw the scale bar left-to-right
+  Vertical    //!< Draw the scale bar bottom-to-top
 };
 
 /// Tick mark strategy for the rendered scale bar.
 enum class ScaleBarTicks
 {
-  Endpoints, //!< Draw ticks at the endpoints only.
-  Automatic  //!< Let the renderer choose suitable tick positions.
+  Endpoints, //!< Draw ticks at the endpoints only
+  Automatic  //!< Let the renderer choose suitable tick positions
 };
 
 /**
@@ -434,7 +434,7 @@ struct AnatomicalLabelPosInfo
 
   /// Positions of the crosshair-view intersections (in Miewport space).
   /// Equal to std::nullopt if there is no intersection of the crosshair with the
-  /// view AABB for this label.
+  /// view AABB for this label
   std::optional<std::array<glm::vec2, 2>> miewportXhairPositions = std::nullopt;
 };
 

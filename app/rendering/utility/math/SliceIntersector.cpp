@@ -23,19 +23,19 @@ SliceIntersector::SliceIntersector()
 
 void SliceIntersector::setPositioningMethod(
   const intersection::PositioningMethod& method,
-  const std::optional<glm::vec3>& p)
+  const std::optional<glm::vec3>& positionOrCameraOffset)
 {
   m_positioningMethod = method;
 
-  if (!p) return;
+  if (!positionOrCameraOffset) return;
 
   switch (m_positioningMethod) {
     case intersection::PositioningMethod::UserDefined: {
-      m_userSlicePosition = *p;
+      m_userSlicePosition = *positionOrCameraOffset;
       break;
     }
     case intersection::PositioningMethod::OffsetFromCamera: {
-      m_cameraSliceOffset = *p;
+      m_cameraSliceOffset = *positionOrCameraOffset;
       break;
     }
     case intersection::PositioningMethod::FrameOrigin:

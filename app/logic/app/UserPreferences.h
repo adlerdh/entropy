@@ -148,11 +148,11 @@ struct RenderPreferences
  */
 struct PrecisionPreferences
 {
-  std::uint32_t imageValuePrecision = 3; //!< Decimal places for image values.
-  std::uint32_t coordsPrecision = 3;     //!< Decimal places for coordinates.
-  std::uint32_t txPrecision = 3;         //!< Decimal places for transformations.
-  std::uint32_t percentilePrecision = 2; //!< Decimal places for percentiles.
-  std::uint32_t timeValuePrecision = 2;  //!< Decimal places for time values.
+  std::uint32_t imageValuePrecision = 3; //!< Decimal places for image values
+  std::uint32_t coordsPrecision = 3;     //!< Decimal places for coordinates
+  std::uint32_t txPrecision = 3;         //!< Decimal places for transformations
+  std::uint32_t percentilePrecision = 2; //!< Decimal places for percentiles
+  std::uint32_t timeValuePrecision = 2;  //!< Decimal places for time values
 };
 
 /**

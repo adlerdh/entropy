@@ -119,11 +119,11 @@ enum class ProjectSegmentationRaycastMasking : std::uint8_t
  */
 struct ProjectMetricSettings
 {
-  std::size_t m_colorMapIndex = 0;        //!< Color map index.
-  glm::vec2 m_slopeIntercept{1.0f, 0.0f}; //!< Metric window slope/intercept.
-  bool m_invertColormap = false;          //!< Invert the metric color map.
-  bool m_continuousColormap = true;       //!< Use continuous colormap interpolation.
-  int m_colormapLevels = 8;               //!< Number of discrete color levels.
+  std::size_t m_colorMapIndex = 0;        //!< Color map index
+  glm::vec2 m_slopeIntercept{1.0f, 0.0f}; //!< Metric window slope/intercept
+  bool m_invertColormap = false;          //!< Invert the metric color map
+  bool m_continuousColormap = true;       //!< Use continuous colormap interpolation
+  int m_colormapLevels = 8;               //!< Number of discrete color levels
 };
 
 /**
@@ -131,8 +131,8 @@ struct ProjectMetricSettings
  */
 struct ProjectDifferenceMetricSettings
 {
-  bool m_squared = true;          //!< Use squared difference instead of absolute difference.
-  ProjectMetricSettings m_metric; //!< Difference metric colormap/window settings.
+  bool m_squared = true;          //!< Use squared difference instead of absolute difference
+  ProjectMetricSettings m_metric; //!< Difference metric colormap/window settings
 };
 
 /**
@@ -140,16 +140,16 @@ struct ProjectDifferenceMetricSettings
  */
 struct ProjectLocalNccMetricSettings
 {
-  ProjectMetricSettings m_metric; //!< Local NCC colormap/window settings.
+  ProjectMetricSettings m_metric; //!< Local NCC colormap/window settings
   ProjectLocalNccPresentation m_presentation =
-    ProjectLocalNccPresentation::Dissimilarity; //!< Correlation or dissimilarity presentation.
-  bool m_negativeCorrelationAsMismatch = true;  //!< Treat negative correlation as mismatch in dissimilarity mode.
-  int m_patchRadius = 3;                        //!< Patch radius in samples.
-  float m_sampleSpacing = 1.0f;                 //!< Patch sample spacing in voxel steps.
-  float m_minimumValidFraction = 0.75f;         //!< Required valid sample fraction.
-  float m_varianceEpsilon = 1.0e-5f;            //!< Minimum variance before a patch is invalid.
+    ProjectLocalNccPresentation::Dissimilarity; //!< Correlation or dissimilarity presentation
+  bool m_negativeCorrelationAsMismatch = true;  //!< Treat negative correlation as mismatch in dissimilarity mode
+  int m_patchRadius = 3;                        //!< Patch radius in samples
+  float m_sampleSpacing = 1.0f;                 //!< Patch sample spacing in voxel steps
+  float m_minimumValidFraction = 0.75f;         //!< Required valid sample fraction
+  float m_varianceEpsilon = 1.0e-5f;            //!< Minimum variance before a patch is invalid
   ProjectLocalMetricInvalidStyle m_invalidStyle =
-    ProjectLocalMetricInvalidStyle::Transparent; //!< Invalid patch display.
+    ProjectLocalMetricInvalidStyle::Transparent; //!< Invalid patch display
 };
 
 /**
@@ -157,13 +157,13 @@ struct ProjectLocalNccMetricSettings
  */
 struct ProjectLocalLinearResidualMetricSettings
 {
-  ProjectMetricSettings m_metric;       //!< Local residual colormap/window settings.
-  int m_patchRadius = 3;                //!< Patch radius in samples.
-  float m_sampleSpacing = 1.0f;         //!< Patch sample spacing in voxel steps.
-  float m_minimumValidFraction = 0.75f; //!< Required valid sample fraction.
-  float m_varianceEpsilon = 1.0e-5f;    //!< Minimum variance before a patch is invalid.
+  ProjectMetricSettings m_metric;       //!< Local residual colormap/window settings
+  int m_patchRadius = 3;                //!< Patch radius in samples
+  float m_sampleSpacing = 1.0f;         //!< Patch sample spacing in voxel steps
+  float m_minimumValidFraction = 0.75f; //!< Required valid sample fraction
+  float m_varianceEpsilon = 1.0e-5f;    //!< Minimum variance before a patch is invalid
   ProjectLocalMetricInvalidStyle m_invalidStyle =
-    ProjectLocalMetricInvalidStyle::Transparent; //!< Invalid patch display.
+    ProjectLocalMetricInvalidStyle::Transparent; //!< Invalid patch display
 };
 
 /**
@@ -171,14 +171,14 @@ struct ProjectLocalLinearResidualMetricSettings
  */
 struct ProjectComparisonSettings
 {
-  ProjectDifferenceMetricSettings m_difference;                   //!< Difference metric settings.
-  ProjectLocalNccMetricSettings m_localNcc;                       //!< Local NCC settings.
-  ProjectLocalLinearResidualMetricSettings m_localLinearResidual; //!< Local linear residual settings.
-  bool m_overlayMagentaCyan = false;                              //!< Overlay color convention.
-  glm::ivec2 m_quadrants{true, true};                             //!< Quadrant comparison axes.
-  int m_checkerboardSquares = 10;                                 //!< Checkerboard square count.
-  float m_flashlightRadiusFraction = 0.15f;                       //!< Flashlight radius as view fraction.
-  bool m_flashlightOverlayMovingImage = true;                     //!< Overlay or replace in flashlight mode.
+  ProjectDifferenceMetricSettings m_difference;                   //!< Difference metric settings
+  ProjectLocalNccMetricSettings m_localNcc;                       //!< Local NCC settings
+  ProjectLocalLinearResidualMetricSettings m_localLinearResidual; //!< Local linear residual settings
+  bool m_overlayMagentaCyan = false;                              //!< Overlay color convention
+  glm::ivec2 m_quadrants{true, true};                             //!< Quadrant comparison axes
+  int m_checkerboardSquares = 10;                                 //!< Checkerboard square count
+  float m_flashlightRadiusFraction = 0.15f;                       //!< Flashlight radius as view fraction
+  bool m_flashlightOverlayMovingImage = true;                     //!< Overlay or replace in flashlight mode
 };
 
 /**
@@ -186,22 +186,22 @@ struct ProjectComparisonSettings
  */
 struct ProjectRaycastingSettings
 {
-  float m_samplingFactor = 0.8f;                          //!< Ray-marching sampling factor.
-  bool m_transparentBackgroundWhenNoHit = true;           //!< Make missed 3D rays transparent.
-  bool m_backgroundEdgeBrighteningEnabled = true;         //!< Brighten raycast background near image-domain edges.
-  bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D raycast views.
-  float m_crosshairs3DGlyphDiameterVoxelDiagonals = 2.0f; //!< 3D crosshairs glyph diameter in voxel diagonals.
-  bool m_showThreeDCameraFrustumIn2DViews = false;        //!< Show the active 3D camera frustum in 2D views.
-  bool m_reverseThreeDRotateAboutEye = false;             //!< Reverse POV 3D camera rotation direction.
+  float m_samplingFactor = 0.8f;                          //!< Ray-marching sampling factor
+  bool m_transparentBackgroundWhenNoHit = true;           //!< Make missed 3D rays transparent
+  bool m_backgroundEdgeBrighteningEnabled = true;         //!< Brighten raycast background near image-domain edges
+  bool m_showCrosshairsIn3D = true;                       //!< Render crosshairs glyph in 3D raycast views
+  float m_crosshairs3DGlyphDiameterVoxelDiagonals = 2.0f; //!< 3D crosshairs glyph diameter in voxel diagonals
+  bool m_showThreeDCameraFrustumIn2DViews = false;        //!< Show the active 3D camera frustum in 2D views
+  bool m_reverseThreeDRotateAboutEye = false;             //!< Reverse POV 3D camera rotation direction
   glm::vec4 m_threeDCameraFrustumColor{
     0x7c / 255.0f,
     0x5e / 255.0f,
     0xd5 / 255.0f,
-    0xa2 / 255.0f};               //!< 2D frustum overlay color.
-  bool m_renderFrontFaces = true; //!< Render front faces in 3D raycasting.
-  bool m_renderBackFaces = true;  //!< Render back faces in 3D raycasting.
+    0xa2 / 255.0f};               //!< 2D frustum overlay color
+  bool m_renderFrontFaces = true; //!< Render front faces in 3D raycasting
+  bool m_renderBackFaces = true;  //!< Render back faces in 3D raycasting
   ProjectSegmentationRaycastMasking m_segmentationMasking =
-    ProjectSegmentationRaycastMasking::Disabled; //!< Segmentation mask behavior.
+    ProjectSegmentationRaycastMasking::Disabled; //!< Segmentation mask behavior
 };
 
 /**
@@ -209,11 +209,11 @@ struct ProjectRaycastingSettings
  */
 struct ProjectIntensityProjectionSettings
 {
-  bool m_useMaximumImageExtent = false; //!< Project through the full image extent.
-  float m_slabThicknessMm = 10.0f;      //!< Default projection slab thickness.
-  float m_xrayEnergyKeV = 80.0f;        //!< X-ray projection photon energy.
-  float m_xrayWindow = 1.0f;            //!< X-ray projection contrast window.
-  float m_xrayLevel = 0.5f;             //!< X-ray projection contrast level.
+  bool m_useMaximumImageExtent = false; //!< Project through the full image extent
+  float m_slabThicknessMm = 10.0f;      //!< Default projection slab thickness
+  float m_xrayEnergyKeV = 80.0f;        //!< X-ray projection photon energy
+  float m_xrayWindow = 1.0f;            //!< X-ray projection contrast window
+  float m_xrayLevel = 0.5f;             //!< X-ray projection contrast level
 };
 
 /**
@@ -221,10 +221,10 @@ struct ProjectIntensityProjectionSettings
  */
 struct ProjectSegmentationDisplaySettings
 {
-  bool m_modulateOpacityWithImageOpacity = true; //!< Scale segmentation opacity by image opacity.
-  SegmentationOutlineStyle m_outlineStyle = SegmentationOutlineStyle::Disabled; //!< Global segmentation outline.
-  float m_interiorOpacity = 0.2f;                                               //!< Interior opacity when outlined.
-  float m_erosionFactor = 0.5f;                                                 //!< Linear interpolation cutoff.
+  bool m_modulateOpacityWithImageOpacity = true; //!< Scale segmentation opacity by image opacity
+  SegmentationOutlineStyle m_outlineStyle = SegmentationOutlineStyle::Disabled; //!< Global segmentation outline
+  float m_interiorOpacity = 0.2f;                                               //!< Interior opacity when outlined
+  float m_erosionFactor = 0.5f;                                                 //!< Linear interpolation cutoff
 };
 
 /**
@@ -232,8 +232,8 @@ struct ProjectSegmentationDisplaySettings
  */
 struct ProjectIsosurfaceDisplaySettings
 {
-  bool m_floatingPointInterpolation = false;      //!< Use floating-point interpolation for isocontours.
-  bool m_modulateOpacityWithImageOpacity = false; //!< Scale isocontour opacity by image opacity.
+  bool m_floatingPointInterpolation = false;      //!< Use floating-point interpolation for isocontours
+  bool m_modulateOpacityWithImageOpacity = false; //!< Scale isocontour opacity by image opacity
 };
 
 /**
@@ -241,9 +241,9 @@ struct ProjectIsosurfaceDisplaySettings
  */
 struct ProjectAnnotationDisplaySettings
 {
-  bool m_annotationsOnTop = false;       //!< Render annotations over all image planes.
-  bool m_landmarksOnTop = false;         //!< Render landmarks over all image planes.
-  bool m_hideAnnotationVertices = false; //!< Hide annotation polygon vertices.
+  bool m_annotationsOnTop = false;       //!< Render annotations over all image planes
+  bool m_landmarksOnTop = false;         //!< Render landmarks over all image planes
+  bool m_hideAnnotationVertices = false; //!< Hide annotation polygon vertices
 };
 
 /**
@@ -251,18 +251,18 @@ struct ProjectAnnotationDisplaySettings
  */
 struct RegistrationResult
 {
-  std::string m_backend;                                     //!< Backend that produced the result.
-  std::string m_fixedImageUid;                               //!< Fixed/reference image UID at registration time.
-  std::string m_movingImageUid;                              //!< Moving image UID at registration time.
-  std::optional<std::filesystem::path> m_manifestFileName;   //!< Result manifest JSON path, when available.
-  std::optional<std::filesystem::path> m_warpedImage;        //!< Warped moving image output.
-  std::optional<std::filesystem::path> m_inverseWarp;        //!< Fixed-to-moving sampling warp output.
-  std::optional<std::filesystem::path> m_forwardWarp;        //!< Moving-to-fixed point warp output.
-  std::optional<std::filesystem::path> m_affineTransform;    //!< Affine/composite transform output.
-  std::vector<std::filesystem::path> m_warpedSegmentations;  //!< Warped segmentation outputs.
-  std::vector<std::filesystem::path> m_transformedSurfaces;  //!< Transformed surface outputs.
-  std::vector<std::filesystem::path> m_transformedLandmarks; //!< Transformed landmark outputs.
-  std::vector<std::string> m_warnings;                       //!< Non-fatal warnings reported by backend/import.
+  std::string m_backend;                                     //!< Backend that produced the result
+  std::string m_fixedImageUid;                               //!< Fixed/reference image UID at registration time
+  std::string m_movingImageUid;                              //!< Moving image UID at registration time
+  std::optional<std::filesystem::path> m_manifestFileName;   //!< Result manifest JSON path, when available
+  std::optional<std::filesystem::path> m_warpedImage;        //!< Warped moving image output
+  std::optional<std::filesystem::path> m_inverseWarp;        //!< Fixed-to-moving sampling warp output
+  std::optional<std::filesystem::path> m_forwardWarp;        //!< Moving-to-fixed point warp output
+  std::optional<std::filesystem::path> m_affineTransform;    //!< Affine/composite transform output
+  std::vector<std::filesystem::path> m_warpedSegmentations;  //!< Warped segmentation outputs
+  std::vector<std::filesystem::path> m_transformedSurfaces;  //!< Transformed surface outputs
+  std::vector<std::filesystem::path> m_transformedLandmarks; //!< Transformed landmark outputs
+  std::vector<std::string> m_warnings;                       //!< Non-fatal warnings reported by backend/import
 };
 
 /**
@@ -272,13 +272,13 @@ struct RegistrationResult
 struct ImageSettings
 {
   std::string m_displayName;
-  bool m_globalVisibility = true;            //!< Global image visibility.
-  double m_globalOpacity = 1.0;              //!< Global opacity multiplier.
-  glm::vec3 m_borderColor{1.0f, 0.0f, 1.0f}; //!< Image border RGB color.
-  bool m_lockedToReference = true;           //!< Lock image transformations to the reference image.
-  bool m_warpEnabled = true;                 //!< Apply assigned warp during image rendering.
-  float m_warpStrength = 1.0f;               //!< Warp strength multiplier.
-  bool m_allowExaggeratedWarp = false;       //!< Permit warp strength greater than 1.0x.
+  bool m_globalVisibility = true;            //!< Global image visibility
+  double m_globalOpacity = 1.0;              //!< Global opacity multiplier
+  glm::vec3 m_borderColor{1.0f, 0.0f, 1.0f}; //!< Image border RGB color
+  bool m_lockedToReference = true;           //!< Lock image transformations to the reference image
+  bool m_warpEnabled = true;                 //!< Apply assigned warp during image rendering
+  float m_warpStrength = 1.0f;               //!< Warp strength multiplier
+  bool m_allowExaggeratedWarp = false;       //!< Permit warp strength greater than 1.0x
 
   double m_level = 0.0f;  //! Window center value in image units
   double m_window = 1.0f; //! Window width in image units
@@ -288,83 +288,83 @@ struct ImageSettings
 
   double m_opacity = 1.0f; //!< Opacity [0, 1]
 
-  uint32_t m_activeComponent = 0;     //!< Active image component.
-  uint32_t m_activeTimePoint = 0;     //!< Active time point for time-series images.
-  bool m_timePlaybackLoop = true;     //!< Loop time playback.
-  bool m_timePlaybackPlaying = false; //!< Time playback is running.
-  double m_timePlaybackSpeed = 1.0;   //!< Time playback speed multiplier.
+  uint32_t m_activeComponent = 0;     //!< Active image component
+  uint32_t m_activeTimePoint = 0;     //!< Active time point for time-series images
+  bool m_timePlaybackLoop = true;     //!< Loop time playback
+  bool m_timePlaybackPlaying = false; //!< Time playback is running
+  double m_timePlaybackSpeed = 1.0;   //!< Time playback speed multiplier
   ProjectComponentRenderMode m_componentRenderMode =
-    ProjectComponentRenderMode::Magnitude;                                       //!< Multi-component render mode.
-  ProjectComplexPhaseUnit m_complexPhaseUnit = ProjectComplexPhaseUnit::Radians; //!< Complex phase display units.
+    ProjectComponentRenderMode::Magnitude;                                       //!< Multi-component render mode
+  ProjectComplexPhaseUnit m_complexPhaseUnit = ProjectComplexPhaseUnit::Radians; //!< Complex phase display units
   ProjectComplexPhaseRange m_complexPhaseRange =
-    ProjectComplexPhaseRange::Signed;                  //!< Complex phase display range convention.
-  bool m_vectorArrowOverlayVisible = false;            //!< Show vector-field arrows over slices.
-  bool m_vectorArrowOverlayOnImage = true;             //!< Draw vector-field arrows over the rendered image.
-  float m_vectorArrowOverlayDensity = 32.0f;           //!< Vector arrow spacing value.
-  float m_vectorArrowOverlayVoxelSpacing = 4.0f;       //!< Vector arrow spacing in image voxels.
-  float m_vectorArrowOverlayMillimeterSpacing = 10.0f; //!< Vector arrow spacing in subject millimeters.
+    ProjectComplexPhaseRange::Signed;                  //!< Complex phase display range convention
+  bool m_vectorArrowOverlayVisible = false;            //!< Show vector-field arrows over slices
+  bool m_vectorArrowOverlayOnImage = true;             //!< Draw vector-field arrows over the rendered image
+  float m_vectorArrowOverlayDensity = 32.0f;           //!< Vector arrow spacing value
+  float m_vectorArrowOverlayVoxelSpacing = 4.0f;       //!< Vector arrow spacing in image voxels
+  float m_vectorArrowOverlayMillimeterSpacing = 10.0f; //!< Vector arrow spacing in subject millimeters
   ProjectVectorArrowOverlaySpacingMode m_vectorArrowOverlaySpacingMode =
-    ProjectVectorArrowOverlaySpacingMode::Voxels;          //!< Vector arrow spacing units.
-  glm::vec3 m_vectorArrowOverlayColor{1.0f, 0.86f, 0.31f}; //!< Fixed vector arrow color.
-  bool m_vectorArrowOverlayUseDirectionColor = false;      //!< Color arrows by vector direction.
-  float m_vectorArrowOverlayLineThickness = 1.4f;          //!< Vector arrow line thickness in pixels.
-  float m_vectorArrowOverlayOpacity = 1.0f;                //!< Vector arrow opacity.
-  bool m_vectorArrowOverlayScaleByMagnitude = true;        //!< Scale arrow length by vector magnitude.
-  float m_vectorArrowOverlayScaleFactor = 1.0f;            //!< Dimensionless vector arrow length multiplier.
-  bool m_vectorWarpedGridVisible = false;                  //!< Show warped vector-field grid.
-  bool m_vectorWarpedGridOverlayOnImage = true;            //!< Draw warped grid over the rendered image.
+    ProjectVectorArrowOverlaySpacingMode::Voxels;          //!< Vector arrow spacing units
+  glm::vec3 m_vectorArrowOverlayColor{1.0f, 0.86f, 0.31f}; //!< Fixed vector arrow color
+  bool m_vectorArrowOverlayUseDirectionColor = false;      //!< Color arrows by vector direction
+  float m_vectorArrowOverlayLineThickness = 1.4f;          //!< Vector arrow line thickness in pixels
+  float m_vectorArrowOverlayOpacity = 1.0f;                //!< Vector arrow opacity
+  bool m_vectorArrowOverlayScaleByMagnitude = true;        //!< Scale arrow length by vector magnitude
+  float m_vectorArrowOverlayScaleFactor = 1.0f;            //!< Dimensionless vector arrow length multiplier
+  bool m_vectorWarpedGridVisible = false;                  //!< Show warped vector-field grid
+  bool m_vectorWarpedGridOverlayOnImage = true;            //!< Draw warped grid over the rendered image
   ProjectVectorWarpedGridConvention m_vectorWarpedGridConvention =
-    ProjectVectorWarpedGridConvention::SamplingField; //!< Warped grid convention.
-  float m_vectorWarpedGridPixelSpacing = 32.0f;       //!< Warped grid spacing in screen pixels.
-  float m_vectorWarpedGridVoxelSpacing = 4.0f;        //!< Warped grid spacing in image voxels.
-  float m_vectorWarpedGridMillimeterSpacing = 4.0f;   //!< Warped grid spacing in subject millimeters.
+    ProjectVectorWarpedGridConvention::SamplingField; //!< Warped grid convention
+  float m_vectorWarpedGridPixelSpacing = 32.0f;       //!< Warped grid spacing in screen pixels
+  float m_vectorWarpedGridVoxelSpacing = 4.0f;        //!< Warped grid spacing in image voxels
+  float m_vectorWarpedGridMillimeterSpacing = 4.0f;   //!< Warped grid spacing in subject millimeters
   ProjectVectorArrowOverlaySpacingMode m_vectorWarpedGridSpacingMode =
-    ProjectVectorArrowOverlaySpacingMode::Voxels; //!< Warped grid spacing units.
-  float m_vectorWarpedGridLineThickness = 1.5f;   //!< Warped grid line thickness in pixels.
-  float m_vectorWarpedGridScaleFactor = 1.0f;     //!< Dimensionless warped grid scale multiplier.
+    ProjectVectorArrowOverlaySpacingMode::Voxels; //!< Warped grid spacing units
+  float m_vectorWarpedGridLineThickness = 1.5f;   //!< Warped grid line thickness in pixels
+  float m_vectorWarpedGridScaleFactor = 1.0f;     //!< Dimensionless warped grid scale multiplier
   glm::vec4 m_vectorWarpedGridForegroundColor{
     209.0f / 255.0f,
     79.0f / 255.0f,
     1.0f,
-    1.0f};                                           //!< Warped grid foreground RGBA color.
-  glm::vec4 m_vectorWarpedGridBackgroundColor{0.0f}; //!< Warped grid background RGBA color.
-  bool m_vectorPlanarProjectionSignedColors = true;  //!< Preserve in-plane vector signs in projection color.
-  bool m_vectorLogJacobianDeterminant = false;       //!< Show log deformation Jacobian determinant.
-  bool m_ignoreAlpha = false;                        //!< Ignore alpha when rendering four-component images as RGBA.
-  InterpolationMode m_colorInterpolationMode = InterpolationMode::Linear; //!< RGB/RGBA interpolation mode.
-  std::vector<double> m_componentLevels;                                  //!< Per-component window centers.
-  std::vector<double> m_componentWindows;                                 //!< Per-component window widths.
-  std::vector<double> m_componentThresholdLows;                           //!< Per-component low thresholds.
-  std::vector<double> m_componentThresholdHighs;                          //!< Per-component high thresholds.
-  std::vector<bool> m_componentVisibility;                                //!< Per-component visibility, when present.
-  std::vector<double> m_componentOpacities;                               //!< Per-component opacity, when present.
-  std::vector<std::size_t> m_colorMapIndices;                             //!< Per-component colormap index.
-  std::vector<bool> m_colorMapInverted;                                   //!< Per-component colormap inversion.
-  std::vector<bool> m_colorMapContinuous;                                 //!< Per-component colormap interpolation.
-  std::vector<std::size_t> m_colorMapLevels;                              //!< Per-component discrete colormap levels.
-  std::vector<glm::vec3> m_colorMapHsvModifiers;                          //!< Per-component HSV colormap modifiers.
-  std::vector<InterpolationMode> m_interpolationModes;                    //!< Per-component scalar interpolation modes.
-  std::vector<double> m_foregroundThresholdLows;  //!< Per-component distance-map foreground low thresholds.
-  std::vector<double> m_foregroundThresholdHighs; //!< Per-component distance-map foreground high thresholds.
+    1.0f};                                           //!< Warped grid foreground RGBA color
+  glm::vec4 m_vectorWarpedGridBackgroundColor{0.0f}; //!< Warped grid background RGBA color
+  bool m_vectorPlanarProjectionSignedColors = true;  //!< Preserve in-plane vector signs in projection color
+  bool m_vectorLogJacobianDeterminant = false;       //!< Show log deformation Jacobian determinant
+  bool m_ignoreAlpha = false;                        //!< Ignore alpha when rendering four-component images as RGBA
+  InterpolationMode m_colorInterpolationMode = InterpolationMode::Linear; //!< RGB/RGBA interpolation mode
+  std::vector<double> m_componentLevels;                                  //!< Per-component window centers
+  std::vector<double> m_componentWindows;                                 //!< Per-component window widths
+  std::vector<double> m_componentThresholdLows;                           //!< Per-component low thresholds
+  std::vector<double> m_componentThresholdHighs;                          //!< Per-component high thresholds
+  std::vector<bool> m_componentVisibility;                                //!< Per-component visibility, when present
+  std::vector<double> m_componentOpacities;                               //!< Per-component opacity, when present
+  std::vector<std::size_t> m_colorMapIndices;                             //!< Per-component colormap index
+  std::vector<bool> m_colorMapInverted;                                   //!< Per-component colormap inversion
+  std::vector<bool> m_colorMapContinuous;                                 //!< Per-component colormap interpolation
+  std::vector<std::size_t> m_colorMapLevels;                              //!< Per-component discrete colormap levels
+  std::vector<glm::vec3> m_colorMapHsvModifiers;                          //!< Per-component HSV colormap modifiers
+  std::vector<InterpolationMode> m_interpolationModes;                    //!< Per-component scalar interpolation modes
+  std::vector<double> m_foregroundThresholdLows;  //!< Per-component distance-map foreground low thresholds
+  std::vector<double> m_foregroundThresholdHighs; //!< Per-component distance-map foreground high thresholds
 
-  ProjectEdgeDetectionMethod m_edgeDetectionMethod = ProjectEdgeDetectionMethod::Voxel; //!< Edge sampling space.
-  bool m_showEdges = false;                                                             //!< Show edge rendering.
-  bool m_thresholdEdges = false;           //!< Show hard thresholded edges.
-  bool m_thinPixelEdges = true;            //!< Thin pixel-space edges with non-maximum suppression.
-  bool m_overlayEdges = false;             //!< Overlay edges on the image.
-  bool m_colormapEdges = false;            //!< Color edges with the image colormap.
-  double m_edgeMagnitude = 0.25;           //!< Voxel-space edge scale or threshold.
-  double m_pixelEdgeScale = 2.0;           //!< Pixel-space edge magnitude scale.
-  double m_pixelEdgeThreshold = 0.2;       //!< Pixel-space edge hard-edge threshold.
-  glm::vec3 m_edgeColor{1.0f, 0.0f, 1.0f}; //!< Solid edge RGB color.
-  double m_edgeOpacity = 1.0;              //!< Solid edge opacity.
+  ProjectEdgeDetectionMethod m_edgeDetectionMethod = ProjectEdgeDetectionMethod::Voxel; //!< Edge sampling space
+  bool m_showEdges = false;                                                             //!< Show edge rendering
+  bool m_thresholdEdges = false;                                                        //!< Show hard thresholded edges
+  bool m_thinPixelEdges = true;            //!< Thin pixel-space edges with non-maximum suppression
+  bool m_overlayEdges = false;             //!< Overlay edges on the image
+  bool m_colormapEdges = false;            //!< Color edges with the image colormap
+  double m_edgeMagnitude = 0.25;           //!< Voxel-space edge scale or threshold
+  double m_pixelEdgeScale = 2.0;           //!< Pixel-space edge magnitude scale
+  double m_pixelEdgeThreshold = 0.2;       //!< Pixel-space edge hard-edge threshold
+  glm::vec3 m_edgeColor{1.0f, 0.0f, 1.0f}; //!< Solid edge RGB color
+  double m_edgeOpacity = 1.0;              //!< Solid edge opacity
 
-  bool m_useDistanceMapForRaycasting = true;      //!< Use distance maps for image raycasting.
-  bool m_isosurfacesVisible = true;               //!< Show image isosurfaces.
-  bool m_applyImageColormapToIsosurfaces = false; //!< Color isosurfaces with the image colormap.
-  bool m_showIsocontoursIn2D = true;              //!< Show 2D isocontours.
-  double m_isocontourLineWidthIn2D = 2.0;         //!< 2D isocontour line width.
-  float m_isosurfaceOpacityModulator = 1.0f;      //!< Isosurface opacity multiplier.
+  bool m_useDistanceMapForRaycasting = true;      //!< Use distance maps for image raycasting
+  bool m_isosurfacesVisible = true;               //!< Show image isosurfaces
+  bool m_applyImageColormapToIsosurfaces = false; //!< Color isosurfaces with the image colormap
+  bool m_showIsocontoursIn2D = true;              //!< Show 2D isocontours
+  double m_isocontourLineWidthIn2D = 2.0;         //!< 2D isocontour line width
+  float m_isosurfaceOpacityModulator = 1.0f;      //!< Isosurface opacity multiplier
 };
 
 /**
@@ -414,8 +414,8 @@ struct LandmarkGroup
  */
 struct ImageIsosurface
 {
-  uint32_t m_component = 0; //!< Image component index that owns this isosurface.
-  Isosurface m_surface;     //!< User-editable isosurface settings.
+  uint32_t m_component = 0; //!< Image component index that owns this isosurface
+  Isosurface m_surface;     //!< User-editable isosurface settings
 };
 
 /**
@@ -427,10 +427,10 @@ struct ImageIsosurface
  */
 struct DicomSource
 {
-  std::filesystem::path m_rootPath;           //!< Root folder used to discover the series.
-  std::string m_studyInstanceUid;             //!< Study Instance UID used to disambiguate the series.
-  std::string m_seriesInstanceUid;            //!< Series Instance UID to reload.
-  std::vector<std::filesystem::path> m_files; //!< Slice files in series order.
+  std::filesystem::path m_rootPath;           //!< Root folder used to discover the series
+  std::string m_studyInstanceUid;             //!< Study Instance UID used to disambiguate the series
+  std::string m_seriesInstanceUid;            //!< Series Instance UID to reload
+  std::vector<std::filesystem::path> m_files; //!< Slice files in series order
 };
 
 /**
@@ -500,7 +500,7 @@ struct Image
  */
 struct ProjectInterfaceSettings
 {
-  bool m_synchronizeTimeSeries = true; //!< Synchronize displayed time points across time-series images.
+  bool m_synchronizeTimeSeries = true; //!< Synchronize displayed time points across time-series images
 };
 
 /**
@@ -508,17 +508,17 @@ struct ProjectInterfaceSettings
  */
 struct ProjectViewSettings
 {
-  bool m_showImageBorders = true;                    //!< Show image borders in all view layouts.
-  bool m_showImageBordersInLightboxViews = false;    //!< Show image borders in lightbox layout tiles.
-  bool m_showCrosshairs = true;                      //!< Show crosshairs in all views.
-  bool m_showCrosshairsInLightboxViews = true;       //!< Show crosshairs in lightbox layout tiles.
-  bool m_showAnatomicalLabels = true;                //!< Show anatomical direction labels in all views.
-  bool m_showAnatomicalLabelsInLightboxViews = true; //!< Show anatomical direction labels in lightbox layout tiles.
-  bool m_showScaleBars = false;                      //!< Show scale bars in all views.
-  bool m_showScaleBarsInLightboxViews = false;       //!< Show scale bars in lightbox layout tiles.
-  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human; //!< Anatomical label convention.
-  bool m_lockAnatomicalDirectionsToReferenceImage = false; //!< Lock anatomical axes to the reference image.
-  CrosshairsSnapping m_crosshairsSnapping = CrosshairsSnapping::Disabled; //!< Crosshairs snapping behavior.
+  bool m_showImageBorders = true;                    //!< Show image borders in all view layouts
+  bool m_showImageBordersInLightboxViews = false;    //!< Show image borders in lightbox layout tiles
+  bool m_showCrosshairs = true;                      //!< Show crosshairs in all views
+  bool m_showCrosshairsInLightboxViews = true;       //!< Show crosshairs in lightbox layout tiles
+  bool m_showAnatomicalLabels = true;                //!< Show anatomical direction labels in all views
+  bool m_showAnatomicalLabelsInLightboxViews = true; //!< Show anatomical direction labels in lightbox layout tiles
+  bool m_showScaleBars = false;                      //!< Show scale bars in all views
+  bool m_showScaleBarsInLightboxViews = false;       //!< Show scale bars in lightbox layout tiles
+  AnatomicalLabelType m_anatomicalLabelType = AnatomicalLabelType::Human; //!< Anatomical label convention
+  bool m_lockAnatomicalDirectionsToReferenceImage = false; //!< Lock anatomical axes to the reference image
+  CrosshairsSnapping m_crosshairsSnapping = CrosshairsSnapping::Disabled; //!< Crosshairs snapping behavior
 };
 
 /**

@@ -25,8 +25,8 @@ enum class OutputStream
  */
 struct EnvironmentVariable
 {
-  std::string name;  //!< Variable name.
-  std::string value; //!< Variable value.
+  std::string name;  //!< Variable name
+  std::string value; //!< Variable value
 };
 
 /**
@@ -34,9 +34,9 @@ struct EnvironmentVariable
  */
 struct ProcessOptions
 {
-  std::filesystem::path workingDirectory;       //!< Process working directory.
-  std::vector<EnvironmentVariable> environment; //!< Environment overrides.
-  bool mergeStdErrIntoStdOut = false;           //!< True to treat stderr lines as stdout lines.
+  std::filesystem::path workingDirectory;       //!< Process working directory
+  std::vector<EnvironmentVariable> environment; //!< Environment overrides
+  bool mergeStdErrIntoStdOut = false;           //!< True to treat stderr lines as stdout lines
 };
 
 /**
@@ -44,8 +44,8 @@ struct ProcessOptions
  */
 struct ProcessOutputLine
 {
-  OutputStream stream = OutputStream::Stdout; //!< Source stream or Entropy command marker.
-  std::string text;                           //!< Line text without trailing newline.
+  OutputStream stream = OutputStream::Stdout; //!< Source stream or Entropy command marker
+  std::string text;                           //!< Line text without trailing newline
 };
 
 /**
@@ -53,10 +53,10 @@ struct ProcessOutputLine
  */
 struct ProcessResult
 {
-  int exitCode = 0;           //!< Native process exit code.
-  bool cancelled = false;     //!< True when Entropy cancelled the process.
-  bool launchFailed = false;  //!< True when the process could not be started.
-  std::string failureMessage; //!< Launch/runtime failure explanation.
+  int exitCode = 0;           //!< Native process exit code
+  bool cancelled = false;     //!< True when Entropy cancelled the process
+  bool launchFailed = false;  //!< True when the process could not be started
+  std::string failureMessage; //!< Launch/runtime failure explanation
   /**
    * @brief Captured stdout/stderr lines in observed order.
    *
@@ -71,8 +71,8 @@ struct ProcessResult
  */
 struct ProcessCallbacks
 {
-  std::function<void(const ProcessOutputLine&)> onOutputLine; //!< Called for every output line.
-  std::function<bool()> shouldCancel;                         //!< True when the process should be cancelled.
+  std::function<void(const ProcessOutputLine&)> onOutputLine; //!< Called for every output line
+  std::function<bool()> shouldCancel;                         //!< True when the process should be cancelled
 };
 
 /**

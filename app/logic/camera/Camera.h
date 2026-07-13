@@ -169,7 +169,7 @@ private:
   std::unique_ptr<Projection> m_projection;
 
   /// Functional providing the start frame of the camera relative to World space.
-  /// If null, then identity is used for anatomy_T_start.
+  /// If null, then identity is used for anatomy_T_start
   GetterType<CoordinateFrame> m_anatomy_T_start_provider;
 
   /// Transformation of the camera relative to its start frame.

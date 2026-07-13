@@ -129,12 +129,12 @@ private:
 
   uuid m_uid; //!< Layout uid
 
-  bool m_isLightbox;                      //!< Layout-level controls affect all views.
-  LayoutKind m_kind = LayoutKind::Custom; //!< Layout kind used for display and serialization.
-  std::string m_displayName = "Custom";   //!< User name for custom non-lightbox layouts.
+  bool m_isLightbox;                      //!< Layout-level controls affect all views
+  LayoutKind m_kind = LayoutKind::Custom; //!< Layout kind used for display and serialization
+  std::string m_displayName = "Custom";   //!< User name for custom non-lightbox layouts
 
-  std::unordered_map<uuid, std::unique_ptr<View>> m_views; //!< Views keyed by UID.
-  std::vector<uuid> m_orderedViewUids;                     //!< View UIDs in display order.
+  std::unordered_map<uuid, std::unique_ptr<View>> m_views; //!< Views keyed by UID
+  std::vector<uuid> m_orderedViewUids;                     //!< View UIDs in display order
 
-  viewer::CameraSyncGroups m_cameraSyncGroups; //!< Camera sync groups by mode.
+  viewer::CameraSyncGroups m_cameraSyncGroups; //!< Camera sync groups by mode
 };

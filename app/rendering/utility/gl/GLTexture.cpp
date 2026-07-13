@@ -991,9 +991,9 @@ void GLTexture::setBorderColor(const glm::vec4& color)
   glSamplerParameterfv(m_samplerID, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
 }
 
-void GLTexture::setAutoGenerateMipmaps(bool set)
+void GLTexture::setAutoGenerateMipmaps(bool enabled)
 {
-  m_autoGenerateMipmaps = set;
+  m_autoGenerateMipmaps = enabled;
 
   if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
         Target::Texture2DMultisampleArray == m_target))

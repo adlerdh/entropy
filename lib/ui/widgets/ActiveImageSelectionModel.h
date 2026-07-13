@@ -7,9 +7,9 @@ namespace ui::active_image_selection
 
 enum class SelectionState
 {
-  Empty,  //!< There are no images to select.
-  Valid,  //!< The active index names an available image.
-  Invalid //!< Images exist, but the active index is out of range.
+  Empty,  //!< There are no images to select
+  Valid,  //!< The active index names an available image
+  Invalid //!< Images exist, but the active index is out of range
 };
 
 /**

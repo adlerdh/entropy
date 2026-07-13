@@ -13,9 +13,9 @@ namespace registration
  */
 struct CommandSpec
 {
-  std::string description;       //!< User-facing step description.
-  std::string executable;        //!< Executable or interpreter path.
-  std::vector<std::string> args; //!< Arguments passed without shell interpretation.
+  std::string description;       //!< User-facing step description
+  std::string executable;        //!< Executable or interpreter path
+  std::vector<std::string> args; //!< Arguments passed without shell interpretation
 };
 
 /**
@@ -23,14 +23,14 @@ struct CommandSpec
  */
 struct CommandGenerationOptions
 {
-  std::string greedyExecutable = "greedy";                     //!< Greedy command or executable path.
-  std::string antsRegistrationExecutable = "antsRegistration"; //!< ANTs registration executable path.
+  std::string greedyExecutable = "greedy";                     //!< Greedy command or executable path
+  std::string antsRegistrationExecutable = "antsRegistration"; //!< ANTs registration executable path
   /** @brief ANTs transform application executable path. */
   std::string antsApplyTransformsExecutable = "antsApplyTransforms";
   /** @brief ANTs transform conversion executable path. */
   std::string antsConvertTransformFileExecutable = "ConvertTransformFile";
-  std::string fireAntsPythonExecutable = "python";              //!< Python executable used for FireANTs.
-  std::string fireAntsBridgeModule = "entropy_fireants_bridge"; //!< Python bridge module name.
+  std::string fireAntsPythonExecutable = "python";              //!< Python executable used for FireANTs
+  std::string fireAntsBridgeModule = "entropy_fireants_bridge"; //!< Python bridge module name
 };
 
 /**

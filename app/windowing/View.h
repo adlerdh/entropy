@@ -113,7 +113,7 @@ private:
 
   const uuid m_uid; //!< This view's uid
 
-  ViewOffsetSetting m_offset; //!< Slice offset behavior.
+  ViewOffsetSetting m_offset; //!< Slice offset behavior
 
   ProjectionType m_projectionType;
   Camera m_camera;
@@ -125,11 +125,11 @@ private:
   const CrosshairsState& m_crosshairs;
   const ViewAlignmentMode& m_viewAlignment;
 
-  std::optional<uuid> m_cameraRotationSyncGroupUid;    //!< Rotation sync group.
-  std::optional<uuid> m_cameraTranslationSyncGroupUid; //!< Translation sync group.
-  std::optional<uuid> m_cameraZoomSyncGroupUid;        //!< Zoom sync group.
+  std::optional<uuid> m_cameraRotationSyncGroupUid;    //!< Rotation sync group
+  std::optional<uuid> m_cameraTranslationSyncGroupUid; //!< Translation sync group
+  std::optional<uuid> m_cameraZoomSyncGroupUid;        //!< Zoom sync group
 
-  float m_clipPlaneDepth; //!< Current image-plane depth in clip coordinates.
+  float m_clipPlaneDepth; //!< Current image-plane depth in clip coordinates
 
   CoordinateFrame m_anatomy_T_start;
 };

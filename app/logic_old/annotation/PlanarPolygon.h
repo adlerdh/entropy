@@ -109,15 +109,15 @@ private:
 
   /// Polygon stored as vector of vectors of points. The first vector defines the outer polygon
   /// boundary; subsequent vectors define holes in the main polygon. Any winding order for the
-  /// outer boundary and holes is valid.
+  /// outer boundary and holes is valid
   std::vector<std::vector<PointType> > m_vertices;
 
   /// Vector of indices that refer to the vertices of the input polygon. Three consecutive indices
-  /// form a clockwise triangle.
+  /// form a clockwise triangle
   std::vector<IndexType> m_triangulation;
 
   /// A unique ID that is re-generated every time anything changes for this polygon,
-  /// including vertices and triangulation.
+  /// including vertices and triangulation
   uuids::uuid m_currentUid;
 
   /// 2D axis-aligned bounding box of the polygon; set to none if the polygon is empty.

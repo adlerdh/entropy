@@ -48,7 +48,7 @@ uint64_t VertexAttributeInfo::vertexCount() const
   return m_vertexCount;
 }
 
-void VertexAttributeInfo::setVertexCount(uint64_t n)
+void VertexAttributeInfo::setVertexCount(uint64_t vertexCount)
 {
-  m_vertexCount = n;
+  m_vertexCount = vertexCount;
 }

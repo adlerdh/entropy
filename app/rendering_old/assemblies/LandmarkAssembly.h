@@ -96,11 +96,9 @@ private:
   /// Mesh record passed down to all landmark drawables
   std::shared_ptr<MeshGpuRecord> m_meshGpuRecord;
 
-  /// Root for landmark groups in 2D views.
-  std::shared_ptr<Transformation> m_rootFor2dViews;
+  std::shared_ptr<Transformation> m_rootFor2dViews; //!< Root for landmark groups in 2D views
 
-  /// Root for landmark groups in 3D views.
-  std::shared_ptr<Transformation> m_rootFor3dViews;
+  std::shared_ptr<Transformation> m_rootFor3dViews; //!< Root for landmark groups in 3D views
 
   /// Hash map of landmark group drawables. (Key: UID of the landmark group).
   /// @todo This map will hold separate 2D and 3D versions of the drawables.

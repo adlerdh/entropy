@@ -471,7 +471,7 @@ private:
 
   /// Queue of UIDs referring to task UIDs of futures.
   /// These are completed isosurface mesh generation tasks that now need
-  /// mesh generation to be run on the GPU.
+  /// mesh generation to be run on the GPU
   std::queue<uuids::uuid> m_isosurfaceTaskQueueForGpuMeshGeneration;
 
   /// Mutex protecting \c m_isosurfaceTaskQueueForGpuMeshGeneration

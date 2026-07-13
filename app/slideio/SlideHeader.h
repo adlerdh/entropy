@@ -48,8 +48,7 @@ private:
 
   glm::vec3 m_backgroundColor;
 
-  /// Flag for whether the slide contains one or more pixels with alpha < 255.
-  bool m_hasTransparency;
+  bool m_hasTransparency; //!< Flag for whether the slide contains one or more pixels with alpha < 255
 
   SlideAssociatedImages m_associatedImages;
 };

@@ -8,8 +8,8 @@ namespace rendering
 /// OpenGL texture target used for an uploaded image or segmentation texture.
 enum class TextureDimension
 {
-  Texture3D, //!< Texture is uploaded as GL_TEXTURE_3D.
-  Texture2D  //!< Planar texture is uploaded as GL_TEXTURE_2D because it exceeds 3D texture limits.
+  Texture3D, //!< Texture is uploaded as GL_TEXTURE_3D
+  Texture2D  //!< Planar texture is uploaded as GL_TEXTURE_2D because it exceeds 3D texture limits
 };
 
 /**

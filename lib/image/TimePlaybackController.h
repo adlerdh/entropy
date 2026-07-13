@@ -7,7 +7,7 @@
  */
 struct TimePlaybackState
 {
-  double lastAdvanceTimeSeconds = 0.0; //!< Wall-clock time of the previous frame advance.
+  double lastAdvanceTimeSeconds = 0.0; //!< Wall-clock time of the previous frame advance
 };
 
 /**
@@ -15,12 +15,12 @@ struct TimePlaybackState
  */
 struct TimePlaybackInput
 {
-  bool playing = false;            //!< Whether playback is currently running.
-  bool loop = true;                //!< Whether playback wraps from the last frame to the first.
-  uint32_t activeTimePoint = 0;    //!< Currently displayed time point.
-  uint32_t numTimePoints = 1;      //!< Number of available time points.
-  double framePeriodSeconds = 0.1; //!< Playback period for one frame.
-  double nowSeconds = 0.0;         //!< Current monotonic time in seconds.
+  bool playing = false;            //!< Whether playback is currently running
+  bool loop = true;                //!< Whether playback wraps from the last frame to the first
+  uint32_t activeTimePoint = 0;    //!< Currently displayed time point
+  uint32_t numTimePoints = 1;      //!< Number of available time points
+  double framePeriodSeconds = 0.1; //!< Playback period for one frame
+  double nowSeconds = 0.0;         //!< Current monotonic time in seconds
 };
 
 /**
@@ -28,10 +28,10 @@ struct TimePlaybackInput
  */
 struct TimePlaybackUpdate
 {
-  uint32_t timePoint = 0;      //!< Time point that should be displayed after the update.
-  bool playing = false;        //!< Whether playback should remain active.
-  bool advanced = false;       //!< True when the displayed frame changed.
-  bool playingChanged = false; //!< True when playback should be started or stopped.
+  uint32_t timePoint = 0;      //!< Time point that should be displayed after the update
+  bool playing = false;        //!< Whether playback should remain active
+  bool advanced = false;       //!< True when the displayed frame changed
+  bool playingChanged = false; //!< True when playback should be started or stopped
 };
 
 /**

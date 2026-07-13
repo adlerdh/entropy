@@ -30,9 +30,9 @@ public:
 private:
   void updateTransforms();
 
-  glm::vec4 m_windowClipViewport;    //!< Bounds in enclosing-window clip coordinates.
-  glm::mat4 m_windowClip_T_viewClip; //!< View clip to enclosing-window clip transform.
-  glm::mat4 m_viewClip_T_windowClip; //!< Enclosing-window clip to view clip transform.
+  glm::vec4 m_windowClipViewport;    //!< Bounds in enclosing-window clip coordinates
+  glm::mat4 m_windowClip_T_viewClip; //!< View clip to enclosing-window clip transform
+  glm::mat4 m_viewClip_T_windowClip; //!< Enclosing-window clip to view clip transform
 };
 
 } // namespace viewer

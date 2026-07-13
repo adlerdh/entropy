@@ -15,22 +15,22 @@ namespace registration
  */
 enum class ArtifactRole
 {
-  JobSpec,              //!< Backend bridge job specification.
-  ResultManifest,       //!< Backend bridge result manifest.
-  AffineTransform,      //!< Affine transform produced by registration.
-  InverseWarp,          //!< Fixed-to-moving sampling warp.
-  ForwardWarp,          //!< Moving-to-fixed point warp.
-  WarpedImage,          //!< Warped moving image.
-  WarpedSegmentation,   //!< Warped moving segmentation.
-  TransformedLandmarks, //!< Transformed landmarks or point annotations.
-  TransformedSurface,   //!< Transformed surface mesh.
-  FixedMask,            //!< Exported fixed mask input.
-  MovingMask,           //!< Exported moving mask input.
-  AuxiliaryFixedImage,  //!< Exported fixed auxiliary image input.
-  AuxiliaryMovingImage, //!< Exported moving auxiliary image input.
-  FixedLandmarks,       //!< Exported fixed landmarks input.
-  MovingLandmarks,      //!< Exported moving landmarks input.
-  Surface               //!< Exported surface input.
+  JobSpec,              //!< Backend bridge job specification
+  ResultManifest,       //!< Backend bridge result manifest
+  AffineTransform,      //!< Affine transform produced by registration
+  InverseWarp,          //!< Fixed-to-moving sampling warp
+  ForwardWarp,          //!< Moving-to-fixed point warp
+  WarpedImage,          //!< Warped moving image
+  WarpedSegmentation,   //!< Warped moving segmentation
+  TransformedLandmarks, //!< Transformed landmarks or point annotations
+  TransformedSurface,   //!< Transformed surface mesh
+  FixedMask,            //!< Exported fixed mask input
+  MovingMask,           //!< Exported moving mask input
+  AuxiliaryFixedImage,  //!< Exported fixed auxiliary image input
+  AuxiliaryMovingImage, //!< Exported moving auxiliary image input
+  FixedLandmarks,       //!< Exported fixed landmarks input
+  MovingLandmarks,      //!< Exported moving landmarks input
+  Surface               //!< Exported surface input
 };
 
 /**
@@ -38,10 +38,10 @@ enum class ArtifactRole
  */
 struct InputArtifact
 {
-  ArtifactRole role = ArtifactRole::JobSpec; //!< Input role.
-  DataRef source;                            //!< Entropy object that supplies the input.
-  std::filesystem::path path;                //!< File path passed to the backend.
-  bool exportRequired = false;               //!< True when Entropy must write the file first.
+  ArtifactRole role = ArtifactRole::JobSpec; //!< Input role
+  DataRef source;                            //!< Entropy object that supplies the input
+  std::filesystem::path path;                //!< File path passed to the backend
+  bool exportRequired = false;               //!< True when Entropy must write the file first
 };
 
 /**

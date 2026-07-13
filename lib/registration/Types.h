@@ -169,10 +169,10 @@ enum class ProgressEventKind : std::uint8_t
  */
 struct DataRef
 {
-  std::string uid;                      //!< Entropy object UID, when available.
-  std::filesystem::path fileName;       //!< File path supplied to the backend.
-  std::string displayName;              //!< User-facing name.
-  DataSource source = DataSource::None; //!< Entropy object category.
+  std::string uid;                      //!< Entropy object UID, when available
+  std::filesystem::path fileName;       //!< File path supplied to the backend
+  std::string displayName;              //!< User-facing name
+  DataSource source = DataSource::None; //!< Entropy object category
 };
 
 /**
@@ -180,10 +180,10 @@ struct DataRef
  */
 struct AuxiliaryImagePair
 {
-  DataRef fixed;               //!< Fixed-space auxiliary image.
-  DataRef moving;              //!< Moving-space auxiliary image.
-  double weight = 1.0;         //!< Backend metric weight when supported.
-  Metric metric = Metric::NCC; //!< Metric used for this pair when supported.
+  DataRef fixed;               //!< Fixed-space auxiliary image
+  DataRef moving;              //!< Moving-space auxiliary image
+  double weight = 1.0;         //!< Backend metric weight when supported
+  Metric metric = Metric::NCC; //!< Metric used for this pair when supported
 };
 
 /**
@@ -197,11 +197,11 @@ struct LandmarkOptions
     ByOrder
   };
 
-  bool enabled = false;                          //!< True when landmarks are part of the job.
-  DataRef fixedLandmarks;                        //!< Fixed/reference landmark set.
-  DataRef movingLandmarks;                       //!< Moving landmark set.
-  PairingMode pairingMode = PairingMode::ByName; //!< Matching rule.
-  std::size_t matchedPairs = 0;                  //!< Count after validation/export.
+  bool enabled = false;                          //!< True when landmarks are part of the job
+  DataRef fixedLandmarks;                        //!< Fixed/reference landmark set
+  DataRef movingLandmarks;                       //!< Moving landmark set
+  PairingMode pairingMode = PairingMode::ByName; //!< Matching rule
+  std::size_t matchedPairs = 0;                  //!< Count after validation/export
 };
 
 /**
@@ -209,15 +209,15 @@ struct LandmarkOptions
  */
 struct OutputRequests
 {
-  bool loadWarpedImage = true;                  //!< Import the warped moving image.
-  bool loadAffineTransform = true;              //!< Apply the affine transform to the moving image.
-  bool loadInverseWarp = true;                  //!< Import the fixed-to-moving sampling warp.
-  bool loadForwardWarp = true;                  //!< Import the moving-to-fixed point warp when produced.
-  bool applyWarpToMovingImage = true;           //!< Assign imported warps to the moving image.
-  bool loadWarpedSegmentation = false;          //!< Import warped moving segmentation output.
-  bool transformLandmarksAndAnnotations = true; //!< Transform point annotations when a forward warp exists.
-  bool transformSurfaces = false;               //!< Import transformed surface outputs.
-  bool makeWarpedImageActive = false;           //!< Select the warped image after import.
+  bool loadWarpedImage = true;                  //!< Import the warped moving image
+  bool loadAffineTransform = true;              //!< Apply the affine transform to the moving image
+  bool loadInverseWarp = true;                  //!< Import the fixed-to-moving sampling warp
+  bool loadForwardWarp = true;                  //!< Import the moving-to-fixed point warp when produced
+  bool applyWarpToMovingImage = true;           //!< Assign imported warps to the moving image
+  bool loadWarpedSegmentation = false;          //!< Import warped moving segmentation output
+  bool transformLandmarksAndAnnotations = true; //!< Transform point annotations when a forward warp exists
+  bool transformSurfaces = false;               //!< Import transformed surface outputs
+  bool makeWarpedImageActive = false;           //!< Select the warped image after import
 };
 
 /**
@@ -225,16 +225,16 @@ struct OutputRequests
  */
 struct ParameterSchema
 {
-  std::string key;                          //!< Stable parameter key.
-  std::string label;                        //!< Visible widget label.
-  std::string tooltip;                      //!< Detailed explanation shown on hover.
-  ParameterKind kind = ParameterKind::Text; //!< Widget/value category.
-  std::string defaultValue;                 //!< Backend-neutral textual default.
-  std::optional<double> minValue;           //!< Lower numeric bound, if applicable.
-  std::optional<double> maxValue;           //!< Upper numeric bound, if applicable.
-  std::vector<std::string> choices;         //!< Choice labels for combo/radio widgets.
-  bool advanced = false;                    //!< Hide behind Advanced by default.
-  bool expert = false;                      //!< Hide behind Expert mode by default.
+  std::string key;                          //!< Stable parameter key
+  std::string label;                        //!< Visible widget label
+  std::string tooltip;                      //!< Detailed explanation shown on hover
+  ParameterKind kind = ParameterKind::Text; //!< Widget/value category
+  std::string defaultValue;                 //!< Backend-neutral textual default
+  std::optional<double> minValue;           //!< Lower numeric bound, if applicable
+  std::optional<double> maxValue;           //!< Upper numeric bound, if applicable
+  std::vector<std::string> choices;         //!< Choice labels for combo/radio widgets
+  bool advanced = false;                    //!< Hide behind Advanced by default
+  bool expert = false;                      //!< Hide behind Expert mode by default
 };
 
 /**
@@ -242,8 +242,8 @@ struct ParameterSchema
  */
 struct ParameterValue
 {
-  std::string key;   //!< Stable parameter key.
-  std::string value; //!< Current text-form value.
+  std::string key;   //!< Stable parameter key
+  std::string value; //!< Current text-form value
 };
 
 /**
@@ -251,12 +251,12 @@ struct ParameterValue
  */
 struct BackendCapabilities
 {
-  Backend backend = Backend::Greedy;           //!< Backend described by this schema.
-  std::vector<TransformModel> transformModels; //!< Supported transform models.
-  std::vector<Metric> metrics;                 //!< Supported metrics/losses.
-  std::vector<Feature> features;               //!< Supported object/output categories.
-  std::vector<Interpolation> interpolations;   //!< Supported output interpolation modes.
-  std::vector<ParameterSchema> parameters;     //!< Parameters shown by the reactive UI.
+  Backend backend = Backend::Greedy;           //!< Backend described by this schema
+  std::vector<TransformModel> transformModels; //!< Supported transform models
+  std::vector<Metric> metrics;                 //!< Supported metrics/losses
+  std::vector<Feature> features;               //!< Supported object/output categories
+  std::vector<Interpolation> interpolations;   //!< Supported output interpolation modes
+  std::vector<ParameterSchema> parameters;     //!< Parameters shown by the reactive UI
 };
 
 /**
@@ -264,27 +264,27 @@ struct BackendCapabilities
  */
 struct JobSpec
 {
-  int version = 1;                                                  //!< JSON schema version.
-  Backend backend = Backend::Greedy;                                //!< Selected backend.
-  int dimension = 3;                                                //!< Spatial dimension passed to external backends.
-  DataRef fixedImage;                                               //!< Fixed/reference image.
-  DataRef movingImage;                                              //!< Moving image.
-  TransformModel transformModel = TransformModel::AffineDeformable; //!< Requested transform model.
-  Metric metric = Metric::WNCC;                                     //!< Primary metric/loss.
-  std::string iterationSchedule = "128x64x32";                      //!< Multi-resolution iteration schedule.
-  bool useImageCentersForInitialization = false;                    //!< Initialize from image centers when supported.
-  bool useCurrentAffineTransformsForInitialization = true;          //!< Initialize from Entropy's current affine state.
-  std::filesystem::path initialAffineTransform;                     //!< Backend-readable initial affine transform file.
-  DataRef fixedMask;                                                //!< Optional fixed mask.
-  DataRef movingMask;                                               //!< Optional moving mask.
-  std::vector<AuxiliaryImagePair> auxiliaryImagePairs;              //!< Additional image/label constraints.
-  LandmarkOptions landmarks;                                        //!< Landmark inputs and matching.
-  std::vector<DataRef> surfaces;                                    //!< Surfaces requested as transformed outputs.
-  OutputRequests outputs;                                           //!< Requested imports and generated outputs.
-  std::filesystem::path outputDirectory;                            //!< Job working/output directory.
-  std::string outputPrefix;                                         //!< File prefix for generated artifacts.
-  std::vector<ParameterValue> parameterValues;                      //!< Backend parameter values selected in setup UI.
-  std::vector<std::string> extraArguments;                          //!< Expert raw backend arguments.
+  int version = 1;                                                  //!< JSON schema version
+  Backend backend = Backend::Greedy;                                //!< Selected backend
+  int dimension = 3;                                                //!< Spatial dimension passed to external backends
+  DataRef fixedImage;                                               //!< Fixed/reference image
+  DataRef movingImage;                                              //!< Moving image
+  TransformModel transformModel = TransformModel::AffineDeformable; //!< Requested transform model
+  Metric metric = Metric::WNCC;                                     //!< Primary metric/loss
+  std::string iterationSchedule = "128x64x32";                      //!< Multi-resolution iteration schedule
+  bool useImageCentersForInitialization = false;                    //!< Initialize from image centers when supported
+  bool useCurrentAffineTransformsForInitialization = true;          //!< Initialize from Entropy's current affine state
+  std::filesystem::path initialAffineTransform;                     //!< Backend-readable initial affine transform file
+  DataRef fixedMask;                                                //!< Optional fixed mask
+  DataRef movingMask;                                               //!< Optional moving mask
+  std::vector<AuxiliaryImagePair> auxiliaryImagePairs;              //!< Additional image/label constraints
+  LandmarkOptions landmarks;                                        //!< Landmark inputs and matching
+  std::vector<DataRef> surfaces;                                    //!< Surfaces requested as transformed outputs
+  OutputRequests outputs;                                           //!< Requested imports and generated outputs
+  std::filesystem::path outputDirectory;                            //!< Job working/output directory
+  std::string outputPrefix;                                         //!< File prefix for generated artifacts
+  std::vector<ParameterValue> parameterValues;                      //!< Backend parameter values selected in setup UI
+  std::vector<std::string> extraArguments;                          //!< Expert raw backend arguments
 };
 
 /**
@@ -292,18 +292,18 @@ struct JobSpec
  */
 struct ProgressEvent
 {
-  ProgressEventKind kind = ProgressEventKind::Progress; //!< Event category.
-  std::string jobId;                                    //!< Backend-neutral job identifier.
-  std::string stageName;                                //!< Current registration stage.
-  std::optional<int> stageIndex;                        //!< Zero-based stage index.
-  std::optional<int> levelIndex;                        //!< Zero-based pyramid level index.
-  std::optional<int> iteration;                         //!< Current iteration.
-  std::optional<int> iterations;                        //!< Total iterations in this stage/level.
-  std::optional<double> progress;                       //!< Normalized progress in [0, 1].
-  std::optional<double> loss;                           //!< Latest metric/loss value.
-  std::string message;                                  //!< Human-readable status/warning/error text.
-  std::filesystem::path artifactPath;                   //!< Generated artifact path for artifact events.
-  std::string artifactKind;                             //!< Artifact role, such as warped_image or inverse_warp.
+  ProgressEventKind kind = ProgressEventKind::Progress; //!< Event category
+  std::string jobId;                                    //!< Backend-neutral job identifier
+  std::string stageName;                                //!< Current registration stage
+  std::optional<int> stageIndex;                        //!< Zero-based stage index
+  std::optional<int> levelIndex;                        //!< Zero-based pyramid level index
+  std::optional<int> iteration;                         //!< Current iteration
+  std::optional<int> iterations;                        //!< Total iterations in this stage/level
+  std::optional<double> progress;                       //!< Normalized progress in [0, 1]
+  std::optional<double> loss;                           //!< Latest metric/loss value
+  std::string message;                                  //!< Human-readable status/warning/error text
+  std::filesystem::path artifactPath;                   //!< Generated artifact path for artifact events
+  std::string artifactKind;                             //!< Artifact role, such as warped_image or inverse_warp
 };
 
 /**
@@ -311,22 +311,22 @@ struct ProgressEvent
  */
 struct ResultManifest
 {
-  int version = 1;                                         //!< JSON schema version.
-  bool success = false;                                    //!< True when the backend completed successfully.
-  Backend backend = Backend::Greedy;                       //!< Backend that produced the result.
-  std::string fixedImageUid;                               //!< Fixed/reference image UID.
-  std::string movingImageUid;                              //!< Moving image UID.
-  std::filesystem::path warpedImage;                       //!< Warped moving image output.
-  std::filesystem::path inverseWarp;                       //!< Fixed-to-moving sampling warp.
-  std::filesystem::path forwardWarp;                       //!< Moving-to-fixed point warp.
-  std::filesystem::path affineTransform;                   //!< Affine/composite transform path.
-  std::vector<std::filesystem::path> warpedSegmentations;  //!< Warped segmentation outputs.
-  std::vector<std::filesystem::path> transformedSurfaces;  //!< Transformed surface outputs.
-  std::vector<std::filesystem::path> transformedLandmarks; //!< Transformed landmark outputs.
-  std::vector<std::string> warnings;                       //!< Non-fatal warnings emitted by backend/import.
-  std::string errorMessage;                                //!< Failure summary.
-  std::string warpConvention;                              //!< Explicit warp direction/coordinate convention.
-  double elapsedSeconds = 0.0;                             //!< Runtime reported by Entropy/backend.
+  int version = 1;                                         //!< JSON schema version
+  bool success = false;                                    //!< True when the backend completed successfully
+  Backend backend = Backend::Greedy;                       //!< Backend that produced the result
+  std::string fixedImageUid;                               //!< Fixed/reference image UID
+  std::string movingImageUid;                              //!< Moving image UID
+  std::filesystem::path warpedImage;                       //!< Warped moving image output
+  std::filesystem::path inverseWarp;                       //!< Fixed-to-moving sampling warp
+  std::filesystem::path forwardWarp;                       //!< Moving-to-fixed point warp
+  std::filesystem::path affineTransform;                   //!< Affine/composite transform path
+  std::vector<std::filesystem::path> warpedSegmentations;  //!< Warped segmentation outputs
+  std::vector<std::filesystem::path> transformedSurfaces;  //!< Transformed surface outputs
+  std::vector<std::filesystem::path> transformedLandmarks; //!< Transformed landmark outputs
+  std::vector<std::string> warnings;                       //!< Non-fatal warnings emitted by backend/import
+  std::string errorMessage;                                //!< Failure summary
+  std::string warpConvention;                              //!< Explicit warp direction/coordinate convention
+  double elapsedSeconds = 0.0;                             //!< Runtime reported by Entropy/backend
 };
 
 std::string_view label(Backend backend);

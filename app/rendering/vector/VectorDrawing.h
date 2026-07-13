@@ -52,9 +52,9 @@ void drawWindowOutline(NVGcontext* nvg, const Viewport& windowViewport);
 /// Highlight state for an individual view outline.
 enum class ViewOutlineMode
 {
-  Hovered,  //!< View is under the pointer.
-  Selected, //!< View is selected/active for interaction.
-  None      //!< View has no special highlight.
+  Hovered,  //!< View is under the pointer
+  Selected, //!< View is selected/active for interaction
+  None      //!< View has no special highlight
 };
 
 /**

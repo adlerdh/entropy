@@ -25,16 +25,16 @@ struct TextureCreationFailure
   /// Type of resource whose texture upload failed.
   enum class Resource
   {
-    Image,       //!< Image texture upload failed.
-    Segmentation //!< Segmentation texture upload failed.
+    Image,       //!< Image texture upload failed
+    Segmentation //!< Segmentation texture upload failed
   };
 
-  Resource resource;                  //!< Resource type.
-  uuids::uuid uid;                    //!< Resource UID.
-  std::string displayName;            //!< User-facing resource name.
-  std::array<uint32_t, 3> dimensions; //!< Resource dimensions in voxels.
-  int max3DTextureSize;               //!< GL_MAX_3D_TEXTURE_SIZE reported by the current OpenGL context.
-  std::string reason;                 //!< User-facing explanation of the failure.
+  Resource resource;                  //!< Resource type
+  uuids::uuid uid;                    //!< Resource UID
+  std::string displayName;            //!< User-facing resource name
+  std::array<uint32_t, 3> dimensions; //!< Resource dimensions in voxels
+  int max3DTextureSize;               //!< GL_MAX_3D_TEXTURE_SIZE reported by the current OpenGL context
+  std::string reason;                 //!< User-facing explanation of the failure
 };
 
 /**
@@ -42,8 +42,8 @@ struct TextureCreationFailure
  */
 struct TextureCreationResult
 {
-  std::vector<uuids::uuid> createdUids;         //!< Resource UIDs for which textures were created successfully.
-  std::vector<TextureCreationFailure> failures; //!< Texture creation failures that require user/app handling.
+  std::vector<uuids::uuid> createdUids;         //!< Resource UIDs for which textures were created successfully
+  std::vector<TextureCreationFailure> failures; //!< Texture creation failures that require user/app handling
 };
 
 /**

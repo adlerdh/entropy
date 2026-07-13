@@ -17,6 +17,5 @@ struct AccumulatedRenderingData
   /// Master opacity multiplier: it multiplies down all individual layer opacities.
   float m_masterOpacityMultiplier = 1.0f;
 
-  /// Flag for whether the drawable is pickable.
-  bool m_pickable = true;
+  bool m_pickable = true; //!< Flag for whether the drawable is pickable
 };

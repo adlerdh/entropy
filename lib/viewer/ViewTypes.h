@@ -6,11 +6,11 @@
 /** @brief View orientation/type. */
 enum class ViewType
 {
-  Axial,    //!< Axial slice view.
-  Coronal,  //!< Coronal slice view.
-  Sagittal, //!< Sagittal slice view.
-  Oblique,  //!< Rotatable oblique slice view.
-  ThreeD,   //!< 3D view.
+  Axial,    //!< Axial slice view
+  Coronal,  //!< Coronal slice view
+  Sagittal, //!< Sagittal slice view
+  Oblique,  //!< Rotatable oblique slice view
+  ThreeD,   //!< 3D view
   NumElements
 };
 

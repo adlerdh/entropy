@@ -14,15 +14,15 @@ namespace registration
  */
 enum class ImportAction
 {
-  ApplyAffineTransform,             //!< Apply the affine transform to the moving image.
-  LoadInverseWarp,                  //!< Load the fixed-to-moving sampling warp.
-  LoadForwardWarp,                  //!< Load the moving-to-fixed point warp.
-  AssignWarpsToMovingImage,         //!< Assign imported warps to the moving image.
-  LoadWarpedImage,                  //!< Load the warped moving image.
-  LoadWarpedSegmentation,           //!< Load a warped segmentation.
-  TransformLandmarksAndAnnotations, //!< Import transformed point annotations.
-  LoadTransformedSurface,           //!< Load a transformed surface.
-  MakeWarpedImageActive             //!< Make the warped image active.
+  ApplyAffineTransform,             //!< Apply the affine transform to the moving image
+  LoadInverseWarp,                  //!< Load the fixed-to-moving sampling warp
+  LoadForwardWarp,                  //!< Load the moving-to-fixed point warp
+  AssignWarpsToMovingImage,         //!< Assign imported warps to the moving image
+  LoadWarpedImage,                  //!< Load the warped moving image
+  LoadWarpedSegmentation,           //!< Load a warped segmentation
+  TransformLandmarksAndAnnotations, //!< Import transformed point annotations
+  LoadTransformedSurface,           //!< Load a transformed surface
+  MakeWarpedImageActive             //!< Make the warped image active
 };
 
 /**
@@ -30,10 +30,10 @@ enum class ImportAction
  */
 struct ImportStep
 {
-  ImportAction action = ImportAction::LoadWarpedImage; //!< Action to perform.
-  std::filesystem::path path;                          //!< Artifact path, when applicable.
-  std::string displayName;                             //!< Suggested Entropy object name.
-  std::string targetImageUid;                          //!< Image UID affected by the step.
+  ImportAction action = ImportAction::LoadWarpedImage; //!< Action to perform
+  std::filesystem::path path;                          //!< Artifact path, when applicable
+  std::string displayName;                             //!< Suggested Entropy object name
+  std::string targetImageUid;                          //!< Image UID affected by the step
 };
 
 /**
@@ -41,8 +41,8 @@ struct ImportStep
  */
 struct ImportPlan
 {
-  std::vector<ImportStep> steps;     //!< Steps in safe execution order.
-  std::vector<std::string> warnings; //!< Non-fatal import planning warnings.
+  std::vector<ImportStep> steps;     //!< Steps in safe execution order
+  std::vector<std::string> warnings; //!< Non-fatal import planning warnings
 };
 
 /**

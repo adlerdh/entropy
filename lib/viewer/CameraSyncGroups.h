@@ -64,7 +64,7 @@ private:
   GroupMap& groupsFor(CameraSyncMode mode);
   const GroupMap* findGroupsFor(CameraSyncMode mode) const;
 
-  std::unordered_map<CameraSyncMode, GroupMap> m_groups; //!< Groups by sync mode.
+  std::unordered_map<CameraSyncMode, GroupMap> m_groups; //!< Groups by sync mode
 };
 
 } // namespace viewer

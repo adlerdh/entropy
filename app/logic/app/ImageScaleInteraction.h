@@ -14,8 +14,8 @@ namespace app
  */
 struct ImageScaleUpdate
 {
-  glm::vec3 m_scale{1.0f};       //!< New absolute manual scale.
-  glm::vec3 m_translation{0.0f}; //!< New manual translation preserving the scale center.
+  glm::vec3 m_scale{1.0f};       //!< New absolute manual scale
+  glm::vec3 m_translation{0.0f}; //!< New manual translation preserving the scale center
 };
 
 /**
@@ -23,10 +23,10 @@ struct ImageScaleUpdate
  */
 enum class ImageScaleConstraint
 {
-  Free,           //!< Scale independently along both visible image axes.
-  Isotropic,      //!< Use one scale factor for all image axes.
-  ViewHorizontal, //!< Scale only along the image axis closest to view-right.
-  ViewVertical    //!< Scale only along the image axis closest to view-up.
+  Free,           //!< Scale independently along both visible image axes
+  Isotropic,      //!< Use one scale factor for all image axes
+  ViewHorizontal, //!< Scale only along the image axis closest to view-right
+  ViewVertical    //!< Scale only along the image axis closest to view-up
 };
 
 /**

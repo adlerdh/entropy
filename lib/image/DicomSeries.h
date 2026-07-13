@@ -64,10 +64,10 @@ struct SeriesMetadata
  */
 struct SeriesTemporalInfo
 {
-  uint32_t numTimePoints = 1;  //!< Number of temporal frames.
-  double spacing = 1.0;        //!< Time spacing between frames.
-  std::string units = "frame"; //!< Time units.
-  bool multiframe = false;     //!< True when frames are encoded in one DICOM object.
+  uint32_t numTimePoints = 1;  //!< Number of temporal frames
+  double spacing = 1.0;        //!< Time spacing between frames
+  std::string units = "frame"; //!< Time units
+  bool multiframe = false;     //!< True when frames are encoded in one DICOM object
 
   /// @brief Return whether the series should be treated as a time series.
   bool isTimeSeries() const;

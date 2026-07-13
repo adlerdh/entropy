@@ -535,7 +535,7 @@ private:
 
   /// Pixel buffers grouped by component type. For separated layout, the outer vector has one entry
   /// per logical component. For interleaved layout, the outer vector has one entry and stores all
-  /// logical components in pixel-major order.
+  /// logical components in pixel-major order
   std::vector<std::vector<int8_t>> m_data_int8;
   std::vector<std::vector<uint8_t>> m_data_uint8;
   std::vector<std::vector<int16_t>> m_data_int16;
@@ -562,7 +562,7 @@ private:
 
   ImageIoInfo m_ioInfoOnDisk;   //!< Info about image as stored on disk
   ImageIoInfo m_ioInfoInMemory; //!< Info about image as loaded into memory
-  ImageTimeAxis m_timeAxis;     //!< Time-axis metadata.
+  ImageTimeAxis m_timeAxis;     //!< Time-axis metadata
 
   ImageHeader m_header;
   ImageHeaderOverrides m_headerOverrides;

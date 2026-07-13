@@ -18,9 +18,9 @@ namespace viewer
  */
 struct FrameHitGeometry
 {
-  glm::vec2 m_windowClipPos{0.0f}; //!< Hit position in enclosing-window clip coordinates.
-  glm::vec2 m_viewClipPos{0.0f};   //!< Hit position in frame clip coordinates.
-  glm::vec4 m_worldPos{0.0f};      //!< Hit position in world coordinates.
+  glm::vec2 m_windowClipPos{0.0f}; //!< Hit position in enclosing-window clip coordinates
+  glm::vec2 m_viewClipPos{0.0f};   //!< Hit position in frame clip coordinates
+  glm::vec4 m_worldPos{0.0f};      //!< Hit position in world coordinates
 };
 
 /**
@@ -44,8 +44,8 @@ FrameHitGeometry computeFrameHitGeometry(
  */
 struct FrameHitTarget
 {
-  uuids::uuid m_uid;                    //!< Frame UID.
-  glm::vec4 m_windowClipViewport{0.0f}; //!< Bounds in enclosing-window clip coordinates.
+  uuids::uuid m_uid;                    //!< Frame UID
+  glm::vec4 m_windowClipViewport{0.0f}; //!< Bounds in enclosing-window clip coordinates
 };
 
 /**
@@ -53,8 +53,8 @@ struct FrameHitTarget
  */
 struct FrameHitSelection
 {
-  uuids::uuid m_hitFrameUid;       //!< Frame that receives the hit.
-  uuids::uuid m_transformFrameUid; //!< Frame used for coordinate transforms.
+  uuids::uuid m_hitFrameUid;       //!< Frame that receives the hit
+  uuids::uuid m_transformFrameUid; //!< Frame used for coordinate transforms
 };
 
 /**

@@ -15,9 +15,9 @@ namespace camera3d
  */
 struct IsoSurfacePickHit
 {
-  glm::vec3 worldPosition{0.0f}; //!< Hit location in world/LPS coordinates.
-  float rayDistance{0.0f};       //!< Distance along the world-space ray.
-  std::size_t isoIndex{0};       //!< Index of the isovalue that was hit.
+  glm::vec3 worldPosition{0.0f}; //!< Hit location in world/LPS coordinates
+  float rayDistance{0.0f};       //!< Distance along the world-space ray
+  std::size_t isoIndex{0};       //!< Index of the isovalue that was hit
 };
 
 /**
@@ -28,16 +28,16 @@ struct IsoSurfacePickHit
  */
 struct IsoSurfacePickRequest
 {
-  glm::vec3 worldRayOrigin{0.0f};    //!< Ray origin in world/LPS coordinates.
-  glm::vec3 worldRayDirection{0.0f}; //!< Normalized ray direction in world/LPS coordinates.
-  glm::mat4 pixel_T_world{1.0f};     //!< Transform from world/LPS to continuous image voxel coordinates.
-  glm::mat4 world_T_pixel{1.0f};     //!< Transform from continuous image voxel coordinates to world/LPS.
-  glm::vec3 pixelDimensions{0.0f};   //!< Image dimensions in voxels.
-  float stepLength{1.0f};            //!< Positive ray step length in world/LPS units.
-  bool renderFrontFaces{true};       //!< Detect low-to-high threshold crossings.
-  bool renderBackFaces{true};        //!< Detect high-to-low threshold crossings.
+  glm::vec3 worldRayOrigin{0.0f};    //!< Ray origin in world/LPS coordinates
+  glm::vec3 worldRayDirection{0.0f}; //!< Normalized ray direction in world/LPS coordinates
+  glm::mat4 pixel_T_world{1.0f};     //!< Transform from world/LPS to continuous image voxel coordinates
+  glm::mat4 world_T_pixel{1.0f};     //!< Transform from continuous image voxel coordinates to world/LPS
+  glm::vec3 pixelDimensions{0.0f};   //!< Image dimensions in voxels
+  float stepLength{1.0f};            //!< Positive ray step length in world/LPS units
+  bool renderFrontFaces{true};       //!< Detect low-to-high threshold crossings
+  bool renderBackFaces{true};        //!< Detect high-to-low threshold crossings
 
-  std::span<const double> isoValues; //!< Native image-intensity isovalues to test.
+  std::span<const double> isoValues; //!< Native image-intensity isovalues to test
   std::function<std::optional<double>(const glm::vec3&)> sampleValue;
 };
 

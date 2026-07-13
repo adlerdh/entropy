@@ -42,7 +42,7 @@ public:
   float rimEmissionStrength = 1.0f;  //!< Additive view-angle rim-light strength
   float rimPower = 2.0f;             //!< Rim falloff exponent; higher values produce a narrower rim
 
-  // MeshRecord mesh;         //!< Mesh record of the isosurface
+  // MeshRecord mesh; //!< Mesh record of the isosurface
   bool meshInSync = false; //!< Is the mesh in sync with the isosurface value?
 
   /// @brief Get the ambient RGB contribution derived from material and surface color.

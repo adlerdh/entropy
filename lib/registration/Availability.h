@@ -15,9 +15,9 @@ namespace registration
  */
 enum class BackendAvailabilityStatus
 {
-  Available, //!< Executable exists and reported successfully.
-  Missing,   //!< Executable could not be found or launched.
-  Error      //!< Executable launched but reported an error.
+  Available, //!< Executable exists and reported successfully
+  Missing,   //!< Executable could not be found or launched
+  Error      //!< Executable launched but reported an error
 };
 
 /**
@@ -25,9 +25,9 @@ enum class BackendAvailabilityStatus
  */
 enum class BackendCompatibilityStatus
 {
-  Compatible,  //!< Backend version is known to satisfy Entropy's requirements.
-  Untested,    //!< Backend is available, but its version could not be validated.
-  Incompatible //!< Backend version is older than Entropy's supported minimum.
+  Compatible,  //!< Backend version is known to satisfy Entropy's requirements
+  Untested,    //!< Backend is available, but its version could not be validated
+  Incompatible //!< Backend version is older than Entropy's supported minimum
 };
 
 /**
@@ -35,9 +35,9 @@ enum class BackendCompatibilityStatus
  */
 struct SemanticVersion
 {
-  int major = 0; //!< Major version number.
-  int minor = 0; //!< Minor version number.
-  int patch = 0; //!< Patch version number.
+  int major = 0; //!< Major version number
+  int minor = 0; //!< Minor version number
+  int patch = 0; //!< Patch version number
 };
 
 /**
@@ -45,11 +45,11 @@ struct SemanticVersion
  */
 struct ExecutableProbeResult
 {
-  bool found = false;         //!< True when the executable exists or can be launched.
-  int exitCode = 0;           //!< Process exit code from the probe command.
-  std::string standardOutput; //!< Captured stdout text.
-  std::string standardError;  //!< Captured stderr text.
-  std::string failureMessage; //!< Launch or probe failure explanation.
+  bool found = false;         //!< True when the executable exists or can be launched
+  int exitCode = 0;           //!< Process exit code from the probe command
+  std::string standardOutput; //!< Captured stdout text
+  std::string standardError;  //!< Captured stderr text
+  std::string failureMessage; //!< Launch or probe failure explanation
 };
 
 /**
@@ -76,15 +76,15 @@ public:
  */
 struct BackendAvailability
 {
-  Backend backend = Backend::Greedy;                                     //!< Backend that was checked.
-  BackendAvailabilityStatus status = BackendAvailabilityStatus::Missing; //!< Availability status.
-  BackendCompatibilityStatus compatibility =                             //!< Version compatibility status.
+  Backend backend = Backend::Greedy;                                     //!< Backend that was checked
+  BackendAvailabilityStatus status = BackendAvailabilityStatus::Missing; //!< Availability status
+  BackendCompatibilityStatus compatibility =                             //!< Version compatibility status
     BackendCompatibilityStatus::Untested;
-  std::filesystem::path executable;               //!< Executable that was checked.
-  std::string versionText;                        //!< Version or identifying output.
-  std::optional<SemanticVersion> detectedVersion; //!< Parsed backend version, if available.
-  std::string message;                            //!< User-facing status message.
-  std::string compatibilityMessage;               //!< User-facing compatibility warning or note.
+  std::filesystem::path executable;               //!< Executable that was checked
+  std::string versionText;                        //!< Version or identifying output
+  std::optional<SemanticVersion> detectedVersion; //!< Parsed backend version, if available
+  std::string message;                            //!< User-facing status message
+  std::string compatibilityMessage;               //!< User-facing compatibility warning or note
 };
 
 /**

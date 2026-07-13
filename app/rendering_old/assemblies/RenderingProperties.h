@@ -18,7 +18,7 @@ struct ImageSliceAssemblyRenderingProperties
 
   /// Auto-hiding mode modulates opacity of image slices as the cosine of the angle
   /// between the view direction and the slice normal vector. Auto-hiding only applies
-  /// to 3D slices and NOT to 2D slices, which are always parallel to the viewer.
+  /// to 3D slices and NOT to 2D slices, which are always parallel to the viewer
   bool m_useAutoHidingMode = true;
 
   /// Show line outline around image slices
@@ -91,15 +91,15 @@ struct MeshAssemblyRenderingProperties
   /// Render meshes using "x-ray mode", which highlights their borders and
   /// makes the interior transparent. Mesh fragment transparency is modulated as
   /// a positive power of the cosine of the angle between the view direction and the mesh
-  /// fragment normal vector.
+  /// fragment normal vector
   bool m_useXrayMode = false;
 
   /// Exponent to which the cosine transparency modulation factor is raised.
-  /// Higher x-ray power makes meshes more "see-through".
+  /// Higher x-ray power makes meshes more "see-through"
   float m_xrayPower = 3.0f;
 
   /// Enable clipping (i.e. discarding) mesh fragments in the octant nearest the viewer's eye.
-  /// The origin of the clipped octant is the crosshair posisiton.
+  /// The origin of the clipped octant is the crosshair posisiton
   bool m_useOctantClipPlanes = false;
 
   /// Opacity of 3D image and its parcellation that is textured over meshes

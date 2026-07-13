@@ -95,7 +95,7 @@ private:
   mutable glm::mat4 m_stack_O_slide;
 
   /// Rigid version of transformation from slide in unit cube space to stack,
-  /// which ignores scaling and shearing.
+  /// which ignores scaling and shearing
   mutable glm::mat4 m_stack_O_slide_rigid;
 
   /// Flag to recompute the transformations
@@ -114,11 +114,9 @@ private:
   /// Rotation angle of slide relative to stack Z axis in degrees. Constrained to [-180.0, 180.0].
   float m_rotationAngleZ_inDegrees;
 
-  /// x,y shear angles in degrees. Constrained to [-90.0, 90.0].
-  glm::vec2 m_shearAnglesAboutXY_inDegrees;
+  glm::vec2 m_shearAnglesAboutXY_inDegrees; //!< x,y shear angles in degrees, constrained to [-90.0, 90.0]
 
-  /// Scale rotation angle in degrees. Constrained to [-180.0, 180.0].
-  float m_scaleAngle_inDegrees;
+  float m_scaleAngle_inDegrees; //!< Scale rotation angle in degrees, constrained to [-180.0, 180.0]
 
   /// x,y scale factors, relative to 1.0 being identity
   glm::vec2 m_scaleFactorsAlongXY;

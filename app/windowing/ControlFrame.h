@@ -92,8 +92,8 @@ public:
   const UiControls& uiControls() const;
 
 protected:
-  viewer::FrameViewport m_viewport;             //!< Viewport and clip-space transforms.
-  viewer::FrameImageSelection m_imageSelection; //!< Rendered and metric image selections.
+  viewer::FrameViewport m_viewport;             //!< Viewport and clip-space transforms
+  viewer::FrameImageSelection m_imageSelection; //!< Rendered and metric image selections
 
   ViewType m_viewType;                               //!< View type
   ViewRenderMode m_renderMode;                       //!< Render mode

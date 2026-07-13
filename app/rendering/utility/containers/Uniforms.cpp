@@ -140,9 +140,9 @@ int Uniforms::queryAndSetAllLocations(std::function<GLint(const std::string&)> l
   return (foundOne ? 0 : 1);
 }
 
-void Uniforms::setDirty(const std::string& name, bool dirty)
+void Uniforms::setDirty(const std::string& name, bool isDirty)
 {
-  m_uniformsMap.at(name).m_isDirty = dirty;
+  m_uniformsMap.at(name).m_isDirty = isDirty;
 }
 
 bool Uniforms::isDirty(const std::string& name) const

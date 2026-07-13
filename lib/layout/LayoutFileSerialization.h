@@ -12,8 +12,8 @@ namespace layout
 /** @brief Contents of a standalone layout preset file. */
 struct LayoutFile
 {
-  std::optional<std::size_t> m_currentLayoutIndex = std::nullopt; //!< Selected layout index, when saved.
-  std::vector<LayoutPreset> m_layouts;                            //!< Layout presets in display order.
+  std::optional<std::size_t> m_currentLayoutIndex = std::nullopt; //!< Selected layout index, when saved
+  std::vector<LayoutPreset> m_layouts;                            //!< Layout presets in display order
 };
 
 /**

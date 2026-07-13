@@ -107,12 +107,12 @@ public:
   void updateImageOrdering(uuid_range_t orderedImageUids);
 
 private:
-  std::list<uuids::uuid> m_renderedImageUids;       //!< Rendered images, bottom layer first.
-  std::list<uuids::uuid> m_metricImageUids;         //!< Images used by metric/comparison modes.
-  std::list<uuids::uuid> m_volumeRenderedImageUids; //!< Single image used by 3D volume raycasting.
+  std::list<uuids::uuid> m_renderedImageUids;       //!< Rendered images, bottom layer first
+  std::list<uuids::uuid> m_metricImageUids;         //!< Images used by metric/comparison modes
+  std::list<uuids::uuid> m_volumeRenderedImageUids; //!< Single image used by 3D volume raycasting
 
-  std::set<std::size_t> m_preferredDefaultRenderedImages; //!< Default rendered image indices.
-  bool m_defaultRenderAllImages = true;                   //!< Ignore preferred indices and render all images.
+  std::set<std::size_t> m_preferredDefaultRenderedImages; //!< Default rendered image indices
+  bool m_defaultRenderAllImages = true;                   //!< Ignore preferred indices and render all images
 };
 
 } // namespace viewer

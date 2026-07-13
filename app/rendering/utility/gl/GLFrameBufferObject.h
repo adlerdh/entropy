@@ -1,6 +1,5 @@
 #pragma once
 
-// #include "rendering/utility/gl/GLErrorChecker.h"
 #include "rendering/utility/gl/GLFBOAttachmentTypes.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
@@ -10,12 +9,16 @@
 #include <optional>
 #include <string>
 
+/**
+ * @brief RAII wrapper around an OpenGL framebuffer object.
+ *
+ * The wrapper owns one framebuffer name and exposes the attachment operations currently needed by the renderer.
+ * Attachment calls check framebuffer completeness after updating the target.
+ */
 class GLFrameBufferObject final
 {
 public:
-  /**
-   * @brief GLFrameBufferObject
-   */
+  /// Create a named framebuffer wrapper for diagnostics.
   explicit GLFrameBufferObject(const std::string& name);
 
   GLFrameBufferObject(const GLFrameBufferObject&) = delete;
@@ -24,32 +27,26 @@ public:
   GLFrameBufferObject(GLFrameBufferObject&&) noexcept;
   GLFrameBufferObject& operator=(GLFrameBufferObject&&) noexcept;
 
-  /**
-   * @brief Deletes the FBO, including storage on GPU
-   */
+  /// Delete the framebuffer object if still owned.
   ~GLFrameBufferObject();
 
-  /**
-   * @brief Generate FBO name
-   */
+  /// Generate the framebuffer name if needed.
   void generate();
 
-  /**
-   * @brief Destroys the FBO, including all data on GPU
-   */
+  /// Delete the framebuffer name and reset local state.
   void destroy();
 
-  /**
-   * @brief Bind the FBO to the current context
-   */
+  /// Bind the framebuffer to the requested draw, read, or draw/read target.
   void bind(const fbo::TargetType& target);
 
+  /// Attach a 2D texture image to a framebuffer attachment point.
   void attach2DTexture(
     const fbo::TargetType& target,
     const fbo::AttachmentType& attachment,
     const GLTexture& tex,
     std::optional<int> colorAttachmentIndex = std::nullopt);
 
+  /// Attach one cube-map face to a framebuffer attachment point.
   void attachCubeMapTexture(
     const fbo::TargetType& target,
     const fbo::AttachmentType& attachment,
@@ -62,8 +59,6 @@ public:
 
 private:
   void checkStatus();
-
-  //    GLErrorChecker m_errorChecker;
 
   std::string m_name;
   GLuint m_id;

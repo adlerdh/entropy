@@ -29,7 +29,7 @@ private:
   // If not loaded, the pointers are null.
 
   /// Thumbnail image from slide file. The image is generated from the lowest resolution
-  /// slide layer if no thumbanil is provided in the slide.
+  /// slide layer if no thumbanil is provided in the slide
   std::shared_ptr<std::vector<uint32_t> > m_thumbImageData;
 
   /// Macro image from slide file

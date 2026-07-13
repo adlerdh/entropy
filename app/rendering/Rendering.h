@@ -260,14 +260,12 @@ private:
   /// Shared application state. Not owned; Rendering reads and updates render-facing state through this reference.
   AppData& m_appData;
 
-  /// NanoVG context for vector graphics. Owned by this class.
-  NVGcontext* m_nvg;
+  NVGcontext* m_nvg; //!< Owned NanoVG context for vector graphics
 
   /// ASCII post-processing pipeline for character atlas, framebuffers, render, and clipboard export.
   AsciiRenderer m_asciiRenderer;
 
-  /// Pixel-space image-edge post-processing pipeline.
-  PixelEdgeRenderer m_pixelEdgeRenderer;
+  PixelEdgeRenderer m_pixelEdgeRenderer; //!< Pixel-space image-edge post-processing pipeline
 
   /// Shader programs for the normal 3D texture rendering path, keyed by render mode and interpolation variant.
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms;
@@ -275,17 +273,14 @@ private:
   /// Shader programs for planar 2D fallback textures that exceed GL_MAX_3D_TEXTURE_SIZE but fit GL_MAX_TEXTURE_SIZE.
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>> m_shaderPrograms2D;
 
-  /// Raycast isosurface shader for unwarped scalar image volumes.
-  GLShaderProgram m_raycastIsoProgram;
+  GLShaderProgram m_raycastIsoProgram; //!< Raycast isosurface shader for unwarped scalar image volumes
 
   /// Raycast isosurface shader variant that samples an inverse deformation field before sampling the scalar image.
   GLShaderProgram m_raycastIsoWarpedProgram;
 
-  /// True once the application has finished the startup/image-loading phase.
-  bool m_isAppDoneLoadingImages;
+  bool m_isAppDoneLoadingImages; //!< True once the application has finished the startup/image-loading phase
 
-  /// Global runtime overlay switch used by the view overlay cycling actions.
-  bool m_showOverlays;
+  bool m_showOverlays; //!< Global runtime overlay switch used by the view overlay cycling actions
 
   /// Refresh the CPU-side isosurface arrays consumed by the 3D raycast shader for one image.
   void updateIsosurfaceDataFor3d(AppData& appData, const uuids::uuid& imageUid);

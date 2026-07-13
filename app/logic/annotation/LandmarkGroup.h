@@ -103,14 +103,14 @@ private:
   std::string m_name;
 
   /// Map of landmark points. Each landmark point is keyed by an index
-  /// that specifies its order.
+  /// that specifies its order
   std::map<size_t, PointRecord<PositionType> > m_pointMap;
 
   /// Are the landmark points defined in Voxel (true) or Subject space?
   bool m_inVoxelSpace;
 
   /// Internal layer of the landmark group: 0 is the backmost layer and higher layers are more
-  /// frontwards.
+  /// frontwards
   uint32_t m_layer;
 
   /// The maximum layer among all landmark groups

@@ -34,7 +34,7 @@ uint64_t VertexIndicesInfo::indexOffset() const
   return m_indexOffset;
 }
 
-void VertexIndicesInfo::setIndexCount(uint64_t n)
+void VertexIndicesInfo::setIndexCount(uint64_t indexCount)
 {
-  m_indexCount = n;
+  m_indexCount = indexCount;
 }

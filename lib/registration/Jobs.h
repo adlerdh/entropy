@@ -18,19 +18,19 @@ struct JobRecord
 {
   using Clock = std::chrono::system_clock;
 
-  std::string id;                             //!< Stable job identifier.
-  std::uint64_t order = 0;                    //!< One-based insertion order.
-  JobSpec spec;                               //!< Job request.
-  JobStatus status = JobStatus::Queued;       //!< Current normalized status.
-  Clock::time_point queuedAt{};               //!< Time at which the job was created.
-  std::optional<Clock::time_point> startedAt; //!< First time the job entered an active running state.
-  std::optional<Clock::time_point> endedAt;   //!< Time at which the job reached a terminal state.
-  std::vector<CommandExecution> commands;     //!< Completed backend command summaries.
-  std::vector<ProgressEvent> progress;        //!< Parsed progress events.
-  std::vector<ProcessOutputLine> outputLines; //!< Raw backend stdout/stderr lines.
-  std::vector<std::string> warnings;          //!< Non-fatal warnings.
-  std::string errorMessage;                   //!< Failure summary.
-  std::optional<ResultManifest> manifest;     //!< Imported or completed result manifest.
+  std::string id;                             //!< Stable job identifier
+  std::uint64_t order = 0;                    //!< One-based insertion order
+  JobSpec spec;                               //!< Job request
+  JobStatus status = JobStatus::Queued;       //!< Current normalized status
+  Clock::time_point queuedAt{};               //!< Time at which the job was created
+  std::optional<Clock::time_point> startedAt; //!< First time the job entered an active running state
+  std::optional<Clock::time_point> endedAt;   //!< Time at which the job reached a terminal state
+  std::vector<CommandExecution> commands;     //!< Completed backend command summaries
+  std::vector<ProgressEvent> progress;        //!< Parsed progress events
+  std::vector<ProcessOutputLine> outputLines; //!< Raw backend stdout/stderr lines
+  std::vector<std::string> warnings;          //!< Non-fatal warnings
+  std::string errorMessage;                   //!< Failure summary
+  std::optional<ResultManifest> manifest;     //!< Imported or completed result manifest
 };
 
 /**

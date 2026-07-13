@@ -13,10 +13,10 @@ namespace ui
  */
 struct IsosurfaceRangeParameters
 {
-  double start = 0.0;      //!< First isosurface value.
-  double end = 1.0;        //!< Last isosurface value.
-  double spacing = 1.0;    //!< Distance between adjacent generated values.
-  std::uint32_t count = 2; //!< Number of generated values.
+  double start = 0.0;      //!< First isosurface value
+  double end = 1.0;        //!< Last isosurface value
+  double spacing = 1.0;    //!< Distance between adjacent generated values
+  std::uint32_t count = 2; //!< Number of generated values
 };
 
 /**

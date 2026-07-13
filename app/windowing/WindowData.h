@@ -241,5 +241,5 @@ private:
   // Default view orientation convention used for all views
   ViewConvention m_viewConvention = ViewConvention::Radiological;
 
-  ViewAlignmentMode m_viewAlignment = ViewAlignmentMode::Crosshairs; //!< View alignment mode.
+  ViewAlignmentMode m_viewAlignment = ViewAlignmentMode::Crosshairs; //!< View alignment mode
 };

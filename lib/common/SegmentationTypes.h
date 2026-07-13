@@ -14,22 +14,22 @@ using LabelType = int64_t;
  */
 struct VoxelDistances
 {
-  float distX; //!< Distance to +/-X neighbors.
-  float distY; //!< Distance to +/-Y neighbors.
-  float distZ; //!< Distance to +/-Z neighbors.
+  float distX; //!< Distance to +/-X neighbors
+  float distY; //!< Distance to +/-Y neighbors
+  float distZ; //!< Distance to +/-Z neighbors
 
-  float distXY; //!< Distance to diagonal neighbors in the XY plane.
-  float distXZ; //!< Distance to diagonal neighbors in the XZ plane.
-  float distYZ; //!< Distance to diagonal neighbors in the YZ plane.
+  float distXY; //!< Distance to diagonal neighbors in the XY plane
+  float distXZ; //!< Distance to diagonal neighbors in the XZ plane
+  float distYZ; //!< Distance to diagonal neighbors in the YZ plane
 
-  float distXYZ; //!< Distance to diagonal neighbors offset along X, Y, and Z.
+  float distXYZ; //!< Distance to diagonal neighbors offset along X, Y, and Z
 };
 
 /// Seed segmentation interpretation.
 enum class SeedSegmentationType
 {
-  Binary,    //!< Seeds are interpreted as foreground/background labels.
-  MultiLabel //!< Seeds preserve multiple label identities.
+  Binary,    //!< Seeds are interpreted as foreground/background labels
+  MultiLabel //!< Seeds preserve multiple label identities
 };
 
 /**

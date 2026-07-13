@@ -13,8 +13,8 @@ namespace registration
  */
 enum class ValidationSeverity
 {
-  Warning, //!< Job may run, but the user should be informed.
-  Error    //!< Job cannot be launched.
+  Warning, //!< Job may run, but the user should be informed
+  Error    //!< Job cannot be launched
 };
 
 /**
@@ -22,9 +22,9 @@ enum class ValidationSeverity
  */
 struct ValidationMessage
 {
-  ValidationSeverity severity = ValidationSeverity::Warning; //!< Message severity.
-  std::string field;                                         //!< Related job field or UI section.
-  std::string text;                                          //!< User-facing explanation.
+  ValidationSeverity severity = ValidationSeverity::Warning; //!< Message severity
+  std::string field;                                         //!< Related job field or UI section
+  std::string text;                                          //!< User-facing explanation
 };
 
 /**
@@ -32,7 +32,7 @@ struct ValidationMessage
  */
 struct ValidationResult
 {
-  std::vector<ValidationMessage> messages; //!< Warnings and errors.
+  std::vector<ValidationMessage> messages; //!< Warnings and errors
 
   /**
    * @brief Return whether the job has any blocking errors.

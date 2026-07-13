@@ -392,8 +392,8 @@ struct IsosurfaceTableItem
 
 enum class IsosurfaceTableItemContentsType
 {
-  Selectable,       //!< Only the visible selectable item reacts to selection.
-  SelectableSpanRow //!< The selectable item spans the full row.
+  Selectable,       //!< Only the visible selectable item reacts to selection
+  SelectableSpanRow //!< The selectable item spans the full row
 };
 
 /**

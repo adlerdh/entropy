@@ -115,7 +115,7 @@ private:
 
   /// Vector of NON-premultiplied alpha colors represented using unsigned char values
   /// per RGBA component. Components are in range [0, 255]. The size of this vector
-  /// matches the size of \c m_properties.
+  /// matches the size of \c m_properties
   std::vector<glm::u8vec4> m_colors_RGBA_U8;
 
   struct LabelProperties

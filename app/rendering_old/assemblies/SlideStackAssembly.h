@@ -76,11 +76,9 @@ private:
     /// Each SlideSlice is different and needs its own MeshRecord.
     std::shared_ptr<MeshGpuRecord> m_sliceMeshGpuRecord = nullptr;
 
-    /// Slide rendered in 2D views is a slice.
-    std::shared_ptr<SlideSlice> m_slideSlice = nullptr;
+    std::shared_ptr<SlideSlice> m_slideSlice = nullptr; //!< Slide rendered in 2D views is a slice
 
-    /// Slide rendered in 3D views is a box.
-    std::shared_ptr<SlideBox> m_slideBox = nullptr;
+    std::shared_ptr<SlideBox> m_slideBox = nullptr; //!< Slide rendered in 3D views is a box
   };
 
   void updateStackRenderingProperties();

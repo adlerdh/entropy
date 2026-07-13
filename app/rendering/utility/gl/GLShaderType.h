@@ -3,8 +3,10 @@
 #include <glad/glad.h>
 
 #include <cstdint>
-#include <type_traits>
 
+/**
+ * @brief OpenGL shader object types supported by the wrapper layer.
+ */
 enum class ShaderType : uint32_t
 {
   Vertex = GL_VERTEX_SHADER,
@@ -14,5 +16,3 @@ enum class ShaderType : uint32_t
   TessEvaluation = GL_TESS_EVALUATION_SHADER
   //    COMPUTE = GL_COMPUTE_SHADER
 };
-
-// using ShaderType_utype = std::underlying_type< ShaderType >::type;

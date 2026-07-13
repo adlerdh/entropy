@@ -896,36 +896,39 @@ private:
 
     /// @note The following slope (m) and intercept (b) are used to map NATIVE image intensity
     /// values (x) into the range [0.0, 1.0], via m*x + b
-    double m_slope_native{0.0};     //!< Slope (m) computed from window
+    /// Slope (m) computed from window
+    double m_slope_native{0.0};
     double m_intercept_native{0.0}; //!< Intercept (b) computed from window and level
 
     /// @note The following slope (m) and intercept (b) are used to map image TEXTURE intensity
     /// values (x) into the range [0.0, 1.0], via m*x + b
-    double m_slope_texture{0.0};     //!< Slope computed from window
+    /// Slope computed from window
+    double m_slope_texture{0.0};
     double m_intercept_texture{0.0}; //!< Intercept computed from window and level
 
     /// @note The following values of slope (m) and intercept (b) are used to map image TEXTURE
     /// intensity values (x) into the range [0.0, 1.0], via m*x + b These values represent the
     /// largest window possible
-    double m_largest_slope_texture{0.0};     //!< Slope computed from window
+    /// Slope computed from window
+    double m_largest_slope_texture{0.0};
     double m_largest_intercept_texture{0.0}; //!< Intercept computed from window and level
 
     double m_opacity{0.0}; //!< Opacity in range [0.0, 1.0]
     bool m_visible{false}; //!< Visibility flag (show/hide the component)
 
-    EdgeDetectionMethod m_edgeDetectionMethod{EdgeDetectionMethod::Voxel}; //!< Selected edge-rendering method.
-    bool m_showEdges{false};                                               //!< Flag to show voxel-space edges.
-    bool m_showPixelEdges{false};                                          //!< Flag to show pixel-space edges.
-    bool m_thresholdEdges{false};                                          //!< Flag to threshold voxel-space edges.
-    bool m_thresholdPixelEdges{false};                                     //!< Flag to threshold pixel-space edges.
-    bool m_thinPixelEdges{true};                                           //!< Flag to thin pixel-space edges.
-    bool m_useFreiChen{false};                                             //!< Flag to use Frei-Chen filters.
-    double m_edgeMagnitude{0.0};      //!< Magnitude of edges to show [0.0, 4.0] if thresholding is on.
-    double m_pixelEdgeScale{2.0};     //!< Pixel-space edge magnitude scale.
-    double m_pixelEdgeThreshold{0.2}; //!< Pixel-space edge threshold.
+    EdgeDetectionMethod m_edgeDetectionMethod{EdgeDetectionMethod::Voxel}; //!< Selected edge-rendering method
+    bool m_showEdges{false};                                               //!< Flag to show voxel-space edges
+    bool m_showPixelEdges{false};                                          //!< Flag to show pixel-space edges
+    bool m_thresholdEdges{false};                                          //!< Flag to threshold voxel-space edges
+    bool m_thresholdPixelEdges{false};                                     //!< Flag to threshold pixel-space edges
+    bool m_thinPixelEdges{true};                                           //!< Flag to thin pixel-space edges
+    bool m_useFreiChen{false};                                             //!< Flag to use Frei-Chen filters
+    double m_edgeMagnitude{0.0};      //!< Magnitude of edges to show [0.0, 4.0] if thresholding is on
+    double m_pixelEdgeScale{2.0};     //!< Pixel-space edge magnitude scale
+    double m_pixelEdgeThreshold{0.2}; //!< Pixel-space edge threshold
     bool m_windowedEdges{false};      //!< Flag to compute edges after applying windowing (width/level) to the image
-    bool m_overlayEdges{false};       //!< Flag to overlay voxel-space edges atop image.
-    bool m_overlayPixelEdges{false};  //!< Flag to overlay pixel-space edges atop image.
+    bool m_overlayEdges{false};       //!< Flag to overlay voxel-space edges atop image
+    bool m_overlayPixelEdges{false};  //!< Flag to overlay pixel-space edges atop image
     bool m_colormapEdges{false};      //!< Flag to apply colormap to edges (true) or to render edges with
                                       //!< a solid color (false)
     glm::vec3 m_edgeColor{0.0f};      //!< Edge color (used if not rendering edges using colormap)

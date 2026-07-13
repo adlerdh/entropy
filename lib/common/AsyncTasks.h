@@ -10,7 +10,7 @@
  */
 enum class AsyncTasks
 {
-  IsosurfaceMeshGeneration //!< Build an isosurface mesh from image or segmentation data.
+  IsosurfaceMeshGeneration //!< Build an isosurface mesh from image or segmentation data
 };
 
 /**

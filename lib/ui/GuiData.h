@@ -28,63 +28,62 @@ struct GuiData
    */
   enum class SettingsTab : std::uint8_t
   {
-    Views,           //!< View, overlay, crosshair, annotation, lightbox, and scale bar settings page.
-    Interface,       //!< Interface appearance and behavior settings page.
-    Images,          //!< Global image display default settings page.
-    Segmentation,    //!< Segmentation display and brush settings page.
-    Comparison,      //!< Image comparison and metric settings page.
-    Rendering,       //!< Rendering, projection, raycasting, and ASCII settings page.
-    Annotations,     //!< Deprecated settings page; annotation display settings are shown under Views.
-    Registration,    //!< External registration backend settings page.
-    Synchronization, //!< ITK-SNAP synchronization settings page.
-    System           //!< System, runtime, and diagnostics settings page.
+    Views,           //!< View, overlay, crosshair, annotation, lightbox, and scale bar settings page
+    Interface,       //!< Interface appearance and behavior settings page
+    Images,          //!< Global image display default settings page
+    Segmentation,    //!< Segmentation display and brush settings page
+    Comparison,      //!< Image comparison and metric settings page
+    Rendering,       //!< Rendering, projection, raycasting, and ASCII settings page
+    Annotations,     //!< Deprecated settings page; annotation display settings are shown under Views
+    Registration,    //!< External registration backend settings page
+    Synchronization, //!< ITK-SNAP synchronization settings page
+    System           //!< System, runtime, and diagnostics settings page
   };
 
   enum class LayoutTabPlacement : std::uint8_t
   {
-    Top,   //!< Place layout tabs above the rendered views.
-    Bottom //!< Place layout tabs below the rendered views.
+    Top,   //!< Place layout tabs above the rendered views
+    Bottom //!< Place layout tabs below the rendered views
   };
 
-  /// Global setting to turn on/off rendering of the UI windows.
-  bool m_renderUiWindows = false;
+  bool m_renderUiWindows = false; //!< Global setting to turn on/off rendering of the UI windows
 
   /// Global setting to turn on/off rendering of the UI overlays (crosshairs, anatomical labels).
   bool m_renderUiOverlays = false;
 
-  bool m_showImagePropertiesWindow = true;    //!< Show the image properties window.
-  bool m_showSegmentationsWindow = false;     //!< Show the segmentations window.
-  bool m_showLandmarksWindow = false;         //!< Show the landmarks window.
-  bool m_showAnnotationsWindow = false;       //!< Show the annotations window.
-  bool m_showIsosurfacesWindow = false;       //!< Show the isosurfaces window.
-  bool m_showRegistrationSetupWindow = false; //!< Show the registration setup window.
-  bool m_showRegistrationJobsWindow = false;  //!< Show the registration jobs window.
-  bool m_requestAddIsosurface = false;        //!< Add one isosurface for the active image.
-  bool m_requestAddIsosurfaceRange = false;   //!< Open the isosurface range dialog.
-  std::optional<uuids::uuid> m_requestedIsosurfacesImageUid = std::nullopt; //!< One-shot image header to open.
-  bool m_showSettingsWindow = false;                                        //!< Show the settings window.
-  std::optional<SettingsTab> m_requestedSettingsTab = std::nullopt;         //!< One-shot requested settings page.
-  bool m_appSettingsDirty = false;            //!< Application settings differ from the last saved state.
-  bool m_showUnsavedAppSettingsPopup = false; //!< Show the unsaved application settings prompt.
-  std::string m_savedAppSettingsJson;         //!< Last saved application settings JSON fingerprint.
-  bool m_showInspectionWindow = true;         //!< Show the cursor inspection window.
-  bool m_showOpacityBlenderWindow = false;    //!< Show the opacity mixer window.
-  bool m_showImGuiDemoWindow = false;         //!< Show the ImGui demo window.
-  bool m_showImPlotDemoWindow = false;        //!< Show the ImPlot demo window.
-  bool m_showAboutDialog = false;             //!< Show the About Entropy dialog.
-  bool m_showKeyboardShortcutsWindow = false; //!< Show the keyboard shortcuts reference window.
-  bool m_showAddLayoutPopup = false;          //!< Show the Add Layout popup.
+  bool m_showImagePropertiesWindow = true;                                  //!< Show the image properties window
+  bool m_showSegmentationsWindow = false;                                   //!< Show the segmentations window
+  bool m_showLandmarksWindow = false;                                       //!< Show the landmarks window
+  bool m_showAnnotationsWindow = false;                                     //!< Show the annotations window
+  bool m_showIsosurfacesWindow = false;                                     //!< Show the isosurfaces window
+  bool m_showRegistrationSetupWindow = false;                               //!< Show the registration setup window
+  bool m_showRegistrationJobsWindow = false;                                //!< Show the registration jobs window
+  bool m_requestAddIsosurface = false;                                      //!< Add one isosurface for the active image
+  bool m_requestAddIsosurfaceRange = false;                                 //!< Open the isosurface range dialog
+  std::optional<uuids::uuid> m_requestedIsosurfacesImageUid = std::nullopt; //!< One-shot image header to open
+  bool m_showSettingsWindow = false;                                        //!< Show the settings window
+  std::optional<SettingsTab> m_requestedSettingsTab = std::nullopt;         //!< One-shot requested settings page
+  bool m_appSettingsDirty = false;            //!< Application settings differ from the last saved state
+  bool m_showUnsavedAppSettingsPopup = false; //!< Show the unsaved application settings prompt
+  std::string m_savedAppSettingsJson;         //!< Last saved application settings JSON fingerprint
+  bool m_showInspectionWindow = true;         //!< Show the cursor inspection window
+  bool m_showOpacityBlenderWindow = false;    //!< Show the opacity mixer window
+  bool m_showImGuiDemoWindow = false;         //!< Show the ImGui demo window
+  bool m_showImPlotDemoWindow = false;        //!< Show the ImPlot demo window
+  bool m_showAboutDialog = false;             //!< Show the About Entropy dialog
+  bool m_showKeyboardShortcutsWindow = false; //!< Show the keyboard shortcuts reference window
+  bool m_showAddLayoutPopup = false;          //!< Show the Add Layout popup
 
   /**
    * @brief Deferred action selected when the unsaved-project confirmation popup resolves.
    */
   enum class UnsavedProjectAction : std::uint8_t
   {
-    CloseProject,    //!< Close only the active project.
-    OpenImages,      //!< Replace the current project with image files.
-    OpenDicomSeries, //!< Replace the current project with DICOM series.
-    OpenProject,     //!< Replace the current project with another project file.
-    QuitApp          //!< Quit the application.
+    CloseProject,    //!< Close only the active project
+    OpenImages,      //!< Replace the current project with image files
+    OpenDicomSeries, //!< Replace the current project with DICOM series
+    OpenProject,     //!< Replace the current project with another project file
+    QuitApp          //!< Quit the application
   };
 
   /// This is set to false until the user requests to close a dirty project or quit the app.
@@ -96,27 +95,24 @@ struct GuiData
   /// This is set to false until the user requests to quit with no unsaved project changes.
   bool m_showConfirmCloseAppPopup = false;
 
-  /// Flag to show dialog confirming reference image reassignment.
-  bool m_showConfirmSetReferenceImagePopup = false;
+  bool m_showConfirmSetReferenceImagePopup = false; //!< Flag to show dialog confirming reference image reassignment
 
   /// Image waiting to become the reference image after confirmation.
   std::optional<uuids::uuid> m_pendingReferenceImageUid = std::nullopt;
 
-  /// Flag to show dialog confirming image removal.
-  bool m_showConfirmRemoveImagePopup = false;
+  bool m_showConfirmRemoveImagePopup = false; //!< Flag to show dialog confirming image removal
 
-  /// Image waiting to be removed after confirmation.
-  std::optional<uuids::uuid> m_pendingRemoveImageUid = std::nullopt;
+  std::optional<uuids::uuid> m_pendingRemoveImageUid = std::nullopt; //!< Image waiting to be removed after confirmation
 
   /**
    * @brief State for the large-image loading preflight popup.
    */
   struct LargeImageLoadPrompt
   {
-    std::filesystem::path fileName;  //!< Image file being considered for loading.
-    ImageHeader header;              //!< Parsed image header used to display size and type estimates.
-    bool allowCancelProject = false; //!< True when the prompt can cancel an in-progress project load.
-    bool allowSkipImage = true;      //!< True when the user can skip this image and continue loading.
+    std::filesystem::path fileName;  //!< Image file being considered for loading
+    ImageHeader header;              //!< Parsed image header used to display size and type estimates
+    bool allowCancelProject = false; //!< True when the prompt can cancel an in-progress project load
+    bool allowSkipImage = true;      //!< True when the user can skip this image and continue loading
   };
 
   /**
@@ -124,13 +120,12 @@ struct GuiData
    */
   enum class LargeImageLoadDecision : std::uint8_t
   {
-    LoadOriginal, //!< Load the image at its original size and type.
-    SkipImage,    //!< Skip this image and continue the larger load operation.
-    CancelProject //!< Cancel the current project load operation.
+    LoadOriginal, //!< Load the image at its original size and type
+    SkipImage,    //!< Skip this image and continue the larger load operation
+    CancelProject //!< Cancel the current project load operation
   };
 
-  /// Show the large-image loading preflight popup.
-  bool m_showLargeImageLoadPrompt = false;
+  bool m_showLargeImageLoadPrompt = false; //!< Show the large-image loading preflight popup
 
   /// Skip the next large-image preflight check after the user has explicitly chosen to load the original.
   bool m_bypassNextImageLoadPreflight = false;
@@ -146,21 +141,21 @@ struct GuiData
       Segmentation
     };
 
-    Kind kind = Kind::Image;             //!< Type of file being loaded.
-    std::filesystem::path fileName;      //!< Source file shown in the loading popup.
-    std::optional<std::uintmax_t> bytes; //!< Source file size, when known.
-    bool loaded = false;                 //!< True after the file has loaded successfully.
+    Kind kind = Kind::Image;             //!< Type of file being loaded
+    std::filesystem::path fileName;      //!< Source file shown in the loading popup
+    std::optional<std::uintmax_t> bytes; //!< Source file size, when known
+    bool loaded = false;                 //!< True after the file has loaded successfully
   };
 
   struct LoadingStatus
   {
-    mutable std::mutex mutex;                //!< Guards title, visibility, and items.
-    bool visible = false;                    //!< Show the loading popup.
-    std::string title = "Loading Images..."; //!< Popup title text.
-    std::vector<LoadingStatusItem> items;    //!< Files shown in load order.
+    mutable std::mutex mutex;                //!< Guards title, visibility, and items
+    bool visible = false;                    //!< Show the loading popup
+    std::string title = "Loading Images..."; //!< Popup title text
+    std::vector<LoadingStatusItem> items;    //!< Files shown in load order
   };
 
-  std::shared_ptr<LoadingStatus> m_loadingStatus = std::make_shared<LoadingStatus>(); //!< Active image-load status.
+  std::shared_ptr<LoadingStatus> m_loadingStatus = std::make_shared<LoadingStatus>(); //!< Active image-load status
 
   /// Number of already-finalized images that image-dependent panels may render while a background load is active.
   std::optional<std::size_t> m_visibleImageCountDuringLoad = std::nullopt;
@@ -170,15 +165,15 @@ struct GuiData
    */
   struct DicomSeriesSelectionPrompt
   {
-    std::vector<dicom::SeriesInfo> series; //!< Discovered DICOM series offered to the user for loading.
-    std::vector<bool> selected;            //!< Per-series load selection state, parallel to series.
-    std::vector<std::string> warnings;     //!< Per-series warning text, parallel to series.
+    std::vector<dicom::SeriesInfo> series; //!< Discovered DICOM series offered to the user for loading
+    std::vector<bool> selected;            //!< Per-series load selection state, parallel to series
+    std::vector<std::string> warnings;     //!< Per-series warning text, parallel to series
 
     /// Index into series for the image that should become reference when reference selection is allowed.
     int referenceSeriesIndex = 0;
 
-    bool addToExistingProject = false;   //!< True when selected series should be appended to the current project.
-    bool allowReferenceSelection = true; //!< False when appending images or otherwise preserving the current reference.
+    bool addToExistingProject = false;   //!< True when selected series should be appended to the current project
+    bool allowReferenceSelection = true; //!< False when appending images or otherwise preserving the current reference
 
     /// Series whose full DICOM metadata modal is currently open.
     std::optional<std::size_t> metadataSeriesIndex = std::nullopt;
@@ -189,10 +184,9 @@ struct GuiData
     /// Cached slice previews, indexed by series, to avoid reloading preview images every frame.
     std::vector<std::vector<dicom::SlicePreview>> previewCache;
 
-    /// Per-series preview loading errors, parallel to series.
-    std::vector<std::string> previewErrors;
+    std::vector<std::string> previewErrors; //!< Per-series preview loading errors, parallel to series
 
-    int previewSliceCount = 10; //!< Number of representative slices requested for each series preview.
+    int previewSliceCount = 10; //!< Number of representative slices requested for each series preview
 
     /// True when the DICOM series table should size columns from the newly scanned series contents.
     bool autoSizeColumnsOnNextRender = true;
@@ -204,32 +198,31 @@ struct GuiData
      * geometry columns are visible by default, while the more verbose orientation and spacing diagnostics start hidden.
      */
     std::array<bool, 16> seriesColumnVisible{
-      true,  //!< Load column.
-      true,  //!< Reference column.
-      true,  //!< Description column.
-      true,  //!< Modality column.
-      true,  //!< Series number column.
-      true,  //!< Slice count column.
-      true,  //!< Slice orientation column.
-      true,  //!< Image dimensions column.
-      true,  //!< Voxel spacing column.
-      true,  //!< Field-of-view column.
-      false, //!< Image origin column.
-      false, //!< Direction matrix column.
-      true,  //!< Series UID column.
-      true,  //!< Study UID column.
-      true,  //!< Metadata action column.
-      true}; //!< Warning summary column.
+      true,  //!< Load column
+      true,  //!< Reference column
+      true,  //!< Description column
+      true,  //!< Modality column
+      true,  //!< Series number column
+      true,  //!< Slice count column
+      true,  //!< Slice orientation column
+      true,  //!< Image dimensions column
+      true,  //!< Voxel spacing column
+      true,  //!< Field-of-view column
+      false, //!< Image origin column
+      false, //!< Direction matrix column
+      true,  //!< Series UID column
+      true,  //!< Study UID column
+      true,  //!< Metadata action column
+      true}; //!< Warning summary column
   };
 
-  bool m_showDicomFolderPathPopup = false; //!< Show the fallback DICOM folder path entry popup.
-  std::string m_dicomFolderPathText;       //!< Editable folder path text for the fallback DICOM folder popup.
+  bool m_showDicomFolderPathPopup = false; //!< Show the fallback DICOM folder path entry popup
+  std::string m_dicomFolderPathText;       //!< Editable folder path text for the fallback DICOM folder popup
 
   /// True while the background DICOM discovery task is scanning folders/files.
   bool m_dicomSeriesScanInProgress = false;
 
-  /// Root path displayed while a DICOM discovery task is pending.
-  std::filesystem::path m_pendingDicomScanRoot;
+  std::filesystem::path m_pendingDicomScanRoot; //!< Root path displayed while a DICOM discovery task is pending
 
   /// Opens the modal that lets the user choose which discovered DICOM series to load.
   bool m_showDicomSeriesSelectionPopup = false;
@@ -240,10 +233,10 @@ struct GuiData
   /// Map from image UID to whether its image color map popup is shown from the Image Properties window.
   std::unordered_map<uuids::uuid, bool> m_showImageColormapWindow;
 
-  bool m_showDifferenceColormapWindow = false;          //!< Show the difference metric color map popup.
-  bool m_showLocalNccColormapWindow = false;            //!< Show the local NCC metric color map popup.
-  bool m_showLocalLinearResidualColormapWindow = false; //!< Show the local linear residual metric color map popup.
-  bool m_showJointHistogramColormapWindow = false;      //!< Show the joint histogram metric color map popup.
+  bool m_showDifferenceColormapWindow = false;          //!< Show the difference metric color map popup
+  bool m_showLocalNccColormapWindow = false;            //!< Show the local NCC metric color map popup
+  bool m_showLocalLinearResidualColormapWindow = false; //!< Show the local linear residual metric color map popup
+  bool m_showJointHistogramColormapWindow = false;      //!< Show the joint histogram metric color map popup
 
   /// Update m_coordsPrecisionFormat from m_coordsPrecision.
   void setCoordsPrecisionFormat();
@@ -254,35 +247,25 @@ struct GuiData
   /// Update m_timeValuePrecisionFormat from m_timeValuePrecision.
   void setTimeValuePrecisionFormat();
 
-  /// printf-style precision format string used for spatial coordinates.
-  std::string m_coordsPrecisionFormat = "%0.3f";
+  std::string m_coordsPrecisionFormat = "%0.3f"; //!< printf-style precision format string used for spatial coordinates
 
-  /// Number of digits after the decimal point for spatial coordinates.
-  uint32_t m_coordsPrecision = 3;
+  uint32_t m_coordsPrecision = 3; //!< Number of digits after the decimal point for spatial coordinates
 
-  /// printf-style precision format string used for image transformations.
-  std::string m_txPrecisionFormat = "%0.3f";
+  std::string m_txPrecisionFormat = "%0.3f"; //!< printf-style precision format string used for image transformations
 
-  /// Number of digits after the decimal point for image transformations.
-  uint32_t m_txPrecision = 3;
+  uint32_t m_txPrecision = 3; //!< Number of digits after the decimal point for image transformations
 
-  /// printf-style precision format string used for image values.
-  std::string m_imageValuePrecisionFormat = "%0.3f";
+  std::string m_imageValuePrecisionFormat = "%0.3f"; //!< printf-style precision format string used for image values
 
-  /// Number of digits after the decimal point for image values.
-  uint32_t m_imageValuePrecision = 3;
+  uint32_t m_imageValuePrecision = 3; //!< Number of digits after the decimal point for image values
 
-  /// printf-style precision format string used for percentiles.
-  std::string m_percentilePrecisionFormat = "%0.2f";
+  std::string m_percentilePrecisionFormat = "%0.2f"; //!< printf-style precision format string used for percentiles
 
-  /// Number of digits after the decimal point for percentiles.
-  uint32_t m_percentilePrecision = 2;
+  uint32_t m_percentilePrecision = 2; //!< Number of digits after the decimal point for percentiles
 
-  /// printf-style precision format string used for time values.
-  std::string m_timeValuePrecisionFormat = "%0.2f";
+  std::string m_timeValuePrecisionFormat = "%0.2f"; //!< printf-style precision format string used for time values
 
-  /// Number of digits after the decimal point for time values.
-  uint32_t m_timeValuePrecision = 2;
+  uint32_t m_timeValuePrecision = 2; //!< Number of digits after the decimal point for time values
 
   /**
    * @brief Visibility state for the Voxel Inspector table columns.
@@ -291,29 +274,29 @@ struct GuiData
    * Interpolated values and region names start hidden, matching the previous table defaults.
    */
   std::array<bool, 23> m_inspectionColumnVisible{
-    true,   //!< Image column.
-    true,   //!< Nearest-neighbor image value column.
-    false,  //!< Linearly interpolated image value column.
-    false,  //!< Nearest-neighbor active component percentile column.
-    false,  //!< Complex real component column.
-    false,  //!< Complex imaginary component column.
-    false,  //!< Complex phase column.
-    false,  //!< Minimum component value column.
-    false,  //!< Mean component value column.
-    false,  //!< Maximum component value column.
-    false,  //!< Magnitude of component values column.
-    false,  //!< Vector-field Jacobian determinant column.
-    false,  //!< Vector-field log-Jacobian determinant column.
-    false,  //!< Vector-field curl magnitude column.
-    false,  //!< Vector-field divergence column.
-    true,   //!< Active segmentation label column.
-    false,  //!< Active segmentation region name column.
-    true,   //!< Voxel index column.
-    true,   //!< Physical subject coordinate column.
-    false,  //!< Warped sampling voxel index column.
-    false,  //!< Warped sampling subject coordinate column.
-    false,  //!< Time frame column.
-    false}; //!< Time value column.
+    true,   //!< Image column
+    true,   //!< Nearest-neighbor image value column
+    false,  //!< Linearly interpolated image value column
+    false,  //!< Nearest-neighbor active component percentile column
+    false,  //!< Complex real component column
+    false,  //!< Complex imaginary component column
+    false,  //!< Complex phase column
+    false,  //!< Minimum component value column
+    false,  //!< Mean component value column
+    false,  //!< Maximum component value column
+    false,  //!< Magnitude of component values column
+    false,  //!< Vector-field Jacobian determinant column
+    false,  //!< Vector-field log-Jacobian determinant column
+    false,  //!< Vector-field curl magnitude column
+    false,  //!< Vector-field divergence column
+    true,   //!< Active segmentation label column
+    false,  //!< Active segmentation region name column
+    true,   //!< Voxel index column
+    true,   //!< Physical subject coordinate column
+    false,  //!< Warped sampling voxel index column
+    false,  //!< Warped sampling subject coordinate column
+    false,  //!< Time frame column
+    false}; //!< Time value column
 
   /// ImGui font pointers keyed by UI font name. ImGui owns the pointed-to font data.
   std::unordered_map<std::string, ImFont*> m_fonts;
@@ -380,13 +363,13 @@ struct GuiData
    */
   glm::vec2 m_segToolbarDockDims{0.0f, 0.0f};
 
-  bool m_showLayoutTabs = true;                                      //!< Show the layout tab strip.
-  LayoutTabPlacement m_layoutTabPlacement = LayoutTabPlacement::Top; //!< Layout tab strip edge.
-  float m_layoutTabBarHeight = 0.0f;                                 //!< Current visible layout tab strip height.
-  float m_layoutTabInnerGap = 0.0f;                                  //!< Gap between layout tabs and the dockspace.
-  std::optional<glm::vec4> m_renderViewport = std::nullopt;          //!< Image rendering bounds in window coordinates.
-  bool m_showConfirmRemoveLayoutPopup = false;                       //!< Confirm deletion of a layout tab.
-  std::optional<std::size_t> m_pendingRemoveLayoutIndex = std::nullopt; //!< Layout waiting for deletion.
+  bool m_showLayoutTabs = true;                                      //!< Show the layout tab strip
+  LayoutTabPlacement m_layoutTabPlacement = LayoutTabPlacement::Top; //!< Layout tab strip edge
+  float m_layoutTabBarHeight = 0.0f;                                 //!< Current visible layout tab strip height
+  float m_layoutTabInnerGap = 0.0f;                                  //!< Gap between layout tabs and the dockspace
+  std::optional<glm::vec4> m_renderViewport = std::nullopt;          //!< Image rendering bounds in window coordinates
+  bool m_showConfirmRemoveLayoutPopup = false;                       //!< Confirm deletion of a layout tab
+  std::optional<std::size_t> m_pendingRemoveLayoutIndex = std::nullopt; //!< Layout waiting for deletion
 
   /**
    * @brief Reserved screen margins occupied by visible UI chrome.
@@ -395,10 +378,10 @@ struct GuiData
    */
   struct Margins
   {
-    float left = 0.0f;   //!< Reserved margin on the left edge of the application window.
-    float right = 0.0f;  //!< Reserved margin on the right edge of the application window.
-    float bottom = 0.0f; //!< Reserved margin on the bottom edge of the application window.
-    float top = 0.0f;    //!< Reserved margin on the top edge of the application window.
+    float left = 0.0f;   //!< Reserved margin on the left edge of the application window
+    float right = 0.0f;  //!< Reserved margin on the right edge of the application window
+    float bottom = 0.0f; //!< Reserved margin on the bottom edge of the application window
+    float top = 0.0f;    //!< Reserved margin on the top edge of the application window
   };
 
   /** @brief Compute UI margins based on visible menu, toolbars, and layout tabs. */

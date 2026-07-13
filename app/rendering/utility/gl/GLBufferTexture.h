@@ -9,15 +9,20 @@
 #include <optional>
 
 /**
- * A Buffer Texture is a one-dimensional Texture whose storage comes from a Buffer Object.
- * It is used to allow a shader to access a large table of memory that is managed by a buffer
- * object.
+ * @brief One-dimensional texture whose storage is backed by an OpenGL buffer object.
+ *
+ * Buffer textures are used for large shader lookup tables, such as segmentation label color tables, where the GPU
+ * should fetch records from buffer storage through a samplerBuffer.
  *
  * @see https://www.khronos.org/opengl/wiki/Buffer_Texture
  */
 class GLBufferTexture final
 {
 public:
+  /**
+   * @param format Sized format used to interpret texels in the buffer.
+   * @param usage Buffer usage hint for the underlying storage.
+   */
   GLBufferTexture(const tex::SizedInternalBufferTextureFormat& format, const BufferUsagePattern& usage);
 
   GLBufferTexture(const GLBufferTexture&) = delete;
@@ -28,23 +33,31 @@ public:
 
   ~GLBufferTexture();
 
+  /// Generate both the backing buffer object and texture object.
   void generate();
+
+  /// Unbind the texture from the current context or from a specific texture unit.
   void release(std::optional<uint32_t> textureUnit = std::nullopt);
+
+  /// Bind the texture to the current context or to a specific texture unit.
   void bind(std::optional<uint32_t> textureUnit = std::nullopt);
+
+  /// Return whether the texture object is bound, optionally on the supplied texture unit.
   bool isBound(std::optional<uint32_t> textureUnit = std::nullopt);
+
+  /// Unbind the texture target from the current context.
   void unbind();
 
-  /**
-   * @return Texture ID
-   */
+  /// Return the OpenGL texture name.
   GLuint id() const;
 
-  // Allocate buffer
+  /// Allocate backing buffer storage and optionally initialize it with CPU data.
   void allocate(std::size_t sizeInBytes, const GLvoid* data);
 
-  // Write to buffer
+  /// Replace a byte range in the backing buffer.
   void write(GLintptr offset, GLsizeiptr sizeInBytes, const GLvoid* data);
 
+  /// Read a byte range from the backing buffer.
   void read(GLintptr offset, GLsizeiptr sizeInBytes, GLvoid* data);
 
   BufferUsagePattern usagePattern() const;
@@ -58,11 +71,13 @@ public:
    */
   std::size_t numBytes() const;
 
-  /**
-   * @brief Attach buffer object's data store to a buffer texture object.
-   */
+  /// Attach the backing buffer object's data store to the texture object.
   void attachBufferToTexture(std::optional<uint32_t> textureUnit = std::nullopt);
 
+  /// Detach any buffer storage currently attached to the texture object.
+  void detachBufferFromTexture();
+
+  /// @deprecated Use `detachBufferFromTexture()`.
   void detatchBufferFromTexture();
 
 private:

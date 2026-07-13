@@ -10,9 +10,18 @@
 
 #include <glad/glad.h>
 
+/**
+ * @brief RAII wrapper around an OpenGL vertex array object.
+ *
+ * The wrapper owns the VAO name and provides helpers for configuring floating-point and integer vertex attributes as
+ * well as issuing indexed draw calls from an already bound index buffer.
+ */
 class GLVertexArrayObject final
 {
 public:
+  /**
+   * @brief Fully resolved arguments for `glDrawElements()`.
+   */
   class IndexedDrawParams
   {
   public:
@@ -29,7 +38,7 @@ public:
     GLenum indexType() const;
     GLvoid* indices() const;
 
-    void setElementCount(std::size_t c);
+    void setElementCount(std::size_t elementCount);
 
   private:
     GLenum m_primitiveMode;
@@ -47,14 +56,21 @@ public:
   GLVertexArrayObject(GLVertexArrayObject&&) = default;
   GLVertexArrayObject& operator=(GLVertexArrayObject&&) = default;
 
+  /// Generate the VAO name if needed.
   void generate();
+
+  /// Delete the VAO name and reset local state.
   void destroy();
 
+  /// Bind this VAO to the current context.
   void bind() const;
+
+  /// Unbind the active VAO from the current context.
   void release() const;
 
   GLuint id() const;
 
+  /// Configure a floating-point vertex attribute stream.
   void setAttributeBuffer(
     GLuint index,
     GLint size,
@@ -63,23 +79,20 @@ public:
     GLsizei stride,
     GLint offset);
 
+  /// Configure a floating-point vertex attribute stream from a stored attribute descriptor.
   void setAttributeBuffer(GLuint index, const VertexAttributeInfo& attribInfo);
 
+  /// Configure an integer vertex attribute stream.
   void
   setAttributeIntegerBuffer(GLuint index, GLint size, const BufferComponentType& type, GLsizei stride, GLint offset);
 
-  /// @note There is a bug in Qt:
-  /// glVertexAttrib family of functions are not defined in the Core profile functions:
-  /// @see
-  /// https://stackoverflow.com/questions/24595609/why-does-qt-consider-glvertexattrib-methods-as-deprecated-compatibility-profile
-
-  // This sets global context state: nothing specific to the VAO
-  //    void setGenericAttribute2f( GLuint index, const glm::vec2& values );
-  //    void setGenericAttribute4f( GLuint index, const glm::vec4& values );
-
+  /// Enable one vertex attribute index.
   void enableVertexAttribute(GLuint index);
+
+  /// Disable one vertex attribute index.
   void disableVertexAttribute(GLuint index);
 
+  /// Issue `glDrawElements()` with precomputed draw arguments.
   void drawElements(const IndexedDrawParams& params) const;
 
 private:

@@ -7,7 +7,7 @@
 namespace intersection
 {
 
-inline constexpr int k_numIntersectionVertices = 7; //!< Six polygon vertices plus centroid.
+inline constexpr int k_numIntersectionVertices = 7; //!< Six polygon vertices plus centroid
 
 /** @brief Intersection polygon vertices in 3D coordinates. */
 using IntersectionVertices = std::array<glm::vec3, k_numIntersectionVertices>;

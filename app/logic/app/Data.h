@@ -45,8 +45,8 @@ using ComponentIndexType = uint32_t;
  */
 struct ComponentProjectionCacheKey
 {
-  ComponentProjectionMode mode{ComponentProjectionMode::Mean}; //!< Projection operation.
-  uint32_t timePoint{0};                                       //!< Source image time point.
+  ComponentProjectionMode mode{ComponentProjectionMode::Mean}; //!< Projection operation
+  uint32_t timePoint{0};                                       //!< Source image time point
 
   /// @brief Order keys for use in std::map.
   bool operator<(const ComponentProjectionCacheKey& other) const
@@ -539,13 +539,14 @@ private:
   void removeWarpReferences(const uuid& warpUid);
 
   /// @todo Put into EntropyApp
-  AppSettings m_settings; //!< Application settings
-  AppState m_state;       //!< Application state
+  /// Application settings
+  AppSettings m_settings;
+  AppState m_state; //!< Application state
 
   GuiData m_guiData;                         //!< Data for the UI
   RenderData m_renderData;                   //!< Data for rendering
   WindowData m_windowData;                   //!< Data for windowing
-  registration::JobStore m_registrationJobs; //!< In-memory registration job records.
+  registration::JobStore m_registrationJobs; //!< In-memory registration job records
 
   serialize::EntropyProject m_project;                    //!< Project that is used for serialization
   std::optional<std::filesystem::path> m_projectFileName; //!< File name of the currently loaded/saved project
@@ -557,7 +558,7 @@ private:
   /// @todo This cache is time-point-aware but not memory-bounded. Replace it with an LRU cache when
   /// large time series make it possible to accumulate many derived frames.
   std::unordered_map<uuid, std::map<ComponentProjectionCacheKey, uuid> > m_imageToComponentProjectionImages;
-  std::unordered_map<uuid, uuid> m_componentProjectionToSourceImage; //!< Hidden projection UID to source image UID.
+  std::unordered_map<uuid, uuid> m_componentProjectionToSourceImage; //!< Hidden projection UID to source image UID
 
   std::unordered_map<uuid, Image> m_segs; //!< Segmentations, also stored as images
   std::vector<uuid> m_segUidsOrdered;     //!< Segmentation UIDs in order
@@ -576,11 +577,10 @@ private:
 
   std::unordered_map<uuid, Annotation> m_annotations; //!< Annotations
 
-  /// ID of the reference image. This is null iff there are no images.
-  std::optional<uuid> m_refImageUid;
+  std::optional<uuid> m_refImageUid; //!< Reference image UID, or null iff there are no images
 
   /// ID of the image being actively transformed or whose settings are being changed.
-  /// This is null iff there are no images.
+  /// This is null iff there are no images
   std::optional<uuid> m_activeImageUid;
 
   /// Map of image to its segmentations

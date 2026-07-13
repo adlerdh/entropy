@@ -108,10 +108,10 @@ std::unique_ptr<MeshGpuRecord> createMeshGpuRecordFromVtkPolyData(
 
 /**
  * @brief Create a GPU record for a slide image.
- * @param slideCpuRecord CPU slide record containing the source image data.
+ * @param cpuRecord CPU slide record containing the source image data.
  * @return GPU slide record, or null if texture creation fails.
  */
-std::unique_ptr<SlideGpuRecord> createSlideGpuRecord(const slideio::SlideCpuRecord*);
+std::unique_ptr<SlideGpuRecord> createSlideGpuRecord(const slideio::SlideCpuRecord* cpuRecord);
 
 /**
  * @brief Create a GPU record for a slide annotation polygon.
@@ -125,14 +125,14 @@ std::unique_ptr<SlideAnnotationGpuRecord> createSlideAnnotationGpuRecord(const P
  * @param colorMap Image color map to upload.
  * @return Texture object, or null if the input is invalid.
  */
-std::unique_ptr<GLTexture> createImageColorMapTexture(const ImageColorMap*);
+std::unique_ptr<GLTexture> createImageColorMapTexture(const ImageColorMap* colorMap);
 
 /**
  * @brief Create a texture buffer containing segmentation label colors.
  * @param labelTable Label color table to upload.
  * @return Buffer texture object, or null if the input is invalid.
  */
-std::unique_ptr<GLBufferTexture> createLabelColorTableTextureBuffer(const ParcellationLabelTable*);
+std::unique_ptr<GLBufferTexture> createLabelColorTableTextureBuffer(const ParcellationLabelTable* labelTable);
 
 /**
  * @brief Create a blank RGBA texture for the requested component type and texture target.

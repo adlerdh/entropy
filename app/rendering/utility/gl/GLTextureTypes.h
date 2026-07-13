@@ -7,6 +7,9 @@
 namespace tex
 {
 
+/**
+ * @brief Texture binding targets supported by Entropy's wrapper layer.
+ */
 enum class Target : uint32_t
 {
   Texture1D = GL_TEXTURE_1D,
@@ -24,6 +27,9 @@ enum class Target : uint32_t
   /// TargetCubeMapArray = GL_TEXTURE_CUBE_MAP_ARRAY
 };
 
+/**
+ * @brief OpenGL state queries for the texture object currently bound to each target.
+ */
 enum class Binding : uint32_t
 {
   TextureBinding1D = GL_TEXTURE_BINDING_1D,
@@ -38,6 +44,9 @@ enum class Binding : uint32_t
   TextureBindingBuffer = GL_TEXTURE_BINDING_BUFFER
 };
 
+/**
+ * @brief Cube-map faces accepted by cube-map upload and framebuffer attachment calls.
+ */
 enum class CubeMapFace : uint32_t
 {
   PositiveX = GL_TEXTURE_CUBE_MAP_POSITIVE_X,
@@ -48,6 +57,9 @@ enum class CubeMapFace : uint32_t
   NegativeZ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
 };
 
+/**
+ * @brief Pixel component layout supplied by CPU memory during texture transfers.
+ */
 enum class BufferPixelFormat : uint32_t
 {
   /// Floating point or normalized (un)signed integer formats
@@ -247,6 +259,8 @@ enum class SizedInternalFormat : uint32_t
 };
 
 /**
+ * @brief Sized internal formats accepted by `glTexBuffer()`.
+ *
  * @see https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexBuffer.xhtml
  */
 enum class SizedInternalBufferTextureFormat : uint32_t
@@ -286,6 +300,9 @@ enum class SizedInternalBufferTextureFormat : uint32_t
   RGBA32U = GL_RGBA32UI
 };
 
+/**
+ * @brief Texture minification filters used when a texel maps to less than one screen pixel.
+ */
 enum class MinificationFilter : uint32_t
 {
   Nearest = GL_NEAREST,
@@ -299,12 +316,18 @@ enum class MinificationFilter : uint32_t
   LinearWithMipmapLinear = GL_LINEAR_MIPMAP_LINEAR
 };
 
+/**
+ * @brief Texture magnification filters used when a texel maps to more than one screen pixel.
+ */
 enum class MagnificationFilter : uint32_t
 {
   Nearest = GL_NEAREST,
   Linear = GL_LINEAR
 };
 
+/**
+ * @brief Component swizzle values used to remap sampled texture channels.
+ */
 enum class SwizzleValue : uint32_t
 {
   Red = GL_RED,
@@ -315,6 +338,9 @@ enum class SwizzleValue : uint32_t
   One = GL_ONE
 };
 
+/**
+ * @brief Texture coordinate behavior outside the normalized image domain.
+ */
 enum class WrapMode : uint32_t
 {
   ClampToBorder = GL_CLAMP_TO_BORDER,
@@ -323,6 +349,9 @@ enum class WrapMode : uint32_t
   MirroredRepeat = GL_MIRRORED_REPEAT
 };
 
+/**
+ * @brief Texture coordinate axis selected when setting wrap modes.
+ */
 enum class SamplingDirection : uint32_t
 {
   X = GL_TEXTURE_WRAP_S,

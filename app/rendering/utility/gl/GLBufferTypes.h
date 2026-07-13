@@ -4,18 +4,21 @@
 
 #include <cstdint>
 
+/**
+ * @brief OpenGL buffer targets used by the renderer.
+ */
 enum class BufferType : uint32_t
 {
-  CopyRead = GL_COPY_READ_BUFFER,
-  CopyWrite = GL_COPY_WRITE_BUFFER,
-  DrawIndirect = GL_DRAW_INDIRECT_BUFFER,
-  Index = GL_ELEMENT_ARRAY_BUFFER,
-  PixelPack = GL_PIXEL_PACK_BUFFER,
-  PixelUnpack = GL_PIXEL_UNPACK_BUFFER,
-  Texture = GL_TEXTURE_BUFFER,
-  TransformFeedback = GL_TRANSFORM_FEEDBACK_BUFFER,
-  Uniform = GL_UNIFORM_BUFFER,
-  VertexArray = GL_ARRAY_BUFFER
+  CopyRead = GL_COPY_READ_BUFFER,                   //!< Source buffer for GL-to-GL copy operations
+  CopyWrite = GL_COPY_WRITE_BUFFER,                 //!< Destination buffer for GL-to-GL copy operations
+  DrawIndirect = GL_DRAW_INDIRECT_BUFFER,           //!< Buffer containing indirect draw commands
+  Index = GL_ELEMENT_ARRAY_BUFFER,                  //!< Element/index buffer for indexed draws
+  PixelPack = GL_PIXEL_PACK_BUFFER,                 //!< Destination buffer for pixel readback
+  PixelUnpack = GL_PIXEL_UNPACK_BUFFER,             //!< Source buffer for pixel uploads
+  Texture = GL_TEXTURE_BUFFER,                      //!< Storage backing a buffer texture
+  TransformFeedback = GL_TRANSFORM_FEEDBACK_BUFFER, //!< Transform feedback capture buffer
+  Uniform = GL_UNIFORM_BUFFER,                      //!< Uniform block storage buffer
+  VertexArray = GL_ARRAY_BUFFER                     //!< Vertex attribute data buffer
 
   // Not supported in GL 3.3:
   // GL_ATOMIC_COUNTER_BUFFER
@@ -24,20 +27,12 @@ enum class BufferType : uint32_t
   // GL_SHADER_STORAGE_BUFFER
 };
 
-/*
-The frequency of access may be one of these:
-STREAM The data store contents will be modified once and used at most a few times.
-STATIC The data store contents will be modified once and used many times.
-DYNAMIC The data store contents will be modified repeatedly and used many times.
-
-The nature of access may be one of these:
-DRAW The data store contents are modified by the application, and used as the source for GL drawing
-and image specification commands. READ The data store contents are modified by reading data from the
-GL, and used to return that data when queried by the application. COPY The data store contents are
-modified by reading data from the GL, and used as the source for GL drawing and image specification
-commands.
-*/
-
+/**
+ * @brief OpenGL buffer storage usage hints.
+ *
+ * `Stream`, `Static`, and `Dynamic` describe expected update frequency. `Draw`, `Read`, and `Copy` describe whether
+ * data is mainly written by the CPU, read back to the CPU, or copied between GL objects.
+ */
 enum class BufferUsagePattern : uint32_t
 {
   DynamicDraw = GL_DYNAMIC_DRAW,
@@ -51,13 +46,19 @@ enum class BufferUsagePattern : uint32_t
   StreamCopy = GL_STREAM_COPY
 };
 
+/**
+ * @brief Access mode for mapping an entire buffer object.
+ */
 enum class BufferMapAccessPolicy : uint32_t
 {
-  ReadOnly = GL_READ_ONLY,
-  WriteOnly = GL_WRITE_ONLY,
-  ReadWrite = GL_READ_WRITE
+  ReadOnly = GL_READ_ONLY,   //!< CPU reads mapped buffer storage
+  WriteOnly = GL_WRITE_ONLY, //!< CPU writes mapped buffer storage
+  ReadWrite = GL_READ_WRITE  //!< CPU reads and writes mapped buffer storage
 };
 
+/**
+ * @brief Access flags for mapping a subrange of a buffer object.
+ */
 enum class BufferMapRangeAccessFlag : uint32_t
 {
   MapReadBit = GL_MAP_READ_BIT,
@@ -72,6 +73,9 @@ enum class BufferMapRangeAccessFlag : uint32_t
   // MapCoherentBit = GL_MAP_COHERENT_BIT,
 };
 
+/**
+ * @brief Scalar component types accepted by vertex attribute buffers.
+ */
 enum class BufferComponentType : uint32_t
 {
   Byte = GL_BYTE,
@@ -91,8 +95,11 @@ enum class BufferComponentType : uint32_t
   // Fixed = GL_FIXED
 };
 
+/**
+ * @brief Whether fixed-point vertex attribute values should be normalized on shader fetch.
+ */
 enum class BufferNormalizeValues : bool
 {
-  True = true,
-  False = false
+  True = true,  //!< Normalize fixed-point attribute values
+  False = false //!< Preserve raw fixed-point attribute values
 };

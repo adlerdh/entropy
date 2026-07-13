@@ -194,7 +194,7 @@ private:
   bool m_dirty;            //!< Does serialized annotation content have unsaved edits?
 
   /// Overall annotation opacity in [0.0, 1.0] range.
-  /// The annotation fill and line colors opacities are modulated by this value.
+  /// The annotation fill and line colors opacities are modulated by this value
   float m_opacity;
 
   glm::vec4 m_vertexColor; //!< Vertex color (non-premultiplied RGBA)
@@ -204,7 +204,7 @@ private:
 
   /// Equation of the 3D plane containing this annotation. The plane is defined by the
   /// coefficients (A, B, C, D) of equation Ax + By + Cz + D = 0, where (x, y, z) are
-  /// coordinates in Subject space.
+  /// coordinates in Subject space
   glm::vec4 m_subjectPlaneEquation;
 
   /// 3D origin of the plane in Subject space

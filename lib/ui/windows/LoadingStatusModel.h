@@ -14,8 +14,8 @@ namespace ui::loading_status_model
  */
 struct LoadingProgress
 {
-  std::uintmax_t loaded = 0; //!< Weighted bytes loaded, or fallback units for unknown-size items.
-  std::uintmax_t total = 0;  //!< Total weighted bytes, or fallback units for unknown-size items.
+  std::uintmax_t loaded = 0; //!< Weighted bytes loaded, or fallback units for unknown-size items
+  std::uintmax_t total = 0;  //!< Total weighted bytes, or fallback units for unknown-size items
 };
 
 /**

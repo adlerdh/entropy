@@ -16,9 +16,9 @@ namespace rendering::texture_setup
  */
 struct TextureLimits
 {
-  int maxTextureSize = 0;        //!< GL_MAX_TEXTURE_SIZE, used for 1D/2D width and height.
-  int max3DTextureSize = 0;      //!< GL_MAX_3D_TEXTURE_SIZE, used for each 3D texture dimension.
-  int maxArrayTextureLayers = 0; //!< GL_MAX_ARRAY_TEXTURE_LAYERS, logged for diagnostics.
+  int maxTextureSize = 0;        //!< GL_MAX_TEXTURE_SIZE, used for 1D/2D width and height
+  int max3DTextureSize = 0;      //!< GL_MAX_3D_TEXTURE_SIZE, used for each 3D texture dimension
+  int maxArrayTextureLayers = 0; //!< GL_MAX_ARRAY_TEXTURE_LAYERS, logged for diagnostics
 };
 
 /**
@@ -26,8 +26,8 @@ struct TextureLimits
  */
 struct TextureUploadLayout
 {
-  PlanarTextureLayout layout; //!< Texture dimensionality and, for 2D textures, the represented image axes.
-  glm::uvec3 uploadSize{1u};  //!< OpenGL upload size; 2D textures use z = 1.
+  PlanarTextureLayout layout; //!< Texture dimensionality and, for 2D textures, the represented image axes
+  glm::uvec3 uploadSize{1u};  //!< OpenGL upload size; 2D textures use z = 1
 };
 
 /**

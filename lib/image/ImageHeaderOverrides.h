@@ -38,16 +38,16 @@ struct ImageHeaderOverrides
     m_originalIsOblique = math::computeSpiralCodeFromDirectionMatrix(m_originalDirs).second;
   }
 
-  bool m_useIdentityPixelSpacings = false;               //!< Use unit pixel spacings instead of original spacing.
-  bool m_useZeroPixelOrigin = false;                     //!< Use a zero origin instead of original origin.
-  bool m_useIdentityPixelDirections = false;             //!< Use identity directions instead of original directions.
-  bool m_snapToClosestOrthogonalPixelDirections = false; //!< Use the closest orthogonal direction matrix.
+  bool m_useIdentityPixelSpacings = false;               //!< Use unit pixel spacings instead of original spacing
+  bool m_useZeroPixelOrigin = false;                     //!< Use a zero origin instead of original origin
+  bool m_useIdentityPixelDirections = false;             //!< Use identity directions instead of original directions
+  bool m_snapToClosestOrthogonalPixelDirections = false; //!< Use the closest orthogonal direction matrix
 
-  glm::uvec3 m_originalDims{0u};     //!< Original voxel dimensions.
-  glm::vec3 m_originalSpacing{1.0f}; //!< Original voxel spacing.
-  glm::vec3 m_originalOrigin{0.0f};  //!< Original voxel origin.
-  glm::mat3 m_originalDirs{1.0f};    //!< Original voxel direction cosines.
-  bool m_originalIsOblique = false;  //!< Whether the original direction matrix is oblique.
+  glm::uvec3 m_originalDims{0u};     //!< Original voxel dimensions
+  glm::vec3 m_originalSpacing{1.0f}; //!< Original voxel spacing
+  glm::vec3 m_originalOrigin{0.0f};  //!< Original voxel origin
+  glm::mat3 m_originalDirs{1.0f};    //!< Original voxel direction cosines
+  bool m_originalIsOblique = false;  //!< Whether the original direction matrix is oblique
 
   /// @brief Closest orthogonal directions to the original voxel direction cosines.
   glm::mat3 m_closestOrthogonalDirs;

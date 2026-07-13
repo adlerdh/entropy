@@ -40,8 +40,8 @@ public:
   uuid bindGroupIndex(std::size_t groupIndex, const uuid& groupUid);
 
 private:
-  std::unordered_map<uuid, std::size_t> m_indicesByUid; //!< Serialized indices by runtime UID.
-  std::unordered_map<std::size_t, uuid> m_uidsByIndex;  //!< Runtime UIDs by serialized index.
+  std::unordered_map<uuid, std::size_t> m_indicesByUid; //!< Serialized indices by runtime UID
+  std::unordered_map<std::size_t, uuid> m_uidsByIndex;  //!< Runtime UIDs by serialized index
 };
 
 } // namespace layout

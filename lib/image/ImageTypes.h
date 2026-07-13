@@ -5,11 +5,11 @@
  */
 enum class ImageLoadState
 {
-  HeaderOnly,    //!< Header metadata is available, but pixel buffers have not been loaded.
-  LoadingPixels, //!< Pixel loading is in progress.
-  LoadedPixels,  //!< Pixel buffers are loaded and available.
-  Failed,        //!< Loading failed.
-  Skipped        //!< Pixel loading was intentionally skipped.
+  HeaderOnly,    //!< Header metadata is available, but pixel buffers have not been loaded
+  LoadingPixels, //!< Pixel loading is in progress
+  LoadedPixels,  //!< Pixel buffers are loaded and available
+  Failed,        //!< Loading failed
+  Skipped        //!< Pixel loading was intentionally skipped
 };
 
 /**

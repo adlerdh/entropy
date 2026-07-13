@@ -163,7 +163,7 @@ private:
   std::string m_memoryComponentTypeAsString;
   uint32_t m_memoryComponentSizeInBytes; //!< Size of component in bytes, as loaded in memory buffer
 
-  glm::uvec3 m_pixelDimensions; //!< Pixel dimensions (i.e. pixel matrix size)
+  glm::uvec3 m_pixelDimensions; //!< Pixel matrix dimensions
   glm::vec3 m_origin;           //!< Origin in physical Subject space
   glm::vec3 m_spacing;          /// Pixel spacing in physical Subject space
   glm::mat3 m_directions;       /// Axis directions in physical Subject space, stored column-wise
@@ -184,7 +184,7 @@ private:
   /// Three-character "SPIRAL" code defining the anatomical orientation of the image in Subject
   /// space, where positive X, Y, and Z axes correspond to the physical Left, Posterior, and
   /// Superior directions, respectively. The acroynm stands for "Superior, Posterior, Inferior,
-  /// Right, Anterior, Left".
+  /// Right, Anterior, Left"
   std::string m_spiralCode;
 
   /// Flag indicating whether the image directions are oblique (i.e. skew w.r.t. the physical X, Y,
