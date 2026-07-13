@@ -29,7 +29,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ubuntu-ci-${{ github.ref }}
+  group: ubuntu-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.run_coverage && 'coverage' || 'ci' }}
   cancel-in-progress: true
 
 env:
