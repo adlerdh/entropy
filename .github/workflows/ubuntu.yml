@@ -7,8 +7,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*.*.*.*"
   schedule:
     # Weekly full Ubuntu validation. Run manually when release confidence is needed sooner.
     - cron: "47 8 * * 0"
@@ -182,10 +180,14 @@ jobs:
     name: Coverage Report (x86_64)
     runs-on: ubuntu-22.04
     needs: format
-    if: >
-      github.event_name == 'schedule' ||
-      startsWith(github.ref, 'refs/tags/v') ||
-      (github.event_name == 'workflow_dispatch' && inputs.run_coverage)
+    if: github.event_name == 'workflow_dispatch' && inputs.run_coverage
+    permissions:
+      contents: read
+      id-token: write
+      pages: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Check out source
@@ -297,6 +299,30 @@ jobs:
           name: ubuntu-coverage-html
           path: build-coverage/coverage/html/
           if-no-files-found: error
+
+      - name: Prepare coverage Pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p coverage-pages/coverage
+          cp -R build-coverage/coverage/html coverage-pages/coverage/html
+          python3 .github/scripts/generate_coverage_pages.py \
+            --summary build-coverage/coverage/summary.json \
+            --output coverage-pages/coverage
+
+      - name: Configure GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+
+      - name: Upload coverage Pages artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: coverage-pages
+
+      - name: Deploy coverage Pages
+        id: deployment
+        if: github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v4
 
       - name: Show Coverage ccache stats
         if: always()
