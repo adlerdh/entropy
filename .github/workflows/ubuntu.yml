@@ -129,8 +129,12 @@ jobs:
 
       - name: Reset Debug ccache stats
         run: |
-          ccache --max-size="${CCACHE_MAXSIZE}"
-          ccache --zero-stats
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --max-size="${CCACHE_MAXSIZE}"
+            ccache --zero-stats
+          else
+            echo "ccache not found; skipping ccache stats reset"
+          fi
 
       - name: Restore Debug Dependencies cache
         uses: actions/cache@v5
@@ -174,7 +178,12 @@ jobs:
 
       - name: Show Debug ccache stats
         if: always()
-        run: ccache --show-stats
+        run: |
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --show-stats
+          else
+            echo "ccache not found; skipping ccache stats"
+          fi
 
   coverage:
     name: Coverage Report (x86_64)
@@ -235,8 +244,12 @@ jobs:
 
       - name: Reset Coverage ccache stats
         run: |
-          ccache --max-size="${CCACHE_MAXSIZE}"
-          ccache --zero-stats
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --max-size="${CCACHE_MAXSIZE}"
+            ccache --zero-stats
+          else
+            echo "ccache not found; skipping ccache stats reset"
+          fi
 
       - name: Restore Coverage Dependencies cache
         uses: actions/cache@v5
@@ -326,7 +339,12 @@ jobs:
 
       - name: Show Coverage ccache stats
         if: always()
-        run: ccache --show-stats
+        run: |
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --show-stats
+          else
+            echo "ccache not found; skipping ccache stats"
+          fi
 
   package:
     name: Release Packages (x86_64)
@@ -381,8 +399,12 @@ jobs:
 
       - name: Reset Release ccache stats
         run: |
-          ccache --max-size="${CCACHE_MAXSIZE}"
-          ccache --zero-stats
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --max-size="${CCACHE_MAXSIZE}"
+            ccache --zero-stats
+          else
+            echo "ccache not found; skipping ccache stats reset"
+          fi
 
       - name: Restore Release Dependencies cache
         uses: actions/cache@v5
@@ -448,4 +470,9 @@ jobs:
 
       - name: Show Release ccache stats
         if: always()
-        run: ccache --show-stats
+        run: |
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --show-stats
+          else
+            echo "ccache not found; skipping ccache stats"
+          fi
