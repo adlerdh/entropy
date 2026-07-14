@@ -41,6 +41,11 @@ void renderImagePropertiesWindow(
   const std::function<std::optional<uuid>(const std::filesystem::path& fileName)>& loadWarpField,
   const std::function<void(
     const uuid& imageUid,
+    const std::filesystem::path& fileName,
+    bool forwardWarp,
+    std::optional<uuid> inverseWarpReferenceImageUid)>& loadAndAssignWarpField,
+  const std::function<void(
+    const uuid& imageUid,
     const uuid& sourceWarpUid,
     ComputedWarpDirection direction,
     const WarpInversionOptions& options)>& requestWarpInversion,
@@ -105,6 +110,7 @@ void renderImagePropertiesWindow(
             getNumImageColorMaps,
             getImageColorMap,
             loadWarpField,
+            loadAndAssignWarpField,
             requestWarpInversion,
             moveImageBackward,
             moveImageForward,

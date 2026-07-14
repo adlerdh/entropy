@@ -100,10 +100,11 @@ void windowCloseCallback(GLFWwindow* window)
 
   SPDLOG_TRACE("User has requested to close the application");
 
-  app->requestQuitApp();
-
-  // Turn off the closing flag, so that the window does not close until the request has been handled.
+  // Turn off the closing flag before opening any confirmation UI, so the native
+  // window remains valid while the close request is being handled.
   glfwSetWindowShouldClose(window, GLFW_FALSE);
+
+  app->requestQuitApp();
 }
 
 void windowPositionCallback(GLFWwindow* window, int screenWindowPosX, int screenWindowPosY)

@@ -22,6 +22,11 @@ registration::JobSpec minimalJob(registration::Backend backend)
   job.backend = backend;
   job.fixedImage = imageRef("fixed", "fixed");
   job.movingImage = imageRef("moving", "moving");
+  if (backend == registration::Backend::FireANTs) {
+    job.metric = registration::Metric::MI;
+    job.outputs.loadForwardWarp = false;
+    job.outputs.transformLandmarksAndAnnotations = false;
+  }
   return job;
 }
 
@@ -88,20 +93,108 @@ TEST_CASE("registration validation requires a moving segmentation for warped seg
   CHECK(result.canLaunch());
 }
 
-TEST_CASE("registration validation requires FireANTs masks to be paired", "[registration]")
+TEST_CASE("registration validation allows FireANTs masks for documented masked metrics", "[registration]")
 {
   registration::JobSpec job = minimalJob(registration::Backend::FireANTs);
+  job.metric = registration::Metric::CC;
   job.fixedMask = imageRef("fixed-mask", "fixed_mask");
+
+  registration::ValidationResult result =
+    registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+
+  job.metric = registration::Metric::MSE;
+  job.movingMask = imageRef("moving-mask", "moving_mask");
+  result = registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+}
+
+TEST_CASE("registration validation rejects FireANTs masks with undocumented masked metrics", "[registration]")
+{
+  registration::JobSpec job = minimalJob(registration::Backend::FireANTs);
+  job.metric = registration::Metric::MI;
+  job.fixedMask = imageRef("fixed-mask", "fixed_mask");
+
+  const registration::ValidationResult result =
+    registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK_FALSE(result.canLaunch());
+}
+
+TEST_CASE("registration validation rejects FireANTs initial affine files", "[registration]")
+{
+  registration::JobSpec job = minimalJob(registration::Backend::FireANTs);
+  job.initialAffineTransform = "/tmp/entropy-registration/initial_affine.tfm";
+
+  const registration::ValidationResult result =
+    registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK_FALSE(result.canLaunch());
+}
+
+TEST_CASE("registration validation rejects FireANTs metrics not supported by the CLI", "[registration]")
+{
+  registration::JobSpec job = minimalJob(registration::Backend::FireANTs);
+  job.metric = registration::Metric::WNCC;
 
   registration::ValidationResult result =
     registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
 
   CHECK_FALSE(result.canLaunch());
 
-  job.movingMask = imageRef("moving-mask", "moving_mask");
+  job.metric = registration::Metric::NCC;
+  result = registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK_FALSE(result.canLaunch());
+
+  job.metric = registration::Metric::CC;
   result = registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
 
   CHECK(result.canLaunch());
+}
+
+TEST_CASE("registration validation rejects FireANTs Levenberg-Marquardt with geodesic deformation", "[registration]")
+{
+  registration::JobSpec job = minimalJob(registration::Backend::FireANTs);
+  job.transformModel = registration::TransformModel::Deformable;
+  job.parameterValues.push_back({"deformableOptimizer", "Levenberg-Marquardt"});
+  job.parameterValues.push_back({"deformationModel", "geodesic"});
+
+  registration::ValidationResult result =
+    registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK_FALSE(result.canLaunch());
+
+  job.parameterValues.back().value = "compositive";
+  result = registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+}
+
+TEST_CASE("registration validation warns about FireANTs missing staged affine output", "[registration]")
+{
+  registration::JobSpec job = minimalJob(registration::Backend::FireANTs);
+  job.transformModel = registration::TransformModel::AffineDeformable;
+  job.outputs.loadAffineTransform = true;
+
+  registration::ValidationResult result =
+    registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+  REQUIRE_FALSE(result.messages.empty());
+  CHECK(result.messages.front().severity == registration::ValidationSeverity::Warning);
+  CHECK(result.messages.front().field == "outputs.affineTransform");
+
+  job.outputs.loadAffineTransform = false;
+  result = registration::validateJob(job, registration::capabilitiesForBackend(job.backend));
+
+  CHECK(result.canLaunch());
+  CHECK(
+    std::none_of(result.messages.begin(), result.messages.end(), [](const registration::ValidationMessage& message) {
+      return message.field == "outputs.affineTransform";
+    }));
 }
 
 TEST_CASE("registration validation warns when Greedy affine-only jobs include a moving mask", "[registration]")

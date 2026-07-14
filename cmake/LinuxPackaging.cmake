@@ -34,8 +34,8 @@ install(FILES "${entropy_LINUX_DESKTOP_FILE}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
 )
 
-install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python"
+install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}/"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python/fireants_bridge"
 )
 
 entropy_install_package_documents("${CMAKE_INSTALL_DOCDIR}")

@@ -34,6 +34,10 @@ void Rendering::renderIsoContoursForImage(
   const bool isFixedImage)
 {
   const RenderData& renderData = m_appData.renderData();
+  const std::optional<uuids::uuid> referenceImageUid =
+    renderWarped ? activeRenderableDeformationReferenceImageUid(imageUid) : std::nullopt;
+  const CurrentImages renderGeometryImages{
+    referenceImageUid ? ImgSegPair{*referenceImageUid, std::nullopt} : imgSegPair};
   const ImageSettings& imageSettings = image.settings();
 
   if (!imageSettings.isosurfacesVisible() || !imageSettings.showIsocontoursIn2D()) {
@@ -122,7 +126,7 @@ void Rendering::renderIsoContoursForImage(
       setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
     }
 
-    renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{imgSegPair}, false);
+    renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, false);
   }
   program->stopUse();
 

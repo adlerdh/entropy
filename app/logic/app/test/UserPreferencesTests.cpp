@@ -67,7 +67,6 @@ void setNonDefaultSettings(AppSettings& settings)
   registrationConfig.antsApplyTransformsExecutable = "/opt/ants/bin/antsApplyTransforms";
   registrationConfig.antsConvertTransformFileExecutable = "/opt/ants/bin/ConvertTransformFile";
   registrationConfig.fireAntsPythonExecutable = "/opt/fireants/bin/python";
-  registrationConfig.fireAntsBridgeModule = "entropy_test_fireants_bridge";
   registrationConfig.defaultOutputDirectory = "/tmp/entropy-registration";
   registrationConfig.keepTemporaryFiles = true;
   registrationConfig.maxConcurrentJobs = 3;
@@ -239,7 +238,6 @@ void requireSettingsEqual(const AppSettings& actual, const AppSettings& expected
   CHECK(
     actualRegistration.antsConvertTransformFileExecutable == expectedRegistration.antsConvertTransformFileExecutable);
   CHECK(actualRegistration.fireAntsPythonExecutable == expectedRegistration.fireAntsPythonExecutable);
-  CHECK(actualRegistration.fireAntsBridgeModule == expectedRegistration.fireAntsBridgeModule);
   CHECK(actualRegistration.defaultOutputDirectory == expectedRegistration.defaultOutputDirectory);
   CHECK(actualRegistration.keepTemporaryFiles == expectedRegistration.keepTemporaryFiles);
   CHECK(actualRegistration.maxConcurrentJobs == expectedRegistration.maxConcurrentJobs);
@@ -442,7 +440,6 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("registration").at("antsApplyTransformsExecutable") == "/opt/ants/bin/antsApplyTransforms");
   CHECK(root.at("registration").at("antsConvertTransformFileExecutable") == "/opt/ants/bin/ConvertTransformFile");
   CHECK(root.at("registration").at("fireAntsPythonExecutable") == "/opt/fireants/bin/python");
-  CHECK(root.at("registration").at("fireAntsBridgeModule") == "entropy_test_fireants_bridge");
   CHECK(root.at("registration").at("defaultOutputDirectory") == "/tmp/entropy-registration");
   CHECK(root.at("registration").at("keepTemporaryFiles") == true);
   CHECK(root.at("registration").at("maxConcurrentJobs") == 3);

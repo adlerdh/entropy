@@ -166,6 +166,32 @@ TEST_CASE("registration import plan fills omitted ANTs warp paths", "[registrati
   CHECK(initializedInverseStep->path == "/tmp/entropy-registration/moving_to_fixed1Warp.nii.gz");
 }
 
+TEST_CASE(
+  "registration import plan assigns FireANTs inverse warps with reference-space metadata",
+  "[registration][import]")
+{
+  registration::JobSpec spec = job();
+  spec.backend = registration::Backend::FireANTs;
+  spec.transformModel = registration::TransformModel::AffineDeformable;
+  spec.outputs.applyWarpToMovingImage = true;
+  spec.outputs.loadForwardWarp = false;
+  spec.outputs.transformLandmarksAndAnnotations = false;
+  spec.outputs.transformSurfaces = false;
+  spec.outputs.loadWarpedSegmentation = false;
+
+  registration::ResultManifest result = manifest();
+  result.forwardWarp.clear();
+  result.transformedLandmarks.clear();
+  result.transformedSurfaces.clear();
+  result.warpedSegmentations.clear();
+
+  const registration::ImportPlan plan = registration::buildImportPlan(spec, result);
+
+  CHECK(std::any_of(plan.steps.begin(), plan.steps.end(), [](const registration::ImportStep& step) {
+    return step.action == registration::ImportAction::AssignWarpsToMovingImage;
+  }));
+}
+
 TEST_CASE("registration import plan warns for requested missing artifacts", "[registration][import]")
 {
   registration::ResultManifest result;

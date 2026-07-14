@@ -111,11 +111,10 @@ TEST_CASE(
   CHECK(availability.compatibilityMessage.find("could not parse") != std::string::npos);
 }
 
-TEST_CASE("registration backend availability checks FireANTs bridge module", "[registration][availability]")
+TEST_CASE("registration backend availability checks FireANTs bridge", "[registration][availability]")
 {
   registration::BackendConfig config;
   config.fireAntsPythonExecutable = "/venv/bin/python";
-  config.fireAntsBridgeModule = "custom_bridge";
 
   FakeProbe probe;
   probe.result.found = true;
@@ -127,7 +126,7 @@ TEST_CASE("registration backend availability checks FireANTs bridge module", "[r
   CHECK(probe.executable == "/venv/bin/python");
   REQUIRE(probe.arguments.size() == 3);
   CHECK(probe.arguments.at(0) == "-m");
-  CHECK(probe.arguments.at(1) == "custom_bridge");
+  CHECK(probe.arguments.at(1) == "fireants_bridge");
   CHECK(probe.arguments.at(2) == "check");
   CHECK(availability.status == registration::BackendAvailabilityStatus::Available);
   CHECK(availability.compatibility == registration::BackendCompatibilityStatus::Untested);

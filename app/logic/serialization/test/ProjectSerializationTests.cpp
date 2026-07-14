@@ -830,34 +830,41 @@ TEST_CASE("Project serialization preserves inverse and forward warp paths", "[pr
 {
   const fs::path root = uniqueTempProjectDirectory();
   const fs::path imageFile = root / "moving.nii.gz";
+  const fs::path referenceImageFile = root / "fixed.nii.gz";
   const fs::path forwardFile = root / "forward.nrrd";
   const fs::path inverseFile = root / "inverse.nrrd";
   const fs::path projectFile = root / "project.json";
 
   touchFile(imageFile);
+  touchFile(referenceImageFile);
   touchFile(forwardFile);
   touchFile(inverseFile);
 
   serialize::EntropyProject project;
   project.m_referenceImage.m_imageFileName = imageFile;
   project.m_referenceImage.m_inverseWarpFileName = inverseFile;
+  project.m_referenceImage.m_inverseWarpReferenceImageFileName = referenceImageFile;
   project.m_referenceImage.m_forwardWarpFileName = forwardFile;
 
   const json inlineJson = project;
   CHECK(inlineJson.at("reference").at("inverseWarp") == inverseFile.string());
+  CHECK(inlineJson.at("reference").at("inverseWarpReferenceImage") == referenceImageFile.string());
   CHECK(inlineJson.at("reference").at("forwardWarp") == forwardFile.string());
 
   REQUIRE(serialize::save(project, projectFile));
 
   const json savedJson = json::parse(std::ifstream(projectFile));
   CHECK(savedJson.at("reference").at("inverseWarp") == "inverse.nrrd");
+  CHECK(savedJson.at("reference").at("inverseWarpReferenceImage") == "fixed.nii.gz");
   CHECK(savedJson.at("reference").at("forwardWarp") == "forward.nrrd");
 
   serialize::EntropyProject loaded;
   REQUIRE(serialize::open(loaded, projectFile));
   REQUIRE(loaded.m_referenceImage.m_inverseWarpFileName);
+  REQUIRE(loaded.m_referenceImage.m_inverseWarpReferenceImageFileName);
   REQUIRE(loaded.m_referenceImage.m_forwardWarpFileName);
   CHECK(*loaded.m_referenceImage.m_inverseWarpFileName == fs::canonical(inverseFile));
+  CHECK(*loaded.m_referenceImage.m_inverseWarpReferenceImageFileName == fs::canonical(referenceImageFile));
   CHECK(*loaded.m_referenceImage.m_forwardWarpFileName == fs::canonical(forwardFile));
 }
 

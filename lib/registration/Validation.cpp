@@ -20,6 +20,15 @@ void addMessage(ValidationResult& result, ValidationSeverity severity, std::stri
   result.messages.push_back(ValidationMessage{severity, std::move(field), std::move(text)});
 }
 
+std::string parameterValueOr(const JobSpec& job, const std::string& key, const std::string& fallback)
+{
+  const auto it =
+    std::find_if(job.parameterValues.begin(), job.parameterValues.end(), [&](const ParameterValue& value) {
+      return value.key == key;
+    });
+  return it == job.parameterValues.end() ? fallback : it->value;
+}
+
 void requireFeature(
   ValidationResult& result,
   const BackendCapabilities& capabilities,
@@ -81,12 +90,45 @@ ValidationResult validateJob(const JobSpec& job, const BackendCapabilities& capa
       "movingMask",
       "The selected backend does not support moving masks.");
   }
-  if (job.backend == Backend::FireANTs && hasPathOrUid(job.fixedMask) != hasPathOrUid(job.movingMask)) {
+  if (
+    job.backend == Backend::FireANTs && (hasPathOrUid(job.fixedMask) || hasPathOrUid(job.movingMask)) &&
+    job.metric != Metric::CC && job.metric != Metric::MSE && job.metric != Metric::SSD)
+  {
     addMessage(
       result,
       ValidationSeverity::Error,
-      "masks",
-      "FireANTs requires both fixed and moving masks when masks are used.");
+      "metric",
+      "FireANTs masked registration is documented for CC and MSE metrics. Choose CC or MSE when using masks.");
+  }
+  if (
+    job.backend == Backend::FireANTs &&
+    parameterValueOr(job, "deformableOptimizer", "Use optimizer setting") == "Levenberg-Marquardt" &&
+    parameterValueOr(job, "deformationModel", "compositive") == "geodesic")
+  {
+    addMessage(
+      result,
+      ValidationSeverity::Error,
+      "deformableOptimizer",
+      "FireANTs Levenberg-Marquardt optimizer is only available for compositive deformable warps, not geodesic "
+      "deformation.");
+  }
+  if (job.backend == Backend::FireANTs && !job.initialAffineTransform.empty()) {
+    addMessage(
+      result,
+      ValidationSeverity::Error,
+      "initialAffineTransform",
+      "FireANTs does not currently support Entropy affine-transform files as initialization input.");
+  }
+  if (
+    job.backend == Backend::FireANTs && includesDeformableTransform(job.transformModel) &&
+    includesAffineTransform(job.transformModel) && job.outputs.loadAffineTransform)
+  {
+    addMessage(
+      result,
+      ValidationSeverity::Warning,
+      "outputs.affineTransform",
+      "FireANTs CLI currently writes only the final deformable transform for affine+deformable jobs. "
+      "Entropy will import the composite warp, but a separate affine transform may not be available.");
   }
   if (
     job.backend == Backend::Greedy && hasPathOrUid(job.movingMask) && !includesDeformableTransform(job.transformModel))

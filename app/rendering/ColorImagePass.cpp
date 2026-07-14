@@ -32,6 +32,10 @@ void Rendering::renderColorImageForImage(
   const bool isFixedImage)
 {
   const RenderData& renderData = m_appData.renderData();
+  const std::optional<uuids::uuid> referenceImageUid =
+    renderWarped ? activeRenderableDeformationReferenceImageUid(imageUid) : std::nullopt;
+  const CurrentImages renderGeometryImages{
+    referenceImageUid ? ImgSegPair{*referenceImageUid, std::nullopt} : imgSegPair};
   GLShaderProgram* program = nullptr;
 
   switch (image.settings().colorInterpolationMode()) {
@@ -80,7 +84,7 @@ void Rendering::renderColorImageForImage(
       setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
     }
 
-    renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{imgSegPair}, uniforms.showEdges);
+    renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, uniforms.showEdges);
   }
   program->stopUse();
 

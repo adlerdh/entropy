@@ -35,7 +35,6 @@ CommandGenerationOptions commandOptions(const BackendConfig& config)
                                                  "ConvertTransformFile")
                                                  .generic_string();
   options.fireAntsPythonExecutable = pathString(config.fireAntsPythonExecutable);
-  options.fireAntsBridgeModule = config.fireAntsBridgeModule;
   return options;
 }
 

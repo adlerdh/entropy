@@ -11,9 +11,131 @@
 #include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
+#include "ui/dialogs/NativeMessageDialogs.h"
+
+#include <glm/gtc/epsilon.hpp>
+
 #include <algorithm>
+#include <limits>
+#include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
+
+namespace
+{
+struct WarpWarningAabb
+{
+  glm::vec3 min{std::numeric_limits<float>::max()};
+  glm::vec3 max{std::numeric_limits<float>::lowest()};
+};
+
+constexpr float k_warpGeometryEpsilon = 1.0e-4f;
+constexpr float k_warpDomainToleranceMm = 0.5f;
+
+WarpWarningAabb warpWarningImageWorldAabb(const Image& image)
+{
+  WarpWarningAabb box;
+  const glm::mat4 world_T_subject = image.transformations().worldDef_T_subject();
+  for (const glm::vec3& corner : image.header().subjectBBoxCorners()) {
+    const glm::vec3 worldCorner{world_T_subject * glm::vec4{corner, 1.0f}};
+    box.min = glm::min(box.min, worldCorner);
+    box.max = glm::max(box.max, worldCorner);
+  }
+  return box;
+}
+
+bool warpWarningAabbContains(const WarpWarningAabb& domain, const WarpWarningAabb& target)
+{
+  return glm::all(glm::lessThanEqual(domain.min, target.min + glm::vec3{k_warpDomainToleranceMm})) &&
+         glm::all(glm::greaterThanEqual(domain.max, target.max - glm::vec3{k_warpDomainToleranceMm}));
+}
+
+bool warpWarningVec3NearlyEqual(const glm::vec3& a, const glm::vec3& b)
+{
+  return glm::all(glm::epsilonEqual(a, b, k_warpGeometryEpsilon));
+}
+
+std::vector<std::string> rawWarpAssignmentWarnings(const Image& field, const Image& target)
+{
+  std::vector<std::string> warnings;
+  if (field.header().numComponentsPerPixel() < 3) {
+    warnings.emplace_back("Fewer than three components per voxel");
+  }
+  if (field.header().pixelDimensions() != target.header().pixelDimensions()) {
+    warnings.emplace_back("Grid dimensions differ");
+  }
+  if (!warpWarningVec3NearlyEqual(field.header().spacing(), target.header().spacing())) {
+    warnings.emplace_back("Voxel spacing differs");
+  }
+  if (!warpWarningVec3NearlyEqual(field.header().origin(), target.header().origin())) {
+    warnings.emplace_back("Origin differs");
+  }
+  if (
+    !warpWarningVec3NearlyEqual(field.header().directions()[0], target.header().directions()[0]) ||
+    !warpWarningVec3NearlyEqual(field.header().directions()[1], target.header().directions()[1]) ||
+    !warpWarningVec3NearlyEqual(field.header().directions()[2], target.header().directions()[2]))
+  {
+    warnings.emplace_back("Direction matrix differs");
+  }
+  if (!warpWarningAabbContains(warpWarningImageWorldAabb(field), warpWarningImageWorldAabb(target))) {
+    warnings.emplace_back("Physical domain does not fully cover the reference");
+  }
+  return warnings;
+}
+
+std::vector<std::string> inverseWarpAssignmentWarnings(const Image& field, const Image& referenceImage)
+{
+  std::vector<std::string> warnings = rawWarpAssignmentWarnings(field, referenceImage);
+  if (!warnings.empty()) {
+    warnings.insert(warnings.begin(), "Warning! The inverse warp field differs from the reference:");
+  }
+  return warnings;
+}
+
+std::vector<std::string>
+forwardWarpAssignmentWarnings(const Image& field, const Image& movingImage, const Image* referenceImage)
+{
+  std::vector<std::string> movingWarnings = rawWarpAssignmentWarnings(field, movingImage);
+  if (movingWarnings.empty()) {
+    return {};
+  }
+  if (referenceImage && rawWarpAssignmentWarnings(field, *referenceImage).empty()) {
+    return {};
+  }
+  movingWarnings.insert(
+    movingWarnings.begin(),
+    "The forward warp field does not match either the moving-image space or the reference-image space.");
+  return movingWarnings;
+}
+
+std::string joinWarpAssignmentWarnings(const std::vector<std::string>& warnings)
+{
+  std::string text;
+  for (std::size_t i = 0; i < warnings.size(); ++i) {
+    if (!text.empty()) {
+      text += "\n";
+    }
+    text += i == 0 ? warnings.at(i) : "- " + warnings.at(i);
+  }
+  return text;
+}
+
+bool confirmWarpAssignmentWarnings(const char* title, const std::vector<std::string>& warnings)
+{
+  if (warnings.empty()) {
+    return true;
+  }
+  const auto result = native_dialog::showMessageDialog(
+    {title,
+     "The selected warp field may not match the expected image space.",
+     joinWarpAssignmentWarnings(warnings),
+     "Use warp field",
+     "Cancel",
+     ""});
+  return !result || native_dialog::MessageDialogResult::FirstButton == *result;
+}
+} // namespace
 
 EntropyApp::EntropyApp()
   : m_imageLoadCancelled(false)
@@ -120,11 +242,13 @@ void EntropyApp::onImagesReady()
   constexpr bool resetZoom = true;
 
   const bool preserveLayouts = m_preserveLayoutsOnImagesReady;
-  const std::vector<uuids::uuid> pendingAddedImageUids = m_pendingAddedImageUids;
+  std::vector<uuids::uuid> pendingAddedImageUids = m_pendingAddedImageUids;
   const std::optional<fs::path> pendingLayoutsFile = m_pendingLayoutsFile;
+  const std::optional<PendingWarpAssignment> pendingWarpAssignment = m_pendingWarpAssignment;
   m_preserveLayoutsOnImagesReady = false;
   m_pendingAddedImageUids.clear();
   m_pendingLayoutsFile = std::nullopt;
+  m_pendingWarpAssignment = std::nullopt;
 
   spdlog::debug("Images are loaded.");
 
@@ -134,6 +258,48 @@ void EntropyApp::onImagesReady()
     // If the reference image is null, then image loading has failed.
     spdlog::critical("The reference image is null");
     throw_debug("The reference image is null")
+  }
+
+  if (pendingWarpAssignment) {
+    const Image* image = m_data.image(pendingWarpAssignment->imageUid);
+    const Image* warp = m_data.warpField(pendingWarpAssignment->warpUid);
+    bool assigned = false;
+    if (image && warp) {
+      if (pendingWarpAssignment->forwardWarp) {
+        const Image* referenceImage = m_data.refImageUid() ? m_data.image(*m_data.refImageUid()) : nullptr;
+        if (confirmWarpAssignmentWarnings(
+              "Forward warp warning",
+              forwardWarpAssignmentWarnings(*warp, *image, referenceImage)))
+        {
+          assigned =
+            m_data.assignForwardWarpUidToImage(pendingWarpAssignment->imageUid, pendingWarpAssignment->warpUid);
+        }
+      }
+      else {
+        const std::optional<uuids::uuid> referenceUid = pendingWarpAssignment->inverseWarpReferenceImageUid
+                                                          ? pendingWarpAssignment->inverseWarpReferenceImageUid
+                                                          : std::optional<uuids::uuid>{pendingWarpAssignment->imageUid};
+        const Image* referenceImage = referenceUid ? m_data.image(*referenceUid) : nullptr;
+        if (
+          referenceImage &&
+          confirmWarpAssignmentWarnings("Inverse warp warning", inverseWarpAssignmentWarnings(*warp, *referenceImage)))
+        {
+          assigned = m_data.assignInverseWarpUidToImage(
+            pendingWarpAssignment->imageUid,
+            pendingWarpAssignment->warpUid,
+            referenceUid);
+        }
+      }
+    }
+    if (assigned) {
+      if (pendingWarpAssignment->loaded) {
+        pendingAddedImageUids.push_back(pendingWarpAssignment->warpUid);
+      }
+      m_data.setRainbowColorsForAllImages();
+    }
+    else if (pendingWarpAssignment->loaded) {
+      m_data.removeDef(pendingWarpAssignment->warpUid);
+    }
   }
 
   if (!preserveLayouts) {

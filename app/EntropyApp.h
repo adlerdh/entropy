@@ -192,6 +192,13 @@ public:
    */
   std::pair<std::optional<uuids::uuid>, bool> loadDeformationField(const std::filesystem::path& fileName);
 
+  /**  Load a warp field asynchronously and assign it to an image when loading completes. */
+  void loadAndAssignDeformationField(
+    const uuids::uuid& imageUid,
+    const std::filesystem::path& fileName,
+    bool forwardWarp,
+    std::optional<uuids::uuid> inverseWarpReferenceImageUid = std::nullopt);
+
   /** @brief Access UI callback operations. */
   CallbackHandler& callbackHandler();
 
@@ -444,6 +451,24 @@ private:
    */
   std::vector<uuids::uuid> m_pendingAddedImageUids;
   std::optional<std::filesystem::path> m_pendingLayoutsFile = std::nullopt;
+
+  struct PendingWarpAssignment
+  {
+    uuids::uuid imageUid;
+    uuids::uuid warpUid;
+    bool loaded = false;
+    bool forwardWarp = false;
+    std::optional<uuids::uuid> inverseWarpReferenceImageUid = std::nullopt;
+  };
+
+  struct PendingInverseWarpReference
+  {
+    uuids::uuid imageUid;
+    std::filesystem::path referenceImageFileName;
+  };
+
+  std::optional<PendingWarpAssignment> m_pendingWarpAssignment = std::nullopt;
+  std::vector<PendingInverseWarpReference> m_pendingInverseWarpReferences;
 
   enum class LargeImageLoadContext : std::uint8_t
   {

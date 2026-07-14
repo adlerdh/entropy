@@ -458,6 +458,13 @@ struct Image
   std::optional<std::filesystem::path> m_inverseWarpFileName = std::nullopt;
 
   /**
+   * Optional inverse-warp reference-space image file name.
+   *
+   * The inverse warp is sampled on this image domain before sampling the moving image.
+   */
+  std::optional<std::filesystem::path> m_inverseWarpReferenceImageFileName = std::nullopt;
+
+  /**
    * Optional forward warp image file name.
    *
    * The forward warp maps moving-image positions back to reference/fixed space.

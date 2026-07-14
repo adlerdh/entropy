@@ -69,6 +69,14 @@ struct ImGuiProjectCallbacks
   /** @brief Load a warp field and return its UID if successful. */
   std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)> loadDeformationField;
 
+  /** @brief Load a warp field asynchronously and assign it to an image when loading completes. */
+  std::function<void(
+    const uuids::uuid& imageUid,
+    const std::filesystem::path& fileName,
+    bool forwardWarp,
+    std::optional<uuids::uuid> inverseWarpReferenceImageUid)>
+    loadAndAssignDeformationField;
+
   /** @brief Import completed registration outputs through the application loading pipeline. */
   std::function<void(const std::string& jobId)> importRegistrationJobOutputs;
 
@@ -324,6 +332,12 @@ private:
   std::function<void(const uuids::uuid& imageUid, const std::filesystem::path& fileName)> m_addSegmentationFileToImage =
     nullptr;
   std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)> m_loadDeformationField = nullptr;
+  std::function<void(
+    const uuids::uuid& imageUid,
+    const std::filesystem::path& fileName,
+    bool forwardWarp,
+    std::optional<uuids::uuid> inverseWarpReferenceImageUid)>
+    m_loadAndAssignDeformationField = nullptr;
   std::function<void(const std::string& jobId)> m_importRegistrationJobOutputs = nullptr;
   std::function<void(const std::filesystem::path& fileName)> m_openProjectFile = nullptr;
   std::function<void(GuiData::LargeImageLoadDecision decision)> m_largeImageLoadDecision = nullptr;

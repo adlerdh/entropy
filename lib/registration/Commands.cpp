@@ -259,6 +259,7 @@ int greedyAffineDof(TransformModel model)
     case TransformModel::Affine:
     case TransformModel::RigidAffine:
     case TransformModel::AffineDeformable:
+    case TransformModel::RigidAffineDeformable:
       return 12;
     case TransformModel::Translation:
     case TransformModel::Deformable:
@@ -363,6 +364,7 @@ std::string antsTransform(const JobSpec& job, TransformModel model)
              parameterValueOr(job, "timeVaryingVelocityTotalVariance", "0") + "]";
     case TransformModel::Deformable:
     case TransformModel::AffineDeformable:
+    case TransformModel::RigidAffineDeformable:
       return "SyN[" + gradientStep + "," + parameterValueOr(job, "synUpdateFieldVariance", "3") + "," +
              parameterValueOr(job, "synTotalFieldVariance", "0") + "]";
   }
@@ -691,7 +693,7 @@ std::vector<CommandSpec> fireAntsCommands(const JobSpec& job, const CommandGener
   CommandSpec command;
   command.description = "FireANTs bridge registration";
   command.executable = options.fireAntsPythonExecutable;
-  command.args = {"-m", options.fireAntsBridgeModule, "run", pathString(artifactPath(job, ArtifactRole::JobSpec))};
+  command.args = {"-m", "fireants_bridge", "run", pathString(artifactPath(job, ArtifactRole::JobSpec))};
   return {command};
 }
 

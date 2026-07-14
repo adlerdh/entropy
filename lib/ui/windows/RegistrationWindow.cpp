@@ -617,6 +617,11 @@ std::string jobTitle(const registration::JobRecord& job)
   return moving + " to " + fixed;
 }
 
+std::string numberedJobTitle(const registration::JobRecord& job)
+{
+  return "Job " + std::to_string(job.order) + ": " + jobTitle(job);
+}
+
 std::string metricDisplayLabel(registration::Backend backend, registration::Metric metric)
 {
   switch (metric) {
@@ -670,7 +675,10 @@ std::string transformDisplayLabel(registration::Backend backend, registration::T
         return "Affine + deformable transformation (12 DOF affine)";
       case registration::TransformModel::Deformable:
         return "Deformable transformation";
+      case registration::TransformModel::RigidAffineDeformable:
+        return "Rigid + affine + deformable transformation (Rigid, Affine, Greedy/SyN)";
       case registration::TransformModel::RigidAffine:
+        return "Rigid + affine transformation (Rigid, Affine)";
       case registration::TransformModel::Translation:
       case registration::TransformModel::BSplineDisplacement:
       case registration::TransformModel::GaussianDisplacement:
@@ -713,10 +721,13 @@ std::string transformDisplayLabel(registration::Backend backend, registration::T
       case registration::TransformModel::Affine:
         return "Affine (Affine)";
       case registration::TransformModel::Deformable:
-        return "Deformable transformation (Deformable)";
+        return "Deformable transformation (Greedy/SyN)";
       case registration::TransformModel::AffineDeformable:
-        return "Affine + deformable transformation (AffineDeformable)";
+        return "Affine + deformable transformation (Affine, Greedy/SyN)";
+      case registration::TransformModel::RigidAffineDeformable:
+        return "Rigid + affine + deformable transformation (Rigid, Affine, Greedy/SyN)";
       case registration::TransformModel::RigidAffine:
+        return "Rigid + affine transformation (Rigid, Affine)";
       case registration::TransformModel::Translation:
       case registration::TransformModel::BSplineDisplacement:
       case registration::TransformModel::GaussianDisplacement:
@@ -1094,7 +1105,7 @@ void renderRegistrationJobDetailsPopup(const registration::JobRecord* job)
 
   ImGui::SetNextWindowSize(ImVec2{760.0f, 520.0f}, ImGuiCond_FirstUseEver);
   if (ImGui::BeginPopupModal("Image Registration Job Details", nullptr)) {
-    ImGui::TextWrapped("%s", jobTitle(*job).c_str());
+    ImGui::TextWrapped("%s", numberedJobTitle(*job).c_str());
     ImGui::TextColored(statusColor(job->status), "%s", statusText(job->status));
 
     std::string logText = jobLogText(*job);
@@ -1731,17 +1742,6 @@ void renderRegistrationSetupWindow(AppData& appData)
         ImGui::TextDisabled(
           "Using per-job folders under: %s",
           (std::filesystem::temp_directory_path() / "entropy-registration").string().c_str());
-      }
-
-      if (state.job.backend == registration::Backend::FireANTs && s_showAdvanced) {
-        ImGui::SeparatorText("Developer");
-        ImGui::PushItemWidth(controlWidth);
-        ImGui::InputText("FireANTs bridge module", &config.fireAntsBridgeModule);
-        ImGui::PopItemWidth();
-        ImGui::SameLine();
-        helpMarker(
-          "Python module launched with 'python -m'. This is normally Entropy's bundled FireANTs bridge and should "
-          "only be changed when testing alternate bridge modules.");
       }
 
       if (ImGui::Checkbox(

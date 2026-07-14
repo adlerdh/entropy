@@ -87,7 +87,9 @@ TEST_CASE("registration capabilities serialize readable enum names", "[registrat
 
   const registration::BackendCapabilities restored = json.get<registration::BackendCapabilities>();
   CHECK(restored.backend == registration::Backend::FireANTs);
+  CHECK(registration::supportsTransformModel(restored, registration::TransformModel::RigidAffineDeformable));
   CHECK(registration::supportsMetric(restored, registration::Metric::CC));
+  CHECK_FALSE(registration::supportsMetric(restored, registration::Metric::WNCC));
 }
 
 TEST_CASE("registration progress events round-trip through JSON", "[registration][serialization]")
@@ -145,7 +147,6 @@ TEST_CASE("registration backend config round-trips through JSON", "[registration
   config.antsApplyTransformsExecutable = "/opt/antsApplyTransforms";
   config.antsConvertTransformFileExecutable = "/opt/ConvertTransformFile";
   config.fireAntsPythonExecutable = "/venv/bin/python";
-  config.fireAntsBridgeModule = "custom_bridge";
   config.defaultOutputDirectory = "/tmp/entropy-registration";
   config.keepTemporaryFiles = true;
   config.maxConcurrentJobs = 2;
@@ -163,7 +164,6 @@ TEST_CASE("registration backend config round-trips through JSON", "[registration
   CHECK(restored.antsApplyTransformsExecutable == "/opt/antsApplyTransforms");
   CHECK(restored.antsConvertTransformFileExecutable == "/opt/ConvertTransformFile");
   CHECK(restored.fireAntsPythonExecutable == "/venv/bin/python");
-  CHECK(restored.fireAntsBridgeModule == "custom_bridge");
   CHECK(restored.defaultOutputDirectory == "/tmp/entropy-registration");
   CHECK(restored.keepTemporaryFiles);
   CHECK(restored.maxConcurrentJobs == 2);

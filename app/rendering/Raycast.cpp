@@ -65,6 +65,9 @@ void Rendering::renderVolumeImagesForView(const View& view)
 
   const auto deformationUid = activeRenderableDeformationUid(*imgSegPair.first);
   const bool renderWarped = deformationUid.has_value();
+  const std::optional<uuid> referenceImageUid =
+    renderWarped ? activeRenderableDeformationReferenceImageUid(*imgSegPair.first) : std::nullopt;
+  const Image* domainImage = referenceImageUid ? m_appData.image(*referenceImageUid) : image;
 
   const auto boundImageTextures = bindScalarImageTextures(imgSegPair);
   const auto boundDefTextures =
@@ -72,14 +75,28 @@ void Rendering::renderVolumeImagesForView(const View& view)
   const auto boundSegBufferTextures = bindSegBufferTextures(imgSegPair);
 
   const auto& U = m_appData.renderData().m_uniforms.at(*imgSegPair.first);
+  const auto& domainU = (referenceImageUid && m_appData.renderData().m_uniforms.count(*referenceImageUid) > 0u)
+                          ? m_appData.renderData().m_uniforms.at(*referenceImageUid)
+                          : U;
 
   GLShaderProgram& program = renderWarped ? m_raycastIsoWarpedProgram : m_raycastIsoProgram;
 
   program.use();
   {
-    setRaycastIsoUniforms(program, view, imgSegPair, *image, U, renderWarped, deformationUid);
+    setRaycastIsoUniforms(
+      program,
+      view,
+      imgSegPair,
+      *(domainImage ? domainImage : image),
+      domainU,
+      renderWarped,
+      deformationUid);
 
-    volumeRenderOneImage(view, program, U.imgTexture_T_world, CurrentImages{imgSegPair});
+    volumeRenderOneImage(
+      view,
+      program,
+      domainU.imgTexture_T_world,
+      CurrentImages{ImgSegPair{referenceImageUid.value_or(*imgSegPair.first), std::nullopt}});
   }
   program.stopUse();
 

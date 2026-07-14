@@ -10,7 +10,6 @@ TEST_CASE("registration backend config converts to command options", "[registrat
   config.antsApplyTransformsExecutable = "/opt/antsApplyTransforms";
   config.antsConvertTransformFileExecutable = "/opt/ConvertTransformFile";
   config.fireAntsPythonExecutable = "/opt/python";
-  config.fireAntsBridgeModule = "entropy_custom_fireants";
 
   const registration::CommandGenerationOptions options = registration::commandOptions(config);
 
@@ -19,7 +18,6 @@ TEST_CASE("registration backend config converts to command options", "[registrat
   CHECK(options.antsApplyTransformsExecutable == "/opt/antsApplyTransforms");
   CHECK(options.antsConvertTransformFileExecutable == "/opt/ConvertTransformFile");
   CHECK(options.fireAntsPythonExecutable == "/opt/python");
-  CHECK(options.fireAntsBridgeModule == "entropy_custom_fireants");
 }
 
 TEST_CASE("registration backend config returns executable by backend", "[registration][config]")

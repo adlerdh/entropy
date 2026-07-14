@@ -46,8 +46,8 @@ if(NOT Entropy_STATIC_BUNDLED_DEPENDENCIES)
     )
 endif()
 
-install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python"
+install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}/"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/entropy/python/fireants_bridge"
     COMPONENT Runtime
 )
 

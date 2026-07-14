@@ -76,6 +76,7 @@ AppData::AppData()
   , m_imageToActiveSeg()
   , m_imageToDefs()
   , m_imageToActiveInverseWarp()
+  , m_imageToActiveInverseWarpReferenceImage()
   , m_imageToActiveForwardWarp()
   , m_imageToLandmarkGroups()
   , m_imageToActiveLandmarkGroup()
@@ -143,6 +144,7 @@ void AppData::clearProjectData()
   m_imageToActiveSeg.clear();
   m_imageToDefs.clear();
   m_imageToActiveInverseWarp.clear();
+  m_imageToActiveInverseWarpReferenceImage.clear();
   m_imageToActiveForwardWarp.clear();
   m_imageToLandmarkGroups.clear();
   m_imageToActiveLandmarkGroup.clear();
@@ -736,6 +738,17 @@ bool AppData::removeImage(const uuid& imageUid)
   m_imageToActiveSeg.erase(imageUid);
   m_imageToDefs.erase(imageUid);
   m_imageToActiveInverseWarp.erase(imageUid);
+  m_imageToActiveInverseWarpReferenceImage.erase(imageUid);
+  for (auto it = m_imageToActiveInverseWarpReferenceImage.begin();
+       it != m_imageToActiveInverseWarpReferenceImage.end();)
+  {
+    if (it->second == imageUid) {
+      it = m_imageToActiveInverseWarpReferenceImage.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
   m_imageToActiveForwardWarp.erase(imageUid);
   m_imageToLandmarkGroups.erase(imageUid);
   m_imageToActiveLandmarkGroup.erase(imageUid);
@@ -905,6 +918,17 @@ void AppData::removeWarpReferences(const uuid& warpUid)
   for (auto it = std::begin(m_imageToActiveInverseWarp); it != std::end(m_imageToActiveInverseWarp);) {
     if (warpUid == it->second) {
       it = m_imageToActiveInverseWarp.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
+
+  for (auto it = m_imageToActiveInverseWarpReferenceImage.begin();
+       it != m_imageToActiveInverseWarpReferenceImage.end();)
+  {
+    if (m_imageToActiveInverseWarp.find(it->first) == m_imageToActiveInverseWarp.end()) {
+      it = m_imageToActiveInverseWarpReferenceImage.erase(it);
     }
     else {
       ++it;
@@ -1729,6 +1753,35 @@ std::optional<uuid> AppData::imageToActiveInverseWarpUid(const uuid& imageUid) c
   return std::nullopt;
 }
 
+std::optional<uuid> AppData::imageToActiveInverseWarpReferenceImageUid(const uuid& imageUid) const
+{
+  if (imageToActiveInverseWarpUid(imageUid)) {
+    auto it = m_imageToActiveInverseWarpReferenceImage.find(imageUid);
+    if (it != m_imageToActiveInverseWarpReferenceImage.end()) {
+      return it->second;
+    }
+    return imageUid;
+  }
+  return std::nullopt;
+}
+
+bool AppData::setActiveInverseWarpReferenceImageUid(const uuid& imageUid, const std::optional<uuid>& referenceImageUid)
+{
+  if (!image(imageUid) || !imageToActiveInverseWarpUid(imageUid)) {
+    return false;
+  }
+  if (referenceImageUid) {
+    if (!image(*referenceImageUid)) {
+      return false;
+    }
+    m_imageToActiveInverseWarpReferenceImage[imageUid] = *referenceImageUid;
+  }
+  else {
+    m_imageToActiveInverseWarpReferenceImage.erase(imageUid);
+  }
+  return true;
+}
+
 std::optional<uuid> AppData::imageToActiveForwardWarpUid(const uuid& imageUid) const
 {
   auto it = m_imageToActiveForwardWarp.find(imageUid);
@@ -1741,13 +1794,28 @@ std::optional<uuid> AppData::imageToActiveForwardWarpUid(const uuid& imageUid) c
 void AppData::clearActiveInverseWarpUidForImage(const uuid& imageUid)
 {
   m_imageToActiveInverseWarp.erase(imageUid);
+  m_imageToActiveInverseWarpReferenceImage.erase(imageUid);
 }
 
 bool AppData::assignActiveInverseWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid)
 {
+  return assignActiveInverseWarpUidToImage(imageUid, activeWarpUid, std::nullopt);
+}
+
+bool AppData::assignActiveInverseWarpUidToImage(
+  const uuid& imageUid,
+  const uuid& activeWarpUid,
+  const std::optional<uuid>& referenceImageUid)
+{
   const Image* defImage = warpField(activeWarpUid);
-  if (image(imageUid) && defImage && defImage->header().numComponentsPerPixel() >= 3) {
+  const std::optional<uuid> resolvedReferenceUid =
+    referenceImageUid ? referenceImageUid : std::optional<uuid>{imageUid};
+  if (
+    image(imageUid) && resolvedReferenceUid && image(*resolvedReferenceUid) && defImage &&
+    defImage->header().numComponentsPerPixel() >= 3)
+  {
     m_imageToActiveInverseWarp[imageUid] = activeWarpUid;
+    m_imageToActiveInverseWarpReferenceImage[imageUid] = *resolvedReferenceUid;
     return true;
   }
   spdlog::error("Cannot assign warp field {} as an inverse warp for image {}", activeWarpUid, imageUid);
@@ -1812,16 +1880,29 @@ bool AppData::assignSegUidToImage(const uuid& imageUid, const uuid& segUid)
 
 bool AppData::assignInverseWarpUidToImage(const uuid& imageUid, const uuid& warpUid)
 {
+  return assignInverseWarpUidToImage(imageUid, warpUid, std::nullopt);
+}
+
+bool AppData::assignInverseWarpUidToImage(
+  const uuid& imageUid,
+  const uuid& warpUid,
+  const std::optional<uuid>& referenceImageUid)
+{
   const Image* movingImage = image(imageUid);
   const Image* defImage = warpField(warpUid);
-  if (movingImage && defImage && defImage->header().numComponentsPerPixel() >= 3) {
+  const std::optional<uuid> resolvedReferenceUid =
+    referenceImageUid ? referenceImageUid : std::optional<uuid>{imageUid};
+  if (
+    movingImage && resolvedReferenceUid && image(*resolvedReferenceUid) && defImage &&
+    defImage->header().numComponentsPerPixel() >= 3)
+  {
     auto& defUids = m_imageToDefs[imageUid];
     if (std::find(std::begin(defUids), std::end(defUids), warpUid) != std::end(defUids)) {
-      return assignActiveInverseWarpUidToImage(imageUid, warpUid);
+      return assignActiveInverseWarpUidToImage(imageUid, warpUid, resolvedReferenceUid);
     }
 
     m_imageToDefs[imageUid].emplace_back(warpUid);
-    return assignActiveInverseWarpUidToImage(imageUid, warpUid);
+    return assignActiveInverseWarpUidToImage(imageUid, warpUid, resolvedReferenceUid);
   }
 
   spdlog::error("Cannot assign inverse warp field {} to image {}", warpUid, imageUid);

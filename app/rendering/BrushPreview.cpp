@@ -37,6 +37,9 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
 
   const std::optional<uuid> deformationUid = activeRenderableDeformationUid(*imageUid);
   const bool renderWarped = deformationUid.has_value();
+  const std::optional<uuid> referenceImageUid =
+    renderWarped ? activeRenderableDeformationReferenceImageUid(*imageUid) : std::nullopt;
+  const Image* geometryImage = referenceImageUid ? m_appData.image(*referenceImageUid) : nullptr;
   GLShaderProgram& program = *m_shaderPrograms.at(
     renderWarped ? ShaderProgramType::SegmentationNearestWarped : ShaderProgramType::SegmentationNearest);
   preview.texture->bind(s_segTexSampler.index);
@@ -72,6 +75,7 @@ void Rendering::renderBrushPreview(const View& view, const glm::vec3& worldOffse
       preview.texture_T_world,
       preview.voxel_T_world,
       preview.textureCapacity,
+      geometryImage,
       view,
       m_appData.windowData().viewport(),
       worldOffsetXhairs,

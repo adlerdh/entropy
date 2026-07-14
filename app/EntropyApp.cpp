@@ -24,6 +24,7 @@
 #include "ui/NativeFileDialogs.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/epsilon.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
@@ -40,6 +41,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <mutex>
 #include <sstream>
 #include <string>
@@ -530,6 +532,50 @@ std::pair<std::optional<uuids::uuid>, bool> EntropyApp::loadDeformationField(con
   return noDefLoaded;
 }
 
+void EntropyApp::loadAndAssignDeformationField(
+  const uuids::uuid& imageUid,
+  const fs::path& fileName,
+  bool forwardWarp,
+  std::optional<uuids::uuid> inverseWarpReferenceImageUid)
+{
+  std::error_code error;
+  const auto bytes = fs::file_size(fileName, error);
+  std::vector<GuiData::LoadingStatusItem> loadingItems{GuiData::LoadingStatusItem{
+    GuiData::LoadingStatusItem::Kind::Image,
+    fileName,
+    error ? std::nullopt : std::optional<std::uintmax_t>{bytes},
+    false}};
+
+  m_preserveLayoutsOnImagesReady = true;
+  m_pendingAddedImageUids.clear();
+
+  startAsyncImageLoad(
+    forwardWarp ? "Loading forward warp..." : "Loading inverse warp...",
+    [this, imageUid, fileName, forwardWarp, inverseWarpReferenceImageUid]() {
+      if (m_imageLoadCancelled) {
+        return false;
+      }
+
+      const auto [warpUid, loaded] = loadDeformationField(fileName);
+      if (!warpUid) {
+        spdlog::error("Unable to load warp field from {}", fileName);
+        return false;
+      }
+
+      m_pendingWarpAssignment =
+        PendingWarpAssignment{imageUid, *warpUid, loaded, forwardWarp, inverseWarpReferenceImageUid};
+      return true;
+    },
+    [this]() {
+      m_data.state().setAnimating(false);
+      m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+      updateWindowTitleStatus();
+    },
+    false,
+    std::move(loadingItems),
+    forwardWarp ? "Loading Forward Warp" : "Loading Inverse Warp");
+}
+
 bool EntropyApp::loadSerializedImage(
   const serialize::Image& serializedImage,
   bool isReferenceImage,
@@ -708,15 +754,16 @@ bool EntropyApp::loadSerializedImage(
 
       if (isInverseWarpNewImage) {
         inverseWarp->settings().setDisplayName(inverseWarp->settings().displayName() + " (deformation)");
-
-        // TODO: Load this from project settings.
-        for (uint32_t i = 0; i < inverseWarp->header().numComponentsPerPixel(); ++i) {
-          inverseWarp->settings().setColorMapIndex(i, 25);
-        }
       }
 
-      if (m_data.assignInverseWarpUidToImage(*imageUid, *inverseWarpUid)) {
+      const std::optional<uuids::uuid> inverseWarpReferenceImageUid = imageUid;
+
+      if (m_data.assignInverseWarpUidToImage(*imageUid, *inverseWarpUid, inverseWarpReferenceImageUid)) {
         spdlog::info("Assigned inverse warp {} to image {}", *inverseWarpUid, *imageUid);
+        if (serializedImage.m_inverseWarpReferenceImageFileName) {
+          m_pendingInverseWarpReferences.push_back(
+            PendingInverseWarpReference{*imageUid, *serializedImage.m_inverseWarpReferenceImageFileName});
+        }
       }
       else {
         spdlog::error("Unable to assign inverse warp {} to image {}", *inverseWarpUid, *imageUid);
@@ -774,11 +821,6 @@ bool EntropyApp::loadSerializedImage(
 
       if (isForwardWarpNewImage) {
         forwardWarp->settings().setDisplayName(forwardWarp->settings().displayName() + " (deformation)");
-
-        // TODO: Load this from project settings.
-        for (uint32_t i = 0; i < forwardWarp->header().numComponentsPerPixel(); ++i) {
-          forwardWarp->settings().setColorMapIndex(i, 25);
-        }
       }
 
       if (m_data.assignForwardWarpUidToImage(*imageUid, *forwardWarpUid)) {
@@ -1837,6 +1879,8 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
 
   m_preserveLayoutsOnImagesReady = false;
   m_pendingAddedImageUids.clear();
+  m_pendingWarpAssignment = std::nullopt;
+  m_pendingInverseWarpReferences.clear();
 
   spdlog::debug("Begin loading images in new thread");
 
@@ -1862,6 +1906,39 @@ bool EntropyApp::loadProject(const serialize::EntropyProject& projectToLoad)
       return false;
     }
   }
+
+  for (const PendingInverseWarpReference& pendingReference : m_pendingInverseWarpReferences) {
+    std::optional<uuids::uuid> resolvedReferenceUid;
+    for (const uuids::uuid& candidateUid : m_data.imageUidsOrdered()) {
+      const Image* candidateImage = m_data.image(candidateUid);
+      if (!candidateImage) {
+        continue;
+      }
+      std::error_code equivalentError;
+      const bool equivalent =
+        fs::equivalent(candidateImage->header().fileName(), pendingReference.referenceImageFileName, equivalentError);
+      if (equivalent || candidateImage->header().fileName() == pendingReference.referenceImageFileName) {
+        resolvedReferenceUid = candidateUid;
+        break;
+      }
+    }
+
+    if (resolvedReferenceUid) {
+      if (!m_data.setActiveInverseWarpReferenceImageUid(pendingReference.imageUid, resolvedReferenceUid)) {
+        spdlog::warn(
+          "Unable to restore inverse warp reference image {} for image {}",
+          pendingReference.referenceImageFileName,
+          pendingReference.imageUid);
+      }
+    }
+    else {
+      spdlog::warn(
+        "Unable to find saved inverse warp reference image {} for image {}; using the moving image",
+        pendingReference.referenceImageFileName,
+        pendingReference.imageUid);
+    }
+  }
+  m_pendingInverseWarpReferences.clear();
 
   const auto refImageUid = m_data.imageUid(defaultReferenceImageIndex);
 

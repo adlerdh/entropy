@@ -43,7 +43,10 @@ TransformModel defaultTransformModel(const BackendCapabilities& capabilities)
 
 Metric defaultMetric(const BackendCapabilities& capabilities)
 {
-  if (capabilities.backend == Backend::ANTs && supportsMetric(capabilities, Metric::MI)) {
+  if (
+    (capabilities.backend == Backend::ANTs || capabilities.backend == Backend::FireANTs) &&
+    supportsMetric(capabilities, Metric::MI))
+  {
     return Metric::MI;
   }
   if (supportsMetric(capabilities, Metric::WNCC)) {
@@ -94,10 +97,69 @@ std::vector<ParameterValue> defaultParameterValues(const BackendCapabilities& ca
   return values;
 }
 
+std::string parameterValueOr(const JobSpec& job, const std::string& key, const std::string& fallback)
+{
+  const auto it =
+    std::find_if(job.parameterValues.begin(), job.parameterValues.end(), [&](const ParameterValue& value) {
+      return value.key == key;
+    });
+  return it == job.parameterValues.end() ? fallback : it->value;
+}
+
+bool includesRigidStage(TransformModel model)
+{
+  return model == TransformModel::Rigid || model == TransformModel::RigidAffine ||
+         model == TransformModel::RigidAffineDeformable;
+}
+
 bool parameterAppliesToJob(const ParameterSchema& parameter, const JobSpec& job)
 {
   if (job.backend == Backend::Greedy && parameter.key == "wnccRadius") {
     return job.metric == Metric::NCC || job.metric == Metric::WNCC;
+  }
+  if (job.backend == Backend::FireANTs) {
+    if (parameter.key == "ccKernelSize" || parameter.key == "ccKernelType") {
+      return job.metric == Metric::CC;
+    }
+    if (parameter.key == "miKernel" || parameter.key == "miBins") {
+      return job.metric == Metric::MI;
+    }
+    if (parameter.key == "rigidScaling") {
+      return includesRigidStage(job.transformModel);
+    }
+    if (parameter.key == "centerOfFrameInitialization" || parameter.key == "aroundCenter") {
+      return includesAffineTransform(job.transformModel);
+    }
+    if (parameter.key == "blurImages") {
+      return includesAffineTransform(job.transformModel) || includesDeformableTransform(job.transformModel);
+    }
+    if (
+      parameter.key == "momentOrder" || parameter.key == "momentPerformScaling" ||
+      parameter.key == "momentOrientation" || parameter.key == "momentScale" || parameter.key == "momentLossType")
+    {
+      return parameterValueOr(job, "initialMovingTransform", "None") != "None";
+    }
+    if (
+      parameter.key == "deformableTransform" || parameter.key == "deformationModel" ||
+      parameter.key == "lossReduction" || parameter.key == "smoothWarpSigma" || parameter.key == "smoothGradSigma")
+    {
+      return includesDeformableTransform(job.transformModel);
+    }
+    if (
+      parameter.key == "levenbergLambdaInit" || parameter.key == "levenbergLambdaIncrease" ||
+      parameter.key == "levenbergLambdaDecrease")
+    {
+      return includesDeformableTransform(job.transformModel) &&
+             parameterValueOr(job, "deformableOptimizer", "Use optimizer setting") == "Levenberg-Marquardt";
+    }
+    if (parameter.key == "integratorN") {
+      return includesDeformableTransform(job.transformModel) &&
+             parameterValueOr(job, "deformationModel", "compositive") == "geodesic";
+    }
+    if (parameter.key == "greedyFreeform") {
+      return includesDeformableTransform(job.transformModel) &&
+             parameterValueOr(job, "deformableTransform", "Greedy") == "Greedy";
+    }
   }
   if (job.backend == Backend::ANTs) {
     if (parameter.key == "synUpdateFieldVariance" || parameter.key == "synTotalFieldVariance") {
@@ -134,6 +196,40 @@ void preserveParameterValues(std::vector<ParameterValue>& values, const std::vec
   }
 }
 
+void normalizeOutputsForCapabilities(JobSpec& job, const BackendCapabilities& capabilities)
+{
+  if (!supportsFeature(capabilities, Feature::InverseWarpOutput)) {
+    job.outputs.loadInverseWarp = false;
+    job.outputs.applyWarpToMovingImage = false;
+  }
+  if (!supportsFeature(capabilities, Feature::ForwardWarpOutput)) {
+    job.outputs.loadForwardWarp = false;
+  }
+  if (!supportsFeature(capabilities, Feature::WarpedSegmentationOutput)) {
+    job.outputs.loadWarpedSegmentation = false;
+  }
+  if (!supportsFeature(capabilities, Feature::LandmarkTransform)) {
+    job.outputs.transformLandmarksAndAnnotations = false;
+  }
+  if (!supportsFeature(capabilities, Feature::SurfaceTransform)) {
+    job.outputs.transformSurfaces = false;
+  }
+}
+
+void normalizeInitializationForCapabilities(JobSpec& job, const BackendCapabilities& capabilities)
+{
+  if (capabilities.backend == Backend::FireANTs) {
+    job.useCurrentAffineTransformsForInitialization = false;
+    job.initialAffineTransform.clear();
+    job.useImageCentersForInitialization = false;
+    return;
+  }
+
+  if (job.useCurrentAffineTransformsForInitialization) {
+    job.useImageCentersForInitialization = false;
+  }
+}
+
 void normalizeJobForCapabilities(JobSpec& job, const BackendCapabilities& capabilities)
 {
   job.backend = capabilities.backend;
@@ -143,6 +239,8 @@ void normalizeJobForCapabilities(JobSpec& job, const BackendCapabilities& capabi
   if (!supportsMetric(capabilities, job.metric)) {
     job.metric = defaultMetric(capabilities);
   }
+  normalizeOutputsForCapabilities(job, capabilities);
+  normalizeInitializationForCapabilities(job, capabilities);
 }
 
 std::filesystem::path previewInitialAffinePath(const JobSpec& job)
@@ -180,9 +278,8 @@ SetupState createSetupState(
   state.job.outputDirectory = outputDirectory;
   state.job.transformModel = defaultTransformModel(state.capabilities);
   state.job.metric = defaultMetric(state.capabilities);
-  if (state.job.useCurrentAffineTransformsForInitialization) {
-    state.job.useImageCentersForInitialization = false;
-  }
+  normalizeOutputsForCapabilities(state.job, state.capabilities);
+  normalizeInitializationForCapabilities(state.job, state.capabilities);
 
   const SetupImageChoice* fixed = firstReferenceImage(images);
   if (!fixed && !images.empty()) {

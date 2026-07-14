@@ -64,6 +64,10 @@ void Rendering::setRaycastIsoUniforms(
     0.5f * renderData.m_crosshairs3DGlyphDiameterVoxelDiagonals * glm::length(image.header().spacing()));
 
   if (renderWarped && deformationUid && imgSegPair.first) {
-    setDeformationUniforms(program, *imgSegPair.first, *deformationUid, uniforms.imgTexture_T_world);
+    const auto sampleUniformsIt = renderData.m_uniforms.find(*imgSegPair.first);
+    const glm::mat4 sampleTex_T_world = sampleUniformsIt != renderData.m_uniforms.end()
+                                          ? sampleUniformsIt->second.imgTexture_T_world
+                                          : uniforms.imgTexture_T_world;
+    setDeformationUniforms(program, *imgSegPair.first, *deformationUid, sampleTex_T_world);
   }
 }

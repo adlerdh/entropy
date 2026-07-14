@@ -293,7 +293,6 @@ TEST_CASE("registration job execution uses configured command options", "[regist
 
   registration::CommandGenerationOptions options;
   options.fireAntsPythonExecutable = "/venv/bin/python";
-  options.fireAntsBridgeModule = "custom_bridge";
 
   const registration::JobExecution execution = registration::executeJob(jobForOneCommand(), options, runner);
 
@@ -301,5 +300,5 @@ TEST_CASE("registration job execution uses configured command options", "[regist
   REQUIRE(runner.commands.size() == 1);
   CHECK(runner.commands.front().executable == "/venv/bin/python");
   REQUIRE(runner.commands.front().args.size() > 1);
-  CHECK(runner.commands.front().args.at(1) == "custom_bridge");
+  CHECK(runner.commands.front().args.at(1) == "fireants_bridge");
 }

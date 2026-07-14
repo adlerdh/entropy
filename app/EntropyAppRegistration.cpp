@@ -176,6 +176,8 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
         asyncJobs.appendProgress(jobId, makeRegistrationProgressEvent(kind, std::move(message)));
       };
 
+      const std::optional<uuids::uuid> fixedReferenceImageUid = uuids::uuid::from_string(spec.fixedImage.uid);
+
       auto parseTargetImageUid =
         [&appendAsyncEvent](const registration::ImportStep& step) -> std::optional<uuids::uuid> {
         if (step.targetImageUid.empty()) {
@@ -280,7 +282,7 @@ void EntropyApp::importRegistrationJobOutputs(const std::string& jobId)
                 break;
               }
               const auto [warpUid, loaded] = loadDeformationField(step.path);
-              if (warpUid && m_data.assignInverseWarpUidToImage(*imageUid, *warpUid)) {
+              if (warpUid && m_data.assignInverseWarpUidToImage(*imageUid, *warpUid, fixedReferenceImageUid)) {
                 if (loaded) {
                   recordAddedImageUid(*warpUid);
                 }

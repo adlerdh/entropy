@@ -11,6 +11,8 @@ log*/**
 /*.dmg
 /*.deb
 **/*.autosave
+**/__pycache__/**
+*.py[cod]
 CMakeFiles/**
 CMakeCache.txt
 CMakeLists.txt.user*

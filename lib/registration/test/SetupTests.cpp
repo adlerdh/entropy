@@ -56,6 +56,34 @@ TEST_CASE("registration setup defaults to reference fixed image and active movin
   CHECK(state.validation.canLaunch());
 }
 
+TEST_CASE("registration setup disables unsupported FireANTs defaults", "[registration][setup]")
+{
+  const std::vector<registration::SetupImageChoice> images = {
+    imageChoice("fixed", "Fixed", true, false),
+    imageChoice("moving", "Moving", false, true)};
+
+  const registration::SetupState state =
+    registration::createSetupState(images, registration::Backend::FireANTs, "/tmp/entropy-reg");
+
+  CHECK_FALSE(state.job.useCurrentAffineTransformsForInitialization);
+  CHECK_FALSE(state.job.useImageCentersForInitialization);
+  CHECK(state.job.initialAffineTransform.empty());
+  CHECK(state.job.metric == registration::Metric::MI);
+  const auto momentIt =
+    std::find_if(state.job.parameterValues.begin(), state.job.parameterValues.end(), [](const auto& value) {
+      return value.key == "initialMovingTransform";
+    });
+  REQUIRE(momentIt != state.job.parameterValues.end());
+  CHECK(momentIt->value == "None");
+  CHECK_FALSE(state.job.outputs.loadForwardWarp);
+  CHECK(state.job.outputs.applyWarpToMovingImage);
+  CHECK_FALSE(state.job.outputs.loadWarpedSegmentation);
+  CHECK_FALSE(state.job.outputs.transformLandmarksAndAnnotations);
+  CHECK_FALSE(state.job.outputs.transformSurfaces);
+  CHECK(state.validation.canLaunch());
+  CHECK_FALSE(registration::commandPreviews(state).empty());
+}
+
 TEST_CASE("registration setup picks a different moving image when active is the reference", "[registration][setup]")
 {
   const std::vector<registration::SetupImageChoice> images = {

@@ -1721,6 +1721,7 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
   m_addSegmentationFile = std::move(callbacks.project.addSegmentationFile);
   m_addSegmentationFileToImage = std::move(callbacks.project.addSegmentationFileToImage);
   m_loadDeformationField = std::move(callbacks.project.loadDeformationField);
+  m_loadAndAssignDeformationField = std::move(callbacks.project.loadAndAssignDeformationField);
   m_importRegistrationJobOutputs = std::move(callbacks.project.importRegistrationJobOutputs);
   m_openProjectFile = std::move(callbacks.project.openProjectFile);
   m_largeImageLoadDecision = std::move(callbacks.project.largeImageLoadDecision);
@@ -4258,7 +4259,7 @@ void ImGuiWrapper::render()
     const bool canLoadDeformationFieldForActiveImage =
       ProjectLoadState::Loaded == projectLoadState && !backgroundTaskRunning && activeImageUidForMenu &&
       (!refImageUidForMenu || *activeImageUidForMenu != *refImageUidForMenu || activeImageCanSelfWarp) &&
-      m_loadDeformationField;
+      m_loadAndAssignDeformationField;
 
     const MainMenuBarCallbacks mainMenuCallbacks{
       .openImageFiles = m_openImageFiles,
@@ -4296,39 +4297,14 @@ void ImGuiWrapper::render()
           const auto refImageUid = m_appData.refImageUid();
           if (
             !imageUid || (refImageUid && *imageUid == *refImageUid && !imageIsOnlyNonWarpImage(m_appData, *imageUid)) ||
-            !m_loadDeformationField)
+            !m_loadAndAssignDeformationField)
           {
             return;
           }
 
-          const std::optional<uuids::uuid> defUid = m_loadDeformationField(fileName);
-          if (!defUid) {
-            spdlog::error("Unable to load inverse warp field from {}", fileName);
-            return;
-          }
-
-          if (!m_appData.assignInverseWarpUidToImage(*imageUid, *defUid)) {
-            spdlog::error("Unable to assign inverse warp field {} to image {}", *defUid, *imageUid);
-            return;
-          }
-
-          if (m_updateImageUniforms) {
-            try {
-              m_updateImageUniforms(*imageUid);
-            }
-            catch (const std::exception& e) {
-              spdlog::error(
-                "Exception after assigning inverse warp field {} to active image {}: {}\n{}",
-                *defUid,
-                *imageUid,
-                e.what(),
-                stack_trace::current(1));
-              throw;
-            }
-          }
-          if (m_postEmptyGlfwEvent) {
-            m_postEmptyGlfwEvent();
-          }
+          const std::optional<uuids::uuid> referenceUid =
+            refImageUid ? refImageUid : std::optional<uuids::uuid>{*imageUid};
+          m_loadAndAssignDeformationField(*imageUid, fileName, false, referenceUid);
         },
       .loadForwardWarpForActiveImage =
         [this](const fs::path& fileName) {
@@ -4336,25 +4312,12 @@ void ImGuiWrapper::render()
           const auto refImageUid = m_appData.refImageUid();
           if (
             !imageUid || (refImageUid && *imageUid == *refImageUid && !imageIsOnlyNonWarpImage(m_appData, *imageUid)) ||
-            !m_loadDeformationField)
+            !m_loadAndAssignDeformationField)
           {
             return;
           }
 
-          const std::optional<uuids::uuid> defUid = m_loadDeformationField(fileName);
-          if (!defUid) {
-            spdlog::error("Unable to load forward warp from {}", fileName);
-            return;
-          }
-
-          if (!m_appData.assignForwardWarpUidToImage(*imageUid, *defUid)) {
-            spdlog::error("Unable to assign forward warp {} to image {}", *defUid, *imageUid);
-            return;
-          }
-
-          if (m_postEmptyGlfwEvent) {
-            m_postEmptyGlfwEvent();
-          }
+          m_loadAndAssignDeformationField(*imageUid, fileName, true, std::nullopt);
         },
       .openProjectFile = m_openProjectFile,
       .saveProject = m_saveProject,
@@ -4603,6 +4566,7 @@ void ImGuiWrapper::render()
         m_updateImageInterpolationMode,
         m_updateImageColorMapInterpolationMode,
         m_loadDeformationField,
+        m_loadAndAssignDeformationField,
         [this](
           const uuids::uuid& imageUid,
           const uuids::uuid& sourceWarpUid,

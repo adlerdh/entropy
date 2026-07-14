@@ -19,8 +19,8 @@ install(TARGETS entropy
     RUNTIME DESTINATION bin
 )
 
-install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}"
-    DESTINATION "${APP_NAME}.app/Contents/Resources/python"
+install(DIRECTORY "${entropy_FIREANTS_BRIDGE_DIR}/"
+    DESTINATION "${APP_NAME}.app/Contents/Resources/python/fireants_bridge"
 )
 
 entropy_install_package_documents("${APP_NAME}.app/Contents/Resources")

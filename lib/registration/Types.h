@@ -29,6 +29,7 @@ enum class TransformModel : std::uint8_t
   RigidAffine,
   Deformable,
   AffineDeformable,
+  RigidAffineDeformable,
   Translation,
   Similarity,
   BSplineDisplacement,

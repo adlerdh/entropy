@@ -1449,7 +1449,7 @@ void renderRegistrationTab(AppData& appData)
     renderPathSettingFixedWidth(
       "FireANTs Python executable",
       config.fireAntsPythonExecutable,
-      "Python executable used to run the FireANTs bridge module.",
+      "Python executable used to run Entropy's FireANTs bridge.",
       true);
   }
   finishSettingsSection(backendDefaultsOpen);

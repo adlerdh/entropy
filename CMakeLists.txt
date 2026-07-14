@@ -51,7 +51,7 @@ set(entropy_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 set(entropy_UI_DIR "${entropy_LIB_DIR}/ui")
 set(entropy_RES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/res")
 set(entropy_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
-set(entropy_FIREANTS_BRIDGE_DIR "${entropy_LIB_DIR}/registration/entropy_fireants_bridge")
+set(entropy_FIREANTS_BRIDGE_DIR "${entropy_LIB_DIR}/registration/fireants_bridge")
 
 # CMake will generate a file compile_commands.json under the build directory.
 # VSCode is able to parse the file and find the include path based on its content.
@@ -919,7 +919,7 @@ if(APPLE)
     COMMAND
       "${CMAKE_COMMAND}" -E copy_directory
       "${entropy_FIREANTS_BRIDGE_DIR}"
-      "$<TARGET_BUNDLE_DIR:entropy>/Contents/Resources/python/entropy_fireants_bridge"
+      "$<TARGET_BUNDLE_DIR:entropy>/Contents/Resources/python/fireants_bridge"
     VERBATIM
   )
 endif()

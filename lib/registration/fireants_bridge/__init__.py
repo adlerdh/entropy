@@ -1,2 +1,1 @@
 """Entropy FireANTs bridge package."""
-

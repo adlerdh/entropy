@@ -1076,6 +1076,10 @@ void to_json(json& j, const serialize::Image& image)
     j["inverseWarp"] = image.m_inverseWarpFileName->string();
   }
 
+  if (image.m_inverseWarpReferenceImageFileName) {
+    j["inverseWarpReferenceImage"] = image.m_inverseWarpReferenceImageFileName->string();
+  }
+
   if (image.m_forwardWarpFileName) {
     j["forwardWarp"] = image.m_forwardWarpFileName->string();
   }
@@ -1121,6 +1125,10 @@ void from_json(const json& j, serialize::Image& image)
 
   if (j.count("inverseWarp")) {
     image.m_inverseWarpFileName = j.at("inverseWarp").get<std::string>();
+  }
+
+  if (j.count("inverseWarpReferenceImage")) {
+    image.m_inverseWarpReferenceImageFileName = j.at("inverseWarpReferenceImage").get<std::string>();
   }
 
   if (j.count("forwardWarp")) {
@@ -1852,6 +1860,16 @@ bool open(EntropyProject& project, const fs::path& fileName)
       }
     }
 
+    if (image.m_inverseWarpReferenceImageFileName) {
+      if (image.m_inverseWarpReferenceImageFileName->empty()) {
+        spdlog::warn("Ignoring empty inverse warp reference image path for image {}", image.m_imageFileName);
+        image.m_inverseWarpReferenceImageFileName = std::nullopt;
+      }
+      else {
+        image.m_inverseWarpReferenceImageFileName = fs::canonical(*image.m_inverseWarpReferenceImageFileName);
+      }
+    }
+
     if (image.m_annotationsFileName) {
       if (image.m_annotationsFileName->empty()) {
         spdlog::warn("Ignoring empty annotations path for image {}", image.m_imageFileName);
@@ -1977,6 +1995,11 @@ bool save(const EntropyProject& project, const fs::path& fileName)
 
     if (image.m_forwardWarpFileName) {
       image.m_forwardWarpFileName = fs::relative(*image.m_forwardWarpFileName, projectBasePath);
+    }
+
+    if (image.m_inverseWarpReferenceImageFileName) {
+      image.m_inverseWarpReferenceImageFileName =
+        fs::relative(*image.m_inverseWarpReferenceImageFileName, projectBasePath);
     }
 
     if (image.m_annotationsFileName) {

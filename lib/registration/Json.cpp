@@ -497,7 +497,6 @@ void to_json(nlohmann::json& j, const BackendConfig& value)
     {"antsApplyTransformsExecutable", pathToString(value.antsApplyTransformsExecutable)},
     {"antsConvertTransformFileExecutable", pathToString(value.antsConvertTransformFileExecutable)},
     {"fireAntsPythonExecutable", pathToString(value.fireAntsPythonExecutable)},
-    {"fireAntsBridgeModule", value.fireAntsBridgeModule},
     {"defaultOutputDirectory", pathToString(value.defaultOutputDirectory)},
     {"keepTemporaryFiles", value.keepTemporaryFiles},
     {"maxConcurrentJobs", value.maxConcurrentJobs},
@@ -526,7 +525,6 @@ void from_json(const nlohmann::json& j, BackendConfig& value)
   if (j.contains("fireAntsPythonExecutable")) {
     value.fireAntsPythonExecutable = pathFromJson(j.at("fireAntsPythonExecutable"));
   }
-  getOptional(j, "fireAntsBridgeModule", value.fireAntsBridgeModule);
   if (j.contains("defaultOutputDirectory")) {
     value.defaultOutputDirectory = pathFromJson(j.at("defaultOutputDirectory"));
   }

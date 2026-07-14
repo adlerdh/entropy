@@ -48,6 +48,11 @@ void renderImageHeader(
   const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadWarpField,
   const std::function<void(
     const uuids::uuid& imageUid,
+    const std::filesystem::path& fileName,
+    bool forwardWarp,
+    std::optional<uuids::uuid> inverseWarpReferenceImageUid)>& loadAndAssignWarpField,
+  const std::function<void(
+    const uuids::uuid& imageUid,
     const uuids::uuid& sourceWarpUid,
     ComputedWarpDirection direction,
     const WarpInversionOptions& options)>& requestWarpInversion,

@@ -139,7 +139,7 @@ bool warpStrengthSlider(float* strength, bool allowExaggerated)
 {
   float slider = warpStrengthToSlider(*strength, allowExaggerated);
   const std::string preview = warpStrengthPreview(*strength);
-  if (ImGui::SliderFloat("Strength", &slider, 0.0f, 1.0f, preview.c_str())) {
+  if (ImGui::SliderFloat("Warp strength", &slider, 0.0f, 1.0f, preview.c_str())) {
     *strength = sliderToWarpStrength(slider, allowExaggerated);
     return true;
   }
@@ -230,6 +230,40 @@ std::vector<std::string> warpFieldWarnings(const Image& field, const Image& targ
   return warnings;
 }
 
+std::string inverseWarpWarningDetail(std::string warning)
+{
+  const std::vector<std::pair<std::string, std::string>> replacements{
+    {"The selected warp field has fewer than three components per voxel.", "Fewer than three components per voxel"},
+    {"The warp field grid dimensions differ from the expected image.", "Grid dimensions differ"},
+    {"The warp field voxel spacing differs from the expected image.", "Voxel spacing differs"},
+    {"The warp field origin differs from the expected image.", "Origin differs"},
+    {"The warp field direction matrix differs from the expected image.", "Direction matrix differs"},
+    {"The warp field physical domain does not fully cover the expected image.",
+     "Physical domain does not fully cover the reference"}};
+  for (const auto& [from, to] : replacements) {
+    if (warning == from) {
+      return to;
+    }
+  }
+  return warning;
+}
+
+std::vector<std::string> inverseWarpFieldWarnings(const Image& field, const Image& referenceImage)
+{
+  const std::vector<std::string> details = warpFieldWarnings(field, referenceImage);
+  if (details.empty()) {
+    return {};
+  }
+
+  std::vector<std::string> warnings;
+  warnings.reserve(details.size() + 1u);
+  warnings.emplace_back("Warning! The inverse warp field differs from the reference:");
+  for (const std::string& detail : details) {
+    warnings.emplace_back(inverseWarpWarningDetail(detail));
+  }
+  return warnings;
+}
+
 std::vector<std::string>
 forwardWarpFieldWarnings(const Image& field, const Image& movingImage, const Image* referenceImage)
 {
@@ -292,8 +326,10 @@ void renderInlineWarpFieldWarnings(const std::vector<std::string>& warnings)
   }
 
   const ImVec4 warningColor{1.0f, 0.72f, 0.28f, 1.0f};
-  for (const std::string& warning : warnings) {
-    ImGui::TextColored(warningColor, "%s", warning.c_str());
+  for (std::size_t i = 0; i < warnings.size(); ++i) {
+    const std::string text =
+      (i > 0 && warnings.front().rfind("Warning!", 0) == 0u) ? "- " + warnings.at(i) : warnings.at(i);
+    ImGui::TextColored(warningColor, "%s", text.c_str());
   }
 }
 
@@ -902,6 +938,11 @@ void renderImageHeader(
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<ImageColorMap*(size_t cmapIndex)>& getImageColorMap,
   const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadWarpField,
+  const std::function<void(
+    const uuids::uuid& imageUid,
+    const std::filesystem::path& fileName,
+    bool forwardWarp,
+    std::optional<uuids::uuid> inverseWarpReferenceImageUid)>& loadAndAssignWarpField,
   const std::function<void(
     const uuids::uuid& imageUid,
     const uuids::uuid& sourceWarpUid,
@@ -2695,7 +2736,13 @@ void renderImageHeader(
       std::end(loadedWarpFieldRange)};
     const std::optional<uuids::uuid> activeInverseWarpUid = appData.imageToActiveInverseWarpUid(imageUid);
     const std::optional<uuids::uuid> activeForwardWarpUid = appData.imageToActiveForwardWarpUid(imageUid);
-    const Image* referenceImage = appData.refImageUid() ? appData.image(*appData.refImageUid()) : nullptr;
+    const std::optional<uuids::uuid> activeInverseWarpReferenceUid =
+      appData.imageToActiveInverseWarpReferenceImageUid(imageUid);
+    const std::optional<uuids::uuid> defaultInverseWarpReferenceUid =
+      appData.refImageUid() ? appData.refImageUid() : std::optional<uuids::uuid>{imageUid};
+    const Image* referenceImage =
+      activeInverseWarpReferenceUid ? appData.image(*activeInverseWarpReferenceUid) : nullptr;
+    const Image* appReferenceImage = appData.refImageUid() ? appData.image(*appData.refImageUid()) : nullptr;
 
     auto warpFieldNamesAndIndex = [&](std::optional<uuids::uuid> activeUid) {
       int activeIndex = activeUid ? -1 : 0;
@@ -2712,17 +2759,31 @@ void renderImageHeader(
       return std::pair{std::move(names), activeIndex};
     };
 
+    auto assignmentInverseWarpReferenceUid = [&]() -> std::optional<uuids::uuid> {
+      if (activeInverseWarpReferenceUid) {
+        return activeInverseWarpReferenceUid;
+      }
+      return defaultInverseWarpReferenceUid;
+    };
+
+    auto assignmentInverseWarpReferenceImage = [&]() -> const Image* {
+      const auto referenceUid = assignmentInverseWarpReferenceUid();
+      return referenceUid ? appData.image(*referenceUid) : image;
+    };
+
     auto confirmAndAssignInverseWarp = [&](const uuids::uuid& defUid) {
       const Image* def = appData.warpField(defUid);
-      if (!def || !referenceImage) {
+      const auto referenceUid = assignmentInverseWarpReferenceUid();
+      const Image* assignmentReferenceImage = assignmentInverseWarpReferenceImage();
+      if (!def || !assignmentReferenceImage) {
         return false;
       }
 
-      const std::vector<std::string> warnings = warpFieldWarnings(*def, *referenceImage);
+      const std::vector<std::string> warnings = inverseWarpFieldWarnings(*def, *assignmentReferenceImage);
       if (!confirmWarpFieldWarnings("Inverse warp warning", warnings)) {
         return false;
       }
-      if (!appData.assignInverseWarpUidToImage(imageUid, defUid)) {
+      if (!appData.assignInverseWarpUidToImage(imageUid, defUid, referenceUid)) {
         spdlog::error("Unable to assign inverse warp {} to image {}", defUid, imageUid);
         return false;
       }
@@ -2736,7 +2797,7 @@ void renderImageHeader(
         return false;
       }
 
-      const std::vector<std::string> warnings = forwardWarpFieldWarnings(*def, *image, referenceImage);
+      const std::vector<std::string> warnings = forwardWarpFieldWarnings(*def, *image, appReferenceImage);
       if (!confirmWarpFieldWarnings("Forward warp warning", warnings)) {
         return false;
       }
@@ -2744,12 +2805,13 @@ void renderImageHeader(
         spdlog::error("Unable to assign forward warp {} to image {}", defUid, imageUid);
         return false;
       }
+      updateImageUniforms();
       return true;
     };
 
-    auto loadAndAssignWarpField = [&](bool forwardWarp) {
-      if (!loadWarpField) {
-        spdlog::error("No warp-field load callback is installed");
+    auto loadAndAssignSelectedWarpField = [&](bool forwardWarp) {
+      if (!loadAndAssignWarpField) {
+        spdlog::error("No async warp-field load callback is installed");
         return;
       }
 
@@ -2758,18 +2820,11 @@ void renderImageHeader(
         return;
       }
 
-      const std::optional<uuids::uuid> defUid = loadWarpField(*selectedFile);
-      if (!defUid) {
-        spdlog::error("Unable to load warp field from {}", *selectedFile);
-        return;
-      }
-
-      if (forwardWarp) {
-        (void)confirmAndAssignForwardWarp(*defUid);
-      }
-      else {
-        (void)confirmAndAssignInverseWarp(*defUid);
-      }
+      loadAndAssignWarpField(
+        imageUid,
+        *selectedFile,
+        forwardWarp,
+        forwardWarp ? std::nullopt : assignmentInverseWarpReferenceUid());
     };
 
     static WarpInversionOptions inversionOptions;
@@ -2815,9 +2870,45 @@ void renderImageHeader(
     ImGui::SameLine();
     helpMarker("Inverse warp is sampled in reference/fixed space and gives the image sampling offset.");
 
+    if (activeInverseWarpUid) {
+      const uuid_range_t imageRange = appData.imageUidsOrdered();
+      const std::vector<uuids::uuid> imageUids{std::begin(imageRange), std::end(imageRange)};
+      int activeReferenceIndex = -1;
+      std::vector<std::string> referenceNames;
+      referenceNames.reserve(imageUids.size());
+      for (std::size_t i = 0; i < imageUids.size(); ++i) {
+        const Image* candidate = appData.image(imageUids.at(i));
+        referenceNames.push_back(candidate ? candidate->settings().displayName() : std::string{"Missing image"});
+        if (activeInverseWarpReferenceUid && *activeInverseWarpReferenceUid == imageUids.at(i)) {
+          activeReferenceIndex = static_cast<int>(i);
+        }
+      }
+      const std::size_t activeReferenceNameIndex =
+        activeReferenceIndex >= 0 ? static_cast<std::size_t>(activeReferenceIndex) : 0u;
+      if (
+        !referenceNames.empty() &&
+        ImGui::BeginCombo("Reference space", referenceNames.at(activeReferenceNameIndex).c_str()))
+      {
+        for (std::size_t i = 0; i < referenceNames.size(); ++i) {
+          const bool selected = static_cast<int>(i) == activeReferenceIndex;
+          if (ImGui::Selectable(referenceNames.at(i).c_str(), selected)) {
+            if (appData.setActiveInverseWarpReferenceImageUid(imageUid, imageUids.at(i))) {
+              updateImageUniforms();
+            }
+          }
+          if (selected) {
+            ImGui::SetItemDefaultFocus();
+          }
+        }
+        ImGui::EndCombo();
+      }
+      ImGui::SameLine();
+      helpMarker("Image domain in which the inverse warp is sampled before sampling this moving image.");
+    }
+
     if (activeInverseWarpUid && referenceImage) {
       if (const Image* def = appData.warpField(*activeInverseWarpUid)) {
-        renderInlineWarpFieldWarnings(warpFieldWarnings(*def, *referenceImage));
+        renderInlineWarpFieldWarnings(inverseWarpFieldWarnings(*def, *referenceImage));
       }
     }
 
@@ -2871,11 +2962,11 @@ void renderImageHeader(
     static const std::string loadForwardWarpButtonText =
       std::string(ICON_FK_ARROW_CIRCLE_O_RIGHT) + " Load forward warp...";
     if (ImGui::Button(loadInverseWarpButtonText.c_str())) {
-      loadAndAssignWarpField(false);
+      loadAndAssignSelectedWarpField(false);
     }
     ImGui::SameLine();
     if (ImGui::Button(loadForwardWarpButtonText.c_str())) {
-      loadAndAssignWarpField(true);
+      loadAndAssignSelectedWarpField(true);
     }
 
     ImGui::BeginDisabled(!hasAssignedInverseWarp);
@@ -2906,7 +2997,7 @@ void renderImageHeader(
       "The inverse warp is sampled in reference space and gives the image sampling offset. "
       "A moving-grid forward warp can map moving landmarks and annotations into reference space for display.");
 
-    if (!loadedWarpFieldUids.empty() && ImGui::TreeNodeEx("Warp inversion", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (!loadedWarpFieldUids.empty() && ImGui::TreeNode("Warp inversion")) {
       if (requestWarpInversion && (activeForwardWarpUid || activeInverseWarpUid)) {
         if (activeForwardWarpUid) {
           if (ImGui::Button("Compute inverse warp")) {

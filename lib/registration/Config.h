@@ -23,14 +23,12 @@ struct BackendConfig
   std::filesystem::path antsConvertTransformFileExecutable = //!< ANTs ConvertTransformFile executable path
     "ConvertTransformFile";
   std::filesystem::path fireAntsPythonExecutable = "python"; //!< Python executable used for FireANTs
-  std::string fireAntsBridgeModule =                         //!< FireANTs Python bridge module
-    "entropy_fireants_bridge";
-  std::filesystem::path defaultOutputDirectory; //!< Default registration output directory
-  bool keepTemporaryFiles = false;              //!< Preserve temporary exported inputs
-  int maxConcurrentJobs = 1;                    //!< Maximum external jobs running at once
-  int defaultCpuThreadCount = 0;                //!< Zero lets the backend choose
-  std::string defaultFireAntsDevice = "cuda:0"; //!< Default PyTorch device for FireANTs
-  bool showExpertOptionsByDefault = false;      //!< Reveal expert controls in setup UI
+  std::filesystem::path defaultOutputDirectory;              //!< Default registration output directory
+  bool keepTemporaryFiles = false;                           //!< Preserve temporary exported inputs
+  int maxConcurrentJobs = 1;                                 //!< Maximum external jobs running at once
+  int defaultCpuThreadCount = 0;                             //!< Zero lets the backend choose
+  std::string defaultFireAntsDevice = "cuda:0";              //!< Default PyTorch device for FireANTs
+  bool showExpertOptionsByDefault = false;                   //!< Reveal expert controls in setup UI
 };
 
 /**

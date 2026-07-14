@@ -375,6 +375,10 @@ public:
    * @return True when both image and warp field exist and the field is usable.
    */
   bool assignActiveInverseWarpUidToImage(const uuid& imageUid, const uuid& activeWarpUid);
+  bool assignActiveInverseWarpUidToImage(
+    const uuid& imageUid,
+    const uuid& activeWarpUid,
+    const std::optional<uuid>& referenceImageUid);
 
   /** @brief Clear the active inverse warp for an image. */
   void clearActiveInverseWarpUidForImage(const uuid& imageUid);
@@ -386,6 +390,16 @@ public:
    * @return Active inverse warp UID, or std::nullopt when none is assigned.
    */
   std::optional<uuid> imageToActiveInverseWarpUid(const uuid& imageUid) const;
+
+  /**
+   *  Return the reference-space image for the active inverse warp.
+   *
+   *  imageUid Moving image UID.
+   *  Reference image UID, or the moving image UID when no explicit reference was assigned.
+   */
+  std::optional<uuid> imageToActiveInverseWarpReferenceImageUid(const uuid& imageUid) const;
+
+  bool setActiveInverseWarpReferenceImageUid(const uuid& imageUid, const std::optional<uuid>& referenceImageUid);
 
   /**
    * @brief Assign the active forward warp for an image.
@@ -421,6 +435,8 @@ public:
    * @return True when the field was assigned.
    */
   bool assignInverseWarpUidToImage(const uuid& imageUid, const uuid& warpUid);
+  bool
+  assignInverseWarpUidToImage(const uuid& imageUid, const uuid& warpUid, const std::optional<uuid>& referenceImageUid);
 
   /**
    * @brief Add a forward warp to an image.
@@ -594,6 +610,9 @@ private:
 
   /// Map of image to the active inverse warp used for image sampling
   std::unordered_map<uuid, uuid> m_imageToActiveInverseWarp;
+
+  // Map of image to the reference-space image for its active inverse warp
+  std::unordered_map<uuid, uuid> m_imageToActiveInverseWarpReferenceImage;
 
   /// Map of image to the active forward warp used for landmarks and annotations
   std::unordered_map<uuid, uuid> m_imageToActiveForwardWarp;

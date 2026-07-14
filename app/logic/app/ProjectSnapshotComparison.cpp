@@ -186,6 +186,7 @@ bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
 {
   return a.m_imageFileName == b.m_imageFileName && dicomSourcesEqual(a.m_dicomSource, b.m_dicomSource) &&
          a.m_affineTxFileName == b.m_affineTxFileName && a.m_inverseWarpFileName == b.m_inverseWarpFileName &&
+         a.m_inverseWarpReferenceImageFileName == b.m_inverseWarpReferenceImageFileName &&
          a.m_forwardWarpFileName == b.m_forwardWarpFileName && matricesEqual(a.m_worldDefTx, b.m_worldDefTx) &&
          a.m_annotationsFileName == b.m_annotationsFileName && imageSettingsEqual(a.m_settings, b.m_settings) &&
          vectorsEqual(a.m_segmentations, b.m_segmentations, segmentationsEqual) &&

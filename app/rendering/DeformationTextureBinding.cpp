@@ -106,7 +106,8 @@ std::optional<uuid> Rendering::activeRenderableDeformationUid(const uuid& imageU
   }
 
   const auto defUid = m_appData.imageToActiveInverseWarpUid(ownerUid);
-  if (!defUid || !m_appData.warpField(*defUid)) {
+  const auto referenceUid = m_appData.imageToActiveInverseWarpReferenceImageUid(ownerUid);
+  if (!defUid || !referenceUid || !m_appData.warpField(*defUid) || !m_appData.image(*referenceUid)) {
     return std::nullopt;
   }
 
@@ -115,6 +116,15 @@ std::optional<uuid> Rendering::activeRenderableDeformationUid(const uuid& imageU
   }
 
   return defUid;
+}
+
+std::optional<uuid> Rendering::activeRenderableDeformationReferenceImageUid(const uuid& imageUid)
+{
+  const uuid ownerUid = deformationSettingsOwnerImageUid(m_appData, imageUid);
+  if (!activeRenderableDeformationUid(imageUid)) {
+    return std::nullopt;
+  }
+  return m_appData.imageToActiveInverseWarpReferenceImageUid(ownerUid);
 }
 
 void Rendering::setDeformationUniforms(

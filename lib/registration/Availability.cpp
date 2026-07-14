@@ -116,7 +116,7 @@ std::optional<SemanticVersion> parseSemanticVersion(std::string_view text)
   return version;
 }
 
-std::vector<std::string> probeArguments(Backend backend, const BackendConfig& config)
+std::vector<std::string> probeArguments(Backend backend, const BackendConfig&)
 {
   switch (backend) {
     case Backend::Greedy:
@@ -124,7 +124,7 @@ std::vector<std::string> probeArguments(Backend backend, const BackendConfig& co
     case Backend::ANTs:
       return {"--version"};
     case Backend::FireANTs:
-      return {"-m", config.fireAntsBridgeModule, "check"};
+      return {"-m", "fireants_bridge", "check"};
   }
   return {};
 }

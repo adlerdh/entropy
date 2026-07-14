@@ -279,6 +279,11 @@ bool ensureDeformationTexture(const uuids::uuid& defUid);
 std::optional<uuids::uuid> activeRenderableDeformationUid(const uuids::uuid& imageUid);
 
 /**
+ *  Return the reference-space image used to draw a warped image, if any.
+ */
+std::optional<uuids::uuid> activeRenderableDeformationReferenceImageUid(const uuids::uuid& imageUid);
+
+/**
  * @brief Set deformation uniforms used by image and segmentation shader paths.
  */
 void setDeformationUniforms(

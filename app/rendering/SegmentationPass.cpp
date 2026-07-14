@@ -40,6 +40,9 @@ void Rendering::renderSegmentationForImage(
   }
 
   const RenderData& renderData = m_appData.renderData();
+  const std::optional<uuids::uuid> referenceImageUid =
+    renderWarped ? activeRenderableDeformationReferenceImageUid(imageUid) : std::nullopt;
+  const Image* geometryImage = referenceImageUid ? m_appData.image(*referenceImageUid) : seg;
   const ShaderProgramType segShaderType =
     (InterpolationMode::NearestNeighbor == seg->settings().interpolationMode())
       ? (renderWarped ? ShaderProgramType::SegmentationNearestWarped : ShaderProgramType::SegmentationNearest)
@@ -78,6 +81,7 @@ void Rendering::renderSegmentationForImage(
       program,
       renderData.m_quad,
       *seg,
+      *(geometryImage ? geometryImage : seg),
       view,
       m_appData.windowData().viewport(),
       worldOffsetXhairs,

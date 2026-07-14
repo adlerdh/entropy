@@ -47,13 +47,47 @@ TEST_CASE("registration backend capabilities expose expected high-level features
   const registration::BackendCapabilities fireAnts =
     registration::capabilitiesForBackend(registration::Backend::FireANTs);
   CHECK(registration::supportsFeature(fireAnts, registration::Feature::StructuredProgress));
+  CHECK(registration::supportsFeature(fireAnts, registration::Feature::InverseWarpOutput));
+  CHECK_FALSE(registration::supportsFeature(fireAnts, registration::Feature::ForwardWarpOutput));
+  CHECK_FALSE(registration::supportsFeature(fireAnts, registration::Feature::WarpedSegmentationOutput));
+  CHECK_FALSE(registration::supportsFeature(fireAnts, registration::Feature::LandmarkTransform));
+  CHECK(registration::supportsTransformModel(fireAnts, registration::TransformModel::RigidAffineDeformable));
   CHECK(registration::supportsMetric(fireAnts, registration::Metric::CC));
+  CHECK(registration::supportsMetric(fireAnts, registration::Metric::MI));
+  CHECK(registration::supportsMetric(fireAnts, registration::Metric::MSE));
+  CHECK_FALSE(registration::supportsMetric(fireAnts, registration::Metric::NCC));
+  CHECK_FALSE(registration::supportsMetric(fireAnts, registration::Metric::WNCC));
   CHECK_FALSE(registration::supportsMetric(fireAnts, registration::Metric::MaskedCC));
   CHECK_FALSE(registration::supportsFeature(fireAnts, registration::Feature::SurfaceTransform));
   const registration::ParameterSchema* fireAntsVerbose = findParameter(fireAnts, "verbose");
   REQUIRE(fireAntsVerbose);
   CHECK(fireAntsVerbose->advanced);
   CHECK(fireAntsVerbose->defaultValue == "true");
+  const registration::ParameterSchema* momentInit = findParameter(fireAnts, "initialMovingTransform");
+  REQUIRE(momentInit);
+  CHECK(momentInit->defaultValue == "None");
+  CHECK(findParameter(fireAnts, "momentOrder") != nullptr);
+  CHECK(findParameter(fireAnts, "momentPerformScaling") != nullptr);
+  CHECK(findParameter(fireAnts, "momentOrientation") != nullptr);
+  CHECK(findParameter(fireAnts, "momentScale") != nullptr);
+  CHECK(findParameter(fireAnts, "momentLossType") != nullptr);
+  const registration::ParameterSchema* deformableTransform = findParameter(fireAnts, "deformableTransform");
+  REQUIRE(deformableTransform);
+  CHECK(deformableTransform->defaultValue == "Greedy");
+  const registration::ParameterSchema* deformationModel = findParameter(fireAnts, "deformationModel");
+  REQUIRE(deformationModel);
+  CHECK(deformationModel->defaultValue == "compositive");
+  const registration::ParameterSchema* deformableOptimizer = findParameter(fireAnts, "deformableOptimizer");
+  REQUIRE(deformableOptimizer);
+  CHECK(deformableOptimizer->defaultValue == "Use optimizer setting");
+  CHECK(findParameter(fireAnts, "rigidScaling") != nullptr);
+  CHECK(findParameter(fireAnts, "centerOfFrameInitialization") != nullptr);
+  CHECK(findParameter(fireAnts, "aroundCenter") != nullptr);
+  CHECK(findParameter(fireAnts, "blurImages") != nullptr);
+  CHECK(findParameter(fireAnts, "ccKernelType") != nullptr);
+  CHECK(findParameter(fireAnts, "integratorN") != nullptr);
+  CHECK(findParameter(fireAnts, "lossReduction") != nullptr);
+  CHECK(findParameter(fireAnts, "greedyFreeform") != nullptr);
 }
 
 TEST_CASE("registration backend schemas include user-facing tooltip text", "[registration]")

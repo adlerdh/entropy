@@ -227,6 +227,16 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
       serializedImage.m_inverseWarpFileName = inverseWarp->header().fileName();
     }
 
+    if (const auto inverseWarpReferenceUid = m_data.imageToActiveInverseWarpReferenceImageUid(imageUid)) {
+      const Image* inverseWarpReferenceImage = m_data.image(*inverseWarpReferenceUid);
+      if (
+        inverseWarpReferenceImage && inverseWarpReferenceImage->header().existsOnDisk() &&
+        !inverseWarpReferenceImage->header().fileName().empty())
+      {
+        serializedImage.m_inverseWarpReferenceImageFileName = inverseWarpReferenceImage->header().fileName();
+      }
+    }
+
     if (const auto activeForwardWarpUid = m_data.imageToActiveForwardWarpUid(imageUid)) {
       const Image* forwardWarp = m_data.warpField(*activeForwardWarpUid);
       if (forwardWarp && forwardWarp->header().existsOnDisk() && !forwardWarp->header().fileName().empty()) {

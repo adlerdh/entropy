@@ -29,8 +29,7 @@ struct CommandGenerationOptions
   std::string antsApplyTransformsExecutable = "antsApplyTransforms";
   /** @brief ANTs transform conversion executable path. */
   std::string antsConvertTransformFileExecutable = "ConvertTransformFile";
-  std::string fireAntsPythonExecutable = "python";              //!< Python executable used for FireANTs
-  std::string fireAntsBridgeModule = "entropy_fireants_bridge"; //!< Python bridge module name
+  std::string fireAntsPythonExecutable = "python"; //!< Python executable used for FireANTs
 };
 
 /**

@@ -41,6 +41,10 @@ void Rendering::renderGrayImageForImage(
     static_cast<int>(deviceViewport.z),
     static_cast<int>(deviceViewport.w)};
   const bool doXray = IntensityProjectionMode::Xray == view.intensityProjectionMode();
+  const std::optional<uuids::uuid> referenceImageUid =
+    renderWarped ? activeRenderableDeformationReferenceImageUid(imageUid) : std::nullopt;
+  const CurrentImages renderGeometryImages{
+    referenceImageUid ? ImgSegPair{*referenceImageUid, std::nullopt} : imgSegPair};
 
   auto drawGrayImage = [&](const bool disableIntensityProjectionForEdges) {
     GLShaderProgram* program = nullptr;
@@ -126,7 +130,7 @@ void Rendering::renderGrayImageForImage(
         setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
       }
 
-      renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{imgSegPair}, disableIntensityProjectionForEdges);
+      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, disableIntensityProjectionForEdges);
     }
     program->stopUse();
 
@@ -211,7 +215,7 @@ void Rendering::renderGrayImageForImage(
         setDeformationUniforms(*program, imageUid, *deformationUid, uniforms.imgTexture_T_world);
       }
 
-      renderOneImage(view, worldOffsetXhairs, *program, CurrentImages{imgSegPair}, uniforms.showEdges);
+      renderOneImage(view, worldOffsetXhairs, *program, renderGeometryImages, uniforms.showEdges);
     }
     program->stopUse();
 

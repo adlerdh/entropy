@@ -43,6 +43,7 @@ constexpr std::array transformModelLabels{
   std::pair{TransformModel::RigidAffine, std::string_view{"RigidAffine"}},
   std::pair{TransformModel::Deformable, std::string_view{"Deformable"}},
   std::pair{TransformModel::AffineDeformable, std::string_view{"AffineDeformable"}},
+  std::pair{TransformModel::RigidAffineDeformable, std::string_view{"RigidAffineDeformable"}},
   std::pair{TransformModel::Translation, std::string_view{"Translation"}},
   std::pair{TransformModel::Similarity, std::string_view{"Similarity"}},
   std::pair{TransformModel::BSplineDisplacement, std::string_view{"BSplineDisplacement"}},
@@ -133,15 +134,15 @@ constexpr std::array progressEventKindLabels{
 bool includesAffineTransform(TransformModel model)
 {
   return model == TransformModel::Rigid || model == TransformModel::Affine || model == TransformModel::RigidAffine ||
-         model == TransformModel::AffineDeformable || model == TransformModel::Similarity ||
-         model == TransformModel::Translation;
+         model == TransformModel::AffineDeformable || model == TransformModel::RigidAffineDeformable ||
+         model == TransformModel::Similarity || model == TransformModel::Translation;
 }
 
 bool includesDeformableTransform(TransformModel model)
 {
   return model == TransformModel::Deformable || model == TransformModel::AffineDeformable ||
-         model == TransformModel::BSplineDisplacement || model == TransformModel::GaussianDisplacement ||
-         model == TransformModel::TimeVaryingVelocity;
+         model == TransformModel::RigidAffineDeformable || model == TransformModel::BSplineDisplacement ||
+         model == TransformModel::GaussianDisplacement || model == TransformModel::TimeVaryingVelocity;
 }
 
 std::string_view label(Backend backend)

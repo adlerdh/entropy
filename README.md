@@ -32,9 +32,12 @@ cmake --build --preset deps-${BUILD_TYPE} --parallel
 # Application
 cmake --preset app-${BUILD_TYPE}
 cmake --build --preset app-${BUILD_TYPE} --parallel
+
+# Unit tests
+ctest --test-dir build-${BUILD_TYPE} --parallel 8 --output-on-failure
 ```
 
-Reduce the parallelism if it runs out of memory. Run with:
+Adjust the parallel job count for your machine, lowering it if you run out of memory. Run with:
 
 ```sh
 build-${BUILD_TYPE}/bin/entropy # macOS and Linux
@@ -227,7 +230,6 @@ Examples:
 ```sh
 entropy -i ref.nii.gz -s ref_seg.nii.gz -i moving.nii.gz
 entropy -p project.json
-entropy -d /path/to/dicom_folder
 ```
 
 Image inputs, DICOM inputs, and `--project` are mutually exclusive. Use `entropy --help` for the complete command-line reference.

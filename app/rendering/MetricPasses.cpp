@@ -272,6 +272,7 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
         program,
         R.m_quad,
         *segs[i],
+        *segs[i],
         view,
         m_appData.windowData().viewport(),
         worldOffsetXhairs,

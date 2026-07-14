@@ -242,6 +242,7 @@ void drawSegQuad(
   GLShaderProgram& program,
   const RenderData::Quad& quad,
   const Image& seg,
+  const Image& geometryImage,
   const View& view,
   const Viewport& windowViewport,
   const glm::vec3& worldCrosshairs,
@@ -255,18 +256,19 @@ void drawSegQuad(
   std::vector<glm::vec3> texSamplingDirsForSmoothSeg{glm::vec3{0.0f}, glm::vec3{0.0f}};
   std::vector<glm::vec3> texSamplingDirsForSegOutline{glm::vec3{0.0f}, glm::vec3{0.0f}};
 
-  const auto posInfo =
-    math::computeAnatomicalLabelsForView(view.camera().camera_T_world(), seg.transformations().worldDef_T_subject());
+  const auto posInfo = math::computeAnatomicalLabelsForView(
+    view.camera().camera_T_world(),
+    geometryImage.transformations().worldDef_T_subject());
 
   const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
-  const glm::mat4 voxel_T_viewClip = seg.transformations().pixel_T_worldDef() * world_T_viewClip;
+  const glm::mat4 voxel_T_viewClip = geometryImage.transformations().pixel_T_worldDef() * world_T_viewClip;
 
   for (int i = 0; i < 2; ++i) {
     voxelSamplingDirs[i] = image_drawing::computeTextureSamplingDirectionForImageVoxelOffset(
       voxel_T_viewClip,
       windowViewport,
       view.viewClip_T_windowClip(),
-      seg.transformations().invPixelDimensions(),
+      geometryImage.transformations().invPixelDimensions(),
       posInfo[i].viewClipDir);
 
     // For smooth segmentation sampling, use sampling directions based on image voxels:
@@ -279,7 +281,7 @@ void drawSegQuad(
       break;
     }
     case SegmentationOutlineStyle::ViewPixel: {
-      const glm::mat4 texture_T_viewClip = seg.transformations().texture_T_worldDef() * world_T_viewClip;
+      const glm::mat4 texture_T_viewClip = geometryImage.transformations().texture_T_worldDef() * world_T_viewClip;
 
       for (int i = 0; i < 2; ++i) {
         texSamplingDirsForSegOutline[i] = image_drawing::computeTextureSamplingDirectionForViewPixelOffset(
@@ -336,6 +338,7 @@ void drawSegPreviewQuad(
   const glm::mat4& texture_T_world,
   const glm::mat4& voxel_T_world,
   const glm::uvec3& textureSize,
+  const Image* geometryImage,
   const View& view,
   const Viewport& windowViewport,
   const glm::vec3& worldCrosshairs,
@@ -346,16 +349,21 @@ void drawSegPreviewQuad(
 {
   std::vector<glm::vec3> texSamplingDirsForSegOutline{glm::vec3{0.0f}, glm::vec3{0.0f}};
 
-  const glm::mat4 world_T_voxel = glm::inverse(voxel_T_world);
+  const glm::mat4 geometryVoxel_T_world =
+    geometryImage ? geometryImage->transformations().pixel_T_worldDef() : voxel_T_world;
+  const glm::mat4 geometryTexture_T_world =
+    geometryImage ? geometryImage->transformations().texture_T_worldDef() : texture_T_world;
+  const glm::mat4 world_T_voxel = glm::inverse(geometryVoxel_T_world);
   const auto posInfo = math::computeAnatomicalLabelsForView(view.camera().camera_T_world(), world_T_voxel);
   const glm::mat4 world_T_viewClip = helper::world_T_clip(view.camera());
-  const glm::mat4 voxel_T_viewClip = voxel_T_world * world_T_viewClip;
-  const glm::mat4 texture_T_viewClip = texture_T_world * world_T_viewClip;
+  const glm::mat4 voxel_T_viewClip = geometryVoxel_T_world * world_T_viewClip;
+  const glm::mat4 texture_T_viewClip = geometryTexture_T_world * world_T_viewClip;
 
-  const glm::vec3 invTextureSize{
-    1.0f / static_cast<float>(textureSize.x),
-    1.0f / static_cast<float>(textureSize.y),
-    1.0f / static_cast<float>(textureSize.z)};
+  const glm::vec3 invTextureSize = geometryImage ? geometryImage->transformations().invPixelDimensions()
+                                                 : glm::vec3{
+                                                     1.0f / static_cast<float>(textureSize.x),
+                                                     1.0f / static_cast<float>(textureSize.y),
+                                                     1.0f / static_cast<float>(textureSize.z)};
 
   switch (segOutlineStyle) {
     case SegmentationOutlineStyle::ImageVoxel: {

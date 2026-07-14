@@ -60,6 +60,13 @@ void EntropyApp::setCallbacks()
     }
     return defUid;
   };
+  imguiCallbacks.project.loadAndAssignDeformationField = [this](
+                                                           const uuids::uuid& imageUid,
+                                                           const fs::path& fileName,
+                                                           bool forwardWarp,
+                                                           std::optional<uuids::uuid> inverseWarpReferenceImageUid) {
+    loadAndAssignDeformationField(imageUid, fileName, forwardWarp, inverseWarpReferenceImageUid);
+  };
   imguiCallbacks.project.importRegistrationJobOutputs = [this](const std::string& jobId) {
     importRegistrationJobOutputs(jobId);
   };
