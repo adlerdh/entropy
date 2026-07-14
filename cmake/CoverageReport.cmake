@@ -10,6 +10,11 @@ if(NOT DEFINED ENTROPY_COVERAGE_DIR)
   set(ENTROPY_COVERAGE_DIR "${ENTROPY_BINARY_DIR}/coverage")
 endif()
 
+if(NOT DEFINED ENTROPY_COVERAGE_EXCLUDE_REGEX)
+  set(ENTROPY_COVERAGE_EXCLUDE_REGEX
+    "(^|.*[/\\\\])(external|test|build-[^/]+|CMakeFiles)([/\\\\]|$)|Tests\\.cpp$|(^|.*[/\\\\])(usr|Applications[/\\\\]Xcode.app)([/\\\\]|$)")
+endif()
+
 if(NOT DEFINED ENTROPY_COVERAGE_HTML)
   set(ENTROPY_COVERAGE_HTML OFF)
 endif()
@@ -104,10 +109,14 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "GCOV")
   endif()
 
   if(DEFINED ENTROPY_GCOVR AND NOT ENTROPY_GCOVR STREQUAL "" AND EXISTS "${ENTROPY_GCOVR}")
+    file(TO_CMAKE_PATH "${ENTROPY_SOURCE_DIR}/app" _entropy_app_filter)
+    file(TO_CMAKE_PATH "${ENTROPY_SOURCE_DIR}/lib" _entropy_lib_filter)
     set(_entropy_gcovr_command
       "${ENTROPY_GCOVR}"
       "--root" "${ENTROPY_SOURCE_DIR}"
       "--object-directory" "${ENTROPY_BINARY_DIR}"
+      "--filter" "${_entropy_app_filter}/"
+      "--filter" "${_entropy_lib_filter}/"
       "--exclude" "${ENTROPY_COVERAGE_EXCLUDE_REGEX}"
       "--gcov-executable" "${ENTROPY_GCOV_EXECUTABLE}"
       "--gcov-ignore-parse-errors" "negative_hits.warn_once_per_file"
@@ -144,7 +153,7 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "GCOV")
     endif()
     execute_process(
       COMMAND "${ENTROPY_LCOV}" --remove "${_entropy_raw_info}"
-        "*/external/*" "*/build-*/*" "/usr/*"
+        "*/external/*" "*/test/*" "*Tests.cpp" "*/build-*/*" "/usr/*"
         --output-file "${_entropy_filtered_info}"
       RESULT_VARIABLE _entropy_lcov_filter_result)
     if(NOT _entropy_lcov_filter_result EQUAL 0)
@@ -224,6 +233,15 @@ elseif(ENTROPY_COVERAGE_MODE STREQUAL "OPENCPPCOVERAGE")
   set(_entropy_opencppcoverage_excluded_source_args)
   set(_entropy_opencppcoverage_external_sources)
   _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_external_sources "${ENTROPY_SOURCE_DIR}/external")
+  _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_external_sources "${ENTROPY_BINARY_DIR}/external")
+  file(GLOB_RECURSE _entropy_source_tree_paths LIST_DIRECTORIES true
+    "${ENTROPY_SOURCE_DIR}/app/*"
+    "${ENTROPY_SOURCE_DIR}/lib/*")
+  foreach(_entropy_source_tree_path IN LISTS _entropy_source_tree_paths)
+    if(IS_DIRECTORY "${_entropy_source_tree_path}" AND _entropy_source_tree_path MATCHES "[/\\\\]test$")
+      _entropy_append_opencppcoverage_path(_entropy_opencppcoverage_external_sources "${_entropy_source_tree_path}")
+    endif()
+  endforeach()
   foreach(_entropy_source IN LISTS _entropy_opencppcoverage_external_sources)
     list(APPEND _entropy_opencppcoverage_excluded_source_args "--excluded_sources" "${_entropy_source}")
   endforeach()

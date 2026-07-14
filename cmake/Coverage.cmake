@@ -5,7 +5,7 @@ set(Entropy_COVERAGE_MODE "AUTO" CACHE STRING
 set_property(CACHE Entropy_COVERAGE_MODE PROPERTY STRINGS AUTO LLVM GCOV OPENCPPCOVERAGE)
 
 set(Entropy_COVERAGE_EXCLUDE_REGEX
-  "(/external/|/test/|Tests\\.cpp$|/build-[^/]+/|/CMakeFiles/|/usr/|/Applications/Xcode.app/)"
+  "(^|.*[/\\\\])(external|test|build-[^/]+|CMakeFiles)([/\\\\]|$)|Tests\\.cpp$|(^|.*[/\\\\])(usr|Applications[/\\\\]Xcode.app)([/\\\\]|$)"
   CACHE STRING "Regular expression for files excluded from coverage reports")
 
 function(entropy_configure_coverage)

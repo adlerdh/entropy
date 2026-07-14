@@ -129,9 +129,9 @@ The `deps-*` presets configure with `Entropy_SUPERBUILD=ON`. The `app-*` presets
 Run the app from the build tree:
 
 ```sh
-build-debug/bin/entropy # Linux
-open build-debug/bin/Entropy.app # macOS
+build-debug/bin/entropy # macOS
 .\build-debug\bin\entropy.exe # Windows
+build-debug/bin/entropy # Linux
 ```
 
 For release builds, replace `build-debug` with `build-release`.

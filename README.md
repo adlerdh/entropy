@@ -12,7 +12,7 @@
 
 Entropy is a cross-platform tool for visualizing, comparing, registering, segmenting, annotating, and inspecting medical images.
 
-It is built to handle projects with multiple images in a common reference space. It can load any number of images, arrange them in flexible layouts, render them with fast shader-based MPR views, and display their values, coordinates, and transforms. Different rendering modes help with comparing images and evaluating spatial alignment.
+It is built to handle projects with multiple images in a common reference space. It can load any number of images, arrange them in flexible layouts, render them with shader-based MPR views, and display their values, coordinates, and transforms. Different rendering modes help with comparing images and evaluating spatial alignment.
 
 Entropy is primarily developed and maintained by Daniel H. Adler, Ph.D., with support from Professor [James C. Gee, Ph.D.](https://www.med.upenn.edu/apps/faculty/index.php/g275/p10656)
 
@@ -37,15 +37,14 @@ cmake --build --preset app-${BUILD_TYPE} --parallel
 Reduce the parallelism if it runs out of memory. Run with:
 
 ```sh
-open build-${BUILD_TYPE}/bin/Entropy.app # macOS
+build-${BUILD_TYPE}/bin/entropy # macOS and Linux
 .\build-${BUILD_TYPE}\bin\entropy.exe # Windows
-build-${BUILD_TYPE}/bin/entropy # Linux
 ```
 
 Release packages are generated with preset `package-release` for:
 
-- macOS Apple Silicon
-- macOS Intel
+- macOS Apple Silicon, arm64
+- macOS Intel, x86_64
 - Windows, x86_64
 - Ubuntu Linux, x86_64
 - Fedora Linux, x86_64
@@ -54,7 +53,7 @@ See [BUILDING.md](BUILDING.md) for detailed platform and build requirements, com
 
 ## Overview
 
-Entropy is useful for reviewing multiple images in relation to one another in a common reference space. It handles multimodal scalar and multi-component images in 2D, 3D, and 4D (time series), as well as segmentations, vector annotations, and registration transformations (affine and deformation fields).
+Entropy is useful for reviewing multiple images in relation to one another in a common reference space. It handles multimodal scalar and multi-component images in 2D, 3D, and 4D (time series), as well as segmentations, vector annotations, and registration transformations (affine matrices and deformation fields).
 
 ### Image Visualization and Comparison
 
@@ -135,18 +134,20 @@ Entropy also displays complete image header information and DICOM metadata. It l
 
 ### Multi-Component and Time Series Images
 
-Supported image categories include:
+Entropy supports 2D, 3D, and 4D (time series) images with any number of components per pixel/voxel.
 
-- 2D and 3D scalar images
-- 4D time series
-- Integer (signed/unsigned 8/16/32-bit) and floating-point component types
-- Complex-valued images
-- RGB and RGBA images
-- Vector fields and deformation warp fields
-- General images with N components
-- Segmentations and label images
+Component types:
+- Integer (signed/unsigned 8, 16, and 32 bits)
+- Floating-point (32 and 64 bits)
 
-Images with multiple components can be viewed by individual component, magnitude, RGB/RGBA interpretation, and derived projections where appropriate. Time series images can be reviewed with per-image and global time controls.
+Pixel/voxel types:
+- Scalar
+- Complex
+- RGB and RGBA
+- Vector fields (e.g. representing deformable registration warps)
+- General multi-component images
+
+Images with multiple components can be viewed by individual component, magnitude, RGB/RGBA color, and as various derived maps (divergence, curl, and Jacobian determinant). Time series images can be reviewed with per-image and global time controls.
 
 ## Technical Notes
 
@@ -163,7 +164,7 @@ Entropy is a native C++ application built for interactive desktop performance ac
 | Image I/O | Medical image loading through [ITK](https://itk.org/) and [GDCM](https://gdcm.sourceforge.net/) |
 | UI | [Dear ImGui](https://github.com/ocornut/imgui) with [Docking support](https://github.com/ocornut/imgui/wiki/Docking) and native platform menus and dialog integration |
 
-Entropy targets OpenGL 3.3 Core with GLSL 3.30 shaders to maximize compatibility across platforms and operating system versions. Detailed compiler versions, operating system versions, development packages, and coverage workflows are documented in [BUILDING.md](BUILDING.md).
+Entropy targets OpenGL 3.3 Core with GLSL 3.30 shaders to maximize compatibility across platforms and operating systems. Detailed compiler versions, operating system versions, development packages, and coverage workflows are documented in [BUILDING.md](BUILDING.md).
 
 ### Continuous Integration
 
