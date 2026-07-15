@@ -5,6 +5,7 @@
 TEST_CASE("layout tabs reserve a fixed viewport edge", "[ui][gui]")
 {
   GuiData guiData;
+  guiData.m_renderUiWindows = true;
   guiData.m_showLayoutTabs = true;
   guiData.m_layoutTabBarHeight = 42.0f;
   guiData.m_layoutTabInnerGap = 2.0f;
@@ -33,6 +34,7 @@ TEST_CASE("layout tabs reserve a fixed viewport edge", "[ui][gui]")
 TEST_CASE("hidden layout tabs do not reserve viewport space", "[ui][gui]")
 {
   GuiData guiData;
+  guiData.m_renderUiWindows = true;
   guiData.m_showLayoutTabs = false;
 
   const GuiData::Margins margins = guiData.computeMargins();
@@ -44,6 +46,7 @@ TEST_CASE("hidden layout tabs do not reserve viewport space", "[ui][gui]")
 TEST_CASE("dock offsets include menu and visible layout tabs", "[ui][gui]")
 {
   GuiData guiData;
+  guiData.m_renderUiWindows = true;
   guiData.m_showMainMenuBar = true;
   guiData.m_mainMenuBarDims.y = 22.0f;
   guiData.m_showLayoutTabs = true;
@@ -78,6 +81,7 @@ TEST_CASE("dock offsets include menu and visible layout tabs", "[ui][gui]")
 TEST_CASE("toolbar margins reserve only the occupied viewport edges", "[ui][gui]")
 {
   GuiData guiData;
+  guiData.m_renderUiWindows = true;
   guiData.m_showMainMenuBar = true;
   guiData.m_mainMenuBarDims.y = 22.0f;
   guiData.m_showLayoutTabs = true;
@@ -108,6 +112,39 @@ TEST_CASE("toolbar margins reserve only the occupied viewport edges", "[ui][gui]
   CHECK(fullMargins.right == 48.0f);
   CHECK(fullMargins.top == 22.0f + 44.0f);
   CHECK(fullMargins.bottom == 36.0f);
+}
+
+TEST_CASE("hidden user interface does not reserve viewport space", "[ui][gui]")
+{
+  GuiData guiData;
+  guiData.m_renderUiWindows = false;
+  guiData.m_showMainMenuBar = true;
+  guiData.m_mainMenuBarDims.y = 22.0f;
+  guiData.m_showLayoutTabs = true;
+  guiData.m_layoutTabBarHeight = 42.0f;
+  guiData.m_layoutTabInnerGap = 2.0f;
+  guiData.m_showModeToolbar = true;
+  guiData.m_isModeToolbarHorizontal = false;
+  guiData.m_modeToolbarCorner = 0;
+  guiData.m_modeToolbarDockDims = glm::vec2{48.0f, 320.0f};
+  guiData.m_showSegToolbar = true;
+  guiData.m_isSegToolbarHorizontal = true;
+  guiData.m_segToolbarCorner = 2;
+  guiData.m_segToolbarDockDims = glm::vec2{280.0f, 36.0f};
+
+  const GuiData::Margins toolbarMargins = guiData.computeToolbarMargins();
+  const GuiData::Margins margins = guiData.computeMargins();
+
+  CHECK(toolbarMargins.left == 0.0f);
+  CHECK(toolbarMargins.right == 0.0f);
+  CHECK(toolbarMargins.top == 0.0f);
+  CHECK(toolbarMargins.bottom == 0.0f);
+  CHECK(margins.left == 0.0f);
+  CHECK(margins.right == 0.0f);
+  CHECK(margins.top == 0.0f);
+  CHECK(margins.bottom == 0.0f);
+  CHECK(guiData.topDockOffset() == 0.0f);
+  CHECK(guiData.bottomDockOffset() == 0.0f);
 }
 
 TEST_CASE("precision format helpers use their own precision fields", "[ui][gui]")

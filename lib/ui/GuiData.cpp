@@ -39,6 +39,9 @@ void GuiData::setTimeValuePrecisionFormat()
 GuiData::Margins GuiData::computeToolbarMargins() const
 {
   Margins margins;
+  if (!m_renderUiWindows) {
+    return margins;
+  }
 
   // Corners: -1 custom, 0 top-left, 1 top-right, 2 bottom-left, 3 bottom-right
 
@@ -86,6 +89,9 @@ GuiData::Margins GuiData::computeToolbarMargins() const
 GuiData::Margins GuiData::computeMargins() const
 {
   Margins margins = computeToolbarMargins();
+  if (!m_renderUiWindows) {
+    return margins;
+  }
 
   if (m_showMainMenuBar) {
     margins.top += m_mainMenuBarDims.y;
@@ -106,6 +112,10 @@ GuiData::Margins GuiData::computeMargins() const
 
 float GuiData::topDockOffset() const
 {
+  if (!m_renderUiWindows) {
+    return 0.0f;
+  }
+
   float offset = 0.0f;
   if (m_showMainMenuBar) {
     offset += m_mainMenuBarDims.y;
@@ -118,6 +128,10 @@ float GuiData::topDockOffset() const
 
 float GuiData::bottomDockOffset() const
 {
+  if (!m_renderUiWindows) {
+    return 0.0f;
+  }
+
   return (m_showLayoutTabs && LayoutTabPlacement::Bottom == m_layoutTabPlacement)
            ? (m_layoutTabBarHeight + m_layoutTabInnerGap)
            : 0.0f;
