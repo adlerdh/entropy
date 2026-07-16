@@ -115,8 +115,9 @@ void GLBufferTexture::allocate(std::size_t sizeInBytes, const GLvoid* data)
   GLint maxSize;
   glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxSize);
 
-  const std::size_t bytesPerTexel =
-    sk_textureFormatToNumComponentsMap.at(m_format) * sk_textureFormatToNumBytesPerComponentMap.at(m_format);
+  const auto numComponents = static_cast<std::size_t>(sk_textureFormatToNumComponentsMap.at(m_format));
+  const auto numBytesPerComponent = static_cast<std::size_t>(sk_textureFormatToNumBytesPerComponentMap.at(m_format));
+  const std::size_t bytesPerTexel = numComponents * numBytesPerComponent;
   const std::size_t texelCount = (sizeInBytes + bytesPerTexel - 1) / bytesPerTexel;
 
   if (texelCount > static_cast<std::size_t>(maxSize)) {
