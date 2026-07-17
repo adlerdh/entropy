@@ -261,6 +261,11 @@ constexpr std::array sk_layoutTabPlacementNames{
   EnumName{UiLayoutTabPlacement::Top, "top"},
   EnumName{UiLayoutTabPlacement::Bottom, "bottom"}};
 
+constexpr std::array sk_floatingPointInterpolationPolicyNames{
+  EnumName{FloatingPointLinearInterpolationPolicy::Automatic, "automatic"},
+  EnumName{FloatingPointLinearInterpolationPolicy::FixedFunction, "fixedFunction"},
+  EnumName{FloatingPointLinearInterpolationPolicy::FloatingPoint, "floatingPoint"}};
+
 constexpr std::uint32_t kMaxPrecision = 9;
 
 std::uint32_t precisionFromJson(const json& root, std::string_view key, std::uint32_t fallback)
@@ -362,7 +367,13 @@ json toJson(
        {{"showImageBorders", renderPreferences.showImageBordersInLightboxViews},
         {"showOffsetLabels", renderPreferences.showLightboxOffsetLabels},
         {"offsetLabelColor", vec4ToJson(renderPreferences.lightboxOffsetLabelColor)}}}}},
-    {"images", {{"floatingPointLinearInterpolation", renderPreferences.floatingPointLinearInterpolation}}},
+    {"images",
+     {{"floatingPointLinearInterpolationPolicy",
+       enumToName(renderPreferences.floatingPointLinearInterpolationPolicy, sk_floatingPointInterpolationPolicyNames)},
+      {"isocontourFloatingPointInterpolationPolicy",
+       enumToName(
+         renderPreferences.isocontourFloatingPointInterpolationPolicy,
+         sk_floatingPointInterpolationPolicyNames)}}},
     {"segmentation",
      {{"brush",
        {{"replaceBackgroundWithForeground", settings.replaceBackgroundWithForeground()},
@@ -516,7 +527,16 @@ void applyJson(
   }
 
   if (const auto images = root.find("images"); images != root.end() && images->is_object()) {
-    setFromJson(renderPreferences.floatingPointLinearInterpolation, *images, "floatingPointLinearInterpolation");
+    setEnumFromJson(
+      renderPreferences.floatingPointLinearInterpolationPolicy,
+      *images,
+      "floatingPointLinearInterpolationPolicy",
+      sk_floatingPointInterpolationPolicyNames);
+    setEnumFromJson(
+      renderPreferences.isocontourFloatingPointInterpolationPolicy,
+      *images,
+      "isocontourFloatingPointInterpolationPolicy",
+      sk_floatingPointInterpolationPolicyNames);
   }
 
   if (const auto segmentation = root.find("segmentation"); segmentation != root.end() && segmentation->is_object()) {
@@ -720,7 +740,6 @@ void preserveProjectOwnedRenderPreferences(RenderPreferences& preferences, const
   preferences.xrayEnergyKeV = currentPreferences.xrayEnergyKeV;
   preferences.xrayWindow = currentPreferences.xrayWindow;
   preferences.xrayLevel = currentPreferences.xrayLevel;
-  preferences.isocontourFloatingPointInterpolation = currentPreferences.isocontourFloatingPointInterpolation;
   preferences.modulateIsocontourOpacityWithImageOpacity = currentPreferences.modulateIsocontourOpacityWithImageOpacity;
   preferences.modulateSegmentationOpacityWithImageOpacity =
     currentPreferences.modulateSegmentationOpacityWithImageOpacity;

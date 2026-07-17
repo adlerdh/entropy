@@ -285,7 +285,7 @@ bool isosurfaceDisplaySettingsEqual(
   const serialize::ProjectIsosurfaceDisplaySettings& a,
   const serialize::ProjectIsosurfaceDisplaySettings& b)
 {
-  return a.m_floatingPointInterpolation == b.m_floatingPointInterpolation &&
+  return a.m_floatingPointInterpolationPolicy == b.m_floatingPointInterpolationPolicy &&
          a.m_modulateOpacityWithImageOpacity == b.m_modulateOpacityWithImageOpacity;
 }
 

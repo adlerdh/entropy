@@ -26,17 +26,11 @@ layout(location = 0) out vec4 o_color; // Output RGBA color (premultiplied alpha
 
 uniform $$IMAGE_SAMPLER_TYPE$$ u_imgTex; // Texture unit 0: image (scalar)
 
-// Uniforms from vertex shader:
-uniform mat4 u_tex_T_world;
-uniform mat4 u_world_T_clip;
-uniform float u_clipDepth;
-
 uniform float u_isoValue;
 uniform float u_fillOpacity;
 uniform float u_lineOpacity;
 uniform vec3 u_color;
 uniform float u_contourWidth; // pixels
-uniform vec2 u_viewSize;      // pixels
 
 uniform vec2 u_imgMinMax;     // Min and max image values (in texture intenstiy units)
 uniform vec2 u_imgThresholds; // Image lower and upper thresholds (in texture intensity units)
@@ -139,61 +133,20 @@ void main()
   }
   */
 
-  // Pixel deltas in clip space:
-  float dx = 2.0 / u_viewSize.x;
-  float dy = 2.0 / u_viewSize.y;
-
-  vec2 p = fs_in.v_clipPos;
-  vec2 pa = p + vec2(-dx, 0.0);
-  vec2 pb = p + vec2(dx, 0.0);
-  vec2 pc = p + vec2(0.0, -dy);
-  vec2 pd = p + vec2(0.0, dy);
-
-  mat4 texture_T_clip = u_tex_T_world * u_world_T_clip;
-
-  vec3 ta = vec3(texture_T_clip * vec4(pa, u_clipDepth, 1.0));
-  vec3 tb = vec3(texture_T_clip * vec4(pb, u_clipDepth, 1.0));
-  vec3 tc = vec3(texture_T_clip * vec4(pc, u_clipDepth, 1.0));
-  vec3 td = vec3(texture_T_clip * vec4(pd, u_clipDepth, 1.0));
-  vec4 waH = u_world_T_clip * vec4(pa, u_clipDepth, 1.0);
-  vec4 wbH = u_world_T_clip * vec4(pb, u_clipDepth, 1.0);
-  vec4 wcH = u_world_T_clip * vec4(pc, u_clipDepth, 1.0);
-  vec4 wdH = u_world_T_clip * vec4(pd, u_clipDepth, 1.0);
-  vec3 wa = vec3(waH / waH.w);
-  vec3 wb = vec3(wbH / wbH.w);
-  vec3 wc = vec3(wcH / wcH.w);
-  vec3 wd = vec3(wdH / wdH.w);
-
-  ta = sampleTexCoord(ta, wa);
-  tb = sampleTexCoord(tb, wb);
-  tc = sampleTexCoord(tc, wc);
-  td = sampleTexCoord(td, wd);
-
-  if (!isInsideTexture(ta) || !isInsideTexture(tb) || !isInsideTexture(tc) || !isInsideTexture(td)) {
-    discard;
+  float gradientPerPixel = length(vec2(dFdx(img), dFdy(img)));
+  float lineCoverage = 0.0;
+  float fillCoverage = float(img < u_isoValue);
+  if (gradientPerPixel > 1.0e-12) {
+    float signedDistancePx = (img - u_isoValue) / gradientPerPixel;
+    float halfLineWidthPx = max(0.5 * u_contourWidth, 0.0);
+    lineCoverage = 1.0 - smoothstep(halfLineWidthPx, halfLineWidthPx + 1.0, abs(signedDistancePx));
+    fillCoverage = 1.0 - smoothstep(-0.5, 0.5, signedDistancePx);
   }
-
-  float a_v = textureLookup(u_imgTex, ta);
-  float b_v = textureLookup(u_imgTex, tb);
-  float c_v = textureLookup(u_imgTex, tc);
-  float d_v = textureLookup(u_imgTex, td);
-
-  vec2 grad = vec2((b_v - a_v) / (2.0 * dx), (d_v - c_v) / (2.0 * dy));
-
-  float de = (img - u_isoValue) / length(grad);
-  float eps = u_contourWidth * min(dx, dy);
-
-  // Feather the contour:
-  // -ve: [iso - eps, iso]
-  // +ve: (iso, iso + eps/2]
-  float cneg = float(-eps <= de) * float(de <= 0.0) * max(1.0 - pow(de / (-1.0 * eps), 6.0), 0.0);
-  float cpos = float(0.0 < de) * float(de <= 0.5 * eps) * max(1.0 - pow(de / (0.5 * eps), 2.0), 0.0);
-  float c_feather = clamp(cneg + cpos, 0.0, 1.0);
 
   /// TODO: use thresholding?
   float alpha = hardThreshold(img, u_imgThresholds);
-  vec4 lineColor = alpha * u_lineOpacity * c_feather * vec4(u_color, 1.0);
-  vec4 fillColor = alpha * u_fillOpacity * float(img < u_isoValue) * vec4(u_color, 1.0);
+  vec4 lineColor = alpha * u_lineOpacity * lineCoverage * vec4(u_color, 1.0);
+  vec4 fillColor = alpha * u_fillOpacity * fillCoverage * vec4(u_color, 1.0);
 
   // Draw line contour atop fill:
   o_color = fillColor;

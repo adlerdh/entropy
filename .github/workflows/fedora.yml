@@ -1,4 +1,4 @@
-name: Fedora CI (x86_64)
+name: Fedora CI
 
 on:
   workflow_dispatch:

@@ -101,13 +101,13 @@ user_preferences::RenderPreferences makeNonDefaultRenderPreferences()
   preferences.scaleBarMarginPx = 44.0f;
   preferences.showLightboxOffsetLabels = true;
   preferences.lightboxOffsetLabelColor = {0.4f, 0.5f, 0.6f, 0.7f};
-  preferences.floatingPointLinearInterpolation = true;
+  preferences.floatingPointLinearInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
   preferences.useMaximumIntensityProjectionExtent = true;
   preferences.intensityProjectionSlabThicknessMm = 12.5f;
   preferences.xrayEnergyKeV = 120.0f;
   preferences.xrayWindow = 0.35f;
   preferences.xrayLevel = 0.65f;
-  preferences.isocontourFloatingPointInterpolation = true;
+  preferences.isocontourFloatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
   preferences.modulateIsocontourOpacityWithImageOpacity = false;
   preferences.modulateSegmentationOpacityWithImageOpacity = false;
   preferences.segmentationOutlineStyle = SegmentationOutlineStyle::ImageVoxel;
@@ -273,13 +273,13 @@ void requireRenderPreferencesEqual(
   CHECK(actual.scaleBarMarginPx == Catch::Approx(expected.scaleBarMarginPx));
   CHECK(actual.showLightboxOffsetLabels == expected.showLightboxOffsetLabels);
   CHECK(actual.lightboxOffsetLabelColor == expected.lightboxOffsetLabelColor);
-  CHECK(actual.floatingPointLinearInterpolation == expected.floatingPointLinearInterpolation);
+  CHECK(actual.floatingPointLinearInterpolationPolicy == expected.floatingPointLinearInterpolationPolicy);
   CHECK(actual.useMaximumIntensityProjectionExtent == expected.useMaximumIntensityProjectionExtent);
   CHECK(actual.intensityProjectionSlabThicknessMm == Catch::Approx(expected.intensityProjectionSlabThicknessMm));
   CHECK(actual.xrayEnergyKeV == Catch::Approx(expected.xrayEnergyKeV));
   CHECK(actual.xrayWindow == Catch::Approx(expected.xrayWindow));
   CHECK(actual.xrayLevel == Catch::Approx(expected.xrayLevel));
-  CHECK(actual.isocontourFloatingPointInterpolation == expected.isocontourFloatingPointInterpolation);
+  CHECK(actual.isocontourFloatingPointInterpolationPolicy == expected.isocontourFloatingPointInterpolationPolicy);
   CHECK(actual.modulateIsocontourOpacityWithImageOpacity == expected.modulateIsocontourOpacityWithImageOpacity);
   CHECK(actual.modulateSegmentationOpacityWithImageOpacity == expected.modulateSegmentationOpacityWithImageOpacity);
   CHECK(actual.segmentationOutlineStyle == expected.segmentationOutlineStyle);
@@ -396,7 +396,6 @@ void resetProjectOwnedSettings(AppSettings& settings, user_preferences::RenderPr
   renderPreferences.segmentationOutlineStyle = defaults.segmentationOutlineStyle;
   renderPreferences.segmentationInteriorOpacity = defaults.segmentationInteriorOpacity;
   renderPreferences.segmentationErosionFactor = defaults.segmentationErosionFactor;
-  renderPreferences.isocontourFloatingPointInterpolation = defaults.isocontourFloatingPointInterpolation;
   renderPreferences.modulateIsocontourOpacityWithImageOpacity = defaults.modulateIsocontourOpacityWithImageOpacity;
   renderPreferences.annotationsOnTop = defaults.annotationsOnTop;
   renderPreferences.landmarksOnTop = defaults.landmarksOnTop;
@@ -434,6 +433,8 @@ TEST_CASE("user preferences round-trip every persisted application and rendering
   CHECK(root.at("interface").at("precision").at("percentiles") == 7);
   CHECK(root.at("interface").at("precision").at("timeValues") == 8);
   CHECK(root.at("views").at("showOverlays") == false);
+  CHECK(root.at("images").at("floatingPointLinearInterpolationPolicy") == "floatingPoint");
+  CHECK(root.at("images").at("isocontourFloatingPointInterpolationPolicy") == "floatingPoint");
   CHECK(root.at("registration").at("defaultBackend") == "ANTs");
   CHECK(root.at("registration").at("greedyExecutable") == "/opt/greedy/bin/greedy");
   CHECK(root.at("registration").at("antsRegistrationExecutable") == "/opt/ants/bin/antsRegistration");
@@ -536,7 +537,7 @@ TEST_CASE("user preferences reject invalid JSON without mutating existing values
   requirePrecisionPreferencesEqual(precisionPreferences, expectedPrecisionPreferences);
 }
 
-TEST_CASE("user preferences preserve defaults for missing invalid and legacy fields", "[app][settings]")
+TEST_CASE("user preferences preserve defaults for missing and invalid fields", "[app][settings]")
 {
   AppSettings settings;
   user_preferences::RenderPreferences renderPreferences;

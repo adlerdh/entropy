@@ -1,6 +1,7 @@
 #include "ui/windows/InspectionWindow.h"
 
 #include "ui/Helpers.h"
+#include "ui/Scaling.h"
 #include "ui/headers/HeaderCommon.h"
 #include "logic/app/Data.h"
 
@@ -1036,8 +1037,8 @@ void renderInspectionWindowWithTable(
     useOverlayPresentation ? k_windowPadding : ImGui::GetStyle().WindowPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, k_windowRounding);
 
-  setNextWindowSizeConstraintsToMainViewport(480.0f, 120.0f);
-  ImGui::SetNextWindowSize(ImVec2{720.0f, 180.0f}, ImGuiCond_FirstUseEver);
+  setNextWindowSizeConstraintsToMainViewport(ui::scaledPixel(480.0f), ui::scaledPixel(120.0f));
+  ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(720.0f, 180.0f), ImGuiCond_FirstUseEver);
   setNextDockablePanelWindowClass();
   if (ImGui::Begin("Voxel Inspector##InspectionWindow", &(appData.guiData().m_showInspectionWindow), windowFlags)) {
     if (useOverlayPresentation) {

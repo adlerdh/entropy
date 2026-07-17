@@ -160,6 +160,16 @@ inline std::array<InterpolationMode, 3> const AllInterpolationModes{
   InterpolationMode::CubicBsplineConvolution};
 
 /**
+ * @brief Policy for choosing fixed-function versus shader-computed floating-point linear interpolation.
+ */
+enum class FloatingPointLinearInterpolationPolicy
+{
+  Automatic,     //!< Use floating-point interpolation only when high magnification makes it useful
+  FixedFunction, //!< Always use the GPU fixed-function linear sampler
+  FloatingPoint  //!< Always use shader-computed floating-point linear interpolation
+};
+
+/**
  * @brief The current mouse mode
  */
 enum class MouseMode

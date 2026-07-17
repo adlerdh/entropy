@@ -294,14 +294,14 @@ serialize::ProjectIsosurfaceDisplaySettings isosurfaceDisplaySettings(const AppD
 {
   const auto& renderData = appData.renderData();
   return serialize::ProjectIsosurfaceDisplaySettings{
-    .m_floatingPointInterpolation = renderData.m_isocontourFloatingPointInterpolation,
+    .m_floatingPointInterpolationPolicy = renderData.m_isocontourFloatingPointInterpolationPolicy,
     .m_modulateOpacityWithImageOpacity = renderData.m_modulateIsocontourOpacityWithImageOpacity};
 }
 
 void applyIsosurfaceDisplaySettings(AppData& appData, const serialize::ProjectIsosurfaceDisplaySettings& settings)
 {
   auto& renderData = appData.renderData();
-  renderData.m_isocontourFloatingPointInterpolation = settings.m_floatingPointInterpolation;
+  renderData.m_isocontourFloatingPointInterpolationPolicy = settings.m_floatingPointInterpolationPolicy;
   renderData.m_modulateIsocontourOpacityWithImageOpacity = settings.m_modulateOpacityWithImageOpacity;
 }
 

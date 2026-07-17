@@ -1,6 +1,7 @@
 #include "ui/windows/SegmentationPropertiesWindow.h"
 
 #include "ui/Helpers.h"
+#include "ui/Scaling.h"
 #include "ui/headers/Headers.h"
 
 #include "image/Image.h"
@@ -34,8 +35,8 @@ void renderSegmentationPropertiesWindow(
   const std::function<bool(const uuid& segUid)>& removeSeg,
   const AllViewsRecenterType& recenterAllViews)
 {
-  setNextWindowSizeConstraintsToMainViewport(320.0f, 260.0f);
-  ImGui::SetNextWindowSize(ImVec2{420.0f, 560.0f}, ImGuiCond_FirstUseEver);
+  setNextWindowSizeConstraintsToMainViewport(ui::scaledPixel(320.0f), ui::scaledPixel(260.0f));
+  ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(420.0f, 560.0f), ImGuiCond_FirstUseEver);
   setNextDockablePanelWindowClass();
   if (ImGui::Begin("Segmentations##Segmentations", &(appData.guiData().m_showSegmentationsWindow))) {
     size_t imageIndex = 0;

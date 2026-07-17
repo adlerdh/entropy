@@ -93,8 +93,6 @@ void renderImageHeaderInformation(
   // Pixel type:
   std::string pixelType = imgHeader.pixelTypeAsString();
   ImGui::InputText("Pixel type", &pixelType, ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Image pixel type");
 
   // Number of components:
   uint32_t numComponentsPerPixel = imgHeader.numComponentsPerPixel();
@@ -106,14 +104,10 @@ void renderImageHeaderInformation(
     nullptr,
     nullptr,
     ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Number of components per pixel");
 
   // Component type:
   std::string componentType = lowerCaseCopy(componentTypeString(imgHeader.fileComponentType()));
   ImGui::InputText("Component type", &componentType, ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Image component type");
 
   if (isComplexValuedImage(image)) {
     std::string componentRoles = "0: real, 1: imaginary";
@@ -132,8 +126,6 @@ void renderImageHeaderInformation(
     nullptr,
     nullptr,
     ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Image size in bytes");
 
   // Image size (MiB):
   double fileSizeMiB = static_cast<double>(imgHeader.fileImageSizeInBytes()) / (1024.0 * 1024.0);
@@ -145,8 +137,6 @@ void renderImageHeaderInformation(
     nullptr,
     nullptr,
     ImGuiInputTextFlags_ReadOnly);
-  ImGui::SameLine();
-  helpMarker("Image size in mebibytes (MiB)");
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -258,7 +248,7 @@ void renderImageHeaderInformation(
   ImGui::SameLine();
   helpMarker(
     "Direction vectors in physical Subject space of the X, Y, Z image voxel axes. "
-    "Also known as the voxel direction cosines matrix.");
+    "Also known as the voxel direction cosines matrix");
 
   ImGui::InputFloat3("x", glm::value_ptr(directions[0]), coordFormat, ImGuiInputTextFlags_ReadOnly);
   ImGui::InputFloat3("y", glm::value_ptr(directions[1]), coordFormat, ImGuiInputTextFlags_ReadOnly);

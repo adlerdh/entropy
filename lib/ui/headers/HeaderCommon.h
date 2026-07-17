@@ -1,11 +1,12 @@
 #pragma once
 
+#include "ui/Scaling.h"
+#include "ui/GuiData.h"
+
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
 #include <imgui/imgui.h>
-
-#include "ui/GuiData.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -43,8 +44,7 @@ inline ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
 {
   static const ImVec2 smallToolbarButtonSize(24, 24);
   (void)contentScale;
-  const float scale = ImGui::GetFontSize() / 16.0f;
-  return ImVec2{scale * smallToolbarButtonSize.x, scale * smallToolbarButtonSize.y};
+  return ui::scaledSize(smallToolbarButtonSize);
 }
 
 inline const char* referenceAndActiveImageMessage = "This is the reference and active image";

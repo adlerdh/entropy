@@ -108,7 +108,7 @@ void renderAddLayoutModalPopup(
         ImGui::EndCombo();
       }
       ImGui::SameLine();
-      helpMarker("Choose the anatomical plane used for every lightbox tile.");
+      helpMarker("Choose the anatomical plane used for every lightbox tile");
 
       if (ImGui::InputFloat("Slice spacing (mm)", &lightboxSliceSpacingMm, 0.1f, 1.0f, "%.3f")) {
         lightboxSliceSpacingMm = std::max(lightboxSliceSpacingMm, 0.0f);
@@ -116,7 +116,7 @@ void renderAddLayoutModalPopup(
       ImGui::SameLine();
       helpMarker(
         "Distance between adjacent custom lightbox tiles. Custom lightboxes use this fixed spacing instead of image "
-        "slice spacing.");
+        "slice spacing");
     }
     else if (!(1 == rows && columns > 1)) {
       ImGui::InputText("Name", &customLayoutName);

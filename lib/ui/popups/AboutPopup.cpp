@@ -77,7 +77,7 @@ void renderAboutDialogModalPopup(bool open)
 
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-  ImGui::SetNextWindowSize(scaledSize(680.0f, 640.0f), ImGuiCond_Appearing);
+  ImGui::SetNextWindowSize(viewportClampedScaledSize(640.0f, 640.0f), ImGuiCond_Appearing);
   const ImVec2 minAboutSize = scaledSize(520.0f, 360.0f);
   setNextWindowSizeConstraintsToMainViewport(minAboutSize.x, minAboutSize.y);
 
@@ -105,10 +105,9 @@ void renderAboutDialogModalPopup(bool open)
     ImGui::Spacing();
 
     const ImGuiStyle& style = ImGui::GetStyle();
-    const float closeButtonHeight = ImGui::GetFrameHeight();
-    const float tabRegionHeight = std::max(
-      ImGui::GetTextLineHeight() * 8.0f,
-      ImGui::GetContentRegionAvail().y - closeButtonHeight - style.ItemSpacing.y);
+    const float footerHeight = ImGui::GetFrameHeightWithSpacing() + style.ItemSpacing.y;
+    const float tabRegionHeight =
+      std::max(ImGui::GetTextLineHeight() * 8.0f, ImGui::GetContentRegionAvail().y - footerHeight);
 
     ImGui::BeginChild("##aboutTabRegion", ImVec2(-FLT_MIN, tabRegionHeight), false);
     if (ImGui::BeginTabBar("##aboutTabs")) {

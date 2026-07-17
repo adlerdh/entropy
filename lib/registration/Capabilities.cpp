@@ -98,7 +98,7 @@ BackendCapabilities greedyCapabilities()
   capabilities.parameters = {
     parameter(
       "iterations",
-      "Iterations per level (coarse to fine):",
+      "Iterations per level",
       ParameterKind::IntegerVector,
       "128x64x32",
       "Multi-resolution iteration schedule from coarse to fine."),
@@ -274,10 +274,10 @@ BackendCapabilities antsCapabilities()
   capabilities.parameters = {
     parameter(
       "iterations",
-      "Iterations per level (coarse to fine):",
+      "Iterations per level",
       ParameterKind::IntegerVector,
       "128x64x32",
-      "Per-level convergence iteration schedule."),
+      "Per-level convergence iteration schedule from coarse to fine."),
     parameter(
       "shrinkFactors",
       "Shrink factors",
@@ -478,10 +478,10 @@ BackendCapabilities fireAntsCapabilities()
       "PyTorch device used by FireANTs. CUDA is expected for practical performance."),
     parameter(
       "iterations",
-      "Iterations per level (coarse to fine):",
+      "Iterations per level",
       ParameterKind::IntegerVector,
       "128x64x32",
-      "Per-scale optimization iterations."),
+      "Per-scale optimization iterations from coarse to fine."),
     parameter("scales", "Scales", ParameterKind::IntegerVector, "4x2x1", "Image pyramid scales from coarse to fine."),
     choiceParameter(
       "initialMovingTransform",

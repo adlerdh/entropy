@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ui/Scaling.h"
+
 #include <imgui/imgui.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
 
@@ -15,12 +17,17 @@ namespace fs = std::filesystem;
 
 inline float scaledPixel(float value)
 {
-  return value * (ImGui::GetFontSize() / 16.0f);
+  return ui::scaledPixel(value);
 }
 
 inline ImVec2 scaledSize(float x, float y)
 {
-  return ImVec2(scaledPixel(x), scaledPixel(y));
+  return ui::scaledSize(x, y);
+}
+
+inline ImVec2 viewportClampedScaledSize(float width, float height, float maxViewportFraction = 0.9f)
+{
+  return ui::viewportClampedScaledSize(width, height, maxViewportFraction);
 }
 
 inline std::string displayPath(fs::path path)

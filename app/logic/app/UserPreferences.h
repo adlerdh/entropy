@@ -82,14 +82,16 @@ struct RenderPreferences
   bool showLightboxOffsetLabels = true;
   glm::vec4 lightboxOffsetLabelColor{0.75f, 0.75f, 0.75f, 0.8f};
 
-  bool floatingPointLinearInterpolation = false;
+  FloatingPointLinearInterpolationPolicy floatingPointLinearInterpolationPolicy =
+    FloatingPointLinearInterpolationPolicy::FixedFunction;
   bool useMaximumIntensityProjectionExtent = false;
   float intensityProjectionSlabThicknessMm = 10.0f;
   float xrayEnergyKeV = 80.0f;
   float xrayWindow = 1.0f;
   float xrayLevel = 0.5f;
 
-  bool isocontourFloatingPointInterpolation = false;
+  FloatingPointLinearInterpolationPolicy isocontourFloatingPointInterpolationPolicy =
+    FloatingPointLinearInterpolationPolicy::Automatic;
   bool modulateIsocontourOpacityWithImageOpacity = true;
 
   bool modulateSegmentationOpacityWithImageOpacity = true;

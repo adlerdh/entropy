@@ -3,6 +3,7 @@
 #include "ui/Helpers.h"
 #include "ui/ImGuiCustomControls.h"
 #include "ui/NativeFileDialogs.h"
+#include "ui/Scaling.h"
 #include "ui/Style.h"
 #include "ui/dialogs/NativeMessageDialogs.h"
 #include "ui/widgets/Widgets.h"
@@ -59,6 +60,45 @@ constexpr std::array k_registrationBackends{
   registration::Backend::ANTs,
   registration::Backend::FireANTs,
   registration::Backend::Greedy};
+
+const char* floatingPointInterpolationPolicyLabel(FloatingPointLinearInterpolationPolicy policy)
+{
+  switch (policy) {
+    case FloatingPointLinearInterpolationPolicy::Automatic:
+      return "Automatic";
+    case FloatingPointLinearInterpolationPolicy::FixedFunction:
+      return "Fixed-function";
+    case FloatingPointLinearInterpolationPolicy::FloatingPoint:
+      return "Floating-point";
+  }
+
+  return "Automatic";
+}
+
+void renderFloatingPointInterpolationPolicyCombo(
+  const char* label,
+  FloatingPointLinearInterpolationPolicy& policy,
+  const char* tooltip)
+{
+  if (ImGui::BeginCombo(label, floatingPointInterpolationPolicyLabel(policy))) {
+    constexpr std::array policies{
+      FloatingPointLinearInterpolationPolicy::Automatic,
+      FloatingPointLinearInterpolationPolicy::FixedFunction,
+      FloatingPointLinearInterpolationPolicy::FloatingPoint};
+    for (const FloatingPointLinearInterpolationPolicy candidate : policies) {
+      const bool selected = policy == candidate;
+      if (ImGui::Selectable(floatingPointInterpolationPolicyLabel(candidate), selected)) {
+        policy = candidate;
+      }
+      if (selected) {
+        ImGui::SetItemDefaultFocus();
+      }
+    }
+    ImGui::EndCombo();
+  }
+  ImGui::SameLine();
+  helpMarker(tooltip);
+}
 
 void disabledTextWrapped(const char* text)
 {
@@ -166,25 +206,44 @@ void renderPathSettingFixedWidth(
   bool browseForFile = false)
 {
   std::string value = path.string();
-  ImGui::PushItemWidth(settingsControlWidth());
-  if (ImGui::InputText(label, &value)) {
+
+  if (!browseForFile) {
+    ImGui::PushItemWidth(settingsControlWidth());
+    if (ImGui::InputText(label, &value)) {
+      path = value;
+    }
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    helpMarker(tooltip);
+    return;
+  }
+
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const float buttonWidth = ImGui::CalcTextSize("...").x + 2.0f * style.FramePadding.x;
+  const float inputWidth = std::max(1.0f, settingsControlWidth() - buttonWidth - style.ItemSpacing.x);
+
+  ImGui::PushID(label);
+  ImGui::PushItemWidth(inputWidth);
+  if (ImGui::InputText("##path", &value)) {
     path = value;
   }
   ImGui::PopItemWidth();
+
   ImGui::SameLine();
-  ImGui::PushID(label);
-  if (browseForFile && ImGui::Button("...")) {
+  if (ImGui::Button("...", ImVec2(buttonWidth, 0.0f))) {
     if (const std::optional<std::filesystem::path> selected = native_dialog::openFile({}, path)) {
       path = *selected;
     }
   }
-  if (browseForFile) {
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
-      ImGui::SetTooltip("%s", "Select executable");
-    }
-    ImGui::SameLine();
+  if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
+    ImGui::SetTooltip("%s", "Select executable");
   }
+
+  ImGui::SameLine();
+  ImGui::TextUnformatted(label);
   ImGui::PopID();
+
+  ImGui::SameLine();
   helpMarker(tooltip);
 }
 
@@ -215,7 +274,7 @@ void renderUiSettingsFileSection(const SettingsPersistenceCallbacks& persistence
     requestResetInterfaceSettings(persistenceCallbacks);
   }
   ImGui::SameLine();
-  helpMarker("Clear saved ImGui interface state and regenerate the default layout.");
+  helpMarker("Clear saved ImGui interface state and regenerate the default layout");
 }
 
 /**
@@ -312,7 +371,7 @@ void renderMetricSettingsPanel(
   }
   ImGui::SameLine();
   helpMarker(
-    showWindowAsSignedCorrelation ? "Minimum and maximum NCC values. Internally these are mapped to the colormap range."
+    showWindowAsSignedCorrelation ? "Minimum and maximum NCC values. Internally these are mapped to the colormap range"
                                   : "Minimum and maximum of the metric window range");
 
   /*
@@ -329,7 +388,7 @@ void renderMetricSettingsPanel(
 
   // Metric colormap dialog:
   bool* showImageColormapWindow = &showColormapWindow;
-  *showImageColormapWindow |= ImGui::Button("Colormap");
+  *showImageColormapWindow |= ImGui::Button("Set colormap");
 
   bool invertedCmap = metricParams.m_invertCmap;
 
@@ -374,7 +433,6 @@ void renderMetricSettingsPanel(
     updateMetricUniforms);
 
   // Colormap preview:
-  const float contentWidth = ImGui::GetContentRegionAvail().x;
   const float height = (ImGui::GetFontSize());
 
   char label[128];
@@ -384,14 +442,14 @@ void renderMetricSettingsPanel(
   const bool doQuantize =
     (!metricParams.m_cmapContinuous && (ImageColorMap::InterpolationMode::Linear == cmap->interpolationMode()));
 
-  ImGui::paletteButton(
+  *showImageColormapWindow |= ImGui::paletteButton(
     label,
     cmap->data_RGBA_asVector(),
     metricParams.m_invertCmap,
     doQuantize,
     metricParams.m_cmapQuantizationLevels,
     glm::vec3{0.0f, 1.0f, 1.0f},
-    ImVec2(contentWidth, height));
+    ImVec2(settingsControlWidth(), height));
 
   if (ImGui::IsItemHovered()) {
     ImGui::SetTooltip("%s", cmap->description().c_str());
@@ -424,7 +482,7 @@ bool renderLocalNccSettings(
     renderData.m_localNccPresentation = RenderData::LocalNccPresentation::Correlation;
   }
   ImGui::SameLine();
-  helpMarker("Dissimilarity highlights disagreement; correlation shows local NCC directly.");
+  helpMarker("Dissimilarity highlights disagreement; correlation shows local NCC directly");
 
   const bool showWindowAsSignedCorrelation =
     RenderData::LocalNccPresentation::Correlation == renderData.m_localNccPresentation;
@@ -445,7 +503,7 @@ bool renderLocalNccSettings(
       renderData.m_localNccIgnoreNegativeCorrelation = ignoreNegativeCorrelation;
     }
     ImGui::SameLine();
-    helpMarker("Negative NCC values are treated as complete mismatch.");
+    helpMarker("Negative NCC values are treated as complete mismatch");
   }
 
   constexpr std::array<std::pair<int, const char*>, 5> k_patchSizes{
@@ -470,28 +528,28 @@ bool renderLocalNccSettings(
     ImGui::EndCombo();
   }
   ImGui::SameLine();
-  helpMarker("Number of view-plane samples used in each local NCC patch.");
+  helpMarker("Number of view-plane samples used in each local NCC patch");
 
   float sampleSpacing = renderData.m_localNccSampleSpacing;
   if (mySliderF32("Sample spacing", &sampleSpacing, 0.5f, 4.0f, "%.2f x")) {
     renderData.m_localNccSampleSpacing = sampleSpacing;
   }
   ImGui::SameLine();
-  helpMarker("Patch sample spacing in reference-image voxel steps along the view-plane axes.");
+  helpMarker("Patch sample spacing in reference-image voxel steps along the view-plane axes");
 
   float minValidFraction = renderData.m_localNccMinValidFraction;
   if (mySliderF32("Minimum valid fraction", &minValidFraction, 0.1f, 1.0f, "%.2f")) {
     renderData.m_localNccMinValidFraction = minValidFraction;
   }
   ImGui::SameLine();
-  helpMarker("Minimum fraction of patch samples that must lie inside both images.");
+  helpMarker("Minimum fraction of patch samples that must lie inside both images");
 
   float varianceEpsilon = renderData.m_localNccVarianceEpsilon;
   if (ImGui::InputFloat("Variance epsilon", &varianceEpsilon, 0.0f, 0.0f, "%.1e")) {
     renderData.m_localNccVarianceEpsilon = std::max(varianceEpsilon, 0.0f);
   }
   ImGui::SameLine();
-  helpMarker("Patches with lower local variance in either image are treated as invalid.");
+  helpMarker("Patches with lower local variance in either image are treated as invalid");
 
   const RenderData::LocalNccInvalidStyle invalidStyle = renderData.m_localNccInvalidStyle;
   if (ImGui::RadioButton("Invalid transparent", RenderData::LocalNccInvalidStyle::Transparent == invalidStyle)) {
@@ -502,7 +560,7 @@ bool renderLocalNccSettings(
     renderData.m_localNccInvalidStyle = RenderData::LocalNccInvalidStyle::Gray;
   }
   ImGui::SameLine();
-  helpMarker("How low-variance or insufficient-overlap patches are drawn.");
+  helpMarker("How low-variance or insufficient-overlap patches are drawn");
 
   return true;
 }
@@ -556,28 +614,28 @@ bool renderLocalLinearResidualSettings(
     ImGui::EndCombo();
   }
   ImGui::SameLine();
-  helpMarker("Number of view-plane samples used to fit the local linear intensity model.");
+  helpMarker("Number of view-plane samples used to fit the local linear intensity model");
 
   float sampleSpacing = renderData.m_localLinearResidualSampleSpacing;
   if (mySliderF32("Sample spacing", &sampleSpacing, 0.5f, 4.0f, "%.2f x")) {
     renderData.m_localLinearResidualSampleSpacing = sampleSpacing;
   }
   ImGui::SameLine();
-  helpMarker("Patch sample spacing in reference-image voxel steps along the view-plane axes.");
+  helpMarker("Patch sample spacing in reference-image voxel steps along the view-plane axes");
 
   float minValidFraction = renderData.m_localLinearResidualMinValidFraction;
   if (mySliderF32("Minimum valid fraction", &minValidFraction, 0.1f, 1.0f, "%.2f")) {
     renderData.m_localLinearResidualMinValidFraction = minValidFraction;
   }
   ImGui::SameLine();
-  helpMarker("Minimum fraction of patch samples that must lie inside both images.");
+  helpMarker("Minimum fraction of patch samples that must lie inside both images");
 
   float varianceEpsilon = renderData.m_localLinearResidualVarianceEpsilon;
   if (ImGui::InputFloat("Variance epsilon", &varianceEpsilon, 0.0f, 0.0f, "%.1e")) {
     renderData.m_localLinearResidualVarianceEpsilon = std::max(varianceEpsilon, 0.0f);
   }
   ImGui::SameLine();
-  helpMarker("Patches with lower reference-image variance cannot produce a stable local gain.");
+  helpMarker("Patches with lower reference-image variance cannot produce a stable local gain");
 
   const RenderData::LocalNccInvalidStyle invalidStyle = renderData.m_localLinearResidualInvalidStyle;
   if (ImGui::RadioButton("Invalid transparent", RenderData::LocalNccInvalidStyle::Transparent == invalidStyle)) {
@@ -588,7 +646,7 @@ bool renderLocalLinearResidualSettings(
     renderData.m_localLinearResidualInvalidStyle = RenderData::LocalNccInvalidStyle::Gray;
   }
   ImGui::SameLine();
-  helpMarker("How low-variance or insufficient-overlap patches are drawn.");
+  helpMarker("How low-variance or insufficient-overlap patches are drawn");
 
   return true;
 }
@@ -933,12 +991,12 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       ImGui::PopItemWidth();
 
       auto drawScaleBarPositionButton = [&](const ui_settings::ScaleBarPositionButton& button) {
-        static constexpr ImVec2 k_buttonSize{32.0f, 24.0f};
+        const ImVec2 buttonSize = ui::scaledSize(32.0f, 24.0f);
         const bool selected = button.position == renderData.m_scaleBarPosition;
         if (selected) {
           ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
         }
-        if (ImGui::Button(button.label, k_buttonSize)) {
+        if (ImGui::Button(button.label, buttonSize)) {
           setScaleBarPosition(button.position);
         }
         if (selected) {
@@ -959,7 +1017,7 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
       drawScaleBarPositionButton(scaleBarPositionButtons[3]);
       ImGui::SameLine();
       ImGui::BeginDisabled();
-      ImGui::Button("##scaleBarPositionCenter", ImVec2{32.0f, 24.0f});
+      ImGui::Button("##scaleBarPositionCenter", ui::scaledSize(32.0f, 24.0f));
       ImGui::EndDisabled();
       ImGui::SameLine();
       drawScaleBarPositionButton(scaleBarPositionButtons[4]);
@@ -1154,7 +1212,7 @@ void renderInterfaceTab(
     appData.settings().setShowGlobalTimeControls(showGlobalTimeControls);
   }
   ImGui::SameLine();
-  helpMarker("Show the floating time-series playback controls shared by loaded time-series images.");
+  helpMarker("Show the floating time-series playback controls shared by loaded time-series images");
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -1162,6 +1220,8 @@ void renderInterfaceTab(
 
   const bool lookAndFeelOpen = ImGui::CollapsingHeader("Look and Feel", ImGuiTreeNodeFlags_DefaultOpen);
   if (lookAndFeelOpen) {
+    ImGui::TextUnformatted("User interface settings:");
+
     const auto currentScale = appData.settings().uiScaleOverride();
     const auto& uiScaleChoices = ui_settings::uiScaleChoices();
     auto currentChoice = std::find_if(
@@ -1172,7 +1232,7 @@ void renderInterfaceTab(
       currentChoice = uiScaleChoices.begin();
     }
 
-    if (ImGui::BeginCombo("UI scale", currentChoice->label)) {
+    if (ImGui::BeginCombo("Scale", currentChoice->label)) {
       for (const ui_settings::ScaleChoice& choice : uiScaleChoices) {
         const bool selected = choice.scale == currentScale;
         if (ImGui::Selectable(choice.label, selected)) {
@@ -1190,7 +1250,7 @@ void renderInterfaceTab(
     ImGui::SameLine();
     helpMarker(
       "Auto uses the platform UI scale. On macOS this is 100% so Retina backing scale keeps rendering sharp "
-      "without enlarging the interface.");
+      "without enlarging the interface");
 
     const UiFontFamily currentFamily = appData.settings().uiFontFamily();
     const auto& uiFontChoices = ui_settings::visibleFontChoices();
@@ -1202,7 +1262,7 @@ void renderInterfaceTab(
       currentFontChoice = uiFontChoices.begin();
     }
 
-    if (ImGui::BeginCombo("UI font", currentFontChoice->label)) {
+    if (ImGui::BeginCombo("Font", currentFontChoice->label)) {
       for (const ui_settings::FontChoice& choice : uiFontChoices) {
         const bool selected = choice.family == currentFamily;
         if (ImGui::Selectable(choice.label, selected)) {
@@ -1217,9 +1277,11 @@ void renderInterfaceTab(
       }
       ImGui::EndCombo();
     }
+    ImGui::SameLine();
+    helpMarker("Font family used for the application interface");
 
     const UiColorPreset currentColorPreset = appData.settings().uiColorPreset();
-    if (ImGui::BeginCombo("UI color scheme", uiColorPresetName(currentColorPreset))) {
+    if (ImGui::BeginCombo("Color scheme", uiColorPresetName(currentColorPreset))) {
       for (const UiColorPreset preset : ui_settings::uiColorPresets()) {
         const bool selected = preset == currentColorPreset;
         if (ImGui::Selectable(uiColorPresetName(preset), selected)) {
@@ -1234,9 +1296,11 @@ void renderInterfaceTab(
       }
       ImGui::EndCombo();
     }
+    ImGui::SameLine();
+    helpMarker("Color palette used for application windows and controls");
 
     const UiDensityPreset currentDensityPreset = appData.settings().uiDensityPreset();
-    if (ImGui::BeginCombo("UI density", uiDensityPresetName(currentDensityPreset))) {
+    if (ImGui::BeginCombo("Density", uiDensityPresetName(currentDensityPreset))) {
       for (const UiDensityPreset preset : ui_settings::uiDensityPresets()) {
         const bool selected = preset == currentDensityPreset;
         if (ImGui::Selectable(uiDensityPresetName(preset), selected)) {
@@ -1251,14 +1315,18 @@ void renderInterfaceTab(
       }
       ImGui::EndCombo();
     }
+    ImGui::SameLine();
+    helpMarker("Spacing and padding density used by application controls");
 
     float windowBgOpacity = appData.settings().uiWindowBgOpacity();
-    if (ImGui::SliderFloat("Window background opacity", &windowBgOpacity, 0.2f, 1.0f, "%.2f")) {
+    if (ImGui::SliderFloat("Window opacity", &windowBgOpacity, 0.2f, 1.0f, "%.2f")) {
       appData.settings().setUiWindowBgOpacity(windowBgOpacity);
       if (applyUiWindowBgOpacity) {
         applyUiWindowBgOpacity(appData.settings().uiWindowBgOpacity());
       }
     }
+    ImGui::SameLine();
+    helpMarker("Opacity of application window and panel backgrounds");
   }
   finishSettingsSection(lookAndFeelOpen);
 }
@@ -1290,7 +1358,11 @@ void renderSystemTab(AppData& appData)
 
   if (ImGui::CollapsingHeader("Developer Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::Checkbox("Show ImGui demo window", &(appData.guiData().m_showImGuiDemoWindow));
+    ImGui::SameLine();
+    helpMarker("Open Dear ImGui's built-in demo and diagnostics window");
     ImGui::Checkbox("Show ImPlot demo window", &(appData.guiData().m_showImPlotDemoWindow));
+    ImGui::SameLine();
+    helpMarker("Open ImPlot's built-in demo and diagnostics window");
   }
 }
 
@@ -1307,11 +1379,21 @@ void renderImagesTab(AppData& appData)
   const bool imageDisplayDefaultsOpen =
     ImGui::CollapsingHeader("Image Display Defaults", ImGuiTreeNodeFlags_DefaultOpen);
   if (imageDisplayDefaultsOpen) {
-    ImGui::Checkbox(
-      "Floating-point linear image interpolation",
-      &appData.renderData().m_imageGrayFloatingPointInterpolation);
-    ImGui::SameLine();
-    helpMarker("Use floating-point instead of 8-bit fixed-point linear interpolation for grayscale images");
+    disabledTextWrapped(
+      "Linear interpolation can use the GPU texture sampler, always use higher-precision shader interpolation, "
+      "or switch automatically when magnification is high enough for fixed-function interpolation artifacts to "
+      "become visible.");
+
+    renderFloatingPointInterpolationPolicyCombo(
+      "Grayscale images",
+      appData.renderData().m_imageGrayFloatingPointInterpolationPolicy,
+      "Automatic switches to floating-point interpolation near 128 screen pixels per image voxel");
+
+    renderFloatingPointInterpolationPolicyCombo(
+      "Isocontours",
+      appData.renderData().m_isocontourFloatingPointInterpolationPolicy,
+      "Automatic switches to floating-point interpolation near 16 screen pixels per image voxel because contour "
+      "artifacts are visible earlier");
   }
   finishSettingsSection(imageDisplayDefaultsOpen);
 
@@ -1374,8 +1456,12 @@ void renderRegistrationBackendInfoRow(const char* label, const char* value)
   ImGui::TextWrapped("%s", value);
 }
 
-void renderRegistrationBackendInfo(const RegistrationBackendInfo& info)
+void renderRegistrationBackendInfo(const RegistrationBackendInfo& info, bool addTopSpacing)
 {
+  if (addTopSpacing) {
+    ImGui::Spacing();
+  }
+
   ImGui::SeparatorText(info.header);
   ImGui::TextWrapped("%s", info.summary);
   renderRegistrationBackendInfoRow("Full name:", info.fullName);
@@ -1419,7 +1505,7 @@ void renderRegistrationTab(AppData& appData)
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
-    helpMarker("Backend preselected for new registration jobs.");
+    helpMarker("Backend preselected for new registration jobs");
 
     ImGui::Spacing();
     disabledTextWrapped(
@@ -1429,27 +1515,27 @@ void renderRegistrationTab(AppData& appData)
     renderPathSettingFixedWidth(
       "Greedy executable",
       config.greedyExecutable,
-      "Command or executable path used to launch Greedy.",
+      "Command or executable path used to launch Greedy",
       true);
     renderPathSettingFixedWidth(
       "ANTs registration executable",
       config.antsRegistrationExecutable,
-      "Command or executable path used to launch antsRegistration.",
+      "Command or executable path used to launch antsRegistration",
       true);
     renderPathSettingFixedWidth(
       "ANTs apply transforms executable",
       config.antsApplyTransformsExecutable,
-      "Command or executable path used to launch antsApplyTransforms for warped outputs.",
+      "Command or executable path used to launch antsApplyTransforms for warped outputs",
       true);
     renderPathSettingFixedWidth(
       "ANTs convert transform executable",
       config.antsConvertTransformFileExecutable,
-      "Command or executable path used to convert ANTs affine output into Entropy's importable matrix artifact.",
+      "Command or executable path used to convert ANTs affine output into Entropy's importable matrix artifact",
       true);
     renderPathSettingFixedWidth(
       "FireANTs Python executable",
       config.fireAntsPythonExecutable,
-      "Python executable used to run Entropy's FireANTs bridge.",
+      "Python executable used to run Entropy's FireANTs bridge",
       true);
   }
   finishSettingsSection(backendDefaultsOpen);
@@ -1457,14 +1543,18 @@ void renderRegistrationTab(AppData& appData)
   const bool executionOpen = ImGui::CollapsingHeader("Execution", ImGuiTreeNodeFlags_DefaultOpen);
   if (executionOpen) {
     std::string outputDirectory = config.defaultOutputDirectory.string();
-    ImGui::PushItemWidth(settingsControlWidth());
-    if (ImGui::InputText("Output directory", &outputDirectory)) {
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float buttonWidth = ImGui::CalcTextSize("...").x + 2.0f * style.FramePadding.x;
+    const float inputWidth = std::max(1.0f, settingsControlWidth() - buttonWidth - style.ItemSpacing.x);
+    ImGui::PushID("RegistrationOutputDirectory");
+    ImGui::PushItemWidth(inputWidth);
+    if (ImGui::InputText("##path", &outputDirectory)) {
       config.defaultOutputDirectory =
         outputDirectory.empty() ? std::filesystem::path{} : std::filesystem::path{outputDirectory};
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
-    if (ImGui::Button("...##RegistrationOutputDirectory")) {
+    if (ImGui::Button("...", ImVec2(buttonWidth, 0.0f))) {
       if (
         const std::optional<std::filesystem::path> selected = native_dialog::pickFolder(config.defaultOutputDirectory))
       {
@@ -1475,9 +1565,12 @@ void renderRegistrationTab(AppData& appData)
       ImGui::SetTooltip("%s", "Select output directory");
     }
     ImGui::SameLine();
+    ImGui::TextUnformatted("Output directory");
+    ImGui::PopID();
+    ImGui::SameLine();
     helpMarker(
       "Optional directory for registration outputs. Leave empty to use per-job folders in the system temporary "
-      "directory.");
+      "directory");
 
     int maxConcurrentJobs = config.maxConcurrentJobs;
     ImGui::PushItemWidth(settingsControlWidth());
@@ -1486,7 +1579,7 @@ void renderRegistrationTab(AppData& appData)
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
-    helpMarker("Maximum number of registration jobs Entropy should run at the same time.");
+    helpMarker("Maximum number of registration jobs Entropy should run at the same time");
 
     int cpuThreads = config.defaultCpuThreadCount;
     ImGui::PushItemWidth(settingsControlWidth());
@@ -1495,13 +1588,13 @@ void renderRegistrationTab(AppData& appData)
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
-    helpMarker("Default CPU thread count. Zero lets the backend choose.");
+    helpMarker("Default CPU thread count. Zero lets the backend choose");
 
-    renderTextSettingFixedWidth("FireANTs device", config.defaultFireAntsDevice, "PyTorch device passed to FireANTs.");
+    renderTextSettingFixedWidth("FireANTs device", config.defaultFireAntsDevice, "PyTorch device passed to FireANTs");
 
     ImGui::Checkbox("Keep temporary files", &config.keepTemporaryFiles);
     ImGui::SameLine();
-    helpMarker("Keep exported intermediate files for debugging backend failures.");
+    helpMarker("Keep exported intermediate files for debugging backend failures");
   }
   finishSettingsSection(executionOpen);
 
@@ -1510,8 +1603,8 @@ void renderRegistrationTab(AppData& appData)
     ImGui::TextWrapped(
       "Entropy launches external registration tools and imports their outputs. These summaries identify the upstream "
       "projects that Entropy can call; use the links for authoritative licensing, citation, and version details.");
-    for (const RegistrationBackendInfo& info : k_registrationBackendInfo) {
-      renderRegistrationBackendInfo(info);
+    for (std::size_t i = 0; i < k_registrationBackendInfo.size(); ++i) {
+      renderRegistrationBackendInfo(k_registrationBackendInfo[i], i > 0);
     }
   }
 }
@@ -1617,7 +1710,7 @@ void renderSynchronizeTab(AppData& appData)
   helpMarker(
     "When enabled, changing one time-series image frame changes other loaded time-series images to the same frame "
     "index "
-    "when available.");
+    "when available");
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -1655,9 +1748,9 @@ void renderSynchronizeTab(AppData& appData)
         [&appData](bool value) { appData.settings().setReceivePanSync(value); },
         "Send Entropy crosshairs movement to ITK-SNAP and receive ITK-SNAP cursor movement in Entropy. "
         "ITK-SNAP cursor messages use NIFTI/RAS coordinates; Entropy converts between internal LPS and "
-        "ITK-SNAP RAS at the IPC boundary.",
-        "Send Entropy view zoom to ITK-SNAP and receive ITK-SNAP view zoom in Entropy.",
-        "Send Entropy view pan to ITK-SNAP and receive ITK-SNAP view pan in Entropy.");
+        "ITK-SNAP RAS at the IPC boundary",
+        "Send Entropy view zoom to ITK-SNAP and receive ITK-SNAP view zoom in Entropy",
+        "Send Entropy view pan to ITK-SNAP and receive ITK-SNAP view pan in Entropy");
     }
   }
 }
@@ -2198,7 +2291,7 @@ void renderRaycastingTab(RenderData& renderData)
     "Controls how the active image segmentation affects 3D raycasting.\n\n"
     "Disable: ignore segmentation values and raycast the full image volume.\n"
     "Mask in: render only samples inside non-background segmentation labels.\n"
-    "Mask out: hide samples inside non-background segmentation labels and render the rest of the image.");
+    "Mask out: hide samples inside non-background segmentation labels and render the rest of the image");
 
   ImGui::PopID(); /*** PopID raycasting ***/
 }
@@ -2264,10 +2357,6 @@ void renderRenderingTab(RenderData& renderData)
 
   const bool isosurfacesOpen = ImGui::CollapsingHeader("Isosurfaces", ImGuiTreeNodeFlags_DefaultOpen);
   if (isosurfacesOpen) {
-    ImGui::Checkbox("Floating-point interpolation", &rd.m_isocontourFloatingPointInterpolation);
-    ImGui::SameLine();
-    helpMarker("Use floating-point instead of 8-bit fixed-point linear image interpolation for isocontours");
-
     ImGui::Checkbox("Modulate opacity with image", &rd.m_modulateIsocontourOpacityWithImageOpacity);
     ImGui::SameLine();
     helpMarker("Modulate isocontour opacity with image opacity");
@@ -2288,12 +2377,14 @@ void renderRenderingTab(RenderData& renderData)
         // Signal that the atlas needs to be rebuilt — caller checks this flag
         rd.m_asciiAtlasNeedsRebuild = true;
       }
+      ImGui::SameLine();
+      helpMarker("Character ramp used to represent image brightness");
 
       ImGui::SliderFloat("Cell size", &rd.m_asciiCellSizePx.y, 4.f, 64.f, "%.0f px");
       ImGui::SameLine();
       helpMarker(
         "Size of each ASCII character cell in screen pixels. Larger cells produce coarser, more readable ASCII "
-        "shading.");
+        "shading");
 
       ImGui::Checkbox("Use colormap as foreground", &rd.m_asciiUseColormap);
       ImGui::SameLine();
@@ -2301,22 +2392,28 @@ void renderRenderingTab(RenderData& renderData)
 
       if (!rd.m_asciiUseColormap) {
         ImGui::ColorEdit3("Foreground color", &rd.m_asciiFgColor.x);
+        ImGui::SameLine();
+        helpMarker("Color used for ASCII characters when colormap foreground is off");
       }
       ImGui::ColorEdit3("Background color", &rd.m_asciiBgColor.x);
+      ImGui::SameLine();
+      helpMarker("Color drawn behind ASCII characters");
       ImGui::SliderFloat("Background alpha", &rd.m_asciiBgAlpha, 0.f, 1.f);
+      ImGui::SameLine();
+      helpMarker("Opacity of the ASCII background color");
 
       ImGui::Spacing();
       ImGui::Checkbox("Spatial matching", &rd.m_asciiSpatialMode);
       ImGui::SameLine();
       helpMarker(
         "Choose ASCII characters by comparing a 3 by 2 regional luminance pattern within each cell, rather than using "
-        "only the cell's average brightness. This can preserve local structure better, but costs more GPU work.");
+        "only the cell's average brightness. This can preserve local structure better, but costs more GPU work");
       if (rd.m_asciiSpatialMode) {
         ImGui::SliderFloat("Spatial Exponent", &rd.m_asciiSpatialExponent, 0.25f, 4.0f, "%.2f");
         ImGui::SameLine();
         helpMarker(
           "Controls how strongly regional luminance differences influence spatial glyph matching. Higher values favor "
-          "sharper local structure; lower values behave more like average-brightness matching.");
+          "sharper local structure; lower values behave more like average-brightness matching");
       }
     }
 
@@ -2462,14 +2559,14 @@ void renderPrecisionTab(AppData& appData)
       ui_settings::precisionFormat(appData.guiData().m_imageValuePrecision);
   }
   ImGui::SameLine();
-  helpMarker("Decimal places for displayed image and segmentation values.");
+  helpMarker("Decimal places for displayed image and segmentation values");
 
   if (ImGui::InputScalar("Coordinates", ImGuiDataType_U32, &coordPrecision, &k_stepPrecision, &k_stepPrecision, "%d")) {
     appData.guiData().m_coordsPrecision = ui_settings::clampPrecision(coordPrecision);
     appData.guiData().setCoordsPrecisionFormat();
   }
   ImGui::SameLine();
-  helpMarker("Decimal places for displayed spatial coordinates and physical length labels.");
+  helpMarker("Decimal places for displayed spatial coordinates and physical length labels");
 
   if (ImGui::InputScalar("Transformations", ImGuiDataType_U32, &txPrecision, &k_stepPrecision, &k_stepPrecision, "%d"))
   {
@@ -2477,7 +2574,7 @@ void renderPrecisionTab(AppData& appData)
     appData.guiData().setTxPrecisionFormat();
   }
   ImGui::SameLine();
-  helpMarker("Decimal places for displayed affine transformation values.");
+  helpMarker("Decimal places for displayed affine transformation values");
 
   if (ImGui::InputScalar(
         "Percentiles",
@@ -2492,7 +2589,7 @@ void renderPrecisionTab(AppData& appData)
       ui_settings::precisionFormat(appData.guiData().m_percentilePrecision);
   }
   ImGui::SameLine();
-  helpMarker("Decimal places for displayed percentile values.");
+  helpMarker("Decimal places for displayed percentile values");
 
   if (ImGui::InputScalar(
         "Time values",
@@ -2506,7 +2603,7 @@ void renderPrecisionTab(AppData& appData)
     appData.guiData().setTimeValuePrecisionFormat();
   }
   ImGui::SameLine();
-  helpMarker("Decimal places for displayed time points, time spacing, and time ranges.");
+  helpMarker("Decimal places for displayed time points, time spacing, and time ranges");
 
   ImGui::PopID(); /*** PopID precision ***/
 }
@@ -2643,8 +2740,8 @@ void renderSettingsWindow(
     appData.guiData().m_requestedSettingsTab = std::nullopt;
   }
 
-  setNextWindowSizeConstraintsToMainViewport(560.0f, 420.0f);
-  ImGui::SetNextWindowSize(ImVec2{760.0f, 560.0f}, ImGuiCond_FirstUseEver);
+  setNextWindowSizeConstraintsToMainViewport(ui::scaledPixel(560.0f), ui::scaledPixel(420.0f));
+  ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(760.0f, 560.0f), ImGuiCond_FirstUseEver);
 
   const bool settingsDirty = appData.guiData().m_appSettingsDirty;
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ui/Scaling.h"
+
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 #include <imgui/imgui.h>
@@ -36,8 +38,7 @@ inline ImVec2 scaledToolbarButtonSize(const glm::vec2& contentScale)
 {
   static const ImVec2 k_toolbarButtonSize(32, 32);
   (void)contentScale;
-  const float scale = ImGui::GetFontSize() / 16.0f;
-  return ImVec2{scale * k_toolbarButtonSize.x, scale * k_toolbarButtonSize.y};
+  return ui::scaledSize(k_toolbarButtonSize);
 }
 
 /**
@@ -47,8 +48,7 @@ inline ImVec2 scaledPad(const glm::vec2& contentScale)
 {
   static constexpr float k_pad = 8.0f;
   (void)contentScale;
-  const float scale = ImGui::GetFontSize() / 16.0f;
-  return ImVec2{scale * k_pad, scale * k_pad};
+  return ui::scaledSize(k_pad, k_pad);
 }
 
 /**

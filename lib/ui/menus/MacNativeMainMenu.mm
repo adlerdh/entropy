@@ -882,7 +882,13 @@ void addWindowsMenu(NSMenu* mainMenu) {
     MainMenuAction::ToggleRegistrationJobsWindow,
     @"list.bullet.rectangle");
   [menu addItem:[NSMenuItem separatorItem]];
-  addSymbolActionMenuItem(menu, @"Application Settings", MainMenuAction::ToggleSettingsWindow, @"gearshape");
+  addSymbolActionMenuItem(
+    menu,
+    @"Application Settings",
+    MainMenuAction::ToggleSettingsWindow,
+    @"gearshape",
+    @",",
+    NSEventModifierFlagCommand);
   [menu addItem:[NSMenuItem separatorItem]];
   addSymbolActionMenuItem(menu, @"Reset Panel Layout", MainMenuAction::ResetPanelLayout, @"rectangle.3.group");
   [menu addItem:[NSMenuItem separatorItem]];

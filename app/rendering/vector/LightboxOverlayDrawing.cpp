@@ -37,12 +37,11 @@ void drawLightboxOffsetLabel(
     view.offsetSetting(),
     helper::worldDirection(view.camera(), Directions::View::Front));
 
-  static constexpr float sk_shadowBlur = 2.0f;
-  static constexpr float sk_padding = 5.0f;
-
   const glm::vec2 miewportMinCorner(miewportViewBounds.bounds.xoffset, miewportViewBounds.bounds.yoffset);
   const glm::vec2 miewportSize(miewportViewBounds.bounds.width, miewportViewBounds.bounds.height);
   const float fontSizePixels = glm::clamp(0.065f * std::min(miewportSize.x, miewportSize.y), 9.0f, 14.0f);
+  const float shadowBlur = std::max(1.0f, fontSizePixels * 0.14f);
+  const float padding = std::max(3.0f, fontSizePixels * 0.35f);
   const std::string label = rendering::lightbox::formatOffsetDistanceMm(
     offsetMm,
     unitReferenceLengthMm,
@@ -59,9 +58,9 @@ void drawLightboxOffsetLabel(
   nvgFontFace(nvg, ROBOTO_LIGHT.c_str());
   nvgTextAlign(nvg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
 
-  const glm::vec2 labelPos = miewportMinCorner + glm::vec2{sk_padding, sk_padding};
+  const glm::vec2 labelPos = miewportMinCorner + glm::vec2{padding, padding};
 
-  nvgFontBlur(nvg, sk_shadowBlur);
+  nvgFontBlur(nvg, shadowBlur);
   nvgFillColor(nvg, nvgRGBAf(0.0f, 0.0f, 0.0f, color.a));
   nvgText(nvg, labelPos.x, labelPos.y, label.c_str(), nullptr);
 

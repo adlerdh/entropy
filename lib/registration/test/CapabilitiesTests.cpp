@@ -113,7 +113,7 @@ TEST_CASE("registration backends use the shared coarse-to-fine iteration default
     const registration::BackendCapabilities capabilities = registration::capabilitiesForBackend(backend);
     const registration::ParameterSchema* iterations = findParameter(capabilities, "iterations");
     REQUIRE(iterations);
-    CHECK(iterations->label == "Iterations per level (coarse to fine):");
+    CHECK(iterations->label == "Iterations per level");
     CHECK(iterations->defaultValue == "128x64x32");
   }
 }

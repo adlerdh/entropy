@@ -42,7 +42,7 @@ ImGuiWindowFlags confirmationPopupFlags()
 
 void setNextConfirmationPopupSize()
 {
-  ImGui::SetNextWindowSize(scaledSize(k_confirmationPopupWidth, 0.0f), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(viewportClampedScaledSize(k_confirmationPopupWidth, 0.0f), ImGuiCond_Always);
 }
 } // namespace
 

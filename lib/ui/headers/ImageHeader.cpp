@@ -907,7 +907,7 @@ void renderTimeSeriesHeader(AppData& appData, const uuids::uuid& imageUid, Image
     ImGui::SameLine();
     helpMarker(
       "Playback speed multiplier. The slider range is adjusted from the image time spacing to include 1 to 120 "
-      "frames/sec playback.");
+      "frames/sec playback");
 
     ImGui::TreePop();
 
@@ -1087,9 +1087,9 @@ void renderImageHeader(
     ImGui::SetTooltip(
       isActiveImage
         ? "This image is active. New segmentations, landmarks, annotations, manual transformations, and image-panel "
-          "edits apply to the active image."
+          "edits apply to the active image"
         : "Make this the active image. New segmentations, landmarks, annotations, manual transformations, and "
-          "image-panel edits will apply to it.");
+          "image-panel edits will apply to it");
   }
 
   ImGui::SameLine();
@@ -1152,13 +1152,13 @@ void renderImageHeader(
 
   if (ImGui::IsItemHovered()) {
     if (forceLocked) {
-      ImGui::SetTooltip("Manual image transformation is always locked for the reference image.");
+      ImGui::SetTooltip("Manual image transformation is always locked for the reference image");
     }
     else if (isLocked) {
-      ImGui::SetTooltip("Manual image transformation is locked.\nClick to unlock and allow movement.");
+      ImGui::SetTooltip("Manual image transformation is locked.\nClick to unlock and allow movement");
     }
     else {
-      ImGui::SetTooltip("Manual image transformation is unlocked.\nClick to lock and prevent movement.");
+      ImGui::SetTooltip("Manual image transformation is unlocked.\nClick to lock and prevent movement");
     }
   }
 
@@ -1408,7 +1408,7 @@ void renderImageHeader(
             updateImageUniforms();
           }
           ImGui::SameLine();
-          helpMarker("Show log(det(F)) instead of det(F), where F is the deformation gradient.");
+          helpMarker("Show log(det(F)) instead of det(F), where F is the deformation gradient");
 
           ImageSettings* jacobianProjectionSettings = nullptr;
           if (const auto projectionMode = componentProjectionForImage(*image)) {
@@ -1466,7 +1466,7 @@ void renderImageHeader(
           ImGui::SameLine();
           helpMarker(
             "Use a blue-white-red diverging color map and a narrow window. "
-            "For log-Jacobian this centers the window on 0; otherwise it centers on 1.");
+            "For log-Jacobian this centers the window on 0; otherwise it centers on 1");
         }
       }
       else if (complexValuedImage) {
@@ -1751,14 +1751,14 @@ void renderImageHeader(
             setVectorOverlayOnImage(vectorOverlayOnImage);
           }
           ImGui::SameLine();
-          helpMarker("Draw the image normally and place vector arrows on top. When off, only the arrows are drawn.");
+          helpMarker("Draw the image normally and place vector arrows on top. When off, only the arrows are drawn");
 
           bool useDirectionColor = imgSettings.vectorArrowOverlayUseDirectionColor();
           if (ImGui::Checkbox("Color by direction", &useDirectionColor)) {
             imgSettings.setVectorArrowOverlayUseDirectionColor(useDirectionColor);
           }
           ImGui::SameLine();
-          helpMarker("Color arrows by vector direction using the absolute x, y, and z components as RGB.");
+          helpMarker("Color arrows by vector direction using the absolute x, y, and z components as RGB");
 
           bool scaleByMagnitude = imgSettings.vectorArrowOverlayScaleByMagnitude();
           if (ImGui::Checkbox("Scale arrows by magnitude", &scaleByMagnitude)) {
@@ -1766,14 +1766,14 @@ void renderImageHeader(
           }
           ImGui::SameLine();
           helpMarker(
-            "Scale each arrow length by the vector magnitude. When off, arrows show direction with uniform length.");
+            "Scale each arrow length by the vector magnitude. When off, arrows show direction with uniform length");
 
           float scaleFactor = imgSettings.vectorArrowOverlayScaleFactor();
           if (ImGui::SliderFloat("Scale factor", &scaleFactor, 0.01f, 10.0f, "%.2f x", ImGuiSliderFlags_Logarithmic)) {
             imgSettings.setVectorArrowOverlayScaleFactor(scaleFactor);
           }
           ImGui::SameLine();
-          helpMarker("Scale factor is dimensionless: 1.0 draws the physical displacement length as stored.");
+          helpMarker("Scale factor is dimensionless: 1.0 draws the physical displacement length as stored");
 
           const VectorArrowOverlaySpacingMode spacingMode = imgSettings.vectorArrowOverlaySpacingMode();
           if (VectorArrowOverlaySpacingMode::Pixels == spacingMode) {
@@ -1826,7 +1826,7 @@ void renderImageHeader(
               imgSettings.setVectorArrowOverlayOpacity(arrowColor.a);
             }
             ImGui::SameLine();
-            helpMarker("RGBA color used for vector arrows.");
+            helpMarker("RGBA color used for vector arrows");
           }
 
           ImGui::TreePop();
@@ -1840,7 +1840,7 @@ void renderImageHeader(
           imgSettings.setVectorWarpedGridVisible(showWarpedGrid);
         }
         ImGui::SameLine();
-        helpMarker("Draw a grid warped by the vector field on the current slice.");
+        helpMarker("Draw a grid warped by the vector field on the current slice");
 
         if (imgSettings.vectorWarpedGridVisible() && ImGui::TreeNodeEx("Grid options", ImGuiTreeNodeFlags_DefaultOpen))
         {
@@ -1850,7 +1850,7 @@ void renderImageHeader(
             setVectorOverlayOnImage(vectorOverlayOnImage);
           }
           ImGui::SameLine();
-          helpMarker("Draw the image normally and place the warped grid on top. When off, only the grid is drawn.");
+          helpMarker("Draw the image normally and place the warped grid on top. When off, only the grid is drawn");
 
           VectorWarpedGridConvention convention = imgSettings.vectorWarpedGridConvention();
           if (ImGui::BeginCombo("Convention", vectorWarpedGridConventionName(convention))) {
@@ -1872,7 +1872,7 @@ void renderImageHeader(
           ImGui::SameLine();
           helpMarker(
             "Choose whether the stored vectors are shown as a sampling field or as an approximate apparent "
-            "deformation.");
+            "deformation");
           if (VectorWarpedGridConvention::ApparentDeformation == imgSettings.vectorWarpedGridConvention()) {
             ImGui::TextDisabled("Uses an approximate inverse by reversing the displacement.");
           }
@@ -1883,7 +1883,7 @@ void renderImageHeader(
             imgSettings.setVectorWarpedGridScaleFactor(gridScaleFactor);
           }
           ImGui::SameLine();
-          helpMarker("Dimensionless multiplier applied to the displacement before warping the grid.");
+          helpMarker("Dimensionless multiplier applied to the displacement before warping the grid");
 
           const VectorArrowOverlaySpacingMode gridSpacingMode = imgSettings.vectorWarpedGridSpacingMode();
           if (VectorArrowOverlaySpacingMode::Pixels == gridSpacingMode) {
@@ -1905,7 +1905,7 @@ void renderImageHeader(
             }
           }
           ImGui::SameLine();
-          helpMarker("Distance between neighboring grid lines, measured in the selected spacing units.");
+          helpMarker("Distance between neighboring grid lines, measured in the selected spacing units");
 
           VectorArrowOverlaySpacingMode selectedGridSpacingMode = gridSpacingMode;
           if (ImGui::BeginCombo("Spacing units", vectorArrowOverlaySpacingModeName(selectedGridSpacingMode))) {
@@ -1927,28 +1927,28 @@ void renderImageHeader(
           }
           ImGui::SameLine();
           helpMarker(
-            "Choose whether grid spacing is specified in screen pixels, image voxels, or physical millimeters.");
+            "Choose whether grid spacing is specified in screen pixels, image voxels, or physical millimeters");
 
           float gridLineThickness = imgSettings.vectorWarpedGridLineThickness();
           if (ImGui::SliderFloat("Line thickness", &gridLineThickness, 0.25f, 8.0f, "%.2f px")) {
             imgSettings.setVectorWarpedGridLineThickness(gridLineThickness);
           }
           ImGui::SameLine();
-          helpMarker("Line thickness in screen pixels.");
+          helpMarker("Line thickness in screen pixels");
 
           glm::vec4 gridForeground = imgSettings.vectorWarpedGridForegroundColor();
           if (ImGui::ColorEdit4("Foreground", glm::value_ptr(gridForeground))) {
             imgSettings.setVectorWarpedGridForegroundColor(gridForeground);
           }
           ImGui::SameLine();
-          helpMarker("RGBA color used for warped grid lines.");
+          helpMarker("RGBA color used for warped grid lines");
 
           glm::vec4 gridBackground = imgSettings.vectorWarpedGridBackgroundColor();
           if (ImGui::ColorEdit4("Background", glm::value_ptr(gridBackground))) {
             imgSettings.setVectorWarpedGridBackgroundColor(gridBackground);
           }
           ImGui::SameLine();
-          helpMarker("RGBA color used between grid lines. Set alpha to zero for a transparent background.");
+          helpMarker("RGBA color used between grid lines. Set alpha to zero for a transparent background");
 
           ImGui::TreePop();
         }
@@ -2431,7 +2431,6 @@ void renderImageHeader(
 
         bool colorMapContinuous = viewSettings.colorMapContinuous();
 
-        ImGui::SameLine();
         if (ImGui::RadioButton("Continuous", colorMapContinuous /*&& ! forcedDiscrete*/)) {
           colorMapContinuous = true;
           viewSettings.setColorMapContinuous(colorMapContinuous);
@@ -2519,6 +2518,8 @@ void renderImageHeader(
           viewSettings.setColorMapValModFactor(hsvModsInt[2] / 100.0f);
           updateImageUniforms();
         }
+        ImGui::SameLine();
+        helpMarker("Adjust hue shift, saturation scale, and value scale for the selected color map");
 
         ImGui::TreePop();
       }
@@ -2562,7 +2563,7 @@ void renderImageHeader(
       updateImageUniforms();
     }
     ImGui::SameLine();
-    helpMarker("Show/hide image edges (E). Edge settings control whether edges are computed in voxel or pixel space.");
+    helpMarker("Show/hide image edges (E). Edge settings control whether edges are computed in voxel or pixel space");
 
     ImGui::SetNextItemOpen(showEdges, ImGuiCond_Appearing);
     if (showEdges && ImGui::TreeNode("Edge settings")) {
@@ -2585,7 +2586,7 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker(
         "Voxel-space edges are computed from image samples. Pixel-space edges are computed after the image is sampled "
-        "into the view.");
+        "into the view");
 
       const bool useVoxelEdges = EdgeDetectionMethod::Voxel == edgeMethod;
       const bool usePixelEdges = EdgeDetectionMethod::Pixel == edgeMethod;
@@ -2605,7 +2606,7 @@ void renderImageHeader(
         updateImageUniforms();
       }
       ImGui::SameLine();
-      helpMarker("Apply thresholding to edge magnitude.");
+      helpMarker("Apply thresholding to edge magnitude");
 
       if (usePixelEdges) {
         bool thinPixelEdges = viewSettings.thinPixelEdges();
@@ -2614,7 +2615,7 @@ void renderImageHeader(
           updateImageUniforms();
         }
         ImGui::SameLine();
-        helpMarker("Keep only local edge-magnitude maxima along the screen-space gradient direction.");
+        helpMarker("Keep only local edge-magnitude maxima along the screen-space gradient direction");
       }
 
       bool overlayEdges = useVoxelEdges ? viewSettings.overlayEdges() : viewSettings.overlayPixelEdges();
@@ -2628,7 +2629,7 @@ void renderImageHeader(
         updateImageUniforms();
       }
       ImGui::SameLine();
-      helpMarker("Overlay edges on top of the image.");
+      helpMarker("Overlay edges on top of the image");
 
       if (useVoxelEdges) {
         if (overlayEdges || hardEdges) {
@@ -2648,7 +2649,7 @@ void renderImageHeader(
           updateImageUniforms();
         }
         ImGui::SameLine();
-        helpMarker("Apply the image colormap to voxel-space edge magnitudes.");
+        helpMarker("Apply the image colormap to voxel-space edge magnitudes");
       }
       else if (viewSettings.colormapEdges()) {
         viewSettings.setColormapEdges(false);
@@ -2662,7 +2663,7 @@ void renderImageHeader(
           updateImageUniforms();
         }
         ImGui::SameLine();
-        helpMarker("Scale applied to screen-space edge magnitude.");
+        helpMarker("Scale applied to screen-space edge magnitude");
       }
       else if (!hardEdges) {
         double edgeScale = 1.0 - viewSettings.edgeMagnitude();
@@ -2671,7 +2672,7 @@ void renderImageHeader(
           updateImageUniforms();
         }
         ImGui::SameLine();
-        helpMarker("Scale applied to voxel-space edge magnitude.");
+        helpMarker("Scale applied to voxel-space edge magnitude");
       }
 
       if (hardEdges) {
@@ -2690,7 +2691,7 @@ void renderImageHeader(
           }
         }
         ImGui::SameLine();
-        helpMarker("Magnitude threshold above which hard edges are shown.");
+        helpMarker("Magnitude threshold above which hard edges are shown");
       }
 
       if (!(useVoxelEdges && viewSettings.colormapEdges())) {
@@ -2701,7 +2702,7 @@ void renderImageHeader(
           updateImageUniforms();
         }
         ImGui::SameLine();
-        helpMarker("Edge color and opacity.");
+        helpMarker("Edge color and opacity");
       }
 
       ImGui::TreePop();
@@ -2840,8 +2841,8 @@ void renderImageHeader(
     ImGui::SameLine();
     helpMarker(
       hasBothWarpDirections ? "Apply the inverse warp to image and segmentation rendering, and apply the forward warp "
-                              "to landmarks and annotations."
-                            : "Warp this image at render time using the active inverse warp.");
+                              "to landmarks and annotations"
+                            : "Warp this image at render time using the active inverse warp");
     ImGui::EndDisabled();
 
     auto [inverseWarpNames, activeInverseWarpIndex] = warpFieldNamesAndIndex(activeInverseWarpUid);
@@ -2868,7 +2869,7 @@ void renderImageHeader(
     }
     ImGui::EndDisabled();
     ImGui::SameLine();
-    helpMarker("Inverse warp is sampled in reference/fixed space and gives the image sampling offset.");
+    helpMarker("Inverse warp is sampled in reference/fixed space and gives the image sampling offset");
 
     if (activeInverseWarpUid) {
       const uuid_range_t imageRange = appData.imageUidsOrdered();
@@ -2903,7 +2904,7 @@ void renderImageHeader(
         ImGui::EndCombo();
       }
       ImGui::SameLine();
-      helpMarker("Image domain in which the inverse warp is sampled before sampling this moving image.");
+      helpMarker("Image domain in which the inverse warp is sampled before sampling this moving image");
     }
 
     if (activeInverseWarpUid && referenceImage) {
@@ -2937,7 +2938,7 @@ void renderImageHeader(
     ImGui::SameLine();
     helpMarker(
       "Forward warp fields may be stored on either the moving-image or reference-image grid. Only moving-grid forward "
-      "warps are sampled directly for landmark and annotation display.");
+      "warps are sampled directly for landmark and annotation display");
 
     if (activeForwardWarpUid) {
       if (const Image* forwardWarp = appData.warpField(*activeForwardWarpUid)) {
@@ -2981,15 +2982,14 @@ void renderImageHeader(
         updateImageUniforms();
       }
       ImGui::SameLine();
-      helpMarker(
-        "0.0x disables displacement, 1.0x applies the field as stored, and larger values exaggerate the warp.");
+      helpMarker("0.0x disables displacement, 1.0x applies the field as stored, and larger values exaggerate the warp");
       bool allowExaggeratedWarp = imgSettings.allowExaggeratedWarp();
       if (ImGui::Checkbox("Allow exaggerated warp", &allowExaggeratedWarp)) {
         imgSettings.setAllowExaggeratedWarp(allowExaggeratedWarp);
         updateImageUniforms();
       }
       ImGui::SameLine();
-      helpMarker("Allow warp strength values above 1.0x, up to 4.0x, for visualizing an exaggerated warp.");
+      helpMarker("Allow warp strength values above 1.0x, up to 4.0x, for visualizing an exaggerated warp");
     }
     ImGui::EndDisabled();
 
@@ -3004,7 +3004,7 @@ void renderImageHeader(
             requestWarpInversion(imageUid, *activeForwardWarpUid, ComputedWarpDirection::Inverse, inversionOptions);
           }
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Compute the inverse warp that matches the selected forward warp.");
+            ImGui::SetTooltip("%s", "Compute the inverse warp that matches the selected forward warp");
           }
         }
         if (activeForwardWarpUid && activeInverseWarpUid) {
@@ -3015,7 +3015,7 @@ void renderImageHeader(
             requestWarpInversion(imageUid, *activeInverseWarpUid, ComputedWarpDirection::Forward, inversionOptions);
           }
           if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", "Compute the forward warp that matches the selected inverse warp.");
+            ImGui::SetTooltip("%s", "Compute the forward warp that matches the selected inverse warp");
           }
         }
         ImGui::Separator();
@@ -3041,7 +3041,7 @@ void renderImageHeader(
         inversionOptions.enforceBoundaryCondition = enforceBoundary;
       }
       ImGui::SameLine();
-      helpMarker("Keep the computed field zero-valued on the image boundary.");
+      helpMarker("Keep the computed field zero-valued on the image boundary");
 
       ImGui::TreePop();
     }
@@ -3071,7 +3071,7 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker(
         "Affine transform loaded from a project, transform file, or registration result. "
-        "It is applied after image header geometry and before manual affine edits.");
+        "It is applied after image header geometry and before manual affine edits");
 
       bool enable_affine_T_subject = imgTx.get_enable_affine_T_subject();
       ImGui::BeginDisabled(forceDisableInitialTxs);
@@ -3083,10 +3083,10 @@ void renderImageHeader(
       ImGui::SameLine();
 
       if (forceDisableInitialTxs) {
-        helpMarker("The reference image defines the project space, so its initial affine transform is not applied.");
+        helpMarker("The reference image defines the project space, so its initial affine transform is not applied");
       }
       else {
-        helpMarker("Apply this imported affine transform before any manual affine adjustment.");
+        helpMarker("Apply this imported affine transform before any manual affine adjustment");
       }
 
       ImGui::BeginDisabled(forceDisableInitialTxs || !enable_affine_T_subject);
@@ -3156,7 +3156,7 @@ void renderImageHeader(
         }
       }
       ImGui::SameLine();
-      helpMarker("Load, save, or reset the initial/imported affine transformation matrix.");
+      helpMarker("Load, save, or reset the initial/imported affine transformation matrix");
       ImGui::EndDisabled();
 
       ImGui::TreePop();
@@ -3169,7 +3169,7 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker(
         "User-controlled affine adjustment applied after the initial affine transform. "
-        "Interactive translation, rotation, and scale tools update this transform.");
+        "Interactive translation, rotation, and scale tools update this transform");
 
       bool enable_worldDef_T_affine = imgTx.get_enable_worldDef_T_affine();
       ImGui::BeginDisabled(forceDisableInitialTxs);
@@ -3180,10 +3180,10 @@ void renderImageHeader(
       ImGui::EndDisabled();
       ImGui::SameLine();
       if (forceDisableInitialTxs) {
-        helpMarker("The reference image defines the project space, so its manual affine transform is not applied.");
+        helpMarker("The reference image defines the project space, so its manual affine transform is not applied");
       }
       else {
-        helpMarker("Apply the manual affine adjustment on top of the initial affine transform.");
+        helpMarker("Apply the manual affine adjustment on top of the initial affine transform");
       }
 
       ImGui::BeginDisabled(forceDisableInitialTxs || !enable_worldDef_T_affine);
@@ -3291,7 +3291,7 @@ void renderImageHeader(
         }
       }
       ImGui::SameLine();
-      helpMarker("Load, save, or reset the manual affine transformation matrix from Subject to World space.");
+      helpMarker("Load, save, or reset the manual affine transformation matrix from Subject to World space");
 
       if (selectedManualTxFile) {
         const glm::dmat4 worldDef_T_affine{imgTx.get_worldDef_T_affine()};
@@ -3324,7 +3324,7 @@ void renderImageHeader(
       ImGui::SameLine();
       helpMarker(
         "Save the effective affine transformation matrix, defined as manual affine multiplied by initial/imported "
-        "affine.");
+        "affine");
 
       if (selectedEffectiveTxFile) {
         const glm::dmat4 affine_T_subject{imgTx.get_affine_T_subject()};

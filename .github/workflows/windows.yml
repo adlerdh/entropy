@@ -1,4 +1,4 @@
-name: Windows CI (x86_64)
+name: Windows CI
 
 on:
   pull_request:

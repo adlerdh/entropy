@@ -52,4 +52,17 @@ MipSamplingParams computeMipSamplingParams(
   float slabThicknessMm,
   bool useMaxExtent);
 
+/**
+ * @brief Estimate the largest projected screen length of one image voxel axis.
+ */
+float maxScreenPixelsPerVoxelAxis(
+  const glm::mat4& viewClip_T_voxel,
+  const glm::mat4& windowClip_T_viewClip,
+  const Viewport& windowViewport);
+
+/**
+ * @brief Return whether automatic floating-point interpolation should be active for the current magnification.
+ */
+bool automaticFloatingPointInterpolationEnabled(float screenPixelsPerVoxel, float turnOnThresholdPx);
+
 } // namespace rendering::image_drawing

@@ -3,6 +3,7 @@
 #include <glm/geometric.hpp>
 #include <glm/vec4.hpp>
 
+#include <array>
 #include <algorithm>
 #include <cmath>
 
@@ -106,6 +107,36 @@ computeMipSamplingParams(float mmPerSample, const glm::uvec3& imageDimensions, f
 
   params.halfNumSamples = std::max(0, static_cast<int>(std::floor(0.5f * slabThicknessMm / mmPerSample)));
   return params;
+}
+
+float maxScreenPixelsPerVoxelAxis(
+  const glm::mat4& viewClip_T_voxel,
+  const glm::mat4& windowClip_T_viewClip,
+  const Viewport& windowViewport)
+{
+  const glm::mat4 windowClip_T_voxel = windowClip_T_viewClip * viewClip_T_voxel;
+
+  auto project = [&](const glm::vec3& voxelPos) {
+    glm::vec4 windowClip = windowClip_T_voxel * glm::vec4{voxelPos, 1.0f};
+    windowClip /= windowClip.w;
+    return glm::vec2{
+      0.5f * (windowClip.x + 1.0f) * windowViewport.width(),
+      0.5f * (windowClip.y + 1.0f) * windowViewport.height()};
+  };
+
+  const glm::vec2 origin = project(glm::vec3{0.0f});
+  const std::array axisLengths{
+    glm::length(project(glm::vec3{1.0f, 0.0f, 0.0f}) - origin),
+    glm::length(project(glm::vec3{0.0f, 1.0f, 0.0f}) - origin),
+    glm::length(project(glm::vec3{0.0f, 0.0f, 1.0f}) - origin)};
+
+  const float maxLength = *std::max_element(axisLengths.begin(), axisLengths.end());
+  return std::isfinite(maxLength) && maxLength > 0.0f ? maxLength : 1.0f;
+}
+
+bool automaticFloatingPointInterpolationEnabled(float screenPixelsPerVoxel, float turnOnThresholdPx)
+{
+  return std::isfinite(screenPixelsPerVoxel) && screenPixelsPerVoxel >= turnOnThresholdPx;
 }
 
 } // namespace rendering::image_drawing

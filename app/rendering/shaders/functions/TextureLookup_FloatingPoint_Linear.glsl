@@ -39,9 +39,10 @@ float textureLookup(sampler3D tex, vec3 texCoords)
   vec3 res = vec3(textureSize(tex, 0));
   ivec3 voxMax = ivec3(res) - ivec3(1);
 
-  vec3 vox = (fract(texCoords) - 0.5 / res) * res;
-  ivec3 i = max(ivec3(floor(vox)), MIN_VOX_COORD);
-  vec3 w = fract(vox);
+  vec3 vox = texCoords * res - 0.5;
+  vec3 clampedVox = clamp(vox, vec3(0.0), res - vec3(1.0));
+  ivec3 i = clamp(ivec3(floor(clampedVox)), MIN_VOX_COORD, voxMax);
+  vec3 w = fract(clampedVox);
 
   float t000 = texelFetch(tex, min(i + ivec3(0, 0, 0), voxMax), 0)[0];
   float t100 = texelFetch(tex, min(i + ivec3(1, 0, 0), voxMax), 0)[0];

@@ -472,7 +472,7 @@ void renderDicomSeriesSelectionPopup(
   }
 
   const ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
-  ImGui::SetNextWindowSize(scaledSize(760.0f, 130.0f), ImGuiCond_Appearing);
+  ImGui::SetNextWindowSize(viewportClampedScaledSize(760.0f, 130.0f), ImGuiCond_Appearing);
   const ImVec2 minScanningSize = scaledSize(640.0f, 120.0f);
   setNextWindowSizeConstraintsToMainViewport(minScanningSize.x, minScanningSize.y);
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));

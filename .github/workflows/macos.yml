@@ -1,4 +1,4 @@
-name: macOS CI (arm64 + x86_64)
+name: macOS CI
 
 on:
   pull_request:

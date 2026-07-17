@@ -1007,7 +1007,7 @@ bool populateWindowsMenu(HMENU menu)
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleInspectorWindow, L"Voxel Ins&pector\tI") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleOpacityMixerWindow, L"&Opacity Mixer") &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleRegistrationJobsWindow, L"Registration &Jobs") &&
-    insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings") &&
+    insertActionMenuItem(menu, position++, MainMenuAction::ToggleSettingsWindow, L"Application Se&ttings\tCtrl+,") &&
     insertSeparator(menu, position++) &&
     insertActionMenuItem(menu, position++, MainMenuAction::ToggleToolbar, L"T&oolbar");
 #ifndef NDEBUG

@@ -232,8 +232,9 @@ struct ProjectSegmentationDisplaySettings
  */
 struct ProjectIsosurfaceDisplaySettings
 {
-  bool m_floatingPointInterpolation = false;      //!< Use floating-point interpolation for isocontours
-  bool m_modulateOpacityWithImageOpacity = false; //!< Scale isocontour opacity by image opacity
+  FloatingPointLinearInterpolationPolicy m_floatingPointInterpolationPolicy =
+    FloatingPointLinearInterpolationPolicy::Automatic; //!< Isocontour interpolation policy
+  bool m_modulateOpacityWithImageOpacity = false;      //!< Scale isocontour opacity by image opacity
 };
 
 /**

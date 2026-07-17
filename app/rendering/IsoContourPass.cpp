@@ -3,11 +3,16 @@
 #include "logic/app/Data.h"
 #include "logic/SurfaceUtility.h"
 #include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/helpers/ImageDrawingHelpers.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "windowing/View.h"
 
+#include "logic/camera/CameraHelpers.h"
+
 #include <spdlog/spdlog.h>
+
+#include <glm/matrix.hpp>
 
 #include <functional>
 #include <list>
@@ -17,6 +22,35 @@ namespace
 {
 
 const Uniforms::SamplerIndexType msk_imgTexSampler{0};
+constexpr float k_isocontourFloatingPointInterpolationThresholdPxPerVoxel = 16.0f;
+
+bool useFloatingPointLinearInterpolation(
+  FloatingPointLinearInterpolationPolicy policy,
+  const View& view,
+  const Viewport& windowViewport,
+  const Image& image,
+  float thresholdPxPerVoxel)
+{
+  switch (policy) {
+    case FloatingPointLinearInterpolationPolicy::FixedFunction:
+      return false;
+    case FloatingPointLinearInterpolationPolicy::FloatingPoint:
+      return true;
+    case FloatingPointLinearInterpolationPolicy::Automatic: {
+      const glm::mat4 viewClip_T_voxel =
+        glm::inverse(image.transformations().pixel_T_worldDef() * helper::world_T_clip(view.camera()));
+      const float screenPixelsPerVoxel = rendering::image_drawing::maxScreenPixelsPerVoxelAxis(
+        viewClip_T_voxel,
+        view.windowClip_T_viewClip(),
+        windowViewport);
+      return rendering::image_drawing::automaticFloatingPointInterpolationEnabled(
+        screenPixelsPerVoxel,
+        thresholdPxPerVoxel);
+    }
+  }
+
+  return false;
+}
 
 } // namespace
 
@@ -44,9 +78,6 @@ void Rendering::renderIsoContoursForImage(
     return;
   }
 
-  const auto& viewport = m_appData.windowData().viewport();
-  const glm::vec2 windowSize{viewport.width(), viewport.height()};
-  const glm::vec2 viewSize = 0.5f * glm::vec2{view.windowClipViewport()[2], view.windowClipViewport()[3]} * windowSize;
   const uint32_t activeComponent = imageSettings.activeComponent();
 
   GLShaderProgram* program = nullptr;
@@ -62,8 +93,14 @@ void Rendering::renderIsoContoursForImage(
       break;
     }
     case InterpolationMode::Linear: {
+      const bool useFloatingPoint = useFloatingPointLinearInterpolation(
+        renderData.m_isocontourFloatingPointInterpolationPolicy,
+        view,
+        m_appData.windowData().viewport(),
+        image,
+        k_isocontourFloatingPointInterpolationThresholdPxPerVoxel);
       const ShaderProgramType shaderType =
-        renderData.m_isocontourFloatingPointInterpolation
+        useFloatingPoint
           ? (renderWarped ? ShaderProgramType::IsoContourLinearFloatingWarped
                           : ShaderProgramType::IsoContourLinearFloating)
           : (renderWarped ? ShaderProgramType::IsoContourLinearFixedWarped : ShaderProgramType::IsoContourLinearFixed);
@@ -116,7 +153,6 @@ void Rendering::renderIsoContoursForImage(
     program->setUniform("u_lineOpacity", static_cast<float>(isosurfaceOpacity * surface->opacity));
     program->setUniform("u_contourWidth", static_cast<float>(imageSettings.isoContourLineWidthIn2D()));
     program->setUniform("u_color", color);
-    program->setUniform("u_viewSize", viewSize);
     program->setUniform("u_imgMinMax", uniforms.minMax);
     program->setUniform("u_imgThresholds", uniforms.thresholds);
     program->setUniform("u_quadrants", renderData.m_quadrants);

@@ -23,7 +23,7 @@ Copyright 2021-2026 Daniel H. Adler, Ph.D. and the Penn Image Computing and Scie
 Entropy uses CMake and C++23. Build the pinned third-party libraries first, then configure and build Entropy against them following the "superbuild" pattern:
 
 ```sh
-BUILD_TYPE=debug # or release
+BUILD_TYPE=release # or debug
 
 # Dependencies
 cmake --preset deps-${BUILD_TYPE}

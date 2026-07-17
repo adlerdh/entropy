@@ -1,6 +1,7 @@
 #include "ui/windows/AnnotationWindow.h"
 
 #include "ui/Helpers.h"
+#include "ui/Scaling.h"
 #include "ui/headers/Headers.h"
 
 #include "logic/app/Data.h"
@@ -21,8 +22,8 @@ void renderAnnotationWindow(
   const std::function<void()>& paintActiveSegmentationWithActivePolygon,
   const AllViewsRecenterType& recenterAllViews)
 {
-  setNextWindowSizeConstraintsToMainViewport(280.0f, 240.0f);
-  ImGui::SetNextWindowSize(ImVec2{360.0f, 480.0f}, ImGuiCond_FirstUseEver);
+  setNextWindowSizeConstraintsToMainViewport(ui::scaledPixel(280.0f), ui::scaledPixel(240.0f));
+  ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(360.0f, 480.0f), ImGuiCond_FirstUseEver);
   setNextDockablePanelWindowClass();
   if (ImGui::Begin("Annotations", &(appData.guiData().m_showAnnotationsWindow))) {
     size_t imageIndex = 0;

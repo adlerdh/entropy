@@ -267,7 +267,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   project.m_segmentationDisplay.m_outlineStyle = SegmentationOutlineStyle::ImageVoxel;
   project.m_segmentationDisplay.m_interiorOpacity = 0.4f;
   project.m_segmentationDisplay.m_erosionFactor = 0.8f;
-  project.m_isosurfaces.m_floatingPointInterpolation = true;
+  project.m_isosurfaces.m_floatingPointInterpolationPolicy = FloatingPointLinearInterpolationPolicy::FloatingPoint;
   project.m_isosurfaces.m_modulateOpacityWithImageOpacity = true;
   project.m_annotationDisplay.m_annotationsOnTop = true;
   project.m_annotationDisplay.m_landmarksOnTop = true;
@@ -295,7 +295,7 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(root.at("intensityProjection").at("xrayEnergyKeV") == 120.0f);
   CHECK(root.at("segmentationDisplay").at("outlineStyle") == "voxel");
   CHECK(root.at("segmentationDisplay").at("erosionFactor") == 0.8f);
-  CHECK(root.at("isosurfaces").at("floatingPointInterpolation") == true);
+  CHECK(root.at("isosurfaces").at("floatingPointInterpolationPolicy") == "floatingPoint");
   CHECK(root.at("isosurfaces").at("modulateOpacityWithImageOpacity") == true);
   CHECK(root.at("annotationDisplay").at("annotationsOnTop") == true);
   CHECK(root.at("annotationDisplay").at("hideAnnotationVertices") == true);
@@ -325,7 +325,8 @@ TEST_CASE("Project serialization preserves rendering presentation settings", "[p
   CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::ImageVoxel);
   CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 0.4f);
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.8f);
-  CHECK(parsed.m_isosurfaces.m_floatingPointInterpolation == true);
+  CHECK(
+    parsed.m_isosurfaces.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
   CHECK(parsed.m_isosurfaces.m_modulateOpacityWithImageOpacity == true);
   CHECK(parsed.m_annotationDisplay.m_annotationsOnTop == true);
   CHECK(parsed.m_annotationDisplay.m_landmarksOnTop == true);
@@ -352,7 +353,7 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
       {"outlineStyle", "bad"},
       {"interiorOpacity", 2.0f},
       {"erosionFactor", 0.0f}}},
-    {"isosurfaces", {{"floatingPointInterpolation", true}, {"modulateOpacityWithImageOpacity", true}}},
+    {"isosurfaces", {{"floatingPointInterpolationPolicy", "floatingPoint"}, {"modulateOpacityWithImageOpacity", true}}},
     {"annotationDisplay", {{"annotationsOnTop", true}, {"landmarksOnTop", true}, {"hideAnnotationVertices", true}}}};
 
   const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
@@ -371,7 +372,8 @@ TEST_CASE("Project serialization sanitizes project-wide presentation settings", 
   CHECK(parsed.m_segmentationDisplay.m_outlineStyle == SegmentationOutlineStyle::Disabled);
   CHECK(parsed.m_segmentationDisplay.m_interiorOpacity == 1.0f);
   CHECK(parsed.m_segmentationDisplay.m_erosionFactor == 0.5f);
-  CHECK(parsed.m_isosurfaces.m_floatingPointInterpolation == true);
+  CHECK(
+    parsed.m_isosurfaces.m_floatingPointInterpolationPolicy == FloatingPointLinearInterpolationPolicy::FloatingPoint);
   CHECK(parsed.m_isosurfaces.m_modulateOpacityWithImageOpacity == true);
   CHECK(parsed.m_annotationDisplay.m_annotationsOnTop == true);
   CHECK(parsed.m_annotationDisplay.m_landmarksOnTop == true);

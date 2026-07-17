@@ -249,6 +249,11 @@ constexpr std::array k_interpolationModeNames{
   EnumName{InterpolationMode::Linear, "linear"},
   EnumName{InterpolationMode::CubicBsplineConvolution, "cubicBSpline"}};
 
+constexpr std::array k_floatingPointInterpolationPolicyNames{
+  EnumName{FloatingPointLinearInterpolationPolicy::Automatic, "automatic"},
+  EnumName{FloatingPointLinearInterpolationPolicy::FixedFunction, "fixedFunction"},
+  EnumName{FloatingPointLinearInterpolationPolicy::FloatingPoint, "floatingPoint"}};
+
 std::optional<std::uint32_t> unsignedIntFromJson(const json& value)
 {
   if (value.is_number_unsigned()) {
@@ -1547,14 +1552,21 @@ void from_json(const json& j, ProjectSegmentationDisplaySettings& settings)
 void to_json(json& j, const ProjectIsosurfaceDisplaySettings& settings)
 {
   j = json{
-    {"floatingPointInterpolation", settings.m_floatingPointInterpolation},
+    {"floatingPointInterpolationPolicy",
+     enumToName(settings.m_floatingPointInterpolationPolicy, k_floatingPointInterpolationPolicyNames)},
     {"modulateOpacityWithImageOpacity", settings.m_modulateOpacityWithImageOpacity}};
 }
 
 void from_json(const json& j, ProjectIsosurfaceDisplaySettings& settings)
 {
-  if (const auto value = j.find("floatingPointInterpolation"); value != j.end() && value->is_boolean()) {
-    settings.m_floatingPointInterpolation = value->get<bool>();
+  if (const auto policy = j.find("floatingPointInterpolationPolicy"); policy != j.end() && policy->is_string()) {
+    if (
+      const auto parsed = enumFromName<FloatingPointLinearInterpolationPolicy>(
+        policy->get<std::string>(),
+        k_floatingPointInterpolationPolicyNames))
+    {
+      settings.m_floatingPointInterpolationPolicy = *parsed;
+    }
   }
   if (const auto value = j.find("modulateOpacityWithImageOpacity"); value != j.end() && value->is_boolean()) {
     settings.m_modulateOpacityWithImageOpacity = value->get<bool>();

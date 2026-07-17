@@ -2,6 +2,8 @@
 
 #include "logic/app/Data.h"
 #include "ui/Helpers.h"
+#include "ui/NativeFileDialogs.h"
+#include "ui/Scaling.h"
 
 #include "registration/Config.h"
 #include "registration/Artifacts.h"
@@ -154,9 +156,14 @@ ImVec2 halfMainViewportSize()
 {
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
   if (!viewport) {
-    return ImVec2{640.0f, 480.0f};
+    return ui::scaledSize(640.0f, 480.0f);
   }
-  return ImVec2{std::max(360.0f, 0.5f * viewport->WorkSize.x), std::max(320.0f, 0.5f * viewport->WorkSize.y)};
+
+  const ImVec2 minSize = ui::scaledSize(360.0f, 320.0f);
+  const ImVec2 maxSize{0.9f * viewport->WorkSize.x, 0.9f * viewport->WorkSize.y};
+  return ImVec2{
+    std::min(std::max(minSize.x, 0.4f * viewport->WorkSize.x), maxSize.x),
+    std::min(std::max(minSize.y, 0.5f * viewport->WorkSize.y), maxSize.y)};
 }
 
 std::string imageChoiceLabel(const registration::SetupImageChoice& choice)
@@ -703,6 +710,8 @@ std::string transformDisplayLabel(registration::Backend backend, registration::T
         return "Symmetric normalization (SyN)";
       case registration::TransformModel::AffineDeformable:
         return "Affine + symmetric normalization (SyN)";
+      case registration::TransformModel::RigidAffineDeformable:
+        return "Rigid + affine + symmetric normalization (SyN)";
       case registration::TransformModel::BSplineDisplacement:
         return "B-spline symmetric normalization (BSplineSyN)";
       case registration::TransformModel::GaussianDisplacement:
@@ -1103,7 +1112,7 @@ void renderRegistrationJobDetailsPopup(const registration::JobRecord* job)
     return;
   }
 
-  ImGui::SetNextWindowSize(ImVec2{760.0f, 520.0f}, ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(760.0f, 520.0f), ImGuiCond_FirstUseEver);
   if (ImGui::BeginPopupModal("Image Registration Job Details", nullptr)) {
     ImGui::TextWrapped("%s", numberedJobTitle(*job).c_str());
     ImGui::TextColored(statusColor(job->status), "%s", statusText(job->status));
@@ -1171,7 +1180,7 @@ void renderIterationsPerLevelWidget(registration::ParameterValue& value, const r
     resizeIntegerSchedule(iterations, levelCount, parameter.key);
     value.value = formatIntegerSchedule(iterations);
   }
-  renderHelpMarker("Number of multi-resolution pyramid levels, ordered coarse to fine.");
+  renderHelpMarker("Number of multi-resolution pyramid levels, ordered coarse to fine");
 
   std::array<int, k_maxResolutionLevels> values{};
   std::copy(iterations.begin(), iterations.end(), values.begin());
@@ -1369,7 +1378,7 @@ void renderTransformCombo(registration::SetupState& state)
     ImGui::EndCombo();
   }
   ImGui::SameLine();
-  helpMarker("Transformation model requested from the selected registration backend.");
+  helpMarker("Transformation model requested from the selected registration backend");
 }
 
 void renderMetricCombo(registration::SetupState& state)
@@ -1390,7 +1399,7 @@ void renderMetricCombo(registration::SetupState& state)
     ImGui::EndCombo();
   }
   ImGui::SameLine();
-  helpMarker("Similarity metric optimized by the selected registration backend.");
+  helpMarker("Similarity metric optimized by the selected registration backend");
 }
 
 void renderAuxiliaryImagePairs(
@@ -1412,7 +1421,7 @@ void renderAuxiliaryImagePairs(
   ImGui::SameLine();
   helpMarker(
     "Add another fixed/moving image pair as an additional registration constraint. "
-    "Greedy and ANTs use these as additional metric terms.");
+    "Greedy and ANTs use these as additional metric terms");
 
   if (!supported) {
     ImGui::TextDisabled("Auxiliary image pairs are not supported by this backend.");
@@ -1446,7 +1455,7 @@ void renderAuxiliaryImagePairs(
     if (state.job.backend == registration::Backend::Greedy) {
       ImGui::TextDisabled("Metric: primary metric");
       ImGui::SameLine();
-      helpMarker("Greedy applies the primary metric to all fixed/moving image pairs.");
+      helpMarker("Greedy applies the primary metric to all fixed/moving image pairs");
     }
     else {
       if (ImGui::BeginCombo("Metric", metricDisplayLabel(state.job.backend, pair.metric).c_str())) {
@@ -1471,7 +1480,7 @@ void renderAuxiliaryImagePairs(
       registration::refreshValidation(state);
     }
     ImGui::SameLine();
-    helpMarker("Relative metric weight for this auxiliary pair.");
+    helpMarker("Relative metric weight for this auxiliary pair");
 
     if (ImGui::Button("Remove")) {
       state.job.auxiliaryImagePairs.erase(state.job.auxiliaryImagePairs.begin() + static_cast<std::ptrdiff_t>(index));
@@ -1605,7 +1614,7 @@ void renderRegistrationSetupWindow(AppData& appData)
 {
   const ImVec2 defaultSize = halfMainViewportSize();
   ImGui::SetNextWindowSize(defaultSize, ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSizeConstraints(ImVec2{360.0f, 320.0f}, ImVec2{FLT_MAX, FLT_MAX});
+  ImGui::SetNextWindowSizeConstraints(ui::scaledSize(360.0f, 320.0f), ImVec2{FLT_MAX, FLT_MAX});
   setNextDockablePanelWindowClass();
   if (!ImGui::Begin("Image Registration Setup##RegistrationSetup", &appData.guiData().m_showRegistrationSetupWindow)) {
     ImGui::End();
@@ -1663,7 +1672,7 @@ void renderRegistrationSetupWindow(AppData& appData)
       ImGui::EndCombo();
     }
     ImGui::SameLine();
-    helpMarker("Registration backend used to estimate the image transformation.");
+    helpMarker("Registration backend used to estimate the image transformation");
     ImGui::Separator();
 
     if (ImGui::CollapsingHeader("Inputs", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -1673,14 +1682,14 @@ void renderRegistrationSetupWindow(AppData& appData)
         state.job.fixedImage,
         [&](const registration::SetupImageChoice& choice) { registration::setFixedImage(state, choice); });
       ImGui::SameLine();
-      helpMarker("Image that defines the reference space for registration.");
+      helpMarker("Image that defines the reference space for registration");
       renderImageChoiceCombo(
         "Moving image",
         choices,
         state.job.movingImage,
         [&](const registration::SetupImageChoice& choice) { registration::setMovingImage(state, choice); });
       ImGui::SameLine();
-      helpMarker("Image that will be transformed into the fixed/reference image space.");
+      helpMarker("Image that will be transformed into the fixed/reference image space");
 
       if (renderDataChoiceCombo("Fixed mask", masks, state.job.fixedMask)) {
         registration::refreshValidation(state);
@@ -1688,7 +1697,7 @@ void renderRegistrationSetupWindow(AppData& appData)
       ImGui::SameLine();
       helpMarker(
         "Optional mask in fixed/reference image space. The backend evaluates registration only within the selected "
-        "fixed-region constraint when supported.");
+        "fixed-region constraint when supported");
 
       if (renderDataChoiceCombo("Moving mask", masks, state.job.movingMask)) {
         registration::refreshValidation(state);
@@ -1697,9 +1706,9 @@ void renderRegistrationSetupWindow(AppData& appData)
       helpMarker(
         state.job.backend == registration::Backend::Greedy
           ? "Optional mask in moving image space. Greedy applies moving masks during deformable registration; "
-            "affine-only Greedy registration ignores moving masks."
+            "affine-only Greedy registration ignores moving masks"
           : "Optional mask in moving image space. The backend excludes moving-image samples outside the "
-            "selected moving-region constraint when supported.");
+            "selected moving-region constraint when supported");
 
       renderAuxiliaryImagePairs(state, choices);
       ImGui::Separator();
@@ -1725,16 +1734,38 @@ void renderRegistrationSetupWindow(AppData& appData)
         registration::refreshValidation(state);
       };
 
-      if (ImGui::InputText("Output directory", &s_outputDirectoryText, ImGuiInputTextFlags_EnterReturnsTrue)) {
+      const float outputBrowseButtonWidth = ImGui::CalcTextSize("...").x + 2.0f * style.FramePadding.x;
+      const float outputDirectoryInputWidth =
+        std::max(1.0f, ImGui::CalcItemWidth() - outputBrowseButtonWidth - style.ItemSpacing.x);
+
+      ImGui::PushID("OutputDirectory");
+      ImGui::PushItemWidth(outputDirectoryInputWidth);
+      if (ImGui::InputText("##path", &s_outputDirectoryText, ImGuiInputTextFlags_EnterReturnsTrue)) {
         commitOutputDirectory();
       }
       if (ImGui::IsItemDeactivatedAfterEdit()) {
         commitOutputDirectory();
       }
+      ImGui::PopItemWidth();
+      ImGui::SameLine();
+      if (ImGui::Button("...", ImVec2(outputBrowseButtonWidth, 0.0f))) {
+        const std::filesystem::path defaultDirectory =
+          s_outputDirectoryText.empty() ? config.defaultOutputDirectory : std::filesystem::path{s_outputDirectoryText};
+        if (const std::optional<std::filesystem::path> selected = native_dialog::pickFolder(defaultDirectory)) {
+          s_outputDirectoryText = selected->string();
+          commitOutputDirectory();
+        }
+      }
+      if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
+        ImGui::SetTooltip("%s", "Select output directory");
+      }
+      ImGui::SameLine();
+      ImGui::TextUnformatted("Output directory");
+      ImGui::PopID();
       ImGui::SameLine();
       helpMarker(
         "Directory where registration outputs are written. Leave empty to use a per-job folder in the system "
-        "temporary directory.");
+        "temporary directory");
       if (s_outputDirectoryWarning) {
         ImGui::TextDisabled("%s", s_outputDirectoryWarning->c_str());
       }
@@ -1756,7 +1787,7 @@ void renderRegistrationSetupWindow(AppData& appData)
       ImGui::SameLine();
       helpMarker(
         "Initialize registration with the moving image's current initial and manual affine transforms. "
-        "After import, the computed affine replaces those transforms as the new initial affine.");
+        "After import, the computed affine replaces those transforms as the new initial affine");
       ImGui::Spacing();
       ImGui::TextUnformatted("Output data to load following registration:");
 
@@ -1764,13 +1795,13 @@ void renderRegistrationSetupWindow(AppData& appData)
         registration::refreshValidation(state);
       }
       ImGui::SameLine();
-      helpMarker("Load the baked/resampled moving image produced by the backend as a new image.");
+      helpMarker("Load the baked/resampled moving image produced by the backend as a new image");
 
       if (ImGui::Checkbox("Affine transformation matrix for moving image", &state.job.outputs.loadAffineTransform)) {
         registration::refreshValidation(state);
       }
       ImGui::SameLine();
-      helpMarker("Apply the computed affine transform to the original moving image.");
+      helpMarker("Apply the computed affine transform to the original moving image");
 
       if (ImGui::Checkbox(
             "Inverse warp field for transforming/resampling moving image to fixed image space",
@@ -1781,7 +1812,7 @@ void renderRegistrationSetupWindow(AppData& appData)
       ImGui::SameLine();
       helpMarker(
         "Load and assign the inverse sampling warp. This field is sampled in fixed/reference space and points to "
-        "moving-image sample locations.");
+        "moving-image sample locations");
 
       if (ImGui::Checkbox(
             "Forward warp field for transforming moving image landmarks and annotations to fixed image space",
@@ -1792,7 +1823,7 @@ void renderRegistrationSetupWindow(AppData& appData)
       ImGui::SameLine();
       helpMarker(
         "Load and assign the forward point warp. This field maps moving-space points into fixed/reference image "
-        "space, which is the direction needed for landmarks and annotations.");
+        "space, which is the direction needed for landmarks and annotations");
       ImGui::Separator();
     }
 
@@ -1837,7 +1868,7 @@ void renderRegistrationSetupWindow(AppData& appData)
       ImGui::SetTooltip(
         "%s",
         "Copy the raw backend command preview to the clipboard. These commands are intended for inspection and "
-        "advanced debugging.");
+        "advanced debugging");
     }
     ImGui::EndDisabled();
     ImGui::SameLine();
@@ -1884,7 +1915,7 @@ void renderRegistrationJobsWindow(
     ImGui::OpenPopup("Remove Registration Temporary Files");
   }
   ImGui::SameLine();
-  helpMarker("Remove registration files that Entropy generated in the system temporary directory.");
+  helpMarker("Remove registration files that Entropy generated in the system temporary directory");
   if (!s_temporaryCleanupMessage.empty()) {
     ImGui::SameLine();
     ImGui::TextDisabled("%s", s_temporaryCleanupMessage.c_str());
@@ -2174,7 +2205,7 @@ void renderRegistrationProgressWindow(AppData& appData)
   const ImVec2 padding = ImGui::GetStyle().WindowPadding;
   const ImVec2 pos{viewport->WorkPos.x + padding.x, viewport->WorkPos.y + viewport->WorkSize.y - padding.y};
   ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2{0.0f, 1.0f});
-  ImGui::SetNextWindowSizeConstraints(ImVec2{280.0f, 0.0f}, ImVec2{520.0f, FLT_MAX});
+  ImGui::SetNextWindowSizeConstraints(ui::scaledSize(280.0f, 0.0f), ImVec2{ui::scaledPixel(520.0f), FLT_MAX});
 
   constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                                      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |

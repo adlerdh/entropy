@@ -4,6 +4,7 @@
 #include "logic/app/Data.h"
 #include "rendering/RenderData.h"
 #include "ui/Helpers.h"
+#include "ui/Scaling.h"
 #include "ui/windows/OpacityMixerModel.h"
 
 #include <imgui/imgui.h>
@@ -31,7 +32,7 @@ ImVec2 opacityMixerContentSize(const AppData& appData, const RenderData& renderD
   }
 
   const float height = titleHeight + (2.0f * style.WindowPadding.y) + (static_cast<float>(rows) * rowHeight);
-  return ImVec2{360.0f, height};
+  return ImVec2{ui::scaledPixel(360.0f), height};
 }
 } // namespace
 

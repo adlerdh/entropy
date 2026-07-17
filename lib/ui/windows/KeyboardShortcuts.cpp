@@ -1,5 +1,7 @@
 #include "ui/windows/KeyboardShortcuts.h"
 
+#include "ui/Scaling.h"
+
 #include <imgui/imgui.h>
 
 namespace ui
@@ -124,6 +126,7 @@ const std::vector<KeyboardShortcutRow>& keyboardShortcutRows()
     {"View", "U", "Show user interface", "Toggle ImGui windows, panels, toolbar, menus, and view controls"},
 
     {"Windows", "I", "Voxel inspector", "Show or hide the Voxel Inspector panel"},
+    {"Windows", commandShortcut(","), "Application settings", "Show or hide the Application Settings window"},
 
     {"Images", "W", "Show image", "Toggle active image visibility"},
     {"Images", "Shift + E", "Show image edges", "Toggle image edge rendering"},
@@ -196,7 +199,7 @@ void renderKeyboardShortcutsWindow(bool& open)
     return;
   }
 
-  ImGui::SetNextWindowSize(ImVec2{780.0f, 560.0f}, ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(780.0f, 560.0f), ImGuiCond_FirstUseEver);
   if (!ImGui::Begin("Keyboard Shortcuts", &open)) {
     ImGui::End();
     return;

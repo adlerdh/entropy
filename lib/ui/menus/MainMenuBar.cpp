@@ -584,6 +584,9 @@ void handleFileShortcuts(const MainMenuBarCallbacks& callbacks)
       saveProject(callbacks);
     }
   }
+  else if (!io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Comma, false)) {
+    performAction(callbacks, MainMenuAction::ToggleSettingsWindow);
+  }
 }
 } // namespace main_menu
 
@@ -727,7 +730,7 @@ void renderMainMenuBar(GuiData& uiData, const MainMenuBarCallbacks& callbacks)
       main_menu::actionMenuItem(callbacks, "Voxel Inspector", MainMenuAction::ToggleInspectorWindow, "I");
       main_menu::actionMenuItem(callbacks, "Opacity Mixer", MainMenuAction::ToggleOpacityMixerWindow);
       main_menu::actionMenuItem(callbacks, "Registration Jobs", MainMenuAction::ToggleRegistrationJobsWindow);
-      main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow);
+      main_menu::actionMenuItem(callbacks, "Application Settings", MainMenuAction::ToggleSettingsWindow, "Ctrl+,");
       ImGui::Separator();
       main_menu::actionMenuItem(callbacks, "Toolbar", MainMenuAction::ToggleToolbar);
 #ifndef NDEBUG

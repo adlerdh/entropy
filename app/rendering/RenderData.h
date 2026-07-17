@@ -227,11 +227,11 @@ struct RenderData
   /// Whether isocontour opacity is multiplied by the corresponding image opacity.
   bool m_modulateIsocontourOpacityWithImageOpacity;
 
-  /// Whether grayscale image rendering uses floating-point interpolation instead of the 8-bit fixed-point path.
-  bool m_imageGrayFloatingPointInterpolation;
+  /// Policy for grayscale image floating-point linear interpolation.
+  FloatingPointLinearInterpolationPolicy m_imageGrayFloatingPointInterpolationPolicy;
 
-  /// Whether isocontour rendering uses floating-point interpolation instead of the 8-bit fixed-point path.
-  bool m_isocontourFloatingPointInterpolation;
+  /// Policy for isocontour floating-point linear interpolation.
+  FloatingPointLinearInterpolationPolicy m_isocontourFloatingPointInterpolationPolicy;
 
   bool m_opacityMixMode; //!< Whether image opacity controls are interpreted as pairwise opacity-mix controls
 

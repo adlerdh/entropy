@@ -98,3 +98,26 @@ TEST_CASE("image drawing MIP sampling parameters cover slab and max-extent modes
   REQUIRE(invalidParams.halfNumSamples == 0);
   REQUIRE(invalidParams.samplingDistanceCm == Catch::Approx(0.0f));
 }
+
+TEST_CASE("image drawing estimates screen pixels per voxel axis", "[rendering][image-drawing]")
+{
+  const Viewport windowViewport{0.0f, 0.0f, 200.0f, 100.0f};
+  REQUIRE(
+    image_drawing::maxScreenPixelsPerVoxelAxis(glm::mat4{1.0f}, glm::mat4{1.0f}, windowViewport) ==
+    Catch::Approx(100.0f));
+
+  const glm::mat4
+    viewClip_T_voxel{0.25f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+  REQUIRE(
+    image_drawing::maxScreenPixelsPerVoxelAxis(viewClip_T_voxel, glm::mat4{1.0f}, windowViewport) ==
+    Catch::Approx(25.0f));
+}
+
+TEST_CASE(
+  "image drawing automatic floating-point interpolation uses magnification threshold",
+  "[rendering][image-drawing]")
+{
+  REQUIRE_FALSE(image_drawing::automaticFloatingPointInterpolationEnabled(127.9f, 128.0f));
+  REQUIRE(image_drawing::automaticFloatingPointInterpolationEnabled(128.0f, 128.0f));
+  REQUIRE_FALSE(image_drawing::automaticFloatingPointInterpolationEnabled(0.0f, 128.0f));
+}

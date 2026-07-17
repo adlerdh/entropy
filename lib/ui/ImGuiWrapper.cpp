@@ -11,6 +11,7 @@
 #include "ui/menus/MacNativeMainMenu.h"
 #endif
 #include "ui/NativeFileDialogs.h"
+#include "ui/Scaling.h"
 #include "ui/popups/Popups.h"
 #include "ui/Style.h"
 #include "ui/toolbars/Toolbars.h"
@@ -132,11 +133,6 @@ private:
   registration::IProcessRunner& m_runner;
 };
 
-float scaledPixel(float value)
-{
-  return value * (ImGui::GetFontSize() / 16.0f);
-}
-
 struct LayoutTabMetrics
 {
   ImVec2 windowPadding;
@@ -147,12 +143,12 @@ struct LayoutTabMetrics
 
 LayoutTabMetrics layoutTabMetrics()
 {
-  const ImVec2 windowPadding{scaledPixel(k_layoutTabWindowPaddingX), scaledPixel(k_layoutTabWindowPaddingY)};
+  const ImVec2 windowPadding{ui::scaledSize(k_layoutTabWindowPaddingX, k_layoutTabWindowPaddingY)};
   const float windowHeight = ImGui::GetFrameHeight() + (2.0f * windowPadding.y);
   const float dockspaceClearance = std::max(1.0f, ImGui::GetStyle().TabBarBorderSize);
   return LayoutTabMetrics{
     .windowPadding = windowPadding,
-    .frameRounding = scaledPixel(k_layoutTabFrameRounding),
+    .frameRounding = ui::scaledPixel(k_layoutTabFrameRounding),
     .windowHeight = windowHeight,
     .innerGap = dockspaceClearance};
 }
@@ -936,7 +932,7 @@ void renderLoadingStatusWindow(const GuiData& guiData)
   }
 
   const ImGuiViewport* viewport = ImGui::GetMainViewport();
-  const float margin = scaledPixel(12.0f);
+  const float margin = ui::scaledPixel(12.0f);
   const ImVec2 pos{viewport->WorkPos.x + margin, viewport->WorkPos.y + viewport->WorkSize.y - margin};
 
   ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2{0.0f, 1.0f});
@@ -945,7 +941,7 @@ void renderLoadingStatusWindow(const GuiData& guiData)
                                      ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing |
                                      ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize;
 
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{scaledPixel(12.0f), scaledPixel(10.0f)});
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ui::scaledSize(12.0f, 10.0f));
 
   const std::string windowTitle = (title.empty() ? "Loading Images" : title) + "###LoadingStatus";
   if (ImGui::Begin(windowTitle.c_str(), nullptr, flags)) {
@@ -958,7 +954,7 @@ void renderLoadingStatusWindow(const GuiData& guiData)
       const auto byteProgress = ui::loading_status_model::loadingProgress(items);
       const float progress = ui::loading_status_model::progressFraction(byteProgress);
       const std::string progressLabel = ui::loading_status_model::progressPercentLabel(progress);
-      ImGui::ProgressBar(progress, ImVec2{scaledPixel(320.0f), 0.0f}, progressLabel.c_str());
+      ImGui::ProgressBar(progress, ImVec2{ui::scaledPixel(320.0f), 0.0f}, progressLabel.c_str());
 
       ImGui::Separator();
       for (const auto& item : items) {
@@ -1204,12 +1200,14 @@ void renderGlobalTimeControl(AppData& appData)
                                  ImGuiWindowFlags_NoDocking;
   ImGui::SetNextWindowViewport(viewport->ID);
   ImGui::SetNextWindowPos(
-    ImVec2{viewport->WorkPos.x + viewport->WorkSize.x * 0.5f, viewport->WorkPos.y + viewport->WorkSize.y - 12.0f},
+    ImVec2{
+      viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
+      viewport->WorkPos.y + viewport->WorkSize.y - ui::scaledPixel(12.0f)},
     ImGuiCond_Always,
     ImVec2{0.5f, 1.0f});
 
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{8.0f, 6.0f});
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, ui::scaledPixel(5.0f));
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ui::scaledSize(8.0f, 6.0f));
   if (ImGui::Begin("GlobalTimeControl", nullptr, flags)) {
     const uint32_t timePrecision = appData.guiData().m_timeValuePrecision;
     const float timeLabelWidth = timePointControlLabelWidth(*image, timePrecision);
@@ -1325,8 +1323,12 @@ void renderRecentEntries(
   const EntryRange& entries,
   PathsForEntry pathsForEntry,
   OpenEntry openEntry,
-  float rowWidth)
+  float rowWidth,
+  bool addTopSpacing = false)
 {
+  if (addTopSpacing) {
+    ImGui::Spacing();
+  }
   ImGui::SeparatorText(title);
   if (entries.empty()) {
     ImGui::TextDisabled("%s", emptyText);
@@ -1371,8 +1373,8 @@ void renderEmptyWorkspace(
   const ImGuiStyle& style = ImGui::GetStyle();
   ui::renderGradientBackground();
 
-  const float panelMargin = scaledPixel(16.0f);
-  const ImVec2 windowPadding{panelMargin, scaledPixel(20.0f)};
+  const float panelMargin = ui::scaledPixel(16.0f);
+  const ImVec2 windowPadding{panelMargin, ui::scaledPixel(20.0f)};
   const char* text = ProjectLoadState::Failed == projectLoadState ? "Project failed to load" : "No images loaded.";
   const std::array<std::string, 3> buttonLabels{
     std::string{ICON_FK_PICTURE_O} + " Open Image(s)...",
@@ -1385,7 +1387,7 @@ void renderEmptyWorkspace(
   }
 
   const float buttonsWidth = 3.0f * buttonWidth + 2.0f * style.ItemSpacing.x;
-  const float recentWidth = scaledPixel(560.0f);
+  const float recentWidth = ui::scaledPixel(560.0f);
   const float contentWidth = std::max({ImGui::CalcTextSize(text).x, buttonsWidth, recentWidth});
   const bool hasRecents = !settings.recentProjectFiles().empty() || !settings.recentImageGroups().empty() ||
                           !settings.recentDicomGroups().empty();
@@ -1402,7 +1404,7 @@ void renderEmptyWorkspace(
 
   const float launcherContentHeight = ImGui::GetTextLineHeight() + style.ItemSpacing.y + ImGui::GetFrameHeight();
   const ImVec2 launcherPanelSize{contentWidth + 2.0f * windowPadding.x, launcherContentHeight + 2.0f * windowPadding.y};
-  const float panelGap = scaledPixel(12.0f);
+  const float panelGap = ui::scaledPixel(12.0f);
 
   const auto visibleEntryRows = [](std::size_t entryCount) {
     return static_cast<float>(std::max<std::size_t>(1, entryCount));
@@ -1422,7 +1424,7 @@ void renderEmptyWorkspace(
     recentRows * ImGui::GetFrameHeightWithSpacing();
   const float recentNaturalPanelHeight = recentNaturalContentHeight + 2.0f * windowPadding.y;
   const float recentAvailableHeight = std::max(
-    scaledPixel(120.0f),
+    ui::scaledPixel(120.0f),
     viewport->WorkSize.y - launcherPanelSize.y - 2.0f * windowPadding.y - 3.0f * panelGap);
   const float recentMaxHeight = std::min(2.0f * viewport->WorkSize.y / 3.0f, recentAvailableHeight);
   const float recentPanelHeight = hasRecents ? std::min(recentNaturalPanelHeight, recentMaxHeight) : 0.0f;
@@ -1487,10 +1489,10 @@ void renderEmptyWorkspace(
     constexpr ImGuiWindowFlags recentFlags = flags | ImGuiWindowFlags_NoScrollWithMouse;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding);
     if (ImGui::Begin("EmptyWorkspaceRecents", nullptr, recentFlags)) {
-      const float footerHeight =
-        style.ItemSpacing.y + scaledPixel(1.0f) + style.ItemSpacing.y + ImGui::GetFrameHeight() + style.ItemSpacing.y;
+      const float footerHeight = style.ItemSpacing.y + ui::scaledPixel(1.0f) + style.ItemSpacing.y +
+                                 ImGui::GetFrameHeight() + style.ItemSpacing.y;
       const float listHeight = std::max(0.0f, ImGui::GetContentRegionAvail().y - footerHeight);
-      const bool listNeedsScrolling = recentListContentHeight > listHeight + scaledPixel(1.0f);
+      const bool listNeedsScrolling = recentListContentHeight > listHeight + ui::scaledPixel(1.0f);
       const ImGuiWindowFlags listFlags =
         listNeedsScrolling ? ImGuiWindowFlags_None : ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 
@@ -1521,7 +1523,8 @@ void renderEmptyWorkspace(
               openImageFiles(paths);
             }
           },
-          rowWidth);
+          rowWidth,
+          true);
 
         renderRecentEntries(
           "Image Groups",
@@ -1533,7 +1536,8 @@ void renderEmptyWorkspace(
               openImageFiles(paths);
             }
           },
-          rowWidth);
+          rowWidth,
+          true);
 
         renderRecentEntries(
           "DICOM Series",
@@ -1545,7 +1549,8 @@ void renderEmptyWorkspace(
               openDicomFolders(paths);
             }
           },
-          rowWidth);
+          rowWidth,
+          true);
       }
       ImGui::EndChild();
 
@@ -2673,7 +2678,7 @@ void ImGuiWrapper::renderWarpInversionProgressPopup()
     for (auto& state : states) {
       ImGui::TextUnformatted(state.description.c_str());
       const float progress = static_cast<float>(state.progress ? state.progress->load() : 0.0);
-      ImGui::ProgressBar(progress, ImVec2{scaledPixel(320.0f), 0.0f});
+      ImGui::ProgressBar(progress, ImVec2{ui::scaledPixel(320.0f), 0.0f});
       if (state.cancel && ImGui::Button("Cancel")) {
         state.cancel->store(true);
       }

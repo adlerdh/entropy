@@ -1,6 +1,7 @@
 #include "ui/windows/ImagePropertiesWindow.h"
 
 #include "ui/Helpers.h"
+#include "ui/Scaling.h"
 #include "ui/headers/Headers.h"
 #include "ui/widgets/Widgets.h"
 
@@ -57,8 +58,8 @@ void renderImagePropertiesWindow(
 {
   static const std::string kShowOpacityMixerButton = std::string(ICON_FK_SLIDERS) + "##showOpacityMixer";
 
-  setNextWindowSizeConstraintsToMainViewport(340.0f, 280.0f);
-  ImGui::SetNextWindowSize(ImVec2{460.0f, 620.0f}, ImGuiCond_FirstUseEver);
+  setNextWindowSizeConstraintsToMainViewport(ui::scaledPixel(340.0f), ui::scaledPixel(280.0f));
+  ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(460.0f, 620.0f), ImGuiCond_FirstUseEver);
   setNextDockablePanelWindowClass();
   if (ImGui::Begin("Images##Images", &(appData.guiData().m_showImagePropertiesWindow))) {
     const bool showOpacityMixer = appData.guiData().m_showOpacityBlenderWindow;

@@ -267,7 +267,6 @@ ShaderUniformSet buildShaderUniformSet()
   fsIsoUniforms.insertUniform("u_lineOpacity", UniformType::Float, 0.0f);
   fsIsoUniforms.insertUniform("u_color", UniformType::Vec3, sk_zeroVec3);
   fsIsoUniforms.insertUniform("u_contourWidth", UniformType::Float, 0.0f);
-  fsIsoUniforms.insertUniform("u_viewSize", UniformType::Vec2, sk_zeroVec2);
   fsIsoUniforms.insertUniform("u_imgMinMax", UniformType::Vec2, sk_zeroVec2);
   fsIsoUniforms.insertUniform("u_imgThresholds", UniformType::Vec2, sk_zeroVec2);
   fsIsoUniforms.insertUniform("u_imgTex", UniformType::Sampler, msk_imgTexSampler);

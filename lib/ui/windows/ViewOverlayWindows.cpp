@@ -210,7 +210,7 @@ void renderViewSettingsComboWindow(
                   ImGui::SetTooltip(
                     "%s",
                     "This image is uploaded as a 2D texture. It can be shown in 2D views but cannot be volume "
-                    "rendered.");
+                    "rendered");
                 }
                 else {
                   ImGui::SetTooltip("%s", displayAndFileName.second.c_str());
@@ -559,6 +559,7 @@ void renderViewSettingsComboWindow(
                   modes.setThreeDProjectionType(ProjectionType::Orthographic);
                   projectionType = ProjectionType::Orthographic;
                 }
+                helpTooltip("Perspective gives depth foreshortening; orthographic keeps scale constant with distance");
 
                 if (modes.getThreeDFovAngleDegrees && modes.setThreeDFovAngleDegrees) {
                   float fovDegrees = modes.getThreeDFovAngleDegrees();
@@ -578,6 +579,7 @@ void renderViewSettingsComboWindow(
                   {
                     modes.setThreeDFovAngleDegrees(fovDegrees);
                   }
+                  helpTooltip("Perspective view angle; larger values show more of the scene with stronger perspective");
                   if (!isPerspective) {
                     ImGui::EndDisabled();
                   }
@@ -596,6 +598,7 @@ void renderViewSettingsComboWindow(
                 if (ImGui::RadioButton("Crosshairs", camera3d::OrbitTargetMode::Crosshairs == targetMode)) {
                   modes.setThreeDOrbitTargetMode(camera3d::OrbitTargetMode::Crosshairs);
                 }
+                helpTooltip("Choose the pivot used by left-drag orbit rotation");
               }
 
               if (modes.getThreeDViewPositionFollowsCrosshairs && modes.setThreeDViewPositionFollowsCrosshairs) {

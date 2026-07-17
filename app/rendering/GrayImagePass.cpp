@@ -1,11 +1,15 @@
 #include "rendering/Rendering.h"
 
 #include "logic/app/Data.h"
+#include "logic/camera/CameraHelpers.h"
+#include "rendering/helpers/ImageDrawingHelpers.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/PixelEdgeRenderer.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "windowing/View.h"
+
+#include <glm/matrix.hpp>
 
 #include <functional>
 #include <list>
@@ -16,6 +20,35 @@ namespace
 
 const Uniforms::SamplerIndexType msk_imgTexSampler{0};
 const Uniforms::SamplerIndexType msk_imgCmapTexSampler{1};
+constexpr float k_imageFloatingPointInterpolationThresholdPxPerVoxel = 128.0f;
+
+bool useFloatingPointLinearInterpolation(
+  FloatingPointLinearInterpolationPolicy policy,
+  const View& view,
+  const Viewport& windowViewport,
+  const Image& image,
+  float thresholdPxPerVoxel)
+{
+  switch (policy) {
+    case FloatingPointLinearInterpolationPolicy::FixedFunction:
+      return false;
+    case FloatingPointLinearInterpolationPolicy::FloatingPoint:
+      return true;
+    case FloatingPointLinearInterpolationPolicy::Automatic: {
+      const glm::mat4 viewClip_T_voxel =
+        glm::inverse(image.transformations().pixel_T_worldDef() * helper::world_T_clip(view.camera()));
+      const float screenPixelsPerVoxel = rendering::image_drawing::maxScreenPixelsPerVoxelAxis(
+        viewClip_T_voxel,
+        view.windowClip_T_viewClip(),
+        windowViewport);
+      return rendering::image_drawing::automaticFloatingPointInterpolationEnabled(
+        screenPixelsPerVoxel,
+        thresholdPxPerVoxel);
+    }
+  }
+
+  return false;
+}
 
 } // namespace
 
@@ -68,8 +101,14 @@ void Rendering::renderGrayImageForImage(
             imageTextureLayout.dimension);
         }
         else {
+          const bool useFloatingPoint = useFloatingPointLinearInterpolation(
+            renderData.m_imageGrayFloatingPointInterpolationPolicy,
+            view,
+            m_appData.windowData().viewport(),
+            image,
+            k_imageFloatingPointInterpolationThresholdPxPerVoxel);
           const ShaderProgramType shaderType =
-            renderData.m_imageGrayFloatingPointInterpolation
+            useFloatingPoint
               ? (renderWarped ? ShaderProgramType::ImageGrayLinearFloatingWarped
                               : ShaderProgramType::ImageGrayLinearFloating)
               : (renderWarped ? ShaderProgramType::ImageGrayLinearWarped : ShaderProgramType::ImageGrayLinear);

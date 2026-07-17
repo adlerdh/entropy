@@ -1,4 +1,4 @@
-name: Release (x86_64 + arm64)
+name: Release
 
 on:
   push:
@@ -832,6 +832,7 @@ jobs:
           ## Notes
 
           - macOS builds are architecture-specific, not universal binaries.
+          - On Ubuntu, install the \`.deb\` with \`sudo apt install ./Entropy-${ENTROPY_VERSION}-Ubuntu-22.04-x86_64.deb\`, not \`dpkg -i\`, so package dependencies are resolved automatically.
           - Registration backends such as ANTs, FireANTs, and Greedy must be installed separately.
           - Prefer the platform installer/package for normal use; portable archives are intended for manual installs and testing.
 
