@@ -98,13 +98,10 @@ void setTimePointWithSynchronization(AppData& appData, const uuid& imageUid, Ima
 
 bool anyTimeSeriesPlaybackRunning(const AppData& appData)
 {
-  for (const auto& imageUid : appData.imageUidsOrdered()) {
+  return std::ranges::any_of(appData.imageUidsOrdered(), [&appData](const auto& imageUid) {
     const Image* image = appData.image(imageUid);
-    if (image && image->isTimeSeries() && image->settings().timePlaybackPlaying()) {
-      return true;
-    }
-  }
-  return false;
+    return image && image->isTimeSeries() && image->settings().timePlaybackPlaying();
+  });
 }
 } // namespace
 
@@ -1216,10 +1213,7 @@ void CallbackHandler::doCameraTranslate2d(const ViewHit& startHit, const ViewHit
       }
 
       View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
-      if (!syncedView) {
-        continue;
-      }
-      else if (syncedView->viewType() != viewToTranslate->viewType()) {
+      if (!syncedView || syncedView->viewType() != viewToTranslate->viewType()) {
         continue;
       }
 
@@ -1290,10 +1284,7 @@ void CallbackHandler::doCameraRotate2d(
       }
 
       View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
-      if (!syncedView) {
-        continue;
-      }
-      else if (syncedView->viewType() != viewToRotate->viewType()) {
+      if (!syncedView || syncedView->viewType() != viewToRotate->viewType()) {
         continue;
       }
 
@@ -1382,10 +1373,7 @@ void CallbackHandler::doCameraRotate3d(
       }
 
       View* syncedView = m_appData.windowData().getCurrentView(syncedViewUid);
-      if (!syncedView) {
-        continue;
-      }
-      else if (syncedView->viewType() != viewToRotate->viewType()) {
+      if (!syncedView || syncedView->viewType() != viewToRotate->viewType()) {
         continue;
       }
 
@@ -1594,10 +1582,7 @@ void CallbackHandler::doCameraRotate3d(const uuid& viewUid, const glm::quat& cam
       }
 
       View* syncedView = windowData.getCurrentView(syncedViewUid);
-      if (!syncedView) {
-        continue;
-      }
-      else if (syncedView->viewType() != view->viewType()) {
+      if (!syncedView || syncedView->viewType() != view->viewType()) {
         continue;
       }
 
@@ -1643,10 +1628,7 @@ void CallbackHandler::handleSetViewForwardDirection(const uuid& viewUid, const g
       }
 
       View* syncedView = windowData.getCurrentView(syncedViewUid);
-      if (!syncedView) {
-        continue;
-      }
-      else if (syncedView->viewType() != view->viewType()) {
+      if (!syncedView || syncedView->viewType() != view->viewType()) {
         continue;
       }
 
@@ -2185,10 +2167,7 @@ void CallbackHandler::toggleSegGlobalOutline()
       m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::ViewPixel;
       break;
     }
-    case SegmentationOutlineStyle::ViewPixel: {
-      m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
-      break;
-    }
+    case SegmentationOutlineStyle::ViewPixel:
     case SegmentationOutlineStyle::ImageVoxel: {
       m_appData.renderData().m_segOutlineStyle = SegmentationOutlineStyle::Disabled;
       break;

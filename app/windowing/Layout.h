@@ -24,8 +24,8 @@ public:
   explicit Layout(bool isLightbox);
   Layout(const Layout&) = delete;
   Layout& operator=(const Layout&) = delete;
-  Layout(Layout&&) noexcept;
-  Layout& operator=(Layout&& other) noexcept;
+  Layout(Layout&&) noexcept = default;
+  Layout& operator=(Layout&& other) noexcept = default;
   ~Layout() = default;
 
   /** @brief Replace this layout's contents without changing its UID.

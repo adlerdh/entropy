@@ -120,7 +120,9 @@ std::optional<glm::dmat4> readItkAffine(const std::vector<std::string>& lines)
   glm::dmat4 matrix{1.0};
   for (int row = 0; row < dimension; ++row) {
     for (int column = 0; column < dimension; ++column) {
-      matrix[column][row] = parameters->at(static_cast<std::size_t>(row * dimension + column));
+      const auto index =
+        static_cast<std::size_t>(row) * static_cast<std::size_t>(dimension) + static_cast<std::size_t>(column);
+      matrix[column][row] = parameters->at(index);
     }
   }
 
@@ -132,7 +134,7 @@ std::optional<glm::dmat4> readItkAffine(const std::vector<std::string>& lines)
   }
 
   glm::dvec4 translation{0.0, 0.0, 0.0, 0.0};
-  const std::size_t translationOffset = static_cast<std::size_t>(dimension * dimension);
+  const std::size_t translationOffset = static_cast<std::size_t>(dimension) * static_cast<std::size_t>(dimension);
   for (int row = 0; row < dimension; ++row) {
     translation[row] = parameters->at(translationOffset + static_cast<std::size_t>(row));
   }

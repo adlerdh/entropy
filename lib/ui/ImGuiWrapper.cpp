@@ -638,13 +638,11 @@ std::string layoutTabBaseLabel(const Layout& layout, const std::string& displayN
       return "1-Up";
     case LayoutKind::MultiImageGrid:
     case LayoutKind::AxCorSagByImage:
+    case LayoutKind::Custom:
+    case LayoutKind::NumElements:
       return displayName;
     case LayoutKind::Lightbox:
       return "Lightbox";
-    case LayoutKind::Custom:
-      return displayName;
-    case LayoutKind::NumElements:
-      return displayName;
   }
   return displayName;
 }
@@ -1115,13 +1113,10 @@ void updateTimePlayback(AppData& appData, const uuids::uuid& imageUid, Image& im
 
 bool anyTimeSeriesPlaybackRunning(const AppData& appData)
 {
-  for (const uuids::uuid& imageUid : appData.imageUidsOrdered()) {
+  return std::ranges::any_of(appData.imageUidsOrdered(), [&appData](const uuids::uuid& imageUid) {
     const Image* image = appData.image(imageUid);
-    if (image && image->isTimeSeries() && image->settings().timePlaybackPlaying()) {
-      return true;
-    }
-  }
-  return false;
+    return image && image->isTimeSeries() && image->settings().timePlaybackPlaying();
+  });
 }
 
 void updateAllTimeSeriesPlayback(AppData& appData)
@@ -1909,13 +1904,10 @@ bool ImGuiWrapper::materializeRegistrationInputs(registration::JobSpec& job)
     spdlog::info("Exported registration initial affine transform to {}", job.initialAffineTransform);
   }
 
-  for (const registration::InputArtifact& artifact : registration::buildInputArtifactPlan(job)) {
-    if (artifact.exportRequired && !exportArtifact(artifact)) {
-      return false;
-    }
-  }
-
-  return true;
+  const std::vector<registration::InputArtifact> inputArtifacts = registration::buildInputArtifactPlan(job);
+  return std::ranges::all_of(inputArtifacts, [&exportArtifact](const registration::InputArtifact& artifact) {
+    return !artifact.exportRequired || exportArtifact(artifact);
+  });
 }
 
 void ImGuiWrapper::storeFuture(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)
@@ -3169,12 +3161,9 @@ void ImGuiWrapper::render()
   };
 
   auto projectHasAnnotations = [this]() {
-    for (const auto& imageUid : m_appData.imageUidsOrdered()) {
-      if (!m_appData.annotationsForImage(imageUid).empty()) {
-        return true;
-      }
-    }
-    return false;
+    return std::ranges::any_of(m_appData.imageUidsOrdered(), [this](const auto& imageUid) {
+      return !m_appData.annotationsForImage(imageUid).empty();
+    });
   };
 
   auto saveAllAnnotations = [projectHasAnnotations, this]() {
@@ -3851,7 +3840,6 @@ void ImGuiWrapper::render()
         case MainMenuAction::ToggleTimePlayback:
           return loaded && globalTimeControlImageUid(m_appData).has_value();
         case MainMenuAction::ToggleLayoutTabs:
-          return canUseProjectActions;
         case MainMenuAction::ResetProjectSettings:
           return canUseProjectActions;
         case MainMenuAction::PreviousForegroundLabel:
@@ -3918,7 +3906,6 @@ void ImGuiWrapper::render()
                   imageIsOnlyNonWarpImage(m_appData, *activeImageUid())) &&
                  m_appData.imageToActiveInverseWarpUid(*activeImageUid()).has_value();
         case MainMenuAction::ShowRegistrationSetupWindow:
-          return canUseProjectActions;
         case MainMenuAction::ToggleRegistrationJobsWindow:
           return canUseProjectActions;
         case MainMenuAction::PaintSegmentationFromAnnotation:

@@ -137,7 +137,7 @@ void sor(
   float /*beta*/
 )
 {
-  const std::size_t N = static_cast<const std::size_t>(dims.x * dims.y * dims.z);
+  const auto N = static_cast<std::size_t>(dims.x) * static_cast<std::size_t>(dims.y) * static_cast<std::size_t>(dims.z);
 
   std::vector<float> imageNorm(N, 0.0f);
 

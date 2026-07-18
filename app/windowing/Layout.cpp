@@ -42,34 +42,6 @@ Layout::Layout(bool isLightbox)
   setDefaultRenderAllImages(false);
 }
 
-Layout::Layout(Layout&& other) noexcept
-  : ControlFrame(other)
-  , // move base class
-  m_uid(other.m_uid)
-  , m_isLightbox(other.m_isLightbox)
-  , m_kind(other.m_kind)
-  , m_displayName(std::move(other.m_displayName))
-  , m_views(std::move(other.m_views))
-  , m_orderedViewUids(std::move(other.m_orderedViewUids))
-  , m_cameraSyncGroups(std::move(other.m_cameraSyncGroups))
-{
-}
-
-Layout& Layout::operator=(Layout&& other) noexcept
-{
-  if (this != &other) {
-    ControlFrame::operator=(other); // move-assign base class
-    m_uid = other.m_uid;
-    m_isLightbox = other.m_isLightbox;
-    m_kind = other.m_kind;
-    m_displayName = std::move(other.m_displayName);
-    m_views = std::move(other.m_views);
-    m_orderedViewUids = std::move(other.m_orderedViewUids);
-    m_cameraSyncGroups = std::move(other.m_cameraSyncGroups);
-  }
-  return *this;
-}
-
 void Layout::replaceContentsPreservingUid(Layout&& other) noexcept
 {
   const uuid uid = m_uid;

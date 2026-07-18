@@ -950,14 +950,10 @@ bool shouldDefaultToOneUpLayout(const AppData& appData)
     return false;
   }
 
-  for (const uuid& imageUid : appData.imageUidsOrdered()) {
+  return std::ranges::all_of(appData.imageUidsOrdered(), [&appData](const uuid& imageUid) {
     const Image* image = appData.image(imageUid);
-    if (!image || !isLinearOrPlanarImage(image->header())) {
-      return false;
-    }
-  }
-
-  return true;
+    return image && isLinearOrPlanarImage(image->header());
+  });
 }
 
 std::optional<std::size_t> firstLayoutIndexWithKind(const std::vector<Layout>& layouts, LayoutKind kind)

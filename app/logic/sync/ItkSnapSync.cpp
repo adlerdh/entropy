@@ -41,6 +41,13 @@ constexpr double sk_cursorEpsilonMm = 1.0e-4;
 constexpr double sk_zoomEpsilon = 1.0e-4;
 constexpr float sk_panEpsilonMm = 1.0e-3f;
 
+enum class IgnoredIpcHeaderReason
+{
+  UnsupportedProtocol,
+  OwnMessage,
+  NoActiveSender
+};
+
 std::int64_t currentProcessId()
 {
 #if defined(_WIN32)
@@ -48,6 +55,25 @@ std::int64_t currentProcessId()
 #else
   return static_cast<std::int64_t>(getpid());
 #endif
+}
+
+void logIgnoredIpcHeader([[maybe_unused]] const ItkSnapIpcHeader& header, IgnoredIpcHeaderReason reason)
+{
+  if (reason == IgnoredIpcHeaderReason::UnsupportedProtocol) {
+    SPDLOG_TRACE(
+      "Ignoring ITK-SNAP IPC header with protocol version 0x{:x}: senderPid={} messageId={}",
+      static_cast<unsigned int>(header.version),
+      header.senderPid,
+      header.messageId);
+    return;
+  }
+
+  if (reason == IgnoredIpcHeaderReason::OwnMessage) {
+    SPDLOG_TRACE("Ignoring own ITK-SNAP IPC header: senderPid={} messageId={}", header.senderPid, header.messageId);
+    return;
+  }
+
+  SPDLOG_TRACE("ITK-SNAP IPC header has no active sender: messageId={}", header.messageId);
 }
 
 bool nearlyEqual(const glm::dvec3& a, const glm::dvec3& b)
@@ -539,26 +565,20 @@ bool ItkSnapSync::readMessage(
     m_lastObservedSenderPid = header->senderPid;
     m_lastObservedMessageId = header->messageId;
 
+    std::optional<IgnoredIpcHeaderReason> ignoredReason;
     if (!isSupportedProtocolVersion(header->version)) {
-      if (changed) {
-        SPDLOG_TRACE(
-          "Ignoring ITK-SNAP IPC header with protocol version 0x{:x}: senderPid={} messageId={}",
-          static_cast<unsigned int>(header->version),
-          header->senderPid,
-          header->messageId);
-      }
+      ignoredReason = IgnoredIpcHeaderReason::UnsupportedProtocol;
     }
     else if (header->senderPid == m_processId) {
-      if (changed) {
-        SPDLOG_TRACE(
-          "Ignoring own ITK-SNAP IPC header: senderPid={} messageId={}",
-          header->senderPid,
-          header->messageId);
-      }
+      ignoredReason = IgnoredIpcHeaderReason::OwnMessage;
     }
     else if (header->senderPid == -1) {
+      ignoredReason = IgnoredIpcHeaderReason::NoActiveSender;
+    }
+
+    if (ignoredReason) {
       if (changed) {
-        SPDLOG_TRACE("ITK-SNAP IPC header has no active sender: messageId={}", header->messageId);
+        logIgnoredIpcHeader(*header, *ignoredReason);
       }
     }
     else {

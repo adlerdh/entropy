@@ -1,10 +1,8 @@
 Checks: >
   -*,
   bugprone-*,
-  -bugprone-branch-clone,
   -bugprone-easily-swappable-parameters,
   -bugprone-exception-escape,
-  -bugprone-misplaced-widening-cast,
   -bugprone-narrowing-conversions,
   -bugprone-unchecked-optional-access,
   clang-analyzer-*,
@@ -81,7 +79,7 @@ Checks: >
   readability-simplify-boolean-expr,
   readability-simplify-subscript-expr,
   readability-static-accessed-through-instance,
-  -readability-use-anyofallof
+  readability-use-anyofallof
 WarningsAsErrors: ''
 HeaderFilterRegex: '^(app|lib)/'
 SystemHeaders: false

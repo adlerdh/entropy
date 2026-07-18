@@ -391,7 +391,7 @@ std::optional<ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(con
   std::vector<clipboard::ColoredTextRun> richRuns;
   const int exportWidth = x1 - x0;
   const int exportHeight = y1 - y0;
-  text.reserve(static_cast<size_t>((exportWidth + 1) * exportHeight));
+  text.reserve((static_cast<std::size_t>(exportWidth) + 1u) * static_cast<std::size_t>(exportHeight));
   html.reserve(text.capacity() * 8u);
   richRuns.reserve(text.capacity());
 
@@ -430,7 +430,8 @@ std::optional<ClipboardPayload> AsciiRenderer::exportClipboardPayloadForView(con
 
   for (int y = y1 - 1; y >= y0; --y) {
     for (int x = x0; x < x1; ++x) {
-      const std::size_t cellIndex = static_cast<size_t>(y * m_asciiCellMeanTexSize.x + x);
+      const auto cellIndex =
+        static_cast<std::size_t>(y) * static_cast<std::size_t>(m_asciiCellMeanTexSize.x) + static_cast<std::size_t>(x);
       const glm::vec4 srcPM = cells[cellIndex];
       if (srcPM.a < 0.001f) {
         text.push_back(' ');

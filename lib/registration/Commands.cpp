@@ -120,8 +120,9 @@ std::string greedyMetric(Metric metric)
     case Metric::WNCC:
       return "WNCC";
     default:
-      return "WNCC";
+      break;
   }
+  return "WNCC";
 }
 
 std::vector<std::string> greedyMetricArguments(const JobSpec& job)
@@ -261,7 +262,6 @@ int greedyAffineDof(TransformModel model)
     case TransformModel::RigidAffine:
     case TransformModel::AffineDeformable:
     case TransformModel::RigidAffineDeformable:
-      return 12;
     case TransformModel::Translation:
     case TransformModel::Deformable:
     case TransformModel::BSplineDisplacement:

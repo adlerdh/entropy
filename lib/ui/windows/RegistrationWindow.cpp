@@ -703,7 +703,6 @@ std::string transformDisplayLabel(registration::Backend backend, registration::T
       case registration::TransformModel::Similarity:
         return "Similarity";
       case registration::TransformModel::Affine:
-        return "Affine";
       case registration::TransformModel::RigidAffine:
         return "Affine";
       case registration::TransformModel::Deformable:

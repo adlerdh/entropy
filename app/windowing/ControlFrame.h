@@ -29,6 +29,10 @@ public:
     IntensityProjectionMode ipMode,
     UiControls uiControls);
 
+  ControlFrame(const ControlFrame&) = default;
+  ControlFrame& operator=(const ControlFrame&) = default;
+  ControlFrame(ControlFrame&&) noexcept = default;
+  ControlFrame& operator=(ControlFrame&&) noexcept = default;
   virtual ~ControlFrame() = default;
 
   /** @brief Set viewport bounds in enclosing-window clip coordinates. */

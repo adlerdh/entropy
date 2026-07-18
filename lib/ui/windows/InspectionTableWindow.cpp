@@ -1772,13 +1772,12 @@ void renderInspectionWindowWithTable(
       ImGui::EndTable();
     }
 
-    if (ImGui::BeginPopupContextWindow()) {
-      // Show context menu on right-button click:
-      contextMenu();
-      ImGui::EndPopup();
+    bool showContextMenu = ImGui::BeginPopupContextWindow();
+    if (!showContextMenu) {
+      showContextMenu = ImGui::BeginPopup("selectionPopup");
     }
-    else if (ImGui::BeginPopup("selectionPopup")) {
-      // Show context menu if the user has clicked the popup button:
+    if (showContextMenu) {
+      // Show the same context menu for right-click and popup-button triggers.
       contextMenu();
       ImGui::EndPopup();
     }

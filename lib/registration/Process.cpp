@@ -605,10 +605,7 @@ runPosixShellCommand(const CommandSpec& command, const ProcessOptions& options, 
     }
 
     const pid_t waitResult = waitpid(pid, &status, WNOHANG);
-    if (waitResult == pid) {
-      processExited = true;
-    }
-    else if (waitResult < 0 && errno == ECHILD) {
+    if (waitResult == pid || (waitResult < 0 && errno == ECHILD)) {
       processExited = true;
     }
   }

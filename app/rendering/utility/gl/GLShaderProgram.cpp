@@ -10,6 +10,7 @@
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
+#include <array>
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -29,13 +30,13 @@ GLShaderProgram::~GLShaderProgram()
   GLint numAttachedShaders = 0;
   glGetProgramiv(m_handle, GL_ATTACHED_SHADERS, &numAttachedShaders);
 
-  std::vector<GLuint> shaders(static_cast<size_t>(numAttachedShaders));
+  std::array<GLuint, 8> shaders{};
   GLsizei actualShaderCount = 0;
-  glGetAttachedShaders(m_handle, numAttachedShaders, &actualShaderCount, &shaders[0]);
+  glGetAttachedShaders(m_handle, static_cast<GLsizei>(shaders.size()), &actualShaderCount, shaders.data());
 
   for (int i = 0; i < actualShaderCount; ++i) {
-    if (glIsShader(shaders[uint32_t(i)])) {
-      glDetachShader(m_handle, shaders[uint32_t(i)]);
+    if (glIsShader(shaders[static_cast<std::size_t>(i)])) {
+      glDetachShader(m_handle, shaders[static_cast<std::size_t>(i)]);
     }
   }
 

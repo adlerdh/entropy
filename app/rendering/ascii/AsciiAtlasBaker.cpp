@@ -83,7 +83,8 @@ float computeGlyphCoverage(
       const float fx = slotPxXf - static_cast<float>(c0);
 
       auto px = [&](int r, int c) -> float {
-        return static_cast<float>(slotPixels[static_cast<size_t>(r * slotW + c)]) / 255.0f;
+        const auto index = static_cast<std::size_t>(r) * static_cast<std::size_t>(slotW) + static_cast<std::size_t>(c);
+        return static_cast<float>(slotPixels[index]) / 255.0f;
       };
       const float sdfVal = px(r0, c0) * (1.0f - fx) * (1.0f - fy) + px(r0, c1) * fx * (1.0f - fy) +
                            px(r1, c0) * (1.0f - fx) * fy + px(r1, c1) * fx * fy;
@@ -156,7 +157,9 @@ std::vector<GlyphProfile> computeGlyphSpatialProfiles(
         const float fx = slotPxXf - static_cast<float>(c0);
 
         auto px = [&](int r, int c) -> float {
-          return static_cast<float>(slot[static_cast<size_t>(r * slotW + c)]) / 255.0f;
+          const auto index =
+            static_cast<std::size_t>(r) * static_cast<std::size_t>(slotW) + static_cast<std::size_t>(c);
+          return static_cast<float>(slot[index]) / 255.0f;
         };
         const float sdfVal = px(r0, c0) * (1.0f - fx) * (1.0f - fy) + px(r0, c1) * fx * (1.0f - fy) +
                              px(r1, c0) * (1.0f - fx) * fy + px(r1, c1) * fx * fy;
@@ -323,7 +326,9 @@ std::vector<BakedGlyph> bakeGlyphs(
         for (int col = 0; col < sdfW; ++col) {
           const int dstCol = dstColTopLeft + col;
           if (dstCol < 0 || dstCol >= slotW) continue;
-          slotPixels[static_cast<size_t>(dstRow * slotW + dstCol)] = sdf[row * sdfW + col];
+          const auto dstIndex =
+            static_cast<std::size_t>(dstRow) * static_cast<std::size_t>(slotW) + static_cast<std::size_t>(dstCol);
+          slotPixels[dstIndex] = sdf[row * sdfW + col];
         }
       }
       stbtt_FreeSDF(sdf, nullptr);

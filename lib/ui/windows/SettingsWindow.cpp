@@ -2693,8 +2693,6 @@ static void renderSettingsPage(
       renderUiSettingsFileSection(persistenceCallbacks);
       break;
     case GuiData::SettingsTab::Views:
-      renderViewsTab(appData, renderData, recenterAllViews);
-      break;
     case GuiData::SettingsTab::Annotations:
       renderViewsTab(appData, renderData, recenterAllViews);
       break;
