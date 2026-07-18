@@ -151,8 +151,6 @@ AssemblyManager::AssemblyManager(
 {
 }
 
-AssemblyManager::~AssemblyManager() = default;
-
 void AssemblyManager::initializeGL()
 {
   m_impl->initialize();

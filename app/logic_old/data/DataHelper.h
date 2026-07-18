@@ -93,7 +93,7 @@ std::pair<gui::ViewSliderParams, gui::ViewSliderParams> viewScrollBarParams(
  *
  * @return
  *
- * @todo this function returns NAN value for off-screen views!
+ * @todo this function returns NaN for off-screen views
  */
 gui::ViewSliderParams viewSliceSliderParams(
   DataManager&,

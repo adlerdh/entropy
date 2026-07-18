@@ -25,7 +25,6 @@
 
 #include <glm/glm.hpp>
 #include <imgui/imgui.h>
-#include <math.h>
 #include <spdlog/spdlog.h>
 
 #define GLFW_INCLUDE_NONE
@@ -34,6 +33,7 @@
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -605,7 +605,8 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
   s_imageScaleEffectivePrevHit = std::nullopt;
   s_imageScaleViewAxisConstraint = std::nullopt;
 
-  double mindowCursorPosX = NAN, mindowCursorPosY = NAN;
+  double mindowCursorPosX = std::numeric_limits<double>::quiet_NaN();
+  double mindowCursorPosY = std::numeric_limits<double>::quiet_NaN();
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
 
   const glm::vec2 windowCursorPos = helper::window_T_mindow(
@@ -668,7 +669,8 @@ void scrollCallback(GLFWwindow* window, double scrollOffsetX, double scrollOffse
   const bool shiftDown = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
   const bool altDown = ImGui::IsKeyDown(ImGuiKey_LeftAlt) || ImGui::IsKeyDown(ImGuiKey_RightAlt);
 
-  double mindowCursorPosX = NAN, mindowCursorPosY = NAN;
+  double mindowCursorPosX = std::numeric_limits<double>::quiet_NaN();
+  double mindowCursorPosY = std::numeric_limits<double>::quiet_NaN();
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
   cursorPosCallback(window, mindowCursorPosX, mindowCursorPosY);
 
@@ -740,7 +742,8 @@ void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int 
     return;
   }
 
-  double mindowCursorPosX = NAN, mindowCursorPosY = NAN;
+  double mindowCursorPosX = std::numeric_limits<double>::quiet_NaN();
+  double mindowCursorPosY = std::numeric_limits<double>::quiet_NaN();
   glfwGetCursorPos(window, &mindowCursorPosX, &mindowCursorPosY);
 
   const glm::vec2 windowCursorPos = helper::window_T_mindow(

@@ -43,7 +43,7 @@ public:
     std::unique_ptr<ShaderProgramContainer>,
     std::shared_ptr<BlankTextures>);
 
-  ~AppController();
+  ~AppController() = default;
 
   void showMainWindow();
 

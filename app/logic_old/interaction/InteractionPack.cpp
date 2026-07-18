@@ -30,8 +30,6 @@ InteractionPack::InteractionPack(
   setActiveHandlerType(InteractionHandlerType::Crosshairs);
 }
 
-// InteractionPack::~InteractionPack() = default;
-
 const gui::ViewType& InteractionPack::getViewType() const
 {
   return m_viewType;

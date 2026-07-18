@@ -1,12 +1,11 @@
 #include "logic/segmentation/Poisson.h"
 
-#include <cstddef>
 #include <glm/glm.hpp>
-#include <math.h>
 #include <spdlog/spdlog.h>
 
 #include <cmath>
-// #include <limits>
+#include <cstddef>
+#include <limits>
 
 namespace
 {
@@ -150,7 +149,10 @@ void sor(
   int isw = 0, jsw = 0, ksw = 0;
 
   float omega = 1.0f;
-  float val = NAN, pot = NAN, grad = NAN, weight = NAN;
+  float val = std::numeric_limits<float>::quiet_NaN();
+  float pot = std::numeric_limits<float>::quiet_NaN();
+  float grad = std::numeric_limits<float>::quiet_NaN();
+  float weight = std::numeric_limits<float>::quiet_NaN();
 
   float resid = 0.0f;
   float total = 0.0f;

@@ -41,7 +41,7 @@ public:
   ActionManager(ActionManager&&) = delete;
   ActionManager& operator=(ActionManager&&) = delete;
 
-  ~ActionManager();
+  ~ActionManager() = default;
 
   void setSlideStackFrameProvider(GetterType<CoordinateFrame>);
   void setCrosshairsFrameProvider(GetterType<CoordinateFrame>);

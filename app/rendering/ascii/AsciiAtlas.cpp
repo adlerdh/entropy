@@ -35,8 +35,6 @@ std::vector<GlyphProfile> AsciiAtlas::computeRenderedSpatialProfiles(glm::vec2 c
   return computeGlyphSpatialProfiles(m_slotPixels, m_slotPx, kPadding, kPixDistScale, kOnedgeValue, cellSizePx);
 }
 
-AsciiAtlas::AsciiAtlas() = default;
-
 AsciiAtlas::~AsciiAtlas()
 {
   destroy();

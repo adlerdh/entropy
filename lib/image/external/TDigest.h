@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <limits>
 #include <numbers>
 #include <queue>
 #include <utility>
@@ -432,12 +433,12 @@ public:
   {
     if (q < 0 || q > 1) {
       // LOG(ERROR) << "q should be in [0,1], got " << q;
-      return NAN;
+      return std::numeric_limits<Value>::quiet_NaN();
     }
 
     if (processed_.size() == 0) {
       // no sorted means no data, no way to get a quantile
-      return NAN;
+      return std::numeric_limits<Value>::quiet_NaN();
     }
     else if (processed_.size() == 1) {
       // with one data point, all quantiles lead to Rome

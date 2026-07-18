@@ -1,14 +1,11 @@
 #include "logic/camera/CameraHelpers.h"
-
-#include <math.h>
-
-#include "common/CoordinateFrame.h"
-#include "common/Viewport.h"
-
 #include "logic/camera/Camera.h"
 #include "logic/camera/MathUtility.h"
 #include "logic/camera/OrthogonalProjection.h"
 #include "logic/camera/PerspectiveProjection.h"
+
+#include "common/CoordinateFrame.h"
+#include "common/Viewport.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -28,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <limits>
 
 namespace
 {
@@ -715,7 +713,7 @@ worldCameraPlaneIntersection(const Camera& camera, const glm::vec2& ndcRayPos, c
   const glm::vec3 worldRayPos = world_T_ndc(camera, glm::vec3{ndcRayPos, sk_ndcNearPlane});
   const glm::vec3 worldRayDir = worldRayDirection(camera, ndcRayPos);
 
-  float intersectionDistance = NAN;
+  float intersectionDistance = std::numeric_limits<float>::quiet_NaN();
 
   bool intersected =
     glm::intersectRayPlane(worldRayPos, worldRayDir, worldPlanePos, worldPlaneNormal, intersectionDistance);

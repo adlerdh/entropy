@@ -51,7 +51,6 @@
 
 #else // use vGizmoMath
 
-    #include <math.h>
     #include <cmath>
     #include <stdint.h>
     #define VGM_NAMESPACE vgm

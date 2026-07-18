@@ -1,8 +1,8 @@
 #include "ui/Style.h"
 
-#include <math.h>
-
 #include <algorithm>
+#include <cmath>
+#include <limits>
 
 void applyCustomLightStyle(bool bStyleDark_, float alpha_)
 {
@@ -53,7 +53,9 @@ void applyCustomLightStyle(bool bStyleDark_, float alpha_)
   if (bStyleDark_) {
     for (int i = 0; i < ImGuiCol_COUNT; i++) {
       ImVec4& col = colors[i];
-      float H = NAN, S = NAN, V = NAN;
+      float H = std::numeric_limits<float>::quiet_NaN();
+      float S = std::numeric_limits<float>::quiet_NaN();
+      float V = std::numeric_limits<float>::quiet_NaN();
       ImGui::ColorConvertRGBtoHSV(col.x, col.y, col.z, H, S, V);
 
       if (S < 0.1f) {

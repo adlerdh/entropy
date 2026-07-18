@@ -1092,8 +1092,8 @@ void AnnotationStateMachine::flipSelectedAnnotation(const FlipDirection& flipDir
   // Compute annotation centroid (in annotation plane coordinates)
   glm::vec2 polyCentroid{0.0f, 0.0f};
 
-  for (auto vertice : vertices) {
-    polyCentroid += vertice;
+  for (auto vertex : vertices) {
+    polyCentroid += vertex;
   }
 
   polyCentroid = (1.0f / static_cast<float>(vertices.size())) * polyCentroid;

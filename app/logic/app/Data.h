@@ -68,7 +68,7 @@ class AppData
 
 public:
   AppData();
-  ~AppData();
+  ~AppData() = default;
 
   const AppSettings& settings() const;
   AppSettings& settings();

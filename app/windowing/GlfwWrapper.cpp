@@ -7,6 +7,7 @@
 #include "ui/ImGuiWrapper.h"
 #include "windowing/GlfwCallbacks.h"
 #include "windowing/WindowData.h"
+
 #if defined(__linux__)
 #include "windowing/EntropyIcon.h"
 #endif
@@ -14,24 +15,24 @@
 #include "ui/menus/WinNativeMainMenu.h"
 #endif
 
-#include <math.h>
 #include <spdlog/spdlog.h>
 
 #include <glm/vec2.hpp>
-
-#include <algorithm>
-#include <cmath>
-#include <cstdlib>
-#include <iterator>
-#include <optional>
-#include <string>
-#include <utility>
 
 #include <glad/glad.h>
 #include <imgui.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <limits>
+#include <optional>
+#include <string>
+#include <utility>
 
 namespace
 {
@@ -432,7 +433,8 @@ void GlfwWrapper::init()
   glfwGetFramebufferSize(m_window, &fbWidth, &fbHeight);
   framebufferSizeCallback(m_window, fbWidth, fbHeight);
 
-  float xscale = NAN, yscale = NAN;
+  float xscale = std::numeric_limits<float>::quiet_NaN();
+  float yscale = std::numeric_limits<float>::quiet_NaN();
   glfwGetWindowContentScale(m_window, &xscale, &yscale);
   windowContentScaleCallback(m_window, xscale, yscale);
 

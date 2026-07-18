@@ -163,8 +163,6 @@ AppController::AppController(
   createUiConnections();
 }
 
-AppController::~AppController() = default;
-
 void AppController::initialize()
 {
   if (

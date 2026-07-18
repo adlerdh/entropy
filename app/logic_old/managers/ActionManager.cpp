@@ -94,8 +94,6 @@ ActionManager::ActionManager(
   m_surface.create();
 }
 
-ActionManager::~ActionManager() = default;
-
 void ActionManager::setSlideStackFrameProvider(GetterType<CoordinateFrame> provider)
 {
   m_slideStackFrameProvider = provider;

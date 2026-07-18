@@ -1,9 +1,6 @@
 #include "logic/app/Data.h"
-
-#include <math.h>
-#include <spdlog/fmt/std.h>
-#include "common/UuidUtility.h"
 #include "logic/camera/CameraHelpers.h"
+#include "common/UuidUtility.h"
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -12,11 +9,13 @@
 #include <cmrc/cmrc.hpp>
 
 #include <spdlog/fmt/ostr.h>
+#include <spdlog/fmt/std.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <limits>
 #include <sstream>
 
 CMRC_DECLARE(colormaps);
@@ -67,8 +66,6 @@ AppData::AppData()
   // m_windowData.setWorldCrosshairsProvider([this](){ return m_state.worldCrosshairs(); });
   spdlog::debug("Constructed application data");
 }
-
-AppData::~AppData() = default;
 
 void AppData::setProject(serialize::EntropyProject project)
 {
@@ -1403,7 +1400,8 @@ void AppData::setRainbowColorsForAllImages()
     if (Image* img = image(imageUid)) {
       const float a = (1.0f + sk_startHue + static_cast<float>(i) / N);
 
-      float fractPart = NAN, intPart = NAN;
+      float fractPart = std::numeric_limits<float>::quiet_NaN();
+      float intPart = std::numeric_limits<float>::quiet_NaN();
       fractPart = std::modf(a, &intPart);
 
       const float hue = 360.0f * fractPart;

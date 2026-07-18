@@ -33,7 +33,7 @@ public:
   static constexpr float kPixDistScale = 32.0f;
   static constexpr uint8_t kOnedgeValue = 128;
 
-  AsciiAtlas();
+  AsciiAtlas() = default;
   ~AsciiAtlas();
 
   // Non-copyable, movable

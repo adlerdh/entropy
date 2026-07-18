@@ -1,8 +1,8 @@
 #include "logic/annotation/SerializeAnnot.h"
-
-#include <math.h>
 #include "common/Exception.hpp"
 
+#include <cmath>
+#include <limits>
 #include <vector>
 
 namespace
@@ -133,7 +133,7 @@ void from_json(const json& j, Annotation& annot)
   std::array<float, 3> planeNormal;
   j.at("subjectPlaneNormal").get_to(planeNormal);
 
-  float planeOffset = NAN;
+  float planeOffset = std::numeric_limits<float>::quiet_NaN();
   j.at("subjectPlaneOffset").get_to(planeOffset);
 
   const glm::vec4 subjectPlaneEquation{planeNormal[0], planeNormal[1], planeNormal[2], planeOffset};

@@ -293,7 +293,12 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
 
   SPDLOG_TRACE("Loaded image color map \"{}\" (\"{}\") with {} colors", briefName, technicalName, colors.size());
 
-  return ImageColorMap(briefName, technicalName, description, InterpolationMode::Linear, std::move(colors));
+  return ImageColorMap(
+    std::move(briefName),
+    std::move(technicalName),
+    std::move(description),
+    InterpolationMode::Linear,
+    std::move(colors));
 }
 
 ImageColorMap ImageColorMap::createLinearImageColorMap(
@@ -318,7 +323,7 @@ ImageColorMap ImageColorMap::createLinearImageColorMap(
     colors[i] = startColor + static_cast<float>(i) / Nm1 * (endColor - startColor);
   }
 
-  ImageColorMap map(briefName, technicalName, description, InterpolationMode::Linear, colors);
+  ImageColorMap map(briefName, technicalName, description, InterpolationMode::Linear, std::move(colors));
 
   std::vector<glm::vec4> previewColors(sk_previewSize);
 

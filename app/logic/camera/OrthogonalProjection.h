@@ -5,7 +5,7 @@
 class OrthographicProjection final : public Projection
 {
 public:
-  explicit OrthographicProjection();
+  explicit OrthographicProjection() = default;
   ~OrthographicProjection() override = default;
 
   ProjectionType type() const override;

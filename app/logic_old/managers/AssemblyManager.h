@@ -45,7 +45,7 @@ public:
   AssemblyManager(AssemblyManager&&) = default;
   AssemblyManager& operator=(AssemblyManager&&) = default;
 
-  ~AssemblyManager();
+  ~AssemblyManager() = default;
 
   /// Set the function that updates all views.
   void setAllViewsUpdater(AllViewsUpdaterType);

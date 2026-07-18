@@ -1,17 +1,14 @@
 #include "windowing/View.h"
 
-#include "logic/app/DataHelper.h"
 #include "common/UuidUtility.h"
-
 #include "image/Image.h"
-
+#include "logic/app/DataHelper.h"
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/camera/CameraStartFrameType.h"
 #include "logic/camera/MathUtility.h"
 #include "logic/camera/OrthogonalProjection.h"
 #include "logic/camera/PerspectiveProjection.h"
-
 #include "rendering/utility/math/SliceIntersector.h"
 
 #include <glm/glm.hpp>
@@ -24,12 +21,13 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include <math.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <limits>
 #include <unordered_map>
 
 namespace
@@ -205,7 +203,7 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
   const glm::vec4 worldViewPlane = math::makePlane(-worldCameraFront, worldPlanePos);
 
   // Compute the World-space distance between the camera origin and the view plane
-  float worldCameraToPlaneDistance = NAN;
+  float worldCameraToPlaneDistance = std::numeric_limits<float>::quiet_NaN();
 
   if (math::vectorPlaneIntersection(worldCameraOrigin, worldCameraFront, worldViewPlane, worldCameraToPlaneDistance)) {
     helper::setWorldTarget(

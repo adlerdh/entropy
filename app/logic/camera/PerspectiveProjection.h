@@ -5,7 +5,7 @@
 class PerspectiveProjection final : public Projection
 {
 public:
-  explicit PerspectiveProjection();
+  explicit PerspectiveProjection() = default;
   ~PerspectiveProjection() override = default;
 
   ProjectionType type() const override;
