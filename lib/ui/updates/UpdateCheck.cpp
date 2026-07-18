@@ -24,6 +24,7 @@
 #include <memory>
 #include <sstream>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #ifdef _WIN32
@@ -45,6 +46,14 @@ namespace ui::updates
 {
 namespace
 {
+CheckResult failedResult(std::string error)
+{
+  CheckResult result;
+  result.status = CheckStatus::Failed;
+  result.error = std::move(error);
+  return result;
+}
+
 std::string trim(std::string value)
 {
   const auto isSpace = [](unsigned char c) {
@@ -442,14 +451,12 @@ CheckResult fetchLatestRelease(const CheckRequest& request)
 {
   const CurlGlobalState& global = curlGlobalState();
   if (global.code != CURLE_OK) {
-    return CheckResult{
-      .status = CheckStatus::Failed,
-      .error = "Could not initialize libcurl: " + std::string{curl_easy_strerror(global.code)}};
+    return failedResult("Could not initialize libcurl: " + std::string{curl_easy_strerror(global.code)});
   }
 
   CurlEasyHandle curl{curl_easy_init()};
   if (!curl) {
-    return CheckResult{.status = CheckStatus::Failed, .error = "Could not create a libcurl easy handle"};
+    return failedResult("Could not create a libcurl easy handle");
   }
 
   CurlResponse response;
@@ -463,7 +470,7 @@ CheckResult fetchLatestRelease(const CheckRequest& request)
     (!request.etag.empty() && !appendCurlHeader(rawHeaders, "If-None-Match: " + request.etag)))
   {
     headers.reset(rawHeaders);
-    return CheckResult{.status = CheckStatus::Failed, .error = "Could not allocate libcurl request headers"};
+    return failedResult("Could not allocate libcurl request headers");
   }
   headers.reset(rawHeaders);
 
@@ -487,7 +494,7 @@ CheckResult fetchLatestRelease(const CheckRequest& request)
   const CURLcode curlCode = curl_easy_perform(curl.get());
   if (curlCode != CURLE_OK) {
     const std::string detail = errorBuffer[0] != '\0' ? errorBuffer : curl_easy_strerror(curlCode);
-    return CheckResult{.status = CheckStatus::Failed, .error = "GitHub update check failed through libcurl: " + detail};
+    return failedResult("GitHub update check failed through libcurl: " + detail);
   }
 
   long status = 0;

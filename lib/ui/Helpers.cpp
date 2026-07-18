@@ -78,7 +78,7 @@ bool mySliderF64(const char* label, double* value, double min, double max, const
 
 int myImFormatString(char* buf, size_t buf_size, const char* fmt, ...)
 {
-  va_list args = nullptr;
+  va_list args;
   va_start(args, fmt);
   int w = vsnprintf(buf, buf_size, fmt, args);
   va_end(args);

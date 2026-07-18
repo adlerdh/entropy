@@ -1,9 +1,10 @@
 #include "registration/Process.h"
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <cwchar>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>

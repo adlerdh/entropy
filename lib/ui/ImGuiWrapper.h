@@ -320,7 +320,7 @@ private:
 
   AppData& m_appData;
   CallbackHandler& m_callbackHandler;
-  GLFWwindow* m_window;
+  [[maybe_unused]] GLFWwindow* m_window;
   std::filesystem::path m_iniFilePath;
   std::filesystem::path m_logFilePath;
   std::string m_iniFileName;

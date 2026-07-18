@@ -1847,7 +1847,9 @@ void WindowData::recenterView(
   }
 
   if (ViewType::ThreeD == view.viewType()) {
-    const camera3d::SceneFrame scene{.m_center = worldCenter, .m_size = worldFov};
+    camera3d::SceneFrame scene;
+    scene.m_center = worldCenter;
+    scene.m_size = worldFov;
     const glm::vec3 orbitTarget =
       (camera3d::OrbitTargetMode::Crosshairs == view.threeDState().m_orbitTargetMode) ? worldCenter : scene.m_center;
     if (view.threeDState().m_viewPositionFollowsCrosshairs) {

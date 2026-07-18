@@ -186,6 +186,7 @@ target_compile_options(entropy_warnings INTERFACE
     -Wno-error=empty-body
     -Wno-error=float-conversion
     -Wno-error=maybe-uninitialized
+    -Wno-error=missing-field-initializers
     -Wno-error=stringop-overflow
     -ftrapv
   >

@@ -33,9 +33,10 @@ bool fitsMax2DTextureSize(const glm::uvec2& size, const TextureLimits& limits)
 std::optional<TextureUploadLayout> textureUploadLayoutForImage(const glm::uvec3& size, const TextureLimits& limits)
 {
   if (fitsMax3DTextureSize(size, limits)) {
-    return TextureUploadLayout{
-      .layout = PlanarTextureLayout{.dimension = TextureDimension::Texture3D},
-      .uploadSize = size};
+    TextureUploadLayout uploadLayout;
+    uploadLayout.layout.dimension = TextureDimension::Texture3D;
+    uploadLayout.uploadSize = size;
+    return uploadLayout;
   }
 
   const std::vector<int> axes = nonSingletonAxes(size);
@@ -48,9 +49,11 @@ std::optional<TextureUploadLayout> textureUploadLayoutForImage(const glm::uvec3&
     return std::nullopt;
   }
 
-  return TextureUploadLayout{
-    .layout = PlanarTextureLayout{.dimension = TextureDimension::Texture2D, .axes = glm::ivec2{axes[0], axes[1]}},
-    .uploadSize = glm::uvec3{size2D.x, size2D.y, 1u}};
+  TextureUploadLayout uploadLayout;
+  uploadLayout.layout.dimension = TextureDimension::Texture2D;
+  uploadLayout.layout.axes = glm::ivec2{axes[0], axes[1]};
+  uploadLayout.uploadSize = glm::uvec3{size2D.x, size2D.y, 1u};
+  return uploadLayout;
 }
 
 std::string textureLimitReason(const glm::uvec3& size, const TextureLimits& limits)
