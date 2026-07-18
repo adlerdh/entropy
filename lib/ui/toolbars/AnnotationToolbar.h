@@ -19,4 +19,4 @@ class AppData;
 void renderAnnotationToolbar(
   AppData& appData,
   const FrameBounds& mindowFrameBounds,
-  const std::function<void()> paintActiveAnnotation);
+  const std::function<void()>& paintActiveAnnotation);

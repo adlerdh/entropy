@@ -40,11 +40,11 @@ public:
    * @throws Debug exception if \p colors is empty.
    */
   ImageColorMap(
-    const std::string& name,
-    const std::string& technicalName,
-    const std::string& description,
+    std::string name,
+    std::string technicalName,
+    std::string description,
     InterpolationMode interpMode,
-    std::vector<glm::vec3> colors);
+    const std::vector<glm::vec3>& colors);
 
   /**
    * @brief Construct color map from a vector of RGBA 32-bit float tuples.
@@ -57,9 +57,9 @@ public:
    * @throws Debug exception if \p colors is empty.
    */
   ImageColorMap(
-    const std::string& name,
-    const std::string& technicalName,
-    const std::string& description,
+    std::string name,
+    std::string technicalName,
+    std::string description,
     InterpolationMode interpMode,
     std::vector<glm::vec4> colors);
 
@@ -159,9 +159,9 @@ public:
     const glm::vec4& startColor,
     const glm::vec4& endColor,
     std::size_t numSteps,
-    std::string briefName,
-    std::string description,
-    std::string technicalName);
+    const std::string& briefName,
+    const std::string& description,
+    const std::string& technicalName);
 
 private:
   std::string m_name;          //!< Short name of the color map

@@ -24,6 +24,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #undef min
@@ -95,8 +96,8 @@ std::optional<uuids::uuid> addSurfaceAtValue(
   size_t index,
   double value,
   const glm::vec3& color,
-  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> /*storeFuture*/,
-  std::function<void(const uuids::uuid& taskUid)> /*addTaskToIsosurfaceGpuMeshGenerationQueue*/
+  const std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)>& /*storeFuture*/,
+  const std::function<void(const uuids::uuid& taskUid)>& /*addTaskToIsosurfaceGpuMeshGenerationQueue*/
 )
 {
   if (!image) {
@@ -198,8 +199,8 @@ bool renderAddSurfacesDialog(
   size_t nextSurfaceIndex,
   std::optional<uuids::uuid>& selectedSurfaceUid,
   std::unordered_map<uuids::uuid, uuids::uuid>& imageToSelectedSurfaceUid,
-  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
+  const std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)>& storeFuture,
+  const std::function<void(const uuids::uuid& taskUid)>& addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
   if (!image) {
     return false;
@@ -430,10 +431,10 @@ bool compareWithSortSpecs(
     }
 
     if (delta > 0.0) {
-      return (spec.SortDirection == ImGuiSortDirection_Ascending) ? true : false;
+      return spec.SortDirection == ImGuiSortDirection_Ascending;
     }
     else if (delta <= 0.0) {
-      return (spec.SortDirection == ImGuiSortDirection_Ascending) ? false : true;
+      return spec.SortDirection != ImGuiSortDirection_Ascending;
     }
   }
 
@@ -458,8 +459,8 @@ std::optional<uuids::uuid> addNewSurface(
   const uuids::uuid& imageUid,
   uint32_t component,
   size_t index,
-  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
+  const std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)>& storeFuture,
+  const std::function<void(const uuids::uuid& taskUid)>& addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
   static constexpr uint32_t k_defaultIsovalueQuantile = 75;
 
@@ -488,8 +489,8 @@ void renderIsosurfacesHeader(
   std::size_t imageIndex,
   bool isActiveImage,
   bool hasFollowingHeader,
-  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
+  const std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)>& storeFuture,
+  const std::function<void(const uuids::uuid& taskUid)>& addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
   static const ImGuiColorEditFlags sk_colorNoAlphaEditFlags =
     ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHex |
@@ -722,7 +723,7 @@ void renderIsosurfacesHeader(
       continue;
     }
 
-    tableItems.push_back(IsosurfaceTableItem(uid, surface));
+    tableItems.emplace_back(uid, surface);
 
     // The selected UID is valid if there is a surface with this UID
     validSelectedUid = validSelectedUid | (selectedSurfaceUid && *selectedSurfaceUid == uid);

@@ -62,7 +62,7 @@ void updateSegmentationUniformsForImage(
 
 } // namespace
 
-void Rendering::updateImageUniforms(uuid_range_t imageUids)
+void Rendering::updateImageUniforms(const uuid_range_t& imageUids)
 {
   for (const auto& imageUid : imageUids) {
     updateImageUniforms(imageUid);

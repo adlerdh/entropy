@@ -35,6 +35,24 @@ namespace
 {
 constexpr float k_confirmationPopupWidth = 360.0f;
 
+const char* unsavedProjectActionText(GuiData::UnsavedProjectAction action)
+{
+  switch (action) {
+    case GuiData::UnsavedProjectAction::CloseProject:
+      return "closing it";
+    case GuiData::UnsavedProjectAction::OpenImages:
+      return "opening another image";
+    case GuiData::UnsavedProjectAction::OpenDicomSeries:
+      return "opening another DICOM series";
+    case GuiData::UnsavedProjectAction::OpenProject:
+      return "opening another project";
+    case GuiData::UnsavedProjectAction::QuitApp:
+      return "quitting";
+  }
+
+  return "continuing";
+}
+
 ImGuiWindowFlags confirmationPopupFlags()
 {
   return ImGuiWindowFlags_Modal | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
@@ -58,24 +76,7 @@ void renderUnsavedProjectPopup(
   constexpr const char* popupTitle = "Unsaved Project";
   auto& guiData = appData.guiData();
   const bool isQuit = GuiData::UnsavedProjectAction::QuitApp == guiData.m_pendingUnsavedProjectAction;
-  const char* actionText = "closing it";
-  switch (guiData.m_pendingUnsavedProjectAction) {
-    case GuiData::UnsavedProjectAction::CloseProject:
-      actionText = "closing it";
-      break;
-    case GuiData::UnsavedProjectAction::OpenImages:
-      actionText = "opening another image";
-      break;
-    case GuiData::UnsavedProjectAction::OpenDicomSeries:
-      actionText = "opening another DICOM series";
-      break;
-    case GuiData::UnsavedProjectAction::OpenProject:
-      actionText = "opening another project";
-      break;
-    case GuiData::UnsavedProjectAction::QuitApp:
-      actionText = "quitting";
-      break;
-  }
+  const char* actionText = unsavedProjectActionText(guiData.m_pendingUnsavedProjectAction);
 
   auto continueAction = [&]() {
     if (isQuit) {

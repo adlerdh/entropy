@@ -97,7 +97,7 @@ TEST_CASE("mouse modes expose strings and toolbar icons", "[common][types]")
   for (const MouseMode mode : k_allMouseModes) {
     CHECK_FALSE(typeString(mode).empty());
     CHECK(toolbarButtonIcon(mode) != nullptr);
-    CHECK(std::string{toolbarButtonIcon(mode)}.size() > 0);
+    CHECK(!std::string{toolbarButtonIcon(mode)}.empty());
   }
 
   CHECK(typeString(MouseMode::Pointer).find("Pointer") != std::string::npos);

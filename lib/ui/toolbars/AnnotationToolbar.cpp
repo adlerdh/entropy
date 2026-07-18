@@ -23,7 +23,7 @@ using namespace ui::toolbars;
 void renderAnnotationToolbar(
   AppData& appData,
   const FrameBounds& mindowFrameBounds,
-  const std::function<void()> paintActiveAnnotation)
+  const std::function<void()>& paintActiveAnnotation)
 {
   // Always keep the toolbar open by setting this to null
   static bool* toolbarWindowOpen = nullptr;
@@ -96,8 +96,6 @@ void renderAnnotationToolbar(
         ++id;
       }
       ImGui::PopID();
-
-      needsSpace = true;
     }
 
     if (state::annot::showToolbarRemoveSelectedVertexButton()) {
@@ -415,8 +413,6 @@ void renderAnnotationToolbar(
         ++id;
       }
       ImGui::PopID();
-
-      needsSpace = true;
     }
 
 #if 0

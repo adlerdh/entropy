@@ -29,14 +29,14 @@ glm::mat4 computeWindowClip_T_viewClip(const glm::vec4& windowClipViewport)
 FrameViewport::FrameViewport() : FrameViewport(sk_fullWindowClipViewport) {}
 
 FrameViewport::FrameViewport(glm::vec4 windowClipViewport)
-  : m_windowClipViewport(std::move(windowClipViewport)), m_windowClip_T_viewClip(1.0f), m_viewClip_T_windowClip(1.0f)
+  : m_windowClipViewport(windowClipViewport), m_windowClip_T_viewClip(1.0f), m_viewClip_T_windowClip(1.0f)
 {
   updateTransforms();
 }
 
 void FrameViewport::setWindowClipViewport(glm::vec4 windowClipViewport)
 {
-  m_windowClipViewport = std::move(windowClipViewport);
+  m_windowClipViewport = windowClipViewport;
   updateTransforms();
 }
 

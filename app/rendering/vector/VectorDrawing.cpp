@@ -647,7 +647,7 @@ void drawLandmarks(
       continue;
     }
 
-    const auto lmGroupUids = appData.imageToLandmarkGroupUids(imgUid);
+    const auto& lmGroupUids = appData.imageToLandmarkGroupUids(imgUid);
     if (lmGroupUids.empty()) {
       continue;
     }
@@ -863,7 +863,7 @@ void drawAnnotations(
                                      appData.imageToActiveForwardWarpUid(imgUid).has_value();
     std::vector<uuids::uuid> annotUids;
     if (renderForwardWarped) {
-      const auto allAnnotUids = appData.annotationsForImage(imgUid);
+      const auto& allAnnotUids = appData.annotationsForImage(imgUid);
       annotUids.assign(std::begin(allAnnotUids), std::end(allAnnotUids));
     }
     else {

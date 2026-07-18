@@ -104,7 +104,7 @@ public:
    *
    * @param imageUids Images whose uniforms should be recomputed.
    */
-  void updateImageUniforms(uuid_range_t imageUids);
+  void updateImageUniforms(const uuid_range_t& imageUids);
 
   /**
    * @brief Update image uniforms for one image.

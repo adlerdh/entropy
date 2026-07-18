@@ -11,11 +11,11 @@
 #include <sstream>
 #include <utility>
 
-GLFrameBufferObject::GLFrameBufferObject(const std::string& name) : m_name(name), m_id(0u) {}
+GLFrameBufferObject::GLFrameBufferObject(std::string name) : m_name(std::move(name)), m_id(0u) {}
 
-GLFrameBufferObject::GLFrameBufferObject(GLFrameBufferObject&& other) noexcept : m_name(other.m_name), m_id(other.m_id)
+GLFrameBufferObject::GLFrameBufferObject(GLFrameBufferObject&& other) noexcept
+  : m_name(std::move(other.m_name)), m_id(other.m_id)
 {
-  other.m_name = "";
   other.m_id = 0u;
 }
 

@@ -61,10 +61,10 @@ public:
    */
   void render(
     std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
-    DrawViewFn drawImages,
-    DrawViewFn drawImageBorders,
-    DrawViewFn drawLandmarks,
-    DrawViewFn drawAnnotations);
+    const DrawViewFn& drawImages,
+    const DrawViewFn& drawImageBorders,
+    const DrawViewFn& drawLandmarks,
+    const DrawViewFn& drawAnnotations);
 
   /**
    * @brief Export the last rendered ASCII clipboard payload for one view.

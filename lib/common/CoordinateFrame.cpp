@@ -18,12 +18,12 @@
 #include <glm/gtx/vector_query.hpp>
 
 CoordinateFrame::CoordinateFrame(glm::vec3 worldOrigin, glm::quat world_T_frame_rotation)
-  : m_worldFrameOrigin(std::move(worldOrigin)), m_world_T_frame_rotation(std::move(world_T_frame_rotation))
+  : m_worldFrameOrigin(worldOrigin), m_world_T_frame_rotation(world_T_frame_rotation)
 {
 }
 
 CoordinateFrame::CoordinateFrame(glm::vec3 worldOrigin, float angleDegress, const glm::vec3& worldAxis)
-  : m_worldFrameOrigin(std::move(worldOrigin))
+  : m_worldFrameOrigin(worldOrigin)
 {
   setFrameToWorldRotation(angleDegress, worldAxis);
 }
@@ -34,7 +34,7 @@ CoordinateFrame::CoordinateFrame(
   const glm::vec3& worldAxis1,
   const glm::vec3& frameAxis2,
   const glm::vec3& worldAxis2)
-  : m_worldFrameOrigin(std::move(worldOrigin))
+  : m_worldFrameOrigin(worldOrigin)
 {
   static constexpr bool k_requireEqualAngles = false;
   setFrameToWorldRotation(frameAxis1, worldAxis1, frameAxis2, worldAxis2, k_requireEqualAngles);
@@ -42,12 +42,12 @@ CoordinateFrame::CoordinateFrame(
 
 void CoordinateFrame::setWorldOrigin(glm::vec3 origin)
 {
-  m_worldFrameOrigin = std::move(origin);
+  m_worldFrameOrigin = origin;
 }
 
 void CoordinateFrame::setFrameToWorldRotation(glm::quat world_T_frame_rotation)
 {
-  m_world_T_frame_rotation = std::move(world_T_frame_rotation);
+  m_world_T_frame_rotation = world_T_frame_rotation;
 }
 
 void CoordinateFrame::setFrameToWorldRotation(float angleDegrees, const glm::vec3& worldAxis)

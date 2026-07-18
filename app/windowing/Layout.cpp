@@ -35,8 +35,7 @@ Layout::Layout(bool isLightbox)
       UiControls(isLightbox))
   , m_uid(generateRandomUuid())
   , m_isLightbox(isLightbox)
-  , m_views()
-  , m_cameraSyncGroups()
+
 {
   // Render the first image by default (and do not render all images):
   setPreferredDefaultRenderedImages({0});
@@ -44,9 +43,9 @@ Layout::Layout(bool isLightbox)
 }
 
 Layout::Layout(Layout&& other) noexcept
-  : ControlFrame(std::move(other))
+  : ControlFrame(other)
   , // move base class
-  m_uid(std::move(other.m_uid))
+  m_uid(other.m_uid)
   , m_isLightbox(other.m_isLightbox)
   , m_kind(other.m_kind)
   , m_displayName(std::move(other.m_displayName))
@@ -59,8 +58,8 @@ Layout::Layout(Layout&& other) noexcept
 Layout& Layout::operator=(Layout&& other) noexcept
 {
   if (this != &other) {
-    ControlFrame::operator=(std::move(other)); // move-assign base class
-    m_uid = std::move(other.m_uid);
+    ControlFrame::operator=(other); // move-assign base class
+    m_uid = other.m_uid;
     m_isLightbox = other.m_isLightbox;
     m_kind = other.m_kind;
     m_displayName = std::move(other.m_displayName);
@@ -114,7 +113,7 @@ void Layout::setImageUsedForMetric(const AppData& appData, std::size_t index, bo
   updateAllViewsInLayout();
 }
 
-void Layout::updateImageOrdering(uuid_range_t orderedImageUids)
+void Layout::updateImageOrdering(const uuid_range_t& orderedImageUids)
 {
   ControlFrame::updateImageOrdering(orderedImageUids);
   updateAllViewsInLayout();

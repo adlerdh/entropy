@@ -83,7 +83,7 @@ endif()
 add_library(EntropyUI STATIC ${entropy_UI_SOURCES})
 add_library(Entropy::UI ALIAS EntropyUI)
 
-if(Entropy_ENABLE_IWYU)
+if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
   set_source_files_properties(
     "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
     "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
@@ -92,7 +92,7 @@ if(Entropy_ENABLE_IWYU)
   )
 endif()
 
-if(APPLE AND Entropy_ENABLE_IWYU)
+if(APPLE AND (Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY))
   set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiWrapper.cpp"
     PROPERTIES SKIP_LINTING ON

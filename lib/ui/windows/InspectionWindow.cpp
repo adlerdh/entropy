@@ -194,7 +194,7 @@ void renderInspectionWindow(
 
       if (0 == s_showSubject.count(*imageUid)) {
         // The reference image is shown by default in this list
-        s_showSubject.insert({*imageUid, (sk_refIndex == imageIndex) ? true : false});
+        s_showSubject.insert({*imageUid, sk_refIndex == imageIndex});
       }
 
       const bool visible = s_showSubject[*imageUid];

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <iomanip>
+#include <ranges>
 #include <sstream>
 #include <utility>
 
@@ -166,9 +167,9 @@ bool JobStore::hasActiveJobs() const
 
 std::optional<double> latestProgress(const JobRecord& job)
 {
-  for (auto it = job.progress.rbegin(); it != job.progress.rend(); ++it) {
-    if (it->progress) {
-      return it->progress;
+  for (const auto& progress : std::ranges::reverse_view(job.progress)) {
+    if (progress.progress) {
+      return progress.progress;
     }
   }
   return std::nullopt;
@@ -179,9 +180,9 @@ std::string latestMessage(const JobRecord& job)
   if ((job.status == JobStatus::Failed || job.status == JobStatus::Cancelled) && !job.errorMessage.empty()) {
     return job.errorMessage;
   }
-  for (auto it = job.progress.rbegin(); it != job.progress.rend(); ++it) {
-    if (!it->message.empty()) {
-      return it->message;
+  for (const auto& progress : std::ranges::reverse_view(job.progress)) {
+    if (!progress.message.empty()) {
+      return progress.message;
     }
   }
   if (!job.errorMessage.empty()) {

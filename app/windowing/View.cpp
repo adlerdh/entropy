@@ -24,6 +24,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include <math.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
@@ -130,7 +131,7 @@ View::View(
   std::optional<uuid> cameraZoomSyncGroup)
   : ControlFrame(winClipViewport, viewType, renderMode, ipMode, uiControls)
   , m_uid(generateRandomUuid())
-  , m_offset(std::move(offsetSetting))
+  , m_offset(offsetSetting)
   , m_projectionType(sk_viewTypeToDefaultProjectionTypeMap.at(m_viewType))
   , m_camera(m_projectionType, [this]() { return get_anatomy_T_start(m_viewType); })
   , m_threeDCamera(ProjectionType::Perspective, nullptr)
@@ -173,7 +174,7 @@ CoordinateFrame View::get_anatomy_T_start(const ViewType& viewType) const
 
   const auto& startFrameTypeMap = sk_viewConventionToStartFrameTypeMap.at(m_viewConvention);
   const glm::quat world_T_startFrame = get_world_T_startFrame(startFrameTypeMap.at(viewType), R);
-  return CoordinateFrame(sk_origin, world_T_startFrame);
+  return {sk_origin, world_T_startFrame};
 }
 
 glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldCrosshairs)
@@ -204,7 +205,7 @@ glm::vec3 View::updateImageSlice(const AppData& appData, const glm::vec3& worldC
   const glm::vec4 worldViewPlane = math::makePlane(-worldCameraFront, worldPlanePos);
 
   // Compute the World-space distance between the camera origin and the view plane
-  float worldCameraToPlaneDistance;
+  float worldCameraToPlaneDistance = NAN;
 
   if (math::vectorPlaneIntersection(worldCameraOrigin, worldCameraFront, worldViewPlane, worldCameraToPlaneDistance)) {
     helper::setWorldTarget(

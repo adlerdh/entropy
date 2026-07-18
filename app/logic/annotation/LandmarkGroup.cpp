@@ -12,10 +12,7 @@ static constexpr float sk_defaultOpacity = 0.75f;
 } // namespace
 
 LandmarkGroup::LandmarkGroup()
-  : m_fileName()
-  , m_name()
-  , m_pointMap()
-  , m_inVoxelSpace(false)
+  : m_inVoxelSpace(false)
   , m_layer(0)
   , m_maxLayer(0)
   , m_visibility(true)
@@ -74,7 +71,7 @@ std::map<size_t, PointRecord<LandmarkGroup::PositionType> >& LandmarkGroup::getP
   return m_pointMap;
 }
 
-size_t LandmarkGroup::addPoint(PointRecord<PositionType> point)
+size_t LandmarkGroup::addPoint(const PointRecord<PositionType>& point)
 {
   size_t maxIndex = 0;
 
@@ -87,7 +84,7 @@ size_t LandmarkGroup::addPoint(PointRecord<PositionType> point)
   return newIndex;
 }
 
-void LandmarkGroup::addPoint(size_t index, PointRecord<PositionType> point)
+void LandmarkGroup::addPoint(size_t index, const PointRecord<PositionType>& point)
 {
   m_pointMap.emplace(index, point);
 }
@@ -152,7 +149,7 @@ float LandmarkGroup::getOpacity() const
 
 void LandmarkGroup::setColor(glm::vec3 color)
 {
-  m_color = std::move(color);
+  m_color = color;
 }
 
 const glm::vec3& LandmarkGroup::getColor() const
@@ -172,7 +169,7 @@ bool LandmarkGroup::getColorOverride() const
 
 void LandmarkGroup::setTextColor(std::optional<glm::vec3> color)
 {
-  m_textColor = std::move(color);
+  m_textColor = color;
 }
 
 const std::optional<glm::vec3>& LandmarkGroup::getTextColor() const

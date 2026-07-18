@@ -269,7 +269,7 @@ void renderSegmentationHeader(
     std::string segDisplayName = std::string("Untitled segmentation ") + std::to_string(numSegsForImage + 1) +
                                  " for image '" + image->settings().displayName() + "'";
 
-    if (createBlankSeg(imageUid, std::move(segDisplayName))) {
+    if (createBlankSeg(imageUid, segDisplayName)) {
       updateImageUniforms();
     }
     else {
@@ -317,11 +317,6 @@ void renderSegmentationHeader(
   }
 
   auto& segSettings = activeSeg->settings();
-
-  // Header is ID'ed only by "seg_" and the image index.
-  // ### allows the header name to change without changing its ID.
-  const std::string segHeaderName =
-    std::string("Seg: ") + segSettings.displayName() + "###seg_" + std::to_string(imageIndex);
 
   /// @todo add "*" to end of name and change color of seg header if seg has been modified
 

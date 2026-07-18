@@ -12,11 +12,11 @@
 GLVersionChecker::GLVersionChecker()
 {
   // Major version number of the OpenGL API supported by the current context:
-  GLint majorVersion;
+  GLint majorVersion = 0;
   glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
 
   // Minor version number of the OpenGL API supported by the current context:
-  GLint minorVersion;
+  GLint minorVersion = 0;
   glGetIntegerv(GL_MINOR_VERSION, &minorVersion);
 
   if (majorVersion < 3 || (majorVersion == 3 && minorVersion < 3)) {
@@ -26,12 +26,12 @@ GLVersionChecker::GLVersionChecker()
   }
 
   // Profile mask used to create the context:
-  GLint contextProfileMask;
+  GLint contextProfileMask = 0;
   glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &contextProfileMask);
 
   std::ostringstream ss;
 
-  ss << "OpenGL context information:" << std::endl;
+  ss << "OpenGL context information:" << '\n';
   ss << "\tVersion: " << glGetString(GL_VERSION);
 
   if (contextProfileMask & GL_CONTEXT_CORE_PROFILE_BIT) {
@@ -41,9 +41,9 @@ GLVersionChecker::GLVersionChecker()
     ss << " (compatibility profile)";
   }
 
-  ss << std::endl;
-  ss << "\tVendor: " << glGetString(GL_VENDOR) << std::endl;
-  ss << "\tRenderer: " << glGetString(GL_RENDERER) << std::endl;
+  ss << '\n';
+  ss << "\tVendor: " << glGetString(GL_VENDOR) << '\n';
+  ss << "\tRenderer: " << glGetString(GL_RENDERER) << '\n';
 
   spdlog::info("{}", ss.str());
 

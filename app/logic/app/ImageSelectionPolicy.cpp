@@ -28,7 +28,7 @@ std::optional<std::size_t> defaultActiveImageIndexForInitialLoad(std::size_t num
 }
 
 std::list<uuids::uuid> defaultMetricImageUids(
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   const std::optional<uuids::uuid>& referenceImageUid,
   const std::optional<uuids::uuid>& activeImageUid)
 {

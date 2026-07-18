@@ -23,7 +23,7 @@ void AppState::setWorldCrosshairsPos(const glm::vec3& worldPos)
 
 void AppState::setWorldCrosshairs(CoordinateFrame worldCrosshairs)
 {
-  m_crosshairsState.worldCrosshairs = std::move(worldCrosshairs);
+  m_crosshairsState.worldCrosshairs = worldCrosshairs;
 }
 
 const CoordinateFrame& AppState::worldCrosshairs() const

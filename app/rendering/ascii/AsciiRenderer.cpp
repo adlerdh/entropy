@@ -128,11 +128,9 @@ entropy_expected::expected<std::unique_ptr<GLShaderProgram>, std::string> buildA
 
 AsciiRenderer::AsciiRenderer(AppData& appData)
   : m_appData(appData)
-  , m_asciiAtlas()
   , m_sceneFbo("SceneAsciiPostFbo")
   , m_sceneColorTex(std::nullopt)
   , m_sceneFboSize{0, 0}
-  , m_asciiPostVao()
   , m_asciiCellMeanTex(std::nullopt)
   , m_asciiCellMeanFbo(std::nullopt)
   , m_asciiCellMeanTexSize{0, 0}
@@ -140,14 +138,8 @@ AsciiRenderer::AsciiRenderer(AppData& appData)
   , m_asciiLumLutCellPx{0.0f, 0.0f}
   , m_asciiCellRegionsTex(std::nullopt)
   , m_asciiCellRegionsTexB(std::nullopt)
-  , m_glyphProfilesPackedA()
-  , m_glyphProfilesPackedB()
   , m_asciiSpatialProfileCellPx{-1.0f, -1.0f}
-  , m_glyphRankToIndex()
-  , m_asciiSpatialDensityWindow{3.0f}
-  , m_glyphRegionMax{}
-  , m_lastUploadedExponent{-1.0f}
-  , m_glyphProfilesNormalized()
+
 {
 }
 
@@ -593,10 +585,10 @@ void AsciiRenderer::ensureAsciiCellFbo(glm::ivec2 viewSizeDevPx, glm::vec2 cellS
 
 void AsciiRenderer::render(
   std::unordered_map<ShaderProgramType, std::unique_ptr<GLShaderProgram>>& shaderPrograms,
-  DrawViewFn drawImages,
-  DrawViewFn drawImageBorders,
-  DrawViewFn drawLandmarks,
-  DrawViewFn drawAnnotations)
+  const DrawViewFn& drawImages,
+  const DrawViewFn& drawImageBorders,
+  const DrawViewFn& drawLandmarks,
+  const DrawViewFn& drawAnnotations)
 {
   const auto& R = m_appData.renderData();
   const bool renderLandmarksOnTop = R.m_globalLandmarkParams.renderOnTopOfAllImagePlanes;

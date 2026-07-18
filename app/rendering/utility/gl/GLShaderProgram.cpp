@@ -16,7 +16,7 @@
 #include <utility>
 #include <variant>
 
-GLShaderProgram::GLShaderProgram() : m_name(), m_handle(0u), m_linked(false) {}
+GLShaderProgram::GLShaderProgram() : m_handle(0u), m_linked(false) {}
 
 GLShaderProgram::GLShaderProgram(std::string name) : m_name(std::move(name)), m_handle(0u), m_linked(false) {}
 
@@ -407,8 +407,8 @@ const Uniforms& GLShaderProgram::getRegisteredUniforms() const
 
 void GLShaderProgram::printActiveUniforms()
 {
-  GLint maxUniformNameLength;
-  GLint numActiveUniforms;
+  GLint maxUniformNameLength = 0;
+  GLint numActiveUniforms = 0;
 
   glGetProgramiv(m_handle, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxUniformNameLength);
   glGetProgramiv(m_handle, GL_ACTIVE_UNIFORMS, &numActiveUniforms);
@@ -418,9 +418,9 @@ void GLShaderProgram::printActiveUniforms()
   spdlog::info("Active uniforms:");
 
   for (int i = 0; i < numActiveUniforms; ++i) {
-    GLsizei actualLength;
-    GLint arraySize;
-    GLenum type;
+    GLsizei actualLength = 0;
+    GLint arraySize = 0;
+    GLenum type = 0;
 
     glGetActiveUniform(m_handle, GLuint(i), maxUniformNameLength, &actualLength, &arraySize, &type, &nameData[0]);
 
@@ -459,9 +459,9 @@ void GLShaderProgram::printActiveUniforms()
 
 void GLShaderProgram::printActiveUniformBlocks()
 {
-  GLint maxUniformBlockNameLength;
-  GLint numUniformBlocks;
-  GLint maxUniformNameLength;
+  GLint maxUniformBlockNameLength = 0;
+  GLint numUniformBlocks = 0;
+  GLint maxUniformNameLength = 0;
 
   glGetProgramiv(m_handle, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &maxUniformBlockNameLength);
   glGetProgramiv(m_handle, GL_ACTIVE_UNIFORM_BLOCKS, &numUniformBlocks);
@@ -473,8 +473,8 @@ void GLShaderProgram::printActiveUniformBlocks()
   spdlog::info("Active uniform blocks:");
 
   for (GLint i = 0; i < numUniformBlocks; ++i) {
-    GLsizei actualLength;
-    GLint binding;
+    GLsizei actualLength = 0;
+    GLint binding = 0;
 
     glGetActiveUniformBlockName(m_handle, i, maxUniformBlockNameLength, &actualLength, &uniformBlockNameData[0]);
     glGetActiveUniformBlockiv(m_handle, i, GL_UNIFORM_BLOCK_BINDING, &binding);
@@ -482,15 +482,15 @@ void GLShaderProgram::printActiveUniformBlocks()
     const std::string uniformBlockName(&uniformBlockNameData[0], actualLength);
     spdlog::info("block {}: name = {}, binding = {}", i, uniformBlockName, binding);
 
-    GLint numUniforms;
+    GLint numUniforms = 0;
     glGetActiveUniformBlockiv(m_handle, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &numUniforms);
 
     std::vector<GLint> uniformIndices(numUniforms);
     glGetActiveUniformBlockiv(m_handle, i, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, &uniformIndices[0]);
 
     for (GLint u = 0; u < numUniforms; ++u) {
-      GLint arraySize;
-      GLenum type;
+      GLint arraySize = 0;
+      GLenum type = 0;
 
       glGetActiveUniform(
         m_handle,
@@ -553,8 +553,8 @@ void GLShaderProgram::printActiveUniformBlocks()
 
 void GLShaderProgram::printActiveAttribs()
 {
-  GLint maxAttribNameLength;
-  GLint numActiveAttribs;
+  GLint maxAttribNameLength = 0;
+  GLint numActiveAttribs = 0;
 
   glGetProgramiv(m_handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxAttribNameLength);
   glGetProgramiv(m_handle, GL_ACTIVE_ATTRIBUTES, &numActiveAttribs);
@@ -564,9 +564,9 @@ void GLShaderProgram::printActiveAttribs()
   spdlog::info("Active attributes:");
 
   for (GLint i = 0; i < numActiveAttribs; ++i) {
-    GLsizei actualLength;
-    GLint arraySize;
-    GLenum type;
+    GLsizei actualLength = 0;
+    GLint arraySize = 0;
+    GLenum type = 0;
 
     glGetActiveAttrib(m_handle, i, maxAttribNameLength, &actualLength, &arraySize, &type, &nameData[0]);
 
@@ -620,7 +620,7 @@ bool GLShaderProgram::isValid()
     return false;
   }
 
-  GLint status;
+  GLint status = 0;
   glValidateProgram(m_handle);
   glGetProgramiv(m_handle, GL_VALIDATE_STATUS, &status);
 

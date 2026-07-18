@@ -25,10 +25,10 @@ void GLErrorChecker::operator()(const char* file, const char* function, int line
     "Attempt to read from or write/render to a framebuffer that is not complete.";
   static const char* UNKNOWN_MSG = "Unknown error.";
 
-  GLenum error;
+  GLenum error = 0;
 
   while (GL_NO_ERROR != (error = glGetError())) {
-    const char* msg;
+    const char* msg = nullptr;
 
     switch (error) {
       case GL_INVALID_ENUM:

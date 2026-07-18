@@ -77,7 +77,7 @@ public:
   struct Decl
   {
     Decl();
-    Decl(UniformType type, ValueType defaultValue, bool isRequired);
+    Decl(UniformType type, const ValueType& defaultValue, bool isRequired);
 
     Decl(const Decl&) = default;
     Decl& operator=(const Decl&) = default;
@@ -107,7 +107,7 @@ public:
   using UniformsMap = std::unordered_map<std::string, Decl>;
 
   explicit Uniforms() = default;
-  explicit Uniforms(const UniformsMap& map);
+  explicit Uniforms(UniformsMap map);
 
   Uniforms(const Uniforms&) = default;
   Uniforms& operator=(const Uniforms&) = default;
@@ -142,10 +142,10 @@ public:
   std::optional<GLint> location(const std::string& name) const;
 
   /// Query and store one linked-program location using the supplied lookup function.
-  GLint queryAndSetLocation(const std::string& name, std::function<GLint(const std::string&)> locationGetter);
+  GLint queryAndSetLocation(const std::string& name, const std::function<GLint(const std::string&)>& locationGetter);
 
   /// Query and store locations for every declared uniform.
-  int queryAndSetAllLocations(std::function<GLint(const std::string&)> locationGetter);
+  int queryAndSetAllLocations(const std::function<GLint(const std::string&)>& locationGetter);
 
   /// Mark one uniform declaration dirty or clean.
   void setDirty(const std::string& name, bool isDirty);

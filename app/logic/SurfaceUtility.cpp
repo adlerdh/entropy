@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 #include <uuid.h>
+
+#include <cmath>
 #include <optional>
 
 namespace
@@ -10,7 +12,7 @@ namespace
 template<typename T>
 std::size_t mapContinuousToIndex(T x, std::size_t N)
 {
-  return static_cast<std::size_t>(x * (N - 1) + 0.5); // rounding to nearest
+  return static_cast<std::size_t>(std::lround(x * static_cast<T>(N - 1)));
 }
 } // namespace
 

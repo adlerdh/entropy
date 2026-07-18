@@ -28,7 +28,7 @@ public:
    * @param orderedImageUids Image UIDs in application order.
    * @param visible Whether the image should be rendered.
    */
-  void setImageRendered(const uuids::uuid& imageUid, uuid_range_t orderedImageUids, bool visible);
+  void setImageRendered(const uuids::uuid& imageUid, const uuid_range_t& orderedImageUids, bool visible);
 
   /** @brief Images selected for direct image rendering, bottom layer first. */
   const std::list<uuids::uuid>& renderedImages() const;
@@ -50,7 +50,7 @@ public:
    * Volume raycasting currently renders at most one image. Setting an image visible replaces
    * any previous volume-rendered image; setting it invisible clears it.
    */
-  void setImageVolumeRendered(const uuids::uuid& imageUid, uuid_range_t orderedImageUids, bool visible);
+  void setImageVolumeRendered(const uuids::uuid& imageUid, const uuid_range_t& orderedImageUids, bool visible);
 
   /** @brief Image selected for 3D volume raycasting, if one has been explicitly chosen. */
   const std::list<uuids::uuid>& volumeRenderedImages() const;
@@ -71,7 +71,7 @@ public:
    * @param orderedImageUids Image UIDs in application order.
    * @param visible Whether the image should be part of metric rendering.
    */
-  void setImageUsedForMetric(const uuids::uuid& imageUid, uuid_range_t orderedImageUids, bool visible);
+  void setImageUsedForMetric(const uuids::uuid& imageUid, const uuid_range_t& orderedImageUids, bool visible);
 
   /** @brief Images selected for metric/comparison rendering. */
   const std::list<uuids::uuid>& metricImages() const;
@@ -104,7 +104,7 @@ public:
    *
    * @param orderedImageUids Current image UIDs in application order.
    */
-  void updateImageOrdering(uuid_range_t orderedImageUids);
+  void updateImageOrdering(const uuid_range_t& orderedImageUids);
 
 private:
   std::list<uuids::uuid> m_renderedImageUids;       //!< Rendered images, bottom layer first

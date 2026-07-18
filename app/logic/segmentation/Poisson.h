@@ -12,7 +12,7 @@ class Image;
 
 void initializePotential(const uint8_t* seeds, float* potential, const glm::ivec3& dims, LabelType label);
 
-void computeResultSeg(const std::vector<const float*> potentials, uint8_t* resultSeg, const glm::ivec3& dims);
+void computeResultSeg(const std::vector<const float*>& potentials, uint8_t* resultSeg, const glm::ivec3& dims);
 
 void computeBinaryResultSeg(const std::array<const float*, 2> potentials, uint8_t* resultSeg, const glm::ivec3& dims);
 

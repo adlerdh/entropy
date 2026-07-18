@@ -24,10 +24,6 @@ static const glm::vec4 sk_defaultSubjectPlaneEquation{1.0f, 0.0f, 0.0f, 0.0f};
 
 Annotation::Annotation(std::string name, const glm::vec4& color, const glm::vec4& subjectPlaneEquation)
   : m_displayName(std::move(name))
-  , m_fileName()
-  , m_polygon()
-  , m_highlightedVertices()
-  , m_highlightedEdges()
   ,
 
   m_highlighted(false)
@@ -335,7 +331,7 @@ float Annotation::getOpacity() const
 
 void Annotation::setVertexColor(glm::vec4 color)
 {
-  m_vertexColor = std::move(color);
+  m_vertexColor = color;
   markDirty();
 }
 
@@ -346,7 +342,7 @@ const glm::vec4& Annotation::getVertexColor() const
 
 void Annotation::setLineColor(glm::vec4 color)
 {
-  m_lineColor = std::move(color);
+  m_lineColor = color;
   markDirty();
 }
 
@@ -381,7 +377,7 @@ bool Annotation::isFilled() const
 
 void Annotation::setFillColor(glm::vec4 color)
 {
-  m_fillColor = std::move(color);
+  m_fillColor = color;
   markDirty();
 }
 

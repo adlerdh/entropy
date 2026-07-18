@@ -3,6 +3,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <cstddef>
+
 namespace
 {
 // Define the vertices and indices of a 2D quad:
@@ -16,7 +18,7 @@ static constexpr int sk_numQuadPosComps = 2;
 static constexpr int sk_byteOffset = 0;
 static constexpr int sk_indexOffset = 0;
 
-static const std::array<float, sk_numQuadVerts * sk_numQuadPosComps> sk_clipPosBuffer = {{
+static const std::array<float, static_cast<size_t>(sk_numQuadVerts* sk_numQuadPosComps)> sk_clipPosBuffer = {{
   -1.0f,
   -1.0f, // bottom left
   1.0f,
@@ -71,24 +73,14 @@ GLTexture createBlankRgbaTexture(uint8_t value)
 } // namespace
 
 RenderData::RenderData()
-  : m_quad()
-  , m_circle()
-
-  , m_imageTextures()
-  , m_distanceMapTextures()
-  , m_segTextures()
-  , m_brushPreviews()
-  , m_labelBufferTextures()
-  , m_colormapTextures()
-
-  , m_blankImageBlackTransparentTexture(createBlankRgbaTexture(0))
+  : m_blankImageBlackTransparentTexture(createBlankRgbaTexture(0))
   , m_blankImageWhiteOpaqueTexture(createBlankRgbaTexture(255))
   , m_blankSegTexture(createBlankRgbaTexture(0))
   , m_blankDistMapTexture(createBlankRgbaTexture(0))
 
-  , m_uniforms()
+  ,
 
-  , m_snapCrosshairs(CrosshairsSnapping::Disabled)
+  m_snapCrosshairs(CrosshairsSnapping::Disabled)
   , m_modulateSegOpacityWithImageOpacity(true)
   , m_modulateIsocontourOpacityWithImageOpacity(false)
   , m_imageGrayFloatingPointInterpolationPolicy(FloatingPointLinearInterpolationPolicy::FixedFunction)
@@ -112,8 +104,6 @@ RenderData::RenderData()
   , m_anatomicalLabelColor(0.695f, 0.870f, 0.090f, 1.0f)
   , m_showAnatomicalLabels(true)
   , m_showAnatomicalLabelsInLightboxViews(true)
-  , m_anatomicalLabelScale(1.0f)
-  , m_anatomicalLabelType(AnatomicalLabelType::Human)
   , m_showScaleBars(true)
   , m_showScaleBarsInLightboxViews(false)
   , m_scaleBarColor(0.380392f, 0.858824f, 0.250980f, 1.0f)
@@ -140,10 +130,6 @@ RenderData::RenderData()
   , m_threeDCameraFrustumColor(0x7c / 255.0f, 0x5e / 255.0f, 0xd5 / 255.0f, 0xa2 / 255.0f)
   , m_lastInteractedThreeDViewUid(std::nullopt)
   , m_segMasking(SegMaskingForRaycasting::Disabled)
-
-  , m_segOutlineStyle(SegmentationOutlineStyle::Disabled)
-  , m_segInteriorOpacity(0.2f)
-  , m_segInterpCutoff(0.5f)
 
   , m_squaredDifferenceParams()
   , m_localNccParams()
@@ -192,7 +178,9 @@ RenderData::Quad::Quad()
   m_positionsObject.generate();
   m_indicesObject.generate();
 
-  m_positionsObject.allocate(sk_numQuadVerts * sk_numQuadPosComps * sizeof(float), sk_clipPosBuffer.data());
+  m_positionsObject.allocate(
+    static_cast<unsigned long>(sk_numQuadVerts * sk_numQuadPosComps) * sizeof(float),
+    sk_clipPosBuffer.data());
   m_indicesObject.allocate(sk_numQuadVerts * sizeof(uint32_t), sk_indicesBuffer.data());
 
   m_vao.generate();
@@ -229,7 +217,9 @@ RenderData::Circle::Circle()
   m_positionsObject.generate();
   m_indicesObject.generate();
 
-  m_positionsObject.allocate(sk_numQuadVerts * sk_numQuadPosComps * sizeof(float), sk_clipPosBuffer.data());
+  m_positionsObject.allocate(
+    static_cast<unsigned long>(sk_numQuadVerts * sk_numQuadPosComps) * sizeof(float),
+    sk_clipPosBuffer.data());
   m_indicesObject.allocate(sk_numQuadVerts * sizeof(uint32_t), sk_indicesBuffer.data());
 
   m_vao.generate();
@@ -249,8 +239,7 @@ RenderData::Circle::Circle()
 }
 
 RenderData::IsosurfaceData::IsosurfaceData()
-  : numIsos(0)
-  , values(8, 0.0f)
+  : values(8, 0.0f)
   , opacities(8, 0.0f)
   , rimOpacityStrengths(8, 0.0f)
   , rimEmissionStrengths(8, 0.0f)

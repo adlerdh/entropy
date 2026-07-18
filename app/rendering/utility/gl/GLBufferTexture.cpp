@@ -65,7 +65,7 @@ GLBufferTexture::GLBufferTexture(const tex::SizedInternalBufferTextureFormat& fo
 }
 
 GLBufferTexture::GLBufferTexture(GLBufferTexture&& other) noexcept
-  : m_buffer(std::move(other.m_buffer)), m_texture(std::move(other.m_texture)), m_format(std::move(other.m_format))
+  : m_buffer(std::move(other.m_buffer)), m_texture(std::move(other.m_texture)), m_format(other.m_format)
 {
 }
 
@@ -76,7 +76,7 @@ GLBufferTexture& GLBufferTexture::operator=(GLBufferTexture&& other) noexcept
 
     m_buffer = std::move(other.m_buffer);
     m_texture = std::move(other.m_texture);
-    m_format = std::move(other.m_format);
+    m_format = other.m_format;
   }
 
   return *this;
@@ -115,7 +115,7 @@ void GLBufferTexture::unbind()
 
 void GLBufferTexture::allocate(std::size_t sizeInBytes, const GLvoid* data)
 {
-  GLint maxSize;
+  GLint maxSize = 0;
   glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxSize);
 
   const auto numComponents = static_cast<std::size_t>(sk_textureFormatToNumComponentsMap.at(m_format));

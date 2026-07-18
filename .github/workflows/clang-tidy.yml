@@ -1,0 +1,123 @@
+name: Clang-Tidy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clang-tidy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CC: gcc-13
+  CXX: g++-13
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_COMPILERCHECK: content
+  CCACHE_MAXSIZE: 2G
+  DEPS_CACHE_VERSION: v1
+
+jobs:
+  clang-tidy:
+    name: Clang-Tidy Analysis (Ubuntu x86_64)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install build and clang-tidy dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            ccache \
+            clang-tidy \
+            gcc-13 \
+            g++-13 \
+            libdbus-1-dev \
+            libssl-dev \
+            libgl1-mesa-dev \
+            libwayland-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxkbcommon-dev \
+            libxrandr-dev \
+            xorg-dev
+
+      - name: Validate runner tools
+        run: |
+          lsb_release -a
+          cmake --version
+          ccache --version
+          clang-tidy --version
+          "${CC}" --version
+          "${CXX}" --version
+
+      - name: Restore Debug ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: ubuntu2404-gcc13-clang-tidy-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            ubuntu2404-gcc13-clang-tidy-ccache-v1-
+
+      - name: Restore Debug Dependencies cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-clang-tidy/external/catch2-*
+            build-clang-tidy/external/cli11-*
+            build-clang-tidy/external/cmakerc-*
+            build-clang-tidy/external/curl-*
+            build-clang-tidy/external/glfw-*
+            build-clang-tidy/external/glm-*
+            build-clang-tidy/external/iconfont-*
+            build-clang-tidy/external/imgui-*
+            build-clang-tidy/external/implot-*
+            build-clang-tidy/external/itk-*
+            build-clang-tidy/external/nanovg-*
+            build-clang-tidy/external/nativefiledialog-*
+            build-clang-tidy/external/nlohmann_json-*
+            build-clang-tidy/external/qtbase-*
+            build-clang-tidy/external/spdlog-*
+            build-clang-tidy/external/stduuid-*
+            build-clang-tidy/external/tinyfsm-*
+          key: ubuntu2404-gcc13-clang-tidy-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            ubuntu2404-gcc13-clang-tidy-deps-${{ env.DEPS_CACHE_VERSION }}-
+
+      - name: Configure Debug dependencies
+        run: cmake --preset deps-debug -B build-clang-tidy -D Entropy_USE_CCACHE=ON
+
+      - name: Build Debug dependencies
+        run: cmake --build build-clang-tidy --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Configure Debug app with clang-tidy
+        run: cmake --preset app-debug -B build-clang-tidy -D Entropy_USE_CCACHE=ON -D Entropy_ENABLE_CLANG_TIDY=ON
+
+      - name: Run clang-tidy during Debug app build
+        run: |
+          set -o pipefail
+          cmake --build build-clang-tidy --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}" -- -k 2>&1 | tee clang-tidy.log
+
+      - name: Upload clang-tidy log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: clang-tidy-log
+          path: clang-tidy.log
+          if-no-files-found: ignore
+
+      - name: Show ccache stats
+        if: always()
+        run: |
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --show-stats
+          else
+            echo "ccache not found; skipping ccache stats"
+          fi

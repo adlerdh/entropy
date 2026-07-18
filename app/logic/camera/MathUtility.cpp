@@ -1,7 +1,6 @@
 #include "logic/camera/MathUtility.h"
 #include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
-#include "logic/camera/MathUtility.h"
 
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
@@ -11,20 +10,20 @@
 
 #define EPSILON 0.000001
 
-#define CROSS(dest, v1, v2)                  \
-  {                                          \
-    dest[0] = v1[1] * v2[2] - v1[2] * v2[1]; \
-    dest[1] = v1[2] * v2[0] - v1[0] * v2[2]; \
-    dest[2] = v1[0] * v2[1] - v1[1] * v2[0]; \
+#define CROSS(dest, v1, v2)                            \
+  {                                                    \
+    (dest)[0] = (v1)[1] * (v2)[2] - (v1)[2] * (v2)[1]; \
+    (dest)[1] = (v1)[2] * (v2)[0] - (v1)[0] * (v2)[2]; \
+    (dest)[2] = (v1)[0] * (v2)[1] - (v1)[1] * (v2)[0]; \
   }
 
-#define DOT(v1, v2) (v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2])
+#define DOT(v1, v2) ((v1)[0] * (v2)[0] + (v1)[1] * (v2)[1] + (v1)[2] * (v2)[2])
 
-#define SUB(dest, v1, v2)    \
-  {                          \
-    dest[0] = v1[0] - v2[0]; \
-    dest[1] = v1[1] - v2[1]; \
-    dest[2] = v1[2] - v2[2]; \
+#define SUB(dest, v1, v2)          \
+  {                                \
+    (dest)[0] = (v1)[0] - (v2)[0]; \
+    (dest)[1] = (v1)[1] - (v2)[1]; \
+    (dest)[2] = (v1)[2] - (v2)[2]; \
   }
 
 namespace math
@@ -86,8 +85,8 @@ std::vector<uint32_t> sortCounterclockwise(const std::vector<glm::vec2>& points)
 
   std::vector<float> angles;
 
-  for (uint32_t i = 0; i < points.size(); ++i) {
-    const glm::vec2 b = points[i] - center;
+  for (auto point : points) {
+    const glm::vec2 b = point - center;
     const float dot = a.x * b.x + a.y * b.y;
     const float det = a.x * b.y - b.x * a.y;
     const float angle = std::atan2(det, dot);
@@ -112,8 +111,9 @@ std::vector<glm::vec2> project3dPointsToPlane(const std::vector<glm::vec3>& A)
 
   std::vector<glm::vec2> B;
 
+  B.reserve(A.size());
   for (auto& a : A) {
-    B.emplace_back(glm::vec2{M * glm::vec4{a, 1.0f}});
+    B.emplace_back(M * glm::vec4{a, 1.0f});
   }
 
   return B;

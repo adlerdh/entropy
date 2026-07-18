@@ -124,7 +124,7 @@ void renderViewSettingsComboWindow(
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, sk_windowPadding);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, sk_windowRounding);
   {
-    const char* label;
+    const char* label = nullptr;
 
     label = view_overlay::usesDisabledVisibilityIcon(renderMode) ? ICON_FK_EYE_SLASH : ICON_FK_EYE;
 

@@ -99,7 +99,7 @@ bool exportDicomImage(AppData& appData, const uuids::uuid& imageUid)
     return false;
   }
 
-  if (!image->saveComponentToDisk(0, std::optional<fs::path>{*selectedFile})) {
+  if (!image->saveComponentToDisk(0, std::optional<fs::path>{selectedFile})) {
     spdlog::error("Failed to export DICOM series image {} to {}", imageUid, *selectedFile);
     return false;
   }

@@ -14,9 +14,9 @@ namespace
 
 glm::vec2 windowNdc_T_window(const Viewport& windowViewport, const glm::vec2& windowPixelPos)
 {
-  return glm::vec2(
+  return {
     2.0f * (windowPixelPos.x - windowViewport.left()) / windowViewport.width() - 1.0f,
-    2.0f * (windowPixelPos.y - windowViewport.bottom()) / windowViewport.height() - 1.0f);
+    2.0f * (windowPixelPos.y - windowViewport.bottom()) / windowViewport.height() - 1.0f};
 }
 
 } // namespace

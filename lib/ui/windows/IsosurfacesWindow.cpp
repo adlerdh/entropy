@@ -17,8 +17,8 @@ using uuid = uuids::uuid;
 
 void renderIsosurfacesWindow(
   AppData& appData,
-  std::function<void(const uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue)
+  const std::function<void(const uuid& taskUid, std::future<AsyncTaskDetails> future)>& storeFuture,
+  const std::function<void(const uuid& taskUid)>& addTaskToIsosurfaceGpuMeshGenerationQueue)
 {
   setNextWindowSizeConstraintsToMainViewport(ui::scaledPixel(300.0f), ui::scaledPixel(240.0f));
   ImGui::SetNextWindowSize(ui::viewportClampedScaledSize(380.0f, 480.0f), ImGuiCond_FirstUseEver);

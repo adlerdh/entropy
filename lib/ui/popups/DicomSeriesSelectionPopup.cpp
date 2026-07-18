@@ -222,12 +222,9 @@ float dicomSeriesColumnAutoWidth(
     width = std::max(width, autoWidthForText(text));
   };
 
-  for (std::size_t i = 0; i < prompt.series.size(); ++i) {
-    const auto& series = prompt.series.at(i);
+  for (const auto& series : prompt.series) {
     switch (columnIndex) {
       case 0:
-        width = std::max(width, ImGui::GetFrameHeight() + 2.0f * ImGui::GetStyle().CellPadding.x + 12.0f);
-        break;
       case 1:
         width = std::max(width, ImGui::GetFrameHeight() + 2.0f * ImGui::GetStyle().CellPadding.x + 12.0f);
         break;

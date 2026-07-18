@@ -1,6 +1,8 @@
 #include "logic/segmentation/Poisson.h"
 
+#include <cstddef>
 #include <glm/glm.hpp>
+#include <math.h>
 #include <spdlog/spdlog.h>
 
 #include <cmath>
@@ -98,7 +100,7 @@ void computeBinaryResultSeg(const std::array<const float*, 2> potentials, uint8_
   }
 }
 
-void computeResultSeg(const std::vector<const float*> potentials, uint8_t* resultSeg, const glm::ivec3& dims)
+void computeResultSeg(const std::vector<const float*>& potentials, uint8_t* resultSeg, const glm::ivec3& dims)
 {
   const int zDelta = dims.x * dims.y;
   const int yDelta = dims.x;
@@ -136,7 +138,7 @@ void sor(
   float /*beta*/
 )
 {
-  const std::size_t N = dims.x * dims.y * dims.z;
+  const std::size_t N = static_cast<const std::size_t>(dims.x * dims.y * dims.z);
 
   std::vector<float> imageNorm(N, 0.0f);
 
@@ -145,10 +147,10 @@ void sor(
   const float BETA = 1.0f; // computeBeta( imageNorm.data(), dims );
 
   int n = 0;
-  int isw, jsw, ksw;
+  int isw = 0, jsw = 0, ksw = 0;
 
   float omega = 1.0f;
-  float val, pot, grad, weight;
+  float val = NAN, pot = NAN, grad = NAN, weight = NAN;
 
   float resid = 0.0f;
   float total = 0.0f;

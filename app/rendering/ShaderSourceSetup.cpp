@@ -10,8 +10,8 @@ namespace
 std::string loadShaderFile(const std::string& path)
 {
   const auto filesystem = cmrc::shaders::get_filesystem();
-  const cmrc::file data = filesystem.open(path.c_str());
-  return std::string(data.begin(), data.end());
+  const cmrc::file data = filesystem.open(path);
+  return {data.begin(), data.end()};
 }
 
 } // namespace

@@ -70,7 +70,7 @@ public:
   Camera(ProjectionType projType, GetterType<CoordinateFrame> anatomy_T_start_provider = nullptr);
 
   Camera(const Camera&);
-  const Camera& operator=(const Camera&);
+  Camera& operator=(const Camera&);
 
   ~Camera() = default;
 

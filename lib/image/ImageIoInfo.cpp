@@ -93,7 +93,7 @@ bool setMatrixMetaDataEntry(MetaDataMap& metaDataMap, const itk::MetaDataDiction
   return false;
 }
 
-MetaDataMap getMetaDataMap(const ::itk::ImageIOBase::Pointer imageIo)
+MetaDataMap getMetaDataMap(const ::itk::ImageIOBase::Pointer& imageIo)
 {
   MetaDataMap metaDataMap;
 
@@ -204,7 +204,7 @@ MetaDataMap getMetaDataMap(const ::itk::ImageIOBase::Pointer imageIo)
   return metaDataMap;
 }
 
-bool setFileInfoFromItk(FileInfo& info, const itk::ImageIOBase::Pointer imageIo)
+bool setFileInfoFromItk(FileInfo& info, const itk::ImageIOBase::Pointer& imageIo)
 {
   if (!imageIo || imageIo.IsNull()) {
     return false;
@@ -220,7 +220,7 @@ bool setFileInfoFromItk(FileInfo& info, const itk::ImageIOBase::Pointer imageIo)
   return true;
 }
 
-bool setComponentInfoFromItk(ComponentInfo& info, const itk::ImageIOBase::Pointer imageIo)
+bool setComponentInfoFromItk(ComponentInfo& info, const itk::ImageIOBase::Pointer& imageIo)
 {
   if (!imageIo || imageIo.IsNull()) {
     return false;
@@ -233,7 +233,7 @@ bool setComponentInfoFromItk(ComponentInfo& info, const itk::ImageIOBase::Pointe
   return true;
 }
 
-bool setPixelInfoFromItk(PixelInfo& info, const itk::ImageIOBase::Pointer imageIo)
+bool setPixelInfoFromItk(PixelInfo& info, const itk::ImageIOBase::Pointer& imageIo)
 {
   if (!imageIo || imageIo.IsNull()) {
     return false;
@@ -250,7 +250,7 @@ bool setPixelInfoFromItk(PixelInfo& info, const itk::ImageIOBase::Pointer imageI
   return true;
 }
 
-bool setSizeInfoFromItk(SizeInfo& info, const itk::ImageIOBase::Pointer imageIo)
+bool setSizeInfoFromItk(SizeInfo& info, const itk::ImageIOBase::Pointer& imageIo)
 {
   if (!imageIo || imageIo.IsNull()) {
     return false;
@@ -262,7 +262,7 @@ bool setSizeInfoFromItk(SizeInfo& info, const itk::ImageIOBase::Pointer imageIo)
   return true;
 }
 
-bool setSpaceInfoFromItk(SpaceInfo& info, const itk::ImageIOBase::Pointer imageIo)
+bool setSpaceInfoFromItk(SpaceInfo& info, const itk::ImageIOBase::Pointer& imageIo)
 {
   if (!imageIo || imageIo.IsNull()) {
     return false;
@@ -290,7 +290,7 @@ bool setSpaceInfoFromItk(SpaceInfo& info, const itk::ImageIOBase::Pointer imageI
   return true;
 }
 
-bool setTimeInfoFromItk(TimeInfo& info, const itk::ImageIOBase::Pointer imageIo)
+bool setTimeInfoFromItk(TimeInfo& info, const itk::ImageIOBase::Pointer& imageIo)
 {
   if (!imageIo || imageIo.IsNull()) {
     return false;
@@ -716,7 +716,7 @@ bool ImageIoInfo::validate() const
     m_spaceInfo.validate() && m_timeInfo.validate());
 }
 
-bool setImageIoInfoFromItk(ImageIoInfo& info, const itk::ImageIOBase::Pointer imageIo)
+bool setImageIoInfoFromItk(ImageIoInfo& info, const itk::ImageIOBase::Pointer& imageIo)
 {
   if (!imageIo || imageIo.IsNull()) {
     return false;
@@ -784,7 +784,7 @@ ImageIoInfo spatializedImageIoInfoForEntropy(const ImageIoInfo& source)
 
 bool setSizeInfoFromItkImageBase(
   SizeInfo& info,
-  const typename itk::ImageBase<3>::Pointer imageBase,
+  const typename itk::ImageBase<3>::Pointer& imageBase,
   std::size_t componentSizeInBytes)
 {
   if (!imageBase || imageBase.IsNull()) {
@@ -797,7 +797,7 @@ bool setSizeInfoFromItkImageBase(
   return true;
 }
 
-bool setSpaceInfoFromItkImageBase(SpaceInfo& info, const typename itk::ImageBase<3>::Pointer imageBase)
+bool setSpaceInfoFromItkImageBase(SpaceInfo& info, const typename itk::ImageBase<3>::Pointer& imageBase)
 {
   if (!imageBase || imageBase.IsNull()) {
     return false;

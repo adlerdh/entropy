@@ -42,7 +42,7 @@ public:
   void setMetricImages(const std::list<uuid>& imageUids) override;
   void setImageUsedForMetric(const AppData& appData, std::size_t index, bool visible) override;
 
-  void updateImageOrdering(uuid_range_t orderedImageUids) override;
+  void updateImageOrdering(const uuid_range_t& orderedImageUids) override;
 
   void setViewType(const ViewType& viewType) override;
   void setRenderMode(const ViewRenderMode& renderMode) override;

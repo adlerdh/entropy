@@ -947,7 +947,7 @@ int compareJobTableColumn(
   const registration::JobRecord& right,
   JobTableColumn column)
 {
-  auto compareStrings = [](std::string lhs, std::string rhs) {
+  auto compareStrings = [](const std::string& lhs, const std::string& rhs) {
     return lhs < rhs ? -1 : (rhs < lhs ? 1 : 0);
   };
   auto compareNumbers = [](double lhs, double rhs) {

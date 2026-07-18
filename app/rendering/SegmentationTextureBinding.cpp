@@ -37,13 +37,13 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindSegTextures(const Im
     // GLTexture& segTex = R.m_distanceMapTextures.at( *imageUid ).at( 0 );
     GLTexture& segTex = R.m_segTextures.at(*segUid);
     segTex.bind(msk_segTexSampler.index);
-    boundTextures.push_back(segTex);
+    boundTextures.emplace_back(segTex);
   }
   else {
     // No segmentation, so bind the blank one:
     GLTexture& segTex = R.m_blankSegTexture;
     segTex.bind(msk_segTexSampler.index);
-    boundTextures.push_back(segTex);
+    boundTextures.emplace_back(segTex);
   }
 
   return boundTextures;
@@ -63,7 +63,7 @@ std::list<std::reference_wrapper<GLBufferTexture>> Rendering::bindSegBufferTextu
     GLBufferTexture& tblTex = R.m_labelBufferTextures.at(*tableUid);
     tblTex.bind(msk_segLabelTableTexSampler.index);
     tblTex.attachBufferToTexture(msk_segLabelTableTexSampler.index);
-    boundBufferTextures.push_back(tblTex);
+    boundBufferTextures.emplace_back(tblTex);
   }
   else {
     // No label table, so bind the first available one:
@@ -71,7 +71,7 @@ std::list<std::reference_wrapper<GLBufferTexture>> Rendering::bindSegBufferTextu
     GLBufferTexture& tblTex = it->second;
     tblTex.bind(msk_segLabelTableTexSampler.index);
     tblTex.attachBufferToTexture(msk_segLabelTableTexSampler.index);
-    boundBufferTextures.push_back(tblTex);
+    boundBufferTextures.emplace_back(tblTex);
   }
 
   return boundBufferTextures;

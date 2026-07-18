@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <cstring>
 #include <limits>
+#include <utility>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -373,13 +374,13 @@ Image::Image(
 }
 
 Image::Image(
-  const ImageHeader& header,
+  ImageHeader header,
   const std::string& displayName,
   const ImageRepresentation& imageRep,
   const MultiComponentBufferType& bufferType,
   const std::vector<const void*>& imageDataComponents,
   ImageTimeAxis timeAxis)
-  : m_imageRep(imageRep), m_bufferType(bufferType), m_timeAxis(std::move(timeAxis)), m_header(header)
+  : m_imageRep(imageRep), m_bufferType(bufferType), m_timeAxis(std::move(timeAxis)), m_header(std::move(header))
 {
   if (imageDataComponents.empty()) {
     spdlog::error("No image data buffers provided for constructing Image");
@@ -701,7 +702,7 @@ std::ostream& Image::metaData(std::ostream& os) const
   for (const auto& p : m_ioInfoInMemory.m_metaData) {
     os << p.first << ": ";
     // std::visit([&os] (const auto& e) { os << e; }, p.second);
-    os << std::endl;
+    os << '\n';
   }
   return os;
 }

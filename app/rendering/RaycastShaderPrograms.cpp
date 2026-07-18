@@ -34,8 +34,8 @@ const Uniforms::SamplerIndexVectorType msk_defTexSamplers{{4, 5, 6}};
 std::string loadFile(const std::string& path)
 {
   const auto filesystem = cmrc::shaders::get_filesystem();
-  const cmrc::file data = filesystem.open(path.c_str());
-  return std::string(data.begin(), data.end());
+  const cmrc::file data = filesystem.open(path);
+  return {data.begin(), data.end()};
 }
 
 } // namespace
@@ -50,8 +50,8 @@ bool Rendering::createRaycastIsoProgram(GLShaderProgram& program, bool warped)
   std::string fsSource;
 
   try {
-    cmrc::file vsData = filesystem.open(vsFileName.c_str());
-    cmrc::file fsData = filesystem.open(fsFileName.c_str());
+    cmrc::file vsData = filesystem.open(vsFileName);
+    cmrc::file fsData = filesystem.open(fsFileName);
 
     vsSource = std::string(vsData.begin(), vsData.end());
     fsSource = std::string(fsData.begin(), fsData.end());

@@ -60,11 +60,11 @@ ImageSettings::ImageSettings(
   std::size_t numPixels,
   uint32_t numComponents,
   ComponentType componentType,
-  std::vector<ComponentStats> componentStats)
+  const std::vector<ComponentStats>& componentStats)
   : m_displayName(std::move(displayName))
   , m_numPixels(numPixels)
   , m_numComponents(numComponents)
-  , m_componentType(std::move(componentType))
+  , m_componentType(componentType)
   , m_componentSettings(numComponents)
 {
   if (0 == m_numPixels) {
@@ -141,7 +141,7 @@ double ImageSettings::timePlaybackSpeed() const
 
 void ImageSettings::setBorderColor(glm::vec3 borderColor)
 {
-  m_borderColor = std::move(borderColor);
+  m_borderColor = borderColor;
 }
 
 const glm::vec3& ImageSettings::borderColor() const
@@ -1217,7 +1217,7 @@ bool ImageSettings::colormapEdges() const
 
 void ImageSettings::setEdgeColor(uint32_t i, glm::vec3 color)
 {
-  m_componentSettings[i].m_edgeColor = std::move(color);
+  m_componentSettings[i].m_edgeColor = color;
 }
 
 void ImageSettings::setEdgeColor(glm::vec3 color)

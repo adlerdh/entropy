@@ -142,9 +142,8 @@ EntropyApp::EntropyApp()
   , m_imagesReady(false)
   , m_imageLoadFailed(false)
   , m_glfw(this, GL_VERSION_MAJOR, GL_VERSION_MINOR) // GLFW creates the OpenGL context
-  , m_data()
-  , m_rendering(m_data)                            // Requires OpenGL context
-  , m_callbackHandler(m_data, m_glfw, m_rendering) // Requires OpenGL context
+  , m_rendering(m_data)                              // Requires OpenGL context
+  , m_callbackHandler(m_data, m_glfw, m_rendering)   // Requires OpenGL context
   , m_itkSnapSync(m_data)
   , m_entropyInstanceSync(m_data)
   , m_imgui(m_glfw.window(), m_data, m_callbackHandler) // Requires OpenGL context
@@ -266,7 +265,8 @@ void EntropyApp::onImagesReady()
     bool assigned = false;
     if (image && warp) {
       if (pendingWarpAssignment->forwardWarp) {
-        const Image* referenceImage = m_data.refImageUid() ? m_data.image(*m_data.refImageUid()) : nullptr;
+        const auto referenceUid = m_data.refImageUid();
+        const Image* referenceImage = referenceUid ? m_data.image(*referenceUid) : nullptr;
         if (confirmWarpAssignmentWarnings(
               "Forward warp warning",
               forwardWarpAssignmentWarnings(*warp, *image, referenceImage)))
@@ -352,16 +352,14 @@ void EntropyApp::onImagesReady()
     m_data.windowData().setCurrentLayoutToDefaultForImages(m_data);
     m_data.windowData().setDefaultRenderedImagesForAllLayouts(m_data);
 
-    if (m_data.project().m_layoutsFileName) {
+    if (const auto layoutsFileName = m_data.project().m_layoutsFileName) {
       layout::LayoutFile layoutFile;
-      if (layout::open(layoutFile, *m_data.project().m_layoutsFileName)) {
+      if (layout::open(layoutFile, *layoutsFileName)) {
         if (layoutFile.m_layouts.empty()) {
-          spdlog::warn(
-            "Referenced layout file {} contains no layouts; using the default layout",
-            *m_data.project().m_layoutsFileName);
+          spdlog::warn("Referenced layout file {} contains no layouts; using the default layout", *layoutsFileName);
         }
         if (!m_data.windowData().applyLayoutPresets(m_data, layoutFile.m_layouts, layoutFile.m_currentLayoutIndex)) {
-          spdlog::error("Could not apply referenced layout file {}", *m_data.project().m_layoutsFileName);
+          spdlog::error("Could not apply referenced layout file {}", *layoutsFileName);
         }
       }
       else if (!m_data.project().m_layouts.empty()) {

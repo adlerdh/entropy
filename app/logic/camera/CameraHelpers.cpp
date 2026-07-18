@@ -1,5 +1,7 @@
 #include "logic/camera/CameraHelpers.h"
 
+#include <math.h>
+
 #include "common/CoordinateFrame.h"
 #include "common/Viewport.h"
 
@@ -574,7 +576,7 @@ glm::vec2 scaleFactorsAboutWorldAxis(
     return sk_ident;
   }
 
-  return glm::vec2(numerator.x / denom.x, numerator.y / denom.y);
+  return {numerator.x / denom.x, numerator.y / denom.y};
 }
 
 glm::vec2 worldViewportDimensions(const Camera& camera, float ndcZ)
@@ -617,9 +619,9 @@ glm::vec3 worldTranslationPerpendicularToWorldAxis(
 
 glm::vec2 windowNdc_T_window(const Viewport& windowViewport, const glm::vec2& windowPixelPos)
 {
-  return glm::vec2(
+  return {
     2.0f * (windowPixelPos.x - windowViewport.left()) / windowViewport.width() - 1.0f,
-    2.0f * (windowPixelPos.y - windowViewport.bottom()) / windowViewport.height() - 1.0f);
+    2.0f * (windowPixelPos.y - windowViewport.bottom()) / windowViewport.height() - 1.0f};
 }
 
 glm::vec2 viewDevice_T_ndc(const Viewport& viewport, const glm::vec2& ndcPos)
@@ -629,23 +631,23 @@ glm::vec2 viewDevice_T_ndc(const Viewport& viewport, const glm::vec2& ndcPos)
 
 glm::vec2 window_T_windowClip(const Viewport& viewport, const glm::vec2& ndcPos)
 {
-  return glm::vec2(
+  return {
     (ndcPos.x + 1.0f) * viewport.width() / 2.0f + viewport.left(),
-    (ndcPos.y + 1.0f) * viewport.height() / 2.0f + viewport.bottom());
+    (ndcPos.y + 1.0f) * viewport.height() / 2.0f + viewport.bottom()};
 }
 
 glm::vec2 viewport_T_windowClip(const Viewport& windowViewport, const glm::vec2& windowClipPos)
 {
-  return glm::vec2(
+  return {
     (windowClipPos.x + 1.0f) * windowViewport.width() / 2.0f,
-    (windowClipPos.y + 1.0f) * windowViewport.height() / 2.0f);
+    (windowClipPos.y + 1.0f) * windowViewport.height() / 2.0f};
 }
 
 glm::vec2 windowClip_T_viewport(const Viewport& windowViewport, const glm::vec2& viewportPos)
 {
-  return glm::vec2(
+  return {
     (2.0f * viewportPos.x / windowViewport.width() - 1.0f),
-    (2.0f * viewportPos.y / windowViewport.height() - 1.0f));
+    (2.0f * viewportPos.y / windowViewport.height() - 1.0f)};
 }
 
 glm::mat4 window_T_windowClip(const Viewport& viewport)
@@ -668,7 +670,7 @@ glm::mat4 viewport_T_windowClip(const Viewport& windowViewport)
 
 glm::vec2 window_T_mindow(float wholeWindowHeight, const glm::vec2& mousePos)
 {
-  return glm::vec2(mousePos.x, wholeWindowHeight - mousePos.y);
+  return {mousePos.x, wholeWindowHeight - mousePos.y};
 }
 
 glm::mat4 window_T_mindow(float wholeWindowHeight)
@@ -687,12 +689,12 @@ glm::mat4 mindow_T_window(float wholeWindowHeight)
 
 glm::vec2 miewport_T_viewport(float viewportHeight, const glm::vec2& viewPos)
 {
-  return glm::vec2(viewPos.x, viewportHeight - viewPos.y);
+  return {viewPos.x, viewportHeight - viewPos.y};
 }
 
 glm::vec2 viewport_T_miewport(float viewportHeight, const glm::vec2& viewPos)
 {
-  return glm::vec2(viewPos.x, viewportHeight - viewPos.y);
+  return {viewPos.x, viewportHeight - viewPos.y};
 }
 
 glm::mat4 miewport_T_viewport(float viewportHeight)
@@ -713,7 +715,7 @@ worldCameraPlaneIntersection(const Camera& camera, const glm::vec2& ndcRayPos, c
   const glm::vec3 worldRayPos = world_T_ndc(camera, glm::vec3{ndcRayPos, sk_ndcNearPlane});
   const glm::vec3 worldRayDir = worldRayDirection(camera, ndcRayPos);
 
-  float intersectionDistance;
+  float intersectionDistance = NAN;
 
   bool intersected =
     glm::intersectRayPlane(worldRayPos, worldRayDir, worldPlanePos, worldPlaneNormal, intersectionDistance);
@@ -1072,25 +1074,15 @@ bool looksAlongOrthogonalAxis(const Camera& camera)
   const float dotY = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::PosY)));
   const float dotZ = std::abs(glm::dot(frontDir, Directions::get(Directions::Cartesian::PosZ)));
 
-  if (
-    glm::epsilonEqual(dotX, 1.0f, sk_eps) || glm::epsilonEqual(dotY, 1.0f, sk_eps) ||
-    glm::epsilonEqual(dotZ, 1.0f, sk_eps))
-  {
-    return true;
-  }
-
-  return false;
+  return glm::epsilonEqual(dotX, 1.0f, sk_eps) || glm::epsilonEqual(dotY, 1.0f, sk_eps) ||
+         glm::epsilonEqual(dotZ, 1.0f, sk_eps);
 }
 
 bool areVectorsParallel(const glm::vec3& a, const glm::vec3& b, float angleThreshold_degrees)
 {
   const float dotProdThreshold = 1.0f - std::cos(glm::radians(angleThreshold_degrees));
 
-  if (std::abs(std::abs(glm::dot(a, b)) - 1.0f) > dotProdThreshold) {
-    return false;
-  }
-
-  return true;
+  return std::abs(std::abs(glm::dot(a, b)) - 1.0f) <= dotProdThreshold;
 }
 
 bool areViewDirectionsParallel(

@@ -295,7 +295,7 @@ private:
    * loadingStatusTitle Title for the loading-status popup.
    */
   void startAsyncImageLoad(
-    std::string windowTitleStatus,
+    const std::string& windowTitleStatus,
     std::function<bool()> loadTask,
     std::function<void()> onLoadFailed,
     bool showLoadingOverlay = true,

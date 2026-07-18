@@ -11,6 +11,7 @@
 #include <optional>
 #include <sstream>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -278,8 +279,8 @@ bool appendScalarComponentTexture(
     return false;
   }
 
-  tex::MinificationFilter minFilter;
-  tex::MagnificationFilter maxFilter;
+  tex::MinificationFilter minFilter = tex::MinificationFilter::Linear;
+  tex::MagnificationFilter maxFilter = tex::MagnificationFilter::Linear;
   switch (image.settings().interpolationMode(component)) {
     case InterpolationMode::NearestNeighbor:
       minFilter = tex::MinificationFilter::Nearest;
@@ -553,7 +554,7 @@ std::vector<std::byte> copyPlanarSegValuesBytes(const Image& seg, const RenderDa
 
 } // namespace
 
-TextureCreationResult createImageTexturesWithReport(AppData& appData, uuid_range_t imageUids)
+TextureCreationResult createImageTexturesWithReport(AppData& appData, const uuid_range_t& imageUids)
 {
   static constexpr GLint sk_mipmapLevel = 0; // Load image data into first mipmap level
   static constexpr GLint sk_alignment = 1;   // Pixel pack/unpack alignment is 1 byte
@@ -660,8 +661,8 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, uuid_range
             numComp);
 
           for (uint32_t comp = 0; comp < numComp; ++comp) {
-            tex::MinificationFilter minFilter;
-            tex::MagnificationFilter maxFilter;
+            tex::MinificationFilter minFilter = tex::MinificationFilter::Linear;
+            tex::MagnificationFilter maxFilter = tex::MagnificationFilter::Linear;
 
             switch (image->settings().interpolationMode(comp)) {
               case InterpolationMode::NearestNeighbor: {
@@ -766,7 +767,7 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, uuid_range
   return result;
 }
 
-std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imageUids)
+std::vector<uuids::uuid> createImageTextures(AppData& appData, const uuid_range_t& imageUids)
 {
   TextureCreationResult result = createImageTexturesWithReport(appData, imageUids);
   handleTextureCreationFailures(appData, result.failures);
@@ -943,7 +944,7 @@ std::unordered_map<uuids::uuid, std::unordered_map<uint32_t, GLTexture>> createD
   return mapTextures;
 }
 
-TextureCreationResult createSegTexturesWithReport(AppData& appData, uuid_range_t segUids)
+TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_range_t& segUids)
 {
   // Load the first pixel component of the segmentation image.
   // (Segmentations should have only one component.)
@@ -1076,7 +1077,7 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, uuid_range_t
   return result;
 }
 
-std::vector<uuids::uuid> createSegTextures(AppData& appData, uuid_range_t segUids)
+std::vector<uuids::uuid> createSegTextures(AppData& appData, const uuid_range_t& segUids)
 {
   TextureCreationResult result = createSegTexturesWithReport(appData, segUids);
   handleTextureCreationFailures(appData, result.failures);
@@ -1182,7 +1183,7 @@ std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(c
       continue;
     }
 
-    int maxBufTexSize;
+    int maxBufTexSize = 0;
     glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufTexSize);
 
     if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize)) {

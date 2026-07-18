@@ -52,7 +52,7 @@ struct TextureCreationResult
  * @param imageUids Image UIDs for which textures should be created.
  * @return Created image UIDs and texture creation failures.
  */
-TextureCreationResult createImageTexturesWithReport(AppData& appData, uuid_range_t imageUids);
+TextureCreationResult createImageTexturesWithReport(AppData& appData, const uuid_range_t& imageUids);
 
 /**
  * @brief Create or recreate image textures and show user prompts for failures.
@@ -60,7 +60,7 @@ TextureCreationResult createImageTexturesWithReport(AppData& appData, uuid_range
  * @param imageUids Image UIDs for which textures should be created.
  * @return Image UIDs for which textures were created successfully.
  */
-std::vector<uuids::uuid> createImageTextures(AppData& appData, uuid_range_t imageUids);
+std::vector<uuids::uuid> createImageTextures(AppData& appData, const uuid_range_t& imageUids);
 
 /**
  * @brief Refresh an existing image texture from the image's active time point when possible.
@@ -80,7 +80,7 @@ bool refreshImageTexturesForActiveTimePoint(AppData& appData, const uuids::uuid&
  * @param segUids Segmentation UIDs for which textures should be created.
  * @return Created segmentation UIDs and texture creation failures.
  */
-TextureCreationResult createSegTexturesWithReport(AppData& appData, uuid_range_t segUids);
+TextureCreationResult createSegTexturesWithReport(AppData& appData, const uuid_range_t& segUids);
 
 /**
  * @brief Create or recreate segmentation textures and show user prompts for failures.
@@ -88,7 +88,7 @@ TextureCreationResult createSegTexturesWithReport(AppData& appData, uuid_range_t
  * @param segUids Segmentation UIDs for which textures should be created.
  * @return Segmentation UIDs for which textures were created successfully.
  */
-std::vector<uuids::uuid> createSegTextures(AppData& appData, uuid_range_t segUids);
+std::vector<uuids::uuid> createSegTextures(AppData& appData, const uuid_range_t& segUids);
 
 /**
  * @brief Create distance-map textures for all available image distance maps.

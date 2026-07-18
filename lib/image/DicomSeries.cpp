@@ -283,7 +283,7 @@ std::string sliceOrientationFromDirections(const glm::mat3& directions)
 }
 
 template<typename T>
-dicom::SeriesGeometry geometryFromImage(const typename itk::Image<T, 3>::Pointer image)
+dicom::SeriesGeometry geometryFromImage(const typename itk::Image<T, 3>::Pointer& image)
 {
   dicom::SeriesGeometry geometry;
   if (!image) {
@@ -511,7 +511,7 @@ ComponentType dicomComponentTypeFor()
 }
 
 template<typename T>
-ImageIoInfo dicomCineIoInfo(const typename itk::Image<T, 3>::Pointer image, const fs::path& fileName)
+ImageIoInfo dicomCineIoInfo(const typename itk::Image<T, 3>::Pointer& image, const fs::path& fileName)
 {
   const auto region = image->GetLargestPossibleRegion();
   const auto size = region.GetSize();

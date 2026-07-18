@@ -73,7 +73,7 @@ void drawImageQuad(
   float xrayIntensityWindow,
   float xrayIntensityLevel,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,
-  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage,
+  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)>& getImage,
   bool showEdges)
 {
   if (imagePairs.empty()) {
@@ -422,7 +422,7 @@ void drawRaycastQuad(
   const View& view,
   const glm::mat4& texture_T_world,
   const std::vector<std::pair<std::optional<uuids::uuid>, std::optional<uuids::uuid>>>& imagePairs,
-  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)> getImage)
+  const std::function<const Image*(const std::optional<uuids::uuid>& imageUid)>& getImage)
 {
   if (imagePairs.empty()) {
     spdlog::error("No images provided when raycasting");

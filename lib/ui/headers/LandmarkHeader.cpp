@@ -76,7 +76,7 @@ void renderLandmarkGroupHeader(
       LandmarkGroup newGroup;
       newGroup.setName(std::string("Landmarks for ") + image->settings().displayName());
 
-      const auto newLmGroupUid = appData.addLandmarkGroup(std::move(newGroup));
+      const auto newLmGroupUid = appData.addLandmarkGroup(newGroup);
       appData.assignLandmarkGroupUidToImage(imageUid, newLmGroupUid);
       appData.setRainbowColorsForAllLandmarkGroups();
       appData.assignActiveLandmarkGroupUidToImage(imageUid, newLmGroupUid);
@@ -292,12 +292,12 @@ void renderLandmarkGroupHeader(
   int inVoxelSpace = activeLmGroup->getInVoxelSpace() ? 1 : 0;
 
   if (ImGui::RadioButton("Physical subject (mm)", &inVoxelSpace, 0)) {
-    activeLmGroup->setInVoxelSpace((1 == inVoxelSpace) ? true : false);
+    activeLmGroup->setInVoxelSpace(1 == inVoxelSpace);
   }
 
   ImGui::SameLine();
   if (ImGui::RadioButton("Voxels", &inVoxelSpace, 1)) {
-    activeLmGroup->setInVoxelSpace((1 == inVoxelSpace) ? true : false);
+    activeLmGroup->setInVoxelSpace(1 == inVoxelSpace);
   }
 
   ImGui::SameLine();

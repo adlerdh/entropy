@@ -19,7 +19,7 @@ class GLFrameBufferObject final
 {
 public:
   /// Create a named framebuffer wrapper for diagnostics.
-  explicit GLFrameBufferObject(const std::string& name);
+  explicit GLFrameBufferObject(std::string name);
 
   GLFrameBufferObject(const GLFrameBufferObject&) = delete;
   GLFrameBufferObject& operator=(const GLFrameBufferObject&) = delete;

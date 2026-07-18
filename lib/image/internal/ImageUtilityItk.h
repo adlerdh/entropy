@@ -42,7 +42,7 @@ typename itk::ImageIOBase::Pointer createStandardImageIo(const char* fileName);
 /**
  * @brief Populate Entropy image IO metadata from an initialized ITK ImageIO object.
  */
-bool setImageIoInfoFromItk(ImageIoInfo& info, const itk::ImageIOBase::Pointer imageIo);
+bool setImageIoInfoFromItk(ImageIoInfo& info, const itk::ImageIOBase::Pointer& imageIo);
 
 /**
  * @brief Populate size metadata from a 3D ITK image base.
@@ -53,10 +53,10 @@ bool setImageIoInfoFromItk(ImageIoInfo& info, const itk::ImageIOBase::Pointer im
  */
 bool setSizeInfoFromItkImageBase(
   SizeInfo& info,
-  const typename itk::ImageBase<3>::Pointer imageBase,
+  const typename itk::ImageBase<3>::Pointer& imageBase,
   std::size_t componentSizeInBytes);
 
 /**
  * @brief Populate spatial metadata from a 3D ITK image base.
  */
-bool setSpaceInfoFromItkImageBase(SpaceInfo& info, const typename itk::ImageBase<3>::Pointer imageBase);
+bool setSpaceInfoFromItkImageBase(SpaceInfo& info, const typename itk::ImageBase<3>::Pointer& imageBase);

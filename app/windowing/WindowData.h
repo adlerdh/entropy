@@ -36,10 +36,10 @@ public:
   void setDefaultRenderedImagesForLayout(Layout& layout, const AppData& appData);
 
   /** @brief Reorder rendered and metric image selections after image order changes. */
-  void updateImageOrdering(uuid_range_t orderedImageUids);
+  void updateImageOrdering(const uuid_range_t& orderedImageUids);
 
   /** @brief Remove image-specific layouts and references to one image. */
-  void removeImageFromLayouts(const uuid& imageUid, uuid_range_t orderedImageUids);
+  void removeImageFromLayouts(const uuid& imageUid, const uuid_range_t& orderedImageUids);
 
   /** @brief Add an image to views that render all images by default. */
   void appendImageToDefaultRenderedImages(const AppData& appData, const uuid& imageUid);
@@ -137,12 +137,12 @@ public:
     const AppData& appData,
     const std::unordered_map<uuid, ViewType>& dicomNativeViewTypesByImage = {});
 
-  std::vector<layout::LayoutSpec> createProjectLayoutSnapshots(uuid_range_t orderedImageUids) const;
+  std::vector<layout::LayoutSpec> createProjectLayoutSnapshots(const uuid_range_t& orderedImageUids) const;
   bool applyProjectLayoutSnapshots(
     const std::vector<layout::LayoutSpec>& layouts,
-    uuid_range_t orderedImageUids,
+    const uuid_range_t& orderedImageUids,
     std::optional<std::size_t> currentLayoutIndex);
-  std::vector<layout::LayoutPreset> createLayoutPresets(uuid_range_t orderedImageUids) const;
+  std::vector<layout::LayoutPreset> createLayoutPresets(const uuid_range_t& orderedImageUids) const;
   bool applyLayoutPresets(
     const AppData& appData,
     const std::vector<layout::LayoutPreset>& presets,

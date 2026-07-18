@@ -18,9 +18,9 @@ ImageHeader::ImageHeader(const ImageIoInfo& ioInfoOnDisk, const ImageIoInfo& ioI
   : m_ioInfoOnDisk(ioInfoOnDisk)
   , m_ioInfoInMemory(ioInfoInMemory)
   , m_interleavedComponents(interleavedComponents)
-  , m_existsOnDisk(true)
+  ,
 
-  , m_fileName(ioInfoOnDisk.m_fileInfo.m_fileName)
+  m_fileName(ioInfoOnDisk.m_fileInfo.m_fileName)
   , m_numComponentsPerPixel(ioInfoInMemory.m_pixelInfo.m_numComponents)
   , m_numPixels(ioInfoOnDisk.m_sizeInfo.m_imageSizeInPixels)
   , m_fileImageSizeInBytes(ioInfoOnDisk.m_sizeInfo.m_imageSizeInBytes)
@@ -207,7 +207,7 @@ void ImageHeader::adjustComponents(const ComponentType& componentType, uint32_t 
   }
 
   std::string compString;
-  uint32_t sizeInBytes;
+  uint32_t sizeInBytes = 0;
 
   switch (componentType) {
     case ComponentType::Int8: {
@@ -441,13 +441,13 @@ std::ostream& operator<<(std::ostream& os, const ImageHeader& header)
      << "\nDirections: " << glm::to_string(header.m_directions)
 
      << "\n\nBounding box corners (in Subject space):\n"
-     << "\t" << glm::to_string(header.m_subjectBBoxCorners[0]) << std::endl
-     << "\t" << glm::to_string(header.m_subjectBBoxCorners[1]) << std::endl
-     << "\t" << glm::to_string(header.m_subjectBBoxCorners[2]) << std::endl
-     << "\t" << glm::to_string(header.m_subjectBBoxCorners[3]) << std::endl
-     << "\t" << glm::to_string(header.m_subjectBBoxCorners[4]) << std::endl
-     << "\t" << glm::to_string(header.m_subjectBBoxCorners[5]) << std::endl
-     << "\t" << glm::to_string(header.m_subjectBBoxCorners[6]) << std::endl
+     << "\t" << glm::to_string(header.m_subjectBBoxCorners[0]) << '\n'
+     << "\t" << glm::to_string(header.m_subjectBBoxCorners[1]) << '\n'
+     << "\t" << glm::to_string(header.m_subjectBBoxCorners[2]) << '\n'
+     << "\t" << glm::to_string(header.m_subjectBBoxCorners[3]) << '\n'
+     << "\t" << glm::to_string(header.m_subjectBBoxCorners[4]) << '\n'
+     << "\t" << glm::to_string(header.m_subjectBBoxCorners[5]) << '\n'
+     << "\t" << glm::to_string(header.m_subjectBBoxCorners[6]) << '\n'
      << "\t" << glm::to_string(header.m_subjectBBoxCorners[7])
 
      << "\n\nBounding box center (mm, Subject space): " << glm::to_string(header.m_subjectBBoxCenter)

@@ -87,8 +87,8 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
 
     GLTexture& texture = textures[textureIndex];
 
-    tex::MinificationFilter minFilter;
-    tex::MagnificationFilter maxFilter;
+    tex::MinificationFilter minFilter = tex::MinificationFilter::Linear;
+    tex::MagnificationFilter maxFilter = tex::MagnificationFilter::Linear;
 
     switch (image->settings().interpolationMode(activeComp)) {
       case InterpolationMode::NearestNeighbor: {
@@ -112,8 +112,8 @@ void Rendering::updateImageInterpolation(const uuid& imageUid)
     // Modify all components for color images
     auto& textures = m_appData.renderData().m_imageTextures.at(effectiveImageUid);
     for (GLTexture& texture : textures) {
-      tex::MinificationFilter minFilter;
-      tex::MagnificationFilter maxFilter;
+      tex::MinificationFilter minFilter = tex::MinificationFilter::Linear;
+      tex::MagnificationFilter maxFilter = tex::MagnificationFilter::Linear;
 
       switch (image->settings().colorInterpolationMode()) {
         case InterpolationMode::NearestNeighbor: {
@@ -157,8 +157,8 @@ void Rendering::updateImageColorMapInterpolation(std::size_t colorMapIndex)
   }
 
   GLTexture& texture = m_appData.renderData().m_colormapTextures.at(*cmapUid);
-  tex::MinificationFilter minFilter;
-  tex::MagnificationFilter maxFilter;
+  tex::MinificationFilter minFilter = tex::MinificationFilter::Linear;
+  tex::MagnificationFilter maxFilter = tex::MagnificationFilter::Linear;
 
   switch (cmap->interpolationMode()) {
     case ImageColorMap::InterpolationMode::Nearest: {

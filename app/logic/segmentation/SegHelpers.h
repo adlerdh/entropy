@@ -11,7 +11,7 @@
  */
 LabelIndexMaps createLabelIndexMaps(
   const glm::ivec3& dims,
-  std::function<LabelType(int x, int y, int z)> getSeedValue,
+  const std::function<LabelType(int x, int y, int z)>& getSeedValue,
   bool ignoreBackgroundZeroLabel);
 
 VoxelDistances computeVoxelDistances(const glm::vec3& spacing, bool normalized);

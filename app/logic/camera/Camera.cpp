@@ -17,6 +17,7 @@
 #include <glm/gtx/orthonormalize.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+#include <utility>
 
 namespace
 {
@@ -27,7 +28,7 @@ static const glm::mat4 sk_ident(1.0f);
 
 Camera::Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFrame> anatomy_T_start_provider)
   : m_projection(std::move(projection))
-  , m_anatomy_T_start_provider(anatomy_T_start_provider)
+  , m_anatomy_T_start_provider(std::move(anatomy_T_start_provider))
   , m_camera_T_anatomy(1.0f)
   , m_start_T_world(1.0f)
 {
@@ -37,7 +38,7 @@ Camera::Camera(std::unique_ptr<Projection> projection, GetterType<CoordinateFram
 }
 
 Camera::Camera(ProjectionType projType, GetterType<CoordinateFrame> anatomy_T_start_provider)
-  : m_anatomy_T_start_provider(anatomy_T_start_provider), m_camera_T_anatomy(1.0f), m_start_T_world(1.0f)
+  : m_anatomy_T_start_provider(std::move(anatomy_T_start_provider)), m_camera_T_anatomy(1.0f), m_start_T_world(1.0f)
 {
   switch (projType) {
     case ProjectionType::Orthographic: {
@@ -56,8 +57,12 @@ Camera::Camera(const Camera& other)
   this->operator=(other);
 }
 
-const Camera& Camera::operator=(const Camera& other)
+Camera& Camera::operator=(const Camera& other)
 {
+  if (this == &other) {
+    return *this;
+  }
+
   m_anatomy_T_start_provider = other.anatomy_T_start_provider();
   m_camera_T_anatomy = other.camera_T_anatomy();
   m_start_T_world = other.start_T_world();
@@ -98,7 +103,7 @@ const Projection* Camera::projection() const
 
 void Camera::set_anatomy_T_start_provider(GetterType<CoordinateFrame> provider)
 {
-  m_anatomy_T_start_provider = provider;
+  m_anatomy_T_start_provider = std::move(provider);
 }
 
 const GetterType<CoordinateFrame>& Camera::anatomy_T_start_provider() const
@@ -118,7 +123,7 @@ std::optional<CoordinateFrame> Camera::startFrame() const
 
 bool Camera::isLinkedToStartFrame() const
 {
-  return (m_anatomy_T_start_provider ? true : false);
+  return (static_cast<bool>(m_anatomy_T_start_provider));
 }
 
 void Camera::set_camera_T_anatomy(glm::mat4 M)
@@ -145,7 +150,7 @@ void Camera::set_camera_T_anatomy(glm::mat4 M)
     return;
   }
 
-  m_camera_T_anatomy = std::move(M);
+  m_camera_T_anatomy = M;
 }
 
 const glm::mat4& Camera::camera_T_anatomy() const
@@ -160,7 +165,7 @@ glm::mat4 Camera::anatomy_T_start() const
 
 void Camera::set_start_T_world(glm::mat4 frameA_T_world)
 {
-  m_start_T_world = std::move(frameA_T_world);
+  m_start_T_world = frameA_T_world;
 }
 
 const glm::mat4& Camera::start_T_world() const

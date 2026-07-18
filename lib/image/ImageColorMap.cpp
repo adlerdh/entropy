@@ -51,14 +51,14 @@ std::vector<std::string> splitCsvFields(const std::string& line)
 } // namespace
 
 ImageColorMap::ImageColorMap(
-  const std::string& name,
-  const std::string& technicalName,
-  const std::string& description,
+  std::string name,
+  std::string technicalName,
+  std::string description,
   InterpolationMode interpMode,
-  std::vector<glm::vec3> colors)
-  : m_name(name)
-  , m_technicalName(technicalName)
-  , m_description(description)
+  const std::vector<glm::vec3>& colors)
+  : m_name(std::move(name))
+  , m_technicalName(std::move(technicalName))
+  , m_description(std::move(description))
   , m_preview(0)
   , m_interpolationMode(interpMode)
   , m_transparentBorder(false)
@@ -68,19 +68,19 @@ ImageColorMap::ImageColorMap(
   }
 
   for (const auto& x : colors) {
-    m_colors_RGBA_F32.push_back(glm::vec4{x.r, x.g, x.b, 1.0f});
+    m_colors_RGBA_F32.emplace_back(x.r, x.g, x.b, 1.0f);
   }
 }
 
 ImageColorMap::ImageColorMap(
-  const std::string& name,
-  const std::string& technicalName,
-  const std::string& description,
+  std::string name,
+  std::string technicalName,
+  std::string description,
   InterpolationMode interpMode,
   std::vector<glm::vec4> colors)
-  : m_name(name)
-  , m_technicalName(technicalName)
-  , m_description(description)
+  : m_name(std::move(name))
+  , m_technicalName(std::move(technicalName))
+  , m_description(std::move(description))
   , m_colors_RGBA_F32(std::move(colors))
   , m_preview(0)
   , m_interpolationMode(interpMode)
@@ -263,7 +263,7 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
         const float r = std::stof(c[0], nullptr);
         const float g = std::stof(c[1], nullptr);
         const float b = std::stof(c[2], nullptr);
-        colors.push_back(glm::vec4{r, g, b, 1.0f});
+        colors.emplace_back(r, g, b, 1.0f);
       }
       else if (4 == c.size()) {
         // Do NOT pre-multiply by the alpha component:
@@ -271,7 +271,7 @@ std::optional<ImageColorMap> ImageColorMap::loadImageColorMap(std::istringstream
         const float g = std::stof(c[1], nullptr);
         const float b = std::stof(c[2], nullptr);
         const float a = std::stof(c[3], nullptr);
-        colors.push_back(glm::vec4{r, g, b, a});
+        colors.emplace_back(r, g, b, a);
       }
       else {
         spdlog::error("Invalid color map \"{}\": Color {} has {} components", briefName, count, c.size());
@@ -300,9 +300,9 @@ ImageColorMap ImageColorMap::createLinearImageColorMap(
   const glm::vec4& startColor,
   const glm::vec4& endColor,
   std::size_t numSteps,
-  std::string briefName,
-  std::string description,
-  std::string technicalName)
+  const std::string& briefName,
+  const std::string& description,
+  const std::string& technicalName)
 {
   const std::size_t N = (numSteps >= 2 ? numSteps : 2);
 

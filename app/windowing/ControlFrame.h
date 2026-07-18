@@ -88,7 +88,7 @@ public:
   bool defaultRenderAllImages() const;
 
   /** @brief Reorder rendered, volume, and metric image selections after the image order changes. */
-  virtual void updateImageOrdering(uuid_range_t orderedImageUids);
+  virtual void updateImageOrdering(const uuid_range_t& orderedImageUids);
 
   const UiControls& uiControls() const;
 

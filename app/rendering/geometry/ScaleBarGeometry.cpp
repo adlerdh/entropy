@@ -90,7 +90,6 @@ std::string formatScaleBarLength(double lengthMm, int precision)
   }
   else if (lengthMm >= 1.0) {
     value = lengthMm;
-    unit = "mm";
   }
   else if (lengthMm >= 1.0e-3) {
     value = lengthMm * 1000.0;

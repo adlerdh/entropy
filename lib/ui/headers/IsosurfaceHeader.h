@@ -26,5 +26,5 @@ void renderIsosurfacesHeader(
   size_t imageIndex,
   bool isActiveImage,
   bool hasFollowingHeader,
-  std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)> storeFuture,
-  std::function<void(const uuids::uuid& taskUid)> addTaskToIsosurfaceGpuMeshGenerationQueue);
+  const std::function<void(const uuids::uuid& taskUid, std::future<AsyncTaskDetails> future)>& storeFuture,
+  const std::function<void(const uuids::uuid& taskUid)>& addTaskToIsosurfaceGpuMeshGenerationQueue);

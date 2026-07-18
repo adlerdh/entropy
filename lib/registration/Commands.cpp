@@ -156,9 +156,9 @@ void appendGreedyAuxiliaryPairs(std::vector<std::string>& args, const JobSpec& j
     if (!hasInputRef(pair.fixed) || !hasInputRef(pair.moving)) {
       continue;
     }
-    args.push_back("-w");
+    args.emplace_back("-w");
     args.push_back(std::to_string(pair.weight));
-    args.push_back("-i");
+    args.emplace_back("-i");
     args.push_back(pathString(inputPath(pair.fixed, artifactPath(job, ArtifactRole::AuxiliaryFixedImage, index))));
     args.push_back(pathString(inputPath(pair.moving, artifactPath(job, ArtifactRole::AuxiliaryMovingImage, index))));
   }
@@ -167,11 +167,11 @@ void appendGreedyAuxiliaryPairs(std::vector<std::string>& args, const JobSpec& j
 void appendGreedyFixedMaskArgs(std::vector<std::string>& args, const JobSpec& job)
 {
   if (hasInputRef(job.fixedMask)) {
-    args.push_back("-gm");
+    args.emplace_back("-gm");
     args.push_back(pathString(inputPath(job.fixedMask, artifactPath(job, ArtifactRole::FixedMask))));
   }
   if (const std::optional<std::string> trim = parameterValue(job, "fixedMaskTrim")) {
-    args.push_back("-gm-trim");
+    args.emplace_back("-gm-trim");
     args.push_back(*trim);
   }
 }
@@ -179,7 +179,7 @@ void appendGreedyFixedMaskArgs(std::vector<std::string>& args, const JobSpec& jo
 void appendGreedyMovingMaskArgs(std::vector<std::string>& args, const JobSpec& job)
 {
   if (hasInputRef(job.movingMask)) {
-    args.push_back("-mm");
+    args.emplace_back("-mm");
     args.push_back(pathString(inputPath(job.movingMask, artifactPath(job, ArtifactRole::MovingMask))));
   }
 }
@@ -188,7 +188,7 @@ void appendGreedyAffineAdvancedArgs(std::vector<std::string>& args, const JobSpe
 {
   const int searchIterations = integerParameterValueOr(job, "affineSearchIterations", 0);
   if (searchIterations > 0) {
-    args.push_back("-search");
+    args.emplace_back("-search");
     args.push_back(std::to_string(searchIterations));
     args.push_back(greedyChoiceToken(parameterValueOr(job, "affineSearchRotation", "Any rotation (any)")));
     args.push_back(parameterValueOr(job, "affineSearchTranslation", "50"));
@@ -196,12 +196,12 @@ void appendGreedyAffineAdvancedArgs(std::vector<std::string>& args, const JobSpe
 
   const std::string determinant = greedyChoiceToken(parameterValueOr(job, "affineDeterminant", "None (free)"));
   if (determinant == "1" || determinant == "-1") {
-    args.push_back("-det");
+    args.emplace_back("-det");
     args.push_back(determinant);
   }
 
   if (const std::optional<std::string> jitter = parameterValue(job, "affineJitter")) {
-    args.push_back("-jitter");
+    args.emplace_back("-jitter");
     args.push_back(*jitter);
   }
 }
@@ -216,36 +216,36 @@ void appendGreedyDeformableAdvancedArgs(std::vector<std::string>& args, const Jo
     std::getline(stream, warpSigma, ',');
     if (!gradientSigma.empty() && !warpSigma.empty()) {
       const std::string units = parameterValueOr(job, "smoothingUnits", "vox");
-      args.push_back("-s");
+      args.emplace_back("-s");
       args.push_back(greedySmoothingValue(gradientSigma, units));
       args.push_back(greedySmoothingValue(warpSigma, units));
     }
   }
 
   if (const std::optional<std::string> stepSize = parameterValue(job, "stepSize")) {
-    args.push_back("-e");
+    args.emplace_back("-e");
     args.push_back(*stepSize);
   }
 
   if (const std::optional<std::string> exponentiation = parameterValue(job, "inverseExponentiation")) {
-    args.push_back("-exp");
+    args.emplace_back("-exp");
     args.push_back(*exponentiation);
   }
 
   const std::string velocityModel =
     greedyChoiceToken(parameterValueOr(job, "velocityModel", "Stationary velocity (sv)"));
   if (velocityModel == "svlb") {
-    args.push_back("-svlb");
+    args.emplace_back("-svlb");
   }
   else if (velocityModel == "sv-incompr") {
-    args.push_back("-sv-incompr");
+    args.emplace_back("-sv-incompr");
   }
   else {
-    args.push_back("-sv");
+    args.emplace_back("-sv");
   }
 
   if (const std::optional<std::string> warpPrecision = parameterValue(job, "warpPrecision")) {
-    args.push_back("-wp");
+    args.emplace_back("-wp");
     args.push_back(*warpPrecision);
   }
 }
@@ -415,31 +415,31 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
        "-n",
        iterations});
     appendGreedyAuxiliaryPairs(command.args, job);
-    command.args.push_back("-dof");
+    command.args.emplace_back("-dof");
     command.args.push_back(std::to_string(greedyAffineDof(job.transformModel)));
     if (!job.initialAffineTransform.empty()) {
-      command.args.push_back("-ia");
+      command.args.emplace_back("-ia");
       command.args.push_back(pathString(job.initialAffineTransform));
     }
     else if (const std::string moments = greedyChoiceToken(parameterValueOr(job, "affineMoments", "Off"));
              moments == "1" || moments == "2")
     {
-      command.args.push_back("-ia-moments");
+      command.args.emplace_back("-ia-moments");
       command.args.push_back(moments);
     }
     else if (job.useImageCentersForInitialization) {
-      command.args.push_back("-ia-image-centers");
+      command.args.emplace_back("-ia-image-centers");
     }
     appendGreedyFixedMaskArgs(command.args, job);
     appendGreedyAffineAdvancedArgs(command.args, job);
     if (threads != "0") {
-      command.args.push_back("-threads");
+      command.args.emplace_back("-threads");
       command.args.push_back(threads);
     }
     if (booleanParameterValue(job, "singlePrecision")) {
-      command.args.push_back("-float");
+      command.args.emplace_back("-float");
     }
-    command.args.push_back("-V");
+    command.args.emplace_back("-V");
     command.args.push_back(verbosity);
     appendExpertArguments(command.args, job);
     commands.push_back(std::move(command));
@@ -467,24 +467,24 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
        iterations});
     appendGreedyAuxiliaryPairs(command.args, job);
     if (includesAffineTransform(job.transformModel)) {
-      command.args.push_back("-it");
+      command.args.emplace_back("-it");
       command.args.push_back(pathString(affine));
     }
     appendGreedyFixedMaskArgs(command.args, job);
     appendGreedyMovingMaskArgs(command.args, job);
     appendGreedyDeformableAdvancedArgs(command.args, job);
     if (needsForwardWarpOutput(job)) {
-      command.args.push_back("-oinv");
+      command.args.emplace_back("-oinv");
       command.args.push_back(pathString(forwardWarp));
     }
     if (threads != "0") {
-      command.args.push_back("-threads");
+      command.args.emplace_back("-threads");
       command.args.push_back(threads);
     }
     if (booleanParameterValue(job, "singlePrecision")) {
-      command.args.push_back("-float");
+      command.args.emplace_back("-float");
     }
-    command.args.push_back("-V");
+    command.args.emplace_back("-V");
     command.args.push_back(verbosity);
     appendExpertArguments(command.args, job);
     commands.push_back(std::move(command));
@@ -510,10 +510,10 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       command.args.push_back(pathString(affine));
     }
     if (threads != "0") {
-      command.args.push_back("-threads");
+      command.args.emplace_back("-threads");
       command.args.push_back(threads);
     }
-    command.args.push_back("-V");
+    command.args.emplace_back("-V");
     command.args.push_back(verbosity);
     commands.push_back(std::move(command));
   }
@@ -541,10 +541,10 @@ std::vector<CommandSpec> greedyCommands(const JobSpec& job, const CommandGenerat
       command.args.push_back(pathString(affine));
     }
     if (threads != "0") {
-      command.args.push_back("-threads");
+      command.args.emplace_back("-threads");
       command.args.push_back(threads);
     }
-    command.args.push_back("-V");
+    command.args.emplace_back("-V");
     command.args.push_back(verbosity);
     commands.push_back(std::move(command));
   }
@@ -617,7 +617,7 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
     if (!hasInputRef(pair.fixed) || !hasInputRef(pair.moving)) {
       continue;
     }
-    registrationCommand.args.push_back("--metric");
+    registrationCommand.args.emplace_back("--metric");
     registrationCommand.args.push_back(antsMetricArguments(
       pair.metric,
       inputPath(pair.fixed, artifactPath(job, ArtifactRole::AuxiliaryFixedImage, index)),
@@ -627,11 +627,11 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
       pair.weight));
   }
   if (!job.initialAffineTransform.empty()) {
-    registrationCommand.args.push_back("--initial-moving-transform");
+    registrationCommand.args.emplace_back("--initial-moving-transform");
     registrationCommand.args.push_back(pathString(job.initialAffineTransform));
   }
   if (hasInputRef(job.fixedMask) || hasInputRef(job.movingMask)) {
-    registrationCommand.args.push_back("--masks");
+    registrationCommand.args.emplace_back("--masks");
     registrationCommand.args.push_back(
       "[" +
       (hasInputRef(job.fixedMask) ? pathString(inputPath(job.fixedMask, artifactPath(job, ArtifactRole::FixedMask)))
@@ -641,8 +641,8 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
                                    : std::string{"NULL"}) +
       "]");
   }
-  registrationCommand.args.push_back("--verbose");
-  registrationCommand.args.push_back(booleanParameterValueOr(job, "verbose", true) ? "1" : "0");
+  registrationCommand.args.emplace_back("--verbose");
+  registrationCommand.args.emplace_back(booleanParameterValueOr(job, "verbose", true) ? "1" : "0");
   appendExpertArguments(registrationCommand.args, job);
   commands.push_back(std::move(registrationCommand));
 
@@ -674,15 +674,15 @@ std::vector<CommandSpec> antsCommands(const JobSpec& job, const CommandGeneratio
       "-n",
       "GenericLabel"};
     if (includesDeformableTransform(job.transformModel)) {
-      command.args.push_back("-t");
+      command.args.emplace_back("-t");
       command.args.push_back(pathString(antsWarpPath(job)));
     }
     if (includesAffineTransform(job.transformModel)) {
-      command.args.push_back("-t");
+      command.args.emplace_back("-t");
       command.args.push_back(pathString(antsAffineTransformPath(job)));
     }
-    command.args.push_back("--verbose");
-    command.args.push_back(booleanParameterValueOr(job, "verbose", true) ? "1" : "0");
+    command.args.emplace_back("--verbose");
+    command.args.emplace_back(booleanParameterValueOr(job, "verbose", true) ? "1" : "0");
     commands.push_back(std::move(command));
   }
 

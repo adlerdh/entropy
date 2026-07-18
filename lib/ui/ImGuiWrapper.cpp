@@ -872,7 +872,7 @@ void renderLayoutTabs(AppData& appData)
             selectedLayoutIndex && *selectedLayoutIndex < windowData.numLayouts() &&
             *selectedLayoutIndex != windowData.currentLayoutIndex())
           {
-            requestedLayoutIndex = *selectedLayoutIndex;
+            requestedLayoutIndex = selectedLayoutIndex;
           }
         }
       }
@@ -2724,7 +2724,7 @@ void ImGuiWrapper::generateIsosurfaceMeshGpuRecords()
     m_futures.erase(it);
 
     if (
-      AsyncTasks::IsosurfaceMeshGeneration != value.task || false == value.success || !value.imageUid ||
+      AsyncTasks::IsosurfaceMeshGeneration != value.task || !value.success || !value.imageUid ||
       !value.imageComponent || !value.objectUid)
     {
       spdlog::error("Failed task {}", taskUid);
@@ -3158,7 +3158,7 @@ void ImGuiWrapper::render()
 
     if (const auto selectedFile = native_dialog::saveFile(native_dialog::segmentationFilters())) {
       static constexpr uint32_t compToSave = 0;
-      if (seg->saveComponentToDisk(compToSave, *selectedFile)) {
+      if (seg->saveComponentToDisk(compToSave, selectedFile)) {
         spdlog::info("Saved segmentation image to file {}", *selectedFile);
         seg->header().setFileName(*selectedFile);
       }
@@ -3220,7 +3220,7 @@ void ImGuiWrapper::render()
 
     LandmarkGroup newGroup;
     newGroup.setName("Landmarks for " + image->settings().displayName());
-    const auto landmarkGroupUid = m_appData.addLandmarkGroup(std::move(newGroup));
+    const auto landmarkGroupUid = m_appData.addLandmarkGroup(newGroup);
     m_appData.assignLandmarkGroupUidToImage(*imageUid, landmarkGroupUid);
     m_appData.setRainbowColorsForAllLandmarkGroups();
     m_appData.assignActiveLandmarkGroupUidToImage(*imageUid, landmarkGroupUid);
@@ -3494,7 +3494,7 @@ void ImGuiWrapper::render()
             if (serialize::openAffineTxFile(affine_T_subject, *selectedFile)) {
               image->transformations().set_enable_affine_T_subject(true);
               image->transformations().set_affine_T_subject(glm::mat4{affine_T_subject});
-              image->transformations().set_affine_T_subject_fileName(*selectedFile);
+              image->transformations().set_affine_T_subject_fileName(selectedFile);
               mirrorInitialAffineToSegmentations(*imageUid, *image);
               updateAffineUniforms();
               spdlog::info("Loaded initial affine transformation matrix from file {}", *selectedFile);
@@ -4308,7 +4308,7 @@ void ImGuiWrapper::render()
           }
 
           const std::optional<uuids::uuid> referenceUid =
-            refImageUid ? refImageUid : std::optional<uuids::uuid>{*imageUid};
+            refImageUid ? refImageUid : std::optional<uuids::uuid>{imageUid};
           m_loadAndAssignDeformationField(*imageUid, fileName, false, referenceUid);
         },
       .loadForwardWarpForActiveImage =
@@ -5081,7 +5081,7 @@ void ImGuiWrapper::render()
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void ImGuiWrapper::annotationToolbar(const std::function<void()> paintActiveAnnotation)
+void ImGuiWrapper::annotationToolbar(const std::function<void()>& paintActiveAnnotation)
 {
   if (!state::annot::isInStateWhereToolbarVisible()) {
     return;

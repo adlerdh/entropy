@@ -44,8 +44,8 @@ void Rendering::renderMetricImagesForView(const View& view, const glm::vec3& wor
     imageSegPairs[1].second ? m_appData.seg(*imageSegPairs[1].second) : nullptr};
 
   const std::array<RenderData::ImageUniforms, 2> U{
-    (imageSegPairs.size() >= 1 && imageSegPairs[0].first) ? R.m_uniforms.at(*imageSegPairs[0].first)
-                                                          : sk_defaultImageUniforms,
+    (!imageSegPairs.empty() && imageSegPairs[0].first) ? R.m_uniforms.at(*imageSegPairs[0].first)
+                                                       : sk_defaultImageUniforms,
     (imageSegPairs.size() >= 2 && imageSegPairs[1].first) ? R.m_uniforms.at(*imageSegPairs[1].first)
                                                           : sk_defaultImageUniforms};
 

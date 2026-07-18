@@ -3,13 +3,14 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <ranges>
 #include <utility>
 
 namespace
 {
 constexpr std::size_t kMaxRecentItems = 10;
 
-std::filesystem::path normalizedRecentPath(std::filesystem::path path)
+std::filesystem::path normalizedRecentPath(const std::filesystem::path& path)
 {
   return path.lexically_normal();
 }
@@ -315,24 +316,24 @@ const std::vector<std::filesystem::path>& AppSettings::recentProjectFiles() cons
 void AppSettings::setRecentImageGroups(std::vector<RecentPathGroup> groups)
 {
   m_recentImageGroups.clear();
-  for (auto it = groups.rbegin(); it != groups.rend(); ++it) {
-    recordRecentPathGroup(m_recentImageGroups, it->paths);
+  for (auto& group : std::ranges::reverse_view(groups)) {
+    recordRecentPathGroup(m_recentImageGroups, group.paths);
   }
 }
 
 void AppSettings::setRecentDicomGroups(std::vector<RecentPathGroup> groups)
 {
   m_recentDicomGroups.clear();
-  for (auto it = groups.rbegin(); it != groups.rend(); ++it) {
-    recordRecentPathGroup(m_recentDicomGroups, it->paths);
+  for (auto& group : std::ranges::reverse_view(groups)) {
+    recordRecentPathGroup(m_recentDicomGroups, group.paths);
   }
 }
 
 void AppSettings::setRecentProjectFiles(std::vector<std::filesystem::path> files)
 {
   m_recentProjectFiles.clear();
-  for (auto it = files.rbegin(); it != files.rend(); ++it) {
-    recordRecentPath(m_recentProjectFiles, *it);
+  for (auto& file : std::ranges::reverse_view(files)) {
+    recordRecentPath(m_recentProjectFiles, file);
   }
 }
 

@@ -56,7 +56,7 @@ std::vector<glm::vec3> generateRandomHsvSamples(
     float sat = std::sqrt(dist(generator) * A + B);
     float val = std::pow(dist(generator) * C + D, 1.0f / 3.0f);
 
-    samples.push_back(glm::vec3{hue, sat, val});
+    samples.emplace_back(hue, sat, val);
   }
 
   return samples;

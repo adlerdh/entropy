@@ -243,6 +243,10 @@ Pass options at configure time with `-DNAME=value`, or put local overrides in `C
 | `Entropy_USE_CCACHE` | `ON` | Configure | Uses `ccache` as the compiler launcher when available |
 | `CMAKE_VERBOSE_MAKEFILE` | `OFF` | Application/dependencies | Prints full native build commands for Makefile-style generators |
 | `BUILD_TESTING` | CTest default | Application | Enables unit-test targets |
+| `Entropy_ENABLE_CLANG_TIDY` | `OFF` | Application | Runs `clang-tidy` during C++ compilation |
+| `Entropy_CLANG_TIDY_OPTIONS` | `--quiet` | Application | Extra options passed to `clang-tidy` |
+| `Entropy_ENABLE_IWYU` | `OFF` | Application | Runs Include What You Use during C++ compilation |
+| `Entropy_IWYU_OPTIONS` | project default | Application | Extra options passed to Include What You Use |
 | `Entropy_ENABLE_COVERAGE` | `OFF` | Application | Adds coverage instrumentation and coverage targets |
 | `Entropy_COVERAGE_MODE` | `AUTO` | Application | Selects coverage backend: `AUTO`, `LLVM`, `GCOV`, or `OPENCPPCOVERAGE` |
 | `Entropy_COVERAGE_EXCLUDE_REGEX` | project default | Application | Regex used to exclude external, generated, test, and system files from coverage reports |
@@ -256,7 +260,7 @@ Standard CMake variables such as `CMAKE_INSTALL_PREFIX`, `CMAKE_OSX_DEPLOYMENT_T
 
 CI workflows are under [.github/workflows](.github/workflows). They build and test Entropy on macOS, Windows, Ubuntu, and Fedora.
 
-Pull requests and pushes to `main` run formatting checks, Debug builds, and unit tests. Heavier coverage, release packaging, and compatibility jobs are available through scheduled or manual workflow runs. Tag-driven release builds are handled by the release workflow and are described in [PACKAGING.md](PACKAGING.md).
+Pull requests and pushes to `main` run formatting checks, debug builds, and unit tests on the primary CI platforms. Additional coverage, release-package validation, static analysis, text hygiene, and compatibility jobs are available through scheduled or manual workflow runs. Official tag-driven release builds are handled by the release workflow described in [PACKAGING.md](PACKAGING.md).
 
 The main CI build matrix is:
 

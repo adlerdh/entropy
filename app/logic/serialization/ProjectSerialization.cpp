@@ -300,7 +300,7 @@ std::optional<std::uint32_t> unsignedIntFromJson(const json& value)
 void applyToImagePaths(
   serialize::EntropyProject& project,
   const fs::path& projectBasePath,
-  std::function<void(serialize::Image& image, const fs::path& projectBasePath)> func)
+  const std::function<void(serialize::Image& image, const fs::path& projectBasePath)>& func)
 {
   func(project.m_referenceImage, projectBasePath);
 

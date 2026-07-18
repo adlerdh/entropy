@@ -118,7 +118,7 @@ void renderAddLayoutModalPopup(
         "Distance between adjacent custom lightbox tiles. Custom lightboxes use this fixed spacing instead of image "
         "slice spacing");
     }
-    else if (!(1 == rows && columns > 1)) {
+    else if (1 != rows || columns <= 1) {
       ImGui::InputText("Name", &customLayoutName);
     }
 

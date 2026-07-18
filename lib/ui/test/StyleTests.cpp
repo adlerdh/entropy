@@ -15,11 +15,11 @@ bool sameColor(const ImVec4& a, const ImVec4& b)
 
 ImVec4 hexColor(int r, int g, int b, int a)
 {
-  return ImVec4(
+  return {
     static_cast<float>(r) / 255.0f,
     static_cast<float>(g) / 255.0f,
     static_cast<float>(b) / 255.0f,
-    static_cast<float>(a) / 255.0f);
+    static_cast<float>(a) / 255.0f};
 }
 
 struct ImGuiContextScope

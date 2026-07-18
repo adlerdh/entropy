@@ -26,7 +26,7 @@ static const auto sk_valMinMax = std::make_pair(0.5f, 1.0f);
 } // namespace
 
 ParcellationLabelTable::ParcellationLabelTable(std::size_t labelCount, std::size_t maxLabelCount)
-  : m_colors_RGBA_U8(), m_properties(), m_maxLabelCount(std::min(maxLabelCount, labelCountUpperBound()))
+  : m_maxLabelCount(std::min(maxLabelCount, labelCountUpperBound()))
 {
   static const std::vector<float>
     sk_startAngles{0.0f, 120.0f, 240.0f, 60.0f, 180.0f, 300.0f, 30.0f, 150.0f, 270.0f, 90.0f, 210.0f, 330.0f};
@@ -46,7 +46,7 @@ ParcellationLabelTable::ParcellationLabelTable(std::size_t labelCount, std::size
   std::vector<glm::vec3> rgbValues;
 
   // The first label (0) is always black:
-  rgbValues.push_back(glm::vec3{0.0f, 0.0f, 0.0f});
+  rgbValues.emplace_back(0.0f, 0.0f, 0.0f);
 
   // Insert the twelve "primary colors" for labels 1-12:
   for (float s : sk_startAngles) {

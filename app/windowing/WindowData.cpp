@@ -685,7 +685,7 @@ std::optional<std::size_t> imageIndexInOrder(uuid_range_t orderedImageUids, cons
   return static_cast<std::size_t>(std::distance(orderedImageUids.begin(), imageIt));
 }
 
-std::vector<std::size_t> imageIndicesInOrder(uuid_range_t orderedImageUids, const std::list<uuid>& imageUids)
+std::vector<std::size_t> imageIndicesInOrder(const uuid_range_t& orderedImageUids, const std::list<uuid>& imageUids)
 {
   std::vector<std::size_t> imageIndices;
   imageIndices.reserve(imageUids.size());
@@ -772,7 +772,7 @@ Layout createOneUpLayout(
   return layout;
 }
 
-std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, uuid_range_t orderedImageUids)
+std::optional<layout::LayoutPreset> createLayoutPreset(const Layout& layout, const uuid_range_t& orderedImageUids)
 {
   switch (layout.kind()) {
     case LayoutKind::FourUp:
@@ -1099,7 +1099,7 @@ std::optional<Layout> createLightboxLayoutForImage(
     crosshairs,
     viewAlignment,
     viewConvention,
-    *imageIndex,
+    imageIndex,
     imageUid);
   layout.setKind(layout::lightboxLayoutKindForViewType(viewType));
   return std::optional<Layout>{std::move(layout)};
@@ -1463,7 +1463,7 @@ void WindowData::reconcileImageDependentLayouts(
           m_viewAlignment,
           m_viewConvention,
           0,
-          *refUid));
+          refUid));
         generatedLayouts.back().setKind(gridLayoutKindForViewType(viewType));
       }
     }
@@ -1539,14 +1539,14 @@ void WindowData::reconcileImageDependentLayouts(
   updateAllViews();
 }
 
-std::vector<layout::LayoutSpec> WindowData::createProjectLayoutSnapshots(uuid_range_t orderedImageUids) const
+std::vector<layout::LayoutSpec> WindowData::createProjectLayoutSnapshots(const uuid_range_t& orderedImageUids) const
 {
   return layout::createLayoutSpecs(m_layouts, orderedImageUids);
 }
 
 bool WindowData::applyProjectLayoutSnapshots(
   const std::vector<layout::LayoutSpec>& layouts,
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   std::optional<std::size_t> currentLayoutIndex)
 {
   if (layouts.empty()) {
@@ -1567,7 +1567,7 @@ bool WindowData::applyProjectLayoutSnapshots(
   return true;
 }
 
-std::vector<layout::LayoutPreset> WindowData::createLayoutPresets(uuid_range_t orderedImageUids) const
+std::vector<layout::LayoutPreset> WindowData::createLayoutPresets(const uuid_range_t& orderedImageUids) const
 {
   std::vector<layout::LayoutPreset> presets;
   presets.reserve(m_layouts.size());
@@ -1739,7 +1739,7 @@ void WindowData::setDefaultRenderedImagesForAllLayouts(const AppData& appData)
   }
 }
 
-void WindowData::updateImageOrdering(uuid_range_t orderedImageUids)
+void WindowData::updateImageOrdering(const uuid_range_t& orderedImageUids)
 {
   for (auto& layout : m_layouts) {
     if (layout.isLightbox()) {
@@ -1755,7 +1755,7 @@ void WindowData::updateImageOrdering(uuid_range_t orderedImageUids)
   }
 }
 
-void WindowData::removeImageFromLayouts(const uuid& imageUid, uuid_range_t orderedImageUids)
+void WindowData::removeImageFromLayouts(const uuid& imageUid, const uuid_range_t& orderedImageUids)
 {
   for (std::size_t i = m_layouts.size(); i > 0; --i) {
     const std::size_t layoutIndex = i - 1;

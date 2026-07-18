@@ -113,7 +113,7 @@ glm::vec3 ImageTransformations::invPixelDimensions() const
 void ImageTransformations::set_worldDef_T_affine_translation(glm::vec3 worldDef_T_affine_translation)
 {
   if (m_is_worldDef_T_affine_locked) return;
-  m_worldDef_T_affine_translation = std::move(worldDef_T_affine_translation);
+  m_worldDef_T_affine_translation = worldDef_T_affine_translation;
   updateTransformations();
 }
 
@@ -125,7 +125,7 @@ const glm::vec3& ImageTransformations::get_worldDef_T_affine_translation() const
 void ImageTransformations::set_worldDef_T_affine_rotation(glm::quat worldDef_T_affine_rotation)
 {
   if (m_is_worldDef_T_affine_locked) return;
-  m_worldDef_T_affine_rotation = std::move(worldDef_T_affine_rotation);
+  m_worldDef_T_affine_rotation = worldDef_T_affine_rotation;
   updateTransformations();
 }
 
@@ -137,7 +137,7 @@ const glm::quat& ImageTransformations::get_worldDef_T_affine_rotation() const
 void ImageTransformations::set_worldDef_T_affine_scale(glm::vec3 worldDef_T_affine_scale)
 {
   if (m_is_worldDef_T_affine_locked) return;
-  m_worldDef_T_affine_scale = std::move(worldDef_T_affine_scale);
+  m_worldDef_T_affine_scale = worldDef_T_affine_scale;
   updateTransformations();
 }
 
@@ -201,7 +201,7 @@ bool ImageTransformations::get_enable_affine_T_subject() const
 
 void ImageTransformations::set_affine_T_subject(glm::mat4 affine_T_subject)
 {
-  m_affine_T_subject = std::move(affine_T_subject);
+  m_affine_T_subject = affine_T_subject;
   updateTransformations();
 }
 

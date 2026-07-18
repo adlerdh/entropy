@@ -22,7 +22,6 @@
 #include <cstring>
 #include <limits>
 #include <optional>
-#include <string_view>
 
 #if defined(_WIN32)
 #ifndef NOMINMAX
@@ -853,9 +852,9 @@ void ItkSnapSync::claimDirectorySlot()
     if (target >= 0) {
       auto& entry = directory->entries[target];
       entry.pid = toItkSnapIpcLong(m_processId);
-      constexpr std::string_view title = "Entropy";
+      constexpr const char* title = "Entropy";
       std::fill(std::begin(entry.title), std::end(entry.title), '\0');
-      std::copy_n(title.data(), std::min(title.size(), sizeof(entry.title) - 1), entry.title);
+      std::copy_n(title, std::min(std::strlen(title), sizeof(entry.title) - 1), entry.title);
       entry.pendingDropId = 0;
       entry.pendingDrop[0] = '\0';
       m_claimedDirectorySlot = true;
@@ -881,8 +880,7 @@ void ItkSnapSync::releaseDirectorySlot()
     header && m_sharedMemory->size() >=
                 static_cast<int>(sizeof(ItkSnapIpcHeader) + sizeof(ItkSnapIpcMessage) + sizeof(ItkSnapIpcDirectory)))
   {
-    for (int i = 0; i < sk_maxInstances; ++i) {
-      auto& entry = directory->entries[i];
+    for (auto& entry : directory->entries) {
       if (entry.pid == m_processId) {
         entry.pid = 0;
         entry.title[0] = '\0';

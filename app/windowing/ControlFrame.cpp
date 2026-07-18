@@ -11,12 +11,12 @@ ControlFrame::ControlFrame(
   ViewRenderMode renderMode,
   IntensityProjectionMode ipMode,
   UiControls uiControls)
-  : m_viewport(std::move(winClipViewport))
+  : m_viewport(winClipViewport)
   , m_imageSelection()
   , m_viewType(viewType)
   , m_renderMode(renderMode)
   , m_intensityProjectionMode(ipMode)
-  , m_uiControls(std::move(uiControls))
+  , m_uiControls(uiControls)
 {
 }
 
@@ -138,9 +138,9 @@ const std::list<uuids::uuid>& ControlFrame::visibleImages() const
   return m_imageSelection.visibleImages(m_renderMode);
 }
 
-void ControlFrame::updateImageOrdering(uuid_range_t orderedImageUids)
+void ControlFrame::updateImageOrdering(const uuid_range_t& orderedImageUids)
 {
-  m_imageSelection.updateImageOrdering(std::move(orderedImageUids));
+  m_imageSelection.updateImageOrdering(orderedImageUids);
 }
 
 void ControlFrame::setPreferredDefaultRenderedImages(std::set<std::size_t> imageIndices)
@@ -165,7 +165,7 @@ bool ControlFrame::defaultRenderAllImages() const
 
 void ControlFrame::setWindowClipViewport(glm::vec4 winClipViewport)
 {
-  m_viewport.setWindowClipViewport(std::move(winClipViewport));
+  m_viewport.setWindowClipViewport(winClipViewport);
 }
 
 const glm::vec4& ControlFrame::windowClipViewport() const

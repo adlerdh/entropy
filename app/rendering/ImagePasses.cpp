@@ -116,28 +116,28 @@ void Rendering::renderAllImagesForView(
         displayModeUniform = 0;
         imageSegPairs = getImageAndSegUidsForImageShaders(view.renderedImages());
         for (const auto& imageUid : view.renderedImages()) {
-          sourceImages.emplace_back(ImgSegPair{imageUid, std::nullopt});
+          sourceImages.emplace_back(imageUid, std::nullopt);
         }
       }
       else if (ViewRenderMode::Checkerboard == view.renderMode()) {
         displayModeUniform = 1;
         imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages()); // guaranteed size 2
         for (const auto& imageUid : view.metricImages()) {
-          sourceImages.emplace_back(ImgSegPair{imageUid, std::nullopt});
+          sourceImages.emplace_back(imageUid, std::nullopt);
         }
       }
       else if (ViewRenderMode::Quadrants == view.renderMode()) {
         displayModeUniform = 2;
         imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages());
         for (const auto& imageUid : view.metricImages()) {
-          sourceImages.emplace_back(ImgSegPair{imageUid, std::nullopt});
+          sourceImages.emplace_back(imageUid, std::nullopt);
         }
       }
       else if (ViewRenderMode::Flashlight == view.renderMode()) {
         displayModeUniform = 3;
         imageSegPairs = getImageAndSegUidsForMetricShaders(view.metricImages());
         for (const auto& imageUid : view.metricImages()) {
-          sourceImages.emplace_back(ImgSegPair{imageUid, std::nullopt});
+          sourceImages.emplace_back(imageUid, std::nullopt);
         }
       }
 

@@ -153,35 +153,19 @@ bool isIntegerType(const ComponentType& type)
 
 bool isFloatingType(const ComponentType& type)
 {
-  if (ComponentType::Float32 == type || ComponentType::Float64 == type || ComponentType::LongDouble == type) {
-    return true;
-  }
-
-  return false;
+  return ComponentType::Float32 == type || ComponentType::Float64 == type || ComponentType::LongDouble == type;
 }
 
 bool isSignedIntegerType(const ComponentType& type)
 {
-  if (
-    ComponentType::Int8 == type || ComponentType::Int16 == type || ComponentType::Int32 == type ||
-    ComponentType::Long == type || ComponentType::LongLong == type)
-  {
-    return true;
-  }
-
-  return false;
+  return ComponentType::Int8 == type || ComponentType::Int16 == type || ComponentType::Int32 == type ||
+         ComponentType::Long == type || ComponentType::LongLong == type;
 }
 
 bool isUnsignedIntegerType(const ComponentType& type)
 {
-  if (
-    ComponentType::UInt8 == type || ComponentType::UInt16 == type || ComponentType::UInt32 == type ||
-    ComponentType::ULong == type || ComponentType::ULongLong == type)
-  {
-    return true;
-  }
-
-  return false;
+  return ComponentType::UInt8 == type || ComponentType::UInt16 == type || ComponentType::UInt32 == type ||
+         ComponentType::ULong == type || ComponentType::ULongLong == type;
 }
 
 const char* toolbarButtonIcon(const MouseMode& mouseMode)

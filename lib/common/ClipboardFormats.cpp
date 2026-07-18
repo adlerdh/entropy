@@ -33,7 +33,7 @@ std::string escapeHtmlChar(char c)
     case '\'':
       return "&#39;";
     default:
-      return std::string(1, c);
+      return {1, c};
   }
 }
 
@@ -118,12 +118,12 @@ rtfDocument(std::span<const ColoredTextRun> runs, int fontSizeHalfPoints, std::o
 {
   const std::vector<Rgb8> colors = uniqueColors(runs, backgroundColor);
 
-  std::string rtf = "{\\rtf1\\ansi\\deff0";
-  rtf += "{\\fonttbl{\\f0\\fmodern Courier;}}";
+  std::string rtf = R"({\rtf1\ansi\deff0)";
+  rtf += R"({\fonttbl{\f0\fmodern Courier;}})";
   rtf += "{\\colortbl;";
   for (Rgb8 color : colors) {
     rtf += std::format(
-      "\\red{}\\green{}\\blue{};",
+      R"(\red{}\green{}\blue{};)",
       static_cast<int>(color.r),
       static_cast<int>(color.g),
       static_cast<int>(color.b));

@@ -57,7 +57,7 @@ namespace
 bool promptForChar(const char* prompt, char& readch)
 {
   std::string tmp;
-  std::cout << prompt << std::endl;
+  std::cout << prompt << '\n';
 
   if (std::getline(std::cin, tmp)) {
     // Only accept single character input
@@ -665,8 +665,8 @@ bool EntropyApp::loadSerializedImage(
   }
 
   // Disable the initial affine and manual transformations for the reference image:
-  image->transformations().set_enable_worldDef_T_affine(isReferenceImage ? false : true);
-  image->transformations().set_enable_affine_T_subject(isReferenceImage ? false : true);
+  image->transformations().set_enable_worldDef_T_affine(!isReferenceImage);
+  image->transformations().set_enable_affine_T_subject(!isReferenceImage);
 
   // Lock all affine transformations to the reference image, which defines the World space:
   image->transformations().set_worldDef_T_affine_locked(true);
@@ -774,7 +774,7 @@ bool EntropyApp::loadSerializedImage(
       }
 
       break;
-    } while (1);
+    } while (true);
 
     // TODO: Warp field images are special:
     // 1) no segmentation is created
@@ -835,7 +835,7 @@ bool EntropyApp::loadSerializedImage(
       }
 
       break;
-    } while (1);
+    } while (true);
   }
 
   // Set annotations from file:
@@ -853,7 +853,7 @@ bool EntropyApp::loadSerializedImage(
         annot.setFileName(*serializedImage.m_annotationsFileName);
 
         if (const auto annotUid = m_data.addAnnotation(*imageUid, annot)) {
-          m_data.assignActiveAnnotationUidToImage(*imageUid, *annotUid);
+          m_data.assignActiveAnnotationUidToImage(*imageUid, annotUid);
           spdlog::debug("Added annotation {} for image {}", *annotUid, *imageUid);
         }
         else {
@@ -981,7 +981,7 @@ bool EntropyApp::loadSerializedImage(
 
     try {
       spdlog::debug("Attempting to load segmentation image from {}", serializedSeg.m_segFileName);
-      std::tie(segInfo.uid, segInfo.isNewSeg) = loadSegmentation(serializedSeg.m_segFileName, *imageUid);
+      std::tie(segInfo.uid, segInfo.isNewSeg) = loadSegmentation(serializedSeg.m_segFileName, imageUid);
     }
     catch (const std::exception& e) {
       spdlog::error("Exception loading segmentation from {}: {}", serializedSeg.m_segFileName, e.what());
@@ -1410,7 +1410,7 @@ void EntropyApp::pollDicomSeriesScan()
   }
   catch (...) {
     spdlog::error("Unknown exception while scanning DICOM series");
-    result.warnings.push_back("Unknown exception while scanning DICOM series");
+    result.warnings.emplace_back("Unknown exception while scanning DICOM series");
   }
   m_futureDiscoverDicom = {};
 
@@ -1803,7 +1803,7 @@ void EntropyApp::hideLoadingStatus()
 }
 
 void EntropyApp::startAsyncImageLoad(
-  std::string windowTitleStatus,
+  const std::string& windowTitleStatus,
   std::function<bool()> loadTask,
   std::function<void()> onLoadFailed,
   bool showLoadingOverlay,

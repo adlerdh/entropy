@@ -94,7 +94,7 @@ std::optional<uuid> syncGroupUidForIndex(
   return syncGroups.bindGroupIndex(*syncGroupIndex, syncGroupUid);
 }
 
-layout::ImageSelectionSpec createImageSelectionSpec(uuid_range_t orderedImageUids, const ControlFrame& frame)
+layout::ImageSelectionSpec createImageSelectionSpec(const uuid_range_t& orderedImageUids, const ControlFrame& frame)
 {
   layout::ImageSelectionSpec selection;
   selection.m_renderedImageIndices = layout::imageIndicesForUids(orderedImageUids, frame.renderedImages());
@@ -105,7 +105,7 @@ layout::ImageSelectionSpec createImageSelectionSpec(uuid_range_t orderedImageUid
 
 void applyImageSelectionSpec(
   ControlFrame& frame,
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   const layout::ImageSelectionSpec& selection)
 {
   frame.setRenderedImages(layout::imageUidsForIndices(orderedImageUids, selection.m_renderedImageIndices), false);
@@ -163,7 +163,7 @@ void normalizeLightboxOffsetSpec(layout::ViewSpec& viewSpec, const layout::Layou
 namespace layout
 {
 
-LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids)
+LayoutSpec createLayoutSpec(const Layout& layout, const uuid_range_t& orderedImageUids)
 {
   LayoutSpec layoutSpec;
   layoutSpec.m_kind = static_cast<int>(layout.kind());
@@ -232,7 +232,7 @@ LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids)
   return layoutSpec;
 }
 
-std::vector<LayoutSpec> createLayoutSpecs(const std::vector<Layout>& layouts, uuid_range_t orderedImageUids)
+std::vector<LayoutSpec> createLayoutSpecs(const std::vector<Layout>& layouts, const uuid_range_t& orderedImageUids)
 {
   std::vector<LayoutSpec> specs;
   specs.reserve(layouts.size());
@@ -246,7 +246,7 @@ std::vector<LayoutSpec> createLayoutSpecs(const std::vector<Layout>& layouts, uu
 
 Layout instantiateLayoutSpec(
   const LayoutSpec& spec,
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   const CrosshairsState& crosshairs,
   const ViewAlignmentMode& viewAlignment,
   const ViewConvention& viewConvention)
@@ -360,7 +360,7 @@ Layout instantiateLayoutSpec(
 
 std::vector<Layout> instantiateLayoutSpecs(
   const std::vector<LayoutSpec>& specs,
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   const CrosshairsState& crosshairs,
   const ViewAlignmentMode& viewAlignment,
   const ViewConvention& viewConvention)

@@ -153,7 +153,7 @@ const std::string& GLShader::shaderTypeString(const ShaderType& type)
 
 bool GLShader::checkShaderStatus(GLuint handle)
 {
-  GLint status;
+  GLint status = 0;
   glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
 
   if (GL_FALSE == status) {

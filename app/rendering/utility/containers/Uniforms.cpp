@@ -14,7 +14,7 @@ Uniforms::Decl::Decl()
 {
 }
 
-Uniforms::Decl::Decl(UniformType type, ValueType defaultValue, bool isRequired)
+Uniforms::Decl::Decl(UniformType type, const ValueType& defaultValue, bool isRequired)
   : m_type(type)
   , m_defaultValue(defaultValue)
   , m_value(defaultValue)
@@ -30,7 +30,7 @@ void Uniforms::Decl::set(const ValueType& value)
   m_isDirty = true;
 }
 
-Uniforms::Uniforms(const UniformsMap& map) : m_uniformsMap(map) {}
+Uniforms::Uniforms(UniformsMap map) : m_uniformsMap(std::move(map)) {}
 
 bool Uniforms::insertUniform(const std::string& name, const Uniforms::Decl& uniform)
 {
@@ -66,12 +66,7 @@ const Uniforms::UniformsMap& Uniforms::operator()() const
 bool Uniforms::containsKey(const std::string& name) const
 {
   auto itr = m_uniformsMap.find(name);
-  if (std::end(m_uniformsMap) != itr) {
-    return true;
-  }
-  else {
-    return false;
-  }
+  return std::end(m_uniformsMap) != itr;
 }
 
 void Uniforms::resetAllToDefaults()
@@ -113,7 +108,9 @@ std::optional<GLint> Uniforms::location(const std::string& name) const
   }
 }
 
-GLint Uniforms::queryAndSetLocation(const std::string& name, std::function<GLint(const std::string&)> locationGetter)
+GLint Uniforms::queryAndSetLocation(
+  const std::string& name,
+  const std::function<GLint(const std::string&)>& locationGetter)
 {
   const GLint loc = locationGetter(name);
 
@@ -133,7 +130,7 @@ GLint Uniforms::queryAndSetLocation(const std::string& name, std::function<GLint
   return loc;
 }
 
-int Uniforms::queryAndSetAllLocations(std::function<GLint(const std::string&)> locationGetter)
+int Uniforms::queryAndSetAllLocations(const std::function<GLint(const std::string&)>& locationGetter)
 {
   bool foundOne = false;
   for (auto& uniform : m_uniformsMap) {

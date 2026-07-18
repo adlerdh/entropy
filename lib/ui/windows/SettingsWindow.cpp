@@ -284,15 +284,17 @@ void renderDiagnosticsSettings()
 {
   const auto currentLogLevel = logging::defaultLoggerSinkLevel();
   const auto currentLogLevelLabel = logging::logLevelLabel(currentLogLevel);
+  const std::string currentLogLevelLabelText(currentLogLevelLabel);
 
-  if (ImGui::BeginCombo("Log verbosity", currentLogLevelLabel.data())) {
+  if (ImGui::BeginCombo("Log verbosity", currentLogLevelLabelText.c_str())) {
     for (const logging::LogLevelChoice& choice : logging::allLogLevelChoices()) {
       if (!logging::isLogLevelChoiceAvailable(choice)) {
         continue;
       }
 
       const bool selected = choice.level == currentLogLevel;
-      if (ImGui::Selectable(choice.label.data(), selected)) {
+      const std::string choiceLabel(choice.label);
+      if (ImGui::Selectable(choiceLabel.c_str(), selected)) {
         logging::setDefaultLoggerSinkLevel(choice.level);
       }
       if (selected) {
@@ -1971,12 +1973,12 @@ void renderMetricsTab(
     ImGui::Spacing();
 
     // Difference type:
-    if (ImGui::RadioButton("Absolute", false == renderData.m_useSquare)) {
+    if (ImGui::RadioButton("Absolute", !renderData.m_useSquare)) {
       renderData.m_useSquare = false;
     }
 
     ImGui::SameLine();
-    if (ImGui::RadioButton("Squared difference", true == renderData.m_useSquare)) {
+    if (ImGui::RadioButton("Squared difference", renderData.m_useSquare)) {
       renderData.m_useSquare = true;
     }
     ImGui::SameLine();
@@ -2010,6 +2012,8 @@ void renderMetricsTab(
     getImageColorMap);
   ImGui::PopID();
 
+  finishSettingsSection(localLinearResidualOpen);
+
   ImGui::PopID(); /*** PopID metrics ***/
 }
 
@@ -2030,10 +2034,10 @@ bool renderComparisonModesTab(RenderData& renderData)
   // Overlap style:
   ImGui::Text("Overlap color scheme:");
 
-  if (ImGui::RadioButton("Red, green, yellow", false == renderData.m_overlayMagentaCyan)) {
+  if (ImGui::RadioButton("Red, green, yellow", !renderData.m_overlayMagentaCyan)) {
     renderData.m_overlayMagentaCyan = false;
   }
-  if (ImGui::RadioButton("Cyan, magenta, white", true == renderData.m_overlayMagentaCyan)) {
+  if (ImGui::RadioButton("Cyan, magenta, white", renderData.m_overlayMagentaCyan)) {
     renderData.m_overlayMagentaCyan = true;
   }
 
@@ -2046,17 +2050,17 @@ bool renderComparisonModesTab(RenderData& renderData)
 
   const glm::ivec2 Q = renderData.m_quadrants;
 
-  if (ImGui::RadioButton("X", true == (Q.x && !Q.y))) {
+  if (ImGui::RadioButton("X", Q.x && !Q.y)) {
     renderData.m_quadrants = glm::ivec2{true, false};
   }
 
   ImGui::SameLine();
-  if (ImGui::RadioButton("Y", true == (!Q.x && Q.y))) {
+  if (ImGui::RadioButton("Y", !Q.x && Q.y)) {
     renderData.m_quadrants = glm::ivec2{false, true};
   }
 
   ImGui::SameLine();
-  if (ImGui::RadioButton("X and Y comparison", true == (Q.x && Q.y))) {
+  if (ImGui::RadioButton("X and Y comparison", Q.x && Q.y)) {
     renderData.m_quadrants = glm::ivec2{true, true};
   }
 
@@ -2093,11 +2097,11 @@ bool renderComparisonModesTab(RenderData& renderData)
   helpMarker("Circle size (as a percentage of the view size) for Flashlight rendering");
 
   ImGui::Spacing();
-  if (ImGui::RadioButton("Overlay moving image atop fixed image", true == renderData.m_flashlightOverlays)) {
+  if (ImGui::RadioButton("Overlay moving image atop fixed image", renderData.m_flashlightOverlays)) {
     renderData.m_flashlightOverlays = true;
   }
 
-  if (ImGui::RadioButton("Replace fixed image with moving image", false == renderData.m_flashlightOverlays)) {
+  if (ImGui::RadioButton("Replace fixed image with moving image", !renderData.m_flashlightOverlays)) {
     renderData.m_flashlightOverlays = false;
   }
   ImGui::SameLine();

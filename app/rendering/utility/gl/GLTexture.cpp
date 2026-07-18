@@ -420,28 +420,26 @@ GLTexture::GLTexture(
   MultisampleSettings multisampleSettings,
   std::optional<PixelStoreSettings> pixelPackSettings,
   std::optional<PixelStoreSettings> pixelUnpackSettings)
-  : m_target(std::move(target))
+  : m_target(target)
   , m_targetEnum(underlyingType(m_target))
   , m_id(0)
   , m_size(1)
-  , m_autoGenerateMipmaps(false)
-  , m_samplerID(0)
-  , m_multisampleSettings(std::move(multisampleSettings))
-  , m_pixelPackSettings(std::move(pixelPackSettings))
-  , m_pixelUnpackSettings(std::move(pixelUnpackSettings))
+  , m_multisampleSettings(multisampleSettings)
+  , m_pixelPackSettings(pixelPackSettings)
+  , m_pixelUnpackSettings(pixelUnpackSettings)
 {
 }
 
 GLTexture::GLTexture(GLTexture&& other) noexcept
   : m_target(other.m_target)
   , m_targetEnum(other.m_targetEnum)
-  , m_id(std::move(other.m_id))
-  , m_size(std::move(other.m_size))
-  , m_autoGenerateMipmaps(std::move(other.m_autoGenerateMipmaps))
-  , m_samplerID(std::move(other.m_samplerID))
-  , m_multisampleSettings(std::move(other.m_multisampleSettings))
-  , m_pixelPackSettings(std::move(other.m_pixelPackSettings))
-  , m_pixelUnpackSettings(std::move(other.m_pixelUnpackSettings))
+  , m_id(other.m_id)
+  , m_size(other.m_size)
+  , m_autoGenerateMipmaps(other.m_autoGenerateMipmaps)
+  , m_samplerID(other.m_samplerID)
+  , m_multisampleSettings(other.m_multisampleSettings)
+  , m_pixelPackSettings(other.m_pixelPackSettings)
+  , m_pixelUnpackSettings(other.m_pixelUnpackSettings)
 {
   other.m_id = 0;
   other.m_size = glm::uvec3{1};
@@ -705,8 +703,9 @@ void GLTexture::setData(
 
   throwIfOpenGLErrorAfterTextureUpload(m_targetEnum, _internalFormat, _size, _format, _type);
 
-  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
-        Target::Texture2DMultisampleArray == m_target))
+  if (
+    Target::Texture2DMultisample != m_target && Target::TextureRectangle != m_target &&
+    Target::Texture2DMultisampleArray != m_target)
   {
     if (m_autoGenerateMipmaps) {
       glGenerateMipmap(m_targetEnum);
@@ -911,8 +910,9 @@ void GLTexture::setMinificationFilter(const MinificationFilter& filter)
 
   Binder binder(*this);
 
-  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
-        Target::Texture2DMultisampleArray == m_target))
+  if (
+    Target::Texture2DMultisample != m_target && Target::TextureRectangle != m_target &&
+    Target::Texture2DMultisampleArray != m_target)
   {
     if (m_autoGenerateMipmaps) {
       glGenerateMipmap(m_targetEnum);
@@ -931,8 +931,9 @@ void GLTexture::setMagnificationFilter(const MagnificationFilter& filter)
 
   Binder binder(*this);
 
-  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
-        Target::Texture2DMultisampleArray == m_target))
+  if (
+    Target::Texture2DMultisample != m_target && Target::TextureRectangle != m_target &&
+    Target::Texture2DMultisampleArray != m_target)
   {
     if (m_autoGenerateMipmaps) {
       glGenerateMipmap(m_targetEnum);
@@ -999,8 +1000,9 @@ void GLTexture::setAutoGenerateMipmaps(bool enabled)
 {
   m_autoGenerateMipmaps = enabled;
 
-  if (!(Target::Texture2DMultisample == m_target || Target::TextureRectangle == m_target ||
-        Target::Texture2DMultisampleArray == m_target))
+  if (
+    Target::Texture2DMultisample != m_target && Target::TextureRectangle != m_target &&
+    Target::Texture2DMultisampleArray != m_target)
   {
     if (m_autoGenerateMipmaps) {
       Binder binder(*this);

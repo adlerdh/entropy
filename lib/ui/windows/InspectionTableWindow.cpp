@@ -699,8 +699,8 @@ void renderInspectionWindowWithTable(
   const std::function<std::pair<std::string, std::string>(std::size_t index)>& getImageDisplayAndFileName,
   const std::function<std::optional<glm::vec3>(std::size_t imageIndex)>& getSubjectPos,
   const std::function<std::optional<glm::ivec3>(std::size_t imageIndex)>& getVoxelPos,
-  const std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)> setSubjectPos,
-  const std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)> setVoxelPos,
+  const std::function<void(std::size_t imageIndex, const glm::vec3& subjectPos)>& setSubjectPos,
+  const std::function<void(std::size_t imageIndex, const glm::ivec3& voxelPos)>& setVoxelPos,
   const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesNN,
   const std::function<std::vector<double>(std::size_t imageIndex, bool getOnlyActiveComponent)>& getImageValuesLinear,
   const std::function<std::optional<int64_t>(std::size_t imageIndex)>& getSegLabel,
@@ -1351,8 +1351,9 @@ void renderInspectionWindowWithTable(
             if (image->header().numComponentsPerPixel() > 1) {
               std::vector<int64_t> imageValuesNNInt;
 
-              for (std::size_t i = 0; i < imageValuesNN.size(); ++i) {
-                imageValuesNNInt.push_back(static_cast<int64_t>(imageValuesNN[i]));
+              imageValuesNNInt.reserve(imageValuesNN.size());
+              for (double i : imageValuesNN) {
+                imageValuesNNInt.push_back(static_cast<int64_t>(i));
               }
 
               ImGui::PushItemWidth(-1);

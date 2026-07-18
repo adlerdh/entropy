@@ -11,33 +11,20 @@ namespace state::annot
 {
 bool isInStateWhereAnnotationHighlightsAreVisible()
 {
-  if (ASM::is_in_state<StandbyState>() || ASM::is_in_state<VertexSelectedState>()) {
-    return true;
-  }
-  return false;
+  return ASM::is_in_state<StandbyState>() || ASM::is_in_state<VertexSelectedState>();
 }
 
 bool isInStateWhereVertexHighlightsAreVisible()
 {
-  if (
-    isInStateWhereAnnotationHighlightsAreVisible() || ASM::is_in_state<CreatingNewAnnotationState>() ||
-    ASM::is_in_state<AddingVertexToNewAnnotationState>())
-  {
-    return true;
-  }
-  return false;
+  return isInStateWhereAnnotationHighlightsAreVisible() || ASM::is_in_state<CreatingNewAnnotationState>() ||
+         ASM::is_in_state<AddingVertexToNewAnnotationState>();
 }
 
 bool isInStateWhereViewsCanScroll()
 {
-  if (
-    ASM::is_in_state<AnnotationOffState>() || ASM::is_in_state<ViewBeingSelectedState>() ||
-    ASM::is_in_state<StandbyState>() || ASM::is_in_state<CreatingNewAnnotationState>() ||
-    ASM::is_in_state<VertexSelectedState>())
-  {
-    return true;
-  }
-  return false;
+  return ASM::is_in_state<AnnotationOffState>() || ASM::is_in_state<ViewBeingSelectedState>() ||
+         ASM::is_in_state<StandbyState>() || ASM::is_in_state<CreatingNewAnnotationState>() ||
+         ASM::is_in_state<VertexSelectedState>();
 }
 
 /**
@@ -46,10 +33,7 @@ bool isInStateWhereViewsCanScroll()
  */
 bool isInStateWhereCrosshairsCanMove()
 {
-  if (ASM::is_in_state<AnnotationOffState>()) {
-    return true;
-  }
-  return false;
+  return ASM::is_in_state<AnnotationOffState>();
 }
 
 bool isInStateWhereViewTypeCanChange(const uuids::uuid& viewUid)
@@ -66,26 +50,17 @@ bool isInStateWhereViewTypeCanChange(const uuids::uuid& viewUid)
 
 bool isInStateWhereToolbarVisible()
 {
-  if (ASM::is_in_state<AnnotationOffState>() || ASM::is_in_state<ViewBeingSelectedState>()) {
-    return false;
-  }
-  return true;
+  return !(ASM::is_in_state<AnnotationOffState>() || ASM::is_in_state<ViewBeingSelectedState>());
 }
 
 bool isInStateWhereViewSelectionsVisible()
 {
-  if (ASM::is_in_state<AnnotationOffState>()) {
-    return false;
-  }
-  return true;
+  return !ASM::is_in_state<AnnotationOffState>();
 }
 
 bool showToolbarCreateButton()
 {
-  if (ASM::is_in_state<StandbyState>() || ASM::is_in_state<VertexSelectedState>()) {
-    return true;
-  }
-  return false;
+  return ASM::is_in_state<StandbyState>() || ASM::is_in_state<VertexSelectedState>();
 }
 
 bool showToolbarCompleteButton()
@@ -159,26 +134,17 @@ bool showToolbarUndoButton()
 
 bool showToolbarCancelButton()
 {
-  if (ASM::is_in_state<CreatingNewAnnotationState>() || ASM::is_in_state<AddingVertexToNewAnnotationState>()) {
-    return true;
-  }
-  return false;
+  return ASM::is_in_state<CreatingNewAnnotationState>() || ASM::is_in_state<AddingVertexToNewAnnotationState>();
 }
 
 bool showToolbarInsertVertexButton()
 {
-  if (ASM::is_in_state<VertexSelectedState>()) {
-    return true;
-  }
-  return false;
+  return ASM::is_in_state<VertexSelectedState>();
 }
 
 bool showToolbarRemoveSelectedVertexButton()
 {
-  if (ASM::is_in_state<VertexSelectedState>()) {
-    return true;
-  }
-  return false;
+  return ASM::is_in_state<VertexSelectedState>();
 }
 
 bool showToolbarRemoveSelectedAnnotationButton()

@@ -73,7 +73,7 @@ public:
    * If the components are interleaved, then component 0 holds all buffers
    */
   Image(
-    const ImageHeader& header,
+    ImageHeader header,
     const std::string& displayName,
     const ImageRepresentation& imageRep,
     const MultiComponentBufferType& bufferType,

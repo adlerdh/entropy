@@ -1,5 +1,7 @@
 #include "logic/annotation/BezierHelper.h"
 
+#include <math.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
@@ -17,7 +19,7 @@ std::pair<float, float> computeLineParams(const glm::vec2& a, const glm::vec2& b
 glm::vec2
 computeControlPoint(const glm::vec2& prev, const glm::vec2& curr, const glm::vec2& next, bool reverse, float smoothing)
 {
-  float length, angle;
+  float length = NAN, angle = NAN;
   std::tie(length, angle) = computeLineParams(prev, next);
 
   angle = angle + (reverse ? glm::pi<float>() : 0.0f);

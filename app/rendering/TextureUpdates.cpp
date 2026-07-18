@@ -101,7 +101,7 @@ bool Rendering::createLabelColorTableTexture(const uuid& labelTableUid)
     return false;
   }
 
-  int maxBufTexSize;
+  int maxBufTexSize = 0;
   glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBufTexSize);
 
   if (table->numColorBytes_RGBA_U8() > static_cast<size_t>(maxBufTexSize)) {

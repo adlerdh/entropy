@@ -34,6 +34,10 @@ option(Entropy_ENABLE_IWYU "Run Include What You Use during C++ compilation" OFF
 set(Entropy_IWYU_OPTIONS
   "-Xiwyu;--no_fwd_decls;-Xiwyu;--quoted_includes_first;-Xiwyu;--max_line_length=120;-Xiwyu;--error=0"
   CACHE STRING "Additional options passed to Include What You Use")
+option(Entropy_ENABLE_CLANG_TIDY "Run clang-tidy during C++ compilation" OFF)
+set(Entropy_CLANG_TIDY_OPTIONS
+  "--quiet"
+  CACHE STRING "Additional options passed to clang-tidy")
 option(Entropy_ENABLE_TRACE_LOGGING "Compile trace-level logging calls into Entropy" OFF)
 
 if(Entropy_USE_CCACHE)
@@ -65,16 +69,32 @@ if(Entropy_ENABLE_IWYU)
   message(STATUS "Using Include What You Use: ${Entropy_IWYU_EXECUTABLE}")
   set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "${Entropy_IWYU_EXECUTABLE};${Entropy_IWYU_OPTIONS}"
       CACHE STRING "Include What You Use command" FORCE)
+else()
+  unset(CMAKE_CXX_INCLUDE_WHAT_YOU_USE CACHE)
 endif()
 
-function(entropy_disable_iwyu_for_targets)
-  if(NOT Entropy_ENABLE_IWYU)
+if(Entropy_ENABLE_CLANG_TIDY)
+  find_program(Entropy_CLANG_TIDY_EXECUTABLE NAMES clang-tidy)
+  if(NOT Entropy_CLANG_TIDY_EXECUTABLE)
+    message(FATAL_ERROR "Entropy_ENABLE_CLANG_TIDY=ON but clang-tidy was not found")
+  endif()
+
+  message(STATUS "Using clang-tidy: ${Entropy_CLANG_TIDY_EXECUTABLE}")
+  set(CMAKE_CXX_CLANG_TIDY "${Entropy_CLANG_TIDY_EXECUTABLE};${Entropy_CLANG_TIDY_OPTIONS}"
+      CACHE STRING "clang-tidy command" FORCE)
+else()
+  unset(CMAKE_CXX_CLANG_TIDY CACHE)
+endif()
+
+function(entropy_disable_linting_for_targets)
+  if(NOT Entropy_ENABLE_IWYU AND NOT Entropy_ENABLE_CLANG_TIDY)
     return()
   endif()
 
   foreach(target IN LISTS ARGN)
     if(TARGET "${target}")
       set_target_properties("${target}" PROPERTIES CXX_INCLUDE_WHAT_YOU_USE "")
+      set_target_properties("${target}" PROPERTIES CXX_CLANG_TIDY "")
     endif()
   endforeach()
 endfunction()
@@ -365,7 +385,7 @@ set(iconfont_INCLUDE_DIR "${iconfont_PREFIX}/src"
 set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
 add_library(nanovg STATIC "${nanovg_SRC_DIR}/nanovg.c")
 target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
-entropy_disable_iwyu_for_targets(nanovg)
+entropy_disable_linting_for_targets(nanovg)
 
 # Native File Dialog Extended
 find_package(nfd REQUIRED
@@ -457,7 +477,7 @@ set(glad_INCLUDE_DIR "${glad_DIR}/include")
 
 add_library(glad STATIC "${glad_DIR}/src/glad.c")
 target_include_directories(glad PRIVATE "${glad_INCLUDE_DIR}")
-entropy_disable_iwyu_for_targets(glad)
+entropy_disable_linting_for_targets(glad)
 
 #--------------------------------------------------------------------------------
 # "Dear ImGui" library: Bloat-free graphical user interface library for C++.
@@ -512,7 +532,7 @@ set_target_properties(imgui PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
-entropy_disable_iwyu_for_targets(imgui)
+entropy_disable_linting_for_targets(imgui)
 
 #--------------------------------------------------------------------------------
 # ImPlot: Immediate mode, GPU accelerated plotting library for Dear ImGui
@@ -564,7 +584,7 @@ set_target_properties(implot PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
-entropy_disable_iwyu_for_targets(implot)
+entropy_disable_linting_for_targets(implot)
 
 # Generate build stamp header after entropy_GLAD_GL_VERSION_MAJOR and entropy_GLAD_GL_VERSION_MINOR are defined
 include(BuildStamp)
@@ -728,7 +748,7 @@ set(entropy_ABOUT_ICON_SOURCE
   "${entropy_RES_DIR}/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png")
 set(entropy_ABOUT_ICON_RESOURCE_PATH "res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png")
 
-if(Entropy_ENABLE_IWYU)
+if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
   set_source_files_properties(
     "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
     PROPERTIES SKIP_LINTING ON
@@ -923,7 +943,7 @@ cmrc_add_resource_library(entropy-shaders ALIAS entropy::shaders ${entropy_SHADE
 cmrc_add_resource_library(entropy-icons ALIAS entropy::icons "${entropy_ABOUT_ICON_SOURCE}" NAMESPACE icons
   WHENCE "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-entropy_disable_iwyu_for_targets(
+entropy_disable_linting_for_targets(
   entropy-colormaps
   entropy-fonts
   entropy-icons

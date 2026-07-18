@@ -14,7 +14,7 @@ target_sources(EntropyCommon PRIVATE
   Viewport.cpp
 )
 
-if(Entropy_ENABLE_IWYU)
+if(Entropy_ENABLE_IWYU OR Entropy_ENABLE_CLANG_TIDY)
   set_source_files_properties(
     "${entropy_EXT_DIR}/wrfranklin/pnpoly.cpp"
     PROPERTIES SKIP_LINTING ON

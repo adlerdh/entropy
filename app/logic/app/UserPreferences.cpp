@@ -74,7 +74,8 @@ void setFromJson(Value& value, const json& object, const char* key)
   try {
     value = it->get<Value>();
   }
-  catch (const json::exception&) {
+  catch (const json::exception& e) {
+    spdlog::debug("Ignoring invalid user preference '{}': {}", key, e.what());
   }
 }
 
@@ -200,7 +201,8 @@ void setVec2FromJson(glm::vec2& value, const json& object, const char* key)
   try {
     value = glm::vec2{it->at(0).get<float>(), it->at(1).get<float>()};
   }
-  catch (const json::exception&) {
+  catch (const json::exception& e) {
+    spdlog::debug("Ignoring invalid vec2 user preference '{}': {}", key, e.what());
   }
 }
 
@@ -214,7 +216,8 @@ void setVec3FromJson(glm::vec3& value, const json& object, const char* key)
   try {
     value = glm::vec3{it->at(0).get<float>(), it->at(1).get<float>(), it->at(2).get<float>()};
   }
-  catch (const json::exception&) {
+  catch (const json::exception& e) {
+    spdlog::debug("Ignoring invalid vec3 user preference '{}': {}", key, e.what());
   }
 }
 
@@ -228,7 +231,8 @@ void setVec4FromJson(glm::vec4& value, const json& object, const char* key)
   try {
     value = glm::vec4{it->at(0).get<float>(), it->at(1).get<float>(), it->at(2).get<float>(), it->at(3).get<float>()};
   }
-  catch (const json::exception&) {
+  catch (const json::exception& e) {
+    spdlog::debug("Ignoring invalid vec4 user preference '{}': {}", key, e.what());
   }
 }
 

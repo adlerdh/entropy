@@ -168,7 +168,7 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForMetricShaders(const std
         image && ((image->settings().vectorArrowOverlayVisible() && !image->settings().vectorArrowOverlayOnImage()) ||
                   (image->settings().vectorWarpedGridVisible() && !image->settings().vectorWarpedGridOverlayOnImage())))
     {
-      imageSegPairs.emplace_back(ImgSegPair());
+      imageSegPairs.emplace_back();
       continue;
     }
 
@@ -190,7 +190,7 @@ Rendering::CurrentImages Rendering::getImageAndSegUidsForMetricShaders(const std
 
   // Always return at least two elements
   while (imageSegPairs.size() < Rendering::NUM_METRIC_IMAGES) {
-    imageSegPairs.emplace_back(ImgSegPair());
+    imageSegPairs.emplace_back();
   }
 
   return imageSegPairs;

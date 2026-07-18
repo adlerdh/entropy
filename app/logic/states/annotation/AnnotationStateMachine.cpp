@@ -277,7 +277,7 @@ bool AnnotationStateMachine::createNewGrowingPolygon(const ViewHit& hit)
       return false;
     }
 
-    ms_appData->assignActiveAnnotationUidToImage(*activeImageUid, *annotUid);
+    ms_appData->assignActiveAnnotationUidToImage(*activeImageUid, annotUid);
 
     spdlog::debug(
       "Added new annotation {} (subject plane: {}) for image {}",
@@ -1038,7 +1038,7 @@ void AnnotationStateMachine::pasteAnnotation() const
   // Add the annotation to the active image:
   if (const auto pastedAnnotUid = ms_appData->addAnnotation(*activeImageUid, *annot)) {
     // Make this the active annotation
-    ms_appData->assignActiveAnnotationUidToImage(*activeImageUid, *pastedAnnotUid);
+    ms_appData->assignActiveAnnotationUidToImage(*activeImageUid, pastedAnnotUid);
     synchronizeAnnotationHighlights();
     spdlog::info("Pasted new annotation {} from clipboard to image {}", *pastedAnnotUid, *activeImageUid);
   }
@@ -1092,8 +1092,8 @@ void AnnotationStateMachine::flipSelectedAnnotation(const FlipDirection& flipDir
   // Compute annotation centroid (in annotation plane coordinates)
   glm::vec2 polyCentroid{0.0f, 0.0f};
 
-  for (size_t i = 0; i < vertices.size(); ++i) {
-    polyCentroid += vertices[i];
+  for (auto vertice : vertices) {
+    polyCentroid += vertice;
   }
 
   polyCentroid = (1.0f / static_cast<float>(vertices.size())) * polyCentroid;
@@ -1221,7 +1221,7 @@ std::vector<std::pair<uuid, size_t> > AnnotationStateMachine::findHitVertices(co
           : glm::length(glm::abs(annotPoint - hoveredPoint) / mmPerPixel);
 
       if (dist_inPixels < sk_distThresh_inPixels) {
-        annotsAndVertices.emplace_back(std::make_pair(annotUid, vertexIndex));
+        annotsAndVertices.emplace_back(annotUid, vertexIndex);
 
         if (dist_inPixels < closestDistance_inPixels) {
           closestDistance_inPixels = dist_inPixels;
@@ -1448,7 +1448,7 @@ void AnnotationStateMachine::setSelectedAnnotationAndVertex(
       if (annot && annot->numBoundaries() > 0) {
         if (annot->getBoundaryVertices(OUTER_BOUNDARY).size() > *vertexIndex) {
           // It's a valid vertex index:
-          ms_selectedVertex = *vertexIndex;
+          ms_selectedVertex = vertexIndex;
           synchronizeAnnotationHighlights();
         }
         else {

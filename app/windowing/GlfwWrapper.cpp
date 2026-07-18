@@ -14,6 +14,7 @@
 #include "ui/menus/WinNativeMainMenu.h"
 #endif
 
+#include <math.h>
 #include <spdlog/spdlog.h>
 
 #include <glm/vec2.hpp>
@@ -231,7 +232,7 @@ GlfwWrapper::GlfwWrapper(EntropyApp* app, int glMajorVersion, int glMinorVersion
   int height = static_cast<int>(app->windowData().viewport().height());
 
   if (GLFWmonitor* monitor = glfwGetPrimaryMonitor()) {
-    int xpos, ypos;
+    int xpos = 0, ypos = 0;
     glfwGetMonitorWorkarea(monitor, &xpos, &ypos, &width, &height);
   }
 
@@ -405,7 +406,7 @@ void GlfwWrapper::setCallbacks(
 
 void GlfwWrapper::setEventProcessingMode(EventProcessingMode mode)
 {
-  m_eventProcessingMode = std::move(mode);
+  m_eventProcessingMode = mode;
 }
 
 void GlfwWrapper::setWaitTimeout(double waitTimoutSeconds)
@@ -431,7 +432,7 @@ void GlfwWrapper::init()
   glfwGetFramebufferSize(m_window, &fbWidth, &fbHeight);
   framebufferSizeCallback(m_window, fbWidth, fbHeight);
 
-  float xscale, yscale;
+  float xscale = NAN, yscale = NAN;
   glfwGetWindowContentScale(m_window, &xscale, &yscale);
   windowContentScaleCallback(m_window, xscale, yscale);
 
@@ -695,7 +696,7 @@ GLFWmonitor* GlfwWrapper::currentMonitor() const
 
   glfwGetWindowSize(m_window, &winWidth, &winHeight);
 
-  int numMonitors;
+  int numMonitors = 0;
   GLFWmonitor** monitors = glfwGetMonitors(&numMonitors);
 
   for (int i = 0; i < numMonitors; ++i) {
@@ -710,7 +711,7 @@ GLFWmonitor* GlfwWrapper::currentMonitor() const
       continue;
     }
 
-    int monitorPosX, monitorPosY;
+    int monitorPosX = 0, monitorPosY = 0;
     glfwGetMonitorPos(monitors[i], &monitorPosX, &monitorPosY);
 
     const int monitorWidth = mode->width;

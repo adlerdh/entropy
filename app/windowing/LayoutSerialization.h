@@ -17,7 +17,7 @@ namespace layout
  * @param orderedImageUids Image UIDs in application order.
  * @return Layout specification.
  */
-LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids);
+LayoutSpec createLayoutSpec(const Layout& layout, const uuid_range_t& orderedImageUids);
 
 /**
  * @brief Create serializable layout snapshots.
@@ -25,7 +25,7 @@ LayoutSpec createLayoutSpec(const Layout& layout, uuid_range_t orderedImageUids)
  * @param orderedImageUids Image UIDs in application order.
  * @return Layout specifications in display order.
  */
-std::vector<LayoutSpec> createLayoutSpecs(const std::vector<Layout>& layouts, uuid_range_t orderedImageUids);
+std::vector<LayoutSpec> createLayoutSpecs(const std::vector<Layout>& layouts, const uuid_range_t& orderedImageUids);
 
 /**
  * @brief Build a layout from a snapshot.
@@ -38,7 +38,7 @@ std::vector<LayoutSpec> createLayoutSpecs(const std::vector<Layout>& layouts, uu
  */
 Layout instantiateLayoutSpec(
   const LayoutSpec& spec,
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   const CrosshairsState& crosshairs,
   const ViewAlignmentMode& viewAlignment,
   const ViewConvention& viewConvention);
@@ -54,7 +54,7 @@ Layout instantiateLayoutSpec(
  */
 std::vector<Layout> instantiateLayoutSpecs(
   const std::vector<LayoutSpec>& specs,
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   const CrosshairsState& crosshairs,
   const ViewAlignmentMode& viewAlignment,
   const ViewConvention& viewConvention);

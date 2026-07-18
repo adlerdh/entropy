@@ -1,5 +1,6 @@
 #include "logic/app/Data.h"
 
+#include <math.h>
 #include <spdlog/fmt/std.h>
 #include "common/UuidUtility.h"
 #include "logic/camera/CameraHelpers.h"
@@ -47,42 +48,13 @@ bool swapElementsAt(Container& values, const std::size_t first, const std::size_
 } // namespace
 
 AppData::AppData()
-  : m_settings()
-  , m_state()
-  , m_guiData()
-  , m_renderData()
+  : m_guiData()
   , m_windowData(m_state.crosshairsState())
   , m_project()
   , m_projectFileName(std::nullopt)
-  , m_images()
-  , m_imageUidsOrdered()
-  , m_componentProjectionImages()
-  , m_imageToComponentProjectionImages()
-  , m_componentProjectionToSourceImage()
-  , m_segs()
-  , m_segUidsOrdered()
-  , m_defs()
-  , m_defUidsOrdered()
-  , m_imageColorMaps()
-  , m_imageColorMapUidsOrdered()
-  , m_labelTables()
-  , m_labelTablesUidsOrdered()
-  , m_landmarkGroups()
-  , m_landmarkGroupUidsOrdered()
-  , m_annotations()
   , m_refImageUid(std::nullopt)
   , m_activeImageUid(std::nullopt)
-  , m_imageToSegs()
-  , m_imageToActiveSeg()
-  , m_imageToDefs()
-  , m_imageToActiveInverseWarp()
-  , m_imageToActiveInverseWarpReferenceImage()
-  , m_imageToActiveForwardWarp()
-  , m_imageToLandmarkGroups()
-  , m_imageToActiveLandmarkGroup()
-  , m_imageToAnnotations()
-  , m_imageToActiveAnnotation()
-  , m_imagesBeingSegmented()
+
 {
   spdlog::debug("Start loading image color maps");
   loadImageColorMaps();
@@ -96,13 +68,7 @@ AppData::AppData()
   spdlog::debug("Constructed application data");
 }
 
-AppData::~AppData()
-{
-  // if ( m_ipcHandler.IsAttached() )
-  //{
-  //     m_ipcHandler.Close();
-  // }
-}
+AppData::~AppData() = default;
 
 void AppData::setProject(serialize::EntropyProject project)
 {
@@ -551,7 +517,7 @@ std::optional<uuid> AppData::addDef(Image def)
   return uid;
 }
 
-uuid AppData::addLandmarkGroup(LandmarkGroup lmGroup)
+uuid AppData::addLandmarkGroup(const LandmarkGroup& lmGroup)
 {
   auto uid = generateRandomUuid();
   m_landmarkGroups.emplace(uid, std::move(lmGroup));
@@ -559,7 +525,7 @@ uuid AppData::addLandmarkGroup(LandmarkGroup lmGroup)
   return uid;
 }
 
-std::optional<uuid> AppData::addAnnotation(const uuid& imageUid, Annotation annotation)
+std::optional<uuid> AppData::addAnnotation(const uuid& imageUid, const Annotation& annotation)
 {
   if (!image(imageUid)) {
     return std::nullopt; // invalid image UID
@@ -1437,7 +1403,7 @@ void AppData::setRainbowColorsForAllImages()
     if (Image* img = image(imageUid)) {
       const float a = (1.0f + sk_startHue + static_cast<float>(i) / N);
 
-      float fractPart, intPart;
+      float fractPart = NAN, intPart = NAN;
       fractPart = std::modf(a, &intPart);
 
       const float hue = 360.0f * fractPart;
@@ -2315,9 +2281,7 @@ void AppData::restoreAllViewWorldCenterPositions()
 
   // const glm::mat4 world_T_refSubject = img->transformations().worldDef_T_subject();
 
-  for (std::size_t layoutIndex = 0; layoutIndex < m_savedViewWorldCenterPositions.size(); ++layoutIndex) {
-    const auto& mapViewUidToWorldCameraPos = m_savedViewWorldCenterPositions.at(layoutIndex);
-
+  for (const auto& mapViewUidToWorldCameraPos : m_savedViewWorldCenterPositions) {
     // for (const auto& [viewUid, refSubjectPos] : mapViewUidToWorldCameraPos) {
     for (const auto& [viewUid, anatomyPos] : mapViewUidToWorldCameraPos) {
       if (View* view = m_windowData.getView(viewUid)) {

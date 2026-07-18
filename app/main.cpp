@@ -26,11 +26,11 @@ int main(int argc, char* argv[])
     logging.setup();
   }
   catch (const std::exception& e) {
-    std::cerr << "Exception when setting up logger: " << e.what() << std::endl;
+    std::cerr << "Exception when setting up logger: " << e.what() << '\n';
     return EXIT_FAILURE;
   }
   catch (...) {
-    std::cerr << "Unknown exception when setting up logger" << std::endl;
+    std::cerr << "Unknown exception when setting up logger" << '\n';
     return EXIT_FAILURE;
   }
 

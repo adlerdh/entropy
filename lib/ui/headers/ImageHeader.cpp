@@ -3119,7 +3119,7 @@ void renderImageHeader(
           if (serialize::openAffineTxFile(affine_T_subject, *selectedFile)) {
             imgTx.set_enable_affine_T_subject(true);
             imgTx.set_affine_T_subject(glm::mat4{affine_T_subject});
-            imgTx.set_affine_T_subject_fileName(*selectedFile);
+            imgTx.set_affine_T_subject_fileName(selectedFile);
             mirrorInitialAffineToSegmentations();
             updateAllImageUniforms();
           }

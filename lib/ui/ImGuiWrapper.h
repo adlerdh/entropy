@@ -312,7 +312,7 @@ private:
    */
   void initializeFonts(float scale);
 
-  void annotationToolbar(const std::function<void()> paintActiveAnnotation);
+  void annotationToolbar(const std::function<void()>& paintActiveAnnotation);
 
   AppData& m_appData;
   CallbackHandler& m_callbackHandler;

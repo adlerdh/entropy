@@ -28,7 +28,7 @@ glm::vec2 computeCameraFov(const glm::vec2& minFov, float aspectRatio, float zoo
 
 } // namespace
 
-OrthographicProjection::OrthographicProjection() : Projection() {}
+OrthographicProjection::OrthographicProjection() = default;
 
 ProjectionType OrthographicProjection::type() const
 {

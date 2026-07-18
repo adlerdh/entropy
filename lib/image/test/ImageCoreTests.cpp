@@ -8,6 +8,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstddef>
 #include <glm/glm.hpp>
 
 #include <array>
@@ -928,7 +929,7 @@ TEST_CASE(
   const glm::uvec3 labelDims{32, 32, 1};
   ImageIoInfo labelInfo = makeIoInfo(ComponentType::UInt16, 1, labelDims);
   ImageHeader labelHeader(labelInfo, labelInfo, false);
-  std::vector<uint16_t> labels(labelDims.x * labelDims.y, 0u);
+  std::vector<uint16_t> labels(static_cast<std::size_t>(labelDims.x * labelDims.y), 0u);
   std::fill(labels.begin() + 128, labels.begin() + 512, 3u);
   const std::vector<const void*> labelBuffers{labels.data()};
 
@@ -964,7 +965,7 @@ TEST_CASE("Constant components get an editable nonzero window", "[image][setting
   const glm::uvec3 dims{4, 4, 1};
   ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 1, dims);
   ImageHeader header(ioInfo, ioInfo, false);
-  const std::vector<float> values(dims.x * dims.y, 5.0f);
+  const std::vector<float> values(static_cast<std::size_t>(dims.x * dims.y), 5.0f);
   const std::vector<const void*> buffers{values.data()};
 
   const Image image(

@@ -68,14 +68,14 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindDeformationTextures(
     for (const auto samplerUnit : samplers.indices) {
       texture.bind(samplerUnit);
     }
-    boundTextures.push_back(texture);
+    boundTextures.emplace_back(texture);
     return boundTextures;
   }
 
   for (std::size_t component = 0; component < 3; ++component) {
     GLTexture& texture = textureIt->second.at(component);
     texture.bind(samplers.indices[component]);
-    boundTextures.push_back(texture);
+    boundTextures.emplace_back(texture);
   }
 
   return boundTextures;

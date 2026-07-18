@@ -57,7 +57,10 @@ bool FrameImageSelection::isImageRendered(const uuids::uuid& imageUid) const
   return contains(m_renderedImageUids, imageUid);
 }
 
-void FrameImageSelection::setImageRendered(const uuids::uuid& imageUid, uuid_range_t orderedImageUids, bool visible)
+void FrameImageSelection::setImageRendered(
+  const uuids::uuid& imageUid,
+  const uuid_range_t& orderedImageUids,
+  bool visible)
 {
   if (!visible) {
     m_renderedImageUids.remove(imageUid);
@@ -96,7 +99,7 @@ bool FrameImageSelection::isImageVolumeRendered(const uuids::uuid& imageUid) con
 
 void FrameImageSelection::setImageVolumeRendered(
   const uuids::uuid& imageUid,
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   bool visible)
 {
   if (!visible) {
@@ -139,7 +142,7 @@ bool FrameImageSelection::isImageUsedForMetric(const uuids::uuid& imageUid) cons
 
 void FrameImageSelection::setImageUsedForMetric(
   const uuids::uuid& imageUid,
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   bool visible)
 {
   if (!visible) {
@@ -212,7 +215,7 @@ bool FrameImageSelection::defaultRenderAllImages() const
   return m_defaultRenderAllImages;
 }
 
-void FrameImageSelection::updateImageOrdering(uuid_range_t orderedImageUids)
+void FrameImageSelection::updateImageOrdering(const uuid_range_t& orderedImageUids)
 {
   m_renderedImageUids = image_selection::reorderSelectedImages(m_renderedImageUids, orderedImageUids);
   m_metricImageUids = image_selection::reorderSelectedImages(m_metricImageUids, orderedImageUids, sk_maxMetricImages);

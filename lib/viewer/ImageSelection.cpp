@@ -29,7 +29,7 @@ std::list<uuids::uuid> filteredDefaultRenderedImages(
 
 std::list<uuids::uuid> reorderSelectedImages(
   const std::list<uuids::uuid>& selectedImageUids,
-  uuid_range_t orderedImageUids,
+  const uuid_range_t& orderedImageUids,
   std::optional<std::size_t> maxCount)
 {
   std::list<uuids::uuid> reorderedImageUids;

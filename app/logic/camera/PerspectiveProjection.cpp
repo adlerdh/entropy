@@ -11,7 +11,7 @@ constexpr float k_minAngle = glm::radians(0.5f);
 constexpr float k_maxAngle = glm::radians(150.0f);
 } // namespace
 
-PerspectiveProjection::PerspectiveProjection() : Projection() {}
+PerspectiveProjection::PerspectiveProjection() = default;
 
 ProjectionType PerspectiveProjection::type() const
 {

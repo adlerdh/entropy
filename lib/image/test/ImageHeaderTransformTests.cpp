@@ -150,12 +150,12 @@ TEST_CASE("ImageHeader component adjustment and overrides update derived metadat
   ImageHeader header(info, info, true);
 
   CHECK(header.interleavedComponents());
-  CHECK(header.fileImageSizeInBytes() == 2 * 3 * 24);
-  CHECK(header.memoryImageSizeInBytes() == 2 * 3 * 24);
+  CHECK(header.fileImageSizeInBytes() == static_cast<uint64_t>(2 * 3 * 24));
+  CHECK(header.memoryImageSizeInBytes() == static_cast<uint64_t>(2 * 3 * 24));
 
   header.setNumComponentsPerPixel(2);
   CHECK(header.numComponentsPerPixel() == 2);
-  CHECK(header.fileImageSizeInBytes() == 2 * 2 * 24);
+  CHECK(header.fileImageSizeInBytes() == static_cast<uint64_t>(2 * 2 * 24));
 
   header.setNumComponentsPerPixel(0);
   CHECK(header.numComponentsPerPixel() == 2);
@@ -164,7 +164,7 @@ TEST_CASE("ImageHeader component adjustment and overrides update derived metadat
   CHECK(header.pixelType() == PixelType::Scalar);
   CHECK(header.fileComponentType() == ComponentType::Float32);
   CHECK(header.memoryComponentType() == ComponentType::Float32);
-  CHECK(header.fileImageSizeInBytes() == 4 * 24);
+  CHECK(header.fileImageSizeInBytes() == static_cast<uint64_t>(4 * 24));
 
   ImageHeaderOverrides overrides(header.pixelDimensions(), header.spacing(), header.origin(), header.directions());
   overrides.m_useIdentityPixelSpacings = true;

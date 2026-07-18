@@ -40,10 +40,10 @@ public:
   /// Add a new point to the landmark group.
   /// The new point's index is one greater than the largest existing index in the group.
   /// Return the index
-  size_t addPoint(PointRecord<PositionType> point);
+  size_t addPoint(const PointRecord<PositionType>& point);
 
   /// Add a new point to the landmark group with the given index.
-  void addPoint(size_t index, PointRecord<PositionType> point);
+  void addPoint(size_t index, const PointRecord<PositionType>& point);
 
   /// Remove the point at a given index from the landmark group
   bool removePoint(size_t index);

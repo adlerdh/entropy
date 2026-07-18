@@ -139,7 +139,7 @@ public:
    * @param[in] lmGroup Landmark group.
    * @return The landmark group's newly generated unique identifier
    */
-  uuid addLandmarkGroup(LandmarkGroup lmGroup);
+  uuid addLandmarkGroup(const LandmarkGroup& lmGroup);
 
   /**
    * @brief Add an annotation and associate it with an image
@@ -148,7 +148,7 @@ public:
    * @return If the image exists, return the annotation's newly generated unique identifier;
    * otherwise return nullopt.
    */
-  std::optional<uuid> addAnnotation(const uuid& imageUid, Annotation annotation);
+  std::optional<uuid> addAnnotation(const uuid& imageUid, const Annotation& annotation);
 
   /**
    * @brief Add a distance map to an image component. The maps are used to accelerate

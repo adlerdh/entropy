@@ -1,4 +1,6 @@
 #include "logic/annotation/SerializeAnnot.h"
+
+#include <math.h>
 #include "common/Exception.hpp"
 
 #include <vector>
@@ -70,7 +72,7 @@ void from_json(const json& j, Annotation& annot)
 {
   // All of these parameters are optional in the JSON:
 
-  std::string displayName = "";
+  std::string displayName;
   if (j.count("name")) {
     displayName = j.at("name").get<std::string>();
   }
@@ -131,7 +133,7 @@ void from_json(const json& j, Annotation& annot)
   std::array<float, 3> planeNormal;
   j.at("subjectPlaneNormal").get_to(planeNormal);
 
-  float planeOffset;
+  float planeOffset = NAN;
   j.at("subjectPlaneOffset").get_to(planeOffset);
 
   const glm::vec4 subjectPlaneEquation{planeNormal[0], planeNormal[1], planeNormal[2], planeOffset};

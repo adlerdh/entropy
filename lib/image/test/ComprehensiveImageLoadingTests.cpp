@@ -264,8 +264,8 @@ std::vector<glm::uvec3> sampleIndices(const ImageSpec& spec)
 {
   const glm::uvec3 dims = expectedPixelDimensions(spec);
   std::vector<glm::uvec3> samples{{0u, 0u, 0u}};
-  samples.push_back(glm::uvec3{dims.x - 1u, dims.y - 1u, dims.z - 1u});
-  samples.push_back(glm::uvec3{dims.x / 2u, dims.y / 2u, dims.z / 2u});
+  samples.emplace_back(dims.x - 1u, dims.y - 1u, dims.z - 1u);
+  samples.emplace_back(dims.x / 2u, dims.y / 2u, dims.z / 2u);
   return samples;
 }
 

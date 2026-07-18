@@ -166,7 +166,7 @@ entropy_expected::expected<FieldImage::Pointer, std::string> makeFieldFromImage(
   return field;
 }
 
-Image makeImageFromField(const FieldImage::Pointer field, const Image& outputDomain, const std::string& displayName)
+Image makeImageFromField(const FieldImage::Pointer& field, const Image& outputDomain, const std::string& displayName)
 {
   const ImageHeader header(makeWarpIoInfo(outputDomain, displayName), makeWarpIoInfo(outputDomain, displayName), false);
   const uint64_t numPixels = header.numPixels();
