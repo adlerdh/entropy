@@ -3,10 +3,13 @@
 
 #include "common/Exception.hpp"
 
+#include <glad/glad.h>
+
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
 #include <sstream>
+#include <utility>
 
 GLFrameBufferObject::GLFrameBufferObject(const std::string& name) : m_name(name), m_id(0u) {}
 

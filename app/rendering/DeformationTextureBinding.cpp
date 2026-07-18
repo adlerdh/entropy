@@ -1,13 +1,28 @@
 #include "rendering/Rendering.h"
 
+#include "common/UuidRange.h"
+#include "image/Image.h"
+#include "image/ImageHeader.h"
+#include "image/ImageSettings.h"
+#include "image/ImageTransformations.h"
 #include "logic/app/Data.h"
+#include "rendering/RenderData.h"
 #include "rendering/TextureSetup.h"
+#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
 
+#include <glm/mat4x4.hpp>
+#include <uuid.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <functional>
+#include <iterator>
 #include <list>
 #include <optional>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace

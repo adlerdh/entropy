@@ -2,10 +2,12 @@
 
 #include "registration/Capabilities.h"
 #include "registration/Commands.h"
+#include "registration/Types.h"
 #include "registration/Validation.h"
 
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace registration

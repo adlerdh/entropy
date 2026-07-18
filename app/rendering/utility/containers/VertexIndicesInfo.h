@@ -2,6 +2,8 @@
 
 #include "rendering/utility/gl/GLDrawTypes.h"
 
+#include <cstdint>
+
 /**
  * @brief Describes indexed draw parameters stored in an element/index buffer.
  */
@@ -14,18 +16,22 @@ public:
    * @param indexCount Number of indices to draw.
    * @param indexOffset Byte offset of the first index inside the bound index buffer.
    */
-  VertexIndicesInfo(IndexType indexType, PrimitiveMode primitiveMode, uint64_t indexCount, uint64_t indexOffset);
+  VertexIndicesInfo(
+    IndexType indexType,
+    PrimitiveMode primitiveMode,
+    std::uint64_t indexCount,
+    std::uint64_t indexOffset);
 
   IndexType indexType() const;
   PrimitiveMode primitiveMode() const;
-  uint64_t indexCount() const;
-  uint64_t indexOffset() const;
+  std::uint64_t indexCount() const;
+  std::uint64_t indexOffset() const;
 
-  void setIndexCount(uint64_t indexCount);
+  void setIndexCount(std::uint64_t indexCount);
 
 private:
   IndexType m_indexType;
   PrimitiveMode m_primitiveMode;
-  uint64_t m_indexCount;
-  uint64_t m_indexOffset;
+  std::uint64_t m_indexCount;
+  std::uint64_t m_indexOffset;
 };

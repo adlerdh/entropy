@@ -3,7 +3,10 @@
 
 #include "common/Exception.hpp"
 
+#include <glad/glad.h>
+
 #include <cstdint>
+#include <limits>
 
 namespace
 {

@@ -8,6 +8,7 @@
 #include <glad/glad.h>
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
@@ -34,13 +35,13 @@ public:
   // that sampler indices will never exceed the maximum signed value.
   struct SamplerIndexType
   {
-    int32_t index;
+    std::int32_t index;
   };
 
   /// Value wrapper for sampler arrays uploaded with `glUniform1iv()`.
   struct SamplerIndexVectorType
   {
-    std::vector<int32_t> indices;
+    std::vector<std::int32_t> indices;
   };
 
   /// All value payload types currently supported by `GLShaderProgram::applyUniforms()`.
@@ -67,7 +68,7 @@ public:
     std::array<float, 3>,
     std::array<float, 4>,
     std::array<float, 5>,
-    std::array<uint32_t, 5>,
+    std::array<std::uint32_t, 5>,
     std::array<glm::vec3, 8> >;
 
   /**

@@ -3,6 +3,8 @@
 
 #include "common/Exception.hpp"
 
+#include <glad/glad.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -11,6 +13,8 @@
 
 #include <algorithm>
 #include <sstream>
+#include <string>
+#include <utility>
 
 using namespace tex;
 

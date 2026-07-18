@@ -6,11 +6,15 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cstdint>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <string_view>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 #ifdef _WIN32

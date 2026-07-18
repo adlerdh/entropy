@@ -3,12 +3,28 @@
 #include "layout/ImageIndexMapping.h"
 #include "layout/SyncGroupIndexMap.h"
 #include "logic/app/CrosshairsState.h"
+#include "logic/camera/Camera.h"
+#include "logic/camera/Camera3DControls.h"
+#include "logic/camera/CameraTypes.h"
+#include "ui/UiControls.h"
+#include "viewer/LayoutTypes.h"
+#include "viewer/ViewModes.h"
+#include "viewer/ViewTypes.h"
+#include "windowing/ControlFrame.h"
 #include "windowing/View.h"
 
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <list>
+#include <memory>
+#include <optional>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
 
 namespace
 {

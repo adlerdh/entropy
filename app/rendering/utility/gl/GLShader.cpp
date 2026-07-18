@@ -1,14 +1,20 @@
 #include "rendering/utility/gl/GLShader.h"
 #include "rendering/utility/UnderlyingEnumType.h"
 
+#include <glad/glad.h>
+
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
 #include <glm/glm.hpp>
 
+#include <cstddef>
 #include <fstream>
+#include <iterator>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace
 {

@@ -14,6 +14,13 @@ target_sources(EntropyCommon PRIVATE
   Viewport.cpp
 )
 
+if(Entropy_ENABLE_IWYU)
+  set_source_files_properties(
+    "${entropy_EXT_DIR}/wrfranklin/pnpoly.cpp"
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
+
 target_include_directories(EntropyCommon
   PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/.."

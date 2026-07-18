@@ -2,6 +2,7 @@
 
 #include <glm/fwd.hpp>
 
+#include <cstddef>
 #include <optional>
 #include <sstream>
 #include <string>

@@ -1,6 +1,7 @@
 #include "logic/app/WindowTitleStatus.h"
 
 #include <algorithm>
+#include <cctype>
 
 namespace
 {

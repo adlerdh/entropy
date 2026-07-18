@@ -1,13 +1,12 @@
 #pragma once
 
+#include "common/Types.h"
 #include "common/UuidRange.h"
 #include "layout/LayoutSpec.h"
+#include "logic/app/CrosshairsState.h"
 #include "windowing/Layout.h"
 
-#include <optional>
 #include <vector>
-
-struct CrosshairsState;
 
 namespace layout
 {

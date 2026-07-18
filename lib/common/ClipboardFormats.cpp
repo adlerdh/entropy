@@ -1,6 +1,7 @@
 #include "common/ClipboardFormats.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <format>
 #include <iomanip>
 #include <iterator>

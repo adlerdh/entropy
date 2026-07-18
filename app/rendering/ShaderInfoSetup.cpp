@@ -1,5 +1,9 @@
 #include "rendering/ShaderInfoSetup.h"
 
+#include "rendering/utility/containers/Uniforms.h"
+
+#include <string>
+
 namespace rendering::shader_setup
 {
 

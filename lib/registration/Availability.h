@@ -1,7 +1,9 @@
 #pragma once
 
 #include "registration/Config.h"
+#include "registration/Types.h"
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>

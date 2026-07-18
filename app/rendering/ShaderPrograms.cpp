@@ -2,18 +2,30 @@
 
 #include "common/Exception.hpp"
 #include "common/Expected.h"
-#include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/PixelEdgeRenderer.h"
+#include "rendering/PrivateMethods.h"
+#include "rendering/RenderData.h"
 #include "rendering/ShaderProgramSetup.h"
+#include "rendering/TextureLayout.h"
+#include "rendering/ascii/AsciiRenderer.h"
+#include "rendering/common/ShaderType.h"
+#include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLShader.h"
+#include "rendering/utility/gl/GLShaderProgram.h"
+#include "rendering/utility/gl/GLShaderType.h"
 
 #include <cmrc/cmrc.hpp>
 #include <spdlog/spdlog.h>
 
+#include <exception>
+#include <expected>
 #include <format>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 CMRC_DECLARE(shaders);
 

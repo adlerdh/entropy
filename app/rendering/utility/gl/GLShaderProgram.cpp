@@ -2,11 +2,19 @@
 
 #include "common/Exception.hpp"
 
+#include <glad/glad.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
+
+#include <cstddef>
+#include <functional>
+#include <optional>
+#include <utility>
+#include <variant>
 
 GLShaderProgram::GLShaderProgram() : m_name(), m_handle(0u), m_linked(false) {}
 

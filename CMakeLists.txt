@@ -30,6 +30,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(Entropy_USE_CCACHE "Use ccache as the compiler launcher when available" ON)
+option(Entropy_ENABLE_IWYU "Run Include What You Use during C++ compilation" OFF)
+set(Entropy_IWYU_OPTIONS
+  "-Xiwyu;--no_fwd_decls;-Xiwyu;--quoted_includes_first;-Xiwyu;--max_line_length=120;-Xiwyu;--error=0"
+  CACHE STRING "Additional options passed to Include What You Use")
 option(Entropy_ENABLE_TRACE_LOGGING "Compile trace-level logging calls into Entropy" OFF)
 
 if(Entropy_USE_CCACHE)
@@ -44,7 +48,36 @@ if(Entropy_USE_CCACHE)
   else()
     message(STATUS "ccache was requested but was not found")
   endif()
+else()
+  unset(CMAKE_C_COMPILER_LAUNCHER CACHE)
+  unset(CMAKE_CXX_COMPILER_LAUNCHER CACHE)
+  if(APPLE)
+    unset(CMAKE_OBJCXX_COMPILER_LAUNCHER CACHE)
+  endif()
 endif()
+
+if(Entropy_ENABLE_IWYU)
+  find_program(Entropy_IWYU_EXECUTABLE NAMES include-what-you-use iwyu)
+  if(NOT Entropy_IWYU_EXECUTABLE)
+    message(FATAL_ERROR "Entropy_ENABLE_IWYU=ON but include-what-you-use was not found")
+  endif()
+
+  message(STATUS "Using Include What You Use: ${Entropy_IWYU_EXECUTABLE}")
+  set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "${Entropy_IWYU_EXECUTABLE};${Entropy_IWYU_OPTIONS}"
+      CACHE STRING "Include What You Use command" FORCE)
+endif()
+
+function(entropy_disable_iwyu_for_targets)
+  if(NOT Entropy_ENABLE_IWYU)
+    return()
+  endif()
+
+  foreach(target IN LISTS ARGN)
+    if(TARGET "${target}")
+      set_target_properties("${target}" PROPERTIES CXX_INCLUDE_WHAT_YOU_USE "")
+    endif()
+  endforeach()
+endfunction()
 
 set(entropy_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app")
 set(entropy_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
@@ -332,6 +365,7 @@ set(iconfont_INCLUDE_DIR "${iconfont_PREFIX}/src"
 set(nanovg_SRC_DIR "${nanovg_PREFIX}/src/src")
 add_library(nanovg STATIC "${nanovg_SRC_DIR}/nanovg.c")
 target_include_directories(nanovg PRIVATE "${nanovg_SRC_DIR}")
+entropy_disable_iwyu_for_targets(nanovg)
 
 # Native File Dialog Extended
 find_package(nfd REQUIRED
@@ -423,6 +457,7 @@ set(glad_INCLUDE_DIR "${glad_DIR}/include")
 
 add_library(glad STATIC "${glad_DIR}/src/glad.c")
 target_include_directories(glad PRIVATE "${glad_INCLUDE_DIR}")
+entropy_disable_iwyu_for_targets(glad)
 
 #--------------------------------------------------------------------------------
 # "Dear ImGui" library: Bloat-free graphical user interface library for C++.
@@ -477,6 +512,7 @@ set_target_properties(imgui PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
+entropy_disable_iwyu_for_targets(imgui)
 
 #--------------------------------------------------------------------------------
 # ImPlot: Immediate mode, GPU accelerated plotting library for Dear ImGui
@@ -528,6 +564,7 @@ set_target_properties(implot PROPERTIES
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
 )
+entropy_disable_iwyu_for_targets(implot)
 
 # Generate build stamp header after entropy_GLAD_GL_VERSION_MAJOR and entropy_GLAD_GL_VERSION_MINOR are defined
 include(BuildStamp)
@@ -690,6 +727,13 @@ set(entropy_SOURCES
 set(entropy_ABOUT_ICON_SOURCE
   "${entropy_RES_DIR}/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png")
 set(entropy_ABOUT_ICON_RESOURCE_PATH "res/icons/Linux/hicolor/128x128/apps/io.github.adlerdh.entropy.png")
+
+if(Entropy_ENABLE_IWYU)
+  set_source_files_properties(
+    "${entropy_EXT_DIR}/safeclib/strerrorlen_s.cpp"
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
 
 if(APPLE)
   set(entropy_MACOS_APP_ICON "${entropy_RES_DIR}/icons/macOS/Entropy.icon")
@@ -878,6 +922,13 @@ cmrc_add_resource_library(entropy-shaders ALIAS entropy::shaders ${entropy_SHADE
 )
 cmrc_add_resource_library(entropy-icons ALIAS entropy::icons "${entropy_ABOUT_ICON_SOURCE}" NAMESPACE icons
   WHENCE "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+entropy_disable_iwyu_for_targets(
+  entropy-colormaps
+  entropy-fonts
+  entropy-icons
+  entropy-licenses
+  entropy-shaders
 )
 
 add_subdirectory("${entropy_LIB_DIR}/ui")

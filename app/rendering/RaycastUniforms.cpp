@@ -1,6 +1,11 @@
 #include "rendering/Rendering.h"
 
+#include "image/Image.h"
+#include "image/ImageSettings.h"
 #include "logic/app/Data.h"
+#include "rendering/RenderData.h"
+#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "windowing/View.h"
 

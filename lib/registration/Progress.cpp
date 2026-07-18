@@ -5,6 +5,8 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <exception>
+#include <map>
 
 namespace registration
 {

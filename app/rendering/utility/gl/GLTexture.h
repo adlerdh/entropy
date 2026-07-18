@@ -10,6 +10,7 @@
 
 #include <glad/glad.h>
 
+#include <cstdint>
 #include <optional>
 #include <unordered_map>
 

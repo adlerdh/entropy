@@ -2,6 +2,9 @@
 
 #include "logic/app/Data.h"
 
+#include <optional>
+#include <utility>
+
 ControlFrame::ControlFrame(
   glm::vec4 winClipViewport,
   ViewType viewType,

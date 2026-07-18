@@ -1,10 +1,16 @@
 #pragma once
 
+#include "common/CoordinateFrame.h"
+#include "common/IntersectionTypes.h"
 #include "common/Types.h"
 #include "logic/app/CrosshairsState.h"
 #include "logic/camera/Camera.h"
 #include "logic/camera/Camera3DControls.h"
+#include "logic/camera/CameraTypes.h"
 #include "rendering/utility/math/SliceIntersectorTypes.h"
+#include "ui/UiControls.h"
+#include "viewer/ViewModes.h"
+#include "viewer/ViewTypes.h"
 #include "windowing/ControlFrame.h"
 
 #include <glm/mat4x4.hpp>

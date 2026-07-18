@@ -83,6 +83,22 @@ endif()
 add_library(EntropyUI STATIC ${entropy_UI_SOURCES})
 add_library(Entropy::UI ALIAS EntropyUI)
 
+if(Entropy_ENABLE_IWYU)
+  set_source_files_properties(
+    "${entropy_EXT_DIR}/imGuIZMO.quat/imGuIZMOquat.cpp"
+    "${entropy_EXT_DIR}/imGuIZMO.quat/ImGuiPaletteButton.cpp"
+    "${entropy_EXT_DIR}/imgui-knobs/imgui-knobs.cpp"
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
+
+if(APPLE AND Entropy_ENABLE_IWYU)
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiWrapper.cpp"
+    PROPERTIES SKIP_LINTING ON
+  )
+endif()
+
 target_compile_definitions(EntropyUI PRIVATE
   ENTROPY_ABOUT_ICON_RESOURCE_PATH="${entropy_ABOUT_ICON_RESOURCE_PATH}"
   ENTROPY_VERSION="${PROJECT_VERSION}"

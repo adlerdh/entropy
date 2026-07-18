@@ -1,6 +1,8 @@
 #pragma once
 
 #include "registration/Execution.h"
+#include "registration/Process.h"
+#include "registration/Types.h"
 
 #include <chrono>
 #include <cstdint>

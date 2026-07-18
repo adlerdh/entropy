@@ -8,7 +8,9 @@
 #include <glad/glad.h>
 
 #include <array>
+#include <cstdint>
 #include <string>
+#include <vector>
 
 /**
  * @brief Owns one linked OpenGL shader program and its registered uniforms.
@@ -81,7 +83,7 @@ public:
   /**
    * @tparam N Number of array elements
    */
-  template<uint32_t N>
+  template<std::uint32_t N>
   bool setUniform(const std::string& name, const std::array<float, N>& a)
   {
     const GLint loc = getUniformLocation(name);

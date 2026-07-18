@@ -1,8 +1,10 @@
 #pragma once
 
-#include <filesystem>
 #include "common/Types.h"
 
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
 #include <string>
 #include <unordered_map>
 #include <variant>

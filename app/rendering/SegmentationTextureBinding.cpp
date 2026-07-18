@@ -1,12 +1,20 @@
 #include "rendering/Rendering.h"
 
+#include "image/Image.h"
+#include "image/ImageSettings.h"
 #include "logic/app/Data.h"
+#include "rendering/RenderData.h"
+#include "rendering/utility/containers/Uniforms.h"
 #include "rendering/utility/gl/GLBufferTexture.h"
 #include "rendering/utility/gl/GLTexture.h"
 
+#include <uuid.h>
+
 #include <functional>
+#include <iterator>
 #include <list>
 #include <optional>
+#include <unordered_map>
 
 namespace
 {

@@ -1,0 +1,126 @@
+name: Include What You Use
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iwyu-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CC: gcc-13
+  CXX: g++-13
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_COMPILERCHECK: content
+  CCACHE_MAXSIZE: 2G
+  DEPS_CACHE_VERSION: v1
+
+jobs:
+  iwyu:
+    name: IWYU Analysis (Ubuntu x86_64)
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install build and IWYU dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y software-properties-common
+          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            ccache \
+            gcc-13 \
+            g++-13 \
+            iwyu \
+            libdbus-1-dev \
+            libssl-dev \
+            libgl1-mesa-dev \
+            libwayland-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxkbcommon-dev \
+            libxrandr-dev \
+            xorg-dev
+
+      - name: Validate runner tools
+        run: |
+          lsb_release -a
+          cmake --version
+          ccache --version
+          include-what-you-use --version
+          "${CC}" --version
+          "${CXX}" --version
+
+      - name: Restore Debug ccache
+        uses: actions/cache@v5
+        with:
+          path: .ccache
+          key: ubuntu2204-gcc13-iwyu-ccache-v1-${{ github.run_id }}
+          restore-keys: |
+            ubuntu2204-gcc13-iwyu-ccache-v1-
+
+      - name: Restore Debug Dependencies cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-iwyu/external/catch2-*
+            build-iwyu/external/cli11-*
+            build-iwyu/external/cmakerc-*
+            build-iwyu/external/curl-*
+            build-iwyu/external/glfw-*
+            build-iwyu/external/glm-*
+            build-iwyu/external/iconfont-*
+            build-iwyu/external/imgui-*
+            build-iwyu/external/implot-*
+            build-iwyu/external/itk-*
+            build-iwyu/external/nanovg-*
+            build-iwyu/external/nativefiledialog-*
+            build-iwyu/external/nlohmann_json-*
+            build-iwyu/external/qtbase-*
+            build-iwyu/external/spdlog-*
+            build-iwyu/external/stduuid-*
+            build-iwyu/external/tinyfsm-*
+          key: ubuntu2204-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt', 'cmake/*.cmake') }}
+          restore-keys: |
+            ubuntu2204-gcc13-iwyu-deps-${{ env.DEPS_CACHE_VERSION }}-
+
+      - name: Configure Debug dependencies
+        run: cmake --preset deps-debug -B build-iwyu -D Entropy_USE_CCACHE=ON
+
+      - name: Build Debug dependencies
+        run: cmake --build build-iwyu --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}"
+
+      - name: Configure Debug app with IWYU
+        run: cmake --preset app-debug -B build-iwyu -D Entropy_USE_CCACHE=ON -D Entropy_ENABLE_IWYU=ON
+
+      - name: Run IWYU during Debug app build
+        run: |
+          set -o pipefail
+          cmake --build build-iwyu --parallel "${CMAKE_BUILD_PARALLEL_LEVEL}" -- -k 2>&1 | tee iwyu.log
+
+      - name: Upload IWYU log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: iwyu-log
+          path: iwyu.log
+          if-no-files-found: ignore
+
+      - name: Show ccache stats
+        if: always()
+        run: |
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --show-stats
+          else
+            echo "ccache not found; skipping ccache stats"
+          fi

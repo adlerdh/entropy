@@ -1,7 +1,13 @@
 #include "rendering/Rendering.h"
 
+#include "common/Types.h"
+#include "image/Image.h"
 #include "image/ImageColorMap.h"
+#include "image/ImageSettings.h"
+#include "image/ImageTypes.h"
 #include "logic/app/Data.h"
+#include "logic/app/ParcellationLabelTable.h"
+#include "rendering/RenderData.h"
 #include "rendering/utility/gl/GLBufferTexture.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
@@ -10,6 +16,12 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <optional>
+#include <unordered_map>
+#include <vector>
 
 namespace
 {

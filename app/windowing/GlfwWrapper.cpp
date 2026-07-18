@@ -2,8 +2,11 @@
 
 #include "EntropyApp.h"
 #include "common/Exception.hpp"
+#include "common/Viewport.h"
 #include "ui/LinuxUiScale.h"
+#include "ui/ImGuiWrapper.h"
 #include "windowing/GlfwCallbacks.h"
+#include "windowing/WindowData.h"
 #if defined(__linux__)
 #include "windowing/EntropyIcon.h"
 #endif
@@ -17,10 +20,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <iterator>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include <glad/glad.h>
+#include <imgui.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>

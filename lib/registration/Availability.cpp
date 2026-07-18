@@ -1,6 +1,7 @@
 #include "registration/Availability.h"
 
 #include <algorithm>
+#include <initializer_list>
 #include <regex>
 #include <sstream>
 

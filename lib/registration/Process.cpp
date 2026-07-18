@@ -3,12 +3,11 @@
 #include <array>
 #include <algorithm>
 #include <cerrno>
-#include <cstdio>
 #include <cwchar>
-#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #ifdef _WIN32
@@ -20,6 +19,7 @@
 #include <csignal>
 #include <fcntl.h>
 #include <sys/select.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #endif

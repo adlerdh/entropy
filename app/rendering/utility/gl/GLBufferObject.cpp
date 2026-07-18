@@ -3,7 +3,10 @@
 
 #include "common/Exception.hpp"
 
+#include <glad/glad.h>
+
 #include <limits>
+#include <utility>
 
 GLBufferObject::GLBufferObject(const BufferType& type, const BufferUsagePattern& usage)
   : m_id(0), m_type(type), m_typeEnum(underlyingType(type)), m_usagePattern(usage), m_bufferSizeInBytes(0)

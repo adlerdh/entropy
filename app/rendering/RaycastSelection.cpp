@@ -1,8 +1,12 @@
 #include "rendering/Rendering.h"
 
 #include "logic/app/Data.h"
+#include "rendering/PrivateMethods.h"
+#include "rendering/RenderData.h"
 #include "rendering/helpers/PipelineHelpers.h"
 #include "windowing/View.h"
+
+#include <uuid.h>
 
 #include <optional>
 

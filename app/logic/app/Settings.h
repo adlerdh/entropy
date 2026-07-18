@@ -7,6 +7,7 @@
 
 #include <glm/vec3.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <optional>

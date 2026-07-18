@@ -3,8 +3,11 @@
 
 #include "common/Exception.hpp"
 
+#include <glad/glad.h>
+
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 
 namespace
 {

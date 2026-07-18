@@ -3,13 +3,25 @@
 #include "EntropyApp.h"
 #include "common/Types.h"
 
+#include "logic/app/CallbackHandler.h"
+#include "logic/app/Data.h"
 #include "logic/app/ImageScaleInteraction.h"
+#include "logic/app/Settings.h"
+#include "logic/app/State.h"
+#include "logic/camera/Camera3DControls.h"
 #include "logic/camera/Camera3DInteraction.h"
 #include "logic/camera/CameraHelpers.h"
 #include "logic/interaction/ViewHit.h"
 #include "logic/interaction/events/ButtonState.h"
+#include "logic/states/annotation/AnnotationEvents.h"
 #include "logic/states/annotation/AnnotationStateHelpers.h"
 #include "logic/states/FsmList.hpp"
+#include "ui/GuiData.h"
+#include "ui/ImGuiWrapper.h"
+#include "viewer/ViewTypes.h"
+#include "windowing/GlfwWrapper.h"
+#include "windowing/View.h"
+#include "windowing/WindowData.h"
 
 #include <glm/glm.hpp>
 #include <imgui/imgui.h>
@@ -19,6 +31,7 @@
 #include <GLFW/glfw3.h>
 
 #include <cmath>
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <vector>

@@ -1,12 +1,19 @@
 #include "rendering/Rendering.h"
 
+#include "image/Image.h"
+#include "image/ImageSettings.h"
+#include "image/Isosurface.h"
 #include "logic/app/Data.h"
 #include "logic/SurfaceUtility.h"
+#include "rendering/RenderData.h"
 
 #include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <iterator>
+#include <vector>
 
 namespace
 {

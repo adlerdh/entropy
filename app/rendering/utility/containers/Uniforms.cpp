@@ -1,7 +1,13 @@
 #include "rendering/utility/containers/Uniforms.h"
 
+#include <glad/glad.h>
+
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
+
+#include <iterator>
+#include <tuple>
+#include <utility>
 
 Uniforms::Decl::Decl()
   : m_type(UniformType::Undefined), m_defaultValue(0), m_value(0), m_location(-1), m_isRequired(false), m_isDirty(true)

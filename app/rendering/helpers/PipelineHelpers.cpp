@@ -2,6 +2,11 @@
 
 #include "rendering/utility/gl/GLShaderProgram.h"
 
+#include <cstddef>
+#include <iterator>
+#include <limits>
+#include <utility>
+
 namespace rendering
 {
 

@@ -10,6 +10,8 @@
 
 #include <glad/glad.h>
 
+#include <cstddef>
+
 /**
  * @brief RAII wrapper around an OpenGL vertex array object.
  *

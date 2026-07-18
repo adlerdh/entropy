@@ -3,6 +3,7 @@
 #include "common/UuidUtility.h"
 
 #include <algorithm>
+#include <utility>
 
 namespace viewer
 {

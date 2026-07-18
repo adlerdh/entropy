@@ -8,18 +8,21 @@
 
 #include "layout/LayoutPreset.h"
 #include "layout/LayoutSpec.h"
+#include "viewer/LayoutTypes.h"
+#include "viewer/ViewTypes.h"
+#include "windowing/ControlFrame.h"
 #include "windowing/Layout.h"
 #include "windowing/View.h"
 
+#include <glm/fwd.hpp>
 #include <uuid.h>
 
+#include <cstddef>
 #include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-class AppData;
 
 class WindowData
 {

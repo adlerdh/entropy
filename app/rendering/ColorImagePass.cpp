@@ -1,14 +1,28 @@
 #include "rendering/Rendering.h"
 
+#include "common/Types.h"
+#include "image/Image.h"
+#include "image/ImageHeader.h"
+#include "image/ImageSettings.h"
 #include "logic/app/Data.h"
-#include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/ImageDrawing.h"
+#include "rendering/PrivateMethods.h"
+#include "rendering/RenderData.h"
+#include "rendering/common/ShaderType.h"
+#include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "windowing/View.h"
+
+#include <glm/vec3.hpp>
+#include <uuid.h>
 
 #include <functional>
 #include <list>
 #include <optional>
+#include <string>
+#include <vector>
 
 namespace
 {

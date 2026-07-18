@@ -15,6 +15,8 @@
 #include <algorithm> // std::equal
 #include <cctype>    // std::tolower
 #include <cstdlib>   // std::exit
+#include <filesystem>
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <sstream>

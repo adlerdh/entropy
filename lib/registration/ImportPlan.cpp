@@ -2,6 +2,8 @@
 
 #include "registration/Artifacts.h"
 
+#include <utility>
+
 namespace registration
 {
 namespace

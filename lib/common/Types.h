@@ -6,8 +6,10 @@
 #include <glm/vec4.hpp>
 
 #include <array>
+#include <cstddef>
 #include <optional>
 #include <string>
+#include <utility>
 
 /**
  * @brief Numeric storage type for one image pixel component.

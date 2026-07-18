@@ -1,15 +1,31 @@
 #include "rendering/Rendering.h"
 
+#include "common/Types.h"
+#include "image/Image.h"
+#include "image/ImageSettings.h"
 #include "logic/app/Data.h"
+#include "logic/camera/CameraTypes.h"
 #include "rendering/ImageDrawing.h"
+#include "rendering/PrivateMethods.h"
+#include "rendering/RenderData.h"
 #include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/vector/VectorDrawing.h"
+#include "viewer/ViewModes.h"
+#include "viewer/ViewTypes.h"
+#include "windowing/Layout.h"
 #include "windowing/View.h"
+#include "windowing/WindowData.h"
 
 #include <glm/glm.hpp>
+#include <uuid.h>
 #include <spdlog/spdlog.h>
 
+#include <functional>
+#include <list>
 #include <optional>
+#include <unordered_map>
+#include <utility>
 
 namespace
 {

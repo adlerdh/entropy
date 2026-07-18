@@ -1,6 +1,10 @@
 #include "registration/Capabilities.h"
 
 #include <algorithm>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace registration
 {

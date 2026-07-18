@@ -2,6 +2,8 @@
 
 #include "rendering/utility/gl/GLBufferTypes.h"
 
+#include <cstdint>
+
 /**
  * @brief Describes one vertex attribute stream inside a bound vertex buffer.
  *
@@ -26,16 +28,16 @@ public:
     int numComponents,
     int strideInBytes,
     int offsetInBytes,
-    uint64_t vertexCount);
+    std::uint64_t vertexCount);
 
   BufferComponentType componentType() const;
   BufferNormalizeValues normalizeValues() const;
   int numComponents() const;
   int strideInBytes() const;
   int offsetInBytes() const;
-  uint64_t vertexCount() const;
+  std::uint64_t vertexCount() const;
 
-  void setVertexCount(uint64_t vertexCount);
+  void setVertexCount(std::uint64_t vertexCount);
 
 private:
   BufferComponentType m_componentType;
@@ -43,5 +45,5 @@ private:
   int m_numComponents;
   int m_strideInBytes;
   int m_offsetInBytes;
-  uint64_t m_vertexCount;
+  std::uint64_t m_vertexCount;
 };

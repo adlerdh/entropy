@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <initializer_list>
 #include <sstream>
 
 namespace rendering::scale_bar

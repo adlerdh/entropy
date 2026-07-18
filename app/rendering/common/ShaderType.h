@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <string>
 
 // Abbreviations used below: linear interpolation (linear), cubic B-spline interpolation (cubic), nearest-neighbor
 // interpolation (nearest), and inverse deformation field sampling (warped)

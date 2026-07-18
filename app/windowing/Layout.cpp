@@ -1,7 +1,12 @@
 #include "windowing/Layout.h"
 #include "common/UuidUtility.h"
 #include "logic/app/Data.h"
+#include "ui/UiControls.h"
+#include "viewer/ViewModes.h"
+#include "viewer/ViewTypes.h"
 
+#include <set>
+#include <stdexcept>
 #include <utility>
 
 namespace

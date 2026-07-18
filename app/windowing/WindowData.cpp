@@ -1,9 +1,15 @@
 #include "windowing/WindowData.h"
 
+#include "common/CoordinateFrame.h"
+#include "common/DirectionMaps.h"
 #include "common/Exception.hpp"
+#include "common/Geometry.h"
 #include "common/UuidUtility.h"
 
+#include "image/Image.h"
+#include "logic/camera/Camera.h"
 #include "logic/camera/CameraHelpers.h"
+#include "logic/camera/Projection.h"
 #include "logic/app/Data.h"
 #include "logic/app/DataHelper.h"
 #include "logic/app/ImageSelectionPolicy.h"

@@ -1,17 +1,34 @@
 #include "rendering/Rendering.h"
 
 #include "common/Exception.hpp"
+#include "common/MathFuncs.h"
+#include "common/Types.h"
+#include "common/UuidRange.h"
 #include "logic/app/Data.h"
-#include "rendering/helpers/PipelineHelpers.h"
+#include "logic/app/ParcellationLabelTable.h"
+#include "rendering/RenderData.h"
+#include "rendering/TextureLayout.h"
 #include "rendering/TextureSetup.h"
+#include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/utility/gl/GLBufferTexture.h"
+#include "rendering/utility/gl/GLBufferTypes.h"
 #include "rendering/utility/gl/GLTexture.h"
 #include "rendering/utility/gl/GLTextureTypes.h"
+
+#include <glad/glad.h>
 
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace

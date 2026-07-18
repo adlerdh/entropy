@@ -1,12 +1,29 @@
 #include "rendering/Rendering.h"
 
+#include "common/Types.h"
+#include "image/Image.h"
 #include "logic/app/Data.h"
+#include "logic/app/Settings.h"
 #include "rendering/ImageDrawing.h"
+#include "rendering/PrivateMethods.h"
+#include "rendering/RenderData.h"
+#include "rendering/common/ShaderType.h"
+#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
+#include "viewer/ViewModes.h"
 #include "windowing/View.h"
+#include "windowing/WindowData.h"
+
+#include <glm/vec3.hpp>
+#include <uuid.h>
 
 #include <functional>
 #include <list>
+#include <memory>
+#include <optional>
+#include <string>
+#include <unordered_map>
 
 namespace
 {

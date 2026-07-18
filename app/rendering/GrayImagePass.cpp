@@ -1,19 +1,38 @@
 #include "rendering/Rendering.h"
 
+#include "common/Types.h"
+#include "common/Viewport.h"
+#include "image/Image.h"
+#include "image/ImageSettings.h"
+#include "image/ImageTransformations.h"
 #include "logic/app/Data.h"
 #include "logic/camera/CameraHelpers.h"
-#include "rendering/helpers/ImageDrawingHelpers.h"
-#include "rendering/helpers/PipelineHelpers.h"
 #include "rendering/ImageDrawing.h"
 #include "rendering/PixelEdgeRenderer.h"
+#include "rendering/PrivateMethods.h"
+#include "rendering/RenderData.h"
+#include "rendering/common/ShaderType.h"
+#include "rendering/geometry/PixelEdgeGeometry.h"
+#include "rendering/helpers/ImageDrawingHelpers.h"
+#include "rendering/helpers/PipelineHelpers.h"
+#include "rendering/utility/containers/Uniforms.h"
+#include "rendering/utility/gl/GLShaderProgram.h"
 #include "rendering/utility/gl/GLTexture.h"
+#include "viewer/ViewModes.h"
 #include "windowing/View.h"
+#include "windowing/WindowData.h"
 
 #include <glm/matrix.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <uuid.h>
 
 #include <functional>
 #include <list>
 #include <optional>
+#include <string>
+#include <unordered_map>
 
 namespace
 {

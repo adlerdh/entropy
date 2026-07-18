@@ -3,7 +3,10 @@
 #include "registration/Capabilities.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <filesystem>
 #include <string>
+#include <utility>
 
 namespace registration
 {

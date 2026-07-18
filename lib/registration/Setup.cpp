@@ -1,6 +1,7 @@
 #include "registration/Setup.h"
 
 #include "registration/Artifacts.h"
+#include "registration/Capabilities.h"
 
 #include <algorithm>
 #include <cctype>
