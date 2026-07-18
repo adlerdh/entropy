@@ -38,27 +38,7 @@ target_link_libraries(EntropyCommon
     stduuid
   PRIVATE
     CLI11::CLI11
-)
-
-target_compile_options(EntropyCommon PRIVATE
-  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
-    -Werror
-    -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
-    -Wno-error=array-bounds
-    -Wno-error=empty-body
-    -Wno-error=float-conversion
-    -Wno-error=maybe-uninitialized
-    -Wno-error=stringop-overflow
-    -ftrapv
-  >
-  $<$<CXX_COMPILER_ID:AppleClang>:
-    -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
-    -Wno-error=array-bounds
-    -Wshadow -ftrapv
-  >
-  $<$<CXX_COMPILER_ID:MSVC>:
-    /W4
-  >
+    entropy_warnings
 )
 
 entropy_enable_coverage_for_target(EntropyCommon)

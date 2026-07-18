@@ -937,7 +937,6 @@ void renderImageHeader(
   const std::function<void(std::size_t cmapIndex)>& /*updateImageColorMapInterpolationMode*/,
   const std::function<size_t(void)>& getNumImageColorMaps,
   const std::function<ImageColorMap*(size_t cmapIndex)>& getImageColorMap,
-  const std::function<std::optional<uuids::uuid>(const std::filesystem::path& fileName)>& loadWarpField,
   const std::function<void(
     const uuids::uuid& imageUid,
     const std::filesystem::path& fileName,

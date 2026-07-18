@@ -39,7 +39,6 @@ void renderImagePropertiesWindow(
   const std::function<void(const uuid& imageUid)>& updateImageUniforms,
   const std::function<void(const uuid& imageUid)>& updateImageInterpolationMode,
   const std::function<void(std::size_t cmapIndex)>& updateImageColorMapInterpolationMode,
-  const std::function<std::optional<uuid>(const std::filesystem::path& fileName)>& loadWarpField,
   const std::function<void(
     const uuid& imageUid,
     const std::filesystem::path& fileName,
@@ -110,7 +109,6 @@ void renderImagePropertiesWindow(
             },
             getNumImageColorMaps,
             getImageColorMap,
-            loadWarpField,
             loadAndAssignWarpField,
             requestWarpInversion,
             moveImageBackward,

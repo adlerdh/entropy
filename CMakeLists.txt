@@ -179,6 +179,28 @@ endif()
 
 add_library(entropy_warnings INTERFACE)
 target_compile_options(entropy_warnings INTERFACE
+  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
+    -Werror
+    -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
+    -Wno-error=array-bounds
+    -Wno-error=empty-body
+    -Wno-error=float-conversion
+    -Wno-error=maybe-uninitialized
+    -Wno-error=stringop-overflow
+    -ftrapv
+  >
+  $<$<CXX_COMPILER_ID:AppleClang>:
+    -Werror
+    -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
+    -Wno-error=array-bounds
+    -ftrapv
+  >
+  $<$<CXX_COMPILER_ID:MSVC>:
+    /W4
+    /WX
+    /permissive-
+    /wd4702
+  >
   $<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>>:
     -fstack-protector-all
   >
@@ -1079,28 +1101,6 @@ target_include_directories(entropy SYSTEM PRIVATE
 )
 
 entropy_copy_runtime_dlls(entropy)
-
-target_compile_options(entropy PRIVATE
-  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
-    -Werror
-    -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
-    # -Wconversion -Wsign-conversion
-    -Wno-error=array-bounds
-    -Wno-error=empty-body
-    -Wno-error=float-conversion
-    -Wno-error=maybe-uninitialized
-    -Wno-error=stringop-overflow
-    -ftrapv
-  >
-  $<$<CXX_COMPILER_ID:AppleClang>:
-    -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
-    -Wno-error=array-bounds
-    -Wshadow -ftrapv
-  >
-  $<$<CXX_COMPILER_ID:MSVC>:
-    /W4
-  >
-)
 
 set_target_properties(entropy PROPERTIES
   CXX_STANDARD 23

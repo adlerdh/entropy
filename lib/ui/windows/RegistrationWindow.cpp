@@ -629,7 +629,7 @@ std::string numberedJobTitle(const registration::JobRecord& job)
   return "Job " + std::to_string(job.order) + ": " + jobTitle(job);
 }
 
-std::string metricDisplayLabel(registration::Backend backend, registration::Metric metric)
+std::string metricDisplayLabel(registration::Metric metric)
 {
   switch (metric) {
     case registration::Metric::SSD:
@@ -1382,11 +1382,11 @@ void renderTransformCombo(registration::SetupState& state)
 
 void renderMetricCombo(registration::SetupState& state)
 {
-  const std::string preview = metricDisplayLabel(state.job.backend, state.job.metric);
+  const std::string preview = metricDisplayLabel(state.job.metric);
   if (ImGui::BeginCombo("Metric", preview.c_str())) {
     for (const registration::Metric metric : state.capabilities.metrics) {
       const bool selected = metric == state.job.metric;
-      const std::string label = metricDisplayLabel(state.job.backend, metric);
+      const std::string label = metricDisplayLabel(metric);
       if (ImGui::Selectable(label.c_str(), selected)) {
         state.job.metric = metric;
         registration::refreshValidation(state);
@@ -1457,10 +1457,10 @@ void renderAuxiliaryImagePairs(
       helpMarker("Greedy applies the primary metric to all fixed/moving image pairs");
     }
     else {
-      if (ImGui::BeginCombo("Metric", metricDisplayLabel(state.job.backend, pair.metric).c_str())) {
+      if (ImGui::BeginCombo("Metric", metricDisplayLabel(pair.metric).c_str())) {
         for (const registration::Metric metric : state.capabilities.metrics) {
           const bool selected = metric == pair.metric;
-          const std::string label = metricDisplayLabel(state.job.backend, metric);
+          const std::string label = metricDisplayLabel(metric);
           if (ImGui::Selectable(label.c_str(), selected)) {
             pair.metric = metric;
             registration::refreshValidation(state);

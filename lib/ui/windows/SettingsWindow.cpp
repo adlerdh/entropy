@@ -144,12 +144,6 @@ float settingsControlWidth()
   return ImGui::CalcItemWidth();
 }
 
-float fillWidthForLabelColumn(float labelWidth)
-{
-  const float spacing = labelWidth > 0.0f ? ImGui::GetStyle().ItemSpacing.x : 0.0f;
-  return std::max(1.0f, ImGui::GetContentRegionAvail().x - labelWidth - spacing);
-}
-
 void finishSettingsSection(bool sectionOpen)
 {
   if (!sectionOpen) {
@@ -176,27 +170,6 @@ void renderReadOnlyPathField(const char* label, const std::filesystem::path& pat
   ImGui::PushItemWidth(itemWidth >= 0.0f ? itemWidth : fillWidthForLabeledControl(label));
   ImGui::InputText(label, buffer.data(), buffer.size(), ImGuiInputTextFlags_ReadOnly);
   ImGui::PopItemWidth();
-}
-
-void renderPathSetting(const char* label, std::filesystem::path& path, const char* tooltip)
-{
-  std::string value = path.string();
-  ImGui::PushItemWidth(fillWidthForLabeledControl(label));
-  if (ImGui::InputText(label, &value)) {
-    path = value;
-  }
-  ImGui::PopItemWidth();
-  ImGui::SameLine();
-  helpMarker(tooltip);
-}
-
-void renderTextSetting(const char* label, std::string& value, const char* tooltip)
-{
-  ImGui::PushItemWidth(fillWidthForLabeledControl(label));
-  ImGui::InputText(label, &value);
-  ImGui::PopItemWidth();
-  ImGui::SameLine();
-  helpMarker(tooltip);
 }
 
 void renderPathSettingFixedWidth(
@@ -1098,13 +1071,14 @@ void renderViewsTab(AppData& appData, RenderData& renderData, const AllViewsRece
   finishSettingsSection(annotationsOpen);
 
   if (ImGui::CollapsingHeader("Lightbox Views", ImGuiTreeNodeFlags_DefaultOpen)) {
-    const bool showImageBorders = renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
-    if (!showImageBorders) {
+    const bool globalImageBordersShown =
+      renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersections;
+    if (!globalImageBordersShown) {
       renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews = false;
     }
-    ImGui::BeginDisabled(!showImageBorders);
+    ImGui::BeginDisabled(!globalImageBordersShown);
     bool showImageBordersInLightboxViews =
-      showImageBorders &&
+      globalImageBordersShown &&
       renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews;
     if (ImGui::Checkbox("Show image borders##lightboxViews", &showImageBordersInLightboxViews)) {
       renderData.m_globalSliceIntersectionParams.renderInactiveImageViewIntersectionsInLightboxViews =
@@ -1176,8 +1150,7 @@ void renderInterfaceTab(
   const std::function<void(UiColorPreset preset)>& applyUiColorPreset,
   const std::function<void(UiDensityPreset preset)>& applyUiDensityPreset,
   const std::function<void(float opacity)>& applyUiWindowBgOpacity,
-  const std::function<void()>& readjustViewport,
-  const SettingsPersistenceCallbacks& persistenceCallbacks)
+  const std::function<void()>& readjustViewport)
 {
   bool showLayoutTabs = appData.settings().showLayoutTabs();
   if (ImGui::Checkbox("Show layout tab bar", &showLayoutTabs)) {
@@ -2682,8 +2655,7 @@ static void renderSettingsPage(
         applyUiColorPreset,
         applyUiDensityPreset,
         applyUiWindowBgOpacity,
-        readjustViewport,
-        persistenceCallbacks);
+        readjustViewport);
       if (ImGui::CollapsingHeader("Precision", ImGuiTreeNodeFlags_DefaultOpen)) {
         renderPrecisionTab(appData);
       }

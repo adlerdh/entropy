@@ -24,27 +24,6 @@ target_link_libraries(EntropyViewer
     entropy_warnings
 )
 
-target_compile_options(EntropyViewer PRIVATE
-  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
-    -Werror
-    -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code -Wshadow
-    -Wno-error=array-bounds
-    -Wno-error=empty-body
-    -Wno-error=float-conversion
-    -Wno-error=maybe-uninitialized
-    -Wno-error=stringop-overflow
-    -ftrapv
-  >
-  $<$<CXX_COMPILER_ID:AppleClang>:
-    -Werror -Wall -Wextra -Wpointer-arith -Winit-self -Wunreachable-code
-    -Wno-error=array-bounds
-    -Wshadow -ftrapv
-  >
-  $<$<CXX_COMPILER_ID:MSVC>:
-    /W4
-  >
-)
-
 entropy_enable_coverage_for_target(EntropyViewer)
 
 set_target_properties(EntropyViewer PROPERTIES

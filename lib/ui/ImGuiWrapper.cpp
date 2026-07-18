@@ -4557,7 +4557,6 @@ void ImGuiWrapper::render()
         m_updateImageUniforms,
         m_updateImageInterpolationMode,
         m_updateImageColorMapInterpolationMode,
-        m_loadDeformationField,
         m_loadAndAssignDeformationField,
         [this](
           const uuids::uuid& imageUid,
