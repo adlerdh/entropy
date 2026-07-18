@@ -297,8 +297,8 @@ void Rendering::renderVectorOverlays()
     ViewOutlineMode outlineMode = ViewOutlineMode::None;
 
     if (state::annot::isInStateWhereViewSelectionsVisible() && ASM::current_state_ptr) {
-      const auto hoveredViewUid = ASM::current_state_ptr->hoveredViewUid();
-      const auto selectedViewUid = ASM::current_state_ptr->selectedViewUid();
+      const auto hoveredViewUid = state::annot::AnnotationStateMachine::hoveredViewUid();
+      const auto selectedViewUid = state::annot::AnnotationStateMachine::selectedViewUid();
 
       if (selectedViewUid && (viewUid == *selectedViewUid)) {
         outlineMode = ViewOutlineMode::Selected;

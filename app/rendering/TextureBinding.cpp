@@ -7,7 +7,7 @@
 
 void Rendering::unbindTextures(const std::list<std::reference_wrapper<GLTexture>>& textures)
 {
-  for (auto& T : textures) {
+  for (const auto& T : textures) {
     T.get().unbind();
   }
 }

@@ -12,7 +12,8 @@ namespace
 
 std::string firstNonEmpty(std::initializer_list<std::string> values)
 {
-  const auto it = std::find_if(values.begin(), values.end(), [](const std::string& value) { return !value.empty(); });
+  const auto* const it =
+    std::find_if(values.begin(), values.end(), [](const std::string& value) { return !value.empty(); });
   return it == values.end() ? std::string{} : *it;
 }
 

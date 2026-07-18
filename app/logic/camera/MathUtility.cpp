@@ -112,7 +112,7 @@ std::vector<glm::vec2> project3dPointsToPlane(const std::vector<glm::vec3>& A)
   std::vector<glm::vec2> B;
 
   B.reserve(A.size());
-  for (auto& a : A) {
+  for (const auto& a : A) {
     B.emplace_back(M * glm::vec4{a, 1.0f});
   }
 

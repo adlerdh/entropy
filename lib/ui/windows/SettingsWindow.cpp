@@ -1226,7 +1226,7 @@ void renderInterfaceTab(
 
     const auto currentScale = appData.settings().uiScaleOverride();
     const auto& uiScaleChoices = ui_settings::uiScaleChoices();
-    auto currentChoice = std::find_if(
+    const auto* currentChoice = std::find_if(
       uiScaleChoices.begin(),
       uiScaleChoices.end(),
       [&currentScale](const ui_settings::ScaleChoice& choice) { return choice.scale == currentScale; });
@@ -1256,7 +1256,7 @@ void renderInterfaceTab(
 
     const UiFontFamily currentFamily = appData.settings().uiFontFamily();
     const auto& uiFontChoices = ui_settings::visibleFontChoices();
-    auto currentFontChoice =
+    const auto* currentFontChoice =
       std::find_if(uiFontChoices.begin(), uiFontChoices.end(), [currentFamily](const ui_settings::FontChoice& choice) {
         return choice.family == currentFamily;
       });

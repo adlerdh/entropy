@@ -1199,7 +1199,7 @@ std::unordered_map<uuids::uuid, GLBufferTexture> createLabelColorTableTextures(c
     auto it = bufTextures.emplace(
       std::piecewise_construct,
       std::forward_as_tuple(*tableUid),
-      std::forward_as_tuple(table->bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw));
+      std::forward_as_tuple(ParcellationLabelTable::bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw));
 
     if (!it.second) continue;
 

@@ -79,7 +79,7 @@ std::list<std::reference_wrapper<GLBufferTexture>> Rendering::bindSegBufferTextu
 
 void Rendering::unbindBufferTextures(const std::list<std::reference_wrapper<GLBufferTexture>>& textures)
 {
-  for (auto& T : textures) {
+  for (const auto& T : textures) {
     T.get().unbind();
   }
 }

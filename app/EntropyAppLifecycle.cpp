@@ -172,9 +172,9 @@ void EntropyApp::init()
   // Start the annotation state machine
   state::annot::fsm_list::start();
 
-  if (auto* state = state::annot::fsm_list::current_state_ptr) {
-    state->setAppData(&m_data);
-    state->setCallbacks([this]() { m_imgui.render(); });
+  if (state::annot::fsm_list::current_state_ptr) {
+    state::annot::AnnotationStateMachine::setAppData(&m_data);
+    state::annot::AnnotationStateMachine::setCallbacks([this]() { m_imgui.render(); });
   }
   else {
     spdlog::error("Null annotation state machine");

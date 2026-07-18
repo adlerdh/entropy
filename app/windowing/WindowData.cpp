@@ -1747,7 +1747,7 @@ void WindowData::updateImageOrdering(const uuid_range_t& orderedImageUids)
       continue;
     }
 
-    for (auto& [viewUid, view] : layout.views()) {
+    for (const auto& [viewUid, view] : layout.views()) {
       if (view) {
         view->updateImageOrdering(orderedImageUids);
       }
@@ -1792,7 +1792,7 @@ void WindowData::appendImageToDefaultRenderedImages(const AppData& appData, cons
 
     appendToFrame(layout);
 
-    for (auto& [viewUid, view] : layout.views()) {
+    for (const auto& [viewUid, view] : layout.views()) {
       if (view) {
         appendToFrame(*view);
       }
@@ -1808,7 +1808,7 @@ void WindowData::recenterAllViews(
   const std::set<uuid>& excludedViews)
 {
   for (auto& layout : m_layouts) {
-    for (auto& [viewUid, view] : layout.views()) {
+    for (const auto& [viewUid, view] : layout.views()) {
       if (excludedViews.contains(viewUid)) {
         continue;
       }
@@ -1906,7 +1906,7 @@ View* WindowData::getCurrentView(const uuid& uid)
     return nullptr;
   }
 
-  auto& views = m_layouts.at(m_currentLayout).views();
+  const auto& views = m_layouts.at(m_currentLayout).views();
   auto it = views.find(uid);
   if (std::end(views) != it) {
     if (it->second) {
@@ -2279,7 +2279,7 @@ uuid WindowData::findLargestCurrentView() const
   frames.reserve(viewUids.size());
   frames.push_back({.m_uid = largestViewUid, .m_windowClipViewport = largestView->windowClipViewport()});
 
-  for (auto& viewUid : viewUids) {
+  for (const auto& viewUid : viewUids) {
     if (viewUid == largestViewUid) {
       continue;
     }
@@ -2298,7 +2298,7 @@ uuid WindowData::findLargestCurrentView() const
 void WindowData::recomputeCameraAspectRatios()
 {
   for (auto& layout : m_layouts) {
-    for (auto& [viewUid, view] : layout.views()) {
+    for (const auto& [viewUid, view] : layout.views()) {
       if (!view) {
         continue;
       }

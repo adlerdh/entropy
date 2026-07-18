@@ -339,7 +339,7 @@ std::pair<itk::CommonEnums::IOComponent, std::string> sniffComponentType(const c
     imageIO->ReadImageInformation();
 
     const auto compType = imageIO->GetComponentType();
-    return {compType, imageIO->GetComponentTypeAsString(compType)};
+    return {compType, itk::ImageIOBase::GetComponentTypeAsString(compType)};
   }
   catch (const itk::ExceptionObject& e) {
     spdlog::error("Exception while creating ImageIOBase for image {}: {}", fileName, e.what());

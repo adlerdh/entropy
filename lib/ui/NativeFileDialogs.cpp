@@ -28,7 +28,7 @@ public:
     }
   }
 
-  bool initialized() const
+  [[nodiscard]] bool initialized() const
   {
     return m_initialized;
   }

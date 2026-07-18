@@ -117,7 +117,7 @@ bool Rendering::createLabelColorTableTexture(const uuid& labelTableUid)
   auto it = m_appData.renderData().m_labelBufferTextures.emplace(
     std::piecewise_construct,
     std::forward_as_tuple(labelTableUid),
-    std::forward_as_tuple(table->bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw));
+    std::forward_as_tuple(ParcellationLabelTable::bufferTextureFormat_RGBA_U8(), BufferUsagePattern::StaticDraw));
 
   if (!it.second) {
     return false;

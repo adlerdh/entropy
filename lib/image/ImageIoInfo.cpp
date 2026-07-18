@@ -366,12 +366,12 @@ EntropyTimeMetadata readEntropyTimeMetadata(const MetaDataMap& metaData)
   EntropyTimeMetadata metadata;
 
   if (const auto it = metaData.find("entropy_time_axis"); it != metaData.end()) {
-    if (const auto timeAxis = std::get_if<std::string>(&it->second)) {
+    if (const auto* const timeAxis = std::get_if<std::string>(&it->second)) {
       metadata.hasTimeAxis = *timeAxis == "last";
     }
   }
   if (const auto it = metaData.find("entropy_time_units"); it != metaData.end()) {
-    if (const auto timeUnits = std::get_if<std::string>(&it->second); timeUnits && !timeUnits->empty()) {
+    if (const auto* const timeUnits = std::get_if<std::string>(&it->second); timeUnits && !timeUnits->empty()) {
       metadata.timeUnits = *timeUnits;
     }
   }

@@ -379,7 +379,7 @@ void GLShaderProgram::applyUniforms(Uniforms& uniforms)
 {
   UniformSetter setter(*this);
 
-  for (auto& uniform : uniforms()) {
+  for (const auto& uniform : uniforms()) {
     const Uniforms::Decl& u = uniform.second;
     if (u.m_isDirty) {
       setter.setLocation(u.m_location);

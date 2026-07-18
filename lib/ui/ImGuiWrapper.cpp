@@ -2434,8 +2434,8 @@ void ImGuiWrapper::requestQueuedRegistrationJobs()
     const uuids::uuid taskUid = generateRandomUuid();
     auto cancelFlag = std::make_shared<std::atomic_bool>(false);
     const bool keepTemporaryFiles = config.keepTemporaryFiles;
-    auto pendingOutputLines = &m_pendingRegistrationOutputLines;
-    auto registrationMutex = &m_registrationJobFuturesMutex;
+    auto* pendingOutputLines = &m_pendingRegistrationOutputLines;
+    auto* registrationMutex = &m_registrationJobFuturesMutex;
     auto future = std::async(
       std::launch::async,
       [jobId,
@@ -5087,12 +5087,12 @@ void ImGuiWrapper::annotationToolbar(const std::function<void()>& paintActiveAnn
     return;
   }
 
-  if (!ASM::current_state_ptr || !ASM::current_state_ptr->selectedViewUid()) {
+  if (!ASM::current_state_ptr || !state::annot::AnnotationStateMachine::selectedViewUid()) {
     return;
   }
 
   // Position the annotation toolbar at the bottom of this view:
-  const View* annotationView = m_appData.windowData().getView(*ASM::current_state_ptr->selectedViewUid());
+  const View* annotationView = m_appData.windowData().getView(*state::annot::AnnotationStateMachine::selectedViewUid());
 
   const float wholeWindowHeight = static_cast<float>(m_appData.windowData().getWindowSize().y);
 
