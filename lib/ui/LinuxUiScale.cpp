@@ -5,12 +5,37 @@
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
+#include <optional>
 #include <string>
 
 namespace ui::linux_ui_scale
 {
 namespace
 {
+std::optional<std::string> environmentVariable(const char* name)
+{
+#ifdef _WIN32
+  char* value = nullptr;
+  std::size_t valueSize = 0;
+  if (_dupenv_s(&value, &valueSize, name) != 0 || value == nullptr) {
+    return std::nullopt;
+  }
+
+  std::string result{value, valueSize > 0 ? valueSize - 1 : 0};
+  std::free(value);
+  if (result.empty()) {
+    return std::nullopt;
+  }
+  return result;
+#else
+  const char* value = std::getenv(name);
+  if (value == nullptr || *value == '\0') {
+    return std::nullopt;
+  }
+  return std::string{value};
+#endif
+}
+
 std::optional<std::string_view> tagValue(std::string_view text, std::string_view tag)
 {
   const std::string openTag = "<" + std::string{tag} + ">";
@@ -115,16 +140,12 @@ std::optional<float> scaleFromMonitorsXmlFile(const std::filesystem::path& path)
 
 std::filesystem::path defaultMonitorsXmlPath()
 {
-  if (const char* configHome = std::getenv("XDG_CONFIG_HOME")) {
-    if (*configHome != 0) {
-      return std::filesystem::path{configHome} / "monitors.xml";
-    }
+  if (const std::optional<std::string> configHome = environmentVariable("XDG_CONFIG_HOME")) {
+    return std::filesystem::path{*configHome} / "monitors.xml";
   }
 
-  if (const char* home = std::getenv("HOME")) {
-    if (*home != 0) {
-      return std::filesystem::path{home} / ".config" / "monitors.xml";
-    }
+  if (const std::optional<std::string> home = environmentVariable("HOME")) {
+    return std::filesystem::path{*home} / ".config" / "monitors.xml";
   }
 
   return {};

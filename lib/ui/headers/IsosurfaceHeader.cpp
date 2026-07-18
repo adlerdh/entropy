@@ -997,7 +997,7 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Surface (3D) and contour (2D) opacity");
 
-      mySliderF32("Fill", &surface->fillOpacity, 0.0f, 1.0f);
+      mySliderF32("2D contour fill", &surface->fillOpacity, 0.0f, 1.0f);
       ImGui::SameLine();
       helpMarker("Fill opacity in 2D views");
 
@@ -1076,7 +1076,7 @@ void renderIsosurfacesHeader(
           float width = static_cast<float>(imgSettings.isoContourLineWidthIn2D());
           // if (ImGui::DragFloat("Iso-line width", &width, 0.001f, 0.001f, 10.000f, "%0.3f \%",
           // ImGuiSliderFlags_AlwaysClamp)) {
-          if (mySliderF32("Isocontour width", &width, 1.0f, 10.0f, "%0.1f %%")) {
+          if (mySliderF32("Contour line width", &width, 1.0f, 10.0f, "%0.1f %%")) {
             imgSettings.setIsosurfaceWidthIn2d(static_cast<double>(width));
           }
           ImGui::SameLine();
@@ -1132,10 +1132,19 @@ void renderIsosurfacesHeader(
             "Distance map is computed to foreground mask of image, which is defined by lower and "
             "upper thresholds");
 
-          /// @todo If the thresholds changed, then create a new distance map (\c
-          /// createDistanceMaps) and texture (\c createDistanceMapTextures)
           if (distMapChanged) {
-            /// @todo create button "Regenerate distance map"
+            // A distance-map texture is conservative only for the foreground mask that created it. Once the mask
+            // thresholds change, disable skipping instead of silently raycasting with stale empty-space distances.
+            appData.removeDistanceMaps(imageUid, componentToAdjust);
+            if (auto imageTexturesIt = appData.renderData().m_distanceMapTextures.find(imageUid);
+                imageTexturesIt != appData.renderData().m_distanceMapTextures.end())
+            {
+              imageTexturesIt->second.erase(componentToAdjust);
+              if (imageTexturesIt->second.empty()) {
+                appData.renderData().m_distanceMapTextures.erase(imageTexturesIt);
+              }
+            }
+            imgSettings.setUseDistanceMapForRaycasting(false);
           }
         }
       }

@@ -163,6 +163,15 @@ public:
    */
   bool addDistanceMap(const uuid& imageUid, ComponentIndexType component, Image distanceMap, double boundaryIsoValue);
 
+  /**
+   * @brief Remove distance maps for one image component.
+   *
+   * @param[in] imageUid UID of image whose distance maps should be removed
+   * @param[in] component Image component whose distance maps should be removed
+   * @return True iff component data existed and was cleared.
+   */
+  bool removeDistanceMaps(const uuid& imageUid, ComponentIndexType component);
+
   bool addNoiseEstimate(const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius);
 
   /**
@@ -519,10 +528,8 @@ private:
   /// @brief Data associated with the individual image components
   struct ComponentData
   {
-    /// @note Distance maps are used to accelerate volume rendering by enabling the ray-casting
-    /// algorithm to skip empty space in the image volume. Each distance map is to a boundary
-    /// (defined by a single isosurface) in the image. Each component of the image has its own
-    /// distance map. Each map is paired with its corresponding boundary isosurface value.
+    /// @note Distance maps accelerate volume raycasting by skipping empty space relative to a foreground mask. A map is
+    /// conservative only while the rendered surfaces remain inside the threshold range used to create that mask.
 
     /// Distance map for the component
     std::map<double, Image> m_distanceMaps;

@@ -33,7 +33,7 @@ std::string escapeHtmlChar(char c)
     case '\'':
       return "&#39;";
     default:
-      return {1, c};
+      return std::string(1, c);
   }
 }
 

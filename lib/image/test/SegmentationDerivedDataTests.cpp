@@ -55,9 +55,8 @@ Image makeSegmentation()
     buffers);
 }
 
-Image makeScalarImage()
+Image makeScalarImage(glm::uvec3 dims = {4, 4, 4})
 {
-  const glm::uvec3 dims{4, 4, 4};
   ImageIoInfo ioInfo = makeIoInfo(ComponentType::Float32, 1, dims);
   ImageHeader header(ioInfo, ioInfo, false);
   std::vector<float> values(static_cast<std::size_t>(dims.x) * dims.y * dims.z, 0.0f);
@@ -189,4 +188,19 @@ TEST_CASE("ImageDerivedData creates derived images and skips unsupported interle
 
   const auto skipped = createDistanceMapImages(makeInterleavedImage(), 1.0f);
   CHECK(skipped.empty());
+}
+
+TEST_CASE("ImageDerivedData downsampled distance maps preserve per-axis geometry", "[image][derived]")
+{
+  Image image = makeScalarImage({1, 8, 8});
+  image.settings().setForegroundThresholdLow(0, 1.0);
+  image.settings().setForegroundThresholdHigh(0, 6.0);
+
+  const auto distanceMaps = createDistanceMapImages(image, 0.5f);
+
+  REQUIRE(distanceMaps.size() == 1);
+  CHECK(distanceMaps.front().image.header().pixelDimensions() == glm::uvec3{1, 4, 4});
+  CHECK(distanceMaps.front().image.header().spacing().x == Catch::Approx(1.0f));
+  CHECK(distanceMaps.front().image.header().spacing().y == Catch::Approx(2.0f));
+  CHECK(distanceMaps.front().image.header().spacing().z == Catch::Approx(2.0f));
 }

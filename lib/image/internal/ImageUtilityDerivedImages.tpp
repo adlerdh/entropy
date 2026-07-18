@@ -99,15 +99,15 @@ typename itk::Image<U, 3>::Pointer computeEuclideanDistanceMap(
   for (uint32_t i = 0; i < 3; ++i) {
     // 1 is the minimum value for any dimension:
     outputSize[i] = std::max(static_cast<std::size_t>(inputSize[i] * scale), static_cast<std::size_t>(1ul));
-
-    // Adjust the scale factor
-    scale = std::max(scale, static_cast<float>(outputSize[i]) / static_cast<float>(inputSize[i]));
   }
 
   itk::Vector<double, 3> delta;
 
   for (uint32_t i = 0; i < 3; ++i) {
-    outputSpacing[i] = inputSpacing[i] / scale;
+    // Each axis can clamp to a different output size, especially for planar/slab images. Derive spacing from the
+    // actual axis scale so the downsampled distance map stays geometrically aligned with the source image.
+    const double axisScale = static_cast<double>(outputSize[i]) / static_cast<double>(inputSize[i]);
+    outputSpacing[i] = inputSpacing[i] / axisScale;
     delta[i] = 0.5 * (outputSpacing[i] - inputSpacing[i]);
   }
 

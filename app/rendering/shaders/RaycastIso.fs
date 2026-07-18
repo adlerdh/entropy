@@ -297,7 +297,6 @@ void main()
   vec4 bgColor = brightenRaycastBackground(u_bgColor, backEdgeAmount);
 
   int hitCount = 0;
-  int stepCount = 0;
 
   // Current position along the ray
   vec3 texPos = texStartPos + tMin * texRayDir;
@@ -307,7 +306,6 @@ void main()
 
   // Save old value and position
   float oldValue = sampleImageValue(texPos);
-  vec3 oldTexPos = texPos;
   float oldT = tMin;
 
   for (float t = tMin; t <= tMax; t += texStep) {
@@ -316,7 +314,6 @@ void main()
 
     do {
       t += jump;
-      oldTexPos = texPos;
       texPos = texStartPos + t * texRayDir;
       jump = 0.98 * texel_T_mm * raycastJumpDistance(texPos); // 2% safety factor
       ++numJumps;
@@ -326,36 +323,48 @@ void main()
     //    return;
 
     float value = sampleImageValue(texPos);
+    int hitIso = -1;
+    float hitT = RAY_BOX_BIG;
+    float hitSign = 1.0;
 
+    // A single ray interval can cross more than one enabled isosurface. Choose the closest estimated crossing first;
+    // otherwise the rendered surface would depend on isosurface array order instead of ray depth.
     for (int i = 0; i < u_numIsos; ++i) {
       bool frontHit = u_renderFrontFaces && value >= u_isoValues[i] && oldValue < u_isoValues[i];
       bool backHit = u_renderBackFaces && value < u_isoValues[i] && oldValue >= u_isoValues[i];
 
       if (u_isoOpacities[i] > 0.0 && (frontHit || backHit)) {
-        ++hitCount;
-        vec3 texHitPos = bisect(texStartPos, texRayDir, oldT, t, value - u_isoValues[i], u_isoValues[i]);
-        vec3 worldHitPos = vec3(u_world_T_tex * vec4(texHitPos, 1.0));
-        vec3 worldLightVector = fs_in.v_worldRayStart - worldHitPos;
-        vec3 worldLightDir = length(worldLightVector) > 1.0e-6 ? normalize(worldLightVector) : -worldRayDir;
-        vec3 texNormal = gradient(texHitPos);
-
-        //        float segMask = float(
-        //          (!segMasksIn && !segMasksOut) ||
-        //          (segMasksIn && texture(u_segTex, texPos).r > 0u) ||
-        //          (segMasksOut && texture(u_segTex, texPos).r == 0u));
-        //        color += segMask * (1.0 - color.a) * shade(texLightDir, -texRayDir, texNormal, i);
-
-        color += (1.0 - color.a) * shade(worldLightDir, -worldRayDir, texNormal, i); // blend under
-
-        // Record the first hit:
-        texFirstHitPos = mix(texFirstHitPos, texHitPos, float(firstHit));
-        firstHitT = mix(firstHitT, dot(texHitPos - texStartPos, texRayDir), float(firstHit));
-        firstHit = firstHit ^ 1;
-
-        // An isosurface intersection occurred, so there is no need to loop over the remaining
-        // isosurfaces for intersections at this position.
-        break;
+        float denom = value - oldValue;
+        float fraction = abs(denom) > 1.0e-8 ? clamp((u_isoValues[i] - oldValue) / denom, 0.0, 1.0) : 0.0;
+        float candidateT = mix(oldT, t, fraction);
+        if (candidateT < hitT) {
+          hitIso = i;
+          hitT = candidateT;
+          hitSign = value - u_isoValues[i];
+        }
       }
+    }
+
+    if (hitIso >= 0) {
+      ++hitCount;
+      vec3 texHitPos = bisect(texStartPos, texRayDir, oldT, t, hitSign, u_isoValues[hitIso]);
+      vec3 worldHitPos = vec3(u_world_T_tex * vec4(texHitPos, 1.0));
+      vec3 worldLightVector = fs_in.v_worldRayStart - worldHitPos;
+      vec3 worldLightDir = length(worldLightVector) > 1.0e-6 ? normalize(worldLightVector) : -worldRayDir;
+      vec3 texNormal = gradient(texHitPos);
+
+      //        float segMask = float(
+      //          (!segMasksIn && !segMasksOut) ||
+      //          (segMasksIn && texture(u_segTex, texPos).r > 0u) ||
+      //          (segMasksOut && texture(u_segTex, texPos).r == 0u));
+      //        color += segMask * (1.0 - color.a) * shade(texLightDir, -texRayDir, texNormal, hitIso);
+
+      color += (1.0 - color.a) * shade(worldLightDir, -worldRayDir, texNormal, hitIso); // blend under
+
+      // Record the first hit:
+      texFirstHitPos = mix(texFirstHitPos, texHitPos, float(firstHit));
+      firstHitT = mix(firstHitT, dot(texHitPos - texStartPos, texRayDir), float(firstHit));
+      firstHit = firstHit ^ 1;
     }
 
     if (color.a >= 0.95 || hitCount >= MAX_HITS) {
@@ -364,7 +373,6 @@ void main()
 
     oldValue = value;
     oldT = t;
-    ++stepCount;
   }
 
   //  float normDistance = abs(oldT - tMin);

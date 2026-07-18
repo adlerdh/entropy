@@ -579,6 +579,34 @@ bool AppData::addDistanceMap(
   return false;
 }
 
+bool AppData::removeDistanceMaps(const uuid& imageUid, ComponentIndexType component)
+{
+  std::lock_guard<std::mutex> lock(m_componentDataMutex);
+
+  const Image* img = image(imageUid);
+  if (!img) {
+    return false;
+  }
+
+  if (component >= img->header().numComponentsPerPixel()) {
+    spdlog::error("Invalid component {} for image {}. Cannot remove distance maps for it.", component, imageUid);
+    return false;
+  }
+
+  auto compDataIt = m_imageToComponentData.find(imageUid);
+  if (std::end(m_imageToComponentData) == compDataIt) {
+    spdlog::error("No component data for image {}. Cannot remove distance maps.", imageUid);
+    return false;
+  }
+
+  if (component >= compDataIt->second.size()) {
+    return false;
+  }
+
+  compDataIt->second.at(component).m_distanceMaps.clear();
+  return true;
+}
+
 bool AppData::addNoiseEstimate(const uuid& imageUid, ComponentIndexType component, Image noiseEstimate, uint32_t radius)
 {
   std::lock_guard<std::mutex> lock(m_componentDataMutex);
