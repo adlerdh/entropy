@@ -3,12 +3,12 @@
 
 #include "common/Exception.hpp"
 #include "common/MathFuncs.h"
-#include <spdlog/fmt/std.h>
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
+#include <spdlog/fmt/std.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
@@ -59,6 +59,37 @@ void ImageHeader::setHeaderOverrides(const ImageHeaderOverrides& overrides)
 const ImageHeaderOverrides& ImageHeader::getHeaderOverrides() const
 {
   return m_headerOverrides;
+}
+
+void ImageHeader::setUserSpatialMetadata(const ImageSpatialMetadata& metadata)
+{
+  std::string errorMessage;
+  ImageSpatialMetadata normalizedMetadata = metadata;
+  if (
+    const auto normalizedDirections =
+      normalizedRasterDirectionMatrix(metadata.directions[0], metadata.directions[1], &errorMessage))
+  {
+    normalizedMetadata.directions = *normalizedDirections;
+  }
+
+  if (!validateImageSpatialMetadata(normalizedMetadata, &errorMessage)) {
+    spdlog::error("Cannot apply image spatial metadata for {}: {}", m_fileName, errorMessage);
+    throw_debug("Invalid image spatial metadata")
+  }
+
+  m_userSpatialMetadata = normalizedMetadata;
+  setSpace(m_ioInfoInMemory.m_spaceInfo);
+}
+
+void ImageHeader::clearUserSpatialMetadata()
+{
+  m_userSpatialMetadata = std::nullopt;
+  setSpace(m_ioInfoInMemory.m_spaceInfo);
+}
+
+const std::optional<ImageSpatialMetadata>& ImageHeader::userSpatialMetadata() const
+{
+  return m_userSpatialMetadata;
 }
 
 void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
@@ -162,6 +193,12 @@ void ImageHeader::setSpace(const SpaceInfo& spaceInfo)
   }
   else if (m_headerOverrides.m_snapToClosestOrthogonalPixelDirections) {
     m_directions = m_headerOverrides.m_closestOrthogonalDirs;
+  }
+
+  if (m_userSpatialMetadata) {
+    m_spacing = m_userSpatialMetadata->spacingMm;
+    m_origin = m_userSpatialMetadata->originMm;
+    m_directions = m_userSpatialMetadata->directions;
   }
 
   std::tie(m_spiralCode, m_isOblique) = math::computeSpiralCodeFromDirectionMatrix(m_directions);

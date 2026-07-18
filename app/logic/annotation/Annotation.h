@@ -1,6 +1,5 @@
 #pragma once
 
-#include <filesystem>
 #include "logic/annotation/AnnotPolygon.tpp"
 
 #include <glm/vec2.hpp>
@@ -9,6 +8,7 @@
 
 #include <uuid.h>
 
+#include <filesystem>
 #include <set>
 #include <string>
 #include <tuple>

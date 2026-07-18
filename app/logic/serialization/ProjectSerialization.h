@@ -2,9 +2,9 @@
 
 #include "common/InputParams.h"
 #include "common/Types.h"
+#include "image/ImageSpatialMetadata.h"
 #include "image/Isosurface.h"
 #include "layout/LayoutSpec.h"
-#include <filesystem>
 #include "logic/annotation/Annotation.h"
 #include "logic/annotation/PointRecord.h"
 
@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <string>
@@ -440,6 +441,9 @@ struct DicomSource
 struct Image
 {
   std::filesystem::path m_imageFileName; //!< Image file name
+
+  /// User-provided geometry for standard 2D raster images without medical spatial metadata.
+  std::optional<ImageSpatialMetadata> m_spatialMetadata = std::nullopt;
 
   /**
    * Optional DICOM source. When present, this describes a full series instead of a single image file.

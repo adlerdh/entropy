@@ -87,6 +87,13 @@ public:
   /// @brief Get the current image-header geometry overrides.
   const ImageHeaderOverrides& getHeaderOverrides() const;
 
+  /// @brief Replace native image geometry and update dependent transforms.
+  void setImageGeometry(
+    const glm::uvec3& pixelDimensions,
+    const glm::vec3& pixelSpacing,
+    const glm::vec3& pixelOrigin,
+    const glm::mat3& pixelDirections);
+
   /// @brief Return whether manual worldDef_T_affine edits are locked.
   bool is_worldDef_T_affine_locked() const;
   /// @brief Set whether manual worldDef_T_affine edits are locked.

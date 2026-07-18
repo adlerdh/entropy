@@ -209,6 +209,9 @@ struct RenderData
   /// Black transparent fallback image texture bound when a shader needs an empty image input.
   GLTexture m_blankImageBlackTransparentTexture;
 
+  /// Black transparent 2D fallback image texture bound when a 2D shader needs an empty image input.
+  GLTexture m_blankImageBlackTransparentTexture2D;
+
   /// White opaque fallback image texture bound when a shader needs an opaque empty image input.
   GLTexture m_blankImageWhiteOpaqueTexture;
 

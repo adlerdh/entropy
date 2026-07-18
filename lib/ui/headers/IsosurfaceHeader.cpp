@@ -1001,7 +1001,7 @@ void renderIsosurfacesHeader(
       ImGui::SameLine();
       helpMarker("Fill opacity in 2D views");
 
-      if (ImGui::TreeNode("Rim lighting")) {
+      if (ImGui::TreeNode("3D rim lighting")) {
         ImGui::Checkbox("Enable", &surface->rimLightingEnabled);
         ImGui::SameLine();
         helpMarker("Enable view-angle rim opacity modulation and glow for this surface in 3D raycasting");

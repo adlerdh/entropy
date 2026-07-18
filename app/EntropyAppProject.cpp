@@ -206,6 +206,7 @@ serialize::Image EntropyApp::createImageSnapshot(const uuids::uuid& imageUid) co
   }
 
   serializedImage.m_imageFileName = image->header().fileName();
+  serializedImage.m_spatialMetadata = image->header().userSpatialMetadata();
   if (const auto sourceIt = m_dicomSourcesByImageUid.find(imageUid); sourceIt != m_dicomSourcesByImageUid.end()) {
     serializedImage.m_dicomSource = sourceIt->second;
   }

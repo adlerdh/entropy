@@ -1868,7 +1868,12 @@ void WindowData::recenterView(
     return;
   }
 
-  helper::positionCameraForWorldTargetAndFov(view.camera(), worldFov, worldCenter);
+  if (resetZoom) {
+    helper::positionCameraForWorldTargetAndFov(view.camera(), worldFov, worldCenter);
+  }
+  else {
+    helper::positionCameraForWorldTarget(view.camera(), worldFov, worldCenter);
+  }
 }
 
 uuid_range_t WindowData::currentViewUids() const

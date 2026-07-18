@@ -1,9 +1,9 @@
 #pragma once
 
+#include <glm/mat4x4.hpp>
+
 #include <filesystem>
 #include <optional>
-
-#include <glm/mat4x4.hpp>
 
 namespace registration
 {

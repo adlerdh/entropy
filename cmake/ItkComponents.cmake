@@ -5,6 +5,10 @@ set(entropy_ITK_COMPONENTS
   ITKIONRRD
   ITKIOMeta
   ITKIOGDCM
+  ITKIOJPEG
+  ITKIOPNG
+  ITKIOTIFF
+  ITKIOBMP
   ITKImageFilterBase
   ITKImageIntensity
   ITKImageStatistics

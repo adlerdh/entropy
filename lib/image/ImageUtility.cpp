@@ -38,9 +38,10 @@ bool endsWith(std::string_view text, std::string_view suffix)
 
 std::string stripMedicalImageExtension(std::string fileName)
 {
-  static constexpr std::array<std::string_view, 21> k_medicalImageExtensions{
-    ".nii.gz", ".mhd.gz", ".nhdr.gz", ".hdr.gz", ".img.gz", ".nrrd.gz", ".gipl.gz", ".mnc.gz", ".nii", ".mha", ".mhd",
-    ".nhdr",   ".hdr",    ".img",     ".nrrd",   ".gipl",   ".mnc",     ".mnc2",    ".vtk",    ".vti", ".hdf5"};
+  static constexpr std::array<std::string_view, 29> k_medicalImageExtensions{
+    ".nii.gz", ".mhd.gz", ".nhdr.gz", ".hdr.gz", ".img.gz", ".nrrd.gz", ".gipl.gz", ".mnc.gz", ".nii", ".mha",
+    ".mhd",    ".nhdr",   ".hdr",     ".img",    ".nrrd",   ".gipl",    ".mnc",     ".mnc2",   ".vtk", ".vti",
+    ".hdf5",   ".jpeg",   ".jpg",     ".jpe",    ".png",    ".tiff",    ".tif",     ".bmp",    ".dib"};
 
   const std::string lowerFileName = toLowerAscii(fileName);
   for (const std::string_view extension : k_medicalImageExtensions) {
@@ -205,6 +206,44 @@ std::string getFileName(const std::string& filePath, bool withExtension)
   }
 
   return stripMedicalImageExtension(fileName);
+}
+
+bool isStandardRasterImageFile(const fs::path& fileName)
+{
+  const std::string extension = toLowerAscii(fileName.extension().string());
+  return extension == ".jpg" || extension == ".jpeg" || extension == ".jpe" || extension == ".png" ||
+         extension == ".tif" || extension == ".tiff" || extension == ".bmp" || extension == ".dib";
+}
+
+bool isStandardRasterColorImage(const ImageHeader& header)
+{
+  const bool colorComponentCount = (PixelType::RGB == header.pixelType() && 3u == header.numComponentsPerPixel()) ||
+                                   (PixelType::RGBA == header.pixelType() && 4u == header.numComponentsPerPixel());
+  return isStandardRasterImageFile(header.fileName()) && countNonSingletonPixelDimensions(header) <= 2u &&
+         colorComponentCount;
+}
+
+std::string imageFormatName(const fs::path& fileName)
+{
+  const std::string extension = toLowerAscii(fileName.extension().string());
+  const std::string lowerName = toLowerAscii(fileName.string());
+  if (extension == ".dcm") return "DICOM";
+  if (
+    extension == ".nrrd" || extension == ".nhdr" || endsWith(lowerName, ".nrrd.gz") || endsWith(lowerName, ".nhdr.gz"))
+    return "NRRD";
+  if (extension == ".nii" || endsWith(lowerName, ".nii.gz")) return "NIfTI";
+  if (extension == ".mha" || extension == ".mhd" || endsWith(lowerName, ".mhd.gz")) return "MetaImage";
+  if (extension == ".hdr" || extension == ".img" || endsWith(lowerName, ".hdr.gz") || endsWith(lowerName, ".img.gz"))
+    return "Analyze";
+  if (extension == ".jpg" || extension == ".jpeg" || extension == ".jpe") return "JPEG";
+  if (extension == ".png") return "PNG";
+  if (extension == ".tif" || extension == ".tiff") return "TIFF";
+  if (extension == ".bmp" || extension == ".dib") return "BMP";
+  if (extension == ".gipl" || endsWith(lowerName, ".gipl.gz")) return "GIPL";
+  if (extension == ".mnc" || extension == ".mnc2" || endsWith(lowerName, ".mnc.gz")) return "MINC";
+  if (extension == ".vtk" || extension == ".vti") return "VTK";
+  if (extension == ".hdf5") return "HDF5";
+  return extension.empty() ? "Unknown" : extension.substr(1);
 }
 
 PixelType fromItkPixelType(const itk::IOPixelEnum& pixelType)

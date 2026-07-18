@@ -18,6 +18,7 @@ target_sources(EntropyImage PRIVATE
   ImageQuantiles.cpp
   ImageIoInfo.cpp
   ImageSettings.cpp
+  ImageSpatialMetadata.cpp
   ImageTimeAxis.cpp
   ImageTransformations.cpp
   ImageUtility.cpp

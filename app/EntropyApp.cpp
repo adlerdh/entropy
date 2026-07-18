@@ -38,6 +38,7 @@
 #include <cctype>
 #include <cmath>
 #include <chrono>
+#include <cstddef>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -127,6 +128,34 @@ bool isDicomInputPath(const fs::path& path)
   }
 
   return dicom::canReadDicomHeader(path);
+}
+
+std::size_t numSerializedImages(const serialize::EntropyProject& project)
+{
+  return 1u + project.m_additionalImages.size();
+}
+
+serialize::Image* serializedImageAt(serialize::EntropyProject& project, std::size_t index)
+{
+  if (0 == index) {
+    return &project.m_referenceImage;
+  }
+  index--;
+  if (index >= project.m_additionalImages.size()) {
+    return nullptr;
+  }
+  return &project.m_additionalImages[index];
+}
+
+void eraseSerializedImageAt(serialize::EntropyProject& project, std::size_t index)
+{
+  if (0 == index) {
+    return;
+  }
+  index--;
+  if (index < project.m_additionalImages.size()) {
+    project.m_additionalImages.erase(project.m_additionalImages.begin() + static_cast<std::ptrdiff_t>(index));
+  }
 }
 
 bool containsDicomInputPath(const std::vector<fs::path>& paths)
@@ -660,6 +689,20 @@ bool EntropyApp::loadSerializedImage(
     m_dicomSourcesByImageUid[*imageUid] = *resolvedDicomSource;
   }
 
+  if (serializedImage.m_spatialMetadata) {
+    image->setUserSpatialMetadata(*serializedImage.m_spatialMetadata);
+  }
+  else if (!resolvedDicomSource && isStandardRasterImageFile(imageToLoad.m_imageFileName)) {
+    image->setUserSpatialMetadata(ImageSpatialMetadata{});
+  }
+  if (const auto& metadata = image->header().userSpatialMetadata()) {
+    for (const auto& segUid : m_data.imageToSegUids(*imageUid)) {
+      if (Image* seg = m_data.seg(segUid)) {
+        seg->setUserSpatialMetadata(*metadata);
+      }
+    }
+  }
+
   if (serializedImage.m_settings) {
     project_snapshot::applyImageSettings(*image, *serializedImage.m_settings);
   }
@@ -1164,11 +1207,225 @@ void EntropyApp::performLoadImageFiles(const std::vector<fs::path>& fileNames)
 
   serialize::EntropyProject project = createProjectFromImageFiles(imageFiles);
 
-  m_pendingLargeImageLoadContext = LargeImageLoadContext::Project;
-  m_pendingLargeProject = std::move(project);
-  m_pendingLargeProjectFileName = std::nullopt;
-  m_pendingLargeProjectImageIndex = 0;
-  continueLargeImageProjectPreflight();
+  m_pendingRasterImageHeaderContext = RasterImageHeaderContext::Project;
+  m_pendingRasterProject = std::move(project);
+  m_pendingRasterAddImages.clear();
+  m_pendingRasterImageIndex = 0;
+  continueRasterImageHeaderPreflight();
+  return;
+}
+
+void EntropyApp::continueRasterImageHeaderPreflight()
+{
+  auto promptForImage = [this](serialize::Image& image, const std::vector<fs::path>& allImages) {
+    if (!isStandardRasterImageFile(image.m_imageFileName) || image.m_spatialMetadata) {
+      return false;
+    }
+
+    const auto header = readImageHeaderOnly(
+      image.m_imageFileName,
+      Image::ImageRepresentation::Image,
+      Image::MultiComponentBufferType::SeparateImages);
+    if (!header) {
+      spdlog::error("Could not read image header from {}", image.m_imageFileName);
+      return false;
+    }
+
+    std::error_code ec;
+    const std::uintmax_t fileSize = fs::file_size(image.m_imageFileName, ec);
+    GuiData::RasterImageHeaderPrompt prompt;
+    prompt.fileName = image.m_imageFileName;
+    prompt.format = imageFormatName(image.m_imageFileName);
+    prompt.fileSizeBytes = ec ? 0u : fileSize;
+    prompt.dimensions = header->pixelDimensions();
+    prompt.allImages = allImages;
+    m_data.guiData().m_pendingRasterImageHeaderPrompt = std::move(prompt);
+    m_data.guiData().m_showRasterImageHeaderPrompt = true;
+    m_glfw.postEmptyEvent();
+    return true;
+  };
+
+  if (m_pendingRasterImageHeaderContext == RasterImageHeaderContext::Project && m_pendingRasterProject) {
+    std::vector<fs::path> allImages;
+    allImages.reserve(numSerializedImages(*m_pendingRasterProject));
+    allImages.push_back(m_pendingRasterProject->m_referenceImage.m_imageFileName);
+    for (const auto& image : m_pendingRasterProject->m_additionalImages) {
+      allImages.push_back(image.m_imageFileName);
+    }
+
+    while (m_pendingRasterImageIndex < numSerializedImages(*m_pendingRasterProject)) {
+      serialize::Image* image = serializedImageAt(*m_pendingRasterProject, m_pendingRasterImageIndex);
+      if (!image) {
+        m_pendingRasterImageIndex++;
+        continue;
+      }
+      if (promptForImage(*image, allImages)) {
+        return;
+      }
+      m_pendingRasterImageIndex++;
+    }
+
+    serialize::EntropyProject project = std::move(*m_pendingRasterProject);
+    m_pendingRasterImageHeaderContext = RasterImageHeaderContext::None;
+    m_pendingRasterProject = std::nullopt;
+    m_pendingRasterImageIndex = 0;
+
+    m_pendingLargeImageLoadContext = LargeImageLoadContext::Project;
+    m_pendingLargeProject = std::move(project);
+    m_pendingLargeProjectFileName = std::nullopt;
+    m_pendingLargeProjectImageIndex = 0;
+    continueLargeImageProjectPreflight();
+    return;
+  }
+
+  if (m_pendingRasterImageHeaderContext == RasterImageHeaderContext::AddImage) {
+    std::vector<fs::path> allImages;
+    allImages.reserve(m_pendingRasterAddImages.size());
+    for (const auto& image : m_pendingRasterAddImages) {
+      allImages.push_back(image.m_imageFileName);
+    }
+
+    while (m_pendingRasterImageIndex < m_pendingRasterAddImages.size()) {
+      if (promptForImage(m_pendingRasterAddImages[m_pendingRasterImageIndex], allImages)) {
+        return;
+      }
+      m_pendingRasterImageIndex++;
+    }
+
+    std::vector<serialize::Image> imagesToAdd = std::move(m_pendingRasterAddImages);
+    std::vector<fs::path> imageFiles;
+    imageFiles.reserve(imagesToAdd.size());
+    for (const auto& image : imagesToAdd) {
+      imageFiles.push_back(image.m_imageFileName);
+    }
+    m_pendingRasterImageHeaderContext = RasterImageHeaderContext::None;
+    m_pendingRasterAddImages.clear();
+    m_pendingRasterImageIndex = 0;
+
+    m_preserveLayoutsOnImagesReady = true;
+    m_pendingAddedImageUids.clear();
+
+    if (imagesToAdd.empty()) {
+      m_preserveLayoutsOnImagesReady = false;
+      m_glfw.postEmptyEvent();
+      return;
+    }
+
+    startAsyncImageLoad(
+      imagesToAdd.size() == 1 ? "Adding image..." : "Adding images...",
+      [this, imagesToAdd = std::move(imagesToAdd)]() {
+        const std::size_t previousNumImages = m_data.numImages();
+        std::vector<uuids::uuid> addedImageUids;
+        addedImageUids.reserve(imagesToAdd.size());
+
+        for (const auto& serializedImage : imagesToAdd) {
+          if (m_imageLoadCancelled) {
+            return false;
+          }
+
+          const std::size_t numImagesBeforeLoad = m_data.numImages();
+          const bool loaded = loadSerializedImage(serializedImage, false);
+
+          if (!loaded || m_data.numImages() <= numImagesBeforeLoad) {
+            spdlog::error("Could not add image from {}", serializedImage.m_imageFileName);
+            continue;
+          }
+
+          if (const auto addedImageUid = m_data.imageUid(m_data.numImages() - 1)) {
+            addedImageUids.push_back(*addedImageUid);
+          }
+        }
+
+        if (addedImageUids.empty() || m_data.numImages() <= previousNumImages) {
+          return false;
+        }
+
+        m_data.setActiveImageUid(addedImageUids.back());
+        m_data.setRainbowColorsForAllImages();
+        m_data.setRainbowColorsForAllLandmarkGroups();
+        m_data.setProject(createProjectSnapshot());
+        m_pendingAddedImageUids = std::move(addedImageUids);
+        return true;
+      },
+      [this]() {
+        m_preserveLayoutsOnImagesReady = false;
+        m_pendingAddedImageUids.clear();
+        m_data.state().setProjectLoadState(ProjectLoadState::Loaded);
+        m_data.state().setAnimating(false);
+        hideLoadingStatus();
+        updateWindowTitleStatus();
+        m_glfw.setEventProcessingMode(EventProcessingMode::Wait);
+      },
+      true,
+      loading_status::imageItems(imageFiles));
+  }
+}
+
+void EntropyApp::handleRasterImageHeaderDecision(
+  GuiData::RasterImageHeaderDecision decision,
+  ImageSpatialMetadata metadata,
+  bool applyToAll)
+{
+  auto applyToSerializedImage = [&](serialize::Image& image) {
+    if (isStandardRasterImageFile(image.m_imageFileName)) {
+      image.m_spatialMetadata = metadata;
+    }
+  };
+
+  if (m_pendingRasterImageHeaderContext == RasterImageHeaderContext::Project && m_pendingRasterProject) {
+    if (decision == GuiData::RasterImageHeaderDecision::Cancel) {
+      if (m_pendingRasterImageIndex == 0u) {
+        spdlog::info(
+          "Cancelled loading reference raster image {}; cancelling project load",
+          m_pendingRasterProject->m_referenceImage.m_imageFileName);
+        m_pendingRasterImageHeaderContext = RasterImageHeaderContext::None;
+        m_pendingRasterProject = std::nullopt;
+        m_pendingRasterImageIndex = 0;
+        m_glfw.postEmptyEvent();
+        return;
+      }
+      eraseSerializedImageAt(*m_pendingRasterProject, m_pendingRasterImageIndex);
+      continueRasterImageHeaderPreflight();
+      return;
+    }
+
+    if (applyToAll) {
+      applyToSerializedImage(m_pendingRasterProject->m_referenceImage);
+      for (auto& image : m_pendingRasterProject->m_additionalImages) {
+        applyToSerializedImage(image);
+      }
+      m_pendingRasterImageIndex = numSerializedImages(*m_pendingRasterProject);
+    }
+    else if (serialize::Image* image = serializedImageAt(*m_pendingRasterProject, m_pendingRasterImageIndex)) {
+      applyToSerializedImage(*image);
+      m_pendingRasterImageIndex++;
+    }
+    continueRasterImageHeaderPreflight();
+    return;
+  }
+
+  if (m_pendingRasterImageHeaderContext == RasterImageHeaderContext::AddImage) {
+    if (decision == GuiData::RasterImageHeaderDecision::Cancel) {
+      if (m_pendingRasterImageIndex < m_pendingRasterAddImages.size()) {
+        m_pendingRasterAddImages.erase(
+          m_pendingRasterAddImages.begin() + static_cast<std::ptrdiff_t>(m_pendingRasterImageIndex));
+      }
+      continueRasterImageHeaderPreflight();
+      return;
+    }
+
+    if (applyToAll) {
+      for (auto& image : m_pendingRasterAddImages) {
+        applyToSerializedImage(image);
+      }
+      m_pendingRasterImageIndex = m_pendingRasterAddImages.size();
+    }
+    else if (m_pendingRasterImageIndex < m_pendingRasterAddImages.size()) {
+      applyToSerializedImage(m_pendingRasterAddImages[m_pendingRasterImageIndex]);
+      m_pendingRasterImageIndex++;
+    }
+    continueRasterImageHeaderPreflight();
+  }
 }
 
 void EntropyApp::addImageFile(const fs::path& fileName)
@@ -1201,6 +1458,21 @@ void EntropyApp::addImageFiles(const std::vector<fs::path>& fileNames)
   }
 
   recordRecentImageGroup(imageFiles);
+
+  if (std::any_of(imageFiles.begin(), imageFiles.end(), isStandardRasterImageFile)) {
+    m_pendingRasterImageHeaderContext = RasterImageHeaderContext::AddImage;
+    m_pendingRasterProject = std::nullopt;
+    m_pendingRasterAddImages.clear();
+    m_pendingRasterAddImages.reserve(imageFiles.size());
+    for (const auto& fileName : imageFiles) {
+      serialize::Image image;
+      image.m_imageFileName = fileName;
+      m_pendingRasterAddImages.emplace_back(std::move(image));
+    }
+    m_pendingRasterImageIndex = 0;
+    continueRasterImageHeaderPreflight();
+    return;
+  }
 
   const bool bypassPreflight = m_data.guiData().m_bypassNextImageLoadPreflight;
   m_data.guiData().m_bypassNextImageLoadPreflight = false;

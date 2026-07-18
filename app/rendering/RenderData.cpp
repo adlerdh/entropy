@@ -31,7 +31,7 @@ static const std::array<float, static_cast<size_t>(sk_numQuadVerts* sk_numQuadPo
 
 static const std::array<uint32_t, sk_numQuadVerts> sk_indicesBuffer = {{0, 1, 2, 3}};
 
-GLTexture createBlankRgbaTexture(uint8_t value)
+GLTexture createBlankRgbaTexture(tex::Target target, uint8_t value)
 {
   static const ComponentType compType = ComponentType::UInt8;
   static std::array<uint8_t, 4> sk_data_U8 = {value, value, value, value};
@@ -49,7 +49,7 @@ GLTexture createBlankRgbaTexture(uint8_t value)
   pixelPackSettings.m_alignment = sk_alignment;
   GLTexture::PixelStoreSettings pixelUnpackSettings = pixelPackSettings;
 
-  GLTexture T(tex::Target::Texture3D, GLTexture::MultisampleSettings(), pixelPackSettings, pixelUnpackSettings);
+  GLTexture T(target, GLTexture::MultisampleSettings(), pixelPackSettings, pixelUnpackSettings);
 
   T.generate();
   T.setMinificationFilter(sk_minFilter);
@@ -65,18 +65,29 @@ GLTexture createBlankRgbaTexture(uint8_t value)
     GLTexture::getBufferPixelDataType(compType),
     sk_data_U8.data());
 
-  spdlog::debug("Created blank RGBA texture");
+  spdlog::debug("Created blank RGBA texture for target {}", static_cast<int>(target));
 
   return T;
+}
+
+GLTexture createBlank3DRgbaTexture(uint8_t value)
+{
+  return createBlankRgbaTexture(tex::Target::Texture3D, value);
+}
+
+GLTexture createBlank2DRgbaTexture(uint8_t value)
+{
+  return createBlankRgbaTexture(tex::Target::Texture2D, value);
 }
 
 } // namespace
 
 RenderData::RenderData()
-  : m_blankImageBlackTransparentTexture(createBlankRgbaTexture(0))
-  , m_blankImageWhiteOpaqueTexture(createBlankRgbaTexture(255))
-  , m_blankSegTexture(createBlankRgbaTexture(0))
-  , m_blankDistMapTexture(createBlankRgbaTexture(0))
+  : m_blankImageBlackTransparentTexture(createBlank3DRgbaTexture(0))
+  , m_blankImageBlackTransparentTexture2D(createBlank2DRgbaTexture(0))
+  , m_blankImageWhiteOpaqueTexture(createBlank3DRgbaTexture(255))
+  , m_blankSegTexture(createBlank3DRgbaTexture(0))
+  , m_blankDistMapTexture(createBlank3DRgbaTexture(0))
 
   ,
 

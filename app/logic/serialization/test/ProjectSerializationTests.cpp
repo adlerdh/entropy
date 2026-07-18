@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <glm/mat4x4.hpp>
+#include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
 
 #include <filesystem>
@@ -980,6 +981,32 @@ TEST_CASE("Project serialization preserves segmentation settings", "[project][se
   CHECK(parsedSettings.m_componentOpacities == std::vector<double>{0.35});
   CHECK(parsedSettings.m_labelTableIndices == std::vector<std::size_t>{3});
   CHECK(parsedSettings.m_interpolationModes == std::vector<InterpolationMode>{InterpolationMode::NearestNeighbor});
+}
+
+TEST_CASE("Project serialization preserves standard raster spatial metadata", "[project][serialization]")
+{
+  serialize::EntropyProject project;
+  project.m_referenceImage.m_imageFileName = "image.png";
+  ImageSpatialMetadata metadata;
+  metadata.spacingMm = glm::vec3{0.5f, 0.25f, 1.0f};
+  metadata.originMm = glm::vec3{1.0f, 2.0f, 3.0f};
+  metadata.directions =
+    glm::mat3{glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}, glm::vec3{1.0f, 0.0f, 0.0f}};
+  project.m_referenceImage.m_spatialMetadata = metadata;
+
+  const json root = project;
+  const json& spatialMetadata = root.at("reference").at("spatialMetadata");
+  CHECK(spatialMetadata.at("spacingMm") == json::array({0.5f, 0.25f, 1.0f}));
+  CHECK(spatialMetadata.at("originMm") == json::array({1.0f, 2.0f, 3.0f}));
+  CHECK(spatialMetadata.at("directions").at(0) == json::array({0.0f, 1.0f, 0.0f}));
+  CHECK(spatialMetadata.at("directions").at(1) == json::array({0.0f, 0.0f, 1.0f}));
+  CHECK(spatialMetadata.at("directions").at(2) == json::array({1.0f, 0.0f, 0.0f}));
+
+  const serialize::EntropyProject parsed = root.get<serialize::EntropyProject>();
+  REQUIRE(parsed.m_referenceImage.m_spatialMetadata.has_value());
+  CHECK(parsed.m_referenceImage.m_spatialMetadata->spacingMm == metadata.spacingMm);
+  CHECK(parsed.m_referenceImage.m_spatialMetadata->originMm == metadata.originMm);
+  CHECK(parsed.m_referenceImage.m_spatialMetadata->directions == metadata.directions);
 }
 
 TEST_CASE("Project serialization preserves voxel edge colormap setting", "[project][serialization]")

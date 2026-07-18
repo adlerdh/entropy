@@ -76,6 +76,10 @@ void EntropyApp::setCallbacks()
   imguiCallbacks.project.largeImageLoadDecision = [this](GuiData::LargeImageLoadDecision decision) {
     handleLargeImageLoadDecision(decision);
   };
+  imguiCallbacks.project.rasterImageHeaderDecision =
+    [this](GuiData::RasterImageHeaderDecision decision, ImageSpatialMetadata metadata, bool applyToAll) {
+      handleRasterImageHeaderDecision(decision, metadata, applyToAll);
+    };
   imguiCallbacks.project.loadDicomSeries = [this](
                                              const std::vector<dicom::SeriesInfo>& series,
                                              std::optional<std::size_t> referenceSeriesIndex,

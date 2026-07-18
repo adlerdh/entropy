@@ -729,8 +729,7 @@ void positionCameraForWorldTargetAndFov(Camera& camera, const glm::vec3& worldBo
   const auto [pullBackDistance, farDistance] = computePullbackAndFarDistances(camera, worldBoxSize);
 
   if (camera.isOrthographic()) {
-    const float fov = glm::compMax(worldBoxSize);
-    camera.setDefaultFov(glm::vec2{fov, fov});
+    camera.setDefaultFov(viewPlaneFovForWorldBox(camera, worldBoxSize));
   }
 
   camera.setFarDistance(farDistance);
@@ -742,6 +741,18 @@ void positionCameraForWorldTarget(Camera& camera, const glm::vec3& worldBoxSize,
   const auto [pullBackDistance, farDistance] = computePullbackAndFarDistances(camera, worldBoxSize);
   camera.setFarDistance(farDistance);
   setWorldTarget(camera, worldTarget, pullBackDistance);
+}
+
+glm::vec2 viewPlaneFovForWorldBox(const Camera& camera, const glm::vec3& worldBoxSize)
+{
+  const auto projectedExtent = [&worldBoxSize](const glm::vec3& worldAxis) {
+    const glm::vec3 weights = glm::abs(worldAxis);
+    return glm::dot(weights, worldBoxSize);
+  };
+
+  return {
+    projectedExtent(worldDirection(camera, Directions::View::Right)),
+    projectedExtent(worldDirection(camera, Directions::View::Up))};
 }
 
 void orientCameraToWorldTargetNormalDirection(Camera& camera, const glm::vec3& targetWorldNormalDirection)

@@ -106,6 +106,25 @@ Image makeRawImage()
     buffers);
 }
 
+Image makeRawRasterRgbImage()
+{
+  const glm::uvec3 dims{2, 2, 1};
+  ImageIoInfo ioInfo = makeIoInfo(ComponentType::UInt8, 3, dims);
+  ioInfo.m_fileInfo.m_fileName = "synthetic.png";
+  ioInfo.m_pixelInfo.m_pixelType = PixelType::RGB;
+  ioInfo.m_pixelInfo.m_pixelTypeString = "RGB";
+  ImageHeader header(ioInfo, ioInfo, true);
+
+  std::vector<std::uint8_t> values{40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150};
+  std::vector<const void*> buffers{values.data()};
+  return Image(
+    header,
+    "rgb",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::InterleavedImage,
+    buffers);
+}
+
 Image makeSparseBinaryImage()
 {
   const glm::uvec3 dims{100, 100, 1};
@@ -378,12 +397,14 @@ ComponentType sourceComponentTypeFor<long long>()
 }
 
 template<>
+[[maybe_unused]]
 ComponentType sourceComponentTypeFor<double>()
 {
   return ComponentType::Float64;
 }
 
 template<>
+[[maybe_unused]]
 ComponentType sourceComponentTypeFor<long double>()
 {
   return ComponentType::LongDouble;
@@ -750,6 +771,17 @@ TEST_CASE("Raw sparse binary images initialize full-range window and level", "[i
   CHECK(image.settings().windowWidth(0) == Catch::Approx(100.0));
   CHECK(image.settings().windowCenter(0) == Catch::Approx(50.0));
   CHECK(image.settings().windowValuesLowHigh(0) == std::pair<double, double>{0.0, 100.0});
+}
+
+TEST_CASE("Standard UInt8 raster RGB images initialize full byte window for every component", "[image][raw][settings]")
+{
+  Image image = makeRawRasterRgbImage();
+
+  CHECK(image.settings().componentRenderMode() == ComponentRenderMode::Color);
+  for (uint32_t component = 0; component < image.settings().numComponents(); ++component) {
+    CHECK(image.settings().windowValuesLowHigh(component).first == Catch::Approx(0.0));
+    CHECK(image.settings().windowValuesLowHigh(component).second == Catch::Approx(255.0));
+  }
 }
 
 TEST_CASE("Raw time-series vector images sample the requested time frame", "[image][raw][time][vector]")
@@ -1271,6 +1303,70 @@ TEST_CASE("Vector field Laplacian magnitude handles nonlinear fields", "[image][
   const auto laplacian = createComponentProjectionImage(image, ComponentProjectionMode::VectorLaplacianMagnitude);
   REQUIRE(laplacian.has_value());
   CHECK(laplacian->value<double>(0, 13).value() == Catch::Approx(expectedLaplacianMagnitude));
+}
+
+TEST_CASE("Standard 2D raster RGB and RGBA images default to color rendering", "[image][settings]")
+{
+  const glm::uvec3 dims{2, 2, 1};
+
+  ImageIoInfo rgbInfo = makeIoInfo(ComponentType::UInt8, 3, dims);
+  rgbInfo.m_fileInfo.m_fileName = "synthetic.png";
+  rgbInfo.m_pixelInfo.m_pixelType = PixelType::RGB;
+  rgbInfo.m_pixelInfo.m_pixelTypeString = "RGB";
+  ImageHeader rgbHeader(rgbInfo, rgbInfo, true);
+  const std::vector<uint8_t> rgbBuffer(rgbHeader.numPixels() * rgbHeader.numComponentsPerPixel(), 128u);
+  std::vector<const void*> rgbBuffers{rgbBuffer.data()};
+  const Image rgbImage(
+    rgbHeader,
+    "rgb",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::InterleavedImage,
+    rgbBuffers);
+
+  CHECK_FALSE(isVectorFieldCandidate(rgbImage));
+  CHECK_FALSE(isVectorFieldImage(rgbImage));
+  CHECK(rgbImage.settings().componentRenderMode() == ComponentRenderMode::Color);
+
+  ImageIoInfo rgbaInfo = makeIoInfo(ComponentType::UInt8, 4, dims);
+  rgbaInfo.m_fileInfo.m_fileName = "synthetic.tiff";
+  rgbaInfo.m_pixelInfo.m_pixelType = PixelType::RGBA;
+  rgbaInfo.m_pixelInfo.m_pixelTypeString = "RGBA";
+  ImageHeader rgbaHeader(rgbaInfo, rgbaInfo, true);
+  const std::vector<uint8_t> rgbaBuffer(rgbaHeader.numPixels() * rgbaHeader.numComponentsPerPixel(), 255u);
+  std::vector<const void*> rgbaBuffers{rgbaBuffer.data()};
+  const Image rgbaImage(
+    rgbaHeader,
+    "rgba",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::InterleavedImage,
+    rgbaBuffers);
+
+  CHECK_FALSE(isVectorFieldCandidate(rgbaImage));
+  CHECK_FALSE(isVectorFieldImage(rgbaImage));
+  CHECK(rgbaImage.settings().componentRenderMode() == ComponentRenderMode::Color);
+  CHECK(rgbaImage.settings().ignoreAlpha());
+}
+
+TEST_CASE("Non-raster RGB-like images keep generic multi-component defaults", "[image][settings]")
+{
+  const glm::uvec3 dims{2, 2, 2};
+  ImageIoInfo info = makeIoInfo(ComponentType::UInt8, 3, dims);
+  info.m_fileInfo.m_fileName = "synthetic.nrrd";
+  info.m_pixelInfo.m_pixelType = PixelType::RGB;
+  info.m_pixelInfo.m_pixelTypeString = "RGB";
+  ImageHeader header(info, info, true);
+  const std::vector<uint8_t> buffer(header.numPixels() * header.numComponentsPerPixel(), 128u);
+  std::vector<const void*> buffers{buffer.data()};
+  const Image image(
+    header,
+    "rgb-like-nrrd",
+    Image::ImageRepresentation::Image,
+    Image::MultiComponentBufferType::InterleavedImage,
+    buffers);
+
+  CHECK(isVectorFieldCandidate(image));
+  CHECK(isVectorFieldImage(image));
+  CHECK(image.settings().componentRenderMode() == ComponentRenderMode::Magnitude);
 }
 
 TEST_CASE("Exact image quantiles work for every in-memory component type", "[image][quantiles]")

@@ -4,13 +4,14 @@
 
 #include "common/Types.h"
 
-#include <cstdint>
-#include <filesystem>
-#include <string>
-#include <cstddef>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <string>
 
 struct RenderData;
 struct GuiData;

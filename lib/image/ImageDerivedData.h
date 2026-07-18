@@ -90,7 +90,7 @@ bool isComplexValuedImage(const Image& image);
 /**
  * @brief Return whether an image can reasonably be interpreted as a 3D vector field.
  * @param image Image to inspect.
- * @return True for loaded 3-component images.
+ * @return True for loaded 3-component images except standard 2D RGB/RGBA raster images.
  */
 bool isVectorFieldCandidate(const Image& image);
 

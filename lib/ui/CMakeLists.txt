@@ -26,6 +26,7 @@ set(entropy_UI_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/popups/DicomFolderPathPopup.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/popups/DicomSeriesSelectionPopup.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/popups/LargeImageLoadPromptPopup.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/popups/RasterImageHeaderPromptPopup.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/popups/UnsavedProjectPopup.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Style.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/settings/SettingsModel.cpp"

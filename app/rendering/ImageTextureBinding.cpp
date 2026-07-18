@@ -145,11 +145,14 @@ std::list<std::reference_wrapper<GLTexture>> Rendering::bindColorImageTextures(c
 
   // Bind the four (RGBA) components:
   auto& compTextures = R.m_imageTextures.at(*imgUid);
+  GLTexture& blankTexture = (!compTextures.empty() && tex::Target::Texture2D == compTextures.front().target())
+                              ? R.m_blankImageBlackTransparentTexture2D
+                              : R.m_blankImageBlackTransparentTexture;
 
   for (std::size_t i = 0; i < 4; ++i) {
     const bool compExists =
       (i < static_cast<std::size_t>(image->settings().numComponents()) && i < compTextures.size());
-    GLTexture& tex = compExists ? compTextures.at(i) : R.m_blankImageBlackTransparentTexture;
+    GLTexture& tex = compExists ? compTextures.at(i) : blankTexture;
     tex.bind(msk_imgRgbaTexSamplers.indices[i]);
     boundTextures.emplace_back(tex);
   }

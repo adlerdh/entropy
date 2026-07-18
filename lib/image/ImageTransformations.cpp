@@ -2,8 +2,6 @@
 
 #include "common/MathFuncs.h"
 
-#include <filesystem>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -13,6 +11,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+
+#include <filesystem>
 
 namespace fs = std::filesystem;
 
@@ -86,6 +86,18 @@ ImageTransformations::ImageTransformations(
 void ImageTransformations::setHeaderOverrides(const ImageHeaderOverrides& overrides)
 {
   m_headerOverrides = overrides;
+  initializeTransformations();
+  updateTransformations();
+}
+
+void ImageTransformations::setImageGeometry(
+  const glm::uvec3& pixelDimensions,
+  const glm::vec3& pixelSpacing,
+  const glm::vec3& pixelOrigin,
+  const glm::mat3& pixelDirections)
+{
+  m_headerOverrides = ImageHeaderOverrides(pixelDimensions, pixelSpacing, pixelOrigin, pixelDirections);
+  m_invPixelDimensions = math::computeInvPixelDimensions(pixelDimensions);
   initializeTransformations();
   updateTransformations();
 }

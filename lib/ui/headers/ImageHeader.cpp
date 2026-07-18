@@ -2061,6 +2061,7 @@ void renderImageHeader(
     Image& viewImage = *displayImage;
     const ImageHeader& viewHeader = viewImage.header();
     const uint32_t viewComp = displayComp;
+    const char* windowingLabel = showComponentControls ? "Windowing of selected component:" : "Windowing:";
 
     const bool imageHasFloatComponents =
       (ComponentType::Float32 == viewHeader.memoryComponentType() ||
@@ -2090,7 +2091,7 @@ void renderImageHeader(
       double windowWidth = viewSettings.windowWidth(viewComp);
       double windowCenter = viewSettings.windowCenter(viewComp);
 
-      ImGui::Text("Windowing:");
+      ImGui::TextUnformatted(windowingLabel);
 
       if (mySliderF64("Width", &windowWidth, windowWidthMin, windowWidthMax, valuesFormat)) {
         viewSettings.setWindowWidth(viewComp, windowWidth);
@@ -2223,7 +2224,7 @@ void renderImageHeader(
       int64_t windowWidth = static_cast<int64_t>(viewSettings.windowWidth(viewComp));
       int64_t windowCenter = static_cast<int64_t>(viewSettings.windowCenter(viewComp));
 
-      ImGui::Text("Windowing:");
+      ImGui::TextUnformatted(windowingLabel);
 
       if (mySliderS64("Width", &windowWidth, windowWidthMin, windowWidthMax)) {
         viewSettings.setWindowWidth(viewComp, static_cast<double>(windowWidth));
@@ -2568,11 +2569,11 @@ void renderImageHeader(
     if (showEdges && ImGui::TreeNode("Edge settings")) {
       EdgeDetectionMethod edgeMethod = viewSettings.edgeDetectionMethod();
       int edgeMethodIndex = EdgeDetectionMethod::Voxel == edgeMethod ? 0 : 1;
-      if (ImGui::RadioButton("Voxel-space", edgeMethodIndex == 0)) {
+      if (ImGui::RadioButton("Voxel space", edgeMethodIndex == 0)) {
         edgeMethodIndex = 0;
       }
       ImGui::SameLine();
-      if (ImGui::RadioButton("Pixel-space", edgeMethodIndex == 1)) {
+      if (ImGui::RadioButton("Screen pixel space", edgeMethodIndex == 1)) {
         edgeMethodIndex = 1;
       }
       const EdgeDetectionMethod selectedEdgeMethod =
@@ -2584,8 +2585,8 @@ void renderImageHeader(
       }
       ImGui::SameLine();
       helpMarker(
-        "Voxel-space edges are computed from image samples. Pixel-space edges are computed after the image is sampled "
-        "into the view");
+        "Voxel space edges are computed from image samples. Screen pixel space edges are computed after the image is "
+        "sampled into the view");
 
       const bool useVoxelEdges = EdgeDetectionMethod::Voxel == edgeMethod;
       const bool usePixelEdges = EdgeDetectionMethod::Pixel == edgeMethod;
@@ -2619,12 +2620,8 @@ void renderImageHeader(
 
       bool overlayEdges = useVoxelEdges ? viewSettings.overlayEdges() : viewSettings.overlayPixelEdges();
       if (ImGui::Checkbox("Overlay edges on image", &overlayEdges)) {
-        if (useVoxelEdges) {
-          viewSettings.setOverlayEdges(overlayEdges);
-        }
-        else {
-          viewSettings.setOverlayPixelEdges(overlayEdges);
-        }
+        viewSettings.setOverlayEdges(overlayEdges);
+        viewSettings.setOverlayPixelEdges(overlayEdges);
         updateImageUniforms();
       }
       ImGui::SameLine();

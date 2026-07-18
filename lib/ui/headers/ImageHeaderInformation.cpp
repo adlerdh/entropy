@@ -64,6 +64,18 @@ std::string lowerCaseCopy(std::string text)
   return text;
 }
 
+std::string displayPixelType(const ImageHeader& header)
+{
+  switch (header.pixelType()) {
+    case PixelType::RGB:
+      return "RGB";
+    case PixelType::RGBA:
+      return "RGBA";
+    default:
+      return header.pixelTypeAsString();
+  }
+}
+
 } // namespace
 
 void renderImageHeaderInformation(
@@ -78,6 +90,7 @@ void renderImageHeaderInformation(
 
   const ImageHeader& imgHeader = image.header();
   ImageTransformations& imgTx = image.transformations();
+  const serialize::DicomSource* dicomSource = image_export::dicomSourceForImage(appData, imageUid);
 
   // File name:
   ImGui::Spacing();
@@ -86,12 +99,15 @@ void renderImageHeaderInformation(
   ImGui::SameLine();
   helpMarker("Image file name");
 
+  std::string format = dicomSource ? "DICOM" : imageFormatName(imgHeader.fileName());
+  ImGui::InputText("Format", &format, ImGuiInputTextFlags_ReadOnly);
+
   ImGui::Spacing();
   ImGui::Separator();
   ImGui::Spacing();
 
   // Pixel type:
-  std::string pixelType = imgHeader.pixelTypeAsString();
+  std::string pixelType = displayPixelType(imgHeader);
   ImGui::InputText("Pixel type", &pixelType, ImGuiInputTextFlags_ReadOnly);
 
   // Number of components:
@@ -213,31 +229,72 @@ void renderImageHeaderInformation(
   ImGui::SameLine();
   helpMarker("Matrix dimensions in voxels");
 
+  auto applyUserSpatialMetadata = [&]() {
+    if (!imgHeader.userSpatialMetadata()) {
+      return;
+    }
+    const ImageSpatialMetadata metadata = *image.header().userSpatialMetadata();
+    std::string errorMessage;
+    if (!validateImageSpatialMetadata(metadata, &errorMessage)) {
+      spdlog::warn("Ignoring invalid image geometry edit for {}: {}", imgHeader.fileName(), errorMessage);
+      return;
+    }
+    image.setUserSpatialMetadata(metadata);
+    for (const auto& segUid : appData.imageToSegUids(imageUid)) {
+      if (Image* seg = appData.seg(segUid)) {
+        seg->setUserSpatialMetadata(metadata);
+      }
+    }
+    updateImageUniforms();
+    recenterAllViews(true, true, true, false, false);
+  };
+
+  const bool editableRasterGeometry =
+    isStandardRasterImageFile(imgHeader.fileName()) && imgHeader.userSpatialMetadata();
+  const ImGuiInputTextFlags geometryInputFlags =
+    editableRasterGeometry ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_ReadOnly;
+
   // Spacing:
   glm::vec3 spacing = imgHeader.spacing();
-  ImGui::InputScalarN(
-    "Spacing (mm)",
-    ImGuiDataType_Float,
-    glm::value_ptr(spacing),
-    3,
-    nullptr,
-    nullptr,
-    coordFormat,
-    ImGuiInputTextFlags_ReadOnly);
+  if (
+    ImGui::InputScalarN(
+      "Spacing (mm)",
+      ImGuiDataType_Float,
+      glm::value_ptr(spacing),
+      3,
+      nullptr,
+      nullptr,
+      coordFormat,
+      geometryInputFlags) &&
+    editableRasterGeometry)
+  {
+    ImageSpatialMetadata metadata = *image.header().userSpatialMetadata();
+    metadata.spacingMm = glm::max(spacing, glm::vec3{std::numeric_limits<float>::epsilon()});
+    image.setUserSpatialMetadata(metadata);
+    applyUserSpatialMetadata();
+  }
   ImGui::SameLine();
   helpMarker("Voxel spacing (mm)");
 
   // Origin:
   glm::vec3 origin = imgHeader.origin();
-  ImGui::InputScalarN(
-    "Origin (mm)",
-    ImGuiDataType_Float,
-    glm::value_ptr(origin),
-    3,
-    nullptr,
-    nullptr,
-    coordFormat,
-    ImGuiInputTextFlags_ReadOnly);
+  if (
+    ImGui::InputScalarN(
+      "Origin (mm)",
+      ImGuiDataType_Float,
+      glm::value_ptr(origin),
+      3,
+      nullptr,
+      nullptr,
+      coordFormat,
+      geometryInputFlags) &&
+    editableRasterGeometry)
+  {
+    ImageSpatialMetadata metadata = *image.header().userSpatialMetadata();
+    metadata.originMm = origin;
+    image.setUserSpatialMetadata(metadata);
+    applyUserSpatialMetadata();
+  }
   ImGui::SameLine();
   helpMarker("Image origin (mm): physical coordinates of voxel (0, 0, 0)");
   ImGui::Spacing();
@@ -247,12 +304,49 @@ void renderImageHeaderInformation(
   ImGui::Text("Voxel coordinate directions:");
   ImGui::SameLine();
   helpMarker(
-    "Direction vectors in physical Subject space of the X, Y, Z image voxel axes. "
-    "Also known as the voxel direction cosines matrix");
+    "Direction vectors in physical Subject space of the image i, j, and k voxel axes. "
+    "The i axis is the column direction, j is the row direction, and k is the slice direction");
 
-  ImGui::InputFloat3("x", glm::value_ptr(directions[0]), coordFormat, ImGuiInputTextFlags_ReadOnly);
-  ImGui::InputFloat3("y", glm::value_ptr(directions[1]), coordFormat, ImGuiInputTextFlags_ReadOnly);
-  ImGui::InputFloat3("z", glm::value_ptr(directions[2]), coordFormat, ImGuiInputTextFlags_ReadOnly);
+  const ImGuiInputTextFlags editableDirectionInputFlags =
+    editableRasterGeometry ? ImGuiInputTextFlags_EnterReturnsTrue : ImGuiInputTextFlags_ReadOnly;
+  bool commitDirectionEdit = false;
+
+  ImageDirectionAxis editedDirectionAxis = ImageDirectionAxis::I;
+
+  const bool iDirectionEntered =
+    ImGui::InputFloat3("i (column)", glm::value_ptr(directions[0]), coordFormat, editableDirectionInputFlags);
+  if (editableRasterGeometry && (iDirectionEntered || ImGui::IsItemDeactivatedAfterEdit())) {
+    commitDirectionEdit = true;
+    editedDirectionAxis = ImageDirectionAxis::I;
+  }
+
+  const bool jDirectionEntered =
+    ImGui::InputFloat3("j (row)", glm::value_ptr(directions[1]), coordFormat, editableDirectionInputFlags);
+  if (editableRasterGeometry && (jDirectionEntered || ImGui::IsItemDeactivatedAfterEdit())) {
+    commitDirectionEdit = true;
+    editedDirectionAxis = ImageDirectionAxis::J;
+  }
+
+  const bool kDirectionEntered =
+    ImGui::InputFloat3("k (slice)", glm::value_ptr(directions[2]), coordFormat, editableDirectionInputFlags);
+  if (editableRasterGeometry && (kDirectionEntered || ImGui::IsItemDeactivatedAfterEdit())) {
+    commitDirectionEdit = true;
+    editedDirectionAxis = ImageDirectionAxis::K;
+  }
+  if (editableRasterGeometry && commitDirectionEdit) {
+    std::string errorMessage;
+    if (
+      const auto normalized = normalizedRasterDirectionMatrixAfterEdit(directions, editedDirectionAxis, &errorMessage))
+    {
+      ImageSpatialMetadata metadata = *image.header().userSpatialMetadata();
+      metadata.directions = *normalized;
+      image.setUserSpatialMetadata(metadata);
+      applyUserSpatialMetadata();
+    }
+    else {
+      spdlog::warn("Ignoring invalid image direction edit for {}: {}", imgHeader.fileName(), errorMessage);
+    }
+  }
 
   // Closest orientation code:
   std::string orientation = imgHeader.spiralCode();
@@ -269,7 +363,7 @@ void renderImageHeaderInformation(
   ImGui::Separator();
   ImGui::Spacing();
 
-  if (const serialize::DicomSource* dicomSource = image_export::dicomSourceForImage(appData, imageUid)) {
+  if (dicomSource) {
     ImGui::Text("DICOM series source:");
 
     std::string dicomFolder = dicomSource->m_rootPath.string();

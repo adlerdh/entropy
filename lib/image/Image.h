@@ -479,6 +479,9 @@ public:
   /// @brief Get the current header override flags.
   const ImageHeaderOverrides& getHeaderOverrides() const;
 
+  /// @brief Apply user-provided physical geometry and update dependent transforms.
+  void setUserSpatialMetadata(const ImageSpatialMetadata& metadata);
+
   /// @brief Get read-only access to the image header.
   const ImageHeader& header() const;
 

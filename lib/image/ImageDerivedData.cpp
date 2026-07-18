@@ -1,4 +1,5 @@
 #include "image/ImageDerivedData.h"
+#include "image/ImageUtility.h"
 #include "internal/ImageUtility.tpp"
 
 #include <spdlog/spdlog.h>
@@ -354,6 +355,10 @@ bool isComplexValuedImage(const Image& image)
 
 bool isVectorFieldCandidate(const Image& image)
 {
+  if (isStandardRasterColorImage(image.header())) {
+    return false;
+  }
+
   return 3u == image.header().numComponentsPerPixel();
 }
 

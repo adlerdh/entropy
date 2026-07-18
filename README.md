@@ -132,8 +132,9 @@ Entropy uses [ITK](https://itk.org/) for image I/O of these common medical image
 - [Nearly Raw Raster Data (NRRD)](https://teem.sourceforge.net/nrrd/format.html) (`.nrrd`, `.nhdr`)
 - [MetaImage](https://insightsoftwareconsortium.github.io/ITKWikiArchive/Wiki/ITK/MetaIO/Documentation/) (`.mha`, `.mhd`, with companion raw data `.raw`, `.zraw`, or `.raw.gz`)
 - [DICOM](https://www.dicomstandard.org/current/) via [GDCM](https://gdcm.sourceforge.net/) (`.dcm` and DICOM series)
+- Standard 2D raster formats: JPEG (`.jpg`, `.jpeg`, `.jpe`), PNG (`.png`), TIFF (`.tif`, `.tiff`), and BMP (`.bmp`, `.dib`)
 
-Entropy also displays complete image header information and DICOM metadata. It loads the supporting files needed to make a review complete: segmentations, landmarks, annotations, affine transforms, deformation warp fields, layouts, and project files.
+Entropy also displays complete image header information, DICOM metadata, and editable spatial geometry for standard 2D raster images that do not carry medical image headers. It loads the supporting files needed to make a review complete: segmentations, landmarks, annotations, affine transforms, deformation warp fields, layouts, and project files.
 
 ### Multi-Component and Time Series Images
 
@@ -190,6 +191,8 @@ Entropy separates image geometry from affine transformations loaded or edited by
 1. The image header defines the image's native voxel to subject geometry
 2. The initial/imported affine transformation is used for a loaded alignment or an alignment computed by registration
 3. The manual affine transformation is intended for interactive adjustment
+
+For standard 2D raster images such as JPEG, PNG, TIFF, and BMP, Entropy asks for spacing, origin, and direction information when the image is loaded and saves that geometry in the project file.
 
 This separation makes it possible to inspect and revise alignment without losing the original image geometry.
 

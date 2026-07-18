@@ -295,6 +295,13 @@ void positionCameraForWorldTargetAndFov(Camera&, const glm::vec3& worldBoxSize, 
 
 void positionCameraForWorldTarget(Camera&, const glm::vec3& worldBoxSize, const glm::vec3& worldTarget);
 
+/**
+ * @brief Compute the World-space AABB extents projected onto the camera right and up axes.
+ * @param[in] camera Camera whose view-plane axes define the projection
+ * @param[in] worldBoxSize Size of the World-space AABB
+ */
+glm::vec2 viewPlaneFovForWorldBox(const Camera& camera, const glm::vec3& worldBoxSize);
+
 void orientCameraToWorldTargetNormalDirection(Camera&, const glm::vec3& targetWorldNormalDirection);
 
 void setWorldForwardDirection(Camera&, const glm::vec3& worldForwardDirection);

@@ -10,7 +10,6 @@
 
 #include "common/Exception.hpp"
 #include "common/Types.h"
-#include <filesystem>
 #include "../Image.h"
 
 #include "../external/TDigest.h"
@@ -39,6 +38,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <numeric>

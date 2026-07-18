@@ -1,5 +1,6 @@
 #include "image/Image.h"
 #include "image/ImageHeader.h"
+#include "image/ImageSpatialMetadata.h"
 #include "image/ImageTransformations.h"
 #include "image/ImageUtility.h"
 
@@ -94,6 +95,54 @@ TEST_CASE("ImageHeader expands 2D image metadata into Entropy's 3D model", "[ima
   CHECK(header.subjectBBoxSize().y > 0.0f);
 }
 
+TEST_CASE("Standard raster formats are detected and named", "[image][header]")
+{
+  CHECK(isStandardRasterImageFile("slice.jpg"));
+  CHECK(isStandardRasterImageFile("slice.jpeg"));
+  CHECK(isStandardRasterImageFile("slice.png"));
+  CHECK(isStandardRasterImageFile("slice.tif"));
+  CHECK(isStandardRasterImageFile("slice.tiff"));
+  CHECK(isStandardRasterImageFile("slice.bmp"));
+  CHECK_FALSE(isStandardRasterImageFile("slice.nii.gz"));
+
+  CHECK(imageFormatName("slice.jpg") == "JPEG");
+  CHECK(imageFormatName("slice.png") == "PNG");
+  CHECK(imageFormatName("slice.tiff") == "TIFF");
+  CHECK(imageFormatName("slice.bmp") == "BMP");
+  CHECK(imageFormatName("slice.nii.gz") == "NIfTI");
+}
+
+TEST_CASE("Raster direction normalization produces a right-handed basis", "[image][header]")
+{
+  std::string errorMessage;
+  const auto directions =
+    normalizedRasterDirectionMatrix(glm::vec3{2.0f, 0.0f, 0.0f}, glm::vec3{0.25f, 3.0f, 0.0f}, &errorMessage);
+  REQUIRE(directions.has_value());
+  checkVec3((*directions)[0], glm::vec3{1.0f, 0.0f, 0.0f});
+  checkVec3((*directions)[1], glm::vec3{0.0f, 1.0f, 0.0f});
+  checkVec3((*directions)[2], glm::vec3{0.0f, 0.0f, 1.0f});
+
+  CHECK_FALSE(normalizedRasterDirectionMatrix(glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{2.0f, 0.0f, 0.0f}).has_value());
+}
+
+TEST_CASE("ImageHeader applies user spatial metadata", "[image][header]")
+{
+  ImageHeader header(make2dIoInfo(), make2dIoInfo(), false);
+
+  ImageSpatialMetadata metadata;
+  metadata.spacingMm = glm::vec3{0.2f, 0.3f, 1.0f};
+  metadata.originMm = glm::vec3{10.0f, 20.0f, 30.0f};
+  metadata.directions = *normalizedRasterDirectionMatrix(glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
+  header.setUserSpatialMetadata(metadata);
+
+  REQUIRE(header.userSpatialMetadata().has_value());
+  checkVec3(header.spacing(), metadata.spacingMm);
+  checkVec3(header.origin(), metadata.originMm);
+  checkVec3(header.directions()[0], glm::vec3{0.0f, 1.0f, 0.0f});
+  checkVec3(header.directions()[1], glm::vec3{0.0f, 0.0f, 1.0f});
+  checkVec3(header.directions()[2], glm::vec3{1.0f, 0.0f, 0.0f});
+}
+
 TEST_CASE("Image dimensionality counts non-singleton pixel axes", "[image][header]")
 {
   const ImageHeader oneDimensional(
@@ -175,6 +224,34 @@ TEST_CASE("ImageHeader component adjustment and overrides update derived metadat
   checkVec3(header.spacing(), glm::vec3(1.0f));
   checkVec3(header.origin(), glm::vec3(0.0f));
   CHECK(header.directions() == glm::mat3(1.0f));
+}
+
+TEST_CASE("Raster direction normalization supports editing i, j, and k axes", "[image][header]")
+{
+  const glm::mat3 identity{1.0f};
+
+  const glm::mat3 editedIInput{glm::vec3{0.0f, 2.0f, 0.0f}, glm::vec3{-1.0f, 0.25f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f}};
+  const auto editedI = normalizedRasterDirectionMatrixAfterEdit(editedIInput, ImageDirectionAxis::I);
+  REQUIRE(editedI);
+  checkVec3((*editedI)[0], glm::vec3{0.0f, 1.0f, 0.0f});
+  CHECK(glm::dot(glm::cross((*editedI)[0], (*editedI)[1]), (*editedI)[2]) == Catch::Approx(1.0f));
+
+  const glm::mat3 editedJInput{glm::vec3{0.25f, 0.0f, 1.0f}, glm::vec3{0.0f, 2.0f, 0.0f}, glm::vec3{1.0f, 0.0f, 0.0f}};
+  const auto editedJ = normalizedRasterDirectionMatrixAfterEdit(editedJInput, ImageDirectionAxis::J);
+  REQUIRE(editedJ);
+  checkVec3((*editedJ)[1], glm::vec3{0.0f, 1.0f, 0.0f});
+  CHECK(glm::dot(glm::cross((*editedJ)[0], (*editedJ)[1]), (*editedJ)[2]) == Catch::Approx(1.0f));
+
+  glm::mat3 editedKInput = identity;
+  editedKInput[2] = glm::vec3{0.0f, 2.0f, 0.0f};
+  const auto editedK = normalizedRasterDirectionMatrixAfterEdit(editedKInput, ImageDirectionAxis::K);
+  REQUIRE(editedK);
+  checkVec3((*editedK)[2], glm::vec3{0.0f, 1.0f, 0.0f});
+  CHECK(glm::dot(glm::cross((*editedK)[0], (*editedK)[1]), (*editedK)[2]) == Catch::Approx(1.0f));
+
+  glm::mat3 invalid = identity;
+  invalid[2] = glm::vec3{0.0f};
+  CHECK_FALSE(normalizedRasterDirectionMatrixAfterEdit(invalid, ImageDirectionAxis::K).has_value());
 }
 
 TEST_CASE("slice counts follow the selected world direction", "[image][utility]")

@@ -82,7 +82,15 @@ void setDefaultComponentRendering(
   Image::ImageRepresentation imageRep)
 {
   if (Image::ImageRepresentation::Image == imageRep && header.numComponentsPerPixel() > 1u) {
-    settings.setComponentRenderMode(ComponentRenderMode::Magnitude);
+    const bool standardRasterColorImage = isStandardRasterColorImage(header);
+    settings.setComponentRenderMode(
+      standardRasterColorImage ? ComponentRenderMode::Color : ComponentRenderMode::Magnitude);
+    if (standardRasterColorImage && ComponentType::UInt8 == header.memoryComponentType()) {
+      settings.setFullUInt8WindowForAllComponents();
+    }
+    if (standardRasterColorImage && PixelType::RGBA == header.pixelType()) {
+      settings.setIgnoreAlpha(true);
+    }
   }
 }
 
@@ -695,6 +703,12 @@ void Image::setHeaderOverrides(const ImageHeaderOverrides& overrides)
 const ImageHeaderOverrides& Image::getHeaderOverrides() const
 {
   return m_headerOverrides;
+}
+
+void Image::setUserSpatialMetadata(const ImageSpatialMetadata& metadata)
+{
+  m_header.setUserSpatialMetadata(metadata);
+  m_tx.setImageGeometry(m_header.pixelDimensions(), m_header.spacing(), m_header.origin(), m_header.directions());
 }
 
 std::ostream& Image::metaData(std::ostream& os) const

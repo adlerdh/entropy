@@ -1,17 +1,17 @@
 #include "ui/menus/WinNativeMainMenu.h"
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+#include <windows.h>
+#include <commctrl.h>
+
 #include <filesystem>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
-#include <windows.h>
-#include <commctrl.h>
 
 namespace
 {

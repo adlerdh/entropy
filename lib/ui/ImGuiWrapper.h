@@ -86,6 +86,10 @@ struct ImGuiProjectCallbacks
   /** @brief Resolve a pending large-image load prompt. */
   std::function<void(GuiData::LargeImageLoadDecision decision)> largeImageLoadDecision;
 
+  /** @brief Resolve a pending standard raster geometry prompt. */
+  std::function<void(GuiData::RasterImageHeaderDecision decision, ImageSpatialMetadata metadata, bool applyToAll)>
+    rasterImageHeaderDecision;
+
   /** @brief Load selected DICOM series into a new or existing project. */
   std::function<void(
     const std::vector<dicom::SeriesInfo>& series,
@@ -341,6 +345,8 @@ private:
   std::function<void(const std::string& jobId)> m_importRegistrationJobOutputs = nullptr;
   std::function<void(const std::filesystem::path& fileName)> m_openProjectFile = nullptr;
   std::function<void(GuiData::LargeImageLoadDecision decision)> m_largeImageLoadDecision = nullptr;
+  std::function<void(GuiData::RasterImageHeaderDecision decision, ImageSpatialMetadata metadata, bool applyToAll)>
+    m_rasterImageHeaderDecision = nullptr;
   std::function<void(
     const std::vector<dicom::SeriesInfo>& series,
     std::optional<std::size_t> referenceSeriesIndex,

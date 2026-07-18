@@ -47,8 +47,20 @@ TEST_CASE("camera positioning centers the target in clip space", "[camera][recen
   CHECK(targetNdc.x == Catch::Approx(0.0f));
   CHECK(targetNdc.y == Catch::Approx(0.0f));
   CHECK(camera.projection()->defaultFov().x == Catch::Approx(20.0f));
-  CHECK(camera.projection()->defaultFov().y == Catch::Approx(20.0f));
+  CHECK(camera.projection()->defaultFov().y == Catch::Approx(10.0f));
   CHECK(camera.farDistance() > 20.0f);
+}
+
+TEST_CASE("orthographic fit uses camera-plane extent instead of full 3D maximum extent", "[camera][recenter]")
+{
+  Camera camera(ProjectionType::Orthographic);
+  const glm::vec3 worldTarget{0.0f};
+  const glm::vec3 worldFov{10.0f, 20.0f, 300.0f};
+
+  helper::positionCameraForWorldTargetAndFov(camera, worldFov, worldTarget);
+
+  CHECK(camera.projection()->defaultFov().x == Catch::Approx(10.0f));
+  CHECK(camera.projection()->defaultFov().y == Catch::Approx(20.0f));
 }
 
 TEST_CASE("camera positioning preserves view direction while moving the origin", "[camera][recenter]")

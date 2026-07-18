@@ -60,31 +60,40 @@ void main()
 
   // Look up the image values (after mapping to GL texture units):
   vec4 img = vec4(
-    clamp(textureLookup(u_imgTex[0], sampleTc), u_imgMinMax[0][0], u_imgMinMax[0][1]),
-    clamp(textureLookup(u_imgTex[1], sampleTc), u_imgMinMax[1][0], u_imgMinMax[1][1]),
-    clamp(textureLookup(u_imgTex[2], sampleTc), u_imgMinMax[2][0], u_imgMinMax[2][1]),
-    clamp(textureLookup(u_imgTex[3], sampleTc), u_imgMinMax[3][0], u_imgMinMax[3][1]));
-
-  float forcedOpaque = float(u_alphaIsOne);
+    clamp(textureLookup(u_imgTex[0], sampleTc, 0), u_imgMinMax[0][0], u_imgMinMax[0][1]),
+    clamp(textureLookup(u_imgTex[1], sampleTc, 1), u_imgMinMax[1][0], u_imgMinMax[1][1]),
+    clamp(textureLookup(u_imgTex[2], sampleTc, 2), u_imgMinMax[2][0], u_imgMinMax[2][1]),
+    clamp(textureLookup(u_imgTex[3], sampleTc, 3), u_imgMinMax[3][0], u_imgMinMax[3][1]));
 
   float thresh[4];
   for (int i = 0; i <= 3; ++i) {
     thresh[i] = hardThreshold(img[i], u_imgThresholds[i]);
   }
-  thresh[3] = mix(thresh[3], 1.0, forcedOpaque);
 
   // Apply window/level to normalize image values in [0.0, 1.0] range:
   vec4 imgNorm = vec4(0.0, 0.0, 0.0, 0.0);
   for (int i = 0; i <= 3; ++i) {
     imgNorm[i] = clamp(u_imgSlopeIntercept[i][0] * img[i] + u_imgSlopeIntercept[i][1], 0.0, 1.0);
   }
+
+  float forcedOpaque = float(u_alphaIsOne);
   imgNorm.a = mix(imgNorm.a, 1.0, forcedOpaque);
+  thresh[3] = mix(thresh[3], 1.0, forcedOpaque);
 
-  // Apply alpha to each component:
   float mask = float(isInsideTexture(sampleTc));
-  for (int i = 0; i <= 3; ++i) {
-    imgNorm[i] *= u_imgOpacity[i] * thresh[i] * mask;
-  }
+  vec3 rgbOpacity = vec3(u_imgOpacity[0], u_imgOpacity[1], u_imgOpacity[2]);
+  vec3 rgbThreshold = vec3(thresh[0], thresh[1], thresh[2]);
 
-  o_color = imgNorm.a * vec4(imgNorm.rgb, 1.0); // premult. RGBA
+  vec3 color = imgNorm.rgb * rgbOpacity * rgbThreshold;
+
+  // If every RGB channel is enabled and passes threshold, preserve normal image coverage so true black pixels still
+  // render as black. If any channel is hidden or thresholded out, coverage follows the remaining color contribution so
+  // zeroed color does not become opaque black.
+  float allRgbEnabled = step(1.0e-6, rgbOpacity.r) * step(1.0e-6, rgbOpacity.g) * step(1.0e-6, rgbOpacity.b);
+  float allRgbThresholdedIn = rgbThreshold.r * rgbThreshold.g * rgbThreshold.b;
+  float colorContribution = max(color.r, max(color.g, color.b));
+  float rgbVisibility = mix(step(1.0e-6, colorContribution), 1.0, allRgbEnabled * allRgbThresholdedIn);
+  float alpha = imgNorm.a * u_imgOpacity[3] * thresh[3] * rgbVisibility * mask;
+
+  o_color = alpha * vec4(color, 1.0); // premult. RGBA
 }

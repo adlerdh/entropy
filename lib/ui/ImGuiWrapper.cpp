@@ -1725,6 +1725,7 @@ void ImGuiWrapper::setCallbacks(ImGuiWrapperCallbacks callbacks)
   m_importRegistrationJobOutputs = std::move(callbacks.project.importRegistrationJobOutputs);
   m_openProjectFile = std::move(callbacks.project.openProjectFile);
   m_largeImageLoadDecision = std::move(callbacks.project.largeImageLoadDecision);
+  m_rasterImageHeaderDecision = std::move(callbacks.project.rasterImageHeaderDecision);
   m_loadDicomSeries = std::move(callbacks.project.loadDicomSeries);
   m_saveProject = std::move(callbacks.project.saveProject);
   m_saveProjectAs = std::move(callbacks.project.saveProjectAs);
@@ -4233,6 +4234,7 @@ void ImGuiWrapper::render()
     renderConfirmSetReferenceImagePopup(m_appData, m_setReferenceImage);
     renderConfirmRemoveImagePopup(m_appData, m_removeImage);
     renderLargeImageLoadPromptPopup(m_appData, m_largeImageLoadDecision);
+    renderRasterImageHeaderPromptPopup(m_appData, m_rasterImageHeaderDecision);
     renderDicomFolderPathPopup(m_appData, m_openDicomFolders);
     renderDicomSeriesSelectionPopup(m_appData, m_loadDicomSeries);
 

@@ -182,9 +182,21 @@ bool dicomSourcesEqual(const std::optional<serialize::DicomSource>& a, const std
          a->m_seriesInstanceUid == b->m_seriesInstanceUid && a->m_files == b->m_files;
 }
 
+bool spatialMetadataEqual(const std::optional<ImageSpatialMetadata>& a, const std::optional<ImageSpatialMetadata>& b)
+{
+  if (a.has_value() != b.has_value()) {
+    return false;
+  }
+  if (!a) {
+    return true;
+  }
+  return a->spacingMm == b->spacingMm && a->originMm == b->originMm && a->directions == b->directions;
+}
+
 bool imagesEqual(const serialize::Image& a, const serialize::Image& b)
 {
   return a.m_imageFileName == b.m_imageFileName && dicomSourcesEqual(a.m_dicomSource, b.m_dicomSource) &&
+         spatialMetadataEqual(a.m_spatialMetadata, b.m_spatialMetadata) &&
          a.m_affineTxFileName == b.m_affineTxFileName && a.m_inverseWarpFileName == b.m_inverseWarpFileName &&
          a.m_inverseWarpReferenceImageFileName == b.m_inverseWarpReferenceImageFileName &&
          a.m_forwardWarpFileName == b.m_forwardWarpFileName && matricesEqual(a.m_worldDefTx, b.m_worldDefTx) &&

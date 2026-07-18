@@ -1,9 +1,8 @@
 #pragma once
 
-#include <filesystem>
-
 #include <spdlog/spdlog.h>
 
+#include <filesystem>
 #include <optional>
 #include <ostream>
 #include <vector>

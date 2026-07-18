@@ -25,6 +25,21 @@ class Image;
 std::string getFileName(const std::string& filePath, bool withExtension = false);
 
 /**
+ * @brief Return true when the file extension is a standard 2D raster image format.
+ */
+bool isStandardRasterImageFile(const std::filesystem::path& fileName);
+
+/**
+ * @brief Return a readable image format name derived from the file extension.
+ */
+std::string imageFormatName(const std::filesystem::path& fileName);
+
+/**
+ * @brief Return true when a header represents a standard 2D RGB/RGBA raster image.
+ */
+bool isStandardRasterColorImage(const ImageHeader& header);
+
+/**
  * @brief Read image metadata without loading pixel buffers.
  * @param fileName Image file to inspect.
  * @param imageRep Semantic image representation requested by the caller.

@@ -2,6 +2,7 @@
 
 #include "image/DicomSeries.h"
 #include "image/ImageHeader.h"
+#include "image/ImageSpatialMetadata.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
@@ -132,6 +133,30 @@ struct GuiData
 
   /// Pending large-image loading prompt state.
   std::optional<LargeImageLoadPrompt> m_pendingLargeImageLoadPrompt = std::nullopt;
+
+  /**
+   * @brief State for entering physical geometry for standard 2D raster images.
+   */
+  struct RasterImageHeaderPrompt
+  {
+    std::filesystem::path fileName;               //!< Raster image currently being described
+    std::string format;                           //!< Detected file format name
+    std::uintmax_t fileSizeBytes = 0u;            //!< Source file size
+    glm::uvec3 dimensions{0u};                    //!< Image dimensions after Entropy normalization
+    ImageSpatialMetadata metadata;                //!< Editable spatial metadata
+    bool applyToAllImagesBeingLoaded = false;     //!< Apply this geometry to all pending raster images
+    std::vector<std::filesystem::path> allImages; //!< Full manual load list when more than one image is pending
+    std::string validationMessage;                //!< Current validation message
+  };
+
+  enum class RasterImageHeaderDecision : std::uint8_t
+  {
+    Accept, //!< Accept the entered geometry
+    Cancel  //!< Cancel loading this raster image
+  };
+
+  bool m_showRasterImageHeaderPrompt = false; //!< Show standard raster geometry prompt
+  std::optional<RasterImageHeaderPrompt> m_pendingRasterImageHeaderPrompt = std::nullopt;
 
   struct LoadingStatusItem
   {

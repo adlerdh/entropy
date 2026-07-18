@@ -1,14 +1,15 @@
 #pragma once
 
 #include "common/Types.h"
-#include <filesystem>
 #include "image/ImageHeaderOverrides.h"
 #include "image/ImageIoInfo.h"
+#include "image/ImageSpatialMetadata.h"
 
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
 
 #include <array>
+#include <filesystem>
 #include <ostream>
 #include <string>
 
@@ -45,6 +46,13 @@ public:
   void setHeaderOverrides(const ImageHeaderOverrides& overrides);
   /// @brief Get the current header override state.
   const ImageHeaderOverrides& getHeaderOverrides() const;
+
+  /// @brief Apply user-provided physical geometry and recompute derived geometry.
+  void setUserSpatialMetadata(const ImageSpatialMetadata& metadata);
+  /// @brief Clear user-provided physical geometry and return to IO metadata plus normal header overrides.
+  void clearUserSpatialMetadata();
+  /// @brief Return user-provided physical geometry, when present.
+  const std::optional<ImageSpatialMetadata>& userSpatialMetadata() const;
 
   /// @brief Change component type/count metadata and recompute pixel type and sizes.
   void adjustComponents(const ComponentType& componentType, uint32_t numComponents);
@@ -193,6 +201,9 @@ private:
 
   /// Overrides to the original image header
   ImageHeaderOverrides m_headerOverrides;
+
+  /// User-provided geometry for standard raster images without medical spatial metadata.
+  std::optional<ImageSpatialMetadata> m_userSpatialMetadata = std::nullopt;
 };
 
 std::ostream& operator<<(std::ostream&, const ImageHeader&);

@@ -374,6 +374,24 @@ glm::vec4 vec4FromJson(const json& j)
   return glm::vec4{j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>(), j.at(3).get<float>()};
 }
 
+json mat3ToJson(const glm::mat3& matrix)
+{
+  json j = json::array();
+  for (int col = 0; col < 3; ++col) {
+    j.push_back(vec3ToJson(matrix[col]));
+  }
+  return j;
+}
+
+glm::mat3 mat3FromJson(const json& j)
+{
+  glm::mat3 matrix{1.0f};
+  for (int col = 0; col < 3; ++col) {
+    matrix[col] = vec3FromJson(j.at(static_cast<std::size_t>(col)));
+  }
+  return matrix;
+}
+
 glm::mat4 matrixFromJson(const json& j)
 {
   glm::mat4 matrix{1.0f};
@@ -1069,6 +1087,13 @@ void to_json(json& j, const serialize::Image& image)
 {
   j = json{{"image", image.m_imageFileName.string()}};
 
+  if (image.m_spatialMetadata) {
+    j["spatialMetadata"] = {
+      {"spacingMm", vec3ToJson(image.m_spatialMetadata->spacingMm)},
+      {"originMm", vec3ToJson(image.m_spatialMetadata->originMm)},
+      {"directions", mat3ToJson(image.m_spatialMetadata->directions)}};
+  }
+
   if (image.m_dicomSource) {
     j["dicomSource"] = *image.m_dicomSource;
   }
@@ -1119,6 +1144,14 @@ void from_json(const json& j, serialize::Image& image)
   std::string p;
   j.at("image").get_to(p);
   image.m_imageFileName = p;
+
+  if (const auto metadata = j.find("spatialMetadata"); metadata != j.end() && metadata->is_object()) {
+    ImageSpatialMetadata spatialMetadata;
+    spatialMetadata.spacingMm = vec3FromJson(metadata->at("spacingMm"));
+    spatialMetadata.originMm = vec3FromJson(metadata->at("originMm"));
+    spatialMetadata.directions = mat3FromJson(metadata->at("directions"));
+    image.m_spatialMetadata = spatialMetadata;
+  }
 
   if (j.count("dicomSource")) {
     image.m_dicomSource = j.at("dicomSource").get<serialize::DicomSource>();

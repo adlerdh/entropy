@@ -1,4 +1,4 @@
-uniform ivec2 u_tex2DAxes[2];
+uniform ivec2 u_tex2DAxes[4];
 
 vec2 texCoord2D(vec3 texCoord, int imageIndex)
 {

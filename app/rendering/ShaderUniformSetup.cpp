@@ -141,6 +141,8 @@ ShaderUniformSet buildShaderUniformSet()
   fsImageColorUniforms.insertUniform("u_imgThresholds", UniformType::Vec2Vector, Vec2Vector{sk_zeroVec2});
   fsImageColorUniforms.insertUniform("u_tex2DAxes[0]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   fsImageColorUniforms.insertUniform("u_tex2DAxes[1]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsImageColorUniforms.insertUniform("u_tex2DAxes[2]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
+  fsImageColorUniforms.insertUniform("u_tex2DAxes[3]", UniformType::IVec2, sk_zeroIVec2, sk_optionalUniform);
   Uniforms fsImageColorWarpedUniforms = fsImageColorUniforms;
   fsImageColorWarpedUniforms.insertUniforms(fsDeformationUniforms);
 

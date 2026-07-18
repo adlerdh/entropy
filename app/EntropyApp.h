@@ -348,6 +348,15 @@ private:
   /** @brief Apply the user decision from a large-image prompt. */
   void handleLargeImageLoadDecision(GuiData::LargeImageLoadDecision decision);
 
+  /** @brief Continue standard-raster geometry prompts before normal image loading. */
+  void continueRasterImageHeaderPreflight();
+
+  /** @brief Apply the user decision from a standard-raster geometry prompt. */
+  void handleRasterImageHeaderDecision(
+    GuiData::RasterImageHeaderDecision decision,
+    ImageSpatialMetadata metadata,
+    bool applyToAll);
+
   /** @brief Load a serialized project snapshot into application data. */
   bool loadProject(const serialize::EntropyProject& project);
 
@@ -477,11 +486,22 @@ private:
     Project
   };
 
+  enum class RasterImageHeaderContext : std::uint8_t
+  {
+    None,
+    AddImage,
+    Project
+  };
+
   LargeImageLoadContext m_pendingLargeImageLoadContext = LargeImageLoadContext::None;
   std::optional<std::filesystem::path> m_pendingLargeAddImageFile = std::nullopt;
   std::optional<serialize::EntropyProject> m_pendingLargeProject = std::nullopt;
   std::optional<std::filesystem::path> m_pendingLargeProjectFileName = std::nullopt;
   std::size_t m_pendingLargeProjectImageIndex = 0;
+  RasterImageHeaderContext m_pendingRasterImageHeaderContext = RasterImageHeaderContext::None;
+  std::optional<serialize::EntropyProject> m_pendingRasterProject = std::nullopt;
+  std::vector<serialize::Image> m_pendingRasterAddImages;
+  std::size_t m_pendingRasterImageIndex = 0;
   std::optional<serialize::EntropyProject> m_savedProjectSnapshot = std::nullopt;
   std::vector<std::filesystem::path> m_pendingProjectReplacementPaths;
 

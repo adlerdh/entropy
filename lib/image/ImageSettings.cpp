@@ -7,6 +7,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 
 #undef min
@@ -764,6 +765,28 @@ void ImageSettings::setWindowCenter(uint32_t i, double center)
 void ImageSettings::setWindowCenter(double center)
 {
   setWindowCenter(m_activeComponent, center);
+}
+
+void ImageSettings::setFullUInt8WindowForAllComponents()
+{
+  if (ComponentType::UInt8 != m_componentType) {
+    return;
+  }
+
+  constexpr double low = 0.0;
+  constexpr double high = static_cast<double>(std::numeric_limits<std::uint8_t>::max());
+  constexpr double center = 0.5 * (low + high);
+  constexpr double width = high - low;
+
+  for (ComponentSettings& setting : m_componentSettings) {
+    setting.m_minMaxWindowCenterRange = {low, high};
+    setting.m_minMaxWindowWidthRange = {0.0, width};
+    setting.m_windowCenter = center;
+    setting.m_windowWidth = width;
+    setting.m_windowQuantilesLowHigh = {0.0, 1.0};
+  }
+
+  updateInternals();
 }
 
 void ImageSettings::setThresholdLow(uint32_t i, double tLow)
