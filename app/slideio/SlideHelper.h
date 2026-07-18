@@ -62,7 +62,7 @@ glm::vec3 physicalSlideDims(const SlideCpuRecord&);
 glm::vec2 convertPhysicalToNormalizedSlideTranslation(const SlideCpuRecord&, const glm::vec2& physicalTranslation);
 
 /**
- * @brief Return the eight corners of a slide in Stack space coodinates
+ * @brief Return the eight corners of a slide in Stack space coordinates
  */
 std::array<glm::vec3, 8> slideCornersInStack(const SlideCpuRecord&);
 

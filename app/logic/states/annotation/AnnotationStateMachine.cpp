@@ -1009,7 +1009,7 @@ void AnnotationStateMachine::pasteAnnotation() const
   // World-space view normal direction
   const glm::vec3 worldViewBackDir = helper::worldDirection(selectedView->camera(), Directions::View::Back);
 
-  // World-space crosshairs position on this view slice (accounting for view offest)
+  // World-space crosshairs position on this view slice (accounting for view offset)
   const glm::vec3 worldXhairsPos =
     selectedView->updateImageSlice(*ms_appData, ms_appData->state().worldCrosshairs().worldOrigin());
 

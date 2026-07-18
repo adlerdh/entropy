@@ -23,8 +23,8 @@ FullScreenQuad::FullScreenQuad(const std::string& name)
   success &= initVao();
 
   if (!success) {
-    spdlog::error("Error initialzing '{}'", m_name);
-    throw_debug("Error iniitalizing FSQ")
+    spdlog::error("Error initializing '{}'", m_name);
+    throw_debug("Error initializing FSQ")
   }
 }
 

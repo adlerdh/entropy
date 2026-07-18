@@ -201,9 +201,11 @@ Coverage backend selection is automatic by default:
 
 The `coverage` target writes machine-readable output under `build-coverage/coverage/`. The `coverage-html` target writes an HTML report under `build-coverage/coverage/html/`.
 
-## Formatting Checks
+## Local Hygiene Checks
 
-Entropy uses [pre-commit](https://pre-commit.com/) for lightweight source checks. The current hook runs `clang-format` on matching files under `app` and `lib`.
+Entropy uses [pre-commit](https://pre-commit.com/) for lightweight local checks before committing.
+The default hooks run `codespell` and `clang-format`; the Markdown link check is manual because it uses
+the network and can fail when external sites are temporarily unavailable.
 
 Install and enable it:
 
@@ -212,11 +214,19 @@ python3 -m pip install pre-commit
 pre-commit install
 ```
 
-Run it manually:
+Run the default hooks manually:
 
 ```sh
 pre-commit run --all-files
 ```
+
+Run the Markdown link check when editing documentation:
+
+```sh
+pre-commit run lychee-doc-links --hook-stage manual
+```
+
+The manual link hook expects `lychee` to be installed and available on `PATH`. (The GitHub Actions text hygiene workflow is manual.)
 
 ## CMake Options
 

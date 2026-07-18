@@ -1103,7 +1103,7 @@ void CallbackHandler::doWindowLevel(
     return;
   }
 
-  const float multipler = fineAdjustment ? 0.1f : 1.0f;
+  const float multiplier = fineAdjustment ? 0.1f : 1.0f;
 
   if (IntensityProjectionMode::Xray == viewToWL->intensityProjectionMode()) {
     // Special logic to adjust W/L for views rendering in x-ray projection mode:
@@ -1118,8 +1118,8 @@ void CallbackHandler::doWindowLevel(
     float oldWindow = m_appData.renderData().m_xrayIntensityWindow;
 
     const float levelDelta =
-      multipler * (levelMax - levelMin) * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f;
-    const float winDelta = multipler * (winMax - winMin) * (currHit.windowClipPos.x - prevHit.windowClipPos.x) / 2.0f;
+      multiplier * (levelMax - levelMin) * (currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0f;
+    const float winDelta = multiplier * (winMax - winMin) * (currHit.windowClipPos.x - prevHit.windowClipPos.x) / 2.0f;
 
     const float newLevel = std::min(std::max(oldLevel + levelDelta, levelMin), levelMax);
     const float newWindow = std::min(std::max(oldWindow + winDelta, winMin), winMax);
@@ -1144,10 +1144,10 @@ void CallbackHandler::doWindowLevel(
 
     auto& S = activeImage->settings();
 
-    const double centerDelta = multipler * (S.minMaxWindowCenterRange().second - S.minMaxWindowCenterRange().first) *
+    const double centerDelta = multiplier * (S.minMaxWindowCenterRange().second - S.minMaxWindowCenterRange().first) *
                                static_cast<double>(currHit.windowClipPos.y - prevHit.windowClipPos.y) / 2.0;
 
-    const double windowDelta = multipler * (S.minMaxWindowWidthRange().second - S.minMaxWindowWidthRange().first) *
+    const double windowDelta = multiplier * (S.minMaxWindowWidthRange().second - S.minMaxWindowWidthRange().first) *
                                static_cast<double>(currHit.windowClipPos.x - prevHit.windowClipPos.x) / 2.0;
 
     S.setWindowCenter(S.windowCenter() + centerDelta);

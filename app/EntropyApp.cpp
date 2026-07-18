@@ -780,7 +780,7 @@ bool EntropyApp::loadSerializedImage(
     // 1) no segmentation is created
     // 2) no affine transformation can be applied: it copies the affine tx of its image
     // 3) need warning when header tx doesn't match that of reference
-    // 4) even if all components are loaded as RGB texure, we should be able to view each component
+    // 4) even if all components are loaded as RGB texture, we should be able to view each component
     // separately in a shader that takes in as a uniform the active component
   }
 

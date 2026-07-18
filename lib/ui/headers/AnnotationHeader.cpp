@@ -97,7 +97,7 @@ void renderAnnotationsHeader(
     appData.state().setWorldCrosshairsPos(glm::vec3{worldCentroid / worldCentroid.w});
   };
 
-  // Finds a view with normal vector maching the annotation plane. (Todo: make this view active.)
+  // Finds a view with normal vector matching the annotation plane. (Todo: make this view active.)
   // If none found, make the largest view oblique and align it to the annotation.
   auto alignViewToAnnotationPlane = [&appData, &imageUid, &image, &setViewDirection](const Annotation& annot) {
     const glm::mat3 world_T_subject_invTranspose =
@@ -106,7 +106,7 @@ void renderAnnotationsHeader(
     const glm::vec3 worldAnnotNormal =
       glm::normalize(world_T_subject_invTranspose * glm::vec3{annot.getSubjectPlaneEquation()});
 
-    // Does the current layout have a view with this orientaion?
+    // Does the current layout have a view with this orientation?
     const auto viewsWithNormal = appData.windowData().findCurrentViewsWithNormal(worldAnnotNormal);
 
     if (viewsWithNormal.empty()) {
@@ -249,7 +249,7 @@ void renderAnnotationsHeader(
   activeAnnotUid = appData.imageToActiveAnnotationUid(imageUid);
   if (!activeAnnotUid) {
     // If there is no active/selected annotation, then do not render the rest of the header,
-    // which shows view properites of the annotation
+    // which shows view properties of the annotation
     if (hasFollowingHeader) {
       ImGui::Spacing();
       ImGui::Separator();

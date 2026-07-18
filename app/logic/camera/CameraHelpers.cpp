@@ -564,7 +564,7 @@ glm::vec2 scaleFactorsAboutWorldAxis(
   const glm::vec3 projSlideNewPos = slideNewPos - glm::dot(sk_slideAxis, slideNewPos) * sk_slideAxis;
 
   // Vectors from center:
-  const glm::vec2 numer = glm::vec2(projSlideNewPos - slideRotationCenter);
+  const glm::vec2 numerator = glm::vec2(projSlideNewPos - slideRotationCenter);
   const glm::vec2 denom = glm::vec2(projSlideOldPos - slideRotationCenter);
 
   static const glm::vec2 sk_zero(0.0f, 0.0f);
@@ -574,7 +574,7 @@ glm::vec2 scaleFactorsAboutWorldAxis(
     return sk_ident;
   }
 
-  return glm::vec2(numer.x / denom.x, numer.y / denom.y);
+  return glm::vec2(numerator.x / denom.x, numerator.y / denom.y);
 }
 
 glm::vec2 worldViewportDimensions(const Camera& camera, float ndcZ)

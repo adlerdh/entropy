@@ -153,7 +153,7 @@ void Rendering::renderVectorOverlays()
   }
 
   /// @note This is the transformation used for rotating the crosshairs.
-  /// It was designed initialially to show the mapping of subject (usually reference subject)
+  /// It was designed initially to show the mapping of subject (usually reference subject)
   /// in the view/camera. However, it need not be a subject-to-world transformation.
   /// We can also use the xhairs/frame-to-world transformation!!!
 

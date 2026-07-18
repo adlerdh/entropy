@@ -953,7 +953,7 @@ void drawAnnotations(
         }
 
         // Note: unlike for non-smoothed boundaries, the Bezier commands already account
-        // for closed polygons. There is no need to draw a vertex back to the beggining.
+        // for closed polygons. There is no need to draw a vertex back to the beginning.
       }
       else {
         nvgLineJoin(nvg, NVG_MITER);

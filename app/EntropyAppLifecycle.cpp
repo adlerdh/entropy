@@ -141,7 +141,7 @@ EntropyApp::EntropyApp()
   : m_imageLoadCancelled(false)
   , m_imagesReady(false)
   , m_imageLoadFailed(false)
-  , m_glfw(this, GL_VERSION_MAJOR, GL_VERSION_MINOR) // GLFW creates the OpenGL contex
+  , m_glfw(this, GL_VERSION_MAJOR, GL_VERSION_MINOR) // GLFW creates the OpenGL context
   , m_data()
   , m_rendering(m_data)                            // Requires OpenGL context
   , m_callbackHandler(m_data, m_glfw, m_rendering) // Requires OpenGL context

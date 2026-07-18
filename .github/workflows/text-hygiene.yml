@@ -1,0 +1,51 @@
+name: Text Hygiene
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: text-hygiene-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codespell:
+    name: Codespell
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install codespell
+        run: python3 -m pip install --user codespell
+
+      - name: Run codespell
+        run: |
+          "${HOME}/.local/bin/codespell" \
+            --ignore-words .codespellignore \
+            --skip './.git,./build-*,./cmake-build-*,./external,./app/logic_old,./app/rendering_old,./res/fonts/ForkAwesome,./*.log'
+
+  markdown-links:
+    name: Markdown Links
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Check Markdown links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --config .github/lychee.toml
+            --no-progress
+            README.md
+            BUILDING.md
+            PACKAGING.md
+            THIRD_PARTY_NOTICES.md
+            test/image_generator/README.md
+            test/deformation_warp_examples/README.md
+            test/warp_field_generator/README.md

@@ -118,7 +118,7 @@ public:
 
   /// Three-character "SPIRAL" code defining the anatomical orientation of the image in physical
   /// Subject space, where positive X, Y, and Z axes correspond to the physical Left, Posterior, and
-  /// Superior directions, respectively. The acroynm stands for "Superior, Posterior, Inferior,
+  /// Superior directions, respectively. The acronym stands for "Superior, Posterior, Inferior,
   /// Right, Anterior, Left".
   const std::string& spiralCode() const;
 
@@ -183,7 +183,7 @@ private:
 
   /// Three-character "SPIRAL" code defining the anatomical orientation of the image in Subject
   /// space, where positive X, Y, and Z axes correspond to the physical Left, Posterior, and
-  /// Superior directions, respectively. The acroynm stands for "Superior, Posterior, Inferior,
+  /// Superior directions, respectively. The acronym stands for "Superior, Posterior, Inferior,
   /// Right, Anterior, Left"
   std::string m_spiralCode;
 

@@ -1,0 +1,13 @@
+accept = [200, 204, 206, 301, 302, 303, 307, 308, 429]
+exclude_all_private = true
+max_concurrency = 8
+retry_wait_time = 2
+timeout = 20
+
+exclude = [
+  "^file:",
+  "^mailto:",
+  "localhost",
+  "127\\.0\\.0\\.1",
+  "^https://www\\.shadertoy\\.com/user/Yusef28$",
+]

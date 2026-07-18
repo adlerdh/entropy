@@ -39,7 +39,7 @@ SlideTransformation::SlideTransformation()
 {
 }
 
-/// @todo GLM bug? is angle in degress?
+/// @todo GLM bug? is angle in degrees?
 const glm::mat4& SlideTransformation::stack_O_slide(const glm::vec3& physicalSlideDims) const
 {
   if (physicalSlideDims != m_cachedPhysicalSlideDims) {

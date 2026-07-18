@@ -1,4 +1,12 @@
 repos:
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        args:
+          - --ignore-words=.codespellignore
+        exclude: ^(external/|app/logic_old/|app/rendering_old/|res/fonts/ForkAwesome/|build[^/]*/|.*\.log$)
+
   - repo: local
     hooks:
       - id: clang-format
@@ -7,3 +15,10 @@ repos:
         language: system
         files: ^(app|lib)/.*\.(c|cc|cpp|cxx|h|hh|hpp|hxx|tpp|txx|inc|mm|fs|vs|gs|frag|vert|geom|glsl)$
         exclude: ^(external|build[^/]*)/
+
+      - id: lychee-doc-links
+        name: lychee Markdown link check
+        entry: lychee --config .github/lychee.toml --no-progress README.md BUILDING.md PACKAGING.md THIRD_PARTY_NOTICES.md test/image_generator/README.md test/deformation_warp_examples/README.md test/warp_field_generator/README.md
+        language: system
+        pass_filenames: false
+        stages: [manual]

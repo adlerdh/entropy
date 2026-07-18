@@ -105,7 +105,7 @@ public:
   bool isHighlighted() const;
 
   /// @brief Set/get whether the annotation's outer boundary is closed.
-  /// If closed, then it is assumed that the last vertex conntects to the first vertex.
+  /// If closed, then it is assumed that the last vertex connects to the first vertex.
   /// If a polygon boundary is specified as closed,  then it is assumed that its last vertex is
   /// connected by an edge to the first vertex. The user need NOT specify a final vertex that is
   /// identical to the first vertex. For example, a closed triangular polygon can be defined with

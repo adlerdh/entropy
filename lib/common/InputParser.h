@@ -9,6 +9,6 @@
  * @param[in] argv Array of command line arguments
  * @param[out] params Parsed parameters
  *
- * @return True iff parsing succceeded without errors
+ * @return True iff parsing succeeded without errors
  */
 bool parseCommandLine(const int argc, char* argv[], InputParams& params);

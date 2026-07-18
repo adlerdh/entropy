@@ -17,7 +17,7 @@
 
 /**
  * @brief A polygon of any winding order that can have multiple holes inside of an outer boundary.
- * The planarity of the polygon is not enforced: that is the reponsibility of the user.
+ * The planarity of the polygon is not enforced: that is the responsibility of the user.
  *
  * @note The polygon's outer boundary can be either open or closed. This property is not specified
  * in this class: It is left up to the user of this class to decide whether the boundary is closed or open.
@@ -397,7 +397,7 @@ public:
     return (!m_triangulation.empty());
   }
 
-  /// Get the polygon triangulation: a vector of indices refering to vertices of the whole polygon.
+  /// Get the polygon triangulation: a vector of indices referring to vertices of the whole polygon.
   const std::vector<size_t>& getTriangulation() const
   {
     return m_triangulation;

@@ -73,7 +73,7 @@ public:
   /// Get the pickable setting.
   bool isPickable() const;
 
-  /// Set wheter this drawable is visible (i.e. rendered).
+  /// Set whether this drawable is visible (i.e. rendered).
   /// Applies property to only this drawable, not to its descendants.
   void setVisible(bool visible);
 

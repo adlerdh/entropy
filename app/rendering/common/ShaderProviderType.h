@@ -6,7 +6,7 @@
 class GLShaderProgram;
 class Uniforms;
 
-/// Functional activiting a shader program (setting it as the current program)
+/// Function activating a shader program (setting it as the current program)
 /// and returning a pointer to it if successful (nullptr it not successful).
 using ShaderProgramActivatorType = std::function<GLShaderProgram*(const std::string& shaderName)>;
 

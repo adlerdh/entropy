@@ -180,7 +180,7 @@ protected:
   bool addVertexToGrowingPolygon(const ViewHit& hit);
 
   /**
-   * @brief Complete the curently growing annotation polygon
+   * @brief Complete the currently growing annotation polygon
    * @param[in] closePolgon Flag to also close the polygon if it has three
    * or more vertices
    */
